@@ -185,7 +185,14 @@ func New(spec *domain.Compiled, seed uint64, id string, startNS int64, opts Opti
 	return w, nil
 }
 
-// renderID renders an id template like "site-{site}/pond-{n}".
+// RenderID renders one entity id from the domain's id template. Exported
+// for hosts that must enumerate the domain's entity ids without building a
+// world (the audit path).
+func RenderID(tmpl string, n int) string {
+	return renderID(tmpl, n, nil)
+}
+
+// renderID expands the id template.
 func renderID(tmpl string, n int, params map[string]any) string {
 	out := tmpl
 	out = strings.ReplaceAll(out, "{n}", strconv.Itoa(n))

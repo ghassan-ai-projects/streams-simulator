@@ -337,8 +337,13 @@ func (s *Suite) buildScenario(cfg Config, rng *randutil.SplitMix64, solver *trut
 	}
 
 	// Audit the candidate: trivial scenarios are excluded from the graded
-	// set and the loop regenerates.
-	verdict, err := panel.Audit(entity, faultID, onsetNS, startNS, entities, durationNS, setup)
+	// set and the loop regenerates. The audit consumes the delivered stream
+	// with the scenario's declared perturbations applied.
+	var auditPerts []audit.Perturbation
+	for _, p := range scPerts {
+		auditPerts = append(auditPerts, audit.Perturbation{Name: p.Name, Params: p.Params, FromNS: p.FromNS, UntilNS: p.UntilNS})
+	}
+	verdict, err := panel.Audit(entity, faultID, onsetNS, startNS, entities, durationNS, setup, auditPerts)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("suite: audit: %w", err)
 	}

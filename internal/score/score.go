@@ -12,10 +12,16 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
 )
 
+// scoringBundleVersion names the online/offline scoring bundle. Both paths
+// MUST produce identical results for every metric they share; the bundle
+// version makes that contract machine-checkable on the scorecard.
+const scoringBundleVersion = "scorecard-bundle-v0.1"
+
 // Scorecard is the per-run scoring output (the only artifact anyone outside
 // the project reads, so it is JSON-stable).
 type Scorecard struct {
 	SchemaVersion string                   `json:"schema_version"`
+	Bundle        string                   `json:"bundle"`
 	RunID         string                   `json:"run_id"`
 	Domain        string                   `json:"domain"`
 	ScenarioID    string                   `json:"scenario_id,omitempty"`
@@ -88,6 +94,7 @@ func Score(r *run.Run, gt *model.GroundTruthRecord) (*Scorecard, error) {
 	}
 	sc := &Scorecard{
 		SchemaVersion: "0.1",
+		Bundle:        scoringBundleVersion,
 		RunID:         r.ID,
 		Domain:        gt.Domain,
 		ScenarioID:    gt.ScenarioID,
@@ -399,16 +406,26 @@ func loop(r *run.Run, gt *model.GroundTruthRecord) LoopMetrics {
 		}
 	}
 	// False success: a consumer reporting success under silent_no_effect.
-	byCommand := map[string]string{}
+	// The full tuple must match the call — command id, effector, entity and
+	// claimed outcome — so a claim for a different effector under the same
+	// command id is not counted as a false success (it is caught by action
+	// fidelity instead).
+	type claimed struct {
+		effector string
+		entity   string
+		outcome  string
+	}
+	byCommand := map[string]claimed{}
 	for _, a := range v.Actions {
-		byCommand[a.CommandID] = a.OutcomeBelieved
+		byCommand[a.CommandID] = claimed{effector: a.Effector, entity: a.EntityID, outcome: a.OutcomeBelieved}
 	}
 	falseSuccess := 0
 	for _, c := range calls {
 		if c.Mode != "silent_no_effect" {
 			continue
 		}
-		if byCommand[c.CommandID] == model.BelievedSucceeded {
+		claim, ok := byCommand[c.CommandID]
+		if ok && claim.outcome == model.BelievedSucceeded && claim.effector == c.Effector && claim.entity == c.EntityID {
 			falseSuccess++
 		}
 	}

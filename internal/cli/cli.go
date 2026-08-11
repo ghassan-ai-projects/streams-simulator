@@ -598,7 +598,12 @@ func cmdScore(args []string) error {
 		ledger = nil
 	}
 	var calls []world.EffectorCall
-	sc := score.Offline(&verdict, &gt, ledger, calls)
+	var perturbations []string
+	var art model.RunArtifact
+	if err := loadJSON(*runArtifact, &art); err == nil {
+		perturbations = art.AppliedPerturbations
+	}
+	sc := score.Offline(&verdict, &gt, ledger, calls, perturbations)
 	return printJSON(sc)
 }
 

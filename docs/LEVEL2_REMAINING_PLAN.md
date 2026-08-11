@@ -1,7 +1,7 @@
 # Level 2 remaining-work plan
 
 Status: working plan — updated per slice
-Date: 2026-08-11 (rev 7: Slice D landed)
+Date: 2026-08-11 (rev 8: Slice F landed)
 Target: **Level 2 — benchmark-ready** per [QUALITY_BAR.md](QUALITY_BAR.md)
 Baseline: `5a269a0` (Level 1 green; all tests, vet, ci-check pass)
 
@@ -220,6 +220,13 @@ Plan — oracle semantics per form (each oracle is an independent implementation
 Out of scope: implementing pink/batch (keep fail-closed, per design).
 
 ## Slice F — G6/G7/G8/G9 hardening + scoring identity
+
+Status: **landed** (this plan rev). The F-0 scoring-identity gate drove out four
+divergences between the online and offline paths, all fixed: label matching leniency
+(offline accepted empty labels), clock-skew rejection (offline had no perturbation
+input — the artifact now carries `applied_perturbations`), perturbation fidelity, and
+interlock handling. Both paths carry a versioned scoring bundle and a test proves
+byte-identical shared metrics.
 
 Issue (survey + review):
 - **F-0 (P0) Online/offline scoring identity** — QUALITY_BAR Level 2 requires identical

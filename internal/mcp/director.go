@@ -22,6 +22,7 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/score"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/truth"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
 // WorldRecord is one created world under the director's control.
@@ -502,10 +503,13 @@ func (d *Director) AuditScenario(domainID, entityID, fault string, onsetNS, star
 	panel := audit.NewPanel(spec, 1, 60*1e9)
 	var ids []string
 	n := spec.Spec.Entities.Count.Default
+	// Entity ids come from the domain's own template — the binary contains
+	// no domain literal.
+	tmpl := spec.Spec.Entities.IDTemplate
 	for i := 1; i <= n; i++ {
-		ids = append(ids, fmt.Sprintf("site-a/pond-%d", i))
+		ids = append(ids, world.RenderID(tmpl, i))
 	}
-	v, err := panel.Audit(entityID, fault, onsetNS, startNS, ids, durationNS, nil)
+	v, err := panel.Audit(entityID, fault, onsetNS, startNS, ids, durationNS, nil, nil)
 	if err != nil {
 		return nil, errTool(CodeDomainInvalid, "%v", err)
 	}

@@ -498,17 +498,50 @@ func (e *evidence) equalPrefix(o *evidence) bool {
 	return len(e.entries) == len(o.entries)
 }
 
+// operatorResponseSet renders the full operator surface over the server
+// tool layer — nameplate, effector list, an invocation, a quiescence
+// report, and the capability-denied error path — as one byte string. Two
+// worlds with identical delivered prefixes must produce identical bytes.
 func operatorResponseSet(t *testing.T, v *OperatorView, token string, atNS int64) (string, error) {
 	t.Helper()
-	np, err := v.ReadNameplate(token)
+	cs, _ := connect(t, NewOperatorServer(v))
+	call := func(name string, args map[string]any) (string, error) {
+		res, err := cs.CallTool(context.Background(), &mcp.CallToolParams{Name: name, Arguments: args})
+		if err != nil {
+			return "", fmt.Errorf("operator call %s: %w", name, err)
+		}
+		raw, _ := json.Marshal(res.StructuredContent)
+		return string(raw), nil
+	}
+	np, err := call("sim.nameplate.read", map[string]any{"token": token})
 	if err != nil {
 		return "", err
 	}
-	effs, err := v.ListEffectors(token)
+	effs, err := call("sim.effector.list", map[string]any{"token": token})
 	if err != nil {
 		return "", err
 	}
-	a, _ := json.Marshal(np)
-	b, _ := json.Marshal(effs)
-	return string(a) + "|" + string(b), nil
+	invoked := "none"
+	var effList []EffectorInfo
+	if err := json.Unmarshal([]byte(effs), &effList); err == nil && len(effList) > 0 {
+		invoked, err = call("sim.effector.invoke", map[string]any{
+			"token": token, "effector": effList[0].Name,
+			"entity_id": "site-a/pond-1", "command_id": "prefix-1",
+			"args": argsForSchema(effList[0].ArgsSchema, "site-a/pond-1"), "at_ns": atNS,
+		})
+		if err != nil {
+			return "", err
+		}
+	}
+	report, err := call("sim.consumer.report", map[string]any{
+		"token": token, "run_id": "", "quiesced_through_ns": atNS,
+	})
+	if err != nil {
+		return "", err
+	}
+	denied, err := call("sim.nameplate.read", map[string]any{"token": "bad-token"})
+	if err != nil {
+		return "", err
+	}
+	return np + "|" + effs + "|" + invoked + "|" + report + "|" + denied, nil
 }

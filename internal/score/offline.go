@@ -15,16 +15,20 @@ import (
 
 // Offline scores a verdict against a label. ledger may be nil (mechanism
 // metrics are then reported conservatively as false, with a note).
-func Offline(v *model.Verdict, gt *model.GroundTruthRecord, ledger []model.LedgerRecord, calls []world.EffectorCall) *Scorecard {
+// perturbations is the run's applied-perturbation list (from the artifact),
+// needed for the clock-skew metric exactly as the online path uses it.
+func Offline(v *model.Verdict, gt *model.GroundTruthRecord, ledger []model.LedgerRecord, calls []world.EffectorCall, perturbations []string) *Scorecard {
 	sc := &Scorecard{
 		SchemaVersion: "0.1",
+		Bundle:        scoringBundleVersion,
 		RunID:         v.RunID,
 		Domain:        gt.Domain,
 		ScenarioID:    gt.ScenarioID,
 		GroundTruth:   gt,
 		NegativeClass: gt.IsNegativeClass,
 	}
-	// Judgment from the verdict and label.
+	// Judgment from the verdict and label. Label matching is strict, exactly
+	// like the online path: an unlabelled detection is not a correct label.
 	j := JudgmentMetrics{DetectionCount: len(v.Detections)}
 	if gt.FirstObservableTimeNS > 0 {
 		for _, d := range v.Detections {
@@ -42,7 +46,7 @@ func Offline(v *model.Verdict, gt *model.GroundTruthRecord, ledger []model.Ledge
 			if !j.Detected || t < j.DetectionLatencyNS {
 				j.Detected = true
 				j.DetectionLatencyNS = t - gt.FirstObservableTimeNS
-				j.LabelCorrect = d.Label == "" || d.Label == gt.Label
+				j.LabelCorrect = d.Label == gt.Label
 			}
 		}
 	}
@@ -52,16 +56,16 @@ func Offline(v *model.Verdict, gt *model.GroundTruthRecord, ledger []model.Ledge
 	sc.Judgment = j
 
 	if ledger != nil {
-		sc.Instrument = instrumentFrom(ledger, calls)
+		sc.Instrument = instrumentFrom(ledger, calls, perturbations)
 	}
 	if calls != nil {
 		sc.Loop = loopFrom(v, gt, calls)
 	}
-	sc.Consumer = consumerFrom(v, ledger, calls)
+	sc.Consumer = consumerFrom(v, ledger, calls, perturbations)
 	return sc
 }
 
-func instrumentFrom(ledger []model.LedgerRecord, calls []world.EffectorCall) InstrumentMetrics {
+func instrumentFrom(ledger []model.LedgerRecord, calls []world.EffectorCall, perturbations []string) InstrumentMetrics {
 	m := InstrumentMetrics{LedgerComplete: true}
 	seenIDs := map[uint64]bool{}
 	seenSeq := map[int64]bool{}
@@ -96,6 +100,21 @@ func instrumentFrom(ledger []model.LedgerRecord, calls []world.EffectorCall) Ins
 			break
 		}
 	}
+	// Perturbation fidelity: every applied perturbation left a mark in the
+	// ledger — the same rule as the online path.
+	m.PerturbationFidelity = true
+	for _, name := range perturbations {
+		found := false
+		for _, l := range ledger {
+			if reasonOf(name) == l.DeliveryReason && l.Delivered != (name == "drop") {
+				found = true
+				break
+			}
+		}
+		if !found {
+			m.PerturbationFidelity = false
+		}
+	}
 	seen := map[string]bool{}
 	m.EffectorIdempotency = true
 	for _, c := range calls {
@@ -110,15 +129,23 @@ func instrumentFrom(ledger []model.LedgerRecord, calls []world.EffectorCall) Ins
 func loopFrom(v *model.Verdict, gt *model.GroundTruthRecord, calls []world.EffectorCall) LoopMetrics {
 	m := LoopMetrics{EffectCalls: len(calls)}
 	expected := gt.ExpectedEffector
-	byCommand := map[string]string{}
+	// The full tuple must match the call — command id, effector, entity and
+	// claimed outcome — the same rule as the online path.
+	type claimed struct {
+		effector string
+		entity   string
+		outcome  string
+	}
+	byCommand := map[string]claimed{}
 	for _, a := range v.Actions {
-		byCommand[a.CommandID] = a.OutcomeBelieved
+		byCommand[a.CommandID] = claimed{effector: a.Effector, entity: a.EntityID, outcome: a.OutcomeBelieved}
 	}
 	falseSuccess := 0
 	for _, c := range calls {
 		if c.Mode == "silent_no_effect" {
 			m.SilentNoEffectCalls++
-			if byCommand[c.CommandID] == model.BelievedSucceeded {
+			claim, ok := byCommand[c.CommandID]
+			if ok && claim.outcome == model.BelievedSucceeded && claim.effector == c.Effector && claim.entity == c.EntityID {
 				falseSuccess++
 			}
 		}
@@ -136,7 +163,7 @@ func loopFrom(v *model.Verdict, gt *model.GroundTruthRecord, calls []world.Effec
 	return m
 }
 
-func consumerFrom(v *model.Verdict, ledger []model.LedgerRecord, calls []world.EffectorCall) ConsumerMetrics {
+func consumerFrom(v *model.Verdict, ledger []model.LedgerRecord, calls []world.EffectorCall, perturbations []string) ConsumerMetrics {
 	m := ConsumerMetrics{}
 	if ledger == nil {
 		return m
@@ -168,6 +195,19 @@ func consumerFrom(v *model.Verdict, ledger []model.LedgerRecord, calls []world.E
 	for _, l := range ledger {
 		if l.DeliveryReason == model.DeliveryDelayed && l.Delivered && !hasOutcome(admissionBySeq[l.Seq], model.AdmissionLate) {
 			m.LatenessClassification = false
+		}
+	}
+	// Clock skew: skewed records must be explicitly rejected or classified
+	// malformed/out-of-contract when the perturbation is active — the same
+	// rule as the online path, fed by the artifact's perturbation list.
+	m.ClockSkewRejection = true
+	if hasPerturbation(perturbations, "clock_skew") {
+		m.ClockSkewRejection = false
+		for _, outcomes := range admissionBySeq {
+			if hasOutcome(outcomes, model.AdmissionRejected) || hasOutcome(outcomes, model.AdmissionMalformed) || hasOutcome(outcomes, model.AdmissionOutOfContract) {
+				m.ClockSkewRejection = true
+				break
+			}
 		}
 	}
 	drops := 0
@@ -244,6 +284,20 @@ func consumerFrom(v *model.Verdict, ledger []model.LedgerRecord, calls []world.E
 	if len(used) != len(v.Actions) {
 		m.ActionFidelity = false
 	}
+	// Interlock handling: a refusal is never retried with a new command_id
+	// for the same effector/entity — the same rule as the online path.
+	m.InterlockHandling = true
+	refused := map[string]bool{}
+	for _, c := range calls {
+		if c.InterlockRefused {
+			refused[c.Effector+"/"+c.EntityID] = true
+		}
+	}
+	for _, c := range calls {
+		if refused[c.Effector+"/"+c.EntityID] && !c.InterlockRefused {
+			m.InterlockHandling = false
+		}
+	}
 	return m
 }
 
@@ -252,4 +306,14 @@ func max64(a, b int64) int64 {
 		return a
 	}
 	return b
+}
+
+// hasPerturbation reports whether the run applied the named perturbation.
+func hasPerturbation(perturbations []string, wanted string) bool {
+	for _, p := range perturbations {
+		if p == wanted {
+			return true
+		}
+	}
+	return false
 }

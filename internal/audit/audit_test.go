@@ -44,7 +44,7 @@ func TestLoudFaultIsTrivial(t *testing.T) {
 	start := model.DefaultStartTimeNS + 4*3600*1e9
 	onset := start + 2*3600*1e9
 	panel := NewPanel(spec, 42, 60*1e9)
-	v, err := panel.Audit("site-a/pond-1", "aerator_failure", onset, start, ids(spec), 12*3600*1e9, runningAerator())
+	v, err := panel.Audit("site-a/pond-1", "aerator_failure", onset, start, ids(spec), 12*3600*1e9, runningAerator(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -66,7 +66,7 @@ func TestProbeFoulingIsNonTrivial(t *testing.T) {
 	start := model.DefaultStartTimeNS + 4*3600*1e9
 	onset := start + 2*3600*1e9
 	panel := NewPanel(spec, 42, 60*1e9)
-	v, err := panel.Audit("site-a/pond-1", "do_probe_fouling", onset, start, ids(spec), 8*3600*1e9, nil)
+	v, err := panel.Audit("site-a/pond-1", "do_probe_fouling", onset, start, ids(spec), 8*3600*1e9, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
