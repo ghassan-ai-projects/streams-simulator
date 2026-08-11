@@ -1,8 +1,16 @@
 # Streams Simulator
 
-Status: design, ready to build
+Status: implementation prototype under correctness hardening; not benchmark-ready
 Date: 2026-08-11
 Codename: `streamsim`
+
+> **Implementation review:** the S0-S5 prototype exists, but the instrument-integrity gates
+> are not yet satisfied. Do not use current scores as benchmark evidence. See the
+> [implementation-readiness review](IMPLEMENTATION_READINESS_REVIEW.md) for confirmed gaps,
+> acceptance criteria, and the recommended implementation sequence.
+>
+> The executable completion bar and per-change remediation loop are defined in
+> [QUALITY_BAR.md](QUALITY_BAR.md).
 
 A standalone, deterministic, closed-loop world simulator for testing stream processors.
 
