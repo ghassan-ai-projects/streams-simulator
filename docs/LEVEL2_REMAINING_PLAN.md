@@ -1,7 +1,7 @@
 # Level 2 remaining-work plan
 
 Status: working plan — updated per slice
-Date: 2026-08-11 (rev 5: Slice E landed)
+Date: 2026-08-11 (rev 6: Slice C landed)
 Target: **Level 2 — benchmark-ready** per [QUALITY_BAR.md](QUALITY_BAR.md)
 Baseline: `5a269a0` (Level 1 green; all tests, vet, ci-check pass)
 
@@ -144,6 +144,8 @@ out-of-process.
 Out of scope: streamable HTTP for the director (stdio stays); TLS.
 
 ## Slice C — G4 durable append-only ledger
+
+Status: **landed** (this plan rev).
 
 Issue (survey): ledger is an in-memory slice in `internal/run`, written once at `End()`;
 no mid-run durability, no crash recovery; no conservation test beyond ~10 rows. The file

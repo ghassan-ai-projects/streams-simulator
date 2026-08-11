@@ -8,6 +8,7 @@
 package run
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"errors"
@@ -48,6 +49,7 @@ type Config struct {
 	Noiseless        bool
 	ForceFailureMode string // force every effector into a failure mode (tests)
 	QuiescenceClock  QuiescenceClock
+	LedgerPath       string // append-only durable ledger path ("" = in-memory only until End)
 }
 
 // DefaultQuiescenceTimeout bounds an await_consumer wait before the run is
@@ -104,6 +106,8 @@ type Run struct {
 	quiesceNotify     chan struct{}
 	evidenceRec       func(model.SimEvent) // delivered-event hook (test harness)
 	quiesceParked     func()               // fired when a quiescence wait blocks (test harness)
+	ledgerWriter      *bufio.Writer
+	ledgerFile        *os.File
 
 	finished     bool
 	incomplete   bool
@@ -163,6 +167,17 @@ func New(ctx context.Context, cfg Config) (*Run, error) {
 		worldEndTimeNS:   cfg.StartTimeNS,
 		envTargets:       map[string]string{},
 		quiesceNotify:    make(chan struct{}),
+	}
+	if cfg.LedgerPath != "" {
+		if err := os.MkdirAll(filepath.Dir(cfg.LedgerPath), 0o700); err != nil {
+			return nil, fmt.Errorf("run: ledger dir: %w", err)
+		}
+		lf, err := os.OpenFile(cfg.LedgerPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600)
+		if err != nil {
+			return nil, fmt.Errorf("run: open ledger %s: %w", cfg.LedgerPath, err)
+		}
+		r.ledgerWriter = bufio.NewWriter(lf)
+		r.ledgerFile = lf
 	}
 	meta := map[string]any{
 		"run_id": cfg.RunID, "sim_version": model.SimVersion,
@@ -244,7 +259,7 @@ func (r *Run) onEmit(ev model.SimEvent) {
 		if d.Malformed {
 			// One bad record must not poison a file: render a broken line.
 			if err := r.writeMalformed(ev); err != nil {
-				r.ledger = append(r.ledger, model.LedgerRecord{
+				r.appendLedger(model.LedgerRecord{
 					DeliveryID: d.DeliveryID, Seq: ev.Seq, WorldID: ev.WorldID, EntityID: ev.EntityID,
 					Channel: ev.Channel, EventTimeNS: atNS, ObservedTimeNS: atNS,
 					Delivered: false, DeliveryReason: model.DeliverySinkError, WrittenAtNS: r.World.Clock(),
@@ -252,7 +267,7 @@ func (r *Run) onEmit(ev model.SimEvent) {
 				r.fail(err)
 				return
 			}
-			r.ledger = append(r.ledger, model.LedgerRecord{
+			r.appendLedger(model.LedgerRecord{
 				DeliveryID: d.DeliveryID, Seq: ev.Seq, WorldID: ev.WorldID, EntityID: ev.EntityID,
 				Channel: ev.Channel, EventTimeNS: atNS, ObservedTimeNS: atNS,
 				Delivered: true, DeliveryReason: model.DeliveryMangled,
@@ -261,7 +276,7 @@ func (r *Run) onEmit(ev model.SimEvent) {
 			continue
 		}
 		if !d.Delivered {
-			r.ledger = append(r.ledger, model.LedgerRecord{
+			r.appendLedger(model.LedgerRecord{
 				DeliveryID: d.DeliveryID, Seq: ev.Seq, WorldID: ev.WorldID, EntityID: ev.EntityID,
 				Channel: ev.Channel, EventTimeNS: atNS, ObservedTimeNS: atNS,
 				Delivered: false, DeliveryReason: d.Reason,
@@ -274,7 +289,7 @@ func (r *Run) onEmit(ev model.SimEvent) {
 		}
 		line, err := r.Engine.RenderStreamRecord(&d.Event)
 		if err != nil {
-			r.ledger = append(r.ledger, model.LedgerRecord{
+			r.appendLedger(model.LedgerRecord{
 				DeliveryID: d.DeliveryID, Seq: d.Event.Seq, WorldID: d.Event.WorldID, EntityID: d.Event.EntityID,
 				Channel: d.Event.Channel, EventTimeNS: atNS, ObservedTimeNS: atNS,
 				Delivered: false, DeliveryReason: model.DeliverySinkError, WrittenAtNS: r.World.Clock(),
@@ -283,7 +298,7 @@ func (r *Run) onEmit(ev model.SimEvent) {
 			return
 		}
 		if line == "" {
-			r.ledger = append(r.ledger, model.LedgerRecord{
+			r.appendLedger(model.LedgerRecord{
 				DeliveryID: d.DeliveryID, Seq: d.Event.Seq, WorldID: d.Event.WorldID, EntityID: d.Event.EntityID,
 				Channel: d.Event.Channel, EventTimeNS: atNS, ObservedTimeNS: atNS,
 				Delivered: false, DeliveryReason: model.DeliveryOmitted, WrittenAtNS: r.World.Clock(),
@@ -291,7 +306,7 @@ func (r *Run) onEmit(ev model.SimEvent) {
 			continue
 		}
 		if err := r.Sink.Write([]byte(line)); err != nil {
-			r.ledger = append(r.ledger, model.LedgerRecord{
+			r.appendLedger(model.LedgerRecord{
 				DeliveryID: d.DeliveryID, Seq: d.Event.Seq, WorldID: d.Event.WorldID, EntityID: d.Event.EntityID,
 				Channel: d.Event.Channel, EventTimeNS: atNS, ObservedTimeNS: atNS,
 				Delivered: false, DeliveryReason: model.DeliverySinkError, WrittenAtNS: r.World.Clock(),
@@ -300,7 +315,7 @@ func (r *Run) onEmit(ev model.SimEvent) {
 			return
 		}
 		otNS, _ := model.ParseTime(d.Event.ObservedTime)
-		r.ledger = append(r.ledger, model.LedgerRecord{
+		r.appendLedger(model.LedgerRecord{
 			DeliveryID: d.DeliveryID, Seq: d.Event.Seq, WorldID: d.Event.WorldID, EntityID: d.Event.EntityID,
 			Channel: d.Event.Channel, EventTimeNS: atNS, ObservedTimeNS: otNS,
 			Delivered: true, DeliveryReason: d.Reason, WrittenAtNS: r.World.Clock(),
@@ -367,6 +382,13 @@ func (r *Run) Advance(ctx context.Context, toNS int64, awaitConsumer bool) (int,
 		Seq: int64(len(r.commandLog)), AtNS: r.World.Clock(),
 		Op: model.OpClockAdvance, Args: map[string]any{"to_ns": toNS, "await_consumer": awaitConsumer},
 	})
+	// Command boundary: the ledger rows and trace bytes for this advance are
+	// now on file descriptors, so a crash here loses nothing acknowledged.
+	if err := r.flushDurable(); err != nil {
+		r.fail(err)
+		r.commandMu.Unlock()
+		return emitted, err
+	}
 	if !awaitConsumer {
 		r.commandMu.Unlock()
 		_ = effects
@@ -392,11 +414,41 @@ func (r *Run) Advance(ctx context.Context, toNS int64, awaitConsumer bool) (int,
 	return emitted, nil
 }
 
+// appendLedger records one delivery row in memory and, when durable
+// persistence is configured, appends it to the ledger file immediately. The
+// file is flushed at command boundaries, so a crash between boundaries loses
+// nothing that was acknowledged at a boundary.
+func (r *Run) appendLedger(rec model.LedgerRecord) {
+	r.ledger = append(r.ledger, rec)
+	if r.ledgerWriter != nil {
+		if raw, err := json.Marshal(rec); err == nil {
+			_, _ = r.ledgerWriter.Write(raw)
+			_ = r.ledgerWriter.WriteByte('\n')
+		}
+	}
+}
+
+// flushDurable pushes the ledger writer and the file sink (when present) to
+// their file descriptors. Called at every command boundary; End adds fsync.
+func (r *Run) flushDurable() error {
+	if r.ledgerWriter != nil {
+		if err := r.ledgerWriter.Flush(); err != nil {
+			return fmt.Errorf("run: flush ledger: %w", err)
+		}
+	}
+	if f, ok := r.Sink.(interface{ Flush() error }); ok {
+		if err := f.Flush(); err != nil {
+			return fmt.Errorf("run: flush sink: %w", err)
+		}
+	}
+	return nil
+}
+
 func (r *Run) deliver(d perturb.Delivered) {
 	if d.Malformed {
 		if err := r.writeMalformed(d.Event); err != nil {
 			atNS, _ := model.ParseTime(d.Event.EventTime)
-			r.ledger = append(r.ledger, model.LedgerRecord{
+			r.appendLedger(model.LedgerRecord{
 				DeliveryID: d.DeliveryID, Seq: d.Event.Seq, WorldID: d.Event.WorldID, EntityID: d.Event.EntityID,
 				Channel: d.Event.Channel, EventTimeNS: atNS, ObservedTimeNS: atNS,
 				Delivered: false, DeliveryReason: model.DeliverySinkError, WrittenAtNS: r.World.Clock(),
@@ -405,7 +457,7 @@ func (r *Run) deliver(d perturb.Delivered) {
 			return
 		}
 		atNS, _ := model.ParseTime(d.Event.EventTime)
-		r.ledger = append(r.ledger, model.LedgerRecord{
+		r.appendLedger(model.LedgerRecord{
 			DeliveryID: d.DeliveryID, Seq: d.Event.Seq, WorldID: d.Event.WorldID, EntityID: d.Event.EntityID,
 			Channel: d.Event.Channel, EventTimeNS: atNS, ObservedTimeNS: atNS,
 			Delivered: true, DeliveryReason: model.DeliveryMangled, WrittenAtNS: r.World.Clock(),
@@ -414,7 +466,7 @@ func (r *Run) deliver(d perturb.Delivered) {
 	}
 	if !d.Delivered {
 		atNS, _ := model.ParseTime(d.Event.EventTime)
-		r.ledger = append(r.ledger, model.LedgerRecord{
+		r.appendLedger(model.LedgerRecord{
 			DeliveryID: d.DeliveryID, Seq: d.Event.Seq, WorldID: d.Event.WorldID, EntityID: d.Event.EntityID,
 			Channel: d.Event.Channel, EventTimeNS: atNS, ObservedTimeNS: atNS,
 			Delivered: false, DeliveryReason: d.Reason, WrittenAtNS: r.World.Clock(),
@@ -424,7 +476,7 @@ func (r *Run) deliver(d perturb.Delivered) {
 	line, err := r.Engine.RenderStreamRecord(&d.Event)
 	if err != nil {
 		atNS, _ := model.ParseTime(d.Event.EventTime)
-		r.ledger = append(r.ledger, model.LedgerRecord{
+		r.appendLedger(model.LedgerRecord{
 			DeliveryID: d.DeliveryID, Seq: d.Event.Seq, WorldID: d.Event.WorldID, EntityID: d.Event.EntityID,
 			Channel: d.Event.Channel, EventTimeNS: atNS, ObservedTimeNS: atNS,
 			Delivered: false, DeliveryReason: model.DeliverySinkError, WrittenAtNS: r.World.Clock(),
@@ -434,7 +486,7 @@ func (r *Run) deliver(d perturb.Delivered) {
 	}
 	if line == "" {
 		atNS, _ := model.ParseTime(d.Event.EventTime)
-		r.ledger = append(r.ledger, model.LedgerRecord{
+		r.appendLedger(model.LedgerRecord{
 			DeliveryID: d.DeliveryID, Seq: d.Event.Seq, WorldID: d.Event.WorldID, EntityID: d.Event.EntityID,
 			Channel: d.Event.Channel, EventTimeNS: atNS, ObservedTimeNS: atNS,
 			Delivered: false, DeliveryReason: model.DeliveryOmitted, WrittenAtNS: r.World.Clock(),
@@ -446,7 +498,7 @@ func (r *Run) deliver(d perturb.Delivered) {
 	}
 	if err := r.Sink.Write([]byte(line)); err != nil {
 		atNS, _ := model.ParseTime(d.Event.EventTime)
-		r.ledger = append(r.ledger, model.LedgerRecord{
+		r.appendLedger(model.LedgerRecord{
 			DeliveryID: d.DeliveryID, Seq: d.Event.Seq, WorldID: d.Event.WorldID, EntityID: d.Event.EntityID,
 			Channel: d.Event.Channel, EventTimeNS: atNS, ObservedTimeNS: atNS,
 			Delivered: false, DeliveryReason: model.DeliverySinkError, WrittenAtNS: r.World.Clock(),
@@ -456,7 +508,7 @@ func (r *Run) deliver(d perturb.Delivered) {
 	}
 	atNS, _ := model.ParseTime(d.Event.EventTime)
 	otNS, _ := model.ParseTime(d.Event.ObservedTime)
-	r.ledger = append(r.ledger, model.LedgerRecord{
+	r.appendLedger(model.LedgerRecord{
 		DeliveryID: d.DeliveryID, Seq: d.Event.Seq, WorldID: d.Event.WorldID, EntityID: d.Event.EntityID,
 		Channel: d.Event.Channel, EventTimeNS: atNS, ObservedTimeNS: otNS,
 		Delivered: true, DeliveryReason: d.Reason, WrittenAtNS: r.World.Clock(),
@@ -774,7 +826,16 @@ func (r *Run) End(outDir string) (*model.RunArtifact, error) {
 		if err := os.WriteFile(tracePath, trace, 0o600); err != nil {
 			return nil, fmt.Errorf("End: %w", err)
 		}
-		if err := writeJSONL(filepath.Join(outDir, "ledger.jsonl"), r.ledger); err != nil {
+		if r.ledgerFile != nil {
+			// The durable ledger already holds every row; fsync it and
+			// leave the file as the canonical ledger.
+			if err := r.ledgerWriter.Flush(); err != nil {
+				return nil, fmt.Errorf("End: flush ledger: %w", err)
+			}
+			if err := r.ledgerFile.Sync(); err != nil {
+				return nil, fmt.Errorf("End: sync ledger: %w", err)
+			}
+		} else if err := writeJSONL(filepath.Join(outDir, "ledger.jsonl"), r.ledger); err != nil {
 			return nil, fmt.Errorf("End: %w", err)
 		}
 		if err := writeJSONL(filepath.Join(outDir, "world_state_history.jsonl"), r.history); err != nil {

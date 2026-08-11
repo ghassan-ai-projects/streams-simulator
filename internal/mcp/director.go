@@ -148,6 +148,7 @@ func (d *Director) CreateWorld(args map[string]any) (map[string]any, error) {
 	d.seq++
 	seq := d.seq
 	d.mu.Unlock()
+	worldID := "w-" + strconv.Itoa(seq)
 	cfg := run.Config{
 		Domain: spec, Adapter: adap, Seed: seed, SinkName: sinkName,
 		SinkTarget: str(args, "sink_target"),
@@ -156,12 +157,12 @@ func (d *Director) CreateWorld(args map[string]any) (map[string]any, error) {
 		ScenarioProfile: str(args, "scenario_profile"),
 		Label:           str(args, "label"),
 		RunID:           "r-" + strconv.Itoa(seq),
+		LedgerPath:      filepath.Join(d.OutDir, worldID, "ledger.jsonl"),
 	}
 	r, err := run.New(d.ctx, cfg)
 	if err != nil {
 		return nil, errTool(CodeDomainInvalid, "%v", err)
 	}
-	worldID := "w-" + strconv.Itoa(seq)
 	token, err := capabilityToken()
 	if err != nil {
 		return nil, errTool(CodeDomainInvalid, "capability token generation failed: %v", err)
