@@ -267,6 +267,67 @@ func TestRunLedgerDistinguishesDrop(t *testing.T) {
 	}
 }
 
+func TestLedgerDeliveryIDsAreUniqueAcrossDuplicates(t *testing.T) {
+	spec, a := testBase(t)
+	start := model.DefaultStartTimeNS + 4*3600*1e9
+	r, err := New(context.Background(), Config{
+		Domain: spec, Adapter: a, Seed: 4, SinkName: model.SinkInproc,
+		TimeMode: model.TimeStepped, StartTimeNS: start,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.ApplyPerturb("duplicate_burst", map[string]any{"rate": 1.0}, 0, 0); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.Advance(start+3600*1e9, false); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.End(""); err != nil {
+		t.Fatal(err)
+	}
+	seen := map[uint64]bool{}
+	for _, row := range r.Ledger() {
+		if row.DeliveryID == 0 || seen[row.DeliveryID] {
+			t.Fatalf("ledger delivery id is missing or duplicated: %+v", row)
+		}
+		seen[row.DeliveryID] = true
+	}
+	if len(seen) < 2 {
+		t.Fatalf("duplicate perturbation did not produce multiple delivery instances")
+	}
+}
+
+func TestHistoryIsNotSilentlyCapped(t *testing.T) {
+	spec, a := testBase(t)
+	// A heartbeat at 1ms produces more than the old 10,000-entry cap in a
+	// short stepped run without availability gating.
+	found := false
+	for i := range spec.Spec.Channels {
+		if spec.Spec.Channels[i].Name == "pond.heartbeat" {
+			spec.Spec.Channels[i].Cadence.PeriodS = 0.001
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("heartbeat channel missing from fixture")
+	}
+	start := model.DefaultStartTimeNS + 4*3600*1e9
+	r, err := New(context.Background(), Config{
+		Domain: spec, Adapter: a, Seed: 13, SinkName: model.SinkInproc,
+		TimeMode: model.TimeStepped, StartTimeNS: start,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.Advance(start+11*1e9, false); err != nil {
+		t.Fatal(err)
+	}
+	if len(r.History()) <= 10000 {
+		t.Fatalf("history was silently capped: %d", len(r.History()))
+	}
+}
+
 // TestRunClosedLoop: fault -> evidence -> effector -> effect -> recovery,
 // with idempotency: a repeated command_id applies exactly one effect.
 func TestRunClosedLoop(t *testing.T) {

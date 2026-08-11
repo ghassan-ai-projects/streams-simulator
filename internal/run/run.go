@@ -188,35 +188,38 @@ func (r *Run) onEmit(ev model.SimEvent) {
 	atNS, _ := model.ParseTime(ev.EventTime)
 	// World-state history: what was actually happening when the record was
 	// emitted (director-only, for post-hoc analysis).
-	if len(r.history) < 10000 {
-		states := map[string]float64{}
-		for _, name := range r.Config.Domain.StateNames() {
-			states[name] = r.World.StateValue(ev.EntityID, name, atNS)
-		}
-		r.history = append(r.history, stateSnapshot{Seq: ev.Seq, TimeNS: atNS, Entity: ev.EntityID, States: states})
+	states := map[string]float64{}
+	for _, name := range r.Config.Domain.StateNames() {
+		states[name] = r.World.StateValue(ev.EntityID, name, atNS)
 	}
+	r.history = append(r.history, stateSnapshot{Seq: ev.Seq, TimeNS: atNS, Entity: ev.EntityID, States: states})
 	recs := r.Perturb.Process(ev, atNS)
 	for _, d := range recs {
 		if d.Malformed {
 			// One bad record must not poison a file: render a broken line.
 			if err := r.writeMalformed(ev); err != nil {
+				r.ledger = append(r.ledger, model.LedgerRecord{
+					DeliveryID: d.DeliveryID, Seq: ev.Seq, WorldID: ev.WorldID, EntityID: ev.EntityID,
+					Channel: ev.Channel, EventTimeNS: atNS, ObservedTimeNS: atNS,
+					Delivered: false, DeliveryReason: model.DeliverySinkError, WrittenAtNS: r.World.Clock(),
+				})
 				r.fail(err)
 				return
 			}
 			r.ledger = append(r.ledger, model.LedgerRecord{
-				Seq: ev.Seq, WorldID: ev.WorldID, EntityID: ev.EntityID,
+				DeliveryID: d.DeliveryID, Seq: ev.Seq, WorldID: ev.WorldID, EntityID: ev.EntityID,
 				Channel: ev.Channel, EventTimeNS: atNS, ObservedTimeNS: atNS,
 				Delivered: true, DeliveryReason: model.DeliveryMangled,
-				WrittenAtNS: int64(len(r.ledger)),
+				WrittenAtNS: r.World.Clock(),
 			})
 			continue
 		}
 		if !d.Delivered {
 			r.ledger = append(r.ledger, model.LedgerRecord{
-				Seq: ev.Seq, WorldID: ev.WorldID, EntityID: ev.EntityID,
+				DeliveryID: d.DeliveryID, Seq: ev.Seq, WorldID: ev.WorldID, EntityID: ev.EntityID,
 				Channel: ev.Channel, EventTimeNS: atNS, ObservedTimeNS: atNS,
 				Delivered: false, DeliveryReason: d.Reason,
-				WrittenAtNS: int64(len(r.ledger)),
+				WrittenAtNS: r.World.Clock(),
 			})
 			continue
 		}
@@ -225,21 +228,36 @@ func (r *Run) onEmit(ev model.SimEvent) {
 		}
 		line, err := r.Engine.RenderStreamRecord(&d.Event)
 		if err != nil {
+			r.ledger = append(r.ledger, model.LedgerRecord{
+				DeliveryID: d.DeliveryID, Seq: d.Event.Seq, WorldID: d.Event.WorldID, EntityID: d.Event.EntityID,
+				Channel: d.Event.Channel, EventTimeNS: atNS, ObservedTimeNS: atNS,
+				Delivered: false, DeliveryReason: model.DeliverySinkError, WrittenAtNS: r.World.Clock(),
+			})
 			r.fail(err)
 			return
 		}
 		if line == "" {
+			r.ledger = append(r.ledger, model.LedgerRecord{
+				DeliveryID: d.DeliveryID, Seq: d.Event.Seq, WorldID: d.Event.WorldID, EntityID: d.Event.EntityID,
+				Channel: d.Event.Channel, EventTimeNS: atNS, ObservedTimeNS: atNS,
+				Delivered: false, DeliveryReason: model.DeliveryOmitted, WrittenAtNS: r.World.Clock(),
+			})
 			continue
 		}
 		if err := r.Sink.Write([]byte(line)); err != nil {
+			r.ledger = append(r.ledger, model.LedgerRecord{
+				DeliveryID: d.DeliveryID, Seq: d.Event.Seq, WorldID: d.Event.WorldID, EntityID: d.Event.EntityID,
+				Channel: d.Event.Channel, EventTimeNS: atNS, ObservedTimeNS: atNS,
+				Delivered: false, DeliveryReason: model.DeliverySinkError, WrittenAtNS: r.World.Clock(),
+			})
 			r.fail(err)
 			return
 		}
 		otNS, _ := model.ParseTime(d.Event.ObservedTime)
 		r.ledger = append(r.ledger, model.LedgerRecord{
-			Seq: d.Event.Seq, WorldID: d.Event.WorldID, EntityID: d.Event.EntityID,
+			DeliveryID: d.DeliveryID, Seq: d.Event.Seq, WorldID: d.Event.WorldID, EntityID: d.Event.EntityID,
 			Channel: d.Event.Channel, EventTimeNS: atNS, ObservedTimeNS: otNS,
-			Delivered: true, DeliveryReason: d.Reason, WrittenAtNS: int64(len(r.ledger)),
+			Delivered: true, DeliveryReason: d.Reason, WrittenAtNS: r.World.Clock(),
 		})
 	}
 }
@@ -304,44 +322,71 @@ func (r *Run) Advance(toNS int64, awaitConsumer bool) (int, error) {
 func (r *Run) deliver(d perturb.Delivered) {
 	if d.Malformed {
 		if err := r.writeMalformed(d.Event); err != nil {
+			atNS, _ := model.ParseTime(d.Event.EventTime)
+			r.ledger = append(r.ledger, model.LedgerRecord{
+				DeliveryID: d.DeliveryID, Seq: d.Event.Seq, WorldID: d.Event.WorldID, EntityID: d.Event.EntityID,
+				Channel: d.Event.Channel, EventTimeNS: atNS, ObservedTimeNS: atNS,
+				Delivered: false, DeliveryReason: model.DeliverySinkError, WrittenAtNS: r.World.Clock(),
+			})
 			r.fail(err)
 			return
 		}
 		atNS, _ := model.ParseTime(d.Event.EventTime)
 		r.ledger = append(r.ledger, model.LedgerRecord{
-			Seq: d.Event.Seq, WorldID: d.Event.WorldID, EntityID: d.Event.EntityID,
+			DeliveryID: d.DeliveryID, Seq: d.Event.Seq, WorldID: d.Event.WorldID, EntityID: d.Event.EntityID,
 			Channel: d.Event.Channel, EventTimeNS: atNS, ObservedTimeNS: atNS,
-			Delivered: true, DeliveryReason: model.DeliveryMangled, WrittenAtNS: int64(len(r.ledger)),
+			Delivered: true, DeliveryReason: model.DeliveryMangled, WrittenAtNS: r.World.Clock(),
 		})
 		return
 	}
 	if !d.Delivered {
 		atNS, _ := model.ParseTime(d.Event.EventTime)
 		r.ledger = append(r.ledger, model.LedgerRecord{
-			Seq: d.Event.Seq, WorldID: d.Event.WorldID, EntityID: d.Event.EntityID,
+			DeliveryID: d.DeliveryID, Seq: d.Event.Seq, WorldID: d.Event.WorldID, EntityID: d.Event.EntityID,
 			Channel: d.Event.Channel, EventTimeNS: atNS, ObservedTimeNS: atNS,
-			Delivered: false, DeliveryReason: d.Reason, WrittenAtNS: int64(len(r.ledger)),
+			Delivered: false, DeliveryReason: d.Reason, WrittenAtNS: r.World.Clock(),
 		})
 		return
 	}
 	line, err := r.Engine.RenderStreamRecord(&d.Event)
 	if err != nil {
+		atNS, _ := model.ParseTime(d.Event.EventTime)
+		r.ledger = append(r.ledger, model.LedgerRecord{
+			DeliveryID: d.DeliveryID, Seq: d.Event.Seq, WorldID: d.Event.WorldID, EntityID: d.Event.EntityID,
+			Channel: d.Event.Channel, EventTimeNS: atNS, ObservedTimeNS: atNS,
+			Delivered: false, DeliveryReason: model.DeliverySinkError, WrittenAtNS: r.World.Clock(),
+		})
 		r.fail(err)
 		return
 	}
 	if line == "" {
+		atNS, _ := model.ParseTime(d.Event.EventTime)
+		r.ledger = append(r.ledger, model.LedgerRecord{
+			DeliveryID: d.DeliveryID, Seq: d.Event.Seq, WorldID: d.Event.WorldID, EntityID: d.Event.EntityID,
+			Channel: d.Event.Channel, EventTimeNS: atNS, ObservedTimeNS: atNS,
+			Delivered: false, DeliveryReason: model.DeliveryOmitted, WrittenAtNS: r.World.Clock(),
+		})
 		return
 	}
+	if r.evidenceRec != nil {
+		r.evidenceRec(d.Event)
+	}
 	if err := r.Sink.Write([]byte(line)); err != nil {
+		atNS, _ := model.ParseTime(d.Event.EventTime)
+		r.ledger = append(r.ledger, model.LedgerRecord{
+			DeliveryID: d.DeliveryID, Seq: d.Event.Seq, WorldID: d.Event.WorldID, EntityID: d.Event.EntityID,
+			Channel: d.Event.Channel, EventTimeNS: atNS, ObservedTimeNS: atNS,
+			Delivered: false, DeliveryReason: model.DeliverySinkError, WrittenAtNS: r.World.Clock(),
+		})
 		r.fail(err)
 		return
 	}
 	atNS, _ := model.ParseTime(d.Event.EventTime)
 	otNS, _ := model.ParseTime(d.Event.ObservedTime)
 	r.ledger = append(r.ledger, model.LedgerRecord{
-		Seq: d.Event.Seq, WorldID: d.Event.WorldID, EntityID: d.Event.EntityID,
+		DeliveryID: d.DeliveryID, Seq: d.Event.Seq, WorldID: d.Event.WorldID, EntityID: d.Event.EntityID,
 		Channel: d.Event.Channel, EventTimeNS: atNS, ObservedTimeNS: otNS,
-		Delivered: true, DeliveryReason: d.Reason, WrittenAtNS: int64(len(r.ledger)),
+		Delivered: true, DeliveryReason: d.Reason, WrittenAtNS: r.World.Clock(),
 	})
 }
 
@@ -626,7 +671,7 @@ func (r *Run) artifact() *model.RunArtifact {
 	sort.SliceStable(cmdLog, func(i, j int) bool { return cmdLog[i].Seq < cmdLog[j].Seq })
 	counts := model.Counts{
 		Emitted:         r.World.EmittedCount(),
-		Perturbed:       int64(countLedger(r.ledger, model.DeliveryDuplicated, model.DeliveryDroppedByPerturb, model.DeliveryMangled, model.DeliveryDelayed)),
+		Perturbed:       int64(countLedger(r.ledger, model.DeliveryDuplicated, model.DeliveryDroppedByPerturb, model.DeliveryMangled, model.DeliveryDelayed, model.DeliveryRewritten, model.DeliveryReordered, model.DeliveryOmitted)),
 		DroppedByDesign: int64(countLedger(r.ledger, model.DeliveryDroppedByPerturb)),
 		EffectorCalls:   int64(len(r.World.EffectorCalls())),
 		FaultsInjected:  int64(r.World.ActiveFaultsCount()),

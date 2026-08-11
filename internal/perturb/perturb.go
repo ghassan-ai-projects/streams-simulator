@@ -10,7 +10,6 @@ package perturb
 import (
 	"encoding/json"
 	"fmt"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -54,10 +53,11 @@ var Names = []string{
 // ledger metadata. Drop yields Delivered=false; duplicate yields extra
 // records with the same seq.
 type Delivered struct {
-	Event     model.SimEvent
-	Reason    string
-	Delivered bool
-	Malformed bool
+	DeliveryID uint64
+	Event      model.SimEvent
+	Reason     string
+	Delivered  bool
+	Malformed  bool
 }
 
 // Active is one applied perturbation.
@@ -70,7 +70,7 @@ type Active struct {
 	window  *reorderWindow
 	rng     *randutil.SplitMix64
 	// producer-flap buffer
-	buffer []model.SimEvent
+	buffer []Delivered
 }
 
 // Layer applies active perturbations to a native event stream.
@@ -81,6 +81,8 @@ type Layer struct {
 	active  map[string]*Active
 	order   []string
 	seq     int
+	nextID  uint64
+	pending []Delivered
 }
 
 // New builds a perturbation layer for a world. The domain spec is needed
@@ -125,8 +127,21 @@ func (l *Layer) Apply(name string, params map[string]any, fromNS, untilNS int64)
 
 // Clear deactivates a perturbation.
 func (l *Layer) Clear(id string) error {
-	if _, ok := l.active[id]; !ok {
+	a, ok := l.active[id]
+	if !ok {
 		return fmt.Errorf("perturb: unknown perturbation id %q", id)
+	}
+	for _, r := range a.buffer {
+		r.Delivered = false
+		r.Reason = model.DeliveryDroppedByPerturb
+		l.pending = append(l.pending, r)
+	}
+	if a.window != nil {
+		for _, r := range a.window.flush(0) {
+			r.Delivered = false
+			r.Reason = model.DeliveryDroppedByPerturb
+			l.pending = append(l.pending, r)
+		}
 	}
 	delete(l.active, id)
 	return nil
@@ -148,7 +163,8 @@ func (l *Layer) ActiveIDs() []string {
 // (drop), one, or several records (duplicate, storm).
 func (l *Layer) Process(ev model.SimEvent, atNS int64) []Delivered {
 	// Unchanged by default; each active perturbation transforms the list.
-	recs := []Delivered{{Event: ev, Reason: model.DeliveryOK, Delivered: true}}
+	l.nextID++
+	recs := []Delivered{{DeliveryID: l.nextID, Event: ev, Reason: model.DeliveryOK, Delivered: true}}
 	for _, id := range l.ActiveIDs() {
 		a := l.active[id]
 		if atNS < a.FromNS || (a.UntilNS > 0 && atNS >= a.UntilNS) {
@@ -168,6 +184,8 @@ func (l *Layer) applyOne(a *Active, recs []Delivered, atNS int64) []Delivered {
 				return []Delivered{r}
 			}
 			dup := r
+			l.nextID++
+			dup.DeliveryID = l.nextID
 			dup.Reason = model.DeliveryDuplicated
 			return []Delivered{r, dup}
 		})
@@ -177,6 +195,8 @@ func (l *Layer) applyOne(a *Active, recs []Delivered, atNS int64) []Delivered {
 				return []Delivered{r}
 			}
 			reuse := r
+			l.nextID++
+			reuse.DeliveryID = l.nextID
 			reuse.Reason = model.DeliveryDuplicated
 			// Same identity, different payload: shift the value.
 			switch v := r.Event.Value.(type) {
@@ -188,7 +208,13 @@ func (l *Layer) applyOne(a *Active, recs []Delivered, atNS int64) []Delivered {
 			return []Delivered{r, reuse}
 		})
 	case Reorder:
-		return a.window.push(recs, atNS)
+		out := a.window.push(recs, atNS)
+		for i := range out {
+			if out[i].Delivered && out[i].Reason == model.DeliveryOK {
+				out[i].Reason = model.DeliveryReordered
+			}
+		}
+		return out
 	case DelayTail:
 		return mapRecs(recs, func(r Delivered) []Delivered {
 			if !r.Delivered {
@@ -211,7 +237,7 @@ func (l *Layer) applyOne(a *Active, recs []Delivered, atNS int64) []Delivered {
 			// Withhold during the gap (fromNS..untilNS); flush handled in
 			// Flush().
 			if atNS < a.UntilNS && a.UntilNS > 0 {
-				a.buffer = append(a.buffer, r.Event)
+				a.buffer = append(a.buffer, r)
 				return nil
 			}
 			return []Delivered{r}
@@ -219,7 +245,7 @@ func (l *Layer) applyOne(a *Active, recs []Delivered, atNS int64) []Delivered {
 	case Drop:
 		return mapRecs(recs, func(r Delivered) []Delivered {
 			if r.Delivered && a.rng.Float64() < paramFloat(a.Params, "rate", 0.01) {
-				return []Delivered{{Event: r.Event, Reason: model.DeliveryDroppedByPerturb, Delivered: false}}
+				return []Delivered{{DeliveryID: r.DeliveryID, Event: r.Event, Reason: model.DeliveryDroppedByPerturb, Delivered: false}}
 			}
 			return []Delivered{r}
 		})
@@ -233,6 +259,7 @@ func (l *Layer) applyOne(a *Active, recs []Delivered, atNS int64) []Delivered {
 				return []Delivered{r}
 			}
 			r.Event.ObservedTime = addSeconds(r.Event.ObservedTime, offset)
+			r.Reason = model.DeliveryRewritten
 			return []Delivered{r}
 		})
 	case NonMonotonic:
@@ -246,6 +273,7 @@ func (l *Layer) applyOne(a *Active, recs []Delivered, atNS int64) []Delivered {
 			ot, err2 := model.ParseTime(r.Event.ObservedTime)
 			if err1 == nil && err2 == nil && ot > et {
 				r.Event.ObservedTime = model.FormatTime(et - 1)
+				r.Reason = model.DeliveryRewritten
 			}
 			return []Delivered{r}
 		})
@@ -331,6 +359,8 @@ func (l *Layer) applyOne(a *Active, recs []Delivered, atNS int64) []Delivered {
 			out := []Delivered{r}
 			for i := 1; i < mult; i++ {
 				dup := r
+				l.nextID++
+				dup.DeliveryID = l.nextID
 				dup.Reason = model.DeliveryDuplicated
 				out = append(out, dup)
 			}
@@ -342,7 +372,7 @@ func (l *Layer) applyOne(a *Active, recs []Delivered, atNS int64) []Delivered {
 				return []Delivered{r}
 			}
 			// Hold every event during the flap window; Flush republishes.
-			a.buffer = append(a.buffer, r.Event)
+			a.buffer = append(a.buffer, r)
 			return nil
 		})
 	case TimeEncoding:
@@ -351,6 +381,7 @@ func (l *Layer) applyOne(a *Active, recs []Delivered, atNS int64) []Delivered {
 				return []Delivered{r}
 			}
 			r.Event.ObservedTime = alternateEncoding(r.Event.ObservedTime)
+			r.Reason = model.DeliveryRewritten
 			return []Delivered{r}
 		})
 	case PrecisionEdge:
@@ -359,6 +390,7 @@ func (l *Layer) applyOne(a *Active, recs []Delivered, atNS int64) []Delivered {
 				return []Delivered{r}
 			}
 			r.Event.ObservedTime = truncatePrecision(r.Event.ObservedTime)
+			r.Reason = model.DeliveryRewritten
 			return []Delivered{r}
 		})
 	case InjectionProbe:
@@ -376,6 +408,7 @@ func (l *Layer) applyOne(a *Active, recs []Delivered, atNS int64) []Delivered {
 					r.Event.Value = s
 				}
 			}
+			r.Reason = model.DeliveryRewritten
 			return []Delivered{r}
 		})
 	}
@@ -392,33 +425,48 @@ func (l *Layer) Flush(atNS int64) []Delivered {
 		a := l.active[id]
 		switch a.Name {
 		case Reorder:
-			out = append(out, a.window.flush(atNS)...)
+			flushed := a.window.flush(atNS)
+			for i := range flushed {
+				if flushed[i].Delivered && flushed[i].Reason == model.DeliveryOK {
+					flushed[i].Reason = model.DeliveryReordered
+				}
+			}
+			out = append(out, flushed...)
 		case ProducerFlap:
 			// Birth burst: republish every held event at one observed time,
 			// with event times spread across the outage.
-			if len(a.buffer) > 0 {
+			if len(a.buffer) > 0 && a.UntilNS > 0 && atNS >= a.UntilNS {
 				recovery := atNS
 				for i := range a.buffer {
-					ev := a.buffer[i]
+					r := a.buffer[i]
+					ev := r.Event
 					ev.Birth = true
 					ev.ObservedTime = model.FormatTime(recovery)
-					out = append(out, Delivered{Event: ev, Reason: model.DeliveryDelayed, Delivered: true})
+					r.Event = ev
+					r.Reason = model.DeliveryDelayed
+					out = append(out, r)
 				}
 				a.buffer = nil
 			}
 		case GrossBackfill:
-			if len(a.buffer) > 0 {
+			if len(a.buffer) > 0 && a.UntilNS > 0 && atNS >= a.UntilNS {
 				recovery := atNS
 				for i := range a.buffer {
-					ev := a.buffer[i]
+					r := a.buffer[i]
+					ev := r.Event
 					ev.ObservedTime = model.FormatTime(recovery)
-					out = append(out, Delivered{Event: ev, Reason: model.DeliveryDelayed, Delivered: true})
+					r.Event = ev
+					r.Reason = model.DeliveryDelayed
+					out = append(out, r)
 				}
 				a.buffer = nil
 			}
 		}
 	}
-	sort.SliceStable(out, func(i, j int) bool { return out[i].Event.Seq < out[j].Event.Seq })
+	if len(l.pending) > 0 {
+		out = append(l.pending, out...)
+		l.pending = nil
+	}
 	return out
 }
 

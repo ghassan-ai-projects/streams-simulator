@@ -81,6 +81,9 @@ func TestDuplicateBurst(t *testing.T) {
 	if recs[1].Reason != model.DeliveryDuplicated {
 		t.Fatalf("duplicate reason wrong: %s", recs[1].Reason)
 	}
+	if recs[0].DeliveryID == 0 || recs[0].DeliveryID == recs[1].DeliveryID {
+		t.Fatalf("duplicate deliveries need distinct stable identities: %+v", recs)
+	}
 }
 
 func TestProducerFlapBirthBurst(t *testing.T) {
@@ -97,6 +100,9 @@ func TestProducerFlapBirthBurst(t *testing.T) {
 			t.Fatalf("flap must withhold, got %+v", recs)
 		}
 	}
+	if flushed := l.Flush(flapStart + 1e9); len(flushed) != 0 {
+		t.Fatalf("flap must remain buffered before until_ns, got %+v", flushed)
+	}
 	// Flush at recovery republishes everything with birth:true at one time.
 	flushed := l.Flush(flapEnd)
 	if len(flushed) != 3 {
@@ -108,6 +114,43 @@ func TestProducerFlapBirthBurst(t *testing.T) {
 		}
 		if r.Event.ObservedTime != model.FormatTime(flapEnd) {
 			t.Fatalf("birth records must share one observed_time: %+v", r.Event)
+		}
+	}
+}
+
+func TestClearAccountsForBufferedRecords(t *testing.T) {
+	l := New("w", 8, testSpec(t))
+	id, err := l.Apply(ProducerFlap, nil, 1000000000, 4000000000)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := l.Process(ev(1, "num", 1.0), 2000000000); len(got) != 0 {
+		t.Fatalf("expected buffered record, got %+v", got)
+	}
+	if err := l.Clear(id); err != nil {
+		t.Fatal(err)
+	}
+	got := l.Flush(4000000000)
+	if len(got) != 1 || got[0].Delivered || got[0].Reason != model.DeliveryDroppedByPerturb {
+		t.Fatalf("clear must account for discarded buffer: %+v", got)
+	}
+}
+
+func TestReorderPreservesDeliveryOrderAndReason(t *testing.T) {
+	l := New("w", 9, testSpec(t))
+	if _, err := l.Apply(Reorder, map[string]any{"max_displacement": 1}, 0, 0); err != nil {
+		t.Fatal(err)
+	}
+	if got := l.Process(ev(0, "num", 0.0), 1000000001); len(got) != 0 {
+		t.Fatalf("first record should remain buffered, got %+v", got)
+	}
+	got := l.Process(ev(1, "num", 1.0), 1000000002)
+	if len(got) != 2 || got[0].Event.Seq != 1 || got[1].Event.Seq != 0 {
+		t.Fatalf("reorder was lost before delivery: %+v", got)
+	}
+	for _, r := range got {
+		if r.Reason != model.DeliveryReordered {
+			t.Fatalf("reordered delivery lacks ledger reason: %+v", r)
 		}
 	}
 }
