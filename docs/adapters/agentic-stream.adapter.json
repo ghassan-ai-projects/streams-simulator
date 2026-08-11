@@ -1,0 +1,62 @@
+{
+  "id": "agentic-stream",
+  "version": "0.1.0",
+  "title": "Agentic Stream V0.1 replay trace",
+  "description": "Projects native sim events into Agentic Stream's trace-record-v0.1 JSONL. Everything Agentic-Stream-specific about the simulator lives in this file and nowhere else: its field names, its id alphabet, its arrival_time rule, its config header, its trace_end horizon. Delete this file and the simulator is unchanged. Add another and a second consumer works with no release.",
+
+  "encoding": "jsonl",
+
+  "entity_id_rewrite": {
+    "replace": [{"from": "/", "to": "."}],
+    "max_length": 128,
+    "on_violation": "fail"
+  },
+
+  "preamble": [
+    {
+      "fields": [
+        {"name": "record_type", "from": {"op": "const", "value": "runtime_config"}},
+        {"name": "runtime_version", "from": {"op": "const", "value": "0.1.0"}},
+        {"name": "storage_schema_version", "from": {"op": "const", "value": 1}},
+        {"name": "max_episodes_per_hour", "from": {"op": "const", "value": 100}}
+      ]
+    }
+  ],
+
+  "record": {
+    "fields": [
+      {"name": "record_type", "from": {"op": "const", "value": "event"}},
+      {"name": "event.id", "from": {"op": "counter", "prefix": "evt-", "width": 6, "of": {"op": "source", "source": "seq"}}},
+      {"name": "event.entity_type", "from": {"op": "source", "source": "entity_type"}},
+      {"name": "event.entity_id", "from": {"op": "source", "source": "entity_id"}},
+      {"name": "event.type", "from": {"op": "source", "source": "channel"}},
+      {
+        "name": "event.event_time",
+        "from": {"op": "format_time", "layout": "rfc3339_nano", "of": {"op": "source", "source": "event_time"}}
+      },
+      {
+        "name": "event.arrival_time",
+        "from": {"op": "format_time", "layout": "rfc3339_nano", "of": {"op": "source", "source": "observed_time"}}
+      },
+      {"name": "event.value", "from": {"op": "source", "source": "value"}, "omit_when_null": true},
+      {"name": "event.unit", "from": {"op": "source", "source": "unit"}, "omit_when_null": true}
+    ]
+  },
+
+  "postamble": [
+    {
+      "fields": [
+        {"name": "record_type", "from": {"op": "const", "value": "trace_end"}},
+        {
+          "name": "until",
+          "from": {"op": "format_time", "layout": "rfc3339_nano", "of": {"op": "run_meta", "key": "world_end_time"}}
+        }
+      ]
+    }
+  ],
+
+  "conformance": {
+    "output_schema": "vendor/agentic-stream/trace-record-v0.1.schema.json",
+    "golden": "golden/agentic-stream.jsonl"
+  }
+}

@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://streams-simulator.local/schemas/consumer-verdict-v0.1.schema.json",
+  "title": "Streams Simulator Consumer Verdict v0.1",
+  "description": "What a consumer submits back after processing a run. This is how scoring works without the simulator knowing anything about any consumer: it never reads a consumer's database, never parses a consumer's logs, and never links a consumer's code. The consumer states what it concluded, in this neutral vocabulary, and the simulator scores it against sealed ground truth, its own delivery ledger, and its own effector-call log. Any stream processor can submit one.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "run_id", "consumer"],
+  "properties": {
+    "schema_version": {"const": "0.1"},
+    "run_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+
+    "consumer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1, "maxLength": 64},
+        "version": {"type": "string", "minLength": 1, "maxLength": 64},
+        "config_digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "description": "Digest of whatever configuration the consumer ran with — a rules document, a model version, a prompt. Opaque to the simulator; recorded so two verdicts are comparable, and so a result cannot later be attributed to a configuration nobody kept."
+        },
+        "arm": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Free-form label for a comparison arm. The simulator does not interpret it; the scorer groups by it."
+        }
+      }
+    },
+
+    "detections": {
+      "type": "array",
+      "description": "What the consumer concluded, and when. Scored against sealed labels and the three onset timestamps. An empty array on a positive scenario is a miss, not an absence of data.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["entity_id", "detected_at"],
+        "properties": {
+          "entity_id": {"type": "string"},
+          "detected_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Must be an observed_time the consumer actually saw, not a wall-clock read. A detection earlier than the scenario's first_observable_time is classified suspicious and investigated as a possible leak."
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "The consumer's conclusion, in the domain's label vocabulary. A consumer that only detects without classifying omits this and is scored on detection alone."
+          },
+          "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+          "evidence_refs": {
+            "type": "array",
+            "items": {"type": "string", "pattern": "^seq:[0-9]+$"},
+            "description": "Native event sequence numbers the conclusion rests on. Enables the evidence-grounding metric and catches fabricated citations: a seq that was never delivered to this consumer is a hallucination, and the delivery ledger knows which those are."
+          },
+          "narrative": {"type": "string", "maxLength": 8192}
+        }
+      }
+    },
+
+    "admission": {
+      "type": "array",
+      "description": "Per-event disposition. This is what lets the simulator verify duplicate, late, reordered and malformed handling without knowing anything about the consumer's internals — the consumer says what it did with each event, in neutral terms, and the simulator compares that against what it actually injected. Optional: a consumer that does not model admission omits it and forgoes those metrics.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["seq", "outcome"],
+        "properties": {
+          "seq": {"type": "integer", "minimum": 0},
+          "outcome": {
+            "enum": ["accepted", "duplicate", "conflict", "late", "out_of_contract", "malformed", "rejected"],
+            "description": "Neutral vocabulary. A consumer maps its own taxonomy onto these seven; the mapping is the consumer's business."
+          },
+          "note": {"type": "string", "maxLength": 256}
+        }
+      }
+    },
+
+    "actions": {
+      "type": "array",
+      "description": "Commands the consumer believes it issued. Cross-checked against the simulator's own effector-call log, which is the authority. A claimed action with no matching call, or a call with no claimed action, is a finding.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["command_id", "effector", "issued_at"],
+        "properties": {
+          "command_id": {"type": "string"},
+          "effector": {"type": "string"},
+          "entity_id": {"type": "string"},
+          "issued_at": {"type": "string", "format": "date-time"},
+          "outcome_believed": {
+            "enum": ["succeeded", "failed", "unknown"],
+            "description": "What the consumer concluded about its own action. Compared against what the world actually did — this single field is what makes the false-success metric computable, and it is the reason silent_no_effect is worth injecting."
+          }
+        }
+      }
+    },
+
+    "counters": {
+      "type": "object",
+      "additionalProperties": {"type": "integer", "minimum": 0},
+      "description": "Free-form consumer counters, reported verbatim alongside the scorecard and never interpreted. A place for a consumer to surface its own suppression, budget, or cost tallies without the simulator growing an opinion about them."
+    },
+
+    "resource": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Optional cost and effort reporting, so cost-per-resolved-scenario is computable without the simulator inspecting a consumer's billing.",
+      "properties": {
+        "reasoning_invocations": {"type": "integer", "minimum": 0},
+        "input_tokens": {"type": "integer", "minimum": 0},
+        "output_tokens": {"type": "integer", "minimum": 0},
+        "wall_seconds": {"type": "number", "minimum": 0}
+      }
+    }
+  }
+}
