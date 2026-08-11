@@ -1,0 +1,12 @@
+{"seq":0,"world_id":"w-fixture","entity_type":"pump","entity_id":"site-a/pump-1","channel":"vibration","event_time":"2026-07-29T09:00:00Z","observed_time":"2026-07-29T09:00:01.5Z","value":2.35,"unit":"mm/s"}
+{"seq":1,"world_id":"w-fixture","entity_type":"pump","entity_id":"site-a/pump-1","channel":"vibration","event_time":"2026-07-29T09:01:00Z","observed_time":"2026-07-29T09:01:01.5Z","value":2.41,"unit":"mm/s"}
+{"seq":2,"world_id":"w-fixture","entity_type":"pump","entity_id":"site-a/pump-1","channel":"mode","event_time":"2026-07-29T09:02:00Z","observed_time":"2026-07-29T09:02:01.5Z","value":"running"}
+{"seq":3,"world_id":"w-fixture","entity_type":"pump","entity_id":"site-a/pump-1","channel":"heartbeat","event_time":"2026-07-29T09:05:00Z","observed_time":"2026-07-29T09:05:01.5Z"}
+{"seq":4,"world_id":"w-fixture","entity_type":"pump","entity_id":"site-b/pump-2","channel":"vibration","event_time":"2026-07-29T09:10:00Z","observed_time":"2026-07-29T09:10:01.5Z","value":2.38,"unit":"mm/s"}
+{"seq":5,"world_id":"w-fixture","entity_type":"pump","entity_id":"site-b/pump-2","channel":"mode","event_time":"2026-07-29T09:15:00Z","observed_time":"2026-07-29T09:15:01.5Z","value":"standby","birth":true}
+{"seq":6,"world_id":"w-fixture","entity_type":"pump","entity_id":"site-a/pump-1","channel":"current","event_time":"2026-07-29T09:30:00Z","observed_time":"2026-07-29T09:30:01.5Z","value":4.1,"unit":"A"}
+{"seq":7,"world_id":"w-fixture","entity_type":"pump","entity_id":"site-b/pump-2","channel":"vibration","event_time":"2026-07-29T10:00:00Z","observed_time":"2026-07-29T10:00:01.5Z","value":2.3,"unit":"mm/s"}
+{"seq":8,"world_id":"w-fixture","entity_type":"pump","entity_id":"site-a/pump-1","channel":"vibration","event_time":"2026-07-29T10:30:00Z","observed_time":"2026-07-29T10:30:01.5Z","value":2.44,"unit":"mm/s"}
+{"seq":9,"world_id":"w-fixture","entity_type":"pump","entity_id":"site-a/pump-1","channel":"rpm","event_time":"2026-07-29T11:00:00Z","observed_time":"2026-07-29T11:00:01.5Z","value":1472,"unit":"rpm"}
+{"seq":10,"world_id":"w-fixture","entity_type":"pump","entity_id":"site-b/pump-2","channel":"mode","event_time":"2026-07-29T11:30:00Z","observed_time":"2026-07-29T11:30:01.5Z","value":"running"}
+{"seq":11,"world_id":"w-fixture","entity_type":"pump","entity_id":"site-a/pump-1","channel":"vibration","event_time":"2026-07-29T12:00:00Z","observed_time":"2026-07-29T12:00:01.5Z","value":2.47,"unit":"mm/s"}

@@ -108,6 +108,13 @@ test-short: ## Run tests in short mode (skip integration)
 	  echo "(no packages yet -- skipping test)"; \
 	fi
 
+test-simdet: ## Run the deterministic suite with the wall clock removed
+	@if [ "$(HAS_PKGS)" = "yes" ]; then \
+	  go test -tags simdet -count=1 $(PKGS); \
+	else \
+	  echo "(no packages yet -- skipping test)"; \
+	fi
+
 test-race: ## Run tests with race detector
 	@if [ "$(HAS_PKGS)" = "yes" ]; then \
 	  go test -race -count=1 $(PKGS); \
@@ -125,7 +132,7 @@ test-coverage: ## Run tests and produce HTML coverage report
 	fi
 
 # ---- Pipeline -------------------------------------------------------------
-ci-check: tidy build vet lint-ci test-short deadcode vulncheck ## Run the full CI pipeline locally (matches .github/workflows/ci.yml)
+ci-check: tidy build vet lint-ci test-short test-simdet deadcode vulncheck ## Run the full CI pipeline locally (matches .github/workflows/ci.yml)
 	@echo "  CI check passed"
 
 # ---- Tools ----------------------------------------------------------------

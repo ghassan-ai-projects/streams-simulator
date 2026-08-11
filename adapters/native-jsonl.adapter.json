@@ -1,0 +1,28 @@
+{
+  "id": "native-jsonl",
+  "version": "0.1.0",
+  "title": "Native sim-event JSONL",
+  "description": "The identity adapter: renders each native sim-event-v0.1 record as one JSONL line, field for field. The trivial case every other adapter is measured against, and the format the reference consumer reads by default.",
+
+  "encoding": "jsonl",
+
+  "record": {
+    "fields": [
+      {"name": "seq", "from": {"op": "source", "source": "seq"}},
+      {"name": "world_id", "from": {"op": "source", "source": "world_id"}},
+      {"name": "entity_type", "from": {"op": "source", "source": "entity_type"}},
+      {"name": "entity_id", "from": {"op": "source", "source": "entity_id"}},
+      {"name": "channel", "from": {"op": "source", "source": "channel"}},
+      {"name": "event_time", "from": {"op": "format_time", "layout": "rfc3339_nano", "of": {"op": "source", "source": "event_time"}}},
+      {"name": "observed_time", "from": {"op": "format_time", "layout": "rfc3339_nano", "of": {"op": "source", "source": "observed_time"}}},
+      {"name": "value", "from": {"op": "source", "source": "value"}, "omit_when_null": true},
+      {"name": "unit", "from": {"op": "source", "source": "unit"}, "omit_when_null": true},
+      {"name": "birth", "from": {"op": "source", "source": "birth"}, "omit_when_null": true}
+    ]
+  },
+
+  "conformance": {
+    "output_schema": "vendor/streamsim/sim-event-v0.1.schema.json",
+    "golden": "golden/native-jsonl.jsonl"
+  }
+}

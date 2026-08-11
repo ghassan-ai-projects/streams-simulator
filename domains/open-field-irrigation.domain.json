@@ -1,0 +1,355 @@
+{
+  "id": "open-field-irrigation",
+  "version": "0.1.0",
+  "title": "Open-field irrigation control",
+  "description": "Six irrigation zones fed by one pump station. The flow meter reports over a radio link whose readings arrive minutes to hours late; the soil-moisture probes stream nearly in real time on exception. Water applied cannot be recovered, so the false-positive cost is concrete: a zone over-irrigated on a bad reading is water and money gone. The gross-lateness domain: size a single lateness allowance for the slowest channel and every probe reading stays admissible forever.",
+
+  "axes": {
+    "rate": "low",
+    "cardinality": "fleet",
+    "value_shape": ["scalar", "enum"],
+    "cadence": ["periodic", "report_by_exception", "event_driven"],
+    "lateness": "gross",
+    "absence": "signal",
+    "time_reference": "wall",
+    "correlation": ["spatial", "peer"],
+    "seasonality": ["diurnal", "annual"],
+    "actuation": "slow_physical",
+    "consequence": ["cost"],
+    "fidelity": ["F1"]
+  },
+
+  "stresses": "Cadence spans orders of magnitude on one entity, with gross lateness on the slowest channel: the flow meter's readings arrive minutes to hours late over the radio link while the soil-moisture probes stream in near real time on exception. A leak must be found in water that already ran. The domain most likely to force a design change in whatever consumes it.",
+
+  "entities": {
+    "id_template": "zone-{zone}/valve-{n}",
+    "entity_type": "valve",
+    "count": {"default": 6, "min": 1, "max": 32}
+  },
+
+  "state": [
+    {"name": "flow_rate_true", "unit": "L/min", "initial": 0.0, "min": 0.0, "max": 200.0,
+     "description": "True delivered flow at the zone valve. A fast first-order lag behind valve position; a leak diverts water upstream so delivered flow falls short of what the valve says."},
+    {"name": "pressure_true", "unit": "bar", "initial": 4.5, "min": 0.0, "max": 10.0,
+     "description": "True header pressure at the valve. Collapses when the pump station loses head — the correlated-cascade root."},
+    {"name": "soil_moisture_true", "unit": "percent", "initial": 25.0, "min": 0.0, "max": 100.0,
+     "description": "True volumetric soil moisture. Dries on its own drift and on the diurnal evapotranspiration curve; a dry patch that self-recovers is the domain's false-positive trap."},
+    {"name": "valve_position_true", "unit": "percent", "initial": 0.0, "min": 0.0, "max": 100.0,
+     "description": "True valve opening. Piecewise: moved by the open/close effectors and by the valve_stuck and solenoid_failure faults. Drives the delivered flow."},
+    {"name": "soil_sensor_bias", "unit": "rel", "initial": 0.0, "min": 0.0, "max": 1.0,
+     "description": "Hidden drift of the soil-moisture probe. Corrupts the soil_moisture channel through its observation_bias: reads up to 15 points wet while the field dries."},
+    {"name": "flow_sensor_bias", "unit": "rel", "initial": 0.0, "min": 0.0, "max": 1.0,
+     "description": "Hidden failure state of the flow meter. Steps the flow reading up 40 L/min and collapses its variance — a flat line at a plausible value."}
+  ],
+
+  "dynamics": [
+    {"target": "flow_rate_true", "tier": "F1", "dt_ms": 1000,
+     "f1": {"form": "first_order_lag", "time_constant_s": 30, "gain": 1.0,
+            "inputs": [{"state": "valve_position_true", "coef": 1.2}],
+            "clamp": {"min": 0.0, "max": 200.0}}},
+    {"target": "pressure_true", "tier": "F0",
+     "f0": {"baseline": 4.5, "trend_per_hour": 0.0, "drift_per_hour": 0.0}},
+    {"target": "soil_moisture_true", "tier": "F0",
+     "f0": {"baseline": 25.0, "trend_per_hour": 0.0,
+            "seasonality": [{"period_s": 86400, "amplitude": 4.0, "phase_rad": 0.0},
+                            {"period_s": 31536000, "amplitude": 6.0, "phase_rad": 0.0}],
+            "drift_per_hour": 0.05}}
+  ],
+
+  "channels": [
+    {
+      "name": "flow_rate",
+      "value_type": "number",
+      "unit": "L/min",
+      "resolution": 0.1,
+      "range": {"min": 0.0, "max": 200.0},
+      "observes": "flow_rate_true",
+      "observation_bias": {"state": "flow_sensor_bias", "coef": 40.0, "noise_scale_at_full": 0.05},
+      "description": "The radio-linked flow meter. Readings arrive minutes to hours late; the gross-lateness channel that breaks single-allowance consumers. Bias state makes it flat-line at a plausible value on failure.",
+      "fidelity": "F1",
+      "iso13374_role": "data_acquisition",
+      "cadence": {"mode": "periodic", "period_s": 60, "jitter_s": 5},
+      "noise": {"model": "gaussian", "sigma": 1.5},
+      "drift": {"rate_per_hour": 0.0, "model": "linear"},
+      "absence": "signal",
+      "availability": {"uptime": 0.99, "mttr_s": 1800},
+      "link_delay": {"model": "exponential", "mean_s": 90, "sigma_s": 45, "max_s": 7200}
+    },
+    {
+      "name": "pressure",
+      "value_type": "number",
+      "unit": "bar",
+      "resolution": 0.01,
+      "range": {"min": 0.0, "max": 10.0},
+      "observes": "pressure_true",
+      "fidelity": "F0",
+      "iso13374_role": "data_acquisition",
+      "cadence": {"mode": "periodic", "period_s": 60, "jitter_s": 2},
+      "noise": {"model": "gaussian", "sigma": 0.03},
+      "absence": "signal",
+      "link_delay": {"model": "exponential", "mean_s": 5, "max_s": 60}
+    },
+    {
+      "name": "soil_moisture",
+      "value_type": "number",
+      "unit": "percent",
+      "resolution": 0.1,
+      "range": {"min": 0.0, "max": 100.0},
+      "observes": "soil_moisture_true",
+      "description": "The probe string, reporting by exception: silence is steady state, a crossing is news. A consumer that treats silence as absence misreads this channel.",
+      "fidelity": "F0",
+      "iso13374_role": "data_acquisition",
+      "cadence": {"mode": "report_by_exception", "period_s": 60, "deadband": 1.5},
+      "noise": {"model": "gaussian", "sigma": 0.8},
+      "absence": "normal",
+      "link_delay": {"model": "constant", "mean_s": 2.0}
+    },
+    {
+      "name": "valve_position",
+      "value_type": "number",
+      "unit": "percent",
+      "resolution": 0.1,
+      "range": {"min": 0.0, "max": 100.0},
+      "observes": "valve_position_true",
+      "fidelity": "F0",
+      "iso13374_role": "state_detection",
+      "cadence": {"mode": "periodic", "period_s": 60, "jitter_s": 2},
+      "noise": {"model": "gaussian", "sigma": 0.5},
+      "absence": "signal",
+      "link_delay": {"model": "constant", "mean_s": 5.0}
+    },
+    {
+      "name": "status",
+      "value_type": "string",
+      "enum_values": ["closed", "opening", "open", "closing", "fault"],
+      "resolution": 1.0,
+      "fidelity": "F0",
+      "iso13374_role": "data_manipulation",
+      "cadence": {"mode": "event_driven", "trigger_state": "valve_position_true"},
+      "noise": {"model": "none", "sigma": 0},
+      "absence": "normal",
+      "link_delay": {"model": "constant", "mean_s": 5.0}
+    },
+    {
+      "name": "heartbeat",
+      "value_type": "none",
+      "resolution": 1.0,
+      "fidelity": "F0",
+      "iso13374_role": "data_acquisition",
+      "cadence": {"mode": "periodic", "period_s": 60},
+      "noise": {"model": "none", "sigma": 0},
+      "absence": "signal",
+      "link_delay": {"model": "constant", "mean_s": 10.0}
+    }
+  ],
+
+  "faults": [
+    {
+      "id": "valve_stuck",
+      "description": "The valve jams open at high opening. Water keeps running — an irreversible cost — until someone intervenes on site.",
+      "onset": {"shape": "step", "magnitude": 1.0},
+      "affects": [{"state": "valve_position_true", "delta": 70.0}],
+      "observability": {"detector": {"form": "single_channel_snr", "channel": "valve_position"}, "first_observable_snr": 3.0, "unavoidable_snr": 10.0},
+      "expected_effector": "maintenance_reset",
+      "deadline_s": 3600,
+      "counterfactual": {"if_no_action": "water_loss", "if_action_by_deadline": "closed"}
+    },
+    {
+      "id": "pressure_loss",
+      "description": "The pump station loses head: pressure falls across every zone at once. The correlated root cause behind a storm of per-zone low-pressure alarms.",
+      "onset": {"shape": "ramp", "rate_per_hour": 0.4, "magnitude": 2.5},
+      "affects": [{"state": "pressure_true", "delta": -2.5}],
+      "observability": {"detector": {"form": "single_channel_snr", "channel": "pressure"}, "first_observable_snr": 3.0, "unavoidable_snr": 10.0},
+      "expected_effector": "increase_pressure",
+      "deadline_s": 3600,
+      "counterfactual": {"if_no_action": "under_irrigation", "if_action_by_deadline": "restored"}
+    },
+    {
+      "id": "soil_sensor_drift",
+      "description": "The moisture probe drifts wet over hours: the field dries and the reading climbs. Every direct threshold on the probe is satisfied, and only the divergence from the diurnal expectation and the sibling zones betrays it. The instrument-lying label.",
+      "onset": {"shape": "ramp", "rate_per_hour": 0.2, "magnitude": 1.0},
+      "affects": [{"state": "soil_sensor_bias", "delta": 1.0}],
+      "observability": {"detector": {"form": "peer_residual", "channel": "soil_moisture"}, "first_observable_snr": 3.0, "unavoidable_snr": 10.0},
+      "expected_effector": "maintenance_reset",
+      "deadline_s": 7200,
+      "counterfactual": {"if_no_action": "over_irrigation", "if_action_by_deadline": "recalibrated"}
+    },
+    {
+      "id": "flow_sensor_fault",
+      "description": "The flow meter fails and flat-lines at a plausible reading: flow shows a steady 40 L/min while the valve sits closed. The conservation check against valve position is what catches it.",
+      "onset": {"shape": "step", "magnitude": 1.0},
+      "affects": [{"state": "flow_sensor_bias", "delta": 1.0}],
+      "observability": {"detector": {"form": "peer_residual", "channel": "flow_rate"}, "first_observable_snr": 3.0, "unavoidable_snr": 10.0},
+      "expected_effector": "maintenance_reset",
+      "deadline_s": 3600,
+      "counterfactual": {"if_no_action": "blind_control", "if_action_by_deadline": "repaired"}
+    },
+    {
+      "id": "leak",
+      "description": "A line ruptures between the meter and the valve: delivered flow falls short of what the valve opening says, because water is leaving the system unmeasured. No single channel is wrong; the imbalance across the balance equation is the only evidence.",
+      "onset": {"shape": "ramp", "rate_per_hour": 0.3, "magnitude": 12.0},
+      "affects": [{"state": "flow_rate_true", "delta": -12.0}],
+      "observability": {"detector": {"form": "conservation_residual", "inputs": ["flow_rate"], "outputs": ["valve_position"]}, "first_observable_snr": 3.0, "unavoidable_snr": 10.0},
+      "expected_effector": "close_valve",
+      "deadline_s": 1800,
+      "counterfactual": {"if_no_action": "water_loss", "if_action_by_deadline": "contained"}
+    },
+    {
+      "id": "solenoid_failure",
+      "description": "The zone solenoid opens on its own under a control glitch: the valve moves without a command and the zone waters itself. A genuine fault with an obvious signature and a hard cost attached to acting late.",
+      "onset": {"shape": "step", "magnitude": 1.0},
+      "affects": [{"state": "valve_position_true", "delta": 30.0}],
+      "observability": {"detector": {"form": "single_channel_snr", "channel": "valve_position"}, "first_observable_snr": 3.0, "unavoidable_snr": 10.0},
+      "expected_effector": "close_valve",
+      "deadline_s": 1800,
+      "counterfactual": {"if_no_action": "uncontrolled_watering", "if_action_by_deadline": "closed"}
+    },
+    {
+      "id": "dry_zone_none",
+      "description": "A dry patch from uneven rainfall: moisture reads low against the sibling zones for a day and recovers on its own. The false-positive trap — it looks exactly like the start of an irrigation failure.",
+      "is_negative_class": true,
+      "onset": {"shape": "intermittent", "rate_per_hour": 2.0, "magnitude": 8.0, "duty_cycle": 0.25},
+      "affects": [{"state": "soil_moisture_true", "delta": -8.0}],
+      "observability": {"detector": {"form": "peer_residual", "channel": "soil_moisture"}, "first_observable_snr": 3.0, "unavoidable_snr": 10.0}
+    }
+  ],
+
+  "effectors": [
+    {
+      "name": "open_valve",
+      "description": "Open the zone valve to a requested position. Flow follows within a minute; the valve's own feedback is the confirmation that the command landed.",
+      "args_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["zone_id", "valve_id", "position"],
+        "properties": {"zone_id": {"type": "string"}, "valve_id": {"type": "string"}, "position": {"type": "number", "minimum": 0, "maximum": 100}}
+      },
+      "risk_class": "low",
+      "ack": {
+        "latency_ms": {"mean": 500, "sigma": 150},
+        "failure_modes": [
+          {"mode": "ok", "probability": 0.90},
+          {"mode": "slow", "probability": 0.04},
+          {"mode": "ack_lost", "probability": 0.02},
+          {"mode": "reject", "probability": 0.02},
+          {"mode": "confirmed_no_effect", "probability": 0.01},
+          {"mode": "silent_no_effect", "probability": 0.01}
+        ]
+      },
+      "confirmation_channels": ["valve_position"],
+      "effect": {
+        "state_deltas": [{"state": "valve_position_true", "delta": 1.0, "from_arg": "position"}],
+        "time_constant_s": 120,
+        "dead_time_s": 0
+      },
+      "idempotency_window_s": 300
+    },
+    {
+      "name": "close_valve",
+      "description": "Close the zone valve. The expensive remedy when the false positive was a real leak alarm: water that was never delivered is the cost of the mistake.",
+      "args_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["zone_id", "valve_id"],
+        "properties": {"zone_id": {"type": "string"}, "valve_id": {"type": "string"}}
+      },
+      "risk_class": "low",
+      "ack": {
+        "latency_ms": {"mean": 400, "sigma": 100},
+        "failure_modes": [{"mode": "ok", "probability": 0.97}, {"mode": "ack_lost", "probability": 0.03}]
+      },
+      "effect": {
+        "state_deltas": [{"state": "valve_position_true", "delta": -80.0}],
+        "time_constant_s": 120,
+        "dead_time_s": 0
+      },
+      "idempotency_window_s": 300
+    },
+    {
+      "name": "increase_pressure",
+      "description": "Raise the pump station setpoint: header pressure climbs over a couple of minutes.",
+      "args_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["zone_id"],
+        "properties": {"zone_id": {"type": "string"}, "target_bar": {"type": "number", "minimum": 1, "maximum": 8}}
+      },
+      "risk_class": "medium",
+      "ack": {
+        "latency_ms": {"mean": 600, "sigma": 200},
+        "failure_modes": [
+          {"mode": "ok", "probability": 0.95},
+          {"mode": "slow", "probability": 0.02},
+          {"mode": "ack_lost", "probability": 0.02},
+          {"mode": "reject", "probability": 0.01}
+        ]
+      },
+      "effect": {
+        "state_deltas": [{"state": "pressure_true", "delta": 1.0}],
+        "time_constant_s": 180,
+        "dead_time_s": 0
+      },
+      "idempotency_window_s": 600
+    },
+    {
+      "name": "maintenance_reset",
+      "description": "Zero the sensor bias states and re-seat the valve: recalibrates the probes that were lying and clears a mechanically stuck valve.",
+      "args_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["zone_id"],
+        "properties": {"zone_id": {"type": "string"}, "note": {"type": "string"}}
+      },
+      "risk_class": "medium",
+      "ack": {
+        "latency_ms": {"mean": 700, "sigma": 200},
+        "failure_modes": [
+          {"mode": "ok", "probability": 0.95},
+          {"mode": "ack_lost", "probability": 0.03},
+          {"mode": "reject", "probability": 0.02}
+        ]
+      },
+      "effect": {
+        "state_deltas": [
+          {"state": "soil_sensor_bias", "delta": -1.0},
+          {"state": "flow_sensor_bias", "delta": -1.0},
+          {"state": "valve_position_true", "delta": -10.0}
+        ],
+        "time_constant_s": 60,
+        "dead_time_s": 0
+      },
+      "idempotency_window_s": 1800
+    }
+  ],
+
+  "profiles": [
+    {
+      "name": "nominal",
+      "description": "Six zones, one fault per scenario, 48-hour traces spanning two irrigation cycles.",
+      "entity_count": 6,
+      "duration_s": 172800
+    },
+    {
+      "name": "correlated_cascade",
+      "description": "The pump station trips: pressure collapses on every zone at once and each zone reports its own low-pressure alarm. The flood case for a consumer without an aggregate ceiling.",
+      "fault_weights": {"pressure_loss": 1.0},
+      "entity_count": 6,
+      "simultaneous_entities": 6,
+      "duration_s": 21600
+    },
+    {
+      "name": "sensor_pathology",
+      "description": "Weighted toward the instrument-lying labels: the moisture drift and the flat-line flow meter, with the dry patch as control. The labels a threshold rule cannot get right.",
+      "fault_weights": {"soil_sensor_drift": 0.5, "flow_sensor_fault": 0.3, "dry_zone_none": 0.2},
+      "entity_count": 6,
+      "duration_s": 86400
+    }
+  ],
+
+  "ground_truth": {
+    "negative_class_fraction": 0.40,
+    "pre_degraded_fraction": 0.12,
+    "min_scenarios": 100,
+    "min_per_label": 10
+  }
+}

@@ -1,0 +1,622 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://streams-simulator.local/schemas/domain-spec-v0.1.schema.json",
+  "title": "Streams Simulator Domain Spec v0.1",
+  "description": "A simulated world, as data. The simulator binary contains no domain behavior: every one of the 25 catalog domains loads through this one contract. If a domain requires a code branch in the binary, the simulator's design is wrong.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "version", "title", "axes", "stresses", "entities", "channels", "faults", "profiles", "ground_truth"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{2,63}$",
+      "description": "Stable domain identifier, e.g. 'aquaculture-pond'. Part of the domain digest."
+    },
+    "version": {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$"},
+    "title": {"type": "string", "minLength": 1, "maxLength": 120},
+    "description": {"type": "string", "maxLength": 2000},
+
+    "axes": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "The twelve-axis property vector. Machine-readable so `catalog coverage` can prove the suite spans the space rather than clustering. A domain whose vector duplicates another's is decoration.",
+      "required": ["rate", "cardinality", "value_shape", "cadence", "lateness", "absence", "time_reference", "correlation", "seasonality", "actuation", "consequence", "fidelity"],
+      "properties": {
+        "rate": {"enum": ["sparse", "low", "medium", "high", "torrent"]},
+        "cardinality": {"enum": ["singleton", "small", "fleet", "large", "churning"]},
+        "value_shape": {"type": "array", "minItems": 1, "items": {"enum": ["scalar", "enum", "boolean", "counter", "distribution", "text"]}},
+        "cadence": {"type": "array", "minItems": 1, "items": {"enum": ["periodic", "report_by_exception", "event_driven", "batch", "human_driven"]}},
+        "lateness": {"enum": ["none", "bounded", "heavy_tail", "gross"]},
+        "absence": {"enum": ["heartbeat", "signal", "normal", "ambiguous"]},
+        "time_reference": {"enum": ["wall", "batch_relative", "cycle_relative", "calendar"]},
+        "correlation": {"type": "array", "minItems": 1, "items": {"enum": ["independent", "coupled", "peer", "spatial", "cascading"]}},
+        "seasonality": {"type": "array", "minItems": 1, "items": {"enum": ["none", "diurnal", "weekly", "annual"]}},
+        "actuation": {"enum": ["observe_only", "advisory", "slow_physical", "fast_physical", "interlocked"]},
+        "consequence": {"type": "array", "minItems": 1, "items": {"enum": ["cost", "downtime", "regulatory", "safety"]}},
+        "fidelity": {"type": "array", "minItems": 1, "items": {"enum": ["F0", "F1", "F2", "F3"]}}
+      }
+    },
+
+    "stresses": {
+      "type": "string",
+      "minLength": 40,
+      "maxLength": 600,
+      "description": "One required sentence naming the runtime property this domain exists to break. Generic text ('tests the system under load') fails review: if the sentence could be written about any domain, the domain has no reason to be in the catalog."
+    },
+
+    "entities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id_template", "count"],
+      "properties": {
+        "id_template": {
+          "type": "string",
+          "description": "Unified-Namespace shaped, e.g. 'site-{site}/pond-{n}'. Rendered ids must satisfy sim-event-v0.1's alphabet. A consumer with a narrower alphabet declares a rewrite in its output adapter; that is the adapter's problem, not the domain's."
+        },
+        "entity_type": {"type": "string", "pattern": "^[a-z][a-z0-9_-]{0,63}$"},
+        "count": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["default"],
+          "properties": {
+            "default": {"type": "integer", "minimum": 1},
+            "min": {"type": "integer", "minimum": 1},
+            "max": {"type": "integer", "minimum": 1}
+          }
+        },
+        "churn": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Entity birth and death during a run. Domains that set this exercise a consumer's entity-retirement behaviour — the capability most stream processors discover they lack.",
+          "properties": {
+            "births_per_hour": {"type": "number", "minimum": 0},
+            "mean_lifetime_s": {"type": "number", "exclusiveMinimum": 0}
+          }
+        }
+      }
+    },
+
+    "state": {
+      "type": "array",
+      "description": "Hidden world variables. Channels observe these; nothing outside sim-director may ever read them. This is the array whose absence from PlantView is enforced at compile time.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "initial"],
+        "properties": {
+          "name": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$"},
+          "unit": {"type": "string", "maxLength": 32},
+          "initial": {"type": "number"},
+          "min": {"type": "number"},
+          "max": {"type": "number"},
+          "description": {"type": "string", "maxLength": 400}
+        }
+      }
+    },
+
+    "dynamics": {
+      "type": "array",
+      "description": "How hidden state evolves. F1 entries are integrated with fixed-step RK4 at `dt`, which is part of the domain digest so a step change is a version change.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["target", "tier"],
+        "properties": {
+          "target": {"type": "string", "description": "A state variable name."},
+          "tier": {"enum": ["F0", "F1", "F2", "F3"]},
+          "dt_ms": {"type": "integer", "minimum": 1, "description": "Required for F1 and F2 (enforced below)."},
+          "f0": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "baseline": {"type": "number"},
+              "trend_per_hour": {"type": "number"},
+              "seasonality": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["period_s", "amplitude"],
+                  "properties": {
+                    "period_s": {"type": "number", "exclusiveMinimum": 0},
+                    "amplitude": {"type": "number"},
+                    "phase_rad": {"type": "number"}
+                  }
+                }
+              },
+              "drift_per_hour": {"type": "number"}
+            }
+          },
+          "f1": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "First-order forms only. Deliberately not a general expression language: an arbitrary evaluator is a nondeterminism surface and a security surface, and no domain in the catalog needs one. The equations for each form are part of the contract and are defined in TECHNICAL_DESIGN §6.2 — a form name without an equation is not a specification.",
+            "required": ["form"],
+            "properties": {
+              "form": {"enum": ["first_order_lag", "rc_network", "dead_time", "saturation", "hysteresis", "integrator", "threshold_integrator"]},
+              "time_constant_s": {"type": "number", "exclusiveMinimum": 0},
+              "time_constant_2_s": {"type": "number", "exclusiveMinimum": 0, "description": "Second lag, for rc_network."},
+              "dead_time_s": {"type": "number", "minimum": 0},
+              "gain": {"type": "number"},
+              "inputs": {
+                "type": "array",
+                "description": "Driving states. A bare string means coefficient 1.0; an object carries an explicit coefficient, which is what makes weighted combinations expressible.",
+                "items": {
+                  "oneOf": [
+                    {"type": "string"},
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": ["state"],
+                      "properties": {
+                        "state": {"type": "string"},
+                        "coef": {"type": "number", "default": 1.0}
+                      }
+                    }
+                  ]
+                }
+              },
+              "threshold": {"type": "number", "description": "For threshold_integrator: the level beyond which the deficit accumulates."},
+              "direction": {"enum": ["below", "above"], "description": "For threshold_integrator: 'below' integrates max(0, threshold − input); 'above' integrates max(0, input − threshold)."},
+              "threshold_low": {"type": "number", "description": "For hysteresis."},
+              "threshold_high": {"type": "number", "description": "For hysteresis."},
+              "clamp": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {"min": {"type": "number"}, "max": {"type": "number"}}
+              }
+            },
+            "allOf": [
+              {
+                "if": {"properties": {"form": {"enum": ["first_order_lag", "dead_time"]}}, "required": ["form"]},
+                "then": {"required": ["time_constant_s"]}
+              },
+              {
+                "if": {"properties": {"form": {"const": "rc_network"}}, "required": ["form"]},
+                "then": {"required": ["time_constant_s", "time_constant_2_s"]}
+              },
+              {
+                "if": {"properties": {"form": {"const": "hysteresis"}}, "required": ["form"]},
+                "then": {"required": ["threshold_low", "threshold_high"]}
+              },
+              {
+                "if": {"properties": {"form": {"const": "threshold_integrator"}}, "required": ["form"]},
+                "then": {"required": ["threshold", "direction"]}
+              }
+            ]
+          },
+          "f2": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "A named reference model from the simulator's standard library, each unit-tested against published vectors.",
+            "required": ["model"],
+            "properties": {
+              "model": {"enum": ["fao56_penman_monteith_et0", "iec61400_power_curve", "arrhenius_spoilage", "psychrometrics_vpd", "soil_water_balance"]},
+              "params": {"type": "object"},
+              "inputs": {"type": "object", "additionalProperties": {"type": "string"}}
+            }
+          },
+          "f3": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "FMI co-simulation seam. Specified, not implemented; returns not_implemented.",
+            "required": ["fmu"],
+            "properties": {
+              "fmu": {"type": "string"},
+              "instance": {"type": "string"},
+              "inputs": {"type": "object"},
+              "outputs": {"type": "object"}
+            }
+          }
+        },
+        "allOf": [
+          {
+            "if": {"properties": {"tier": {"enum": ["F1", "F2"]}}, "required": ["tier"]},
+            "then": {"required": ["dt_ms"]}
+          },
+          {
+            "if": {"required": ["f1"]},
+            "then": {"properties": {"tier": {"enum": ["F1"]}}}
+          }
+        ]
+      }
+    },
+
+    "channels": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Observation channels. Each becomes a `channel` on the native event; how a consumer names or declares it is the output adapter's business.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "value_type", "cadence", "fidelity", "absence", "resolution"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+            "description": "Becomes the native event's `channel`. How a consumer names it is the output adapter's business."
+          },
+          "description": {"type": "string", "maxLength": 600},
+          "value_type": {"enum": ["number", "string", "boolean", "counter", "none"]},
+          "unit": {"type": "string", "minLength": 1, "maxLength": 32, "description": "Required for number and counter; forbidden otherwise. Carried verbatim; the simulator performs no unit conversion and neither should an adapter."},
+          "enum_values": {"type": "array", "items": {"type": "string", "maxLength": 256}, "description": "Required for string channels. The out_of_enum perturbation emits values outside this set."},
+          "resolution": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "description": "Mandatory. Emitted values are quantized to this before hashing, which both matches real instruments and removes cross-architecture float divergence as a determinism hazard."
+          },
+          "range": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {"min": {"type": "number"}, "max": {"type": "number"}}
+          },
+          "observes": {"type": "string", "description": "A state variable name. Absent for channels that are pure F0 generators."},
+          "observation_gain": {"type": "number", "default": 1},
+          "observation_offset": {"type": "number", "default": 0},
+          "observation_bias": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["state", "coef"],
+            "description": "A hidden state that corrupts this channel's reading: observed = gain·true + offset + coef·bias_state, with the noise sigma scaled by linear interpolation toward noise_scale_at_full as the bias state approaches 1. This is what makes sensor-pathology faults real: without a bias hook, a fault that affects only a fouling state changes no emitted byte, and the domain's hardest label is a no-op.",
+            "properties": {
+              "state": {"type": "string", "description": "A hidden state variable, e.g. probe_fouling."},
+              "coef": {"type": "number"},
+              "noise_scale_at_full": {"type": "number", "minimum": 0, "maximum": 1, "default": 1, "description": "Noise multiplier at bias_state = 1. A fouled probe reads high AND stable: 0.1 collapses the variance that an honest sensor shows."}
+            }
+          },
+          "fidelity": {"enum": ["F0", "F1", "F2", "F3"]},
+          "iso13374_role": {
+            "enum": ["data_acquisition", "data_manipulation", "state_detection", "health_assessment", "prognostic_assessment", "advisory_generation"],
+            "description": "ISO 13374 / OSA-CBM block. Documentation only; makes the catalog legible to the condition-monitoring world."
+          },
+          "cadence": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["mode"],
+            "properties": {
+              "mode": {"enum": ["periodic", "report_by_exception", "event_driven", "batch", "human_driven"]},
+              "period_s": {"type": "number", "exclusiveMinimum": 0},
+              "jitter_s": {"type": "number", "minimum": 0},
+              "deadband": {"type": "number", "exclusiveMinimum": 0, "description": "Mandatory when mode is report_by_exception. An RBE channel without a deadband emits on every float wobble and is not RBE."},
+              "batch_size": {"type": "integer", "minimum": 1},
+              "trigger_state": {"type": "string", "description": "For event_driven: the state variable whose change emits."}
+            },
+            "allOf": [
+              {
+                "if": {"properties": {"mode": {"const": "report_by_exception"}}, "required": ["mode"]},
+                "then": {"required": ["deadband"]}
+              },
+              {
+                "if": {"properties": {"mode": {"const": "periodic"}}, "required": ["mode"]},
+                "then": {"required": ["period_s"]}
+              }
+            ]
+          },
+          "noise": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["model", "sigma"],
+            "properties": {
+              "model": {"enum": ["gaussian", "pink", "quantization", "none"]},
+              "sigma": {"type": "number", "minimum": 0, "description": "The noise floor. first_observable_time is computed against this, so an unrealistically small sigma silently makes every scenario easy."}
+            }
+          },
+          "drift": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "rate_per_hour": {"type": "number"},
+              "model": {"enum": ["linear", "random_walk"]}
+            }
+          },
+          "absence": {
+            "enum": ["heartbeat", "signal", "normal", "ambiguous"],
+            "description": "heartbeat: a separate liveness channel exists. signal: silence means broken. normal: silence is expected (night, weekend, RBE steady state). ambiguous: undecidable from this channel alone — another producer must disambiguate."
+          },
+          "availability": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "uptime": {"type": "number", "minimum": 0, "maximum": 1},
+              "mttr_s": {"type": "number", "exclusiveMinimum": 0}
+            }
+          },
+          "link_delay": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Transport delay model. Sets observed_time = event_time + delay in the file and inproc sinks, and is realized as actual withholding of the POST in http-push, for consumers that assign their own receipt time on ingest.",
+            "properties": {
+              "model": {"enum": ["constant", "exponential", "lognormal", "store_and_forward"]},
+              "mean_s": {"type": "number", "minimum": 0},
+              "sigma_s": {"type": "number", "minimum": 0},
+              "max_s": {"type": "number", "minimum": 0}
+            }
+          },
+          "attacker_controlled": {
+            "type": "boolean",
+            "default": false,
+            "description": "True for free-text channels whose content originates outside the system (operator notes, process command lines, log messages). Injection probes are placed only in channels marked true, because these are the ones that reach a reasoning snapshot as admitted evidence."
+          }
+        },
+        "allOf": [
+          {
+            "if": {"properties": {"value_type": {"enum": ["number", "counter"]}}, "required": ["value_type"]},
+            "then": {"required": ["unit"]},
+            "else": {"not": {"required": ["unit"]}}
+          },
+          {
+            "if": {"properties": {"value_type": {"const": "string"}}, "required": ["value_type"]},
+            "then": {"required": ["enum_values"]}
+          }
+        ]
+      }
+    },
+
+    "faults": {
+      "type": "array",
+      "minItems": 1,
+      "description": "World faults: they change hidden state and are what the reasoner must diagnose. Distinct from transport perturbations and infrastructure faults, which are run-level and not declared here.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "onset", "affects", "observability"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$"},
+          "description": {"type": "string", "maxLength": 600},
+          "is_negative_class": {
+            "type": "boolean",
+            "default": false,
+            "description": "True for transient_none-style controls: something happens, nothing is wrong, and an episode is a false positive."
+          },
+          "onset": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["shape"],
+            "properties": {
+              "shape": {"enum": ["step", "ramp", "exponential", "intermittent", "stochastic"]},
+              "rate_per_hour": {"type": "number"},
+              "magnitude": {"type": "number"},
+              "duty_cycle": {"type": "number", "minimum": 0, "maximum": 1}
+            }
+          },
+          "affects": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["state", "delta"],
+              "properties": {
+                "state": {"type": "string"},
+                "delta": {"type": "number"},
+                "multiplicative": {"type": "boolean", "default": false}
+              }
+            }
+          },
+          "observability": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["detector"],
+            "description": "Makes first_observable_time and unavoidable_time computable rather than guessed. The detector is an expression, not a channel name (G-03): the important faults — a fouled probe reading a plausible value, a leak visible only in a conservation law — have no single-channel signature, and a single-channel SNR model scores their detection latency against a fictional reference.",
+            "properties": {
+              "detector": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["form"],
+                "properties": {
+                  "form": {
+                    "enum": ["single_channel_snr", "channel_divergence", "peer_residual", "conservation_residual"],
+                    "description": "single_channel_snr: level against one channel's noise floor. channel_divergence: |a − b| against the combined sigma. peer_residual: the entity against its siblings. conservation_residual: a balance (e.g. inlet − outlet − metered) across channels or entities."
+                  },
+                  "channel": {"type": "string"},
+                  "channel_a": {"type": "string"},
+                  "channel_b": {"type": "string"},
+                  "inputs": {"type": "array", "items": {"type": "string"}},
+                  "outputs": {"type": "array", "items": {"type": "string"}}
+                },
+                "allOf": [
+                  {
+                    "if": {"properties": {"form": {"enum": ["single_channel_snr", "peer_residual"]}}, "required": ["form"]},
+                    "then": {"required": ["channel"]}
+                  },
+                  {
+                    "if": {"properties": {"form": {"const": "channel_divergence"}}, "required": ["form"]},
+                    "then": {"required": ["channel_a", "channel_b"]}
+                  },
+                  {
+                    "if": {"properties": {"form": {"const": "conservation_residual"}}, "required": ["form"]},
+                    "then": {"required": ["inputs", "outputs"]}
+                  }
+                ]
+              },
+              "first_observable_snr": {"type": "number", "exclusiveMinimum": 0, "default": 3.0},
+              "unavoidable_snr": {"type": "number", "exclusiveMinimum": 0, "default": 10.0}
+            }
+          },
+          "expected_effector": {"type": "string"},
+          "deadline_s": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "description": "Time from first_observable_time within which action must complete or the counterfactual consequence occurs. Present only for domains with a hard physical deadline."
+          },
+          "counterfactual": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "if_no_action": {"type": "string", "maxLength": 200},
+              "if_action_by_deadline": {"type": "string", "maxLength": 200}
+            }
+          }
+        }
+      }
+    },
+
+    "effectors": {
+      "type": "array",
+      "description": "Invoked through the single generic sim.effector.invoke tool under the operator role; the binary contains no effector name. Every call requires a command_id and a capability token. That is the simulator's only opinion about a consumer's internals — an actuator is driven by a deliberate, identified dispatch — and it holds no opinion about who inside the consumer was permitted to decide it.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "args_schema", "ack", "effect"],
+        "properties": {
+          "name": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$"},
+          "description": {"type": "string", "maxLength": 400},
+          "args_schema": {"type": "object", "description": "JSON Schema for arguments beyond command_id."},
+          "risk_class": {"enum": ["low", "medium", "high"], "default": "medium"},
+          "ack": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["latency_ms"],
+            "properties": {
+              "latency_ms": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["mean"],
+                "properties": {"mean": {"type": "number", "minimum": 0}, "sigma": {"type": "number", "minimum": 0}}
+              },
+              "failure_modes": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["mode", "probability"],
+                  "properties": {
+                    "mode": {
+                      "enum": ["ok", "slow", "ack_lost", "reject", "partial", "confirmed_no_effect", "silent_no_effect"],
+                      "description": "The two no-effect modes are scored separately (C-05). confirmed_no_effect: the ack lies but a confirmation channel tells the truth — a deterministic two-signal comparison, a mechanism test. silent_no_effect: the ack lies and every confirmation channel reports the counterfactual (what it would have read had the effect applied), so only the absent physical outcome betrays the failure — the loop test whose false-success rate must be zero. Interlock refusal is not here: it is predicate-driven, not probabilistic."
+                    },
+                    "probability": {"type": "number", "minimum": 0, "maximum": 1}
+                  }
+                }
+              }
+            }
+          },
+          "interlock": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "An independent safety system that may refuse. Refusal is a terminal outcome: the runtime must never retry it and must never route around it to the same physical effect.",
+            "properties": {
+              "state": {"type": "string"},
+              "operator": {"enum": ["lt", "lte", "gt", "gte"]},
+              "threshold": {"type": "number"},
+              "autonomous_action": {
+                "type": "object",
+                "additionalProperties": false,
+                "description": "What the interlock does on its own, without being asked. Appears in the evidence stream as an ordinary event; the runtime gets no privileged knowledge of it.",
+                "properties": {
+                  "state": {"type": "string"},
+                  "delta": {"type": "number"}
+                }
+              }
+            }
+          },
+          "confirmation_channels": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "Channels that independently report whether the effect physically happened — an aerator's current draw. Required when any no-effect failure mode is declared. Under confirmed_no_effect they keep reporting the truth; under silent_no_effect they report the counterfactual the simulator computes on a shadow state (the motor draws current; the shaft is sheared), so the emitted evidence stays internally consistent and only the absent outcome contradicts the ack."
+          },
+          "effect": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["state_deltas"],
+            "properties": {
+              "state_deltas": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["state", "delta"],
+                  "properties": {
+                    "state": {"type": "string"},
+                    "delta": {"type": "number"},
+                    "from_arg": {"type": "string", "description": "Take the magnitude from a named argument instead of a literal."}
+                  }
+                }
+              },
+              "time_constant_s": {"type": "number", "minimum": 0, "default": 0, "description": "Effects propagate through the world with physical delay; lubrication reduces vibration over hours, not instantly."},
+              "dead_time_s": {"type": "number", "minimum": 0, "default": 0}
+            }
+          },
+          "idempotency_window_s": {"type": "number", "exclusiveMinimum": 0, "default": 3600}
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "ack": {
+                  "properties": {
+                    "failure_modes": {
+                      "type": "array",
+                      "contains": {"properties": {"mode": {"enum": ["confirmed_no_effect", "silent_no_effect"]}}, "required": ["mode"]}
+                    }
+                  },
+                  "required": ["failure_modes"]
+                }
+              },
+              "required": ["ack"]
+            },
+            "then": {
+              "required": ["confirmation_channels"],
+              "properties": {"confirmation_channels": {"minItems": 1}}
+            }
+          }
+        ]
+      }
+    },
+
+    "profiles": {
+      "type": "array",
+      "minItems": 3,
+      "description": "Named scenario families. nominal and sensor_pathology are mandatory for every domain: the baseline, and the instrument-lying case a threshold rule cannot get right. correlated_cascade — the alarm-flood case — is mandatory where the domain has the coupling to support one; where it does not, the domain declares the profile not_applicable with a reason. An honest absence beats an invented scenario (G-11).",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name"],
+        "properties": {
+          "name": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$"},
+          "description": {"type": "string", "maxLength": 400},
+          "not_applicable": {"type": "string", "minLength": 20, "maxLength": 400, "description": "In place of a profile definition: an explicit declaration that this family is fiction in this domain, with the reason."},
+          "fault_weights": {"type": "object", "additionalProperties": {"type": "number", "minimum": 0}},
+          "entity_count": {"type": "integer", "minimum": 1},
+          "duration_s": {"type": "number", "exclusiveMinimum": 0},
+          "simultaneous_entities": {"type": "integer", "minimum": 1, "description": "For correlated_cascade: how many entities the root cause trips at once."}
+        }
+      },
+      "allOf": [
+        {
+          "contains": {"properties": {"name": {"const": "nominal"}}, "required": ["name"]}
+        },
+        {
+          "contains": {"properties": {"name": {"const": "correlated_cascade"}}, "required": ["name"]}
+        },
+        {
+          "contains": {"properties": {"name": {"const": "sensor_pathology"}}, "required": ["name"]}
+        }
+      ]
+    },
+
+    "ground_truth": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["negative_class_fraction"],
+      "properties": {
+        "negative_class_fraction": {
+          "type": "number",
+          "minimum": 0.35,
+          "maximum": 0.45,
+          "description": "Enforced range, not advice. Benchmarks with a small negative class reward trigger-happy detectors and hide false-positive cost — one of the four documented flaws in the standard anomaly-detection benchmarks."
+        },
+        "pre_degraded_fraction": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 0.25,
+          "default": 0.12,
+          "description": "Scenarios whose fault predates t0, with no healthy baseline. Counters run-to-failure bias and exercises cold-start previous-state handling."
+        },
+        "min_scenarios": {"type": "integer", "minimum": 100, "default": 100},
+        "min_per_label": {"type": "integer", "minimum": 10, "default": 10}
+      }
+    }
+  }
+}

@@ -1,0 +1,282 @@
+{
+  "id": "k8s-cluster",
+  "version": "0.1.0",
+  "title": "Kubernetes cluster health",
+  "description": "A cluster where pods are born and die continuously: 120 pod identities an hour with a 30-minute mean lifetime. Entity identity is ephemeral by design, so silence is meaningless without knowing whether the entity was supposed to still exist. The catalog targets 4,000 births per hour; this spec runs 120 per hour so a single-machine run stays usable while keeping the retirement behaviour — the capability most stream processors discover they lack — fully exercised.",
+
+  "axes": {
+    "rate": "medium",
+    "cardinality": "churning",
+    "value_shape": ["scalar", "counter", "enum"],
+    "cadence": ["periodic", "event_driven"],
+    "lateness": "bounded",
+    "absence": "ambiguous",
+    "time_reference": "wall",
+    "correlation": ["cascading", "peer"],
+    "seasonality": ["diurnal"],
+    "actuation": "fast_physical",
+    "consequence": ["downtime"],
+    "fidelity": ["F0"]
+  },
+
+  "stresses": "Entity identity is ephemeral by design, so silence is meaningless without knowing whether the entity was supposed to still exist: a pod that stops reporting was probably scaled down on purpose. A consumer holding durable per-entity state with a wake schedule accumulates orphaned states and absence alarms against entities that were correctly deleted. Entity retirement is the concept most designs discover they lack.",
+
+  "entities": {
+    "id_template": "cluster-{cluster}/pod-{n}",
+    "entity_type": "pod",
+    "count": {"default": 8, "min": 1, "max": 64},
+    "churn": {"births_per_hour": 120, "mean_lifetime_s": 1800}
+  },
+
+  "state": [
+    {"name": "resource_usage_true", "unit": "percent", "initial": 55.0, "min": 0.0, "max": 100.0,
+     "description": "True CPU/memory composite utilisation of the pod. Diurnal workload curve; dropped to near zero when the pod is evicted or its metrics path is severed."},
+    {"name": "restarts_true", "unit": "count", "initial": 0.0, "min": 0.0, "max": 1000.0,
+     "description": "True cumulative restart count of the pod. Steps up in bursts under crash_loop; a counter whose rate is the diagnosis and whose absolute value means nothing across pods."},
+    {"name": "pod_phase", "unit": "rel", "initial": 1.0, "min": 0.0, "max": 1.0,
+     "description": "Whether the pod is scheduled and running. No free dynamics: stepped to zero by evictions and drains. The trigger for the event-driven status channel."},
+    {"name": "net_health", "unit": "rel", "initial": 1.0, "min": 0.0, "max": 1.0,
+     "description": "Whether the pod's network path is intact. No free dynamics: stepped to zero by network_partition. The root of the metric-silence signature."},
+    {"name": "config_bias", "unit": "rel", "initial": 0.0, "min": 0.0, "max": 1.0,
+     "description": "Hidden staleness of the pod's declared resource limits. Corrupts the resource_usage channel through its observation_bias: reads up to 20 points high while the pod is actually healthy."}
+  ],
+
+  "dynamics": [
+    {"target": "resource_usage_true", "tier": "F0",
+     "f0": {"baseline": 55.0, "trend_per_hour": 0.0,
+            "seasonality": [{"period_s": 86400, "amplitude": 12.0, "phase_rad": 0.0}],
+            "drift_per_hour": 0.0}},
+    {"target": "restarts_true", "tier": "F0",
+     "f0": {"baseline": 0.0, "trend_per_hour": 0.0, "drift_per_hour": 0.0}}
+  ],
+
+  "channels": [
+    {
+      "name": "resource_usage",
+      "value_type": "number",
+      "unit": "percent",
+      "resolution": 0.1,
+      "range": {"min": 0.0, "max": 100.0},
+      "observes": "resource_usage_true",
+      "observation_bias": {"state": "config_bias", "coef": 20.0, "noise_scale_at_full": 0.4},
+      "description": "The pod metrics sample. Stops moving when the pod dies or its metrics path is severed, which is exactly why a consumer must know whether the entity is supposed to exist.",
+      "fidelity": "F0",
+      "iso13374_role": "data_acquisition",
+      "cadence": {"mode": "periodic", "period_s": 60, "jitter_s": 2},
+      "noise": {"model": "gaussian", "sigma": 1.0},
+      "drift": {"rate_per_hour": 0.0, "model": "linear"},
+      "absence": "ambiguous",
+      "availability": {"uptime": 0.995, "mttr_s": 300},
+      "link_delay": {"model": "exponential", "mean_s": 0.5, "max_s": 10}
+    },
+    {
+      "name": "restarts",
+      "value_type": "counter",
+      "unit": "count",
+      "resolution": 1.0,
+      "range": {"min": 0.0, "max": 1000.0},
+      "observes": "restarts_true",
+      "fidelity": "F0",
+      "iso13374_role": "data_acquisition",
+      "cadence": {"mode": "periodic", "period_s": 60},
+      "noise": {"model": "quantization", "sigma": 1.0},
+      "absence": "ambiguous",
+      "link_delay": {"model": "exponential", "mean_s": 0.5, "max_s": 10}
+    },
+    {
+      "name": "status",
+      "value_type": "string",
+      "enum_values": ["pending", "running", "crashloop", "evicted", "ready"],
+      "resolution": 1.0,
+      "fidelity": "F0",
+      "iso13374_role": "data_manipulation",
+      "cadence": {"mode": "event_driven", "trigger_state": "pod_phase"},
+      "noise": {"model": "none", "sigma": 0},
+      "absence": "ambiguous",
+      "link_delay": {"model": "constant", "mean_s": 1.0}
+    },
+    {
+      "name": "heartbeat",
+      "value_type": "none",
+      "resolution": 1.0,
+      "fidelity": "F0",
+      "iso13374_role": "data_acquisition",
+      "cadence": {"mode": "periodic", "period_s": 60},
+      "noise": {"model": "none", "sigma": 0},
+      "absence": "ambiguous",
+      "link_delay": {"model": "constant", "mean_s": 0.5}
+    }
+  ],
+
+  "faults": [
+    {
+      "id": "pod_eviction",
+      "description": "The pod is evicted under node pressure: phase drops and the metrics reading collapses to near zero. Looks exactly like a pod that was correctly deleted — the consumer that cannot tell the difference has no defence here.",
+      "onset": {"shape": "step", "magnitude": 1.0},
+      "affects": [{"state": "pod_phase", "delta": -1.0}, {"state": "resource_usage_true", "delta": -40.0}],
+      "observability": {"detector": {"form": "peer_residual", "channel": "resource_usage"}, "first_observable_snr": 3.0, "unavoidable_snr": 10.0},
+      "expected_effector": "scale_replicas",
+      "deadline_s": 600,
+      "counterfactual": {"if_no_action": "capacity_loss", "if_action_by_deadline": "replicated"}
+    },
+    {
+      "id": "memory_thrash",
+      "description": "The pod thrashes against its memory limit in pulses: usage spikes repeatedly and settles. Sustained, not a single event — a cooldown-aware consumer absorbs it, a naive one fights it.",
+      "onset": {"shape": "intermittent", "rate_per_hour": 6.0, "magnitude": 20.0, "duty_cycle": 0.3},
+      "affects": [{"state": "resource_usage_true", "delta": 20.0}],
+      "observability": {"detector": {"form": "single_channel_snr", "channel": "resource_usage"}, "first_observable_snr": 3.0, "unavoidable_snr": 10.0},
+      "expected_effector": "evict_pod",
+      "deadline_s": 1800,
+      "counterfactual": {"if_no_action": "node_pressure", "if_action_by_deadline": "rescheduled"}
+    },
+    {
+      "id": "network_partition",
+      "description": "The pod's network path is severed: metrics stop flowing and the resource reading freezes low. The heartbeat continues from the out-of-band agent, so only the absent metric stream betrays the partition — silence with a known cause.",
+      "onset": {"shape": "step", "magnitude": 1.0},
+      "affects": [{"state": "net_health", "delta": -1.0}, {"state": "resource_usage_true", "delta": -45.0}],
+      "observability": {"detector": {"form": "single_channel_snr", "channel": "resource_usage"}, "first_observable_snr": 3.0, "unavoidable_snr": 10.0},
+      "expected_effector": "cordon_node",
+      "deadline_s": 900,
+      "counterfactual": {"if_no_action": "stale_workload", "if_action_by_deadline": "contained"}
+    },
+    {
+      "id": "crash_loop",
+      "description": "The pod's container crashes on startup and the restart counter climbs in bursts. The rate of the counter is the signal; its absolute level is meaningless across pods.",
+      "onset": {"shape": "step", "magnitude": 1.0},
+      "affects": [{"state": "restarts_true", "delta": 4.0}],
+      "observability": {"detector": {"form": "single_channel_snr", "channel": "restarts"}, "first_observable_snr": 3.0, "unavoidable_snr": 10.0},
+      "expected_effector": "evict_pod",
+      "deadline_s": 1200,
+      "counterfactual": {"if_no_action": "churn_storm", "if_action_by_deadline": "broken"}
+    },
+    {
+      "id": "node_drain",
+      "description": "A scheduled node drain evicts pods legitimately: the pod is terminated because it was supposed to be, and the metrics reading collapses exactly as under pod_eviction. The false-positive trap — same signature, different truth.",
+      "is_negative_class": true,
+      "onset": {"shape": "intermittent", "rate_per_hour": 3.0, "magnitude": 1.0, "duty_cycle": 0.2},
+      "affects": [{"state": "pod_phase", "delta": -1.0}, {"state": "resource_usage_true", "delta": -40.0}],
+      "observability": {"detector": {"form": "peer_residual", "channel": "resource_usage"}, "first_observable_snr": 3.0, "unavoidable_snr": 10.0}
+    },
+    {
+      "id": "config_mismatch",
+      "description": "The pod runs against stale resource limits: the metric reads up to 20 points high while the pod is actually healthy. Only the divergence from the sibling pods and the pod's own history betrays it — the instrument-lying label of this domain.",
+      "onset": {"shape": "ramp", "rate_per_hour": 0.2, "magnitude": 1.0},
+      "affects": [{"state": "config_bias", "delta": 1.0}],
+      "observability": {"detector": {"form": "peer_residual", "channel": "resource_usage"}, "first_observable_snr": 3.0, "unavoidable_snr": 10.0},
+      "expected_effector": "evict_pod",
+      "deadline_s": 3600,
+      "counterfactual": {"if_no_action": "capacity_waste", "if_action_by_deadline": "reconfigured"}
+    }
+  ],
+
+  "effectors": [
+    {
+      "name": "evict_pod",
+      "description": "Force-evict the pod so it is rescheduled elsewhere. High-risk, high-cost: the remedy for a crashing or lying pod, and expensive when the call was wrong.",
+      "args_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["cluster_id", "pod_id"],
+        "properties": {"cluster_id": {"type": "string"}, "pod_id": {"type": "string"}, "reason": {"type": "string"}}
+      },
+      "risk_class": "high",
+      "ack": {
+        "latency_ms": {"mean": 300, "sigma": 100},
+        "failure_modes": [
+          {"mode": "ok", "probability": 0.90},
+          {"mode": "slow", "probability": 0.04},
+          {"mode": "ack_lost", "probability": 0.03},
+          {"mode": "reject", "probability": 0.03}
+        ]
+      },
+      "effect": {
+        "state_deltas": [{"state": "pod_phase", "delta": -1.0}, {"state": "resource_usage_true", "delta": -30.0}],
+        "time_constant_s": 30,
+        "dead_time_s": 0
+      },
+      "idempotency_window_s": 60
+    },
+    {
+      "name": "scale_replicas",
+      "description": "Raise the replica count of the deployment backing the pod: load spreads and the observed usage falls as siblings take the work.",
+      "args_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["cluster_id", "deployment"],
+        "properties": {"cluster_id": {"type": "string"}, "deployment": {"type": "string"}, "replicas": {"type": "integer", "minimum": 1, "maximum": 64}}
+      },
+      "risk_class": "low",
+      "ack": {
+        "latency_ms": {"mean": 400, "sigma": 120},
+        "failure_modes": [
+          {"mode": "ok", "probability": 0.95},
+          {"mode": "slow", "probability": 0.02},
+          {"mode": "ack_lost", "probability": 0.02},
+          {"mode": "reject", "probability": 0.01}
+        ]
+      },
+      "effect": {
+        "state_deltas": [{"state": "resource_usage_true", "delta": -15.0}, {"state": "restarts_true", "delta": -2.0}],
+        "time_constant_s": 120,
+        "dead_time_s": 0
+      },
+      "idempotency_window_s": 600
+    },
+    {
+      "name": "cordon_node",
+      "description": "Mark the node unschedulable so no new work lands on the partitioned path. Contains the blast radius; does not claim to fix the partition itself.",
+      "args_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["cluster_id", "node_id"],
+        "properties": {"cluster_id": {"type": "string"}, "node_id": {"type": "string"}}
+      },
+      "risk_class": "medium",
+      "ack": {
+        "latency_ms": {"mean": 350, "sigma": 100},
+        "failure_modes": [
+          {"mode": "ok", "probability": 0.94},
+          {"mode": "ack_lost", "probability": 0.03},
+          {"mode": "reject", "probability": 0.03}
+        ]
+      },
+      "effect": {
+        "state_deltas": [{"state": "resource_usage_true", "delta": -10.0}],
+        "time_constant_s": 60,
+        "dead_time_s": 0
+      },
+      "idempotency_window_s": 300
+    }
+  ],
+
+  "profiles": [
+    {
+      "name": "nominal",
+      "description": "A base fleet of eight pods under continuous churn, one fault per scenario, 24-hour traces.",
+      "entity_count": 8,
+      "duration_s": 86400
+    },
+    {
+      "name": "correlated_cascade",
+      "description": "A control-plane event flips many pods into crash-loop at once: eight restart counters climbing together. The alarm-flood case, and the one where per-entity restart-rate triggers each open their own episode.",
+      "fault_weights": {"crash_loop": 1.0},
+      "entity_count": 8,
+      "simultaneous_entities": 8,
+      "duration_s": 10800
+    },
+    {
+      "name": "sensor_pathology",
+      "description": "Weighted toward the lies: the stale-limit reading and the frozen metrics, with the legitimately-evicted pod as control. The labels a fixed threshold on resource usage cannot separate.",
+      "fault_weights": {"config_mismatch": 0.5, "network_partition": 0.3, "node_drain": 0.2},
+      "entity_count": 8,
+      "duration_s": 43200
+    }
+  ],
+
+  "ground_truth": {
+    "negative_class_fraction": 0.40,
+    "pre_degraded_fraction": 0.12,
+    "min_scenarios": 100,
+    "min_per_label": 10
+  }
+}

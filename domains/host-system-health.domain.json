@@ -1,0 +1,371 @@
+{
+  "id": "host-system-health",
+  "version": "0.1.0",
+  "title": "Host system health",
+  "description": "A rack of twelve servers in a data hall. Mostly F0 generators and counters: CPU with a workday diurnal pattern, disk that creeps, an uptime counter that freezes when the host dies, and a memory state that rises on its slow lag toward an OOM cliff. The cheapest domain in the catalog — no ODE beyond one lag and one integrator — and the one that makes counters-that-reset and violent saturation concrete.",
+
+  "axes": {
+    "rate": "medium",
+    "cardinality": "fleet",
+    "value_shape": ["scalar", "counter", "enum"],
+    "cadence": ["periodic", "event_driven"],
+    "lateness": "bounded",
+    "absence": "signal",
+    "time_reference": "wall",
+    "correlation": ["peer"],
+    "seasonality": ["diurnal", "weekly"],
+    "actuation": "advisory",
+    "consequence": ["downtime"],
+    "fidelity": ["F0", "F1"]
+  },
+
+  "stresses": "Counters that reset and saturation that is violently nonlinear: a network or uptime counter freezes or rolls over and a naive differencer emits a catastrophic negative rate, while a disk at 80% is fine and at 98% the whole host behaves differently. Cheap to build, expensive to misread: the saturation is the fact, and the consequence is not a linear function of it.",
+
+  "entities": {
+    "id_template": "rack-{rack}/server-{n}",
+    "entity_type": "server",
+    "count": {"default": 12, "min": 1, "max": 64}
+  },
+
+  "state": [
+    {"name": "cpu_usage_true", "unit": "percent", "initial": 35.0, "min": 0.0, "max": 100.0,
+     "description": "True CPU utilisation. Diurnal workday curve with a weekly dip; the baseline every load fault is measured against."},
+    {"name": "memory_usage_true", "unit": "percent", "initial": 30.0, "min": 0.0, "max": 100.0,
+     "description": "True memory utilisation, a slow first-order lag behind application load. The leak that pushes it toward the OOM cliff is the domain's deadline fault."},
+    {"name": "disk_usage_true", "unit": "percent", "initial": 60.0, "min": 0.0, "max": 100.0,
+     "description": "True disk utilisation. Creeps upward on its own drift; exhaustion time is predictable, which makes disk_fill a prognostic test."},
+    {"name": "process_count_true", "unit": "count", "initial": 120.0, "min": 0.0, "max": 1000.0,
+     "description": "True number of processes on the host. Nearly constant at baseline; drops and flat-lines when processes hang."},
+    {"name": "uptime_s_true", "unit": "s", "initial": 86400.0, "min": 0.0,
+     "description": "True uptime in seconds, an integrator driven by host power: one per second while powered, frozen the moment the host dies. The honest confirmation channel for reboot."},
+    {"name": "tcp_connections_true", "unit": "count", "initial": 240.0, "min": 0.0, "max": 10000.0,
+     "description": "True established TCP connections. Drops when clients stop trusting the host — the certificate_expiry signature."},
+    {"name": "app_load", "unit": "rel", "initial": 0.5, "min": 0.0, "max": 1.0,
+     "description": "Application demand on the host. Drives memory through its lag; lowered by drain and quarantine."},
+    {"name": "host_powered", "unit": "rel", "initial": 1.0, "min": 0.0, "max": 1.0,
+     "description": "Whether the host is powered. No free dynamics: stepped to zero by host_down, restored by reboot. Drives the uptime integrator."},
+    {"name": "host_state", "unit": "rel", "initial": 1.0, "min": 0.0, "max": 1.0,
+     "description": "Operator-visible host state (1 up, 0 down). The trigger for the event-driven status channel."}
+  ],
+
+  "dynamics": [
+    {"target": "cpu_usage_true", "tier": "F0",
+     "f0": {"baseline": 35.0, "trend_per_hour": 0.0,
+            "seasonality": [{"period_s": 86400, "amplitude": 15.0, "phase_rad": 0.0},
+                            {"period_s": 604800, "amplitude": 8.0, "phase_rad": 0.0}],
+            "drift_per_hour": 0.0}},
+    {"target": "memory_usage_true", "tier": "F1", "dt_ms": 1000,
+     "f1": {"form": "first_order_lag", "time_constant_s": 3600, "gain": 1.0,
+            "inputs": [{"state": "app_load", "coef": 60.0}],
+            "clamp": {"min": 0.0, "max": 100.0}}},
+    {"target": "disk_usage_true", "tier": "F0",
+     "f0": {"baseline": 60.0, "trend_per_hour": 0.0, "drift_per_hour": 0.02}},
+    {"target": "process_count_true", "tier": "F0",
+     "f0": {"baseline": 120.0, "trend_per_hour": 0.0, "drift_per_hour": 0.0}},
+    {"target": "uptime_s_true", "tier": "F1", "dt_ms": 1000,
+     "f1": {"form": "integrator", "gain": 1.0, "inputs": [{"state": "host_powered", "coef": 1.0}]}},
+    {"target": "tcp_connections_true", "tier": "F0",
+     "f0": {"baseline": 240.0, "trend_per_hour": 0.0, "drift_per_hour": 0.0}},
+    {"target": "app_load", "tier": "F0",
+     "f0": {"baseline": 0.5, "trend_per_hour": 0.0, "drift_per_hour": 0.0}}
+  ],
+
+  "channels": [
+    {
+      "name": "cpu_usage",
+      "value_type": "number",
+      "unit": "percent",
+      "resolution": 0.1,
+      "range": {"min": 0.0, "max": 100.0},
+      "observes": "cpu_usage_true",
+      "fidelity": "F0",
+      "iso13374_role": "data_acquisition",
+      "cadence": {"mode": "periodic", "period_s": 60, "jitter_s": 2},
+      "noise": {"model": "gaussian", "sigma": 1.5},
+      "drift": {"rate_per_hour": 0.0, "model": "linear"},
+      "absence": "signal",
+      "availability": {"uptime": 0.999, "mttr_s": 600},
+      "link_delay": {"model": "exponential", "mean_s": 1.0, "max_s": 20}
+    },
+    {
+      "name": "memory_usage",
+      "value_type": "number",
+      "unit": "percent",
+      "resolution": 0.1,
+      "range": {"min": 0.0, "max": 100.0},
+      "observes": "memory_usage_true",
+      "fidelity": "F1",
+      "iso13374_role": "state_detection",
+      "cadence": {"mode": "periodic", "period_s": 60},
+      "noise": {"model": "gaussian", "sigma": 1.0},
+      "absence": "signal",
+      "link_delay": {"model": "exponential", "mean_s": 1.0, "max_s": 20}
+    },
+    {
+      "name": "disk_usage",
+      "value_type": "number",
+      "unit": "percent",
+      "resolution": 0.1,
+      "range": {"min": 0.0, "max": 100.0},
+      "observes": "disk_usage_true",
+      "fidelity": "F0",
+      "iso13374_role": "data_acquisition",
+      "cadence": {"mode": "periodic", "period_s": 300, "jitter_s": 10},
+      "noise": {"model": "gaussian", "sigma": 0.5},
+      "absence": "signal",
+      "link_delay": {"model": "exponential", "mean_s": 1.0, "max_s": 20}
+    },
+    {
+      "name": "process_count",
+      "value_type": "counter",
+      "unit": "count",
+      "resolution": 1.0,
+      "range": {"min": 0.0, "max": 1000.0},
+      "observes": "process_count_true",
+      "fidelity": "F0",
+      "iso13374_role": "data_acquisition",
+      "cadence": {"mode": "periodic", "period_s": 60},
+      "noise": {"model": "quantization", "sigma": 2.0},
+      "absence": "signal",
+      "link_delay": {"model": "constant", "mean_s": 1.0}
+    },
+    {
+      "name": "uptime_s",
+      "value_type": "counter",
+      "unit": "count",
+      "resolution": 1.0,
+      "observes": "uptime_s_true",
+      "fidelity": "F1",
+      "iso13374_role": "data_acquisition",
+      "cadence": {"mode": "periodic", "period_s": 60},
+      "noise": {"model": "quantization", "sigma": 1.0},
+      "absence": "signal",
+      "link_delay": {"model": "constant", "mean_s": 1.0}
+    },
+    {
+      "name": "tcp_connections",
+      "value_type": "counter",
+      "unit": "count",
+      "resolution": 1.0,
+      "range": {"min": 0.0, "max": 10000.0},
+      "observes": "tcp_connections_true",
+      "fidelity": "F0",
+      "iso13374_role": "state_detection",
+      "cadence": {"mode": "periodic", "period_s": 60},
+      "noise": {"model": "quantization", "sigma": 5.0},
+      "absence": "signal",
+      "link_delay": {"model": "constant", "mean_s": 1.0}
+    },
+    {
+      "name": "status",
+      "value_type": "string",
+      "enum_values": ["running", "degraded", "maintenance", "down"],
+      "resolution": 1.0,
+      "fidelity": "F0",
+      "iso13374_role": "data_manipulation",
+      "cadence": {"mode": "event_driven", "trigger_state": "host_state"},
+      "noise": {"model": "none", "sigma": 0},
+      "absence": "signal",
+      "link_delay": {"model": "constant", "mean_s": 1.0}
+    },
+    {
+      "name": "heartbeat",
+      "value_type": "none",
+      "resolution": 1.0,
+      "fidelity": "F0",
+      "iso13374_role": "data_acquisition",
+      "cadence": {"mode": "periodic", "period_s": 60},
+      "noise": {"model": "none", "sigma": 0},
+      "absence": "signal",
+      "link_delay": {"model": "constant", "mean_s": 0.5}
+    }
+  ],
+
+  "faults": [
+    {
+      "id": "memory_leak",
+      "description": "A leaked allocation grows until the OOM killer acts. The ramp is slow; the cliff at ~97% is not. Predictable exhaustion makes this the deadline fault of the domain.",
+      "onset": {"shape": "ramp", "rate_per_hour": 0.6, "magnitude": 25.0},
+      "affects": [{"state": "memory_usage_true", "delta": 25.0}],
+      "observability": {"detector": {"form": "single_channel_snr", "channel": "memory_usage"}, "first_observable_snr": 3.0, "unavoidable_snr": 10.0},
+      "expected_effector": "reboot",
+      "deadline_s": 7200,
+      "counterfactual": {"if_no_action": "oom_kill", "if_action_by_deadline": "recovery"}
+    },
+    {
+      "id": "disk_fill",
+      "description": "A log file grows without bound. The exhaustion time is computable from the trend, so a prognostic consumer names the hour while a threshold consumer only reports the symptom.",
+      "onset": {"shape": "ramp", "rate_per_hour": 0.3, "magnitude": 30.0},
+      "affects": [{"state": "disk_usage_true", "delta": 30.0}],
+      "observability": {"detector": {"form": "single_channel_snr", "channel": "disk_usage"}, "first_observable_snr": 3.0, "unavoidable_snr": 10.0},
+      "expected_effector": "quarantine",
+      "deadline_s": 86400,
+      "counterfactual": {"if_no_action": "disk_full_outage", "if_action_by_deadline": "reclaimed"}
+    },
+    {
+      "id": "process_hang",
+      "description": "The application stops making progress: the process count drops once and then flat-lines. The step is the signal; a threshold on the count itself catches it, a rate-based consumer misreads it as a burst.",
+      "onset": {"shape": "step", "magnitude": 1.0},
+      "affects": [{"state": "process_count_true", "delta": -35.0}],
+      "observability": {"detector": {"form": "single_channel_snr", "channel": "process_count"}, "first_observable_snr": 3.0, "unavoidable_snr": 10.0},
+      "expected_effector": "reboot",
+      "deadline_s": 1800,
+      "counterfactual": {"if_no_action": "stalled_work", "if_action_by_deadline": "restored"}
+    },
+    {
+      "id": "load_spike",
+      "description": "A batch job saturates the host in pulses. Transient by nature; the correct behaviour is to ride it out, and a trigger that acts on every crossing pays for it.",
+      "onset": {"shape": "intermittent", "rate_per_hour": 3.0, "magnitude": 30.0, "duty_cycle": 0.2},
+      "affects": [{"state": "cpu_usage_true", "delta": 30.0}],
+      "observability": {"detector": {"form": "single_channel_snr", "channel": "cpu_usage"}, "first_observable_snr": 3.0, "unavoidable_snr": 10.0}
+    },
+    {
+      "id": "certificate_expiry",
+      "description": "The host's TLS certificate is near expiry: strict clients begin dropping connections, so the connection count falls against the host's own history while siblings are unaffected. Not visible on any absolute channel — only as a peer residual.",
+      "onset": {"shape": "ramp", "rate_per_hour": 0.3, "magnitude": 120.0},
+      "affects": [{"state": "tcp_connections_true", "delta": -120.0}],
+      "observability": {"detector": {"form": "peer_residual", "channel": "tcp_connections"}, "first_observable_snr": 3.0, "unavoidable_snr": 10.0},
+      "expected_effector": "quarantine",
+      "deadline_s": 604800,
+      "counterfactual": {"if_no_action": "client_failures", "if_action_by_deadline": "renewed"}
+    },
+    {
+      "id": "host_down",
+      "description": "The host loses power. Every metric that depended on it stops, and the uptime counter — an integrator driven by host power — freezes mid-count. A differencing consumer reports a negative uptime rate.",
+      "onset": {"shape": "step", "magnitude": 1.0},
+      "affects": [{"state": "host_powered", "delta": -1.0}, {"state": "host_state", "delta": -1.0}],
+      "observability": {"detector": {"form": "single_channel_snr", "channel": "uptime_s"}, "first_observable_snr": 3.0, "unavoidable_snr": 10.0},
+      "expected_effector": "reboot",
+      "deadline_s": 900,
+      "counterfactual": {"if_no_action": "prolonged_outage", "if_action_by_deadline": "restored"}
+    },
+    {
+      "id": "transient_none",
+      "description": "The nightly backup: CPU jumps for half an hour every evening and settles, exactly the shape of a load-spike fault that does not need an operator. The false-positive trap of this domain.",
+      "is_negative_class": true,
+      "onset": {"shape": "intermittent", "rate_per_hour": 1.0, "magnitude": 20.0, "duty_cycle": 0.12},
+      "affects": [{"state": "cpu_usage_true", "delta": 20.0}],
+      "observability": {"detector": {"form": "single_channel_snr", "channel": "cpu_usage"}, "first_observable_snr": 3.0, "unavoidable_snr": 10.0}
+    }
+  ],
+
+  "effectors": [
+    {
+      "name": "reboot",
+      "description": "Cycle the host: power is restored and a fresh boot drains the accumulated load. Uptime resumes counting; the frozen integrator starts again.",
+      "args_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["server_id"],
+        "properties": {"server_id": {"type": "string"}, "reason": {"type": "string"}}
+      },
+      "risk_class": "medium",
+      "ack": {
+        "latency_ms": {"mean": 400, "sigma": 120},
+        "failure_modes": [
+          {"mode": "ok", "probability": 0.90},
+          {"mode": "slow", "probability": 0.05},
+          {"mode": "ack_lost", "probability": 0.02},
+          {"mode": "reject", "probability": 0.02},
+          {"mode": "confirmed_no_effect", "probability": 0.005},
+          {"mode": "silent_no_effect", "probability": 0.005}
+        ]
+      },
+      "confirmation_channels": ["uptime_s", "cpu_usage"],
+      "effect": {
+        "state_deltas": [
+          {"state": "host_powered", "delta": 1.0},
+          {"state": "host_state", "delta": 1.0},
+          {"state": "cpu_usage_true", "delta": -20.0},
+          {"state": "memory_usage_true", "delta": -15.0},
+          {"state": "process_count_true", "delta": 20.0}
+        ],
+        "time_constant_s": 300,
+        "dead_time_s": 0
+      },
+      "idempotency_window_s": 900
+    },
+    {
+      "name": "drain",
+      "description": "Gracefully shed application load: memory follows down on its hour-long lag.",
+      "args_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["server_id"],
+        "properties": {"server_id": {"type": "string"}}
+      },
+      "risk_class": "low",
+      "ack": {
+        "latency_ms": {"mean": 250, "sigma": 60},
+        "failure_modes": [{"mode": "ok", "probability": 0.97}, {"mode": "ack_lost", "probability": 0.03}]
+      },
+      "effect": {
+        "state_deltas": [{"state": "app_load", "delta": -0.15}],
+        "time_constant_s": 600,
+        "dead_time_s": 0
+      },
+      "idempotency_window_s": 1800
+    },
+    {
+      "name": "quarantine",
+      "description": "Take the host out of service: stop serving traffic, which sheds connections and load. The expensive remedy whose false positives cost availability.",
+      "args_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["server_id"],
+        "properties": {"server_id": {"type": "string"}, "reason": {"type": "string"}}
+      },
+      "risk_class": "high",
+      "ack": {
+        "latency_ms": {"mean": 600, "sigma": 180},
+        "failure_modes": [
+          {"mode": "ok", "probability": 0.92},
+          {"mode": "slow", "probability": 0.03},
+          {"mode": "ack_lost", "probability": 0.03},
+          {"mode": "reject", "probability": 0.02}
+        ]
+      },
+      "effect": {
+        "state_deltas": [
+          {"state": "app_load", "delta": -0.25},
+          {"state": "tcp_connections_true", "delta": -120.0},
+          {"state": "cpu_usage_true", "delta": -10.0}
+        ],
+        "time_constant_s": 300,
+        "dead_time_s": 0
+      },
+      "idempotency_window_s": 1800
+    }
+  ],
+
+  "profiles": [
+    {
+      "name": "nominal",
+      "description": "Twelve servers on their own diurnal curves, one fault per scenario, 48-hour traces spanning two workdays and one nightly backup.",
+      "entity_count": 12,
+      "duration_s": 172800
+    },
+    {
+      "name": "correlated_cascade",
+      "description": "A rack power feed trips: every server on the rack drops at once, twelve frozen uptime counters. The fleet-wide silence case, where a per-entity trigger produces twelve parallel episodes and pays for each.",
+      "fault_weights": {"host_down": 1.0},
+      "entity_count": 12,
+      "simultaneous_entities": 12,
+      "duration_s": 7200
+    },
+    {
+      "name": "sensor_pathology",
+      "description": "Weighted toward the faults with no loud channel: the slow leak and the peer-residual certificate drop, with the nightly backup as control. The labels a single fixed threshold cannot get right.",
+      "fault_weights": {"memory_leak": 0.35, "certificate_expiry": 0.35, "transient_none": 0.3},
+      "entity_count": 12,
+      "duration_s": 86400
+    }
+  ],
+
+  "ground_truth": {
+    "negative_class_fraction": 0.40,
+    "pre_degraded_fraction": 0.12,
+    "min_scenarios": 100,
+    "min_per_label": 10
+  }
+}

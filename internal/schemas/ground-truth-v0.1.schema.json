@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://streams-simulator.local/schemas/ground-truth-v0.1.schema.json",
+  "title": "Streams Simulator Ground Truth v0.1",
+  "description": "The sealed label for one scenario. Reachable only under the director role; the view struct backing the operator role contains no reference to it. Three onset timestamps rather than one, because the instant a fault becomes true and the instant it becomes knowable are different, and scoring latency against the former punishes a perfect detector for not being clairvoyant.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "scenario_id", "domain", "seed", "entity_id", "label", "expected_episode",
+    "injection_time_ns", "first_observable_time_ns", "unavoidable_time_ns",
+    "observability", "trivial_baseline_verdict"
+  ],
+  "properties": {
+    "scenario_id": {"type": "string", "pattern": "^[a-z][a-z0-9-]*/\\d{4,}$"},
+    "domain": {"type": "string"},
+    "seed": {"type": "integer", "minimum": 0},
+    "entity_id": {"type": "string"},
+
+    "label": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,63}$",
+      "description": "The injected fault id, or a negative-class label. Generative, not annotated: there is no annotator to disagree with."
+    },
+    "is_negative_class": {"type": "boolean", "default": false},
+
+    "expected_episode": {
+      "type": "boolean",
+      "description": "False for the negative class. A missing episode on a positive scenario is a mechanism miss producing no model output; it is counted, never silently dropped from the results."
+    },
+
+    "injection_time_ns": {
+      "type": "integer",
+      "description": "When the world changed. Taken from the command log. NOT the reference for detection latency."
+    },
+    "first_observable_time_ns": {
+      "type": "integer",
+      "description": "The earliest instant at which the fault's contribution exceeds the observing channel's noise floor at the declared SNR. Detection before this is classified `suspicious` and triggers a leak investigation, because the only ways to beat the noise floor are luck and cheating. This is the reference for detection latency."
+    },
+    "unavoidable_time_ns": {
+      "type": "integer",
+      "description": "The instant by which the deviation is large enough that any competent detector must catch it. Detection after this is a miss, however confident the eventual diagnosis. The interval between the two observability timestamps is where the arms actually differ."
+    },
+
+    "observability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["detector_form", "channels", "effective_sigma", "first_observable_snr", "unavoidable_snr"],
+      "description": "How the two onset timestamps were computed. The detector is an expression (G-03), so the record carries its form, the channels it reads, and the noise floor after that form's propagation rule — a divergence combines two sigmas in quadrature, a peer residual pools the sibling variance.",
+      "properties": {
+        "detector_form": {"enum": ["single_channel_snr", "channel_divergence", "peer_residual", "conservation_residual"]},
+        "channels": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "effective_sigma": {"type": "number", "minimum": 0, "description": "The detector's noise floor after propagation. An unrealistically small sigma silently makes every scenario easy, which is why the suppression-effectiveness self-check exists as a cross-check on the world's difficulty."},
+        "first_observable_snr": {"type": "number", "exclusiveMinimum": 0},
+        "unavoidable_snr": {"type": "number", "exclusiveMinimum": 0},
+        "solution_method": {"enum": ["analytic", "numeric"]}
+      }
+    },
+
+    "deadline_ns": {
+      "type": "integer",
+      "description": "Present only for domains with a hard physical deadline (aquaculture dissolved-oxygen crash, thermal runaway). Measured from first_observable_time. Past it, the counterfactual consequence occurs regardless of what the runtime concludes."
+    },
+    "counterfactual": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "if_no_action": {"type": "string", "maxLength": 200},
+        "if_action_by_deadline": {"type": "string", "maxLength": 200}
+      }
+    },
+
+    "expected_effector": {"type": "string", "description": "The correct action, for the action-appropriateness loop metric."},
+
+    "trivial_baseline_verdict": {
+      "enum": ["non_trivial", "trivial"],
+      "description": "Output of the audit panel (fixed_threshold, zscore, first_difference, moving_median_residual, channel_silence), each fitted with hindsight on the scenario itself — deliberately unfair to the scenario. A `trivial` scenario is kept as a mechanism regression fixture and excluded from the graded suite: a benchmark a one-line detector wins measures nothing about reasoning."
+    },
+    "trivial_baseline_detail": {
+      "type": "object",
+      "additionalProperties": {"type": "number"},
+      "description": "Balanced accuracy achieved by each trivial detector. Committed so a reviewer can see which scenarios were excluded and why."
+    },
+
+    "pre_degraded": {
+      "type": "boolean",
+      "default": false,
+      "description": "The fault predates t0 and there is no healthy baseline. Counters run-to-failure bias, and exercises the stream's cold-start previous-state handling, which nothing else currently tests."
+    },
+
+    "perturbations": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Transport perturbations active in this scenario, e.g. 'duplicate_burst@0.02'. Recorded because a miss caused by an injected `drop` is a transport result, not a reasoning result, and the report must be able to say which."
+    },
+
+    "world_state_reference": {
+      "type": "string",
+      "description": "Pointer into world_state_history: the true hidden state over the scenario. Director-only, always. Used for post-hoc analysis of what was actually happening when the model said what it said."
+    }
+  }
+}

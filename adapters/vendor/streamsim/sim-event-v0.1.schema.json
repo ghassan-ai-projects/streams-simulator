@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://streams-simulator.local/schemas/sim-event-v0.1.schema.json",
+  "title": "Streams Simulator Native Event v0.1",
+  "description": "One observation emitted by a simulated world. This is the simulator's own format and owes nothing to any consumer. Consumers receive it through a declarative output adapter (output-adapter-v0.1), so no consumer's field names, timestamp rules, or record framing appear anywhere in the simulator's core. Deliberately minimal: anything a consumer could compute from the nameplate is not carried here.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["seq", "world_id", "entity_type", "entity_id", "channel", "event_time", "observed_time"],
+  "properties": {
+    "seq": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Monotonic emission sequence within a run, assigned before perturbation. Stable across regenerations of the same run, so it is a durable reference for evidence citations in a consumer verdict."
+    },
+    "world_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+
+    "entity_type": {"type": "string", "pattern": "^[a-z][a-z0-9_-]{0,63}$"},
+    "entity_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,255}$",
+      "description": "Unified-Namespace shaped, e.g. 'site-a/pond-3'. The simulator's alphabet is deliberately wider than any particular consumer's; an adapter that targets a stricter consumer declares its own rewrite or rejects at adapter-validation time rather than at run time."
+    },
+
+    "channel": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+      "description": "The domain spec's channel name."
+    },
+
+    "event_time": {
+      "type": "string",
+      "format": "date-time",
+      "description": "RFC 3339, UTC, nanosecond precision. The world-clock instant the observation describes."
+    },
+    "observed_time": {
+      "type": "string",
+      "format": "date-time",
+      "description": "event_time plus the channel's modelled link delay: the instant an observer would have received it. Always >= event_time except where a clock_skew perturbation deliberately violates that, which is test material. Named for what it is rather than after any consumer's term for it."
+    },
+
+    "value": {
+      "description": "Number, string, boolean, or absent for a valueless channel such as a heartbeat. Numbers are quantized to the channel's declared resolution before emission and before hashing.",
+      "oneOf": [
+        {"type": "number"},
+        {"type": "string", "maxLength": 262144},
+        {"type": "boolean"}
+      ]
+    },
+    "unit": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 32,
+      "description": "Present for numeric and counter channels, absent otherwise. Carried verbatim; the simulator performs no unit conversion and neither should an adapter."
+    },
+
+    "birth": {
+      "type": "boolean",
+      "default": false,
+      "description": "True when this event is part of a producer birth burst after an outage — every channel republished at one observed_time with event times spread across the gap. Modelled after Sparkplug B birth certificates. Declared rather than hidden because a real producer announces a birth; inferring it is not the consumer's job."
+    },
+
+    "_forbidden_note": {
+      "description": "NOT A FIELD. Recorded here so review has a place to check: this envelope must never carry perturbation metadata, fault identity, hidden state, the true value behind a noisy observation, or scenario labels. An event that says it is a duplicate hands the consumer the answer to a question the whole instrument exists to ask. Perturbation provenance lives in the director-side delivery ledger.",
+      "not": {}
+    }
+  }
+}

@@ -1,0 +1,156 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://streams-simulator.local/schemas/output-adapter-v0.1.schema.json",
+  "title": "Streams Simulator Output Adapter v0.1",
+  "description": "A declarative projection from the simulator's native event (sim-event-v0.1) into a consumer's wire format. Adapters are data, loaded through one path, exactly like domain specs: the binary contains no consumer-specific code, no consumer's field names, and no consumer's framing rules. Adding a consumer must never require a release.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "version", "encoding", "record"],
+  "properties": {
+    "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]{2,63}$"},
+    "version": {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$"},
+    "title": {"type": "string", "maxLength": 120},
+    "description": {"type": "string", "maxLength": 2000},
+
+    "encoding": {
+      "enum": ["jsonl", "json-array", "line", "csv"],
+      "description": "Text encodings only in v0.1. Binary framings (protobuf, Sparkplug B) need a codec extension and are deliberately out of scope: a declarative adapter cannot express them, and faking it with a plugin would reintroduce consumer-specific code."
+    },
+
+    "entity_id_rewrite": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Some consumers accept a narrower identifier alphabet than the simulator's. Declare the rewrite here so it is visible and validated once, rather than discovered as a run-time rejection.",
+      "properties": {
+        "replace": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["from", "to"],
+            "properties": {"from": {"type": "string"}, "to": {"type": "string"}}
+          }
+        },
+        "max_length": {"type": "integer", "minimum": 1},
+        "on_violation": {"enum": ["fail", "truncate", "hash_suffix"], "default": "fail"}
+      }
+    },
+
+    "preamble": {
+      "type": "array",
+      "description": "Records emitted once before any event — a configuration header, a schema line, a CSV header row. Rendered from run-level bindings only.",
+      "items": {"$ref": "#/$defs/recordTemplate"}
+    },
+    "record": {
+      "$ref": "#/$defs/recordTemplate",
+      "description": "The per-event projection. It MUST carry a stable event identity derived from the native seq — either seq verbatim or a bijective encoding of it (e.g. a counter with of=seq). The duplicate and id-reuse probes, and the verdict's seq:N evidence citations, all depend on identity surviving the projection."
+    },
+    "postamble": {
+      "type": "array",
+      "description": "Records emitted once after the last event — an end-of-trace horizon, a terminator.",
+      "items": {"$ref": "#/$defs/recordTemplate"}
+    },
+
+    "conformance": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "How to prove the adapter is correct without the consumer being present. Both are run by `streamsim adapter verify`.",
+      "properties": {
+        "output_schema": {
+          "type": "string",
+          "description": "Path to a JSON Schema the rendered records must satisfy. Usually the consumer's published contract, vendored."
+        },
+        "golden": {
+          "type": "string",
+          "description": "Path to a committed expected output for the adapter conformance fixture — a fixed 12-event native trace shipped with the simulator. Byte comparison."
+        }
+      }
+    }
+  },
+
+  "$defs": {
+    "recordTemplate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fields"],
+      "properties": {
+        "when": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Optional guard. Omit the record when the condition is false — e.g. a consumer that wants no record for valueless heartbeats.",
+          "properties": {
+            "field": {"type": "string"},
+            "op": {"enum": ["present", "absent", "eq", "ne"]},
+            "value": {}
+          }
+        },
+        "fields": {
+          "type": "array",
+          "minItems": 1,
+          "description": "Ordered output fields. Order is significant for csv and line encodings, and for byte-stable JSON output.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "from"],
+            "properties": {
+              "name": {"type": "string", "minLength": 1, "maxLength": 128},
+              "from": {
+                "$ref": "#/$defs/valueExpr"
+              },
+              "omit_when_null": {"type": "boolean", "default": false}
+            }
+          }
+        }
+      }
+    },
+
+    "valueExpr": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "A closed set of transforms. Deliberately not an expression language: an arbitrary evaluator is a nondeterminism surface and a security surface, and every adapter written so far needs none. The same reasoning governs the F1 dynamics forms in the domain spec.",
+      "required": ["op"],
+      "properties": {
+        "op": {
+          "enum": [
+            "source",
+            "const",
+            "concat",
+            "template",
+            "format_time",
+            "counter",
+            "run_meta"
+          ]
+        },
+        "source": {
+          "enum": ["seq", "world_id", "entity_type", "entity_id", "channel", "event_time", "observed_time", "value", "unit", "birth"],
+          "description": "For op=source: which native event field."
+        },
+        "value": {"description": "For op=const."},
+        "parts": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/valueExpr"},
+          "description": "For op=concat."
+        },
+        "template": {
+          "type": "string",
+          "maxLength": 512,
+          "description": "For op=template: a literal with {field} placeholders naming native event fields only. No arithmetic, no conditionals, no function calls."
+        },
+        "layout": {
+          "enum": ["rfc3339_nano", "rfc3339", "unix_nano", "unix_millis", "unix_seconds"],
+          "description": "For op=format_time."
+        },
+        "of": {
+          "$ref": "#/$defs/valueExpr",
+          "description": "For op=format_time: the time-valued source to render. For op=counter: an integer-valued source (almost always seq) to render instead of the render index. Deriving the counter from seq is what keeps event identity stable across perturbation: a duplicated event keeps its id, id_reuse shows one id with two payloads, and the consumer can cite seq in its verdict. A render-order counter re-mints identity per record and silently defeats all three."
+        },
+        "prefix": {"type": "string", "maxLength": 64, "description": "For op=counter: e.g. 'evt-' producing evt-000001."},
+        "width": {"type": "integer", "minimum": 1, "maximum": 20, "description": "For op=counter: zero-padding width."},
+        "key": {
+          "enum": ["run_id", "sim_version", "domain_id", "domain_version", "world_start_time", "world_end_time", "seed"],
+          "description": "For op=run_meta: a run-level binding, available in preamble and postamble as well as per-record."
+        }
+      }
+    }
+  }
+}

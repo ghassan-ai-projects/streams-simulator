@@ -1,0 +1,362 @@
+{
+  "id": "rotating-machinery",
+  "version": "0.1.0",
+  "title": "Rotating machinery condition monitoring",
+  "description": "A fleet of eight site pumps on a common water header. Slow thermal and bearing lags mean the same failure looks different on every pump, so per-entity baselines beat global thresholds: a bearing that is warm for that pump is still healthy, and one that is cool for its sibling is already failing. The reference domain — the fixed point against which the whole simulator is validated, and the most legible to anyone from condition monitoring.",
+
+  "axes": {
+    "rate": "medium",
+    "cardinality": "fleet",
+    "value_shape": ["scalar", "counter", "enum"],
+    "cadence": ["periodic", "event_driven"],
+    "lateness": "bounded",
+    "absence": "heartbeat",
+    "time_reference": "wall",
+    "correlation": ["coupled", "peer"],
+    "seasonality": ["none"],
+    "actuation": "advisory",
+    "consequence": ["downtime"],
+    "fidelity": ["F1"]
+  },
+
+  "stresses": "Slow plant that hides its own failures: the bearing and thermal lags are long enough that the same fault is a different number on every pump, so a per-entity baseline beats any global threshold. A pump that is warm for itself is healthy; a pump cool for its sibling is already failing. The control domain against which every other domain is validated.",
+
+  "entities": {
+    "id_template": "site-{site}/pump-{n}",
+    "entity_type": "pump",
+    "count": {"default": 8, "min": 1, "max": 64}
+  },
+
+  "state": [
+    {"name": "pump_load", "unit": "rel", "initial": 0.8, "min": 0.0, "max": 1.2,
+     "description": "Duty point of the pump, 0.8 at design point. Drives vibration, temperature and current through first-order lags; moved by the reduce_load effector and the overload fault."},
+    {"name": "vibration_true", "unit": "mm/s", "initial": 3.1, "min": 0.0, "max": 50.0,
+     "description": "True bearing housing velocity. Equilibrium is 5*load - 1*lubrication, so 3.1 mm/s at design point with healthy lubrication. Never observable directly."},
+    {"name": "axial_vibration_true", "unit": "mm/s", "initial": 2.0, "min": 0.0, "max": 30.0,
+     "description": "True axial (thrust) vibration, the signature of shaft misalignment. Follows load with its own lag."},
+    {"name": "temperature_true", "unit": "degC", "initial": 32.0, "min": 0.0, "max": 120.0,
+     "description": "True motor winding temperature. Slowest lag in the domain: 40*load degrees Celsius at equilibrium."},
+    {"name": "motor_current_true", "unit": "A", "initial": 30.0, "min": 0.0, "max": 100.0,
+     "description": "True motor current. Follows load with a five-minute lag; the loudest and most direct reading on the pump."},
+    {"name": "rpm_true", "unit": "rpm", "initial": 2950.0, "min": 0.0, "max": 3600.0,
+     "description": "True shaft speed. Stepped to zero by stop_motor; the confirmation channel for that effector."},
+    {"name": "lubrication", "unit": "rel", "initial": 0.9, "min": 0.0, "max": 1.0,
+     "description": "Bearing lubrication level. No free dynamics: degrades under lubrication_due, restored by schedule_maintenance. Its fall raises vibration through the lag input."},
+    {"name": "maintenance_due", "unit": "rel", "initial": 0.0, "min": 0.0, "max": 1.0,
+     "description": "Accrued maintenance backlog. Raised by lubrication_due; cleared by schedule_maintenance. The counterfactual outcome variable for the slow-lubrication label."},
+    {"name": "vibration_bias", "unit": "rel", "initial": 0.0, "min": 0.0, "max": 1.0,
+     "description": "Hidden instrument fault on the vibration probe. Raised by sensor_drift and sensor_failure; corrupts the vibration channel through its observation_bias."},
+    {"name": "operating_mode", "unit": "rel", "initial": 1.0, "min": 0.0, "max": 3.0,
+     "description": "Operator-visible mode state (1 running, 0 stopped). Moved by stop_motor; the trigger for the event-driven mode channel."}
+  ],
+
+  "dynamics": [
+    {"target": "pump_load", "tier": "F0", "f0": {"baseline": 0.8, "trend_per_hour": 0.0, "drift_per_hour": 0.0}},
+    {"target": "vibration_true", "tier": "F1", "dt_ms": 1000,
+     "f1": {"form": "first_order_lag", "time_constant_s": 1800, "gain": 1.0,
+            "inputs": [{"state": "pump_load", "coef": 5.0}, {"state": "lubrication", "coef": -1.0}],
+            "clamp": {"min": 0.0, "max": 50.0}}},
+    {"target": "axial_vibration_true", "tier": "F1", "dt_ms": 1000,
+     "f1": {"form": "first_order_lag", "time_constant_s": 1800, "gain": 1.0,
+            "inputs": [{"state": "pump_load", "coef": 2.5}],
+            "clamp": {"min": 0.0, "max": 30.0}}},
+    {"target": "temperature_true", "tier": "F1", "dt_ms": 1000,
+     "f1": {"form": "first_order_lag", "time_constant_s": 3600, "gain": 1.0,
+            "inputs": [{"state": "pump_load", "coef": 40.0}],
+            "clamp": {"min": 0.0, "max": 120.0}}},
+    {"target": "motor_current_true", "tier": "F1", "dt_ms": 1000,
+     "f1": {"form": "first_order_lag", "time_constant_s": 300, "gain": 1.0,
+            "inputs": [{"state": "pump_load", "coef": 37.5}],
+            "clamp": {"min": 0.0, "max": 100.0}}},
+    {"target": "rpm_true", "tier": "F0", "f0": {"baseline": 2950.0, "trend_per_hour": 0.0, "drift_per_hour": 0.0}}
+  ],
+
+  "channels": [
+    {
+      "name": "vibration",
+      "value_type": "number",
+      "unit": "mm/s",
+      "resolution": 0.01,
+      "range": {"min": 0.0, "max": 50.0},
+      "observes": "vibration_true",
+      "observation_bias": {"state": "vibration_bias", "coef": 2.0, "noise_scale_at_full": 0.8},
+      "description": "The bearing housing probe. Reads high and nearly stable when the sensor itself fails; the peer residual against sibling pumps is what separates a real wear trend from a lying probe.",
+      "fidelity": "F1",
+      "iso13374_role": "data_acquisition",
+      "cadence": {"mode": "periodic", "period_s": 60, "jitter_s": 2},
+      "noise": {"model": "gaussian", "sigma": 0.08},
+      "drift": {"rate_per_hour": 0.0, "model": "linear"},
+      "absence": "signal",
+      "availability": {"uptime": 0.999, "mttr_s": 600},
+      "link_delay": {"model": "exponential", "mean_s": 1.5, "max_s": 30}
+    },
+    {
+      "name": "axial_vibration",
+      "value_type": "number",
+      "unit": "mm/s",
+      "resolution": 0.01,
+      "range": {"min": 0.0, "max": 30.0},
+      "observes": "axial_vibration_true",
+      "fidelity": "F1",
+      "iso13374_role": "data_acquisition",
+      "cadence": {"mode": "periodic", "period_s": 60, "jitter_s": 2},
+      "noise": {"model": "gaussian", "sigma": 0.05},
+      "absence": "signal",
+      "link_delay": {"model": "exponential", "mean_s": 1.5, "max_s": 30}
+    },
+    {
+      "name": "temperature",
+      "value_type": "number",
+      "unit": "degC",
+      "resolution": 0.1,
+      "range": {"min": 0.0, "max": 120.0},
+      "observes": "temperature_true",
+      "fidelity": "F1",
+      "iso13374_role": "data_acquisition",
+      "cadence": {"mode": "periodic", "period_s": 60, "jitter_s": 3},
+      "noise": {"model": "gaussian", "sigma": 0.15},
+      "absence": "signal",
+      "link_delay": {"model": "exponential", "mean_s": 1.5, "max_s": 30}
+    },
+    {
+      "name": "motor_current",
+      "value_type": "number",
+      "unit": "A",
+      "resolution": 0.1,
+      "range": {"min": 0.0, "max": 100.0},
+      "observes": "motor_current_true",
+      "fidelity": "F1",
+      "iso13374_role": "state_detection",
+      "cadence": {"mode": "periodic", "period_s": 10, "jitter_s": 1},
+      "noise": {"model": "gaussian", "sigma": 0.3},
+      "absence": "signal",
+      "link_delay": {"model": "constant", "mean_s": 1.0}
+    },
+    {
+      "name": "rpm",
+      "value_type": "counter",
+      "unit": "rpm",
+      "resolution": 1.0,
+      "range": {"min": 0.0, "max": 3600.0},
+      "observes": "rpm_true",
+      "fidelity": "F0",
+      "iso13374_role": "state_detection",
+      "cadence": {"mode": "periodic", "period_s": 60},
+      "noise": {"model": "quantization", "sigma": 1.0},
+      "absence": "signal",
+      "link_delay": {"model": "constant", "mean_s": 1.0}
+    },
+    {
+      "name": "mode",
+      "value_type": "string",
+      "enum_values": ["start", "stop", "fault", "maintenance"],
+      "resolution": 1.0,
+      "fidelity": "F0",
+      "iso13374_role": "data_manipulation",
+      "cadence": {"mode": "event_driven", "trigger_state": "operating_mode"},
+      "noise": {"model": "none", "sigma": 0},
+      "absence": "normal",
+      "link_delay": {"model": "constant", "mean_s": 2.0}
+    },
+    {
+      "name": "heartbeat",
+      "value_type": "none",
+      "resolution": 1.0,
+      "fidelity": "F0",
+      "iso13374_role": "data_acquisition",
+      "cadence": {"mode": "periodic", "period_s": 60},
+      "noise": {"model": "none", "sigma": 0},
+      "absence": "signal",
+      "link_delay": {"model": "constant", "mean_s": 0.5}
+    }
+  ],
+
+  "faults": [
+    {
+      "id": "bearing_wear",
+      "description": "Progressive bearing wear raises housing vibration over days. Slow, per-pump: the absolute level is meaningless until compared against that pump's own baseline and its siblings.",
+      "onset": {"shape": "ramp", "rate_per_hour": 0.08, "magnitude": 1.5},
+      "affects": [{"state": "vibration_true", "delta": 1.5}],
+      "observability": {"detector": {"form": "peer_residual", "channel": "vibration"}, "first_observable_snr": 3.0, "unavoidable_snr": 10.0},
+      "expected_effector": "schedule_maintenance",
+      "deadline_s": 43200,
+      "counterfactual": {"if_no_action": "bearing_failure", "if_action_by_deadline": "recovery"}
+    },
+    {
+      "id": "misalignment",
+      "description": "Shaft misalignment after a coupling service raises axial vibration specifically, leaving the radial housing probe nearly clean. The attribution test: the obvious channel is the wrong one.",
+      "onset": {"shape": "ramp", "rate_per_hour": 0.1, "magnitude": 1.5},
+      "affects": [{"state": "axial_vibration_true", "delta": 1.5}],
+      "observability": {"detector": {"form": "peer_residual", "channel": "axial_vibration"}, "first_observable_snr": 3.0, "unavoidable_snr": 10.0},
+      "expected_effector": "schedule_maintenance",
+      "deadline_s": 43200,
+      "counterfactual": {"if_no_action": "shaft_damage", "if_action_by_deadline": "recovery"}
+    },
+    {
+      "id": "overload",
+      "description": "A downstream blockage loads the pump beyond duty point: current jumps immediately and temperature climbs on its slow lag. Loud on motor_current, slow on temperature.",
+      "onset": {"shape": "step", "magnitude": 1.0},
+      "affects": [
+        {"state": "pump_load", "delta": 0.2},
+        {"state": "motor_current_true", "delta": 15.0},
+        {"state": "temperature_true", "delta": 8.0}
+      ],
+      "observability": {"detector": {"form": "single_channel_snr", "channel": "motor_current"}, "first_observable_snr": 3.0, "unavoidable_snr": 10.0},
+      "expected_effector": "reduce_load",
+      "deadline_s": 3600,
+      "counterfactual": {"if_no_action": "thermal_damage", "if_action_by_deadline": "recovery"}
+    },
+    {
+      "id": "lubrication_due",
+      "description": "The lubrication schedule was missed: the film degrades and vibration creeps upward on an exponential over many hours. The slow label with a hard-enough deadline — maintenance restores the film and the vibration falls back over hours, not seconds.",
+      "onset": {"shape": "exponential", "rate_per_hour": 0.15, "magnitude": 1.0},
+      "affects": [{"state": "maintenance_due", "delta": 0.8}, {"state": "lubrication", "delta": -0.5}],
+      "observability": {"detector": {"form": "peer_residual", "channel": "vibration"}, "first_observable_snr": 3.0, "unavoidable_snr": 10.0},
+      "expected_effector": "schedule_maintenance",
+      "deadline_s": 21600,
+      "counterfactual": {"if_no_action": "bearing_wear_acceleration", "if_action_by_deadline": "recovery"}
+    },
+    {
+      "id": "sensor_drift",
+      "description": "The vibration probe's amplifier drifts high over hours. The pump is healthy; the reading is not. Only the divergence from the pump's own history and from its siblings betrays it — the sensor-pathology label.",
+      "onset": {"shape": "ramp", "rate_per_hour": 0.2, "magnitude": 1.0},
+      "affects": [{"state": "vibration_bias", "delta": 1.0}],
+      "observability": {"detector": {"form": "peer_residual", "channel": "vibration"}, "first_observable_snr": 3.0, "unavoidable_snr": 10.0},
+      "expected_effector": "schedule_maintenance",
+      "deadline_s": 7200,
+      "counterfactual": {"if_no_action": "false_bearing_alarm", "if_action_by_deadline": "recalibrated"}
+    },
+    {
+      "id": "sensor_failure",
+      "description": "The vibration probe fails and flat-lines at a plausible value: the reading pins high and stops moving. Loud on the single channel — a threshold that knows the pump's steady state catches it at once.",
+      "onset": {"shape": "step", "magnitude": 1.0},
+      "affects": [{"state": "vibration_bias", "delta": 1.0}],
+      "observability": {"detector": {"form": "single_channel_snr", "channel": "vibration"}, "first_observable_snr": 3.0, "unavoidable_snr": 10.0},
+      "expected_effector": "schedule_maintenance",
+      "deadline_s": 3600,
+      "counterfactual": {"if_no_action": "blind_monitoring", "if_action_by_deadline": "repaired"}
+    },
+    {
+      "id": "transient_none",
+      "description": "A transient cavitation episode: vibration spikes and settles on its own, exactly like the start of bearing wear for about half an hour. The false-positive trap for this domain.",
+      "is_negative_class": true,
+      "onset": {"shape": "intermittent", "rate_per_hour": 2.0, "magnitude": 0.8, "duty_cycle": 0.15},
+      "affects": [{"state": "vibration_true", "delta": 0.8}],
+      "observability": {"detector": {"form": "single_channel_snr", "channel": "vibration"}, "first_observable_snr": 3.0, "unavoidable_snr": 10.0}
+    }
+  ],
+
+  "effectors": [
+    {
+      "name": "schedule_maintenance",
+      "description": "Book and apply bearing maintenance: restores the lubrication film and clears the maintenance backlog over the following hours.",
+      "args_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["pump_id"],
+        "properties": {"pump_id": {"type": "string"}, "work_order": {"type": "string"}}
+      },
+      "risk_class": "low",
+      "ack": {
+        "latency_ms": {"mean": 300, "sigma": 80},
+        "failure_modes": [{"mode": "ok", "probability": 0.97}, {"mode": "ack_lost", "probability": 0.03}]
+      },
+      "effect": {
+        "state_deltas": [{"state": "maintenance_due", "delta": -1.0}, {"state": "lubrication", "delta": 0.3}],
+        "time_constant_s": 7200,
+        "dead_time_s": 0
+      },
+      "idempotency_window_s": 7200
+    },
+    {
+      "name": "reduce_load",
+      "description": "Throttle the pump back to a lower duty point. Current falls within minutes; temperature follows its hour-long lag.",
+      "args_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["pump_id"],
+        "properties": {"pump_id": {"type": "string"}, "target_load": {"type": "number", "minimum": 0.2, "maximum": 1.0}}
+      },
+      "risk_class": "medium",
+      "ack": {
+        "latency_ms": {"mean": 500, "sigma": 150},
+        "failure_modes": [
+          {"mode": "ok", "probability": 0.95},
+          {"mode": "slow", "probability": 0.02},
+          {"mode": "ack_lost", "probability": 0.02},
+          {"mode": "reject", "probability": 0.01}
+        ]
+      },
+      "effect": {
+        "state_deltas": [{"state": "pump_load", "delta": -0.2}],
+        "time_constant_s": 600,
+        "dead_time_s": 0
+      },
+      "idempotency_window_s": 900
+    },
+    {
+      "name": "stop_motor",
+      "description": "Emergency stop: shaft speed coasts to zero and current is cut. High-risk, high-cost action; the pump must be restarted on site.",
+      "args_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["pump_id"],
+        "properties": {"pump_id": {"type": "string"}, "reason": {"type": "string"}}
+      },
+      "risk_class": "high",
+      "ack": {
+        "latency_ms": {"mean": 800, "sigma": 200},
+        "failure_modes": [
+          {"mode": "ok", "probability": 0.90},
+          {"mode": "slow", "probability": 0.02},
+          {"mode": "ack_lost", "probability": 0.02},
+          {"mode": "reject", "probability": 0.03},
+          {"mode": "confirmed_no_effect", "probability": 0.01},
+          {"mode": "silent_no_effect", "probability": 0.02}
+        ]
+      },
+      "confirmation_channels": ["rpm", "motor_current"],
+      "effect": {
+        "state_deltas": [
+          {"state": "rpm_true", "delta": -2950.0},
+          {"state": "motor_current_true", "delta": -30.0},
+          {"state": "operating_mode", "delta": -1.0}
+        ],
+        "time_constant_s": 10,
+        "dead_time_s": 0
+      },
+      "idempotency_window_s": 60
+    }
+  ],
+
+  "profiles": [
+    {
+      "name": "nominal",
+      "description": "Eight pumps on their own baselines, one fault per scenario, 48-hour traces. The control profile and the fixed point for byte-equivalence replay.",
+      "entity_count": 8,
+      "duration_s": 172800
+    },
+    {
+      "name": "correlated_cascade",
+      "description": "A supply-grid dip trips every pump into overload at once: eight simultaneous current and temperature excursions. The alarm-flood case for a condition-monitoring consumer, and where per-entity triggers produce eight parallel episodes.",
+      "fault_weights": {"overload": 1.0},
+      "entity_count": 8,
+      "simultaneous_entities": 8,
+      "duration_s": 21600
+    },
+    {
+      "name": "sensor_pathology",
+      "description": "Weighted toward the lying probe: sensor drift and failure dominate, with the cavitation transient as control. The labels a fixed threshold cannot get right.",
+      "fault_weights": {"sensor_drift": 0.4, "sensor_failure": 0.3, "transient_none": 0.3},
+      "entity_count": 8,
+      "duration_s": 86400
+    }
+  ],
+
+  "ground_truth": {
+    "negative_class_fraction": 0.40,
+    "pre_degraded_fraction": 0.12,
+    "min_scenarios": 100,
+    "min_per_label": 10
+  }
+}

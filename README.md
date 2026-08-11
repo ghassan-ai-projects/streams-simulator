@@ -1,6 +1,6 @@
 # Streams Simulator
 
-> **Codename:** `streamsim` · **Status:** design, ready to build · **Date:** 2026-08-11
+> **Codename:** `streamsim` · **Status:** built — S0–S5 core, six domains, all nine non-negotiables under test · **Date:** 2026-08-11
 
 A standalone, deterministic, closed-loop world simulator for testing stream processors.
 
@@ -83,14 +83,25 @@ The full specification lives in [docs/](docs/README.md):
 
 ## Technology
 
-Go 1.26, one binary, SQLite WAL, RFC 8785 canonical JSON, the official MCP Go SDK. No physics engine, no broker, no ORM, no expression language, no plugin system. The statistics and reporting layer may be Python, post-hoc and outside the determinism boundary.
+Go 1.26, one binary, RFC 8785 canonical JSON, the official MCP Go SDK. No physics engine, no broker, no ORM, no expression language, no plugin system. Persistence is file-based run artifacts (see [docs/DECISIONS.md](docs/DECISIONS.md) D-11 for why not SQLite).
 
-Start here: [docs/research/TRANSPORT_ANALYSIS.md](docs/research/TRANSPORT_ANALYSIS.md), then [docs/design/DOMAIN_CATALOG.md](docs/design/DOMAIN_CATALOG.md), then both reviews, then the plan. Begin with S0.
+## Building and running
+
+```bash
+make build            # bin/streamsim
+./bin/streamsim help  # subcommands: catalog, domain, adapter, run, replay, verify, mcp, refconsumer, suite, score
+make ci-check         # tidy + build + vet + lint + test-short + test-simdet + deadcode + vulncheck
+make test             # race + shuffle + coverage
+make test-simdet      # the deterministic suite with the wall clock removed
+```
+
+The shipped artifacts: six domains in [domains/](domains/), two adapters
+(with goldens and vendored schemas) in [adapters/](adapters/), and the
+embedded contract schemas in `internal/schemas`.
 
 ## Development
 
 ```bash
-make ci-check        # tidy + build + vet + lint + test-short + deadcode + vulncheck
 make test            # race + shuffle + coverage
 make test-coverage   # coverage HTML report
 make lint            # golangci-lint
