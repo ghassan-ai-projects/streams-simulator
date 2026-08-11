@@ -106,6 +106,7 @@ func (r *Runner) Process(trace []byte, endNS int64) (*model.Verdict, error) {
 	var detections []model.Detection
 	var actions []model.Action
 	now := int64(0)
+	recordsSeen := int64(0)
 
 	for _, line := range splitLines(trace) {
 		var ev model.SimEvent
@@ -113,6 +114,7 @@ func (r *Runner) Process(trace []byte, endNS int64) (*model.Verdict, error) {
 			// A malformed record is itself evidence: report it and move on.
 			continue
 		}
+		recordsSeen++
 		t, _ := model.ParseTime(ev.ObservedTime)
 		if t > now {
 			now = t
@@ -165,6 +167,9 @@ func (r *Runner) Process(trace []byte, endNS int64) (*model.Verdict, error) {
 	}
 	// Absence: a channel that was present and went quiet for several of its
 	// own observed periods (the cadence is measured, not assumed).
+	if endNS > now {
+		now = endNS
+	}
 	for key, s := range stats {
 		if !s.seen || len(s.gaps) == 0 {
 			continue
@@ -190,7 +195,7 @@ func (r *Runner) Process(trace []byte, endNS int64) (*model.Verdict, error) {
 		Detections: detections,
 		Actions:    actions,
 		Counters: map[string]int64{
-			"records_seen": int64(len(stats)),
+			"records_seen": recordsSeen,
 			"detections":   int64(len(detections)),
 			"actions":      int64(len(actions)),
 		},

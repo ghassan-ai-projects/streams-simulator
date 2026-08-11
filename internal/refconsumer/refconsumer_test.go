@@ -20,6 +20,45 @@ const (
 	nativeAdapter   = "../../adapters/native-jsonl.adapter.json"
 )
 
+type verdictCapture struct{ got *model.Verdict }
+
+func (c *verdictCapture) SubmitVerdict(v *model.Verdict) error {
+	c.got = v
+	return nil
+}
+
+func TestProcessUsesEndTimeAndCountsRecords(t *testing.T) {
+	start := model.DefaultStartTimeNS
+	lines := []byte{}
+	for i, at := range []int64{start, start + 60*1e9} {
+		ev := model.SimEvent{Seq: int64(i), WorldID: "w", EntityType: "host", EntityID: "e-1", Channel: "temperature", EventTime: model.FormatTime(at), ObservedTime: model.FormatTime(at), Value: 10.0}
+		b, err := json.Marshal(ev)
+		if err != nil {
+			t.Fatal(err)
+		}
+		lines = append(lines, b...)
+		lines = append(lines, '\n')
+	}
+	capture := &verdictCapture{}
+	cfg := DefaultConfig()
+	cfg.MinConsecutive = 99
+	cfg.AbsenceFactor = 2
+	rc := New(cfg, &Nameplate{}, nil, capture, "r")
+	verdict, err := rc.Process(lines, start+10*60*1e9)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if verdict.Counters["records_seen"] != 2 {
+		t.Fatalf("records_seen counts series instead of records: %+v", verdict.Counters)
+	}
+	if len(verdict.Detections) != 1 || verdict.Detections[0].Narrative != "channel silence" {
+		t.Fatalf("end-of-run silence was not evaluated: %+v", verdict.Detections)
+	}
+	if capture.got == nil {
+		t.Fatal("verdict was not submitted")
+	}
+}
+
 // TestDetectsFaultAndActs: a crash scenario produces detections and one
 // actuator dispatch per entity.
 func TestDetectsFaultAndActs(t *testing.T) {
