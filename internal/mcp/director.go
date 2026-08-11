@@ -9,6 +9,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"strconv"
@@ -495,6 +496,10 @@ func num(args map[string]any, key string, def int64) int64 {
 		return int64(v)
 	case int64:
 		return v
+	case json.Number:
+		if n, err := v.Int64(); err == nil {
+			return n
+		}
 	case string:
 		var n int64
 		if _, err := fmt.Sscanf(v, "%d", &n); err == nil {

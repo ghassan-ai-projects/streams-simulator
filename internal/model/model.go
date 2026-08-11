@@ -50,8 +50,12 @@ func Decode(r io.Reader, dst any) error {
 		return fmt.Errorf("model: %w", err)
 	}
 	// Reject trailing garbage after the document.
-	if dec.More() {
-		return fmt.Errorf("model: trailing data after JSON document")
+	var extra any
+	if err := dec.Decode(&extra); err != io.EOF {
+		if err == nil {
+			return fmt.Errorf("model: trailing JSON document")
+		}
+		return fmt.Errorf("model: trailing data after JSON document: %w", err)
 	}
 	return nil
 }

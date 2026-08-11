@@ -34,8 +34,11 @@ func addTool(s *mcp.Server, def toolDef) {
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        def.name,
 		Description: def.description,
-	}, func(_ context.Context, _ *mcp.CallToolRequest, args map[string]any) (*mcp.CallToolResult, any, error) {
-		out, err := def.handler(context.Background(), args)
+		// Handlers perform cross-field validation, but MCP clients still need
+		// an explicit object schema rather than an omitted/undefined input.
+		InputSchema: json.RawMessage(`{"type":"object","additionalProperties":true}`),
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, args map[string]any) (*mcp.CallToolResult, any, error) {
+		out, err := def.handler(ctx, args)
 		return nil, out, err
 	})
 }
