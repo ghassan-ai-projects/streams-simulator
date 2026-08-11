@@ -303,7 +303,9 @@ func (w *World) linkDelay(entityID string, ch *model.Channel, t int64) float64 {
 	return 0
 }
 
-// updateAvailability advances the producer up/down renewal process.
+// updateAvailability advances the producer up/down renewal process. The
+// exponential sojourns are in seconds and converted to ns, like every other
+// Exp() usage in the world.
 func (w *World) updateAvailability(ent *Entity, ch *model.Channel, cs *channelRunState, t int64) error {
 	rng := w.substream(ent.ID + "/" + ch.Name + "/availability")
 	a := ch.Availability
@@ -316,7 +318,7 @@ func (w *World) updateAvailability(ent *Entity, ch *model.Channel, cs *channelRu
 	if !cs.availInit {
 		cs.availInit = true
 		cs.availDown = false
-		cs.availUntil = t + int64(rng.Exp(mtbfSeconds(a.Uptime, a.MTTRS)))
+		cs.availUntil = t + int64(rng.Exp(mtbfSeconds(a.Uptime, a.MTTRS))*secondsPerNS)
 		return nil
 	}
 	if t < cs.availUntil {
@@ -324,10 +326,10 @@ func (w *World) updateAvailability(ent *Entity, ch *model.Channel, cs *channelRu
 	}
 	if cs.availDown {
 		cs.availDown = false
-		cs.availUntil = t + int64(rng.Exp(mtbfSeconds(a.Uptime, a.MTTRS)))
+		cs.availUntil = t + int64(rng.Exp(mtbfSeconds(a.Uptime, a.MTTRS))*secondsPerNS)
 	} else {
 		cs.availDown = true
-		cs.availUntil = t + int64(rng.Exp(mttrSeconds(a.MTTRS)))
+		cs.availUntil = t + int64(rng.Exp(mttrSeconds(a.MTTRS))*secondsPerNS)
 	}
 	return nil
 }

@@ -1,7 +1,7 @@
 # Level 2 remaining-work plan
 
 Status: working plan — updated per slice
-Date: 2026-08-11 (rev 6: Slice C landed)
+Date: 2026-08-11 (rev 7: Slice D landed)
 Target: **Level 2 — benchmark-ready** per [QUALITY_BAR.md](QUALITY_BAR.md)
 Baseline: `5a269a0` (Level 1 green; all tests, vet, ci-check pass)
 
@@ -178,6 +178,12 @@ Out of scope: WAL for world state; extracting the ledger into a new package (kee
 `run`, extract only the writer).
 
 ## Slice D — G2 independent oracles and fail-closed noise
+
+Status: **landed** (this plan rev). The availability oracle caught a real bug:
+`updateAvailability` converted exponential sojourns as `int64(rng.Exp(...))`,
+treating seconds as nanoseconds — down periods lasted ~23ns and the producer
+never sustained silence. Fixed (multiplied by `secondsPerNS`, matching every
+other Exp usage); the oracle now guards it.
 
 Issue (survey): only `first_order_lag` has an analytic oracle. Fail-open bug: noise model
 `none` with `sigma > 0` silently simulates gaussian (observe.go:176-179). `pink` is

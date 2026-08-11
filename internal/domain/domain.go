@@ -266,6 +266,12 @@ func crossCheck(c *Compiled, src string) error {
 		if ch.Noise.Model == "pink" {
 			return bad("channel %q uses pink noise, which is not implemented", ch.Name)
 		}
+		if ch.Noise.Model == "none" && ch.Noise.Sigma > 0 {
+			// Fail closed: a "no noise" declaration with a nonzero sigma
+			// would otherwise be silently approximated by the gaussian
+			// branch in observe.go.
+			return bad("channel %q declares noise model none with sigma %v; sigma must be 0", ch.Name, ch.Noise.Sigma)
+		}
 		if ch.Availability != nil && ch.Availability.MTTRS <= 0 {
 			return bad("channel %q availability requires mttr_s > 0", ch.Name)
 		}

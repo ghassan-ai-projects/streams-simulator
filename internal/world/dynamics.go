@@ -292,11 +292,6 @@ func f1Derivative(f1 *model.F1Dyn, x, u float64) float64 {
 			return f1.Gain * math.Max(0, f1.Threshold-u)
 		}
 		return f1.Gain * math.Max(0, u-f1.Threshold)
-	case "rc_network":
-		if f1.TimeConstantS <= 0 {
-			return 0
-		}
-		return (f1.Gain*u - x) / f1.TimeConstantS
 	}
 	return 0
 }
