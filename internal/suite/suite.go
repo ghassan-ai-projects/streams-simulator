@@ -421,26 +421,26 @@ func buildCommandLog(spec *domain.Compiled, sc *Scenario) []model.Command {
 		seq++
 	}
 	appendCmd(model.OpWorldCreate, map[string]any{
-		"domain": spec.Spec.ID, "seed": float64(sc.Seed), "start_time_ns": float64(sc.StartNS),
+		"domain": spec.Spec.ID, "seed": sc.Seed, "start_time_ns": sc.StartNS,
 		"time_mode": model.TimeStepped,
 	}, sc.StartNS)
 	for _, call := range sc.Setup {
 		appendCmd(model.OpEffectorInvoke, map[string]any{
 			"effector": call.Effector, "entity_id": call.EntityID,
-			"command_id": call.CommandID, "args": call.Args, "at_ns": float64(call.AtNS),
+			"command_id": call.CommandID, "args": call.Args, "at_ns": call.AtNS,
 		}, call.AtNS)
 	}
 	appendCmd(model.OpFaultInject, map[string]any{
-		"entity_id": sc.EntityID, "fault": sc.Fault, "onset_ns": float64(sc.OnsetNS),
+		"entity_id": sc.EntityID, "fault": sc.Fault, "onset_ns": sc.OnsetNS,
 	}, sc.OnsetNS)
 	for _, p := range sc.Perturbations {
 		appendCmd(model.OpPerturbApply, map[string]any{
 			"perturbation": p.Name, "params": p.Params,
-			"from_ns": float64(p.FromNS), "until_ns": float64(p.UntilNS),
+			"from_ns": p.FromNS, "until_ns": p.UntilNS,
 		}, p.FromNS)
 	}
 	appendCmd(model.OpClockAdvance, map[string]any{
-		"to_ns": float64(sc.StartNS + sc.DurationNS), "await_consumer": false,
+		"to_ns": sc.StartNS + sc.DurationNS, "await_consumer": false,
 	}, sc.StartNS+sc.DurationNS)
 	return cmds
 }

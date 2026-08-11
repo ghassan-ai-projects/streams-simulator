@@ -119,7 +119,7 @@ func New(ctx context.Context, cfg Config) (*Run, error) {
 	meta := map[string]any{
 		"run_id": cfg.RunID, "sim_version": model.SimVersion,
 		"domain_id": cfg.Domain.Spec.ID, "domain_version": cfg.Domain.Spec.Version,
-		"world_start_time": model.FormatTime(cfg.StartTimeNS), "seed": float64(cfg.Seed),
+		"world_start_time": model.FormatTime(cfg.StartTimeNS), "seed": cfg.Seed,
 	}
 	eng, err := adapter.NewEngine(cfg.Adapter, meta)
 	if err != nil {
@@ -275,7 +275,7 @@ func (r *Run) Advance(toNS int64, awaitConsumer bool) (int, error) {
 	_ = effects
 	r.commandLog = append(r.commandLog, model.Command{
 		Seq: int64(len(r.commandLog)), AtNS: r.World.Clock(),
-		Op: model.OpClockAdvance, Args: map[string]any{"to_ns": float64(toNS), "await_consumer": awaitConsumer},
+		Op: model.OpClockAdvance, Args: map[string]any{"to_ns": toNS, "await_consumer": awaitConsumer},
 	})
 	return emitted, nil
 }
@@ -330,7 +330,7 @@ func (r *Run) InjectFault(entityID, faultID string, onsetNS int64, params map[st
 	r.commandLog = append(r.commandLog, model.Command{
 		Seq: int64(len(r.commandLog)), AtNS: r.World.Clock(), Op: model.OpFaultInject,
 		Args: map[string]any{
-			"entity_id": entityID, "fault": faultID, "onset_ns": float64(onsetNS), "params": params,
+			"entity_id": entityID, "fault": faultID, "onset_ns": onsetNS, "params": params,
 		},
 	})
 	return fid, nil
@@ -343,7 +343,7 @@ func (r *Run) ClearFault(faultID string, atNS int64) error {
 	}
 	r.commandLog = append(r.commandLog, model.Command{
 		Seq: int64(len(r.commandLog)), AtNS: r.World.Clock(), Op: model.OpFaultClear,
-		Args: map[string]any{"fault_id": faultID, "at_ns": float64(atNS)},
+		Args: map[string]any{"fault_id": faultID, "at_ns": atNS},
 	})
 	return nil
 }
@@ -358,7 +358,7 @@ func (r *Run) ApplyPerturb(name string, params map[string]any, fromNS, untilNS i
 	r.commandLog = append(r.commandLog, model.Command{
 		Seq: int64(len(r.commandLog)), AtNS: r.World.Clock(), Op: model.OpPerturbApply,
 		Args: map[string]any{
-			"perturbation": name, "params": params, "from_ns": float64(fromNS), "until_ns": float64(untilNS),
+			"perturbation": name, "params": params, "from_ns": fromNS, "until_ns": untilNS,
 		},
 	})
 	return id, nil
@@ -386,7 +386,7 @@ func (r *Run) InvokeEffector(effector, entityID, commandID string, args map[stri
 			Seq: int64(len(r.commandLog)), AtNS: r.World.Clock(), Op: model.OpEffectorInvoke,
 			Args: map[string]any{
 				"effector": effector, "entity_id": entityID, "command_id": commandID,
-				"args": args, "at_ns": float64(atNS),
+				"args": args, "at_ns": atNS,
 			},
 		})
 		if err != nil {
@@ -398,7 +398,7 @@ func (r *Run) InvokeEffector(effector, entityID, commandID string, args map[stri
 		Seq: int64(len(r.commandLog)), AtNS: r.World.Clock(), Op: model.OpEffectorInvoke,
 		Args: map[string]any{
 			"effector": effector, "entity_id": entityID, "command_id": commandID,
-			"args": args, "at_ns": float64(atNS),
+			"args": args, "at_ns": atNS,
 		},
 	})
 	return res, nil
@@ -411,7 +411,7 @@ func (r *Run) AddEntity(id string, atNS int64) error {
 	}
 	r.commandLog = append(r.commandLog, model.Command{
 		Seq: int64(len(r.commandLog)), AtNS: atNS, Op: model.OpEntityAdd,
-		Args: map[string]any{"entity_id": id, "at_ns": float64(atNS)},
+		Args: map[string]any{"entity_id": id, "at_ns": atNS},
 	})
 	return nil
 }
@@ -421,7 +421,7 @@ func (r *Run) RetireEntity(entityID, reason string, atNS int64) error {
 	r.World.Retire(entityID, reason, atNS)
 	r.commandLog = append(r.commandLog, model.Command{
 		Seq: int64(len(r.commandLog)), AtNS: atNS, Op: model.OpEntityRetire,
-		Args: map[string]any{"entity_id": entityID, "reason": reason, "at_ns": float64(atNS)},
+		Args: map[string]any{"entity_id": entityID, "reason": reason, "at_ns": atNS},
 	})
 	return nil
 }
@@ -439,7 +439,7 @@ func (r *Run) EnvInject(target, fault string, params map[string]any, atNS int64)
 	}
 	r.commandLog = append(r.commandLog, model.Command{
 		Seq: int64(len(r.commandLog)), AtNS: atNS, Op: model.OpEnvInject,
-		Args: map[string]any{"target": target, "fault": fault, "params": params, "at_ns": float64(atNS)},
+		Args: map[string]any{"target": target, "fault": fault, "params": params, "at_ns": atNS},
 	})
 	return "env-" + strconv.Itoa(len(r.commandLog)), nil
 }
@@ -664,15 +664,28 @@ func adapterDigest(a *model.Adapter) string {
 }
 
 func worldDigest(r *Run) string {
+	entityIDs := make([]any, 0, len(r.World.InitialEntityIDs()))
+	for _, id := range r.World.InitialEntityIDs() {
+		entityIDs = append(entityIDs, id)
+	}
 	raw := map[string]any{
-		"sim_version": model.SimVersion,
-		"domain":      r.Config.Domain.Digest,
-		"seed":        float64(r.Config.Seed),
-		"world":       r.World.EntityIDs(),
+		"sim_version":        model.SimVersion,
+		"domain":             r.Config.Domain.Digest,
+		"seed":               r.Config.Seed,
+		"start_time_ns":      r.worldStartTimeNS,
+		"entity_ids":         entityIDs,
+		"scenario_profile":   r.Config.ScenarioProfile,
+		"clock_multiplier":   r.Config.ClockMultiplier,
+		"time_mode":          r.Config.TimeMode,
+		"noiseless":          r.Config.Noiseless,
+		"force_failure_mode": r.Config.ForceFailureMode,
 	}
 	d, err := canonical.Digest(raw)
 	if err != nil {
-		return ""
+		// Every value above is one of canonical's explicitly supported types.
+		// Keep the failure visible if that invariant changes rather than
+		// silently emitting an empty identity.
+		return "invalid-world-digest:" + err.Error()
 	}
 	return d
 }

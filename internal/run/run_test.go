@@ -80,6 +80,39 @@ func TestRunByteReproducible(t *testing.T) {
 	}
 }
 
+func TestWorldDigestAndCommandTimesAreLossless(t *testing.T) {
+	spec, a := testBase(t)
+	start := int64(1<<60) + 123
+	r, err := New(context.Background(), Config{
+		Domain: spec, Adapter: a, Seed: ^uint64(0), SinkName: model.SinkInproc,
+		TimeMode: model.TimeStepped, StartTimeNS: start,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	to := start + 7
+	if _, err := r.Advance(to, false); err != nil {
+		t.Fatal(err)
+	}
+	if got, ok := r.commandLog[0].Args["to_ns"].(int64); !ok || got != to {
+		t.Fatalf("command time lost precision: type/value %T/%v", r.commandLog[0].Args["to_ns"], r.commandLog[0].Args["to_ns"])
+	}
+	if got := r.Digest(); got == "" || strings.HasPrefix(got, "invalid-world-digest:") {
+		t.Fatalf("world digest is not usable: %q", got)
+	}
+
+	other, err := New(context.Background(), Config{
+		Domain: spec, Adapter: a, Seed: ^uint64(0) - 1, SinkName: model.SinkInproc,
+		TimeMode: model.TimeStepped, StartTimeNS: start,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r.Digest() == other.Digest() {
+		t.Fatal("adjacent uint64 seeds must produce distinct world digests")
+	}
+}
+
 // buildArtifact runs the config and returns its artifact.
 func buildArtifact(t *testing.T, cfg Config) *model.RunArtifact {
 	t.Helper()
@@ -249,6 +282,20 @@ func TestReplayDetectsTampering(t *testing.T) {
 	}
 	if res.Matches {
 		t.Fatal("tampered digest must not match")
+	}
+}
+
+func TestReplayRejectsInputDigestMismatch(t *testing.T) {
+	spec, a := testBase(t)
+	art := buildArtifact(t, Config{
+		Domain: spec, Adapter: a, Seed: 6, SinkName: model.SinkInproc,
+		TimeMode: model.TimeStepped, StartTimeNS: model.DefaultStartTimeNS + 4*3600*1e9,
+	})
+	bad := *art
+	bad.Domain = art.Domain
+	bad.Domain.Digest = "sha256:" + strings.Repeat("0", 64)
+	if _, err := ReplayArtifact(context.Background(), &bad, spec, a, ""); err == nil {
+		t.Fatal("replay must reject a changed domain digest before execution")
 	}
 }
 

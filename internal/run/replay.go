@@ -6,9 +6,11 @@ package run
 // server.
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
@@ -19,7 +21,7 @@ import (
 type ReplayResult struct {
 	Matches         bool   `json:"matches"`
 	VersionMatch    bool   `json:"version_match"`
-	FirstDivergence int    `json:"first_divergence,omitempty"` // 0-based record index
+	FirstDivergence *int   `json:"first_divergence,omitempty"` // 0-based record index; nil means no divergence
 	GotDigest       string `json:"got_digest"`
 	WantDigest      string `json:"want_digest"`
 	Emitted         int64  `json:"emitted"`
@@ -40,8 +42,17 @@ func LoadArtifact(path string) (*model.RunArtifact, error) {
 		return nil, fmt.Errorf("streamsim: %w", err)
 	}
 	var art model.RunArtifact
-	if err := json.Unmarshal(raw, &art); err != nil {
+	dec := json.NewDecoder(bytes.NewReader(raw))
+	dec.UseNumber()
+	if err := dec.Decode(&art); err != nil {
 		return nil, fmt.Errorf("run: decode artifact: %w", err)
+	}
+	var extra any
+	if err := dec.Decode(&extra); err != io.EOF {
+		if err == nil {
+			return nil, fmt.Errorf("run: artifact has trailing JSON")
+		}
+		return nil, fmt.Errorf("run: artifact trailing data: %w", err)
 	}
 	return &art, nil
 }
@@ -50,9 +61,19 @@ func LoadArtifact(path string) (*model.RunArtifact, error) {
 // world and compares the delivered trace to the expected digest. sinkTarget
 // selects the replay sink ("" = inproc).
 func ReplayArtifact(ctx context.Context, art *model.RunArtifact, spec *domain.Compiled, adapterSpec *model.Adapter, sinkTarget string) (*ReplayResult, error) {
+	if art == nil || spec == nil || adapterSpec == nil {
+		return nil, fmt.Errorf("run: replay requires artifact, domain, and adapter")
+	}
 	res := &ReplayResult{
 		WantDigest:   art.ExpectedTraceDigest,
 		VersionMatch: art.SimVersion == model.SimVersion,
+	}
+	if spec.Spec.ID != art.Domain.ID || spec.Spec.Version != art.Domain.Version || spec.Digest != art.Domain.Digest {
+		return nil, fmt.Errorf("run: domain digest mismatch: artifact=%s current=%s", art.Domain.Digest, spec.Digest)
+	}
+	currentAdapterDigest := adapterDigest(adapterSpec)
+	if adapterSpec.ID != art.Adapter.ID || adapterSpec.Version != art.Adapter.Version || currentAdapterDigest != art.Adapter.Digest {
+		return nil, fmt.Errorf("run: adapter digest mismatch: artifact=%s current=%s", art.Adapter.Digest, currentAdapterDigest)
 	}
 	if !res.VersionMatch {
 		res.Detail = fmt.Sprintf("artifact built by sim %s, current sim %s; a different version may legitimately differ", art.SimVersion, model.SimVersion)
@@ -77,6 +98,9 @@ func ReplayArtifact(ctx context.Context, art *model.RunArtifact, spec *domain.Co
 	if err != nil {
 		return nil, fmt.Errorf("streamsim: %w", err)
 	}
+	if art.WorldDigest != "" && r.Digest() != art.WorldDigest {
+		return nil, fmt.Errorf("run: world digest mismatch: artifact=%s current=%s", art.WorldDigest, r.Digest())
+	}
 	for _, cmd := range art.CommandLog {
 		if err := executeCommand(r, &cmd); err != nil {
 			return nil, fmt.Errorf("run: replay command %d (%s): %w", cmd.Seq, cmd.Op, err)
@@ -89,7 +113,10 @@ func ReplayArtifact(ctx context.Context, art *model.RunArtifact, spec *domain.Co
 	res.GotDigest = r.TraceDigest()
 	res.Emitted = r.World.EmittedCount()
 	if res.GotDigest != res.WantDigest {
-		res.FirstDivergence = firstDivergentRecord(r, art)
+		idx := firstDivergentRecord(r, art)
+		if idx >= 0 {
+			res.FirstDivergence = &idx
+		}
 		return res, nil
 	}
 	res.Matches = true
@@ -112,8 +139,10 @@ func executeCommand(r *Run, cmd *model.Command) error {
 		case int64:
 			return v
 		case json.Number:
-			n, _ := v.Int64()
-			return n
+			n, err := v.Int64()
+			if err == nil {
+				return n
+			}
 		}
 		return 0
 	}
