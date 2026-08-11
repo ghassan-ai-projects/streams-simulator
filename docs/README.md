@@ -1,14 +1,15 @@
 # Streams Simulator
 
-Status: Level 1 replayable prototype; not benchmark-ready
+Status: **Level 2 — benchmark-ready** (release gate green)
 Date: 2026-08-11
 Codename: `streamsim`
 
-> **Implementation review:** the correctness spine and replayable-prototype bar are green,
-> but the benchmark-release gates are not yet satisfied. Do not use current scores as
-> benchmark evidence. See the
-> [implementation-readiness review](IMPLEMENTATION_READINESS_REVIEW.md) for confirmed gaps,
-> acceptance criteria, and the recommended implementation sequence.
+> **Release evidence:** the nine non-negotiable gates are green on production paths with
+> committed, per-gate evidence (see [QUALITY_BAR.md](QUALITY_BAR.md) current-bar-status and
+> [LEVEL2_REMAINING_PLAN.md](LEVEL2_REMAINING_PLAN.md)). `make ci-check` fails closed
+> without the security tools; `make soak` passes a deterministic million-record run;
+> `streamsim manifest` produces a signed release manifest. Do not publish benchmark scores
+> without a fresh manifest for the exact commit.
 >
 > The executable completion bar and per-change remediation loop are defined in
 > [QUALITY_BAR.md](QUALITY_BAR.md).
@@ -211,6 +212,10 @@ anything else; it may never remove these.
 | [contracts/](contracts/) | `sim-event`, `output-adapter`, `consumer-verdict`, `domain-spec`, `run-artifact`, `ground-truth` |
 | [adapters/](adapters/) | One adapter per consumer. Deleting one changes no simulator behaviour. |
 | [examples/](examples/) | `aquaculture-pond`, the closed-loop showcase domain |
+| [QUALITY_BAR.md](QUALITY_BAR.md) | The executable completion bar, per-change remediation loop, and current status |
+| [IMPLEMENTATION_REBASELINE.md](IMPLEMENTATION_REBASELINE.md) | Resolved Level 2 blockers with commit evidence |
+| [LEVEL2_REMAINING_PLAN.md](LEVEL2_REMAINING_PLAN.md) | The Level 2 execution plan (slices A–G, complete) |
+| [MCP_INTERACTION_REVIEW.md](MCP_INTERACTION_REVIEW.md) | External live-interaction review of the MCP surface |
 
 ## 8. Technology
 
