@@ -127,8 +127,20 @@ func TestBuildRecord(t *testing.T) {
 
 func TestStoreSealing(t *testing.T) {
 	s := NewStore()
-	rec := &model.GroundTruthRecord{ScenarioID: "x/0001", Label: "f"}
-	s.Seal("r-1", rec)
+	rec := &model.GroundTruthRecord{
+		ScenarioID: "x/0001", Label: "f", Observability: model.ObservabilityInfo{Channels: []string{"c1"}},
+		Perturbations: []string{"drop"}, TrivialBaselineDetail: map[string]float64{"accuracy": 0.5},
+		Counterfactual: &model.Counterfactual{IfNoAction: "bad"},
+	}
+	if err := s.Seal("r-1", rec); err != nil {
+		t.Fatal(err)
+	}
+	// Mutating the input after sealing must not mutate the oracle.
+	rec.Label = "mutated"
+	rec.Observability.Channels[0] = "mutated"
+	rec.Perturbations[0] = "mutated"
+	rec.TrivialBaselineDetail["accuracy"] = 0
+	rec.Counterfactual.IfNoAction = "mutated"
 	// Open run: reveal refused without unblind.
 	s.OpenChecker = func(runID string) bool { return runID == "r-1" }
 	if _, err := s.Reveal("r-1", false); err == nil {
@@ -138,8 +150,22 @@ func TestStoreSealing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unblind reveal refused: %v", err)
 	}
-	if got.Label != "f" {
+	if got.Label != "f" || got.Observability.Channels[0] != "c1" || got.Perturbations[0] != "drop" || got.TrivialBaselineDetail["accuracy"] != 0.5 || got.Counterfactual.IfNoAction != "bad" {
 		t.Fatalf("wrong label: %+v", got)
+	}
+	// Mutating a revealed copy must not mutate the stored oracle.
+	got.Label = "mutated-again"
+	got.Observability.Channels[0] = "mutated-again"
+	sealed, unblinded, err := s.SealStatus("r-1")
+	if err != nil || !sealed || !unblinded {
+		t.Fatalf("unexpected seal status: sealed=%v unblinded=%v err=%v", sealed, unblinded, err)
+	}
+	got2, err := s.Reveal("r-1", false)
+	if err != nil || got2.Label != "f" || got2.Observability.Channels[0] != "c1" {
+		t.Fatalf("stored oracle was mutable: got=%+v err=%v", got2, err)
+	}
+	if err := s.Seal("r-1", &model.GroundTruthRecord{}); err == nil {
+		t.Fatal("resealing a run must fail")
 	}
 	if _, err := s.Reveal("r-nope", false); err == nil {
 		t.Fatal("unknown run must fail")

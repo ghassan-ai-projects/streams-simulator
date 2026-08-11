@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter"
@@ -61,6 +62,8 @@ type Run struct {
 	history           []stateSnapshot
 	verdict           *model.Verdict
 	quiescedThroughNS int64
+	quiesceMu         sync.Mutex
+	quiesceNotify     chan struct{}
 	evidenceRec       func(model.SimEvent) // delivered-event hook (test harness)
 
 	finished     bool
@@ -117,6 +120,7 @@ func New(ctx context.Context, cfg Config) (*Run, error) {
 		worldStartTimeNS: cfg.StartTimeNS,
 		worldEndTimeNS:   cfg.StartTimeNS,
 		envTargets:       map[string]string{},
+		quiesceNotify:    make(chan struct{}),
 	}
 	meta := map[string]any{
 		"run_id": cfg.RunID, "sim_version": model.SimVersion,
@@ -515,21 +519,35 @@ func (r *Run) EnvInject(target, fault string, params map[string]any, atNS int64)
 
 // ReportQuiesced records the consumer's quiescence assertion.
 func (r *Run) ReportQuiesced(throughNS int64) {
+	r.quiesceMu.Lock()
+	defer r.quiesceMu.Unlock()
 	if throughNS > r.quiescedThroughNS {
 		r.quiescedThroughNS = throughNS
+		close(r.quiesceNotify)
+		r.quiesceNotify = make(chan struct{})
 	}
 }
 
 func (r *Run) awaitQuiescence(toNS int64) error {
-	deadline := time.Now().Add(30 * time.Second)
-	for r.quiescedThroughNS < toNS {
-		if time.Now().After(deadline) {
-			r.reproducible = false
-			return fmt.Errorf("run: consumer_not_quiesced: quiesced through %d, asked for %d", r.quiescedThroughNS, toNS)
+	deadline := time.NewTimer(30 * time.Second)
+	defer deadline.Stop()
+	for {
+		r.quiesceMu.Lock()
+		if r.quiescedThroughNS >= toNS {
+			r.quiesceMu.Unlock()
+			return nil
 		}
-		time.Sleep(10 * time.Millisecond)
+		ch := r.quiesceNotify
+		through := r.quiescedThroughNS
+		r.quiesceMu.Unlock()
+		select {
+		case <-ch:
+			continue
+		case <-deadline.C:
+			r.reproducible = false
+			return fmt.Errorf("run: consumer_not_quiesced: quiesced through %d, asked for %d", through, toNS)
+		}
 	}
-	return nil
 }
 
 // Domain exposes the compiled domain spec.

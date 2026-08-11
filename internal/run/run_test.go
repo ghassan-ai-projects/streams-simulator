@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
@@ -117,6 +118,36 @@ func TestWorldDigestAndCommandTimesAreLossless(t *testing.T) {
 	}
 	if r.Digest() == other.Digest() {
 		t.Fatal("adjacent uint64 seeds must produce distinct world digests")
+	}
+}
+
+func TestQuiescenceWaitIsRaceFreeAndWakesOnReport(t *testing.T) {
+	spec, a := testBase(t)
+	start := model.DefaultStartTimeNS + 4*3600*1e9
+	r, err := New(context.Background(), Config{
+		Domain: spec, Adapter: a, Seed: 77, SinkName: model.SinkInproc,
+		TimeMode: model.TimeStepped, StartTimeNS: start,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	to := start + int64(time.Hour)
+	done := make(chan error, 1)
+	go func() {
+		_, err := r.Advance(to, true)
+		done <- err
+	}()
+	// Report from the consumer side while Advance is waiting. The wait must
+	// wake immediately without polling a shared unsynchronized field.
+	time.Sleep(10 * time.Millisecond)
+	r.ReportQuiesced(to)
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("quiescence wait did not wake")
 	}
 }
 
