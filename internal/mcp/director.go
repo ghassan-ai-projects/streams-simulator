@@ -231,6 +231,7 @@ func (d *Director) Advance(worldID string, toNS int64, await bool) (map[string]a
 	}
 	return map[string]any{
 		"emitted": emitted, "clock": model.FormatTime(w.Run.World.Clock()),
+		"emitted_total":   w.Run.World.EmittedCount(),
 		"effects_applied": w.Run.World.ActiveFaultsCount(), "simulated": true,
 	}, nil
 }
@@ -508,4 +509,29 @@ func num(args map[string]any, key string, def int64) int64 {
 		}
 	}
 	return def
+}
+
+func intArg(args map[string]any, key string) (int64, bool) {
+	if args == nil {
+		return 0, false
+	}
+	v, ok := args[key]
+	if !ok {
+		return 0, false
+	}
+	switch n := v.(type) {
+	case float64:
+		return int64(n), true
+	case int64:
+		return n, true
+	case json.Number:
+		value, err := n.Int64()
+		return value, err == nil
+	case string:
+		var value int64
+		if _, err := fmt.Sscanf(n, "%d", &value); err == nil {
+			return value, true
+		}
+	}
+	return 0, false
 }

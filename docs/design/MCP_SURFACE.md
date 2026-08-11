@@ -1,6 +1,6 @@
 # MCP Surface
 
-Status: design
+Status: implemented core surface; deferred items are listed explicitly below
 Date: 2026-08-11
 
 One MCP server. Two roles. Every tool is domain-agnostic.
@@ -15,7 +15,7 @@ correctness requirement rather than tidiness.
 
 The binary does not know that ponds have aerators. It knows that a loaded domain spec
 declares effectors, and it exposes one generic tool for invoking them. Twenty-five domains
-and the twenty-sixth all work through the same three operator tools.
+and the twenty-sixth all work through the same four operator tools.
 
 The earlier draft generated one MCP tool per effector — `plant.aquaculture.start_aerator`
 and so on. That is domain knowledge reaching the protocol surface. It also makes the tool
@@ -41,17 +41,18 @@ role is fixed at session initialize:
 
 ```bash
 streamsim mcp --role director            # stdio
-streamsim mcp --role operator            # stdio
-streamsim serve --addr :7801             # HTTP; role from the capability token
 ```
 
-A session's role never changes, and the server advertises only that role's tools —
-so a consumer cannot discover the existence of a director tool, let alone call it.
+The current prototype serves the director over stdio. The operator server is constructed
+per world by the host from the capability token; there is not yet a standalone operator
+CLI or HTTP `serve` command. A session's role never changes, and each server advertises
+only its role's tools — so a consumer cannot discover the existence of a director tool,
+let alone call it.
 
-Both advertise MCP protocol range `2025-11-25`–`2026-07-28`, pinned per configuration,
-failing closed outside it. Both are stateless in the MCP sense: identity lives in the
-world and run ids the tools carry, not in a transport session, so a dropped connection
-loses nothing.
+The role-specific servers advertise MCP protocol range `2025-11-25`–`2026-07-28`, pinned
+per configuration, failing closed outside it. They are stateless in the MCP sense:
+identity lives in the world and run ids the tools carry, not in a transport session, so a
+dropped connection loses nothing.
 
 ## 3. Director tools
 
@@ -63,34 +64,50 @@ loses nothing.
 | `sim.catalog.describe` | `{domain}` | the full spec: channels, faults, effectors, profiles, fidelity tiers |
 | `sim.catalog.coverage` | `{}` | the axis-coverage matrix; which axes are thin |
 | `sim.adapter.list` | `{}` | installed output adapters |
-| `sim.adapter.verify` | `{adapter}` | schema check plus golden-fixture comparison |
 
-Resources: `sim://catalog`, `sim://domains/{id}/spec`, `sim://adapters/{id}`.
+`adapter verify` is currently a CLI command (`streamsim adapter verify`), not an MCP
+tool. Keeping conformance verification out of the live director surface avoids implying
+that a consumer's schema or golden fixture is part of a running world.
+
+Resources: `sim://catalog` and `sim://domains/{id}/spec`. Adapter metadata is available
+through `sim.adapter.list`; an adapter resource template is not exposed yet.
 
 ### 3.2 World lifecycle
 
 | Tool | Args | Returns |
 |---|---|---|
-| `sim.world.create` | `{domain, seed, entities?, scenario_profile?, sink, adapter, time_mode, start_time}` | `{world_id, world_digest, entity_ids[], clock}` |
-| `sim.world.describe` | `{world_id}` | config, digest, clock, emitted count |
-| `sim.world.destroy` | `{world_id}` | final counts, run artifact path |
-| `sim.entity.add` | `{world_id, entity_id?, params?}` | the new entity — churn domains |
+| `sim.world.create` | `{domain, seed?, entities?, scenario_profile?, sink?, sink_target?, adapter?, time_mode?, start_time?, label?}` | `{world_id, world_digest, entity_ids[], clock, token}` |
+| `sim.world.describe` | `{world_id}` | domain, seed, clock, emitted count |
+| `sim.world.destroy` | `{world_id}` | `{world_id, destroyed}`; final artifact is written under the configured output directory |
 | `sim.entity.retire` | `{world_id, entity_id, reason}` | churn domains |
 
-`time_mode` is `stepped` (the clock moves only when told — the deterministic default),
-`scaled` (real time × multiplier), or `wall`.
+`seed`, `start_time`, and all clock arguments are integer nanoseconds or integer seed
+values. `start_time` defaults to `2026-01-01T00:00:00Z`
+(`1767225600000000000` ns), the same default used by the CLI. `time_mode` is `stepped`
+(the clock moves only when told — the deterministic default), `scaled` (real time ×
+multiplier), or `wall`.
 
+`sink` defaults to `inproc`; `sink_target` is required for `file` and `http-push`.
 `sink` and `adapter` are independent: any adapter can be written to any sink.
+
+`sim.entity.add` is not exposed over MCP yet. The run package has the replay primitive,
+but the public identity-allocation contract is not complete, so it remains deferred
+rather than accepting an ambiguous empty entity id.
 
 ### 3.3 Clock
 
 | Tool | Args | Returns |
 |---|---|---|
-| `sim.clock.advance` | `{world_id, by_ns \| to_ns, await_consumer?}` | `{emitted, clock, effects_applied}` |
-| `sim.clock.run` | `{world_id, until_ns, multiplier?}` | same, for `scaled` and `wall` |
+| `sim.clock.advance` | `{world_id, by_ns \| to_ns, await_consumer?}` | `{emitted, emitted_total, clock, effects_applied}` |
 | `sim.clock.state` | `{world_id}` | `{clock, next_scheduled_ns, pending_effects}` |
 
-The clock never moves backwards; a request to do so is refused.
+Exactly one of `by_ns` and `to_ns` is required. `by_ns` is a non-negative relative
+nanosecond delta; `to_ns` is an absolute epoch nanosecond timestamp. The clock never moves
+backwards; a request to do so is refused. `emitted` is the number produced by this call,
+while `emitted_total` is cumulative for the world.
+
+`sim.clock.run` is not built. Continuous mode is deliberately cut for this release and
+maps to repeated `sim.clock.advance` calls in a harness.
 
 `await_consumer` is the quiescence barrier ([GAP_ANALYSIS G-02](GAP_ANALYSIS.md)). In
 `stepped` mode `advance` returns once every record up to the new instant has been written
@@ -99,6 +116,11 @@ consumer has finished reacting — so with `await_consumer: true` the call addit
 blocks until the consumer reports quiescence through §4.4. Without it, a closed-loop run
 is not reproducible, because the effector call lands at an arbitrary world time.
 
+For the `file` sink, writes use a buffered writer. The path is created at
+`sim.world.create`, but newly emitted bytes become visible on disk when the run is closed
+by `sim.run.end` or `sim.world.destroy`. Consumers should use the MCP count response while
+the world is open and read the finalized file after close.
+
 ### 3.4 Faults, perturbations, environment
 
 | Tool | Args | Returns |
@@ -106,9 +128,9 @@ is not reproducible, because the effector call lands at an arbitrary world time.
 | `sim.fault.inject` | `{world_id, entity_id, fault, onset_ns?, params?}` | `{fault_id}` |
 | `sim.fault.clear` | `{world_id, fault_id}` | — |
 | `sim.fault.list` | `{world_id}` | active faults — **director only** |
-| `sim.perturb.apply` | `{world_id, perturbation, params, from_ns?, until_ns?}` | `{perturb_id}` |
+| `sim.perturb.apply` | `{world_id, perturbation, params?, from_ns?, until_ns?}` | `{perturb_id}` |
 | `sim.perturb.clear` | `{world_id, perturb_id}` | — |
-| `sim.env.inject` | `{target, fault, params}` | `{env_id}` — pause, kill or partition a configured consumer endpoint |
+| `sim.env.inject` | `{world_id, target, fault, params?}` | `{env_id}` — record an environment fault against a configured consumer endpoint |
 
 Three surfaces, three tools, never conflated: `fault` changes physics, `perturb` changes
 delivery, `env` changes the consumer's environment.
@@ -121,15 +143,18 @@ It has no idea what the target is.
 
 | Tool | Args | Returns |
 |---|---|---|
-| `sim.trace.export` | `{world_id, adapter}` | `{path, digest, record_count}` |
 | `sim.run.begin` | `{world_id, label?}` | `{run_id}` |
-| `sim.run.end` | `{run_id}` | `{run_artifact_path, trace_digest}` |
+| `sim.run.end` | `{world_id}` | `{run_artifact_path, trace_digest}` |
 | `sim.run.verify` | `{run_artifact_path}` | `{matches, first_divergence?}` |
 | `sim.truth.seal` | `{run_id, ground_truth}` | `{run_id, sealed}` |
 | `sim.truth.reveal` | `{run_id, unblind?}` | labels, three onset timestamps, hidden state history |
 | `sim.truth.seal_status` | `{run_id}` | `{sealed, unblinded, unblinded_at}` |
 | `sim.score` | `{run_id}` | scorecard, computed from the submitted verdict, sealed truth, the delivery ledger and the effector log |
-| `sim.scenario.audit` | `{suite_path}` | per-scenario trivial-baseline verdict |
+| `sim.scenario.audit` | `{domain, entity_id, fault, onset_ns?, start_ns?, duration_ns?}` | per-scenario trivial-baseline verdict |
+
+`sim.trace.export` is not built. Evidence is delivered through the configured sink and the
+run artifact is finalized by `sim.run.end` or `sim.world.destroy`; exporting a second live
+trace path would create another delivery contract.
 
 `sim.score` takes no consumer artifact of any kind. Everything it needs was either
 generated by the simulator or submitted through §4.4.
@@ -149,7 +174,7 @@ Four tools. No evidence surface — evidence arrives on the sink, never here.
 
 ### 4.1 `sim.nameplate.read`
 
-`{world_id}` → entities (ids, types, hierarchy), channels (names, units, declared ranges,
+`{token}` → entities (ids, types, hierarchy), channels (names, units, declared ranges,
 resolutions), effectors (names, argument schemas, risk classes).
 
 Static and time-invariant, exactly the information an instrument datasheet gives you. A
@@ -158,14 +183,14 @@ of the evidence plane's guarantees, and is forbidden.
 
 ### 4.2 `sim.effector.list`
 
-`{world_id}` → the declared effectors and their argument schemas, read from the loaded
+`{token}` → the declared effectors and their argument schemas, read from the loaded
 domain spec.
 
 ### 4.3 `sim.effector.invoke`
 
 ```json
 {
-  "world_id": "w-7fa2",
+  "token": "t-...",
   "effector": "start_aerator",
   "entity_id": "site-a/pond-3",
   "command_id": "cmd-91",
@@ -194,7 +219,7 @@ contains no effector name.**
 ### 4.4 `sim.consumer.report`
 
 ```json
-{"run_id": "r-114", "quiesced_through_ns": 1785315600000000000, "verdict": { ... }}
+{"token": "t-...", "run_id": "r-114", "quiesced_through_ns": 1785315600000000000, "verdict": { ... }}
 ```
 
 Two jobs, one tool, because they are the same statement at different granularities.

@@ -23,6 +23,7 @@ var implementation = &mcp.Implementation{Name: "streamsim", Version: "0.1.0"}
 type toolDef struct {
 	name        string
 	description string
+	schema      json.RawMessage
 	// handler receives the decoded arguments and returns a JSON value.
 	handler func(ctx context.Context, args map[string]any) (any, error)
 }
@@ -34,9 +35,7 @@ func addTool(s *mcp.Server, def toolDef) {
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        def.name,
 		Description: def.description,
-		// Handlers perform cross-field validation, but MCP clients still need
-		// an explicit object schema rather than an omitted/undefined input.
-		InputSchema: json.RawMessage(`{"type":"object","additionalProperties":true}`),
+		InputSchema: def.schema,
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, args map[string]any) (*mcp.CallToolResult, any, error) {
 		out, err := def.handler(ctx, args)
 		return nil, out, err
@@ -47,20 +46,20 @@ func addTool(s *mcp.Server, def toolDef) {
 func NewDirectorServer(d *Director) *mcp.Server {
 	s := mcp.NewServer(implementation, nil)
 
-	addTool(s, toolDef{name: "sim.catalog.list", description: "List the installed domains with their property vectors and stresses.", handler: func(_ context.Context, args map[string]any) (any, error) {
+	addTool(s, toolDef{name: "sim.catalog.list", description: "List the installed domains with their property vectors and stresses.", schema: toolSchema("sim.catalog.list"), handler: func(_ context.Context, args map[string]any) (any, error) {
 		return map[string]any{"domains": d.Catalog.List(str(args, "group"))}, nil
 	}})
-	addTool(s, toolDef{name: "sim.catalog.describe", description: "Describe a domain: channels, faults, effectors, profiles, fidelity tiers.", handler: func(_ context.Context, args map[string]any) (any, error) {
+	addTool(s, toolDef{name: "sim.catalog.describe", description: "Describe a domain: channels, faults, effectors, profiles, fidelity tiers.", schema: toolSchema("sim.catalog.describe"), handler: func(_ context.Context, args map[string]any) (any, error) {
 		c, err := d.Catalog.Describe(str(args, "domain"))
 		if err != nil {
 			return nil, errTool(CodeDomainInvalid, "%v", err)
 		}
 		return map[string]any{"spec": c.Spec, "digest": c.Digest}, nil
 	}})
-	addTool(s, toolDef{name: "sim.catalog.coverage", description: "The axis-coverage matrix; which axes are thin.", handler: func(_ context.Context, args map[string]any) (any, error) {
+	addTool(s, toolDef{name: "sim.catalog.coverage", description: "The axis-coverage matrix; which axes are thin.", schema: toolSchema("sim.catalog.coverage"), handler: func(_ context.Context, args map[string]any) (any, error) {
 		return d.Catalog.Coverage(), nil
 	}})
-	addTool(s, toolDef{name: "sim.adapter.list", description: "Installed output adapters.", handler: func(_ context.Context, args map[string]any) (any, error) {
+	addTool(s, toolDef{name: "sim.adapter.list", description: "Installed output adapters.", schema: toolSchema("sim.adapter.list"), handler: func(_ context.Context, args map[string]any) (any, error) {
 		ids := make([]string, 0, len(d.Adapters))
 		// determinism-safe: collected here, sorted below before output.
 		for id := range d.Adapters {
@@ -74,46 +73,66 @@ func NewDirectorServer(d *Director) *mcp.Server {
 		}
 		return map[string]any{"adapters": out}, nil
 	}})
-	addTool(s, toolDef{name: "sim.world.create", description: "Create a world: domain, seed, sink, adapter, time mode.", handler: func(_ context.Context, args map[string]any) (any, error) {
+	addTool(s, toolDef{name: "sim.world.create", description: "Create a world: domain, seed, sink, adapter, time mode.", schema: toolSchema("sim.world.create"), handler: func(_ context.Context, args map[string]any) (any, error) {
 		return d.CreateWorld(args)
 	}})
-	addTool(s, toolDef{name: "sim.world.describe", description: "Describe a world: config, digest, clock, emitted count.", handler: func(_ context.Context, args map[string]any) (any, error) {
+	addTool(s, toolDef{name: "sim.world.describe", description: "Describe a world: config, digest, clock, emitted count.", schema: toolSchema("sim.world.describe"), handler: func(_ context.Context, args map[string]any) (any, error) {
 		return d.DescribeWorld(str(args, "world_id"))
 	}})
-	addTool(s, toolDef{name: "sim.world.destroy", description: "Destroy a world; final counts and run artifact.", handler: func(_ context.Context, args map[string]any) (any, error) {
+	addTool(s, toolDef{name: "sim.world.destroy", description: "Destroy a world; final counts and run artifact.", schema: toolSchema("sim.world.destroy"), handler: func(_ context.Context, args map[string]any) (any, error) {
 		return d.DestroyWorld(str(args, "world_id"))
 	}})
-	addTool(s, toolDef{name: "sim.clock.advance", description: "Advance the clock; await_consumer blocks on quiescence.", handler: func(_ context.Context, args map[string]any) (any, error) {
-		return d.Advance(str(args, "world_id"), num(args, "to_ns", 0), boolArg(args, "await_consumer"))
+	addTool(s, toolDef{name: "sim.clock.advance", description: "Advance by a relative nanosecond delta or to an absolute epoch nanosecond; await_consumer blocks on quiescence.", schema: toolSchema("sim.clock.advance"), handler: func(_ context.Context, args map[string]any) (any, error) {
+		worldID := str(args, "world_id")
+		toNS, hasTo := intArg(args, "to_ns")
+		byNS, hasBy := intArg(args, "by_ns")
+		if hasTo == hasBy {
+			return nil, errTool(CodeInvalidArgs, "exactly one of by_ns or to_ns is required")
+		}
+		if hasBy {
+			if byNS < 0 {
+				return nil, errTool(CodeInvalidArgs, "by_ns must be non-negative")
+			}
+			w := d.World(worldID)
+			if w == nil {
+				return nil, errTool(CodeWorldNotFound, "unknown world %q", worldID)
+			}
+			const maxInt64 = int64(1<<63 - 1)
+			if byNS > maxInt64-w.Run.World.Clock() {
+				return nil, errTool(CodeInvalidArgs, "by_ns overflows the world clock")
+			}
+			toNS = w.Run.World.Clock() + byNS
+		}
+		return d.Advance(worldID, toNS, boolArg(args, "await_consumer"))
 	}})
-	addTool(s, toolDef{name: "sim.clock.state", description: "The clock, next scheduled event, pending effects.", handler: func(_ context.Context, args map[string]any) (any, error) {
+	addTool(s, toolDef{name: "sim.clock.state", description: "The clock, next scheduled event, pending effects.", schema: toolSchema("sim.clock.state"), handler: func(_ context.Context, args map[string]any) (any, error) {
 		return d.ClockState(str(args, "world_id"))
 	}})
-	addTool(s, toolDef{name: "sim.fault.inject", description: "Inject a world fault into an entity.", handler: func(_ context.Context, args map[string]any) (any, error) {
+	addTool(s, toolDef{name: "sim.fault.inject", description: "Inject a world fault into an entity.", schema: toolSchema("sim.fault.inject"), handler: func(_ context.Context, args map[string]any) (any, error) {
 		return d.InjectFault(str(args, "world_id"), str(args, "entity_id"), str(args, "fault"), num(args, "onset_ns", 0), mapArg(args, "params"))
 	}})
-	addTool(s, toolDef{name: "sim.fault.clear", description: "Clear a fault by id.", handler: func(_ context.Context, args map[string]any) (any, error) {
+	addTool(s, toolDef{name: "sim.fault.clear", description: "Clear a fault by id.", schema: toolSchema("sim.fault.clear"), handler: func(_ context.Context, args map[string]any) (any, error) {
 		return d.ClearFault(str(args, "world_id"), str(args, "fault_id"))
 	}})
-	addTool(s, toolDef{name: "sim.fault.list", description: "Active faults. Director only.", handler: func(_ context.Context, args map[string]any) (any, error) {
+	addTool(s, toolDef{name: "sim.fault.list", description: "Active faults. Director only.", schema: toolSchema("sim.fault.list"), handler: func(_ context.Context, args map[string]any) (any, error) {
 		return d.ListFaults(str(args, "world_id"))
 	}})
-	addTool(s, toolDef{name: "sim.perturb.apply", description: "Apply a delivery perturbation.", handler: func(_ context.Context, args map[string]any) (any, error) {
+	addTool(s, toolDef{name: "sim.perturb.apply", description: "Apply a delivery perturbation.", schema: toolSchema("sim.perturb.apply"), handler: func(_ context.Context, args map[string]any) (any, error) {
 		return d.ApplyPerturb(str(args, "world_id"), str(args, "perturbation"), mapArg(args, "params"), num(args, "from_ns", 0), num(args, "until_ns", 0))
 	}})
-	addTool(s, toolDef{name: "sim.perturb.clear", description: "Clear a perturbation by id.", handler: func(_ context.Context, args map[string]any) (any, error) {
+	addTool(s, toolDef{name: "sim.perturb.clear", description: "Clear a perturbation by id.", schema: toolSchema("sim.perturb.clear"), handler: func(_ context.Context, args map[string]any) (any, error) {
 		return d.ClearPerturb(str(args, "world_id"), str(args, "perturb_id"))
 	}})
-	addTool(s, toolDef{name: "sim.env.inject", description: "Inject an environment fault against a configured target.", handler: func(_ context.Context, args map[string]any) (any, error) {
+	addTool(s, toolDef{name: "sim.env.inject", description: "Inject an environment fault against a configured target.", schema: toolSchema("sim.env.inject"), handler: func(_ context.Context, args map[string]any) (any, error) {
 		return d.EnvInject(str(args, "world_id"), str(args, "target"), str(args, "fault"), mapArg(args, "params"))
 	}})
-	addTool(s, toolDef{name: "sim.run.begin", description: "Open a run; truth is sealed.", handler: func(_ context.Context, args map[string]any) (any, error) {
+	addTool(s, toolDef{name: "sim.run.begin", description: "Open a run; truth is sealed.", schema: toolSchema("sim.run.begin"), handler: func(_ context.Context, args map[string]any) (any, error) {
 		return d.BeginRun(str(args, "world_id"), str(args, "label"))
 	}})
-	addTool(s, toolDef{name: "sim.run.end", description: "Close the run; writes the run artifact.", handler: func(_ context.Context, args map[string]any) (any, error) {
+	addTool(s, toolDef{name: "sim.run.end", description: "Close the run; writes the run artifact.", schema: toolSchema("sim.run.end"), handler: func(_ context.Context, args map[string]any) (any, error) {
 		return d.EndRun(str(args, "world_id"))
 	}})
-	addTool(s, toolDef{name: "sim.truth.seal", description: "Install and seal a director-only ground-truth record before run.begin.", handler: func(_ context.Context, args map[string]any) (any, error) {
+	addTool(s, toolDef{name: "sim.truth.seal", description: "Install and seal a director-only ground-truth record before run.begin.", schema: toolSchema("sim.truth.seal"), handler: func(_ context.Context, args map[string]any) (any, error) {
 		runID := str(args, "run_id")
 		raw, ok := args["ground_truth"].(map[string]any)
 		if !ok {
@@ -132,22 +151,22 @@ func NewDirectorServer(d *Director) *mcp.Server {
 		}
 		return map[string]any{"run_id": runID, "sealed": true}, nil
 	}})
-	addTool(s, toolDef{name: "sim.run.verify", description: "Verify a run artifact reproduces.", handler: func(_ context.Context, args map[string]any) (any, error) {
+	addTool(s, toolDef{name: "sim.run.verify", description: "Verify a run artifact reproduces.", schema: toolSchema("sim.run.verify"), handler: func(_ context.Context, args map[string]any) (any, error) {
 		return d.VerifyRun(str(args, "run_artifact_path"))
 	}})
-	addTool(s, toolDef{name: "sim.truth.reveal", description: "Reveal sealed truth; unblind stamps the run permanently.", handler: func(_ context.Context, args map[string]any) (any, error) {
+	addTool(s, toolDef{name: "sim.truth.reveal", description: "Reveal sealed truth; unblind stamps the run permanently.", schema: toolSchema("sim.truth.reveal"), handler: func(_ context.Context, args map[string]any) (any, error) {
 		return d.RevealTruth(str(args, "run_id"), boolArg(args, "unblind"))
 	}})
-	addTool(s, toolDef{name: "sim.truth.seal_status", description: "Sealing state of a run.", handler: func(_ context.Context, args map[string]any) (any, error) {
+	addTool(s, toolDef{name: "sim.truth.seal_status", description: "Sealing state of a run.", schema: toolSchema("sim.truth.seal_status"), handler: func(_ context.Context, args map[string]any) (any, error) {
 		return d.SealStatus(str(args, "run_id"))
 	}})
-	addTool(s, toolDef{name: "sim.score", description: "Score a run from its submitted verdict, sealed truth, ledger and effector log.", handler: func(_ context.Context, args map[string]any) (any, error) {
+	addTool(s, toolDef{name: "sim.score", description: "Score a run from its submitted verdict, sealed truth, ledger and effector log.", schema: toolSchema("sim.score"), handler: func(_ context.Context, args map[string]any) (any, error) {
 		return d.Score(str(args, "run_id"))
 	}})
-	addTool(s, toolDef{name: "sim.scenario.audit", description: "Trivial-baseline audit of one injection.", handler: func(_ context.Context, args map[string]any) (any, error) {
+	addTool(s, toolDef{name: "sim.scenario.audit", description: "Trivial-baseline audit of one injection.", schema: toolSchema("sim.scenario.audit"), handler: func(_ context.Context, args map[string]any) (any, error) {
 		return d.AuditScenario(str(args, "domain"), str(args, "entity_id"), str(args, "fault"), num(args, "onset_ns", 0), num(args, "start_ns", 0), num(args, "duration_ns", 0))
 	}})
-	addTool(s, toolDef{name: "sim.entity.retire", description: "Retire an entity.", handler: func(_ context.Context, args map[string]any) (any, error) {
+	addTool(s, toolDef{name: "sim.entity.retire", description: "Retire an entity.", schema: toolSchema("sim.entity.retire"), handler: func(_ context.Context, args map[string]any) (any, error) {
 		w := d.World(str(args, "world_id"))
 		if w == nil {
 			return nil, errTool(CodeWorldNotFound, "unknown world")
@@ -183,16 +202,16 @@ func NewDirectorServer(d *Director) *mcp.Server {
 // It advertises exactly the four operator tools and nothing else.
 func NewOperatorServer(v *OperatorView) *mcp.Server {
 	s := mcp.NewServer(implementation, nil)
-	addTool(s, toolDef{name: "sim.nameplate.read", description: "The static world nameplate: entities, channels, effectors.", handler: func(_ context.Context, args map[string]any) (any, error) {
+	addTool(s, toolDef{name: "sim.nameplate.read", description: "The static world nameplate: entities, channels, effectors.", schema: toolSchema("sim.nameplate.read"), handler: func(_ context.Context, args map[string]any) (any, error) {
 		return v.ReadNameplate(str(args, "token"))
 	}})
-	addTool(s, toolDef{name: "sim.effector.list", description: "The declared effectors and their argument schemas.", handler: func(_ context.Context, args map[string]any) (any, error) {
+	addTool(s, toolDef{name: "sim.effector.list", description: "The declared effectors and their argument schemas.", schema: toolSchema("sim.effector.list"), handler: func(_ context.Context, args map[string]any) (any, error) {
 		return v.ListEffectors(str(args, "token"))
 	}})
-	addTool(s, toolDef{name: "sim.effector.invoke", description: "Invoke an effector by name with a command_id (idempotency key) and capability token.", handler: func(_ context.Context, args map[string]any) (any, error) {
+	addTool(s, toolDef{name: "sim.effector.invoke", description: "Invoke an effector by name with a command_id (idempotency key) and capability token.", schema: toolSchema("sim.effector.invoke"), handler: func(_ context.Context, args map[string]any) (any, error) {
 		return v.Invoke(str(args, "token"), str(args, "effector"), str(args, "entity_id"), str(args, "command_id"), mapArg(args, "args"), num(args, "at_ns", 0))
 	}})
-	addTool(s, toolDef{name: "sim.consumer.report", description: "Report quiescence and submit a consumer verdict. Write-only; never returns a score.", handler: func(_ context.Context, args map[string]any) (any, error) {
+	addTool(s, toolDef{name: "sim.consumer.report", description: "Report quiescence and submit a consumer verdict. Write-only; never returns a score.", schema: toolSchema("sim.consumer.report"), handler: func(_ context.Context, args map[string]any) (any, error) {
 		var verdict *model.Verdict
 		if vd, ok := args["verdict"].(map[string]any); ok {
 			b, err := json.Marshal(vd)
