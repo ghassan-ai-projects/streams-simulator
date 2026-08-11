@@ -395,6 +395,25 @@ func TestFaultOnsetMagnitudeScalesDeclaredDelta(t *testing.T) {
 	}
 }
 
+// TestInjectFaultRejectsUnknownParams: fault parameters are fail-closed; the
+// only declared key is severity, and it must be numeric.
+func TestInjectFaultRejectsUnknownParams(t *testing.T) {
+	spec := testSpec(t, nil)
+	w := newTestWorld(t, spec, 23, model.DefaultStartTimeNS)
+	if _, err := w.InjectFault("e-1", "f1", 0, map[string]any{"bogus": 1}); err == nil {
+		t.Fatal("unknown fault param key must be rejected")
+	}
+	if _, err := w.InjectFault("e-1", "f1", 0, map[string]any{"severity": "high"}); err == nil {
+		t.Fatal("non-numeric severity must be rejected")
+	}
+	if _, err := w.InjectFault("e-1", "f1", 0, map[string]any{"severity": -1.0}); err == nil {
+		t.Fatal("negative severity must be rejected")
+	}
+	if _, err := w.InjectFault("e-1", "f1", 0, map[string]any{"severity": 2.5}); err != nil {
+		t.Fatalf("declared severity rejected: %v", err)
+	}
+}
+
 func TestDeclaredValueTypesReachNativeEvents(t *testing.T) {
 	spec := testSpec(t, func(s *model.DomainSpec) {
 		s.Dynamics = nil

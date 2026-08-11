@@ -1,7 +1,7 @@
 # Level 2 remaining-work plan
 
 Status: working plan — updated per slice
-Date: 2026-08-11 (rev 2, after adversarial review)
+Date: 2026-08-11 (rev 3: Slice A landed)
 Target: **Level 2 — benchmark-ready** per [QUALITY_BAR.md](QUALITY_BAR.md)
 Baseline: `5a269a0` (Level 1 green; all tests, vet, ci-check pass)
 
@@ -36,6 +36,8 @@ per-change loop. Commits name their gate.
 ---
 
 ## Slice A — MCP contract strictness (rebaseline blocker 5)
+
+Status: **landed** (this plan rev). Commits: Slice A commit (this round).
 
 Issue: top-level tool schemas are already typed and closed for all 28 tools
 (`internal/mcp/schemas.go`, `additionalProperties: false`; unknown/missing args rejected

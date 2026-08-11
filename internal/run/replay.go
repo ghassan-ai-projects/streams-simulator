@@ -103,6 +103,7 @@ func ReplayArtifact(ctx context.Context, art *model.RunArtifact, spec *domain.Co
 		SinkTarget:      sinkTarget,
 		TimeMode:        art.TimeMode,
 		StartTimeNS:     art.WorldConfig.StartTimeNS,
+		StartTimeSet:    true,
 		EntityIDs:       art.WorldConfig.EntityIDs,
 		ScenarioProfile: art.WorldConfig.ScenarioProfile,
 		RunID:           art.RunID,

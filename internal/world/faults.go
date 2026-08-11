@@ -39,6 +39,11 @@ func (w *World) InjectFault(entityID, faultID string, onsetNS int64, params map[
 		severity = math.Abs(fault.Onset.Magnitude)
 	}
 	if params != nil {
+		for k := range params {
+			if k != "severity" {
+				return "", fmt.Errorf("world: fault %q has no parameter %q (declared: severity)", faultID, k)
+			}
+		}
 		if s, ok := params["severity"]; ok {
 			switch x := s.(type) {
 			case float64:

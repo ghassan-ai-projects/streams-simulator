@@ -90,7 +90,7 @@ func TestProducerFlapBirthBurst(t *testing.T) {
 	l := New("w", 3, testSpec(t))
 	flapStart := int64(1000000000)
 	flapEnd := int64(4000000000)
-	if _, err := l.Apply(ProducerFlap, map[string]any{"period": 3}, flapStart, flapEnd); err != nil {
+	if _, err := l.Apply(ProducerFlap, nil, flapStart, flapEnd); err != nil {
 		t.Fatal(err)
 	}
 	// Events inside the window are withheld.
@@ -228,5 +228,58 @@ func TestUnknownPerturbation(t *testing.T) {
 	l := New("w", 1, testSpec(t))
 	if _, err := l.Apply("not_a_perturbation", nil, 0, 0); err == nil {
 		t.Fatal("unknown perturbation must be refused")
+	}
+}
+
+// TestValidateParamsFailClosed: perturbation parameters are declared per
+// perturbation. Unknown keys, wrong types and out-of-range values are
+// rejected; only the declared keys pass.
+func TestValidateParamsFailClosed(t *testing.T) {
+	l := New("w", 1, testSpec(t))
+	cases := []struct {
+		name   string
+		params map[string]any
+		wantOK bool
+	}{
+		// Declared keys, valid ranges.
+		{Drop, map[string]any{"rate": 0.5}, true},
+		{Drop, map[string]any{"rate": 1}, true},
+		{DuplicateBurst, map[string]any{"rate": 0.1}, true},
+		{OutOfRange, map[string]any{"rate": 0.5, "magnitude": 10}, true},
+		{Reorder, map[string]any{"max_displacement": 2}, true},
+		{DelayTail, map[string]any{"mean_s": 30, "sigma_s": 100}, true},
+		{ClockSkew, map[string]any{"offset_s": 5, "sign": "negative"}, true},
+		{Oversize, map[string]any{"bytes": 8192}, true},
+		{Storm, map[string]any{"multiplier": 3}, true},
+		{InjectionProbe, map[string]any{"payloads": []any{"x", "y"}}, true},
+		// Unknown or misspelled keys.
+		{Drop, map[string]any{"raet": 0.5}, false},
+		{Drop, map[string]any{"rate": 0.5, "extra": 1}, false},
+		{Reorder, map[string]any{"displacement": 2}, false},
+		{ProducerFlap, map[string]any{"period": 3}, false},
+		{GrossBackfill, map[string]any{"rate": 0.5}, false},
+		{UnitMismatch, map[string]any{"magnitude": 10}, false},
+		{Malformed, map[string]any{"bytes": 10}, false},
+		// Wrong types.
+		{Drop, map[string]any{"rate": "high"}, false},
+		{Reorder, map[string]any{"max_displacement": "two"}, false},
+		{ClockSkew, map[string]any{"sign": "sideways"}, false},
+		{InjectionProbe, map[string]any{"payloads": "x"}, false},
+		{InjectionProbe, map[string]any{"payloads": []any{}}, false},
+		{InjectionProbe, map[string]any{"payloads": []any{1}}, false},
+		// Out-of-range values.
+		{Drop, map[string]any{"rate": 1.5}, false},
+		{Drop, map[string]any{"rate": -0.1}, false},
+		{Storm, map[string]any{"multiplier": 0}, false},
+		{Reorder, map[string]any{"max_displacement": -1}, false},
+	}
+	for _, tc := range cases {
+		_, err := l.Apply(tc.name, tc.params, 0, 0)
+		if tc.wantOK && err != nil {
+			t.Errorf("%s %v: expected accepted, got %v", tc.name, tc.params, err)
+		}
+		if !tc.wantOK && err == nil {
+			t.Errorf("%s %v: expected rejection, got accepted", tc.name, tc.params)
+		}
 	}
 }

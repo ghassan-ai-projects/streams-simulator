@@ -28,9 +28,10 @@ type toolDef struct {
 	handler func(ctx context.Context, args map[string]any) (any, error)
 }
 
-// addTool registers one tool with the SDK. Inputs are passed as raw maps
-// and validated inside the handlers (which need cross-field checks the
-// SDK's schema inference would not express).
+// addTool registers one tool with the SDK. The SDK validates every call
+// against the tool's declared schema before the handler runs; handlers keep
+// the cross-field and domain-dependent checks the static schema cannot
+// express (e.g. effector arguments validated against the loaded domain).
 func addTool(s *mcp.Server, def toolDef) {
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        def.name,

@@ -280,6 +280,7 @@ func cmdRun(args []string) error {
 	cfg := run.Config{
 		Domain: spec, Adapter: adap, Seed: *seed, SinkName: *sinkName,
 		SinkTarget: *sinkTarget, TimeMode: model.TimeStepped, StartTimeNS: *startTime,
+		StartTimeSet:    true,
 		ScenarioProfile: *profile,
 	}
 	r, err := run.New(context.Background(), cfg)

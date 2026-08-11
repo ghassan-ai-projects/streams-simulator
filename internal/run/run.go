@@ -37,6 +37,7 @@ type Config struct {
 	SinkTarget       string // file path or http-push URL
 	TimeMode         string
 	StartTimeNS      int64
+	StartTimeSet     bool // true when StartTimeNS was supplied (0 is a legal start)
 	EntityIDs        []string
 	ScenarioProfile  string
 	ClockMultiplier  float64
@@ -98,7 +99,7 @@ func New(ctx context.Context, cfg Config) (*Run, error) {
 	if cfg.TimeMode == "" {
 		cfg.TimeMode = model.TimeStepped
 	}
-	if cfg.StartTimeNS == 0 {
+	if cfg.StartTimeNS == 0 && !cfg.StartTimeSet {
 		cfg.StartTimeNS = model.DefaultStartTimeNS
 	}
 	if cfg.RunID == "" {
@@ -506,10 +507,15 @@ func (r *Run) ConfigureEnvTarget(target string, allow bool) {
 	r.allowEnv = r.allowEnv || allow
 }
 
-// EnvInject records an environment fault against a configured target.
+// EnvInject records an environment fault against a configured target. No
+// environment-fault parameters are declared yet, so any params are rejected
+// rather than recorded and ignored.
 func (r *Run) EnvInject(target, fault string, params map[string]any, atNS int64) (string, error) {
 	if !r.allowEnv {
 		return "", fmt.Errorf("run: env.inject not enabled for this world (no configured target)")
+	}
+	if len(params) > 0 {
+		return "", fmt.Errorf("run: env fault %q accepts no parameters (got %d)", fault, len(params))
 	}
 	r.commandLog = append(r.commandLog, model.Command{
 		Seq: int64(len(r.commandLog)), AtNS: atNS, Op: model.OpEnvInject,

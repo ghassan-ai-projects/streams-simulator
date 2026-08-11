@@ -1,6 +1,10 @@
 package mcp
 
-import "encoding/json"
+import (
+	"encoding/json"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/schemas"
+)
 
 // toolSchema returns the public input contract for one MCP tool. Keep these
 // schemas here, next to the MCP surface, so a client can discover the same
@@ -16,6 +20,23 @@ func toolSchema(name string) json.RawMessage {
 	boolean := func() map[string]any { return map[string]any{"type": "boolean"} }
 	object := func() map[string]any {
 		return map[string]any{"type": "object", "additionalProperties": true}
+	}
+	// contractObject advertises an embedded contract schema as the schema of a
+	// nested argument. Document-level keywords are stripped: $schema and $id
+	// are invalid inside a subschema, and title/description add no validation.
+	// The SDK (google/jsonschema-go) enforces the contract over the wire, so a
+	// client submitting a verdict or ground-truth record is validated against
+	// the exact committed contract, additionalProperties and all.
+	contractObject := func(contract []byte) map[string]any {
+		doc := map[string]any{}
+		if err := json.Unmarshal(contract, &doc); err != nil {
+			panic("mcp: unmarshal embedded contract schema: " + err.Error())
+		}
+		delete(doc, "$schema")
+		delete(doc, "$id")
+		delete(doc, "title")
+		delete(doc, "description")
+		return doc
 	}
 	enum := func(values ...string) map[string]any {
 		out := str()
@@ -109,7 +130,7 @@ func toolSchema(name string) json.RawMessage {
 		req("world_id")
 	case "sim.truth.seal":
 		props["run_id"] = str()
-		props["ground_truth"] = object()
+		props["ground_truth"] = contractObject(schemas.GroundTruth())
 		req("run_id", "ground_truth")
 	case "sim.run.verify":
 		props["run_artifact_path"] = str()
@@ -149,7 +170,7 @@ func toolSchema(name string) json.RawMessage {
 		props["token"] = str()
 		props["run_id"] = str()
 		props["quiesced_through_ns"] = integer()
-		props["verdict"] = object()
+		props["verdict"] = contractObject(schemas.ConsumerVerdict())
 		req("token", "run_id")
 	default:
 		panic("mcp: schema is missing for tool " + name)

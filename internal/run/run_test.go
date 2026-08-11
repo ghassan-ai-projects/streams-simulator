@@ -544,3 +544,24 @@ func TestArtifactRoundTrip(t *testing.T) {
 		}
 	}
 }
+
+// TestEnvInjectRejectsUndefinedParams: environment faults declare no params
+// yet, so any params are rejected rather than recorded and ignored.
+func TestEnvInjectRejectsUndefinedParams(t *testing.T) {
+	spec, a := testBase(t)
+	start := model.DefaultStartTimeNS
+	r, err := New(context.Background(), Config{
+		Domain: spec, Adapter: a, Seed: 77, SinkName: model.SinkInproc,
+		TimeMode: model.TimeStepped, StartTimeNS: start, StartTimeSet: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	r.ConfigureEnvTarget("consumer-1", true)
+	if _, err := r.EnvInject("consumer-1", "pause", map[string]any{"duration_s": 30}, start); err == nil {
+		t.Fatal("env.inject params must be rejected (none declared)")
+	}
+	if _, err := r.EnvInject("consumer-1", "pause", nil, start); err != nil {
+		t.Fatalf("env.inject without params rejected: %v", err)
+	}
+}

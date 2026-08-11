@@ -100,7 +100,14 @@ func (d *Director) CreateWorld(args map[string]any) (map[string]any, error) {
 	if timeMode == "" {
 		timeMode = model.TimeStepped
 	}
-	startNS := num(args, "start_time", model.DefaultStartTimeNS)
+	// start_time is presence-aware: absent means the documented default, an
+	// explicit 0 means epoch-0 (a legal start the CLI default must not mask).
+	startNS := model.DefaultStartTimeNS
+	startTimeSet := false
+	if _, ok := args["start_time"]; ok {
+		startNS = num(args, "start_time", 0)
+		startTimeSet = true
+	}
 	var entityIDs []string
 	if ents, ok := args["entities"].([]any); ok {
 		for _, e := range ents {
@@ -120,7 +127,8 @@ func (d *Director) CreateWorld(args map[string]any) (map[string]any, error) {
 	cfg := run.Config{
 		Domain: spec, Adapter: adap, Seed: seed, SinkName: sinkName,
 		SinkTarget: str(args, "sink_target"),
-		TimeMode:   timeMode, StartTimeNS: startNS, EntityIDs: entityIDs,
+		TimeMode:   timeMode, StartTimeNS: startNS, StartTimeSet: startTimeSet,
+		EntityIDs:       entityIDs,
 		ScenarioProfile: str(args, "scenario_profile"),
 		Label:           str(args, "label"),
 		RunID:           "r-" + strconv.Itoa(seq),
