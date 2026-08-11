@@ -7,8 +7,11 @@ package mcp
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"fmt"
 	"path/filepath"
+	"strconv"
 	"sync"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/audit"
@@ -28,7 +31,6 @@ type WorldRecord struct {
 	Started   bool
 	Ended     bool
 	RunEnded  bool
-	Truth     *model.GroundTruthRecord
 }
 
 // Director holds the director-role state: the catalog, the installed
@@ -106,23 +108,32 @@ func (d *Director) CreateWorld(args map[string]any) (map[string]any, error) {
 			}
 		}
 	}
+	// Reserve a director-local identity before constructing the run. Two
+	// worlds with identical simulation inputs are still distinct resources;
+	// using the deterministic default run id here would overwrite the first
+	// world in the registry and make truth lookup ambiguous.
+	d.mu.Lock()
+	d.seq++
+	seq := d.seq
+	d.mu.Unlock()
 	cfg := run.Config{
 		Domain: spec, Adapter: adap, Seed: seed, SinkName: sinkName,
 		TimeMode: timeMode, StartTimeNS: startNS, EntityIDs: entityIDs,
 		ScenarioProfile: str(args, "scenario_profile"),
 		Label:           str(args, "label"),
+		RunID:           "r-" + strconv.Itoa(seq),
 	}
 	r, err := run.New(d.ctx, cfg)
 	if err != nil {
 		return nil, errTool(CodeDomainInvalid, "%v", err)
 	}
-	d.mu.Lock()
-	d.seq++
-	worldID := r.ID
-	d.mu.Unlock()
-
-	token := fmt.Sprintf("t-%d-%d", d.seq, seed)
+	worldID := "w-" + strconv.Itoa(seq)
+	token, err := capabilityToken()
+	if err != nil {
+		return nil, errTool(CodeDomainInvalid, "capability token generation failed: %v", err)
+	}
 	nameplate := buildNameplate(r)
+	nameplate.WorldID = worldID
 	ov := NewOperatorView(worldID, token, nameplate, r, r)
 	rec := &WorldRecord{Run: r, Token: token, Nameplate: nameplate, Operator: ov}
 	d.mu.Lock()
@@ -134,6 +145,14 @@ func (d *Director) CreateWorld(args map[string]any) (map[string]any, error) {
 		"clock": model.FormatTime(r.World.Clock()), "token": token,
 		"simulated": true,
 	}, nil
+}
+
+func capabilityToken() (string, error) {
+	buf := make([]byte, 32)
+	if _, err := rand.Read(buf); err != nil {
+		return "", err
+	}
+	return "t-" + base64.RawURLEncoding.EncodeToString(buf), nil
 }
 
 func buildNameplate(r *run.Run) *Nameplate {
@@ -299,7 +318,10 @@ func (d *Director) EnvInject(worldID, target, fault string, params map[string]an
 	return map[string]any{"env_id": id}, nil
 }
 
-// BeginRun opens a run (sealing truth on the way).
+// BeginRun opens a run after the director has sealed its ground-truth record.
+// Truth is intentionally a separate operation because the complete label is
+// generated from the selected scenario and fault, not from the human label
+// carried by run.begin.
 func (d *Director) BeginRun(worldID, label string) (map[string]any, error) {
 	w := d.World(worldID)
 	if w == nil {
@@ -308,8 +330,31 @@ func (d *Director) BeginRun(worldID, label string) (map[string]any, error) {
 	if w.Started {
 		return nil, errTool(CodeDomainInvalid, "a run is already open for %q", worldID)
 	}
+	sealed, unblinded, err := d.Truth.SealStatus(w.Run.ID)
+	if err != nil || !sealed {
+		return nil, errTool(CodeTruthSealed, "ground truth must be sealed before run.begin")
+	}
+	if unblinded {
+		return nil, errTool(CodeRunUnblinded, "run is already stamped unblinded")
+	}
 	w.Started = true
-	return map[string]any{"run_id": w.Run.ID}, nil
+	return map[string]any{"run_id": w.Run.ID, "truth_sealed": true}, nil
+}
+
+// SealTruth installs the director-only ground-truth record before a run is
+// opened. The record is copied and cannot be mutated through this pointer.
+func (d *Director) SealTruth(runID string, rec *model.GroundTruthRecord) error {
+	w := d.worldByRun(runID)
+	if w == nil {
+		return errTool(CodeWorldNotFound, "unknown run %q", runID)
+	}
+	if w.Started || w.RunEnded {
+		return errTool(CodeTruthSealed, "truth must be sealed before run.begin")
+	}
+	if err := d.Truth.Seal(runID, rec); err != nil {
+		return errTool(CodeTruthSealed, "%v", err)
+	}
+	return nil
 }
 
 // EndRun finalizes the run and writes the artifact.

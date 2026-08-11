@@ -161,6 +161,33 @@ func TestCapabilityTokenEnforced(t *testing.T) {
 	}
 }
 
+func TestDirectorCreatesDistinctWorldsAndOpaqueTokens(t *testing.T) {
+	d := newTestDirector(t)
+	one := createWorld(t, d)
+	two := createWorld(t, d)
+	if one == two {
+		t.Fatalf("world ids collided: %q", one)
+	}
+	w1, w2 := d.Worlds[one], d.Worlds[two]
+	if w1 == nil || w2 == nil || w1.Run.ID == w2.Run.ID {
+		t.Fatalf("run ids collided: %q and %q", w1.Run.ID, w2.Run.ID)
+	}
+	if w1.Token == w2.Token || len(w1.Token) < 40 || len(w2.Token) < 40 {
+		t.Fatalf("capability tokens are not opaque and unique: %q %q", w1.Token, w2.Token)
+	}
+	if w1.Token == fmt.Sprintf("t-%d-%d", 1, 42) {
+		t.Fatal("capability token still exposes the predictable seed form")
+	}
+}
+
+func TestBeginRunRequiresSealedTruth(t *testing.T) {
+	d := newTestDirector(t)
+	worldID := createWorld(t, d)
+	if _, err := d.BeginRun(worldID, "missing-truth"); err == nil {
+		t.Fatal("run.begin must refuse an unsealed oracle")
+	}
+}
+
 func TestClosedLoopThroughMCPSurface(t *testing.T) {
 	d := newTestDirector(t)
 	worldID := createWorld(t, d)
@@ -205,6 +232,16 @@ func TestClosedLoopThroughMCPSurface(t *testing.T) {
 	if err := w.Operator.Report(w.Token, w.Run.ID, w.Run.World.Clock(), verdict); err != nil {
 		t.Fatal(err)
 	}
+	// Seal the director-only label before opening the run. The operator never
+	// receives this record.
+	rec := &model.GroundTruthRecord{
+		ScenarioID: "mcp/0001", Domain: "aquaculture-pond", Label: "aerator_failure",
+		EntityID: pond, ExpectedEffector: "start_aerator",
+		InjectionTimeNS: start + 2*3600*1e9, FirstObservableTimeNS: start + 2*3600*1e9,
+	}
+	if err := d.SealTruth(w.Run.ID, rec); err != nil {
+		t.Fatal(err)
+	}
 	// Run lifecycle + score through the director.
 	if _, err := d.BeginRun(worldID, "mcp-loop"); err != nil {
 		t.Fatal(err)
@@ -212,13 +249,6 @@ func TestClosedLoopThroughMCPSurface(t *testing.T) {
 	if _, err := d.EndRun(worldID); err != nil {
 		t.Fatal(err)
 	}
-	// Seal the label and score.
-	rec := &model.GroundTruthRecord{
-		ScenarioID: "mcp/0001", Domain: "aquaculture-pond", Label: "aerator_failure",
-		EntityID: pond, ExpectedEffector: "start_aerator",
-		InjectionTimeNS: start + 2*3600*1e9, FirstObservableTimeNS: start + 2*3600*1e9,
-	}
-	d.Truth.Seal(w.Run.ID, rec)
 	out, err := d.Score(w.Run.ID)
 	if err != nil {
 		t.Fatal(err)

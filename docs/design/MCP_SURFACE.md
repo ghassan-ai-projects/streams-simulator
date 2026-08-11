@@ -125,6 +125,7 @@ It has no idea what the target is.
 | `sim.run.begin` | `{world_id, label?}` | `{run_id}` |
 | `sim.run.end` | `{run_id}` | `{run_artifact_path, trace_digest}` |
 | `sim.run.verify` | `{run_artifact_path}` | `{matches, first_divergence?}` |
+| `sim.truth.seal` | `{run_id, ground_truth}` | `{run_id, sealed}` |
 | `sim.truth.reveal` | `{run_id, unblind?}` | labels, three onset timestamps, hidden state history |
 | `sim.truth.seal_status` | `{run_id}` | `{sealed, unblinded, unblinded_at}` |
 | `sim.score` | `{run_id}` | scorecard, computed from the submitted verdict, sealed truth, the delivery ledger and the effector log |
@@ -269,6 +270,7 @@ the results.
 ```text
 director: catalog.describe(aquaculture-pond)
 director: world.create(seed=42, sink=file, adapter=<consumer>, time_mode=stepped)
+director: truth.seal(run_id, ground_truth)                 # director-only, before begin
 director: run.begin()
 director: fault.inject(pond-3, do_probe_fouling, onset=T+4h)
 director: perturb.apply(duplicate_burst, rate=0.02)

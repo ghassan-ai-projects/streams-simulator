@@ -110,6 +110,25 @@ func NewDirectorServer(d *Director) *mcp.Server {
 	addTool(s, toolDef{name: "sim.run.end", description: "Close the run; writes the run artifact.", handler: func(_ context.Context, args map[string]any) (any, error) {
 		return d.EndRun(str(args, "world_id"))
 	}})
+	addTool(s, toolDef{name: "sim.truth.seal", description: "Install and seal a director-only ground-truth record before run.begin.", handler: func(_ context.Context, args map[string]any) (any, error) {
+		runID := str(args, "run_id")
+		raw, ok := args["ground_truth"].(map[string]any)
+		if !ok {
+			return nil, errTool(CodeInvalidArgs, "ground_truth object is required")
+		}
+		b, err := json.Marshal(raw)
+		if err != nil {
+			return nil, errTool(CodeInvalidArgs, "%v", err)
+		}
+		rec := &model.GroundTruthRecord{}
+		if err := json.Unmarshal(b, rec); err != nil {
+			return nil, errTool(CodeInvalidArgs, "%v", err)
+		}
+		if err := d.SealTruth(runID, rec); err != nil {
+			return nil, err
+		}
+		return map[string]any{"run_id": runID, "sealed": true}, nil
+	}})
 	addTool(s, toolDef{name: "sim.run.verify", description: "Verify a run artifact reproduces.", handler: func(_ context.Context, args map[string]any) (any, error) {
 		return d.VerifyRun(str(args, "run_artifact_path"))
 	}})
