@@ -11,6 +11,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"sort"
@@ -817,21 +818,14 @@ func (r *Run) History() []stateSnapshot {
 	out := make([]stateSnapshot, len(r.history))
 	for i, rec := range r.history {
 		out[i] = rec
-		out[i].States = make(map[string]float64, len(rec.States))
-		for k, v := range rec.States {
-			out[i].States[k] = v
-		}
+		out[i].States = maps.Clone(rec.States)
 	}
 	return out
 }
 
 // RecordHistory snapshots hidden state for post-hoc analysis.
 func (r *Run) RecordHistory(seq int64, atNS int64, entity string, states map[string]float64) {
-	copyStates := make(map[string]float64, len(states))
-	for k, v := range states {
-		copyStates[k] = v
-	}
-	r.history = append(r.history, stateSnapshot{Seq: seq, TimeNS: atNS, Entity: entity, States: copyStates})
+	r.history = append(r.history, stateSnapshot{Seq: seq, TimeNS: atNS, Entity: entity, States: maps.Clone(states)})
 }
 
 func cloneVerdict(v *model.Verdict) *model.Verdict {
