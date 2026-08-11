@@ -106,7 +106,14 @@ func Score(r *run.Run, gt *model.GroundTruthRecord) (*Scorecard, error) {
 func instrument(r *run.Run) InstrumentMetrics {
 	ledger := r.Ledger()
 	m := InstrumentMetrics{LedgerComplete: true, Emitted: r.World.EmittedCount()}
+	seenIDs := map[uint64]bool{}
+	seenSeq := map[int64]bool{}
 	for _, l := range ledger {
+		if l.DeliveryID == 0 || seenIDs[l.DeliveryID] {
+			m.LedgerComplete = false
+		}
+		seenIDs[l.DeliveryID] = true
+		seenSeq[l.Seq] = true
 		switch l.DeliveryReason {
 		case model.DeliveryDroppedByPerturb:
 			m.Dropped++
@@ -121,6 +128,12 @@ func instrument(r *run.Run) InstrumentMetrics {
 			m.Delivered++
 		}
 	}
+	for seq := int64(0); seq < m.Emitted; seq++ {
+		if !seenSeq[seq] {
+			m.LedgerComplete = false
+			break
+		}
+	}
 	// Perturbation fidelity: every perturbation that was applied left a mark
 	// in the ledger (and never in the delivered event, which is enforced by
 	// construction).
@@ -128,7 +141,7 @@ func instrument(r *run.Run) InstrumentMetrics {
 	for _, name := range r.AppliedPerturbations() {
 		found := false
 		for _, l := range ledger {
-			if reasonOf(name) == l.DeliveryReason && !l.Delivered == (name == "drop") {
+			if reasonOf(name) == l.DeliveryReason && l.Delivered != (name == "drop") {
 				found = true
 				break
 			}
@@ -159,6 +172,10 @@ func reasonOf(perturbName string) string {
 		return model.DeliveryMangled
 	case "delay_tail", "gross_backfill", "producer_flap":
 		return model.DeliveryDelayed
+	case "clock_skew", "non_monotonic", "time_encoding", "precision_edge", "injection_probe":
+		return model.DeliveryRewritten
+	case "reorder":
+		return model.DeliveryReordered
 	}
 	return ""
 }
@@ -168,9 +185,9 @@ func consumer(r *run.Run, gt *model.GroundTruthRecord) ConsumerMetrics {
 	ledger := r.Ledger()
 	m := ConsumerMetrics{}
 
-	admissionBySeq := map[int64]string{}
+	admissionBySeq := map[int64][]string{}
 	for _, a := range v.Admission {
-		admissionBySeq[a.Seq] = a.Outcome
+		admissionBySeq[a.Seq] = append(admissionBySeq[a.Seq], a.Outcome)
 		m.AdmissionReported++
 	}
 	deliveredSeqs := map[int64]bool{}
@@ -185,19 +202,35 @@ func consumer(r *run.Run, gt *model.GroundTruthRecord) ConsumerMetrics {
 	m.AdmissionExpected = 0
 	for _, l := range ledger {
 		if l.DeliveryReason == model.DeliveryDuplicated && l.Delivered {
-			m.AdmissionExpected++
-			if admissionBySeq[l.Seq] != model.AdmissionDuplicate {
+			if !hasOutcome(admissionBySeq[l.Seq], model.AdmissionDuplicate) {
 				m.DuplicateHandling = false
 			}
 		}
 	}
-	// Identity conflict: id_reuse reported conflict.
+	duplicateSeqs := map[int64]bool{}
+	for _, l := range ledger {
+		if l.DeliveryReason == model.DeliveryDuplicated && l.Delivered {
+			duplicateSeqs[l.Seq] = true
+		}
+	}
+	m.AdmissionExpected = len(duplicateSeqs)
+	// Identity conflict is applicable only when the identity-reuse
+	// perturbation was actually applied; otherwise it is not a failing gate.
 	m.IdentityConflict = true
+	if hasPerturb(r, "id_reuse") {
+		m.IdentityConflict = false
+		for _, outcomes := range admissionBySeq {
+			if hasOutcome(outcomes, model.AdmissionConflict) {
+				m.IdentityConflict = true
+				break
+			}
+		}
+	}
 	// Lateness: delayed records reported late.
 	m.LatenessClassification = true
 	for _, l := range ledger {
 		if l.DeliveryReason == model.DeliveryDelayed && l.Delivered {
-			if o, ok := admissionBySeq[l.Seq]; ok && o != model.AdmissionLate && o != model.AdmissionAccepted {
+			if o, ok := admissionBySeq[l.Seq]; !ok || !hasOutcome(o, model.AdmissionLate) {
 				m.LatenessClassification = false
 			}
 		}
@@ -221,20 +254,43 @@ func consumer(r *run.Run, gt *model.GroundTruthRecord) ConsumerMetrics {
 			}
 		}
 		m.DroppedEventDetection = false
+		used := map[string]map[int]bool{}
 		for _, l := range ledger {
-			if l.DeliveryReason != model.DeliveryDroppedByPerturb {
+			if l.DeliveryReason != model.DeliveryDroppedByPerturb || l.Delivered {
 				continue
 			}
-			for _, t := range detectionTimes[l.EntityID] {
+			if used[l.EntityID] == nil {
+				used[l.EntityID] = map[int]bool{}
+			}
+			for i, t := range detectionTimes[l.EntityID] {
+				if used[l.EntityID][i] {
+					continue
+				}
 				// A detection within 30 minutes of the drop window counts.
 				if t >= l.ObservedTimeNS-30*60*1e9 && t <= l.ObservedTimeNS+30*60*1e9 {
-					m.DroppedEventDetection = true
+					used[l.EntityID][i] = true
+					break
 				}
 			}
 		}
+		matched := 0
+		for _, indices := range used {
+			matched += len(indices)
+		}
+		m.DroppedEventDetection = matched == drops
 	}
-	// Clock skew: skewed records rejected or malformed.
+	// Clock skew: skewed records must be explicitly rejected or classified
+	// malformed/out-of-contract when the perturbation is active.
 	m.ClockSkewRejection = true
+	if hasPerturb(r, "clock_skew") {
+		m.ClockSkewRejection = false
+		for _, outcomes := range admissionBySeq {
+			if hasOutcome(outcomes, model.AdmissionRejected) || hasOutcome(outcomes, model.AdmissionMalformed) || hasOutcome(outcomes, model.AdmissionOutOfContract) {
+				m.ClockSkewRejection = true
+				break
+			}
+		}
+	}
 	// Evidence grounding: every cited seq was actually delivered.
 	m.EvidenceGrounding = true
 	for _, d := range v.Detections {
@@ -249,26 +305,34 @@ func consumer(r *run.Run, gt *model.GroundTruthRecord) ConsumerMetrics {
 	}
 	// Action fidelity: claimed actions match the effector log, and vice
 	// versa.
-	callByCommand := map[string]bool{}
-	for _, c := range r.World.EffectorCalls() {
-		callByCommand[c.CommandID] = true
-	}
 	m.ActionFidelity = true
-	for _, a := range v.Actions {
-		if !callByCommand[a.CommandID] {
+	usedActions := map[int]bool{}
+	for _, c := range r.World.EffectorCalls() {
+		matched := false
+		for i, a := range v.Actions {
+			if usedActions[i] || a.CommandID != c.CommandID || a.Effector != c.Effector || a.EntityID != c.EntityID {
+				continue
+			}
+			issued, err := model.ParseTime(a.IssuedAt)
+			if err != nil || issued < c.AtNS {
+				continue
+			}
+			if c.Accepted && a.OutcomeBelieved == model.BelievedFailed {
+				continue
+			}
+			if !c.Accepted && a.OutcomeBelieved == model.BelievedSucceeded {
+				continue
+			}
+			usedActions[i] = true
+			matched = true
+			break
+		}
+		if !matched {
 			m.ActionFidelity = false
 		}
 	}
-	for cid := range callByCommand {
-		claimed := false
-		for _, a := range v.Actions {
-			if a.CommandID == cid {
-				claimed = true
-			}
-		}
-		if !claimed {
-			m.ActionFidelity = false
-		}
+	if len(usedActions) != len(v.Actions) {
+		m.ActionFidelity = false
 	}
 	// Interlock handling: a refusal is never retried with a new command_id
 	// for the same effector/entity.
@@ -290,9 +354,13 @@ func consumer(r *run.Run, gt *model.GroundTruthRecord) ConsumerMetrics {
 func judgment(r *run.Run, gt *model.GroundTruthRecord) JudgmentMetrics {
 	v := r.Verdict()
 	m := JudgmentMetrics{DetectionCount: len(v.Detections)}
+	if gt.IsNegativeClass && m.DetectionCount > 0 {
+		m.FalsePositive = true
+	}
 	if gt.FirstObservableTimeNS <= 0 {
 		return m
 	}
+	bestAt := int64(0)
 	// The graded detection: first detection on the scenario entity, after
 	// first_observable_time.
 	for _, d := range v.Detections {
@@ -307,14 +375,12 @@ func judgment(r *run.Run, gt *model.GroundTruthRecord) JudgmentMetrics {
 			m.Suspicious = true
 			continue
 		}
-		if !m.Detected || t < m.DetectionLatencyNS {
+		if !m.Detected || t < bestAt {
 			m.Detected = true
+			bestAt = t
 			m.DetectionLatencyNS = t - gt.FirstObservableTimeNS
-			m.LabelCorrect = d.Label == "" || d.Label == gt.Label
+			m.LabelCorrect = d.Label == gt.Label
 		}
-	}
-	if gt.IsNegativeClass && m.DetectionCount > 0 {
-		m.FalsePositive = true
 	}
 	return m
 }
@@ -328,7 +394,7 @@ func loop(r *run.Run, gt *model.GroundTruthRecord) LoopMetrics {
 		if c.Mode == "silent_no_effect" {
 			m.SilentNoEffectCalls++
 		}
-		if expected != "" && c.Effector == expected {
+		if expected != "" && c.Effector == expected && c.EntityID == gt.EntityID && c.EffectApplied {
 			m.ActionAppropriate = true
 		}
 	}
@@ -361,7 +427,14 @@ func loop(r *run.Run, gt *model.GroundTruthRecord) LoopMetrics {
 		m.TimeToResolutionNS = t
 	}
 	if gt.DeadlineNS > 0 {
-		m.DeadlineAdhered = !m.FalseSuccess && !m.UnnecessaryAction
+		m.DeadlineAdhered = false
+		for _, c := range calls {
+			if c.Effector == expected && c.EntityID == gt.EntityID && c.EffectApplied && c.AtNS <= gt.DeadlineNS {
+				m.DeadlineAdhered = true
+				break
+			}
+		}
+		m.DeadlineAdhered = m.DeadlineAdhered && !m.FalseSuccess && !m.UnnecessaryAction
 	}
 	return m
 }
@@ -375,8 +448,14 @@ func resolveTime(r *run.Run, gt *model.GroundTruthRecord) (bool, int64) {
 	}
 	state := fault.Affects[0].State
 	// Pre-fault baseline: the state just before onset.
-	base := r.World.StateValue(gt.EntityID, state, gt.InjectionTimeNS-1)
-	faulted := r.World.StateValue(gt.EntityID, state, gt.FirstObservableTimeNS+60*1e9)
+	base, ok := historyValue(r, gt.EntityID, state, gt.InjectionTimeNS-1)
+	if !ok {
+		return false, 0
+	}
+	faulted, ok := historyValue(r, gt.EntityID, state, gt.FirstObservableTimeNS+60*1e9)
+	if !ok {
+		return false, 0
+	}
 	deviation := base - faulted
 	if deviation == 0 {
 		return false, 0
@@ -393,16 +472,67 @@ func resolveTime(r *run.Run, gt *model.GroundTruthRecord) (bool, int64) {
 	}
 	// Recovery: the state returned within 50% of the deviation.
 	recoverLevel := faulted + 0.5*deviation
-	if deviation < 0 {
-		recoverLevel = faulted - 0.5*deviation
-	}
-	for t := start; t <= r.World.Clock(); t += 600 * 1e9 {
-		v := r.World.StateValue(gt.EntityID, state, t)
+	for _, snap := range r.History() {
+		if snap.Entity != gt.EntityID || snap.TimeNS < start {
+			continue
+		}
+		v := snap.States[state]
 		if (deviation > 0 && v >= recoverLevel) || (deviation < 0 && v <= recoverLevel) {
-			return true, t - start
+			return true, snap.TimeNS - start
 		}
 	}
 	return false, 0
+}
+
+func hasOutcome(outcomes []string, wanted string) bool {
+	for _, outcome := range outcomes {
+		if outcome == wanted {
+			return true
+		}
+	}
+	return false
+}
+
+func hasPerturb(r *run.Run, wanted string) bool {
+	for _, name := range r.AppliedPerturbations() {
+		if name == wanted {
+			return true
+		}
+	}
+	return false
+}
+
+func historyValue(r *run.Run, entity, state string, atNS int64) (float64, bool) {
+	history := r.History()
+	if len(history) == 0 {
+		return 0, false
+	}
+	// Prefer the first sample at/after the requested instant, otherwise the
+	// latest sample before it. This is random-access over captured evidence;
+	// it never advances the mutable world during scoring.
+	var before *float64
+	var beforeAt int64
+	for _, snap := range history {
+		if snap.Entity != entity {
+			continue
+		}
+		value, ok := snap.States[state]
+		if !ok {
+			continue
+		}
+		if snap.TimeNS >= atNS {
+			return value, true
+		}
+		if before == nil || snap.TimeNS > beforeAt {
+			v := value
+			before = &v
+			beforeAt = snap.TimeNS
+		}
+	}
+	if before != nil {
+		return *before, true
+	}
+	return 0, false
 }
 
 func faultFor(r *run.Run, label string) *model.Fault {

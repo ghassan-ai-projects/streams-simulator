@@ -7,6 +7,8 @@ package score
 // covers the judgment metrics and whatever the ledger provides.
 
 import (
+	"fmt"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
@@ -60,8 +62,18 @@ func Offline(v *model.Verdict, gt *model.GroundTruthRecord, ledger []model.Ledge
 }
 
 func instrumentFrom(ledger []model.LedgerRecord, calls []world.EffectorCall) InstrumentMetrics {
-	m := InstrumentMetrics{LedgerComplete: true, Emitted: int64(len(ledger))}
+	m := InstrumentMetrics{LedgerComplete: true}
+	seenIDs := map[uint64]bool{}
+	seenSeq := map[int64]bool{}
 	for _, l := range ledger {
+		if l.DeliveryID == 0 || seenIDs[l.DeliveryID] {
+			m.LedgerComplete = false
+		}
+		seenIDs[l.DeliveryID] = true
+		seenSeq[l.Seq] = true
+		if l.Seq >= 0 {
+			m.Emitted = max64(m.Emitted, l.Seq+1)
+		}
 		switch l.DeliveryReason {
 		case model.DeliveryDroppedByPerturb:
 			m.Dropped++
@@ -71,9 +83,17 @@ func instrumentFrom(ledger []model.LedgerRecord, calls []world.EffectorCall) Ins
 			m.Mangled++
 		case model.DeliveryDelayed:
 			m.Delayed++
+		case model.DeliveryRewritten, model.DeliveryReordered, model.DeliveryOmitted:
+			// Perturbed is counted below; these are still valid terminal rows.
 		}
 		if l.Delivered {
 			m.Delivered++
+		}
+	}
+	for seq := int64(0); seq < m.Emitted; seq++ {
+		if !seenSeq[seq] {
+			m.LedgerComplete = false
+			break
 		}
 	}
 	seen := map[string]bool{}
@@ -121,42 +141,115 @@ func consumerFrom(v *model.Verdict, ledger []model.LedgerRecord, calls []world.E
 	if ledger == nil {
 		return m
 	}
-	admissionBySeq := map[int64]string{}
+	admissionBySeq := map[int64][]string{}
 	for _, a := range v.Admission {
-		admissionBySeq[a.Seq] = a.Outcome
+		admissionBySeq[a.Seq] = append(admissionBySeq[a.Seq], a.Outcome)
 		m.AdmissionReported++
 	}
 	m.DuplicateHandling = true
+	duplicateSeqs := map[int64]bool{}
 	for _, l := range ledger {
 		if l.DeliveryReason == model.DeliveryDuplicated && l.Delivered {
-			m.AdmissionExpected++
-			if admissionBySeq[l.Seq] != model.AdmissionDuplicate {
+			duplicateSeqs[l.Seq] = true
+			if !hasOutcome(admissionBySeq[l.Seq], model.AdmissionDuplicate) {
 				m.DuplicateHandling = false
 			}
 		}
 	}
-	m.DroppedEventDetection = true
-	m.EvidenceGrounding = true
-	callByCommand := map[string]bool{}
-	for _, c := range calls {
-		callByCommand[c.CommandID] = true
-	}
-	m.ActionFidelity = true
-	for _, a := range v.Actions {
-		if !callByCommand[a.CommandID] {
-			m.ActionFidelity = false
+	m.AdmissionExpected = len(duplicateSeqs)
+	m.IdentityConflict = true
+	for _, outcomes := range admissionBySeq {
+		if hasOutcome(outcomes, model.AdmissionConflict) {
+			m.IdentityConflict = true
+			break
 		}
 	}
-	for cid := range callByCommand {
-		claimed := false
-		for _, a := range v.Actions {
-			if a.CommandID == cid {
-				claimed = true
+	m.LatenessClassification = true
+	for _, l := range ledger {
+		if l.DeliveryReason == model.DeliveryDelayed && l.Delivered && !hasOutcome(admissionBySeq[l.Seq], model.AdmissionLate) {
+			m.LatenessClassification = false
+		}
+	}
+	drops := 0
+	detectionTimes := map[string][]int64{}
+	for _, d := range v.Detections {
+		if t, err := model.ParseTime(d.DetectedAt); err == nil {
+			detectionTimes[d.EntityID] = append(detectionTimes[d.EntityID], t)
+		}
+	}
+	for _, l := range ledger {
+		if l.DeliveryReason == model.DeliveryDroppedByPerturb && !l.Delivered {
+			drops++
+		}
+	}
+	m.DroppedEventDetection = drops == 0
+	usedDetections := map[string]map[int]bool{}
+	if drops > 0 {
+		m.DroppedEventDetection = true
+		for _, l := range ledger {
+			if l.DeliveryReason != model.DeliveryDroppedByPerturb || l.Delivered {
+				continue
+			}
+			if usedDetections[l.EntityID] == nil {
+				usedDetections[l.EntityID] = map[int]bool{}
+			}
+			matched := false
+			for i, t := range detectionTimes[l.EntityID] {
+				if !usedDetections[l.EntityID][i] && t >= l.ObservedTimeNS-30*60*1e9 && t <= l.ObservedTimeNS+30*60*1e9 {
+					usedDetections[l.EntityID][i] = true
+					matched = true
+					break
+				}
+			}
+			if !matched {
+				m.DroppedEventDetection = false
 			}
 		}
-		if !claimed {
+	}
+	m.EvidenceGrounding = true
+	deliveredSeqs := map[int64]bool{}
+	for _, l := range ledger {
+		if l.Delivered {
+			deliveredSeqs[l.Seq] = true
+		}
+	}
+	for _, d := range v.Detections {
+		for _, ref := range d.EvidenceRefs {
+			var seq int64
+			if _, err := fmt.Sscanf(ref, "seq:%d", &seq); err != nil || !deliveredSeqs[seq] {
+				m.EvidenceGrounding = false
+			}
+		}
+	}
+	m.ActionFidelity = true
+	used := map[int]bool{}
+	for _, c := range calls {
+		matched := false
+		for i, a := range v.Actions {
+			if used[i] || a.CommandID != c.CommandID || a.Effector != c.Effector || a.EntityID != c.EntityID {
+				continue
+			}
+			issued, err := model.ParseTime(a.IssuedAt)
+			if err != nil || issued < c.AtNS || (c.Accepted && a.OutcomeBelieved == model.BelievedFailed) || (!c.Accepted && a.OutcomeBelieved == model.BelievedSucceeded) {
+				continue
+			}
+			used[i] = true
+			matched = true
+			break
+		}
+		if !matched {
 			m.ActionFidelity = false
 		}
 	}
+	if len(used) != len(v.Actions) {
+		m.ActionFidelity = false
+	}
 	return m
+}
+
+func max64(a, b int64) int64 {
+	if a > b {
+		return a
+	}
+	return b
 }

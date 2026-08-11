@@ -236,3 +236,94 @@ func TestSuspiciousEarlyDetection(t *testing.T) {
 		t.Fatalf("early detection must be suspicious, not credited: %+v", sc.Judgment)
 	}
 }
+
+func TestJudgmentChoosesEarliestAndRequiresLabel(t *testing.T) {
+	r, gt := setupFaultedRun(t, "ok", "do_probe_fouling")
+	pond := "site-a/pond-1"
+	later := model.FormatTime(gt.FirstObservableTimeNS + 20*60*1e9)
+	earlier := model.FormatTime(gt.FirstObservableTimeNS + 10*60*1e9)
+	submitVerdict(t, r, nil, []model.Detection{
+		{EntityID: pond, DetectedAt: later, Label: gt.Label},
+		{EntityID: pond, DetectedAt: earlier},
+	})
+	if _, err := r.End(""); err != nil {
+		t.Fatal(err)
+	}
+	sc, err := Score(r, gt)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sc.Judgment.DetectionLatencyNS != 10*60*1e9 || sc.Judgment.LabelCorrect {
+		t.Fatalf("judgment must use earliest detection and require exact label: %+v", sc.Judgment)
+	}
+}
+
+func TestNegativeUnobservableDetectionIsFalsePositive(t *testing.T) {
+	spec, a := testBase(t)
+	r, err := run.New(context.Background(), run.Config{
+		Domain: spec, Adapter: a, Seed: 21, SinkName: model.SinkInproc,
+		TimeMode: model.TimeStepped, StartTimeNS: model.DefaultStartTimeNS,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	gt := &model.GroundTruthRecord{ScenarioID: "aquaculture-pond/9999", Domain: spec.Spec.ID,
+		EntityID: pondIDs[0], Label: "negative", IsNegativeClass: true, ExpectedEpisode: false}
+	submitVerdict(t, r, nil, []model.Detection{{EntityID: pondIDs[0], DetectedAt: model.FormatTime(model.DefaultStartTimeNS)}})
+	m := judgment(r, gt)
+	if !m.FalsePositive {
+		t.Fatalf("negative detection must remain a false positive even without observable time: %+v", m)
+	}
+}
+
+func TestDroppedDetectionRequiresOneDetectionPerDrop(t *testing.T) {
+	spec, a := testBase(t)
+	start := model.DefaultStartTimeNS + 4*3600*1e9
+	r, err := run.New(context.Background(), run.Config{
+		Domain: spec, Adapter: a, Seed: 22, SinkName: model.SinkInproc,
+		TimeMode: model.TimeStepped, StartTimeNS: start,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.ApplyPerturb("drop", map[string]any{"rate": 1.0}, 0, 0); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.Advance(start+3600*1e9, false); err != nil {
+		t.Fatal(err)
+	}
+	if err := r.SubmitVerdict(&model.Verdict{
+		SchemaVersion: "0.1", RunID: r.ID, Consumer: model.ConsumerInfo{Name: "test", Version: "1"},
+		Detections: []model.Detection{{EntityID: pondIDs[0], DetectedAt: model.FormatTime(start + 1*1e9)}},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	m := consumer(r, &model.GroundTruthRecord{EntityID: pondIDs[0]})
+	if m.DroppedEventDetection {
+		t.Fatal("one detection must not satisfy every dropped delivery")
+	}
+}
+
+func TestActionFidelityChecksEffectorAndEntity(t *testing.T) {
+	spec, a := testBase(t)
+	start := model.DefaultStartTimeNS
+	r, err := run.New(context.Background(), run.Config{
+		Domain: spec, Adapter: a, Seed: 23, SinkName: model.SinkInproc,
+		TimeMode: model.TimeStepped, StartTimeNS: start, ForceFailureMode: "ok",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.InvokeEffector("start_aerator", pondIDs[0], "cmd", map[string]any{"pond_id": pondIDs[0], "level": 1.0}, start); err != nil {
+		t.Fatal(err)
+	}
+	if err := r.SubmitVerdict(&model.Verdict{
+		SchemaVersion: "0.1", RunID: r.ID, Consumer: model.ConsumerInfo{Name: "test", Version: "1"},
+		Actions: []model.Action{{CommandID: "cmd", Effector: "halt_feeding", EntityID: pondIDs[1], IssuedAt: model.FormatTime(start), OutcomeBelieved: model.BelievedSucceeded}},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if consumer(r, &model.GroundTruthRecord{}).ActionFidelity {
+		t.Fatal("wrong effector/entity must not receive action credit")
+	}
+}
