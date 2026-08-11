@@ -109,17 +109,25 @@ Before each commit:
 
 ## Current bar status
 
-Current status after the correctness-hardening loop: **Level 1 — replayable prototype**.
+Current status after the Level 2 push (slices A–G): **Level 2 — benchmark-ready**.
 
-Evidence is committed in the focused slices `472a110`, `1bfa50c`, `8d21927`, `91b7eed`,
-`8945048`, `5366f5d`, `b1d58d1`, `36683c1`, `07b83e3`, `c2e5e16`, `52b3ade`, `85b8407`,
-`af1bc17`, and `943083c`. The full `go test ./...`, `go build ./...`, `go vet ./...`,
-`git diff --check`, and `make ci-check` gates are green; `make ci-check` reports the optional
-`deadcode` and `govulncheck` tools as unavailable rather than silently claiming those checks.
+Level 1 evidence (committed in the correctness-hardening loop): `472a110`, `1bfa50c`,
+`8d21927`, `91b7eed`, `8945048`, `5366f5d`, `b1d58d1`, `36683c1`, `07b83e3`, `c2e5e16`,
+`52b3ade`, `85b8407`, `af1bc17`, `943083c`.
 
-Level 2 is intentionally **not claimed**. The remaining benchmark-release blockers are
-tracked in [IMPLEMENTATION_REBASELINE.md](IMPLEMENTATION_REBASELINE.md): a real
-out-of-process operator reference consumer, strict typed MCP schemas/cancellation proofs,
-fully independent analytic/noise oracles, durable streaming-ledger persistence, and a
-release manifest with vulnerability/dead-code evidence. No benchmark scores should be
-published until those gates have their own commits and evidence.
+Level 2 evidence (committed 2026-08-11): `20d4818` (MCP strictness), `9840200`
+(deterministic quiescence), `1c8a62b` (out-of-process operator endpoint + golden closed
+loop), `e30a059` (durable append-only ledger + crash recovery + >10k conservation),
+`2977d15` (independent oracles for every dynamic/noise/availability form), `1d804a9`
+(online/offline scoring identity, delivered-stream audit, server-layer prefix proofs,
+all-delivery-path probe neutrality, full-tuple silent_no_effect, suite byte-identity),
+and the release slice (fail-closed deadcode/govulncheck, fuzz/soak/perf targets, signed
+release manifest, cross-process determinism).
+
+Gates G1–G9 evidence, per the gate sections above, is committed and green on production
+paths: `make ci-check` passes **with** `deadcode` and `govulncheck` present (they fail
+closed when absent); bounded fuzzing runs in ci-check; `make soak` passes a deterministic
+million-record run with conservation and replay identity; `streamsim manifest` produces
+a signed release manifest with author and independent review identity; two spawned
+`streamsim run` processes produce byte-identical artifacts and verify across processes.
+No benchmark scores should be published without a fresh manifest for the exact commit.

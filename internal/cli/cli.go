@@ -31,6 +31,13 @@ import (
 )
 
 // Main dispatches to a subcommand. It is the whole CLI surface.
+// Version and Commit are injected by cmd/streamsim from the Makefile
+// ldflags; the manifest command records them.
+var (
+	Version = "dev"
+	Commit  = "none"
+)
+
 func Main(args []string) int {
 	if len(args) < 2 {
 		usage()
@@ -59,6 +66,8 @@ func Main(args []string) int {
 		err = cmdSuite(rest)
 	case "score":
 		err = cmdScore(rest)
+	case "manifest":
+		err = cmdManifest(rest)
 	case "help", "-h", "--help":
 		usage()
 		return 0
@@ -95,6 +104,8 @@ Commands:
                                         the loop over the operator endpoint)
   suite generate --domain --profile     Generate an audited graded suite
   score --run --verdict --label         Offline scorecard from artifacts
+  manifest                              Write release-manifest.json (author +
+                                        reviewer identity, optional ed25519)
   help
 `)
 }

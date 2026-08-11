@@ -1,7 +1,7 @@
 # Level 2 remaining-work plan
 
-Status: working plan — updated per slice
-Date: 2026-08-11 (rev 8: Slice F landed)
+Status: **complete** — Level 2 reached (rev 9: Slice G landed)
+Date: 2026-08-11
 Target: **Level 2 — benchmark-ready** per [QUALITY_BAR.md](QUALITY_BAR.md)
 Baseline: `5a269a0` (Level 1 green; all tests, vet, ci-check pass)
 

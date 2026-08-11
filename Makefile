@@ -28,7 +28,8 @@ HAS_MAIN := $(if $(MAIN_PKGS),yes,no)
 
 # ---- Phony declarations ---------------------------------------------------
 .PHONY: help all build vet fmt tidy lint lint-ci test test-short test-race \
-        test-coverage ci-check deadcode vulncheck clean run cross-compile
+        test-coverage ci-check deadcode vulncheck fuzz soak fuzz-soak perf \
+        manifest clean run cross-compile
 
 # ---- Help -----------------------------------------------------------------
 help: ## Show this help message
@@ -132,13 +133,16 @@ test-coverage: ## Run tests and produce HTML coverage report
 	fi
 
 # ---- Pipeline -------------------------------------------------------------
-ci-check: tidy build vet lint-ci test-short test-simdet deadcode vulncheck ## Run the full CI pipeline locally (matches .github/workflows/ci.yml)
+ci-check: tidy build vet lint-ci test-short test-simdet deadcode vulncheck fuzz-soak ## Run the full CI pipeline locally (matches .github/workflows/ci.yml)
 	@echo "  CI check passed"
 
 # ---- Tools ----------------------------------------------------------------
+# Level 2: the release gates fail closed when their tools are unavailable —
+# a green ci-check must mean the checks ran, not that they were skipped.
 deadcode: ## Detect unused exported functions
 	@if ! command -v deadcode >/dev/null 2>&1; then \
-	  echo "(deadcode not installed -- run: go install golang.org/x/tools/cmd/deadcode@latest)"; \
+	  echo "ERROR: deadcode is required for the release gate (install: go install golang.org/x/tools/cmd/deadcode@latest)"; \
+	  exit 1; \
 	elif [ "$(HAS_MAIN)" != "yes" ]; then \
 	  echo "(no main package yet -- skipping deadcode)"; \
 	else \
@@ -146,14 +150,50 @@ deadcode: ## Detect unused exported functions
 	fi
 
 vulncheck: ## Run govulncheck
-	@if command -v govulncheck >/dev/null 2>&1; then \
-	  if [ "$(HAS_PKGS)" = "yes" ]; then \
-	    govulncheck ./...; \
-	  else \
-	    echo "(no packages yet -- skipping vulncheck)"; \
-	  fi; \
+	@if ! command -v govulncheck >/dev/null 2>&1; then \
+	  echo "ERROR: govulncheck is required for the release gate (install: go install golang.org/x/vuln/cmd/govulncheck@latest)"; \
+	  exit 1; \
+	elif [ "$(HAS_PKGS)" = "yes" ]; then \
+	  govulncheck ./...; \
 	else \
-	  echo "(govulncheck not installed -- run: go install golang.org/x/vuln/cmd/govulncheck@latest)"; \
+	  echo "(no packages yet -- skipping vulncheck)"; \
+	fi
+
+fuzz: ## Bounded native fuzzing of the parsers (10s per target)
+	@if [ "$(HAS_PKGS)" = "yes" ]; then \
+	  go test -fuzz=FuzzDomainParse -fuzztime=10s ./internal/domain/; \
+	  go test -fuzz=FuzzArtifactLoad -fuzztime=10s ./internal/run/; \
+	else \
+	  echo "(no packages yet -- skipping fuzz)"; \
+	fi
+
+soak: ## Deterministic soak: >1M delivered records, conservation + replay identity
+	@if [ "$(HAS_PKGS)" = "yes" ]; then \
+	  SOAK=1 go test -run TestSoakConservationAtScale -count=1 -timeout=15m ./internal/run/; \
+	else \
+	  echo "(no packages yet -- skipping soak)"; \
+	fi
+
+fuzz-soak: ## Bounded fuzz only (soak is an explicit, slower target)
+	@if [ "$(HAS_PKGS)" = "yes" ]; then \
+	  go test -fuzz=FuzzDomainParse -fuzztime=5s ./internal/domain/; \
+	  go test -fuzz=FuzzArtifactLoad -fuzztime=5s ./internal/run/; \
+	else \
+	  echo "(no packages yet -- skipping fuzz)"; \
+	fi
+
+perf: ## Benchmarks for the emission and ledger paths
+	@if [ "$(HAS_PKGS)" = "yes" ]; then \
+	  go test -bench=. -benchtime=1s -run='^$$' ./internal/world/ ./internal/run/; \
+	else \
+	  echo "(no packages yet -- skipping perf)"; \
+	fi
+
+manifest: ## Write release-manifest.json for the current commit
+	@if [ -d cmd ]; then \
+	  go run $(LDFLAGS) ./cmd/... manifest; \
+	else \
+	  echo "(no cmd/ directory yet -- nothing to manifest)"; \
 	fi
 
 # ---- Cleanup --------------------------------------------------------------

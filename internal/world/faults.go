@@ -7,6 +7,7 @@ package world
 // never conflated.
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
 	"strconv"
@@ -50,6 +51,12 @@ func (w *World) InjectFault(entityID, faultID string, onsetNS int64, params map[
 				severity = x
 			case int64:
 				severity = float64(x)
+			case json.Number:
+				f, err := x.Float64()
+				if err != nil {
+					return "", fmt.Errorf("world: severity must be numeric")
+				}
+				severity = f
 			default:
 				return "", fmt.Errorf("world: severity must be numeric")
 			}

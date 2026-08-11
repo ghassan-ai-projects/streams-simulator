@@ -620,7 +620,8 @@ func validateParams(name string, params map[string]any) error {
 }
 
 // asFloat coerces a JSON number to float64 without accepting non-numeric
-// types. JSON numbers arrive as float64 or int64; Go callers may pass int;
+// types. JSON numbers arrive as float64 or int64 in-process, as json.Number
+// when decoded from a command-log artifact, or as Go int from callers;
 // strings are never numeric.
 func asFloat(v any) (float64, bool) {
 	switch x := v.(type) {
@@ -630,6 +631,9 @@ func asFloat(v any) (float64, bool) {
 		return float64(x), true
 	case int:
 		return float64(x), true
+	case json.Number:
+		f, err := x.Float64()
+		return f, err == nil
 	}
 	return 0, false
 }
