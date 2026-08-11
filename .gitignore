@@ -44,5 +44,6 @@ build/
 Thumbs.db
 
 # --- Project-specific (customize per project) ---
+runs/
 # /tmp/
 # /var/
