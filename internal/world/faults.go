@@ -8,6 +8,7 @@ package world
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 )
 
@@ -34,6 +35,9 @@ func (w *World) InjectFault(entityID, faultID string, onsetNS int64, params map[
 		onsetNS = w.ClockNS
 	}
 	severity := 1.0
+	if fault.Onset.Magnitude != 0 {
+		severity = math.Abs(fault.Onset.Magnitude)
+	}
 	if params != nil {
 		if s, ok := params["severity"]; ok {
 			switch x := s.(type) {
@@ -41,14 +45,25 @@ func (w *World) InjectFault(entityID, faultID string, onsetNS int64, params map[
 				severity = x
 			case int64:
 				severity = float64(x)
+			default:
+				return "", fmt.Errorf("world: severity must be numeric")
 			}
 		}
+	}
+	if math.IsNaN(severity) || math.IsInf(severity, 0) || severity < 0 {
+		return "", fmt.Errorf("world: severity must be finite and non-negative")
 	}
 	af := &activeFault{
 		fault:    fault,
 		entity:   entityID,
 		onsetNS:  onsetNS,
 		severity: severity,
+	}
+	if fault.Onset.Shape == "stochastic" {
+		// The envelope is defined relative to fault onset. Starting at epoch
+		// zero would make a first read at a modern Unix timestamp replay
+		// millions of random-walk steps.
+		af.walkStep = onsetNS
 	}
 	// A fault already active on this entity is re-injected as a fresh
 	// instance (clear first if the caller wants a single instance).

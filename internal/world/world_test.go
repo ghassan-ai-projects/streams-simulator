@@ -144,6 +144,26 @@ func TestAnalyticCrossCheck(t *testing.T) {
 	}
 }
 
+func TestRCNetworkUsesBothTimeConstants(t *testing.T) {
+	makeWorld := func(tau2 float64) *World {
+		spec := testSpec(t, func(s *model.DomainSpec) {
+			s.Dynamics[0].F1.Form = "rc_network"
+			s.Dynamics[0].F1.TimeConstantS = 10
+			s.Dynamics[0].F1.TimeConstant2S = tau2
+		})
+		return newTestWorld(t, spec, 41, model.DefaultStartTimeNS)
+	}
+	start := model.DefaultStartTimeNS
+	fastSecond := makeWorld(1)
+	slowSecond := makeWorld(100)
+	at := start + 100*secondsPerNS
+	fast := fastSecond.StateValue("e-1", "x", at)
+	slow := slowSecond.StateValue("e-1", "x", at)
+	if fast-slow < 0.2 {
+		t.Fatalf("rc_network second time constant has no effect: fast=%v slow=%v", fast, slow)
+	}
+}
+
 // TestStepFaultMovesState verifies a step fault shifts hidden state and
 // clearing it reverts the contribution.
 func TestStepFaultMovesState(t *testing.T) {
@@ -355,5 +375,74 @@ func TestChurnAllocatesAndContinuesAfterBirths(t *testing.T) {
 	}
 	if _, ok := w.entities["e-2"]; !ok {
 		t.Fatalf("first birth did not receive a free identity: %v", ids)
+	}
+}
+
+func TestFaultOnsetMagnitudeScalesDeclaredDelta(t *testing.T) {
+	spec := testSpec(t, func(s *model.DomainSpec) {
+		s.Faults[0].Onset.Magnitude = 2
+		s.Faults[0].Affects[0].Delta = 1
+	})
+	start := model.DefaultStartTimeNS
+	w := newTestWorld(t, spec, 23, start)
+	base := w.StateValue("e-1", "x", start+secondsPerNS)
+	if _, err := w.InjectFault("e-1", "f1", start, nil); err != nil {
+		t.Fatal(err)
+	}
+	got := w.StateValue("e-1", "x", start+secondsPerNS)
+	if math.Abs((got-base)-2) > 0.01 {
+		t.Fatalf("fault magnitude was not applied: base=%v got=%v", base, got)
+	}
+}
+
+func TestDeclaredValueTypesReachNativeEvents(t *testing.T) {
+	spec := testSpec(t, func(s *model.DomainSpec) {
+		s.Dynamics = nil
+		s.State[1].Initial = 1
+		s.Channels = []model.Channel{
+			{Name: "flag", ValueType: "boolean", Resolution: 1, Fidelity: "F0", Absence: "signal", Observes: "x", Cadence: model.Cadence{Mode: "periodic", PeriodS: 60}, Noise: model.Noise{Model: "none"}},
+			{Name: "count", ValueType: "counter", Unit: "items", Resolution: 1, Fidelity: "F0", Absence: "signal", Observes: "x", Cadence: model.Cadence{Mode: "periodic", PeriodS: 60}, Noise: model.Noise{Model: "none"}},
+		}
+		s.Faults[0].Observability.Detector.Channel = "flag"
+	})
+	start := model.DefaultStartTimeNS
+	w, err := New(spec, 29, "w-types", start, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var events []model.SimEvent
+	w.SetEmitter(func(ev model.SimEvent) { events = append(events, ev) })
+	if _, _, err := w.Advance(start + 60*secondsPerNS); err != nil {
+		t.Fatal(err)
+	}
+	seen := map[string]any{}
+	for _, ev := range events {
+		seen[ev.Channel] = ev.Value
+	}
+	if _, ok := seen["flag"].(bool); !ok {
+		t.Fatalf("boolean channel emitted %T: %#v", seen["flag"], seen["flag"])
+	}
+	if _, ok := seen["count"].(int64); !ok {
+		t.Fatalf("counter channel emitted %T: %#v", seen["count"], seen["count"])
+	}
+}
+
+func TestAvailabilityStartsUpAndUsesRenewalTransitions(t *testing.T) {
+	spec := testSpec(t, func(s *model.DomainSpec) {
+		s.Dynamics = nil
+		s.Channels[0].Availability = &model.Availability{Uptime: 0.5, MTTRS: 60}
+	})
+	start := model.DefaultStartTimeNS
+	w, err := New(spec, 31, "w-availability", start, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var events []model.SimEvent
+	w.SetEmitter(func(ev model.SimEvent) { events = append(events, ev) })
+	if _, _, err := w.Advance(start + 10*3600*secondsPerNS); err != nil {
+		t.Fatal(err)
+	}
+	if len(events) == 0 {
+		t.Fatal("availability renewal incorrectly started the producer down")
 	}
 }

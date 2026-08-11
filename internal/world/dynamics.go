@@ -245,6 +245,26 @@ func (w *World) rk4Step(ent *Entity, dyn *model.Dynamics, s *stateValue, t, dt i
 		s.recordDelay(u, f1, dt)
 		s.lastStep = t + dt
 		return
+	case "rc_network":
+		// Two cascaded first-order lags. aux is the first stage and x is
+		// the second; both declared time constants affect the output.
+		tau1, tau2 := f1.TimeConstantS, f1.TimeConstant2S
+		if tau1 <= 0 || tau2 <= 0 {
+			s.lastStep = t + dt
+			return
+		}
+		u := w.inputValue(ent, dyn, t)
+		a0, x0 := s.aux, s.x
+		fa := func(a float64) float64 { return (f1.Gain*u - a) / tau1 }
+		fx := func(a, x float64) float64 { return (a - x) / tau2 }
+		ka1, kx1 := fa(a0), fx(a0, x0)
+		ka2, kx2 := fa(a0+0.5*dtF*ka1), fx(a0+0.5*dtF*ka1, x0+0.5*dtF*kx1)
+		ka3, kx3 := fa(a0+0.5*dtF*ka2), fx(a0+0.5*dtF*ka2, x0+0.5*dtF*kx2)
+		ka4, kx4 := fa(a0+dtF*ka3), fx(a0+dtF*ka3, x0+dtF*kx3)
+		s.aux = clamp(a0+dtF/6*(ka1+2*ka2+2*ka3+ka4), dyn.F1.Clamp)
+		s.x = clamp(x0+dtF/6*(kx1+2*kx2+2*kx3+kx4), dyn.F1.Clamp)
+		s.lastStep = t + dt
+		return
 	}
 
 	// Standard RK4 for the remaining first-order forms.
@@ -255,14 +275,6 @@ func (w *World) rk4Step(ent *Entity, dyn *model.Dynamics, s *stateValue, t, dt i
 	k4 := f1Derivative(f1, s.x+dtF*k3, inputs)
 	next := s.x + dtF/6*(k1+2*k2+2*k3+k4)
 	s.x = clamp(next, dyn.F1.Clamp)
-	if f1.Form == "rc_network" {
-		// second lag: dm/dt = (g*u - m)/tau1 was k1..k4 of the first;
-		// the second lag integrates aux toward the first stage output.
-		dmdt := (f1.Gain*inputs - s.aux) / f1.TimeConstantS
-		s.aux = clamp(s.aux+dtF*dmdt, dyn.F1.Clamp)
-		// x is the second stage: drive it toward the first stage (s.aux).
-		s.x = clamp(s.aux, dyn.F1.Clamp)
-	}
 	s.lastStep = t + dt
 }
 

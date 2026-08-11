@@ -101,6 +101,7 @@ type Entity struct {
 type channelRunState struct {
 	availDown   bool
 	availUntil  int64
+	availInit   bool
 	lastSent    float64
 	hasSent     bool
 	lastTrigger float64

@@ -190,6 +190,23 @@ func TestDeadTimeDoubleApplicationRejected(t *testing.T) {
 	}
 }
 
+func TestDynamicsCycleRejected(t *testing.T) {
+	spec := minimalSpec()
+	spec.State = []model.State{{Name: "x", Initial: 0}, {Name: "y", Initial: 0}}
+	spec.Dynamics = []model.Dynamics{
+		{Target: "x", Tier: "F1", DTMs: 1000, F1: &model.F1Dyn{Form: "first_order_lag", TimeConstantS: 1, Gain: 1, Inputs: []model.F1Input{{State: "y", Coef: 1}}}},
+		{Target: "y", Tier: "F1", DTMs: 1000, F1: &model.F1Dyn{Form: "first_order_lag", TimeConstantS: 1, Gain: 1, Inputs: []model.F1Input{{State: "x", Coef: 1}}}},
+	}
+	spec.Channels[0].Observes = "x"
+	raw, err := json.Marshal(spec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Parse(raw, "cycle"); err == nil || !strings.Contains(err.Error(), "cycle") {
+		t.Fatalf("expected dynamics cycle rejection, got %v", err)
+	}
+}
+
 // minimalSpec builds a valid tiny spec for cross-check tests.
 func minimalSpec() *model.DomainSpec {
 	return &model.DomainSpec{

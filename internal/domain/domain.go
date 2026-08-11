@@ -260,6 +260,15 @@ func crossCheck(c *Compiled, src string) error {
 		if ch.Cadence.Mode == "event_driven" && ch.Cadence.TriggerState != "" && !c.HasState(ch.Cadence.TriggerState) {
 			return bad("channel %q trigger references undeclared state %q", ch.Name, ch.Cadence.TriggerState)
 		}
+		if ch.Cadence.Mode == "batch" {
+			return bad("channel %q uses batch cadence, which is not implemented", ch.Name)
+		}
+		if ch.Noise.Model == "pink" {
+			return bad("channel %q uses pink noise, which is not implemented", ch.Name)
+		}
+		if ch.Availability != nil && ch.Availability.MTTRS <= 0 {
+			return bad("channel %q availability requires mttr_s > 0", ch.Name)
+		}
 	}
 	for i := range spec.Dynamics {
 		d := &spec.Dynamics[i]
@@ -288,8 +297,14 @@ func crossCheck(c *Compiled, src string) error {
 			}
 		}
 	}
+	if err := rejectDynamicsCycles(spec, c, src); err != nil {
+		return err
+	}
 	for i := range spec.Faults {
 		f := &spec.Faults[i]
+		if f.Onset.RatePerHour < 0 {
+			return bad("fault %q onset rate_per_hour must be non-negative", f.ID)
+		}
 		for _, a := range f.Affects {
 			if !c.HasState(a.State) {
 				return bad("fault %q affects undeclared state %q", f.ID, a.State)
@@ -342,6 +357,45 @@ func crossCheck(c *Compiled, src string) error {
 			if w < 0 {
 				return bad("profile %q has negative weight for %q", p.Name, name)
 			}
+		}
+	}
+	return nil
+}
+
+func rejectDynamicsCycles(spec *model.DomainSpec, c *Compiled, src string) error {
+	deps := make(map[string][]string)
+	for _, d := range spec.Dynamics {
+		if d.F1 == nil {
+			continue
+		}
+		for _, in := range d.F1.Inputs {
+			deps[d.Target] = append(deps[d.Target], in.State)
+		}
+	}
+	state := make(map[string]uint8)
+	var stack []string
+	var visit func(string) error
+	visit = func(name string) error {
+		switch state[name] {
+		case 1:
+			return fmt.Errorf("domain: %s: dynamics dependency cycle at state %q (path %v)", src, name, append(stack, name))
+		case 2:
+			return nil
+		}
+		state[name] = 1
+		stack = append(stack, name)
+		for _, dep := range deps[name] {
+			if err := visit(dep); err != nil {
+				return err
+			}
+		}
+		stack = stack[:len(stack)-1]
+		state[name] = 2
+		return nil
+	}
+	for _, name := range c.StateNames() {
+		if err := visit(name); err != nil {
+			return err
 		}
 	}
 	return nil

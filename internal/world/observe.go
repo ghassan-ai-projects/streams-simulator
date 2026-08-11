@@ -140,7 +140,14 @@ func (w *World) reading(ent *Entity, ch *model.Channel, cs *channelRunState, t i
 	}
 	cs.lastSent = raw
 	cs.hasSent = true
-	return true, raw
+	switch ch.ValueType {
+	case "boolean":
+		return true, raw >= 0.5
+	case "counter":
+		return true, int64(math.Round(raw))
+	default:
+		return true, raw
+	}
 }
 
 // observe applies the channel's observation function to the hidden state.
@@ -165,7 +172,9 @@ func (w *World) observe(ent *Entity, ch *model.Channel, cs *channelRunState, t i
 		scale := 1 + (b.NoiseScaleAtFull-1)*bias
 		sigma *= scale
 	}
-	if sigma > 0 && !w.Noiseless {
+	if sigma > 0 && ch.Noise.Model == "quantization" && !w.Noiseless {
+		reading = math.Round(reading/sigma) * sigma
+	} else if sigma > 0 && !w.Noiseless {
 		rng := w.substream(ent.ID + "/" + ch.Name + "/noise")
 		reading += sigma * rng.Norm()
 	}
@@ -296,31 +305,48 @@ func (w *World) linkDelay(entityID string, ch *model.Channel, t int64) float64 {
 
 // updateAvailability advances the producer up/down renewal process.
 func (w *World) updateAvailability(ent *Entity, ch *model.Channel, cs *channelRunState, t int64) error {
-	if cs.availUntil == 0 {
-		cs.availUntil = t
+	rng := w.substream(ent.ID + "/" + ch.Name + "/availability")
+	a := ch.Availability
+	if a.Uptime >= 1 {
+		cs.availInit = true
+		cs.availDown = false
+		cs.availUntil = 0
+		return nil
+	}
+	if !cs.availInit {
+		cs.availInit = true
+		cs.availDown = false
+		cs.availUntil = t + int64(rng.Exp(mtbfSeconds(a.Uptime, a.MTTRS)))
+		return nil
 	}
 	if t < cs.availUntil {
 		return nil
 	}
-	rng := w.substream(ent.ID + "/" + ch.Name + "/availability")
-	a := ch.Availability
-	mttr := a.MTTRS * secondsPerNS
-	mtbf := mttr
-	if a.Uptime < 1 {
-		mtbf = mttr * (1/(1-a.Uptime) - 1)
-	}
 	if cs.availDown {
 		cs.availDown = false
-		cs.availUntil = t + int64(mtbf)
+		cs.availUntil = t + int64(rng.Exp(mtbfSeconds(a.Uptime, a.MTTRS)))
 	} else {
 		cs.availDown = true
-		cs.availUntil = t + int64(mttr)
-	}
-	if mttr > 0 {
-		// jitter the transition times from the same substream
-		_ = rng
+		cs.availUntil = t + int64(rng.Exp(mttrSeconds(a.MTTRS)))
 	}
 	return nil
+}
+
+func mttrSeconds(mttr float64) float64 {
+	if mttr <= 0 {
+		return 1
+	}
+	return mttr
+}
+
+func mtbfSeconds(uptime, mttr float64) float64 {
+	if uptime >= 1 {
+		return math.Inf(1)
+	}
+	if uptime <= 0 {
+		return mttrSeconds(mttr)
+	}
+	return mttrSeconds(mttr) * uptime / (1 - uptime)
 }
 
 // isConfirmationChannel reports whether the channel independently reports an

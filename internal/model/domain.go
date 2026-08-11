@@ -114,8 +114,9 @@ type F1Dyn struct {
 // F1Input is a driving state, with an optional coefficient. The schema
 // allows a bare string (coefficient 1.0) or an object.
 type F1Input struct {
-	State string  `json:"state"`
-	Coef  float64 `json:"coef,omitempty"`
+	State   string  `json:"state"`
+	Coef    float64 `json:"coef,omitempty"`
+	CoefSet bool    `json:"-"`
 }
 
 // UnmarshalJSON accepts both the bare-string and object forms.
@@ -124,6 +125,7 @@ func (f *F1Input) UnmarshalJSON(b []byte) error {
 	if err := json.Unmarshal(b, &s); err == nil {
 		f.State = s
 		f.Coef = 1
+		f.CoefSet = true
 		return nil
 	}
 	type alias F1Input
@@ -133,7 +135,15 @@ func (f *F1Input) UnmarshalJSON(b []byte) error {
 	}
 	f.State = a.State
 	f.Coef = a.Coef
-	if f.Coef == 0 {
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(b, &fields); err != nil {
+		return fmt.Errorf("UnmarshalJSON: %w", err)
+	}
+	f.CoefSet = false
+	if _, ok := fields["coef"]; ok {
+		f.CoefSet = true
+	}
+	if !f.CoefSet {
 		f.Coef = 1
 	}
 	return nil
