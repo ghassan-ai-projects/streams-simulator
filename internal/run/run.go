@@ -178,7 +178,7 @@ func fnv(b []byte) uint64 {
 }
 
 // Trace returns the delivered trace bytes (available after End).
-func (r *Run) Trace() []byte { return r.trace }
+func (r *Run) Trace() []byte { return append([]byte(nil), r.trace...) }
 
 // SetEvidenceRecorder installs a hook invoked for every delivered event
 // (post-perturbation, pre-render). The prefix-indistinguishability harness
@@ -576,6 +576,9 @@ func (r *Run) AppliedPerturbations() []string {
 
 // SubmitVerdict stores and validates a consumer verdict.
 func (r *Run) SubmitVerdict(v *model.Verdict) error {
+	if v == nil {
+		return fmt.Errorf("SubmitVerdict: verdict is required")
+	}
 	if v.RunID != r.ID {
 		return fmt.Errorf("run: verdict run_id %q does not match run %q", v.RunID, r.ID)
 	}
@@ -586,15 +589,17 @@ func (r *Run) SubmitVerdict(v *model.Verdict) error {
 	if err := model.ValidateVerdict(raw); err != nil {
 		return fmt.Errorf("SubmitVerdict: %w", err)
 	}
-	r.verdict = v
+	r.verdict = cloneVerdict(v)
 	return nil
 }
 
 // Verdict returns the submitted verdict, or nil.
-func (r *Run) Verdict() *model.Verdict { return r.verdict }
+func (r *Run) Verdict() *model.Verdict { return cloneVerdict(r.verdict) }
 
 // Ledger returns the delivery ledger in delivery order.
-func (r *Run) Ledger() []model.LedgerRecord { return r.ledger }
+func (r *Run) Ledger() []model.LedgerRecord {
+	return append([]model.LedgerRecord(nil), r.ledger...)
+}
 
 // TraceDigest is the sha256 of the delivered trace bytes.
 func (r *Run) TraceDigest() string { return r.traceDigest }
@@ -808,9 +813,38 @@ func worldDigest(r *Run) string {
 }
 
 // History returns the world-state history (director-only).
-func (r *Run) History() []stateSnapshot { return r.history }
+func (r *Run) History() []stateSnapshot {
+	out := make([]stateSnapshot, len(r.history))
+	for i, rec := range r.history {
+		out[i] = rec
+		out[i].States = make(map[string]float64, len(rec.States))
+		for k, v := range rec.States {
+			out[i].States[k] = v
+		}
+	}
+	return out
+}
 
 // RecordHistory snapshots hidden state for post-hoc analysis.
 func (r *Run) RecordHistory(seq int64, atNS int64, entity string, states map[string]float64) {
-	r.history = append(r.history, stateSnapshot{Seq: seq, TimeNS: atNS, Entity: entity, States: states})
+	copyStates := make(map[string]float64, len(states))
+	for k, v := range states {
+		copyStates[k] = v
+	}
+	r.history = append(r.history, stateSnapshot{Seq: seq, TimeNS: atNS, Entity: entity, States: copyStates})
+}
+
+func cloneVerdict(v *model.Verdict) *model.Verdict {
+	if v == nil {
+		return nil
+	}
+	raw, err := json.Marshal(v)
+	if err != nil {
+		return nil
+	}
+	out := &model.Verdict{}
+	if err := json.Unmarshal(raw, out); err != nil {
+		return nil
+	}
+	return out
 }
