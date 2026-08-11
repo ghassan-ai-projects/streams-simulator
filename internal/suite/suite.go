@@ -370,12 +370,19 @@ func (s *Suite) pickFault(cfg Config, prof *model.Profile, rng *randutil.SplitMi
 	}
 	if len(prof.FaultWeights) > 0 {
 		total := 0.0
-		for _, w := range prof.FaultWeights {
+		ids := make([]string, 0, len(prof.FaultWeights))
+		for id := range prof.FaultWeights {
+			ids = append(ids, id)
+		}
+		sort.Strings(ids)
+		for _, id := range ids {
+			w := prof.FaultWeights[id]
 			total += w
 		}
 		if total > 0 {
 			r := rng.Float64() * total
-			for id, w := range prof.FaultWeights {
+			for _, id := range ids {
+				w := prof.FaultWeights[id]
 				if r < w {
 					return id
 				}
@@ -397,19 +404,41 @@ func (s *Suite) pickFault(cfg Config, prof *model.Profile, rng *randutil.SplitMi
 	return positives[rng.Intn(len(positives))]
 }
 
-// defaultSetup returns scenario context effectors. Currently only the
-// aquaculture aerator night-run; extensible per domain.
+// defaultSetup translates profile data into scenario context calls. The
+// simulator never branches on a domain id or effector name here.
 func (s *Suite) defaultSetup(spec *domain.Compiled, entity string, startNS int64) []truth.SetupCall {
-	if spec.Spec.ID != "aquaculture-pond" {
+	prof := spec.Profile(s.Profile)
+	if prof == nil {
 		return nil
 	}
-	if spec.Effector("start_aerator") == nil {
+	var out []truth.SetupCall
+	for i, setup := range prof.Setup {
+		if setup.Effector == "" || spec.Effector(setup.Effector) == nil {
+			continue
+		}
+		args := substituteEntity(setup.Args, entity)
+		commandID := setup.CommandID
+		if commandID == "" {
+			commandID = fmt.Sprintf("setup-%d", i)
+		}
+		out = append(out, truth.SetupCall{Effector: setup.Effector, EntityID: entity, CommandID: commandID, Args: args, AtNS: startNS})
+	}
+	return out
+}
+
+func substituteEntity(in map[string]any, entity string) map[string]any {
+	if len(in) == 0 {
 		return nil
 	}
-	return []truth.SetupCall{{
-		Effector: "start_aerator", EntityID: entity, CommandID: "setup",
-		Args: map[string]any{"pond_id": entity, "level": 1.0}, AtNS: startNS,
-	}}
+	out := make(map[string]any, len(in))
+	for k, v := range in {
+		if s, ok := v.(string); ok && s == "{entity_id}" {
+			out[k] = entity
+		} else {
+			out[k] = v
+		}
+	}
+	return out
 }
 
 // buildCommandLog renders the scenario as replayable commands.

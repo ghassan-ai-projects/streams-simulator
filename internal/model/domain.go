@@ -353,6 +353,16 @@ type Profile struct {
 	EntityCount          int                `json:"entity_count,omitempty"`
 	DurationS            float64            `json:"duration_s,omitempty"`
 	SimultaneousEntities int                `json:"simultaneous_entities,omitempty"`
+	Setup                []ProfileSetup     `json:"setup,omitempty"`
+}
+
+// ProfileSetup declares context calls made before a scenario fault. The
+// scenario entity is substituted for the {entity_id} placeholder in string
+// arguments, keeping setup data-defined rather than domain-coded.
+type ProfileSetup struct {
+	Effector  string         `json:"effector"`
+	CommandID string         `json:"command_id,omitempty"`
+	Args      map[string]any `json:"args,omitempty"`
 }
 
 // GroundTruth declares suite composition targets.

@@ -367,7 +367,8 @@
       "name": "nominal",
       "description": "Eight ponds, one fault sampled per scenario, 72-hour traces spanning three dawn cycles.",
       "entity_count": 8,
-      "duration_s": 259200
+      "duration_s": 259200,
+      "setup": [{"effector": "start_aerator", "command_id": "setup", "args": {"pond_id": "{entity_id}", "level": 1.0}}]
     },
     {
       "name": "correlated_cascade",
@@ -375,21 +376,24 @@
       "fault_weights": {"aerator_failure": 1.0},
       "entity_count": 8,
       "simultaneous_entities": 8,
-      "duration_s": 43200
+      "duration_s": 43200,
+      "setup": [{"effector": "start_aerator", "command_id": "setup", "args": {"pond_id": "{entity_id}", "level": 1.0}}]
     },
     {
       "name": "sensor_pathology",
       "description": "Weighted toward do_probe_fouling: the instrument lies while the process degrades. The label a threshold rule cannot get right, and the one where reasoning has to earn its place.",
       "fault_weights": {"do_probe_fouling": 0.7, "transient_none": 0.3},
       "entity_count": 8,
-      "duration_s": 172800
+      "duration_s": 172800,
+      "setup": [{"effector": "start_aerator", "command_id": "setup", "args": {"pond_id": "{entity_id}", "level": 1.0}}]
     },
     {
       "name": "dawn_crash",
       "description": "Compressed: every scenario begins four hours before sunrise, so the deadline pressure is maximal and slow reasoning is directly measurable in mortality.",
       "fault_weights": {"aerator_failure": 0.4, "algae_bloom_crash": 0.3, "do_probe_fouling": 0.3},
       "entity_count": 8,
-      "duration_s": 28800
+      "duration_s": 28800,
+      "setup": [{"effector": "start_aerator", "command_id": "setup", "args": {"pond_id": "{entity_id}", "level": 1.0}}]
     }
   ],
 

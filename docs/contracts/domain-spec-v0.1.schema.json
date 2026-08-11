@@ -580,7 +580,21 @@
           "fault_weights": {"type": "object", "additionalProperties": {"type": "number", "minimum": 0}},
           "entity_count": {"type": "integer", "minimum": 1},
           "duration_s": {"type": "number", "exclusiveMinimum": 0},
-          "simultaneous_entities": {"type": "integer", "minimum": 1, "description": "For correlated_cascade: how many entities the root cause trips at once."}
+          "simultaneous_entities": {"type": "integer", "minimum": 1, "description": "For correlated_cascade: how many entities the root cause trips at once."},
+          "setup": {
+            "type": "array",
+            "description": "Pre-fault context calls. {entity_id} in string arguments is replaced with the sampled scenario entity.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["effector"],
+              "properties": {
+                "effector": {"type": "string"},
+                "command_id": {"type": "string"},
+                "args": {"type": "object"}
+              }
+            }
+          }
         }
       },
       "allOf": [
