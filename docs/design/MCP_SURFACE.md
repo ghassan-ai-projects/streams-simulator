@@ -36,23 +36,31 @@ There is no "stream" anything. A consumer is whoever holds an operator token.
 | Can mutate the world | arbitrarily | only through declared effectors, with their declared effects |
 | Can move the clock | yes | no |
 
-One process, one endpoint, two handler sets constructed from different view structs. The
-role is fixed at session initialize:
+One process, one stdio endpoint for the director; the operator role is served over
+streamable HTTP from the same process. The role is fixed at session initialize:
 
 ```bash
-streamsim mcp --role director            # stdio
+streamsim mcp --role director --operator-addr 127.0.0.1:PORT
 ```
 
-The current prototype serves the director over stdio. The operator server is constructed
-per world by the host from the capability token; there is not yet a standalone operator
-CLI or HTTP `serve` command. A session's role never changes, and each server advertises
-only its role's tools — so a consumer cannot discover the existence of a director tool,
-let alone call it.
+The director serves over stdio; `--operator-addr` additionally binds the operator role
+over streamable HTTP. A single operator server serves every world: each tool call
+resolves the capability token — returned by `sim.world.create` alongside the operator
+endpoint — to the owning world's `OperatorView`, so the connection, not the role, is
+shared. A session's role never changes, and each server advertises only its role's tools
+— so a consumer cannot discover the existence of a director tool, let alone call it. A
+consumer connects with any MCP client over HTTP:
+
+```bash
+streamsim refconsumer --trace trace.jsonl --mcp http://127.0.0.1:PORT --token t-... --run r-...
+```
 
 The role-specific servers advertise MCP protocol range `2025-11-25`–`2026-07-28`, pinned
 per configuration, failing closed outside it. They are stateless in the MCP sense:
 identity lives in the world and run ids the tools carry, not in a transport session, so a
-dropped connection loses nothing.
+dropped connection loses nothing. The world itself is single-goroutine: a command mutex
+serializes every world mutation across the director and operator surfaces, and the
+quiescence wait releases it so a consumer's effector call can land mid-wait.
 
 ## 3. Director tools
 

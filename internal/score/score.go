@@ -447,8 +447,11 @@ func resolveTime(r *run.Run, gt *model.GroundTruthRecord) (bool, int64) {
 		return false, 0
 	}
 	state := fault.Affects[0].State
-	// Pre-fault baseline: the state just before onset.
-	base, ok := historyValue(r, gt.EntityID, state, gt.InjectionTimeNS-1)
+	// Pre-fault baseline: the state just before onset. The sample at or
+	// after the onset may already carry the fault when the onset lands on
+	// an emission boundary, so the baseline is the latest sample strictly
+	// before it.
+	base, ok := historyValueBefore(r, gt.EntityID, state, gt.InjectionTimeNS)
 	if !ok {
 		return false, 0
 	}
@@ -531,6 +534,34 @@ func historyValue(r *run.Run, entity, state string, atNS int64) (float64, bool) 
 	}
 	if before != nil {
 		return *before, true
+	}
+	return 0, false
+}
+
+// historyValueBefore returns the latest captured sample strictly before t.
+// A pre-onset baseline must not read a sample at or after the onset: when
+// the fault lands on an emission boundary, that sample already carries the
+// fault and the deviation collapses to zero.
+func historyValueBefore(r *run.Run, entity, state string, atNS int64) (float64, bool) {
+	history := r.History()
+	var best *float64
+	var bestAt int64
+	for _, snap := range history {
+		if snap.Entity != entity {
+			continue
+		}
+		value, ok := snap.States[state]
+		if !ok {
+			continue
+		}
+		if snap.TimeNS < atNS && (best == nil || snap.TimeNS > bestAt) {
+			v := value
+			best = &v
+			bestAt = snap.TimeNS
+		}
+	}
+	if best != nil {
+		return *best, true
 	}
 	return 0, false
 }

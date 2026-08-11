@@ -99,6 +99,7 @@ type Run struct {
 	history           []stateSnapshot
 	verdict           *model.Verdict
 	quiescedThroughNS int64
+	commandMu         sync.Mutex // serializes world-mutating commands across goroutines
 	quiesceMu         sync.Mutex
 	quiesceNotify     chan struct{}
 	evidenceRec       func(model.SimEvent) // delivered-event hook (test harness)
@@ -334,16 +335,19 @@ func (r *Run) RenderRecord(ev *model.SimEvent) (string, error) {
 
 // Advance moves the world to toNS, delivering everything along the way.
 // awaitConsumer blocks until quiescence is reported through toNS; the wait
-// is bounded by DefaultQuiescenceTimeout and cancelled by ctx. On a
+// is bounded by DefaultQuiescenceTimeout and canceled by ctx. On a
 // quiescence timeout the world has already moved, so the advance is logged
 // (replay reproduces the same state), the run is marked incomplete, and the
 // emitted count is still returned alongside the error.
 func (r *Run) Advance(ctx context.Context, toNS int64, awaitConsumer bool) (int, error) {
+	r.commandMu.Lock()
 	if r.runErr != nil {
+		r.commandMu.Unlock()
 		return 0, r.runErr
 	}
 	emitted, effects, err := r.World.Advance(toNS)
 	if err != nil {
+		r.commandMu.Unlock()
 		return 0, fmt.Errorf("run: advance: %w", err)
 	}
 	r.worldEndTimeNS = toNS
@@ -353,6 +357,7 @@ func (r *Run) Advance(ctx context.Context, toNS int64, awaitConsumer bool) (int,
 		r.deliver(d)
 	}
 	if r.runErr != nil {
+		r.commandMu.Unlock()
 		return emitted, r.runErr
 	}
 	// Log the advance before awaiting quiescence: the world has already
@@ -362,15 +367,26 @@ func (r *Run) Advance(ctx context.Context, toNS int64, awaitConsumer bool) (int,
 		Seq: int64(len(r.commandLog)), AtNS: r.World.Clock(),
 		Op: model.OpClockAdvance, Args: map[string]any{"to_ns": toNS, "await_consumer": awaitConsumer},
 	})
-	if awaitConsumer {
-		if err := r.awaitQuiescence(ctx, toNS); err != nil {
-			// Only a timeout is a simulator failure: a cancelled wait is a
-			// caller-side abandonment and leaves the run open-loop.
-			if errors.Is(err, ErrConsumerNotQuiesced) {
-				r.fail(err)
-			}
-			return emitted, err
+	if !awaitConsumer {
+		r.commandMu.Unlock()
+		_ = effects
+		return emitted, nil
+	}
+	// The quiescence wait is a consumer-sync barrier, not a world mutation:
+	// release the command mutex so the consumer's effector call can land
+	// while the advance waits. Without this the closed loop deadlocks.
+	r.commandMu.Unlock()
+	if err := r.awaitQuiescence(ctx, toNS); err != nil {
+		// Only a timeout is a simulator failure: a canceled wait is a
+		// caller-side abandonment and leaves the run open-loop. The failure
+		// state is written under the command mutex so a concurrent End or
+		// Score never reads it half-written.
+		if errors.Is(err, ErrConsumerNotQuiesced) {
+			r.commandMu.Lock()
+			r.fail(err)
+			r.commandMu.Unlock()
 		}
+		return emitted, err
 	}
 	_ = effects
 	return emitted, nil
@@ -449,6 +465,9 @@ func (r *Run) deliver(d perturb.Delivered) {
 
 // InjectFault records and applies a world fault.
 func (r *Run) InjectFault(entityID, faultID string, onsetNS int64, params map[string]any) (string, error) {
+	r.commandMu.Lock()
+	defer r.commandMu.Unlock()
+
 	fid, err := r.World.InjectFault(entityID, faultID, onsetNS, params)
 	if err != nil {
 		return "", fmt.Errorf("run: inject fault: %w", err)
@@ -464,6 +483,9 @@ func (r *Run) InjectFault(entityID, faultID string, onsetNS int64, params map[st
 
 // ClearFault records and clears a fault.
 func (r *Run) ClearFault(faultID string, atNS int64) error {
+	r.commandMu.Lock()
+	defer r.commandMu.Unlock()
+
 	if err := r.World.ClearFault(faultID, atNS); err != nil {
 		return fmt.Errorf("ClearFault: %w", err)
 	}
@@ -476,6 +498,9 @@ func (r *Run) ClearFault(faultID string, atNS int64) error {
 
 // ApplyPerturb records and applies a delivery perturbation.
 func (r *Run) ApplyPerturb(name string, params map[string]any, fromNS, untilNS int64) (string, error) {
+	r.commandMu.Lock()
+	defer r.commandMu.Unlock()
+
 	id, err := r.Perturb.Apply(name, params, fromNS, untilNS)
 	if err != nil {
 		return "", fmt.Errorf("run: perturb: %w", err)
@@ -492,6 +517,9 @@ func (r *Run) ApplyPerturb(name string, params map[string]any, fromNS, untilNS i
 
 // ClearPerturb records and deactivates a perturbation.
 func (r *Run) ClearPerturb(id string) error {
+	r.commandMu.Lock()
+	defer r.commandMu.Unlock()
+
 	if err := r.Perturb.Clear(id); err != nil {
 		return fmt.Errorf("ClearPerturb: %w", err)
 	}
@@ -504,6 +532,11 @@ func (r *Run) ClearPerturb(id string) error {
 
 // InvokeEffector records and performs an effector call.
 func (r *Run) InvokeEffector(effector, entityID, commandID string, args map[string]any, atNS int64) (*world.InvokeResult, error) {
+	r.commandMu.Lock()
+	defer r.commandMu.Unlock()
+	if r.finished {
+		return nil, fmt.Errorf("InvokeEffector: run is finished")
+	}
 	res, err := r.World.InvokeEffector(effector, entityID, commandID, args, atNS)
 	if err != nil {
 		// Interlock and effector refusals are recorded as commands too, so a
@@ -532,6 +565,9 @@ func (r *Run) InvokeEffector(effector, entityID, commandID string, args map[stri
 
 // AddEntity records and performs an entity birth.
 func (r *Run) AddEntity(id string, atNS int64) error {
+	r.commandMu.Lock()
+	defer r.commandMu.Unlock()
+
 	if err := r.World.AddEntity(id, atNS, nil); err != nil {
 		return fmt.Errorf("AddEntity: %w", err)
 	}
@@ -544,6 +580,9 @@ func (r *Run) AddEntity(id string, atNS int64) error {
 
 // RetireEntity records and performs an entity retirement.
 func (r *Run) RetireEntity(entityID, reason string, atNS int64) error {
+	r.commandMu.Lock()
+	defer r.commandMu.Unlock()
+
 	r.World.Retire(entityID, reason, atNS)
 	r.commandLog = append(r.commandLog, model.Command{
 		Seq: int64(len(r.commandLog)), AtNS: atNS, Op: model.OpEntityRetire,
@@ -554,6 +593,8 @@ func (r *Run) RetireEntity(entityID, reason string, atNS int64) error {
 
 // ConfigureEnvTarget records an env.inject target (pause/kill/partition).
 func (r *Run) ConfigureEnvTarget(target string, allow bool) {
+	r.commandMu.Lock()
+	defer r.commandMu.Unlock()
 	r.envTargets[target] = target
 	r.allowEnv = r.allowEnv || allow
 }
@@ -562,6 +603,9 @@ func (r *Run) ConfigureEnvTarget(target string, allow bool) {
 // environment-fault parameters are declared yet, so any params are rejected
 // rather than recorded and ignored.
 func (r *Run) EnvInject(target, fault string, params map[string]any, atNS int64) (string, error) {
+	r.commandMu.Lock()
+	defer r.commandMu.Unlock()
+
 	if !r.allowEnv {
 		return "", fmt.Errorf("run: env.inject not enabled for this world (no configured target)")
 	}
@@ -578,7 +622,7 @@ func (r *Run) EnvInject(target, fault string, params map[string]any, atNS int64)
 // ReportQuiesced records the consumer's quiescence assertion. The watermark
 // is monotonic, so a report can only move it forward: a stale report for an
 // earlier instant can never satisfy a later await, and a report received
-// between advances is honoured on the next wait (the fast path).
+// between advances is honored on the next wait (the fast path).
 func (r *Run) ReportQuiesced(throughNS int64) {
 	r.quiesceMu.Lock()
 	defer r.quiesceMu.Unlock()
@@ -614,9 +658,8 @@ func (r *Run) awaitQuiescence(ctx context.Context, toNS int64) error {
 		case <-ch:
 			continue
 		case <-ctx.Done():
-			return ctx.Err()
+			return fmt.Errorf("run: quiescence wait canceled: %w", ctx.Err())
 		case <-timer.C():
-			r.reproducible = false
 			return fmt.Errorf("run: %w: quiesced through %d, asked for %d", ErrConsumerNotQuiesced, through, toNS)
 		}
 	}
@@ -648,6 +691,13 @@ func (r *Run) AppliedPerturbations() []string {
 
 // SubmitVerdict stores and validates a consumer verdict.
 func (r *Run) SubmitVerdict(v *model.Verdict) error {
+	r.commandMu.Lock()
+	defer r.commandMu.Unlock()
+	if r.finished {
+		// The operator endpoint outlives run.end; a verdict arriving then
+		// must not be silently dropped from an already-written artifact.
+		return fmt.Errorf("SubmitVerdict: run is finished")
+	}
 	if v == nil {
 		return fmt.Errorf("SubmitVerdict: verdict is required")
 	}
@@ -692,6 +742,9 @@ func (r *Run) Reproducible() bool { return r.reproducible }
 // writes the run artifact, ledger, world-state history and (if any) verdict
 // into outDir.
 func (r *Run) End(outDir string) (*model.RunArtifact, error) {
+	r.commandMu.Lock()
+	defer r.commandMu.Unlock()
+
 	if r.finished {
 		return nil, fmt.Errorf("run: already finished")
 	}

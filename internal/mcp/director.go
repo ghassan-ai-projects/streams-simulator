@@ -38,22 +38,24 @@ type WorldRecord struct {
 // Director holds the director-role state: the catalog, the installed
 // adapters, the world registry, and the truth store.
 type Director struct {
-	mu       sync.Mutex
-	Catalog  *domain.Catalog
-	Adapters map[string]*model.Adapter
-	Worlds   map[string]*WorldRecord
-	byRun    map[string]string // run id -> world id
-	Truth    *truth.Store
-	OutDir   string
-	ctx      context.Context
-	seq      int
+	mu               sync.Mutex
+	Catalog          *domain.Catalog
+	Adapters         map[string]*model.Adapter
+	Worlds           map[string]*WorldRecord
+	byRun            map[string]string // run id -> world id
+	byToken          map[string]*WorldRecord
+	OperatorEndpoint string // operator HTTP endpoint served by this process (CLI)
+	Truth            *truth.Store
+	OutDir           string
+	ctx              context.Context
+	seq              int
 }
 
 // NewDirector builds the director with its registries.
 func NewDirector(ctx context.Context, cat *domain.Catalog, adapters map[string]*model.Adapter, outDir string) *Director {
 	d := &Director{
 		Catalog: cat, Adapters: adapters, Worlds: map[string]*WorldRecord{},
-		byRun: map[string]string{},
+		byRun: map[string]string{}, byToken: map[string]*WorldRecord{},
 		Truth: truth.NewStore(), OutDir: outDir, ctx: ctx,
 	}
 	d.Truth.OpenChecker = func(runID string) bool {
@@ -67,6 +69,27 @@ func NewDirector(ctx context.Context, cat *domain.Catalog, adapters map[string]*
 		return w != nil && !w.RunEnded
 	}
 	return d
+}
+
+// ResolveOperator returns the operator view for a capability token. This is
+// what lets one operator endpoint serve every world: the token, not the
+// connection, names the world.
+func (d *Director) ResolveOperator(token string) (*OperatorView, error) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	rec := d.byToken[token]
+	if rec == nil {
+		return nil, errTool(CodeCapabilityDenied, "capability token required")
+	}
+	return rec.Operator, nil
+}
+
+// SetOperatorEndpoint records the operator HTTP endpoint this process serves
+// (CLI wiring); sim.world.create includes it in its response.
+func (d *Director) SetOperatorEndpoint(endpoint string) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.OperatorEndpoint = endpoint
 }
 
 // World returns the record for a world id, or nil.
@@ -150,12 +173,18 @@ func (d *Director) CreateWorld(args map[string]any) (map[string]any, error) {
 	d.mu.Lock()
 	d.Worlds[worldID] = rec
 	d.byRun[r.ID] = worldID
+	d.byToken[token] = rec
+	operatorEndpoint := d.OperatorEndpoint
 	d.mu.Unlock()
-	return map[string]any{
+	out := map[string]any{
 		"world_id": worldID, "world_digest": r.Digest(), "entity_ids": r.World.EntityIDs(),
 		"clock": model.FormatTime(r.World.Clock()), "token": token,
 		"simulated": true,
-	}, nil
+	}
+	if operatorEndpoint != "" {
+		out["operator_endpoint"] = operatorEndpoint
+	}
+	return out, nil
 }
 
 func capabilityToken() (string, error) {
@@ -224,6 +253,7 @@ func (d *Director) DestroyWorld(worldID string) (map[string]any, error) {
 	}
 	d.mu.Lock()
 	delete(d.Worlds, worldID)
+	delete(d.byToken, w.Token)
 	d.mu.Unlock()
 	return map[string]any{"world_id": worldID, "destroyed": true}, nil
 }

@@ -125,7 +125,7 @@ func TestQuiescenceCancelStopsTheWait(t *testing.T) {
 	if err := <-done; !errors.Is(err, context.Canceled) {
 		t.Fatalf("expected context.Canceled, got %v", err)
 	}
-	// A cancelled wait is a caller-side abandonment, not a simulator
+	// A canceled wait is a caller-side abandonment, not a simulator
 	// failure: the run is not marked incomplete.
 	if r.Reproducible() == false {
 		t.Fatal("ctx cancel must not mark the run non-reproducible")

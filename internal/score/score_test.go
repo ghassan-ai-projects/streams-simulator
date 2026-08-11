@@ -100,6 +100,64 @@ func loopResolved(r *run.Run) bool {
 	return r.World.StateValue("site-a/pond-1", "aerator_output", r.World.Clock()) > 0.9
 }
 
+// TestLoopResolvesWhenFaultOnsetLandsOnEmissionBoundary: the MCP harness
+// pattern is inject-then-advance, so when the injected onset aligns exactly
+// with an emission the sample at the onset already carries the fault. The
+// pre-onset baseline must be the latest sample strictly before the onset,
+// or the deviation collapses to zero and a correct recovery is scored as
+// unresolved. Regression for the operator-endpoint golden loop.
+func TestLoopResolvesWhenFaultOnsetLandsOnEmissionBoundary(t *testing.T) {
+	spec, a := testBase(t)
+	start := model.DefaultStartTimeNS + 4*3600*1e9
+	r, err := run.New(context.Background(), run.Config{
+		Domain: spec, Adapter: a, Seed: 11, SinkName: model.SinkInproc,
+		TimeMode: model.TimeStepped, StartTimeNS: start,
+		ForceFailureMode: "ok",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	pond := "site-a/pond-1"
+	if _, err := r.InvokeEffector("start_aerator", pond, "setup", map[string]any{"pond_id": pond, "level": 1.0}, start); err != nil {
+		t.Fatal(err)
+	}
+	// Inject-then-advance, with the onset on an emission boundary.
+	onset := start + 2*3600*1e9 // 06:00:00, an emission boundary
+	if _, err := r.InjectFault(pond, "aerator_failure", onset, nil); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.Advance(context.Background(), start+5*3600*1e9, false); err != nil {
+		t.Fatal(err)
+	}
+	// Actuate and let the effect propagate.
+	if _, err := r.InvokeEffector("start_aerator", pond, "cmd-boundary", map[string]any{"pond_id": pond, "level": 1.0}, r.World.Clock()); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.Advance(context.Background(), r.World.Clock()+4*3600*1e9, false); err != nil {
+		t.Fatal(err)
+	}
+	submitVerdict(t, r, []model.Action{
+		{CommandID: "setup", Effector: "start_aerator", EntityID: pond, IssuedAt: model.FormatTime(start), OutcomeBelieved: model.BelievedSucceeded},
+		{CommandID: "cmd-boundary", Effector: "start_aerator", EntityID: pond, IssuedAt: model.FormatTime(r.World.Clock()), OutcomeBelieved: model.BelievedSucceeded},
+	}, nil)
+	if _, err := r.End(""); err != nil {
+		t.Fatal(err)
+	}
+	gt := &model.GroundTruthRecord{
+		ScenarioID: "score/9002", Domain: "aquaculture-pond", Label: "aerator_failure",
+		EntityID: pond, ExpectedEffector: "start_aerator", ExpectedEpisode: true,
+		InjectionTimeNS: onset, FirstObservableTimeNS: onset, UnavoidableTimeNS: start + 3*3600*1e9,
+		TrivialBaselineVerdict: model.TrivialNonTrivial,
+	}
+	sc, err := Score(r, gt)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !sc.Loop.Resolved {
+		t.Fatalf("recovery must resolve even when the onset lands on an emission boundary: %+v", sc.Loop)
+	}
+}
+
 // TestSilentNoEffectFalseSuccess is the highest-value single test in the
 // plan: under silent_no_effect the confirmation channel reports the
 // counterfactual (the motor draws current), so the evidence is internally

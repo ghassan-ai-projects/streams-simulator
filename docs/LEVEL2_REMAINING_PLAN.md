@@ -1,7 +1,7 @@
 # Level 2 remaining-work plan
 
 Status: working plan — updated per slice
-Date: 2026-08-11 (rev 4: Slice B landed)
+Date: 2026-08-11 (rev 5: Slice E landed)
 Target: **Level 2 — benchmark-ready** per [QUALITY_BAR.md](QUALITY_BAR.md)
 Baseline: `5a269a0` (Level 1 green; all tests, vet, ci-check pass)
 
@@ -97,6 +97,17 @@ Plan:
   rejection, replay of a timed-out advance reproduces incomplete.
 
 ## Slice E — G3 out-of-process operator endpoint and golden closed loop
+
+Status: **landed** (this plan rev). Deviations: the operator endpoint is streamable
+HTTP (the SDK has no TCP/socket transport); `Run` gained a command-serialization mutex
+with the quiescence wait releasing it (otherwise the consumer's mid-wait effector call
+deadlocks); a scoring bug found by the golden loop was fixed — `resolveTime`'s pre-onset
+baseline now samples strictly before the onset (emission-boundary alignments collapsed
+the deviation to zero). Adversarial review of the slice: all P1s fixed (lint gate,
+absence re-fire, post-End verdict guard), P2s fixed (dedup semantics, error reason,
+timeout-path race, e2e assertions), nits fixed (`--world` removed, `--effector` requires
+`--mcp`). The untracked external review `docs/MCP_INTERACTION_REVIEW.md` was committed
+as review evidence.
 
 Issue (survey): `NewOperatorServer` is test-only; `streamsim mcp --role operator` errors
 (cli.go:417-418); refconsumer is offline-only with no quiescence reporting and no `--mcp`;
