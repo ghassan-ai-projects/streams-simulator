@@ -88,6 +88,24 @@ func TestRunByteReproducible(t *testing.T) {
 	}
 }
 
+func TestReplayUsesEmbeddedDomainAndAdapter(t *testing.T) {
+	spec, a := testBase(t)
+	art := buildArtifact(t, Config{
+		Domain: spec, Adapter: a, Seed: 123, SinkName: model.SinkInproc,
+		TimeMode: model.TimeStepped, StartTimeNS: model.DefaultStartTimeNS,
+	})
+	if len(art.DomainSpec) == 0 || len(art.AdapterSpec) == 0 {
+		t.Fatal("run artifact did not embed its validated source documents")
+	}
+	res, err := ReplayArtifact(context.Background(), art, nil, nil, "")
+	if err != nil {
+		t.Fatalf("embedded replay failed: %v", err)
+	}
+	if !res.Matches {
+		t.Fatalf("embedded replay mismatch: got=%s want=%s", res.GotDigest, res.WantDigest)
+	}
+}
+
 func TestWorldDigestAndCommandTimesAreLossless(t *testing.T) {
 	spec, a := testBase(t)
 	start := int64(1<<60) + 123

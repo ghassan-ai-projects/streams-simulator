@@ -13,6 +13,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
@@ -61,8 +62,24 @@ func LoadArtifact(path string) (*model.RunArtifact, error) {
 // world and compares the delivered trace to the expected digest. sinkTarget
 // selects the replay sink ("" = inproc).
 func ReplayArtifact(ctx context.Context, art *model.RunArtifact, spec *domain.Compiled, adapterSpec *model.Adapter, sinkTarget string) (*ReplayResult, error) {
-	if art == nil || spec == nil || adapterSpec == nil {
-		return nil, fmt.Errorf("run: replay requires artifact, domain, and adapter")
+	if art == nil {
+		return nil, fmt.Errorf("run: replay requires an artifact")
+	}
+	var err error
+	if spec == nil && len(art.DomainSpec) > 0 {
+		spec, err = domain.Parse(art.DomainSpec, "run-artifact.domain_spec")
+		if err != nil {
+			return nil, fmt.Errorf("run: embedded domain spec: %w", err)
+		}
+	}
+	if adapterSpec == nil && len(art.AdapterSpec) > 0 {
+		adapterSpec, err = adapter.LoadBytes(art.AdapterSpec, "run-artifact.adapter_spec")
+		if err != nil {
+			return nil, fmt.Errorf("run: embedded adapter spec: %w", err)
+		}
+	}
+	if spec == nil || adapterSpec == nil {
+		return nil, fmt.Errorf("run: replay requires domain and adapter, or their embedded artifact specs")
 	}
 	res := &ReplayResult{
 		WantDigest:   art.ExpectedTraceDigest,

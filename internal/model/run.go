@@ -1,33 +1,38 @@
 package model
 
-import "runtime"
+import (
+	"encoding/json"
+	"runtime"
+)
 
 // RunArtifact is the single file that reproduces a run, matching
 // docs/contracts/run-artifact-v0.1.schema.json. If a failure cannot be
 // reduced to one of these, it is not reproducible and the architecture is
 // wrong.
 type RunArtifact struct {
-	SchemaVersion       string      `json:"schema_version"`
-	SimVersion          string      `json:"sim_version"`
-	RunID               string      `json:"run_id,omitempty"`
-	Label               string      `json:"label,omitempty"`
-	CreatedAt           string      `json:"created_at,omitempty"`
-	Domain              ArtifactRef `json:"domain"`
-	Seed                uint64      `json:"seed"`
-	Sink                string      `json:"sink"`
-	Adapter             ArtifactRef `json:"adapter"`
-	TimeMode            string      `json:"time_mode"`
-	WorldConfig         WorldConfig `json:"world_config"`
-	WorldDigest         string      `json:"world_digest,omitempty"`
-	CommandLog          []Command   `json:"command_log"`
-	ExpectedTraceDigest string      `json:"expected_trace_digest,omitempty"`
-	Reproducible        bool        `json:"reproducible"`
-	Incomplete          bool        `json:"incomplete,omitempty"`
-	Error               string      `json:"error,omitempty"`
-	Unblinded           bool        `json:"unblinded,omitempty"`
-	UnblindedAt         string      `json:"unblinded_at,omitempty"`
-	Platform            Platform    `json:"platform,omitempty"`
-	Counts              Counts      `json:"counts,omitempty"`
+	SchemaVersion       string          `json:"schema_version"`
+	SimVersion          string          `json:"sim_version"`
+	RunID               string          `json:"run_id,omitempty"`
+	Label               string          `json:"label,omitempty"`
+	CreatedAt           string          `json:"created_at,omitempty"`
+	Domain              ArtifactRef     `json:"domain"`
+	DomainSpec          json.RawMessage `json:"domain_spec,omitempty"`
+	Seed                uint64          `json:"seed"`
+	Sink                string          `json:"sink"`
+	Adapter             ArtifactRef     `json:"adapter"`
+	AdapterSpec         json.RawMessage `json:"adapter_spec,omitempty"`
+	TimeMode            string          `json:"time_mode"`
+	WorldConfig         WorldConfig     `json:"world_config"`
+	WorldDigest         string          `json:"world_digest,omitempty"`
+	CommandLog          []Command       `json:"command_log"`
+	ExpectedTraceDigest string          `json:"expected_trace_digest,omitempty"`
+	Reproducible        bool            `json:"reproducible"`
+	Incomplete          bool            `json:"incomplete,omitempty"`
+	Error               string          `json:"error,omitempty"`
+	Unblinded           bool            `json:"unblinded,omitempty"`
+	UnblindedAt         string          `json:"unblinded_at,omitempty"`
+	Platform            Platform        `json:"platform,omitempty"`
+	Counts              Counts          `json:"counts,omitempty"`
 }
 
 // ArtifactRef identifies a versioned data artifact (domain spec or adapter)

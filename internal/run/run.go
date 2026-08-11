@@ -703,12 +703,14 @@ func (r *Run) artifact() *model.RunArtifact {
 		Domain: model.ArtifactRef{
 			ID: r.Config.Domain.Spec.ID, Version: r.Config.Domain.Spec.Version, Digest: r.Config.Domain.Digest,
 		},
-		Seed: r.Config.Seed,
-		Sink: r.Config.SinkName,
+		DomainSpec: json.RawMessage(append([]byte(nil), r.Config.Domain.Raw...)),
+		Seed:       r.Config.Seed,
+		Sink:       r.Config.SinkName,
 		Adapter: model.ArtifactRef{
 			ID: r.Config.Adapter.ID, Version: r.Config.Adapter.Version, Digest: adapterDigest(r.Config.Adapter),
 		},
-		TimeMode: r.Config.TimeMode,
+		AdapterSpec: json.RawMessage(append([]byte(nil), r.Config.Adapter.Raw...)),
+		TimeMode:    r.Config.TimeMode,
 		WorldConfig: model.WorldConfig{
 			StartTimeNS:     r.worldStartTimeNS,
 			EntityIDs:       r.World.InitialEntityIDs(),

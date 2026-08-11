@@ -28,6 +28,11 @@
         "digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$", "description": "RFC 8785 canonical digest of the normalized domain spec."}
       }
     },
+    "domain_spec": {
+      "type": "object",
+      "description": "Embedded validated domain document. When present, replay can run without an external catalog and verifies its digest against domain.",
+      "additionalProperties": true
+    },
 
     "seed": {"type": "integer", "minimum": 0, "maximum": 18446744073709551615},
 
@@ -45,6 +50,11 @@
         "version": {"type": "string"},
         "digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
       }
+    },
+    "adapter_spec": {
+      "type": "object",
+      "description": "Embedded validated adapter document. When present, replay can run without an external adapter registry and verifies its digest against adapter.",
+      "additionalProperties": true
     },
     "time_mode": {"enum": ["stepped", "scaled", "wall"]},
 

@@ -48,6 +48,32 @@ func Load(path string) (*model.Adapter, error) {
 	if err := crossCheck(&a, path); err != nil {
 		return nil, fmt.Errorf("adapter: %w", err)
 	}
+	a.Raw = append([]byte(nil), raw...)
+	return &a, nil
+}
+
+// LoadBytes validates an adapter from an in-memory source document. It is
+// used by artifact replay so a run can carry its own adapter definition.
+func LoadBytes(raw []byte, src string) (*model.Adapter, error) {
+	var doc any
+	if err := model.DecodeBytes(raw, &doc); err != nil {
+		return nil, fmt.Errorf("adapter: %s: not valid JSON: %w", src, err)
+	}
+	sch, err := jsonschema.Compile(mustAny(schemas.OutputAdapter()))
+	if err != nil {
+		return nil, fmt.Errorf("adapter: compile contract schema: %w", err)
+	}
+	if errs := sch.Validate(doc); len(errs) > 0 {
+		return nil, fmt.Errorf("adapter: %s fails output-adapter-v0.1 validation: %s", src, formatErrs(errs))
+	}
+	var a model.Adapter
+	if err := json.Unmarshal(raw, &a); err != nil {
+		return nil, fmt.Errorf("adapter: %s: decode: %w", src, err)
+	}
+	if err := crossCheck(&a, src); err != nil {
+		return nil, fmt.Errorf("adapter: %w", err)
+	}
+	a.Raw = append([]byte(nil), raw...)
 	return &a, nil
 }
 

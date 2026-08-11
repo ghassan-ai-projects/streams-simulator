@@ -2,7 +2,6 @@ package adapter
 
 import (
 	"encoding/json"
-	"fmt"
 	"strings"
 	"testing"
 
@@ -224,20 +223,4 @@ func TestJSONArrayLifecycleProducesValidArray(t *testing.T) {
 	if len(records) != 14 {
 		t.Fatalf("expected preamble, records, and postamble in array; got %d", len(records))
 	}
-}
-
-// LoadBytes validates an adapter from memory (test helper).
-func LoadBytes(raw []byte, src string) (*model.Adapter, error) {
-	var doc any
-	if err := model.DecodeBytes(raw, &doc); err != nil {
-		return nil, fmt.Errorf("decode: %w", err)
-	}
-	var a model.Adapter
-	if err := json.Unmarshal(raw, &a); err != nil {
-		return nil, fmt.Errorf("unmarshal: %w", err)
-	}
-	if err := crossCheck(&a, src); err != nil {
-		return nil, err
-	}
-	return &a, nil
 }

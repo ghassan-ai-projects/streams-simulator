@@ -57,6 +57,7 @@ func Parse(raw []byte, src string) (*Compiled, error) {
 	if err != nil {
 		return nil, fmt.Errorf("streamsim: %w", err)
 	}
+	c.Raw = append([]byte(nil), raw...)
 	return c, nil
 }
 
@@ -91,6 +92,8 @@ func LoadAll(dir string) ([]*Compiled, error) {
 type Compiled struct {
 	Spec   *model.DomainSpec
 	Digest string
+	// Raw is the validated source document embedded in run artifacts.
+	Raw []byte
 
 	states    map[string]bool
 	channels  map[string]bool

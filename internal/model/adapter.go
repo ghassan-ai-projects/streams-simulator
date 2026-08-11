@@ -15,6 +15,9 @@ type Adapter struct {
 	Record          RecordTemplate   `json:"record"`
 	Postamble       []RecordTemplate `json:"postamble,omitempty"`
 	Conformance     *Conformance     `json:"conformance,omitempty"`
+	// Raw is the validated source document embedded in run artifacts. It is
+	// excluded from normal JSON encoding and digests.
+	Raw []byte `json:"-"`
 }
 
 // IDRewrite narrows the simulator's entity-id alphabet to a consumer's.
