@@ -115,8 +115,11 @@ func Generate(cfg Config) (*Suite, error) {
 
 	for len(s.Scenarios) < cfg.N && s.Attempts < cfg.MaxAttempts {
 		s.Attempts++
-		idx := len(s.Scenarios)
-		scenarioSeed := cfg.Seed + uint64(idx)*0x9e3779b97f4a7c15
+		// Attempt identity, not admitted-count identity, enters the seed and
+		// scenario id. Rejected candidates must never be replayed under the
+		// same identity as a later admitted candidate.
+		attemptIndex := s.Attempts - 1
+		scenarioSeed := cfg.Seed + uint64(attemptIndex)*0x9e3779b97f4a7c15
 		// Adaptive negative sampling: the audit rejects positive scenarios
 		// aggressively, so the admission fraction drifts above the declared
 		// band; proportional control on the sampling probability holds the
@@ -134,7 +137,7 @@ func Generate(cfg Config) (*Suite, error) {
 			sampleFrac = 0.7
 		}
 		sc, label, verdict, err := s.buildScenario(cfg, rng, solver, panel, prof, entities,
-			startNS, durationNS, scenarioSeed, idx, &negatives, &preDegraded, &cascadeCount, &pathologyCount, perturbCount, sampleFrac)
+			startNS, durationNS, scenarioSeed, attemptIndex, perturbCount, sampleFrac)
 		if err != nil {
 			return nil, fmt.Errorf("streamsim: %w", err)
 		}
@@ -148,6 +151,21 @@ func Generate(cfg Config) (*Suite, error) {
 		}
 		s.Scenarios = append(s.Scenarios, *sc)
 		s.Labels = append(s.Labels, *label)
+		for _, p := range sc.Perturbations {
+			perturbCount[p.Name]++
+		}
+		if label.IsNegativeClass {
+			negatives++
+		}
+		if sc.PreDegraded {
+			preDegraded++
+		}
+		if sc.Profile == "correlated_cascade" {
+			cascadeCount++
+		}
+		if sc.Profile == "sensor_pathology" {
+			pathologyCount++
+		}
 	}
 
 	// Perturbation coverage: every catalog perturbation in >= 5 scenarios.
@@ -249,7 +267,7 @@ func indexOf(s, sub string) int {
 // buildScenario constructs one candidate scenario and its audit verdict.
 func (s *Suite) buildScenario(cfg Config, rng *randutil.SplitMix64, solver *truth.Solver, panel *audit.Panel,
 	prof *model.Profile, entities []string, startNS, durationNS int64, seed uint64, idx int,
-	negatives, preDegraded, cascadeCount, pathologyCount *int, perturbCount map[string]int, sampleFrac float64) (*Scenario, *model.GroundTruthRecord, *audit.Verdict, error) {
+	perturbCount map[string]int, sampleFrac float64) (*Scenario, *model.GroundTruthRecord, *audit.Verdict, error) {
 
 	gt := cfg.Domain.Spec.GroundTruth
 	isNegative := rng.Float64() < sampleFrac
@@ -279,7 +297,6 @@ func (s *Suite) buildScenario(cfg Config, rng *randutil.SplitMix64, solver *trut
 		from := startNS + int64(rng.Float64()*float64(durationNS/2))
 		until := from + int64((0.25+rng.Float64()*0.5)*float64(durationNS/2))
 		scPerts = append(scPerts, Perturbation{Name: name, Params: params, FromNS: from, UntilNS: until})
-		perturbCount[name]++
 	}
 
 	scenario := &Scenario{
@@ -330,19 +347,6 @@ func (s *Suite) buildScenario(cfg Config, rng *randutil.SplitMix64, solver *trut
 	if verdict != nil {
 		label.TrivialBaselineDetail = verdict.Scores
 	}
-	if isNegative {
-		*negatives++
-	}
-	if preDeg {
-		*preDegraded++
-	}
-	if profileName == "correlated_cascade" {
-		*cascadeCount++
-	}
-	if profileName == "sensor_pathology" {
-		*pathologyCount++
-	}
-
 	// The executable command log.
 	scenario.CommandLog = buildCommandLog(cfg.Domain, scenario)
 	return scenario, label, verdict, nil

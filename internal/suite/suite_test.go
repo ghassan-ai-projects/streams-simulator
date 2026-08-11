@@ -104,4 +104,11 @@ func TestNegativeClassFractionAdapts(t *testing.T) {
 			t.Fatalf("out-of-band fraction %.2f without a reportable terminal state (state=%q)", frac, s.TerminalState)
 		}
 	}
+	seen := map[string]bool{}
+	for _, sc := range s.Scenarios {
+		if seen[sc.ID] {
+			t.Fatalf("scenario id repeated after rejected attempt: %q", sc.ID)
+		}
+		seen[sc.ID] = true
+	}
 }
