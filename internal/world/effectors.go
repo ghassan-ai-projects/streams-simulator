@@ -248,8 +248,9 @@ func (w *World) interlockHolds(entityID string, il *model.Interlock, atNS int64)
 
 // applyAutonomousAction applies the interlock's autonomous state delta.
 func (w *World) applyAutonomousAction(entityID, state string, delta float64, atNS int64) {
-	k := &kick{state: state, delta: delta, startNS: atNS, tauNS: 0}
-	w.kicks[state] = append(w.kicks[state], k)
+	k := &kick{entity: entityID, state: state, delta: delta, startNS: atNS, tauNS: 0}
+	key := driverKey{entity: entityID, state: state}
+	w.kicks[key] = append(w.kicks[key], k)
 	w.schedule(kindEffectStart, entityID, state, atNS, k)
 }
 
@@ -266,11 +267,12 @@ func (w *World) applyEffect(entityID string, eff *model.Effector, args map[strin
 			}
 		}
 		delta *= scale
-		k := &kick{state: d.State, delta: delta, startNS: start, tauNS: tau}
+		k := &kick{entity: entityID, state: d.State, delta: delta, startNS: start, tauNS: tau}
+		key := driverKey{entity: entityID, state: d.State}
 		if shadow {
-			w.shadow[d.State] = append(w.shadow[d.State], k)
+			w.shadow[key] = append(w.shadow[key], k)
 		} else {
-			w.kicks[d.State] = append(w.kicks[d.State], k)
+			w.kicks[key] = append(w.kicks[key], k)
 		}
 		w.schedule(kindEffectStart, entityID, d.State, start, k)
 	}
@@ -363,8 +365,8 @@ func (w *World) sortedStateNames() []string {
 // PendingKicks is the number of scheduled-but-unapplied effect kicks.
 func (w *World) PendingKicks() int {
 	n := 0
-	for _, state := range w.sortedKickStates() {
-		for _, k := range w.kicks[state] {
+	for _, key := range w.sortedKickStates() {
+		for _, k := range w.kicks[key] {
 			if !k.applied {
 				n++
 			}
@@ -374,12 +376,17 @@ func (w *World) PendingKicks() int {
 }
 
 // sortedKickStates returns the states with pending kicks in a stable order.
-func (w *World) sortedKickStates() []string {
-	var out []string
+func (w *World) sortedKickStates() []driverKey {
+	var out []driverKey
 	// determinism-safe: collected here, sorted below before any output.
-	for state := range w.kicks {
-		out = append(out, state)
+	for key := range w.kicks {
+		out = append(out, key)
 	}
-	sort.Strings(out)
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].entity != out[j].entity {
+			return out[i].entity < out[j].entity
+		}
+		return out[i].state < out[j].state
+	})
 	return out
 }

@@ -302,3 +302,58 @@ func TestEffectorIdempotencyAndInterlock(t *testing.T) {
 		t.Fatalf("interlock refusal not recorded: %+v", calls)
 	}
 }
+
+// TestEffectsAreEntityScoped protects the closed-loop invariant that an
+// effector command changes only the addressed producer. A state name is not
+// a sufficient key because every entity may expose the same state.
+func TestEffectsAreEntityScoped(t *testing.T) {
+	spec := testSpec(t, func(s *model.DomainSpec) {
+		s.Effectors = []model.Effector{{
+			Name:       "act",
+			ArgsSchema: map[string]any{"type": "object"},
+			Ack:        model.Ack{LatencyMS: model.Latency{Mean: 1}},
+			Effect:     model.Effect{StateDeltas: []model.StateDelta{{State: "x", Delta: 3}}},
+		}}
+	})
+	start := model.DefaultStartTimeNS
+	w := newTestWorld(t, spec, 17, start)
+	if err := w.AddEntity("e-2", start, nil); err != nil {
+		t.Fatal(err)
+	}
+	before := w.StateValue("e-2", "x", start+secondsPerNS)
+	if _, err := w.InvokeEffector("act", "e-1", "cmd-1", nil, start); err != nil {
+		t.Fatal(err)
+	}
+	addressed := w.StateValue("e-1", "x", start+secondsPerNS)
+	unaddressed := w.StateValue("e-2", "x", start+secondsPerNS)
+	if addressed-before < 2.9 {
+		t.Fatalf("addressed entity did not receive effect: e-1=%v e-2-before=%v", addressed, before)
+	}
+	if math.Abs(unaddressed-before) > 1e-9 {
+		t.Fatalf("effect leaked to e-2: before=%v after=%v", before, unaddressed)
+	}
+}
+
+// TestChurnAllocatesAndContinuesAfterBirths protects autonomous lifecycle
+// scheduling. The first generated birth must not collide with e-1 and a
+// rejected/custom identity must not stop future births.
+func TestChurnAllocatesAndContinuesAfterBirths(t *testing.T) {
+	spec := testSpec(t, func(s *model.DomainSpec) {
+		s.Entities.Churn = &model.Churn{BirthsPerHour: 3600, MeanLifetimeS: 1e6}
+	})
+	start := model.DefaultStartTimeNS
+	w := newTestWorld(t, spec, 19, start)
+	if _, _, err := w.Advance(start + 10*secondsPerNS); err != nil {
+		t.Fatal(err)
+	}
+	ids := w.EntityIDs()
+	if len(ids) < 2 {
+		t.Fatalf("expected at least one autonomous birth, got %v", ids)
+	}
+	if _, ok := w.entities["e-1"]; !ok {
+		t.Fatalf("initial entity was replaced: %v", ids)
+	}
+	if _, ok := w.entities["e-2"]; !ok {
+		t.Fatalf("first birth did not receive a free identity: %v", ids)
+	}
+}

@@ -64,8 +64,8 @@ type World struct {
 	entityOrder []string
 	nextIndex   int
 
-	kicks  map[string][]*kick
-	shadow map[string][]*kick
+	kicks  map[driverKey][]*kick
+	shadow map[driverKey][]*kick
 
 	faultsByState map[string][]*activeFault
 	faultsByID    map[string]*activeFault
@@ -149,8 +149,8 @@ func New(spec *domain.Compiled, seed uint64, id string, startNS int64, opts Opti
 		forceFailureMode: opts.ForceFailureMode,
 		subs:             map[string]*randutil.SplitMix64{},
 		entities:         map[string]*Entity{},
-		kicks:            map[string][]*kick{},
-		shadow:           map[string][]*kick{},
+		kicks:            map[driverKey][]*kick{},
+		shadow:           map[driverKey][]*kick{},
 		faultsByState:    map[string][]*activeFault{},
 		faultsByID:       map[string]*activeFault{},
 		idempotent:       map[string]*idempotentResult{},
@@ -175,6 +175,9 @@ func New(spec *domain.Compiled, seed uint64, id string, startNS int64, opts Opti
 			return nil, fmt.Errorf("streamsim: %w", err)
 		}
 	}
+	// Start autonomous IDs after the generated initial set. Births still
+	// probe for a free ID because callers may supply custom initial IDs.
+	w.nextIndex = len(ids)
 	if ch := spec.Spec.Entities.Churn; ch != nil && ch.BirthsPerHour > 0 {
 		w.scheduleChurn(startNS)
 	}

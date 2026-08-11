@@ -18,11 +18,20 @@ const secondsPerNS = 1e9
 // kick is a permanent state contribution that approaches its full delta
 // exponentially with a time constant, starting at startNS (after dead time).
 type kick struct {
+	entity  string
 	state   string
 	delta   float64
 	startNS int64
 	tauNS   float64 // 0 = instantaneous
 	applied bool    // set when the effect-start event pops
+}
+
+// driverKey scopes a physical or shadow driver to one entity and state. A
+// state name alone is not an identity: two producers may expose the same
+// state while remaining physically independent.
+type driverKey struct {
+	entity string
+	state  string
 }
 
 func (k *kick) valueAt(t int64) float64 {
@@ -311,7 +320,7 @@ func (w *World) stateAt(entity, state string, t int64) float64 {
 	v := w.naturalValue(ent, state, t)
 	lastKick := int64(-1)
 	anyKick := false
-	for _, k := range w.kicks[state] {
+	for _, k := range w.kicks[driverKey{entity: entity, state: state}] {
 		kv := k.valueAt(t)
 		if kv == 0 {
 			continue
@@ -367,7 +376,7 @@ func (f *activeFault) activeAt(t int64) bool {
 // silent_no_effect shadow: the real value plus the shadow kicks.
 func (w *World) shadowValue(entity, state string, t int64) float64 {
 	v := w.stateAt(entity, state, t)
-	for _, k := range w.shadow[state] {
+	for _, k := range w.shadow[driverKey{entity: entity, state: state}] {
 		v += k.valueAt(t)
 	}
 	return v

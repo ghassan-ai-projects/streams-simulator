@@ -72,7 +72,7 @@ func (w *World) processEmission(entityID, channelName string, t int64) {
 	}
 
 	// Link delay: observed_time = event_time + delay.
-	delay := w.linkDelay(ch, t)
+	delay := w.linkDelay(entityID, ch, t)
 	observed := t + int64(delay*secondsPerNS)
 
 	if !w.EmitDisabled {
@@ -265,12 +265,12 @@ func (w *World) nextEmission(entityID string, ch *model.Channel, t int64) int64 
 }
 
 // linkDelay samples the channel's transport delay.
-func (w *World) linkDelay(ch *model.Channel, t int64) float64 {
+func (w *World) linkDelay(entityID string, ch *model.Channel, t int64) float64 {
 	ld := ch.LinkDelay
 	if ld == nil || ld.Model == "" {
 		return 0
 	}
-	rng := w.substream("link/" + ch.Name + "/delay")
+	rng := w.substream("link/" + entityID + "/" + ch.Name + "/delay")
 	switch ld.Model {
 	case "constant":
 		return ld.MeanS
@@ -344,14 +344,17 @@ func (w *World) birthAutonomous(atNS int64) {
 	}
 	w.nextIndex++
 	id := renderID(w.Spec.Spec.Entities.IDTemplate, w.nextIndex, nil)
-	if err := w.addEntity(id, atNS, nil); err != nil {
-		return
+	for id == "" || w.entities[id] != nil {
+		w.nextIndex++
+		id = renderID(w.Spec.Spec.Entities.IDTemplate, w.nextIndex, nil)
 	}
-	// Schedule its death.
-	if ch.MeanLifetimeS > 0 {
-		rng := w.substream("churn/lifetimes")
-		dieAt := atNS + int64(rng.Exp(ch.MeanLifetimeS)*secondsPerNS)
-		w.schedule(kindDeath, id, "", dieAt, nil)
+	if err := w.addEntity(id, atNS, nil); err == nil {
+		// Schedule its death.
+		if ch.MeanLifetimeS > 0 {
+			rng := w.substream("churn/lifetimes/" + id)
+			dieAt := atNS + int64(rng.Exp(ch.MeanLifetimeS)*secondsPerNS)
+			w.schedule(kindDeath, id, "", dieAt, nil)
+		}
 	}
 	// Schedule the next birth.
 	rng := w.substream("churn/births")
