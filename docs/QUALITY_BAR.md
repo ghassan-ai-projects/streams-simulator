@@ -109,7 +109,17 @@ Before each commit:
 
 ## Current bar status
 
-At the time this bar was defined, the project is Level 0 only. The implementation-readiness
-review records the evidence for that assessment and the ordered work needed to reach Level 1
-and Level 2. A future release may raise the level only by updating this table with links to
-passing tests and a signed release manifest.
+Current status after the correctness-hardening loop: **Level 1 — replayable prototype**.
+
+Evidence is committed in the focused slices `472a110`, `1bfa50c`, `8d21927`, `91b7eed`,
+`8945048`, `5366f5d`, `b1d58d1`, `36683c1`, `07b83e3`, `c2e5e16`, `52b3ade`, `85b8407`,
+`af1bc17`, and `943083c`. The full `go test ./...`, `go build ./...`, `go vet ./...`,
+`git diff --check`, and `make ci-check` gates are green; `make ci-check` reports the optional
+`deadcode` and `govulncheck` tools as unavailable rather than silently claiming those checks.
+
+Level 2 is intentionally **not claimed**. The remaining benchmark-release blockers are
+tracked in [IMPLEMENTATION_REBASELINE.md](IMPLEMENTATION_REBASELINE.md): a real
+out-of-process operator reference consumer, strict typed MCP schemas/cancellation proofs,
+fully independent analytic/noise oracles, durable streaming-ledger persistence, and a
+release manifest with vulnerability/dead-code evidence. No benchmark scores should be
+published until those gates have their own commits and evidence.

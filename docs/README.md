@@ -1,11 +1,12 @@
 # Streams Simulator
 
-Status: implementation prototype under correctness hardening; not benchmark-ready
+Status: Level 1 replayable prototype; not benchmark-ready
 Date: 2026-08-11
 Codename: `streamsim`
 
-> **Implementation review:** the S0-S5 prototype exists, but the instrument-integrity gates
-> are not yet satisfied. Do not use current scores as benchmark evidence. See the
+> **Implementation review:** the correctness spine and replayable-prototype bar are green,
+> but the benchmark-release gates are not yet satisfied. Do not use current scores as
+> benchmark evidence. See the
 > [implementation-readiness review](IMPLEMENTATION_READINESS_REVIEW.md) for confirmed gaps,
 > acceptance criteria, and the recommended implementation sequence.
 >

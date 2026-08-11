@@ -1,12 +1,16 @@
 # Streams Simulator implementation-readiness review
 
-Status: **not benchmark-ready**
+Status: **Level 1 replayable prototype; not benchmark-ready**
 Review date: 2026-08-11
-Reviewed commit: `63b1f1c`
+Initial reviewed commit: `63b1f1c`
+Correctness-hardening rebaseline: `943083c`
 Scope: repository design, contracts, implementation, shipped domains and adapters, tests,
 build automation, and representative end-to-end executions
 
 ## 1. Executive verdict
+
+This document is the initial gap inventory. The post-fix status and remaining benchmark
+blockers are maintained in [IMPLEMENTATION_REBASELINE.md](IMPLEMENTATION_REBASELINE.md).
 
 The project has a strong design premise, unusually clear architectural intent, and a
 substantial S0-S5 prototype. It is not yet a trustworthy test instrument.
