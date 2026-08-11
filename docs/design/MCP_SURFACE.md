@@ -116,6 +116,13 @@ consumer has finished reacting — so with `await_consumer: true` the call addit
 blocks until the consumer reports quiescence through §4.4. Without it, a closed-loop run
 is not reproducible, because the effector call lands at an arbitrary world time.
 
+The wait is bounded by a fixed 30-second deadline. On expiry the world has already
+advanced, so the advance is logged, the run is marked incomplete (never silently
+successful), and the error is `consumer_not_quiesced` — distinct from `clock_backwards`,
+which is reserved for a genuinely refused backward move. A request cancelled by a client
+disconnect simply abandons the wait and leaves the run open-loop. The deadline is
+injectable for deterministic tests; no production path uses wall time beyond it.
+
 For the `file` sink, writes use a buffered writer. The path is created at
 `sim.world.create`, but newly emitted bytes become visible on disk when the run is closed
 by `sim.run.end` or `sim.world.destroy`. Consumers should use the MCP count response while

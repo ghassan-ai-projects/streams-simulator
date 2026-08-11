@@ -83,7 +83,7 @@ func NewDirectorServer(d *Director) *mcp.Server {
 	addTool(s, toolDef{name: "sim.world.destroy", description: "Destroy a world; final counts and run artifact.", schema: toolSchema("sim.world.destroy"), handler: func(_ context.Context, args map[string]any) (any, error) {
 		return d.DestroyWorld(str(args, "world_id"))
 	}})
-	addTool(s, toolDef{name: "sim.clock.advance", description: "Advance by a relative nanosecond delta or to an absolute epoch nanosecond; await_consumer blocks on quiescence.", schema: toolSchema("sim.clock.advance"), handler: func(_ context.Context, args map[string]any) (any, error) {
+	addTool(s, toolDef{name: "sim.clock.advance", description: "Advance by a relative nanosecond delta or to an absolute epoch nanosecond; await_consumer blocks on quiescence.", schema: toolSchema("sim.clock.advance"), handler: func(ctx context.Context, args map[string]any) (any, error) {
 		worldID := str(args, "world_id")
 		toNS, hasTo := intArg(args, "to_ns")
 		byNS, hasBy := intArg(args, "by_ns")
@@ -104,7 +104,7 @@ func NewDirectorServer(d *Director) *mcp.Server {
 			}
 			toNS = w.Run.World.Clock() + byNS
 		}
-		return d.Advance(worldID, toNS, boolArg(args, "await_consumer"))
+		return d.Advance(ctx, worldID, toNS, boolArg(args, "await_consumer"))
 	}})
 	addTool(s, toolDef{name: "sim.clock.state", description: "The clock, next scheduled event, pending effects.", schema: toolSchema("sim.clock.state"), handler: func(_ context.Context, args map[string]any) (any, error) {
 		return d.ClockState(str(args, "world_id"))

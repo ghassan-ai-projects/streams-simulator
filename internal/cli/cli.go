@@ -334,7 +334,7 @@ func cmdRun(args []string) error {
 			}
 		}
 	}
-	if _, err := r.Advance(start+int64(*durationS*1e9), false); err != nil {
+	if _, err := r.Advance(context.Background(), start+int64(*durationS*1e9), false); err != nil {
 		return fmt.Errorf("streamsim: %w", err)
 	}
 	art, err := r.End(*outDir)

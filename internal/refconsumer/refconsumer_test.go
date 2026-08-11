@@ -85,7 +85,7 @@ func TestDetectsFaultAndActs(t *testing.T) {
 	if _, err := r.InjectFault(pond, "aerator_failure", start+2*3600*1e9, nil); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := r.Advance(start+6*3600*1e9, false); err != nil {
+	if _, err := r.Advance(context.Background(), start+6*3600*1e9, false); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := r.End(""); err != nil {
@@ -143,7 +143,7 @@ func TestObserveOnlyOnCleanRun(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := r.Advance(start+4*3600*1e9, false); err != nil {
+	if _, err := r.Advance(context.Background(), start+4*3600*1e9, false); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := r.End(""); err != nil {

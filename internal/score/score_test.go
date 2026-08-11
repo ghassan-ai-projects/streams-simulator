@@ -52,13 +52,13 @@ func setupFaultedRun(t *testing.T, failureMode, faultID string) (*run.Run, *mode
 	if _, err := r.InvokeEffector("start_aerator", pond, "setup", map[string]any{"pond_id": pond, "level": 1.0}, start); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := r.Advance(start+2*3600*1e9, false); err != nil {
+	if _, err := r.Advance(context.Background(), start+2*3600*1e9, false); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := r.InjectFault(pond, faultID, 0, nil); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := r.Advance(start+3*3600*1e9, false); err != nil {
+	if _, err := r.Advance(context.Background(), start+3*3600*1e9, false); err != nil {
 		t.Fatal(err)
 	}
 	if failureMode != "ok" {
@@ -117,7 +117,7 @@ func TestSilentNoEffectFalseSuccess(t *testing.T) {
 		t.Fatalf("silent_no_effect must ack success: %+v", res)
 	}
 	// The effect propagates.
-	if _, err := r.Advance(r.World.Clock()+3*3600*1e9, false); err != nil {
+	if _, err := r.Advance(context.Background(), r.World.Clock()+3*3600*1e9, false); err != nil {
 		t.Fatal(err)
 	}
 	at := r.World.Clock()
@@ -156,7 +156,7 @@ func TestSilentNoEffectHonestConsumer(t *testing.T) {
 	if _, err := r.InvokeEffector("start_aerator", pond, "cmd-92", map[string]any{"pond_id": pond, "level": 1.0}, r.World.Clock()); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := r.Advance(r.World.Clock()+3*3600*1e9, false); err != nil {
+	if _, err := r.Advance(context.Background(), r.World.Clock()+3*3600*1e9, false); err != nil {
 		t.Fatal(err)
 	}
 	submitVerdict(t, r, []model.Action{
@@ -187,7 +187,7 @@ func TestClosedLoopRecoveryAndIdempotency(t *testing.T) {
 	if !res.Accepted {
 		t.Fatal("ok mode must accept")
 	}
-	if _, err := r.Advance(r.World.Clock()+4*3600*1e9, false); err != nil {
+	if _, err := r.Advance(context.Background(), r.World.Clock()+4*3600*1e9, false); err != nil {
 		t.Fatal(err)
 	}
 	if !loopResolved(r) {
@@ -289,7 +289,7 @@ func TestDroppedDetectionRequiresOneDetectionPerDrop(t *testing.T) {
 	if _, err := r.ApplyPerturb("drop", map[string]any{"rate": 1.0}, 0, 0); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := r.Advance(start+3600*1e9, false); err != nil {
+	if _, err := r.Advance(context.Background(), start+3600*1e9, false); err != nil {
 		t.Fatal(err)
 	}
 	if err := r.SubmitVerdict(&model.Verdict{

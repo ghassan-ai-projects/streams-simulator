@@ -10,6 +10,7 @@ package run
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"maps"
 	"os"
@@ -46,7 +47,41 @@ type Config struct {
 	WorldID          string
 	Noiseless        bool
 	ForceFailureMode string // force every effector into a failure mode (tests)
+	QuiescenceClock  QuiescenceClock
 }
+
+// DefaultQuiescenceTimeout bounds an await_consumer wait before the run is
+// marked incomplete. The duration is fixed; the clock is injectable so
+// deterministic tests never sleep.
+const DefaultQuiescenceTimeout = 30 * time.Second
+
+// QuiescenceClock supplies the deadline for await_consumer waits. The real
+// implementation is a wall-clock timer; tests inject a fake they can fire.
+type QuiescenceClock interface {
+	NewTimer(time.Duration) QuiescenceTimer
+}
+
+// QuiescenceTimer is one deadline from a QuiescenceClock.
+type QuiescenceTimer interface {
+	C() <-chan time.Time
+	Stop() bool
+}
+
+// realQuiescenceClock is the default quiescence clock.
+type realQuiescenceClock struct{}
+
+type realQuiescenceTimer struct{ t *time.Timer }
+
+func (rt realQuiescenceTimer) C() <-chan time.Time { return rt.t.C }
+func (rt realQuiescenceTimer) Stop() bool          { return rt.t.Stop() }
+
+func (realQuiescenceClock) NewTimer(d time.Duration) QuiescenceTimer {
+	return realQuiescenceTimer{t: time.NewTimer(d)}
+}
+
+// ErrConsumerNotQuiesced marks an await_consumer timeout. The world has
+// already advanced; the run is incomplete, never silently successful.
+var ErrConsumerNotQuiesced = errors.New("consumer_not_quiesced")
 
 // Run is one deterministic execution.
 type Run struct {
@@ -67,6 +102,7 @@ type Run struct {
 	quiesceMu         sync.Mutex
 	quiesceNotify     chan struct{}
 	evidenceRec       func(model.SimEvent) // delivered-event hook (test harness)
+	quiesceParked     func()               // fired when a quiescence wait blocks (test harness)
 
 	finished     bool
 	incomplete   bool
@@ -104,6 +140,9 @@ func New(ctx context.Context, cfg Config) (*Run, error) {
 	}
 	if cfg.RunID == "" {
 		cfg.RunID = "r-" + strconv.FormatUint(canonicalHash(cfg.Domain.Spec.ID, cfg.Seed), 36)
+	}
+	if cfg.QuiescenceClock == nil {
+		cfg.QuiescenceClock = realQuiescenceClock{}
 	}
 	w, err := world.New(cfg.Domain, cfg.Seed, cfg.WorldID, cfg.StartTimeNS, world.Options{
 		InitialEntities:  cfg.EntityIDs,
@@ -294,8 +333,12 @@ func (r *Run) RenderRecord(ev *model.SimEvent) (string, error) {
 }
 
 // Advance moves the world to toNS, delivering everything along the way.
-// awaitConsumer blocks until quiescence is reported through toNS.
-func (r *Run) Advance(toNS int64, awaitConsumer bool) (int, error) {
+// awaitConsumer blocks until quiescence is reported through toNS; the wait
+// is bounded by DefaultQuiescenceTimeout and cancelled by ctx. On a
+// quiescence timeout the world has already moved, so the advance is logged
+// (replay reproduces the same state), the run is marked incomplete, and the
+// emitted count is still returned alongside the error.
+func (r *Run) Advance(ctx context.Context, toNS int64, awaitConsumer bool) (int, error) {
 	if r.runErr != nil {
 		return 0, r.runErr
 	}
@@ -312,16 +355,24 @@ func (r *Run) Advance(toNS int64, awaitConsumer bool) (int, error) {
 	if r.runErr != nil {
 		return emitted, r.runErr
 	}
-	if awaitConsumer {
-		if err := r.awaitQuiescence(toNS); err != nil {
-			return 0, err
-		}
-	}
-	_ = effects
+	// Log the advance before awaiting quiescence: the world has already
+	// moved, and replay must reproduce exactly this state even when the
+	// consumer never reports quiescence.
 	r.commandLog = append(r.commandLog, model.Command{
 		Seq: int64(len(r.commandLog)), AtNS: r.World.Clock(),
 		Op: model.OpClockAdvance, Args: map[string]any{"to_ns": toNS, "await_consumer": awaitConsumer},
 	})
+	if awaitConsumer {
+		if err := r.awaitQuiescence(ctx, toNS); err != nil {
+			// Only a timeout is a simulator failure: a cancelled wait is a
+			// caller-side abandonment and leaves the run open-loop.
+			if errors.Is(err, ErrConsumerNotQuiesced) {
+				r.fail(err)
+			}
+			return emitted, err
+		}
+	}
+	_ = effects
 	return emitted, nil
 }
 
@@ -524,7 +575,10 @@ func (r *Run) EnvInject(target, fault string, params map[string]any, atNS int64)
 	return "env-" + strconv.Itoa(len(r.commandLog)), nil
 }
 
-// ReportQuiesced records the consumer's quiescence assertion.
+// ReportQuiesced records the consumer's quiescence assertion. The watermark
+// is monotonic, so a report can only move it forward: a stale report for an
+// earlier instant can never satisfy a later await, and a report received
+// between advances is honoured on the next wait (the fast path).
 func (r *Run) ReportQuiesced(throughNS int64) {
 	r.quiesceMu.Lock()
 	defer r.quiesceMu.Unlock()
@@ -535,9 +589,15 @@ func (r *Run) ReportQuiesced(throughNS int64) {
 	}
 }
 
-func (r *Run) awaitQuiescence(toNS int64) error {
-	deadline := time.NewTimer(30 * time.Second)
-	defer deadline.Stop()
+// SetQuiesceParkedHook installs a callback fired each time a quiescence wait
+// is about to block (test harness; nil by default).
+func (r *Run) SetQuiesceParkedHook(h func()) {
+	r.quiesceParked = h
+}
+
+func (r *Run) awaitQuiescence(ctx context.Context, toNS int64) error {
+	timer := r.Config.QuiescenceClock.NewTimer(DefaultQuiescenceTimeout)
+	defer timer.Stop()
 	for {
 		r.quiesceMu.Lock()
 		if r.quiescedThroughNS >= toNS {
@@ -547,12 +607,17 @@ func (r *Run) awaitQuiescence(toNS int64) error {
 		ch := r.quiesceNotify
 		through := r.quiescedThroughNS
 		r.quiesceMu.Unlock()
+		if r.quiesceParked != nil {
+			r.quiesceParked()
+		}
 		select {
 		case <-ch:
 			continue
-		case <-deadline.C:
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-timer.C():
 			r.reproducible = false
-			return fmt.Errorf("run: consumer_not_quiesced: quiesced through %d, asked for %d", through, toNS)
+			return fmt.Errorf("run: %w: quiesced through %d, asked for %d", ErrConsumerNotQuiesced, through, toNS)
 		}
 	}
 }

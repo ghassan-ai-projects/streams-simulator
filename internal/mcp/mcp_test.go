@@ -313,7 +313,7 @@ func TestDirectorPassesSinkTarget(t *testing.T) {
 		t.Fatal(err)
 	}
 	worldID := res["world_id"].(string)
-	if _, err := d.Advance(worldID, model.DefaultStartTimeNS+60*1e9, false); err != nil {
+	if _, err := d.Advance(context.Background(), worldID, model.DefaultStartTimeNS+60*1e9, false); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := d.DestroyWorld(worldID); err != nil {
@@ -335,13 +335,13 @@ func TestClosedLoopThroughMCPSurface(t *testing.T) {
 	if _, err := w.Run.InvokeEffector("start_aerator", pond, "setup", map[string]any{"pond_id": pond, "level": 1.0}, start); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := d.Advance(worldID, start+2*3600*1e9, false); err != nil {
+	if _, err := d.Advance(context.Background(), worldID, start+2*3600*1e9, false); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := d.InjectFault(worldID, pond, "aerator_failure", 0, nil); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := d.Advance(worldID, start+3*3600*1e9, false); err != nil {
+	if _, err := d.Advance(context.Background(), worldID, start+3*3600*1e9, false); err != nil {
 		t.Fatal(err)
 	}
 	// The operator invokes the effector through the narrow surface.
@@ -353,7 +353,7 @@ func TestClosedLoopThroughMCPSurface(t *testing.T) {
 	if !res.Simulated || !res.Accepted {
 		t.Fatalf("invoke result wrong: %+v", res)
 	}
-	if _, err := d.Advance(worldID, start+7*3600*1e9, false); err != nil {
+	if _, err := d.Advance(context.Background(), worldID, start+7*3600*1e9, false); err != nil {
 		t.Fatal(err)
 	}
 	// Submit a verdict through the report tool.
@@ -444,10 +444,10 @@ func TestPrefixIndistinguishability(t *testing.T) {
 	step := int64(30 * 60 * 1000000000)
 	divergedAt := int64(0)
 	for now := start + step; now <= start+12*3600*1e9; now += step {
-		if _, err := dA.Advance(idA, now, false); err != nil {
+		if _, err := dA.Advance(context.Background(), idA, now, false); err != nil {
 			t.Fatal(err)
 		}
-		if _, err := dB.Advance(idB, now, false); err != nil {
+		if _, err := dB.Advance(context.Background(), idB, now, false); err != nil {
 			t.Fatal(err)
 		}
 		if evA.equalPrefix(&evB) {

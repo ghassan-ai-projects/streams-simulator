@@ -73,7 +73,7 @@ func TestInjectionProbeNeutral(t *testing.T) {
 				t.Fatal(err)
 			}
 		}
-		if _, err := r.Advance(start+2*3600*1e9, false); err != nil {
+		if _, err := r.Advance(context.Background(), start+2*3600*1e9, false); err != nil {
 			t.Fatal(err)
 		}
 		if _, err := r.End(""); err != nil {

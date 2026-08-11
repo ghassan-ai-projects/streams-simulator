@@ -10,6 +10,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strconv"
@@ -228,13 +229,16 @@ func (d *Director) DestroyWorld(worldID string) (map[string]any, error) {
 }
 
 // Advance moves the clock (sim.clock.advance).
-func (d *Director) Advance(worldID string, toNS int64, await bool) (map[string]any, error) {
+func (d *Director) Advance(ctx context.Context, worldID string, toNS int64, await bool) (map[string]any, error) {
 	w := d.World(worldID)
 	if w == nil {
 		return nil, errTool(CodeWorldNotFound, "unknown world %q", worldID)
 	}
-	emitted, err := w.Run.Advance(toNS, await)
+	emitted, err := w.Run.Advance(ctx, toNS, await)
 	if err != nil {
+		if errors.Is(err, run.ErrConsumerNotQuiesced) {
+			return nil, errTool(CodeConsumerNotQuiesced, "%v", err)
+		}
 		return nil, errTool(CodeClockBackwards, "%v", err)
 	}
 	return map[string]any{

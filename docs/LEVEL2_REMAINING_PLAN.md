@@ -1,7 +1,7 @@
 # Level 2 remaining-work plan
 
 Status: working plan — updated per slice
-Date: 2026-08-11 (rev 3: Slice A landed)
+Date: 2026-08-11 (rev 4: Slice B landed)
 Target: **Level 2 — benchmark-ready** per [QUALITY_BAR.md](QUALITY_BAR.md)
 Baseline: `5a269a0` (Level 1 green; all tests, vet, ci-check pass)
 
@@ -66,6 +66,14 @@ rejection test; `start_time=0` honored; presence of typed nested schemas in the 
 list.
 
 ## Slice B — G5 quiescence barrier, injectable and deterministic
+
+Status: **landed** (this plan rev). Deviation from plan: no per-wait generation
+token was added. The monotonic watermark (`quiescedThroughNS`, monotone under
+`ReportQuiesced`) already prevents a stale report from satisfying a later wait
+(a report only moves the watermark forward, and each wait checks `>= toNS`),
+and a strict token would break the legitimate fast path where the consumer
+reported before the harness issued the advance. The property is now proven by
+deterministic tests instead.
 
 Issue (survey): `awaitQuiescence` (run.go:532-551) uses a real 30 s wall timer, has no
 cancellation path, no generation token; its only test sleeps (run_test.go:160,167);
