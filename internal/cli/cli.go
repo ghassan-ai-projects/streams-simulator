@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -201,8 +202,14 @@ func cmdAdapter(args []string) error {
 		if err != nil {
 			return fmt.Errorf("streamsim: %w", err)
 		}
+		ids := make([]string, 0, len(adapters))
+		for id := range adapters {
+			ids = append(ids, id)
+		}
+		sort.Strings(ids)
 		var out []map[string]any
-		for id, a := range adapters {
+		for _, id := range ids {
+			a := adapters[id]
 			out = append(out, map[string]any{"id": id, "version": a.Version, "encoding": a.Encoding, "title": a.Title})
 		}
 		return printJSON(map[string]any{"adapters": out})
@@ -233,7 +240,7 @@ func cmdRun(args []string) error {
 	domainID := fs.String("domain", "", "domain id")
 	adapterID := fs.String("adapter", "native-jsonl", "adapter id")
 	seed := fs.Uint64("seed", 1, "world seed")
-	sinkName := fs.String("sink", "file", "sink: inproc|file")
+	sinkName := fs.String("sink", "inproc", "sink: inproc|file|http-push")
 	sinkTarget := fs.String("sink-target", "", "sink target (file path)")
 	outDir := fs.String("out", "", "output directory for artifacts")
 	durationS := fs.Float64("duration", 6*3600, "run duration (seconds)")
@@ -247,6 +254,12 @@ func cmdRun(args []string) error {
 	}
 	if *domainID == "" {
 		return fmt.Errorf("run requires --domain")
+	}
+	if *sinkName == model.SinkFile && *sinkTarget == "" {
+		if *outDir == "" {
+			return fmt.Errorf("--sink=file requires --sink-target or --out")
+		}
+		*sinkTarget = filepath.Join(*outDir, "trace.jsonl")
 	}
 	cat, err := loadCatalog(*domainsDir)
 	if err != nil {

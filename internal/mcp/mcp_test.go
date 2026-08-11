@@ -9,6 +9,7 @@ package mcp
 import (
 	"context"
 	"encoding/json"
+	"os"
 	"testing"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -185,6 +186,28 @@ func TestBeginRunRequiresSealedTruth(t *testing.T) {
 	worldID := createWorld(t, d)
 	if _, err := d.BeginRun(worldID, "missing-truth"); err == nil {
 		t.Fatal("run.begin must refuse an unsealed oracle")
+	}
+}
+
+func TestDirectorPassesSinkTarget(t *testing.T) {
+	d := newTestDirector(t)
+	target := t.TempDir() + "/trace.jsonl"
+	res, err := d.CreateWorld(map[string]any{
+		"domain": "aquaculture-pond", "seed": float64(9), "adapter": "native-jsonl",
+		"sink": model.SinkFile, "sink_target": target,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	worldID := res["world_id"].(string)
+	if _, err := d.Advance(worldID, model.DefaultStartTimeNS+60*1e9, false); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := d.DestroyWorld(worldID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(target); err != nil {
+		t.Fatalf("director did not pass sink target through: %v", err)
 	}
 }
 

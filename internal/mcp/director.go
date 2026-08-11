@@ -119,7 +119,8 @@ func (d *Director) CreateWorld(args map[string]any) (map[string]any, error) {
 	d.mu.Unlock()
 	cfg := run.Config{
 		Domain: spec, Adapter: adap, Seed: seed, SinkName: sinkName,
-		TimeMode: timeMode, StartTimeNS: startNS, EntityIDs: entityIDs,
+		SinkTarget: str(args, "sink_target"),
+		TimeMode:   timeMode, StartTimeNS: startNS, EntityIDs: entityIDs,
 		ScenarioProfile: str(args, "scenario_profile"),
 		Label:           str(args, "label"),
 		RunID:           "r-" + strconv.Itoa(seq),
