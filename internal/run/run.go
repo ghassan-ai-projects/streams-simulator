@@ -64,6 +64,8 @@ type Run struct {
 	evidenceRec       func(model.SimEvent) // delivered-event hook (test harness)
 
 	finished     bool
+	incomplete   bool
+	runErr       error
 	trace        []byte
 	traceDigest  string
 	reproducible bool
@@ -144,6 +146,11 @@ func New(ctx context.Context, cfg Config) (*Run, error) {
 	default:
 		return nil, fmt.Errorf("run: unsupported sink %q", cfg.SinkName)
 	}
+	if lines, err := eng.Begin(); err != nil {
+		return nil, fmt.Errorf("run: adapter begin: %w", err)
+	} else if err := writeSinkLines(r.Sink, lines); err != nil {
+		return nil, fmt.Errorf("run: adapter preamble: %w", err)
+	}
 	// Reproducible unless the wall clock drives delivery.
 	r.reproducible = cfg.TimeMode != model.TimeWall
 
@@ -192,7 +199,10 @@ func (r *Run) onEmit(ev model.SimEvent) {
 	for _, d := range recs {
 		if d.Malformed {
 			// One bad record must not poison a file: render a broken line.
-			r.writeMalformed(ev)
+			if err := r.writeMalformed(ev); err != nil {
+				r.fail(err)
+				return
+			}
 			r.ledger = append(r.ledger, model.LedgerRecord{
 				Seq: ev.Seq, WorldID: ev.WorldID, EntityID: ev.EntityID,
 				Channel: ev.Channel, EventTimeNS: atNS, ObservedTimeNS: atNS,
@@ -213,7 +223,7 @@ func (r *Run) onEmit(ev model.SimEvent) {
 		if r.evidenceRec != nil {
 			r.evidenceRec(d.Event)
 		}
-		line, err := r.Engine.RenderRecord(&d.Event)
+		line, err := r.Engine.RenderStreamRecord(&d.Event)
 		if err != nil {
 			r.fail(err)
 			return
@@ -234,14 +244,19 @@ func (r *Run) onEmit(ev model.SimEvent) {
 	}
 }
 
-func (r *Run) writeMalformed(ev model.SimEvent) {
+func (r *Run) writeMalformed(ev model.SimEvent) error {
 	// A broken line in the adapter's encoding: unterminated JSON.
-	_ = r.Sink.Write([]byte(`{"seq":` + strconv.FormatInt(ev.Seq, 10) + `,"broken":`))
+	return r.Sink.Write([]byte(`{"seq":` + strconv.FormatInt(ev.Seq, 10) + `,"broken":`))
 }
 
 // fail aborts the run with an error; the run is marked incomplete.
 func (r *Run) fail(err error) {
-	panic(fmt.Sprintf("run %s aborted: %v", r.ID, err))
+	if err == nil || r.runErr != nil {
+		return
+	}
+	r.runErr = fmt.Errorf("run %s aborted: %w", r.ID, err)
+	r.incomplete = true
+	r.reproducible = false
 }
 
 // RenderRecord exposes the adapter's per-record rendering (used by the MCP
@@ -257,6 +272,9 @@ func (r *Run) RenderRecord(ev *model.SimEvent) (string, error) {
 // Advance moves the world to toNS, delivering everything along the way.
 // awaitConsumer blocks until quiescence is reported through toNS.
 func (r *Run) Advance(toNS int64, awaitConsumer bool) (int, error) {
+	if r.runErr != nil {
+		return 0, r.runErr
+	}
 	emitted, effects, err := r.World.Advance(toNS)
 	if err != nil {
 		return 0, fmt.Errorf("run: advance: %w", err)
@@ -266,6 +284,9 @@ func (r *Run) Advance(toNS int64, awaitConsumer bool) (int, error) {
 	// boundary.
 	for _, d := range r.Perturb.Flush(toNS) {
 		r.deliver(d)
+	}
+	if r.runErr != nil {
+		return emitted, r.runErr
 	}
 	if awaitConsumer {
 		if err := r.awaitQuiescence(toNS); err != nil {
@@ -282,7 +303,10 @@ func (r *Run) Advance(toNS int64, awaitConsumer bool) (int, error) {
 
 func (r *Run) deliver(d perturb.Delivered) {
 	if d.Malformed {
-		r.writeMalformed(d.Event)
+		if err := r.writeMalformed(d.Event); err != nil {
+			r.fail(err)
+			return
+		}
 		atNS, _ := model.ParseTime(d.Event.EventTime)
 		r.ledger = append(r.ledger, model.LedgerRecord{
 			Seq: d.Event.Seq, WorldID: d.Event.WorldID, EntityID: d.Event.EntityID,
@@ -300,7 +324,7 @@ func (r *Run) deliver(d perturb.Delivered) {
 		})
 		return
 	}
-	line, err := r.Engine.RenderRecord(&d.Event)
+	line, err := r.Engine.RenderStreamRecord(&d.Event)
 	if err != nil {
 		r.fail(err)
 		return
@@ -531,6 +555,13 @@ func (r *Run) End(outDir string) (*model.RunArtifact, error) {
 	if r.finished {
 		return nil, fmt.Errorf("run: already finished")
 	}
+	if r.runErr == nil {
+		if lines, err := r.Engine.End(r.worldEndTimeNS); err != nil {
+			r.fail(fmt.Errorf("End: adapter postamble: %w", err))
+		} else if err := writeSinkLines(r.Sink, lines); err != nil {
+			r.fail(fmt.Errorf("End: adapter postamble: %w", err))
+		}
+	}
 	trace, err := r.Sink.Close()
 	if err != nil {
 		return nil, fmt.Errorf("End: %w", err)
@@ -573,7 +604,19 @@ func (r *Run) End(outDir string) (*model.RunArtifact, error) {
 			return nil, fmt.Errorf("End: %w", err)
 		}
 	}
+	if r.runErr != nil {
+		return art, r.runErr
+	}
 	return art, nil
+}
+
+func writeSinkLines(dst sink.Sink, lines []string) error {
+	for _, line := range lines {
+		if err := dst.Write([]byte(line)); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // artifact assembles the run artifact from the run state.
@@ -613,11 +656,20 @@ func (r *Run) artifact() *model.RunArtifact {
 		CommandLog:          cmdLog,
 		ExpectedTraceDigest: r.traceDigest,
 		Reproducible:        r.reproducible,
+		Incomplete:          r.incomplete,
+		Error:               errorString(r.runErr),
 		Unblinded:           r.unblinded,
 		UnblindedAt:         r.unblindedAt,
 		Platform:            model.CurrentPlatform(),
 		Counts:              counts,
 	}
+}
+
+func errorString(err error) string {
+	if err == nil {
+		return ""
+	}
+	return err.Error()
 }
 
 func countLedger(ledger []model.LedgerRecord, reasons ...string) int {

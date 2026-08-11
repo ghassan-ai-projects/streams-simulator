@@ -22,6 +22,8 @@ type RunArtifact struct {
 	CommandLog          []Command   `json:"command_log"`
 	ExpectedTraceDigest string      `json:"expected_trace_digest,omitempty"`
 	Reproducible        bool        `json:"reproducible"`
+	Incomplete          bool        `json:"incomplete,omitempty"`
+	Error               string      `json:"error,omitempty"`
 	Unblinded           bool        `json:"unblinded,omitempty"`
 	UnblindedAt         string      `json:"unblinded_at,omitempty"`
 	Platform            Platform    `json:"platform,omitempty"`

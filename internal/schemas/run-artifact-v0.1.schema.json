@@ -106,6 +106,16 @@
       "description": "False for http-push + wall, where delivery timing comes from a real clock and cannot be reproduced, and for any closed-loop run where the consumer did not report quiescence. Scorecards refuse to report hash-equality metrics for a run with this false, and every report carries the flag."
     },
 
+    "incomplete": {
+      "type": "boolean",
+      "description": "True when a rendering, sink, or lifecycle error aborted the run before a complete adapter end state was written."
+    },
+    "error": {
+      "type": "string",
+      "maxLength": 4096,
+      "description": "Stable diagnostic text for an incomplete run; not an input to replay."
+    },
+
     "unblinded": {
       "type": "boolean",
       "default": false,

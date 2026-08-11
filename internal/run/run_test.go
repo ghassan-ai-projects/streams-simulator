@@ -3,6 +3,7 @@ package run
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,9 +14,15 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
+type failingSink struct{}
+
+func (failingSink) Write([]byte) error     { return errors.New("injected sink failure") }
+func (failingSink) Close() ([]byte, error) { return nil, nil }
+
 const (
 	aquaculturePath = "../../docs/examples/aquaculture-pond.domain.json"
 	nativeAdapter   = "../../adapters/native-jsonl.adapter.json"
+	agenticAdapter  = "../../adapters/agentic-stream.adapter.json"
 )
 
 // testBase loads the aquaculture-pond domain and native-jsonl adapter.
@@ -155,6 +162,64 @@ func TestRunSinkEquivalence(t *testing.T) {
 	file := run(model.SinkFile, filepath.Join(t.TempDir(), "trace.jsonl"))
 	if string(inproc) != string(file) {
 		t.Fatalf("sink equivalence broken: inproc and file diverged")
+	}
+}
+
+func TestStreamingRunIncludesAdapterPreambleAndPostamble(t *testing.T) {
+	spec, err := domain.Load(aquaculturePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	a, err := adapter.Load(agenticAdapter)
+	if err != nil {
+		t.Fatal(err)
+	}
+	start := model.DefaultStartTimeNS + 4*3600*1e9
+	r, err := New(context.Background(), Config{
+		Domain: spec, Adapter: a, Seed: 11, SinkName: model.SinkInproc,
+		TimeMode: model.TimeStepped, StartTimeNS: start,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.Advance(start+3600*1e9, false); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.End(""); err != nil {
+		t.Fatal(err)
+	}
+	lines := strings.Split(strings.TrimSpace(string(r.Trace())), "\n")
+	if len(lines) < 3 {
+		t.Fatalf("expected preamble, event, and postamble; got %d lines", len(lines))
+	}
+	if !strings.Contains(lines[0], `"record_type":"runtime_config"`) {
+		t.Fatalf("missing runtime preamble: %s", lines[0])
+	}
+	if !strings.Contains(lines[len(lines)-1], `"record_type":"trace_end"`) {
+		t.Fatalf("missing trace postamble: %s", lines[len(lines)-1])
+	}
+}
+
+func TestSinkFailureMarksRunIncompleteWithoutPanic(t *testing.T) {
+	spec, a := testBase(t)
+	start := model.DefaultStartTimeNS + 4*3600*1e9
+	r, err := New(context.Background(), Config{
+		Domain: spec, Adapter: a, Seed: 12, SinkName: model.SinkInproc,
+		TimeMode: model.TimeStepped, StartTimeNS: start,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	r.Sink = failingSink{}
+	if _, err := r.Advance(start+3600*1e9, false); err == nil {
+		t.Fatal("sink failure must be returned from Advance")
+	}
+	art, endErr := r.End("")
+	if endErr == nil {
+		t.Fatal("incomplete run must retain its failure")
+	}
+	if art == nil || !art.Incomplete || art.Error == "" {
+		t.Fatalf("incomplete artifact missing failure state: %+v", art)
 	}
 }
 
