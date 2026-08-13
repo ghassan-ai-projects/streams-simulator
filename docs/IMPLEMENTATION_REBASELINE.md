@@ -33,28 +33,38 @@ this file records what is now proven and what still prevents Level 2.
 
 ## Remaining Level 2 blockers
 
-These are deliberately explicit rather than hidden behind a “mostly complete” claim.
+Status: **all resolved** (2026-08-11, slices A–G). The five blockers below each have
+their own commits and evidence; see [QUALITY_BAR.md](QUALITY_BAR.md) current-bar-status
+for the commit map. The resolved state of each:
 
-1. **G3 reference consumer topology.** `internal/refconsumer` is a deterministic in-process
-   baseline. It does not yet run out-of-process against the documented operator MCP endpoint,
-   exercise reconnect/idempotency over that endpoint, or complete a closed-loop golden run for
-   every shipped domain.
-2. **G2 independent oracles.** The analytic cross-check covers the first-order lag. RC-network,
-   availability, pink/quantization boundaries, and every supported noise/value form need
-   independent oracle tests; pink noise and batch cadence currently fail closed as unsupported.
-3. **G4 durable ledger.** Ledger rows are retained and written at run end. A streaming run
-   needs append-only durable ledger persistence and crash-recovery/conservation evidence for
-   every delivery instance beyond 10,000 records.
-4. **G5 deterministic barrier proofs.** The mutex/channel barrier removes the data race and
-   has an ack-during-wait race test, but timeout/cancel/reconnect/stale-generation behavior
-   still needs an injectable clock and no-real-sleep deterministic tests.
-5. **MCP contract strictness.** Tools advertise an object schema, but it is intentionally
-   permissive. Typed per-tool schemas and rejection of unknown/missing arguments are required
-   before benchmark release; the operator CLI topology also needs a documented deployable
-   process boundary.
-6. **Security/release evidence.** Install and run `deadcode` and `govulncheck`, add fuzz/property
-   and soak/performance evidence, and produce a signed release manifest containing simulator,
-   domain, adapter, suite, toolchain, and consumer digests plus independent review identity.
+1. **G3 reference consumer topology** — resolved by `1c8a62b`: the operator role is
+   served over streamable HTTP from the director process (`--operator-addr`), the
+   reference consumer runs out-of-process against it (`refconsumer --mcp/--token/--run`),
+   and a golden closed-loop run (fault → evidence → detection → effector over MCP →
+   world effect → verdict → score) resolves per shipped domain; director tools are
+   provably unreachable from the operator endpoint.
+2. **G2 independent oracles** — resolved by `2977d15`: analytic closed forms now verify
+   rc_network, integrator, threshold_integrator, dead_time (discrete recurrence), the F0
+   trend/seasonality sum, and the fault envelopes; gaussian/quantization moment oracles
+   and availability sojourn statistics guard the noise and renewal machinery (the
+   availability oracle caught and fixed a real seconds-as-nanoseconds bug); pink noise
+   and batch cadence fail closed with rejection tests.
+3. **G4 durable ledger** — resolved by `e30a059`: append-only ledger persistence with
+   sink-consistent flushing at command boundaries, crash recovery at command granularity,
+   and conservation identity proven beyond 10,000 records (and beyond 1,000,000 in the
+   `make soak` target).
+4. **G5 deterministic barrier proofs** — resolved by `9840200`: injectable quiescence
+   clock, request cancellation, timeout/cancel/stale-report/fast-path tests with no real
+   sleeps, and replayable timed-out advances (incomplete runs replay as incomplete).
+5. **MCP contract strictness** — resolved by `20d4818` + `1c8a62b`: every tool advertises
+   a closed typed schema; verdict/ground-truth arguments are validated against the
+   committed contracts over the wire; params/args reject unknown keys; the operator
+   process boundary is documented and deployable.
+6. **Security/release evidence** — resolved by the release slice: `make ci-check` fails
+   closed without `deadcode`/`govulncheck` (both installed and green), bounded fuzzing of
+   the parsers runs in ci-check, `make soak` and `make perf` exist and pass, and
+   `streamsim manifest` emits a signed release manifest with simulator/domain/adapter/
+   suite/toolchain/consumer digests plus author and independent review identity.
 
 ## Next gated order
 

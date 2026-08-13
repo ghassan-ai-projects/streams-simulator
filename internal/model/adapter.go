@@ -60,6 +60,7 @@ type ValueExpr struct {
 	Source   string      `json:"source,omitempty"`
 	Value    any         `json:"value,omitempty"`
 	Parts    []ValueExpr `json:"parts,omitempty"`
+	Fields   []Field     `json:"fields,omitempty"`
 	Template string      `json:"template,omitempty"`
 	Layout   string      `json:"layout,omitempty"`
 	Of       *ValueExpr  `json:"of,omitempty"`

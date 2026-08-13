@@ -58,6 +58,11 @@ type World struct {
 	queue    priorityQueue
 	tiebreak uint64
 	seq      int64
+	// lastObservedNS serializes native delivery timestamps in emission order.
+	// The link-delay model supplies a timestamp candidate; this watermark adds
+	// the deterministic total-order tiebreak required by consumers.
+	lastObservedNS    int64
+	hasObservedTimeNS bool
 
 	subs        map[string]*randutil.SplitMix64
 	entities    map[string]*Entity
@@ -185,7 +190,14 @@ func New(spec *domain.Compiled, seed uint64, id string, startNS int64, opts Opti
 	return w, nil
 }
 
-// renderID renders an id template like "site-{site}/pond-{n}".
+// RenderID renders one entity id from the domain's id template. Exported
+// for hosts that must enumerate the domain's entity ids without building a
+// world (the audit path).
+func RenderID(tmpl string, n int) string {
+	return renderID(tmpl, n, nil)
+}
+
+// renderID expands the id template.
 func renderID(tmpl string, n int, params map[string]any) string {
 	out := tmpl
 	out = strings.ReplaceAll(out, "{n}", strconv.Itoa(n))

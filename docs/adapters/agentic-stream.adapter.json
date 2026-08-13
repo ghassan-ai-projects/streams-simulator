@@ -2,7 +2,7 @@
   "id": "agentic-stream",
   "version": "0.1.0",
   "title": "Agentic Stream V0.1 replay trace",
-  "description": "Projects native sim events into Agentic Stream's trace-record-v0.1 JSONL. Everything Agentic-Stream-specific about the simulator lives in this file and nowhere else: its field names, its id alphabet, its arrival_time rule, its config header, its trace_end horizon. Delete this file and the simulator is unchanged. Add another and a second consumer works with no release.",
+  "description": "Projects native sim events into Agentic Stream's trace-record-v0.1 JSONL. Everything Agentic-Stream-specific about the simulator lives in this file and nowhere else: its nested event object, field names, id alphabet, arrival_time rule, config header, and trace_end horizon. Delete this file and the simulator is unchanged. Add another and a second consumer works with no release.",
 
   "encoding": "jsonl",
 
@@ -26,20 +26,22 @@
   "record": {
     "fields": [
       {"name": "record_type", "from": {"op": "const", "value": "event"}},
-      {"name": "event.id", "from": {"op": "counter", "prefix": "evt-", "width": 6, "of": {"op": "source", "source": "seq"}}},
-      {"name": "event.entity_type", "from": {"op": "source", "source": "entity_type"}},
-      {"name": "event.entity_id", "from": {"op": "source", "source": "entity_id"}},
-      {"name": "event.type", "from": {"op": "source", "source": "channel"}},
-      {
-        "name": "event.event_time",
-        "from": {"op": "format_time", "layout": "rfc3339_nano", "of": {"op": "source", "source": "event_time"}}
-      },
-      {
-        "name": "event.arrival_time",
-        "from": {"op": "format_time", "layout": "rfc3339_nano", "of": {"op": "source", "source": "observed_time"}}
-      },
-      {"name": "event.value", "from": {"op": "source", "source": "value"}, "omit_when_null": true},
-      {"name": "event.unit", "from": {"op": "source", "source": "unit"}, "omit_when_null": true}
+      {"name": "event", "from": {"op": "object", "fields": [
+        {"name": "id", "from": {"op": "counter", "prefix": "evt-", "width": 6, "of": {"op": "source", "source": "seq"}}},
+        {"name": "entity_type", "from": {"op": "source", "source": "entity_type"}},
+        {"name": "entity_id", "from": {"op": "source", "source": "entity_id"}},
+        {"name": "type", "from": {"op": "source", "source": "channel"}},
+        {
+          "name": "event_time",
+          "from": {"op": "format_time", "layout": "rfc3339_nano", "of": {"op": "source", "source": "event_time"}}
+        },
+        {
+          "name": "arrival_time",
+          "from": {"op": "format_time", "layout": "rfc3339_nano", "of": {"op": "source", "source": "observed_time"}}
+        },
+        {"name": "value", "from": {"op": "source", "source": "value"}, "omit_when_null": true},
+        {"name": "unit", "from": {"op": "source", "source": "unit"}, "omit_when_null": true}
+      ]}}
     ]
   },
 

@@ -76,6 +76,19 @@ func (s *File) Write(line []byte) error {
 	return nil
 }
 
+// Flush pushes buffered bytes to the file descriptor without syncing. The
+// delivery ledger and the trace stay consistent at command boundaries: a
+// crash after a boundary leaves both recoverable from the page cache; End
+// syncs them to disk.
+func (s *File) Flush() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if err := s.w.Flush(); err != nil {
+		return fmt.Errorf("sink: flush %s: %w", s.path, err)
+	}
+	return nil
+}
+
 // Close flushes and returns the file contents.
 func (s *File) Close() ([]byte, error) {
 	s.mu.Lock()

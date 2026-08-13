@@ -162,6 +162,44 @@ func TestF2Rejected(t *testing.T) {
 	}
 }
 
+// TestPinkNoiseRejected: pink noise is not implemented; the declared option
+// must fail loudly (fail-closed conformance row).
+func TestPinkNoiseRejected(t *testing.T) {
+	spec := minimalSpec()
+	spec.Channels[0].Noise = model.Noise{Model: "pink", Sigma: 0.5}
+	raw, err := json.Marshal(spec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Parse(raw, "pink"); err == nil || !strings.Contains(err.Error(), "not implemented") {
+		t.Fatalf("expected pink not-implemented rejection, got %v", err)
+	}
+}
+
+// TestNoneNoiseWithSigmaRejected: noise model none with a nonzero sigma
+// must be refused, not silently approximated by the gaussian branch.
+func TestNoneNoiseWithSigmaRejected(t *testing.T) {
+	spec := minimalSpec()
+	spec.Channels[0].Noise = model.Noise{Model: "none", Sigma: 0.5}
+	raw, err := json.Marshal(spec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Parse(raw, "none-sigma"); err == nil || !strings.Contains(err.Error(), "sigma must be 0") {
+		t.Fatalf("expected none+sigma rejection, got %v", err)
+	}
+
+	// The legitimate "no noise" declaration still loads.
+	spec.Channels[0].Noise = model.Noise{Model: "none", Sigma: 0}
+	raw, err = json.Marshal(spec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Parse(raw, "none"); err != nil {
+		t.Fatalf("none with sigma 0 must load: %v", err)
+	}
+}
+
 func TestDeadTimeDoubleApplicationRejected(t *testing.T) {
 	// An effector with dead_time_s driving a dead_time state must be refused.
 	spec := minimalSpec()

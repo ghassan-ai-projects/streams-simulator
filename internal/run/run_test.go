@@ -58,7 +58,7 @@ func TestRunByteReproducible(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := r.Advance(start+6*3600*1e9, false); err != nil {
+		if _, err := r.Advance(context.Background(), start+6*3600*1e9, false); err != nil {
 			t.Fatal(err)
 		}
 		art, err := r.End("")
@@ -85,6 +85,33 @@ func TestRunByteReproducible(t *testing.T) {
 	}
 	if !res.Matches {
 		t.Fatalf("replay mismatch: got %s want %s (first divergence %d)", res.GotDigest, res.WantDigest, res.FirstDivergence)
+	}
+}
+
+func TestRunRejectsNonMonotonicNativeObservedTime(t *testing.T) {
+	spec, a := testBase(t)
+	start := model.DefaultStartTimeNS
+	r, err := New(context.Background(), Config{
+		Domain: spec, Adapter: a, Seed: 1, SinkName: model.SinkInproc,
+		TimeMode: model.TimeStepped, StartTimeNS: start,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	base := model.SimEvent{
+		Seq: 0, WorldID: r.World.ID, EntityType: "fish", EntityID: r.World.InitialEntityIDs()[0],
+		Channel: "temperature", EventTime: model.FormatTime(start),
+	}
+	first := base
+	first.ObservedTime = model.FormatTime(start + 2)
+	second := base
+	second.Seq = 1
+	second.ObservedTime = model.FormatTime(start + 1)
+	r.onEmit(first)
+	r.onEmit(second)
+	_, err = r.End("")
+	if err == nil || !strings.Contains(err.Error(), "strict observed-time guard") {
+		t.Fatalf("run accepted non-monotonic native observed_time: %v", err)
 	}
 }
 
@@ -117,7 +144,7 @@ func TestWorldDigestAndCommandTimesAreLossless(t *testing.T) {
 		t.Fatal(err)
 	}
 	to := start + 7
-	if _, err := r.Advance(to, false); err != nil {
+	if _, err := r.Advance(context.Background(), to, false); err != nil {
 		t.Fatal(err)
 	}
 	if got, ok := r.commandLog[0].Args["to_ns"].(int64); !ok || got != to {
@@ -150,21 +177,24 @@ func TestQuiescenceWaitIsRaceFreeAndWakesOnReport(t *testing.T) {
 		t.Fatal(err)
 	}
 	to := start + int64(time.Hour)
+	// Park the waiter deterministically: the hook fires only when the wait
+	// is about to block, so the report lands while the waiter is parked —
+	// no wall-clock sleeps.
+	parked := make(chan struct{})
+	r.SetQuiesceParkedHook(func() { parked <- struct{}{} })
 	done := make(chan error, 1)
 	go func() {
-		_, err := r.Advance(to, true)
+		_, err := r.Advance(context.Background(), to, true)
 		done <- err
 	}()
-	// Report from the consumer side while Advance is waiting. The wait must
-	// wake immediately without polling a shared unsynchronized field.
-	time.Sleep(10 * time.Millisecond)
+	<-parked
 	r.ReportQuiesced(to)
 	select {
 	case err := <-done:
 		if err != nil {
 			t.Fatal(err)
 		}
-	case <-time.After(2 * time.Second):
+	case <-time.After(5 * time.Second):
 		t.Fatal("quiescence wait did not wake")
 	}
 }
@@ -196,7 +226,7 @@ func buildArtifact(t *testing.T, cfg Config) *model.RunArtifact {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := r.Advance(cfg.StartTimeNS+6*3600*1e9, false); err != nil {
+	if _, err := r.Advance(context.Background(), cfg.StartTimeNS+6*3600*1e9, false); err != nil {
 		t.Fatal(err)
 	}
 	art, err := r.End("")
@@ -218,7 +248,7 @@ func TestRunSinkEquivalence(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := r.Advance(start+2*3600*1e9, false); err != nil {
+		if _, err := r.Advance(context.Background(), start+2*3600*1e9, false); err != nil {
 			t.Fatal(err)
 		}
 		art, err := r.End("")
@@ -251,7 +281,7 @@ func TestStreamingRunIncludesAdapterPreambleAndPostamble(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := r.Advance(start+3600*1e9, false); err != nil {
+	if _, err := r.Advance(context.Background(), start+3600*1e9, false); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := r.End(""); err != nil {
@@ -269,6 +299,76 @@ func TestStreamingRunIncludesAdapterPreambleAndPostamble(t *testing.T) {
 	}
 }
 
+func TestGeneratedTraceTrailerFollowsEventArrivals(t *testing.T) {
+	spec, err := domain.Load(aquaculturePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	a, err := adapter.Load(agenticAdapter)
+	if err != nil {
+		t.Fatal(err)
+	}
+	start := model.DefaultStartTimeNS + 4*3600*1e9
+	r, err := New(context.Background(), Config{
+		Domain: spec, Adapter: a, Seed: 11, SinkName: model.SinkInproc,
+		TimeMode: model.TimeStepped, StartTimeNS: start,
+		EntityIDs: []string{"site-a/pond-1"}, Noiseless: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.Advance(context.Background(), start+60*1e9, false); err != nil {
+		t.Fatal(err)
+	}
+	art, err := r.End("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !art.Reproducible {
+		t.Fatal("generated trace must remain reproducible")
+	}
+
+	var maxArrival int64
+	var until int64
+	haveEvent, haveTrailer := false, false
+	for i, line := range strings.Split(strings.TrimSpace(string(r.Trace())), "\n") {
+		var record struct {
+			RecordType string `json:"record_type"`
+			Event      struct {
+				ArrivalTime string `json:"arrival_time"`
+			} `json:"event"`
+			Until string `json:"until"`
+		}
+		if err := json.Unmarshal([]byte(line), &record); err != nil {
+			t.Fatalf("decode trace line %d: %v", i, err)
+		}
+		switch record.RecordType {
+		case "event":
+			arrival, err := model.ParseTime(record.Event.ArrivalTime)
+			if err != nil {
+				t.Fatalf("parse event arrival on line %d: %v", i, err)
+			}
+			if !haveEvent || arrival > maxArrival {
+				maxArrival = arrival
+			}
+			haveEvent = true
+		case "trace_end":
+			var err error
+			until, err = model.ParseTime(record.Until)
+			if err != nil {
+				t.Fatalf("parse trailer until on line %d: %v", i, err)
+			}
+			haveTrailer = true
+		}
+	}
+	if !haveEvent || !haveTrailer {
+		t.Fatalf("trace must contain event(s) and a trace_end trailer")
+	}
+	if maxArrival >= until {
+		t.Fatalf("trace_end.until %s must be later than last arrival %s", model.FormatTime(until), model.FormatTime(maxArrival))
+	}
+}
+
 func TestSinkFailureMarksRunIncompleteWithoutPanic(t *testing.T) {
 	spec, a := testBase(t)
 	start := model.DefaultStartTimeNS + 4*3600*1e9
@@ -280,7 +380,7 @@ func TestSinkFailureMarksRunIncompleteWithoutPanic(t *testing.T) {
 		t.Fatal(err)
 	}
 	r.Sink = failingSink{}
-	if _, err := r.Advance(start+3600*1e9, false); err == nil {
+	if _, err := r.Advance(context.Background(), start+3600*1e9, false); err == nil {
 		t.Fatal("sink failure must be returned from Advance")
 	}
 	art, endErr := r.End("")
@@ -307,7 +407,7 @@ func TestRunLedgerDistinguishesDrop(t *testing.T) {
 	if _, err := r.ApplyPerturb("drop", map[string]any{"rate": 1.0}, 0, 0); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := r.Advance(start+1*3600*1e9, false); err != nil {
+	if _, err := r.Advance(context.Background(), start+1*3600*1e9, false); err != nil {
 		t.Fatal(err)
 	}
 	art, err := r.End("")
@@ -349,7 +449,7 @@ func TestLedgerDeliveryIDsAreUniqueAcrossDuplicates(t *testing.T) {
 	if _, err := r.ApplyPerturb("duplicate_burst", map[string]any{"rate": 1.0}, 0, 0); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := r.Advance(start+3600*1e9, false); err != nil {
+	if _, err := r.Advance(context.Background(), start+3600*1e9, false); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := r.End(""); err != nil {
@@ -389,7 +489,7 @@ func TestHistoryIsNotSilentlyCapped(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := r.Advance(start+11*1e9, false); err != nil {
+	if _, err := r.Advance(context.Background(), start+11*1e9, false); err != nil {
 		t.Fatal(err)
 	}
 	if len(r.History()) <= 10000 {
@@ -410,7 +510,7 @@ func TestRunClosedLoop(t *testing.T) {
 		t.Fatal(err)
 	}
 	pond := "site-a/pond-1"
-	if _, err := r.Advance(start+1*3600*1e9, false); err != nil {
+	if _, err := r.Advance(context.Background(), start+1*3600*1e9, false); err != nil {
 		t.Fatal(err)
 	}
 	doBefore := r.World.StateValue(pond, "dissolved_oxygen_true", r.World.Clock())
@@ -419,7 +519,7 @@ func TestRunClosedLoop(t *testing.T) {
 		t.Fatal(err)
 	}
 	// The effect (with time constant) propagates; DO falls through the night.
-	if _, err := r.Advance(start+2*3600*1e9, false); err != nil {
+	if _, err := r.Advance(context.Background(), start+2*3600*1e9, false); err != nil {
 		t.Fatal(err)
 	}
 	doAfterFault := r.World.StateValue(pond, "dissolved_oxygen_true", r.World.Clock())
@@ -445,7 +545,7 @@ func TestRunClosedLoop(t *testing.T) {
 		t.Fatalf("idempotency broken: res=%+v res2=%+v calls=%+v", res, res2, r.World.EffectorCalls())
 	}
 	// The effect recovers DO over its time constant.
-	if _, err := r.Advance(start+5*3600*1e9, false); err != nil {
+	if _, err := r.Advance(context.Background(), start+5*3600*1e9, false); err != nil {
 		t.Fatal(err)
 	}
 	doRecovered := r.World.StateValue(pond, "dissolved_oxygen_true", r.World.Clock())
@@ -510,7 +610,7 @@ func TestArtifactRoundTrip(t *testing.T) {
 	if _, err := r.InjectFault("site-a/pond-1", "do_probe_fouling", 0, nil); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := r.Advance(cfg.StartTimeNS+2*3600*1e9, false); err != nil {
+	if _, err := r.Advance(context.Background(), cfg.StartTimeNS+2*3600*1e9, false); err != nil {
 		t.Fatal(err)
 	}
 	art, err := r.End(dir)
@@ -542,5 +642,26 @@ func TestArtifactRoundTrip(t *testing.T) {
 		if _, err := os.Stat(filepath.Join(dir, name)); err != nil {
 			t.Fatalf("missing artifact file %s: %v", name, err)
 		}
+	}
+}
+
+// TestEnvInjectRejectsUndefinedParams: environment faults declare no params
+// yet, so any params are rejected rather than recorded and ignored.
+func TestEnvInjectRejectsUndefinedParams(t *testing.T) {
+	spec, a := testBase(t)
+	start := model.DefaultStartTimeNS
+	r, err := New(context.Background(), Config{
+		Domain: spec, Adapter: a, Seed: 77, SinkName: model.SinkInproc,
+		TimeMode: model.TimeStepped, StartTimeNS: start, StartTimeSet: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	r.ConfigureEnvTarget("consumer-1", true)
+	if _, err := r.EnvInject("consumer-1", "pause", map[string]any{"duration_s": 30}, start); err == nil {
+		t.Fatal("env.inject params must be rejected (none declared)")
+	}
+	if _, err := r.EnvInject("consumer-1", "pause", nil, start); err != nil {
+		t.Fatalf("env.inject without params rejected: %v", err)
 	}
 }

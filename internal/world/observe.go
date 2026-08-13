@@ -71,9 +71,11 @@ func (w *World) processEmission(entityID, channelName string, t int64) {
 		return
 	}
 
-	// Link delay: observed_time = event_time + delay.
+	// Link delay supplies the observed-time candidate; the world then
+	// serializes it into the native emission order.
 	delay := w.linkDelay(entityID, ch, t)
 	observed := t + int64(delay*secondsPerNS)
+	observed = w.serializeObservedTime(observed)
 
 	if !w.EmitDisabled {
 		w.seq++
@@ -101,6 +103,20 @@ func (w *World) processEmission(entityID, channelName string, t int64) {
 	if next > 0 {
 		w.schedule(kindEmission, entityID, channelName, next, nil)
 	}
+}
+
+// serializeObservedTime turns the link-delay candidate into a strict total
+// order in native emission order. Equal candidates receive a one-nanosecond
+// deterministic tiebreak, and a candidate that would move backwards is
+// advanced past the previous timestamp. The adjustment is deliberately in
+// the world layer so every adapter sees the same ordered observed_time.
+func (w *World) serializeObservedTime(candidate int64) int64 {
+	if w.hasObservedTimeNS && candidate <= w.lastObservedNS {
+		candidate = w.lastObservedNS + 1
+	}
+	w.lastObservedNS = candidate
+	w.hasObservedTimeNS = true
+	return candidate
 }
 
 // reading computes the observed (pre-quantization) value and whether this
@@ -303,7 +319,9 @@ func (w *World) linkDelay(entityID string, ch *model.Channel, t int64) float64 {
 	return 0
 }
 
-// updateAvailability advances the producer up/down renewal process.
+// updateAvailability advances the producer up/down renewal process. The
+// exponential sojourns are in seconds and converted to ns, like every other
+// Exp() usage in the world.
 func (w *World) updateAvailability(ent *Entity, ch *model.Channel, cs *channelRunState, t int64) error {
 	rng := w.substream(ent.ID + "/" + ch.Name + "/availability")
 	a := ch.Availability
@@ -316,7 +334,7 @@ func (w *World) updateAvailability(ent *Entity, ch *model.Channel, cs *channelRu
 	if !cs.availInit {
 		cs.availInit = true
 		cs.availDown = false
-		cs.availUntil = t + int64(rng.Exp(mtbfSeconds(a.Uptime, a.MTTRS)))
+		cs.availUntil = t + int64(rng.Exp(mtbfSeconds(a.Uptime, a.MTTRS))*secondsPerNS)
 		return nil
 	}
 	if t < cs.availUntil {
@@ -324,10 +342,10 @@ func (w *World) updateAvailability(ent *Entity, ch *model.Channel, cs *channelRu
 	}
 	if cs.availDown {
 		cs.availDown = false
-		cs.availUntil = t + int64(rng.Exp(mtbfSeconds(a.Uptime, a.MTTRS)))
+		cs.availUntil = t + int64(rng.Exp(mtbfSeconds(a.Uptime, a.MTTRS))*secondsPerNS)
 	} else {
 		cs.availDown = true
-		cs.availUntil = t + int64(rng.Exp(mttrSeconds(a.MTTRS)))
+		cs.availUntil = t + int64(rng.Exp(mttrSeconds(a.MTTRS))*secondsPerNS)
 	}
 	return nil
 }

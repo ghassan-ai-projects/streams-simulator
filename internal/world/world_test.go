@@ -240,6 +240,56 @@ func TestEmitterReceivesEvents(t *testing.T) {
 	}
 }
 
+func TestObservedTimesAreStrictlyIncreasingAcrossEmissionTies(t *testing.T) {
+	spec := testSpec(t, func(s *model.DomainSpec) {
+		s.Entities.Count.Default = 2
+		s.Faults[0].Observability.Detector.Channel = "slow"
+		s.Channels = []model.Channel{
+			{
+				Name: "slow", ValueType: "number", Unit: "u", Resolution: 0.01,
+				Fidelity: "F0", Absence: "signal", Observes: "x",
+				Cadence:   model.Cadence{Mode: "periodic", PeriodS: 60},
+				Noise:     model.Noise{Model: "none"},
+				LinkDelay: &model.LinkDelay{Model: "constant", MeanS: 10},
+			},
+			{
+				Name: "fast", ValueType: "number", Unit: "u", Resolution: 0.01,
+				Fidelity: "F0", Absence: "signal", Observes: "x",
+				Cadence:   model.Cadence{Mode: "periodic", PeriodS: 60},
+				Noise:     model.Noise{Model: "none"},
+				LinkDelay: &model.LinkDelay{Model: "constant", MeanS: 1},
+			},
+		}
+	})
+	start := model.DefaultStartTimeNS
+	w, err := New(spec, 1, "w-observed-order", start, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var events []model.SimEvent
+	w.SetEmitter(func(ev model.SimEvent) { events = append(events, ev) })
+	if _, _, err := w.Advance(start + 60*secondsPerNS); err != nil {
+		t.Fatal(err)
+	}
+	if len(events) != 4 {
+		t.Fatalf("expected four simultaneous-channel events, got %d", len(events))
+	}
+	previous := int64(0)
+	for i, ev := range events {
+		observed, err := model.ParseTime(ev.ObservedTime)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if i > 0 && observed <= previous {
+			t.Fatalf("event %d observed_time %s is not strictly after %s", i, ev.ObservedTime, model.FormatTime(previous))
+		}
+		previous = observed
+	}
+	if got := previous - (start + 60*secondsPerNS + 10*secondsPerNS); got != 3 {
+		t.Fatalf("expected three one-nanosecond serialization steps after the slow candidate, got %d ns", got)
+	}
+}
+
 // TestSubstreamIsolation: adding an unrelated entity must not change an
 // existing entity's output (S1 gate 5, at the world level).
 func TestSubstreamIsolation(t *testing.T) {
@@ -392,6 +442,25 @@ func TestFaultOnsetMagnitudeScalesDeclaredDelta(t *testing.T) {
 	got := w.StateValue("e-1", "x", start+secondsPerNS)
 	if math.Abs((got-base)-2) > 0.01 {
 		t.Fatalf("fault magnitude was not applied: base=%v got=%v", base, got)
+	}
+}
+
+// TestInjectFaultRejectsUnknownParams: fault parameters are fail-closed; the
+// only declared key is severity, and it must be numeric.
+func TestInjectFaultRejectsUnknownParams(t *testing.T) {
+	spec := testSpec(t, nil)
+	w := newTestWorld(t, spec, 23, model.DefaultStartTimeNS)
+	if _, err := w.InjectFault("e-1", "f1", 0, map[string]any{"bogus": 1}); err == nil {
+		t.Fatal("unknown fault param key must be rejected")
+	}
+	if _, err := w.InjectFault("e-1", "f1", 0, map[string]any{"severity": "high"}); err == nil {
+		t.Fatal("non-numeric severity must be rejected")
+	}
+	if _, err := w.InjectFault("e-1", "f1", 0, map[string]any{"severity": -1.0}); err == nil {
+		t.Fatal("negative severity must be rejected")
+	}
+	if _, err := w.InjectFault("e-1", "f1", 0, map[string]any{"severity": 2.5}); err != nil {
+		t.Fatalf("declared severity rejected: %v", err)
 	}
 }
 

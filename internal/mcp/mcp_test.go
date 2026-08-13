@@ -313,7 +313,7 @@ func TestDirectorPassesSinkTarget(t *testing.T) {
 		t.Fatal(err)
 	}
 	worldID := res["world_id"].(string)
-	if _, err := d.Advance(worldID, model.DefaultStartTimeNS+60*1e9, false); err != nil {
+	if _, err := d.Advance(context.Background(), worldID, model.DefaultStartTimeNS+60*1e9, false); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := d.DestroyWorld(worldID); err != nil {
@@ -335,13 +335,13 @@ func TestClosedLoopThroughMCPSurface(t *testing.T) {
 	if _, err := w.Run.InvokeEffector("start_aerator", pond, "setup", map[string]any{"pond_id": pond, "level": 1.0}, start); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := d.Advance(worldID, start+2*3600*1e9, false); err != nil {
+	if _, err := d.Advance(context.Background(), worldID, start+2*3600*1e9, false); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := d.InjectFault(worldID, pond, "aerator_failure", 0, nil); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := d.Advance(worldID, start+3*3600*1e9, false); err != nil {
+	if _, err := d.Advance(context.Background(), worldID, start+3*3600*1e9, false); err != nil {
 		t.Fatal(err)
 	}
 	// The operator invokes the effector through the narrow surface.
@@ -353,7 +353,7 @@ func TestClosedLoopThroughMCPSurface(t *testing.T) {
 	if !res.Simulated || !res.Accepted {
 		t.Fatalf("invoke result wrong: %+v", res)
 	}
-	if _, err := d.Advance(worldID, start+7*3600*1e9, false); err != nil {
+	if _, err := d.Advance(context.Background(), worldID, start+7*3600*1e9, false); err != nil {
 		t.Fatal(err)
 	}
 	// Submit a verdict through the report tool.
@@ -444,10 +444,10 @@ func TestPrefixIndistinguishability(t *testing.T) {
 	step := int64(30 * 60 * 1000000000)
 	divergedAt := int64(0)
 	for now := start + step; now <= start+12*3600*1e9; now += step {
-		if _, err := dA.Advance(idA, now, false); err != nil {
+		if _, err := dA.Advance(context.Background(), idA, now, false); err != nil {
 			t.Fatal(err)
 		}
-		if _, err := dB.Advance(idB, now, false); err != nil {
+		if _, err := dB.Advance(context.Background(), idB, now, false); err != nil {
 			t.Fatal(err)
 		}
 		if evA.equalPrefix(&evB) {
@@ -498,17 +498,50 @@ func (e *evidence) equalPrefix(o *evidence) bool {
 	return len(e.entries) == len(o.entries)
 }
 
+// operatorResponseSet renders the full operator surface over the server
+// tool layer — nameplate, effector list, an invocation, a quiescence
+// report, and the capability-denied error path — as one byte string. Two
+// worlds with identical delivered prefixes must produce identical bytes.
 func operatorResponseSet(t *testing.T, v *OperatorView, token string, atNS int64) (string, error) {
 	t.Helper()
-	np, err := v.ReadNameplate(token)
+	cs, _ := connect(t, NewOperatorServer(v))
+	call := func(name string, args map[string]any) (string, error) {
+		res, err := cs.CallTool(context.Background(), &mcp.CallToolParams{Name: name, Arguments: args})
+		if err != nil {
+			return "", fmt.Errorf("operator call %s: %w", name, err)
+		}
+		raw, _ := json.Marshal(res.StructuredContent)
+		return string(raw), nil
+	}
+	np, err := call("sim.nameplate.read", map[string]any{"token": token})
 	if err != nil {
 		return "", err
 	}
-	effs, err := v.ListEffectors(token)
+	effs, err := call("sim.effector.list", map[string]any{"token": token})
 	if err != nil {
 		return "", err
 	}
-	a, _ := json.Marshal(np)
-	b, _ := json.Marshal(effs)
-	return string(a) + "|" + string(b), nil
+	invoked := "none"
+	var effList []EffectorInfo
+	if err := json.Unmarshal([]byte(effs), &effList); err == nil && len(effList) > 0 {
+		invoked, err = call("sim.effector.invoke", map[string]any{
+			"token": token, "effector": effList[0].Name,
+			"entity_id": "site-a/pond-1", "command_id": "prefix-1",
+			"args": argsForSchema(effList[0].ArgsSchema, "site-a/pond-1"), "at_ns": atNS,
+		})
+		if err != nil {
+			return "", err
+		}
+	}
+	report, err := call("sim.consumer.report", map[string]any{
+		"token": token, "run_id": "", "quiesced_through_ns": atNS,
+	})
+	if err != nil {
+		return "", err
+	}
+	denied, err := call("sim.nameplate.read", map[string]any{"token": "bad-token"})
+	if err != nil {
+		return "", err
+	}
+	return np + "|" + effs + "|" + invoked + "|" + report + "|" + denied, nil
 }

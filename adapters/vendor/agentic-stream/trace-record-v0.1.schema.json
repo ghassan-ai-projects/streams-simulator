@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://agentic-stream.local/schemas/trace-record-v0.1.schema.json",
   "title": "Agentic Stream V0.1 Trace Record",
-  "description": "The wire format the agentic-stream output adapter renders into: flat dotted keys under a record_type discriminator. Vendored here so `streamsim adapter verify` can prove the adapter correct with Agentic Stream absent.",
+  "description": "The wire format the agentic-stream output adapter renders into: a nested event object under a record_type discriminator. Vendored here so `streamsim adapter verify` can prove the adapter correct with Agentic Stream absent.",
   "type": "object",
   "additionalProperties": false,
   "required": ["record_type"],
@@ -15,20 +15,27 @@
     "storage_schema_version": {"type": "integer", "minimum": 1},
     "max_episodes_per_hour": {"type": "integer", "minimum": 0},
     "until": {"type": "string", "format": "date-time"},
-    "event.id": {"type": "string", "pattern": "^evt-[0-9]{6}$"},
-    "event.entity_type": {"type": "string"},
-    "event.entity_id": {"type": "string", "maxLength": 128},
-    "event.type": {"type": "string"},
-    "event.event_time": {"type": "string", "format": "date-time"},
-    "event.arrival_time": {"type": "string", "format": "date-time"},
-    "event.value": {},
-    "event.unit": {"type": "string", "maxLength": 32}
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "entity_type", "entity_id", "type", "event_time", "arrival_time"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^evt-[0-9]{6}$"},
+        "entity_type": {"type": "string"},
+        "entity_id": {"type": "string", "maxLength": 128},
+        "type": {"type": "string"},
+        "event_time": {"type": "string", "format": "date-time"},
+        "arrival_time": {"type": "string", "format": "date-time"},
+        "value": {},
+        "unit": {"type": "string", "maxLength": 32}
+      }
+    }
   },
   "allOf": [
     {
       "if": {"properties": {"record_type": {"const": "event"}}, "required": ["record_type"]},
       "then": {
-        "required": ["event.id", "event.entity_type", "event.entity_id", "event.type", "event.event_time", "event.arrival_time"]
+        "required": ["event"]
       }
     },
     {

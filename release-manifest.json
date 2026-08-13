@@ -1,0 +1,34 @@
+{
+  "manifest": {
+    "adapters": {
+      "agentic-stream.adapter.json": "sha256:5fff08633def4a567bd8728d16678a697a81935af42e79036d3e06203f4a52b5",
+      "native-jsonl.adapter.json": "sha256:370a803df9d3f98e4713c1fa0e70b1a98dbe27a6f13c8641bd899c3bea0c8f54"
+    },
+    "author": "Streams Simulator maintainers \u003cmaintainers@streams-simulator.local\u003e",
+    "consumer": {
+      "name": "streamsim-refconsumer",
+      "version": "0.1.0"
+    },
+    "created_at": "2026-08-11T20:43:08Z",
+    "domains": {
+      "aquaculture-pond.domain.json": "sha256:df484e75ecf86db494e925111b8a8b75c8a8f7ec42918178bd2e9cfc4b919d85",
+      "discrete-line-oee.domain.json": "sha256:b8b81d1567327bc393c1fcaf6c9e2d863a54b5a93a4dfa0bb819072a1e049a94",
+      "host-system-health.domain.json": "sha256:6a730a241b425a02f8ee1864c9cfbc45d6d1a31e0d0a1c7b6f5c638df45cd759",
+      "k8s-cluster.domain.json": "sha256:df2e4d1b45895d9f5f949499a5e8bc272d714b1345e59ae36e76804c6014765e",
+      "open-field-irrigation.domain.json": "sha256:11b00bdd68faac133bfd646326589d69bed5b225b30e4721d9f9c7786c85f197",
+      "rotating-machinery.domain.json": "sha256:a6ddc0bd56820965f93ba327f4ae69018b9f280438894bba8b8f33c7c1d37d0a"
+    },
+    "reviewer": "Independent review \u003creview@streams-simulator.local\u003e",
+    "schema_version": "release-manifest-v0.1",
+    "sim": {
+      "commit": "b99c51f",
+      "go": "go1.26.5",
+      "version": "dev"
+    },
+    "suite": {
+      "negative_class_fraction": 0.4,
+      "trivial_cutoff": 0.9
+    }
+  },
+  "signature": "e0d165bc82f75545ebf5444db19fafe0e3d23e19d0d0c5f0f243ef16ef2a82b14cd044e81937d0c30ce097e43baa7295727735e97485c7d208bdf9ee99594c0a"
+}

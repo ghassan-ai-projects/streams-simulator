@@ -8,12 +8,14 @@
 package audit
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
 	"sort"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/perturb"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/truth"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
@@ -53,13 +55,24 @@ func NewPanel(spec *domain.Compiled, seed uint64, sampleNS int64) *Panel {
 	return &Panel{spec: spec, seed: seed, sampleNS: sampleNS}
 }
 
+// Perturbation is one delivery perturbation the audit applies to the
+// delivered stream, exactly as the scenario declares it.
+type Perturbation struct {
+	Name    string         `json:"name"`
+	Params  map[string]any `json:"params,omitempty"`
+	FromNS  int64          `json:"from_ns,omitempty"`
+	UntilNS int64          `json:"until_ns,omitempty"`
+}
+
 // Audit runs the panel on one injection. The control is the domain's
 // declared negative-class scenario (transient_none-style) when one exists,
 // else a clean world: the design's bar is separating the fault from its
 // negative controls, not from an empty trace. setup applies pre-fault
 // effector calls to both worlds (scenario context such as an aerator
-// running at night).
-func (p *Panel) Audit(entityID, faultID string, onsetNS, startNS int64, entityIDs []string, durationNS int64, setup []truth.SetupCall) (*Verdict, error) {
+// running at night). The detector inputs are the immutable delivered
+// stream — world, perturbation layer and adapter projection — in monotonic
+// order, never random access on a mutable world.
+func (p *Panel) Audit(entityID, faultID string, onsetNS, startNS int64, entityIDs []string, durationNS int64, setup []truth.SetupCall, perturbations []Perturbation) (*Verdict, error) {
 	controlFault := ""
 	for i := range p.spec.Spec.Faults {
 		if p.spec.Spec.Faults[i].IsNegativeClass {
@@ -67,11 +80,11 @@ func (p *Panel) Audit(entityID, faultID string, onsetNS, startNS int64, entityID
 			break
 		}
 	}
-	clean, cleanEmissions, err := p.build(entityID, startNS, entityIDs, map[string]int64{controlFault: onsetNS}, setup, durationNS)
+	clean, cleanEmissions, err := p.build(entityID, startNS, entityIDs, map[string]int64{controlFault: onsetNS}, setup, perturbations, durationNS)
 	if err != nil {
 		return nil, fmt.Errorf("Audit: %w", err)
 	}
-	faulted, faultEmissions, err := p.build(entityID, startNS, entityIDs, map[string]int64{faultID: onsetNS}, setup, durationNS)
+	faulted, faultEmissions, err := p.build(entityID, startNS, entityIDs, map[string]int64{faultID: onsetNS}, setup, perturbations, durationNS)
 	if err != nil {
 		return nil, fmt.Errorf("Audit: %w", err)
 	}
@@ -92,8 +105,8 @@ func (p *Panel) Audit(entityID, faultID string, onsetNS, startNS int64, entityID
 			labels[i] = 1
 		}
 		for _, ch := range channels {
-			faultSeries[ch][i] = faulted.Reading(entityID, ch, t)
-			controlSeries[ch][i] = clean.Reading(entityID, ch, t)
+			faultSeries[ch][i] = gridValue(faulted[ch], i)
+			controlSeries[ch][i] = gridValue(clean[ch], i)
 		}
 	}
 	v := &Verdict{Scores: map[string]float64{}, Channels: channels, Samples: n}
@@ -116,10 +129,22 @@ func (p *Panel) Audit(entityID, faultID string, onsetNS, startNS int64, entityID
 	return v, nil
 }
 
-// emissionLog records the native events of one world, keyed by channel.
+// emissionLog records the delivered events of one world, keyed by channel.
 type emissionLog map[string][]int64
 
-func (p *Panel) build(entityID string, startNS int64, entityIDs []string, faults map[string]int64, setup []truth.SetupCall, durationNS int64) (*world.World, emissionLog, error) {
+// gridValue holds the last delivered value at or before the sample.
+func gridValue(series []float64, i int) float64 {
+	if i >= 0 && i < len(series) {
+		return series[i]
+	}
+	return 0
+}
+
+// build runs one world through the real delivery pipeline — perturbation
+// layer then capture of the delivered records in monotonic order — and
+// returns the per-channel series on the audit grid plus the delivered
+// emission log. The series are immutable evidence, never live world reads.
+func (p *Panel) build(entityID string, startNS int64, entityIDs []string, faults map[string]int64, setup []truth.SetupCall, perturbations []Perturbation, durationNS int64) (map[string][]float64, emissionLog, error) {
 	w, err := world.New(p.spec, p.seed, "w-audit", startNS, world.Options{
 		InitialEntities: entityIDs,
 		ForceEffectorOK: true,
@@ -127,15 +152,38 @@ func (p *Panel) build(entityID string, startNS int64, entityIDs []string, faults
 	if err != nil {
 		return nil, nil, fmt.Errorf("build: %w", err)
 	}
+	layer := perturb.New(w.ID, p.seed, p.spec)
+	for _, pert := range perturbations {
+		if _, err := layer.Apply(pert.Name, pert.Params, pert.FromNS, pert.UntilNS); err != nil {
+			return nil, nil, fmt.Errorf("build: perturb %s: %w", pert.Name, err)
+		}
+	}
 	for _, call := range setup {
 		if _, err := w.InvokeEffector(call.Effector, call.EntityID, call.CommandID, call.Args, call.AtNS); err != nil {
 			return nil, nil, fmt.Errorf("build: %w", err)
 		}
 	}
 	log := emissionLog{}
+	series := map[string][]float64{}
+	times := map[string][]int64{}
+	deliver := func(d perturb.Delivered) {
+		// The audit is per-entity: only the audited entity's delivered
+		// records form the series, exactly as a per-entity Reading did.
+		if d.Malformed || !d.Delivered || d.Event.EntityID != entityID {
+			return
+		}
+		t, _ := model.ParseTime(d.Event.EventTime)
+		log[d.Event.Channel] = append(log[d.Event.Channel], t)
+		if v, ok := asFloat(d.Event.Value); ok {
+			series[d.Event.Channel] = append(series[d.Event.Channel], v)
+			times[d.Event.Channel] = append(times[d.Event.Channel], t)
+		}
+	}
 	w.SetEmitter(func(ev model.SimEvent) {
 		t, _ := model.ParseTime(ev.EventTime)
-		log[ev.Channel] = append(log[ev.Channel], t)
+		for _, d := range layer.Process(ev, t) {
+			deliver(d)
+		}
 	})
 	for fid, onset := range faults {
 		if fid == "" {
@@ -154,7 +202,41 @@ func (p *Panel) build(entityID string, startNS int64, entityIDs []string, faults
 	if _, _, err := w.Advance(horizon); err != nil {
 		return nil, nil, fmt.Errorf("build: %w", err)
 	}
-	return w, log, nil
+	for _, d := range layer.Flush(horizon) {
+		deliver(d)
+	}
+	// Grid: value at sample i = the last delivered value at or before the
+	// sample instant; 0 before the first delivery.
+	n := int((horizon-startNS)/p.sampleNS) + 1
+	grid := map[string][]float64{}
+	for _, ch := range p.spec.ChannelNames() {
+		out := make([]float64, n)
+		si := 0
+		last := 0.0
+		for i := 0; i < n; i++ {
+			t := startNS + int64(i)*p.sampleNS
+			for si < len(times[ch]) && times[ch][si] <= t {
+				last = series[ch][si]
+				si++
+			}
+			out[i] = last
+		}
+		grid[ch] = out
+	}
+	return grid, log, nil
+}
+
+func asFloat(v any) (float64, bool) {
+	switch x := v.(type) {
+	case float64:
+		return x, true
+	case int64:
+		return float64(x), true
+	case json.Number:
+		f, err := x.Float64()
+		return f, err == nil
+	}
+	return 0, false
 }
 
 // fitSilence flags samples that follow a gap longer than minGap in any

@@ -7,6 +7,7 @@ package world
 // never conflated.
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
 	"strconv"
@@ -39,12 +40,23 @@ func (w *World) InjectFault(entityID, faultID string, onsetNS int64, params map[
 		severity = math.Abs(fault.Onset.Magnitude)
 	}
 	if params != nil {
+		for k := range params {
+			if k != "severity" {
+				return "", fmt.Errorf("world: fault %q has no parameter %q (declared: severity)", faultID, k)
+			}
+		}
 		if s, ok := params["severity"]; ok {
 			switch x := s.(type) {
 			case float64:
 				severity = x
 			case int64:
 				severity = float64(x)
+			case json.Number:
+				f, err := x.Float64()
+				if err != nil {
+					return "", fmt.Errorf("world: severity must be numeric")
+				}
+				severity = f
 			default:
 				return "", fmt.Errorf("world: severity must be numeric")
 			}

@@ -1,6 +1,7 @@
 package suite
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 
@@ -110,5 +111,41 @@ func TestNegativeClassFractionAdapts(t *testing.T) {
 			t.Fatalf("scenario id repeated after rejected attempt: %q", sc.ID)
 		}
 		seen[sc.ID] = true
+	}
+}
+
+// TestGenerateIsByteIdentical: two generations from the same seed produce
+// byte-identical scenarios and labels — suite generation is a pure function
+// of (seed, domain, profile), and rejected candidates never shift the
+// identity of later admitted ones.
+func TestGenerateIsByteIdentical(t *testing.T) {
+	if testing.Short() {
+		t.Skip("suite generation runs full worlds and audits; skipped in -short mode")
+	}
+	spec := loadSpec(t)
+	cfg := Config{Domain: spec, Profile: "nominal", N: 6, Seed: 99, SampleNS: 120 * 1e9, MaxAttempts: 40}
+	a, err := Generate(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, err := Generate(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(a.Scenarios) != len(b.Scenarios) {
+		t.Fatalf("generation counts differ: %d vs %d", len(a.Scenarios), len(b.Scenarios))
+	}
+	for i := range a.Scenarios {
+		aj, _ := json.Marshal(a.Scenarios[i])
+		bj, _ := json.Marshal(b.Scenarios[i])
+		if string(aj) != string(bj) {
+			t.Fatalf("scenario %d diverges across identical seeds", i)
+		}
+		if a.Labels[i].ScenarioID != b.Labels[i].ScenarioID {
+			t.Fatalf("label identity diverges at %d: %s vs %s", i, a.Labels[i].ScenarioID, b.Labels[i].ScenarioID)
+		}
+	}
+	if a.TerminalState != b.TerminalState {
+		t.Fatalf("terminal state diverges: %q vs %q", a.TerminalState, b.TerminalState)
 	}
 }

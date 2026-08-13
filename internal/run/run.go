@@ -8,8 +8,10 @@
 package run
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"maps"
 	"os"
@@ -37,6 +39,7 @@ type Config struct {
 	SinkTarget       string // file path or http-push URL
 	TimeMode         string
 	StartTimeNS      int64
+	StartTimeSet     bool // true when StartTimeNS was supplied (0 is a legal start)
 	EntityIDs        []string
 	ScenarioProfile  string
 	ClockMultiplier  float64
@@ -45,7 +48,42 @@ type Config struct {
 	WorldID          string
 	Noiseless        bool
 	ForceFailureMode string // force every effector into a failure mode (tests)
+	QuiescenceClock  QuiescenceClock
+	LedgerPath       string // append-only durable ledger path ("" = in-memory only until End)
 }
+
+// DefaultQuiescenceTimeout bounds an await_consumer wait before the run is
+// marked incomplete. The duration is fixed; the clock is injectable so
+// deterministic tests never sleep.
+const DefaultQuiescenceTimeout = 30 * time.Second
+
+// QuiescenceClock supplies the deadline for await_consumer waits. The real
+// implementation is a wall-clock timer; tests inject a fake they can fire.
+type QuiescenceClock interface {
+	NewTimer(time.Duration) QuiescenceTimer
+}
+
+// QuiescenceTimer is one deadline from a QuiescenceClock.
+type QuiescenceTimer interface {
+	C() <-chan time.Time
+	Stop() bool
+}
+
+// realQuiescenceClock is the default quiescence clock.
+type realQuiescenceClock struct{}
+
+type realQuiescenceTimer struct{ t *time.Timer }
+
+func (rt realQuiescenceTimer) C() <-chan time.Time { return rt.t.C }
+func (rt realQuiescenceTimer) Stop() bool          { return rt.t.Stop() }
+
+func (realQuiescenceClock) NewTimer(d time.Duration) QuiescenceTimer {
+	return realQuiescenceTimer{t: time.NewTimer(d)}
+}
+
+// ErrConsumerNotQuiesced marks an await_consumer timeout. The world has
+// already advanced; the run is incomplete, never silently successful.
+var ErrConsumerNotQuiesced = errors.New("consumer_not_quiesced")
 
 // Run is one deterministic execution.
 type Run struct {
@@ -63,9 +101,13 @@ type Run struct {
 	history           []stateSnapshot
 	verdict           *model.Verdict
 	quiescedThroughNS int64
+	commandMu         sync.Mutex // serializes world-mutating commands across goroutines
 	quiesceMu         sync.Mutex
 	quiesceNotify     chan struct{}
 	evidenceRec       func(model.SimEvent) // delivered-event hook (test harness)
+	quiesceParked     func()               // fired when a quiescence wait blocks (test harness)
+	ledgerWriter      *bufio.Writer
+	ledgerFile        *os.File
 
 	finished     bool
 	incomplete   bool
@@ -76,8 +118,12 @@ type Run struct {
 	unblinded    bool
 	unblindedAt  string
 
-	worldStartTimeNS int64
-	worldEndTimeNS   int64
+	worldStartTimeNS    int64
+	worldEndTimeNS      int64
+	lastObservedNS      int64
+	hasObservedTime     bool
+	lastTraceArrivalNS  int64
+	hasTraceArrivalTime bool
 
 	envTargets map[string]string
 	allowEnv   bool
@@ -98,11 +144,14 @@ func New(ctx context.Context, cfg Config) (*Run, error) {
 	if cfg.TimeMode == "" {
 		cfg.TimeMode = model.TimeStepped
 	}
-	if cfg.StartTimeNS == 0 {
+	if cfg.StartTimeNS == 0 && !cfg.StartTimeSet {
 		cfg.StartTimeNS = model.DefaultStartTimeNS
 	}
 	if cfg.RunID == "" {
 		cfg.RunID = "r-" + strconv.FormatUint(canonicalHash(cfg.Domain.Spec.ID, cfg.Seed), 36)
+	}
+	if cfg.QuiescenceClock == nil {
+		cfg.QuiescenceClock = realQuiescenceClock{}
 	}
 	w, err := world.New(cfg.Domain, cfg.Seed, cfg.WorldID, cfg.StartTimeNS, world.Options{
 		InitialEntities:  cfg.EntityIDs,
@@ -122,6 +171,17 @@ func New(ctx context.Context, cfg Config) (*Run, error) {
 		worldEndTimeNS:   cfg.StartTimeNS,
 		envTargets:       map[string]string{},
 		quiesceNotify:    make(chan struct{}),
+	}
+	if cfg.LedgerPath != "" {
+		if err := os.MkdirAll(filepath.Dir(cfg.LedgerPath), 0o700); err != nil {
+			return nil, fmt.Errorf("run: ledger dir: %w", err)
+		}
+		lf, err := os.OpenFile(cfg.LedgerPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600)
+		if err != nil {
+			return nil, fmt.Errorf("run: open ledger %s: %w", cfg.LedgerPath, err)
+		}
+		r.ledgerWriter = bufio.NewWriter(lf)
+		r.ledgerFile = lf
 	}
 	meta := map[string]any{
 		"run_id": cfg.RunID, "sim_version": model.SimVersion,
@@ -190,7 +250,22 @@ func (r *Run) SetEvidenceRecorder(fn func(model.SimEvent)) {
 
 // onEmit is the world's emitter: perturb -> adapter -> sink -> ledger.
 func (r *Run) onEmit(ev model.SimEvent) {
-	atNS, _ := model.ParseTime(ev.EventTime)
+	atNS, err := model.ParseTime(ev.EventTime)
+	if err != nil {
+		r.fail(fmt.Errorf("strict observed-time guard: event %d has invalid event_time: %w", ev.Seq, err))
+		return
+	}
+	observedNS, err := model.ParseTime(ev.ObservedTime)
+	if err != nil {
+		r.fail(fmt.Errorf("strict observed-time guard: event %d has invalid observed_time: %w", ev.Seq, err))
+		return
+	}
+	if r.hasObservedTime && observedNS <= r.lastObservedNS {
+		r.fail(fmt.Errorf("strict observed-time guard: event %d observed_time %s is not after %s", ev.Seq, ev.ObservedTime, model.FormatTime(r.lastObservedNS)))
+		return
+	}
+	r.lastObservedNS = observedNS
+	r.hasObservedTime = true
 	// World-state history: what was actually happening when the record was
 	// emitted (director-only, for post-hoc analysis).
 	states := map[string]float64{}
@@ -203,7 +278,7 @@ func (r *Run) onEmit(ev model.SimEvent) {
 		if d.Malformed {
 			// One bad record must not poison a file: render a broken line.
 			if err := r.writeMalformed(ev); err != nil {
-				r.ledger = append(r.ledger, model.LedgerRecord{
+				r.appendLedger(model.LedgerRecord{
 					DeliveryID: d.DeliveryID, Seq: ev.Seq, WorldID: ev.WorldID, EntityID: ev.EntityID,
 					Channel: ev.Channel, EventTimeNS: atNS, ObservedTimeNS: atNS,
 					Delivered: false, DeliveryReason: model.DeliverySinkError, WrittenAtNS: r.World.Clock(),
@@ -211,7 +286,7 @@ func (r *Run) onEmit(ev model.SimEvent) {
 				r.fail(err)
 				return
 			}
-			r.ledger = append(r.ledger, model.LedgerRecord{
+			r.appendLedger(model.LedgerRecord{
 				DeliveryID: d.DeliveryID, Seq: ev.Seq, WorldID: ev.WorldID, EntityID: ev.EntityID,
 				Channel: ev.Channel, EventTimeNS: atNS, ObservedTimeNS: atNS,
 				Delivered: true, DeliveryReason: model.DeliveryMangled,
@@ -220,7 +295,7 @@ func (r *Run) onEmit(ev model.SimEvent) {
 			continue
 		}
 		if !d.Delivered {
-			r.ledger = append(r.ledger, model.LedgerRecord{
+			r.appendLedger(model.LedgerRecord{
 				DeliveryID: d.DeliveryID, Seq: ev.Seq, WorldID: ev.WorldID, EntityID: ev.EntityID,
 				Channel: ev.Channel, EventTimeNS: atNS, ObservedTimeNS: atNS,
 				Delivered: false, DeliveryReason: d.Reason,
@@ -233,7 +308,7 @@ func (r *Run) onEmit(ev model.SimEvent) {
 		}
 		line, err := r.Engine.RenderStreamRecord(&d.Event)
 		if err != nil {
-			r.ledger = append(r.ledger, model.LedgerRecord{
+			r.appendLedger(model.LedgerRecord{
 				DeliveryID: d.DeliveryID, Seq: d.Event.Seq, WorldID: d.Event.WorldID, EntityID: d.Event.EntityID,
 				Channel: d.Event.Channel, EventTimeNS: atNS, ObservedTimeNS: atNS,
 				Delivered: false, DeliveryReason: model.DeliverySinkError, WrittenAtNS: r.World.Clock(),
@@ -242,7 +317,7 @@ func (r *Run) onEmit(ev model.SimEvent) {
 			return
 		}
 		if line == "" {
-			r.ledger = append(r.ledger, model.LedgerRecord{
+			r.appendLedger(model.LedgerRecord{
 				DeliveryID: d.DeliveryID, Seq: d.Event.Seq, WorldID: d.Event.WorldID, EntityID: d.Event.EntityID,
 				Channel: d.Event.Channel, EventTimeNS: atNS, ObservedTimeNS: atNS,
 				Delivered: false, DeliveryReason: model.DeliveryOmitted, WrittenAtNS: r.World.Clock(),
@@ -250,7 +325,7 @@ func (r *Run) onEmit(ev model.SimEvent) {
 			continue
 		}
 		if err := r.Sink.Write([]byte(line)); err != nil {
-			r.ledger = append(r.ledger, model.LedgerRecord{
+			r.appendLedger(model.LedgerRecord{
 				DeliveryID: d.DeliveryID, Seq: d.Event.Seq, WorldID: d.Event.WorldID, EntityID: d.Event.EntityID,
 				Channel: d.Event.Channel, EventTimeNS: atNS, ObservedTimeNS: atNS,
 				Delivered: false, DeliveryReason: model.DeliverySinkError, WrittenAtNS: r.World.Clock(),
@@ -258,8 +333,9 @@ func (r *Run) onEmit(ev model.SimEvent) {
 			r.fail(err)
 			return
 		}
+		r.noteTraceArrival(d.Event)
 		otNS, _ := model.ParseTime(d.Event.ObservedTime)
-		r.ledger = append(r.ledger, model.LedgerRecord{
+		r.appendLedger(model.LedgerRecord{
 			DeliveryID: d.DeliveryID, Seq: d.Event.Seq, WorldID: d.Event.WorldID, EntityID: d.Event.EntityID,
 			Channel: d.Event.Channel, EventTimeNS: atNS, ObservedTimeNS: otNS,
 			Delivered: true, DeliveryReason: d.Reason, WrittenAtNS: r.World.Clock(),
@@ -293,13 +369,20 @@ func (r *Run) RenderRecord(ev *model.SimEvent) (string, error) {
 }
 
 // Advance moves the world to toNS, delivering everything along the way.
-// awaitConsumer blocks until quiescence is reported through toNS.
-func (r *Run) Advance(toNS int64, awaitConsumer bool) (int, error) {
+// awaitConsumer blocks until quiescence is reported through toNS; the wait
+// is bounded by DefaultQuiescenceTimeout and canceled by ctx. On a
+// quiescence timeout the world has already moved, so the advance is logged
+// (replay reproduces the same state), the run is marked incomplete, and the
+// emitted count is still returned alongside the error.
+func (r *Run) Advance(ctx context.Context, toNS int64, awaitConsumer bool) (int, error) {
+	r.commandMu.Lock()
 	if r.runErr != nil {
+		r.commandMu.Unlock()
 		return 0, r.runErr
 	}
 	emitted, effects, err := r.World.Advance(toNS)
 	if err != nil {
+		r.commandMu.Unlock()
 		return 0, fmt.Errorf("run: advance: %w", err)
 	}
 	r.worldEndTimeNS = toNS
@@ -309,26 +392,83 @@ func (r *Run) Advance(toNS int64, awaitConsumer bool) (int, error) {
 		r.deliver(d)
 	}
 	if r.runErr != nil {
+		r.commandMu.Unlock()
 		return emitted, r.runErr
 	}
-	if awaitConsumer {
-		if err := r.awaitQuiescence(toNS); err != nil {
-			return 0, err
-		}
-	}
-	_ = effects
+	// Log the advance before awaiting quiescence: the world has already
+	// moved, and replay must reproduce exactly this state even when the
+	// consumer never reports quiescence.
 	r.commandLog = append(r.commandLog, model.Command{
 		Seq: int64(len(r.commandLog)), AtNS: r.World.Clock(),
 		Op: model.OpClockAdvance, Args: map[string]any{"to_ns": toNS, "await_consumer": awaitConsumer},
 	})
+	// Command boundary: the ledger rows and trace bytes for this advance are
+	// now on file descriptors, so a crash here loses nothing acknowledged.
+	if err := r.flushDurable(); err != nil {
+		r.fail(err)
+		r.commandMu.Unlock()
+		return emitted, err
+	}
+	if !awaitConsumer {
+		r.commandMu.Unlock()
+		_ = effects
+		return emitted, nil
+	}
+	// The quiescence wait is a consumer-sync barrier, not a world mutation:
+	// release the command mutex so the consumer's effector call can land
+	// while the advance waits. Without this the closed loop deadlocks.
+	r.commandMu.Unlock()
+	if err := r.awaitQuiescence(ctx, toNS); err != nil {
+		// Only a timeout is a simulator failure: a canceled wait is a
+		// caller-side abandonment and leaves the run open-loop. The failure
+		// state is written under the command mutex so a concurrent End or
+		// Score never reads it half-written.
+		if errors.Is(err, ErrConsumerNotQuiesced) {
+			r.commandMu.Lock()
+			r.fail(err)
+			r.commandMu.Unlock()
+		}
+		return emitted, err
+	}
+	_ = effects
 	return emitted, nil
+}
+
+// appendLedger records one delivery row in memory and, when durable
+// persistence is configured, appends it to the ledger file immediately. The
+// file is flushed at command boundaries, so a crash between boundaries loses
+// nothing that was acknowledged at a boundary.
+func (r *Run) appendLedger(rec model.LedgerRecord) {
+	r.ledger = append(r.ledger, rec)
+	if r.ledgerWriter != nil {
+		if raw, err := json.Marshal(rec); err == nil {
+			_, _ = r.ledgerWriter.Write(raw)
+			_ = r.ledgerWriter.WriteByte('\n')
+		}
+	}
+}
+
+// flushDurable pushes the ledger writer and the file sink (when present) to
+// their file descriptors. Called at every command boundary; End adds fsync.
+func (r *Run) flushDurable() error {
+	if r.ledgerWriter != nil {
+		if err := r.ledgerWriter.Flush(); err != nil {
+			return fmt.Errorf("run: flush ledger: %w", err)
+		}
+	}
+	if f, ok := r.Sink.(interface{ Flush() error }); ok {
+		if err := f.Flush(); err != nil {
+			return fmt.Errorf("run: flush sink: %w", err)
+		}
+	}
+	return nil
 }
 
 func (r *Run) deliver(d perturb.Delivered) {
 	if d.Malformed {
 		if err := r.writeMalformed(d.Event); err != nil {
 			atNS, _ := model.ParseTime(d.Event.EventTime)
-			r.ledger = append(r.ledger, model.LedgerRecord{
+			r.appendLedger(model.LedgerRecord{
 				DeliveryID: d.DeliveryID, Seq: d.Event.Seq, WorldID: d.Event.WorldID, EntityID: d.Event.EntityID,
 				Channel: d.Event.Channel, EventTimeNS: atNS, ObservedTimeNS: atNS,
 				Delivered: false, DeliveryReason: model.DeliverySinkError, WrittenAtNS: r.World.Clock(),
@@ -337,7 +477,7 @@ func (r *Run) deliver(d perturb.Delivered) {
 			return
 		}
 		atNS, _ := model.ParseTime(d.Event.EventTime)
-		r.ledger = append(r.ledger, model.LedgerRecord{
+		r.appendLedger(model.LedgerRecord{
 			DeliveryID: d.DeliveryID, Seq: d.Event.Seq, WorldID: d.Event.WorldID, EntityID: d.Event.EntityID,
 			Channel: d.Event.Channel, EventTimeNS: atNS, ObservedTimeNS: atNS,
 			Delivered: true, DeliveryReason: model.DeliveryMangled, WrittenAtNS: r.World.Clock(),
@@ -346,7 +486,7 @@ func (r *Run) deliver(d perturb.Delivered) {
 	}
 	if !d.Delivered {
 		atNS, _ := model.ParseTime(d.Event.EventTime)
-		r.ledger = append(r.ledger, model.LedgerRecord{
+		r.appendLedger(model.LedgerRecord{
 			DeliveryID: d.DeliveryID, Seq: d.Event.Seq, WorldID: d.Event.WorldID, EntityID: d.Event.EntityID,
 			Channel: d.Event.Channel, EventTimeNS: atNS, ObservedTimeNS: atNS,
 			Delivered: false, DeliveryReason: d.Reason, WrittenAtNS: r.World.Clock(),
@@ -356,7 +496,7 @@ func (r *Run) deliver(d perturb.Delivered) {
 	line, err := r.Engine.RenderStreamRecord(&d.Event)
 	if err != nil {
 		atNS, _ := model.ParseTime(d.Event.EventTime)
-		r.ledger = append(r.ledger, model.LedgerRecord{
+		r.appendLedger(model.LedgerRecord{
 			DeliveryID: d.DeliveryID, Seq: d.Event.Seq, WorldID: d.Event.WorldID, EntityID: d.Event.EntityID,
 			Channel: d.Event.Channel, EventTimeNS: atNS, ObservedTimeNS: atNS,
 			Delivered: false, DeliveryReason: model.DeliverySinkError, WrittenAtNS: r.World.Clock(),
@@ -366,7 +506,7 @@ func (r *Run) deliver(d perturb.Delivered) {
 	}
 	if line == "" {
 		atNS, _ := model.ParseTime(d.Event.EventTime)
-		r.ledger = append(r.ledger, model.LedgerRecord{
+		r.appendLedger(model.LedgerRecord{
 			DeliveryID: d.DeliveryID, Seq: d.Event.Seq, WorldID: d.Event.WorldID, EntityID: d.Event.EntityID,
 			Channel: d.Event.Channel, EventTimeNS: atNS, ObservedTimeNS: atNS,
 			Delivered: false, DeliveryReason: model.DeliveryOmitted, WrittenAtNS: r.World.Clock(),
@@ -378,7 +518,7 @@ func (r *Run) deliver(d perturb.Delivered) {
 	}
 	if err := r.Sink.Write([]byte(line)); err != nil {
 		atNS, _ := model.ParseTime(d.Event.EventTime)
-		r.ledger = append(r.ledger, model.LedgerRecord{
+		r.appendLedger(model.LedgerRecord{
 			DeliveryID: d.DeliveryID, Seq: d.Event.Seq, WorldID: d.Event.WorldID, EntityID: d.Event.EntityID,
 			Channel: d.Event.Channel, EventTimeNS: atNS, ObservedTimeNS: atNS,
 			Delivered: false, DeliveryReason: model.DeliverySinkError, WrittenAtNS: r.World.Clock(),
@@ -386,17 +526,47 @@ func (r *Run) deliver(d perturb.Delivered) {
 		r.fail(err)
 		return
 	}
+	r.noteTraceArrival(d.Event)
 	atNS, _ := model.ParseTime(d.Event.EventTime)
 	otNS, _ := model.ParseTime(d.Event.ObservedTime)
-	r.ledger = append(r.ledger, model.LedgerRecord{
+	r.appendLedger(model.LedgerRecord{
 		DeliveryID: d.DeliveryID, Seq: d.Event.Seq, WorldID: d.Event.WorldID, EntityID: d.Event.EntityID,
 		Channel: d.Event.Channel, EventTimeNS: atNS, ObservedTimeNS: otNS,
 		Delivered: true, DeliveryReason: d.Reason, WrittenAtNS: r.World.Clock(),
 	})
 }
 
+// noteTraceArrival records the latest arrival timestamp that was rendered
+// into the trace. Perturbations can rewrite an event's observed_time after
+// the world has emitted it, so the trailer must use delivered records rather
+// than the world clock or the native emission watermark.
+func (r *Run) noteTraceArrival(ev model.SimEvent) {
+	arrivalNS, err := model.ParseTime(ev.ObservedTime)
+	if err != nil {
+		return
+	}
+	if !r.hasTraceArrivalTime || arrivalNS > r.lastTraceArrivalNS {
+		r.lastTraceArrivalNS = arrivalNS
+		r.hasTraceArrivalTime = true
+	}
+}
+
+// traceEndTime returns a deterministic trailer horizon strictly after every
+// rendered event arrival while preserving the scenario horizon when it is
+// already later.
+func (r *Run) traceEndTime() int64 {
+	end := r.worldEndTimeNS
+	if r.hasTraceArrivalTime && r.lastTraceArrivalNS >= end {
+		end = r.lastTraceArrivalNS + 1
+	}
+	return end
+}
+
 // InjectFault records and applies a world fault.
 func (r *Run) InjectFault(entityID, faultID string, onsetNS int64, params map[string]any) (string, error) {
+	r.commandMu.Lock()
+	defer r.commandMu.Unlock()
+
 	fid, err := r.World.InjectFault(entityID, faultID, onsetNS, params)
 	if err != nil {
 		return "", fmt.Errorf("run: inject fault: %w", err)
@@ -412,6 +582,9 @@ func (r *Run) InjectFault(entityID, faultID string, onsetNS int64, params map[st
 
 // ClearFault records and clears a fault.
 func (r *Run) ClearFault(faultID string, atNS int64) error {
+	r.commandMu.Lock()
+	defer r.commandMu.Unlock()
+
 	if err := r.World.ClearFault(faultID, atNS); err != nil {
 		return fmt.Errorf("ClearFault: %w", err)
 	}
@@ -424,6 +597,9 @@ func (r *Run) ClearFault(faultID string, atNS int64) error {
 
 // ApplyPerturb records and applies a delivery perturbation.
 func (r *Run) ApplyPerturb(name string, params map[string]any, fromNS, untilNS int64) (string, error) {
+	r.commandMu.Lock()
+	defer r.commandMu.Unlock()
+
 	id, err := r.Perturb.Apply(name, params, fromNS, untilNS)
 	if err != nil {
 		return "", fmt.Errorf("run: perturb: %w", err)
@@ -440,6 +616,9 @@ func (r *Run) ApplyPerturb(name string, params map[string]any, fromNS, untilNS i
 
 // ClearPerturb records and deactivates a perturbation.
 func (r *Run) ClearPerturb(id string) error {
+	r.commandMu.Lock()
+	defer r.commandMu.Unlock()
+
 	if err := r.Perturb.Clear(id); err != nil {
 		return fmt.Errorf("ClearPerturb: %w", err)
 	}
@@ -452,6 +631,11 @@ func (r *Run) ClearPerturb(id string) error {
 
 // InvokeEffector records and performs an effector call.
 func (r *Run) InvokeEffector(effector, entityID, commandID string, args map[string]any, atNS int64) (*world.InvokeResult, error) {
+	r.commandMu.Lock()
+	defer r.commandMu.Unlock()
+	if r.finished {
+		return nil, fmt.Errorf("InvokeEffector: run is finished")
+	}
 	res, err := r.World.InvokeEffector(effector, entityID, commandID, args, atNS)
 	if err != nil {
 		// Interlock and effector refusals are recorded as commands too, so a
@@ -480,6 +664,9 @@ func (r *Run) InvokeEffector(effector, entityID, commandID string, args map[stri
 
 // AddEntity records and performs an entity birth.
 func (r *Run) AddEntity(id string, atNS int64) error {
+	r.commandMu.Lock()
+	defer r.commandMu.Unlock()
+
 	if err := r.World.AddEntity(id, atNS, nil); err != nil {
 		return fmt.Errorf("AddEntity: %w", err)
 	}
@@ -492,6 +679,9 @@ func (r *Run) AddEntity(id string, atNS int64) error {
 
 // RetireEntity records and performs an entity retirement.
 func (r *Run) RetireEntity(entityID, reason string, atNS int64) error {
+	r.commandMu.Lock()
+	defer r.commandMu.Unlock()
+
 	r.World.Retire(entityID, reason, atNS)
 	r.commandLog = append(r.commandLog, model.Command{
 		Seq: int64(len(r.commandLog)), AtNS: atNS, Op: model.OpEntityRetire,
@@ -502,14 +692,24 @@ func (r *Run) RetireEntity(entityID, reason string, atNS int64) error {
 
 // ConfigureEnvTarget records an env.inject target (pause/kill/partition).
 func (r *Run) ConfigureEnvTarget(target string, allow bool) {
+	r.commandMu.Lock()
+	defer r.commandMu.Unlock()
 	r.envTargets[target] = target
 	r.allowEnv = r.allowEnv || allow
 }
 
-// EnvInject records an environment fault against a configured target.
+// EnvInject records an environment fault against a configured target. No
+// environment-fault parameters are declared yet, so any params are rejected
+// rather than recorded and ignored.
 func (r *Run) EnvInject(target, fault string, params map[string]any, atNS int64) (string, error) {
+	r.commandMu.Lock()
+	defer r.commandMu.Unlock()
+
 	if !r.allowEnv {
 		return "", fmt.Errorf("run: env.inject not enabled for this world (no configured target)")
+	}
+	if len(params) > 0 {
+		return "", fmt.Errorf("run: env fault %q accepts no parameters (got %d)", fault, len(params))
 	}
 	r.commandLog = append(r.commandLog, model.Command{
 		Seq: int64(len(r.commandLog)), AtNS: atNS, Op: model.OpEnvInject,
@@ -518,7 +718,10 @@ func (r *Run) EnvInject(target, fault string, params map[string]any, atNS int64)
 	return "env-" + strconv.Itoa(len(r.commandLog)), nil
 }
 
-// ReportQuiesced records the consumer's quiescence assertion.
+// ReportQuiesced records the consumer's quiescence assertion. The watermark
+// is monotonic, so a report can only move it forward: a stale report for an
+// earlier instant can never satisfy a later await, and a report received
+// between advances is honored on the next wait (the fast path).
 func (r *Run) ReportQuiesced(throughNS int64) {
 	r.quiesceMu.Lock()
 	defer r.quiesceMu.Unlock()
@@ -529,9 +732,15 @@ func (r *Run) ReportQuiesced(throughNS int64) {
 	}
 }
 
-func (r *Run) awaitQuiescence(toNS int64) error {
-	deadline := time.NewTimer(30 * time.Second)
-	defer deadline.Stop()
+// SetQuiesceParkedHook installs a callback fired each time a quiescence wait
+// is about to block (test harness; nil by default).
+func (r *Run) SetQuiesceParkedHook(h func()) {
+	r.quiesceParked = h
+}
+
+func (r *Run) awaitQuiescence(ctx context.Context, toNS int64) error {
+	timer := r.Config.QuiescenceClock.NewTimer(DefaultQuiescenceTimeout)
+	defer timer.Stop()
 	for {
 		r.quiesceMu.Lock()
 		if r.quiescedThroughNS >= toNS {
@@ -541,12 +750,16 @@ func (r *Run) awaitQuiescence(toNS int64) error {
 		ch := r.quiesceNotify
 		through := r.quiescedThroughNS
 		r.quiesceMu.Unlock()
+		if r.quiesceParked != nil {
+			r.quiesceParked()
+		}
 		select {
 		case <-ch:
 			continue
-		case <-deadline.C:
-			r.reproducible = false
-			return fmt.Errorf("run: consumer_not_quiesced: quiesced through %d, asked for %d", through, toNS)
+		case <-ctx.Done():
+			return fmt.Errorf("run: quiescence wait canceled: %w", ctx.Err())
+		case <-timer.C():
+			return fmt.Errorf("run: %w: quiesced through %d, asked for %d", ErrConsumerNotQuiesced, through, toNS)
 		}
 	}
 }
@@ -577,6 +790,13 @@ func (r *Run) AppliedPerturbations() []string {
 
 // SubmitVerdict stores and validates a consumer verdict.
 func (r *Run) SubmitVerdict(v *model.Verdict) error {
+	r.commandMu.Lock()
+	defer r.commandMu.Unlock()
+	if r.finished {
+		// The operator endpoint outlives run.end; a verdict arriving then
+		// must not be silently dropped from an already-written artifact.
+		return fmt.Errorf("SubmitVerdict: run is finished")
+	}
 	if v == nil {
 		return fmt.Errorf("SubmitVerdict: verdict is required")
 	}
@@ -621,11 +841,14 @@ func (r *Run) Reproducible() bool { return r.reproducible }
 // writes the run artifact, ledger, world-state history and (if any) verdict
 // into outDir.
 func (r *Run) End(outDir string) (*model.RunArtifact, error) {
+	r.commandMu.Lock()
+	defer r.commandMu.Unlock()
+
 	if r.finished {
 		return nil, fmt.Errorf("run: already finished")
 	}
 	if r.runErr == nil {
-		if lines, err := r.Engine.End(r.worldEndTimeNS); err != nil {
+		if lines, err := r.Engine.End(r.traceEndTime()); err != nil {
 			r.fail(fmt.Errorf("End: adapter postamble: %w", err))
 		} else if err := writeSinkLines(r.Sink, lines); err != nil {
 			r.fail(fmt.Errorf("End: adapter postamble: %w", err))
@@ -650,7 +873,16 @@ func (r *Run) End(outDir string) (*model.RunArtifact, error) {
 		if err := os.WriteFile(tracePath, trace, 0o600); err != nil {
 			return nil, fmt.Errorf("End: %w", err)
 		}
-		if err := writeJSONL(filepath.Join(outDir, "ledger.jsonl"), r.ledger); err != nil {
+		if r.ledgerFile != nil {
+			// The durable ledger already holds every row; fsync it and
+			// leave the file as the canonical ledger.
+			if err := r.ledgerWriter.Flush(); err != nil {
+				return nil, fmt.Errorf("End: flush ledger: %w", err)
+			}
+			if err := r.ledgerFile.Sync(); err != nil {
+				return nil, fmt.Errorf("End: sync ledger: %w", err)
+			}
+		} else if err := writeJSONL(filepath.Join(outDir, "ledger.jsonl"), r.ledger); err != nil {
 			return nil, fmt.Errorf("End: %w", err)
 		}
 		if err := writeJSONL(filepath.Join(outDir, "world_state_history.jsonl"), r.history); err != nil {
@@ -723,16 +955,17 @@ func (r *Run) artifact() *model.RunArtifact {
 			ScenarioProfile: r.Config.ScenarioProfile,
 			ClockMultiplier: r.Config.ClockMultiplier,
 		},
-		WorldDigest:         worldDigest(r),
-		CommandLog:          cmdLog,
-		ExpectedTraceDigest: r.traceDigest,
-		Reproducible:        r.reproducible,
-		Incomplete:          r.incomplete,
-		Error:               errorString(r.runErr),
-		Unblinded:           r.unblinded,
-		UnblindedAt:         r.unblindedAt,
-		Platform:            model.CurrentPlatform(),
-		Counts:              counts,
+		WorldDigest:          worldDigest(r),
+		CommandLog:           cmdLog,
+		ExpectedTraceDigest:  r.traceDigest,
+		Reproducible:         r.reproducible,
+		Incomplete:           r.incomplete,
+		Error:                errorString(r.runErr),
+		Unblinded:            r.unblinded,
+		UnblindedAt:          r.unblindedAt,
+		Platform:             model.CurrentPlatform(),
+		Counts:               counts,
+		AppliedPerturbations: r.AppliedPerturbations(),
 	}
 }
 

@@ -28,9 +28,10 @@ type toolDef struct {
 	handler func(ctx context.Context, args map[string]any) (any, error)
 }
 
-// addTool registers one tool with the SDK. Inputs are passed as raw maps
-// and validated inside the handlers (which need cross-field checks the
-// SDK's schema inference would not express).
+// addTool registers one tool with the SDK. The SDK validates every call
+// against the tool's declared schema before the handler runs; handlers keep
+// the cross-field and domain-dependent checks the static schema cannot
+// express (e.g. effector arguments validated against the loaded domain).
 func addTool(s *mcp.Server, def toolDef) {
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        def.name,
@@ -82,7 +83,7 @@ func NewDirectorServer(d *Director) *mcp.Server {
 	addTool(s, toolDef{name: "sim.world.destroy", description: "Destroy a world; final counts and run artifact.", schema: toolSchema("sim.world.destroy"), handler: func(_ context.Context, args map[string]any) (any, error) {
 		return d.DestroyWorld(str(args, "world_id"))
 	}})
-	addTool(s, toolDef{name: "sim.clock.advance", description: "Advance by a relative nanosecond delta or to an absolute epoch nanosecond; await_consumer blocks on quiescence.", schema: toolSchema("sim.clock.advance"), handler: func(_ context.Context, args map[string]any) (any, error) {
+	addTool(s, toolDef{name: "sim.clock.advance", description: "Advance by a relative nanosecond delta or to an absolute epoch nanosecond; await_consumer blocks on quiescence.", schema: toolSchema("sim.clock.advance"), handler: func(ctx context.Context, args map[string]any) (any, error) {
 		worldID := str(args, "world_id")
 		toNS, hasTo := intArg(args, "to_ns")
 		byNS, hasBy := intArg(args, "by_ns")
@@ -103,7 +104,7 @@ func NewDirectorServer(d *Director) *mcp.Server {
 			}
 			toNS = w.Run.World.Clock() + byNS
 		}
-		return d.Advance(worldID, toNS, boolArg(args, "await_consumer"))
+		return d.Advance(ctx, worldID, toNS, boolArg(args, "await_consumer"))
 	}})
 	addTool(s, toolDef{name: "sim.clock.state", description: "The clock, next scheduled event, pending effects.", schema: toolSchema("sim.clock.state"), handler: func(_ context.Context, args map[string]any) (any, error) {
 		return d.ClockState(str(args, "world_id"))
@@ -198,20 +199,50 @@ func NewDirectorServer(d *Director) *mcp.Server {
 	return s
 }
 
-// NewOperatorServer builds the operator-role server from one world's view.
+// NewOperatorServer builds the operator-role server for one world's view.
 // It advertises exactly the four operator tools and nothing else.
 func NewOperatorServer(v *OperatorView) *mcp.Server {
+	return NewOperatorServerResolver(viewResolver{v: v})
+}
+
+// NewOperatorServerResolver builds the operator-role server for a token
+// resolver. One endpoint serves every world: each tool call resolves the
+// capability token to its owning OperatorView before dispatching.
+func NewOperatorServerResolver(r OperatorResolver) *mcp.Server {
 	s := mcp.NewServer(implementation, nil)
+	resolve := func(args map[string]any) (*OperatorView, error) {
+		v, err := r.ResolveOperator(str(args, "token"))
+		if err != nil {
+			return nil, errTool(CodeCapabilityDenied, "capability token required")
+		}
+		return v, nil
+	}
 	addTool(s, toolDef{name: "sim.nameplate.read", description: "The static world nameplate: entities, channels, effectors.", schema: toolSchema("sim.nameplate.read"), handler: func(_ context.Context, args map[string]any) (any, error) {
+		v, err := resolve(args)
+		if err != nil {
+			return nil, err
+		}
 		return v.ReadNameplate(str(args, "token"))
 	}})
 	addTool(s, toolDef{name: "sim.effector.list", description: "The declared effectors and their argument schemas.", schema: toolSchema("sim.effector.list"), handler: func(_ context.Context, args map[string]any) (any, error) {
+		v, err := resolve(args)
+		if err != nil {
+			return nil, err
+		}
 		return v.ListEffectors(str(args, "token"))
 	}})
 	addTool(s, toolDef{name: "sim.effector.invoke", description: "Invoke an effector by name with a command_id (idempotency key) and capability token.", schema: toolSchema("sim.effector.invoke"), handler: func(_ context.Context, args map[string]any) (any, error) {
+		v, err := resolve(args)
+		if err != nil {
+			return nil, err
+		}
 		return v.Invoke(str(args, "token"), str(args, "effector"), str(args, "entity_id"), str(args, "command_id"), mapArg(args, "args"), num(args, "at_ns", 0))
 	}})
 	addTool(s, toolDef{name: "sim.consumer.report", description: "Report quiescence and submit a consumer verdict. Write-only; never returns a score.", schema: toolSchema("sim.consumer.report"), handler: func(_ context.Context, args map[string]any) (any, error) {
+		v, err := resolve(args)
+		if err != nil {
+			return nil, err
+		}
 		var verdict *model.Verdict
 		if vd, ok := args["verdict"].(map[string]any); ok {
 			b, err := json.Marshal(vd)

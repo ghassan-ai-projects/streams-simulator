@@ -10,6 +10,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strconv"
@@ -21,6 +22,7 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/score"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/truth"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
 // WorldRecord is one created world under the director's control.
@@ -37,22 +39,24 @@ type WorldRecord struct {
 // Director holds the director-role state: the catalog, the installed
 // adapters, the world registry, and the truth store.
 type Director struct {
-	mu       sync.Mutex
-	Catalog  *domain.Catalog
-	Adapters map[string]*model.Adapter
-	Worlds   map[string]*WorldRecord
-	byRun    map[string]string // run id -> world id
-	Truth    *truth.Store
-	OutDir   string
-	ctx      context.Context
-	seq      int
+	mu               sync.Mutex
+	Catalog          *domain.Catalog
+	Adapters         map[string]*model.Adapter
+	Worlds           map[string]*WorldRecord
+	byRun            map[string]string // run id -> world id
+	byToken          map[string]*WorldRecord
+	OperatorEndpoint string // operator HTTP endpoint served by this process (CLI)
+	Truth            *truth.Store
+	OutDir           string
+	ctx              context.Context
+	seq              int
 }
 
 // NewDirector builds the director with its registries.
 func NewDirector(ctx context.Context, cat *domain.Catalog, adapters map[string]*model.Adapter, outDir string) *Director {
 	d := &Director{
 		Catalog: cat, Adapters: adapters, Worlds: map[string]*WorldRecord{},
-		byRun: map[string]string{},
+		byRun: map[string]string{}, byToken: map[string]*WorldRecord{},
 		Truth: truth.NewStore(), OutDir: outDir, ctx: ctx,
 	}
 	d.Truth.OpenChecker = func(runID string) bool {
@@ -66,6 +70,27 @@ func NewDirector(ctx context.Context, cat *domain.Catalog, adapters map[string]*
 		return w != nil && !w.RunEnded
 	}
 	return d
+}
+
+// ResolveOperator returns the operator view for a capability token. This is
+// what lets one operator endpoint serve every world: the token, not the
+// connection, names the world.
+func (d *Director) ResolveOperator(token string) (*OperatorView, error) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	rec := d.byToken[token]
+	if rec == nil {
+		return nil, errTool(CodeCapabilityDenied, "capability token required")
+	}
+	return rec.Operator, nil
+}
+
+// SetOperatorEndpoint records the operator HTTP endpoint this process serves
+// (CLI wiring); sim.world.create includes it in its response.
+func (d *Director) SetOperatorEndpoint(endpoint string) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.OperatorEndpoint = endpoint
 }
 
 // World returns the record for a world id, or nil.
@@ -100,7 +125,14 @@ func (d *Director) CreateWorld(args map[string]any) (map[string]any, error) {
 	if timeMode == "" {
 		timeMode = model.TimeStepped
 	}
-	startNS := num(args, "start_time", model.DefaultStartTimeNS)
+	// start_time is presence-aware: absent means the documented default, an
+	// explicit 0 means epoch-0 (a legal start the CLI default must not mask).
+	startNS := model.DefaultStartTimeNS
+	startTimeSet := false
+	if _, ok := args["start_time"]; ok {
+		startNS = num(args, "start_time", 0)
+		startTimeSet = true
+	}
 	var entityIDs []string
 	if ents, ok := args["entities"].([]any); ok {
 		for _, e := range ents {
@@ -117,19 +149,21 @@ func (d *Director) CreateWorld(args map[string]any) (map[string]any, error) {
 	d.seq++
 	seq := d.seq
 	d.mu.Unlock()
+	worldID := "w-" + strconv.Itoa(seq)
 	cfg := run.Config{
 		Domain: spec, Adapter: adap, Seed: seed, SinkName: sinkName,
 		SinkTarget: str(args, "sink_target"),
-		TimeMode:   timeMode, StartTimeNS: startNS, EntityIDs: entityIDs,
+		TimeMode:   timeMode, StartTimeNS: startNS, StartTimeSet: startTimeSet,
+		EntityIDs:       entityIDs,
 		ScenarioProfile: str(args, "scenario_profile"),
 		Label:           str(args, "label"),
 		RunID:           "r-" + strconv.Itoa(seq),
+		LedgerPath:      filepath.Join(d.OutDir, worldID, "ledger.jsonl"),
 	}
 	r, err := run.New(d.ctx, cfg)
 	if err != nil {
 		return nil, errTool(CodeDomainInvalid, "%v", err)
 	}
-	worldID := "w-" + strconv.Itoa(seq)
 	token, err := capabilityToken()
 	if err != nil {
 		return nil, errTool(CodeDomainInvalid, "capability token generation failed: %v", err)
@@ -141,12 +175,18 @@ func (d *Director) CreateWorld(args map[string]any) (map[string]any, error) {
 	d.mu.Lock()
 	d.Worlds[worldID] = rec
 	d.byRun[r.ID] = worldID
+	d.byToken[token] = rec
+	operatorEndpoint := d.OperatorEndpoint
 	d.mu.Unlock()
-	return map[string]any{
+	out := map[string]any{
 		"world_id": worldID, "world_digest": r.Digest(), "entity_ids": r.World.EntityIDs(),
 		"clock": model.FormatTime(r.World.Clock()), "token": token,
 		"simulated": true,
-	}, nil
+	}
+	if operatorEndpoint != "" {
+		out["operator_endpoint"] = operatorEndpoint
+	}
+	return out, nil
 }
 
 func capabilityToken() (string, error) {
@@ -215,18 +255,22 @@ func (d *Director) DestroyWorld(worldID string) (map[string]any, error) {
 	}
 	d.mu.Lock()
 	delete(d.Worlds, worldID)
+	delete(d.byToken, w.Token)
 	d.mu.Unlock()
 	return map[string]any{"world_id": worldID, "destroyed": true}, nil
 }
 
 // Advance moves the clock (sim.clock.advance).
-func (d *Director) Advance(worldID string, toNS int64, await bool) (map[string]any, error) {
+func (d *Director) Advance(ctx context.Context, worldID string, toNS int64, await bool) (map[string]any, error) {
 	w := d.World(worldID)
 	if w == nil {
 		return nil, errTool(CodeWorldNotFound, "unknown world %q", worldID)
 	}
-	emitted, err := w.Run.Advance(toNS, await)
+	emitted, err := w.Run.Advance(ctx, toNS, await)
 	if err != nil {
+		if errors.Is(err, run.ErrConsumerNotQuiesced) {
+			return nil, errTool(CodeConsumerNotQuiesced, "%v", err)
+		}
 		return nil, errTool(CodeClockBackwards, "%v", err)
 	}
 	return map[string]any{
@@ -459,10 +503,13 @@ func (d *Director) AuditScenario(domainID, entityID, fault string, onsetNS, star
 	panel := audit.NewPanel(spec, 1, 60*1e9)
 	var ids []string
 	n := spec.Spec.Entities.Count.Default
+	// Entity ids come from the domain's own template — the binary contains
+	// no domain literal.
+	tmpl := spec.Spec.Entities.IDTemplate
 	for i := 1; i <= n; i++ {
-		ids = append(ids, fmt.Sprintf("site-a/pond-%d", i))
+		ids = append(ids, world.RenderID(tmpl, i))
 	}
-	v, err := panel.Audit(entityID, fault, onsetNS, startNS, ids, durationNS, nil)
+	v, err := panel.Audit(entityID, fault, onsetNS, startNS, ids, durationNS, nil, nil)
 	if err != nil {
 		return nil, errTool(CodeDomainInvalid, "%v", err)
 	}

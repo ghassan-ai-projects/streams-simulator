@@ -5,27 +5,61 @@
   "description": "The single file that reproduces a run. This is the deterministic-simulation-testing contract: if a failure cannot be reduced to one of these, it is not reproducible and the architecture is wrong. `streamsim replay` consumes it with no MCP server running, which is what turns an improvised exploratory session into a committed regression fixture.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "sim_version", "domain", "adapter", "seed", "sink", "time_mode", "world_config", "command_log", "reproducible"],
+  "required": [
+    "schema_version",
+    "sim_version",
+    "domain",
+    "adapter",
+    "seed",
+    "sink",
+    "time_mode",
+    "world_config",
+    "command_log",
+    "reproducible"
+  ],
   "properties": {
-    "schema_version": {"const": "0.1"},
+    "schema_version": {
+      "const": "0.1"
+    },
     "sim_version": {
       "type": "string",
       "minLength": 1,
       "maxLength": 64,
       "description": "Part of the determinism tuple. A different simulator version may legitimately produce a different trace; verify reports that as a version mismatch rather than a failure."
     },
-    "run_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
-    "label": {"type": "string", "maxLength": 200},
-    "created_at": {"type": "string", "format": "date-time", "description": "Wall clock, for humans. Never an input to anything."},
-
+    "run_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+    },
+    "label": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Wall clock, for humans. Never an input to anything."
+    },
     "domain": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "version", "digest"],
+      "required": [
+        "id",
+        "version",
+        "digest"
+      ],
       "properties": {
-        "id": {"type": "string"},
-        "version": {"type": "string"},
-        "digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$", "description": "RFC 8785 canonical digest of the normalized domain spec."}
+        "id": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "description": "RFC 8785 canonical digest of the normalized domain spec."
+        }
       }
     },
     "domain_spec": {
@@ -33,22 +67,40 @@
       "description": "Embedded validated domain document. When present, replay can run without an external catalog and verifies its digest against domain.",
       "additionalProperties": true
     },
-
-    "seed": {"type": "integer", "minimum": 0, "maximum": 18446744073709551615},
-
+    "seed": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 18446744073709551615
+    },
     "sink": {
-      "enum": ["inproc", "file", "http-push", "broker"],
+      "enum": [
+        "inproc",
+        "file",
+        "http-push",
+        "broker"
+      ],
       "description": "Where rendered records were delivered. MCP manages the simulator and never carries evidence, so there is no MCP sink. broker is deferred and fails at load with not_implemented."
     },
     "adapter": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "version", "digest"],
+      "required": [
+        "id",
+        "version",
+        "digest"
+      ],
       "description": "Which output adapter rendered the run. Part of the determinism tuple: the same world under two adapters produces two different byte streams, both correct.",
       "properties": {
-        "id": {"type": "string"},
-        "version": {"type": "string"},
-        "digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+        "id": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        }
       }
     },
     "adapter_spec": {
@@ -56,66 +108,110 @@
       "description": "Embedded validated adapter document. When present, replay can run without an external adapter registry and verifies its digest against adapter.",
       "additionalProperties": true
     },
-    "time_mode": {"enum": ["stepped", "scaled", "wall"]},
-
+    "time_mode": {
+      "enum": [
+        "stepped",
+        "scaled",
+        "wall"
+      ]
+    },
     "world_config": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["start_time_ns", "entity_ids"],
+      "required": [
+        "start_time_ns",
+        "entity_ids"
+      ],
       "properties": {
-        "start_time_ns": {"type": "integer"},
-        "entity_ids": {"type": "array", "minItems": 1, "items": {"type": "string"}},
-        "scenario_profile": {"type": "string"},
-        "sinks": {"type": "array", "items": {"type": "object"}},
-        "clock_multiplier": {"type": "number", "exclusiveMinimum": 0}
+        "start_time_ns": {
+          "type": "integer"
+        },
+        "entity_ids": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        },
+        "scenario_profile": {
+          "type": "string"
+        },
+        "sinks": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "clock_multiplier": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
       }
     },
-
     "world_digest": {
       "type": "string",
       "pattern": "^sha256:[0-9a-f]{64}$",
       "description": "Digest over (sim_version, domain digest, seed, world_config). Two creates with the same arguments must agree; a divergence means the environment changed and the runs are not comparable."
     },
-
     "command_log": {
       "type": "array",
-      "description": "Every mutation, in a total order established under the world mutex before seq assignment — so concurrent MCP calls cannot reorder it. Replaying this log, not re-issuing the MCP calls, is what reproduces the run.",
+      "description": "Every mutation, in a total order established under the world mutex before seq assignment \u2014 so concurrent MCP calls cannot reorder it. Replaying this log, not re-issuing the MCP calls, is what reproduces the run.",
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["seq", "at_ns", "op", "args"],
+        "required": [
+          "seq",
+          "at_ns",
+          "op",
+          "args"
+        ],
         "properties": {
-          "seq": {"type": "integer", "minimum": 0},
-          "at_ns": {"type": "integer", "description": "World clock at which the command applied. Never a wall-clock read."},
+          "seq": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "at_ns": {
+            "type": "integer",
+            "description": "World clock at which the command applied. Never a wall-clock read."
+          },
           "op": {
             "enum": [
-              "world.create", "entity.add", "entity.retire",
-              "clock.advance", "clock.run",
-              "fault.inject", "fault.clear",
-              "perturb.apply", "perturb.clear",
+              "world.create",
+              "entity.add",
+              "entity.retire",
+              "clock.advance",
+              "clock.run",
+              "fault.inject",
+              "fault.clear",
+              "perturb.apply",
+              "perturb.clear",
               "env.inject",
               "effector.invoke",
-              "run.begin", "run.end"
+              "run.begin",
+              "run.end"
             ],
             "description": "Names match the MCP_SURFACE tools minus the 'sim.' prefix. env has no clear: pause and kill are momentary."
           },
-          "args": {"type": "object", "description": "Canonical arguments, RFC 8785 normalized before hashing."},
-          "result_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+          "args": {
+            "type": "object",
+            "description": "Canonical arguments, RFC 8785 normalized before hashing."
+          },
+          "result_digest": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          }
         }
       }
     },
-
     "expected_trace_digest": {
       "type": "string",
       "pattern": "^sha256:[0-9a-f]{64}$",
       "description": "Digest of the emitted trace. `verify` regenerates and compares; on mismatch it reports the first divergent record index rather than a bare boolean."
     },
-
     "reproducible": {
       "type": "boolean",
       "description": "False for http-push + wall, where delivery timing comes from a real clock and cannot be reproduced, and for any closed-loop run where the consumer did not report quiescence. Scorecards refuse to report hash-equality metrics for a run with this false, and every report carries the flag."
     },
-
     "incomplete": {
       "type": "boolean",
       "description": "True when a rendering, sink, or lifecycle error aborted the run before a complete adapter end state was written."
@@ -125,34 +221,62 @@
       "maxLength": 4096,
       "description": "Stable diagnostic text for an incomplete run; not an input to replay."
     },
-
     "unblinded": {
       "type": "boolean",
       "default": false,
       "description": "Set permanently and irreversibly when truth.reveal was called with unblind:true on an open run. An unblinded run is excluded from every scorecard and the exclusion count is printed."
     },
-    "unblinded_at": {"type": "string", "format": "date-time"},
-
+    "unblinded_at": {
+      "type": "string",
+      "format": "date-time"
+    },
     "platform": {
       "type": "object",
       "additionalProperties": false,
       "description": "Recorded so that a cross-architecture digest divergence is diagnosable rather than mysterious. Not part of the determinism tuple: identical output across platforms is a requirement, not a variable.",
       "properties": {
-        "goos": {"type": "string"},
-        "goarch": {"type": "string"},
-        "go_version": {"type": "string"}
+        "goos": {
+          "type": "string"
+        },
+        "goarch": {
+          "type": "string"
+        },
+        "go_version": {
+          "type": "string"
+        }
       }
     },
-
     "counts": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "emitted": {"type": "integer", "minimum": 0},
-        "perturbed": {"type": "integer", "minimum": 0},
-        "dropped_by_design": {"type": "integer", "minimum": 0},
-        "effector_calls": {"type": "integer", "minimum": 0},
-        "faults_injected": {"type": "integer", "minimum": 0}
+        "emitted": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "perturbed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "dropped_by_design": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "effector_calls": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "faults_injected": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "applied_perturbations": {
+      "type": "array",
+      "description": "The perturbations applied during the run, in application order; feeds offline scoring's perturbation-fidelity and clock-skew metrics identically to the online path.",
+      "items": {
+        "type": "string"
       }
     }
   }

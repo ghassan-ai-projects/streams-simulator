@@ -68,7 +68,7 @@ func TestHandComputedGoldenVector(t *testing.T) {
 	if r.World.ID != "w-hand" {
 		t.Fatalf("world id is %q, want w-hand", r.World.ID)
 	}
-	if _, err := r.Advance(start+12*60*1e9, false); err != nil {
+	if _, err := r.Advance(context.Background(), start+12*60*1e9, false); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := r.End(""); err != nil {

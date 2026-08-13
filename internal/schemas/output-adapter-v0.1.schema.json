@@ -89,18 +89,22 @@
           "minItems": 1,
           "description": "Ordered output fields. Order is significant for csv and line encodings, and for byte-stable JSON output.",
           "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "required": ["name", "from"],
-            "properties": {
-              "name": {"type": "string", "minLength": 1, "maxLength": 128},
-              "from": {
-                "$ref": "#/$defs/valueExpr"
-              },
-              "omit_when_null": {"type": "boolean", "default": false}
-            }
+            "$ref": "#/$defs/field"
           }
         }
+      }
+    },
+
+    "field": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "from"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1, "maxLength": 128},
+        "from": {
+          "$ref": "#/$defs/valueExpr"
+        },
+        "omit_when_null": {"type": "boolean", "default": false}
       }
     },
 
@@ -114,6 +118,7 @@
           "enum": [
             "source",
             "const",
+            "object",
             "concat",
             "template",
             "format_time",
@@ -130,6 +135,12 @@
           "type": "array",
           "items": {"$ref": "#/$defs/valueExpr"},
           "description": "For op=concat."
+        },
+        "fields": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/field"},
+          "description": "For op=object: ordered fields rendered as a nested JSON object."
         },
         "template": {
           "type": "string",

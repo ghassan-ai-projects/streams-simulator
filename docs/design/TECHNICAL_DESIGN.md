@@ -71,7 +71,11 @@ Everything rests on one property:
 ### 3.1 The discrete-event core
 
 The world advances by popping a priority queue keyed by `(event_time_ns, tiebreak_seq)`,
-with `tiebreak_seq` a monotonic counter assigned at scheduling time. `time.Now()` appears
+with `tiebreak_seq` a monotonic counter assigned at scheduling time. Link-delay timestamps
+are then serialized in that same native emission order: a tie or backward candidate is
+advanced to one nanosecond after the previous `observed_time`. Deliberate delivery
+perturbations may rewrite this source timestamp afterward when testing consumer rejection.
+`time.Now()` appears
 in exactly two places: the `http-push + wall` sink and the log timestamp. Both are outside
 the world model, and a `simdet` build tag makes them unavailable so the deterministic test
 suite cannot link them by accident.

@@ -26,6 +26,7 @@ type ReplayResult struct {
 	GotDigest       string `json:"got_digest"`
 	WantDigest      string `json:"want_digest"`
 	Emitted         int64  `json:"emitted"`
+	Incomplete      bool   `json:"incomplete,omitempty"` // the original run did not reach a clean end
 	Detail          string `json:"detail,omitempty"`
 }
 
@@ -103,6 +104,7 @@ func ReplayArtifact(ctx context.Context, art *model.RunArtifact, spec *domain.Co
 		SinkTarget:      sinkTarget,
 		TimeMode:        art.TimeMode,
 		StartTimeNS:     art.WorldConfig.StartTimeNS,
+		StartTimeSet:    true,
 		EntityIDs:       art.WorldConfig.EntityIDs,
 		ScenarioProfile: art.WorldConfig.ScenarioProfile,
 		RunID:           art.RunID,
@@ -119,7 +121,7 @@ func ReplayArtifact(ctx context.Context, art *model.RunArtifact, spec *domain.Co
 		return nil, fmt.Errorf("run: world digest mismatch: artifact=%s current=%s", art.WorldDigest, r.Digest())
 	}
 	for _, cmd := range art.CommandLog {
-		if err := executeCommand(r, &cmd); err != nil {
+		if err := executeCommand(ctx, r, &cmd); err != nil {
 			return nil, fmt.Errorf("run: replay command %d (%s): %w", cmd.Seq, cmd.Op, err)
 		}
 	}
@@ -129,6 +131,10 @@ func ReplayArtifact(ctx context.Context, art *model.RunArtifact, spec *domain.Co
 	}
 	res.GotDigest = r.TraceDigest()
 	res.Emitted = r.World.EmittedCount()
+	res.Incomplete = art.Incomplete
+	if art.Incomplete && res.Detail == "" {
+		res.Detail = art.Error
+	}
 	if res.GotDigest != res.WantDigest {
 		idx := firstDivergentRecord(r, art)
 		if idx >= 0 {
@@ -141,7 +147,7 @@ func ReplayArtifact(ctx context.Context, art *model.RunArtifact, spec *domain.Co
 }
 
 // executeCommand applies one logged command to a run (replay path).
-func executeCommand(r *Run, cmd *model.Command) error {
+func executeCommand(ctx context.Context, r *Run, cmd *model.Command) error {
 	args := cmd.Args
 	str := func(k string) string {
 		if v, ok := args[k].(string); ok {
@@ -165,7 +171,7 @@ func executeCommand(r *Run, cmd *model.Command) error {
 	}
 	switch cmd.Op {
 	case model.OpClockAdvance:
-		_, err := r.Advance(num("to_ns"), false)
+		_, err := r.Advance(ctx, num("to_ns"), false)
 		if err != nil {
 			return fmt.Errorf("streamsim: %w", err)
 		}

@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"sort"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/canonical"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
@@ -26,6 +27,21 @@ type EffectorInvoker interface {
 // VerdictSink accepts the final report.
 type VerdictSink interface {
 	SubmitVerdict(v *model.Verdict) error
+}
+
+// QuiescenceReporter asserts the consumer's quiescence watermark. It is
+// satisfied by sinks that report through the MCP operator surface; run-based
+// sinks whose ReportQuiesced returns nothing are bridged automatically.
+type QuiescenceReporter interface {
+	ReportQuiesced(throughNS int64) error
+}
+
+// quiescenceBridge adapts a sink with a void ReportQuiesced.
+type quiescenceBridge struct{ q func(throughNS int64) }
+
+func (b quiescenceBridge) ReportQuiesced(throughNS int64) error {
+	b.q(throughNS)
+	return nil
 }
 
 // Nameplate is the static world description the consumer is given (subset
@@ -73,40 +89,56 @@ func DefaultConfig() Config {
 	return Config{Threshold: 4, Window: 30, MinConsecutive: 3, AbsenceFactor: 3}
 }
 
-// Runner executes the consumer over a native-format trace.
+// Runner executes the consumer over a native-format trace. State persists
+// across Process calls, so a harness can feed one batch per advance: the
+// consumer reacts between advances exactly as a live consumer would, and
+// repeated delivery of an already-processed sequence number is skipped.
 type Runner struct {
-	cfg        Config
-	np         *Nameplate
-	invoker    EffectorInvoker
-	report     VerdictSink
-	runID      string
-	commandSeq int
-	actuated   map[string]bool
+	cfg         Config
+	np          *Nameplate
+	invoker     EffectorInvoker
+	report      VerdictSink
+	quiescence  QuiescenceReporter
+	runID       string
+	commandSeq  int
+	actuated    map[string]bool
+	stats       map[string]*series
+	seen        map[string]bool // (seq, observed_time) deliveries already processed
+	detections  []model.Detection
+	actions     []model.Action
+	recordsSeen int64
 }
 
-// New builds a consumer runner.
+// New builds a consumer runner. If the report sink also reports quiescence,
+// Process asserts the consumer's watermark through it after each run.
 func New(cfg Config, np *Nameplate, invoker EffectorInvoker, report VerdictSink, runID string) *Runner {
-	return &Runner{cfg: cfg, np: np, invoker: invoker, report: report, runID: runID, actuated: map[string]bool{}}
+	r := &Runner{cfg: cfg, np: np, invoker: invoker, report: report, runID: runID, actuated: map[string]bool{}, seen: map[string]bool{}}
+	if q, ok := report.(QuiescenceReporter); ok {
+		r.quiescence = q
+	} else if q, ok := report.(interface{ ReportQuiesced(int64) }); ok {
+		r.quiescence = quiescenceBridge{q: q.ReportQuiesced}
+	}
+	return r
 }
 
 // series is one entity/channel's running statistics.
 type series struct {
-	window     []float64
-	gaps       []int64 // observed inter-arrival gaps, for silence detection
-	lastEmitNS int64
-	lastSeq    int64
-	suspicious int
-	seen       bool
+	window          []float64
+	gaps            []int64 // observed inter-arrival gaps, for silence detection
+	lastEmitNS      int64
+	lastSeq         int64
+	suspicious      int
+	seen            bool
+	silenceReported bool // one silence detection per quiet episode
 }
 
-// Process consumes a native-format trace (JSONL sim events) and returns the
-// consumer's verdict. Events must arrive in delivery order.
+// Process consumes one batch of native-format JSONL sim events (delivery
+// order) and returns the consumer's cumulative verdict. endNS is the world
+// instant the batch covers, used for the quiescence watermark and absence
+// detection. Sequences already processed by an earlier call are skipped, so
+// a harness may re-feed the full trace without double-counting.
 func (r *Runner) Process(trace []byte, endNS int64) (*model.Verdict, error) {
-	stats := map[string]*series{} // key: entity + "\x00" + channel
-	var detections []model.Detection
-	var actions []model.Action
 	now := int64(0)
-	recordsSeen := int64(0)
 
 	for _, line := range splitLines(trace) {
 		var ev model.SimEvent
@@ -114,22 +146,34 @@ func (r *Runner) Process(trace []byte, endNS int64) (*model.Verdict, error) {
 			// A malformed record is itself evidence: report it and move on.
 			continue
 		}
-		recordsSeen++
+		// Deduplicate only exact re-feeds of an already-processed delivery;
+		// reordered and duplicated deliveries (same seq, different observed
+		// time) are each counted, as a live consumer would count them.
+		deliveryKey := fmt.Sprintf("%d@%s", ev.Seq, ev.ObservedTime)
+		if r.seen[deliveryKey] {
+			continue
+		}
+		r.seen[deliveryKey] = true
+		r.recordsSeen++
 		t, _ := model.ParseTime(ev.ObservedTime)
 		if t > now {
 			now = t
 		}
 		key := ev.EntityID + "\x00" + ev.Channel
-		s := stats[key]
+		s := r.stats[key]
 		if s == nil {
 			s = &series{}
-			stats[key] = s
+			if r.stats == nil {
+				r.stats = map[string]*series{}
+			}
+			r.stats[key] = s
 		}
 		if s.seen && t > s.lastEmitNS {
 			s.gaps = append(s.gaps, t-s.lastEmitNS)
 			if len(s.gaps) > 60 {
 				s.gaps = s.gaps[1:]
 			}
+			s.silenceReported = false // a new sample ends any quiet episode
 		}
 		if v, ok := asFloat(ev.Value); ok {
 			// Compare against the baseline BEFORE this reading: the window
@@ -148,13 +192,13 @@ func (r *Runner) Process(trace []byte, endNS int64) (*model.Verdict, error) {
 					det := r.detect(ev.EntityID, ev.Channel, t, s)
 					if r.cfg.OnDetectionEffector != "" && !r.actuated[ev.EntityID] {
 						cmd := r.issue(ev.EntityID, t)
-						actions = append(actions, cmd)
+						r.actions = append(r.actions, cmd)
 						r.actuated[ev.EntityID] = true
 					}
 					// Rebuild the baseline from post-anomaly readings.
 					s.suspicious = 0
 					s.window = nil
-					detections = append(detections, det)
+					r.detections = append(r.detections, det)
 				}
 			} else {
 				s.suspicious = 0
@@ -170,21 +214,40 @@ func (r *Runner) Process(trace []byte, endNS int64) (*model.Verdict, error) {
 	if endNS > now {
 		now = endNS
 	}
-	for key, s := range stats {
-		if !s.seen || len(s.gaps) == 0 {
+	// determinism-safe: keys collected below and sorted, so silence
+	// detections append in a stable order across processes.
+	keys := make([]string, 0, len(r.stats))
+	// determinism-safe
+	for key := range r.stats {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		s := r.stats[key]
+		if !s.seen || len(s.gaps) == 0 || s.silenceReported {
 			continue
 		}
 		parts := splitKey(key)
 		period := median(s.gaps)
 		if now-s.lastEmitNS > int64(r.cfg.AbsenceFactor*float64(period)) {
-			detections = append(detections, model.Detection{
+			r.detections = append(r.detections, model.Detection{
 				EntityID: parts[0], DetectedAt: model.FormatTime(now),
 				Confidence: 0.9, Narrative: "channel silence",
 				EvidenceRefs: []string{fmt.Sprintf("seq:%d", s.lastSeq)},
 			})
+			s.silenceReported = true
 		}
 	}
 
+	// The consumer asserts quiescence through the instant it has fully
+	// processed: the later of the last observed record and the declared end
+	// of the window. Without this assertion a harness cannot tell when a
+	// closed-loop advance is reproducible.
+	if r.quiescence != nil {
+		if err := r.quiescence.ReportQuiesced(now); err != nil {
+			return nil, fmt.Errorf("Process: report quiescence: %w", err)
+		}
+	}
 	v := &model.Verdict{
 		SchemaVersion: "0.1",
 		RunID:         r.runID,
@@ -192,12 +255,12 @@ func (r *Runner) Process(trace []byte, endNS int64) (*model.Verdict, error) {
 			Name: "streamsim-refconsumer", Version: "0.1.0",
 			ConfigDigest: r.configDigest(),
 		},
-		Detections: detections,
-		Actions:    actions,
+		Detections: r.detections,
+		Actions:    r.actions,
 		Counters: map[string]int64{
-			"records_seen": recordsSeen,
-			"detections":   int64(len(detections)),
-			"actions":      int64(len(actions)),
+			"records_seen": r.recordsSeen,
+			"detections":   int64(len(r.detections)),
+			"actions":      int64(len(r.actions)),
 		},
 	}
 	if err := r.report.SubmitVerdict(v); err != nil {

@@ -9,6 +9,8 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"net"
+	"net/http"
 	"os"
 	"path/filepath"
 	"sort"
@@ -29,6 +31,13 @@ import (
 )
 
 // Main dispatches to a subcommand. It is the whole CLI surface.
+// Version and Commit are injected by cmd/streamsim from the Makefile
+// ldflags; the manifest command records them.
+var (
+	Version = "dev"
+	Commit  = "none"
+)
+
 func Main(args []string) int {
 	if len(args) < 2 {
 		usage()
@@ -57,6 +66,8 @@ func Main(args []string) int {
 		err = cmdSuite(rest)
 	case "score":
 		err = cmdScore(rest)
+	case "manifest":
+		err = cmdManifest(rest)
 	case "help", "-h", "--help":
 		usage()
 		return 0
@@ -84,10 +95,17 @@ Commands:
   run                                   One-shot scripted run
   replay <run.json>                     Reproduce a run from its artifact
   verify <run.json>                     Verify a run artifact reproduces
-  mcp --role director|operator          Serve the MCP role over stdio
+  mcp --role director                   Serve the director role over stdio
+                                        (--operator-addr binds the operator role
+                                        over streamable HTTP; sim.world.create
+                                        returns the endpoint with the token)
   refconsumer --trace <file>            Detect episodes in a trace; write verdict.json
+                                        (--mcp <url> --token <t> --run <id> closes
+                                        the loop over the operator endpoint)
   suite generate --domain --profile     Generate an audited graded suite
   score --run --verdict --label         Offline scorecard from artifacts
+  manifest                              Write release-manifest.json (author +
+                                        reviewer identity, optional ed25519)
   help
 `)
 }
@@ -280,6 +298,7 @@ func cmdRun(args []string) error {
 	cfg := run.Config{
 		Domain: spec, Adapter: adap, Seed: *seed, SinkName: *sinkName,
 		SinkTarget: *sinkTarget, TimeMode: model.TimeStepped, StartTimeNS: *startTime,
+		StartTimeSet:    true,
 		ScenarioProfile: *profile,
 	}
 	r, err := run.New(context.Background(), cfg)
@@ -333,7 +352,7 @@ func cmdRun(args []string) error {
 			}
 		}
 	}
-	if _, err := r.Advance(start+int64(*durationS*1e9), false); err != nil {
+	if _, err := r.Advance(context.Background(), start+int64(*durationS*1e9), false); err != nil {
 		return fmt.Errorf("streamsim: %w", err)
 	}
 	art, err := r.End(*outDir)
@@ -390,8 +409,8 @@ func cmdReplay(args []string, verifyOnly bool) error {
 
 func cmdMCP(args []string) error {
 	fs := flag.NewFlagSet("mcp", flag.ExitOnError)
-	role := fs.String("role", "", "director|operator")
-	fs.String("world", "", "world id (operator role)")
+	role := fs.String("role", "", "director")
+	operatorAddr := fs.String("operator-addr", "", "serve the operator role over streamable HTTP at this listen address (e.g. 127.0.0.1:0); sim.world.create returns the endpoint with the token")
 	domainsDir := fs.String("domains-dir", "domains", "domain specs directory")
 	adaptersDir := fs.String("adapters-dir", "adapters", "adapters directory")
 	outDir := fs.String("out", "runs", "run artifact output directory")
@@ -410,15 +429,49 @@ func cmdMCP(args []string) error {
 		}
 		d := mcp.NewDirector(context.Background(), cat, adapters, *outDir)
 		srv := mcp.NewDirectorServer(d)
-		if err := srv.Run(context.Background(), &mcpsdk.StdioTransport{}); err != nil {
+		var httpServer *http.Server
+		if *operatorAddr != "" {
+			httpServer, err = serveOperatorEndpoint(d, *operatorAddr)
+			if err != nil {
+				return err
+			}
+		}
+		err = srv.Run(context.Background(), &mcpsdk.StdioTransport{})
+		if httpServer != nil {
+			_ = httpServer.Close()
+		}
+		if err != nil {
 			return fmt.Errorf("mcp director: %w", err)
 		}
 		return nil
 	case "operator":
-		return fmt.Errorf("the operator role is served per-world from a director session; use the director's sim.world.create token")
+		return fmt.Errorf("the operator role is served from a director process; start `streamsim mcp --role director --operator-addr 127.0.0.1:PORT` and use the sim.world.create token")
 	default:
 		return fmt.Errorf("mcp requires --role director|operator")
 	}
+}
+
+// serveOperatorEndpoint binds the operator role over streamable HTTP so a
+// consumer process can connect with the capability token from
+// sim.world.create. sim.world.create responses include the endpoint; the
+// returned server is closed when the director stdio session ends.
+func serveOperatorEndpoint(d *mcp.Director, addr string) (*http.Server, error) {
+	opServer := mcp.NewOperatorServerResolver(d)
+	handler := mcpsdk.NewStreamableHTTPHandler(func(*http.Request) *mcpsdk.Server { return opServer }, nil)
+	ln, err := (&net.ListenConfig{}).Listen(context.Background(), "tcp", addr)
+	if err != nil {
+		return nil, fmt.Errorf("mcp operator listener: %w", err)
+	}
+	endpoint := "http://" + ln.Addr().String()
+	d.SetOperatorEndpoint(endpoint)
+	fmt.Fprintf(os.Stderr, "operator endpoint: %s\n", endpoint)
+	httpServer := &http.Server{Handler: handler, ReadHeaderTimeout: 10 * time.Second}
+	go func() {
+		if err := httpServer.Serve(ln); err != nil && err != http.ErrServerClosed {
+			fmt.Fprintf(os.Stderr, "operator endpoint failed: %v\n", err)
+		}
+	}()
+	return httpServer, nil
 }
 
 func cmdRefconsumer(args []string) error {
@@ -427,20 +480,53 @@ func cmdRefconsumer(args []string) error {
 	out := fs.String("out", "verdict.json", "verdict output path")
 	threshold := fs.Float64("threshold", 4, "z-score threshold")
 	window := fs.Int("window", 30, "detector window")
+	effector := fs.String("effector", "", "effector to actuate on detection (from the nameplate)")
+	mcpEndpoint := fs.String("mcp", "", "operator endpoint URL (closes the loop over MCP)")
+	token := fs.String("token", "", "capability token from sim.world.create")
+	runID := fs.String("run", "", "run id to report against")
 	if err := fs.Parse(args); err != nil {
 		return fmt.Errorf("streamsim: %w", err)
 	}
 	if *trace == "" {
 		return fmt.Errorf("refconsumer requires --trace")
 	}
+	if *effector != "" && *mcpEndpoint == "" {
+		return fmt.Errorf("refconsumer: --effector requires --mcp (actuation needs the operator surface)")
+	}
 	// #nosec G703 -- a CLI flag naming a trace file is user intent, not attacker input.
 	raw, err := os.ReadFile(*trace)
 	if err != nil {
 		return fmt.Errorf("streamsim: %w", err)
 	}
-	np := &refconsumer.Nameplate{WorldID: "cli"}
-	verdictSink := &fileSink{}
-	r := refconsumer.New(refconsumer.Config{Threshold: *threshold, Window: *window, MinConsecutive: 3, AbsenceFactor: 3}, np, nil, verdictSink, "cli")
+	cfg := refconsumer.Config{
+		Threshold: *threshold, Window: *window, MinConsecutive: 3,
+		AbsenceFactor: 3, OnDetectionEffector: *effector,
+	}
+	var (
+		np       *refconsumer.Nameplate
+		invoker  refconsumer.EffectorInvoker
+		sink     refconsumer.VerdictSink
+		id       = "cli"
+		operator *refconsumer.MCPOperator
+	)
+	if *mcpEndpoint != "" {
+		operator, err = refconsumer.NewMCPOperator(*mcpEndpoint, *token, *runID)
+		if err != nil {
+			return fmt.Errorf("streamsim: %w", err)
+		}
+		defer func() { _ = operator.Close() }()
+		np, err = operator.Nameplate()
+		if err != nil {
+			return fmt.Errorf("streamsim: %w", err)
+		}
+		invoker = operator
+		sink = operator
+		id = *runID
+	} else {
+		np = &refconsumer.Nameplate{WorldID: "cli"}
+		sink = &fileSink{}
+	}
+	r := refconsumer.New(cfg, np, invoker, sink, id)
 	v, err := r.Process(raw, 0)
 	if err != nil {
 		return fmt.Errorf("streamsim: %w", err)
@@ -523,7 +609,12 @@ func cmdScore(args []string) error {
 		ledger = nil
 	}
 	var calls []world.EffectorCall
-	sc := score.Offline(&verdict, &gt, ledger, calls)
+	var perturbations []string
+	var art model.RunArtifact
+	if err := loadJSON(*runArtifact, &art); err == nil {
+		perturbations = art.AppliedPerturbations
+	}
+	sc := score.Offline(&verdict, &gt, ledger, calls, perturbations)
 	return printJSON(sc)
 }
 

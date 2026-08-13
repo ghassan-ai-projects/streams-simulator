@@ -2,6 +2,7 @@ package score
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter"
@@ -52,13 +53,13 @@ func setupFaultedRun(t *testing.T, failureMode, faultID string) (*run.Run, *mode
 	if _, err := r.InvokeEffector("start_aerator", pond, "setup", map[string]any{"pond_id": pond, "level": 1.0}, start); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := r.Advance(start+2*3600*1e9, false); err != nil {
+	if _, err := r.Advance(context.Background(), start+2*3600*1e9, false); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := r.InjectFault(pond, faultID, 0, nil); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := r.Advance(start+3*3600*1e9, false); err != nil {
+	if _, err := r.Advance(context.Background(), start+3*3600*1e9, false); err != nil {
 		t.Fatal(err)
 	}
 	if failureMode != "ok" {
@@ -100,6 +101,116 @@ func loopResolved(r *run.Run) bool {
 	return r.World.StateValue("site-a/pond-1", "aerator_output", r.World.Clock()) > 0.9
 }
 
+// TestLoopResolvesWhenFaultOnsetLandsOnEmissionBoundary: the MCP harness
+// pattern is inject-then-advance, so when the injected onset aligns exactly
+// with an emission the sample at the onset already carries the fault. The
+// pre-onset baseline must be the latest sample strictly before the onset,
+// or the deviation collapses to zero and a correct recovery is scored as
+// unresolved. Regression for the operator-endpoint golden loop.
+func TestLoopResolvesWhenFaultOnsetLandsOnEmissionBoundary(t *testing.T) {
+	spec, a := testBase(t)
+	start := model.DefaultStartTimeNS + 4*3600*1e9
+	r, err := run.New(context.Background(), run.Config{
+		Domain: spec, Adapter: a, Seed: 11, SinkName: model.SinkInproc,
+		TimeMode: model.TimeStepped, StartTimeNS: start,
+		ForceFailureMode: "ok",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	pond := "site-a/pond-1"
+	if _, err := r.InvokeEffector("start_aerator", pond, "setup", map[string]any{"pond_id": pond, "level": 1.0}, start); err != nil {
+		t.Fatal(err)
+	}
+	// Inject-then-advance, with the onset on an emission boundary.
+	onset := start + 2*3600*1e9 // 06:00:00, an emission boundary
+	if _, err := r.InjectFault(pond, "aerator_failure", onset, nil); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.Advance(context.Background(), start+5*3600*1e9, false); err != nil {
+		t.Fatal(err)
+	}
+	// Actuate and let the effect propagate.
+	if _, err := r.InvokeEffector("start_aerator", pond, "cmd-boundary", map[string]any{"pond_id": pond, "level": 1.0}, r.World.Clock()); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.Advance(context.Background(), r.World.Clock()+4*3600*1e9, false); err != nil {
+		t.Fatal(err)
+	}
+	submitVerdict(t, r, []model.Action{
+		{CommandID: "setup", Effector: "start_aerator", EntityID: pond, IssuedAt: model.FormatTime(start), OutcomeBelieved: model.BelievedSucceeded},
+		{CommandID: "cmd-boundary", Effector: "start_aerator", EntityID: pond, IssuedAt: model.FormatTime(r.World.Clock()), OutcomeBelieved: model.BelievedSucceeded},
+	}, nil)
+	if _, err := r.End(""); err != nil {
+		t.Fatal(err)
+	}
+	gt := &model.GroundTruthRecord{
+		ScenarioID: "score/9002", Domain: "aquaculture-pond", Label: "aerator_failure",
+		EntityID: pond, ExpectedEffector: "start_aerator", ExpectedEpisode: true,
+		InjectionTimeNS: onset, FirstObservableTimeNS: onset, UnavoidableTimeNS: start + 3*3600*1e9,
+		TrivialBaselineVerdict: model.TrivialNonTrivial,
+	}
+	sc, err := Score(r, gt)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !sc.Loop.Resolved {
+		t.Fatalf("recovery must resolve even when the onset lands on an emission boundary: %+v", sc.Loop)
+	}
+}
+
+// TestOnlineOfflineScoringIdentity (F-0, P0): online and offline scoring
+// come from one versioned bundle and must produce byte-identical results
+// for every metric both can compute. History-dependent loop metrics
+// (resolution, deadlines) are offline-uncomputable and are compared
+// structurally, not for equality.
+func TestOnlineOfflineScoringIdentity(t *testing.T) {
+	r, gt := setupFaultedRun(t, "silent_no_effect", "aerator_failure")
+	pond := "site-a/pond-1"
+	if _, err := r.InvokeEffector("start_aerator", pond, "cmd-id", map[string]any{"pond_id": pond, "level": 1.0}, r.World.Clock()); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.Advance(context.Background(), r.World.Clock()+3*3600*1e9, false); err != nil {
+		t.Fatal(err)
+	}
+	submitVerdict(t, r, []model.Action{
+		{CommandID: "setup", Effector: "start_aerator", EntityID: pond, IssuedAt: model.FormatTime(r.World.Clock()), OutcomeBelieved: model.BelievedSucceeded},
+		{CommandID: "cmd-id", Effector: "start_aerator", EntityID: pond, IssuedAt: model.FormatTime(r.World.Clock()), OutcomeBelieved: model.BelievedSucceeded},
+	}, nil)
+	if _, err := r.End(""); err != nil {
+		t.Fatal(err)
+	}
+	online, err := Score(r, gt)
+	if err != nil {
+		t.Fatal(err)
+	}
+	offline := Offline(r.Verdict(), gt, r.Ledger(), r.World.EffectorCalls(), r.AppliedPerturbations())
+	if online.Bundle != offline.Bundle || online.Bundle != scoringBundleVersion {
+		t.Fatalf("both paths must carry the versioned bundle: online=%q offline=%q", online.Bundle, offline.Bundle)
+	}
+	// Judgment, instrument and consumer metrics are shared and must agree
+	// byte-for-byte.
+	shared := func(sc *Scorecard) map[string]any {
+		return map[string]any{
+			"judgment": sc.Judgment, "instrument": sc.Instrument, "consumer": sc.Consumer,
+		}
+	}
+	a, _ := json.Marshal(shared(online))
+	b, _ := json.Marshal(shared(offline))
+	if string(a) != string(b) {
+		t.Fatalf("online and offline scoring diverge:\nonline : %s\noffline: %s", a, b)
+	}
+	// The loop metrics offline can compute must agree too.
+	if online.Loop.ActionAppropriate != offline.Loop.ActionAppropriate ||
+		online.Loop.FalseSuccess != offline.Loop.FalseSuccess ||
+		online.Loop.FalseSuccessRate != offline.Loop.FalseSuccessRate ||
+		online.Loop.SilentNoEffectCalls != offline.Loop.SilentNoEffectCalls ||
+		online.Loop.EffectCalls != offline.Loop.EffectCalls ||
+		online.Loop.UnnecessaryAction != offline.Loop.UnnecessaryAction {
+		t.Fatalf("shared loop metrics diverge: online=%+v offline=%+v", online.Loop, offline.Loop)
+	}
+}
+
 // TestSilentNoEffectFalseSuccess is the highest-value single test in the
 // plan: under silent_no_effect the confirmation channel reports the
 // counterfactual (the motor draws current), so the evidence is internally
@@ -117,7 +228,7 @@ func TestSilentNoEffectFalseSuccess(t *testing.T) {
 		t.Fatalf("silent_no_effect must ack success: %+v", res)
 	}
 	// The effect propagates.
-	if _, err := r.Advance(r.World.Clock()+3*3600*1e9, false); err != nil {
+	if _, err := r.Advance(context.Background(), r.World.Clock()+3*3600*1e9, false); err != nil {
 		t.Fatal(err)
 	}
 	at := r.World.Clock()
@@ -156,7 +267,7 @@ func TestSilentNoEffectHonestConsumer(t *testing.T) {
 	if _, err := r.InvokeEffector("start_aerator", pond, "cmd-92", map[string]any{"pond_id": pond, "level": 1.0}, r.World.Clock()); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := r.Advance(r.World.Clock()+3*3600*1e9, false); err != nil {
+	if _, err := r.Advance(context.Background(), r.World.Clock()+3*3600*1e9, false); err != nil {
 		t.Fatal(err)
 	}
 	submitVerdict(t, r, []model.Action{
@@ -187,7 +298,7 @@ func TestClosedLoopRecoveryAndIdempotency(t *testing.T) {
 	if !res.Accepted {
 		t.Fatal("ok mode must accept")
 	}
-	if _, err := r.Advance(r.World.Clock()+4*3600*1e9, false); err != nil {
+	if _, err := r.Advance(context.Background(), r.World.Clock()+4*3600*1e9, false); err != nil {
 		t.Fatal(err)
 	}
 	if !loopResolved(r) {
@@ -289,7 +400,7 @@ func TestDroppedDetectionRequiresOneDetectionPerDrop(t *testing.T) {
 	if _, err := r.ApplyPerturb("drop", map[string]any{"rate": 1.0}, 0, 0); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := r.Advance(start+3600*1e9, false); err != nil {
+	if _, err := r.Advance(context.Background(), start+3600*1e9, false); err != nil {
 		t.Fatal(err)
 	}
 	if err := r.SubmitVerdict(&model.Verdict{

@@ -85,7 +85,7 @@ func TestDetectsFaultAndActs(t *testing.T) {
 	if _, err := r.InjectFault(pond, "aerator_failure", start+2*3600*1e9, nil); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := r.Advance(start+6*3600*1e9, false); err != nil {
+	if _, err := r.Advance(context.Background(), start+6*3600*1e9, false); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := r.End(""); err != nil {
@@ -103,7 +103,10 @@ func TestDetectsFaultAndActs(t *testing.T) {
 	cfg := DefaultConfig()
 	cfg.OnDetectionEffector = "start_aerator"
 	cfg.Threshold = 3 // the crash is loud
-	rc := New(cfg, np, r, r, r.ID)
+	// The run is the invoker; the verdict is captured (the run is already
+	// ended, so its own sink refuses post-End submissions).
+	capture := &verdictCapture{}
+	rc := New(cfg, np, r, capture, r.ID)
 	verdict, err := rc.Process(r.Trace(), 0)
 	if err != nil {
 		t.Fatal(err)
@@ -143,14 +146,15 @@ func TestObserveOnlyOnCleanRun(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := r.Advance(start+4*3600*1e9, false); err != nil {
+	if _, err := r.Advance(context.Background(), start+4*3600*1e9, false); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := r.End(""); err != nil {
 		t.Fatal(err)
 	}
 	np := &Nameplate{WorldID: r.ID}
-	rc := New(DefaultConfig(), np, nil, r, r.ID)
+	capture := &verdictCapture{}
+	rc := New(DefaultConfig(), np, nil, capture, r.ID)
 	verdict, err := rc.Process(r.Trace(), 0)
 	if err != nil {
 		t.Fatal(err)
