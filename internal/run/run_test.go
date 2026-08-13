@@ -88,6 +88,33 @@ func TestRunByteReproducible(t *testing.T) {
 	}
 }
 
+func TestRunRejectsNonMonotonicNativeObservedTime(t *testing.T) {
+	spec, a := testBase(t)
+	start := model.DefaultStartTimeNS
+	r, err := New(context.Background(), Config{
+		Domain: spec, Adapter: a, Seed: 1, SinkName: model.SinkInproc,
+		TimeMode: model.TimeStepped, StartTimeNS: start,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	base := model.SimEvent{
+		Seq: 0, WorldID: r.World.ID, EntityType: "fish", EntityID: r.World.InitialEntityIDs()[0],
+		Channel: "temperature", EventTime: model.FormatTime(start),
+	}
+	first := base
+	first.ObservedTime = model.FormatTime(start + 2)
+	second := base
+	second.Seq = 1
+	second.ObservedTime = model.FormatTime(start + 1)
+	r.onEmit(first)
+	r.onEmit(second)
+	_, err = r.End("")
+	if err == nil || !strings.Contains(err.Error(), "strict observed-time guard") {
+		t.Fatalf("run accepted non-monotonic native observed_time: %v", err)
+	}
+}
+
 func TestReplayUsesEmbeddedDomainAndAdapter(t *testing.T) {
 	spec, a := testBase(t)
 	art := buildArtifact(t, Config{
@@ -269,6 +296,76 @@ func TestStreamingRunIncludesAdapterPreambleAndPostamble(t *testing.T) {
 	}
 	if !strings.Contains(lines[len(lines)-1], `"record_type":"trace_end"`) {
 		t.Fatalf("missing trace postamble: %s", lines[len(lines)-1])
+	}
+}
+
+func TestGeneratedTraceTrailerFollowsEventArrivals(t *testing.T) {
+	spec, err := domain.Load(aquaculturePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	a, err := adapter.Load(agenticAdapter)
+	if err != nil {
+		t.Fatal(err)
+	}
+	start := model.DefaultStartTimeNS + 4*3600*1e9
+	r, err := New(context.Background(), Config{
+		Domain: spec, Adapter: a, Seed: 11, SinkName: model.SinkInproc,
+		TimeMode: model.TimeStepped, StartTimeNS: start,
+		EntityIDs: []string{"site-a/pond-1"}, Noiseless: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.Advance(context.Background(), start+60*1e9, false); err != nil {
+		t.Fatal(err)
+	}
+	art, err := r.End("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !art.Reproducible {
+		t.Fatal("generated trace must remain reproducible")
+	}
+
+	var maxArrival int64
+	var until int64
+	haveEvent, haveTrailer := false, false
+	for i, line := range strings.Split(strings.TrimSpace(string(r.Trace())), "\n") {
+		var record struct {
+			RecordType string `json:"record_type"`
+			Event      struct {
+				ArrivalTime string `json:"arrival_time"`
+			} `json:"event"`
+			Until string `json:"until"`
+		}
+		if err := json.Unmarshal([]byte(line), &record); err != nil {
+			t.Fatalf("decode trace line %d: %v", i, err)
+		}
+		switch record.RecordType {
+		case "event":
+			arrival, err := model.ParseTime(record.Event.ArrivalTime)
+			if err != nil {
+				t.Fatalf("parse event arrival on line %d: %v", i, err)
+			}
+			if !haveEvent || arrival > maxArrival {
+				maxArrival = arrival
+			}
+			haveEvent = true
+		case "trace_end":
+			var err error
+			until, err = model.ParseTime(record.Until)
+			if err != nil {
+				t.Fatalf("parse trailer until on line %d: %v", i, err)
+			}
+			haveTrailer = true
+		}
+	}
+	if !haveEvent || !haveTrailer {
+		t.Fatalf("trace must contain event(s) and a trace_end trailer")
+	}
+	if maxArrival >= until {
+		t.Fatalf("trace_end.until %s must be later than last arrival %s", model.FormatTime(until), model.FormatTime(maxArrival))
 	}
 }
 

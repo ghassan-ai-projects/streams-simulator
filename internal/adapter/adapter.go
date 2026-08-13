@@ -96,6 +96,7 @@ func crossCheck(a *model.Adapter, src string) error {
 		"world_end_time": true, "seed": true,
 	}
 	var checkExpr func(e model.ValueExpr) error
+	var checkField func(f model.Field) error
 	checkExpr = func(e model.ValueExpr) error {
 		switch e.Op {
 		case "source":
@@ -103,6 +104,15 @@ func crossCheck(a *model.Adapter, src string) error {
 				return bad("unknown source %q", e.Source)
 			}
 		case "const":
+		case "object":
+			if len(e.Fields) == 0 {
+				return bad("object requires fields")
+			}
+			for _, f := range e.Fields {
+				if err := checkField(f); err != nil {
+					return fmt.Errorf("adapter: %w", err)
+				}
+			}
 		case "concat":
 			if len(e.Parts) == 0 {
 				return bad("concat requires parts")
@@ -146,6 +156,15 @@ func crossCheck(a *model.Adapter, src string) error {
 		}
 		return nil
 	}
+	checkField = func(f model.Field) error {
+		if f.Name == "" {
+			return bad("field name must not be empty")
+		}
+		if err := checkExpr(f.From); err != nil {
+			return fmt.Errorf("adapter: %w", err)
+		}
+		return nil
+	}
 	checkTemplate := func(t model.RecordTemplate) error {
 		if len(t.Fields) == 0 {
 			return bad("record template requires at least one field")
@@ -156,10 +175,7 @@ func crossCheck(a *model.Adapter, src string) error {
 			}
 		}
 		for _, f := range t.Fields {
-			if f.Name == "" {
-				return bad("field name must not be empty")
-			}
-			if err := checkExpr(f.From); err != nil {
+			if err := checkField(f); err != nil {
 				return fmt.Errorf("adapter: %w", err)
 			}
 		}
@@ -179,13 +195,28 @@ func crossCheck(a *model.Adapter, src string) error {
 		}
 	}
 	// The per-event projection must carry a stable identity derived from seq.
+	var hasIdentity func(e model.ValueExpr) bool
+	hasIdentity = func(e model.ValueExpr) bool {
+		if e.Op == "source" && e.Source == "seq" {
+			return true
+		}
+		if e.Op == "counter" && e.Of != nil && e.Of.Op == "source" && e.Of.Source == "seq" {
+			return true
+		}
+		if e.Op == "object" {
+			for _, f := range e.Fields {
+				if hasIdentity(f.From) {
+					return true
+				}
+			}
+		}
+		return false
+	}
 	identity := false
 	for _, f := range a.Record.Fields {
-		if f.From.Op == "source" && f.From.Source == "seq" {
+		if hasIdentity(f.From) {
 			identity = true
-		}
-		if f.From.Op == "counter" && f.From.Of != nil && f.From.Of.Source == "seq" {
-			identity = true
+			break
 		}
 	}
 	if !identity {
@@ -503,6 +534,22 @@ func evalExpr(e *model.ValueExpr, ctx *recordContext) (any, error) {
 		return ctx.value(e.Source), nil
 	case "const":
 		return e.Value, nil
+	case "object":
+		if len(e.Fields) == 0 {
+			return nil, fmt.Errorf("adapter: object requires fields")
+		}
+		out := orderedObject{}
+		for _, f := range e.Fields {
+			v, err := evalExpr(&f.From, ctx)
+			if err != nil {
+				return nil, fmt.Errorf("adapter: object field %q: %w", f.Name, err)
+			}
+			if v == nil && f.OmitWhenNull {
+				continue
+			}
+			out = append(out, orderedField{name: f.Name, value: v})
+		}
+		return out, nil
 	case "concat":
 		var b strings.Builder
 		for _, p := range e.Parts {
@@ -626,10 +673,28 @@ func writeJSONValue(b *strings.Builder, v any) {
 		b.WriteString(strconv.FormatInt(x, 10))
 	case json.Number:
 		b.WriteString(x.String())
+	case orderedObject:
+		b.WriteByte('{')
+		for i, field := range x {
+			if i > 0 {
+				b.WriteByte(',')
+			}
+			writeJSONString(b, field.name)
+			b.WriteByte(':')
+			writeJSONValue(b, field.value)
+		}
+		b.WriteByte('}')
 	default:
 		raw, _ := json.Marshal(v)
 		b.Write(raw)
 	}
+}
+
+type orderedObject []orderedField
+
+type orderedField struct {
+	name  string
+	value any
 }
 
 func jsonEqualish(a, b any) bool {

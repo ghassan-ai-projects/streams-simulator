@@ -240,6 +240,56 @@ func TestEmitterReceivesEvents(t *testing.T) {
 	}
 }
 
+func TestObservedTimesAreStrictlyIncreasingAcrossEmissionTies(t *testing.T) {
+	spec := testSpec(t, func(s *model.DomainSpec) {
+		s.Entities.Count.Default = 2
+		s.Faults[0].Observability.Detector.Channel = "slow"
+		s.Channels = []model.Channel{
+			{
+				Name: "slow", ValueType: "number", Unit: "u", Resolution: 0.01,
+				Fidelity: "F0", Absence: "signal", Observes: "x",
+				Cadence:   model.Cadence{Mode: "periodic", PeriodS: 60},
+				Noise:     model.Noise{Model: "none"},
+				LinkDelay: &model.LinkDelay{Model: "constant", MeanS: 10},
+			},
+			{
+				Name: "fast", ValueType: "number", Unit: "u", Resolution: 0.01,
+				Fidelity: "F0", Absence: "signal", Observes: "x",
+				Cadence:   model.Cadence{Mode: "periodic", PeriodS: 60},
+				Noise:     model.Noise{Model: "none"},
+				LinkDelay: &model.LinkDelay{Model: "constant", MeanS: 1},
+			},
+		}
+	})
+	start := model.DefaultStartTimeNS
+	w, err := New(spec, 1, "w-observed-order", start, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var events []model.SimEvent
+	w.SetEmitter(func(ev model.SimEvent) { events = append(events, ev) })
+	if _, _, err := w.Advance(start + 60*secondsPerNS); err != nil {
+		t.Fatal(err)
+	}
+	if len(events) != 4 {
+		t.Fatalf("expected four simultaneous-channel events, got %d", len(events))
+	}
+	previous := int64(0)
+	for i, ev := range events {
+		observed, err := model.ParseTime(ev.ObservedTime)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if i > 0 && observed <= previous {
+			t.Fatalf("event %d observed_time %s is not strictly after %s", i, ev.ObservedTime, model.FormatTime(previous))
+		}
+		previous = observed
+	}
+	if got := previous - (start + 60*secondsPerNS + 10*secondsPerNS); got != 3 {
+		t.Fatalf("expected three one-nanosecond serialization steps after the slow candidate, got %d ns", got)
+	}
+}
+
 // TestSubstreamIsolation: adding an unrelated entity must not change an
 // existing entity's output (S1 gate 5, at the world level).
 func TestSubstreamIsolation(t *testing.T) {

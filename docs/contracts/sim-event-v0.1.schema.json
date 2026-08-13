@@ -35,7 +35,7 @@
     "observed_time": {
       "type": "string",
       "format": "date-time",
-      "description": "event_time plus the channel's modelled link delay: the instant an observer would have received it. Always >= event_time except where a clock_skew perturbation deliberately violates that, which is test material. Named for what it is rather than after any consumer's term for it."
+      "description": "The channel's modelled link-delay arrival candidate, serialized into strict native emission order with a deterministic one-nanosecond tiebreak when needed. Always >= event_time except where a clock_skew or other delivery perturbation deliberately violates that, which is test material. Named for what it is rather than after any consumer's term for it."
     },
 
     "value": {

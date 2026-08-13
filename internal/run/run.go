@@ -118,8 +118,12 @@ type Run struct {
 	unblinded    bool
 	unblindedAt  string
 
-	worldStartTimeNS int64
-	worldEndTimeNS   int64
+	worldStartTimeNS    int64
+	worldEndTimeNS      int64
+	lastObservedNS      int64
+	hasObservedTime     bool
+	lastTraceArrivalNS  int64
+	hasTraceArrivalTime bool
 
 	envTargets map[string]string
 	allowEnv   bool
@@ -246,7 +250,22 @@ func (r *Run) SetEvidenceRecorder(fn func(model.SimEvent)) {
 
 // onEmit is the world's emitter: perturb -> adapter -> sink -> ledger.
 func (r *Run) onEmit(ev model.SimEvent) {
-	atNS, _ := model.ParseTime(ev.EventTime)
+	atNS, err := model.ParseTime(ev.EventTime)
+	if err != nil {
+		r.fail(fmt.Errorf("strict observed-time guard: event %d has invalid event_time: %w", ev.Seq, err))
+		return
+	}
+	observedNS, err := model.ParseTime(ev.ObservedTime)
+	if err != nil {
+		r.fail(fmt.Errorf("strict observed-time guard: event %d has invalid observed_time: %w", ev.Seq, err))
+		return
+	}
+	if r.hasObservedTime && observedNS <= r.lastObservedNS {
+		r.fail(fmt.Errorf("strict observed-time guard: event %d observed_time %s is not after %s", ev.Seq, ev.ObservedTime, model.FormatTime(r.lastObservedNS)))
+		return
+	}
+	r.lastObservedNS = observedNS
+	r.hasObservedTime = true
 	// World-state history: what was actually happening when the record was
 	// emitted (director-only, for post-hoc analysis).
 	states := map[string]float64{}
@@ -314,6 +333,7 @@ func (r *Run) onEmit(ev model.SimEvent) {
 			r.fail(err)
 			return
 		}
+		r.noteTraceArrival(d.Event)
 		otNS, _ := model.ParseTime(d.Event.ObservedTime)
 		r.appendLedger(model.LedgerRecord{
 			DeliveryID: d.DeliveryID, Seq: d.Event.Seq, WorldID: d.Event.WorldID, EntityID: d.Event.EntityID,
@@ -506,6 +526,7 @@ func (r *Run) deliver(d perturb.Delivered) {
 		r.fail(err)
 		return
 	}
+	r.noteTraceArrival(d.Event)
 	atNS, _ := model.ParseTime(d.Event.EventTime)
 	otNS, _ := model.ParseTime(d.Event.ObservedTime)
 	r.appendLedger(model.LedgerRecord{
@@ -513,6 +534,32 @@ func (r *Run) deliver(d perturb.Delivered) {
 		Channel: d.Event.Channel, EventTimeNS: atNS, ObservedTimeNS: otNS,
 		Delivered: true, DeliveryReason: d.Reason, WrittenAtNS: r.World.Clock(),
 	})
+}
+
+// noteTraceArrival records the latest arrival timestamp that was rendered
+// into the trace. Perturbations can rewrite an event's observed_time after
+// the world has emitted it, so the trailer must use delivered records rather
+// than the world clock or the native emission watermark.
+func (r *Run) noteTraceArrival(ev model.SimEvent) {
+	arrivalNS, err := model.ParseTime(ev.ObservedTime)
+	if err != nil {
+		return
+	}
+	if !r.hasTraceArrivalTime || arrivalNS > r.lastTraceArrivalNS {
+		r.lastTraceArrivalNS = arrivalNS
+		r.hasTraceArrivalTime = true
+	}
+}
+
+// traceEndTime returns a deterministic trailer horizon strictly after every
+// rendered event arrival while preserving the scenario horizon when it is
+// already later.
+func (r *Run) traceEndTime() int64 {
+	end := r.worldEndTimeNS
+	if r.hasTraceArrivalTime && r.lastTraceArrivalNS >= end {
+		end = r.lastTraceArrivalNS + 1
+	}
+	return end
 }
 
 // InjectFault records and applies a world fault.
@@ -801,7 +848,7 @@ func (r *Run) End(outDir string) (*model.RunArtifact, error) {
 		return nil, fmt.Errorf("run: already finished")
 	}
 	if r.runErr == nil {
-		if lines, err := r.Engine.End(r.worldEndTimeNS); err != nil {
+		if lines, err := r.Engine.End(r.traceEndTime()); err != nil {
 			r.fail(fmt.Errorf("End: adapter postamble: %w", err))
 		} else if err := writeSinkLines(r.Sink, lines); err != nil {
 			r.fail(fmt.Errorf("End: adapter postamble: %w", err))

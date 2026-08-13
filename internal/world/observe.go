@@ -71,9 +71,11 @@ func (w *World) processEmission(entityID, channelName string, t int64) {
 		return
 	}
 
-	// Link delay: observed_time = event_time + delay.
+	// Link delay supplies the observed-time candidate; the world then
+	// serializes it into the native emission order.
 	delay := w.linkDelay(entityID, ch, t)
 	observed := t + int64(delay*secondsPerNS)
+	observed = w.serializeObservedTime(observed)
 
 	if !w.EmitDisabled {
 		w.seq++
@@ -101,6 +103,20 @@ func (w *World) processEmission(entityID, channelName string, t int64) {
 	if next > 0 {
 		w.schedule(kindEmission, entityID, channelName, next, nil)
 	}
+}
+
+// serializeObservedTime turns the link-delay candidate into a strict total
+// order in native emission order. Equal candidates receive a one-nanosecond
+// deterministic tiebreak, and a candidate that would move backwards is
+// advanced past the previous timestamp. The adjustment is deliberately in
+// the world layer so every adapter sees the same ordered observed_time.
+func (w *World) serializeObservedTime(candidate int64) int64 {
+	if w.hasObservedTimeNS && candidate <= w.lastObservedNS {
+		candidate = w.lastObservedNS + 1
+	}
+	w.lastObservedNS = candidate
+	w.hasObservedTimeNS = true
+	return candidate
 }
 
 // reading computes the observed (pre-quantization) value and whether this

@@ -36,6 +36,9 @@ func Verify(adapterPath, fixturePath, base string) (*VerifyResult, error) {
 	if err != nil {
 		return nil, fmt.Errorf("adapter: %w", err)
 	}
+	if err := validateStrictObservedOrder(fixture); err != nil {
+		return nil, fmt.Errorf("adapter: %w", err)
+	}
 	meta := map[string]any{
 		"run_id": "verify", "sim_version": "0.1.0",
 		"domain_id": "fixture", "domain_version": "0.0.0",
@@ -104,6 +107,25 @@ func Verify(adapterPath, fixturePath, base string) (*VerifyResult, error) {
 		res.GoldenMatch = true
 	}
 	return res, nil
+}
+
+// validateStrictObservedOrder protects the adapter conformance path from a
+// fixture that would violate the simulator's native single-stream ordering
+// guarantee. Deliberate delivery perturbations are applied after this source
+// contract and remain available to exercise consumers' rejection paths.
+func validateStrictObservedOrder(events []model.SimEvent) error {
+	var previous int64
+	for i, ev := range events {
+		observed, err := model.ParseTime(ev.ObservedTime)
+		if err != nil {
+			return fmt.Errorf("strict observed-time order: event %d: %w", i, err)
+		}
+		if i > 0 && observed <= previous {
+			return fmt.Errorf("strict observed-time order: event %d observed_time %s is not after %s", i, ev.ObservedTime, model.FormatTime(previous))
+		}
+		previous = observed
+	}
+	return nil
 }
 
 func firstDivergence(got, want []byte) string {

@@ -58,6 +58,11 @@ type World struct {
 	queue    priorityQueue
 	tiebreak uint64
 	seq      int64
+	// lastObservedNS serializes native delivery timestamps in emission order.
+	// The link-delay model supplies a timestamp candidate; this watermark adds
+	// the deterministic total-order tiebreak required by consumers.
+	lastObservedNS    int64
+	hasObservedTimeNS bool
 
 	subs        map[string]*randutil.SplitMix64
 	entities    map[string]*Entity
