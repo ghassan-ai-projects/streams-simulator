@@ -46,11 +46,12 @@ Use the prompt files under `.agents/prompts/` when the task matches them.
 ## Current Repository State
 
 - Module path: `github.com/ghassan-ai-projects/streams-simulator` (set).
-- Design is complete and committed under `docs/` (research, design, contracts, adapters, examples). Status: design, ready to build.
-- There is no `cmd/` tree yet.
-- There is no `internal/` tree yet.
-- The root scaffold package in [doc.go](doc.go) exists so Go tooling has something to operate on.
-- Implementation starts at stage S0 per [docs/design/IMPLEMENTATION_PLAN.md](docs/design/IMPLEMENTATION_PLAN.md). Commit to S0-S2 before anything else.
+- Design is complete and committed under `docs/` (research, design, contracts, adapters, examples).
+- Implementation is complete: the CLI lives in `cmd/streamsim/` and `internal/` holds
+  the world, perturbation, adapter, sink, MCP, ledger, and truth packages. The shipped
+  domains (`domains/*.domain.json`), adapters (`adapters/*.adapter.json`), and
+  `bin/streams-simulator` are produced by `make build`.
+- Domain specs, adapters, and effectors are **data** (JSON), never code.
 
 Do not invent architecture outside the documented design. The spec was written to be built as specified; deviations need a design change first.
 
