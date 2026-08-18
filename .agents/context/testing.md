@@ -12,12 +12,12 @@ Use these commands unless the task is documentation-only:
 - `git diff --check`
 - `pre-commit run --all-files` if `pre-commit` is installed
 
-## Template-Specific Behavior
+## Repository-Specific Behavior
 
-- `make build` prints a skip message when `cmd/` does not exist.
+- `make build` builds `cmd/streamsim` into `bin/`.
 - `make ci-check` runs `tidy -> build -> vet -> lint-ci -> test-short -> deadcode -> vulncheck`.
-- In restricted environments, `golangci-lint` can fail because it writes outside the workspace cache.
-- `deadcode` and `govulncheck` are optional locally when the tools are missing; the Makefile reports that explicitly.
+- In restricted environments, lint and loopback MCP tests can fail because they need cache writes or local sockets.
+- `deadcode` and `govulncheck` are release-gate tools; the Makefile fails closed when they are missing.
 
 ## Test Quality Bar
 

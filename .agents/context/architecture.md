@@ -2,7 +2,7 @@
 
 ## Repository Architecture
 
-The authoritative architecture is the design in [docs/design/TECHNICAL_DESIGN.md](../../docs/design/TECHNICAL_DESIGN.md). This file is the concise version agents should load before editing.
+The accepted architecture is summarized in [`documentation/architecture/`](../../documentation/architecture/), while the detailed design record remains in [docs/design/](../../docs/design/). Read both when a change affects a protocol, contract, trust boundary, or replay guarantee.
 
 ## Current Structure
 
@@ -11,7 +11,8 @@ The authoritative architecture is the design in [docs/design/TECHNICAL_DESIGN.md
 - `Makefile` defines the authoritative local commands.
 - `.github/workflows/ci.yml` defines CI parity for core checks.
 - `.golangci.yml` and `.pre-commit-config.yaml` enforce code quality and hygiene.
-- `docs/` holds the design, research, contracts, adapters, and examples — the source of truth for behavior.
+- `documentation/` holds curated public usage, architecture, benchmark, operations, and governance docs.
+- `docs/` holds the engineering archive, canonical contract sources, design history, research, adapters/examples fixtures, and reviews.
 
 ## Target Structure (per the design)
 
@@ -21,7 +22,7 @@ The authoritative architecture is the design in [docs/design/TECHNICAL_DESIGN.md
 - `internal/adapter`: declarative output adapters projecting native `sim-event-v0.1` into consumer wire formats
 - `internal/sink`: inproc, file, http-push
 - `internal/mcp`: one server, two roles — `director` (catalog · world · clock · fault · perturb · truth) and `operator` (nameplate · effectors · invoke · verdict)
-- `internal/ledger`: delivery ledger (transport misses vs reasoning misses)
+- `internal/run`: run orchestration, delivery ledger, artifacts, replay, and quiescence
 - `internal/truth`: sealed ground truth and scoring
 - `test/`: integration and end-to-end suites
 
@@ -33,7 +34,8 @@ The authoritative architecture is the design in [docs/design/TECHNICAL_DESIGN.md
 
 ## Dependency Direction
 
-- `cmd` -> `mcp` -> `world`/`perturb`/`adapter`/`sink`/`ledger`/`truth`
+- `cmd` -> `cli` -> `mcp`/`run`/`suite`/`score`/`refconsumer`
+- `run` -> `world`/`perturb`/`adapter`/`sink`/`truth`
 - Dependencies flow downward only.
 - Domain specs, adapters, and effectors are data (JSON), never code.
 - The binary contains no consumer knowledge and no effector names.

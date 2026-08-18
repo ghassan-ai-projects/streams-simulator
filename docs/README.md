@@ -1,18 +1,26 @@
-# Streams Simulator
+# Streams Simulator engineering archive
 
-Status: **Level 2 — benchmark-ready** (release gate green)
-Date: 2026-08-11
+This directory is the working engineering archive for Streams Simulator. The curated public documentation is under [`../documentation/`](../documentation/README.md). Keep plans, reviews, audits, research, design history, fixtures, and canonical contract files here so implementation evidence remains inspectable without making the public hub unreadable.
+
+**Archive status:** historical and current design/evidence material; not a release claim for the current working tree. The checked-in Level 2 evidence and older status statements must be revalidated against the exact commit before publication. See [`../documentation/limitations.md`](../documentation/limitations.md) and [`../documentation/benchmark/evidence.md`](../documentation/benchmark/evidence.md).
+
+Date of the latest archive material: 2026-08-11
 Codename: `streamsim`
 
-> **Release evidence:** the nine non-negotiable gates are green on production paths with
-> committed, per-gate evidence (see [QUALITY_BAR.md](QUALITY_BAR.md) current-bar-status and
-> [LEVEL2_REMAINING_PLAN.md](LEVEL2_REMAINING_PLAN.md)). `make ci-check` fails closed
-> without the security tools; `make soak` passes a deterministic million-record run;
-> `streamsim manifest` produces a signed release manifest. Do not publish benchmark scores
-> without a fresh manifest for the exact commit.
+The documentation reorganization plan is [`DOCUMENTATION_ORGANIZATION_PLAN.md`](DOCUMENTATION_ORGANIZATION_PLAN.md). It is a maintenance artifact, not part of the curated product journey.
+
+> **Archive-only navigation:** this page is for maintainers auditing design history and implementation evidence. It is not a second user homepage. Start with [`../documentation/README.md`](../documentation/README.md) for the public product journey. [`agent-setup-notes.md`](agent-setup-notes.md) is internal agent material and is not public documentation.
+
+> **Historical release evidence:** this archive contains a Level 2 evidence record from
+> an earlier commit. It is not a current release claim. The current working tree has a
+> known domain-inventory test failure, and manifest signing is optional. Re-run the full
+> gate and generate a fresh manifest with explicit author and reviewer identities before
+> publishing any benchmark result.
 >
 > The executable completion bar and per-change remediation loop are defined in
 > [QUALITY_BAR.md](QUALITY_BAR.md).
+
+Everything below is preserved design and implementation history. Claims such as the 25-domain catalog, completed soak, signed manifest, or green G1–G9 gates describe the historical record unless a current manifest and validation run explicitly re-establish them.
 
 A standalone, deterministic, closed-loop world simulator for testing stream processors.
 
@@ -149,7 +157,7 @@ Worth being precise: that is a property of the **command log**, not of MCP. A CL
 the same log would earn it too. MCP's contribution is that the improvisation can be
 conversational.
 
-## 5. The 25 domains
+## 5. The designed 25-domain catalog
 
 A coverage matrix over twelve axes of stream physics, not a list of industries. Each
 domain declares its property vector and one required sentence naming the runtime property
@@ -167,10 +175,9 @@ it exists to break. Two domains with the same vector means one is decoration.
 A domain is **data**. All 25 load through one schema with no per-domain code. If any needs
 a code branch in the binary, the simulator is wrong and the domain found the bug.
 
-**Six get built**, per [CRITICAL_REVIEW C-02](design/CRITICAL_REVIEW.md); the rest stay
-specified. The catalog's value — eight design questions about the first consumer, four
-probable defects — was collected by *writing* it, and building the other 19 costs 20–40
-days while spreading a fixed scenario budget thinner.
+**Six were the initial build target**, per [CRITICAL_REVIEW C-02](design/CRITICAL_REVIEW.md);
+the rest stay specified in this archive. The current working tree has six committed domain
+files plus an unreconciled untracked cold-chain file; see the public [limitations](../documentation/limitations.md).
 
 ## 6. Non-negotiables
 
@@ -219,7 +226,7 @@ anything else; it may never remove these.
 
 ## 8. Technology
 
-Go 1.26, one binary, SQLite WAL, RFC 8785 canonical JSON, the official MCP Go SDK.
+Go 1.25.12, one binary, file-based JSON/JSONL run artifacts, RFC 8785 canonical JSON, and the official MCP Go SDK. Earlier SQLite-WAL language belongs to superseded design material and is not the current persistence model.
 
 Go inside the determinism boundary. The decisive argument is not shared code with any
 consumer — the simulator digests only its own artifacts — but that **a discrete-event core
@@ -229,7 +236,7 @@ Add one language for one engineer, and a single static binary for a 24-hour soak
 **The statistics and reporting layer may be Python**, and probably should be: bootstrap
 confidence intervals, balanced accuracy, and the report itself are real statistics work,
 and they are post-hoc, offline, and outside the determinism boundary. `streamsim score`
-emits `scorecard.json`; an analysis script consumes it.
+prints a scorecard JSON result; an analysis script may persist and aggregate it.
 
 No physics engine, no broker, no ORM, no expression language, no plugin system — a plugin
 is consumer-specific code renamed.
@@ -249,16 +256,15 @@ The finding that still needs an owner decision:
 > holding both halves. If this is a solo project the strong fix is unavailable, and
 > pretending otherwise is the worst option.
 
-## 10. Start here
+## 10. Archive navigation (historical)
 
-[TRANSPORT_ANALYSIS.md](research/TRANSPORT_ANALYSIS.md) — the two decisions in §1
-determine everything downstream. Then
-[DOMAIN_CATALOG.md §5](design/DOMAIN_CATALOG.md) for the eight design questions, which are
-the reason to build this rather than a reason to admire it. Then both reviews, then the
-plan.
+[TRANSPORT_ANALYSIS.md](research/TRANSPORT_ANALYSIS.md) — the two decisions in §1 explain
+the historical architecture. Then read [DOMAIN_CATALOG.md §5](design/DOMAIN_CATALOG.md) for
+the design questions, followed by the reviews and implementation plan. For current behavior,
+return to the public documentation and verify against code, tests, and contracts.
 
-Begin with S0: three decisions and half a day of fixes. Commit to S0–S2, sixteen days, and
-re-decide with a working product — at the end of S2 the loop closes against the reference
-consumer, which is the whole thing in miniature.
+The original implementation plan began with S0 and S1–S2 gates. Those milestones are
+historical context; they do not describe the remaining work or release status of the current
+checkout.
 
 Do not begin with a broker, a web UI, a physics engine, or a second consumer.

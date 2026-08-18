@@ -1,0 +1,386 @@
+{
+  "id": "cold-chain-transit",
+  "version": "0.1.0",
+  "title": "Cold-chain reefer transit",
+  "description": "Twelve refrigerated containers (reefers) crossing an ocean. For ~14 hours at sea a unit reports nothing (no cellular over deep water), then reconnects and dumps ~840 buffered readings at one arrival instant, every event-time in the past. The regulatory question is not 'is it cold now' but 'was cumulative time above -18 C more than 4 hours across the whole voyage' - and the answer depends on every one of the late readings. The domain that makes gross store-and-forward lateness (Q1) and normal-vs-broken absence (absence: normal) first-class.",
+
+  "axes": {
+    "rate": "low",
+    "cardinality": "fleet",
+    "value_shape": ["scalar", "enum", "boolean"],
+    "cadence": ["periodic", "event_driven"],
+    "lateness": "gross",
+    "absence": "normal",
+    "time_reference": "wall",
+    "correlation": ["independent"],
+    "seasonality": ["none"],
+    "actuation": "advisory",
+    "consequence": ["regulatory"],
+    "fidelity": ["F1"]
+  },
+
+  "stresses": "Store-and-forward birth bursts, and regulatory excursion accounting that must survive them. After 14 hours of ocean silence the unit reconnects and dumps 840 buffered readings at one arrival instant, all with event times in the past - every one beyond any sane lateness allowance, yet the regulatory question depends on all of them. Absence is normal at sea (silence must not alarm), so a genuinely dead unit must be told apart by 'reporting is due', not by silence. The strongest test in the catalog that late_beyond_allowance evidence must remain visible to the reasoner rather than merely counted.",
+
+  "entities": {
+    "id_template": "reefer-{n}",
+    "entity_type": "reefer",
+    "count": {"default": 12, "min": 1, "max": 200}
+  },
+
+  "state": [
+    {"name": "setpoint_true", "unit": "degC", "initial": -20.0, "min": -30.0, "max": 10.0,
+     "description": "Commanded temperature. No free dynamics: moved only by the adjust_setpoint effector."},
+    {"name": "ambient_true", "unit": "degC", "initial": 12.0, "min": -5.0, "max": 45.0,
+     "description": "Outside temperature. Mild diurnal swing at sea; warmer in port. Explains a rise without a fault."},
+    {"name": "door_open", "unit": "rel", "initial": 0.0, "min": 0.0, "max": 1.0,
+     "description": "0/1. No free dynamics: moved by the transient_none (legitimate 4-minute stop) and door_seal_leak faults."},
+    {"name": "defrost_active", "unit": "rel", "initial": 0.0, "min": 0.0, "max": 1.0,
+     "description": "0/1. Scheduled defrosts transiently warm the coil; defrost_stuck_on pins it on for ~2 h (the near-sensor-pathology case)."},
+    {"name": "power_mode", "unit": "rel", "initial": 0.0, "min": 0.0, "max": 2.0,
+     "description": "0=shore, 1=genset (at sea), 2=none. Moves on power_transfer_gap. genset => an offline stretch is expected."},
+    {"name": "logged", "unit": "rel", "initial": 0.0, "min": 0.0, "max": 100.0,
+     "description": "Advisory-effector ledger: request_inspection and raise_excursion_report bump it so their effect is observable to the world. No free dynamics."},
+    {"name": "box_temp_true", "unit": "degC", "initial": -20.0, "min": -30.0, "max": 40.0,
+     "description": "The actual box temperature. Never observable directly; supply/return air channels observe it through noise. The regulated metric: crossing -18 C is an excursion."},
+    {"name": "excursion_minutes", "unit": "min", "initial": 0.0, "min": 0.0, "max": 100000.0,
+     "description": "Director-only ground truth: cumulative minutes the box spent above -18 C (threshold_integrator over box_temp_true). The number the scorer checks the agent's cumulative against. Never observed by any channel; the per-sample dwell indicator on supply_air_temp traces is derived from it."}
+  ],
+
+  "dynamics": [
+    {
+      "target": "setpoint_true",
+      "tier": "F0",
+      "f0": {"baseline": -20.0, "seasonality": [], "drift_per_hour": 0.0}
+    },
+    {
+      "target": "ambient_true",
+      "tier": "F0",
+      "f0": {
+        "baseline": 12.0,
+        "seasonality": [{"period_s": 86400, "amplitude": 6.0, "phase_rad": -1.6}],
+        "drift_per_hour": 0.0
+      }
+    },
+    {
+      "target": "door_open",
+      "tier": "F0",
+      "f0": {"baseline": 0.0, "seasonality": [], "drift_per_hour": 0.0}
+    },
+    {
+      "target": "defrost_active",
+      "tier": "F0",
+      "f0": {"baseline": 0.0, "seasonality": [], "drift_per_hour": 0.0}
+    },
+    {
+      "target": "power_mode",
+      "tier": "F0",
+      "f0": {"baseline": 0.0, "seasonality": [], "drift_per_hour": 0.0}
+    },
+    {
+      "target": "box_temp_true",
+      "tier": "F1",
+      "dt_ms": 1000,
+      "f1": {
+        "form": "first_order_lag",
+        "time_constant_s": 900,
+        "gain": 1.0,
+        "inputs": [
+          {"state": "setpoint_true", "coef": 1.0},
+          {"state": "ambient_true", "coef": 0.02},
+          {"state": "door_open", "coef": 12.0},
+          {"state": "defrost_active", "coef": 8.0}
+        ],
+        "clamp": {"min": -30.0, "max": 40.0}
+      }
+    },
+    {
+      "target": "excursion_minutes",
+      "tier": "F1",
+      "dt_ms": 1000,
+      "f1": {
+        "form": "threshold_integrator",
+        "threshold": -18.0,
+        "direction": "above",
+        "gain": 0.0166667,
+        "inputs": ["box_temp_true"],
+        "clamp": {"min": 0.0, "max": 100000.0}
+      }
+    }
+  ],
+
+  "channels": [
+    {
+      "name": "reefer.supply_air_temp",
+      "value_type": "number",
+      "unit": "degC",
+      "resolution": 0.1,
+      "range": {"min": -30.0, "max": 40.0},
+      "observes": "box_temp_true",
+      "description": "The regulated metric (the -18 C line). The one channel that carries the whole demo: link_delay store_and_forward buffers an ocean gap and replays it as a birth-burst on reconnect. Normalized traces enrich each reading with excursion_dwell_s (per-sample seconds above -18, derived from the director's excursion_minutes).",
+      "fidelity": "F1",
+      "iso13374_role": "data_acquisition",
+      "cadence": {"mode": "periodic", "period_s": 60, "jitter_s": 2},
+      "noise": {"model": "gaussian", "sigma": 0.2},
+      "drift": {"rate_per_hour": 0.0, "model": "linear"},
+      "absence": "normal",
+      "availability": {"uptime": 0.999, "mttr_s": 3600},
+      "link_delay": {"model": "store_and_forward", "mean_s": 5, "max_s": 50400}
+    },
+    {
+      "name": "reefer.return_air_temp",
+      "value_type": "number",
+      "unit": "degC",
+      "resolution": 0.1,
+      "range": {"min": -30.0, "max": 40.0},
+      "observes": "box_temp_true",
+      "description": "Load temperature; thermal mass context (lower noise than supply).",
+      "fidelity": "F1",
+      "iso13374_role": "data_acquisition",
+      "cadence": {"mode": "periodic", "period_s": 120, "jitter_s": 5},
+      "noise": {"model": "gaussian", "sigma": 0.1},
+      "absence": "normal",
+      "link_delay": {"model": "store_and_forward", "mean_s": 5, "max_s": 50400}
+    },
+    {
+      "name": "reefer.setpoint",
+      "value_type": "number",
+      "unit": "degC",
+      "resolution": 0.1,
+      "range": {"min": -30.0, "max": 10.0},
+      "observes": "setpoint_true",
+      "fidelity": "F1",
+      "iso13374_role": "data_acquisition",
+      "cadence": {"mode": "periodic", "period_s": 300, "jitter_s": 5},
+      "noise": {"model": "gaussian", "sigma": 0.05},
+      "absence": "normal",
+      "link_delay": {"model": "store_and_forward", "mean_s": 5, "max_s": 50400}
+    },
+    {
+      "name": "reefer.ambient_temp",
+      "value_type": "number",
+      "unit": "degC",
+      "resolution": 0.1,
+      "range": {"min": -5.0, "max": 45.0},
+      "observes": "ambient_true",
+      "description": "Outside temperature; explains a rise without a fault.",
+      "fidelity": "F1",
+      "iso13374_role": "data_acquisition",
+      "cadence": {"mode": "periodic", "period_s": 300, "jitter_s": 5},
+      "noise": {"model": "gaussian", "sigma": 0.1},
+      "absence": "normal",
+      "link_delay": {"model": "store_and_forward", "mean_s": 5, "max_s": 50400}
+    },
+    {
+      "name": "reefer.door_state",
+      "value_type": "string",
+      "enum_values": ["closed", "open"],
+      "resolution": 1.0,
+      "fidelity": "F0",
+      "iso13374_role": "data_manipulation",
+      "cadence": {"mode": "event_driven", "trigger_state": "door_open"},
+      "noise": {"model": "none", "sigma": 0},
+      "absence": "normal",
+      "link_delay": {"model": "constant", "mean_s": 2.0},
+      "description": "The confounder: an open door at a stop transiently spikes supply air."
+    },
+    {
+      "name": "reefer.defrost",
+      "value_type": "boolean",
+      "resolution": 1.0,
+      "fidelity": "F0",
+      "iso13374_role": "data_manipulation",
+      "cadence": {"mode": "event_driven", "trigger_state": "defrost_active"},
+      "noise": {"model": "none", "sigma": 0},
+      "absence": "normal",
+      "link_delay": {"model": "constant", "mean_s": 2.0},
+      "description": "Scheduled defrost transiently warms the coil - a second benign spike."
+    },
+    {
+      "name": "reefer.power_source",
+      "value_type": "string",
+      "enum_values": ["shore", "genset", "none"],
+      "resolution": 1.0,
+      "fidelity": "F0",
+      "iso13374_role": "data_manipulation",
+      "cadence": {"mode": "event_driven", "trigger_state": "power_mode"},
+      "noise": {"model": "none", "sigma": 0},
+      "absence": "normal",
+      "link_delay": {"model": "constant", "mean_s": 2.0},
+      "description": "shore / genset / none. genset = at sea, so a gap is expected."
+    },
+    {
+      "name": "reefer.link_state",
+      "value_type": "string",
+      "enum_values": ["online", "offline"],
+      "resolution": 1.0,
+      "fidelity": "F0",
+      "iso13374_role": "data_manipulation",
+      "cadence": {"mode": "event_driven", "trigger_state": "power_mode"},
+      "noise": {"model": "none", "sigma": 0},
+      "absence": "normal",
+      "link_delay": {"model": "constant", "mean_s": 1.0},
+      "description": "Liveness proxy. offline while buffering at sea (normal); a dead unit in port is NOT offline on purpose - the signal there is missing reporting when due."
+    }
+  ],
+
+  "faults": [
+    {
+      "id": "refrigeration_underperform",
+      "description": "The refrigeration unit underperforms: box temp slowly rises toward the -18 C line and beyond over hours. The genuine cumulative breach (moment 5).",
+      "onset": {"shape": "ramp", "rate_per_hour": 0.8, "magnitude": 14.0},
+      "affects": [{"state": "box_temp_true", "delta": 14.0}],
+      "observability": {"detector": {"form": "channel_divergence", "channel_a": "reefer.supply_air_temp", "channel_b": "reefer.setpoint"}, "first_observable_snr": 3.0, "unavoidable_snr": 10.0},
+      "expected_effector": "raise_excursion_report",
+      "deadline_s": 28800,
+      "counterfactual": {"if_no_action": "regulatory_finding", "if_action_by_deadline": "recovery"}
+    },
+    {
+      "id": "defrost_stuck_on",
+      "description": "The defrost heater sticks on: the coil warms for ~2 h, supply air spikes above -18 while the load stays cold. The near-sensor-pathology case - a transient that mimics an excursion (moments 4 & 7).",
+      "onset": {"shape": "step", "magnitude": 1.0},
+      "affects": [{"state": "defrost_active", "delta": 1.0}],
+      "observability": {"detector": {"form": "single_channel_snr", "channel": "reefer.supply_air_temp"}, "first_observable_snr": 3.0, "unavoidable_snr": 10.0},
+      "expected_effector": "adjust_setpoint",
+      "deadline_s": 14400,
+      "counterfactual": {"if_no_action": "false_report_risk", "if_action_by_deadline": "recovery"}
+    },
+    {
+      "id": "door_seal_leak",
+      "description": "A failed door seal lets ambient heat in steadily: sustained rise, real excursion risk over the voyage.",
+      "onset": {"shape": "ramp", "rate_per_hour": 0.4, "magnitude": 10.0},
+      "affects": [{"state": "box_temp_true", "delta": 10.0}],
+      "observability": {"detector": {"form": "single_channel_snr", "channel": "reefer.supply_air_temp"}, "first_observable_snr": 3.0, "unavoidable_snr": 10.0},
+      "expected_effector": "raise_excursion_report",
+      "deadline_s": 43200,
+      "counterfactual": {"if_no_action": "regulatory_finding", "if_action_by_deadline": "recovery"}
+    },
+    {
+      "id": "power_transfer_gap",
+      "description": "Genset-to-shore transfer: the unit is offline (store_and_forward buffering) for the transfer stretch. Produces the birth-burst on reconnect (moment 6).",
+      "onset": {"shape": "step", "magnitude": 1.0},
+      "affects": [{"state": "power_mode", "delta": 1.0}],
+      "observability": {"detector": {"form": "single_channel_snr", "channel": "reefer.link_state"}, "first_observable_snr": 3.0, "unavoidable_snr": 10.0},
+      "expected_effector": "request_inspection_at_next_port",
+      "deadline_s": 172800,
+      "counterfactual": {"if_no_action": "late_history", "if_action_by_deadline": "recovery"}
+    },
+    {
+      "id": "transient_none",
+      "description": "A legitimate 4-minute door opening at a stop. Supply air spikes above -18; the load never leaves the safe band. The false-positive trap: it looks like the start of an excursion for a few minutes.",
+      "is_negative_class": true,
+      "onset": {"shape": "intermittent", "magnitude": 1.0, "duty_cycle": 0.05},
+      "affects": [{"state": "door_open", "delta": 1.0}],
+      "observability": {"detector": {"form": "single_channel_snr", "channel": "reefer.supply_air_temp"}, "first_observable_snr": 3.0, "unavoidable_snr": 10.0}
+    }
+  ],
+
+  "effectors": [
+    {
+      "name": "adjust_setpoint",
+      "description": "Lower the commanded temperature. Slow-physical: dead time then a long settling constant. The cheap corrective for a building-but-sub-threshold cumulative.",
+      "args_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["reefer_id"],
+        "properties": {"reefer_id": {"type": "string"}, "setpoint_c": {"type": "number", "minimum": -30, "maximum": -10}}
+      },
+      "risk_class": "low",
+      "ack": {
+        "latency_ms": {"mean": 400, "sigma": 120},
+        "failure_modes": [
+          {"mode": "ok", "probability": 0.94},
+          {"mode": "slow", "probability": 0.03},
+          {"mode": "ack_lost", "probability": 0.02},
+          {"mode": "reject", "probability": 0.01}
+        ]
+      },
+      "confirmation_channels": ["reefer.setpoint"],
+      "effect": {
+        "state_deltas": [{"state": "setpoint_true", "delta": -2.0, "from_arg": "setpoint_c"}],
+        "time_constant_s": 1800,
+        "dead_time_s": 600
+      },
+      "idempotency_window_s": 7200
+    },
+    {
+      "name": "request_inspection_at_next_port",
+      "description": "Advisory: book a physical inspection at the next port. No state effect (near-noop on a logged state).",
+      "args_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["reefer_id"],
+        "properties": {"reefer_id": {"type": "string"}, "note": {"type": "string"}}
+      },
+      "risk_class": "low",
+      "ack": {
+        "latency_ms": {"mean": 200, "sigma": 60},
+        "failure_modes": [{"mode": "ok", "probability": 0.98}, {"mode": "ack_lost", "probability": 0.02}]
+      },
+      "effect": {
+        "state_deltas": [{"state": "logged", "delta": 1.0}],
+        "time_constant_s": 60,
+        "dead_time_s": 0
+      },
+      "idempotency_window_s": 86400
+    },
+    {
+      "name": "raise_excursion_report",
+      "description": "File the regulatory excursion report: 'cumulative time above -18 C exceeded 4 hours'. High blast radius - a false filing scraps a good load and triggers a needless claim. R2 on the Stream side: human approval required.",
+      "args_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["reefer_id"],
+        "properties": {"reefer_id": {"type": "string"}, "cumulative_minutes": {"type": "number"}, "note": {"type": "string"}}
+      },
+      "risk_class": "high",
+      "ack": {
+        "latency_ms": {"mean": 1500, "sigma": 400},
+        "failure_modes": [
+          {"mode": "ok", "probability": 0.88},
+          {"mode": "partial", "probability": 0.07},
+          {"mode": "reject", "probability": 0.05}
+        ]
+      },
+      "effect": {
+        "state_deltas": [{"state": "logged", "delta": 1.0}],
+        "time_constant_s": 60,
+        "dead_time_s": 0
+      },
+      "idempotency_window_s": 86400
+    }
+  ],
+
+  "profiles": [
+    {
+      "name": "nominal",
+      "description": "Twelve reefers at setpoint, one fault sampled per scenario, voyage-length traces spanning at least one ocean gap (14 h store_and_forward silence).",
+      "entity_count": 12,
+      "duration_s": 259200,
+      "setup": []
+    },
+    {
+      "name": "sensor_pathology",
+      "description": "Weighted toward defrost_stuck_on: the transient that mimics an excursion. The label a threshold rule gets wrong - the coil warms while the load stays cold.",
+      "fault_weights": {"defrost_stuck_on": 0.7, "transient_none": 0.3},
+      "entity_count": 12,
+      "duration_s": 259200,
+      "setup": []
+    },
+    {
+      "name": "correlated_cascade",
+      "description": "Port-wide reconnect: every reefer's power_source flips genset->shore at one instant and all buffers replay together. The birth-burst storm (scale check) - should trip a consumer's cost ceiling while ingress and the action plane survive.",
+      "fault_weights": {"power_transfer_gap": 1.0},
+      "entity_count": 12,
+      "simultaneous_entities": 12,
+      "duration_s": 172800,
+      "setup": []
+    }
+  ],
+
+  "ground_truth": {
+    "negative_class_fraction": 0.40,
+    "pre_degraded_fraction": 0.12,
+    "min_scenarios": 100,
+    "min_per_label": 10
+  }
+}

@@ -8,7 +8,7 @@ Streams Simulator (`streamsim`) is a standalone, deterministic, closed-loop worl
 
 It is a **test instrument**. An instrument less trustworthy than the system it measures is worse than no instrument, because it produces confident wrong answers. Determinism guarantees, generative ground truth, and analytic oracles come before features.
 
-The design is fully specified in [docs/](docs/README.md). The nine non-negotiables in the spec (determinism, analytic cross-check, reference consumer, delivery ledger, quiescence barrier, sealed oracle, injection probe, `silent_no_effect` test, trivial-baseline audit) are not negotiable.
+The design and evidence archive is maintained in [docs/](docs/README.md); the curated public documentation is in [documentation/](documentation/README.md). The nine non-negotiables in the spec (determinism, analytic cross-check, reference consumer, delivery ledger, quiescence barrier, sealed oracle, injection probe, `silent_no_effect` test, trivial-baseline audit) are not negotiable.
 
 ## Engineering Priorities
 
@@ -46,11 +46,11 @@ Use the prompt files under `.agents/prompts/` when the task matches them.
 ## Current Repository State
 
 - Module path: `github.com/ghassan-ai-projects/streams-simulator` (set).
-- Design is complete and committed under `docs/` (research, design, contracts, adapters, examples). Status: design, ready to build.
-- There is no `cmd/` tree yet.
-- There is no `internal/` tree yet.
-- The root scaffold package in [doc.go](doc.go) exists so Go tooling has something to operate on.
-- Implementation starts at stage S0 per [docs/design/IMPLEMENTATION_PLAN.md](docs/design/IMPLEMENTATION_PLAN.md). Commit to S0-S2 before anything else.
+- Design, research, contracts, and implementation evidence are maintained under `docs/`; public usage documentation is under `documentation/`.
+- The implementation includes `cmd/streamsim` and the `internal/` packages described below.
+- Six domains are committed in `domains/` and two adapters are committed in `adapters/`; the current working tree may contain additional untracked inputs that must be reconciled before release claims.
+- The root package in [doc.go](doc.go) remains so Go tooling has a stable module root.
+- Historical stage planning is in [docs/design/IMPLEMENTATION_PLAN.md](docs/design/IMPLEMENTATION_PLAN.md); current status and limitations are in [documentation/limitations.md](documentation/limitations.md).
 
 Do not invent architecture outside the documented design. The spec was written to be built as specified; deviations need a design change first.
 
@@ -64,9 +64,10 @@ The documented shape (see [docs/design/TECHNICAL_DESIGN.md](docs/design/TECHNICA
 - `internal/adapter` - declarative output adapters projecting native `sim-event-v0.1` into consumer wire formats
 - `internal/sink` - inproc, file, http-push sinks
 - `internal/mcp` - one MCP server, two roles: `director` (catalog, world, clock, fault, perturb, truth) and `operator` (nameplate, effectors, invoke, verdict)
-- `internal/ledger` - delivery ledger; distinguishes transport misses from reasoning misses
+- `internal/run` - run orchestration, delivery ledger, artifacts, replay, and quiescence; there is no separate `internal/ledger` package
 - `internal/truth` - sealed ground truth and scoring
-- `docs/` - the design, research, contracts, and examples (source of truth for behavior)
+- `docs/` - the engineering design, research, contracts, fixtures, and evidence archive
+- `documentation/` - curated public product, usage, architecture, benchmark, operations, and governance documentation
 
 Dependency direction:
 
@@ -91,8 +92,8 @@ Primary commands:
 
 Important behavior:
 
-- `make build` skips gracefully until `cmd/` exists.
-- `make test` and `go test ./...` operate on the root scaffold package until real packages exist.
+- `make build` builds `cmd/streamsim` into `bin/`.
+- `make test` and `go test ./...` exercise the implemented packages; inspect current limitations before treating a working-tree result as release evidence.
 - `make lint` depends on `golangci-lint` and may fail if the environment cannot write to its cache.
 
 See [.agents/context/testing.md](.agents/context/testing.md) for the testing and validation bar. The analytic cross-check (implement the integrator twice, assert agreement) is a non-negotiable correctness oracle, not a consistency check.

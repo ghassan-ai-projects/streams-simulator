@@ -1,5 +1,7 @@
 # Streams Simulator — Technical Design
 
+> **Archive status:** historical design record. The current implementation uses Go 1.25.12, file-based JSON/JSONL run artifacts, and the CLI surface documented under [`documentation/reference/cli.md`](../../documentation/reference/cli.md). Earlier SQLite, toolchain, and command examples below are retained for design provenance and are superseded where they conflict with [`docs/DECISIONS.md`](../DECISIONS.md) or the code.
+
 Status: design, ready for review
 Date: 2026-08-11
 Codename: `streamsim`

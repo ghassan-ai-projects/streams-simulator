@@ -27,7 +27,7 @@ HAS_MAIN := $(if $(MAIN_PKGS),yes,no)
 .DEFAULT_GOAL := help
 
 # ---- Phony declarations ---------------------------------------------------
-.PHONY: help all build vet fmt tidy lint lint-ci test test-short test-race \
+.PHONY: help all build vet fmt tidy lint lint-ci docs-check test test-short test-race \
         test-coverage ci-check deadcode vulncheck fuzz soak fuzz-soak perf \
         manifest clean run cross-compile
 
@@ -67,6 +67,8 @@ run: ## Run the binary (requires cmd/<name>/main.go)
 
 # Usage: make run ARGS="--flag value"
 ARGS ?=
+MANIFEST_AUTHOR ?=
+MANIFEST_REVIEWER ?=
 
 # ---- Quality --------------------------------------------------------------
 vet: ## Run go vet
@@ -92,6 +94,9 @@ lint: ## Run golangci-lint
 
 lint-ci: ## Run golangci-lint with full timeout (for CI)
 	golangci-lint run --timeout=5m
+
+docs-check: ## Validate documentation smoke commands and whitespace
+	./scripts/docs-check
 
 # ---- Test -----------------------------------------------------------------
 test: ## Run all tests with race + shuffle + coverage
@@ -133,7 +138,7 @@ test-coverage: ## Run tests and produce HTML coverage report
 	fi
 
 # ---- Pipeline -------------------------------------------------------------
-ci-check: tidy build vet lint-ci test-short test-simdet deadcode vulncheck fuzz-soak ## Run the full CI pipeline locally (matches .github/workflows/ci.yml)
+ci-check: docs-check tidy build vet lint-ci test-short test-simdet deadcode vulncheck fuzz-soak ## Run the full CI pipeline locally (matches .github/workflows/ci.yml)
 	@echo "  CI check passed"
 
 # ---- Tools ----------------------------------------------------------------
@@ -191,7 +196,8 @@ perf: ## Benchmarks for the emission and ledger paths
 
 manifest: ## Write release-manifest.json for the current commit
 	@if [ -d cmd ]; then \
-	  go run $(LDFLAGS) ./cmd/... manifest; \
+	  go run $(LDFLAGS) ./cmd/... manifest \
+	    --author "$(MANIFEST_AUTHOR)" --reviewer "$(MANIFEST_REVIEWER)"; \
 	else \
 	  echo "(no cmd/ directory yet -- nothing to manifest)"; \
 	fi

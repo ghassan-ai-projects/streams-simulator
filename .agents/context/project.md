@@ -8,19 +8,19 @@ It is a test instrument first. Determinism, sealed ground truth, and analytic or
 
 ## Current State
 
-- Design is complete and committed under `docs/` — research, design, contracts, adapters, examples. Status: design, ready to build.
+- The implementation is present under `cmd/streamsim` and `internal/`; the original S0–S6 plan is historical execution context.
+- The engineering archive is under [`docs/`](../../docs/README.md); the curated public documentation is under [`documentation/`](../../documentation/README.md).
 - Module path `github.com/ghassan-ai-projects/streams-simulator` is set.
-- There is no `cmd/` directory yet.
-- There are no `internal/*` packages yet.
-- The root [doc.go](../../doc.go) package exists so Go tooling has something to operate on.
-- Implementation begins at stage S0 of [docs/design/IMPLEMENTATION_PLAN.md](../../docs/design/IMPLEMENTATION_PLAN.md) (three decisions, ~half a day), then S1-S2 (sixteen days) to close the loop against the reference consumer.
+- Six domain files are committed, two adapters are committed, and the working tree may contain additional untracked inputs that must be reconciled before release claims.
+- The root [doc.go](../../doc.go) package remains so Go tooling has a stable module root.
+- Current implementation status and known limitations are in [`documentation/limitations.md`](../../documentation/limitations.md).
 
 ## What Agents Should Optimize For
 
 - Build the documented design; do not invent architecture outside it.
 - Keep the determinism boundary airtight. A run is a pure function of `(sim_version, domain_digest, adapter_digest, seed, command_log, sink)`.
 - Treat domains, adapters, and effectors as data. No per-domain code.
-- Preserve parity between prose, `Makefile`, CI, and the design docs.
+- Preserve parity between public documentation, `Makefile`, CI, contracts, and the implementation.
 - Prefer durable repo files over long always-loaded guidance.
 
 ## Main Risks
