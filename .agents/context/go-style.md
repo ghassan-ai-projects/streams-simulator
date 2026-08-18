@@ -28,7 +28,7 @@
 
 ## Avoid
 
-- persistence outside the documented SQLite WAL choice (see `docs/design/TECHNICAL_DESIGN.md`)
+- persistence abstractions beyond the current file-based JSON/JSONL artifact model without an accepted design change
 - `init()` outside configuration/bootstrap cases
 - global mutable state
 - "future-proof" interfaces or wrapper layers with no current consumer need

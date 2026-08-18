@@ -125,8 +125,9 @@ command, and never signals anything. Replay treats it as a record.
 
 ## Not built (deliberately, per the cut list)
 
-- Streamable HTTP transport for MCP (stdio is the default and the cut-list
-  item); `sim.clock.run` (continuous mode) maps to repeated `advance`.
+- A continuous `sim.clock.run` tool; continuous mode maps to repeated
+  `sim.clock.advance`. Streamable HTTP is implemented for the operator
+  endpoint, while the director remains on stdio.
 - F3/FMU co-simulation: the seam exists in the schema and cross-checks
   reject F3 specs with `not_implemented`.
 - F2 reference models (FAO-56 soil water balance and peers): the integrator
@@ -134,6 +135,6 @@ command, and never signals anything. Replay treats it as a record.
   rather than silently emitting a static state. Shipped domains use F0/F1,
   which the open-field-irrigation domain documents.
 - A broker sink: `not_implemented`.
-- The reference consumer over a live MCP endpoint: the CLI consumer is
-  observe-only over a trace; the in-process closed loop is exercised by
-  tests, and a full stdio session is a small follow-up.
+- A separate production consumer: the CLI reference consumer can use the live
+  operator endpoint via `--mcp`, and the closed loop is covered by tests, but
+  no external production consumer is shipped.

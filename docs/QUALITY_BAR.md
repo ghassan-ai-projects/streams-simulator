@@ -1,4 +1,6 @@
-# Streams Simulator completion bar
+# Streams Simulator implementation completion bar
+
+This is the engineering/release gate. The public documentation acceptance bar is [`../documentation/QUALITY_BAR.md`](../documentation/QUALITY_BAR.md). The current working tree must be revalidated before any historical Level 2 evidence is treated as a release claim.
 
 Status: **required release gate**
 Defined: 2026-08-11
@@ -7,7 +9,8 @@ Owner: Streams Simulator maintainers
 This document converts the implementation-readiness review into an executable definition of
 done. A feature is not complete because its package compiles or its nominal test passes. It
 is complete only when the production path, an invariant test, and the compliance checks below
-agree.
+agree. The evidence recorded later is historical and must be revalidated for the current
+working tree.
 
 ## Release levels
 
@@ -109,7 +112,7 @@ Before each commit:
 
 ## Current bar status
 
-Current status after the Level 2 push (slices A–G): **Level 2 — benchmark-ready**.
+Historical status after the Level 2 push (slices A–G): **claimed Level 2 evidence; revalidation required for the current working tree**.
 
 Level 1 evidence (committed in the correctness-hardening loop): `472a110`, `1bfa50c`,
 `8d21927`, `91b7eed`, `8945048`, `5366f5d`, `b1d58d1`, `36683c1`, `07b83e3`, `c2e5e16`,
@@ -124,10 +127,7 @@ all-delivery-path probe neutrality, full-tuple silent_no_effect, suite byte-iden
 and the release slice (fail-closed deadcode/govulncheck, fuzz/soak/perf targets, signed
 release manifest, cross-process determinism).
 
-Gates G1–G9 evidence, per the gate sections above, is committed and green on production
-paths: `make ci-check` passes **with** `deadcode` and `govulncheck` present (they fail
-closed when absent); bounded fuzzing runs in ci-check; `make soak` passes a deterministic
-million-record run with conservation and replay identity; `streamsim manifest` produces
-a signed release manifest with author and independent review identity; two spawned
-`streamsim run` processes produce byte-identical artifacts and verify across processes.
-No benchmark scores should be published without a fresh manifest for the exact commit.
+The G1–G9, soak, signing, and cross-process evidence described above is historical from the
+implementation push, not a current green claim. Re-run `make ci-check`, the slow checks, and
+`streamsim manifest` for the exact commit before relying on it. No benchmark scores should be
+published without a fresh manifest for the exact commit.

@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -102,8 +103,8 @@ Commands:
   refconsumer --trace <file>            Detect episodes in a trace; write verdict.json
                                         (--mcp <url> --token <t> --run <id> closes
                                         the loop over the operator endpoint)
-  suite generate --domain --profile     Generate an audited graded suite
-  score --run --verdict --label         Offline scorecard from artifacts
+  suite --domain --profile              Generate an audited graded suite
+  score --run --label                   Offline scorecard from artifacts
   manifest                              Write release-manifest.json (author +
                                         reviewer identity, optional ed25519)
   help
@@ -264,8 +265,8 @@ func cmdRun(args []string) error {
 	durationS := fs.Float64("duration", 6*3600, "run duration (seconds)")
 	startTime := fs.Int64("start-time", model.DefaultStartTimeNS, "world start (ns epoch)")
 	faults := fs.String("fault", "", "repeatable: entity=fault@offset_s")
-	perts := fs.String("perturb", "", "repeatable: name@from_s[-until_s]")
-	effectors := fs.String("effector", "", "repeatable: effector@entity@offset_s[=arg:val]")
+	perts := fs.String("perturb", "", "repeatable: name@from_s[@until_s]")
+	effectors := fs.String("effector", "", "repeatable: effector@entity@offset_s")
 	profile := fs.String("profile", "", "scenario profile")
 	if err := fs.Parse(args); err != nil {
 		return fmt.Errorf("streamsim: %w", err)
@@ -604,9 +605,9 @@ func cmdScore(args []string) error {
 	if err := loadJSON(label, &gt); err != nil {
 		return fmt.Errorf("streamsim: %w", err)
 	}
-	var ledger []model.LedgerRecord
-	if err := loadJSON(filepath.Join(dir, "ledger.jsonl"), &ledger); err != nil {
-		ledger = nil
+	ledger, err := loadLedger(filepath.Join(dir, "ledger.jsonl"))
+	if err != nil {
+		return fmt.Errorf("streamsim: %w", err)
 	}
 	var calls []world.EffectorCall
 	var perturbations []string
@@ -627,6 +628,31 @@ func loadJSON(path string, dst any) error {
 		return fmt.Errorf("decode %s: %w", path, err)
 	}
 	return nil
+}
+
+// loadLedger reads the newline-delimited delivery ledger written by Run.End.
+// A ledger is JSONL, not one JSON array; decoding it as a single JSON value
+// would silently discard delivery evidence from the offline score path.
+func loadLedger(path string) ([]model.LedgerRecord, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, fmt.Errorf("open ledger %s: %w", path, err)
+	}
+	defer func() { _ = f.Close() }()
+
+	dec := json.NewDecoder(f)
+	var ledger []model.LedgerRecord
+	for {
+		var record model.LedgerRecord
+		err := dec.Decode(&record)
+		if err == io.EOF {
+			return ledger, nil
+		}
+		if err != nil {
+			return nil, fmt.Errorf("decode ledger %s: %w", path, err)
+		}
+		ledger = append(ledger, record)
+	}
 }
 
 func printJSON(v any) error {

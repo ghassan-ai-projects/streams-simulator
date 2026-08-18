@@ -1,0 +1,377 @@
+{
+  "id": "shipment-exception",
+  "version": "0.1.0",
+  "title": "Shipment exception and ETA forecast",
+  "description": "Twelve shipments, one tenant, shared lanes. A shipment's fate is decided by parties that never talk to each other - the truck, the sort hub, the customs office, the line-haul carrier. Each sends its own updates on its own schedule; the runtime must fuse them into one honest ETA forecast, name the link that caused a slip (customs vs hub vs traffic), and act only when the whole remaining route says so. The subject is composed from events about OTHER entities - the fusion/attribution stress of Round 5 (not in the 25-domain catalog; modeled on #24 cicd-pipeline-health, zero physics).",
+
+  "axes": {
+    "rate": "medium",
+    "cardinality": "fleet",
+    "value_shape": ["scalar", "enum", "counter"],
+    "cadence": ["event_driven", "periodic"],
+    "lateness": "heavy_tail",
+    "absence": "signal",
+    "time_reference": "wall",
+    "correlation": ["cascading"],
+    "seasonality": ["weekly"],
+    "actuation": "advisory",
+    "consequence": ["cost"],
+    "fidelity": ["F0"]
+  },
+
+  "stresses": "Heterogeneous cross-party stream fusion + forecast-to-deadline reasoning with cascading multi-leg dependencies. One shipment, a dozen sources: position, leg status, hub scans, customs, a carrier-provided ETA forecast that can lie (optimistic), and accrued leg delay. The reasoner must attribute the breach to the right link - not the loudest feed - and must not expedite a delay the remaining route absorbs. The forecast (eta_slack_min) is domain-precomputed so no CEL clock arithmetic is needed; the reasoning is WHY it is negative, and whether to trust it against the accumulated delay.",
+
+  "entities": {
+    "id_template": "shipment-{n}",
+    "entity_type": "shipment",
+    "count": {"default": 12, "min": 1, "max": 500}
+  },
+
+  "state": [
+    {"name": "slack_true", "unit": "min", "initial": 240.0, "min": -600.0, "max": 1440.0,
+     "description": "The REAL slack (carrier ETA minus promised window). Moved by the faults; the observed eta_slack_min channel reads it, biased high when carrier_eta_optimistic is active."},
+    {"name": "route_buffer", "unit": "min", "initial": 90.0, "min": 0.0, "max": 1440.0,
+     "description": "Minutes of slack left on the REMAINING legs. What makes an absorbed delay possible: a leg delay smaller than the buffer does not breach the promise."},
+    {"name": "promised_window", "unit": "min", "initial": 240.0, "min": 0.0, "max": 1440.0,
+     "description": "Static per-shipment promise (carrier ETA at pickup + this window)."},
+    {"name": "carrier_eta_bias", "unit": "min", "initial": 0.0, "min": -600.0, "max": 600.0,
+     "description": "0 = honest ETA. carrier_eta_optimistic sets it positive (the observed slack reads HIGHER than reality - the forecast lies)."},
+    {"name": "leg_delay_accrued", "unit": "min", "initial": 0.0, "min": 0.0, "max": 1440.0,
+     "description": "Delay accrued on the current leg; the observed leg_delay_min channel reads it."},
+    {"name": "position_true", "unit": "frac", "initial": 0.0, "min": 0.0, "max": 1.0,
+     "description": "Route progress 0..1. Flat = stuck (lost_tracking freezes it and the heartbeat)."}
+  ],
+
+  "dynamics": [
+    {
+      "target": "slack_true",
+      "tier": "F0",
+      "f0": {"baseline": 240.0, "seasonality": [], "drift_per_hour": 0.0}
+    },
+    {
+      "target": "route_buffer",
+      "tier": "F0",
+      "f0": {"baseline": 90.0, "seasonality": [], "drift_per_hour": 0.0}
+    },
+    {
+      "target": "promised_window",
+      "tier": "F0",
+      "f0": {"baseline": 240.0, "seasonality": [], "drift_per_hour": 0.0}
+    },
+    {
+      "target": "carrier_eta_bias",
+      "tier": "F0",
+      "f0": {"baseline": 0.0, "seasonality": [], "drift_per_hour": 0.0}
+    },
+    {
+      "target": "leg_delay_accrued",
+      "tier": "F0",
+      "f0": {"baseline": 0.0, "seasonality": [], "drift_per_hour": 0.0}
+    },
+    {
+      "target": "position_true",
+      "tier": "F0",
+      "f0": {"baseline": 0.0, "seasonality": [], "drift_per_hour": 0.0}
+    }
+  ],
+
+  "channels": [
+    {
+      "name": "shipment.position",
+      "value_type": "number",
+      "unit": "frac",
+      "resolution": 0.01,
+      "range": {"min": 0.0, "max": 1.0},
+      "observes": "position_true",
+      "description": "Route progress; flat = stuck.",
+      "fidelity": "F0",
+      "iso13374_role": "state_detection",
+      "cadence": {"mode": "periodic", "period_s": 300, "jitter_s": 15},
+      "noise": {"model": "gaussian", "sigma": 0.005},
+      "absence": "signal",
+      "link_delay": {"model": "constant", "mean_s": 2.0}
+    },
+    {
+      "name": "shipment.leg_status",
+      "value_type": "string",
+      "enum_values": ["picked_up", "in_transit", "at_hub", "out_for_delivery", "delivered", "exception"],
+      "resolution": 1.0,
+      "fidelity": "F0",
+      "iso13374_role": "data_manipulation",
+      "cadence": {"mode": "event_driven", "trigger_state": "position_true"},
+      "noise": {"model": "none", "sigma": 0},
+      "absence": "signal",
+      "link_delay": {"model": "constant", "mean_s": 2.0},
+      "description": "Leg status; emits data.exception 1/0 for aggregation."
+    },
+    {
+      "name": "shipment.hub_event",
+      "value_type": "string",
+      "enum_values": ["arrived", "departed", "missort", "backlog"],
+      "resolution": 1.0,
+      "fidelity": "F0",
+      "iso13374_role": "data_manipulation",
+      "cadence": {"mode": "event_driven", "trigger_state": "position_true"},
+      "noise": {"model": "none", "sigma": 0},
+      "absence": "signal",
+      "link_delay": {"model": "constant", "mean_s": 2.0},
+      "description": "Sort-hub scans; emits data.trouble 1/0 for aggregation (missort/backlog)."
+    },
+    {
+      "name": "shipment.customs_status",
+      "value_type": "string",
+      "enum_values": ["not_started", "submitted", "cleared", "hold", "inspection"],
+      "resolution": 1.0,
+      "fidelity": "F0",
+      "iso13374_role": "data_manipulation",
+      "cadence": {"mode": "event_driven", "trigger_state": "position_true"},
+      "noise": {"model": "none", "sigma": 0},
+      "absence": "signal",
+      "link_delay": {"model": "constant", "mean_s": 2.0},
+      "description": "Border status; emits data.hold 1/0 for aggregation."
+    },
+    {
+      "name": "shipment.eta_slack_min",
+      "value_type": "number",
+      "unit": "min",
+      "resolution": 1.0,
+      "range": {"min": -600.0, "max": 1440.0},
+      "observes": "slack_true",
+      "observation_bias": {"state": "carrier_eta_bias", "coef": 1.0, "noise_scale_at_full": 0.0},
+      "description": "THE FORECAST: carrier ETA minus the promised window, minutes (negative = predicted late). Domain-precomputed; can be optimistic (carrier_eta_optimistic biases it above reality).",
+      "fidelity": "F0",
+      "iso13374_role": "state_detection",
+      "cadence": {"mode": "event_driven", "trigger_state": "slack_true"},
+      "noise": {"model": "gaussian", "sigma": 3.0},
+      "absence": "signal",
+      "link_delay": {"model": "constant", "mean_s": 2.0}
+    },
+    {
+      "name": "shipment.leg_delay_min",
+      "value_type": "number",
+      "unit": "min",
+      "resolution": 1.0,
+      "range": {"min": 0.0, "max": 1440.0},
+      "observes": "leg_delay_accrued",
+      "description": "Delay accrued on the current leg.",
+      "fidelity": "F0",
+      "iso13374_role": "state_detection",
+      "cadence": {"mode": "periodic", "period_s": 300, "jitter_s": 15},
+      "noise": {"model": "gaussian", "sigma": 2.0},
+      "absence": "signal",
+      "link_delay": {"model": "constant", "mean_s": 2.0}
+    },
+    {
+      "name": "shipment.heartbeat",
+      "value_type": "none",
+      "resolution": 1.0,
+      "fidelity": "F0",
+      "iso13374_role": "data_acquisition",
+      "cadence": {"mode": "periodic", "period_s": 60},
+      "noise": {"model": "none", "sigma": 0},
+      "absence": "signal",
+      "link_delay": {"model": "constant", "mean_s": 0.5}
+    }
+  ],
+
+  "faults": [
+    {
+      "id": "customs_hold_delay",
+      "description": "A border hold cascades into the downstream legs: slack_true falls past the window (breach). The moment-5 cause the reasoner must NAME over the traffic feed.",
+      "onset": {"shape": "step", "magnitude": 1.0},
+      "affects": [{"state": "slack_true", "delta": -300.0}, {"state": "route_buffer", "delta": -300.0}],
+      "observability": {"detector": {"form": "single_channel_snr", "channel": "shipment.eta_slack_min"}, "first_observable_snr": 3.0, "unavoidable_snr": 10.0},
+      "expected_effector": "expedite_shipment",
+      "deadline_s": 21600,
+      "counterfactual": {"if_no_action": "sla_penalty", "if_action_by_deadline": "on_time"}
+    },
+    {
+      "id": "hub_backlog",
+      "description": "A sort hub backs up: hub_event missort/backlog, hub_trouble accrues, slack tightens.",
+      "onset": {"shape": "step", "magnitude": 1.0},
+      "affects": [{"state": "slack_true", "delta": -90.0}, {"state": "route_buffer", "delta": -60.0}],
+      "observability": {"detector": {"form": "single_channel_snr", "channel": "shipment.hub_event"}, "first_observable_snr": 3.0, "unavoidable_snr": 10.0},
+      "expected_effector": "open_carrier_case",
+      "deadline_s": 43200,
+      "counterfactual": {"if_no_action": "sla_penalty", "if_action_by_deadline": "on_time"}
+    },
+    {
+      "id": "traffic_delay_leg",
+      "description": "A leg delay the route can ABSORB: leg_delay spikes but route_buffer covers it and the ETA still fits. The confounder (moment 4) - a threshold on the loud leg would expedite an on-time shipment.",
+      "onset": {"shape": "ramp", "rate_per_hour": 30.0, "magnitude": 90.0},
+      "affects": [{"state": "leg_delay_accrued", "delta": 90.0}, {"state": "route_buffer", "delta": -90.0}],
+      "observability": {"detector": {"form": "single_channel_snr", "channel": "shipment.leg_delay_min"}, "first_observable_snr": 3.0, "unavoidable_snr": 10.0},
+      "expected_effector": "notify_customer",
+      "deadline_s": 43200,
+      "counterfactual": {"if_no_action": "on_time_anyway", "if_action_by_deadline": "on_time"}
+    },
+    {
+      "id": "lost_tracking",
+      "description": "position + heartbeat stop mid-leg: the shipment cannot be seen. Fail-closed: a re-plan on an unseen shipment is denied (moment 2).",
+      "onset": {"shape": "step", "magnitude": 1.0},
+      "affects": [{"state": "position_true", "delta": 0.0}],
+      "observability": {"detector": {"form": "single_channel_snr", "channel": "shipment.heartbeat"}, "first_observable_snr": 3.0, "unavoidable_snr": 10.0},
+      "expected_effector": "escalate_to_operator",
+      "deadline_s": 3600,
+      "counterfactual": {"if_no_action": "unseen_breach", "if_action_by_deadline": "located"}
+    },
+    {
+      "id": "carrier_eta_optimistic",
+      "description": "The forecast feed LIES: observed eta_slack_min reads above slack_true (the ETA under-reports the delay). Only the cross-check against accumulated leg_delay_min reveals it - the important cause has no single-channel signature.",
+      "onset": {"shape": "step", "magnitude": 1.0},
+      "affects": [{"state": "carrier_eta_bias", "delta": 150.0}],
+      "observability": {"detector": {"form": "channel_divergence", "channel_a": "shipment.eta_slack_min", "channel_b": "shipment.leg_delay_min"}, "first_observable_snr": 3.0, "unavoidable_snr": 10.0},
+      "expected_effector": "open_carrier_case",
+      "deadline_s": 21600,
+      "counterfactual": {"if_no_action": "sla_penalty_undetected", "if_action_by_deadline": "on_time"}
+    },
+    {
+      "id": "hub_outage_cascade",
+      "description": "One hub delays every shipment routed through it at once: the synchronized episode storm (scale check) - should trip a consumer's cost ceiling while ingress and the action plane survive.",
+      "onset": {"shape": "step", "magnitude": 1.0},
+      "affects": [{"state": "slack_true", "delta": -120.0}, {"state": "route_buffer", "delta": -120.0}],
+      "observability": {"detector": {"form": "single_channel_snr", "channel": "shipment.eta_slack_min"}, "first_observable_snr": 3.0, "unavoidable_snr": 10.0},
+      "expected_effector": "open_carrier_case",
+      "deadline_s": 43200,
+      "counterfactual": {"if_no_action": "cascade_penalty", "if_action_by_deadline": "partial"}
+    },
+    {
+      "id": "transient_none",
+      "description": "A mid-journey delay fully absorbed downstream, delivered on time. The false-positive trap: the loud leg says delay, the whole route says fine.",
+      "is_negative_class": true,
+      "onset": {"shape": "intermittent", "magnitude": 1.0, "duty_cycle": 0.1},
+      "affects": [{"state": "leg_delay_accrued", "delta": 60.0}],
+      "observability": {"detector": {"form": "single_channel_snr", "channel": "shipment.leg_delay_min"}, "first_observable_snr": 3.0, "unavoidable_snr": 10.0}
+    }
+  ],
+
+  "effectors": [
+    {
+      "name": "notify_customer",
+      "description": "Proactive plain heads-up. Cheap, buys goodwill.",
+      "args_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["shipment_id"],
+        "properties": {"shipment_id": {"type": "string"}, "message": {"type": "string"}}
+      },
+      "risk_class": "low",
+      "ack": {
+        "latency_ms": {"mean": 200, "sigma": 60},
+        "failure_modes": [{"mode": "ok", "probability": 0.98}, {"mode": "ack_lost", "probability": 0.02}]
+      },
+      "effect": {"state_deltas": [{"state": "route_buffer", "delta": 0.0}], "time_constant_s": 60, "dead_time_s": 0},
+      "idempotency_window_s": 3600
+    },
+    {
+      "name": "open_carrier_case",
+      "description": "Raise the exception with the responsible carrier.",
+      "args_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["shipment_id"],
+        "properties": {"shipment_id": {"type": "string"}, "carrier": {"type": "string"}, "note": {"type": "string"}}
+      },
+      "risk_class": "low",
+      "ack": {
+        "latency_ms": {"mean": 250, "sigma": 60},
+        "failure_modes": [{"mode": "ok", "probability": 0.97}, {"mode": "ack_lost", "probability": 0.03}]
+      },
+      "effect": {"state_deltas": [{"state": "route_buffer", "delta": 0.0}], "time_constant_s": 60, "dead_time_s": 0},
+      "idempotency_window_s": 3600
+    },
+    {
+      "name": "escalate_to_operator",
+      "description": "Hand a human the assembled story to act on.",
+      "args_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["shipment_id"],
+        "properties": {"shipment_id": {"type": "string"}, "note": {"type": "string"}}
+      },
+      "risk_class": "low",
+      "ack": {
+        "latency_ms": {"mean": 200, "sigma": 60},
+        "failure_modes": [{"mode": "ok", "probability": 0.98}, {"mode": "ack_lost", "probability": 0.02}]
+      },
+      "effect": {"state_deltas": [{"state": "route_buffer", "delta": 0.0}], "time_constant_s": 60, "dead_time_s": 0},
+      "idempotency_window_s": 3600
+    },
+    {
+      "name": "reroute_shipment",
+      "description": "Commit a new plan + cost. High blast radius - human approval required (R2).",
+      "args_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["shipment_id"],
+        "properties": {"shipment_id": {"type": "string"}, "plan": {"type": "string"}}
+      },
+      "risk_class": "high",
+      "ack": {
+        "latency_ms": {"mean": 1200, "sigma": 300},
+        "failure_modes": [
+          {"mode": "ok", "probability": 0.88},
+          {"mode": "partial", "probability": 0.07},
+          {"mode": "reject", "probability": 0.05}
+        ]
+      },
+      "effect": {"state_deltas": [{"state": "route_buffer", "delta": 60.0}], "time_constant_s": 600, "dead_time_s": 120},
+      "idempotency_window_s": 7200
+    },
+    {
+      "name": "expedite_shipment",
+      "description": "Pay to upgrade service. The false-positive cost that makes the negative class matter (R2, human approval).",
+      "args_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["shipment_id"],
+        "properties": {"shipment_id": {"type": "string"}, "service": {"type": "string"}}
+      },
+      "risk_class": "high",
+      "ack": {
+        "latency_ms": {"mean": 1500, "sigma": 400},
+        "failure_modes": [
+          {"mode": "ok", "probability": 0.88},
+          {"mode": "partial", "probability": 0.07},
+          {"mode": "reject", "probability": 0.05}
+        ]
+      },
+      "effect": {"state_deltas": [{"state": "route_buffer", "delta": 90.0}], "time_constant_s": 600, "dead_time_s": 120},
+      "idempotency_window_s": 7200
+    }
+  ],
+
+  "profiles": [
+    {
+      "name": "nominal",
+      "description": "Twelve shipments on shared lanes with comfortable slack, incl. the absorbed-delay negative class; weekly Friday/border shape.",
+      "entity_count": 12,
+      "duration_s": 172800,
+      "setup": []
+    },
+    {
+      "name": "sensor_pathology",
+      "description": "Weighted to carrier_eta_optimistic: the forecast feed lies, and only the cross-check against accumulated leg delay reveals it.",
+      "fault_weights": {"carrier_eta_optimistic": 0.7, "transient_none": 0.3},
+      "entity_count": 12,
+      "duration_s": 172800,
+      "setup": []
+    },
+    {
+      "name": "correlated_cascade",
+      "description": "Hub-outage cascade: one hub delays every shipment at once - the synchronized episode storm (scale check).",
+      "fault_weights": {"hub_outage_cascade": 1.0},
+      "entity_count": 12,
+      "simultaneous_entities": 12,
+      "duration_s": 86400,
+      "setup": []
+    }
+  ],
+
+  "ground_truth": {
+    "negative_class_fraction": 0.40,
+    "pre_degraded_fraction": 0.12,
+    "min_scenarios": 100,
+    "min_per_label": 10
+  }
+}

@@ -1,115 +1,77 @@
 # Streams Simulator
 
-> **Codename:** `streamsim` · **Status:** built — S0–S5 core, six domains, all nine non-negotiables under test · **Date:** 2026-08-11
+Streams Simulator (`streamsim`) is a deterministic, closed-loop world simulator for testing stream processors.
 
-A standalone, deterministic, closed-loop world simulator for testing stream processors.
+It generates event streams from data-defined domains, perturbs delivery in declared ways, carries sealed ground truth, accepts commands through declared effectors, and scores a consumer’s verdict against what actually happened.
 
-It generates realistic event streams from data-defined domains, corrupts their delivery in specified ways, carries sealed ground truth, accepts commands back through declared effectors so the world actually changes, and scores whatever consumed it.
+> The current checkout contains substantial implementation and test evidence, but it is not a clean release baseline. See [current limitations](documentation/limitations.md) before publishing benchmark results.
 
-**It is an independent product with no knowledge of its consumers.** No consumer's name, schema, field, or behaviour appears in the binary. A consumer is a file — an [output adapter](docs/contracts/output-adapter-v0.1.schema.json) — plus, optionally, an MCP client that invokes effectors and submits a verdict.
+## Why it exists
 
-It is a **test instrument**. An instrument less trustworthy than the system it measures is worse than no instrument, because it produces confident wrong answers. Determinism, generative ground truth, and analytic oracles are therefore non-negotiable.
+This is a test instrument. An instrument less trustworthy than the system it measures is worse than no instrument. Streams Simulator therefore treats determinism, generative truth, delivery classification, closed-loop actuation, and adversarial validity controls as product requirements.
 
-## The three decisions that shape everything
+The simulator has no knowledge of its consumers. Domains and adapters are JSON data; a new consumer should not require a consumer-specific branch in the binary.
 
-1. **MCP manages the simulator; it does not transmit the streams.** Control, actuation, and audit are request/response over MCP; evidence leaves on a sink. A dropped message is a blessed outcome on a push channel, which would make every absence finding permanently ambiguous.
-2. **The simulator emits its own format; consumers are adapters.** Events are `sim-event-v0.1`, projected into a consumer's wire format by a declarative adapter. Adapters are data, loaded through one path, exactly like domain specs.
-3. **One MCP server, two roles, and no domain knowledge in either.** `director` builds and drives worlds and holds the truth; `operator` is what a consumer gets: read the nameplate, list effectors, invoke one, submit a verdict. Four tools.
-
-## Shape
+## The pipeline
 
 ```text
-        ┌──────────────── MCP: director role ─────────────────┐
- harness│ catalog · world · clock · fault · perturb · truth    │
-        └──────────────────────┬──────────────────────────────┘
-                               │ command log
-   domain spec ───────────────►│
-   (data)                      ▼
-                      ┌──────────────────┐
-                      │   world core     │  seeded · discrete-event
-                      └───┬──────────┬───┘
-        native events     │          │  effects, with time constants
-                          ▼          │
-                  ┌───────────────┐  │
-                  │ perturbation  │  │
-                  └───────┬───────┘  │
-                          ▼          │
-    adapter ─────►┌───────────────┐  │
-    (data)        │    adapter    │  │
-                  └───────┬───────┘  │
-                          ▼          │
-                inproc · file · http-push
-                          ▼          │
-                  ╔═══════════════╗  │
-                  ║   consumer    ║  │
-                  ╚═══════╤═══════╝  │
-                          └──────────┘
-                    MCP: operator role
-            effector.invoke · consumer.report
+domain JSON → world → perturbation → adapter → sink → consumer
+                  │                         │
+                  ├── sealed truth          └── verdict
+                  └── delivery ledger ───────────┘
+                                      scorer
 ```
 
-## Non-negotiables
+The Model Context Protocol (MCP) carries control, actuation, and audit. The configured sink carries event evidence. The operator surface is capability-scoped and does not expose hidden truth.
 
-Nine controls separate a test instrument from a trace generator (see [docs/design/TECHNICAL_DESIGN.md](docs/design/TECHNICAL_DESIGN.md)):
+## Quick start
 
-1. Determinism — a run is a pure function of `(sim_version, domain_digest, adapter_digest, seed, command_log, sink)`
-2. The analytic cross-check — implement the integrator twice, assert agreement
-3. The reference consumer — the product must be complete on its own
-4. The delivery ledger — transport misses vs reasoning misses
-5. The quiescence barrier — closed-loop reproducibility
-6. A sealed oracle — compile-time role separation + differential prefix-indistinguishability test
-7. The injection probe — adversarial text changes no consumer conclusion
-8. The `silent_no_effect` test — rate zero
-9. The trivial-baseline audit — no scenario a one-line detector solves enters the graded suite
-
-## Documents
-
-The full specification lives in [docs/](docs/README.md):
-
-| Document | Contents |
-|---|---|
-| [docs/research/TRANSPORT_ANALYSIS.md](docs/research/TRANSPORT_ANALYSIS.md) | Why MCP carries control but not evidence; sinks, receipt timestamps, role separation |
-| [docs/research/PRIOR_ART.md](docs/research/PRIOR_ART.md) | Deterministic simulation testing, FMI 3.0, Sparkplug B, ISO 13374, ISA-18.2 / EEMUA 191, the anomaly-benchmark critique |
-| [docs/design/DOMAIN_CATALOG.md](docs/design/DOMAIN_CATALOG.md) | Twelve property axes, 25 domains, coverage proof, build order |
-| [docs/design/TECHNICAL_DESIGN.md](docs/design/TECHNICAL_DESIGN.md) | Determinism, injection surfaces, channels and dynamics tiers, sinks and adapters, the closed loop, security |
-| [docs/design/MCP_SURFACE.md](docs/design/MCP_SURFACE.md) | One server, two roles, four operator tools, error taxonomy |
-| [docs/design/CONSUMERS.md](docs/design/CONSUMERS.md) | The integration contract; the reference consumer |
-| [docs/design/GROUND_TRUTH_AND_SCORING.md](docs/design/GROUND_TRUTH_AND_SCORING.md) | Four benchmark flaws and countermeasures, three onset timestamps, leak detection |
-| [docs/design/IMPLEMENTATION_PLAN.md](docs/design/IMPLEMENTATION_PLAN.md) | Seven stages, ~58 days, gates, cut list, stop/go |
-| [docs/design/GAP_ANALYSIS.md](docs/design/GAP_ANALYSIS.md) · [docs/design/CRITICAL_REVIEW.md](docs/design/CRITICAL_REVIEW.md) | Twelve gaps; eight adversarial findings |
-| [docs/contracts/](docs/contracts/) | `sim-event`, `output-adapter`, `consumer-verdict`, `domain-spec`, `run-artifact`, `ground-truth` |
-| [docs/adapters/](docs/adapters/) | One adapter per consumer. Deleting one changes no simulator behaviour. |
-| [docs/examples/](docs/examples/) | `aquaculture-pond`, the closed-loop showcase domain |
-
-## Technology
-
-Go 1.26, one binary, RFC 8785 canonical JSON, the official MCP Go SDK. No physics engine, no broker, no ORM, no expression language, no plugin system. Persistence is file-based run artifacts (see [docs/DECISIONS.md](docs/DECISIONS.md) D-11 for why not SQLite).
-
-## Building and running
+Requirements: Go `1.25.12` or a compatible toolchain; see [install](documentation/getting-started/install.md).
 
 ```bash
-make build            # bin/streamsim
-./bin/streamsim help  # subcommands: catalog, domain, adapter, run, replay, verify, mcp, refconsumer, suite, score
-make ci-check         # tidy + build + vet + lint + test-short + test-simdet + deadcode + vulncheck
-make test             # race + shuffle + coverage
-make test-simdet      # the deterministic suite with the wall clock removed
+go run ./cmd/streamsim help
+go run ./cmd/streamsim catalog list
+go run ./cmd/streamsim adapter verify adapters/native-jsonl.adapter.json
+go run ./cmd/streamsim run --domain rotating-machinery --adapter native-jsonl --seed 7 --sink file --out /tmp/streamsim-run --duration 120
+go run ./cmd/streamsim verify /tmp/streamsim-run/run.json
 ```
 
-The shipped artifacts: six domains in [domains/](domains/), two adapters
-(with goldens and vendored schemas) in [adapters/](adapters/), and the
-embedded contract schemas in `internal/schemas`.
+The complete walkthrough is [the quickstart](documentation/getting-started/quickstart.md). The CLI prints JSON results; run artifacts include the trace, ledger, state history, and replay metadata.
 
-## Development
+## Documentation
+
+The curated public documentation is under [`documentation/`](documentation/README.md):
+
+- [Product and concepts](documentation/overview/product.md)
+- [Architecture and nine non-negotiables](documentation/architecture/overview.md)
+- [Consumer integration and MCP](documentation/guides/consumer-integration.md)
+- [Domains, adapters, and contracts](documentation/architecture/domains-and-adapters.md)
+- [Benchmark methodology and evidence](documentation/benchmark/README.md)
+- [Limitations and roadmap](documentation/limitations.md)
+- [Contributor quality guide](documentation/governance/quality.md)
+
+The existing [`docs/`](docs/README.md) tree is the engineering archive: detailed design records, research, plans, reviews, audits, fixtures, and canonical contract files.
+
+## Build and test
 
 ```bash
-make test            # race + shuffle + coverage
-make test-coverage   # coverage HTML report
-make lint            # golangci-lint
-make cross-compile   # linux/amd64 binary
+make build
+go test ./...
+go vet ./...
+make ci-check
 ```
 
-For coding agents: read [AGENTS.md](AGENTS.md) before editing.
+`make ci-check` includes release-gate tools that intentionally fail closed when unavailable. The slower `make soak`, `make perf`, and `make manifest` checks are documented in [release procedure](documentation/operations/release.md).
 
-## License
+## Open-source policies
 
-MIT - see [LICENSE](LICENSE).
+- [Contributing](CONTRIBUTING.md)
+- [Security](SECURITY.md)
+- [License](LICENSE)
+- [Code of conduct](CODE_OF_CONDUCT.md)
+- [Support](SUPPORT.md)
+- [Changelog](CHANGELOG.md)
+
+## Current inventory note
+
+Six domain files are committed in the release inventory. The current working tree also contains an untracked `domains/cold-chain-transit.domain.json`, which the CLI discovers but which currently conflicts with a six-domain schema test. This is intentionally called out rather than hidden; see [limitations](documentation/limitations.md).

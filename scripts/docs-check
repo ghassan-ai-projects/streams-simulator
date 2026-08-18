@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+
+set -eu
+
+repo_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+cd "$repo_root"
+
+git diff --check
+
+cache_dir=${TMPDIR:-/tmp}/streams-simulator-gocache
+mkdir -p "$cache_dir"
+
+# These commands are the copyable public smoke paths. Keep them here so a
+# renamed command fails the documentation check instead of drifting silently.
+GOCACHE="$cache_dir" go run ./cmd/streamsim help >/dev/null 2>&1
+GOCACHE="$cache_dir" go run ./cmd/streamsim catalog list >/dev/null 2>&1
+GOCACHE="$cache_dir" go run ./cmd/streamsim adapter list >/dev/null 2>&1
+
+# Keep the public entry points present; relative links and Mermaid diagrams are
+# reviewed from the Markdown source without fetching network URLs.
+for required in \
+  documentation/README.md \
+  documentation/QUALITY_BAR.md \
+  documentation/getting-started/quickstart.md \
+  documentation/reference/cli.md \
+  documentation/reference/mcp.md \
+  documentation/limitations.md; do
+  test -f "$required"
+done
+
+echo "documentation checks passed"

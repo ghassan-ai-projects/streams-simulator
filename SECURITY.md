@@ -8,7 +8,7 @@ Security fixes should target `main` unless the maintainers document release bran
 
 Do not open a public issue for a suspected vulnerability.
 
-Report privately through GitHub's private vulnerability reporting if enabled for the repository. If it is not enabled, contact the maintainers using the private security contact listed by the adopting project.
+Report privately through [GitHub private vulnerability reporting](https://github.com/ghassan-ai-projects/streams-simulator/security/advisories/new) when it is enabled. This repository does not currently publish a secondary private email or contact channel. If the advisory path is unavailable, do not open a public issue; ask a repository owner to provide a private channel before disclosure.
 
 Include:
 
@@ -21,7 +21,7 @@ Include:
 
 This project keeps these controls enabled:
 
-- `gosec`, `govulncheck`, `go vet`, and race-enabled tests in CI.
+- `govulncheck`, `go vet`, and race-enabled tests in CI. `gosec` is not currently a CI gate.
 - Pre-commit hooks for file hygiene, formatting, vetting, imports, and linting.
 - Secret scanning and branch protection in the hosting platform.
 - Least-privilege tokens for CI and automation.

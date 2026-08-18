@@ -30,6 +30,7 @@ A change is done when:
 - Production-code behavior changes include meaningful tests, and modified packages do not show 0% coverage.
 - When feasible, production-code behavior changes start with a failing or expectation-setting test.
 - `make ci-check` passes, unless the change is documentation-only and a narrower check is clearly sufficient.
+- `make docs-check` passes when documentation, commands, workflows, or public status claims change.
 - `git diff --check` passes, and `pre-commit run --all-files` passes when `pre-commit` is installed.
 - Documentation is updated when behavior, commands, setup, or agent expectations change.
 - Secrets are not added, security-sensitive changes are called out, and dependency or workflow permission changes receive extra review.
@@ -38,6 +39,7 @@ A change is done when:
 
 ```bash
 make help
+make docs-check
 make ci-check
 ```
 
