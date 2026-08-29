@@ -80,7 +80,10 @@ func TestEmbeddedDomainSchemaValidatesAllShippedDomains(t *testing.T) {
 			}
 		})
 	}
-	if count != 6 {
-		t.Fatalf("expected six shipped domains, found %d", count)
+	// The count guard only ensures the glob actually found domains to validate;
+	// the per-file subtests above are the real assertion. Do not hard-code an
+	// exact number here — every new shipped domain would break it for no reason.
+	if count == 0 {
+		t.Fatalf("found no shipped domains to validate in %s", domainsDir)
 	}
 }
