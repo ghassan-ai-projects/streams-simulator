@@ -215,7 +215,11 @@ func (d *Device) ApplyCommand(command map[string]any) Outcome {
 	target, _ := command["target"].(string)
 	operation, _ := command["operation"].(string)
 	params := numericParams(command["parameters"])
-	value, energized := d.plant.Apply(target, operation, params)
+	effect := d.plant.Apply(PlantCommand{
+		Target: target, Operation: operation, Params: params,
+		CommandID: commandID, AtMicros: now,
+	})
+	value, energized := effect.Value, effect.Energized
 	if d.faults.Stuck {
 		energized = false
 	}
