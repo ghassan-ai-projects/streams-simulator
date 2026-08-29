@@ -69,6 +69,8 @@ func Main(args []string) int {
 		err = cmdScore(rest)
 	case "manifest":
 		err = cmdManifest(rest)
+	case "device":
+		err = cmdDevice(rest)
 	case "help", "-h", "--help":
 		usage()
 		return 0
@@ -107,6 +109,9 @@ Commands:
   score --run --label                   Offline scorecard from artifacts
   manifest                              Write release-manifest.json (author +
                                         reviewer identity, optional ed25519)
+  device serve --socket <path>          Serve the serial device emulator over a
+                                        UDS (the HIL-0 gateway link: command/
+                                        receipt/result/state wire contract)
   help
 `)
 }

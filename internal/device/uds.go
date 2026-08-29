@@ -19,11 +19,19 @@ import (
 // Raw serial framing (COBS, checksums, reconnect, device identity) is a gateway
 // concern; this NDJSON line framing is the debug/emulator transport.
 func ServeConn(conn io.ReadWriter, d *Device) error {
+	return ServeConnWithFaults(conn, d, WireFaults{})
+}
+
+// ServeConnWithFaults is ServeConn with a deterministic transport-fault plan
+// applied to the outbound frames (state/receipt/result), indexed by emission
+// order across the connection. See WireFaults.
+func ServeConnWithFaults(conn io.ReadWriter, d *Device, faults WireFaults) error {
+	gate := newWireGate(conn, faults)
 	stateFrame, err := EncodeRecord(d.State())
 	if err != nil {
 		return fmt.Errorf("device: encode initial state: %w", err)
 	}
-	if _, err := conn.Write(stateFrame); err != nil {
+	if err := gate.send(stateFrame); err != nil {
 		return fmt.Errorf("device: write initial state: %w", err)
 	}
 
@@ -43,7 +51,7 @@ func ServeConn(conn io.ReadWriter, d *Device) error {
 			if encErr != nil {
 				return fmt.Errorf("device: encode malformed receipt: %w", encErr)
 			}
-			if _, err := conn.Write(reject); err != nil {
+			if err := gate.send(reject); err != nil {
 				return err
 			}
 			continue
@@ -51,17 +59,17 @@ func ServeConn(conn io.ReadWriter, d *Device) error {
 		if ackLost {
 			continue // ack_lost: withhold receipt and result; effect stands
 		}
-		if _, err := conn.Write(receipt); err != nil {
+		if err := gate.send(receipt); err != nil {
 			return err
 		}
-		if _, err := conn.Write(result); err != nil {
+		if err := gate.send(result); err != nil {
 			return err
 		}
 	}
 	if err := scanner.Err(); err != nil && !errors.Is(err, io.EOF) {
 		return fmt.Errorf("device: read connection: %w", err)
 	}
-	return nil
+	return gate.flush()
 }
 
 func malformedReceipt() map[string]any {
