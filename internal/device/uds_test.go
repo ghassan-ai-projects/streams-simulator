@@ -12,7 +12,7 @@ import (
 // and result.
 func TestServeConnLoop(t *testing.T) {
 	client, server := net.Pipe()
-	d := New(Config{})
+	d := New(Config{Capabilities: testCaps(t)})
 	done := make(chan error, 1)
 	go func() { done <- ServeConn(server, d) }()
 

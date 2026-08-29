@@ -1,6 +1,7 @@
 package deviceworld
 
 import (
+	"os"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/device"
@@ -112,7 +113,7 @@ func TestWiredThroughDevice(t *testing.T) {
 	plant := New(w, setpointBinding(entity))
 
 	atMicros := w.Clock() / 1000
-	d := device.New(device.Config{Plant: plant, Clock: func() int64 { return atMicros }})
+	d := device.New(device.Config{Plant: plant, Capabilities: deviceCaps(t), Clock: func() int64 { return atMicros }})
 
 	// A valid, in-bounds command bound to the device's boot.
 	out := d.ApplyCommand(map[string]any{
@@ -143,4 +144,19 @@ func rep(b byte, n int) string {
 		out[i] = b
 	}
 	return string(out)
+}
+
+// deviceCaps loads the device capability catalog data fixture for the through-
+// device test.
+func deviceCaps(t *testing.T) *device.Capabilities {
+	t.Helper()
+	data, err := os.ReadFile("../device/testdata/thermal.capabilities.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	caps, err := device.LoadCapabilities(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return caps
 }

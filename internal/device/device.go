@@ -5,16 +5,6 @@ import (
 	"sync"
 )
 
-// capability is one allowed (target, operation) with numeric parameter bounds.
-// Every declared parameter is required and must fall within [min,max]; an
-// undeclared parameter or an out-of-range value is rejected out_of_range. This
-// is the device's own last-boundary enforcement — defense in depth behind the
-// gateway and policy, never a substitute for them.
-type capability struct {
-	operation string
-	numeric   map[string][2]float64
-}
-
 // Config configures a device instance. Digests and identity default to fixed
 // deterministic values matching the vendored contract's golden state frame.
 type Config struct {
@@ -22,12 +12,18 @@ type Config struct {
 	BootID           string
 	FirmwareDigest   string
 	CapabilityDigest string
-	Plant            Plant
+	// Plant is the physical process the device actuates. When nil, the device
+	// derives the output value/energized state from the capability catalog's
+	// declared energize_field (no external plant); bind a world-backed Plant to
+	// make the world the effector oracle.
+	Plant Plant
 	// Clock returns the device monotonic time in microseconds. It must be
 	// monotonic non-decreasing. Defaults to a manual clock starting at 0.
 	Clock func() int64
-	// Capabilities overrides the default led-01/fan-01 catalog.
-	Capabilities map[string]capability
+	// Capabilities is the device's data-defined capability catalog (loaded via
+	// LoadCapabilities). When nil the device declares no targets and rejects
+	// every command wrong_target — capabilities are never hard-coded.
+	Capabilities *Capabilities
 }
 
 // Faults is the injectable protocol fault state. Zero value is a healthy
@@ -61,7 +57,7 @@ type Device struct {
 	plant            Plant
 	clock            func() int64
 	manualMono       int64
-	capabilities     map[string]capability
+	capabilities     *Capabilities
 	faults           Faults
 
 	dedup     map[string]Outcome // idempotency_key -> prior outcome
@@ -70,17 +66,6 @@ type Device struct {
 	curValue  float64
 	energized bool
 	safeState bool
-}
-
-func defaultCapabilities() map[string]capability {
-	return map[string]capability{
-		"fan-01": {operation: "set_pwm_lease", numeric: map[string][2]float64{
-			"duty_permille": {0, 600}, "lease_ms": {1, 10000},
-		}},
-		"led-01": {operation: "set_indicator", numeric: map[string][2]float64{
-			"level": {0, 3},
-		}},
-	}
 }
 
 // New builds a device from cfg, applying deterministic defaults.
@@ -94,12 +79,6 @@ func New(cfg Config) *Device {
 		capabilities:     cfg.Capabilities,
 		dedup:            map[string]Outcome{},
 		safeState:        true,
-	}
-	if d.plant == nil {
-		d.plant = NewMemoryPlant()
-	}
-	if d.capabilities == nil {
-		d.capabilities = defaultCapabilities()
 	}
 	if cfg.Clock != nil {
 		d.clock = cfg.Clock
@@ -215,11 +194,10 @@ func (d *Device) ApplyCommand(command map[string]any) Outcome {
 	target, _ := command["target"].(string)
 	operation, _ := command["operation"].(string)
 	params := numericParams(command["parameters"])
-	effect := d.plant.Apply(PlantCommand{
+	value, energized := d.effect(PlantCommand{
 		Target: target, Operation: operation, Params: params,
 		CommandID: commandID, AtMicros: now,
 	})
-	value, energized := effect.Value, effect.Energized
 	if d.faults.Stuck {
 		energized = false
 	}
@@ -250,7 +228,9 @@ func (d *Device) ApplyCommand(command map[string]any) Outcome {
 	return outcome
 }
 
-// admit returns "" when the command may execute, or a device reject_code.
+// admit returns "" when the command may execute, or a device reject_code. All
+// target/operation/bound knowledge comes from the data-defined capability
+// catalog, never a code branch.
 func (d *Device) admit(command map[string]any, now int64) string {
 	if boot, _ := command["expected_boot_id"].(string); boot != d.bootID {
 		return "wrong_boot"
@@ -261,24 +241,41 @@ func (d *Device) admit(command map[string]any, now int64) string {
 		return "expired"
 	}
 	target, _ := command["target"].(string)
-	capa, ok := d.capabilities[target]
+	capa, ok := d.capabilities.target(target)
 	if !ok {
 		return "wrong_target"
 	}
-	if operation, _ := command["operation"].(string); operation != capa.operation {
+	if operation, _ := command["operation"].(string); operation != capa.Operation {
 		return "unknown_operation"
 	}
 	params := numericParams(command["parameters"])
-	if len(params) != len(capa.numeric) {
+	if len(params) != len(capa.Bounds) {
 		return "out_of_range"
 	}
-	for name, bounds := range capa.numeric {
+	for name, bounds := range capa.Bounds {
 		v, ok := params[name]
 		if !ok || v < bounds[0] || v > bounds[1] {
 			return "out_of_range"
 		}
 	}
 	return ""
+}
+
+// effect resolves the output value and energized state for an accepted command.
+// A bound Plant (e.g. the world oracle) is authoritative; otherwise the value is
+// the command's energize_field and energized means that field is positive — both
+// read from the capability catalog, never switched on an operation name.
+func (d *Device) effect(cmd PlantCommand) (value float64, energized bool) {
+	if d.plant != nil {
+		e := d.plant.Apply(cmd)
+		return e.Value, e.Energized
+	}
+	capa, ok := d.capabilities.target(cmd.Target)
+	if !ok {
+		return 0, false
+	}
+	value = cmd.Params[capa.EnergizeField]
+	return value, value > 0
 }
 
 func (d *Device) rejection(commandID string, now int64, code string) Outcome {

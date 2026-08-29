@@ -29,6 +29,7 @@ func cmdDevice(args []string) error {
 func cmdDeviceServe(args []string) error {
 	fs := flag.NewFlagSet("device serve", flag.ExitOnError)
 	socket := fs.String("socket", "", "Unix domain socket path to listen on (required)")
+	capabilities := fs.String("capabilities", "", "device capability catalog JSON path (required)")
 	bootID := fs.String("boot-id", "boot-A", "initial device boot identity")
 	deviceID := fs.String("device-id", "dev-01", "device identity")
 	if err := fs.Parse(args); err != nil {
@@ -37,8 +38,19 @@ func cmdDeviceServe(args []string) error {
 	if *socket == "" {
 		return fmt.Errorf("device serve requires --socket")
 	}
+	if *capabilities == "" {
+		return fmt.Errorf("device serve requires --capabilities")
+	}
+	capabilityData, err := os.ReadFile(*capabilities)
+	if err != nil {
+		return fmt.Errorf("streamsim: read capabilities: %w", err)
+	}
+	caps, err := device.LoadCapabilities(capabilityData)
+	if err != nil {
+		return fmt.Errorf("streamsim: %w", err)
+	}
 
-	dev := device.New(device.Config{BootID: *bootID, DeviceID: *deviceID})
+	dev := device.New(device.Config{BootID: *bootID, DeviceID: *deviceID, Capabilities: caps})
 	listener, err := device.Listen(*socket, dev)
 	if err != nil {
 		return fmt.Errorf("streamsim: %w", err)

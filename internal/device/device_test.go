@@ -6,6 +6,21 @@ import (
 	"testing"
 )
 
+// testCaps loads the device capability catalog from the JSON data fixture — the
+// same data-not-code path the emulator uses at runtime.
+func testCaps(t *testing.T) *Capabilities {
+	t.Helper()
+	data, err := os.ReadFile("testdata/thermal.capabilities.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	caps, err := LoadCapabilities(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return caps
+}
+
 // validCommand loads the vendored golden command fixture (fan-01, boot-A, in
 // range, deadline 7_200_000us) so device tests exercise the real contract, then
 // applies optional mutations.
@@ -26,7 +41,7 @@ func validCommand(t *testing.T, mutate func(map[string]any)) map[string]any {
 }
 
 func TestAcceptedCommandEnergizesAndVerifies(t *testing.T) {
-	d := New(Config{})
+	d := New(Config{Capabilities: testCaps(t)})
 	out := d.ApplyCommand(validCommand(t, nil))
 	if out.Receipt["accepted"] != true {
 		t.Fatalf("valid command must be accepted: %v", out.Receipt)
@@ -78,7 +93,7 @@ func TestRejections(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			mono := tc.clock
-			d := New(Config{Clock: func() int64 { return mono }})
+			d := New(Config{Capabilities: testCaps(t), Clock: func() int64 { return mono }})
 			out := d.ApplyCommand(validCommand(t, tc.mutate))
 			if out.Receipt["accepted"] != false {
 				t.Fatalf("%s must be rejected: %v", tc.name, out.Receipt)
@@ -97,7 +112,7 @@ func TestRejections(t *testing.T) {
 }
 
 func TestIdempotentReplayAppliesNoSecondEffect(t *testing.T) {
-	d := New(Config{})
+	d := New(Config{Capabilities: testCaps(t)})
 	first := d.ApplyCommand(validCommand(t, nil))
 	second := d.ApplyCommand(validCommand(t, nil))
 	if first.Receipt["command_id"] != second.Receipt["command_id"] {
@@ -111,7 +126,7 @@ func TestIdempotentReplayAppliesNoSecondEffect(t *testing.T) {
 }
 
 func TestStuckActuatorIsDesiredNotObserved(t *testing.T) {
-	d := New(Config{})
+	d := New(Config{Capabilities: testCaps(t)})
 	d.SetFaults(Faults{Stuck: true})
 	out := d.ApplyCommand(validCommand(t, nil))
 	if out.Receipt["accepted"] != true || out.Result["status"] != "executed" {
@@ -124,7 +139,7 @@ func TestStuckActuatorIsDesiredNotObserved(t *testing.T) {
 }
 
 func TestAckLostAppliesEffectButWithholdsReceipt(t *testing.T) {
-	d := New(Config{})
+	d := New(Config{Capabilities: testCaps(t)})
 	d.SetFaults(Faults{AckLost: true})
 	out := d.ApplyCommand(validCommand(t, nil))
 	if !out.AckLost {
@@ -137,7 +152,7 @@ func TestAckLostAppliesEffectButWithholdsReceipt(t *testing.T) {
 }
 
 func TestRebootChangesBootAndInvalidatesOldCommands(t *testing.T) {
-	d := New(Config{})
+	d := New(Config{Capabilities: testCaps(t)})
 	d.ApplyCommand(validCommand(t, nil))
 	d.Reboot("boot-B")
 	if d.BootID() != "boot-B" {

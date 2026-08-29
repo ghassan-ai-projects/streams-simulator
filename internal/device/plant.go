@@ -31,24 +31,3 @@ type PlantEffect struct {
 	Value     float64
 	Energized bool
 }
-
-// memPlant is a minimal deterministic plant: a PWM/lease output is energized
-// while its duty is positive; an indicator is energized while its level is
-// above zero. It keeps no history beyond the latest output.
-type memPlant struct{}
-
-// NewMemoryPlant returns the default in-memory plant.
-func NewMemoryPlant() Plant { return memPlant{} }
-
-func (memPlant) Apply(cmd PlantCommand) PlantEffect {
-	switch cmd.Operation {
-	case "set_pwm_lease":
-		duty := cmd.Params["duty_permille"]
-		return PlantEffect{Value: duty, Energized: duty > 0}
-	case "set_indicator":
-		level := cmd.Params["level"]
-		return PlantEffect{Value: level, Energized: level > 0}
-	default:
-		return PlantEffect{}
-	}
-}

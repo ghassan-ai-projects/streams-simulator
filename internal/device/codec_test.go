@@ -7,7 +7,7 @@ import (
 )
 
 func TestEncodeDecodeRoundTrip(t *testing.T) {
-	d := New(Config{})
+	d := New(Config{Capabilities: testCaps(t)})
 	out := d.ApplyCommand(validCommand(t, nil))
 	for name, record := range map[string]map[string]any{
 		"receipt": out.Receipt,

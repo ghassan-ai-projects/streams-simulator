@@ -1,0 +1,18 @@
+{
+  "protocol_version": 1,
+  "targets": {
+    "led-01": {
+      "operation": "set_indicator",
+      "energize_field": "level",
+      "bounds": { "level": { "min": 0, "max": 3 } }
+    },
+    "fan-01": {
+      "operation": "set_pwm_lease",
+      "energize_field": "duty_permille",
+      "bounds": {
+        "duty_permille": { "min": 0, "max": 600 },
+        "lease_ms": { "min": 1, "max": 10000 }
+      }
+    }
+  }
+}
