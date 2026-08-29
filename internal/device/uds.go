@@ -2,6 +2,7 @@ package device
 
 import (
 	"bufio"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -43,7 +44,25 @@ func ServeConnWithFaults(conn io.ReadWriter, d *Device, faults WireFaults) error
 			continue
 		}
 		frame := append(append([]byte{}, line...), '\n')
-		receipt, result, ackLost, handleErr := d.HandleCommand(frame)
+
+		// query_state is a host→device gateway-link control (NOT one of the four
+		// device wire records): the upstream QueryState asks for a fresh state.
+		if isQueryState(frame) {
+			stateFrame, encErr := EncodeRecord(d.State())
+			if encErr != nil {
+				return fmt.Errorf("device: encode state: %w", encErr)
+			}
+			if err := gate.send(stateFrame); err != nil {
+				return err
+			}
+			continue
+		}
+
+		// The command stream mirrors the effector's Exchange: one command yields
+		// exactly one receipt. Execution truth (current_output) is read back via
+		// query_state, so the result record is not pushed unsolicited here — that
+		// would desync the receipt the upstream reads next.
+		receipt, _, ackLost, handleErr := d.HandleCommand(frame)
 		if handleErr != nil {
 			// A malformed command is a wire error, not a silent drop: report it
 			// as a rejected receipt the upstream can act on.
@@ -57,12 +76,9 @@ func ServeConnWithFaults(conn io.ReadWriter, d *Device, faults WireFaults) error
 			continue
 		}
 		if ackLost {
-			continue // ack_lost: withhold receipt and result; effect stands
+			continue // ack_lost: withhold the receipt; effect stands, upstream reconciles via query_state
 		}
 		if err := gate.send(receipt); err != nil {
-			return err
-		}
-		if err := gate.send(result); err != nil {
 			return err
 		}
 	}
@@ -70,6 +86,21 @@ func ServeConnWithFaults(conn io.ReadWriter, d *Device, faults WireFaults) error
 		return fmt.Errorf("device: read connection: %w", err)
 	}
 	return gate.flush()
+}
+
+// QueryStateControl is the host→device gateway-link control line that asks the
+// device for a fresh state record. It is transport control, not one of the four
+// device wire records, so it carries only message_type.
+const QueryStateControl = `{"message_type":"query_state"}`
+
+func isQueryState(frame []byte) bool {
+	var probe struct {
+		MessageType string `json:"message_type"`
+	}
+	if err := json.Unmarshal(frame, &probe); err != nil {
+		return false
+	}
+	return probe.MessageType == "query_state"
 }
 
 func malformedReceipt() map[string]any {

@@ -36,9 +36,19 @@ func TestServeConnLoop(t *testing.T) {
 	if receipt["message_type"] != "receipt" || receipt["accepted"] != true {
 		t.Fatalf("expected an accepting receipt, got %v", receipt)
 	}
-	result := readRecord(t, reader)
-	if result["message_type"] != "result" || result["status"] != "executed" {
-		t.Fatalf("expected an executed result, got %v", result)
+
+	// Execution truth is read back via a query_state control, not an unsolicited
+	// result frame — mirroring the effector's QueryState.
+	if _, err := client.Write([]byte(QueryStateControl + "\n")); err != nil {
+		t.Fatal(err)
+	}
+	refreshed := readRecord(t, reader)
+	if refreshed["message_type"] != "state" {
+		t.Fatalf("query_state must return a state record, got %v", refreshed["message_type"])
+	}
+	output, ok := refreshed["current_output"].(map[string]any)
+	if !ok || output["energized"] != true {
+		t.Fatalf("state after an accepted fan command must show energized output, got %v", refreshed["current_output"])
 	}
 
 	_ = client.Close()
