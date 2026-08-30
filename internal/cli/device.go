@@ -12,8 +12,8 @@ import (
 
 // cmdDevice serves the wire-faithful serial device emulator as a gateway link.
 // It is the device end of the Real-World Sensor HIL-0 loop: the Agentic Stream
-// serial effector connects to this socket and speaks the device wire contract
-// (command/receipt/result/state).
+// serial effector connects to this socket and speaks the device gateway link
+// (state/command/receipt; execution truth is queried as state).
 func cmdDevice(args []string) error {
 	if len(args) == 0 {
 		return fmt.Errorf("device requires a subcommand: serve")

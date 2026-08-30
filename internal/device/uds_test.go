@@ -3,6 +3,8 @@ package device
 import (
 	"bufio"
 	"net"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 )
@@ -54,6 +56,23 @@ func TestServeConnLoop(t *testing.T) {
 	_ = client.Close()
 	if err := <-done; err != nil {
 		t.Fatalf("ServeConn returned error: %v", err)
+	}
+}
+
+func TestListenRefusesRegularFilePath(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "device.sock")
+	if err := os.WriteFile(path, []byte("keep me"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Listen(path, New(Config{Capabilities: testCaps(t)})); err == nil {
+		t.Fatal("device listener must refuse a regular file path")
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("regular file must remain recoverable: %v", err)
+	}
+	if string(data) != "keep me" {
+		t.Fatalf("regular file was modified: %q", data)
 	}
 }
 

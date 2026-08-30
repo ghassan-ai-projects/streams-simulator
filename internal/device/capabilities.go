@@ -1,8 +1,12 @@
 package device
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/canonical"
 )
 
 // Capabilities is the device's declared, data-defined capability catalog: which
@@ -13,6 +17,7 @@ import (
 // per-domain code branches).
 type Capabilities struct {
 	targets map[string]TargetCapability
+	digest  string
 }
 
 // TargetCapability is one target's declared capability.
@@ -34,11 +39,22 @@ type capabilitiesDoc struct {
 	} `json:"targets"`
 }
 
-// LoadCapabilities parses a device capability catalog from JSON.
+// LoadCapabilities parses and validates a device capability catalog from JSON.
+// Unknown fields and trailing JSON are rejected so a typo cannot silently
+// change the device's safety envelope. The canonical digest is retained as the
+// identity advertised in the device.state handshake.
 func LoadCapabilities(data []byte) (*Capabilities, error) {
 	var doc capabilitiesDoc
-	if err := json.Unmarshal(data, &doc); err != nil {
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&doc); err != nil {
 		return nil, fmt.Errorf("device: decode capabilities: %w", err)
+	}
+	if err := decoder.Decode(&struct{}{}); err != io.EOF {
+		if err == nil {
+			return nil, fmt.Errorf("device: capabilities contain trailing JSON")
+		}
+		return nil, fmt.Errorf("device: decode trailing capabilities: %w", err)
 	}
 	if doc.ProtocolVersion != ProtocolVersion {
 		return nil, fmt.Errorf("device: capabilities protocol_version %d != %d", doc.ProtocolVersion, ProtocolVersion)
@@ -46,7 +62,15 @@ func LoadCapabilities(data []byte) (*Capabilities, error) {
 	if len(doc.Targets) == 0 {
 		return nil, fmt.Errorf("device: capabilities declare no targets")
 	}
-	caps := &Capabilities{targets: make(map[string]TargetCapability, len(doc.Targets))}
+	var raw map[string]any
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return nil, fmt.Errorf("device: decode capabilities for digest: %w", err)
+	}
+	digest, err := canonical.Digest(raw)
+	if err != nil {
+		return nil, fmt.Errorf("device: digest capabilities: %w", err)
+	}
+	caps := &Capabilities{targets: make(map[string]TargetCapability, len(doc.Targets)), digest: digest}
 	for name, target := range doc.Targets {
 		if target.Operation == "" {
 			return nil, fmt.Errorf("device: target %q declares no operation", name)
@@ -67,6 +91,14 @@ func LoadCapabilities(data []byte) (*Capabilities, error) {
 		caps.targets[name] = TargetCapability{Operation: target.Operation, EnergizeField: target.EnergizeField, Bounds: bounds}
 	}
 	return caps, nil
+}
+
+// Digest returns the canonical identity of the loaded capability catalog.
+func (c *Capabilities) Digest() string {
+	if c == nil {
+		return ""
+	}
+	return c.digest
 }
 
 func (c *Capabilities) target(name string) (TargetCapability, bool) {

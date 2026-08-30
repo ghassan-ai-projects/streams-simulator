@@ -1,5 +1,15 @@
 package device
 
+import "errors"
+
+var (
+	// ErrPlantInterlocked identifies a plant refusal caused by an independent
+	// safety interlock.
+	ErrPlantInterlocked = errors.New("device plant interlocked")
+	// ErrPlantUnavailable identifies a plant that could not apply the command.
+	ErrPlantUnavailable = errors.New("device plant unavailable")
+)
+
 // Plant is the physical process the device actuates. The emulator asks the
 // plant to apply an accepted, in-bounds command and reports back the resulting
 // output value and whether it is actually energized — the ground truth
@@ -11,7 +21,7 @@ package device
 // device's observed truth. The default in-memory plant is enough to prove the
 // wire loop and the desired≠observed cases.
 type Plant interface {
-	Apply(PlantCommand) PlantEffect
+	Apply(PlantCommand) (PlantEffect, error)
 }
 
 // PlantCommand is one accepted, in-bounds actuation handed to the plant. It

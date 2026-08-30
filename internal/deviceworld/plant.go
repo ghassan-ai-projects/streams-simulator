@@ -11,6 +11,9 @@
 package deviceworld
 
 import (
+	"errors"
+	"fmt"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/device"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
@@ -45,10 +48,13 @@ func New(w *world.World, bindings map[string]Binding) *Plant {
 // reports the physical truth. energized reflects whether the world applied the
 // effect (res.EffectApplied) — independent of the acknowledgement, which the
 // device layer handles separately. An unmapped target is a fail-safe no-op.
-func (p *Plant) Apply(cmd device.PlantCommand) device.PlantEffect {
+func (p *Plant) Apply(cmd device.PlantCommand) (device.PlantEffect, error) {
 	binding, ok := p.bindings[cmd.Target]
 	if !ok {
-		return device.PlantEffect{}
+		return device.PlantEffect{}, nil
+	}
+	if p.w == nil {
+		return device.PlantEffect{}, fmt.Errorf("%w: world is unavailable", device.ErrPlantUnavailable)
 	}
 	args := map[string]any{}
 	if binding.Args != nil {
@@ -56,13 +62,17 @@ func (p *Plant) Apply(cmd device.PlantCommand) device.PlantEffect {
 	}
 	res, err := p.w.InvokeEffector(binding.Effector, binding.Entity, cmd.CommandID, args, cmd.AtMicros*1000)
 	if err != nil || res == nil {
-		// Interlock refusal, unknown entity/effector, or invalid args: the
-		// world applied nothing, so the output is not energized.
-		return device.PlantEffect{}
+		if errors.Is(err, world.ErrInterlockRefused) {
+			return device.PlantEffect{}, fmt.Errorf("%w: %w", device.ErrPlantInterlocked, err)
+		}
+		if err == nil {
+			err = fmt.Errorf("world returned no effector result")
+		}
+		return device.PlantEffect{}, fmt.Errorf("%w: %w", device.ErrPlantUnavailable, err)
 	}
 	effect := device.PlantEffect{Energized: res.EffectApplied}
 	if binding.ValueState != "" {
 		effect.Value = p.w.StateValue(binding.Entity, binding.ValueState, p.w.Clock())
 	}
-	return effect
+	return effect, nil
 }

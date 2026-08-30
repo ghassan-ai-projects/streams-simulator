@@ -6,16 +6,18 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net"
 	"os"
 )
 
 // ServeConn runs one device over a byte-stream connection using newline-delimited
 // framing. On connect it emits the current device.state; then for each inbound
-// command line it applies the command and writes the receipt followed by the
-// result. Under an ack_lost fault it writes NOTHING for that command — the effect
-// is still applied, so the upstream must reconcile via a later state query, which
-// is exactly the unknown-outcome path.
+// command line it applies the command and writes one receipt. The result is
+// available from HandleCommand for direct callers; the gateway link uses state
+// queries for observed execution state. Under an ack_lost fault it writes
+// NOTHING for that command — the effect is still applied, so the upstream must
+// reconcile via a later state query.
 //
 // Raw serial framing (COBS, checksums, reconnect, device identity) is a gateway
 // concern; this NDJSON line framing is the debug/emulator transport.
@@ -24,7 +26,7 @@ func ServeConn(conn io.ReadWriter, d *Device) error {
 }
 
 // ServeConnWithFaults is ServeConn with a deterministic transport-fault plan
-// applied to the outbound frames (state/receipt/result), indexed by emission
+// applied to the outbound frames (state/receipt), indexed by emission
 // order across the connection. See WireFaults.
 func ServeConnWithFaults(conn io.ReadWriter, d *Device, faults WireFaults) error {
 	gate := newWireGate(conn, faults)
@@ -117,10 +119,10 @@ func malformedReceipt() map[string]any {
 // Listen serves a single device on a Unix domain socket at path until the
 // listener is closed. Each accepted connection is handled sequentially — one
 // device speaks to one gateway link at a time. It removes a stale socket file
-// at path before binding.
+// at path before binding, but never removes a regular file or directory.
 func Listen(path string, d *Device) (*net.UnixListener, error) {
-	if err := os.Remove(path); err != nil && !errors.Is(err, os.ErrNotExist) {
-		return nil, fmt.Errorf("device: clear stale socket %s: %w", path, err)
+	if err := removeStaleSocket(path); err != nil {
+		return nil, err
 	}
 	addr, err := net.ResolveUnixAddr("unix", path)
 	if err != nil {
@@ -136,9 +138,30 @@ func Listen(path string, d *Device) (*net.UnixListener, error) {
 			if err != nil {
 				return // listener closed
 			}
-			_ = ServeConn(conn, d)
-			_ = conn.Close()
+			if err := ServeConn(conn, d); err != nil {
+				slog.Error("device connection failed", "error", err)
+			}
+			if err := conn.Close(); err != nil {
+				slog.Error("device connection close failed", "error", err)
+			}
 		}
 	}()
 	return listener, nil
+}
+
+func removeStaleSocket(path string) error {
+	info, err := os.Lstat(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("device: inspect socket path %s: %w", path, err)
+	}
+	if info.Mode()&os.ModeSocket == 0 {
+		return fmt.Errorf("device: refusing to remove non-socket path %s", path)
+	}
+	if err := os.Remove(path); err != nil {
+		return fmt.Errorf("device: clear stale socket %s: %w", path, err)
+	}
+	return nil
 }

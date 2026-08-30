@@ -20,10 +20,6 @@ type WireFaults struct {
 	Swap map[int]bool
 }
 
-func (f WireFaults) empty() bool {
-	return len(f.Drop) == 0 && len(f.Duplicate) == 0 && len(f.Swap) == 0
-}
-
 // wireGate applies a WireFaults plan to a stream of whole frames.
 type wireGate struct {
 	faults    WireFaults

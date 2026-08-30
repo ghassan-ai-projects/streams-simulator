@@ -30,6 +30,13 @@ The current checkout contains substantial implementation and tests, but it is no
 - The current code uses file-based JSON/JSONL run artifacts; older SQLite language in the design archive is historical or superseded by the accepted decision.
 - No actual external production consumer is shipped; the reference consumer is a test instrument and integration example.
 
+The `streamsim device serve` command is a deterministic emulator gateway link,
+not a physical-HIL claim. Its capability catalog is a simulator-side device
+contract and must be kept aligned with the paired Agentic Stream catalog and
+allow-listed digest before a cross-repository handshake can be treated as
+evidence. The CLI does not itself bind the emulator to a simulated world plant;
+the `internal/deviceworld` package provides that seam for focused tests.
+
 ## What is not a release claim
 
 The presence of tests for all nine non-negotiables is valuable evidence, but it is not itself a green release gate. A release claim requires a clean run of the required checks, a matching manifest, reproducible artifacts, and an explicit review identity.

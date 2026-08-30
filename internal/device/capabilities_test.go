@@ -27,6 +27,8 @@ func TestLoadCapabilitiesFailsClosed(t *testing.T) {
 		"no-operation":         `{"protocol_version": 1, "targets": {"x": {"energize_field": "f", "bounds": {"f": {"min": 0, "max": 1}}}}}`,
 		"energize-not-bounded": `{"protocol_version": 1, "targets": {"x": {"operation": "o", "energize_field": "f", "bounds": {"g": {"min": 0, "max": 1}}}}}`,
 		"max-below-min":        `{"protocol_version": 1, "targets": {"x": {"operation": "o", "energize_field": "f", "bounds": {"f": {"min": 5, "max": 1}}}}}`,
+		"unknown-field":        `{"protocol_version": 1, "targets": {"x": {"operation": "o", "energize_field": "f", "bounds": {"f": {"min": 0, "max": 1}}, "typo": true}}}`,
+		"trailing-json":        `{"protocol_version": 1, "targets": {"x": {"operation": "o", "energize_field": "f", "bounds": {"f": {"min": 0, "max": 1}}}}} {}`,
 	}
 	for name, body := range cases {
 		body := body

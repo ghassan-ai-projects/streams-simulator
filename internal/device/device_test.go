@@ -3,6 +3,7 @@ package device
 import (
 	"encoding/json"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -34,10 +35,63 @@ func validCommand(t *testing.T, mutate func(map[string]any)) map[string]any {
 	if err := json.Unmarshal(raw, &cmd); err != nil {
 		t.Fatal(err)
 	}
+	// The emulator's manual clock starts at zero. The explicit freshness test
+	// covers future-bound commands.
+	cmd["not_before_mono_us"] = float64(0)
 	if mutate != nil {
 		mutate(cmd)
 	}
 	return cmd
+}
+
+func TestRejectsCommandBeforeNotBefore(t *testing.T) {
+	d := New(Config{Capabilities: testCaps(t), Clock: func() int64 { return 0 }})
+	out := d.ApplyCommand(validCommand(t, func(c map[string]any) {
+		c["not_before_mono_us"] = float64(1)
+	}))
+	if out.Receipt["accepted"] != false || out.Receipt["reject_code"] != "not_ready" {
+		t.Fatalf("future-bound command must be rejected as not_ready: %v", out.Receipt)
+	}
+}
+
+func TestLeaseExpiryReturnsSafeState(t *testing.T) {
+	now := int64(0)
+	d := New(Config{Capabilities: testCaps(t), Clock: func() int64 { return now }})
+	out := d.ApplyCommand(validCommand(t, nil))
+	if out.Receipt["accepted"] != true {
+		t.Fatalf("valid command must be accepted: %v", out.Receipt)
+	}
+	now = 5_000_000
+	state := d.State()
+	if state["safe_state"] != true {
+		t.Fatalf("expired lease must put the device in safe state: %v", state)
+	}
+	output := state["current_output"].(map[string]any)
+	if output["energized"] != false {
+		t.Fatalf("expired lease must de-energize the output: %v", output)
+	}
+}
+
+func TestCapabilityDigestIsBoundToLoadedData(t *testing.T) {
+	data, err := os.ReadFile("testdata/thermal.capabilities.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	first, err := LoadCapabilities(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	changedData := []byte(strings.Replace(string(data), "fan-01", "fan-02", 1))
+	second, err := LoadCapabilities(changedData)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if first.Digest() == second.Digest() {
+		t.Fatalf("different capability catalogs must have different digests: %s", first.Digest())
+	}
+	if got := New(Config{Capabilities: first}).State()["capability_digest"]; got != first.Digest() {
+		t.Fatalf("device state must advertise the loaded catalog digest: %v vs %s", got, first.Digest())
+	}
 }
 
 func TestAcceptedCommandEnergizesAndVerifies(t *testing.T) {

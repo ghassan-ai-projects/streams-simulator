@@ -56,7 +56,10 @@ func TestEnergizedMirrorsWorldEffect(t *testing.T) {
 	plant := New(w, setpointBinding(entity))
 	atMicros := w.Clock() / 1000
 
-	effect := plant.Apply(plantCommand("cmd-1", atMicros))
+	effect, err := plant.Apply(plantCommand("cmd-1", atMicros))
+	if err != nil {
+		t.Fatalf("apply plant command: %v", err)
+	}
 
 	calls := w.EffectorCalls()
 	if len(calls) != 1 {
@@ -76,8 +79,14 @@ func TestIdempotentByCommandID(t *testing.T) {
 	plant := New(w, setpointBinding(entity))
 	atMicros := w.Clock() / 1000
 
-	first := plant.Apply(plantCommand("cmd-dup", atMicros))
-	second := plant.Apply(plantCommand("cmd-dup", atMicros))
+	first, err := plant.Apply(plantCommand("cmd-dup", atMicros))
+	if err != nil {
+		t.Fatalf("apply first plant command: %v", err)
+	}
+	second, err := plant.Apply(plantCommand("cmd-dup", atMicros))
+	if err != nil {
+		t.Fatalf("apply duplicate plant command: %v", err)
+	}
 
 	if len(w.EffectorCalls()) != 1 {
 		t.Fatalf("a replayed command_id must not add a second effector call: %d", len(w.EffectorCalls()))
@@ -94,13 +103,57 @@ func TestUnmappedTargetFailsSafe(t *testing.T) {
 	entity := w.EntityIDs()[0]
 	plant := New(w, setpointBinding(entity))
 
-	effect := plant.Apply(device.PlantCommand{Target: "unknown-99", Operation: "set_pwm_lease", CommandID: "cmd-x", AtMicros: w.Clock() / 1000})
+	effect, err := plant.Apply(device.PlantCommand{Target: "unknown-99", Operation: "set_pwm_lease", CommandID: "cmd-x", AtMicros: w.Clock() / 1000})
+	if err != nil {
+		t.Fatalf("unmapped target should be a no-op: %v", err)
+	}
 
 	if effect.Energized {
 		t.Fatal("an unmapped target must not energize")
 	}
 	if len(w.EffectorCalls()) != 0 {
 		t.Fatalf("an unmapped target must not invoke the world: %d calls", len(w.EffectorCalls()))
+	}
+}
+
+func TestStuckDeviceDoesNotApplyWorldEffect(t *testing.T) {
+	w := coldChainWorld(t, 1)
+	entity := w.EntityIDs()[0]
+	plant := New(w, setpointBinding(entity))
+	atMicros := w.Clock() / 1000
+	d := device.New(device.Config{
+		Plant: plant, Capabilities: deviceCaps(t),
+		Clock: func() int64 { return atMicros },
+	})
+	d.SetFaults(device.Faults{Stuck: true})
+
+	out := d.ApplyCommand(deviceCommand("cmd-stuck", atMicros))
+	if out.Receipt["accepted"] != true {
+		t.Fatalf("stuck command should be acknowledged: %v", out.Receipt)
+	}
+	if len(w.EffectorCalls()) != 0 {
+		t.Fatalf("stuck device must not mutate the world: %d calls", len(w.EffectorCalls()))
+	}
+}
+
+func TestWorldBindingFailureIsNotReportedAsExecution(t *testing.T) {
+	w := coldChainWorld(t, 1)
+	entity := w.EntityIDs()[0]
+	plant := New(w, map[string]Binding{
+		"fan-01": {Effector: "missing-effector", Entity: entity},
+	})
+	atMicros := w.Clock() / 1000
+	d := device.New(device.Config{
+		Plant: plant, Capabilities: deviceCaps(t),
+		Clock: func() int64 { return atMicros },
+	})
+
+	out := d.ApplyCommand(deviceCommand("cmd-unavailable", atMicros))
+	if out.Receipt["accepted"] != false || out.Receipt["reject_code"] != "not_ready" {
+		t.Fatalf("binding failure must be a terminal not_ready rejection: %v", out.Receipt)
+	}
+	if out.Result["status"] != "rejected" {
+		t.Fatalf("binding failure must not be reported as executed: %v", out.Result)
 	}
 }
 
@@ -144,6 +197,17 @@ func rep(b byte, n int) string {
 		out[i] = b
 	}
 	return string(out)
+}
+
+func deviceCommand(commandID string, atMicros int64) map[string]any {
+	return map[string]any{
+		"message_type": "command", "protocol_version": float64(1),
+		"command_id": commandID, "idempotency_key": "sha256:" + rep('a', 64),
+		"target": "fan-01", "operation": "set_pwm_lease",
+		"parameters":       map[string]any{"duty_permille": float64(450), "lease_ms": float64(5000)},
+		"expected_boot_id": "boot-A", "not_before_mono_us": float64(atMicros),
+		"expires_after_ms": float64(60000), "policy_digest": "sha256:" + rep('b', 64),
+	}
 }
 
 // deviceCaps loads the device capability catalog data fixture for the through-

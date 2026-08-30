@@ -46,6 +46,25 @@ Flags:
 - `--adapters-dir <path>` — adapter directory; defaults to `adapters`.
 - `adapter verify <path>` — verifies the selected adapter.
 
+### `device serve`
+
+Serves the data-defined device emulator over a Unix domain socket for a typed
+gateway-link integration test. The emulator emits an initial `state` record,
+accepts command records, and emits receipts; query-state control returns fresh
+state. It is not a physical serial gateway.
+
+```text
+streamsim device serve --socket <path> --capabilities <path>
+```
+
+Flags:
+
+- `--socket` — required Unix domain socket path. A regular file at this path is
+  never removed.
+- `--capabilities` — required device capability catalog JSON path.
+- `--device-id` — device identity; defaults to `dev-01`.
+- `--boot-id` — initial boot identity; defaults to `boot-A`.
+
 ### `run`
 
 Runs one scripted world and writes an artifact when `--out` is supplied.

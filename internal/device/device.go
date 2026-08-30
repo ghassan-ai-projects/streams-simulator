@@ -1,12 +1,14 @@
 package device
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 )
 
-// Config configures a device instance. Digests and identity default to fixed
-// deterministic values matching the vendored contract's golden state frame.
+// Config configures a device instance. Identity and firmware digest default to
+// fixed deterministic values matching the vendored contract's golden state
+// frame. When Capabilities is supplied, its canonical digest is authoritative.
 type Config struct {
 	DeviceID         string
 	BootID           string
@@ -60,21 +62,28 @@ type Device struct {
 	capabilities     *Capabilities
 	faults           Faults
 
-	dedup     map[string]Outcome // idempotency_key -> prior outcome
-	curTarget string
-	curOp     string
-	curValue  float64
-	energized bool
-	safeState bool
+	dedup            map[string]Outcome // idempotency_key -> prior outcome
+	curTarget        string
+	curOp            string
+	curValue         float64
+	energized        bool
+	safeState        bool
+	leaseUntilMicros int64
 }
 
 // New builds a device from cfg, applying deterministic defaults.
 func New(cfg Config) *Device {
+	capabilityDigest := orDefault(cfg.CapabilityDigest, "sha256:"+repeat('d', 64))
+	if cfg.Capabilities != nil {
+		if digest := cfg.Capabilities.Digest(); digest != "" {
+			capabilityDigest = digest
+		}
+	}
 	d := &Device{
 		deviceID:         orDefault(cfg.DeviceID, "dev-01"),
 		bootID:           orDefault(cfg.BootID, "boot-A"),
 		firmwareDigest:   orDefault(cfg.FirmwareDigest, "sha256:"+repeat('c', 64)),
-		capabilityDigest: orDefault(cfg.CapabilityDigest, "sha256:"+repeat('d', 64)),
+		capabilityDigest: capabilityDigest,
 		plant:            cfg.Plant,
 		capabilities:     cfg.Capabilities,
 		dedup:            map[string]Outcome{},
@@ -94,6 +103,7 @@ func (d *Device) Advance(deltaMicros int64) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	d.manualMono += deltaMicros
+	d.expireLease(d.clock())
 }
 
 // SetFaults installs the fault state applied to subsequent accepted commands.
@@ -114,6 +124,7 @@ func (d *Device) Reboot(newBootID string) {
 	d.curTarget, d.curOp, d.curValue = "", "", 0
 	d.safeState = true
 	d.dedup = map[string]Outcome{}
+	d.leaseUntilMicros = 0
 }
 
 // BootID returns the current device boot identity.
@@ -127,6 +138,7 @@ func (d *Device) BootID() string {
 func (d *Device) State() map[string]any {
 	d.mu.Lock()
 	defer d.mu.Unlock()
+	d.expireLease(d.clock())
 	state := map[string]any{
 		"message_type":      "state",
 		"protocol_version":  float64(ProtocolVersion),
@@ -179,6 +191,7 @@ func (d *Device) ApplyCommand(command map[string]any) Outcome {
 	commandID, _ := command["command_id"].(string)
 	idempotencyKey, _ := command["idempotency_key"].(string)
 	now := d.clock()
+	d.expireLease(now)
 
 	// Idempotency: a repeated key replays the prior outcome and applies no new
 	// effect, regardless of faults.
@@ -190,21 +203,30 @@ func (d *Device) ApplyCommand(command map[string]any) Outcome {
 		return d.rejection(commandID, now, reject)
 	}
 
-	// Accepted. Apply the effect unless a stuck fault suppresses it.
+	outcome, accepted := d.applyAcceptedCommand(command, commandID, now)
+	if accepted {
+		d.dedup[idempotencyKey] = outcome
+	}
+	return outcome
+}
+
+func (d *Device) applyAcceptedCommand(command map[string]any, commandID string, now int64) (Outcome, bool) {
 	target, _ := command["target"].(string)
 	operation, _ := command["operation"].(string)
 	params := numericParams(command["parameters"])
-	value, energized := d.effect(PlantCommand{
+	plantCommand := PlantCommand{
 		Target: target, Operation: operation, Params: params,
 		CommandID: commandID, AtMicros: now,
-	})
-	if d.faults.Stuck {
-		energized = false
+	}
+	value, energized, err := d.applyPlant(plantCommand)
+	if err != nil {
+		return d.rejection(commandID, now, plantRejectCode(err)), false
 	}
 	d.curTarget, d.curOp, d.curValue, d.energized = target, operation, value, energized
 	d.safeState = !energized
+	d.leaseUntilMicros = leaseDeadline(now, params)
 
-	outcome := Outcome{
+	return Outcome{
 		Receipt: map[string]any{
 			"message_type":     "receipt",
 			"protocol_version": float64(ProtocolVersion),
@@ -223,9 +245,7 @@ func (d *Device) ApplyCommand(command map[string]any) Outcome {
 			"completed_mono_us": float64(now),
 		},
 		AckLost: d.faults.AckLost,
-	}
-	d.dedup[idempotencyKey] = outcome
-	return outcome
+	}, true
 }
 
 // admit returns "" when the command may execute, or a device reject_code. All
@@ -237,6 +257,9 @@ func (d *Device) admit(command map[string]any, now int64) string {
 	}
 	notBefore, _ := command["not_before_mono_us"].(float64)
 	expiresAfter, _ := command["expires_after_ms"].(float64)
+	if float64(now) < notBefore {
+		return "not_ready"
+	}
 	if float64(now) > notBefore+expiresAfter*1000 {
 		return "expired"
 	}
@@ -261,21 +284,53 @@ func (d *Device) admit(command map[string]any, now int64) string {
 	return ""
 }
 
-// effect resolves the output value and energized state for an accepted command.
+// applyPlant resolves the output value and energized state for an accepted command.
 // A bound Plant (e.g. the world oracle) is authoritative; otherwise the value is
 // the command's energize_field and energized means that field is positive — both
 // read from the capability catalog, never switched on an operation name.
-func (d *Device) effect(cmd PlantCommand) (value float64, energized bool) {
+func (d *Device) applyPlant(cmd PlantCommand) (value float64, energized bool, err error) {
+	// A stuck device accepts the command but does not hand it to the plant; this
+	// keeps a world-backed oracle aligned with the observed no-effect.
+	if d.faults.Stuck {
+		return 0, false, nil
+	}
 	if d.plant != nil {
-		e := d.plant.Apply(cmd)
-		return e.Value, e.Energized
+		e, err := d.plant.Apply(cmd)
+		if err != nil {
+			return 0, false, fmt.Errorf("device: apply plant command: %w", err)
+		}
+		return e.Value, e.Energized, nil
 	}
 	capa, ok := d.capabilities.target(cmd.Target)
 	if !ok {
-		return 0, false
+		return 0, false, nil
 	}
 	value = cmd.Params[capa.EnergizeField]
-	return value, value > 0
+	return value, value > 0, nil
+}
+
+func (d *Device) expireLease(now int64) {
+	if d.leaseUntilMicros == 0 || now < d.leaseUntilMicros {
+		return
+	}
+	d.energized = false
+	d.safeState = true
+	d.leaseUntilMicros = 0
+}
+
+func leaseDeadline(now int64, params map[string]float64) int64 {
+	leaseMS, ok := params["lease_ms"]
+	if !ok || leaseMS <= 0 {
+		return 0
+	}
+	return now + int64(leaseMS*1000)
+}
+
+func plantRejectCode(err error) string {
+	if errors.Is(err, ErrPlantInterlocked) {
+		return "interlocked"
+	}
+	return "not_ready"
 }
 
 func (d *Device) rejection(commandID string, now int64, code string) Outcome {
