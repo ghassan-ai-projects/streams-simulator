@@ -35,7 +35,9 @@ not a physical-HIL claim. Its capability catalog is a simulator-side device
 contract and must be kept aligned with the paired Agentic Stream catalog and
 allow-listed digest before a cross-repository handshake can be treated as
 evidence. The CLI does not itself bind the emulator to a simulated world plant;
-the `internal/deviceworld` package provides that seam for focused tests.
+the `internal/deviceworld` package provides that seam for focused tests. Its
+world bindings are loaded from structured configuration; the adapter does not
+contain per-domain argument callbacks.
 
 ## What is not a release claim
 

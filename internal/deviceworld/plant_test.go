@@ -1,6 +1,7 @@
 package deviceworld
 
 import (
+	"encoding/json"
 	"os"
 	"testing"
 
@@ -26,23 +27,38 @@ func coldChainWorld(t *testing.T, seed uint64) *world.World {
 	return w
 }
 
-func setpointBinding(entity string) map[string]Binding {
-	return map[string]Binding{
-		"fan-01": {
-			Effector:   "adjust_setpoint",
-			Entity:     entity,
-			ValueState: "setpoint_true",
-			Args: func(_ map[string]float64) map[string]any {
-				return map[string]any{"reefer_id": entity, "setpoint_c": float64(-20)}
-			},
-		},
+func loadBindings(t *testing.T, entity string) map[string]Binding {
+	t.Helper()
+	data, err := os.ReadFile("testdata/thermal.bindings.json")
+	if err != nil {
+		t.Fatal(err)
 	}
+	bindings, err := LoadBindings(data, entity)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return bindings
 }
 
-func plantCommand(commandID string, atMicros int64) device.PlantCommand {
+func plantCommand(t *testing.T, commandID string, atMicros int64) device.PlantCommand {
+	t.Helper()
+	command := deviceCommand(t, commandID, atMicros)
+	parameters, ok := command["parameters"].(map[string]any)
+	if !ok {
+		t.Fatalf("command parameters have wrong type: %T", command["parameters"])
+	}
+	numeric := make(map[string]float64, len(parameters))
+	for name, raw := range parameters {
+		value, ok := raw.(float64)
+		if !ok {
+			t.Fatalf("command parameter %q has wrong type: %T", name, raw)
+		}
+		numeric[name] = value
+	}
+	target, _ := command["target"].(string)
+	operation, _ := command["operation"].(string)
 	return device.PlantCommand{
-		Target: "fan-01", Operation: "set_pwm_lease",
-		Params:    map[string]float64{"duty_permille": 450, "lease_ms": 5000},
+		Target: target, Operation: operation, Params: numeric,
 		CommandID: commandID, AtMicros: atMicros,
 	}
 }
@@ -53,10 +69,10 @@ func plantCommand(commandID string, atMicros int64) device.PlantCommand {
 func TestEnergizedMirrorsWorldEffect(t *testing.T) {
 	w := coldChainWorld(t, 1)
 	entity := w.EntityIDs()[0]
-	plant := New(w, setpointBinding(entity))
+	plant := New(w, loadBindings(t, entity))
 	atMicros := w.Clock() / 1000
 
-	effect, err := plant.Apply(plantCommand("cmd-1", atMicros))
+	effect, err := plant.Apply(plantCommand(t, "cmd-1", atMicros))
 	if err != nil {
 		t.Fatalf("apply plant command: %v", err)
 	}
@@ -76,14 +92,14 @@ func TestEnergizedMirrorsWorldEffect(t *testing.T) {
 func TestIdempotentByCommandID(t *testing.T) {
 	w := coldChainWorld(t, 1)
 	entity := w.EntityIDs()[0]
-	plant := New(w, setpointBinding(entity))
+	plant := New(w, loadBindings(t, entity))
 	atMicros := w.Clock() / 1000
 
-	first, err := plant.Apply(plantCommand("cmd-dup", atMicros))
+	first, err := plant.Apply(plantCommand(t, "cmd-dup", atMicros))
 	if err != nil {
 		t.Fatalf("apply first plant command: %v", err)
 	}
-	second, err := plant.Apply(plantCommand("cmd-dup", atMicros))
+	second, err := plant.Apply(plantCommand(t, "cmd-dup", atMicros))
 	if err != nil {
 		t.Fatalf("apply duplicate plant command: %v", err)
 	}
@@ -101,9 +117,11 @@ func TestIdempotentByCommandID(t *testing.T) {
 func TestUnmappedTargetFailsSafe(t *testing.T) {
 	w := coldChainWorld(t, 1)
 	entity := w.EntityIDs()[0]
-	plant := New(w, setpointBinding(entity))
+	plant := New(w, loadBindings(t, entity))
 
-	effect, err := plant.Apply(device.PlantCommand{Target: "unknown-99", Operation: "set_pwm_lease", CommandID: "cmd-x", AtMicros: w.Clock() / 1000})
+	command := plantCommand(t, "cmd-x", w.Clock()/1000)
+	command.Target = "unknown-99"
+	effect, err := plant.Apply(command)
 	if err != nil {
 		t.Fatalf("unmapped target should be a no-op: %v", err)
 	}
@@ -119,7 +137,7 @@ func TestUnmappedTargetFailsSafe(t *testing.T) {
 func TestStuckDeviceDoesNotApplyWorldEffect(t *testing.T) {
 	w := coldChainWorld(t, 1)
 	entity := w.EntityIDs()[0]
-	plant := New(w, setpointBinding(entity))
+	plant := New(w, loadBindings(t, entity))
 	atMicros := w.Clock() / 1000
 	d := device.New(device.Config{
 		Plant: plant, Capabilities: deviceCaps(t),
@@ -127,7 +145,7 @@ func TestStuckDeviceDoesNotApplyWorldEffect(t *testing.T) {
 	})
 	d.SetFaults(device.Faults{Stuck: true})
 
-	out := d.ApplyCommand(deviceCommand("cmd-stuck", atMicros))
+	out := d.ApplyCommand(deviceCommand(t, "cmd-stuck", atMicros))
 	if out.Receipt["accepted"] != true {
 		t.Fatalf("stuck command should be acknowledged: %v", out.Receipt)
 	}
@@ -139,16 +157,20 @@ func TestStuckDeviceDoesNotApplyWorldEffect(t *testing.T) {
 func TestWorldBindingFailureIsNotReportedAsExecution(t *testing.T) {
 	w := coldChainWorld(t, 1)
 	entity := w.EntityIDs()[0]
-	plant := New(w, map[string]Binding{
-		"fan-01": {Effector: "missing-effector", Entity: entity},
-	})
+	bindings := loadBindings(t, entity)
+	command := deviceCommand(t, "cmd-unavailable", w.Clock()/1000)
+	target, _ := command["target"].(string)
+	binding := bindings[target]
+	binding.effector = "missing-effector"
+	bindings[target] = binding
 	atMicros := w.Clock() / 1000
 	d := device.New(device.Config{
-		Plant: plant, Capabilities: deviceCaps(t),
+		Plant: New(w, bindings), Capabilities: deviceCaps(t),
 		Clock: func() int64 { return atMicros },
 	})
 
-	out := d.ApplyCommand(deviceCommand("cmd-unavailable", atMicros))
+	command["not_before_mono_us"] = float64(atMicros)
+	out := d.ApplyCommand(command)
 	if out.Receipt["accepted"] != false || out.Receipt["reject_code"] != "not_ready" {
 		t.Fatalf("binding failure must be a terminal not_ready rejection: %v", out.Receipt)
 	}
@@ -163,20 +185,13 @@ func TestWorldBindingFailureIsNotReportedAsExecution(t *testing.T) {
 func TestWiredThroughDevice(t *testing.T) {
 	w := coldChainWorld(t, 1)
 	entity := w.EntityIDs()[0]
-	plant := New(w, setpointBinding(entity))
+	plant := New(w, loadBindings(t, entity))
 
 	atMicros := w.Clock() / 1000
 	d := device.New(device.Config{Plant: plant, Capabilities: deviceCaps(t), Clock: func() int64 { return atMicros }})
 
 	// A valid, in-bounds command bound to the device's boot.
-	out := d.ApplyCommand(map[string]any{
-		"message_type": "command", "protocol_version": float64(1),
-		"command_id": "cmd-through", "idempotency_key": "sha256:" + rep('a', 64),
-		"target": "fan-01", "operation": "set_pwm_lease",
-		"parameters":       map[string]any{"duty_permille": float64(450), "lease_ms": float64(5000)},
-		"expected_boot_id": "boot-A", "not_before_mono_us": float64(atMicros),
-		"expires_after_ms": float64(60000), "policy_digest": "sha256:" + rep('b', 64),
-	})
+	out := d.ApplyCommand(deviceCommand(t, "cmd-through", atMicros))
 
 	if out.Receipt["accepted"] != true {
 		t.Fatalf("valid command must be accepted: %v", out.Receipt)
@@ -191,23 +206,19 @@ func TestWiredThroughDevice(t *testing.T) {
 	}
 }
 
-func rep(b byte, n int) string {
-	out := make([]byte, n)
-	for i := range out {
-		out[i] = b
+func deviceCommand(t *testing.T, commandID string, atMicros int64) map[string]any {
+	t.Helper()
+	data, err := os.ReadFile("../device/contract/conformance/v1/valid/command.json")
+	if err != nil {
+		t.Fatal(err)
 	}
-	return string(out)
-}
-
-func deviceCommand(commandID string, atMicros int64) map[string]any {
-	return map[string]any{
-		"message_type": "command", "protocol_version": float64(1),
-		"command_id": commandID, "idempotency_key": "sha256:" + rep('a', 64),
-		"target": "fan-01", "operation": "set_pwm_lease",
-		"parameters":       map[string]any{"duty_permille": float64(450), "lease_ms": float64(5000)},
-		"expected_boot_id": "boot-A", "not_before_mono_us": float64(atMicros),
-		"expires_after_ms": float64(60000), "policy_digest": "sha256:" + rep('b', 64),
+	var command map[string]any
+	if err := json.Unmarshal(data, &command); err != nil {
+		t.Fatal(err)
 	}
+	command["command_id"] = commandID
+	command["not_before_mono_us"] = float64(atMicros)
+	return command
 }
 
 // deviceCaps loads the device capability catalog data fixture for the through-

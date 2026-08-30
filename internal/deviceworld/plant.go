@@ -18,18 +18,14 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
-// Binding maps one device target to a world effector invocation.
+// Binding is a validated data-defined mapping from one device target to a world
+// effector invocation. LoadBindings is the supported construction path; domain
+// mappings are not supplied as Go callbacks.
 type Binding struct {
-	// Effector is the world effector name to invoke.
-	Effector string
-	// Entity is the world entity id the effector acts on.
-	Entity string
-	// ValueState, when set, is the world state read back as the output's value
-	// — the independent process reading used for verification.
-	ValueState string
-	// Args builds the world effector arguments from the device's numeric
-	// parameters. It must satisfy the effector's args_schema.
-	Args func(params map[string]float64) map[string]any
+	effector   string
+	entity     string
+	valueState string
+	arguments  map[string]bindingArgument
 }
 
 // Plant is a device.Plant backed by a *world.World.
@@ -56,11 +52,11 @@ func (p *Plant) Apply(cmd device.PlantCommand) (device.PlantEffect, error) {
 	if p.w == nil {
 		return device.PlantEffect{}, fmt.Errorf("%w: world is unavailable", device.ErrPlantUnavailable)
 	}
-	args := map[string]any{}
-	if binding.Args != nil {
-		args = binding.Args(cmd.Params)
+	args, err := binding.args(cmd.Params)
+	if err != nil {
+		return device.PlantEffect{}, fmt.Errorf("%w: build effector arguments: %w", device.ErrPlantUnavailable, err)
 	}
-	res, err := p.w.InvokeEffector(binding.Effector, binding.Entity, cmd.CommandID, args, cmd.AtMicros*1000)
+	res, err := p.w.InvokeEffector(binding.effector, binding.entity, cmd.CommandID, args, cmd.AtMicros*1000)
 	if err != nil || res == nil {
 		if errors.Is(err, world.ErrInterlockRefused) {
 			return device.PlantEffect{}, fmt.Errorf("%w: %w", device.ErrPlantInterlocked, err)
@@ -71,8 +67,8 @@ func (p *Plant) Apply(cmd device.PlantCommand) (device.PlantEffect, error) {
 		return device.PlantEffect{}, fmt.Errorf("%w: %w", device.ErrPlantUnavailable, err)
 	}
 	effect := device.PlantEffect{Energized: res.EffectApplied}
-	if binding.ValueState != "" {
-		effect.Value = p.w.StateValue(binding.Entity, binding.ValueState, p.w.Clock())
+	if binding.valueState != "" {
+		effect.Value = p.w.StateValue(binding.entity, binding.valueState, p.w.Clock())
 	}
 	return effect, nil
 }
