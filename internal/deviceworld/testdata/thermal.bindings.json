@@ -1,0 +1,12 @@
+{
+  "bindings": {
+    "fan-01": {
+      "effector": "adjust_setpoint",
+      "value_state": "setpoint_true",
+      "arguments": {
+        "reefer_id": {"source": "entity"},
+        "setpoint_c": {"source": "value", "value": -20}
+      }
+    }
+  }
+}

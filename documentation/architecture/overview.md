@@ -32,7 +32,8 @@ The intended dependency direction is downward:
 cmd/streamsim
     → internal/cli
         → internal/mcp, run, suite, score, refconsumer
-            → world, perturb, adapter, sink, truth, domain, model
+            → world, perturb, adapter, sink, truth, domain, model, device
+                → deviceworld (world-backed emulator plant)
 ```
 
 The current implementation keeps ledger behavior inside `internal/run`; there is no separate `internal/ledger` package. That is an implementation detail worth knowing when navigating the code, not a public contract.
@@ -49,6 +50,8 @@ The current implementation keeps ledger behavior inside `internal/run`; there is
 | MCP | Expose catalog, world control, truth, and operator capabilities. | Carry the event stream as a best-effort control push. |
 | Run/artifact | Record commands, counts, ledger, digests, and replay inputs. | Hide incomplete or divergent runs. |
 | Truth/scoring | Seal truth, accept verdicts, and compare evidence. | Reveal truth to the consumer before unblind. |
+| Device emulator | Enforce the vendored device wire contract and data-defined capability boundary. | Pretend emulator output is physical HIL evidence. |
+| Device-world binding | Route accepted emulator commands to a world effector oracle. | Hide interlock or binding failures as successful execution. |
 
 ## Data, not code
 
