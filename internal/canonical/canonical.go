@@ -47,13 +47,28 @@ func MarshalString(v any) (string, error) {
 	return string(b), err
 }
 
+// CapabilityCatalogDomain is the domain separator used by the paired device
+// capability catalog contract. The trailing newline is part of the contract.
+const CapabilityCatalogDomain = "situation-runtime/capability-catalog/v1\n"
+
 // Digest returns the RFC 8785 canonical digest of v as "sha256:<hex>".
 func Digest(v any) (string, error) {
+	return DigestDomain("", v)
+}
+
+// DigestDomain returns a domain-separated RFC 8785 canonical digest of v as
+// "sha256:<hex>". The domain is prepended to the canonical JSON bytes before
+// hashing. An empty domain preserves the simulator's historical unscoped
+// digest behavior.
+func DigestDomain(domain string, v any) (string, error) {
 	b, err := Marshal(v)
 	if err != nil {
 		return "", err
 	}
-	sum := sha256.Sum256(b)
+	preimage := make([]byte, 0, len(domain)+len(b))
+	preimage = append(preimage, domain...)
+	preimage = append(preimage, b...)
+	sum := sha256.Sum256(preimage)
 	return "sha256:" + hex.EncodeToString(sum[:]), nil
 }
 

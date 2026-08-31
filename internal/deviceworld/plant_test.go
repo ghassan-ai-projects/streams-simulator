@@ -3,6 +3,7 @@ package deviceworld
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"testing"
 
@@ -208,6 +209,25 @@ func TestWiredThroughDevice(t *testing.T) {
 	}
 }
 
+func TestSetFanDutyIsAnAssignment(t *testing.T) {
+	w := coldChainWorld(t, 1)
+	entity := w.EntityIDs()[0]
+	plant := New(w, loadBindings(t, entity))
+	for _, want := range []float64{450, 600, 0} {
+		effect, err := plant.Apply(device.PlantCommand{
+			Target: "fan-01", Operation: "set_fan_duty",
+			Params:    map[string]float64{"duty_permille": want},
+			CommandID: fmt.Sprintf("cmd-duty-%g", want), AtMicros: w.Clock() / 1000,
+		})
+		if err != nil {
+			t.Fatalf("set fan duty %g: %v", want, err)
+		}
+		if effect.Value != want || w.StateValue(entity, "fan_duty_true", w.Clock()) != want {
+			t.Fatalf("set fan duty %g produced effect=%+v world=%v", want, effect, w.StateValue(entity, "fan_duty_true", w.Clock()))
+		}
+	}
+}
+
 func TestLeaseExpiryInvokesWorldSafeStop(t *testing.T) {
 	w := coldChainWorld(t, 1)
 	entity := w.EntityIDs()[0]
@@ -234,6 +254,33 @@ func TestLeaseExpiryInvokesWorldSafeStop(t *testing.T) {
 	calls := w.EffectorCalls()
 	if len(calls) != 2 || calls[1].CommandID != "safe-stop/fan-01" {
 		t.Fatalf("lease expiry must invoke the world safe-stop path, calls = %+v", calls)
+	}
+	if calls[1].Effector != "stop_fan" || w.StateValue(entity, "fan_duty_true", w.Clock()) != 0 {
+		t.Fatalf("lease expiry must use the explicit stop_fan effect and clear fan duty: calls=%+v duty=%v", calls, w.StateValue(entity, "fan_duty_true", w.Clock()))
+	}
+}
+
+func TestWorldSafeStopDoesNotClaimPhysicalEffect(t *testing.T) {
+	spec, err := domain.Load("../../domains/cold-chain-transit.domain.json")
+	if err != nil {
+		t.Fatalf("load cold-chain domain: %v", err)
+	}
+	w, err := world.New(spec, 1, "w-safe-stop-failure", model.DefaultStartTimeNS, world.Options{
+		EmitDisabled:     true,
+		ForceFailureMode: world.ModeConfirmedNoEffect,
+	})
+	if err != nil {
+		t.Fatalf("new world: %v", err)
+	}
+	entity := w.EntityIDs()[0]
+	plant := New(w, loadBindings(t, entity))
+
+	effect, err := plant.SafeStop("fan-01", w.Clock()/1000)
+	if !errors.Is(err, device.ErrPlantUnavailable) {
+		t.Fatalf("accepted safe stop without a world effect must fail closed: effect=%+v err=%v", effect, err)
+	}
+	if effect.Energized {
+		t.Fatal("failed safe stop must not report an energized effect")
 	}
 }
 

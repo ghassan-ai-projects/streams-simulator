@@ -21,6 +21,7 @@ type kick struct {
 	entity  string
 	state   string
 	delta   float64
+	assign  bool
 	startNS int64
 	tauNS   float64 // 0 = instantaneous
 	applied bool    // set when the effect-start event pops
@@ -327,16 +328,33 @@ func (w *World) stateAt(entity, state string, t int64) float64 {
 	v := w.naturalValue(ent, state, t)
 	lastKick := int64(-1)
 	anyKick := false
+	lastAssignment := (*kick)(nil)
 	for _, k := range w.kicks[driverKey{entity: entity, state: state}] {
-		kv := k.valueAt(t)
-		if kv == 0 {
+		if t <= k.startNS {
 			continue
 		}
 		anyKick = true
 		if k.startNS > lastKick {
 			lastKick = k.startNS
 		}
-		v += kv
+		if k.assign && (lastAssignment == nil || k.startNS > lastAssignment.startNS) {
+			lastAssignment = k
+		}
+	}
+	if lastAssignment != nil {
+		v = lastAssignment.valueAt(t)
+		for _, k := range w.kicks[driverKey{entity: entity, state: state}] {
+			if k.assign || k.startNS <= lastAssignment.startNS || t <= k.startNS {
+				continue
+			}
+			v += k.valueAt(t)
+		}
+	} else {
+		for _, k := range w.kicks[driverKey{entity: entity, state: state}] {
+			if t > k.startNS {
+				v += k.valueAt(t)
+			}
+		}
 	}
 	lastFault := int64(-1)
 	anyFault := false

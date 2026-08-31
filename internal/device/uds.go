@@ -18,11 +18,10 @@ var ErrInjectedDisconnect = errors.New("device: injected disconnect")
 
 // ServeConn runs one device over a byte-stream connection using newline-delimited
 // framing. On connect it emits the current device.state; then for each inbound
-// command line it applies the command and writes one receipt. The result is
-// available from HandleCommand for direct callers; the gateway link uses state
-// queries for observed execution state. Under an ack_lost fault it writes
-// NOTHING for that command — the effect is still applied, so the upstream must
-// reconcile via a later state query.
+// command line it applies the command and writes the ordered receipt and
+// terminal result. Under an ack_lost fault it writes NOTHING for that command
+// — the effect is still applied, so the upstream must reconcile via a later
+// state query before retrying.
 //
 // Raw serial framing (COBS, checksums, reconnect, device identity) is a gateway
 // concern; this NDJSON line framing is the debug/emulator transport.
@@ -31,7 +30,7 @@ func ServeConn(conn io.ReadWriter, d *Device) error {
 }
 
 // ServeConnWithFaults is ServeConn with a deterministic transport-fault plan
-// applied to the outbound frames (state/receipt), indexed by emission
+// applied to the outbound frames (state/receipt/result), indexed by emission
 // order across the connection. See WireFaults.
 func ServeConnWithFaults(conn io.ReadWriter, d *Device, faults WireFaults) error {
 	gate := newWireGate(conn, faults)
@@ -66,18 +65,25 @@ func ServeConnWithFaults(conn io.ReadWriter, d *Device, faults WireFaults) error
 		}
 
 		// The command stream mirrors the effector's Exchange: one command yields
-		// exactly one receipt. Execution truth (current_output) is read back via
-		// query_state, so the result record is not pushed unsolicited here — that
-		// would desync the receipt the upstream reads next.
+		// exactly one ordered receipt/result pair. Execution truth (current_output)
+		// is still read back via query_state; the result is device-reported
+		// terminal status, not independent physical confirmation.
 		outcome, handleErr := d.handleCommand(frame)
 		if handleErr != nil {
 			// A malformed command is a wire error, not a silent drop: report it
-			// as a rejected receipt the upstream can act on.
+			// as a rejected receipt/result pair the upstream can act on.
 			reject, encErr := EncodeRecord(malformedReceipt())
 			if encErr != nil {
 				return fmt.Errorf("device: encode malformed receipt: %w", encErr)
 			}
 			if err := gate.send(reject); err != nil {
+				return err
+			}
+			malformed, encErr := EncodeRecord(malformedResult())
+			if encErr != nil {
+				return fmt.Errorf("device: encode malformed result: %w", encErr)
+			}
+			if err := gate.send(malformed); err != nil {
 				return err
 			}
 			continue
@@ -93,6 +99,10 @@ func ServeConnWithFaults(conn io.ReadWriter, d *Device, faults WireFaults) error
 		if err != nil {
 			return fmt.Errorf("device: encode receipt: %w", err)
 		}
+		result, err := EncodeRecord(outcome.Result)
+		if err != nil {
+			return fmt.Errorf("device: encode result: %w", err)
+		}
 		if outcome.Duplicate {
 			// Re-run the exact frame through admission/idempotency so the test
 			// exercises the same path as a gateway duplicate. The replay is an
@@ -103,9 +113,12 @@ func ServeConnWithFaults(conn io.ReadWriter, d *Device, faults WireFaults) error
 			}
 		}
 		if outcome.AckLost {
-			continue // ack_lost: withhold the receipt; effect stands, upstream reconciles via query_state
+			continue // ack_lost: withhold receipt and result; effect stands, upstream reconciles via query_state
 		}
 		if err := gate.send(receipt); err != nil {
+			return err
+		}
+		if err := gate.send(result); err != nil {
 			return err
 		}
 		if outcome.Disconnect {
@@ -141,6 +154,17 @@ func malformedReceipt() map[string]any {
 		"boot_id":          "unknown",
 		"accepted":         false,
 		"reject_code":      "malformed",
+	}
+}
+
+func malformedResult() map[string]any {
+	return map[string]any{
+		"message_type":     "result",
+		"protocol_version": float64(ProtocolVersion),
+		"command_id":       "unknown",
+		"boot_id":          "unknown",
+		"status":           "rejected",
+		"error_code":       "malformed",
 	}
 }
 

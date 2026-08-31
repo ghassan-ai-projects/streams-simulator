@@ -2,9 +2,11 @@ package device
 
 import (
 	"bufio"
+	"errors"
 	"net"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -38,9 +40,13 @@ func TestServeConnLoop(t *testing.T) {
 	if receipt["message_type"] != "receipt" || receipt["accepted"] != true {
 		t.Fatalf("expected an accepting receipt, got %v", receipt)
 	}
+	result := readRecord(t, reader)
+	if result["message_type"] != "result" || result["status"] != "executed" {
+		t.Fatalf("expected an executed result, got %v", result)
+	}
 
-	// Execution truth is read back via a query_state control, not an unsolicited
-	// result frame — mirroring the effector's QueryState.
+	// Execution truth is still read back via a query_state control; the result is
+	// device-reported terminal status, not independent physical confirmation.
 	if _, err := client.Write([]byte(QueryStateControl + "\n")); err != nil {
 		t.Fatal(err)
 	}
@@ -100,6 +106,10 @@ func TestScheduledDuplicateReplaysReceiptWithoutSecondPlantEffect(t *testing.T) 
 	receipt := readRecord(t, reader)
 	if receipt["message_type"] != "receipt" || receipt["accepted"] != true {
 		t.Fatalf("duplicate delivery must emit one accepted receipt: %v", receipt)
+	}
+	result := readRecord(t, reader)
+	if result["message_type"] != "result" || result["status"] != "executed" {
+		t.Fatalf("duplicate delivery must emit one executed result: %v", result)
 	}
 	if plant.applyCalls != 1 {
 		t.Fatalf("duplicate delivery must apply the plant once, got %d calls", plant.applyCalls)
@@ -174,6 +184,10 @@ func TestAckLostRetryReplaysReceiptWithoutSecondPlantEffect(t *testing.T) {
 	if receipt["message_type"] != "receipt" || receipt["accepted"] != true {
 		t.Fatalf("retry must replay an accepted receipt: %v", receipt)
 	}
+	result := readRecord(t, reader)
+	if result["message_type"] != "result" || result["status"] != "executed" {
+		t.Fatalf("retry must replay an executed result: %v", result)
+	}
 	if plant.applyCalls != 1 {
 		t.Fatalf("ack_lost retry must apply the plant once, got %d calls", plant.applyCalls)
 	}
@@ -186,6 +200,73 @@ func TestAckLostRetryReplaysReceiptWithoutSecondPlantEffect(t *testing.T) {
 	}
 
 	_ = client.Close()
+}
+
+func TestSafeStopAckLostRetryReplaysReceiptAndResult(t *testing.T) {
+	plant := &countingPlant{}
+	d := New(Config{
+		Capabilities:  testCaps(t),
+		Plant:         plant,
+		FaultSchedule: []FaultInjection{{Name: FaultAckLost, AcceptedCommand: 2}},
+	})
+	client, server := net.Pipe()
+	done := make(chan error, 1)
+	go func() { done <- ServeConn(server, d) }()
+	_ = client.SetReadDeadline(time.Now().Add(2 * time.Second))
+	reader := bufio.NewReader(client)
+	readRecord(t, reader)
+
+	normal, err := EncodeRecord(validCommand(t, nil))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := client.Write(normal); err != nil {
+		t.Fatal(err)
+	}
+	readRecord(t, reader)
+	readRecord(t, reader)
+
+	safeStop := validCommand(t, func(c map[string]any) {
+		c["command_id"] = "safe-stop/fan-01"
+		c["idempotency_key"] = "sha256:" + strings.Repeat("e", 64)
+		c["operation"] = "safe_stop"
+		c["parameters"] = map[string]any{}
+		c["expires_after_ms"] = float64(1000)
+	})
+	frame, err := EncodeRecord(safeStop)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := client.Write(frame); err != nil {
+		t.Fatal(err)
+	}
+	_ = client.SetReadDeadline(time.Now().Add(50 * time.Millisecond))
+	if _, err := reader.ReadBytes('\n'); err == nil {
+		t.Fatal("ack_lost safe-stop must not emit a receipt")
+	} else {
+		var netErr net.Error
+		if !errors.As(err, &netErr) || !netErr.Timeout() {
+			t.Fatalf("expected bounded safe-stop read timeout, got %v", err)
+		}
+	}
+
+	_ = client.SetReadDeadline(time.Now().Add(2 * time.Second))
+	if _, err := client.Write(frame); err != nil {
+		t.Fatal(err)
+	}
+	receipt := readRecord(t, reader)
+	result := readRecord(t, reader)
+	if receipt["accepted"] != true || result["status"] != "safe_state" {
+		t.Fatalf("safe-stop retry receipt=%v result=%v", receipt, result)
+	}
+	if plant.applyCalls != 1 || plant.safeStopCalls != 1 {
+		t.Fatalf("safe-stop retry applied more than once: apply=%d safe_stop=%d", plant.applyCalls, plant.safeStopCalls)
+	}
+
+	_ = client.Close()
+	if err := <-done; err != nil {
+		t.Fatalf("ServeConn returned error: %v", err)
+	}
 }
 
 func readRecord(t *testing.T, reader *bufio.Reader) map[string]any {

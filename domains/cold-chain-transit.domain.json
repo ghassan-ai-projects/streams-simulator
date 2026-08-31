@@ -30,6 +30,10 @@
   "state": [
     {"name": "setpoint_true", "unit": "degC", "initial": -20.0, "min": -30.0, "max": 10.0,
      "description": "Commanded temperature. No free dynamics: moved only by the adjust_setpoint effector."},
+    {"name": "fan_duty_true", "unit": "permille", "initial": 0.0, "min": 0.0, "max": 1000.0,
+     "description": "Emulated low-voltage fan output. It is changed only by the explicit device-world fan effectors."},
+    {"name": "led_brightness_true", "unit": "permille", "initial": 0.0, "min": 0.0, "max": 1000.0,
+     "description": "Emulated low-voltage indicator output used as the first bounded device-loop effect."},
     {"name": "ambient_true", "unit": "degC", "initial": 12.0, "min": -5.0, "max": 45.0,
      "description": "Outside temperature. Mild diurnal swing at sea; warmer in port. Explains a rise without a fault."},
     {"name": "door_open", "unit": "rel", "initial": 0.0, "min": 0.0, "max": 1.0,
@@ -275,6 +279,97 @@
   ],
 
   "effectors": [
+    {
+      "name": "set_fan_duty",
+      "description": "Emulated bounded fan output used by the device-wire integration path.",
+      "args_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["reefer_id", "duty_permille"],
+        "properties": {
+          "reefer_id": {"type": "string"},
+          "duty_permille": {"type": "number", "minimum": 0, "maximum": 1000}
+        }
+      },
+      "risk_class": "low",
+      "ack": {
+        "latency_ms": {"mean": 100, "sigma": 20},
+        "failure_modes": [{"mode": "ok", "probability": 1.0}]
+      },
+      "effect": {
+        "state_deltas": [{"state": "fan_duty_true", "assign_from_arg": "duty_permille"}],
+        "time_constant_s": 0,
+        "dead_time_s": 0
+      },
+      "idempotency_window_s": 3600
+    },
+    {
+      "name": "stop_fan",
+      "description": "Explicit catalog-owned safe stop for the emulated fan output.",
+      "args_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["reefer_id"],
+        "properties": {"reefer_id": {"type": "string"}}
+      },
+      "risk_class": "low",
+      "ack": {
+        "latency_ms": {"mean": 100, "sigma": 20},
+        "failure_modes": [{"mode": "ok", "probability": 1.0}]
+      },
+      "effect": {
+        "state_deltas": [{"state": "fan_duty_true", "delta": -1000.0}],
+        "time_constant_s": 0,
+        "dead_time_s": 0
+      },
+      "idempotency_window_s": 3600
+    },
+    {
+      "name": "set_led",
+      "description": "Emulated bounded low-voltage indicator output used by the device-wire integration path.",
+      "args_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["reefer_id", "brightness_permille", "pattern"],
+        "properties": {
+          "reefer_id": {"type": "string"},
+          "brightness_permille": {"type": "number", "minimum": 0, "maximum": 1000},
+          "pattern": {"type": "string", "enum": ["off", "slow_blink", "solid"]}
+        }
+      },
+      "risk_class": "low",
+      "ack": {
+        "latency_ms": {"mean": 50, "sigma": 10},
+        "failure_modes": [{"mode": "ok", "probability": 1.0}]
+      },
+      "effect": {
+        "state_deltas": [{"state": "led_brightness_true", "assign_from_arg": "brightness_permille"}],
+        "time_constant_s": 0,
+        "dead_time_s": 0
+      },
+      "idempotency_window_s": 3600
+    },
+    {
+      "name": "stop_led",
+      "description": "Explicit catalog-owned safe stop for the emulated indicator output.",
+      "args_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["reefer_id"],
+        "properties": {"reefer_id": {"type": "string"}}
+      },
+      "risk_class": "low",
+      "ack": {
+        "latency_ms": {"mean": 50, "sigma": 10},
+        "failure_modes": [{"mode": "ok", "probability": 1.0}]
+      },
+      "effect": {
+        "state_deltas": [{"state": "led_brightness_true", "delta": -1000.0}],
+        "time_constant_s": 0,
+        "dead_time_s": 0
+      },
+      "idempotency_window_s": 3600
+    },
     {
       "name": "adjust_setpoint",
       "description": "Lower the commanded temperature. Slow-physical: dead time then a long settling constant. The cheap corrective for a building-but-sub-threshold cumulative.",

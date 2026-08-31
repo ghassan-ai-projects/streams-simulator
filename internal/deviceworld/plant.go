@@ -22,10 +22,12 @@ import (
 // effector invocation. LoadBindings is the supported construction path; domain
 // mappings are not supplied as Go callbacks.
 type Binding struct {
-	effector   string
-	entity     string
-	valueState string
-	arguments  map[string]bindingArgument
+	effector         string
+	entity           string
+	valueState       string
+	arguments        map[string]bindingArgument
+	safeStopEffector string
+	safeStopArgs     map[string]bindingArgument
 }
 
 // Plant is a device.Plant backed by a *world.World.
@@ -71,6 +73,9 @@ func (p *Plant) Apply(cmd device.PlantCommand) (device.PlantEffect, error) {
 		}
 		return device.PlantEffect{}, fmt.Errorf("%w: %w", device.ErrPlantUnavailable, err)
 	}
+	if _, _, err := p.w.Advance(atNS + 1); err != nil {
+		return device.PlantEffect{}, fmt.Errorf("%w: advance world after effector: %w", device.ErrPlantUnavailable, err)
+	}
 	effect := device.PlantEffect{Energized: res.EffectApplied}
 	if binding.valueState != "" {
 		effect.Value = p.w.StateValue(binding.entity, binding.valueState, p.w.Clock())
@@ -86,6 +91,9 @@ func (p *Plant) SafeStop(target string, atMicros int64) (device.PlantEffect, err
 	if !ok {
 		return device.PlantEffect{}, fmt.Errorf("%w: no binding for target %q", device.ErrPlantUnavailable, target)
 	}
+	if binding.safeStopEffector == "" {
+		return device.PlantEffect{}, fmt.Errorf("%w: no explicit safe-stop binding for target %q", device.ErrPlantUnavailable, target)
+	}
 	if p.w == nil {
 		return device.PlantEffect{}, fmt.Errorf("%w: world is unavailable", device.ErrPlantUnavailable)
 	}
@@ -93,11 +101,11 @@ func (p *Plant) SafeStop(target string, atMicros int64) (device.PlantEffect, err
 	if err != nil {
 		return device.PlantEffect{}, fmt.Errorf("%w: advance world for safe stop: %w", device.ErrPlantUnavailable, err)
 	}
-	args, err := binding.args(nil)
+	args, err := binding.safeStopArgsForEntity()
 	if err != nil {
 		return device.PlantEffect{}, fmt.Errorf("%w: build safe-stop arguments: %w", device.ErrPlantUnavailable, err)
 	}
-	res, err := p.w.InvokeEffector(binding.effector, binding.entity, "safe-stop/"+target, args, atNS)
+	res, err := p.w.InvokeEffector(binding.safeStopEffector, binding.entity, "safe-stop/"+target, args, atNS)
 	if err != nil || res == nil {
 		if errors.Is(err, world.ErrInterlockRefused) {
 			return device.PlantEffect{}, fmt.Errorf("%w: %w", device.ErrPlantInterlocked, err)
@@ -109,6 +117,12 @@ func (p *Plant) SafeStop(target string, atMicros int64) (device.PlantEffect, err
 	}
 	if !res.Accepted {
 		return device.PlantEffect{}, fmt.Errorf("%w: safe stop was not accepted: %s", device.ErrPlantUnavailable, res.Reason)
+	}
+	if !res.EffectApplied {
+		return device.PlantEffect{}, fmt.Errorf("%w: safe stop was accepted without applying its effect: %s", device.ErrPlantUnavailable, res.Mode)
+	}
+	if _, _, err := p.w.Advance(atNS + 1); err != nil {
+		return device.PlantEffect{}, fmt.Errorf("%w: advance world after safe stop: %w", device.ErrPlantUnavailable, err)
 	}
 	return device.PlantEffect{Value: stateValue(p.w, binding), Energized: false}, nil
 }

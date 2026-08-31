@@ -24,6 +24,12 @@ type bindingDocument struct {
 	Effector   string                      `json:"effector"`
 	ValueState string                      `json:"value_state,omitempty"`
 	Arguments  map[string]argumentDocument `json:"arguments,omitempty"`
+	SafeStop   *safeStopDocument           `json:"safe_stop,omitempty"`
+}
+
+type safeStopDocument struct {
+	Effector  string                      `json:"effector"`
+	Arguments map[string]argumentDocument `json:"arguments,omitempty"`
 }
 
 type argumentDocument struct {
@@ -61,14 +67,27 @@ func LoadBindings(data []byte, entity string) (map[string]Binding, error) {
 		if err != nil {
 			return nil, fmt.Errorf("deviceworld: target %q: %w", target, err)
 		}
+		var safeStopEffector string
+		var safeStopArgs map[string]bindingArgument
+		if binding.SafeStop != nil {
+			if binding.SafeStop.Effector == "" {
+				return nil, fmt.Errorf("deviceworld: target %q safe_stop must declare an effector", target)
+			}
+			safeStopEffector = binding.SafeStop.Effector
+			safeStopArgs, err = loadArguments(binding.SafeStop.Arguments)
+			if err != nil {
+				return nil, fmt.Errorf("deviceworld: target %q safe_stop: %w", target, err)
+			}
+		}
 		if argumentsNeedEntity(arguments) && entity == "" {
 			return nil, fmt.Errorf("deviceworld: target %q requires a world entity", target)
 		}
+		if argumentsNeedEntity(safeStopArgs) && entity == "" {
+			return nil, fmt.Errorf("deviceworld: target %q safe_stop requires a world entity", target)
+		}
 		bindings[target] = Binding{
-			effector:   binding.Effector,
-			entity:     entity,
-			valueState: binding.ValueState,
-			arguments:  arguments,
+			effector: binding.Effector, entity: entity, valueState: binding.ValueState,
+			arguments: arguments, safeStopEffector: safeStopEffector, safeStopArgs: safeStopArgs,
 		}
 	}
 	return bindings, nil
@@ -123,11 +142,19 @@ func argumentsNeedEntity(arguments map[string]bindingArgument) bool {
 }
 
 func (b Binding) args(params map[string]float64) (map[string]any, error) {
-	args := make(map[string]any, len(b.arguments))
-	for name, argument := range b.arguments {
+	return resolveArgs(b.arguments, b.entity, params)
+}
+
+func (b Binding) safeStopArgsForEntity() (map[string]any, error) {
+	return resolveArgs(b.safeStopArgs, b.entity, nil)
+}
+
+func resolveArgs(arguments map[string]bindingArgument, entity string, params map[string]float64) (map[string]any, error) {
+	args := make(map[string]any, len(arguments))
+	for name, argument := range arguments {
 		switch argument.source {
 		case "entity":
-			args[name] = b.entity
+			args[name] = entity
 		case "parameter":
 			value, ok := params[argument.parameter]
 			if !ok {

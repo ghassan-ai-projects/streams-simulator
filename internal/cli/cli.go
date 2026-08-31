@@ -110,7 +110,7 @@ Commands:
   manifest                              Write release-manifest.json (author +
                                         reviewer identity, optional ed25519)
   device serve --socket <path>          Serve the device emulator over a UDS
-                                        (state/receipt gateway link)
+                                        (state/receipt link; --world enables plant wiring)
   help
 `)
 }

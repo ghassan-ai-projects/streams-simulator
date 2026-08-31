@@ -28,6 +28,7 @@ type TargetCapability struct {
 	EnergizeField  string
 	ExpiresAfterMS int
 	Bounds         map[string][2]float64
+	StringValues   map[string]map[string]struct{}
 }
 
 type safeStopCapability struct {
@@ -245,14 +246,33 @@ func (c *Capabilities) loadRoutes(routes map[string]routeDocument) error {
 		if err != nil {
 			return err
 		}
+		stringValues := routeStringValues(route)
 		c.targets[route.Target] = TargetCapability{
 			Operation:      route.Operation,
 			EnergizeField:  firstBoundField(bounds),
 			ExpiresAfterMS: route.ExpiresAfterMS,
 			Bounds:         bounds,
+			StringValues:   stringValues,
 		}
 	}
 	return nil
+}
+
+func routeStringValues(route routeDocument) map[string]map[string]struct{} {
+	values := map[string]map[string]struct{}{}
+	for _, preset := range route.Presets {
+		for field, raw := range preset {
+			value, ok := raw.(string)
+			if !ok {
+				continue
+			}
+			if values[field] == nil {
+				values[field] = map[string]struct{}{}
+			}
+			values[field][value] = struct{}{}
+		}
+	}
+	return values
 }
 
 func routeBounds(routeName string, route routeDocument) (map[string][2]float64, error) {
@@ -405,6 +425,23 @@ func (c *Capabilities) hasSafeStop(target string) bool {
 	}
 	_, ok := c.safeStops[target]
 	return ok
+}
+
+// TargetNames returns the catalog's device targets in deterministic order.
+func (c *Capabilities) TargetNames() []string {
+	if c == nil {
+		return nil
+	}
+	return sortedStringKeys(c.targets)
+}
+
+// SafeStopNames returns the catalog's explicit safe-stop targets in
+// deterministic order.
+func (c *Capabilities) SafeStopNames() []string {
+	if c == nil {
+		return nil
+	}
+	return sortedStringKeys(c.safeStops)
 }
 
 func (c *Capabilities) target(name string) (TargetCapability, bool) {

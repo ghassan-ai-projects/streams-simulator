@@ -1,11 +1,42 @@
 {
   "bindings": {
     "fan-01": {
-      "effector": "adjust_setpoint",
-      "value_state": "setpoint_true",
+      "effector": "set_fan_duty",
+      "value_state": "fan_duty_true",
       "arguments": {
         "reefer_id": {"source": "entity"},
-        "setpoint_c": {"source": "value", "value": -20}
+        "duty_permille": {"source": "parameter", "parameter": "duty_permille"}
+      },
+      "safe_stop": {
+        "effector": "stop_fan",
+        "arguments": {
+          "reefer_id": {"source": "entity"}
+        }
+      }
+    },
+    "led-01": {
+      "effector": "set_led",
+      "value_state": "led_brightness_true",
+      "arguments": {
+        "reefer_id": {
+          "source": "entity"
+        },
+        "brightness_permille": {
+          "source": "parameter",
+          "parameter": "brightness_permille"
+        },
+        "pattern": {
+          "source": "value",
+          "value": "solid"
+        }
+      },
+      "safe_stop": {
+        "effector": "stop_led",
+        "arguments": {
+          "reefer_id": {
+            "source": "entity"
+          }
+        }
       }
     }
   }
