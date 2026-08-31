@@ -43,11 +43,12 @@ func New(w *world.World, bindings map[string]Binding) *Plant {
 // Apply invokes the bound world effector for an accepted device command and
 // reports the physical truth. energized reflects whether the world applied the
 // effect (res.EffectApplied) — independent of the acknowledgement, which the
-// device layer handles separately. An unmapped target is a fail-safe no-op.
+// device layer handles separately. An unmapped target is unavailable, not a
+// successful no-op, so the device cannot report execution without an effect.
 func (p *Plant) Apply(cmd device.PlantCommand) (device.PlantEffect, error) {
 	binding, ok := p.bindings[cmd.Target]
 	if !ok {
-		return device.PlantEffect{}, nil
+		return device.PlantEffect{}, fmt.Errorf("%w: no binding for target %q", device.ErrPlantUnavailable, cmd.Target)
 	}
 	if p.w == nil {
 		return device.PlantEffect{}, fmt.Errorf("%w: world is unavailable", device.ErrPlantUnavailable)
@@ -83,7 +84,7 @@ func (p *Plant) Apply(cmd device.PlantCommand) (device.PlantEffect, error) {
 func (p *Plant) SafeStop(target string, atMicros int64) (device.PlantEffect, error) {
 	binding, ok := p.bindings[target]
 	if !ok {
-		return device.PlantEffect{}, nil
+		return device.PlantEffect{}, fmt.Errorf("%w: no binding for target %q", device.ErrPlantUnavailable, target)
 	}
 	if p.w == nil {
 		return device.PlantEffect{}, fmt.Errorf("%w: world is unavailable", device.ErrPlantUnavailable)
