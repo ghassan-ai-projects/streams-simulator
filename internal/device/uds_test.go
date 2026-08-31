@@ -118,6 +118,76 @@ func TestScheduledDuplicateReplaysReceiptWithoutSecondPlantEffect(t *testing.T) 
 	}
 }
 
+func TestAckLostRetryReplaysReceiptWithoutSecondPlantEffect(t *testing.T) {
+	plant := &countingPlant{}
+	d := New(Config{
+		Capabilities:  testCaps(t),
+		Plant:         plant,
+		FaultSchedule: []FaultInjection{{Name: FaultAckLost, AcceptedCommand: 1}},
+	})
+	tmpDir, err := os.MkdirTemp("/tmp", "ss-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmpDir)
+	path := filepath.Join(tmpDir, "device.sock")
+	listener, err := Listen(path, d)
+	if err != nil {
+		t.Fatal(err)
+	}
+	client, err := net.Dial("unix", path)
+	if err != nil {
+		_ = listener.Close()
+		t.Fatal(err)
+	}
+	defer listener.Close()
+
+	_ = client.SetReadDeadline(time.Now().Add(2 * time.Second))
+	reader := bufio.NewReader(client)
+	readRecord(t, reader)
+	command, err := EncodeRecord(validCommand(t, nil))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := client.Write(command); err != nil {
+		t.Fatal(err)
+	}
+	deadline := time.Now().Add(2 * time.Second)
+	for d.AcceptedCommandCount() != 1 && time.Now().Before(deadline) {
+		time.Sleep(time.Millisecond)
+	}
+	if d.AcceptedCommandCount() != 1 {
+		t.Fatal("ack_lost command was not admitted")
+	}
+	_ = client.SetReadDeadline(time.Now().Add(50 * time.Millisecond))
+	if _, err := reader.ReadBytes('\n'); err == nil {
+		t.Fatal("ack_lost first delivery must not emit a receipt")
+	} else if netErr, ok := err.(net.Error); !ok || !netErr.Timeout() {
+		t.Fatalf("expected bounded read timeout before retry, got %v", err)
+	}
+
+	_ = client.SetReadDeadline(time.Now().Add(2 * time.Second))
+	if _, err := client.Write(command); err != nil {
+		t.Fatal(err)
+	}
+	receipt := readRecord(t, reader)
+	if receipt["message_type"] != "receipt" || receipt["accepted"] != true {
+		t.Fatalf("retry must replay an accepted receipt: %v", receipt)
+	}
+	if plant.applyCalls != 1 {
+		t.Fatalf("ack_lost retry must apply the plant once, got %d calls", plant.applyCalls)
+	}
+	if _, err := client.Write([]byte(QueryStateControl + "\n")); err != nil {
+		t.Fatal(err)
+	}
+	state := readRecord(t, reader)
+	if state["message_type"] != "state" {
+		t.Fatalf("query_state after ack_lost retry must return state, got %v", state)
+	}
+
+	_ = client.Close()
+}
+
 func readRecord(t *testing.T, reader *bufio.Reader) map[string]any {
 	t.Helper()
 	line, err := reader.ReadBytes('\n')

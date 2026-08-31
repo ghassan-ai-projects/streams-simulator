@@ -3,6 +3,9 @@ package device
 import (
 	"errors"
 	"fmt"
+	"log/slog"
+	"strconv"
+	"strings"
 	"sync"
 )
 
@@ -26,6 +29,10 @@ type Config struct {
 	// LoadCapabilities). When nil the device declares no targets and rejects
 	// every command wrong_target — capabilities are never hard-coded.
 	Capabilities *Capabilities
+	// FaultSchedule is an optional deterministic schedule of protocol faults.
+	// Invalid schedules should be rejected with ValidateFaultSchedule before
+	// constructing a device.
+	FaultSchedule []FaultInjection
 }
 
 // Faults is the injectable protocol fault state. Zero value is a healthy
@@ -46,6 +53,16 @@ type Outcome struct {
 	// AckLost is true when an ack_lost fault means the receipt must NOT be
 	// written to the wire, even though Result records what actually happened.
 	AckLost bool
+	// Duplicate asks the gateway loop to deliver this command to the device a
+	// second time. The device's idempotency ledger still applies it once.
+	Duplicate bool
+	// Disconnect asks the gateway loop to close the current connection after
+	// handling this command.
+	Disconnect bool
+	// Fault and AcceptedCommand are local evidence for deterministic fault logs;
+	// neither field is serialized onto the device wire.
+	Fault           string
+	AcceptedCommand int
 }
 
 // Device is a wire-faithful serial device emulator. It is safe for use by one
@@ -61,6 +78,8 @@ type Device struct {
 	manualMono       int64
 	capabilities     *Capabilities
 	faults           Faults
+	faultSchedule    map[int][]string
+	acceptedCommands int
 
 	dedup            map[string]Outcome // idempotency_key -> prior outcome
 	curTarget        string
@@ -87,6 +106,7 @@ func New(cfg Config) *Device {
 		plant:            cfg.Plant,
 		capabilities:     cfg.Capabilities,
 		dedup:            map[string]Outcome{},
+		faultSchedule:    faultNames(cfg.FaultSchedule),
 		safeState:        true,
 	}
 	if cfg.Clock != nil {
@@ -113,12 +133,39 @@ func (d *Device) SetFaults(f Faults) {
 	d.faults = f
 }
 
+// SetFaultSchedule installs a deterministic one-shot fault schedule. Entries
+// are keyed by the one-based admission ordinal and are consumed when that
+// ordinal is reached.
+func (d *Device) SetFaultSchedule(schedule []FaultInjection) error {
+	if err := ValidateFaultSchedule(schedule); err != nil {
+		return err
+	}
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.faultSchedule = faultNames(schedule)
+	d.acceptedCommands = 0
+	return nil
+}
+
+// AcceptedCommandCount returns the number of commands that reached the
+// schedule's admission ordinal. It is useful for deterministic test evidence.
+func (d *Device) AcceptedCommandCount() int {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.acceptedCommands
+}
+
 // Reboot simulates a power cycle: a new boot identity, safe outputs, and a
 // cleared volatile dedup ledger. Commands bound to the old boot are then
 // rejected wrong_boot, which is exactly what forces upstream reconciliation.
 func (d *Device) Reboot(newBootID string) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
+	d.rebootLocked(newBootID)
+}
+
+func (d *Device) rebootLocked(newBootID string) {
+	d.invokeSafeStopLocked()
 	d.bootID = newBootID
 	d.energized = false
 	d.curTarget, d.curOp, d.curValue = "", "", 0
@@ -162,14 +209,10 @@ func (d *Device) State() map[string]any {
 // the encoded receipt and result frames. When ackLost is true the receipt frame
 // must not be written to the wire (the effect still happened).
 func (d *Device) HandleCommand(frame []byte) (receipt []byte, result []byte, ackLost bool, err error) {
-	command, decodeErr := DecodeRecord(frame)
-	if decodeErr != nil {
-		return nil, nil, false, decodeErr
+	outcome, err := d.handleCommand(frame)
+	if err != nil {
+		return nil, nil, false, err
 	}
-	if command["message_type"] != "command" {
-		return nil, nil, false, fmt.Errorf("device: expected a command frame, got %v", command["message_type"])
-	}
-	outcome := d.ApplyCommand(command)
 	receiptFrame, err := EncodeRecord(outcome.Receipt)
 	if err != nil {
 		return nil, nil, false, fmt.Errorf("device: encode receipt: %w", err)
@@ -179,6 +222,17 @@ func (d *Device) HandleCommand(frame []byte) (receipt []byte, result []byte, ack
 		return nil, nil, false, fmt.Errorf("device: encode result: %w", err)
 	}
 	return receiptFrame, resultFrame, outcome.AckLost, nil
+}
+
+func (d *Device) handleCommand(frame []byte) (Outcome, error) {
+	command, decodeErr := DecodeRecord(frame)
+	if decodeErr != nil {
+		return Outcome{}, decodeErr
+	}
+	if command["message_type"] != "command" {
+		return Outcome{}, fmt.Errorf("device: expected a command frame, got %v", command["message_type"])
+	}
+	return d.ApplyCommand(command), nil
 }
 
 // ApplyCommand runs the device's admission logic on an already-decoded command
@@ -202,10 +256,58 @@ func (d *Device) ApplyCommand(command map[string]any) Outcome {
 	if reject := d.admit(command, now); reject != "" {
 		return d.rejection(commandID, now, reject)
 	}
+	d.acceptedCommands++
+	ordinal := d.acceptedCommands
+	injections := d.faultSchedule[ordinal]
+	delete(d.faultSchedule, ordinal)
+	fault := strings.Join(injections, ",")
+	originalFaults := d.faults
+	for _, injection := range injections {
+		switch injection {
+		case FaultAckLost:
+			d.faults.AckLost = true
+		case FaultStuck:
+			d.faults.Stuck = true
+		}
+	}
+	for _, injection := range injections {
+		if injection != FaultStale && injection != FaultExpired {
+			continue
+		}
+		code := "not_ready"
+		if injection == FaultExpired {
+			code = "expired"
+		}
+		outcome := d.rejection(commandID, now, code)
+		outcome.Fault = fault
+		outcome.AcceptedCommand = ordinal
+		d.faults = originalFaults
+		return outcome
+	}
 
 	outcome, accepted := d.applyAcceptedCommand(command, commandID, now)
+	d.faults = originalFaults
+	outcome.Fault = fault
+	outcome.AcceptedCommand = ordinal
 	if accepted {
-		d.dedup[idempotencyKey] = outcome
+		for _, injection := range injections {
+			switch injection {
+			case FaultDuplicate:
+				outcome.Duplicate = true
+			case FaultDisconnect:
+				outcome.Disconnect = true
+			case FaultReboot:
+				d.rebootLocked("boot-reboot-" + strconv.Itoa(ordinal))
+			}
+		}
+		if !containsFault(injections, FaultReboot) {
+			replay := outcome
+			// Ack loss is a property of this wire delivery, not of the
+			// idempotent execution. A later retry must be able to recover the
+			// receipt without applying the plant a second time.
+			replay.AckLost = false
+			d.dedup[idempotencyKey] = replay
+		}
 	}
 	return outcome
 }
@@ -313,9 +415,23 @@ func (d *Device) expireLease(now int64) {
 	if d.leaseUntilMicros == 0 || now < d.leaseUntilMicros {
 		return
 	}
+	d.invokeSafeStopLocked()
 	d.energized = false
 	d.safeState = true
 	d.leaseUntilMicros = 0
+}
+
+func (d *Device) invokeSafeStopLocked() {
+	if d.curTarget == "" || d.capabilities == nil || !d.capabilities.hasSafeStop(d.curTarget) {
+		return
+	}
+	stopper, ok := d.plant.(SafeStopper)
+	if !ok {
+		return
+	}
+	if _, err := stopper.SafeStop(d.curTarget, d.clock()); err != nil {
+		slog.Error("device safe stop failed", "target", d.curTarget, "error", err)
+	}
 }
 
 func leaseDeadline(now int64, params map[string]float64) int64 {
@@ -353,6 +469,15 @@ func (d *Device) rejection(commandID string, now int64, code string) Outcome {
 			"error_code":       code,
 		},
 	}
+}
+
+func containsFault(faults []string, want string) bool {
+	for _, fault := range faults {
+		if fault == want {
+			return true
+		}
+	}
+	return false
 }
 
 func resultDetail(energized bool) string {
