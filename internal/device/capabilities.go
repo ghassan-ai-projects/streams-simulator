@@ -24,9 +24,10 @@ type Capabilities struct {
 
 // TargetCapability is one target's declared capability.
 type TargetCapability struct {
-	Operation     string
-	EnergizeField string
-	Bounds        map[string][2]float64
+	Operation      string
+	EnergizeField  string
+	ExpiresAfterMS int
+	Bounds         map[string][2]float64
 }
 
 type safeStopCapability struct {
@@ -245,9 +246,10 @@ func (c *Capabilities) loadRoutes(routes map[string]routeDocument) error {
 			return err
 		}
 		c.targets[route.Target] = TargetCapability{
-			Operation:     route.Operation,
-			EnergizeField: firstBoundField(bounds),
-			Bounds:        bounds,
+			Operation:      route.Operation,
+			EnergizeField:  firstBoundField(bounds),
+			ExpiresAfterMS: route.ExpiresAfterMS,
+			Bounds:         bounds,
 		}
 	}
 	return nil

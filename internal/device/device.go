@@ -370,6 +370,9 @@ func (d *Device) admit(command map[string]any, now int64) string {
 	if !ok {
 		return "wrong_target"
 	}
+	if capa.ExpiresAfterMS > 0 && expiresAfter > float64(capa.ExpiresAfterMS) {
+		return "expired"
+	}
 	if operation, _ := command["operation"].(string); operation != capa.Operation {
 		return "unknown_operation"
 	}
