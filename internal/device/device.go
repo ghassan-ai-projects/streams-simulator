@@ -165,11 +165,18 @@ func (d *Device) Reboot(newBootID string) {
 }
 
 func (d *Device) rebootLocked(newBootID string) {
-	d.invokeSafeStopLocked()
+	safeStopSucceeded := d.invokeSafeStopLocked()
 	d.bootID = newBootID
-	d.energized = false
-	d.curTarget, d.curOp, d.curValue = "", "", 0
-	d.safeState = true
+	if safeStopSucceeded {
+		d.energized = false
+		d.curTarget, d.curOp, d.curValue = "", "", 0
+		d.safeState = true
+	} else {
+		// Preserve the last output as conservative evidence when the plant
+		// could not confirm the safe transition.
+		d.energized = true
+		d.safeState = false
+	}
 	d.dedup = map[string]Outcome{}
 	d.leaseUntilMicros = 0
 }
@@ -418,23 +425,32 @@ func (d *Device) expireLease(now int64) {
 	if d.leaseUntilMicros == 0 || now < d.leaseUntilMicros {
 		return
 	}
-	d.invokeSafeStopLocked()
-	d.energized = false
-	d.safeState = true
+	safeStopSucceeded := d.invokeSafeStopLocked()
+	if safeStopSucceeded {
+		d.energized = false
+		d.safeState = true
+	} else {
+		// A failed stop leaves the physical output unknown; do not claim the
+		// device is safe or erase the last energized observation.
+		d.energized = true
+		d.safeState = false
+	}
 	d.leaseUntilMicros = 0
 }
 
-func (d *Device) invokeSafeStopLocked() {
+func (d *Device) invokeSafeStopLocked() bool {
 	if d.curTarget == "" || d.capabilities == nil || !d.capabilities.hasSafeStop(d.curTarget) {
-		return
+		return true
 	}
 	stopper, ok := d.plant.(SafeStopper)
 	if !ok {
-		return
+		return true
 	}
 	if _, err := stopper.SafeStop(d.curTarget, d.clock()); err != nil {
 		slog.Error("device safe stop failed", "target", d.curTarget, "error", err)
+		return false
 	}
+	return true
 }
 
 func leaseDeadline(now int64, params map[string]float64) int64 {

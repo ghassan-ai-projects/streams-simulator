@@ -2,6 +2,7 @@ package device
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"strings"
 	"testing"
@@ -10,6 +11,7 @@ import (
 type countingPlant struct {
 	applyCalls    int
 	safeStopCalls int
+	safeStopErr   error
 }
 
 func (p *countingPlant) Apply(PlantCommand) (PlantEffect, error) {
@@ -19,7 +21,7 @@ func (p *countingPlant) Apply(PlantCommand) (PlantEffect, error) {
 
 func (p *countingPlant) SafeStop(string, int64) (PlantEffect, error) {
 	p.safeStopCalls++
-	return PlantEffect{}, nil
+	return PlantEffect{}, p.safeStopErr
 }
 
 // testCaps loads the device capability catalog from the JSON data fixture — the
@@ -84,6 +86,44 @@ func TestLeaseExpiryReturnsSafeState(t *testing.T) {
 	output := state["current_output"].(map[string]any)
 	if output["energized"] != false {
 		t.Fatalf("expired lease must de-energize the output: %v", output)
+	}
+}
+
+func TestSafeStopFailureDoesNotClaimSafe(t *testing.T) {
+	for _, reboot := range []bool{false, true} {
+		name := "lease expiry"
+		if reboot {
+			name = "reboot"
+		}
+		t.Run(name, func(t *testing.T) {
+			now := int64(0)
+			plant := &countingPlant{safeStopErr: errors.New("stop unavailable")}
+			d := New(Config{
+				Capabilities: testCaps(t),
+				Plant:        plant,
+				Clock:        func() int64 { return now },
+			})
+			if out := d.ApplyCommand(validCommand(t, nil)); out.Receipt["accepted"] != true {
+				t.Fatalf("valid lease command must be accepted: %v", out.Receipt)
+			}
+			if reboot {
+				d.Reboot("boot-failed-stop")
+			} else {
+				now = 5_000_000
+				_ = d.State()
+			}
+			state := d.State()
+			if state["safe_state"] != false {
+				t.Fatalf("failed safe stop must not claim safe: %v", state)
+			}
+			output, ok := state["current_output"].(map[string]any)
+			if !ok || output["energized"] != true {
+				t.Fatalf("failed safe stop must preserve conservative energized evidence: %v", state["current_output"])
+			}
+			if plant.safeStopCalls != 1 {
+				t.Fatalf("safe stop must be attempted once, got %d", plant.safeStopCalls)
+			}
+		})
 	}
 }
 
