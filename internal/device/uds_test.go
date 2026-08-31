@@ -76,6 +76,48 @@ func TestListenRefusesRegularFilePath(t *testing.T) {
 	}
 }
 
+func TestScheduledDuplicateReplaysReceiptWithoutSecondPlantEffect(t *testing.T) {
+	client, server := net.Pipe()
+	plant := &countingPlant{}
+	d := New(Config{
+		Capabilities:  testCaps(t),
+		Plant:         plant,
+		FaultSchedule: []FaultInjection{{Name: FaultDuplicate, AcceptedCommand: 1}},
+	})
+	done := make(chan error, 1)
+	go func() { done <- ServeConn(server, d) }()
+
+	_ = client.SetDeadline(time.Now().Add(2 * time.Second))
+	reader := bufio.NewReader(client)
+	readRecord(t, reader)
+	command, err := EncodeRecord(validCommand(t, nil))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := client.Write(command); err != nil {
+		t.Fatal(err)
+	}
+	receipt := readRecord(t, reader)
+	if receipt["message_type"] != "receipt" || receipt["accepted"] != true {
+		t.Fatalf("duplicate delivery must emit one accepted receipt: %v", receipt)
+	}
+	if plant.applyCalls != 1 {
+		t.Fatalf("duplicate delivery must apply the plant once, got %d calls", plant.applyCalls)
+	}
+	if _, err := client.Write([]byte(QueryStateControl + "\n")); err != nil {
+		t.Fatal(err)
+	}
+	state := readRecord(t, reader)
+	if state["message_type"] != "state" {
+		t.Fatalf("duplicate delivery must not leave a second receipt queued; query_state got %v", state)
+	}
+
+	_ = client.Close()
+	if err := <-done; err != nil {
+		t.Fatalf("ServeConn returned error: %v", err)
+	}
+}
+
 func readRecord(t *testing.T, reader *bufio.Reader) map[string]any {
 	t.Helper()
 	line, err := reader.ReadBytes('\n')

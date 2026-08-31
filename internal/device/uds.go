@@ -11,6 +11,11 @@ import (
 	"os"
 )
 
+// ErrInjectedDisconnect identifies a deterministic disconnect fault. The
+// listener closes the current connection and remains available for the next
+// gateway connection.
+var ErrInjectedDisconnect = errors.New("device: injected disconnect")
+
 // ServeConn runs one device over a byte-stream connection using newline-delimited
 // framing. On connect it emits the current device.state; then for each inbound
 // command line it applies the command and writes one receipt. The result is
@@ -64,7 +69,7 @@ func ServeConnWithFaults(conn io.ReadWriter, d *Device, faults WireFaults) error
 		// exactly one receipt. Execution truth (current_output) is read back via
 		// query_state, so the result record is not pushed unsolicited here — that
 		// would desync the receipt the upstream reads next.
-		receipt, _, ackLost, handleErr := d.HandleCommand(frame)
+		outcome, handleErr := d.handleCommand(frame)
 		if handleErr != nil {
 			// A malformed command is a wire error, not a silent drop: report it
 			// as a rejected receipt the upstream can act on.
@@ -77,11 +82,34 @@ func ServeConnWithFaults(conn io.ReadWriter, d *Device, faults WireFaults) error
 			}
 			continue
 		}
-		if ackLost {
+		if outcome.Fault != "" {
+			slog.Info("device fault injected", "fault", outcome.Fault, "accepted_command", outcome.AcceptedCommand)
+		}
+		accepted, _ := outcome.Receipt["accepted"].(bool)
+		if !accepted {
+			slog.Info("device command rejected", "command_id", outcome.Receipt["command_id"], "reject_code", outcome.Receipt["reject_code"])
+		}
+		receipt, err := EncodeRecord(outcome.Receipt)
+		if err != nil {
+			return fmt.Errorf("device: encode receipt: %w", err)
+		}
+		if outcome.Duplicate {
+			// Re-run the exact frame through admission/idempotency so the test
+			// exercises the same path as a gateway duplicate. The replay is an
+			// internal delivery, not a second protocol exchange: one inbound
+			// command line must produce at most one wire receipt.
+			if _, duplicateErr := d.handleCommand(frame); duplicateErr != nil {
+				return fmt.Errorf("device: duplicate command: %w", duplicateErr)
+			}
+		}
+		if outcome.AckLost {
 			continue // ack_lost: withhold the receipt; effect stands, upstream reconciles via query_state
 		}
 		if err := gate.send(receipt); err != nil {
 			return err
+		}
+		if outcome.Disconnect {
+			return ErrInjectedDisconnect
 		}
 	}
 	if err := scanner.Err(); err != nil && !errors.Is(err, io.EOF) {
@@ -138,7 +166,7 @@ func Listen(path string, d *Device) (*net.UnixListener, error) {
 			if err != nil {
 				return // listener closed
 			}
-			if err := ServeConn(conn, d); err != nil {
+			if err := ServeConn(conn, d); err != nil && !errors.Is(err, ErrInjectedDisconnect) {
 				slog.Error("device connection failed", "error", err)
 			}
 			if err := conn.Close(); err != nil {
