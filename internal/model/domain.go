@@ -349,9 +349,10 @@ type Effect struct {
 
 // StateDelta is one state change; magnitude may come from an argument.
 type StateDelta struct {
-	State   string  `json:"state"`
-	Delta   float64 `json:"delta"`
-	FromArg string  `json:"from_arg,omitempty"`
+	State         string  `json:"state"`
+	Delta         float64 `json:"delta"`
+	FromArg       string  `json:"from_arg,omitempty"`
+	AssignFromArg string  `json:"assign_from_arg,omitempty"`
 }
 
 // Profile is a named scenario family.

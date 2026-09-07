@@ -34,10 +34,10 @@ The `streamsim device serve` command is a deterministic emulator gateway link,
 not a physical-HIL claim. Its capability catalog is a simulator-side device
 contract and must be kept aligned with the paired Agentic Stream catalog and
 allow-listed digest before a cross-repository handshake can be treated as
-evidence. The CLI does not itself bind the emulator to a simulated world plant;
-the `internal/deviceworld` package provides that seam for focused tests. Its
-world bindings are loaded from structured configuration; the adapter does not
-contain per-domain argument callbacks.
+evidence. When `--world` is supplied, the CLI binds the emulator to a
+simulated world plant through `internal/deviceworld`; without it, the device
+uses its local catalog projection. World bindings are loaded from structured
+configuration; the adapter does not contain per-domain argument callbacks.
 
 ## What is not a release claim
 

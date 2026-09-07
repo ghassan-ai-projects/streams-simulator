@@ -261,13 +261,22 @@ func (w *World) applyEffect(entityID string, eff *model.Effector, args map[strin
 	tau := eff.Effect.TimeConstantS * secondsPerNS
 	for _, d := range eff.Effect.StateDeltas {
 		delta := d.Delta
+		assign := false
 		if d.FromArg != "" {
 			if v, ok := argFloat(args, d.FromArg); ok {
 				delta = v
 			}
 		}
+		if d.AssignFromArg != "" {
+			v, ok := argFloat(args, d.AssignFromArg)
+			if !ok {
+				continue
+			}
+			delta = v
+			assign = true
+		}
 		delta *= scale
-		k := &kick{entity: entityID, state: d.State, delta: delta, startNS: start, tauNS: tau}
+		k := &kick{entity: entityID, state: d.State, delta: delta, assign: assign, startNS: start, tauNS: tau}
 		key := driverKey{entity: entityID, state: d.State}
 		if shadow {
 			w.shadow[key] = append(w.shadow[key], k)

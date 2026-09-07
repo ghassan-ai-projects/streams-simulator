@@ -51,10 +51,12 @@ Flags:
 Serves the data-defined device emulator over a Unix domain socket for a typed
 gateway-link integration test. The emulator emits an initial `state` record,
 accepts command records, and emits receipts; query-state control returns fresh
-state. It is not a physical serial gateway.
+state. With `--world`, accepted commands are routed through the data-defined
+world effector plant and lease expiry invokes its safe-stop path. It is not a
+physical serial gateway.
 
 ```text
-streamsim device serve --socket <path> --capabilities <path>
+streamsim device serve --socket <path> --capabilities <path> [--world <bindings.json>]
 ```
 
 Flags:
@@ -62,8 +64,19 @@ Flags:
 - `--socket` — required Unix domain socket path. A regular file at this path is
   never removed.
 - `--capabilities` — required device capability catalog JSON path.
+- `--world` — optional deviceworld binding catalog JSON path. When present, the
+  default world is `domains/cold-chain-transit.domain.json` and accepted device
+  commands invoke its declared effectors.
+- `--world-domain` — world domain JSON path; used only with `--world`.
+- `--world-entity` — world entity for the bindings; defaults to the first world
+  entity.
 - `--device-id` — device identity; defaults to `dev-01`.
 - `--boot-id` — initial boot identity; defaults to `boot-A`.
+- `--fault` — repeatable deterministic fault in the form
+  `name[@accepted-command-ordinal]`. Supported names are `ack_lost`, `stuck`,
+  `reboot`, `duplicate`, `stale`, `expired`, and `disconnect`. The default
+  ordinal is one. Fault application is logged to stderr; duplicate delivery
+  remains idempotent and disconnect closes only the current UDS connection.
 
 ### `run`
 

@@ -2,16 +2,43 @@ package device
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"strings"
 	"testing"
 )
 
+type countingPlant struct {
+	applyCalls    int
+	safeStopCalls int
+	safeStopErr   error
+}
+
+type energizedSafeStopPlant struct{}
+
+func (energizedSafeStopPlant) Apply(PlantCommand) (PlantEffect, error) {
+	return PlantEffect{Value: 450, Energized: true}, nil
+}
+
+func (energizedSafeStopPlant) SafeStop(string, int64) (PlantEffect, error) {
+	return PlantEffect{Value: 450, Energized: true}, nil
+}
+
+func (p *countingPlant) Apply(PlantCommand) (PlantEffect, error) {
+	p.applyCalls++
+	return PlantEffect{Value: 450, Energized: true}, nil
+}
+
+func (p *countingPlant) SafeStop(string, int64) (PlantEffect, error) {
+	p.safeStopCalls++
+	return PlantEffect{}, p.safeStopErr
+}
+
 // testCaps loads the device capability catalog from the JSON data fixture — the
 // same data-not-code path the emulator uses at runtime.
 func testCaps(t *testing.T) *Capabilities {
 	t.Helper()
-	data, err := os.ReadFile("testdata/thermal.capabilities.json")
+	data, err := os.ReadFile("testdata/thermal_capability_catalog.json")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -72,6 +99,79 @@ func TestLeaseExpiryReturnsSafeState(t *testing.T) {
 	}
 }
 
+func TestSafeStopIsAnExplicitDeviceOperation(t *testing.T) {
+	plant := &countingPlant{}
+	d := New(Config{Capabilities: testCaps(t), Plant: plant, Clock: func() int64 { return 0 }})
+	out := d.ApplyCommand(validCommand(t, func(command map[string]any) {
+		command["command_id"] = "safe-stop/fan-01"
+		command["idempotency_key"] = "sha256:" + strings.Repeat("e", 64)
+		command["operation"] = "safe_stop"
+		command["parameters"] = map[string]any{}
+		command["expires_after_ms"] = float64(1000)
+	}))
+	if out.Receipt["accepted"] != true || out.Result["status"] != "safe_state" {
+		t.Fatalf("explicit safe stop must be accepted as safe_state: receipt=%v result=%v", out.Receipt, out.Result)
+	}
+	if plant.applyCalls != 0 || plant.safeStopCalls != 1 {
+		t.Fatalf("safe stop must bypass ordinary plant apply: apply=%d safe_stop=%d", plant.applyCalls, plant.safeStopCalls)
+	}
+}
+
+func TestSafeStopFailureDoesNotClaimSafe(t *testing.T) {
+	for _, reboot := range []bool{false, true} {
+		name := "lease expiry"
+		if reboot {
+			name = "reboot"
+		}
+		t.Run(name, func(t *testing.T) {
+			now := int64(0)
+			plant := &countingPlant{safeStopErr: errors.New("stop unavailable")}
+			d := New(Config{
+				Capabilities: testCaps(t),
+				Plant:        plant,
+				Clock:        func() int64 { return now },
+			})
+			if out := d.ApplyCommand(validCommand(t, nil)); out.Receipt["accepted"] != true {
+				t.Fatalf("valid lease command must be accepted: %v", out.Receipt)
+			}
+			if reboot {
+				d.Reboot("boot-failed-stop")
+			} else {
+				now = 5_000_000
+				_ = d.State()
+			}
+			state := d.State()
+			if state["safe_state"] != false {
+				t.Fatalf("failed safe stop must not claim safe: %v", state)
+			}
+			output, ok := state["current_output"].(map[string]any)
+			if !ok || output["energized"] != true {
+				t.Fatalf("failed safe stop must preserve conservative energized evidence: %v", state["current_output"])
+			}
+			if plant.safeStopCalls != 1 {
+				t.Fatalf("safe stop must be attempted once, got %d", plant.safeStopCalls)
+			}
+		})
+	}
+}
+
+func TestSafeStopPositivePlantEffectDoesNotClaimSafe(t *testing.T) {
+	now := int64(0)
+	d := New(Config{
+		Capabilities: testCaps(t),
+		Plant:        energizedSafeStopPlant{},
+		Clock:        func() int64 { return now },
+	})
+	if out := d.ApplyCommand(validCommand(t, nil)); out.Receipt["accepted"] != true {
+		t.Fatalf("valid lease command must be accepted: %v", out.Receipt)
+	}
+	now = 5_000_000
+	state := d.State()
+	if state["safe_state"] != false {
+		t.Fatalf("positive safe-stop plant effect must not claim safe: %v", state)
+	}
+}
+
 func TestCapabilityDigestIsBoundToLoadedData(t *testing.T) {
 	data, err := os.ReadFile("testdata/thermal.capabilities.json")
 	if err != nil {
@@ -94,6 +194,40 @@ func TestCapabilityDigestIsBoundToLoadedData(t *testing.T) {
 	}
 }
 
+func TestCanonicalRouteExpiryBoundsCommandFreshness(t *testing.T) {
+	tests := []struct {
+		name           string
+		expiresAfter   float64
+		wantAccepted   bool
+		wantRejectCode string
+	}{
+		{name: "within route", expiresAfter: 20000, wantAccepted: true},
+		{name: "beyond route", expiresAfter: 20001, wantRejectCode: "expired"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			plant := &countingPlant{}
+			d := New(Config{Capabilities: testCaps(t), Plant: plant})
+			out := d.ApplyCommand(validCommand(t, func(command map[string]any) {
+				command["expires_after_ms"] = tc.expiresAfter
+			}))
+			if got := out.Receipt["accepted"] == true; got != tc.wantAccepted {
+				t.Fatalf("accepted = %v, want %v: %v", got, tc.wantAccepted, out.Receipt)
+			}
+			if tc.wantRejectCode != "" && out.Receipt["reject_code"] != tc.wantRejectCode {
+				t.Fatalf("reject_code = %v, want %q", out.Receipt["reject_code"], tc.wantRejectCode)
+			}
+			wantCalls := 0
+			if tc.wantAccepted {
+				wantCalls = 1
+			}
+			if plant.applyCalls != wantCalls {
+				t.Fatalf("plant calls = %d, want %d", plant.applyCalls, wantCalls)
+			}
+		})
+	}
+}
+
 func TestAcceptedCommandEnergizesAndVerifies(t *testing.T) {
 	d := New(Config{Capabilities: testCaps(t)})
 	out := d.ApplyCommand(validCommand(t, nil))
@@ -111,6 +245,43 @@ func TestAcceptedCommandEnergizesAndVerifies(t *testing.T) {
 	// The encoded receipt and result must themselves be valid wire records.
 	if _, _, _, err := d.HandleCommandFor(t, validCommand(t, func(c map[string]any) { c["command_id"] = "cmd-2"; c["idempotency_key"] = keyB })); err != nil {
 		t.Fatalf("second valid command must encode cleanly: %v", err)
+	}
+}
+
+func TestCanonicalRouteAcceptsCatalogDefinedStringPresetParameter(t *testing.T) {
+	d := New(Config{Capabilities: testCaps(t)})
+	out := d.ApplyCommand(validCommand(t, func(command map[string]any) {
+		command["command_id"] = "led-command"
+		command["idempotency_key"] = "sha256:" + strings.Repeat("f", 64)
+		command["target"] = "led-01"
+		command["operation"] = "set_led"
+		command["parameters"] = map[string]any{
+			"brightness_permille": float64(1000),
+			"pattern":             "solid",
+		}
+		command["expires_after_ms"] = float64(60000)
+	}))
+	if out.Receipt["accepted"] != true || out.Result["status"] != "executed" {
+		t.Fatalf("catalog-defined LED preset must be accepted: receipt=%v result=%v", out.Receipt, out.Result)
+	}
+	output, ok := d.State()["current_output"].(map[string]any)
+	if !ok || output["operation"] != "set_led" || output["energized"] != true {
+		t.Fatalf("accepted LED preset must energize the declared output: %v", output)
+	}
+
+	rejected := d.ApplyCommand(validCommand(t, func(command map[string]any) {
+		command["command_id"] = "led-invalid-pattern"
+		command["idempotency_key"] = "sha256:" + strings.Repeat("a", 64)
+		command["target"] = "led-01"
+		command["operation"] = "set_led"
+		command["parameters"] = map[string]any{
+			"brightness_permille": float64(1000),
+			"pattern":             "unknown",
+		}
+		command["expires_after_ms"] = float64(60000)
+	}))
+	if rejected.Receipt["accepted"] != false || rejected.Receipt["reject_code"] != "out_of_range" {
+		t.Fatalf("unknown catalog string preset must be rejected: %v", rejected.Receipt)
 	}
 }
 
@@ -142,6 +313,9 @@ func TestRejections(t *testing.T) {
 		{"wrong_target", func(c map[string]any) { c["target"] = "pump-01" }, 0, "wrong_target"},
 		{"unknown_operation", func(c map[string]any) { c["operation"] = "set_indicator" }, 0, "unknown_operation"},
 		{"missing_param", func(c map[string]any) { c["parameters"] = map[string]any{"duty_permille": float64(450)} }, 0, "out_of_range"},
+		{"unknown_nonnumeric_param", func(c map[string]any) {
+			c["parameters"] = map[string]any{"duty_permille": float64(450), "lease_ms": float64(5000), "extra": "ignored"}
+		}, 0, "out_of_range"},
 	}
 	for _, tc := range cases {
 		tc := tc
@@ -176,6 +350,52 @@ func TestIdempotentReplayAppliesNoSecondEffect(t *testing.T) {
 	ledger := state["dedup_ledger"].(map[string]any)
 	if ledger["size"] != float64(1) {
 		t.Fatalf("a replayed key must be deduped to a single ledger entry: %v", ledger["size"])
+	}
+}
+
+func TestIdempotencyKeyConflictIsRejected(t *testing.T) {
+	plant := &countingPlant{}
+	d := New(Config{Capabilities: testCaps(t), Plant: plant})
+	first := validCommand(t, nil)
+	if out := d.ApplyCommand(first); out.Receipt["accepted"] != true {
+		t.Fatalf("first command must be accepted: %v", out.Receipt)
+	}
+	conflict := validCommand(t, func(c map[string]any) {
+		c["command_id"] = "cmd-conflict"
+		c["parameters"] = map[string]any{"duty_permille": float64(600), "lease_ms": float64(5000)}
+	})
+	out := d.ApplyCommand(conflict)
+	if out.Receipt["accepted"] != false || out.Receipt["reject_code"] != "duplicate" || out.Result["error_code"] != "duplicate" {
+		t.Fatalf("conflicting idempotency reuse must be rejected: receipt=%v result=%v", out.Receipt, out.Result)
+	}
+	if plant.applyCalls != 1 {
+		t.Fatalf("conflicting idempotency reuse must not apply a second effect: %d", plant.applyCalls)
+	}
+}
+
+func TestSafeStopAckLostAndRebootWithholdTerminalExchange(t *testing.T) {
+	d := New(Config{
+		Capabilities:  testCaps(t),
+		FaultSchedule: []FaultInjection{{Name: FaultAckLost, AcceptedCommand: 1}},
+	})
+	safeStop := validCommand(t, func(c map[string]any) {
+		c["command_id"] = "safe-stop/fan-01"
+		c["idempotency_key"] = "sha256:" + strings.Repeat("e", 64)
+		c["operation"] = "safe_stop"
+		c["parameters"] = map[string]any{}
+		c["expires_after_ms"] = float64(1000)
+	})
+	if out := d.ApplyCommand(safeStop); !out.AckLost || out.Result["status"] != "safe_state" {
+		t.Fatalf("safe-stop ack loss must withhold its pair: %+v", out)
+	}
+
+	reboot := New(Config{
+		Capabilities:  testCaps(t),
+		FaultSchedule: []FaultInjection{{Name: FaultReboot, AcceptedCommand: 1}},
+	})
+	out := reboot.ApplyCommand(validCommand(t, nil))
+	if !out.AckLost || out.Receipt["boot_id"] == reboot.BootID() {
+		t.Fatalf("reboot must withhold the old-boot pair: outcome=%+v current_boot=%s", out, reboot.BootID())
 	}
 }
 
@@ -219,5 +439,72 @@ func TestRebootChangesBootAndInvalidatesOldCommands(t *testing.T) {
 	out := d.ApplyCommand(validCommand(t, func(c map[string]any) { c["command_id"] = "cmd-old" }))
 	if out.Receipt["reject_code"] != "wrong_boot" {
 		t.Fatalf("post-reboot, an old-boot command must be wrong_boot: %v", out.Receipt)
+	}
+}
+
+func TestScheduledFaultsAreDeterministic(t *testing.T) {
+	cases := []struct {
+		name        string
+		fault       string
+		wantCode    string
+		wantAckLost bool
+		wantApply   int
+		wantBoot    string
+	}{
+		{name: FaultStuck, fault: FaultStuck, wantApply: 0},
+		{name: FaultAckLost, fault: FaultAckLost, wantAckLost: true, wantApply: 1},
+		{name: FaultExpired, fault: FaultExpired, wantCode: FaultExpired, wantApply: 0},
+		{name: FaultReboot, fault: FaultReboot, wantAckLost: true, wantApply: 1, wantBoot: "boot-reboot-1"},
+	}
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			plant := &countingPlant{}
+			d := New(Config{
+				Capabilities:  testCaps(t),
+				Plant:         plant,
+				FaultSchedule: []FaultInjection{{Name: tc.fault, AcceptedCommand: 1}},
+			})
+			out := d.ApplyCommand(validCommand(t, nil))
+			if out.AckLost != tc.wantAckLost {
+				t.Fatalf("ack_lost = %v, want %v: %+v", out.AckLost, tc.wantAckLost, out)
+			}
+			if tc.wantCode == "" && out.Receipt["accepted"] != true {
+				t.Fatalf("fault %q should preserve acceptance: %v", tc.fault, out.Receipt)
+			}
+			if tc.wantCode != "" && out.Receipt["reject_code"] != tc.wantCode {
+				t.Fatalf("fault %q reject_code = %v, want %s", tc.fault, out.Receipt["reject_code"], tc.wantCode)
+			}
+			if plant.applyCalls != tc.wantApply {
+				t.Fatalf("fault %q plant calls = %d, want %d", tc.fault, plant.applyCalls, tc.wantApply)
+			}
+			if tc.wantBoot != "" && d.BootID() != tc.wantBoot {
+				t.Fatalf("fault %q boot id = %q, want %q", tc.fault, d.BootID(), tc.wantBoot)
+			}
+			if tc.fault == FaultStuck && d.State()["current_output"].(map[string]any)["energized"] != false {
+				t.Fatal("scheduled stuck fault must leave output de-energized")
+			}
+		})
+	}
+}
+
+func TestParseFaultSpec(t *testing.T) {
+	cases := map[string]FaultInjection{
+		"stuck":      {Name: FaultStuck, AcceptedCommand: 1},
+		"ack_lost@3": {Name: FaultAckLost, AcceptedCommand: 3},
+	}
+	for input, want := range cases {
+		got, err := ParseFaultSpec(input)
+		if err != nil {
+			t.Fatalf("parse %q: %v", input, err)
+		}
+		if got != want {
+			t.Fatalf("parse %q = %+v, want %+v", input, got, want)
+		}
+	}
+	for _, input := range []string{"unknown", "stuck@0", "stuck@x", "stuck@1@2"} {
+		if _, err := ParseFaultSpec(input); err == nil {
+			t.Fatalf("parse %q should fail", input)
+		}
 	}
 }

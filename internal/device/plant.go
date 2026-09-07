@@ -24,6 +24,13 @@ type Plant interface {
 	Apply(PlantCommand) (PlantEffect, error)
 }
 
+// SafeStopper is an optional plant lifecycle seam. A device invokes it when a
+// lease expires or the device reboots, allowing a world-backed plant to record
+// the safe-stop effect instead of only clearing device-local state.
+type SafeStopper interface {
+	SafeStop(target string, atMicros int64) (PlantEffect, error)
+}
+
 // PlantCommand is one accepted, in-bounds actuation handed to the plant. It
 // carries the device command identity and monotonic time so a world-backed
 // plant can invoke its effector idempotently and at the right instant.

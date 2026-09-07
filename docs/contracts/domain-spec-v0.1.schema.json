@@ -526,11 +526,17 @@
                 "items": {
                   "type": "object",
                   "additionalProperties": false,
-                  "required": ["state", "delta"],
+                  "required": ["state"],
+                  "anyOf": [
+                    {"required": ["delta"]},
+                    {"required": ["from_arg"]},
+                    {"required": ["assign_from_arg"]}
+                  ],
                   "properties": {
                     "state": {"type": "string"},
                     "delta": {"type": "number"},
-                    "from_arg": {"type": "string", "description": "Take the magnitude from a named argument instead of a literal."}
+                    "from_arg": {"type": "string", "description": "Take the magnitude from a named argument instead of a literal."},
+                    "assign_from_arg": {"type": "string", "description": "Replace the state with the named argument instead of adding a delta."}
                   }
                 }
               },

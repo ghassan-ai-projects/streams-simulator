@@ -2,6 +2,8 @@ package deviceworld
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"os"
 	"testing"
 
@@ -112,22 +114,23 @@ func TestIdempotentByCommandID(t *testing.T) {
 	}
 }
 
-// TestUnmappedTargetFailsSafe proves an unbound target energizes nothing and
-// touches the world not at all.
-func TestUnmappedTargetFailsSafe(t *testing.T) {
+// TestUnmappedTargetFailsClosed proves an unbound target cannot be reported as
+// a successful no-op and touches the world not at all.
+func TestUnmappedTargetFailsClosed(t *testing.T) {
 	w := coldChainWorld(t, 1)
 	entity := w.EntityIDs()[0]
 	plant := New(w, loadBindings(t, entity))
 
-	command := plantCommand(t, "cmd-x", w.Clock()/1000)
-	command.Target = "unknown-99"
-	effect, err := plant.Apply(command)
-	if err != nil {
-		t.Fatalf("unmapped target should be a no-op: %v", err)
-	}
-
-	if effect.Energized {
-		t.Fatal("an unmapped target must not energize")
+	for _, target := range []string{"unknown-99", "led-01"} {
+		command := plantCommand(t, "cmd-"+target, w.Clock()/1000)
+		command.Target = target
+		effect, err := plant.Apply(command)
+		if !errors.Is(err, device.ErrPlantUnavailable) {
+			t.Fatalf("unmapped target %q must fail with ErrPlantUnavailable: %v", target, err)
+		}
+		if effect.Energized {
+			t.Fatalf("unmapped target %q must not energize", target)
+		}
 	}
 	if len(w.EffectorCalls()) != 0 {
 		t.Fatalf("an unmapped target must not invoke the world: %d calls", len(w.EffectorCalls()))
@@ -206,6 +209,81 @@ func TestWiredThroughDevice(t *testing.T) {
 	}
 }
 
+func TestSetFanDutyIsAnAssignment(t *testing.T) {
+	w := coldChainWorld(t, 1)
+	entity := w.EntityIDs()[0]
+	plant := New(w, loadBindings(t, entity))
+	for _, want := range []float64{450, 600, 0} {
+		effect, err := plant.Apply(device.PlantCommand{
+			Target: "fan-01", Operation: "set_fan_duty",
+			Params:    map[string]float64{"duty_permille": want},
+			CommandID: fmt.Sprintf("cmd-duty-%g", want), AtMicros: w.Clock() / 1000,
+		})
+		if err != nil {
+			t.Fatalf("set fan duty %g: %v", want, err)
+		}
+		if effect.Value != want || w.StateValue(entity, "fan_duty_true", w.Clock()) != want {
+			t.Fatalf("set fan duty %g produced effect=%+v world=%v", want, effect, w.StateValue(entity, "fan_duty_true", w.Clock()))
+		}
+	}
+}
+
+func TestLeaseExpiryInvokesWorldSafeStop(t *testing.T) {
+	w := coldChainWorld(t, 1)
+	entity := w.EntityIDs()[0]
+	plant := New(w, loadBindings(t, entity))
+	now := w.Clock() / 1000
+	d := device.New(device.Config{
+		Plant:        plant,
+		Capabilities: deviceCaps(t),
+		Clock:        func() int64 { return now },
+	})
+
+	if out := d.ApplyCommand(deviceCommand(t, "cmd-lease", now)); out.Receipt["accepted"] != true {
+		t.Fatalf("valid lease command must be accepted: %v", out.Receipt)
+	}
+	now += 5_000_001
+	state := d.State()
+	if state["safe_state"] != true {
+		t.Fatalf("expired lease must put device in safe state: %v", state)
+	}
+	output, ok := state["current_output"].(map[string]any)
+	if !ok || output["energized"] != false {
+		t.Fatalf("expired lease must de-energize device output: %v", state["current_output"])
+	}
+	calls := w.EffectorCalls()
+	if len(calls) != 2 || calls[1].CommandID != "safe-stop/fan-01" {
+		t.Fatalf("lease expiry must invoke the world safe-stop path, calls = %+v", calls)
+	}
+	if calls[1].Effector != "stop_fan" || w.StateValue(entity, "fan_duty_true", w.Clock()) != 0 {
+		t.Fatalf("lease expiry must use the explicit stop_fan effect and clear fan duty: calls=%+v duty=%v", calls, w.StateValue(entity, "fan_duty_true", w.Clock()))
+	}
+}
+
+func TestWorldSafeStopDoesNotClaimPhysicalEffect(t *testing.T) {
+	spec, err := domain.Load("../../domains/cold-chain-transit.domain.json")
+	if err != nil {
+		t.Fatalf("load cold-chain domain: %v", err)
+	}
+	w, err := world.New(spec, 1, "w-safe-stop-failure", model.DefaultStartTimeNS, world.Options{
+		EmitDisabled:     true,
+		ForceFailureMode: world.ModeConfirmedNoEffect,
+	})
+	if err != nil {
+		t.Fatalf("new world: %v", err)
+	}
+	entity := w.EntityIDs()[0]
+	plant := New(w, loadBindings(t, entity))
+
+	effect, err := plant.SafeStop("fan-01", w.Clock()/1000)
+	if !errors.Is(err, device.ErrPlantUnavailable) {
+		t.Fatalf("accepted safe stop without a world effect must fail closed: effect=%+v err=%v", effect, err)
+	}
+	if effect.Energized {
+		t.Fatal("failed safe stop must not report an energized effect")
+	}
+}
+
 func deviceCommand(t *testing.T, commandID string, atMicros int64) map[string]any {
 	t.Helper()
 	data, err := os.ReadFile("../device/contract/conformance/v1/valid/command.json")
@@ -225,7 +303,7 @@ func deviceCommand(t *testing.T, commandID string, atMicros int64) map[string]an
 // device test.
 func deviceCaps(t *testing.T) *device.Capabilities {
 	t.Helper()
-	data, err := os.ReadFile("../device/testdata/thermal.capabilities.json")
+	data, err := os.ReadFile("../device/testdata/thermal_capability_catalog.json")
 	if err != nil {
 		t.Fatal(err)
 	}
