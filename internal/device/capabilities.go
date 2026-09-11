@@ -173,7 +173,7 @@ func canonicalCatalog(doc capabilitiesDoc) canonicalCatalogDocument {
 	for name, route := range doc.Routes {
 		bounds := make(map[string]canonicalBoundDocument, len(route.Bounds))
 		for field, bound := range route.Bounds {
-			bounds[field] = canonicalBoundDocument{Min: bound.Min, Max: bound.Max}
+			bounds[field] = canonicalBoundDocument(bound)
 		}
 		if len(route.Bounds) == 0 {
 			bounds = nil

@@ -25,7 +25,7 @@ on:
     branches: [main]
 
 env:
-  GO_VERSION: "1.25.12"
+  GO_VERSION: "1.25.13"
   GO_TOOLS_VERSION: "v0.45.0"
   GOVULNCHECK_VERSION: "v1.3.0"
   GOLANGCI_LINT_VERSION: "v2.12.2"
@@ -46,6 +46,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          # The golangci-lint diff baseline is HEAD~1.
+          fetch-depth: 0
 
       - name: Set up Go
         uses: actions/setup-go@v7

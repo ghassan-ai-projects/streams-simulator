@@ -306,7 +306,7 @@ func TestRejections(t *testing.T) {
 		code   string
 	}{
 		{"wrong_boot", func(c map[string]any) { c["expected_boot_id"] = "boot-Z" }, 0, "wrong_boot"},
-		{"expired", nil, 8_000_000, "expired"},
+		{"expired", func(c map[string]any) { c["not_before_mono_us"] = float64(1) }, 8_000_000, "expired"},
 		{"out_of_range_high", func(c map[string]any) {
 			c["parameters"] = map[string]any{"duty_permille": float64(900), "lease_ms": float64(5000)}
 		}, 0, "out_of_range"},

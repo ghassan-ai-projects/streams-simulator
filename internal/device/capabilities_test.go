@@ -7,7 +7,7 @@ import (
 
 // This digest is shared with Agentic Stream's conformance fixture. A mismatch
 // prevents the live device handshake even when each repository passes alone.
-const thermalCapabilityCatalogDigest = "sha256:177552ccdaa8d71ac3eb1e27a1a60e3433e1e2792bad2dc16ea95acb2d735eaf"
+const thermalCapabilityCatalogDigest = "sha256:0d61225286c628cfba8cbf7aea514e1fdc95918b514b4b810516dbe0fc44fc76"
 const legacyCapabilityCatalogDigest = "sha256:ed9ebf9685f9933c15578f06c65e059f906cfd1edcd8f75b778b6a4f794cc494"
 
 func TestLoadCanonicalCapabilityCatalogAndDigest(t *testing.T) {

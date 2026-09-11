@@ -345,7 +345,10 @@ func (r *Run) onEmit(ev model.SimEvent) {
 
 func (r *Run) writeMalformed(ev model.SimEvent) error {
 	// A broken line in the adapter's encoding: unterminated JSON.
-	return r.Sink.Write([]byte(`{"seq":` + strconv.FormatInt(ev.Seq, 10) + `,"broken":`))
+	if err := r.Sink.Write([]byte(`{"seq":` + strconv.FormatInt(ev.Seq, 10) + `,"broken":`)); err != nil {
+		return fmt.Errorf("write malformed event %d: %w", ev.Seq, err)
+	}
+	return nil
 }
 
 // fail aborts the run with an error; the run is marked incomplete.
@@ -914,7 +917,7 @@ func (r *Run) End(outDir string) (*model.RunArtifact, error) {
 func writeSinkLines(dst sink.Sink, lines []string) error {
 	for _, line := range lines {
 		if err := dst.Write([]byte(line)); err != nil {
-			return err
+			return fmt.Errorf("write sink line: %w", err)
 		}
 	}
 	return nil

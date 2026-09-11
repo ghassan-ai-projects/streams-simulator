@@ -139,18 +139,26 @@ func TestAckLostRetryReplaysReceiptWithoutSecondPlantEffect(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(tmpDir)
+	t.Cleanup(func() {
+		if err := os.RemoveAll(tmpDir); err != nil {
+			t.Errorf("remove temporary device directory: %v", err)
+		}
+	})
 	path := filepath.Join(tmpDir, "device.sock")
 	listener, err := Listen(path, d)
 	if err != nil {
 		t.Fatal(err)
 	}
-	client, err := net.Dial("unix", path)
+	t.Cleanup(func() {
+		if err := listener.Close(); err != nil {
+			t.Errorf("close device listener: %v", err)
+		}
+	})
+	var dialer net.Dialer
+	client, err := dialer.DialContext(t.Context(), "unix", path)
 	if err != nil {
-		_ = listener.Close()
 		t.Fatal(err)
 	}
-	defer listener.Close()
 
 	_ = client.SetReadDeadline(time.Now().Add(2 * time.Second))
 	reader := bufio.NewReader(client)
@@ -172,8 +180,11 @@ func TestAckLostRetryReplaysReceiptWithoutSecondPlantEffect(t *testing.T) {
 	_ = client.SetReadDeadline(time.Now().Add(50 * time.Millisecond))
 	if _, err := reader.ReadBytes('\n'); err == nil {
 		t.Fatal("ack_lost first delivery must not emit a receipt")
-	} else if netErr, ok := err.(net.Error); !ok || !netErr.Timeout() {
-		t.Fatalf("expected bounded read timeout before retry, got %v", err)
+	} else {
+		var netErr net.Error
+		if !errors.As(err, &netErr) || !netErr.Timeout() {
+			t.Fatalf("expected bounded read timeout before retry, got %v", err)
+		}
 	}
 
 	_ = client.SetReadDeadline(time.Now().Add(2 * time.Second))

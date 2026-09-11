@@ -404,11 +404,15 @@ func (d *Device) admit(command map[string]any, now int64) string {
 	}
 	notBefore, _ := command["not_before_mono_us"].(float64)
 	expiresAfter, _ := command["expires_after_ms"].(float64)
-	if float64(now) < notBefore {
-		return "not_ready"
-	}
-	if float64(now) > notBefore+expiresAfter*1000 {
-		return "expired"
+	// Zero is the immediate-dispatch sentinel emitted by Agentic Stream.
+	// Nonzero values are boot-relative freshness anchors.
+	if notBefore > 0 {
+		if float64(now) < notBefore {
+			return "not_ready"
+		}
+		if float64(now) > notBefore+expiresAfter*1000 {
+			return "expired"
+		}
 	}
 	rawParams, validParams := strictParams(command["parameters"])
 	if !validParams {
@@ -423,7 +427,7 @@ func (d *Device) admit(command map[string]any, now int64) string {
 		if len(rawParams) != 0 {
 			return "out_of_range"
 		}
-		stop, _ := d.capabilities.safeStops[target]
+		stop := d.capabilities.safeStops[target]
 		if stop.expiresAfterMS > 0 && expiresAfter > float64(stop.expiresAfterMS) {
 			return "expired"
 		}

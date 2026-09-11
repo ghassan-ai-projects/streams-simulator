@@ -1,6 +1,9 @@
 package device
 
-import "io"
+import (
+	"fmt"
+	"io"
+)
 
 // WireFaults is a deterministic, scripted transport-fault plan applied to the
 // device's OUTBOUND frames (receipt/result/state), indexed by their 1-based
@@ -69,11 +72,11 @@ func (g *wireGate) flush() error {
 
 func (g *wireGate) writeOne(frame []byte, duplicate bool) error {
 	if _, err := g.w.Write(frame); err != nil {
-		return err
+		return fmt.Errorf("write wire frame %d: %w", g.i, err)
 	}
 	if duplicate {
 		if _, err := g.w.Write(frame); err != nil {
-			return err
+			return fmt.Errorf("write duplicate wire frame %d: %w", g.i, err)
 		}
 	}
 	return nil
