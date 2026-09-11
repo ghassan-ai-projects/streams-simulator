@@ -9,16 +9,16 @@ import (
 )
 
 const (
-	physicalCapabilityDigest = "sha256:2359d96660d55461a48acaac76d4ade3cb0c3460b73eae22d96d49149b890cc2"
-	physicalFirmwareDigest   = "sha256:b8d17e989c57d440774fcc8f63c17a879f94f92e3b11c02bb3227310f9667716"
+	physicalCapabilityDigest = "sha256:0d61225286c628cfba8cbf7aea514e1fdc95918b514b4b810516dbe0fc44fc76"
+	physicalFirmwareDigest   = "sha256:36a91963b13e5b86749953f8e5441c63c22866ae71796d889fbc629d48d176af"
 )
 
-func TestPhysicalArduinoCatalogExecutesMaterializedAlertLED(t *testing.T) {
+func TestPhysicalArduinoCatalogExecutesMaterializedAlertLEDAndFan(t *testing.T) {
 	root := os.Getenv("REAL_WORLD_SENSOR_ROOT")
 	if root == "" {
 		root = filepath.Join("..", "..", "..", "agent-research-lab", "real-world-sensor")
 	}
-	data, err := os.ReadFile(filepath.Join(root, "assessment", "arduino-mega-led-capability-catalog.json"))
+	data, err := os.ReadFile(filepath.Join(root, "assessment", "arduino-mega-l293d-fan-led-capability-catalog.json"))
 	if err != nil {
 		t.Fatalf("read physical catalog: %v", err)
 	}
@@ -83,6 +83,50 @@ func TestPhysicalArduinoCatalogExecutesMaterializedAlertLED(t *testing.T) {
 	output, _ = state["current_output"].(map[string]any)
 	if state["safe_state"] != true || output["energized"] != false {
 		t.Fatalf("physical safe-stop state = %v", state)
+	}
+
+	fan := d.ApplyCommand(map[string]any{
+		"message_type":       "command",
+		"protocol_version":   float64(1),
+		"command_id":         "cross-repo-fan",
+		"idempotency_key":    "sha256:" + strings.Repeat("d", 64),
+		"target":             "fan-01",
+		"operation":          "set_pwm_lease",
+		"parameters":         map[string]any{"duty_permille": float64(450), "lease_ms": float64(5000)},
+		"expected_boot_id":   "boot-cross",
+		"not_before_mono_us": float64(0),
+		"expires_after_ms":   float64(20000),
+		"policy_digest":      "sha256:" + strings.Repeat("e", 64),
+	})
+	if fan.Receipt["accepted"] != true || fan.Result["status"] != "executed" {
+		t.Fatalf("physical fan command outcome = receipt %v result %v", fan.Receipt, fan.Result)
+	}
+	state = d.State()
+	output, ok = state["current_output"].(map[string]any)
+	if !ok || output["target"] != "fan-01" || output["operation"] != "set_pwm_lease" || output["value"] != float64(450) || output["energized"] != true {
+		t.Fatalf("physical fan observed output = %v", state["current_output"])
+	}
+
+	fanSafeStop := d.ApplyCommand(map[string]any{
+		"message_type":       "command",
+		"protocol_version":   float64(1),
+		"command_id":         "safe-stop/fan-01",
+		"idempotency_key":    "sha256:" + strings.Repeat("f", 64),
+		"target":             "fan-01",
+		"operation":          "safe_stop",
+		"parameters":         map[string]any{},
+		"expected_boot_id":   "boot-cross",
+		"not_before_mono_us": float64(0),
+		"expires_after_ms":   float64(1000),
+		"policy_digest":      physicalCapabilityDigest,
+	})
+	if fanSafeStop.Receipt["accepted"] != true || fanSafeStop.Result["status"] != "safe_state" {
+		t.Fatalf("physical fan safe stop outcome = receipt %v result %v", fanSafeStop.Receipt, fanSafeStop.Result)
+	}
+	state = d.State()
+	output, _ = state["current_output"].(map[string]any)
+	if state["safe_state"] != true || output["target"] != "fan-01" || output["energized"] != false {
+		t.Fatalf("physical fan safe-stop state = %v", state)
 	}
 
 	// Keep the source catalog parseable as the exact JSON artifact used by both
