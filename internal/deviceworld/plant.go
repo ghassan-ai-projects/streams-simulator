@@ -139,7 +139,7 @@ func (p *Plant) advance(atMicros int64) (int64, error) {
 		atNS = p.w.Clock()
 	}
 	if _, _, err := p.w.Advance(atNS); err != nil {
-		return 0, err
+		return 0, fmt.Errorf("advance world to %d: %w", atNS, err)
 	}
 	return atNS, nil
 }

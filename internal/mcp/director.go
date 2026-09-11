@@ -192,7 +192,7 @@ func (d *Director) CreateWorld(args map[string]any) (map[string]any, error) {
 func capabilityToken() (string, error) {
 	buf := make([]byte, 32)
 	if _, err := rand.Read(buf); err != nil {
-		return "", err
+		return "", fmt.Errorf("read capability token randomness: %w", err)
 	}
 	return "t-" + base64.RawURLEncoding.EncodeToString(buf), nil
 }

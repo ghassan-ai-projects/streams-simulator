@@ -67,7 +67,10 @@ func cmdDeviceServe(args []string) error {
 	defer signal.Stop(stop)
 	<-stop
 	fmt.Fprintln(os.Stderr, "streamsim device: shutting down")
-	return listener.Close()
+	if err := listener.Close(); err != nil {
+		return fmt.Errorf("streamsim: close device listener: %w", err)
+	}
+	return nil
 }
 
 func newDeviceServeDevice(capabilityPath, bindingPath, domainPath, entity, bootID, deviceID string, schedule []device.FaultInjection) (*device.Device, *world.World, error) {

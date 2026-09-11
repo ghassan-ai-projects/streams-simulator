@@ -18,7 +18,9 @@ func TestPhysicalArduinoCatalogExecutesMaterializedAlertLEDAndFan(t *testing.T) 
 	if root == "" {
 		root = filepath.Join("..", "..", "..", "agent-research-lab", "real-world-sensor")
 	}
-	data, err := os.ReadFile(filepath.Join(root, "assessment", "arduino-mega-l293d-fan-led-capability-catalog.json"))
+	// REAL_WORLD_SENSOR_ROOT is an explicit local integration-fixture root; the
+	// catalog path below has a fixed suffix and is not request-derived input.
+	data, err := os.ReadFile(filepath.Join(root, "assessment", "arduino-mega-l293d-fan-led-capability-catalog.json")) // #nosec G703 -- explicit local cross-repository fixture root
 	if err != nil {
 		t.Fatalf("read physical catalog: %v", err)
 	}

@@ -427,7 +427,7 @@ func (d *Device) admit(command map[string]any, now int64) string {
 		if len(rawParams) != 0 {
 			return "out_of_range"
 		}
-		stop, _ := d.capabilities.safeStops[target]
+		stop := d.capabilities.safeStops[target]
 		if stop.expiresAfterMS > 0 && expiresAfter > float64(stop.expiresAfterMS) {
 			return "expired"
 		}

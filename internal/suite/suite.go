@@ -105,6 +105,7 @@ func Generate(cfg Config) (*Suite, error) {
 	preDegraded := 0
 	cascadeCount := 0
 	pathologyCount := 0
+	attemptIndex := uint64(0)
 
 	startNS := model.DefaultStartTimeNS + 4*3600*1e9
 	durationNS := int64(prof.DurationS * 1e9)
@@ -118,8 +119,9 @@ func Generate(cfg Config) (*Suite, error) {
 		// Attempt identity, not admitted-count identity, enters the seed and
 		// scenario id. Rejected candidates must never be replayed under the
 		// same identity as a later admitted candidate.
-		attemptIndex := s.Attempts - 1
-		scenarioSeed := cfg.Seed + uint64(attemptIndex)*0x9e3779b97f4a7c15
+		currentAttempt := attemptIndex
+		attemptIndex++
+		scenarioSeed := cfg.Seed + currentAttempt*0x9e3779b97f4a7c15
 		// Adaptive negative sampling: the audit rejects positive scenarios
 		// aggressively, so the admission fraction drifts above the declared
 		// band; proportional control on the sampling probability holds the
@@ -137,7 +139,7 @@ func Generate(cfg Config) (*Suite, error) {
 			sampleFrac = 0.7
 		}
 		sc, label, verdict, err := s.buildScenario(cfg, rng, solver, panel, prof, entities,
-			startNS, durationNS, scenarioSeed, attemptIndex, perturbCount, sampleFrac)
+			startNS, durationNS, scenarioSeed, currentAttempt, perturbCount, sampleFrac)
 		if err != nil {
 			return nil, fmt.Errorf("streamsim: %w", err)
 		}
@@ -266,12 +268,12 @@ func indexOf(s, sub string) int {
 
 // buildScenario constructs one candidate scenario and its audit verdict.
 func (s *Suite) buildScenario(cfg Config, rng *randutil.SplitMix64, solver *truth.Solver, panel *audit.Panel,
-	prof *model.Profile, entities []string, startNS, durationNS int64, seed uint64, idx int,
+	prof *model.Profile, entities []string, startNS, durationNS int64, seed, idx uint64,
 	perturbCount map[string]int, sampleFrac float64) (*Scenario, *model.GroundTruthRecord, *audit.Verdict, error) {
 
 	gt := cfg.Domain.Spec.GroundTruth
 	isNegative := rng.Float64() < sampleFrac
-	faultID := s.pickFault(cfg, prof, rng, isNegative, idx)
+	faultID := s.pickFault(cfg, prof, rng, isNegative)
 
 	entity := entities[rng.Intn(len(entities))]
 	profileName := cfg.Profile
@@ -369,7 +371,7 @@ func verdictTrivialString(v *audit.Verdict) string {
 
 // pickFault samples a fault id per the profile weights and the negative
 // fraction.
-func (s *Suite) pickFault(cfg Config, prof *model.Profile, rng *randutil.SplitMix64, isNegative bool, idx int) string {
+func (s *Suite) pickFault(cfg Config, prof *model.Profile, rng *randutil.SplitMix64, isNegative bool) string {
 	if isNegative {
 		for i := range cfg.Domain.Spec.Faults {
 			if cfg.Domain.Spec.Faults[i].IsNegativeClass {
