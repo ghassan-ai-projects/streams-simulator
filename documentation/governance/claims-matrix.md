@@ -1,13 +1,13 @@
 # Documentation claim-to-source matrix
 
-Validation snapshot: verified 2026-08-17 against commit `c09b34b` plus the current working-tree documentation/code changes. The repository declares Go `1.25.12` in `go.mod` and CI; this local review ran with Go `1.26.6`. The working tree also contains an untracked seventh domain, called out wherever release status matters.
+Validation snapshot: verified 2026-08-17 against commit `c09b34b` plus the current working-tree documentation/code changes. The repository declares Go `1.25.12` as its module minimum; CI uses the patched Go `1.25.13` toolchain. This local review ran with Go `1.26.6`. The working tree also contains an untracked seventh domain, called out wherever release status matters.
 
 This matrix is the handoff evidence for public claims. It prevents the curated documentation from becoming a second, drifting implementation record.
 
 | Claim area | Public home | Authority | Verification/evidence | Status |
 | --- | --- | --- | --- | --- |
 | Product purpose and boundaries | [`overview/product.md`](../overview/product.md) | `README.md`, design decisions, implementation boundaries | Repository review and package map | Verified summary |
-| Toolchain | [`overview/compatibility.md`](../overview/compatibility.md) | [`go.mod`](../../go.mod), CI workflow | `go version`, `.github/workflows/ci.yml` | Verified: Go 1.25.12 |
+| Toolchain | [`overview/compatibility.md`](../overview/compatibility.md) | [`go.mod`](../../go.mod), CI workflow | `go version`, `.github/workflows/ci.yml` | Verified: module minimum Go 1.25.12; CI Go 1.25.13 |
 | CLI commands and flags | [`reference/cli.md`](../reference/cli.md) | [`internal/cli/cli.go`](../../internal/cli/cli.go) | `go run ./cmd/streamsim help`; targeted command smoke tests | Verified |
 | Domain inventory | [`architecture/domains-and-adapters.md`](../architecture/domains-and-adapters.md) | `domains/`, release manifest, shipped-domain tests | `catalog list`; `go test ./internal/schemas` | Working tree not reconciled: seven discovered, six expected by test |
 | Adapter inventory | [`architecture/domains-and-adapters.md`](../architecture/domains-and-adapters.md) | `adapters/`, adapter tests | `adapter list`; `adapter verify` | Verified |
