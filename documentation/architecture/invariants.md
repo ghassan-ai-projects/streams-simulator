@@ -18,7 +18,7 @@ These guarantees distinguish a test instrument from a trace generator. The desig
 
 ## Evidence status
 
-The repository contains named production-path tests for all nine gates. That is not the same as a current release claim: the working tree currently fails a shipped-domain count test because an untracked seventh domain is present. See [limitations](../limitations.md) and [release evidence](../operations/release.md).
+The repository contains named production-path tests for all nine gates, and the full suite is green at the snapshot commit. That is still not the same as a release claim: publication requires fresh gate evidence and a matching manifest for the exact commit. See [limitations](../limitations.md) and [release evidence](../operations/release.md).
 
 ## How to use this page
 

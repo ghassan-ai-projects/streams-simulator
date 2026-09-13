@@ -11,7 +11,7 @@ It is a test instrument first. Determinism, sealed ground truth, and analytic or
 - The implementation is present under `cmd/streamsim` and `internal/`; the original S0–S6 plan is historical execution context.
 - The engineering archive is under [`docs/`](../../docs/README.md); the curated public documentation is under [`documentation/`](../../documentation/README.md).
 - Module path `github.com/ghassan-ai-projects/streams-simulator` is set.
-- Six domain files are committed, two adapters are committed, and the working tree may contain additional untracked inputs that must be reconciled before release claims.
+- Eight domain files and two adapters are committed; the schema suite validates every shipped domain, so new inputs must land together with test, inventory, and manifest updates.
 - The root [doc.go](../../doc.go) package remains so Go tooling has a stable module root.
 - Current implementation status and known limitations are in [`documentation/limitations.md`](../../documentation/limitations.md).
 

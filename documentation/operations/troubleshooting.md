@@ -14,7 +14,7 @@ Diagnose from evidence in this order: command output, run artifact, replay resul
 | `missing_command_id` | Effector idempotency | Supply a stable non-empty `command_id`; preserve it on retry. |
 | `unknown_effector` | Domain contract | Read the operator nameplate/effector list; do not invent names. |
 | Trace is missing records | Delivery | Inspect `ledger.jsonl` before blaming the consumer. |
-| Full test suite finds seven domains | Working-tree inventory | The untracked cold-chain domain conflicts with the six-domain assertion; see [limitations](../limitations.md). |
+| Shipped-domain schema failure | Working-tree inventory | A file in `domains/` failed validation or the inventory changed without matching test and manifest updates; see [limitations](../limitations.md). |
 | `make ci-check` stops early | Tooling or code | Read the first failing target; missing release tools are intentional failures. |
 
 ## Escalation packet

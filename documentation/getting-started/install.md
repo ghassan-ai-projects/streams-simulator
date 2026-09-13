@@ -49,7 +49,7 @@ The gate includes formatting/module maintenance, build, vet, lint, short/race te
 
 ## Current checkout note
 
-The current working tree includes an untracked `domains/cold-chain-transit.domain.json`. It is discoverable by the CLI, but an existing schema test still expects six shipped domains. Until that domain is intentionally integrated or removed, treat the full test suite as a known red baseline; see [limitations](../limitations.md).
+All shipped domains in [`domains/`](../../domains/) are committed and validated by the schema suite. New domain files must be added together with their test, inventory, and release-manifest updates; see [limitations](../limitations.md) for the current status boundary.
 
 ## Next reads
 

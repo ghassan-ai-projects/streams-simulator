@@ -1,6 +1,6 @@
 # Benchmark and release evidence
 
-> Status: Implemented evidence requirements; current checkout is not release-green. Authority: CI, manifest command, artifacts, and tests. Verified by: smoke validation and current working-tree review. Last verified: 2026-08-17.
+> Status: Implemented evidence requirements; repository gates are green at the snapshot commit, with per-release evidence generation. Authority: CI, manifest command, artifacts, and tests. Verified by: smoke validation, full `make ci-check` run, and working-tree review. Last verified: 2026-09-13.
 
 Evidence is part of the benchmark output. A prose statement such as “all gates are green” is not a substitute for the exact command, commit, toolchain, inputs, and artifact that support it.
 
@@ -31,7 +31,7 @@ These commands are meaningful only when their required tools are present and the
 
 ## Current repository status
 
-The checked-in [`release-manifest.json`](../../release-manifest.json) describes an older commit and toolchain, and the current working tree contains an untracked seventh domain that makes the full test suite fail its six-domain assertion. Treat the manifest as historical evidence until a fresh manifest is generated after reconciliation.
+The full gate is green at the snapshot commit and the shipped inventory is eight committed domains. The checked-in [`release-manifest.json`](../../release-manifest.json) still describes the commit it was generated at, so regenerate it for the exact commit whose evidence you publish; a manifest from another commit is historical evidence only.
 
 ## Evidence ownership
 

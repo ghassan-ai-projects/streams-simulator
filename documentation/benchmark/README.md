@@ -20,7 +20,7 @@ The simulator is not the consumer. The same run can be used to compare consumers
 
 ## Benchmark readiness
 
-The repository has suite generation, trivial-baseline auditing, scoring, release-manifest generation, and tests for the nine non-negotiables. Suite generation is not yet a complete batch runner: it emits scenario definitions and labels, while a harness must choose the adapter, execute each scenario, collect run evidence, and invoke scoring. The current working tree is not a clean release baseline, so no benchmark result should be published from it without fresh validation and a manifest for the exact commit and inputs.
+The repository has suite generation, trivial-baseline auditing, scoring, release-manifest generation, and tests for the nine non-negotiables. Suite generation is not yet a complete batch runner: it emits scenario definitions and labels, while a harness must choose the adapter, execute each scenario, collect run evidence, and invoke scoring. No benchmark result should be published without fresh validation and a manifest for the exact commit and inputs.
 
 ## Recommended reading order
 

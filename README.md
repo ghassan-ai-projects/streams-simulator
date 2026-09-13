@@ -4,7 +4,7 @@ Streams Simulator (`streamsim`) is a deterministic, closed-loop world simulator 
 
 It generates event streams from data-defined domains, perturbs delivery in declared ways, carries sealed ground truth, accepts commands through declared effectors, and scores a consumer’s verdict against what actually happened.
 
-> The current checkout contains substantial implementation and test evidence, but it is not a clean release baseline. See [current limitations](documentation/limitations.md) before publishing benchmark results.
+> The repository is tested green at its current commit, but no release claim is made from a working tree: see [current limitations](documentation/limitations.md) before publishing benchmark results, and generate fresh evidence for the exact commit.
 
 ## Why it exists
 
@@ -74,4 +74,4 @@ make ci-check
 
 ## Current inventory note
 
-Six domain files are committed in the release inventory. The current working tree also contains an untracked `domains/cold-chain-transit.domain.json`, which the CLI discovers but which currently conflicts with a six-domain schema test. This is intentionally called out rather than hidden; see [limitations](documentation/limitations.md).
+Eight domain files are committed in the release inventory alongside two adapters. The schema suite validates every shipped domain from the `domains/` directory, so new domain files must be added together with their test and inventory updates. See [limitations](documentation/limitations.md) for the current status boundary.

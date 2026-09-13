@@ -1,6 +1,6 @@
 # Release and publication procedure
 
-> Status: Implemented release procedure; current checkout is not release-green. Authority: CI, Makefile, manifest command, and release evidence. Verified by: CI attempt and manifest smoke command. Last verified: 2026-08-17.
+> Status: Implemented release procedure; repository gates are green at the snapshot commit, and publication evidence is generated per release. Authority: CI, Makefile, manifest command, and release evidence. Verified by: full `make ci-check` run and manifest smoke command. Last verified: 2026-09-13.
 
 The project must be able to prove what it released and what it measured. A release claim is bound to an exact commit and evidence bundle.
 
@@ -34,7 +34,7 @@ The manifest binds simulator identity, toolchain, domains, adapters, consumer, s
 
 ## Current status
 
-The current working tree is not release-green: `go test ./...` fails because an untracked seventh domain conflicts with a six-domain test, and the checked-in manifest pins an older commit/toolchain. See [benchmark evidence](../benchmark/evidence.md) and [limitations](../limitations.md).
+The repository gates are green at the snapshot commit and the shipped inventory is eight committed domains. A release claim still requires the pre-release checks above from a clean, intentional commit, with a manifest generated for that exact commit. See [benchmark evidence](../benchmark/evidence.md) and [limitations](../limitations.md).
 
 ## Next reads
 

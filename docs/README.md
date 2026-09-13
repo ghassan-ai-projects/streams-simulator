@@ -176,8 +176,8 @@ A domain is **data**. All 25 load through one schema with no per-domain code. If
 a code branch in the binary, the simulator is wrong and the domain found the bug.
 
 **Six were the initial build target**, per [CRITICAL_REVIEW C-02](design/CRITICAL_REVIEW.md);
-the rest stay specified in this archive. The current working tree has six committed domain
-files plus an unreconciled untracked cold-chain file; see the public [limitations](../documentation/limitations.md).
+the rest stay specified in this archive. The current working tree has eight committed domain
+files; see the public [limitations](../documentation/limitations.md).
 
 ## 6. Non-negotiables
 

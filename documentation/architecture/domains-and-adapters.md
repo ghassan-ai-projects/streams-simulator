@@ -8,7 +8,7 @@ Streams Simulator extends through data files, not per-domain or per-consumer cod
 
 A domain specification declares the world’s entities and the behavior that makes a scenario useful: channels, state variables, dynamics, faults, effectors, profiles, and property axes. The loader validates the JSON against the domain contract, computes a digest, and exposes it through the catalog.
 
-The committed domain set is under [`domains/`](../../domains/). The design catalog describes more domains than are currently committed. The current working tree also contains an untracked cold-chain domain; it is discoverable but not yet reconciled with the shipped-domain test. See [limitations](../limitations.md).
+The committed domain set is under [`domains/`](../../domains/): eight domains, each validated against the embedded schema by the shipped-domain test. The design catalog describes more domains than are currently committed. See [limitations](../limitations.md).
 
 The world and domain loader are data-defined, but the suite harness is not fully generic yet: [`internal/suite/suite.go`](../../internal/suite/suite.go) contains a current aquaculture-specific setup exception so the `aerator_failure` scenario starts from a meaningful operating state. Treat “data-defined” as a core runtime guarantee, not as a claim that every benchmark-generation convenience is domain-neutral today.
 
