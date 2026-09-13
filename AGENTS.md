@@ -48,7 +48,7 @@ Use the prompt files under `.agents/prompts/` when the task matches them.
 - Module path: `github.com/ghassan-ai-projects/streams-simulator` (set).
 - Design, research, contracts, and implementation evidence are maintained under `docs/`; public usage documentation is under `documentation/`.
 - The implementation includes `cmd/streamsim` and the `internal/` packages described below.
-- Six domains are committed in `domains/` and two adapters are committed in `adapters/`; the current working tree may contain additional untracked inputs that must be reconciled before release claims.
+- Eight domains are committed in `domains/` and two adapters are committed in `adapters/`; the schema suite validates every shipped domain, so new inputs must be reconciled with the tests and release manifest in the same change.
 - The root package in [doc.go](doc.go) remains so Go tooling has a stable module root.
 - Historical stage planning is in [docs/design/IMPLEMENTATION_PLAN.md](docs/design/IMPLEMENTATION_PLAN.md); current status and limitations are in [documentation/limitations.md](documentation/limitations.md).
 

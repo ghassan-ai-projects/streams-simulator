@@ -1,6 +1,6 @@
 # Roadmap and open work
 
-> Status: Maintainer backlog, not a delivery promise. Authority: current limitations and accepted decisions. Verified by: documentation review. Last verified: 2026-08-17.
+> Status: Maintainer backlog, not a delivery promise. Authority: current limitations and accepted decisions. Verified by: documentation review. Last verified: 2026-09-13.
 
 This is a status map, not a promise of dates. The implementation plan and historical reviews remain in [`docs/`](../docs/); this page names the work that matters to users and maintainers now.
 
@@ -13,12 +13,11 @@ This is a status map, not a promise of dates. The implementation plan and histor
 
 ## Next maintenance work
 
-- Reconcile the untracked cold-chain domain with the six-domain test and release inventory.
 - Extend the lightweight documentation check with local link/fragment and example validation while retaining human diagram review.
 - Reconcile any future design/archive drift with the implemented package layout and file-artifact decision.
 - Add a suite runner that records adapter selection and persists per-scenario action evidence and score output.
 - Keep the support, conduct, changelog, compatibility, and release policies actionable as the hosting setup evolves.
-- Generate a fresh release manifest and rerun the full gate from a clean, intentional commit.
+- Generate a fresh release manifest and rerun the full gate from a clean, intentional commit at publication time.
 
 ## Design horizon
 
