@@ -9,6 +9,7 @@ package world
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"math"
 	"strconv"
 )
@@ -35,35 +36,9 @@ func (w *World) InjectFault(entityID, faultID string, onsetNS int64, params map[
 	if onsetNS <= 0 {
 		onsetNS = w.ClockNS
 	}
-	severity := 1.0
-	if fault.Onset.Magnitude != 0 {
-		severity = math.Abs(fault.Onset.Magnitude)
-	}
-	if params != nil {
-		for k := range params {
-			if k != "severity" {
-				return "", fmt.Errorf("world: fault %q has no parameter %q (declared: severity)", faultID, k)
-			}
-		}
-		if s, ok := params["severity"]; ok {
-			switch x := s.(type) {
-			case float64:
-				severity = x
-			case int64:
-				severity = float64(x)
-			case json.Number:
-				f, err := x.Float64()
-				if err != nil {
-					return "", fmt.Errorf("world: severity must be numeric")
-				}
-				severity = f
-			default:
-				return "", fmt.Errorf("world: severity must be numeric")
-			}
-		}
-	}
-	if math.IsNaN(severity) || math.IsInf(severity, 0) || severity < 0 {
-		return "", fmt.Errorf("world: severity must be finite and non-negative")
+	severity, err := faultSeverity(fault, faultID, params)
+	if err != nil {
+		return "", err
 	}
 	af := &activeFault{
 		fault:    fault,
@@ -86,6 +61,40 @@ func (w *World) InjectFault(entityID, faultID string, onsetNS int64, params map[
 		w.faultsByState[a.State] = append(w.faultsByState[a.State], af)
 	}
 	return fid, nil
+}
+
+func faultSeverity(fault *model.Fault, faultID string, params map[string]any) (float64, error) {
+	severity := 1.0
+	if fault.Onset.Magnitude != 0 {
+		severity = math.Abs(fault.Onset.Magnitude)
+	}
+	if params != nil {
+		for k := range params {
+			if k != "severity" {
+				return 0, fmt.Errorf("world: fault %q has no parameter %q (declared: severity)", faultID, k)
+			}
+		}
+		if s, ok := params["severity"]; ok {
+			switch x := s.(type) {
+			case float64:
+				severity = x
+			case int64:
+				severity = float64(x)
+			case json.Number:
+				f, err := x.Float64()
+				if err != nil {
+					return 0, fmt.Errorf("world: severity must be numeric")
+				}
+				severity = f
+			default:
+				return 0, fmt.Errorf("world: severity must be numeric")
+			}
+		}
+	}
+	if math.IsNaN(severity) || math.IsInf(severity, 0) || severity < 0 {
+		return 0, fmt.Errorf("world: severity must be finite and non-negative")
+	}
+	return severity, nil
 }
 
 // ClearFault removes a fault's contribution from the given time onward.

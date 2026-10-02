@@ -2,6 +2,7 @@ package world
 
 import (
 	"fmt"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
 // Effector failure modes.
@@ -78,6 +79,18 @@ func (w *World) InvokeEffector(effector, entityID, commandID string, args map[st
 	// Failure mode and ack latency from the effector's own substream.
 	mode := w.pickFailureMode(entityID, eff, atNS)
 	latency := w.ackLatency(entityID, eff, mode, atNS)
+	effResult := w.executeEffectorMode(entityID, commandID, eff, args, atNS, mode, latency)
+
+	w.recordCall(effector, entityID, commandID, args, atNS, mode, effResult.Accepted, false, effResult.Reason, latency, effResult.EffectApplied)
+	window := eff.IdempotencyWindowS
+	if window <= 0 {
+		window = 3600
+	}
+	w.idempotent[commandID] = &idempotentResult{call: w.effectorCalls[len(w.effectorCalls)-1], expiresNS: atNS + int64(window*secondsPerNS)}
+	return effResult, nil
+}
+
+func (w *World) executeEffectorMode(entityID, commandID string, eff *model.Effector, args map[string]any, atNS int64, mode string, latency float64) *InvokeResult {
 	effResult := &InvokeResult{
 		Simulated:    true,
 		WorldID:      w.ID,
@@ -120,13 +133,7 @@ func (w *World) InvokeEffector(effector, entityID, commandID string, args map[st
 	}
 	effResult.EffectApplied = effectApplied
 
-	w.recordCall(effector, entityID, commandID, args, atNS, mode, effResult.Accepted, false, effResult.Reason, latency, effectApplied)
-	window := eff.IdempotencyWindowS
-	if window <= 0 {
-		window = 3600
-	}
-	w.idempotent[commandID] = &idempotentResult{call: w.effectorCalls[len(w.effectorCalls)-1], expiresNS: atNS + int64(window*secondsPerNS)}
-	return effResult, nil
+	return effResult
 }
 
 // callResult reconstructs the original invoke result for an idempotent

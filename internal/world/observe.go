@@ -69,6 +69,17 @@ func (w *World) processEmission(entityID, channelName string, t int64) {
 	observed := t + int64(delay*secondsPerNS)
 	observed = w.serializeObservedTime(observed)
 
+	w.publishNativeEvent(ent, ch, value, t, observed)
+
+	// Schedule the next emission for this channel.
+	next := w.nextEmission(entityID, ch, t)
+	if next > 0 {
+		w.schedule(kindEmission, entityID, channelName, next, nil)
+	}
+}
+
+func (w *World) publishNativeEvent(ent *Entity, ch *model.Channel, value any, t, observed int64) {
+	entityID, channelName := ent.ID, ch.Name
 	if !w.EmitDisabled {
 		w.seq++
 		ev := model.SimEvent{
@@ -90,11 +101,6 @@ func (w *World) processEmission(entityID, channelName string, t int64) {
 		w.emittedThisAdvance++
 	}
 
-	// Schedule the next emission for this channel.
-	next := w.nextEmission(entityID, ch, t)
-	if next > 0 {
-		w.schedule(kindEmission, entityID, channelName, next, nil)
-	}
 }
 
 // serializeObservedTime turns the link-delay candidate into a strict total

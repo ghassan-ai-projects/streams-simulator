@@ -20,6 +20,38 @@ func (w *World) stateAt(entity, state string, t int64) float64 {
 		return 0
 	}
 	v := w.naturalValue(ent, state, t)
+	v, lastKick, anyKick := w.applyStateKicks(v, entity, state, t)
+	lastFault := int64(-1)
+	anyFault := false
+	for _, f := range w.faultsByState[state] {
+		if f.entity != entity || !f.activeAt(t) {
+			continue
+		}
+		anyFault = true
+		if f.onsetNS > lastFault {
+			lastFault = f.onsetNS
+		}
+	}
+	if anyFault && (!anyKick || lastFault > lastKick) {
+		// The fault is the most recent driver: it rules the state.
+		v = w.naturalValue(ent, state, t)
+		for _, f := range w.faultsByState[state] {
+			if f.entity != entity || !f.activeAt(t) {
+				continue
+			}
+			add, mult := f.contributionAt(state, t, w.substream(faultSubstream(f, state)), w.dtFor(state))
+			if mult != 0 {
+				v = v*(1+mult) + add
+			} else {
+				v += add
+			}
+		}
+	}
+	v = w.clampState(ent, state, v)
+	return v
+}
+
+func (w *World) applyStateKicks(v float64, entity, state string, t int64) (float64, int64, bool) {
 	lastKick := int64(-1)
 	anyKick := false
 	lastAssignment := (*kick)(nil)
@@ -50,34 +82,7 @@ func (w *World) stateAt(entity, state string, t int64) float64 {
 			}
 		}
 	}
-	lastFault := int64(-1)
-	anyFault := false
-	for _, f := range w.faultsByState[state] {
-		if f.entity != entity || !f.activeAt(t) {
-			continue
-		}
-		anyFault = true
-		if f.onsetNS > lastFault {
-			lastFault = f.onsetNS
-		}
-	}
-	if anyFault && (!anyKick || lastFault > lastKick) {
-		// The fault is the most recent driver: it rules the state.
-		v = w.naturalValue(ent, state, t)
-		for _, f := range w.faultsByState[state] {
-			if f.entity != entity || !f.activeAt(t) {
-				continue
-			}
-			add, mult := f.contributionAt(state, t, w.substream(faultSubstream(f, state)), w.dtFor(state))
-			if mult != 0 {
-				v = v*(1+mult) + add
-			} else {
-				v += add
-			}
-		}
-	}
-	v = w.clampState(ent, state, v)
-	return v
+	return v, lastKick, anyKick
 }
 
 // activeAt reports whether the fault's contribution is in force at t.

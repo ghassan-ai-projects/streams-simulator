@@ -88,3 +88,19 @@ and channel-before-fault error priority. Existing schema and golden-byte tests p
 Race coverage: adapter 69.1%, domain 76.1%, jsonschema 68.8%. Final focused tests,
 size/dependency guards, zero-issue lint and whitespace checks pass. No intended
 runtime or contract changes in this round.
+
+## Round 6 — World effects and perturbation ownership
+
+The perturbation dispatcher delegates to named duplication, timing and payload
+transforms in cohesive files. Each extracted operation retains its original body,
+short-circuit checks and PRNG calls. World actuation separates admission/replay/
+interlock checks from selected-mode execution. Fault severity parsing, state-kick
+evaluation and native-event publication now sit below their callers.
+
+Captured a fixed-seed overlapping perturbation stream before refactoring and pinned
+its complete delivery digest (`d34d9a91…`). The digest is unchanged afterward.
+Added an argument-validation-before-idempotency regression. Existing analytic
+oracles, observed-time ordering, substream isolation, closed-loop and replay tests
+pass. Numerical RK4 arithmetic remains together for independent oracle review.
+Race coverage: perturb 85.2%, world 64.5%, run 68.2%. Architecture guards, zero-issue
+lint and whitespace review pass. No intended behavior changes.
