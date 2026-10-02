@@ -86,52 +86,9 @@ func newDeviceServeDevice(capabilityPath, bindingPath, domainPath, entity, bootI
 		return nil, nil, fmt.Errorf("validate fault schedule: %w", err)
 	}
 
-	var plant device.Plant
-	var worldState *world.World
-	var clock func() int64
-	if bindingPath != "" {
-		worldData, readErr := os.ReadFile(bindingPath)
-		if readErr != nil {
-			return nil, nil, fmt.Errorf("read world bindings: %w", readErr)
-		}
-		domainSpec, loadErr := domain.Load(domainPath)
-		if loadErr != nil {
-			return nil, nil, fmt.Errorf("load device world domain: %w", loadErr)
-		}
-		worldState, err = world.New(domainSpec, 1, "device-world", model.DefaultStartTimeNS, world.Options{EmitDisabled: true})
-		if err != nil {
-			return nil, nil, fmt.Errorf("create device world: %w", err)
-		}
-		if entity == "" {
-			ids := worldState.EntityIDs()
-			if len(ids) == 0 {
-				return nil, nil, fmt.Errorf("device world has no entities")
-			}
-			entity = ids[0]
-		}
-		if worldState.Entity(entity) == nil {
-			return nil, nil, fmt.Errorf("device world entity %q does not exist", entity)
-		}
-		bindings, loadErr := deviceworld.LoadBindings(worldData, entity)
-		if loadErr != nil {
-			return nil, nil, fmt.Errorf("load device world bindings: %w", loadErr)
-		}
-		requiredTargets := make([]string, 0, len(bindings))
-		for target := range bindings {
-			requiredTargets = append(requiredTargets, target)
-		}
-		requiredSafeStops := make([]string, 0, len(bindings))
-		for _, target := range caps.SafeStopNames() {
-			if _, ok := bindings[target]; ok {
-				requiredSafeStops = append(requiredSafeStops, target)
-			}
-		}
-		if validateErr := deviceworld.ValidateBindings(worldState, bindings, requiredTargets, requiredSafeStops); validateErr != nil {
-			return nil, nil, fmt.Errorf("validate device world bindings: %w", validateErr)
-		}
-		plant = deviceworld.New(worldState, bindings)
-		started := time.Now()
-		clock = func() int64 { return time.Since(started).Microseconds() }
+	plant, worldState, clock, err := prepareDeviceWorld(bindingPath, domainPath, entity, caps)
+	if err != nil {
+		return nil, nil, err
 	}
 	return device.New(device.Config{
 		BootID:        bootID,
@@ -141,6 +98,55 @@ func newDeviceServeDevice(capabilityPath, bindingPath, domainPath, entity, bootI
 		Clock:         clock,
 		FaultSchedule: schedule,
 	}), worldState, nil
+}
+
+func prepareDeviceWorld(bindingPath, domainPath, entity string, caps *device.Capabilities) (device.Plant, *world.World, func() int64, error) {
+	if bindingPath == "" {
+		return nil, nil, nil, nil
+	}
+	worldData, readErr := os.ReadFile(bindingPath)
+	if readErr != nil {
+		return nil, nil, nil, fmt.Errorf("read world bindings: %w", readErr)
+	}
+	domainSpec, loadErr := domain.Load(domainPath)
+	if loadErr != nil {
+		return nil, nil, nil, fmt.Errorf("load device world domain: %w", loadErr)
+	}
+	worldState, err := world.New(domainSpec, 1, "device-world", model.DefaultStartTimeNS, world.Options{EmitDisabled: true})
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("create device world: %w", err)
+	}
+	if entity == "" {
+		ids := worldState.EntityIDs()
+		if len(ids) == 0 {
+			return nil, nil, nil, fmt.Errorf("device world has no entities")
+		}
+		entity = ids[0]
+	}
+	if worldState.Entity(entity) == nil {
+		return nil, nil, nil, fmt.Errorf("device world entity %q does not exist", entity)
+	}
+	bindings, loadErr := deviceworld.LoadBindings(worldData, entity)
+	if loadErr != nil {
+		return nil, nil, nil, fmt.Errorf("load device world bindings: %w", loadErr)
+	}
+	requiredTargets := make([]string, 0, len(bindings))
+	for target := range bindings {
+		requiredTargets = append(requiredTargets, target)
+	}
+	requiredSafeStops := make([]string, 0, len(bindings))
+	for _, target := range caps.SafeStopNames() {
+		if _, ok := bindings[target]; ok {
+			requiredSafeStops = append(requiredSafeStops, target)
+		}
+	}
+	if validateErr := deviceworld.ValidateBindings(worldState, bindings, requiredTargets, requiredSafeStops); validateErr != nil {
+		return nil, nil, nil, fmt.Errorf("validate device world bindings: %w", validateErr)
+	}
+	plant := deviceworld.New(worldState, bindings)
+	started := time.Now()
+	clock := func() int64 { return time.Since(started).Microseconds() }
+	return plant, worldState, clock, nil
 }
 
 type faultSpecFlag struct {

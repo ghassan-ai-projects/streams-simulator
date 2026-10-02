@@ -45,15 +45,11 @@ func cmdRefconsumer(args []string) error {
 		operator *refconsumer.MCPOperator
 	)
 	if *mcpEndpoint != "" {
-		operator, err = refconsumer.NewMCPOperator(*mcpEndpoint, *token, *runID)
+		np, operator, err = connectReferenceConsumer(*mcpEndpoint, *token, *runID)
 		if err != nil {
 			return fmt.Errorf("streamsim: %w", err)
 		}
 		defer func() { _ = operator.Close() }()
-		np, err = operator.Nameplate()
-		if err != nil {
-			return fmt.Errorf("streamsim: %w", err)
-		}
 		invoker = operator
 		sink = operator
 		id = *runID
@@ -66,12 +62,32 @@ func cmdRefconsumer(args []string) error {
 	if err != nil {
 		return fmt.Errorf("streamsim: %w", err)
 	}
-	rawV, _ := json.MarshalIndent(v, "", "  ")
-	// #nosec G703 -- the CLI output path is user intent.
-	if err := os.WriteFile(*out, rawV, 0o600); err != nil {
-		return fmt.Errorf("streamsim: %w", err)
+	if err := writeConsumerVerdict(v, *out); err != nil {
+		return err
 	}
 	return printJSON(map[string]any{"verdict_written": *out, "detections": len(v.Detections)})
+}
+
+func connectReferenceConsumer(endpoint, token, runID string) (*refconsumer.Nameplate, *refconsumer.MCPOperator, error) {
+	operator, err := refconsumer.NewMCPOperator(endpoint, token, runID)
+	if err != nil {
+		return nil, nil, fmt.Errorf("%w", err)
+	}
+	nameplate, err := operator.Nameplate()
+	if err != nil {
+		_ = operator.Close()
+		return nil, nil, fmt.Errorf("%w", err)
+	}
+	return nameplate, operator, nil
+}
+
+func writeConsumerVerdict(v *model.Verdict, out string) error {
+	rawV, _ := json.MarshalIndent(v, "", "  ")
+	// #nosec G703 -- the CLI output path is user intent.
+	if err := os.WriteFile(out, rawV, 0o600); err != nil {
+		return fmt.Errorf("streamsim: %w", err)
+	}
+	return nil
 }
 
 type fileSink struct{}

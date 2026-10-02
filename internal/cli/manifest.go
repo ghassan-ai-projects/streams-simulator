@@ -65,19 +65,9 @@ func cmdManifest(args []string) error {
 	if err != nil {
 		return fmt.Errorf("manifest: canonical: %w", err)
 	}
-	sig := ""
-	if *keyFile != "" {
-		raw, err := os.ReadFile(*keyFile)
-		if err != nil {
-			return fmt.Errorf("manifest: key: %w", err)
-		}
-		seed, err := hex.DecodeString(strings.TrimSpace(string(raw)))
-		if err != nil || len(seed) != ed25519.SeedSize {
-			return fmt.Errorf("manifest: key must be %d hex chars", ed25519.SeedSize*2)
-		}
-		priv := ed25519.NewKeyFromSeed(seed)
-		digest := sha256.Sum256(body)
-		sig = hex.EncodeToString(ed25519.Sign(priv, digest[:]))
+	sig, err := signManifest(body, *keyFile)
+	if err != nil {
+		return err
 	}
 	doc := map[string]any{
 		"manifest":  json.RawMessage(body),
@@ -91,6 +81,24 @@ func cmdManifest(args []string) error {
 		return fmt.Errorf("manifest: %w", err)
 	}
 	return printJSON(map[string]any{"manifest_written": *out, "signed": sig != "", "sim": Version + "@" + Commit})
+}
+
+func signManifest(body []byte, keyFile string) (string, error) {
+	sig := ""
+	if keyFile != "" {
+		raw, err := os.ReadFile(keyFile)
+		if err != nil {
+			return "", fmt.Errorf("manifest: key: %w", err)
+		}
+		seed, err := hex.DecodeString(strings.TrimSpace(string(raw)))
+		if err != nil || len(seed) != ed25519.SeedSize {
+			return "", fmt.Errorf("manifest: key must be %d hex chars", ed25519.SeedSize*2)
+		}
+		priv := ed25519.NewKeyFromSeed(seed)
+		digest := sha256.Sum256(body)
+		sig = hex.EncodeToString(ed25519.Sign(priv, digest[:]))
+	}
+	return sig, nil
 }
 
 // fileDigests digests every file in dir, keyed by base name. Values are

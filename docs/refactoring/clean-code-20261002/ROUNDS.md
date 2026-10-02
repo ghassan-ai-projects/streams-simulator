@@ -120,3 +120,21 @@ extraction, alongside lease, safe-stop, ack-loss retry, duplicate, reboot and wo
 binding tests. Race tests pass with local socket access. Coverage: device 84.1%,
 deviceworld 76.8%. Architecture guards, zero-issue lint and whitespace checks pass.
 No intended behavior changes.
+
+## Round 8 — Application workflows
+
+CLI run reads as parse options, load config, create run, apply scripted faults /
+perturbations / effects, advance and publish. Flags/defaults and wall-derived
+command IDs are unchanged. Device-world setup, reference-consumer connection/output
+and manifest signing sit below their workflows. MCP world creation separates
+configuration, identity reservation and registry publication. Director server
+registration reads as catalog, world/clock, injection, run, truth and resources;
+registration order and the original handlers/schemas are retained.
+
+Added regressions for explicit epoch zero, default CLI inputs, derived file targets,
+script command order, ed25519 signing over the canonical-body digest and distinct
+MCP world/run/token identities. Extraction tests use existing process replay and
+role/capability suites; new characterization was added afterward where existing
+integration tests already covered the path. Full CLI tests pass (26.5% coverage),
+MCP race tests pass (65.7%). Final focused CLI tests, architecture guards, zero-issue
+lint and whitespace checks pass.

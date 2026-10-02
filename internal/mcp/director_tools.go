@@ -12,7 +12,16 @@ import (
 // NewDirectorServer builds the director-role server.
 func NewDirectorServer(d *Director) *mcp.Server {
 	s := mcp.NewServer(implementation, nil)
+	registerCatalogTools(s, d)
+	registerWorldTools(s, d)
+	registerInjectionTools(s, d)
+	registerRunTools(s, d)
+	registerTruthTools(s, d)
+	registerDirectorResources(s, d)
+	return s
+}
 
+func registerCatalogTools(s *mcp.Server, d *Director) {
 	addTool(s, toolDef{name: "sim.catalog.list", description: "List the installed domains with their property vectors and stresses.", schema: toolSchema("sim.catalog.list"), handler: func(_ context.Context, args map[string]any) (any, error) {
 		return map[string]any{"domains": d.Catalog.List(str(args, "group"))}, nil
 	}})
@@ -40,6 +49,9 @@ func NewDirectorServer(d *Director) *mcp.Server {
 		}
 		return map[string]any{"adapters": out}, nil
 	}})
+}
+
+func registerWorldTools(s *mcp.Server, d *Director) {
 	addTool(s, toolDef{name: "sim.world.create", description: "Create a world: domain, seed, sink, adapter, time mode.", schema: toolSchema("sim.world.create"), handler: func(_ context.Context, args map[string]any) (any, error) {
 		return d.CreateWorld(args)
 	}})
@@ -75,6 +87,9 @@ func NewDirectorServer(d *Director) *mcp.Server {
 	addTool(s, toolDef{name: "sim.clock.state", description: "The clock, next scheduled event, pending effects.", schema: toolSchema("sim.clock.state"), handler: func(_ context.Context, args map[string]any) (any, error) {
 		return d.ClockState(str(args, "world_id"))
 	}})
+}
+
+func registerInjectionTools(s *mcp.Server, d *Director) {
 	addTool(s, toolDef{name: "sim.fault.inject", description: "Inject a world fault into an entity.", schema: toolSchema("sim.fault.inject"), handler: func(_ context.Context, args map[string]any) (any, error) {
 		return d.InjectFault(str(args, "world_id"), str(args, "entity_id"), str(args, "fault"), num(args, "onset_ns", 0), mapArg(args, "params"))
 	}})
@@ -93,12 +108,18 @@ func NewDirectorServer(d *Director) *mcp.Server {
 	addTool(s, toolDef{name: "sim.env.inject", description: "Inject an environment fault against a configured target.", schema: toolSchema("sim.env.inject"), handler: func(_ context.Context, args map[string]any) (any, error) {
 		return d.EnvInject(str(args, "world_id"), str(args, "target"), str(args, "fault"), mapArg(args, "params"))
 	}})
+}
+
+func registerRunTools(s *mcp.Server, d *Director) {
 	addTool(s, toolDef{name: "sim.run.begin", description: "Open a run; truth is sealed.", schema: toolSchema("sim.run.begin"), handler: func(_ context.Context, args map[string]any) (any, error) {
 		return d.BeginRun(str(args, "world_id"), str(args, "label"))
 	}})
 	addTool(s, toolDef{name: "sim.run.end", description: "Close the run; writes the run artifact.", schema: toolSchema("sim.run.end"), handler: func(_ context.Context, args map[string]any) (any, error) {
 		return d.EndRun(str(args, "world_id"))
 	}})
+}
+
+func registerTruthTools(s *mcp.Server, d *Director) {
 	addTool(s, toolDef{name: "sim.truth.seal", description: "Install and seal a director-only ground-truth record before run.begin.", schema: toolSchema("sim.truth.seal"), handler: func(_ context.Context, args map[string]any) (any, error) {
 		runID := str(args, "run_id")
 		raw, ok := args["ground_truth"].(map[string]any)
@@ -144,6 +165,9 @@ func NewDirectorServer(d *Director) *mcp.Server {
 		return map[string]any{"retired": true}, nil
 	}})
 
+}
+
+func registerDirectorResources(s *mcp.Server, d *Director) {
 	// Resources: catalog and per-domain specs.
 	s.AddResource(&mcp.Resource{URI: "sim://catalog", Name: "Domain catalog", MIMEType: "application/json"}, func(_ context.Context, _ *mcp.ReadResourceRequest) (*mcp.ReadResourceResult, error) {
 		entries := d.Catalog.List("")
@@ -162,5 +186,4 @@ func NewDirectorServer(d *Director) *mcp.Server {
 		b, _ := json.Marshal(c.Spec)
 		return &mcp.ReadResourceResult{Contents: []*mcp.ResourceContents{{URI: req.Params.URI, MIMEType: "application/json", Text: string(b)}}}, nil
 	})
-	return s
 }

@@ -12,10 +12,38 @@ import (
 
 // CreateWorld builds a world (sim.world.create).
 func (d *Director) CreateWorld(args map[string]any) (map[string]any, error) {
+	cfg, err := d.worldConfig(args)
+	if err != nil {
+		return nil, err
+	}
+	worldID, runID := d.reserveWorldIdentity()
+	cfg.RunID = runID
+	cfg.LedgerPath = filepath.Join(d.OutDir, worldID, "ledger.jsonl")
+	r, err := run.New(d.ctx, cfg)
+	if err != nil {
+		return nil, errTool(CodeDomainInvalid, "%v", err)
+	}
+	token, err := capabilityToken()
+	if err != nil {
+		return nil, errTool(CodeDomainInvalid, "capability token generation failed: %v", err)
+	}
+	operatorEndpoint := d.registerWorld(worldID, r, token)
+	out := map[string]any{
+		"world_id": worldID, "world_digest": r.Digest(), "entity_ids": r.World.EntityIDs(),
+		"clock": model.FormatTime(r.World.Clock()), "token": token,
+		"simulated": true,
+	}
+	if operatorEndpoint != "" {
+		out["operator_endpoint"] = operatorEndpoint
+	}
+	return out, nil
+}
+
+func (d *Director) worldConfig(args map[string]any) (run.Config, error) {
 	domainID := str(args, "domain")
 	spec, err := d.Catalog.Describe(domainID)
 	if err != nil {
-		return nil, errTool(CodeDomainInvalid, "%v", err)
+		return run.Config{}, errTool(CodeDomainInvalid, "%v", err)
 	}
 	adapterID := str(args, "adapter")
 	if adapterID == "" {
@@ -23,7 +51,7 @@ func (d *Director) CreateWorld(args map[string]any) (map[string]any, error) {
 	}
 	adap, ok := d.Adapters[adapterID]
 	if !ok {
-		return nil, errTool(CodeAdapterInvalid, "unknown adapter %q", adapterID)
+		return run.Config{}, errTool(CodeAdapterInvalid, "unknown adapter %q", adapterID)
 	}
 	// #nosec G115 -- the seed arg is a documented uint64 range value.
 	seed := uint64(num(args, "seed", 1))
@@ -51,15 +79,6 @@ func (d *Director) CreateWorld(args map[string]any) (map[string]any, error) {
 			}
 		}
 	}
-	// Reserve a director-local identity before constructing the run. Two
-	// worlds with identical simulation inputs are still distinct resources;
-	// using the deterministic default run id here would overwrite the first
-	// world in the registry and make truth lookup ambiguous.
-	d.mu.Lock()
-	d.seq++
-	seq := d.seq
-	d.mu.Unlock()
-	worldID := "w-" + strconv.Itoa(seq)
 	cfg := run.Config{
 		Domain: spec, Adapter: adap, Seed: seed, SinkName: sinkName,
 		SinkTarget: str(args, "sink_target"),
@@ -67,17 +86,20 @@ func (d *Director) CreateWorld(args map[string]any) (map[string]any, error) {
 		EntityIDs:       entityIDs,
 		ScenarioProfile: str(args, "scenario_profile"),
 		Label:           str(args, "label"),
-		RunID:           "r-" + strconv.Itoa(seq),
-		LedgerPath:      filepath.Join(d.OutDir, worldID, "ledger.jsonl"),
 	}
-	r, err := run.New(d.ctx, cfg)
-	if err != nil {
-		return nil, errTool(CodeDomainInvalid, "%v", err)
-	}
-	token, err := capabilityToken()
-	if err != nil {
-		return nil, errTool(CodeDomainInvalid, "capability token generation failed: %v", err)
-	}
+	return cfg, nil
+}
+
+func (d *Director) reserveWorldIdentity() (string, string) {
+	d.mu.Lock()
+	d.seq++
+	seq := d.seq
+	d.mu.Unlock()
+	worldID := "w-" + strconv.Itoa(seq)
+	return worldID, "r-" + strconv.Itoa(seq)
+}
+
+func (d *Director) registerWorld(worldID string, r *run.Run, token string) string {
 	nameplate := buildNameplate(r)
 	nameplate.WorldID = worldID
 	ov := NewOperatorView(worldID, token, nameplate, r, r)
@@ -88,15 +110,7 @@ func (d *Director) CreateWorld(args map[string]any) (map[string]any, error) {
 	d.byToken[token] = rec
 	operatorEndpoint := d.OperatorEndpoint
 	d.mu.Unlock()
-	out := map[string]any{
-		"world_id": worldID, "world_digest": r.Digest(), "entity_ids": r.World.EntityIDs(),
-		"clock": model.FormatTime(r.World.Clock()), "token": token,
-		"simulated": true,
-	}
-	if operatorEndpoint != "" {
-		out["operator_endpoint"] = operatorEndpoint
-	}
-	return out, nil
+	return operatorEndpoint
 }
 
 func capabilityToken() (string, error) {
