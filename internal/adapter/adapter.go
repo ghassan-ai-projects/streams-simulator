@@ -24,41 +24,18 @@ func Load(path string) (*model.Adapter, error) {
 	if err != nil {
 		return nil, fmt.Errorf("adapter: read %s: %w", path, err)
 	}
-	var doc any
-	if err := model.DecodeBytes(raw, &doc); err != nil {
-		return nil, fmt.Errorf("adapter: %s: not valid JSON: %w", path, err)
-	}
-	sch, err := jsonschema.Compile(mustAny(schemas.OutputAdapter()))
-	if err != nil {
-		return nil, fmt.Errorf("adapter: compile contract schema: %w", err)
-	}
-	if errs := sch.Validate(doc); len(errs) > 0 {
-		return nil, fmt.Errorf("adapter: %s fails output-adapter-v0.1 validation:\n  %s", path, formatErrs(errs))
-	}
-	var a model.Adapter
-	if err := json.Unmarshal(raw, &a); err != nil {
-		return nil, fmt.Errorf("adapter: %s: decode: %w", path, err)
-	}
-	if err := crossCheck(&a, path); err != nil {
-		return nil, fmt.Errorf("adapter: %w", err)
-	}
-	a.Raw = append([]byte(nil), raw...)
-	return &a, nil
+	return decodeAdapter(raw, path, "\n  ")
 }
 
 // LoadBytes validates an adapter from an in-memory source document. It is
 // used by artifact replay so a run can carry its own adapter definition.
 func LoadBytes(raw []byte, src string) (*model.Adapter, error) {
-	var doc any
-	if err := model.DecodeBytes(raw, &doc); err != nil {
-		return nil, fmt.Errorf("adapter: %s: not valid JSON: %w", src, err)
-	}
-	sch, err := jsonschema.Compile(mustAny(schemas.OutputAdapter()))
-	if err != nil {
-		return nil, fmt.Errorf("adapter: compile contract schema: %w", err)
-	}
-	if errs := sch.Validate(doc); len(errs) > 0 {
-		return nil, fmt.Errorf("adapter: %s fails output-adapter-v0.1 validation: %s", src, formatErrs(errs))
+	return decodeAdapter(raw, src, " ")
+}
+
+func decodeAdapter(raw []byte, src, separator string) (*model.Adapter, error) {
+	if err := validateAdapterDocument(raw, src, separator); err != nil {
+		return nil, err
 	}
 	var a model.Adapter
 	if err := json.Unmarshal(raw, &a); err != nil {
@@ -69,4 +46,23 @@ func LoadBytes(raw []byte, src string) (*model.Adapter, error) {
 	}
 	a.Raw = append([]byte(nil), raw...)
 	return &a, nil
+}
+
+func validateAdapterDocument(raw []byte, src, separator string) error {
+	var doc any
+	if err := model.DecodeBytes(raw, &doc); err != nil {
+		return fmt.Errorf("adapter: %s: not valid JSON: %w", src, err)
+	}
+	return validateAdapterSchema(doc, src, separator)
+}
+
+func validateAdapterSchema(doc any, src, separator string) error {
+	schema, err := jsonschema.Compile(mustAny(schemas.OutputAdapter()))
+	if err != nil {
+		return fmt.Errorf("adapter: compile contract schema: %w", err)
+	}
+	if errs := schema.Validate(doc); len(errs) > 0 {
+		return fmt.Errorf("adapter: %s fails output-adapter-v0.1 validation:%s%s", src, separator, formatErrs(errs))
+	}
+	return nil
 }

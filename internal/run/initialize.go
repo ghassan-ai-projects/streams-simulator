@@ -19,6 +19,19 @@ import (
 // New creates a run: world, perturbation layer, adapter engine and sink.
 func New(ctx context.Context, cfg Config) (*Run, error) {
 	cfg = defaultConfig(cfg)
+	w, err := newRunWorld(cfg)
+	if err != nil {
+		return nil, err
+	}
+	r := newRunState(ctx, cfg, w)
+	if err := r.openPipeline(); err != nil {
+		return nil, err
+	}
+	r.attachWorld()
+	return r, nil
+}
+
+func newRunWorld(cfg Config) (*world.World, error) {
 	w, err := world.New(cfg.Domain, cfg.Seed, cfg.WorldID, cfg.StartTimeNS, world.Options{
 		InitialEntities:  cfg.EntityIDs,
 		Noiseless:        cfg.Noiseless,
@@ -27,7 +40,11 @@ func New(ctx context.Context, cfg Config) (*Run, error) {
 	if err != nil {
 		return nil, fmt.Errorf("streamsim: %w", err)
 	}
-	r := &Run{
+	return w, nil
+}
+
+func newRunState(ctx context.Context, cfg Config, w *world.World) *Run {
+	return &Run{
 		ID:               cfg.RunID,
 		Config:           cfg,
 		World:            w,
@@ -38,23 +55,25 @@ func New(ctx context.Context, cfg Config) (*Run, error) {
 		envTargets:       map[string]string{},
 		quiesceNotify:    make(chan struct{}),
 	}
+}
+
+func (r *Run) openPipeline() error {
 	if err := r.openLedger(); err != nil {
-		return nil, err
+		return err
 	}
 	if err := r.openAdapter(); err != nil {
-		return nil, err
+		return err
 	}
 	if err := r.openSink(); err != nil {
-		return nil, err
+		return err
 	}
-	if err := r.beginTrace(); err != nil {
-		return nil, err
-	}
-	// Reproducible unless the wall clock drives delivery.
-	r.reproducible = cfg.TimeMode != model.TimeWall
+	return r.beginTrace()
+}
 
-	w.SetEmitter(r.onEmit)
-	return r, nil
+func (r *Run) attachWorld() {
+	// Reproducible unless the wall clock drives delivery.
+	r.reproducible = r.Config.TimeMode != model.TimeWall
+	r.World.SetEmitter(r.onEmit)
 }
 
 func defaultConfig(cfg Config) Config {
@@ -67,6 +86,10 @@ func defaultConfig(cfg Config) Config {
 	if cfg.StartTimeNS == 0 && !cfg.StartTimeSet {
 		cfg.StartTimeNS = model.DefaultStartTimeNS
 	}
+	return defaultRunIdentity(cfg)
+}
+
+func defaultRunIdentity(cfg Config) Config {
 	if cfg.RunID == "" {
 		cfg.RunID = "r-" + strconv.FormatUint(canonicalHash(cfg.Domain.Spec.ID, cfg.Seed), 36)
 	}
@@ -106,24 +129,33 @@ func (r *Run) openAdapter() error {
 }
 
 func (r *Run) openSink() error {
-
 	switch r.Config.SinkName {
 	case model.SinkInproc:
 		r.Sink = &sink.Inproc{}
 	case model.SinkFile:
-		f, err := sink.NewFile(r.Config.SinkTarget)
-		if err != nil {
-			return fmt.Errorf("streamsim: %w", err)
-		}
-		r.Sink = f
+		return r.openFileSink()
 	case model.SinkHTTPPush:
-		if r.Config.SinkTarget == "" {
-			return fmt.Errorf("run: http-push sink requires a URL")
-		}
-		r.Sink = sink.NewHTTPPush(r.ctx, r.Config.SinkTarget)
+		return r.openHTTPPushSink()
 	default:
 		return fmt.Errorf("run: unsupported sink %q", r.Config.SinkName)
 	}
+	return nil
+}
+
+func (r *Run) openFileSink() error {
+	file, err := sink.NewFile(r.Config.SinkTarget)
+	if err != nil {
+		return fmt.Errorf("streamsim: %w", err)
+	}
+	r.Sink = file
+	return nil
+}
+
+func (r *Run) openHTTPPushSink() error {
+	if r.Config.SinkTarget == "" {
+		return fmt.Errorf("run: http-push sink requires a URL")
+	}
+	r.Sink = sink.NewHTTPPush(r.ctx, r.Config.SinkTarget)
 	return nil
 }
 

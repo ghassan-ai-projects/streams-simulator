@@ -253,3 +253,24 @@ extra once; extraction preserves the previous traversal. It is a heuristic, not 
 new algorithmic regression. The enforced cycle/layer gate passes.
 
 The strict repository audit remains open with 263 overlength production bodies.
+
+
+## Round 15 — High-impact adapter and run workflows
+
+Prioritized duplicated loader/framing code and long lifecycle entry points. Adapter
+file/byte loading now shares decoding and contract validation while retaining each
+public error layout. Streaming and batch rendering share ordered pre/postamble
+steps. Run creation names world/state construction, pipeline opening and emitter
+attachment; completion names locked admission, trace closing and ordered evidence
+publication. Every function in the four modified source files meets 15 lines.
+
+Existing shuffled race tests pass for adapter, run and architecture; run takes
+43.9 seconds. Package lint/vet and whitespace checks pass. Test files and exported
+signatures remain unchanged. Terminal publication failures, constructor cleanup
+and short hash-suffix admission remain separate correctness findings; this round
+preserves behavior. The strict audit now reports 250 overlength production bodies.
+
+Per user steering, Enola is checked once at the end of the batch, immediately
+before the round commit, using the retained pre-change baseline and the enforced
+cycle/layer policy. Subsequent work prioritizes straightforward workflow and
+duplication improvements before lower-impact helper splitting.

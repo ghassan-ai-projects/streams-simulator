@@ -55,16 +55,7 @@ func (e *Engine) Begin() ([]string, error) {
 	if e.Adapter.Encoding == "json-array" {
 		out = append(out, "[")
 	}
-	for i := range e.Adapter.Preamble {
-		line, err := e.renderTemplate(&e.Adapter.Preamble[i], nil)
-		if err != nil {
-			return nil, fmt.Errorf("adapter: preamble[%d]: %w", i, err)
-		}
-		if line != "" {
-			out = append(out, e.frame(line))
-		}
-	}
-	return out, nil
+	return e.renderFramingTemplates(e.Adapter.Preamble, "preamble", out)
 }
 
 // RenderStreamRecord renders one event in an active streaming session. It
@@ -87,15 +78,9 @@ func (e *Engine) End(worldEndNS int64) ([]string, error) {
 		return nil, fmt.Errorf("adapter: session is not active")
 	}
 	e.meta["world_end_time"] = model.FormatTime(worldEndNS)
-	var out []string
-	for i := range e.Adapter.Postamble {
-		line, err := e.renderTemplate(&e.Adapter.Postamble[i], nil)
-		if err != nil {
-			return nil, fmt.Errorf("adapter: postamble[%d]: %w", i, err)
-		}
-		if line != "" {
-			out = append(out, e.frame(line))
-		}
+	out, err := e.renderFramingTemplates(e.Adapter.Postamble, "postamble", nil)
+	if err != nil {
+		return nil, err
 	}
 	if e.Adapter.Encoding == "json-array" {
 		out = append(out, "]")
@@ -129,15 +114,20 @@ func (e *Engine) rewriteID(id string) (string, error) {
 		out = strings.ReplaceAll(out, r.from, r.to)
 	}
 	if rw.MaxLength > 0 && len(out) > rw.MaxLength {
-		switch rw.OnViolation {
-		case "truncate":
-			out = out[:rw.MaxLength]
-		case "hash_suffix":
-			h := canonical.DigestBytes([]byte(out))[:16]
-			out = out[:rw.MaxLength-len(h)] + h
-		default: // fail
-			return "", fmt.Errorf("adapter: entity id %q exceeds max_length %d after rewrite", id, rw.MaxLength)
-		}
+		return rewriteOverflow(id, out, rw)
+	}
+	return out, nil
+}
+
+func rewriteOverflow(id, out string, rw *model.IDRewrite) (string, error) {
+	switch rw.OnViolation {
+	case "truncate":
+		out = out[:rw.MaxLength]
+	case "hash_suffix":
+		h := canonical.DigestBytes([]byte(out))[:16]
+		out = out[:rw.MaxLength-len(h)] + h
+	default: // fail
+		return "", fmt.Errorf("adapter: entity id %q exceeds max_length %d after rewrite", id, rw.MaxLength)
 	}
 	return out, nil
 }
@@ -146,33 +136,65 @@ func (e *Engine) rewriteID(id string) (string, error) {
 // encoding. worldEndNS is the run's final clock (for run_meta world_end_time).
 func (e *Engine) RenderRun(events []model.SimEvent, worldEndNS int64) ([]byte, error) {
 	var buf bytes.Buffer
-	lines, err := e.Begin()
-	if err != nil {
+	if err := e.renderRunInto(&buf, events, worldEndNS); err != nil {
 		return nil, err
 	}
-	writeLines := func(lines []string) {
-		for _, line := range lines {
-			buf.WriteString(line)
-			buf.WriteByte('\n')
-		}
+	return buf.Bytes(), nil
+}
+
+func (e *Engine) renderRunInto(buf *bytes.Buffer, events []model.SimEvent, worldEndNS int64) error {
+	lines, err := e.Begin()
+	if err != nil {
+		return err
 	}
-	writeLines(lines)
+	writeRenderedLines(buf, lines)
+	if err := e.renderRunRecords(buf, events); err != nil {
+		return err
+	}
+	return e.renderRunPostamble(buf, worldEndNS)
+}
+
+func (e *Engine) renderRunRecords(buf *bytes.Buffer, events []model.SimEvent) error {
 	for i := range events {
 		line, err := e.RenderStreamRecord(&events[i])
 		if err != nil {
-			return nil, fmt.Errorf("adapter: record %d: %w", i, err)
+			return fmt.Errorf("adapter: record %d: %w", i, err)
 		}
 		if line != "" {
 			buf.WriteString(line)
 			buf.WriteByte('\n')
 		}
 	}
-	lines, err = e.End(worldEndNS)
+	return nil
+}
+
+func (e *Engine) renderRunPostamble(buf *bytes.Buffer, worldEndNS int64) error {
+	lines, err := e.End(worldEndNS)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	writeLines(lines)
-	return buf.Bytes(), nil
+	writeRenderedLines(buf, lines)
+	return nil
+}
+
+func writeRenderedLines(buf *bytes.Buffer, lines []string) {
+	for _, line := range lines {
+		buf.WriteString(line)
+		buf.WriteByte('\n')
+	}
+}
+
+func (e *Engine) renderFramingTemplates(templates []model.RecordTemplate, phase string, out []string) ([]string, error) {
+	for i := range templates {
+		line, err := e.renderTemplate(&templates[i], nil)
+		if err != nil {
+			return nil, fmt.Errorf("adapter: %s[%d]: %w", phase, i, err)
+		}
+		if line != "" {
+			out = append(out, e.frame(line))
+		}
+	}
+	return out, nil
 }
 
 // RenderRecord renders a single event through the record template,
