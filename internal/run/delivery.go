@@ -41,49 +41,29 @@ func (r *Run) deliver(d perturb.Delivered) {
 	if d.Malformed {
 		if err := r.writeMalformed(d.Event); err != nil {
 			atNS, _ := model.ParseTime(d.Event.EventTime)
-			r.appendLedger(model.LedgerRecord{
-				DeliveryID: d.DeliveryID, Seq: d.Event.Seq, WorldID: d.Event.WorldID, EntityID: d.Event.EntityID,
-				Channel: d.Event.Channel, EventTimeNS: atNS, ObservedTimeNS: atNS,
-				Delivered: false, DeliveryReason: model.DeliverySinkError, WrittenAtNS: r.World.Clock(),
-			})
+			r.recordDelivery(d.Event, d.DeliveryID, atNS, atNS, false, model.DeliverySinkError)
 			r.fail(err)
 			return
 		}
 		atNS, _ := model.ParseTime(d.Event.EventTime)
-		r.appendLedger(model.LedgerRecord{
-			DeliveryID: d.DeliveryID, Seq: d.Event.Seq, WorldID: d.Event.WorldID, EntityID: d.Event.EntityID,
-			Channel: d.Event.Channel, EventTimeNS: atNS, ObservedTimeNS: atNS,
-			Delivered: true, DeliveryReason: model.DeliveryMangled, WrittenAtNS: r.World.Clock(),
-		})
+		r.recordDelivery(d.Event, d.DeliveryID, atNS, atNS, true, model.DeliveryMangled)
 		return
 	}
 	if !d.Delivered {
 		atNS, _ := model.ParseTime(d.Event.EventTime)
-		r.appendLedger(model.LedgerRecord{
-			DeliveryID: d.DeliveryID, Seq: d.Event.Seq, WorldID: d.Event.WorldID, EntityID: d.Event.EntityID,
-			Channel: d.Event.Channel, EventTimeNS: atNS, ObservedTimeNS: atNS,
-			Delivered: false, DeliveryReason: d.Reason, WrittenAtNS: r.World.Clock(),
-		})
+		r.recordDelivery(d.Event, d.DeliveryID, atNS, atNS, false, d.Reason)
 		return
 	}
 	line, err := r.Engine.RenderStreamRecord(&d.Event)
 	if err != nil {
 		atNS, _ := model.ParseTime(d.Event.EventTime)
-		r.appendLedger(model.LedgerRecord{
-			DeliveryID: d.DeliveryID, Seq: d.Event.Seq, WorldID: d.Event.WorldID, EntityID: d.Event.EntityID,
-			Channel: d.Event.Channel, EventTimeNS: atNS, ObservedTimeNS: atNS,
-			Delivered: false, DeliveryReason: model.DeliverySinkError, WrittenAtNS: r.World.Clock(),
-		})
+		r.recordDelivery(d.Event, d.DeliveryID, atNS, atNS, false, model.DeliverySinkError)
 		r.fail(err)
 		return
 	}
 	if line == "" {
 		atNS, _ := model.ParseTime(d.Event.EventTime)
-		r.appendLedger(model.LedgerRecord{
-			DeliveryID: d.DeliveryID, Seq: d.Event.Seq, WorldID: d.Event.WorldID, EntityID: d.Event.EntityID,
-			Channel: d.Event.Channel, EventTimeNS: atNS, ObservedTimeNS: atNS,
-			Delivered: false, DeliveryReason: model.DeliveryOmitted, WrittenAtNS: r.World.Clock(),
-		})
+		r.recordDelivery(d.Event, d.DeliveryID, atNS, atNS, false, model.DeliveryOmitted)
 		return
 	}
 	if r.evidenceRec != nil {
@@ -91,22 +71,14 @@ func (r *Run) deliver(d perturb.Delivered) {
 	}
 	if err := r.Sink.Write([]byte(line)); err != nil {
 		atNS, _ := model.ParseTime(d.Event.EventTime)
-		r.appendLedger(model.LedgerRecord{
-			DeliveryID: d.DeliveryID, Seq: d.Event.Seq, WorldID: d.Event.WorldID, EntityID: d.Event.EntityID,
-			Channel: d.Event.Channel, EventTimeNS: atNS, ObservedTimeNS: atNS,
-			Delivered: false, DeliveryReason: model.DeliverySinkError, WrittenAtNS: r.World.Clock(),
-		})
+		r.recordDelivery(d.Event, d.DeliveryID, atNS, atNS, false, model.DeliverySinkError)
 		r.fail(err)
 		return
 	}
 	r.noteTraceArrival(d.Event)
 	atNS, _ := model.ParseTime(d.Event.EventTime)
 	otNS, _ := model.ParseTime(d.Event.ObservedTime)
-	r.appendLedger(model.LedgerRecord{
-		DeliveryID: d.DeliveryID, Seq: d.Event.Seq, WorldID: d.Event.WorldID, EntityID: d.Event.EntityID,
-		Channel: d.Event.Channel, EventTimeNS: atNS, ObservedTimeNS: otNS,
-		Delivered: true, DeliveryReason: d.Reason, WrittenAtNS: r.World.Clock(),
-	})
+	r.recordDelivery(d.Event, d.DeliveryID, atNS, otNS, true, d.Reason)
 }
 
 // noteTraceArrival records the latest arrival timestamp that was rendered
@@ -133,4 +105,12 @@ func (r *Run) traceEndTime() int64 {
 		end = r.lastTraceArrivalNS + 1
 	}
 	return end
+}
+
+func (r *Run) recordDelivery(ev model.SimEvent, deliveryID uint64, atNS, observedNS int64, delivered bool, reason string) {
+	r.appendLedger(model.LedgerRecord{
+		DeliveryID: deliveryID, Seq: ev.Seq, WorldID: ev.WorldID, EntityID: ev.EntityID,
+		Channel: ev.Channel, EventTimeNS: atNS, ObservedTimeNS: observedNS,
+		Delivered: delivered, DeliveryReason: reason, WrittenAtNS: r.World.Clock(),
+	})
 }

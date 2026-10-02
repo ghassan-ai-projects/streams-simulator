@@ -17,21 +17,7 @@ import (
 
 // New creates a run: world, perturbation layer, adapter engine and sink.
 func New(ctx context.Context, cfg Config) (*Run, error) {
-	if cfg.SinkName == "" {
-		cfg.SinkName = model.SinkFile
-	}
-	if cfg.TimeMode == "" {
-		cfg.TimeMode = model.TimeStepped
-	}
-	if cfg.StartTimeNS == 0 && !cfg.StartTimeSet {
-		cfg.StartTimeNS = model.DefaultStartTimeNS
-	}
-	if cfg.RunID == "" {
-		cfg.RunID = "r-" + strconv.FormatUint(canonicalHash(cfg.Domain.Spec.ID, cfg.Seed), 36)
-	}
-	if cfg.QuiescenceClock == nil {
-		cfg.QuiescenceClock = realQuiescenceClock{}
-	}
+	cfg = defaultConfig(cfg)
 	w, err := world.New(cfg.Domain, cfg.Seed, cfg.WorldID, cfg.StartTimeNS, world.Options{
 		InitialEntities:  cfg.EntityIDs,
 		Noiseless:        cfg.Noiseless,
@@ -51,55 +37,103 @@ func New(ctx context.Context, cfg Config) (*Run, error) {
 		envTargets:       map[string]string{},
 		quiesceNotify:    make(chan struct{}),
 	}
-	if cfg.LedgerPath != "" {
-		if err := os.MkdirAll(filepath.Dir(cfg.LedgerPath), 0o700); err != nil {
-			return nil, fmt.Errorf("run: ledger dir: %w", err)
-		}
-		lf, err := os.OpenFile(cfg.LedgerPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600)
-		if err != nil {
-			return nil, fmt.Errorf("run: open ledger %s: %w", cfg.LedgerPath, err)
-		}
-		r.ledgerWriter = bufio.NewWriter(lf)
-		r.ledgerFile = lf
+	if err := r.openLedger(); err != nil {
+		return nil, err
 	}
-	meta := map[string]any{
-		"run_id": cfg.RunID, "sim_version": model.SimVersion,
-		"domain_id": cfg.Domain.Spec.ID, "domain_version": cfg.Domain.Spec.Version,
-		"world_start_time": model.FormatTime(cfg.StartTimeNS), "seed": cfg.Seed,
+	if err := r.openAdapter(); err != nil {
+		return nil, err
 	}
-	eng, err := adapter.NewEngine(cfg.Adapter, meta)
-	if err != nil {
-		return nil, fmt.Errorf("streamsim: %w", err)
+	if err := r.openSink(); err != nil {
+		return nil, err
 	}
-	r.Engine = eng
-
-	switch cfg.SinkName {
-	case model.SinkInproc:
-		r.Sink = &sink.Inproc{}
-	case model.SinkFile:
-		f, err := sink.NewFile(cfg.SinkTarget)
-		if err != nil {
-			return nil, fmt.Errorf("streamsim: %w", err)
-		}
-		r.Sink = f
-	case model.SinkHTTPPush:
-		if cfg.SinkTarget == "" {
-			return nil, fmt.Errorf("run: http-push sink requires a URL")
-		}
-		r.Sink = sink.NewHTTPPush(ctx, cfg.SinkTarget)
-	default:
-		return nil, fmt.Errorf("run: unsupported sink %q", cfg.SinkName)
-	}
-	if lines, err := eng.Begin(); err != nil {
-		return nil, fmt.Errorf("run: adapter begin: %w", err)
-	} else if err := writeSinkLines(r.Sink, lines); err != nil {
-		return nil, fmt.Errorf("run: adapter preamble: %w", err)
+	if err := r.beginTrace(); err != nil {
+		return nil, err
 	}
 	// Reproducible unless the wall clock drives delivery.
 	r.reproducible = cfg.TimeMode != model.TimeWall
 
 	w.SetEmitter(r.onEmit)
 	return r, nil
+}
+
+func defaultConfig(cfg Config) Config {
+	if cfg.SinkName == "" {
+		cfg.SinkName = model.SinkFile
+	}
+	if cfg.TimeMode == "" {
+		cfg.TimeMode = model.TimeStepped
+	}
+	if cfg.StartTimeNS == 0 && !cfg.StartTimeSet {
+		cfg.StartTimeNS = model.DefaultStartTimeNS
+	}
+	if cfg.RunID == "" {
+		cfg.RunID = "r-" + strconv.FormatUint(canonicalHash(cfg.Domain.Spec.ID, cfg.Seed), 36)
+	}
+	if cfg.QuiescenceClock == nil {
+		cfg.QuiescenceClock = realQuiescenceClock{}
+	}
+	return cfg
+}
+
+func (r *Run) openLedger() error {
+	if r.Config.LedgerPath != "" {
+		if err := os.MkdirAll(filepath.Dir(r.Config.LedgerPath), 0o700); err != nil {
+			return fmt.Errorf("run: ledger dir: %w", err)
+		}
+		lf, err := os.OpenFile(r.Config.LedgerPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600)
+		if err != nil {
+			return fmt.Errorf("run: open ledger %s: %w", r.Config.LedgerPath, err)
+		}
+		r.ledgerWriter = bufio.NewWriter(lf)
+		r.ledgerFile = lf
+	}
+	return nil
+}
+
+func (r *Run) openAdapter() error {
+	meta := map[string]any{
+		"run_id": r.Config.RunID, "sim_version": model.SimVersion,
+		"domain_id": r.Config.Domain.Spec.ID, "domain_version": r.Config.Domain.Spec.Version,
+		"world_start_time": model.FormatTime(r.Config.StartTimeNS), "seed": r.Config.Seed,
+	}
+	eng, err := adapter.NewEngine(r.Config.Adapter, meta)
+	if err != nil {
+		return fmt.Errorf("streamsim: %w", err)
+	}
+	r.Engine = eng
+	return nil
+}
+
+func (r *Run) openSink() error {
+
+	switch r.Config.SinkName {
+	case model.SinkInproc:
+		r.Sink = &sink.Inproc{}
+	case model.SinkFile:
+		f, err := sink.NewFile(r.Config.SinkTarget)
+		if err != nil {
+			return fmt.Errorf("streamsim: %w", err)
+		}
+		r.Sink = f
+	case model.SinkHTTPPush:
+		if r.Config.SinkTarget == "" {
+			return fmt.Errorf("run: http-push sink requires a URL")
+		}
+		r.Sink = sink.NewHTTPPush(r.ctx, r.Config.SinkTarget)
+	default:
+		return fmt.Errorf("run: unsupported sink %q", r.Config.SinkName)
+	}
+	return nil
+}
+
+func (r *Run) beginTrace() error {
+
+	if lines, err := r.Engine.Begin(); err != nil {
+		return fmt.Errorf("run: adapter begin: %w", err)
+	} else if err := writeSinkLines(r.Sink, lines); err != nil {
+		return fmt.Errorf("run: adapter preamble: %w", err)
+	}
+	return nil
 }
 
 // canonicalHash derives a short stable id from the domain and seed.

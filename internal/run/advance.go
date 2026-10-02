@@ -15,13 +15,24 @@ import (
 // emitted count is still returned alongside the error.
 func (r *Run) Advance(ctx context.Context, toNS int64, awaitConsumer bool) (int, error) {
 	r.commandMu.Lock()
+	emitted, err := r.advanceThroughBoundary(toNS, awaitConsumer)
+	r.commandMu.Unlock()
+	if err != nil || !awaitConsumer {
+		return emitted, err
+	}
+	if err := r.waitForConsumer(ctx, toNS); err != nil {
+		return emitted, err
+	}
+	return emitted, nil
+}
+
+// advanceThroughBoundary holds commandMu through delivery and durable logging.
+func (r *Run) advanceThroughBoundary(toNS int64, awaitConsumer bool) (int, error) {
 	if r.runErr != nil {
-		r.commandMu.Unlock()
 		return 0, r.runErr
 	}
-	emitted, effects, err := r.World.Advance(toNS)
+	emitted, _, err := r.World.Advance(toNS)
 	if err != nil {
-		r.commandMu.Unlock()
 		return 0, fmt.Errorf("run: advance: %w", err)
 	}
 	r.worldEndTimeNS = toNS
@@ -31,7 +42,6 @@ func (r *Run) Advance(ctx context.Context, toNS int64, awaitConsumer bool) (int,
 		r.deliver(d)
 	}
 	if r.runErr != nil {
-		r.commandMu.Unlock()
 		return emitted, r.runErr
 	}
 	// Log the advance before awaiting quiescence: the world has already
@@ -45,18 +55,13 @@ func (r *Run) Advance(ctx context.Context, toNS int64, awaitConsumer bool) (int,
 	// now on file descriptors, so a crash here loses nothing acknowledged.
 	if err := r.flushDurable(); err != nil {
 		r.fail(err)
-		r.commandMu.Unlock()
 		return emitted, err
 	}
-	if !awaitConsumer {
-		r.commandMu.Unlock()
-		_ = effects
-		return emitted, nil
-	}
-	// The quiescence wait is a consumer-sync barrier, not a world mutation:
-	// release the command mutex so the consumer's effector call can land
-	// while the advance waits. Without this the closed loop deadlocks.
-	r.commandMu.Unlock()
+	return emitted, nil
+}
+
+// Consumer synchronization releases commandMu so closed-loop effects can land.
+func (r *Run) waitForConsumer(ctx context.Context, toNS int64) error {
 	if err := r.awaitQuiescence(ctx, toNS); err != nil {
 		// Only a timeout is a simulator failure: a canceled wait is a
 		// caller-side abandonment and leaves the run open-loop. The failure
@@ -67,8 +72,7 @@ func (r *Run) Advance(ctx context.Context, toNS int64, awaitConsumer bool) (int,
 			r.fail(err)
 			r.commandMu.Unlock()
 		}
-		return emitted, err
+		return err
 	}
-	_ = effects
-	return emitted, nil
+	return nil
 }
