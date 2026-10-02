@@ -13,86 +13,127 @@ import (
 
 func writeValue(b *strings.Builder, v any) error {
 	switch x := v.(type) {
+	case []any:
+		return writeArray(b, x)
+	case map[string]any:
+		return writeObject(b, x)
+	default:
+		return writeScalar(b, v)
+	}
+}
+
+func writeScalar(b *strings.Builder, v any) error {
+	switch x := v.(type) {
 	case nil:
 		b.WriteString("null")
 	case bool:
-		if x {
-			b.WriteString("true")
-		} else {
-			b.WriteString("false")
-		}
-	case json.Number:
-		s, err := canonicalNumber(x.String())
-		if err != nil {
-			return fmt.Errorf("canonical: %w", err)
-		}
-		b.WriteString(s)
-	case float64:
-		s, err := esNumber(x)
-		if err != nil {
-			return fmt.Errorf("canonical: %w", err)
-		}
-		b.WriteString(s)
-	case int:
-		b.WriteString(strconv.Itoa(x))
-	case int8:
-		b.WriteString(strconv.FormatInt(int64(x), 10))
-	case int16:
-		b.WriteString(strconv.FormatInt(int64(x), 10))
-	case int32:
-		b.WriteString(strconv.FormatInt(int64(x), 10))
-	case int64:
-		b.WriteString(strconv.FormatInt(x, 10))
-	case uint:
-		b.WriteString(strconv.FormatUint(uint64(x), 10))
-	case uint8:
-		b.WriteString(strconv.FormatUint(uint64(x), 10))
-	case uint16:
-		b.WriteString(strconv.FormatUint(uint64(x), 10))
-	case uint32:
-		b.WriteString(strconv.FormatUint(uint64(x), 10))
-	case uint64:
-		b.WriteString(strconv.FormatUint(x, 10))
+		b.WriteString(strconv.FormatBool(x))
 	case string:
 		writeString(b, x)
 	case time.Time:
 		writeString(b, x.UTC().Format(time.RFC3339Nano))
-	case []any:
-		b.WriteByte('[')
-		for i, e := range x {
-			if i > 0 {
-				b.WriteByte(',')
-			}
-			if err := writeValue(b, e); err != nil {
-				return err
-			}
-		}
-		b.WriteByte(']')
-	case map[string]any:
-		if err := writeObject(b, x); err != nil {
-			return err
-		}
 	default:
-		return fmt.Errorf("canonical: unsupported value type %T", v)
+		return writeNumber(b, v)
 	}
 	return nil
 }
 
+func writeNumber(b *strings.Builder, v any) error {
+	text, err := numberText(v)
+	if err != nil {
+		return fmt.Errorf("canonical: %w", err)
+	}
+	b.WriteString(text)
+	return nil
+}
+
+func numberText(v any) (string, error) {
+	switch x := v.(type) {
+	case json.Number:
+		return canonicalNumber(x.String())
+	case float64:
+		return esNumber(x)
+	case int, int8, int16, int32, int64:
+		return signedNumber(v), nil
+	case uint, uint8, uint16, uint32, uint64:
+		return unsignedNumber(v), nil
+	default:
+		return "", fmt.Errorf("unsupported value type %T", v)
+	}
+}
+
+func signedNumber(v any) string {
+	switch x := v.(type) {
+	case int:
+		return strconv.Itoa(x)
+	case int8:
+		return strconv.FormatInt(int64(x), 10)
+	case int16:
+		return strconv.FormatInt(int64(x), 10)
+	case int32:
+		return strconv.FormatInt(int64(x), 10)
+	default:
+		return strconv.FormatInt(v.(int64), 10)
+	}
+}
+
+func unsignedNumber(v any) string {
+	switch x := v.(type) {
+	case uint:
+		return strconv.FormatUint(uint64(x), 10)
+	case uint8:
+		return strconv.FormatUint(uint64(x), 10)
+	case uint16:
+		return strconv.FormatUint(uint64(x), 10)
+	case uint32:
+		return strconv.FormatUint(uint64(x), 10)
+	default:
+		return strconv.FormatUint(v.(uint64), 10)
+	}
+}
+
+func writeArray(b *strings.Builder, values []any) error {
+	b.WriteByte('[')
+	for i, value := range values {
+		if i > 0 {
+			b.WriteByte(',')
+		}
+		if err := writeValue(b, value); err != nil {
+			return err
+		}
+	}
+	b.WriteByte(']')
+	return nil
+}
+
 func writeObject(b *strings.Builder, m map[string]any) error {
+	keys, err := objectKeys(m)
+	if err != nil {
+		return err
+	}
+	b.WriteByte('{')
+	if err := writeObjectMembers(b, m, keys); err != nil {
+		return err
+	}
+	b.WriteByte('}')
+	return nil
+}
+
+func objectKeys(m map[string]any) ([]string, error) {
 	keys := make([]string, 0, len(m))
-	// determinism-safe: keys are collected here but sorted by UTF-16 code
-	// units before any output is written.
+	// determinism-safe: collected keys are sorted before writing output.
 	for k := range m {
 		if !utf8.ValidString(k) {
-			return fmt.Errorf("canonical: object key is not valid UTF-8")
+			return nil, fmt.Errorf("canonical: object key is not valid UTF-8")
 		}
 		keys = append(keys, k)
 	}
-	// RFC 8785 §3.2.3: sort keys by UTF-16 code units, not code points.
-	sort.Slice(keys, func(i, j int) bool {
-		return utf16Less(keys[i], keys[j])
-	})
-	b.WriteByte('{')
+	// RFC 8785 §3.2.3: sort by UTF-16 code units, not code points.
+	sort.Slice(keys, func(i, j int) bool { return utf16Less(keys[i], keys[j]) })
+	return keys, nil
+}
+
+func writeObjectMembers(b *strings.Builder, m map[string]any, keys []string) error {
 	for i, k := range keys {
 		if i > 0 {
 			b.WriteByte(',')
@@ -103,13 +144,11 @@ func writeObject(b *strings.Builder, m map[string]any) error {
 			return err
 		}
 	}
-	b.WriteByte('}')
 	return nil
 }
 
 func utf16Less(a, b string) bool {
-	au := utf16.Encode([]rune(a))
-	bu := utf16.Encode([]rune(b))
+	au, bu := utf16.Encode([]rune(a)), utf16.Encode([]rune(b))
 	for i := 0; i < len(au) && i < len(bu); i++ {
 		if au[i] != bu[i] {
 			return au[i] < bu[i]
@@ -121,32 +160,23 @@ func utf16Less(a, b string) bool {
 func writeString(b *strings.Builder, s string) {
 	b.WriteByte('"')
 	for _, r := range s {
-		switch r {
-		case '"':
-			b.WriteString(`\"`)
-		case '\\':
-			b.WriteString(`\\`)
-		case '\b':
-			b.WriteString(`\b`)
-		case '\f':
-			b.WriteString(`\f`)
-		case '\n':
-			b.WriteString(`\n`)
-		case '\r':
-			b.WriteString(`\r`)
-		case '\t':
-			b.WriteString(`\t`)
-		case 0x2028:
-			b.WriteString(`\u2028`)
-		case 0x2029:
-			b.WriteString(`\u2029`)
-		default:
-			if r < 0x20 {
-				fmt.Fprintf(b, `\u%04x`, r)
-			} else {
-				b.WriteRune(r)
-			}
-		}
+		writeStringRune(b, r)
 	}
 	b.WriteByte('"')
+}
+
+func writeStringRune(b *strings.Builder, r rune) {
+	if escaped, ok := escapedRunes[r]; ok {
+		b.WriteString(escaped)
+	} else if r < 0x20 {
+		fmt.Fprintf(b, `\u%04x`, r)
+	} else {
+		b.WriteRune(r)
+	}
+}
+
+// Escapes preserve the existing digest representation, including U+2028/2029.
+var escapedRunes = map[rune]string{
+	'"': `\"`, '\\': `\\`, '\b': `\b`, '\f': `\f`, '\n': `\n`,
+	'\r': `\r`, '\t': `\t`, 0x2028: `\u2028`, 0x2029: `\u2029`,
 }

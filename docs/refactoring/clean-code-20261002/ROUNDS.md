@@ -210,3 +210,21 @@ counting, methods/literals, test exclusion and parse-error failure. Existing
 architecture checks and documentation smoke checks pass. No runtime behavior or
 test files changed in this round. Subsequent rounds migrate production packages
 and run their existing tests before committing.
+
+
+## Round 13 — Canonical serialization steps
+
+Refactored canonical traversal into collection/scalar dispatch, number conversion,
+UTF-16 object ordering, member writing and string escaping. Number rendering now
+names exact values, scientific decomposition and decimal/exponent notation. Every
+production function in `internal/canonical` meets the 15-line maximum.
+
+Existing canonical race tests, package vet/lint and architecture checks pass. Test
+files are unchanged. Canonical bytes, supported input types, integer formatting,
+negative-zero handling, escaping and error wrapping are preserved. Existing
+RFC 8785 deviations remain separate correctness findings.
+
+Enola receipts are comparable, there are no new findings or package spillover,
+and three heuristic findings clear. The object traversal algorithm is unchanged;
+cleared performance heuristics are not evidence of a complexity improvement. The
+strict repository audit still reports 283 overlength bodies outside this package.
