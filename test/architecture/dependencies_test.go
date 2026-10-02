@@ -1,6 +1,7 @@
 package architecture
 
 import (
+	"fmt"
 	"go/parser"
 	"go/token"
 	"io/fs"
@@ -43,7 +44,7 @@ func TestPackageDependencies(t *testing.T) {
 	t.Parallel()
 	err := filepath.WalkDir("../..", func(path string, entry fs.DirEntry, err error) error {
 		if err != nil {
-			return err
+			return fmt.Errorf("inspect dependency in %s: %w", path, err)
 		}
 		if entry.IsDir() && entry.Name() == ".git" {
 			return filepath.SkipDir
@@ -53,11 +54,11 @@ func TestPackageDependencies(t *testing.T) {
 		}
 		source, err := parser.ParseFile(token.NewFileSet(), path, nil, parser.ImportsOnly)
 		if err != nil {
-			return err
+			return fmt.Errorf("inspect dependency in %s: %w", path, err)
 		}
 		owner, err := filepath.Rel("../..", filepath.Dir(path))
 		if err != nil {
-			return err
+			return fmt.Errorf("inspect dependency in %s: %w", path, err)
 		}
 		owner = filepath.ToSlash(owner)
 		if owner == "." {
@@ -69,7 +70,7 @@ func TestPackageDependencies(t *testing.T) {
 		for _, spec := range source.Imports {
 			imported, err := strconv.Unquote(spec.Path.Value)
 			if err != nil {
-				return err
+				return fmt.Errorf("inspect dependency in %s: %w", path, err)
 			}
 			if dependencyAllowed(owner, imported) {
 				continue
