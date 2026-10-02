@@ -11,8 +11,6 @@ package world
 
 import (
 	"container/heap"
-	"fmt"
-	"strconv"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/jsonschema"
@@ -138,52 +136,14 @@ type idempotentResult struct {
 // New creates a world. The world id is derived deterministically from the
 // seed and domain, so replay reconstructs the same id.
 func New(spec *domain.Compiled, seed uint64, id string, startNS int64, opts Options) (*World, error) {
-	if id == "" {
-		id = "w-" + strconv.FormatUint(randutil.Fnv1a64(spec.Spec.ID+":"+strconv.FormatUint(seed, 10))%0xffffff, 36)
-	}
-	w := &World{
-		ID:               id,
-		Spec:             spec,
-		Seed:             seed,
-		StartNS:          startNS,
-		ClockNS:          startNS,
-		Noiseless:        opts.Noiseless,
-		EmitDisabled:     opts.EmitDisabled,
-		forceEffectorOK:  opts.ForceEffectorOK,
-		forceFailureMode: opts.ForceFailureMode,
-		subs:             map[string]*randutil.SplitMix64{},
-		entities:         map[string]*Entity{},
-		kicks:            map[driverKey][]*kick{},
-		shadow:           map[driverKey][]*kick{},
-		faultsByState:    map[string][]*activeFault{},
-		faultsByID:       map[string]*activeFault{},
-		idempotent:       map[string]*idempotentResult{},
-		interlockActed:   map[string]bool{},
-		argSchemas:       map[string]*jsonschema.Schema{},
-		churnSeed:        seed,
-	}
+	id = worldIdentity(spec, seed, id)
+	w := newWorldState(spec, seed, id, startNS, opts)
+	w.initializeRuntime(seed)
 	heap.Init(&w.queue)
-
-	ids := opts.InitialEntities
-	if len(ids) == 0 {
-		n := spec.Spec.Entities.Count.Default
-		if n < 1 {
-			n = 1
-		}
-		for i := 1; i <= n; i++ {
-			ids = append(ids, renderID(spec.Spec.Entities.IDTemplate, i, nil))
-		}
+	ids := initialEntityIDs(spec, opts.InitialEntities)
+	if err := w.populateInitialEntities(ids, startNS); err != nil {
+		return nil, err
 	}
-	for _, id := range ids {
-		if err := w.addEntity(id, startNS, nil); err != nil {
-			return nil, fmt.Errorf("streamsim: %w", err)
-		}
-	}
-	// Start autonomous IDs after the generated initial set. Births still
-	// probe for a free ID because callers may supply custom initial IDs.
-	w.nextIndex = len(ids)
-	if ch := spec.Spec.Entities.Churn; ch != nil && ch.BirthsPerHour > 0 {
-		w.scheduleChurn(startNS)
-	}
+	w.scheduleInitialChurn(startNS)
 	return w, nil
 }

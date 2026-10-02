@@ -301,3 +301,17 @@ and the unknown-tool panic match exactly. Existing shuffled MCP/architecture rac
 tests, lint/vet and whitespace checks pass; tests are unchanged. The retained
 Enola baseline is checked once before committing. The strict audit remains open
 at 243 production bodies.
+
+
+## Round 18 — World initialization and actuation workflows
+
+World creation now names identity, state/runtime construction, initial entities
+and churn. Effector invocation names admission, idempotent replay, terminal
+interlock refusal, outcome application and authority-log caching. Each function
+in the three modified source files meets 15 lines. Mode selection and latency
+draws keep their order; physical/partial/shadow effects retain their semantics.
+
+Existing shuffled world, scoring and architecture race tests pass, including
+effect-order and replay/argument-admission regressions. Package lint/vet and
+whitespace checks pass; test files remain unchanged. The retained Enola baseline
+is verified once before committing. The strict audit remains open at 240 bodies.
