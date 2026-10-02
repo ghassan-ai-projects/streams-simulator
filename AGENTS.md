@@ -100,6 +100,16 @@ See [.agents/context/testing.md](.agents/context/testing.md) for the testing and
 
 ## Go Standards
 
+### Clean-code and architecture bar
+
+- Every Go source file, including tests, must be at most **300 total lines** (comments and blank lines count). Split files by a named responsibility within their owning package; do not split functions arbitrarily or compress code to meet the limit.
+- Function names state domain intent. Each function performs one task at one abstraction level. Entry points read as a sequence of simulator operations; put parsing, serialization, record bookkeeping, and concrete mechanics in named steps below their callers.
+- Keep private helpers in stepdown reading order where practical. Review functions over 60 lines explicitly; cohesive schema/registration tables and numerical algorithms require a recorded rationale, not mechanical extraction.
+- Packages own simulator responsibilities, not generic controller/service/store layers. Preserve the world → perturbation → adapter → sink pipeline and director/operator truth boundary. Create a package only for a distinct responsibility with a concrete caller and a downward dependency direction.
+- Preserve exported signatures, JSON shapes, errors, command/delivery order, RNG draws, digest inputs, locks, cancellation, and effects during refactoring. Record intentional corrections separately and prove them with regression tests.
+- Add meaningful boundary tests in each modified production package. Run focused tests and review the diff before each round's commit; run the full repository gate before handoff.
+- The executable file-size and package-dependency checks live in `test/architecture`. The review criteria and round evidence are in [docs/refactoring/clean-code-20261002/](docs/refactoring/clean-code-20261002/BAR.md).
+
 - Use `context.Context` as the first parameter for cancellable or I/O work.
 - Use `log/slog` for logging.
 - Wrap errors with `%w`.
