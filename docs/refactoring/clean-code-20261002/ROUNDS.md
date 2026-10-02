@@ -228,3 +228,28 @@ Enola receipts are comparable, there are no new findings or package spillover,
 and three heuristic findings clear. The object traversal algorithm is unchanged;
 cleared performance heuristics are not evidence of a complexity improvement. The
 strict repository audit still reports 283 overlength bodies outside this package.
+
+
+## Round 14 — Schema compiler and validator steps
+
+All production functions in `internal/jsonschema` now meet the 15-line maximum.
+Compilation names definition registration, reference resolution, keyword filling
+and schema-valued assignment. Validation names type/value admission, primitive
+constraints, ordered object checks, array constraints and composition branches.
+No new runtime package or dependency was added. Test files remain unchanged.
+
+Existing shuffled-independent race checks pass for jsonschema, adapter, domain,
+model, device and architecture. The device socket test first hit sandbox binding
+restrictions, then passed with socket access. Package lint/vet and whitespace
+checks pass. Disposable old/new modules prove equal canonical output/error strings
+for 20,023 cases and equal validation diagnostics for six shipped schema fixtures
+across mixed valid/invalid values. Reference depth, keyword order, wrapping and
+additional-property diagnostic order are preserved.
+
+Enola receipts are comparable and changes remain within jsonschema. Two complexity
+findings clear. A new low-confidence quadratic warning on validateAdditional was
+source-reviewed: it still gathers and sorts extra names once, then validates each
+extra once; extraction preserves the previous traversal. It is a heuristic, not a
+new algorithmic regression. The enforced cycle/layer gate passes.
+
+The strict repository audit remains open with 263 overlength production bodies.

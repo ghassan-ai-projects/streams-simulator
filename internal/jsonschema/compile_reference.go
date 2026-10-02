@@ -6,8 +6,7 @@ import (
 	"strings"
 )
 
-// fill populates a Schema from its JSON form (the compile body, without the
-// $ref shortcut).
+// refName accepts local definition references only.
 func refName(ref string) (string, error) {
 	if !strings.HasPrefix(ref, "#/$defs/") {
 		return "", fmt.Errorf("jsonschema: unsupported $ref %q (local #/$defs refs only)", ref)
@@ -16,6 +15,13 @@ func refName(ref string) (string, error) {
 }
 
 func toInt(v any) int {
+	if number, ok := v.(jsonNumber); ok {
+		return numberInteger(number)
+	}
+	return integerValue(v)
+}
+
+func integerValue(v any) int {
 	switch n := v.(type) {
 	case float64:
 		return int(n)
@@ -26,30 +32,19 @@ func toInt(v any) int {
 	case uint64:
 		// #nosec G115 -- schema integer keywords are small literals.
 		return int(n)
-	case jsonNumber:
-		i, err := strconv.Atoi(n.String())
-		if err != nil {
-			return 0
-		}
-		return i
 	default:
 		return 0
 	}
 }
 
 func toFloat(v any) (float64, bool) {
-	switch n := v.(type) {
-	case float64:
-		return n, true
-	case jsonNumber:
-		f, err := n.Float64()
-		return f, err == nil
-	case int:
-		return float64(n), true
-	case int64:
-		return float64(n), true
-	case uint64:
-		return float64(n), true
+	return asFloat(v)
+}
+
+func numberInteger(n jsonNumber) int {
+	i, err := strconv.Atoi(n.String())
+	if err != nil {
+		return 0
 	}
-	return 0, false
+	return i
 }

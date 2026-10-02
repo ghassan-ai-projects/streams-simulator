@@ -31,31 +31,48 @@ func typeMatches(types []string, v any) bool {
 
 func matchesType(t string, v any) bool {
 	switch t {
+	case "null", "boolean", "string":
+		return matchesPrimitiveType(t, v)
+	case "object", "array":
+		return matchesCollectionType(t, v)
+	case "number":
+		_, ok := asFloat(v)
+		return ok
+	case "integer":
+		return matchesInteger(v)
+	}
+	return false
+}
+
+func matchesPrimitiveType(t string, v any) bool {
+	switch t {
 	case "null":
 		return v == nil
 	case "boolean":
 		_, ok := v.(bool)
 		return ok
+	case "string":
+		_, ok := v.(string)
+		return ok
+	}
+	return false
+}
+
+func matchesCollectionType(t string, v any) bool {
+	switch t {
 	case "object":
 		_, ok := v.(map[string]any)
 		return ok
 	case "array":
 		_, ok := v.([]any)
 		return ok
-	case "string":
-		_, ok := v.(string)
-		return ok
-	case "number":
-		_, ok := asFloat(v)
-		return ok
-	case "integer":
-		f, ok := asFloat(v)
-		if !ok {
-			return false
-		}
-		return f == float64(int64(f))
 	}
 	return false
+}
+
+func matchesInteger(v any) bool {
+	number, ok := asFloat(v)
+	return ok && number == float64(int64(number))
 }
 
 type jsonNumber interface {
@@ -73,9 +90,15 @@ func asFloat(v any) (float64, bool) {
 		return float64(n), true
 	case uint64:
 		return float64(n), true
-	case jsonNumber:
-		f, err := n.Float64()
-		return f, err == nil
+	default:
+		return jsonFloat(v)
+	}
+}
+
+func jsonFloat(v any) (float64, bool) {
+	if number, ok := v.(jsonNumber); ok {
+		value, err := number.Float64()
+		return value, err == nil
 	}
 	return 0, false
 }
@@ -86,18 +109,27 @@ func typeName(v any) string {
 		return "null"
 	case bool:
 		return "boolean"
-	case map[string]any:
-		return "object"
-	case []any:
-		return "array"
+	case map[string]any, []any:
+		return collectionTypeName(v)
 	case string:
 		return "string"
 	default:
-		if _, ok := asFloat(v); ok {
-			return "number"
-		}
-		return "unknown"
+		return numericTypeName(v)
 	}
+}
+
+func collectionTypeName(v any) string {
+	if _, ok := v.(map[string]any); ok {
+		return "object"
+	}
+	return "array"
+}
+
+func numericTypeName(v any) string {
+	if _, ok := asFloat(v); ok {
+		return "number"
+	}
+	return "unknown"
 }
 
 func enumContains(enum []any, v any) bool {
@@ -124,21 +156,41 @@ func jsonEqual(a, b any) bool {
 func checkFormat(format, s string) string {
 	switch format {
 	case "date-time":
-		if _, err := time.Parse(time.RFC3339Nano, s); err != nil {
-			return "string is not a valid RFC 3339 date-time"
-		}
+		return checkDateTime(s)
 	case "regex":
-		if _, err := regexp.Compile(s); err != nil {
-			return "string is not a valid regular expression"
-		}
+		return checkRegex(s)
 	case "uri":
-		if !strings.Contains(s, ":") {
-			return "string is not a valid URI"
-		}
+		return checkURI(s)
 	case "hostname":
-		if s == "" || strings.ContainsAny(s, " /") {
-			return "string is not a valid hostname"
-		}
+		return checkHostname(s)
+	}
+	return ""
+}
+
+func checkDateTime(s string) string {
+	if _, err := time.Parse(time.RFC3339Nano, s); err != nil {
+		return "string is not a valid RFC 3339 date-time"
+	}
+	return ""
+}
+
+func checkRegex(s string) string {
+	if _, err := regexp.Compile(s); err != nil {
+		return "string is not a valid regular expression"
+	}
+	return ""
+}
+
+func checkURI(s string) string {
+	if !strings.Contains(s, ":") {
+		return "string is not a valid URI"
+	}
+	return ""
+}
+
+func checkHostname(s string) string {
+	if s == "" || strings.ContainsAny(s, " /") {
+		return "string is not a valid hostname"
 	}
 	return ""
 }
