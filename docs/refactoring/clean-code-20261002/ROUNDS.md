@@ -104,3 +104,19 @@ oracles, observed-time ordering, substream isolation, closed-loop and replay tes
 pass. Numerical RK4 arithmetic remains together for independent oracle review.
 Race coverage: perturb 85.2%, world 64.5%, run 68.2%. Architecture guards, zero-issue
 lint and whitespace review pass. No intended behavior changes.
+
+## Round 7 — Device admission and transport exchange
+
+Capability loading separates strict decoding, digest preparation and route/target
+construction. Admission names boot/freshness checks, safe-stop authorization and
+capability parameter checks. Command handling separates scheduled execution faults,
+freshness injections and response faults while retaining lock/lease/dedup order.
+Connection framing delegates state queries, malformed exchange and command outcome
+emission to small private steps; receipt precedes result as before.
+
+Pre-extraction regressions pin boot-before-freshness-before-target rejection and a
+mixed blank/malformed/query/command stream with exact frame order. Those pass after
+extraction, alongside lease, safe-stop, ack-loss retry, duplicate, reboot and world
+binding tests. Race tests pass with local socket access. Coverage: device 84.1%,
+deviceworld 76.8%. Architecture guards, zero-issue lint and whitespace checks pass.
+No intended behavior changes.

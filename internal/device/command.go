@@ -39,14 +39,32 @@ func (d *Device) ApplyCommand(command map[string]any) Outcome {
 	delete(d.faultSchedule, ordinal)
 	fault := strings.Join(injections, ",")
 	originalFaults := d.faults
-	for _, injection := range injections {
-		switch injection {
-		case FaultAckLost:
-			d.faults.AckLost = true
-		case FaultStuck:
-			d.faults.Stuck = true
+	d.injectExecutionFaults(injections)
+
+	if outcome, rejected := d.scheduledFreshnessRejection(commandID, now, injections, fault, ordinal); rejected {
+		d.faults = originalFaults
+		return outcome
+	}
+
+	outcome, accepted := d.applyAcceptedCommand(command, commandID, now)
+	d.faults = originalFaults
+	outcome.Fault = fault
+	outcome.AcceptedCommand = ordinal
+	if accepted {
+		outcome = d.applyResponseFaults(outcome, injections, ordinal)
+		if !containsFault(injections, FaultReboot) {
+			replay := outcome
+			// Ack loss is a property of this wire delivery, not of the
+			// idempotent execution. A later retry must be able to recover the
+			// receipt without applying the plant a second time.
+			replay.AckLost = false
+			d.dedup[idempotencyKey] = dedupEntry{digest: digest, outcome: replay}
 		}
 	}
+	return outcome
+}
+
+func (d *Device) scheduledFreshnessRejection(commandID string, now int64, injections []string, fault string, ordinal int) (Outcome, bool) {
 	for _, injection := range injections {
 		if injection != FaultStale && injection != FaultExpired {
 			continue
@@ -58,35 +76,35 @@ func (d *Device) ApplyCommand(command map[string]any) Outcome {
 		outcome := d.rejection(commandID, now, code)
 		outcome.Fault = fault
 		outcome.AcceptedCommand = ordinal
-		d.faults = originalFaults
-		return outcome
+		return outcome, true
 	}
 
-	outcome, accepted := d.applyAcceptedCommand(command, commandID, now)
-	d.faults = originalFaults
-	outcome.Fault = fault
-	outcome.AcceptedCommand = ordinal
-	if accepted {
-		for _, injection := range injections {
-			switch injection {
-			case FaultDuplicate:
-				outcome.Duplicate = true
-			case FaultDisconnect:
-				outcome.Disconnect = true
-			case FaultReboot:
-				d.rebootLocked("boot-reboot-" + strconv.Itoa(ordinal))
-				// The response was created under the old boot identity. Do not
-				// emit it after reboot; require the caller to observe new state.
-				outcome.AckLost = true
-			}
+	return Outcome{}, false
+}
+
+func (d *Device) injectExecutionFaults(injections []string) {
+	for _, injection := range injections {
+		switch injection {
+		case FaultAckLost:
+			d.faults.AckLost = true
+		case FaultStuck:
+			d.faults.Stuck = true
 		}
-		if !containsFault(injections, FaultReboot) {
-			replay := outcome
-			// Ack loss is a property of this wire delivery, not of the
-			// idempotent execution. A later retry must be able to recover the
-			// receipt without applying the plant a second time.
-			replay.AckLost = false
-			d.dedup[idempotencyKey] = dedupEntry{digest: digest, outcome: replay}
+	}
+}
+
+func (d *Device) applyResponseFaults(outcome Outcome, injections []string, ordinal int) Outcome {
+	for _, injection := range injections {
+		switch injection {
+		case FaultDuplicate:
+			outcome.Duplicate = true
+		case FaultDisconnect:
+			outcome.Disconnect = true
+		case FaultReboot:
+			d.rebootLocked("boot-reboot-" + strconv.Itoa(ordinal))
+			// The response was created under the old boot identity. Do not
+			// emit it after reboot; require the caller to observe new state.
+			outcome.AckLost = true
 		}
 	}
 	return outcome
