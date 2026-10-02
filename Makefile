@@ -30,7 +30,7 @@ HAS_MAIN := $(if $(MAIN_PKGS),yes,no)
 # ---- Phony declarations ---------------------------------------------------
 .PHONY: help all build vet fmt tidy lint lint-ci docs-check test test-short test-race \
         test-coverage ci-check deadcode vulncheck fuzz soak fuzz-soak perf \
-        manifest clean run cross-compile architecture architecture-baseline
+        manifest clean run cross-compile architecture architecture-baseline function-length
 
 # ---- Help -----------------------------------------------------------------
 help: ## Show this help message
@@ -104,6 +104,9 @@ architecture-baseline: ## Pin Enola architecture before a structural change
 
 architecture: ## Reject new Enola cycle or layer findings against the baseline
 	ENOLA_NO_UPDATE_CHECK=1 $(ENOLA) check --fail-on=cycles,layers --min-confidence=0.8 mcp-arch.yaml
+
+function-length: ## Check the 15-line maximum for production function bodies
+	go run cmd/streamsim/function_length.go
 
 # ---- Test -----------------------------------------------------------------
 test: ## Run all tests with race + shuffle + coverage

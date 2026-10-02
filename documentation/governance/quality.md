@@ -4,7 +4,7 @@ The repository’s contributor rules are in [`CONTRIBUTING.md`](../../CONTRIBUTI
 
 ## Code organization checks
 
-Every Go file, including tests, is limited to 300 total lines. Name files and functions by simulator responsibility. Entry points should read as named operations with concrete mechanics one level below. Functions longer than 60 body lines require a recorded review decision; retained schema tables and numerical operations have specific, bounded allowances.
+Every Go file, including tests, is limited to 300 total lines. Name files and functions by simulator responsibility. Entry points should read as named operations with concrete mechanics one level below. Production functions, methods and anonymous functions are limited to 15 physical body lines, including braces, comments and blanks. Test functions are excluded. The source migration is in progress; the prior 60-line review guard does not prove compliance with the new limit. Run `make function-length` for the strict audit.
 
 Run `go test ./test/architecture` to check file size, reviewed function lengths and direct package dependencies. The [refactoring bar](../../docs/refactoring/clean-code-20261002/BAR.md) and [review decisions](../../docs/refactoring/clean-code-20261002/REVIEW.md) describe the checks and their limits. Runtime correctness still requires the full repository gate and tests.
 

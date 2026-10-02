@@ -11,9 +11,10 @@ Existing modifications to `docs/README.md` and `docs/reviews/` are excluded.
 2. File names identify responsibilities; related declarations stay together.
    There are no numbered overflow files or new packages created only for size.
 3. Entry points state intent and delegate concrete mechanics one level down.
-   Each changed function has one responsibility. Functions over 60 lines receive
-   an explicit review decision; cohesive declarative tables or numerical
-   algorithms may remain together with a recorded reason.
+   Every production function, method and anonymous function has at most 15
+   physical body lines, including braces, comments and blanks. Tests are exempt
+   from the function limit and remain unchanged during this migration. Extract
+   named responsibilities without compressing statements or hiding complexity.
 4. An executable import allowlist protects the business package graph. The core
    cannot import CLI, MCP, run orchestration or device transport. Device-world
    integration is a leaf bridge. Schema/model helpers remain foundation packages.
@@ -67,3 +68,21 @@ retaining the documented architecture.
 Known correctness and release findings in `docs/reviews/ARCHITECTURE_REVIEW.md`
 remain separate from readability completion. This program must not imply all prior
 release risks were resolved through file splitting.
+
+## Stricter function limit — 2026-10-03
+
+The user tightened the function limit from the former reviewed 60-line threshold
+to 25, then selected a hard maximum of **15 lines**. The earlier round-10
+completion claim applies to the old bar; the new bar is not met yet.
+
+The source-only audit finds 281 named production functions and seven anonymous
+functions over 15 lines. Run `make function-length` for the strict AST-based
+check. It counts all production Go files, including build-tagged sources, and
+excludes test files. It currently fails and will be added to the full CI gate
+when the migration is complete. No allowances or frozen-body exemptions apply.
+
+Refactor by owning package, preserving expression order, RNG consumption, errors,
+locking and digest representations. Keep test files unchanged; existing replay,
+analytic, protocol and fixture oracles provide behavioral evidence. Commit each
+validated round. Enola baselines precede structural edits; receipt comparability
+and new coupling are reviewed afterward.

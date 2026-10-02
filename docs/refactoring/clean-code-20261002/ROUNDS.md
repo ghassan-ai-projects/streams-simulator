@@ -195,3 +195,18 @@ limits in ENOLA.md. Disposable fixtures prove rejection of new cycles/upward
 layers, missing baselines and incomparable extraction inputs. Architecture/domain
 tests, docs smoke/links and whitespace checks pass. No runtime source changes;
 the previously completed full runtime gate is not repeated for this setup round.
+
+
+## Round 12 — Strict 15-line source bar
+
+Recorded the user-selected 15-line maximum and the instruction to leave tests
+unchanged. Added a standalone, build-excluded AST source checker and the local
+`make function-length` target. It checks named functions, methods and literals,
+counts all body lines and fails without exceptions. The initial audit reports
+288 overlength bodies (281 named, seven anonymous). The new bar remains open.
+
+The checker itself meets the limit. Disposable source fixtures prove boundary
+counting, methods/literals, test exclusion and parse-error failure. Existing
+architecture checks and documentation smoke checks pass. No runtime behavior or
+test files changed in this round. Subsequent rounds migrate production packages
+and run their existing tests before committing.
