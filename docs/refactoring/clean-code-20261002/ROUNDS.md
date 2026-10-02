@@ -315,3 +315,18 @@ Existing shuffled world, scoring and architecture race tests pass, including
 effect-order and replay/argument-admission regressions. Package lint/vet and
 whitespace checks pass; test files remain unchanged. The retained Enola baseline
 is verified once before committing. The strict audit remains open at 240 bodies.
+
+## Round 19 — Domain loading and admission
+
+Domain parsing names document validation, decoding, digesting and compilation.
+Symbol registration shares duplicate detection while retaining declaration order
+and channel defaults. Per-record validation names reference, fidelity, detector,
+interlock and delay checks without changing error priority. Dynamics traversal
+and catalog coverage now expose their steps. Every domain-package production
+function meets 15 lines; all changed files remain below 300 lines.
+
+Existing shuffled domain, world, adapter and architecture race tests pass;
+domain lint/vet and whitespace checks pass. Test files remain unchanged. The
+retained Enola baseline is verified once before committing. The strict repository
+audit remains open at 226 production bodies. High-impact workflows and repeated
+validation take priority; full-repository verification remains a final gate.

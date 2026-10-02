@@ -6,17 +6,10 @@
 package domain
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
-	"sort"
-	"strings"
 
-	"github.com/ghassan-ai-projects/streams-simulator/internal/canonical"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/jsonschema"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/schemas"
 )
 
 // Load reads, schema-validates and structurally validates a domain spec from
@@ -33,31 +26,11 @@ func Load(path string) (*Compiled, error) {
 // Parse is Load over an in-memory document. src names the source for error
 // messages.
 func Parse(raw []byte, src string) (*Compiled, error) {
-	var doc any
-	if err := model.DecodeBytes(raw, &doc); err != nil {
-		return nil, fmt.Errorf("domain: %s: not valid JSON: %w", src, err)
-	}
-	sch, err := jsonschema.Compile(mustAny(schemas.DomainSpec()))
+	doc, err := validateDocument(raw, src)
 	if err != nil {
-		return nil, fmt.Errorf("domain: compile contract schema: %w", err)
+		return nil, err
 	}
-	if errs := sch.Validate(doc); len(errs) > 0 {
-		return nil, fmt.Errorf("domain: %s fails domain-spec-v0.1 validation:\n  %s", src, formatErrs(errs))
-	}
-	var spec model.DomainSpec
-	if err := json.Unmarshal(raw, &spec); err != nil {
-		return nil, fmt.Errorf("domain: %s: decode: %w", src, err)
-	}
-	digest, err := canonical.Digest(doc)
-	if err != nil {
-		return nil, fmt.Errorf("domain: %s: digest: %w", src, err)
-	}
-	c, err := compile(&spec, digest, src)
-	if err != nil {
-		return nil, fmt.Errorf("streamsim: %w", err)
-	}
-	c.Raw = append([]byte(nil), raw...)
-	return c, nil
+	return compileDocument(raw, doc, src)
 }
 
 // LoadAll loads every domain spec in a directory (non-recursive), sorted by
@@ -68,23 +41,7 @@ func LoadAll(dir string) ([]*Compiled, error) {
 	if err != nil {
 		return nil, fmt.Errorf("domain: list %s: %w", dir, err)
 	}
-	var paths []string
-	for _, e := range entries {
-		if e.IsDir() || !strings.HasSuffix(e.Name(), ".json") {
-			continue
-		}
-		paths = append(paths, filepath.Join(dir, e.Name()))
-	}
-	sort.Strings(paths)
-	var out []*Compiled
-	for _, p := range paths {
-		c, err := Load(p)
-		if err != nil {
-			return nil, fmt.Errorf("streamsim: %w", err)
-		}
-		out = append(out, c)
-	}
-	return out, nil
+	return loadPaths(domainPaths(dir, entries))
 }
 
 // Compiled is the typed, validated, digest-carrying form of a domain spec.
@@ -183,55 +140,9 @@ func (c *Compiled) Profile(name string) *model.Profile {
 }
 
 func compile(spec *model.DomainSpec, digest, src string) (*Compiled, error) {
-	c := &Compiled{
-		Spec:        spec,
-		Digest:      digest,
-		states:      map[string]bool{},
-		channels:    map[string]bool{},
-		faults:      map[string]bool{},
-		effectors:   map[string]bool{},
-		profiles:    map[string]bool{},
-		channelGain: map[string]float64{},
-	}
-	for i := range spec.State {
-		s := &spec.State[i]
-		if c.states[s.Name] {
-			return nil, fmt.Errorf("domain: %s: duplicate state %q", src, s.Name)
-		}
-		c.states[s.Name] = true
-	}
-	for i := range spec.Channels {
-		ch := &spec.Channels[i]
-		if c.channels[ch.Name] {
-			return nil, fmt.Errorf("domain: %s: duplicate channel %q", src, ch.Name)
-		}
-		c.channels[ch.Name] = true
-		gain := ch.ObservationGain
-		if gain == 0 {
-			gain = 1
-		}
-		c.channelGain[ch.Name] = gain
-	}
-	for i := range spec.Faults {
-		f := &spec.Faults[i]
-		if c.faults[f.ID] {
-			return nil, fmt.Errorf("domain: %s: duplicate fault %q", src, f.ID)
-		}
-		c.faults[f.ID] = true
-	}
-	for i := range spec.Effectors {
-		e := &spec.Effectors[i]
-		if c.effectors[e.Name] {
-			return nil, fmt.Errorf("domain: %s: duplicate effector %q", src, e.Name)
-		}
-		c.effectors[e.Name] = true
-	}
-	for i := range spec.Profiles {
-		p := &spec.Profiles[i]
-		if c.profiles[p.Name] {
-			return nil, fmt.Errorf("domain: %s: duplicate profile %q", src, p.Name)
-		}
-		c.profiles[p.Name] = true
+	c := newCompiled(spec, digest)
+	if err := c.registerSymbols(src); err != nil {
+		return nil, err
 	}
 	if err := crossCheck(c, src); err != nil {
 		return nil, fmt.Errorf("streamsim: %w", err)
