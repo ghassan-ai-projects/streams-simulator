@@ -37,6 +37,21 @@ func loadAdapters(dir string) (map[string]*model.Adapter, error) {
 	if err != nil {
 		return nil, fmt.Errorf("streamsim: %w", err)
 	}
+	return decodeAdapterDirectory(dir, entries)
+}
+
+func decodeAdapterDirectory(dir string, entries []os.DirEntry) (map[string]*model.Adapter, error) {
+	out, err := loadAdapterEntries(dir, entries)
+	if err != nil {
+		return nil, err
+	}
+	if len(out) == 0 {
+		return nil, fmt.Errorf("no adapters found in %s", dir)
+	}
+	return out, nil
+}
+
+func loadAdapterEntries(dir string, entries []os.DirEntry) (map[string]*model.Adapter, error) {
 	out := map[string]*model.Adapter{}
 	for _, e := range entries {
 		if e.IsDir() || !strings.HasSuffix(e.Name(), ".json") {
@@ -48,43 +63,55 @@ func loadAdapters(dir string) (map[string]*model.Adapter, error) {
 		}
 		out[a.ID] = a
 	}
-	if len(out) == 0 {
-		return nil, fmt.Errorf("no adapters found in %s", dir)
-	}
 	return out, nil
 }
 
 func cmdCatalog(args []string) error {
 	fs := flag.NewFlagSet("catalog", flag.ExitOnError)
 	dir := fs.String("domains-dir", "", "directory of domain specs")
-	verb := "list"
-	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
-		verb = args[0]
-		args = args[1:]
-	}
-	if err := fs.Parse(args); err != nil {
-		return fmt.Errorf("streamsim: %w", err)
+	verb, err := parseCommandVerb(fs, args)
+	if err != nil {
+		return err
 	}
 	cat, err := loadCatalog(*dir)
 	if err != nil {
 		return fmt.Errorf("streamsim: %w", err)
 	}
+	return catalogVerb(cat, verb, fs.Args())
+}
+
+func parseCommandVerb(fs *flag.FlagSet, args []string) (string, error) {
+	verb := "list"
+	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
+		verb, args = args[0], args[1:]
+	}
+	if err := fs.Parse(args); err != nil {
+		return "", fmt.Errorf("streamsim: %w", err)
+	}
+	return verb, nil
+}
+
+func catalogVerb(cat *domain.Catalog, verb string, args []string) error {
 	switch verb {
 	case "list":
 		return printJSON(map[string]any{"domains": cat.List("")})
 	case "describe":
-		if fs.NArg() == 0 {
-			return fmt.Errorf("catalog describe requires a domain id")
-		}
-		c, err := cat.Describe(fs.Arg(0))
-		if err != nil {
-			return fmt.Errorf("streamsim: %w", err)
-		}
-		return printJSON(map[string]any{"spec": c.Spec, "digest": c.Digest})
+		return describeCatalogDomain(cat, args)
 	case "coverage":
 		return printJSON(cat.Coverage())
 	}
 	return fmt.Errorf("catalog: unknown verb %q", verb)
+}
+
+func describeCatalogDomain(cat *domain.Catalog, args []string) error {
+	if len(args) == 0 {
+		return fmt.Errorf("catalog describe requires a domain id")
+	}
+	compiled, err := cat.Describe(args[0])
+	if err != nil {
+		return fmt.Errorf("streamsim: %w", err)
+	}
+	return printJSON(map[string]any{"spec": compiled.Spec, "digest": compiled.Digest})
 }
 
 func cmdDomain(args []string) error {
@@ -97,59 +124,82 @@ func cmdDomain(args []string) error {
 	}
 	switch fs.Arg(0) {
 	case "validate":
-		c, err := domain.Load(fs.Arg(1))
-		if err != nil {
-			return fmt.Errorf("streamsim: %w", err)
-		}
-		return printJSON(map[string]any{"valid": true, "id": c.Spec.ID, "digest": c.Digest, "channels": len(c.Spec.Channels), "faults": len(c.Spec.Faults), "effectors": len(c.Spec.Effectors)})
+		return validateDomainFile(fs.Arg(1))
 	}
 	return fmt.Errorf("domain: unknown verb %q", fs.Arg(0))
+}
+
+func validateDomainFile(path string) error {
+	c, err := domain.Load(path)
+	if err != nil {
+		return fmt.Errorf("streamsim: %w", err)
+	}
+	return printJSON(map[string]any{"valid": true, "id": c.Spec.ID, "digest": c.Digest, "channels": len(c.Spec.Channels), "faults": len(c.Spec.Faults), "effectors": len(c.Spec.Effectors)})
 }
 
 func cmdAdapter(args []string) error {
 	fs := flag.NewFlagSet("adapter", flag.ExitOnError)
 	dir := fs.String("adapters-dir", "", "directory of adapter files")
-	verb := "list"
-	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
-		verb = args[0]
-		args = args[1:]
+	verb, err := parseCommandVerb(fs, args)
+	if err != nil {
+		return err
 	}
-	if err := fs.Parse(args); err != nil {
-		return fmt.Errorf("streamsim: %w", err)
-	}
+	return adapterVerb(verb, *dir, fs.Args())
+}
+
+func adapterVerb(verb, dir string, args []string) error {
 	switch verb {
 	case "list":
-		adapters, err := loadAdapters(*dir)
-		if err != nil {
-			return fmt.Errorf("streamsim: %w", err)
-		}
-		ids := make([]string, 0, len(adapters))
-		for id := range adapters {
-			ids = append(ids, id)
-		}
-		sort.Strings(ids)
-		var out []map[string]any
-		for _, id := range ids {
-			a := adapters[id]
-			out = append(out, map[string]any{"id": id, "version": a.Version, "encoding": a.Encoding, "title": a.Title})
-		}
-		return printJSON(map[string]any{"adapters": out})
+		return listAdapters(dir)
 	case "verify":
-		if fs.NArg() < 1 {
-			return fmt.Errorf("adapter verify requires a path")
-		}
-		base := *dir
-		if base == "" {
-			base = "adapters"
-		}
-		res, err := adapter.Verify(fs.Arg(0), "", base)
-		if err != nil {
-			return fmt.Errorf("streamsim: %w", err)
-		}
-		if !res.SchemaOK || !res.GoldenMatch {
-			return fmt.Errorf("adapter verify FAILED: %s", res.FirstDivergence)
-		}
-		return printJSON(map[string]any{"adapter": res.Adapter, "schema_ok": true, "golden_match": true, "records": res.RecordCount})
+		return verifyAdapterCommand(dir, args)
 	}
 	return fmt.Errorf("adapter: unknown verb %q", verb)
+}
+
+func listAdapters(dir string) error {
+	adapters, err := loadAdapters(dir)
+	if err != nil {
+		return fmt.Errorf("streamsim: %w", err)
+	}
+	return printJSON(map[string]any{"adapters": adapterListings(adapters)})
+}
+
+func adapterListings(adapters map[string]*model.Adapter) []map[string]any {
+	var out []map[string]any
+	for _, id := range sortedAdapterIDs(adapters) {
+		a := adapters[id]
+		out = append(out, map[string]any{"id": id, "version": a.Version, "encoding": a.Encoding, "title": a.Title})
+	}
+	return out
+}
+
+func sortedAdapterIDs(adapters map[string]*model.Adapter) []string {
+	ids := make([]string, 0, len(adapters))
+	for id := range adapters {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	return ids
+}
+
+func verifyAdapterCommand(dir string, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("adapter verify requires a path")
+	}
+	if dir == "" {
+		dir = "adapters"
+	}
+	return verifyAdapterFile(args[0], dir)
+}
+
+func verifyAdapterFile(path, base string) error {
+	res, err := adapter.Verify(path, "", base)
+	if err != nil {
+		return fmt.Errorf("streamsim: %w", err)
+	}
+	if !res.SchemaOK || !res.GoldenMatch {
+		return fmt.Errorf("adapter verify FAILED: %s", res.FirstDivergence)
+	}
+	return printJSON(map[string]any{"adapter": res.Adapter, "schema_ok": true, "golden_match": true, "records": res.RecordCount})
 }

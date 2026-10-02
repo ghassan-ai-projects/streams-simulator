@@ -9,55 +9,57 @@ import (
 	"os"
 )
 
-// Main dispatches to a subcommand. It is the whole CLI surface.
-// Version and Commit are injected by cmd/streamsim from the Makefile
-// ldflags; the manifest command records them.
+// Version and Commit are injected by the entrypoint from Makefile ldflags.
+// The manifest command records them.
 var (
 	Version = "dev"
 	Commit  = "none"
 )
 
+// Main dispatches the command and returns its process exit status.
 func Main(args []string) int {
 	if len(args) < 2 {
 		usage()
 		return 2
 	}
-	cmd, rest := args[1], args[2:]
-	var err error
-	switch cmd {
-	case "catalog":
-		err = cmdCatalog(rest)
-	case "domain":
-		err = cmdDomain(rest)
-	case "adapter":
-		err = cmdAdapter(rest)
-	case "run":
-		err = cmdRun(rest)
-	case "replay":
-		err = cmdReplay(rest, false)
-	case "verify":
-		err = cmdReplay(rest, true)
-	case "mcp":
-		err = cmdMCP(rest)
-	case "refconsumer":
-		err = cmdRefconsumer(rest)
-	case "suite":
-		err = cmdSuite(rest)
-	case "score":
-		err = cmdScore(rest)
-	case "manifest":
-		err = cmdManifest(rest)
-	case "device":
-		err = cmdDevice(rest)
-	case "help", "-h", "--help":
+	if isHelpCommand(args[1]) {
 		usage()
 		return 0
-	default:
-		fmt.Fprintf(os.Stderr, "streamsim: unknown command %q\n\n", cmd)
-		usage()
-		return 2
 	}
-	if err != nil {
+	handler, known := commandHandlers[args[1]]
+	if !known {
+		return unknownCommand(args[1])
+	}
+	return executeCommand(handler, args[2:])
+}
+
+var commandHandlers = map[string]func([]string) error{
+	"catalog":     cmdCatalog,
+	"domain":      cmdDomain,
+	"adapter":     cmdAdapter,
+	"run":         cmdRun,
+	"replay":      func(args []string) error { return cmdReplay(args, false) },
+	"verify":      func(args []string) error { return cmdReplay(args, true) },
+	"mcp":         cmdMCP,
+	"refconsumer": cmdRefconsumer,
+	"suite":       cmdSuite,
+	"score":       cmdScore,
+	"manifest":    cmdManifest,
+	"device":      cmdDevice,
+}
+
+func isHelpCommand(command string) bool {
+	return command == "help" || command == "-h" || command == "--help"
+}
+
+func unknownCommand(command string) int {
+	fmt.Fprintf(os.Stderr, "streamsim: unknown command %q\n\n", command)
+	usage()
+	return 2
+}
+
+func executeCommand(handler func([]string) error, args []string) int {
+	if err := handler(args); err != nil {
 		fmt.Fprintf(os.Stderr, "streamsim: %v\n", err)
 		return 1
 	}
@@ -65,7 +67,10 @@ func Main(args []string) int {
 }
 
 func usage() {
-	fmt.Fprintf(os.Stderr, `streamsim — deterministic world simulator for testing stream processors
+	fmt.Fprint(os.Stderr, usageText)
+}
+
+const usageText = `streamsim — deterministic world simulator for testing stream processors
 
 Usage: streamsim <command> [flags]
 
@@ -90,5 +95,4 @@ Commands:
   device serve --socket <path>          Serve the device emulator over a UDS
                                         (state/receipt link; --world enables plant wiring)
   help
-`)
-}
+`

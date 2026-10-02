@@ -274,3 +274,17 @@ Per user steering, Enola is checked once at the end of the batch, immediately
 before the round commit, using the retained pre-change baseline and the enforced
 cycle/layer policy. Subsequent work prioritizes straightforward workflow and
 duplication improvements before lower-impact helper splitting.
+
+
+## Round 16 — CLI command and catalog dispatch
+
+Replaced the long command switch with a declarative handler registry and named
+help/error/exit-status steps. Shared catalog/adapter verb parsing and split their
+loading, selection and reporting. The help text is a constant; its exact bytes
+remain unchanged. Every function in both modified source files meets 15 lines.
+
+Existing shuffled CLI/architecture race tests, lint/vet, documentation smoke and
+whitespace checks pass. Test files remain unchanged. Directory loading order,
+verb defaults, duplicate adapter handling, exit codes and error wrapping are
+preserved. Validation is batched once before the round commit, including the
+retained Enola baseline check. The strict audit remains open at 244 bodies.
