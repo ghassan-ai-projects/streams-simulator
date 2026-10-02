@@ -288,3 +288,16 @@ whitespace checks pass. Test files remain unchanged. Directory loading order,
 verb defaults, duplicate adapter handling, exit codes and error wrapping are
 preserved. Validation is batched once before the round commit, including the
 retained Enola baseline check. The strict audit remains open at 244 bodies.
+
+
+## Round 17 — Declarative MCP input contracts
+
+Replaced the 185-line schema switch with a registry of fresh input builders,
+grouped by director/operator responsibility. Shared world/run/token contracts
+avoid duplication. Every function in the four schema source files meets 15 lines.
+
+A disposable old/new source comparison proves all 28 tool schema JSON documents
+and the unknown-tool panic match exactly. Existing shuffled MCP/architecture race
+tests, lint/vet and whitespace checks pass; tests are unchanged. The retained
+Enola baseline is checked once before committing. The strict audit remains open
+at 243 production bodies.
