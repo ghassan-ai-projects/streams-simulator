@@ -6,7 +6,17 @@ import (
 )
 
 func instrumentFrom(ledger []model.LedgerRecord, calls []world.EffectorCall, perturbations []string) InstrumentMetrics {
-	m := InstrumentMetrics{LedgerComplete: true}
+	var emitted int64
+	for _, row := range ledger {
+		if row.Seq >= 0 {
+			emitted = max(emitted, row.Seq+1)
+		}
+	}
+	return instrumentEvidence(ledger, calls, perturbations, emitted)
+}
+
+func instrumentEvidence(ledger []model.LedgerRecord, calls []world.EffectorCall, perturbations []string, emitted int64) InstrumentMetrics {
+	m := InstrumentMetrics{LedgerComplete: true, Emitted: emitted}
 	seenIDs := map[uint64]bool{}
 	seenSeq := map[int64]bool{}
 	for _, l := range ledger {
@@ -15,9 +25,6 @@ func instrumentFrom(ledger []model.LedgerRecord, calls []world.EffectorCall, per
 		}
 		seenIDs[l.DeliveryID] = true
 		seenSeq[l.Seq] = true
-		if l.Seq >= 0 {
-			m.Emitted = max64(m.Emitted, l.Seq+1)
-		}
 		switch l.DeliveryReason {
 		case model.DeliveryDroppedByPerturb:
 			m.Dropped++
@@ -40,6 +47,13 @@ func instrumentFrom(ledger []model.LedgerRecord, calls []world.EffectorCall, per
 			break
 		}
 	}
+	m.PerturbationFidelity = perturbationsObserved(ledger, perturbations)
+	m.EffectorIdempotency = commandsAppliedOnce(calls)
+	return m
+}
+
+func perturbationsObserved(ledger []model.LedgerRecord, perturbations []string) bool {
+	m := InstrumentMetrics{}
 	// Perturbation fidelity: every applied perturbation left a mark in the
 	// ledger — the same rule as the online path.
 	m.PerturbationFidelity = true
@@ -55,6 +69,11 @@ func instrumentFrom(ledger []model.LedgerRecord, calls []world.EffectorCall, per
 			m.PerturbationFidelity = false
 		}
 	}
+	return m.PerturbationFidelity
+}
+
+func commandsAppliedOnce(calls []world.EffectorCall) bool {
+	m := InstrumentMetrics{}
 	seen := map[string]bool{}
 	m.EffectorIdempotency = true
 	for _, c := range calls {
@@ -63,5 +82,5 @@ func instrumentFrom(ledger []model.LedgerRecord, calls []world.EffectorCall, per
 		}
 		seen[c.CommandID] = true
 	}
-	return m
+	return m.EffectorIdempotency
 }

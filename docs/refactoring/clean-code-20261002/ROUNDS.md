@@ -30,3 +30,22 @@ modified production package except suite has nonzero short-test coverage (suite'
 runtime tests are deliberately non-short; full-suite coverage is required at final
 validation). All 199 Go files are at most 300 lines; largest is 298. Dependency and
 size guards pass. Lint and whitespace review pass.
+
+## Round 3 — One owner for shared scoring policies
+
+Online and offline paths now share judgment, admission, dropped-event detection,
+evidence grounding, action/interlock fidelity, instrument and basic loop policies.
+Consumer orchestration reads as named metric operations instead of 170 lines of
+bookkeeping. Resolution and deadline checks remain online where world history is
+available. Empty available ledgers retain vacuous success; unavailable offline
+ledgers retain conservative zero metrics.
+
+Tests first reproduced order-sensitive offline judgment, missing offline identity
+conflict gating and wrong-entity action credit. Those are intentional corrections.
+Online malformed evidence citations now fail grounding, matching offline behavior.
+The scoring bundle advances to `scorecard-bundle-v0.2` to identify corrected metric
+semantics; JSON fields and function signatures are unchanged.
+
+Validation: scoring race tests and architecture guards pass; scoring coverage is
+83.7%. Lint has zero issues. Self-review checked entity/effector/command matching,
+nil versus empty evidence, earliest detection and retained history-only metrics.

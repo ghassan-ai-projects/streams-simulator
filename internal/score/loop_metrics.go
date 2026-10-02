@@ -28,7 +28,7 @@ func loopFrom(v *model.Verdict, gt *model.GroundTruthRecord, calls []world.Effec
 				falseSuccess++
 			}
 		}
-		if expected != "" && c.Effector == expected && c.EffectApplied {
+		if expected != "" && c.Effector == expected && c.EntityID == gt.EntityID && c.EffectApplied {
 			m.ActionAppropriate = true
 		}
 	}

@@ -13,7 +13,7 @@ import (
 // scoringBundleVersion names the online/offline scoring bundle. Both paths
 // MUST produce identical results for every metric they share; the bundle
 // version makes that contract machine-checkable on the scorecard.
-const scoringBundleVersion = "scorecard-bundle-v0.1"
+const scoringBundleVersion = "scorecard-bundle-v0.2"
 
 // Scorecard is the per-run scoring output (the only artifact anyone outside
 // the project reads, so it is JSON-stable).

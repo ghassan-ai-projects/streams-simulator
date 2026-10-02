@@ -6,62 +6,7 @@ import (
 )
 
 func instrument(r *run.Run) InstrumentMetrics {
-	ledger := r.Ledger()
-	m := InstrumentMetrics{LedgerComplete: true, Emitted: r.World.EmittedCount()}
-	seenIDs := map[uint64]bool{}
-	seenSeq := map[int64]bool{}
-	for _, l := range ledger {
-		if l.DeliveryID == 0 || seenIDs[l.DeliveryID] {
-			m.LedgerComplete = false
-		}
-		seenIDs[l.DeliveryID] = true
-		seenSeq[l.Seq] = true
-		switch l.DeliveryReason {
-		case model.DeliveryDroppedByPerturb:
-			m.Dropped++
-		case model.DeliveryDuplicated:
-			m.Duplicated++
-		case model.DeliveryMangled:
-			m.Mangled++
-		case model.DeliveryDelayed:
-			m.Delayed++
-		}
-		if l.Delivered {
-			m.Delivered++
-		}
-	}
-	for seq := int64(0); seq < m.Emitted; seq++ {
-		if !seenSeq[seq] {
-			m.LedgerComplete = false
-			break
-		}
-	}
-	// Perturbation fidelity: every perturbation that was applied left a mark
-	// in the ledger (and never in the delivered event, which is enforced by
-	// construction).
-	m.PerturbationFidelity = true
-	for _, name := range r.AppliedPerturbations() {
-		found := false
-		for _, l := range ledger {
-			if reasonOf(name) == l.DeliveryReason && l.Delivered != (name == "drop") {
-				found = true
-				break
-			}
-		}
-		if !found {
-			m.PerturbationFidelity = false
-		}
-	}
-	// Effector idempotency: no command_id applied twice.
-	seen := map[string]bool{}
-	m.EffectorIdempotency = true
-	for _, c := range r.World.EffectorCalls() {
-		if seen[c.CommandID] {
-			m.EffectorIdempotency = false
-		}
-		seen[c.CommandID] = true
-	}
-	return m
+	return instrumentEvidence(r.Ledger(), r.World.EffectorCalls(), r.AppliedPerturbations(), r.World.EmittedCount())
 }
 
 func reasonOf(perturbName string) string {

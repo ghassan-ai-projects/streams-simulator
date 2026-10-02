@@ -6,7 +6,10 @@ import (
 )
 
 func judgment(r *run.Run, gt *model.GroundTruthRecord) JudgmentMetrics {
-	v := r.Verdict()
+	return judgmentFrom(r.Verdict(), gt)
+}
+
+func judgmentFrom(v *model.Verdict, gt *model.GroundTruthRecord) JudgmentMetrics {
 	m := JudgmentMetrics{DetectionCount: len(v.Detections)}
 	if gt.IsNegativeClass && m.DetectionCount > 0 {
 		m.FalsePositive = true

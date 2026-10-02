@@ -16,15 +16,6 @@ func hasOutcome(outcomes []string, wanted string) bool {
 	return false
 }
 
-func hasPerturb(r *run.Run, wanted string) bool {
-	for _, name := range r.AppliedPerturbations() {
-		if name == wanted {
-			return true
-		}
-	}
-	return false
-}
-
 func historyValue(r *run.Run, entity, state string, atNS int64) (float64, bool) {
 	history := r.History()
 	if len(history) == 0 {

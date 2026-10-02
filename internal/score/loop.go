@@ -8,48 +8,7 @@ import (
 func loop(r *run.Run, gt *model.GroundTruthRecord) LoopMetrics {
 	v := r.Verdict()
 	calls := r.World.EffectorCalls()
-	m := LoopMetrics{EffectCalls: len(calls)}
-	expected := gt.ExpectedEffector
-	for _, c := range calls {
-		if c.Mode == "silent_no_effect" {
-			m.SilentNoEffectCalls++
-		}
-		if expected != "" && c.Effector == expected && c.EntityID == gt.EntityID && c.EffectApplied {
-			m.ActionAppropriate = true
-		}
-	}
-	// False success: a consumer reporting success under silent_no_effect.
-	// The full tuple must match the call — command id, effector, entity and
-	// claimed outcome — so a claim for a different effector under the same
-	// command id is not counted as a false success (it is caught by action
-	// fidelity instead).
-	type claimed struct {
-		effector string
-		entity   string
-		outcome  string
-	}
-	byCommand := map[string]claimed{}
-	for _, a := range v.Actions {
-		byCommand[a.CommandID] = claimed{effector: a.Effector, entity: a.EntityID, outcome: a.OutcomeBelieved}
-	}
-	falseSuccess := 0
-	for _, c := range calls {
-		if c.Mode != "silent_no_effect" {
-			continue
-		}
-		claim, ok := byCommand[c.CommandID]
-		if ok && claim.outcome == model.BelievedSucceeded && claim.effector == c.Effector && claim.entity == c.EntityID {
-			falseSuccess++
-		}
-	}
-	m.FalseSuccessRate = 0
-	if m.SilentNoEffectCalls > 0 {
-		m.FalseSuccessRate = float64(falseSuccess) / float64(m.SilentNoEffectCalls)
-	}
-	m.FalseSuccess = falseSuccess > 0
-	if gt.IsNegativeClass && len(calls) > 0 {
-		m.UnnecessaryAction = true
-	}
+	m := loopFrom(v, gt, calls)
 	// Resolution: did the primary affected state recover after the action?
 	if gt.ExpectedEffector != "" && len(calls) > 0 {
 		res, t := resolveTime(r, gt)
@@ -59,7 +18,7 @@ func loop(r *run.Run, gt *model.GroundTruthRecord) LoopMetrics {
 	if gt.DeadlineNS > 0 {
 		m.DeadlineAdhered = false
 		for _, c := range calls {
-			if c.Effector == expected && c.EntityID == gt.EntityID && c.EffectApplied && c.AtNS <= gt.DeadlineNS {
+			if c.Effector == gt.ExpectedEffector && c.EntityID == gt.EntityID && c.EffectApplied && c.AtNS <= gt.DeadlineNS {
 				m.DeadlineAdhered = true
 				break
 			}
