@@ -11,32 +11,105 @@ import (
 )
 
 // buildScenario constructs one candidate scenario and its audit verdict.
-func (s *Suite) buildScenario(cfg Config, rng *randutil.SplitMix64, solver *truth.Solver, panel *audit.Panel,
-	prof *model.Profile, entities []string, startNS, durationNS int64, seed, idx uint64,
-	perturbCount map[string]int, sampleFrac float64) (*Scenario, *model.GroundTruthRecord, *audit.Verdict, error) {
+func (g *suiteGeneration) buildScenario(seed, idx uint64, sampleFrac float64) (*Scenario, *model.GroundTruthRecord, *audit.Verdict, error) {
+	scenario := g.drawScenario(seed, idx, sampleFrac)
+	label, err := g.sealScenarioLabel(scenario)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	if label.FirstObservableTimeNS == 0 {
+		return scenario, label, &audit.Verdict{Trivial: true}, nil
+	}
 
-	gt := cfg.Domain.Spec.GroundTruth
-	isNegative := rng.Float64() < sampleFrac
-	faultID := s.pickFault(cfg, prof, rng, isNegative)
+	verdict, err := g.auditScenario(scenario)
+	if err != nil {
+		return nil, nil, nil, err
+	}
 
-	entity := entities[rng.Intn(len(entities))]
-	profileName := cfg.Profile
+	label.TrivialBaselineVerdict = verdictTrivialString(verdict)
+	if verdict != nil {
+		label.TrivialBaselineDetail = verdict.Scores
+	}
+	// The executable command log.
+	scenario.CommandLog = buildCommandLog(g.cfg.Domain, scenario)
+	return scenario, label, verdict, nil
+}
+
+// sealScenarioLabel identifies candidates with no observable signal before audit.
+func (g *suiteGeneration) sealScenarioLabel(sc *Scenario) (*model.GroundTruthRecord, error) {
+	var descriptions []string
+	for _, p := range sc.Perturbations {
+		descriptions = append(descriptions, p.Name+"@"+fmt.Sprint(p.Params["rate"]))
+	}
+	label, err := truth.BuildRecord(g.cfg.Domain, g.solver, sc.ID, sc.Seed, sc.EntityID, sc.Fault,
+		sc.OnsetNS, sc.StartNS, g.entities, sc.PreDegraded, descriptions, sc.Setup)
+	if err != nil {
+		return nil, fmt.Errorf("suite: build label: %w", err)
+	}
+	return label, nil
+}
+
+// auditScenario evaluates the candidate's delivered, perturbed stream.
+func (g *suiteGeneration) auditScenario(sc *Scenario) (*audit.Verdict, error) {
+	var perturbations []audit.Perturbation
+	for _, p := range sc.Perturbations {
+		perturbations = append(perturbations, audit.Perturbation{Name: p.Name, Params: p.Params, FromNS: p.FromNS, UntilNS: p.UntilNS})
+	}
+	verdict, err := g.panel.Audit(sc.EntityID, sc.Fault, sc.OnsetNS, sc.StartNS, g.entities, sc.DurationNS, sc.Setup, perturbations)
+	if err != nil {
+		return nil, fmt.Errorf("suite: audit: %w", err)
+	}
+	return verdict, nil
+}
+
+func (g *suiteGeneration) drawScenario(seed, idx uint64, sampleFrac float64) *Scenario {
+	gt := g.cfg.Domain.Spec.GroundTruth
+	isNegative := g.rng.Float64() < sampleFrac
+	faultID := g.suite.pickFault(g.cfg, g.prof, g.rng, isNegative)
+
+	entity := g.entities[g.rng.Intn(len(g.entities))]
+	profileName := g.cfg.Profile
 	preDeg := false
 	var onsetNS int64
 	// Randomized onset: uniform across the first half of the trace, so the
 	// fault has room to develop and run-to-failure bias is countered. 10-15%
 	// of scenarios begin with the asset already degraded (fault before t0).
-	if rng.Float64() < gt.PreDegradedFraction {
+	if g.rng.Float64() < gt.PreDegradedFraction {
 		preDeg = true
-		onsetNS = startNS - int64(rng.Float64()*float64(durationNS/4))
+		onsetNS = g.startNS - int64(g.rng.Float64()*float64(g.durationNS/4))
 	} else {
-		onsetNS = startNS + int64(rng.Float64()*float64(durationNS/2))
+		onsetNS = g.startNS + int64(g.rng.Float64()*float64(g.durationNS/2))
 	}
 	if onsetNS < 0 {
 		onsetNS = 0
 	}
 
 	// Perturbations: sample 0-2, with forced coverage for thin ones.
+	scPerts := drawPerturbations(g.rng, g.perturbCount, g.startNS, g.durationNS)
+	scenario := &Scenario{
+		ID:            fmt.Sprintf("%s/%04d", g.cfg.Domain.Spec.ID, idx),
+		Seed:          seed,
+		Profile:       profileName,
+		EntityID:      entity,
+		Fault:         faultID,
+		StartNS:       g.startNS,
+		OnsetNS:       onsetNS,
+		DurationNS:    g.durationNS,
+		PreDegraded:   preDeg,
+		Perturbations: scPerts,
+	}
+
+	// Profile setup supplies the initial context. Pre-degraded starts omit
+	// setup because changing the context could mask the earlier fault.
+	var setup []truth.SetupCall
+	if !preDeg {
+		setup = g.suite.defaultSetup(g.cfg.Domain, entity, g.startNS)
+	}
+	scenario.Setup = setup
+	return scenario
+}
+
+func drawPerturbations(rng *randutil.SplitMix64, perturbCount map[string]int, startNS, durationNS int64) []Perturbation {
 	scPerts := []Perturbation{}
 	for _, name := range pickPerturbations(rng, perturbCount) {
 		params := samplePerturbParams(rng, name)
@@ -45,62 +118,7 @@ func (s *Suite) buildScenario(cfg Config, rng *randutil.SplitMix64, solver *trut
 		scPerts = append(scPerts, Perturbation{Name: name, Params: params, FromNS: from, UntilNS: until})
 	}
 
-	scenario := &Scenario{
-		ID:            fmt.Sprintf("%s/%04d", cfg.Domain.Spec.ID, idx),
-		Seed:          seed,
-		Profile:       profileName,
-		EntityID:      entity,
-		Fault:         faultID,
-		StartNS:       startNS,
-		OnsetNS:       onsetNS,
-		DurationNS:    durationNS,
-		PreDegraded:   preDeg,
-		Perturbations: scPerts,
-	}
-
-	// Setup: aquaculture scenarios start the aerator for the night so
-	// aerator_failure is meaningful — except pre-degraded starts, where the
-	// fault predates t0 and starting the aerator would mask it.
-	var setup []truth.SetupCall
-	if !preDeg {
-		setup = s.defaultSetup(cfg.Domain, entity, startNS)
-	}
-	scenario.Setup = setup
-
-	// Seal the label first: unobservable scenarios (no signal crosses the
-	// noise floor within the horizon) cannot be graded and are regenerated.
-	var pertStrs []string
-	for _, p := range scPerts {
-		pertStrs = append(pertStrs, p.Name+"@"+fmt.Sprint(p.Params["rate"]))
-	}
-	label, err := truth.BuildRecord(cfg.Domain, solver, scenario.ID, seed, entity, faultID,
-		onsetNS, startNS, entities, preDeg, pertStrs, setup)
-	if err != nil {
-		return nil, nil, nil, fmt.Errorf("suite: build label: %w", err)
-	}
-	if label.FirstObservableTimeNS == 0 {
-		return scenario, label, &audit.Verdict{Trivial: true}, nil
-	}
-
-	// Audit the candidate: trivial scenarios are excluded from the graded
-	// set and the loop regenerates. The audit consumes the delivered stream
-	// with the scenario's declared perturbations applied.
-	var auditPerts []audit.Perturbation
-	for _, p := range scPerts {
-		auditPerts = append(auditPerts, audit.Perturbation{Name: p.Name, Params: p.Params, FromNS: p.FromNS, UntilNS: p.UntilNS})
-	}
-	verdict, err := panel.Audit(entity, faultID, onsetNS, startNS, entities, durationNS, setup, auditPerts)
-	if err != nil {
-		return nil, nil, nil, fmt.Errorf("suite: audit: %w", err)
-	}
-
-	label.TrivialBaselineVerdict = verdictTrivialString(verdict)
-	if verdict != nil {
-		label.TrivialBaselineDetail = verdict.Scores
-	}
-	// The executable command log.
-	scenario.CommandLog = buildCommandLog(cfg.Domain, scenario)
-	return scenario, label, verdict, nil
+	return scPerts
 }
 
 func verdictTrivialString(v *audit.Verdict) string {

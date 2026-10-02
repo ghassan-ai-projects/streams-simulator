@@ -138,3 +138,21 @@ role/capability suites; new characterization was added afterward where existing
 integration tests already covered the path. Full CLI tests pass (26.5% coverage),
 MCP race tests pass (65.7%). Final focused CLI tests, architecture guards, zero-issue
 lint and whitespace checks pass.
+
+## Round 9 — Generation, audit capture and consumer processing
+
+Suite generation reads as initialize, populate, report shortfalls and return.
+A private generation context owns the existing state shared by those steps;
+candidate construction names recipe drawing, label sealing and delivered-stream
+audit, eliminating the former twelve-argument internal call. Reference processing
+names trace consumption, silence detection and verdict reporting. Audit capture
+owns immutable delivered series and sample-grid projection.
+
+Pre-extraction regressions pin cumulative re-feeding, malformed records,
+quiescence-before-report failure, dropped audit records and a complete fixed-seed
+suite JSON digest (`9247a8f2…`). They pass afterward. RNG draw order, rejected-attempt
+identity, adaptive sampling, setup/fault order, audit horizon and terminal strings
+are unchanged. Focused race checks pass; reference-consumer coverage is 66.8% and
+audit coverage 92.9%. The suite snapshot also passes under race detection; full
+suite coverage is part of final validation. Architecture checks, zero-issue lint
+and whitespace review pass. No intended behavior changes.

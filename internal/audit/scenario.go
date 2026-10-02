@@ -43,26 +43,11 @@ func (p *Panel) build(entityID string, startNS int64, entityIDs []string, faults
 			return nil, nil, fmt.Errorf("build: %w", err)
 		}
 	}
-	log := emissionLog{}
-	series := map[string][]float64{}
-	times := map[string][]int64{}
-	deliver := func(d perturb.Delivered) {
-		// The audit is per-entity: only the audited entity's delivered
-		// records form the series, exactly as a per-entity Reading did.
-		if d.Malformed || !d.Delivered || d.Event.EntityID != entityID {
-			return
-		}
-		t, _ := model.ParseTime(d.Event.EventTime)
-		log[d.Event.Channel] = append(log[d.Event.Channel], t)
-		if v, ok := asFloat(d.Event.Value); ok {
-			series[d.Event.Channel] = append(series[d.Event.Channel], v)
-			times[d.Event.Channel] = append(times[d.Event.Channel], t)
-		}
-	}
+	capture := auditCapture{entityID: entityID, log: emissionLog{}, series: map[string][]float64{}, times: map[string][]int64{}}
 	w.SetEmitter(func(ev model.SimEvent) {
 		t, _ := model.ParseTime(ev.EventTime)
 		for _, d := range layer.Process(ev, t) {
-			deliver(d)
+			capture.deliver(d)
 		}
 	})
 	for fid, onset := range faults {
@@ -83,8 +68,33 @@ func (p *Panel) build(entityID string, startNS int64, entityIDs []string, faults
 		return nil, nil, fmt.Errorf("build: %w", err)
 	}
 	for _, d := range layer.Flush(horizon) {
-		deliver(d)
+		capture.deliver(d)
 	}
+	return capture.sampleGrid(p, startNS, horizon), capture.log, nil
+}
+
+type auditCapture struct {
+	entityID string
+	log      emissionLog
+	series   map[string][]float64
+	times    map[string][]int64
+}
+
+func (capture *auditCapture) deliver(d perturb.Delivered) {
+	// The audit is per-entity: only the audited entity's delivered
+	// records form the series, exactly as a per-entity Reading did.
+	if d.Malformed || !d.Delivered || d.Event.EntityID != capture.entityID {
+		return
+	}
+	t, _ := model.ParseTime(d.Event.EventTime)
+	capture.log[d.Event.Channel] = append(capture.log[d.Event.Channel], t)
+	if v, ok := asFloat(d.Event.Value); ok {
+		capture.series[d.Event.Channel] = append(capture.series[d.Event.Channel], v)
+		capture.times[d.Event.Channel] = append(capture.times[d.Event.Channel], t)
+	}
+}
+
+func (capture *auditCapture) sampleGrid(p *Panel, startNS, horizon int64) map[string][]float64 {
 	// Grid: value at sample i = the last delivered value at or before the
 	// sample instant; 0 before the first delivery.
 	n := int((horizon-startNS)/p.sampleNS) + 1
@@ -95,15 +105,15 @@ func (p *Panel) build(entityID string, startNS int64, entityIDs []string, faults
 		last := 0.0
 		for i := 0; i < n; i++ {
 			t := startNS + int64(i)*p.sampleNS
-			for si < len(times[ch]) && times[ch][si] <= t {
-				last = series[ch][si]
+			for si < len(capture.times[ch]) && capture.times[ch][si] <= t {
+				last = capture.series[ch][si]
 				si++
 			}
 			out[i] = last
 		}
 		grid[ch] = out
 	}
-	return grid, log, nil
+	return grid
 }
 
 func asFloat(v any) (float64, bool) {

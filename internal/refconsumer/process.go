@@ -12,82 +12,92 @@ import (
 // detection. Sequences already processed by an earlier call are skipped, so
 // a harness may re-feed the full trace without double-counting.
 func (r *Runner) Process(trace []byte, endNS int64) (*model.Verdict, error) {
-	now := int64(0)
+	now := max(r.processTrace(trace), endNS)
+	r.detectSilence(now)
+	return r.reportVerdict(now)
+}
 
+func (r *Runner) processTrace(trace []byte) int64 {
+	var now int64
 	for _, line := range splitLines(trace) {
 		var ev model.SimEvent
 		if err := model.DecodeBytes([]byte(line), &ev); err != nil {
 			// A malformed record is itself evidence: report it and move on.
 			continue
 		}
-		// Deduplicate only exact re-feeds of an already-processed delivery;
-		// reordered and duplicated deliveries (same seq, different observed
-		// time) are each counted, as a live consumer would count them.
-		deliveryKey := fmt.Sprintf("%d@%s", ev.Seq, ev.ObservedTime)
-		if r.seen[deliveryKey] {
-			continue
+		now = max(now, r.consumeEvent(ev))
+	}
+	return now
+}
+
+func (r *Runner) consumeEvent(ev model.SimEvent) int64 {
+	// Deduplicate only exact re-feeds of an already-processed delivery;
+	// reordered and duplicated deliveries (same seq, different observed
+	// time) are each counted, as a live consumer would count them.
+	deliveryKey := fmt.Sprintf("%d@%s", ev.Seq, ev.ObservedTime)
+	if r.seen[deliveryKey] {
+		return 0
+	}
+	r.seen[deliveryKey] = true
+	r.recordsSeen++
+	t, _ := model.ParseTime(ev.ObservedTime)
+	key := ev.EntityID + "\x00" + ev.Channel
+	s := r.stats[key]
+	if s == nil {
+		s = &series{}
+		if r.stats == nil {
+			r.stats = map[string]*series{}
 		}
-		r.seen[deliveryKey] = true
-		r.recordsSeen++
-		t, _ := model.ParseTime(ev.ObservedTime)
-		if t > now {
-			now = t
+		r.stats[key] = s
+	}
+	if s.seen && t > s.lastEmitNS {
+		s.gaps = append(s.gaps, t-s.lastEmitNS)
+		if len(s.gaps) > 60 {
+			s.gaps = s.gaps[1:]
 		}
-		key := ev.EntityID + "\x00" + ev.Channel
-		s := r.stats[key]
-		if s == nil {
-			s = &series{}
-			if r.stats == nil {
-				r.stats = map[string]*series{}
-			}
-			r.stats[key] = s
+		s.silenceReported = false // a new sample ends any quiet episode
+	}
+	r.evaluateReading(ev, s, t)
+	return t
+}
+
+func (r *Runner) evaluateReading(ev model.SimEvent, s *series, t int64) {
+	if v, ok := asFloat(ev.Value); ok {
+		// Compare against the baseline BEFORE this reading: the window
+		// must not be diluted by the anomaly it is meant to detect.
+		suspicious := r.suspicious(s, v)
+		s.window = append(s.window, v)
+		if len(s.window) > r.cfg.Window {
+			s.window = s.window[1:]
 		}
-		if s.seen && t > s.lastEmitNS {
-			s.gaps = append(s.gaps, t-s.lastEmitNS)
-			if len(s.gaps) > 60 {
-				s.gaps = s.gaps[1:]
-			}
-			s.silenceReported = false // a new sample ends any quiet episode
-		}
-		if v, ok := asFloat(ev.Value); ok {
-			// Compare against the baseline BEFORE this reading: the window
-			// must not be diluted by the anomaly it is meant to detect.
-			suspicious := r.suspicious(s, v)
-			s.window = append(s.window, v)
-			if len(s.window) > r.cfg.Window {
-				s.window = s.window[1:]
-			}
-			s.lastEmitNS = t
-			s.seen = true
-			if suspicious {
-				s.suspicious++
-				if s.suspicious >= r.cfg.MinConsecutive {
-					s.lastSeq = ev.Seq
-					det := r.detect(ev.EntityID, ev.Channel, t, s)
-					if r.cfg.OnDetectionEffector != "" && !r.actuated[ev.EntityID] {
-						cmd := r.issue(ev.EntityID, t)
-						r.actions = append(r.actions, cmd)
-						r.actuated[ev.EntityID] = true
-					}
-					// Rebuild the baseline from post-anomaly readings.
-					s.suspicious = 0
-					s.window = nil
-					r.detections = append(r.detections, det)
+		s.lastEmitNS = t
+		s.seen = true
+		if suspicious {
+			s.suspicious++
+			if s.suspicious >= r.cfg.MinConsecutive {
+				s.lastSeq = ev.Seq
+				det := r.detect(ev.EntityID, ev.Channel, t, s)
+				if r.cfg.OnDetectionEffector != "" && !r.actuated[ev.EntityID] {
+					cmd := r.issue(ev.EntityID, t)
+					r.actions = append(r.actions, cmd)
+					r.actuated[ev.EntityID] = true
 				}
-			} else {
+				// Rebuild the baseline from post-anomaly readings.
 				s.suspicious = 0
+				s.window = nil
+				r.detections = append(r.detections, det)
 			}
 		} else {
-			// Heartbeats and strings refresh the presence marker.
-			s.lastEmitNS = t
-			s.seen = true
+			s.suspicious = 0
 		}
+	} else {
+		// Heartbeats and strings refresh the presence marker.
+		s.lastEmitNS = t
+		s.seen = true
 	}
-	// Absence: a channel that was present and went quiet for several of its
-	// own observed periods (the cadence is measured, not assumed).
-	if endNS > now {
-		now = endNS
-	}
+}
+
+func (r *Runner) detectSilence(now int64) {
 	// determinism-safe: keys collected below and sorted, so silence
 	// detections append in a stable order across processes.
 	keys := make([]string, 0, len(r.stats))
@@ -112,7 +122,9 @@ func (r *Runner) Process(trace []byte, endNS int64) (*model.Verdict, error) {
 			s.silenceReported = true
 		}
 	}
+}
 
+func (r *Runner) reportVerdict(now int64) (*model.Verdict, error) {
 	// The consumer asserts quiescence through the instant it has fully
 	// processed: the later of the last observed record and the declared end
 	// of the window. Without this assertion a harness cannot tell when a
