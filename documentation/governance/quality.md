@@ -8,6 +8,8 @@ Every Go file, including tests, is limited to 300 total lines. Name files and fu
 
 Run `go test ./test/architecture` to check file size, reviewed function lengths and direct package dependencies. The [refactoring bar](../../docs/refactoring/clean-code-20261002/BAR.md) and [review decisions](../../docs/refactoring/clean-code-20261002/REVIEW.md) describe the checks and their limits. Runtime correctness still requires the full repository gate and tests.
 
+For structural work, use Enola's local baseline-and-delta gate: run `make architecture-baseline` before editing, then `make architecture` afterward. The latter enforces new cycles and layer findings; it requires the local tool and a comparable pre-change baseline. Keep generated `.enola/` state local. The [Enola review](../../docs/refactoring/clean-code-20261002/ENOLA.md) records current findings, checked candidates and extraction limits.
+
 ## Before changing docs
 
 - Read [the quality bar](../QUALITY_BAR.md).

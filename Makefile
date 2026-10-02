@@ -11,6 +11,7 @@ MODULE    ?= github.com/ghassan-ai-projects/streams-simulator
 VERSION   := $(shell git describe --tags 2>/dev/null || echo dev)
 COMMIT    := $(shell git rev-parse --short HEAD 2>/dev/null || echo none)
 LDFLAGS   := -ldflags="-X main.Version=$(VERSION) -X main.Commit=$(COMMIT)"
+ENOLA     ?= enola
 
 # Detect if any Go packages exist (after the user adds code). Used to skip
 # targets gracefully in a freshly-cloned template.
@@ -29,7 +30,7 @@ HAS_MAIN := $(if $(MAIN_PKGS),yes,no)
 # ---- Phony declarations ---------------------------------------------------
 .PHONY: help all build vet fmt tidy lint lint-ci docs-check test test-short test-race \
         test-coverage ci-check deadcode vulncheck fuzz soak fuzz-soak perf \
-        manifest clean run cross-compile
+        manifest clean run cross-compile architecture architecture-baseline
 
 # ---- Help -----------------------------------------------------------------
 help: ## Show this help message
@@ -97,6 +98,12 @@ lint-ci: ## Run golangci-lint with full timeout (for CI)
 
 docs-check: ## Validate documentation smoke commands and whitespace
 	./scripts/docs-check
+
+architecture-baseline: ## Pin Enola architecture before a structural change
+	ENOLA_NO_UPDATE_CHECK=1 $(ENOLA) baseline pin mcp-arch.yaml
+
+architecture: ## Reject new Enola cycle or layer findings against the baseline
+	ENOLA_NO_UPDATE_CHECK=1 $(ENOLA) check --fail-on=cycles,layers --min-confidence=0.8 mcp-arch.yaml
 
 # ---- Test -----------------------------------------------------------------
 test: ## Run all tests with race + shuffle + coverage

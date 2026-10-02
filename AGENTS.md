@@ -129,6 +129,15 @@ See [.agents/context/testing.md](.agents/context/testing.md) for the testing and
 
 See [.agents/context/go-style.md](.agents/context/go-style.md) for the repo-specific style rules.
 
+## Enola architecture review
+
+- Use Enola for this repository, with [mcp-arch.yaml](mcp-arch.yaml). Generated snapshots and baselines live in ignored `.enola/`; commit review evidence, not generated state.
+- Before structural edits, generate a fresh snapshot for this repository and pin it with `set_baseline`, or run `make architecture-baseline`. Pin once before the round; do not re-pin to hide findings.
+- Use `query_insights` for cycles/layers and `impact_analysis` before changing a shared symbol. After editing, regenerate, verify receipt comparability, and inspect `diff_snapshot` for new coupling, findings and scope spillover.
+- Run `make architecture` to enforce new cycle/layer findings at confidence 0.8, matching the Tamoz workflow. A report-only exit zero is not an enforced pass. Missing baselines, unavailable tools and incomparable snapshots are blockers for this check, not clean results.
+- Confirm heuristic hotspots, complexity and performance candidates against code and tests. Go import checks and `test/architecture` remain authoritative for compilation and the detailed business package graph; Enola's inferred command/internal layers do not cover every internal ownership boundary.
+- After an Enola extractor/configuration upgrade, check coverage and comparability before pinning a replacement baseline. These local targets complement `make ci-check`; they require a pre-change local baseline.
+
 ## Forbidden Changes
 
 - Do not add secrets, credentials, or machine-specific private data.

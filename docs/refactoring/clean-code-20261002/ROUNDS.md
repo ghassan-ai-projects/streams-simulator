@@ -179,3 +179,19 @@ REVIEW.md. No remote release, manifest or physical-HIL evidence is claimed.
 
 The refactoring bar is met. Existing advisory review files and the initial
 README edit remain untouched and excluded from these round commits.
+
+## Round 11 — Enola architecture gate
+
+Applied the Tamoz Enola workflow to this repository: generated a fresh single-repo
+snapshot, pinned before the setup edits, regenerated and checked comparable
+receipts/delta. Added repository-owned configuration, ignored generated state,
+explicit local baseline/check targets and AGENTS instructions. The check enforces
+new cycles/layers at confidence 0.8; it does not merely print a report.
+
+Enola finds no package dependency cycles or upward inferred-layer imports. The
+existing business import guard remains necessary because generic Go layers group
+all internal packages together. Reviewed heuristic candidates and extraction
+limits in ENOLA.md. Disposable fixtures prove rejection of new cycles/upward
+layers, missing baselines and incomparable extraction inputs. Architecture/domain
+tests, docs smoke/links and whitespace checks pass. No runtime source changes;
+the previously completed full runtime gate is not repeated for this setup round.

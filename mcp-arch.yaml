@@ -1,0 +1,6 @@
+# Repository-owned Enola configuration. Inherit the installed tool's extractors,
+# explainers and ignore defaults so new coverage is not silently disabled.
+repo: "."
+
+output:
+  dir: ".enola"
