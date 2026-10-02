@@ -70,3 +70,21 @@ separate lifecycle design rather than an implicit refactor behavior change.
 Validation: run/score race tests and architecture guards pass; run coverage 65.0%.
 New close/delivery regressions pass after final edits. Lint has zero issues and
 whitespace checks pass. All files remain under 300 lines.
+
+## Round 5 — Validation and adapter steps
+
+Domain cross-checks now read as channels, dynamics, cycle rejection, faults,
+effectors and profiles. Private validation context owns source-aware errors.
+Schema compilation names value/object/array/string/number/composition/conditional
+keyword phases. Runtime validation preserves type short-circuiting, primitive
+checks, object/array traversal and composition order. Adapter validation replaces
+mutually recursive closures with named steps; expression evaluation delegates
+object/concat/template/time/counter operations. Verification separates fixture
+rendering, schema conformance and golden comparison.
+
+Characterization tests were green before extraction and remain green afterward:
+keyword error order, type short-circuit, nested projection identity/source context
+and channel-before-fault error priority. Existing schema and golden-byte tests pass.
+Race coverage: adapter 69.1%, domain 76.1%, jsonschema 68.8%. Final focused tests,
+size/dependency guards, zero-issue lint and whitespace checks pass. No intended
+runtime or contract changes in this round.

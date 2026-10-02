@@ -28,6 +28,17 @@ func (s *Schema) validate(v any, path string, errs *[]Error) {
 	if s.hasConst && !jsonEqual(s.constVal, v) {
 		fail("value does not match const")
 	}
+	s.validatePrimitive(v, fail)
+	switch x := v.(type) {
+	case map[string]any:
+		s.validateObject(x, path, errs)
+	case []any:
+		s.validateArray(x, path, errs)
+	}
+	s.validateComposition(v, path, errs, fail)
+}
+
+func (s *Schema) validatePrimitive(v any, fail func(string)) {
 	if s.pattern != nil {
 		if str, ok := v.(string); ok && !s.pattern.MatchString(str) {
 			fail(fmt.Sprintf("string does not match pattern %s", s.pattern))
@@ -66,12 +77,9 @@ func (s *Schema) validate(v any, path string, errs *[]Error) {
 			}
 		}
 	}
-	switch x := v.(type) {
-	case map[string]any:
-		s.validateObject(x, path, errs)
-	case []any:
-		s.validateArray(x, path, errs)
-	}
+}
+
+func (s *Schema) validateComposition(v any, path string, errs *[]Error, fail func(string)) {
 	for _, sub := range s.allOf {
 		sub.validate(v, path, errs)
 	}

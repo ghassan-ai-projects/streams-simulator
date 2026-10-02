@@ -55,25 +55,37 @@ func Verify(adapterPath, fixturePath, base string) (*VerifyResult, error) {
 	}
 	res := &VerifyResult{Adapter: a.ID}
 
+	if complete, err := verifyOutputSchema(a, out, base, res); err != nil {
+		return nil, err
+	} else if !complete {
+		return res, nil
+	}
+	if err := verifyGolden(a, out, base, res); err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func verifyOutputSchema(a *model.Adapter, out []byte, base string, res *VerifyResult) (bool, error) {
 	// Schema conformance: every rendered record must validate against the
 	// declared output schema.
 	if a.Conformance != nil && a.Conformance.OutputSchema != "" {
 		schemaPath := resolvePath(base, a.Conformance.OutputSchema)
 		rawSchema, err := os.ReadFile(schemaPath)
 		if err != nil {
-			return nil, fmt.Errorf("adapter: read output schema %s: %w", schemaPath, err)
+			return false, fmt.Errorf("adapter: read output schema %s: %w", schemaPath, err)
 		}
 		var doc any
 		if err := model.DecodeBytes(rawSchema, &doc); err != nil {
-			return nil, fmt.Errorf("adapter: %w", err)
+			return false, fmt.Errorf("adapter: %w", err)
 		}
 		sch, err := jsonschema.Compile(doc)
 		if err != nil {
-			return nil, fmt.Errorf("adapter: %w", err)
+			return false, fmt.Errorf("adapter: %w", err)
 		}
 		records, err := splitRecords(out, a.Encoding)
 		if err != nil {
-			return nil, fmt.Errorf("adapter: %w", err)
+			return false, fmt.Errorf("adapter: %w", err)
 		}
 		for i, rec := range records {
 			var v any
@@ -81,32 +93,36 @@ func Verify(adapterPath, fixturePath, base string) (*VerifyResult, error) {
 			dec.UseNumber()
 			if err := dec.Decode(&v); err != nil {
 				res.FirstDivergence = fmt.Sprintf("record %d is not valid JSON: %v", i, err)
-				return res, nil
+				return false, nil
 			}
 			if errs := sch.Validate(v); len(errs) > 0 {
 				res.FirstDivergence = fmt.Sprintf("record %d fails %s: %s", i, filepath.Base(schemaPath), errs[0].Msg)
-				return res, nil
+				return false, nil
 			}
 		}
 		res.SchemaOK = true
 		res.RecordCount = len(records)
 	}
 
+	return true, nil
+}
+
+func verifyGolden(a *model.Adapter, out []byte, base string, res *VerifyResult) error {
 	// Golden comparison: byte-exact.
 	if a.Conformance != nil && a.Conformance.Golden != "" {
 		goldenPath := resolvePath(base, a.Conformance.Golden)
 		golden, err := os.ReadFile(goldenPath)
 		if err != nil {
-			return nil, fmt.Errorf("adapter: read golden %s: %w", goldenPath, err)
+			return fmt.Errorf("adapter: read golden %s: %w", goldenPath, err)
 		}
 		if string(out) != string(golden) {
 			res.FirstDivergence = firstDivergence(out, golden)
 			res.Detail = fmt.Sprintf("rendered %d bytes, golden %d bytes", len(out), len(golden))
-			return res, nil
+			return nil
 		}
 		res.GoldenMatch = true
 	}
-	return res, nil
+	return nil
 }
 
 // validateStrictObservedOrder protects the adapter conformance path from a
