@@ -4,9 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
-	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"sort"
+
+	"github.com/modelcontextprotocol/go-sdk/mcp"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
 // NewDirectorServer builds the director-role server.

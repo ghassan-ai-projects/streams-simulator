@@ -2,6 +2,7 @@ package device
 
 import (
 	"fmt"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/canonical"
 )
 

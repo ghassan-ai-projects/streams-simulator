@@ -3,10 +3,11 @@ package adapter
 import (
 	"bytes"
 	"fmt"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/canonical"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"regexp"
 	"strings"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/canonical"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
 var templateFieldRE = regexp.MustCompile(`\{([a-z_]+)\}`)

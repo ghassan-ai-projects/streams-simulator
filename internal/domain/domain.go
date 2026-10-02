@@ -8,14 +8,15 @@ package domain
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/canonical"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/jsonschema"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/schemas"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/canonical"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/jsonschema"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/schemas"
 )
 
 // Load reads, schema-validates and structurally validates a domain spec from

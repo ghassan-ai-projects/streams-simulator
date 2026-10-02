@@ -4,10 +4,11 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
 	"path/filepath"
 	"strconv"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
 )
 
 // CreateWorld builds a world (sim.world.create).

@@ -2,9 +2,10 @@ package run
 
 import (
 	"context"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"strings"
 	"testing"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
 // TestRunLedgerDistinguishesDrop: a dropped event is in the ledger as

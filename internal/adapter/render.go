@@ -2,8 +2,9 @@ package adapter
 
 import (
 	"fmt"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"strings"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
 // renderTemplate renders one record template; returns "" when the when-guard

@@ -3,9 +3,10 @@ package cli
 import (
 	"flag"
 	"fmt"
+	"path/filepath"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
-	"path/filepath"
 )
 
 type runOptions struct {

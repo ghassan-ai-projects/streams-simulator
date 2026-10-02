@@ -1,12 +1,13 @@
 package mcp
 
 import (
+	"path/filepath"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/audit"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/score"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
-	"path/filepath"
 )
 
 // BeginRun opens a run after the director has sealed its ground-truth record.

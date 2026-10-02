@@ -16,6 +16,8 @@ const modulePrefix = "github.com/ghassan-ai-projects/streams-simulator/"
 // Direct dependencies reflect ownership, not transitive reachability. Changing
 // this map requires reviewing the design and the importing package's role.
 var packageDependencies = map[string]string{
+	".":                    "",
+	"tools":                "",
 	"cmd/streamsim":        "cli",
 	"internal/cli":         "adapter canonical device deviceworld domain mcp model refconsumer run score suite world",
 	"internal/mcp":         "audit domain model run schemas score truth world",
@@ -61,9 +63,9 @@ func TestPackageDependencies(t *testing.T) {
 			return fmt.Errorf("inspect dependency in %s: %w", path, err)
 		}
 		owner = filepath.ToSlash(owner)
-		if owner == "." {
-			return nil
-		} // The root contains only the module doc package.
+		if owner == "." && filepath.Base(path) == "tools.go" {
+			owner = "tools" // Build-tagged development tools, outside runtime.
+		}
 		if _, exists := packageDependencies[owner]; !exists {
 			t.Errorf("unreviewed package: %s", owner)
 		}
@@ -87,6 +89,11 @@ func TestPackageDependencies(t *testing.T) {
 func dependencyAllowed(owner, imported string) bool {
 	if !strings.Contains(strings.Split(imported, "/")[0], ".") {
 		return true
+	}
+	if owner == "tools" {
+		return imported == "golang.org/x/tools/cmd/deadcode" ||
+			imported == "golang.org/x/tools/cmd/goimports" ||
+			imported == "golang.org/x/vuln/cmd/govulncheck"
 	}
 	if strings.HasPrefix(imported, modulePrefix) {
 		allowed, exists := packageDependencies[owner]
@@ -121,6 +128,9 @@ func TestDependencyGuardRejectsUpwardAndExternalEdges(t *testing.T) {
 		{"internal/mcp", "github.com/modelcontextprotocol/go-sdk/mcp", true},
 		{"internal/domain", "example.com/new-dependency", false},
 		{"internal/unreviewed", modulePrefix + "internal/model", false},
+		{".", modulePrefix + "internal/mcp", false},
+		{"tools", "golang.org/x/tools/cmd/deadcode", true},
+		{"tools", "github.com/modelcontextprotocol/go-sdk/mcp", false},
 	} {
 		t.Run(tc.owner+"/"+tc.imported, func(t *testing.T) {
 			if got := dependencyAllowed(tc.owner, tc.imported); got != tc.allowed {

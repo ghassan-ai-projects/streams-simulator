@@ -1,8 +1,9 @@
 package world
 
 import (
-	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"math"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
 // updateAvailability advances the producer up/down renewal process. The

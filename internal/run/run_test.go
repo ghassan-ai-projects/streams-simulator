@@ -3,12 +3,13 @@ package run
 import (
 	"context"
 	"errors"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
 type failingSink struct{}

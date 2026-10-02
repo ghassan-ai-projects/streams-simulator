@@ -11,15 +11,16 @@ import (
 	"bufio"
 	"context"
 	"errors"
+	"os"
+	"sync"
+	"time"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/perturb"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/sink"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
-	"os"
-	"sync"
-	"time"
 )
 
 // Config pins everything that enters the determinism tuple.

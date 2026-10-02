@@ -3,6 +3,7 @@ package run
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/perturb"
 )

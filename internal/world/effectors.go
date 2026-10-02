@@ -2,6 +2,7 @@ package world
 
 import (
 	"fmt"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 

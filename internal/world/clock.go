@@ -3,9 +3,10 @@ package world
 import (
 	"container/heap"
 	"fmt"
+	"math"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/randutil"
-	"math"
 )
 
 // NextEventNS is the time of the next scheduled event.

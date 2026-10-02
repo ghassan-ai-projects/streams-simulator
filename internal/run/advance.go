@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 

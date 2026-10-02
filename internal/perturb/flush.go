@@ -2,6 +2,7 @@ package perturb
 
 import (
 	"encoding/json"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 

@@ -3,11 +3,12 @@ package world
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"math"
 	"strings"
 	"testing"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
 // testSpec builds a tiny valid domain spec for world tests.

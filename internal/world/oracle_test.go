@@ -1,9 +1,10 @@
 package world
 
 import (
-	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"math"
 	"testing"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
 // constWorld builds a world with a constant driving input u and one dynamic

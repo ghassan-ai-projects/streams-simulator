@@ -9,10 +9,11 @@ package adapter
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/jsonschema"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/schemas"
-	"os"
 )
 
 // Load reads and validates an adapter file. The validation covers the

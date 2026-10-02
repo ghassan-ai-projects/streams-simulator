@@ -1,6 +1,12 @@
 # Contributor documentation and quality
 
-The repository’s contributor rules are in [`CONTRIBUTING.md`](../../CONTRIBUTING.md). The root [`AGENTS.md`](../../AGENTS.md) is an agent-only instruction file, not a public governance policy. This page adds the documentation-specific review bar.
+The repository’s contributor rules are in [`CONTRIBUTING.md`](../../CONTRIBUTING.md). The root [`AGENTS.md`](../../AGENTS.md) is an agent-only instruction file, not a public governance policy. This page records code and documentation review checks.
+
+## Code organization checks
+
+Every Go file, including tests, is limited to 300 total lines. Name files and functions by simulator responsibility. Entry points should read as named operations with concrete mechanics one level below. Functions longer than 60 body lines require a recorded review decision; retained schema tables and numerical operations have specific, bounded allowances.
+
+Run `go test ./test/architecture` to check file size, reviewed function lengths and direct package dependencies. The [refactoring bar](../../docs/refactoring/clean-code-20261002/BAR.md) and [review decisions](../../docs/refactoring/clean-code-20261002/REVIEW.md) describe the checks and their limits. Runtime correctness still requires the full repository gate and tests.
 
 ## Before changing docs
 

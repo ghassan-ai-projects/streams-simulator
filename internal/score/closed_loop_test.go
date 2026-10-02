@@ -2,9 +2,10 @@ package score
 
 import (
 	"context"
+	"testing"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
-	"testing"
 )
 
 // TestClosedLoopRecoveryAndIdempotency: with mode ok the effector recovers

@@ -2,9 +2,10 @@ package world
 
 import (
 	"fmt"
+	"math"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/jsonschema"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
-	"math"
 )
 
 func (w *World) validateArgs(eff *model.Effector, args map[string]any) error {

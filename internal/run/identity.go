@@ -2,6 +2,7 @@ package run
 
 import (
 	"encoding/json"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/canonical"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )

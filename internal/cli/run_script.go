@@ -2,8 +2,9 @@ package cli
 
 import (
 	"fmt"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
 	"strings"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
 )
 
 func applyScriptedFaults(r *run.Run, options runOptions) error {

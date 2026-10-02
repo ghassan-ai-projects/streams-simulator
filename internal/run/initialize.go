@@ -4,15 +4,16 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
+	"strconv"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/canonical"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/perturb"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/sink"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
-	"os"
-	"path/filepath"
-	"strconv"
 )
 
 // New creates a run: world, perturbation layer, adapter engine and sink.

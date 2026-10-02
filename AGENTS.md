@@ -58,20 +58,26 @@ Do not invent architecture outside the documented design. The spec was written t
 
 The documented shape (see [docs/design/TECHNICAL_DESIGN.md](docs/design/TECHNICAL_DESIGN.md)):
 
-- `cmd/streamsim/main.go` - entrypoint, flags, wiring, shutdown
+- `cmd/streamsim/main.go` - version metadata and CLI entrypoint
+- `internal/cli` - flags, application wiring, commands, shutdown
 - `internal/world` - seeded discrete-event world core; domain specs are data, loaded through one schema
 - `internal/perturb` - perturbation layer between world and adapter (what the observer got, not what happened)
 - `internal/adapter` - declarative output adapters projecting native `sim-event-v0.1` into consumer wire formats
 - `internal/sink` - inproc, file, http-push sinks
 - `internal/mcp` - one MCP server, two roles: `director` (catalog, world, clock, fault, perturb, truth) and `operator` (nameplate, effectors, invoke, verdict)
 - `internal/run` - run orchestration, delivery ledger, artifacts, replay, and quiescence; there is no separate `internal/ledger` package
-- `internal/truth` - sealed ground truth and scoring
+- `internal/truth` - sealed ground truth and independent analytic solver
+- `internal/score` - online/offline scoring policies
+- `internal/audit`, `internal/suite`, `internal/refconsumer` - trivial-baseline audit, scenario generation, shipped reference consumer
+- `internal/device`, `internal/deviceworld` - device emulation and its world integration bridge
+- `internal/domain`, `internal/model`, `internal/jsonschema`, `internal/schemas`, `internal/canonical`, `internal/randutil`, `internal/wall` - data loading, shared records and bounded foundations
 - `docs/` - the engineering design, research, contracts, fixtures, and evidence archive
 - `documentation/` - curated public product, usage, architecture, benchmark, operations, and governance documentation
 
 Dependency direction:
 
-- `cmd` -> `mcp` -> `world`/`perturb`/`adapter`/`sink`/`ledger`/`truth`
+- `cmd` -> `cli` -> application packages (`mcp`, `run`, `suite`, `score`, `refconsumer`)
+- `run` composes `world`/`perturb`/`adapter`/`sink`; truth and scoring consume world/evidence. `deviceworld` bridges `device` and `world` without either core importing the bridge.
 - Dependencies flow downward only.
 - Domain specs, adapters, and effectors are **data** (JSON), never code. If any domain needs a code branch in the binary, the simulator is wrong and the domain found the bug.
 - The simulator has no knowledge of its consumers. No consumer name, schema, field, or behaviour appears in the binary.
@@ -108,7 +114,7 @@ See [.agents/context/testing.md](.agents/context/testing.md) for the testing and
 - Packages own simulator responsibilities, not generic controller/service/store layers. Preserve the world → perturbation → adapter → sink pipeline and director/operator truth boundary. Create a package only for a distinct responsibility with a concrete caller and a downward dependency direction.
 - Preserve exported signatures, JSON shapes, errors, command/delivery order, RNG draws, digest inputs, locks, cancellation, and effects during refactoring. Record intentional corrections separately and prove them with regression tests.
 - Add meaningful boundary tests in each modified production package. Run focused tests and review the diff before each round's commit; run the full repository gate before handoff.
-- The executable file-size and package-dependency checks live in `test/architecture`. The review criteria and round evidence are in [docs/refactoring/clean-code-20261002/](docs/refactoring/clean-code-20261002/BAR.md).
+- The executable file-size, package-dependency and function-review checks live in `test/architecture`. The review criteria and round evidence are in [docs/refactoring/clean-code-20261002/](docs/refactoring/clean-code-20261002/BAR.md).
 
 - Use `context.Context` as the first parameter for cancellable or I/O work.
 - Use `log/slog` for logging.

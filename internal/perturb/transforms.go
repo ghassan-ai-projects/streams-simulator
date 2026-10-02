@@ -1,7 +1,5 @@
 package perturb
 
-import ()
-
 func (l *Layer) applyOne(a *Active, recs []Delivered, atNS int64) []Delivered {
 	switch a.Name {
 	case DuplicateBurst:

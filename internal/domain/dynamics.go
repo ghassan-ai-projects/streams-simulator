@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/jsonschema"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"sort"
 	"strings"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/jsonschema"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
 func rejectDynamicsCycles(spec *model.DomainSpec, c *Compiled, src string) error {

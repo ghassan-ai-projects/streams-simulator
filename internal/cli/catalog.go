@@ -3,13 +3,14 @@ package cli
 import (
 	"flag"
 	"fmt"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
 // loadCatalog loads every domain in a directory.

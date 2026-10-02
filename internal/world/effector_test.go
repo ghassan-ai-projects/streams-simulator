@@ -1,9 +1,10 @@
 package world
 
 import (
-	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"math"
 	"testing"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
 // TestEffectorIdempotencyAndInterlock covers the loop's basic invariants.

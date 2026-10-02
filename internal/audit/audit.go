@@ -9,6 +9,7 @@ package audit
 
 import (
 	"fmt"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/truth"
 )

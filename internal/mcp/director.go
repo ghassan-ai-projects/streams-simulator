@@ -2,11 +2,12 @@ package mcp
 
 import (
 	"context"
+	"sync"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/truth"
-	"sync"
 )
 
 // WorldRecord is one created world under the director's control.

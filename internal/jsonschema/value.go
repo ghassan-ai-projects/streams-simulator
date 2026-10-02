@@ -1,10 +1,11 @@
 package jsonschema
 
 import (
-	"github.com/ghassan-ai-projects/streams-simulator/internal/canonical"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/canonical"
 )
 
 func joinPath(base, name string) string {

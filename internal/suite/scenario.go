@@ -2,12 +2,13 @@ package suite
 
 import (
 	"fmt"
+	"sort"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/audit"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/randutil"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/truth"
-	"sort"
 )
 
 // buildScenario constructs one candidate scenario and its audit verdict.

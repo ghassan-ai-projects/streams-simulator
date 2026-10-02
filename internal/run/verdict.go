@@ -3,8 +3,9 @@ package run
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"time"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
 // SubmitVerdict stores and validates a consumer verdict.

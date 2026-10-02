@@ -1,9 +1,10 @@
 package perturb
 
 import (
-	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"strconv"
 	"strings"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
 func (l *Layer) mangleEnum(a *Active, recs []Delivered, atNS int64) []Delivered {

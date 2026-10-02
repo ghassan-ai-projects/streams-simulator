@@ -1,8 +1,9 @@
 package world
 
 import (
-	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"math"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
 // stateAt is the full observable hidden value of a state at time t:

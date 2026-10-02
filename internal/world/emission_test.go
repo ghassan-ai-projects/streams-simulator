@@ -1,8 +1,9 @@
 package world
 
 import (
-	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"testing"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
 // TestEmitterReceivesEvents runs the full emission pipeline and checks

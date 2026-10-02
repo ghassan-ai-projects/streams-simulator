@@ -3,12 +3,13 @@ package deviceworld
 import (
 	"encoding/json"
 	"errors"
+	"os"
+	"testing"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/device"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
-	"os"
-	"testing"
 )
 
 func TestLeaseExpiryInvokesWorldSafeStop(t *testing.T) {

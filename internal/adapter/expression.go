@@ -3,9 +3,10 @@ package adapter
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"strings"
 	"time"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
 // recordContext exposes native event fields to the transforms.

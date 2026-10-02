@@ -1,9 +1,10 @@
 package world
 
 import (
+	"math"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/randutil"
-	"math"
 )
 
 // secondsPerNS converts nanoseconds to seconds.

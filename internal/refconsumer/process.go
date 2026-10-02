@@ -2,8 +2,9 @@ package refconsumer
 
 import (
 	"fmt"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"sort"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
 // Process consumes one batch of native-format JSONL sim events (delivery

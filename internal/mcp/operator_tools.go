@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
 // NewOperatorServer builds the operator-role server for one world's view.

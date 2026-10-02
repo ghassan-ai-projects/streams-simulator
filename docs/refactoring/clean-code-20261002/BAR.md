@@ -17,9 +17,10 @@ Existing modifications to `docs/README.md` and `docs/reviews/` are excluded.
 4. An executable import allowlist protects the business package graph. The core
    cannot import CLI, MCP, run orchestration or device transport. Device-world
    integration is a leaf bridge. Schema/model helpers remain foundation packages.
-5. Each modified production package includes a meaningful regression test added
-   or strengthened in this program. Relocated declarations preserve their bodies
-   and existing tests remain intact. Intentional corrections are identified.
+5. Each behavior or workflow change includes a meaningful regression test added
+   or strengthened in its package. Pure relocation preserves declaration bodies
+   and existing oracles, with source-comparison evidence. Intentional corrections
+   are identified and covered by regressions.
 6. Focused tests, self-review and whitespace checks precede every code commit.
    Final evidence includes `make ci-check`, full tests with coverage, build/vet/
    lint, and hook checks if available. Environment failures are not passes.

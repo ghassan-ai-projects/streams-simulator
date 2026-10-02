@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/score"
 	"os"
 	"testing"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/score"
 )
 
 func TestCapabilityTokenEnforced(t *testing.T) {

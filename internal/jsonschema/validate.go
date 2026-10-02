@@ -2,9 +2,10 @@ package jsonschema
 
 import (
 	"fmt"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/canonical"
 	"sort"
 	"strings"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/canonical"
 )
 
 // Validate checks v against the schema and returns every failure found.

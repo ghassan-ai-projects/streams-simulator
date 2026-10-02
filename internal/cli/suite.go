@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/suite"
 	"os"
 	"path/filepath"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/suite"
 )
 
 func cmdSuite(args []string) error {

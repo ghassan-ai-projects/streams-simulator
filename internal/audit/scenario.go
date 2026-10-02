@@ -3,6 +3,7 @@ package audit
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/perturb"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/truth"

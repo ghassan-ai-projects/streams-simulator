@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"os"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/refconsumer"
-	"os"
 )
 
 func cmdRefconsumer(args []string) error {

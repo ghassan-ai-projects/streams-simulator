@@ -3,9 +3,10 @@ package mcp
 import (
 	"context"
 	"errors"
+	"path/filepath"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
-	"path/filepath"
 )
 
 // DescribeWorld reports config, digest, clock and emitted count.

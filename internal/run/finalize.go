@@ -3,11 +3,12 @@ package run
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/canonical"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/sink"
-	"os"
-	"path/filepath"
 )
 
 // End finalizes the run: closes the sink, computes the trace digest, and

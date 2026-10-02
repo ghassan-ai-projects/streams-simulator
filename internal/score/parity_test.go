@@ -3,8 +3,9 @@ package score
 import (
 	"context"
 	"encoding/json"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"testing"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
 // TestOnlineOfflineScoringIdentity (F-0, P0): online and offline scoring

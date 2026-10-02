@@ -14,16 +14,30 @@ The accepted architecture is summarized in [`documentation/architecture/`](../..
 - `documentation/` holds curated public usage, architecture, benchmark, operations, and governance docs.
 - `docs/` holds the engineering archive, canonical contract sources, design history, research, adapters/examples fixtures, and reviews.
 
-## Target Structure (per the design)
+## Current Package Ownership
 
-- `cmd/streamsim/main.go`: entrypoint, flags, wiring, shutdown
+- `cmd/streamsim/main.go`: version metadata and CLI entrypoint
+- `internal/cli`: flags, application wiring, commands and shutdown
 - `internal/world`: seeded discrete-event world core; domains are data loaded through one schema
 - `internal/perturb`: perturbation layer between world and adapter (what the observer got, not what happened)
 - `internal/adapter`: declarative output adapters projecting native `sim-event-v0.1` into consumer wire formats
 - `internal/sink`: inproc, file, http-push
 - `internal/mcp`: one server, two roles — `director` (catalog · world · clock · fault · perturb · truth) and `operator` (nameplate · effectors · invoke · verdict)
 - `internal/run`: run orchestration, delivery ledger, artifacts, replay, and quiescence
-- `internal/truth`: sealed ground truth and scoring
+- `internal/truth`: ground-truth generation and independent analytic solver
+- `internal/score`: instrument and consumer scoring, shared online/offline policies
+- `internal/audit`: trivial-baseline evaluation over delivered evidence
+- `internal/suite`: scenario generation, composition and admission
+- `internal/refconsumer`: shipped reference detector and operator-client integration
+- `internal/device`: data-defined capability admission and vendored device transport
+- `internal/deviceworld`: device-to-world effector binding
+- `internal/domain`: load, validate, compile and digest domain data
+- `internal/model`: shared simulator records and strict JSON decoding
+- `internal/jsonschema`: core schema compilation and validation
+- `internal/schemas`: embedded contract sources
+- `internal/canonical`: canonical JSON encoding and digest operations
+- `internal/randutil`: seeded random streams
+- `internal/wall`: wall-clock seam and deterministic build replacement
 - `test/`: integration and end-to-end suites
 
 ## Deliberate Placements
@@ -35,8 +49,11 @@ The accepted architecture is summarized in [`documentation/architecture/`](../..
 ## Dependency Direction
 
 - `cmd` -> `cli` -> `mcp`/`run`/`suite`/`score`/`refconsumer`
-- `run` -> `world`/`perturb`/`adapter`/`sink`/`truth`
+- `run` -> `world`/`perturb`/`adapter`/`sink`/`domain`/`model`/`canonical`
+- `truth` -> `world`/`domain`/`model`; `score` -> `run`/`world`/`model`
+- `deviceworld` -> `device`/`world`/`model`; neither core imports the bridge
 - Dependencies flow downward only.
+- `test/architecture/dependencies_test.go` is the complete direct-import allowlist; this list is an ownership summary.
 - Domain specs, adapters, and effectors are data (JSON), never code.
 - The binary contains no consumer knowledge and no effector names.
 
@@ -45,5 +62,5 @@ Avoid:
 - circular imports
 - business logic in MCP handlers
 - persistence concerns leaking into `world`
-- transport concerns leaking into `models`
+- transport concerns leaking into `model`
 - per-domain code branches

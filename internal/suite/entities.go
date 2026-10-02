@@ -2,9 +2,10 @@ package suite
 
 import (
 	"fmt"
+	"strconv"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
-	"strconv"
 )
 
 func defaultEntities(spec *domain.Compiled, prof *model.Profile) []string {

@@ -2,8 +2,9 @@ package run
 
 import (
 	"encoding/json"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"maps"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
 // History returns the world-state history (director-only).

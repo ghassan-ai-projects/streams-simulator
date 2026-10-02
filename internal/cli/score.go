@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/score"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 	"io"
 	"os"
 	"path/filepath"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/score"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
 func cmdScore(args []string) error {

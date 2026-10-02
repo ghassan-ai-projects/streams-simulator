@@ -9,9 +9,10 @@ package world
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"math"
 	"strconv"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
 // FaultInfo describes one active fault (director role only).

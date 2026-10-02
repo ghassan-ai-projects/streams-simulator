@@ -9,10 +9,11 @@ package perturb
 
 import (
 	"fmt"
+	"strconv"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/randutil"
-	"strconv"
 )
 
 // Perturbation names (the catalog in TECHNICAL_DESIGN §5.2).

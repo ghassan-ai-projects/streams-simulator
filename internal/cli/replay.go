@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
 )
 

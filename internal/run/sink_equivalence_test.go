@@ -3,12 +3,13 @@ package run
 import (
 	"context"
 	"encoding/json"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
 // buildArtifact runs the config and returns its artifact.

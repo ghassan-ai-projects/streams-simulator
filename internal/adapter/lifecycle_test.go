@@ -2,9 +2,10 @@ package adapter
 
 import (
 	"encoding/json"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"strings"
 	"testing"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
 func TestStreamingLifecycleMatchesBatchForJSONL(t *testing.T) {

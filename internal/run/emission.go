@@ -2,9 +2,10 @@ package run
 
 import (
 	"fmt"
+	"strconv"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/perturb"
-	"strconv"
 )
 
 // onEmit is the world's emitter: perturb -> adapter -> sink -> ledger.

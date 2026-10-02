@@ -2,9 +2,10 @@ package refconsumer
 
 import (
 	"fmt"
+	"math"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/canonical"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
-	"math"
 )
 
 func (r *Runner) suspicious(s *series, v float64) bool {

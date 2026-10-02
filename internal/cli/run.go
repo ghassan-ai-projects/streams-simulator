@@ -3,6 +3,7 @@ package cli
 import (
 	"context"
 	"fmt"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
 )
 

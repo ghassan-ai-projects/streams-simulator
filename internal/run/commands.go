@@ -2,9 +2,10 @@ package run
 
 import (
 	"fmt"
+	"strconv"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
-	"strconv"
 )
 
 // InjectFault records and applies a world fault.

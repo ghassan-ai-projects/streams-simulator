@@ -156,3 +156,26 @@ are unchanged. Focused race checks pass; reference-consumer coverage is 66.8% an
 audit coverage 92.9%. The suite snapshot also passes under race detection; full
 suite coverage is part of final validation. Architecture checks, zero-issue lint
 and whitespace review pass. No intended behavior changes.
+
+## Round 10 — Final architecture review and enforcement
+
+Added a function-review guard covering production declarations and anonymous
+functions. Three cohesive encoding/schema/numerical operations retain documented
+bounds; new long functions or growth fail. Strengthened root/tool import checks.
+Corrected agent/public package maps and replaced unrelated server/service/store
+advice with actual simulator ownership. Published the 226-file inventory,
+review decisions, explicit behavior corrections and remaining release work.
+Grouped imports in 88 changed files; AST printing confirms every non-import
+declaration is unchanged by that formatting pass.
+
+Final validation: `make ci-check` passes, including full simdet tests, bounded
+fuzzing and vulnerability scan. Full shuffled race tests with coverage pass;
+suite generation takes 475.9 s and total coverage is 69.4%. Every modified runtime
+package has nonzero coverage. Final architecture additions pass race/simdet checks;
+baseline-wide lint reports zero issues. Documentation links, docs smoke and
+whitespace checks pass. Optional pre-commit is absent. Four baseline deadcode
+findings remain reported by the successful tool invocation and are disclosed in
+REVIEW.md. No remote release, manifest or physical-HIL evidence is claimed.
+
+The refactoring bar is met. Existing advisory review files and the initial
+README edit remain untouched and excluded from these round commits.

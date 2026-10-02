@@ -3,12 +3,13 @@ package deviceworld
 import (
 	"errors"
 	"fmt"
+	"os"
+	"testing"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/device"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
-	"os"
-	"testing"
 )
 
 // coldChainWorld builds a world from the shipped cold-chain domain, whose

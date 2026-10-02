@@ -3,14 +3,16 @@ package mcp
 import (
 	"context"
 	"encoding/json"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/refconsumer"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/score"
-	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
 	"net"
 	"net/http"
 	"testing"
 	"time"
+
+	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/refconsumer"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/score"
 )
 
 // startOperatorEndpoint binds the operator role over streamable HTTP, the

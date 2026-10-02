@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/canonical"
 	"io"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/canonical"
 )
 
 // LoadCapabilities parses and validates a device capability catalog from

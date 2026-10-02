@@ -3,10 +3,11 @@ package run
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"os"
 	"sort"
 	"time"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
 // artifact assembles the run artifact from the run state.

@@ -4,11 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"testing"
+
+	"github.com/modelcontextprotocol/go-sdk/mcp"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
-	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"testing"
 )
 
 const (

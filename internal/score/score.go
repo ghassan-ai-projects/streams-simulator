@@ -6,6 +6,7 @@ package score
 
 import (
 	"fmt"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
 )

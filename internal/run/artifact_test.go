@@ -3,11 +3,12 @@ package run
 import (
 	"context"
 	"encoding/json"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
 // TestReplayDetectsTampering: a corrupted expected digest must fail verify.

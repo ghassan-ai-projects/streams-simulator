@@ -2,12 +2,13 @@ package score
 
 import (
 	"context"
+	"testing"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/truth"
-	"testing"
 )
 
 const (

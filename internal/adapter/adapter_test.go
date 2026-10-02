@@ -2,11 +2,12 @@ package adapter
 
 import (
 	"encoding/json"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
 // miniAdapter builds a jsonl adapter exercising every transform op.

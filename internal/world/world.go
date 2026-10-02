@@ -12,11 +12,12 @@ package world
 import (
 	"container/heap"
 	"fmt"
+	"strconv"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/jsonschema"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/randutil"
-	"strconv"
 )
 
 // Options tune world construction. Everything here is part of the

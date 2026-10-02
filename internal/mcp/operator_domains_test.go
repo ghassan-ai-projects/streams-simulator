@@ -2,12 +2,13 @@ package mcp
 
 import (
 	"context"
+	"strings"
+	"testing"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/refconsumer"
-	"strings"
-	"testing"
 )
 
 // TestOperatorEndpointPerShippedDomain: every shipped domain can be driven
