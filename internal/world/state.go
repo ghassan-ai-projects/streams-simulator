@@ -20,70 +20,25 @@ func (w *World) stateAt(entity, state string, t int64) float64 {
 	if ent == nil {
 		return 0
 	}
-	v := w.naturalValue(ent, state, t)
-	v, lastKick, anyKick := w.applyStateKicks(v, entity, state, t)
-	lastFault := int64(-1)
-	anyFault := false
-	for _, f := range w.faultsByState[state] {
-		if f.entity != entity || !f.activeAt(t) {
-			continue
-		}
-		anyFault = true
-		if f.onsetNS > lastFault {
-			lastFault = f.onsetNS
-		}
-	}
+	value := w.naturalValue(ent, state, t)
+	value, lastKick, anyKick := w.applyStateKicks(value, entity, state, t)
+	lastFault, anyFault := w.latestStateFault(entity, state, t)
 	if anyFault && (!anyKick || lastFault > lastKick) {
-		// The fault is the most recent driver: it rules the state.
-		v = w.naturalValue(ent, state, t)
-		for _, f := range w.faultsByState[state] {
-			if f.entity != entity || !f.activeAt(t) {
-				continue
-			}
-			add, mult := f.contributionAt(state, t, w.substream(faultSubstream(f, state)), w.dtFor(state))
-			if mult != 0 {
-				v = v*(1+mult) + add
-			} else {
-				v += add
-			}
-		}
+		// The newer fault rules; discard contributions from older kicks.
+		value = w.applyStateFaults(w.naturalValue(ent, state, t), entity, state, t)
 	}
-	v = w.clampState(ent, state, v)
-	return v
+	return w.clampState(ent, state, value)
 }
 
 func (w *World) applyStateKicks(v float64, entity, state string, t int64) (float64, int64, bool) {
-	lastKick := int64(-1)
-	anyKick := false
-	lastAssignment := (*kick)(nil)
-	for _, k := range w.kicks[driverKey{entity: entity, state: state}] {
-		if t <= k.startNS {
-			continue
-		}
-		anyKick = true
-		if k.startNS > lastKick {
-			lastKick = k.startNS
-		}
-		if k.assign && (lastAssignment == nil || k.startNS > lastAssignment.startNS) {
-			lastAssignment = k
-		}
-	}
-	if lastAssignment != nil {
-		v = lastAssignment.valueAt(t)
-		for _, k := range w.kicks[driverKey{entity: entity, state: state}] {
-			if k.assign || k.startNS <= lastAssignment.startNS || t <= k.startNS {
-				continue
-			}
-			v += k.valueAt(t)
-		}
+	kicks := w.kicks[driverKey{entity: entity, state: state}]
+	drivers := latestKickDrivers(kicks, t)
+	if drivers.assignment != nil {
+		v = applyAssignedKicks(kicks, drivers.assignment, t)
 	} else {
-		for _, k := range w.kicks[driverKey{entity: entity, state: state}] {
-			if t > k.startNS {
-				v += k.valueAt(t)
-			}
-		}
+		v = applyAdditiveKicks(v, kicks, t)
 	}
-	return v, lastKick, anyKick
+	return v, drivers.last, drivers.any
 }
 
 // activeAt reports whether the fault's contribution is in force at t.
@@ -138,18 +93,12 @@ func clamp(v float64, c *model.Clamp) float64 {
 
 // recordDelay pushes u into the dead-time ring buffer.
 func (s *stateValue) recordDelay(u float64, f1 *model.F1Dyn, dt int64) {
-	cap := 1
-	if f1.DeadTimeS > 0 && dt > 0 {
-		cap = int(math.Ceil(f1.DeadTimeS / (float64(dt) / secondsPerNS)))
-	}
-	if cap < 1 {
-		cap = 1
-	}
-	if len(s.delayed) < cap {
-		s.delayed = make([]float64, cap)
+	capacity := delayCapacity(f1, dt)
+	if len(s.delayed) < capacity {
+		s.delayed = make([]float64, capacity)
 	}
 	s.delayed[s.delayHead] = u
-	s.delayHead = (s.delayHead + 1) % cap
+	s.delayHead = (s.delayHead + 1) % capacity
 	if s.delayHead == 0 {
 		s.delayFull = true
 	}
@@ -177,4 +126,15 @@ func (w *World) dtFor(state string) int64 {
 
 func faultSubstream(f *activeFault, state string) string {
 	return "fault/" + f.fault.ID + "/" + state
+}
+
+func delayCapacity(f1 *model.F1Dyn, dt int64) int {
+	capacity := 1
+	if f1.DeadTimeS > 0 && dt > 0 {
+		capacity = int(math.Ceil(f1.DeadTimeS / (float64(dt) / secondsPerNS)))
+	}
+	if capacity < 1 {
+		capacity = 1
+	}
+	return capacity
 }

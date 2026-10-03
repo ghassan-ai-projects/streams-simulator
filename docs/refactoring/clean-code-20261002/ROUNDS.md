@@ -506,3 +506,16 @@ are unchanged. No operator truth/state surface is introduced.
 Existing shuffled MCP, reference-consumer and architecture race tests pass;
 package lint/vet and whitespace checks pass. Tests are unchanged. Enola is clean
 and comparable with no added findings. The strict audit has 65 bodies left.
+
+## Round 34 — World integration and state drivers
+
+Complete dynamics integration, state-driver selection and fault-envelope functions
+to 15 lines. RK4 separates bounded, dead-time, cascaded RC and first-order forms
+without changing arithmetic order. State evaluation preserves recency, assignment,
+additive kicks and fault contributions. Enola impact review identifies truth, run
+and deviceworld callers; its retained extractor remains unchanged.
+
+Existing shuffled world, truth, scoring and architecture race tests pass, including
+independent analytic cross-checks. Lint/vet and whitespace checks pass; tests are
+unchanged. Enola is clean and comparable with no added findings. The strict audit
+has 57 production bodies left.

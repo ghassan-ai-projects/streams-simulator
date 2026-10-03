@@ -64,47 +64,7 @@ func (f *activeFault) envelopeAt(t int64, rng *randutil.SplitMix64, dtNS int64) 
 	if f.clearedNS > 0 && t >= f.clearedNS {
 		return 0
 	}
-	shape := f.fault.Onset.Shape
-	rate := f.fault.Onset.RatePerHour
-	switch shape {
-	case "step":
-		return 1
-	case "ramp":
-		e := rate * (float64(elapsed) / secondsPerNS / 3600)
-		return math.Min(e, 1)
-	case "exponential":
-		return 1 - math.Exp(-rate*float64(elapsed)/secondsPerNS/3600)
-	case "intermittent":
-		period := 3600.0
-		if rate > 0 {
-			period = 3600 / rate
-		}
-		periodNS := int64(period * secondsPerNS)
-		cycle := elapsed % periodNS
-		duty := f.fault.Onset.DutyCycle
-		if duty <= 0 {
-			duty = 0.5
-		}
-		if float64(cycle) < duty*float64(periodNS) {
-			return 1
-		}
-		return 0
-	case "stochastic":
-		if dtNS <= 0 {
-			dtNS = 60 * secondsPerNS
-		}
-		for f.walkStep < t {
-			next := f.walkStep + dtNS
-			if next > t {
-				next = t
-			}
-			dh := float64(next-f.walkStep) / secondsPerNS / 3600
-			f.walk += rate*dh + 0.5*math.Sqrt(rate*dh+1e-12)*math.Abs(rng.Norm())
-			f.walkStep = next
-		}
-		return math.Min(math.Max(f.walk, 0), 1)
-	}
-	return 0
+	return f.onsetEnvelope(elapsed, t, rng, dtNS)
 }
 
 // contributionAt is this fault's additive or multiplicative contribution to
@@ -122,4 +82,55 @@ func (f *activeFault) contributionAt(state string, t int64, rng *randutil.SplitM
 		}
 	}
 	return add, mult
+}
+
+func (f *activeFault) onsetEnvelope(elapsed, at int64, rng *randutil.SplitMix64, dt int64) float64 {
+	rate := f.fault.Onset.RatePerHour
+	switch f.fault.Onset.Shape {
+	case "step":
+		return 1
+	case "ramp":
+		return math.Min(rate*(float64(elapsed)/secondsPerNS/3600), 1)
+	case "exponential":
+		return 1 - math.Exp(-rate*float64(elapsed)/secondsPerNS/3600)
+	case "intermittent":
+		return f.intermittentEnvelope(elapsed, rate)
+	case "stochastic":
+		return f.stochasticEnvelope(at, rng, dt, rate)
+	}
+	return 0
+}
+
+func (f *activeFault) intermittentEnvelope(elapsed int64, rate float64) float64 {
+	periodNS := intermittentPeriod(rate)
+	cycle := elapsed % periodNS
+	duty := f.fault.Onset.DutyCycle
+	if duty <= 0 {
+		duty = 0.5
+	}
+	if float64(cycle) < duty*float64(periodNS) {
+		return 1
+	}
+	return 0
+}
+
+func (f *activeFault) stochasticEnvelope(at int64, rng *randutil.SplitMix64, dt int64, rate float64) float64 {
+	if dt <= 0 {
+		dt = 60 * secondsPerNS
+	}
+	for f.walkStep < at {
+		next := min(f.walkStep+dt, at)
+		hours := float64(next-f.walkStep) / secondsPerNS / 3600
+		f.walk += rate*hours + 0.5*math.Sqrt(rate*hours+1e-12)*math.Abs(rng.Norm())
+		f.walkStep = next
+	}
+	return math.Min(math.Max(f.walk, 0), 1)
+}
+
+func intermittentPeriod(rate float64) int64 {
+	period := 3600.0
+	if rate > 0 {
+		period = 3600 / rate
+	}
+	return int64(period * secondsPerNS)
 }
