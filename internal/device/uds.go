@@ -34,27 +34,13 @@ func ServeConn(conn io.ReadWriter, d *Device) error {
 // order across the connection. See WireFaults.
 func ServeConnWithFaults(conn io.ReadWriter, d *Device, faults WireFaults) error {
 	gate := newWireGate(conn, faults)
-	stateFrame, err := EncodeRecord(d.State())
-	if err != nil {
-		return fmt.Errorf("device: encode initial state: %w", err)
+	if err := sendInitialState(d, gate); err != nil {
+		return err
 	}
-	if err := gate.send(stateFrame); err != nil {
-		return fmt.Errorf("device: write initial state: %w", err)
-	}
-
 	scanner := bufio.NewScanner(conn)
 	scanner.Buffer(make([]byte, 0, 4096), maxFrameBytes)
-	for scanner.Scan() {
-		line := scanner.Bytes()
-		if len(line) == 0 {
-			continue
-		}
-		frame := append(append([]byte{}, line...), '\n')
-
-		if err := serveDeviceFrame(d, gate, frame); err != nil {
-			return err
-		}
-
+	if err := scanDeviceFrames(scanner, d, gate); err != nil {
+		return err
 	}
 	if err := scanner.Err(); err != nil && !errors.Is(err, io.EOF) {
 		return fmt.Errorf("device: read connection: %w", err)
@@ -115,20 +101,7 @@ func Listen(path string, d *Device) (*net.UnixListener, error) {
 	if err != nil {
 		return nil, fmt.Errorf("device: listen on %s: %w", path, err)
 	}
-	go func() {
-		for {
-			conn, err := listener.AcceptUnix()
-			if err != nil {
-				return // listener closed
-			}
-			if err := ServeConn(conn, d); err != nil && !errors.Is(err, ErrInjectedDisconnect) {
-				slog.Error("device connection failed", "error", err)
-			}
-			if err := conn.Close(); err != nil {
-				slog.Error("device connection close failed", "error", err)
-			}
-		}
-	}()
+	go acceptDeviceConnections(listener, d)
 	return listener, nil
 }
 
@@ -143,6 +116,54 @@ func removeStaleSocket(path string) error {
 	if info.Mode()&os.ModeSocket == 0 {
 		return fmt.Errorf("device: refusing to remove non-socket path %s", path)
 	}
+	return clearSocketPath(path)
+}
+
+func sendInitialState(d *Device, gate *wireGate) error {
+	frame, err := EncodeRecord(d.State())
+	if err != nil {
+		return fmt.Errorf("device: encode initial state: %w", err)
+	}
+	if err := gate.send(frame); err != nil {
+		return fmt.Errorf("device: write initial state: %w", err)
+	}
+	return nil
+}
+
+func scanDeviceFrames(scanner *bufio.Scanner, d *Device, gate *wireGate) error {
+	for scanner.Scan() {
+		line := scanner.Bytes()
+		if len(line) == 0 {
+			continue
+		}
+		frame := append(append([]byte{}, line...), '\n')
+		if err := serveDeviceFrame(d, gate, frame); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func acceptDeviceConnections(listener *net.UnixListener, d *Device) {
+	for {
+		conn, err := listener.AcceptUnix()
+		if err != nil {
+			return
+		}
+		serveAcceptedConnection(conn, d)
+	}
+}
+
+func serveAcceptedConnection(conn *net.UnixConn, d *Device) {
+	if err := ServeConn(conn, d); err != nil && !errors.Is(err, ErrInjectedDisconnect) {
+		slog.Error("device connection failed", "error", err)
+	}
+	if err := conn.Close(); err != nil {
+		slog.Error("device connection close failed", "error", err)
+	}
+}
+
+func clearSocketPath(path string) error {
 	if err := os.Remove(path); err != nil {
 		return fmt.Errorf("device: clear stale socket %s: %w", path, err)
 	}

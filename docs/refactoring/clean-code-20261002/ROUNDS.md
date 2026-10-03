@@ -567,3 +567,16 @@ Shared receipt/result constructors preserve wire shapes, including omitted field
 Existing shuffled device, deviceworld and architecture race tests pass; lint/vet
 and whitespace checks pass. Tests remain unchanged. Enola is clean and comparable
 with no added findings. Exactly 10 production bodies remain in device transport.
+
+## Round 39 — Device frame admission and ordered transport
+
+Complete every production function and callback to 15 lines. Device transport
+names frame/object/trailing-data admission, canonical encoding, ordered malformed
+rejections, outcome encoding, duplicate replay and delivery faults. Socket setup
+and sequential connection handling retain close/error behavior and stale-path
+protection. Pending swap frames retain drop/write/flush ordering.
+
+The strict AST audit passes with zero violations and no exemptions. Existing
+shuffled device, deviceworld and architecture race tests pass; lint/vet and
+whitespace checks pass. Tests remain unchanged. Enola is clean and comparable
+with no added findings. The final repository gate and CI wiring follow.

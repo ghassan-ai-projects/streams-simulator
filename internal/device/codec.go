@@ -21,42 +21,22 @@ func EncodeRecord(document map[string]any) ([]byte, error) {
 	if err := validateRecord(document); err != nil {
 		return nil, err
 	}
-	encoded, err := canonical.Marshal(document)
-	if err != nil {
-		return nil, fmt.Errorf("device: encode record: %w", err)
-	}
-	encoded = append(encoded, '\n')
-	if len(encoded) > maxFrameBytes {
-		return nil, fmt.Errorf("device: record exceeds %d bytes", maxFrameBytes)
-	}
-	return encoded, nil
+	return encodeRecordLine(document)
 }
 
 // DecodeRecord decodes and validates exactly one device record from a frame. It
 // fails closed on empty, oversized, non-object, trailing-content, unknown-type,
 // and schema-invalid input — an invalid frame must never yield a usable record.
 func DecodeRecord(frame []byte) (map[string]any, error) {
-	if len(frame) == 0 {
-		return nil, fmt.Errorf("device: frame is empty")
-	}
-	if len(frame) > maxFrameBytes {
-		return nil, fmt.Errorf("device: frame exceeds %d bytes", maxFrameBytes)
+	if err := admitFrameSize(frame); err != nil {
+		return nil, err
 	}
 	decoder := json.NewDecoder(bytes.NewReader(frame))
-	var document map[string]any
-	if err := decoder.Decode(&document); err != nil {
-		return nil, fmt.Errorf("device: decode frame: %w", err)
+	document, err := decodeCompleteFrame(decoder)
+	if err != nil {
+		return nil, err
 	}
-	if document == nil {
-		return nil, fmt.Errorf("device: frame must be a JSON object")
-	}
-	var trailing any
-	if err := decoder.Decode(&trailing); err != io.EOF {
-		if err == nil {
-			return nil, fmt.Errorf("device: frame contains trailing JSON")
-		}
-		return nil, fmt.Errorf("device: decode trailing frame data: %w", err)
-	}
+
 	if err := validateRecord(document); err != nil {
 		return nil, err
 	}
@@ -76,4 +56,59 @@ func validateRecord(document map[string]any) error {
 		return fmt.Errorf("device: validate %s record: %w", messageType, jsonschema.Error(errs[0]))
 	}
 	return nil
+}
+
+func encodeRecordLine(document map[string]any) ([]byte, error) {
+	encoded, err := canonical.Marshal(document)
+	if err != nil {
+		return nil, fmt.Errorf("device: encode record: %w", err)
+	}
+	encoded = append(encoded, '\n')
+	if len(encoded) > maxFrameBytes {
+		return nil, fmt.Errorf("device: record exceeds %d bytes", maxFrameBytes)
+	}
+	return encoded, nil
+}
+
+func admitFrameSize(frame []byte) error {
+	if len(frame) == 0 {
+		return fmt.Errorf("device: frame is empty")
+	}
+	if len(frame) > maxFrameBytes {
+		return fmt.Errorf("device: frame exceeds %d bytes", maxFrameBytes)
+	}
+	return nil
+}
+
+func decodeFrameObject(decoder *json.Decoder) (map[string]any, error) {
+	var document map[string]any
+	if err := decoder.Decode(&document); err != nil {
+		return nil, fmt.Errorf("device: decode frame: %w", err)
+	}
+	if document == nil {
+		return nil, fmt.Errorf("device: frame must be a JSON object")
+	}
+	return document, nil
+}
+
+func rejectTrailingFrame(decoder *json.Decoder) error {
+	var trailing any
+	if err := decoder.Decode(&trailing); err != io.EOF {
+		if err == nil {
+			return fmt.Errorf("device: frame contains trailing JSON")
+		}
+		return fmt.Errorf("device: decode trailing frame data: %w", err)
+	}
+	return nil
+}
+
+func decodeCompleteFrame(decoder *json.Decoder) (map[string]any, error) {
+	document, err := decodeFrameObject(decoder)
+	if err != nil {
+		return nil, err
+	}
+	if err := rejectTrailingFrame(decoder); err != nil {
+		return nil, err
+	}
+	return document, nil
 }

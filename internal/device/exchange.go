@@ -6,51 +6,47 @@ import (
 )
 
 func serveDeviceFrame(d *Device, gate *wireGate, frame []byte) error {
-	// query_state is a host→device gateway-link control (NOT one of the four
-	// device wire records): the upstream QueryState asks for a fresh state.
+	// query_state is gateway-link control, separate from device wire records.
 	if isQueryState(frame) {
-		stateFrame, encErr := EncodeRecord(d.State())
-		if encErr != nil {
-			return fmt.Errorf("device: encode state: %w", encErr)
-		}
-		if err := gate.send(stateFrame); err != nil {
-			return err
-		}
-		return nil
+		return sendEncodedRecord(gate, d.State(), "state")
 	}
-
-	// The command stream mirrors the effector's Exchange: one command yields
-	// exactly one ordered receipt/result pair. Execution truth (current_output)
-	// is still read back via query_state; the result is device-reported
-	// terminal status, not independent physical confirmation.
-	outcome, handleErr := d.handleCommand(frame)
-	if handleErr != nil {
+	// Execution truth is read via state; results report terminal status only.
+	outcome, err := d.handleCommand(frame)
+	if err != nil {
 		return sendMalformedExchange(gate)
 	}
 	return sendCommandOutcome(d, gate, frame, outcome)
 }
 
 func sendMalformedExchange(gate *wireGate) error {
-	// A malformed command is a wire error, not a silent drop: report it
-	// as a rejected receipt/result pair the upstream can act on.
-	reject, encErr := EncodeRecord(malformedReceipt())
-	if encErr != nil {
-		return fmt.Errorf("device: encode malformed receipt: %w", encErr)
-	}
-	if err := gate.send(reject); err != nil {
+	// Malformed commands receive an ordered rejection receipt/result pair.
+	if err := sendEncodedRecord(gate, malformedReceipt(), "malformed receipt"); err != nil {
 		return err
 	}
-	malformed, encErr := EncodeRecord(malformedResult())
-	if encErr != nil {
-		return fmt.Errorf("device: encode malformed result: %w", encErr)
-	}
-	if err := gate.send(malformed); err != nil {
-		return err
-	}
-	return nil
+	return sendEncodedRecord(gate, malformedResult(), "malformed result")
 }
 
 func sendCommandOutcome(d *Device, gate *wireGate, frame []byte, outcome Outcome) error {
+	logCommandOutcome(outcome)
+	receipt, result, err := encodeCommandOutcome(outcome)
+	if err != nil {
+		return err
+	}
+	if err := replayDuplicateCommand(d, frame, outcome); err != nil {
+		return err
+	}
+	return deliverCommandOutcome(gate, receipt, result, outcome)
+}
+
+func sendEncodedRecord(gate *wireGate, record map[string]any, kind string) error {
+	frame, err := EncodeRecord(record)
+	if err != nil {
+		return fmt.Errorf("device: encode %s: %w", kind, err)
+	}
+	return gate.send(frame)
+}
+
+func logCommandOutcome(outcome Outcome) {
 	if outcome.Fault != "" {
 		slog.Info("device fault injected", "fault", outcome.Fault, "accepted_command", outcome.AcceptedCommand)
 	}
@@ -58,25 +54,33 @@ func sendCommandOutcome(d *Device, gate *wireGate, frame []byte, outcome Outcome
 	if !accepted {
 		slog.Info("device command rejected", "command_id", outcome.Receipt["command_id"], "reject_code", outcome.Receipt["reject_code"])
 	}
+}
+
+func encodeCommandOutcome(outcome Outcome) ([]byte, []byte, error) {
 	receipt, err := EncodeRecord(outcome.Receipt)
 	if err != nil {
-		return fmt.Errorf("device: encode receipt: %w", err)
+		return nil, nil, fmt.Errorf("device: encode receipt: %w", err)
 	}
 	result, err := EncodeRecord(outcome.Result)
 	if err != nil {
-		return fmt.Errorf("device: encode result: %w", err)
+		return nil, nil, fmt.Errorf("device: encode result: %w", err)
 	}
+	return receipt, result, nil
+}
+
+func replayDuplicateCommand(d *Device, frame []byte, outcome Outcome) error {
 	if outcome.Duplicate {
-		// Re-run the exact frame through admission/idempotency so the test
-		// exercises the same path as a gateway duplicate. The replay is an
-		// internal delivery, not a second protocol exchange: one inbound
-		// command line must produce at most one wire receipt.
-		if _, duplicateErr := d.handleCommand(frame); duplicateErr != nil {
-			return fmt.Errorf("device: duplicate command: %w", duplicateErr)
+		// Exercise idempotency internally; retain one protocol exchange.
+		if _, err := d.handleCommand(frame); err != nil {
+			return fmt.Errorf("device: duplicate command: %w", err)
 		}
 	}
+	return nil
+}
+
+func deliverCommandOutcome(gate *wireGate, receipt, result []byte, outcome Outcome) error {
 	if outcome.AckLost {
-		return nil // ack_lost: withhold receipt and result; effect stands, upstream reconciles via query_state
+		return nil
 	}
 	if err := gate.send(receipt); err != nil {
 		return err
