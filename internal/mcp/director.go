@@ -44,16 +44,7 @@ func NewDirector(ctx context.Context, cat *domain.Catalog, adapters map[string]*
 		byRun: map[string]string{}, byToken: map[string]*WorldRecord{},
 		Truth: truth.NewStore(), OutDir: outDir, ctx: ctx,
 	}
-	d.Truth.OpenChecker = func(runID string) bool {
-		d.mu.Lock()
-		defer d.mu.Unlock()
-		worldID, ok := d.byRun[runID]
-		if !ok {
-			return false
-		}
-		w := d.Worlds[worldID]
-		return w != nil && !w.RunEnded
-	}
+	d.Truth.OpenChecker = d.runIsOpen
 	return d
 }
 
@@ -83,4 +74,16 @@ func (d *Director) World(worldID string) *WorldRecord {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	return d.Worlds[worldID]
+}
+
+func (d *Director) runIsOpen(runID string) bool {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	worldID, ok := d.byRun[runID]
+	if !ok {
+		return false
+	}
+	w := d.Worlds[worldID]
+	return w != nil && !w.RunEnded
+
 }

@@ -30,19 +30,8 @@ func templateParam(req *mcp.ReadResourceRequest, key string) (string, error) {
 	if req.Params != nil {
 		uri = req.Params.URI
 	}
-	switch key {
-	case "id":
-		const prefix = "sim://domains/"
-		if len(uri) > len(prefix) && uri[:len(prefix)] == prefix {
-			id := uri[len(prefix):]
-			if end := indexByte(id, '/'); end >= 0 {
-				id = id[:end]
-			}
-			if id != "" {
-				return id, nil
-			}
-		}
-		return "", errTool(CodeDomainInvalid, "cannot parse domain id from %q", uri)
+	if key == "id" {
+		return domainTemplateID(uri)
 	}
 	return "", errTool(CodeDomainInvalid, "unknown template parameter %q", key)
 }
@@ -54,4 +43,18 @@ func indexByte(s string, b byte) int {
 		}
 	}
 	return -1
+}
+
+func domainTemplateID(uri string) (string, error) {
+	const prefix = "sim://domains/"
+	if len(uri) > len(prefix) && uri[:len(prefix)] == prefix {
+		id := uri[len(prefix):]
+		if end := indexByte(id, '/'); end >= 0 {
+			id = id[:end]
+		}
+		if id != "" {
+			return id, nil
+		}
+	}
+	return "", errTool(CodeDomainInvalid, "cannot parse domain id from %q", uri)
 }

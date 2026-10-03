@@ -16,36 +16,23 @@ func str(args map[string]any, key string) string {
 }
 
 func num(args map[string]any, key string, def int64) int64 {
-	if args == nil {
-		return def
-	}
-	switch v := args[key].(type) {
-	case float64:
-		return int64(v)
-	case int64:
-		return v
-	case json.Number:
-		if n, err := v.Int64(); err == nil {
-			return n
-		}
-	case string:
-		var n int64
-		if _, err := fmt.Sscanf(v, "%d", &n); err == nil {
-			return n
-		}
+	value, ok := intArg(args, key)
+	if ok {
+		return value
 	}
 	return def
 }
 
 func intArg(args map[string]any, key string) (int64, bool) {
-	if args == nil {
-		return 0, false
-	}
-	v, ok := args[key]
+	value, ok := args[key]
 	if !ok {
 		return 0, false
 	}
-	switch n := v.(type) {
+	return integerArgument(value)
+}
+
+func integerArgument(value any) (int64, bool) {
+	switch n := value.(type) {
 	case float64:
 		return int64(n), true
 	case int64:
@@ -54,10 +41,15 @@ func intArg(args map[string]any, key string) (int64, bool) {
 		value, err := n.Int64()
 		return value, err == nil
 	case string:
-		var value int64
-		if _, err := fmt.Sscanf(n, "%d", &value); err == nil {
-			return value, true
-		}
+		return parseIntegerArgument(n)
+	}
+	return 0, false
+}
+
+func parseIntegerArgument(text string) (int64, bool) {
+	var value int64
+	if _, err := fmt.Sscanf(text, "%d", &value); err == nil {
+		return value, true
 	}
 	return 0, false
 }

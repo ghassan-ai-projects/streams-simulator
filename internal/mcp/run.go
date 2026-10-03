@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/audit"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/score"
@@ -22,12 +23,8 @@ func (d *Director) BeginRun(worldID, label string) (map[string]any, error) {
 	if w.Started {
 		return nil, errTool(CodeDomainInvalid, "a run is already open for %q", worldID)
 	}
-	sealed, unblinded, err := d.Truth.SealStatus(w.Run.ID)
-	if err != nil || !sealed {
-		return nil, errTool(CodeTruthSealed, "ground truth must be sealed before run.begin")
-	}
-	if unblinded {
-		return nil, errTool(CodeRunUnblinded, "run is already stamped unblinded")
+	if err := d.requireSealedRun(w.Run.ID); err != nil {
+		return nil, err
 	}
 	w.Started = true
 	return map[string]any{"run_id": w.Run.ID, "truth_sealed": true}, nil
@@ -55,17 +52,7 @@ func (d *Director) EndRun(worldID string) (map[string]any, error) {
 	if w == nil {
 		return nil, errTool(CodeWorldNotFound, "unknown world %q", worldID)
 	}
-	dir := filepath.Join(d.OutDir, worldID)
-	art, err := w.Run.End(dir)
-	if err != nil {
-		return nil, errTool(CodeDomainInvalid, "%v", err)
-	}
-	w.RunEnded = true
-	return map[string]any{
-		"run_artifact_path": filepath.Join(dir, "run.json"),
-		"trace_digest":      art.ExpectedTraceDigest,
-		"reproducible":      art.Reproducible,
-	}, nil
+	return d.finalizeRun(w, worldID)
 }
 
 // RevealTruth returns the sealed label; unblind permits revealing on an
@@ -101,18 +88,7 @@ func (d *Director) Score(runID string) (map[string]any, error) {
 	if w.Run.UnblindedStamp() {
 		return nil, errTool(CodeRunUnblinded, "scoring refused; the run is stamped unblinded")
 	}
-	gt, err := d.Truth.Reveal(runID, false)
-	if err != nil {
-		return nil, errTool(CodeTruthSealed, "%v", err)
-	}
-	sc, err := score.Score(w.Run, gt)
-	if err != nil {
-		return nil, errTool(CodeDomainInvalid, "%v", err)
-	}
-	if !w.Run.Reproducible() {
-		sc.Detail = "non-reproducible run (wall-clock delivery or consumer not quiesced); hash-equality metrics refused"
-	}
-	return map[string]any{"scorecard": sc}, nil
+	return d.scoreClosedRun(w, runID)
 }
 
 // VerifyRun replays a run artifact and compares digests.
@@ -129,14 +105,7 @@ func (d *Director) VerifyRun(artifactPath string) (map[string]any, error) {
 	if !ok {
 		return nil, errTool(CodeAdapterInvalid, "unknown adapter %q", art.Adapter.ID)
 	}
-	res, err := run.ReplayArtifact(d.ctx, art, spec, adap, "")
-	if err != nil {
-		return nil, errTool(CodeDomainInvalid, "%v", err)
-	}
-	return map[string]any{
-		"matches": res.Matches, "version_match": res.VersionMatch,
-		"first_divergence": res.FirstDivergence, "detail": res.Detail,
-	}, nil
+	return d.verifyArtifact(art, spec, adap)
 }
 
 // AuditScenario runs the trivial-baseline audit on one injection.
@@ -146,14 +115,7 @@ func (d *Director) AuditScenario(domainID, entityID, fault string, onsetNS, star
 		return nil, errTool(CodeDomainInvalid, "%v", err)
 	}
 	panel := audit.NewPanel(spec, 1, 60*1e9)
-	var ids []string
-	n := spec.Spec.Entities.Count.Default
-	// Entity ids come from the domain's own template — the binary contains
-	// no domain literal.
-	tmpl := spec.Spec.Entities.IDTemplate
-	for i := 1; i <= n; i++ {
-		ids = append(ids, world.RenderID(tmpl, i))
-	}
+	ids := auditEntityIDs(spec)
 	v, err := panel.Audit(entityID, fault, onsetNS, startNS, ids, durationNS, nil, nil)
 	if err != nil {
 		return nil, errTool(CodeDomainInvalid, "%v", err)
@@ -169,4 +131,67 @@ func (d *Director) worldByRun(runID string) *WorldRecord {
 		return nil
 	}
 	return d.Worlds[worldID]
+}
+
+func (d *Director) requireSealedRun(runID string) error {
+	sealed, unblinded, err := d.Truth.SealStatus(runID)
+	if err != nil || !sealed {
+		return errTool(CodeTruthSealed, "ground truth must be sealed before run.begin")
+	}
+	if unblinded {
+		return errTool(CodeRunUnblinded, "run is already stamped unblinded")
+	}
+	return nil
+}
+
+func (d *Director) finalizeRun(w *WorldRecord, worldID string) (map[string]any, error) {
+	dir := filepath.Join(d.OutDir, worldID)
+	art, err := w.Run.End(dir)
+	if err != nil {
+		return nil, errTool(CodeDomainInvalid, "%v", err)
+	}
+	w.RunEnded = true
+	return map[string]any{
+		"run_artifact_path": filepath.Join(dir, "run.json"),
+		"trace_digest":      art.ExpectedTraceDigest,
+		"reproducible":      art.Reproducible,
+	}, nil
+}
+
+func (d *Director) scoreClosedRun(w *WorldRecord, runID string) (map[string]any, error) {
+	gt, err := d.Truth.Reveal(runID, false)
+	if err != nil {
+		return nil, errTool(CodeTruthSealed, "%v", err)
+	}
+	sc, err := score.Score(w.Run, gt)
+	if err != nil {
+		return nil, errTool(CodeDomainInvalid, "%v", err)
+	}
+	if !w.Run.Reproducible() {
+		sc.Detail = "non-reproducible run (wall-clock delivery or consumer not quiesced); hash-equality metrics refused"
+	}
+	return map[string]any{"scorecard": sc}, nil
+}
+
+func (d *Director) verifyArtifact(art *model.RunArtifact, spec *domain.Compiled, adap *model.Adapter) (map[string]any, error) {
+	res, err := run.ReplayArtifact(d.ctx, art, spec, adap, "")
+	if err != nil {
+		return nil, errTool(CodeDomainInvalid, "%v", err)
+	}
+	return map[string]any{
+		"matches": res.Matches, "version_match": res.VersionMatch,
+		"first_divergence": res.FirstDivergence, "detail": res.Detail,
+	}, nil
+}
+
+func auditEntityIDs(spec *domain.Compiled) []string {
+	var ids []string
+	n := spec.Spec.Entities.Count.Default
+	// Entity ids come from the domain's own template — the binary contains
+	// no domain literal.
+	tmpl := spec.Spec.Entities.IDTemplate
+	for i := 1; i <= n; i++ {
+		ids = append(ids, world.RenderID(tmpl, i))
+	}
+	return ids
 }

@@ -28,11 +28,8 @@ func (d *Director) DestroyWorld(worldID string) (map[string]any, error) {
 	if w == nil {
 		return nil, errTool(CodeWorldNotFound, "unknown world %q", worldID)
 	}
-	if !w.RunEnded {
-		dir := filepath.Join(d.OutDir, worldID)
-		if _, err := w.Run.End(dir); err != nil {
-			return nil, errTool(CodeDomainInvalid, "%v", err)
-		}
+	if err := d.finishDestroyedWorld(w, worldID); err != nil {
+		return nil, err
 	}
 	d.mu.Lock()
 	delete(d.Worlds, worldID)
@@ -49,10 +46,7 @@ func (d *Director) Advance(ctx context.Context, worldID string, toNS int64, awai
 	}
 	emitted, err := w.Run.Advance(ctx, toNS, await)
 	if err != nil {
-		if errors.Is(err, run.ErrConsumerNotQuiesced) {
-			return nil, errTool(CodeConsumerNotQuiesced, "%v", err)
-		}
-		return nil, errTool(CodeClockBackwards, "%v", err)
+		return nil, advanceToolError(err)
 	}
 	return map[string]any{
 		"emitted": emitted, "clock": model.FormatTime(w.Run.World.Clock()),
@@ -144,4 +138,21 @@ func (d *Director) EnvInject(worldID, target, fault string, params map[string]an
 		return nil, errTool(CodeDomainInvalid, "%v", err)
 	}
 	return map[string]any{"env_id": id}, nil
+}
+
+func (d *Director) finishDestroyedWorld(w *WorldRecord, worldID string) error {
+	if !w.RunEnded {
+		dir := filepath.Join(d.OutDir, worldID)
+		if _, err := w.Run.End(dir); err != nil {
+			return errTool(CodeDomainInvalid, "%v", err)
+		}
+	}
+	return nil
+}
+
+func advanceToolError(err error) error {
+	if errors.Is(err, run.ErrConsumerNotQuiesced) {
+		return errTool(CodeConsumerNotQuiesced, "%v", err)
+	}
+	return errTool(CodeClockBackwards, "%v", err)
 }

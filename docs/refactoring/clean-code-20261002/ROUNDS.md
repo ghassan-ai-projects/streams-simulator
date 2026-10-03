@@ -481,3 +481,15 @@ retain endpoint lifecycle and close/error order. Flags and output shapes persist
 Existing shuffled CLI, deviceworld, reference-consumer and architecture race tests
 pass; lint/vet and whitespace checks pass. Tests are unchanged. Enola is clean
 and comparable with no added findings. The strict audit has 89 bodies left.
+
+## Round 32 — MCP world, run and capability operations
+
+Complete MCP application operations to 15 lines. World creation names input
+admission, registration and nameplate projection. Run operations retain sealed
+truth gates, unblinding refusal and replay error priority. Invocation admission
+retains token, command-id and declared-effector ordering. Numeric decoding and
+resource-template parsing retain their accepted representations and defaults.
+
+Existing shuffled MCP, reference-consumer and architecture race tests pass;
+package lint/vet and whitespace checks pass. Tests are unchanged. Enola is clean
+and comparable with no added findings. The strict audit has 74 bodies left.
