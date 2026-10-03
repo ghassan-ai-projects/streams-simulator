@@ -11,32 +11,10 @@ import (
 // placeholders, and the mandatory stable event identity.
 func crossCheck(a *model.Adapter, src string) error {
 	checks := adapterChecks{source: src}
-
-	for i := range a.Preamble {
-		if err := checks.checkTemplate(a.Preamble[i]); err != nil {
-			return fmt.Errorf("preamble[%d]: %w", i, err)
-		}
+	if err := checks.checkTemplates(a); err != nil {
+		return err
 	}
-	if err := checks.checkTemplate(a.Record); err != nil {
-		return fmt.Errorf("adapter: %w", err)
-	}
-	for i := range a.Postamble {
-		if err := checks.checkTemplate(a.Postamble[i]); err != nil {
-			return fmt.Errorf("postamble[%d]: %w", i, err)
-		}
-	}
-
-	identity := false
-	for _, f := range a.Record.Fields {
-		if hasIdentity(f.From) {
-			identity = true
-			break
-		}
-	}
-	if !identity {
-		return checks.bad("the record projection must carry a stable event identity derived from seq (a seq source or a counter with of=seq)")
-	}
-	return nil
+	return checks.requireIdentity(a.Record.Fields)
 }
 
 type adapterChecks struct{ source string }
@@ -49,17 +27,10 @@ func (checks adapterChecks) checkTemplate(t model.RecordTemplate) error {
 	if len(t.Fields) == 0 {
 		return checks.bad("record template requires at least one field")
 	}
-	if t.When != nil {
-		if !nativeSource(t.When.Field) {
-			return checks.bad("when guard references unknown field %q", t.When.Field)
-		}
+	if t.When != nil && !nativeSource(t.When.Field) {
+		return checks.bad("when guard references unknown field %q", t.When.Field)
 	}
-	for _, f := range t.Fields {
-		if err := checks.checkField(f); err != nil {
-			return fmt.Errorf("adapter: %w", err)
-		}
-	}
-	return nil
+	return checks.checkFields(t.Fields)
 }
 
 func (checks adapterChecks) checkField(f model.Field) error {
@@ -75,40 +46,14 @@ func (checks adapterChecks) checkField(f model.Field) error {
 func (checks adapterChecks) checkExpr(e model.ValueExpr) error {
 	switch e.Op {
 	case "source":
-		if !nativeSource(e.Source) {
-			return checks.bad("unknown source %q", e.Source)
-		}
+		return checks.checkSource(e.Source)
 	case "const":
+		return nil
 	case "object":
-		if len(e.Fields) == 0 {
-			return checks.bad("object requires fields")
-		}
-		for _, f := range e.Fields {
-			if err := checks.checkField(f); err != nil {
-				return fmt.Errorf("adapter: %w", err)
-			}
-		}
-	case "concat":
-		return checks.checkConcat(e)
-	case "template":
-		return checks.checkPlaceholders(e)
-	case "format_time":
-		return checks.checkTimeFormat(e)
-	case "counter":
-		if e.Of != nil && e.Of.Source != "seq" {
-			return checks.bad("counter of must derive from seq")
-		}
-		if e.Width < 1 || e.Width > 20 {
-			return checks.bad("counter width must be in [1,20]")
-		}
-	case "run_meta":
-		if !runMetaKey(e.Key) {
-			return checks.bad("unknown run_meta key %q", e.Key)
-		}
+		return checks.checkObjectFields(e.Fields)
 	default:
-		return checks.bad("unknown transform op %q", e.Op)
+		return checks.checkTransform(e)
 	}
-	return nil
 }
 
 func (checks adapterChecks) checkConcat(e model.ValueExpr) error {
@@ -148,18 +93,13 @@ func (checks adapterChecks) checkTimeFormat(e model.ValueExpr) error {
 }
 
 func hasIdentity(e model.ValueExpr) bool {
-	if e.Op == "source" && e.Source == "seq" {
-		return true
-	}
-	if e.Op == "counter" && e.Of != nil && e.Of.Op == "source" && e.Of.Source == "seq" {
-		return true
-	}
-	if e.Op == "object" {
-		for _, f := range e.Fields {
-			if hasIdentity(f.From) {
-				return true
-			}
-		}
+	switch e.Op {
+	case "source":
+		return e.Source == "seq"
+	case "counter":
+		return e.Of != nil && e.Of.Op == "source" && e.Of.Source == "seq"
+	case "object":
+		return fieldsCarryIdentity(e.Fields)
 	}
 	return false
 }
@@ -178,4 +118,95 @@ func runMetaKey(name string) bool {
 		return true
 	}
 	return false
+}
+
+func (checks adapterChecks) checkTemplates(a *model.Adapter) error {
+	if err := checks.checkFraming(a.Preamble, "preamble"); err != nil {
+		return err
+	}
+	if err := checks.checkTemplate(a.Record); err != nil {
+		return fmt.Errorf("adapter: %w", err)
+	}
+	return checks.checkFraming(a.Postamble, "postamble")
+}
+
+func (checks adapterChecks) checkFraming(templates []model.RecordTemplate, kind string) error {
+	for i, template := range templates {
+		if err := checks.checkTemplate(template); err != nil {
+			return fmt.Errorf("%s[%d]: %w", kind, i, err)
+		}
+	}
+	return nil
+}
+
+func (checks adapterChecks) requireIdentity(fields []model.Field) error {
+	if fieldsCarryIdentity(fields) {
+		return nil
+	}
+	return checks.bad("the record projection must carry a stable event identity derived from seq (a seq source or a counter with of=seq)")
+}
+
+func fieldsCarryIdentity(fields []model.Field) bool {
+	for _, field := range fields {
+		if hasIdentity(field.From) {
+			return true
+		}
+	}
+	return false
+}
+
+func (checks adapterChecks) checkFields(fields []model.Field) error {
+	for _, field := range fields {
+		if err := checks.checkField(field); err != nil {
+			return fmt.Errorf("adapter: %w", err)
+		}
+	}
+	return nil
+}
+
+func (checks adapterChecks) checkSource(source string) error {
+	if !nativeSource(source) {
+		return checks.bad("unknown source %q", source)
+	}
+	return nil
+}
+
+func (checks adapterChecks) checkObjectFields(fields []model.Field) error {
+	if len(fields) == 0 {
+		return checks.bad("object requires fields")
+	}
+	return checks.checkFields(fields)
+}
+
+func (checks adapterChecks) checkTransform(e model.ValueExpr) error {
+	switch e.Op {
+	case "concat":
+		return checks.checkConcat(e)
+	case "template":
+		return checks.checkPlaceholders(e)
+	case "format_time":
+		return checks.checkTimeFormat(e)
+	case "counter":
+		return checks.checkCounter(e)
+	case "run_meta":
+		return checks.checkRunMeta(e.Key)
+	}
+	return checks.bad("unknown transform op %q", e.Op)
+}
+
+func (checks adapterChecks) checkCounter(e model.ValueExpr) error {
+	if e.Of != nil && e.Of.Source != "seq" {
+		return checks.bad("counter of must derive from seq")
+	}
+	if e.Width < 1 || e.Width > 20 {
+		return checks.bad("counter width must be in [1,20]")
+	}
+	return nil
+}
+
+func (checks adapterChecks) checkRunMeta(key string) error {
+	if !runMetaKey(key) {
+		return checks.bad("unknown run_meta key %q", key)
+	}
+	return nil
 }

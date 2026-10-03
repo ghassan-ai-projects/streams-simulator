@@ -18,24 +18,7 @@ func newContext(ev *model.SimEvent, meta map[string]any) *recordContext {
 		ctx[k] = v
 	}
 	if ev != nil {
-		ctx["seq"] = float64(ev.Seq)
-		ctx["world_id"] = ev.WorldID
-		ctx["entity_type"] = ev.EntityType
-		ctx["entity_id"] = ev.EntityID
-		ctx["channel"] = ev.Channel
-		ctx["event_time"] = ev.EventTime
-		ctx["observed_time"] = ev.ObservedTime
-		ctx["value"] = ev.Value
-		if ev.Unit != "" {
-			ctx["unit"] = ev.Unit
-		} else {
-			ctx["unit"] = nil
-		}
-		if ev.Birth {
-			ctx["birth"] = true
-		} else {
-			ctx["birth"] = nil
-		}
+		ctx.addEvent(ev)
 	}
 	return &ctx
 }
@@ -54,36 +37,30 @@ func evalExpr(e *model.ValueExpr, ctx *recordContext) (any, error) {
 		return ctx.value(e.Source), nil
 	case "const":
 		return e.Value, nil
-	case "object":
-		return evalObject(e, ctx)
-	case "concat":
-		return evalConcat(e, ctx)
-	case "template":
-		return evalTemplate(e, ctx)
-	case "format_time":
-		return evalTimeFormat(e, ctx)
-	case "counter":
-		return evalCounter(e, ctx)
 	case "run_meta":
 		return ctx.value(e.Key), nil
+	default:
+		return evalTransform(e, ctx)
 	}
-	return nil, fmt.Errorf("adapter: unknown op %q", e.Op)
 }
 
 func evalObject(e *model.ValueExpr, ctx *recordContext) (any, error) {
 	if len(e.Fields) == 0 {
 		return nil, fmt.Errorf("adapter: object requires fields")
 	}
+	return evalObjectFields(e.Fields, ctx)
+}
+
+func evalObjectFields(fields []model.Field, ctx *recordContext) (orderedObject, error) {
 	out := orderedObject{}
-	for _, f := range e.Fields {
-		v, err := evalExpr(&f.From, ctx)
+	for _, field := range fields {
+		value, err := evalObjectField(field, ctx)
 		if err != nil {
-			return nil, fmt.Errorf("adapter: object field %q: %w", f.Name, err)
+			return nil, err
 		}
-		if v == nil && f.OmitWhenNull {
-			continue
+		if value != nil || !field.OmitWhenNull {
+			out = append(out, orderedField{name: field.Name, value: value})
 		}
-		out = append(out, orderedField{name: f.Name, value: v})
 	}
 	return out, nil
 }
@@ -110,19 +87,81 @@ func evalTemplate(e *model.ValueExpr, ctx *recordContext) (any, error) {
 }
 
 func evalTimeFormat(e *model.ValueExpr, ctx *recordContext) (any, error) {
-	v, err := evalExpr(e.Of, ctx)
+	value, err := evalExpr(e.Of, ctx)
 	if err != nil {
 		return nil, fmt.Errorf("adapter: %w", err)
 	}
-	s, ok := v.(string)
-	if !ok || s == "" {
+	text, ok := value.(string)
+	if !ok || text == "" {
 		return nil, nil
 	}
-	t, err := time.Parse(time.RFC3339Nano, s)
+	parsed, err := time.Parse(time.RFC3339Nano, text)
 	if err != nil {
 		return nil, fmt.Errorf("adapter: format_time: %w", err)
 	}
-	switch e.Layout {
+	return formatTimeLayout(parsed, e.Layout)
+}
+
+func evalCounter(e *model.ValueExpr, ctx *recordContext) (any, error) {
+	n, err := counterValue(e.Of, ctx)
+	if err != nil {
+		return nil, err
+	}
+	width := e.Width
+	if width <= 0 {
+		width = 6
+	}
+	return e.Prefix + fmt.Sprintf("%0*d", width, n), nil
+}
+
+func (ctx recordContext) addEvent(ev *model.SimEvent) {
+	ctx["seq"] = float64(ev.Seq)
+	ctx["world_id"] = ev.WorldID
+	ctx["entity_type"] = ev.EntityType
+	ctx["entity_id"] = ev.EntityID
+	ctx["channel"] = ev.Channel
+	ctx["event_time"] = ev.EventTime
+	ctx["observed_time"] = ev.ObservedTime
+	ctx["value"] = ev.Value
+	ctx.addOptionalEventFields(ev)
+}
+
+func (ctx recordContext) addOptionalEventFields(ev *model.SimEvent) {
+	ctx["unit"], ctx["birth"] = nil, nil
+	if ev.Unit != "" {
+		ctx["unit"] = ev.Unit
+	}
+	if ev.Birth {
+		ctx["birth"] = true
+	}
+}
+
+func evalTransform(e *model.ValueExpr, ctx *recordContext) (any, error) {
+	switch e.Op {
+	case "object":
+		return evalObject(e, ctx)
+	case "concat":
+		return evalConcat(e, ctx)
+	case "template":
+		return evalTemplate(e, ctx)
+	case "format_time":
+		return evalTimeFormat(e, ctx)
+	case "counter":
+		return evalCounter(e, ctx)
+	}
+	return nil, fmt.Errorf("adapter: unknown op %q", e.Op)
+}
+
+func evalObjectField(field model.Field, ctx *recordContext) (any, error) {
+	value, err := evalExpr(&field.From, ctx)
+	if err != nil {
+		return nil, fmt.Errorf("adapter: object field %q: %w", field.Name, err)
+	}
+	return value, nil
+}
+
+func formatTimeLayout(t time.Time, layout string) (any, error) {
+	switch layout {
 	case "rfc3339_nano":
 		return t.UTC().Format(time.RFC3339Nano), nil
 	case "rfc3339":
@@ -134,32 +173,32 @@ func evalTimeFormat(e *model.ValueExpr, ctx *recordContext) (any, error) {
 	case "unix_seconds":
 		return t.Unix(), nil
 	}
-	return nil, fmt.Errorf("adapter: unknown layout %q", e.Layout)
+	return nil, fmt.Errorf("adapter: unknown layout %q", layout)
 }
 
-func evalCounter(e *model.ValueExpr, ctx *recordContext) (any, error) {
-	n := int64(0)
-	if e.Of != nil {
-		v, err := evalExpr(e.Of, ctx)
+func counterValue(operand *model.ValueExpr, ctx *recordContext) (int64, error) {
+	if operand == nil {
+		return 0, nil
+	}
+	value, err := evalExpr(operand, ctx)
+	if err != nil {
+		return 0, fmt.Errorf("adapter: %w", err)
+	}
+	return counterInteger(value)
+}
+
+func counterInteger(value any) (int64, error) {
+	switch x := value.(type) {
+	case float64:
+		return int64(x), nil
+	case int64:
+		return x, nil
+	case json.Number:
+		n, err := x.Int64()
 		if err != nil {
-			return nil, fmt.Errorf("adapter: %w", err)
+			return 0, fmt.Errorf("adapter: %w", err)
 		}
-		switch x := v.(type) {
-		case float64:
-			n = int64(x)
-		case int64:
-			n = x
-		case json.Number:
-			f, err := x.Int64()
-			if err != nil {
-				return nil, fmt.Errorf("adapter: %w", err)
-			}
-			n = f
-		}
+		return n, nil
 	}
-	width := e.Width
-	if width <= 0 {
-		width = 6
-	}
-	return e.Prefix + fmt.Sprintf("%0*d", width, n), nil
+	return 0, nil
 }

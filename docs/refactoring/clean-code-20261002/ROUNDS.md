@@ -356,3 +356,16 @@ labeled source-confirmed risks. No production or test source changes in this
 round; whitespace checks suffice for the evidence update. Preserve the concurrent
 publication commit and its included architecture-review documents. Publish the
 report through the existing PR rather than creating a duplicate.
+
+## Round 22 — Adapter projection and conformance
+
+Complete the adapter package's 15-line migration. Rendering names context,
+guards, encoding and individual fields; transform evaluation separates concrete
+operations. Validation and conformance name templates, identity, schemas,
+fixtures and golden comparison. Ordered JSON output, null handling, expression
+errors and byte-divergence positions retain their semantics. All adapter
+production functions meet 15 lines; test files remain unchanged.
+
+Existing adapter and run replay/conformance race tests, architecture guards,
+adapter lint/vet and whitespace checks pass. One retained-baseline Enola check
+precedes the commit. The strict audit remains open at 193 production bodies.
