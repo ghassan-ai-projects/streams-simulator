@@ -67,14 +67,7 @@ type Perturbation struct {
 // stream — world, perturbation layer and adapter projection — in monotonic
 // order, never random access on a mutable world.
 func (p *Panel) Audit(entityID, faultID string, onsetNS, startNS int64, entityIDs []string, durationNS int64, setup []truth.SetupCall, perturbations []Perturbation) (*Verdict, error) {
-	controlFault := ""
-	for i := range p.spec.Spec.Faults {
-		if p.spec.Spec.Faults[i].IsNegativeClass {
-			controlFault = p.spec.Spec.Faults[i].ID
-			break
-		}
-	}
-	clean, cleanEmissions, err := p.build(entityID, startNS, entityIDs, map[string]int64{controlFault: onsetNS}, setup, perturbations, durationNS)
+	clean, cleanEmissions, err := p.build(entityID, startNS, entityIDs, map[string]int64{p.controlFault(): onsetNS}, setup, perturbations, durationNS)
 	if err != nil {
 		return nil, fmt.Errorf("Audit: %w", err)
 	}
@@ -82,43 +75,6 @@ func (p *Panel) Audit(entityID, faultID string, onsetNS, startNS int64, entityID
 	if err != nil {
 		return nil, fmt.Errorf("Audit: %w", err)
 	}
-	end := startNS + durationNS
-	n := int((end-startNS)/p.sampleNS) + 1
-	channels := p.spec.ChannelNames()
-	labels := make([]float64, n)
-	faultSeries := make(map[string][]float64, len(channels))
-	controlSeries := make(map[string][]float64, len(channels))
-	for _, ch := range channels {
-		faultSeries[ch] = make([]float64, n)
-		controlSeries[ch] = make([]float64, n)
-	}
-	for i := 0; i < n; i++ {
-		t := startNS + int64(i)*p.sampleNS
-		labels[i] = 0
-		if t >= onsetNS {
-			labels[i] = 1
-		}
-		for _, ch := range channels {
-			faultSeries[ch][i] = gridValue(faulted[ch], i)
-			controlSeries[ch][i] = gridValue(clean[ch], i)
-		}
-	}
-	v := &Verdict{Scores: map[string]float64{}, Channels: channels, Samples: n}
-	var bestScore float64
-	for _, name := range DetectorNames {
-		var score float64
-		if name == "channel_silence" {
-			score = fitSilence(labels, channels, faultEmissions, cleanEmissions, startNS, end, p.sampleNS)
-		} else {
-			score = p.fit(name, labels, faultSeries, controlSeries)
-		}
-		v.Scores[name] = score
-		if score > bestScore {
-			bestScore = score
-			v.Best = name
-		}
-	}
-	v.BestScore = bestScore
-	v.Trivial = bestScore >= BalancedAccuracyCutoff
-	return v, nil
+	evidence := p.sampleEvidence(clean, faulted, onsetNS, startNS, durationNS)
+	return p.gradeEvidence(evidence, cleanEmissions, faultEmissions, startNS, durationNS), nil
 }

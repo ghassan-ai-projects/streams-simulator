@@ -434,3 +434,14 @@ nameplate projection preserves ordered append and nil-slice representations.
 Existing shuffled reference-consumer race and architecture tests, package lint/vet
 and whitespace checks pass. Test files are unchanged. Enola is clean and
 comparable with no added findings. The strict audit remains open at 132 bodies.
+
+## Round 28 — Trivial-baseline audit evidence and fitting
+
+Complete audit production functions to 15 lines. World preparation and delivered
+evidence capture lead into sampling and detector grading. Threshold, difference,
+z-score, median and silence detectors share balanced-accuracy pooling. Preserve
+quantile grids, numerical accumulation, strict comparisons and tie priority.
+
+Existing shuffled audit race tests and architecture guards, lint/vet and whitespace
+checks pass. Tests remain unchanged. Enola is clean and comparable with no added
+findings. The strict audit remains open at 120 production bodies.

@@ -2,12 +2,10 @@ package audit
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/perturb"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/truth"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
 // emissionLog records the delivered events of one world, keyed by channel.
@@ -26,50 +24,18 @@ func gridValue(series []float64, i int) float64 {
 // returns the per-channel series on the audit grid plus the delivered
 // emission log. The series are immutable evidence, never live world reads.
 func (p *Panel) build(entityID string, startNS int64, entityIDs []string, faults map[string]int64, setup []truth.SetupCall, perturbations []Perturbation, durationNS int64) (map[string][]float64, emissionLog, error) {
-	w, err := world.New(p.spec, p.seed, "w-audit", startNS, world.Options{
-		InitialEntities: entityIDs,
-		ForceEffectorOK: true,
-	})
+	w, layer, err := p.prepareWorld(startNS, entityIDs, setup, perturbations)
 	if err != nil {
-		return nil, nil, fmt.Errorf("build: %w", err)
-	}
-	layer := perturb.New(w.ID, p.seed, p.spec)
-	for _, pert := range perturbations {
-		if _, err := layer.Apply(pert.Name, pert.Params, pert.FromNS, pert.UntilNS); err != nil {
-			return nil, nil, fmt.Errorf("build: perturb %s: %w", pert.Name, err)
-		}
-	}
-	for _, call := range setup {
-		if _, err := w.InvokeEffector(call.Effector, call.EntityID, call.CommandID, call.Args, call.AtNS); err != nil {
-			return nil, nil, fmt.Errorf("build: %w", err)
-		}
+		return nil, nil, err
 	}
 	capture := auditCapture{entityID: entityID, log: emissionLog{}, series: map[string][]float64{}, times: map[string][]int64{}}
-	w.SetEmitter(func(ev model.SimEvent) {
-		t, _ := model.ParseTime(ev.EventTime)
-		for _, d := range layer.Process(ev, t) {
-			capture.deliver(d)
-		}
-	})
-	for fid, onset := range faults {
-		if fid == "" {
-			continue
-		}
-		if _, err := w.InjectFault(entityID, fid, onset, nil); err != nil {
-			return nil, nil, fmt.Errorf("build: %w", err)
-		}
+	capture.bindEmitter(w, layer)
+	if err := injectAuditFaults(w, entityID, faults); err != nil {
+		return nil, nil, err
 	}
-	// Emit everything up to the horizon so the log is complete. The audit
-	// only needs the scenario window, so horizon is bounded by 24h.
-	horizon := startNS + 24*3600*1e9
-	if durationNS > 0 && startNS+durationNS < horizon {
-		horizon = startNS + durationNS
-	}
-	if _, _, err := w.Advance(horizon); err != nil {
-		return nil, nil, fmt.Errorf("build: %w", err)
-	}
-	for _, d := range layer.Flush(horizon) {
-		capture.deliver(d)
+	horizon := auditHorizon(startNS, durationNS)
+	if err := capture.finishWorld(w, layer, horizon); err != nil {
+		return nil, nil, err
 	}
 	return capture.sampleGrid(p, startNS, horizon), capture.log, nil
 }
@@ -96,23 +62,11 @@ func (capture *auditCapture) deliver(d perturb.Delivered) {
 }
 
 func (capture *auditCapture) sampleGrid(p *Panel, startNS, horizon int64) map[string][]float64 {
-	// Grid: value at sample i = the last delivered value at or before the
-	// sample instant; 0 before the first delivery.
+	// Hold the last delivered value at each sample; zero before delivery.
 	n := int((horizon-startNS)/p.sampleNS) + 1
 	grid := map[string][]float64{}
-	for _, ch := range p.spec.ChannelNames() {
-		out := make([]float64, n)
-		si := 0
-		last := 0.0
-		for i := 0; i < n; i++ {
-			t := startNS + int64(i)*p.sampleNS
-			for si < len(capture.times[ch]) && capture.times[ch][si] <= t {
-				last = capture.series[ch][si]
-				si++
-			}
-			out[i] = last
-		}
-		grid[ch] = out
+	for _, channel := range p.spec.ChannelNames() {
+		grid[channel] = sampleChannel(capture.series[channel], capture.times[channel], n, startNS, p.sampleNS)
 	}
 	return grid
 }
@@ -128,4 +82,19 @@ func asFloat(v any) (float64, bool) {
 		return f, err == nil
 	}
 	return 0, false
+}
+
+func sampleChannel(values []float64, times []int64, n int, start, step int64) []float64 {
+	out := make([]float64, n)
+	index := 0
+	last := 0.0
+	for i := range out {
+		at := start + int64(i)*step
+		for index < len(times) && times[index] <= at {
+			last = values[index]
+			index++
+		}
+		out[i] = last
+	}
+	return out
 }
