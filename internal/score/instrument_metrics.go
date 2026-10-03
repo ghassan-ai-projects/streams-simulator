@@ -16,60 +16,20 @@ func instrumentFrom(ledger []model.LedgerRecord, calls []world.EffectorCall, per
 }
 
 func instrumentEvidence(ledger []model.LedgerRecord, calls []world.EffectorCall, perturbations []string, emitted int64) InstrumentMetrics {
-	m := InstrumentMetrics{LedgerComplete: true, Emitted: emitted}
-	seenIDs := map[uint64]bool{}
-	seenSeq := map[int64]bool{}
-	for _, l := range ledger {
-		if l.DeliveryID == 0 || seenIDs[l.DeliveryID] {
-			m.LedgerComplete = false
-		}
-		seenIDs[l.DeliveryID] = true
-		seenSeq[l.Seq] = true
-		switch l.DeliveryReason {
-		case model.DeliveryDroppedByPerturb:
-			m.Dropped++
-		case model.DeliveryDuplicated:
-			m.Duplicated++
-		case model.DeliveryMangled:
-			m.Mangled++
-		case model.DeliveryDelayed:
-			m.Delayed++
-		case model.DeliveryRewritten, model.DeliveryReordered, model.DeliveryOmitted:
-			// Perturbed is counted below; these are still valid terminal rows.
-		}
-		if l.Delivered {
-			m.Delivered++
-		}
-	}
-	for seq := int64(0); seq < m.Emitted; seq++ {
-		if !seenSeq[seq] {
-			m.LedgerComplete = false
-			break
-		}
-	}
+	m := ledgerMetrics(ledger, emitted)
 	m.PerturbationFidelity = perturbationsObserved(ledger, perturbations)
 	m.EffectorIdempotency = commandsAppliedOnce(calls)
 	return m
 }
 
 func perturbationsObserved(ledger []model.LedgerRecord, perturbations []string) bool {
-	m := InstrumentMetrics{}
-	// Perturbation fidelity: every applied perturbation left a mark in the
-	// ledger — the same rule as the online path.
-	m.PerturbationFidelity = true
+	// Each applied perturbation must leave its expected delivery mark.
 	for _, name := range perturbations {
-		found := false
-		for _, l := range ledger {
-			if reasonOf(name) == l.DeliveryReason && l.Delivered != (name == "drop") {
-				found = true
-				break
-			}
-		}
-		if !found {
-			m.PerturbationFidelity = false
+		if !ledgerShowsPerturbation(ledger, name) {
+			return false
 		}
 	}
-	return m.PerturbationFidelity
+	return true
 }
 
 func commandsAppliedOnce(calls []world.EffectorCall) bool {
@@ -83,4 +43,13 @@ func commandsAppliedOnce(calls []world.EffectorCall) bool {
 		seen[c.CommandID] = true
 	}
 	return m.EffectorIdempotency
+}
+
+func ledgerShowsPerturbation(ledger []model.LedgerRecord, name string) bool {
+	for _, row := range ledger {
+		if reasonOf(name) == row.DeliveryReason && row.Delivered != (name == "drop") {
+			return true
+		}
+	}
+	return false
 }

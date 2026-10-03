@@ -8,28 +8,12 @@ import (
 func matchesActions(actions []model.Action, calls []world.EffectorCall) bool {
 	faithful := true
 	used := map[int]bool{}
-	for _, c := range calls {
-		matched := false
-		for i, a := range actions {
-			if used[i] || a.CommandID != c.CommandID || a.Effector != c.Effector || a.EntityID != c.EntityID {
-				continue
-			}
-			issued, err := model.ParseTime(a.IssuedAt)
-			if err != nil || issued < c.AtNS || (c.Accepted && a.OutcomeBelieved == model.BelievedFailed) || (!c.Accepted && a.OutcomeBelieved == model.BelievedSucceeded) {
-				continue
-			}
-			used[i] = true
-			matched = true
-			break
-		}
-		if !matched {
+	for _, call := range calls {
+		if !matchAction(actions, call, used) {
 			faithful = false
 		}
 	}
-	if len(used) != len(actions) {
-		faithful = false
-	}
-	return faithful
+	return faithful && len(used) == len(actions)
 }
 
 func respectsInterlocks(calls []world.EffectorCall) bool {
@@ -46,4 +30,29 @@ func respectsInterlocks(calls []world.EffectorCall) bool {
 		}
 	}
 	return respected
+}
+
+func matchAction(actions []model.Action, call world.EffectorCall, used map[int]bool) bool {
+	for i, action := range actions {
+		if !used[i] && actionMatchesCall(action, call) {
+			used[i] = true
+			return true
+		}
+	}
+	return false
+}
+
+func actionMatchesCall(action model.Action, call world.EffectorCall) bool {
+	if action.CommandID != call.CommandID || action.Effector != call.Effector || action.EntityID != call.EntityID {
+		return false
+	}
+	issued, err := model.ParseTime(action.IssuedAt)
+	return err == nil && issued >= call.AtNS && beliefMatchesAcceptance(action.OutcomeBelieved, call.Accepted)
+}
+
+func beliefMatchesAcceptance(belief string, accepted bool) bool {
+	if accepted {
+		return belief != model.BelievedFailed
+	}
+	return belief != model.BelievedSucceeded
 }

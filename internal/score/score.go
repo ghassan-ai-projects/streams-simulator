@@ -91,20 +91,19 @@ func Score(r *run.Run, gt *model.GroundTruthRecord) (*Scorecard, error) {
 	if r.Verdict() == nil {
 		return nil, fmt.Errorf("score: no verdict submitted for run %s", r.ID)
 	}
-	sc := &Scorecard{
-		SchemaVersion: "0.1",
-		Bundle:        scoringBundleVersion,
-		RunID:         r.ID,
-		Domain:        gt.Domain,
-		ScenarioID:    gt.ScenarioID,
-		GroundTruth:   gt,
-		Reproducible:  r.Reproducible(),
-		Unblinded:     r.UnblindedStamp(),
-		NegativeClass: gt.IsNegativeClass,
-	}
+	sc := newScorecard(r.ID, gt)
+	sc.Reproducible, sc.Unblinded = r.Reproducible(), r.UnblindedStamp()
 	sc.Instrument = instrument(r)
 	sc.Consumer = consumer(r, gt)
 	sc.Judgment = judgment(r, gt)
 	sc.Loop = loop(r, gt)
 	return sc, nil
+}
+
+func newScorecard(runID string, gt *model.GroundTruthRecord) *Scorecard {
+	return &Scorecard{
+		SchemaVersion: "0.1", Bundle: scoringBundleVersion,
+		RunID: runID, Domain: gt.Domain, ScenarioID: gt.ScenarioID,
+		GroundTruth: gt, NegativeClass: gt.IsNegativeClass,
+	}
 }

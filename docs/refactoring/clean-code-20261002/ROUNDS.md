@@ -330,3 +330,17 @@ domain lint/vet and whitespace checks pass. Test files remain unchanged. The
 retained Enola baseline is verified once before committing. The strict repository
 audit remains open at 226 production bodies. High-impact workflows and repeated
 validation take priority; full-repository verification remains a final gate.
+
+## Round 20 — Shared scoring workflows and publication handoff
+
+Online/offline scorecards share construction. Admission, action/dropped-event
+matching, evidence grounding, ledger accounting, judgment and recovery scoring
+now name their concrete steps. History lookup shares latest-sample selection.
+All score-package production functions meet 15 lines. Matching remains greedy;
+existing recovery scope and zero-time semantics are preserved for separate,
+regression-proven corrections. Test files remain unchanged.
+
+Focused scoring/architecture race tests and score lint/vet pass. Full repository
+verification and one final retained-baseline Enola check precede publication.
+The strict audit remains open at 211 bodies. HANDOFF.md records the package
+inventory, source-confirmed improvement candidates and remaining CI integration.

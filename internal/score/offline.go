@@ -10,17 +10,8 @@ import (
 // perturbations is the run's applied-perturbation list (from the artifact),
 // needed for the clock-skew metric exactly as the online path uses it.
 func Offline(v *model.Verdict, gt *model.GroundTruthRecord, ledger []model.LedgerRecord, calls []world.EffectorCall, perturbations []string) *Scorecard {
-	sc := &Scorecard{
-		SchemaVersion: "0.1",
-		Bundle:        scoringBundleVersion,
-		RunID:         v.RunID,
-		Domain:        gt.Domain,
-		ScenarioID:    gt.ScenarioID,
-		GroundTruth:   gt,
-		NegativeClass: gt.IsNegativeClass,
-	}
+	sc := newScorecard(v.RunID, gt)
 	sc.Judgment = judgmentFrom(v, gt)
-
 	if ledger != nil {
 		sc.Instrument = instrumentFrom(ledger, calls, perturbations)
 	}

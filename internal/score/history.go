@@ -18,36 +18,18 @@ func hasOutcome(outcomes []string, wanted string) bool {
 }
 
 func historyValue(r *run.Run, entity, state string, atNS int64) (float64, bool) {
-	history := r.History()
-	if len(history) == 0 {
-		return 0, false
-	}
-	// Prefer the first sample at/after the requested instant, otherwise the
-	// latest sample before it. This is random-access over captured evidence;
-	// it never advances the mutable world during scoring.
-	var before *float64
-	var beforeAt int64
-	for _, snap := range history {
-		if snap.Entity != entity {
-			continue
-		}
-		value, ok := snap.States[state]
-		if !ok {
-			continue
-		}
-		if snap.TimeNS >= atNS {
-			return value, true
-		}
-		if before == nil || snap.TimeNS > beforeAt {
-			v := value
-			before = &v
-			beforeAt = snap.TimeNS
+	var before historySample
+	// Prefer the first sample at/after the instant, otherwise the latest before it.
+	for _, snap := range r.History() {
+		value, ok := entityStateValue(snap.Entity, entity, snap.States, state)
+		if ok {
+			if snap.TimeNS >= atNS {
+				return value, true
+			}
+			before.retainLatest(value, snap.TimeNS)
 		}
 	}
-	if before != nil {
-		return *before, true
-	}
-	return 0, false
+	return before.value, before.found
 }
 
 // historyValueBefore returns the latest captured sample strictly before t.
@@ -55,27 +37,14 @@ func historyValue(r *run.Run, entity, state string, atNS int64) (float64, bool) 
 // the fault lands on an emission boundary, that sample already carries the
 // fault and the deviation collapses to zero.
 func historyValueBefore(r *run.Run, entity, state string, atNS int64) (float64, bool) {
-	history := r.History()
-	var best *float64
-	var bestAt int64
-	for _, snap := range history {
-		if snap.Entity != entity {
-			continue
-		}
-		value, ok := snap.States[state]
-		if !ok {
-			continue
-		}
-		if snap.TimeNS < atNS && (best == nil || snap.TimeNS > bestAt) {
-			v := value
-			best = &v
-			bestAt = snap.TimeNS
+	var before historySample
+	for _, snap := range r.History() {
+		value, ok := entityStateValue(snap.Entity, entity, snap.States, state)
+		if ok && snap.TimeNS < atNS {
+			before.retainLatest(value, snap.TimeNS)
 		}
 	}
-	if best != nil {
-		return *best, true
-	}
-	return 0, false
+	return before.value, before.found
 }
 
 func faultFor(r *run.Run, label string) *model.Fault {
@@ -94,4 +63,24 @@ func (s *Scorecard) Marshal() ([]byte, error) {
 		return nil, fmt.Errorf("score: marshal: %w", err)
 	}
 	return raw, nil
+}
+
+type historySample struct {
+	value float64
+	atNS  int64
+	found bool
+}
+
+func (sample *historySample) retainLatest(value float64, atNS int64) {
+	if !sample.found || atNS > sample.atNS {
+		sample.value, sample.atNS, sample.found = value, atNS, true
+	}
+}
+
+func entityStateValue(sampleEntity, entity string, states map[string]float64, state string) (float64, bool) {
+	if sampleEntity != entity {
+		return 0, false
+	}
+	value, ok := states[state]
+	return value, ok
 }

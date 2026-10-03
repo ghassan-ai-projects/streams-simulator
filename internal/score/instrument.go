@@ -19,6 +19,12 @@ func reasonOf(perturbName string) string {
 		return model.DeliveryMangled
 	case "delay_tail", "gross_backfill", "producer_flap":
 		return model.DeliveryDelayed
+	}
+	return timingDeliveryReason(perturbName)
+}
+
+func timingDeliveryReason(perturbName string) string {
+	switch perturbName {
 	case "clock_skew", "non_monotonic", "time_encoding", "precision_edge", "injection_probe":
 		return model.DeliveryRewritten
 	case "reorder":

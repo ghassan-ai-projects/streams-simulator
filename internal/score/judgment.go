@@ -11,33 +11,29 @@ func judgment(r *run.Run, gt *model.GroundTruthRecord) JudgmentMetrics {
 
 func judgmentFrom(v *model.Verdict, gt *model.GroundTruthRecord) JudgmentMetrics {
 	m := JudgmentMetrics{DetectionCount: len(v.Detections)}
-	if gt.IsNegativeClass && m.DetectionCount > 0 {
-		m.FalsePositive = true
-	}
+	m.FalsePositive = gt.IsNegativeClass && m.DetectionCount > 0
 	if gt.FirstObservableTimeNS <= 0 {
 		return m
 	}
 	bestAt := int64(0)
-	// The graded detection: first detection on the scenario entity, after
-	// first_observable_time.
-	for _, d := range v.Detections {
-		t, err := model.ParseTime(d.DetectedAt)
-		if err != nil {
-			continue
-		}
-		if d.EntityID != gt.EntityID {
-			continue
-		}
-		if t < gt.FirstObservableTimeNS {
-			m.Suspicious = true
-			continue
-		}
-		if !m.Detected || t < bestAt {
-			m.Detected = true
-			bestAt = t
-			m.DetectionLatencyNS = t - gt.FirstObservableTimeNS
-			m.LabelCorrect = d.Label == gt.Label
-		}
+	for _, detection := range v.Detections {
+		gradeDetection(&m, &bestAt, detection, gt)
 	}
 	return m
+}
+
+func gradeDetection(m *JudgmentMetrics, bestAt *int64, detection model.Detection, gt *model.GroundTruthRecord) {
+	at, err := model.ParseTime(detection.DetectedAt)
+	if err != nil || detection.EntityID != gt.EntityID {
+		return
+	}
+	if at < gt.FirstObservableTimeNS {
+		m.Suspicious = true
+		return
+	}
+	if !m.Detected || at < *bestAt {
+		m.Detected, *bestAt = true, at
+		m.DetectionLatencyNS = at - gt.FirstObservableTimeNS
+		m.LabelCorrect = detection.Label == gt.Label
+	}
 }
