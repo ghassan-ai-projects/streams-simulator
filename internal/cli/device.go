@@ -1,18 +1,14 @@
 package cli
 
 import (
-	"flag"
 	"fmt"
+	"net"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
-	"time"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/device"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/deviceworld"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
@@ -33,114 +29,46 @@ func cmdDevice(args []string) error {
 }
 
 func cmdDeviceServe(args []string) error {
-	fs := flag.NewFlagSet("device serve", flag.ExitOnError)
-	socket := fs.String("socket", "", "Unix domain socket path to listen on (required)")
-	capabilities := fs.String("capabilities", "", "device capability catalog JSON path (required)")
-	worldBindings := fs.String("world", "", "deviceworld binding catalog JSON path (optional)")
-	worldDomain := fs.String("world-domain", "domains/cold-chain-transit.domain.json", "world domain JSON path when --world is set")
-	worldEntity := fs.String("world-entity", "", "world entity bound to device targets; defaults to the first entity")
-	bootID := fs.String("boot-id", "boot-A", "initial device boot identity")
-	deviceID := fs.String("device-id", "dev-01", "device identity")
-	var faultSchedule faultSpecFlag
-	fs.Var(&faultSchedule, "fault", "deterministic fault name[@accepted-command-ordinal]; repeatable")
-	if err := fs.Parse(args); err != nil {
-		return fmt.Errorf("streamsim: %w", err)
+	options, err := parseDeviceServeOptions(args)
+	if err != nil {
+		return err
 	}
-	if *socket == "" {
-		return fmt.Errorf("device serve requires --socket")
-	}
-	if *capabilities == "" {
-		return fmt.Errorf("device serve requires --capabilities")
-	}
-	dev, _, err := newDeviceServeDevice(*capabilities, *worldBindings, *worldDomain, *worldEntity, *bootID, *deviceID, faultSchedule.entries)
+	dev, _, err := newDeviceServeDevice(options.capabilities, options.worldBindings, options.worldDomain, options.worldEntity, options.bootID, options.deviceID, options.faultSchedule.entries)
 	if err != nil {
 		return fmt.Errorf("streamsim: %w", err)
 	}
-	listener, err := device.Listen(*socket, dev)
-	if err != nil {
-		return fmt.Errorf("streamsim: %w", err)
-	}
-	fmt.Fprintf(os.Stderr, "streamsim device: listening on %s (device_id=%s boot_id=%s)\n", *socket, *deviceID, *bootID)
-
-	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
-	defer signal.Stop(stop)
-	<-stop
-	fmt.Fprintln(os.Stderr, "streamsim device: shutting down")
-	if err := listener.Close(); err != nil {
-		return fmt.Errorf("streamsim: close device listener: %w", err)
-	}
-	return nil
+	return serveDevice(dev, options)
 }
 
 func newDeviceServeDevice(capabilityPath, bindingPath, domainPath, entity, bootID, deviceID string, schedule []device.FaultInjection) (*device.Device, *world.World, error) {
-	capabilityData, err := os.ReadFile(capabilityPath)
+	caps, err := loadDeviceCapabilities(capabilityPath)
 	if err != nil {
-		return nil, nil, fmt.Errorf("read capabilities: %w", err)
-	}
-	caps, err := device.LoadCapabilities(capabilityData)
-	if err != nil {
-		return nil, nil, fmt.Errorf("load capabilities: %w", err)
+		return nil, nil, err
 	}
 	if err := device.ValidateFaultSchedule(schedule); err != nil {
 		return nil, nil, fmt.Errorf("validate fault schedule: %w", err)
 	}
-
-	var plant device.Plant
-	var worldState *world.World
-	var clock func() int64
-	if bindingPath != "" {
-		worldData, readErr := os.ReadFile(bindingPath)
-		if readErr != nil {
-			return nil, nil, fmt.Errorf("read world bindings: %w", readErr)
-		}
-		domainSpec, loadErr := domain.Load(domainPath)
-		if loadErr != nil {
-			return nil, nil, fmt.Errorf("load device world domain: %w", loadErr)
-		}
-		worldState, err = world.New(domainSpec, 1, "device-world", model.DefaultStartTimeNS, world.Options{EmitDisabled: true})
-		if err != nil {
-			return nil, nil, fmt.Errorf("create device world: %w", err)
-		}
-		if entity == "" {
-			ids := worldState.EntityIDs()
-			if len(ids) == 0 {
-				return nil, nil, fmt.Errorf("device world has no entities")
-			}
-			entity = ids[0]
-		}
-		if worldState.Entity(entity) == nil {
-			return nil, nil, fmt.Errorf("device world entity %q does not exist", entity)
-		}
-		bindings, loadErr := deviceworld.LoadBindings(worldData, entity)
-		if loadErr != nil {
-			return nil, nil, fmt.Errorf("load device world bindings: %w", loadErr)
-		}
-		requiredTargets := make([]string, 0, len(bindings))
-		for target := range bindings {
-			requiredTargets = append(requiredTargets, target)
-		}
-		requiredSafeStops := make([]string, 0, len(bindings))
-		for _, target := range caps.SafeStopNames() {
-			if _, ok := bindings[target]; ok {
-				requiredSafeStops = append(requiredSafeStops, target)
-			}
-		}
-		if validateErr := deviceworld.ValidateBindings(worldState, bindings, requiredTargets, requiredSafeStops); validateErr != nil {
-			return nil, nil, fmt.Errorf("validate device world bindings: %w", validateErr)
-		}
-		plant = deviceworld.New(worldState, bindings)
-		started := time.Now()
-		clock = func() int64 { return time.Since(started).Microseconds() }
+	plant, worldState, clock, err := prepareDeviceWorld(bindingPath, domainPath, entity, caps)
+	if err != nil {
+		return nil, nil, err
 	}
-	return device.New(device.Config{
-		BootID:        bootID,
-		DeviceID:      deviceID,
-		Capabilities:  caps,
-		Plant:         plant,
-		Clock:         clock,
-		FaultSchedule: schedule,
-	}), worldState, nil
+	return device.New(device.Config{BootID: bootID, DeviceID: deviceID, Capabilities: caps,
+		Plant: plant, Clock: clock, FaultSchedule: schedule}), worldState, nil
+}
+
+func prepareDeviceWorld(bindingPath, domainPath, entity string, caps *device.Capabilities) (device.Plant, *world.World, func() int64, error) {
+	if bindingPath == "" {
+		return nil, nil, nil, nil
+	}
+	data, err := os.ReadFile(bindingPath)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("read world bindings: %w", err)
+	}
+	w, err := createDeviceWorld(domainPath)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	return bindDeviceWorld(w, data, entity, caps)
 }
 
 type faultSpecFlag struct {
@@ -167,4 +95,25 @@ func (f *faultSpecFlag) Set(value string) error {
 		f.entries = append(f.entries, entry)
 	}
 	return nil
+}
+
+func awaitDeviceShutdown(listener *net.UnixListener) error {
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
+	defer signal.Stop(stop)
+	<-stop
+	fmt.Fprintln(os.Stderr, "streamsim device: shutting down")
+	if err := listener.Close(); err != nil {
+		return fmt.Errorf("streamsim: close device listener: %w", err)
+	}
+	return nil
+}
+
+func serveDevice(dev *device.Device, options deviceServeOptions) error {
+	listener, err := device.Listen(options.socket, dev)
+	if err != nil {
+		return fmt.Errorf("streamsim: %w", err)
+	}
+	fmt.Fprintf(os.Stderr, "streamsim device: listening on %s (device_id=%s boot_id=%s)\n", options.socket, options.deviceID, options.bootID)
+	return awaitDeviceShutdown(listener)
 }

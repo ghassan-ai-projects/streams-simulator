@@ -93,14 +93,8 @@ func (s *File) Flush() error {
 func (s *File) Close() ([]byte, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if err := s.w.Flush(); err != nil {
-		return nil, fmt.Errorf("sink: flush %s: %w", s.path, err)
-	}
-	if err := s.f.Sync(); err != nil {
-		return nil, fmt.Errorf("sink: sync %s: %w", s.path, err)
-	}
-	if err := s.f.Close(); err != nil {
-		return nil, fmt.Errorf("sink: close %s: %w", s.path, err)
+	if err := s.finishFile(); err != nil {
+		return nil, err
 	}
 	raw, err := os.ReadFile(s.path)
 	if err != nil {
@@ -134,14 +128,9 @@ func NewHTTPPush(ctx context.Context, url string) *HTTPPush {
 func (s *HTTPPush) Write(line []byte) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	req, err := http.NewRequestWithContext(s.ctx, http.MethodPost, s.url, bytes.NewReader(line))
+	resp, err := s.postLine(line)
 	if err != nil {
-		return fmt.Errorf("sink: http-push request: %w", err)
-	}
-	req.Header.Set("Content-Type", "application/jsonl")
-	resp, err := s.client.Do(req)
-	if err != nil {
-		return fmt.Errorf("sink: http-push POST: %w", err)
+		return err
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode >= 300 {
@@ -159,4 +148,30 @@ func (s *HTTPPush) Close() ([]byte, error) {
 	out := make([]byte, s.buf.Len())
 	copy(out, s.buf.Bytes())
 	return out, nil
+}
+
+func (s *File) finishFile() error {
+	if err := s.w.Flush(); err != nil {
+		return fmt.Errorf("sink: flush %s: %w", s.path, err)
+	}
+	if err := s.f.Sync(); err != nil {
+		return fmt.Errorf("sink: sync %s: %w", s.path, err)
+	}
+	if err := s.f.Close(); err != nil {
+		return fmt.Errorf("sink: close %s: %w", s.path, err)
+	}
+	return nil
+}
+
+func (s *HTTPPush) postLine(line []byte) (*http.Response, error) {
+	req, err := http.NewRequestWithContext(s.ctx, http.MethodPost, s.url, bytes.NewReader(line))
+	if err != nil {
+		return nil, fmt.Errorf("sink: http-push request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/jsonl")
+	resp, err := s.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("sink: http-push POST: %w", err)
+	}
+	return resp, nil
 }

@@ -14,10 +14,12 @@
 
 ## Layering Rules
 
-- Keep transport logic in `server`.
-- Keep business logic in `service`.
-- Keep persistence logic in `store`.
-- Keep data types and validation close to `models`.
+- Keep flags and application wiring in `cli`, and MCP protocol handling in `mcp`.
+- Keep simulation, delivery transforms, projections and scoring in their business packages: `world`, `perturb`, `adapter`, `truth` and `score`.
+- Keep command logs, delivery ledgers, artifacts, replay and quiescence in `run`.
+- Keep shared records in `model`, data loading in `domain`, and schema validation in `jsonschema`.
+- Keep the device transport in `device`; only `deviceworld` bridges it to the world.
+- Follow the direct dependency graph enforced by `test/architecture`. Follow the file-size and function-review rules in root `AGENTS.md`.
 - Define interfaces in the consumer package when possible.
 
 ## Naming Rules

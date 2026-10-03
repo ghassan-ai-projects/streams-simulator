@@ -128,14 +128,8 @@ func (v *OperatorView) ListEffectors(token string) ([]EffectorInfo, error) {
 // The world id is asserted in the result, so simulated actuation is
 // unmistakable.
 func (v *OperatorView) Invoke(token, effector, entityID, commandID string, args map[string]any, atNS int64) (*world.InvokeResult, error) {
-	if !v.authorized(token) {
-		return nil, errTool(CodeCapabilityDenied, "capability token required")
-	}
-	if commandID == "" {
-		return nil, errTool(CodeMissingCommandID, "command_id is the idempotency key and is required")
-	}
-	if !v.effectors[effector] {
-		return nil, errTool(CodeUnknownEffector, "effector not declared by this world's domain")
+	if err := v.admitInvocation(token, effector, commandID); err != nil {
+		return nil, err
 	}
 	res, err := v.Invoker.InvokeEffector(effector, entityID, commandID, args, atNS)
 	if err != nil {
@@ -167,4 +161,18 @@ func (v *OperatorView) Report(token, runID string, quiescedThroughNS int64, verd
 // consumer's deliberate, identified dispatch.
 func (v *OperatorView) authorized(token string) bool {
 	return v.Token != "" && token == v.Token
+}
+
+func (v *OperatorView) admitInvocation(token, effector, commandID string) error {
+	if !v.authorized(token) {
+		return errTool(CodeCapabilityDenied, "capability token required")
+	}
+	if commandID == "" {
+		return errTool(CodeMissingCommandID, "command_id is the idempotency key and is required")
+	}
+	if !v.effectors[effector] {
+		return errTool(CodeUnknownEffector, "effector not declared by this world's domain")
+	}
+
+	return nil
 }

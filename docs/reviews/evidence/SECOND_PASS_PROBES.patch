@@ -1,0 +1,53 @@
+diff --git a/internal/canonical/architecture_review_probe_test.go b/internal/canonical/architecture_review_probe_test.go
+new file mode 100644
+index 0000000..d247b76
+--- /dev/null
++++ b/internal/canonical/architecture_review_probe_test.go
+@@ -0,0 +1,6 @@
++package canonical_test
++import("github.com/ghassan-ai-projects/streams-simulator/internal/canonical";"testing";"encoding/json";"github.com/ghassan-ai-projects/streams-simulator/internal/model")
++func TestArchitectureReviewProbe(t *testing.T) {
++ for _, v := range []any{"\u2028", json.Number("9007199254740993"), string([]byte{0xff})} { b,e:=canonical.Marshal(v); t.Logf("input=%q bytes=%x err=%v",v,b,e) }
++ _,e:=canonical.Digest(&model.Adapter{}); if e==nil {t.Fatal("expected unsupported struct")}; t.Log(e)
++}
+diff --git a/internal/cli/architecture_review_probe_test.go b/internal/cli/architecture_review_probe_test.go
+new file mode 100644
+index 0000000..5ee15c9
+--- /dev/null
++++ b/internal/cli/architecture_review_probe_test.go
+@@ -0,0 +1,7 @@
++package cli
++import("testing";"os";"path/filepath")
++func TestArchitectureReviewProbe(t *testing.T) {
++ dir:=t.TempDir(); for _,name:=range []string{"verdict.json","label.json"} {if e:=os.WriteFile(filepath.Join(dir,name),[]byte("{}"),0600); e!=nil {t.Fatal(e)}}
++ if e:=os.WriteFile(filepath.Join(dir,"ledger.jsonl"),nil,0600);e!=nil {t.Fatal(e)}; p:=filepath.Join(dir,"run.json"); if e:=os.WriteFile(p,[]byte("not JSON"),0600);e!=nil {t.Fatal(e)}
++ if e:=cmdScore([]string{"--run",p});e!=nil {t.Fatalf("unexpected probe result %v",e)}; t.Log("score succeeded with invalid artifact and empty verdict/label")
++}
+diff --git a/internal/run/architecture_review_probe_test.go b/internal/run/architecture_review_probe_test.go
+new file mode 100644
+index 0000000..54a9355
+--- /dev/null
++++ b/internal/run/architecture_review_probe_test.go
+@@ -0,0 +1,8 @@
++package run
++import("testing";"path/filepath";"github.com/ghassan-ai-projects/streams-simulator/internal/model")
++func TestArchitectureReviewProbe(t *testing.T) {
++ spec,a:=testBase(t); r,e:=New(t.Context(),Config{Domain:spec,Adapter:a,SinkName:model.SinkInproc,LedgerPath:filepath.Join(t.TempDir(),"ledger.jsonl")});if e!=nil {t.Fatal(e)}
++ defer r.ledgerFile.Close()
++ if _,e=r.End(t.TempDir());e!=nil {t.Fatal(e)}
++ if _,e=r.ledgerFile.Stat();e!=nil {t.Fatalf("unexpected closed descriptor: %v",e)};t.Log("ledger descriptor remains open after successful End")
++}
+diff --git a/internal/score/architecture_review_probe_test.go b/internal/score/architecture_review_probe_test.go
+new file mode 100644
+index 0000000..f16a2a3
+--- /dev/null
++++ b/internal/score/architecture_review_probe_test.go
+@@ -0,0 +1,8 @@
++package score
++import("testing";"github.com/ghassan-ai-projects/streams-simulator/internal/model")
++func TestArchitectureReviewProbe(t *testing.T) {
++ at:=model.DefaultStartTimeNS
++ v:=&model.Verdict{RunID:"r-probe",Detections:[]model.Detection{{EntityID:"e",DetectedAt:model.FormatTime(at+20e9),Label:"wrong"},{EntityID:"e",DetectedAt:model.FormatTime(at+10e9),Label:"right"}}}
++ gt:=&model.GroundTruthRecord{EntityID:"e",FirstObservableTimeNS:at,Label:"right"}
++ sc:=Offline(v,gt,nil,nil,nil); if sc.Judgment.DetectionLatencyNS!=20e9 {t.Fatalf("unexpected probe result %+v",sc.Judgment)}; t.Logf("later-first ordering chooses latency=%d label_correct=%v",sc.Judgment.DetectionLatencyNS,sc.Judgment.LabelCorrect)
++}

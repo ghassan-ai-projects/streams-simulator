@@ -33,43 +33,9 @@ func BuildRecord(
 	if err != nil {
 		return nil, fmt.Errorf("streamsim: %w", err)
 	}
-	rec := &model.GroundTruthRecord{
-		ScenarioID:            scenarioID,
-		Domain:                spec.Spec.ID,
-		Seed:                  seed,
-		EntityID:              entityID,
-		Label:                 faultID,
-		IsNegativeClass:       fault.IsNegativeClass,
-		ExpectedEpisode:       !fault.IsNegativeClass,
-		InjectionTimeNS:       onsetNS,
-		FirstObservableTimeNS: res.FirstObservableNS,
-		UnavoidableTimeNS:     res.UnavoidableNS,
-		Observability: model.ObservabilityInfo{
-			DetectorForm:       fault.Observability.Detector.Form,
-			Channels:           res.Channels,
-			EffectiveSigma:     res.EffectiveSigma,
-			FirstObservableSNR: fault.Observability.FirstObservableSNR,
-			UnavoidableSNR:     fault.Observability.UnavoidableSNR,
-			SolutionMethod:     res.Method,
-		},
-		TrivialBaselineVerdict: model.TrivialNonTrivial,
-		PreDegraded:            preDegraded,
-		Perturbations:          perturbations,
-	}
-	if fault.ExpectedEffector != "" {
-		rec.ExpectedEffector = fault.ExpectedEffector
-	}
-	if fault.DeadlineS > 0 {
-		if res.FirstObservableNS > 0 {
-			rec.DeadlineNS = res.FirstObservableNS + int64(fault.DeadlineS*1e9)
-		}
-	}
-	if fault.Counterfactual != nil {
-		rec.Counterfactual = &model.Counterfactual{
-			IfNoAction:         fault.Counterfactual.IfNoAction,
-			IfActionByDeadline: fault.Counterfactual.IfActionByDeadline,
-		}
-	}
+	rec := recordIdentity(spec.Spec.ID, scenarioID, seed, entityID, faultID)
+	attachObservability(rec, fault, res, onsetNS)
+	attachScenarioContext(rec, fault, preDegraded, perturbations)
 	return rec, nil
 }
 
@@ -95,11 +61,8 @@ func NewStore() *Store {
 
 // Seal records the label for a run and seals it.
 func (s *Store) Seal(runID string, rec *model.GroundTruthRecord) error {
-	if runID == "" {
-		return fmt.Errorf("truth: run id is required")
-	}
-	if rec == nil {
-		return fmt.Errorf("truth: label is required")
+	if err := validateSealInput(runID, rec); err != nil {
+		return err
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -154,4 +117,14 @@ func cloneRecord(in *model.GroundTruthRecord) *model.GroundTruthRecord {
 		out.Counterfactual = &cf
 	}
 	return &out
+}
+
+func validateSealInput(runID string, rec *model.GroundTruthRecord) error {
+	if runID == "" {
+		return fmt.Errorf("truth: run id is required")
+	}
+	if rec == nil {
+		return fmt.Errorf("truth: label is required")
+	}
+	return nil
 }

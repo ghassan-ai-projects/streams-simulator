@@ -45,5 +45,6 @@ Thumbs.db
 
 # --- Project-specific (customize per project) ---
 runs/
+.enola/
 # /tmp/
 # /var/

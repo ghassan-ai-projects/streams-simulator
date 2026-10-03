@@ -6,14 +6,11 @@ package run
 // server.
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 
-	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
@@ -36,180 +33,101 @@ func LoadArtifact(path string) (*model.RunArtifact, error) {
 	if err != nil {
 		return nil, fmt.Errorf("run: read artifact %s: %w", path, err)
 	}
-	var doc any
-	if err := model.DecodeBytes(raw, &doc); err != nil {
-		return nil, fmt.Errorf("run: %s not valid JSON: %w", path, err)
+	if err := validateArtifactDocument(raw, path); err != nil {
+		return nil, err
 	}
-	if err := model.ValidateRunArtifact(raw); err != nil {
-		return nil, fmt.Errorf("streamsim: %w", err)
-	}
-	var art model.RunArtifact
-	dec := json.NewDecoder(bytes.NewReader(raw))
-	dec.UseNumber()
-	if err := dec.Decode(&art); err != nil {
-		return nil, fmt.Errorf("run: decode artifact: %w", err)
-	}
-	var extra any
-	if err := dec.Decode(&extra); err != io.EOF {
-		if err == nil {
-			return nil, fmt.Errorf("run: artifact has trailing JSON")
-		}
-		return nil, fmt.Errorf("run: artifact trailing data: %w", err)
-	}
-	return &art, nil
+	return decodeArtifact(raw)
 }
 
 // ReplayArtifact re-executes a run artifact's command log against a fresh
 // world and compares the delivered trace to the expected digest. sinkTarget
 // selects the replay sink ("" = inproc).
 func ReplayArtifact(ctx context.Context, art *model.RunArtifact, spec *domain.Compiled, adapterSpec *model.Adapter, sinkTarget string) (*ReplayResult, error) {
-	if art == nil {
-		return nil, fmt.Errorf("run: replay requires an artifact")
+	spec, adapterSpec, result, err := prepareReplay(art, spec, adapterSpec)
+	if err != nil {
+		return nil, err
 	}
-	var err error
-	if spec == nil && len(art.DomainSpec) > 0 {
-		spec, err = domain.Parse(art.DomainSpec, "run-artifact.domain_spec")
-		if err != nil {
-			return nil, fmt.Errorf("run: embedded domain spec: %w", err)
-		}
+	replay, err := newReplayRun(ctx, art, spec, adapterSpec, sinkTarget)
+	if err != nil {
+		return nil, err
 	}
-	if adapterSpec == nil && len(art.AdapterSpec) > 0 {
-		adapterSpec, err = adapter.LoadBytes(art.AdapterSpec, "run-artifact.adapter_spec")
-		if err != nil {
-			return nil, fmt.Errorf("run: embedded adapter spec: %w", err)
-		}
+	if err := replayCommands(ctx, replay, art.CommandLog); err != nil {
+		return nil, err
+	}
+	return finishReplayResult(replay, art, result), nil
+}
+
+func replayInputs(art *model.RunArtifact, spec *domain.Compiled, adapterSpec *model.Adapter) (*domain.Compiled, *model.Adapter, error) {
+	spec, err := replayDomain(art, spec)
+	if err != nil {
+		return nil, nil, err
+	}
+	adapterSpec, err = replayAdapter(art, adapterSpec)
+	if err != nil {
+		return nil, nil, err
 	}
 	if spec == nil || adapterSpec == nil {
-		return nil, fmt.Errorf("run: replay requires domain and adapter, or their embedded artifact specs")
+		return nil, nil, fmt.Errorf("run: replay requires domain and adapter, or their embedded artifact specs")
 	}
-	res := &ReplayResult{
-		WantDigest:   art.ExpectedTraceDigest,
-		VersionMatch: art.SimVersion == model.SimVersion,
-	}
+	return spec, adapterSpec, nil
+}
+
+func validateReplayInputs(art *model.RunArtifact, spec *domain.Compiled, adapterSpec *model.Adapter) error {
 	if spec.Spec.ID != art.Domain.ID || spec.Spec.Version != art.Domain.Version || spec.Digest != art.Domain.Digest {
-		return nil, fmt.Errorf("run: domain digest mismatch: artifact=%s current=%s", art.Domain.Digest, spec.Digest)
+		return fmt.Errorf("run: domain digest mismatch: artifact=%s current=%s", art.Domain.Digest, spec.Digest)
 	}
 	currentAdapterDigest := adapterDigest(adapterSpec)
 	if adapterSpec.ID != art.Adapter.ID || adapterSpec.Version != art.Adapter.Version || currentAdapterDigest != art.Adapter.Digest {
-		return nil, fmt.Errorf("run: adapter digest mismatch: artifact=%s current=%s", art.Adapter.Digest, currentAdapterDigest)
+		return fmt.Errorf("run: adapter digest mismatch: artifact=%s current=%s", art.Adapter.Digest, currentAdapterDigest)
 	}
-	if !res.VersionMatch {
-		res.Detail = fmt.Sprintf("artifact built by sim %s, current sim %s; a different version may legitimately differ", art.SimVersion, model.SimVersion)
-	}
-	cfg := Config{
-		Domain:          spec,
-		Adapter:         adapterSpec,
-		Seed:            art.Seed,
-		SinkName:        model.SinkInproc,
-		SinkTarget:      sinkTarget,
-		TimeMode:        art.TimeMode,
-		StartTimeNS:     art.WorldConfig.StartTimeNS,
-		StartTimeSet:    true,
-		EntityIDs:       art.WorldConfig.EntityIDs,
-		ScenarioProfile: art.WorldConfig.ScenarioProfile,
-		RunID:           art.RunID,
-		Label:           "replay",
-	}
+	return nil
+}
+
+func replayConfig(art *model.RunArtifact, spec *domain.Compiled, adapterSpec *model.Adapter, sinkTarget string) Config {
+	cfg := baseReplayConfig(art, spec, adapterSpec, sinkTarget)
+	cfg.StartTimeNS = art.WorldConfig.StartTimeNS
+	cfg.StartTimeSet = true
+	cfg.EntityIDs = art.WorldConfig.EntityIDs
+	cfg.ScenarioProfile = art.WorldConfig.ScenarioProfile
 	if sinkTarget != "" {
 		cfg.SinkName = model.SinkFile
 	}
-	r, err := New(ctx, cfg)
-	if err != nil {
-		return nil, fmt.Errorf("streamsim: %w", err)
-	}
-	if art.WorldDigest != "" && r.Digest() != art.WorldDigest {
-		return nil, fmt.Errorf("run: world digest mismatch: artifact=%s current=%s", art.WorldDigest, r.Digest())
-	}
-	for _, cmd := range art.CommandLog {
-		if err := executeCommand(ctx, r, &cmd); err != nil {
-			return nil, fmt.Errorf("run: replay command %d (%s): %w", cmd.Seq, cmd.Op, err)
-		}
-	}
-	_, err = r.End("")
-	if err != nil {
-		return nil, fmt.Errorf("streamsim: %w", err)
-	}
-	res.GotDigest = r.TraceDigest()
-	res.Emitted = r.World.EmittedCount()
-	res.Incomplete = art.Incomplete
-	if art.Incomplete && res.Detail == "" {
-		res.Detail = art.Error
-	}
-	if res.GotDigest != res.WantDigest {
-		idx := firstDivergentRecord(r, art)
-		if idx >= 0 {
-			res.FirstDivergence = &idx
-		}
-		return res, nil
-	}
-	res.Matches = true
-	return res, nil
+	return cfg
 }
 
 // executeCommand applies one logged command to a run (replay path).
 func executeCommand(ctx context.Context, r *Run, cmd *model.Command) error {
-	args := cmd.Args
-	str := func(k string) string {
-		if v, ok := args[k].(string); ok {
-			return v
-		}
-		return ""
-	}
-	num := func(k string) int64 {
-		switch v := args[k].(type) {
-		case float64:
-			return int64(v)
-		case int64:
-			return v
-		case json.Number:
-			n, err := v.Int64()
-			if err == nil {
-				return n
-			}
-		}
-		return 0
-	}
 	switch cmd.Op {
 	case model.OpClockAdvance:
-		_, err := r.Advance(ctx, num("to_ns"), false)
-		if err != nil {
-			return fmt.Errorf("streamsim: %w", err)
-		}
-		return nil
-	case model.OpFaultInject:
-		_, err := r.InjectFault(str("entity_id"), str("fault"), num("onset_ns"), asMap(args["params"]))
-		if err != nil {
-			return fmt.Errorf("streamsim: %w", err)
-		}
-		return nil
-	case model.OpFaultClear:
-		return r.ClearFault(str("fault_id"), num("at_ns"))
-	case model.OpPerturbApply:
-		_, err := r.ApplyPerturb(str("perturbation"), asMap(args["params"]), num("from_ns"), num("until_ns"))
-		if err != nil {
-			return fmt.Errorf("streamsim: %w", err)
-		}
-		return nil
-	case model.OpPerturbClear:
-		return r.ClearPerturb(str("perturb_id"))
-	case model.OpEffectorInvoke:
-		_, err := r.InvokeEffector(str("effector"), str("entity_id"), str("command_id"), asMap(args["args"]), num("at_ns"))
-		if err != nil {
-			return fmt.Errorf("streamsim: %w", err)
-		}
-		return nil
-	case model.OpEntityAdd:
-		return r.AddEntity(str("entity_id"), num("at_ns"))
-	case model.OpEntityRetire:
-		return r.RetireEntity(str("entity_id"), str("reason"), num("at_ns"))
-	case model.OpEnvInject:
-		// Environment faults act on the consumer's process, which replay has
-		// no right to touch; the command is replayed as a record.
-		return nil
-	case model.OpWorldCreate, model.OpRunBegin, model.OpRunEnd, model.OpClockRun:
-		return nil
+		return replayAdvance(ctx, r, cmd.Args)
+	case model.OpFaultInject, model.OpFaultClear:
+		return replayFault(r, cmd)
+	case model.OpPerturbApply, model.OpPerturbClear:
+		return replayPerturb(r, cmd)
+	default:
+		return replayActuation(r, cmd)
 	}
-	return fmt.Errorf("run: unknown command op %q", cmd.Op)
+}
+
+func commandString(args map[string]any, key string) string {
+	if value, ok := args[key].(string); ok {
+		return value
+	}
+	return ""
+}
+
+func commandTime(args map[string]any, key string) int64 {
+	switch value := args[key].(type) {
+	case float64:
+		return int64(value)
+	case int64:
+		return value
+	case json.Number:
+		if n, err := value.Int64(); err == nil {
+			return n
+		}
+	}
+	return 0
 }
 
 func asMap(v any) map[string]any {

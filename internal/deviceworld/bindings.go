@@ -1,10 +1,8 @@
 package deviceworld
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 )
 
 // bindingArgument is a data-defined source for one world effector argument.
@@ -42,55 +40,14 @@ type argumentDocument struct {
 // Entity-source arguments resolve to the supplied runtime world entity; all
 // other mapping and literal values come from the JSON catalog.
 func LoadBindings(data []byte, entity string) (map[string]Binding, error) {
-	var doc bindingsDocument
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	if err := decoder.Decode(&doc); err != nil {
-		return nil, fmt.Errorf("deviceworld: decode bindings: %w", err)
+	document, err := decodeBindings(data)
+	if err != nil {
+		return nil, err
 	}
-	if err := decoder.Decode(&struct{}{}); err != io.EOF {
-		if err == nil {
-			return nil, fmt.Errorf("deviceworld: bindings contain trailing JSON")
-		}
-		return nil, fmt.Errorf("deviceworld: decode trailing bindings: %w", err)
-	}
-	if len(doc.Bindings) == 0 {
+	if len(document.Bindings) == 0 {
 		return nil, fmt.Errorf("deviceworld: bindings declare no targets")
 	}
-
-	bindings := make(map[string]Binding, len(doc.Bindings))
-	for target, binding := range doc.Bindings {
-		if target == "" || binding.Effector == "" {
-			return nil, fmt.Errorf("deviceworld: target %q must declare an effector", target)
-		}
-		arguments, err := loadArguments(binding.Arguments)
-		if err != nil {
-			return nil, fmt.Errorf("deviceworld: target %q: %w", target, err)
-		}
-		var safeStopEffector string
-		var safeStopArgs map[string]bindingArgument
-		if binding.SafeStop != nil {
-			if binding.SafeStop.Effector == "" {
-				return nil, fmt.Errorf("deviceworld: target %q safe_stop must declare an effector", target)
-			}
-			safeStopEffector = binding.SafeStop.Effector
-			safeStopArgs, err = loadArguments(binding.SafeStop.Arguments)
-			if err != nil {
-				return nil, fmt.Errorf("deviceworld: target %q safe_stop: %w", target, err)
-			}
-		}
-		if argumentsNeedEntity(arguments) && entity == "" {
-			return nil, fmt.Errorf("deviceworld: target %q requires a world entity", target)
-		}
-		if argumentsNeedEntity(safeStopArgs) && entity == "" {
-			return nil, fmt.Errorf("deviceworld: target %q safe_stop requires a world entity", target)
-		}
-		bindings[target] = Binding{
-			effector: binding.Effector, entity: entity, valueState: binding.ValueState,
-			arguments: arguments, safeStopEffector: safeStopEffector, safeStopArgs: safeStopArgs,
-		}
-	}
-	return bindings, nil
+	return compileBindings(document.Bindings, entity)
 }
 
 func loadArguments(doc map[string]argumentDocument) (map[string]bindingArgument, error) {
@@ -110,24 +67,13 @@ func loadArguments(doc map[string]argumentDocument) (map[string]bindingArgument,
 
 func parseArgument(doc argumentDocument) (bindingArgument, error) {
 	argument := bindingArgument{source: doc.Source, parameter: doc.Parameter}
-	switch doc.Source {
-	case "entity":
-		if doc.Parameter != "" || len(doc.Value) != 0 {
-			return bindingArgument{}, fmt.Errorf("entity source cannot set parameter or value")
-		}
-	case "parameter":
-		if doc.Parameter == "" || len(doc.Value) != 0 {
-			return bindingArgument{}, fmt.Errorf("parameter source requires only parameter")
-		}
-	case "value":
-		if doc.Parameter != "" || len(doc.Value) == 0 {
-			return bindingArgument{}, fmt.Errorf("value source requires only value")
-		}
+	if err := validateArgumentSource(doc); err != nil {
+		return bindingArgument{}, err
+	}
+	if doc.Source == "value" {
 		if err := json.Unmarshal(doc.Value, &argument.value); err != nil {
 			return bindingArgument{}, fmt.Errorf("decode value: %w", err)
 		}
-	default:
-		return bindingArgument{}, fmt.Errorf("unknown source %q", doc.Source)
 	}
 	return argument, nil
 }
@@ -152,20 +98,52 @@ func (b Binding) safeStopArgsForEntity() (map[string]any, error) {
 func resolveArgs(arguments map[string]bindingArgument, entity string, params map[string]float64) (map[string]any, error) {
 	args := make(map[string]any, len(arguments))
 	for name, argument := range arguments {
-		switch argument.source {
-		case "entity":
-			args[name] = entity
-		case "parameter":
-			value, ok := params[argument.parameter]
-			if !ok {
-				return nil, fmt.Errorf("parameter %q is not present", argument.parameter)
-			}
-			args[name] = value
-		case "value":
-			args[name] = argument.value
-		default:
-			return nil, fmt.Errorf("unknown argument source %q", argument.source)
+		value, err := argument.resolve(entity, params)
+		if err != nil {
+			return nil, err
 		}
+		args[name] = value
 	}
 	return args, nil
+}
+
+func validateArgumentSource(doc argumentDocument) error {
+	switch doc.Source {
+	case "entity":
+		return requireArgumentShape(doc.Parameter == "" && len(doc.Value) == 0, "entity source cannot set parameter or value")
+	case "parameter":
+		return requireArgumentShape(doc.Parameter != "" && len(doc.Value) == 0, "parameter source requires only parameter")
+	case "value":
+		return requireArgumentShape(doc.Parameter == "" && len(doc.Value) != 0, "value source requires only value")
+	default:
+		return fmt.Errorf("unknown source %q", doc.Source)
+	}
+}
+
+func requireArgumentShape(valid bool, message string) error {
+	if !valid {
+		return fmt.Errorf("%s", message)
+	}
+	return nil
+}
+
+func (argument bindingArgument) resolve(entity string, params map[string]float64) (any, error) {
+	switch argument.source {
+	case "entity":
+		return entity, nil
+	case "parameter":
+		return parameterArgument(params, argument.parameter)
+	case "value":
+		return argument.value, nil
+	default:
+		return nil, fmt.Errorf("unknown argument source %q", argument.source)
+	}
+}
+
+func parameterArgument(params map[string]float64, name string) (any, error) {
+	value, ok := params[name]
+	if !ok {
+		return nil, fmt.Errorf("parameter %q is not present", name)
+	}
+	return value, nil
 }

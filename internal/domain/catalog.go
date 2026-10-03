@@ -39,13 +39,7 @@ func (c *Catalog) List(group string) []Entry {
 		if group != "" && !hasPrefix(d.Spec.ID, group) {
 			continue
 		}
-		out = append(out, Entry{
-			ID:       d.Spec.ID,
-			Title:    d.Spec.Title,
-			Version:  d.Spec.Version,
-			Axes:     axisVector(d.Spec),
-			Stresses: d.Spec.Stresses,
-		})
+		out = append(out, catalogEntry(d.Spec))
 	}
 	return out
 }
@@ -71,48 +65,11 @@ type CoverageReport struct {
 
 // Coverage computes the axis-coverage matrix across the catalog.
 func (c *Catalog) Coverage() CoverageReport {
-	axes := map[string][]string{
-		"rate": nil, "cardinality": nil, "value_shape": nil,
-		"cadence": nil, "lateness": nil, "absence": nil,
-		"time_reference": nil, "correlation": nil, "seasonality": nil,
-		"actuation": nil, "consequence": nil, "fidelity": nil,
-	}
-	by := map[string]map[string]int{}
-	for a := range axes {
-		by[a] = map[string]int{}
-	}
+	by := coverageCounts()
 	for _, d := range c.domains {
-		add := func(axis string, values []string) {
-			for _, v := range values {
-				if v != "" {
-					by[axis][v]++
-				}
-			}
-		}
-		s := d.Spec
-		add("rate", []string{s.Axes.Rate})
-		add("cardinality", []string{s.Axes.Cardinality})
-		add("value_shape", s.Axes.ValueShape)
-		add("cadence", s.Axes.Cadence)
-		add("lateness", []string{s.Axes.Lateness})
-		add("absence", []string{s.Axes.Absence})
-		add("time_reference", []string{s.Axes.TimeRef})
-		add("correlation", s.Axes.Correlation)
-		add("seasonality", s.Axes.Seasonality)
-		add("actuation", []string{s.Axes.Actuation})
-		add("consequence", s.Axes.Consequence)
-		add("fidelity", s.Axes.Fidelity)
+		addDomainCoverage(by, d.Spec)
 	}
-	var thin []string
-	for axis, counts := range by {
-		for value, n := range counts {
-			if n < 2 {
-				thin = append(thin, fmt.Sprintf("%s=%s(%d)", axis, value, n))
-			}
-		}
-	}
-	sort.Strings(thin)
-	return CoverageReport{ByAxis: by, Thin: thin}
+	return CoverageReport{ByAxis: by, Thin: thinCoverage(by)}
 }
 
 func axisVector(s *model.DomainSpec) []string {

@@ -11,7 +11,6 @@
 package deviceworld
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/device"
@@ -48,96 +47,41 @@ func New(w *world.World, bindings map[string]Binding) *Plant {
 // device layer handles separately. An unmapped target is unavailable, not a
 // successful no-op, so the device cannot report execution without an effect.
 func (p *Plant) Apply(cmd device.PlantCommand) (device.PlantEffect, error) {
-	binding, ok := p.bindings[cmd.Target]
-	if !ok {
-		return device.PlantEffect{}, fmt.Errorf("%w: no binding for target %q", device.ErrPlantUnavailable, cmd.Target)
-	}
-	if p.w == nil {
-		return device.PlantEffect{}, fmt.Errorf("%w: world is unavailable", device.ErrPlantUnavailable)
-	}
-	atNS, err := p.advance(cmd.AtMicros)
+	binding, err := p.targetBinding(cmd.Target)
 	if err != nil {
-		return device.PlantEffect{}, fmt.Errorf("%w: advance world: %w", device.ErrPlantUnavailable, err)
+		return device.PlantEffect{}, err
 	}
-	args, err := binding.args(cmd.Params)
+	atNS, args, err := p.prepareCommand(binding, cmd)
 	if err != nil {
-		return device.PlantEffect{}, fmt.Errorf("%w: build effector arguments: %w", device.ErrPlantUnavailable, err)
+		return device.PlantEffect{}, err
 	}
-	res, err := p.w.InvokeEffector(binding.effector, binding.entity, cmd.CommandID, args, atNS)
-	if err != nil || res == nil {
-		if errors.Is(err, world.ErrInterlockRefused) {
-			return device.PlantEffect{}, fmt.Errorf("%w: %w", device.ErrPlantInterlocked, err)
-		}
-		if err == nil {
-			err = fmt.Errorf("world returned no effector result")
-		}
-		return device.PlantEffect{}, fmt.Errorf("%w: %w", device.ErrPlantUnavailable, err)
+	result, err := p.invokeWorld(binding.effector, binding.entity, cmd.CommandID, args, atNS, "world returned no effector result")
+	if err != nil {
+		return device.PlantEffect{}, err
 	}
-	if _, _, err := p.w.Advance(atNS + 1); err != nil {
-		return device.PlantEffect{}, fmt.Errorf("%w: advance world after effector: %w", device.ErrPlantUnavailable, err)
-	}
-	effect := device.PlantEffect{Energized: res.EffectApplied}
-	if binding.valueState != "" {
-		effect.Value = p.w.StateValue(binding.entity, binding.valueState, p.w.Clock())
-	}
-	return effect, nil
+	return p.completeCommand(binding, result, atNS)
 }
 
 // SafeStop invokes the bound world effector with its catalog-owned, literal
 // arguments. It is used when the device lease expires or the device reboots;
 // clearing the device state alone would leave the world oracle unchanged.
 func (p *Plant) SafeStop(target string, atMicros int64) (device.PlantEffect, error) {
-	binding, ok := p.bindings[target]
-	if !ok {
-		return device.PlantEffect{}, fmt.Errorf("%w: no binding for target %q", device.ErrPlantUnavailable, target)
+	binding, err := p.targetBinding(target)
+	if err != nil {
+		return device.PlantEffect{}, err
 	}
 	if binding.safeStopEffector == "" {
 		return device.PlantEffect{}, fmt.Errorf("%w: no explicit safe-stop binding for target %q", device.ErrPlantUnavailable, target)
 	}
-	if p.w == nil {
-		return device.PlantEffect{}, fmt.Errorf("%w: world is unavailable", device.ErrPlantUnavailable)
-	}
-	atNS, err := p.advance(atMicros)
+	atNS, args, err := p.prepareSafeStop(binding, atMicros)
 	if err != nil {
-		return device.PlantEffect{}, fmt.Errorf("%w: advance world for safe stop: %w", device.ErrPlantUnavailable, err)
+		return device.PlantEffect{}, err
 	}
-	args, err := binding.safeStopArgsForEntity()
-	if err != nil {
-		return device.PlantEffect{}, fmt.Errorf("%w: build safe-stop arguments: %w", device.ErrPlantUnavailable, err)
-	}
-	res, err := p.w.InvokeEffector(binding.safeStopEffector, binding.entity, "safe-stop/"+target, args, atNS)
-	if err != nil || res == nil {
-		if errors.Is(err, world.ErrInterlockRefused) {
-			return device.PlantEffect{}, fmt.Errorf("%w: %w", device.ErrPlantInterlocked, err)
-		}
-		if err == nil {
-			err = fmt.Errorf("world returned no safe-stop result")
-		}
-		return device.PlantEffect{}, fmt.Errorf("%w: %w", device.ErrPlantUnavailable, err)
-	}
-	if !res.Accepted {
-		return device.PlantEffect{}, fmt.Errorf("%w: safe stop was not accepted: %s", device.ErrPlantUnavailable, res.Reason)
-	}
-	if !res.EffectApplied {
-		return device.PlantEffect{}, fmt.Errorf("%w: safe stop was accepted without applying its effect: %s", device.ErrPlantUnavailable, res.Mode)
-	}
-	if _, _, err := p.w.Advance(atNS + 1); err != nil {
-		return device.PlantEffect{}, fmt.Errorf("%w: advance world after safe stop: %w", device.ErrPlantUnavailable, err)
-	}
-	return device.PlantEffect{Value: stateValue(p.w, binding), Energized: false}, nil
+	return p.invokeSafeStop(binding, target, atNS, args)
 }
 
 func (p *Plant) advance(atMicros int64) (int64, error) {
-	atNS := atMicros * 1000
-	// Device clocks are boot-relative. Focused plant tests historically pass
-	// epoch-relative microseconds, so retain that form while accepting the
-	// relative clock used by the CLI gateway.
-	if atNS < p.w.StartNS {
-		atNS = p.w.StartNS + atNS
-	}
-	if atNS < p.w.Clock() {
-		atNS = p.w.Clock()
-	}
+	atNS := p.worldInstant(atMicros)
 	if _, _, err := p.w.Advance(atNS); err != nil {
 		return 0, fmt.Errorf("advance world to %d: %w", atNS, err)
 	}
@@ -149,4 +93,16 @@ func stateValue(w *world.World, binding Binding) float64 {
 		return 0
 	}
 	return w.StateValue(binding.entity, binding.valueState, w.Clock())
+}
+
+func (p *Plant) worldInstant(atMicros int64) int64 {
+	atNS := atMicros * 1000
+	// Accept boot-relative device clocks and the historical epoch-relative test form.
+	if atNS < p.w.StartNS {
+		atNS = p.w.StartNS + atNS
+	}
+	if atNS < p.w.Clock() {
+		atNS = p.w.Clock()
+	}
+	return atNS
 }

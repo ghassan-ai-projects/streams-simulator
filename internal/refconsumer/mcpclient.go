@@ -63,26 +63,10 @@ func (o *MCPOperator) call(name string, args map[string]any, out any) error {
 	if err != nil {
 		return fmt.Errorf("refconsumer: %s: %w", name, err)
 	}
-	if res.IsError {
-		reason := errorText(res)
-		if reason != "" {
-			return fmt.Errorf("refconsumer: %s refused by the simulator: %s", name, reason)
-		}
-		return fmt.Errorf("refconsumer: %s refused by the simulator", name)
+	if err := admitOperatorResult(name, res); err != nil {
+		return err
 	}
-	if res.StructuredContent == nil {
-		return fmt.Errorf("refconsumer: %s returned no structured content", name)
-	}
-	raw, err := json.Marshal(res.StructuredContent)
-	if err != nil {
-		return fmt.Errorf("refconsumer: %s: %w", name, err)
-	}
-	if out != nil {
-		if err := json.Unmarshal(raw, out); err != nil {
-			return fmt.Errorf("refconsumer: %s: %w", name, err)
-		}
-	}
-	return nil
+	return decodeOperatorResult(name, res.StructuredContent, out)
 }
 
 // nameplateShape mirrors the simulator's nameplate over the wire.
@@ -115,17 +99,9 @@ func (o *MCPOperator) Nameplate() (*Nameplate, error) {
 		return nil, err
 	}
 	out := &Nameplate{WorldID: np.WorldID}
-	for _, e := range np.Entities {
-		out.Entities = append(out.Entities, EntityInfo{ID: e.ID, Type: e.Type})
-	}
-	for _, c := range np.Channels {
-		out.Channels = append(out.Channels, ChannelInfo{
-			Name: c.Name, Unit: c.Unit, RangeMin: c.RangeMin, RangeMax: c.RangeMax, Resolution: c.Resolution,
-		})
-	}
-	for _, e := range np.Effectors {
-		out.Effectors = append(out.Effectors, EffectorInfo{Name: e.Name, Schema: e.ArgsSchema})
-	}
+	np.appendEntities(out)
+	np.appendChannels(out)
+	np.appendEffectors(out)
 	return out, nil
 }
 
@@ -170,4 +146,50 @@ func (o *MCPOperator) ReportQuiesced(throughNS int64) error {
 	return o.call("sim.consumer.report", map[string]any{
 		"token": o.token, "run_id": o.runID, "quiesced_through_ns": throughNS,
 	}, nil)
+}
+
+func admitOperatorResult(name string, res *mcpsdk.CallToolResult) error {
+	if res.IsError {
+		reason := errorText(res)
+		if reason != "" {
+			return fmt.Errorf("refconsumer: %s refused by the simulator: %s", name, reason)
+		}
+		return fmt.Errorf("refconsumer: %s refused by the simulator", name)
+	}
+	if res.StructuredContent == nil {
+		return fmt.Errorf("refconsumer: %s returned no structured content", name)
+	}
+	return nil
+}
+
+func decodeOperatorResult(name string, content, out any) error {
+	raw, err := json.Marshal(content)
+	if err != nil {
+		return fmt.Errorf("refconsumer: %s: %w", name, err)
+	}
+	if out != nil {
+		if err := json.Unmarshal(raw, out); err != nil {
+			return fmt.Errorf("refconsumer: %s: %w", name, err)
+		}
+	}
+	return nil
+}
+
+func (np *nameplateShape) appendEntities(out *Nameplate) {
+	for _, entity := range np.Entities {
+		out.Entities = append(out.Entities, EntityInfo{ID: entity.ID, Type: entity.Type})
+	}
+}
+
+func (np *nameplateShape) appendChannels(out *Nameplate) {
+	for _, channel := range np.Channels {
+		out.Channels = append(out.Channels, ChannelInfo{Name: channel.Name, Unit: channel.Unit,
+			RangeMin: channel.RangeMin, RangeMax: channel.RangeMax, Resolution: channel.Resolution})
+	}
+}
+
+func (np *nameplateShape) appendEffectors(out *Nameplate) {
+	for _, effector := range np.Effectors {
+		out.Effectors = append(out.Effectors, EffectorInfo{Name: effector.Name, Schema: effector.ArgsSchema})
+	}
 }

@@ -10,87 +10,38 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/canonical"
 )
 
 func cmdManifest(args []string) error {
-	fs := flag.NewFlagSet("manifest", flag.ExitOnError)
-	out := fs.String("out", "release-manifest.json", "output path")
-	domainsDir := fs.String("domains-dir", "domains", "domains directory")
-	adaptersDir := fs.String("adapters-dir", "adapters", "adapters directory")
-	author := fs.String("author", "", "release author identity (name <email>)")
-	reviewer := fs.String("reviewer", "", "independent review identity (name <email>)")
-	keyFile := fs.String("key", "", "ed25519 private key (64 hex seed chars) to sign the manifest digest")
-	if err := fs.Parse(args); err != nil {
-		return fmt.Errorf("streamsim: %w", err)
-	}
-	if *author == "" || *reviewer == "" {
-		return fmt.Errorf("manifest requires --author and --reviewer (independent review identity)")
-	}
-	domains, err := fileDigests(*domainsDir, "domain")
+	options, err := parseManifestOptions(args)
 	if err != nil {
 		return err
 	}
-	adapters, err := fileDigests(*adaptersDir, "adapter")
+	manifest, err := buildReleaseManifest(options)
 	if err != nil {
 		return err
 	}
-	manifest := map[string]any{
-		"schema_version": "release-manifest-v0.1",
-		"sim": map[string]any{
-			"version": Version, "commit": Commit, "go": runtime.Version(),
-		},
-		"domains":  domains,
-		"adapters": adapters,
-		"consumer": map[string]any{"name": "streamsim-refconsumer", "version": "0.1.0"},
-		"suite": map[string]any{
-			"negative_class_fraction": 0.4,
-			"trivial_cutoff":          0.9,
-		},
-		"author":     *author,
-		"reviewer":   *reviewer,
-		"created_at": time.Now().UTC().Format(time.RFC3339),
+	return signAndPublishManifest(manifest, options)
+}
+
+func signManifest(body []byte, keyFile string) (string, error) {
+	if keyFile == "" {
+		return "", nil
 	}
-	// Canonical JSON is the signed body; the signature sits alongside.
-	body, err := canonical.Marshal(manifest)
+	seed, err := readSigningSeed(keyFile)
 	if err != nil {
-		return fmt.Errorf("manifest: canonical: %w", err)
+		return "", err
 	}
-	sig := ""
-	if *keyFile != "" {
-		raw, err := os.ReadFile(*keyFile)
-		if err != nil {
-			return fmt.Errorf("manifest: key: %w", err)
-		}
-		seed, err := hex.DecodeString(strings.TrimSpace(string(raw)))
-		if err != nil || len(seed) != ed25519.SeedSize {
-			return fmt.Errorf("manifest: key must be %d hex chars", ed25519.SeedSize*2)
-		}
-		priv := ed25519.NewKeyFromSeed(seed)
-		digest := sha256.Sum256(body)
-		sig = hex.EncodeToString(ed25519.Sign(priv, digest[:]))
-	}
-	doc := map[string]any{
-		"manifest":  json.RawMessage(body),
-		"signature": sig,
-	}
-	raw, err := json.MarshalIndent(doc, "", "  ")
-	if err != nil {
-		return fmt.Errorf("manifest: %w", err)
-	}
-	if err := os.WriteFile(*out, raw, 0o600); err != nil {
-		return fmt.Errorf("manifest: %w", err)
-	}
-	return printJSON(map[string]any{"manifest_written": *out, "signed": sig != "", "sim": Version + "@" + Commit})
+	priv := ed25519.NewKeyFromSeed(seed)
+	digest := sha256.Sum256(body)
+	return hex.EncodeToString(ed25519.Sign(priv, digest[:])), nil
 }
 
 // fileDigests digests every file in dir, keyed by base name. Values are
@@ -100,13 +51,33 @@ func fileDigests(dir, kind string) (map[string]any, error) {
 	if err != nil {
 		return nil, fmt.Errorf("manifest: %s dir: %w", kind, err)
 	}
+	return digestManifestFiles(dir, manifestFileNames(entries))
+}
+
+func readSigningSeed(path string) ([]byte, error) {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("manifest: key: %w", err)
+	}
+	seed, err := hex.DecodeString(strings.TrimSpace(string(raw)))
+	if err != nil || len(seed) != ed25519.SeedSize {
+		return nil, fmt.Errorf("manifest: key must be %d hex chars", ed25519.SeedSize*2)
+	}
+	return seed, nil
+}
+
+func manifestFileNames(entries []os.DirEntry) []string {
 	names := make([]string, 0, len(entries))
-	for _, e := range entries {
-		if !e.IsDir() && !strings.HasPrefix(e.Name(), ".") {
-			names = append(names, e.Name())
+	for _, entry := range entries {
+		if !entry.IsDir() && !strings.HasPrefix(entry.Name(), ".") {
+			names = append(names, entry.Name())
 		}
 	}
 	sort.Strings(names)
+	return names
+}
+
+func digestManifestFiles(dir string, names []string) (map[string]any, error) {
 	out := map[string]any{}
 	for _, name := range names {
 		raw, err := os.ReadFile(filepath.Join(dir, name))
@@ -116,4 +87,28 @@ func fileDigests(dir, kind string) (map[string]any, error) {
 		out[name] = canonical.DigestBytes(raw)
 	}
 	return out, nil
+}
+
+func publishManifest(body []byte, signature, out string) error {
+	doc := map[string]any{"manifest": json.RawMessage(body), "signature": signature}
+	raw, err := json.MarshalIndent(doc, "", "  ")
+	if err != nil {
+		return fmt.Errorf("manifest: %w", err)
+	}
+	if err := os.WriteFile(out, raw, 0o600); err != nil {
+		return fmt.Errorf("manifest: %w", err)
+	}
+	return printJSON(map[string]any{"manifest_written": out, "signed": signature != "", "sim": Version + "@" + Commit})
+}
+
+func signAndPublishManifest(manifest map[string]any, options manifestOptions) error {
+	body, err := canonical.Marshal(manifest)
+	if err != nil {
+		return fmt.Errorf("manifest: canonical: %w", err)
+	}
+	sig, err := signManifest(body, options.keyFile)
+	if err != nil {
+		return err
+	}
+	return publishManifest(body, sig, options.out)
 }

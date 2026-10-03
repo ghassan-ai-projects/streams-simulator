@@ -67,68 +67,24 @@ func (s *Solver) Solve(entityID, faultID string, onsetNS int64, startNS int64, e
 	if fault == nil {
 		return nil, fmt.Errorf("truth: unknown fault %q", faultID)
 	}
-	det := &fault.Observability.Detector
-	channels := detectorChannels(det)
-	res := &Result{Channels: channels, Method: model.SolveNumeric}
-
-	clean, err := s.buildWorld(entityID, startNS, entityIDs, nil, setup)
+	res := &Result{Channels: detectorChannels(&fault.Observability.Detector), Method: model.SolveNumeric}
+	scan, err := s.prepareScan(entityID, faultID, fault, onsetNS, startNS, entityIDs, setup)
 	if err != nil {
-		return nil, fmt.Errorf("Solve: %w", err)
+		return nil, err
 	}
-	faulted, err := s.buildWorld(entityID, startNS, entityIDs, map[string]int64{faultID: onsetNS}, setup)
-	if err != nil {
-		return nil, fmt.Errorf("Solve: %w", err)
-	}
-	sigma := s.effectiveSigma(entityID, det, entityIDs)
-
-	horizon := onsetNS + s.maxHorizonNS
-	if horizon < startNS+s.maxHorizonNS {
-		horizon = startNS + s.maxHorizonNS
-	}
-	t := onsetNS
-	if t < startNS {
-		t = startNS
-	}
-	var firstObs, firstUnavoid int64
-	for t <= horizon {
-		q := s.quantity(entityID, det, clean, faulted, t, entityIDs)
-		if firstObs == 0 && q >= fault.Observability.FirstObservableSNR*sigma {
-			firstObs = t
-		}
-		if firstUnavoid == 0 && q >= fault.Observability.UnavoidableSNR*sigma {
-			firstUnavoid = t
-		}
-		if firstUnavoid != 0 {
-			break
-		}
-		t += s.sampleNS
-	}
-	res.FirstObservableNS = firstObs
-	res.UnavoidableNS = firstUnavoid
-	res.EffectiveSigma = sigma
-	res.Observable = firstObs != 0
-	return res, nil
+	return scan.searchOnsets(res, fault, onsetNS, startNS), nil
 }
 
 func (s *Solver) buildWorld(entityID string, startNS int64, entityIDs []string, faults map[string]int64, setup []SetupCall) (*world.World, error) {
-	w, err := world.New(s.spec, s.seed, "w-solver", startNS, world.Options{
-		Noiseless:       true,
-		EmitDisabled:    true,
-		InitialEntities: entityIDs,
-		ForceEffectorOK: true,
-	})
+	w, err := s.newOracleWorld(startNS, entityIDs)
 	if err != nil {
-		return nil, fmt.Errorf("buildWorld: %w", err)
+		return nil, err
 	}
-	for _, call := range setup {
-		if _, err := w.InvokeEffector(call.Effector, call.EntityID, call.CommandID, call.Args, call.AtNS); err != nil {
-			return nil, fmt.Errorf("truth: setup %s: %w", call.Effector, err)
-		}
+	if err := applyOracleSetup(w, setup); err != nil {
+		return nil, err
 	}
-	for fid, onset := range faults {
-		if _, err := w.InjectFault(entityID, fid, onset, nil); err != nil {
-			return nil, fmt.Errorf("buildWorld: %w", err)
-		}
+	if err := injectOracleFaults(w, entityID, faults); err != nil {
+		return nil, err
 	}
 	return w, nil
 }
@@ -138,46 +94,24 @@ func (s *Solver) buildWorld(entityID string, startNS int64, entityIDs []string, 
 func (s *Solver) quantity(entityID string, det *model.Detector, clean, faulted *world.World, t int64, entityIDs []string) float64 {
 	switch det.Form {
 	case model.DetectorSingleChannel:
-		f := faulted.Reading(entityID, det.Channel, t)
-		c := clean.Reading(entityID, det.Channel, t)
-		return math.Abs(f - c)
+		return singleChannelDeviation(entityID, det.Channel, clean, faulted, t)
 	case model.DetectorDivergence:
-		fa := faulted.Reading(entityID, det.ChannelA, t)
-		fb := faulted.Reading(entityID, det.ChannelB, t)
-		ca := clean.Reading(entityID, det.ChannelA, t)
-		cb := clean.Reading(entityID, det.ChannelB, t)
-		return math.Abs((fa - fb) - (ca - cb))
+		return channelDivergence(entityID, det, clean, faulted, t)
 	case model.DetectorPeerResidual:
-		// The entity against its siblings: the deviation of E's reading from
-		// the mean of the other entities' readings.
-		fr := s.peerResidual(entityID, det.Channel, faulted, t)
-		cr := s.peerResidual(entityID, det.Channel, clean, t)
-		return math.Abs(fr - cr)
+		return s.peerDeviation(entityID, det.Channel, clean, faulted, t)
 	case model.DetectorConservation:
-		fi := s.balance(det.Inputs, faulted, t, entityID)
-		ci := s.balance(det.Inputs, clean, t, entityID)
-		fo := s.balance(det.Outputs, faulted, t, entityID)
-		co := s.balance(det.Outputs, clean, t, entityID)
-		return math.Abs((fi - fo) - (ci - co))
+		return s.conservationDeviation(entityID, det, clean, faulted, t)
 	}
 	return 0
 }
 
 func (s *Solver) peerResidual(entityID, channel string, w *world.World, t int64) float64 {
 	me := w.Reading(entityID, channel, t)
-	var sum float64
-	n := 0
-	for _, id := range w.EntityIDs() {
-		if id == entityID {
-			continue
-		}
-		sum += w.Reading(id, channel, t)
-		n++
-	}
-	if n == 0 {
+	sum, count := peerReadings(entityID, channel, w, t)
+	if count == 0 {
 		return 0
 	}
-	return me - sum/float64(n)
+	return me - sum/float64(count)
 }
 
 func (s *Solver) balance(channels []string, w *world.World, t int64, entityID string) float64 {
@@ -192,30 +126,15 @@ func (s *Solver) balance(channels []string, w *world.World, t int64, entityID st
 // rule: a divergence combines sigmas in quadrature, a peer residual pools
 // the sibling variance, a conservation residual sums over the balance.
 func (s *Solver) effectiveSigma(entityID string, det *model.Detector, entityIDs []string) float64 {
-	sig := func(ch string) float64 {
-		c := s.spec.Channel(ch)
-		if c == nil {
-			return 0
-		}
-		return c.Noise.Sigma
-	}
 	switch det.Form {
 	case model.DetectorSingleChannel:
-		return sig(det.Channel)
+		return s.channelSigma(det.Channel)
 	case model.DetectorDivergence:
-		return math.Hypot(sig(det.ChannelA), sig(det.ChannelB))
+		return math.Hypot(s.channelSigma(det.ChannelA), s.channelSigma(det.ChannelB))
 	case model.DetectorPeerResidual:
-		n := len(entityIDs)
-		if n < 2 {
-			n = 2
-		}
-		return sig(det.Channel) * math.Sqrt(1+1/float64(n-1))
+		return s.peerSigma(det.Channel, len(entityIDs))
 	case model.DetectorConservation:
-		var sum float64
-		for _, c := range append(append([]string{}, det.Inputs...), det.Outputs...) {
-			sum += sig(c) * sig(c)
-		}
-		return math.Sqrt(sum)
+		return s.balanceSigma(det)
 	}
 	return 0
 }
@@ -232,4 +151,35 @@ func detectorChannels(det *model.Detector) []string {
 	}
 	sort.Strings(out)
 	return out
+}
+
+func (s *Solver) newOracleWorld(startNS int64, entityIDs []string) (*world.World, error) {
+	w, err := world.New(s.spec, s.seed, "w-solver", startNS, world.Options{
+		Noiseless:       true,
+		EmitDisabled:    true,
+		InitialEntities: entityIDs,
+		ForceEffectorOK: true,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("buildWorld: %w", err)
+	}
+	return w, nil
+}
+
+func applyOracleSetup(w *world.World, setup []SetupCall) error {
+	for _, call := range setup {
+		if _, err := w.InvokeEffector(call.Effector, call.EntityID, call.CommandID, call.Args, call.AtNS); err != nil {
+			return fmt.Errorf("truth: setup %s: %w", call.Effector, err)
+		}
+	}
+	return nil
+}
+
+func injectOracleFaults(w *world.World, entityID string, faults map[string]int64) error {
+	for fid, onset := range faults {
+		if _, err := w.InjectFault(entityID, fid, onset, nil); err != nil {
+			return fmt.Errorf("buildWorld: %w", err)
+		}
+	}
+	return nil
 }

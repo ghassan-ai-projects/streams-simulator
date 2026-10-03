@@ -41,24 +41,18 @@ func newWireGate(w io.Writer, faults WireFaults) *wireGate {
 // applying drop/duplicate/swap by emission index.
 func (g *wireGate) send(frame []byte) error {
 	g.i++
-	idx := g.i
-	if g.faults.Drop[idx] {
-		return nil // dropped; any held frame stays held until a real emit
-	}
-	if g.faults.Swap[idx] && !g.heldValid {
-		g.held = append([]byte(nil), frame...)
-		g.heldDup = g.faults.Duplicate[idx]
-		g.heldValid = true
+	index := g.i
+	if g.faults.Drop[index] {
 		return nil
 	}
-	if err := g.writeOne(frame, g.faults.Duplicate[idx]); err != nil {
+	if g.faults.Swap[index] && !g.heldValid {
+		g.holdFrame(frame, index)
+		return nil
+	}
+	if err := g.writeOne(frame, g.faults.Duplicate[index]); err != nil {
 		return err
 	}
-	if g.heldValid {
-		g.heldValid = false
-		return g.writeOne(g.held, g.heldDup)
-	}
-	return nil
+	return g.flush()
 }
 
 // flush emits any frame still held by a pending swap (e.g. at connection close).
@@ -80,4 +74,10 @@ func (g *wireGate) writeOne(frame []byte, duplicate bool) error {
 		}
 	}
 	return nil
+}
+
+func (g *wireGate) holdFrame(frame []byte, index int) {
+	g.held = append([]byte(nil), frame...)
+	g.heldDup = g.faults.Duplicate[index]
+	g.heldValid = true
 }

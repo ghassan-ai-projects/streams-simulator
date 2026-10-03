@@ -34,96 +34,13 @@ func ServeConn(conn io.ReadWriter, d *Device) error {
 // order across the connection. See WireFaults.
 func ServeConnWithFaults(conn io.ReadWriter, d *Device, faults WireFaults) error {
 	gate := newWireGate(conn, faults)
-	stateFrame, err := EncodeRecord(d.State())
-	if err != nil {
-		return fmt.Errorf("device: encode initial state: %w", err)
+	if err := sendInitialState(d, gate); err != nil {
+		return err
 	}
-	if err := gate.send(stateFrame); err != nil {
-		return fmt.Errorf("device: write initial state: %w", err)
-	}
-
 	scanner := bufio.NewScanner(conn)
 	scanner.Buffer(make([]byte, 0, 4096), maxFrameBytes)
-	for scanner.Scan() {
-		line := scanner.Bytes()
-		if len(line) == 0 {
-			continue
-		}
-		frame := append(append([]byte{}, line...), '\n')
-
-		// query_state is a host→device gateway-link control (NOT one of the four
-		// device wire records): the upstream QueryState asks for a fresh state.
-		if isQueryState(frame) {
-			stateFrame, encErr := EncodeRecord(d.State())
-			if encErr != nil {
-				return fmt.Errorf("device: encode state: %w", encErr)
-			}
-			if err := gate.send(stateFrame); err != nil {
-				return err
-			}
-			continue
-		}
-
-		// The command stream mirrors the effector's Exchange: one command yields
-		// exactly one ordered receipt/result pair. Execution truth (current_output)
-		// is still read back via query_state; the result is device-reported
-		// terminal status, not independent physical confirmation.
-		outcome, handleErr := d.handleCommand(frame)
-		if handleErr != nil {
-			// A malformed command is a wire error, not a silent drop: report it
-			// as a rejected receipt/result pair the upstream can act on.
-			reject, encErr := EncodeRecord(malformedReceipt())
-			if encErr != nil {
-				return fmt.Errorf("device: encode malformed receipt: %w", encErr)
-			}
-			if err := gate.send(reject); err != nil {
-				return err
-			}
-			malformed, encErr := EncodeRecord(malformedResult())
-			if encErr != nil {
-				return fmt.Errorf("device: encode malformed result: %w", encErr)
-			}
-			if err := gate.send(malformed); err != nil {
-				return err
-			}
-			continue
-		}
-		if outcome.Fault != "" {
-			slog.Info("device fault injected", "fault", outcome.Fault, "accepted_command", outcome.AcceptedCommand)
-		}
-		accepted, _ := outcome.Receipt["accepted"].(bool)
-		if !accepted {
-			slog.Info("device command rejected", "command_id", outcome.Receipt["command_id"], "reject_code", outcome.Receipt["reject_code"])
-		}
-		receipt, err := EncodeRecord(outcome.Receipt)
-		if err != nil {
-			return fmt.Errorf("device: encode receipt: %w", err)
-		}
-		result, err := EncodeRecord(outcome.Result)
-		if err != nil {
-			return fmt.Errorf("device: encode result: %w", err)
-		}
-		if outcome.Duplicate {
-			// Re-run the exact frame through admission/idempotency so the test
-			// exercises the same path as a gateway duplicate. The replay is an
-			// internal delivery, not a second protocol exchange: one inbound
-			// command line must produce at most one wire receipt.
-			if _, duplicateErr := d.handleCommand(frame); duplicateErr != nil {
-				return fmt.Errorf("device: duplicate command: %w", duplicateErr)
-			}
-		}
-		if outcome.AckLost {
-			continue // ack_lost: withhold receipt and result; effect stands, upstream reconciles via query_state
-		}
-		if err := gate.send(receipt); err != nil {
-			return err
-		}
-		if err := gate.send(result); err != nil {
-			return err
-		}
-		if outcome.Disconnect {
-			return ErrInjectedDisconnect
-		}
+	if err := scanDeviceFrames(scanner, d, gate); err != nil {
+		return err
 	}
 	if err := scanner.Err(); err != nil && !errors.Is(err, io.EOF) {
 		return fmt.Errorf("device: read connection: %w", err)
@@ -184,20 +101,7 @@ func Listen(path string, d *Device) (*net.UnixListener, error) {
 	if err != nil {
 		return nil, fmt.Errorf("device: listen on %s: %w", path, err)
 	}
-	go func() {
-		for {
-			conn, err := listener.AcceptUnix()
-			if err != nil {
-				return // listener closed
-			}
-			if err := ServeConn(conn, d); err != nil && !errors.Is(err, ErrInjectedDisconnect) {
-				slog.Error("device connection failed", "error", err)
-			}
-			if err := conn.Close(); err != nil {
-				slog.Error("device connection close failed", "error", err)
-			}
-		}
-	}()
+	go acceptDeviceConnections(listener, d)
 	return listener, nil
 }
 
@@ -212,6 +116,54 @@ func removeStaleSocket(path string) error {
 	if info.Mode()&os.ModeSocket == 0 {
 		return fmt.Errorf("device: refusing to remove non-socket path %s", path)
 	}
+	return clearSocketPath(path)
+}
+
+func sendInitialState(d *Device, gate *wireGate) error {
+	frame, err := EncodeRecord(d.State())
+	if err != nil {
+		return fmt.Errorf("device: encode initial state: %w", err)
+	}
+	if err := gate.send(frame); err != nil {
+		return fmt.Errorf("device: write initial state: %w", err)
+	}
+	return nil
+}
+
+func scanDeviceFrames(scanner *bufio.Scanner, d *Device, gate *wireGate) error {
+	for scanner.Scan() {
+		line := scanner.Bytes()
+		if len(line) == 0 {
+			continue
+		}
+		frame := append(append([]byte{}, line...), '\n')
+		if err := serveDeviceFrame(d, gate, frame); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func acceptDeviceConnections(listener *net.UnixListener, d *Device) {
+	for {
+		conn, err := listener.AcceptUnix()
+		if err != nil {
+			return
+		}
+		serveAcceptedConnection(conn, d)
+	}
+}
+
+func serveAcceptedConnection(conn *net.UnixConn, d *Device) {
+	if err := ServeConn(conn, d); err != nil && !errors.Is(err, ErrInjectedDisconnect) {
+		slog.Error("device connection failed", "error", err)
+	}
+	if err := conn.Close(); err != nil {
+		slog.Error("device connection close failed", "error", err)
+	}
+}
+
+func clearSocketPath(path string) error {
 	if err := os.Remove(path); err != nil {
 		return fmt.Errorf("device: clear stale socket %s: %w", path, err)
 	}

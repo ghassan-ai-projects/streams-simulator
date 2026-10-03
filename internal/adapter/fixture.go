@@ -51,6 +51,10 @@ func decodeJSONL(path string, dst *[]model.SimEvent) error {
 	if err != nil {
 		return fmt.Errorf("adapter: %w", err)
 	}
+	return appendFixtureRecords(raw, dst)
+}
+
+func appendFixtureRecords(raw []byte, dst *[]model.SimEvent) error {
 	for _, line := range strings.Split(strings.TrimSpace(string(raw)), "\n") {
 		line = strings.TrimSpace(line)
 		if line == "" {

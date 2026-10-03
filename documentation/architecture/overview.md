@@ -1,6 +1,6 @@
 # Architecture overview
 
-> Status: Implemented summary; release posture is conditional. Authority: current Go code and tests, with accepted deviations in `docs/DECISIONS.md`. Verified by: package map and targeted repository review. Last verified: 2026-08-17.
+> Status: Implemented summary; release posture is conditional. Authority: current Go code and tests, with accepted deviations in `docs/DECISIONS.md`. Verified by: package map and executable dependency checks. Last verified: 2026-10-03.
 
 Streams Simulator is a layered Go application. The layers are intentionally boring: domain data enters a world, a delivery layer changes the observer’s evidence, a data-defined adapter renders that evidence, and a sink carries it to a consumer.
 
@@ -26,17 +26,22 @@ flowchart LR
 
 ## Package direction
 
-The intended dependency direction is downward:
+One Go module contains packages organized around simulator responsibilities.
+The ownership direction is downward; this summary omits shared foundation imports:
 
 ```text
 cmd/streamsim
     → internal/cli
-        → internal/mcp, run, suite, score, refconsumer
-            → world, perturb, adapter, sink, truth, domain, model, device
-                → deviceworld (world-backed emulator plant)
+        → mcp, run, suite, score, refconsumer, deviceworld
+            → audit, truth, world, perturb, adapter, sink, device
+                → domain, model, jsonschema, schemas, canonical, randutil
+
+deviceworld → device, world (world-backed emulator bridge)
 ```
 
-The current implementation keeps ledger behavior inside `internal/run`; there is no separate `internal/ledger` package. That is an implementation detail worth knowing when navigating the code, not a public contract.
+The complete direct-import map is enforced by [`test/architecture`](../../test/architecture/dependencies_test.go). Application packages compose lower-level responsibilities; the world and device cores do not import their integration bridge. Ledger behavior belongs to `internal/run`.
+
+Files within a package separate loading, admission, execution, publication and related tests. Every Go file, including tests, is limited to 300 total lines. New packages require a distinct ownership boundary and a current caller; file size alone does not justify another package or Go module.
 
 ## Responsibilities
 

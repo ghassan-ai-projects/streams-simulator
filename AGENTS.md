@@ -58,20 +58,26 @@ Do not invent architecture outside the documented design. The spec was written t
 
 The documented shape (see [docs/design/TECHNICAL_DESIGN.md](docs/design/TECHNICAL_DESIGN.md)):
 
-- `cmd/streamsim/main.go` - entrypoint, flags, wiring, shutdown
+- `cmd/streamsim/main.go` - version metadata and CLI entrypoint
+- `internal/cli` - flags, application wiring, commands, shutdown
 - `internal/world` - seeded discrete-event world core; domain specs are data, loaded through one schema
 - `internal/perturb` - perturbation layer between world and adapter (what the observer got, not what happened)
 - `internal/adapter` - declarative output adapters projecting native `sim-event-v0.1` into consumer wire formats
 - `internal/sink` - inproc, file, http-push sinks
 - `internal/mcp` - one MCP server, two roles: `director` (catalog, world, clock, fault, perturb, truth) and `operator` (nameplate, effectors, invoke, verdict)
 - `internal/run` - run orchestration, delivery ledger, artifacts, replay, and quiescence; there is no separate `internal/ledger` package
-- `internal/truth` - sealed ground truth and scoring
+- `internal/truth` - sealed ground truth and independent analytic solver
+- `internal/score` - online/offline scoring policies
+- `internal/audit`, `internal/suite`, `internal/refconsumer` - trivial-baseline audit, scenario generation, shipped reference consumer
+- `internal/device`, `internal/deviceworld` - device emulation and its world integration bridge
+- `internal/domain`, `internal/model`, `internal/jsonschema`, `internal/schemas`, `internal/canonical`, `internal/randutil`, `internal/wall` - data loading, shared records and bounded foundations
 - `docs/` - the engineering design, research, contracts, fixtures, and evidence archive
 - `documentation/` - curated public product, usage, architecture, benchmark, operations, and governance documentation
 
 Dependency direction:
 
-- `cmd` -> `mcp` -> `world`/`perturb`/`adapter`/`sink`/`ledger`/`truth`
+- `cmd` -> `cli` -> application packages (`mcp`, `run`, `suite`, `score`, `refconsumer`)
+- `run` composes `world`/`perturb`/`adapter`/`sink`; truth and scoring consume world/evidence. `deviceworld` bridges `device` and `world` without either core importing the bridge.
 - Dependencies flow downward only.
 - Domain specs, adapters, and effectors are **data** (JSON), never code. If any domain needs a code branch in the binary, the simulator is wrong and the domain found the bug.
 - The simulator has no knowledge of its consumers. No consumer name, schema, field, or behaviour appears in the binary.
@@ -83,6 +89,7 @@ Determinism: a run is a pure function of `(sim_version, domain_digest, adapter_d
 Primary commands:
 
 - `make ci-check`
+- `make function-length`
 - `make build`
 - `go vet ./...`
 - `go test ./...`
@@ -100,6 +107,17 @@ See [.agents/context/testing.md](.agents/context/testing.md) for the testing and
 
 ## Go Standards
 
+### Clean-code and architecture bar
+
+- Every Go source file, including tests, must be at most **300 total lines** (comments and blank lines count). Split files by a named responsibility within their owning package; do not split functions arbitrarily or compress code to meet the limit.
+- Function names state domain intent. Each function performs one task at one abstraction level. Entry points read as a sequence of simulator operations; put parsing, serialization, record bookkeeping, and concrete mechanics in named steps below their callers.
+- Every production Go function, method and anonymous function must have at most **15 physical body lines**, from the opening brace through the closing brace, including comments and blank lines. Test functions are excluded from this limit. Keep private helpers in stepdown reading order. Extract named responsibilities; do not compress statements or remove useful comments to meet the limit.
+- Apply function-length refactoring to production source only; leave test files unchanged and use the existing tests to validate behavior.
+- Packages own simulator responsibilities, not generic controller/service/store layers. Preserve the world → perturbation → adapter → sink pipeline and director/operator truth boundary. Create a package only for a distinct responsibility with a concrete caller and a downward dependency direction.
+- Preserve exported signatures, JSON shapes, errors, command/delivery order, RNG draws, digest inputs, locks, cancellation, and effects during refactoring. Record intentional corrections separately and prove them with regression tests.
+- Add meaningful boundary tests in each modified production package. Run focused tests and review the diff before each round's commit; run the full repository gate before handoff.
+- The executable file-size, package-dependency and legacy function-review checks live in `test/architecture`. The strict 15-line AST check runs through `make function-length`, `make ci-check` and the local pre-commit hook. The review criteria and round evidence are in [docs/refactoring/clean-code-20261002/](docs/refactoring/clean-code-20261002/BAR.md).
+
 - Use `context.Context` as the first parameter for cancellable or I/O work.
 - Use `log/slog` for logging.
 - Wrap errors with `%w`.
@@ -112,6 +130,15 @@ See [.agents/context/testing.md](.agents/context/testing.md) for the testing and
 - RFC 8785 canonical JSON everywhere a digest is computed.
 
 See [.agents/context/go-style.md](.agents/context/go-style.md) for the repo-specific style rules.
+
+## Enola architecture review
+
+- Use Enola for this repository, with [mcp-arch.yaml](mcp-arch.yaml). Generated snapshots and baselines live in ignored `.enola/`; commit review evidence, not generated state.
+- Before structural edits, generate a fresh snapshot for this repository and pin it with `set_baseline`, or run `make architecture-baseline`. Pin once before the round; do not re-pin to hide findings.
+- Use `query_insights` for cycles/layers and `impact_analysis` before changing a shared symbol. After editing, regenerate, verify receipt comparability, and inspect `diff_snapshot` for new coupling, findings and scope spillover.
+- Run `make architecture` to enforce new cycle/layer findings at confidence 0.8, matching the Tamoz workflow. A report-only exit zero is not an enforced pass. Missing baselines, unavailable tools and incomparable snapshots are blockers for this check, not clean results.
+- Confirm heuristic hotspots, complexity and performance candidates against code and tests. Go import checks and `test/architecture` remain authoritative for compilation and the detailed business package graph; Enola's inferred command/internal layers do not cover every internal ownership boundary.
+- After an Enola extractor/configuration upgrade, check coverage and comparability before pinning a replacement baseline. These local targets complement `make ci-check`; they require a pre-change local baseline.
 
 ## Forbidden Changes
 

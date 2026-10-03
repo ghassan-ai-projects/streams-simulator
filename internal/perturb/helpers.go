@@ -26,19 +26,13 @@ func newReorderWindow(disp int) *reorderWindow {
 
 func (w *reorderWindow) push(recs []Delivered, atNS int64) []Delivered {
 	w.buf = append(w.buf, recs...)
-	// Emit the earliest buffered record, then displace a later one ahead of
-	// it (deterministically: swap within the window).
 	var out []Delivered
 	for len(w.buf) > w.maxDisplacement {
-		// Take the head; then, with the next record, emit it first to create
-		// an out-of-order pair when a later record arrived first.
-		head := w.buf[0]
-		w.buf = w.buf[1:]
-		if len(w.buf) > 0 && atNS%2 == 0 {
-			out = append(out, w.buf[0], head)
-			w.buf = w.buf[1:]
+		first, second, paired := w.popDisplaced(atNS)
+		if paired {
+			out = append(out, first, second)
 		} else {
-			out = append(out, head)
+			out = append(out, first)
 		}
 	}
 	return out
@@ -80,4 +74,16 @@ func truncatePrecision(ts string) string {
 		return ts
 	}
 	return t.Format("2006-01-02T15:04:05.000000Z07:00")
+}
+
+func (w *reorderWindow) popDisplaced(atNS int64) (Delivered, Delivered, bool) {
+	// Emit the later record first when displacing an out-of-order pair.
+	head := w.buf[0]
+	w.buf = w.buf[1:]
+	if len(w.buf) > 0 && atNS%2 == 0 {
+		later := w.buf[0]
+		w.buf = w.buf[1:]
+		return later, head, true
+	}
+	return head, Delivered{}, false
 }

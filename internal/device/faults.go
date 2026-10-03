@@ -60,17 +60,13 @@ func knownFault(name string) bool {
 // accepted-command ordinal. Without @n the fault applies to the first
 // admission-valid command.
 func ParseFaultSpec(spec string) (FaultInjection, error) {
-	name, ordinalText, hasOrdinal := strings.Cut(spec, "@")
-	if name == "" || strings.Contains(ordinalText, "@") {
+	name, text, present := strings.Cut(spec, "@")
+	if name == "" || strings.Contains(text, "@") {
 		return FaultInjection{}, fmt.Errorf("device: fault must be name[@accepted-command], got %q", spec)
 	}
-	ordinal := 1
-	if hasOrdinal {
-		parsed, err := strconv.Atoi(ordinalText)
-		if err != nil {
-			return FaultInjection{}, fmt.Errorf("device: fault %q has invalid accepted command ordinal: %w", spec, err)
-		}
-		ordinal = parsed
+	ordinal, err := faultOrdinal(spec, text, present)
+	if err != nil {
+		return FaultInjection{}, err
 	}
 	injection := FaultInjection{Name: name, AcceptedCommand: ordinal}
 	if err := ValidateFaultSchedule([]FaultInjection{injection}); err != nil {
@@ -88,4 +84,15 @@ func faultNames(schedule []FaultInjection) map[int][]string {
 		sort.Strings(byOrdinal[ordinal])
 	}
 	return byOrdinal
+}
+
+func faultOrdinal(spec, text string, present bool) (int, error) {
+	if !present {
+		return 1, nil
+	}
+	ordinal, err := strconv.Atoi(text)
+	if err != nil {
+		return 0, fmt.Errorf("device: fault %q has invalid accepted command ordinal: %w", spec, err)
+	}
+	return ordinal, nil
 }

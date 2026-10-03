@@ -9,15 +9,22 @@ Use these commands unless the task is documentation-only:
 - `make build`
 - `make lint`
 - `make ci-check`
+- `make function-length`
 - `git diff --check`
 - `pre-commit run --all-files` if `pre-commit` is installed
 
 ## Repository-Specific Behavior
 
 - `make build` builds `cmd/streamsim` into `bin/`.
-- `make ci-check` runs `tidy -> build -> vet -> lint-ci -> test-short -> deadcode -> vulncheck`.
+- `make ci-check` runs `function-length -> docs-check -> tidy -> build -> vet -> lint-ci -> test-short -> test-simdet -> deadcode -> vulncheck -> fuzz-soak`.
 - In restricted environments, lint and loopback MCP tests can fail because they need cache writes or local sockets.
 - `deadcode` and `govulncheck` are release-gate tools; the Makefile fails closed when they are missing.
+
+The strict source checker covers production declarations, methods and callbacks,
+including build-tagged files, with no exemptions. Architecture tests enforce the
+300-line file limit and direct package ownership. During the current source-only
+refactoring program, the user requires test files to remain unchanged; validate
+behavior with existing regression, replay and analytic-oracle tests.
 
 ## Test Quality Bar
 

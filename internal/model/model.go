@@ -49,15 +49,7 @@ func Decode(r io.Reader, dst any) error {
 	if err := dec.Decode(dst); err != nil {
 		return fmt.Errorf("model: %w", err)
 	}
-	// Reject trailing garbage after the document.
-	var extra any
-	if err := dec.Decode(&extra); err != io.EOF {
-		if err == nil {
-			return fmt.Errorf("model: trailing JSON document")
-		}
-		return fmt.Errorf("model: trailing data after JSON document: %w", err)
-	}
-	return nil
+	return rejectTrailingJSON(dec)
 }
 
 // DecodeBytes is Decode over a byte slice.
@@ -110,4 +102,16 @@ func mustAny(b []byte) any {
 		panic(err)
 	}
 	return v
+}
+
+func rejectTrailingJSON(dec *json.Decoder) error {
+	// Reject trailing garbage after the document.
+	var extra any
+	if err := dec.Decode(&extra); err != io.EOF {
+		if err == nil {
+			return fmt.Errorf("model: trailing JSON document")
+		}
+		return fmt.Errorf("model: trailing data after JSON document: %w", err)
+	}
+	return nil
 }

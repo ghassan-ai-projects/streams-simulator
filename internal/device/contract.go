@@ -41,20 +41,35 @@ var (
 
 // schemaForMessageType returns the compiled schema for a device message_type.
 func schemaForMessageType(messageType string) (*jsonschema.Schema, error) {
-	file, ok := map[string]string{
-		"command": "device-command-v1.json",
-		"receipt": "device-receipt-v1.json",
-		"result":  "device-result-v1.json",
-		"state":   "device-state-v1.json",
-	}[messageType]
+	file, err := messageSchemaFile(messageType)
+	if err != nil {
+		return nil, err
+	}
+	return cachedMessageSchema(messageType, file)
+}
+
+func messageSchemaFile(messageType string) (string, error) {
+	file, ok := map[string]string{"command": "device-command-v1.json", "receipt": "device-receipt-v1.json",
+		"result": "device-result-v1.json", "state": "device-state-v1.json"}[messageType]
 	if !ok {
-		return nil, fmt.Errorf("device: unsupported message_type %q", messageType)
+		return "", fmt.Errorf("device: unsupported message_type %q", messageType)
 	}
-	schemaMu.Lock()
-	defer schemaMu.Unlock()
-	if s := compiled[messageType]; s != nil {
-		return s, nil
+	return file, nil
+}
+
+func compileMessageSchema(file string) (*jsonschema.Schema, error) {
+	doc, err := decodeMessageSchema(file)
+	if err != nil {
+		return nil, err
 	}
+	schema, err := jsonschema.Compile(doc)
+	if err != nil {
+		return nil, fmt.Errorf("device: compile schema %s: %w", file, err)
+	}
+	return schema, nil
+}
+
+func decodeMessageSchema(file string) (any, error) {
 	raw, err := schemaFiles.ReadFile("contract/schemas/" + file)
 	if err != nil {
 		return nil, fmt.Errorf("device: read embedded schema %s: %w", file, err)
@@ -63,9 +78,18 @@ func schemaForMessageType(messageType string) (*jsonschema.Schema, error) {
 	if err := json.Unmarshal(raw, &doc); err != nil {
 		return nil, fmt.Errorf("device: decode schema %s: %w", file, err)
 	}
-	schema, err := jsonschema.Compile(doc)
+	return doc, nil
+}
+
+func cachedMessageSchema(messageType, file string) (*jsonschema.Schema, error) {
+	schemaMu.Lock()
+	defer schemaMu.Unlock()
+	if schema := compiled[messageType]; schema != nil {
+		return schema, nil
+	}
+	schema, err := compileMessageSchema(file)
 	if err != nil {
-		return nil, fmt.Errorf("device: compile schema %s: %w", file, err)
+		return nil, err
 	}
 	compiled[messageType] = schema
 	return schema, nil
