@@ -10,45 +10,14 @@ import (
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/score"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
 func cmdScore(args []string) error {
-	fs := flag.NewFlagSet("score", flag.ExitOnError)
-	runArtifact := fs.String("run", "", "run artifact (run.json)")
-	labelPath := fs.String("label", "", "ground truth label (JSON)")
-	if err := fs.Parse(args); err != nil {
-		return fmt.Errorf("streamsim: %w", err)
-	}
-	if *runArtifact == "" {
-		return fmt.Errorf("score requires --run")
-	}
-	dir := filepath.Dir(*runArtifact)
-	verdictPath := filepath.Join(dir, "verdict.json")
-	label := *labelPath
-	if label == "" {
-		label = filepath.Join(dir, "label.json")
-	}
-	var verdict model.Verdict
-	if err := loadJSON(verdictPath, &verdict); err != nil {
-		return fmt.Errorf("streamsim: %w", err)
-	}
-	var gt model.GroundTruthRecord
-	if err := loadJSON(label, &gt); err != nil {
-		return fmt.Errorf("streamsim: %w", err)
-	}
-	ledger, err := loadLedger(filepath.Join(dir, "ledger.jsonl"))
+	artifact, label, err := parseScoreOptions(args)
 	if err != nil {
-		return fmt.Errorf("streamsim: %w", err)
+		return err
 	}
-	var calls []world.EffectorCall
-	var perturbations []string
-	var art model.RunArtifact
-	if err := loadJSON(*runArtifact, &art); err == nil {
-		perturbations = art.AppliedPerturbations
-	}
-	sc := score.Offline(&verdict, &gt, ledger, calls, perturbations)
-	return printJSON(sc)
+	return scoreArtifact(artifact, label)
 }
 
 func loadJSON(path string, dst any) error {
@@ -71,8 +40,19 @@ func loadLedger(path string) ([]model.LedgerRecord, error) {
 		return nil, fmt.Errorf("open ledger %s: %w", path, err)
 	}
 	defer func() { _ = f.Close() }()
+	return decodeLedger(json.NewDecoder(f), path)
+}
 
-	dec := json.NewDecoder(f)
+func printJSON(v any) error {
+	raw, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		return fmt.Errorf("streamsim: %w", err)
+	}
+	fmt.Println(string(raw))
+	return nil
+}
+
+func decodeLedger(dec *json.Decoder, path string) ([]model.LedgerRecord, error) {
 	var ledger []model.LedgerRecord
 	for {
 		var record model.LedgerRecord
@@ -87,11 +67,51 @@ func loadLedger(path string) ([]model.LedgerRecord, error) {
 	}
 }
 
-func printJSON(v any) error {
-	raw, err := json.MarshalIndent(v, "", "  ")
+func parseScoreOptions(args []string) (string, string, error) {
+	fs := flag.NewFlagSet("score", flag.ExitOnError)
+	artifact := fs.String("run", "", "run artifact (run.json)")
+	label := fs.String("label", "", "ground truth label (JSON)")
+	if err := fs.Parse(args); err != nil {
+		return "", "", fmt.Errorf("streamsim: %w", err)
+	}
+	if *artifact == "" {
+		return "", "", fmt.Errorf("score requires --run")
+	}
+	return *artifact, *label, nil
+}
+
+func loadScoreReports(dir, label string) (*model.Verdict, *model.GroundTruthRecord, error) {
+	if label == "" {
+		label = filepath.Join(dir, "label.json")
+	}
+	var verdict model.Verdict
+	if err := loadJSON(filepath.Join(dir, "verdict.json"), &verdict); err != nil {
+		return nil, nil, fmt.Errorf("streamsim: %w", err)
+	}
+	var gt model.GroundTruthRecord
+	if err := loadJSON(label, &gt); err != nil {
+		return nil, nil, fmt.Errorf("streamsim: %w", err)
+	}
+	return &verdict, &gt, nil
+}
+
+func artifactPerturbations(path string) []string {
+	var art model.RunArtifact
+	if err := loadJSON(path, &art); err == nil {
+		return art.AppliedPerturbations
+	}
+	return nil
+}
+
+func scoreArtifact(artifact, label string) error {
+	dir := filepath.Dir(artifact)
+	verdict, gt, err := loadScoreReports(dir, label)
+	if err != nil {
+		return err
+	}
+	ledger, err := loadLedger(filepath.Join(dir, "ledger.jsonl"))
 	if err != nil {
 		return fmt.Errorf("streamsim: %w", err)
 	}
-	fmt.Println(string(raw))
-	return nil
+	return printJSON(score.Offline(verdict, gt, ledger, nil, artifactPerturbations(artifact)))
 }

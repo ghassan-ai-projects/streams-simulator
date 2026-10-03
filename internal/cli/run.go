@@ -16,25 +16,37 @@ func cmdRun(args []string) error {
 	if err != nil {
 		return err
 	}
+	return executeRun(cfg, options)
+}
+
+func executeRun(cfg run.Config, options runOptions) error {
 	r, err := run.New(context.Background(), cfg)
 	if err != nil {
 		return fmt.Errorf("streamsim: %w", err)
 	}
+	if err := applyRunScript(r, options); err != nil {
+		return err
+	}
+	if _, err := r.Advance(context.Background(), options.startTime+int64(options.durationS*1e9), false); err != nil {
+		return fmt.Errorf("streamsim: %w", err)
+	}
+	return publishRun(r, options.outDir)
+}
+
+func applyRunScript(r *run.Run, options runOptions) error {
 	for _, apply := range []func(*run.Run, runOptions) error{applyScriptedFaults, applyScriptedPerturbations, invokeScriptedEffectors} {
 		if err := apply(r, options); err != nil {
 			return err
 		}
 	}
-	if _, err := r.Advance(context.Background(), options.startTime+int64(options.durationS*1e9), false); err != nil {
-		return fmt.Errorf("streamsim: %w", err)
-	}
-	art, err := r.End(options.outDir)
+	return nil
+}
+
+func publishRun(r *run.Run, out string) error {
+	art, err := r.End(out)
 	if err != nil {
 		return fmt.Errorf("streamsim: %w", err)
 	}
-	return printJSON(map[string]any{
-		"run_id": art.RunID, "trace_digest": art.ExpectedTraceDigest,
-		"reproducible": art.Reproducible, "emitted": art.Counts.Emitted,
-		"ledger": len(r.Ledger()),
-	})
+	return printJSON(map[string]any{"run_id": art.RunID, "trace_digest": art.ExpectedTraceDigest,
+		"reproducible": art.Reproducible, "emitted": art.Counts.Emitted, "ledger": len(r.Ledger())})
 }

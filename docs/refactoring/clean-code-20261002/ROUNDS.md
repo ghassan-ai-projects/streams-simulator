@@ -458,3 +458,14 @@ Existing focused generation regression, audit and architecture race tests pass;
 complete expensive suite tests are reserved for the final repository gate.
 Package lint/vet and whitespace checks pass; test files are unchanged. Enola is
 clean and comparable with no added findings. The strict audit has 108 bodies left.
+
+## Round 30 — Run, replay, scoring and suite command workflows
+
+Complete command orchestration, run option parsing, script execution and evidence
+loading functions to 15 lines. Shared simulator-input loading retains catalog,
+adapter, domain and adapter-selection error priority. Preserve flags, defaults,
+CLI output shapes, ignored artifact-load behavior and empty-ledger representation.
+
+Existing shuffled CLI race and architecture tests, package lint/vet and whitespace
+checks pass. Tests remain unchanged. Enola is clean and comparable with no added
+findings. The strict audit remains open at 98 production bodies.
