@@ -423,3 +423,14 @@ Existing shuffled deviceworld/device race tests and architecture guards pass.
 Package lint/vet and whitespace checks pass; tests are unchanged. Enola is clean,
 comparable and adds no findings against the retained baseline. The strict audit
 remains open at 140 production bodies.
+
+## Round 27 — Reference-consumer observation and reporting
+
+Complete reference-consumer functions to 15 lines. Separate delivery admission,
+series tracking, anomaly detection, actuation, silence detection and verdict
+publication. MCP decoding names refusal and structured-content admission;
+nameplate projection preserves ordered append and nil-slice representations.
+
+Existing shuffled reference-consumer race and architecture tests, package lint/vet
+and whitespace checks pass. Test files are unchanged. Enola is clean and
+comparable with no added findings. The strict audit remains open at 132 bodies.
