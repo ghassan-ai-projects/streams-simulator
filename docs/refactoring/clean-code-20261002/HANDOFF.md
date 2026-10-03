@@ -95,12 +95,21 @@ lint, short race tests, deterministic tests, vulnerability scan and bounded
 fuzzing. No vulnerabilities were reported. Deadcode reports four existing
 unreachable symbols (Capabilities.TargetNames, Device.Advance,
 Device.SetFaultSchedule and wall.Now); its successful exit is not zero findings.
-Pre-commit is unavailable. The PR is a draft
-because the 15-line migration and correctness follow-ups remain open. Local
+Pre-commit is unavailable. The full shuffled race-and-coverage run (`go test -race -count=1 -shuffle=on
+-coverprofile=... ./...`) passes with 69.4% total coverage; score coverage is
+84.2%. The final Enola check is clean and comparable, enforcing cycles/layers at
+0.8 with no new findings. Go dependency/file-size guards and whitespace checks
+pass. The strict function checker still fails with the 211 bodies listed above.
+
+The PR remains open with the 15-line migration and correctness follow-ups
+explicitly incomplete. Local
 Enola evidence complements, rather than replaces, the Go dependency guard and
 behavioral oracles. Remote CI must be checked independently after publication.
 
-Unrelated working-tree changes in docs/README.md and docs/reviews/ are excluded.
+A concurrent publication commit (`b6851c6`) included the pre-existing docs/README.md
+update and docs/reviews/ architecture-review documents. They were excluded from
+earlier refactoring commits; they are now part of this PR and retained as
+published. Their historical claims do not replace this current validation.
 
 ## Probe reproduction
 

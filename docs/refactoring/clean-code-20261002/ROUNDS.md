@@ -340,7 +340,19 @@ All score-package production functions meet 15 lines. Matching remains greedy;
 existing recovery scope and zero-time semantics are preserved for separate,
 regression-proven corrections. Test files remain unchanged.
 
-Focused scoring/architecture race tests and score lint/vet pass. Full repository
-verification and one final retained-baseline Enola check precede publication.
+Focused scoring/architecture race tests and score lint/vet pass. The full CI gate and shuffled race/coverage suite pass (69.4% total coverage);
+the final retained-baseline Enola check is clean and comparable.
 The strict audit remains open at 211 bodies. HANDOFF.md records the package
 inventory, source-confirmed improvement candidates and remaining CI integration.
+
+
+## Round 21 — Publication evidence
+
+Record the final full-gate results and package-level remaining work in HANDOFF.md.
+The strict 15-line migration is incomplete at 211 production bodies, despite the
+passing existing CI gate. Disposable public-API probes reproduce adapter
+hash-suffix bounds and authority-log argument mutation. Other scan findings are
+labeled source-confirmed risks. No production or test source changes in this
+round; whitespace checks suffice for the evidence update. Preserve the concurrent
+publication commit and its included architecture-review documents. Publish the
+report through the existing PR rather than creating a duplicate.
