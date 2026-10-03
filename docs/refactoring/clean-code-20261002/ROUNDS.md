@@ -544,3 +544,14 @@ envelopes and audit capture; historical counts are reconciled with check receipt
 Existing shuffled world, truth, audit, deviceworld and architecture race tests pass;
 lint/vet and whitespace checks pass. Tests remain unchanged. Enola is clean and
 comparable with no added findings. Exactly 34 production bodies remain, all in device.
+
+## Round 37 — Device capability and wire-schema admission
+
+Complete capability loading, route/preset/bound validation, legacy targets and
+wire-schema compilation to 15 lines. Preserve sorted route admission, inner-map
+error priority, typed digest preimages and omitted bounds. Cached schemas retain
+their mutex scope, admission order and error wrapping.
+
+Existing shuffled device, deviceworld and architecture race tests pass; lint/vet
+and whitespace checks pass. Tests remain unchanged. Enola is clean and comparable
+with no added findings. Exactly 25 production bodies remain, all in device.
