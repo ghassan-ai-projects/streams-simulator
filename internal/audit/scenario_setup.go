@@ -80,3 +80,9 @@ func (capture *auditCapture) finishWorld(w *world.World, layer *perturb.Layer, h
 	}
 	return nil
 }
+
+func prepareAuditCapture(entity string, w *world.World, layer *perturb.Layer) *auditCapture {
+	capture := &auditCapture{entityID: entity, log: emissionLog{}, series: map[string][]float64{}, times: map[string][]int64{}}
+	capture.bindEmitter(w, layer)
+	return capture
+}

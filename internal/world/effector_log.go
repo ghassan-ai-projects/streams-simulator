@@ -6,20 +6,8 @@ import (
 )
 
 func (w *World) recordCall(effector, entityID, commandID string, args map[string]any, atNS int64, mode string, accepted, interlock bool, reason string, latency float64, effectApplied bool) {
-	call := &EffectorCall{
-		CommandID:        commandID,
-		Effector:         effector,
-		EntityID:         entityID,
-		WorldID:          w.ID,
-		Args:             args,
-		AtNS:             atNS,
-		Mode:             mode,
-		Accepted:         accepted,
-		InterlockRefused: interlock,
-		Reason:           reason,
-		AckLatencyMS:     latency,
-		EffectApplied:    effectApplied,
-	}
+	call := &EffectorCall{CommandID: commandID, Effector: effector, EntityID: entityID, WorldID: w.ID, Args: args, AtNS: atNS}
+	call.recordOutcome(mode, accepted, interlock, reason, latency, effectApplied)
 	call.ResultDigest = resultDigest(call)
 	w.effectorCalls = append(w.effectorCalls, *call)
 }
@@ -94,4 +82,13 @@ func (w *World) sortedKickStates() []driverKey {
 		return out[i].state < out[j].state
 	})
 	return out
+}
+
+func (call *EffectorCall) recordOutcome(mode string, accepted, interlock bool, reason string, latency float64, applied bool) {
+	call.Mode = mode
+	call.Accepted = accepted
+	call.InterlockRefused = interlock
+	call.Reason = reason
+	call.AckLatencyMS = latency
+	call.EffectApplied = applied
 }

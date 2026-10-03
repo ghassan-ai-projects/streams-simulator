@@ -444,7 +444,7 @@ quantile grids, numerical accumulation, strict comparisons and tie priority.
 
 Existing shuffled audit race tests and architecture guards, lint/vet and whitespace
 checks pass. Tests remain unchanged. Enola is clean and comparable with no added
-findings. The strict audit remains open at 120 production bodies.
+findings. The strict audit remains open at 121 production bodies.
 
 ## Round 29 — Scenario generation, admission and replay commands
 
@@ -457,7 +457,7 @@ the source of setup; no domain-specific branch is introduced.
 Existing focused generation regression, audit and architecture race tests pass;
 complete expensive suite tests are reserved for the final repository gate.
 Package lint/vet and whitespace checks pass; test files are unchanged. Enola is
-clean and comparable with no added findings. The strict audit has 108 bodies left.
+clean and comparable with no added findings. The strict audit has 109 bodies left.
 
 ## Round 30 — Run, replay, scoring and suite command workflows
 
@@ -468,7 +468,7 @@ CLI output shapes, ignored artifact-load behavior and empty-ledger representatio
 
 Existing shuffled CLI race and architecture tests, package lint/vet and whitespace
 checks pass. Tests remain unchanged. Enola is clean and comparable with no added
-findings. The strict audit remains open at 98 production bodies.
+findings. The strict audit remains open at 101 production bodies.
 
 ## Round 31 — Device, manifest and MCP command wiring
 
@@ -480,7 +480,7 @@ retain endpoint lifecycle and close/error order. Flags and output shapes persist
 
 Existing shuffled CLI, deviceworld, reference-consumer and architecture race tests
 pass; lint/vet and whitespace checks pass. Tests are unchanged. Enola is clean
-and comparable with no added findings. The strict audit has 89 bodies left.
+and comparable with no added findings. The strict audit has 90 bodies left.
 
 ## Round 32 — MCP world, run and capability operations
 
@@ -492,7 +492,7 @@ resource-template parsing retain their accepted representations and defaults.
 
 Existing shuffled MCP, reference-consumer and architecture race tests pass;
 package lint/vet and whitespace checks pass. Tests are unchanged. Enola is clean
-and comparable with no added findings. The strict audit has 74 bodies left.
+and comparable with no added findings. The strict audit has 75 bodies left.
 
 ## Round 33 — MCP tool registration and transport handlers
 
@@ -505,7 +505,7 @@ are unchanged. No operator truth/state surface is introduced.
 
 Existing shuffled MCP, reference-consumer and architecture race tests pass;
 package lint/vet and whitespace checks pass. Tests are unchanged. Enola is clean
-and comparable with no added findings. The strict audit has 65 bodies left.
+and comparable with no added findings. The strict audit has 66 bodies left.
 
 ## Round 34 — World integration and state drivers
 
@@ -518,7 +518,7 @@ and deviceworld callers; its retained extractor remains unchanged.
 Existing shuffled world, truth, scoring and architecture race tests pass, including
 independent analytic cross-checks. Lint/vet and whitespace checks pass; tests are
 unchanged. Enola is clean and comparable with no added findings. The strict audit
-has 57 production bodies left.
+has 61 production bodies left.
 
 ## Round 35 — World scheduling, availability and observations
 
@@ -529,4 +529,18 @@ preserving all seeded draws, timestamps, trigger updates and emission counters.
 
 Existing shuffled world, independent truth, replay/run and architecture race tests
 pass; lint/vet and whitespace checks pass. Tests are unchanged. Enola is clean
-and comparable with no added findings. The strict audit has 45 bodies left.
+and comparable with no added findings. The strict audit has 47 bodies left.
+
+## Round 36 — World lifecycle, faults and effector policy
+
+Complete all world production functions to 15 lines. Entity construction names
+state and channel initialization; fault admission preserves parameter/error
+priority and onset defaults. Effect scheduling separates argument contributions
+and physical/shadow kicks. Failure sampling retains total accumulation and RNG
+order; acknowledgement timing and call evidence retain their representations.
+The strict audit also catches and resolves two 16-line helper carryovers in fault
+envelopes and audit capture; historical counts are reconciled with check receipts.
+
+Existing shuffled world, truth, audit, deviceworld and architecture race tests pass;
+lint/vet and whitespace checks pass. Tests remain unchanged. Enola is clean and
+comparable with no added findings. Exactly 34 production bodies remain, all in device.

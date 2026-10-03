@@ -16,29 +16,14 @@ func RenderID(tmpl string, n int) string {
 
 // renderID expands the id template.
 func renderID(tmpl string, n int, params map[string]any) string {
-	out := tmpl
-	out = strings.ReplaceAll(out, "{n}", strconv.Itoa(n))
+	out := strings.ReplaceAll(tmpl, "{n}", strconv.Itoa(n))
 	for {
-		start := strings.Index(out, "{")
-		end := strings.Index(out, "}")
+		start, end := strings.Index(out, "{"), strings.Index(out, "}")
 		if start < 0 || end < 0 || end < start {
-			break
+			return out
 		}
-		name := out[start+1 : end]
-		val := "a"
-		if params != nil {
-			if v, ok := params[name]; ok {
-				switch x := v.(type) {
-				case string:
-					val = x
-				default:
-					val = fmt.Sprint(x)
-				}
-			}
-		}
-		out = out[:start] + val + out[end+1:]
+		out = out[:start] + entityTemplateValue(params, out[start+1:end]) + out[end+1:]
 	}
-	return out
 }
 
 // addEntity creates an entity with initial hidden state and schedules its
@@ -47,44 +32,11 @@ func (w *World) addEntity(id string, atNS int64, params map[string]any) error {
 	if _, exists := w.entities[id]; exists {
 		return fmt.Errorf("world: entity %q already exists", id)
 	}
-	et := w.Spec.Spec.Entities.EntityType
-	if et == "" {
-		et = strings.Split(w.Spec.Spec.ID, "-")[0]
-	}
-	ent := &Entity{
-		ID:       id,
-		Type:     et,
-		BornNS:   atNS,
-		States:   map[string]*stateValue{},
-		channels: map[string]*channelRunState{},
-		alive:    true,
-	}
-	for i := range w.Spec.Spec.State {
-		st := &w.Spec.Spec.State[i]
-		ent.States[st.Name] = &stateValue{
-			x:        st.Initial,
-			lastStep: atNS,
-		}
-	}
+	ent := w.newEntity(id, atNS)
+	w.initializeEntityState(ent, atNS)
 	w.entities[id] = ent
 	w.entityOrder = append(w.entityOrder, id)
-
-	// Generate any template ids from params for this entity.
-	if tmpl := w.Spec.Spec.Entities.IDTemplate; tmpl != "" {
-		// re-render a fresh n if this is an autonomous birth
-		_ = tmpl
-	}
-	_ = params
-
-	for i := range w.Spec.Spec.Channels {
-		ch := &w.Spec.Spec.Channels[i]
-		cs := &channelRunState{lastTrigger: w.stateAt(id, ch.Cadence.TriggerState, atNS)}
-		ent.channels[ch.Name] = cs
-		next := w.nextEmission(id, ch, atNS)
-		if next > 0 {
-			w.schedule(kindEmission, id, ch.Name, next, nil)
-		}
-	}
+	w.initializeEntityChannels(ent, id, atNS)
 	return nil
 }
 
@@ -113,4 +65,39 @@ func (w *World) schedule(kind eventKind, entity, channel string, atNS int64, pay
 		channel:  channel,
 		payload:  payload,
 	})
+}
+
+func entityTemplateValue(params map[string]any, name string) string {
+	if params != nil {
+		if value, ok := params[name]; ok {
+			if text, ok := value.(string); ok {
+				return text
+			}
+			return fmt.Sprint(value)
+		}
+	}
+	return "a"
+}
+
+func (w *World) newEntity(id string, at int64) *Entity {
+	kind := w.Spec.Spec.Entities.EntityType
+	if kind == "" {
+		kind = strings.Split(w.Spec.Spec.ID, "-")[0]
+	}
+	return &Entity{ID: id, Type: kind, BornNS: at, States: map[string]*stateValue{}, channels: map[string]*channelRunState{}, alive: true}
+}
+
+func (w *World) initializeEntityState(ent *Entity, at int64) {
+	for i := range w.Spec.Spec.State {
+		state := &w.Spec.Spec.State[i]
+		ent.States[state.Name] = &stateValue{x: state.Initial, lastStep: at}
+	}
+}
+
+func (w *World) initializeEntityChannels(ent *Entity, id string, at int64) {
+	for i := range w.Spec.Spec.Channels {
+		channel := &w.Spec.Spec.Channels[i]
+		ent.channels[channel.Name] = &channelRunState{lastTrigger: w.stateAt(id, channel.Cadence.TriggerState, at)}
+		w.scheduleNextEmission(id, channel.Name, channel, at)
+	}
 }

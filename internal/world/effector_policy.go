@@ -6,23 +6,19 @@ import (
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/jsonschema"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/randutil"
 )
 
 func (w *World) validateArgs(eff *model.Effector, args map[string]any) error {
 	if len(eff.ArgsSchema) == 0 {
 		return nil
 	}
-	sch := w.argSchemas[eff.Name]
-	if sch == nil {
-		var err error
-		sch, err = jsonschema.Compile(eff.ArgsSchema)
-		if err != nil {
-			return fmt.Errorf("world: effector %q args schema: %w", eff.Name, err)
-		}
-		w.argSchemas[eff.Name] = sch
+	schema, err := w.effectorArgumentSchema(eff)
+	if err != nil {
+		return err
 	}
-	if errs := sch.Validate(args); len(errs) > 0 {
-		return fmt.Errorf("world: invalid args for %q: %s", eff.Name, errs[0].Msg)
+	if errors := schema.Validate(args); len(errors) > 0 {
+		return fmt.Errorf("world: invalid args for %q: %s", eff.Name, errors[0].Msg)
 	}
 	return nil
 }
@@ -39,21 +35,7 @@ func (w *World) pickFailureMode(entityID string, eff *model.Effector, atNS int64
 		return ModeOK
 	}
 	rng := w.substream(entityID + "/" + eff.Name + "/fault_shape")
-	total := 0.0
-	for _, fm := range eff.Ack.FailureModes {
-		total += fm.Probability
-	}
-	if total <= 0 {
-		return ModeOK
-	}
-	r := rng.Float64() * total
-	for _, fm := range eff.Ack.FailureModes {
-		if r < fm.Probability {
-			return fm.Mode
-		}
-		r -= fm.Probability
-	}
-	return ModeOK
+	return sampleFailureMode(eff, rng)
 }
 
 // SetFailureMode overrides the failure-mode selection for subsequent
@@ -66,19 +48,15 @@ func (w *World) SetFailureMode(mode string) {
 // ackLatency samples the ack latency; slow mode is 10x (bounded).
 func (w *World) ackLatency(entityID string, eff *model.Effector, mode string, atNS int64) float64 {
 	rng := w.substream(entityID + "/" + eff.Name + "/delay")
-	mean := eff.Ack.LatencyMS.Mean
-	if mean <= 0 {
-		mean = 100
-	}
-	sigma := eff.Ack.LatencyMS.Sigma
-	l := mean + sigma*rng.Norm()
-	if l < 1 {
-		l = 1
+	mean := acknowledgementMean(eff)
+	latency := mean + eff.Ack.LatencyMS.Sigma*rng.Norm()
+	if latency < 1 {
+		latency = 1
 	}
 	if mode == ModeSlow {
-		l *= 10
+		latency *= 10
 	}
-	return math.Round(l)
+	return math.Round(latency)
 }
 
 // interlockHolds evaluates the interlock predicate over hidden state.
@@ -95,4 +73,48 @@ func (w *World) interlockHolds(entityID string, il *model.Interlock, atNS int64)
 		return v >= il.Threshold
 	}
 	return false
+}
+
+func (w *World) effectorArgumentSchema(eff *model.Effector) (*jsonschema.Schema, error) {
+	schema := w.argSchemas[eff.Name]
+	if schema != nil {
+		return schema, nil
+	}
+	schema, err := jsonschema.Compile(eff.ArgsSchema)
+	if err != nil {
+		return nil, fmt.Errorf("world: effector %q args schema: %w", eff.Name, err)
+	}
+	w.argSchemas[eff.Name] = schema
+	return schema, nil
+}
+
+func sampleFailureMode(eff *model.Effector, rng *randutil.SplitMix64) string {
+	total := failureModeWeight(eff)
+	if total <= 0 {
+		return ModeOK
+	}
+	draw := rng.Float64() * total
+	for _, mode := range eff.Ack.FailureModes {
+		if draw < mode.Probability {
+			return mode.Mode
+		}
+		draw -= mode.Probability
+	}
+	return ModeOK
+}
+
+func acknowledgementMean(eff *model.Effector) float64 {
+	mean := eff.Ack.LatencyMS.Mean
+	if mean <= 0 {
+		mean = 100
+	}
+	return mean
+}
+
+func failureModeWeight(eff *model.Effector) float64 {
+	total := 0.0
+	for _, mode := range eff.Ack.FailureModes {
+		total += mode.Probability
+	}
+	return total
 }

@@ -34,34 +34,7 @@ func (w *World) InjectFault(entityID, faultID string, onsetNS int64, params map[
 	if _, ok := w.entities[entityID]; !ok {
 		return "", fmt.Errorf("world: unknown entity %q", entityID)
 	}
-	if onsetNS <= 0 {
-		onsetNS = w.ClockNS
-	}
-	severity, err := faultSeverity(fault, faultID, params)
-	if err != nil {
-		return "", err
-	}
-	af := &activeFault{
-		fault:    fault,
-		entity:   entityID,
-		onsetNS:  onsetNS,
-		severity: severity,
-	}
-	if fault.Onset.Shape == "stochastic" {
-		// The envelope is defined relative to fault onset. Starting at epoch
-		// zero would make a first read at a modern Unix timestamp replay
-		// millions of random-walk steps.
-		af.walkStep = onsetNS
-	}
-	// A fault already active on this entity is re-injected as a fresh
-	// instance (clear first if the caller wants a single instance).
-	fid := "f-" + strconv.FormatInt(int64(len(w.faultsByID)), 10)
-	w.faultsByID[fid] = af
-	w.faultOrder = append(w.faultOrder, fid)
-	for _, a := range fault.Affects {
-		w.faultsByState[a.State] = append(w.faultsByState[a.State], af)
-	}
-	return fid, nil
+	return w.admitFaultInjection(fault, entityID, faultID, onsetNS, params)
 }
 
 func faultSeverity(fault *model.Fault, faultID string, params map[string]any) (float64, error) {
@@ -69,33 +42,10 @@ func faultSeverity(fault *model.Fault, faultID string, params map[string]any) (f
 	if fault.Onset.Magnitude != 0 {
 		severity = math.Abs(fault.Onset.Magnitude)
 	}
-	if params != nil {
-		for k := range params {
-			if k != "severity" {
-				return 0, fmt.Errorf("world: fault %q has no parameter %q (declared: severity)", faultID, k)
-			}
-		}
-		if s, ok := params["severity"]; ok {
-			switch x := s.(type) {
-			case float64:
-				severity = x
-			case int64:
-				severity = float64(x)
-			case json.Number:
-				f, err := x.Float64()
-				if err != nil {
-					return 0, fmt.Errorf("world: severity must be numeric")
-				}
-				severity = f
-			default:
-				return 0, fmt.Errorf("world: severity must be numeric")
-			}
-		}
+	if err := validateFaultParameters(faultID, params); err != nil {
+		return 0, err
 	}
-	if math.IsNaN(severity) || math.IsInf(severity, 0) || severity < 0 {
-		return 0, fmt.Errorf("world: severity must be finite and non-negative")
-	}
-	return severity, nil
+	return declaredSeverity(severity, params)
 }
 
 // ClearFault removes a fault's contribution from the given time onward.
@@ -115,20 +65,87 @@ func (w *World) ClearFault(faultID string, atNS int64) error {
 // in force at the current clock).
 func (w *World) ListFaults() []FaultInfo {
 	var out []FaultInfo
-	for _, fid := range w.faultOrder {
-		af := w.faultsByID[fid]
-		if af == nil || (af.clearedNS > 0 && w.ClockNS >= af.clearedNS) {
+	for _, id := range w.faultOrder {
+		fault := w.faultsByID[id]
+		if fault == nil || (fault.clearedNS > 0 && w.ClockNS >= fault.clearedNS) {
 			continue
 		}
-		out = append(out, FaultInfo{
-			FaultID:  fid,
-			EntityID: af.entity,
-			Fault:    af.fault.ID,
-			OnsetNS:  af.onsetNS,
-		})
+		out = append(out, fault.info(id))
 	}
 	return out
 }
 
 // ActiveFaultsCount is the number of faults in force at the current clock.
 func (w *World) ActiveFaultsCount() int { return len(w.ListFaults()) }
+
+func (w *World) registerFault(fault *model.Fault, entity string, onset int64, severity float64) string {
+	active := &activeFault{fault: fault, entity: entity, onsetNS: onset, severity: severity}
+	// Stochastic envelopes start at onset, avoiding epoch-length replay.
+	if fault.Onset.Shape == "stochastic" {
+		active.walkStep = onset
+	}
+	id := "f-" + strconv.FormatInt(int64(len(w.faultsByID)), 10)
+	w.faultsByID[id] = active
+	w.faultOrder = append(w.faultOrder, id)
+	for _, affected := range fault.Affects {
+		w.faultsByState[affected.State] = append(w.faultsByState[affected.State], active)
+	}
+	return id
+}
+
+func validateFaultParameters(id string, params map[string]any) error {
+	for name := range params {
+		if name != "severity" {
+			return fmt.Errorf("world: fault %q has no parameter %q (declared: severity)", id, name)
+		}
+	}
+	return nil
+}
+
+func severityNumber(value any) (float64, error) {
+	switch number := value.(type) {
+	case float64:
+		return number, nil
+	case int64:
+		return float64(number), nil
+	case json.Number:
+		parsed, err := number.Float64()
+		if err == nil {
+			return parsed, nil
+		}
+	}
+	return 0, fmt.Errorf("world: severity must be numeric")
+}
+
+func finiteSeverity(severity float64) (float64, error) {
+	if math.IsNaN(severity) || math.IsInf(severity, 0) || severity < 0 {
+		return 0, fmt.Errorf("world: severity must be finite and non-negative")
+	}
+	return severity, nil
+}
+
+func (fault *activeFault) info(id string) FaultInfo {
+	return FaultInfo{FaultID: id, EntityID: fault.entity, Fault: fault.fault.ID, OnsetNS: fault.onsetNS}
+}
+
+func (w *World) admitFaultInjection(fault *model.Fault, entityID, faultID string, onsetNS int64, params map[string]any) (string, error) {
+	if onsetNS <= 0 {
+		onsetNS = w.ClockNS
+	}
+	severity, err := faultSeverity(fault, faultID, params)
+	if err != nil {
+		return "", err
+	}
+	return w.registerFault(fault, entityID, onsetNS, severity), nil
+}
+
+func declaredSeverity(severity float64, params map[string]any) (float64, error) {
+	if value, present := params["severity"]; present {
+		var err error
+		severity, err = severityNumber(value)
+		if err != nil {
+			return 0, err
+		}
+	}
+	return finiteSeverity(severity)
+}

@@ -86,6 +86,13 @@ func (f *activeFault) contributionAt(state string, t int64, rng *randutil.SplitM
 
 func (f *activeFault) onsetEnvelope(elapsed, at int64, rng *randutil.SplitMix64, dt int64) float64 {
 	rate := f.fault.Onset.RatePerHour
+	if f.fault.Onset.Shape == "stochastic" {
+		return f.stochasticEnvelope(at, rng, dt, rate)
+	}
+	return f.deterministicEnvelope(elapsed, rate)
+}
+
+func (f *activeFault) deterministicEnvelope(elapsed int64, rate float64) float64 {
 	switch f.fault.Onset.Shape {
 	case "step":
 		return 1
@@ -95,8 +102,6 @@ func (f *activeFault) onsetEnvelope(elapsed, at int64, rng *randutil.SplitMix64,
 		return 1 - math.Exp(-rate*float64(elapsed)/secondsPerNS/3600)
 	case "intermittent":
 		return f.intermittentEnvelope(elapsed, rate)
-	case "stochastic":
-		return f.stochasticEnvelope(at, rng, dt, rate)
 	}
 	return 0
 }

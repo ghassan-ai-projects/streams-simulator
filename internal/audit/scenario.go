@@ -28,8 +28,7 @@ func (p *Panel) build(entityID string, startNS int64, entityIDs []string, faults
 	if err != nil {
 		return nil, nil, err
 	}
-	capture := auditCapture{entityID: entityID, log: emissionLog{}, series: map[string][]float64{}, times: map[string][]int64{}}
-	capture.bindEmitter(w, layer)
+	capture := prepareAuditCapture(entityID, w, layer)
 	if err := injectAuditFaults(w, entityID, faults); err != nil {
 		return nil, nil, err
 	}
