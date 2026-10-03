@@ -16,91 +16,32 @@ func (w *World) Reading(entityID, channelName string, t int64) float64 {
 	if ch == nil {
 		return 0
 	}
-	cs := ent.channels[channelName]
-	if cs == nil {
-		cs = &channelRunState{}
-		ent.channels[channelName] = cs
-	}
-	// Reuse the observation path with noise suppressed: the world must be
-	// built with Noiseless for a deterministic signal.
-	return w.observe(ent, ch, cs, t)
+	// Reuse the observation path; the solver builds a Noiseless world.
+	return w.observe(ent, ch, ent.ensureChannel(channelName), t)
 }
 
 // processEmission emits one native event for (entity, channel) at time t.
 func (w *World) processEmission(entityID, channelName string, t int64) {
-	ent := w.entities[entityID]
-	if ent == nil || !ent.alive {
-		return
-	}
-	ch := w.Spec.Channel(channelName)
-	if ch == nil {
-		return
-	}
-	cs := ent.channels[channelName]
+	ent, ch, cs := w.emissionChannel(entityID, channelName)
 	if cs == nil {
 		return
 	}
-
-	// Producer availability: during a down period the producer is silent.
-	if ch.Availability != nil {
-		if err := w.updateAvailability(ent, ch, cs, t); err != nil {
-			return
-		}
-		if cs.availDown {
-			// Silent while down; check again when the producer returns.
-			w.schedule(kindEmission, entityID, channelName, cs.availUntil, nil)
-			return
-		}
-	}
-
-	// Decide whether this cadence mode emits at this tick.
-	emit, value := w.reading(ent, ch, cs, t)
-	if !emit {
-		next := w.nextEmission(entityID, ch, t)
-		if next > 0 {
-			w.schedule(kindEmission, entityID, channelName, next, nil)
-		}
+	if !w.producerAvailable(entityID, channelName, ent, ch, cs, t) {
 		return
 	}
-
-	// Link delay supplies the observed-time candidate; the world then
-	// serializes it into the native emission order.
-	delay := w.linkDelay(entityID, ch, t)
-	observed := t + int64(delay*secondsPerNS)
-	observed = w.serializeObservedTime(observed)
-
-	w.publishNativeEvent(ent, ch, value, t, observed)
-
-	// Schedule the next emission for this channel.
-	next := w.nextEmission(entityID, ch, t)
-	if next > 0 {
-		w.schedule(kindEmission, entityID, channelName, next, nil)
-	}
+	w.emitChannelReading(entityID, channelName, ent, ch, cs, t)
 }
 
 func (w *World) publishNativeEvent(ent *Entity, ch *model.Channel, value any, t, observed int64) {
-	entityID, channelName := ent.ID, ch.Name
-	if !w.EmitDisabled {
-		w.seq++
-		ev := model.SimEvent{
-			Seq:          w.seq - 1,
-			WorldID:      w.ID,
-			EntityType:   ent.Type,
-			EntityID:     entityID,
-			Channel:      channelName,
-			EventTime:    model.FormatTime(t),
-			ObservedTime: model.FormatTime(observed),
-			Unit:         ch.Unit,
-		}
-		if ch.ValueType != "none" {
-			ev.Value = value
-		}
-		if w.emitter != nil {
-			w.emitter(ev)
-		}
-		w.emittedThisAdvance++
+	if w.EmitDisabled {
+		return
 	}
-
+	w.seq++
+	event := w.nativeEvent(ent, ch, value, t, observed)
+	if w.emitter != nil {
+		w.emitter(event)
+	}
+	w.emittedThisAdvance++
 }
 
 // serializeObservedTime turns the link-delay candidate into a strict total
@@ -115,4 +56,65 @@ func (w *World) serializeObservedTime(candidate int64) int64 {
 	w.lastObservedNS = candidate
 	w.hasObservedTimeNS = true
 	return candidate
+}
+
+func (ent *Entity) ensureChannel(name string) *channelRunState {
+	state := ent.channels[name]
+	if state == nil {
+		state = &channelRunState{}
+		ent.channels[name] = state
+	}
+	return state
+}
+
+func (w *World) emissionChannel(entity, channel string) (*Entity, *model.Channel, *channelRunState) {
+	ent := w.entities[entity]
+	if ent == nil || !ent.alive {
+		return nil, nil, nil
+	}
+	ch := w.Spec.Channel(channel)
+	if ch == nil {
+		return nil, nil, nil
+	}
+	return ent, ch, ent.channels[channel]
+}
+
+func (w *World) producerAvailable(entityID, channelName string, ent *Entity, ch *model.Channel, cs *channelRunState, at int64) bool {
+	if ch.Availability == nil {
+		return true
+	}
+	if err := w.updateAvailability(ent, ch, cs, at); err != nil {
+		return false
+	}
+	if cs.availDown {
+		w.schedule(kindEmission, entityID, channelName, cs.availUntil, nil)
+		return false
+	}
+	return true
+}
+
+func (w *World) scheduleNextEmission(entity, channel string, ch *model.Channel, at int64) {
+	next := w.nextEmission(entity, ch, at)
+	if next > 0 {
+		w.schedule(kindEmission, entity, channel, next, nil)
+	}
+}
+
+func (w *World) nativeEvent(ent *Entity, ch *model.Channel, value any, at, observed int64) model.SimEvent {
+	event := model.SimEvent{Seq: w.seq - 1, WorldID: w.ID, EntityType: ent.Type, EntityID: ent.ID,
+		Channel: ch.Name, EventTime: model.FormatTime(at), ObservedTime: model.FormatTime(observed), Unit: ch.Unit}
+	if ch.ValueType != "none" {
+		event.Value = value
+	}
+	return event
+}
+
+func (w *World) emitChannelReading(entityID, channelName string, ent *Entity, ch *model.Channel, cs *channelRunState, t int64) {
+	emit, value := w.reading(ent, ch, cs, t)
+	if emit {
+		delay := w.linkDelay(entityID, ch, t)
+		observed := w.serializeObservedTime(t + int64(delay*secondsPerNS))
+		w.publishNativeEvent(ent, ch, value, t, observed)
+	}
+	w.scheduleNextEmission(entityID, channelName, ch, t)
 }

@@ -4,6 +4,7 @@ import (
 	"math"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/randutil"
 )
 
 // updateAvailability advances the producer up/down renewal process. The
@@ -18,22 +19,7 @@ func (w *World) updateAvailability(ent *Entity, ch *model.Channel, cs *channelRu
 		cs.availUntil = 0
 		return nil
 	}
-	if !cs.availInit {
-		cs.availInit = true
-		cs.availDown = false
-		cs.availUntil = t + int64(rng.Exp(mtbfSeconds(a.Uptime, a.MTTRS))*secondsPerNS)
-		return nil
-	}
-	if t < cs.availUntil {
-		return nil
-	}
-	if cs.availDown {
-		cs.availDown = false
-		cs.availUntil = t + int64(rng.Exp(mtbfSeconds(a.Uptime, a.MTTRS))*secondsPerNS)
-	} else {
-		cs.availDown = true
-		cs.availUntil = t + int64(rng.Exp(mttrSeconds(a.MTTRS))*secondsPerNS)
-	}
+	cs.advanceAvailability(a, rng, t)
 	return nil
 }
 
@@ -69,27 +55,16 @@ func (w *World) isConfirmationChannel(name string) bool {
 
 // birthAutonomous creates an entity on the churn schedule.
 func (w *World) birthAutonomous(atNS int64) {
-	ch := w.Spec.Spec.Entities.Churn
-	if ch == nil {
+	churn := w.Spec.Spec.Entities.Churn
+	if churn == nil {
 		return
 	}
-	w.nextIndex++
-	id := renderID(w.Spec.Spec.Entities.IDTemplate, w.nextIndex, nil)
-	for id == "" || w.entities[id] != nil {
-		w.nextIndex++
-		id = renderID(w.Spec.Spec.Entities.IDTemplate, w.nextIndex, nil)
-	}
+	id := w.reserveBirthID()
 	if err := w.addEntity(id, atNS, nil); err == nil {
-		// Schedule its death.
-		if ch.MeanLifetimeS > 0 {
-			rng := w.substream("churn/lifetimes/" + id)
-			dieAt := atNS + int64(rng.Exp(ch.MeanLifetimeS)*secondsPerNS)
-			w.schedule(kindDeath, id, "", dieAt, nil)
-		}
+		w.scheduleLifetime(id, atNS, churn.MeanLifetimeS)
 	}
-	// Schedule the next birth.
 	rng := w.substream("churn/births")
-	next := atNS + int64(rng.Exp(3600*secondsPerNS/ch.BirthsPerHour))
+	next := atNS + int64(rng.Exp(3600*secondsPerNS/churn.BirthsPerHour))
 	w.schedule(kindBirth, "", "", next, nil)
 }
 
@@ -108,4 +83,45 @@ func (w *World) retire(entityID, reason string, atNS int64) {
 	ent.RetiredNS = atNS
 	// Scheduled emissions are dropped when popped (processEmission checks
 	// liveness).
+}
+
+func (cs *channelRunState) advanceAvailability(a *model.Availability, rng *randutil.SplitMix64, at int64) {
+	if !cs.availInit {
+		cs.availInit = true
+		cs.availDown = false
+		cs.availUntil = at + int64(rng.Exp(mtbfSeconds(a.Uptime, a.MTTRS))*secondsPerNS)
+		return
+	}
+	if at < cs.availUntil {
+		return
+	}
+	cs.renewAvailability(a, rng, at)
+}
+
+func (cs *channelRunState) renewAvailability(a *model.Availability, rng *randutil.SplitMix64, at int64) {
+	if cs.availDown {
+		cs.availDown = false
+		cs.availUntil = at + int64(rng.Exp(mtbfSeconds(a.Uptime, a.MTTRS))*secondsPerNS)
+	} else {
+		cs.availDown = true
+		cs.availUntil = at + int64(rng.Exp(mttrSeconds(a.MTTRS))*secondsPerNS)
+	}
+}
+
+func (w *World) reserveBirthID() string {
+	w.nextIndex++
+	id := renderID(w.Spec.Spec.Entities.IDTemplate, w.nextIndex, nil)
+	for id == "" || w.entities[id] != nil {
+		w.nextIndex++
+		id = renderID(w.Spec.Spec.Entities.IDTemplate, w.nextIndex, nil)
+	}
+	return id
+}
+
+func (w *World) scheduleLifetime(id string, at int64, mean float64) {
+	if mean > 0 {
+		rng := w.substream("churn/lifetimes/" + id)
+		dieAt := at + int64(rng.Exp(mean)*secondsPerNS)
+		w.schedule(kindDeath, id, "", dieAt, nil)
+	}
 }

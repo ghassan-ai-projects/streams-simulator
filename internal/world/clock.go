@@ -28,27 +28,7 @@ func (w *World) Advance(to int64) (int, int, error) {
 	}
 	w.emittedThisAdvance = 0
 	w.effectsAppliedThis = 0
-	for w.queue.Len() > 0 {
-		it := w.queue[0]
-		if it.timeNS > to {
-			break
-		}
-		heap.Pop(&w.queue)
-		w.ClockNS = it.timeNS
-		switch it.kind {
-		case kindEmission:
-			w.processEmission(it.entity, it.channel, it.timeNS)
-		case kindEffectStart:
-			if k, ok := it.payload.(*kick); ok && !k.applied {
-				k.applied = true
-				w.effectsAppliedThis++
-			}
-		case kindBirth:
-			w.birthAutonomous(it.timeNS)
-		case kindDeath:
-			w.retire(it.entity, "lifetime", it.timeNS)
-		}
-	}
+	w.processScheduledEvents(to)
 	w.ClockNS = to
 	return w.emittedThisAdvance, w.effectsAppliedThis, nil
 }
@@ -130,4 +110,32 @@ func quantize(v, resolution float64) float64 {
 		return v
 	}
 	return math.Round(v/resolution) * resolution
+}
+
+func (w *World) processScheduledEvents(to int64) {
+	for w.queue.Len() > 0 {
+		event := w.queue[0]
+		if event.timeNS > to {
+			break
+		}
+		heap.Pop(&w.queue)
+		w.ClockNS = event.timeNS
+		w.processScheduledEvent(event)
+	}
+}
+
+func (w *World) processScheduledEvent(event *item) {
+	switch event.kind {
+	case kindEmission:
+		w.processEmission(event.entity, event.channel, event.timeNS)
+	case kindEffectStart:
+		if kick, ok := event.payload.(*kick); ok && !kick.applied {
+			kick.applied = true
+			w.effectsAppliedThis++
+		}
+	case kindBirth:
+		w.birthAutonomous(event.timeNS)
+	case kindDeath:
+		w.retire(event.entity, "lifetime", event.timeNS)
+	}
 }

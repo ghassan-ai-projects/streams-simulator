@@ -519,3 +519,14 @@ Existing shuffled world, truth, scoring and architecture race tests pass, includ
 independent analytic cross-checks. Lint/vet and whitespace checks pass; tests are
 unchanged. Enola is clean and comparable with no added findings. The strict audit
 has 57 production bodies left.
+
+## Round 35 — World scheduling, availability and observations
+
+Complete clock dispatch, churn scheduling, cadence, link-delay and observation
+functions to 15 lines. Name producer admission, readings, native publication and
+rescheduling. Separate numeric/string observations, bias, noise and drift while
+preserving all seeded draws, timestamps, trigger updates and emission counters.
+
+Existing shuffled world, independent truth, replay/run and architecture race tests
+pass; lint/vet and whitespace checks pass. Tests are unchanged. Enola is clean
+and comparable with no added findings. The strict audit has 45 bodies left.

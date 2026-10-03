@@ -9,83 +9,27 @@ import (
 // reading computes the observed (pre-quantization) value and whether this
 // tick emits, per the channel's cadence mode.
 func (w *World) reading(ent *Entity, ch *model.Channel, cs *channelRunState, t int64) (bool, any) {
-	var raw float64
 	switch ch.ValueType {
 	case "none":
 		return w.cadenceEmits(ch, cs, t, 0), nil
 	case "string":
-		// Event-driven string channels emit on trigger-state change; the
-		// value is sampled from the declared enum values.
-		if ch.Cadence.Mode == "event_driven" {
-			trig := ch.Cadence.TriggerState
-			cur := w.stateAt(ent.ID, trig, t)
-			changed := !cs.hasSent || math.Abs(cur-cs.lastTrigger) >= ch.Resolution
-			cs.lastTrigger = cur
-			if !changed {
-				return false, nil
-			}
-			cs.hasSent = true
-			if len(ch.EnumValues) == 0 {
-				return true, nil
-			}
-			rng := w.substream(ent.ID + "/" + ch.Name + "/enum")
-			idx := rng.Intn(len(ch.EnumValues))
-			return true, ch.EnumValues[idx]
-		}
-		// Non-event-driven string channels emit on the base cadence.
-		return w.cadenceEmits(ch, cs, t, 0), nil
+		return w.stringReading(ent, ch, cs, t)
 	default:
-		raw = w.observe(ent, ch, cs, t)
-	}
-	emit := w.cadenceEmits(ch, cs, t, raw)
-	if !emit {
-		return false, nil
-	}
-	cs.lastSent = raw
-	cs.hasSent = true
-	switch ch.ValueType {
-	case "boolean":
-		return true, raw >= 0.5
-	case "counter":
-		return true, int64(math.Round(raw))
-	default:
-		return true, raw
+		return w.numericReading(ent, ch, cs, t)
 	}
 }
 
 // observe applies the channel's observation function to the hidden state.
 func (w *World) observe(ent *Entity, ch *model.Channel, cs *channelRunState, t int64) float64 {
-	state := ch.Observes
-	v := w.stateAt(ent.ID, state, t)
-	// A confirmation channel under an active silent_no_effect shadow reports
-	// the counterfactual: add the shadow kicks.
+	value := w.stateAt(ent.ID, ch.Observes, t)
 	if w.isConfirmationChannel(ch.Name) {
-		v = w.shadowValue(ent.ID, state, t)
+		value = w.shadowValue(ent.ID, ch.Observes, t)
 	}
-	gain := w.Spec.ChannelGain(ch.Name)
-	reading := gain*v + ch.ObservationOffset
-	if b := ch.ObservationBias; b != nil {
-		bias := w.stateAt(ent.ID, b.State, t)
-		reading += b.Coef * bias
+	reading := w.biasedObservation(ent, ch, value, t)
+	reading = w.noisyObservation(ent, ch, reading, t)
+	if drift := ch.Drift; drift != nil && drift.RatePerHour != 0 {
+		reading += w.drift(ent, ch, cs, t, drift)
 	}
-	// Observation noise, scaled by the bias level toward noise_scale_at_full.
-	sigma := ch.Noise.Sigma
-	if b := ch.ObservationBias; b != nil && sigma > 0 && !w.Noiseless {
-		bias := math.Min(math.Max(w.stateAt(ent.ID, b.State, t), 0), 1)
-		scale := 1 + (b.NoiseScaleAtFull-1)*bias
-		sigma *= scale
-	}
-	if sigma > 0 && ch.Noise.Model == "quantization" && !w.Noiseless {
-		reading = math.Round(reading/sigma) * sigma
-	} else if sigma > 0 && !w.Noiseless {
-		rng := w.substream(ent.ID + "/" + ch.Name + "/noise")
-		reading += sigma * rng.Norm()
-	}
-	// Drift on the reading.
-	if d := ch.Drift; d != nil && d.RatePerHour != 0 {
-		reading += w.drift(ent, ch, cs, t, d)
-	}
-	// Quantize to the channel resolution.
 	return quantize(reading, ch.Resolution)
 }
 
@@ -95,15 +39,17 @@ func (w *World) drift(ent *Entity, ch *model.Channel, cs *channelRunState, t int
 		cs.walkLastNS = t
 		return d.RatePerHour * (float64(t-w.StartNS) / secondsPerNS / 3600)
 	}
-	dtH := float64(t-cs.walkLastNS) / secondsPerNS / 3600
+	hours := float64(t-cs.walkLastNS) / secondsPerNS / 3600
 	cs.walkLastNS = t
-	switch d.Model {
-	case "random_walk":
-		rng := w.substream(ent.ID + "/" + ch.Name + "/drift")
-		step := d.RatePerHour*dtH + math.Abs(d.RatePerHour)*math.Sqrt(dtH)*rng.Norm()
-		cs.walk += step
-		return cs.walk
-	default: // linear
-		return d.RatePerHour * (float64(t-w.StartNS) / secondsPerNS / 3600)
+	if d.Model == "random_walk" {
+		return w.randomWalkDrift(ent, ch, cs, d, hours)
 	}
+	return d.RatePerHour * (float64(t-w.StartNS) / secondsPerNS / 3600)
+}
+
+func (w *World) randomWalkDrift(ent *Entity, ch *model.Channel, cs *channelRunState, drift *model.Drift, hours float64) float64 {
+	rng := w.substream(ent.ID + "/" + ch.Name + "/drift")
+	step := drift.RatePerHour*hours + math.Abs(drift.RatePerHour)*math.Sqrt(hours)*rng.Norm()
+	cs.walk += step
+	return cs.walk
 }
