@@ -12,17 +12,11 @@ import (
 func (r *Run) InjectFault(entityID, faultID string, onsetNS int64, params map[string]any) (string, error) {
 	r.commandMu.Lock()
 	defer r.commandMu.Unlock()
-
 	fid, err := r.World.InjectFault(entityID, faultID, onsetNS, params)
 	if err != nil {
 		return "", fmt.Errorf("run: inject fault: %w", err)
 	}
-	r.commandLog = append(r.commandLog, model.Command{
-		Seq: int64(len(r.commandLog)), AtNS: r.World.Clock(), Op: model.OpFaultInject,
-		Args: map[string]any{
-			"entity_id": entityID, "fault": faultID, "onset_ns": onsetNS, "params": params,
-		},
-	})
+	r.recordWorldCommand(model.OpFaultInject, map[string]any{"entity_id": entityID, "fault": faultID, "onset_ns": onsetNS, "params": params})
 	return fid, nil
 }
 
@@ -45,18 +39,12 @@ func (r *Run) ClearFault(faultID string, atNS int64) error {
 func (r *Run) ApplyPerturb(name string, params map[string]any, fromNS, untilNS int64) (string, error) {
 	r.commandMu.Lock()
 	defer r.commandMu.Unlock()
-
 	id, err := r.Perturb.Apply(name, params, fromNS, untilNS)
 	if err != nil {
 		return "", fmt.Errorf("run: perturb: %w", err)
 	}
 	r.perturbHistory = append(r.perturbHistory, name)
-	r.commandLog = append(r.commandLog, model.Command{
-		Seq: int64(len(r.commandLog)), AtNS: r.World.Clock(), Op: model.OpPerturbApply,
-		Args: map[string]any{
-			"perturbation": name, "params": params, "from_ns": fromNS, "until_ns": untilNS,
-		},
-	})
+	r.recordWorldCommand(model.OpPerturbApply, map[string]any{"perturbation": name, "params": params, "from_ns": fromNS, "until_ns": untilNS})
 	return id, nil
 }
 
@@ -82,30 +70,13 @@ func (r *Run) InvokeEffector(effector, entityID, commandID string, args map[stri
 	if r.finished {
 		return nil, fmt.Errorf("InvokeEffector: run is finished")
 	}
-	res, err := r.World.InvokeEffector(effector, entityID, commandID, args, atNS)
+	result, err := r.World.InvokeEffector(effector, entityID, commandID, args, atNS)
+	// Record refusals as well as successful calls so replay reproduces both.
+	r.recordWorldCommand(model.OpEffectorInvoke, map[string]any{"effector": effector, "entity_id": entityID, "command_id": commandID, "args": args, "at_ns": atNS})
 	if err != nil {
-		// Interlock and effector refusals are recorded as commands too, so a
-		// replay reproduces them.
-		r.commandLog = append(r.commandLog, model.Command{
-			Seq: int64(len(r.commandLog)), AtNS: r.World.Clock(), Op: model.OpEffectorInvoke,
-			Args: map[string]any{
-				"effector": effector, "entity_id": entityID, "command_id": commandID,
-				"args": args, "at_ns": atNS,
-			},
-		})
-		if err != nil {
-			return nil, fmt.Errorf("InvokeEffector: %w", err)
-		}
-		return nil, nil
+		return nil, fmt.Errorf("InvokeEffector: %w", err)
 	}
-	r.commandLog = append(r.commandLog, model.Command{
-		Seq: int64(len(r.commandLog)), AtNS: r.World.Clock(), Op: model.OpEffectorInvoke,
-		Args: map[string]any{
-			"effector": effector, "entity_id": entityID, "command_id": commandID,
-			"args": args, "at_ns": atNS,
-		},
-	})
-	return res, nil
+	return result, nil
 }
 
 // AddEntity records and performs an entity birth.
@@ -150,16 +121,22 @@ func (r *Run) ConfigureEnvTarget(target string, allow bool) {
 func (r *Run) EnvInject(target, fault string, params map[string]any, atNS int64) (string, error) {
 	r.commandMu.Lock()
 	defer r.commandMu.Unlock()
-
 	if !r.allowEnv {
 		return "", fmt.Errorf("run: env.inject not enabled for this world (no configured target)")
 	}
 	if len(params) > 0 {
 		return "", fmt.Errorf("run: env fault %q accepts no parameters (got %d)", fault, len(params))
 	}
-	r.commandLog = append(r.commandLog, model.Command{
-		Seq: int64(len(r.commandLog)), AtNS: atNS, Op: model.OpEnvInject,
-		Args: map[string]any{"target": target, "fault": fault, "params": params, "at_ns": atNS},
-	})
+	r.recordCommandAt(model.OpEnvInject, atNS, map[string]any{"target": target, "fault": fault, "params": params, "at_ns": atNS})
 	return "env-" + strconv.Itoa(len(r.commandLog)), nil
+}
+
+func (r *Run) recordWorldCommand(op string, args map[string]any) {
+	r.recordCommandAt(op, r.World.Clock(), args)
+}
+
+func (r *Run) recordCommandAt(op string, atNS int64, args map[string]any) {
+	r.commandLog = append(r.commandLog, model.Command{
+		Seq: int64(len(r.commandLog)), AtNS: atNS, Op: op, Args: args,
+	})
 }

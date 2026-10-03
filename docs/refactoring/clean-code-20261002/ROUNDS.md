@@ -396,3 +396,18 @@ Reorder displacement avoids allocating an intermediate slice per pair.
 Existing shuffled perturbation/run race and architecture tests, package lint/vet
 and whitespace checks pass; test files are unchanged. One retained-baseline
 Enola check precedes the commit. The strict audit remains open at 166 bodies.
+
+## Round 25 — Run commands, delivery and replay
+
+Complete run-package functions to 15 lines. Command logging shares sequenced
+record construction and records refusals exactly once. Delivery steps retain
+native versus perturbed timestamps and evidence-hook placement. Quiescence
+retains watermark locking, wakeups, cancellation and timeout semantics. Artifact
+assembly names identity, inputs, counts and state; replay names admission,
+configuration, commands, completion and divergence. Existing cleanup/publication
+and serialization limitations remain documented, without behavioral correction.
+
+Existing shuffled run, scoring and architecture race tests pass, including replay
+identity and quiescence/failure boundaries. Package lint/vet and whitespace checks
+pass; tests are unchanged. The retained Enola baseline is checked once before
+committing. The strict audit remains open at 148 production bodies.

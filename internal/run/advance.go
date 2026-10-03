@@ -29,36 +29,17 @@ func (r *Run) Advance(ctx context.Context, toNS int64, awaitConsumer bool) (int,
 
 // advanceThroughBoundary holds commandMu through delivery and durable logging.
 func (r *Run) advanceThroughBoundary(toNS int64, awaitConsumer bool) (int, error) {
-	if r.runErr != nil {
-		return 0, r.runErr
-	}
-	emitted, _, err := r.World.Advance(toNS)
+	emitted, err := r.advanceWorld(toNS)
 	if err != nil {
-		return 0, fmt.Errorf("run: advance: %w", err)
+		return 0, err
 	}
-	r.worldEndTimeNS = toNS
-	// Flush windowing perturbations (reorder, flaps, backfill) at the
-	// boundary.
-	for _, d := range r.Perturb.Flush(toNS) {
-		r.deliver(d)
-	}
+	r.flushPendingDeliveries(toNS)
 	if r.runErr != nil {
 		return emitted, r.runErr
 	}
-	// Log the advance before awaiting quiescence: the world has already
-	// moved, and replay must reproduce exactly this state even when the
-	// consumer never reports quiescence.
-	r.commandLog = append(r.commandLog, model.Command{
-		Seq: int64(len(r.commandLog)), AtNS: r.World.Clock(),
-		Op: model.OpClockAdvance, Args: map[string]any{"to_ns": toNS, "await_consumer": awaitConsumer},
-	})
-	// Command boundary: the ledger rows and trace bytes for this advance are
-	// now on file descriptors, so a crash here loses nothing acknowledged.
-	if err := r.flushDurable(); err != nil {
-		r.fail(err)
-		return emitted, err
-	}
-	return emitted, nil
+	// Log the moved world before quiescence, even when the consumer never reports.
+	r.recordWorldCommand(model.OpClockAdvance, map[string]any{"to_ns": toNS, "await_consumer": awaitConsumer})
+	return emitted, r.persistAdvanceBoundary()
 }
 
 // Consumer synchronization releases commandMu so closed-loop effects can land.
@@ -73,6 +54,34 @@ func (r *Run) waitForConsumer(ctx context.Context, toNS int64) error {
 			r.fail(err)
 			r.commandMu.Unlock()
 		}
+		return err
+	}
+	return nil
+}
+
+func (r *Run) advanceWorld(toNS int64) (int, error) {
+	if r.runErr != nil {
+		return 0, r.runErr
+	}
+	emitted, _, err := r.World.Advance(toNS)
+	if err != nil {
+		return 0, fmt.Errorf("run: advance: %w", err)
+	}
+	r.worldEndTimeNS = toNS
+	return emitted, nil
+}
+
+func (r *Run) flushPendingDeliveries(toNS int64) {
+	// Windowing perturbations release their records at the advance boundary.
+	for _, delivery := range r.Perturb.Flush(toNS) {
+		r.deliver(delivery)
+	}
+}
+
+func (r *Run) persistAdvanceBoundary() error {
+	// Trace and ledger bytes must reach file descriptors before acknowledgement.
+	if err := r.flushDurable(); err != nil {
+		r.fail(err)
 		return err
 	}
 	return nil

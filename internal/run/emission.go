@@ -28,17 +28,9 @@ func (r *Run) acceptEmissionTime(ev model.SimEvent) (int64, error) {
 		r.fail(fmt.Errorf("strict observed-time guard: event %d has invalid event_time: %w", ev.Seq, err))
 		return 0, r.runErr
 	}
-	observedNS, err := model.ParseTime(ev.ObservedTime)
-	if err != nil {
-		r.fail(fmt.Errorf("strict observed-time guard: event %d has invalid observed_time: %w", ev.Seq, err))
-		return 0, r.runErr
+	if err := r.acceptObservedOrder(ev); err != nil {
+		return 0, err
 	}
-	if r.hasObservedTime && observedNS <= r.lastObservedNS {
-		r.fail(fmt.Errorf("strict observed-time guard: event %d observed_time %s is not after %s", ev.Seq, ev.ObservedTime, model.FormatTime(r.lastObservedNS)))
-		return 0, r.runErr
-	}
-	r.lastObservedNS = observedNS
-	r.hasObservedTime = true
 	return atNS, nil
 }
 
@@ -54,14 +46,7 @@ func (r *Run) captureEmissionState(ev model.SimEvent, atNS int64) {
 
 func (r *Run) deliverEmission(ev model.SimEvent, d perturb.Delivered, atNS int64) bool {
 	if d.Malformed {
-		// One bad record must not poison a file: render a broken line.
-		if err := r.writeMalformed(ev); err != nil {
-			r.recordDelivery(ev, d.DeliveryID, atNS, atNS, false, model.DeliverySinkError)
-			r.fail(err)
-			return false
-		}
-		r.recordDelivery(ev, d.DeliveryID, atNS, atNS, true, model.DeliveryMangled)
-		return true
+		return r.deliverMalformedEvent(ev, d.DeliveryID)
 	}
 	if !d.Delivered {
 		r.recordDelivery(ev, d.DeliveryID, atNS, atNS, false, d.Reason)
@@ -70,25 +55,7 @@ func (r *Run) deliverEmission(ev model.SimEvent, d perturb.Delivered, atNS int64
 	if r.evidenceRec != nil {
 		r.evidenceRec(d.Event)
 	}
-	line, err := r.Engine.RenderStreamRecord(&d.Event)
-	if err != nil {
-		r.recordDelivery(d.Event, d.DeliveryID, atNS, atNS, false, model.DeliverySinkError)
-		r.fail(err)
-		return false
-	}
-	if line == "" {
-		r.recordDelivery(d.Event, d.DeliveryID, atNS, atNS, false, model.DeliveryOmitted)
-		return true
-	}
-	if err := r.Sink.Write([]byte(line)); err != nil {
-		r.recordDelivery(d.Event, d.DeliveryID, atNS, atNS, false, model.DeliverySinkError)
-		r.fail(err)
-		return false
-	}
-	r.noteTraceArrival(d.Event)
-	otNS, _ := model.ParseTime(d.Event.ObservedTime)
-	r.recordDelivery(d.Event, d.DeliveryID, atNS, otNS, true, d.Reason)
-	return true
+	return r.renderEmission(d, atNS)
 }
 
 func (r *Run) writeMalformed(ev model.SimEvent) error {
@@ -117,4 +84,46 @@ func (r *Run) RenderRecord(ev *model.SimEvent) (string, error) {
 		return "", fmt.Errorf("run: render: %w", err)
 	}
 	return line, nil
+}
+
+func (r *Run) acceptObservedOrder(ev model.SimEvent) error {
+	observedNS, err := model.ParseTime(ev.ObservedTime)
+	if err != nil {
+		r.fail(fmt.Errorf("strict observed-time guard: event %d has invalid observed_time: %w", ev.Seq, err))
+		return r.runErr
+	}
+	if r.hasObservedTime && observedNS <= r.lastObservedNS {
+		r.fail(fmt.Errorf("strict observed-time guard: event %d observed_time %s is not after %s", ev.Seq, ev.ObservedTime, model.FormatTime(r.lastObservedNS)))
+		return r.runErr
+	}
+	r.lastObservedNS, r.hasObservedTime = observedNS, true
+	return nil
+}
+
+func (r *Run) renderEmission(d perturb.Delivered, atNS int64) bool {
+	line, err := r.Engine.RenderStreamRecord(&d.Event)
+	if err != nil {
+		return r.failEmission(d, atNS, err)
+	}
+	if line == "" {
+		r.recordDelivery(d.Event, d.DeliveryID, atNS, atNS, false, model.DeliveryOmitted)
+		return true
+	}
+	return r.writeEmission(d, line, atNS)
+}
+
+func (r *Run) writeEmission(d perturb.Delivered, line string, atNS int64) bool {
+	if err := r.Sink.Write([]byte(line)); err != nil {
+		return r.failEmission(d, atNS, err)
+	}
+	r.noteTraceArrival(d.Event)
+	observedNS, _ := model.ParseTime(d.Event.ObservedTime)
+	r.recordDelivery(d.Event, d.DeliveryID, atNS, observedNS, true, d.Reason)
+	return true
+}
+
+func (r *Run) failEmission(d perturb.Delivered, atNS int64, err error) bool {
+	r.recordDelivery(d.Event, d.DeliveryID, atNS, atNS, false, model.DeliverySinkError)
+	r.fail(err)
+	return false
 }

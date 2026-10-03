@@ -31,24 +31,13 @@ func (r *Run) awaitQuiescence(ctx context.Context, toNS int64) error {
 	timer := r.Config.QuiescenceClock.NewTimer(DefaultQuiescenceTimeout)
 	defer timer.Stop()
 	for {
-		r.quiesceMu.Lock()
-		if r.quiescedThroughNS >= toNS {
-			r.quiesceMu.Unlock()
+		ch, through, done := r.quiescenceStatus(toNS)
+		if done {
 			return nil
 		}
-		ch := r.quiesceNotify
-		through := r.quiescedThroughNS
-		r.quiesceMu.Unlock()
-		if r.quiesceParked != nil {
-			r.quiesceParked()
-		}
-		select {
-		case <-ch:
-			continue
-		case <-ctx.Done():
-			return fmt.Errorf("run: quiescence wait canceled: %w", ctx.Err())
-		case <-timer.C():
-			return fmt.Errorf("run: %w: quiesced through %d, asked for %d", ErrConsumerNotQuiesced, through, toNS)
+		r.notifyQuiescenceParked()
+		if err := waitForQuiescence(ctx, timer, ch, through, toNS); err != nil {
+			return err
 		}
 	}
 }
@@ -75,4 +64,30 @@ func (r *Run) AppliedPerturbations() []string {
 	out := make([]string, len(r.perturbHistory))
 	copy(out, r.perturbHistory)
 	return out
+}
+
+func (r *Run) quiescenceStatus(toNS int64) (chan struct{}, int64, bool) {
+	r.quiesceMu.Lock()
+	defer r.quiesceMu.Unlock()
+	if r.quiescedThroughNS >= toNS {
+		return nil, r.quiescedThroughNS, true
+	}
+	return r.quiesceNotify, r.quiescedThroughNS, false
+}
+
+func (r *Run) notifyQuiescenceParked() {
+	if r.quiesceParked != nil {
+		r.quiesceParked()
+	}
+}
+
+func waitForQuiescence(ctx context.Context, timer QuiescenceTimer, ch chan struct{}, through, toNS int64) error {
+	select {
+	case <-ch:
+		return nil
+	case <-ctx.Done():
+		return fmt.Errorf("run: quiescence wait canceled: %w", ctx.Err())
+	case <-timer.C():
+		return fmt.Errorf("run: %w: quiesced through %d, asked for %d", ErrConsumerNotQuiesced, through, toNS)
+	}
 }
