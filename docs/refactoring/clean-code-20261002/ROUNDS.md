@@ -493,3 +493,16 @@ resource-template parsing retain their accepted representations and defaults.
 Existing shuffled MCP, reference-consumer and architecture race tests pass;
 package lint/vet and whitespace checks pass. Tests are unchanged. Enola is clean
 and comparable with no added findings. The strict audit has 74 bodies left.
+
+## Round 33 — MCP tool registration and transport handlers
+
+Complete all MCP functions and callbacks to 15 lines. Registration references
+named handlers grouped by catalog, world, injection, run and truth operations.
+Operator handlers resolve capabilities before decoding or dispatch. JSON record
+decoding and clock-target validation are named steps; resource handlers retain
+URI parsing, MIME types and serialization. Tool order, descriptions and schemas
+are unchanged. No operator truth/state surface is introduced.
+
+Existing shuffled MCP, reference-consumer and architecture race tests pass;
+package lint/vet and whitespace checks pass. Tests are unchanged. Enola is clean
+and comparable with no added findings. The strict audit has 65 bodies left.
