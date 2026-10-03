@@ -445,3 +445,16 @@ quantile grids, numerical accumulation, strict comparisons and tie priority.
 Existing shuffled audit race tests and architecture guards, lint/vet and whitespace
 checks pass. Tests remain unchanged. Enola is clean and comparable with no added
 findings. The strict audit remains open at 120 production bodies.
+
+## Round 29 — Scenario generation, admission and replay commands
+
+Complete suite production functions to 15 lines. Name generation defaults,
+attempts, sampling, composition accounting, label grading and command logging.
+Preserve random draw order, weighted accumulation order, failed-attempt identities,
+trivial exclusions and replay-command sequence. Existing profile data remains
+the source of setup; no domain-specific branch is introduced.
+
+Existing focused generation regression, audit and architecture race tests pass;
+complete expensive suite tests are reserved for the final repository gate.
+Package lint/vet and whitespace checks pass; test files are unchanged. Enola is
+clean and comparable with no added findings. The strict audit has 108 bodies left.

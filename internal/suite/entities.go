@@ -24,24 +24,14 @@ func defaultEntities(spec *domain.Compiled, prof *model.Profile) []string {
 }
 
 func renderID(tmpl string, n int, params map[string]any) string {
-	out := tmpl
-	out = replaceAll(out, "{n}", strconv.Itoa(n))
+	out := replaceAll(tmpl, "{n}", strconv.Itoa(n))
 	for {
-		start := indexOf(out, "{")
-		end := indexOf(out, "}")
+		start, end := indexOf(out, "{"), indexOf(out, "}")
 		if start < 0 || end < 0 || end < start {
-			break
+			return out
 		}
-		name := out[start+1 : end]
-		val := "a"
-		if params != nil {
-			if v, ok := params[name]; ok {
-				val = fmt.Sprint(v)
-			}
-		}
-		out = out[:start] + val + out[end+1:]
+		out = out[:start] + entityParameter(params, out[start+1:end]) + out[end+1:]
 	}
-	return out
 }
 
 func replaceAll(s, old, new string) string {
@@ -63,4 +53,13 @@ func indexOf(s, sub string) int {
 		}
 	}
 	return -1
+}
+
+func entityParameter(params map[string]any, name string) string {
+	if params != nil {
+		if value, ok := params[name]; ok {
+			return fmt.Sprint(value)
+		}
+	}
+	return "a"
 }

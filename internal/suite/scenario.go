@@ -2,7 +2,6 @@ package suite
 
 import (
 	"fmt"
-	"sort"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/audit"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
@@ -21,19 +20,7 @@ func (g *suiteGeneration) buildScenario(seed, idx uint64, sampleFrac float64) (*
 	if label.FirstObservableTimeNS == 0 {
 		return scenario, label, &audit.Verdict{Trivial: true}, nil
 	}
-
-	verdict, err := g.auditScenario(scenario)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	label.TrivialBaselineVerdict = verdictTrivialString(verdict)
-	if verdict != nil {
-		label.TrivialBaselineDetail = verdict.Scores
-	}
-	// The executable command log.
-	scenario.CommandLog = buildCommandLog(g.cfg.Domain, scenario)
-	return scenario, label, verdict, nil
+	return g.gradeScenario(scenario, label)
 }
 
 // sealScenarioLabel identifies candidates with no observable signal before audit.
@@ -64,49 +51,16 @@ func (g *suiteGeneration) auditScenario(sc *Scenario) (*audit.Verdict, error) {
 }
 
 func (g *suiteGeneration) drawScenario(seed, idx uint64, sampleFrac float64) *Scenario {
-	gt := g.cfg.Domain.Spec.GroundTruth
-	isNegative := g.rng.Float64() < sampleFrac
-	faultID := g.suite.pickFault(g.cfg, g.prof, g.rng, isNegative)
-
+	negative := g.rng.Float64() < sampleFrac
+	fault := g.suite.pickFault(g.cfg, g.prof, g.rng, negative)
 	entity := g.entities[g.rng.Intn(len(g.entities))]
-	profileName := g.cfg.Profile
-	preDeg := false
-	var onsetNS int64
-	// Randomized onset: uniform across the first half of the trace, so the
-	// fault has room to develop and run-to-failure bias is countered. 10-15%
-	// of scenarios begin with the asset already degraded (fault before t0).
-	if g.rng.Float64() < gt.PreDegradedFraction {
-		preDeg = true
-		onsetNS = g.startNS - int64(g.rng.Float64()*float64(g.durationNS/4))
-	} else {
-		onsetNS = g.startNS + int64(g.rng.Float64()*float64(g.durationNS/2))
+	onset, preDegraded := g.drawOnset()
+	perturbations := drawPerturbations(g.rng, g.perturbCount, g.startNS, g.durationNS)
+	scenario := g.scenarioIdentity(seed, idx, entity, fault, onset, preDegraded, perturbations)
+	// Changing context can mask a pre-existing fault; omit setup then.
+	if !preDegraded {
+		scenario.Setup = g.suite.defaultSetup(g.cfg.Domain, entity, g.startNS)
 	}
-	if onsetNS < 0 {
-		onsetNS = 0
-	}
-
-	// Perturbations: sample 0-2, with forced coverage for thin ones.
-	scPerts := drawPerturbations(g.rng, g.perturbCount, g.startNS, g.durationNS)
-	scenario := &Scenario{
-		ID:            fmt.Sprintf("%s/%04d", g.cfg.Domain.Spec.ID, idx),
-		Seed:          seed,
-		Profile:       profileName,
-		EntityID:      entity,
-		Fault:         faultID,
-		StartNS:       g.startNS,
-		OnsetNS:       onsetNS,
-		DurationNS:    g.durationNS,
-		PreDegraded:   preDeg,
-		Perturbations: scPerts,
-	}
-
-	// Profile setup supplies the initial context. Pre-degraded starts omit
-	// setup because changing the context could mask the earlier fault.
-	var setup []truth.SetupCall
-	if !preDeg {
-		setup = g.suite.defaultSetup(g.cfg.Domain, entity, g.startNS)
-	}
-	scenario.Setup = setup
 	return scenario
 }
 
@@ -136,46 +90,16 @@ func verdictTrivialString(v *audit.Verdict) string {
 // fraction.
 func (s *Suite) pickFault(cfg Config, prof *model.Profile, rng *randutil.SplitMix64, isNegative bool) string {
 	if isNegative {
-		for i := range cfg.Domain.Spec.Faults {
-			if cfg.Domain.Spec.Faults[i].IsNegativeClass {
-				return cfg.Domain.Spec.Faults[i].ID
-			}
+		if fault, found := negativeFault(cfg); found {
+			return fault
 		}
 	}
 	if len(prof.FaultWeights) > 0 {
-		total := 0.0
-		ids := make([]string, 0, len(prof.FaultWeights))
-		for id := range prof.FaultWeights {
-			ids = append(ids, id)
-		}
-		sort.Strings(ids)
-		for _, id := range ids {
-			w := prof.FaultWeights[id]
-			total += w
-		}
-		if total > 0 {
-			r := rng.Float64() * total
-			for _, id := range ids {
-				w := prof.FaultWeights[id]
-				if r < w {
-					return id
-				}
-				r -= w
-			}
+		if fault, found := weightedFault(prof, rng); found {
+			return fault
 		}
 	}
-	// Uniform over positive faults.
-	var positives []string
-	for i := range cfg.Domain.Spec.Faults {
-		if !cfg.Domain.Spec.Faults[i].IsNegativeClass {
-			positives = append(positives, cfg.Domain.Spec.Faults[i].ID)
-		}
-	}
-	if len(positives) == 0 {
-		return ""
-	}
-	sort.Strings(positives)
-	return positives[rng.Intn(len(positives))]
+	return uniformPositiveFault(cfg, rng)
 }
 
 // defaultSetup translates profile data into scenario context calls. The
@@ -190,12 +114,16 @@ func (s *Suite) defaultSetup(spec *domain.Compiled, entity string, startNS int64
 		if setup.Effector == "" || spec.Effector(setup.Effector) == nil {
 			continue
 		}
-		args := substituteEntity(setup.Args, entity)
-		commandID := setup.CommandID
-		if commandID == "" {
-			commandID = fmt.Sprintf("setup-%d", i)
-		}
-		out = append(out, truth.SetupCall{Effector: setup.Effector, EntityID: entity, CommandID: commandID, Args: args, AtNS: startNS})
+		out = append(out, scenarioSetupCall(setup.Effector, setup.CommandID, setup.Args, i, entity, startNS))
 	}
 	return out
+}
+
+func (g *suiteGeneration) gradeScenario(scenario *Scenario, label *model.GroundTruthRecord) (*Scenario, *model.GroundTruthRecord, *audit.Verdict, error) {
+	verdict, err := g.auditScenario(scenario)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	finalizeScenario(g.cfg.Domain, scenario, label, verdict)
+	return scenario, label, verdict, nil
 }
