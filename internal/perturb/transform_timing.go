@@ -61,20 +61,7 @@ func (l *Layer) skewClock(a *Active, recs []Delivered, atNS int64) []Delivered {
 }
 
 func (l *Layer) rewriteNonMonotonicTime(a *Active, recs []Delivered, atNS int64) []Delivered {
-	return mapRecs(recs, func(r Delivered) []Delivered {
-		if !r.Delivered {
-			return []Delivered{r}
-		}
-		// Force observed_time before event_time: a receipt-order
-		// violation an honest consumer must reject.
-		et, err1 := model.ParseTime(r.Event.EventTime)
-		ot, err2 := model.ParseTime(r.Event.ObservedTime)
-		if err1 == nil && err2 == nil && ot > et {
-			r.Event.ObservedTime = model.FormatTime(et - 1)
-			r.Reason = model.DeliveryRewritten
-		}
-		return []Delivered{r}
-	})
+	return mapRecs(recs, func(record Delivered) []Delivered { return []Delivered{nonMonotonicRecord(record)} })
 }
 
 func (l *Layer) withholdProducerRecords(a *Active, recs []Delivered, atNS int64) []Delivered {
@@ -108,4 +95,18 @@ func (l *Layer) truncateTimePrecision(a *Active, recs []Delivered, atNS int64) [
 		r.Reason = model.DeliveryRewritten
 		return []Delivered{r}
 	})
+}
+
+func nonMonotonicRecord(record Delivered) Delivered {
+	if !record.Delivered {
+		return record
+	}
+	// Force receipt before event time, which an honest consumer must reject.
+	eventTime, err1 := model.ParseTime(record.Event.EventTime)
+	observedTime, err2 := model.ParseTime(record.Event.ObservedTime)
+	if err1 == nil && err2 == nil && observedTime > eventTime {
+		record.Event.ObservedTime = model.FormatTime(eventTime - 1)
+		record.Reason = model.DeliveryRewritten
+	}
+	return record
 }

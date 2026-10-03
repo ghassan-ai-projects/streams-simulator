@@ -104,42 +104,21 @@ func (l *Layer) Apply(name string, params map[string]any, fromNS, untilNS int64)
 	if err := validateParams(name, params); err != nil {
 		return "", err
 	}
-	id := name + "-" + strconv.Itoa(l.seq)
-	l.seq++
-	a := &Active{
-		ID:      id,
-		Name:    name,
-		Params:  params,
-		FromNS:  fromNS,
-		UntilNS: untilNS,
-		rng:     randutil.Substream(l.seed, l.worldID+"/perturb/"+id),
-	}
-	if name == Reorder {
-		disp := int(paramInt(params, "max_displacement", 2))
-		a.window = newReorderWindow(disp)
-	}
-	l.active[id] = a
-	l.order = append(l.order, id)
-	return id, nil
+	active := l.newActive(name, params, fromNS, untilNS)
+	l.active[active.ID] = active
+	l.order = append(l.order, active.ID)
+	return active.ID, nil
 }
 
 // Clear deactivates a perturbation.
 func (l *Layer) Clear(id string) error {
-	a, ok := l.active[id]
+	active, ok := l.active[id]
 	if !ok {
 		return fmt.Errorf("perturb: unknown perturbation id %q", id)
 	}
-	for _, r := range a.buffer {
-		r.Delivered = false
-		r.Reason = model.DeliveryDroppedByPerturb
-		l.pending = append(l.pending, r)
-	}
-	if a.window != nil {
-		for _, r := range a.window.flush(0) {
-			r.Delivered = false
-			r.Reason = model.DeliveryDroppedByPerturb
-			l.pending = append(l.pending, r)
-		}
+	l.discardRecords(active.buffer)
+	if active.window != nil {
+		l.discardRecords(active.window.flush(0))
 	}
 	delete(l.active, id)
 	return nil
@@ -172,4 +151,33 @@ func (l *Layer) Process(ev model.SimEvent, atNS int64) []Delivered {
 	}
 	// Post-pass: flaps and reorder windows may hold records back.
 	return recs
+}
+
+func (l *Layer) newActive(name string, params map[string]any, fromNS, untilNS int64) *Active {
+	id := name + "-" + strconv.Itoa(l.seq)
+	l.seq++
+	active := l.activation(id, name, params, fromNS, untilNS)
+	if name == Reorder {
+		active.window = newReorderWindow(paramInt(params, "max_displacement", 2))
+	}
+	return active
+}
+
+func (l *Layer) activation(id, name string, params map[string]any, fromNS, untilNS int64) *Active {
+	return &Active{
+		ID:      id,
+		Name:    name,
+		Params:  params,
+		FromNS:  fromNS,
+		UntilNS: untilNS,
+		rng:     randutil.Substream(l.seed, l.worldID+"/perturb/"+id),
+	}
+}
+
+func (l *Layer) discardRecords(records []Delivered) {
+	for _, record := range records {
+		record.Delivered = false
+		record.Reason = model.DeliveryDroppedByPerturb
+		l.pending = append(l.pending, record)
+	}
 }

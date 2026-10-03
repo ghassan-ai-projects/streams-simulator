@@ -88,16 +88,9 @@ func validateParams(name string, params map[string]any) error {
 		return nil
 	}
 	rules, declared := paramRules[name]
-	for k := range params {
-		if !declared {
-			return fmt.Errorf("perturb: %s accepts no parameters (got %q)", name, k)
-		}
-		check, ok := rules[k]
-		if !ok {
-			return fmt.Errorf("perturb: %s has no parameter %q", name, k)
-		}
-		if err := check(params[k]); err != nil {
-			return fmt.Errorf("perturb: %s %s: %w", name, k, err)
+	for key := range params {
+		if err := validateParameter(name, key, params[key], rules, declared); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -120,4 +113,18 @@ func asFloat(v any) (float64, bool) {
 		return f, err == nil
 	}
 	return 0, false
+}
+
+func validateParameter(name, key string, value any, rules map[string]paramCheck, declared bool) error {
+	if !declared {
+		return fmt.Errorf("perturb: %s accepts no parameters (got %q)", name, key)
+	}
+	check, ok := rules[key]
+	if !ok {
+		return fmt.Errorf("perturb: %s has no parameter %q", name, key)
+	}
+	if err := check(value); err != nil {
+		return fmt.Errorf("perturb: %s %s: %w", name, key, err)
+	}
+	return nil
 }

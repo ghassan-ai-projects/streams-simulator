@@ -1,8 +1,6 @@
 package perturb
 
 import (
-	"encoding/json"
-
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
@@ -13,46 +11,7 @@ import (
 func (l *Layer) Flush(atNS int64) []Delivered {
 	var out []Delivered
 	for _, id := range l.ActiveIDs() {
-		a := l.active[id]
-		switch a.Name {
-		case Reorder:
-			flushed := a.window.flush(atNS)
-			for i := range flushed {
-				if flushed[i].Delivered && flushed[i].Reason == model.DeliveryOK {
-					flushed[i].Reason = model.DeliveryReordered
-				}
-			}
-			out = append(out, flushed...)
-		case ProducerFlap:
-			// Birth burst: republish every held event at one observed time,
-			// with event times spread across the outage.
-			if len(a.buffer) > 0 && a.UntilNS > 0 && atNS >= a.UntilNS {
-				recovery := atNS
-				for i := range a.buffer {
-					r := a.buffer[i]
-					ev := r.Event
-					ev.Birth = true
-					ev.ObservedTime = model.FormatTime(recovery)
-					r.Event = ev
-					r.Reason = model.DeliveryDelayed
-					out = append(out, r)
-				}
-				a.buffer = nil
-			}
-		case GrossBackfill:
-			if len(a.buffer) > 0 && a.UntilNS > 0 && atNS >= a.UntilNS {
-				recovery := atNS
-				for i := range a.buffer {
-					r := a.buffer[i]
-					ev := r.Event
-					ev.ObservedTime = model.FormatTime(recovery)
-					r.Event = ev
-					r.Reason = model.DeliveryDelayed
-					out = append(out, r)
-				}
-				a.buffer = nil
-			}
-		}
+		out = append(out, l.active[id].flushRecords(atNS)...)
 	}
 	if len(l.pending) > 0 {
 		out = append(l.pending, out...)
@@ -79,21 +38,8 @@ func isName(name string) bool {
 }
 
 func paramFloat(params map[string]any, key string, def float64) float64 {
-	if params == nil {
-		return def
-	}
-	switch v := params[key].(type) {
-	case float64:
-		return v
-	case int64:
-		return float64(v)
-	case int:
-		return float64(v)
-	case json.Number:
-		f, err := v.Float64()
-		if err == nil {
-			return f
-		}
+	if value, ok := asFloat(params[key]); ok {
+		return value
 	}
 	return def
 }
@@ -110,4 +56,50 @@ func paramStr(params map[string]any, key, def string) string {
 		return s
 	}
 	return def
+}
+
+func (a *Active) flushRecords(atNS int64) []Delivered {
+	switch a.Name {
+	case Reorder:
+		return a.flushReorder(atNS)
+	case ProducerFlap:
+		return a.flushBuffered(atNS, true)
+	case GrossBackfill:
+		return a.flushBuffered(atNS, false)
+	}
+	return nil
+}
+
+func (a *Active) flushReorder(atNS int64) []Delivered {
+	flushed := a.window.flush(atNS)
+	for i := range flushed {
+		if flushed[i].Delivered && flushed[i].Reason == model.DeliveryOK {
+			flushed[i].Reason = model.DeliveryReordered
+		}
+	}
+	return flushed
+}
+
+func (a *Active) flushBuffered(atNS int64, birth bool) []Delivered {
+	if len(a.buffer) == 0 || a.UntilNS <= 0 || atNS < a.UntilNS {
+		return nil
+	}
+	var out []Delivered
+	for _, record := range a.buffer {
+		out = append(out, recoveredRecord(record, atNS, birth))
+	}
+	a.buffer = nil
+	return out
+}
+
+func recoveredRecord(record Delivered, atNS int64, birth bool) Delivered {
+	// Producer recovery republishes a birth burst; backfill retains birth flags.
+	event := record.Event
+	if birth {
+		event.Birth = true
+	}
+	event.ObservedTime = model.FormatTime(atNS)
+	record.Event = event
+	record.Reason = model.DeliveryDelayed
+	return record
 }

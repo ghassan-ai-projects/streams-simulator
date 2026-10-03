@@ -383,3 +383,16 @@ Existing shuffled foundation/sink/truth race tests and architecture guards pass,
 including sealed-label and analytic regressions. Package lint/vet and whitespace
 checks pass; tests are unchanged. The retained Enola baseline is checked once
 before committing. The strict audit remains open at 181 production bodies.
+
+## Round 24 — Seeded delivery perturbations
+
+Complete perturbation functions and callbacks to 15 lines. Activation,
+parameter admission, pending drops, reorder displacement and buffered recovery
+are named steps. Transform routing follows multiplicity, delivery, timing and
+payload responsibilities. Record helpers share duplicate IDs and numeric
+parameter conversion while preserving seeded draws, delivery order and flags.
+Reorder displacement avoids allocating an intermediate slice per pair.
+
+Existing shuffled perturbation/run race and architecture tests, package lint/vet
+and whitespace checks pass; test files are unchanged. One retained-baseline
+Enola check precedes the commit. The strict audit remains open at 166 bodies.
