@@ -411,3 +411,15 @@ Existing shuffled run, scoring and architecture race tests pass, including repla
 identity and quiescence/failure boundaries. Package lint/vet and whitespace checks
 pass; tests are unchanged. The retained Enola baseline is checked once before
 committing. The strict audit remains open at 148 production bodies.
+
+## Round 26 — Device world bindings and safe stops
+
+Complete deviceworld production functions to 15 lines. Binding admission names
+source compilation, entity requirements and catalog checks. Plant commands name
+world advancement, argument resolution, invocation and effect completion. Safe
+stops retain explicit admission, interlock errors and applied-effect requirements.
+
+Existing shuffled deviceworld/device race tests and architecture guards pass.
+Package lint/vet and whitespace checks pass; tests are unchanged. Enola is clean,
+comparable and adds no findings against the retained baseline. The strict audit
+remains open at 140 production bodies.
