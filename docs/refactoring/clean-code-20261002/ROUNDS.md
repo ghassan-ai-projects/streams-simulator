@@ -555,3 +555,15 @@ their mutex scope, admission order and error wrapping.
 Existing shuffled device, deviceworld and architecture race tests pass; lint/vet
 and whitespace checks pass. Tests remain unchanged. Enola is clean and comparable
 with no added findings. Exactly 25 production bodies remain, all in device.
+
+## Round 38 — Device command execution, idempotency and safety
+
+Complete command admission/execution, freshness, parameter, device initialization
+and safety-transition functions to 15 lines. Name semantic identity, scheduled
+fault consumption, response faults and retry evidence. Safe stops, plant effects,
+lease expiry and reboot preserve locks, conservative state and refusal behavior.
+Shared receipt/result constructors preserve wire shapes, including omitted fields.
+
+Existing shuffled device, deviceworld and architecture race tests pass; lint/vet
+and whitespace checks pass. Tests remain unchanged. Enola is clean and comparable
+with no added findings. Exactly 10 production bodies remain in device transport.

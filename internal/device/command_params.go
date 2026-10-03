@@ -8,27 +8,15 @@ import (
 
 func strictParams(raw any) (map[string]any, bool) {
 	out := map[string]any{}
-	m, ok := raw.(map[string]any)
+	params, ok := raw.(map[string]any)
 	if !ok {
 		return nil, false
 	}
-	for name, v := range m {
-		if name == "" {
+	for name, value := range params {
+		if name == "" || !validParameterValue(value) {
 			return nil, false
 		}
-		switch value := v.(type) {
-		case float64:
-			if !finite(value) {
-				return nil, false
-			}
-		case string:
-			if value == "" {
-				return nil, false
-			}
-		default:
-			return nil, false
-		}
-		out[name] = v
+		out[name] = value
 	}
 	return out, true
 }
@@ -75,4 +63,15 @@ func repeat(b byte, n int) string {
 		out[i] = b
 	}
 	return string(out)
+}
+
+func validParameterValue(value any) bool {
+	switch value := value.(type) {
+	case float64:
+		return finite(value)
+	case string:
+		return value != ""
+	default:
+		return false
+	}
 }

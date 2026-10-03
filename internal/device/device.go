@@ -92,27 +92,28 @@ type dedupEntry struct {
 
 // New builds a device from cfg, applying deterministic defaults.
 func New(cfg Config) *Device {
-	capabilityDigest := orDefault(cfg.CapabilityDigest, "sha256:"+repeat('d', 64))
-	if cfg.Capabilities != nil {
-		if digest := cfg.Capabilities.Digest(); digest != "" {
-			capabilityDigest = digest
-		}
-	}
-	d := &Device{
-		deviceID:         orDefault(cfg.DeviceID, "dev-01"),
-		bootID:           orDefault(cfg.BootID, "boot-A"),
-		firmwareDigest:   orDefault(cfg.FirmwareDigest, "sha256:"+repeat('c', 64)),
-		capabilityDigest: capabilityDigest,
-		plant:            cfg.Plant,
-		capabilities:     cfg.Capabilities,
-		dedup:            map[string]dedupEntry{},
-		faultSchedule:    faultNames(cfg.FaultSchedule),
-		safeState:        true,
-	}
+	d := configuredDevice(cfg)
 	if cfg.Clock != nil {
 		d.clock = cfg.Clock
 	} else {
 		d.clock = func() int64 { return d.manualMono }
 	}
 	return d
+}
+
+func configuredDevice(cfg Config) *Device {
+	digest := configuredCapabilityDigest(cfg)
+	return &Device{deviceID: orDefault(cfg.DeviceID, "dev-01"), bootID: orDefault(cfg.BootID, "boot-A"),
+		firmwareDigest: orDefault(cfg.FirmwareDigest, "sha256:"+repeat('c', 64)), capabilityDigest: digest,
+		plant: cfg.Plant, capabilities: cfg.Capabilities, dedup: map[string]dedupEntry{}, faultSchedule: faultNames(cfg.FaultSchedule), safeState: true}
+}
+
+func configuredCapabilityDigest(cfg Config) string {
+	digest := orDefault(cfg.CapabilityDigest, "sha256:"+repeat('d', 64))
+	if cfg.Capabilities != nil {
+		if catalogDigest := cfg.Capabilities.Digest(); catalogDigest != "" {
+			digest = catalogDigest
+		}
+	}
+	return digest
 }

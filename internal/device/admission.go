@@ -7,27 +7,7 @@ func (d *Device) admit(command map[string]any, now int64) string {
 	if reject := d.admitFreshness(command, now); reject != "" {
 		return reject
 	}
-	expiresAfter, _ := command["expires_after_ms"].(float64)
-	rawParams, validParams := strictParams(command["parameters"])
-	if !validParams {
-		return "out_of_range"
-	}
-	target, _ := command["target"].(string)
-	operation, _ := command["operation"].(string)
-	if operation == "safe_stop" {
-		return d.admitSafeStop(target, rawParams, expiresAfter)
-	}
-	capa, ok := d.capabilities.target(target)
-	if !ok {
-		return "wrong_target"
-	}
-	if capa.ExpiresAfterMS > 0 && expiresAfter > float64(capa.ExpiresAfterMS) {
-		return "expired"
-	}
-	if operation != capa.Operation {
-		return "unknown_operation"
-	}
-	return admitCapabilityParams(capa, rawParams)
+	return d.admitCommandParameters(command)
 }
 
 func (d *Device) admitFreshness(command map[string]any, now int64) string {
@@ -36,17 +16,7 @@ func (d *Device) admitFreshness(command map[string]any, now int64) string {
 	}
 	notBefore, _ := command["not_before_mono_us"].(float64)
 	expiresAfter, _ := command["expires_after_ms"].(float64)
-	// Zero is the immediate-dispatch sentinel emitted by Agentic Stream.
-	// Nonzero values are boot-relative freshness anchors.
-	if notBefore > 0 {
-		if float64(now) < notBefore {
-			return "not_ready"
-		}
-		if float64(now) > notBefore+expiresAfter*1000 {
-			return "expired"
-		}
-	}
-	return ""
+	return freshnessWindow(notBefore, expiresAfter, now)
 }
 
 func (d *Device) admitSafeStop(target string, rawParams map[string]any, expiresAfter float64) string {
@@ -67,20 +37,72 @@ func admitCapabilityParams(capa TargetCapability, rawParams map[string]any) stri
 	if len(rawParams) != len(capa.Bounds)+len(capa.StringValues) {
 		return "out_of_range"
 	}
-	for name, bounds := range capa.Bounds {
-		v, ok := rawParams[name].(float64)
-		if !ok || v < bounds[0] || v > bounds[1] {
-			return "out_of_range"
+	if reject := admitNumericBounds(capa.Bounds, rawParams); reject != "" {
+		return reject
+	}
+	return admitStringValues(capa.StringValues, rawParams)
+}
+
+func (d *Device) admitTargetOperation(target, operation string, params map[string]any, expires float64) string {
+	capability, ok := d.capabilities.target(target)
+	if !ok {
+		return "wrong_target"
+	}
+	if capability.ExpiresAfterMS > 0 && expires > float64(capability.ExpiresAfterMS) {
+		return "expired"
+	}
+	if operation != capability.Operation {
+		return "unknown_operation"
+	}
+	return admitCapabilityParams(capability, params)
+}
+
+func freshnessWindow(notBefore, expires float64, now int64) string {
+	// Zero is the immediate-dispatch sentinel; other values are boot-relative.
+	if notBefore > 0 {
+		if float64(now) < notBefore {
+			return "not_ready"
+		}
+		if float64(now) > notBefore+expires*1000 {
+			return "expired"
 		}
 	}
-	for name, allowed := range capa.StringValues {
-		value, ok := rawParams[name].(string)
-		if !ok {
-			return "out_of_range"
-		}
-		if _, ok := allowed[value]; !ok {
+	return ""
+}
+
+func admitNumericBounds(bounds map[string][2]float64, params map[string]any) string {
+	for name, bound := range bounds {
+		value, ok := params[name].(float64)
+		if !ok || value < bound[0] || value > bound[1] {
 			return "out_of_range"
 		}
 	}
 	return ""
+}
+
+func admitStringValues(allowed map[string]map[string]struct{}, params map[string]any) string {
+	for name, values := range allowed {
+		value, ok := params[name].(string)
+		if !ok {
+			return "out_of_range"
+		}
+		if _, ok := values[value]; !ok {
+			return "out_of_range"
+		}
+	}
+	return ""
+}
+
+func (d *Device) admitCommandParameters(command map[string]any) string {
+	expiresAfter, _ := command["expires_after_ms"].(float64)
+	params, valid := strictParams(command["parameters"])
+	if !valid {
+		return "out_of_range"
+	}
+	target, _ := command["target"].(string)
+	operation, _ := command["operation"].(string)
+	if operation == "safe_stop" {
+		return d.admitSafeStop(target, params, expiresAfter)
+	}
+	return d.admitTargetOperation(target, operation, params, expiresAfter)
 }
