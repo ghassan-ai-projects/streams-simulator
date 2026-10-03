@@ -369,3 +369,17 @@ production functions meet 15 lines; test files remain unchanged.
 Existing adapter and run replay/conformance race tests, architecture guards,
 adapter lint/vet and whitespace checks pass. One retained-baseline Enola check
 precedes the commit. The strict audit remains open at 193 production bodies.
+
+## Round 23 — Foundations and sealed observability
+
+Complete model, randutil, sink and truth production functions to 15 lines.
+Decoding separates trailing-document checks and coefficient defaults. Weighted
+sampling retains insertion sorting and total accumulation order. Sink helpers
+retain locking, close/error ordering and HTTP body ownership. The truth solver
+names oracle-world preparation, threshold scanning and detector arithmetic;
+label construction names identity, observability and scenario context.
+
+Existing shuffled foundation/sink/truth race tests and architecture guards pass,
+including sealed-label and analytic regressions. Package lint/vet and whitespace
+checks pass; tests are unchanged. The retained Enola baseline is checked once
+before committing. The strict audit remains open at 181 production bodies.

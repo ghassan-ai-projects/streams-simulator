@@ -106,23 +106,8 @@ type Picker struct {
 // Names with zero weight are skipped; an empty picker returns "" forever.
 func NewPicker(rng *SplitMix64, weights map[string]float64) *Picker {
 	p := &Picker{rng: rng}
-	// determinism-safe: the name/weight pairs are insertion-ordered by the
-	// sort below before any pick is made.
-	for name, w := range weights {
-		if w <= 0 {
-			continue
-		}
-		p.names = append(p.names, name)
-		p.weights = append(p.weights, w)
-		p.total += w
-	}
-	// Deterministic order so the picker itself is stable.
-	for i := 1; i < len(p.names); i++ {
-		for j := i; j > 0 && p.names[j] < p.names[j-1]; j-- {
-			p.names[j], p.names[j-1] = p.names[j-1], p.names[j]
-			p.weights[j], p.weights[j-1] = p.weights[j-1], p.weights[j]
-		}
-	}
+	p.addPositiveWeights(weights)
+	p.sortNames()
 	return p
 }
 
@@ -139,4 +124,26 @@ func (p *Picker) Pick() string {
 		r -= w
 	}
 	return p.names[len(p.names)-1]
+}
+
+func (p *Picker) addPositiveWeights(weights map[string]float64) {
+	// determinism-safe: sortNames orders these pairs before any pick is made.
+	for name, weight := range weights {
+		if weight <= 0 {
+			continue
+		}
+		p.names = append(p.names, name)
+		p.weights = append(p.weights, weight)
+		p.total += weight
+	}
+}
+
+func (p *Picker) sortNames() {
+	// Retain paired insertion sorting and the original total accumulation order.
+	for i := 1; i < len(p.names); i++ {
+		for j := i; j > 0 && p.names[j] < p.names[j-1]; j-- {
+			p.names[j], p.names[j-1] = p.names[j-1], p.names[j]
+			p.weights[j], p.weights[j-1] = p.weights[j-1], p.weights[j]
+		}
+	}
 }

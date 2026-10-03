@@ -1,10 +1,5 @@
 package model
 
-import (
-	"encoding/json"
-	"fmt"
-)
-
 // DomainSpec is the typed form of docs/contracts/domain-spec-v0.1.schema.json.
 // A simulated world, as data: the simulator binary contains no domain
 // behavior.
@@ -117,36 +112,6 @@ type F1Input struct {
 	State   string  `json:"state"`
 	Coef    float64 `json:"coef,omitempty"`
 	CoefSet bool    `json:"-"`
-}
-
-// UnmarshalJSON accepts both the bare-string and object forms.
-func (f *F1Input) UnmarshalJSON(b []byte) error {
-	var s string
-	if err := json.Unmarshal(b, &s); err == nil {
-		f.State = s
-		f.Coef = 1
-		f.CoefSet = true
-		return nil
-	}
-	type alias F1Input
-	var a alias
-	if err := json.Unmarshal(b, &a); err != nil {
-		return fmt.Errorf("UnmarshalJSON: %w", err)
-	}
-	f.State = a.State
-	f.Coef = a.Coef
-	var fields map[string]json.RawMessage
-	if err := json.Unmarshal(b, &fields); err != nil {
-		return fmt.Errorf("UnmarshalJSON: %w", err)
-	}
-	f.CoefSet = false
-	if _, ok := fields["coef"]; ok {
-		f.CoefSet = true
-	}
-	if !f.CoefSet {
-		f.Coef = 1
-	}
-	return nil
 }
 
 // Clamp is the value interval a state is kept within.
