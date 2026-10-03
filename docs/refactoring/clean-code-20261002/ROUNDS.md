@@ -469,3 +469,15 @@ CLI output shapes, ignored artifact-load behavior and empty-ledger representatio
 Existing shuffled CLI race and architecture tests, package lint/vet and whitespace
 checks pass. Tests remain unchanged. Enola is clean and comparable with no added
 findings. The strict audit remains open at 98 production bodies.
+
+## Round 31 — Device, manifest and MCP command wiring
+
+Complete all CLI production functions to 15 lines. Name device options,
+capability loading, world selection and safe-stop binding requirements; separate
+listener shutdown from startup. Release manifests name options, file digests,
+identity, signing and publication. MCP startup and reference-consumer connection
+retain endpoint lifecycle and close/error order. Flags and output shapes persist.
+
+Existing shuffled CLI, deviceworld, reference-consumer and architecture race tests
+pass; lint/vet and whitespace checks pass. Tests are unchanged. Enola is clean
+and comparable with no added findings. The strict audit has 89 bodies left.

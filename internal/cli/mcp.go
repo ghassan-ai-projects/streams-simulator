@@ -15,42 +15,13 @@ import (
 )
 
 func cmdMCP(args []string) error {
-	fs := flag.NewFlagSet("mcp", flag.ExitOnError)
-	role := fs.String("role", "", "director")
-	operatorAddr := fs.String("operator-addr", "", "serve the operator role over streamable HTTP at this listen address (e.g. 127.0.0.1:0); sim.world.create returns the endpoint with the token")
-	domainsDir := fs.String("domains-dir", "domains", "domain specs directory")
-	adaptersDir := fs.String("adapters-dir", "adapters", "adapters directory")
-	outDir := fs.String("out", "runs", "run artifact output directory")
-	if err := fs.Parse(args); err != nil {
-		return fmt.Errorf("streamsim: %w", err)
+	options, err := parseMCPOptions(args)
+	if err != nil {
+		return err
 	}
-	switch *role {
+	switch options.role {
 	case "director":
-		cat, err := loadCatalog(*domainsDir)
-		if err != nil {
-			return fmt.Errorf("streamsim: %w", err)
-		}
-		adapters, err := loadAdapters(*adaptersDir)
-		if err != nil {
-			return fmt.Errorf("streamsim: %w", err)
-		}
-		d := mcp.NewDirector(context.Background(), cat, adapters, *outDir)
-		srv := mcp.NewDirectorServer(d)
-		var httpServer *http.Server
-		if *operatorAddr != "" {
-			httpServer, err = serveOperatorEndpoint(d, *operatorAddr)
-			if err != nil {
-				return err
-			}
-		}
-		err = srv.Run(context.Background(), &mcpsdk.StdioTransport{})
-		if httpServer != nil {
-			_ = httpServer.Close()
-		}
-		if err != nil {
-			return fmt.Errorf("mcp director: %w", err)
-		}
-		return nil
+		return serveDirector(options)
 	case "operator":
 		return fmt.Errorf("the operator role is served from a director process; start `streamsim mcp --role director --operator-addr 127.0.0.1:PORT` and use the sim.world.create token")
 	default:
@@ -73,10 +44,67 @@ func serveOperatorEndpoint(d *mcp.Director, addr string) (*http.Server, error) {
 	d.SetOperatorEndpoint(endpoint)
 	fmt.Fprintf(os.Stderr, "operator endpoint: %s\n", endpoint)
 	httpServer := &http.Server{Handler: handler, ReadHeaderTimeout: 10 * time.Second}
-	go func() {
-		if err := httpServer.Serve(ln); err != nil && err != http.ErrServerClosed {
-			fmt.Fprintf(os.Stderr, "operator endpoint failed: %v\n", err)
-		}
-	}()
+	go runOperatorHTTP(httpServer, ln)
 	return httpServer, nil
+}
+
+func runOperatorHTTP(server *http.Server, listener net.Listener) {
+	if err := server.Serve(listener); err != nil && err != http.ErrServerClosed {
+		fmt.Fprintf(os.Stderr, "operator endpoint failed: %v\n", err)
+	}
+}
+
+type mcpOptions struct{ role, operatorAddr, domainsDir, adaptersDir, outDir string }
+
+func parseMCPOptions(args []string) (mcpOptions, error) {
+	var options mcpOptions
+	fs := flag.NewFlagSet("mcp", flag.ExitOnError)
+	fs.StringVar(&options.role, "role", "", "director")
+	fs.StringVar(&options.operatorAddr, "operator-addr", "", "serve the operator role over streamable HTTP at this listen address (e.g. 127.0.0.1:0); sim.world.create returns the endpoint with the token")
+	fs.StringVar(&options.domainsDir, "domains-dir", "domains", "domain specs directory")
+	fs.StringVar(&options.adaptersDir, "adapters-dir", "adapters", "adapters directory")
+	fs.StringVar(&options.outDir, "out", "runs", "run artifact output directory")
+	if err := fs.Parse(args); err != nil {
+		return mcpOptions{}, fmt.Errorf("streamsim: %w", err)
+	}
+	return options, nil
+}
+
+func serveDirector(options mcpOptions) error {
+	d, err := loadDirector(options)
+	if err != nil {
+		return err
+	}
+	srv := mcp.NewDirectorServer(d)
+	var httpServer *http.Server
+	if options.operatorAddr != "" {
+		httpServer, err = serveOperatorEndpoint(d, options.operatorAddr)
+		if err != nil {
+			return err
+		}
+	}
+	return runDirectorSession(srv, httpServer)
+}
+
+func loadDirector(options mcpOptions) (*mcp.Director, error) {
+	cat, err := loadCatalog(options.domainsDir)
+	if err != nil {
+		return nil, fmt.Errorf("streamsim: %w", err)
+	}
+	adapters, err := loadAdapters(options.adaptersDir)
+	if err != nil {
+		return nil, fmt.Errorf("streamsim: %w", err)
+	}
+	return mcp.NewDirector(context.Background(), cat, adapters, options.outDir), nil
+}
+
+func runDirectorSession(server *mcpsdk.Server, operator *http.Server) error {
+	err := server.Run(context.Background(), &mcpsdk.StdioTransport{})
+	if operator != nil {
+		_ = operator.Close()
+	}
+	if err != nil {
+		return fmt.Errorf("mcp director: %w", err)
+	}
+	return nil
 }
