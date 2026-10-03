@@ -148,7 +148,7 @@ test-coverage: ## Run tests and produce HTML coverage report
 	fi
 
 # ---- Pipeline -------------------------------------------------------------
-ci-check: docs-check tidy build vet lint-ci test-short test-simdet deadcode vulncheck fuzz-soak ## Run the full CI pipeline locally (matches .github/workflows/ci.yml)
+ci-check: function-length docs-check tidy build vet lint-ci test-short test-simdet deadcode vulncheck fuzz-soak ## Run the full CI pipeline locally (matches .github/workflows/ci.yml)
 	@echo "  CI check passed"
 
 # ---- Tools ----------------------------------------------------------------

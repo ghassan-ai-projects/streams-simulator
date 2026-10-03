@@ -1,4 +1,11 @@
-# Enola architecture review
+# Enola architecture review and initial baseline
+
+The findings census and candidate decisions below record the initial round-11
+scan. Subsequent rounds retain the same tool/extractor and enforce comparable
+deltas. Current completion evidence is in [HANDOFF.md](HANDOFF.md). The earlier
+long-function retention decisions were superseded by the strict 15-line bar;
+canonical dispatch, MCP schemas and numerical integration are now split into
+named responsibilities and pass with no exemptions.
 
 Date: 2026-10-03. Repository: Streams Simulator. Starting commit: `ecd5b98`.
 This round follows Tamoz's generate → pin → edit → regenerate → compare workflow.

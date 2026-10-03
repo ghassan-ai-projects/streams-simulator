@@ -2,7 +2,8 @@
 
 Scope: all repository Go files and production package boundaries. Baseline:
 `4e26cc1`, branch `code-improvements-1`, 103 Go files, 30 over 300 lines.
-Existing modifications to `docs/README.md` and `docs/reviews/` are excluded.
+Existing modifications to `docs/README.md` and `docs/reviews/` were excluded from
+refactoring rounds; a concurrent publication commit later included them.
 
 ## Completion criteria
 
@@ -73,13 +74,14 @@ release risks were resolved through file splitting.
 
 The user tightened the function limit from the former reviewed 60-line threshold
 to 25, then selected a hard maximum of **15 lines**. The earlier round-10
-completion claim applies to the old bar; the new bar is not met yet.
+completion claim applies to the old bar. Rounds 12–39 completed the stricter
+source migration; final gate evidence is recorded in [HANDOFF.md](HANDOFF.md).
 
-The source-only audit finds 281 named production functions and seven anonymous
-functions over 15 lines. Run `make function-length` for the strict AST-based
-check. It counts all production Go files, including build-tagged sources, and
-excludes test files. It currently fails and will be added to the full CI gate
-when the migration is complete. No allowances or frozen-body exemptions apply.
+The initial source-only audit found 281 named production functions and seven
+anonymous functions over 15 lines; the completed audit has zero violations.
+Run `make function-length` for the strict AST-based check. It counts all production Go files, including build-tagged sources, and
+excludes test files. It runs in the full CI gate and local pre-commit hook.
+No allowances or frozen-body exemptions apply.
 
 Refactor by owning package, preserving expression order, RNG consumption, errors,
 locking and digest representations. Keep test files unchanged; existing replay,

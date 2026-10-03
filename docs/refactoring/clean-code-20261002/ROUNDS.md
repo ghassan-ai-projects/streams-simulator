@@ -580,3 +580,23 @@ The strict AST audit passes with zero violations and no exemptions. Existing
 shuffled device, deviceworld and architecture race tests pass; lint/vet and
 whitespace checks pass. Tests remain unchanged. Enola is clean and comparable
 with no added findings. The final repository gate and CI wiring follow.
+
+## Round 40 — Enforce and verify the completed bar
+
+Wire the strict AST function checker into the repository gate and local hook.
+Update canonical instructions, public quality guidance, inventory and handoff
+with the completed 15-line bar; label earlier 60-line review evidence historical.
+No production or test files change in this enforcement round.
+
+`make function-length` passes with zero violations. All 284 Go files are at most
+300 lines (largest 294). Disposable probes reject 16-line functions, methods,
+callbacks and build-tagged functions, accept 15-line equivalents and exclude
+tests. Tests remain unchanged since round 11. The full repository gate and full
+shuffled race suite pass; total coverage is 69.9%, with nonzero coverage in every
+modified runtime package. Documentation/link and whitespace checks pass.
+
+The final retained-baseline Enola receipt is clean and comparable, with no added
+findings, enforced cycles/layers at confidence 0.8 and no new runtime dependency
+edges. Pre-commit itself is unavailable; its checker is independently proven.
+The readability and architecture bar is complete. HANDOFF.md records separate
+correctness follow-ups and the limits of this evidence.

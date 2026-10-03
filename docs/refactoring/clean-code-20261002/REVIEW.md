@@ -1,4 +1,9 @@
-# Refactoring review and completion evidence
+# Historical round-10 review and completion evidence
+
+This review records the former 60-line bar. Its three retained long-function
+decisions and file/function census are historical. The strict 15-line bar has
+since been completed with no exceptions; current evidence is in
+[HANDOFF.md](HANDOFF.md) and per-round evidence in [ROUNDS.md](ROUNDS.md).
 
 Scope: the clean-code and package-ownership bar in [BAR.md](BAR.md), starting at
 `4e26cc1`. The original working-tree changes in `docs/README.md` and

@@ -1,56 +1,70 @@
-# Refactoring handoff — 2026-10-03
+# Refactoring completion — 2026-10-03
 
-This branch is an incremental refactoring, not completion of the stricter bar.
-The current requirement is 15 physical body lines, including braces, comments
-and blanks. The earlier 25-line goal text is superseded by the user's 15-line
-selection and AGENTS.md. Tests are exempt from function length.
+The strict clean-code and architecture bar is complete for this refactoring
+scope. Every production Go function, method and anonymous function is at most
+15 physical body lines, including braces, comments and blanks. Test functions
+are exempt; no production exceptions or frozen-body allowances remain.
 
-## Completed
+## Completed structure and review
 
-- Responsibility-based files and a downward business-package dependency guard.
-- All 243 Go files are within 300 lines; the largest is 298 lines.
-- Shared online/offline scoring policies and named simulator workflows.
-- Every production function in canonical, jsonschema, domain and score is within
-  15 lines. Other packages have completed workflow subsets, not package-wide compliance.
-- Strict AST source audit: `make function-length`, including anonymous functions, methods
-  and build-tagged production sources, without exemptions.
-- Enola baseline/change review with enforced cycle/layer checks at confidence 0.8.
-  Generated architecture state remains local and ignored.
-- Test files are unchanged since round 11, before the source-only migration.
-  Earlier rounds on this branch include test partitioning and regression tests.
+- All 284 Go files, including tests, are within 300 physical lines; maximum 294.
+- Responsibility-based files and named workflow steps cover all production
+  packages. Public operations delegate admission, execution and reporting to
+  concrete helpers. No extra runtime module/package or external dependency was
+  introduced for size; the existing business ownership map remains appropriate.
+- The AST checker includes build-tagged source and callbacks. It is enforced by
+  `make function-length`, `make ci-check`, GitHub CI and the local pre-commit hook.
+- Disposable checker probes reject 16-line named functions, methods, callbacks
+  and build-tagged functions; 15-line equivalents pass. Invalid test source is
+  excluded as required. No repository tests were edited for these probes.
+- The existing import allowlist protects downward business dependencies and the
+  deviceworld integration bridge. Go compilation rejects import cycles.
+- Enola uses retained, comparable pre-change baselines and enforced cycle/layer
+  checks at confidence 0.8. Generated state stays local and ignored. Its inferred
+  command/internal layers complement the detailed Go business import guard.
+- Self-review checked intent, abstraction levels, stepdown helpers, error
+  priority, random draws, arithmetic order, JSON/digest representations, locks,
+  command/effect/delivery sequence, cancellation and resource close behavior.
+- Test files are byte-for-byte unchanged since round 11 (`7ee077a`), before the
+  stricter source-only migration. Earlier rounds include test partitioning and
+  regression tests for separately identified behavior corrections.
+- Each round is committed after focused checks and a single retained-baseline
+  Enola comparison. Current source migration has zero overlength bodies.
 
-## Remaining function-length work
+## Final validation
 
-The strict audit still fails for **211 production bodies**:
+| Check | Result |
+| --- | --- |
+| Strict production function check | Pass; zero bodies above 15 lines |
+| Go file inventory | Pass; 284 files, largest 294 lines |
+| `make ci-check` | Pass, including build, vet, lint, race/shuffle, determinism, fuzz and vulnerability checks |
+| Full shuffled race suite with coverage | Pass; longest package (suite) 446.058 seconds |
+| Repository coverage | 69.9%; every modified runtime package has nonzero coverage |
+| Enola retained-baseline comparison | Clean and comparable; zero added findings; cycles/layers enforced at confidence 0.8 |
+| Documentation, links and whitespace | Pass |
+| Source-only migration | Test files unchanged since `7ee077a` |
 
-| Package | Bodies over 15 lines |
-| --- | ---: |
-| device | 34 |
-| world | 31 |
-| mcp | 24 |
-| cli | 19 |
-| adapter | 18 |
-| run | 18 |
-| perturb | 15 |
-| audit | 12 |
-| suite | 12 |
-| deviceworld | 8 |
-| refconsumer | 8 |
-| truth | 7 |
-| model | 2 |
-| sink | 2 |
-| randutil | 1 |
+Enola's final graph delta contains documentation declarations and name links;
+there are no new runtime dependency edges. The vulnerability check reports no
+vulnerabilities. The passing deadcode command still reports four existing unused
+symbols: Capabilities.TargetNames, Device.Advance, Device.SetFaultSchedule and
+wall.Now; passing CI does not establish that all unused APIs are eliminated.
 
-Prioritize long shared admission/rendering/command workflows and duplication;
-then remaining concrete helpers. Preserve command and delivery order, RNG draws,
-locks, digest representations and error priority. No new package is justified
-solely by length. Keep tests unchanged under the current instruction.
+Pre-commit is not installed, so its optional invocation was skipped. Its new
+hook runs the separately verified source checker. Local logs and coverage stay
+outside the repository; remote CI status is reported separately at publication.
 
-Once all bodies comply, add the strict check to CI and reconcile the legacy
-60-line architecture-review test with the authoritative source checker. Today,
-`make ci-check` does not include `make function-length`; a green CI run cannot
-prove the new bar. Finish a readability review of stepdown order and abstraction
-levels; length alone is insufficient.
+## Publication scope
+
+PR [#16](https://github.com/ghassan-ai-projects/streams-simulator/pull/16) contains
+round-scoped commits and this completion evidence. Publication requires exact
+local, remote and PR-head verification after pushing. Remote CI status is
+reported separately from local results.
+
+A concurrent publication commit (`b6851c6`) included pre-existing docs/README.md
+and docs/reviews/ changes. They were excluded from earlier refactoring commits
+and retained as published. Historical review claims do not replace current
+validation; REVIEW.md explicitly labels the former 60-line completion evidence.
 
 ## Improvement scan: follow-up correctness work
 
@@ -87,29 +101,6 @@ Further investigation remains for offline ledger availability, ignored JSONL
 serialization/close errors and canonical JSON edge cases. These are not covered
 by Enola's inferred layers. Do not turn heuristic performance warnings into defect
 claims without measuring the actual path; action matching remains a nested scan.
-
-## Validation and publication
-
-`make ci-check` passes: documentation smoke checks, module tidy, build, vet,
-lint, short race tests, deterministic tests, vulnerability scan and bounded
-fuzzing. No vulnerabilities were reported. Deadcode reports four existing
-unreachable symbols (Capabilities.TargetNames, Device.Advance,
-Device.SetFaultSchedule and wall.Now); its successful exit is not zero findings.
-Pre-commit is unavailable. The full shuffled race-and-coverage run (`go test -race -count=1 -shuffle=on
--coverprofile=... ./...`) passes with 69.4% total coverage; score coverage is
-84.2%. The final Enola check is clean and comparable, enforcing cycles/layers at
-0.8 with no new findings. Go dependency/file-size guards and whitespace checks
-pass. The strict function checker still fails with the 211 bodies listed above.
-
-The PR remains open with the 15-line migration and correctness follow-ups
-explicitly incomplete. Local
-Enola evidence complements, rather than replaces, the Go dependency guard and
-behavioral oracles. Remote CI must be checked independently after publication.
-
-A concurrent publication commit (`b6851c6`) included the pre-existing docs/README.md
-update and docs/reviews/ architecture-review documents. They were excluded from
-earlier refactoring commits; they are now part of this PR and retained as
-published. Their historical claims do not replace this current validation.
 
 ## Probe reproduction
 

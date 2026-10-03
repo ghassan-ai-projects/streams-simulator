@@ -89,6 +89,7 @@ Determinism: a run is a pure function of `(sim_version, domain_digest, adapter_d
 Primary commands:
 
 - `make ci-check`
+- `make function-length`
 - `make build`
 - `go vet ./...`
 - `go test ./...`
@@ -115,7 +116,7 @@ See [.agents/context/testing.md](.agents/context/testing.md) for the testing and
 - Packages own simulator responsibilities, not generic controller/service/store layers. Preserve the world → perturbation → adapter → sink pipeline and director/operator truth boundary. Create a package only for a distinct responsibility with a concrete caller and a downward dependency direction.
 - Preserve exported signatures, JSON shapes, errors, command/delivery order, RNG draws, digest inputs, locks, cancellation, and effects during refactoring. Record intentional corrections separately and prove them with regression tests.
 - Add meaningful boundary tests in each modified production package. Run focused tests and review the diff before each round's commit; run the full repository gate before handoff.
-- The executable file-size, package-dependency and function-review checks live in `test/architecture`. The review criteria and round evidence are in [docs/refactoring/clean-code-20261002/](docs/refactoring/clean-code-20261002/BAR.md).
+- The executable file-size, package-dependency and legacy function-review checks live in `test/architecture`. The strict 15-line AST check runs through `make function-length`, `make ci-check` and the local pre-commit hook. The review criteria and round evidence are in [docs/refactoring/clean-code-20261002/](docs/refactoring/clean-code-20261002/BAR.md).
 
 - Use `context.Context` as the first parameter for cancellable or I/O work.
 - Use `log/slog` for logging.
