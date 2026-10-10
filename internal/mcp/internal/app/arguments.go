@@ -5,7 +5,9 @@ import (
 	"fmt"
 )
 
-func str(args map[string]any, key string) string {
+// Str reads a string argument, "" when absent or not a string. The argument
+// readers are shared with the protocol layer, which decodes the same maps.
+func Str(args map[string]any, key string) string {
 	if args == nil {
 		return ""
 	}
@@ -15,15 +17,17 @@ func str(args map[string]any, key string) string {
 	return ""
 }
 
-func num(args map[string]any, key string, def int64) int64 {
-	value, ok := intArg(args, key)
+// Num reads an integer argument, def when absent or not an integer.
+func Num(args map[string]any, key string, def int64) int64 {
+	value, ok := IntArg(args, key)
 	if ok {
 		return value
 	}
 	return def
 }
 
-func intArg(args map[string]any, key string) (int64, bool) {
+// IntArg reads an integer argument and reports whether it was present and valid.
+func IntArg(args map[string]any, key string) (int64, bool) {
 	value, ok := args[key]
 	if !ok {
 		return 0, false

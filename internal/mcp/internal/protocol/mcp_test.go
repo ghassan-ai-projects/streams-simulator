@@ -1,10 +1,12 @@
-package app
+package protocol
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
 	"testing"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/mcp/internal/app"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
@@ -16,7 +18,7 @@ import (
 
 // newTestDirector builds a director with the aquaculture-pond domain and
 // the native-jsonl adapter.
-func newTestDirector(t *testing.T) *Director {
+func newTestDirector(t *testing.T) *app.Director {
 	t.Helper()
 	spec, err := domain.Load(testsupport.Example())
 	if err != nil {
@@ -27,7 +29,7 @@ func newTestDirector(t *testing.T) *Director {
 		t.Fatal(err)
 	}
 	cat := domain.NewCatalog([]*domain.Compiled{spec})
-	d := NewDirector(context.Background(), cat, map[string]*model.Adapter{"native-jsonl": a}, t.TempDir())
+	d := app.NewDirector(context.Background(), cat, map[string]*model.Adapter{"native-jsonl": a}, t.TempDir())
 	return d
 }
 
@@ -224,7 +226,7 @@ func serverHasTool(t *testing.T, server *mcp.Server, name string) bool {
 	return false
 }
 
-func createWorld(t *testing.T, d *Director) string {
+func createWorld(t *testing.T, d *app.Director) string {
 	t.Helper()
 	res, err := d.CreateWorld(map[string]any{
 		"domain": "aquaculture-pond", "seed": float64(42), "adapter": "native-jsonl",

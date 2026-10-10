@@ -4,5 +4,7 @@
 // Every tool is domain-agnostic: the binary contains no effector name, no
 // consumer name, no consumer schema.
 //
-// The package is a facade: the surface lives in its private app layer.
+// The package is a facade: the use cases live in its private app layer, the
+// protocol wiring (tools, schemas, SDK registration) in its protocol layer, and
+// the capability-token entropy in its capability edge.
 package mcp

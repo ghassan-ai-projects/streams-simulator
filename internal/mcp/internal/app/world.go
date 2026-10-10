@@ -26,7 +26,7 @@ func (d *Director) CreateWorld(args map[string]any) (map[string]any, error) {
 }
 
 func (d *Director) worldConfig(args map[string]any) (run.Config, error) {
-	spec, err := d.Catalog.Describe(str(args, "domain"))
+	spec, err := d.Catalog.Describe(Str(args, "domain"))
 	if err != nil {
 		return run.Config{}, errTool(CodeDomainInvalid, "%v", err)
 	}

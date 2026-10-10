@@ -17,5 +17,5 @@ system under test has, and it never sees truth.
 
 | Word | Replaced by | Why |
 | --- | --- | --- |
-| `internal/mcp` flat package symbols | the facade (`Director`, `NewDirectorServer`, `NewOperatorServerResolver`, `SetOperatorEndpoint`) | handlers and schemas moved behind `internal/mcp/internal/app` |
+| `internal/mcp` flat package symbols | the facade (`Director`, `NewDirectorServer`, `NewOperatorServerResolver`, `SetOperatorEndpoint`) | handlers and schemas moved behind `internal/mcp/internal/{app,protocol}` |
 | `capabilityToken` | `capability.NewToken` | entropy is an I/O edge, not a use-case concern |

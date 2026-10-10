@@ -1,4 +1,8 @@
-package app
+// Package protocol is the MCP driving adapter of the surface: it declares the
+// tools and their closed input schemas, registers them with the SDK, decodes
+// arguments and hands them to the app layer's use cases. It holds no
+// simulator rule and is the only place the MCP SDK is imported.
+package protocol
 
 import (
 	"context"

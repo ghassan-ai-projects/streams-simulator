@@ -1,4 +1,4 @@
-package app
+package protocol
 
 // Slice A: the nested contract schemas (verdict, ground_truth) are typed and
 // enforced over the wire; fault/perturb params reject unknown keys; start_time

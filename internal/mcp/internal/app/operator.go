@@ -35,6 +35,10 @@ type OperatorResolver interface {
 	ResolveOperator(token string) (*OperatorView, error)
 }
 
+// SingleView resolves every token against one OperatorView, which authorizes
+// it: a single world served on its own.
+func SingleView(v *OperatorView) OperatorResolver { return viewResolver{v: v} }
+
 // viewResolver adapts one OperatorView to the resolver interface.
 type viewResolver struct{ v *OperatorView }
 

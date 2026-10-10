@@ -1,22 +1,24 @@
-package app
+package protocol
 
 import (
 	"context"
 	"fmt"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/mcp/internal/app"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 // NewOperatorServer builds the operator-role server for one world's view.
 // It advertises exactly the four operator tools and nothing else.
-func NewOperatorServer(v *OperatorView) *mcp.Server {
-	return NewOperatorServerResolver(viewResolver{v: v})
+func NewOperatorServer(v *app.OperatorView) *mcp.Server {
+	return NewOperatorServerResolver(app.SingleView(v))
 }
 
 // NewOperatorServerResolver builds the operator-role server for a token
 // resolver. One endpoint serves every world: each tool call resolves the
 // capability token to its owning OperatorView before dispatching.
-func NewOperatorServerResolver(r OperatorResolver) *mcp.Server {
+func NewOperatorServerResolver(r app.OperatorResolver) *mcp.Server {
 	s := mcp.NewServer(implementation, nil)
 	handlers := operatorToolHandlers{resolver: r}
 	addTool(s, toolDef{name: "sim.nameplate.read", description: "The static world nameplate: entities, channels, effectors.", schema: toolSchema("sim.nameplate.read"), handler: handlers.handleNameplateRead})
@@ -26,12 +28,12 @@ func NewOperatorServerResolver(r OperatorResolver) *mcp.Server {
 	return s
 }
 
-type operatorToolHandlers struct{ resolver OperatorResolver }
+type operatorToolHandlers struct{ resolver app.OperatorResolver }
 
-func (h operatorToolHandlers) resolve(args map[string]any) (*OperatorView, error) {
-	v, err := h.resolver.ResolveOperator(str(args, "token"))
+func (h operatorToolHandlers) resolve(args map[string]any) (*app.OperatorView, error) {
+	v, err := h.resolver.ResolveOperator(app.Str(args, "token"))
 	if err != nil {
-		return nil, errTool(CodeCapabilityDenied, "capability token required")
+		return nil, app.ToolErrorf(app.CodeCapabilityDenied, "capability token required")
 	}
 	return v, nil
 }
@@ -40,21 +42,21 @@ func (h operatorToolHandlers) handleNameplateRead(_ context.Context, args map[st
 	if err != nil {
 		return nil, err
 	}
-	return v.ReadNameplate(str(args, "token"))
+	return v.ReadNameplate(app.Str(args, "token"))
 }
 func (h operatorToolHandlers) handleEffectorList(_ context.Context, args map[string]any) (any, error) {
 	v, err := h.resolve(args)
 	if err != nil {
 		return nil, err
 	}
-	return v.ListEffectors(str(args, "token"))
+	return v.ListEffectors(app.Str(args, "token"))
 }
 func (h operatorToolHandlers) handleEffectorInvoke(_ context.Context, args map[string]any) (any, error) {
 	v, err := h.resolve(args)
 	if err != nil {
 		return nil, err
 	}
-	return v.Invoke(str(args, "token"), str(args, "effector"), str(args, "entity_id"), str(args, "command_id"), mapArg(args, "args"), num(args, "at_ns", 0))
+	return v.Invoke(app.Str(args, "token"), app.Str(args, "effector"), app.Str(args, "entity_id"), app.Str(args, "command_id"), mapArg(args, "args"), app.Num(args, "at_ns", 0))
 }
 func (h operatorToolHandlers) handleConsumerReport(_ context.Context, args map[string]any) (any, error) {
 	v, err := h.resolve(args)
@@ -65,7 +67,7 @@ func (h operatorToolHandlers) handleConsumerReport(_ context.Context, args map[s
 	if err != nil {
 		return nil, err
 	}
-	if err := v.Report(str(args, "token"), str(args, "run_id"), num(args, "quiesced_through_ns", 0), verdict); err != nil {
+	if err := v.Report(app.Str(args, "token"), app.Str(args, "run_id"), app.Num(args, "quiesced_through_ns", 0), verdict); err != nil {
 		return nil, fmt.Errorf("mcp: %w", err)
 	}
 	return map[string]any{"accepted": true, "world_id": v.WorldID, "simulated": true}, nil

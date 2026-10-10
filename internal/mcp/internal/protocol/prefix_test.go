@@ -1,10 +1,12 @@
-package app
+package protocol
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
 	"testing"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/mcp/internal/app"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
@@ -18,7 +20,7 @@ import (
 func TestPrefixIndistinguishability(t *testing.T) {
 	t.Parallel()
 	start := model.DefaultStartTimeNS + 4*3600*1e9
-	mk := func(seed uint64) (*Director, string) {
+	mk := func(seed uint64) (*app.Director, string) {
 		d := newTestDirector(t)
 		res, err := d.CreateWorld(map[string]any{
 			"domain": "aquaculture-pond", "seed": float64(seed), "adapter": "native-jsonl",
@@ -41,7 +43,7 @@ func TestPrefixIndistinguishability(t *testing.T) {
 	wA.Run.SetEvidenceRecorder(func(e model.SimEvent) { evA.record(e) })
 	wB.Run.SetEvidenceRecorder(func(e model.SimEvent) { evB.record(e) })
 	// Same setup.
-	for _, w := range []*WorldRecord{wA, wB} {
+	for _, w := range []*app.WorldRecord{wA, wB} {
 		if _, err := w.Run.InvokeEffector("start_aerator", pond, "setup", map[string]any{"pond_id": pond, "level": 1.0}, start); err != nil {
 			t.Fatal(err)
 		}
@@ -116,7 +118,7 @@ func (e *evidence) equalPrefix(o *evidence) bool {
 // tool layer — nameplate, effector list, an invocation, a quiescence
 // report, and the capability-denied error path — as one byte string. Two
 // worlds with identical delivered prefixes must produce identical bytes.
-func operatorResponseSet(t *testing.T, v *OperatorView, token string, atNS int64) (string, error) {
+func operatorResponseSet(t *testing.T, v *app.OperatorView, token string, atNS int64) (string, error) {
 	t.Helper()
 	cs, _ := connect(t, NewOperatorServer(v))
 	call := func(name string, args map[string]any) (string, error) {
@@ -136,7 +138,7 @@ func operatorResponseSet(t *testing.T, v *OperatorView, token string, atNS int64
 		return "", err
 	}
 	invoked := "none"
-	var effList []EffectorInfo
+	var effList []app.EffectorInfo
 	if err := json.Unmarshal([]byte(effs), &effList); err == nil && len(effList) > 0 {
 		invoked, err = call("sim.effector.invoke", map[string]any{
 			"token": token, "effector": effList[0].Name,

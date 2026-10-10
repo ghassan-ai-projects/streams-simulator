@@ -7,7 +7,7 @@ import (
 )
 
 func (d *Director) worldAdapter(args map[string]any) (*model.Adapter, error) {
-	id := str(args, "adapter")
+	id := Str(args, "adapter")
 	if id == "" {
 		id = "native-jsonl"
 	}
@@ -20,20 +20,20 @@ func (d *Director) worldAdapter(args map[string]any) (*model.Adapter, error) {
 
 func configuredWorld(spec *domain.Compiled, adapter *model.Adapter, args map[string]any) run.Config {
 	// #nosec G115 -- the seed argument has a documented uint64 range.
-	seed := uint64(num(args, "seed", 1))
+	seed := uint64(Num(args, "seed", 1))
 	sink, timeMode := worldDeliveryOptions(args)
 	start, present := worldStartTime(args)
-	return run.Config{Domain: spec, Adapter: adapter, Seed: seed, SinkName: sink, SinkTarget: str(args, "sink_target"),
+	return run.Config{Domain: spec, Adapter: adapter, Seed: seed, SinkName: sink, SinkTarget: Str(args, "sink_target"),
 		TimeMode: timeMode, StartTimeNS: start, StartTimeSet: present, EntityIDs: worldEntityArguments(args),
-		ScenarioProfile: str(args, "scenario_profile"), Label: str(args, "label")}
+		ScenarioProfile: Str(args, "scenario_profile"), Label: Str(args, "label")}
 }
 
 func worldDeliveryOptions(args map[string]any) (string, string) {
-	sink := str(args, "sink")
+	sink := Str(args, "sink")
 	if sink == "" {
 		sink = model.SinkInproc
 	}
-	mode := str(args, "time_mode")
+	mode := Str(args, "time_mode")
 	if mode == "" {
 		mode = model.TimeStepped
 	}
@@ -43,7 +43,7 @@ func worldDeliveryOptions(args map[string]any) (string, string) {
 func worldStartTime(args map[string]any) (int64, bool) {
 	// Presence distinguishes the default from a legal epoch-zero start.
 	if _, present := args["start_time"]; present {
-		return num(args, "start_time", 0), true
+		return Num(args, "start_time", 0), true
 	}
 	return model.DefaultStartTimeNS, false
 }

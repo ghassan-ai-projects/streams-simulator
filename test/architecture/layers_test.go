@@ -75,15 +75,19 @@ func splitModule(dir string) (module, layer string) {
 }
 
 // layerRank orders the layers inside one module: domain below edges below app
-// below the facade. Inside a module an import must point to a lower rank.
+// below the protocol layer (a surface's driving adapter, which calls the app's
+// use cases) below the facade. Inside a module an import must point to a
+// lower rank.
 func layerRank(layer string) int {
 	switch layer {
 	case "":
+		return 4
+	case "protocol":
 		return 3
-	case "domain":
-		return 0
 	case "app":
 		return 2
+	case "domain":
+		return 0
 	}
 	return 1
 }
