@@ -238,3 +238,13 @@ func createWorld(t *testing.T, d *app.Director) string {
 	}
 	return res["world_id"].(string)
 }
+
+// A client that reads the server's identity sees the simulator it is
+// measuring with, not a constant that outlives a version bump.
+func TestServerAdvertisesTheSimulatorVersion(t *testing.T) {
+	t.Parallel()
+	cs, _ := connect(t, NewDirectorServer(newTestDirector(t)))
+	if got := cs.InitializeResult().ServerInfo.Version; got != model.SimVersion {
+		t.Fatalf("server version = %q, want %q", got, model.SimVersion)
+	}
+}

@@ -2,10 +2,12 @@ package app
 
 import (
 	"context"
+	"errors"
 	"path/filepath"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
 // A refused invocation is part of the command log so that replay reproduces
@@ -27,8 +29,8 @@ func TestReplayReproducesARefusedEffectorInvocation(t *testing.T) {
 		t.Fatal(err)
 	}
 	reused := map[string]any{"pond_id": pond, "level": 0.5}
-	if _, err := r.InvokeEffector("start_aerator", pond, "cmd-1", reused, now); err == nil {
-		t.Fatal("a command_id reused for a different request must be refused")
+	if _, err := r.InvokeEffector("start_aerator", pond, "cmd-1", reused, now); !errors.Is(err, world.ErrCommandIDReused) {
+		t.Fatalf("err = %v, want world.ErrCommandIDReused", err)
 	}
 	dir := t.TempDir()
 	if _, err := r.End(dir); err != nil {

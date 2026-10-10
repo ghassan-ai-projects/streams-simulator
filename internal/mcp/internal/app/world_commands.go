@@ -50,12 +50,15 @@ func (d *Director) Advance(ctx context.Context, worldID string, toNS int64, awai
 	if err != nil {
 		return nil, advanceToolError(err)
 	}
-	status := w.Run.Status()
+	return advanceResult(emitted, w.Run.Status()), nil
+}
+
+func advanceResult(emitted int, status run.WorldStatus) map[string]any {
 	return map[string]any{
 		"emitted": emitted, "clock": model.FormatTime(status.ClockNS),
 		"emitted_total":   status.Emitted,
 		"effects_applied": status.ActiveFaults, "simulated": true,
-	}, nil
+	}
 }
 
 // ClockState reports the clock and queue.

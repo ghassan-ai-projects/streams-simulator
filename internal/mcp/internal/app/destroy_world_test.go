@@ -1,6 +1,7 @@
 package app
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -20,8 +21,10 @@ func TestDestroyWorldAfterAFailedEndCanBeRetried(t *testing.T) {
 	if err := os.WriteFile(dir, nil, 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := d.DestroyWorld(worldID); err == nil {
-		t.Fatal("destroying with an unwritable artifact directory must report the failed End")
+	_, err := d.DestroyWorld(worldID)
+	var toolErr *ToolError
+	if !errors.As(err, &toolErr) || toolErr.Code != CodeDomainInvalid {
+		t.Fatalf("err = %v, want a %s tool error for the failed End", err, CodeDomainInvalid)
 	}
 	if _, err := d.DestroyWorld(worldID); err != nil {
 		t.Fatalf("the retry must destroy the world: %v", err)

@@ -37,3 +37,10 @@ Rules for every item:
   oracle solver (D-11/12/13), the reorder draw (D-26) and the canonical
   adapter digest (D-36) change numbers or digests; the pin file was
   regenerated and says which outputs moved.
+- Independent review of the branch (PR #19) found six further defects, fixed
+  with regression tests as R-1 … R-6 in [PLAN.md](PLAN.md): a `run.begin` /
+  `truth.reveal` lock-order deadlock, replay aborting on a logged refusal,
+  the idempotency key, the version-before-digest check on replay,
+  `DestroyWorld` after a failed `End`, and director reads outside the run's
+  command lock. The decisions that change numbers, digests or stored formats
+  are listed in PLAN.md under "Decisions taken" for the reviewer to confirm.

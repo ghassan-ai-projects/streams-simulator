@@ -1,6 +1,6 @@
 # Plan and status
 
-Branch `harden-weak-spots`, from `main` after PR #18. Tiers run in order;
+Branch `harden-weak-spots`, from `main` after PR #18. Tiers ran in order;
 within a tier, items are independent.
 
 | Tier | Scope | Items |
@@ -11,99 +11,123 @@ within a tier, items are independent.
 | 4 | Loaders, adapters, schemas, sinks | D-26, D-28, D-30, D-31, D-32, D-33, D-34, D-38, D-40 |
 | 5 | Structure and test weak spots | D-46 (mcp protocol edge), D-47, D-48, T-01 (error assertions), run facade test hooks, determinism-gate gaps D-43 |
 
-## Needs a decision (not applied unprompted)
+## Decisions taken
 
-| ID | Why | Recommendation |
+The branch was asked to "fix all weak spots"; the items below changed a
+number, a digest or a stored format, so they are recorded here as decisions
+for the reviewer of the pull request to confirm or reverse. Each was taken
+with the recommendation originally written for it, except D-36/D-39 (the
+canonical digest replaced the legacy one instead of sitting beside it, because
+two digests of one document would each need a meaning).
+
+| ID | Decision | Consequence |
 | --- | --- | --- |
-| D-14 | Making reads pure changes simulated numbers | Pin the current numbers; make reads pure behind a new `sim_version` |
-| D-18 | Two delivery paths diverge; intent unclear | Choose the ledger-first path, unify, record as a version change |
-| D-35 | Zero equals unset for omitempty floats | Keep; document in the domain contract |
-| D-36, D-39 | Changing digests invalidates stored artifacts | Keep the legacy digest, add the RFC 8785 digest beside it |
-| P-01 | `wall` seam has no importers | Delete the package; amend DECISIONS D-13 |
+| D-14 | Reads are pure; the integration grid no longer depends on the read schedule | Simulator 0.1.0 → 0.2.0; world-state histories and run artifacts moved |
+| D-18, P-07 | One delivery path for live and released records | Ledger event time and sink-failure rows follow the unified path |
+| D-35 | Zero equals unset for omitempty floats: kept | Documented in the domain contract |
+| D-36 | The adapter digest is the RFC 8785 digest of the adapter's JSON form | Adapter digests in every run artifact changed; 0.1.0 artifacts replay with a version mismatch (note 8) |
+| D-39 | Verbatim integers in canonical JSON: kept | Documented in `canonical` |
+| P-01 | The `wall` seam is wired into the run clock edge rather than deleted | DECISIONS D-13 amended |
 
 ## Status
 
-| Item | State | Commit | Regression test |
-| --- | --- | --- | --- |
-| D-01 | done | `see git log` | `TestRevealRefusesALabelForARunTheDirectorDoesNotKnow` |
-| D-02 | done (truthful, see note) | `see git log` | `TestReplayDivergenceSaysWhatIsAndIsNotKnown` |
-| D-03 | done | `see git log` | `TestVerifyFailsTheCommandWhenTheReplayDoesNotReproduceTheArtifact` |
+| Item | State | Regression test |
+| --- | --- | --- |
+| D-01 | done | `TestRevealRefusesALabelForARunTheDirectorDoesNotKnow` |
+| D-02 | done (truthful, note 1) | `TestReplayDivergenceSaysWhatIsAndIsNotKnown` |
+| D-03 | done | `TestVerifyFailsTheCommandWhenTheReplayDoesNotReproduceTheArtifact` |
+| D-04 | done (note 2) | `TestOfflineScoreEqualsTheOnlineScoreOfTheSameRun` |
+| D-05 | done (note 3) | `TestEverySafeStopAppliesItsOwnWorldEffect` |
+| D-06 | done | `TestWireFaultsAreNotReplayedWithTheEvidenceOfARetry` |
+| D-07 | done | `TestARunThatEndedWithAFailureIsStillClosed`, `TestDestroyWorldAfterAFailedEndCanBeRetried` |
+| D-08 | done | `TestConcurrentBeginRunOpensTheRunOnce` (-race), `TestBeginRunAndRevealTruthNeverDeadlock` |
+| D-09 | done | `TestArtifactCountsEveryInjectedFaultEvenOnceCleared` |
+| D-10 | done | `TestReplayRebuildsTheWorldIdentityInputsOfTheArtifact` |
+| D-15 | done | `TestEveryCommandIsRefusedOnceTheRunIsFinished` |
+| D-16 | done | `TestFailedNewLeaksNoFileDescriptor`, `TestEndKeepsTheArtifactWhenItsEvidenceCannotBePublished` |
+| D-17 | done | `TestEvidenceReadsDoNotRaceWithAnAdvancingRun`, `TestWorldReadsDoNotOverlapAnAdvance` (both -race) |
+| D-11, D-12, D-13 | done (note 4) | `TestAnOnsetObservableAtTimeZeroIsObservable`, `TestAnUnknownDetectorFormIsRefusedNotTreatedAsObservable`, `TestAFaultWithNoEffectIsNotObservableEvenWithoutNoise`, `TestPeerResidualSigmaCountsTheEntitiesTheWorldHolds` |
+| D-19, D-41 | done | `TestScriptedEffectorsCarryTheirArgumentsAndDeterministicIds` |
+| D-20 | done | `TestAuditScenarioWithoutAWindowAuditsTheSuiteScenarioLength` |
+| D-21 | done | `TestSilenceDetectionCitesTheLastDeliveredRecordOfTheSeries` |
+| D-22 | done (refuse; note 5) | `TestWorldCreateRefusesSeedsThatJSONCannotCarryExactly`, `TestIntegerTypeAcceptsEveryWholeNumberInRange` |
+| D-23 | done | `TestAdvanceErrorsKeepTheirOwnCodes` |
+| D-24 | done | `TestReportChangesNothingWhenItsVerdictIsRefused` |
+| D-25 | done | `TestReadingNeverAltersWhatARunEmits` |
+| D-26 | done | `TestReorderSwapsAboutHalfOfTheWholeSecondPairs`; pinned reorder/combined digests updated |
+| D-27, D-42 | done | `TestCommandIDReusedForADifferentRequestIsRefused`, `TestIdempotentReplayReturnsTheFirstResultIncludingItsEffectETA`, `TestOmittedArgumentsAndAnEmptyObjectAreOneRequest`, `TestReplayReproducesARefusedEffectorInvocation` |
+| D-51 | done | `TestWorldCreateReturnsTheRunIdTruthIsSealedAgainst` |
+| D-30 | done | `TestVerifyRefusesAnEmptyFixtureInsteadOfPanicking` |
+| D-31 | done (note 6) | `TestHashSuffixKeepsTheLimitAndStaysHexWhateverTheLimit` |
+| D-32 | done | `TestSplitRecordsReadsJSONArrayOutputElementwise`, `TestAdapterVerdictFailsOnlyForADeclaredCheckOrForNothingToCheck` |
+| D-33 | done | `TestCompileRefusesMalformedCountAndUniqueKeywords` |
+| D-34 | done | `TestF1InputExplicitZeroCoefficientSurvivesARoundTrip` |
+| D-38 | done | `TestCompileReportsTheFirstBrokenDefinitionByName`, `TestProfileValidationNamesTheSortedFirstUndeclaredFault` |
+| D-40 | done | removed the dead default (no behaviour) |
+| D-28, D-50 | closed, not defects | see DEFERRED; measured / traced |
+| D-35, D-39 | decided: kept, documented | DEFERRED.md; the domain and adapter contracts state the behaviour |
+| D-14 | done (note 7) | `TestStateValueDoesNotDependOnTheReadSchedule`, `TestStochasticFaultEnvelopeDoesNotDependOnTheReadSchedule` |
+| D-18, P-07 | done | `TestSinkFailureStillAccountsForEveryDelivery` |
+| D-36 | done (note 8) | `TestAdapterDigestIsTheCanonicalDigestOfItsJSONForm` |
+| D-43 | done | the determinism gate type-checks the module (`go/packages`) and flags every map range without a stated reason; 13 order-sensitive sites iterate sorted keys, the rest carry a `determinism-safe` reason |
+| D-44, D-45 | done | `TestEntitySnapshotCannotChangeTheWorld`, `TestEffectorCallLogIsIsolatedFromCallersArguments` |
+| D-46 | done | mcp split into `app` (use cases, errors, operator view, capability) and `protocol` (tools, schemas, SDK); gate rank `protocol` between app and facade |
+| D-47, D-48 | done | device setters removed; quiescence clock private; no test-only ledger query |
+| T-01 | done | 51 negative tests name the error they expect; `TestErrorAssertionsNameTheErrorTheyExpect` has no exceptions |
+| P-01 | done | the run clock edge reads through `wall`; `clock_simdet_test.go` pins the zero time under `simdet`; DECISIONS D-13 amended |
+| P-03 | done for failure modes | `world.FailureMode` is a named string type (JSON-neutral); the other closed sets keep their constants |
+| P-05, P-06 | done | `SinkBroker`/`TimeScaled` removed and MCP refuses scaled time; `ClockMultiplier` documented as reserved; profile names are `model.Profile*` constants |
+| P-02, P-04 | decided: not adopted | P-02: exported symbols stay documented, comments inside modules stay; P-04: the device's record maps are the wire form the contract tests pin byte for byte, and no defect traces to them |
+| R-1 … R-6 | done (note 9) | `TestBeginRunAndRevealTruthNeverDeadlock`, `TestReplayReproducesARefusedEffectorInvocation`, `TestOmittedArgumentsAndAnEmptyObjectAreOneRequest`, `TestReplayOfAnotherVersionReportsItsInputDigestsInsteadOfFailing`, `TestDestroyWorldAfterAFailedEndCanBeRetried`, `TestWorldReadsDoNotOverlapAnAdvance` |
 
-D-02 note: the artifact stores only the trace digest, so the position of the
-first differing record cannot be known when the counts agree. The result now
-says so in `detail` instead of implying a position; per-record digests in the
-artifact would be a format change (decision).
-| D-04 | done | `see git log` | `TestOfflineScoreEqualsTheOnlineScoreOfTheSameRun` |
+## Notes
 
-D-04 note: `streamsim score` now needs `--domains-dir`/`--adapters-dir` (as
-`replay` does); it builds the same `score.Evidence` the director builds and
-calls the same `score.Score`. `score.Offline` remains for callers without a
-replayable artifact.
-| D-05 | done | `see git log` | `TestEverySafeStopAppliesItsOwnWorldEffect` |
-| D-06 | done | `see git log` | `TestWireFaultsAreNotReplayedWithTheEvidenceOfARetry` |
-
-D-05 note: world command ids for safe stops are now `safe-stop/<target>/<n>`
-(was `safe-stop/<target>`), visible in the effector-call log.
-| D-07 | done | `see git log` | `TestARunThatEndedWithAFailureIsStillClosed` |
-| D-08 | done | `see git log` | `TestConcurrentBeginRunOpensTheRunOnce` (-race) |
-| D-09 | done | `see git log` | `TestArtifactCountsEveryInjectedFaultEvenOnceCleared` |
-| D-10 | done | `see git log` | `TestReplayRebuildsTheWorldIdentityInputsOfTheArtifact` |
-| D-15 | done | `see git log` | `TestEveryCommandIsRefusedOnceTheRunIsFinished` |
-| D-16 | done | `see git log` | `TestFailedNewLeaksNoFileDescriptor`, `TestEndKeepsTheArtifactWhenItsEvidenceCannotBePublished` |
-| D-17 | done | `see git log` | `TestEvidenceReadsDoNotRaceWithAnAdvancingRun` (-race) |
-
-Tier 2 notes: the run-artifact contract gained optional `noiseless` and
-`force_failure_mode` in `world_config` (additive; the world digest already
-hashed them). `End` now returns the artifact together with a publication
-error, and a run whose end failed is finished.
-| D-11, D-12, D-13 | done | `see git log` | `TestAnOnsetObservableAtTimeZeroIsObservable`, `TestAnUnknownDetectorFormIsRefusedNotTreatedAsObservable`, `TestAFaultWithNoEffectIsNotObservableEvenWithoutNoise`, `TestPeerResidualSigmaCountsTheEntitiesTheWorldHolds` |
-| D-23 | done | `see git log` | `TestAdvanceErrorsKeepTheirOwnCodes` |
-| D-24 | done | `see git log` | `TestReportChangesNothingWhenItsVerdictIsRefused` |
-| D-22 | done (refuse) | `see git log` | `TestWorldCreateRefusesSeedsThatJSONCannotCarryExactly` |
-| D-19, D-41 | done | `see git log` | `TestScriptedEffectorsCarryTheirArgumentsAndDeterministicIds` |
-
-D-22 note: the SDK re-marshals arguments through float64 before the handler,
-so exact seeds above 2^53-1 cannot be carried; MCP now refuses them in the
-schema instead of rounding. The CLI `--seed` keeps the full uint64 range.
-
-Pin impact: `suite/cold-chain-transit` and its suite file changed (D-12): the
-`power_transfer_gap` scenario is no longer claimed observable because its
-declared detector channel has zero noise and zero deviation (D-52). The pin
-file was regenerated in this commit.
-| D-21 | done | `see git log` | `TestSilenceDetectionCitesTheLastDeliveredRecordOfTheSeries` |
-| D-27, D-42 | done | `see git log` | `TestCommandIDReusedForADifferentRequestIsRefused`, `TestIdempotentReplayReturnsTheFirstResultIncludingItsEffectETA` |
-| D-51 | done | `see git log` | `TestWorldCreateReturnsTheRunIdTruthIsSealedAgainst` |
-
-Not yet started: D-20, D-25, D-26, D-28, D-30..D-34, D-38, D-40, D-50, tier 5
-(D-46, D-47, D-48, T-01). The last round-check was green at `92ace18`; the
-D-21/D-27/D-42/D-51 commit below ran focused package tests only.
-| D-25 | done | `see git log` | `TestReadingNeverAltersWhatARunEmits` |
-| D-20 | done | `see git log` | `TestAuditScenarioWithoutAWindowAuditsTheSuiteScenarioLength` |
-| D-26 | done | `see git log` | `TestReorderSwapsAboutHalfOfTheWholeSecondPairs`; pinned reorder/combined digests updated |
-| D-30 | done | `see git log` | `TestVerifyRefusesAnEmptyFixtureInsteadOfPanicking` |
-| D-31 | done | `see git log` | `TestHashSuffixKeepsTheLimitAndStaysHexWhateverTheLimit` |
-| D-32 | done | `see git log` | `TestSplitRecordsReadsJSONArrayOutputElementwise`, `TestAdapterVerdictFailsOnlyForADeclaredCheckOrForNothingToCheck` |
-| D-33 | done | `see git log` | `TestCompileRefusesMalformedCountAndUniqueKeywords` |
-| D-34 | done | `see git log` | `TestF1InputExplicitZeroCoefficientSurvivesARoundTrip` |
-| D-38 | done | `see git log` | `TestCompileReportsTheFirstBrokenDefinitionByName`, `TestProfileValidationNamesTheSortedFirstUndeclaredFault` |
-| D-40 | done | removed the dead default | (no behaviour) |
-| D-28, D-50 | closed, not defects | see DEFERRED | measured / traced |
-| D-46 | done | `see git log` | mcp split into `app` (use cases, errors, operator view, capability) and `protocol` (tools, schemas, SDK); gate rank `protocol` between app and facade; protocol tests moved, app use-case tests added |
-| D-47, D-48 | done | `see git log` | device setters removed; quiescence clock private; no test-only ledger query |
-| T-01 | done | `see git log` | 51 negative tests name the error they expect; `TestErrorAssertionsNameTheErrorTheyExpect` has no exceptions |
-| D-43 | done | `see git log` | the determinism gate type-checks the module (`go/packages`) and flags every map range without a stated reason; 13 order-sensitive sites now iterate sorted keys, the rest carry a `determinism-safe` reason; `determinismDebt` is gone |
-| D-14 | done | `see git log` | `TestStateValueDoesNotDependOnTheReadSchedule`, `TestStochasticFaultEnvelopeDoesNotDependOnTheReadSchedule` |
-| D-18 | done | `see git log` | `TestSinkFailureStillAccountsForEveryDelivery` |
-
-**Simulator version 0.1.0 → 0.2.0.** The integration grid no longer depends on
-when a state is read (D-14), the oracle's solver (D-11/12/13) and the reorder
-perturbation (D-26) changed numbers, so artifacts built by 0.1.0 report a
-version mismatch on replay instead of silently differing. Pinned traces and
-ledgers are unchanged; world-state histories, run artifacts (sim_version and
-world digest) and the cold-chain suite moved. The pin file was regenerated.
-| D-44, D-45 | done | `see git log` | `TestEntitySnapshotCannotChangeTheWorld`, `TestEffectorCallLogIsIsolatedFromCallersArguments` |
-| P-01 | done | `see git log` | the run clock edge reads through `wall`; `clock_simdet_test.go` pins the zero time under `simdet`; DECISIONS D-13 amended |
-| D-36 | done | `see git log` | `TestAdapterDigestIsTheCanonicalDigestOfItsJSONForm`; adapter digests in run artifacts changed (pin regenerated) |
-| P-03 | done for failure modes | `see git log` | `world.FailureMode` is a named string type (JSON-neutral); the other closed sets keep their constants: the profile names are named in `model`, detector forms and reject codes already have constants |
-| P-05, P-06 | done | `see git log` | `SinkBroker`/`TimeScaled` removed and MCP refuses scaled time; `ClockMultiplier` documented as reserved; profile names are `model.Profile*` constants (they are the domain contract's closed set, not per-domain branches) |
-| P-02, P-04 | decided: not adopted | - | P-02: exported symbols stay documented, comments inside modules stay; P-04: the device's record maps are the wire form the contract tests pin byte for byte, and no defect traces to them |
+1. **D-02.** The artifact stores only the trace digest, so the position of the
+   first differing record cannot be known when the counts agree. The result
+   says so in `detail` instead of implying a position; per-record digests in
+   the artifact would be a format change.
+2. **D-04.** `streamsim score` needs `--domains-dir`/`--adapters-dir` (as
+   `replay` does); it builds the same `score.Evidence` the director builds
+   and calls the same `score.Score`. `score.Offline` remains for callers
+   without a replayable artifact. One input the files cannot carry: a
+   `reveal` with `unblind:true` after the run ended is not in the artifact,
+   so only the online scorer sees it.
+3. **D-05.** World command ids for safe stops are `safe-stop/<target>/<n>`
+   (was `safe-stop/<target>`), visible in the effector-call log.
+4. **D-11…D-13.** `suite/cold-chain-transit` and its suite file changed: the
+   `power_transfer_gap` scenario is no longer claimed observable because its
+   declared detector channel has zero noise and zero deviation (D-52, left to
+   the domain owner because changing it changes the domain digest).
+5. **D-22.** The SDK re-marshals arguments through float64 before the handler,
+   so exact seeds above 2^53-1 cannot be carried over MCP; MCP refuses them
+   in the schema instead of rounding. The CLI `--seed` keeps the full uint64
+   range (the schema `integer` check now accepts whole numbers of any
+   magnitude, so an artifact of seed 2^64-1 loads and verifies).
+6. **D-31.** `hash_suffix` ids are `sha256:` plus 16 hex digits (was 9). No
+   shipped adapter uses the keyword, but a consumer that parsed the width
+   would notice.
+7. **Version.** Simulator 0.1.0 → 0.2.0. The integration grid (D-14), the
+   oracle's solver (D-11/12/13), the reorder perturbation (D-26) and the
+   canonical adapter digest (D-36) changed numbers or digests. Pinned traces
+   and ledgers are unchanged; world-state histories, run artifacts
+   (`sim_version`, world digest, adapter digest) and the cold-chain suite
+   moved, and the pin file was regenerated. The MCP `serverInfo.version` now
+   reports `model.SimVersion` instead of a constant that outlived the bump.
+8. **Replaying a 0.1.0 artifact.** Its stored adapter digest was computed by
+   the old rule, so the digests differ. `replay` and `verify` do not fail on
+   that: the result carries `version_match: false` and a `detail` naming the
+   digests that were not reproduced (a same-version artifact with a wrong
+   digest is still refused before execution). Whether the trace digest
+   reproduces is then decided by the replay itself.
+9. **Review follow-ups (R-1 … R-6)**, found by the independent review of this
+   branch: a lock-order deadlock between `run.begin` and `truth.reveal`
+   (introduced by D-08); replay aborting on a logged refused invocation
+   (a command_id reused for another request, new with D-27); the idempotency
+   key telling omitted arguments from `{}` and sharing a key between
+   unencodable arguments; the version check running after the digest check;
+   `DestroyWorld` wedging a world whose `End` failed; and director reads of
+   the world outside the run's command lock (D-17 was partial).
+10. **Process.** Commits `765257e` and `2d0d6b7` leave the behaviour pin
+    failing for the cold-chain suite; the pin is regenerated in `92ace18`.
+    History is not rewritten; bisect across those two commits needs the pin
+    from `92ace18`.

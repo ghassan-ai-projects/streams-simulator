@@ -1,6 +1,7 @@
 package jsonschema
 
 import (
+	"math"
 	"regexp"
 	"strings"
 	"time"
@@ -72,7 +73,7 @@ func matchesCollectionType(t string, v any) bool {
 
 func matchesInteger(v any) bool {
 	number, ok := asFloat(v)
-	return ok && number == float64(int64(number))
+	return ok && !math.IsInf(number, 0) && number == math.Trunc(number)
 }
 
 type jsonNumber interface {

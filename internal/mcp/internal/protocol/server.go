@@ -8,11 +8,12 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 // Implementation identity advertised by the server.
-var implementation = &mcp.Implementation{Name: "streamsim", Version: "0.1.0"}
+var implementation = &mcp.Implementation{Name: "streamsim", Version: model.SimVersion}
 
 // toolDef describes one tool for the SDK wiring.
 type toolDef struct {

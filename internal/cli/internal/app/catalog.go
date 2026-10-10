@@ -209,7 +209,7 @@ func adapterVerdict(res *adapter.VerifyResult) (any, error) {
 		return nil, fmt.Errorf("adapter verify: %s declares no conformance schema or golden to check", res.Adapter)
 	}
 	if (res.SchemaChecked && !res.SchemaOK) || (res.GoldenChecked && !res.GoldenMatch) {
-		return nil, fmt.Errorf("adapter verify FAILED: %s %s", res.FirstDivergence, res.Detail)
+		return nil, fmt.Errorf("adapter verify FAILED: %s", strings.TrimSpace(res.FirstDivergence+" "+res.Detail))
 	}
 	return map[string]any{"adapter": res.Adapter, "schema_ok": res.SchemaOK, "golden_match": res.GoldenMatch,
 		"schema_checked": res.SchemaChecked, "golden_checked": res.GoldenChecked, "records": res.RecordCount}, nil

@@ -234,12 +234,23 @@ func TestAdvanceErrorsKeepTheirOwnCodes(t *testing.T) {
 func TestWorldCreateRefusesSeedsThatJSONCannotCarryExactly(t *testing.T) {
 	t.Parallel()
 	cs, _ := connect(t, NewDirectorServer(newTestDirector(t)))
-	for name, seed := range map[string]any{"negative": -1, "beyond 2^53": float64(1 << 54), "fractional": 1.5} {
+	cases := map[string]struct {
+		seed any
+		want string
+	}{
+		"negative":    {-1, "/properties/seed: minimum"},
+		"beyond 2^53": {float64(1 << 54), "/properties/seed: maximum"},
+		"fractional":  {1.5, `/properties/seed: type: 1.5 has type "number", want "integer"`},
+	}
+	for name, tc := range cases {
 		res, err := cs.CallTool(context.Background(), &mcp.CallToolParams{Name: "sim.world.create", Arguments: map[string]any{
-			"domain": "aquaculture-pond", "seed": seed,
+			"domain": "aquaculture-pond", "seed": tc.seed,
 		}})
-		if err == nil && !res.IsError {
-			t.Errorf("%s seed %v was accepted", name, seed)
+		if err != nil || !res.IsError {
+			t.Fatalf("%s seed %v was accepted: res=%+v err=%v", name, tc.seed, res, err)
+		}
+		if text := res.Content[0].(*mcp.TextContent).Text; !strings.Contains(text, tc.want) {
+			t.Errorf("%s seed %v: refusal = %q, want %q", name, tc.seed, text, tc.want)
 		}
 	}
 	created := mustCall(t, cs, "sim.world.create", map[string]any{"domain": "aquaculture-pond", "seed": float64(1<<53 - 1)})
@@ -266,7 +277,10 @@ func TestWorldCreateRefusesATimeModeNothingImplements(t *testing.T) {
 	res, err := cs.CallTool(context.Background(), &mcp.CallToolParams{Name: "sim.world.create", Arguments: map[string]any{
 		"domain": "aquaculture-pond", "time_mode": "scaled",
 	}})
-	if err == nil && !res.IsError {
-		t.Fatal("scaled time is not implemented and must be refused")
+	if err != nil || !res.IsError {
+		t.Fatalf("scaled time is not implemented and must be refused: res=%+v err=%v", res, err)
+	}
+	if text := res.Content[0].(*mcp.TextContent).Text; !strings.Contains(text, "time_mode") {
+		t.Fatalf("the refusal must name time_mode: %q", text)
 	}
 }
