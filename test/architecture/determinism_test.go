@@ -20,7 +20,7 @@ const determinismMarker = "determinism-safe"
 // surfaces first (DEFERRED D-38), never emitted records; each entry leaves
 // when its module is migrated and the ranges are made ordered.
 var determinismDebt = map[string]string{
-	"internal/device":                      "capability and fault validation order (D-38); module M11",
+	"internal/device/internal/domain":      "capability and fault validation order (D-38); module M11 (layer)",
 	"internal/deviceworld/internal/domain": "binding validation order (D-38); module M7 (layer)",
 }
 

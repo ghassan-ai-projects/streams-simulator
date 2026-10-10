@@ -1,8 +1,9 @@
-package device
+package device_test
 
 import (
 	"bufio"
 	"errors"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/device"
 	"net"
 	"os"
 	"path/filepath"
@@ -16,9 +17,9 @@ import (
 // and result.
 func TestServeConnLoop(t *testing.T) {
 	client, server := net.Pipe()
-	d := New(Config{Capabilities: testCaps(t)})
+	d := device.New(device.Config{Capabilities: testCaps(t)})
 	done := make(chan error, 1)
-	go func() { done <- ServeConn(server, d) }()
+	go func() { done <- device.ServeConn(server, d) }()
 
 	_ = client.SetDeadline(time.Now().Add(2 * time.Second))
 	reader := bufio.NewReader(client)
@@ -28,7 +29,7 @@ func TestServeConnLoop(t *testing.T) {
 		t.Fatalf("first frame must be state, got %v", state["message_type"])
 	}
 
-	cmd, err := EncodeRecord(validCommand(t, nil))
+	cmd, err := device.EncodeRecord(validCommand(t, nil))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -47,7 +48,7 @@ func TestServeConnLoop(t *testing.T) {
 
 	// Execution truth is still read back via a query_state control; the result is
 	// device-reported terminal status, not independent physical confirmation.
-	if _, err := client.Write([]byte(QueryStateControl + "\n")); err != nil {
+	if _, err := client.Write([]byte(device.QueryStateControl + "\n")); err != nil {
 		t.Fatal(err)
 	}
 	refreshed := readRecord(t, reader)
@@ -61,7 +62,7 @@ func TestServeConnLoop(t *testing.T) {
 
 	_ = client.Close()
 	if err := <-done; err != nil {
-		t.Fatalf("ServeConn returned error: %v", err)
+		t.Fatalf("device.ServeConn returned error: %v", err)
 	}
 }
 
@@ -70,7 +71,7 @@ func TestListenRefusesRegularFilePath(t *testing.T) {
 	if err := os.WriteFile(path, []byte("keep me"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Listen(path, New(Config{Capabilities: testCaps(t)})); err == nil {
+	if _, err := device.Listen(path, device.New(device.Config{Capabilities: testCaps(t)})); err == nil {
 		t.Fatal("device listener must refuse a regular file path")
 	}
 	data, err := os.ReadFile(path)
@@ -85,18 +86,18 @@ func TestListenRefusesRegularFilePath(t *testing.T) {
 func TestScheduledDuplicateReplaysReceiptWithoutSecondPlantEffect(t *testing.T) {
 	client, server := net.Pipe()
 	plant := &countingPlant{}
-	d := New(Config{
+	d := device.New(device.Config{
 		Capabilities:  testCaps(t),
 		Plant:         plant,
-		FaultSchedule: []FaultInjection{{Name: FaultDuplicate, AcceptedCommand: 1}},
+		FaultSchedule: []device.FaultInjection{{Name: device.FaultDuplicate, AcceptedCommand: 1}},
 	})
 	done := make(chan error, 1)
-	go func() { done <- ServeConn(server, d) }()
+	go func() { done <- device.ServeConn(server, d) }()
 
 	_ = client.SetDeadline(time.Now().Add(2 * time.Second))
 	reader := bufio.NewReader(client)
 	readRecord(t, reader)
-	command, err := EncodeRecord(validCommand(t, nil))
+	command, err := device.EncodeRecord(validCommand(t, nil))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -114,7 +115,7 @@ func TestScheduledDuplicateReplaysReceiptWithoutSecondPlantEffect(t *testing.T) 
 	if plant.applyCalls != 1 {
 		t.Fatalf("duplicate delivery must apply the plant once, got %d calls", plant.applyCalls)
 	}
-	if _, err := client.Write([]byte(QueryStateControl + "\n")); err != nil {
+	if _, err := client.Write([]byte(device.QueryStateControl + "\n")); err != nil {
 		t.Fatal(err)
 	}
 	state := readRecord(t, reader)
@@ -124,16 +125,16 @@ func TestScheduledDuplicateReplaysReceiptWithoutSecondPlantEffect(t *testing.T) 
 
 	_ = client.Close()
 	if err := <-done; err != nil {
-		t.Fatalf("ServeConn returned error: %v", err)
+		t.Fatalf("device.ServeConn returned error: %v", err)
 	}
 }
 
 func TestAckLostRetryReplaysReceiptWithoutSecondPlantEffect(t *testing.T) {
 	plant := &countingPlant{}
-	d := New(Config{
+	d := device.New(device.Config{
 		Capabilities:  testCaps(t),
 		Plant:         plant,
-		FaultSchedule: []FaultInjection{{Name: FaultAckLost, AcceptedCommand: 1}},
+		FaultSchedule: []device.FaultInjection{{Name: device.FaultAckLost, AcceptedCommand: 1}},
 	})
 	tmpDir, err := os.MkdirTemp("/tmp", "ss-")
 	if err != nil {
@@ -145,7 +146,7 @@ func TestAckLostRetryReplaysReceiptWithoutSecondPlantEffect(t *testing.T) {
 		}
 	})
 	path := filepath.Join(tmpDir, "device.sock")
-	listener, err := Listen(path, d)
+	listener, err := device.Listen(path, d)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -163,7 +164,7 @@ func TestAckLostRetryReplaysReceiptWithoutSecondPlantEffect(t *testing.T) {
 	_ = client.SetReadDeadline(time.Now().Add(2 * time.Second))
 	reader := bufio.NewReader(client)
 	readRecord(t, reader)
-	command, err := EncodeRecord(validCommand(t, nil))
+	command, err := device.EncodeRecord(validCommand(t, nil))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -202,7 +203,7 @@ func TestAckLostRetryReplaysReceiptWithoutSecondPlantEffect(t *testing.T) {
 	if plant.applyCalls != 1 {
 		t.Fatalf("ack_lost retry must apply the plant once, got %d calls", plant.applyCalls)
 	}
-	if _, err := client.Write([]byte(QueryStateControl + "\n")); err != nil {
+	if _, err := client.Write([]byte(device.QueryStateControl + "\n")); err != nil {
 		t.Fatal(err)
 	}
 	state := readRecord(t, reader)
@@ -215,19 +216,19 @@ func TestAckLostRetryReplaysReceiptWithoutSecondPlantEffect(t *testing.T) {
 
 func TestSafeStopAckLostRetryReplaysReceiptAndResult(t *testing.T) {
 	plant := &countingPlant{}
-	d := New(Config{
+	d := device.New(device.Config{
 		Capabilities:  testCaps(t),
 		Plant:         plant,
-		FaultSchedule: []FaultInjection{{Name: FaultAckLost, AcceptedCommand: 2}},
+		FaultSchedule: []device.FaultInjection{{Name: device.FaultAckLost, AcceptedCommand: 2}},
 	})
 	client, server := net.Pipe()
 	done := make(chan error, 1)
-	go func() { done <- ServeConn(server, d) }()
+	go func() { done <- device.ServeConn(server, d) }()
 	_ = client.SetReadDeadline(time.Now().Add(2 * time.Second))
 	reader := bufio.NewReader(client)
 	readRecord(t, reader)
 
-	normal, err := EncodeRecord(validCommand(t, nil))
+	normal, err := device.EncodeRecord(validCommand(t, nil))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -244,7 +245,7 @@ func TestSafeStopAckLostRetryReplaysReceiptAndResult(t *testing.T) {
 		c["parameters"] = map[string]any{}
 		c["expires_after_ms"] = float64(1000)
 	})
-	frame, err := EncodeRecord(safeStop)
+	frame, err := device.EncodeRecord(safeStop)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -276,7 +277,7 @@ func TestSafeStopAckLostRetryReplaysReceiptAndResult(t *testing.T) {
 
 	_ = client.Close()
 	if err := <-done; err != nil {
-		t.Fatalf("ServeConn returned error: %v", err)
+		t.Fatalf("device.ServeConn returned error: %v", err)
 	}
 }
 
@@ -286,7 +287,7 @@ func readRecord(t *testing.T, reader *bufio.Reader) map[string]any {
 	if err != nil {
 		t.Fatalf("read frame: %v", err)
 	}
-	record, err := DecodeRecord(line)
+	record, err := device.DecodeRecord(line)
 	if err != nil {
 		t.Fatalf("decode frame %q: %v", string(line), err)
 	}

@@ -124,6 +124,7 @@ the two delivery paths (D-18), and world read-purity (D-14).
 | M7 | done | `c522b77` | deviceworld |
 | M8 | done | `28c648a` | sink; review pending |
 | M9 | done | `59c3a45` | domain |
-| M10 | in progress | | adapter |
+| M10 | done | `2d44673` | adapter; M7–M10 review follow-up pending |
+| M11 | in progress | | device |
 | M10–M15 | pending | | |
 | T1–T5, F | pending | | |

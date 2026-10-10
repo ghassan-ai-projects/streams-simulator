@@ -30,6 +30,7 @@ type packageInfo struct {
 // not listed fails TestEveryPackageIsClassified.
 var packages = map[string]packageInfo{
 	"internal/canonical":           {kindFoundation, 0},
+	"internal/device/contract":     {kindFoundation, 0},
 	"internal/randutil":            {kindFoundation, 0},
 	"internal/schemas":             {kindFoundation, 0},
 	"internal/wall":                {kindSeam, 0},

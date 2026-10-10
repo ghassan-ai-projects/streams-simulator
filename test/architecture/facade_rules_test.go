@@ -17,7 +17,8 @@ var facadeExemptions = map[string]string{}
 // keyed "<module>:<alias>". Each is a reviewed value type whose whole method
 // set is read-only lookup over its own data and is the public contract.
 var aliasedValueTypes = map[string]string{
-	"internal/domain:Compiled": "compiled domain spec: fields and read-only name lookups are the contract used by every module",
+	"internal/domain:Compiled":     "compiled domain spec: fields and read-only name lookups are the contract used by every module",
+	"internal/device:Capabilities": "device capability catalog: read-only target, operation and bounds lookups plus its digest",
 }
 
 // facade describes one facade file for the rules below.

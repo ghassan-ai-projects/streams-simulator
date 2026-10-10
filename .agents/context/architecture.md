@@ -30,7 +30,8 @@ The accepted architecture is summarized in [`documentation/architecture/`](../..
 - `internal/audit`: trivial-baseline evaluation over delivered evidence; facade over `internal/audit/internal/domain`
 - `internal/suite`: scenario generation, composition and admission; facade over `internal/suite/internal/domain`
 - `internal/refconsumer`: shipped reference detector and operator-client integration
-- `internal/device`: data-defined capability admission and vendored device transport
+- `internal/device`: data-defined capability admission and vendored device transport; facade over `internal/device/internal/domain` (rules, codec) and the `uds` transport edge
+- `internal/device/contract`: the vendored device wire-protocol schemas (embedded) and conformance fixtures
 - `internal/deviceworld`: device-to-world effector binding; facade over `internal/deviceworld/internal/domain`
 - `internal/domain`: load, validate, compile and digest domain data; facade over `internal/domain/internal/domain` with a `files` edge
 - `internal/model`: shared simulator records and strict JSON decoding

@@ -534,3 +534,35 @@ list, the suite determinism test uses one scenario (suite package 3.8 s →
 - Tests by layer: rules (66 %, floor moved to the layer), files (100 %),
   facade (86 %: nil adapter, `LoadBytes`, streaming session equals whole-run
   render over the shipped adapter and fixture).
+
+## M11 — device
+
+- Facade `internal/device` (`Device`, `New`, `ApplyCommand`, `State`,
+  `SetFaults`, `LoadCapabilities`, `ParseFaultSpec`, `ValidateFaultSchedule`,
+  `Listen`; aliases `Config`, `Faults`, `Outcome`, `FaultInjection`, `Plant`,
+  `SafeStopper`, `PlantCommand`, `PlantEffect`, `Capabilities`, `WireFaults`;
+  the three sentinel errors) over
+  - `internal/device/internal/domain`: state machine, admission, capability
+    catalog, fault schedule, plant port and the wire record codec (the codec
+    is pure and the rules call it, so it cannot sit in a higher layer);
+  - `internal/device/internal/uds`: socket listener, session loop, exchange
+    and the deterministic wire-fault gate (the only `net`/`os` user);
+  - `internal/device/contract`: the vendored schemas as an embedded
+    `contract.Schemas` (a tiny foundation package so the module keeps the
+    fixture directory it shares with `deviceworld` tests and the Agentic Stream
+    provenance in `SOURCE.md`).
+- `Capabilities` is an alias of a method-bearing type: listed in the reviewed
+  `aliasedValueTypes` table (read-only lookups plus the digest).
+- Test seams (`EncodeRecord`, `DecodeRecord`, `ServeConn*`, `QueryStateControl`,
+  `AcceptedCommandCount`, `Fault*`) exist only in `export_test.go`; they had no
+  production caller outside the module. `domain.ApplyFrame` is the exported
+  form of the old private `handleCommand` the edge needs.
+- Tests by layer: domain 85 % (including the admission-order test, moved from
+  the transport file because it exercises `admit`), uds 76 % (session, wire
+  faults, ack loss, injected disconnect, listen) plus the wire-gate unit
+  tests, facade 100 % (black-box transport flows over the shipped catalog and
+  contract fixtures, plus the facade contract tests). `determinismDebt` key
+  follows the layer.
+- Untouched, recorded: D-05/D-06 (safe-stop id window, one-shot flags in dedup
+  replay), `Listen`'s unjoined accept loop (D-38 family), typed
+  receipt/result records (P-04).
