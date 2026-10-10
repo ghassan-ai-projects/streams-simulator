@@ -7,41 +7,19 @@ package domain
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-// Load reads, schema-validates and structurally validates a domain spec from
-// a path. The returned Compiled carries the spec, its canonical digest, and
-// resolved defaults.
-func Load(path string) (*Compiled, error) {
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("domain: read %s: %w", path, err)
-	}
-	return Parse(raw, path)
-}
-
-// Parse is Load over an in-memory document. src names the source for error
-// messages.
+// Parse reads, schema-validates and structurally validates a domain spec from
+// an in-memory document. The returned Compiled carries the spec, its canonical
+// digest, and resolved defaults. src names the source for error messages.
 func Parse(raw []byte, src string) (*Compiled, error) {
 	doc, err := validateDocument(raw, src)
 	if err != nil {
 		return nil, err
 	}
 	return compileDocument(raw, doc, src)
-}
-
-// LoadAll loads every domain spec in a directory (non-recursive), sorted by
-// id. A single unloadable domain fails the whole load: the catalog is a
-// fixed, reviewed set, and a silent skip would make coverage reports lie.
-func LoadAll(dir string) ([]*Compiled, error) {
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return nil, fmt.Errorf("domain: list %s: %w", dir, err)
-	}
-	return loadPaths(domainPaths(dir, entries))
 }
 
 // Compiled is the typed, validated, digest-carrying form of a domain spec.
@@ -89,15 +67,6 @@ func (c *Compiled) StateNames() []string { return sortedKeys(c.states) }
 
 // ChannelNames returns the declared channel names, sorted.
 func (c *Compiled) ChannelNames() []string { return sortedKeys(c.channels) }
-
-// FaultNames returns the declared fault ids, sorted.
-func (c *Compiled) FaultNames() []string { return sortedKeys(c.faults) }
-
-// EffectorNames returns the declared effector names, sorted.
-func (c *Compiled) EffectorNames() []string { return sortedKeys(c.effectors) }
-
-// ProfileNames returns the declared profile names, sorted.
-func (c *Compiled) ProfileNames() []string { return sortedKeys(c.profiles) }
 
 // Fault returns the fault by id, or nil.
 func (c *Compiled) Fault(id string) *model.Fault {

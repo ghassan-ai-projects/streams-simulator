@@ -48,8 +48,7 @@ var ioEdges = map[string]ioEdge{
 	"internal/cli/score.go":            {uses: []string{"import:os"}, why: "artifact files"},
 	"internal/cli/suite.go":            {uses: []string{"import:os"}, why: "suite output files"},
 
-	"internal/domain/domain.go":              {uses: []string{"import:os"}, why: "domain file loading", debt: "R3"},
-	"internal/domain/loading.go":             {uses: []string{"import:os"}, why: "domain directory scan", debt: "R3"},
+	"internal/domain/file.go":                {uses: []string{"import:os"}, why: "domain file and directory loading; the only file-system edge of the package"},
 	"internal/adapter/adapter.go":            {uses: []string{"import:os"}, why: "adapter file loading", debt: "R4"},
 	"internal/adapter/fixture.go":            {uses: []string{"import:os"}, why: "conformance fixture file", debt: "R4"},
 	"internal/adapter/verify_conformance.go": {uses: []string{"import:os"}, why: "conformance golden and schema files", debt: "R4"},

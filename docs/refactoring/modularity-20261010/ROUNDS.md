@@ -80,3 +80,19 @@ corrected. Not fixed, recorded: mixed skip-directory rules between older gates
   adds shared state), moving `canonical.CapabilityCatalogDomain` (R9, with the
   device split), `wall` (decision P-01).
 - Coverage floor for `model` raised 18 → 20.
+
+## R3 — domain
+
+- `Load`, `LoadAll`, `domainPaths`, `loadPaths` moved verbatim into
+  `internal/domain/file.go`, now the package's only `os` user and its single
+  `ioEdges` entry (no debt). `domain` is reclassified `edge-core`.
+- Decision change vs the R0 plan: moving the loaders to `cli` was rejected. 28
+  call sites in 14 packages' tests use `domain.Load`; relocating them buys no
+  gate (the file-level gate already isolates the I/O) and the sibling pattern
+  keeps small readers beside their rules. Revisit only if a second external
+  system appears.
+- Deleted `Compiled.FaultNames/EffectorNames/ProfileNames` (no callers).
+  `HasProfile` stays (used by shipped-domain tests).
+- New `file_test.go`: sorted top-level `.json` only, nested dir and non-JSON
+  ignored, one bad domain fails the whole load, error text names the missing
+  path (`domain: read …`, `domain: list …`).

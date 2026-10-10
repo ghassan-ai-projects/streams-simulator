@@ -3,10 +3,6 @@ package domain
 import (
 	"encoding/json"
 	"fmt"
-	"os"
-	"path/filepath"
-	"sort"
-	"strings"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/canonical"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/jsonschema"
@@ -52,29 +48,6 @@ func compileWithDigest(spec *model.DomainSpec, doc any, src string) (*Compiled, 
 		return nil, fmt.Errorf("streamsim: %w", err)
 	}
 	return c, nil
-}
-
-func domainPaths(dir string, entries []os.DirEntry) []string {
-	var paths []string
-	for _, e := range entries {
-		if !e.IsDir() && strings.HasSuffix(e.Name(), ".json") {
-			paths = append(paths, filepath.Join(dir, e.Name()))
-		}
-	}
-	sort.Strings(paths)
-	return paths
-}
-
-func loadPaths(paths []string) ([]*Compiled, error) {
-	var out []*Compiled
-	for _, p := range paths {
-		c, err := Load(p)
-		if err != nil {
-			return nil, fmt.Errorf("streamsim: %w", err)
-		}
-		out = append(out, c)
-	}
-	return out, nil
 }
 
 func decodeSpec(raw []byte, src string) (*model.DomainSpec, error) {
