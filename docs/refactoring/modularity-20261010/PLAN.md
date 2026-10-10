@@ -24,31 +24,67 @@ Tests, vet and `golangci-lint` are green at baseline; every package passes
 
 ## Rounds
 
-Order is bottom-up so each round builds on cleaner dependencies. `Hazards`
-are the behaviours the round could silently change.
+Phase A (R0–R7) established the standard, gates and local clean-ups on the
+flat package layout. **Direction change 2026-10-10:** every module becomes a
+facade over private layers with no leaks, and tests are organised per layer
+(STANDARD v2). Phase B migrates one module per round, bottom-up, so callers
+keep importing the same facade path with the same exported API; Phase C
+finishes test organisation.
 
-| Round | Scope | Hazards to guard | Proof beyond the common list |
+### Phase A — done
+
+| Round | Scope | Commit |
+| --- | --- | --- |
+| R0 | Standard, surveys, plan, deferred register, behaviour pin | `3e81cf2` |
+| R1 | Kind/layer table, I/O-edge inventory, doc gates, 15-line gate, lint ratchet, coverage floors | `52ea773` |
+| R2 | Foundations: shared schema compile/format helpers, dead `Picker`/`TimeNS` | `a3f6858` |
+| R3 | `domain` file loading isolated in one declared file | `33d757f` |
+| R4 | `adapter/conformance` extracted; `adapter.Load` isolated | `f735d8e` |
+| R5 | `world`: invocation values, dead API, responsibility files | `ddf8535` |
+| R6 | `perturb`: golden streams, table-driven dispatch | `87363c0` |
+| R7 | `truth`: store/record split, fail-closed store, `SetupCall` to `model` | `b9b7909` |
+
+### Phase B — module migration (facade · layers · no leaks)
+
+Per round: write the module's `UBIQUITOUS_LANGUAGE.md`; create the layers
+from its row in STANDARD §1; move code with bodies unchanged; write the
+facade (aliases in `api.go`, delegating operations); move each test to the
+layer it proves; register packages, allowlist, `facadeSpecs`; keep the
+exported API other modules use (narrow only what nobody uses); behaviour pin
+and goldens unchanged.
+
+| Round | Module | Shape | Specific hazards |
 | --- | --- | --- | --- |
-| R0 | This folder, standard, surveys, deferred list, behaviour pin, agent context and `AGENTS.md` update | none (docs, one script) | review |
-| R1 | **Gates and lint ratchet** in `test/architecture`: `packages` kind+layer table with strict-lower-layer and no-stale-edge gates; `ioEdges` inventory (imports, clock calls and values, `go` statements) with scheduled debt; package-comment and package-map gates; `make coverage-check` with a per-package baseline table; lint adds `gocognit`, `gocyclo`, `nestif`, `dupl` (fix the one `nestif` in `jsonschema` and one `dupl` pair in `perturb`); remove the stale 60-line review table | exception tables must start equal to today's violations and may only shrink | each gate fails on an injected violation (recorded) |
-| R2 | **Foundations**: delete `randutil.Picker` and the unused `model.TimeNS`; one `jsonschema.CompileJSON` and one `jsonschema.FormatErrors` replace three `mustAny` and two `formatErrs` copies; `model` keeps its two contract validators (foundation→foundation edge is allowed; error strings are contract); schema enum constants stay (they mirror contract enums) | error strings byte-identical, including the `streamsim: streamsim:` prefix stutter | run artifact tests; fuzz target |
-| R3 | **domain**: file loading (`Load`, `LoadAll`, directory scan) isolated in `file.go`, the package's one declared I/O file (STANDARD: a package that is K3 only for one small reader stays one package; moving it to `cli` would force 28 call sites in 14 packages' tests through a new helper for no gate gain); delete unused `Compiled` name accessors | domain digest, error text including prefix stutter, sorted path order, `Compiled.Raw` copy | pin; `shipped_test`, replay tests; new `file_test.go` |
-| R4 | **adapter**: `adapter/conformance` package (verify + fixture file branch); `Load` isolated in `adapter/file.go`; the `adapterDigest` recipe move waits for R11 (it is digest-bearing and lives with `run`'s identity code); `Engine.Meta` and `jsonEqualish` left (not worth a round) | `VerifyResult` JSON keys, `adapter verify` output, adapter digest bytes | pin (`adapter-verify/*`); golden tests |
-| R5 | **world**: delete dead API, unexport never-read fields, `invocation`/`callOutcome` values instead of 11 positional params, named `Advance` results, drop unused `AddEntity` params and dead `atNS` params, move registry/churn/kick-count code into files named for them (`FailureMode` type waits for R14) | RNG substream names and draw order, idempotency window and replay-before-interlock order, effector call ledger bytes | `effector_order_test`, `determinism_test`, `oracle_test`, pin |
-| R6 | **perturb**: name→transform table replaces the switch ladder; unexport `Active`; drop unused params; shared param defaults | per-perturbation RNG draws (short-circuit order), `nextID` allocation, `ActiveIDs` order | new fixed-seed golden over all 19 perturbations (committed first), `perturb_test` |
-| R7 | **truth**: `store.go` (sealed `Store`) apart from solver/record; `NewStore` requires the open-run check (production wiring identical); `BuildRecord` takes an `Injection` value; `SetupCall` moves to `model` | label bytes (feed digests and scoring), reveal error precedence | analytic cross-check tests, suite golden, pin |
-| R8 | **audit / suite / score / refconsumer**: shared `model.Perturbation`/`SetupCall`; `suite` uses `world.RenderID`; perturb-owned reason table read by score; `score.Evidence` so `Score` and `Offline` share one path and `score` stops importing `run`; dedupe `asFloat` and refconsumer identity literals; unexport symbols nobody uses | scorecard JSON byte-identical incl. omitempty; suite generation RNG order; nil-vs-empty ledger/calls semantics | `parity_test`, `shared_policy_test`, new golden scorecard, suite golden, pin |
-| R9 | **device**: `device/contract` becomes a Go package (embed + codec + schemas); `device` core is pure (typed `commandView` parsed once, reject codes as typed consts); new `devicewire` for session loop, frame gate, `Listen`; `CapabilityCatalogDomain` moves to `device`; delete dead exports | admission order boot→freshness→target→operation→bounds; dedup-before-admit; fault-ordinal accounting; canonical frame bytes; lock scope (plant called under `mu`) | `conformance_test`, `uds_test`, `wire_test`, `transport_order_test`, `fault_schedule_test`; add a disconnect/duplicate characterization test first |
-| R10 | **deviceworld + sink**: shared strict decode; delete duplicate `stateValue`; `sink` split into `inproc.go`/`file.go`/`httppush.go`, remove the unreachable branch and the false doc | sink byte streams, digests, `Close` return values | `sink_test`, `sink_equivalence_test`, pin |
-| R11 | **run**: delete dead surface and test-only exports behind `export_test.go`; `internal/run/internal/durable` (ledger file + artifact publish/load); `internal/run/internal/quiesce` (barrier + timer); accessors regrouped by topic; hand-rolled FNV replaced by `randutil.Fnv1a64` | RunID value (pinned before), ledger flush points and fsync at End, write order trace→ledger→history→verdict→run.json, permissions, error prefixes, `select` precedence in await, both recording idioms keep their `AtNS` semantics | `golden_test`, `ledger_test`, `finalization_regression_test`, `quiescence_test` under `-race`, soak, fuzz, pin |
-| R12 | **mcp**: surface reduced to what `cli` uses; lifecycle and audit policy leave handlers for named use-case files; constants shared with `suite`/`audit`; no race fix (D-08) | tool schemas, error codes and their precedence, resource shapes | mcp e2e tests, `prefix_test`, pin |
-| R13 | **cli**: composition root only — manifest build/sign and artifact-layout loading as named functions taking an injected clock and readers; named policy constants; `cmd` unchanged | manifest bytes and signature input, flag defaults, exit codes, output text | `subprocess_test`, pin (`manifest`) |
-| R14 | **Typed closed sets**: `DetectorForm`, `TransformOp`, `Encoding`, `CadenceMode`, `F1Form`, `RejectCode`, `FailureMode` as named string types | JSON/digest unchanged (named strings marshal identically); `model/adapter.go` field order and tags untouched | pin; digest pin tests from R3/R4 |
-| R15 | **Test hygiene and close-out**: `paralleltest`/`tparallel`/`usetesting`; per-package coverage ≥ 70 % (cli, model, mcp, world, randutil, refconsumer, adapter below today); exception tables empty or justified; map and docs updated; full `make ci-check`, race suite, final rating | n/a | `make ci-check`, `make coverage-check` |
+| M0 | Gates and template | `facadeSpecs`, `TestFacadesOnlyDelegate`, `TestFacadeSignaturesNameNoInternalTypes`, `TestModuleShapeMatchesItsKind`, `TestEveryModuleHasUbiquitousLanguage`; test-bar gates T1/T3/T5/T9; `.agents/prompts/module-refactor.md` | gates start with the migrated-module list and grow with it |
+| M1 | `perturb` | facade · domain | RNG draw order; golden digests (R6) |
+| M2 | `truth` | facade · domain | label bytes; sealed-store semantics |
+| M3 | `world` | facade · domain | substream names and draws; call log; idempotency order |
+| M4 | `score` | facade · domain; `score.Evidence` replaces `*run.Run` input (drops the `run` import) | scorecard JSON byte-identical; nil-vs-empty ledger/calls |
+| M5 | `audit` | facade · domain | audit verdict bytes |
+| M6 | `suite` | facade · domain | generation RNG order, suite JSON bytes |
+| M7 | `deviceworld` | facade · domain | binding validation, safe-stop plant |
+| M8 | `sink` | facade · inproc/file/httppush edges | byte streams, `Close` returns |
+| M9 | `domain` | facade · domain · files edge | domain digest, error text, catalog order |
+| M10 | `adapter` | facade · domain · files edge; `conformance` becomes its own module | adapter digest bytes, render output |
+| M11 | `device` | facade · app · domain · contract · wire/uds edges | admission order, frame bytes, lock scope |
+| M12 | `run` | facade · app · domain · durable · quiesce edges | RunID, ledger flush/fsync points, artifact write order, replay |
+| M13 | `refconsumer` | facade · app · domain · mcpclient edge | detection bytes, verdict JSON |
+| M14 | `mcp` | facade · app (director/operator use cases) · protocol edge | tool schemas, error codes and precedence |
+| M15 | `cli` | facade · app (commands) · edges; `cmd` unchanged | flag defaults, exit codes, output text, manifest bytes |
 
-A round that turns out larger than one reviewable diff is split and the
-extra rounds are appended with letters (`R5a`, `R5b`); the table is updated,
-not rewritten.
+A module that proves larger than one reviewable diff is split (`M12a`,
+`M12b`) and the table updated, not rewritten.
+
+### Phase C — test organisation
+
+| Round | Scope |
+| --- | --- |
+| T1 | `internal/testsupport`: one named loader for the shipped/example domains, adapters and capability catalogs replaces seven copies of the fixture path; `TestFixturePathsAreDefinedOnce` |
+| T2 | Hygiene: remove the one `time.Sleep`; `paralleltest`, `tparallel`, `usetesting`, `thelper` on; `t.Parallel` everywhere or a reasoned nolint |
+| T3 | Assertions name the error they expect (ratchet), no-op/duplicate tests deleted, names follow T3 |
+| T4 | `test/acceptance`: cross-module flows (run → verify → score, mcp loop) live there, not in a module |
+| T5 | Coverage to ≥ 70 % per package (`cli`, `model`, `mcp`, `world`, `refconsumer`, `adapter`), floors file empty |
+| F | Final: full `make ci-check`, uncached race suite, module/test ratings, handoff |
 
 ## Not in this program
 
@@ -60,19 +96,7 @@ the two delivery paths (D-18), and world read-purity (D-14).
 
 | Round | State | Commit | Notes |
 | --- | --- | --- | --- |
-| R0 | done | `3e81cf2` | |
-| R1 | done | `52ea773` | gates, lint, coverage ratchet; review fixes folded in |
-| R2 | done | `a3f6858` | review fixes amended |
-| R3 | done | `33d757f` | `file.go` instead of a move to cli |
-| R4 | done | `f735d8e` | review follow-up `68c57d3` |
-| R5 | done | `ddf8535`, follow-ups `85ae21b` | review: no High/Med |
-| R6 | done | `87363c0` | |
-| R7 | in progress | | |
-| R8 | pending | | |
-| R9 | pending | | |
-| R10 | pending | | |
-| R11 | pending | | |
-| R12 | pending | | |
-| R13 | pending | | |
-| R14 | pending | | |
-| R15 | pending | | |
+| R0–R7 | done | see Phase A | R6 `87363c0`, R7 `b9b7909` |
+| M0 | done | see git log | gates, template, prompt |
+| M1–M15 | pending | | |
+| T1–T5, F | pending | | |

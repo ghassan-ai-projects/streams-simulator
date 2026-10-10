@@ -52,14 +52,14 @@ var ioEdges = map[string]ioEdge{
 	"internal/adapter/file.go":                {uses: []string{"import:os"}, why: "adapter file loading; the only file-system edge of the package"},
 	"internal/adapter/conformance/inputs.go":  {uses: []string{"import:os"}, why: "adapter verify: fixture file"},
 	"internal/adapter/conformance/outputs.go": {uses: []string{"import:os"}, why: "adapter verify: output schema and golden files"},
-	"internal/device/uds.go":                  {uses: []string{"go-statement", "import:net", "import:os"}, why: "unix socket listener and session", debt: "R9"},
-	"internal/run/artifact.go":                {uses: []string{"import:os"}, why: "artifact files", debt: "R11"},
-	"internal/run/artifact_metadata.go":       {uses: []string{"call:time.Now"}, why: "artifact created_at", debt: "R11"},
-	"internal/run/finalize.go":                {uses: []string{"import:os"}, why: "artifact publication", debt: "R11"},
-	"internal/run/initialize.go":              {uses: []string{"import:os"}, why: "durable ledger file", debt: "R11"},
-	"internal/run/replay.go":                  {uses: []string{"import:os"}, why: "artifact loading", debt: "R11"},
-	"internal/run/run.go":                     {uses: []string{"call:time.NewTimer", "import:os"}, why: "quiescence timer and ledger handle", debt: "R11"},
-	"internal/run/verdict.go":                 {uses: []string{"call:time.Now"}, why: "unblinded timestamp", debt: "R11"},
+	"internal/device/uds.go":                  {uses: []string{"go-statement", "import:net", "import:os"}, why: "unix socket listener and session", debt: "M11"},
+	"internal/run/artifact.go":                {uses: []string{"import:os"}, why: "artifact files", debt: "M12"},
+	"internal/run/artifact_metadata.go":       {uses: []string{"call:time.Now"}, why: "artifact created_at", debt: "M12"},
+	"internal/run/finalize.go":                {uses: []string{"import:os"}, why: "artifact publication", debt: "M12"},
+	"internal/run/initialize.go":              {uses: []string{"import:os"}, why: "durable ledger file", debt: "M12"},
+	"internal/run/replay.go":                  {uses: []string{"import:os"}, why: "artifact loading", debt: "M12"},
+	"internal/run/run.go":                     {uses: []string{"call:time.NewTimer", "import:os"}, why: "quiescence timer and ledger handle", debt: "M12"},
+	"internal/run/verdict.go":                 {uses: []string{"call:time.Now"}, why: "unblinded timestamp", debt: "M12"},
 }
 
 func TestIOStaysInDeclaredEdges(t *testing.T) {
@@ -84,7 +84,7 @@ func TestIOStaysInDeclaredEdges(t *testing.T) {
 func TestPureKindsHoldOnlyScheduledIODebt(t *testing.T) {
 	t.Parallel()
 	for path, edge := range ioEdges {
-		kind := packages[packageDirectory(path)].kind
+		kind := infoOf(packageDirectory(path)).kind
 		pure := kind == kindFoundation || kind == kindCore
 		if pure && edge.debt == "" {
 			t.Errorf("%s: %s package declares I/O without scheduled debt", path, kind)

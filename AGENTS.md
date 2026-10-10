@@ -108,11 +108,15 @@ See [.agents/context/testing.md](.agents/context/testing.md) for the testing and
 
 ## Modularity bar
 
-Packages are one of four kinds (foundation, pure core, core with an I/O edge,
-surface), documented in [STANDARD.md](docs/refactoring/modularity-20261010/STANDARD.md).
-Pure packages and every `internal/domain` layer import no `os`/`net`/`exec` and
-read no wall clock; file, socket and clock access sits only in declared edge
-packages; `cli` and `mcp` hold wiring and protocol only. A structural round
+Every module is a public facade (`internal/<m>`) over private layers
+(`internal/<m>/internal/{domain,app,<edge>}`) with no internal leaks, shaped by
+its kind (pure core, core with an edge, surface; foundations stay single
+packages) as described in [STANDARD.md](docs/refactoring/modularity-20261010/STANDARD.md).
+Domain layers import no `os`/`net`/`exec` and read no wall clock; file, socket
+and clock access sits only in declared edge packages; a facade only delegates;
+`cli` and `mcp` hold wiring and protocol only. Tests live at the layer they
+prove (test bar T1-T10). Use [.agents/prompts/module-refactor.md](.agents/prompts/module-refactor.md)
+to migrate a package. A structural round
 changes no behaviour: run `scripts/behaviour-pin` and diff it against
 `docs/refactoring/modularity-20261010/BEHAVIOUR_PIN.txt`. Defects found during
 a round are added to `DEFERRED.md`, not fixed in the same commit.

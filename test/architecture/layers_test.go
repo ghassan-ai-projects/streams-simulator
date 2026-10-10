@@ -56,13 +56,59 @@ var packages = map[string]packageInfo{
 	"tools":                        {kindRoot, 10},
 }
 
+// splitModule separates a package directory into its module and the name of
+// the internal layer inside it ("" for the facade or an unlayered package):
+// internal/world/internal/domain is module internal/world, layer domain.
+func splitModule(dir string) (module, layer string) {
+	rest, ok := strings.CutPrefix(dir, "internal/")
+	if !ok {
+		return dir, ""
+	}
+	name, below, layered := strings.Cut(rest, "/internal/")
+	if !layered {
+		return dir, ""
+	}
+	layer, _, _ = strings.Cut(below, "/")
+	return "internal/" + name, layer
+}
+
+// layerRank orders the layers inside one module: domain below edges below app
+// below the facade. Inside a module an import must point to a lower rank.
+func layerRank(layer string) int {
+	switch layer {
+	case "":
+		return 3
+	case "domain":
+		return 0
+	case "app":
+		return 2
+	}
+	return 1
+}
+
+// infoOf classifies any package directory: a module entry, or one of its
+// internal layers (domain and app are pure, every other layer is an edge).
+func infoOf(dir string) packageInfo {
+	module, layer := splitModule(dir)
+	info := packages[module]
+	switch layer {
+	case "":
+	case "domain", "app":
+		info.kind = kindCore
+	default:
+		info.kind = kindEdgeCore
+	}
+	return info
+}
+
 func TestEveryPackageIsClassified(t *testing.T) {
 	t.Parallel()
 	seen := map[string]bool{}
 	for _, file := range productionFiles(t) {
-		seen[file.pkgDir] = true
-		if _, ok := packages[file.pkgDir]; !ok {
-			t.Errorf("%s: package %s is not classified in packages", file.path, file.pkgDir)
+		module, _ := splitModule(file.pkgDir)
+		seen[module] = true
+		if _, ok := packages[module]; !ok {
+			t.Errorf("%s: module %s is not classified in packages", file.path, module)
 		}
 	}
 	for dir := range packages {
@@ -77,8 +123,7 @@ func TestImportsPointToStrictlyLowerLayers(t *testing.T) {
 	for _, file := range productionFiles(t) {
 		for _, imported := range modulePackages(file) {
 			if layerViolation(file.pkgDir, imported) {
-				t.Errorf("%s (layer %d) imports %s (layer %d): imports must point to a lower layer",
-					file.path, packages[file.pkgDir].layer, imported, packages[imported].layer)
+				t.Errorf("%s imports %s: imports must point to a lower layer", file.path, imported)
 			}
 		}
 	}
@@ -87,12 +132,12 @@ func TestImportsPointToStrictlyLowerLayers(t *testing.T) {
 func TestFoundationsImportOnlyFoundations(t *testing.T) {
 	t.Parallel()
 	for _, file := range productionFiles(t) {
-		if packages[file.pkgDir].kind != kindFoundation {
+		if infoOf(file.pkgDir).kind != kindFoundation {
 			continue
 		}
 		for _, imported := range modulePackages(file) {
-			if packages[imported].kind != kindFoundation {
-				t.Errorf("%s: foundation imports %s (%s)", file.path, imported, packages[imported].kind)
+			if kind := infoOf(imported).kind; kind != kindFoundation {
+				t.Errorf("%s: foundation imports %s (%s)", file.path, imported, kind)
 			}
 		}
 	}
@@ -101,12 +146,12 @@ func TestFoundationsImportOnlyFoundations(t *testing.T) {
 func TestSurfacesAreImportedOnlyBySurfaces(t *testing.T) {
 	t.Parallel()
 	for _, file := range productionFiles(t) {
-		kind := packages[file.pkgDir].kind
+		kind := infoOf(file.pkgDir).kind
 		if kind == kindSurface || kind == kindRoot {
 			continue
 		}
 		for _, imported := range modulePackages(file) {
-			if packages[imported].kind == kindSurface {
+			if infoOf(imported).kind == kindSurface {
 				t.Errorf("%s imports surface package %s", file.path, imported)
 			}
 		}
@@ -126,9 +171,15 @@ func modulePackages(file productionFile) []string {
 	return slices.Compact(packages)
 }
 
-// layerViolation reports an import that does not point to a strictly lower layer.
+// layerViolation reports an import that does not point to a strictly lower
+// layer: between modules by module layer, inside a module by layer rank.
 func layerViolation(owner, imported string) bool {
-	return packages[owner].layer <= packages[imported].layer
+	ownerModule, ownerLayer := splitModule(owner)
+	importedModule, importedLayer := splitModule(imported)
+	if ownerModule == importedModule {
+		return layerRank(ownerLayer) <= layerRank(importedLayer)
+	}
+	return packages[ownerModule].layer <= packages[importedModule].layer
 }
 
 func TestLayerViolationRejectsSameAndUpwardEdges(t *testing.T) {
@@ -153,11 +204,14 @@ func TestAllowedImportsHaveNoStaleEdges(t *testing.T) {
 	t.Parallel()
 	used := map[string]map[string]bool{}
 	for _, file := range productionFiles(t) {
-		if used[file.pkgDir] == nil {
-			used[file.pkgDir] = map[string]bool{}
+		owner, _ := splitModule(file.pkgDir)
+		if used[owner] == nil {
+			used[owner] = map[string]bool{}
 		}
 		for _, imported := range modulePackages(file) {
-			used[file.pkgDir][strings.TrimPrefix(imported, "internal/")] = true
+			if module, _ := splitModule(imported); module != owner {
+				used[owner][strings.TrimPrefix(module, "internal/")] = true
+			}
 		}
 	}
 	for owner, allowed := range packageDependencies {

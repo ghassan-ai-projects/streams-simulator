@@ -27,6 +27,10 @@ var (
 	loadOnce  sync.Once
 	loadedSet []productionFile
 	loadErr   error
+
+	testsOnce   sync.Once
+	testsLoaded []productionFile
+	testsErr    error
 )
 
 // productionFiles parses every production Go file once and shares the result
@@ -40,7 +44,21 @@ func productionFiles(t *testing.T) []productionFile {
 	return loadedSet
 }
 
+// testFiles parses every _test.go file once, for the test-bar gates.
+func testFiles(t *testing.T) []productionFile {
+	t.Helper()
+	testsOnce.Do(func() { testsLoaded, testsErr = parseFiles("../..", true) })
+	if testsErr != nil {
+		t.Fatal(testsErr)
+	}
+	return testsLoaded
+}
+
 func parseProduction(root string) ([]productionFile, error) {
+	return parseFiles(root, false)
+}
+
+func parseFiles(root string, tests bool) ([]productionFile, error) {
 	var files []productionFile
 	err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, err error) error {
 		if err != nil {
@@ -49,7 +67,7 @@ func parseProduction(root string) ([]productionFile, error) {
 		if entry.IsDir() {
 			return skipDirectory(entry.Name())
 		}
-		if !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") {
+		if !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") != tests {
 			return nil
 		}
 		file, err := parseProductionFile(root, path)

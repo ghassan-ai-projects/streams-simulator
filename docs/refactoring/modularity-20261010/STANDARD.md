@@ -1,95 +1,121 @@
-# Modularity standard
+# Modularity standard (v2)
 
-Adapted from the sibling repository `agentic-stream` (its quality bar Q1–Q8,
-architecture bar A1–A12 and the "reference module" pattern of
-`internal/authority`). That repository owns SQLite tables; this one owns
+Adapted from the sibling repository `agentic-stream`: its quality bar Q1–Q8,
+architecture bar A1–A12, test bar T1–T12 and the "reference module" pattern of
+`internal/authority`. That repository owns SQLite tables; this one owns
 deterministic computation, JSON/JSONL artifacts, a wire transport and an MCP
-surface. The *principles* carry over; the *layer names* are adapted. Nothing
-here changes behaviour: the nine non-negotiables, determinism tuple and
+surface. The *principles* carry over, the *layer names* are adapted. Nothing
+here changes behaviour: the nine non-negotiables, the determinism tuple and
 digest inputs are fixed.
 
-## What was taken, what was changed
+**v2 (2026-10-10, owner direction):** every module is a facade over private
+internal layers with no internal leaks, and tests are organised per layer.
+This replaces v1's "pure cores stay one package".
 
-| agentic-stream | This repository | Why |
+## 1. Modules and shapes
+
+A **module** is `internal/<name>`: a public *facade* package plus private
+layers under `internal/<name>/internal/…`. Go itself forbids importing those
+layers from outside the module; gates forbid the facade from leaking them.
+
+| Module kind | Shape | Modules |
 | --- | --- | --- |
-| facade · `internal/app` · `internal/domain` · `internal/store` | facade · `internal/app` · `internal/domain` · named edge packages (`internal/artifact`, `internal/transport`, `internal/files`, …) | There are no SQL tables. The edge is named after the external system it touches. |
-| Every module gets the layers | Layers only where a package has **both** a real I/O edge **and** non-trivial rules | `AGENTS.md` forbids layers "for future flexibility". Pure cores stay one package. |
-| No comments inside modules | Not adopted (see `DEFERRED.md` D-1) | Large churn, no behavioural or structural value here; exported symbols stay documented. |
-| `durableOwners` table ownership gate | Artifact/ledger file ownership gate (one writer per file family) | The durable state here is run artifacts, the append-only ledger and the release manifest. |
-| `packageLayers` numeric layer map, strict lower-layer imports | Adopted | Catches same-layer coupling the per-package allowlist permits. |
-| Per-module dated planning folder | One program folder; `ROUNDS.md` holds the per-round record | Keeps tracking in one place. |
+| **Pure core** (rules, no I/O) | facade · `internal/domain` | `world`, `perturb`, `truth`, `audit`, `score`, `suite`, `deviceworld` |
+| **Core with an edge** (rules plus files, sockets, timers) | facade · `internal/app` · `internal/domain` · one edge package per external system | `run`, `device`, `adapter`, `domain`, `sink`, `refconsumer` |
+| **Surface** (protocol or CLI) | facade · `internal/app` · edge/protocol packages | `mcp`, `cli` |
+| **Foundation** (stateless library every module uses) | one package, no layers | `canonical`, `jsonschema`, `model`, `randutil`, `schemas`, `wall` |
 
-## Package kinds
+Foundations are the standard's explicit "N/A": the sibling repository leaves
+its stateless libraries (`ids`, `clock`, `contractsv1`, …) single-package for
+the same reason — a facade over a library whose whole export is the API only
+forwards. They keep their gates (purity, no business imports) and are
+protected by `ioEdges`.
 
-Every production package is exactly one kind. The kind decides its shape and
-which gates apply.
+### Layer responsibilities
 
-| Kind | Packages today | Shape | Must not |
-| --- | --- | --- | --- |
-| **K1 Foundation** | `canonical`, `randutil`, `schemas`, `jsonschema`, `model`, `wall` | One package, stdlib (+ lower foundations) only | Import any business package; read files, env, sockets or the clock (`wall` is the declared clock seam for pure kinds; edge and surface packages read the clock at declared `ioEdges` sites) |
-| **K2 Pure core** | `world`, `perturb`, `truth`, `audit`, `score`, `suite`, `deviceworld`, `refconsumer`, `domain` rules | One package (or facade + `internal/domain` when an edge is split off) | Import `os`, `net`, `net/http`, `os/exec`, `os/signal`; read the wall clock; use global `math/rand`; hold goroutines or sockets |
-| **K3 Core with an edge** | `run`, `device`, `adapter`, `domain` loading, `sink` | Facade · `internal/app` (orchestration) · `internal/domain` (pure rules) · edge package per external system | Put rules in the edge or I/O in domain/app |
-| **K4 Surface / composition root** | `cmd/streamsim`, `cli`, `mcp` | Wiring, flag/protocol decoding, output formatting | Contain a business decision; build a result a lower package should own |
+- **Facade** (`internal/<m>`): the module's whole public contract. Files:
+  `doc.go` (package comment: the business capability), `api.go` (aliases of
+  domain values, constants, sentinel errors), `service.go` (`Config`, `New`,
+  the facade type), `operations.go` (one documented delegating line per
+  operation). No loops, no I/O, no decisions. Exported signatures name facade
+  types only: a type defined in an internal layer appears through an alias
+  declared in `api.go`, never as `domain.X` in a signature (**no leaks**).
+  Required dependencies are constructor arguments; a missing one fails closed.
+- **domain** (`internal/<m>/internal/domain`): vocabulary and every rule,
+  including the module's in-memory aggregate and its invariants. Pure: no
+  `os`, `net`, `os/exec`, clock read, entropy or goroutine. Time, randomness
+  and sizes arrive as parameters or injected sources.
+- **app** (`internal/<m>/internal/app`): use cases as a short sequence of
+  domain verbs: validate → open resources → load → decide (domain) → persist
+  or send (edge) → record. Never imports `os`/`net`/`os/exec` itself; talks to
+  edges through the module's edge packages.
+- **edge** (`internal/<m>/internal/<system>`): the only code that touches a
+  file system, socket, process, timer or the wall clock, named after the
+  external system (`durable`, `quiesce`, `wire`, `uds`, `files`). Decides
+  nothing: a `WHERE`-equivalent selects, it never authorises.
 
-A package that is K3 only because of one small file reader keeps that reader in
-its own file and is declared in the edge table; it is split into a package
-only when a second caller or a second external system appears.
+Dependency direction inside a module: facade → app → domain; app → edges;
+edges → domain types only; domain → nothing of the module. Between modules:
+facade → facade, downward by layer (STANDARD M2).
 
-## Layer responsibilities (K3)
+## 2. Rules
 
-- **Facade** (`internal/<pkg>`): exported value types and errors callers need,
-  `New(Config)`/constructors with every safety dependency required,
-  one documented delegating line per operation. No loops, no I/O, no decisions.
-- **app**: use cases as a sequence of domain verbs: validate → open resources →
-  load → decide (domain) → persist/send (edge) → record. May not import
-  `os`, `net`, `net/http`, `os/exec`.
-- **domain**: vocabulary and every rule as pure functions over values. Time,
-  randomness and sizes arrive as parameters. No `os`, `net`, clock reads.
-- **edge**: the only code that touches files, sockets, processes, the wall
-  clock or environment. Named after the external system. Methods are named
-  after domain actions and decide nothing.
-
-## Rules
-
-Each rule has a named enforcement. "Gate" means a test in
-`test/architecture`. A rule with no gate is review-enforced and listed as such.
+Each rule has a named enforcement. "Gate" is a test in `test/architecture`.
 
 | ID | Rule | Enforced by |
 | --- | --- | --- |
-| M1 | Every production package states its responsibility in a package comment and appears in the package map (`.agents/context/architecture.md`); a layered package has `UBIQUITOUS_LANGUAGE.md`. | Gates `TestEveryPackageDocumentsItsResponsibility` (comment begins `Package <name>`), `TestPackageMapListsEveryPackage`; the language file is review-only until a layered module exists |
-| M2 | Imports point only to a strictly lower layer; same-layer edges are forbidden unless listed. The direct-import allowlist stays complete and has no stale edges. | Gates `TestPackageDependencies`, `TestAllowedImportsHaveNoStaleEdges` (allowlist) and `TestImportsPointToStrictlyLowerLayers` (`packages` table) |
-| M3 | K1/K2 packages and every `internal/domain` layer are pure: no `os`, `net`, `os/exec`, `os/signal`, entropy imports, no wall-clock call or function value, no `go` statement, no `filepath` file-system call. Exceptions are `ioEdges` entries carrying `debt: "R<n>"`, naming a PLAN round, and burn down to empty. | Gates `TestIOStaysInDeclaredEdges`, `TestPureKindsHoldOnlyScheduledIODebt` |
-| M4 | File, socket, process, entropy, goroutine and wall-clock use sits only in files declared in `ioEdges` with a reason; a declared use a file no longer has fails the gate. | Gate `TestIOStaysInDeclaredEdges` |
-| M5 | `cli` and `mcp` hold wiring and protocol only: no scoring, truth, delivery, digest or world rule. Facades only delegate. | Review + Gate `TestFacadesOnlyDelegate` once a facade exists |
-| M6 | Exported surface is what another package or the CLI/MCP contract uses. Symbols used by nobody are removed or unexported; test-only seams live in `export_test.go`. | Review + `make deadcode` (production reachability) |
-| M7 | Records cross a boundary typed and parsed once, with a closed field set. A raw document is kept only where a digest depends on its exact bytes. | Review |
-| M8 | Production functions ≤ 15 body lines at one abstraction level, entry points first (stepdown); files ≤ 300 lines; cognitive complexity ≤ 15, cyclomatic ≤ 20, nested-`if` ≤ 3; no token clone of 75+ tokens. | `make function-length`, `TestGoFileSize`, lint (`gocognit`, `gocyclo`, `nestif`, `dupl`) |
-| M9 | Every package with statements has tests and ≥ 70 % statement coverage (`-short`); behaviour moved across a layer boundary keeps its original tests. Each new gate is proven by injecting a violation and watching it fail. | `make coverage-check` (floors file ratchets: below floor fails, 2 points of slack fails); injection proofs recorded in `ROUNDS.md` |
-| M10 | A refactor round changes structure only: RNG draw order, digest inputs, JSON shapes, error precedence, locks, command and delivery order are identical. A deliberate change is listed in `PLAN.md` first and proven by a regression test. | Existing replay, analytic cross-check and golden fixtures run unchanged; round review |
-| M11 | No duplicated implementation of a job the repo already does; wrappers whose body is one call are removed unless a gate requires them. | Lint `dupl` + the duplication scan below |
+| M1 | Every package states its responsibility in a package comment beginning `Package <name>`, is listed in the package map, and every module has `UBIQUITOUS_LANGUAGE.md` (terms with code names, retired words). | Gates `TestEveryPackageDocumentsItsResponsibility`, `TestPackageMapListsEveryPackage`, `TestEveryModuleHasUbiquitousLanguage` |
+| M2 | Imports point only to a strictly lower layer; the direct-import allowlist is complete with no stale edges; nothing imports a surface except surfaces. | Gates `TestPackageDependencies`, `TestAllowedImportsHaveNoStaleEdges`, `TestImportsPointToStrictlyLowerLayers`, `TestSurfacesAreImportedOnlyBySurfaces` |
+| M3 | Domain layers and foundations are pure: no I/O, entropy, `go` statement, wall-clock call or function value. Exceptions are `ioEdges` entries with scheduled debt. | Gates `TestIOStaysInDeclaredEdges`, `TestPureKindsHoldOnlyScheduledIODebt` |
+| M4 | File, socket, process, entropy, goroutine and clock use sits only in files declared in `ioEdges` with a reason. App layers hold none. | Gate `TestIOStaysInDeclaredEdges` |
+| M5 | A facade only delegates: each exported function and method is one statement reaching the layer below (or a constructor/config check). `cli` and `mcp` hold wiring and protocol only. | Gate `TestFacadesOnlyDelegate` (`facadeSpecs` per module) |
+| M6 | No leaks: exported facade signatures contain no internal-layer qualifier; layers below the facade are not re-exported; exported symbols used by nobody outside tests are removed or moved behind `export_test.go`. | Gates `TestFacadeSignaturesNameNoInternalTypes`, `make deadcode` |
+| M7 | Records cross a boundary typed and parsed once with a closed field set; a raw document is kept only where a digest depends on its bytes. | Review |
+| M8 | Production functions ≤ 15 body lines at one abstraction level, entry points first; files ≤ 300 lines; cognitive ≤ 15, cyclomatic ≤ 20, nested-`if` ≤ 3; no token clone of 75+. | Gates `TestProductionFunctionsStayWithinTheBodyLimit`, `TestGoFileSize`; lint |
+| M9 | Every package with statements is ≥ 70 % covered (`-short`); every exported facade operation and every error branch that enforces an invariant has a test. | `make coverage-check` |
+| M10 | A round changes structure only: RNG draw order, digest inputs, JSON shapes, error precedence, locks, command and delivery order are identical. A deliberate change is listed in PLAN first and proven by a regression test. | Existing oracles unchanged, `scripts/behaviour-pin`, golden digests, round review |
+| M11 | No duplicated implementation of a job the repo already does; a wrapper whose body is one call is deleted unless a gate requires it. | Lint `dupl`; duplication scan |
+| M12 | A module's internal layers match its row in §1 and are registered in the `packages` table with kind and layer; a module that gains an edge adds an edge package, not code in app or domain. | Gates `TestEveryPackageIsClassified`, `TestModuleShapeMatchesItsKind` |
 
-## Function and naming bar (M8 detail)
+## 3. Test organisation (T1–T10)
 
-Unchanged from `docs/refactoring/clean-code-20261002/BAR.md`: names state
-intent; one task at one abstraction level; public entry points read as a short
-sequence of domain verbs; callees sit below their first caller. Extraction is
-by named responsibility, never `partA`/`partB`.
+Adapted from the sibling's test bar. Current baseline (2026-10-10): 285
+tests in 87 files, 14 files call `t.Parallel`, one `time.Sleep`, the same
+fixture path constant copied into 7 packages.
 
-## Duplication scan (run on every touched file)
+| ID | Rule | Enforced by |
+| --- | --- | --- |
+| T1 | **Place.** A test lives with the code it proves, at the lowest layer that owns the behaviour, plus at most one integration path through the layer above. The facade keeps wiring and contract tests, not domain rules. Nothing at the repository root. Repository-wide gates live in `test/architecture`; cross-module acceptance flows live in `test/acceptance`. | Gate `TestNoTestsAtRepositoryRoot`; module rounds move tests |
+| T2 | **Layers prove different things.** domain: every branch, boundary and rejection over values; app: use-case ordering and error precedence with fakes of edges; edge: framing, files, sockets; facade: configuration and the public contract; surfaces: product flows and CLI/MCP contracts, few and fast. | Review; coverage per package |
+| T3 | **Name.** `TestSubjectDoesObservableThing`; the file is named for the subject; no round, phase or ticket number. | Gate `TestTestNamesCarryNoPlanningVocabulary` |
+| T4 | **Assert.** Observable outcomes, got and want printed; error tests assert which error (`errors.Is/As` or the domain message), never `err != nil` alone. | Review; `TestErrorAssertionsNameTheErrorTheyExpect` (ratchet, added with the module that needs it) |
+| T5 | **Deterministic.** A test never sleeps to wait for work; waits on a channel, condition or bounded poll bound to `t.Context()`; time comes from a virtual or injected clock. | Gate `TestTestsNeverSleep` |
+| T6 | **Isolated and parallel.** Every test and subtest calls `t.Parallel()`; `t.TempDir`, `t.Context`, `t.Cleanup`, `t.Setenv`. A test that cannot be parallel says why in a `//nolint:paralleltest // <reason>`. No mutable package-level test state. | Lint `paralleltest`, `tparallel`, `usetesting`, `thelper` |
+| T7 | **Fast.** `go test -short -race ./...` stays fast; no test sleeps; product acceptance tests are made faster, never skipped under `-short`. | Review; `make coverage-check` timings |
+| T8 | **Covered.** ≥ 70 % per package; coverage is never raised with assertion-free tests. | `make coverage-check`; review |
+| T9 | **Shared fixtures.** Inputs come from `testdata/`, the shipped `domains/` and `adapters/`, or a named builder in `internal/testsupport`; a path constant lives in one place; helpers call `t.Helper()`; setup repeated in two places moves into one helper. | Gate `TestFixturePathsAreDefinedOnce`; review |
+| T10 | **No dead tests.** Delete tests that repeat another assertion at the same layer, test removed behaviour or assert a constant equals its literal. `t.Skip` only for `-short` or a missing optional tool, and it says which. | Review |
 
-1. Token clones: `golangci-lint` with `dupl` at 75; lower to 60 locally for files you touched.
-2. Same job, different code: search the repo for the verb before adding a helper.
-3. Wrappers: a function whose body is one call into another package is deleted unless a gate requires it.
-4. Identical bodies: group `FuncDecl` bodies by printed form with a throwaway `go/ast` program (kept in the scratchpad, not the repo).
+## 4. What was taken, what was changed
 
-## Refactoring method
+| agentic-stream | This repository | Why |
+| --- | --- | --- |
+| facade · app · domain · `store` | facade · app · domain · named edge packages (`durable`, `quiesce`, `wire`, `uds`, `files`) | No SQL; the edge is named after the external system. |
+| No comments inside modules | Not adopted (DEFERRED P-02) | Churn without structural value; exported symbols stay documented. |
+| `durableOwners` table ownership gate | `ioEdges` inventory plus an artifact-file ownership rule in `run` | The durable state here is run artifacts and the append-only ledger. |
+| Per-module dated folders | One program folder; `ROUNDS.md` per round | Tracking in one place. |
 
-- Go-aware tooling for Go changes (`gopls rename`, `gofmt -r`, `goimports`, small `go/ast` programs). `sed` only for non-Go text.
-- Move code with declaration bodies unchanged; prove with the existing oracles. Keep source-comparison evidence for pure relocations in the module record.
-- One round = focused tests + `gofmt` + `go vet` + lint + architecture tests + independent review + one commit; the round's row in `PLAN.md` gets the commit hash.
-- `make ci-check` before handoff of the program; blocked checks are reported, not skipped silently.
+## 5. Method
 
-## Constraints carried over unchanged
+- Go-aware tooling for Go changes (`gopls rename`, `gofmt -r`, `goimports`,
+  small `go/ast` programs); `sed` only for non-Go text.
+- Move code with declaration bodies unchanged; record source comparison in
+  `ROUNDS.md`. One module per round; tests move with the code they prove.
+- A round = focused tests + `gofmt` + `go vet` + lint + architecture gates +
+  `scripts/behaviour-pin` + independent review + one commit, hash in PLAN.
+- `make ci-check` before handoff.
+
+## 6. Constraints carried over
 
 `AGENTS.md` Forbidden Changes remain: domains/adapters/effectors are data; no
 consumer knowledge in the binary; no broker, physics engine, ORM, expression

@@ -212,3 +212,27 @@ spec); covered today by `effector_order_test` and the behaviour pin.
   `truth/solver_scan.go` became `solve: %w` (staticcheck ST1005 stopped
   exempting the capitalised name once `Solve` was unexported). The prefix
   appears only inside `streamsim: …` wraps of oracle-world failures.
+
+## Direction change and M0 — module shape and test organisation
+
+Owner direction (mid-program): every module follows the sibling's pattern — a
+facade in each, private internal layers, no leaks — and tests are organised
+per layer. Phase B/C of PLAN replace the old R8–R15; STANDARD is v2. The
+"pure cores stay one package" decision of v1 is withdrawn; foundations stay
+single packages (the sibling's own N/A precedent), flagged for owner
+confirmation.
+
+M0 added to `test/architecture` (all green; module gates are vacuous until the
+first module migrates in M1, where their injection proofs are recorded):
+
+- Layer model for nested packages: `splitModule`, `layerRank`
+  (domain < edges < app < facade), `infoOf`; cross-module layering by module
+  layer, intra-module by rank; allowlist and stale-edge gates keyed by module.
+- `moduleShapes`, `TestModuleShapeMatchesItsKind`,
+  `TestEveryModuleHasUbiquitousLanguage`, `TestFacadesOnlyDelegate`,
+  `TestFacadeSignaturesNameNoInternalTypes` (the no-leak gate; aliases are the
+  sanctioned exposure).
+- Test bar: `TestNoTestsAtRepositoryRoot`, `TestTestsNeverSleep` (ratchet: one
+  sleep in `device/uds_test.go`), `TestTestNamesCarryNoPlanningVocabulary`.
+- `.agents/prompts/module-refactor.md`, AGENTS.md modularity section.
+- Debt rounds for `run`/`device` I/O renumbered to M12/M11.

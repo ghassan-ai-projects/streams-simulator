@@ -67,6 +67,7 @@ func TestPackageDependencies(t *testing.T) {
 		if owner == "." && filepath.Base(path) == "tools.go" {
 			owner = "tools" // Build-tagged development tools, outside runtime.
 		}
+		owner, _ = splitModule(owner)
 		if _, exists := packageDependencies[owner]; !exists {
 			t.Errorf("unreviewed package: %s", owner)
 		}
@@ -101,7 +102,12 @@ func dependencyAllowed(owner, imported string) bool {
 		if !exists {
 			return false
 		}
-		target := strings.TrimPrefix(imported, modulePrefix+"internal/")
+		dir := strings.TrimPrefix(imported, modulePrefix)
+		if module, layer := splitModule(dir); module == owner && layer != "" {
+			return true // a module's own internal layers
+		}
+		module, _ := splitModule(dir)
+		target := strings.TrimPrefix(module, "internal/")
 		for _, name := range strings.Fields(allowed) {
 			if name == target {
 				return true

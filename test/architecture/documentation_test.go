@@ -38,7 +38,7 @@ func TestPackageMapListsEveryPackage(t *testing.T) {
 	}
 	slices.Sort(directories)
 	for _, directory := range slices.Compact(directories) {
-		if directory == "." || directory == "tools" {
+		if _, layer := splitModule(directory); directory == "." || directory == "tools" || layer != "" {
 			continue
 		}
 		if !strings.Contains(text, "`"+directory+"`") && !strings.Contains(text, "`"+directory+"/") {
