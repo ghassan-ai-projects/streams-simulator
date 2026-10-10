@@ -202,3 +202,31 @@ func TestDirectorResourcesServeTheCatalogAndDomainSpec(t *testing.T) {
 		t.Fatalf("an unknown domain resource must be refused by name: %v", err)
 	}
 }
+
+func TestAdvanceErrorsKeepTheirOwnCodes(t *testing.T) {
+	t.Parallel()
+	d := newTestDirector(t)
+	cs, _ := connect(t, NewDirectorServer(d))
+	worldID := createWorld(t, d)
+	mustCall(t, cs, "sim.clock.advance", map[string]any{"world_id": worldID, "by_ns": 60 * 1e9})
+
+	_, refusal := toolCall(t, cs, "sim.clock.advance", map[string]any{"world_id": worldID, "to_ns": model.DefaultStartTimeNS})
+	if !strings.HasPrefix(refusal, "clock_backwards: ") {
+		t.Fatalf("moving the clock back = %q", refusal)
+	}
+	mustCall(t, cs, "sim.world.destroy", map[string]any{"world_id": worldID})
+	_, refusal = toolCall(t, cs, "sim.clock.advance", map[string]any{"world_id": worldID, "by_ns": 1})
+	if !strings.HasPrefix(refusal, "world_not_found: ") {
+		t.Fatalf("advancing a destroyed world = %q", refusal)
+	}
+
+	worldID = createWorld(t, d)
+	w := d.World(worldID)
+	if _, err := w.Run.End(""); err != nil {
+		t.Fatal(err)
+	}
+	_, refusal = toolCall(t, cs, "sim.clock.advance", map[string]any{"world_id": worldID, "by_ns": 60 * 1e9})
+	if !strings.HasPrefix(refusal, "domain_invalid: Advance: run is finished") {
+		t.Fatalf("advancing a finished run must not claim the clock went backwards: %q", refusal)
+	}
+}

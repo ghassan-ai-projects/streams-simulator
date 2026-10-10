@@ -2,6 +2,7 @@ package domain
 
 import (
 	"container/heap"
+	"errors"
 	"fmt"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
@@ -16,12 +17,16 @@ func (w *World) NextEventNS() int64 {
 	return w.queue[0].timeNS
 }
 
+// ErrClockBackwards is returned when an advance would move the clock before
+// the current world time.
+var ErrClockBackwards = errors.New("world: clock would move backwards")
+
 // Advance processes every event scheduled at or before to, then sets the
 // clock to to, and reports how many native events were emitted and how many
 // effect kicks started. Moving the clock backwards is refused.
 func (w *World) Advance(to int64) (emitted, effectsApplied int, err error) {
 	if to < w.clockNS {
-		return 0, 0, fmt.Errorf("world: clock would move backwards (%d -> %d)", w.clockNS, to)
+		return 0, 0, fmt.Errorf("%w (%d -> %d)", ErrClockBackwards, w.clockNS, to)
 	}
 	w.emittedThisAdvance = 0
 	w.effectsAppliedThis = 0

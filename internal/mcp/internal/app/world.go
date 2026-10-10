@@ -50,6 +50,7 @@ func (d *Director) registerWorld(worldID string, r *run.Run, token string) strin
 	nameplate := buildNameplate(r)
 	nameplate.WorldID = worldID
 	ov := NewOperatorView(worldID, token, nameplate, r, r)
+	ov.RunID = r.ID
 	rec := &WorldRecord{Run: r, Token: token, Nameplate: nameplate, Operator: ov}
 	d.mu.Lock()
 	d.Worlds[worldID] = rec

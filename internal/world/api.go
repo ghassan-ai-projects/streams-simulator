@@ -38,5 +38,9 @@ const (
 // system. Refusal is not a retryable error.
 var ErrInterlockRefused = layer.ErrInterlockRefused
 
+// ErrClockBackwards is returned by Advance when the target time is before the
+// current world time.
+var ErrClockBackwards = layer.ErrClockBackwards
+
 // ErrNoSpec is returned by New when no domain spec is given.
 var ErrNoSpec = errors.New("world: a domain spec is required")

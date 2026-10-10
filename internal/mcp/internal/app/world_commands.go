@@ -7,6 +7,7 @@ import (
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
 // DescribeWorld reports config, digest, clock and emitted count.
@@ -151,8 +152,11 @@ func (d *Director) finishDestroyedWorld(w *WorldRecord, worldID string) error {
 }
 
 func advanceToolError(err error) error {
-	if errors.Is(err, run.ErrConsumerNotQuiesced) {
+	switch {
+	case errors.Is(err, run.ErrConsumerNotQuiesced):
 		return errTool(CodeConsumerNotQuiesced, "%v", err)
+	case errors.Is(err, world.ErrClockBackwards):
+		return errTool(CodeClockBackwards, "%v", err)
 	}
-	return errTool(CodeClockBackwards, "%v", err)
+	return errTool(CodeDomainInvalid, "%v", err)
 }

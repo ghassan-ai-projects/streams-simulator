@@ -88,6 +88,9 @@ type NameplateChannel struct {
 type OperatorView struct {
 	WorldID   string
 	Token     string // capability token minted at world creation
+	// RunID is the run this capability reports against. A report naming any
+	// other run is refused; empty means the view is not bound to one run.
+	RunID string
 	Nameplate *Nameplate
 	Invoker   EffectorInvoker
 	Verdicts  VerdictSink
@@ -145,13 +148,18 @@ func (v *OperatorView) Report(token, runID string, quiescedThroughNS int64, verd
 	if !v.authorized(token) {
 		return errTool(CodeCapabilityDenied, "capability token required")
 	}
-	if quiescedThroughNS > 0 {
-		v.Verdicts.ReportQuiesced(quiescedThroughNS)
+	if v.RunID != "" && runID != v.RunID {
+		return errTool(CodeInvalidArgs, "run_id does not name this world's run")
 	}
+	// The verdict is judged first: a refused report changes nothing, so a
+	// consumer cannot advance quiescence with a verdict that will not stand.
 	if verdict != nil {
 		if err := v.Verdicts.SubmitVerdict(verdict); err != nil {
 			return errTool(CodeInvalidArgs, "verdict rejected: %v", err)
 		}
+	}
+	if quiescedThroughNS > 0 {
+		v.Verdicts.ReportQuiesced(quiescedThroughNS)
 	}
 	return nil
 }
