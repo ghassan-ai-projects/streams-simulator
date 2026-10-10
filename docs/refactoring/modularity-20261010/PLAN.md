@@ -99,7 +99,8 @@ dereferenced nil; every one has a regression test.
 | M3 | `world.New` returns `ErrNoSpec` for a nil spec | `TestNewRefusesAMissingSpec` |
 | M4 | `score.Score` returns `ErrNoLabel` for a nil label; a nil domain in the evidence skips fault recovery levels | `TestScoreRefusesAMissingLabelAndToleratesAMissingDomain` |
 | M7 | `deviceworld.New` returns `(*Plant, error)`, `ErrNoWorld` for a nil world | `TestNewRefusesAMissingWorld` |
-| M5 | `audit.NewPanel` returns `(*Panel, error)`, `ErrNoSpec` for a nil spec | `TestNewPanelRefusesAMissingSpec` |
+| M6 | `suite.Generate` returns `ErrNoDomain` for a missing domain | `TestGenerateRefusesAMissingDomain` |
+| M5 | `audit.NewPanel` returns `(*Panel, error)`, `ErrNoSpec` for a nil spec | `TestNewPanelRefusesAMissingSpec`; `audit.Audit` on a nil/zero panel returns `ErrNoPanel` (`TestAuditRefusesAMissingPanel`) |
 
 ## Not in this program
 
@@ -117,9 +118,10 @@ the two delivery paths (D-18), and world read-purity (D-14).
 | M2 | done | `b5674df` | review follow-up in M3 commit |
 | M3 | done | `463fb65`, follow-up `e88cc57` | gate hardened, doc links gate |
 | M4 | done | `2f5cf24`, follow-up `see git log` | score takes Evidence |
-| M5 | done | `820e025` | audit; review pending |
-| M6 | done | `ff2f3a3` | suite; review pending |
+| M5 | done | `820e025` | audit; review follow-up in `see git log` |
+| M6 | done | `ff2f3a3` | suite; review follow-up with M5 |
 | M7 | done | `c522b77` | deviceworld |
-| M8 | in progress | | sink |
-| M9–M15 | pending | | |
+| M8 | done | `28c648a` | sink; review pending |
+| M9 | next | | domain |
+| M10–M15 | pending | | |
 | T1–T5, F | pending | | |

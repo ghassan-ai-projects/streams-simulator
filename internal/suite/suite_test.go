@@ -2,6 +2,7 @@ package suite_test
 
 import (
 	"encoding/json"
+	"errors"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -19,6 +20,21 @@ func shipped(t *testing.T, id string) *domain.Compiled {
 	return spec
 }
 
+func TestGenerateRefusesAMissingDomain(t *testing.T) {
+	t.Parallel()
+	if _, err := suite.Generate(suite.Config{Profile: "nominal", N: 1}); !errors.Is(err, suite.ErrNoDomain) {
+		t.Fatalf("err = %v, want ErrNoDomain", err)
+	}
+}
+
+func TestScenarioPerturbationsKeepTheAuditJSONShape(t *testing.T) {
+	t.Parallel()
+	raw, err := json.Marshal(suite.Perturbation{Name: "drop", Params: map[string]any{"rate": 0.5}, FromNS: 1, UntilNS: 2})
+	if err != nil || string(raw) != `{"name":"drop","params":{"rate":0.5},"from_ns":1,"until_ns":2}` {
+		t.Fatalf("perturbation JSON = %s (%v)", raw, err)
+	}
+}
+
 func TestGenerateRefusesAnUnknownProfile(t *testing.T) {
 	t.Parallel()
 	_, err := suite.Generate(suite.Config{Domain: shipped(t, "rotating-machinery"), Profile: "no_such_profile", N: 1, Seed: 1})
@@ -29,7 +45,7 @@ func TestGenerateRefusesAnUnknownProfile(t *testing.T) {
 
 func TestGenerateIsDeterministicAndLabelsEveryScenario(t *testing.T) {
 	t.Parallel()
-	cfg := suite.Config{Domain: shipped(t, "rotating-machinery"), Profile: "nominal", N: 2, Seed: 5}
+	cfg := suite.Config{Domain: shipped(t, "rotating-machinery"), Profile: "nominal", N: 1, Seed: 5}
 	first, err := suite.Generate(cfg)
 	if err != nil {
 		t.Fatal(err)

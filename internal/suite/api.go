@@ -1,9 +1,14 @@
 package suite
 
 import (
+	"errors"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/audit"
 	layer "github.com/ghassan-ai-projects/streams-simulator/internal/suite/internal/domain"
 )
+
+// ErrNoDomain is returned by Generate when the configuration has no domain.
+var ErrNoDomain = errors.New("suite: a domain is required")
 
 // Perturbation is one delivery perturbation in a scenario: the same record
 // the audit applies, so a scenario is audited exactly as declared.

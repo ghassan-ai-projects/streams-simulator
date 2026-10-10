@@ -21,4 +21,4 @@ the graded benchmark a consumer is scored against.
 | --- | --- | --- |
 | `suite.Perturbation` (own struct) | alias of `audit.Perturbation` | identical record; the audit now receives the scenario's slice unchanged |
 | `suite.renderID` | `world.RenderID` | identical output (nil params), one implementation |
-| `truth.SetupCall` | `model.SetupCall` | shared record |
+| `suite.Perturbation` JSON tags | owned by `audit.Perturbation` | the scenario artifact's `perturbations[]` shape follows the audit record |

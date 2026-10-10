@@ -20,4 +20,3 @@ from its control, the scenario is not evidence that reasoning helped.
 | Word | Replaced by | Why |
 | --- | --- | --- |
 | `audit.DetectorNames`, `BalancedAccuracyCutoff` (exported) | domain-layer only | no caller outside the module (the manifest keeps its own literal, DEFERRED P-06/duplicates) |
-| `truth.SetupCall` | `model.SetupCall` | shared record; audit no longer imports `truth` |

@@ -70,7 +70,7 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 | P-03 | Typed closed sets | `FailureMode`, `RejectCode`, cadence mode, detector form, transform op, encoding as named string types (JSON-neutral). Scheduled as R15 once layers settle. |
 | P-04 | Typed device records | Receipt/Result/State as structs instead of `map[string]any`; canonical bytes must stay identical. |
 | P-05 | `Config` fields set by no production caller | `ClockMultiplier`, `Noiseless`, `ForceFailureMode`, `WorldID`; `TimeMode` scaled/wall are labels only; `SinkBroker` is unsupported. Remove or implement. |
-| P-06 | Suite profile-name branches | `suite/admission.go:30-55` branches on `correlated_cascade` and `sensor_pathology`, violating "domains are data" in spirit. |
+| P-06 | Suite profile-name branches | `suite/internal/domain/admission.go:30-55` branches on `correlated_cascade` and `sensor_pathology`, violating "domains are data" in spirit. |
 | P-07 | Delivery-path unification | See D-18. |
 
 ## Hygiene and small improvements

@@ -15,3 +15,6 @@ type Perturbation = layer.Perturbation
 
 // ErrNoSpec is returned by NewPanel when no domain spec is given.
 var ErrNoSpec = errors.New("audit: a domain spec is required")
+
+// ErrNoPanel is returned by Audit on a nil or zero Panel.
+var ErrNoPanel = errors.New("audit: a panel built by NewPanel is required")

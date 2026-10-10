@@ -14,7 +14,7 @@ These guarantees distinguish a test instrument from a trace generator. The desig
 | 6 | Sealed oracle: truth is role-scoped and cannot leak through the consumer surface. | [`internal/truth/internal/domain/truth_test.go`](../../internal/truth/internal/domain/truth_test.go), [`internal/truth/truth_test.go`](../../internal/truth/truth_test.go), MCP tests | `go test ./internal/truth/... ./internal/mcp`; operator surface excludes truth |
 | 7 | Injection probe: producer text cannot change the consumer conclusion. | [`internal/run/probe_test.go`](../../internal/run/probe_test.go) | `go test ./internal/run -run Probe`; built-in/reference-consumer path, not arbitrary external consumers |
 | 8 | `silent_no_effect`: acknowledgement without world change is scored as such. | [`internal/score/internal/domain/score_test.go`](../../internal/score/internal/domain/score_test.go) | `go test ./internal/score/... -run Silent`; action outcome uses world evidence |
-| 9 | Trivial-baseline audit: label-leaking scenarios do not enter the graded suite. | [`internal/audit/audit_test.go`](../../internal/audit/audit_test.go), [`internal/suite/`](../../internal/suite/) | `go test ./internal/audit ./internal/suite`; suite admission control |
+| 9 | Trivial-baseline audit: label-leaking scenarios do not enter the graded suite. | [`internal/audit/internal/domain/audit_test.go`](../../internal/audit/internal/domain/audit_test.go), [`internal/suite/`](../../internal/suite/) | `go test ./internal/audit/... ./internal/suite/...`; suite admission control |
 
 ## Evidence status
 

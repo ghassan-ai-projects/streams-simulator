@@ -428,8 +428,8 @@ map (D-45).
   case reached).
 - `Generate` is unchanged; facade tests cover the unknown-profile error,
   determinism of the suite bytes and label/scenario parity. Domain layer 70.8 %.
-- Doc link repaired (`domains-and-adapters.md` now points at `scenario.go`,
-  where the aquaculture setup exception lives).
+- Doc link repaired (`domains-and-adapters.md` now points at `admission.go`,
+  where the profile-name branches live; see the follow-up).
 
 ### M4 review follow-up
 
@@ -481,3 +481,17 @@ run`. Not done: avoiding the evidence clone before the no-verdict check
   layers, including edges). It governs calls *into* a layer from the facade;
   an edge still has to wrap the `os`/`net/http` errors it receives because
   those packages are not ignored.
+
+### M5/M6 review follow-up
+
+Isolated review: no High. Suite bytes were compared old vs new binary over
+8 domains × 3 profiles (24 files identical) and `renderID` vs `world.RenderID`
+over 4488 cases (0 diffs). Fixed: `mcp.AuditScenario` had no test at all (the
+M5 change is now covered: result keys, unknown domain, unknown fault);
+`suite.Generate` refuses a missing domain (`ErrNoDomain`) and `audit.Panel`
+refuses a nil or zero panel (`ErrNoPanel`), both listed in PLAN; the false
+"aquaculture setup exception" sentence in `domains-and-adapters.md` is
+replaced by the real remaining non-data gap (profile-name branches in
+`admission.go`); facade tests assert messages and a non-empty perturbation
+list, the suite determinism test uses one scenario (suite package 3.8 s →
+2 s), and the scenario perturbation JSON shape is pinned.
