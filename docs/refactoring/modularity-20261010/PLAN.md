@@ -61,8 +61,8 @@ the two delivery paths (D-18), and world read-purity (D-14).
 | Round | State | Commit | Notes |
 | --- | --- | --- | --- |
 | R0 | done | `3e81cf2` | |
-| R1 | done | `2f2b08e` (amended) | gates, lint, coverage ratchet |
-| R2 | pending | | |
+| R1 | done | `52ea773` | gates, lint, coverage ratchet; review fixes folded in |
+| R2 | in review | | |
 | R3 | pending | | |
 | R4 | pending | | |
 | R5 | pending | | |

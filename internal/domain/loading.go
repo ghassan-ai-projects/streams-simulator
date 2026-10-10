@@ -19,12 +19,12 @@ func validateDocument(raw []byte, src string) (any, error) {
 	if err := model.DecodeBytes(raw, &doc); err != nil {
 		return nil, fmt.Errorf("domain: %s: not valid JSON: %w", src, err)
 	}
-	sch, err := jsonschema.Compile(mustAny(schemas.DomainSpec()))
+	sch, err := jsonschema.CompileJSON(schemas.DomainSpec())
 	if err != nil {
 		return nil, fmt.Errorf("domain: compile contract schema: %w", err)
 	}
 	if errs := sch.Validate(doc); len(errs) > 0 {
-		return nil, fmt.Errorf("domain: %s fails domain-spec-v0.1 validation:\n  %s", src, formatErrs(errs))
+		return nil, fmt.Errorf("domain: %s fails domain-spec-v0.1 validation:\n  %s", src, jsonschema.FormatErrors(errs))
 	}
 	return doc, nil
 }

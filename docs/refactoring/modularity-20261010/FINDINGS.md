@@ -17,7 +17,7 @@ confidence tags). This page records the verdict per package against the
 
 | Package | Kind | Gap | Round |
 | --- | --- | --- | --- |
-| `domain` | K2→K3 | Reads files (`Load`, `LoadAll`) inside the compile/validate package; `mustAny`/`formatErrs` duplicated; unused accessors | R3 |
+| `domain` | K2→K3 | Reads files (`Load`, `LoadAll`) inside the compile/validate package; unused accessors (helper duplication fixed in R2) | R3 |
 | `adapter` | K2→K3 | Conformance harness (`verify*`, fixture file branch) ships inside the render engine package; adapter digest recipe lives in `run` | R4 |
 | `model` | K1 | Hosts two contract validators with two callers (allowed foundation edge; package doc drift) | R2 (doc, decision recorded) |
 | `schemas`, `jsonschema` | K1 | `mustAny`/`formatErrs` copied across `domain`, `adapter`, `model`; embedded schemas recompiled per call (perf only, left) | R2 |

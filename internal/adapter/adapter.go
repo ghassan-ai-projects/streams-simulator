@@ -57,12 +57,12 @@ func validateAdapterDocument(raw []byte, src, separator string) error {
 }
 
 func validateAdapterSchema(doc any, src, separator string) error {
-	schema, err := jsonschema.Compile(mustAny(schemas.OutputAdapter()))
+	schema, err := jsonschema.CompileJSON(schemas.OutputAdapter())
 	if err != nil {
 		return fmt.Errorf("adapter: compile contract schema: %w", err)
 	}
 	if errs := schema.Validate(doc); len(errs) > 0 {
-		return fmt.Errorf("adapter: %s fails output-adapter-v0.1 validation:%s%s", src, separator, formatErrs(errs))
+		return fmt.Errorf("adapter: %s fails output-adapter-v0.1 validation:%s%s", src, separator, jsonschema.FormatErrors(errs))
 	}
 	return nil
 }

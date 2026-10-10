@@ -1,9 +1,10 @@
 // Package model holds the typed forms of every simulator contract: the
 // domain spec, the native sim event, the output adapter, the consumer
 // verdict, the ground-truth record, the run artifact, and the delivery
-// ledger. These types mirror docs/contracts/*.schema.json field for field;
-// validation against the committed schemas happens in the domain and
-// adapter packages.
+// ledger. These types mirror docs/contracts/*.schema.json field for field.
+// Domain and adapter documents are validated by their own packages; this
+// package validates only the consumer verdict and the run artifact, the two
+// contracts that cross the run boundary.
 package model
 
 import (
@@ -57,9 +58,6 @@ func DecodeBytes(b []byte, dst any) error {
 	return Decode(strings.NewReader(string(b)), dst)
 }
 
-// TimeNS is a nanosecond epoch within the simulator's representable range.
-type TimeNS int64
-
 // ValidateVerdict checks a serialized consumer verdict against the
 // committed consumer-verdict schema.
 func ValidateVerdict(raw []byte) error {
@@ -77,7 +75,7 @@ func validateAgainst(raw []byte, noun, contract string, schema []byte) error {
 	if err := DecodeBytes(raw, &doc); err != nil {
 		return fmt.Errorf("model: %s not valid JSON: %w", noun, err)
 	}
-	sch, err := jsonschema.Compile(mustAny(schema))
+	sch, err := jsonschema.CompileJSON(schema)
 	if err != nil {
 		return fmt.Errorf("model: compile %s schema: %w", noun, err)
 	}
@@ -85,16 +83,6 @@ func validateAgainst(raw []byte, noun, contract string, schema []byte) error {
 		return fmt.Errorf("model: %s fails %s: %s", noun, contract, errs[0].Error())
 	}
 	return nil
-}
-
-func mustAny(b []byte) any {
-	var v any
-	dec := json.NewDecoder(strings.NewReader(string(b)))
-	dec.UseNumber()
-	if err := dec.Decode(&v); err != nil {
-		panic(err)
-	}
-	return v
 }
 
 func rejectTrailingJSON(dec *json.Decoder) error {

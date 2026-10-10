@@ -54,3 +54,29 @@ corrected. Not fixed, recorded: mixed skip-directory rules between older gates
 **Proof:** `gofmt`, `go vet`, `go test -short`, `-tags simdet`,
 `make function-length`, `golangci-lint` 0 issues, `scripts/check-coverage`,
 `scripts/behaviour-pin` identical to baseline.
+
+## R2 — foundations
+
+- `randutil`: `Picker` deleted (no production caller; its map-order float sum
+  was a determinism trap, D-37). Tests for `Intn`, `Exp`, `Lognormal` added
+  (coverage 72.9 → 92.3 %, floor entry removed; the 68.8 % of the first survey was a single-run variance, the Picker tests sat in the denominator).
+- `jsonschema`: `CompileJSON` and `FormatErrors` (new `document.go`, with
+  tests) replace three `mustAny` and two `formatErrs` copies in `domain`,
+  `adapter` and `model`. Bodies were identical (the `model` copy differed only in its reader type); the 10-error bound is now a
+  named constant. Behaviour difference: a malformed *embedded* schema returned
+  by `CompileJSON` is an error rather than a panic — unreachable, the
+  embedded schemas are proven byte-identical to the contracts and compiled by
+  every test.
+- `model`: unused `TimeNS` type deleted; package comment corrected (it
+  validates the consumer verdict and run artifact). Decision: validators stay in
+  `model`. The `model → jsonschema/schemas` edge is foundation→foundation (the
+  standard permits it), both callers are in `run`, and moving them would only
+  relocate error strings that are part of the contract. Schema-enum constants
+  (`SinkBroker`, `TimeScaled`, `AdmissionAccepted`, `SolveAnalytic`) are
+  as unreferenced as `TimeNS` but stay as a deliberate exception: they mirror
+  the committed contract enums (`run-artifact-v0.1`, verdict, ground truth) and
+  document the closed vocabulary; `TimeNS` mirrored nothing.
+- Not done on purpose: caching compiled embedded schemas (performance only,
+  adds shared state), moving `canonical.CapabilityCatalogDomain` (R9, with the
+  device split), `wall` (decision P-01).
+- Coverage floor for `model` raised 18 → 20.

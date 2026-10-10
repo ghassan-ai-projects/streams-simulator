@@ -1,14 +1,11 @@
 package adapter
 
 import (
-	"bytes"
 	"encoding/json"
-	"fmt"
 	"strconv"
 	"strings"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/canonical"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/jsonschema"
 )
 
 func stringify(v any) string {
@@ -60,28 +57,6 @@ func csvEscape(s string) string {
 		return `"` + strings.ReplaceAll(s, `"`, `""`) + `"`
 	}
 	return s
-}
-
-func formatErrs(errs []jsonschema.Error) string {
-	var b strings.Builder
-	for i, e := range errs {
-		if i == 10 {
-			fmt.Fprintf(&b, "  ... and %d more\n", len(errs)-10)
-			break
-		}
-		fmt.Fprintf(&b, "  %s\n", e.Error())
-	}
-	return strings.TrimSuffix(b.String(), "\n")
-}
-
-func mustAny(b []byte) any {
-	var v any
-	dec := json.NewDecoder(bytes.NewReader(b))
-	dec.UseNumber()
-	if err := dec.Decode(&v); err != nil {
-		panic(err)
-	}
-	return v
 }
 
 func stringifyNumberOrObject(v any) string {

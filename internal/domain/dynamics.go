@@ -1,13 +1,8 @@
 package domain
 
 import (
-	"bytes"
-	"encoding/json"
-	"fmt"
 	"sort"
-	"strings"
 
-	"github.com/ghassan-ai-projects/streams-simulator/internal/jsonschema"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
@@ -59,26 +54,4 @@ func sortedKeys(m map[string]bool) []string {
 	}
 	sort.Strings(out)
 	return out
-}
-
-func formatErrs(errs []jsonschema.Error) string {
-	var b strings.Builder
-	for i, e := range errs {
-		if i == 10 {
-			fmt.Fprintf(&b, "  ... and %d more\n", len(errs)-10)
-			break
-		}
-		fmt.Fprintf(&b, "  %s\n", e.Error())
-	}
-	return strings.TrimSuffix(b.String(), "\n")
-}
-
-func mustAny(b []byte) any {
-	var v any
-	dec := json.NewDecoder(bytes.NewReader(b))
-	dec.UseNumber()
-	if err := dec.Decode(&v); err != nil {
-		panic(err)
-	}
-	return v
 }
