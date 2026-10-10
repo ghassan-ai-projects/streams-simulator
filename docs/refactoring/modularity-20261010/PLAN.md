@@ -65,8 +65,8 @@ the two delivery paths (D-18), and world read-purity (D-14).
 | R2 | done | `a3f6858` | review fixes amended |
 | R3 | done | `33d757f` | `file.go` instead of a move to cli |
 | R4 | done | `f735d8e` | review follow-up `68c57d3` |
-| R5 | in progress | | |
-| R6 | pending | | |
+| R5 | done | `ddf8535`, follow-ups `85ae21b` | review: no High/Med |
+| R6 | in progress | | |
 | R7 | pending | | |
 | R8 | pending | | |
 | R9 | pending | | |

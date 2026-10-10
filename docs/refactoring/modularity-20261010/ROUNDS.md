@@ -168,3 +168,25 @@ and its one assignment); PLAN wording corrected to *replay-before-interlock*;
 added the refusal-is-not-cached test. Not pinned: replay-before-interlock with
 the interlock newly holding (needs a time-varying hidden state in the test
 spec); covered today by `effector_order_test` and the behaviour pin.
+
+## R6 — perturb
+
+- Characterization first: `golden_test.go` pins the digest of the delivered
+  stream for each of the 19 perturbations alone and for all together over a
+  60-event stream (fixed seed, flush every 15 events). Recorded on the
+  unmodified code, re-run unchanged after the refactor. (A first draft left
+  `unit_mismatch`, `non_monotonic` and `gross_backfill` as no-ops; the stream
+  now carries a unit, observed-after-event times and a backfill window so every
+  digest is distinct.)
+- `transforms.go`: the four-level switch ladder (`applyMultiplicity`,
+  `applyDelivery`, `applyTiming`, `applyPayload`, `applyPayloadContent`)
+  becomes one `transforms` name→function table; `Apply` admits only catalog
+  names so every name has an entry. Application order and RNG consumption are
+  untouched (the layer's `order` slice, not the map, orders application).
+- `Active` unexported (`applied`; never returned or used outside); a stale
+  "Post-pass" comment removed from `Process`.
+- Left: unused `atNS`/receiver parameters (the table needs one uniform
+  signature), the whole-second reorder rule (D-26).
+- Weak pin, known: with the golden stream `producer_flap` delivers nothing
+  (every record is held and the flap window never closes), so its digest is
+  that of an empty stream; its buffering is covered by `perturb_test`.

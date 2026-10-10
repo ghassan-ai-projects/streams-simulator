@@ -4,7 +4,7 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-func (l *Layer) duplicateRecords(a *Active, recs []Delivered, atNS int64) []Delivered {
+func (l *Layer) duplicateRecords(a *applied, recs []Delivered, atNS int64) []Delivered {
 	return mapRecs(recs, func(r Delivered) []Delivered {
 		if !r.Delivered || a.rng.Float64() >= paramFloat(a.Params, "rate", 0.02) {
 			return []Delivered{r}
@@ -14,11 +14,11 @@ func (l *Layer) duplicateRecords(a *Active, recs []Delivered, atNS int64) []Deli
 	})
 }
 
-func (l *Layer) reuseIdentity(a *Active, recs []Delivered, atNS int64) []Delivered {
+func (l *Layer) reuseIdentity(a *applied, recs []Delivered, atNS int64) []Delivered {
 	return mapRecs(recs, func(record Delivered) []Delivered { return l.reusedRecord(a, record) })
 }
 
-func (l *Layer) dropRecords(a *Active, recs []Delivered, atNS int64) []Delivered {
+func (l *Layer) dropRecords(a *applied, recs []Delivered, atNS int64) []Delivered {
 	return mapRecs(recs, func(r Delivered) []Delivered {
 		if r.Delivered && a.rng.Float64() < paramFloat(a.Params, "rate", 0.01) {
 			return []Delivered{{DeliveryID: r.DeliveryID, Event: r.Event, Reason: model.DeliveryDroppedByPerturb, Delivered: false}}
@@ -27,12 +27,12 @@ func (l *Layer) dropRecords(a *Active, recs []Delivered, atNS int64) []Delivered
 	})
 }
 
-func (l *Layer) multiplyRecords(a *Active, recs []Delivered, atNS int64) []Delivered {
+func (l *Layer) multiplyRecords(a *applied, recs []Delivered, atNS int64) []Delivered {
 	multiplier := paramInt(a.Params, "multiplier", 3)
 	return mapRecs(recs, func(record Delivered) []Delivered { return l.multipliedRecord(record, multiplier) })
 }
 
-func (l *Layer) reusedRecord(a *Active, record Delivered) []Delivered {
+func (l *Layer) reusedRecord(a *applied, record Delivered) []Delivered {
 	if !record.Delivered || a.rng.Float64() >= paramFloat(a.Params, "rate", 0.01) {
 		return []Delivered{record}
 	}

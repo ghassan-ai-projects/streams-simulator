@@ -58,7 +58,7 @@ func paramStr(params map[string]any, key, def string) string {
 	return def
 }
 
-func (a *Active) flushRecords(atNS int64) []Delivered {
+func (a *applied) flushRecords(atNS int64) []Delivered {
 	switch a.Name {
 	case Reorder:
 		return a.flushReorder(atNS)
@@ -70,7 +70,7 @@ func (a *Active) flushRecords(atNS int64) []Delivered {
 	return nil
 }
 
-func (a *Active) flushReorder(atNS int64) []Delivered {
+func (a *applied) flushReorder(atNS int64) []Delivered {
 	flushed := a.window.flush(atNS)
 	for i := range flushed {
 		if flushed[i].Delivered && flushed[i].Reason == model.DeliveryOK {
@@ -80,7 +80,7 @@ func (a *Active) flushReorder(atNS int64) []Delivered {
 	return flushed
 }
 
-func (a *Active) flushBuffered(atNS int64, birth bool) []Delivered {
+func (a *applied) flushBuffered(atNS int64, birth bool) []Delivered {
 	if len(a.buffer) == 0 || a.UntilNS <= 0 || atNS < a.UntilNS {
 		return nil
 	}

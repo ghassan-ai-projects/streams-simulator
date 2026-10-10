@@ -58,8 +58,8 @@ type Delivered struct {
 	Malformed  bool
 }
 
-// Active is one applied perturbation.
-type Active struct {
+// applied is one applied perturbation.
+type applied struct {
 	ID      string
 	Name    string
 	Params  map[string]any
@@ -76,7 +76,7 @@ type Layer struct {
 	worldID string
 	seed    uint64
 	domain  *domain.Compiled
-	active  map[string]*Active
+	active  map[string]*applied
 	order   []string
 	seq     int
 	nextID  uint64
@@ -91,7 +91,7 @@ func New(worldID string, seed uint64, spec *domain.Compiled) *Layer {
 		worldID: worldID,
 		seed:    seed,
 		domain:  spec,
-		active:  map[string]*Active{},
+		active:  map[string]*applied{},
 	}
 }
 
@@ -149,11 +149,10 @@ func (l *Layer) Process(ev model.SimEvent, atNS int64) []Delivered {
 		}
 		recs = l.applyOne(a, recs, atNS)
 	}
-	// Post-pass: flaps and reorder windows may hold records back.
 	return recs
 }
 
-func (l *Layer) newActive(name string, params map[string]any, fromNS, untilNS int64) *Active {
+func (l *Layer) newActive(name string, params map[string]any, fromNS, untilNS int64) *applied {
 	id := name + "-" + strconv.Itoa(l.seq)
 	l.seq++
 	active := l.activation(id, name, params, fromNS, untilNS)
@@ -163,8 +162,8 @@ func (l *Layer) newActive(name string, params map[string]any, fromNS, untilNS in
 	return active
 }
 
-func (l *Layer) activation(id, name string, params map[string]any, fromNS, untilNS int64) *Active {
-	return &Active{
+func (l *Layer) activation(id, name string, params map[string]any, fromNS, untilNS int64) *applied {
+	return &applied{
 		ID:      id,
 		Name:    name,
 		Params:  params,

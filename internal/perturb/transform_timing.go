@@ -4,7 +4,7 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-func (l *Layer) reorderRecords(a *Active, recs []Delivered, atNS int64) []Delivered {
+func (l *Layer) reorderRecords(a *applied, recs []Delivered, atNS int64) []Delivered {
 	out := a.window.push(recs, atNS)
 	for i := range out {
 		if out[i].Delivered && out[i].Reason == model.DeliveryOK {
@@ -14,7 +14,7 @@ func (l *Layer) reorderRecords(a *Active, recs []Delivered, atNS int64) []Delive
 	return out
 }
 
-func (l *Layer) delayRecords(a *Active, recs []Delivered, atNS int64) []Delivered {
+func (l *Layer) delayRecords(a *applied, recs []Delivered, atNS int64) []Delivered {
 	return mapRecs(recs, func(r Delivered) []Delivered {
 		if !r.Delivered {
 			return []Delivered{r}
@@ -30,7 +30,7 @@ func (l *Layer) delayRecords(a *Active, recs []Delivered, atNS int64) []Delivere
 	})
 }
 
-func (l *Layer) withholdBackfill(a *Active, recs []Delivered, atNS int64) []Delivered {
+func (l *Layer) withholdBackfill(a *applied, recs []Delivered, atNS int64) []Delivered {
 	return mapRecs(recs, func(r Delivered) []Delivered {
 		if !r.Delivered {
 			return []Delivered{r}
@@ -45,7 +45,7 @@ func (l *Layer) withholdBackfill(a *Active, recs []Delivered, atNS int64) []Deli
 	})
 }
 
-func (l *Layer) skewClock(a *Active, recs []Delivered, atNS int64) []Delivered {
+func (l *Layer) skewClock(a *applied, recs []Delivered, atNS int64) []Delivered {
 	offset := paramFloat(a.Params, "offset_s", 300)
 	if paramStr(a.Params, "sign", "positive") == "negative" {
 		offset = -offset
@@ -60,11 +60,11 @@ func (l *Layer) skewClock(a *Active, recs []Delivered, atNS int64) []Delivered {
 	})
 }
 
-func (l *Layer) rewriteNonMonotonicTime(a *Active, recs []Delivered, atNS int64) []Delivered {
+func (l *Layer) rewriteNonMonotonicTime(a *applied, recs []Delivered, atNS int64) []Delivered {
 	return mapRecs(recs, func(record Delivered) []Delivered { return []Delivered{nonMonotonicRecord(record)} })
 }
 
-func (l *Layer) withholdProducerRecords(a *Active, recs []Delivered, atNS int64) []Delivered {
+func (l *Layer) withholdProducerRecords(a *applied, recs []Delivered, atNS int64) []Delivered {
 	return mapRecs(recs, func(r Delivered) []Delivered {
 		if !r.Delivered {
 			return []Delivered{r}
@@ -75,11 +75,11 @@ func (l *Layer) withholdProducerRecords(a *Active, recs []Delivered, atNS int64)
 	})
 }
 
-func (l *Layer) rewriteTimeEncoding(a *Active, recs []Delivered, atNS int64) []Delivered {
+func (l *Layer) rewriteTimeEncoding(a *applied, recs []Delivered, atNS int64) []Delivered {
 	return rewriteObservedTimes(recs, alternateEncoding)
 }
 
-func (l *Layer) truncateTimePrecision(a *Active, recs []Delivered, atNS int64) []Delivered {
+func (l *Layer) truncateTimePrecision(a *applied, recs []Delivered, atNS int64) []Delivered {
 	return rewriteObservedTimes(recs, truncatePrecision)
 }
 

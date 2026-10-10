@@ -7,7 +7,7 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-func (l *Layer) mangleEnum(a *Active, recs []Delivered, atNS int64) []Delivered {
+func (l *Layer) mangleEnum(a *applied, recs []Delivered, atNS int64) []Delivered {
 	return mapRecs(recs, func(r Delivered) []Delivered {
 		if !r.Delivered || a.rng.Float64() >= paramFloat(a.Params, "rate", 0.01) {
 			return []Delivered{r}
@@ -22,7 +22,7 @@ func (l *Layer) mangleEnum(a *Active, recs []Delivered, atNS int64) []Delivered 
 	})
 }
 
-func (l *Layer) mangleRange(a *Active, recs []Delivered, atNS int64) []Delivered {
+func (l *Layer) mangleRange(a *applied, recs []Delivered, atNS int64) []Delivered {
 	return mapRecs(recs, func(r Delivered) []Delivered {
 		if !r.Delivered || a.rng.Float64() >= paramFloat(a.Params, "rate", 0.01) {
 			return []Delivered{r}
@@ -38,7 +38,7 @@ func (l *Layer) mangleRange(a *Active, recs []Delivered, atNS int64) []Delivered
 	})
 }
 
-func (l *Layer) mangleUnit(a *Active, recs []Delivered, atNS int64) []Delivered {
+func (l *Layer) mangleUnit(a *applied, recs []Delivered, atNS int64) []Delivered {
 	return mapRecs(recs, func(r Delivered) []Delivered {
 		if !r.Delivered || r.Event.Unit == "" {
 			return []Delivered{r}
@@ -49,11 +49,11 @@ func (l *Layer) mangleUnit(a *Active, recs []Delivered, atNS int64) []Delivered 
 	})
 }
 
-func (l *Layer) enlargePayload(a *Active, recs []Delivered, atNS int64) []Delivered {
+func (l *Layer) enlargePayload(a *applied, recs []Delivered, atNS int64) []Delivered {
 	return mapRecs(recs, func(record Delivered) []Delivered { return []Delivered{enlargedRecord(a, record)} })
 }
 
-func (l *Layer) markMalformed(a *Active, recs []Delivered, atNS int64) []Delivered {
+func (l *Layer) markMalformed(a *applied, recs []Delivered, atNS int64) []Delivered {
 	return mapRecs(recs, func(r Delivered) []Delivered {
 		if !r.Delivered {
 			return []Delivered{r}
@@ -64,7 +64,7 @@ func (l *Layer) markMalformed(a *Active, recs []Delivered, atNS int64) []Deliver
 	})
 }
 
-func (l *Layer) mangleNumericValue(a *Active, recs []Delivered, atNS int64) []Delivered {
+func (l *Layer) mangleNumericValue(a *applied, recs []Delivered, atNS int64) []Delivered {
 	return mapRecs(recs, func(r Delivered) []Delivered {
 		if !r.Delivered {
 			return []Delivered{r}
@@ -76,11 +76,11 @@ func (l *Layer) mangleNumericValue(a *Active, recs []Delivered, atNS int64) []De
 	})
 }
 
-func (l *Layer) injectTextProbe(a *Active, recs []Delivered, atNS int64) []Delivered {
+func (l *Layer) injectTextProbe(a *applied, recs []Delivered, atNS int64) []Delivered {
 	return mapRecs(recs, func(record Delivered) []Delivered { return []Delivered{l.probedRecord(a, record)} })
 }
 
-func enlargedRecord(a *Active, record Delivered) Delivered {
+func enlargedRecord(a *applied, record Delivered) Delivered {
 	if !record.Delivered {
 		return record
 	}
@@ -102,7 +102,7 @@ func enlargedValue(value any, limit int) (any, bool) {
 	return strings.Repeat("x", limit), true
 }
 
-func (l *Layer) probedRecord(a *Active, record Delivered) Delivered {
+func (l *Layer) probedRecord(a *applied, record Delivered) Delivered {
 	if !record.Delivered {
 		return record
 	}
@@ -115,7 +115,7 @@ func (l *Layer) probedRecord(a *Active, record Delivered) Delivered {
 	return record
 }
 
-func applyProbePayload(a *Active, record *Delivered) {
+func applyProbePayload(a *applied, record *Delivered) {
 	if payloads, ok := a.Params["payloads"].([]any); ok && len(payloads) > 0 {
 		index := a.rng.Intn(len(payloads))
 		if text, ok := payloads[index].(string); ok {
