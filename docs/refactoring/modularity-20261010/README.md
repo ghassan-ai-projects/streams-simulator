@@ -33,7 +33,7 @@ limits and the direct-import allowlist, already complete).
   the deliberate changes (fail-closed constructors, M15 items) are in
   PLAN with regression tests.
 - Tests: every package at or above 70 % except the entrypoint; all tests
-  parallel and sleep-free; shipped fixtures named once; four cross-module
+  parallel and sleep-free; shipped fixtures named once; three cross-module
   acceptance flows against the real binary.
 - Open work is in [DEFERRED.md](DEFERRED.md): defects D-01…D-51 (found, not
   fixed), policy items P-01…P-07, and the T-01 ratchet.
