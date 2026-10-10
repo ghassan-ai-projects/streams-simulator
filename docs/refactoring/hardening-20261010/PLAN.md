@@ -33,3 +33,9 @@ D-02 note: the artifact stores only the trace digest, so the position of the
 first differing record cannot be known when the counts agree. The result now
 says so in `detail` instead of implying a position; per-record digests in the
 artifact would be a format change (decision).
+| D-04 | done | `see git log` | `TestOfflineScoreEqualsTheOnlineScoreOfTheSameRun` |
+
+D-04 note: `streamsim score` now needs `--domains-dir`/`--adapters-dir` (as
+`replay` does); it builds the same `score.Evidence` the director builds and
+calls the same `score.Score`. `score.Offline` remains for callers without a
+replayable artifact.

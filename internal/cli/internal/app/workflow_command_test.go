@@ -75,7 +75,8 @@ func TestRefconsumerConsumesATraceAndScoreReadsItsVerdict(t *testing.T) {
 	if err := os.WriteFile(label, []byte(record), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	scored := invoke(t, "score", "--run", filepath.Join(dir, "run.json"), "--label", label).mustSucceed(t).json(t)
+	scored := invoke(t, "score", "--run", filepath.Join(dir, "run.json"), "--label", label,
+		"--domains-dir", testsupport.DomainsDir(), "--adapters-dir", testsupport.AdaptersDir()).mustSucceed(t).json(t)
 	if len(scored) == 0 {
 		t.Fatal("score printed an empty scorecard")
 	}

@@ -20,6 +20,12 @@ func ReplayArtifact(ctx context.Context, art *model.RunArtifact, spec *domain.Co
 	return layer.ReplayArtifact(ctx, art, spec, adapterSpec, sinkTarget)
 }
 
+// ReplayArtifactEvidence replays an artifact like ReplayArtifact and also
+// returns the effector calls the replayed world made.
+func ReplayArtifactEvidence(ctx context.Context, art *model.RunArtifact, spec *domain.Compiled, adapterSpec *model.Adapter) (*ReplayEvidence, error) {
+	return layer.ReplayArtifactEvidence(ctx, art, spec, adapterSpec)
+}
+
 // Advance moves the world to toNS, delivering what it emits through the
 // perturbation layer, adapter and sink; with awaitConsumer it then waits for
 // the consumer to quiesce.

@@ -162,10 +162,10 @@ Flags:
 
 ### `score`
 
-Scores a run from artifact files. `--run` is required; `--label` is optional and defaults to `label.json` beside the run artifact. The command reads `verdict.json` beside the artifact.
+Scores a run from the files it published, with the scorer the director uses online, so the offline and online scorecards of one run are identical. `--run` is required; `--label` defaults to `label.json` beside the run artifact. The command reads `verdict.json`, `ledger.jsonl` and `world_state_history.jsonl` beside the artifact, and replays the artifact (against `--domains-dir` and `--adapters-dir`) to recover the effector calls the command log cannot state. A replay that does not reproduce the recorded trace is refused, not graded.
 
 ```text
-streamsim score --run <run.json> [--label <label.json>]
+streamsim score --run <run.json> [--label <label.json>] [--domains-dir <path>] [--adapters-dir <path>]
 ```
 
 ### `manifest`

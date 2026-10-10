@@ -13,6 +13,7 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run/internal/durable"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
 // ReplayResult is the outcome of replaying a run artifact.
@@ -55,6 +56,32 @@ func ReplayArtifact(ctx context.Context, art *model.RunArtifact, spec *domain.Co
 		return nil, err
 	}
 	return finishReplayResult(replay, art, result), nil
+}
+
+// ReplayEvidence is what replaying an artifact recovers beyond the digest
+// comparison: the effector calls the original run made, which the artifact's
+// command log cannot state (applied, refused or silent).
+type ReplayEvidence struct {
+	Result *ReplayResult
+	Calls  []world.EffectorCall
+}
+
+// ReplayArtifactEvidence replays like ReplayArtifact and also returns the
+// replayed world's effector calls, so offline scoring can grade the loop.
+func ReplayArtifactEvidence(ctx context.Context, art *model.RunArtifact, spec *domain.Compiled, adapterSpec *model.Adapter) (*ReplayEvidence, error) {
+	spec, adapterSpec, result, err := prepareReplay(art, spec, adapterSpec)
+	if err != nil {
+		return nil, err
+	}
+	replay, err := newReplayRun(ctx, art, spec, adapterSpec, "")
+	if err != nil {
+		return nil, err
+	}
+	if err := replayCommands(ctx, replay, art.CommandLog); err != nil {
+		return nil, err
+	}
+	calls := append([]world.EffectorCall{}, replay.World.EffectorCalls()...)
+	return &ReplayEvidence{Result: finishReplayResult(replay, art, result), Calls: calls}, nil
 }
 
 func replayInputs(art *model.RunArtifact, spec *domain.Compiled, adapterSpec *model.Adapter) (*domain.Compiled, *model.Adapter, error) {
