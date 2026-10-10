@@ -60,3 +60,29 @@ func TestEndKeepsTheArtifactWhenItsEvidenceCannotBePublished(t *testing.T) {
 		t.Fatalf("a second End: %v", err)
 	}
 }
+
+// Every delivery gets a ledger row, also after the sink has failed: the
+// duplicate the perturbation made of an event is accounted for even though
+// the event itself could not be written.
+func TestSinkFailureStillAccountsForEveryDelivery(t *testing.T) {
+	t.Parallel()
+	spec, a := testBase(t)
+	r, err := New(t.Context(), Config{Domain: spec, Adapter: a, SinkName: model.SinkHTTPPush, SinkTarget: "http://127.0.0.1:1/unreachable"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.ApplyPerturb("duplicate_burst", map[string]any{"rate": 1.0}, r.World.Clock(), 0); err != nil {
+		t.Fatal(err)
+	}
+	_, _ = r.Advance(t.Context(), r.World.Clock()+120*1e9, false)
+	emitted := int(r.World.EmittedCount())
+	ledger := r.Ledger()
+	if emitted == 0 || len(ledger) < 2*emitted {
+		t.Fatalf("%d emitted events but %d ledger rows: a duplicate went unaccounted for", emitted, len(ledger))
+	}
+	for _, row := range ledger {
+		if row.Delivered || row.DeliveryReason != model.DeliverySinkError {
+			t.Fatalf("with a dead sink every row is a sink error, got %+v", row)
+		}
+	}
+}

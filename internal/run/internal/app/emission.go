@@ -5,7 +5,6 @@ import (
 	"strconv"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/perturb"
 )
 
 // onEmit is the world's emitter: perturb -> adapter -> sink -> ledger.
@@ -15,10 +14,12 @@ func (r *Run) onEmit(ev model.SimEvent) {
 		return
 	}
 	r.captureEmissionState(ev, atNS)
+	// One delivery path serves live emissions and records released at a
+	// boundary: every delivery gets a ledger row of its own event, and a
+	// failing sink is recorded for each record rather than silently ending
+	// the ledger.
 	for _, d := range r.Perturb.Process(ev, atNS) {
-		if !r.deliverEmission(ev, d, atNS) {
-			return
-		}
+		r.deliver(d)
 	}
 }
 
@@ -42,20 +43,6 @@ func (r *Run) captureEmissionState(ev model.SimEvent, atNS int64) {
 		states[name] = r.World.StateValue(ev.EntityID, name, atNS)
 	}
 	r.history = append(r.history, model.StateSnapshot{Seq: ev.Seq, TimeNS: atNS, Entity: ev.EntityID, States: states})
-}
-
-func (r *Run) deliverEmission(ev model.SimEvent, d perturb.Delivered, atNS int64) bool {
-	if d.Malformed {
-		return r.deliverMalformedEvent(ev, d.DeliveryID)
-	}
-	if !d.Delivered {
-		r.recordDelivery(ev, d.DeliveryID, atNS, atNS, false, d.Reason)
-		return true
-	}
-	if r.evidenceRec != nil {
-		r.evidenceRec(d.Event)
-	}
-	return r.renderEmission(d, atNS)
 }
 
 func (r *Run) writeMalformed(ev model.SimEvent) error {
@@ -98,32 +85,4 @@ func (r *Run) acceptObservedOrder(ev model.SimEvent) error {
 	}
 	r.lastObservedNS, r.hasObservedTime = observedNS, true
 	return nil
-}
-
-func (r *Run) renderEmission(d perturb.Delivered, atNS int64) bool {
-	line, err := r.Engine.RenderStreamRecord(&d.Event)
-	if err != nil {
-		return r.failEmission(d, atNS, err)
-	}
-	if line == "" {
-		r.recordDelivery(d.Event, d.DeliveryID, atNS, atNS, false, model.DeliveryOmitted)
-		return true
-	}
-	return r.writeEmission(d, line, atNS)
-}
-
-func (r *Run) writeEmission(d perturb.Delivered, line string, atNS int64) bool {
-	if err := r.Sink.Write([]byte(line)); err != nil {
-		return r.failEmission(d, atNS, err)
-	}
-	r.noteTraceArrival(d.Event)
-	observedNS, _ := model.ParseTime(d.Event.ObservedTime)
-	r.recordDelivery(d.Event, d.DeliveryID, atNS, observedNS, true, d.Reason)
-	return true
-}
-
-func (r *Run) failEmission(d perturb.Delivered, atNS int64, err error) bool {
-	r.recordDelivery(d.Event, d.DeliveryID, atNS, atNS, false, model.DeliverySinkError)
-	r.fail(err)
-	return false
 }
