@@ -17,7 +17,6 @@ type WorldRecord struct {
 	Nameplate *Nameplate
 	Operator  *OperatorView
 	Started   bool
-	Ended     bool
 	RunEnded  bool
 }
 
@@ -76,14 +75,49 @@ func (d *Director) World(worldID string) *WorldRecord {
 	return d.Worlds[worldID]
 }
 
+// openRun marks the world's run opened once its truth is sealed. The seal is
+// read before taking the director lock: the truth store calls back into the
+// director while holding its own lock, so the two are never nested the other
+// way round. The started flag is checked and set in one step, so two callers
+// cannot both open the run.
+func (d *Director) openRun(w *WorldRecord, worldID string) error {
+	if err := d.requireSealedRun(w.Run.ID); err != nil {
+		return err
+	}
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if w.Started {
+		return errTool(CodeDomainInvalid, "a run is already open for %q", worldID)
+	}
+	w.Started = true
+	return nil
+}
+
+// runLifecycle reports whether the world's run has been opened and ended.
+func (d *Director) runLifecycle(w *WorldRecord) (started, ended bool) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return w.Started, w.RunEnded
+}
+
+// markRunEnded records that the world's run is over, whether or not it
+// ended cleanly.
+func (d *Director) markRunEnded(w *WorldRecord) {
+	if !w.Run.Finished() {
+		return
+	}
+	d.mu.Lock()
+	w.RunEnded = true
+	d.mu.Unlock()
+}
+
 func (d *Director) runIsOpen(runID string) bool {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	worldID, ok := d.byRun[runID]
 	if !ok {
-		return false
+		return true // a run the director does not know is never treated as closed
 	}
 	w := d.Worlds[worldID]
 	return w != nil && !w.RunEnded
-
 }

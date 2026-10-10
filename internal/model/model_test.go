@@ -9,10 +9,10 @@ import (
 func TestDecodeRejectsTrailingJSON(t *testing.T) {
 	t.Parallel()
 	var got any
-	if err := Decode(strings.NewReader(`{"ok":true} {"trailing":true}`), &got); err == nil {
+	if err := Decode(strings.NewReader(`{"ok":true} {"trailing":true}`), &got); err == nil || !strings.Contains(err.Error(), "model: trailing JSON document") {
 		t.Fatal("decoder accepted two concatenated JSON documents")
 	}
-	if err := Decode(strings.NewReader(`{"ok":true} trailing`), &got); err == nil {
+	if err := Decode(strings.NewReader(`{"ok":true} trailing`), &got); err == nil || !strings.Contains(err.Error(), "model: trailing data after JSON document: invalid character 'a' in literal true (expecting 'u')") {
 		t.Fatal("decoder accepted trailing non-JSON data")
 	}
 }
@@ -133,5 +133,28 @@ func TestCurrentPlatformNamesTheBuild(t *testing.T) {
 	p := CurrentPlatform()
 	if p.GOOS == "" || p.GOARCH == "" || !strings.HasPrefix(p.GoVersion, "go") {
 		t.Fatalf("platform = %+v", p)
+	}
+}
+
+func TestF1InputExplicitZeroCoefficientSurvivesARoundTrip(t *testing.T) {
+	t.Parallel()
+	var in F1Input
+	if err := json.Unmarshal([]byte(`{"state":"u","coef":0}`), &in); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := json.Marshal(in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var back F1Input
+	if err := json.Unmarshal(raw, &back); err != nil {
+		t.Fatal(err)
+	}
+	if back.Coef != 0 || !back.CoefSet {
+		t.Fatalf("explicit coef 0 came back as %+v from %s", back, raw)
+	}
+	unset, _ := json.Marshal(F1Input{State: "u", Coef: 1})
+	if string(unset) != `{"state":"u","coef":1}` {
+		t.Fatalf("a default coefficient keeps its shape: %s", unset)
 	}
 }

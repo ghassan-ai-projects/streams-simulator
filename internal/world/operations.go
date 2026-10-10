@@ -44,7 +44,7 @@ func (w *World) EffectorCalls() []EffectorCall {
 
 // SetFailureMode overrides the failure-mode selection for subsequent
 // invocations ("" restores the declared distribution).
-func (w *World) SetFailureMode(mode string) {
+func (w *World) SetFailureMode(mode FailureMode) {
 	w.world.SetFailureMode(mode)
 }
 

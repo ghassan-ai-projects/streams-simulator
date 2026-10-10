@@ -2,6 +2,8 @@ package domain
 
 import (
 	"fmt"
+	"maps"
+	"slices"
 )
 
 func (c *Capabilities) loadRoutes(routes map[string]routeDocument) error {
@@ -15,6 +17,7 @@ func (c *Capabilities) loadRoutes(routes map[string]routeDocument) error {
 
 func routeStringValues(route routeDocument) map[string]map[string]struct{} {
 	values := map[string]map[string]struct{}{}
+	// determinism-safe: builds a set per field; membership is order-free.
 	for _, preset := range route.Presets {
 		appendRouteStrings(values, preset)
 	}
@@ -65,9 +68,9 @@ func validateRouteIdentity(name string, route routeDocument) error {
 }
 
 func validateRoutePresets(name string, route routeDocument) error {
-	for field := range route.Bounds {
-		for presetName, preset := range route.Presets {
-			if _, ok := preset[field]; !ok {
+	for _, field := range slices.Sorted(maps.Keys(route.Bounds)) {
+		for _, presetName := range slices.Sorted(maps.Keys(route.Presets)) {
+			if _, ok := route.Presets[presetName][field]; !ok {
 				return fmt.Errorf("device: route %q preset %q does not produce bounded parameter %q", name, presetName, field)
 			}
 		}
@@ -76,7 +79,8 @@ func validateRoutePresets(name string, route routeDocument) error {
 }
 
 func validateTargetBindings(name string, route routeDocument) error {
-	for logical, physical := range route.TargetBindings {
+	for _, logical := range slices.Sorted(maps.Keys(route.TargetBindings)) {
+		physical := route.TargetBindings[logical]
 		if logical == "" || physical == "" {
 			return fmt.Errorf("device: route %q contains an empty target binding", name)
 		}
@@ -88,6 +92,7 @@ func validateTargetBindings(name string, route routeDocument) error {
 }
 
 func appendRouteStrings(values map[string]map[string]struct{}, preset map[string]any) {
+	// determinism-safe: builds a set per field; membership is order-free.
 	for field, raw := range preset {
 		value, ok := raw.(string)
 		if !ok {

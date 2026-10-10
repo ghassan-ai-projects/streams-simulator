@@ -2,6 +2,8 @@ package domain
 
 import (
 	"fmt"
+	"maps"
+	"slices"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
@@ -40,8 +42,8 @@ func validateBindingCatalog(w *world.World, bindings map[string]Binding) error {
 		return fmt.Errorf("deviceworld: bindings declare no targets")
 	}
 	states := worldStateSet(w)
-	for target, binding := range bindings {
-		if err := validateWorldBinding(w, target, binding, states); err != nil {
+	for _, target := range slices.Sorted(maps.Keys(bindings)) {
+		if err := validateWorldBinding(w, target, bindings[target], states); err != nil {
 			return err
 		}
 	}
@@ -98,7 +100,7 @@ func requireSafeStopTargets(bindings map[string]Binding, targets []string) error
 }
 
 func validateArgumentProperties(target, role, effector string, properties map[string]any, arguments map[string]bindingArgument) error {
-	for argument := range arguments {
+	for _, argument := range slices.Sorted(maps.Keys(arguments)) {
 		if _, ok := properties[argument]; !ok {
 			return fmt.Errorf("deviceworld: target %q %s argument %q is not declared by effector %q", target, role, argument, effector)
 		}

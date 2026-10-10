@@ -3,6 +3,7 @@ package run_test
 import (
 	"context"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter"
@@ -90,7 +91,7 @@ func TestAnInvalidVerdictIsRefusedAndNeverKept(t *testing.T) {
 	if r.Verdict() != nil {
 		t.Fatal("no verdict before one is submitted")
 	}
-	if err := r.SubmitVerdict(&model.Verdict{}); err == nil {
+	if err := r.SubmitVerdict(&model.Verdict{}); err == nil || !strings.Contains(err.Error(), "run: verdict run_id \"\" does not match run \"r-3h6olxmxbko6q\"") {
 		t.Fatal("an empty verdict must be refused")
 	}
 	if r.Verdict() != nil {
@@ -135,7 +136,7 @@ func TestCommandsAreRecordedAndTheTestHooksReachTheRun(t *testing.T) {
 	if err := r.RetireEntity(pond, "test", start+800e9); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := r.EnvInject("none", "f", nil, start+900e9); err == nil {
+	if _, err := r.EnvInject("none", "f", nil, start+900e9); err == nil || !strings.Contains(err.Error(), "run: env.inject not enabled for this world (no configured target)") {
 		t.Fatal("environment injection is not enabled for a plain run")
 	}
 	if seen == 0 {

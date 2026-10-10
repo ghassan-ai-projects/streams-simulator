@@ -1,17 +1,19 @@
-package app
+package protocol
 
 import (
 	"encoding/json"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/mcp/internal/app"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
 func decodeToolRecord(raw map[string]any, out any) error {
 	data, err := json.Marshal(raw)
 	if err != nil {
-		return errTool(CodeInvalidArgs, "%v", err)
+		return app.ToolErrorf(app.CodeInvalidArgs, "%v", err)
 	}
 	if err := json.Unmarshal(data, out); err != nil {
-		return errTool(CodeInvalidArgs, "%v", err)
+		return app.ToolErrorf(app.CodeInvalidArgs, "%v", err)
 	}
 	return nil
 }

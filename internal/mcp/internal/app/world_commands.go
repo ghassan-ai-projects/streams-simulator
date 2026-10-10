@@ -7,6 +7,7 @@ import (
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
 // DescribeWorld reports config, digest, clock and emitted count.
@@ -15,10 +16,11 @@ func (d *Director) DescribeWorld(worldID string) (map[string]any, error) {
 	if w == nil {
 		return nil, errTool(CodeWorldNotFound, "unknown world %q", worldID)
 	}
+	status := w.Run.Status()
 	return map[string]any{
 		"world_id": worldID, "domain": w.Run.Domain().Spec.ID,
-		"seed": float64(w.Run.Config.Seed), "clock": model.FormatTime(w.Run.World.Clock()),
-		"emitted": w.Run.World.EmittedCount(), "simulated": true,
+		"seed": w.Run.Config.Seed, "clock": model.FormatTime(status.ClockNS),
+		"emitted": status.Emitted, "simulated": true,
 	}, nil
 }
 
@@ -48,11 +50,15 @@ func (d *Director) Advance(ctx context.Context, worldID string, toNS int64, awai
 	if err != nil {
 		return nil, advanceToolError(err)
 	}
+	return advanceResult(emitted, w.Run.Status()), nil
+}
+
+func advanceResult(emitted int, status run.WorldStatus) map[string]any {
 	return map[string]any{
-		"emitted": emitted, "clock": model.FormatTime(w.Run.World.Clock()),
-		"emitted_total":   w.Run.World.EmittedCount(),
-		"effects_applied": w.Run.World.ActiveFaultsCount(), "simulated": true,
-	}, nil
+		"emitted": emitted, "clock": model.FormatTime(status.ClockNS),
+		"emitted_total":   status.Emitted,
+		"effects_applied": status.ActiveFaults, "simulated": true,
+	}
 }
 
 // ClockState reports the clock and queue.
@@ -61,10 +67,11 @@ func (d *Director) ClockState(worldID string) (map[string]any, error) {
 	if w == nil {
 		return nil, errTool(CodeWorldNotFound, "unknown world %q", worldID)
 	}
+	status := w.Run.Status()
 	return map[string]any{
-		"clock":             model.FormatTime(w.Run.World.Clock()),
-		"next_scheduled_ns": w.Run.World.NextEventNS(),
-		"pending_effects":   w.Run.World.PendingKicks(),
+		"clock":             model.FormatTime(status.ClockNS),
+		"next_scheduled_ns": status.NextEventNS,
+		"pending_effects":   status.PendingEffects,
 	}, nil
 }
 
@@ -99,7 +106,7 @@ func (d *Director) ListFaults(worldID string) (map[string]any, error) {
 	if w == nil {
 		return nil, errTool(CodeWorldNotFound, "unknown world %q", worldID)
 	}
-	return map[string]any{"faults": w.Run.World.ListFaults()}, nil
+	return map[string]any{"faults": w.Run.Faults()}, nil
 }
 
 // ApplyPerturb activates a delivery perturbation.
@@ -133,7 +140,7 @@ func (d *Director) EnvInject(worldID, target, fault string, params map[string]an
 	if w == nil {
 		return nil, errTool(CodeWorldNotFound, "unknown world %q", worldID)
 	}
-	id, err := w.Run.EnvInject(target, fault, params, w.Run.World.Clock())
+	id, err := w.Run.EnvInject(target, fault, params, w.Run.Status().ClockNS)
 	if err != nil {
 		return nil, errTool(CodeDomainInvalid, "%v", err)
 	}
@@ -141,9 +148,13 @@ func (d *Director) EnvInject(worldID, target, fault string, params map[string]an
 }
 
 func (d *Director) finishDestroyedWorld(w *WorldRecord, worldID string) error {
-	if !w.RunEnded {
+	if _, ended := d.runLifecycle(w); !ended {
 		dir := filepath.Join(d.OutDir, worldID)
-		if _, err := w.Run.End(dir); err != nil {
+		_, err := w.Run.End(dir)
+		// An End that failed still finished the run; leaving it open would
+		// make every retry fail with "already finished".
+		d.markRunEnded(w)
+		if err != nil {
 			return errTool(CodeDomainInvalid, "%v", err)
 		}
 	}
@@ -151,8 +162,11 @@ func (d *Director) finishDestroyedWorld(w *WorldRecord, worldID string) error {
 }
 
 func advanceToolError(err error) error {
-	if errors.Is(err, run.ErrConsumerNotQuiesced) {
+	switch {
+	case errors.Is(err, run.ErrConsumerNotQuiesced):
 		return errTool(CodeConsumerNotQuiesced, "%v", err)
+	case errors.Is(err, world.ErrClockBackwards):
+		return errTool(CodeClockBackwards, "%v", err)
 	}
-	return errTool(CodeClockBackwards, "%v", err)
+	return errTool(CodeDomainInvalid, "%v", err)
 }

@@ -1,9 +1,11 @@
-package app
+package protocol
 
 import (
 	"context"
 	"strings"
 	"testing"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/mcp/internal/app"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
@@ -25,7 +27,7 @@ func TestOperatorEndpointPerShippedDomain(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	d := NewDirector(context.Background(), domain.NewCatalog(specs), map[string]*model.Adapter{"native-jsonl": adap}, t.TempDir())
+	d := app.NewDirector(context.Background(), domain.NewCatalog(specs), map[string]*model.Adapter{"native-jsonl": adap}, t.TempDir())
 	endpoint := startOperatorEndpoint(t, d)
 
 	for _, spec := range specs {
@@ -40,9 +42,7 @@ func TestOperatorEndpointPerShippedDomain(t *testing.T) {
 				t.Fatalf("world.create: %v", err)
 			}
 			worldID := created["world_id"].(string)
-			d.mu.Lock()
-			w := d.Worlds[worldID]
-			d.mu.Unlock()
+			w := d.World(worldID)
 			op, err := refconsumer.NewMCPOperator(endpoint, w.Token, w.Run.ID)
 			if err != nil {
 				t.Fatal(err)

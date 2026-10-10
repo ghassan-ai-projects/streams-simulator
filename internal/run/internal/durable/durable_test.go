@@ -1,6 +1,7 @@
 package durable
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -23,11 +24,11 @@ func TestLedgerAppendsFlushesAndClosesItsFile(t *testing.T) {
 	if raw, err := os.ReadFile(path); err != nil || !strings.Contains(string(raw), `"delivery_reason":"ok"`) {
 		t.Fatalf("flushed ledger = %q (%v)", raw, err)
 	}
-	if l.Closed() {
+	if isClosed(l) {
 		t.Fatal("the ledger is open until Finish")
 	}
-	if err := l.Finish(); err != nil || !l.Closed() {
-		t.Fatalf("finish: %v, closed %v", err, l.Closed())
+	if err := l.Finish(); err != nil || !isClosed(l) {
+		t.Fatalf("finish: %v, closed %v", err, isClosed(l))
 	}
 }
 
@@ -103,8 +104,8 @@ func TestFinishClosesTheFileEvenWhenTheFlushFails(t *testing.T) {
 	if err := l.Finish(); err == nil || !strings.HasPrefix(err.Error(), "End: flush ledger: ") {
 		t.Fatalf("finish over a closed file = %v", err)
 	}
-	if !l.Closed() {
-		t.Fatal("the ledger must report closed after a failed finish")
+	if !isClosed(l) {
+		t.Fatal("the ledger must be closed after a failed finish")
 	}
 }
 
@@ -133,4 +134,10 @@ func TestPublishEvidenceRefusesAnOutputDirUnderAFile(t *testing.T) {
 	if err == nil || !strings.HasPrefix(err.Error(), "End: ") {
 		t.Fatalf("publish under a regular file = %v", err)
 	}
+}
+
+// isClosed reports whether the ledger's file descriptor has been closed.
+func isClosed(l *Ledger) bool {
+	_, err := l.file.Stat()
+	return errors.Is(err, os.ErrClosed)
 }

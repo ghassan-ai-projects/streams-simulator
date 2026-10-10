@@ -2,6 +2,7 @@ package world_test
 
 import (
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
@@ -65,7 +66,7 @@ func TestAdvanceEmitsNativeEventsInOrderAndRefusesTimeTravel(t *testing.T) {
 			t.Fatalf("event %d has seq %d", i, seq)
 		}
 	}
-	if _, _, err := w.Advance(model.DefaultStartTimeNS); err == nil {
+	if _, _, err := w.Advance(model.DefaultStartTimeNS); err == nil || !strings.Contains(err.Error(), "world: clock would move backwards") {
 		t.Fatal("moving the clock backwards must be refused")
 	}
 	if w.Clock() != model.DefaultStartTimeNS+3600e9 {
@@ -111,7 +112,7 @@ func TestEntitiesJoinAndLeaveAndTheirStateIsReadable(t *testing.T) {
 	if err := w.AddEntity("site-a/pond-99", at); err != nil {
 		t.Fatal(err)
 	}
-	if err := w.AddEntity("site-a/pond-99", at); err == nil {
+	if err := w.AddEntity("site-a/pond-99", at); err == nil || !strings.Contains(err.Error(), "world: entity \"site-a/pond-99\" already exists") {
 		t.Fatal("adding an existing entity must fail")
 	}
 	if got := w.EntityIDs(); len(got) != 9 || len(w.InitialEntityIDs()) != 8 {

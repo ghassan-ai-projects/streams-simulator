@@ -15,6 +15,7 @@ func admissionMetrics(admission []model.Admission, ledger []model.LedgerRecord, 
 }
 
 func reportsOutcome(admission map[int64][]string, wanted string) bool {
+	// determinism-safe: an existence test; the answer ignores order.
 	for _, outcomes := range admission {
 		if hasOutcome(outcomes, wanted) {
 			return true
@@ -66,6 +67,7 @@ func rejectsClockSkew(bySeq map[int64][]string, perturbations []string) bool {
 	if !hasPerturbation(perturbations, "clock_skew") {
 		return true
 	}
+	// determinism-safe: an existence test; the answer ignores order.
 	for _, outcomes := range bySeq {
 		if hasOutcome(outcomes, model.AdmissionRejected) || hasOutcome(outcomes, model.AdmissionMalformed) || hasOutcome(outcomes, model.AdmissionOutOfContract) {
 			return true

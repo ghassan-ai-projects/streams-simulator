@@ -40,6 +40,32 @@ func parseFlags(fs *flag.FlagSet, args []string) error {
 	return usageExit{code: 2}
 }
 
+// listFlag is a repeatable string flag: every occurrence adds one value.
+type listFlag []string
+
+func (l *listFlag) String() string { return strings.Join(*l, ",") }
+
+// Set appends one occurrence of the flag.
+func (l *listFlag) Set(value string) error {
+	*l = append(*l, value)
+	return nil
+}
+
+// items expands the occurrences into entries. An occurrence is a comma
+// separated list of entries; one that carries a JSON object (an "@{"
+// argument) is a single entry, because the object may contain commas.
+func (l listFlag) items() []string {
+	var out []string
+	for _, value := range l {
+		if strings.Contains(value, "@{") {
+			out = append(out, value)
+			continue
+		}
+		out = append(out, splitCSV(value)...)
+	}
+	return out
+}
+
 func splitCSV(s string) []string {
 	var out []string
 	for _, p := range strings.Split(s, ",") {

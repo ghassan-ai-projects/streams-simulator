@@ -1,4 +1,4 @@
-package app
+package protocol
 
 import (
 	"context"
@@ -200,5 +200,87 @@ func TestDirectorResourcesServeTheCatalogAndDomainSpec(t *testing.T) {
 	_, err := cs.ReadResource(context.Background(), &mcp.ReadResourceParams{URI: "sim://domains/no-such/spec"})
 	if err == nil || !strings.Contains(err.Error(), "no-such") {
 		t.Fatalf("an unknown domain resource must be refused by name: %v", err)
+	}
+}
+
+func TestAdvanceErrorsKeepTheirOwnCodes(t *testing.T) {
+	t.Parallel()
+	d := newTestDirector(t)
+	cs, _ := connect(t, NewDirectorServer(d))
+	worldID := createWorld(t, d)
+	mustCall(t, cs, "sim.clock.advance", map[string]any{"world_id": worldID, "by_ns": 60 * 1e9})
+
+	_, refusal := toolCall(t, cs, "sim.clock.advance", map[string]any{"world_id": worldID, "to_ns": model.DefaultStartTimeNS})
+	if !strings.HasPrefix(refusal, "clock_backwards: ") {
+		t.Fatalf("moving the clock back = %q", refusal)
+	}
+	mustCall(t, cs, "sim.world.destroy", map[string]any{"world_id": worldID})
+	_, refusal = toolCall(t, cs, "sim.clock.advance", map[string]any{"world_id": worldID, "by_ns": 1})
+	if !strings.HasPrefix(refusal, "world_not_found: ") {
+		t.Fatalf("advancing a destroyed world = %q", refusal)
+	}
+
+	worldID = createWorld(t, d)
+	w := d.World(worldID)
+	if _, err := w.Run.End(""); err != nil {
+		t.Fatal(err)
+	}
+	_, refusal = toolCall(t, cs, "sim.clock.advance", map[string]any{"world_id": worldID, "by_ns": 60 * 1e9})
+	if !strings.HasPrefix(refusal, "domain_invalid: Advance: run is finished") {
+		t.Fatalf("advancing a finished run must not claim the clock went backwards: %q", refusal)
+	}
+}
+
+func TestWorldCreateRefusesSeedsThatJSONCannotCarryExactly(t *testing.T) {
+	t.Parallel()
+	cs, _ := connect(t, NewDirectorServer(newTestDirector(t)))
+	cases := map[string]struct {
+		seed any
+		want string
+	}{
+		"negative":    {-1, "/properties/seed: minimum"},
+		"beyond 2^53": {float64(1 << 54), "/properties/seed: maximum"},
+		"fractional":  {1.5, `/properties/seed: type: 1.5 has type "number", want "integer"`},
+	}
+	for name, tc := range cases {
+		res, err := cs.CallTool(context.Background(), &mcp.CallToolParams{Name: "sim.world.create", Arguments: map[string]any{
+			"domain": "aquaculture-pond", "seed": tc.seed,
+		}})
+		if err != nil || !res.IsError {
+			t.Fatalf("%s seed %v was accepted: res=%+v err=%v", name, tc.seed, res, err)
+		}
+		if text := res.Content[0].(*mcp.TextContent).Text; !strings.Contains(text, tc.want) {
+			t.Errorf("%s seed %v: refusal = %q, want %q", name, tc.seed, text, tc.want)
+		}
+	}
+	created := mustCall(t, cs, "sim.world.create", map[string]any{"domain": "aquaculture-pond", "seed": float64(1<<53 - 1)})
+	described := mustCall(t, cs, "sim.world.describe", map[string]any{"world_id": created["world_id"]})
+	if described["seed"] != float64(1<<53-1) {
+		t.Fatalf("the largest carried seed must round-trip exactly: %v", described["seed"])
+	}
+}
+
+func TestWorldCreateReturnsTheRunIdTruthIsSealedAgainst(t *testing.T) {
+	t.Parallel()
+	d := newTestDirector(t)
+	cs, _ := connect(t, NewDirectorServer(d))
+	created := mustCall(t, cs, "sim.world.create", map[string]any{"domain": "aquaculture-pond"})
+	runID, _ := created["run_id"].(string)
+	if runID == "" || runID != d.World(created["world_id"].(string)).Run.ID {
+		t.Fatalf("world.create must name the run: %v", created)
+	}
+}
+
+func TestWorldCreateRefusesATimeModeNothingImplements(t *testing.T) {
+	t.Parallel()
+	cs, _ := connect(t, NewDirectorServer(newTestDirector(t)))
+	res, err := cs.CallTool(context.Background(), &mcp.CallToolParams{Name: "sim.world.create", Arguments: map[string]any{
+		"domain": "aquaculture-pond", "time_mode": "scaled",
+	}})
+	if err != nil || !res.IsError {
+		t.Fatalf("scaled time is not implemented and must be refused: res=%+v err=%v", res, err)
+	}
+	if text := res.Content[0].(*mcp.TextContent).Text; !strings.Contains(text, "time_mode") {
+		t.Fatalf("the refusal must name time_mode: %q", text)
 	}
 }

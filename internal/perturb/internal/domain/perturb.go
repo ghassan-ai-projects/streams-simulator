@@ -164,7 +164,7 @@ func (l *Layer) newActive(name string, params map[string]any, fromNS, untilNS in
 	l.seq++
 	active := l.activation(id, name, params, fromNS, untilNS)
 	if name == Reorder {
-		active.window = newReorderWindow(paramInt(params, "max_displacement", 2))
+		active.window = newReorderWindow(paramInt(params, "max_displacement", 2), active.rng)
 	}
 	return active
 }

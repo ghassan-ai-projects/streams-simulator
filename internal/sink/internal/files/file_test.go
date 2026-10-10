@@ -64,7 +64,7 @@ func TestFlushMakesBufferedLinesVisibleAndAClosedFileRefusesMore(t *testing.T) {
 	if err := f.Flush(); err == nil || !strings.Contains(err.Error(), "sink: flush") {
 		t.Fatalf("flush after close: %v", err)
 	}
-	if _, err := f.Close(); err == nil {
+	if _, err := f.Close(); err == nil || !strings.Contains(err.Error(), "sink: flush") {
 		t.Fatal("closing twice must fail")
 	}
 }

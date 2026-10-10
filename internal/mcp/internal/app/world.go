@@ -26,7 +26,7 @@ func (d *Director) CreateWorld(args map[string]any) (map[string]any, error) {
 }
 
 func (d *Director) worldConfig(args map[string]any) (run.Config, error) {
-	spec, err := d.Catalog.Describe(str(args, "domain"))
+	spec, err := d.Catalog.Describe(Str(args, "domain"))
 	if err != nil {
 		return run.Config{}, errTool(CodeDomainInvalid, "%v", err)
 	}
@@ -50,6 +50,7 @@ func (d *Director) registerWorld(worldID string, r *run.Run, token string) strin
 	nameplate := buildNameplate(r)
 	nameplate.WorldID = worldID
 	ov := NewOperatorView(worldID, token, nameplate, r, r)
+	ov.RunID = r.ID
 	rec := &WorldRecord{Run: r, Token: token, Nameplate: nameplate, Operator: ov}
 	d.mu.Lock()
 	d.Worlds[worldID] = rec
@@ -75,7 +76,7 @@ func (d *Director) publishWorld(worldID string, r *run.Run) (map[string]any, err
 		return nil, errTool(CodeDomainInvalid, "capability token generation failed: %v", err)
 	}
 	endpoint := d.registerWorld(worldID, r, token)
-	out := map[string]any{"world_id": worldID, "world_digest": r.Digest(), "entity_ids": r.World.EntityIDs(),
+	out := map[string]any{"world_id": worldID, "run_id": r.ID, "world_digest": r.Digest(), "entity_ids": r.World.EntityIDs(),
 		"clock": model.FormatTime(r.World.Clock()), "token": token, "simulated": true}
 	if endpoint != "" {
 		out["operator_endpoint"] = endpoint

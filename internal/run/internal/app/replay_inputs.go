@@ -52,15 +52,31 @@ func prepareReplay(art *model.RunArtifact, spec *domain.Compiled, adapterSpec *m
 		return nil, nil, nil, err
 	}
 	result := &ReplayResult{WantDigest: art.ExpectedTraceDigest, VersionMatch: art.SimVersion == model.SimVersion}
-	if err := validateReplayInputs(art, spec, adapterSpec); err != nil {
+	if err := checkReplayInputs(result, art, spec, adapterSpec); err != nil {
 		return nil, nil, nil, err
 	}
-	annotateReplayVersion(result, art)
 	return spec, adapterSpec, result, nil
 }
 
-func annotateReplayVersion(result *ReplayResult, artifact *model.RunArtifact) {
-	if !result.VersionMatch {
-		result.Detail = fmt.Sprintf("artifact built by sim %s, current sim %s; a different version may legitimately differ", artifact.SimVersion, model.SimVersion)
+// checkReplayInputs compares the inputs with the digests the artifact
+// recorded. An artifact from another simulator version may carry digests
+// computed by that version's rules, so there a mismatch is reported in the
+// result and the replay still runs; with the same version it is an error.
+func checkReplayInputs(result *ReplayResult, art *model.RunArtifact, spec *domain.Compiled, adapterSpec *model.Adapter) error {
+	err := validateReplayInputs(art, spec, adapterSpec)
+	if err != nil && result.VersionMatch {
+		return err
+	}
+	annotateReplayVersion(result, art, err)
+	return nil
+}
+
+func annotateReplayVersion(result *ReplayResult, artifact *model.RunArtifact, inputs error) {
+	if result.VersionMatch {
+		return
+	}
+	result.Detail = fmt.Sprintf("artifact built by sim %s, current sim %s; a different version may legitimately differ", artifact.SimVersion, model.SimVersion)
+	if inputs != nil {
+		result.Detail += fmt.Sprintf("; its recorded input digests were not reproduced (%v)", inputs)
 	}
 }

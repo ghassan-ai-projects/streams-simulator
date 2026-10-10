@@ -34,21 +34,23 @@ func TestDecodeFailsClosed(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	cases := map[string][]byte{
-		"empty":            {},
-		"not-an-object":    []byte("[1,2,3]\n"),
-		"unknown-type":     []byte(`{"message_type":"telemetry"}` + "\n"),
-		"missing-type":     []byte(`{"protocol_version":1}` + "\n"),
-		"trailing-json":    append(append([]byte{}, bytes.TrimRight(command, "\n")...), []byte(" {}\n")...),
-		"oversize":         []byte(`{"message_type":"state","x":"` + strings.Repeat("z", MaxFrameBytes) + `"}`),
-		"schema-violation": []byte(`{"message_type":"command","protocol_version":1}` + "\n"),
+	cases := map[string]struct {
+		frame []byte
+		want  string
+	}{
+		"empty":            {[]byte{}, "frame is empty"},
+		"not-an-object":    {[]byte("[1,2,3]\n"), "decode frame:"},
+		"unknown-type":     {[]byte(`{"message_type":"telemetry"}` + "\n"), `unsupported message_type "telemetry"`},
+		"missing-type":     {[]byte(`{"protocol_version":1}` + "\n"), "message_type is required"},
+		"trailing-json":    {append(append([]byte{}, bytes.TrimRight(command, "\n")...), []byte(" {}\n")...), "trailing JSON"},
+		"oversize":         {[]byte(`{"message_type":"state","x":"` + strings.Repeat("z", MaxFrameBytes) + `"}`), "frame exceeds"},
+		"schema-violation": {[]byte(`{"message_type":"command","protocol_version":1}` + "\n"), `missing required property "command_id"`},
 	}
-	for name, frame := range cases {
-		frame := frame
+	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			if _, err := DecodeRecord(frame); err == nil {
-				t.Fatalf("%s must fail closed, but decoded", name)
+			if _, err := DecodeRecord(tc.frame); err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("%s: err = %v, want %q", name, err, tc.want)
 			}
 		})
 	}

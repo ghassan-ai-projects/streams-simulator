@@ -1,6 +1,6 @@
 // Package app implements the MCP surface's use cases: the director registry
 // of worlds and runs, the operator view a capability token resolves to, the
-// tool handlers and schemas of both roles, and the error taxonomy. The
+// use-case methods behind both roles' tools, and the error taxonomy. The
 // protocol framing is the MCP Go SDK's; the simulator's rules live in the
 // modules it calls.
 package app
@@ -43,4 +43,9 @@ func (e *ToolError) Error() string {
 
 func errTool(code Code, format string, args ...any) *ToolError {
 	return &ToolError{Code: code, Msg: fmt.Sprintf(format, args...)}
+}
+
+// ToolErrorf builds a coded tool failure for the protocol layer's own checks.
+func ToolErrorf(code Code, format string, args ...any) *ToolError {
+	return errTool(code, format, args...)
 }

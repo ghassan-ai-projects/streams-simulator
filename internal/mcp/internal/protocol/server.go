@@ -1,14 +1,19 @@
-package app
+// Package protocol is the MCP driving adapter of the surface: it declares the
+// tools and their closed input schemas, registers them with the SDK, decodes
+// arguments and hands them to the app layer's use cases. It holds no
+// simulator rule and is the only place the MCP SDK is imported.
+package protocol
 
 import (
 	"context"
 	"encoding/json"
 
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 // Implementation identity advertised by the server.
-var implementation = &mcp.Implementation{Name: "streamsim", Version: "0.1.0"}
+var implementation = &mcp.Implementation{Name: "streamsim", Version: model.SimVersion}
 
 // toolDef describes one tool for the SDK wiring.
 type toolDef struct {

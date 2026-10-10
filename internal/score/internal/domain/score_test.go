@@ -10,6 +10,7 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/truth"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
 var pondIDs = []string{"site-a/pond-1", "site-a/pond-2", "site-a/pond-3", "site-a/pond-4",
@@ -58,7 +59,7 @@ func setupFaultedRun(t *testing.T, failureMode, faultID string) (*run.Run, *mode
 		t.Fatal(err)
 	}
 	if failureMode != "ok" {
-		r.SetFailureMode(failureMode)
+		r.SetFailureMode(world.FailureMode(failureMode))
 	}
 	// Sealed label via the solver.
 	solver, err := truth.NewSolver(spec, 11, 60*1e9, 24*3600*1e9)

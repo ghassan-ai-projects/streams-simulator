@@ -8,11 +8,13 @@ package app
 import (
 	"context"
 	"fmt"
+
 	rules "github.com/ghassan-ai-projects/streams-simulator/internal/run/internal/domain"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run/internal/durable"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
 // ReplayResult is the outcome of replaying a run artifact.
@@ -57,6 +59,32 @@ func ReplayArtifact(ctx context.Context, art *model.RunArtifact, spec *domain.Co
 	return finishReplayResult(replay, art, result), nil
 }
 
+// ReplayEvidence is what replaying an artifact recovers beyond the digest
+// comparison: the effector calls the original run made, which the artifact's
+// command log cannot state (applied, refused or silent).
+type ReplayEvidence struct {
+	Result *ReplayResult
+	Calls  []world.EffectorCall
+}
+
+// ReplayArtifactEvidence replays like ReplayArtifact and also returns the
+// replayed world's effector calls, so offline scoring can grade the loop.
+func ReplayArtifactEvidence(ctx context.Context, art *model.RunArtifact, spec *domain.Compiled, adapterSpec *model.Adapter) (*ReplayEvidence, error) {
+	spec, adapterSpec, result, err := prepareReplay(art, spec, adapterSpec)
+	if err != nil {
+		return nil, err
+	}
+	replay, err := newReplayRun(ctx, art, spec, adapterSpec, "")
+	if err != nil {
+		return nil, err
+	}
+	if err := replayCommands(ctx, replay, art.CommandLog); err != nil {
+		return nil, err
+	}
+	calls := append([]world.EffectorCall{}, replay.World.EffectorCalls()...)
+	return &ReplayEvidence{Result: finishReplayResult(replay, art, result), Calls: calls}, nil
+}
+
 func replayInputs(art *model.RunArtifact, spec *domain.Compiled, adapterSpec *model.Adapter) (*domain.Compiled, *model.Adapter, error) {
 	spec, err := replayDomain(art, spec)
 	if err != nil {
@@ -89,6 +117,9 @@ func replayConfig(art *model.RunArtifact, spec *domain.Compiled, adapterSpec *mo
 	cfg.StartTimeSet = true
 	cfg.EntityIDs = art.WorldConfig.EntityIDs
 	cfg.ScenarioProfile = art.WorldConfig.ScenarioProfile
+	cfg.ClockMultiplier = art.WorldConfig.ClockMultiplier
+	cfg.Noiseless = art.WorldConfig.Noiseless
+	cfg.ForceFailureMode = world.FailureMode(art.WorldConfig.ForceFailureMode)
 	if sinkTarget != "" {
 		cfg.SinkName = model.SinkFile
 	}
@@ -109,19 +140,14 @@ func executeCommand(ctx context.Context, r *Run, cmd *model.Command) error {
 	}
 }
 
-// firstDivergentRecord compares the replayed trace against the original
-// artifact's trace digest source by finding the first differing line. The
-// original trace is not stored in the artifact (only its digest), so the
-// divergence index is computed against the expected record count from the
-// ledger length when available; otherwise it reports a digest mismatch.
+// firstDivergentRecord names the first record the replay is missing or has
+// beyond the original run, from the delivery counts. The artifact carries only
+// the trace digest, not the records, so when the counts agree the position of
+// the first differing record is unknown and -1 is returned.
 func firstDivergentRecord(r *Run, art *model.RunArtifact) int {
-	// The ledger preserves delivery order; a replayed ledger of different
-	// length is the first divergence.
-	if int64(len(r.ledger)) != art.Counts.Emitted {
-		if int64(len(r.ledger)) < art.Counts.Emitted {
-			return int(len(r.ledger))
-		}
-		return int(art.Counts.Emitted)
+	replayed := int64(len(r.ledger))
+	if replayed == art.Counts.Emitted {
+		return -1
 	}
-	return -1
+	return int(min(replayed, art.Counts.Emitted))
 }

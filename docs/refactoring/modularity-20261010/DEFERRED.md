@@ -75,7 +75,7 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 
 ## Hygiene and small improvements
 
-- D-43 (M): `test/architecture/determinism_test.go` is a name heuristic; a
+- D-43 (M, FIXED in hardening): the gate was a name heuristic; a
   `go/types` scan finds 46 unmarked map ranges it passes. Order-sensitive
   ones: `truth/internal/domain/solver.go:168` and `audit/scenario_setup.go:65`
   (InjectFault in map order; fault ids `f-N` depend on it, latent because every
@@ -84,7 +84,7 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
   its error). Upgrade the gate to type information and sort the three sites in
   a listed change. `device`/`deviceworld` have 15 ranges (message order,
   capability catalog order; `determinismDebt`).
-- D-44 (L): `world.Entity` returns the live `*Entity`; `ID`/`Type`/`BornNS` are
+- D-44 (L, see hardening): `world.Entity` returns the live `*Entity`; `ID`/`Type`/`BornNS` are
   writable by callers and `BornNS` feeds `InitialEntityIDs`. Return a value
   type or a `HasEntity` query in a listed change.
 - D-45 (L): `EffectorCall.Args` is the caller's map (`recordCall` stores it and
@@ -134,3 +134,28 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
   `sim.truth.seal` needs it before `sim.run.begin` (documented as returned by
   `run.begin`). Callers must derive `r-<n>` from `w-<n>`; the acceptance test
   does. Return `run_id` from `world.create`.
+- **D-52 (domain data)** `cold-chain-transit` declares the `power_transfer_gap`
+  detector on `reefer.link_state` (noise none, sigma 0), a channel the fault
+  does not change. With the solver no longer treating a zero deviation as a
+  detection (D-12) that scenario is correctly unobservable and the nominal
+  suite excludes it; the domain should name the channel the fault affects.
+  Changing the domain changes its digest, so it is left to the domain owner.
+
+> **D-50 closed as not a defect.** `exceptionCadence` does not update
+> `lastSent` itself, but its only caller (`numericReading`) sets
+> `lastSent`/`hasSent` after every emission, so the deadband is measured from
+> the last report. A through-the-world test would have passed before and after.
+
+> **D-28 closed as designed.** The http-push sink posts one line at a time
+> under the run lock because delivery order is part of the trace digest; the
+> 30 s client timeout bounds a stalled receiver. A measured experiment showed
+> the response body needs no explicit drain (Go's transport reuses the
+> connection for small bodies), so there is nothing to fix without an
+> asynchronous, order-preserving sink, which is a design change.
+
+> **Decided in the hardening program.** D-35 (`observation_gain: 0` is read as
+> unset): kept; zero and unset are the same value for the declared floats and
+> the domain contract says so. D-39 (integers beyond 2^53 are written
+> verbatim): kept; seeds are `uint64`, and RFC 8785's double form would map
+> distinct seeds to one digest. Both are documented in the `canonical`
+> package comment. D-36 is fixed (canonical adapter digest, simulator 0.2.0).

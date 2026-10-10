@@ -20,13 +20,9 @@ func (d *Director) BeginRun(worldID, label string) (map[string]any, error) {
 	if w == nil {
 		return nil, errTool(CodeWorldNotFound, "unknown world %q", worldID)
 	}
-	if w.Started {
-		return nil, errTool(CodeDomainInvalid, "a run is already open for %q", worldID)
-	}
-	if err := d.requireSealedRun(w.Run.ID); err != nil {
+	if err := d.openRun(w, worldID); err != nil {
 		return nil, err
 	}
-	w.Started = true
 	return map[string]any{"run_id": w.Run.ID, "truth_sealed": true}, nil
 }
 
@@ -37,7 +33,7 @@ func (d *Director) SealTruth(runID string, rec *model.GroundTruthRecord) error {
 	if w == nil {
 		return errTool(CodeWorldNotFound, "unknown run %q", runID)
 	}
-	if w.Started || w.RunEnded {
+	if started, ended := d.runLifecycle(w); started || ended {
 		return errTool(CodeTruthSealed, "truth must be sealed before run.begin")
 	}
 	if err := d.Truth.Seal(runID, rec); err != nil {
@@ -114,11 +110,34 @@ func (d *Director) AuditScenario(domainID, entityID, fault string, onsetNS, star
 	if err != nil {
 		return nil, err
 	}
+	startNS, durationNS = auditWindow(startNS, durationNS)
 	v, err := panel.Audit(entityID, fault, onsetNS, startNS, auditEntityIDs(spec), durationNS, nil, nil)
 	if err != nil {
 		return nil, errTool(CodeDomainInvalid, "%v", err)
 	}
-	return map[string]any{"trivial": v.Trivial, "scores": v.Scores, "best": v.Best}, nil
+	return map[string]any{"trivial": v.Trivial, "scores": v.Scores, "best": v.Best, "samples": v.Samples}, nil
+}
+
+// The audit defaults mirror the suite generator's (seed 1, 120 s samples, a
+// 72 h scenario from the default world start), so auditing one injection here
+// and generating it in a suite give the same verdict.
+const (
+	auditSeed          = uint64(1) ^ 0x5eed
+	auditSampleNS      = int64(120 * 1e9)
+	auditDefaultWindow = int64(72 * 3600 * 1e9)
+)
+
+// auditWindow fills in an omitted start (the default world start) and an
+// omitted duration (the suite's scenario length) instead of auditing one
+// sample at the Unix epoch.
+func auditWindow(startNS, durationNS int64) (int64, int64) {
+	if startNS == 0 {
+		startNS = model.DefaultStartTimeNS
+	}
+	if durationNS <= 0 {
+		durationNS = auditDefaultWindow
+	}
+	return startNS, durationNS
 }
 
 func (d *Director) auditPanel(domainID string) (*domain.Compiled, *audit.Panel, error) {
@@ -126,7 +145,7 @@ func (d *Director) auditPanel(domainID string) (*domain.Compiled, *audit.Panel, 
 	if err != nil {
 		return nil, nil, errTool(CodeDomainInvalid, "%v", err)
 	}
-	panel, err := audit.NewPanel(spec, 1, 60*1e9)
+	panel, err := audit.NewPanel(spec, auditSeed, auditSampleNS)
 	if err != nil {
 		return nil, nil, errTool(CodeDomainInvalid, "%v", err)
 	}
@@ -157,10 +176,12 @@ func (d *Director) requireSealedRun(runID string) error {
 func (d *Director) finalizeRun(w *WorldRecord, worldID string) (map[string]any, error) {
 	dir := filepath.Join(d.OutDir, worldID)
 	art, err := w.Run.End(dir)
+	// A run that ended with a failure is still over: leaving it open would
+	// make its truth unrevealable and its score unobtainable forever.
+	d.markRunEnded(w)
 	if err != nil {
 		return nil, errTool(CodeDomainInvalid, "%v", err)
 	}
-	w.RunEnded = true
 	return map[string]any{
 		"run_artifact_path": filepath.Join(dir, "run.json"),
 		"trace_digest":      art.ExpectedTraceDigest,

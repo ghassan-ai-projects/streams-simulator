@@ -6,17 +6,24 @@ package domain
 // The files verification compares against arrive through VerifyFiles.
 
 import (
+	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"strings"
 
+	"github.com/ghassan-ai-projects/streams-simulator/internal/jsonschema"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
 // VerifyResult is the outcome of `streamsim adapter verify`.
 type VerifyResult struct {
-	Adapter         string `json:"adapter"`
+	Adapter string `json:"adapter"`
+	// SchemaChecked and GoldenChecked say which checks the adapter declares
+	// and the verification ran; SchemaOK and GoldenMatch are meaningful only
+	// for a check that ran.
+	SchemaChecked   bool   `json:"schema_checked"`
 	SchemaOK        bool   `json:"schema_ok"`
+	GoldenChecked   bool   `json:"golden_checked"`
 	GoldenMatch     bool   `json:"golden_match"`
 	RecordCount     int    `json:"record_count"`
 	FirstDivergence string `json:"first_divergence,omitempty"`
@@ -36,6 +43,9 @@ type VerifyFiles interface {
 // file. base is the directory the adapter's conformance paths resolve
 // against.
 func Verify(a *model.Adapter, fixture []model.SimEvent, base string, src VerifyFiles) (*VerifyResult, error) {
+	if len(fixture) == 0 {
+		return nil, fmt.Errorf("adapter: the conformance fixture holds no events")
+	}
 	if err := validateStrictObservedOrder(fixture); err != nil {
 		return nil, fmt.Errorf("adapter: %w", err)
 	}
@@ -84,19 +94,28 @@ func verifyOutputSchema(a *model.Adapter, out []byte, base string, src VerifyFil
 	if a.Conformance == nil || a.Conformance.OutputSchema == "" {
 		return true, nil
 	}
+	res.SchemaChecked = true
 	path := resolveConformancePath(base, a.Conformance.OutputSchema)
 	schema, err := loadOutputSchema(path, src)
 	if err != nil {
 		return false, err
 	}
-	records := splitRecords(out)
-	return validateOutputRecords(records, schema, filepath.Base(path), res), nil
+	return validateRenderedRecords(a, out, schema, filepath.Base(path), res)
+}
+
+func validateRenderedRecords(a *model.Adapter, out []byte, schema *jsonschema.Schema, name string, res *VerifyResult) (bool, error) {
+	records, err := splitRecords(out, a.Encoding)
+	if err != nil {
+		return false, fmt.Errorf("adapter: %w", err)
+	}
+	return validateOutputRecords(records, schema, name, res), nil
 }
 
 func verifyGolden(a *model.Adapter, out []byte, base string, src VerifyFiles, res *VerifyResult) error {
 	if a.Conformance == nil || a.Conformance.Golden == "" {
 		return nil
 	}
+	res.GoldenChecked = true
 	return compareGolden(resolveConformancePath(base, a.Conformance.Golden), out, src, res)
 }
 
@@ -129,7 +148,28 @@ func resolveConformancePath(base, p string) string {
 	return filepath.Join(base, p)
 }
 
-func splitRecords(out []byte) []string {
+// splitRecords returns the rendered records: one per non-empty line for
+// jsonl, the elements of the array for json-array.
+func splitRecords(out []byte, encoding string) ([]string, error) {
+	if encoding == "json-array" {
+		return arrayRecords(out)
+	}
+	return lineRecords(out), nil
+}
+
+func arrayRecords(out []byte) ([]string, error) {
+	var elements []json.RawMessage
+	if err := json.Unmarshal(out, &elements); err != nil {
+		return nil, fmt.Errorf("json-array output is not a JSON array: %w", err)
+	}
+	records := make([]string, len(elements))
+	for i, element := range elements {
+		records[i] = string(element)
+	}
+	return records, nil
+}
+
+func lineRecords(out []byte) []string {
 	lines := strings.Split(strings.TrimSuffix(string(out), "\n"), "\n")
 	var recs []string
 	for _, l := range lines {

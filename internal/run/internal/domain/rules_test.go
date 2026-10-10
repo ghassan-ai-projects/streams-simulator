@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ghassan-ai-projects/streams-simulator/internal/canonical"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
@@ -54,7 +55,7 @@ func TestValidateArtifactDocumentNamesThePathOfInvalidJSON(t *testing.T) {
 	if err := ValidateArtifactDocument([]byte(`{`), "run.json"); err == nil || !strings.Contains(err.Error(), "run.json") {
 		t.Fatalf("err = %v", err)
 	}
-	if err := ValidateArtifactDocument([]byte(`{}`), "run.json"); err == nil {
+	if err := ValidateArtifactDocument([]byte(`{}`), "run.json"); err == nil || !strings.Contains(err.Error(), "streamsim: model: artifact fails run-artifact-v0.1: missing required property \"adapter\"") {
 		t.Fatal("an empty object does not satisfy the run-artifact schema")
 	}
 }
@@ -103,5 +104,27 @@ func TestValidateSubmittedVerdictAppliesTheContractSchema(t *testing.T) {
 	t.Parallel()
 	if err := ValidateSubmittedVerdict(&model.Verdict{}); err == nil || !strings.Contains(err.Error(), "SubmitVerdict") {
 		t.Fatalf("an empty verdict must fail the contract: %v", err)
+	}
+}
+
+func TestAdapterDigestIsTheCanonicalDigestOfItsJSONForm(t *testing.T) {
+	t.Parallel()
+	adapter := &model.Adapter{ID: "a", Version: "1", Encoding: "jsonl", Title: "t"}
+	got := AdapterDigest(adapter)
+	raw, err := json.Marshal(adapter)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var form map[string]any
+	if err := json.Unmarshal(raw, &form); err != nil {
+		t.Fatal(err)
+	}
+	want, err := canonical.Digest(form)
+	if err != nil || got != want {
+		t.Fatalf("AdapterDigest = %s, want the RFC 8785 digest %s (%v)", got, want, err)
+	}
+	adapter.Raw = []byte(`{  "id":"a"  }`)
+	if again := AdapterDigest(adapter); again != got {
+		t.Fatalf("the digest must not depend on how the source file was formatted: %s vs %s", again, got)
 	}
 }

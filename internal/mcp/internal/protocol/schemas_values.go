@@ -1,9 +1,23 @@
-package app
+package protocol
 
-import "encoding/json"
+import (
+	"encoding/json"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+)
 
 func stringSchema() map[string]any  { return map[string]any{"type": "string"} }
 func integerSchema() map[string]any { return map[string]any{"type": "integer"} }
+
+// maxMCPSeed is the largest seed MCP can carry exactly: JSON numbers reach the
+// handler as float64, and every integer up to 2^53-1 is exact in float64.
+// A larger seed would be rounded without notice, so it is refused instead.
+const maxMCPSeed = 1<<53 - 1
+
+func seedSchema() map[string]any {
+	return map[string]any{"type": "integer", "minimum": 0, "maximum": maxMCPSeed}
+}
+
 func booleanSchema() map[string]any { return map[string]any{"type": "boolean"} }
 func objectSchema() map[string]any {
 	return map[string]any{"type": "object", "additionalProperties": true}
@@ -54,13 +68,13 @@ func clockAdvanceChoice() []any {
 func worldCreationProperties() map[string]any {
 	return map[string]any{
 		"domain":           stringSchema(),
-		"seed":             integerSchema(),
+		"seed":             seedSchema(),
 		"entities":         stringArraySchema(),
 		"scenario_profile": stringSchema(),
 		"sink":             enumSchema("inproc", "file", "http-push"),
 		"sink_target":      stringSchema(),
 		"adapter":          stringSchema(),
-		"time_mode":        enumSchema("stepped", "scaled", "wall"),
+		"time_mode":        enumSchema(model.TimeStepped, model.TimeWall),
 		"start_time":       integerSchema(),
 		"label":            stringSchema(),
 	}

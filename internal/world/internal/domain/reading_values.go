@@ -1,8 +1,9 @@
 package domain
 
 import (
-	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"math"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
 func (w *World) stringReading(ent *Entity, ch *model.Channel, cs *channelRunState, at int64) (bool, any) {

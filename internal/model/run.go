@@ -52,6 +52,11 @@ type WorldConfig struct {
 	ScenarioProfile string           `json:"scenario_profile,omitempty"`
 	Sinks           []map[string]any `json:"sinks,omitempty"`
 	ClockMultiplier float64          `json:"clock_multiplier,omitempty"`
+	// Noiseless and ForceFailureMode are world-identity inputs: the world
+	// digest hashes them, so the artifact must carry them for a replay to
+	// rebuild the same world.
+	Noiseless        bool   `json:"noiseless,omitempty"`
+	ForceFailureMode string `json:"force_failure_mode,omitempty"`
 }
 
 // Command is one mutation in the total order that reproduces a run.
@@ -86,14 +91,21 @@ const (
 	SinkInproc   = "inproc"
 	SinkFile     = "file"
 	SinkHTTPPush = "http-push"
-	SinkBroker   = "broker"
 )
 
-// Time modes.
+// Time modes. The run-artifact contract also lists "scaled"; nothing
+// implements it, so the simulator accepts only these two.
 const (
 	TimeStepped = "stepped"
-	TimeScaled  = "scaled"
 	TimeWall    = "wall"
+)
+
+// Scenario profile names every domain declares (the domain contract's closed
+// set): the suite generator composes a suite from them.
+const (
+	ProfileNominal           = "nominal"
+	ProfileCorrelatedCascade = "correlated_cascade"
+	ProfileSensorPathology   = "sensor_pathology"
 )
 
 // Platform is recorded so cross-architecture digest divergence is

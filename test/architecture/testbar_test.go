@@ -188,39 +188,6 @@ func TestPlanningVocabularyPatternIsSpecific(t *testing.T) {
 	}
 }
 
-// unnamedErrorAssertions is the ratchet of tests that only assert an error
-// occurred (`if err == nil { t.Fatal }`) without saying which (T4). A file may
-// only lower its count; the table is empty when the last one is fixed.
-var unnamedErrorAssertions = map[string]int{
-	"internal/canonical/canonical_test.go":                       4,
-	"internal/device/device_test.go":                             3,
-	"internal/device/internal/domain/capabilities_test.go":       1,
-	"internal/device/internal/domain/codec_test.go":              1,
-	"internal/device/internal/domain/conformance_test.go":        1,
-	"internal/device/internal/domain/fault_schedule_test.go":     1,
-	"internal/device/internal/uds/uds_test.go":                   1,
-	"internal/device/uds_test.go":                                1,
-	"internal/deviceworld/deviceworld_test.go":                   1,
-	"internal/deviceworld/internal/domain/bindings_test.go":      3,
-	"internal/domain/internal/domain/domain_test.go":             2,
-	"internal/mcp/internal/app/capability_test.go":               3,
-	"internal/model/model_test.go":                               2,
-	"internal/perturb/internal/domain/perturb_test.go":           1,
-	"internal/perturb/perturb_test.go":                           2,
-	"internal/refconsumer/internal/domain/process_steps_test.go": 1,
-	"internal/run/internal/app/artifact_test.go":                 2,
-	"internal/run/internal/app/sink_equivalence_test.go":         2,
-	"internal/run/internal/domain/rules_test.go":                 1,
-	"internal/run/run_test.go":                                   2,
-	"internal/sink/internal/files/file_test.go":                  1,
-	"internal/sink/internal/httppush/httppush_test.go":           1,
-	"internal/truth/internal/domain/truth_test.go":               5,
-	"internal/truth/truth_test.go":                               2,
-	"internal/world/internal/domain/effector_order_test.go":      1,
-	"internal/world/internal/domain/effector_test.go":            4,
-	"internal/world/world_test.go":                               2,
-}
-
 func TestErrorAssertionsNameTheErrorTheyExpect(t *testing.T) {
 	t.Parallel()
 	counts := map[string]int{}
@@ -236,14 +203,7 @@ func TestErrorAssertionsNameTheErrorTheyExpect(t *testing.T) {
 		})
 	}
 	for path, count := range counts {
-		if count > unnamedErrorAssertions[path] {
-			t.Errorf("%s: %d tests assert only that an error occurred (allowed %d): check errors.Is/As or the message", path, count, unnamedErrorAssertions[path])
-		}
-	}
-	for path, allowed := range unnamedErrorAssertions {
-		if counts[path] < allowed {
-			t.Errorf("unnamedErrorAssertions is stale: %s has %d, table says %d", path, counts[path], allowed)
-		}
+		t.Errorf("%s: %d tests assert only that an error occurred: check errors.Is/As or the message (T4)", path, count)
 	}
 }
 

@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
@@ -16,7 +17,7 @@ func TestEffectorValidatesArgumentsBeforeIdempotentReplay(t *testing.T) {
 	if _, err := w.InvokeEffector("act", "e-1", "command", map[string]any{"level": 1.0}, w.Clock()); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := w.InvokeEffector("act", "e-1", "command", map[string]any{"level": "invalid"}, w.Clock()); err == nil {
+	if _, err := w.InvokeEffector("act", "e-1", "command", map[string]any{"level": "invalid"}, w.Clock()); err == nil || !strings.Contains(err.Error(), "InvokeEffector: world: invalid args for \"act\": expected type number, got string") {
 		t.Fatal("invalid retry must fail argument validation before cached replay")
 	}
 	if len(w.EffectorCalls()) != 1 {

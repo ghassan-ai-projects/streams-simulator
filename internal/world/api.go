@@ -23,6 +23,10 @@ type FaultInfo = layer.FaultInfo
 // Entity is one simulated producer, as hosts may read it.
 type Entity = layer.Entity
 
+// FailureMode is how an effector invocation went; its JSON form is the plain
+// string.
+type FailureMode = layer.FailureMode
+
 // Effector failure modes: the closed vocabulary of InvokeResult.Mode.
 const (
 	ModeOK                = layer.ModeOK
@@ -37,6 +41,14 @@ const (
 // ErrInterlockRefused is the terminal refusal of an independent safety
 // system. Refusal is not a retryable error.
 var ErrInterlockRefused = layer.ErrInterlockRefused
+
+// ErrCommandIDReused is returned by InvokeEffector when a command_id inside
+// its idempotency window names a different request than it first did.
+var ErrCommandIDReused = layer.ErrCommandIDReused
+
+// ErrClockBackwards is returned by Advance when the target time is before the
+// current world time.
+var ErrClockBackwards = layer.ErrClockBackwards
 
 // ErrNoSpec is returned by New when no domain spec is given.
 var ErrNoSpec = errors.New("world: a domain spec is required")

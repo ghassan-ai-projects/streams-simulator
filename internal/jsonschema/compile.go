@@ -1,6 +1,10 @@
 package jsonschema
 
-import "fmt"
+import (
+	"fmt"
+	"maps"
+	"slices"
+)
 
 // Compile builds a Schema from a decoded JSON Schema document. Definitions are
 // registered before the root is filled so recursive references remain valid.
@@ -34,6 +38,7 @@ func schemaDefinitions(m map[string]any) map[string]any {
 
 func definitionRegistry(defs map[string]any) map[string]*Schema {
 	reg := map[string]*Schema{}
+	// determinism-safe: fills a map; no order is observable.
 	for name := range defs {
 		reg[name] = &Schema{addAllowed: true}
 	}
@@ -41,7 +46,8 @@ func definitionRegistry(defs map[string]any) map[string]*Schema {
 }
 
 func fillDefinitions(defs map[string]any, reg map[string]*Schema) error {
-	for name, raw := range defs {
+	for _, name := range slices.Sorted(maps.Keys(defs)) {
+		raw := defs[name]
 		m, ok := raw.(map[string]any)
 		if !ok {
 			return fmt.Errorf("jsonschema: $defs/%s must be an object", name)

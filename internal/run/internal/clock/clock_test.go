@@ -1,3 +1,5 @@
+//go:build !simdet
+
 package clock
 
 import (
@@ -5,13 +7,13 @@ import (
 	"time"
 )
 
-func TestStampIsUTCRFC3339Nano(t *testing.T) {
+func TestStampIsTheCurrentUTCTime(t *testing.T) {
 	t.Parallel()
-	parsed, err := time.Parse(time.RFC3339Nano, Stamp())
+	stamp, err := time.Parse(time.RFC3339Nano, Stamp())
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("stamp is not RFC 3339: %v", err)
 	}
-	if parsed.Location() != time.UTC {
-		t.Fatalf("location = %v", parsed.Location())
+	if delta := time.Since(stamp); delta < 0 || delta > time.Minute {
+		t.Fatalf("stamp is %v away from now", delta)
 	}
 }

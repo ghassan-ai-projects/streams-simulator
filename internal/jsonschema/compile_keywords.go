@@ -2,6 +2,8 @@ package jsonschema
 
 import (
 	"fmt"
+	"maps"
+	"slices"
 	"sort"
 )
 
@@ -49,7 +51,8 @@ func fillProperties(s *Schema, m, defs map[string]any, reg map[string]*Schema, d
 }
 
 func fillPropertySchemas(s *Schema, properties, defs map[string]any, reg map[string]*Schema, depth int) error {
-	for name, sub := range properties {
+	for _, name := range slices.Sorted(maps.Keys(properties)) {
+		sub := properties[name]
 		cs, err := compileProperty(name, sub, defs, reg, depth)
 		if err != nil {
 			return err
@@ -90,7 +93,9 @@ func fillArrayKeywords(s *Schema, m map[string]any, defs map[string]any, reg map
 	if err := fillSubschema(&s.items, m["items"], defs, reg, depth); err != nil {
 		return err
 	}
-	fillArrayCardinality(s, m)
+	if err := fillArrayCardinality(s, m); err != nil {
+		return err
+	}
 	return fillSubschema(&s.contains, m["contains"], defs, reg, depth)
 }
 
@@ -130,18 +135,29 @@ func fillTypeArray(s *Schema, types []any) error {
 	return nil
 }
 
-func fillArrayCardinality(s *Schema, m map[string]any) {
-	if v, ok := m["minItems"]; ok {
-		s.minItems = toInt(v)
-		s.hasMinItems = true
+func fillArrayCardinality(s *Schema, m map[string]any) error {
+	var err error
+	if s.minItems, s.hasMinItems, err = countKeyword(m, "minItems"); err != nil {
+		return err
 	}
-	if v, ok := m["maxItems"]; ok {
-		s.maxItems = toInt(v)
-		s.hasMaxItems = true
+	if s.maxItems, s.hasMaxItems, err = countKeyword(m, "maxItems"); err != nil {
+		return err
 	}
-	if v, ok := m["uniqueItems"]; ok {
-		s.uniqueItems = v.(bool)
+	s.uniqueItems, err = booleanKeyword(m, "uniqueItems")
+	return err
+}
+
+// booleanKeyword reads an optional boolean keyword, false when absent.
+func booleanKeyword(m map[string]any, key string) (bool, error) {
+	raw, ok := m[key]
+	if !ok {
+		return false, nil
 	}
+	value, isBool := raw.(bool)
+	if !isBool {
+		return false, fmt.Errorf("jsonschema: %s must be a boolean", key)
+	}
+	return value, nil
 }
 
 func fillEnum(s *Schema, m map[string]any) error {

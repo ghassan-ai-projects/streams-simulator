@@ -176,6 +176,7 @@ func adapterListings(adapters map[string]*model.Adapter) []map[string]any {
 
 func sortedAdapterIDs(adapters map[string]*model.Adapter) []string {
 	ids := make([]string, 0, len(adapters))
+	// determinism-safe: collected ids are sorted below.
 	for id := range adapters {
 		ids = append(ids, id)
 	}
@@ -198,8 +199,18 @@ func verifyAdapterFile(path, base string) (any, error) {
 	if err != nil {
 		return nil, fmt.Errorf("streamsim: %w", err)
 	}
-	if !res.SchemaOK || !res.GoldenMatch {
-		return nil, fmt.Errorf("adapter verify FAILED: %s", res.FirstDivergence)
+	return adapterVerdict(res)
+}
+
+// adapterVerdict fails the command when a declared check failed, or when the
+// adapter declares none, so "verified" always means something was compared.
+func adapterVerdict(res *adapter.VerifyResult) (any, error) {
+	if !res.SchemaChecked && !res.GoldenChecked {
+		return nil, fmt.Errorf("adapter verify: %s declares no conformance schema or golden to check", res.Adapter)
 	}
-	return map[string]any{"adapter": res.Adapter, "schema_ok": true, "golden_match": true, "records": res.RecordCount}, nil
+	if (res.SchemaChecked && !res.SchemaOK) || (res.GoldenChecked && !res.GoldenMatch) {
+		return nil, fmt.Errorf("adapter verify FAILED: %s", strings.TrimSpace(res.FirstDivergence+" "+res.Detail))
+	}
+	return map[string]any{"adapter": res.Adapter, "schema_ok": res.SchemaOK, "golden_match": res.GoldenMatch,
+		"schema_checked": res.SchemaChecked, "golden_checked": res.GoldenChecked, "records": res.RecordCount}, nil
 }

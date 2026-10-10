@@ -224,6 +224,7 @@ anything else; it may never remove these.
 | [LEVEL2_REMAINING_PLAN.md](LEVEL2_REMAINING_PLAN.md) | The Level 2 execution plan (slices A–G, complete) |
 | [MCP_INTERACTION_REVIEW.md](MCP_INTERACTION_REVIEW.md) | External live-interaction review of the MCP surface |
 | [reviews/ARCHITECTURE_REVIEW.md](reviews/ARCHITECTURE_REVIEW.md) | Architecture and quality review (2026-09-30 second pass, snapshot `4e26cc1`): five initial lenses, seven further perspectives, corrected evidence, six new findings, reproducible probes and ordered acceptance gates |
+| [simulation-ideas/README.md](simulation-ideas/README.md) | Candidate simulation-idea portfolio: method, raw candidate pool and four-angle research notes, five-lens review evidence, and ten ideas scored against the quality bar (none met it; best 80/100) |
 
 ## 8. Technology
 

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
@@ -17,7 +18,7 @@ func TestCapabilityTokenEnforced(t *testing.T) {
 	worldID := createWorld(t, d)
 	w := d.Worlds[worldID]
 	// Without the token every operator call is refused.
-	if _, err := w.Operator.ReadNameplate(""); err == nil {
+	if _, err := w.Operator.ReadNameplate(""); err == nil || !strings.Contains(err.Error(), "capability_denied: capability token required") {
 		t.Fatal("nameplate.read without token must fail")
 	}
 	np, err := w.Operator.ReadNameplate(w.Token)
@@ -35,7 +36,7 @@ func TestCapabilityTokenEnforced(t *testing.T) {
 	}
 	// Missing command_id refused.
 	_, err = w.Operator.Invoke(w.Token, "start_aerator", "site-a/pond-1", "", nil, 0)
-	if err == nil {
+	if err == nil || !strings.Contains(err.Error(), "missing_command_id: command_id is the idempotency key and is required") {
 		t.Fatal("missing command_id must fail")
 	}
 }
@@ -64,7 +65,7 @@ func TestBeginRunRequiresSealedTruth(t *testing.T) {
 	t.Parallel()
 	d := newTestDirector(t)
 	worldID := createWorld(t, d)
-	if _, err := d.BeginRun(worldID, "missing-truth"); err == nil {
+	if _, err := d.BeginRun(worldID, "missing-truth"); err == nil || !strings.Contains(err.Error(), "truth_sealed: ground truth must be sealed before run.begin") {
 		t.Fatal("run.begin must refuse an unsealed oracle")
 	}
 }
@@ -164,5 +165,81 @@ func TestClosedLoopThroughMCPSurface(t *testing.T) {
 	}
 	if !sc.Loop.Resolved {
 		t.Fatalf("loop did not resolve: %+v", sc.Loop)
+	}
+}
+
+func TestRevealRefusesALabelForARunTheDirectorDoesNotKnow(t *testing.T) {
+	t.Parallel()
+	d := newTestDirector(t)
+	rec := &model.GroundTruthRecord{ScenarioID: "x/1", Domain: "aquaculture-pond", Label: "l", EntityID: "e"}
+	if err := d.Truth.Seal("r-unknown", rec); err != nil {
+		t.Fatal(err)
+	}
+	_, err := d.RevealTruth("r-unknown", false)
+	var tool *ToolError
+	if !errors.As(err, &tool) || tool.Code != CodeTruthSealed || !strings.Contains(tool.Msg, "open run") {
+		t.Fatalf("an unknown run must be treated as open: err = %v", err)
+	}
+}
+
+// Two callers racing to open the same run: exactly one wins and the race
+// detector sees no unsynchronised access to the run state.
+func TestConcurrentBeginRunOpensTheRunOnce(t *testing.T) {
+	t.Parallel()
+	d := newTestDirector(t)
+	worldID := createWorld(t, d)
+	w := d.World(worldID)
+	if err := d.SealTruth(w.Run.ID, &model.GroundTruthRecord{ScenarioID: "race/1", Domain: "aquaculture-pond", Label: "l", EntityID: "e"}); err != nil {
+		t.Fatal(err)
+	}
+	const callers = 8
+	results := make(chan error, callers)
+	for range callers {
+		go func() {
+			_, err := d.BeginRun(worldID, "race")
+			results <- err
+		}()
+	}
+	opened := 0
+	for range callers {
+		if err := <-results; err == nil {
+			opened++
+		}
+	}
+	if opened != 1 {
+		t.Fatalf("%d callers opened the run, want exactly 1", opened)
+	}
+}
+
+// A run that failed mid-way is still over: its end is reported as an error,
+// but the world must not stay "open", or its truth could never be revealed
+// and its evidence never scored.
+func TestARunThatEndedWithAFailureIsStillClosed(t *testing.T) {
+	t.Parallel()
+	d := newTestDirector(t)
+	created, err := d.CreateWorld(map[string]any{
+		"domain": "aquaculture-pond", "seed": float64(3), "adapter": "native-jsonl",
+		"sink": model.SinkHTTPPush, "sink_target": "http://127.0.0.1:1/unreachable", "time_mode": model.TimeStepped,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	worldID, _ := created["world_id"].(string)
+	w := d.World(worldID)
+	if err := d.SealTruth(w.Run.ID, &model.GroundTruthRecord{ScenarioID: "f/1", Domain: "aquaculture-pond", Label: "l", EntityID: "e"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := d.BeginRun(worldID, "failing"); err != nil {
+		t.Fatal(err)
+	}
+	_, _ = d.Advance(t.Context(), worldID, model.DefaultStartTimeNS+600*1e9, false)
+	if _, err := d.EndRun(worldID); err == nil || !strings.HasPrefix(err.Error(), "domain_invalid: run r-1 aborted: sink: http-push POST") {
+		t.Fatalf("a run whose sink failed must report the failure when it ends: %v", err)
+	}
+	if d.runIsOpen(w.Run.ID) {
+		t.Fatal("a run that ended with a failure must not stay open")
+	}
+	if _, err := d.RevealTruth(w.Run.ID, false); err != nil {
+		t.Fatalf("the sealed label of a finished run must be revealable: %v", err)
 	}
 }

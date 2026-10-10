@@ -10,8 +10,23 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
 )
 
-// cmdReplay serves both replay and verify: each reproduces the run and
-// reports whether the trace digest matches.
+// cmdVerify replays the artifact like cmdReplay but fails the command when
+// the replay does not reproduce the recorded trace, so scripts can gate on
+// the exit status. The result document is still printed.
+func cmdVerify(s *session, args []string) (any, error) {
+	result, err := cmdReplay(s, args)
+	if err != nil {
+		return nil, err
+	}
+	report, _ := result.(map[string]any)
+	if report["matches"] == true {
+		return result, nil
+	}
+	return result, fmt.Errorf("verify: replay does not reproduce the artifact: %v", report["detail"])
+}
+
+// cmdReplay reproduces the run and reports whether the trace digest matches;
+// it exits 0 whatever the outcome (see cmdVerify).
 func cmdReplay(s *session, args []string) (any, error) {
 	fs, domainsDir, adaptersDir, err := parseReplayOptions(args, s.stderr)
 	if err != nil {

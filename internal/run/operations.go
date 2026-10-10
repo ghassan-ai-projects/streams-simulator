@@ -20,6 +20,12 @@ func ReplayArtifact(ctx context.Context, art *model.RunArtifact, spec *domain.Co
 	return layer.ReplayArtifact(ctx, art, spec, adapterSpec, sinkTarget)
 }
 
+// ReplayArtifactEvidence replays an artifact like ReplayArtifact and also
+// returns the effector calls the replayed world made.
+func ReplayArtifactEvidence(ctx context.Context, art *model.RunArtifact, spec *domain.Compiled, adapterSpec *model.Adapter) (*ReplayEvidence, error) {
+	return layer.ReplayArtifactEvidence(ctx, art, spec, adapterSpec)
+}
+
 // Advance moves the world to toNS, delivering what it emits through the
 // perturbation layer, adapter and sink; with awaitConsumer it then waits for
 // the consumer to quiesce.
@@ -118,6 +124,11 @@ func (r *Run) UnblindedStamp() bool {
 	return r.run.UnblindedStamp()
 }
 
+// Finished reports whether End has closed the run, cleanly or not.
+func (r *Run) Finished() bool {
+	return r.run.Finished()
+}
+
 // End closes the run, publishes its evidence under outDir when set, and
 // returns the run artifact.
 func (r *Run) End(outDir string) (*model.RunArtifact, error) {
@@ -141,6 +152,17 @@ func (r *Run) SetQuiesceParkedHook(h func()) {
 }
 
 // SetFailureMode overrides the effector failure-mode selection (test hook).
-func (r *Run) SetFailureMode(mode string) {
+func (r *Run) SetFailureMode(mode world.FailureMode) {
 	r.run.SetFailureMode(mode)
+}
+
+// Status reads the world's clock and queues between commands, so it never
+// overlaps an advance.
+func (r *Run) Status() WorldStatus {
+	return r.run.Status()
+}
+
+// Faults lists the active faults between commands.
+func (r *Run) Faults() []world.FaultInfo {
+	return r.run.Faults()
 }

@@ -2,6 +2,8 @@ package domain
 
 import (
 	"fmt"
+	"maps"
+	"slices"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/perturb"
@@ -62,11 +64,11 @@ func (capture *auditCapture) bindEmitter(w *world.World, layer *perturb.Layer) {
 }
 
 func injectAuditFaults(w *world.World, entity string, faults map[string]int64) error {
-	for fault, at := range faults {
+	for _, fault := range slices.Sorted(maps.Keys(faults)) {
 		if fault == "" {
 			continue
 		}
-		if _, err := w.InjectFault(entity, fault, at, nil); err != nil {
+		if _, err := w.InjectFault(entity, fault, faults[fault], nil); err != nil {
 			return fmt.Errorf("build: %w", err)
 		}
 	}

@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
+	"slices"
 )
 
 func decodeBindings(data []byte) (*bindingsDocument, error) {
@@ -32,8 +34,8 @@ func rejectTrailingBindings(decoder *json.Decoder) error {
 
 func compileBindings(documents map[string]bindingDocument, entity string) (map[string]Binding, error) {
 	bindings := make(map[string]Binding, len(documents))
-	for target, document := range documents {
-		binding, err := compileBinding(target, document, entity)
+	for _, target := range slices.Sorted(maps.Keys(documents)) {
+		binding, err := compileBinding(target, documents[target], entity)
 		if err != nil {
 			return nil, err
 		}

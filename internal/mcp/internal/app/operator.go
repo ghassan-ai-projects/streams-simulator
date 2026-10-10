@@ -9,6 +9,8 @@ package app
 // must read.
 
 import (
+	"errors"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
@@ -32,6 +34,10 @@ type VerdictSink interface {
 type OperatorResolver interface {
 	ResolveOperator(token string) (*OperatorView, error)
 }
+
+// SingleView resolves every token against one OperatorView, which authorizes
+// it: a single world served on its own.
+func SingleView(v *OperatorView) OperatorResolver { return viewResolver{v: v} }
 
 // viewResolver adapts one OperatorView to the resolver interface.
 type viewResolver struct{ v *OperatorView }
@@ -86,8 +92,11 @@ type NameplateChannel struct {
 // OperatorView is the entire operator surface. Constructed per world from
 // data the world's author declares; never from runtime state.
 type OperatorView struct {
-	WorldID   string
-	Token     string // capability token minted at world creation
+	WorldID string
+	Token   string // capability token minted at world creation
+	// RunID is the run this capability reports against. A report naming any
+	// other run is refused; empty means the view is not bound to one run.
+	RunID     string
 	Nameplate *Nameplate
 	Invoker   EffectorInvoker
 	Verdicts  VerdictSink
@@ -132,6 +141,9 @@ func (v *OperatorView) Invoke(token, effector, entityID, commandID string, args 
 		return nil, err
 	}
 	res, err := v.Invoker.InvokeEffector(effector, entityID, commandID, args, atNS)
+	if errors.Is(err, world.ErrCommandIDReused) {
+		return nil, errTool(CodeInvalidArgs, "command_id was already used for a different request")
+	}
 	if err != nil {
 		return nil, errTool(CodeEffectorRefused, "the effector declined")
 	}
@@ -142,16 +154,36 @@ func (v *OperatorView) Invoke(token, effector, entityID, commandID string, args 
 // returns an acknowledgement and never a score: submitting cannot be used
 // to probe for the answer.
 func (v *OperatorView) Report(token, runID string, quiescedThroughNS int64, verdict *model.Verdict) error {
-	if !v.authorized(token) {
-		return errTool(CodeCapabilityDenied, "capability token required")
+	if err := v.admitReport(token, runID); err != nil {
+		return err
+	}
+	// The verdict is judged first: a refused report changes nothing, so a
+	// consumer cannot advance quiescence with a verdict that will not stand.
+	if err := v.submit(verdict); err != nil {
+		return err
 	}
 	if quiescedThroughNS > 0 {
 		v.Verdicts.ReportQuiesced(quiescedThroughNS)
 	}
-	if verdict != nil {
-		if err := v.Verdicts.SubmitVerdict(verdict); err != nil {
-			return errTool(CodeInvalidArgs, "verdict rejected: %v", err)
-		}
+	return nil
+}
+
+func (v *OperatorView) submit(verdict *model.Verdict) error {
+	if verdict == nil {
+		return nil
+	}
+	if err := v.Verdicts.SubmitVerdict(verdict); err != nil {
+		return errTool(CodeInvalidArgs, "verdict rejected: %v", err)
+	}
+	return nil
+}
+
+func (v *OperatorView) admitReport(token, runID string) error {
+	if !v.authorized(token) {
+		return errTool(CodeCapabilityDenied, "capability token required")
+	}
+	if v.RunID != "" && runID != v.RunID {
+		return errTool(CodeInvalidArgs, "run_id does not name this world's run")
 	}
 	return nil
 }

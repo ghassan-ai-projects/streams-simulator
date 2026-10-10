@@ -51,5 +51,17 @@ func noteReplayDivergence(replay *Run, art *model.RunArtifact, result *ReplayRes
 	index := firstDivergentRecord(replay, art)
 	if index >= 0 {
 		result.FirstDivergence = &index
+		result.Detail = divergenceDetail(result.Detail,
+			fmt.Sprintf("replayed %d records, artifact recorded %d", len(replay.ledger), art.Counts.Emitted))
+		return
 	}
+	result.Detail = divergenceDetail(result.Detail,
+		"trace digest differs with the same record count; the artifact keeps only the digest, so the first differing record is not known")
+}
+
+func divergenceDetail(existing, note string) string {
+	if existing == "" {
+		return note
+	}
+	return existing + "; " + note
 }

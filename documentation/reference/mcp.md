@@ -1,6 +1,6 @@
 # Model Context Protocol (MCP) reference
 
-> Status: Implemented reference. Authority: `internal/mcp/internal/app/` (`schemas.go`, `operator.go`, `director.go`). Verified by: MCP strictness and operator tests. Last verified: 2026-08-17.
+> Status: Implemented reference. Authority: `internal/mcp/internal/protocol/` (`schemas.go`, tool registration) and `internal/mcp/internal/app/` (`operator.go`, `director.go`). Verified by: MCP strictness and operator tests. Last verified: 2026-08-17.
 
 Streams Simulator exposes one MCP server with two role surfaces:
 
@@ -46,7 +46,7 @@ The `sim.world.create` response includes the endpoint when configured and always
 | `sim.scenario.audit` | Run the trivial-baseline audit for one injection. | `domain`, `entity_id`, `fault`; optional times. |
 | `sim.entity.retire` | Retire an entity. | `world_id`, `entity_id`, `reason`. |
 
-The authoritative input schemas are defined and enforced beside the handlers in [`internal/mcp/internal/app/schemas.go`](../../internal/mcp/internal/app/schemas.go). Unknown properties are rejected at the MCP schema boundary; domain-dependent checks such as effector names and argument schemas happen in the handler.
+The authoritative input schemas are defined and enforced beside the handlers in [`internal/mcp/internal/protocol/schemas.go`](../../internal/mcp/internal/protocol/schemas.go). Unknown properties are rejected at the MCP schema boundary; domain-dependent checks such as effector names and argument schemas happen in the handler.
 
 ## Operator tools
 
@@ -63,7 +63,7 @@ The operator view contains no truth store, fault registry, perturbation log, or 
 
 | Tool | Fields and defaults |
 | --- | --- |
-| `sim.world.create` | `domain` is required. `seed` defaults to `1`, `adapter` to `native-jsonl`, `sink` to `inproc`, and `time_mode` to `stepped`. `sink_target` is required for `file` and `http-push`. Optional `entities`, `scenario_profile`, `start_time`, and `label` are recorded in the world configuration. |
+| `sim.world.create` | `domain` is required. `seed` defaults to `1` and must be an integer from 0 to 9007199254740991 (2^53-1; larger values would not survive JSON numbers exactly), `adapter` to `native-jsonl`, `sink` to `inproc`, and `time_mode` to `stepped`. `sink_target` is required for `file` and `http-push`. Optional `entities`, `scenario_profile`, `start_time`, and `label` are recorded in the world configuration. |
 | `sim.clock.advance` | `world_id` plus exactly one of `by_ns` or `to_ns` is required. `by_ns` is non-negative. `await_consumer` defaults false; when true, the call waits for the consumer’s quiescence report or returns `consumer_not_quiesced`. |
 | `sim.effector.invoke` | `token`, `effector`, `entity_id`, and unique `command_id` are required. `args` defaults to an empty object and is checked against the domain-declared argument schema. `at_ns` defaults to the current world clock. |
 | `sim.consumer.report` | `token` and `run_id` are required. `quiesced_through_ns` is optional; `verdict` is optional when the consumer is reporting only quiescence. The response acknowledges acceptance and never includes a score. |
@@ -72,7 +72,7 @@ The operator view contains no truth store, fault registry, perturbation log, or 
 
 ## Minimal director/operator sequence
 
-The identifiers come from earlier responses: `world_id`, `token`, and `run_id` are returned by world creation or run begin. The ground-truth record is created by the director, never by the consumer.
+The identifiers come from earlier responses: `world_id`, `run_id` and `token` are returned by world creation (and `run_id` again by run begin). The ground-truth record is created by the director, never by the consumer.
 
 1. Call `sim.world.create` with a domain and, for a closed loop, a configured operator endpoint:
 
@@ -80,7 +80,7 @@ The identifiers come from earlier responses: `world_id`, `token`, and `run_id` a
    {"domain":"rotating-machinery","seed":7,"adapter":"native-jsonl","sink":"file","sink_target":"runs/w-1/trace.jsonl","time_mode":"stepped"}
    ```
 
-   The response includes `world_id`, `world_digest`, `entity_ids`, `clock`, `token`, and `operator_endpoint` when HTTP operator serving is enabled.
+   The response includes `world_id`, `run_id`, `world_digest`, `entity_ids`, `clock`, `token`, and `operator_endpoint` when HTTP operator serving is enabled.
 2. Call `sim.truth.seal` with the director-generated `ground_truth`, then call `sim.run.begin` with `world_id`. `run.begin` returns `run_id` and confirms `truth_sealed`.
 3. Call `sim.clock.advance` with either `by_ns` or `to_ns`. Set `await_consumer: true` at a boundary where the consumer must have processed the delivered evidence.
 4. Over the operator endpoint, call `sim.nameplate.read` and `sim.effector.list`, then invoke declared actions with `sim.effector.invoke`. Preserve the same `command_id` across retries. Submit the verdict and quiescence through `sim.consumer.report`.

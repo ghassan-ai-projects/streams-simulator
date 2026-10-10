@@ -82,7 +82,7 @@ func TestStoreUnblindStampsTheRunAndRefusesDoubleSealAndUnknownRuns(t *testing.T
 	if err := store.Seal("r-1", &model.GroundTruthRecord{Label: "g"}); err == nil || !strings.Contains(err.Error(), "already sealed") {
 		t.Fatalf("second seal: %v", err)
 	}
-	if _, err := store.Reveal("r-1", false); err == nil {
+	if _, err := store.Reveal("r-1", false); err == nil || !strings.Contains(err.Error(), "truth: reveal refused on an open run (call with unblind:true to stamp and reveal)") {
 		t.Fatal("an open run must not reveal without unblind")
 	}
 	if got, err := store.Reveal("r-1", true); err != nil || got.Label != "f" {
@@ -105,7 +105,7 @@ func TestStoreWithoutAnOpenRunCheckOrBackingStoreFailsClosed(t *testing.T) {
 	if err := nilCheck.Seal("r-1", &model.GroundTruthRecord{Label: "f"}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := nilCheck.Reveal("r-1", false); err == nil {
+	if _, err := nilCheck.Reveal("r-1", false); err == nil || !strings.Contains(err.Error(), "truth: reveal refused on an open run (call with unblind:true to stamp and reveal)") {
 		t.Fatal("a store without an open-run check must refuse to reveal")
 	}
 	var zero truth.Store

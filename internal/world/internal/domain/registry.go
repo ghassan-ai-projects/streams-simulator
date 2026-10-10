@@ -29,5 +29,12 @@ func (w *World) AddEntity(id string, atNS int64) error {
 	return w.addEntity(id, atNS)
 }
 
-// Entity returns the entity by id, or nil.
-func (w *World) Entity(id string) *Entity { return w.entities[id] }
+// Entity returns a snapshot of the entity by id, or nil. The caller gets a
+// copy of the identity fields: writing to it cannot change the world.
+func (w *World) Entity(id string) *Entity {
+	live := w.entities[id]
+	if live == nil {
+		return nil
+	}
+	return &Entity{ID: live.ID, Type: live.Type, BornNS: live.BornNS, alive: live.alive}
+}

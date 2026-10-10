@@ -1,4 +1,4 @@
-package app
+package protocol
 
 import (
 	"context"
@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"testing"
 	"time"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/mcp/internal/app"
 
 	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
 
@@ -17,7 +19,7 @@ import (
 
 // startOperatorEndpoint binds the operator role over streamable HTTP, the
 // same wiring the CLI's --operator-addr uses.
-func startOperatorEndpoint(t *testing.T, d *Director) string {
+func startOperatorEndpoint(t *testing.T, d *app.Director) string {
 	t.Helper()
 	opServer := NewOperatorServerResolver(d)
 	handler := mcpsdk.NewStreamableHTTPHandler(func(*http.Request) *mcpsdk.Server { return opServer }, nil)

@@ -3,6 +3,7 @@ package domain
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"testing"
 
@@ -38,7 +39,7 @@ func TestLeaseExpiryInvokesWorldSafeStop(t *testing.T) {
 		t.Fatalf("expired lease must de-energize device output: %v", state["current_output"])
 	}
 	calls := w.EffectorCalls()
-	if len(calls) != 2 || calls[1].CommandID != "safe-stop/fan-01" {
+	if len(calls) != 2 || calls[1].CommandID != "safe-stop/fan-01/1" {
 		t.Fatalf("lease expiry must invoke the world safe-stop path, calls = %+v", calls)
 	}
 	if calls[1].Effector != "stop_fan" || w.StateValue(entity, "fan_duty_true", w.Clock()) != 0 {
@@ -99,4 +100,34 @@ func deviceCaps(t *testing.T) *device.Capabilities {
 		t.Fatal(err)
 	}
 	return caps
+}
+
+func TestEverySafeStopAppliesItsOwnWorldEffect(t *testing.T) {
+	t.Parallel()
+	w := coldChainWorld(t, 1)
+	entity := w.EntityIDs()[0]
+	plant := New(w, loadBindings(t, entity))
+	duty := func() float64 { return w.StateValue(entity, "fan_duty_true", w.Clock()) }
+	at := w.Clock() / 1000
+
+	for round := 1; round <= 3; round++ {
+		command := device.PlantCommand{
+			Target: "fan-01", Operation: "set_fan_duty", Params: map[string]float64{"duty_permille": 600},
+			CommandID: fmt.Sprintf("duty-%d", round), AtMicros: at,
+		}
+		if _, err := plant.Apply(command); err != nil {
+			t.Fatalf("round %d: apply: %v", round, err)
+		}
+		if duty() != 600 {
+			t.Fatalf("round %d: fan duty after the command = %v, want 600", round, duty())
+		}
+		at += 1000
+		if _, err := plant.SafeStop("fan-01", at); err != nil {
+			t.Fatalf("round %d: safe stop: %v", round, err)
+		}
+		if got := duty(); got != 0 {
+			t.Fatalf("round %d: a safe stop inside the idempotency window must still clear the fan, duty = %v", round, got)
+		}
+		at += 1000
+	}
 }

@@ -3,6 +3,8 @@ package domain
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
+	"slices"
 )
 
 // paramCheck validates one declared parameter value. Perturbation parameters
@@ -88,7 +90,7 @@ func validateParams(name string, params map[string]any) error {
 		return nil
 	}
 	rules, declared := paramRules[name]
-	for key := range params {
+	for _, key := range slices.Sorted(maps.Keys(params)) {
 		if err := validateParameter(name, key, params[key], rules, declared); err != nil {
 			return err
 		}

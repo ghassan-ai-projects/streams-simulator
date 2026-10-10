@@ -24,7 +24,7 @@ func (w *World) validateArgs(eff *model.Effector, args map[string]any) error {
 }
 
 // pickFailureMode samples from the declared failure-mode distribution.
-func (w *World) pickFailureMode(entityID string, eff *model.Effector) string {
+func (w *World) pickFailureMode(entityID string, eff *model.Effector) FailureMode {
 	if w.forceEffectorOK {
 		return ModeOK
 	}
@@ -41,12 +41,12 @@ func (w *World) pickFailureMode(entityID string, eff *model.Effector) string {
 // SetFailureMode overrides the failure-mode selection for subsequent
 // invocations ("" restores the declared distribution). Test-only knob; the
 // distribution is fixed per run otherwise.
-func (w *World) SetFailureMode(mode string) {
+func (w *World) SetFailureMode(mode FailureMode) {
 	w.forceFailureMode = mode
 }
 
 // ackLatency samples the ack latency; slow mode is 10x (bounded).
-func (w *World) ackLatency(entityID string, eff *model.Effector, mode string) float64 {
+func (w *World) ackLatency(entityID string, eff *model.Effector, mode FailureMode) float64 {
 	rng := w.substream(entityID + "/" + eff.Name + "/delay")
 	mean := acknowledgementMean(eff)
 	latency := mean + eff.Ack.LatencyMS.Sigma*rng.Norm()
@@ -88,7 +88,7 @@ func (w *World) effectorArgumentSchema(eff *model.Effector) (*jsonschema.Schema,
 	return schema, nil
 }
 
-func sampleFailureMode(eff *model.Effector, rng *randutil.SplitMix64) string {
+func sampleFailureMode(eff *model.Effector, rng *randutil.SplitMix64) FailureMode {
 	total := failureModeWeight(eff)
 	if total <= 0 {
 		return ModeOK
@@ -96,7 +96,7 @@ func sampleFailureMode(eff *model.Effector, rng *randutil.SplitMix64) string {
 	draw := rng.Float64() * total
 	for _, mode := range eff.Ack.FailureModes {
 		if draw < mode.Probability {
-			return mode.Mode
+			return FailureMode(mode.Mode)
 		}
 		draw -= mode.Probability
 	}

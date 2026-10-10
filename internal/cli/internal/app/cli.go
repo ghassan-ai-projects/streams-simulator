@@ -34,7 +34,7 @@ var commandHandlers = map[string]handler{
 	"adapter":     cmdAdapter,
 	"run":         cmdRun,
 	"replay":      cmdReplay,
-	"verify":      cmdReplay,
+	"verify":      cmdVerify,
 	"mcp":         cmdMCP,
 	"refconsumer": cmdRefconsumer,
 	"suite":       cmdSuite,
@@ -80,12 +80,20 @@ func (s *session) unknownCommand(command string) int {
 	return 2
 }
 
-// execute runs the handler and prints its result as indented JSON on stdout.
+// execute runs the handler, prints its result as indented JSON on stdout
+// (even when the command also fails, as verify does) and returns the exit
+// status.
 func (s *session) execute(stdout io.Writer, command handler, args []string) int {
 	result, err := command(s, args)
-	if err == nil && result != nil {
-		err = printJSON(stdout, result)
+	if result != nil {
+		if printErr := printJSON(stdout, result); err == nil {
+			err = printErr
+		}
 	}
+	return s.exitStatus(err)
+}
+
+func (s *session) exitStatus(err error) int {
 	if err == nil {
 		return 0
 	}

@@ -40,7 +40,7 @@ func TestReplayRejectsInputDigestMismatch(t *testing.T) {
 	bad := *art
 	bad.Domain = art.Domain
 	bad.Domain.Digest = "sha256:" + strings.Repeat("0", 64)
-	if _, err := ReplayArtifact(context.Background(), &bad, spec, a, ""); err == nil {
+	if _, err := ReplayArtifact(context.Background(), &bad, spec, a, ""); err == nil || !strings.Contains(err.Error(), "run: domain digest mismatch") {
 		t.Fatal("replay must reject a changed domain digest before execution")
 	}
 }
@@ -111,10 +111,90 @@ func TestEnvInjectRejectsUndefinedParams(t *testing.T) {
 		t.Fatal(err)
 	}
 	r.ConfigureEnvTarget("consumer-1", true)
-	if _, err := r.EnvInject("consumer-1", "pause", map[string]any{"duration_s": 30}, start); err == nil {
+	if _, err := r.EnvInject("consumer-1", "pause", map[string]any{"duration_s": 30}, start); err == nil || !strings.Contains(err.Error(), "run: env fault \"pause\" accepts no parameters (got 1)") {
 		t.Fatal("env.inject params must be rejected (none declared)")
 	}
 	if _, err := r.EnvInject("consumer-1", "pause", nil, start); err != nil {
 		t.Fatalf("env.inject without params rejected: %v", err)
+	}
+}
+
+func TestReplayDivergenceSaysWhatIsAndIsNotKnown(t *testing.T) {
+	t.Parallel()
+	spec, a := testBase(t)
+	cfg := Config{
+		Domain: spec, Adapter: a, Seed: 5, SinkName: model.SinkInproc,
+		TimeMode: model.TimeStepped, StartTimeNS: model.DefaultStartTimeNS + 4*3600*1e9,
+	}
+	wrongDigest := "sha256:" + strings.Repeat("0", 64)
+
+	sameCount := buildArtifact(t, cfg)
+	sameCount.ExpectedTraceDigest = wrongDigest
+	res, err := ReplayArtifact(context.Background(), sameCount, spec, a, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Matches || res.FirstDivergence != nil || !strings.Contains(res.Detail, "first differing record is not known") {
+		t.Fatalf("same count, different digest: %+v", res)
+	}
+
+	longer := buildArtifact(t, cfg)
+	longer.ExpectedTraceDigest = wrongDigest
+	longer.Counts.Emitted += 5
+	res, err = ReplayArtifact(context.Background(), longer, spec, a, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.FirstDivergence == nil || int64(*res.FirstDivergence) != longer.Counts.Emitted-5 {
+		t.Fatalf("a replay shorter than the artifact diverges at the replayed length: %+v", res)
+	}
+	if !strings.Contains(res.Detail, "recorded") {
+		t.Fatalf("detail = %q", res.Detail)
+	}
+}
+
+// Every input the world digest hashes must be in the artifact, or a run
+// built with it could never be replayed: the replayed world would hash to a
+// different identity.
+func TestReplayRebuildsTheWorldIdentityInputsOfTheArtifact(t *testing.T) {
+	t.Parallel()
+	spec, a := testBase(t)
+	cfg := Config{
+		Domain: spec, Adapter: a, Seed: 5, SinkName: model.SinkInproc,
+		TimeMode: model.TimeStepped, StartTimeNS: model.DefaultStartTimeNS,
+		Noiseless: true, ForceFailureMode: "confirmed_no_effect", ClockMultiplier: 2,
+	}
+	art := buildArtifact(t, cfg)
+	if !art.WorldConfig.Noiseless || art.WorldConfig.ForceFailureMode != "confirmed_no_effect" || art.WorldConfig.ClockMultiplier != 2 {
+		t.Fatalf("the artifact must record the world-identity inputs: %+v", art.WorldConfig)
+	}
+	res, err := ReplayArtifact(context.Background(), art, spec, a, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !res.Matches {
+		t.Fatalf("replay of a noiseless forced-failure run must reproduce it: %+v", res)
+	}
+}
+
+// An artifact built by another simulator version can carry digests computed
+// by that version's rules: the replay runs and says so, instead of failing
+// before it can report the version difference.
+func TestReplayOfAnotherVersionReportsItsInputDigestsInsteadOfFailing(t *testing.T) {
+	t.Parallel()
+	spec, a := testBase(t)
+	art := buildArtifact(t, Config{
+		Domain: spec, Adapter: a, Seed: 6, SinkName: model.SinkInproc,
+		TimeMode: model.TimeStepped, StartTimeNS: model.DefaultStartTimeNS + 4*3600*1e9,
+	})
+	old := *art
+	old.SimVersion = "0.1.0"
+	old.Adapter.Digest = "sha256:" + strings.Repeat("0", 64)
+	res, err := ReplayArtifact(context.Background(), &old, spec, a, "")
+	if err != nil {
+		t.Fatalf("a replay of another version must report, not fail: %v", err)
+	}
+	if res.VersionMatch || !strings.Contains(res.Detail, "recorded input digests were not reproduced") {
+		t.Fatalf("result = %+v, want a version mismatch naming the digests", res)
 	}
 }

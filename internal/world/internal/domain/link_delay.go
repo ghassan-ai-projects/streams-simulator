@@ -1,9 +1,10 @@
 package domain
 
 import (
+	"math"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/randutil"
-	"math"
 )
 
 func sampleLinkDelay(delay *model.LinkDelay, rng *randutil.SplitMix64) float64 {

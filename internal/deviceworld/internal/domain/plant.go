@@ -27,12 +27,16 @@ type Binding struct {
 type Plant struct {
 	w        *world.World
 	bindings map[string]Binding
+	// safeStops counts safe stops per target: each one is its own world
+	// command, so the world's idempotency window never replays an earlier
+	// stop as if it were the current one.
+	safeStops map[string]int
 }
 
 // New returns a world-backed plant. bindings maps device targets (e.g.
 // "fan-01") to world effector invocations.
 func New(w *world.World, bindings map[string]Binding) *Plant {
-	return &Plant{w: w, bindings: bindings}
+	return &Plant{w: w, bindings: bindings, safeStops: map[string]int{}}
 }
 
 // Apply invokes the bound world effector for an accepted device command and

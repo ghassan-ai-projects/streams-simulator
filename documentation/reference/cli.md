@@ -44,7 +44,7 @@ streamsim adapter [list|verify] [flags]
 Flags:
 
 - `--adapters-dir <path>` — adapter directory; defaults to `adapters`.
-- `adapter verify <path>` — verifies the selected adapter.
+- `adapter verify <path>` — renders the conformance fixture and checks it against the adapter's declared output schema and golden file. It fails when a declared check fails, and when the adapter declares neither (nothing would be compared); the result reports `schema_checked` and `golden_checked`.
 
 ### `device serve`
 
@@ -98,14 +98,14 @@ streamsim run [flags]
 | `--out` | empty | Artifact output directory. |
 | `--duration` | `21600` | Duration in seconds. |
 | `--start-time` | `2026-01-01T00:00:00Z` | World start as epoch nanoseconds. |
-| `--fault` | empty | Comma-separated `entity=fault@offset_s` entries. |
-| `--perturb` | empty | Comma-separated `name@from_s[@until_s]` entries. The optional end time is a second `@`-separated value. |
-| `--effector` | empty | Comma-separated `effector@entity@offset_s` entries. The CLI currently sends empty arguments; use MCP for typed effector arguments. |
+| `--fault` | empty | Repeatable; each occurrence may be comma-separated `entity=fault@offset_s` entries. |
+| `--perturb` | empty | Repeatable; each occurrence may be comma-separated `name@from_s[@until_s]` entries. The optional end time is a second `@`-separated value. |
+| `--effector` | empty | Repeatable. `effector@entity@offset_s[@{"arg":value}]`; the optional JSON object carries the effector arguments (required by every shipped effector). Command ids are `cli-0`, `cli-1`, … in order, so identical invocations record identical command logs. Entries without arguments may still be comma-separated within one occurrence; an entry with arguments takes an occurrence of its own. |
 | `--profile` | empty | Scenario profile name. |
 
 ### `replay` and `verify`
 
-Both load a run artifact and replay its command log. `verify` is the explicit verification spelling used in scripts. The current CLI also loads the matching domain and adapter from `domains/` and `adapters/`; keep those directories available or override them with the flags.
+Both load a run artifact, replay its command log and print the result as one JSON document. `replay` exits 0 whatever the outcome; `verify` exits 1 when the replay does not reproduce the recorded trace digest (a simulator-version difference alone does not fail it; it is reported in `version_match` and `detail`), so scripts can gate on it. The current CLI also loads the matching domain and adapter from `domains/` and `adapters/`; keep those directories available or override them with the flags.
 
 ```text
 streamsim replay <run.json> [--domains-dir <path>] [--adapters-dir <path>]
@@ -162,10 +162,10 @@ Flags:
 
 ### `score`
 
-Scores a run from artifact files. `--run` is required; `--label` is optional and defaults to `label.json` beside the run artifact. The command reads `verdict.json` beside the artifact.
+Scores a run from the files it published, with the scorer the director uses online, so the offline and online scorecards of one run agree. The one input the files cannot carry is a `reveal` with `unblind:true` made after the run ended: the artifact stamps unblinding at its end, so that later reveal affects only the online scorer. `--run` is required; `--label` defaults to `label.json` beside the run artifact. The command reads `verdict.json`, `ledger.jsonl` and `world_state_history.jsonl` beside the artifact, and replays the artifact (against `--domains-dir` and `--adapters-dir`) to recover the effector calls the command log cannot state. A replay that does not reproduce the recorded trace is refused, not graded.
 
 ```text
-streamsim score --run <run.json> [--label <label.json>]
+streamsim score --run <run.json> [--label <label.json>] [--domains-dir <path>] [--adapters-dir <path>]
 ```
 
 ### `manifest`

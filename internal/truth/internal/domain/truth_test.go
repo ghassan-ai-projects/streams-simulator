@@ -2,6 +2,7 @@ package domain
 
 import (
 	"math"
+	"strings"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
@@ -149,7 +150,7 @@ func TestStoreSealing(t *testing.T) {
 	rec.TrivialBaselineDetail["accuracy"] = 0
 	rec.Counterfactual.IfNoAction = "mutated"
 	// Open run: reveal refused without unblind.
-	if _, err := s.Reveal("r-1", false); err == nil {
+	if _, err := s.Reveal("r-1", false); err == nil || !strings.Contains(err.Error(), "truth: reveal refused on an open run (call with unblind:true to stamp and reveal)") {
 		t.Fatal("reveal on an open run must be refused")
 	}
 	got, err := s.Reveal("r-1", true)
@@ -170,10 +171,10 @@ func TestStoreSealing(t *testing.T) {
 	if err != nil || got2.Label != "f" || got2.Observability.Channels[0] != "c1" {
 		t.Fatalf("stored oracle was mutable: got=%+v err=%v", got2, err)
 	}
-	if err := s.Seal("r-1", &model.GroundTruthRecord{}); err == nil {
+	if err := s.Seal("r-1", &model.GroundTruthRecord{}); err == nil || !strings.Contains(err.Error(), "truth: run \"r-1\" is already sealed") {
 		t.Fatal("resealing a run must fail")
 	}
-	if _, err := s.Reveal("r-nope", false); err == nil {
+	if _, err := s.Reveal("r-nope", false); err == nil || !strings.Contains(err.Error(), "truth: no sealed label for run \"r-nope\"") {
 		t.Fatal("unknown run must fail")
 	}
 }
@@ -187,7 +188,7 @@ func TestRevealRefusesOpenRunsAndAllowsClosedOnes(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if _, err := s.Reveal("r-open", false); err == nil {
+	if _, err := s.Reveal("r-open", false); err == nil || !strings.Contains(err.Error(), "truth: reveal refused on an open run (call with unblind:true to stamp and reveal)") {
 		t.Fatal("an open run must refuse reveal without unblind")
 	}
 	if got, err := s.Reveal("r-closed", false); err != nil || got.Label != "r-closed" {
@@ -207,7 +208,7 @@ func TestStoreWithoutOpenRunCheckFailsClosed(t *testing.T) {
 	if err := s.Seal("r-1", &model.GroundTruthRecord{Label: "f"}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := s.Reveal("r-1", false); err == nil {
+	if _, err := s.Reveal("r-1", false); err == nil || !strings.Contains(err.Error(), "truth: reveal refused on an open run (call with unblind:true to stamp and reveal)") {
 		t.Fatal("reveal without a check must be refused")
 	}
 	if got, err := s.Reveal("r-1", true); err != nil || got.Label != "f" {

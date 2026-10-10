@@ -2,6 +2,7 @@ package device_test
 
 import (
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/device"
@@ -26,7 +27,7 @@ func TestFacadeAppliesACommandReportsStateAndSetsFaults(t *testing.T) {
 
 func TestLoadCapabilitiesAndFaultSpecsAreValidatedAtTheFacade(t *testing.T) {
 	t.Parallel()
-	if _, err := device.LoadCapabilities([]byte(`{"not":"a catalog"}`)); err == nil {
+	if _, err := device.LoadCapabilities([]byte(`{"not":"a catalog"}`)); err == nil || !strings.Contains(err.Error(), "device: decode capabilities: json: unknown field \"not\"") {
 		t.Fatal("an invalid catalog must be refused")
 	}
 	entry, err := device.ParseFaultSpec("ack_lost@2")
@@ -36,10 +37,10 @@ func TestLoadCapabilitiesAndFaultSpecsAreValidatedAtTheFacade(t *testing.T) {
 	if err := device.ValidateFaultSchedule([]device.FaultInjection{entry}); err != nil {
 		t.Fatal(err)
 	}
-	if err := device.ValidateFaultSchedule([]device.FaultInjection{{Name: "no_such_fault", AcceptedCommand: 1}}); err == nil {
+	if err := device.ValidateFaultSchedule([]device.FaultInjection{{Name: "no_such_fault", AcceptedCommand: 1}}); err == nil || !strings.Contains(err.Error(), "device: unknown fault \"no_such_fault\"") {
 		t.Fatal("an unknown fault name must be refused")
 	}
-	if _, err := device.ParseFaultSpec("garbage"); err == nil {
+	if _, err := device.ParseFaultSpec("garbage"); err == nil || !strings.Contains(err.Error(), "device: unknown fault \"garbage\"") {
 		t.Fatal("an unparsable fault spec must be refused")
 	}
 }

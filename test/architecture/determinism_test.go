@@ -1,66 +1,76 @@
 package architecture
 
 // Determinism guard: no output-producing code may range over a map, because
-// map iteration order is unspecified. The gate collects every map-typed
-// field and variable of a package (all its files, layers included) and fails
-// on a `range` over one in production code unless a "determinism-safe"
-// comment sits on or just above the loop. It lints a rule Go cannot express.
+// map iteration order is unspecified. The gate type-checks every production
+// package and fails on a `range` whose operand's type is a map unless a
+// "determinism-safe" comment states why the order cannot reach an output
+// (the keys are sorted afterwards, the loop only copies or aggregates, ...).
+// It lints a rule Go cannot express, using types, not names.
 
 import (
 	"go/ast"
+	"go/token"
+	"go/types"
 	"strings"
 	"testing"
+
+	xpackages "golang.org/x/tools/go/packages"
 )
 
 const determinismMarker = "determinism-safe"
 
-// determinismDebt lists packages the map-iteration gate does not yet cover
-// (it covered the world, perturbation, run and scoring packages before this
-// program). Their map ranges only order which error message or catalog entry
-// surfaces first (DEFERRED D-38), never emitted records; each entry leaves
-// when its module is migrated and the ranges are made ordered.
-var determinismDebt = map[string]string{
-	"internal/device/internal/domain":      "capability and fault validation order (D-38); module M11 (layer)",
-	"internal/deviceworld/internal/domain": "binding validation order (D-38); module M7 (layer)",
-}
-
 func TestNoMapIterationInOutputCode(t *testing.T) {
 	t.Parallel()
-	byPackage := map[string][]productionFile{}
-	for _, file := range productionFiles(t) {
-		byPackage[file.pkgDir] = append(byPackage[file.pkgDir], file)
+	loaded, err := xpackages.Load(&xpackages.Config{
+		Mode: xpackages.NeedName | xpackages.NeedFiles | xpackages.NeedSyntax | xpackages.NeedTypes |
+			xpackages.NeedTypesInfo | xpackages.NeedImports | xpackages.NeedDeps,
+		Dir: "../..",
+	}, "./internal/...", "./cmd/...")
+	if err != nil {
+		t.Fatalf("type-check the module: %v", err)
 	}
-	for directory, files := range byPackage {
-		if _, debt := determinismDebt[directory]; debt {
-			continue
+	for _, pkg := range loaded {
+		for _, problem := range pkg.Errors {
+			t.Fatalf("package %s does not type-check: %v", pkg.PkgPath, problem)
 		}
-		fields, vars := mapNames(files)
-		for _, file := range files {
-			markers := markerLines(file)
-			ast.Inspect(file.source, func(node ast.Node) bool {
-				statement, ok := node.(*ast.RangeStmt)
-				if !ok || !rangesMap(statement.X, fields, vars) {
-					return true
-				}
-				line := file.fset.Position(statement.Pos()).Line
-				if !markers[line-1] && !markers[line] && !markers[line+1] {
-					t.Errorf("%s:%d (%s): ranging over a map in output code is nondeterministic", file.path, line, directory)
-				}
-				return true
-			})
+		for _, file := range pkg.Syntax {
+			checkMapRanges(t, pkg, file)
 		}
 	}
+}
+
+func checkMapRanges(t *testing.T, pkg *xpackages.Package, file *ast.File) {
+	t.Helper()
+	markers := markerLines(pkg.Fset, file)
+	ast.Inspect(file, func(node ast.Node) bool {
+		statement, ok := node.(*ast.RangeStmt)
+		if !ok || !isMapType(pkg.TypesInfo.TypeOf(statement.X)) {
+			return true
+		}
+		position := pkg.Fset.Position(statement.Pos())
+		if !markers[position.Line-1] && !markers[position.Line] && !markers[position.Line+1] {
+			t.Errorf("%s:%d: ranging over a map is order-dependent; sort the keys or add a %q comment saying why the order cannot reach output",
+				strings.TrimPrefix(position.Filename, repositoryPrefix(position.Filename)), position.Line, determinismMarker)
+		}
+		return true
+	})
+}
+
+func isMapType(t types.Type) bool {
+	if t == nil {
+		return false
+	}
+	_, isMap := t.Underlying().(*types.Map)
+	return isMap
 }
 
 // markerLines returns the lines a determinism marker comment covers.
-func markerLines(file productionFile) map[int]bool {
+func markerLines(fset *token.FileSet, file *ast.File) map[int]bool {
 	lines := map[int]bool{}
-	for _, group := range file.source.Comments {
+	for _, group := range file.Comments {
 		for _, comment := range group.List {
 			if strings.Contains(comment.Text, determinismMarker) {
-				start := file.fset.Position(comment.Pos()).Line
-				end := file.fset.Position(comment.End()).Line
-				for line := start; line <= end; line++ {
+				for line := fset.Position(comment.Pos()).Line; line <= fset.Position(comment.End()).Line; line++ {
 					lines[line] = true
 				}
 			}
@@ -69,91 +79,13 @@ func markerLines(file productionFile) map[int]bool {
 	return lines
 }
 
-// mapNames returns the names of map-typed struct fields and of map-typed
-// variables across the files of one package.
-func mapNames(files []productionFile) (fields, vars map[string]bool) {
-	fields, vars = map[string]bool{}, map[string]bool{}
-	for _, file := range files {
-		ast.Inspect(file.source, func(node ast.Node) bool {
-			switch x := node.(type) {
-			case *ast.TypeSpec:
-				recordMapFields(x, fields)
-			case *ast.ValueSpec:
-				recordMapValues(x, vars)
-			case *ast.AssignStmt:
-				recordMapAssignments(x, vars)
-			}
-			return true
-		})
-	}
-	return fields, vars
-}
-
-func recordMapFields(spec *ast.TypeSpec, fields map[string]bool) {
-	structure, ok := spec.Type.(*ast.StructType)
-	if !ok {
-		return
-	}
-	for _, field := range structure.Fields.List {
-		if _, isMap := field.Type.(*ast.MapType); isMap {
-			for _, name := range field.Names {
-				fields[name.Name] = true
-			}
+// repositoryPrefix returns the absolute path up to and including the first
+// "internal/" or "cmd/" element, so reports show repository-relative paths.
+func repositoryPrefix(filename string) string {
+	for _, element := range []string{"/internal/", "/cmd/"} {
+		if index := strings.Index(filename, element); index >= 0 {
+			return filename[:index+1]
 		}
 	}
-}
-
-func recordMapValues(spec *ast.ValueSpec, vars map[string]bool) {
-	for i, name := range spec.Names {
-		if len(spec.Values) > i {
-			if _, isMap := spec.Values[i].(*ast.MapType); isMap {
-				vars[name.Name] = true
-			}
-		}
-		if _, isMap := spec.Type.(*ast.MapType); isMap {
-			vars[name.Name] = true
-		}
-	}
-}
-
-func recordMapAssignments(assignment *ast.AssignStmt, vars map[string]bool) {
-	for i, target := range assignment.Lhs {
-		ident, ok := target.(*ast.Ident)
-		if !ok || len(assignment.Rhs) <= i {
-			continue
-		}
-		switch rhs := assignment.Rhs[i].(type) {
-		case *ast.MapType:
-			vars[ident.Name] = true
-		case *ast.CallExpr:
-			if makesMap(rhs) {
-				vars[ident.Name] = true
-			}
-		}
-	}
-}
-
-func makesMap(call *ast.CallExpr) bool {
-	function, ok := call.Fun.(*ast.Ident)
-	if !ok || function.Name != "make" || len(call.Args) == 0 {
-		return false
-	}
-	_, isMap := call.Args[0].(*ast.MapType)
-	return isMap
-}
-
-// rangesMap reports whether the ranged expression is a known map. Indexing a
-// map yields its value (usually a slice), which is safe to range.
-func rangesMap(expr ast.Expr, fields, vars map[string]bool) bool {
-	switch x := expr.(type) {
-	case *ast.MapType:
-		return true
-	case *ast.Ident:
-		return vars[x.Name]
-	case *ast.SelectorExpr:
-		return fields[x.Sel.Name]
-	case *ast.CallExpr:
-		return rangesMap(x.Fun, fields, vars)
-	}
-	return false
+	return ""
 }

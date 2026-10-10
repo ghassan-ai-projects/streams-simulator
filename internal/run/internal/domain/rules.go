@@ -90,10 +90,24 @@ func fnv(b []byte) uint64 {
 	return h
 }
 
-// AdapterDigest is the canonical digest of an adapter document.
+// AdapterDigest is the RFC 8785 canonical digest of an adapter's JSON form,
+// so it does not depend on struct field order or on how the source file was
+// formatted. (An explicit zero kept out by `omitempty` is not part of the
+// form: the digest identifies the adapter as the simulator understands it.)
 func AdapterDigest(a *model.Adapter) string {
-	raw, _ := json.Marshal(a)
-	return canonical.DigestBytes(raw)
+	raw, err := json.Marshal(a)
+	if err != nil {
+		return "invalid-adapter-digest:" + err.Error()
+	}
+	var form any
+	if err := model.DecodeBytes(raw, &form); err != nil {
+		return "invalid-adapter-digest:" + err.Error()
+	}
+	digest, err := canonical.Digest(form)
+	if err != nil {
+		return "invalid-adapter-digest:" + err.Error()
+	}
+	return digest
 }
 
 // ValidateSubmittedVerdict refuses a verdict the run cannot accept.

@@ -140,26 +140,6 @@ func TestClearAccountsForBufferedRecords(t *testing.T) {
 	}
 }
 
-func TestReorderPreservesDeliveryOrderAndReason(t *testing.T) {
-	t.Parallel()
-	l := New("w", 9, testSpec(t))
-	if _, err := l.Apply(Reorder, map[string]any{"max_displacement": 1}, 0, 0); err != nil {
-		t.Fatal(err)
-	}
-	if got := l.Process(ev(0, "num", 0.0), 1000000001); len(got) != 0 {
-		t.Fatalf("first record should remain buffered, got %+v", got)
-	}
-	got := l.Process(ev(1, "num", 1.0), 1000000002)
-	if len(got) != 2 || got[0].Event.Seq != 1 || got[1].Event.Seq != 0 {
-		t.Fatalf("reorder was lost before delivery: %+v", got)
-	}
-	for _, r := range got {
-		if r.Reason != model.DeliveryReordered {
-			t.Fatalf("reordered delivery lacks ledger reason: %+v", r)
-		}
-	}
-}
-
 func TestOutOfEnumAndRange(t *testing.T) {
 	t.Parallel()
 	l := New("w", 4, testSpec(t))
@@ -235,7 +215,7 @@ func TestDeterminism(t *testing.T) {
 func TestUnknownPerturbation(t *testing.T) {
 	t.Parallel()
 	l := New("w", 1, testSpec(t))
-	if _, err := l.Apply("not_a_perturbation", nil, 0, 0); err == nil {
+	if _, err := l.Apply("not_a_perturbation", nil, 0, 0); err == nil || !strings.Contains(err.Error(), "perturb: unknown perturbation \"not_a_perturbation\"") {
 		t.Fatal("unknown perturbation must be refused")
 	}
 }

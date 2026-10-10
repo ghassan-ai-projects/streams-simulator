@@ -70,7 +70,6 @@ type Device struct {
 	capabilityDigest string
 	plant            Plant
 	clock            func() int64
-	manualMono       int64
 	capabilities     *Capabilities
 	faults           Faults
 	faultSchedule    map[int][]string
@@ -96,7 +95,9 @@ func New(cfg Config) *Device {
 	if cfg.Clock != nil {
 		d.clock = cfg.Clock
 	} else {
-		d.clock = func() int64 { return d.manualMono }
+		// A device built without a clock reads time zero: nothing advances
+		// it, so a lease never expires on its own.
+		d.clock = func() int64 { return 0 }
 	}
 	return d
 }

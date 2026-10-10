@@ -7,7 +7,6 @@ package durable
 import (
 	"bufio"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -66,10 +65,4 @@ func (l *Ledger) Finish() error {
 		return fmt.Errorf("End: close ledger: %w", err)
 	}
 	return nil
-}
-
-// Closed reports whether the ledger file has been closed by Finish.
-func (l *Ledger) Closed() bool {
-	_, err := l.file.Stat()
-	return errors.Is(err, os.ErrClosed)
 }

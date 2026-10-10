@@ -80,6 +80,7 @@ func faultNames(schedule []FaultInjection) map[int][]string {
 	for _, injection := range schedule {
 		byOrdinal[injection.AcceptedCommand] = append(byOrdinal[injection.AcceptedCommand], injection.Name)
 	}
+	// determinism-safe: sorts each value in place; the order of the outer loop is unobservable.
 	for ordinal := range byOrdinal {
 		sort.Strings(byOrdinal[ordinal])
 	}

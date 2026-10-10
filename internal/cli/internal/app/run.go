@@ -16,15 +16,15 @@ func cmdRun(s *session, args []string) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	return executeRun(cfg, options, func() int64 { return s.now().UnixNano() })
+	return executeRun(cfg, options)
 }
 
-func executeRun(cfg run.Config, options runOptions, nanos func() int64) (any, error) {
+func executeRun(cfg run.Config, options runOptions) (any, error) {
 	r, err := run.New(context.Background(), cfg)
 	if err != nil {
 		return nil, fmt.Errorf("streamsim: %w", err)
 	}
-	if err := applyRunScript(r, options, nanos); err != nil {
+	if err := applyRunScript(r, options); err != nil {
 		return nil, err
 	}
 	if _, err := r.Advance(context.Background(), options.startTime+int64(options.durationS*1e9), false); err != nil {
@@ -33,14 +33,14 @@ func executeRun(cfg run.Config, options runOptions, nanos func() int64) (any, er
 	return publishRun(r, options.outDir)
 }
 
-func applyRunScript(r *run.Run, options runOptions, nanos func() int64) error {
+func applyRunScript(r *run.Run, options runOptions) error {
 	if err := applyScriptedFaults(r, options); err != nil {
 		return err
 	}
 	if err := applyScriptedPerturbations(r, options); err != nil {
 		return err
 	}
-	return invokeScriptedEffectors(r, options, nanos)
+	return invokeScriptedEffectors(r, options)
 }
 
 func publishRun(r *run.Run, out string) (any, error) {

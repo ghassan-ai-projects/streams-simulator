@@ -2,6 +2,7 @@ package domain
 
 import (
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -60,18 +61,18 @@ func TestLoadBindingsFromData(t *testing.T) {
 
 func TestLoadBindingsFailsClosed(t *testing.T) {
 	t.Parallel()
-	cases := map[string]string{
-		"unknown field":     `{"bindings":{"target":{"effector":"effect","unexpected":true}}}`,
-		"trailing json":     `{"bindings":{"target":{"effector":"effect"}}} {}`,
-		"unknown source":    `{"bindings":{"target":{"effector":"effect","arguments":{"arg":{"source":"unknown"}}}}}`,
-		"missing parameter": `{"bindings":{"target":{"effector":"effect","arguments":{"arg":{"source":"parameter"}}}}}`,
-		"entity with value": `{"bindings":{"target":{"effector":"effect","arguments":{"arg":{"source":"entity","value":"x"}}}}}`,
+	cases := map[string]struct{ body, want string }{
+		"unknown field":     {`{"bindings":{"target":{"effector":"effect","unexpected":true}}}`, `unknown field "unexpected"`},
+		"trailing json":     {`{"bindings":{"target":{"effector":"effect"}}} {}`, "trailing JSON"},
+		"unknown source":    {`{"bindings":{"target":{"effector":"effect","arguments":{"arg":{"source":"unknown"}}}}}`, `unknown source "unknown"`},
+		"missing parameter": {`{"bindings":{"target":{"effector":"effect","arguments":{"arg":{"source":"parameter"}}}}}`, "parameter source requires only parameter"},
+		"entity with value": {`{"bindings":{"target":{"effector":"effect","arguments":{"arg":{"source":"entity","value":"x"}}}}}`, "entity source cannot set parameter or value"},
 	}
-	for name, body := range cases {
+	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			if _, err := LoadBindings([]byte(body), "entity-01"); err == nil {
-				t.Fatal("invalid binding catalog was accepted")
+			if _, err := LoadBindings([]byte(tc.body), "entity-01"); err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("%s: err = %v, want %q", name, err, tc.want)
 			}
 		})
 	}
@@ -83,7 +84,7 @@ func TestLoadBindingsRequiresEntitySourceValue(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := LoadBindings(data, ""); err == nil {
+	if _, err := LoadBindings(data, ""); err == nil || !strings.Contains(err.Error(), "deviceworld: target \"fan-01\" requires a world entity") {
 		t.Fatal("entity-sourced binding must require a runtime entity")
 	}
 }
@@ -107,7 +108,20 @@ func TestValidateBindingsChecksWorldCompositionBeforeListen(t *testing.T) {
 	broken := bindings["fan-01"]
 	broken.effector = "missing-effector"
 	bindings["fan-01"] = broken
-	if err := ValidateBindings(w, bindings, []string{"fan-01"}, []string{"fan-01"}); err == nil {
+	if err := ValidateBindings(w, bindings, []string{"fan-01"}, []string{"fan-01"}); err == nil || !strings.Contains(err.Error(), "deviceworld: target \"fan-01\" effector references unknown effector \"missing-effector\"") {
 		t.Fatal("unknown world effector accepted")
+	}
+}
+
+// With several broken bindings, the one reported is the first by name, every
+// time: loading never depends on map order.
+func TestLoadBindingsReportsTheFirstBrokenTargetByName(t *testing.T) {
+	t.Parallel()
+	body := `{"bindings":{"zeta":{"effector":"e","arguments":{"a":{"source":"unknown"}}},"alpha":{"effector":"e","arguments":{"a":{"source":"unknown"}}}}}`
+	for range 25 {
+		_, err := LoadBindings([]byte(body), "entity-01")
+		if err == nil || !strings.Contains(err.Error(), `target "alpha"`) {
+			t.Fatalf("err = %v, want the alphabetically first broken target", err)
+		}
 	}
 }
