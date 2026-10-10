@@ -6,10 +6,14 @@
 package domain
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
+
+// ErrNoLabel is returned when a run is scored without its sealed label.
+var ErrNoLabel = errors.New("score: a sealed label is required")
 
 // scoringBundleVersion names the online/offline scoring bundle. Both paths
 // MUST produce identical results for every metric they share; the bundle
@@ -88,6 +92,9 @@ type JudgmentMetrics struct {
 
 // Score evaluates one run's evidence against its sealed label.
 func Score(ev Evidence, gt *model.GroundTruthRecord) (*Scorecard, error) {
+	if gt == nil {
+		return nil, ErrNoLabel
+	}
 	if ev.Verdict == nil {
 		return nil, fmt.Errorf("score: no verdict submitted for run %s", ev.RunID)
 	}

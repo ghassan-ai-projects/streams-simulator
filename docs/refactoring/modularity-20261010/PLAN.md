@@ -97,6 +97,7 @@ dereferenced nil; every one has a regression test.
 | M1 | `perturb.New` returns `(*Layer, error)`, `ErrNoSpec` for a nil spec; `perturb.Names` is a function returning a copy | `TestNewRefusesAMissingSpec`, `TestNamesIsTheCatalogAndAModifiableCopy` |
 | M2 | `truth.NewSolver` returns `(*Solver, error)`; `BuildRecord` refuses a nil spec or solver; a zero or nil `Store` returns `ErrNoStore`; the record no longer aliases the caller's perturbation slice | `TestBuildRecordRefusesMissingInputsAndUnknownFaults`, `TestBuildRecordLabelsAScenarioFromTheSolvedOnsets` |
 | M3 | `world.New` returns `ErrNoSpec` for a nil spec | `TestNewRefusesAMissingSpec` |
+| M4 | `score.Score` returns `ErrNoLabel` for a nil label; a nil domain in the evidence skips fault recovery levels | `TestScoreRefusesAMissingLabelAndToleratesAMissingDomain` |
 | M5 | `audit.NewPanel` returns `(*Panel, error)`, `ErrNoSpec` for a nil spec | `TestNewPanelRefusesAMissingSpec` |
 
 ## Not in this program
@@ -114,8 +115,9 @@ the two delivery paths (D-18), and world read-purity (D-14).
 | M1 | done | `4a05a3b`, hardening `see git log` | perturb template; gates hardened after review |
 | M2 | done | `b5674df` | review follow-up in M3 commit |
 | M3 | done | `463fb65`, follow-up `e88cc57` | gate hardened, doc links gate |
-| M4 | done | `2f5cf24` | score takes Evidence; review in progress |
+| M4 | done | `2f5cf24`, follow-up `see git log` | score takes Evidence |
 | M5 | done | `820e025` | audit; review pending |
-| M6 | in progress | | suite |
-| M7–M15 | pending | | |
+| M6 | done | `ff2f3a3` | suite; review pending |
+| M7 | next | | deviceworld |
+| M8–M15 | pending | | |
 | T1–T5, F | pending | | |

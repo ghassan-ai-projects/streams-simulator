@@ -51,7 +51,7 @@ The accepted architecture is summarized in [`documentation/architecture/`](../..
 
 - `cmd` -> `cli` -> `mcp`/`run`/`suite`/`score`/`refconsumer`
 - `run` -> `world`/`perturb`/`adapter`/`sink`/`domain`/`model`/`canonical`
-- `truth` -> `world`/`domain`/`model`; `score` -> `run`/`world`/`model`
+- `truth` -> `world`/`domain`/`model`; `score` -> `domain`/`world`/`model` (hosts pack a `score.Evidence`)
 - `deviceworld` -> `device`/`world`/`model`; neither core imports the bridge
 - Dependencies flow downward only.
 - `test/architecture/dependencies_test.go` is the complete direct-import allowlist; this list is an ownership summary.

@@ -19,6 +19,9 @@ type LoopMetrics = layer.LoopMetrics
 // JudgmentMetrics need a model; reported per scenario, never gated in CI.
 type JudgmentMetrics = layer.JudgmentMetrics
 
+// ErrNoLabel is returned by Score when no sealed label is given.
+var ErrNoLabel = layer.ErrNoLabel
+
 // Evidence is everything the scorer reads about one run: the submitted
 // verdict, the delivery ledger, the director-side effector log, the applied
 // perturbations, the emitted count and the hidden-state history, plus the

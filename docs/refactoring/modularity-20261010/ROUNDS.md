@@ -430,3 +430,16 @@ map (D-45).
   determinism of the suite bytes and label/scenario parity. Domain layer 70.8 %.
 - Doc link repaired (`domains-and-adapters.md` now points at `scenario.go`,
   where the aquaculture setup exception lives).
+
+### M4 review follow-up
+
+Differential test by the reviewer: byte-identical scorecards over 4 failure
+modes × 2 faults plus an empty-ledger run. Fixed: `mcp.scoringEvidence` is now
+pinned field by field against the run accessors (perturbed run, blind and
+unblinded; a swapped or dropped field fails) because the behaviour pin never
+scores; `Score` returns `ErrNoLabel` for a nil label and `faultFor` tolerates a
+nil domain (deliberate, unreachable from `mcp`); the facade's constant-equals-
+itself bundle test became a real online/offline agreement test over the shared
+consumer and judgment metrics; the architecture map no longer says `score ->
+run`. Not done: avoiding the evidence clone before the no-verdict check
+(performance only).
