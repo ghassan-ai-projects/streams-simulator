@@ -23,14 +23,13 @@ func writeFile(t *testing.T, dir, name, content string) {
 	}
 }
 
-func TestLoadAllReadsOnlyTopLevelJSONInSortedOrder(t *testing.T) {
+func TestLoadAllReadsOnlyTopLevelJSON(t *testing.T) {
 	t.Parallel()
 	example, err := os.ReadFile(examplePath)
 	if err != nil {
 		t.Fatal(err)
 	}
 	dir := t.TempDir()
-	writeFile(t, dir, "b.domain.json", string(example))
 	writeFile(t, dir, "a.domain.json", string(example))
 	writeFile(t, dir, "notes.txt", "not a domain")
 	if err := os.Mkdir(filepath.Join(dir, "nested.json"), 0o700); err != nil {
@@ -40,8 +39,19 @@ func TestLoadAllReadsOnlyTopLevelJSONInSortedOrder(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(specs) != 2 {
-		t.Fatalf("loaded %d specs, want 2", len(specs))
+	if len(specs) != 1 {
+		t.Fatalf("loaded %d specs, want 1 (txt and nested dir ignored)", len(specs))
+	}
+}
+
+func TestLoadAllVisitsFilesInSortedOrder(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	writeFile(t, dir, "b.json", `{"id":`)
+	writeFile(t, dir, "a.json", `{"id":`)
+	_, err := LoadAll(dir)
+	if err == nil || !strings.Contains(err.Error(), "a.json") || strings.Contains(err.Error(), "b.json") {
+		t.Fatalf("err = %v, want the failure to name a.json only", err)
 	}
 }
 
@@ -50,8 +60,8 @@ func TestLoadAllFailsTheWholeLoadOnOneBadDomain(t *testing.T) {
 	dir := t.TempDir()
 	writeFile(t, dir, "broken.json", `{"id":`)
 	_, err := LoadAll(dir)
-	if err == nil || !strings.Contains(err.Error(), "broken.json") {
-		t.Fatalf("err = %v, want a failure naming broken.json", err)
+	if err == nil || !strings.Contains(err.Error(), "broken.json") || !strings.HasPrefix(err.Error(), "streamsim: ") {
+		t.Fatalf("err = %v, want a streamsim-prefixed failure naming broken.json", err)
 	}
 }
 

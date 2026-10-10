@@ -86,8 +86,9 @@ corrected. Not fixed, recorded: mixed skip-directory rules between older gates
 - `Load`, `LoadAll`, `domainPaths`, `loadPaths` moved verbatim into
   `internal/domain/file.go`, now the package's only `os` user and its single
   `ioEdges` entry (no debt). `domain` is reclassified `edge-core`.
-- Decision change vs the R0 plan: moving the loaders to `cli` was rejected. 28
-  call sites in 14 packages' tests use `domain.Load`; relocating them buys no
+- Decision change vs the R0 plan: moving the loaders to `cli` was rejected. about 29
+  `domain.Load/LoadAll` references (3 in `cli`, 17 in tests of 8 packages, 9 in
+  `domain`'s own tests) use it; relocating them buys no
   gate (the file-level gate already isolates the I/O) and the sibling pattern
   keeps small readers beside their rules. Revisit only if a second external
   system appears.
@@ -115,10 +116,22 @@ corrected. Not fixed, recorded: mixed skip-directory rules between older gates
   success and missing file.
 - Coverage: moving verification out lowered `adapter` from 69.9 to 68.3 (the
   moved code was well covered); floor reset to 68 and tracked for R15.
-  `conformance` 82.7 %.
+  `conformance` 82.4 %.
 - Known and untouched (DEFERRED D-30..D-32): empty-fixture panic, `hash_suffix`,
   verify semantics for absent `output_schema`/`golden`.
 - One error-text edit, unreachable: the embedded-fixture failure in
   `conformance.loadFixture` now reads `adapter: embedded fixture: …` (wrapcheck;
   the embedded fixture is covered by tests). All reachable `adapter verify`
   messages are unchanged.
+
+## R3/R4 review follow-up
+
+Independent review found no High issue. Fixed: the LoadAll ordering test did
+not test order (now two invalid files, the error must name `a.json` only); the
+bad-domain test now pins the `streamsim: ` prefix; the misnamed
+`TestVerifyDetectsTampering` (it tampered with nothing) was removed in favour
+of the real tamper tests, which now assert the exact line/column and add a
+truncated-golden case. Doc nits corrected (82.4 %, reference counts, stale
+`verify*.go` paths in DEFERRED, domains-and-adapters.md). The PLAN hazard
+"VerifyResult JSON keys" is vacuous: no caller marshals `Result` (cli prints a
+hand-built map); the tags are kept.

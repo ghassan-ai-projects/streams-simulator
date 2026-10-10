@@ -38,18 +38,6 @@ func TestShippedAdaptersConform(t *testing.T) {
 	}
 }
 
-func TestVerifyDetectsTampering(t *testing.T) {
-	// A golden with one byte changed must be reported, not matched.
-	root := filepath.Join("..", "..", "..", "adapters")
-	res, err := Verify(filepath.Join(root, "native-jsonl.adapter.json"), "", root)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !res.GoldenMatch {
-		t.Fatalf("baseline golden mismatch: %s", res.FirstDivergence)
-	}
-}
-
 func TestValidateStrictObservedOrder(t *testing.T) {
 	base := model.DefaultStartTimeNS
 	cases := []struct {
@@ -144,7 +132,7 @@ func TestVerifyReportsTheFirstDivergentGoldenByte(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	raw[len(raw)/2] ^= 0x01
+	raw[0] ^= 0x01
 	writeUnder(t, base, "golden/native-jsonl.jsonl", raw)
 	res, err := Verify(adapterPath, "", base)
 	if err != nil {
@@ -153,8 +141,26 @@ func TestVerifyReportsTheFirstDivergentGoldenByte(t *testing.T) {
 	if res.GoldenMatch || !res.SchemaOK {
 		t.Fatalf("result = %+v, want schema ok and golden mismatch", res)
 	}
-	if !strings.HasPrefix(res.FirstDivergence, "first divergent byte at line ") || res.Detail == "" {
+	if res.FirstDivergence != "first divergent byte at line 1, column 1" || res.Detail == "" {
 		t.Fatalf("divergence = %q, detail = %q", res.FirstDivergence, res.Detail)
+	}
+}
+
+func TestVerifyReportsATruncatedGolden(t *testing.T) {
+	t.Parallel()
+	adapterPath, base := copyShippedAdapter(t)
+	golden := filepath.Join(base, "golden", "native-jsonl.jsonl")
+	raw, err := os.ReadFile(golden)
+	if err != nil {
+		t.Fatal(err)
+	}
+	writeUnder(t, base, "golden/native-jsonl.jsonl", raw[:len(raw)-1])
+	res, err := Verify(adapterPath, "", base)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.GoldenMatch || res.FirstDivergence != "lengths differ" {
+		t.Fatalf("result = %+v, want a length difference", res)
 	}
 }
 
