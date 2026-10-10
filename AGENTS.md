@@ -40,6 +40,7 @@ Start with these context files:
 - [.agents/context/testing.md](.agents/context/testing.md) for commands and testing bar.
 - [.agents/context/go-style.md](.agents/context/go-style.md) for coding conventions.
 - [.agents/context/review-checklist.md](.agents/context/review-checklist.md) before handoff.
+- [docs/refactoring/modularity-20261010/STANDARD.md](docs/refactoring/modularity-20261010/STANDARD.md) for package kinds, layer rules and the M1-M11 modularity bar; its [PLAN.md](docs/refactoring/modularity-20261010/PLAN.md) tracks the migration rounds and [DEFERRED.md](docs/refactoring/modularity-20261010/DEFERRED.md) lists known defects that are intentionally not fixed by structural rounds.
 
 Use the prompt files under `.agents/prompts/` when the task matches them.
 
@@ -104,6 +105,17 @@ Important behavior:
 - `make lint` depends on `golangci-lint` and may fail if the environment cannot write to its cache.
 
 See [.agents/context/testing.md](.agents/context/testing.md) for the testing and validation bar. The analytic cross-check (implement the integrator twice, assert agreement) is a non-negotiable correctness oracle, not a consistency check.
+
+## Modularity bar
+
+Packages are one of four kinds (foundation, pure core, core with an I/O edge,
+surface), documented in [STANDARD.md](docs/refactoring/modularity-20261010/STANDARD.md).
+Pure packages and every `internal/domain` layer import no `os`/`net`/`exec` and
+read no wall clock; file, socket and clock access sits only in declared edge
+packages; `cli` and `mcp` hold wiring and protocol only. A structural round
+changes no behaviour: run `scripts/behaviour-pin` and diff it against
+`docs/refactoring/modularity-20261010/BEHAVIOUR_PIN.txt`. Defects found during
+a round are added to `DEFERRED.md`, not fixed in the same commit.
 
 ## Go Standards
 

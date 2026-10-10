@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+# Prints one "sha256  label" line per deterministic CLI output so a structural
+# refactor can prove it changed no behaviour:
+#
+#   scripts/behaviour-pin > /tmp/after.txt
+#   diff docs/refactoring/modularity-20261010/BEHAVIOUR_PIN.txt /tmp/after.txt
+#
+# Wall-clock fields (created_at, unblinded_at) are masked. Everything else is
+# a pure function of the shipped domains/adapters, seeds and commands below.
+set -eu
+
+repo_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+cd "$repo_root"
+work=$(mktemp -d)
+trap 'rm -rf "$work"' EXIT
+bin="$work/streamsim"
+go build -o "$bin" ./cmd/streamsim
+
+emit() { # label file
+  printf '%s  %s\n' "$(sed -E 's/"(created_at|unblinded_at)": *"[^"]*"/"\1":"MASKED"/' "$2" | shasum -a 256 | cut -d' ' -f1)" "$1"
+}
+capture() { # label cmd...
+  label=$1; shift
+  "$@" >"$work/out.txt" 2>&1 || echo "exit=$?" >>"$work/out.txt"
+  sed -i.bak "s|$work|WORK|g" "$work/out.txt"
+  emit "$label" "$work/out.txt"
+}
+
+capture catalog-list "$bin" catalog list
+capture catalog-coverage "$bin" catalog coverage
+capture adapter-list "$bin" adapter list
+for adapter in adapters/*.adapter.json; do
+  capture "adapter-verify/$(basename "$adapter")" "$bin" adapter verify "$adapter"
+done
+for domain in domains/*.domain.json; do
+  id=$(basename "$domain" .domain.json)
+  capture "domain-validate/$id" "$bin" domain validate "$domain"
+  capture "catalog-describe/$id" "$bin" catalog describe "$id"
+  for adapter in native-jsonl agentic-stream; do
+    out="$work/run-$id-$adapter"
+    mkdir -p "$out"
+    capture "run/$id/$adapter" "$bin" run --domain "$id" --adapter "$adapter" \
+      --seed 7 --sink file --out "$out" --duration 600
+    for f in trace.jsonl ledger.jsonl world_state_history.jsonl run.json; do
+      [ -f "$out/$f" ] && emit "run/$id/$adapter/$f" "$out/$f"
+    done
+    capture "verify/$id/$adapter" "$bin" verify "$out/run.json"
+    capture "replay/$id/$adapter" "$bin" replay "$out/run.json"
+  done
+done
+
+# Scripted run with a fault and a perturbation. The CLI --effector flag sends
+# empty arguments, which every shipped effector with required args rejects.
+out="$work/scripted"
+mkdir -p "$out"
+capture scripted-run "$bin" run --domain rotating-machinery --adapter native-jsonl \
+  --seed 11 --sink file --out "$out" --duration 3600 \
+  --fault site-a/pump-1=bearing_wear@60 --perturb duplicate_burst@120@600
+for f in trace.jsonl ledger.jsonl world_state_history.jsonl run.json; do
+  [ -f "$out/$f" ] && emit "scripted/$f" "$out/$f"
+done
+capture scripted-verify "$bin" verify "$out/run.json"
+capture scripted-replay "$bin" replay "$out/run.json"
+
+# Suite generation (profile and seed fixed).
+for domain in rotating-machinery cold-chain-transit; do
+  sd="$work/suite-$domain"
+  capture "suite/$domain" "$bin" suite --domain "$domain" --profile nominal --n 4 --seed 5 --out "$sd"
+  for f in "$sd"/*.json; do
+    [ -f "$f" ] && emit "suite/$domain/$(basename "$f")" "$f"
+  done
+done
+
+# Manifest (author/reviewer fixed, created_at masked).
+capture manifest "$bin" manifest --author "a <a@example.test>" --reviewer "b <b@example.test>" --out "$work/manifest.json"
+emit manifest-file "$work/manifest.json"

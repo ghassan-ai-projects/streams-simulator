@@ -64,3 +64,10 @@ Avoid:
 - persistence concerns leaking into `world`
 - transport concerns leaking into `model`
 - per-domain code branches
+
+## Modularity standard
+
+Package kinds, layer shapes, purity/I-O rules (M1-M11) and the migration plan
+are in [docs/refactoring/modularity-20261010/](../../docs/refactoring/modularity-20261010/README.md).
+Where this file and `STANDARD.md` disagree about layering, `STANDARD.md` is
+current and this file is updated in the same round that changes ownership.
