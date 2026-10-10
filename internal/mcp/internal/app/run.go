@@ -20,13 +20,9 @@ func (d *Director) BeginRun(worldID, label string) (map[string]any, error) {
 	if w == nil {
 		return nil, errTool(CodeWorldNotFound, "unknown world %q", worldID)
 	}
-	if w.Started {
-		return nil, errTool(CodeDomainInvalid, "a run is already open for %q", worldID)
-	}
-	if err := d.requireSealedRun(w.Run.ID); err != nil {
+	if err := d.openRun(w, worldID); err != nil {
 		return nil, err
 	}
-	w.Started = true
 	return map[string]any{"run_id": w.Run.ID, "truth_sealed": true}, nil
 }
 
@@ -37,7 +33,7 @@ func (d *Director) SealTruth(runID string, rec *model.GroundTruthRecord) error {
 	if w == nil {
 		return errTool(CodeWorldNotFound, "unknown run %q", runID)
 	}
-	if w.Started || w.RunEnded {
+	if started, ended := d.runLifecycle(w); started || ended {
 		return errTool(CodeTruthSealed, "truth must be sealed before run.begin")
 	}
 	if err := d.Truth.Seal(runID, rec); err != nil {
@@ -157,10 +153,12 @@ func (d *Director) requireSealedRun(runID string) error {
 func (d *Director) finalizeRun(w *WorldRecord, worldID string) (map[string]any, error) {
 	dir := filepath.Join(d.OutDir, worldID)
 	art, err := w.Run.End(dir)
+	// A run that ended with a failure is still over: leaving it open would
+	// make its truth unrevealable and its score unobtainable forever.
+	d.markRunEnded(w)
 	if err != nil {
 		return nil, errTool(CodeDomainInvalid, "%v", err)
 	}
-	w.RunEnded = true
 	return map[string]any{
 		"run_artifact_path": filepath.Join(dir, "run.json"),
 		"trace_digest":      art.ExpectedTraceDigest,

@@ -19,6 +19,15 @@ func (r *Run) End(outDir string) (*model.RunArtifact, error) {
 	return r.endLocked(outDir)
 }
 
+// Finished reports whether End has closed the run, cleanly or not: a run
+// that failed mid-way and was ended is finished, and takes no further
+// commands.
+func (r *Run) Finished() bool {
+	r.commandMu.Lock()
+	defer r.commandMu.Unlock()
+	return r.finished
+}
+
 func (r *Run) endLocked(outDir string) (*model.RunArtifact, error) {
 	if r.finished {
 		return nil, fmt.Errorf("run: already finished")

@@ -124,6 +124,11 @@ func (r *Run) UnblindedStamp() bool {
 	return r.run.UnblindedStamp()
 }
 
+// Finished reports whether End has closed the run, cleanly or not.
+func (r *Run) Finished() bool {
+	return r.run.Finished()
+}
+
 // End closes the run, publishes its evidence under outDir when set, and
 // returns the run artifact.
 func (r *Run) End(outDir string) (*model.RunArtifact, error) {
