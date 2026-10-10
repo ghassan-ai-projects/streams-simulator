@@ -110,11 +110,34 @@ func (d *Director) AuditScenario(domainID, entityID, fault string, onsetNS, star
 	if err != nil {
 		return nil, err
 	}
+	startNS, durationNS = auditWindow(startNS, durationNS)
 	v, err := panel.Audit(entityID, fault, onsetNS, startNS, auditEntityIDs(spec), durationNS, nil, nil)
 	if err != nil {
 		return nil, errTool(CodeDomainInvalid, "%v", err)
 	}
-	return map[string]any{"trivial": v.Trivial, "scores": v.Scores, "best": v.Best}, nil
+	return map[string]any{"trivial": v.Trivial, "scores": v.Scores, "best": v.Best, "samples": v.Samples}, nil
+}
+
+// The audit defaults mirror the suite generator's (seed 1, 120 s samples, a
+// 72 h scenario from the default world start), so auditing one injection here
+// and generating it in a suite give the same verdict.
+const (
+	auditSeed          = uint64(1) ^ 0x5eed
+	auditSampleNS      = int64(120 * 1e9)
+	auditDefaultWindow = int64(72 * 3600 * 1e9)
+)
+
+// auditWindow fills in an omitted start (the default world start) and an
+// omitted duration (the suite's scenario length) instead of auditing one
+// sample at the Unix epoch.
+func auditWindow(startNS, durationNS int64) (int64, int64) {
+	if startNS == 0 {
+		startNS = model.DefaultStartTimeNS
+	}
+	if durationNS <= 0 {
+		durationNS = auditDefaultWindow
+	}
+	return startNS, durationNS
 }
 
 func (d *Director) auditPanel(domainID string) (*domain.Compiled, *audit.Panel, error) {
@@ -122,7 +145,7 @@ func (d *Director) auditPanel(domainID string) (*domain.Compiled, *audit.Panel, 
 	if err != nil {
 		return nil, nil, errTool(CodeDomainInvalid, "%v", err)
 	}
-	panel, err := audit.NewPanel(spec, 1, 60*1e9)
+	panel, err := audit.NewPanel(spec, auditSeed, auditSampleNS)
 	if err != nil {
 		return nil, nil, errTool(CodeDomainInvalid, "%v", err)
 	}

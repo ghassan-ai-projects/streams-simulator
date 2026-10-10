@@ -16,8 +16,32 @@ func (w *World) Reading(entityID, channelName string, t int64) float64 {
 	if ch == nil {
 		return 0
 	}
-	// Reuse the observation path; the solver builds a Noiseless world.
-	return w.observe(ent, ch, ent.ensureChannel(channelName), t)
+	return w.noiseFreeObservation(ent, ch, t)
+}
+
+// noiseFreeObservation picks the side-effect-free path: the observability
+// solver's noiseless worlds already observe without noise (and their numbers
+// are pinned); any other world is read quietly.
+func (w *World) noiseFreeObservation(ent *Entity, ch *model.Channel, t int64) float64 {
+	if w.noiseless {
+		return w.observe(ent, ch, ent.ensureChannel(ch.Name), t)
+	}
+	return w.quietObservation(ent, ch, t)
+}
+
+// quietObservation is the noise-free reading of a world that does emit noise:
+// hidden state, bias and the deterministic drift, with no random draw and no
+// change to the channel's emission state, so asking never alters a run.
+func (w *World) quietObservation(ent *Entity, ch *model.Channel, t int64) float64 {
+	value := w.stateAt(ent.ID, ch.Observes, t)
+	if w.isConfirmationChannel(ch.Name) {
+		value = w.shadowValue(ent.ID, ch.Observes, t)
+	}
+	reading := w.biasedObservation(ent, ch, value, t)
+	if drift := ch.Drift; drift != nil && drift.RatePerHour != 0 && drift.Model != "random_walk" {
+		reading += drift.RatePerHour * (float64(t-w.StartNS) / secondsPerNS / 3600)
+	}
+	return quantize(reading, ch.Resolution)
 }
 
 // processEmission emits one native event for (entity, channel) at time t.

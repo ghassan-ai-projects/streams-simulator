@@ -140,3 +140,8 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
   detection (D-12) that scenario is correctly unobservable and the nominal
   suite excludes it; the domain should name the channel the fault affects.
   Changing the domain changes its digest, so it is left to the domain owner.
+
+> **D-50 closed as not a defect.** `exceptionCadence` does not update
+> `lastSent` itself, but its only caller (`numericReading`) sets
+> `lastSent`/`hasSent` after every emission, so the deadband is measured from
+> the last report. A through-the-world test would have passed before and after.

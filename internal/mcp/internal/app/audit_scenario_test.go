@@ -33,3 +33,18 @@ func TestAuditScenarioNamesAnUnknownDomainAndAnUnknownFault(t *testing.T) {
 		t.Fatalf("unknown fault: %v", err)
 	}
 }
+
+// An omitted window audits the suite's whole scenario length, not one sample.
+func TestAuditScenarioWithoutAWindowAuditsTheSuiteScenarioLength(t *testing.T) {
+	t.Parallel()
+	d := newTestDirector(t)
+	onset := model.DefaultStartTimeNS + 24*3600*1e9
+	out, err := d.AuditScenario("aquaculture-pond", "site-a/pond-1", "aerator_failure", onset, 0, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := int(auditDefaultWindow/auditSampleNS) + 1
+	if out["samples"] != want {
+		t.Fatalf("samples = %v, want %d", out["samples"], want)
+	}
+}
