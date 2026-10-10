@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
@@ -164,5 +165,19 @@ func TestClosedLoopThroughMCPSurface(t *testing.T) {
 	}
 	if !sc.Loop.Resolved {
 		t.Fatalf("loop did not resolve: %+v", sc.Loop)
+	}
+}
+
+func TestRevealRefusesALabelForARunTheDirectorDoesNotKnow(t *testing.T) {
+	t.Parallel()
+	d := newTestDirector(t)
+	rec := &model.GroundTruthRecord{ScenarioID: "x/1", Domain: "aquaculture-pond", Label: "l", EntityID: "e"}
+	if err := d.Truth.Seal("r-unknown", rec); err != nil {
+		t.Fatal(err)
+	}
+	_, err := d.RevealTruth("r-unknown", false)
+	var tool *ToolError
+	if !errors.As(err, &tool) || tool.Code != CodeTruthSealed || !strings.Contains(tool.Msg, "open run") {
+		t.Fatalf("an unknown run must be treated as open: err = %v", err)
 	}
 }

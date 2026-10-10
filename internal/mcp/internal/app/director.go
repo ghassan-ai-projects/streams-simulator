@@ -81,9 +81,8 @@ func (d *Director) runIsOpen(runID string) bool {
 	defer d.mu.Unlock()
 	worldID, ok := d.byRun[runID]
 	if !ok {
-		return false
+		return true // a run the director does not know is never treated as closed
 	}
 	w := d.Worlds[worldID]
 	return w != nil && !w.RunEnded
-
 }
