@@ -1,4 +1,4 @@
-package cli
+package cli_test
 
 // Slice G: cross-process determinism. Two spawned `streamsim run`
 // invocations from the same inputs must produce byte-identical traces,

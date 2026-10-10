@@ -1,24 +1,24 @@
-package cli
+package app
 
 import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"os"
+	"io"
 
+	"github.com/ghassan-ai-projects/streams-simulator/internal/cli/internal/files"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/refconsumer"
 )
 
-func cmdRefconsumer(args []string) error {
-	options, err := parseRefconsumerOptions(args)
+func cmdRefconsumer(s *session, args []string) (any, error) {
+	options, err := parseRefconsumerOptions(args, s.stderr)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	// #nosec G703 -- a CLI flag naming a trace file is user intent.
-	raw, err := os.ReadFile(options.trace)
+	raw, err := files.Read(options.trace)
 	if err != nil {
-		return fmt.Errorf("streamsim: %w", err)
+		return nil, fmt.Errorf("streamsim: %w", err)
 	}
 	return consumeReferenceTrace(raw, options)
 }
@@ -38,8 +38,7 @@ func connectReferenceConsumer(endpoint, token, runID string) (*refconsumer.Namep
 
 func writeConsumerVerdict(v *model.Verdict, out string) error {
 	rawV, _ := json.MarshalIndent(v, "", "  ")
-	// #nosec G703 -- the CLI output path is user intent.
-	if err := os.WriteFile(out, rawV, 0o600); err != nil {
+	if err := files.Write(out, rawV); err != nil {
 		return fmt.Errorf("streamsim: %w", err)
 	}
 	return nil
@@ -55,12 +54,12 @@ type refconsumerOptions struct {
 	window                                          int
 }
 
-func parseRefconsumerOptions(args []string) (refconsumerOptions, error) {
+func parseRefconsumerOptions(args []string, stderr io.Writer) (refconsumerOptions, error) {
 	var options refconsumerOptions
-	fs := flag.NewFlagSet("refconsumer", flag.ExitOnError)
+	fs := newFlagSet("refconsumer", stderr)
 	registerRefconsumerFlags(fs, &options)
-	if err := fs.Parse(args); err != nil {
-		return refconsumerOptions{}, fmt.Errorf("streamsim: %w", err)
+	if err := parseFlags(fs, args); err != nil {
+		return refconsumerOptions{}, err
 	}
 	if options.trace == "" {
 		return refconsumerOptions{}, fmt.Errorf("refconsumer requires --trace")
@@ -82,28 +81,28 @@ func registerRefconsumerFlags(fs *flag.FlagSet, options *refconsumerOptions) {
 	fs.StringVar(&options.runID, "run", "", "run id to report against")
 }
 
-func consumeReferenceTrace(raw []byte, options refconsumerOptions) error {
+func consumeReferenceTrace(raw []byte, options refconsumerOptions) (any, error) {
 	if options.mcpEndpoint == "" {
 		return runReferenceConsumer(raw, options, &refconsumer.Nameplate{WorldID: "cli"}, nil, &fileSink{}, "cli")
 	}
 	np, operator, err := connectReferenceConsumer(options.mcpEndpoint, options.token, options.runID)
 	if err != nil {
-		return fmt.Errorf("streamsim: %w", err)
+		return nil, fmt.Errorf("streamsim: %w", err)
 	}
 	defer func() { _ = operator.Close() }()
 	return runReferenceConsumer(raw, options, np, operator, operator, options.runID)
 }
 
-func runReferenceConsumer(raw []byte, options refconsumerOptions, np *refconsumer.Nameplate, invoker refconsumer.EffectorInvoker, sink refconsumer.VerdictSink, id string) error {
+func runReferenceConsumer(raw []byte, options refconsumerOptions, np *refconsumer.Nameplate, invoker refconsumer.EffectorInvoker, sink refconsumer.VerdictSink, id string) (any, error) {
 	cfg := refconsumer.Config{Threshold: options.threshold, Window: options.window, MinConsecutive: 3,
 		AbsenceFactor: 3, OnDetectionEffector: options.effector}
 	r := refconsumer.New(cfg, np, invoker, sink, id)
 	v, err := r.Process(raw, 0)
 	if err != nil {
-		return fmt.Errorf("streamsim: %w", err)
+		return nil, fmt.Errorf("streamsim: %w", err)
 	}
 	if err := writeConsumerVerdict(v, options.out); err != nil {
-		return err
+		return nil, err
 	}
-	return printJSON(map[string]any{"verdict_written": options.out, "detections": len(v.Detections)})
+	return map[string]any{"verdict_written": options.out, "detections": len(v.Detections)}, nil
 }

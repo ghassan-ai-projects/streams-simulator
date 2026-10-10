@@ -147,8 +147,8 @@ func TestFoundationsImportOnlyFoundations(t *testing.T) {
 func TestSurfacesAreImportedOnlyBySurfaces(t *testing.T) {
 	t.Parallel()
 	for _, file := range productionFiles(t) {
-		kind := infoOf(file.pkgDir).kind
-		if kind == kindSurface || kind == kindRoot {
+		module, _ := splitModule(file.pkgDir)
+		if kind := packages[module].kind; kind == kindSurface || kind == kindRoot {
 			continue
 		}
 		for _, imported := range modulePackages(file) {

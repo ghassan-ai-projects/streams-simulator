@@ -1,20 +1,21 @@
-package cli
+package app
 
 import (
 	"flag"
 	"fmt"
+	"io"
 	"runtime"
 	"time"
 )
 
 type manifestOptions struct{ out, domainsDir, adaptersDir, author, reviewer, keyFile string }
 
-func parseManifestOptions(args []string) (manifestOptions, error) {
+func parseManifestOptions(args []string, stderr io.Writer) (manifestOptions, error) {
 	var options manifestOptions
-	fs := flag.NewFlagSet("manifest", flag.ExitOnError)
+	fs := newFlagSet("manifest", stderr)
 	registerManifestFlags(fs, &options)
-	if err := fs.Parse(args); err != nil {
-		return manifestOptions{}, fmt.Errorf("streamsim: %w", err)
+	if err := parseFlags(fs, args); err != nil {
+		return manifestOptions{}, err
 	}
 	if options.author == "" || options.reviewer == "" {
 		return manifestOptions{}, fmt.Errorf("manifest requires --author and --reviewer (independent review identity)")
@@ -22,7 +23,7 @@ func parseManifestOptions(args []string) (manifestOptions, error) {
 	return options, nil
 }
 
-func buildReleaseManifest(options manifestOptions) (map[string]any, error) {
+func buildReleaseManifest(options manifestOptions, s *session) (map[string]any, error) {
 	domains, err := fileDigests(options.domainsDir, "domain")
 	if err != nil {
 		return nil, err
@@ -31,16 +32,16 @@ func buildReleaseManifest(options manifestOptions) (map[string]any, error) {
 	if err != nil {
 		return nil, err
 	}
-	return releaseManifestIdentity(options, domains, adapters), nil
+	return releaseManifestIdentity(options, s, domains, adapters), nil
 }
 
-func releaseManifestIdentity(options manifestOptions, domains, adapters map[string]any) map[string]any {
+func releaseManifestIdentity(options manifestOptions, s *session, domains, adapters map[string]any) map[string]any {
 	return map[string]any{"schema_version": "release-manifest-v0.1",
-		"sim":     map[string]any{"version": Version, "commit": Commit, "go": runtime.Version()},
+		"sim":     map[string]any{"version": s.build.Version, "commit": s.build.Commit, "go": runtime.Version()},
 		"domains": domains, "adapters": adapters,
 		"consumer": map[string]any{"name": "streamsim-refconsumer", "version": "0.1.0"},
 		"suite":    map[string]any{"negative_class_fraction": 0.4, "trivial_cutoff": 0.9},
-		"author":   options.author, "reviewer": options.reviewer, "created_at": time.Now().UTC().Format(time.RFC3339)}
+		"author":   options.author, "reviewer": options.reviewer, "created_at": s.now().UTC().Format(time.RFC3339)}
 }
 
 func registerManifestFlags(fs *flag.FlagSet, options *manifestOptions) {

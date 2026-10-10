@@ -8,7 +8,7 @@ This matrix is the handoff evidence for public claims. It prevents the curated d
 | --- | --- | --- | --- | --- |
 | Product purpose and boundaries | [`overview/product.md`](../overview/product.md) | `README.md`, design decisions, implementation boundaries | Repository review and package map | Verified summary |
 | Toolchain | [`overview/compatibility.md`](../overview/compatibility.md) | [`go.mod`](../../go.mod), CI workflow | `go version`, `.github/workflows/ci.yml` | Verified: module minimum Go 1.25.12; CI Go 1.25.13 |
-| CLI commands and flags | [`reference/cli.md`](../reference/cli.md) | [`internal/cli/cli.go`](../../internal/cli/cli.go) | `go run ./cmd/streamsim help`; targeted command smoke tests | Verified |
+| CLI commands and flags | [`reference/cli.md`](../reference/cli.md) | [`internal/cli/internal/app/cli.go`](../../internal/cli/internal/app/cli.go) | `go run ./cmd/streamsim help`; targeted command smoke tests | Verified |
 | Domain inventory | [`architecture/domains-and-adapters.md`](../architecture/domains-and-adapters.md) | `domains/`, release manifest, shipped-domain tests | `catalog list`; `go test ./internal/schemas` | Verified: eight shipped domains, each validated by the schema test |
 | Adapter inventory | [`architecture/domains-and-adapters.md`](../architecture/domains-and-adapters.md) | `adapters/`, adapter tests | `adapter list`; `adapter verify` | Verified |
 | Event pipeline | [`architecture/pipeline.md`](../architecture/pipeline.md) | `internal/world`, `perturb`, `adapter`, `sink`, `run` | run ledger and golden tests | Verified summary |

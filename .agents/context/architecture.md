@@ -17,7 +17,7 @@ The accepted architecture is summarized in [`documentation/architecture/`](../..
 ## Current Package Ownership
 
 - `cmd/streamsim/main.go`: version metadata and CLI entrypoint
-- `internal/cli`: flags, application wiring, commands and shutdown
+- `internal/cli`: facade (`Main`) over the commands in `internal/app` and the `process`, `files` and `serve` edges
 - `internal/world`: seeded discrete-event world core; domains are data loaded through one schema; facade over `internal/world/internal/domain`
 - `internal/perturb`: perturbation layer between world and adapter (what the observer got, not what happened); facade over `internal/domain`
 - `internal/adapter`: declarative output adapters projecting native `sim-event-v0.1` into consumer wire formats; facade over `internal/adapter/internal/domain` with a `files` edge

@@ -15,7 +15,5 @@ var (
 )
 
 func main() {
-	cli.Version = Version
-	cli.Commit = Commit
-	os.Exit(cli.Main(os.Args))
+	os.Exit(cli.Main(os.Args, cli.Build{Version: Version, Commit: Commit}))
 }

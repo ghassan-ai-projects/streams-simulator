@@ -1,4 +1,4 @@
-package cli
+package app
 
 // The release manifest: simulator, domain, adapter, suite, toolchain and
 // consumer digests plus author and independent review identity, optionally
@@ -11,24 +11,24 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/canonical"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/cli/internal/files"
 )
 
-func cmdManifest(args []string) error {
-	options, err := parseManifestOptions(args)
+func cmdManifest(s *session, args []string) (any, error) {
+	options, err := parseManifestOptions(args, s.stderr)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	manifest, err := buildReleaseManifest(options)
+	manifest, err := buildReleaseManifest(options, s)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return signAndPublishManifest(manifest, options)
+	return signAndPublishManifest(manifest, options, s.build)
 }
 
 func signManifest(body []byte, keyFile string) (string, error) {
@@ -47,15 +47,15 @@ func signManifest(body []byte, keyFile string) (string, error) {
 // fileDigests digests every file in dir, keyed by base name. Values are
 // map[string]any for the canonical marshaler.
 func fileDigests(dir, kind string) (map[string]any, error) {
-	entries, err := os.ReadDir(dir)
+	names, err := files.FileNames(dir)
 	if err != nil {
 		return nil, fmt.Errorf("manifest: %s dir: %w", kind, err)
 	}
-	return digestManifestFiles(dir, manifestFileNames(entries))
+	return digestManifestFiles(dir, manifestFileNames(names))
 }
 
 func readSigningSeed(path string) ([]byte, error) {
-	raw, err := os.ReadFile(path)
+	raw, err := files.Read(path)
 	if err != nil {
 		return nil, fmt.Errorf("manifest: key: %w", err)
 	}
@@ -66,11 +66,11 @@ func readSigningSeed(path string) ([]byte, error) {
 	return seed, nil
 }
 
-func manifestFileNames(entries []os.DirEntry) []string {
+func manifestFileNames(entries []string) []string {
 	names := make([]string, 0, len(entries))
-	for _, entry := range entries {
-		if !entry.IsDir() && !strings.HasPrefix(entry.Name(), ".") {
-			names = append(names, entry.Name())
+	for _, name := range entries {
+		if !strings.HasPrefix(name, ".") {
+			names = append(names, name)
 		}
 	}
 	sort.Strings(names)
@@ -80,7 +80,7 @@ func manifestFileNames(entries []os.DirEntry) []string {
 func digestManifestFiles(dir string, names []string) (map[string]any, error) {
 	out := map[string]any{}
 	for _, name := range names {
-		raw, err := os.ReadFile(filepath.Join(dir, name))
+		raw, err := files.Read(filepath.Join(dir, name))
 		if err != nil {
 			return nil, fmt.Errorf("manifest: read %s: %w", name, err)
 		}
@@ -89,26 +89,26 @@ func digestManifestFiles(dir string, names []string) (map[string]any, error) {
 	return out, nil
 }
 
-func publishManifest(body []byte, signature, out string) error {
+func publishManifest(body []byte, signature, out string, build Build) (any, error) {
 	doc := map[string]any{"manifest": json.RawMessage(body), "signature": signature}
 	raw, err := json.MarshalIndent(doc, "", "  ")
 	if err != nil {
-		return fmt.Errorf("manifest: %w", err)
+		return nil, fmt.Errorf("manifest: %w", err)
 	}
-	if err := os.WriteFile(out, raw, 0o600); err != nil {
-		return fmt.Errorf("manifest: %w", err)
+	if err := files.Write(out, raw); err != nil {
+		return nil, fmt.Errorf("manifest: %w", err)
 	}
-	return printJSON(map[string]any{"manifest_written": out, "signed": signature != "", "sim": Version + "@" + Commit})
+	return map[string]any{"manifest_written": out, "signed": signature != "", "sim": build.Version + "@" + build.Commit}, nil
 }
 
-func signAndPublishManifest(manifest map[string]any, options manifestOptions) error {
+func signAndPublishManifest(manifest map[string]any, options manifestOptions, build Build) (any, error) {
 	body, err := canonical.Marshal(manifest)
 	if err != nil {
-		return fmt.Errorf("manifest: canonical: %w", err)
+		return nil, fmt.Errorf("manifest: canonical: %w", err)
 	}
 	sig, err := signManifest(body, options.keyFile)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return publishManifest(body, sig, options.out)
+	return publishManifest(body, sig, options.out, build)
 }

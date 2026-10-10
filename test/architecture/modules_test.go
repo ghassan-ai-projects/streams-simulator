@@ -27,6 +27,7 @@ var moduleShapes = map[string][]string{
 	"internal/run":         {"domain", "app", "durable", "quiesce", "clock"},
 	"internal/refconsumer": {"domain", "mcpclient"},
 	"internal/mcp":         {"app", "capability"},
+	"internal/cli":         {"app", "files", "process", "serve"},
 }
 
 func migratedModules() []string {

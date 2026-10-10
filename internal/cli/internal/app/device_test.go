@@ -1,18 +1,19 @@
-package cli
+package app
 
 import (
 	"encoding/json"
 	"os"
 	"testing"
+	"time"
 )
 
 func TestNewDeviceServeDeviceBindsWorldPlant(t *testing.T) {
-	dev, worldState, err := newDeviceServeDevice(
-		"../../internal/device/testdata/thermal_capability_catalog.json",
-		"../../internal/deviceworld/testdata/thermal.bindings.json",
-		"../../domains/cold-chain-transit.domain.json",
-		"", "boot-A", "dev-01", nil,
-	)
+	dev, worldState, err := newDeviceServeDevice(deviceServeOptions{
+		capabilities:  "../../../device/testdata/thermal_capability_catalog.json",
+		worldBindings: "../../../deviceworld/testdata/thermal.bindings.json",
+		worldDomain:   "../../../../domains/cold-chain-transit.domain.json",
+		bootID:        "boot-A", deviceID: "dev-01",
+	}, time.Now)
 	if err != nil {
 		t.Fatalf("build world-backed device: %v", err)
 	}
@@ -20,7 +21,7 @@ func TestNewDeviceServeDeviceBindsWorldPlant(t *testing.T) {
 		t.Fatal("world binding must construct a world")
 	}
 
-	commandData, err := os.ReadFile("../../internal/device/contract/conformance/v1/valid/command.json")
+	commandData, err := os.ReadFile("../../../device/contract/conformance/v1/valid/command.json")
 	if err != nil {
 		t.Fatal(err)
 	}

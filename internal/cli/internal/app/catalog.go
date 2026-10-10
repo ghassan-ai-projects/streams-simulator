@@ -1,15 +1,15 @@
-package cli
+package app
 
 import (
 	"flag"
 	"fmt"
-	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter/conformance"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/cli/internal/files"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
@@ -34,15 +34,15 @@ func loadAdapters(dir string) (map[string]*model.Adapter, error) {
 	if dir == "" {
 		dir = "adapters"
 	}
-	entries, err := os.ReadDir(dir)
+	names, err := files.FileNames(dir)
 	if err != nil {
 		return nil, fmt.Errorf("streamsim: %w", err)
 	}
-	return decodeAdapterDirectory(dir, entries)
+	return decodeAdapterDirectory(dir, names)
 }
 
-func decodeAdapterDirectory(dir string, entries []os.DirEntry) (map[string]*model.Adapter, error) {
-	out, err := loadAdapterEntries(dir, entries)
+func decodeAdapterDirectory(dir string, names []string) (map[string]*model.Adapter, error) {
+	out, err := loadAdapterEntries(dir, names)
 	if err != nil {
 		return nil, err
 	}
@@ -52,13 +52,13 @@ func decodeAdapterDirectory(dir string, entries []os.DirEntry) (map[string]*mode
 	return out, nil
 }
 
-func loadAdapterEntries(dir string, entries []os.DirEntry) (map[string]*model.Adapter, error) {
+func loadAdapterEntries(dir string, names []string) (map[string]*model.Adapter, error) {
 	out := map[string]*model.Adapter{}
-	for _, e := range entries {
-		if e.IsDir() || !strings.HasSuffix(e.Name(), ".json") {
+	for _, name := range names {
+		if !strings.HasSuffix(name, ".json") {
 			continue
 		}
-		a, err := adapter.Load(filepath.Join(dir, e.Name()))
+		a, err := adapter.Load(filepath.Join(dir, name))
 		if err != nil {
 			return nil, fmt.Errorf("streamsim: %w", err)
 		}
@@ -67,16 +67,16 @@ func loadAdapterEntries(dir string, entries []os.DirEntry) (map[string]*model.Ad
 	return out, nil
 }
 
-func cmdCatalog(args []string) error {
-	fs := flag.NewFlagSet("catalog", flag.ExitOnError)
+func cmdCatalog(s *session, args []string) (any, error) {
+	fs := newFlagSet("catalog", s.stderr)
 	dir := fs.String("domains-dir", "", "directory of domain specs")
 	verb, err := parseCommandVerb(fs, args)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	cat, err := loadCatalog(*dir)
 	if err != nil {
-		return fmt.Errorf("streamsim: %w", err)
+		return nil, fmt.Errorf("streamsim: %w", err)
 	}
 	return catalogVerb(cat, verb, fs.Args())
 }
@@ -86,84 +86,84 @@ func parseCommandVerb(fs *flag.FlagSet, args []string) (string, error) {
 	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
 		verb, args = args[0], args[1:]
 	}
-	if err := fs.Parse(args); err != nil {
-		return "", fmt.Errorf("streamsim: %w", err)
+	if err := parseFlags(fs, args); err != nil {
+		return "", err
 	}
 	return verb, nil
 }
 
-func catalogVerb(cat *domain.Catalog, verb string, args []string) error {
+func catalogVerb(cat *domain.Catalog, verb string, args []string) (any, error) {
 	switch verb {
 	case "list":
-		return printJSON(map[string]any{"domains": cat.List("")})
+		return map[string]any{"domains": cat.List("")}, nil
 	case "describe":
 		return describeCatalogDomain(cat, args)
 	case "coverage":
-		return printJSON(cat.Coverage())
+		return cat.Coverage(), nil
 	}
-	return fmt.Errorf("catalog: unknown verb %q", verb)
+	return nil, fmt.Errorf("catalog: unknown verb %q", verb)
 }
 
-func describeCatalogDomain(cat *domain.Catalog, args []string) error {
+func describeCatalogDomain(cat *domain.Catalog, args []string) (any, error) {
 	if len(args) == 0 {
-		return fmt.Errorf("catalog describe requires a domain id")
+		return nil, fmt.Errorf("catalog describe requires a domain id")
 	}
 	compiled, err := cat.Describe(args[0])
 	if err != nil {
-		return fmt.Errorf("streamsim: %w", err)
+		return nil, fmt.Errorf("streamsim: %w", err)
 	}
-	return printJSON(map[string]any{"spec": compiled.Spec, "digest": compiled.Digest})
+	return map[string]any{"spec": compiled.Spec, "digest": compiled.Digest}, nil
 }
 
-func cmdDomain(args []string) error {
-	fs := flag.NewFlagSet("domain", flag.ExitOnError)
-	if err := fs.Parse(args); err != nil {
-		return fmt.Errorf("streamsim: %w", err)
+func cmdDomain(s *session, args []string) (any, error) {
+	fs := newFlagSet("domain", s.stderr)
+	if err := parseFlags(fs, args); err != nil {
+		return nil, err
 	}
 	if fs.NArg() < 2 {
-		return fmt.Errorf("usage: streamsim domain validate <path>")
+		return nil, fmt.Errorf("usage: streamsim domain validate <path>")
 	}
 	switch fs.Arg(0) {
 	case "validate":
 		return validateDomainFile(fs.Arg(1))
 	}
-	return fmt.Errorf("domain: unknown verb %q", fs.Arg(0))
+	return nil, fmt.Errorf("domain: unknown verb %q", fs.Arg(0))
 }
 
-func validateDomainFile(path string) error {
+func validateDomainFile(path string) (any, error) {
 	c, err := domain.Load(path)
 	if err != nil {
-		return fmt.Errorf("streamsim: %w", err)
+		return nil, fmt.Errorf("streamsim: %w", err)
 	}
-	return printJSON(map[string]any{"valid": true, "id": c.Spec.ID, "digest": c.Digest, "channels": len(c.Spec.Channels), "faults": len(c.Spec.Faults), "effectors": len(c.Spec.Effectors)})
+	return map[string]any{"valid": true, "id": c.Spec.ID, "digest": c.Digest, "channels": len(c.Spec.Channels), "faults": len(c.Spec.Faults), "effectors": len(c.Spec.Effectors)}, nil
 }
 
-func cmdAdapter(args []string) error {
-	fs := flag.NewFlagSet("adapter", flag.ExitOnError)
+func cmdAdapter(s *session, args []string) (any, error) {
+	fs := newFlagSet("adapter", s.stderr)
 	dir := fs.String("adapters-dir", "", "directory of adapter files")
 	verb, err := parseCommandVerb(fs, args)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	return adapterVerb(verb, *dir, fs.Args())
 }
 
-func adapterVerb(verb, dir string, args []string) error {
+func adapterVerb(verb, dir string, args []string) (any, error) {
 	switch verb {
 	case "list":
 		return listAdapters(dir)
 	case "verify":
 		return verifyAdapterCommand(dir, args)
 	}
-	return fmt.Errorf("adapter: unknown verb %q", verb)
+	return nil, fmt.Errorf("adapter: unknown verb %q", verb)
 }
 
-func listAdapters(dir string) error {
+func listAdapters(dir string) (any, error) {
 	adapters, err := loadAdapters(dir)
 	if err != nil {
-		return fmt.Errorf("streamsim: %w", err)
+		return nil, fmt.Errorf("streamsim: %w", err)
 	}
-	return printJSON(map[string]any{"adapters": adapterListings(adapters)})
+	return map[string]any{"adapters": adapterListings(adapters)}, nil
 }
 
 func adapterListings(adapters map[string]*model.Adapter) []map[string]any {
@@ -184,9 +184,9 @@ func sortedAdapterIDs(adapters map[string]*model.Adapter) []string {
 	return ids
 }
 
-func verifyAdapterCommand(dir string, args []string) error {
+func verifyAdapterCommand(dir string, args []string) (any, error) {
 	if len(args) < 1 {
-		return fmt.Errorf("adapter verify requires a path")
+		return nil, fmt.Errorf("adapter verify requires a path")
 	}
 	if dir == "" {
 		dir = "adapters"
@@ -194,13 +194,13 @@ func verifyAdapterCommand(dir string, args []string) error {
 	return verifyAdapterFile(args[0], dir)
 }
 
-func verifyAdapterFile(path, base string) error {
+func verifyAdapterFile(path, base string) (any, error) {
 	res, err := conformance.Verify(path, "", base)
 	if err != nil {
-		return fmt.Errorf("streamsim: %w", err)
+		return nil, fmt.Errorf("streamsim: %w", err)
 	}
 	if !res.SchemaOK || !res.GoldenMatch {
-		return fmt.Errorf("adapter verify FAILED: %s", res.FirstDivergence)
+		return nil, fmt.Errorf("adapter verify FAILED: %s", res.FirstDivergence)
 	}
-	return printJSON(map[string]any{"adapter": res.Adapter, "schema_ok": true, "golden_match": true, "records": res.RecordCount})
+	return map[string]any{"adapter": res.Adapter, "schema_ok": true, "golden_match": true, "records": res.RecordCount}, nil
 }

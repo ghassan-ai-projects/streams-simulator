@@ -1,8 +1,9 @@
-package cli
+package app
 
 import (
 	"flag"
 	"fmt"
+	"io"
 )
 
 type deviceServeOptions struct {
@@ -10,12 +11,12 @@ type deviceServeOptions struct {
 	faultSchedule                                                                   faultSpecFlag
 }
 
-func parseDeviceServeOptions(args []string) (deviceServeOptions, error) {
+func parseDeviceServeOptions(args []string, stderr io.Writer) (deviceServeOptions, error) {
 	var options deviceServeOptions
-	fs := flag.NewFlagSet("device serve", flag.ExitOnError)
+	fs := newFlagSet("device serve", stderr)
 	registerDeviceServeFlags(fs, &options)
-	if err := fs.Parse(args); err != nil {
-		return deviceServeOptions{}, fmt.Errorf("streamsim: %w", err)
+	if err := parseFlags(fs, args); err != nil {
+		return deviceServeOptions{}, err
 	}
 	if options.socket == "" {
 		return deviceServeOptions{}, fmt.Errorf("device serve requires --socket")

@@ -133,5 +133,5 @@ the two delivery paths (D-18), and world read-purity (D-14).
 | M12b | done | `3b40255` | run edges and domain |
 | M13 | done | `13fa2e2` | refconsumer |
 | M14 | done | `7b9def3` | mcp |
-| M15 | pending | | |
+| M15 | done | `see git log` | cli |
 | T1–T5, F | pending | | |

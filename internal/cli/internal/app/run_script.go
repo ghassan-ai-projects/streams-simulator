@@ -1,4 +1,4 @@
-package cli
+package app
 
 import (
 	"fmt"
@@ -35,10 +35,10 @@ func applyScriptedPerturbations(r *run.Run, options runOptions) error {
 	return nil
 }
 
-func invokeScriptedEffectors(r *run.Run, options runOptions) error {
+func invokeScriptedEffectors(r *run.Run, options runOptions, nanos func() int64) error {
 	if options.effectors != "" {
 		for _, item := range splitCSV(options.effectors) {
-			if err := invokeScriptedEffector(r, item, options.startTime); err != nil {
+			if err := invokeScriptedEffector(r, item, options.startTime, nanos); err != nil {
 				return err
 			}
 		}
@@ -62,12 +62,12 @@ func scriptedPerturbation(item string, start int64) (string, int64, int64) {
 	return parts[0], start + int64(fromS*1e9), until
 }
 
-func invokeScriptedEffector(r *run.Run, item string, start int64) error {
+func invokeScriptedEffector(r *run.Run, item string, start int64, nanos func() int64) error {
 	effector, entity, offset, err := parseTriple(item, "@", "@")
 	if err != nil {
 		return fmt.Errorf("streamsim: %w", err)
 	}
-	command := fmt.Sprintf("cli-%d", timeNanos())
+	command := fmt.Sprintf("cli-%d", nanos())
 	if _, err := r.InvokeEffector(effector, entity, command, map[string]any{}, start+int64(offset*1e9)); err != nil {
 		return fmt.Errorf("effector %s: %w", effector, err)
 	}

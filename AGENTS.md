@@ -60,7 +60,7 @@ Do not invent architecture outside the documented design. The spec was written t
 The documented shape (see [docs/design/TECHNICAL_DESIGN.md](docs/design/TECHNICAL_DESIGN.md)):
 
 - `cmd/streamsim/main.go` - version metadata and CLI entrypoint
-- `internal/cli` - flags, application wiring, commands, shutdown
+- `internal/cli` - facade (`Main`) over the commands (`app`) and the process, file and serve edges
 - `internal/world` - seeded discrete-event world core; domain specs are data, loaded through one schema
 - `internal/perturb` - perturbation layer between world and adapter (what the observer got, not what happened)
 - `internal/adapter` - declarative output adapters projecting native `sim-event-v0.1` into consumer wire formats

@@ -1,18 +1,19 @@
-package cli
+package app
 
 import (
 	"fmt"
+	"time"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/cli/internal/files"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/device"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/deviceworld"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
-	"os"
-	"time"
 )
 
 func loadDeviceCapabilities(path string) (*device.Capabilities, error) {
-	data, err := os.ReadFile(path)
+	data, err := files.Read(path)
 	if err != nil {
 		return nil, fmt.Errorf("read capabilities: %w", err)
 	}
@@ -35,7 +36,7 @@ func createDeviceWorld(path string) (*world.World, error) {
 	return w, nil
 }
 
-func bindDeviceWorld(w *world.World, data []byte, entity string, caps *device.Capabilities) (device.Plant, *world.World, func() int64, error) {
+func bindDeviceWorld(w *world.World, data []byte, entity string, caps *device.Capabilities, now func() time.Time) (device.Plant, *world.World, func() int64, error) {
 	entity, err := selectDeviceWorldEntity(w, entity)
 	if err != nil {
 		return nil, nil, nil, err
@@ -47,7 +48,7 @@ func bindDeviceWorld(w *world.World, data []byte, entity string, caps *device.Ca
 	if err := validateDeviceWorldBindings(w, bindings, caps); err != nil {
 		return nil, nil, nil, err
 	}
-	return deviceWorldPlant(w, bindings)
+	return deviceWorldPlant(w, bindings, now)
 }
 
 func selectDeviceWorldEntity(w *world.World, entity string) (string, error) {
@@ -76,13 +77,13 @@ func validateDeviceWorldBindings(w *world.World, bindings map[string]deviceworld
 	return nil
 }
 
-func deviceWorldPlant(w *world.World, bindings map[string]deviceworld.Binding) (device.Plant, *world.World, func() int64, error) {
+func deviceWorldPlant(w *world.World, bindings map[string]deviceworld.Binding, now func() time.Time) (device.Plant, *world.World, func() int64, error) {
 	plant, err := deviceworld.New(w, bindings)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("device world plant: %w", err)
 	}
-	started := time.Now()
-	clock := func() int64 { return time.Since(started).Microseconds() }
+	started := now()
+	clock := func() int64 { return now().Sub(started).Microseconds() }
 	return plant, w, clock, nil
 }
 

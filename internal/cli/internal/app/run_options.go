@@ -1,8 +1,9 @@
-package cli
+package app
 
 import (
 	"flag"
 	"fmt"
+	"io"
 	"path/filepath"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
@@ -17,14 +18,14 @@ type runOptions struct {
 	startTime                                                       int64
 }
 
-func parseRunOptions(args []string) (runOptions, error) {
+func parseRunOptions(args []string, stderr io.Writer) (runOptions, error) {
 	var options runOptions
-	fs := flag.NewFlagSet("run", flag.ExitOnError)
+	fs := newFlagSet("run", stderr)
 	registerRunInputs(fs, &options)
 	registerRunExecution(fs, &options)
 	registerRunScript(fs, &options)
-	if err := fs.Parse(args); err != nil {
-		return runOptions{}, fmt.Errorf("streamsim: %w", err)
+	if err := parseFlags(fs, args); err != nil {
+		return runOptions{}, err
 	}
 	return admitRunOptions(options)
 }

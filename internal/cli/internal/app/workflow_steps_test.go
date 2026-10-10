@@ -1,9 +1,10 @@
-package cli
+package app
 
 import (
 	"crypto/ed25519"
 	"crypto/sha256"
 	"encoding/hex"
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -14,21 +15,21 @@ import (
 
 func TestRunOptionsPreserveDefaultsEpochZeroAndFileTarget(t *testing.T) {
 	t.Parallel()
-	options, err := parseRunOptions([]string{"--domain", "rotating-machinery", "--start-time", "0", "--sink", "file", "--out", "results"})
+	options, err := parseRunOptions([]string{"--domain", "rotating-machinery", "--start-time", "0", "--sink", "file", "--out", "results"}, io.Discard)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if options.startTime != 0 || options.seed != 1 || options.durationS != 6*3600 || options.adapterID != "native-jsonl" || options.sinkTarget != filepath.Join("results", "trace.jsonl") {
 		t.Fatalf("options=%+v", options)
 	}
-	options, err = parseRunOptions([]string{"--domain", "rotating-machinery", "--sink", "file"})
+	options, err = parseRunOptions([]string{"--domain", "rotating-machinery", "--sink", "file"}, io.Discard)
 	if err == nil {
 		t.Fatalf("missing file destination accepted: %+v", options)
 	}
 }
 
 func TestScriptedFaultsPrecedePerturbationsInCommandLog(t *testing.T) {
-	options, err := parseRunOptions([]string{"--domain", "rotating-machinery", "--domains-dir", "../../domains", "--adapters-dir", "../../adapters"})
+	options, err := parseRunOptions([]string{"--domain", "rotating-machinery", "--domains-dir", "../../../../domains", "--adapters-dir", "../../../../adapters"}, io.Discard)
 	if err != nil {
 		t.Fatal(err)
 	}

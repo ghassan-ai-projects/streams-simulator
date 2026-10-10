@@ -693,3 +693,32 @@ Isolated review of `42d0dbf`, `92d803b`, `3b40255`: no behaviour regression
   way to move), D-48 (`run.Config.QuiescenceClock` is public through the
   alias yet typed by a private interface; `Ledger.Closed` is a test-only
   query on a production type).
+
+## M15 — cli
+
+- Facade `internal/cli` (`Main(args, Build)`, `Build`) over
+  `internal/cli/internal/app` (every command: option parsing and use-case
+  orchestration, no direct process access) and three edges:
+  `process` (standard streams and wall clock as `process.Env`), `files`
+  (reads, writes, directory listing) and `serve` (the device socket and the
+  MCP director session with its operator endpoint, both until interrupted).
+- Commands now return the JSON document to print; the dispatcher prints it
+  once. Flag errors surface as a `usageExit` (status 2, `-h` status 0) instead
+  of `flag.ExitOnError` exiting inside the command, which is what makes every
+  command runnable in-process under test.
+- `cmd/streamsim` passes `cli.Build{Version, Commit}` to `cli.Main`; the
+  facade exports no mutable variables, so `cli.Version`/`cli.Commit` are gone.
+  This is the only change to `cmd`, deliberate and listed below.
+- Deliberate changes: (1) the interrupt handler is registered before the
+  device socket is bound, so a signal during startup is no longer lost;
+  (2) `score` reads the ledger with one file read instead of an open and a
+  stream, which changes the text only for a ledger path that is a directory.
+- Tests: `app` 81 % (was 26 % for the package as one unit; 22 in-process
+  command cases: usage and exit statuses, every error prefix, catalog,
+  domain, adapter, run → replay/verify, refconsumer → score, suite, manifest
+  with the injected clock and build), `files`/`process` 100 %, `serve` 79 %
+  (injected stop channel and in-memory transport; no signals, no sleeps),
+  facade 100 %. The cross-process determinism test stays beside the facade.
+- Architecture gates: the "surfaces are imported only by surfaces" rule now
+  reads the module's kind, so a surface's own layers may import surfaces; the
+  twelve per-file `internal/cli` ioEdges entries became three edge entries.
