@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/randutil"
 )
 
 // reorderWindow buffers records and emits them out of order within a bounded
@@ -15,13 +16,14 @@ import (
 type reorderWindow struct {
 	maxDisplacement int
 	buf             []Delivered
+	rng             *randutil.SplitMix64 // the perturbation's own stream decides each swap
 }
 
-func newReorderWindow(disp int) *reorderWindow {
+func newReorderWindow(disp int, rng *randutil.SplitMix64) *reorderWindow {
 	if disp < 1 {
 		disp = 1
 	}
-	return &reorderWindow{maxDisplacement: disp}
+	return &reorderWindow{maxDisplacement: disp, rng: rng}
 }
 
 func (w *reorderWindow) push(recs []Delivered, atNS int64) []Delivered {
@@ -76,11 +78,11 @@ func truncatePrecision(ts string) string {
 	return t.Format("2006-01-02T15:04:05.000000Z07:00")
 }
 
-func (w *reorderWindow) popDisplaced(atNS int64) (Delivered, Delivered, bool) {
+func (w *reorderWindow) popDisplaced(_ int64) (Delivered, Delivered, bool) {
 	// Emit the later record first when displacing an out-of-order pair.
 	head := w.buf[0]
 	w.buf = w.buf[1:]
-	if len(w.buf) > 0 && atNS%2 == 0 {
+	if len(w.buf) > 0 && w.rng.Intn(2) == 0 {
 		later := w.buf[0]
 		w.buf = w.buf[1:]
 		return later, head, true

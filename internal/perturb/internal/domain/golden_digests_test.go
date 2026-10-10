@@ -20,10 +20,10 @@ var goldenDigests = map[string]string{
 	"oversize":        "0fdd958b5fffa41fb09b5dc5780c7c31d37c0cac50ac5d31daca06ae562dfdb2",
 	"precision_edge":  "0f8a6431c9ef8eb6334e11c7103eb66c52fea8bf5b49bf0598ab0551a6e74177",
 	"producer_flap":   "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
-	"reorder":         "835decafadad78469d9ec798ef38edc239f4d75e31d8820116e67148875cbbbf",
+	"reorder":         "706303017af2a5eda18e60dba9d714f35729c3f4956dbf34bb07d4c7223d03c5",
 	"storm":           "44c1fc3dc057d86e0cf7601f6bf54aca60692de10acfd56f9174026c581a26a0",
 	"time_encoding":   "c7b03b9b53eb78f1762b4e297bce4b284e5589553d82c69a367b9e26665dc19a",
 	"unit_mismatch":   "e8b51490864adb68a05dd999a0ded7cd0dc3a2780bc0920652946a80a1438c34",
 }
 
-const goldenAllDigest = "8aa8537f0379558589e73b155da0302826528a433100f41362c7d5dc715a22fc"
+const goldenAllDigest = "b1997b1ceec5de55524ae40de0bd30985e717874b38787a10566b88b4830e374"
