@@ -56,11 +56,23 @@ func (r *Run) SetFailureMode(mode string) {
 }
 
 // UnblindedStamp reports whether the run was permanently stamped.
-func (r *Run) UnblindedStamp() bool { return r.unblinded }
+func (r *Run) UnblindedStamp() bool {
+	r.commandMu.Lock()
+	defer r.commandMu.Unlock()
+	return r.unblinded
+}
 
 // AppliedPerturbations returns the perturbations applied during the run, in
 // application order (the scorer's perturbation-fidelity input).
 func (r *Run) AppliedPerturbations() []string {
+	r.commandMu.Lock()
+	defer r.commandMu.Unlock()
+	return r.appliedPerturbations()
+}
+
+// appliedPerturbations copies the perturbation history; the caller holds the
+// command lock.
+func (r *Run) appliedPerturbations() []string {
 	out := make([]string, len(r.perturbHistory))
 	copy(out, r.perturbHistory)
 	return out

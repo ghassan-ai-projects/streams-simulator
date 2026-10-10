@@ -44,3 +44,15 @@ replayable artifact.
 
 D-05 note: world command ids for safe stops are now `safe-stop/<target>/<n>`
 (was `safe-stop/<target>`), visible in the effector-call log.
+| D-07 | done | `see git log` | `TestARunThatEndedWithAFailureIsStillClosed` |
+| D-08 | done | `see git log` | `TestConcurrentBeginRunOpensTheRunOnce` (-race) |
+| D-09 | done | `see git log` | `TestArtifactCountsEveryInjectedFaultEvenOnceCleared` |
+| D-10 | done | `see git log` | `TestReplayRebuildsTheWorldIdentityInputsOfTheArtifact` |
+| D-15 | done | `see git log` | `TestEveryCommandIsRefusedOnceTheRunIsFinished` |
+| D-16 | done | `see git log` | `TestFailedNewLeaksNoFileDescriptor`, `TestEndKeepsTheArtifactWhenItsEvidenceCannotBePublished` |
+| D-17 | done | `see git log` | `TestEvidenceReadsDoNotRaceWithAnAdvancingRun` (-race) |
+
+Tier 2 notes: the run-artifact contract gained optional `noiseless` and
+`force_failure_mode` in `world_config` (additive; the world digest already
+hashed them). `End` now returns the artifact together with a publication
+error, and a run whose end failed is finished.

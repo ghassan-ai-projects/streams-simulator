@@ -116,6 +116,9 @@ func replayConfig(art *model.RunArtifact, spec *domain.Compiled, adapterSpec *mo
 	cfg.StartTimeSet = true
 	cfg.EntityIDs = art.WorldConfig.EntityIDs
 	cfg.ScenarioProfile = art.WorldConfig.ScenarioProfile
+	cfg.ClockMultiplier = art.WorldConfig.ClockMultiplier
+	cfg.Noiseless = art.WorldConfig.Noiseless
+	cfg.ForceFailureMode = art.WorldConfig.ForceFailureMode
 	if sinkTarget != "" {
 		cfg.SinkName = model.SinkFile
 	}

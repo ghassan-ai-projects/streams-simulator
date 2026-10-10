@@ -8,6 +8,8 @@ import (
 
 // History returns the world-state history (director-only).
 func (r *Run) History() []model.StateSnapshot {
+	r.commandMu.Lock()
+	defer r.commandMu.Unlock()
 	out := make([]model.StateSnapshot, len(r.history))
 	for i, rec := range r.history {
 		out[i] = rec

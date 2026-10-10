@@ -22,6 +22,7 @@ func New(ctx context.Context, cfg Config) (*Run, error) {
 		return nil, err
 	}
 	if err := r.openPipeline(); err != nil {
+		r.releaseOpened()
 		return nil, err
 	}
 	r.attachWorld()
@@ -81,6 +82,18 @@ func (r *Run) openPipeline() error {
 		return err
 	}
 	return r.beginTrace()
+}
+
+// releaseOpened closes the durable ledger and the sink a failed New had
+// already opened, so a failed start leaks no file descriptor. Errors are
+// dropped: the start failure is the one to report.
+func (r *Run) releaseOpened() {
+	if r.durableLedger != nil {
+		_ = r.durableLedger.Finish()
+	}
+	if r.Sink != nil {
+		_, _ = r.Sink.Close()
+	}
 }
 
 func (r *Run) attachWorld() {
@@ -180,7 +193,11 @@ func (r *Run) beginTrace() error {
 }
 
 // Trace returns the delivered trace bytes (available after End).
-func (r *Run) Trace() []byte { return append([]byte(nil), r.trace...) }
+func (r *Run) Trace() []byte {
+	r.commandMu.Lock()
+	defer r.commandMu.Unlock()
+	return append([]byte(nil), r.trace...)
+}
 
 // SetEvidenceRecorder installs a hook invoked for every delivered event
 // (post-perturbation, pre-render). The prefix-indistinguishability harness

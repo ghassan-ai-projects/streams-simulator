@@ -15,9 +15,7 @@ import (
 // (replay reproduces the same state), the run is marked incomplete, and the
 // emitted count is still returned alongside the error.
 func (r *Run) Advance(ctx context.Context, toNS int64, awaitConsumer bool) (int, error) {
-	r.commandMu.Lock()
-	emitted, err := r.advanceThroughBoundary(toNS, awaitConsumer)
-	r.commandMu.Unlock()
+	emitted, err := r.advanceLocked(toNS, awaitConsumer)
 	if err != nil || !awaitConsumer {
 		return emitted, err
 	}
@@ -25,6 +23,16 @@ func (r *Run) Advance(ctx context.Context, toNS int64, awaitConsumer bool) (int,
 		return emitted, err
 	}
 	return emitted, nil
+}
+
+// advanceLocked advances under the command lock, refusing a finished run.
+func (r *Run) advanceLocked(toNS int64, awaitConsumer bool) (int, error) {
+	r.commandMu.Lock()
+	defer r.commandMu.Unlock()
+	if err := r.refuseWhenFinished("Advance"); err != nil {
+		return 0, err
+	}
+	return r.advanceThroughBoundary(toNS, awaitConsumer)
 }
 
 // advanceThroughBoundary holds commandMu through delivery and durable logging.

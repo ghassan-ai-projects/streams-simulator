@@ -22,8 +22,21 @@ func (r *Run) artifactCounts() model.Counts {
 		Perturbed:       int64(rules.CountLedger(r.ledger, model.DeliveryDuplicated, model.DeliveryDroppedByPerturb, model.DeliveryMangled, model.DeliveryDelayed, model.DeliveryRewritten, model.DeliveryReordered, model.DeliveryOmitted)),
 		DroppedByDesign: int64(rules.CountLedger(r.ledger, model.DeliveryDroppedByPerturb)),
 		EffectorCalls:   int64(len(r.World.EffectorCalls())),
-		FaultsInjected:  int64(r.World.ActiveFaultsCount()),
+		FaultsInjected:  r.countCommands(model.OpFaultInject),
 	}
+}
+
+// countCommands counts the recorded commands of one operation. Faults
+// injected are counted from the command log, not from the faults still
+// active, so clearing a fault does not erase it from the run's counts.
+func (r *Run) countCommands(op string) int64 {
+	var n int64
+	for _, command := range r.commandLog {
+		if command.Op == op {
+			n++
+		}
+	}
+	return n
 }
 
 func (r *Run) artifactIdentity() *model.RunArtifact {
@@ -53,6 +66,9 @@ func (r *Run) artifactWorldConfig() model.WorldConfig {
 		EntityIDs:       r.World.InitialEntityIDs(),
 		ScenarioProfile: r.Config.ScenarioProfile,
 		ClockMultiplier: r.Config.ClockMultiplier,
+
+		Noiseless:        r.Config.Noiseless,
+		ForceFailureMode: r.Config.ForceFailureMode,
 	}
 }
 
@@ -67,5 +83,5 @@ func (r *Run) attachArtifactState(artifact *model.RunArtifact, commands []model.
 	artifact.UnblindedAt = r.unblindedAt
 	artifact.Platform = model.CurrentPlatform()
 	artifact.Counts = counts
-	artifact.AppliedPerturbations = r.AppliedPerturbations()
+	artifact.AppliedPerturbations = r.appliedPerturbations()
 }

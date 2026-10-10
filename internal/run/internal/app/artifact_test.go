@@ -152,3 +152,27 @@ func TestReplayDivergenceSaysWhatIsAndIsNotKnown(t *testing.T) {
 		t.Fatalf("detail = %q", res.Detail)
 	}
 }
+
+// Every input the world digest hashes must be in the artifact, or a run
+// built with it could never be replayed: the replayed world would hash to a
+// different identity.
+func TestReplayRebuildsTheWorldIdentityInputsOfTheArtifact(t *testing.T) {
+	t.Parallel()
+	spec, a := testBase(t)
+	cfg := Config{
+		Domain: spec, Adapter: a, Seed: 5, SinkName: model.SinkInproc,
+		TimeMode: model.TimeStepped, StartTimeNS: model.DefaultStartTimeNS,
+		Noiseless: true, ForceFailureMode: "confirmed_no_effect", ClockMultiplier: 2,
+	}
+	art := buildArtifact(t, cfg)
+	if !art.WorldConfig.Noiseless || art.WorldConfig.ForceFailureMode != "confirmed_no_effect" || art.WorldConfig.ClockMultiplier != 2 {
+		t.Fatalf("the artifact must record the world-identity inputs: %+v", art.WorldConfig)
+	}
+	res, err := ReplayArtifact(context.Background(), art, spec, a, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !res.Matches {
+		t.Fatalf("replay of a noiseless forced-failure run must reproduce it: %+v", res)
+	}
+}

@@ -52,6 +52,11 @@ type WorldConfig struct {
 	ScenarioProfile string           `json:"scenario_profile,omitempty"`
 	Sinks           []map[string]any `json:"sinks,omitempty"`
 	ClockMultiplier float64          `json:"clock_multiplier,omitempty"`
+	// Noiseless and ForceFailureMode are world-identity inputs: the world
+	// digest hashes them, so the artifact must carry them for a replay to
+	// rebuild the same world.
+	Noiseless        bool   `json:"noiseless,omitempty"`
+	ForceFailureMode string `json:"force_failure_mode,omitempty"`
 }
 
 // Command is one mutation in the total order that reproduces a run.

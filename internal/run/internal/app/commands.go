@@ -12,6 +12,9 @@ import (
 func (r *Run) InjectFault(entityID, faultID string, onsetNS int64, params map[string]any) (string, error) {
 	r.commandMu.Lock()
 	defer r.commandMu.Unlock()
+	if err := r.refuseWhenFinished("InjectFault"); err != nil {
+		return "", err
+	}
 	fid, err := r.World.InjectFault(entityID, faultID, onsetNS, params)
 	if err != nil {
 		return "", fmt.Errorf("run: inject fault: %w", err)
@@ -24,14 +27,14 @@ func (r *Run) InjectFault(entityID, faultID string, onsetNS int64, params map[st
 func (r *Run) ClearFault(faultID string, atNS int64) error {
 	r.commandMu.Lock()
 	defer r.commandMu.Unlock()
+	if err := r.refuseWhenFinished("ClearFault"); err != nil {
+		return err
+	}
 
 	if err := r.World.ClearFault(faultID, atNS); err != nil {
 		return fmt.Errorf("ClearFault: %w", err)
 	}
-	r.commandLog = append(r.commandLog, model.Command{
-		Seq: int64(len(r.commandLog)), AtNS: r.World.Clock(), Op: model.OpFaultClear,
-		Args: map[string]any{"fault_id": faultID, "at_ns": atNS},
-	})
+	r.recordWorldCommand(model.OpFaultClear, map[string]any{"fault_id": faultID, "at_ns": atNS})
 	return nil
 }
 
@@ -39,6 +42,9 @@ func (r *Run) ClearFault(faultID string, atNS int64) error {
 func (r *Run) ApplyPerturb(name string, params map[string]any, fromNS, untilNS int64) (string, error) {
 	r.commandMu.Lock()
 	defer r.commandMu.Unlock()
+	if err := r.refuseWhenFinished("ApplyPerturb"); err != nil {
+		return "", err
+	}
 	id, err := r.Perturb.Apply(name, params, fromNS, untilNS)
 	if err != nil {
 		return "", fmt.Errorf("run: perturb: %w", err)
@@ -52,14 +58,14 @@ func (r *Run) ApplyPerturb(name string, params map[string]any, fromNS, untilNS i
 func (r *Run) ClearPerturb(id string) error {
 	r.commandMu.Lock()
 	defer r.commandMu.Unlock()
+	if err := r.refuseWhenFinished("ClearPerturb"); err != nil {
+		return err
+	}
 
 	if err := r.Perturb.Clear(id); err != nil {
 		return fmt.Errorf("ClearPerturb: %w", err)
 	}
-	r.commandLog = append(r.commandLog, model.Command{
-		Seq: int64(len(r.commandLog)), AtNS: r.World.Clock(), Op: model.OpPerturbClear,
-		Args: map[string]any{"perturb_id": id},
-	})
+	r.recordWorldCommand(model.OpPerturbClear, map[string]any{"perturb_id": id})
 	return nil
 }
 
@@ -67,8 +73,8 @@ func (r *Run) ClearPerturb(id string) error {
 func (r *Run) InvokeEffector(effector, entityID, commandID string, args map[string]any, atNS int64) (*world.InvokeResult, error) {
 	r.commandMu.Lock()
 	defer r.commandMu.Unlock()
-	if r.finished {
-		return nil, fmt.Errorf("InvokeEffector: run is finished")
+	if err := r.refuseWhenFinished("InvokeEffector"); err != nil {
+		return nil, err
 	}
 	result, err := r.World.InvokeEffector(effector, entityID, commandID, args, atNS)
 	// Record refusals as well as successful calls so replay reproduces both.
@@ -83,14 +89,14 @@ func (r *Run) InvokeEffector(effector, entityID, commandID string, args map[stri
 func (r *Run) AddEntity(id string, atNS int64) error {
 	r.commandMu.Lock()
 	defer r.commandMu.Unlock()
+	if err := r.refuseWhenFinished("AddEntity"); err != nil {
+		return err
+	}
 
 	if err := r.World.AddEntity(id, atNS); err != nil {
 		return fmt.Errorf("AddEntity: %w", err)
 	}
-	r.commandLog = append(r.commandLog, model.Command{
-		Seq: int64(len(r.commandLog)), AtNS: atNS, Op: model.OpEntityAdd,
-		Args: map[string]any{"entity_id": id, "at_ns": atNS},
-	})
+	r.recordCommandAt(model.OpEntityAdd, atNS, map[string]any{"entity_id": id, "at_ns": atNS})
 	return nil
 }
 
@@ -98,12 +104,12 @@ func (r *Run) AddEntity(id string, atNS int64) error {
 func (r *Run) RetireEntity(entityID, reason string, atNS int64) error {
 	r.commandMu.Lock()
 	defer r.commandMu.Unlock()
+	if err := r.refuseWhenFinished("RetireEntity"); err != nil {
+		return err
+	}
 
 	r.World.Retire(entityID, reason, atNS)
-	r.commandLog = append(r.commandLog, model.Command{
-		Seq: int64(len(r.commandLog)), AtNS: atNS, Op: model.OpEntityRetire,
-		Args: map[string]any{"entity_id": entityID, "reason": reason, "at_ns": atNS},
-	})
+	r.recordCommandAt(model.OpEntityRetire, atNS, map[string]any{"entity_id": entityID, "reason": reason, "at_ns": atNS})
 	return nil
 }
 
@@ -121,6 +127,9 @@ func (r *Run) ConfigureEnvTarget(target string, allow bool) {
 func (r *Run) EnvInject(target, fault string, params map[string]any, atNS int64) (string, error) {
 	r.commandMu.Lock()
 	defer r.commandMu.Unlock()
+	if err := r.refuseWhenFinished("EnvInject"); err != nil {
+		return "", err
+	}
 	if !r.allowEnv {
 		return "", fmt.Errorf("run: env.inject not enabled for this world (no configured target)")
 	}
@@ -139,4 +148,13 @@ func (r *Run) recordCommandAt(op string, atNS int64, args map[string]any) {
 	r.commandLog = append(r.commandLog, model.Command{
 		Seq: int64(len(r.commandLog)), AtNS: atNS, Op: op, Args: args,
 	})
+}
+
+// refuseWhenFinished is the one place a mutating command learns the run is
+// over: a finished run's command log, world and evidence are sealed.
+func (r *Run) refuseWhenFinished(command string) error {
+	if r.finished {
+		return fmt.Errorf("%s: run is finished", command)
+	}
+	return nil
 }

@@ -36,16 +36,26 @@ func (r *Run) endLocked(outDir string) (*model.RunArtifact, error) {
 }
 
 func (r *Run) finishRun(outDir string) (*model.RunArtifact, error) {
-	if err := r.finishTrace(); err != nil {
-		return nil, err
-	}
+	// The sink and ledger are closed by now whatever happened, so the run is
+	// over: it takes no further commands even when its end failed.
+	traceErr := r.finishTrace()
 	r.finished = true
-	if err := r.publishRequestedEvidence(outDir); err != nil {
-		return nil, err
+	if traceErr != nil {
+		return nil, traceErr
 	}
+	return r.publishArtifact(outDir)
+}
+
+// publishArtifact writes the run's evidence and artifact. The artifact is
+// returned with a publication error too: the run is over and its evidence is
+// in memory, so a caller can still use it.
+func (r *Run) publishArtifact(outDir string) (*model.RunArtifact, error) {
 	art := r.artifact()
+	if err := r.publishRequestedEvidence(outDir); err != nil {
+		return art, err
+	}
 	if err := durable.WriteRunArtifact(outDir, art); err != nil {
-		return nil, err
+		return art, err
 	}
 	return art, r.runErr
 }
@@ -76,12 +86,15 @@ func (r *Run) tracePath(outDir string) string {
 func (r *Run) finishTrace() error {
 	r.finishPostamble()
 	trace, err := r.Sink.Close()
+	// The ledger is closed even when the sink fails to close, or its file
+	// descriptor would outlive the run.
+	ledgerErr := r.closeDurableLedger()
 	if err != nil {
 		return fmt.Errorf("End: %w", err)
 	}
 	r.trace = trace
 	r.traceDigest = canonical.DigestBytes(trace)
-	return r.closeDurableLedger()
+	return ledgerErr
 }
 
 func (r *Run) finishPostamble() {

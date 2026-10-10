@@ -233,8 +233,8 @@ func TestARunThatEndedWithAFailureIsStillClosed(t *testing.T) {
 		t.Fatal(err)
 	}
 	_, _ = d.Advance(t.Context(), worldID, model.DefaultStartTimeNS+600*1e9, false)
-	if _, err := d.EndRun(worldID); err == nil {
-		t.Fatal("a run whose sink failed must report the failure when it ends")
+	if _, err := d.EndRun(worldID); err == nil || !strings.HasPrefix(err.Error(), "domain_invalid: run r-1 aborted: sink: http-push POST") {
+		t.Fatalf("a run whose sink failed must report the failure when it ends: %v", err)
 	}
 	if d.runIsOpen(w.Run.ID) {
 		t.Fatal("a run that ended with a failure must not stay open")
