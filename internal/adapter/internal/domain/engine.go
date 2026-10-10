@@ -121,12 +121,20 @@ func rewriteOverflow(id, out string, rw *model.IDRewrite) (string, error) {
 	case "truncate":
 		out = out[:rw.MaxLength]
 	case "hash_suffix":
-		h := canonical.DigestBytes([]byte(out))[:16]
-		out = out[:rw.MaxLength-len(h)] + h
+		out = hashSuffixed(out, rw.MaxLength)
 	default: // fail
 		return "", fmt.Errorf("adapter: entity id %q exceeds max_length %d after rewrite", id, rw.MaxLength)
 	}
 	return out, nil
+}
+
+// hashSuffixed shortens id to maxLength characters, ending it with up to 16
+// hex digits of the digest of the full id so distinct long ids stay distinct.
+// A limit below 16 keeps only as many digest digits as fit.
+func hashSuffixed(id string, maxLength int) string {
+	digits := strings.TrimPrefix(canonical.DigestBytes([]byte(id)), "sha256:")
+	suffix := digits[:min(16, maxLength)]
+	return id[:maxLength-len(suffix)] + suffix
 }
 
 // RenderRun renders preamble, every event, and postamble into the adapter's

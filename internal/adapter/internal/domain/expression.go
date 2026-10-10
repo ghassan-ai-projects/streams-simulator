@@ -107,11 +107,9 @@ func evalCounter(e *model.ValueExpr, ctx *recordContext) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	width := e.Width
-	if width <= 0 {
-		width = 6
-	}
-	return e.Prefix + fmt.Sprintf("%0*d", width, n), nil
+	// The contract requires width in [1,20]; validation has refused anything
+	// else, so there is no default to apply here.
+	return e.Prefix + fmt.Sprintf("%0*d", e.Width, n), nil
 }
 
 func (ctx recordContext) addEvent(ev *model.SimEvent) {

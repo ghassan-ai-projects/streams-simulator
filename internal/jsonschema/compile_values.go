@@ -6,13 +6,12 @@ import (
 )
 
 func fillStringKeywords(s *Schema, m map[string]any, defs map[string]any, reg map[string]*Schema, depth int) error {
-	if v, ok := m["minLength"]; ok {
-		s.minLen = toInt(v)
-		s.hasMinLen = true
+	var err error
+	if s.minLen, s.hasMinLen, err = countKeyword(m, "minLength"); err != nil {
+		return err
 	}
-	if v, ok := m["maxLength"]; ok {
-		s.maxLen = toInt(v)
-		s.hasMaxLen = true
+	if s.maxLen, s.hasMaxLen, err = countKeyword(m, "maxLength"); err != nil {
+		return err
 	}
 	return fillPattern(s, m)
 }

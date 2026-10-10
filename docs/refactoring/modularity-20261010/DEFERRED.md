@@ -145,3 +145,10 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 > `lastSent` itself, but its only caller (`numericReading`) sets
 > `lastSent`/`hasSent` after every emission, so the deadband is measured from
 > the last report. A through-the-world test would have passed before and after.
+
+> **D-28 closed as designed.** The http-push sink posts one line at a time
+> under the run lock because delivery order is part of the trace digest; the
+> 30 s client timeout bounds a stalled receiver. A measured experiment showed
+> the response body needs no explicit drain (Go's transport reuses the
+> connection for small bodies), so there is nothing to fix without an
+> asynchronous, order-preserving sink, which is a design change.

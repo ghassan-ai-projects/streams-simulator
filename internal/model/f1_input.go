@@ -5,6 +5,25 @@ import (
 	"fmt"
 )
 
+// MarshalJSON writes the object form. The coefficient is left out only when
+// it was never given and is zero; an explicit zero must be written, or the
+// value would reload as the default 1.
+func (f F1Input) MarshalJSON() ([]byte, error) {
+	type wire struct {
+		State string   `json:"state"`
+		Coef  *float64 `json:"coef,omitempty"`
+	}
+	out := wire{State: f.State}
+	if f.CoefSet || f.Coef != 0 {
+		out.Coef = &f.Coef
+	}
+	raw, err := json.Marshal(out)
+	if err != nil {
+		return nil, fmt.Errorf("model: marshal f1 input: %w", err)
+	}
+	return raw, nil
+}
+
 // UnmarshalJSON accepts both the bare-string and object forms.
 func (f *F1Input) UnmarshalJSON(b []byte) error {
 	var state string

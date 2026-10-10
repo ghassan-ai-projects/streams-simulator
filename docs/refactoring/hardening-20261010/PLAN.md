@@ -77,3 +77,14 @@ file was regenerated in this commit.
 Not yet started: D-20, D-25, D-26, D-28, D-30..D-34, D-38, D-40, D-50, tier 5
 (D-46, D-47, D-48, T-01). The last round-check was green at `92ace18`; the
 D-21/D-27/D-42/D-51 commit below ran focused package tests only.
+| D-25 | done | `see git log` | `TestReadingNeverAltersWhatARunEmits` |
+| D-20 | done | `see git log` | `TestAuditScenarioWithoutAWindowAuditsTheSuiteScenarioLength` |
+| D-26 | done | `see git log` | `TestReorderSwapsAboutHalfOfTheWholeSecondPairs`; pinned reorder/combined digests updated |
+| D-30 | done | `see git log` | `TestVerifyRefusesAnEmptyFixtureInsteadOfPanicking` |
+| D-31 | done | `see git log` | `TestHashSuffixKeepsTheLimitAndStaysHexWhateverTheLimit` |
+| D-32 | done | `see git log` | `TestSplitRecordsReadsJSONArrayOutputElementwise`, `TestAdapterVerdictFailsOnlyForADeclaredCheckOrForNothingToCheck` |
+| D-33 | done | `see git log` | `TestCompileRefusesMalformedCountAndUniqueKeywords` |
+| D-34 | done | `see git log` | `TestF1InputExplicitZeroCoefficientSurvivesARoundTrip` |
+| D-38 | done | `see git log` | `TestCompileReportsTheFirstBrokenDefinitionByName`, `TestProfileValidationNamesTheSortedFirstUndeclaredFault` |
+| D-40 | done | removed the dead default | (no behaviour) |
+| D-28, D-50 | closed, not defects | see DEFERRED | measured / traced |

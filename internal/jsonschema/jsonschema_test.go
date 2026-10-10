@@ -182,3 +182,43 @@ func TestPathReporting(t *testing.T) {
 		t.Fatalf("path wrong: %v", errs)
 	}
 }
+
+// A malformed keyword in a user-supplied schema is an error at compile time,
+// never a panic and never silently read as zero.
+func TestCompileRefusesMalformedCountAndUniqueKeywords(t *testing.T) {
+	t.Parallel()
+	cases := map[string]string{
+		"uniqueItems string": `{"type":"array","uniqueItems":"x"}`,
+		"minItems string":    `{"type":"array","minItems":"2"}`,
+		"maxItems negative":  `{"type":"array","maxItems":-1}`,
+		"minLength fraction": `{"type":"string","minLength":1.5}`,
+		"maxLength bool":     `{"type":"string","maxLength":true}`,
+	}
+	for name, schema := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			var doc any
+			if err := json.Unmarshal([]byte(schema), &doc); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := Compile(doc); err == nil || !strings.Contains(err.Error(), "jsonschema:") {
+				t.Fatalf("Compile(%s) = %v, want a jsonschema error", schema, err)
+			}
+		})
+	}
+	if _, err := CompileJSON([]byte(`{"type":"array","minItems":2,"maxItems":3,"uniqueItems":true}`)); err != nil {
+		t.Fatalf("a well-formed schema must still compile: %v", err)
+	}
+}
+
+// Which broken definition is reported must not depend on map order.
+func TestCompileReportsTheFirstBrokenDefinitionByName(t *testing.T) {
+	t.Parallel()
+	doc := `{"type":"object","$defs":{"zeta":"not an object","alpha":"also not","mid":{"type":"string"}}}`
+	for range 25 {
+		_, err := CompileJSON([]byte(doc))
+		if err == nil || !strings.Contains(err.Error(), "$defs/alpha") {
+			t.Fatalf("err = %v, want the alphabetically first broken definition", err)
+		}
+	}
+}

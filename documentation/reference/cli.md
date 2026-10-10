@@ -44,7 +44,7 @@ streamsim adapter [list|verify] [flags]
 Flags:
 
 - `--adapters-dir <path>` — adapter directory; defaults to `adapters`.
-- `adapter verify <path>` — verifies the selected adapter.
+- `adapter verify <path>` — renders the conformance fixture and checks it against the adapter's declared output schema and golden file. It fails when a declared check fails, and when the adapter declares neither (nothing would be compared); the result reports `schema_checked` and `golden_checked`.
 
 ### `device serve`
 

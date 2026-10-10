@@ -135,3 +135,26 @@ func TestCurrentPlatformNamesTheBuild(t *testing.T) {
 		t.Fatalf("platform = %+v", p)
 	}
 }
+
+func TestF1InputExplicitZeroCoefficientSurvivesARoundTrip(t *testing.T) {
+	t.Parallel()
+	var in F1Input
+	if err := json.Unmarshal([]byte(`{"state":"u","coef":0}`), &in); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := json.Marshal(in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var back F1Input
+	if err := json.Unmarshal(raw, &back); err != nil {
+		t.Fatal(err)
+	}
+	if back.Coef != 0 || !back.CoefSet {
+		t.Fatalf("explicit coef 0 came back as %+v from %s", back, raw)
+	}
+	unset, _ := json.Marshal(F1Input{State: "u", Coef: 1})
+	if string(unset) != `{"state":"u","coef":1}` {
+		t.Fatalf("a default coefficient keeps its shape: %s", unset)
+	}
+}

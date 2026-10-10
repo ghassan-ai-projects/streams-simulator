@@ -2,6 +2,8 @@ package domain
 
 import (
 	"fmt"
+	"maps"
+	"slices"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
@@ -92,7 +94,7 @@ func (checks domainChecks) dynamicF1(d *model.Dynamics) error {
 
 func (checks domainChecks) dynamicF2(d *model.Dynamics) error {
 	if d.F2 != nil {
-		for name := range d.F2.Inputs {
+		for _, name := range slices.Sorted(maps.Keys(d.F2.Inputs)) {
 			if !checks.compiled.HasState(name) {
 				return checks.bad("f2 model %q input %q is not a declared state", d.F2.Model, name)
 			}
@@ -141,11 +143,11 @@ func (checks domainChecks) faultEffector(f *model.Fault) error {
 }
 
 func (checks domainChecks) checkProfile(p *model.Profile) error {
-	for name, w := range p.FaultWeights {
+	for _, name := range slices.Sorted(maps.Keys(p.FaultWeights)) {
 		if !checks.compiled.HasFault(name) {
 			return checks.bad("profile %q weights undeclared fault %q", p.Name, name)
 		}
-		if w < 0 {
+		if p.FaultWeights[name] < 0 {
 			return checks.bad("profile %q has negative weight for %q", p.Name, name)
 		}
 	}

@@ -162,3 +162,41 @@ func TestDecodeFixtureRecordsReadsOneEventPerLine(t *testing.T) {
 		t.Fatalf("malformed fixture: %v", err)
 	}
 }
+
+func TestVerifyRefusesAnEmptyFixtureInsteadOfPanicking(t *testing.T) {
+	t.Parallel()
+	a, _, _ := shippedNative(t)
+	_, err := Verify(a, nil, "", memoryFiles{})
+	if err == nil || !strings.Contains(err.Error(), "holds no events") {
+		t.Fatalf("err = %v", err)
+	}
+}
+
+func TestSplitRecordsReadsJSONArrayOutputElementwise(t *testing.T) {
+	t.Parallel()
+	got, err := splitRecords([]byte("[\n{\"a\":1}\n,{\"b\":2}\n]\n"), "json-array")
+	if err != nil || len(got) != 2 || got[0] != `{"a":1}` || got[1] != `{"b":2}` {
+		t.Fatalf("records = %q, err = %v", got, err)
+	}
+	if _, err := splitRecords([]byte("not an array"), "json-array"); err == nil || !strings.Contains(err.Error(), "not a JSON array") {
+		t.Fatalf("err = %v", err)
+	}
+	lines, err := splitRecords([]byte("{\"a\":1}\n\n{\"b\":2}\n"), "jsonl")
+	if err != nil || len(lines) != 2 {
+		t.Fatalf("jsonl records = %q, err = %v", lines, err)
+	}
+}
+
+func TestVerifyReportsWhichDeclaredChecksRan(t *testing.T) {
+	t.Parallel()
+	a, fixture, rendered := shippedNative(t)
+	res, err := Verify(a, fixture, "", memoryFiles{schema: []byte(anyObject), golden: rendered})
+	if err != nil || !res.SchemaChecked || !res.GoldenChecked {
+		t.Fatalf("both declared checks must be reported as run: %+v (%v)", res, err)
+	}
+	a.Conformance = nil
+	res, err = Verify(a, fixture, "", memoryFiles{})
+	if err != nil || res.SchemaChecked || res.GoldenChecked {
+		t.Fatalf("no declared checks, none reported: %+v (%v)", res, err)
+	}
+}
