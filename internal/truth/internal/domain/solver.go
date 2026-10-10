@@ -47,6 +47,11 @@ type result struct {
 	Observable        bool     `json:"observable"`
 	Method            string   `json:"solution_method"`
 	Channels          []string `json:"channels"`
+
+	// firstFound and unavoidableFound say whether each threshold was
+	// crossed: the timestamps alone cannot, because epoch zero is a legal
+	// time.
+	firstFound, unavoidableFound bool
 }
 
 // solve computes the onset timestamps for a fault injected at onsetNS on
@@ -55,6 +60,9 @@ func (s *Solver) solve(entityID, faultID string, onsetNS int64, startNS int64, e
 	fault := s.spec.Fault(faultID)
 	if fault == nil {
 		return nil, fmt.Errorf("truth: unknown fault %q", faultID)
+	}
+	if !knownDetectorForm(fault.Observability.Detector.Form) {
+		return nil, fmt.Errorf("truth: fault %q declares unknown detector form %q", faultID, fault.Observability.Detector.Form)
 	}
 	res := &result{Channels: detectorChannels(&fault.Observability.Detector), Method: model.SolveNumeric}
 	scan, err := s.prepareScan(entityID, faultID, fault, onsetNS, startNS, entityIDs, setup)
@@ -114,18 +122,28 @@ func (s *Solver) balance(channels []string, w *world.World, t int64, entityID st
 // effectiveSigma is the detector's noise floor after the form's propagation
 // rule: a divergence combines sigmas in quadrature, a peer residual pools
 // the sibling variance, a conservation residual sums over the balance.
-func (s *Solver) effectiveSigma(entityID string, det *model.Detector, entityIDs []string) float64 {
+// peers is the number of entities the world actually holds: a peer residual
+// pools over those, whether or not the caller named them.
+func (s *Solver) effectiveSigma(entityID string, det *model.Detector, peers int) float64 {
 	switch det.Form {
 	case model.DetectorSingleChannel:
 		return s.channelSigma(det.Channel)
 	case model.DetectorDivergence:
 		return math.Hypot(s.channelSigma(det.ChannelA), s.channelSigma(det.ChannelB))
 	case model.DetectorPeerResidual:
-		return s.peerSigma(det.Channel, len(entityIDs))
+		return s.peerSigma(det.Channel, peers)
 	case model.DetectorConservation:
 		return s.balanceSigma(det)
 	}
 	return 0
+}
+
+func knownDetectorForm(form string) bool {
+	switch form {
+	case model.DetectorSingleChannel, model.DetectorDivergence, model.DetectorPeerResidual, model.DetectorConservation:
+		return true
+	}
+	return false
 }
 
 func detectorChannels(det *model.Detector) []string {

@@ -33,7 +33,7 @@ func newObservabilityScan(s *Solver, entity string, fault *model.Fault, clean, f
 	return &observabilityScan{
 		solver: s, entity: entity, detector: detector,
 		clean: clean, faulted: faulted, entityIDs: entityIDs,
-		sigma: s.effectiveSigma(entity, detector, entityIDs),
+		sigma: s.effectiveSigma(entity, detector, len(clean.EntityIDs())),
 	}
 }
 
@@ -45,17 +45,19 @@ func (scan *observabilityScan) searchOnsets(res *result, fault *model.Fault, ons
 		}
 	}
 	res.EffectiveSigma = scan.sigma
-	res.Observable = res.FirstObservableNS != 0
+	res.Observable = res.firstFound
 	return res
 }
 
 func (scan *observabilityScan) observeThresholds(res *result, fault *model.Fault, at int64) bool {
 	quantity := scan.solver.quantity(scan.entity, scan.detector, scan.clean, scan.faulted, at, scan.entityIDs)
-	if res.FirstObservableNS == 0 && quantity >= fault.Observability.FirstObservableSNR*scan.sigma {
-		res.FirstObservableNS = at
+	// A zero deviation is never a detection, even where the noise floor
+	// (and so the threshold) is zero.
+	if !res.firstFound && quantity > 0 && quantity >= fault.Observability.FirstObservableSNR*scan.sigma {
+		res.FirstObservableNS, res.firstFound = at, true
 	}
-	if res.UnavoidableNS == 0 && quantity >= fault.Observability.UnavoidableSNR*scan.sigma {
-		res.UnavoidableNS = at
+	if !res.unavoidableFound && quantity > 0 && quantity >= fault.Observability.UnavoidableSNR*scan.sigma {
+		res.UnavoidableNS, res.unavoidableFound = at, true
 	}
-	return res.UnavoidableNS != 0
+	return res.unavoidableFound
 }
