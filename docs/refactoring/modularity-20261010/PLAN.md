@@ -100,6 +100,7 @@ dereferenced nil; every one has a regression test.
 | M4 | `score.Score` returns `ErrNoLabel` for a nil label; a nil domain in the evidence skips fault recovery levels | `TestScoreRefusesAMissingLabelAndToleratesAMissingDomain` |
 | M7 | `deviceworld.New` returns `(*Plant, error)`, `ErrNoWorld` for a nil world | `TestNewRefusesAMissingWorld` |
 | M6 | `suite.Generate` returns `ErrNoDomain` for a missing domain | `TestGenerateRefusesAMissingDomain` |
+| M10 | `adapter.NewEngine` returns `ErrNoAdapter` for a nil adapter | `TestNewEngineRefusesAMissingAdapter` |
 | M5 | `audit.NewPanel` returns `(*Panel, error)`, `ErrNoSpec` for a nil spec | `TestNewPanelRefusesAMissingSpec`; `audit.Audit` on a nil/zero panel returns `ErrNoPanel` (`TestAuditRefusesAMissingPanel`) |
 
 ## Not in this program
@@ -122,6 +123,7 @@ the two delivery paths (D-18), and world read-purity (D-14).
 | M6 | done | `ff2f3a3` | suite; review follow-up with M5 |
 | M7 | done | `c522b77` | deviceworld |
 | M8 | done | `28c648a` | sink; review pending |
-| M9 | in progress | | domain |
+| M9 | done | `59c3a45` | domain |
+| M10 | in progress | | adapter |
 | M10–M15 | pending | | |
 | T1–T5, F | pending | | |

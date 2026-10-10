@@ -1,10 +1,9 @@
-// Package adapter implements the declarative output adapter engine. An
-// adapter is data — a JSON file projecting native sim-event-v0.1 records
-// into a consumer's wire format through a closed set of transforms. The
-// binary contains no consumer-specific code, no consumer's field names and
-// no consumer's framing rules; adding a consumer must never require a
-// release.
-package adapter
+// Package domain holds the declarative output-adapter rules: validation of
+// an adapter document against its schema and cross-checks, and the engine
+// that projects native sim-event-v0.1 records into a consumer's wire format
+// through a closed set of transforms. An adapter is data: this package has no
+// consumer-specific code and performs no I/O.
+package domain
 
 import (
 	"encoding/json"
@@ -14,6 +13,12 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/schemas"
 )
+
+// DecodeFile validates an adapter document read from a file: the same checks
+// as LoadBytes, with the multi-line error layout used for files.
+func DecodeFile(raw []byte, path string) (*model.Adapter, error) {
+	return decodeAdapter(raw, path, "\n  ")
+}
 
 // LoadBytes validates an adapter from an in-memory source document. It is
 // used by artifact replay so a run can carry its own adapter definition.

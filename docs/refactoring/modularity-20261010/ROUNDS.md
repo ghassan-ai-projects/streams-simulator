@@ -516,3 +516,21 @@ list, the suite determinism test uses one scenario (suite package 3.8 s →
   the shipped-domain integrity test plus catalog and parse contract tests
   (100 %). Fuzz targets in the Makefile and two documented test commands
   point at the new paths.
+
+## M10 — adapter
+
+- Facade `internal/adapter` (`Load`, `LoadBytes`, `FixtureEvents`, `Engine`
+  with `Begin`/`RenderRecord`/`RenderStreamRecord`/`End`/`RenderRun`,
+  `NewEngine`) over `internal/adapter/internal/domain` (validation, engine;
+  embedded fixture moved with it) and `internal/adapter/internal/files`
+  (`Load`: the only `os` user). The loader's `separator` parameter no longer
+  leaks: `DecodeFile` (multi-line error layout) and `LoadBytes` (single-line)
+  are the two entry points; error text is unchanged.
+- Deliberate, listed in PLAN: `NewEngine` refuses a nil adapter
+  (`ErrNoAdapter`). `Engine.Meta` (no caller) removed.
+- `adapter/conformance` is still a flat edge-core package that uses only the
+  adapter facade; it is listed with the other unmigrated packages for the
+  final shape gate (a facade/domain split would only forward ~200 lines).
+- Tests by layer: rules (66 %, floor moved to the layer), files (100 %),
+  facade (86 %: nil adapter, `LoadBytes`, streaming session equals whole-run
+  render over the shipped adapter and fixture).

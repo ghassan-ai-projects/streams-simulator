@@ -1,4 +1,4 @@
-package adapter
+package domain
 
 // The adapter conformance fixture: a fixed 12-event native trace, committed
 // with the simulator. Every adapter's golden file is rendered from exactly

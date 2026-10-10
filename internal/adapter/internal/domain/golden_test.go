@@ -1,4 +1,4 @@
-package adapter
+package domain
 
 // Golden regeneration: run `REGEN_GOLDEN=1 go test ./internal/adapter/ -run
 // TestRegenerateGoldens -v` after an intentional adapter or fixture change.
@@ -26,7 +26,7 @@ func TestRegenerateGoldens(t *testing.T) {
 		"domain_id": "fixture", "domain_version": "0.0.0",
 		"world_start_time": fx[0].EventTime, "seed": float64(0),
 	}
-	root := filepath.Join("..", "..", "adapters")
+	root := filepath.Join("..", "..", "..", "..", "adapters")
 	for _, name := range []string{"native-jsonl", "agentic-stream"} {
 		a, err := Load(filepath.Join(root, name+".adapter.json"))
 		if err != nil {

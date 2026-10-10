@@ -1,4 +1,4 @@
-package adapter
+package domain
 
 import (
 	"bytes"
@@ -99,9 +99,6 @@ func (e *Engine) frame(line string) string {
 	e.items++
 	return line
 }
-
-// Meta returns the run-level bindings (for the run layer to fill in).
-func (e *Engine) Meta() map[string]any { return e.meta }
 
 // rewriteID applies the declared entity-id rewrite.
 func (e *Engine) rewriteID(id string) (string, error) {

@@ -1,4 +1,4 @@
-package adapter
+package files
 
 import (
 	"path/filepath"
@@ -8,7 +8,7 @@ import (
 
 func TestLoadReadsAndValidatesAnAdapterFile(t *testing.T) {
 	t.Parallel()
-	a, err := Load(filepath.Join("..", "..", "adapters", "native-jsonl.adapter.json"))
+	a, err := Load(filepath.Join("..", "..", "..", "..", "adapters", "native-jsonl.adapter.json"))
 	if err != nil {
 		t.Fatal(err)
 	}

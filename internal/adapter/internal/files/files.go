@@ -1,14 +1,15 @@
-package adapter
+// Package files is the file-system edge of the adapter module: it reads an
+// adapter file and hands the bytes to the pure layer, which validates and
+// decodes them.
+package files
 
 import (
 	"fmt"
 	"os"
 
+	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
-
-// This file is the package's only file-system edge: everything else decodes
-// and renders in-memory documents.
 
 // Load reads and validates an adapter file. The validation covers the
 // output-adapter schema plus adapter-specific cross-checks (transform
@@ -18,5 +19,5 @@ func Load(path string) (*model.Adapter, error) {
 	if err != nil {
 		return nil, fmt.Errorf("adapter: read %s: %w", path, err)
 	}
-	return decodeAdapter(raw, path, "\n  ")
+	return domain.DecodeFile(raw, path)
 }
