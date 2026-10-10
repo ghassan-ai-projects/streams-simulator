@@ -95,6 +95,7 @@ func newTestWorld(t *testing.T, spec *domain.Compiled, seed uint64, startNS int6
 // to within the channel resolution. This is the difference between
 // "self-consistent" and "right".
 func TestAnalyticCrossCheck(t *testing.T) {
+	t.Parallel()
 	start := model.DefaultStartTimeNS
 
 	taus := []float64{300, 1200, 3600, 7200}
@@ -119,6 +120,7 @@ func TestAnalyticCrossCheck(t *testing.T) {
 						dt := dt
 						h := h
 						t.Run(fmt.Sprintf("tau=%v/g=%v/u=%v/dt=%d/h=%v", tau, g, u, dt, h), func(t *testing.T) {
+							t.Parallel()
 							spec := testSpec(t, func(s *model.DomainSpec) {
 								s.Dynamics[0].DTMs = dt
 								s.Dynamics[0].F1.TimeConstantS = tau
@@ -145,6 +147,7 @@ func TestAnalyticCrossCheck(t *testing.T) {
 }
 
 func TestRCNetworkUsesBothTimeConstants(t *testing.T) {
+	t.Parallel()
 	makeWorld := func(tau2 float64) *World {
 		spec := testSpec(t, func(s *model.DomainSpec) {
 			s.Dynamics[0].F1.Form = "rc_network"
@@ -167,6 +170,7 @@ func TestRCNetworkUsesBothTimeConstants(t *testing.T) {
 // TestStepFaultMovesState verifies a step fault shifts hidden state and
 // clearing it reverts the contribution.
 func TestStepFaultMovesState(t *testing.T) {
+	t.Parallel()
 	spec := testSpec(t, nil)
 	w := newTestWorld(t, spec, 7, model.DefaultStartTimeNS)
 	w2 := newTestWorld(t, spec, 7, model.DefaultStartTimeNS) // no-fault control

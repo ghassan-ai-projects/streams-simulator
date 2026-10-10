@@ -9,6 +9,7 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/device"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
@@ -17,7 +18,7 @@ import (
 // oracle to drive the device plant against.
 func coldChainWorld(t *testing.T, seed uint64) *world.World {
 	t.Helper()
-	spec, err := domain.Load("../../../../domains/cold-chain-transit.domain.json")
+	spec, err := domain.Load(testsupport.Domain("cold-chain-transit"))
 	if err != nil {
 		t.Fatalf("load cold-chain domain: %v", err)
 	}
@@ -68,6 +69,7 @@ func plantCommand(t *testing.T, commandID string, atMicros int64) device.PlantCo
 // truth, not the command's wish: energized must equal what the world's own
 // effector-call ledger recorded as EffectApplied, whatever failure mode fired.
 func TestEnergizedMirrorsWorldEffect(t *testing.T) {
+	t.Parallel()
 	w := coldChainWorld(t, 1)
 	entity := w.EntityIDs()[0]
 	plant := New(w, loadBindings(t, entity))
@@ -91,6 +93,7 @@ func TestEnergizedMirrorsWorldEffect(t *testing.T) {
 // second world effect — the ledger stays at one call and the reported effect is
 // stable.
 func TestIdempotentByCommandID(t *testing.T) {
+	t.Parallel()
 	w := coldChainWorld(t, 1)
 	entity := w.EntityIDs()[0]
 	plant := New(w, loadBindings(t, entity))
@@ -116,6 +119,7 @@ func TestIdempotentByCommandID(t *testing.T) {
 // TestUnmappedTargetFailsClosed proves an unbound target cannot be reported as
 // a successful no-op and touches the world not at all.
 func TestUnmappedTargetFailsClosed(t *testing.T) {
+	t.Parallel()
 	w := coldChainWorld(t, 1)
 	entity := w.EntityIDs()[0]
 	plant := New(w, loadBindings(t, entity))
@@ -137,6 +141,7 @@ func TestUnmappedTargetFailsClosed(t *testing.T) {
 }
 
 func TestStuckDeviceDoesNotApplyWorldEffect(t *testing.T) {
+	t.Parallel()
 	w := coldChainWorld(t, 1)
 	entity := w.EntityIDs()[0]
 	plant := New(w, loadBindings(t, entity))
@@ -157,6 +162,7 @@ func TestStuckDeviceDoesNotApplyWorldEffect(t *testing.T) {
 }
 
 func TestWorldBindingFailureIsNotReportedAsExecution(t *testing.T) {
+	t.Parallel()
 	w := coldChainWorld(t, 1)
 	entity := w.EntityIDs()[0]
 	bindings := loadBindings(t, entity)
@@ -185,6 +191,7 @@ func TestWorldBindingFailureIsNotReportedAsExecution(t *testing.T) {
 // through the emulator's admission logic, drives the world oracle and the
 // device's reported state agrees with the world.
 func TestWiredThroughDevice(t *testing.T) {
+	t.Parallel()
 	w := coldChainWorld(t, 1)
 	entity := w.EntityIDs()[0]
 	plant := New(w, loadBindings(t, entity))
@@ -209,6 +216,7 @@ func TestWiredThroughDevice(t *testing.T) {
 }
 
 func TestSetFanDutyIsAnAssignment(t *testing.T) {
+	t.Parallel()
 	w := coldChainWorld(t, 1)
 	entity := w.EntityIDs()[0]
 	plant := New(w, loadBindings(t, entity))

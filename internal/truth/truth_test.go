@@ -2,18 +2,18 @@ package truth_test
 
 import (
 	"errors"
-	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/truth"
 )
 
 func shippedSpec(t *testing.T) *domain.Compiled {
 	t.Helper()
-	spec, err := domain.Load(filepath.Join("..", "..", "domains", "aquaculture-pond.domain.json"))
+	spec, err := domain.Load(testsupport.Domain("aquaculture-pond"))
 	if err != nil {
 		t.Fatal(err)
 	}

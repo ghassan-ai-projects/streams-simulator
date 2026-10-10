@@ -9,6 +9,7 @@ import (
 // TestEmitterReceivesEvents runs the full emission pipeline and checks
 // cadence, quantization, seq and world id.
 func TestEmitterReceivesEvents(t *testing.T) {
+	t.Parallel()
 	spec := testSpec(t, func(s *model.DomainSpec) {
 		s.Dynamics = nil
 		s.Channels = []model.Channel{{
@@ -54,6 +55,7 @@ func TestEmitterReceivesEvents(t *testing.T) {
 }
 
 func TestObservedTimesAreStrictlyIncreasingAcrossEmissionTies(t *testing.T) {
+	t.Parallel()
 	spec := testSpec(t, func(s *model.DomainSpec) {
 		s.Entities.Count.Default = 2
 		s.Faults[0].Observability.Detector.Channel = "slow"
@@ -106,6 +108,7 @@ func TestObservedTimesAreStrictlyIncreasingAcrossEmissionTies(t *testing.T) {
 // TestSubstreamIsolation: adding an unrelated entity must not change an
 // existing entity's output (S1 gate 5, at the world level).
 func TestSubstreamIsolation(t *testing.T) {
+	t.Parallel()
 	spec := testSpec(t, func(s *model.DomainSpec) {
 		s.Dynamics = nil
 		s.Channels = []model.Channel{{

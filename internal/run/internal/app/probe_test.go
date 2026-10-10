@@ -17,6 +17,7 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/refconsumer"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
 func probeSpec(t *testing.T) *domain.Compiled {
@@ -50,8 +51,9 @@ func probeSpec(t *testing.T) *domain.Compiled {
 // TestInjectionProbeNeutral: benign and probed traces produce byte-identical
 // consumer verdicts.
 func TestInjectionProbeNeutral(t *testing.T) {
+	t.Parallel()
 	spec := probeSpec(t)
-	a, err := adapter.Load(nativeAdapter)
+	a, err := adapter.Load(testsupport.Adapter("native-jsonl"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -116,7 +118,8 @@ func (s *verdictSink) SubmitVerdict(v *model.Verdict) error { return nil }
 // fixture. The probe alters delivered bytes; the consumer's verdict must
 // not.
 func TestInjectionProbeNeutralAcrossDeliveryPaths(t *testing.T) {
-	a, err := adapter.Load(nativeAdapter)
+	t.Parallel()
+	a, err := adapter.Load(testsupport.Adapter("native-jsonl"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -129,14 +132,16 @@ func TestInjectionProbeNeutralAcrossDeliveryPaths(t *testing.T) {
 		{"inproc-synthetic", probeSpec, model.SinkInproc},
 		{"file-synthetic", probeSpec, model.SinkFile},
 		{"inproc-shipped", func(t *testing.T) *domain.Compiled {
-			c, err := domain.Load("../../../../domains/discrete-line-oee.domain.json")
+			t.Helper()
+			c, err := domain.Load(testsupport.Domain("discrete-line-oee"))
 			if err != nil {
 				t.Fatal(err)
 			}
 			return c
 		}, model.SinkInproc},
 		{"file-shipped", func(t *testing.T) *domain.Compiled {
-			c, err := domain.Load("../../../../domains/discrete-line-oee.domain.json")
+			t.Helper()
+			c, err := domain.Load(testsupport.Domain("discrete-line-oee"))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -144,6 +149,7 @@ func TestInjectionProbeNeutralAcrossDeliveryPaths(t *testing.T) {
 		}, model.SinkFile},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			spec := tc.spec(t)
 			dir := t.TempDir()
 			start := model.DefaultStartTimeNS

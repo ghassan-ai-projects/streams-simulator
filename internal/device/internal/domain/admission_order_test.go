@@ -3,6 +3,7 @@ package domain
 import "testing"
 
 func TestAdmissionPreservesBootBeforeFreshnessBeforeTarget(t *testing.T) {
+	t.Parallel()
 	d := New(Config{Capabilities: testCaps(t), Clock: func() int64 { return 1000 }})
 	command := validCommand(t, nil)
 	command["expected_boot_id"] = "wrong"

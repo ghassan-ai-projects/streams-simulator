@@ -14,6 +14,7 @@ import (
 )
 
 func TestInprocAndFileEqual(t *testing.T) {
+	t.Parallel()
 	lines := [][]byte{[]byte(`{"a":1}`), []byte(`{"a":2}`), []byte(`{"a":3}`)}
 	in := &sink.Inproc{}
 	for _, l := range lines {

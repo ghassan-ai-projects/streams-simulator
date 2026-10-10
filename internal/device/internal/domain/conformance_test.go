@@ -12,6 +12,7 @@ import (
 // two ends agree on the wire, byte for byte, and cannot silently diverge.
 
 func TestConformanceValidFramesDecode(t *testing.T) {
+	t.Parallel()
 	files, err := filepath.Glob("../../contract/conformance/v1/valid/*.json")
 	if err != nil || len(files) == 0 {
 		t.Fatalf("no valid conformance fixtures found: %v", err)
@@ -19,6 +20,7 @@ func TestConformanceValidFramesDecode(t *testing.T) {
 	for _, file := range files {
 		file := file
 		t.Run(filepath.Base(file), func(t *testing.T) {
+			t.Parallel()
 			frame, err := os.ReadFile(file)
 			if err != nil {
 				t.Fatal(err)
@@ -31,6 +33,7 @@ func TestConformanceValidFramesDecode(t *testing.T) {
 }
 
 func TestConformanceInvalidFramesRejected(t *testing.T) {
+	t.Parallel()
 	files, err := filepath.Glob("../../contract/conformance/v1/invalid/*.json")
 	if err != nil || len(files) == 0 {
 		t.Fatalf("no invalid conformance fixtures found: %v", err)
@@ -38,6 +41,7 @@ func TestConformanceInvalidFramesRejected(t *testing.T) {
 	for _, file := range files {
 		file := file
 		t.Run(filepath.Base(file), func(t *testing.T) {
+			t.Parallel()
 			frame, err := os.ReadFile(file)
 			if err != nil {
 				t.Fatal(err)

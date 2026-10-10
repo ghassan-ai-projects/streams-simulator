@@ -2,17 +2,17 @@ package world_test
 
 import (
 	"errors"
-	"path/filepath"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
 func newPondWorld(t *testing.T, opts world.Options) *world.World {
 	t.Helper()
-	spec, err := domain.Load(filepath.Join("..", "..", "domains", "aquaculture-pond.domain.json"))
+	spec, err := domain.Load(testsupport.Domain("aquaculture-pond"))
 	if err != nil {
 		t.Fatal(err)
 	}

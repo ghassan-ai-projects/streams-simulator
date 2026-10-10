@@ -5,6 +5,7 @@ import (
 )
 
 func TestScheduledFaultsAreDeterministic(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name        string
 		fault       string
@@ -21,6 +22,7 @@ func TestScheduledFaultsAreDeterministic(t *testing.T) {
 	for _, tc := range cases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			plant := &countingPlant{}
 			d := New(Config{
 				Capabilities:  testCaps(t),
@@ -51,6 +53,7 @@ func TestScheduledFaultsAreDeterministic(t *testing.T) {
 }
 
 func TestParseFaultSpec(t *testing.T) {
+	t.Parallel()
 	cases := map[string]FaultInjection{
 		"stuck":      {Name: FaultStuck, AcceptedCommand: 1},
 		"ack_lost@3": {Name: FaultAckLost, AcceptedCommand: 3},

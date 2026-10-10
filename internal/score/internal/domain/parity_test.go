@@ -14,6 +14,7 @@ import (
 // (resolution, deadlines) are offline-uncomputable and are compared
 // structurally, not for equality.
 func TestOnlineOfflineScoringIdentity(t *testing.T) {
+	t.Parallel()
 	r, gt := setupFaultedRun(t, "silent_no_effect", "aerator_failure")
 	pond := "site-a/pond-1"
 	if _, err := r.InvokeEffector("start_aerator", pond, "cmd-id", map[string]any{"pond_id": pond, "level": 1.0}, r.World.Clock()); err != nil {
@@ -66,6 +67,7 @@ func TestOnlineOfflineScoringIdentity(t *testing.T) {
 // consistent with success — only the absent physical outcome betrays the
 // failure. A consumer reporting success has recorded a false outcome.
 func TestSilentNoEffectFalseSuccess(t *testing.T) {
+	t.Parallel()
 	r, gt := setupFaultedRun(t, "silent_no_effect", "aerator_failure")
 	pond := "site-a/pond-1"
 	// Actuate; the shadow state takes the effect, the real world does not.
@@ -111,6 +113,7 @@ func TestSilentNoEffectFalseSuccess(t *testing.T) {
 // TestSilentNoEffectHonestConsumer: the same scenario with an honest
 // consumer reports unknown and the metric reads zero.
 func TestSilentNoEffectHonestConsumer(t *testing.T) {
+	t.Parallel()
 	r, gt := setupFaultedRun(t, "silent_no_effect", "aerator_failure")
 	pond := "site-a/pond-1"
 	if _, err := r.InvokeEffector("start_aerator", pond, "cmd-92", map[string]any{"pond_id": pond, "level": 1.0}, r.World.Clock()); err != nil {

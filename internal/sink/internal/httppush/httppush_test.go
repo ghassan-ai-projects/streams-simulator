@@ -9,6 +9,7 @@ import (
 )
 
 func TestHTTPPushEquivalence(t *testing.T) {
+	t.Parallel()
 	var mu sync.Mutex
 	var received []string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -47,6 +48,7 @@ func TestHTTPPushEquivalence(t *testing.T) {
 }
 
 func TestHTTPPushUnreachableFails(t *testing.T) {
+	t.Parallel()
 	// A configured endpoint that is down must fail the write, never silently
 	// drop: a dropped record is indistinguishable from a modeled dropout.
 	h := New(t.Context(), "http://127.0.0.1:1/unreachable")

@@ -3,27 +3,20 @@ package serve
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
+	"io/fs"
 	"net"
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/device"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/mcp"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
-
-// shortSocket is a socket path short enough for the platform's sun_path limit.
-func shortSocket(t *testing.T) string {
-	t.Helper()
-	dir, err := os.MkdirTemp("", "ss")
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.RemoveAll(dir) })
-	return filepath.Join(dir, "d.sock")
-}
 
 func dial(socket string) (net.Conn, error) {
 	conn, err := (&net.Dialer{}).DialContext(context.Background(), "unix", socket)
@@ -50,7 +43,7 @@ func (w *readyWriter) Write(p []byte) (int, error) {
 
 func TestDeviceListensUntilStoppedThenClosesItsSocket(t *testing.T) {
 	t.Parallel()
-	socket := shortSocket(t)
+	socket := testsupport.SocketPath(t)
 	stderr := &readyWriter{ready: make(chan struct{})}
 	stop := make(chan os.Signal, 1)
 	done := make(chan error, 1)
@@ -70,8 +63,31 @@ func TestDeviceListensUntilStoppedThenClosesItsSocket(t *testing.T) {
 	if !strings.Contains(stderr.String(), "streamsim device: shutting down") {
 		t.Fatalf("stderr = %q", stderr.String())
 	}
-	if _, err := dial(socket); err == nil {
-		t.Fatal("the socket must be closed after shutdown")
+	if _, err := dial(socket); !errors.Is(err, fs.ErrNotExist) && !errors.Is(err, syscall.ECONNREFUSED) {
+		t.Fatalf("dial after shutdown: err = %v, want the socket gone or refused", err)
+	}
+}
+
+// A real interrupt: the handler is registered before the socket is bound, so
+// an interrupt sent once the banner shows is always caught, never fatal.
+//
+//nolint:paralleltest // the interrupt is delivered to the whole test process
+func TestDeviceStopsOnAnInterruptRegisteredBeforeBinding(t *testing.T) {
+	socket := testsupport.SocketPath(t)
+	stderr := &readyWriter{ready: make(chan struct{})}
+	done := make(chan error, 1)
+	go func() {
+		done <- Device(stderr, socket, device.New(device.Config{}), "streamsim device: listening on "+socket)
+	}()
+	<-stderr.ready
+	if err := syscall.Kill(syscall.Getpid(), syscall.SIGINT); err != nil {
+		t.Fatal(err)
+	}
+	if err := <-done; err != nil {
+		t.Fatalf("serve: %v", err)
+	}
+	if !strings.Contains(stderr.String(), "streamsim device: shutting down") {
+		t.Fatalf("stderr = %q", stderr.String())
 	}
 }
 
@@ -88,7 +104,7 @@ func TestDeviceRefusesASocketPathItCannotBind(t *testing.T) {
 	}
 }
 
-func TestOperatorEndpointAnnouncesItsAddressAndRecordsIt(t *testing.T) {
+func TestOperatorEndpointAnnouncesItsAddressAndRefusesABadOne(t *testing.T) {
 	t.Parallel()
 	var stderr bytes.Buffer
 	d := mcp.NewDirector(t.Context(), nil, nil, t.TempDir())

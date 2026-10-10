@@ -9,6 +9,7 @@ import (
 )
 
 func TestDroppedDetectionRequiresOneDetectionPerDrop(t *testing.T) {
+	t.Parallel()
 	spec, a := testBase(t)
 	start := model.DefaultStartTimeNS + 4*3600*1e9
 	r, err := run.New(context.Background(), run.Config{
@@ -37,6 +38,7 @@ func TestDroppedDetectionRequiresOneDetectionPerDrop(t *testing.T) {
 }
 
 func TestActionFidelityChecksEffectorAndEntity(t *testing.T) {
+	t.Parallel()
 	spec, a := testBase(t)
 	start := model.DefaultStartTimeNS
 	r, err := run.New(context.Background(), run.Config{

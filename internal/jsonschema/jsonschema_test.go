@@ -29,6 +29,7 @@ func validateDoc(t *testing.T, s *Schema, doc string) []Error {
 }
 
 func TestBasicTypesAndRequired(t *testing.T) {
+	t.Parallel()
 	s := compileDoc(t, `{"type": "object", "required": ["id"], "properties": {"id": {"type": "string", "pattern": "^[a-z]+$"}, "count": {"type": "integer", "minimum": 0}}}`)
 	if errs := validateDoc(t, s, `{"id": "abc", "count": 3}`); len(errs) != 0 {
 		t.Fatalf("valid doc rejected: %v", errs)
@@ -48,6 +49,7 @@ func TestBasicTypesAndRequired(t *testing.T) {
 }
 
 func TestAdditionalProperties(t *testing.T) {
+	t.Parallel()
 	s := compileDoc(t, `{"type": "object", "additionalProperties": false, "properties": {"a": {"type": "number"}}}`)
 	errs := validateDoc(t, s, `{"a": 1, "b": 2}`)
 	if len(errs) != 1 || !strings.Contains(errs[0].Msg, "additional property") {
@@ -64,6 +66,7 @@ func TestAdditionalProperties(t *testing.T) {
 }
 
 func TestEnumConstAndNumericForms(t *testing.T) {
+	t.Parallel()
 	s := compileDoc(t, `{"enum": ["a", "b", 1, 1.0]}`)
 	if errs := validateDoc(t, s, `"a"`); len(errs) != 0 {
 		t.Fatalf("enum member rejected: %v", errs)
@@ -91,6 +94,7 @@ func TestEnumConstAndNumericForms(t *testing.T) {
 }
 
 func TestArraysAndRefs(t *testing.T) {
+	t.Parallel()
 	s := compileDoc(t, `{
 		"type": "object",
 		"properties": {
@@ -110,6 +114,7 @@ func TestArraysAndRefs(t *testing.T) {
 }
 
 func TestCombinatorsAndConditionals(t *testing.T) {
+	t.Parallel()
 	// RBE deadband pattern: when cadence.mode == report_by_exception then
 	// deadband is required.
 	s := compileDoc(t, `{
@@ -143,6 +148,7 @@ func TestCombinatorsAndConditionals(t *testing.T) {
 }
 
 func TestContainsAndFormat(t *testing.T) {
+	t.Parallel()
 	s := compileDoc(t, `{"type": "array", "contains": {"type": "string", "pattern": "^x"}}`)
 	if errs := validateDoc(t, s, `["a", "xb"]`); len(errs) != 0 {
 		t.Fatalf("contains rejected valid: %v", errs)
@@ -160,6 +166,7 @@ func TestContainsAndFormat(t *testing.T) {
 }
 
 func TestTypeFailureShortCircuits(t *testing.T) {
+	t.Parallel()
 	s := compileDoc(t, `{"type": "string", "minLength": 5}`)
 	errs := validateDoc(t, s, `123`)
 	if len(errs) != 1 {
@@ -168,6 +175,7 @@ func TestTypeFailureShortCircuits(t *testing.T) {
 }
 
 func TestPathReporting(t *testing.T) {
+	t.Parallel()
 	s := compileDoc(t, `{"type": "object", "properties": {"a": {"type": "array", "items": {"type": "object", "required": ["x"]}}}}`)
 	errs := validateDoc(t, s, `{"a": [{"x": 1}, {}]}`)
 	if len(errs) != 1 || errs[0].Path != "/a/1" {

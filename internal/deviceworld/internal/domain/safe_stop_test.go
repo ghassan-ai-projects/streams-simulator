@@ -9,10 +9,12 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/device"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
 func TestLeaseExpiryInvokesWorldSafeStop(t *testing.T) {
+	t.Parallel()
 	w := coldChainWorld(t, 1)
 	entity := w.EntityIDs()[0]
 	plant := New(w, loadBindings(t, entity))
@@ -45,7 +47,8 @@ func TestLeaseExpiryInvokesWorldSafeStop(t *testing.T) {
 }
 
 func TestWorldSafeStopDoesNotClaimPhysicalEffect(t *testing.T) {
-	spec, err := domain.Load("../../../../domains/cold-chain-transit.domain.json")
+	t.Parallel()
+	spec, err := domain.Load(testsupport.Domain("cold-chain-transit"))
 	if err != nil {
 		t.Fatalf("load cold-chain domain: %v", err)
 	}

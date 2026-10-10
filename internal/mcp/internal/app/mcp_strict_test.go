@@ -40,6 +40,7 @@ func schemaOf(t *testing.T, server *mcp.Server, name string) map[string]any {
 }
 
 func TestNestedContractSchemasAreAdvertised(t *testing.T) {
+	t.Parallel()
 	// ground_truth rides the director surface; verdict rides the operator
 	// surface. Each server advertises its own typed nested contract.
 	check := func(t *testing.T, server *mcp.Server, tool, prop string) {
@@ -82,6 +83,7 @@ func validVerdict(runID string) map[string]any {
 }
 
 func TestVerdictContractEnforcedOverWire(t *testing.T) {
+	t.Parallel()
 	d := newTestDirector(t)
 	worldID := createWorld(t, d)
 	runID := d.Worlds[worldID].Run.ID
@@ -124,6 +126,7 @@ func TestVerdictContractEnforcedOverWire(t *testing.T) {
 }
 
 func TestGroundTruthContractEnforcedOverWire(t *testing.T) {
+	t.Parallel()
 	d := newTestDirector(t)
 	worldID := createWorld(t, d)
 	runID := d.Worlds[worldID].Run.ID
@@ -163,6 +166,7 @@ func TestGroundTruthContractEnforcedOverWire(t *testing.T) {
 }
 
 func TestFaultInjectRejectsUnknownParamKeys(t *testing.T) {
+	t.Parallel()
 	d := newTestDirector(t)
 	worldID := createWorld(t, d)
 	cs, _ := connect(t, NewDirectorServer(d))
@@ -179,6 +183,7 @@ func TestFaultInjectRejectsUnknownParamKeys(t *testing.T) {
 }
 
 func TestPerturbApplyRejectsUnknownParamKeys(t *testing.T) {
+	t.Parallel()
 	d := newTestDirector(t)
 	worldID := createWorld(t, d)
 	cs, _ := connect(t, NewDirectorServer(d))
@@ -200,6 +205,7 @@ func TestPerturbApplyRejectsUnknownParamKeys(t *testing.T) {
 }
 
 func TestWorldCreateHonorsExplicitZeroStartTime(t *testing.T) {
+	t.Parallel()
 	d := newTestDirector(t)
 	res, err := d.CreateWorld(map[string]any{
 		"domain": "aquaculture-pond", "seed": float64(1), "adapter": "native-jsonl",

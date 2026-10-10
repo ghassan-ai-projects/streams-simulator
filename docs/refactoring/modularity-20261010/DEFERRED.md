@@ -14,14 +14,14 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 
 | ID | Sev | Where | Finding |
 | --- | --- | --- | --- |
-| D-01 | H | `truth/internal/domain/store.go`, `mcp/director.go` | Sealed-oracle gate fails open: `Store.Reveal` refuses on an open run only `if OpenChecker != nil`, and the checker is wired after construction. Round R7 makes the constructor require it (production wiring is unchanged); the fail-open default of other call paths is the defect. |
+| D-01 | H | `truth/internal/domain/store.go`, `mcp/internal/app/director.go` | Sealed-oracle gate fails open: `Store.Reveal` refuses on an open run only `if OpenChecker != nil`, and the checker is wired after construction. Round R7 makes the constructor require it (production wiring is unchanged); the fail-open default of other call paths is the defect. |
 | D-02 | H | `run/replay.go:145-155` | `ReplayResult.FirstDivergence` compares ledger length to `Counts.Emitted`; it never finds the first differing record, though `mcp verify` reports it. |
-| D-03 | H | `cli/replay.go:12-52` | `streamsim verify` exits 0 even when `matches=false` (`verifyOnly` ignored). |
-| D-04 | H | `cli/score.go`, `score/offline.go` | Offline `streamsim score` passes `calls=nil`: loop metrics zero, `ActionFidelity` false for any verdict with actions; `Reproducible`/`Unblinded` never set. Online scorecard differs from offline. |
+| D-03 | H | `cli/internal/app/replay.go:12-52` | `streamsim verify` exits 0 even when `matches=false` (`verifyOnly` ignored). |
+| D-04 | H | `cli/internal/app/score.go`, `score/offline.go` | Offline `streamsim score` passes `calls=nil`: loop metrics zero, `ActionFidelity` false for any verdict with actions; `Reproducible`/`Unblinded` never set. Online scorecard differs from offline. |
 | D-05 | H | `deviceworld/plant_execution.go:75` | World command id is the constant `"safe-stop/"+target`; a second safe stop inside `idempotency_window_s` replays the cached result and applies no kick while the device reports safe state. The instrument lies. |
 | D-06 | H | `device/command_execution.go:62-66` | `rememberExecution` clears only `AckLost`; a retry with the same idempotency key re-injects `Disconnect`/`Duplicate` every time (livelock). No test covers the disconnect fault. |
-| D-07 | M | `run/finalize.go:34-42`, `mcp/run.go:143-153` | After a failed run `End` returns artifact + error, `finalizeRun` bails before `RunEnded=true`; the run looks open forever, so score/reveal are refused. |
-| D-08 | M | `mcp/run.go:29,153`, `mcp/director.go:79-88` | Data race: `WorldRecord.Started`/`RunEnded` written outside `d.mu`, read under it; `BeginRun` check-then-set race. |
+| D-07 | M | `run/finalize.go:34-42`, `mcp/internal/app/run.go:143-153` | After a failed run `End` returns artifact + error, `finalizeRun` bails before `RunEnded=true`; the run looks open forever, so score/reveal are refused. |
+| D-08 | M | `mcp/internal/app/run.go:29,153`, `mcp/internal/app/director.go:79-88` | Data race: `WorldRecord.Started`/`RunEnded` written outside `d.mu`, read under it; `BeginRun` check-then-set race. |
 | D-09 | M | `run/artifact_metadata.go:24` | `Counts.FaultsInjected` is `ActiveFaultsCount`, i.e. faults still active at End; under-reports after any clear. |
 | D-10 | M | `run/identity.go:41-43`, `replay.go:86-96` | Replay fidelity gap: `worldDigest` hashes `Noiseless`, `ForceFailureMode`, `ClockMultiplier`, but the artifact omits the first two and `replayConfig` never sets `ClockMultiplier`. Latent: production never sets them. |
 | D-11 | M | `truth/internal/domain/solver_scan.go:48-58`, `record.go` | `FirstObservableNS == 0` means both "unset" and a legal epoch-zero time; wrong oracle with `start_time` 0. |
@@ -32,16 +32,16 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 | D-16 | M | `run/initialize.go:60-71`, `finalize.go:68-76` | File descriptors leak on partial failure in `New` and `End`; a publish failure after `finished=true` is unrecoverable. |
 | D-17 | M | `run/verdict.go`, `history.go` | `Ledger`, `Verdict`, `History`, `Reproducible`, `Unblind` read/write without a lock; race with operator goroutines. |
 | D-18 | M | `run/emission.go` vs `delivery.go` | Two near-identical delivery state machines diverge on `evidenceRec` timing, ledger `EventTimeNS` source, and continuing after sink failure. Intent must be decided before unifying. |
-| D-19 | M | `cli/arguments.go:36`, `cli/run_script.go:70` | `cli-<unixnano>` command ids enter the recorded command log: two identical `run --effector` runs are not bit-identical. |
+| D-19 | M | `cli/internal/process/process.go` (`time.Now`), `cli/internal/app/run_script.go:70` | `cli-<unixnano>` command ids enter the recorded command log: two identical `run --effector` runs are not bit-identical. |
 | D-20 | M | `audit/evidence.go:20`, `mcp` audit | `sim.scenario.audit` with default `duration_ns=0` audits one sample against a 24 h world; MCP audits with seed 1 / 60 s, suite uses `Seed^0x5eed` / 120 s: they disagree for the same injection. |
 | D-21 | M | `refconsumer/series.go:68,102` | Silence detections cite `seq:<lastSeq>`, 0 unless a prior detection set it; scoring flags unfounded evidence. |
-| D-22 | M | `mcp/world_config.go:23` | Seeds pass through `float64`: above 2^53 rounded, negatives wrap. |
+| D-22 | M | `mcp/internal/app/world_config.go:23` | Seeds pass through `float64`: above 2^53 rounded, negatives wrap. |
 | D-23 | M | `mcp` advance | `advanceToolError` maps every non-quiescence error to `clock_backwards`. |
 | D-24 | M | `mcp` operator report | `OperatorView.Report` applies quiescence before validating the verdict and ignores `run_id`. |
 | D-25 | M | `world/observe.go:10` | `World.Reading` is documented noise-free but draws the noise substream and mutates drift state on a non-Noiseless world. |
 | D-26 | L | `perturb/internal/domain/helpers.go:83` | `reorder` swaps by `atNS%2==0`, not the layer RNG: whole-second events always swap. |
 | D-27 | L | `world/effectors.go:86,121` | World idempotency key is `command_id` alone: same id with another effector/entity/args replays the first result. |
-| D-41 | M | `cli/run_script.go:invokeScriptedEffector` | `run --effector` always sends empty args, so every shipped effector with required args (all of them) is rejected: the flag is unusable except for argument-free custom domains. |
+| D-41 | M | `cli/internal/app/run_script.go:invokeScriptedEffector` | `run --effector` always sends empty args, so every shipped effector with required args (all of them) is rejected: the flag is unusable except for argument-free custom domains. |
 | D-42 | L | `world/effectors.go:callResult` | An idempotent replay returns the original result without `EffectETANS` (the call record does not keep it), so a replayed acknowledgement differs from the first one. |
 | D-28 | L | `sink/sink.go:128-141` | HTTP push POSTs synchronously under the run lock (30 s timeout), response body not drained. |
 
@@ -53,7 +53,7 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 | D-31 | M | `adapter/engine.go:127-128` | `hash_suffix`: `DigestBytes(...)[:16]` is `"sha256:"` + 9 hex (colon in id); panics when `1 ≤ max_length < 16`; untested, no shipped adapter uses it. |
 | D-32 | M | `adapter/internal/domain/verify*.go`, `cli/internal/app/catalog.go` | `SchemaOK`/`GoldenMatch` unset when the field is absent so the CLI prints FAILED with an empty detail; `splitRecords` ignores `encoding` (`json-array` + output schema fails). |
 | D-33 | M | `jsonschema/compile_keywords.go:143` | `Compile` panics on user schemas (`"uniqueItems": "x"`); `toInt` silently returns 0. Reachable from adapter `output_schema` and effector `args_schema`. |
-| D-34 | L | `model/domain.go:111-115` | `F1Input` with explicit `"coef":0` marshals without coef and reloads as 1; `mcp/director_resources.go:25` misreports it. |
+| D-34 | L | `model/domain.go:111-115` | `F1Input` with explicit `"coef":0` marshals without coef and reloads as 1; `mcp/internal/app/director_resources.go:25` misreports it. |
 | D-35 | L | `domain/compilation.go:85-90` | `observation_gain: 0` becomes 1; zero equals unset for `omitempty` floats. Behavioural contract: decide, do not "fix". |
 | D-36 | L | `run/identity.go:10` | `adapterDigest` is `DigestBytes(json.Marshal(struct))`, not RFC 8785 of the document (AGENTS rule). Struct field order and `omitempty` tags are digest-bearing. Canonicalising changes every adapter digest and breaks stored artifacts. |
 | D-37 | L | `randutil.Picker` | Sums `total` in map-iteration order (non-deterministic if used). Unused: deleted in R2 (a deletion, not a fix). |
@@ -65,7 +65,7 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 
 | ID | Topic | Notes |
 | --- | --- | --- |
-| P-01 | `internal/wall` seam | Zero importers; `time.Now` is called directly at `run/artifact_metadata.go:34`, `run/verdict.go:39`, `cli/arguments.go:36`, `cli/device_world.go:81`, `cli/manifest_options.go:43`. Routing through `wall` makes `created_at`/`unblinded_at` zero under `-tags simdet`. Either inject a clock func at the edge or delete the package and amend DECISIONS D-13. |
+| P-01 | `internal/wall` seam | Zero importers; `time.Now` is called directly at `run/artifact_metadata.go:34`, `run/verdict.go:39`, `cli/internal/process/process.go` (`time.Now`), `cli/internal/app/device_world.go:81`, `cli/internal/app/manifest_options.go:43`. Routing through `wall` makes `created_at`/`unblinded_at` zero under `-tags simdet`. Either inject a clock func at the edge or delete the package and amend DECISIONS D-13. |
 | P-02 | Comment policy | `agentic-stream` forbids comments inside modules. Not adopted here (see STANDARD). |
 | P-03 | Typed closed sets | `FailureMode`, `RejectCode`, cadence mode, detector form, transform op, encoding as named string types (JSON-neutral). Scheduled as R15 once layers settle. |
 | P-04 | Typed device records | Receipt/Result/State as structs instead of `map[string]any`; canonical bytes must stay identical. |
@@ -92,7 +92,7 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 
 - `truth.Store.SealStatus` returns a `sealed` flag that is always true for a
   known run (the sealed map is set with the label); the `!sealed` branch in
-  `mcp/run.go` cannot trigger.
+  `mcp/internal/app/run.go` cannot trigger.
 
 - `truth.Store.Reveal` holds `Store.mu` while calling `OpenChecker` (takes `Director.mu`): lock order `Store.mu → Director.mu`; fragile.
 - `sink.File.Close` rereads the file from disk; not idempotent; `Inproc.Close` returns its internal slice; file perms `0o666&umask` vs run's `0o600`; doc promises a simdet "wall" sub-mode that does not exist; `NewFile` has an unreachable branch.
@@ -116,3 +116,17 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
   alias but typed by the private `quiesce.Clock`, so only in-module tests
   can implement it; inject through an unexported option instead.
   `durable.Ledger.Closed` exists only for the finalisation regression test.
+- **D-49 (cli)** After M15 `replay` and `verify` share one handler that does not
+  know which command invoked it, so the D-03 fix (exit non-zero when
+  `matches=false` under `verify`) must give the handler the command name.
+  `adapter verify` on an empty fixture file still panics (D-30), now in
+  `adapter/internal/domain/verify.go`.
+- **T-01 (tests)** `unnamedErrorAssertions` in `test/architecture/testbar_test.go`
+  lists the 27 test files whose negative tests assert only that an error
+  occurred (`if err == nil { t.Fatal }`). Each entry becomes an
+  `errors.Is/As` or message assertion; the table only shrinks.
+- **D-50 (world)** `exceptionCadence` (`world/internal/domain/cadence.go`)
+  records `lastSent` only for the first reading, so a report-by-exception
+  channel compares every later reading against the first value instead of the
+  last one sent. Looks like a defect; not changed here (the behaviour pin and
+  every golden trace depend on it).

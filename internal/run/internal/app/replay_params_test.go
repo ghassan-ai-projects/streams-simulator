@@ -13,6 +13,7 @@ import (
 )
 
 func TestReplayRoundTripsCommandParams(t *testing.T) {
+	t.Parallel()
 	spec, a := testBase(t)
 	start := model.DefaultStartTimeNS + 4*3600*1e9
 	r, err := New(context.Background(), Config{

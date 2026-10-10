@@ -10,6 +10,7 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
 // buildArtifact runs the config and returns its artifact.
@@ -31,6 +32,7 @@ func buildArtifact(t *testing.T, cfg Config) *model.RunArtifact {
 
 // TestRunSinkEquivalence: inproc and file produce byte-identical traces.
 func TestRunSinkEquivalence(t *testing.T) {
+	t.Parallel()
 	spec, a := testBase(t)
 	start := model.DefaultStartTimeNS + 4*3600*1e9
 	run := func(sink, target string) []byte {
@@ -58,11 +60,12 @@ func TestRunSinkEquivalence(t *testing.T) {
 }
 
 func TestStreamingRunIncludesAdapterPreambleAndPostamble(t *testing.T) {
-	spec, err := domain.Load(aquaculturePath)
+	t.Parallel()
+	spec, err := domain.Load(testsupport.Example())
 	if err != nil {
 		t.Fatal(err)
 	}
-	a, err := adapter.Load(agenticAdapter)
+	a, err := adapter.Load(testsupport.Adapter("agentic-stream"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -93,11 +96,12 @@ func TestStreamingRunIncludesAdapterPreambleAndPostamble(t *testing.T) {
 }
 
 func TestGeneratedTraceTrailerFollowsEventArrivals(t *testing.T) {
-	spec, err := domain.Load(aquaculturePath)
+	t.Parallel()
+	spec, err := domain.Load(testsupport.Example())
 	if err != nil {
 		t.Fatal(err)
 	}
-	a, err := adapter.Load(agenticAdapter)
+	a, err := adapter.Load(testsupport.Adapter("agentic-stream"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -163,6 +167,7 @@ func TestGeneratedTraceTrailerFollowsEventArrivals(t *testing.T) {
 }
 
 func TestSinkFailureMarksRunIncompleteWithoutPanic(t *testing.T) {
+	t.Parallel()
 	spec, a := testBase(t)
 	start := model.DefaultStartTimeNS + 4*3600*1e9
 	r, err := New(context.Background(), Config{

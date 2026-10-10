@@ -11,6 +11,7 @@ import (
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
 func TestRunOptionsPreserveDefaultsEpochZeroAndFileTarget(t *testing.T) {
@@ -23,13 +24,14 @@ func TestRunOptionsPreserveDefaultsEpochZeroAndFileTarget(t *testing.T) {
 		t.Fatalf("options=%+v", options)
 	}
 	options, err = parseRunOptions([]string{"--domain", "rotating-machinery", "--sink", "file"}, io.Discard)
-	if err == nil {
-		t.Fatalf("missing file destination accepted: %+v", options)
+	if err == nil || err.Error() != "--sink=file requires --sink-target or --out" {
+		t.Fatalf("missing file destination: options=%+v err=%v", options, err)
 	}
 }
 
 func TestScriptedFaultsPrecedePerturbationsInCommandLog(t *testing.T) {
-	options, err := parseRunOptions([]string{"--domain", "rotating-machinery", "--domains-dir", "../../../../domains", "--adapters-dir", "../../../../adapters"}, io.Discard)
+	t.Parallel()
+	options, err := parseRunOptions([]string{"--domain", "rotating-machinery", "--domains-dir", testsupport.DomainsDir(), "--adapters-dir", testsupport.AdaptersDir()}, io.Discard)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -82,4 +84,32 @@ func TestManifestSignsCanonicalBodyDigest(t *testing.T) {
 	if signature, err := signManifest(body, ""); err != nil || signature != "" {
 		t.Fatalf("unsigned manifest: signature=%s error=%v", signature, err)
 	}
+}
+
+func TestScriptedEffectorCommandIdComesFromTheInjectedClock(t *testing.T) {
+	t.Parallel()
+	options, err := parseRunOptions([]string{"--domain", "rotating-machinery", "--domains-dir", testsupport.DomainsDir(), "--adapters-dir", testsupport.AdaptersDir()}, io.Discard)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := loadRunConfig(options)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r, err := run.New(t.Context(), cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	entity := r.World.EntityIDs()[0]
+	_ = invokeScriptedEffector(r, "stop_motor@"+entity+"@1", options.startTime, func() int64 { return 424242 })
+	art, err := r.End("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, command := range art.CommandLog {
+		if command.Op == model.OpEffectorInvoke && command.Args["command_id"] == "cli-424242" {
+			return
+		}
+	}
+	t.Fatalf("the scripted effector command id must be cli-<injected nanos>: %+v", art.CommandLog)
 }

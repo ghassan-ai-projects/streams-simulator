@@ -13,11 +13,7 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
-)
-
-const (
-	aquaculturePath = "../../../../docs/examples/aquaculture-pond.domain.json"
-	nativeAdapter   = "../../../../adapters/native-jsonl.adapter.json"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
 type verdictCapture struct{ got *model.Verdict }
@@ -28,6 +24,7 @@ func (c *verdictCapture) SubmitVerdict(v *model.Verdict) error {
 }
 
 func TestProcessUsesEndTimeAndCountsRecords(t *testing.T) {
+	t.Parallel()
 	start := model.DefaultStartTimeNS
 	lines := []byte{}
 	for i, at := range []int64{start, start + 60*1e9} {
@@ -62,11 +59,12 @@ func TestProcessUsesEndTimeAndCountsRecords(t *testing.T) {
 // TestDetectsFaultAndActs: a crash scenario produces detections and one
 // actuator dispatch per entity.
 func TestDetectsFaultAndActs(t *testing.T) {
-	spec, err := domain.Load(aquaculturePath)
+	t.Parallel()
+	spec, err := domain.Load(testsupport.Example())
 	if err != nil {
 		t.Fatal(err)
 	}
-	a, err := adapter.Load(nativeAdapter)
+	a, err := adapter.Load(testsupport.Adapter("native-jsonl"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -130,11 +128,12 @@ func TestDetectsFaultAndActs(t *testing.T) {
 
 // TestObserveOnlyOnCleanRun: no fault, no detections, no actions.
 func TestObserveOnlyOnCleanRun(t *testing.T) {
-	spec, err := domain.Load(aquaculturePath)
+	t.Parallel()
+	spec, err := domain.Load(testsupport.Example())
 	if err != nil {
 		t.Fatal(err)
 	}
-	a, err := adapter.Load(nativeAdapter)
+	a, err := adapter.Load(testsupport.Adapter("native-jsonl"))
 	if err != nil {
 		t.Fatal(err)
 	}

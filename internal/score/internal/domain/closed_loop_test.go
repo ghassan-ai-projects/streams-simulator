@@ -11,6 +11,7 @@ import (
 // TestClosedLoopRecoveryAndIdempotency: with mode ok the effector recovers
 // the state and the loop metrics credit it.
 func TestClosedLoopRecoveryAndIdempotency(t *testing.T) {
+	t.Parallel()
 	r, gt := setupFaultedRun(t, "ok", "aerator_failure")
 	pond := "site-a/pond-1"
 	res, err := r.InvokeEffector("start_aerator", pond, "cmd-1", map[string]any{"pond_id": pond, "level": 1.0}, r.World.Clock())
@@ -52,6 +53,7 @@ func TestClosedLoopRecoveryAndIdempotency(t *testing.T) {
 // flagged, never credited. The fouling fault has a ~2.6h observability lag,
 // so a detection right after injection is before the noise floor.
 func TestSuspiciousEarlyDetection(t *testing.T) {
+	t.Parallel()
 	r, gt := setupFaultedRun(t, "ok", "do_probe_fouling")
 	pond := "site-a/pond-1"
 	early := model.FormatTime(gt.InjectionTimeNS + 10*1e9)
@@ -71,6 +73,7 @@ func TestSuspiciousEarlyDetection(t *testing.T) {
 }
 
 func TestJudgmentChoosesEarliestAndRequiresLabel(t *testing.T) {
+	t.Parallel()
 	r, gt := setupFaultedRun(t, "ok", "do_probe_fouling")
 	pond := "site-a/pond-1"
 	later := model.FormatTime(gt.FirstObservableTimeNS + 20*60*1e9)
@@ -92,6 +95,7 @@ func TestJudgmentChoosesEarliestAndRequiresLabel(t *testing.T) {
 }
 
 func TestNegativeUnobservableDetectionIsFalsePositive(t *testing.T) {
+	t.Parallel()
 	spec, a := testBase(t)
 	r, err := run.New(context.Background(), run.Config{
 		Domain: spec, Adapter: a, Seed: 21, SinkName: model.SinkInproc,

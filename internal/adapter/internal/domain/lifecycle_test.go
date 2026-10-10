@@ -9,6 +9,7 @@ import (
 )
 
 func TestStreamingLifecycleMatchesBatchForJSONL(t *testing.T) {
+	t.Parallel()
 	a := miniAdapter()
 	fx, err := FixtureEvents()
 	if err != nil {
@@ -55,6 +56,7 @@ func TestStreamingLifecycleMatchesBatchForJSONL(t *testing.T) {
 }
 
 func TestJSONArrayLifecycleProducesValidArray(t *testing.T) {
+	t.Parallel()
 	a := miniAdapter()
 	a.Encoding = "json-array"
 	fx, err := FixtureEvents()

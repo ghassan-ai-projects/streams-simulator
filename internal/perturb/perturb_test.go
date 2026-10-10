@@ -2,18 +2,18 @@ package perturb_test
 
 import (
 	"errors"
-	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/perturb"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
 func shippedLayer(t *testing.T) *perturb.Layer {
 	t.Helper()
-	spec, err := domain.Load(filepath.Join("..", "..", "domains", "rotating-machinery.domain.json"))
+	spec, err := domain.Load(testsupport.Domain("rotating-machinery"))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -5,9 +5,9 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-)
 
-var examplePath = filepath.Join("..", "..", "..", "..", "docs", "examples", "aquaculture-pond.domain.json")
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
+)
 
 func writeFile(t *testing.T, dir, name, content string) {
 	t.Helper()
@@ -27,7 +27,7 @@ func writeFile(t *testing.T, dir, name, content string) {
 
 func TestLoadAllReadsOnlyTopLevelJSON(t *testing.T) {
 	t.Parallel()
-	example, err := os.ReadFile(examplePath)
+	example, err := os.ReadFile(testsupport.Example())
 	if err != nil {
 		t.Fatal(err)
 	}

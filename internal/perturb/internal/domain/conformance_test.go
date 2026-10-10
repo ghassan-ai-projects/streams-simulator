@@ -12,6 +12,7 @@ import (
 )
 
 func TestDelayTailConformance(t *testing.T) {
+	t.Parallel()
 	l := New("w", 11, testSpec(t))
 	if _, err := l.Apply(DelayTail, map[string]any{"mean_s": 30, "sigma_s": 60}, 0, 0); err != nil {
 		t.Fatal(err)
@@ -31,6 +32,7 @@ func TestDelayTailConformance(t *testing.T) {
 }
 
 func TestIDReuseConformance(t *testing.T) {
+	t.Parallel()
 	l := New("w", 12, testSpec(t))
 	if _, err := l.Apply(IDReuse, map[string]any{"rate": 1.0}, 0, 0); err != nil {
 		t.Fatal(err)
@@ -51,6 +53,7 @@ func TestIDReuseConformance(t *testing.T) {
 }
 
 func TestGrossBackfillConformance(t *testing.T) {
+	t.Parallel()
 	l := New("w", 13, testSpec(t))
 	from, until := int64(1000000000), int64(4000000000)
 	if _, err := l.Apply(GrossBackfill, nil, from, until); err != nil {
@@ -79,6 +82,7 @@ func TestGrossBackfillConformance(t *testing.T) {
 }
 
 func TestClockSkewConformance(t *testing.T) {
+	t.Parallel()
 	l := New("w", 14, testSpec(t))
 	if _, err := l.Apply(ClockSkew, map[string]any{"offset_s": 300, "sign": "positive"}, 0, 0); err != nil {
 		t.Fatal(err)
@@ -105,6 +109,7 @@ func TestClockSkewConformance(t *testing.T) {
 }
 
 func TestNonMonotonicConformance(t *testing.T) {
+	t.Parallel()
 	l := New("w", 16, testSpec(t))
 	if _, err := l.Apply(NonMonotonic, nil, 0, 0); err != nil {
 		t.Fatal(err)
@@ -124,6 +129,7 @@ func TestNonMonotonicConformance(t *testing.T) {
 }
 
 func TestUnitMismatchConformance(t *testing.T) {
+	t.Parallel()
 	l := New("w", 17, testSpec(t))
 	if _, err := l.Apply(UnitMismatch, nil, 0, 0); err != nil {
 		t.Fatal(err)
@@ -140,6 +146,7 @@ func TestUnitMismatchConformance(t *testing.T) {
 }
 
 func TestOversizeConformance(t *testing.T) {
+	t.Parallel()
 	l := New("w", 18, testSpec(t))
 	if _, err := l.Apply(Oversize, map[string]any{"bytes": 8}, 0, 0); err != nil {
 		t.Fatal(err)
@@ -154,6 +161,7 @@ func TestOversizeConformance(t *testing.T) {
 }
 
 func TestMalformedConformance(t *testing.T) {
+	t.Parallel()
 	l := New("w", 19, testSpec(t))
 	if _, err := l.Apply(Malformed, nil, 0, 0); err != nil {
 		t.Fatal(err)
@@ -168,6 +176,7 @@ func TestMalformedConformance(t *testing.T) {
 }
 
 func TestNaNInfConformance(t *testing.T) {
+	t.Parallel()
 	l := New("w", 20, testSpec(t))
 	if _, err := l.Apply(NaNInf, nil, 0, 0); err != nil {
 		t.Fatal(err)
@@ -183,6 +192,7 @@ func TestNaNInfConformance(t *testing.T) {
 }
 
 func TestStormConformance(t *testing.T) {
+	t.Parallel()
 	l := New("w", 21, testSpec(t))
 	if _, err := l.Apply(Storm, map[string]any{"multiplier": 3}, 0, 0); err != nil {
 		t.Fatal(err)
@@ -200,6 +210,7 @@ func TestStormConformance(t *testing.T) {
 }
 
 func TestTimeEncodingConformance(t *testing.T) {
+	t.Parallel()
 	l := New("w", 22, testSpec(t))
 	if _, err := l.Apply(TimeEncoding, nil, 0, 0); err != nil {
 		t.Fatal(err)
@@ -217,6 +228,7 @@ func TestTimeEncodingConformance(t *testing.T) {
 }
 
 func TestPrecisionEdgeConformance(t *testing.T) {
+	t.Parallel()
 	l := New("w", 23, testSpec(t))
 	if _, err := l.Apply(PrecisionEdge, nil, 0, 0); err != nil {
 		t.Fatal(err)
@@ -235,6 +247,7 @@ func TestPrecisionEdgeConformance(t *testing.T) {
 }
 
 func TestUnitMismatchSkipsUnitlessChannels(t *testing.T) {
+	t.Parallel()
 	l := New("w", 24, testSpec(t))
 	if _, err := l.Apply(UnitMismatch, nil, 0, 0); err != nil {
 		t.Fatal(err)
@@ -247,6 +260,7 @@ func TestUnitMismatchSkipsUnitlessChannels(t *testing.T) {
 }
 
 func TestNonMonotonicPassesThroughOrderedRecords(t *testing.T) {
+	t.Parallel()
 	l := New("w", 25, testSpec(t))
 	if _, err := l.Apply(NonMonotonic, nil, 0, 0); err != nil {
 		t.Fatal(err)

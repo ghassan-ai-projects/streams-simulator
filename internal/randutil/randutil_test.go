@@ -6,6 +6,7 @@ import (
 )
 
 func TestSplitMix64Deterministic(t *testing.T) {
+	t.Parallel()
 	a := NewSplitMix64(42)
 	b := NewSplitMix64(42)
 	for i := 0; i < 100; i++ {
@@ -16,6 +17,7 @@ func TestSplitMix64Deterministic(t *testing.T) {
 }
 
 func TestSubstreamStabilityAndIndependence(t *testing.T) {
+	t.Parallel()
 	s1 := Substream(7, "w/entity/chan/noise")
 	first1, second1 := s1.Next(), s1.Next()
 	// Same seed+name → same stream.
@@ -41,6 +43,7 @@ func TestSubstreamStabilityAndIndependence(t *testing.T) {
 }
 
 func TestFloat64Range(t *testing.T) {
+	t.Parallel()
 	r := NewSplitMix64(1)
 	for i := 0; i < 10000; i++ {
 		f := r.Float64()
@@ -51,6 +54,7 @@ func TestFloat64Range(t *testing.T) {
 }
 
 func TestNormDistribution(t *testing.T) {
+	t.Parallel()
 	r := NewSplitMix64(9)
 	var sum, sumsq float64
 	n := 20000

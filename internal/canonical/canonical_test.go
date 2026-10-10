@@ -22,6 +22,7 @@ func must(t *testing.T, err error) {
 }
 
 func TestRFC8785WorkedExample(t *testing.T) {
+	t.Parallel()
 	// The worked example from RFC 8785 §3.2, verbatim. The input string
 	// contains two backslashes (one from \u005c, one from \\), so the
 	// canonical output escapes both.
@@ -39,6 +40,7 @@ func TestRFC8785WorkedExample(t *testing.T) {
 }
 
 func TestKeySorting(t *testing.T) {
+	t.Parallel()
 	// Keys sort by UTF-16 code unit; uppercase precedes lowercase.
 	got, err := MarshalString(map[string]any{"b": 1, "A": 2, "a": 3})
 	must(t, err)
@@ -48,6 +50,7 @@ func TestKeySorting(t *testing.T) {
 }
 
 func TestUTF16KeyOrdering(t *testing.T) {
+	t.Parallel()
 	// U+20BB7 encodes as a surrogate pair (D842 DFB7); the first code unit
 	// D842 sorts before U+E000, so it comes first even though its code point
 	// is larger. UTF-8 byte order would get this wrong.
@@ -59,6 +62,7 @@ func TestUTF16KeyOrdering(t *testing.T) {
 }
 
 func TestNumberForms(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		in   string
 		want string
@@ -98,6 +102,7 @@ func TestNumberForms(t *testing.T) {
 }
 
 func TestStringEscapes(t *testing.T) {
+	t.Parallel()
 	got, err := MarshalString("a\"b\\c\nd\u0001\u2028\u2029e")
 	must(t, err)
 	if got != `"a\"b\\c\nd\u0001\u2028\u2029e"` {
@@ -106,6 +111,7 @@ func TestStringEscapes(t *testing.T) {
 }
 
 func TestDeterministicAcrossMapOrders(t *testing.T) {
+	t.Parallel()
 	a := map[string]any{"x": 1, "y": []any{1, 2, map[string]any{"z": "s"}}}
 	b := map[string]any{"y": []any{1, 2, map[string]any{"z": "s"}}, "x": 1}
 	sa, err := MarshalString(a)
@@ -118,6 +124,7 @@ func TestDeterministicAcrossMapOrders(t *testing.T) {
 }
 
 func TestDigestStable(t *testing.T) {
+	t.Parallel()
 	d1, err := Digest(map[string]any{"v": 6.5, "t": int64(1785315600000000000)})
 	must(t, err)
 	d2, err := Digest(map[string]any{"t": int64(1785315600000000000), "v": 6.5})
@@ -131,6 +138,7 @@ func TestDigestStable(t *testing.T) {
 }
 
 func TestRejectsNonFinite(t *testing.T) {
+	t.Parallel()
 	if _, err := MarshalString(math.Inf(1)); err == nil {
 		t.Fatal("Inf should be rejected")
 	}
@@ -140,6 +148,7 @@ func TestRejectsNonFinite(t *testing.T) {
 }
 
 func TestRejectsUnsupportedTypes(t *testing.T) {
+	t.Parallel()
 	if _, err := MarshalString(struct{ A int }{1}); err == nil {
 		t.Fatal("struct should be rejected")
 	}
@@ -149,6 +158,7 @@ func TestRejectsUnsupportedTypes(t *testing.T) {
 }
 
 func TestTimeFormatting(t *testing.T) {
+	t.Parallel()
 	// A fixed instant must render as RFC 3339 with nanoseconds, UTC.
 	ns := int64(1785315600123456789)
 	got, err := MarshalString(timeValue(ns))

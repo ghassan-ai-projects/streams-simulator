@@ -12,6 +12,7 @@ import (
 )
 
 func TestCapabilityTokenEnforced(t *testing.T) {
+	t.Parallel()
 	d := newTestDirector(t)
 	worldID := createWorld(t, d)
 	w := d.Worlds[worldID]
@@ -40,6 +41,7 @@ func TestCapabilityTokenEnforced(t *testing.T) {
 }
 
 func TestDirectorCreatesDistinctWorldsAndOpaqueTokens(t *testing.T) {
+	t.Parallel()
 	d := newTestDirector(t)
 	one := createWorld(t, d)
 	two := createWorld(t, d)
@@ -59,6 +61,7 @@ func TestDirectorCreatesDistinctWorldsAndOpaqueTokens(t *testing.T) {
 }
 
 func TestBeginRunRequiresSealedTruth(t *testing.T) {
+	t.Parallel()
 	d := newTestDirector(t)
 	worldID := createWorld(t, d)
 	if _, err := d.BeginRun(worldID, "missing-truth"); err == nil {
@@ -67,6 +70,7 @@ func TestBeginRunRequiresSealedTruth(t *testing.T) {
 }
 
 func TestDirectorPassesSinkTarget(t *testing.T) {
+	t.Parallel()
 	d := newTestDirector(t)
 	target := t.TempDir() + "/trace.jsonl"
 	res, err := d.CreateWorld(map[string]any{
@@ -89,6 +93,7 @@ func TestDirectorPassesSinkTarget(t *testing.T) {
 }
 
 func TestClosedLoopThroughMCPSurface(t *testing.T) {
+	t.Parallel()
 	d := newTestDirector(t)
 	worldID := createWorld(t, d)
 	w := d.Worlds[worldID]

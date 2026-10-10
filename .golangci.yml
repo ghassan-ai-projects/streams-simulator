@@ -24,6 +24,9 @@ linters:
     - misspell       # English spell-check
     - noctx          # http.Request without ctx
     - thelper        # test helpers missing t.Helper()
+    - paralleltest   # T6: every test and subtest runs in parallel
+    - tparallel      # T6: consistent parallel use between tests and subtests
+    - usetesting     # T6: t.TempDir/t.Context/t.Setenv over os equivalents
     - musttag        # struct fields needing json/xml tags
     - wrapcheck      # exported funcs must wrap errors
     - errorlint      # error comparisons must use errors.Is/As

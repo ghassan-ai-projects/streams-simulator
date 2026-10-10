@@ -9,17 +9,19 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/refconsumer"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
 // TestOperatorEndpointPerShippedDomain: every shipped domain can be driven
 // through the operator endpoint — nameplate, effector list, an invocation
 // with arguments derived from the declared schema, quiescence and a verdict.
 func TestOperatorEndpointPerShippedDomain(t *testing.T) {
-	specs, err := domain.LoadAll("../../../../domains")
+	t.Parallel()
+	specs, err := domain.LoadAll(testsupport.DomainsDir())
 	if err != nil {
 		t.Fatal(err)
 	}
-	adap, err := adapter.Load(nativeAdapter)
+	adap, err := adapter.Load(testsupport.Adapter("native-jsonl"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -29,6 +31,7 @@ func TestOperatorEndpointPerShippedDomain(t *testing.T) {
 	for _, spec := range specs {
 		id := spec.Spec.ID
 		t.Run(id, func(t *testing.T) {
+			t.Parallel()
 			created, err := d.CreateWorld(map[string]any{
 				"domain": id, "seed": float64(7), "adapter": "native-jsonl",
 				"sink": model.SinkInproc, "time_mode": model.TimeStepped,
@@ -37,7 +40,9 @@ func TestOperatorEndpointPerShippedDomain(t *testing.T) {
 				t.Fatalf("world.create: %v", err)
 			}
 			worldID := created["world_id"].(string)
+			d.mu.Lock()
 			w := d.Worlds[worldID]
+			d.mu.Unlock()
 			op, err := refconsumer.NewMCPOperator(endpoint, w.Token, w.Run.ID)
 			if err != nil {
 				t.Fatal(err)

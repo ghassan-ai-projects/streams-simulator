@@ -4,11 +4,13 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
 func TestLoadReadsAndValidatesAnAdapterFile(t *testing.T) {
 	t.Parallel()
-	a, err := Load(filepath.Join("..", "..", "..", "..", "adapters", "native-jsonl.adapter.json"))
+	a, err := Load(testsupport.Adapter("native-jsonl"))
 	if err != nil {
 		t.Fatal(err)
 	}

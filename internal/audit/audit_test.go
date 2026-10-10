@@ -2,13 +2,13 @@ package audit_test
 
 import (
 	"errors"
-	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/audit"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
 func TestNewPanelRefusesAMissingSpec(t *testing.T) {
@@ -20,7 +20,7 @@ func TestNewPanelRefusesAMissingSpec(t *testing.T) {
 
 func TestAuditReportsEveryDetectorScoreAndABestDetector(t *testing.T) {
 	t.Parallel()
-	spec, err := domain.Load(filepath.Join("..", "..", "domains", "aquaculture-pond.domain.json"))
+	spec, err := domain.Load(testsupport.Domain("aquaculture-pond"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -49,7 +49,7 @@ func TestAuditReportsEveryDetectorScoreAndABestDetector(t *testing.T) {
 
 func TestAuditRefusesAnUnknownFault(t *testing.T) {
 	t.Parallel()
-	spec, err := domain.Load(filepath.Join("..", "..", "domains", "aquaculture-pond.domain.json"))
+	spec, err := domain.Load(testsupport.Domain("aquaculture-pond"))
 	if err != nil {
 		t.Fatal(err)
 	}

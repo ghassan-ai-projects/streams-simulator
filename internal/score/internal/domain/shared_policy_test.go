@@ -40,6 +40,7 @@ func TestSharedConsumerPoliciesRespectPerturbationAndEvidence(t *testing.T) {
 		{"undelivered citation", &model.Verdict{Detections: []model.Detection{{EvidenceRefs: []string{"seq:1"}}}}, nil, true, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			got := consumerFrom(tc.verdict, ledger, nil, tc.perturbations)
 			if got.IdentityConflict != tc.conflict || got.EvidenceGrounding != tc.grounding {
 				t.Fatalf("consumer=%+v", got)
@@ -58,6 +59,7 @@ func TestSharedLoopRequiresScenarioEntity(t *testing.T) {
 }
 
 func TestOnlineOfflineParityWithReversedDetections(t *testing.T) {
+	t.Parallel()
 	r, gt := setupFaultedRun(t, "ok", "do_probe_fouling")
 	submitVerdict(t, r, nil, []model.Detection{
 		{EntityID: gt.EntityID, Label: "other", DetectedAt: model.FormatTime(gt.FirstObservableTimeNS + 20*60*1e9)},

@@ -5,13 +5,12 @@ import (
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
-
-const aquaculturePath = "../../../../docs/examples/aquaculture-pond.domain.json"
 
 func loadSpec(t *testing.T) *domain.Compiled {
 	t.Helper()
-	spec, err := domain.Load(aquaculturePath)
+	spec, err := domain.Load(testsupport.Example())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -39,6 +38,7 @@ func runningAerator() []model.SetupCall {
 // hindsight must solve it. That is the point of the audit: the label the
 // threshold rule already gets right must not enter the graded suite.
 func TestLoudFaultIsTrivial(t *testing.T) {
+	t.Parallel()
 	spec := loadSpec(t)
 	start := model.DefaultStartTimeNS + 4*3600*1e9
 	onset := start + 2*3600*1e9
@@ -61,6 +61,7 @@ func TestLoudFaultIsTrivial(t *testing.T) {
 // channel signature — the probe reads a plausible value within the normal
 // diurnal range. The audit must keep it out of the trivial bucket.
 func TestProbeFoulingIsNonTrivial(t *testing.T) {
+	t.Parallel()
 	spec := loadSpec(t)
 	start := model.DefaultStartTimeNS + 4*3600*1e9
 	onset := start + 2*3600*1e9

@@ -6,6 +6,7 @@ import (
 )
 
 func TestLoadBindingsFromData(t *testing.T) {
+	t.Parallel()
 	data, err := os.ReadFile("../../testdata/thermal.bindings.json")
 	if err != nil {
 		t.Fatal(err)
@@ -58,6 +59,7 @@ func TestLoadBindingsFromData(t *testing.T) {
 }
 
 func TestLoadBindingsFailsClosed(t *testing.T) {
+	t.Parallel()
 	cases := map[string]string{
 		"unknown field":     `{"bindings":{"target":{"effector":"effect","unexpected":true}}}`,
 		"trailing json":     `{"bindings":{"target":{"effector":"effect"}}} {}`,
@@ -67,6 +69,7 @@ func TestLoadBindingsFailsClosed(t *testing.T) {
 	}
 	for name, body := range cases {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 			if _, err := LoadBindings([]byte(body), "entity-01"); err == nil {
 				t.Fatal("invalid binding catalog was accepted")
 			}
@@ -75,6 +78,7 @@ func TestLoadBindingsFailsClosed(t *testing.T) {
 }
 
 func TestLoadBindingsRequiresEntitySourceValue(t *testing.T) {
+	t.Parallel()
 	data, err := os.ReadFile("../../testdata/thermal.bindings.json")
 	if err != nil {
 		t.Fatal(err)
@@ -85,6 +89,7 @@ func TestLoadBindingsRequiresEntitySourceValue(t *testing.T) {
 }
 
 func TestValidateBindingsChecksWorldCompositionBeforeListen(t *testing.T) {
+	t.Parallel()
 	w := coldChainWorld(t, 1)
 	entity := w.EntityIDs()[0]
 	data, err := os.ReadFile("../../testdata/thermal.bindings.json")

@@ -6,9 +6,11 @@ import (
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
 func TestValidateStrictObservedOrder(t *testing.T) {
+	t.Parallel()
 	base := model.DefaultStartTimeNS
 	cases := []struct {
 		name    string
@@ -41,6 +43,7 @@ func TestValidateStrictObservedOrder(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			err := validateStrictObservedOrder(tc.events)
 			if (err != nil) != tc.wantErr {
 				t.Fatalf("validateStrictObservedOrder() error = %v, wantErr %t", err, tc.wantErr)
@@ -61,7 +64,7 @@ func (m memoryFiles) Golden(string) ([]byte, error)       { return m.golden, m.g
 
 func shippedNative(t *testing.T) (*model.Adapter, []model.SimEvent, []byte) {
 	t.Helper()
-	a, err := Load("../../../../adapters/native-jsonl.adapter.json")
+	a, err := Load(testsupport.Adapter("native-jsonl"))
 	if err != nil {
 		t.Fatal(err)
 	}

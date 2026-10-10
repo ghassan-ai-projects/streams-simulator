@@ -3,6 +3,7 @@ package serve
 import (
 	"bytes"
 	"context"
+	"net"
 	"strings"
 	"testing"
 
@@ -33,8 +34,14 @@ func TestDirectorServesItsToolsUntilTheSessionEndsThenStopsTheOperatorEndpoint(t
 	if err := <-done; err != nil {
 		t.Fatalf("director session: %v", err)
 	}
-	if !strings.Contains(stderr.String(), "operator endpoint: http://127.0.0.1:") {
+	endpoint, ok := strings.CutPrefix(strings.TrimSpace(stderr.String()), "operator endpoint: http://")
+	if !ok {
 		t.Fatalf("stderr = %q", stderr.String())
+	}
+	conn, err := (&net.Dialer{}).DialContext(context.Background(), "tcp", endpoint)
+	if err == nil {
+		_ = conn.Close()
+		t.Fatalf("operator endpoint %s still accepts connections after the session ended", endpoint)
 	}
 }
 

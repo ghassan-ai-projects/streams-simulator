@@ -1,9 +1,12 @@
 package files
 
 import (
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"slices"
+	"syscall"
 	"testing"
 )
 
@@ -30,8 +33,8 @@ func TestReadAndWriteKeepTheOperatingSystemsErrorText(t *testing.T) {
 	if _, err := Read(absent); err == nil || err.Error() != readErr.Error() {
 		t.Fatalf("read error = %v, want %v", err, readErr)
 	}
-	if err := Write(absent, nil); err == nil {
-		t.Fatal("a write under a missing directory must fail")
+	if err := Write(absent, nil); !errors.Is(err, fs.ErrNotExist) {
+		t.Fatalf("a write under a missing directory: err = %v, want ErrNotExist", err)
 	}
 }
 
@@ -49,8 +52,8 @@ func TestEnsureDirCreatesParentsOwnerOnly(t *testing.T) {
 	if err := os.WriteFile(blocker, nil, 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if err := EnsureDir(filepath.Join(blocker, "sub")); err == nil {
-		t.Fatal("a directory under a regular file must be refused")
+	if err := EnsureDir(filepath.Join(blocker, "sub")); !errors.Is(err, syscall.ENOTDIR) {
+		t.Fatalf("a directory under a regular file: err = %v, want ENOTDIR", err)
 	}
 }
 
@@ -69,7 +72,7 @@ func TestFileNamesListsRegularEntriesInNameOrder(t *testing.T) {
 	if err != nil || !slices.Equal(names, []string{".hidden", "a.json", "b.json"}) {
 		t.Fatalf("names = %v (%v)", names, err)
 	}
-	if _, err := FileNames(filepath.Join(dir, "absent")); err == nil {
-		t.Fatal("a missing directory must be refused")
+	if _, err := FileNames(filepath.Join(dir, "absent")); !errors.Is(err, fs.ErrNotExist) {
+		t.Fatalf("a missing directory: err = %v, want ErrNotExist", err)
 	}
 }

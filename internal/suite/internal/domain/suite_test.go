@@ -8,13 +8,12 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/perturb"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
-
-const aquaculturePath = "../../../../docs/examples/aquaculture-pond.domain.json"
 
 func loadSpec(t *testing.T) *domain.Compiled {
 	t.Helper()
-	spec, err := domain.Load(aquaculturePath)
+	spec, err := domain.Load(testsupport.Example())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -22,6 +21,7 @@ func loadSpec(t *testing.T) *domain.Compiled {
 }
 
 func TestGenerateSmallSuite(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("suite generation runs full worlds and audits; skipped in -short mode")
 	}
@@ -78,6 +78,7 @@ func TestGenerateSmallSuite(t *testing.T) {
 }
 
 func TestNegativeClassFractionAdapts(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("suite generation runs full worlds and audits; skipped in -short mode")
 	}
@@ -119,6 +120,7 @@ func TestNegativeClassFractionAdapts(t *testing.T) {
 // of (seed, domain, profile), and rejected candidates never shift the
 // identity of later admitted ones.
 func TestGenerateIsByteIdentical(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("suite generation runs full worlds and audits; skipped in -short mode")
 	}

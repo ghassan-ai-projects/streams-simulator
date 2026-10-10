@@ -739,3 +739,52 @@ Isolated review of `42d0dbf`, `92d803b`, `3b40255`: no behaviour regression
   plus a facade test over the shipped adapters).
 - Gate tables lose the package, its two ioEdges entries and its
   dependency row.
+
+## Review follow-ups — M14 mcp, M15 cli
+
+Isolated review of `7b9def3` and `f28d88e`: approved, no behaviour change
+outside the recorded deliberate changes (about 100 invocations compared
+between the old and new binaries); 0 high, 1 medium, 8 low.
+
+- Fixed: the M15 deliberate changes are in PLAN with regression tests
+  (ledger path that is a directory, interrupt registered before binding, the
+  build identity forwarded by `cmd`); stale pointers in `claims-matrix.md`,
+  DEFERRED paths and the `mcp` language file; CLI tests assert the exact
+  prefix and a single flag diagnostic instead of "contains"; the injected
+  clock is exercised (scripted effector id, device clock); the operator
+  endpoint is shown closed when the director session ends; `suite` test uses
+  one scenario (app layer 41 s → 13 s under `-race`).
+- Recorded: D-49 (`verify` shares the `replay` handler), D-46 (mcp app layer
+  is 65.5 %), `cmd/streamsim` stays at 0 % (the entrypoint is exercised by
+  the subprocess tests).
+
+## Phase C — test organisation (T1–T10)
+
+- `internal/testsupport` is the one place that names shipped fixtures
+  (`Domain`, `DomainsDir`, `Example`, `Adapter`, `AdaptersDir`,
+  `RepositoryRoot`) and builds short unix-socket paths. 37 test files lost
+  their `../../..` constants; tests no longer depend on their own depth.
+- Gates added: `TestFixturePathsAreDefinedOnce` (literal and `filepath.Join`
+  forms), `TestProductionNeverImportsTestSupport`, `TestEveryTestRunsInParallel`
+  (first statement `t.Parallel()` or `//nolint:paralleltest` with a reason),
+  `TestErrorAssertionsNameTheErrorTheyExpect` (ratchet, T-01) and
+  `TestEveryModuleIsMigrated` (nothing but foundations, the wall seam, test
+  aids and the entrypoint may stay flat).
+- `TestTestsNeverSleep` has no exceptions: the last `time.Sleep` (a poll and a
+  50 ms negative wait in the device ack-lost test) became an ordered
+  state-query frame on the sequential link.
+- Linters `paralleltest`, `tparallel` and `usetesting` are on; 190 tests and
+  every table subtest now run in parallel and the whole suite passes under
+  `-race`; the one real race found (an unlocked `Worlds` read in the mcp
+  operator-per-domain test) was in the test.
+
+## T8 — coverage floors emptied
+
+- `model` 20 → 94 % (time formatting, strict decode, verdict and artifact
+  validation, the two `F1Input` forms, ground-truth class, platform),
+  `wall` 0 → 100 % under both build tags, `mcp/internal/app` 65 → 84 %
+  (every director tool through an in-memory session: catalog, world, clock,
+  injection, seal order, run verify, reveal, retire, resources),
+  `world/internal/domain` 68 → 71 % (cadence modes, link-delay models).
+- `scripts/coverage-floors.txt` keeps only `cmd/streamsim`. Found while
+  testing: D-50.

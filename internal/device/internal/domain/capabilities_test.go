@@ -11,6 +11,7 @@ const thermalCapabilityCatalogDigest = "sha256:0d61225286c628cfba8cbf7aea514e1fd
 const legacyCapabilityCatalogDigest = "sha256:ed9ebf9685f9933c15578f06c65e059f906cfd1edcd8f75b778b6a4f794cc494"
 
 func TestLoadCanonicalCapabilityCatalogAndDigest(t *testing.T) {
+	t.Parallel()
 	data, err := os.ReadFile("../../testdata/thermal_capability_catalog.json")
 	if err != nil {
 		t.Fatal(err)
@@ -41,6 +42,7 @@ func TestLoadCanonicalCapabilityCatalogAndDigest(t *testing.T) {
 }
 
 func TestLoadCapabilitiesFromData(t *testing.T) {
+	t.Parallel()
 	caps := testCaps(t)
 	fan, ok := caps.target("fan-01")
 	if !ok {
@@ -58,6 +60,7 @@ func TestLoadCapabilitiesFromData(t *testing.T) {
 }
 
 func TestLegacyCapabilityCatalogDigestRemainsUnscoped(t *testing.T) {
+	t.Parallel()
 	data, err := os.ReadFile("../../testdata/thermal.capabilities.json")
 	if err != nil {
 		t.Fatal(err)
@@ -72,6 +75,7 @@ func TestLegacyCapabilityCatalogDigestRemainsUnscoped(t *testing.T) {
 }
 
 func TestLoadCapabilitiesFailsClosed(t *testing.T) {
+	t.Parallel()
 	cases := map[string]string{
 		"bad-json":             `{`,
 		"wrong-version":        `{"protocol_version": 2, "targets": {"x": {"operation": "o", "energize_field": "f", "bounds": {"f": {"min": 0, "max": 1}}}}}`,
@@ -85,6 +89,7 @@ func TestLoadCapabilitiesFailsClosed(t *testing.T) {
 	for name, body := range cases {
 		body := body
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 			if _, err := LoadCapabilities([]byte(body)); err == nil {
 				t.Fatalf("%s must fail closed, but loaded", name)
 			}

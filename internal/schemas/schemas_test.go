@@ -9,11 +9,13 @@ import (
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/jsonschema"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
 // TestEmbeddedMatchCommitted proves the embedded schemas never drift from the
 // committed originals in docs/contracts.
 func TestEmbeddedMatchCommitted(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name string
 		got  []byte
@@ -41,6 +43,7 @@ func TestEmbeddedMatchCommitted(t *testing.T) {
 // describe. In particular, profile setup calls must remain part of the
 // domain-spec contract because the suite consumes them at runtime.
 func TestEmbeddedDomainSchemaValidatesAllShippedDomains(t *testing.T) {
+	t.Parallel()
 	var schemaDoc any
 	dec := json.NewDecoder(bytes.NewReader(DomainSpec()))
 	dec.UseNumber()
@@ -52,7 +55,7 @@ func TestEmbeddedDomainSchemaValidatesAllShippedDomains(t *testing.T) {
 		t.Fatalf("compile embedded domain schema: %v", err)
 	}
 
-	domainsDir := filepath.Join("..", "..", "domains")
+	domainsDir := testsupport.DomainsDir()
 	entries, err := os.ReadDir(domainsDir)
 	if err != nil {
 		t.Fatalf("read shipped domains: %v", err)
@@ -65,6 +68,7 @@ func TestEmbeddedDomainSchemaValidatesAllShippedDomains(t *testing.T) {
 		count++
 		path := filepath.Join(domainsDir, entry.Name())
 		t.Run(entry.Name(), func(t *testing.T) {
+			t.Parallel()
 			raw, err := os.ReadFile(path)
 			if err != nil {
 				t.Fatalf("read domain: %v", err)

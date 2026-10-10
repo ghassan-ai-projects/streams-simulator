@@ -5,13 +5,15 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
 // runPond executes a short scripted run and returns its output directory.
 func runPond(t *testing.T, extra ...string) string {
 	t.Helper()
 	dir := t.TempDir()
-	args := append([]string{"run", "--domains-dir", domainsDir, "--adapters-dir", adaptersDir, "--domain", pondDomain,
+	args := append([]string{"run", "--domains-dir", testsupport.DomainsDir(), "--adapters-dir", testsupport.AdaptersDir(), "--domain", pondDomain,
 		"--seed", "7", "--duration", "900", "--sink", "file", "--out", dir}, extra...)
 	got := invoke(t, args...).mustSucceed(t).json(t)
 	if got["run_id"] == "" || got["reproducible"] != true {
@@ -29,7 +31,7 @@ func TestRunPublishesEvidenceThatReplayAndVerifyReproduce(t *testing.T) {
 		}
 	}
 	for _, command := range []string{"replay", "verify"} {
-		got := invoke(t, command, "--domains-dir", domainsDir, "--adapters-dir", adaptersDir, filepath.Join(dir, "run.json")).mustSucceed(t).json(t)
+		got := invoke(t, command, "--domains-dir", testsupport.DomainsDir(), "--adapters-dir", testsupport.AdaptersDir(), filepath.Join(dir, "run.json")).mustSucceed(t).json(t)
 		if got["matches"] != true || got["version_match"] != true {
 			t.Fatalf("%s result = %v", command, got)
 		}
@@ -46,7 +48,7 @@ func TestReplayNamesAnArtifactThatCannotBeRead(t *testing.T) {
 
 func TestRunRefusesAnUnknownAdapterAndANonexistentEffector(t *testing.T) {
 	t.Parallel()
-	base := []string{"run", "--domains-dir", domainsDir, "--adapters-dir", adaptersDir, "--domain", pondDomain, "--duration", "60"}
+	base := []string{"run", "--domains-dir", testsupport.DomainsDir(), "--adapters-dir", testsupport.AdaptersDir(), "--domain", pondDomain, "--duration", "60"}
 	unknown := invoke(t, append(base, "--adapter", "no-such")...)
 	if unknown.code != 1 || !strings.Contains(unknown.stderr, `unknown adapter "no-such"`) {
 		t.Fatalf("unknown adapter: %+v", unknown)
@@ -86,7 +88,7 @@ func TestRefconsumerAndScoreNameWhatTheyCannotRead(t *testing.T) {
 		args []string
 		want string
 	}{
-		{"missing trace", []string{"refconsumer", "--trace", missing}, "streamsim: "},
+		{"missing trace", []string{"refconsumer", "--trace", missing}, "no such file or directory"},
 		{"effector without endpoint", []string{"refconsumer", "--trace", missing, "--effector", "x"}, "--effector requires --mcp"},
 		{"missing verdict", []string{"score", "--run", filepath.Join(missing, "run.json")}, "read " + filepath.Join(missing, "verdict.json")},
 	}

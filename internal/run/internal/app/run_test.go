@@ -10,6 +10,7 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
 type failingSink struct{}
@@ -18,20 +19,14 @@ func (failingSink) Write([]byte) error { return errors.New("injected sink failur
 
 func (failingSink) Close() ([]byte, error) { return nil, nil }
 
-const (
-	aquaculturePath = "../../../../docs/examples/aquaculture-pond.domain.json"
-	nativeAdapter   = "../../../../adapters/native-jsonl.adapter.json"
-	agenticAdapter  = "../../../../adapters/agentic-stream.adapter.json"
-)
-
 // testBase loads the aquaculture-pond domain and native-jsonl adapter.
 func testBase(t *testing.T) (*domain.Compiled, *model.Adapter) {
 	t.Helper()
-	spec, err := domain.Load(aquaculturePath)
+	spec, err := domain.Load(testsupport.Example())
 	if err != nil {
 		t.Fatal(err)
 	}
-	a, err := adapter.Load(nativeAdapter)
+	a, err := adapter.Load(testsupport.Adapter("native-jsonl"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -41,6 +36,7 @@ func testBase(t *testing.T) (*domain.Compiled, *model.Adapter) {
 // TestRunByteReproducible is S1 gate 4: three runs byte-identical, and the
 // artifact replays to a matching digest.
 func TestRunByteReproducible(t *testing.T) {
+	t.Parallel()
 	spec, a := testBase(t)
 	start := model.DefaultStartTimeNS + 4*3600*1e9 // 04:00, pre-dawn
 	cfg := func() Config {
@@ -87,6 +83,7 @@ func TestRunByteReproducible(t *testing.T) {
 }
 
 func TestRunRejectsNonMonotonicNativeObservedTime(t *testing.T) {
+	t.Parallel()
 	spec, a := testBase(t)
 	start := model.DefaultStartTimeNS
 	r, err := New(context.Background(), Config{
@@ -114,6 +111,7 @@ func TestRunRejectsNonMonotonicNativeObservedTime(t *testing.T) {
 }
 
 func TestReplayUsesEmbeddedDomainAndAdapter(t *testing.T) {
+	t.Parallel()
 	spec, a := testBase(t)
 	art := buildArtifact(t, Config{
 		Domain: spec, Adapter: a, Seed: 123, SinkName: model.SinkInproc,
@@ -132,6 +130,7 @@ func TestReplayUsesEmbeddedDomainAndAdapter(t *testing.T) {
 }
 
 func TestWorldDigestAndCommandTimesAreLossless(t *testing.T) {
+	t.Parallel()
 	spec, a := testBase(t)
 	start := int64(1<<60) + 123
 	r, err := New(context.Background(), Config{
@@ -165,6 +164,7 @@ func TestWorldDigestAndCommandTimesAreLossless(t *testing.T) {
 }
 
 func TestQuiescenceWaitIsRaceFreeAndWakesOnReport(t *testing.T) {
+	t.Parallel()
 	spec, a := testBase(t)
 	start := model.DefaultStartTimeNS + 4*3600*1e9
 	r, err := New(context.Background(), Config{
@@ -198,6 +198,7 @@ func TestQuiescenceWaitIsRaceFreeAndWakesOnReport(t *testing.T) {
 }
 
 func TestRunViewsAreDefensiveCopies(t *testing.T) {
+	t.Parallel()
 	r := &Run{
 		trace:   []byte("trace"),
 		ledger:  []model.LedgerRecord{{DeliveryID: 1, Seq: 2}},

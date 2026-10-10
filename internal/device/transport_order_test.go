@@ -15,6 +15,7 @@ type recordedConnection struct {
 }
 
 func TestConnectionPreservesMalformedQueryAndCommandFrameOrder(t *testing.T) {
+	t.Parallel()
 	command, err := device.EncodeRecord(validCommand(t, nil))
 	if err != nil {
 		t.Fatal(err)

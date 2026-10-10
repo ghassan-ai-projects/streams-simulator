@@ -11,22 +11,18 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
-)
-
-const (
-	aquaculturePath = "../../../../docs/examples/aquaculture-pond.domain.json"
-	nativeAdapter   = "../../../../adapters/native-jsonl.adapter.json"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
 // newTestDirector builds a director with the aquaculture-pond domain and
 // the native-jsonl adapter.
 func newTestDirector(t *testing.T) *Director {
 	t.Helper()
-	spec, err := domain.Load(aquaculturePath)
+	spec, err := domain.Load(testsupport.Example())
 	if err != nil {
 		t.Fatal(err)
 	}
-	a, err := adapter.Load(nativeAdapter)
+	a, err := adapter.Load(testsupport.Adapter("native-jsonl"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -69,6 +65,7 @@ func callTool(t *testing.T, server *mcp.Server, name string, args map[string]any
 }
 
 func TestRoleSeparation(t *testing.T) {
+	t.Parallel()
 	d := newTestDirector(t)
 	dirServer := NewDirectorServer(d)
 	res, err := callTool(t, dirServer, "tools/list", nil)
@@ -97,6 +94,7 @@ func TestRoleSeparation(t *testing.T) {
 }
 
 func TestToolSchemasAreClosedAndMachineReadable(t *testing.T) {
+	t.Parallel()
 	d := newTestDirector(t)
 	servers := map[string]*mcp.Server{"director": NewDirectorServer(d)}
 	worldID := createWorld(t, d)
@@ -134,6 +132,7 @@ func TestToolSchemasAreClosedAndMachineReadable(t *testing.T) {
 }
 
 func TestMCPRejectsUnknownAndMissingArguments(t *testing.T) {
+	t.Parallel()
 	d := newTestDirector(t)
 	server := NewDirectorServer(d)
 
@@ -170,6 +169,7 @@ func TestMCPRejectsUnknownAndMissingArguments(t *testing.T) {
 }
 
 func TestClockAdvanceSupportsRelativeTimeAndReportsTotal(t *testing.T) {
+	t.Parallel()
 	d := newTestDirector(t)
 	created, err := d.CreateWorld(map[string]any{
 		"domain": "aquaculture-pond", "seed": float64(42), "adapter": "native-jsonl",

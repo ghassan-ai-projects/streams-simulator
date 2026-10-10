@@ -11,9 +11,11 @@ import (
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
 func TestRegenerateGoldens(t *testing.T) {
+	t.Parallel()
 	if os.Getenv("REGEN_GOLDEN") == "" {
 		t.Skip("set REGEN_GOLDEN=1 to regenerate the committed golden files")
 	}
@@ -26,7 +28,7 @@ func TestRegenerateGoldens(t *testing.T) {
 		"domain_id": "fixture", "domain_version": "0.0.0",
 		"world_start_time": fx[0].EventTime, "seed": float64(0),
 	}
-	root := filepath.Join("..", "..", "..", "..", "adapters")
+	root := testsupport.AdaptersDir()
 	for _, name := range []string{"native-jsonl", "agentic-stream"} {
 		a, err := Load(filepath.Join(root, name+".adapter.json"))
 		if err != nil {

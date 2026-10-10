@@ -72,6 +72,7 @@ func validCommand(t *testing.T, mutate func(map[string]any)) map[string]any {
 }
 
 func TestRejectsCommandBeforeNotBefore(t *testing.T) {
+	t.Parallel()
 	d := New(Config{Capabilities: testCaps(t), Clock: func() int64 { return 0 }})
 	out := d.ApplyCommand(validCommand(t, func(c map[string]any) {
 		c["not_before_mono_us"] = float64(1)
@@ -82,6 +83,7 @@ func TestRejectsCommandBeforeNotBefore(t *testing.T) {
 }
 
 func TestLeaseExpiryReturnsSafeState(t *testing.T) {
+	t.Parallel()
 	now := int64(0)
 	d := New(Config{Capabilities: testCaps(t), Clock: func() int64 { return now }})
 	out := d.ApplyCommand(validCommand(t, nil))
@@ -100,6 +102,7 @@ func TestLeaseExpiryReturnsSafeState(t *testing.T) {
 }
 
 func TestSafeStopIsAnExplicitDeviceOperation(t *testing.T) {
+	t.Parallel()
 	plant := &countingPlant{}
 	d := New(Config{Capabilities: testCaps(t), Plant: plant, Clock: func() int64 { return 0 }})
 	out := d.ApplyCommand(validCommand(t, func(command map[string]any) {
@@ -118,12 +121,14 @@ func TestSafeStopIsAnExplicitDeviceOperation(t *testing.T) {
 }
 
 func TestSafeStopFailureDoesNotClaimSafe(t *testing.T) {
+	t.Parallel()
 	for _, reboot := range []bool{false, true} {
 		name := "lease expiry"
 		if reboot {
 			name = "reboot"
 		}
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 			now := int64(0)
 			plant := &countingPlant{safeStopErr: errors.New("stop unavailable")}
 			d := New(Config{
@@ -156,6 +161,7 @@ func TestSafeStopFailureDoesNotClaimSafe(t *testing.T) {
 }
 
 func TestSafeStopPositivePlantEffectDoesNotClaimSafe(t *testing.T) {
+	t.Parallel()
 	now := int64(0)
 	d := New(Config{
 		Capabilities: testCaps(t),

@@ -8,12 +8,8 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/truth"
-)
-
-const (
-	aquaculturePath = "../../../../docs/examples/aquaculture-pond.domain.json"
-	nativeAdapter   = "../../../../adapters/native-jsonl.adapter.json"
 )
 
 var pondIDs = []string{"site-a/pond-1", "site-a/pond-2", "site-a/pond-3", "site-a/pond-4",
@@ -21,11 +17,11 @@ var pondIDs = []string{"site-a/pond-1", "site-a/pond-2", "site-a/pond-3", "site-
 
 func testBase(t *testing.T) (*domain.Compiled, *model.Adapter) {
 	t.Helper()
-	spec, err := domain.Load(aquaculturePath)
+	spec, err := domain.Load(testsupport.Example())
 	if err != nil {
 		t.Fatal(err)
 	}
-	a, err := adapter.Load(nativeAdapter)
+	a, err := adapter.Load(testsupport.Adapter("native-jsonl"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -112,6 +108,7 @@ func loopResolved(r *run.Run) bool {
 // or the deviation collapses to zero and a correct recovery is scored as
 // unresolved. Regression for the operator-endpoint golden loop.
 func TestLoopResolvesWhenFaultOnsetLandsOnEmissionBoundary(t *testing.T) {
+	t.Parallel()
 	spec, a := testBase(t)
 	start := model.DefaultStartTimeNS + 4*3600*1e9
 	r, err := run.New(context.Background(), run.Config{

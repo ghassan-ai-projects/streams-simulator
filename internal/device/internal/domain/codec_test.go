@@ -7,6 +7,7 @@ import (
 )
 
 func TestEncodeDecodeRoundTrip(t *testing.T) {
+	t.Parallel()
 	d := New(Config{Capabilities: testCaps(t)})
 	out := d.ApplyCommand(validCommand(t, nil))
 	for name, record := range map[string]map[string]any{
@@ -28,6 +29,7 @@ func TestEncodeDecodeRoundTrip(t *testing.T) {
 }
 
 func TestDecodeFailsClosed(t *testing.T) {
+	t.Parallel()
 	command, err := EncodeRecord(validCommand(t, nil))
 	if err != nil {
 		t.Fatal(err)
@@ -44,6 +46,7 @@ func TestDecodeFailsClosed(t *testing.T) {
 	for name, frame := range cases {
 		frame := frame
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 			if _, err := DecodeRecord(frame); err == nil {
 				t.Fatalf("%s must fail closed, but decoded", name)
 			}

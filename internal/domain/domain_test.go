@@ -1,16 +1,16 @@
 package domain_test
 
 import (
-	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
 func shipped(t *testing.T, id string) *domain.Compiled {
 	t.Helper()
-	c, err := domain.Load(filepath.Join("..", "..", "domains", id+".domain.json"))
+	c, err := domain.Load(testsupport.Domain(id))
 	if err != nil {
 		t.Fatal(err)
 	}

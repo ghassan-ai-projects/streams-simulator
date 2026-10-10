@@ -47,6 +47,7 @@ func connectOperatorClient(t *testing.T, endpoint string) *mcpsdk.ClientSession 
 }
 
 func TestOperatorEndpointServesOnlyOperatorTools(t *testing.T) {
+	t.Parallel()
 	d := newTestDirector(t)
 	endpoint := startOperatorEndpoint(t, d)
 	worldID := createWorld(t, d)
@@ -89,6 +90,7 @@ func nativeTrace(evs []model.SimEvent) []byte {
 // evidence, detects, actuates over MCP, asserts quiescence, submits a
 // verdict; the harness scores and the loop resolves.
 func TestGoldenClosedLoopOverOperatorEndpoint(t *testing.T) {
+	t.Parallel()
 	d := newTestDirector(t)
 	endpoint := startOperatorEndpoint(t, d)
 	start := model.DefaultStartTimeNS + 4*3600*1e9

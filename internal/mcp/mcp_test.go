@@ -10,15 +10,16 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/mcp"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
 func newDirector(t *testing.T) *mcp.Director {
 	t.Helper()
-	spec, err := domain.Load("../../docs/examples/aquaculture-pond.domain.json")
+	spec, err := domain.Load(testsupport.Example())
 	if err != nil {
 		t.Fatal(err)
 	}
-	native, err := adapter.Load("../../adapters/native-jsonl.adapter.json")
+	native, err := adapter.Load(testsupport.Adapter("native-jsonl"))
 	if err != nil {
 		t.Fatal(err)
 	}

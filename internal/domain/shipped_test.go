@@ -5,14 +5,15 @@ package domain_test
 // would make coverage reports lie.
 
 import (
-	"path/filepath"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
 func TestAllShippedDomainsLoad(t *testing.T) {
-	dir := filepath.Join("..", "..", "domains")
+	t.Parallel()
+	dir := testsupport.DomainsDir()
 	list, err := domain.LoadAll(dir)
 	if err != nil {
 		t.Fatalf("a shipped domain failed to load: %v", err)
@@ -40,8 +41,8 @@ func TestAllShippedDomainsLoad(t *testing.T) {
 		}
 	}
 	// The docs example and the installed copy must agree byte-for-byte.
-	ex := filepath.Join("..", "..", "docs", "examples", "aquaculture-pond.domain.json")
-	installed := filepath.Join("..", "..", "domains", "aquaculture-pond.domain.json")
+	ex := testsupport.Example()
+	installed := testsupport.Domain("aquaculture-pond")
 	a, err := domain.Load(ex)
 	if err != nil {
 		t.Fatal(err)
@@ -51,6 +52,6 @@ func TestAllShippedDomainsLoad(t *testing.T) {
 		t.Fatal(err)
 	}
 	if a.Digest != b.Digest {
-		t.Fatalf("installed aquaculture-pond drifted from docs/examples: %s vs %s", a.Digest, b.Digest)
+		t.Fatalf("installed aquaculture-pond drifted from the documented example: %s vs %s", a.Digest, b.Digest)
 	}
 }

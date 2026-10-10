@@ -5,7 +5,6 @@ import (
 	"strconv"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/mcp/internal/capability"
-
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
 )

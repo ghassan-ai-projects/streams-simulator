@@ -10,13 +10,10 @@ import (
 	"time"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/cli/internal/process"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
-const (
-	domainsDir  = "../../../../domains"
-	adaptersDir = "../../../../adapters"
-	pondDomain  = "aquaculture-pond"
-)
+const pondDomain = "aquaculture-pond"
 
 var fixedNow = time.Date(2026, 10, 10, 12, 0, 0, 0, time.UTC)
 
@@ -70,7 +67,7 @@ func TestUsageAndExitStatuses(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			got := invoke(t, tc.args...)
-			if got.code != tc.code || !strings.Contains(got.stderr, tc.stderr) || got.stdout != "" {
+			if got.code != tc.code || !strings.Contains(got.stderr, tc.stderr) || strings.Count(got.stderr, tc.stderr) != 1 || got.stdout != "" {
 				t.Fatalf("exit %d stdout %q stderr %q; want exit %d with %q", got.code, got.stdout, got.stderr, tc.code, tc.stderr)
 			}
 		})
@@ -84,13 +81,13 @@ func TestCommandErrorsExitOneWithThePrefixedMessage(t *testing.T) {
 		args []string
 		want string
 	}{
-		{"catalog verb", []string{"catalog", "nope", "--domains-dir", domainsDir}, `catalog: unknown verb "nope"`},
-		{"describe without id", []string{"catalog", "describe", "--domains-dir", domainsDir}, "catalog describe requires a domain id"},
-		{"describe unknown", []string{"catalog", "describe", "no-such", "--domains-dir", domainsDir}, "streamsim: "},
+		{"catalog verb", []string{"catalog", "nope", "--domains-dir", testsupport.DomainsDir()}, `catalog: unknown verb "nope"`},
+		{"describe without id", []string{"catalog", "describe", "--domains-dir", testsupport.DomainsDir()}, "catalog describe requires a domain id"},
+		{"describe unknown", []string{"catalog", "describe", "--domains-dir", testsupport.DomainsDir(), "no-such"}, "no-such"},
 		{"domain usage", []string{"domain"}, "usage: streamsim domain validate <path>"},
 		{"domain verb", []string{"domain", "lint", "x"}, `domain: unknown verb "lint"`},
-		{"adapter verb", []string{"adapter", "nope", "--adapters-dir", adaptersDir}, `adapter: unknown verb "nope"`},
-		{"adapter verify without path", []string{"adapter", "verify", "--adapters-dir", adaptersDir}, "adapter verify requires a path"},
+		{"adapter verb", []string{"adapter", "nope", "--adapters-dir", testsupport.AdaptersDir()}, `adapter: unknown verb "nope"`},
+		{"adapter verify without path", []string{"adapter", "verify", "--adapters-dir", testsupport.AdaptersDir()}, "adapter verify requires a path"},
 		{"run without domain", []string{"run"}, "run requires --domain"},
 		{"replay without artifact", []string{"replay"}, "replay requires a run artifact path"},
 		{"score without run", []string{"score"}, "score requires --run"},
@@ -106,7 +103,7 @@ func TestCommandErrorsExitOneWithThePrefixedMessage(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			got := invoke(t, tc.args...)
-			if got.code != 1 || !strings.Contains(got.stderr, "streamsim: ") || !strings.Contains(got.stderr, tc.want) || got.stdout != "" {
+			if got.code != 1 || !strings.HasPrefix(got.stderr, "streamsim: ") || !strings.Contains(got.stderr, tc.want) || got.stdout != "" {
 				t.Fatalf("exit %d stdout %q stderr %q; want exit 1 naming %q", got.code, got.stdout, got.stderr, tc.want)
 			}
 		})
@@ -115,18 +112,18 @@ func TestCommandErrorsExitOneWithThePrefixedMessage(t *testing.T) {
 
 func TestCatalogAndDomainCommandsPrintOneJSONDocument(t *testing.T) {
 	t.Parallel()
-	list := invoke(t, "catalog", "list", "--domains-dir", domainsDir).mustSucceed(t).json(t)
+	list := invoke(t, "catalog", "list", "--domains-dir", testsupport.DomainsDir()).mustSucceed(t).json(t)
 	if domains, _ := list["domains"].([]any); len(domains) < 8 {
 		t.Fatalf("catalog list = %v", list)
 	}
-	describe := invoke(t, "catalog", "describe", "--domains-dir", domainsDir, pondDomain).mustSucceed(t).json(t)
+	describe := invoke(t, "catalog", "describe", "--domains-dir", testsupport.DomainsDir(), pondDomain).mustSucceed(t).json(t)
 	if describe["digest"] == "" || describe["spec"] == nil {
 		t.Fatalf("catalog describe = %v", describe)
 	}
-	if coverage := invoke(t, "catalog", "coverage", "--domains-dir", domainsDir).mustSucceed(t).json(t); len(coverage) == 0 {
+	if coverage := invoke(t, "catalog", "coverage", "--domains-dir", testsupport.DomainsDir()).mustSucceed(t).json(t); len(coverage) == 0 {
 		t.Fatal("catalog coverage printed nothing")
 	}
-	validate := invoke(t, "domain", "validate", filepath.Join(domainsDir, pondDomain+".domain.json")).mustSucceed(t).json(t)
+	validate := invoke(t, "domain", "validate", filepath.Join(testsupport.DomainsDir(), pondDomain+".domain.json")).mustSucceed(t).json(t)
 	if validate["valid"] != true || validate["id"] != pondDomain {
 		t.Fatalf("domain validate = %v", validate)
 	}
@@ -134,12 +131,12 @@ func TestCatalogAndDomainCommandsPrintOneJSONDocument(t *testing.T) {
 
 func TestAdapterListAndVerify(t *testing.T) {
 	t.Parallel()
-	list := invoke(t, "adapter", "list", "--adapters-dir", adaptersDir).mustSucceed(t).json(t)
+	list := invoke(t, "adapter", "list", "--adapters-dir", testsupport.AdaptersDir()).mustSucceed(t).json(t)
 	if adapters, _ := list["adapters"].([]any); len(adapters) < 2 {
 		t.Fatalf("adapter list = %v", list)
 	}
-	path := filepath.Join(adaptersDir, "native-jsonl.adapter.json")
-	verify := invoke(t, "adapter", "verify", "--adapters-dir", adaptersDir, path).mustSucceed(t).json(t)
+	path := filepath.Join(testsupport.AdaptersDir(), "native-jsonl.adapter.json")
+	verify := invoke(t, "adapter", "verify", "--adapters-dir", testsupport.AdaptersDir(), path).mustSucceed(t).json(t)
 	if verify["schema_ok"] != true || verify["golden_match"] != true {
 		t.Fatalf("adapter verify = %v", verify)
 	}
@@ -148,7 +145,7 @@ func TestAdapterListAndVerify(t *testing.T) {
 func TestSuiteWritesTheGeneratedSuiteFile(t *testing.T) {
 	t.Parallel()
 	out := filepath.Join(t.TempDir(), "suites")
-	got := invoke(t, "suite", "--domains-dir", domainsDir, "--domain", pondDomain, "--n", "4", "--out", out).mustSucceed(t).json(t)
+	got := invoke(t, "suite", "--domains-dir", testsupport.DomainsDir(), "--domain", pondDomain, "--n", "1", "--out", out).mustSucceed(t).json(t)
 	path, _ := got["suite"].(string)
 	if filepath.Dir(path) != out || got["scenarios"] == nil {
 		t.Fatalf("suite result = %v", got)
@@ -161,7 +158,7 @@ func TestSuiteWritesTheGeneratedSuiteFile(t *testing.T) {
 func TestManifestRecordsBuildClockAndDigests(t *testing.T) {
 	t.Parallel()
 	out := filepath.Join(t.TempDir(), "manifest.json")
-	got := invoke(t, "manifest", "--out", out, "--domains-dir", domainsDir, "--adapters-dir", adaptersDir,
+	got := invoke(t, "manifest", "--out", out, "--domains-dir", testsupport.DomainsDir(), "--adapters-dir", testsupport.AdaptersDir(),
 		"--author", "A <a@x>", "--reviewer", "R <r@x>").mustSucceed(t).json(t)
 	if got["sim"] != "v-test@c-test" || got["signed"] != false {
 		t.Fatalf("manifest result = %v", got)
@@ -188,7 +185,7 @@ func TestManifestRefusesAMissingDirectoryAndAShortKey(t *testing.T) {
 	if err := os.WriteFile(key, []byte("abcd"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	short := invoke(t, append(identity, "--domains-dir", domainsDir, "--adapters-dir", adaptersDir, "--key", key)...)
+	short := invoke(t, append(identity, "--domains-dir", testsupport.DomainsDir(), "--adapters-dir", testsupport.AdaptersDir(), "--key", key)...)
 	if short.code != 1 || !strings.Contains(short.stderr, "manifest: key must be 64 hex chars") {
 		t.Fatalf("short key: %+v", short)
 	}

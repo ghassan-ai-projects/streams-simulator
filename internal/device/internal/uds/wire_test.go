@@ -23,18 +23,21 @@ func collect(t *testing.T, faults WireFaults, frames ...string) string {
 }
 
 func TestWireFaultsDrop(t *testing.T) {
+	t.Parallel()
 	if got := collect(t, WireFaults{Drop: map[int]bool{2: true}}, "a", "b", "c"); got != "ac" {
 		t.Fatalf("drop of frame 2 should yield %q, got %q", "ac", got)
 	}
 }
 
 func TestWireFaultsDuplicate(t *testing.T) {
+	t.Parallel()
 	if got := collect(t, WireFaults{Duplicate: map[int]bool{2: true}}, "a", "b", "c"); got != "abbc" {
 		t.Fatalf("duplicate of frame 2 should yield %q, got %q", "abbc", got)
 	}
 }
 
 func TestWireFaultsSwap(t *testing.T) {
+	t.Parallel()
 	// Frame 2 is delayed by one position: emitted after frame 3.
 	if got := collect(t, WireFaults{Swap: map[int]bool{2: true}}, "a", "b", "c"); got != "acb" {
 		t.Fatalf("swap of frame 2 should yield %q, got %q", "acb", got)
@@ -42,6 +45,7 @@ func TestWireFaultsSwap(t *testing.T) {
 }
 
 func TestWireFaultsSwapAtEndFlushes(t *testing.T) {
+	t.Parallel()
 	// A swap on the last frame has nothing to swap with; flush releases it.
 	if got := collect(t, WireFaults{Swap: map[int]bool{3: true}}, "a", "b", "c"); got != "abc" {
 		t.Fatalf("swap of the final frame should still emit it, got %q", got)
@@ -49,6 +53,7 @@ func TestWireFaultsSwapAtEndFlushes(t *testing.T) {
 }
 
 func TestWireFaultsIdentityWhenEmpty(t *testing.T) {
+	t.Parallel()
 	if got := collect(t, WireFaults{}, "a", "b", "c"); got != "abc" {
 		t.Fatalf("no faults should be identity, got %q", got)
 	}

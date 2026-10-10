@@ -40,6 +40,7 @@ The accepted architecture is summarized in [`documentation/architecture/`](../..
 - `internal/canonical`: canonical JSON encoding and digest operations
 - `internal/randutil`: seeded random streams
 - `internal/wall`: wall-clock seam and deterministic build replacement
+- `internal/testsupport`: shipped-fixture paths and short socket paths for tests; imported only by `_test.go` files
 - `test/`: integration and end-to-end suites
 
 ## Deliberate Placements

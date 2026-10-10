@@ -12,15 +12,18 @@ import (
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
 func TestShippedAdaptersConform(t *testing.T) {
-	root := filepath.Join("..", "..", "..", "..", "adapters")
+	t.Parallel()
+	root := testsupport.AdaptersDir()
 	cases := map[string]int{"native-jsonl": 12, "agentic-stream": 14} // events vs preamble+events+postamble
 	for name, want := range cases {
 		name := name
 		want := want
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 			res, err := Verify(filepath.Join(root, name+".adapter.json"), "", root)
 			if err != nil {
 				t.Fatalf("verify: %v", err)
@@ -39,6 +42,7 @@ func TestShippedAdaptersConform(t *testing.T) {
 }
 
 func TestVerifyRejectsNonMonotonicFixture(t *testing.T) {
+	t.Parallel()
 	base := model.DefaultStartTimeNS
 	events := []model.SimEvent{
 		{ObservedTime: model.FormatTime(base + 2)},
@@ -57,7 +61,7 @@ func TestVerifyRejectsNonMonotonicFixture(t *testing.T) {
 	if err := os.WriteFile(fixturePath, []byte(fixture.String()), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	_, err := Verify("../../../../adapters/native-jsonl.adapter.json", fixturePath, "../../../../adapters")
+	_, err := Verify(testsupport.Adapter("native-jsonl"), fixturePath, testsupport.AdaptersDir())
 	if err == nil || !strings.Contains(err.Error(), "strict observed-time order") {
 		t.Fatalf("adapter verify accepted non-monotonic fixture: %v", err)
 	}
@@ -67,7 +71,7 @@ func TestVerifyRejectsNonMonotonicFixture(t *testing.T) {
 // vendored output schema into a temp directory so a test can alter one.
 func copyShippedAdapter(t *testing.T) (adapterPath, base string) {
 	t.Helper()
-	source := filepath.Join("..", "..", "..", "..", "adapters")
+	source := testsupport.AdaptersDir()
 	base = t.TempDir()
 	for _, rel := range []string{
 		"native-jsonl.adapter.json",

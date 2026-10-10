@@ -42,6 +42,7 @@ func loadLedgerFile(t *testing.T, path string) []model.LedgerRecord {
 // no artifact, and the recovered trace is consistent with it. The run can
 // resume; End fsyncs and produces the artifact.
 func TestDurableLedgerSurvivesCrash(t *testing.T) {
+	t.Parallel()
 	spec, a := testBase(t)
 	dir := t.TempDir()
 	start := model.DefaultStartTimeNS + 4*3600*1e9
@@ -117,6 +118,7 @@ func TestDurableLedgerSurvivesCrash(t *testing.T) {
 // surplus, delivery ids are unique and non-zero, and the identity holds
 // beyond 10,000 records — the G4 evidence the in-memory ledger never had.
 func TestConservationAtScaleBeyondTenThousand(t *testing.T) {
+	t.Parallel()
 	spec, a := testBase(t)
 	// A 1ms heartbeat produces >10,000 deliveries in a short stepped run
 	// (the same recipe as TestHistoryIsNotSilentlyCapped).

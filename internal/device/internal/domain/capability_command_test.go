@@ -7,6 +7,7 @@ import (
 )
 
 func TestCapabilityDigestIsBoundToLoadedData(t *testing.T) {
+	t.Parallel()
 	data, err := os.ReadFile("../../testdata/thermal.capabilities.json")
 	if err != nil {
 		t.Fatal(err)
@@ -29,6 +30,7 @@ func TestCapabilityDigestIsBoundToLoadedData(t *testing.T) {
 }
 
 func TestCanonicalRouteExpiryBoundsCommandFreshness(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name           string
 		expiresAfter   float64
@@ -40,6 +42,7 @@ func TestCanonicalRouteExpiryBoundsCommandFreshness(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			plant := &countingPlant{}
 			d := New(Config{Capabilities: testCaps(t), Plant: plant})
 			out := d.ApplyCommand(validCommand(t, func(command map[string]any) {
@@ -63,6 +66,7 @@ func TestCanonicalRouteExpiryBoundsCommandFreshness(t *testing.T) {
 }
 
 func TestAcceptedCommandEnergizesAndVerifies(t *testing.T) {
+	t.Parallel()
 	d := New(Config{Capabilities: testCaps(t)})
 	out := d.ApplyCommand(validCommand(t, nil))
 	if out.Receipt["accepted"] != true {
@@ -83,6 +87,7 @@ func TestAcceptedCommandEnergizesAndVerifies(t *testing.T) {
 }
 
 func TestCanonicalRouteAcceptsCatalogDefinedStringPresetParameter(t *testing.T) {
+	t.Parallel()
 	d := New(Config{Capabilities: testCaps(t)})
 	out := d.ApplyCommand(validCommand(t, func(command map[string]any) {
 		command["command_id"] = "led-command"

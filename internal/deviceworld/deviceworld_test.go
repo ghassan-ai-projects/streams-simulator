@@ -12,12 +12,13 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/deviceworld"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
 func coldChain(t *testing.T) (*world.World, string) {
 	t.Helper()
-	spec, err := domain.Load(filepath.Join("..", "..", "domains", "cold-chain-transit.domain.json"))
+	spec, err := domain.Load(testsupport.Domain("cold-chain-transit"))
 	if err != nil {
 		t.Fatal(err)
 	}

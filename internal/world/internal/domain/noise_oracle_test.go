@@ -10,6 +10,7 @@ import (
 // TestGaussianNoiseMomentsOracle: gaussian noise on a quiet channel has the
 // declared sigma as its empirical standard deviation (deterministic seed).
 func TestGaussianNoiseMomentsOracle(t *testing.T) {
+	t.Parallel()
 	start := model.DefaultStartTimeNS
 	spec := testSpec(t, func(s *model.DomainSpec) {
 		s.Dynamics = nil
@@ -49,6 +50,7 @@ func TestGaussianNoiseMomentsOracle(t *testing.T) {
 // TestQuantizationNoiseOracle: quantization noise forces every emitted value
 // onto the sigma grid — no value may fall off it.
 func TestQuantizationNoiseOracle(t *testing.T) {
+	t.Parallel()
 	start := model.DefaultStartTimeNS
 	spec := testSpec(t, func(s *model.DomainSpec) {
 		s.Dynamics = nil
@@ -109,6 +111,7 @@ func meanStdOracle(xs []float64) (float64, float64) {
 // producer must be silent during down periods (observed as gaps several
 // channel periods long).
 func TestAvailabilitySojournOracle(t *testing.T) {
+	t.Parallel()
 	start := model.DefaultStartTimeNS
 	spec := testSpec(t, func(s *model.DomainSpec) {
 		s.Dynamics = nil

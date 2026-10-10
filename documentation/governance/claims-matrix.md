@@ -13,8 +13,8 @@ This matrix is the handoff evidence for public claims. It prevents the curated d
 | Adapter inventory | [`architecture/domains-and-adapters.md`](../architecture/domains-and-adapters.md) | `adapters/`, adapter tests | `adapter list`; `adapter verify` | Verified |
 | Event pipeline | [`architecture/pipeline.md`](../architecture/pipeline.md) | `internal/world`, `perturb`, `adapter`, `sink`, `run` | run ledger and golden tests | Verified summary |
 | Determinism/replay | [`architecture/determinism.md`](../architecture/determinism.md) | `internal/run`, run-artifact schema | quickstart `verify`; replay tests | Verified for deterministic local path |
-| MCP director surface | [`reference/mcp.md`](../reference/mcp.md) | `internal/mcp/server.go`, `schemas.go` | MCP strictness tests | Verified |
-| MCP operator surface | [`reference/mcp.md`](../reference/mcp.md) | `internal/mcp/operator.go`, operator endpoint | operator E2E tests | Implemented; environment may block loopback tests |
+| MCP director surface | [`reference/mcp.md`](../reference/mcp.md) | `internal/mcp/internal/app/server.go`, `schemas.go` | MCP strictness tests | Verified |
+| MCP operator surface | [`reference/mcp.md`](../reference/mcp.md) | `internal/mcp/internal/app/operator.go`, operator endpoint | operator E2E tests | Implemented; environment may block loopback tests |
 | Contract schemas | [`reference/contracts.md`](../reference/contracts.md) | `docs/contracts/`; embedded copies in `internal/schemas/` | byte-equality and schema tests | Verified |
 | Run output files | [`reference/artifacts.md`](../reference/artifacts.md) | `internal/run/internal/app/run.go` | quickstart output inventory | Verified |
 | Truth and scoring | [`architecture/truth-and-scoring.md`](../architecture/truth-and-scoring.md) | `internal/truth`, `internal/score`, verdict/truth schemas | truth and score tests | Substantial evidence; release status conditional |

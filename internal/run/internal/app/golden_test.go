@@ -16,6 +16,7 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
 // goldenSpec: state v = baseline 5.0 (no trend, no seasonality, no drift);
@@ -50,9 +51,10 @@ func goldenSpec(t *testing.T) *domain.Compiled {
 }
 
 func TestHandComputedGoldenVector(t *testing.T) {
+	t.Parallel()
 	spec := goldenSpec(t)
 	start := model.DefaultStartTimeNS // 2026-01-01T00:00:00Z
-	a, err := adapter.Load(nativeAdapter)
+	a, err := adapter.Load(testsupport.Adapter("native-jsonl"))
 	if err != nil {
 		t.Fatal(err)
 	}

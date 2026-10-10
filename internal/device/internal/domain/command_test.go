@@ -6,6 +6,7 @@ import (
 )
 
 func TestRejections(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name   string
 		mutate func(map[string]any)
@@ -27,6 +28,7 @@ func TestRejections(t *testing.T) {
 	for _, tc := range cases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			mono := tc.clock
 			d := New(Config{Capabilities: testCaps(t), Clock: func() int64 { return mono }})
 			out := d.ApplyCommand(validCommand(t, tc.mutate))
@@ -47,6 +49,7 @@ func TestRejections(t *testing.T) {
 }
 
 func TestIdempotentReplayAppliesNoSecondEffect(t *testing.T) {
+	t.Parallel()
 	d := New(Config{Capabilities: testCaps(t)})
 	first := d.ApplyCommand(validCommand(t, nil))
 	second := d.ApplyCommand(validCommand(t, nil))
@@ -61,6 +64,7 @@ func TestIdempotentReplayAppliesNoSecondEffect(t *testing.T) {
 }
 
 func TestIdempotencyKeyConflictIsRejected(t *testing.T) {
+	t.Parallel()
 	plant := &countingPlant{}
 	d := New(Config{Capabilities: testCaps(t), Plant: plant})
 	first := validCommand(t, nil)
@@ -81,6 +85,7 @@ func TestIdempotencyKeyConflictIsRejected(t *testing.T) {
 }
 
 func TestSafeStopAckLostAndRebootWithholdTerminalExchange(t *testing.T) {
+	t.Parallel()
 	d := New(Config{
 		Capabilities:  testCaps(t),
 		FaultSchedule: []FaultInjection{{Name: FaultAckLost, AcceptedCommand: 1}},
@@ -107,6 +112,7 @@ func TestSafeStopAckLostAndRebootWithholdTerminalExchange(t *testing.T) {
 }
 
 func TestStuckActuatorIsDesiredNotObserved(t *testing.T) {
+	t.Parallel()
 	d := New(Config{Capabilities: testCaps(t)})
 	d.SetFaults(Faults{Stuck: true})
 	out := d.ApplyCommand(validCommand(t, nil))
@@ -120,6 +126,7 @@ func TestStuckActuatorIsDesiredNotObserved(t *testing.T) {
 }
 
 func TestAckLostAppliesEffectButWithholdsReceipt(t *testing.T) {
+	t.Parallel()
 	d := New(Config{Capabilities: testCaps(t)})
 	d.SetFaults(Faults{AckLost: true})
 	out := d.ApplyCommand(validCommand(t, nil))
@@ -133,6 +140,7 @@ func TestAckLostAppliesEffectButWithholdsReceipt(t *testing.T) {
 }
 
 func TestRebootChangesBootAndInvalidatesOldCommands(t *testing.T) {
+	t.Parallel()
 	d := New(Config{Capabilities: testCaps(t)})
 	d.ApplyCommand(validCommand(t, nil))
 	d.Reboot("boot-B")

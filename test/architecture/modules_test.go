@@ -9,9 +9,9 @@ import (
 
 // moduleShapes lists the migrated modules (facade over private layers) and
 // the internal layers each may have: domain always, app and edge packages
-// where the module's kind (STANDARD §1) calls for them. A module that is not
-// listed is still a flat package; the program ends when every non-foundation
-// module is listed.
+// where the module's kind (STANDARD §1) calls for them. Foundations, the
+// wall seam, the entrypoint and the repository root are the only packages that
+// stay flat; TestEveryModuleIsMigrated enforces that nothing else is.
 var moduleShapes = map[string][]string{
 	"internal/perturb":     {"domain"},
 	"internal/truth":       {"domain"},
@@ -28,6 +28,16 @@ var moduleShapes = map[string][]string{
 	"internal/refconsumer": {"domain", "mcpclient"},
 	"internal/mcp":         {"app", "capability"},
 	"internal/cli":         {"app", "files", "process", "serve"},
+}
+
+func TestEveryModuleIsMigrated(t *testing.T) {
+	t.Parallel()
+	for dir, info := range packages {
+		flat := info.kind == kindFoundation || info.kind == kindSeam || info.kind == kindTestAid || info.kind == kindRoot || !strings.HasPrefix(dir, "internal/")
+		if _, migrated := moduleShapes[dir]; !flat && !migrated {
+			t.Errorf("%s (%s) is still a flat package: give it a facade and private layers or classify it as a foundation", dir, info.kind)
+		}
+	}
 }
 
 func migratedModules() []string {

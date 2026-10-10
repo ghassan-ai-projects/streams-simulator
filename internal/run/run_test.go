@@ -9,15 +9,16 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
 func pondRun(t *testing.T, sinkDir string) *run.Run {
 	t.Helper()
-	spec, err := domain.Load(filepath.Join("..", "..", "domains", "aquaculture-pond.domain.json"))
+	spec, err := domain.Load(testsupport.Domain("aquaculture-pond"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	a, err := adapter.Load(filepath.Join("..", "..", "adapters", "native-jsonl.adapter.json"))
+	a, err := adapter.Load(testsupport.Adapter("native-jsonl"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -73,7 +74,7 @@ func TestEndPublishesAnArtifactThatReplaysToTheSameTrace(t *testing.T) {
 	if err != nil || loaded.ExpectedTraceDigest != art.ExpectedTraceDigest {
 		t.Fatalf("loaded digest %q, ended %q (%v)", loaded.ExpectedTraceDigest, art.ExpectedTraceDigest, err)
 	}
-	spec, err := domain.Load(filepath.Join("..", "..", "domains", "aquaculture-pond.domain.json"))
+	spec, err := domain.Load(testsupport.Domain("aquaculture-pond"))
 	if err != nil {
 		t.Fatal(err)
 	}

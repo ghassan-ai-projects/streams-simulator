@@ -3,17 +3,17 @@ package suite_test
 import (
 	"encoding/json"
 	"errors"
-	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/suite"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
 func shipped(t *testing.T, id string) *domain.Compiled {
 	t.Helper()
-	spec, err := domain.Load(filepath.Join("..", "..", "domains", id+".domain.json"))
+	spec, err := domain.Load(testsupport.Domain(id))
 	if err != nil {
 		t.Fatal(err)
 	}

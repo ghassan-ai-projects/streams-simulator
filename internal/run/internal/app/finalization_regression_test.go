@@ -9,8 +9,10 @@ import (
 )
 
 func TestEndClosesDurableLedgerWithAndWithoutPublication(t *testing.T) {
+	t.Parallel()
 	for _, publish := range []bool{false, true} {
 		t.Run(map[bool]string{false: "memory artifact", true: "published artifact"}[publish], func(t *testing.T) {
+			t.Parallel()
 			spec, a := testBase(t)
 			dir := t.TempDir()
 			path := filepath.Join(dir, "ledger.jsonl")
@@ -41,6 +43,7 @@ func TestEndClosesDurableLedgerWithAndWithoutPublication(t *testing.T) {
 }
 
 func TestDeliveryLedgerPreservesIdentityAndTerminalReason(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		name                 string
 		malformed, delivered bool
@@ -51,6 +54,7 @@ func TestDeliveryLedgerPreservesIdentityAndTerminalReason(t *testing.T) {
 		{"normal", false, true, model.DeliveryOK, model.DeliveryOK},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			spec, a := testBase(t)
 			r, err := New(t.Context(), Config{Domain: spec, Adapter: a, SinkName: model.SinkInproc})
 			if err != nil {

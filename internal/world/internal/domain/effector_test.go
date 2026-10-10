@@ -9,6 +9,7 @@ import (
 
 // TestEffectorIdempotencyAndInterlock covers the loop's basic invariants.
 func TestEffectorIdempotencyAndInterlock(t *testing.T) {
+	t.Parallel()
 	spec := testSpec(t, func(s *model.DomainSpec) {
 		// start_aerator-style effector on state x, interlocked on state u.
 		s.Effectors = []model.Effector{{
@@ -43,6 +44,7 @@ func TestEffectorIdempotencyAndInterlock(t *testing.T) {
 // effector command changes only the addressed producer. A state name is not
 // a sufficient key because every entity may expose the same state.
 func TestEffectsAreEntityScoped(t *testing.T) {
+	t.Parallel()
 	spec := testSpec(t, func(s *model.DomainSpec) {
 		s.Effectors = []model.Effector{{
 			Name:       "act",
@@ -74,6 +76,7 @@ func TestEffectsAreEntityScoped(t *testing.T) {
 // scheduling. The first generated birth must not collide with e-1 and a
 // rejected/custom identity must not stop future births.
 func TestChurnAllocatesAndContinuesAfterBirths(t *testing.T) {
+	t.Parallel()
 	spec := testSpec(t, func(s *model.DomainSpec) {
 		s.Entities.Churn = &model.Churn{BirthsPerHour: 3600, MeanLifetimeS: 1e6}
 	})
@@ -95,6 +98,7 @@ func TestChurnAllocatesAndContinuesAfterBirths(t *testing.T) {
 }
 
 func TestFaultOnsetMagnitudeScalesDeclaredDelta(t *testing.T) {
+	t.Parallel()
 	spec := testSpec(t, func(s *model.DomainSpec) {
 		s.Faults[0].Onset.Magnitude = 2
 		s.Faults[0].Affects[0].Delta = 1
@@ -114,6 +118,7 @@ func TestFaultOnsetMagnitudeScalesDeclaredDelta(t *testing.T) {
 // TestInjectFaultRejectsUnknownParams: fault parameters are fail-closed; the
 // only declared key is severity, and it must be numeric.
 func TestInjectFaultRejectsUnknownParams(t *testing.T) {
+	t.Parallel()
 	spec := testSpec(t, nil)
 	w := newTestWorld(t, spec, 23, model.DefaultStartTimeNS)
 	if _, err := w.InjectFault("e-1", "f1", 0, map[string]any{"bogus": 1}); err == nil {
@@ -131,6 +136,7 @@ func TestInjectFaultRejectsUnknownParams(t *testing.T) {
 }
 
 func TestDeclaredValueTypesReachNativeEvents(t *testing.T) {
+	t.Parallel()
 	spec := testSpec(t, func(s *model.DomainSpec) {
 		s.Dynamics = nil
 		s.State[1].Initial = 1
@@ -163,6 +169,7 @@ func TestDeclaredValueTypesReachNativeEvents(t *testing.T) {
 }
 
 func TestAvailabilityStartsUpAndUsesRenewalTransitions(t *testing.T) {
+	t.Parallel()
 	spec := testSpec(t, func(s *model.DomainSpec) {
 		s.Dynamics = nil
 		s.Channels[0].Availability = &model.Availability{Uptime: 0.5, MTTRS: 60}

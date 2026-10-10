@@ -75,6 +75,7 @@ func quiesceHarness(t *testing.T, start, to int64) (*Run, *fakeQuiescenceClock, 
 }
 
 func TestQuiescenceTimeoutMarksRunIncomplete(t *testing.T) {
+	t.Parallel()
 	start := model.DefaultStartTimeNS + 4*3600*1e9
 	to := start + int64(time.Hour)
 	r, fc, done, _ := quiesceHarness(t, start, to)
@@ -102,6 +103,7 @@ func TestQuiescenceTimeoutMarksRunIncomplete(t *testing.T) {
 }
 
 func TestQuiescenceCancelStopsTheWait(t *testing.T) {
+	t.Parallel()
 	start := model.DefaultStartTimeNS + 4*3600*1e9
 	to := start + int64(time.Hour)
 	spec, a := testBase(t)
@@ -133,6 +135,7 @@ func TestQuiescenceCancelStopsTheWait(t *testing.T) {
 }
 
 func TestQuiescenceStaleReportCannotSatisfyLaterWait(t *testing.T) {
+	t.Parallel()
 	start := model.DefaultStartTimeNS + 4*3600*1e9
 	to := start + int64(time.Hour)
 	r, fc, done, parked := quiesceHarness(t, start, to)
@@ -153,6 +156,7 @@ func TestQuiescenceStaleReportCannotSatisfyLaterWait(t *testing.T) {
 }
 
 func TestQuiescenceReportAtTargetSatisfies(t *testing.T) {
+	t.Parallel()
 	start := model.DefaultStartTimeNS + 4*3600*1e9
 	to := start + int64(time.Hour)
 	r, _, done, _ := quiesceHarness(t, start, to)
@@ -163,6 +167,7 @@ func TestQuiescenceReportAtTargetSatisfies(t *testing.T) {
 }
 
 func TestQuiescenceFastPathHonorsReportBetweenAdvances(t *testing.T) {
+	t.Parallel()
 	start := model.DefaultStartTimeNS + 4*3600*1e9
 	spec, a := testBase(t)
 	r, err := New(context.Background(), Config{
@@ -210,6 +215,7 @@ func TestQuiescenceFastPathHonorsReportBetweenAdvances(t *testing.T) {
 // out reproduces byte-for-byte, but replay reports the original run as
 // incomplete — never silent success.
 func TestReplayOfTimedOutAdvanceReportsIncomplete(t *testing.T) {
+	t.Parallel()
 	start := model.DefaultStartTimeNS + 4*3600*1e9
 	to := start + int64(time.Hour)
 	spec, a := testBase(t)

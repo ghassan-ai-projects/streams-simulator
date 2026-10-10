@@ -6,13 +6,12 @@ import (
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
-
-const aquaculturePath = "../../../../docs/examples/aquaculture-pond.domain.json"
 
 func loadSpec(t *testing.T) *domain.Compiled {
 	t.Helper()
-	spec, err := domain.Load(aquaculturePath)
+	spec, err := domain.Load(testsupport.Example())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -29,6 +28,7 @@ func entityIDs(spec *domain.Compiled) []string {
 }
 
 func TestAeratorFailureImmediatelyObservable(t *testing.T) {
+	t.Parallel()
 	spec := loadSpec(t)
 	ids := entityIDs(spec)
 	start := model.DefaultStartTimeNS + 4*3600*1e9
@@ -60,6 +60,7 @@ func TestAeratorFailureImmediatelyObservable(t *testing.T) {
 }
 
 func TestProbeFoulingObservabilityLag(t *testing.T) {
+	t.Parallel()
 	// The lethal sensor fault: the probe reads high and stable, so the
 	// single-channel SNR never crosses; only the peer residual against
 	// sibling ponds makes it observable, and only after the fouling ramp
@@ -87,6 +88,7 @@ func TestProbeFoulingObservabilityLag(t *testing.T) {
 }
 
 func TestBuildRecord(t *testing.T) {
+	t.Parallel()
 	spec := loadSpec(t)
 	ids := entityIDs(spec)
 	start := model.DefaultStartTimeNS + 4*3600*1e9
@@ -130,6 +132,7 @@ func TestBuildRecord(t *testing.T) {
 }
 
 func TestStoreSealing(t *testing.T) {
+	t.Parallel()
 	s := NewStore(func(runID string) bool { return runID == "r-1" })
 	rec := &model.GroundTruthRecord{
 		ScenarioID: "x/0001", Label: "f", Observability: model.ObservabilityInfo{Channels: []string{"c1"}},

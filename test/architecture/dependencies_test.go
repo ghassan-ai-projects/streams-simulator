@@ -41,6 +41,7 @@ var packageDependencies = map[string]string{
 	"internal/schemas":         "",
 	"internal/sink":            "",
 	"internal/wall":            "",
+	"internal/testsupport":     "",
 }
 
 func TestPackageDependencies(t *testing.T) {
@@ -140,6 +141,7 @@ func TestDependencyGuardRejectsUpwardAndExternalEdges(t *testing.T) {
 		{"tools", "github.com/modelcontextprotocol/go-sdk/mcp", false},
 	} {
 		t.Run(tc.owner+"/"+tc.imported, func(t *testing.T) {
+			t.Parallel()
 			if got := dependencyAllowed(tc.owner, tc.imported); got != tc.allowed {
 				t.Fatalf("allowed=%v, want %v", got, tc.allowed)
 			}

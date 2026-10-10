@@ -2,18 +2,18 @@ package domain
 
 import (
 	"encoding/json"
-	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
-// examplePath is the committed closed-loop showcase domain.
-var examplePath = filepath.Join("..", "..", "..", "..", "docs", "examples", "aquaculture-pond.domain.json")
+// testsupport.Example() is the committed closed-loop showcase domain.
 
 func TestLoadAquaculturePond(t *testing.T) {
-	c, err := Load(examplePath)
+	t.Parallel()
+	c, err := Load(testsupport.Example())
 	if err != nil {
 		t.Fatalf("load example domain: %v", err)
 	}
@@ -46,11 +46,12 @@ func TestLoadAquaculturePond(t *testing.T) {
 }
 
 func TestDigestStable(t *testing.T) {
-	a, err := Load(examplePath)
+	t.Parallel()
+	a, err := Load(testsupport.Example())
 	if err != nil {
 		t.Fatal(err)
 	}
-	b, err := Load(examplePath)
+	b, err := Load(testsupport.Example())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -63,8 +64,9 @@ func TestDigestStable(t *testing.T) {
 }
 
 func TestCrossCheckRejectsBadReferences(t *testing.T) {
+	t.Parallel()
 	// Copy the example and break one cross-reference.
-	c, err := Load(examplePath)
+	c, err := Load(testsupport.Example())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -89,6 +91,7 @@ func TestCrossCheckRejectsBadReferences(t *testing.T) {
 }
 
 func TestSchemaValidationRejectsMalformed(t *testing.T) {
+	t.Parallel()
 	// A spec missing required fields must fail the schema, not the
 	// cross-check.
 	bad := `{"id": "x"}`
@@ -115,7 +118,8 @@ func TestSchemaValidationRejectsMalformed(t *testing.T) {
 }
 
 func TestCatalogCoverage(t *testing.T) {
-	c, err := Load(examplePath)
+	t.Parallel()
+	c, err := Load(testsupport.Example())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -146,6 +150,7 @@ func TestCatalogCoverage(t *testing.T) {
 // TestF2Rejected: F2 reference models are not built; a domain that declares
 // them must fail loudly, never silently emit a static state.
 func TestF2Rejected(t *testing.T) {
+	t.Parallel()
 	spec := minimalSpec()
 	spec.Dynamics = []model.Dynamics{{
 		Target: "x",
@@ -165,6 +170,7 @@ func TestF2Rejected(t *testing.T) {
 // TestPinkNoiseRejected: pink noise is not implemented; the declared option
 // must fail loudly (fail-closed conformance row).
 func TestPinkNoiseRejected(t *testing.T) {
+	t.Parallel()
 	spec := minimalSpec()
 	spec.Channels[0].Noise = model.Noise{Model: "pink", Sigma: 0.5}
 	raw, err := json.Marshal(spec)
@@ -179,6 +185,7 @@ func TestPinkNoiseRejected(t *testing.T) {
 // TestNoneNoiseWithSigmaRejected: noise model none with a nonzero sigma
 // must be refused, not silently approximated by the gaussian branch.
 func TestNoneNoiseWithSigmaRejected(t *testing.T) {
+	t.Parallel()
 	spec := minimalSpec()
 	spec.Channels[0].Noise = model.Noise{Model: "none", Sigma: 0.5}
 	raw, err := json.Marshal(spec)
@@ -201,6 +208,7 @@ func TestNoneNoiseWithSigmaRejected(t *testing.T) {
 }
 
 func TestDeadTimeDoubleApplicationRejected(t *testing.T) {
+	t.Parallel()
 	// An effector with dead_time_s driving a dead_time state must be refused.
 	spec := minimalSpec()
 	spec.Effectors = []model.Effector{{
@@ -229,6 +237,7 @@ func TestDeadTimeDoubleApplicationRejected(t *testing.T) {
 }
 
 func TestDynamicsCycleRejected(t *testing.T) {
+	t.Parallel()
 	spec := minimalSpec()
 	spec.State = []model.State{{Name: "x", Initial: 0}, {Name: "y", Initial: 0}}
 	spec.Dynamics = []model.Dynamics{

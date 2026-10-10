@@ -72,7 +72,7 @@ and goldens unchanged.
 | M12 | `run` (summary row; delivered by M12a and M12b) | facade · app · domain · durable · quiesce edges | RunID, ledger flush/fsync points, artifact write order, replay |
 | M13 | `refconsumer` | facade · app · domain · mcpclient edge | detection bytes, verdict JSON |
 | M14 | `mcp` | facade · app (director/operator use cases) · protocol edge | tool schemas, error codes and precedence |
-| M15 | `cli` | facade · app (commands) · edges; `cmd` unchanged | flag defaults, exit codes, output text, manifest bytes |
+| M15 | `cli` | facade · app (commands) · process/files/serve edges | flag defaults, exit codes, output text, manifest bytes; `cmd` changes only to pass `cli.Build` |
 
 A module that proves larger than one reviewable diff is split (`M12a`,
 `M12b`) and the table updated, not rewritten.
@@ -104,6 +104,9 @@ dereferenced nil; every one has a regression test.
 | M6 | `suite.Generate` returns `ErrNoDomain` for a missing domain | `TestGenerateRefusesAMissingDomain` |
 | M10 | `adapter.NewEngine` returns `ErrNoAdapter` for a nil adapter; `Engine.Meta` (no caller) removed | `TestNewEngineRefusesAMissingAdapter` |
 | M7–M10 | zero-value `deviceworld.Plant`, `domain.Catalog`, `sink.File`, `sink.HTTPPush` return `ErrNoPlant`/`ErrNoCatalog`/`ErrNotConstructed` instead of panicking (the old `Plant{}` returned `ErrPlantUnavailable`) | `TestZeroValueFileAndHTTPPushRefuseInsteadOfPanicking` and facade guards |
+| M15 | the interrupt handler is registered before the device socket is bound (a signal during startup is no longer lost) | `TestDeviceStopsOnAnInterruptRegisteredBeforeBinding` |
+| M15 | `score` reads the ledger with one file read; a ledger path that is a directory reports `open ledger X: read X: is a directory` instead of `decode ledger X: ...` | `TestLoadLedgerNamesAPathThatIsADirectory` |
+| M15 | `cli.Version`/`cli.Commit` exported variables become `cli.Build` passed to `cli.Main`; `cmd/streamsim` passes it | `TestMainForwardsTheBuildIdentity` (subprocess) |
 | M5 | `audit.NewPanel` returns `(*Panel, error)`, `ErrNoSpec` for a nil spec | `TestNewPanelRefusesAMissingSpec`; `audit.Audit` on a nil/zero panel returns `ErrNoPanel` (`TestAuditRefusesAMissingPanel`) |
 
 ## Not in this program
@@ -134,5 +137,5 @@ the two delivery paths (D-18), and world read-purity (D-14).
 | M13 | done | `13fa2e2` | refconsumer |
 | M14 | done | `7b9def3` | mcp |
 | M15 | done | `f28d88e` | cli |
-| M16 | done | `see git log` | adapter conformance |
+| M16 | done | `13f18be` | adapter conformance |
 | T1–T5, F | pending | | |

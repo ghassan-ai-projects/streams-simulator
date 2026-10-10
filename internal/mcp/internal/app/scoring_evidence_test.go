@@ -9,6 +9,7 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
 // scoringEvidence is the only place a run is packed for the scorer, so each
@@ -26,11 +27,11 @@ func TestScoringEvidencePacksEveryFieldFromTheRun(t *testing.T) {
 
 func checkScoringEvidence(t *testing.T, unblind bool) {
 	t.Helper()
-	spec, err := domain.Load(aquaculturePath)
+	spec, err := domain.Load(testsupport.Example())
 	if err != nil {
 		t.Fatal(err)
 	}
-	a, err := adapter.Load(nativeAdapter)
+	a, err := adapter.Load(testsupport.Adapter("native-jsonl"))
 	if err != nil {
 		t.Fatal(err)
 	}

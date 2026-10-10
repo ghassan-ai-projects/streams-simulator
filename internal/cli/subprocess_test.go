@@ -15,25 +15,17 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
 func TestCrossProcessDeterminism(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("spawns the real binary; skipped in -short mode")
 	}
-	root, err := filepath.Abs(filepath.Join("..", ".."))
-	if err != nil {
-		t.Fatal(err)
-	}
-	bin := filepath.Join(t.TempDir(), "streamsim")
-	buildCtx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-	defer cancel()
-	// #nosec G204 -- the test builds and runs the repo's own binary
-	build := exec.CommandContext(buildCtx, "go", "build", "-o", bin, "./cmd/streamsim")
-	build.Dir = root
-	if out, err := build.CombinedOutput(); err != nil {
-		t.Fatalf("build binary: %v\n%s", err, out)
-	}
+	root := testsupport.RepositoryRoot()
+	bin := buildBinary(t, root, "")
 
 	run := func(dir string) {
 		cmdCtx, cancel2 := context.WithTimeout(context.Background(), 5*time.Minute)
@@ -105,5 +97,47 @@ func TestCrossProcessDeterminism(t *testing.T) {
 	verify.Dir = root
 	if out, err := verify.CombinedOutput(); err != nil {
 		t.Fatalf("cross-process verify failed: %v\n%s", err, out)
+	}
+}
+
+// buildBinary compiles cmd/streamsim into a temporary directory; ldflags may
+// be empty.
+func buildBinary(t *testing.T, root, ldflags string) string {
+	t.Helper()
+	bin := filepath.Join(t.TempDir(), "streamsim")
+	buildCtx, cancel := context.WithTimeout(t.Context(), 5*time.Minute)
+	defer cancel()
+	args := []string{"build", "-o", bin}
+	if ldflags != "" {
+		args = append(args, "-ldflags", ldflags)
+	}
+	// #nosec G204 -- the test builds and runs the repo's own binary
+	build := exec.CommandContext(buildCtx, "go", append(args, "./cmd/streamsim")...)
+	build.Dir = root
+	if out, err := build.CombinedOutput(); err != nil {
+		t.Fatalf("build binary: %v\n%s", err, out)
+	}
+	return bin
+}
+
+func TestMainForwardsTheBuildIdentity(t *testing.T) {
+	t.Parallel()
+	if testing.Short() {
+		t.Skip("spawns the real binary; skipped in -short mode")
+	}
+	root := testsupport.RepositoryRoot()
+	bin := buildBinary(t, root, "-X main.Version=v-sub -X main.Commit=c-sub")
+	manifest := filepath.Join(t.TempDir(), "manifest.json")
+	// #nosec G204 -- the test runs the freshly built binary with fixed args
+	cmd := exec.CommandContext(t.Context(), bin, "manifest", "--out", manifest,
+		"--domains-dir", testsupport.DomainsDir(), "--adapters-dir", testsupport.AdaptersDir(),
+		"--author", "A", "--reviewer", "R")
+	cmd.Dir = root
+	out, err := cmd.Output()
+	if err != nil {
+		t.Fatalf("manifest: %v", err)
+	}
+	if !strings.Contains(string(out), `"sim": "v-sub@c-sub"`) {
+		t.Fatalf("manifest output lacks the linked build identity:\n%s", out)
 	}
 }

@@ -8,11 +8,12 @@ import (
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
 func shippedAdapter(t *testing.T, id string) *model.Adapter {
 	t.Helper()
-	a, err := adapter.Load(filepath.Join("..", "..", "adapters", id+".adapter.json"))
+	a, err := adapter.Load(testsupport.Adapter(id))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -92,7 +93,7 @@ func TestEngineRendersAStreamingSessionTheSameAsAWholeRun(t *testing.T) {
 
 func TestVerifyProvesEveryShippedAdapterAgainstItsGolden(t *testing.T) {
 	t.Parallel()
-	root := filepath.Join("..", "..", "adapters")
+	root := testsupport.AdaptersDir()
 	for _, name := range []string{"native-jsonl", "agentic-stream"} {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()

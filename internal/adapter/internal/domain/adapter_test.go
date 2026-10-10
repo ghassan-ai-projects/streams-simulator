@@ -53,6 +53,7 @@ func miniAdapter() *model.Adapter {
 }
 
 func TestRenderTransforms(t *testing.T) {
+	t.Parallel()
 	a := miniAdapter()
 	meta := map[string]any{
 		"run_id": "r-1", "sim_version": "0.1.0", "domain_id": "d",
@@ -114,6 +115,7 @@ func TestRenderTransforms(t *testing.T) {
 }
 
 func TestWhenGuardExcludes(t *testing.T) {
+	t.Parallel()
 	a := miniAdapter()
 	a.Postamble = []model.RecordTemplate{{
 		When:   &model.WhenClause{Field: "value", Op: "present"},
@@ -135,6 +137,7 @@ func TestWhenGuardExcludes(t *testing.T) {
 }
 
 func TestIdentityRequirement(t *testing.T) {
+	t.Parallel()
 	// A record without seq-derived identity must be refused at load.
 	doc := `{
 		"id": "no-identity", "version": "0.1.0", "encoding": "jsonl",
@@ -146,6 +149,7 @@ func TestIdentityRequirement(t *testing.T) {
 }
 
 func TestVerifyAgainstOwnGolden(t *testing.T) {
+	t.Parallel()
 	// The native-jsonl adapter verifies against its own golden; see the
 	// adapters/ dir tests for the shipped pair. Here we verify the engine's
 	// byte-stability directly.

@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/device/internal/domain"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
 type pipeConn struct {
@@ -67,15 +68,8 @@ func TestSessionAppliesTheWireFaultPlanToOutboundFrames(t *testing.T) {
 
 func TestListenRefusesAPathThatIsARegularFileAndReplacesAStaleSocket(t *testing.T) {
 	t.Parallel()
-	dir, err := os.MkdirTemp("", "uds")
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Error(err)
-		}
-	})
+	sock := testsupport.SocketPath(t)
+	dir := filepath.Dir(sock)
 	regular := filepath.Join(dir, "regular")
 	if err := os.WriteFile(regular, []byte("x"), 0o600); err != nil {
 		t.Fatal(err)
@@ -83,7 +77,6 @@ func TestListenRefusesAPathThatIsARegularFileAndReplacesAStaleSocket(t *testing.
 	if _, err := Listen(regular, domain.New(domain.Config{})); err == nil {
 		t.Fatal("a regular file at the socket path must be refused")
 	}
-	sock := filepath.Join(dir, "d.sock")
 	for i := 0; i < 2; i++ {
 		listener, err := Listen(sock, domain.New(domain.Config{}))
 		if err != nil {

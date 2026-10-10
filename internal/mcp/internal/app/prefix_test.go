@@ -16,6 +16,7 @@ import (
 // surface must respond identically. This catches any covert channel — an
 // error string, a latency, a field that changes with hidden state.
 func TestPrefixIndistinguishability(t *testing.T) {
+	t.Parallel()
 	start := model.DefaultStartTimeNS + 4*3600*1e9
 	mk := func(seed uint64) (*Director, string) {
 		d := newTestDirector(t)

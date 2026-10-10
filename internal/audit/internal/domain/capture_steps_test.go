@@ -3,6 +3,7 @@ package domain
 import "testing"
 
 func TestAuditCaptureExcludesDroppedRecords(t *testing.T) {
+	t.Parallel()
 	spec := loadSpec(t)
 	panel := NewPanel(spec, 42, 60*1e9)
 	grid, log, err := panel.build("site-a/pond-1", 0, ids(spec), nil, nil, []Perturbation{{Name: "drop", Params: map[string]any{"rate": 1.0}}}, 120*1e9)

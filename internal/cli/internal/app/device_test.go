@@ -5,13 +5,17 @@ import (
 	"os"
 	"testing"
 	"time"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/device"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
 func TestNewDeviceServeDeviceBindsWorldPlant(t *testing.T) {
+	t.Parallel()
 	dev, worldState, err := newDeviceServeDevice(deviceServeOptions{
 		capabilities:  "../../../device/testdata/thermal_capability_catalog.json",
 		worldBindings: "../../../deviceworld/testdata/thermal.bindings.json",
-		worldDomain:   "../../../../domains/cold-chain-transit.domain.json",
+		worldDomain:   testsupport.Domain("cold-chain-transit"),
 		bootID:        "boot-A", deviceID: "dev-01",
 	}, time.Now)
 	if err != nil {
@@ -45,6 +49,7 @@ func TestNewDeviceServeDeviceBindsWorldPlant(t *testing.T) {
 }
 
 func TestFaultSpecFlagIsRepeatable(t *testing.T) {
+	t.Parallel()
 	var flag faultSpecFlag
 	if err := flag.Set("stuck@2"); err != nil {
 		t.Fatal(err)
@@ -55,4 +60,33 @@ func TestFaultSpecFlagIsRepeatable(t *testing.T) {
 	if len(flag.entries) != 2 || flag.entries[0].AcceptedCommand != 2 || flag.entries[1].AcceptedCommand != 1 {
 		t.Fatalf("fault entries = %+v", flag.entries)
 	}
+}
+
+func TestDeviceWorldClockCountsMicrosecondsOfTheInjectedClock(t *testing.T) {
+	t.Parallel()
+	now := fixedNow
+	clock := func() time.Time { return now }
+	_, _, deviceClock, err := prepareDeviceWorld(deviceServeOptions{
+		worldBindings: testsupport.RepositoryRoot() + "/internal/deviceworld/testdata/thermal.bindings.json",
+		worldDomain:   testsupport.Domain("cold-chain-transit"),
+	}, mustCapabilities(t), clock)
+	if err != nil {
+		t.Fatalf("prepare device world: %v", err)
+	}
+	if got := deviceClock(); got != 0 {
+		t.Fatalf("clock at start = %d, want 0", got)
+	}
+	now = now.Add(1500 * time.Microsecond)
+	if got := deviceClock(); got != 1500 {
+		t.Fatalf("clock after 1.5ms = %d, want 1500", got)
+	}
+}
+
+func mustCapabilities(t *testing.T) *device.Capabilities {
+	t.Helper()
+	caps, err := loadDeviceCapabilities(testsupport.RepositoryRoot() + "/internal/device/testdata/thermal_capability_catalog.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return caps
 }

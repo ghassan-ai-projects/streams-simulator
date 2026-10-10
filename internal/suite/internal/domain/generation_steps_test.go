@@ -8,6 +8,7 @@ import (
 )
 
 func TestBoundedGenerationRegression(t *testing.T) {
+	t.Parallel()
 	spec := loadSpec(t)
 	generated, err := Generate(Config{Domain: spec, Profile: "nominal", N: 1, Seed: 91, SampleNS: 300 * 1e9, MaxAttempts: 2})
 	if err != nil {

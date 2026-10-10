@@ -7,6 +7,7 @@ import (
 )
 
 func TestWorldConfigPreservesEpochZeroAndSeparateResourceIdentities(t *testing.T) {
+	t.Parallel()
 	d := newTestDirector(t)
 	first, err := d.CreateWorld(map[string]any{"domain": "aquaculture-pond", "start_time": float64(0)})
 	if err != nil {

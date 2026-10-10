@@ -13,6 +13,7 @@ import (
 
 // TestReplayDetectsTampering: a corrupted expected digest must fail verify.
 func TestReplayDetectsTampering(t *testing.T) {
+	t.Parallel()
 	spec, a := testBase(t)
 	cfg := Config{
 		Domain: spec, Adapter: a, Seed: 5, SinkName: model.SinkInproc,
@@ -30,6 +31,7 @@ func TestReplayDetectsTampering(t *testing.T) {
 }
 
 func TestReplayRejectsInputDigestMismatch(t *testing.T) {
+	t.Parallel()
 	spec, a := testBase(t)
 	art := buildArtifact(t, Config{
 		Domain: spec, Adapter: a, Seed: 6, SinkName: model.SinkInproc,
@@ -46,6 +48,7 @@ func TestReplayRejectsInputDigestMismatch(t *testing.T) {
 // TestArtifactRoundTrip validates the artifact against its schema and the
 // command log is a faithful record of the run.
 func TestArtifactRoundTrip(t *testing.T) {
+	t.Parallel()
 	spec, a := testBase(t)
 	cfg := Config{
 		Domain: spec, Adapter: a, Seed: 9, SinkName: model.SinkInproc,
@@ -97,6 +100,7 @@ func TestArtifactRoundTrip(t *testing.T) {
 // TestEnvInjectRejectsUndefinedParams: environment faults declare no params
 // yet, so any params are rejected rather than recorded and ignored.
 func TestEnvInjectRejectsUndefinedParams(t *testing.T) {
+	t.Parallel()
 	spec, a := testBase(t)
 	start := model.DefaultStartTimeNS
 	r, err := New(context.Background(), Config{

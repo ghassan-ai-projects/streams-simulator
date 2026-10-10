@@ -11,6 +11,7 @@ import (
 // TestRunLedgerDistinguishesDrop: a dropped event is in the ledger as
 // undelivered and absent from the trace.
 func TestRunLedgerDistinguishesDrop(t *testing.T) {
+	t.Parallel()
 	spec, a := testBase(t)
 	start := model.DefaultStartTimeNS + 4*3600*1e9
 	r, err := New(context.Background(), Config{
@@ -53,6 +54,7 @@ func TestRunLedgerDistinguishesDrop(t *testing.T) {
 }
 
 func TestLedgerDeliveryIDsAreUniqueAcrossDuplicates(t *testing.T) {
+	t.Parallel()
 	spec, a := testBase(t)
 	start := model.DefaultStartTimeNS + 4*3600*1e9
 	r, err := New(context.Background(), Config{
@@ -84,6 +86,7 @@ func TestLedgerDeliveryIDsAreUniqueAcrossDuplicates(t *testing.T) {
 }
 
 func TestHistoryIsNotSilentlyCapped(t *testing.T) {
+	t.Parallel()
 	spec, a := testBase(t)
 	// A heartbeat at 1ms produces more than the old 10,000-entry cap in a
 	// short stepped run without availability gating.
@@ -116,6 +119,7 @@ func TestHistoryIsNotSilentlyCapped(t *testing.T) {
 // TestRunClosedLoop: fault -> evidence -> effector -> effect -> recovery,
 // with idempotency: a repeated command_id applies exactly one effect.
 func TestRunClosedLoop(t *testing.T) {
+	t.Parallel()
 	spec, a := testBase(t)
 	start := model.DefaultStartTimeNS + 4*3600*1e9
 	r, err := New(context.Background(), Config{

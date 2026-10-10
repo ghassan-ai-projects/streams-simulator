@@ -14,12 +14,14 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
 // TestSoakConservationAtScale drives the full pipeline past a million
 // delivered records and asserts the conservation identity plus replay
 // determinism under load. Gated behind SOAK=1 so unit runs stay fast.
 func TestSoakConservationAtScale(t *testing.T) {
+	t.Parallel()
 	if os.Getenv("SOAK") != "1" {
 		t.Skip("soak run requires SOAK=1 (make soak)")
 	}
@@ -91,11 +93,11 @@ func TestSoakConservationAtScale(t *testing.T) {
 
 // BenchmarkEmissionPath profiles the world emission pipeline.
 func BenchmarkEmissionPath(b *testing.B) {
-	spec, err := domain.Load(aquaculturePath)
+	spec, err := domain.Load(testsupport.Example())
 	if err != nil {
 		b.Fatal(err)
 	}
-	a, err := adapter.Load(nativeAdapter)
+	a, err := adapter.Load(testsupport.Adapter("native-jsonl"))
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -117,11 +119,11 @@ func BenchmarkEmissionPath(b *testing.B) {
 
 // BenchmarkLedgerAppend profiles the durable ledger write path.
 func BenchmarkLedgerAppend(b *testing.B) {
-	spec, err := domain.Load(aquaculturePath)
+	spec, err := domain.Load(testsupport.Example())
 	if err != nil {
 		b.Fatal(err)
 	}
-	a, err := adapter.Load(nativeAdapter)
+	a, err := adapter.Load(testsupport.Adapter("native-jsonl"))
 	if err != nil {
 		b.Fatal(err)
 	}

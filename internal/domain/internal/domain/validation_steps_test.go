@@ -3,10 +3,13 @@ package domain
 import (
 	"strings"
 	"testing"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
 func TestCrossReferenceValidationChecksChannelsBeforeFaults(t *testing.T) {
-	spec, err := Load("../../../../domains/rotating-machinery.domain.json")
+	t.Parallel()
+	spec, err := Load(testsupport.Domain("rotating-machinery"))
 	if err != nil {
 		t.Fatal(err)
 	}

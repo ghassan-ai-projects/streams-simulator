@@ -16,6 +16,7 @@ const (
 	kindEdgeCore   packageKind = "edge-core"  // K3: rules plus a named I/O edge
 	kindSurface    packageKind = "surface"    // K4: wiring and protocol only
 	kindRoot       packageKind = "root"       // module root and development tools
+	kindTestAid    packageKind = "test-aid"   // shared test fixtures; tests only
 )
 
 // packageInfo is a package's kind and declared layer. An import must point to
@@ -34,6 +35,7 @@ var packages = map[string]packageInfo{
 	"internal/randutil":        {kindFoundation, 0},
 	"internal/schemas":         {kindFoundation, 0},
 	"internal/wall":            {kindSeam, 0},
+	"internal/testsupport":     {kindTestAid, 0},
 	"internal/sink":            {kindEdgeCore, 0},
 	"internal/jsonschema":      {kindFoundation, 1},
 	"internal/model":           {kindFoundation, 2},

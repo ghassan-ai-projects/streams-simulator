@@ -3,19 +3,22 @@ package device_test
 import (
 	"bufio"
 	"errors"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/device"
 	"net"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/device"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
 // TestServeConnLoop drives the emulator over an in-memory connection exactly as
 // a gateway link would: read the opening state, send a command, read the receipt
 // and result.
 func TestServeConnLoop(t *testing.T) {
+	t.Parallel()
 	client, server := net.Pipe()
 	d := device.New(device.Config{Capabilities: testCaps(t)})
 	done := make(chan error, 1)
@@ -67,6 +70,7 @@ func TestServeConnLoop(t *testing.T) {
 }
 
 func TestListenRefusesRegularFilePath(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join(t.TempDir(), "device.sock")
 	if err := os.WriteFile(path, []byte("keep me"), 0o600); err != nil {
 		t.Fatal(err)
@@ -84,6 +88,7 @@ func TestListenRefusesRegularFilePath(t *testing.T) {
 }
 
 func TestScheduledDuplicateReplaysReceiptWithoutSecondPlantEffect(t *testing.T) {
+	t.Parallel()
 	client, server := net.Pipe()
 	plant := &countingPlant{}
 	d := device.New(device.Config{
@@ -130,22 +135,14 @@ func TestScheduledDuplicateReplaysReceiptWithoutSecondPlantEffect(t *testing.T) 
 }
 
 func TestAckLostRetryReplaysReceiptWithoutSecondPlantEffect(t *testing.T) {
+	t.Parallel()
 	plant := &countingPlant{}
 	d := device.New(device.Config{
 		Capabilities:  testCaps(t),
 		Plant:         plant,
 		FaultSchedule: []device.FaultInjection{{Name: device.FaultAckLost, AcceptedCommand: 1}},
 	})
-	tmpDir, err := os.MkdirTemp("/tmp", "ss-")
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() {
-		if err := os.RemoveAll(tmpDir); err != nil {
-			t.Errorf("remove temporary device directory: %v", err)
-		}
-	})
-	path := filepath.Join(tmpDir, "device.sock")
+	path := testsupport.SocketPath(t)
 	listener, err := device.Listen(path, d)
 	if err != nil {
 		t.Fatal(err)
@@ -171,21 +168,17 @@ func TestAckLostRetryReplaysReceiptWithoutSecondPlantEffect(t *testing.T) {
 	if _, err := client.Write(command); err != nil {
 		t.Fatal(err)
 	}
-	deadline := time.Now().Add(2 * time.Second)
-	for d.AcceptedCommandCount() != 1 && time.Now().Before(deadline) {
-		time.Sleep(time.Millisecond)
+	// The link is sequential: a state query sent behind the command is
+	// answered only after the command was admitted, so the first frame back
+	// being that state proves the lost acknowledgement emitted no receipt.
+	if _, err := client.Write([]byte(device.QueryStateControl + "\n")); err != nil {
+		t.Fatal(err)
+	}
+	if first := readRecord(t, reader); first["message_type"] != "state" {
+		t.Fatalf("ack_lost first delivery must not emit a receipt or result, got %v", first)
 	}
 	if d.AcceptedCommandCount() != 1 {
 		t.Fatal("ack_lost command was not admitted")
-	}
-	_ = client.SetReadDeadline(time.Now().Add(50 * time.Millisecond))
-	if _, err := reader.ReadBytes('\n'); err == nil {
-		t.Fatal("ack_lost first delivery must not emit a receipt")
-	} else {
-		var netErr net.Error
-		if !errors.As(err, &netErr) || !netErr.Timeout() {
-			t.Fatalf("expected bounded read timeout before retry, got %v", err)
-		}
 	}
 
 	_ = client.SetReadDeadline(time.Now().Add(2 * time.Second))
@@ -215,6 +208,7 @@ func TestAckLostRetryReplaysReceiptWithoutSecondPlantEffect(t *testing.T) {
 }
 
 func TestSafeStopAckLostRetryReplaysReceiptAndResult(t *testing.T) {
+	t.Parallel()
 	plant := &countingPlant{}
 	d := device.New(device.Config{
 		Capabilities:  testCaps(t),

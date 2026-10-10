@@ -22,6 +22,7 @@ func constWorld(t *testing.T, mutate func(*model.DomainSpec), start int64) *Worl
 //	a(t) = gu(1-e^(-t/tau1))
 //	x(t) = gu(1-e^(-t/tau2)) - gu(e^(-t/tau2)-e^(-t/tau1))/(1/tau1-1/tau2)
 func TestRCNNetworkAnalyticOracle(t *testing.T) {
+	t.Parallel()
 	start := model.DefaultStartTimeNS
 	closed := func(t, tau1, tau2, g, u float64) float64 {
 		e1 := math.Exp(-t / tau1)
@@ -56,6 +57,7 @@ func TestRCNNetworkAnalyticOracle(t *testing.T) {
 
 // TestIntegratorAnalyticOracle: dx/dt = g*u, closed form x(t) = x0 + g*u*t.
 func TestIntegratorAnalyticOracle(t *testing.T) {
+	t.Parallel()
 	start := model.DefaultStartTimeNS
 	for _, g := range []float64{0.5, 1, 3} {
 		w := constWorld(t, func(s *model.DomainSpec) {
@@ -77,6 +79,7 @@ func TestIntegratorAnalyticOracle(t *testing.T) {
 // TestThresholdIntegratorAnalyticOracle: dx/dt = g*max(0, threshold-u)
 // (direction below): linear while u is below the threshold, frozen above.
 func TestThresholdIntegratorAnalyticOracle(t *testing.T) {
+	t.Parallel()
 	start := model.DefaultStartTimeNS
 	// u = 2 constant; threshold 1.5 -> u above threshold -> frozen.
 	w := constWorld(t, func(s *model.DomainSpec) {
@@ -111,6 +114,7 @@ func TestThresholdIntegratorAnalyticOracle(t *testing.T) {
 // time-varying input (a step fault on the driving state u) so the delay is
 // observable.
 func TestDeadTimeDiscreteOracle(t *testing.T) {
+	t.Parallel()
 	start := model.DefaultStartTimeNS
 	const (
 		dtNS      = 1 * secondsPerNS
@@ -185,6 +189,7 @@ func TestDeadTimeDiscreteOracle(t *testing.T) {
 // TestF0TrendSeasonalityOracle: the F0 generator is an analytic sum —
 // baseline + trend*h + drift*h + sum amplitude*sin(2*pi*t/period + phase).
 func TestF0TrendSeasonalityOracle(t *testing.T) {
+	t.Parallel()
 	start := model.DefaultStartTimeNS
 	w := constWorld(t, func(s *model.DomainSpec) {
 		s.Dynamics[0].Tier = "F0"
@@ -219,6 +224,7 @@ func TestF0TrendSeasonalityOracle(t *testing.T) {
 // envelope; the faulted state value must match the full closed form —
 // natural lag growth plus the fault's delta*envelope contribution.
 func TestFaultEnvelopeOracles(t *testing.T) {
+	t.Parallel()
 	start := model.DefaultStartTimeNS
 	rate := 2.0 // per hour
 	for _, shape := range []string{"step", "ramp", "exponential", "intermittent"} {
