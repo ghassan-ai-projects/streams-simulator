@@ -23,6 +23,10 @@ type FaultInfo = layer.FaultInfo
 // Entity is one simulated producer, as hosts may read it.
 type Entity = layer.Entity
 
+// FailureMode is how an effector invocation went; its JSON form is the plain
+// string.
+type FailureMode = layer.FailureMode
+
 // Effector failure modes: the closed vocabulary of InvokeResult.Mode.
 const (
 	ModeOK                = layer.ModeOK

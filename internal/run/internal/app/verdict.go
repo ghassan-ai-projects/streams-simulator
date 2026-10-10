@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+
 	rules "github.com/ghassan-ai-projects/streams-simulator/internal/run/internal/domain"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"

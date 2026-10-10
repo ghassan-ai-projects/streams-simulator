@@ -35,7 +35,7 @@ type Options struct {
 	// ForceFailureMode forces every effector invocation into the given
 	// failure mode ("" = declared distribution): used by tests that must
 	// exercise a specific mode deterministically.
-	ForceFailureMode string
+	ForceFailureMode FailureMode
 }
 
 // World is one seeded simulated world.
@@ -48,7 +48,7 @@ type World struct {
 	noiseless        bool
 	emitDisabled     bool
 	forceEffectorOK  bool
-	forceFailureMode string
+	forceFailureMode FailureMode
 
 	queue    priorityQueue
 	tiebreak uint64
@@ -117,7 +117,7 @@ type EffectorCall struct {
 	WorldID          string         `json:"world_id"`
 	Args             map[string]any `json:"args"`
 	AtNS             int64          `json:"at_ns"`
-	Mode             string         `json:"mode"`
+	Mode             FailureMode    `json:"mode"`
 	Accepted         bool           `json:"accepted"`
 	InterlockRefused bool           `json:"interlock_refused,omitempty"`
 	Reason           string         `json:"reason,omitempty"`

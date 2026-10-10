@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"fmt"
+
 	rules "github.com/ghassan-ai-projects/streams-simulator/internal/run/internal/domain"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"

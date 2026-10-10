@@ -8,28 +8,32 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
+// FailureMode is how an effector invocation went: the closed vocabulary of
+// InvokeResult.Mode. Its JSON form is the plain string.
+type FailureMode string
+
 // Effector failure modes.
 const (
-	ModeOK                = "ok"
-	ModeSlow              = "slow"
-	ModeAckLost           = "ack_lost"
-	ModeReject            = "reject"
-	ModePartial           = "partial"
-	ModeConfirmedNoEffect = "confirmed_no_effect"
-	ModeSilentNoEffect    = "silent_no_effect"
+	ModeOK                FailureMode = "ok"
+	ModeSlow              FailureMode = "slow"
+	ModeAckLost           FailureMode = "ack_lost"
+	ModeReject            FailureMode = "reject"
+	ModePartial           FailureMode = "partial"
+	ModeConfirmedNoEffect FailureMode = "confirmed_no_effect"
+	ModeSilentNoEffect    FailureMode = "silent_no_effect"
 )
 
 // InvokeResult is what an effector invocation returns.
 type InvokeResult struct {
-	Accepted      bool    `json:"accepted"`
-	Simulated     bool    `json:"simulated"`
-	WorldID       string  `json:"world_id"`
-	CommandID     string  `json:"command_id"`
-	EffectETANS   int64   `json:"effect_eta_ns,omitempty"`
-	Reason        string  `json:"reason,omitempty"`
-	Mode          string  `json:"mode,omitempty"`
-	AckLatencyMS  float64 `json:"ack_latency_ms,omitempty"`
-	EffectApplied bool    `json:"effect_applied,omitempty"`
+	Accepted      bool        `json:"accepted"`
+	Simulated     bool        `json:"simulated"`
+	WorldID       string      `json:"world_id"`
+	CommandID     string      `json:"command_id"`
+	EffectETANS   int64       `json:"effect_eta_ns,omitempty"`
+	Reason        string      `json:"reason,omitempty"`
+	Mode          FailureMode `json:"mode,omitempty"`
+	AckLatencyMS  float64     `json:"ack_latency_ms,omitempty"`
+	EffectApplied bool        `json:"effect_applied,omitempty"`
 }
 
 // ErrInterlockRefused is the terminal refusal of an independent safety
@@ -52,7 +56,7 @@ type invocation struct {
 
 // callOutcome is what became of an invocation, as recorded in the call log.
 type callOutcome struct {
-	mode          string
+	mode          FailureMode
 	accepted      bool
 	interlock     bool
 	reason        string
@@ -165,7 +169,7 @@ func (w *World) cacheInvocation(eff *model.Effector, inv invocation, result *Inv
 	}
 }
 
-func (w *World) executeEffectorMode(eff *model.Effector, inv invocation, mode string, latency float64) *InvokeResult {
+func (w *World) executeEffectorMode(eff *model.Effector, inv invocation, mode FailureMode, latency float64) *InvokeResult {
 	result := &InvokeResult{
 		Simulated:    true,
 		WorldID:      w.ID,

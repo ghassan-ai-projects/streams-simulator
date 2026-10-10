@@ -2,8 +2,9 @@ package app
 
 import (
 	"encoding/json"
-	rules "github.com/ghassan-ai-projects/streams-simulator/internal/run/internal/domain"
 	"sort"
+
+	rules "github.com/ghassan-ai-projects/streams-simulator/internal/run/internal/domain"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run/internal/clock"
@@ -68,7 +69,7 @@ func (r *Run) artifactWorldConfig() model.WorldConfig {
 		ClockMultiplier: r.Config.ClockMultiplier,
 
 		Noiseless:        r.Config.Noiseless,
-		ForceFailureMode: r.Config.ForceFailureMode,
+		ForceFailureMode: string(r.Config.ForceFailureMode),
 	}
 }
 

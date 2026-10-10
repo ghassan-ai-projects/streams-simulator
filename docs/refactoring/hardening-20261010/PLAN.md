@@ -104,3 +104,6 @@ world digest) and the cold-chain suite moved. The pin file was regenerated.
 | D-44, D-45 | done | `see git log` | `TestEntitySnapshotCannotChangeTheWorld`, `TestEffectorCallLogIsIsolatedFromCallersArguments` |
 | P-01 | done | `see git log` | the run clock edge reads through `wall`; `clock_simdet_test.go` pins the zero time under `simdet`; DECISIONS D-13 amended |
 | D-36 | done | `see git log` | `TestAdapterDigestIsTheCanonicalDigestOfItsJSONForm`; adapter digests in run artifacts changed (pin regenerated) |
+| P-03 | done for failure modes | `see git log` | `world.FailureMode` is a named string type (JSON-neutral); the other closed sets keep their constants: the profile names are named in `model`, detector forms and reject codes already have constants |
+| P-05, P-06 | done | `see git log` | `SinkBroker`/`TimeScaled` removed and MCP refuses scaled time; `ClockMultiplier` documented as reserved; profile names are `model.Profile*` constants (they are the domain contract's closed set, not per-domain branches) |
+| P-02, P-04 | decided: not adopted | - | P-02: exported symbols stay documented, comments inside modules stay; P-04: the device's record maps are the wire form the contract tests pin byte for byte, and no defect traces to them |

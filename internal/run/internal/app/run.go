@@ -41,7 +41,7 @@ type Config struct {
 	RunID            string
 	WorldID          string
 	Noiseless        bool
-	ForceFailureMode string // force every effector into a failure mode (tests)
+	ForceFailureMode world.FailureMode // force every effector into a failure mode (tests)
 	// quiescenceClock supplies the await_consumer deadline; only this layer's
 	// tests replace the real clock, so it is not part of the public Config.
 	quiescenceClock QuiescenceClock

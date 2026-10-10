@@ -152,6 +152,6 @@ func (r *Run) SetQuiesceParkedHook(h func()) {
 }
 
 // SetFailureMode overrides the effector failure-mode selection (test hook).
-func (r *Run) SetFailureMode(mode string) {
+func (r *Run) SetFailureMode(mode world.FailureMode) {
 	r.run.SetFailureMode(mode)
 }

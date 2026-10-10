@@ -8,6 +8,7 @@ package app
 import (
 	"context"
 	"fmt"
+
 	rules "github.com/ghassan-ai-projects/streams-simulator/internal/run/internal/domain"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
@@ -118,7 +119,7 @@ func replayConfig(art *model.RunArtifact, spec *domain.Compiled, adapterSpec *mo
 	cfg.ScenarioProfile = art.WorldConfig.ScenarioProfile
 	cfg.ClockMultiplier = art.WorldConfig.ClockMultiplier
 	cfg.Noiseless = art.WorldConfig.Noiseless
-	cfg.ForceFailureMode = art.WorldConfig.ForceFailureMode
+	cfg.ForceFailureMode = world.FailureMode(art.WorldConfig.ForceFailureMode)
 	if sinkTarget != "" {
 		cfg.SinkName = model.SinkFile
 	}

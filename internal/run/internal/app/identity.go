@@ -33,6 +33,6 @@ func worldIdentity(r *Run, entities []any) map[string]any {
 		"clock_multiplier":   r.Config.ClockMultiplier,
 		"time_mode":          r.Config.TimeMode,
 		"noiseless":          r.Config.Noiseless,
-		"force_failure_mode": r.Config.ForceFailureMode,
+		"force_failure_mode": string(r.Config.ForceFailureMode),
 	}
 }

@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 )
 
@@ -51,7 +53,7 @@ func (r *Run) Digest() string { return worldDigest(r) }
 
 // SetFailureMode overrides the effector failure-mode distribution for
 // subsequent invocations (test-only knob).
-func (r *Run) SetFailureMode(mode string) {
+func (r *Run) SetFailureMode(mode world.FailureMode) {
 	r.World.SetFailureMode(mode)
 }
 
