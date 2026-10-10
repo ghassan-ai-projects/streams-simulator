@@ -35,7 +35,7 @@ type Config struct {
 	EntityIDs       []string
 	ScenarioProfile string
 	// ClockMultiplier is part of the world identity and the artifact; no
-	// stepped-time behaviour reads it (reserved for scaled wall time).
+	// stepped-time code reads it (reserved for scaled wall time).
 	ClockMultiplier  float64
 	Label            string
 	RunID            string
