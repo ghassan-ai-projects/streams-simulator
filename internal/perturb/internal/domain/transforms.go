@@ -1,4 +1,4 @@
-package perturb
+package domain
 
 // transform applies one active perturbation to the records of one event.
 type transform func(l *Layer, a *applied, recs []Delivered, atNS int64) []Delivered

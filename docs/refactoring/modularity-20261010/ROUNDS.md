@@ -236,3 +236,33 @@ first module migrates in M1, where their injection proofs are recorded):
   sleep in `device/uds_test.go`), `TestTestNamesCarryNoPlanningVocabulary`.
 - `.agents/prompts/module-refactor.md`, AGENTS.md modularity section.
 - Debt rounds for `run`/`device` I/O renumbered to M12/M11.
+
+## M1 — perturb (template module)
+
+- Shape: facade `internal/perturb` (`doc.go`, `api.go`, `service.go`,
+  `operations.go`) over `internal/perturb/internal/domain`. Every production
+  and test file moved with `git mv`; only the package clause, the package
+  comment and the import graph changed in them. The facade keeps the exported
+  API the other modules use (`New`, `Layer.{Apply,Clear,Process,Flush}`,
+  `Delivered`, the 19 name constants, `Names`); `ActiveIDs` stays internal
+  (no caller outside the module).
+- `Layer` is a facade struct holding the domain `*Layer` (explicit delegating
+  methods, not an alias of the aggregate); `Delivered` is an alias because it
+  is a plain value record. Constants and `Names` re-export the domain values.
+- Tests: all 285-line behaviour tests, the golden digests and the
+  conformance matrix now sit in the domain layer where the private helpers
+  live; the facade keeps four black-box contract tests (`perturb_test`
+  package): catalog listing, admission of names/params, apply→process→clear,
+  flap hold and flush.
+- `UBIQUITOUS_LANGUAGE.md` added; architecture map updated.
+- Gate corrections found while migrating: the no-leak gate must ignore
+  unexported struct fields (the facade holds the internal object in one); a
+  nil `Recv` made the inspector panic.
+- Injection proofs: a two-statement facade method fails
+  `TestFacadesOnlyDelegate`; an exported method returning `*rules.Layer`
+  fails `TestFacadeSignaturesNameNoInternalTypes` (and delegation); removing
+  `UBIQUITOUS_LANGUAGE.md` fails `TestEveryModuleHasUbiquitousLanguage`; an
+  undeclared `internal/zzextra` layer fails `TestModuleShapeMatchesItsKind`.
+- Lint: `wrapcheck` ignores errors from a module's private layers
+  (`*/internal/*/internal/*`, the sibling's rule), so the facade returns layer
+  errors unchanged; layers wrap with their own context.

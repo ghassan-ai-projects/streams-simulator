@@ -1,11 +1,10 @@
-// Package perturb implements the delivery perturbation layer, which sits
-// between the world and the adapter: the world produces what physically
-// happened, the perturbation layer produces what the observer got. It
-// changes nothing physical and tests a consumer's ingest, time handling and
-// deduplication. The delivery ledger records what each perturbation did, so
-// a scenario the consumer never saw is scored as a transport miss, not a
-// reasoning miss.
-package perturb
+// Package domain holds the perturbation rules: the catalog of delivery
+// corruptions, their parameter contracts, the Layer aggregate that applies
+// them to a native event stream, and the buffers that hold records back
+// (reorder windows, producer flaps, gross backfill). It performs no I/O and
+// reads no clock; every random draw comes from a substream seeded by the
+// caller.
+package domain
 
 import (
 	"fmt"

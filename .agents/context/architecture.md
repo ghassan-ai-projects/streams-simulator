@@ -19,7 +19,7 @@ The accepted architecture is summarized in [`documentation/architecture/`](../..
 - `cmd/streamsim/main.go`: version metadata and CLI entrypoint
 - `internal/cli`: flags, application wiring, commands and shutdown
 - `internal/world`: seeded discrete-event world core; domains are data loaded through one schema
-- `internal/perturb`: perturbation layer between world and adapter (what the observer got, not what happened)
+- `internal/perturb`: perturbation layer between world and adapter (what the observer got, not what happened); facade over `internal/domain`
 - `internal/adapter`: declarative output adapters projecting native `sim-event-v0.1` into consumer wire formats; `file.go` is its one file-system edge
 - `internal/adapter/conformance`: `adapter verify` — renders the fixture, validates the declared output schema and byte-compares the golden
 - `internal/sink`: inproc, file, http-push

@@ -13,7 +13,9 @@ import (
 // where the module's kind (STANDARD §1) calls for them. A module that is not
 // listed is still a flat package; the program ends when every non-foundation
 // module is listed.
-var moduleShapes = map[string][]string{}
+var moduleShapes = map[string][]string{
+	"internal/perturb": {"domain"},
+}
 
 // facadeExemptions names exported facade functions that are deliberately not
 // single delegations, with the reason. It is reviewed like any gate table.
@@ -196,7 +198,9 @@ func internalTypeLeaks(file productionFile, layers map[string]bool) []string {
 		case *ast.FuncDecl:
 			if d.Name.IsExported() {
 				report("func "+d.Name.Name, d.Type)
-				report("receiver of "+d.Name.Name, d.Recv)
+				if d.Recv != nil {
+					report("receiver of "+d.Name.Name, d.Recv)
+				}
 			}
 		case *ast.GenDecl:
 			leaks = append(leaks, declLeaks(d, layers)...)
@@ -210,8 +214,8 @@ func declLeaks(decl *ast.GenDecl, layers map[string]bool) []string {
 	for _, spec := range decl.Specs {
 		switch s := spec.(type) {
 		case *ast.TypeSpec:
-			if s.Name.IsExported() && s.Assign == token.NoPos && namesLayer(s.Type, layers) {
-				leaks = append(leaks, "type "+s.Name.Name+" is defined over an internal layer; use an alias")
+			if s.Name.IsExported() && s.Assign == token.NoPos && exportedTypeNamesLayer(s.Type, layers) {
+				leaks = append(leaks, "type "+s.Name.Name+" exposes an internal layer type; use an alias")
 			}
 		case *ast.ValueSpec:
 			if s.Type != nil && anyExported(s.Names) && namesLayer(s.Type, layers) {
@@ -220,6 +224,22 @@ func declLeaks(decl *ast.GenDecl, layers map[string]bool) []string {
 		}
 	}
 	return leaks
+}
+
+// exportedTypeNamesLayer judges a defined type: for a struct only its
+// exported (or embedded) fields are public surface, so an unexported field
+// that holds the internal object is not a leak.
+func exportedTypeNamesLayer(expr ast.Expr, layers map[string]bool) bool {
+	structure, ok := expr.(*ast.StructType)
+	if !ok {
+		return namesLayer(expr, layers)
+	}
+	for _, field := range structure.Fields.List {
+		if (len(field.Names) == 0 || anyExported(field.Names)) && namesLayer(field.Type, layers) {
+			return true
+		}
+	}
+	return false
 }
 
 func anyExported(names []*ast.Ident) bool {

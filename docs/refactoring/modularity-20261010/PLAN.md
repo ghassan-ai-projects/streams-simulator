@@ -98,5 +98,6 @@ the two delivery paths (D-18), and world read-purity (D-14).
 | --- | --- | --- | --- |
 | R0–R7 | done | see Phase A | R6 `87363c0`, R7 `b9b7909` |
 | M0 | done | see git log | gates, template, prompt |
-| M1–M15 | pending | | |
+| M1 | in review | | perturb template |
+| M2–M15 | pending | | |
 | T1–T5, F | pending | | |

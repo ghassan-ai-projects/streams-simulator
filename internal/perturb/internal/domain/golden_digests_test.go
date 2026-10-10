@@ -1,4 +1,4 @@
-package perturb
+package domain
 
 // Digests of the delivered stream for each perturbation alone and for all of them
 // together over the 60-event golden stream (golden_test.go). They were recorded

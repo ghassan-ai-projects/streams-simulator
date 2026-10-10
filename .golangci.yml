@@ -73,6 +73,11 @@ linters:
         - fmt.Errorf
         - errors.New
         - "*.Error() string"
+      # A module's private layers (internal/<module>/internal/<layer>) are part
+      # of that module: its facade returns their errors as they are, and each
+      # layer wraps with its own operation context.
+      ignore-package-globs:
+        - "*/internal/*/internal/*"
 
     # STANDARD M8: the mechanical floor for the clean-function bar. Do not
     # raise these to make a diff pass.
