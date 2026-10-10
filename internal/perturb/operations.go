@@ -1,6 +1,9 @@
 package perturb
 
-import "github.com/ghassan-ai-projects/streams-simulator/internal/model"
+import (
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	layer "github.com/ghassan-ai-projects/streams-simulator/internal/perturb/internal/domain"
+)
 
 // Apply activates a perturbation. fromNS/untilNS bound its activity window
 // (0 = from now / no end). It returns the id of the applied perturbation.
@@ -26,4 +29,10 @@ func (l *Layer) Process(ev model.SimEvent, atNS int64) []Delivered {
 // closes.
 func (l *Layer) Flush(atNS int64) []Delivered {
 	return l.layer.Flush(atNS)
+}
+
+// Names returns the perturbation catalog in a stable order. The slice is a
+// copy: changing it does not change which perturbations Apply admits.
+func Names() []string {
+	return layer.CatalogNames()
 }

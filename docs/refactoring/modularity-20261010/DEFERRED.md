@@ -39,7 +39,7 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 | D-23 | M | `mcp` advance | `advanceToolError` maps every non-quiescence error to `clock_backwards`. |
 | D-24 | M | `mcp` operator report | `OperatorView.Report` applies quiescence before validating the verdict and ignores `run_id`. |
 | D-25 | M | `world/observe.go:10` | `World.Reading` is documented noise-free but draws the noise substream and mutates drift state on a non-Noiseless world. |
-| D-26 | L | `perturb/helpers.go:83` | `reorder` swaps by `atNS%2==0`, not the layer RNG: whole-second events always swap. |
+| D-26 | L | `perturb/internal/domain/helpers.go:83` | `reorder` swaps by `atNS%2==0`, not the layer RNG: whole-second events always swap. |
 | D-27 | L | `world/effectors.go:86,121` | World idempotency key is `command_id` alone: same id with another effector/entity/args replays the first result. |
 | D-41 | M | `cli/run_script.go:invokeScriptedEffector` | `run --effector` always sends empty args, so every shipped effector with required args (all of them) is rejected: the flag is unusable except for argument-free custom domains. |
 | D-42 | L | `world/effectors.go:callResult` | An idempotent replay returns the original result without `EffectETANS` (the call record does not keep it), so a replayed acknowledgement differs from the first one. |

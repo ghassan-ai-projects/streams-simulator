@@ -62,7 +62,7 @@ func TestGenerateSmallSuite(t *testing.T) {
 		}
 		for _, p := range sc.Perturbations {
 			valid := false
-			for _, name := range perturb.Names {
+			for _, name := range perturb.Names() {
 				if p.Name == name {
 					valid = true
 				}

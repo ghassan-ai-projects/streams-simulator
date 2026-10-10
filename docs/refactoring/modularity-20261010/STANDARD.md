@@ -40,7 +40,11 @@ protected by `ioEdges`.
   operation). No loops, no I/O, no decisions. Exported signatures name facade
   types only: a type defined in an internal layer appears through an alias
   declared in `api.go`, never as `domain.X` in a signature (**no leaks**).
-  Required dependencies are constructor arguments; a missing one fails closed.
+  Required dependencies are constructor arguments; a missing one fails closed
+  with a typed error (`New(…) (*T, error)`). The facade imports its own domain
+  layer under the alias `layer` (the repository also has a module named
+  `domain`). Re-exported catalogs are functions returning copies, never
+  exported mutable variables.
 - **domain** (`internal/<m>/internal/domain`): vocabulary and every rule,
   including the module's in-memory aggregate and its invariants. Pure: no
   `os`, `net`, `os/exec`, clock read, entropy or goroutine. Time, randomness
@@ -68,8 +72,8 @@ Each rule has a named enforcement. "Gate" is a test in `test/architecture`.
 | M2 | Imports point only to a strictly lower layer; the direct-import allowlist is complete with no stale edges; nothing imports a surface except surfaces. | Gates `TestPackageDependencies`, `TestAllowedImportsHaveNoStaleEdges`, `TestImportsPointToStrictlyLowerLayers`, `TestSurfacesAreImportedOnlyBySurfaces` |
 | M3 | Domain layers and foundations are pure: no I/O, entropy, `go` statement, wall-clock call or function value. Exceptions are `ioEdges` entries with scheduled debt. | Gates `TestIOStaysInDeclaredEdges`, `TestPureKindsHoldOnlyScheduledIODebt` |
 | M4 | File, socket, process, entropy, goroutine and clock use sits only in files declared in `ioEdges` with a reason. App layers hold none. | Gate `TestIOStaysInDeclaredEdges` |
-| M5 | A facade only delegates: each exported function and method is one statement reaching the layer below (or a constructor/config check). `cli` and `mcp` hold wiring and protocol only. | Gate `TestFacadesOnlyDelegate` (`facadeSpecs` per module) |
-| M6 | No leaks: exported facade signatures contain no internal-layer qualifier; layers below the facade are not re-exported; exported symbols used by nobody outside tests are removed or moved behind `export_test.go`. | Gates `TestFacadeSignaturesNameNoInternalTypes`, `make deadcode` |
+| M5 | A facade only delegates: every function (exported or not, `init` forbidden) is one statement calling `<layer>.F(…)` or `<receiver>.<field>.M(…)` where the field was declared with a layer type; arguments contain no function literal or nested call; a constructor is nil-guards then one return. `cli` and `mcp` hold wiring and protocol only. | Gate `TestFacadesFollowTheFacadeRules` (`facadeViolations`), proven by `TestFacadeRulesRejectEveryKnownBypass` |
+| M6 | No leaks: exported signatures, fields and values contain no internal-layer type except an alias of a plain value record declared exported in `api.go` (the layer type must have no methods); no exported mutable variable (only `Err…` sentinels and constants); dot or blank imports of a layer are rejected; exported symbols used by nobody outside tests are removed. | Gate `TestFacadesFollowTheFacadeRules`, `make deadcode` |
 | M7 | Records cross a boundary typed and parsed once with a closed field set; a raw document is kept only where a digest depends on its bytes. | Review |
 | M8 | Production functions ≤ 15 body lines at one abstraction level, entry points first; files ≤ 300 lines; cognitive ≤ 15, cyclomatic ≤ 20, nested-`if` ≤ 3; no token clone of 75+. | Gates `TestProductionFunctionsStayWithinTheBodyLimit`, `TestGoFileSize`; lint |
 | M9 | Every package with statements is ≥ 70 % covered (`-short`); every exported facade operation and every error branch that enforces an invariant has a test. | `make coverage-check` |

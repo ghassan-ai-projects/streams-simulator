@@ -266,3 +266,35 @@ first module migrates in M1, where their injection proofs are recorded):
 - Lint: `wrapcheck` ignores errors from a module's private layers
   (`*/internal/*/internal/*`, the sibling's rule), so the facade returns layer
   errors unchanged; layers wrap with their own context.
+
+### M1 review follow-up (template hardened before M2+ copy it)
+
+Independent review found no behaviour change but a weak template:
+
+- **Gates (H1).** Every bypass the reviewer built passed the first gates. The
+  facade rules are now `facade_rules_test.go`/`facade_declarations_test.go`:
+  all functions (not only exported), `init` forbidden, callee must be
+  `<layer>.F` or `<recv>.<field>.M` with the field declared in a struct as a
+  layer type (resolved across the module's facade files), no function literal
+  or nested call in arguments, constructors are nil-guards plus one return,
+  exported non-error variables rejected, aliases only exported, in `api.go`
+  and of layer types without methods, dot/blank layer imports rejected.
+  `TestFacadeRulesRejectEveryKnownBypass` builds each bypass as a snippet.
+- **Mutable catalog (H2).** `perturb.Names` shared the admission slice; it is
+  now `perturb.Names()` returning a copy (`domain.CatalogNames`), the domain
+  variable is private, and the domain layer tests uniqueness and
+  copy-on-return. Callers in `suite` updated.
+- **Fail closed (M1).** `perturb.New` returns `(*Layer, error)` and refuses a
+  nil spec with `ErrNoSpec`. Deliberate change: callers `run.newRunState` and
+  `audit.newAuditPipeline` already returned errors; the nil case is unreachable
+  in production (`world.New` precedes it) so no observable difference.
+- **Surface (M2).** The 19 name constants had no outside user and are
+  removed from the facade; `Names()` is the catalog.
+- **Tests (M3, T1).** The catalog-uniqueness test moved to the domain layer;
+  the facade test asserts the copy semantics.
+- **Docs (L1–L4).** Language file corrected (`delivery_reason`,
+  `applied_perturbations`); alias name `layer` mandated; `wrapcheck` ignore
+  narrowed to `internal/*/internal/{domain,app}` (edge layers still wrap);
+  `ActiveIDs` unexported in the domain layer; DEFERRED path updated.
+- Two production functions that crossed 15 lines with the new error path
+  (`run.New`, `audit.prepareWorld`) were split into named steps.

@@ -59,7 +59,7 @@ func round1(f float64) float64 { return float64(int(f*10+0.5)) / 10 }
 
 func uncovered(counts map[string]int) []string {
 	var out []string
-	for _, name := range perturb.Names {
+	for _, name := range perturb.Names() {
 		if counts[name] < 5 {
 			out = append(out, name)
 		}
@@ -76,9 +76,10 @@ func min(a, b int) int {
 
 func drawCatalogPerturbations(rng *randutil.SplitMix64) []string {
 	var out []string
+	names := perturb.Names()
 	n := rng.Intn(3)
 	for i := 0; i < n; i++ {
-		out = append(out, perturb.Names[rng.Intn(len(perturb.Names))])
+		out = append(out, names[rng.Intn(len(names))])
 	}
 	return out
 }

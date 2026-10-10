@@ -9,16 +9,27 @@ import (
 )
 
 func (p *Panel) prepareWorld(start int64, entities []string, setup []model.SetupCall, perturbations []Perturbation) (*world.World, *perturb.Layer, error) {
-	w, err := world.New(p.spec, p.seed, "w-audit", start, world.Options{InitialEntities: entities, ForceEffectorOK: true})
+	w, layer, err := p.newAuditPipeline(start, entities)
 	if err != nil {
-		return nil, nil, fmt.Errorf("build: %w", err)
+		return nil, nil, err
 	}
-	layer := perturb.New(w.ID, p.seed, p.spec)
 	if err := applyAuditPerturbations(layer, perturbations); err != nil {
 		return nil, nil, err
 	}
 	if err := applyAuditSetup(w, setup); err != nil {
 		return nil, nil, err
+	}
+	return w, layer, nil
+}
+
+func (p *Panel) newAuditPipeline(start int64, entities []string) (*world.World, *perturb.Layer, error) {
+	w, err := world.New(p.spec, p.seed, "w-audit", start, world.Options{InitialEntities: entities, ForceEffectorOK: true})
+	if err != nil {
+		return nil, nil, fmt.Errorf("build: %w", err)
+	}
+	layer, err := perturb.New(w.ID, p.seed, p.spec)
+	if err != nil {
+		return nil, nil, fmt.Errorf("build: %w", err)
 	}
 	return w, layer, nil
 }

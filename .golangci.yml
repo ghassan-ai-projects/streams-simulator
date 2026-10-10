@@ -73,11 +73,12 @@ linters:
         - fmt.Errorf
         - errors.New
         - "*.Error() string"
-      # A module's private layers (internal/<module>/internal/<layer>) are part
-      # of that module: its facade returns their errors as they are, and each
-      # layer wraps with its own operation context.
+      # A module's pure layers (internal/<module>/internal/{domain,app}) are
+      # part of that module: its facade returns their errors as they are.
+      # Edge layers are not listed: they wrap OS and network errors.
       ignore-package-globs:
-        - "*/internal/*/internal/*"
+        - "*/streams-simulator/internal/*/internal/domain"
+        - "*/streams-simulator/internal/*/internal/app"
 
     # STANDARD M8: the mechanical floor for the clean-function bar. Do not
     # raise these to make a diff pass.

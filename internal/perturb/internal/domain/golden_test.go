@@ -78,7 +78,7 @@ func goldenStream(t *testing.T, names []string) string {
 
 func TestEveryPerturbationStreamIsPinned(t *testing.T) {
 	t.Parallel()
-	for _, name := range Names {
+	for _, name := range catalogNames {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			if got, want := goldenStream(t, []string{name}), goldenDigests[name]; got != want {
@@ -90,14 +90,14 @@ func TestEveryPerturbationStreamIsPinned(t *testing.T) {
 
 func TestAllPerturbationsTogetherAreOrderedAndPinned(t *testing.T) {
 	t.Parallel()
-	if got := goldenStream(t, Names); got != goldenAllDigest {
+	if got := goldenStream(t, catalogNames); got != goldenAllDigest {
 		t.Fatalf("combined stream digest = %s, want %s", got, goldenAllDigest)
 	}
 }
 
 func TestGoldenDigestsCoverTheCatalog(t *testing.T) {
 	t.Parallel()
-	if len(goldenDigests) != len(Names) {
-		t.Fatalf("%d pinned digests for %d perturbations", len(goldenDigests), len(Names))
+	if len(goldenDigests) != len(catalogNames) {
+		t.Fatalf("%d pinned digests for %d perturbations", len(goldenDigests), len(catalogNames))
 	}
 }

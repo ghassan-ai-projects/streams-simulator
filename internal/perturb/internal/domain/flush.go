@@ -10,7 +10,7 @@ import (
 // window closes.
 func (l *Layer) Flush(atNS int64) []Delivered {
 	var out []Delivered
-	for _, id := range l.ActiveIDs() {
+	for _, id := range l.activeIDs() {
 		out = append(out, l.active[id].flushRecords(atNS)...)
 	}
 	if len(l.pending) > 0 {
@@ -29,7 +29,7 @@ func mapRecs(recs []Delivered, f func(Delivered) []Delivered) []Delivered {
 }
 
 func isName(name string) bool {
-	for _, n := range Names {
+	for _, n := range catalogNames {
 		if n == name {
 			return true
 		}

@@ -18,17 +18,23 @@ import (
 
 // New creates a run: world, perturbation layer, adapter engine and sink.
 func New(ctx context.Context, cfg Config) (*Run, error) {
-	cfg = defaultConfig(cfg)
-	w, err := newRunWorld(cfg)
+	r, err := newRun(ctx, defaultConfig(cfg))
 	if err != nil {
 		return nil, err
 	}
-	r := newRunState(ctx, cfg, w)
 	if err := r.openPipeline(); err != nil {
 		return nil, err
 	}
 	r.attachWorld()
 	return r, nil
+}
+
+func newRun(ctx context.Context, cfg Config) (*Run, error) {
+	w, err := newRunWorld(cfg)
+	if err != nil {
+		return nil, err
+	}
+	return newRunState(ctx, cfg, w)
 }
 
 func newRunWorld(cfg Config) (*world.World, error) {
@@ -43,12 +49,20 @@ func newRunWorld(cfg Config) (*world.World, error) {
 	return w, nil
 }
 
-func newRunState(ctx context.Context, cfg Config, w *world.World) *Run {
+func newRunState(ctx context.Context, cfg Config, w *world.World) (*Run, error) {
+	layer, err := perturb.New(w.ID, cfg.Seed, cfg.Domain)
+	if err != nil {
+		return nil, fmt.Errorf("streamsim: %w", err)
+	}
+	return runWith(ctx, cfg, w, layer), nil
+}
+
+func runWith(ctx context.Context, cfg Config, w *world.World, layer *perturb.Layer) *Run {
 	return &Run{
 		ID:               cfg.RunID,
 		Config:           cfg,
 		World:            w,
-		Perturb:          perturb.New(w.ID, cfg.Seed, cfg.Domain),
+		Perturb:          layer,
 		ctx:              ctx,
 		worldStartTimeNS: cfg.StartTimeNS,
 		worldEndTimeNS:   cfg.StartTimeNS,

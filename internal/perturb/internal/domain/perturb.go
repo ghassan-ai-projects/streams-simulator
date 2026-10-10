@@ -8,6 +8,7 @@ package domain
 
 import (
 	"fmt"
+	"slices"
 	"strconv"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
@@ -38,12 +39,19 @@ const (
 	InjectionProbe = "injection_probe"
 )
 
-// Names is the full catalog in a stable order.
-var Names = []string{
+// catalogNames is the full catalog in a stable order. It is the admission
+// list for Apply, so it is never exposed as a mutable slice.
+var catalogNames = []string{
 	DuplicateBurst, IDReuse, Reorder, DelayTail, GrossBackfill, Drop,
 	ClockSkew, NonMonotonic, OutOfEnum, OutOfRange, UnitMismatch, Oversize,
 	Malformed, NaNInf, Storm, ProducerFlap, TimeEncoding, PrecisionEdge,
 	InjectionProbe,
+}
+
+// CatalogNames returns a copy of the full perturbation catalog in a stable
+// order; mutating it cannot change which perturbations are admitted.
+func CatalogNames() []string {
+	return slices.Clone(catalogNames)
 }
 
 // Delivered is one delivered record: the (possibly modified) event plus its
@@ -123,8 +131,8 @@ func (l *Layer) Clear(id string) error {
 	return nil
 }
 
-// ActiveIDs lists the active perturbation ids in application order.
-func (l *Layer) ActiveIDs() []string {
+// activeIDs lists the active perturbation ids in application order.
+func (l *Layer) activeIDs() []string {
 	var out []string
 	for _, id := range l.order {
 		if _, ok := l.active[id]; ok {
@@ -141,7 +149,7 @@ func (l *Layer) Process(ev model.SimEvent, atNS int64) []Delivered {
 	// Unchanged by default; each active perturbation transforms the list.
 	l.nextID++
 	recs := []Delivered{{DeliveryID: l.nextID, Event: ev, Reason: model.DeliveryOK, Delivered: true}}
-	for _, id := range l.ActiveIDs() {
+	for _, id := range l.activeIDs() {
 		a := l.active[id]
 		if atNS < a.FromNS || (a.UntilNS > 0 && atNS >= a.UntilNS) {
 			continue

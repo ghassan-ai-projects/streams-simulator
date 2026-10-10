@@ -1,6 +1,7 @@
 package perturb_test
 
 import (
+	"errors"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -16,7 +17,11 @@ func shippedLayer(t *testing.T) *perturb.Layer {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return perturb.New("w-1", 7, spec)
+	layer, err := perturb.New("w-1", 7, spec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return layer
 }
 
 func event(seq int64) model.SimEvent {
@@ -25,22 +30,26 @@ func event(seq int64) model.SimEvent {
 		Channel: "motor_current", EventTime: at, ObservedTime: at, Value: 30.0, Unit: "A"}
 }
 
-func TestCatalogListsEveryNamedPerturbationOnce(t *testing.T) {
+func TestNamesIsTheCatalogAndAModifiableCopy(t *testing.T) {
 	t.Parallel()
-	seen := map[string]bool{}
-	for _, name := range perturb.Names {
-		if seen[name] {
-			t.Fatalf("%s listed twice", name)
-		}
-		seen[name] = true
+	names := perturb.Names()
+	if len(names) == 0 || names[0] == "" {
+		t.Fatalf("catalog = %v", names)
 	}
-	for _, name := range []string{perturb.Drop, perturb.DuplicateBurst, perturb.Reorder, perturb.InjectionProbe} {
-		if !seen[name] {
-			t.Fatalf("catalog lacks %s", name)
-		}
+	first := names[0]
+	names[0] = "bogus"
+	if again := perturb.Names(); again[0] != first {
+		t.Fatalf("mutating the result changed the catalog: %v", again)
 	}
-	if len(perturb.Names) != 19 {
-		t.Fatalf("catalog has %d perturbations, want 19", len(perturb.Names))
+	if _, err := shippedLayer(t).Apply("bogus", nil, 0, 0); err == nil {
+		t.Fatal("a mutated copy must not admit a new name")
+	}
+}
+
+func TestNewRefusesAMissingSpec(t *testing.T) {
+	t.Parallel()
+	if _, err := perturb.New("w-1", 1, nil); !errors.Is(err, perturb.ErrNoSpec) {
+		t.Fatalf("err = %v, want ErrNoSpec", err)
 	}
 }
 
@@ -50,10 +59,10 @@ func TestApplyAdmitsOnlyCatalogNamesWithDeclaredParameters(t *testing.T) {
 	if _, err := layer.Apply("no_such_perturbation", nil, 0, 0); err == nil || !strings.Contains(err.Error(), "unknown perturbation") {
 		t.Fatalf("unknown name: %v", err)
 	}
-	if _, err := layer.Apply(perturb.Drop, map[string]any{"rate": 2.0}, 0, 0); err == nil {
+	if _, err := layer.Apply("drop", map[string]any{"rate": 2.0}, 0, 0); err == nil {
 		t.Fatal("an out-of-range rate must be rejected")
 	}
-	if _, err := layer.Apply(perturb.Drop, map[string]any{"bogus": 1.0}, 0, 0); err == nil || !strings.Contains(err.Error(), "bogus") {
+	if _, err := layer.Apply("drop", map[string]any{"bogus": 1.0}, 0, 0); err == nil || !strings.Contains(err.Error(), "bogus") {
 		t.Fatalf("an undeclared parameter must be named: %v", err)
 	}
 }
@@ -61,7 +70,7 @@ func TestApplyAdmitsOnlyCatalogNamesWithDeclaredParameters(t *testing.T) {
 func TestProcessAppliesAnActivePerturbationUntilItIsCleared(t *testing.T) {
 	t.Parallel()
 	layer := shippedLayer(t)
-	id, err := layer.Apply(perturb.Drop, map[string]any{"rate": 1.0}, 0, 0)
+	id, err := layer.Apply("drop", map[string]any{"rate": 1.0}, 0, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -85,7 +94,7 @@ func TestFlushReleasesRecordsHeldByAFlap(t *testing.T) {
 	t.Parallel()
 	layer := shippedLayer(t)
 	until := model.DefaultStartTimeNS + 30e9
-	if _, err := layer.Apply(perturb.ProducerFlap, nil, 0, until); err != nil {
+	if _, err := layer.Apply("producer_flap", nil, 0, until); err != nil {
 		t.Fatal(err)
 	}
 	if held := layer.Process(event(0), model.DefaultStartTimeNS); len(held) != 0 {
