@@ -46,7 +46,7 @@ The presence of tests for all nine non-negotiables is valuable evidence, but it 
 
 1. ~~Decide whether `cold-chain-transit` is shipped~~ Done: the domain is committed and validated with the rest of the inventory.
 2. ~~Reconcile stale design, README, context, and decision text~~ Done for the public set and agent instructions; archive text under `docs/` remains status-labeled by decision.
-3. ~~Add or document compatibility, support, conduct, changelog, and release policy~~ Done: see [compatibility](overview/compatibility.md), [SUPPORT](../../SUPPORT.md), [CODE_OF_CONDUCT](../../CODE_OF_CONDUCT.md), [CHANGELOG](../../CHANGELOG.md), and the [release procedure](operations/release.md).
+3. ~~Add or document compatibility, support, conduct, changelog, and release policy~~ Done: see [compatibility](overview/compatibility.md), [SUPPORT](../SUPPORT.md), [CODE_OF_CONDUCT](../CODE_OF_CONDUCT.md), [CHANGELOG](../CHANGELOG.md), and the [release procedure](operations/release.md).
 4. Extend `docs-check` with local link/fragment and example checks, then keep it in CI; manual diagram and prose review will still be required.
 5. Add a suite runner that records the selected adapter and persists per-scenario score evidence.
 6. Generate fresh release evidence (gates, soak, perf, manifest) from a clean, intentional commit at publication time.

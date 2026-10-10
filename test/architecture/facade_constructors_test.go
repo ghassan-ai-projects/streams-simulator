@@ -14,8 +14,12 @@ func (f *facade) constructs(function *ast.FuncDecl) bool {
 	if len(list) == 0 {
 		return false
 	}
+	definitions := 0
 	for _, statement := range list[:len(list)-1] {
-		if !f.constructorStep(statement) {
+		if _, defines := statement.(*ast.AssignStmt); defines {
+			definitions++
+		}
+		if !f.constructorStep(statement) || definitions > 1 {
 			return false
 		}
 	}
@@ -74,6 +78,8 @@ func (f *facade) plainArgumentValues(arguments []ast.Expr) bool {
 	return true
 }
 
+// constructorStep judges one statement before the final return: a refusing
+// nil guard or a definition from a single layer call.
 func (f *facade) constructorStep(statement ast.Stmt) bool {
 	switch s := statement.(type) {
 	case *ast.IfStmt:
@@ -145,5 +151,20 @@ func isNilComparison(expr ast.Expr) bool {
 		return isNilComparison(binary.X) && isNilComparison(binary.Y)
 	}
 	nilSide := func(e ast.Expr) bool { ident, ok := e.(*ast.Ident); return ok && ident.Name == "nil" }
-	return (binary.Op == token.EQL || binary.Op == token.NEQ) && (nilSide(binary.X) || nilSide(binary.Y))
+	if binary.Op != token.EQL && binary.Op != token.NEQ {
+		return false
+	}
+	return (nilSide(binary.X) && referenceChain(binary.Y)) || (nilSide(binary.Y) && referenceChain(binary.X))
+}
+
+// referenceChain accepts an identifier or a selector chain over identifiers:
+// the operand of a nil guard is a value, never a call or an index.
+func referenceChain(expr ast.Expr) bool {
+	switch e := expr.(type) {
+	case *ast.Ident:
+		return true
+	case *ast.SelectorExpr:
+		return referenceChain(e.X)
+	}
+	return false
 }

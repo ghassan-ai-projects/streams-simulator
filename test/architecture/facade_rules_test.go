@@ -189,7 +189,7 @@ func plainArguments(call *ast.CallExpr) bool {
 		plain := true
 		ast.Inspect(argument, func(node ast.Node) bool {
 			switch n := node.(type) {
-			case *ast.FuncLit:
+			case *ast.FuncLit, *ast.BinaryExpr, *ast.IndexExpr, *ast.SliceExpr, *ast.StarExpr:
 				plain = false
 			case *ast.CallExpr:
 				if !isConversion(n) {

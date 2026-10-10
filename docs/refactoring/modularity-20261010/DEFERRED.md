@@ -75,6 +75,21 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 
 ## Hygiene and small improvements
 
+- D-43 (M): `test/architecture/determinism_test.go` is a name heuristic; a
+  `go/types` scan finds 46 unmarked map ranges it passes. Order-sensitive
+  ones: `truth/internal/domain/solver.go:168` and `audit/scenario_setup.go:65`
+  (InjectFault in map order; fault ids `f-N` depend on it, latent because every
+  caller passes one entry) and `world/internal/domain/faults.go:97`
+  (`validateFaultParameters` names a map-order-dependent unknown parameter in
+  its error). Upgrade the gate to type information and sort the three sites in
+  a listed change. `device`/`deviceworld` have 15 ranges (message order,
+  capability catalog order; `determinismDebt`).
+- D-44 (L): `world.Entity` returns the live `*Entity`; `ID`/`Type`/`BornNS` are
+  writable by callers and `BornNS` feeds `InitialEntityIDs`. Return a value
+  type or a `HasEntity` query in a listed change.
+- D-45 (L): `EffectorCall.Args` is the caller's map (`recordCall` stores it and
+  `EffectorCalls()` copies the slice shallowly); no layer code mutates it.
+
 - `truth.Store.SealStatus` returns a `sealed` flag that is always true for a
   known run (the sealed map is set with the label); the `!sealed` branch in
   `mcp/run.go` cannot trigger.
@@ -85,5 +100,5 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 - `perturb`: unused `atNS`/receiver params; `delay_tail.sigma_s` is a second exponential mean; scattered default literals.
 - `device`: `Listen` accept loop has no join and does not close the active connection; `ServeConn` loses a held swapped frame on injected disconnect; strict-decode copy-pasted 3× (device codec, capability loader, deviceworld bindings).
 - `cli`/`mcp`/`domain`: error prefixes stutter (`streamsim: streamsim: domain:`, `adapter: adapter:`, `canonical: canonical: canonical:`); strings are contract-ish, change deliberately.
-- Repo: `internal/world/determinism_test.go` lists a stale `../ledger` root and omits device packages; `test/architecture/functions_test.go` carries a legacy 60-line review table (3 entries) superseded by the 15-line AST checker.
+- Resolved in R1/M3: the legacy 60-line review table and the stale-root determinism test (now a repository gate, see D-43).
 - Duplicates found for later: `asFloat` ×4, `mustAny` ×3, `formatErrs` ×2, `fnv` in `run` vs `randutil.Fnv1a64`, `audit.Perturbation` ≡ `suite.Perturbation`, `suite.renderID` ≡ `world.RenderID`, refconsumer name/version literal ×3, manifest hard-codes 0.4/0.9, strict-decode ×3.

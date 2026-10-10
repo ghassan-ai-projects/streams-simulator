@@ -92,6 +92,37 @@ func (s *S) Do(id string) error {
 	return s.impl.Do(id)
 }`,
 			"does more than delegate"},
+		"guard whose condition calls a function": {
+			`type S struct{ impl *layer.S }
+func New(id string) (*S, error) {
+	if lookup(id) != nil {
+		return nil, ErrGone
+	}
+	return &S{impl: layer.New(id)}, nil
+}
+func lookup(id string) *S { return nil }`,
+			"does more than delegate"},
+		"constructor returning a computed field": {
+			`import "strings"
+type S struct{ ID string; impl *layer.S }
+func New(inner *layer.S) *S { return &S{ID: strings.ToUpper(inner.ID), impl: inner} }`,
+			"does more than delegate"},
+		"constructor with two definitions": {
+			`type S struct{ impl *layer.S }
+func New() *S {
+	a := layer.New()
+	b := layer.New()
+	return &S{impl: a, other: b}
+}`,
+			"does more than delegate"},
+		"delegation with an arithmetic argument": {
+			`type S struct{ impl *layer.S }
+func (s *S) Advance(to int64) int64 { return s.impl.Advance(to + 1) }`,
+			"does more than delegate"},
+		"delegation with an indexed argument": {
+			`type S struct{ impl *layer.S }
+func (s *S) Do(m map[string]string, k string) string { return s.impl.Do(m[k]) }`,
+			"does more than delegate"},
 		"constructor with a loop": {
 			`type S struct{ impl *layer.S }
 func New() *S { for { break }; return &S{impl: layer.New()} }`,

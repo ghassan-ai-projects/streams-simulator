@@ -112,7 +112,8 @@ the two delivery paths (D-18), and world read-purity (D-14).
 | M0 | done | see git log | gates, template, prompt |
 | M1 | done | `4a05a3b`, hardening `see git log` | perturb template; gates hardened after review |
 | M2 | done | `b5674df` | review follow-up in M3 commit |
-| M3 | done | `463fb65` | review follow-ups pending |
-| M4 | in progress | | score |
-| M5–M15 | pending | | |
+| M3 | done | `463fb65`, follow-up `see git log` | gate hardened, doc links gate |
+| M4 | done | `2f5cf24` | score takes Evidence; review pending |
+| M5 | next | | audit |
+| M6–M15 | pending | | |
 | T1–T5, F | pending | | |

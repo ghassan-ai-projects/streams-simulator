@@ -144,7 +144,26 @@ func TestFailureModeOverrideAndKickCountAreVisible(t *testing.T) {
 	if _, err := w.InvokeEffector("start_aerator", pond, "cmd-3", map[string]any{"pond_id": pond}, at); err != nil {
 		t.Fatal(err)
 	}
-	if w.PendingKicks() < 0 {
-		t.Fatal("kick count must not be negative")
+	if w.PendingKicks() == 0 {
+		t.Fatal("an accepted effector with a declared effect schedules at least one kick")
+	}
+}
+
+func TestOptionsReachTheWorld(t *testing.T) {
+	t.Parallel()
+	chosen := []string{"site-a/pond-7", "site-a/pond-9"}
+	w := newPondWorld(t, world.Options{InitialEntities: chosen, EmitDisabled: true})
+	if got := w.EntityIDs(); len(got) != 2 || got[0] != chosen[0] || got[1] != chosen[1] {
+		t.Fatalf("entities = %v, want %v", got, chosen)
+	}
+	emitted, _, err := w.Advance(model.DefaultStartTimeNS + 3600e9)
+	if err != nil || emitted != 0 {
+		t.Fatalf("an emit-disabled world emitted %d (%v)", emitted, err)
+	}
+	forced := newPondWorld(t, world.Options{ForceFailureMode: world.ModeSilentNoEffect})
+	pond := forced.EntityIDs()[0]
+	result, err := forced.InvokeEffector("start_aerator", pond, "cmd-1", map[string]any{"pond_id": pond}, model.DefaultStartTimeNS+60e9)
+	if err != nil || result.Mode != world.ModeSilentNoEffect {
+		t.Fatalf("forced mode: %v, %+v", err, result)
 	}
 }

@@ -327,7 +327,8 @@ Independent review found no behaviour change but a weak template:
 - Deliberate, listed in PLAN: `world.New` refuses a nil spec with `ErrNoSpec`.
 - The repository-wide map-iteration determinism test moved out of `world`
   into `test/architecture` (T1: a whole-repository rule). It now ranges over
-  every production package (layers included) with the same marker. `device`
+  every production package (layers included) with the same name heuristic
+  and marker window (a marker on the loop line or the line above or below). `device`
   and `deviceworld`, which it did not cover before, have 15 map ranges
   (DEFERRED D-38, message order only) and sit in `determinismDebt` until
   their modules migrate (M7, M11).
@@ -378,3 +379,23 @@ T5.
   the paths changes scorecards and is deferred.
 - Facade contract tests: no-verdict refusal, identity/flag carry-over, bundle
   parity online vs offline. Domain-layer scoring tests unchanged (85 %).
+
+### M3 review follow-up
+
+Isolated review: no High. Fixed: the invariants page pointed at the moved
+oracle test and its evidence command ran no tests; `TestDocumentationLinksResolve`
+now fails on any dead relative link in `documentation/`, `.agents/` and the
+root pages (it also caught and fixed three older broken links in
+`limitations.md`); the determinism marker window is restored to the original
+line above/on/below; the constructor and delegation gate no longer accepts
+computed return values or arguments (arithmetic, index, slice, dereference),
+guard conditions with calls, or more than one layer definition (five new bypass
+snippets); `PendingKicks() < 0` replaced by an assertion that can fail, and
+`Options` pass-through (initial entities, emit disabled, forced failure mode)
+is tested at the facade.
+
+Recorded, not fixed: the map-iteration gate is a name heuristic. A type-aware
+scan finds 46 unmarked map ranges it cannot see (DEFERRED D-43), among them
+three whose order reaches output or error text. The `Entity` alias exposes the
+live record (parity with before; D-44). `EffectorCall.Args` is the caller's
+map (D-45).

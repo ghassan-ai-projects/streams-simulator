@@ -43,7 +43,7 @@ func TestNoMapIterationInOutputCode(t *testing.T) {
 					return true
 				}
 				line := file.fset.Position(statement.Pos()).Line
-				if !markers[line] && !markers[line-1] && !markers[line-2] {
+				if !markers[line-1] && !markers[line] && !markers[line+1] {
 					t.Errorf("%s:%d (%s): ranging over a map in output code is nondeterministic", file.path, line, directory)
 				}
 				return true
