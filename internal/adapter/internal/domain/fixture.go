@@ -33,3 +33,21 @@ func FixtureEvents() ([]model.SimEvent, error) {
 	}
 	return out, nil
 }
+
+// DecodeFixtureRecords decodes a JSONL native-event fixture supplied by the
+// caller instead of the embedded one.
+func DecodeFixtureRecords(raw []byte) ([]model.SimEvent, error) {
+	var out []model.SimEvent
+	for _, line := range strings.Split(strings.TrimSpace(string(raw)), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		var ev model.SimEvent
+		if err := model.DecodeBytes([]byte(line), &ev); err != nil {
+			return nil, fmt.Errorf("adapter: %w", err)
+		}
+		out = append(out, ev)
+	}
+	return out, nil
+}

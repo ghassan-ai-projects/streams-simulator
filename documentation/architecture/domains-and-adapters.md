@@ -41,7 +41,7 @@ go run ./cmd/streamsim adapter verify adapters/native-jsonl.adapter.json
 
 ## Source authority
 
-The machine-readable domain and adapter contracts are in [`docs/contracts/`](../../docs/contracts/). The design catalog and coverage rationale are in [`docs/design/DOMAIN_CATALOG.md`](../../docs/design/DOMAIN_CATALOG.md). The loader tests are under [`internal/domain/`](../../internal/domain/) and [`internal/adapter/`](../../internal/adapter/); adapter conformance is [`internal/adapter/conformance/`](../../internal/adapter/conformance/).
+The machine-readable domain and adapter contracts are in [`docs/contracts/`](../../docs/contracts/). The design catalog and coverage rationale are in [`docs/design/DOMAIN_CATALOG.md`](../../docs/design/DOMAIN_CATALOG.md). The loader tests are under [`internal/domain/`](../../internal/domain/) and [`internal/adapter/`](../../internal/adapter/); adapter conformance is `adapter.Verify` in [`internal/adapter/`](../../internal/adapter/), implemented in [`internal/adapter/internal/domain/verify.go`](../../internal/adapter/internal/domain/verify.go).
 
 ## Next reads
 

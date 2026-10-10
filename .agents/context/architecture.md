@@ -21,7 +21,7 @@ The accepted architecture is summarized in [`documentation/architecture/`](../..
 - `internal/world`: seeded discrete-event world core; domains are data loaded through one schema; facade over `internal/world/internal/domain`
 - `internal/perturb`: perturbation layer between world and adapter (what the observer got, not what happened); facade over `internal/domain`
 - `internal/adapter`: declarative output adapters projecting native `sim-event-v0.1` into consumer wire formats; facade over `internal/adapter/internal/domain` with a `files` edge
-- `internal/adapter/conformance`: `adapter verify` — renders the fixture, validates the declared output schema and byte-compares the golden
+- `internal/adapter` also owns `adapter verify` (`adapter.Verify`): renders the fixture, validates the declared output schema and byte-compares the golden
 - `internal/sink`: inproc, file, http-push; facade over `internal/sink/internal/domain` with `files` and `httppush` edge packages
 - `internal/mcp`: facade over `internal/mcp/internal/app`; one server, two roles — `director` (catalog · world · clock · fault · perturb · truth) and `operator` (nameplate · effectors · invoke · verdict)
 - `internal/run`: run orchestration, delivery ledger, artifacts, replay, and quiescence; facade over `internal/run/internal/app` (orchestration), `domain` (pure rules) and the `durable`, `quiesce` and `clock` edges

@@ -1,4 +1,4 @@
-package conformance
+package files
 
 // Conformance of the shipped adapters: every adapter renders the fixture,
 // validates against its declared schema, and byte-matches its committed
@@ -15,7 +15,7 @@ import (
 )
 
 func TestShippedAdaptersConform(t *testing.T) {
-	root := filepath.Join("..", "..", "..", "adapters")
+	root := filepath.Join("..", "..", "..", "..", "adapters")
 	cases := map[string]int{"native-jsonl": 12, "agentic-stream": 14} // events vs preamble+events+postamble
 	for name, want := range cases {
 		name := name
@@ -33,47 +33,6 @@ func TestShippedAdaptersConform(t *testing.T) {
 			}
 			if res.RecordCount != want {
 				t.Fatalf("record count %d, want %d", res.RecordCount, want)
-			}
-		})
-	}
-}
-
-func TestValidateStrictObservedOrder(t *testing.T) {
-	base := model.DefaultStartTimeNS
-	cases := []struct {
-		name    string
-		events  []model.SimEvent
-		wantErr bool
-	}{
-		{
-			name: "strict",
-			events: []model.SimEvent{
-				{ObservedTime: model.FormatTime(base)},
-				{ObservedTime: model.FormatTime(base + 1)},
-			},
-		},
-		{
-			name: "tie",
-			events: []model.SimEvent{
-				{ObservedTime: model.FormatTime(base)},
-				{ObservedTime: model.FormatTime(base)},
-			},
-			wantErr: true,
-		},
-		{
-			name: "out-of-order",
-			events: []model.SimEvent{
-				{ObservedTime: model.FormatTime(base + 1)},
-				{ObservedTime: model.FormatTime(base)},
-			},
-			wantErr: true,
-		},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			err := validateStrictObservedOrder(tc.events)
-			if (err != nil) != tc.wantErr {
-				t.Fatalf("validateStrictObservedOrder() error = %v, wantErr %t", err, tc.wantErr)
 			}
 		})
 	}
@@ -98,7 +57,7 @@ func TestVerifyRejectsNonMonotonicFixture(t *testing.T) {
 	if err := os.WriteFile(fixturePath, []byte(fixture.String()), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	_, err := Verify("../../../adapters/native-jsonl.adapter.json", fixturePath, "../../../adapters")
+	_, err := Verify("../../../../adapters/native-jsonl.adapter.json", fixturePath, "../../../../adapters")
 	if err == nil || !strings.Contains(err.Error(), "strict observed-time order") {
 		t.Fatalf("adapter verify accepted non-monotonic fixture: %v", err)
 	}
@@ -108,7 +67,7 @@ func TestVerifyRejectsNonMonotonicFixture(t *testing.T) {
 // vendored output schema into a temp directory so a test can alter one.
 func copyShippedAdapter(t *testing.T) (adapterPath, base string) {
 	t.Helper()
-	source := filepath.Join("..", "..", "..", "adapters")
+	source := filepath.Join("..", "..", "..", "..", "adapters")
 	base = t.TempDir()
 	for _, rel := range []string{
 		"native-jsonl.adapter.json",

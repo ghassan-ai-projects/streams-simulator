@@ -49,9 +49,9 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 
 | ID | Sev | Where | Finding |
 | --- | --- | --- | --- |
-| D-30 | M | `adapter/conformance/inputs.go` | `adapter verify` panics on an empty fixture file. |
+| D-30 | M | `adapter/internal/files/verify.go` | `adapter verify` panics on an empty fixture file. |
 | D-31 | M | `adapter/engine.go:127-128` | `hash_suffix`: `DigestBytes(...)[:16]` is `"sha256:"` + 9 hex (colon in id); panics when `1 ≤ max_length < 16`; untested, no shipped adapter uses it. |
-| D-32 | M | `adapter/conformance/*.go`, `cli/catalog.go:198` | `SchemaOK`/`GoldenMatch` unset when the field is absent so the CLI prints FAILED with an empty detail; `splitRecords` ignores `encoding` (`json-array` + output schema fails). |
+| D-32 | M | `adapter/internal/domain/verify*.go`, `cli/internal/app/catalog.go` | `SchemaOK`/`GoldenMatch` unset when the field is absent so the CLI prints FAILED with an empty detail; `splitRecords` ignores `encoding` (`json-array` + output schema fails). |
 | D-33 | M | `jsonschema/compile_keywords.go:143` | `Compile` panics on user schemas (`"uniqueItems": "x"`); `toInt` silently returns 0. Reachable from adapter `output_schema` and effector `args_schema`. |
 | D-34 | L | `model/domain.go:111-115` | `F1Input` with explicit `"coef":0` marshals without coef and reloads as 1; `mcp/director_resources.go:25` misreports it. |
 | D-35 | L | `domain/compilation.go:85-90` | `observation_gain: 0` becomes 1; zero equals unset for `omitempty` floats. Behavioural contract: decide, do not "fix". |

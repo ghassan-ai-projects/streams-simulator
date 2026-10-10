@@ -19,6 +19,16 @@ func LoadBytes(raw []byte, src string) (*model.Adapter, error) {
 	return layer.LoadBytes(raw, src)
 }
 
+// Verify proves the adapter file at adapterPath correct with the consumer
+// absent: it renders the conformance fixture, validates every record against
+// the adapter's declared output schema and byte-compares the output to the
+// committed golden. fixturePath names a native-event JSONL fixture ("" selects
+// the embedded one); base is the directory the adapter's declared paths
+// resolve against.
+func Verify(adapterPath, fixturePath, base string) (*VerifyResult, error) {
+	return files.Verify(adapterPath, fixturePath, base)
+}
+
 // FixtureEvents returns the committed 12-event conformance fixture every
 // adapter's golden file is rendered from.
 func FixtureEvents() ([]model.SimEvent, error) {

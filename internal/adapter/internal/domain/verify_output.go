@@ -1,17 +1,16 @@
-package conformance
+package domain
 
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/jsonschema"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-func loadOutputSchema(path string) (*jsonschema.Schema, error) {
-	raw, err := os.ReadFile(path)
+func loadOutputSchema(path string, src VerifyFiles) (*jsonschema.Schema, error) {
+	raw, err := src.OutputSchema(path)
 	if err != nil {
 		return nil, fmt.Errorf("adapter: read output schema %s: %w", path, err)
 	}
@@ -30,7 +29,7 @@ func compileOutputSchema(raw []byte) (*jsonschema.Schema, error) {
 	return schema, nil
 }
 
-func validateOutputRecords(records []string, schema *jsonschema.Schema, name string, res *Result) bool {
+func validateOutputRecords(records []string, schema *jsonschema.Schema, name string, res *VerifyResult) bool {
 	for i, record := range records {
 		if divergence := outputRecordDivergence(record, i, schema, name); divergence != "" {
 			res.FirstDivergence = divergence
@@ -55,8 +54,8 @@ func outputRecordDivergence(record string, i int, schema *jsonschema.Schema, nam
 	return ""
 }
 
-func compareGolden(path string, out []byte, res *Result) error {
-	golden, err := os.ReadFile(path)
+func compareGolden(path string, out []byte, src VerifyFiles, res *VerifyResult) error {
+	golden, err := src.Golden(path)
 	if err != nil {
 		return fmt.Errorf("adapter: read golden %s: %w", path, err)
 	}
@@ -67,4 +66,24 @@ func compareGolden(path string, out []byte, res *Result) error {
 	}
 	res.GoldenMatch = true
 	return nil
+}
+
+func firstDivergence(got, want []byte) string {
+	line, col := 1, 1
+	for i := 0; i < min(len(got), len(want)); i++ {
+		if got[i] != want[i] {
+			return fmt.Sprintf("first divergent byte at line %d, column %d", line, col)
+		}
+		advanceTextPosition(&line, &col, got[i])
+	}
+	return "lengths differ"
+}
+
+func advanceTextPosition(line, col *int, value byte) {
+	if value == '\n' {
+		*line++
+		*col = 1
+	} else {
+		*col++
+	}
 }

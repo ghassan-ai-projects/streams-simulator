@@ -722,3 +722,20 @@ Isolated review of `42d0dbf`, `92d803b`, `3b40255`: no behaviour regression
 - Architecture gates: the "surfaces are imported only by surfaces" rule now
   reads the module's kind, so a surface's own layers may import surfaces; the
   twelve per-file `internal/cli` ioEdges entries became three edge entries.
+
+## M16 — adapter conformance folded into the adapter module
+
+- `internal/adapter/conformance` was the last flat package outside the
+  module standard. It is now part of `internal/adapter`: the pure
+  verification (strict observed order, rendering, schema and golden
+  comparison, divergence reporting) is `internal/adapter/internal/domain/
+  verify*.go` behind a `VerifyFiles` port, the file reads and fixture loading
+  are `internal/adapter/internal/files/verify.go`, and the facade exports
+  `Verify` and the `VerifyResult` record. The cli imports `adapter` only.
+- Text and order preserved: the nested `adapter: adapter: adapter:` prefixes
+  of a fixture read failure and the `adapter: read output schema` /
+  `adapter: read golden` texts are unchanged; tests moved with the code
+  (pure order test to `domain`, file-based verification tests to `files`,
+  plus a facade test over the shipped adapters).
+- Gate tables lose the package, its two ioEdges entries and its
+  dependency row.

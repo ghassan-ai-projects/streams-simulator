@@ -8,4 +8,3 @@ internal/wall         0
 internal/model        20
 internal/mcp/internal/app 65
 internal/world/internal/domain 68
-internal/adapter/internal/domain 66

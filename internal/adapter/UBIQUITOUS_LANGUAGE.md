@@ -15,7 +15,7 @@ The binary holds no consumer's field names or framing rules.
 | Run meta | Run-level bindings the framing reads (run id, versions, world times, seed) | `meta` | `run_meta` |
 | Fixture | The committed 12-event native trace every adapter's golden is rendered from | `FixtureEvents` | `testdata/fixture.jsonl` |
 | Golden | The committed expected output of an adapter over the fixture | – | `adapters/golden/*.jsonl` |
-| Conformance | Rendering the fixture, validating against the declared output schema and byte-comparing the golden | `conformance` module | `adapter verify` |
+| Conformance | Rendering the fixture, validating against the declared output schema and byte-comparing the golden | `Verify`, `VerifyResult` | `adapter verify` |
 
 ## Retired words
 

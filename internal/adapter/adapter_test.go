@@ -89,3 +89,28 @@ func TestEngineRendersAStreamingSessionTheSameAsAWholeRun(t *testing.T) {
 		t.Fatalf("streaming session differs from RenderRun:\n%q\n%q", got.String(), want)
 	}
 }
+
+func TestVerifyProvesEveryShippedAdapterAgainstItsGolden(t *testing.T) {
+	t.Parallel()
+	root := filepath.Join("..", "..", "adapters")
+	for _, name := range []string{"native-jsonl", "agentic-stream"} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			res, err := adapter.Verify(filepath.Join(root, name+".adapter.json"), "", root)
+			if err != nil {
+				t.Fatalf("verify: %v", err)
+			}
+			if !res.SchemaOK || !res.GoldenMatch || res.RecordCount == 0 {
+				t.Fatalf("result = %+v", res)
+			}
+		})
+	}
+}
+
+func TestVerifyNamesAnAdapterFileItCannotLoad(t *testing.T) {
+	t.Parallel()
+	_, err := adapter.Verify(filepath.Join(t.TempDir(), "absent.adapter.json"), "", "")
+	if err == nil || !strings.HasPrefix(err.Error(), "adapter: ") {
+		t.Fatalf("err = %v", err)
+	}
+}
