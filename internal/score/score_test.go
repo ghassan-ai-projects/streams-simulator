@@ -65,7 +65,10 @@ func setupFaultedRun(t *testing.T, failureMode, faultID string) (*run.Run, *mode
 		r.SetFailureMode(failureMode)
 	}
 	// Sealed label via the solver.
-	solver := truth.NewSolver(spec, 11, 60*1e9, 24*3600*1e9)
+	solver, err := truth.NewSolver(spec, 11, 60*1e9, 24*3600*1e9)
+	if err != nil {
+		t.Fatal(err)
+	}
 	var setup []model.SetupCall
 	if faultID == "aerator_failure" {
 		setup = []model.SetupCall{{

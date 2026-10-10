@@ -1,4 +1,4 @@
-package truth
+package domain
 
 // The sealed truth store. A label is sealed at run begin and revealed only
 // after the run closes, or earlier with unblind:true, which stamps the run

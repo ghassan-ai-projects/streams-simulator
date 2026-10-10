@@ -298,3 +298,17 @@ Independent review found no behaviour change but a weak template:
   `ActiveIDs` unexported in the domain layer; DEFERRED path updated.
 - Two production functions that crossed 15 lines with the new error path
   (`run.New`, `audit.prepareWorld`) were split into named steps.
+
+## M2 — truth
+
+- Facade `internal/truth` (`doc.go`, `api.go`, `service.go`, `operations.go`)
+  over `internal/truth/internal/domain`; files `git mv`-ed, package clause and
+  package comment changed, domain tests' fixture path deepened by two levels.
+- Facade surface = what other modules used: `Solver`, `NewSolver`, `Store`,
+  `NewStore`, `BuildRecord`, `Injection` (alias of a plain record). `Solver`
+  and `Store` are facade structs with explicit delegating methods.
+- Deliberate, listed in PLAN: `NewSolver` returns `(*Solver, error)` and
+  refuses a nil spec with `ErrNoSpec` (STANDARD fail-closed constructors); the
+  one production caller (`suite.prepareGeneration`) already returned errors.
+- Facade contract tests (`truth_test`): nil spec, positive/negative class
+  label, seal/reveal lifecycle. `UBIQUITOUS_LANGUAGE.md` added.

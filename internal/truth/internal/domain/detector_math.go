@@ -1,4 +1,4 @@
-package truth
+package domain
 
 import (
 	"math"

@@ -33,7 +33,10 @@ func newSuiteGeneration(cfg Config) (*suiteGeneration, error) {
 	if prof == nil {
 		return nil, fmt.Errorf("suite: unknown profile %q", cfg.Profile)
 	}
-	g := prepareGeneration(cfg, prof)
+	g, err := prepareGeneration(cfg, prof)
+	if err != nil {
+		return nil, err
+	}
 	g.startNS = model.DefaultStartTimeNS + 4*3600*1e9
 	g.durationNS = profileDuration(prof)
 	g.entities = defaultEntities(cfg.Domain, prof)

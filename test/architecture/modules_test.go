@@ -14,6 +14,7 @@ import (
 // module is listed.
 var moduleShapes = map[string][]string{
 	"internal/perturb": {"domain"},
+	"internal/truth":   {"domain"},
 }
 
 func migratedModules() []string {

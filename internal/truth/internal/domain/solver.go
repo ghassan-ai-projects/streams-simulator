@@ -1,9 +1,9 @@
-// Package truth computes generative ground truth: the three onset
-// timestamps, the sealed label records, and the observability solver that
-// makes detection latency measured against a real reference rather than a
-// guess. Ground truth is reachable only under the director role; the
-// operator view contains no reference to it.
-package truth
+// Package domain holds the ground-truth rules: the observability solver that
+// finds the onset timestamps by running a clean and a faulted noiseless
+// world, the construction of sealed label records, and the sealed store that
+// keeps a label from the operator role until its run closes. It performs no
+// I/O and reads no clock.
+package domain
 
 import (
 	"fmt"
