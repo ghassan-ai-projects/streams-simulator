@@ -27,15 +27,24 @@ func Parse(raw []byte, src string) (*Compiled, error) {
 
 // List returns the catalog rows whose id starts with group ("" lists all).
 func (c *Catalog) List(group string) []Entry {
+	if c == nil || c.catalog == nil {
+		return nil
+	}
 	return c.catalog.List(group)
 }
 
 // Describe returns the compiled domain with the given id.
 func (c *Catalog) Describe(id string) (*Compiled, error) {
+	if c == nil || c.catalog == nil {
+		return nil, ErrNoCatalog
+	}
 	return c.catalog.Describe(id)
 }
 
 // Coverage reports which axis values the installed domains cover.
 func (c *Catalog) Coverage() CoverageReport {
+	if c == nil || c.catalog == nil {
+		return CoverageReport{}
+	}
 	return c.catalog.Coverage()
 }

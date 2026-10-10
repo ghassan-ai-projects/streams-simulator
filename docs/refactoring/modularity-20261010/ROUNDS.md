@@ -589,3 +589,20 @@ list, the suite determinism test uses one scenario (suite package 3.8 s →
   commands point at the new paths; `go test ./internal/run/...`.
 - Facade tests (97 %): identity, command recording, publication and replay of
   an artifact, hooks. App layer 72 %.
+
+### M7–M10 review follow-up
+
+Isolated review: no High; suite/pin/fuzz identical. Fixed: the facade
+`deviceworld.Plant` is now pinned as `device.Plant` and `device.SafeStopper`
+and a lease expiry is driven through it (a drifting `SafeStop` would have
+skipped safe stops silently, since the device discovers it by assertion);
+the alias gate no longer accepts composite aliases or an exemption keyed by
+name alone: `aliasedValueTypes` pins the target and the exact exported method
+set and has a stale-entry test, which immediately caught the unused
+`Capabilities.TargetNames` (removed); stale regeneration and test commands
+point at the layer packages and the false wall-mode claims are corrected
+(`httppush`, `wall`, DECISIONS erratum); zero-value facade types refuse
+instead of panicking; a formally racy sink test is locked; the adapter layer
+tests the two error layouts; PLAN and STANDARD text corrected (the `app`
+layer exists only where use cases orchestrate, and the exemption is pinned,
+not "read-only whole method set").

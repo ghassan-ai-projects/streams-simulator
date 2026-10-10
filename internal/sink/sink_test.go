@@ -2,10 +2,12 @@ package sink_test
 
 import (
 	"bytes"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/sink"
@@ -84,11 +86,14 @@ func TestInprocSinkIsReadyAtItsZeroValueAndSatisfiesTheContract(t *testing.T) {
 
 func TestHTTPPushDeliversEachLineInOrderAndKeepsTheStream(t *testing.T) {
 	t.Parallel()
+	var mu sync.Mutex
 	var posted []string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		buffer := make([]byte, r.ContentLength)
 		_, _ = r.Body.Read(buffer)
+		mu.Lock()
 		posted = append(posted, string(buffer))
+		mu.Unlock()
 	}))
 	defer server.Close()
 	push := sink.NewHTTPPush(t.Context(), server.URL)
@@ -98,7 +103,21 @@ func TestHTTPPushDeliversEachLineInOrderAndKeepsTheStream(t *testing.T) {
 		}
 	}
 	got, err := push.Close()
+	mu.Lock()
+	defer mu.Unlock()
 	if err != nil || string(got) != "one\ntwo\n" || len(posted) != 2 || posted[0] != "one" {
 		t.Fatalf("stream = %q posted = %v (%v)", got, posted, err)
+	}
+}
+
+func TestZeroValueFileAndHTTPPushRefuseInsteadOfPanicking(t *testing.T) {
+	t.Parallel()
+	var file sink.File
+	if err := file.Write([]byte("x")); !errors.Is(err, sink.ErrNotConstructed) {
+		t.Fatalf("file: %v", err)
+	}
+	var push sink.HTTPPush
+	if err := push.Write([]byte("x")); !errors.Is(err, sink.ErrNotConstructed) {
+		t.Fatalf("http push: %v", err)
 	}
 }

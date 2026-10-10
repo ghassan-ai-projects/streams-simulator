@@ -14,3 +14,6 @@ type Binding = layer.Binding
 // ErrNoWorld is returned by New when no world is given: the plant is the
 // device's view of that world.
 var ErrNoWorld = errors.New("deviceworld: a world is required")
+
+// ErrNoPlant is returned by a nil or zero Plant that was not built by New.
+var ErrNoPlant = errors.New("deviceworld: a plant built by New is required")

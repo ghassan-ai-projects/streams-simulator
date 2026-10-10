@@ -23,10 +23,16 @@ func ValidateBindings(w *world.World, bindings map[string]Binding, requiredTarge
 // reports the physical truth. An unmapped target is unavailable, not a
 // successful no-op.
 func (p *Plant) Apply(cmd device.PlantCommand) (device.PlantEffect, error) {
+	if p == nil || p.plant == nil {
+		return device.PlantEffect{}, ErrNoPlant
+	}
 	return p.plant.Apply(cmd)
 }
 
 // SafeStop drives the target to its declared safe state at atMicros.
 func (p *Plant) SafeStop(target string, atMicros int64) (device.PlantEffect, error) {
+	if p == nil || p.plant == nil {
+		return device.PlantEffect{}, ErrNoPlant
+	}
 	return p.plant.SafeStop(target, atMicros)
 }

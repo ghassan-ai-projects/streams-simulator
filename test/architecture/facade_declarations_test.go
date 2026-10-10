@@ -35,19 +35,27 @@ func (f *facade) typeViolations(spec *ast.TypeSpec) []string {
 // value record declared in api.go: an alias of a type with methods would
 // export its whole method set past the facade.
 func (f *facade) aliasViolations(spec *ast.TypeSpec) []string {
-	selector, ok := spec.Type.(*ast.SelectorExpr)
-	if !ok || !f.namesLayer(selector) {
+	if !f.namesLayer(spec.Type) {
 		return nil
+	}
+	selector, plain := spec.Type.(*ast.SelectorExpr)
+	if !plain {
+		return []string{"alias " + spec.Name.Name + " is a composite over an internal layer type; alias the plain type"}
 	}
 	if !spec.Name.IsExported() || filepath.Base(f.file.path) != "api.go" {
 		return []string{"alias " + spec.Name.Name + " of an internal layer type must be exported and declared in api.go"}
 	}
 	ident := selector.X.(*ast.Ident)
-	if _, reviewed := aliasedValueTypes[f.module+":"+spec.Name.Name]; reviewed {
+	methods := f.methodsOf(f.layers[ident.Name], selector.Sel.Name)
+	if len(methods) == 0 {
 		return nil
 	}
-	if f.hasMethods(f.layers[ident.Name], selector.Sel.Name) {
+	review, reviewed := aliasedValueTypes[f.module+":"+spec.Name.Name]
+	if !reviewed || review.target != selector.Sel.Name {
 		return []string{"alias " + spec.Name.Name + " would export the methods of " + selector.Sel.Name + "; wrap the type in a facade struct"}
+	}
+	if !slices.Equal(methods, review.methods) {
+		return []string{"alias " + spec.Name.Name + " exposes " + strings.Join(methods, ",") + ", reviewed " + strings.Join(review.methods, ",")}
 	}
 	return nil
 }

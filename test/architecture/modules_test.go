@@ -88,35 +88,62 @@ func facadeFiles(t *testing.T, module string) []productionFile {
 	return files
 }
 
-// layerHasMethods reports whether a type declared in the production package
-// at the import path has methods; an alias of such a type would export them.
-func layerHasMethods(t *testing.T) func(path, typeName string) bool {
+// layerMethods lists the sorted exported methods of a type declared in the
+// production package at the import path; an alias of the type exports them.
+func layerMethods(t *testing.T) func(path, typeName string) []string {
 	t.Helper()
-	return func(path, typeName string) bool {
+	return func(path, typeName string) []string {
 		directory := strings.TrimPrefix(path, modulePrefix)
+		var methods []string
 		for _, file := range productionFiles(t) {
 			if file.pkgDir != directory {
 				continue
 			}
 			for _, decl := range file.source.Decls {
 				if function, ok := decl.(*ast.FuncDecl); ok && function.Name.IsExported() && receiverType(function) == typeName {
-					return true
+					methods = append(methods, function.Name.Name)
 				}
 			}
 		}
-		return false
+		slices.Sort(methods)
+		return methods
+	}
+}
+
+// TestAliasReviewsAreAllInUse keeps aliasedValueTypes honest: an entry whose
+// alias no facade declares any more is removed.
+func TestAliasReviewsAreAllInUse(t *testing.T) {
+	t.Parallel()
+	declared := map[string]bool{}
+	for _, file := range productionFiles(t) {
+		for _, decl := range file.source.Decls {
+			general, ok := decl.(*ast.GenDecl)
+			if !ok {
+				continue
+			}
+			for _, spec := range general.Specs {
+				if alias, ok := spec.(*ast.TypeSpec); ok && alias.Assign.IsValid() {
+					declared[file.pkgDir+":"+alias.Name.Name] = true
+				}
+			}
+		}
+	}
+	for key := range aliasedValueTypes {
+		if !declared[key] {
+			t.Errorf("aliasedValueTypes has %s but no facade declares that alias", key)
+		}
 	}
 }
 
 func TestFacadesFollowTheFacadeRules(t *testing.T) {
 	t.Parallel()
-	hasMethods := layerHasMethods(t)
+	methodsOf := layerMethods(t)
 	for _, module := range migratedModules() {
 		t.Run(module, func(t *testing.T) {
 			t.Parallel()
 			files := facadeFiles(t, module)
 			for _, file := range files {
-				for _, violation := range facadeViolations(file, module, hasMethods, files...) {
+				for _, violation := range facadeViolations(file, module, methodsOf, files...) {
 					t.Errorf("%s: %s", file.path, violation)
 				}
 			}

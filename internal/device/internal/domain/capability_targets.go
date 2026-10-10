@@ -85,14 +85,6 @@ func (c *Capabilities) hasSafeStop(target string) bool {
 	return ok
 }
 
-// TargetNames returns the catalog's device targets in deterministic order.
-func (c *Capabilities) TargetNames() []string {
-	if c == nil {
-		return nil
-	}
-	return sortedStringKeys(c.targets)
-}
-
 // SafeStopNames returns the catalog's explicit safe-stop targets in
 // deterministic order.
 func (c *Capabilities) SafeStopNames() []string {

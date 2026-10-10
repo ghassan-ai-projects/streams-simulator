@@ -52,7 +52,7 @@ func (s *Service) Guarded(id string) error {
 
 func Parse(raw []byte) (Record, error) { return layer.Parse(raw, string(raw)) }
 `
-	noMethods := func(string, string) bool { return false }
+	noMethods := func(string, string) []string { return nil }
 	if got := facadeViolations(snippetFacade(t, "internal/m/api.go", source), "internal/m", noMethods); len(got) != 0 {
 		t.Fatalf("violations = %v", got)
 	}
@@ -60,7 +60,12 @@ func Parse(raw []byte) (Record, error) { return layer.Parse(raw, string(raw)) }
 
 func TestFacadeRulesRejectEveryKnownBypass(t *testing.T) {
 	t.Parallel()
-	hasMethods := func(path, typeName string) bool { return typeName == "Aggregate" }
+	methodsOf := func(path, typeName string) []string {
+		if typeName == "Aggregate" {
+			return []string{"Run"}
+		}
+		return nil
+	}
 	for name, tc := range map[string]struct {
 		source string
 		want   string
@@ -152,6 +157,12 @@ func (s *S) Stop() { s.other.Stop() }`,
 		"alias of an aggregate with methods": {
 			`type Whole = layer.Aggregate`,
 			"would export the methods of Aggregate"},
+		"composite alias of an aggregate": {
+			`type Many = []layer.Aggregate`,
+			"composite over an internal layer type"},
+		"pointer alias of an aggregate": {
+			`type P = *layer.Aggregate`,
+			"composite over an internal layer type"},
 		"unexported alias of a layer type": {
 			`type inner = layer.Record
 func Make() *inner { return layer.Make() }`,
@@ -183,7 +194,7 @@ func (s *S) Inner() *layer.S { return s.impl }`,
 			if name == "dot import of a layer" {
 				source = "package m\nimport . \"" + modulePrefix + "internal/m/internal/domain\"\n"
 			}
-			violations := facadeViolations(snippetFacade(t, path, source), "internal/m", hasMethods)
+			violations := facadeViolations(snippetFacade(t, path, source), "internal/m", methodsOf)
 			if !strings.Contains(strings.Join(violations, "\n"), tc.want) {
 				t.Fatalf("violations = %v, want one containing %q", violations, tc.want)
 			}
@@ -194,7 +205,7 @@ func (s *S) Inner() *layer.S { return s.impl }`,
 func TestFacadeRulesKeepAliasesInAPIFile(t *testing.T) {
 	t.Parallel()
 	source := snippetHeader + "type Record = layer.Record\n"
-	noMethods := func(string, string) bool { return false }
+	noMethods := func(string, string) []string { return nil }
 	got := facadeViolations(snippetFacade(t, "internal/m/service.go", source), "internal/m", noMethods)
 	if !strings.Contains(strings.Join(got, "\n"), "declared in api.go") {
 		t.Fatalf("violations = %v", got)

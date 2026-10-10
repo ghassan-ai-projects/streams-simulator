@@ -23,4 +23,4 @@ The binary holds no consumer's field names or framing rules.
 | --- | --- | --- |
 | `Engine.Meta` | removed | no caller |
 | `adapter.Load` inside the rules package | `files.Load` behind the facade | file reading is an edge |
-| `separator` parameter (loader) | `DecodeFile` / `LoadBytes` | the multi-line versus single-line error layout is chosen by the entry point, not passed in |
+| `separator` parameter (loader) | `DecodeFile` / `LoadBytes` | the multi-line versus single-line error layout is chosen by the entry point, not by callers (the layer still threads it privately) |

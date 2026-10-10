@@ -13,29 +13,48 @@ import (
 // reviewed table: an entry is a design decision, not a convenience.
 var facadeExemptions = map[string]string{}
 
-// aliasedValueTypes names facade aliases of layer types that have methods,
-// keyed "<module>:<alias>". Each is a reviewed value type whose whole method
-// set is read-only lookup over its own data and is the public contract.
-var aliasedValueTypes = map[string]string{
-	"internal/domain:Compiled":     "compiled domain spec: fields and read-only name lookups are the contract used by every module",
-	"internal/device:Capabilities": "device capability catalog: read-only target, operation and bounds lookups plus its digest",
+// aliasReview pins a reviewed alias of a method-bearing layer type: the layer
+// type it names and the exact exported method set it exposes. A new method on
+// the layer type fails the gate until the review is renewed here.
+type aliasReview struct {
+	target  string
+	methods []string
+	reason  string
+}
+
+// aliasedValueTypes lists facade aliases of layer types that have methods,
+// keyed "<module>:<alias>". Each is a value type whose method set is read-only
+// lookup over its own data and is the contract other modules use; its
+// exported fields (for Compiled, Spec/Digest/Raw) are deliberately plain data.
+var aliasedValueTypes = map[string]aliasReview{
+	"internal/domain:Compiled": {
+		target: "Compiled",
+		methods: []string{"Channel", "ChannelGain", "ChannelNames", "Effector", "Fault", "HasChannel",
+			"HasEffector", "HasFault", "HasProfile", "HasState", "Profile", "StateNames"},
+		reason: "compiled domain spec: lookups over its own declared names; Spec is deliberately mutable for tests",
+	},
+	"internal/device:Capabilities": {
+		target:  "Capabilities",
+		methods: []string{"Digest", "SafeStopNames"},
+		reason:  "device capability catalog: read-only target and safe-stop lookups plus its digest",
+	},
 }
 
 // facade describes one facade file for the rules below.
 type facade struct {
-	module     string
-	file       productionFile
-	layers     map[string]string          // local name -> import path of an internal layer
-	holders    map[string]map[string]bool // struct type -> field -> holds an internal layer object
-	hasMethods func(importPath, typeName string) bool
+	module    string
+	file      productionFile
+	layers    map[string]string          // local name -> import path of an internal layer
+	holders   map[string]map[string]bool // struct type -> field -> holds an internal layer object
+	methodsOf func(importPath, typeName string) []string
 }
 
 // facadeViolations returns every way a facade file breaks the module rules:
 // it delegates only, exposes no internal layer type and re-exports no mutable
 // state (STANDARD M5, M6). siblings are the module's other facade files,
 // whose struct declarations say which fields hold layer objects.
-func facadeViolations(file productionFile, module string, hasMethods func(string, string) bool, siblings ...productionFile) []string {
-	f := facade{module: module, file: file, layers: map[string]string{}, holders: map[string]map[string]bool{}, hasMethods: hasMethods}
+func facadeViolations(file productionFile, module string, methodsOf func(string, string) []string, siblings ...productionFile) []string {
+	f := facade{module: module, file: file, layers: map[string]string{}, holders: map[string]map[string]bool{}, methodsOf: methodsOf}
 	violations := f.collectLayers(module)
 	for _, peer := range append([]productionFile{file}, siblings...) {
 		peerView := facade{file: peer, layers: map[string]string{}, holders: f.holders}

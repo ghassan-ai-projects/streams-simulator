@@ -113,6 +113,8 @@ func refusalValue(expr ast.Expr) bool {
 	switch e := expr.(type) {
 	case *ast.Ident:
 		return e.Name == "nil" || e.Name == "false" || e.Name == "err" || strings.HasPrefix(e.Name, "Err")
+	case *ast.CompositeLit:
+		return len(e.Elts) == 0
 	case *ast.BasicLit:
 		return e.Value == "0" || e.Value == `""`
 	case *ast.SelectorExpr:

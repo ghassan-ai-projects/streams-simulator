@@ -12,10 +12,9 @@ import (
 	"time"
 )
 
-// HTTPPush posts each line to an endpoint. In stepped mode delivery is
-// immediate and in order, so the sink is byte-deterministic. The wall
-// sub-mode (real-time withholding by observed_time) lives behind the simdet
-// build tag and is unavailable to the deterministic test suite.
+// HTTPPush posts each line to an endpoint. Delivery is immediate and in
+// order, so the sink is byte-deterministic. There is no real-time (wall)
+// sub-mode: withholding by observed time is the perturbation layer's job.
 type HTTPPush struct {
 	url    string
 	client *http.Client

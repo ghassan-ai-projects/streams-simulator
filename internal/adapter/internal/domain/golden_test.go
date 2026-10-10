@@ -1,6 +1,6 @@
 package domain
 
-// Golden regeneration: run `REGEN_GOLDEN=1 go test ./internal/adapter/ -run
+// Golden regeneration: run `REGEN_GOLDEN=1 go test ./internal/adapter/internal/domain/ -run
 // TestRegenerateGoldens -v` after an intentional adapter or fixture change.
 // The goldens are committed artifacts; this test exists so the regeneration
 // step is recorded and repeatable, not so it runs by default.

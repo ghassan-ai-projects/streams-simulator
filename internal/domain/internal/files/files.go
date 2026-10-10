@@ -25,7 +25,7 @@ func Load(path string) (*domain.Compiled, error) {
 }
 
 // LoadAll loads every domain spec in a directory (non-recursive), sorted by
-// id. A single unloadable domain fails the whole load: the catalog is a
+// path. A single unloadable domain fails the whole load: the catalog is a
 // fixed, reviewed set, and a silent skip would make coverage reports lie.
 func LoadAll(dir string) ([]*domain.Compiled, error) {
 	entries, err := os.ReadDir(dir)
