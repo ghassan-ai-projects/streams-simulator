@@ -105,9 +105,11 @@ Under `simdet`, `internal/wall.Now` returns the zero time and the http-push
 wall sub-mode cannot link. `make test-simdet` runs the suite with `-tags
 simdet`; CI gates on it, so no test can depend on a wall clock by accident.
 
-*Erratum (2026-10-10):* the code has no http-push wall sub-mode, and most
-clock reads bypass this seam; see `docs/refactoring/modularity-20261010/DEFERRED.md`
-P-01.
+*Erratum (2026-10-10, hardening):* the code has no http-push wall sub-mode.
+The seam is now used by the run module's clock edge, so under `simdet` the
+`created_at` and `unblinded_at` stamps of run artifacts are the zero time. The
+CLI's process edge (`internal/cli/internal/process`) reads the clock directly
+because the binary is never built with `simdet`; it is declared in `ioEdges`.
 
 ### D-14 (deviation). env.inject is record-only
 Environment faults target a consumer's process, which a simulator must not

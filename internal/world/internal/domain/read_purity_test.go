@@ -63,3 +63,20 @@ func TestStochasticFaultEnvelopeDoesNotDependOnTheReadSchedule(t *testing.T) {
 		t.Fatalf("stochastic fault value differs with the read schedule: %v vs %v", quiet, probed)
 	}
 }
+
+// The entity a caller receives is a snapshot: scribbling on it must not move
+// the world's own record of when the entity was born.
+func TestEntitySnapshotCannotChangeTheWorld(t *testing.T) {
+	t.Parallel()
+	w := newTestWorld(t, testSpec(t, nil), 4, model.DefaultStartTimeNS)
+	snapshot := w.Entity("e-1")
+	if snapshot == nil {
+		t.Fatal("e-1 must exist")
+	}
+	born := snapshot.BornNS
+	snapshot.BornNS, snapshot.ID = born+999, "renamed"
+	again := w.Entity("e-1")
+	if again.BornNS != born || again.ID != "e-1" {
+		t.Fatalf("the world's entity changed through a snapshot: %+v", again)
+	}
+}

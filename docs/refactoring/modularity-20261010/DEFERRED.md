@@ -152,3 +152,10 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 > the response body needs no explicit drain (Go's transport reuses the
 > connection for small bodies), so there is nothing to fix without an
 > asynchronous, order-preserving sink, which is a design change.
+
+> **Decided in the hardening program.** D-35 (`observation_gain: 0` is read as
+> unset): kept; zero and unset are the same value for the declared floats and
+> the domain contract says so. D-39 (integers beyond 2^53 are written
+> verbatim): kept; seeds are `uint64`, and RFC 8785's double form would map
+> distinct seeds to one digest. Both are documented in the `canonical`
+> package comment. D-36 is fixed (canonical adapter digest, simulator 0.2.0).

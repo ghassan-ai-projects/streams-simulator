@@ -7,6 +7,12 @@
 // produces: nil, bool, json.Number, float64, int/uint of any width, string,
 // []any, map[string]any, and time.Time (rendered RFC 3339 with nanoseconds).
 // Anything else is rejected rather than guessed at.
+//
+// One deliberate departure: a json.Number integer literal is written as it
+// came, not through the IEEE-754 double form RFC 8785 prescribes. Seeds and
+// nanosecond timestamps are 64-bit integers; the double form would map
+// distinct values above 2^53 to the same text, and so to the same digest.
+// Non-integer numbers follow the RFC.
 package canonical
 
 import (

@@ -49,7 +49,6 @@ var ioEdges = map[string]ioEdge{
 	"internal/cli/internal/files/files.go":      {uses: []string{"import:os"}, why: "files and directories named on the command line"},
 	"internal/cli/internal/serve/serve.go":      {uses: []string{"go-statement", "import:net", "import:net/http", "import:os", "import:os/signal", "import:syscall"}, why: "device socket and MCP director session served until interrupted"},
 	"internal/testsupport/testsupport.go":       {uses: []string{"import:os"}, why: "repository root discovery and short socket directories for tests"},
-	"internal/run/internal/clock/clock.go":      {uses: []string{"call:time.Now"}, why: "artifact creation and unblinding timestamps"},
 	"internal/device/internal/uds/uds.go":       {uses: []string{"go-statement", "import:net", "import:os"}, why: "unix socket listener, accept loop and session"},
 }
 

@@ -101,3 +101,6 @@ perturbation (D-26) changed numbers, so artifacts built by 0.1.0 report a
 version mismatch on replay instead of silently differing. Pinned traces and
 ledgers are unchanged; world-state histories, run artifacts (sim_version and
 world digest) and the cold-chain suite moved. The pin file was regenerated.
+| D-44, D-45 | done | `see git log` | `TestEntitySnapshotCannotChangeTheWorld`, `TestEffectorCallLogIsIsolatedFromCallersArguments` |
+| P-01 | done | `see git log` | the run clock edge reads through `wall`; `clock_simdet_test.go` pins the zero time under `simdet`; DECISIONS D-13 amended |
+| D-36 | done | `see git log` | `TestAdapterDigestIsTheCanonicalDigestOfItsJSONForm`; adapter digests in run artifacts changed (pin regenerated) |
