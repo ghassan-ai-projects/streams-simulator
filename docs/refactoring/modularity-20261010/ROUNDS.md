@@ -312,3 +312,29 @@ Independent review found no behaviour change but a weak template:
   one production caller (`suite.prepareGeneration`) already returned errors.
 - Facade contract tests (`truth_test`): nil spec, positive/negative class
   label, seal/reveal lifecycle. `UBIQUITOUS_LANGUAGE.md` added.
+
+## M3 — world
+
+- Facade `internal/world` (`doc.go`, `api.go`, `service.go`, `operations.go`)
+  over `internal/world/internal/domain` (every file and test `git mv`-ed;
+  package clause and comment only). `World` is a facade struct with `ID`,
+  `Spec`, `StartNS` fixed at construction and 20 explicit delegating methods;
+  `Options`, `InvokeResult`, `EffectorCall`, `FaultInfo`, `Entity` are aliases
+  of plain records (the gate checks they have no exported methods); the seven
+  `Mode*` constants stay as the vocabulary of `InvokeResult.Mode`;
+  `ErrInterlockRefused` is the same error value, so `errors.Is` is unchanged.
+- Deliberate, listed in PLAN: `world.New` refuses a nil spec with `ErrNoSpec`.
+- The repository-wide map-iteration determinism test moved out of `world`
+  into `test/architecture` (T1: a whole-repository rule). It now ranges over
+  every production package (layers included) with the same marker. `device`
+  and `deviceworld`, which it did not cover before, have 15 map ranges
+  (DEFERRED D-38, message order only) and sit in `determinismDebt` until
+  their modules migrate (M7, M11).
+- Facade gate refinements found here: `constructs` accepts definitions from
+  one layer call and nil guards in either direction (`== nil`/`!= nil`) that
+  return; an alias counts a layer type's *exported* methods only.
+- Facade contract tests (`world_test`, black-box over the shipped
+  aquaculture-pond domain): nil spec, identity and entities, ordered emission
+  and clock refusal, faults and effectors, entity lifecycle, failure-mode
+  override. Facade coverage 96 %, domain layer 68 % (floor moved to the
+  layer package).

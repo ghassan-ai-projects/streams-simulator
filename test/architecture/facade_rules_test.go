@@ -129,21 +129,58 @@ func (f *facade) delegates(function *ast.FuncDecl) bool {
 	return ok && f.calleeIsLayer(call.Fun, function) && plainArguments(call)
 }
 
-// constructs accepts nil-guard ifs followed by a single return of a call or
-// a composite literal: the shape of a fail-closed constructor.
+// constructs accepts the shape of a fail-closed constructor: nil guards that
+// return, definitions from a single layer call, and one final return of a
+// call or composite literal. No loops, no function literals.
 func (f *facade) constructs(function *ast.FuncDecl) bool {
 	list := function.Body.List
 	if len(list) == 0 {
 		return false
 	}
 	for _, statement := range list[:len(list)-1] {
-		guard, ok := statement.(*ast.IfStmt)
-		if !ok || guard.Init != nil || guard.Else != nil || !isNilComparison(guard.Cond) {
+		if !f.constructorStep(statement) {
 			return false
 		}
 	}
 	returned, ok := list[len(list)-1].(*ast.ReturnStmt)
 	return ok && len(returned.Results) >= 1 && !containsFuncLiteral(returned)
+}
+
+func (f *facade) constructorStep(statement ast.Stmt) bool {
+	switch s := statement.(type) {
+	case *ast.IfStmt:
+		return s.Init == nil && s.Else == nil && isNilComparison(s.Cond) && len(s.Body.List) == 1 && isReturn(s.Body.List[0])
+	case *ast.AssignStmt:
+		call, ok := singleAssignedCall(s)
+		return ok && s.Tok == token.DEFINE && f.calleeIsLayerFunction(call.Fun) && plainArguments(call)
+	}
+	return false
+}
+
+func isReturn(statement ast.Stmt) bool {
+	_, ok := statement.(*ast.ReturnStmt)
+	return ok
+}
+
+func singleAssignedCall(assignment *ast.AssignStmt) (*ast.CallExpr, bool) {
+	if len(assignment.Rhs) != 1 {
+		return nil, false
+	}
+	call, ok := assignment.Rhs[0].(*ast.CallExpr)
+	return call, ok
+}
+
+func (f *facade) calleeIsLayerFunction(fun ast.Expr) bool {
+	selector, ok := fun.(*ast.SelectorExpr)
+	if !ok {
+		return false
+	}
+	ident, ok := selector.X.(*ast.Ident)
+	if !ok {
+		return false
+	}
+	_, isLayer := f.layers[ident.Name]
+	return isLayer
 }
 
 func isNilComparison(expr ast.Expr) bool {
@@ -155,7 +192,7 @@ func isNilComparison(expr ast.Expr) bool {
 		return isNilComparison(binary.X) && isNilComparison(binary.Y)
 	}
 	nilSide := func(e ast.Expr) bool { ident, ok := e.(*ast.Ident); return ok && ident.Name == "nil" }
-	return binary.Op == token.EQL && (nilSide(binary.X) || nilSide(binary.Y))
+	return (binary.Op == token.EQL || binary.Op == token.NEQ) && (nilSide(binary.X) || nilSide(binary.Y))
 }
 
 func singleCall(list []ast.Stmt) (*ast.CallExpr, bool) {

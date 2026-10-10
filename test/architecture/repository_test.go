@@ -18,6 +18,7 @@ import (
 type productionFile struct {
 	path    string // slash-separated, relative to the repository root
 	pkgDir  string // owning package directory, "." for the root package
+	fset    *token.FileSet
 	source  *ast.File
 	paths   []string          // every imported path, blank and dot imports included
 	imports map[string]string // local name -> import path, for selector resolution
@@ -91,7 +92,8 @@ func skipDirectory(name string) error {
 }
 
 func parseProductionFile(root, path string) (productionFile, error) {
-	source, err := parser.ParseFile(token.NewFileSet(), path, nil, parser.ParseComments)
+	fset := token.NewFileSet()
+	source, err := parser.ParseFile(fset, path, nil, parser.ParseComments)
 	if err != nil {
 		return productionFile{}, fmt.Errorf("parse %s: %w", path, err)
 	}
@@ -103,6 +105,7 @@ func parseProductionFile(root, path string) (productionFile, error) {
 	return productionFile{
 		path:    relative,
 		pkgDir:  packageDirectory(relative),
+		fset:    fset,
 		source:  source,
 		paths:   importPaths(source),
 		imports: importNames(source),

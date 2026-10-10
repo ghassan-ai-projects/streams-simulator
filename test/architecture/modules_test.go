@@ -15,6 +15,7 @@ import (
 var moduleShapes = map[string][]string{
 	"internal/perturb": {"domain"},
 	"internal/truth":   {"domain"},
+	"internal/world":   {"domain"},
 }
 
 func migratedModules() []string {
@@ -90,7 +91,7 @@ func layerHasMethods(t *testing.T) func(path, typeName string) bool {
 				continue
 			}
 			for _, decl := range file.source.Decls {
-				if function, ok := decl.(*ast.FuncDecl); ok && receiverType(function) == typeName {
+				if function, ok := decl.(*ast.FuncDecl); ok && function.Name.IsExported() && receiverType(function) == typeName {
 					return true
 				}
 			}
