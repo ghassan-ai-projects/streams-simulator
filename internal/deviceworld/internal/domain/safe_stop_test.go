@@ -1,4 +1,4 @@
-package deviceworld
+package domain
 
 import (
 	"encoding/json"
@@ -45,7 +45,7 @@ func TestLeaseExpiryInvokesWorldSafeStop(t *testing.T) {
 }
 
 func TestWorldSafeStopDoesNotClaimPhysicalEffect(t *testing.T) {
-	spec, err := domain.Load("../../domains/cold-chain-transit.domain.json")
+	spec, err := domain.Load("../../../../domains/cold-chain-transit.domain.json")
 	if err != nil {
 		t.Fatalf("load cold-chain domain: %v", err)
 	}
@@ -70,7 +70,7 @@ func TestWorldSafeStopDoesNotClaimPhysicalEffect(t *testing.T) {
 
 func deviceCommand(t *testing.T, commandID string, atMicros int64) map[string]any {
 	t.Helper()
-	data, err := os.ReadFile("../device/contract/conformance/v1/valid/command.json")
+	data, err := os.ReadFile("../../../device/contract/conformance/v1/valid/command.json")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -87,7 +87,7 @@ func deviceCommand(t *testing.T, commandID string, atMicros int64) map[string]an
 // device test.
 func deviceCaps(t *testing.T) *device.Capabilities {
 	t.Helper()
-	data, err := os.ReadFile("../device/testdata/thermal_capability_catalog.json")
+	data, err := os.ReadFile("../../../device/testdata/thermal_capability_catalog.json")
 	if err != nil {
 		t.Fatal(err)
 	}

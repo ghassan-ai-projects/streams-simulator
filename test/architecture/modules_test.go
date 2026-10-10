@@ -13,12 +13,13 @@ import (
 // listed is still a flat package; the program ends when every non-foundation
 // module is listed.
 var moduleShapes = map[string][]string{
-	"internal/perturb": {"domain"},
-	"internal/truth":   {"domain"},
-	"internal/world":   {"domain"},
-	"internal/score":   {"domain"},
-	"internal/audit":   {"domain"},
-	"internal/suite":   {"domain"},
+	"internal/perturb":     {"domain"},
+	"internal/truth":       {"domain"},
+	"internal/world":       {"domain"},
+	"internal/score":       {"domain"},
+	"internal/audit":       {"domain"},
+	"internal/suite":       {"domain"},
+	"internal/deviceworld": {"domain"},
 }
 
 func migratedModules() []string {

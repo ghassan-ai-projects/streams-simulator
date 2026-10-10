@@ -1,4 +1,4 @@
-package deviceworld
+package domain
 
 import (
 	"os"
@@ -6,7 +6,7 @@ import (
 )
 
 func TestLoadBindingsFromData(t *testing.T) {
-	data, err := os.ReadFile("testdata/thermal.bindings.json")
+	data, err := os.ReadFile("../../testdata/thermal.bindings.json")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -75,7 +75,7 @@ func TestLoadBindingsFailsClosed(t *testing.T) {
 }
 
 func TestLoadBindingsRequiresEntitySourceValue(t *testing.T) {
-	data, err := os.ReadFile("testdata/thermal.bindings.json")
+	data, err := os.ReadFile("../../testdata/thermal.bindings.json")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -87,7 +87,7 @@ func TestLoadBindingsRequiresEntitySourceValue(t *testing.T) {
 func TestValidateBindingsChecksWorldCompositionBeforeListen(t *testing.T) {
 	w := coldChainWorld(t, 1)
 	entity := w.EntityIDs()[0]
-	data, err := os.ReadFile("testdata/thermal.bindings.json")
+	data, err := os.ReadFile("../../testdata/thermal.bindings.json")
 	if err != nil {
 		t.Fatal(err)
 	}

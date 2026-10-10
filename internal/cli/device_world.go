@@ -77,7 +77,10 @@ func validateDeviceWorldBindings(w *world.World, bindings map[string]deviceworld
 }
 
 func deviceWorldPlant(w *world.World, bindings map[string]deviceworld.Binding) (device.Plant, *world.World, func() int64, error) {
-	plant := deviceworld.New(w, bindings)
+	plant, err := deviceworld.New(w, bindings)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("device world plant: %w", err)
+	}
 	started := time.Now()
 	clock := func() int64 { return time.Since(started).Microseconds() }
 	return plant, w, clock, nil

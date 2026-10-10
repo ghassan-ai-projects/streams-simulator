@@ -1,4 +1,4 @@
-package deviceworld
+package domain
 
 import (
 	"errors"
@@ -17,7 +17,7 @@ import (
 // oracle to drive the device plant against.
 func coldChainWorld(t *testing.T, seed uint64) *world.World {
 	t.Helper()
-	spec, err := domain.Load("../../domains/cold-chain-transit.domain.json")
+	spec, err := domain.Load("../../../../domains/cold-chain-transit.domain.json")
 	if err != nil {
 		t.Fatalf("load cold-chain domain: %v", err)
 	}
@@ -30,7 +30,7 @@ func coldChainWorld(t *testing.T, seed uint64) *world.World {
 
 func loadBindings(t *testing.T, entity string) map[string]Binding {
 	t.Helper()
-	data, err := os.ReadFile("testdata/thermal.bindings.json")
+	data, err := os.ReadFile("../../testdata/thermal.bindings.json")
 	if err != nil {
 		t.Fatal(err)
 	}

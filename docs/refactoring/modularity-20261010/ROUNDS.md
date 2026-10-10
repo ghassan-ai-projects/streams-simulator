@@ -443,3 +443,18 @@ itself bundle test became a real online/offline agreement test over the shared
 consumer and judgment metrics; the architecture map no longer says `score ->
 run`. Not done: avoiding the evidence clone before the no-verdict check
 (performance only).
+
+## M7 — deviceworld
+
+- Facade `internal/deviceworld` (`Binding` alias; `LoadBindings`,
+  `ValidateBindings` delegate; `Plant` struct with `Apply`/`SafeStop`) over
+  `internal/deviceworld/internal/domain`. The binding fixture stays at the
+  module level (`internal/deviceworld/testdata/`), because the `cli` device
+  test reads it too; the layer's tests read it by relative path.
+- Deliberate, listed in PLAN: `deviceworld.New` returns `(*Plant, error)` and
+  refuses a nil world (`ErrNoWorld`); the one caller (`cli.deviceWorldPlant`)
+  already returned an error.
+- `determinismDebt` key follows the layer (`.../internal/domain`).
+- Facade tests: nil world, unknown catalog field, binding validation against a
+  world (missing required target named), unmapped target is
+  `ErrPlantUnavailable`. Facade 86 %, layer 83 %.
