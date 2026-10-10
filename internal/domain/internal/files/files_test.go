@@ -1,4 +1,4 @@
-package domain
+package files
 
 import (
 	"os"
@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 )
+
+var examplePath = filepath.Join("..", "..", "..", "..", "docs", "examples", "aquaculture-pond.domain.json")
 
 func writeFile(t *testing.T, dir, name, content string) {
 	t.Helper()

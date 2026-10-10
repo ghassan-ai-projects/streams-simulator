@@ -43,6 +43,9 @@ func (f *facade) aliasViolations(spec *ast.TypeSpec) []string {
 		return []string{"alias " + spec.Name.Name + " of an internal layer type must be exported and declared in api.go"}
 	}
 	ident := selector.X.(*ast.Ident)
+	if _, reviewed := aliasedValueTypes[f.module+":"+spec.Name.Name]; reviewed {
+		return nil
+	}
 	if f.hasMethods(f.layers[ident.Name], selector.Sel.Name) {
 		return []string{"alias " + spec.Name.Name + " would export the methods of " + selector.Sel.Name + "; wrap the type in a facade struct"}
 	}

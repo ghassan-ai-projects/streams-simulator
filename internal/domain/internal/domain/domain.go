@@ -1,8 +1,9 @@
-// Package domain loads, validates and compiles domain specs — the data
-// files that define whole simulated worlds. The binary contains no domain
-// behavior: every domain in the catalog loads through this one path, and a
-// domain that needs a code branch in the binary is a bug in the simulator's
-// design, not a missing feature.
+// Package domain holds the domain-spec rules: parsing, schema validation,
+// cross-checking, compilation and digesting of the data files that define
+// whole simulated worlds, and the catalog over them. The binary contains no
+// domain behavior: a domain that needs a code branch in the binary is a bug
+// in the simulator's design, not a missing feature. It performs no I/O; the
+// files edge reads the bytes.
 package domain
 
 import (

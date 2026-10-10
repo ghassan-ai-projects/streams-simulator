@@ -15,7 +15,7 @@ The design catalog is a planning document, not proof that a domain is shipped. A
 ```bash
 go run ./cmd/streamsim domain validate domains/my-domain.domain.json
 go run ./cmd/streamsim catalog describe my-domain
-go test ./internal/domain ./internal/schemas
+go test ./internal/domain/... ./internal/schemas
 ```
 
 Use the exact output digest in review notes. If the domain changes after a run, that run must be treated as a different input set.

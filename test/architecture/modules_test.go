@@ -21,6 +21,7 @@ var moduleShapes = map[string][]string{
 	"internal/suite":       {"domain"},
 	"internal/deviceworld": {"domain"},
 	"internal/sink":        {"domain", "files", "httppush"},
+	"internal/domain":      {"domain", "files"},
 }
 
 func migratedModules() []string {

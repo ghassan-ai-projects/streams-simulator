@@ -122,6 +122,6 @@ the two delivery paths (D-18), and world read-purity (D-14).
 | M6 | done | `ff2f3a3` | suite; review follow-up with M5 |
 | M7 | done | `c522b77` | deviceworld |
 | M8 | done | `28c648a` | sink; review pending |
-| M9 | next | | domain |
+| M9 | in progress | | domain |
 | M10–M15 | pending | | |
 | T1–T5, F | pending | | |

@@ -13,8 +13,16 @@ import (
 // reviewed table: an entry is a design decision, not a convenience.
 var facadeExemptions = map[string]string{}
 
+// aliasedValueTypes names facade aliases of layer types that have methods,
+// keyed "<module>:<alias>". Each is a reviewed value type whose whole method
+// set is read-only lookup over its own data and is the public contract.
+var aliasedValueTypes = map[string]string{
+	"internal/domain:Compiled": "compiled domain spec: fields and read-only name lookups are the contract used by every module",
+}
+
 // facade describes one facade file for the rules below.
 type facade struct {
+	module     string
 	file       productionFile
 	layers     map[string]string          // local name -> import path of an internal layer
 	holders    map[string]map[string]bool // struct type -> field -> holds an internal layer object
@@ -26,7 +34,7 @@ type facade struct {
 // state (STANDARD M5, M6). siblings are the module's other facade files,
 // whose struct declarations say which fields hold layer objects.
 func facadeViolations(file productionFile, module string, hasMethods func(string, string) bool, siblings ...productionFile) []string {
-	f := facade{file: file, layers: map[string]string{}, holders: map[string]map[string]bool{}, hasMethods: hasMethods}
+	f := facade{module: module, file: file, layers: map[string]string{}, holders: map[string]map[string]bool{}, hasMethods: hasMethods}
 	violations := f.collectLayers(module)
 	for _, peer := range append([]productionFile{file}, siblings...) {
 		peerView := facade{file: peer, layers: map[string]string{}, holders: f.holders}

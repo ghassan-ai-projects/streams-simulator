@@ -32,7 +32,7 @@ The accepted architecture is summarized in [`documentation/architecture/`](../..
 - `internal/refconsumer`: shipped reference detector and operator-client integration
 - `internal/device`: data-defined capability admission and vendored device transport
 - `internal/deviceworld`: device-to-world effector binding; facade over `internal/deviceworld/internal/domain`
-- `internal/domain`: load, validate, compile and digest domain data
+- `internal/domain`: load, validate, compile and digest domain data; facade over `internal/domain/internal/domain` with a `files` edge
 - `internal/model`: shared simulator records and strict JSON decoding
 - `internal/jsonschema`: core schema compilation and validation
 - `internal/schemas`: embedded contract sources

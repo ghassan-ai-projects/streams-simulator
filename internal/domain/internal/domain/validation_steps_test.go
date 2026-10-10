@@ -6,7 +6,7 @@ import (
 )
 
 func TestCrossReferenceValidationChecksChannelsBeforeFaults(t *testing.T) {
-	spec, err := Load("../../domains/rotating-machinery.domain.json")
+	spec, err := Load("../../../../domains/rotating-machinery.domain.json")
 	if err != nil {
 		t.Fatal(err)
 	}

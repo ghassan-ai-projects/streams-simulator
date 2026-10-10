@@ -495,3 +495,24 @@ replaced by the real remaining non-data gap (profile-name branches in
 `admission.go`); facade tests assert messages and a non-empty perturbation
 list, the suite determinism test uses one scenario (suite package 3.8 s →
 2 s), and the scenario perturbation JSON shape is pinned.
+
+## M9 — domain
+
+- Facade `internal/domain` (`doc.go`, `api.go`, `service.go`, `operations.go`)
+  over `internal/domain/internal/domain` (parse, validate, compile, digest,
+  catalog; the module named `domain` therefore has the one stuttering path
+  `internal/domain/internal/domain`) and `internal/domain/internal/files`
+  (`Load`, `LoadAll`: the only `os` user). Callers keep `*domain.Compiled`
+  unchanged: ~65 references, 171 `.Spec` reads.
+- `Compiled` is an **alias** of the layer type although it has methods. It is
+  a value type whose whole method set is read-only lookup over its own data
+  and is the public contract used by every module, so it is listed in the
+  gate's reviewed `aliasedValueTypes` table with that reason; any other alias
+  of a method-bearing type is still rejected. `Catalog` is a facade struct
+  with delegating `List`/`Describe`/`Coverage`; `Entry` and `CoverageReport`
+  are plain-record aliases.
+- Tests by layer: rules tests stay in the domain layer (75 %, with a test-only
+  `Load` helper), loader tests moved to `files` (100 %), and the facade holds
+  the shipped-domain integrity test plus catalog and parse contract tests
+  (100 %). Fuzz targets in the Makefile and two documented test commands
+  point at the new paths.

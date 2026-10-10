@@ -183,7 +183,7 @@ vulncheck: ## Run govulncheck
 
 fuzz: ## Bounded native fuzzing of the parsers (10s per target)
 	@if [ "$(HAS_PKGS)" = "yes" ]; then \
-	  go test -fuzz=FuzzDomainParse -fuzztime=10s ./internal/domain/; \
+	  go test -fuzz=FuzzDomainParse -fuzztime=10s ./internal/domain/internal/domain/; \
 	  go test -fuzz=FuzzArtifactLoad -fuzztime=10s ./internal/run/; \
 	else \
 	  echo "(no packages yet -- skipping fuzz)"; \
@@ -198,7 +198,7 @@ soak: ## Deterministic soak: >1M delivered records, conservation + replay identi
 
 fuzz-soak: ## Bounded fuzz only (soak is an explicit, slower target)
 	@if [ "$(HAS_PKGS)" = "yes" ]; then \
-	  go test -fuzz=FuzzDomainParse -fuzztime=5s ./internal/domain/; \
+	  go test -fuzz=FuzzDomainParse -fuzztime=5s ./internal/domain/internal/domain/; \
 	  go test -fuzz=FuzzArtifactLoad -fuzztime=5s ./internal/run/; \
 	else \
 	  echo "(no packages yet -- skipping fuzz)"; \

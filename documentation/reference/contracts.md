@@ -40,7 +40,7 @@ Vendor or consumer-specific schemas belong under the adapter data, not the simul
 ## Validation
 
 ```bash
-go test ./internal/schemas ./internal/domain ./internal/adapter
+go test ./internal/schemas ./internal/domain/... ./internal/adapter/...
 ```
 
 The CLI also validates domains and adapters through their normal loading paths. Contract failures should identify the source file and contract version.
