@@ -75,16 +75,19 @@ func (d *Director) World(worldID string) *WorldRecord {
 	return d.Worlds[worldID]
 }
 
-// openRun marks the world's run opened once its truth is sealed. The check
-// and the mark are one step, so two callers cannot both open it.
+// openRun marks the world's run opened once its truth is sealed. The seal is
+// read before taking the director lock: the truth store calls back into the
+// director while holding its own lock, so the two are never nested the other
+// way round. The started flag is checked and set in one step, so two callers
+// cannot both open the run.
 func (d *Director) openRun(w *WorldRecord, worldID string) error {
+	if err := d.requireSealedRun(w.Run.ID); err != nil {
+		return err
+	}
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	if w.Started {
 		return errTool(CodeDomainInvalid, "a run is already open for %q", worldID)
-	}
-	if err := d.requireSealedRun(w.Run.ID); err != nil {
-		return err
 	}
 	w.Started = true
 	return nil
