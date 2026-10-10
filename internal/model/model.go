@@ -21,7 +21,7 @@ import (
 // SimVersion is part of the determinism tuple. A different simulator version
 // may legitimately produce a different trace; verify reports that as a
 // version mismatch rather than a failure.
-const SimVersion = "0.1.0"
+const SimVersion = "0.2.0"
 
 // DefaultStartTimeNS is the epoch used when a world is created without an
 // explicit start time: 2026-01-01T00:00:00Z.

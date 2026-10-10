@@ -123,8 +123,10 @@ func (f *activeFault) stochasticEnvelope(at int64, rng *randutil.SplitMix64, dt 
 	if dt <= 0 {
 		dt = 60 * secondsPerNS
 	}
-	for f.walkStep < at {
-		next := min(f.walkStep+dt, at)
+	// Whole steps only: the walk (and its random draws) is a function of the
+	// grid, not of when it is read.
+	for f.walkStep+dt <= at {
+		next := f.walkStep + dt
 		hours := float64(next-f.walkStep) / secondsPerNS / 3600
 		f.walk += rate*hours + 0.5*math.Sqrt(rate*hours+1e-12)*math.Abs(rng.Norm())
 		f.walkStep = next

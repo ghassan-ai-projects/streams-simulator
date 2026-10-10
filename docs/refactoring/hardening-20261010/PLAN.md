@@ -92,3 +92,12 @@ D-21/D-27/D-42/D-51 commit below ran focused package tests only.
 | D-47, D-48 | done | `see git log` | device setters removed; quiescence clock private; no test-only ledger query |
 | T-01 | done | `see git log` | 51 negative tests name the error they expect; `TestErrorAssertionsNameTheErrorTheyExpect` has no exceptions |
 | D-43 | done | `see git log` | the determinism gate type-checks the module (`go/packages`) and flags every map range without a stated reason; 13 order-sensitive sites now iterate sorted keys, the rest carry a `determinism-safe` reason; `determinismDebt` is gone |
+| D-14 | done | `see git log` | `TestStateValueDoesNotDependOnTheReadSchedule`, `TestStochasticFaultEnvelopeDoesNotDependOnTheReadSchedule` |
+| D-18 | done | `see git log` | `TestSinkFailureStillAccountsForEveryDelivery` |
+
+**Simulator version 0.1.0 → 0.2.0.** The integration grid no longer depends on
+when a state is read (D-14), the oracle's solver (D-11/12/13) and the reorder
+perturbation (D-26) changed numbers, so artifacts built by 0.1.0 report a
+version mismatch on replay instead of silently differing. Pinned traces and
+ledgers are unchanged; world-state histories, run artifacts (sim_version and
+world digest) and the cold-chain suite moved. The pin file was regenerated.

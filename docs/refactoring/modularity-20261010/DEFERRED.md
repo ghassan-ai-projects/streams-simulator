@@ -84,7 +84,7 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
   its error). Upgrade the gate to type information and sort the three sites in
   a listed change. `device`/`deviceworld` have 15 ranges (message order,
   capability catalog order; `determinismDebt`).
-- D-44 (L): `world.Entity` returns the live `*Entity`; `ID`/`Type`/`BornNS` are
+- D-44 (L, see hardening): `world.Entity` returns the live `*Entity`; `ID`/`Type`/`BornNS` are
   writable by callers and `BornNS` feeds `InitialEntityIDs`. Return a value
   type or a `HasEntity` query in a listed change.
 - D-45 (L): `EffectorCall.Args` is the caller's map (`recordCall` stores it and
