@@ -40,7 +40,7 @@ func TestReplayRejectsInputDigestMismatch(t *testing.T) {
 	bad := *art
 	bad.Domain = art.Domain
 	bad.Domain.Digest = "sha256:" + strings.Repeat("0", 64)
-	if _, err := ReplayArtifact(context.Background(), &bad, spec, a, ""); err == nil {
+	if _, err := ReplayArtifact(context.Background(), &bad, spec, a, ""); err == nil || !strings.Contains(err.Error(), "run: domain digest mismatch") {
 		t.Fatal("replay must reject a changed domain digest before execution")
 	}
 }
@@ -111,7 +111,7 @@ func TestEnvInjectRejectsUndefinedParams(t *testing.T) {
 		t.Fatal(err)
 	}
 	r.ConfigureEnvTarget("consumer-1", true)
-	if _, err := r.EnvInject("consumer-1", "pause", map[string]any{"duration_s": 30}, start); err == nil {
+	if _, err := r.EnvInject("consumer-1", "pause", map[string]any{"duration_s": 30}, start); err == nil || !strings.Contains(err.Error(), "run: env fault \"pause\" accepts no parameters (got 1)") {
 		t.Fatal("env.inject params must be rejected (none declared)")
 	}
 	if _, err := r.EnvInject("consumer-1", "pause", nil, start); err != nil {

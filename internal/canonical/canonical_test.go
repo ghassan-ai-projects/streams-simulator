@@ -139,20 +139,20 @@ func TestDigestStable(t *testing.T) {
 
 func TestRejectsNonFinite(t *testing.T) {
 	t.Parallel()
-	if _, err := MarshalString(math.Inf(1)); err == nil {
+	if _, err := MarshalString(math.Inf(1)); err == nil || !strings.Contains(err.Error(), "canonical: canonical: canonical: non-finite number +Inf is not representable in canonical JSON") {
 		t.Fatal("Inf should be rejected")
 	}
-	if _, err := MarshalString(math.NaN()); err == nil {
+	if _, err := MarshalString(math.NaN()); err == nil || !strings.Contains(err.Error(), "canonical: canonical: canonical: non-finite number NaN is not representable in canonical JSON") {
 		t.Fatal("NaN should be rejected")
 	}
 }
 
 func TestRejectsUnsupportedTypes(t *testing.T) {
 	t.Parallel()
-	if _, err := MarshalString(struct{ A int }{1}); err == nil {
+	if _, err := MarshalString(struct{ A int }{1}); err == nil || !strings.Contains(err.Error(), "canonical: canonical: unsupported value type struct { A int }") {
 		t.Fatal("struct should be rejected")
 	}
-	if _, err := MarshalString([]int{1}); err == nil {
+	if _, err := MarshalString([]int{1}); err == nil || !strings.Contains(err.Error(), "canonical: canonical: unsupported value type []int") {
 		t.Fatal("[]int should be rejected")
 	}
 }

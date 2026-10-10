@@ -95,7 +95,7 @@ func TestSchemaValidationRejectsMalformed(t *testing.T) {
 	// A spec missing required fields must fail the schema, not the
 	// cross-check.
 	bad := `{"id": "x"}`
-	if _, err := Parse([]byte(bad), "bad"); err == nil {
+	if _, err := Parse([]byte(bad), "bad"); err == nil || !strings.Contains(err.Error(), "domain: bad fails domain-spec-v0.1 validation") {
 		t.Fatal("malformed spec accepted")
 	}
 	// A numeric channel without a unit must fail.
@@ -131,7 +131,7 @@ func TestCatalogCoverage(t *testing.T) {
 	if _, err := cat.Describe("aquaculture-pond"); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := cat.Describe("nope"); err == nil {
+	if _, err := cat.Describe("nope"); err == nil || !strings.Contains(err.Error(), "catalog: unknown domain \"nope\"") {
 		t.Fatal("describe of unknown domain must fail")
 	}
 	// The twelve axis groups must all be present.

@@ -2,6 +2,7 @@ package domain
 
 import (
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -76,22 +77,22 @@ func TestLegacyCapabilityCatalogDigestRemainsUnscoped(t *testing.T) {
 
 func TestLoadCapabilitiesFailsClosed(t *testing.T) {
 	t.Parallel()
-	cases := map[string]string{
-		"bad-json":             `{`,
-		"wrong-version":        `{"protocol_version": 2, "targets": {"x": {"operation": "o", "energize_field": "f", "bounds": {"f": {"min": 0, "max": 1}}}}}`,
-		"no-targets":           `{"protocol_version": 1, "targets": {}}`,
-		"no-operation":         `{"protocol_version": 1, "targets": {"x": {"energize_field": "f", "bounds": {"f": {"min": 0, "max": 1}}}}}`,
-		"energize-not-bounded": `{"protocol_version": 1, "targets": {"x": {"operation": "o", "energize_field": "f", "bounds": {"g": {"min": 0, "max": 1}}}}}`,
-		"max-below-min":        `{"protocol_version": 1, "targets": {"x": {"operation": "o", "energize_field": "f", "bounds": {"f": {"min": 5, "max": 1}}}}}`,
-		"unknown-field":        `{"protocol_version": 1, "targets": {"x": {"operation": "o", "energize_field": "f", "bounds": {"f": {"min": 0, "max": 1}}, "typo": true}}}`,
-		"trailing-json":        `{"protocol_version": 1, "targets": {"x": {"operation": "o", "energize_field": "f", "bounds": {"f": {"min": 0, "max": 1}}}}} {}`,
+	const target = `"x": {"operation": "o", "energize_field": "f", "bounds": {"f": {"min": 0, "max": 1}}`
+	cases := map[string]struct{ body, want string }{
+		"bad-json":             {`{`, "unexpected EOF"},
+		"wrong-version":        {`{"protocol_version": 2, "targets": {` + target + `}}}`, "protocol_version 2 != 1"},
+		"no-targets":           {`{"protocol_version": 1, "targets": {}}`, "declare no routes or targets"},
+		"no-operation":         {`{"protocol_version": 1, "targets": {"x": {"energize_field": "f", "bounds": {"f": {"min": 0, "max": 1}}}}}`, "declares no operation"},
+		"energize-not-bounded": {`{"protocol_version": 1, "targets": {"x": {"operation": "o", "energize_field": "f", "bounds": {"g": {"min": 0, "max": 1}}}}}`, "is not a bounded parameter"},
+		"max-below-min":        {`{"protocol_version": 1, "targets": {"x": {"operation": "o", "energize_field": "f", "bounds": {"f": {"min": 5, "max": 1}}}}}`, "max < min"},
+		"unknown-field":        {`{"protocol_version": 1, "targets": {` + target + `, "typo": true}}}`, `unknown field "typo"`},
+		"trailing-json":        {`{"protocol_version": 1, "targets": {` + target + `}}} {}`, "trailing JSON"},
 	}
-	for name, body := range cases {
-		body := body
+	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			if _, err := LoadCapabilities([]byte(body)); err == nil {
-				t.Fatalf("%s must fail closed, but loaded", name)
+			if _, err := LoadCapabilities([]byte(tc.body)); err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("%s: err = %v, want %q", name, err, tc.want)
 			}
 		})
 	}

@@ -178,11 +178,11 @@ func TestSinkFailureMarksRunIncompleteWithoutPanic(t *testing.T) {
 		t.Fatal(err)
 	}
 	r.Sink = failingSink{}
-	if _, err := r.Advance(context.Background(), start+3600*1e9, false); err == nil {
+	if _, err := r.Advance(context.Background(), start+3600*1e9, false); err == nil || !strings.Contains(err.Error(), "aborted: injected sink failure") {
 		t.Fatal("sink failure must be returned from Advance")
 	}
 	art, endErr := r.End("")
-	if endErr == nil {
+	if endErr == nil || !strings.Contains(endErr.Error(), "aborted: injected sink failure") {
 		t.Fatal("incomplete run must retain its failure")
 	}
 	if art == nil || !art.Incomplete || art.Error == "" {

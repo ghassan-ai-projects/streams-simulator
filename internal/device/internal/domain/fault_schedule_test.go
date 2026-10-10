@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -67,9 +68,14 @@ func TestParseFaultSpec(t *testing.T) {
 			t.Fatalf("parse %q = %+v, want %+v", input, got, want)
 		}
 	}
-	for _, input := range []string{"unknown", "stuck@0", "stuck@x", "stuck@1@2"} {
-		if _, err := ParseFaultSpec(input); err == nil {
-			t.Fatalf("parse %q should fail", input)
+	for input, want := range map[string]string{
+		"unknown":   `unknown fault "unknown"`,
+		"stuck@0":   "requires a positive accepted command ordinal",
+		"stuck@x":   "invalid accepted command ordinal",
+		"stuck@1@2": "must be name[@accepted-command]",
+	} {
+		if _, err := ParseFaultSpec(input); err == nil || !strings.Contains(err.Error(), want) {
+			t.Fatalf("parse %q: err = %v, want %q", input, err, want)
 		}
 	}
 }

@@ -2,6 +2,7 @@ package domain
 
 import (
 	"math"
+	"strings"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
@@ -31,7 +32,7 @@ func TestEffectorIdempotencyAndInterlock(t *testing.T) {
 	w := newTestWorld(t, spec, 5, model.DefaultStartTimeNS)
 	at := model.DefaultStartTimeNS + 60*secondsPerNS
 	// u = 2 > 1, so the interlock refuses.
-	if _, err := w.InvokeEffector("act", "e-1", "cmd-1", map[string]any{}, at); err == nil {
+	if _, err := w.InvokeEffector("act", "e-1", "cmd-1", map[string]any{}, at); err == nil || !strings.Contains(err.Error(), "world: interlock refused") {
 		t.Fatal("interlock should refuse")
 	}
 	calls := w.EffectorCalls()
@@ -121,13 +122,13 @@ func TestInjectFaultRejectsUnknownParams(t *testing.T) {
 	t.Parallel()
 	spec := testSpec(t, nil)
 	w := newTestWorld(t, spec, 23, model.DefaultStartTimeNS)
-	if _, err := w.InjectFault("e-1", "f1", 0, map[string]any{"bogus": 1}); err == nil {
+	if _, err := w.InjectFault("e-1", "f1", 0, map[string]any{"bogus": 1}); err == nil || !strings.Contains(err.Error(), "world: fault \"f1\" has no parameter \"bogus\"") {
 		t.Fatal("unknown fault param key must be rejected")
 	}
-	if _, err := w.InjectFault("e-1", "f1", 0, map[string]any{"severity": "high"}); err == nil {
+	if _, err := w.InjectFault("e-1", "f1", 0, map[string]any{"severity": "high"}); err == nil || !strings.Contains(err.Error(), "world: severity must be numeric") {
 		t.Fatal("non-numeric severity must be rejected")
 	}
-	if _, err := w.InjectFault("e-1", "f1", 0, map[string]any{"severity": -1.0}); err == nil {
+	if _, err := w.InjectFault("e-1", "f1", 0, map[string]any{"severity": -1.0}); err == nil || !strings.Contains(err.Error(), "world: severity must be finite and non-negative") {
 		t.Fatal("negative severity must be rejected")
 	}
 	if _, err := w.InjectFault("e-1", "f1", 0, map[string]any{"severity": 2.5}); err != nil {

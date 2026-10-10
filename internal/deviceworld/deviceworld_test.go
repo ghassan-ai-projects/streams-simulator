@@ -51,7 +51,7 @@ func TestNewRefusesAMissingWorld(t *testing.T) {
 
 func TestLoadBindingsRefusesAnUnknownField(t *testing.T) {
 	t.Parallel()
-	if _, err := deviceworld.LoadBindings([]byte(`{"no_such_field": 1}`), "e-1"); err == nil {
+	if _, err := deviceworld.LoadBindings([]byte(`{"no_such_field": 1}`), "e-1"); err == nil || !strings.Contains(err.Error(), "deviceworld: decode bindings: json: unknown field \"no_such_field\"") {
 		t.Fatal("a catalog with an undeclared field must be refused")
 	}
 }

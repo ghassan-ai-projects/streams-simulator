@@ -54,7 +54,7 @@ func TestValidateArtifactDocumentNamesThePathOfInvalidJSON(t *testing.T) {
 	if err := ValidateArtifactDocument([]byte(`{`), "run.json"); err == nil || !strings.Contains(err.Error(), "run.json") {
 		t.Fatalf("err = %v", err)
 	}
-	if err := ValidateArtifactDocument([]byte(`{}`), "run.json"); err == nil {
+	if err := ValidateArtifactDocument([]byte(`{}`), "run.json"); err == nil || !strings.Contains(err.Error(), "streamsim: model: artifact fails run-artifact-v0.1: missing required property \"adapter\"") {
 		t.Fatal("an empty object does not satisfy the run-artifact schema")
 	}
 }

@@ -3,6 +3,7 @@ package domain
 import (
 	"encoding/json"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
@@ -33,7 +34,7 @@ func TestProcessPreservesCumulativeRefeedAndQuiescenceBoundary(t *testing.T) {
 	failed := &failedQuiescence{}
 	runner = New(DefaultConfig(), &Nameplate{}, nil, failed, "run")
 	runner.quiescence = failed
-	if _, err := runner.Process(raw, 2e9); err == nil {
+	if _, err := runner.Process(raw, 2e9); err == nil || !strings.Contains(err.Error(), "Process: report quiescence: consumer not ready") {
 		t.Fatal("quiescence failure must propagate")
 	}
 	if failed.got != nil {

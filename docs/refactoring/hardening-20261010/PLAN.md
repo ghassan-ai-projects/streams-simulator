@@ -90,3 +90,4 @@ D-21/D-27/D-42/D-51 commit below ran focused package tests only.
 | D-28, D-50 | closed, not defects | see DEFERRED | measured / traced |
 | D-46 | done | `see git log` | mcp split into `app` (use cases, errors, operator view, capability) and `protocol` (tools, schemas, SDK); gate rank `protocol` between app and facade; protocol tests moved, app use-case tests added |
 | D-47, D-48 | done | `see git log` | device setters removed; quiescence clock private; no test-only ledger query |
+| T-01 | done | `see git log` | 51 negative tests name the error they expect; `TestErrorAssertionsNameTheErrorTheyExpect` has no exceptions |

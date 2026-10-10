@@ -9,10 +9,10 @@ import (
 func TestDecodeRejectsTrailingJSON(t *testing.T) {
 	t.Parallel()
 	var got any
-	if err := Decode(strings.NewReader(`{"ok":true} {"trailing":true}`), &got); err == nil {
+	if err := Decode(strings.NewReader(`{"ok":true} {"trailing":true}`), &got); err == nil || !strings.Contains(err.Error(), "model: trailing JSON document") {
 		t.Fatal("decoder accepted two concatenated JSON documents")
 	}
-	if err := Decode(strings.NewReader(`{"ok":true} trailing`), &got); err == nil {
+	if err := Decode(strings.NewReader(`{"ok":true} trailing`), &got); err == nil || !strings.Contains(err.Error(), "model: trailing data after JSON document: invalid character 'a' in literal true (expecting 'u')") {
 		t.Fatal("decoder accepted trailing non-JSON data")
 	}
 }

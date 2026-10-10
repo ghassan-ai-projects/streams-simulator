@@ -18,7 +18,7 @@ func TestCapabilityTokenEnforced(t *testing.T) {
 	worldID := createWorld(t, d)
 	w := d.Worlds[worldID]
 	// Without the token every operator call is refused.
-	if _, err := w.Operator.ReadNameplate(""); err == nil {
+	if _, err := w.Operator.ReadNameplate(""); err == nil || !strings.Contains(err.Error(), "capability_denied: capability token required") {
 		t.Fatal("nameplate.read without token must fail")
 	}
 	np, err := w.Operator.ReadNameplate(w.Token)
@@ -36,7 +36,7 @@ func TestCapabilityTokenEnforced(t *testing.T) {
 	}
 	// Missing command_id refused.
 	_, err = w.Operator.Invoke(w.Token, "start_aerator", "site-a/pond-1", "", nil, 0)
-	if err == nil {
+	if err == nil || !strings.Contains(err.Error(), "missing_command_id: command_id is the idempotency key and is required") {
 		t.Fatal("missing command_id must fail")
 	}
 }
@@ -65,7 +65,7 @@ func TestBeginRunRequiresSealedTruth(t *testing.T) {
 	t.Parallel()
 	d := newTestDirector(t)
 	worldID := createWorld(t, d)
-	if _, err := d.BeginRun(worldID, "missing-truth"); err == nil {
+	if _, err := d.BeginRun(worldID, "missing-truth"); err == nil || !strings.Contains(err.Error(), "truth_sealed: ground truth must be sealed before run.begin") {
 		t.Fatal("run.begin must refuse an unsealed oracle")
 	}
 }

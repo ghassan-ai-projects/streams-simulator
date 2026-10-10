@@ -41,7 +41,7 @@ func TestNamesIsTheCatalogAndAModifiableCopy(t *testing.T) {
 	if again := perturb.Names(); again[0] != first {
 		t.Fatalf("mutating the result changed the catalog: %v", again)
 	}
-	if _, err := shippedLayer(t).Apply("bogus", nil, 0, 0); err == nil {
+	if _, err := shippedLayer(t).Apply("bogus", nil, 0, 0); err == nil || !strings.Contains(err.Error(), "perturb: unknown perturbation \"bogus\"") {
 		t.Fatal("a mutated copy must not admit a new name")
 	}
 }
@@ -59,7 +59,7 @@ func TestApplyAdmitsOnlyCatalogNamesWithDeclaredParameters(t *testing.T) {
 	if _, err := layer.Apply("no_such_perturbation", nil, 0, 0); err == nil || !strings.Contains(err.Error(), "unknown perturbation") {
 		t.Fatalf("unknown name: %v", err)
 	}
-	if _, err := layer.Apply("drop", map[string]any{"rate": 2.0}, 0, 0); err == nil {
+	if _, err := layer.Apply("drop", map[string]any{"rate": 2.0}, 0, 0); err == nil || !strings.Contains(err.Error(), "perturb: drop rate: must be in [0,1], got 2") {
 		t.Fatal("an out-of-range rate must be rejected")
 	}
 	if _, err := layer.Apply("drop", map[string]any{"bogus": 1.0}, 0, 0); err == nil || !strings.Contains(err.Error(), "bogus") {

@@ -215,7 +215,7 @@ func TestDeterminism(t *testing.T) {
 func TestUnknownPerturbation(t *testing.T) {
 	t.Parallel()
 	l := New("w", 1, testSpec(t))
-	if _, err := l.Apply("not_a_perturbation", nil, 0, 0); err == nil {
+	if _, err := l.Apply("not_a_perturbation", nil, 0, 0); err == nil || !strings.Contains(err.Error(), "perturb: unknown perturbation \"not_a_perturbation\"") {
 		t.Fatal("unknown perturbation must be refused")
 	}
 }

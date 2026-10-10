@@ -74,7 +74,7 @@ func TestListenRefusesRegularFilePath(t *testing.T) {
 	if err := os.WriteFile(path, []byte("keep me"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := device.Listen(path, device.New(device.Config{Capabilities: testCaps(t)})); err == nil {
+	if _, err := device.Listen(path, device.New(device.Config{Capabilities: testCaps(t)})); err == nil || !strings.Contains(err.Error(), "device: refusing to remove non-socket path") {
 		t.Fatal("device listener must refuse a regular file path")
 	}
 	data, err := os.ReadFile(path)

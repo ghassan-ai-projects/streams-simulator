@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"testing"
 )
@@ -52,7 +53,7 @@ func TestHTTPPushUnreachableFails(t *testing.T) {
 	// A configured endpoint that is down must fail the write, never silently
 	// drop: a dropped record is indistinguishable from a modeled dropout.
 	h := New(t.Context(), "http://127.0.0.1:1/unreachable")
-	if err := h.Write([]byte(`{"x":1}`)); err == nil {
+	if err := h.Write([]byte(`{"x":1}`)); err == nil || !strings.Contains(err.Error(), "sink: http-push POST: Post \"http://127.0.0.1:1/unreachable\": dial tcp 127.0.0.1:1: connect: connection refused") {
 		t.Fatal("unreachable endpoint must fail the write")
 	}
 }
