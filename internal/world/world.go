@@ -89,12 +89,12 @@ type World struct {
 
 // Entity is one simulated producer.
 type Entity struct {
-	ID        string
-	Type      string
-	BornNS    int64
-	states    map[string]*stateValue
-	channels  map[string]*channelRunState
-	alive     bool
+	ID       string
+	Type     string
+	BornNS   int64
+	states   map[string]*stateValue
+	channels map[string]*channelRunState
+	alive    bool
 }
 
 // channelRunState is the per-channel scheduling state of one entity.
