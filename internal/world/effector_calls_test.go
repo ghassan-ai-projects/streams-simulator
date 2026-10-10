@@ -90,3 +90,19 @@ func TestIdempotentReplayAddsNoSecondCallRecord(t *testing.T) {
 		t.Fatalf("expired window must execute again: %v, %d calls", err, len(w.EffectorCalls()))
 	}
 }
+
+// A refusal is terminal but not cached: repeating the same command id is
+// evaluated, and refused, again.
+func TestInterlockRefusalIsNotCachedForIdempotentReplay(t *testing.T) {
+	t.Parallel()
+	w := callLogSpec(t, &model.Interlock{State: "u", Operator: "gt", Threshold: 1})
+	at := model.DefaultStartTimeNS + 5*secondsPerNS
+	for i := 0; i < 2; i++ {
+		if _, err := w.InvokeEffector("act", "e-1", "cmd-1", map[string]any{}, at); !errors.Is(err, ErrInterlockRefused) {
+			t.Fatalf("attempt %d: err = %v, want ErrInterlockRefused", i, err)
+		}
+	}
+	if n := len(w.EffectorCalls()); n != 2 {
+		t.Fatalf("calls = %d, want one record per refusal", n)
+	}
+}

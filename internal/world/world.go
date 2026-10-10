@@ -92,7 +92,6 @@ type Entity struct {
 	ID        string
 	Type      string
 	BornNS    int64
-	retiredNS int64
 	states    map[string]*stateValue
 	channels  map[string]*channelRunState
 	alive     bool

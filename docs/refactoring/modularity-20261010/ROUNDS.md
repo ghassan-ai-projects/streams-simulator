@@ -160,3 +160,11 @@ hand-built map); the tags are kept.
   and re-executes after the window. It exposed D-42 (replay loses the effect
   ETA), recorded, not fixed.
 - Coverage 66.2 → 68.0 %; floor 68.
+
+### R5 review follow-up
+
+No High/Med finding. Fixed: write-only `Entity.retiredNS` removed (the field
+and its one assignment); PLAN wording corrected to *replay-before-interlock*;
+added the refusal-is-not-cached test. Not pinned: replay-before-interlock with
+the interlock newly holding (needs a time-varying hidden state in the test
+spec); covered today by `effector_order_test` and the behaviour pin.
