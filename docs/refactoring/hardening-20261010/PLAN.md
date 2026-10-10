@@ -39,3 +39,8 @@ D-04 note: `streamsim score` now needs `--domains-dir`/`--adapters-dir` (as
 `replay` does); it builds the same `score.Evidence` the director builds and
 calls the same `score.Score`. `score.Offline` remains for callers without a
 replayable artifact.
+| D-05 | done | `see git log` | `TestEverySafeStopAppliesItsOwnWorldEffect` |
+| D-06 | done | `see git log` | `TestWireFaultsAreNotReplayedWithTheEvidenceOfARetry` |
+
+D-05 note: world command ids for safe stops are now `safe-stop/<target>/<n>`
+(was `safe-stop/<target>`), visible in the effector-call log.

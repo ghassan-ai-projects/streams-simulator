@@ -60,8 +60,10 @@ func (d *Device) completeScheduledCommand(outcome Outcome, accepted bool, key, d
 }
 
 func (d *Device) rememberExecution(key, digest string, outcome Outcome) {
-	// Ack loss belongs to this wire delivery; retries recover the receipt.
-	outcome.AckLost = false
+	// Ack loss, duplication and disconnect belong to this wire delivery;
+	// a retry recovers the receipt and result without repeating them.
+	outcome.AckLost, outcome.Duplicate, outcome.Disconnect = false, false, false
+	outcome.Fault = ""
 	d.dedup[key] = dedupEntry{digest: digest, outcome: outcome}
 }
 

@@ -126,7 +126,7 @@ func TestLeaseExpiryDrivesTheWorldSafeStopThroughTheFacadePlant(t *testing.T) {
 	if state := d.State(); state["safe_state"] != true {
 		t.Fatalf("an expired lease must put the device in its safe state: %v", state)
 	}
-	if calls := w.EffectorCalls(); len(calls) != 2 || calls[1].CommandID != "safe-stop/fan-01" {
+	if calls := w.EffectorCalls(); len(calls) != 2 || calls[1].CommandID != "safe-stop/fan-01/1" {
 		t.Fatalf("the world must see the safe-stop invocation: %+v", calls)
 	}
 }

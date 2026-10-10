@@ -72,7 +72,12 @@ func (p *Plant) prepareSafeStop(binding Binding, atMicros int64) (int64, map[str
 }
 
 func (p *Plant) invokeSafeStop(binding Binding, target string, atNS int64, args map[string]any) (device.PlantEffect, error) {
-	result, err := p.invokeWorld(binding.safeStopEffector, binding.entity, "safe-stop/"+target, args, atNS, "world returned no safe-stop result")
+	if p.safeStops == nil {
+		p.safeStops = map[string]int{}
+	}
+	p.safeStops[target]++
+	command := fmt.Sprintf("safe-stop/%s/%d", target, p.safeStops[target])
+	result, err := p.invokeWorld(binding.safeStopEffector, binding.entity, command, args, atNS, "world returned no safe-stop result")
 	if err != nil {
 		return device.PlantEffect{}, err
 	}

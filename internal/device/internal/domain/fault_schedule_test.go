@@ -73,3 +73,35 @@ func TestParseFaultSpec(t *testing.T) {
 		}
 	}
 }
+
+// A wire fault belongs to one delivery. The retry of an identified command
+// replays its evidence without repeating the fault, or a disconnecting link
+// could never complete a command.
+func TestWireFaultsAreNotReplayedWithTheEvidenceOfARetry(t *testing.T) {
+	t.Parallel()
+	cases := map[string]func(Outcome) bool{
+		FaultDisconnect: func(o Outcome) bool { return o.Disconnect },
+		FaultDuplicate:  func(o Outcome) bool { return o.Duplicate },
+		FaultAckLost:    func(o Outcome) bool { return o.AckLost },
+	}
+	for fault, injected := range cases {
+		t.Run(fault, func(t *testing.T) {
+			t.Parallel()
+			plant := &countingPlant{}
+			d := New(Config{Capabilities: testCaps(t), Plant: plant,
+				FaultSchedule: []FaultInjection{{Name: fault, AcceptedCommand: 1}}})
+			command := validCommand(t, nil)
+			first := d.ApplyCommand(command)
+			if !injected(first) {
+				t.Fatalf("the first delivery must carry the %s fault: %+v", fault, first)
+			}
+			retry := d.ApplyCommand(command)
+			if injected(retry) {
+				t.Fatalf("the retry must not repeat the %s fault: %+v", fault, retry)
+			}
+			if retry.Receipt["accepted"] != true || plant.applyCalls != 1 {
+				t.Fatalf("the retry replays the accepted receipt without a second plant effect: %+v calls=%d", retry.Receipt, plant.applyCalls)
+			}
+		})
+	}
+}
