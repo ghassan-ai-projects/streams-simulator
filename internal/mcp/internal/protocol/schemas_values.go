@@ -1,6 +1,10 @@
 package protocol
 
-import "encoding/json"
+import (
+	"encoding/json"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+)
 
 func stringSchema() map[string]any  { return map[string]any{"type": "string"} }
 func integerSchema() map[string]any { return map[string]any{"type": "integer"} }
@@ -70,7 +74,7 @@ func worldCreationProperties() map[string]any {
 		"sink":             enumSchema("inproc", "file", "http-push"),
 		"sink_target":      stringSchema(),
 		"adapter":          stringSchema(),
-		"time_mode":        enumSchema("stepped", "scaled", "wall"),
+		"time_mode":        enumSchema(model.TimeStepped, model.TimeWall),
 		"start_time":       integerSchema(),
 		"label":            stringSchema(),
 	}

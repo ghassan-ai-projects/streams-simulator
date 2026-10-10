@@ -2,6 +2,7 @@ package domain
 
 import (
 	"fmt"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/audit"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
@@ -27,10 +28,10 @@ func (g *suiteGeneration) countComposition(sc *Scenario, label *model.GroundTrut
 	if sc.PreDegraded {
 		g.preDegraded++
 	}
-	if sc.Profile == "correlated_cascade" {
+	if sc.Profile == model.ProfileCorrelatedCascade {
 		g.cascadeCount++
 	}
-	if sc.Profile == "sensor_pathology" {
+	if sc.Profile == model.ProfileSensorPathology {
 		g.pathologyCount++
 	}
 }

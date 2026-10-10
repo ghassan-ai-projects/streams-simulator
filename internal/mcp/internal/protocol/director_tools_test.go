@@ -259,3 +259,14 @@ func TestWorldCreateReturnsTheRunIdTruthIsSealedAgainst(t *testing.T) {
 		t.Fatalf("world.create must name the run: %v", created)
 	}
 }
+
+func TestWorldCreateRefusesATimeModeNothingImplements(t *testing.T) {
+	t.Parallel()
+	cs, _ := connect(t, NewDirectorServer(newTestDirector(t)))
+	res, err := cs.CallTool(context.Background(), &mcp.CallToolParams{Name: "sim.world.create", Arguments: map[string]any{
+		"domain": "aquaculture-pond", "time_mode": "scaled",
+	}})
+	if err == nil && !res.IsError {
+		t.Fatal("scaled time is not implemented and must be refused")
+	}
+}

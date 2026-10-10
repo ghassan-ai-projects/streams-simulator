@@ -24,16 +24,18 @@ import (
 
 // Config pins everything that enters the determinism tuple.
 type Config struct {
-	Domain           *domain.Compiled
-	Adapter          *model.Adapter
-	Seed             uint64
-	SinkName         string
-	SinkTarget       string // file path or http-push URL
-	TimeMode         string
-	StartTimeNS      int64
-	StartTimeSet     bool // true when StartTimeNS was supplied (0 is a legal start)
-	EntityIDs        []string
-	ScenarioProfile  string
+	Domain          *domain.Compiled
+	Adapter         *model.Adapter
+	Seed            uint64
+	SinkName        string
+	SinkTarget      string // file path or http-push URL
+	TimeMode        string
+	StartTimeNS     int64
+	StartTimeSet    bool // true when StartTimeNS was supplied (0 is a legal start)
+	EntityIDs       []string
+	ScenarioProfile string
+	// ClockMultiplier is part of the world identity and the artifact; no
+	// stepped-time behaviour reads it (reserved for scaled wall time).
 	ClockMultiplier  float64
 	Label            string
 	RunID            string
