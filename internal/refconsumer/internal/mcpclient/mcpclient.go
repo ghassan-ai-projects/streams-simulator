@@ -1,4 +1,7 @@
-package refconsumer
+// Package mcpclient is the network edge of the refconsumer module: the
+// reference consumer's out-of-process operator client over the MCP operator
+// endpoint, the documented deployable process boundary.
+package mcpclient
 
 // MCPOperator is the reference consumer's out-of-process operator client:
 // it actuates and reports through the director process's operator endpoint,
@@ -13,6 +16,7 @@ import (
 	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/refconsumer/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
@@ -93,12 +97,12 @@ type nameplateShape struct {
 }
 
 // Nameplate reads the world's static nameplate over the operator surface.
-func (o *MCPOperator) Nameplate() (*Nameplate, error) {
+func (o *MCPOperator) Nameplate() (*domain.Nameplate, error) {
 	var np nameplateShape
 	if err := o.call("sim.nameplate.read", map[string]any{"token": o.token}, &np); err != nil {
 		return nil, err
 	}
-	out := &Nameplate{WorldID: np.WorldID}
+	out := &domain.Nameplate{WorldID: np.WorldID}
 	np.appendEntities(out)
 	np.appendChannels(out)
 	np.appendEffectors(out)
@@ -106,7 +110,7 @@ func (o *MCPOperator) Nameplate() (*Nameplate, error) {
 }
 
 // ListEffectors reads the declared effectors over sim.effector.list.
-func (o *MCPOperator) ListEffectors() ([]EffectorInfo, error) {
+func (o *MCPOperator) ListEffectors() ([]domain.EffectorInfo, error) {
 	var raw []struct {
 		Name       string         `json:"name"`
 		ArgsSchema map[string]any `json:"args_schema"`
@@ -114,9 +118,9 @@ func (o *MCPOperator) ListEffectors() ([]EffectorInfo, error) {
 	if err := o.call("sim.effector.list", map[string]any{"token": o.token}, &raw); err != nil {
 		return nil, err
 	}
-	out := make([]EffectorInfo, 0, len(raw))
+	out := make([]domain.EffectorInfo, 0, len(raw))
 	for _, e := range raw {
-		out = append(out, EffectorInfo{Name: e.Name, Schema: e.ArgsSchema})
+		out = append(out, domain.EffectorInfo{Name: e.Name, Schema: e.ArgsSchema})
 	}
 	return out, nil
 }
@@ -175,21 +179,21 @@ func decodeOperatorResult(name string, content, out any) error {
 	return nil
 }
 
-func (np *nameplateShape) appendEntities(out *Nameplate) {
+func (np *nameplateShape) appendEntities(out *domain.Nameplate) {
 	for _, entity := range np.Entities {
-		out.Entities = append(out.Entities, EntityInfo{ID: entity.ID, Type: entity.Type})
+		out.Entities = append(out.Entities, domain.EntityInfo{ID: entity.ID, Type: entity.Type})
 	}
 }
 
-func (np *nameplateShape) appendChannels(out *Nameplate) {
+func (np *nameplateShape) appendChannels(out *domain.Nameplate) {
 	for _, channel := range np.Channels {
-		out.Channels = append(out.Channels, ChannelInfo{Name: channel.Name, Unit: channel.Unit,
+		out.Channels = append(out.Channels, domain.ChannelInfo{Name: channel.Name, Unit: channel.Unit,
 			RangeMin: channel.RangeMin, RangeMax: channel.RangeMax, Resolution: channel.Resolution})
 	}
 }
 
-func (np *nameplateShape) appendEffectors(out *Nameplate) {
+func (np *nameplateShape) appendEffectors(out *domain.Nameplate) {
 	for _, effector := range np.Effectors {
-		out.Effectors = append(out.Effectors, EffectorInfo{Name: effector.Name, Schema: effector.ArgsSchema})
+		out.Effectors = append(out.Effectors, domain.EffectorInfo{Name: effector.Name, Schema: effector.ArgsSchema})
 	}
 }

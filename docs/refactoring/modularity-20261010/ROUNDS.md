@@ -635,3 +635,24 @@ not "read-only whole method set").
 - Recorded, not changed: the `Run` aggregate in `app` still mixes command
   admission, delivery and replay (D-18 delivery-path divergence stays);
   D-15/D-16/D-17 untouched.
+
+## M13 — refconsumer
+
+- Facade `internal/refconsumer` (`Runner` with `Process`, `New`,
+  `DefaultConfig`; `MCPOperator` with explicit methods, `NewMCPOperator`;
+  aliases of `Config`, `Nameplate`, `EntityInfo`, `ChannelInfo`,
+  `EffectorInfo` and the three port interfaces) over
+  `internal/refconsumer/internal/domain` (detector, series, statistics,
+  verdict, the Runner and its ports) and
+  `internal/refconsumer/internal/mcpclient` (the MCP operator client; the
+  only package that speaks to an operator endpoint).
+- Moves verbatim; the edge qualifies the domain types it returns.
+- Tests: domain 93 % (moved), `mcpclient` 77 % (new: an in-memory fake
+  operator serving the four tools — token and run id on every call, decoded
+  nameplate and effector list, refusal text), facade 100 % (default tuning,
+  empty-trace verdict reaches the sink once, a real streamable HTTP operator
+  endpoint, argument refusal). The package had 68 % as one unit; its floor
+  entry is gone.
+- Recorded, not changed: the consumer identity literal is still repeated
+  (DEFERRED duplicates); `NewMCPOperator` uses `context.Background()` for
+  its calls (no caller cancellation).

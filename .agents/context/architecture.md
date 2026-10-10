@@ -29,7 +29,7 @@ The accepted architecture is summarized in [`documentation/architecture/`](../..
 - `internal/score`: instrument and consumer scoring, shared online/offline policies; facade over `internal/score/internal/domain`; the host packs a `score.Evidence`
 - `internal/audit`: trivial-baseline evaluation over delivered evidence; facade over `internal/audit/internal/domain`
 - `internal/suite`: scenario generation, composition and admission; facade over `internal/suite/internal/domain`
-- `internal/refconsumer`: shipped reference detector and operator-client integration
+- `internal/refconsumer`: shipped reference detector and operator-client integration; facade over `internal/refconsumer/internal/domain` and the `mcpclient` edge
 - `internal/device`: data-defined capability admission and vendored device transport; facade over `internal/device/internal/domain` (rules, codec) and the `uds` transport edge
 - `internal/device/contract`: the vendored device wire-protocol schemas (embedded) and conformance fixtures
 - `internal/deviceworld`: device-to-world effector binding; facade over `internal/deviceworld/internal/domain`

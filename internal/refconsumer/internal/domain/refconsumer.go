@@ -1,11 +1,9 @@
-// Package refconsumer is the reference consumer: a deliberately simple
-// moving-window detector that closes the loop against the simulator the way
-// a real consumer would. It is config-driven (threshold, window, which
-// effector to actuate) and carries no domain knowledge of its own — the
-// same binary serves as a baseline for any domain. It never reads the
-// ledger, never reads ground truth, and treats every actuator ack as
-// provisional.
-package refconsumer
+// Package domain holds the reference consumer's rules: a deliberately simple
+// moving-window detector, its statistics and series handling, the verdict it
+// builds and the Runner that closes the loop through narrow ports. It carries
+// no domain knowledge, performs no I/O and never reads the ledger or ground
+// truth.
+package domain
 
 import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"

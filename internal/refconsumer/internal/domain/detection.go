@@ -1,4 +1,4 @@
-package refconsumer
+package domain
 
 import (
 	"fmt"
