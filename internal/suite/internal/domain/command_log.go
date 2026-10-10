@@ -1,4 +1,4 @@
-package suite
+package domain
 
 import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"

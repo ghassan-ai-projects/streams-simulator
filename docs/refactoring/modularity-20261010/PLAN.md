@@ -115,6 +115,7 @@ the two delivery paths (D-18), and world read-purity (D-14).
 | M2 | done | `b5674df` | review follow-up in M3 commit |
 | M3 | done | `463fb65`, follow-up `e88cc57` | gate hardened, doc links gate |
 | M4 | done | `2f5cf24` | score takes Evidence; review in progress |
-| M5 | in progress | | audit |
-| M6–M15 | pending | | |
+| M5 | done | `820e025` | audit; review pending |
+| M6 | in progress | | suite |
+| M7–M15 | pending | | |
 | T1–T5, F | pending | | |

@@ -1,4 +1,4 @@
-package suite
+package domain
 
 import (
 	"fmt"
@@ -42,11 +42,7 @@ func (g *suiteGeneration) sealScenarioLabel(sc *Scenario) (*model.GroundTruthRec
 
 // auditScenario evaluates the candidate's delivered, perturbed stream.
 func (g *suiteGeneration) auditScenario(sc *Scenario) (*audit.Verdict, error) {
-	var perturbations []audit.Perturbation
-	for _, p := range sc.Perturbations {
-		perturbations = append(perturbations, audit.Perturbation{Name: p.Name, Params: p.Params, FromNS: p.FromNS, UntilNS: p.UntilNS})
-	}
-	verdict, err := g.panel.Audit(sc.EntityID, sc.Fault, sc.OnsetNS, sc.StartNS, g.entities, sc.DurationNS, sc.Setup, perturbations)
+	verdict, err := g.panel.Audit(sc.EntityID, sc.Fault, sc.OnsetNS, sc.StartNS, g.entities, sc.DurationNS, sc.Setup, sc.Perturbations)
 	if err != nil {
 		return nil, fmt.Errorf("suite: audit: %w", err)
 	}

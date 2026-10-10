@@ -1,23 +1,20 @@
-// Package suite generates graded scenario suites: declared negative-class
+// Package domain holds the suite generation rules: declared negative-class
 // fraction, randomized onset (including pre-degraded starts), perturbation
-// coverage, and a generate-audit-regenerate loop that keeps only
+// coverage, and the generate-audit-regenerate loop that keeps only
 // non-trivial scenarios. A domain that cannot produce non-trivial scenarios
 // at the declared prevalence reports a terminal state rather than an empty
-// directory (G-06).
-package suite
+// directory (G-06). It performs no I/O.
+package domain
 
 import (
+	"github.com/ghassan-ai-projects/streams-simulator/internal/audit"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-// Perturbation is one delivery perturbation in a scenario.
-type Perturbation struct {
-	Name    string         `json:"name"`
-	Params  map[string]any `json:"params,omitempty"`
-	FromNS  int64          `json:"from_ns,omitempty"`
-	UntilNS int64          `json:"until_ns,omitempty"`
-}
+// Perturbation is one delivery perturbation in a scenario: the same record
+// the audit applies, so a scenario is audited exactly as declared.
+type Perturbation = audit.Perturbation
 
 // Scenario is one executable scenario recipe.
 type Scenario struct {

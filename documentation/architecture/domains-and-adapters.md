@@ -10,7 +10,7 @@ A domain specification declares the world’s entities and the behavior that mak
 
 The committed domain set is under [`domains/`](../../domains/): eight domains, each validated against the embedded schema by the shipped-domain test. The design catalog describes more domains than are currently committed. See [limitations](../limitations.md).
 
-The world and domain loader are data-defined, but the suite harness is not fully generic yet: [`internal/suite/suite.go`](../../internal/suite/suite.go) contains a current aquaculture-specific setup exception so the `aerator_failure` scenario starts from a meaningful operating state. Treat “data-defined” as a core runtime guarantee, not as a claim that every benchmark-generation convenience is domain-neutral today.
+The world and domain loader are data-defined, but the suite harness is not fully generic yet: [`internal/suite/internal/domain/scenario.go`](../../internal/suite/internal/domain/scenario.go) contains a current aquaculture-specific setup exception so the `aerator_failure` scenario starts from a meaningful operating state. Treat “data-defined” as a core runtime guarantee, not as a claim that every benchmark-generation convenience is domain-neutral today.
 
 Use the common path to inspect and validate data:
 

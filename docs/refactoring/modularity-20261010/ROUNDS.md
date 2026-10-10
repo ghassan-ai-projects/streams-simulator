@@ -414,3 +414,19 @@ map (D-45).
   stay within 15 lines.
 - Facade contract tests (nil spec; verdict shape and best-score consistency;
   unknown fault refused). Domain layer 90 %.
+
+## M6 — suite
+
+- Facade `internal/suite` (aliases of `Scenario`, `TrivialCase`, `Suite`,
+  `Config`; `Generate` delegates) over `internal/suite/internal/domain`.
+- Duplicates removed first, behaviour-neutral and proven by the suite tests,
+  the generation goldens and the behaviour pin: `suite.Perturbation` is now an
+  alias of `audit.Perturbation` (identical record; the audit receives the
+  scenario's slice unchanged instead of a field-by-field copy), and the local
+  `renderID` with its hand-written `replaceAll`/`indexOf`/`entityParameter`
+  is replaced by `world.RenderID` (same output for nil parameters, the only
+  case reached).
+- `Generate` is unchanged; facade tests cover the unknown-profile error,
+  determinism of the suite bytes and label/scenario parity. Domain layer 70.8 %.
+- Doc link repaired (`domains-and-adapters.md` now points at `scenario.go`,
+  where the aquaculture setup exception lives).
