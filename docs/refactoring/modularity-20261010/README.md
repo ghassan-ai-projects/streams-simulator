@@ -21,3 +21,19 @@ Reference material in the sibling repo: `AGENTS.md`,
 
 Builds on [clean-code-20261002](../clean-code-20261002/BAR.md) (file/function
 limits and the direct-import allowlist, already complete).
+
+## Outcome (2026-10-10)
+
+- Every `internal/` package is a facade over private layers
+  (`internal/<m>/internal/{domain,app,<edges>}`) except the six foundations
+  (`canonical`, `jsonschema`, `model`, `randutil`, `schemas`, `device/contract`),
+  the wall seam (P-01) and the test aid `testsupport`;
+  `TestEveryModuleIsMigrated` keeps it that way.
+- Behaviour is unchanged: `scripts/behaviour-pin` reproduces the baseline;
+  the deliberate changes (fail-closed constructors, M15 items) are in
+  PLAN with regression tests.
+- Tests: every package at or above 70 % except the entrypoint; all tests
+  parallel and sleep-free; shipped fixtures named once; four cross-module
+  acceptance flows against the real binary.
+- Open work is in [DEFERRED.md](DEFERRED.md): defects D-01…D-51 (found, not
+  fixed), policy items P-01…P-07, and the T-01 ratchet.

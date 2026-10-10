@@ -138,4 +138,9 @@ the two delivery paths (D-18), and world read-purity (D-14).
 | M14 | done | `7b9def3` | mcp |
 | M15 | done | `f28d88e` | cli |
 | M16 | done | `13f18be` | adapter conformance |
-| T1–T5, F | pending | | |
+| T1 | done | `3d8ee4c` | `internal/testsupport`, `TestFixturePathsAreDefinedOnce` |
+| T2 | done | `3d8ee4c`, `0a406f0` | no sleeps, 190 tests parallel, linters on |
+| T3 | done | `3d8ee4c` | error-assertion ratchet (T-01 open: 27 files) |
+| T4 | done | `0a406f0` | `test/acceptance`: determinism, build identity, closed loop |
+| T5 | done | `3d8ee4c` | floors file holds only `cmd/streamsim` |
+| F | done | `0a406f0` | `make ci-check` passes; uncached `-race -shuffle` suite passes |
