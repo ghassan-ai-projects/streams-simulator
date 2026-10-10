@@ -76,7 +76,7 @@ func (d *Director) publishWorld(worldID string, r *run.Run) (map[string]any, err
 		return nil, errTool(CodeDomainInvalid, "capability token generation failed: %v", err)
 	}
 	endpoint := d.registerWorld(worldID, r, token)
-	out := map[string]any{"world_id": worldID, "world_digest": r.Digest(), "entity_ids": r.World.EntityIDs(),
+	out := map[string]any{"world_id": worldID, "run_id": r.ID, "world_digest": r.Digest(), "entity_ids": r.World.EntityIDs(),
 		"clock": model.FormatTime(r.World.Clock()), "token": token, "simulated": true}
 	if endpoint != "" {
 		out["operator_endpoint"] = endpoint

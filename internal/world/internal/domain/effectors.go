@@ -1,6 +1,8 @@
 package domain
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
@@ -34,6 +36,10 @@ type InvokeResult struct {
 // system. Refusal is not a retryable error.
 var ErrInterlockRefused = fmt.Errorf("world: interlock refused")
 
+// ErrCommandIDReused is returned when a command_id still inside its
+// idempotency window names a different request than it first did.
+var ErrCommandIDReused = errors.New("world: command_id already used for a different request")
+
 // invocation is one effector actuation request: what was asked, of which
 // entity, under which idempotency key, at what world time.
 type invocation struct {
@@ -63,8 +69,8 @@ func (w *World) InvokeEffector(effector, entityID, commandID string, args map[st
 	if err != nil {
 		return nil, err
 	}
-	if result, known := w.replayInvocation(inv.commandID, inv.atNS); known {
-		return result, nil
+	if result, known, err := w.replayInvocation(inv); err != nil || known {
+		return result, err
 	}
 	if w.refuseInterlock(eff, inv) {
 		return nil, ErrInterlockRefused
@@ -98,15 +104,31 @@ func (w *World) invocationIdentity(effector, entityID, commandID string) (*model
 	return eff, nil
 }
 
-// A command inside its idempotency window replays without another effect.
-func (w *World) replayInvocation(commandID string, atNS int64) (*InvokeResult, bool) {
-	if prev, known := w.idempotent[commandID]; known {
-		if atNS < prev.expiresNS {
-			return prev.callResult(), true
-		}
-		delete(w.idempotent, commandID)
+// A command inside its idempotency window replays, byte for byte, the result
+// of the request it first carried, without another effect. The same command_id
+// naming a different request is refused: replaying the first answer to it
+// would acknowledge an actuation that never happened.
+func (w *World) replayInvocation(inv invocation) (*InvokeResult, bool, error) {
+	prev, known := w.idempotent[inv.commandID]
+	if !known {
+		return nil, false, nil
 	}
-	return nil, false
+	if inv.atNS >= prev.expiresNS {
+		delete(w.idempotent, inv.commandID)
+		return nil, false, nil
+	}
+	if prev.request != requestKey(inv) {
+		return nil, false, fmt.Errorf("%w: %q", ErrCommandIDReused, inv.commandID)
+	}
+	replayed := prev.result
+	return &replayed, true, nil
+}
+
+// requestKey identifies what an invocation asks for: effector, entity and
+// arguments (json.Marshal sorts map keys, so equal arguments give equal keys).
+func requestKey(inv invocation) string {
+	raw, _ := json.Marshal([]any{inv.effector, inv.entityID, inv.args})
+	return string(raw)
 }
 
 // Safety refusal is terminal and may execute its independent autonomous action.
@@ -129,16 +151,18 @@ func (w *World) executeInvocation(eff *model.Effector, inv invocation) *InvokeRe
 		mode: mode, accepted: result.Accepted, reason: result.Reason,
 		latencyMS: latency, effectApplied: result.EffectApplied,
 	})
-	w.cacheInvocation(eff, inv.commandID, inv.atNS)
+	w.cacheInvocation(eff, inv, result)
 	return result
 }
 
-func (w *World) cacheInvocation(eff *model.Effector, commandID string, atNS int64) {
+func (w *World) cacheInvocation(eff *model.Effector, inv invocation, result *InvokeResult) {
 	window := eff.IdempotencyWindowS
 	if window <= 0 {
 		window = 3600
 	}
-	w.idempotent[commandID] = &idempotentResult{call: w.effectorCalls[len(w.effectorCalls)-1], expiresNS: atNS + int64(window*secondsPerNS)}
+	w.idempotent[inv.commandID] = &idempotentResult{
+		request: requestKey(inv), result: *result, expiresNS: inv.atNS + int64(window*secondsPerNS),
+	}
 }
 
 func (w *World) executeEffectorMode(eff *model.Effector, inv invocation, mode string, latency float64) *InvokeResult {
@@ -186,20 +210,4 @@ func (w *World) applyUnconfirmedEffect(result *InvokeResult, eff *model.Effector
 	result.EffectApplied = true
 	result.Accepted = true
 	result.EffectETANS = inv.atNS + int64(eff.Effect.DeadTimeS*secondsPerNS)
-}
-
-// callResult reconstructs the original invoke result for an idempotent
-// replay.
-func (r *idempotentResult) callResult() *InvokeResult {
-	c := r.call
-	return &InvokeResult{
-		Accepted:      c.Accepted,
-		Simulated:     true,
-		WorldID:       c.WorldID,
-		CommandID:     c.CommandID,
-		Reason:        c.Reason,
-		Mode:          c.Mode,
-		AckLatencyMS:  c.AckLatencyMS,
-		EffectApplied: c.EffectApplied,
-	}
 }

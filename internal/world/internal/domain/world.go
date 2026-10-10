@@ -127,7 +127,8 @@ type EffectorCall struct {
 }
 
 type idempotentResult struct {
-	call      EffectorCall // value copy of the original invocation
+	request   string       // effector, entity and arguments the command_id first carried
+	result    InvokeResult // value copy of the answer it first received
 	expiresNS int64
 }
 

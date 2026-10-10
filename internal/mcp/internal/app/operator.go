@@ -9,6 +9,8 @@ package app
 // must read.
 
 import (
+	"errors"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
@@ -135,6 +137,9 @@ func (v *OperatorView) Invoke(token, effector, entityID, commandID string, args 
 		return nil, err
 	}
 	res, err := v.Invoker.InvokeEffector(effector, entityID, commandID, args, atNS)
+	if errors.Is(err, world.ErrCommandIDReused) {
+		return nil, errTool(CodeInvalidArgs, "command_id was already used for a different request")
+	}
 	if err != nil {
 		return nil, errTool(CodeEffectorRefused, "the effector declined")
 	}

@@ -75,7 +75,7 @@ func TestOutOfProcessConsumerClosesTheLoopThroughTheBinary(t *testing.T) {
 	worldID, _ := created["world_id"].(string)
 	token, _ := created["token"].(string)
 	endpoint, _ := created["operator_endpoint"].(string)
-	runID := "r-" + strings.TrimPrefix(worldID, "w-")
+	runID, _ := created["run_id"].(string)
 	if !strings.HasPrefix(endpoint, "http://127.0.0.1:") {
 		t.Fatalf("the director must advertise its operator endpoint, got %q", endpoint)
 	}

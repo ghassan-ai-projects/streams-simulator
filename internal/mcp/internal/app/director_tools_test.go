@@ -248,3 +248,14 @@ func TestWorldCreateRefusesSeedsThatJSONCannotCarryExactly(t *testing.T) {
 		t.Fatalf("the largest carried seed must round-trip exactly: %v", described["seed"])
 	}
 }
+
+func TestWorldCreateReturnsTheRunIdTruthIsSealedAgainst(t *testing.T) {
+	t.Parallel()
+	d := newTestDirector(t)
+	cs, _ := connect(t, NewDirectorServer(d))
+	created := mustCall(t, cs, "sim.world.create", map[string]any{"domain": "aquaculture-pond"})
+	runID, _ := created["run_id"].(string)
+	if runID == "" || runID != d.World(created["world_id"].(string)).Run.ID {
+		t.Fatalf("world.create must name the run: %v", created)
+	}
+}

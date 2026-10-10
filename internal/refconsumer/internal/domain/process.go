@@ -37,6 +37,9 @@ func (r *Runner) consumeEvent(ev model.SimEvent) int64 {
 	t, _ := model.ParseTime(ev.ObservedTime)
 	s := r.seriesFor(ev.EntityID, ev.Channel)
 	recordArrivalGap(s, t)
+	// The last record a series delivered is the evidence a later silence
+	// cites, whether or not that record was itself suspicious.
+	s.lastSeq = ev.Seq
 	r.evaluateReading(ev, s, t)
 	return t
 }

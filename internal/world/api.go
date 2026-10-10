@@ -38,6 +38,10 @@ const (
 // system. Refusal is not a retryable error.
 var ErrInterlockRefused = layer.ErrInterlockRefused
 
+// ErrCommandIDReused is returned by InvokeEffector when a command_id inside
+// its idempotency window names a different request than it first did.
+var ErrCommandIDReused = layer.ErrCommandIDReused
+
 // ErrClockBackwards is returned by Advance when the target time is before the
 // current world time.
 var ErrClockBackwards = layer.ErrClockBackwards

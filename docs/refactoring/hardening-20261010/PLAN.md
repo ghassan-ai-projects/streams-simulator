@@ -70,3 +70,10 @@ Pin impact: `suite/cold-chain-transit` and its suite file changed (D-12): the
 `power_transfer_gap` scenario is no longer claimed observable because its
 declared detector channel has zero noise and zero deviation (D-52). The pin
 file was regenerated in this commit.
+| D-21 | done | `see git log` | `TestSilenceDetectionCitesTheLastDeliveredRecordOfTheSeries` |
+| D-27, D-42 | done | `see git log` | `TestCommandIDReusedForADifferentRequestIsRefused`, `TestIdempotentReplayReturnsTheFirstResultIncludingItsEffectETA` |
+| D-51 | done | `see git log` | `TestWorldCreateReturnsTheRunIdTruthIsSealedAgainst` |
+
+Not yet started: D-20, D-25, D-26, D-28, D-30..D-34, D-38, D-40, D-50, tier 5
+(D-46, D-47, D-48, T-01). The last round-check was green at `92ace18`; the
+D-21/D-27/D-42/D-51 commit below ran focused package tests only.
