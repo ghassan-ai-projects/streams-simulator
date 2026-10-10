@@ -1,4 +1,4 @@
-package score
+package domain
 
 import (
 	"context"
@@ -29,7 +29,7 @@ func TestOnlineOfflineScoringIdentity(t *testing.T) {
 	if _, err := r.End(""); err != nil {
 		t.Fatal(err)
 	}
-	online, err := Score(r, gt)
+	online, err := Score(evidenceOf(r), gt)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -99,7 +99,7 @@ func TestSilentNoEffectFalseSuccess(t *testing.T) {
 	if _, err := r.End(""); err != nil {
 		t.Fatal(err)
 	}
-	sc, err := Score(r, gt)
+	sc, err := Score(evidenceOf(r), gt)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -126,7 +126,7 @@ func TestSilentNoEffectHonestConsumer(t *testing.T) {
 	if _, err := r.End(""); err != nil {
 		t.Fatal(err)
 	}
-	sc, err := Score(r, gt)
+	sc, err := Score(evidenceOf(r), gt)
 	if err != nil {
 		t.Fatal(err)
 	}

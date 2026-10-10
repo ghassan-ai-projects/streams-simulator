@@ -22,7 +22,7 @@ var packageDependencies = map[string]string{
 	"internal/cli":                 "adapter adapter/conformance canonical device deviceworld domain mcp model refconsumer run score suite world",
 	"internal/mcp":                 "audit domain model run schemas score truth world",
 	"internal/run":                 "adapter canonical domain model perturb sink world",
-	"internal/score":               "model run world",
+	"internal/score":               "domain model world",
 	"internal/suite":               "audit domain model perturb randutil truth",
 	"internal/audit":               "domain model perturb world",
 	"internal/refconsumer":         "canonical model world",

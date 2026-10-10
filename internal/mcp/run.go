@@ -163,7 +163,7 @@ func (d *Director) scoreClosedRun(w *WorldRecord, runID string) (map[string]any,
 	if err != nil {
 		return nil, errTool(CodeTruthSealed, "%v", err)
 	}
-	sc, err := score.Score(w.Run, gt)
+	sc, err := score.Score(scoringEvidence(w.Run), gt)
 	if err != nil {
 		return nil, errTool(CodeDomainInvalid, "%v", err)
 	}
@@ -194,4 +194,14 @@ func auditEntityIDs(spec *domain.Compiled) []string {
 		ids = append(ids, world.RenderID(tmpl, i))
 	}
 	return ids
+}
+
+// scoringEvidence packs a closed run into the scorer's input.
+func scoringEvidence(r *run.Run) score.Evidence {
+	return score.Evidence{
+		RunID: r.ID, Domain: r.Domain(), Verdict: r.Verdict(), Ledger: r.Ledger(),
+		Calls: r.World.EffectorCalls(), Perturbations: r.AppliedPerturbations(),
+		Emitted: r.World.EmittedCount(), History: r.History(),
+		Reproducible: r.Reproducible(), Unblinded: r.UnblindedStamp(),
+	}
 }

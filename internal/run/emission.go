@@ -41,7 +41,7 @@ func (r *Run) captureEmissionState(ev model.SimEvent, atNS int64) {
 	for _, name := range r.Config.Domain.StateNames() {
 		states[name] = r.World.StateValue(ev.EntityID, name, atNS)
 	}
-	r.history = append(r.history, stateSnapshot{Seq: ev.Seq, TimeNS: atNS, Entity: ev.EntityID, States: states})
+	r.history = append(r.history, model.StateSnapshot{Seq: ev.Seq, TimeNS: atNS, Entity: ev.EntityID, States: states})
 }
 
 func (r *Run) deliverEmission(ev model.SimEvent, d perturb.Delivered, atNS int64) bool {

@@ -26,7 +26,7 @@ The accepted architecture is summarized in [`documentation/architecture/`](../..
 - `internal/mcp`: one server, two roles — `director` (catalog · world · clock · fault · perturb · truth) and `operator` (nameplate · effectors · invoke · verdict)
 - `internal/run`: run orchestration, delivery ledger, artifacts, replay, and quiescence
 - `internal/truth`: ground-truth generation and independent analytic solver; facade over `internal/truth/internal/domain`
-- `internal/score`: instrument and consumer scoring, shared online/offline policies
+- `internal/score`: instrument and consumer scoring, shared online/offline policies; facade over `internal/score/internal/domain`; the host packs a `score.Evidence`
 - `internal/audit`: trivial-baseline evaluation over delivered evidence
 - `internal/suite`: scenario generation, composition and admission
 - `internal/refconsumer`: shipped reference detector and operator-client integration

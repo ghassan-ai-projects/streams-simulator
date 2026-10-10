@@ -1,12 +1,11 @@
-package score
+package domain
 
 import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
 )
 
-func judgment(r *run.Run, gt *model.GroundTruthRecord) JudgmentMetrics {
-	return judgmentFrom(r.Verdict(), gt)
+func judgment(ev Evidence, gt *model.GroundTruthRecord) JudgmentMetrics {
+	return judgmentFrom(ev.Verdict, gt)
 }
 
 func judgmentFrom(v *model.Verdict, gt *model.GroundTruthRecord) JudgmentMetrics {

@@ -357,3 +357,24 @@ true for a known run — D-note: the flag is vestigial). `NewStore(nil)` keeps
 the refusing-default substitution (STANDARD §1 exception, documented). Coverage
 gaps in the domain layer (divergence/conservation detector paths) remain for
 T5.
+
+## M4 — score
+
+- `score` no longer imports `run`: the scorer's input is a `score.Evidence`
+  (run id, domain, verdict, ledger, effector calls, applied perturbations,
+  emitted count, hidden-state history, reproducible/unblinded flags). The one
+  production caller (`mcp.scoreClosedRun`) packs it with `scoringEvidence`;
+  the hidden-state record became `model.StateSnapshot` (JSON tags unchanged,
+  `run.History()` now returns it). Every metric function reads the same data
+  through the same accessors as before, once instead of per call.
+- Structure: facade `internal/score` (aliases of the five plain records and
+  `Evidence`; `Score` and `Offline` delegate) over
+  `internal/score/internal/domain`; files and tests `git mv`-ed (fixture paths
+  deepened). Dead `Scorecard.Marshal` (no caller) removed so the record can be
+  aliased. The `internal/score` layer drops from 6 to 5 and the allowlist
+  edge `score -> run` is gone.
+- `Offline` stays a separate entry point sharing the same policy functions
+  (D-04: offline cannot compute loop metrics without history/calls); unifying
+  the paths changes scorecards and is deferred.
+- Facade contract tests: no-verdict refusal, identity/flag carry-over, bundle
+  parity online vs offline. Domain-layer scoring tests unchanged (85 %).

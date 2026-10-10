@@ -1,12 +1,11 @@
-package score
+package domain
 
 import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
 )
 
-func instrument(r *run.Run) InstrumentMetrics {
-	return instrumentEvidence(r.Ledger(), r.World.EffectorCalls(), r.AppliedPerturbations(), r.World.EmittedCount())
+func instrument(ev Evidence) InstrumentMetrics {
+	return instrumentEvidence(ev.Ledger, ev.Calls, ev.Perturbations, ev.Emitted)
 }
 
 func reasonOf(perturbName string) string {

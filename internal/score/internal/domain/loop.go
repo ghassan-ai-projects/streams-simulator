@@ -1,17 +1,16 @@
-package score
+package domain
 
 import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
-func loop(r *run.Run, gt *model.GroundTruthRecord) LoopMetrics {
-	v := r.Verdict()
-	calls := r.World.EffectorCalls()
+func loop(ev Evidence, gt *model.GroundTruthRecord) LoopMetrics {
+	v := ev.Verdict
+	calls := ev.Calls
 	m := loopFrom(v, gt, calls)
 	if gt.ExpectedEffector != "" && len(calls) > 0 {
-		m.Resolved, m.TimeToResolutionNS = resolveTime(r, gt)
+		m.Resolved, m.TimeToResolutionNS = resolveTime(ev, gt)
 	}
 	if gt.DeadlineNS > 0 {
 		m.DeadlineAdhered = actsBeforeDeadline(calls, gt) && !m.FalseSuccess && !m.UnnecessaryAction
@@ -21,16 +20,16 @@ func loop(r *run.Run, gt *model.GroundTruthRecord) LoopMetrics {
 
 // resolveTime scans the world after the first successful expected-effector
 // call for the primary affected state to return toward its pre-fault level.
-func resolveTime(r *run.Run, gt *model.GroundTruthRecord) (bool, int64) {
-	state, faulted, deviation, ok := recoveryTarget(r, gt)
+func resolveTime(ev Evidence, gt *model.GroundTruthRecord) (bool, int64) {
+	state, faulted, deviation, ok := recoveryTarget(ev, gt)
 	if !ok {
 		return false, 0
 	}
-	start := firstSuccessfulCall(r.World.EffectorCalls(), gt.ExpectedEffector)
+	start := firstSuccessfulCall(ev.Calls, gt.ExpectedEffector)
 	if start == 0 {
 		return false, 0
 	}
-	return recoveryAfter(r, gt.EntityID, state, start, faulted+0.5*deviation, deviation)
+	return recoveryAfter(ev, gt.EntityID, state, start, faulted+0.5*deviation, deviation)
 }
 
 func actsBeforeDeadline(calls []world.EffectorCall, gt *model.GroundTruthRecord) bool {
@@ -42,23 +41,23 @@ func actsBeforeDeadline(calls []world.EffectorCall, gt *model.GroundTruthRecord)
 	return false
 }
 
-func recoveryTarget(r *run.Run, gt *model.GroundTruthRecord) (string, float64, float64, bool) {
-	fault := faultFor(r, gt.Label)
+func recoveryTarget(ev Evidence, gt *model.GroundTruthRecord) (string, float64, float64, bool) {
+	fault := faultFor(ev, gt.Label)
 	if fault == nil || len(fault.Affects) == 0 {
 		return "", 0, 0, false
 	}
 	state := fault.Affects[0].State
-	faulted, deviation, ok := recoveryLevels(r, gt, state)
+	faulted, deviation, ok := recoveryLevels(ev, gt, state)
 	return state, faulted, deviation, ok
 }
 
-func recoveryLevels(r *run.Run, gt *model.GroundTruthRecord, state string) (float64, float64, bool) {
+func recoveryLevels(ev Evidence, gt *model.GroundTruthRecord, state string) (float64, float64, bool) {
 	// Onset samples may already carry the fault; baseline must precede onset.
-	baseline, ok := historyValueBefore(r, gt.EntityID, state, gt.InjectionTimeNS)
+	baseline, ok := historyValueBefore(ev, gt.EntityID, state, gt.InjectionTimeNS)
 	if !ok {
 		return 0, 0, false
 	}
-	faulted, ok := historyValue(r, gt.EntityID, state, gt.FirstObservableTimeNS+60*1e9)
+	faulted, ok := historyValue(ev, gt.EntityID, state, gt.FirstObservableTimeNS+60*1e9)
 	if !ok {
 		return 0, 0, false
 	}
@@ -76,9 +75,9 @@ func firstSuccessfulCall(calls []world.EffectorCall, effector string) int64 {
 	return start
 }
 
-func recoveryAfter(r *run.Run, entity, state string, start int64, level, deviation float64) (bool, int64) {
+func recoveryAfter(ev Evidence, entity, state string, start int64, level, deviation float64) (bool, int64) {
 	// Recovery means returning within 50% of the original deviation.
-	for _, snap := range r.History() {
+	for _, snap := range ev.History {
 		if snap.Entity != entity || snap.TimeNS < start {
 			continue
 		}

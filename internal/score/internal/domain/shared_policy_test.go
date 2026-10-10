@@ -1,4 +1,4 @@
-package score
+package domain
 
 import (
 	"reflect"
@@ -63,7 +63,7 @@ func TestOnlineOfflineParityWithReversedDetections(t *testing.T) {
 		{EntityID: gt.EntityID, Label: "other", DetectedAt: model.FormatTime(gt.FirstObservableTimeNS + 20*60*1e9)},
 		{EntityID: gt.EntityID, Label: gt.Label, DetectedAt: model.FormatTime(gt.FirstObservableTimeNS + 10*60*1e9)},
 	})
-	online, err := Score(r, gt)
+	online, err := Score(evidenceOf(r), gt)
 	if err != nil {
 		t.Fatal(err)
 	}

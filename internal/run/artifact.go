@@ -47,7 +47,7 @@ func writeJSONL(path string, v any) error {
 	switch records := v.(type) {
 	case []model.LedgerRecord:
 		return writeJSONRecords(file, records)
-	case []stateSnapshot:
+	case []model.StateSnapshot:
 		return writeJSONRecords(file, records)
 	}
 	return nil

@@ -47,7 +47,7 @@ var packages = map[string]packageInfo{
 	"internal/refconsumer":         {kindCore, 5},
 	"internal/deviceworld":         {kindCore, 5},
 	"internal/audit":               {kindCore, 5},
-	"internal/score":               {kindCore, 6},
+	"internal/score":               {kindCore, 5},
 	"internal/suite":               {kindCore, 6},
 	"internal/mcp":                 {kindSurface, 7},
 	"internal/cli":                 {kindSurface, 8},

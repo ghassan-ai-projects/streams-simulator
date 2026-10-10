@@ -201,7 +201,7 @@ func TestRunViewsAreDefensiveCopies(t *testing.T) {
 	r := &Run{
 		trace:   []byte("trace"),
 		ledger:  []model.LedgerRecord{{DeliveryID: 1, Seq: 2}},
-		history: []stateSnapshot{{States: map[string]float64{"x": 1}}},
+		history: []model.StateSnapshot{{States: map[string]float64{"x": 1}}},
 		verdict: &model.Verdict{RunID: "r", Counters: map[string]int64{"records_seen": 1}},
 	}
 	trace := r.Trace()

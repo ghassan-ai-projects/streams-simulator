@@ -1,4 +1,4 @@
-package score
+package domain
 
 import (
 	"context"
@@ -33,7 +33,7 @@ func TestClosedLoopRecoveryAndIdempotency(t *testing.T) {
 	if _, err := r.End(""); err != nil {
 		t.Fatal(err)
 	}
-	sc, err := Score(r, gt)
+	sc, err := Score(evidenceOf(r), gt)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -61,7 +61,7 @@ func TestSuspiciousEarlyDetection(t *testing.T) {
 	if _, err := r.End(""); err != nil {
 		t.Fatal(err)
 	}
-	sc, err := Score(r, gt)
+	sc, err := Score(evidenceOf(r), gt)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -82,7 +82,7 @@ func TestJudgmentChoosesEarliestAndRequiresLabel(t *testing.T) {
 	if _, err := r.End(""); err != nil {
 		t.Fatal(err)
 	}
-	sc, err := Score(r, gt)
+	sc, err := Score(evidenceOf(r), gt)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -103,7 +103,7 @@ func TestNegativeUnobservableDetectionIsFalsePositive(t *testing.T) {
 	gt := &model.GroundTruthRecord{ScenarioID: "aquaculture-pond/9999", Domain: spec.Spec.ID,
 		EntityID: pondIDs[0], Label: "negative", IsNegativeClass: true, ExpectedEpisode: false}
 	submitVerdict(t, r, nil, []model.Detection{{EntityID: pondIDs[0], DetectedAt: model.FormatTime(model.DefaultStartTimeNS)}})
-	m := judgment(r, gt)
+	m := judgment(evidenceOf(r), gt)
 	if !m.FalsePositive {
 		t.Fatalf("negative detection must remain a false positive even without observable time: %+v", m)
 	}

@@ -1,4 +1,4 @@
-package score
+package domain
 
 import (
 	"context"
@@ -30,7 +30,7 @@ func TestDroppedDetectionRequiresOneDetectionPerDrop(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	m := consumer(r, &model.GroundTruthRecord{EntityID: pondIDs[0]})
+	m := consumer(evidenceOf(r), &model.GroundTruthRecord{EntityID: pondIDs[0]})
 	if m.DroppedEventDetection {
 		t.Fatal("one detection must not satisfy every dropped delivery")
 	}
@@ -55,7 +55,7 @@ func TestActionFidelityChecksEffectorAndEntity(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	if consumer(r, &model.GroundTruthRecord{}).ActionFidelity {
+	if consumer(evidenceOf(r), &model.GroundTruthRecord{}).ActionFidelity {
 		t.Fatal("wrong effector/entity must not receive action credit")
 	}
 }

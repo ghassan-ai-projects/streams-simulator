@@ -1,4 +1,4 @@
-package score
+package domain
 
 import (
 	"fmt"

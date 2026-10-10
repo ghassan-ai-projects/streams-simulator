@@ -92,7 +92,7 @@ type Run struct {
 	commandLog        []model.Command
 	perturbHistory    []string
 	ledger            []model.LedgerRecord
-	history           []stateSnapshot
+	history           []model.StateSnapshot
 	verdict           *model.Verdict
 	quiescedThroughNS int64
 	commandMu         sync.Mutex // serializes world-mutating commands across goroutines
@@ -121,11 +121,4 @@ type Run struct {
 
 	envTargets map[string]string
 	allowEnv   bool
-}
-
-type stateSnapshot struct {
-	Seq    int64              `json:"seq"`
-	TimeNS int64              `json:"time_ns"`
-	Entity string             `json:"entity_id"`
-	States map[string]float64 `json:"states"`
 }
