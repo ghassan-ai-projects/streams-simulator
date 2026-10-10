@@ -144,7 +144,11 @@ func (d *Director) EnvInject(worldID, target, fault string, params map[string]an
 func (d *Director) finishDestroyedWorld(w *WorldRecord, worldID string) error {
 	if _, ended := d.runLifecycle(w); !ended {
 		dir := filepath.Join(d.OutDir, worldID)
-		if _, err := w.Run.End(dir); err != nil {
+		_, err := w.Run.End(dir)
+		// An End that failed still finished the run; leaving it open would
+		// make every retry fail with "already finished".
+		d.markRunEnded(w)
+		if err != nil {
 			return errTool(CodeDomainInvalid, "%v", err)
 		}
 	}

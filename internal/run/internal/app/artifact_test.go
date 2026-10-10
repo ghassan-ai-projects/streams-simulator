@@ -176,3 +176,25 @@ func TestReplayRebuildsTheWorldIdentityInputsOfTheArtifact(t *testing.T) {
 		t.Fatalf("replay of a noiseless forced-failure run must reproduce it: %+v", res)
 	}
 }
+
+// An artifact built by another simulator version can carry digests computed
+// by that version's rules: the replay runs and says so, instead of failing
+// before it can report the version difference.
+func TestReplayOfAnotherVersionReportsItsInputDigestsInsteadOfFailing(t *testing.T) {
+	t.Parallel()
+	spec, a := testBase(t)
+	art := buildArtifact(t, Config{
+		Domain: spec, Adapter: a, Seed: 6, SinkName: model.SinkInproc,
+		TimeMode: model.TimeStepped, StartTimeNS: model.DefaultStartTimeNS + 4*3600*1e9,
+	})
+	old := *art
+	old.SimVersion = "0.1.0"
+	old.Adapter.Digest = "sha256:" + strings.Repeat("0", 64)
+	res, err := ReplayArtifact(context.Background(), &old, spec, a, "")
+	if err != nil {
+		t.Fatalf("a replay of another version must report, not fail: %v", err)
+	}
+	if res.VersionMatch || !strings.Contains(res.Detail, "recorded input digests were not reproduced") {
+		t.Fatalf("result = %+v, want a version mismatch naming the digests", res)
+	}
+}

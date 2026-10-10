@@ -105,7 +105,7 @@ streamsim run [flags]
 
 ### `replay` and `verify`
 
-Both load a run artifact, replay its command log and print the result as one JSON document. `replay` exits 0 whatever the outcome; `verify` exits 1 when the replay does not reproduce the recorded trace digest (including a simulator-version difference), so scripts can gate on it. The current CLI also loads the matching domain and adapter from `domains/` and `adapters/`; keep those directories available or override them with the flags.
+Both load a run artifact, replay its command log and print the result as one JSON document. `replay` exits 0 whatever the outcome; `verify` exits 1 when the replay does not reproduce the recorded trace digest (a simulator-version difference alone does not fail it; it is reported in `version_match` and `detail`), so scripts can gate on it. The current CLI also loads the matching domain and adapter from `domains/` and `adapters/`; keep those directories available or override them with the flags.
 
 ```text
 streamsim replay <run.json> [--domains-dir <path>] [--adapters-dir <path>]
