@@ -7,7 +7,7 @@ cmd/streamsim         0
 internal/wall         0
 internal/cli          26
 internal/model        20
-internal/mcp          62
+internal/mcp          65
 internal/world/internal/domain 68
 internal/refconsumer  68
 internal/adapter      68
