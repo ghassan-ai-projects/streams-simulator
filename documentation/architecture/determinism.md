@@ -37,7 +37,7 @@ The replay library can use embedded domain and adapter specifications when avail
 
 ## Test evidence
 
-The implementation tests determinism and replay in [`internal/run/`](../../internal/run/), [`internal/world/`](../../internal/world/), and the CLI subprocess tests in [`internal/cli/subprocess_test.go`](../../internal/cli/subprocess_test.go). The underlying artifact contract is [`docs/contracts/run-artifact-v0.1.schema.json`](../../docs/contracts/run-artifact-v0.1.schema.json).
+The implementation tests determinism and replay in [`internal/run/`](../../internal/run/), [`internal/world/`](../../internal/world/), and the CLI subprocess tests in [`test/acceptance/determinism_test.go`](../../test/acceptance/determinism_test.go). The underlying artifact contract is [`docs/contracts/run-artifact-v0.1.schema.json`](../../docs/contracts/run-artifact-v0.1.schema.json).
 
 ## Next reads
 

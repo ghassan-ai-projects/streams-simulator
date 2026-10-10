@@ -6,7 +6,7 @@ These guarantees distinguish a test instrument from a trace generator. The desig
 
 | Gate | Guarantee | Current evidence | Validation and scope |
 | --- | --- | --- | --- |
-| 1 | Determinism: a run is replayable from its declared inputs and command log. | [`internal/run/`](../../internal/run/), [`internal/world/`](../../internal/world/), CLI subprocess tests | `go test ./internal/run/... ./internal/cli/...`; deterministic local path |
+| 1 | Determinism: a run is replayable from its declared inputs and command log. | [`internal/run/`](../../internal/run/), [`internal/world/`](../../internal/world/), [`test/acceptance/`](../../test/acceptance/) | `go test ./internal/run/... ./test/acceptance/...`; deterministic local path |
 | 2 | Analytic cross-check: the production integrator agrees with an independent oracle. | [`internal/world/internal/domain/oracle_test.go`](../../internal/world/internal/domain/oracle_test.go) | `go test ./internal/world/... -run Oracle`; oracle cross-check |
 | 3 | Reference consumer: the product can complete its own consumer workflow. | [`internal/refconsumer/`](../../internal/refconsumer/), [`internal/mcp/internal/app/operator_e2e_test.go`](../../internal/mcp/internal/app/operator_e2e_test.go) | `go test ./internal/refconsumer/... ./internal/mcp/...`; loopback tests need socket permission |
 | 4 | Delivery ledger: transport misses and reasoning misses remain distinguishable. | [`internal/run/internal/app/ledger_test.go`](../../internal/run/internal/app/ledger_test.go) | `go test ./internal/run/... -run Ledger`; ledger classification |

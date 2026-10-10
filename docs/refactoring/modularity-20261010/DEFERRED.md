@@ -130,3 +130,7 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
   channel compares every later reading against the first value instead of the
   last one sent. Looks like a defect; not changed here (the behaviour pin and
   every golden trace depend on it).
+- **D-51 (mcp)** `sim.world.create` does not return the run id, yet
+  `sim.truth.seal` needs it before `sim.run.begin` (documented as returned by
+  `run.begin`). Callers must derive `r-<n>` from `w-<n>`; the acceptance test
+  does. Return `run_id` from `world.create`.

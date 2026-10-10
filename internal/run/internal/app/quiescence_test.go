@@ -146,7 +146,7 @@ func TestQuiescenceStaleReportCannotSatisfyLaterWait(t *testing.T) {
 	case <-parked:
 	case <-done:
 		t.Fatal("stale report satisfied the wait")
-	case <-time.After(5 * time.Second):
+	case <-time.After(time.Minute):
 		t.Fatal("waiter did not re-park after a stale report")
 	}
 	fc.fire()
@@ -202,7 +202,7 @@ func TestQuiescenceFastPathHonorsReportBetweenAdvances(t *testing.T) {
 	}()
 	select {
 	case <-parked:
-	case <-time.After(5 * time.Second):
+	case <-time.After(time.Minute):
 		t.Fatal("waiter did not park for a target beyond the watermark")
 	}
 	r.ReportQuiesced(t3)

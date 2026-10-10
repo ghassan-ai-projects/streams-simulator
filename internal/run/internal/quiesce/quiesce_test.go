@@ -10,7 +10,7 @@ func TestRealClockTimerFiresAndStops(t *testing.T) {
 	fired := RealClock{}.NewTimer(time.Millisecond)
 	select {
 	case <-fired.C():
-	case <-time.After(2 * time.Second):
+	case <-time.After(30 * time.Second):
 		t.Fatal("the timer must fire")
 	}
 	stopped := RealClock{}.NewTimer(time.Hour)

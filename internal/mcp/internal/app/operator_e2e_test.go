@@ -150,12 +150,14 @@ func TestGoldenClosedLoopOverOperatorEndpoint(t *testing.T) {
 	cfg.OnDetectionEffector = "start_aerator"
 	consumer := refconsumer.New(cfg, np, op, op, w.Run.ID)
 
-	// park blocks until the quiescence wait parks, with a bound so a
-	// fast-path wait (watermark already satisfied) cannot hang the test.
+	// park blocks until the quiescence wait parks. The bound only keeps a
+	// fast-path wait (watermark already satisfied) from hanging the test; it
+	// is generous because the advance is CPU-bound and runs beside the
+	// package's other parallel tests under -race.
 	park := func() {
 		select {
 		case <-parked:
-		case <-time.After(5 * time.Second):
+		case <-time.After(2 * time.Minute):
 			t.Fatal("quiescence wait did not park")
 		}
 	}

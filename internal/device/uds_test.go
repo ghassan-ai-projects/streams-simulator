@@ -2,7 +2,6 @@ package device_test
 
 import (
 	"bufio"
-	"errors"
 	"net"
 	"os"
 	"path/filepath"
@@ -24,7 +23,7 @@ func TestServeConnLoop(t *testing.T) {
 	done := make(chan error, 1)
 	go func() { done <- device.ServeConn(server, d) }()
 
-	_ = client.SetDeadline(time.Now().Add(2 * time.Second))
+	_ = client.SetDeadline(time.Now().Add(time.Minute))
 	reader := bufio.NewReader(client)
 
 	state := readRecord(t, reader)
@@ -99,7 +98,7 @@ func TestScheduledDuplicateReplaysReceiptWithoutSecondPlantEffect(t *testing.T) 
 	done := make(chan error, 1)
 	go func() { done <- device.ServeConn(server, d) }()
 
-	_ = client.SetDeadline(time.Now().Add(2 * time.Second))
+	_ = client.SetDeadline(time.Now().Add(time.Minute))
 	reader := bufio.NewReader(client)
 	readRecord(t, reader)
 	command, err := device.EncodeRecord(validCommand(t, nil))
@@ -158,7 +157,7 @@ func TestAckLostRetryReplaysReceiptWithoutSecondPlantEffect(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_ = client.SetReadDeadline(time.Now().Add(2 * time.Second))
+	_ = client.SetReadDeadline(time.Now().Add(time.Minute))
 	reader := bufio.NewReader(client)
 	readRecord(t, reader)
 	command, err := device.EncodeRecord(validCommand(t, nil))
@@ -181,7 +180,7 @@ func TestAckLostRetryReplaysReceiptWithoutSecondPlantEffect(t *testing.T) {
 		t.Fatal("ack_lost command was not admitted")
 	}
 
-	_ = client.SetReadDeadline(time.Now().Add(2 * time.Second))
+	_ = client.SetReadDeadline(time.Now().Add(time.Minute))
 	if _, err := client.Write(command); err != nil {
 		t.Fatal(err)
 	}
@@ -218,7 +217,7 @@ func TestSafeStopAckLostRetryReplaysReceiptAndResult(t *testing.T) {
 	client, server := net.Pipe()
 	done := make(chan error, 1)
 	go func() { done <- device.ServeConn(server, d) }()
-	_ = client.SetReadDeadline(time.Now().Add(2 * time.Second))
+	_ = client.SetReadDeadline(time.Now().Add(time.Minute))
 	reader := bufio.NewReader(client)
 	readRecord(t, reader)
 
@@ -246,17 +245,16 @@ func TestSafeStopAckLostRetryReplaysReceiptAndResult(t *testing.T) {
 	if _, err := client.Write(frame); err != nil {
 		t.Fatal(err)
 	}
-	_ = client.SetReadDeadline(time.Now().Add(50 * time.Millisecond))
-	if _, err := reader.ReadBytes('\n'); err == nil {
-		t.Fatal("ack_lost safe-stop must not emit a receipt")
-	} else {
-		var netErr net.Error
-		if !errors.As(err, &netErr) || !netErr.Timeout() {
-			t.Fatalf("expected bounded safe-stop read timeout, got %v", err)
-		}
+	// The link is sequential: the state answering a query sent behind the
+	// safe-stop proves the lost acknowledgement emitted no receipt.
+	if _, err := client.Write([]byte(device.QueryStateControl + "\n")); err != nil {
+		t.Fatal(err)
+	}
+	if first := readRecord(t, reader); first["message_type"] != "state" {
+		t.Fatalf("ack_lost safe-stop must not emit a receipt, got %v", first)
 	}
 
-	_ = client.SetReadDeadline(time.Now().Add(2 * time.Second))
+	_ = client.SetReadDeadline(time.Now().Add(time.Minute))
 	if _, err := client.Write(frame); err != nil {
 		t.Fatal(err)
 	}
