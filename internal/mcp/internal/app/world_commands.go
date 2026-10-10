@@ -18,7 +18,7 @@ func (d *Director) DescribeWorld(worldID string) (map[string]any, error) {
 	}
 	return map[string]any{
 		"world_id": worldID, "domain": w.Run.Domain().Spec.ID,
-		"seed": float64(w.Run.Config.Seed), "clock": model.FormatTime(w.Run.World.Clock()),
+		"seed": w.Run.Config.Seed, "clock": model.FormatTime(w.Run.World.Clock()),
 		"emitted": w.Run.World.EmittedCount(), "simulated": true,
 	}, nil
 }

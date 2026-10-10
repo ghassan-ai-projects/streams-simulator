@@ -11,11 +11,12 @@ import (
 )
 
 type runOptions struct {
-	domainsDir, adaptersDir, domainID, adapterID                    string
-	sinkName, sinkTarget, outDir, faults, perts, effectors, profile string
-	seed                                                            uint64
-	durationS                                                       float64
-	startTime                                                       int64
+	domainsDir, adaptersDir, domainID, adapterID string
+	sinkName, sinkTarget, outDir, profile        string
+	faults, perts, effectors                     listFlag
+	seed                                         uint64
+	durationS                                    float64
+	startTime                                    int64
 }
 
 func parseRunOptions(args []string, stderr io.Writer) (runOptions, error) {
@@ -57,9 +58,9 @@ func registerRunExecution(fs *flag.FlagSet, options *runOptions) {
 }
 
 func registerRunScript(fs *flag.FlagSet, options *runOptions) {
-	fs.StringVar(&options.faults, "fault", "", "repeatable: entity=fault@offset_s")
-	fs.StringVar(&options.perts, "perturb", "", "repeatable: name@from_s[@until_s]")
-	fs.StringVar(&options.effectors, "effector", "", "repeatable: effector@entity@offset_s")
+	fs.Var(&options.faults, "fault", "repeatable: entity=fault@offset_s")
+	fs.Var(&options.perts, "perturb", "repeatable: name@from_s[@until_s]")
+	fs.Var(&options.effectors, "effector", `repeatable: effector@entity@offset_s[@{"arg":value}]`)
 	fs.StringVar(&options.profile, "profile", "", "scenario profile")
 }
 

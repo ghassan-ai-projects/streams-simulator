@@ -63,7 +63,7 @@ The operator view contains no truth store, fault registry, perturbation log, or 
 
 | Tool | Fields and defaults |
 | --- | --- |
-| `sim.world.create` | `domain` is required. `seed` defaults to `1`, `adapter` to `native-jsonl`, `sink` to `inproc`, and `time_mode` to `stepped`. `sink_target` is required for `file` and `http-push`. Optional `entities`, `scenario_profile`, `start_time`, and `label` are recorded in the world configuration. |
+| `sim.world.create` | `domain` is required. `seed` defaults to `1` and must be an integer from 0 to 9007199254740991 (2^53-1; larger values would not survive JSON numbers exactly), `adapter` to `native-jsonl`, `sink` to `inproc`, and `time_mode` to `stepped`. `sink_target` is required for `file` and `http-push`. Optional `entities`, `scenario_profile`, `start_time`, and `label` are recorded in the world configuration. |
 | `sim.clock.advance` | `world_id` plus exactly one of `by_ns` or `to_ns` is required. `by_ns` is non-negative. `await_consumer` defaults false; when true, the call waits for the consumer’s quiescence report or returns `consumer_not_quiesced`. |
 | `sim.effector.invoke` | `token`, `effector`, `entity_id`, and unique `command_id` are required. `args` defaults to an empty object and is checked against the domain-declared argument schema. `at_ns` defaults to the current world clock. |
 | `sim.consumer.report` | `token` and `run_id` are required. `quiesced_through_ns` is optional; `verdict` is optional when the consumer is reporting only quiescence. The response acknowledges acceptance and never includes a score. |

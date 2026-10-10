@@ -56,3 +56,17 @@ Tier 2 notes: the run-artifact contract gained optional `noiseless` and
 `force_failure_mode` in `world_config` (additive; the world digest already
 hashed them). `End` now returns the artifact together with a publication
 error, and a run whose end failed is finished.
+| D-11, D-12, D-13 | done | `see git log` | `TestAnOnsetObservableAtTimeZeroIsObservable`, `TestAnUnknownDetectorFormIsRefusedNotTreatedAsObservable`, `TestAFaultWithNoEffectIsNotObservableEvenWithoutNoise`, `TestPeerResidualSigmaCountsTheEntitiesTheWorldHolds` |
+| D-23 | done | `see git log` | `TestAdvanceErrorsKeepTheirOwnCodes` |
+| D-24 | done | `see git log` | `TestReportChangesNothingWhenItsVerdictIsRefused` |
+| D-22 | done (refuse) | `see git log` | `TestWorldCreateRefusesSeedsThatJSONCannotCarryExactly` |
+| D-19, D-41 | done | `see git log` | `TestScriptedEffectorsCarryTheirArgumentsAndDeterministicIds` |
+
+D-22 note: the SDK re-marshals arguments through float64 before the handler,
+so exact seeds above 2^53-1 cannot be carried; MCP now refuses them in the
+schema instead of rounding. The CLI `--seed` keeps the full uint64 range.
+
+Pin impact: `suite/cold-chain-transit` and its suite file changed (D-12): the
+`power_transfer_gap` scenario is no longer claimed observable because its
+declared detector channel has zero noise and zero deviation (D-52). The pin
+file was regenerated in this commit.

@@ -230,3 +230,21 @@ func TestAdvanceErrorsKeepTheirOwnCodes(t *testing.T) {
 		t.Fatalf("advancing a finished run must not claim the clock went backwards: %q", refusal)
 	}
 }
+
+func TestWorldCreateRefusesSeedsThatJSONCannotCarryExactly(t *testing.T) {
+	t.Parallel()
+	cs, _ := connect(t, NewDirectorServer(newTestDirector(t)))
+	for name, seed := range map[string]any{"negative": -1, "beyond 2^53": float64(1 << 54), "fractional": 1.5} {
+		res, err := cs.CallTool(context.Background(), &mcp.CallToolParams{Name: "sim.world.create", Arguments: map[string]any{
+			"domain": "aquaculture-pond", "seed": seed,
+		}})
+		if err == nil && !res.IsError {
+			t.Errorf("%s seed %v was accepted", name, seed)
+		}
+	}
+	created := mustCall(t, cs, "sim.world.create", map[string]any{"domain": "aquaculture-pond", "seed": float64(1<<53 - 1)})
+	described := mustCall(t, cs, "sim.world.describe", map[string]any{"world_id": created["world_id"]})
+	if described["seed"] != float64(1<<53-1) {
+		t.Fatalf("the largest carried seed must round-trip exactly: %v", described["seed"])
+	}
+}

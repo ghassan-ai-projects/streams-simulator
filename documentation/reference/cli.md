@@ -98,9 +98,9 @@ streamsim run [flags]
 | `--out` | empty | Artifact output directory. |
 | `--duration` | `21600` | Duration in seconds. |
 | `--start-time` | `2026-01-01T00:00:00Z` | World start as epoch nanoseconds. |
-| `--fault` | empty | Comma-separated `entity=fault@offset_s` entries. |
-| `--perturb` | empty | Comma-separated `name@from_s[@until_s]` entries. The optional end time is a second `@`-separated value. |
-| `--effector` | empty | Comma-separated `effector@entity@offset_s` entries. The CLI currently sends empty arguments; use MCP for typed effector arguments. |
+| `--fault` | empty | Repeatable; each occurrence may be comma-separated `entity=fault@offset_s` entries. |
+| `--perturb` | empty | Repeatable; each occurrence may be comma-separated `name@from_s[@until_s]` entries. The optional end time is a second `@`-separated value. |
+| `--effector` | empty | Repeatable. `effector@entity@offset_s[@{"arg":value}]`; the optional JSON object carries the effector arguments (required by every shipped effector). Command ids are `cli-0`, `cli-1`, … in order, so identical invocations record identical command logs. Entries without arguments may still be comma-separated within one occurrence. |
 | `--profile` | empty | Scenario profile name. |
 
 ### `replay` and `verify`

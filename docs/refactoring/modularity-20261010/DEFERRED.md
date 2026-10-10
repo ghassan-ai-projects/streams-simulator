@@ -134,3 +134,9 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
   `sim.truth.seal` needs it before `sim.run.begin` (documented as returned by
   `run.begin`). Callers must derive `r-<n>` from `w-<n>`; the acceptance test
   does. Return `run_id` from `world.create`.
+- **D-52 (domain data)** `cold-chain-transit` declares the `power_transfer_gap`
+  detector on `reefer.link_state` (noise none, sigma 0), a channel the fault
+  does not change. With the solver no longer treating a zero deviation as a
+  detection (D-12) that scenario is correctly unobservable and the nominal
+  suite excludes it; the domain should name the channel the fault affects.
+  Changing the domain changes its digest, so it is left to the domain owner.
