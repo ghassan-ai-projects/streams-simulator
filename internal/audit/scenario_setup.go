@@ -2,13 +2,13 @@ package audit
 
 import (
 	"fmt"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/perturb"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/truth"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
-func (p *Panel) prepareWorld(start int64, entities []string, setup []truth.SetupCall, perturbations []Perturbation) (*world.World, *perturb.Layer, error) {
+func (p *Panel) prepareWorld(start int64, entities []string, setup []model.SetupCall, perturbations []Perturbation) (*world.World, *perturb.Layer, error) {
 	w, err := world.New(p.spec, p.seed, "w-audit", start, world.Options{InitialEntities: entities, ForceEffectorOK: true})
 	if err != nil {
 		return nil, nil, fmt.Errorf("build: %w", err)
@@ -32,7 +32,7 @@ func applyAuditPerturbations(layer *perturb.Layer, perturbations []Perturbation)
 	return nil
 }
 
-func applyAuditSetup(w *world.World, setup []truth.SetupCall) error {
+func applyAuditSetup(w *world.World, setup []model.SetupCall) error {
 	for _, call := range setup {
 		if _, err := w.InvokeEffector(call.Effector, call.EntityID, call.CommandID, call.Args, call.AtNS); err != nil {
 			return fmt.Errorf("build: %w", err)

@@ -2,12 +2,12 @@ package suite
 
 import (
 	"fmt"
+	"sort"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/audit"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/randutil"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/truth"
-	"sort"
 )
 
 func finalizeScenario(spec *domain.Compiled, sc *Scenario, label *model.GroundTruthRecord, verdict *audit.Verdict) {
@@ -91,10 +91,10 @@ func uniformPositiveFault(cfg Config, rng *randutil.SplitMix64) string {
 	return positives[rng.Intn(len(positives))]
 }
 
-func scenarioSetupCall(effector, command string, args map[string]any, index int, entity string, at int64) truth.SetupCall {
+func scenarioSetupCall(effector, command string, args map[string]any, index int, entity string, at int64) model.SetupCall {
 	resolved := substituteEntity(args, entity)
 	if command == "" {
 		command = fmt.Sprintf("setup-%d", index)
 	}
-	return truth.SetupCall{Effector: effector, EntityID: entity, CommandID: command, Args: resolved, AtNS: at}
+	return model.SetupCall{Effector: effector, EntityID: entity, CommandID: command, Args: resolved, AtNS: at}
 }

@@ -42,9 +42,9 @@ func NewDirector(ctx context.Context, cat *domain.Catalog, adapters map[string]*
 	d := &Director{
 		Catalog: cat, Adapters: adapters, Worlds: map[string]*WorldRecord{},
 		byRun: map[string]string{}, byToken: map[string]*WorldRecord{},
-		Truth: truth.NewStore(), OutDir: outDir, ctx: ctx,
+		OutDir: outDir, ctx: ctx,
 	}
-	d.Truth.OpenChecker = d.runIsOpen
+	d.Truth = truth.NewStore(d.runIsOpen)
 	return d
 }
 

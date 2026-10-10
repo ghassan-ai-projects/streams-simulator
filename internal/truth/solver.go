@@ -39,8 +39,8 @@ func NewSolver(spec *domain.Compiled, seed uint64, sampleNS, maxHorizonNS int64)
 	return &Solver{spec: spec, seed: seed, sampleNS: sampleNS, maxHorizonNS: maxHorizonNS}
 }
 
-// Result is the solved observability of one injection.
-type Result struct {
+// result is the solved observability of one injection.
+type result struct {
 	FirstObservableNS int64    `json:"first_observable_time_ns"`
 	UnavoidableNS     int64    `json:"unavoidable_time_ns"`
 	EffectiveSigma    float64  `json:"effective_sigma"`
@@ -49,25 +49,14 @@ type Result struct {
 	Channels          []string `json:"channels"`
 }
 
-// SetupCall is a pre-fault effector invocation applied to both the clean
-// and faulted worlds, so the scenario context (an aerator running at
-// night) exists before the fault lands.
-type SetupCall struct {
-	Effector  string         `json:"effector"`
-	EntityID  string         `json:"entity_id"`
-	CommandID string         `json:"command_id"`
-	Args      map[string]any `json:"args,omitempty"`
-	AtNS      int64          `json:"at_ns"`
-}
-
-// Solve computes the onset timestamps for a fault injected at onsetNS on
+// solve computes the onset timestamps for a fault injected at onsetNS on
 // entityID. The world ids must be shared so the two runs' substreams align.
-func (s *Solver) Solve(entityID, faultID string, onsetNS int64, startNS int64, entityIDs []string, setup []SetupCall) (*Result, error) {
+func (s *Solver) solve(entityID, faultID string, onsetNS int64, startNS int64, entityIDs []string, setup []model.SetupCall) (*result, error) {
 	fault := s.spec.Fault(faultID)
 	if fault == nil {
 		return nil, fmt.Errorf("truth: unknown fault %q", faultID)
 	}
-	res := &Result{Channels: detectorChannels(&fault.Observability.Detector), Method: model.SolveNumeric}
+	res := &result{Channels: detectorChannels(&fault.Observability.Detector), Method: model.SolveNumeric}
 	scan, err := s.prepareScan(entityID, faultID, fault, onsetNS, startNS, entityIDs, setup)
 	if err != nil {
 		return nil, err
@@ -75,7 +64,7 @@ func (s *Solver) Solve(entityID, faultID string, onsetNS int64, startNS int64, e
 	return scan.searchOnsets(res, fault, onsetNS, startNS), nil
 }
 
-func (s *Solver) buildWorld(entityID string, startNS int64, entityIDs []string, faults map[string]int64, setup []SetupCall) (*world.World, error) {
+func (s *Solver) buildWorld(entityID string, startNS int64, entityIDs []string, faults map[string]int64, setup []model.SetupCall) (*world.World, error) {
 	w, err := s.newOracleWorld(startNS, entityIDs)
 	if err != nil {
 		return nil, err
@@ -166,7 +155,7 @@ func (s *Solver) newOracleWorld(startNS int64, entityIDs []string) (*world.World
 	return w, nil
 }
 
-func applyOracleSetup(w *world.World, setup []SetupCall) error {
+func applyOracleSetup(w *world.World, setup []model.SetupCall) error {
 	for _, call := range setup {
 		if _, err := w.InvokeEffector(call.Effector, call.EntityID, call.CommandID, call.Args, call.AtNS); err != nil {
 			return fmt.Errorf("truth: setup %s: %w", call.Effector, err)

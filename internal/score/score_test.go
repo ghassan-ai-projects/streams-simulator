@@ -66,15 +66,17 @@ func setupFaultedRun(t *testing.T, failureMode, faultID string) (*run.Run, *mode
 	}
 	// Sealed label via the solver.
 	solver := truth.NewSolver(spec, 11, 60*1e9, 24*3600*1e9)
-	var setup []truth.SetupCall
+	var setup []model.SetupCall
 	if faultID == "aerator_failure" {
-		setup = []truth.SetupCall{{
+		setup = []model.SetupCall{{
 			Effector: "start_aerator", EntityID: pond, CommandID: "setup",
 			Args: map[string]any{"pond_id": pond, "level": 1.0}, AtNS: start,
 		}}
 	}
-	gt, err := truth.BuildRecord(spec, solver, "aquaculture-pond/9001", 11,
-		pond, faultID, start+2*3600*1e9, start, pondIDs, false, nil, setup)
+	gt, err := truth.BuildRecord(spec, solver, truth.Injection{
+		ScenarioID: "aquaculture-pond/9001", Seed: 11, EntityID: pond, FaultID: faultID,
+		OnsetNS: start + 2*3600*1e9, StartNS: start, EntityIDs: pondIDs, Setup: setup,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}

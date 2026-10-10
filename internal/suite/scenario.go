@@ -29,8 +29,11 @@ func (g *suiteGeneration) sealScenarioLabel(sc *Scenario) (*model.GroundTruthRec
 	for _, p := range sc.Perturbations {
 		descriptions = append(descriptions, p.Name+"@"+fmt.Sprint(p.Params["rate"]))
 	}
-	label, err := truth.BuildRecord(g.cfg.Domain, g.solver, sc.ID, sc.Seed, sc.EntityID, sc.Fault,
-		sc.OnsetNS, sc.StartNS, g.entities, sc.PreDegraded, descriptions, sc.Setup)
+	label, err := truth.BuildRecord(g.cfg.Domain, g.solver, truth.Injection{
+		ScenarioID: sc.ID, Seed: sc.Seed, EntityID: sc.EntityID, FaultID: sc.Fault,
+		OnsetNS: sc.OnsetNS, StartNS: sc.StartNS, EntityIDs: g.entities,
+		PreDegraded: sc.PreDegraded, Perturbations: descriptions, Setup: sc.Setup,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("suite: build label: %w", err)
 	}
@@ -104,12 +107,12 @@ func (s *Suite) pickFault(cfg Config, prof *model.Profile, rng *randutil.SplitMi
 
 // defaultSetup translates profile data into scenario context calls. The
 // simulator never branches on a domain id or effector name here.
-func (s *Suite) defaultSetup(spec *domain.Compiled, entity string, startNS int64) []truth.SetupCall {
+func (s *Suite) defaultSetup(spec *domain.Compiled, entity string, startNS int64) []model.SetupCall {
 	prof := spec.Profile(s.Profile)
 	if prof == nil {
 		return nil
 	}
-	var out []truth.SetupCall
+	var out []model.SetupCall
 	for i, setup := range prof.Setup {
 		if setup.Effector == "" || spec.Effector(setup.Effector) == nil {
 			continue

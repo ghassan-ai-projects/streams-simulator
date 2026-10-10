@@ -5,7 +5,6 @@ import (
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/truth"
 )
 
 const aquaculturePath = "../../docs/examples/aquaculture-pond.domain.json"
@@ -28,8 +27,8 @@ func ids(spec *domain.Compiled) []string {
 	return out
 }
 
-func runningAerator() []truth.SetupCall {
-	return []truth.SetupCall{{
+func runningAerator() []model.SetupCall {
+	return []model.SetupCall{{
 		Effector: "start_aerator", EntityID: "site-a/pond-1", CommandID: "setup",
 		Args: map[string]any{"pond_id": "site-a/pond-1", "level": 1.0}, AtNS: model.DefaultStartTimeNS + 4*3600*1e9,
 	}}

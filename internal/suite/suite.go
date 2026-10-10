@@ -9,7 +9,6 @@ package suite
 import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/truth"
 )
 
 // Perturbation is one delivery perturbation in a scenario.
@@ -32,7 +31,7 @@ type Scenario struct {
 	DurationNS    int64             `json:"duration_ns"`
 	PreDegraded   bool              `json:"pre_degraded,omitempty"`
 	Perturbations []Perturbation    `json:"perturbations,omitempty"`
-	Setup         []truth.SetupCall `json:"setup,omitempty"`
+	Setup         []model.SetupCall `json:"setup,omitempty"`
 	CommandLog    []model.Command   `json:"command_log"`
 }
 

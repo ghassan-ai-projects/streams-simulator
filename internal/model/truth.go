@@ -60,3 +60,14 @@ const (
 func (g *GroundTruthRecord) IsPositive() bool {
 	return !g.IsNegativeClass && g.ExpectedEpisode
 }
+
+// SetupCall is a pre-fault effector invocation applied to both the clean
+// and faulted worlds, so the scenario context (an aerator running at
+// night) exists before the fault lands.
+type SetupCall struct {
+	Effector  string         `json:"effector"`
+	EntityID  string         `json:"entity_id"`
+	CommandID string         `json:"command_id"`
+	Args      map[string]any `json:"args,omitempty"`
+	AtNS      int64          `json:"at_ns"`
+}

@@ -190,3 +190,25 @@ spec); covered today by `effector_order_test` and the behaviour pin.
 - Weak pin, known: with the golden stream `producer_flap` delivers nothing
   (every record is held and the flap window never closes), so its digest is
   that of an empty stream; its buffering is covered by `perturb_test`.
+
+## R7 — truth
+
+- `truth.go` split by responsibility: `record.go` (label building) and
+  `store.go` (sealed store). `BuildRecord` takes an `Injection` value instead
+  of ten positional parameters (four adjacent same-typed); label bytes are
+  unchanged (suite golden, analytic cross-check and pin identical).
+- `SetupCall` moved to `model` (plain record used by `truth`, `audit`,
+  `suite`); `audit` no longer imports `truth`, so `audit` drops to layer 5 and
+  `suite` to 6 in the layer table and the allowlist lost the edge.
+- `NewStore(runIsOpen)` takes the open-run check at construction and
+  `OpenChecker` is gone. Production wiring is identical (`mcp` passed
+  `d.runIsOpen`). A nil check counts every run as open, so a store built
+  without one refuses to reveal unless unblinded: D-01's fail-open default is
+  closed. Behaviour change confined to constructions that never occur in
+  production; pinned by `TestStoreWithoutOpenRunCheckFailsClosed`.
+- `Solve`/`Result` unexported (only `BuildRecord` and tests used them).
+- Not changed: D-11 epoch-zero sentinel, D-12 zero sigma, D-13 peer sigma.
+- One error-text edit: the two `Solve: %w` wrap prefixes in
+  `truth/solver_scan.go` became `solve: %w` (staticcheck ST1005 stopped
+  exempting the capitalised name once `Solve` was unexported). The prefix
+  appears only inside `streamsim: …` wraps of oracle-world failures.

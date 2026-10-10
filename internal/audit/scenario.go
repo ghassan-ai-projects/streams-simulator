@@ -5,7 +5,6 @@ import (
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/perturb"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/truth"
 )
 
 // emissionLog records the delivered events of one world, keyed by channel.
@@ -23,7 +22,7 @@ func gridValue(series []float64, i int) float64 {
 // layer then capture of the delivered records in monotonic order — and
 // returns the per-channel series on the audit grid plus the delivered
 // emission log. The series are immutable evidence, never live world reads.
-func (p *Panel) build(entityID string, startNS int64, entityIDs []string, faults map[string]int64, setup []truth.SetupCall, perturbations []Perturbation, durationNS int64) (map[string][]float64, emissionLog, error) {
+func (p *Panel) build(entityID string, startNS int64, entityIDs []string, faults map[string]int64, setup []model.SetupCall, perturbations []Perturbation, durationNS int64) (map[string][]float64, emissionLog, error) {
 	w, layer, err := p.prepareWorld(startNS, entityIDs, setup, perturbations)
 	if err != nil {
 		return nil, nil, err

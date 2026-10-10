@@ -34,12 +34,12 @@ func TestAeratorFailureImmediatelyObservable(t *testing.T) {
 	start := model.DefaultStartTimeNS + 4*3600*1e9
 	onset := start + 2*3600*1e9
 	// Scenario context: the aerator runs through the night.
-	setup := []SetupCall{{
+	setup := []model.SetupCall{{
 		Effector: "start_aerator", EntityID: "site-a/pond-1", CommandID: "setup",
 		Args: map[string]any{"pond_id": "site-a/pond-1", "level": 1.0}, AtNS: start,
 	}}
 	solver := NewSolver(spec, 42, 60*1e9, 24*3600*1e9)
-	res, err := solver.Solve("site-a/pond-1", "aerator_failure", onset, start, ids, setup)
+	res, err := solver.solve("site-a/pond-1", "aerator_failure", onset, start, ids, setup)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -69,7 +69,7 @@ func TestProbeFoulingObservabilityLag(t *testing.T) {
 	start := model.DefaultStartTimeNS + 4*3600*1e9
 	onset := start + 2*3600*1e9
 	solver := NewSolver(spec, 7, 60*1e9, 24*3600*1e9)
-	res, err := solver.Solve("site-a/pond-1", "do_probe_fouling", onset, start, ids, nil)
+	res, err := solver.solve("site-a/pond-1", "do_probe_fouling", onset, start, ids, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -92,12 +92,14 @@ func TestBuildRecord(t *testing.T) {
 	start := model.DefaultStartTimeNS + 4*3600*1e9
 	onset := start + 2*3600*1e9
 	solver := NewSolver(spec, 3, 60*1e9, 24*3600*1e9)
-	setup := []SetupCall{{
+	setup := []model.SetupCall{{
 		Effector: "start_aerator", EntityID: "site-a/pond-1", CommandID: "setup",
 		Args: map[string]any{"pond_id": "site-a/pond-1", "level": 1.0}, AtNS: start,
 	}}
-	rec, err := BuildRecord(spec, solver, "aquaculture-pond/0001", 3,
-		"site-a/pond-1", "aerator_failure", onset, start, ids, false, []string{"drop@0.01"}, setup)
+	rec, err := BuildRecord(spec, solver, Injection{
+		ScenarioID: "aquaculture-pond/0001", Seed: 3, EntityID: "site-a/pond-1", FaultID: "aerator_failure",
+		OnsetNS: onset, StartNS: start, EntityIDs: ids, Perturbations: []string{"drop@0.01"}, Setup: setup,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -115,8 +117,10 @@ func TestBuildRecord(t *testing.T) {
 	}
 
 	// Negative class: expected_episode false.
-	recN, err := BuildRecord(spec, solver, "aquaculture-pond/0002", 3,
-		"site-a/pond-2", "transient_none", onset, start, ids, false, nil, nil)
+	recN, err := BuildRecord(spec, solver, Injection{
+		ScenarioID: "aquaculture-pond/0002", Seed: 3, EntityID: "site-a/pond-2", FaultID: "transient_none",
+		OnsetNS: onset, StartNS: start, EntityIDs: ids,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -126,7 +130,7 @@ func TestBuildRecord(t *testing.T) {
 }
 
 func TestStoreSealing(t *testing.T) {
-	s := NewStore()
+	s := NewStore(func(runID string) bool { return runID == "r-1" })
 	rec := &model.GroundTruthRecord{
 		ScenarioID: "x/0001", Label: "f", Observability: model.ObservabilityInfo{Channels: []string{"c1"}},
 		Perturbations: []string{"drop"}, TrivialBaselineDetail: map[string]float64{"accuracy": 0.5},
@@ -142,7 +146,6 @@ func TestStoreSealing(t *testing.T) {
 	rec.TrivialBaselineDetail["accuracy"] = 0
 	rec.Counterfactual.IfNoAction = "mutated"
 	// Open run: reveal refused without unblind.
-	s.OpenChecker = func(runID string) bool { return runID == "r-1" }
 	if _, err := s.Reveal("r-1", false); err == nil {
 		t.Fatal("reveal on an open run must be refused")
 	}
@@ -169,5 +172,42 @@ func TestStoreSealing(t *testing.T) {
 	}
 	if _, err := s.Reveal("r-nope", false); err == nil {
 		t.Fatal("unknown run must fail")
+	}
+}
+
+func TestRevealRefusesOpenRunsAndAllowsClosedOnes(t *testing.T) {
+	t.Parallel()
+	open := map[string]bool{"r-open": true}
+	s := NewStore(func(runID string) bool { return open[runID] })
+	for _, id := range []string{"r-open", "r-closed"} {
+		if err := s.Seal(id, &model.GroundTruthRecord{Label: id}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := s.Reveal("r-open", false); err == nil {
+		t.Fatal("an open run must refuse reveal without unblind")
+	}
+	if got, err := s.Reveal("r-closed", false); err != nil || got.Label != "r-closed" {
+		t.Fatalf("closed run reveal: %v, %+v", err, got)
+	}
+	open["r-open"] = false
+	if got, err := s.Reveal("r-open", false); err != nil || got.Label != "r-open" {
+		t.Fatalf("run closed since: %v, %+v", err, got)
+	}
+}
+
+// A store built without an open-run check must fail closed: no run is known
+// to be closed, so only an unblinded reveal succeeds.
+func TestStoreWithoutOpenRunCheckFailsClosed(t *testing.T) {
+	t.Parallel()
+	s := NewStore(nil)
+	if err := s.Seal("r-1", &model.GroundTruthRecord{Label: "f"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Reveal("r-1", false); err == nil {
+		t.Fatal("reveal without a check must be refused")
+	}
+	if got, err := s.Reveal("r-1", true); err != nil || got.Label != "f" {
+		t.Fatalf("unblinded reveal: %v, %+v", err, got)
 	}
 }

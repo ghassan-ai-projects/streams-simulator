@@ -11,7 +11,7 @@ import (
 	"fmt"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/truth"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
 // BalancedAccuracyCutoff is the hindsight-fitted bar for triviality.
@@ -66,7 +66,7 @@ type Perturbation struct {
 // running at night). The detector inputs are the immutable delivered
 // stream — world, perturbation layer and adapter projection — in monotonic
 // order, never random access on a mutable world.
-func (p *Panel) Audit(entityID, faultID string, onsetNS, startNS int64, entityIDs []string, durationNS int64, setup []truth.SetupCall, perturbations []Perturbation) (*Verdict, error) {
+func (p *Panel) Audit(entityID, faultID string, onsetNS, startNS int64, entityIDs []string, durationNS int64, setup []model.SetupCall, perturbations []Perturbation) (*Verdict, error) {
 	clean, cleanEmissions, err := p.build(entityID, startNS, entityIDs, map[string]int64{p.controlFault(): onsetNS}, setup, perturbations, durationNS)
 	if err != nil {
 		return nil, fmt.Errorf("Audit: %w", err)
