@@ -1,8 +1,6 @@
 package truth
 
 import (
-	"errors"
-
 	layer "github.com/ghassan-ai-projects/streams-simulator/internal/truth/internal/domain"
 )
 
@@ -10,6 +8,10 @@ import (
 // built from.
 type Injection = layer.Injection
 
-// ErrNoSpec is returned by NewSolver when no domain spec is given: the
-// solver builds oracle worlds from the spec.
-var ErrNoSpec = errors.New("truth: a domain spec is required")
+// Errors returned for a missing dependency: NewSolver and BuildRecord need a
+// domain spec, BuildRecord a solver, and a zero Store has no backing store.
+var (
+	ErrNoSpec   = layer.ErrNoSpec
+	ErrNoSolver = layer.ErrNoSolver
+	ErrNoStore  = layer.ErrNoStore
+)

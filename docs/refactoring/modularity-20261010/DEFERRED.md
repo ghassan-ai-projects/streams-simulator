@@ -14,7 +14,7 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 
 | ID | Sev | Where | Finding |
 | --- | --- | --- | --- |
-| D-01 | H | `truth/truth.go:86`, `mcp/director.go:47` | Sealed-oracle gate fails open: `Store.Reveal` refuses on an open run only `if OpenChecker != nil`, and the checker is wired after construction. Round R7 makes the constructor require it (production wiring is unchanged); the fail-open default of other call paths is the defect. |
+| D-01 | H | `truth/internal/domain/store.go`, `mcp/director.go` | Sealed-oracle gate fails open: `Store.Reveal` refuses on an open run only `if OpenChecker != nil`, and the checker is wired after construction. Round R7 makes the constructor require it (production wiring is unchanged); the fail-open default of other call paths is the defect. |
 | D-02 | H | `run/replay.go:145-155` | `ReplayResult.FirstDivergence` compares ledger length to `Counts.Emitted`; it never finds the first differing record, though `mcp verify` reports it. |
 | D-03 | H | `cli/replay.go:12-52` | `streamsim verify` exits 0 even when `matches=false` (`verifyOnly` ignored). |
 | D-04 | H | `cli/score.go`, `score/offline.go` | Offline `streamsim score` passes `calls=nil`: loop metrics zero, `ActionFidelity` false for any verdict with actions; `Reproducible`/`Unblinded` never set. Online scorecard differs from offline. |
@@ -24,9 +24,9 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 | D-08 | M | `mcp/run.go:29,153`, `mcp/director.go:79-88` | Data race: `WorldRecord.Started`/`RunEnded` written outside `d.mu`, read under it; `BeginRun` check-then-set race. |
 | D-09 | M | `run/artifact_metadata.go:24` | `Counts.FaultsInjected` is `ActiveFaultsCount`, i.e. faults still active at End; under-reports after any clear. |
 | D-10 | M | `run/identity.go:41-43`, `replay.go:86-96` | Replay fidelity gap: `worldDigest` hashes `Noiseless`, `ForceFailureMode`, `ClockMultiplier`, but the artifact omits the first two and `replayConfig` never sets `ClockMultiplier`. Latent: production never sets them. |
-| D-11 | M | `truth/solver_scan.go:48-58`, `record.go:36` | `FirstObservableNS == 0` means both "unset" and a legal epoch-zero time; wrong oracle with `start_time` 0. |
-| D-12 | M | `truth/solver_scan.go:54`, `detector_math.go:52-58` | Sigma 0 (schema allows it) or unknown detector form makes every fault trivially observable instead of erroring. |
-| D-13 | M | `truth/solver.go:135` | `peerSigma` uses `len(entityIDs)`; readings use the world's actual entities (differs when `entityIDs` is empty). |
+| D-11 | M | `truth/internal/domain/solver_scan.go:48-58`, `record.go` | `FirstObservableNS == 0` means both "unset" and a legal epoch-zero time; wrong oracle with `start_time` 0. |
+| D-12 | M | `truth/internal/domain/solver_scan.go:54`, `detector_math.go:52-58` | Sigma 0 (schema allows it) or unknown detector form makes every fault trivially observable instead of erroring. |
+| D-13 | M | `truth/internal/domain/solver.go:135` | `peerSigma` uses `len(entityIDs)`; readings use the world's actual entities (differs when `entityIDs` is empty). |
 | D-14 | M | `world/integration.go:54-67`, `world/dynamics.go:122-133` | Reads are not pure: `stateAt` takes a partial RK4 step and draws per read-bounded step, so a run world (reads every emission) and the oracle's world (no emission) partition steps differently. Fixing changes numbers: needs a design decision. |
 | D-15 | M | `run/*` mutators | No `finished` guard on `Advance`, `InjectFault`, `ClearFault`, `ApplyPerturb`, `ClearPerturb`, `AddEntity`, `RetireEntity`, `EnvInject` (only `InvokeEffector`/`SubmitVerdict` check). |
 | D-16 | M | `run/initialize.go:60-71`, `finalize.go:68-76` | File descriptors leak on partial failure in `New` and `End`; a publish failure after `finished=true` is unrecoverable. |
@@ -74,6 +74,10 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 | P-07 | Delivery-path unification | See D-18. |
 
 ## Hygiene and small improvements
+
+- `truth.Store.SealStatus` returns a `sealed` flag that is always true for a
+  known run (the sealed map is set with the label); the `!sealed` branch in
+  `mcp/run.go` cannot trigger.
 
 - `truth.Store.Reveal` holds `Store.mu` while calling `OpenChecker` (takes `Director.mu`): lock order `Store.mu → Director.mu`; fragile.
 - `sink.File.Close` rereads the file from disk; not idempotent; `Inproc.Close` returns its internal slice; file perms `0o666&umask` vs run's `0o600`; doc promises a simdet "wall" sub-mode that does not exist; `NewFile` has an unreachable branch.

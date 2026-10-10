@@ -306,7 +306,8 @@ Independent review found no behaviour change but a weak template:
   package comment changed, domain tests' fixture path deepened by two levels.
 - Facade surface = what other modules used: `Solver`, `NewSolver`, `Store`,
   `NewStore`, `BuildRecord`, `Injection` (alias of a plain record). `Solver`
-  and `Store` are facade structs with explicit delegating methods.
+  and `Store` are facade structs; `Store` has explicit delegating methods,
+  `Solver` is an opaque handle passed to `BuildRecord`.
 - Deliberate, listed in PLAN: `NewSolver` returns `(*Solver, error)` and
   refuses a nil spec with `ErrNoSpec` (STANDARD fail-closed constructors); the
   one production caller (`suite.prepareGeneration`) already returned errors.
@@ -338,3 +339,21 @@ Independent review found no behaviour change but a weak template:
   and clock refusal, faults and effectors, entity lifecycle, failure-mode
   override. Facade coverage 96 %, domain layer 68 % (floor moved to the
   layer package).
+
+### M2 review follow-up (applied in the M3 round)
+
+Isolated-snapshot review: no High. Fixed: nil-handle panics (`BuildRecord`
+with nil spec or solver, zero `Store`) now return `ErrNoSpec`/`ErrNoSolver`/
+`ErrNoStore`; the record clones the caller's perturbation slice; the facade
+gate learned guarded delegations (nil guards that only refuse) and now judges
+constructor guard bodies (one return of nil/zero/`Err…`/`err`) and every
+returned value or composite-literal field (plain references, layer calls with
+plain arguments only), proven by new bypass snippets (repairing guard,
+computed arguments); facade tests restructured so the facade proves its own
+contracts (missing inputs, unknown fault, unblind stamping, double seal,
+unknown run, fail-closed stores) instead of repeating domain rules; language
+file and DEFERRED paths corrected; `SealStatus` documented (`sealed` is always
+true for a known run — D-note: the flag is vestigial). `NewStore(nil)` keeps
+the refusing-default substitution (STANDARD §1 exception, documented). Coverage
+gaps in the domain layer (divergence/conservation detector paths) remain for
+T5.

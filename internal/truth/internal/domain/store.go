@@ -39,11 +39,22 @@ func NewStore(runIsOpen func(runID string) bool) *Store {
 
 // Seal records the label for a run and seals it.
 func (s *Store) Seal(runID string, rec *model.GroundTruthRecord) error {
-	if err := validateSealInput(runID, rec); err != nil {
+	if err := s.checkSealInput(runID, rec); err != nil {
 		return err
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	return s.record(runID, rec)
+}
+
+func (s *Store) checkSealInput(runID string, rec *model.GroundTruthRecord) error {
+	if s == nil {
+		return ErrNoStore
+	}
+	return validateSealInput(runID, rec)
+}
+
+func (s *Store) record(runID string, rec *model.GroundTruthRecord) error {
 	if s.sealed[runID] {
 		return fmt.Errorf("truth: run %q is already sealed", runID)
 	}
@@ -55,8 +66,15 @@ func (s *Store) Seal(runID string, rec *model.GroundTruthRecord) error {
 // Reveal returns the sealed label. unblind permits revealing on an open
 // run, permanently stamping it.
 func (s *Store) Reveal(runID string, unblind bool) (*model.GroundTruthRecord, error) {
+	if s == nil {
+		return nil, ErrNoStore
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	return s.reveal(runID, unblind)
+}
+
+func (s *Store) reveal(runID string, unblind bool) (*model.GroundTruthRecord, error) {
 	rec, ok := s.labels[runID]
 	if !ok {
 		return nil, fmt.Errorf("truth: no sealed label for run %q", runID)
@@ -72,6 +90,9 @@ func (s *Store) Reveal(runID string, unblind bool) (*model.GroundTruthRecord, er
 
 // SealStatus reports the sealing state.
 func (s *Store) SealStatus(runID string) (sealed, unblinded bool, err error) {
+	if s == nil {
+		return false, false, ErrNoStore
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if _, ok := s.labels[runID]; !ok {

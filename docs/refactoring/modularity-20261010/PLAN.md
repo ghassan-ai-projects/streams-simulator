@@ -86,6 +86,18 @@ A module that proves larger than one reviewable diff is split (`M12a`,
 | T5 | Coverage to ≥ 70 % per package (`cli`, `model`, `mcp`, `world`, `refconsumer`, `adapter`), floors file empty |
 | F | Final: full `make ci-check`, uncached race suite, module/test ratings, handoff |
 
+## Deliberate changes (STANDARD M10)
+
+Each is unreachable on production paths or refuses where the old code
+dereferenced nil; every one has a regression test.
+
+| Round | Change | Test |
+| --- | --- | --- |
+| R7 | `truth.Store` takes its open-run check at construction; a nil check counts every run as open (reveal refused) | `TestStoreWithoutAnOpenRunCheckOrBackingStoreFailsClosed` |
+| M1 | `perturb.New` returns `(*Layer, error)`, `ErrNoSpec` for a nil spec; `perturb.Names` is a function returning a copy | `TestNewRefusesAMissingSpec`, `TestNamesIsTheCatalogAndAModifiableCopy` |
+| M2 | `truth.NewSolver` returns `(*Solver, error)`; `BuildRecord` refuses a nil spec or solver; a zero or nil `Store` returns `ErrNoStore`; the record no longer aliases the caller's perturbation slice | `TestBuildRecordRefusesMissingInputsAndUnknownFaults`, `TestBuildRecordLabelsAScenarioFromTheSolvedOnsets` |
+| M3 | `world.New` returns `ErrNoSpec` for a nil spec | `TestNewRefusesAMissingSpec` |
+
 ## Not in this program
 
 Everything in [DEFERRED.md](DEFERRED.md), in particular: any fix to D-01…D-40,

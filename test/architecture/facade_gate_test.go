@@ -43,6 +43,13 @@ func New(dependency *Dependency) (*Service, error) {
 
 func (s *Service) Do(id string) error { return s.impl.Do(id) }
 
+func (s *Service) Guarded(id string) error {
+	if s == nil {
+		return ErrGone
+	}
+	return s.impl.Do(id)
+}
+
 func Parse(raw []byte) (Record, error) { return layer.Parse(raw, string(raw)) }
 `
 	noMethods := func(string, string) bool { return false }
@@ -76,9 +83,31 @@ func (s *S) Do() string { return s.impl.Do(func() string { return "x" }()) }`,
 func (s *S) Do(a string) string { return s.impl.Do(compute(a)) }
 func compute(a string) string { return a }`,
 			"does more than delegate"},
+		"guarded delegation that repairs instead of refusing": {
+			`type S struct{ impl *layer.S }
+func (s *S) Do(id string) error {
+	if id == "" {
+		id = "default"
+	}
+	return s.impl.Do(id)
+}`,
+			"does more than delegate"},
 		"constructor with a loop": {
 			`type S struct{ impl *layer.S }
 func New() *S { for { break }; return &S{impl: layer.New()} }`,
+			"does more than delegate"},
+		"constructor guard that repairs instead of refusing": {
+			`type S struct{ impl *layer.S }
+func New(check func(string) bool) *S {
+	if check == nil {
+		check = func(string) bool { return true }
+	}
+	return &S{impl: layer.New(check)}
+}`,
+			"does more than delegate"},
+		"constructor returning computed arguments": {
+			`type S struct{ impl *layer.S }
+func New(seed uint64) *S { return &S{impl: layer.New(seed + 1)} }`,
 			"does more than delegate"},
 		"delegating through a receiver field that holds no layer object": {
 			`type S struct{ other *Other; impl *layer.S }

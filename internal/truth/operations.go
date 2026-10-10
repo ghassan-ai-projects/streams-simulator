@@ -8,6 +8,9 @@ import (
 
 // BuildRecord assembles one sealed label for a scenario.
 func BuildRecord(spec *domain.Compiled, solver *Solver, in Injection) (*model.GroundTruthRecord, error) {
+	if solver == nil {
+		return nil, ErrNoSolver
+	}
 	return layer.BuildRecord(spec, solver.solver, in)
 }
 
@@ -22,8 +25,9 @@ func (s *Store) Reveal(runID string, unblind bool) (*model.GroundTruthRecord, er
 	return s.store.Reveal(runID, unblind)
 }
 
-// SealStatus reports whether a run's label is sealed and whether the run was
-// unblinded.
+// SealStatus reports the sealing state of a run: an unknown run is an error;
+// for a known run sealed is always true and unblinded tells whether a reveal
+// stamped it.
 func (s *Store) SealStatus(runID string) (sealed, unblinded bool, err error) {
 	return s.store.SealStatus(runID)
 }

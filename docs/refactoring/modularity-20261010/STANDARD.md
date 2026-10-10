@@ -44,7 +44,10 @@ protected by `ioEdges`.
   with a typed error (`New(…) (*T, error)`). The facade imports its own domain
   layer under the alias `layer` (the repository also has a module named
   `domain`). Re-exported catalogs are functions returning copies, never
-  exported mutable variables.
+  exported mutable variables. A constructor may instead fail closed by
+  *substituting the refusing default* when that default simply refuses the
+  guarded operation (`truth.NewStore(nil)` counts every run as open, so reveal
+  is refused); it says so in its doc comment and has a test.
 - **domain** (`internal/<m>/internal/domain`): vocabulary and every rule,
   including the module's in-memory aggregate and its invariants. Pure: no
   `os`, `net`, `os/exec`, clock read, entropy or goroutine. Time, randomness
