@@ -102,3 +102,8 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 - `cli`/`mcp`/`domain`: error prefixes stutter (`streamsim: streamsim: domain:`, `adapter: adapter:`, `canonical: canonical: canonical:`); strings are contract-ish, change deliberately.
 - Resolved in R1/M3: the legacy 60-line review table and the stale-root determinism test (now a repository gate, see D-43).
 - Duplicates found for later: `asFloat` ×4, `mustAny` ×3, `formatErrs` ×2, `fnv` in `run` vs `randutil.Fnv1a64`, `audit.Perturbation` ≡ `suite.Perturbation`, `suite.renderID` ≡ `world.RenderID`, refconsumer name/version literal ×3, manifest hard-codes 0.4/0.9, strict-decode ×3.
+
+- **D-46 (mcp)** `internal/mcp/internal/app` still mixes use cases with the
+  MCP protocol wiring (server construction, schemas, tool registration).
+  A protocol edge split needs the handler signatures to stop returning
+  SDK types; coverage of the layer is 65.5 %, below the 70 % bar.

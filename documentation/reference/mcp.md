@@ -1,6 +1,6 @@
 # Model Context Protocol (MCP) reference
 
-> Status: Implemented reference. Authority: `internal/mcp/server.go`, `schemas.go`, and `operator.go`. Verified by: MCP strictness and operator tests. Last verified: 2026-08-17.
+> Status: Implemented reference. Authority: `internal/mcp/internal/app/` (`schemas.go`, `operator.go`, `director.go`). Verified by: MCP strictness and operator tests. Last verified: 2026-08-17.
 
 Streams Simulator exposes one MCP server with two role surfaces:
 
@@ -46,7 +46,7 @@ The `sim.world.create` response includes the endpoint when configured and always
 | `sim.scenario.audit` | Run the trivial-baseline audit for one injection. | `domain`, `entity_id`, `fault`; optional times. |
 | `sim.entity.retire` | Retire an entity. | `world_id`, `entity_id`, `reason`. |
 
-The authoritative input schemas are defined and enforced beside the handlers in [`internal/mcp/schemas.go`](../../internal/mcp/schemas.go). Unknown properties are rejected at the MCP schema boundary; domain-dependent checks such as effector names and argument schemas happen in the handler.
+The authoritative input schemas are defined and enforced beside the handlers in [`internal/mcp/internal/app/schemas.go`](../../internal/mcp/internal/app/schemas.go). Unknown properties are rejected at the MCP schema boundary; domain-dependent checks such as effector names and argument schemas happen in the handler.
 
 ## Operator tools
 

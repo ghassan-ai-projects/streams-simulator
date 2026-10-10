@@ -656,3 +656,20 @@ not "read-only whole method set").
 - Recorded, not changed: the consumer identity literal is still repeated
   (DEFERRED duplicates); `NewMCPOperator` uses `context.Background()` for
   its calls (no caller cancellation).
+
+## M14 — mcp
+
+- Facade `internal/mcp` (`Director`, `NewDirector`, `NewDirectorServer`,
+  `NewOperatorServerResolver`, `SetOperatorEndpoint`) over
+  `internal/mcp/internal/app` (every handler, schema and tool: the
+  director and operator use cases, moved verbatim) and
+  `internal/mcp/internal/capability` (the entropy edge: the only place
+  that reads `crypto/rand`, minting `t-` + 32 random bytes, error text
+  unchanged).
+- Kind: surface (facade · app · edge); no domain layer because the module
+  holds no rules of its own. `ioEdges` names the capability edge; the
+  protocol-edge split of `app` stays open (D-46).
+- Tests: facade 100 % (roles expose disjoint tool surfaces, the recorded
+  operator endpoint reaches `sim.world.create`), `capability` (prefix,
+  width, uniqueness), `app` 65.5 % (moved, floor re-keyed to the app layer).
+- Documentation links and `go test` commands now name the app layer.

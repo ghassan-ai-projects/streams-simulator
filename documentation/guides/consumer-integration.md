@@ -37,7 +37,7 @@ The operator role is not a separate standalone process. A request for `--role op
 
 ## Integration tests
 
-The out-of-process operator endpoint and closed-loop behavior are exercised in [`internal/mcp/operator_e2e_test.go`](../../internal/mcp/operator_e2e_test.go). The reference consumer implementation is under [`internal/refconsumer/`](../../internal/refconsumer/).
+The out-of-process operator endpoint and closed-loop behavior are exercised in [`internal/mcp/internal/app/operator_e2e_test.go`](../../internal/mcp/internal/app/operator_e2e_test.go). The reference consumer implementation is under [`internal/refconsumer/`](../../internal/refconsumer/).
 
 ## Next reads
 
