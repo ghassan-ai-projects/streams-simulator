@@ -26,3 +26,10 @@ within a tier, items are independent.
 | Item | State | Commit | Regression test |
 | --- | --- | --- | --- |
 | D-01 | done | `see git log` | `TestRevealRefusesALabelForARunTheDirectorDoesNotKnow` |
+| D-02 | done (truthful, see note) | `see git log` | `TestReplayDivergenceSaysWhatIsAndIsNotKnown` |
+| D-03 | done | `see git log` | `TestVerifyFailsTheCommandWhenTheReplayDoesNotReproduceTheArtifact` |
+
+D-02 note: the artifact stores only the trace digest, so the position of the
+first differing record cannot be known when the counts agree. The result now
+says so in `detail` instead of implying a position; per-record digests in the
+artifact would be a format change (decision).

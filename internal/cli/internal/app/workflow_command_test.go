@@ -1,6 +1,7 @@
 package app
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -100,5 +101,40 @@ func TestRefconsumerAndScoreNameWhatTheyCannotRead(t *testing.T) {
 				t.Fatalf("%v: %+v, want %q", tc.args, got, tc.want)
 			}
 		})
+	}
+}
+
+func TestVerifyFailsTheCommandWhenTheReplayDoesNotReproduceTheArtifact(t *testing.T) {
+	t.Parallel()
+	dir := runPond(t)
+	path := filepath.Join(dir, "run.json")
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var artifact map[string]any
+	if err := json.Unmarshal(raw, &artifact); err != nil {
+		t.Fatal(err)
+	}
+	artifact["expected_trace_digest"] = "sha256:" + strings.Repeat("0", 64)
+	tampered, err := json.Marshal(artifact)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, tampered, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	flags := []string{"--domains-dir", testsupport.DomainsDir(), "--adapters-dir", testsupport.AdaptersDir(), path}
+
+	verified := invoke(t, append([]string{"verify"}, flags...)...)
+	if verified.code != 1 || !strings.HasPrefix(verified.stderr, "streamsim: verify: replay does not reproduce the artifact") {
+		t.Fatalf("verify of a tampered artifact: %+v", verified)
+	}
+	if got := verified.json(t); got["matches"] != false {
+		t.Fatalf("verify must still print the result: %v", got)
+	}
+	replayed := invoke(t, append([]string{"replay"}, flags...)...).mustSucceed(t).json(t)
+	if replayed["matches"] != false {
+		t.Fatalf("replay reports the mismatch without failing: %v", replayed)
 	}
 }

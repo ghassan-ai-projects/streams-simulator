@@ -118,3 +118,37 @@ func TestEnvInjectRejectsUndefinedParams(t *testing.T) {
 		t.Fatalf("env.inject without params rejected: %v", err)
 	}
 }
+
+func TestReplayDivergenceSaysWhatIsAndIsNotKnown(t *testing.T) {
+	t.Parallel()
+	spec, a := testBase(t)
+	cfg := Config{
+		Domain: spec, Adapter: a, Seed: 5, SinkName: model.SinkInproc,
+		TimeMode: model.TimeStepped, StartTimeNS: model.DefaultStartTimeNS + 4*3600*1e9,
+	}
+	wrongDigest := "sha256:" + strings.Repeat("0", 64)
+
+	sameCount := buildArtifact(t, cfg)
+	sameCount.ExpectedTraceDigest = wrongDigest
+	res, err := ReplayArtifact(context.Background(), sameCount, spec, a, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Matches || res.FirstDivergence != nil || !strings.Contains(res.Detail, "first differing record is not known") {
+		t.Fatalf("same count, different digest: %+v", res)
+	}
+
+	longer := buildArtifact(t, cfg)
+	longer.ExpectedTraceDigest = wrongDigest
+	longer.Counts.Emitted += 5
+	res, err = ReplayArtifact(context.Background(), longer, spec, a, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.FirstDivergence == nil || int64(*res.FirstDivergence) != longer.Counts.Emitted-5 {
+		t.Fatalf("a replay shorter than the artifact diverges at the replayed length: %+v", res)
+	}
+	if !strings.Contains(res.Detail, "recorded") {
+		t.Fatalf("detail = %q", res.Detail)
+	}
+}

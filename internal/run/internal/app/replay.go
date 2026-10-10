@@ -109,19 +109,14 @@ func executeCommand(ctx context.Context, r *Run, cmd *model.Command) error {
 	}
 }
 
-// firstDivergentRecord compares the replayed trace against the original
-// artifact's trace digest source by finding the first differing line. The
-// original trace is not stored in the artifact (only its digest), so the
-// divergence index is computed against the expected record count from the
-// ledger length when available; otherwise it reports a digest mismatch.
+// firstDivergentRecord names the first record the replay is missing or has
+// beyond the original run, from the delivery counts. The artifact carries only
+// the trace digest, not the records, so when the counts agree the position of
+// the first differing record is unknown and -1 is returned.
 func firstDivergentRecord(r *Run, art *model.RunArtifact) int {
-	// The ledger preserves delivery order; a replayed ledger of different
-	// length is the first divergence.
-	if int64(len(r.ledger)) != art.Counts.Emitted {
-		if int64(len(r.ledger)) < art.Counts.Emitted {
-			return int(len(r.ledger))
-		}
-		return int(art.Counts.Emitted)
+	replayed := int64(len(r.ledger))
+	if replayed == art.Counts.Emitted {
+		return -1
 	}
-	return -1
+	return int(min(replayed, art.Counts.Emitted))
 }
