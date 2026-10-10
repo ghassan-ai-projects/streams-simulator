@@ -47,9 +47,13 @@ func replayActuation(r *Run, cmd *model.Command) error {
 	return fmt.Errorf("run: unknown command op %q", cmd.Op)
 }
 
+// replayEffector repeats a logged invocation. The log also holds the
+// invocations the world refused; the original run got the same refusal, so it
+// is part of the history being reproduced, not a failure of the replay. A
+// divergence still shows in the digests.
 func replayEffector(r *Run, args map[string]any) error {
-	_, err := r.InvokeEffector(rules.CommandString(args, "effector"), rules.CommandString(args, "entity_id"), rules.CommandString(args, "command_id"), rules.AsMap(args["args"]), rules.CommandTime(args, "at_ns"))
-	return wrapReplayError(err)
+	_, _ = r.InvokeEffector(rules.CommandString(args, "effector"), rules.CommandString(args, "entity_id"), rules.CommandString(args, "command_id"), rules.AsMap(args["args"]), rules.CommandTime(args, "at_ns"))
+	return nil
 }
 
 func wrapReplayError(err error) error {

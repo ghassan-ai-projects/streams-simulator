@@ -130,8 +130,17 @@ func (w *World) replayInvocation(inv invocation) (*InvokeResult, bool, error) {
 
 // requestKey identifies what an invocation asks for: effector, entity and
 // arguments (json.Marshal sorts map keys, so equal arguments give equal keys).
+// Omitted arguments and an empty object are the same request.
 func requestKey(inv invocation) string {
-	raw, _ := json.Marshal([]any{inv.effector, inv.entityID, inv.args})
+	args := inv.args
+	if args == nil {
+		args = map[string]any{}
+	}
+	raw, err := json.Marshal([]any{inv.effector, inv.entityID, args})
+	if err != nil {
+		// fmt prints map keys in sorted order, so the fallback is stable too.
+		return fmt.Sprintf("%q|%q|%v", inv.effector, inv.entityID, args)
+	}
 	return string(raw)
 }
 
