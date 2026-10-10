@@ -110,17 +110,27 @@ func (d *Director) VerifyRun(artifactPath string) (map[string]any, error) {
 
 // AuditScenario runs the trivial-baseline audit on one injection.
 func (d *Director) AuditScenario(domainID, entityID, fault string, onsetNS, startNS int64, durationNS int64) (map[string]any, error) {
-	spec, err := d.Catalog.Describe(domainID)
+	spec, panel, err := d.auditPanel(domainID)
 	if err != nil {
-		return nil, errTool(CodeDomainInvalid, "%v", err)
+		return nil, err
 	}
-	panel := audit.NewPanel(spec, 1, 60*1e9)
-	ids := auditEntityIDs(spec)
-	v, err := panel.Audit(entityID, fault, onsetNS, startNS, ids, durationNS, nil, nil)
+	v, err := panel.Audit(entityID, fault, onsetNS, startNS, auditEntityIDs(spec), durationNS, nil, nil)
 	if err != nil {
 		return nil, errTool(CodeDomainInvalid, "%v", err)
 	}
 	return map[string]any{"trivial": v.Trivial, "scores": v.Scores, "best": v.Best}, nil
+}
+
+func (d *Director) auditPanel(domainID string) (*domain.Compiled, *audit.Panel, error) {
+	spec, err := d.Catalog.Describe(domainID)
+	if err != nil {
+		return nil, nil, errTool(CodeDomainInvalid, "%v", err)
+	}
+	panel, err := audit.NewPanel(spec, 1, 60*1e9)
+	if err != nil {
+		return nil, nil, errTool(CodeDomainInvalid, "%v", err)
+	}
+	return spec, panel, nil
 }
 
 func (d *Director) worldByRun(runID string) *WorldRecord {

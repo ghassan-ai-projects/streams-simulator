@@ -399,3 +399,18 @@ scan finds 46 unmarked map ranges it cannot see (DEFERRED D-43), among them
 three whose order reaches output or error text. The `Entity` alias exposes the
 live record (parity with before; D-44). `EffectorCall.Args` is the caller's
 map (D-45).
+
+## M5 — audit
+
+- Facade `internal/audit` over `internal/audit/internal/domain` (files and
+  tests `git mv`-ed; fixture paths deepened). `Panel` is a facade struct with
+  one delegating `Audit`; `Verdict` and `Perturbation` are aliases of plain
+  records. `DetectorNames` and `BalancedAccuracyCutoff` had no caller outside
+  the module and are not re-exported (the exported mutable `DetectorNames`
+  slice is gone from the public surface).
+- Deliberate, listed in PLAN: `audit.NewPanel` returns `(*Panel, error)` and
+  refuses a nil spec (`ErrNoSpec`). Callers `suite.generationTools` and
+  `mcp.auditPanel` already return errors; both were split into named steps to
+  stay within 15 lines.
+- Facade contract tests (nil spec; verdict shape and best-score consistency;
+  unknown fault refused). Domain layer 90 %.

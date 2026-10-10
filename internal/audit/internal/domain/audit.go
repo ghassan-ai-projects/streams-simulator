@@ -1,11 +1,9 @@
-// Package audit implements the trivial-baseline audit: every candidate
-// scenario runs against a panel of one-line detectors fitted with hindsight
-// on the scenario itself — deliberately unfair to the scenario. If a
-// detector tuned on the answer still cannot separate the fault from its
-// control at >= 0.9 balanced accuracy, the scenario is non_trivial and may
-// enter the graded suite. Trivial scenarios stay as mechanism regression
-// fixtures but never count as evidence that reasoning helped.
-package audit
+// Package domain holds the trivial-baseline audit rules: a panel of one-line
+// detectors fitted with hindsight on the scenario itself, deliberately unfair
+// to the scenario. If a detector tuned on the answer still cannot separate
+// the fault from its control at >= 0.9 balanced accuracy, the scenario is
+// non_trivial and may enter the graded suite. It performs no I/O.
+package domain
 
 import (
 	"fmt"

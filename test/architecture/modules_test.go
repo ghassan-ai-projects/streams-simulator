@@ -17,6 +17,7 @@ var moduleShapes = map[string][]string{
 	"internal/truth":   {"domain"},
 	"internal/world":   {"domain"},
 	"internal/score":   {"domain"},
+	"internal/audit":   {"domain"},
 }
 
 func migratedModules() []string {

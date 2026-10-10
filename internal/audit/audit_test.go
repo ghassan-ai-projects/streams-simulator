@@ -1,75 +1,61 @@
-package audit
+package audit_test
 
 import (
+	"errors"
+	"path/filepath"
 	"testing"
 
+	"github.com/ghassan-ai-projects/streams-simulator/internal/audit"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-const aquaculturePath = "../../docs/examples/aquaculture-pond.domain.json"
+func TestNewPanelRefusesAMissingSpec(t *testing.T) {
+	t.Parallel()
+	if _, err := audit.NewPanel(nil, 1, 60e9); !errors.Is(err, audit.ErrNoSpec) {
+		t.Fatalf("err = %v, want ErrNoSpec", err)
+	}
+}
 
-func loadSpec(t *testing.T) *domain.Compiled {
-	t.Helper()
-	spec, err := domain.Load(aquaculturePath)
+func TestAuditReportsEveryDetectorScoreAndABestDetector(t *testing.T) {
+	t.Parallel()
+	spec, err := domain.Load(filepath.Join("..", "..", "domains", "aquaculture-pond.domain.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	return spec
-}
-
-func ids(spec *domain.Compiled) []string {
-	n := spec.Spec.Entities.Count.Default
-	var out []string
-	for i := 1; i <= n; i++ {
-		out = append(out, "site-a/pond-"+string(rune('0'+i)))
+	panel, err := audit.NewPanel(spec, 42, 60e9)
+	if err != nil {
+		t.Fatal(err)
 	}
-	return out
-}
-
-func runningAerator() []model.SetupCall {
-	return []model.SetupCall{{
-		Effector: "start_aerator", EntityID: "site-a/pond-1", CommandID: "setup",
-		Args: map[string]any{"pond_id": "site-a/pond-1", "level": 1.0}, AtNS: model.DefaultStartTimeNS + 4*3600*1e9,
+	start := model.DefaultStartTimeNS + 4*3600e9
+	ids := []string{"site-a/pond-1", "site-a/pond-2"}
+	setup := []model.SetupCall{{
+		Effector: "start_aerator", EntityID: ids[0], CommandID: "setup",
+		Args: map[string]any{"pond_id": ids[0], "level": 1.0}, AtNS: start,
 	}}
-}
-
-// TestLoudFaultIsTrivial: aerator_failure against a running aerator is a
-// step on a dedicated confirmation channel — a fixed threshold with
-// hindsight must solve it. That is the point of the audit: the label the
-// threshold rule already gets right must not enter the graded suite.
-func TestLoudFaultIsTrivial(t *testing.T) {
-	spec := loadSpec(t)
-	start := model.DefaultStartTimeNS + 4*3600*1e9
-	onset := start + 2*3600*1e9
-	panel := NewPanel(spec, 42, 60*1e9)
-	v, err := panel.Audit("site-a/pond-1", "aerator_failure", onset, start, ids(spec), 12*3600*1e9, runningAerator(), nil)
+	verdict, err := panel.Audit(ids[0], "aerator_failure", start+2*3600e9, start, ids, 12*3600e9, setup, []audit.Perturbation{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	// The aerator current channel drops 18 A against sigma 0.2: any
-	// hindsight-fitted threshold separates it.
-	if !v.Trivial {
-		t.Fatalf("aerator_failure should be trivial, scores: %+v", v.Scores)
+	if len(verdict.Scores) == 0 || verdict.Best == "" || verdict.Samples == 0 || len(verdict.Channels) == 0 {
+		t.Fatalf("verdict = %+v", verdict)
 	}
-	if v.Best != "fixed_threshold" {
-		t.Fatalf("expected fixed_threshold to win, got %s (%v)", v.Best, v.Scores)
+	if verdict.Scores[verdict.Best] != verdict.BestScore {
+		t.Fatalf("best %q scores %v, BestScore %v", verdict.Best, verdict.Scores[verdict.Best], verdict.BestScore)
 	}
 }
 
-// TestProbeFoulingIsNonTrivial: the lethal sensor fault has no single
-// channel signature — the probe reads a plausible value within the normal
-// diurnal range. The audit must keep it out of the trivial bucket.
-func TestProbeFoulingIsNonTrivial(t *testing.T) {
-	spec := loadSpec(t)
-	start := model.DefaultStartTimeNS + 4*3600*1e9
-	onset := start + 2*3600*1e9
-	panel := NewPanel(spec, 42, 60*1e9)
-	v, err := panel.Audit("site-a/pond-1", "do_probe_fouling", onset, start, ids(spec), 8*3600*1e9, nil, nil)
+func TestAuditRefusesAnUnknownFault(t *testing.T) {
+	t.Parallel()
+	spec, err := domain.Load(filepath.Join("..", "..", "domains", "aquaculture-pond.domain.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if v.Trivial {
-		t.Fatalf("do_probe_fouling must be non-trivial at an 8h horizon, scores: %+v", v.Scores)
+	panel, err := audit.NewPanel(spec, 1, 60e9)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := panel.Audit("site-a/pond-1", "no_such_fault", 0, 0, []string{"site-a/pond-1"}, 3600e9, nil, nil); err == nil {
+		t.Fatal("an unknown fault must be refused")
 	}
 }

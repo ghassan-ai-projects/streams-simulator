@@ -1,4 +1,4 @@
-package audit
+package domain
 
 type auditEvidence struct {
 	labels         []float64

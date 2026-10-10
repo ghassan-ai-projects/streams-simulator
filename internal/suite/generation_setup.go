@@ -21,18 +21,35 @@ func generationDefaults(cfg Config) Config {
 
 func prepareGeneration(cfg Config, prof *model.Profile) (*suiteGeneration, error) {
 	rng := randutil.NewSplitMix64(cfg.Seed ^ randutil.Fnv1a64(cfg.Domain.Spec.ID+"/"+cfg.Profile))
+	solver, panel, err := generationTools(cfg)
+	if err != nil {
+		return nil, err
+	}
+	suite := &Suite{DomainID: cfg.Domain.Spec.ID, Profile: cfg.Profile, Seed: cfg.Seed}
+	return &suiteGeneration{cfg: cfg, prof: prof, rng: rng, solver: solver, panel: panel, suite: suite,
+		perturbCount: map[string]int{}, negativeFrac: negativeFraction(cfg)}, nil
+}
+
+// generationTools builds the oracle solver and the trivial-baseline panel a
+// suite generation labels and audits scenarios with.
+func generationTools(cfg Config) (*truth.Solver, *audit.Panel, error) {
+	solver, err := truth.NewSolver(cfg.Domain, cfg.Seed, cfg.SampleNS, 72*3600*1e9)
+	if err != nil {
+		return nil, nil, fmt.Errorf("suite: %w", err)
+	}
+	panel, err := audit.NewPanel(cfg.Domain, cfg.Seed^0x5eed, cfg.SampleNS)
+	if err != nil {
+		return nil, nil, fmt.Errorf("suite: %w", err)
+	}
+	return solver, panel, nil
+}
+
+func negativeFraction(cfg Config) float64 {
 	fraction := cfg.Domain.Spec.GroundTruth.NegativeClassFraction
 	if fraction <= 0 {
 		fraction = 0.4
 	}
-	solver, err := truth.NewSolver(cfg.Domain, cfg.Seed, cfg.SampleNS, 72*3600*1e9)
-	if err != nil {
-		return nil, fmt.Errorf("suite: %w", err)
-	}
-	panel := audit.NewPanel(cfg.Domain, cfg.Seed^0x5eed, cfg.SampleNS)
-	suite := &Suite{DomainID: cfg.Domain.Spec.ID, Profile: cfg.Profile, Seed: cfg.Seed}
-	return &suiteGeneration{cfg: cfg, prof: prof, rng: rng, solver: solver, panel: panel, suite: suite,
-		perturbCount: map[string]int{}, negativeFrac: fraction}, nil
+	return fraction
 }
 
 func profileDuration(prof *model.Profile) int64 {

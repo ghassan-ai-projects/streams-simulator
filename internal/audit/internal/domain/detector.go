@@ -1,4 +1,4 @@
-package audit
+package domain
 
 // fitSilence flags samples that follow a gap longer than minGap in any
 // channel's emission record.
