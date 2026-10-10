@@ -4,14 +4,17 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"path/filepath"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/cli/internal/files"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/score"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
 // scoreOptions are the inputs of the offline score command.
@@ -105,24 +108,37 @@ func scoreArtifact(options scoreOptions) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	ledger, err := loadLedger(filepath.Join(dir, "ledger.jsonl"))
-	if err != nil {
-		return nil, fmt.Errorf("streamsim: %w", err)
-	}
-	history, err := loadHistory(filepath.Join(dir, "world_state_history.jsonl"))
-	if err != nil {
-		return nil, fmt.Errorf("streamsim: %w", err)
-	}
-	evidence, err := replayedEvidence(options)
+	evidence, err := scoringEvidence(options, dir)
 	if err != nil {
 		return nil, err
 	}
-	evidence.Verdict, evidence.Ledger, evidence.History = verdict, ledger, history
+	evidence.Verdict = verdict
+	return gradeRun(evidence, gt)
+}
+
+func gradeRun(evidence score.Evidence, gt *model.GroundTruthRecord) (any, error) {
 	card, err := score.Score(evidence, gt)
 	if err != nil {
 		return nil, fmt.Errorf("streamsim: %w", err)
 	}
 	return card, nil
+}
+
+// scoringEvidence assembles everything the scorer needs except the verdict:
+// the replayed identity, domain and effector calls, and the published ledger
+// and state history.
+func scoringEvidence(options scoreOptions, dir string) (score.Evidence, error) {
+	evidence, err := replayedEvidence(options)
+	if err != nil {
+		return score.Evidence{}, err
+	}
+	if evidence.Ledger, err = loadLedger(filepath.Join(dir, "ledger.jsonl")); err != nil {
+		return score.Evidence{}, fmt.Errorf("streamsim: %w", err)
+	}
+	if evidence.History, err = loadHistory(filepath.Join(dir, "world_state_history.jsonl")); err != nil {
+		return score.Evidence{}, fmt.Errorf("streamsim: %w", err)
+	}
+	return evidence, nil
 }
 
 // replayedEvidence replays the artifact and returns the evidence it can
@@ -137,17 +153,29 @@ func replayedEvidence(options scoreOptions) (score.Evidence, error) {
 	if err != nil {
 		return score.Evidence{}, err
 	}
+	replayed, err := replayReproducing(art, spec, adap)
+	if err != nil {
+		return score.Evidence{}, err
+	}
+	return artifactEvidence(art, spec, replayed.Calls), nil
+}
+
+func artifactEvidence(art *model.RunArtifact, spec *domain.Compiled, calls []world.EffectorCall) score.Evidence {
+	return score.Evidence{
+		RunID: art.RunID, Domain: spec, Calls: calls, Perturbations: art.AppliedPerturbations,
+		Emitted: art.Counts.Emitted, Reproducible: art.Reproducible, Unblinded: art.Unblinded,
+	}
+}
+
+func replayReproducing(art *model.RunArtifact, spec *domain.Compiled, adap *model.Adapter) (*run.ReplayEvidence, error) {
 	replayed, err := run.ReplayArtifactEvidence(context.Background(), art, spec, adap)
 	if err != nil {
-		return score.Evidence{}, fmt.Errorf("streamsim: %w", err)
+		return nil, fmt.Errorf("streamsim: %w", err)
 	}
 	if !replayed.Result.Matches {
-		return score.Evidence{}, fmt.Errorf("score: replay does not reproduce the artifact, so its effector calls cannot be graded: %s", replayed.Result.Detail)
+		return nil, fmt.Errorf("score: replay does not reproduce the artifact, so its effector calls cannot be graded: %s", replayed.Result.Detail)
 	}
-	return score.Evidence{
-		RunID: art.RunID, Domain: spec, Calls: replayed.Calls, Perturbations: art.AppliedPerturbations,
-		Emitted: art.Counts.Emitted, Reproducible: art.Reproducible, Unblinded: art.Unblinded,
-	}, nil
+	return replayed, nil
 }
 
 // loadHistory reads the director-only per-emission state history a run
@@ -157,16 +185,23 @@ func loadHistory(path string) ([]model.StateSnapshot, error) {
 	if err != nil {
 		return nil, fmt.Errorf("open state history %s: %w", path, err)
 	}
-	dec := json.NewDecoder(bytes.NewReader(raw))
+	history, err := decodeHistory(json.NewDecoder(bytes.NewReader(raw)))
+	if err != nil {
+		return nil, fmt.Errorf("decode state history %s: %w", path, err)
+	}
+	return history, nil
+}
+
+func decodeHistory(dec *json.Decoder) ([]model.StateSnapshot, error) {
 	var history []model.StateSnapshot
 	for {
 		var snapshot model.StateSnapshot
 		err := dec.Decode(&snapshot)
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			return history, nil
 		}
 		if err != nil {
-			return nil, fmt.Errorf("decode state history %s: %w", path, err)
+			return nil, fmt.Errorf("%w", err)
 		}
 		history = append(history, snapshot)
 	}
