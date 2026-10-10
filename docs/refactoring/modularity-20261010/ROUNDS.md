@@ -458,3 +458,26 @@ run`. Not done: avoiding the evidence clone before the no-verdict check
 - Facade tests: nil world, unknown catalog field, binding validation against a
   world (missing required target named), unmapped target is
   `ErrPlantUnavailable`. Facade 86 %, layer 83 %.
+
+## M8 — sink
+
+- Facade `internal/sink` (`Sink` alias of the contract; `Inproc`, `File`,
+  `HTTPPush` facade structs with explicit delegating methods; `NewFile`,
+  `NewHTTPPush`) over `internal/sink/internal/domain` (contract and the
+  in-memory sink), `internal/sink/internal/files` and
+  `internal/sink/internal/httppush` (the only code with `os` and `net/http`).
+  `ioEdges` entries moved to the two edge files; the zero-value `Inproc`
+  remains usable (`&sink.Inproc{}` in `run`).
+- Verbatim moves; one equivalent simplification in `files.New`: the
+  unreachable inner branch of the mkdir check was dropped (same control flow:
+  an error with a directory other than `.` fails, otherwise create proceeds).
+- Tests by layer: domain (`Inproc`), files (round trip, mkdir failure, flush,
+  closed file), httppush (equivalence, unreachable endpoint — moved), facade
+  (inproc/file equality, flush visibility, zero value, HTTP delivery order).
+- Known and untouched: D-28 (synchronous POST under the run lock),
+  `File.Close` re-reads the file, non-idempotent Close, file permissions
+  (`0o666 & umask` vs `0o600`).
+- Lint: the wrapcheck ignore is `internal/*/internal/*` again (all private
+  layers, including edges). It governs calls *into* a layer from the facade;
+  an edge still has to wrap the `os`/`net/http` errors it receives because
+  those packages are not ignored.

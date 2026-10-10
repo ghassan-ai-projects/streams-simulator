@@ -119,6 +119,7 @@ the two delivery paths (D-18), and world read-purity (D-14).
 | M4 | done | `2f5cf24`, follow-up `see git log` | score takes Evidence |
 | M5 | done | `820e025` | audit; review pending |
 | M6 | done | `ff2f3a3` | suite; review pending |
-| M7 | in progress | | deviceworld |
-| M8–M15 | pending | | |
+| M7 | done | `c522b77` | deviceworld |
+| M8 | in progress | | sink |
+| M9–M15 | pending | | |
 | T1–T5, F | pending | | |

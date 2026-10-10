@@ -1,4 +1,4 @@
-package sink
+package sink_test
 
 import (
 	"bytes"
@@ -6,13 +6,14 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
-	"sync"
 	"testing"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/sink"
 )
 
 func TestInprocAndFileEqual(t *testing.T) {
 	lines := [][]byte{[]byte(`{"a":1}`), []byte(`{"a":2}`), []byte(`{"a":3}`)}
-	in := &Inproc{}
+	in := &sink.Inproc{}
 	for _, l := range lines {
 		if err := in.Write(l); err != nil {
 			t.Fatal(err)
@@ -23,7 +24,7 @@ func TestInprocAndFileEqual(t *testing.T) {
 		t.Fatal(err)
 	}
 	path := filepath.Join(t.TempDir(), "trace.jsonl")
-	f, err := NewFile(path)
+	f, err := sink.NewFile(path)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -49,49 +50,55 @@ func TestInprocAndFileEqual(t *testing.T) {
 	}
 }
 
-func TestHTTPPushEquivalence(t *testing.T) {
-	var mu sync.Mutex
-	var received []string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		buf := make([]byte, r.ContentLength)
-		_, _ = r.Body.Read(buf)
-		mu.Lock()
-		received = append(received, string(buf))
-		mu.Unlock()
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer srv.Close()
-
-	lines := [][]byte{[]byte(`{"s":0}`), []byte(`{"s":1}`), []byte(`{"s":2}`)}
-	h := NewHTTPPush(t.Context(), srv.URL)
-	for _, l := range lines {
-		if err := h.Write(l); err != nil {
-			t.Fatal(err)
-		}
-	}
-	got, err := h.Close()
+func TestFileSinkCreatesMissingDirectoriesAndFlushesBeforeClose(t *testing.T) {
+	t.Parallel()
+	path := filepath.Join(t.TempDir(), "nested", "deeper", "trace.jsonl")
+	f, err := sink.NewFile(path)
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []byte("{\"s\":0}\n{\"s\":1}\n{\"s\":2}\n")
-	if !bytes.Equal(got, want) {
-		t.Fatalf("http-push stream wrong:\n%q\n%q", got, want)
+	if err := f.Write([]byte(`{"a":1}`)); err != nil {
+		t.Fatal(err)
 	}
-	mu.Lock()
-	defer mu.Unlock()
-	if len(received) != 3 {
-		t.Fatalf("server received %d posts, want 3", len(received))
+	if err := f.Flush(); err != nil {
+		t.Fatal(err)
 	}
-	if received[0] != "{\"s\":0}" || received[2] != "{\"s\":2}" {
-		t.Fatalf("delivery order wrong: %v", received)
+	if disk, err := os.ReadFile(path); err != nil || string(disk) != "{\"a\":1}\n" {
+		t.Fatalf("flushed file = %q (%v)", disk, err)
+	}
+	if _, err := f.Close(); err != nil {
+		t.Fatal(err)
 	}
 }
 
-func TestHTTPPushUnreachableFails(t *testing.T) {
-	// A configured endpoint that is down must fail the write, never silently
-	// drop: a dropped record is indistinguishable from a modeled dropout.
-	h := NewHTTPPush(t.Context(), "http://127.0.0.1:1/unreachable")
-	if err := h.Write([]byte(`{"x":1}`)); err == nil {
-		t.Fatal("unreachable endpoint must fail the write")
+func TestInprocSinkIsReadyAtItsZeroValueAndSatisfiesTheContract(t *testing.T) {
+	t.Parallel()
+	var contract sink.Sink = &sink.Inproc{}
+	if err := contract.Write([]byte("x")); err != nil {
+		t.Fatal(err)
+	}
+	if got, err := contract.Close(); err != nil || string(got) != "x\n" {
+		t.Fatalf("close = %q (%v)", got, err)
+	}
+}
+
+func TestHTTPPushDeliversEachLineInOrderAndKeepsTheStream(t *testing.T) {
+	t.Parallel()
+	var posted []string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		buffer := make([]byte, r.ContentLength)
+		_, _ = r.Body.Read(buffer)
+		posted = append(posted, string(buffer))
+	}))
+	defer server.Close()
+	push := sink.NewHTTPPush(t.Context(), server.URL)
+	for _, line := range []string{"one", "two"} {
+		if err := push.Write([]byte(line)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	got, err := push.Close()
+	if err != nil || string(got) != "one\ntwo\n" || len(posted) != 2 || posted[0] != "one" {
+		t.Fatalf("stream = %q posted = %v (%v)", got, posted, err)
 	}
 }
