@@ -4,34 +4,11 @@ import (
 	"fmt"
 )
 
-// Advance moves the default manual clock forward by deltaMicros. It is a no-op
-// when a custom Clock was supplied.
-func (d *Device) Advance(deltaMicros int64) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	d.manualMono += deltaMicros
-	d.expireLease(d.clock())
-}
-
 // SetFaults installs the fault state applied to subsequent accepted commands.
 func (d *Device) SetFaults(f Faults) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	d.faults = f
-}
-
-// SetFaultSchedule installs a deterministic one-shot fault schedule. Entries
-// are keyed by the one-based admission ordinal and are consumed when that
-// ordinal is reached.
-func (d *Device) SetFaultSchedule(schedule []FaultInjection) error {
-	if err := ValidateFaultSchedule(schedule); err != nil {
-		return err
-	}
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	d.faultSchedule = faultNames(schedule)
-	d.acceptedCommands = 0
-	return nil
 }
 
 // AcceptedCommandCount returns the number of commands that reached the

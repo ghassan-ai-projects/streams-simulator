@@ -28,7 +28,7 @@ func (r *Run) SetQuiesceParkedHook(h func()) {
 }
 
 func (r *Run) awaitQuiescence(ctx context.Context, toNS int64) error {
-	timer := r.Config.QuiescenceClock.NewTimer(DefaultQuiescenceTimeout)
+	timer := r.Config.quiescenceClock.NewTimer(DefaultQuiescenceTimeout)
 	defer timer.Stop()
 	for {
 		ch, through, done := r.quiescenceStatus(toNS)

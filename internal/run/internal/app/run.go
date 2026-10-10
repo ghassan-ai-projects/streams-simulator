@@ -40,8 +40,10 @@ type Config struct {
 	WorldID          string
 	Noiseless        bool
 	ForceFailureMode string // force every effector into a failure mode (tests)
-	QuiescenceClock  QuiescenceClock
-	LedgerPath       string // append-only durable ledger path ("" = in-memory only until End)
+	// quiescenceClock supplies the await_consumer deadline; only this layer's
+	// tests replace the real clock, so it is not part of the public Config.
+	quiescenceClock QuiescenceClock
+	LedgerPath      string // append-only durable ledger path ("" = in-memory only until End)
 }
 
 // DefaultQuiescenceTimeout bounds an await_consumer wait before the run is

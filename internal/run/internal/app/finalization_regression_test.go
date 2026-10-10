@@ -1,6 +1,8 @@
 package app
 
 import (
+	"errors"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -31,8 +33,10 @@ func TestEndClosesDurableLedgerWithAndWithoutPublication(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if !r.durableLedger.Closed() {
-				t.Fatal("ledger must be closed after End")
+			// A closed ledger cannot take another row: the write fails.
+			r.durableLedger.Append(model.LedgerRecord{DeliveryReason: "late"})
+			if err := r.durableLedger.Flush(); !errors.Is(err, os.ErrClosed) {
+				t.Fatalf("ledger must be closed after End; flushing a late row gave %v", err)
 			}
 			rows := loadLedgerFile(t, path)
 			if int64(len(rows)) != art.Counts.Emitted {

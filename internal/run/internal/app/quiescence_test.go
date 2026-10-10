@@ -58,7 +58,7 @@ func quiesceHarness(t *testing.T, start, to int64) (*Run, *fakeQuiescenceClock, 
 	fc := &fakeQuiescenceClock{}
 	r, err := New(context.Background(), Config{
 		Domain: spec, Adapter: a, Seed: 77, SinkName: model.SinkInproc,
-		TimeMode: model.TimeStepped, StartTimeNS: start, QuiescenceClock: fc,
+		TimeMode: model.TimeStepped, StartTimeNS: start, quiescenceClock: fc,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -109,7 +109,7 @@ func TestQuiescenceCancelStopsTheWait(t *testing.T) {
 	spec, a := testBase(t)
 	r, err := New(context.Background(), Config{
 		Domain: spec, Adapter: a, Seed: 77, SinkName: model.SinkInproc,
-		TimeMode: model.TimeStepped, StartTimeNS: start, QuiescenceClock: &fakeQuiescenceClock{},
+		TimeMode: model.TimeStepped, StartTimeNS: start, quiescenceClock: &fakeQuiescenceClock{},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -172,7 +172,7 @@ func TestQuiescenceFastPathHonorsReportBetweenAdvances(t *testing.T) {
 	spec, a := testBase(t)
 	r, err := New(context.Background(), Config{
 		Domain: spec, Adapter: a, Seed: 77, SinkName: model.SinkInproc,
-		TimeMode: model.TimeStepped, StartTimeNS: start, QuiescenceClock: &fakeQuiescenceClock{},
+		TimeMode: model.TimeStepped, StartTimeNS: start, quiescenceClock: &fakeQuiescenceClock{},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -222,7 +222,7 @@ func TestReplayOfTimedOutAdvanceReportsIncomplete(t *testing.T) {
 	fc := &fakeQuiescenceClock{}
 	r, err := New(context.Background(), Config{
 		Domain: spec, Adapter: a, Seed: 77, SinkName: model.SinkInproc,
-		TimeMode: model.TimeStepped, StartTimeNS: start, QuiescenceClock: fc,
+		TimeMode: model.TimeStepped, StartTimeNS: start, quiescenceClock: fc,
 	})
 	if err != nil {
 		t.Fatal(err)

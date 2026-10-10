@@ -119,8 +119,8 @@ func defaultRunIdentity(cfg Config) Config {
 	if cfg.RunID == "" {
 		cfg.RunID = "r-" + strconv.FormatUint(rules.CanonicalHash(cfg.Domain.Spec.ID, cfg.Seed), 36)
 	}
-	if cfg.QuiescenceClock == nil {
-		cfg.QuiescenceClock = quiesce.RealClock{}
+	if cfg.quiescenceClock == nil {
+		cfg.quiescenceClock = quiesce.RealClock{}
 	}
 	return cfg
 }
