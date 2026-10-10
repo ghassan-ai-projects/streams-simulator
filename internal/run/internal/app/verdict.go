@@ -1,11 +1,11 @@
 package app
 
 import (
-	"encoding/json"
 	"fmt"
-	"time"
+	rules "github.com/ghassan-ai-projects/streams-simulator/internal/run/internal/domain"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/run/internal/clock"
 )
 
 // SubmitVerdict stores and validates a consumer verdict.
@@ -15,15 +15,15 @@ func (r *Run) SubmitVerdict(v *model.Verdict) error {
 	if err := r.admitVerdict(v); err != nil {
 		return err
 	}
-	if err := validateSubmittedVerdict(v); err != nil {
+	if err := rules.ValidateSubmittedVerdict(v); err != nil {
 		return err
 	}
-	r.verdict = cloneVerdict(v)
+	r.verdict = rules.CloneVerdict(v)
 	return nil
 }
 
 // Verdict returns the submitted verdict, or nil.
-func (r *Run) Verdict() *model.Verdict { return cloneVerdict(r.verdict) }
+func (r *Run) Verdict() *model.Verdict { return rules.CloneVerdict(r.verdict) }
 
 // Ledger returns the delivery ledger in delivery order.
 func (r *Run) Ledger() []model.LedgerRecord {
@@ -36,7 +36,7 @@ func (r *Run) TraceDigest() string { return r.traceDigest }
 // Unblind permanently stamps the run and excludes it from scorecards.
 func (r *Run) Unblind() {
 	r.unblinded = true
-	r.unblindedAt = time.Now().UTC().Format(time.RFC3339Nano)
+	r.unblindedAt = clock.Stamp()
 }
 
 // Unblinded reports the stamp state.
@@ -55,17 +55,6 @@ func (r *Run) admitVerdict(v *model.Verdict) error {
 	}
 	if v.RunID != r.ID {
 		return fmt.Errorf("run: verdict run_id %q does not match run %q", v.RunID, r.ID)
-	}
-	return nil
-}
-
-func validateSubmittedVerdict(v *model.Verdict) error {
-	raw, err := json.Marshal(v)
-	if err != nil {
-		return fmt.Errorf("SubmitVerdict: %w", err)
-	}
-	if err := model.ValidateVerdict(raw); err != nil {
-		return fmt.Errorf("SubmitVerdict: %w", err)
 	}
 	return nil
 }

@@ -1,17 +1,16 @@
 package app
 
 import (
-	"bufio"
 	"context"
 	"fmt"
-	"os"
-	"path/filepath"
+	rules "github.com/ghassan-ai-projects/streams-simulator/internal/run/internal/domain"
 	"strconv"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/canonical"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/perturb"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/run/internal/durable"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/run/internal/quiesce"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/sink"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
@@ -105,26 +104,23 @@ func defaultConfig(cfg Config) Config {
 
 func defaultRunIdentity(cfg Config) Config {
 	if cfg.RunID == "" {
-		cfg.RunID = "r-" + strconv.FormatUint(canonicalHash(cfg.Domain.Spec.ID, cfg.Seed), 36)
+		cfg.RunID = "r-" + strconv.FormatUint(rules.CanonicalHash(cfg.Domain.Spec.ID, cfg.Seed), 36)
 	}
 	if cfg.QuiescenceClock == nil {
-		cfg.QuiescenceClock = realQuiescenceClock{}
+		cfg.QuiescenceClock = quiesce.RealClock{}
 	}
 	return cfg
 }
 
 func (r *Run) openLedger() error {
-	if r.Config.LedgerPath != "" {
-		if err := os.MkdirAll(filepath.Dir(r.Config.LedgerPath), 0o700); err != nil {
-			return fmt.Errorf("run: ledger dir: %w", err)
-		}
-		lf, err := os.OpenFile(r.Config.LedgerPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600)
-		if err != nil {
-			return fmt.Errorf("run: open ledger %s: %w", r.Config.LedgerPath, err)
-		}
-		r.ledgerWriter = bufio.NewWriter(lf)
-		r.ledgerFile = lf
+	if r.Config.LedgerPath == "" {
+		return nil
 	}
+	ledger, err := durable.OpenLedger(r.Config.LedgerPath)
+	if err != nil {
+		return err
+	}
+	r.durableLedger = ledger
 	return nil
 }
 
@@ -181,21 +177,6 @@ func (r *Run) beginTrace() error {
 		return fmt.Errorf("run: adapter preamble: %w", err)
 	}
 	return nil
-}
-
-// canonicalHash derives a short stable id from the domain and seed.
-func canonicalHash(domainID string, seed uint64) uint64 {
-	b, _ := canonical.MarshalString(map[string]any{"d": domainID, "s": seed})
-	return fnv([]byte(b))
-}
-
-func fnv(b []byte) uint64 {
-	h := uint64(14695981039346656037)
-	for _, c := range b {
-		h ^= uint64(c)
-		h *= 1099511628211
-	}
-	return h
 }
 
 // Trace returns the delivered trace bytes (available after End).

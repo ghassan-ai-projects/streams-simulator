@@ -1,7 +1,6 @@
 package app
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
@@ -14,20 +13,17 @@ import (
 // nothing that was acknowledged at a boundary.
 func (r *Run) appendLedger(rec model.LedgerRecord) {
 	r.ledger = append(r.ledger, rec)
-	if r.ledgerWriter != nil {
-		if raw, err := json.Marshal(rec); err == nil {
-			_, _ = r.ledgerWriter.Write(raw)
-			_ = r.ledgerWriter.WriteByte('\n')
-		}
+	if r.durableLedger != nil {
+		r.durableLedger.Append(rec)
 	}
 }
 
 // flushDurable pushes the ledger writer and the file sink (when present) to
 // their file descriptors. Called at every command boundary; End adds fsync.
 func (r *Run) flushDurable() error {
-	if r.ledgerWriter != nil {
-		if err := r.ledgerWriter.Flush(); err != nil {
-			return fmt.Errorf("run: flush ledger: %w", err)
+	if r.durableLedger != nil {
+		if err := r.durableLedger.Flush(); err != nil {
+			return err
 		}
 	}
 	if f, ok := r.Sink.(interface{ Flush() error }); ok {

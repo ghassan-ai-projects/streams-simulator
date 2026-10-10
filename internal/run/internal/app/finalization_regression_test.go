@@ -1,8 +1,6 @@
 package app
 
 import (
-	"errors"
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -31,8 +29,8 @@ func TestEndClosesDurableLedgerWithAndWithoutPublication(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if _, err := r.ledgerFile.Stat(); !errors.Is(err, os.ErrClosed) {
-				t.Fatalf("ledger must be closed, got %v", err)
+			if !r.durableLedger.Closed() {
+				t.Fatal("ledger must be closed after End")
 			}
 			rows := loadLedgerFile(t, path)
 			if int64(len(rows)) != art.Counts.Emitted {

@@ -8,17 +8,16 @@
 package app
 
 import (
-	"bufio"
 	"context"
 	"errors"
-	"os"
 	"sync"
-	"time"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/perturb"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/run/internal/durable"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/run/internal/quiesce"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/sink"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
@@ -46,34 +45,15 @@ type Config struct {
 }
 
 // DefaultQuiescenceTimeout bounds an await_consumer wait before the run is
-// marked incomplete. The duration is fixed; the clock is injectable so
-// deterministic tests never sleep.
-const DefaultQuiescenceTimeout = 30 * time.Second
+// marked incomplete.
+const DefaultQuiescenceTimeout = quiesce.DefaultTimeout
 
 // QuiescenceClock supplies the deadline for await_consumer waits. The real
 // implementation is a wall-clock timer; tests inject a fake they can fire.
-type QuiescenceClock interface {
-	NewTimer(time.Duration) QuiescenceTimer
-}
+type QuiescenceClock = quiesce.Clock
 
 // QuiescenceTimer is one deadline from a QuiescenceClock.
-type QuiescenceTimer interface {
-	C() <-chan time.Time
-	Stop() bool
-}
-
-// realQuiescenceClock is the default quiescence clock.
-type realQuiescenceClock struct{}
-
-type realQuiescenceTimer struct{ t *time.Timer }
-
-func (rt realQuiescenceTimer) C() <-chan time.Time { return rt.t.C }
-
-func (rt realQuiescenceTimer) Stop() bool { return rt.t.Stop() }
-
-func (realQuiescenceClock) NewTimer(d time.Duration) QuiescenceTimer {
-	return realQuiescenceTimer{t: time.NewTimer(d)}
-}
+type QuiescenceTimer = quiesce.Timer
 
 // ErrConsumerNotQuiesced marks an await_consumer timeout. The world has
 // already advanced; the run is incomplete, never silently successful.
@@ -100,8 +80,7 @@ type Run struct {
 	quiesceNotify     chan struct{}
 	evidenceRec       func(model.SimEvent) // delivered-event hook (test harness)
 	quiesceParked     func()               // fired when a quiescence wait blocks (test harness)
-	ledgerWriter      *bufio.Writer
-	ledgerFile        *os.File
+	durableLedger     *durable.Ledger
 
 	finished     bool
 	incomplete   bool

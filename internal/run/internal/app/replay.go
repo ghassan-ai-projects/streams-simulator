@@ -7,12 +7,12 @@ package app
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"os"
+	rules "github.com/ghassan-ai-projects/streams-simulator/internal/run/internal/domain"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/run/internal/durable"
 )
 
 // ReplayResult is the outcome of replaying a run artifact.
@@ -29,14 +29,14 @@ type ReplayResult struct {
 
 // LoadArtifact reads and validates a run artifact.
 func LoadArtifact(path string) (*model.RunArtifact, error) {
-	raw, err := os.ReadFile(path)
+	raw, err := durable.ReadArtifact(path)
 	if err != nil {
-		return nil, fmt.Errorf("run: read artifact %s: %w", path, err)
-	}
-	if err := validateArtifactDocument(raw, path); err != nil {
 		return nil, err
 	}
-	return decodeArtifact(raw)
+	if err := rules.ValidateArtifactDocument(raw, path); err != nil {
+		return nil, err
+	}
+	return rules.DecodeArtifact(raw)
 }
 
 // ReplayArtifact re-executes a run artifact's command log against a fresh
@@ -76,7 +76,7 @@ func validateReplayInputs(art *model.RunArtifact, spec *domain.Compiled, adapter
 	if spec.Spec.ID != art.Domain.ID || spec.Spec.Version != art.Domain.Version || spec.Digest != art.Domain.Digest {
 		return fmt.Errorf("run: domain digest mismatch: artifact=%s current=%s", art.Domain.Digest, spec.Digest)
 	}
-	currentAdapterDigest := adapterDigest(adapterSpec)
+	currentAdapterDigest := rules.AdapterDigest(adapterSpec)
 	if adapterSpec.ID != art.Adapter.ID || adapterSpec.Version != art.Adapter.Version || currentAdapterDigest != art.Adapter.Digest {
 		return fmt.Errorf("run: adapter digest mismatch: artifact=%s current=%s", art.Adapter.Digest, currentAdapterDigest)
 	}
@@ -107,34 +107,6 @@ func executeCommand(ctx context.Context, r *Run, cmd *model.Command) error {
 	default:
 		return replayActuation(r, cmd)
 	}
-}
-
-func commandString(args map[string]any, key string) string {
-	if value, ok := args[key].(string); ok {
-		return value
-	}
-	return ""
-}
-
-func commandTime(args map[string]any, key string) int64 {
-	switch value := args[key].(type) {
-	case float64:
-		return int64(value)
-	case int64:
-		return value
-	case json.Number:
-		if n, err := value.Int64(); err == nil {
-			return n
-		}
-	}
-	return 0
-}
-
-func asMap(v any) map[string]any {
-	if m, ok := v.(map[string]any); ok {
-		return m
-	}
-	return nil
 }
 
 // firstDivergentRecord compares the replayed trace against the original

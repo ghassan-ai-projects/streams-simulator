@@ -606,3 +606,32 @@ instead of panicking; a formally racy sink test is locked; the adapter layer
 tests the two error layouts; PLAN and STANDARD text corrected (the `app`
 layer exists only where use cases orchestrate, and the exemption is pinned,
 not "read-only whole method set").
+
+## M12b — run: edges and rules
+
+- `internal/run/internal/durable`: the append-only ledger file (`OpenLedger`,
+  `Append`, `Flush`, `Finish`, `Closed`), evidence publication
+  (`PublishEvidence`, `WriteRunArtifact`) and `ReadArtifact`; `quiesce`: the
+  `Clock`/`Timer` interfaces, `RealClock` and `DefaultTimeout` (`app` keeps
+  type aliases so its tests and `Config` are unchanged); `clock`: `Stamp()`,
+  the one place `time.Now` is read for the artifact's `created_at` and the
+  unblinding stamp (behaviour-neutral; not the `wall` seam, P-01).
+- `internal/run/internal/domain`: the pure free functions — `AdapterDigest`,
+  `CanonicalHash`/`fnv` (the RunID derivation; now pinned by a test),
+  `ValidateArtifactDocument`/`DecodeArtifact`, `CommandString`/`CommandTime`/
+  `AsMap`, `ValidateSubmittedVerdict`, `CloneVerdict`, `CountLedger`,
+  `ErrorString`. Bodies verbatim; the functions that read `*Run` stay in
+  `app` (they are orchestration over the aggregate).
+- `app` no longer imports `os`/`bufio`/`net`; the debt entries are gone and
+  `ioEdges` lists the four edge files. Error text is unchanged, including the
+  `End:`/`run:`/`streamsim:` prefixes of the ledger, evidence and artifact
+  paths and the order: trace, ledger, history, verdict, `run.json`.
+- `run` joins `moduleShapes`; the facade rules, no-leak and alias gates now
+  cover it.
+- Tests by layer: `durable` (ledger lifecycle, unusable path, evidence files,
+  artifact round trip), `domain` (RunID hash pin, digests, decoding,
+  argument decoding, helpers), `quiesce`, `clock`; the app's finalization
+  regression now asks the ledger edge whether it is closed.
+- Recorded, not changed: the `Run` aggregate in `app` still mixes command
+  admission, delivery and replay (D-18 delivery-path divergence stays);
+  D-15/D-16/D-17 untouched.

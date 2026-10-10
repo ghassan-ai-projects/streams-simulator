@@ -1,16 +1,9 @@
 package app
 
 import (
-	"encoding/json"
-
 	"github.com/ghassan-ai-projects/streams-simulator/internal/canonical"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
-
-func adapterDigest(a *model.Adapter) string {
-	raw, _ := json.Marshal(a)
-	return canonical.DigestBytes(raw)
-}
 
 func worldDigest(r *Run) string {
 	digest, err := canonical.Digest(worldIdentity(r, initialEntityValues(r)))

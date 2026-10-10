@@ -1,13 +1,12 @@
 package app
 
 import (
-	"encoding/json"
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/canonical"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/run/internal/durable"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/sink"
 )
 
@@ -36,7 +35,7 @@ func (r *Run) finishRun(outDir string) (*model.RunArtifact, error) {
 		return nil, err
 	}
 	art := r.artifact()
-	if err := writeRunArtifact(outDir, art); err != nil {
+	if err := durable.WriteRunArtifact(outDir, art); err != nil {
 		return nil, err
 	}
 	return art, r.runErr
@@ -46,21 +45,23 @@ func (r *Run) publishRequestedEvidence(outDir string) error {
 	if outDir == "" {
 		return nil
 	}
-	return r.publishEvidence(outDir)
+	return durable.PublishEvidence(outDir, durable.Evidence{
+		TracePath:   r.tracePath(outDir),
+		Trace:       r.trace,
+		Ledger:      r.ledger,
+		WriteLedger: r.durableLedger == nil,
+		History:     r.history,
+		Verdict:     r.verdict,
+	})
 }
 
-func writeRunArtifact(outDir string, art *model.RunArtifact) error {
-	if outDir == "" {
-		return nil
+// tracePath is where the delivered trace is published: the file sink's own
+// target when it has one, otherwise trace.jsonl under outDir.
+func (r *Run) tracePath(outDir string) string {
+	if r.Config.SinkName == model.SinkFile && r.Config.SinkTarget != "" {
+		return r.Config.SinkTarget
 	}
-	raw, err := json.MarshalIndent(art, "", "  ")
-	if err != nil {
-		return fmt.Errorf("End: %w", err)
-	}
-	if err := os.WriteFile(filepath.Join(outDir, "run.json"), raw, 0o600); err != nil {
-		return fmt.Errorf("End: %w", err)
-	}
-	return nil
+	return filepath.Join(outDir, "trace.jsonl")
 }
 
 func (r *Run) finishTrace() error {
@@ -71,10 +72,7 @@ func (r *Run) finishTrace() error {
 	}
 	r.trace = trace
 	r.traceDigest = canonical.DigestBytes(trace)
-	if err := r.closeDurableLedger(); err != nil {
-		return err
-	}
-	return nil
+	return r.closeDurableLedger()
 }
 
 func (r *Run) finishPostamble() {
@@ -88,73 +86,10 @@ func (r *Run) finishPostamble() {
 }
 
 func (r *Run) closeDurableLedger() error {
-	if r.ledgerFile == nil {
+	if r.durableLedger == nil {
 		return nil
 	}
-	if err := r.flushDurableLedger(); err != nil {
-		_ = r.ledgerFile.Close()
-		return err
-	}
-	if err := r.ledgerFile.Close(); err != nil {
-		return fmt.Errorf("End: close ledger: %w", err)
-	}
-	return nil
-}
-
-func (r *Run) flushDurableLedger() error {
-	if err := r.ledgerWriter.Flush(); err != nil {
-		return fmt.Errorf("End: flush ledger: %w", err)
-	}
-	if err := r.ledgerFile.Sync(); err != nil {
-		return fmt.Errorf("End: sync ledger: %w", err)
-	}
-	return nil
-}
-
-func (r *Run) publishEvidence(outDir string) error {
-	if err := os.MkdirAll(outDir, 0o700); err != nil {
-		return fmt.Errorf("End: %w", err)
-	}
-	if err := r.publishTrace(outDir); err != nil {
-		return err
-	}
-	if err := r.publishLedger(outDir); err != nil {
-		return err
-	}
-	if err := writeJSONL(filepath.Join(outDir, "world_state_history.jsonl"), r.history); err != nil {
-		return fmt.Errorf("End: %w", err)
-	}
-	return r.publishVerdict(outDir)
-}
-
-func (r *Run) publishTrace(outDir string) error {
-	tracePath := filepath.Join(outDir, "trace.jsonl")
-	if r.Config.SinkName == model.SinkFile && r.Config.SinkTarget != "" {
-		tracePath = r.Config.SinkTarget
-	}
-	if err := os.WriteFile(tracePath, r.trace, 0o600); err != nil {
-		return fmt.Errorf("End: %w", err)
-	}
-	return nil
-}
-
-func (r *Run) publishLedger(outDir string) error {
-	if r.ledgerFile == nil {
-		if err := writeJSONL(filepath.Join(outDir, "ledger.jsonl"), r.ledger); err != nil {
-			return fmt.Errorf("End: %w", err)
-		}
-	}
-	return nil
-}
-
-func (r *Run) publishVerdict(outDir string) error {
-	if r.verdict != nil {
-		raw, _ := json.MarshalIndent(r.verdict, "", "  ")
-		if err := os.WriteFile(filepath.Join(outDir, "verdict.json"), raw, 0o600); err != nil {
-			return fmt.Errorf("End: %w", err)
-		}
-	}
-	return nil
+	return r.durableLedger.Finish()
 }
 
 func writeSinkLines(dst sink.Sink, lines []string) error {
