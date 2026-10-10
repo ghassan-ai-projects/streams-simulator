@@ -21,11 +21,11 @@ type stateValue struct {
 // integrating F1 states forward as needed. Returns the value and the state
 // record (so callers can keep the updated integration state).
 func (w *World) naturalValue(ent *Entity, stateName string, t int64) float64 {
-	s := ent.States[stateName]
+	s := ent.states[stateName]
 	if s == nil {
 		return 0
 	}
-	return w.naturalStateValue(ent, stateName, s, w.DynamicsFor(stateName), t)
+	return w.naturalStateValue(ent, stateName, s, w.dynamicsFor(stateName), t)
 }
 
 func (w *World) initial(ent *Entity, stateName string) float64 {
@@ -52,7 +52,7 @@ func (w *World) f0Value(dyn *model.Dynamics, t int64) float64 {
 // integrateF1 advances an F1 state from its last step to t in dt-sized RK4
 // steps (with one final partial step), reading inputs at step boundaries.
 func (w *World) integrateF1(ent *Entity, dyn *model.Dynamics, t int64) {
-	s := ent.States[dyn.Target]
+	s := ent.states[dyn.Target]
 	dt := dyn.DTMs * 1e6 // ms -> ns
 	if dt <= 0 {
 		dt = secondsPerNS

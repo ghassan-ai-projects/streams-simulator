@@ -114,7 +114,7 @@ func (s *stateValue) delayedValue(current float64) float64 {
 
 // dtFor returns the integration step for a state (ns), or 0.
 func (w *World) dtFor(state string) int64 {
-	dyn := w.DynamicsFor(state)
+	dyn := w.dynamicsFor(state)
 	if dyn == nil || (dyn.Tier != "F1" && dyn.Tier != "F2") {
 		return 0
 	}

@@ -43,11 +43,11 @@ type Options struct {
 type World struct {
 	ID               string
 	Spec             *domain.Compiled
-	Seed             uint64
+	seed             uint64
 	StartNS          int64
-	ClockNS          int64
-	Noiseless        bool
-	EmitDisabled     bool
+	clockNS          int64
+	noiseless        bool
+	emitDisabled     bool
 	forceEffectorOK  bool
 	forceFailureMode string
 
@@ -92,8 +92,8 @@ type Entity struct {
 	ID        string
 	Type      string
 	BornNS    int64
-	RetiredNS int64
-	States    map[string]*stateValue
+	retiredNS int64
+	states    map[string]*stateValue
 	channels  map[string]*channelRunState
 	alive     bool
 }

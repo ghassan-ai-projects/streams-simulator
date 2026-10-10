@@ -135,3 +135,28 @@ truncated-golden case. Doc nits corrected (82.4 %, reference counts, stale
 `verify*.go` paths in DEFERRED, domains-and-adapters.md). The PLAN hazard
 "VerifyResult JSON keys" is vacuous: no caller marshals `Result` (cli prints a
 hand-built map); the tags are kept.
+
+## R5 — world
+
+- Deleted (no caller anywhere, tests included): `PendingEvents`,
+  `HiddenStateSnapshot` with `sortedStateNames`, `ErrEffectorRefused`.
+  `DynamicsFor` unexported (`dynamicsFor`), `AddEntity` and `addEntity` lose the
+  ignored `params` argument (one production caller in `run`).
+- Unexported by `gopls rename` (build, vet and tests green): `World.Seed`,
+  `ClockNS`, `Noiseless`, `EmitDisabled`; `Entity.RetiredNS`, `States`. None was
+  read outside the package.
+- `recordCall`'s 11 positional parameters and the repeated
+  `(effector, entityID, commandID, args, atNS)` tuple became `invocation` and
+  `callOutcome` values; evaluation order and every call-log field are
+  unchanged. `Advance` has named results (`emitted, effectsApplied`) and a doc
+  line; dead `atNS` removed from `pickFailureMode` and `ackLatency`. The
+  failure-mode substream names and draw order are untouched.
+- File moves (declarations verbatim): `registry.go` (entity registry),
+  `churn.go` (birth/retire/lifetime), kick counting into `effects.go`,
+  `StateValue` into `observe.go`, `quantize` into `reading_values.go`,
+  `dynamicsFor` into `dynamics.go`.
+- New `effector_calls_test.go` pins the call-log contract: identity and
+  outcome fields, interlock refusal record, idempotent replay adds no record
+  and re-executes after the window. It exposed D-42 (replay loses the effect
+  ETA), recorded, not fixed.
+- Coverage 66.2 → 68.0 %; floor 68.

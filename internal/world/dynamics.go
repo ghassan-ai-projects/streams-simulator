@@ -139,3 +139,13 @@ func intermittentPeriod(rate float64) int64 {
 	}
 	return int64(period * secondsPerNS)
 }
+
+// dynamicsFor returns the dynamics declaration for a state, or nil.
+func (w *World) dynamicsFor(state string) *model.Dynamics {
+	for i := range w.Spec.Spec.Dynamics {
+		if w.Spec.Spec.Dynamics[i].Target == state {
+			return &w.Spec.Spec.Dynamics[i]
+		}
+	}
+	return nil
+}

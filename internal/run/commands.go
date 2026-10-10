@@ -84,7 +84,7 @@ func (r *Run) AddEntity(id string, atNS int64) error {
 	r.commandMu.Lock()
 	defer r.commandMu.Unlock()
 
-	if err := r.World.AddEntity(id, atNS, nil); err != nil {
+	if err := r.World.AddEntity(id, atNS); err != nil {
 		return fmt.Errorf("AddEntity: %w", err)
 	}
 	r.commandLog = append(r.commandLog, model.Command{

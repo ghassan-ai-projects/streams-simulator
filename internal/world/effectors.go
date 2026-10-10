@@ -34,33 +34,50 @@ type InvokeResult struct {
 // system. Refusal is not a retryable error.
 var ErrInterlockRefused = fmt.Errorf("world: interlock refused")
 
-// ErrEffectorRefused is a generic refusal whose detail must never reach the
-// operator role.
-var ErrEffectorRefused = fmt.Errorf("world: effector refused")
+// invocation is one effector actuation request: what was asked, of which
+// entity, under which idempotency key, at what world time.
+type invocation struct {
+	effector  string
+	entityID  string
+	commandID string
+	args      map[string]any
+	atNS      int64
+}
+
+// callOutcome is what became of an invocation, as recorded in the call log.
+type callOutcome struct {
+	mode          string
+	accepted      bool
+	interlock     bool
+	reason        string
+	latencyMS     float64
+	effectApplied bool
+}
 
 // InvokeEffector actuates an effector. commandID is the idempotency key;
 // repeating a call with the same command_id inside the declared window
 // returns the original result and applies no second effect.
 func (w *World) InvokeEffector(effector, entityID, commandID string, args map[string]any, atNS int64) (*InvokeResult, error) {
-	eff, err := w.admitInvocation(effector, entityID, commandID, args)
+	inv := invocation{effector: effector, entityID: entityID, commandID: commandID, args: args, atNS: atNS}
+	eff, err := w.admitInvocation(inv)
 	if err != nil {
 		return nil, err
 	}
-	if result, known := w.replayInvocation(commandID, atNS); known {
+	if result, known := w.replayInvocation(inv.commandID, inv.atNS); known {
 		return result, nil
 	}
-	if w.refuseInterlock(eff, effector, entityID, commandID, args, atNS) {
+	if w.refuseInterlock(eff, inv) {
 		return nil, ErrInterlockRefused
 	}
-	return w.executeInvocation(eff, effector, entityID, commandID, args, atNS), nil
+	return w.executeInvocation(eff, inv), nil
 }
 
-func (w *World) admitInvocation(effector, entityID, commandID string, args map[string]any) (*model.Effector, error) {
-	eff, err := w.invocationIdentity(effector, entityID, commandID)
+func (w *World) admitInvocation(inv invocation) (*model.Effector, error) {
+	eff, err := w.invocationIdentity(inv.effector, inv.entityID, inv.commandID)
 	if err != nil {
 		return nil, err
 	}
-	if err := w.validateArgs(eff, args); err != nil {
+	if err := w.validateArgs(eff, inv.args); err != nil {
 		return nil, fmt.Errorf("InvokeEffector: %w", err)
 	}
 	return eff, nil
@@ -93,23 +110,26 @@ func (w *World) replayInvocation(commandID string, atNS int64) (*InvokeResult, b
 }
 
 // Safety refusal is terminal and may execute its independent autonomous action.
-func (w *World) refuseInterlock(eff *model.Effector, effector, entityID, commandID string, args map[string]any, atNS int64) bool {
-	if eff.Interlock == nil || !w.interlockHolds(entityID, eff.Interlock, atNS) {
+func (w *World) refuseInterlock(eff *model.Effector, inv invocation) bool {
+	if eff.Interlock == nil || !w.interlockHolds(inv.entityID, eff.Interlock, inv.atNS) {
 		return false
 	}
 	if action := eff.Interlock.AutonomousAction; action != nil {
-		w.applyAutonomousAction(entityID, action.State, action.Delta, atNS)
+		w.applyAutonomousAction(inv.entityID, action.State, action.Delta, inv.atNS)
 	}
-	w.recordCall(effector, entityID, commandID, args, atNS, ModeReject, false, true, "interlock_refused", 0, false)
+	w.recordCall(inv, callOutcome{mode: ModeReject, interlock: true, reason: "interlock_refused"})
 	return true
 }
 
-func (w *World) executeInvocation(eff *model.Effector, effector, entityID, commandID string, args map[string]any, atNS int64) *InvokeResult {
-	mode := w.pickFailureMode(entityID, eff, atNS)
-	latency := w.ackLatency(entityID, eff, mode, atNS)
-	result := w.executeEffectorMode(entityID, commandID, eff, args, atNS, mode, latency)
-	w.recordCall(effector, entityID, commandID, args, atNS, mode, result.Accepted, false, result.Reason, latency, result.EffectApplied)
-	w.cacheInvocation(eff, commandID, atNS)
+func (w *World) executeInvocation(eff *model.Effector, inv invocation) *InvokeResult {
+	mode := w.pickFailureMode(inv.entityID, eff)
+	latency := w.ackLatency(inv.entityID, eff, mode)
+	result := w.executeEffectorMode(eff, inv, mode, latency)
+	w.recordCall(inv, callOutcome{
+		mode: mode, accepted: result.Accepted, reason: result.Reason,
+		latencyMS: latency, effectApplied: result.EffectApplied,
+	})
+	w.cacheInvocation(eff, inv.commandID, inv.atNS)
 	return result
 }
 
@@ -121,51 +141,51 @@ func (w *World) cacheInvocation(eff *model.Effector, commandID string, atNS int6
 	w.idempotent[commandID] = &idempotentResult{call: w.effectorCalls[len(w.effectorCalls)-1], expiresNS: atNS + int64(window*secondsPerNS)}
 }
 
-func (w *World) executeEffectorMode(entityID, commandID string, eff *model.Effector, args map[string]any, atNS int64, mode string, latency float64) *InvokeResult {
+func (w *World) executeEffectorMode(eff *model.Effector, inv invocation, mode string, latency float64) *InvokeResult {
 	result := &InvokeResult{
 		Simulated:    true,
 		WorldID:      w.ID,
-		CommandID:    commandID,
+		CommandID:    inv.commandID,
 		AckLatencyMS: latency,
 		Mode:         mode,
 	}
-	w.applyEffectorOutcome(result, eff, entityID, args, atNS)
+	w.applyEffectorOutcome(result, eff, inv)
 	return result
 }
 
-func (w *World) applyEffectorOutcome(result *InvokeResult, eff *model.Effector, entityID string, args map[string]any, atNS int64) {
+func (w *World) applyEffectorOutcome(result *InvokeResult, eff *model.Effector, inv invocation) {
 	switch result.Mode {
 	case ModeOK, ModeSlow, ModeAckLost:
-		w.applyAcknowledgedEffect(result, eff, entityID, args, atNS)
+		w.applyAcknowledgedEffect(result, eff, inv)
 	case ModeReject:
 		result.Reason = "effector_refused"
 	case ModePartial, ModeSilentNoEffect:
-		w.applyUnconfirmedEffect(result, eff, entityID, args, atNS)
+		w.applyUnconfirmedEffect(result, eff, inv)
 	case ModeConfirmedNoEffect:
 		result.Accepted = true // The ack lies; confirmation channels report truth.
 	}
 }
 
-func (w *World) applyAcknowledgedEffect(result *InvokeResult, eff *model.Effector, entityID string, args map[string]any, atNS int64) {
-	w.applyEffect(entityID, eff, args, atNS, 1.0, false)
+func (w *World) applyAcknowledgedEffect(result *InvokeResult, eff *model.Effector, inv invocation) {
+	w.applyEffect(inv.entityID, eff, inv.args, inv.atNS, 1.0, false)
 	result.EffectApplied = true
 	result.Accepted = result.Mode != ModeAckLost
 	if !result.Accepted {
 		result.Reason = "ack_lost"
 	}
-	result.EffectETANS = atNS + int64(eff.Effect.DeadTimeS*secondsPerNS)
+	result.EffectETANS = inv.atNS + int64(eff.Effect.DeadTimeS*secondsPerNS)
 }
 
 // Silent-no-effect applies to shadow state only; partial applies half physically.
-func (w *World) applyUnconfirmedEffect(result *InvokeResult, eff *model.Effector, entityID string, args map[string]any, atNS int64) {
+func (w *World) applyUnconfirmedEffect(result *InvokeResult, eff *model.Effector, inv invocation) {
 	strength, shadow := 0.5, false
 	if result.Mode == ModeSilentNoEffect {
 		strength, shadow = 1.0, true
 	}
-	w.applyEffect(entityID, eff, args, atNS, strength, shadow)
+	w.applyEffect(inv.entityID, eff, inv.args, inv.atNS, strength, shadow)
 	result.EffectApplied = true
 	result.Accepted = true
-	result.EffectETANS = atNS + int64(eff.Effect.DeadTimeS*secondsPerNS)
+	result.EffectETANS = inv.atNS + int64(eff.Effect.DeadTimeS*secondsPerNS)
 }
 
 // callResult reconstructs the original invoke result for an idempotent

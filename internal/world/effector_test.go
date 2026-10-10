@@ -53,7 +53,7 @@ func TestEffectsAreEntityScoped(t *testing.T) {
 	})
 	start := model.DefaultStartTimeNS
 	w := newTestWorld(t, spec, 17, start)
-	if err := w.AddEntity("e-2", start, nil); err != nil {
+	if err := w.AddEntity("e-2", start); err != nil {
 		t.Fatal(err)
 	}
 	before := w.StateValue("e-2", "x", start+secondsPerNS)

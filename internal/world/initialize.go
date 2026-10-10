@@ -20,11 +20,11 @@ func newWorldState(spec *domain.Compiled, seed uint64, id string, startNS int64,
 	return &World{
 		ID:               id,
 		Spec:             spec,
-		Seed:             seed,
+		seed:             seed,
 		StartNS:          startNS,
-		ClockNS:          startNS,
-		Noiseless:        opts.Noiseless,
-		EmitDisabled:     opts.EmitDisabled,
+		clockNS:          startNS,
+		noiseless:        opts.Noiseless,
+		emitDisabled:     opts.EmitDisabled,
 		forceEffectorOK:  opts.ForceEffectorOK,
 		forceFailureMode: opts.ForceFailureMode,
 	}
@@ -59,7 +59,7 @@ func initialEntityIDs(spec *domain.Compiled, ids []string) []string {
 
 func (w *World) populateInitialEntities(ids []string, startNS int64) error {
 	for _, id := range ids {
-		if err := w.addEntity(id, startNS, nil); err != nil {
+		if err := w.addEntity(id, startNS); err != nil {
 			return fmt.Errorf("streamsim: %w", err)
 		}
 	}

@@ -3,7 +3,6 @@ package world
 import (
 	"container/heap"
 	"fmt"
-	"math"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/randutil"
@@ -17,24 +16,22 @@ func (w *World) NextEventNS() int64 {
 	return w.queue[0].timeNS
 }
 
-// PendingEvents is the number of scheduled events.
-func (w *World) PendingEvents() int { return w.queue.Len() }
-
 // Advance processes every event scheduled at or before to, then sets the
-// clock to to. Moving the clock backwards is refused.
-func (w *World) Advance(to int64) (int, int, error) {
-	if to < w.ClockNS {
-		return 0, 0, fmt.Errorf("world: clock would move backwards (%d -> %d)", w.ClockNS, to)
+// clock to to, and reports how many native events were emitted and how many
+// effect kicks started. Moving the clock backwards is refused.
+func (w *World) Advance(to int64) (emitted, effectsApplied int, err error) {
+	if to < w.clockNS {
+		return 0, 0, fmt.Errorf("world: clock would move backwards (%d -> %d)", w.clockNS, to)
 	}
 	w.emittedThisAdvance = 0
 	w.effectsAppliedThis = 0
 	w.processScheduledEvents(to)
-	w.ClockNS = to
+	w.clockNS = to
 	return w.emittedThisAdvance, w.effectsAppliedThis, nil
 }
 
 // Clock is the current world time.
-func (w *World) Clock() int64 { return w.ClockNS }
+func (w *World) Clock() int64 { return w.clockNS }
 
 // SetEmitter installs the event sink. Events flow world -> emitter.
 func (w *World) SetEmitter(emitter func(model.SimEvent)) {
@@ -52,64 +49,9 @@ func (w *World) substream(name string) *randutil.SplitMix64 {
 	if s, ok := w.subs[full]; ok {
 		return s
 	}
-	s := randutil.Substream(w.Seed, full)
+	s := randutil.Substream(w.seed, full)
 	w.subs[full] = s
 	return s
-}
-
-// EntityIDs returns the live entity ids in creation order.
-func (w *World) EntityIDs() []string {
-	var out []string
-	for _, id := range w.entityOrder {
-		if w.entities[id] != nil && w.entities[id].alive {
-			out = append(out, id)
-		}
-	}
-	return out
-}
-
-// InitialEntityIDs returns the entities created at world construction, in
-// order (before any churn or entity.add).
-func (w *World) InitialEntityIDs() []string {
-	var out []string
-	for _, id := range w.entityOrder {
-		if w.entities[id] != nil && w.entities[id].BornNS == w.StartNS {
-			out = append(out, id)
-		}
-	}
-	return out
-}
-
-// AddEntity creates an entity at the given time (entity.add; churn births
-// go through birthAutonomous, which schedules the death).
-func (w *World) AddEntity(id string, atNS int64, params map[string]any) error {
-	return w.addEntity(id, atNS, params)
-}
-
-// Entity returns the entity by id, or nil.
-func (w *World) Entity(id string) *Entity { return w.entities[id] }
-
-// DynamicsFor returns the dynamics declaration for a state, or nil.
-func (w *World) DynamicsFor(state string) *model.Dynamics {
-	for i := range w.Spec.Spec.Dynamics {
-		if w.Spec.Spec.Dynamics[i].Target == state {
-			return &w.Spec.Spec.Dynamics[i]
-		}
-	}
-	return nil
-}
-
-// StateValue exposes a hidden state to the director only (solver and truth).
-func (w *World) StateValue(entity, state string, t int64) float64 {
-	return w.stateAt(entity, state, t)
-}
-
-// quantize rounds v to the channel's declared resolution.
-func quantize(v, resolution float64) float64 {
-	if resolution <= 0 {
-		return v
-	}
-	return math.Round(v/resolution) * resolution
 }
 
 func (w *World) processScheduledEvents(to int64) {
@@ -119,7 +61,7 @@ func (w *World) processScheduledEvents(to int64) {
 			break
 		}
 		heap.Pop(&w.queue)
-		w.ClockNS = event.timeNS
+		w.clockNS = event.timeNS
 		w.processScheduledEvent(event)
 	}
 }

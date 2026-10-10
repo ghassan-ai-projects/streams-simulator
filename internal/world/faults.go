@@ -55,7 +55,7 @@ func (w *World) ClearFault(faultID string, atNS int64) error {
 		return fmt.Errorf("world: unknown fault id %q", faultID)
 	}
 	if atNS <= 0 {
-		atNS = w.ClockNS
+		atNS = w.clockNS
 	}
 	af.clearedNS = atNS
 	return nil
@@ -67,7 +67,7 @@ func (w *World) ListFaults() []FaultInfo {
 	var out []FaultInfo
 	for _, id := range w.faultOrder {
 		fault := w.faultsByID[id]
-		if fault == nil || (fault.clearedNS > 0 && w.ClockNS >= fault.clearedNS) {
+		if fault == nil || (fault.clearedNS > 0 && w.clockNS >= fault.clearedNS) {
 			continue
 		}
 		out = append(out, fault.info(id))
@@ -130,7 +130,7 @@ func (fault *activeFault) info(id string) FaultInfo {
 
 func (w *World) admitFaultInjection(fault *model.Fault, entityID, faultID string, onsetNS int64, params map[string]any) (string, error) {
 	if onsetNS <= 0 {
-		onsetNS = w.ClockNS
+		onsetNS = w.clockNS
 	}
 	severity, err := faultSeverity(fault, faultID, params)
 	if err != nil {

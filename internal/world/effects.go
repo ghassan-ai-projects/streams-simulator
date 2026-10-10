@@ -2,6 +2,7 @@ package world
 
 import (
 	"encoding/json"
+	"sort"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
@@ -83,4 +84,33 @@ func additiveEffectValue(delta model.StateDelta, args map[string]any) float64 {
 		}
 	}
 	return value
+}
+
+// PendingKicks is the number of scheduled-but-unapplied effect kicks.
+func (w *World) PendingKicks() int {
+	n := 0
+	for _, key := range w.sortedKickStates() {
+		for _, k := range w.kicks[key] {
+			if !k.applied {
+				n++
+			}
+		}
+	}
+	return n
+}
+
+// sortedKickStates returns the states with pending kicks in a stable order.
+func (w *World) sortedKickStates() []driverKey {
+	var out []driverKey
+	// determinism-safe: collected here, sorted below before any output.
+	for key := range w.kicks {
+		out = append(out, key)
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].entity != out[j].entity {
+			return out[i].entity < out[j].entity
+		}
+		return out[i].state < out[j].state
+	})
+	return out
 }

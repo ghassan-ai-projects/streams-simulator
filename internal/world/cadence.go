@@ -64,7 +64,7 @@ func (w *World) periodicEmission(entity string, ch *model.Channel, at int64) int
 		return 0
 	}
 	next := at + int64(cadence.PeriodS*secondsPerNS)
-	if cadence.JitterS > 0 && !w.Noiseless {
+	if cadence.JitterS > 0 && !w.noiseless {
 		rng := w.substream(entity + "/" + ch.Name + "/jitter")
 		jitter := (2*rng.Float64() - 1) * cadence.JitterS
 		next += int64(jitter * secondsPerNS)

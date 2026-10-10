@@ -42,6 +42,7 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 | D-26 | L | `perturb/helpers.go:83` | `reorder` swaps by `atNS%2==0`, not the layer RNG: whole-second events always swap. |
 | D-27 | L | `world/effectors.go:86,121` | World idempotency key is `command_id` alone: same id with another effector/entity/args replays the first result. |
 | D-41 | M | `cli/run_script.go:invokeScriptedEffector` | `run --effector` always sends empty args, so every shipped effector with required args (all of them) is rejected: the flag is unusable except for argument-free custom domains. |
+| D-42 | L | `world/effectors.go:callResult` | An idempotent replay returns the original result without `EffectETANS` (the call record does not keep it), so a replayed acknowledgement differs from the first one. |
 | D-28 | L | `sink/sink.go:128-141` | HTTP push POSTs synchronously under the run lock (30 s timeout), response body not drained. |
 
 ## Correctness — loaders, adapters, schemas

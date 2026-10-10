@@ -33,7 +33,7 @@ func (w *World) processEmission(entityID, channelName string, t int64) {
 }
 
 func (w *World) publishNativeEvent(ent *Entity, ch *model.Channel, value any, t, observed int64) {
-	if w.EmitDisabled {
+	if w.emitDisabled {
 		return
 	}
 	w.seq++
@@ -117,4 +117,9 @@ func (w *World) emitChannelReading(entityID, channelName string, ent *Entity, ch
 		w.publishNativeEvent(ent, ch, value, t, observed)
 	}
 	w.scheduleNextEmission(entityID, channelName, ch, t)
+}
+
+// StateValue exposes a hidden state to the director only (solver and truth).
+func (w *World) StateValue(entity, state string, t int64) float64 {
+	return w.stateAt(entity, state, t)
 }

@@ -24,7 +24,7 @@ func (w *World) validateArgs(eff *model.Effector, args map[string]any) error {
 }
 
 // pickFailureMode samples from the declared failure-mode distribution.
-func (w *World) pickFailureMode(entityID string, eff *model.Effector, atNS int64) string {
+func (w *World) pickFailureMode(entityID string, eff *model.Effector) string {
 	if w.forceEffectorOK {
 		return ModeOK
 	}
@@ -46,7 +46,7 @@ func (w *World) SetFailureMode(mode string) {
 }
 
 // ackLatency samples the ack latency; slow mode is 10x (bounded).
-func (w *World) ackLatency(entityID string, eff *model.Effector, mode string, atNS int64) float64 {
+func (w *World) ackLatency(entityID string, eff *model.Effector, mode string) float64 {
 	rng := w.substream(entityID + "/" + eff.Name + "/delay")
 	mean := acknowledgementMean(eff)
 	latency := mean + eff.Ack.LatencyMS.Sigma*rng.Norm()

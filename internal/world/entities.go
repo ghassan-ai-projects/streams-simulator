@@ -28,7 +28,7 @@ func renderID(tmpl string, n int, params map[string]any) string {
 
 // addEntity creates an entity with initial hidden state and schedules its
 // first emissions.
-func (w *World) addEntity(id string, atNS int64, params map[string]any) error {
+func (w *World) addEntity(id string, atNS int64) error {
 	if _, exists := w.entities[id]; exists {
 		return fmt.Errorf("world: entity %q already exists", id)
 	}
@@ -84,13 +84,13 @@ func (w *World) newEntity(id string, at int64) *Entity {
 	if kind == "" {
 		kind = strings.Split(w.Spec.Spec.ID, "-")[0]
 	}
-	return &Entity{ID: id, Type: kind, BornNS: at, States: map[string]*stateValue{}, channels: map[string]*channelRunState{}, alive: true}
+	return &Entity{ID: id, Type: kind, BornNS: at, states: map[string]*stateValue{}, channels: map[string]*channelRunState{}, alive: true}
 }
 
 func (w *World) initializeEntityState(ent *Entity, at int64) {
 	for i := range w.Spec.Spec.State {
 		state := &w.Spec.Spec.State[i]
-		ent.States[state.Name] = &stateValue{x: state.Initial, lastStep: at}
+		ent.states[state.Name] = &stateValue{x: state.Initial, lastStep: at}
 	}
 }
 

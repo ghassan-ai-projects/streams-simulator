@@ -2,12 +2,11 @@ package world
 
 import (
 	"encoding/json"
-	"sort"
 )
 
-func (w *World) recordCall(effector, entityID, commandID string, args map[string]any, atNS int64, mode string, accepted, interlock bool, reason string, latency float64, effectApplied bool) {
-	call := &EffectorCall{CommandID: commandID, Effector: effector, EntityID: entityID, WorldID: w.ID, Args: args, AtNS: atNS}
-	call.recordOutcome(mode, accepted, interlock, reason, latency, effectApplied)
+func (w *World) recordCall(inv invocation, outcome callOutcome) {
+	call := &EffectorCall{CommandID: inv.commandID, Effector: inv.effector, EntityID: inv.entityID, WorldID: w.ID, Args: inv.args, AtNS: inv.atNS}
+	call.recordOutcome(outcome)
 	call.ResultDigest = resultDigest(call)
 	w.effectorCalls = append(w.effectorCalls, *call)
 }
@@ -30,65 +29,11 @@ func (w *World) EffectorCalls() []EffectorCall {
 	return out
 }
 
-// HiddenStateSnapshot returns the true hidden state values of every live
-// entity at time t (director-only; feeds world_state_history).
-func (w *World) HiddenStateSnapshot(t int64) map[string]map[string]float64 {
-	out := map[string]map[string]float64{}
-	for _, id := range w.entityOrder {
-		ent := w.entities[id]
-		if ent == nil || !ent.alive {
-			continue
-		}
-		row := map[string]float64{}
-		for _, name := range w.sortedStateNames() {
-			row[name] = w.stateAt(id, name, t)
-		}
-		out[id] = row
-	}
-	return out
-}
-
-// sortedStateNames returns the declared state names in a stable order.
-func (w *World) sortedStateNames() []string {
-	names := w.Spec.StateNames()
-	sort.Strings(names)
-	return names
-}
-
-// PendingKicks is the number of scheduled-but-unapplied effect kicks.
-func (w *World) PendingKicks() int {
-	n := 0
-	for _, key := range w.sortedKickStates() {
-		for _, k := range w.kicks[key] {
-			if !k.applied {
-				n++
-			}
-		}
-	}
-	return n
-}
-
-// sortedKickStates returns the states with pending kicks in a stable order.
-func (w *World) sortedKickStates() []driverKey {
-	var out []driverKey
-	// determinism-safe: collected here, sorted below before any output.
-	for key := range w.kicks {
-		out = append(out, key)
-	}
-	sort.Slice(out, func(i, j int) bool {
-		if out[i].entity != out[j].entity {
-			return out[i].entity < out[j].entity
-		}
-		return out[i].state < out[j].state
-	})
-	return out
-}
-
-func (call *EffectorCall) recordOutcome(mode string, accepted, interlock bool, reason string, latency float64, applied bool) {
-	call.Mode = mode
-	call.Accepted = accepted
-	call.InterlockRefused = interlock
-	call.Reason = reason
-	call.AckLatencyMS = latency
-	call.EffectApplied = applied
+func (call *EffectorCall) recordOutcome(outcome callOutcome) {
+	call.Mode = outcome.mode
+	call.Accepted = outcome.accepted
+	call.InterlockRefused = outcome.interlock
+	call.Reason = outcome.reason
+	call.AckLatencyMS = outcome.latencyMS
+	call.EffectApplied = outcome.effectApplied
 }
