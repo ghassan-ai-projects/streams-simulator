@@ -2,6 +2,8 @@ package app
 
 import (
 	"fmt"
+	"maps"
+	"slices"
 	"time"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/cli/internal/files"
@@ -66,10 +68,7 @@ func selectDeviceWorldEntity(w *world.World, entity string) (string, error) {
 }
 
 func validateDeviceWorldBindings(w *world.World, bindings map[string]deviceworld.Binding, caps *device.Capabilities) error {
-	targets := make([]string, 0, len(bindings))
-	for target := range bindings {
-		targets = append(targets, target)
-	}
+	targets := slices.Sorted(maps.Keys(bindings))
 	stops := deviceWorldSafeStops(bindings, caps)
 	if err := deviceworld.ValidateBindings(w, bindings, targets, stops); err != nil {
 		return fmt.Errorf("validate device world bindings: %w", err)

@@ -12,6 +12,7 @@ func strictParams(raw any) (map[string]any, bool) {
 	if !ok {
 		return nil, false
 	}
+	// determinism-safe: one invalid entry fails the whole set; the order is unobservable.
 	for name, value := range params {
 		if name == "" || !validParameterValue(value) {
 			return nil, false
@@ -27,6 +28,7 @@ func numericParams(raw any) (map[string]float64, bool) {
 		return nil, false
 	}
 	out := map[string]float64{}
+	// determinism-safe: copies the numeric entries into a map.
 	for name, value := range params {
 		number, ok := value.(float64)
 		if ok {
@@ -38,6 +40,7 @@ func numericParams(raw any) (map[string]float64, bool) {
 
 func semanticCommandDigest(command map[string]any) (string, error) {
 	identity := make(map[string]any, len(command))
+	// determinism-safe: copies a map into a map.
 	for key, value := range command {
 		if key != "command_id" {
 			identity[key] = value

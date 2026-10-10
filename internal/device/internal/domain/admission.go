@@ -71,6 +71,7 @@ func freshnessWindow(notBefore, expires float64, now int64) string {
 }
 
 func admitNumericBounds(bounds map[string][2]float64, params map[string]any) string {
+	// determinism-safe: every violation returns the same code; the order is unobservable.
 	for name, bound := range bounds {
 		value, ok := params[name].(float64)
 		if !ok || value < bound[0] || value > bound[1] {
@@ -81,6 +82,7 @@ func admitNumericBounds(bounds map[string][2]float64, params map[string]any) str
 }
 
 func admitStringValues(allowed map[string]map[string]struct{}, params map[string]any) string {
+	// determinism-safe: every violation returns the same code; the order is unobservable.
 	for name, values := range allowed {
 		value, ok := params[name].(string)
 		if !ok {

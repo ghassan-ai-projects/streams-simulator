@@ -49,6 +49,7 @@ func dynamicsFor(c *Compiled, state string) *model.Dynamics {
 
 func sortedKeys(m map[string]bool) []string {
 	out := make([]string, 0, len(m))
+	// determinism-safe: collected keys are sorted below.
 	for k := range m {
 		out = append(out, k)
 	}

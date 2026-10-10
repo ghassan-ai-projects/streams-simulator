@@ -176,6 +176,7 @@ func adapterListings(adapters map[string]*model.Adapter) []map[string]any {
 
 func sortedAdapterIDs(adapters map[string]*model.Adapter) []string {
 	ids := make([]string, 0, len(adapters))
+	// determinism-safe: collected ids are sorted below.
 	for id := range adapters {
 		ids = append(ids, id)
 	}

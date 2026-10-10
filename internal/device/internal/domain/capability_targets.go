@@ -3,7 +3,9 @@ package domain
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"math"
+	"slices"
 	"sort"
 )
 
@@ -34,6 +36,7 @@ func (c *Capabilities) loadSafeStops(stops map[string]safeStopDocument) error {
 
 func firstBoundField(bounds map[string][2]float64) string {
 	fields := make([]string, 0, len(bounds))
+	// determinism-safe: the collected fields are sorted below.
 	for field := range bounds {
 		fields = append(fields, field)
 	}
@@ -62,6 +65,7 @@ func finite(value float64) bool {
 
 func sortedStringKeys[V any](values map[string]V) []string {
 	keys := make([]string, 0, len(values))
+	// determinism-safe: the collected keys are sorted below.
 	for key := range values {
 		keys = append(keys, key)
 	}
@@ -118,7 +122,8 @@ func compileLegacyTarget(name string, target legacyTargetDocument) (TargetCapabi
 
 func legacyTargetBounds(name string, declared map[string]legacyBoundDocument) (map[string][2]float64, error) {
 	bounds := make(map[string][2]float64, len(declared))
-	for field, bound := range declared {
+	for _, field := range slices.Sorted(maps.Keys(declared)) {
+		bound := declared[field]
 		if !finite(bound.Min) || !finite(bound.Max) {
 			return nil, fmt.Errorf("device: target %q field %q has a non-finite bound", name, field)
 		}

@@ -14,6 +14,7 @@ type recordContext map[string]any
 
 func newContext(ev *model.SimEvent, meta map[string]any) *recordContext {
 	ctx := recordContext{}
+	// determinism-safe: copies a map into a map.
 	for k, v := range meta {
 		ctx[k] = v
 	}

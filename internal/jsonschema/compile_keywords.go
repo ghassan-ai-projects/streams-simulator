@@ -2,6 +2,8 @@ package jsonschema
 
 import (
 	"fmt"
+	"maps"
+	"slices"
 	"sort"
 )
 
@@ -49,7 +51,8 @@ func fillProperties(s *Schema, m, defs map[string]any, reg map[string]*Schema, d
 }
 
 func fillPropertySchemas(s *Schema, properties, defs map[string]any, reg map[string]*Schema, depth int) error {
-	for name, sub := range properties {
+	for _, name := range slices.Sorted(maps.Keys(properties)) {
+		sub := properties[name]
 		cs, err := compileProperty(name, sub, defs, reg, depth)
 		if err != nil {
 			return err

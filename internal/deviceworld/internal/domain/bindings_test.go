@@ -112,3 +112,16 @@ func TestValidateBindingsChecksWorldCompositionBeforeListen(t *testing.T) {
 		t.Fatal("unknown world effector accepted")
 	}
 }
+
+// With several broken bindings, the one reported is the first by name, every
+// time: loading never depends on map order.
+func TestLoadBindingsReportsTheFirstBrokenTargetByName(t *testing.T) {
+	t.Parallel()
+	body := `{"bindings":{"zeta":{"effector":"e","arguments":{"a":{"source":"unknown"}}},"alpha":{"effector":"e","arguments":{"a":{"source":"unknown"}}}}}`
+	for range 25 {
+		_, err := LoadBindings([]byte(body), "entity-01")
+		if err == nil || !strings.Contains(err.Error(), `target "alpha"`) {
+			t.Fatalf("err = %v, want the alphabetically first broken target", err)
+		}
+	}
+}

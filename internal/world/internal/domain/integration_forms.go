@@ -1,8 +1,9 @@
 package domain
 
 import (
-	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"math"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
 func (w *World) stepSpecialForm(ent *Entity, dyn *model.Dynamics, s *stateValue, at, dt int64, seconds float64) bool {

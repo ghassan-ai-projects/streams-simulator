@@ -108,6 +108,7 @@ func cloneRecord(in *model.GroundTruthRecord) *model.GroundTruthRecord {
 	out.Observability.Channels = append([]string(nil), in.Observability.Channels...)
 	out.Perturbations = append([]string(nil), in.Perturbations...)
 	out.TrivialBaselineDetail = make(map[string]float64, len(in.TrivialBaselineDetail))
+	// determinism-safe: copies a map into a map.
 	for k, v := range in.TrivialBaselineDetail {
 		out.TrivialBaselineDetail[k] = v
 	}

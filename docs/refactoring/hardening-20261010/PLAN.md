@@ -91,3 +91,4 @@ D-21/D-27/D-42/D-51 commit below ran focused package tests only.
 | D-46 | done | `see git log` | mcp split into `app` (use cases, errors, operator view, capability) and `protocol` (tools, schemas, SDK); gate rank `protocol` between app and facade; protocol tests moved, app use-case tests added |
 | D-47, D-48 | done | `see git log` | device setters removed; quiescence clock private; no test-only ledger query |
 | T-01 | done | `see git log` | 51 negative tests name the error they expect; `TestErrorAssertionsNameTheErrorTheyExpect` has no exceptions |
+| D-43 | done | `see git log` | the determinism gate type-checks the module (`go/packages`) and flags every map range without a stated reason; 13 order-sensitive sites now iterate sorted keys, the rest carry a `determinism-safe` reason; `determinismDebt` is gone |

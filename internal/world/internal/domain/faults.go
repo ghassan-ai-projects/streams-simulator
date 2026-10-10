@@ -9,7 +9,9 @@ package domain
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"math"
+	"slices"
 	"strconv"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
@@ -94,7 +96,7 @@ func (w *World) registerFault(fault *model.Fault, entity string, onset int64, se
 }
 
 func validateFaultParameters(id string, params map[string]any) error {
-	for name := range params {
+	for _, name := range slices.Sorted(maps.Keys(params)) {
 		if name != "severity" {
 			return fmt.Errorf("world: fault %q has no parameter %q (declared: severity)", id, name)
 		}

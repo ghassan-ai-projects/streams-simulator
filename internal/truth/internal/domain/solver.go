@@ -7,7 +7,9 @@ package domain
 
 import (
 	"fmt"
+	"maps"
 	"math"
+	"slices"
 	"sort"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
@@ -183,8 +185,8 @@ func applyOracleSetup(w *world.World, setup []model.SetupCall) error {
 }
 
 func injectOracleFaults(w *world.World, entityID string, faults map[string]int64) error {
-	for fid, onset := range faults {
-		if _, err := w.InjectFault(entityID, fid, onset, nil); err != nil {
+	for _, fid := range slices.Sorted(maps.Keys(faults)) {
+		if _, err := w.InjectFault(entityID, fid, faults[fid], nil); err != nil {
 			return fmt.Errorf("buildWorld: %w", err)
 		}
 	}

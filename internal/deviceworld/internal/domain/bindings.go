@@ -3,6 +3,8 @@ package domain
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
+	"slices"
 )
 
 // bindingArgument is a data-defined source for one world effector argument.
@@ -52,7 +54,8 @@ func LoadBindings(data []byte, entity string) (map[string]Binding, error) {
 
 func loadArguments(doc map[string]argumentDocument) (map[string]bindingArgument, error) {
 	arguments := make(map[string]bindingArgument, len(doc))
-	for name, argument := range doc {
+	for _, name := range slices.Sorted(maps.Keys(doc)) {
+		argument := doc[name]
 		if name == "" {
 			return nil, fmt.Errorf("argument name must not be empty")
 		}
@@ -79,6 +82,7 @@ func parseArgument(doc argumentDocument) (bindingArgument, error) {
 }
 
 func argumentsNeedEntity(arguments map[string]bindingArgument) bool {
+	// determinism-safe: an existence test; the answer ignores order.
 	for _, argument := range arguments {
 		if argument.source == "entity" {
 			return true
@@ -97,8 +101,8 @@ func (b Binding) safeStopArgsForEntity() (map[string]any, error) {
 
 func resolveArgs(arguments map[string]bindingArgument, entity string, params map[string]float64) (map[string]any, error) {
 	args := make(map[string]any, len(arguments))
-	for name, argument := range arguments {
-		value, err := argument.resolve(entity, params)
+	for _, name := range slices.Sorted(maps.Keys(arguments)) {
+		value, err := arguments[name].resolve(entity, params)
 		if err != nil {
 			return nil, err
 		}

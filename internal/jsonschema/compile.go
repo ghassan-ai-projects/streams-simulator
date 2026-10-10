@@ -38,6 +38,7 @@ func schemaDefinitions(m map[string]any) map[string]any {
 
 func definitionRegistry(defs map[string]any) map[string]*Schema {
 	reg := map[string]*Schema{}
+	// determinism-safe: fills a map; no order is observable.
 	for name := range defs {
 		reg[name] = &Schema{addAllowed: true}
 	}

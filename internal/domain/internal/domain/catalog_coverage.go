@@ -44,7 +44,9 @@ func addCoverage(counts map[string]int, values []string) {
 
 func thinCoverage(by map[string]map[string]int) []string {
 	var thin []string
+	// determinism-safe: the collected entries are sorted before returning.
 	for axis, counts := range by {
+		// determinism-safe: the collected entries are sorted before returning.
 		for value, n := range counts {
 			if n < 2 {
 				thin = append(thin, fmt.Sprintf("%s=%s(%d)", axis, value, n))

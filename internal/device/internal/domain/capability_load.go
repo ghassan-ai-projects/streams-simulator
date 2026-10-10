@@ -57,6 +57,7 @@ func capabilitiesDigest(data []byte, doc capabilitiesDoc) (string, error) {
 
 func canonicalCatalog(doc capabilitiesDoc) canonicalCatalogDocument {
 	routes := make(map[string]canonicalRouteDocument, len(doc.Routes))
+	// determinism-safe: copies a map into a map.
 	for name, route := range doc.Routes {
 		routes[name] = canonicalRoute(route)
 	}
@@ -139,6 +140,7 @@ func digestRouteCapabilities(doc capabilitiesDoc) (string, error) {
 
 func canonicalRoute(route routeDocument) canonicalRouteDocument {
 	bounds := make(map[string]canonicalBoundDocument, len(route.Bounds))
+	// determinism-safe: copies a map into a map.
 	for field, bound := range route.Bounds {
 		bounds[field] = canonicalBoundDocument(bound)
 	}

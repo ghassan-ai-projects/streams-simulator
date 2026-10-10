@@ -75,7 +75,7 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 
 ## Hygiene and small improvements
 
-- D-43 (M): `test/architecture/determinism_test.go` is a name heuristic; a
+- D-43 (M, FIXED in hardening): the gate was a name heuristic; a
   `go/types` scan finds 46 unmarked map ranges it passes. Order-sensitive
   ones: `truth/internal/domain/solver.go:168` and `audit/scenario_setup.go:65`
   (InjectFault in map order; fault ids `f-N` depend on it, latent because every

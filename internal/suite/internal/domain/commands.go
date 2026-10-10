@@ -12,6 +12,7 @@ func substituteEntity(in map[string]any, entity string) map[string]any {
 		return nil
 	}
 	out := make(map[string]any, len(in))
+	// determinism-safe: rewrites values into a new map.
 	for k, v := range in {
 		if s, ok := v.(string); ok && s == "{entity_id}" {
 			out[k] = entity

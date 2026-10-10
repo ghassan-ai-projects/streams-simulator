@@ -1,6 +1,10 @@
 package domain
 
-import "fmt"
+import (
+	"fmt"
+	"maps"
+	"slices"
+)
 
 type routePresetValues struct {
 	numeric map[string][]float64
@@ -8,9 +12,10 @@ type routePresetValues struct {
 }
 
 func (values *routePresetValues) collect(name string, presets map[string]map[string]any) error {
-	for _, preset := range presets {
-		for field, raw := range preset {
-			if err := values.record(name, field, raw); err != nil {
+	for _, presetName := range slices.Sorted(maps.Keys(presets)) {
+		preset := presets[presetName]
+		for _, field := range slices.Sorted(maps.Keys(preset)) {
+			if err := values.record(name, field, preset[field]); err != nil {
 				return err
 			}
 		}
@@ -33,8 +38,8 @@ func (values *routePresetValues) record(name, field string, raw any) error {
 }
 
 func (values *routePresetValues) validateBounds(name string, bounds map[string]routeBoundDocument) error {
-	for field, bound := range bounds {
-		if err := validateRouteBound(name, field, values.kinds[field], bound); err != nil {
+	for _, field := range slices.Sorted(maps.Keys(bounds)) {
+		if err := validateRouteBound(name, field, values.kinds[field], bounds[field]); err != nil {
 			return err
 		}
 	}
@@ -59,7 +64,8 @@ func validateRouteBound(name, field, kind string, bound routeBoundDocument) erro
 
 func (values *routePresetValues) effectiveBounds(name string, declared map[string]routeBoundDocument) (map[string][2]float64, error) {
 	bounds := make(map[string][2]float64, len(values.numeric))
-	for field, numbers := range values.numeric {
+	for _, field := range slices.Sorted(maps.Keys(values.numeric)) {
+		numbers := values.numeric[field]
 		minimum, maximum := presetExtremes(numbers, declared[field])
 		if maximum < minimum {
 			return nil, fmt.Errorf("device: route %q field %q has max < min", name, field)
