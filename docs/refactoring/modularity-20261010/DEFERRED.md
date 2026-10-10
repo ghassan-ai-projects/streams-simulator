@@ -107,3 +107,12 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
   MCP protocol wiring (server construction, schemas, tool registration).
   A protocol edge split needs the handler signatures to stop returning
   SDK types; coverage of the layer is 65.5 %, below the 70 % bar.
+- **D-47 (device)** `Device.Advance` and `Device.SetFaultSchedule` in
+  `internal/device/internal/domain/state.go` have no production caller.
+  Removing `Advance` leaves the default manual clock unable to move; decide
+  between removing both with the manual clock or keeping them as the
+  documented test-clock API.
+- **D-48 (run)** `Config.QuiescenceClock` is exported through the `Config`
+  alias but typed by the private `quiesce.Clock`, so only in-module tests
+  can implement it; inject through an unexported option instead.
+  `durable.Ledger.Closed` exists only for the finalisation regression test.

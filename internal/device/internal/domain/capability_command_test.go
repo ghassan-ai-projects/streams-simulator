@@ -120,14 +120,26 @@ func TestCanonicalRouteAcceptsCatalogDefinedStringPresetParameter(t *testing.T) 
 }
 
 // HandleCommandFor is a small test bridge: encode the command, hand the bytes to
-// HandleCommand, and surface any error. It keeps the wire path under test.
+// ApplyFrame, and encode the outcome frames. It keeps the wire path under test.
 func (d *Device) HandleCommandFor(t *testing.T, command map[string]any) ([]byte, []byte, bool, error) {
 	t.Helper()
 	frame, err := EncodeRecord(command)
 	if err != nil {
 		t.Fatalf("encode command: %v", err)
 	}
-	return d.HandleCommand(frame)
+	outcome, err := d.ApplyFrame(frame)
+	if err != nil {
+		return nil, nil, false, err
+	}
+	receipt, err := EncodeRecord(outcome.Receipt)
+	if err != nil {
+		t.Fatalf("encode receipt: %v", err)
+	}
+	result, err := EncodeRecord(outcome.Result)
+	if err != nil {
+		t.Fatalf("encode result: %v", err)
+	}
+	return receipt, result, outcome.AckLost, nil
 }
 
 const keyB = "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"

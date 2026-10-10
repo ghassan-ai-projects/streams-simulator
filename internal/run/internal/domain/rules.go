@@ -53,6 +53,7 @@ func rejectArtifactTrailingJSON(decoder *json.Decoder) error {
 	return nil
 }
 
+// ErrorString renders an error, or "" for nil.
 func ErrorString(err error) string {
 	if err == nil {
 		return ""
@@ -60,6 +61,7 @@ func ErrorString(err error) string {
 	return err.Error()
 }
 
+// CountLedger counts the ledger rows whose delivery reason is one of reasons.
 func CountLedger(ledger []model.LedgerRecord, reasons ...string) int {
 	n := 0
 	for _, l := range ledger {
@@ -73,7 +75,7 @@ func CountLedger(ledger []model.LedgerRecord, reasons ...string) int {
 	return n
 }
 
-// canonicalHash derives a short stable id from the domain and seed.
+// CanonicalHash derives a short stable id from the domain and seed.
 func CanonicalHash(domainID string, seed uint64) uint64 {
 	b, _ := canonical.MarshalString(map[string]any{"d": domainID, "s": seed})
 	return fnv([]byte(b))
@@ -88,11 +90,13 @@ func fnv(b []byte) uint64 {
 	return h
 }
 
+// AdapterDigest is the canonical digest of an adapter document.
 func AdapterDigest(a *model.Adapter) string {
 	raw, _ := json.Marshal(a)
 	return canonical.DigestBytes(raw)
 }
 
+// ValidateSubmittedVerdict refuses a verdict the run cannot accept.
 func ValidateSubmittedVerdict(v *model.Verdict) error {
 	raw, err := json.Marshal(v)
 	if err != nil {
@@ -104,6 +108,7 @@ func ValidateSubmittedVerdict(v *model.Verdict) error {
 	return nil
 }
 
+// CloneVerdict deep-copies a verdict so callers cannot mutate the run's copy.
 func CloneVerdict(v *model.Verdict) *model.Verdict {
 	if v == nil {
 		return nil
@@ -119,6 +124,7 @@ func CloneVerdict(v *model.Verdict) *model.Verdict {
 	return out
 }
 
+// CommandString reads a string argument of a recorded command, "" when absent.
 func CommandString(args map[string]any, key string) string {
 	if value, ok := args[key].(string); ok {
 		return value
@@ -126,6 +132,7 @@ func CommandString(args map[string]any, key string) string {
 	return ""
 }
 
+// CommandTime reads a nanosecond time argument of a recorded command.
 func CommandTime(args map[string]any, key string) int64 {
 	switch value := args[key].(type) {
 	case float64:
@@ -140,6 +147,7 @@ func CommandTime(args map[string]any, key string) int64 {
 	return 0
 }
 
+// AsMap views a decoded JSON value as an object, nil when it is not one.
 func AsMap(v any) map[string]any {
 	if m, ok := v.(map[string]any); ok {
 		return m

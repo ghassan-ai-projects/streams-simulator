@@ -673,3 +673,23 @@ not "read-only whole method set").
   operator endpoint reaches `sim.world.create`), `capability` (prefix,
   width, uniqueness), `app` 65.5 % (moved, floor re-keyed to the app layer).
 - Documentation links and `go test` commands now name the app layer.
+
+## Review follow-ups — M11 device, M12 run
+
+Isolated review of `42d0dbf`, `92d803b`, `3b40255`: no behaviour regression
+(behaviour pin identical, race/shuffle clean, fuzz pass); 0 high, 1 medium,
+6 low.
+
+- Fixed: the durable edge's error branches now have tests (`Finish` closes
+  the file when the flush fails, `Flush` and `PublishEvidence` error text);
+  the exported run rules have doc comments and `CanonicalHash`'s comment
+  names the right symbol; `ApplyFrame` is documented; dead production
+  `Device.HandleCommand` is gone (its test bridge encodes the outcome
+  itself); the unreachable `ServeConnWithFaults` test seam on the facade is
+  removed; `SOURCE.md` names the moved conformance test; the verdict test
+  now asserts refusal instead of logging.
+- Recorded, not changed: D-47 (device `Advance`/`SetFaultSchedule` are
+  unreachable by production code but give the default manual clock its only
+  way to move), D-48 (`run.Config.QuiescenceClock` is public through the
+  alias yet typed by a private interface; `Ledger.Closed` is a test-only
+  query on a production type).

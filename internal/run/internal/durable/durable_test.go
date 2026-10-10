@@ -89,3 +89,48 @@ func TestWriteRunArtifactAndReadArtifact(t *testing.T) {
 		t.Fatalf("missing artifact: %v", err)
 	}
 }
+
+func TestFinishClosesTheFileEvenWhenTheFlushFails(t *testing.T) {
+	t.Parallel()
+	l, err := OpenLedger(filepath.Join(t.TempDir(), "ledger.jsonl"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := l.file.Close(); err != nil {
+		t.Fatal(err)
+	}
+	l.Append(model.LedgerRecord{DeliveryReason: "ok"})
+	if err := l.Finish(); err == nil || !strings.HasPrefix(err.Error(), "End: flush ledger: ") {
+		t.Fatalf("finish over a closed file = %v", err)
+	}
+	if !l.Closed() {
+		t.Fatal("the ledger must report closed after a failed finish")
+	}
+}
+
+func TestFlushNamesTheLedgerWhenTheFileIsGone(t *testing.T) {
+	t.Parallel()
+	l, err := OpenLedger(filepath.Join(t.TempDir(), "ledger.jsonl"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := l.file.Close(); err != nil {
+		t.Fatal(err)
+	}
+	l.Append(model.LedgerRecord{DeliveryReason: "ok"})
+	if err := l.Flush(); err == nil || !strings.HasPrefix(err.Error(), "run: flush ledger: ") {
+		t.Fatalf("flush over a closed file = %v", err)
+	}
+}
+
+func TestPublishEvidenceRefusesAnOutputDirUnderAFile(t *testing.T) {
+	t.Parallel()
+	blocker := filepath.Join(t.TempDir(), "file")
+	if err := os.WriteFile(blocker, []byte("x"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	err := PublishEvidence(filepath.Join(blocker, "out"), Evidence{Trace: []byte("t\n")})
+	if err == nil || !strings.HasPrefix(err.Error(), "End: ") {
+		t.Fatalf("publish under a regular file = %v", err)
+	}
+}

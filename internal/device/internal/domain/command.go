@@ -2,7 +2,7 @@ package domain
 
 // ApplyCommand runs the device's admission logic on an already-decoded command
 // and returns the receipt and result records. It is the deterministic core of
-// the emulator; HandleCommand is the wire wrapper.
+// the emulator; ApplyFrame is the wire wrapper.
 func (d *Device) ApplyCommand(command map[string]any) Outcome {
 	d.mu.Lock()
 	defer d.mu.Unlock()

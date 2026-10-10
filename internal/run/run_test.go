@@ -2,7 +2,6 @@ package run_test
 
 import (
 	"context"
-	"errors"
 	"path/filepath"
 	"testing"
 
@@ -84,14 +83,17 @@ func TestEndPublishesAnArtifactThatReplaysToTheSameTrace(t *testing.T) {
 	}
 }
 
-func TestVerdictAndLedgerAreRefusedUntilSubmitted(t *testing.T) {
+func TestAnInvalidVerdictIsRefusedAndNeverKept(t *testing.T) {
 	t.Parallel()
 	r := pondRun(t, "")
 	if r.Verdict() != nil {
 		t.Fatal("no verdict before one is submitted")
 	}
-	if err := r.SubmitVerdict(&model.Verdict{}); err != nil && !errors.Is(err, run.ErrConsumerNotQuiesced) {
-		t.Logf("submit verdict: %v", err)
+	if err := r.SubmitVerdict(&model.Verdict{}); err == nil {
+		t.Fatal("an empty verdict must be refused")
+	}
+	if r.Verdict() != nil {
+		t.Fatal("a refused verdict must not be kept")
 	}
 	r.Unblind()
 	if !r.UnblindedStamp() {

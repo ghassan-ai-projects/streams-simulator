@@ -14,5 +14,5 @@ the device emulator tests against so the two repos cannot silently diverge.
 To change the contract, change it in Agentic Stream, regenerate its fixtures
 (`AGENTIC_STREAM_UPDATE_CONFORMANCE=1 go test ./internal/contractsv1/`), then
 re-copy them here and update the commit above. The emulator's conformance test
-(`internal/device/conformance_test.go`) proves this copy still decodes/rejects
+(`internal/device/internal/domain/conformance_test.go`) proves this copy still decodes/rejects
 exactly as the contract requires.

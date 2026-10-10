@@ -78,25 +78,8 @@ func (d *Device) State() map[string]any {
 	return state
 }
 
-// HandleCommand decodes, validates, and applies one command frame, returning
-// the encoded receipt and result frames. When ackLost is true the receipt frame
-// must not be written to the wire (the effect still happened).
-func (d *Device) HandleCommand(frame []byte) (receipt []byte, result []byte, ackLost bool, err error) {
-	outcome, err := d.ApplyFrame(frame)
-	if err != nil {
-		return nil, nil, false, err
-	}
-	receiptFrame, err := EncodeRecord(outcome.Receipt)
-	if err != nil {
-		return nil, nil, false, fmt.Errorf("device: encode receipt: %w", err)
-	}
-	resultFrame, err := EncodeRecord(outcome.Result)
-	if err != nil {
-		return nil, nil, false, fmt.Errorf("device: encode result: %w", err)
-	}
-	return receiptFrame, resultFrame, outcome.AckLost, nil
-}
-
+// ApplyFrame decodes one command frame, validates that it is a command and
+// applies it, returning the structured outcome the wire edge encodes.
 func (d *Device) ApplyFrame(frame []byte) (Outcome, error) {
 	command, decodeErr := DecodeRecord(frame)
 	if decodeErr != nil {
