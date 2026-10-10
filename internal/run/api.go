@@ -17,3 +17,6 @@ type ReplayEvidence = layer.ReplayEvidence
 // ErrConsumerNotQuiesced marks an await_consumer timeout. The world has
 // already advanced; the run is incomplete, never silently successful.
 var ErrConsumerNotQuiesced = layer.ErrConsumerNotQuiesced
+
+// WorldStatus is a consistent read of the world's clock and queues.
+type WorldStatus = layer.WorldStatus

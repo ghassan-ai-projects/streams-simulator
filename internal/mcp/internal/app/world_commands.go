@@ -16,10 +16,11 @@ func (d *Director) DescribeWorld(worldID string) (map[string]any, error) {
 	if w == nil {
 		return nil, errTool(CodeWorldNotFound, "unknown world %q", worldID)
 	}
+	status := w.Run.Status()
 	return map[string]any{
 		"world_id": worldID, "domain": w.Run.Domain().Spec.ID,
-		"seed": w.Run.Config.Seed, "clock": model.FormatTime(w.Run.World.Clock()),
-		"emitted": w.Run.World.EmittedCount(), "simulated": true,
+		"seed": w.Run.Config.Seed, "clock": model.FormatTime(status.ClockNS),
+		"emitted": status.Emitted, "simulated": true,
 	}, nil
 }
 
@@ -49,10 +50,11 @@ func (d *Director) Advance(ctx context.Context, worldID string, toNS int64, awai
 	if err != nil {
 		return nil, advanceToolError(err)
 	}
+	status := w.Run.Status()
 	return map[string]any{
-		"emitted": emitted, "clock": model.FormatTime(w.Run.World.Clock()),
-		"emitted_total":   w.Run.World.EmittedCount(),
-		"effects_applied": w.Run.World.ActiveFaultsCount(), "simulated": true,
+		"emitted": emitted, "clock": model.FormatTime(status.ClockNS),
+		"emitted_total":   status.Emitted,
+		"effects_applied": status.ActiveFaults, "simulated": true,
 	}, nil
 }
 
@@ -62,10 +64,11 @@ func (d *Director) ClockState(worldID string) (map[string]any, error) {
 	if w == nil {
 		return nil, errTool(CodeWorldNotFound, "unknown world %q", worldID)
 	}
+	status := w.Run.Status()
 	return map[string]any{
-		"clock":             model.FormatTime(w.Run.World.Clock()),
-		"next_scheduled_ns": w.Run.World.NextEventNS(),
-		"pending_effects":   w.Run.World.PendingKicks(),
+		"clock":             model.FormatTime(status.ClockNS),
+		"next_scheduled_ns": status.NextEventNS,
+		"pending_effects":   status.PendingEffects,
 	}, nil
 }
 
@@ -100,7 +103,7 @@ func (d *Director) ListFaults(worldID string) (map[string]any, error) {
 	if w == nil {
 		return nil, errTool(CodeWorldNotFound, "unknown world %q", worldID)
 	}
-	return map[string]any{"faults": w.Run.World.ListFaults()}, nil
+	return map[string]any{"faults": w.Run.Faults()}, nil
 }
 
 // ApplyPerturb activates a delivery perturbation.
@@ -134,7 +137,7 @@ func (d *Director) EnvInject(worldID, target, fault string, params map[string]an
 	if w == nil {
 		return nil, errTool(CodeWorldNotFound, "unknown world %q", worldID)
 	}
-	id, err := w.Run.EnvInject(target, fault, params, w.Run.World.Clock())
+	id, err := w.Run.EnvInject(target, fault, params, w.Run.Status().ClockNS)
 	if err != nil {
 		return nil, errTool(CodeDomainInvalid, "%v", err)
 	}

@@ -39,7 +39,7 @@ func (d directorTools) handleEntityRetire(_ context.Context, args map[string]any
 	if w == nil {
 		return nil, app.ToolErrorf(app.CodeWorldNotFound, "unknown world")
 	}
-	if err := w.Run.RetireEntity(app.Str(args, "entity_id"), app.Str(args, "reason"), w.Run.World.Clock()); err != nil {
+	if err := w.Run.RetireEntity(app.Str(args, "entity_id"), app.Str(args, "reason"), w.Run.Status().ClockNS); err != nil {
 		return nil, app.ToolErrorf(app.CodeDomainInvalid, "%v", err)
 	}
 	return map[string]any{"retired": true}, nil

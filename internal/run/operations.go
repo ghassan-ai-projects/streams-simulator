@@ -155,3 +155,14 @@ func (r *Run) SetQuiesceParkedHook(h func()) {
 func (r *Run) SetFailureMode(mode world.FailureMode) {
 	r.run.SetFailureMode(mode)
 }
+
+// Status reads the world's clock and queues between commands, so it never
+// overlaps an advance.
+func (r *Run) Status() WorldStatus {
+	return r.run.Status()
+}
+
+// Faults lists the active faults between commands.
+func (r *Run) Faults() []world.FaultInfo {
+	return r.run.Faults()
+}

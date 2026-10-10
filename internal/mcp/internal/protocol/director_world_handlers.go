@@ -36,10 +36,10 @@ func (d directorTools) relativeClockTarget(worldID string, byNS int64) (int64, e
 		return 0, app.ToolErrorf(app.CodeWorldNotFound, "unknown world %q", worldID)
 	}
 	const maxInt64 = int64(1<<63 - 1)
-	if byNS > maxInt64-w.Run.World.Clock() {
+	if byNS > maxInt64-w.Run.Status().ClockNS {
 		return 0, app.ToolErrorf(app.CodeInvalidArgs, "by_ns overflows the world clock")
 	}
-	return w.Run.World.Clock() + byNS, nil
+	return w.Run.Status().ClockNS + byNS, nil
 }
 
 func (d directorTools) clockTarget(args map[string]any, worldID string) (int64, error) {
