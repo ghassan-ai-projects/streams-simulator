@@ -96,3 +96,29 @@ corrected. Not fixed, recorded: mixed skip-directory rules between older gates
 - New `file_test.go`: sorted top-level `.json` only, nested dir and non-JSON
   ignored, one bad domain fails the whole load, error text names the missing
   path (`domain: read …`, `domain: list …`).
+
+## R4 — adapter
+
+- New package `internal/adapter/conformance` (layer 4, edge-core) owns
+  `adapter verify`: `Verify`, `Result` (was `adapter.VerifyResult`; JSON keys
+  unchanged), output-schema validation, golden comparison and the fixture-file
+  branch. Files moved with bodies unchanged except package, the
+  `adapter.Load`/`adapter.NewEngine`/`adapter.FixtureEvents` qualifiers and the
+  type rename. `cli/catalog.go` is the only caller.
+- `adapter` keeps the embedded fixture (`FixtureEvents`, used by its own
+  tests) and `Load` now sits in `file.go`, the package's one file-system edge;
+  `adapter` is reclassified `edge-core`.
+- Tests moved with the code: `TestShippedAdaptersConform`,
+  `TestVerifyDetectsTampering`, `TestValidateStrictObservedOrder`,
+  `TestVerifyRejectsNonMonotonicFixture`. Added: golden divergence (first byte
+  reported), schema-violating record, missing golden file, `adapter.Load`
+  success and missing file.
+- Coverage: moving verification out lowered `adapter` from 69.9 to 68.3 (the
+  moved code was well covered); floor reset to 68 and tracked for R15.
+  `conformance` 82.7 %.
+- Known and untouched (DEFERRED D-30..D-32): empty-fixture panic, `hash_suffix`,
+  verify semantics for absent `output_schema`/`golden`.
+- One error-text edit, unreachable: the embedded-fixture failure in
+  `conformance.loadFixture` now reads `adapter: embedded fixture: …` (wrapcheck;
+  the embedded fixture is covered by tests). All reachable `adapter verify`
+  messages are unchanged.

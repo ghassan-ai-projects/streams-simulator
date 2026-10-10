@@ -2,8 +2,6 @@ package adapter
 
 import (
 	"encoding/json"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -112,72 +110,6 @@ func TestRenderTransforms(t *testing.T) {
 	// no event context (value absent).
 	if !strings.Contains(lines[13], `"trace_end"`) {
 		t.Fatalf("postamble missing: %s", lines[13])
-	}
-}
-
-func TestValidateStrictObservedOrder(t *testing.T) {
-	base := model.DefaultStartTimeNS
-	cases := []struct {
-		name    string
-		events  []model.SimEvent
-		wantErr bool
-	}{
-		{
-			name: "strict",
-			events: []model.SimEvent{
-				{ObservedTime: model.FormatTime(base)},
-				{ObservedTime: model.FormatTime(base + 1)},
-			},
-		},
-		{
-			name: "tie",
-			events: []model.SimEvent{
-				{ObservedTime: model.FormatTime(base)},
-				{ObservedTime: model.FormatTime(base)},
-			},
-			wantErr: true,
-		},
-		{
-			name: "out-of-order",
-			events: []model.SimEvent{
-				{ObservedTime: model.FormatTime(base + 1)},
-				{ObservedTime: model.FormatTime(base)},
-			},
-			wantErr: true,
-		},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			err := validateStrictObservedOrder(tc.events)
-			if (err != nil) != tc.wantErr {
-				t.Fatalf("validateStrictObservedOrder() error = %v, wantErr %t", err, tc.wantErr)
-			}
-		})
-	}
-}
-
-func TestVerifyRejectsNonMonotonicFixture(t *testing.T) {
-	base := model.DefaultStartTimeNS
-	events := []model.SimEvent{
-		{ObservedTime: model.FormatTime(base + 2)},
-		{ObservedTime: model.FormatTime(base + 1)},
-	}
-	var fixture strings.Builder
-	for _, ev := range events {
-		raw, err := json.Marshal(ev)
-		if err != nil {
-			t.Fatal(err)
-		}
-		fixture.Write(raw)
-		fixture.WriteByte('\n')
-	}
-	fixturePath := filepath.Join(t.TempDir(), "fixture.jsonl")
-	if err := os.WriteFile(fixturePath, []byte(fixture.String()), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	_, err := Verify("../../adapters/native-jsonl.adapter.json", fixturePath, "../../adapters")
-	if err == nil || !strings.Contains(err.Error(), "strict observed-time order") {
-		t.Fatalf("adapter verify accepted non-monotonic fixture: %v", err)
 	}
 }
 

@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter/conformance"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
@@ -194,7 +195,7 @@ func verifyAdapterCommand(dir string, args []string) error {
 }
 
 func verifyAdapterFile(path, base string) error {
-	res, err := adapter.Verify(path, "", base)
+	res, err := conformance.Verify(path, "", base)
 	if err != nil {
 		return fmt.Errorf("streamsim: %w", err)
 	}

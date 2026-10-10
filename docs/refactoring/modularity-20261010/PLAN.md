@@ -33,7 +33,7 @@ are the behaviours the round could silently change.
 | R1 | **Gates and lint ratchet** in `test/architecture`: `packages` kind+layer table with strict-lower-layer and no-stale-edge gates; `ioEdges` inventory (imports, clock calls and values, `go` statements) with scheduled debt; package-comment and package-map gates; `make coverage-check` with a per-package baseline table; lint adds `gocognit`, `gocyclo`, `nestif`, `dupl` (fix the one `nestif` in `jsonschema` and one `dupl` pair in `perturb`); remove the stale 60-line review table | exception tables must start equal to today's violations and may only shrink | each gate fails on an injected violation (recorded) |
 | R2 | **Foundations**: delete `randutil.Picker` and the unused `model.TimeNS`; one `jsonschema.CompileJSON` and one `jsonschema.FormatErrors` replace three `mustAny` and two `formatErrs` copies; `model` keeps its two contract validators (foundation→foundation edge is allowed; error strings are contract); schema enum constants stay (they mirror contract enums) | error strings byte-identical, including the `streamsim: streamsim:` prefix stutter | run artifact tests; fuzz target |
 | R3 | **domain**: file loading (`Load`, `LoadAll`, directory scan) isolated in `file.go`, the package's one declared I/O file (STANDARD: a package that is K3 only for one small reader stays one package; moving it to `cli` would force 28 call sites in 14 packages' tests through a new helper for no gate gain); delete unused `Compiled` name accessors | domain digest, error text including prefix stutter, sorted path order, `Compiled.Raw` copy | pin; `shipped_test`, replay tests; new `file_test.go` |
-| R4 | **adapter**: `adapter/conformance` package (verify + fixture file branch); `adapter.Digest` moved beside the adapter with the same value; dedupe `jsonEqualish`; remove `Engine.Meta`, unneeded `NewEngine` error is kept (signature) | `VerifyResult` JSON keys, `adapter verify` output, adapter digest bytes | pin (`adapter-verify/*`); golden tests |
+| R4 | **adapter**: `adapter/conformance` package (verify + fixture file branch); `Load` isolated in `adapter/file.go`; the `adapterDigest` recipe move waits for R11 (it is digest-bearing and lives with `run`'s identity code); `Engine.Meta` and `jsonEqualish` left (not worth a round) | `VerifyResult` JSON keys, `adapter verify` output, adapter digest bytes | pin (`adapter-verify/*`); golden tests |
 | R5 | **world**: delete dead API, unexport never-read fields, `FailureMode` type, `invocation` value instead of 11 positional params, named `AdvanceResult`, split `clock.go` / `effector_log.go` / `availability.go` by concern | RNG substream names and draw order, idempotency window and interlock-before-replay order, effector call ledger bytes | `effector_order_test`, `determinism_test`, `oracle_test`, pin |
 | R6 | **perturb**: name→transform table replaces the switch ladder; unexport `Active`; drop unused params; shared param defaults | per-perturbation RNG draws (short-circuit order), `nextID` allocation, `ActiveIDs` order | new fixed-seed golden over all 19 perturbations (committed first), `perturb_test` |
 | R7 | **truth**: `store.go` (sealed `Store`) apart from solver/record; `NewStore` requires the open-run check (production wiring identical); `BuildRecord` takes an `Injection` value; `SetupCall` moves to `model` | label bytes (feed digests and scoring), reveal error precedence | analytic cross-check tests, suite golden, pin |
@@ -63,8 +63,8 @@ the two delivery paths (D-18), and world read-purity (D-14).
 | R0 | done | `3e81cf2` | |
 | R1 | done | `52ea773` | gates, lint, coverage ratchet; review fixes folded in |
 | R2 | done | `a3f6858` | review fixes amended |
-| R3 | in progress | | |
-| R4 | pending | | |
+| R3 | done | `33d757f` | `file.go` instead of a move to cli |
+| R4 | in progress | | |
 | R5 | pending | | |
 | R6 | pending | | |
 | R7 | pending | | |

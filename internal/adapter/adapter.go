@@ -9,23 +9,11 @@ package adapter
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/jsonschema"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/schemas"
 )
-
-// Load reads and validates an adapter file. The validation covers the
-// output-adapter schema plus adapter-specific cross-checks (transform
-// arity, source names, identity preservation).
-func Load(path string) (*model.Adapter, error) {
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("adapter: read %s: %w", path, err)
-	}
-	return decodeAdapter(raw, path, "\n  ")
-}
 
 // LoadBytes validates an adapter from an in-memory source document. It is
 // used by artifact replay so a run can carry its own adapter definition.

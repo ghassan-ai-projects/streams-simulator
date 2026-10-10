@@ -9,7 +9,6 @@ package adapter
 import (
 	_ "embed"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
@@ -33,38 +32,4 @@ func FixtureEvents() ([]model.SimEvent, error) {
 		out = append(out, ev)
 	}
 	return out, nil
-}
-
-func loadFixture(path string) ([]model.SimEvent, error) {
-	if path == "" {
-		return FixtureEvents()
-	}
-	var out []model.SimEvent
-	if err := decodeJSONL(path, &out); err != nil {
-		return nil, fmt.Errorf("adapter: %w", err)
-	}
-	return out, nil
-}
-
-func decodeJSONL(path string, dst *[]model.SimEvent) error {
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		return fmt.Errorf("adapter: %w", err)
-	}
-	return appendFixtureRecords(raw, dst)
-}
-
-func appendFixtureRecords(raw []byte, dst *[]model.SimEvent) error {
-	for _, line := range strings.Split(strings.TrimSpace(string(raw)), "\n") {
-		line = strings.TrimSpace(line)
-		if line == "" {
-			continue
-		}
-		var ev model.SimEvent
-		if err := model.DecodeBytes([]byte(line), &ev); err != nil {
-			return fmt.Errorf("adapter: %w", err)
-		}
-		*dst = append(*dst, ev)
-	}
-	return nil
 }

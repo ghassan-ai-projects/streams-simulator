@@ -1,4 +1,4 @@
-package adapter
+package conformance
 
 import (
 	"encoding/json"
@@ -30,7 +30,7 @@ func compileOutputSchema(raw []byte) (*jsonschema.Schema, error) {
 	return schema, nil
 }
 
-func validateOutputRecords(records []string, schema *jsonschema.Schema, name string, res *VerifyResult) bool {
+func validateOutputRecords(records []string, schema *jsonschema.Schema, name string, res *Result) bool {
 	for i, record := range records {
 		if divergence := outputRecordDivergence(record, i, schema, name); divergence != "" {
 			res.FirstDivergence = divergence
@@ -55,7 +55,7 @@ func outputRecordDivergence(record string, i int, schema *jsonschema.Schema, nam
 	return ""
 }
 
-func compareGolden(path string, out []byte, res *VerifyResult) error {
+func compareGolden(path string, out []byte, res *Result) error {
 	golden, err := os.ReadFile(path)
 	if err != nil {
 		return fmt.Errorf("adapter: read golden %s: %w", path, err)

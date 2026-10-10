@@ -1,13 +1,16 @@
-package adapter
+package conformance
 
 import (
 	"fmt"
+	"os"
+	"strings"
 
+	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
 func verificationInputs(adapterPath, fixturePath string) (*model.Adapter, []model.SimEvent, error) {
-	a, err := Load(adapterPath)
+	a, err := adapter.Load(adapterPath)
 	if err != nil {
 		return nil, nil, fmt.Errorf("adapter: %w", err)
 	}
@@ -22,7 +25,7 @@ func verificationInputs(adapterPath, fixturePath string) (*model.Adapter, []mode
 }
 
 func renderVerification(a *model.Adapter, fixture []model.SimEvent) ([]byte, error) {
-	engine, err := NewEngine(a, verificationMetadata(fixture))
+	engine, err := adapter.NewEngine(a, verificationMetadata(fixture))
 	if err != nil {
 		return nil, fmt.Errorf("adapter: %w", err)
 	}
@@ -42,8 +45,8 @@ func verificationMetadata(fixture []model.SimEvent) map[string]any {
 	}
 }
 
-func verifyRendered(a *model.Adapter, out []byte, base string) (*VerifyResult, error) {
-	res := &VerifyResult{Adapter: a.ID}
+func verifyRendered(a *model.Adapter, out []byte, base string) (*Result, error) {
+	res := &Result{Adapter: a.ID}
 	if complete, err := verifyOutputSchema(a, out, base, res); err != nil {
 		return nil, err
 	} else if !complete {
@@ -53,4 +56,42 @@ func verifyRendered(a *model.Adapter, out []byte, base string) (*VerifyResult, e
 		return nil, err
 	}
 	return res, nil
+}
+
+func loadFixture(path string) ([]model.SimEvent, error) {
+	if path == "" {
+		events, err := adapter.FixtureEvents()
+		if err != nil {
+			return nil, fmt.Errorf("adapter: embedded fixture: %w", err)
+		}
+		return events, nil
+	}
+	var out []model.SimEvent
+	if err := decodeJSONL(path, &out); err != nil {
+		return nil, fmt.Errorf("adapter: %w", err)
+	}
+	return out, nil
+}
+
+func decodeJSONL(path string, dst *[]model.SimEvent) error {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("adapter: %w", err)
+	}
+	return appendFixtureRecords(raw, dst)
+}
+
+func appendFixtureRecords(raw []byte, dst *[]model.SimEvent) error {
+	for _, line := range strings.Split(strings.TrimSpace(string(raw)), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		var ev model.SimEvent
+		if err := model.DecodeBytes([]byte(line), &ev); err != nil {
+			return fmt.Errorf("adapter: %w", err)
+		}
+		*dst = append(*dst, ev)
+	}
+	return nil
 }

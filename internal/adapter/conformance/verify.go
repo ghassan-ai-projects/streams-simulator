@@ -1,4 +1,8 @@
-package adapter
+// Package conformance proves an output adapter correct with the consumer
+// absent: it renders the shipped fixture through the adapter engine, validates
+// the output against the adapter's declared schema and byte-compares it to the
+// committed golden file. It is the `adapter verify` use case.
+package conformance
 
 import (
 	"fmt"
@@ -8,8 +12,8 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-// VerifyResult is the outcome of `streamsim adapter verify`.
-type VerifyResult struct {
+// Result is the outcome of `streamsim adapter verify`.
+type Result struct {
 	Adapter         string `json:"adapter"`
 	SchemaOK        bool   `json:"schema_ok"`
 	GoldenMatch     bool   `json:"golden_match"`
@@ -24,7 +28,7 @@ type VerifyResult struct {
 // committed golden file. adapterPath is the adapter file; fixturePath is the
 // native-event fixture (defaults to the embedded one); base is the directory
 // conformance paths resolve against.
-func Verify(adapterPath, fixturePath, base string) (*VerifyResult, error) {
+func Verify(adapterPath, fixturePath, base string) (*Result, error) {
 	a, fixture, err := verificationInputs(adapterPath, fixturePath)
 	if err != nil {
 		return nil, err
@@ -36,7 +40,7 @@ func Verify(adapterPath, fixturePath, base string) (*VerifyResult, error) {
 	return verifyRendered(a, out, base)
 }
 
-func verifyOutputSchema(a *model.Adapter, out []byte, base string, res *VerifyResult) (bool, error) {
+func verifyOutputSchema(a *model.Adapter, out []byte, base string, res *Result) (bool, error) {
 	if a.Conformance == nil || a.Conformance.OutputSchema == "" {
 		return true, nil
 	}
@@ -52,7 +56,7 @@ func verifyOutputSchema(a *model.Adapter, out []byte, base string, res *VerifyRe
 	return validateOutputRecords(records, schema, filepath.Base(path), res), nil
 }
 
-func verifyGolden(a *model.Adapter, out []byte, base string, res *VerifyResult) error {
+func verifyGolden(a *model.Adapter, out []byte, base string, res *Result) error {
 	if a.Conformance == nil || a.Conformance.Golden == "" {
 		return nil
 	}

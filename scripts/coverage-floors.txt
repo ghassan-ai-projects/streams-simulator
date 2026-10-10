@@ -10,4 +10,4 @@ internal/model        20
 internal/mcp          62
 internal/world        66
 internal/refconsumer  68
-internal/adapter      69
+internal/adapter      68
