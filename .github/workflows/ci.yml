@@ -47,7 +47,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
         with:
-          # The golangci-lint diff baseline is HEAD~1.
+          # Full history: the Makefile derives the version from git describe.
           fetch-depth: 0
 
       - name: Set up Go

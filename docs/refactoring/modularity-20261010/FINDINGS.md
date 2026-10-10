@@ -19,8 +19,8 @@ confidence tags). This page records the verdict per package against the
 | --- | --- | --- | --- |
 | `domain` | K2→K3 | Reads files (`Load`, `LoadAll`) inside the compile/validate package; `mustAny`/`formatErrs` duplicated; unused accessors | R3 |
 | `adapter` | K2→K3 | Conformance harness (`verify*`, fixture file branch) ships inside the render engine package; adapter digest recipe lives in `run` | R4 |
-| `model` | K1 | Not "records only": imports `jsonschema` and `schemas` to host two validators with two callers | R2 |
-| `schemas`, `jsonschema` | K1 | Embedded schemas recompiled on every call; helper duplication | R2 |
+| `model` | K1 | Hosts two contract validators with two callers (allowed foundation edge; package doc drift) | R2 (doc, decision recorded) |
+| `schemas`, `jsonschema` | K1 | `mustAny`/`formatErrs` copied across `domain`, `adapter`, `model`; embedded schemas recompiled per call (perf only, left) | R2 |
 | `randutil`, `canonical` | K1 | Unused `Picker` (map-order sum); device constant in a foundation package | R2, R9 |
 | `world` | K2 | Dead API and exported-but-unread fields; 11-positional-param call recorder; three mixed files | R5 |
 | `perturb` | K2 | Switch ladder over one name string; unused params everywhere; exported unused `Active` | R6 |

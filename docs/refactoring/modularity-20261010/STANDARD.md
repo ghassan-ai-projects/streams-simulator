@@ -26,7 +26,7 @@ which gates apply.
 
 | Kind | Packages today | Shape | Must not |
 | --- | --- | --- | --- |
-| **K1 Foundation** | `canonical`, `randutil`, `schemas`, `jsonschema`, `model`, `wall` | One package, stdlib (+ lower foundations) only | Import any business package; read files, env, sockets or the clock (`wall` is the single declared clock seam) |
+| **K1 Foundation** | `canonical`, `randutil`, `schemas`, `jsonschema`, `model`, `wall` | One package, stdlib (+ lower foundations) only | Import any business package; read files, env, sockets or the clock (`wall` is the declared clock seam for pure kinds; edge and surface packages read the clock at declared `ioEdges` sites) |
 | **K2 Pure core** | `world`, `perturb`, `truth`, `audit`, `score`, `suite`, `deviceworld`, `refconsumer`, `domain` rules | One package (or facade + `internal/domain` when an edge is split off) | Import `os`, `net`, `net/http`, `os/exec`, `os/signal`; read the wall clock; use global `math/rand`; hold goroutines or sockets |
 | **K3 Core with an edge** | `run`, `device`, `adapter`, `domain` loading, `sink` | Facade · `internal/app` (orchestration) · `internal/domain` (pure rules) · edge package per external system | Put rules in the edge or I/O in domain/app |
 | **K4 Surface / composition root** | `cmd/streamsim`, `cli`, `mcp` | Wiring, flag/protocol decoding, output formatting | Contain a business decision; build a result a lower package should own |
@@ -56,15 +56,15 @@ Each rule has a named enforcement. "Gate" means a test in
 
 | ID | Rule | Enforced by |
 | --- | --- | --- |
-| M1 | Every production package states its responsibility in a package comment and appears in the package map (`.agents/context/architecture.md`); a layered package has `UBIQUITOUS_LANGUAGE.md`. | Gate `TestEveryPackageDocumentsItsResponsibility`, `TestPackageMapListsEveryPackage` |
-| M2 | Imports point only to a strictly lower layer; same-layer edges are forbidden unless listed. The direct-import allowlist stays complete and has no stale edges. | Gate `TestPackageDependencies` (allowlist) + `TestImportsOnlyPointToLowerLayers` (`packageLayers`) |
-| M3 | K1/K2 packages and every `internal/domain` layer are pure: banned imports and banned calls listed above. Exceptions live in one table with a reason and burn down to empty. | Gate `TestPureLayersHaveNoIO`, `TestPureLayersReadNoWallClock` |
-| M4 | File, socket, process and wall-clock access sits only in declared edge packages/files (`ioEdges` table). | Gate `TestIOStaysInDeclaredEdges` |
+| M1 | Every production package states its responsibility in a package comment and appears in the package map (`.agents/context/architecture.md`); a layered package has `UBIQUITOUS_LANGUAGE.md`. | Gates `TestEveryPackageDocumentsItsResponsibility` (comment begins `Package <name>`), `TestPackageMapListsEveryPackage`; the language file is review-only until a layered module exists |
+| M2 | Imports point only to a strictly lower layer; same-layer edges are forbidden unless listed. The direct-import allowlist stays complete and has no stale edges. | Gates `TestPackageDependencies`, `TestAllowedImportsHaveNoStaleEdges` (allowlist) and `TestImportsPointToStrictlyLowerLayers` (`packages` table) |
+| M3 | K1/K2 packages and every `internal/domain` layer are pure: no `os`, `net`, `os/exec`, `os/signal`, entropy imports, no wall-clock call or function value, no `go` statement, no `filepath` file-system call. Exceptions are `ioEdges` entries carrying `debt: "R<n>"`, naming a PLAN round, and burn down to empty. | Gates `TestIOStaysInDeclaredEdges`, `TestPureKindsHoldOnlyScheduledIODebt` |
+| M4 | File, socket, process, entropy, goroutine and wall-clock use sits only in files declared in `ioEdges` with a reason; a declared use a file no longer has fails the gate. | Gate `TestIOStaysInDeclaredEdges` |
 | M5 | `cli` and `mcp` hold wiring and protocol only: no scoring, truth, delivery, digest or world rule. Facades only delegate. | Review + Gate `TestFacadesOnlyDelegate` once a facade exists |
 | M6 | Exported surface is what another package or the CLI/MCP contract uses. Symbols used by nobody are removed or unexported; test-only seams live in `export_test.go`. | Review + `make deadcode` (production reachability) |
 | M7 | Records cross a boundary typed and parsed once, with a closed field set. A raw document is kept only where a digest depends on its exact bytes. | Review |
 | M8 | Production functions ≤ 15 body lines at one abstraction level, entry points first (stepdown); files ≤ 300 lines; cognitive complexity ≤ 15, cyclomatic ≤ 20, nested-`if` ≤ 3; no token clone of 75+ tokens. | `make function-length`, `TestGoFileSize`, lint (`gocognit`, `gocyclo`, `nestif`, `dupl`) |
-| M9 | Every package with statements has tests and ≥ 70 % statement coverage (`-short`); behaviour moved across a layer boundary keeps its original tests. Each new gate is proven by injecting a violation and watching it fail. | `make coverage-check`; recorded in module record |
+| M9 | Every package with statements has tests and ≥ 70 % statement coverage (`-short`); behaviour moved across a layer boundary keeps its original tests. Each new gate is proven by injecting a violation and watching it fail. | `make coverage-check` (floors file ratchets: below floor fails, 2 points of slack fails); injection proofs recorded in `ROUNDS.md` |
 | M10 | A refactor round changes structure only: RNG draw order, digest inputs, JSON shapes, error precedence, locks, command and delivery order are identical. A deliberate change is listed in `PLAN.md` first and proven by a regression test. | Existing replay, analytic cross-check and golden fixtures run unchanged; round review |
 | M11 | No duplicated implementation of a job the repo already does; wrappers whose body is one call are removed unless a gate requires them. | Lint `dupl` + the duplication scan below |
 

@@ -48,13 +48,18 @@ func (s *Schema) validateNot(v any, fail func(string)) {
 }
 
 func (s *Schema) validateCondition(v any, path string, errs *[]Error) {
-	if s.ifS != nil {
-		if len(s.ifS.Validate(v)) == 0 {
-			if s.thenS != nil {
-				s.thenS.validate(v, path, errs)
-			}
-		} else if s.elseS != nil {
-			s.elseS.validate(v, path, errs)
-		}
+	if s.ifS == nil {
+		return
+	}
+	if len(s.ifS.Validate(v)) == 0 {
+		validateBranch(s.thenS, v, path, errs)
+		return
+	}
+	validateBranch(s.elseS, v, path, errs)
+}
+
+func validateBranch(branch *Schema, v any, path string, errs *[]Error) {
+	if branch != nil {
+		branch.validate(v, path, errs)
 	}
 }

@@ -30,7 +30,8 @@ HAS_MAIN := $(if $(MAIN_PKGS),yes,no)
 # ---- Phony declarations ---------------------------------------------------
 .PHONY: help all build vet fmt tidy lint lint-ci docs-check test test-short test-race \
         test-coverage ci-check deadcode vulncheck fuzz soak fuzz-soak perf \
-        manifest clean run cross-compile architecture architecture-baseline function-length
+        manifest clean run cross-compile architecture architecture-baseline function-length \
+        coverage-check behaviour-pin
 
 # ---- Help -----------------------------------------------------------------
 help: ## Show this help message
@@ -108,6 +109,12 @@ architecture: ## Reject new Enola cycle or layer findings against the baseline
 function-length: ## Check the 15-line maximum for production function bodies
 	go run cmd/streamsim/function_length.go
 
+coverage-check: ## Fail when a package is below its statement-coverage floor
+	./scripts/check-coverage
+
+behaviour-pin: ## Print deterministic CLI output hashes (diff against the baseline)
+	./scripts/behaviour-pin
+
 # ---- Test -----------------------------------------------------------------
 test: ## Run all tests with race + shuffle + coverage
 	@if [ "$(HAS_PKGS)" = "yes" ]; then \
@@ -148,7 +155,7 @@ test-coverage: ## Run tests and produce HTML coverage report
 	fi
 
 # ---- Pipeline -------------------------------------------------------------
-ci-check: function-length docs-check tidy build vet lint-ci test-short test-simdet deadcode vulncheck fuzz-soak ## Run the full CI pipeline locally (matches .github/workflows/ci.yml)
+ci-check: function-length docs-check tidy build vet lint-ci test-short test-simdet coverage-check deadcode vulncheck fuzz-soak ## Run the full CI pipeline locally (matches .github/workflows/ci.yml)
 	@echo "  CI check passed"
 
 # ---- Tools ----------------------------------------------------------------

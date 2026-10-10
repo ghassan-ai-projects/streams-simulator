@@ -1,0 +1,14 @@
+# Per-package statement-coverage floors for `make coverage-check` (-short).
+# The default floor is 70. A package listed here has a lower floor; the script
+# fails when coverage is 2 points above the floor, so floors only ratchet up.
+# STANDARD M9 / PLAN R15 burn this file down to empty.
+# <package>  <floor>
+cmd/streamsim         0
+internal/wall         0
+internal/cli          26
+internal/model        18
+internal/mcp          62
+internal/world        66
+internal/refconsumer  68
+internal/randutil     68
+internal/adapter      69

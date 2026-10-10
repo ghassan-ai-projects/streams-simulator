@@ -63,33 +63,26 @@ type TimeNS int64
 // ValidateVerdict checks a serialized consumer verdict against the
 // committed consumer-verdict schema.
 func ValidateVerdict(raw []byte) error {
-	var doc any
-	if err := DecodeBytes(raw, &doc); err != nil {
-		return fmt.Errorf("model: verdict not valid JSON: %w", err)
-	}
-	sch, err := jsonschema.Compile(mustAny(schemas.ConsumerVerdict()))
-	if err != nil {
-		return fmt.Errorf("model: compile verdict schema: %w", err)
-	}
-	if errs := sch.Validate(doc); len(errs) > 0 {
-		return fmt.Errorf("model: verdict fails consumer-verdict-v0.1: %s", errs[0].Error())
-	}
-	return nil
+	return validateAgainst(raw, "verdict", "consumer-verdict-v0.1", schemas.ConsumerVerdict())
 }
 
 // ValidateRunArtifact checks a serialized run artifact against the
 // committed run-artifact schema.
 func ValidateRunArtifact(raw []byte) error {
+	return validateAgainst(raw, "artifact", "run-artifact-v0.1", schemas.RunArtifact())
+}
+
+func validateAgainst(raw []byte, noun, contract string, schema []byte) error {
 	var doc any
 	if err := DecodeBytes(raw, &doc); err != nil {
-		return fmt.Errorf("model: artifact not valid JSON: %w", err)
+		return fmt.Errorf("model: %s not valid JSON: %w", noun, err)
 	}
-	sch, err := jsonschema.Compile(mustAny(schemas.RunArtifact()))
+	sch, err := jsonschema.Compile(mustAny(schema))
 	if err != nil {
-		return fmt.Errorf("model: compile artifact schema: %w", err)
+		return fmt.Errorf("model: compile %s schema: %w", noun, err)
 	}
 	if errs := sch.Validate(doc); len(errs) > 0 {
-		return fmt.Errorf("model: artifact fails run-artifact-v0.1: %s", errs[0].Error())
+		return fmt.Errorf("model: %s fails %s: %s", noun, contract, errs[0].Error())
 	}
 	return nil
 }

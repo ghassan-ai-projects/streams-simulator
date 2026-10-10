@@ -30,8 +30,8 @@ are the behaviours the round could silently change.
 | Round | Scope | Hazards to guard | Proof beyond the common list |
 | --- | --- | --- | --- |
 | R0 | This folder, standard, surveys, deferred list, behaviour pin, agent context and `AGENTS.md` update | none (docs, one script) | review |
-| R1 | **Gates and lint ratchet** in `test/architecture`: `packageLayers` + same-layer rule; `TestPureLayersHaveNoIO` / `NoWallClock` with a burn-down exception table; `TestIOStaysInDeclaredEdges`; package-comment and package-map gates; `make coverage-check` with a per-package baseline table; lint adds `gocognit`, `gocyclo`, `nestif`, `dupl` (fix the one `nestif` in `jsonschema` and one `dupl` pair in `perturb`); remove the stale 60-line review table | exception tables must start equal to today's violations and may only shrink | each gate fails on an injected violation (recorded) |
-| R2 | **Foundations**: delete `randutil.Picker`; one `mustAny`/`FormatErrors`; cached compiled-schema accessors in `schemas`; `model` stops importing `jsonschema`/`schemas` (validators move next to their two callers or into `schemas`); delete unused `model` constants | error strings byte-identical; shared compiled schema is read-only | architecture allowlist for `model`; run artifact tests; fuzz target |
+| R1 | **Gates and lint ratchet** in `test/architecture`: `packages` kind+layer table with strict-lower-layer and no-stale-edge gates; `ioEdges` inventory (imports, clock calls and values, `go` statements) with scheduled debt; package-comment and package-map gates; `make coverage-check` with a per-package baseline table; lint adds `gocognit`, `gocyclo`, `nestif`, `dupl` (fix the one `nestif` in `jsonschema` and one `dupl` pair in `perturb`); remove the stale 60-line review table | exception tables must start equal to today's violations and may only shrink | each gate fails on an injected violation (recorded) |
+| R2 | **Foundations**: delete `randutil.Picker` and the unused `model.TimeNS`; one `jsonschema.CompileJSON` and one `jsonschema.FormatErrors` replace three `mustAny` and two `formatErrs` copies; `model` keeps its two contract validators (foundation→foundation edge is allowed; error strings are contract); schema enum constants stay (they mirror contract enums) | error strings byte-identical, including the `streamsim: streamsim:` prefix stutter | run artifact tests; fuzz target |
 | R3 | **domain**: parse/validate/compile/digest pure; file loading (`Load`, `LoadAll`, directory scan) leaves `domain` for the CLI edge with a `domaintest` helper for tests; delete unused `Compiled` accessors; dedupe helpers | domain digest, error text including prefix stutter, sorted `domainPaths` order, `Compiled.Raw` copy | pin; `shipped_test`, replay tests |
 | R4 | **adapter**: `adapter/conformance` package (verify + fixture file branch); `adapter.Digest` moved beside the adapter with the same value; dedupe `jsonEqualish`; remove `Engine.Meta`, unneeded `NewEngine` error is kept (signature) | `VerifyResult` JSON keys, `adapter verify` output, adapter digest bytes | pin (`adapter-verify/*`); golden tests |
 | R5 | **world**: delete dead API, unexport never-read fields, `FailureMode` type, `invocation` value instead of 11 positional params, named `AdvanceResult`, split `clock.go` / `effector_log.go` / `availability.go` by concern | RNG substream names and draw order, idempotency window and interlock-before-replay order, effector call ledger bytes | `effector_order_test`, `determinism_test`, `oracle_test`, pin |
@@ -60,8 +60,8 @@ the two delivery paths (D-18), and world read-purity (D-14).
 
 | Round | State | Commit | Notes |
 | --- | --- | --- | --- |
-| R0 | in progress | | |
-| R1 | pending | | |
+| R0 | done | `3e81cf2` | |
+| R1 | done | `2f2b08e` (amended) | gates, lint, coverage ratchet |
 | R2 | pending | | |
 | R3 | pending | | |
 | R4 | pending | | |

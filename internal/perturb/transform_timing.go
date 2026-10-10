@@ -76,23 +76,21 @@ func (l *Layer) withholdProducerRecords(a *Active, recs []Delivered, atNS int64)
 }
 
 func (l *Layer) rewriteTimeEncoding(a *Active, recs []Delivered, atNS int64) []Delivered {
-	return mapRecs(recs, func(r Delivered) []Delivered {
-		if !r.Delivered {
-			return []Delivered{r}
-		}
-		r.Event.ObservedTime = alternateEncoding(r.Event.ObservedTime)
-		r.Reason = model.DeliveryRewritten
-		return []Delivered{r}
-	})
+	return rewriteObservedTimes(recs, alternateEncoding)
 }
 
 func (l *Layer) truncateTimePrecision(a *Active, recs []Delivered, atNS int64) []Delivered {
+	return rewriteObservedTimes(recs, truncatePrecision)
+}
+
+// rewriteObservedTimes re-encodes the observed time of every delivered record
+// and marks it rewritten; undelivered records pass through unchanged.
+func rewriteObservedTimes(recs []Delivered, rewrite func(string) string) []Delivered {
 	return mapRecs(recs, func(r Delivered) []Delivered {
-		if !r.Delivered {
-			return []Delivered{r}
+		if r.Delivered {
+			r.Event.ObservedTime = rewrite(r.Event.ObservedTime)
+			r.Reason = model.DeliveryRewritten
 		}
-		r.Event.ObservedTime = truncatePrecision(r.Event.ObservedTime)
-		r.Reason = model.DeliveryRewritten
 		return []Delivered{r}
 	})
 }
