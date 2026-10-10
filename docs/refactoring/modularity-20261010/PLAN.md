@@ -67,7 +67,9 @@ and goldens unchanged.
 | M9 | `domain` | facade · domain · files edge | domain digest, error text, catalog order |
 | M10 | `adapter` | facade · domain · files edge; `conformance` becomes its own module | adapter digest bytes, render output |
 | M11 | `device` | facade · app · domain · contract · wire/uds edges | admission order, frame bytes, lock scope |
-| M12 | `run` | facade · app · domain · durable · quiesce edges | RunID, ledger flush/fsync points, artifact write order, replay |
+| M12a | `run` | facade · app (whole package body moved verbatim; ledger/artifact/timer I/O declared as debt) | RunID, replay, `-race` quiescence |
+| M12b | `run` | `durable` and `quiesce` and `clock` edges; pure `domain` rules (identity digests, replay command decoding, artifact assembly); app free of I/O | ledger flush/fsync points, artifact write order, permissions |
+| M12 | `run` (summary row; delivered by M12a and M12b) | facade · app · domain · durable · quiesce edges | RunID, ledger flush/fsync points, artifact write order, replay |
 | M13 | `refconsumer` | facade · app · domain · mcpclient edge | detection bytes, verdict JSON |
 | M14 | `mcp` | facade · app (director/operator use cases) · protocol edge | tool schemas, error codes and precedence |
 | M15 | `cli` | facade · app (commands) · edges; `cmd` unchanged | flag defaults, exit codes, output text, manifest bytes |
@@ -125,6 +127,8 @@ the two delivery paths (D-18), and world read-purity (D-14).
 | M8 | done | `28c648a` | sink; review pending |
 | M9 | done | `59c3a45` | domain |
 | M10 | done | `2d44673` | adapter; M7–M10 review follow-up pending |
-| M11 | in progress | | device |
-| M10–M15 | pending | | |
+| M11 | done | `42d0dbf` | device |
+| M12a | in progress | | run facade over app |
+| M12b | pending | | run edges and domain |
+| M13–M15 | pending | | |
 | T1–T5, F | pending | | |

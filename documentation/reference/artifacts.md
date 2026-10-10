@@ -1,6 +1,6 @@
 # Artifact reference
 
-> Status: Implemented reference. Authority: `internal/model/run.go`, `internal/run/run.go`, and the run-artifact schema. Verified by: quickstart output inventory and replay tests. Last verified: 2026-08-17.
+> Status: Implemented reference. Authority: `internal/model/run.go`, `internal/run/internal/app/run.go`, and the run-artifact schema. Verified by: quickstart output inventory and replay tests. Last verified: 2026-08-17.
 
 An output directory is the evidence bundle for one run. The exact contents depend on the sink and whether a verdict was submitted, but the standard file-based path writes these files:
 

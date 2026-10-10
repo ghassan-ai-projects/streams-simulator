@@ -16,7 +16,7 @@ This matrix is the handoff evidence for public claims. It prevents the curated d
 | MCP director surface | [`reference/mcp.md`](../reference/mcp.md) | `internal/mcp/server.go`, `schemas.go` | MCP strictness tests | Verified |
 | MCP operator surface | [`reference/mcp.md`](../reference/mcp.md) | `internal/mcp/operator.go`, operator endpoint | operator E2E tests | Implemented; environment may block loopback tests |
 | Contract schemas | [`reference/contracts.md`](../reference/contracts.md) | `docs/contracts/`; embedded copies in `internal/schemas/` | byte-equality and schema tests | Verified |
-| Run output files | [`reference/artifacts.md`](../reference/artifacts.md) | `internal/run/run.go` | quickstart output inventory | Verified |
+| Run output files | [`reference/artifacts.md`](../reference/artifacts.md) | `internal/run/internal/app/run.go` | quickstart output inventory | Verified |
 | Truth and scoring | [`architecture/truth-and-scoring.md`](../architecture/truth-and-scoring.md) | `internal/truth`, `internal/score`, verdict/truth schemas | truth and score tests | Substantial evidence; release status conditional |
 | Nine non-negotiables | [`architecture/invariants.md`](../architecture/invariants.md) | design archive plus named tests | per-gate test files | Named evidence present; full suite green at snapshot commit |
 | Release posture | [`operations/release.md`](../operations/release.md) | CI, manifest, exact commit | `make ci-check`, `make manifest`, replay | Gates green at snapshot commit; publication still requires fresh evidence for the exact commit |

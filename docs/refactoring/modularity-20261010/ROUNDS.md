@@ -566,3 +566,26 @@ list, the suite determinism test uses one scenario (suite package 3.8 s →
 - Untouched, recorded: D-05/D-06 (safe-stop id window, one-shot flags in dedup
   replay), `Listen`'s unjoined accept loop (D-38 family), typed
   receipt/result records (P-04).
+
+## M12a — run: facade over the app layer
+
+- Facade `internal/run` (`Run` with `ID`, `Config`, `World` fixed at
+  construction and 25 explicit delegating methods; `Config`, `ReplayResult`
+  aliases; `LoadArtifact`, `ReplayArtifact`, `ErrConsumerNotQuiesced`) over
+  `internal/run/internal/app`: every file and test moved verbatim (package
+  clause, comment, fixture depth only). The four hooks other modules' tests
+  use (`SetEvidenceRecorder`, `SetQuiesceParkedHook`, `SetFailureMode`,
+  `Trace`) stay public and documented as test-harness hooks: an
+  `export_test.go` seam cannot serve another package's tests.
+- Removed from the public surface (no caller outside the module):
+  `RecordHistory`, `RenderRecord`, `Unblinded`, `TraceDigest`, `AddEntity`,
+  `ConfigureEnvTarget`, the quiescence clock types and
+  `DefaultQuiescenceTimeout`, and the exported `Perturb`/`Engine`/`Sink`
+  fields. They remain in the app layer for the module's own tests.
+- The app layer still holds the ledger/artifact/timer I/O; `ioEdges` entries
+  are re-keyed with debt `M12b`, which extracts the edges and the pure rules.
+  `run` joins `moduleShapes` in M12b (the shape gate requires a domain layer).
+- Makefile fuzz, soak and benchmark targets and the invariants evidence
+  commands point at the new paths; `go test ./internal/run/...`.
+- Facade tests (97 %): identity, command recording, publication and replay of
+  an artifact, hooks. App layer 72 %.

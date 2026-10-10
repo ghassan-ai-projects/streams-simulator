@@ -184,14 +184,14 @@ vulncheck: ## Run govulncheck
 fuzz: ## Bounded native fuzzing of the parsers (10s per target)
 	@if [ "$(HAS_PKGS)" = "yes" ]; then \
 	  go test -fuzz=FuzzDomainParse -fuzztime=10s ./internal/domain/internal/domain/; \
-	  go test -fuzz=FuzzArtifactLoad -fuzztime=10s ./internal/run/; \
+	  go test -fuzz=FuzzArtifactLoad -fuzztime=10s ./internal/run/internal/app/; \
 	else \
 	  echo "(no packages yet -- skipping fuzz)"; \
 	fi
 
 soak: ## Deterministic soak: >1M delivered records, conservation + replay identity
 	@if [ "$(HAS_PKGS)" = "yes" ]; then \
-	  SOAK=1 go test -run TestSoakConservationAtScale -count=1 -timeout=15m ./internal/run/; \
+	  SOAK=1 go test -run TestSoakConservationAtScale -count=1 -timeout=15m ./internal/run/internal/app/; \
 	else \
 	  echo "(no packages yet -- skipping soak)"; \
 	fi
@@ -199,14 +199,14 @@ soak: ## Deterministic soak: >1M delivered records, conservation + replay identi
 fuzz-soak: ## Bounded fuzz only (soak is an explicit, slower target)
 	@if [ "$(HAS_PKGS)" = "yes" ]; then \
 	  go test -fuzz=FuzzDomainParse -fuzztime=5s ./internal/domain/internal/domain/; \
-	  go test -fuzz=FuzzArtifactLoad -fuzztime=5s ./internal/run/; \
+	  go test -fuzz=FuzzArtifactLoad -fuzztime=5s ./internal/run/internal/app/; \
 	else \
 	  echo "(no packages yet -- skipping fuzz)"; \
 	fi
 
 perf: ## Benchmarks for the emission and ledger paths
 	@if [ "$(HAS_PKGS)" = "yes" ]; then \
-	  go test -bench=. -benchtime=1s -run='^$$' ./internal/world/ ./internal/run/; \
+	  go test -bench=. -benchtime=1s -run='^$$' ./internal/world/internal/domain/ ./internal/run/internal/app/; \
 	else \
 	  echo "(no packages yet -- skipping perf)"; \
 	fi
