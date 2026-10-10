@@ -10,7 +10,7 @@ A domain specification declares the world’s entities and the behavior that mak
 
 The committed domain set is under [`domains/`](../../domains/): eight domains, each validated against the embedded schema by the shipped-domain test. The design catalog describes more domains than are currently committed. See [limitations](../limitations.md).
 
-The world and domain loader are data-defined, but the suite harness is not fully generic yet: [`internal/suite/suite.go`](../../internal/suite/suite.go) contains a current aquaculture-specific setup exception so the `aerator_failure` scenario starts from a meaningful operating state. Treat “data-defined” as a core runtime guarantee, not as a claim that every benchmark-generation convenience is domain-neutral today.
+The world and domain loader are data-defined, but the suite harness is not fully generic yet: [`internal/suite/internal/domain/admission.go`](../../internal/suite/internal/domain/admission.go) still branches on the profile names `correlated_cascade` and `sensor_pathology`. Treat “data-defined” as a core runtime guarantee, not as a claim that every benchmark-generation convenience is domain-neutral today.
 
 Use the common path to inspect and validate data:
 
@@ -41,7 +41,7 @@ go run ./cmd/streamsim adapter verify adapters/native-jsonl.adapter.json
 
 ## Source authority
 
-The machine-readable domain and adapter contracts are in [`docs/contracts/`](../../docs/contracts/). The design catalog and coverage rationale are in [`docs/design/DOMAIN_CATALOG.md`](../../docs/design/DOMAIN_CATALOG.md). The loader and conformance tests are under [`internal/domain/`](../../internal/domain/) and [`internal/adapter/`](../../internal/adapter/).
+The machine-readable domain and adapter contracts are in [`docs/contracts/`](../../docs/contracts/). The design catalog and coverage rationale are in [`docs/design/DOMAIN_CATALOG.md`](../../docs/design/DOMAIN_CATALOG.md). The loader tests are under [`internal/domain/`](../../internal/domain/) and [`internal/adapter/`](../../internal/adapter/); adapter conformance is `adapter.Verify` in [`internal/adapter/`](../../internal/adapter/), implemented in [`internal/adapter/internal/domain/verify.go`](../../internal/adapter/internal/domain/verify.go).
 
 ## Next reads
 

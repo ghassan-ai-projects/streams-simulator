@@ -1,173 +1,118 @@
-package truth
+package truth_test
 
 import (
-	"math"
+	"errors"
+	"strings"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/truth"
 )
 
-const aquaculturePath = "../../docs/examples/aquaculture-pond.domain.json"
-
-func loadSpec(t *testing.T) *domain.Compiled {
+func shippedSpec(t *testing.T) *domain.Compiled {
 	t.Helper()
-	spec, err := domain.Load(aquaculturePath)
+	spec, err := domain.Load(testsupport.Domain("aquaculture-pond"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	return spec
 }
 
-func entityIDs(spec *domain.Compiled) []string {
-	n := spec.Spec.Entities.Count.Default
-	var ids []string
-	for i := 1; i <= n; i++ {
-		ids = append(ids, "site-a/pond-"+string(rune('0'+i)))
-	}
-	return ids
-}
-
-func TestAeratorFailureImmediatelyObservable(t *testing.T) {
-	spec := loadSpec(t)
-	ids := entityIDs(spec)
-	start := model.DefaultStartTimeNS + 4*3600*1e9
-	onset := start + 2*3600*1e9
-	// Scenario context: the aerator runs through the night.
-	setup := []SetupCall{{
-		Effector: "start_aerator", EntityID: "site-a/pond-1", CommandID: "setup",
-		Args: map[string]any{"pond_id": "site-a/pond-1", "level": 1.0}, AtNS: start,
-	}}
-	solver := NewSolver(spec, 42, 60*1e9, 24*3600*1e9)
-	res, err := solver.Solve("site-a/pond-1", "aerator_failure", onset, start, ids, setup)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !res.Observable {
-		t.Fatal("aerator_failure must be observable when the aerator is running")
-	}
-	// The aerator current channel drops by 18 A (gain 18 x delta -1.0)
-	// against sigma 0.2: far past SNR 3 immediately.
-	if res.FirstObservableNS != onset && math.Abs(float64(res.FirstObservableNS-onset)) > 60*1e9 {
-		t.Fatalf("first observable should be at onset, got %d vs %d", res.FirstObservableNS, onset)
-	}
-	if res.FirstObservableNS > res.UnavoidableNS {
-		t.Fatalf("first observable after unavoidable: %d > %d", res.FirstObservableNS, res.UnavoidableNS)
-	}
-	if math.Abs(res.EffectiveSigma-0.2) > 1e-9 {
-		t.Fatalf("single-channel sigma wrong: %v", res.EffectiveSigma)
+func TestNewSolverRefusesAMissingSpec(t *testing.T) {
+	t.Parallel()
+	if _, err := truth.NewSolver(nil, 1, 60e9, 3600e9); !errors.Is(err, truth.ErrNoSpec) {
+		t.Fatalf("err = %v, want ErrNoSpec", err)
 	}
 }
 
-func TestProbeFoulingObservabilityLag(t *testing.T) {
-	// The lethal sensor fault: the probe reads high and stable, so the
-	// single-channel SNR never crosses; only the peer residual against
-	// sibling ponds makes it observable, and only after the fouling ramp
-	// accumulates. first_observable must be hours after injection.
-	spec := loadSpec(t)
-	ids := entityIDs(spec)
-	start := model.DefaultStartTimeNS + 4*3600*1e9
-	onset := start + 2*3600*1e9
-	solver := NewSolver(spec, 7, 60*1e9, 24*3600*1e9)
-	res, err := solver.Solve("site-a/pond-1", "do_probe_fouling", onset, start, ids, nil)
+func TestBuildRecordRefusesMissingInputsAndUnknownFaults(t *testing.T) {
+	t.Parallel()
+	spec := shippedSpec(t)
+	solver, err := truth.NewSolver(spec, 3, 60e9, 24*3600e9)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !res.Observable {
-		t.Fatal("fouling must become observable within the horizon")
+	in := truth.Injection{ScenarioID: "s", EntityID: "site-a/pond-1", FaultID: "aerator_failure"}
+	if _, err := truth.BuildRecord(nil, solver, in); !errors.Is(err, truth.ErrNoSpec) {
+		t.Fatalf("nil spec: %v", err)
 	}
-	lagHours := float64(res.FirstObservableNS-onset) / 3600e9
-	if lagHours < 1.5 || lagHours > 5 {
-		t.Fatalf("first observable should lag ~2.6h (fouling 0.04/h, coef 2.5, sigma 0.086): got %.2fh", lagHours)
+	if _, err := truth.BuildRecord(spec, nil, in); !errors.Is(err, truth.ErrNoSolver) {
+		t.Fatalf("nil solver: %v", err)
 	}
-	// The peer residual pools sibling variance.
-	if res.EffectiveSigma <= 0.08 || res.EffectiveSigma > 0.1 {
-		t.Fatalf("peer sigma should pool ~0.086, got %v", res.EffectiveSigma)
+	in.FaultID = "no_such_fault"
+	if _, err := truth.BuildRecord(spec, solver, in); err == nil || !strings.Contains(err.Error(), `unknown fault "no_such_fault"`) {
+		t.Fatalf("unknown fault: %v", err)
 	}
 }
 
-func TestBuildRecord(t *testing.T) {
-	spec := loadSpec(t)
-	ids := entityIDs(spec)
-	start := model.DefaultStartTimeNS + 4*3600*1e9
-	onset := start + 2*3600*1e9
-	solver := NewSolver(spec, 3, 60*1e9, 24*3600*1e9)
-	setup := []SetupCall{{
-		Effector: "start_aerator", EntityID: "site-a/pond-1", CommandID: "setup",
-		Args: map[string]any{"pond_id": "site-a/pond-1", "level": 1.0}, AtNS: start,
-	}}
-	rec, err := BuildRecord(spec, solver, "aquaculture-pond/0001", 3,
-		"site-a/pond-1", "aerator_failure", onset, start, ids, false, []string{"drop@0.01"}, setup)
+func TestBuildRecordLabelsAScenarioFromTheSolvedOnsets(t *testing.T) {
+	t.Parallel()
+	spec := shippedSpec(t)
+	solver, err := truth.NewSolver(spec, 3, 60e9, 24*3600e9)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if rec.Label != "aerator_failure" || rec.ExpectedEpisode != true || rec.IsNegativeClass != false {
-		t.Fatalf("label wrong: %+v", rec)
-	}
-	if rec.DeadlineNS != rec.FirstObservableTimeNS+5400*1e9 {
-		t.Fatalf("deadline wrong: %d vs %d", rec.DeadlineNS, rec.FirstObservableTimeNS+5400*1e9)
-	}
-	if rec.ExpectedEffector != "start_aerator" {
-		t.Fatalf("expected effector wrong: %s", rec.ExpectedEffector)
-	}
-	if len(rec.Perturbations) != 1 || rec.Perturbations[0] != "drop@0.01" {
-		t.Fatalf("perturbations wrong: %v", rec.Perturbations)
-	}
-
-	// Negative class: expected_episode false.
-	recN, err := BuildRecord(spec, solver, "aquaculture-pond/0002", 3,
-		"site-a/pond-2", "transient_none", onset, start, ids, false, nil, nil)
+	start := model.DefaultStartTimeNS + 4*3600e9
+	ids := []string{"site-a/pond-1", "site-a/pond-2"}
+	perturbations := []string{"drop@0.01"}
+	rec, err := truth.BuildRecord(spec, solver, truth.Injection{
+		ScenarioID: "aquaculture-pond/0001", Seed: 3, EntityID: ids[0], FaultID: "aerator_failure",
+		OnsetNS: start + 2*3600e9, StartNS: start, EntityIDs: ids, Perturbations: perturbations,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if recN.IsNegativeClass != true || recN.ExpectedEpisode != false {
-		t.Fatalf("negative class wrong: %+v", recN)
+	if rec.Label != "aerator_failure" || !rec.ExpectedEpisode || rec.InjectionTimeNS != start+2*3600e9 {
+		t.Fatalf("label = %+v", rec)
+	}
+	perturbations[0] = "mutated"
+	if rec.Perturbations[0] != "drop@0.01" {
+		t.Fatal("the record must not share the caller's perturbation slice")
 	}
 }
 
-func TestStoreSealing(t *testing.T) {
-	s := NewStore()
-	rec := &model.GroundTruthRecord{
-		ScenarioID: "x/0001", Label: "f", Observability: model.ObservabilityInfo{Channels: []string{"c1"}},
-		Perturbations: []string{"drop"}, TrivialBaselineDetail: map[string]float64{"accuracy": 0.5},
-		Counterfactual: &model.Counterfactual{IfNoAction: "bad"},
-	}
-	if err := s.Seal("r-1", rec); err != nil {
+func TestStoreUnblindStampsTheRunAndRefusesDoubleSealAndUnknownRuns(t *testing.T) {
+	t.Parallel()
+	store := truth.NewStore(func(string) bool { return true })
+	if err := store.Seal("r-1", &model.GroundTruthRecord{Label: "f"}); err != nil {
 		t.Fatal(err)
 	}
-	// Mutating the input after sealing must not mutate the oracle.
-	rec.Label = "mutated"
-	rec.Observability.Channels[0] = "mutated"
-	rec.Perturbations[0] = "mutated"
-	rec.TrivialBaselineDetail["accuracy"] = 0
-	rec.Counterfactual.IfNoAction = "mutated"
-	// Open run: reveal refused without unblind.
-	s.OpenChecker = func(runID string) bool { return runID == "r-1" }
-	if _, err := s.Reveal("r-1", false); err == nil {
-		t.Fatal("reveal on an open run must be refused")
+	if err := store.Seal("r-1", &model.GroundTruthRecord{Label: "g"}); err == nil || !strings.Contains(err.Error(), "already sealed") {
+		t.Fatalf("second seal: %v", err)
 	}
-	got, err := s.Reveal("r-1", true)
-	if err != nil {
-		t.Fatalf("unblind reveal refused: %v", err)
+	if _, err := store.Reveal("r-1", false); err == nil {
+		t.Fatal("an open run must not reveal without unblind")
 	}
-	if got.Label != "f" || got.Observability.Channels[0] != "c1" || got.Perturbations[0] != "drop" || got.TrivialBaselineDetail["accuracy"] != 0.5 || got.Counterfactual.IfNoAction != "bad" {
-		t.Fatalf("wrong label: %+v", got)
+	if got, err := store.Reveal("r-1", true); err != nil || got.Label != "f" {
+		t.Fatalf("unblinded reveal: %v, %+v", err, got)
 	}
-	// Mutating a revealed copy must not mutate the stored oracle.
-	got.Label = "mutated-again"
-	got.Observability.Channels[0] = "mutated-again"
-	sealed, unblinded, err := s.SealStatus("r-1")
-	if err != nil || !sealed || !unblinded {
-		t.Fatalf("unexpected seal status: sealed=%v unblinded=%v err=%v", sealed, unblinded, err)
+	if sealed, unblinded, err := store.SealStatus("r-1"); err != nil || !sealed || !unblinded {
+		t.Fatalf("status after unblind = %v %v %v", sealed, unblinded, err)
 	}
-	got2, err := s.Reveal("r-1", false)
-	if err != nil || got2.Label != "f" || got2.Observability.Channels[0] != "c1" {
-		t.Fatalf("stored oracle was mutable: got=%+v err=%v", got2, err)
+	if _, err := store.Reveal("r-2", true); err == nil || !strings.Contains(err.Error(), "no sealed label") {
+		t.Fatalf("unknown run reveal: %v", err)
 	}
-	if err := s.Seal("r-1", &model.GroundTruthRecord{}); err == nil {
-		t.Fatal("resealing a run must fail")
+	if _, _, err := store.SealStatus("r-2"); err == nil || !strings.Contains(err.Error(), "unknown run") {
+		t.Fatalf("unknown run status: %v", err)
 	}
-	if _, err := s.Reveal("r-nope", false); err == nil {
-		t.Fatal("unknown run must fail")
+}
+
+func TestStoreWithoutAnOpenRunCheckOrBackingStoreFailsClosed(t *testing.T) {
+	t.Parallel()
+	nilCheck := truth.NewStore(nil)
+	if err := nilCheck.Seal("r-1", &model.GroundTruthRecord{Label: "f"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := nilCheck.Reveal("r-1", false); err == nil {
+		t.Fatal("a store without an open-run check must refuse to reveal")
+	}
+	var zero truth.Store
+	if err := zero.Seal("r-1", &model.GroundTruthRecord{}); !errors.Is(err, truth.ErrNoStore) {
+		t.Fatalf("zero store seal: %v", err)
+	}
+	if _, err := zero.Reveal("r-1", true); !errors.Is(err, truth.ErrNoStore) {
+		t.Fatalf("zero store reveal: %v", err)
 	}
 }

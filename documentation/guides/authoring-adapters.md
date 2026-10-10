@@ -16,7 +16,7 @@ An adapter is a declarative projection from native `sim-event-v0.1` to a consume
 ```bash
 go run ./cmd/streamsim adapter list
 go run ./cmd/streamsim adapter verify adapters/my-adapter.adapter.json
-go test ./internal/adapter
+go test ./internal/adapter/...
 ```
 
 ## Rules

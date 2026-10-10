@@ -25,7 +25,7 @@ on:
     branches: [main]
 
 env:
-  GO_VERSION: "1.25.13"
+  GO_VERSION: "1.26.9"
   GO_TOOLS_VERSION: "v0.45.0"
   GOVULNCHECK_VERSION: "v1.3.0"
   GOLANGCI_LINT_VERSION: "v2.12.2"
@@ -47,7 +47,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
         with:
-          # The golangci-lint diff baseline is HEAD~1.
+          # Full history: the Makefile derives the version from git describe.
           fetch-depth: 0
 
       - name: Set up Go

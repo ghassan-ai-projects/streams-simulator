@@ -16,30 +16,32 @@ const modulePrefix = "github.com/ghassan-ai-projects/streams-simulator/"
 // Direct dependencies reflect ownership, not transitive reachability. Changing
 // this map requires reviewing the design and the importing package's role.
 var packageDependencies = map[string]string{
-	".":                    "",
-	"tools":                "",
-	"cmd/streamsim":        "cli",
-	"internal/cli":         "adapter canonical device deviceworld domain mcp model refconsumer run score suite world",
-	"internal/mcp":         "audit domain model run schemas score truth world",
-	"internal/run":         "adapter canonical domain model perturb sink world",
-	"internal/score":       "model run world",
-	"internal/suite":       "audit domain model perturb randutil truth",
-	"internal/audit":       "domain model perturb truth world",
-	"internal/refconsumer": "canonical model world",
-	"internal/deviceworld": "device model world",
-	"internal/device":      "canonical jsonschema",
-	"internal/world":       "domain jsonschema model randutil",
-	"internal/truth":       "domain model world",
-	"internal/perturb":     "domain model randutil",
-	"internal/adapter":     "canonical jsonschema model schemas",
-	"internal/domain":      "canonical jsonschema model schemas",
-	"internal/model":       "jsonschema schemas",
-	"internal/jsonschema":  "canonical",
-	"internal/canonical":   "",
-	"internal/randutil":    "",
-	"internal/schemas":     "",
-	"internal/sink":        "",
-	"internal/wall":        "",
+	".":                        "",
+	"tools":                    "",
+	"cmd/streamsim":            "cli",
+	"internal/cli":             "adapter canonical device deviceworld domain mcp model refconsumer run score suite world",
+	"internal/mcp":             "audit domain model run schemas score truth world",
+	"internal/run":             "adapter canonical domain model perturb sink world",
+	"internal/score":           "domain model world",
+	"internal/suite":           "audit domain model perturb randutil truth world",
+	"internal/audit":           "domain model perturb world",
+	"internal/refconsumer":     "canonical model world",
+	"internal/deviceworld":     "device model world",
+	"internal/device":          "canonical jsonschema device/contract",
+	"internal/world":           "domain jsonschema model randutil",
+	"internal/truth":           "domain model world",
+	"internal/perturb":         "domain model randutil",
+	"internal/adapter":         "canonical jsonschema model schemas",
+	"internal/domain":          "canonical jsonschema model schemas",
+	"internal/model":           "jsonschema schemas",
+	"internal/jsonschema":      "canonical",
+	"internal/canonical":       "",
+	"internal/device/contract": "",
+	"internal/randutil":        "",
+	"internal/schemas":         "",
+	"internal/sink":            "",
+	"internal/wall":            "",
+	"internal/testsupport":     "",
 }
 
 func TestPackageDependencies(t *testing.T) {
@@ -66,6 +68,7 @@ func TestPackageDependencies(t *testing.T) {
 		if owner == "." && filepath.Base(path) == "tools.go" {
 			owner = "tools" // Build-tagged development tools, outside runtime.
 		}
+		owner, _ = splitModule(owner)
 		if _, exists := packageDependencies[owner]; !exists {
 			t.Errorf("unreviewed package: %s", owner)
 		}
@@ -100,7 +103,12 @@ func dependencyAllowed(owner, imported string) bool {
 		if !exists {
 			return false
 		}
-		target := strings.TrimPrefix(imported, modulePrefix+"internal/")
+		dir := strings.TrimPrefix(imported, modulePrefix)
+		if module, layer := splitModule(dir); module == owner && layer != "" {
+			return true // a module's own internal layers
+		}
+		module, _ := splitModule(dir)
+		target := strings.TrimPrefix(module, "internal/")
 		for _, name := range strings.Fields(allowed) {
 			if name == target {
 				return true
@@ -133,6 +141,7 @@ func TestDependencyGuardRejectsUpwardAndExternalEdges(t *testing.T) {
 		{"tools", "github.com/modelcontextprotocol/go-sdk/mcp", false},
 	} {
 		t.Run(tc.owner+"/"+tc.imported, func(t *testing.T) {
+			t.Parallel()
 			if got := dependencyAllowed(tc.owner, tc.imported); got != tc.allowed {
 				t.Fatalf("allowed=%v, want %v", got, tc.allowed)
 			}

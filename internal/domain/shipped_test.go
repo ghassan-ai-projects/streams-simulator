@@ -1,17 +1,20 @@
-package domain
+package domain_test
 
 // Every shipped domain must load, validate and carry a stable digest. This
 // is the catalog's integrity check: a domain that silently stops loading
 // would make coverage reports lie.
 
 import (
-	"path/filepath"
 	"testing"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
 func TestAllShippedDomainsLoad(t *testing.T) {
-	dir := filepath.Join("..", "..", "domains")
-	list, err := LoadAll(dir)
+	t.Parallel()
+	dir := testsupport.DomainsDir()
+	list, err := domain.LoadAll(dir)
 	if err != nil {
 		t.Fatalf("a shipped domain failed to load: %v", err)
 	}
@@ -38,17 +41,17 @@ func TestAllShippedDomainsLoad(t *testing.T) {
 		}
 	}
 	// The docs example and the installed copy must agree byte-for-byte.
-	ex := filepath.Join("..", "..", "docs", "examples", "aquaculture-pond.domain.json")
-	installed := filepath.Join("..", "..", "domains", "aquaculture-pond.domain.json")
-	a, err := Load(ex)
+	ex := testsupport.Example()
+	installed := testsupport.Domain("aquaculture-pond")
+	a, err := domain.Load(ex)
 	if err != nil {
 		t.Fatal(err)
 	}
-	b, err := Load(installed)
+	b, err := domain.Load(installed)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if a.Digest != b.Digest {
-		t.Fatalf("installed aquaculture-pond drifted from docs/examples: %s vs %s", a.Digest, b.Digest)
+		t.Fatalf("installed aquaculture-pond drifted from the documented example: %s vs %s", a.Digest, b.Digest)
 	}
 }

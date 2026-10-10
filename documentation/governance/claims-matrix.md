@@ -8,15 +8,15 @@ This matrix is the handoff evidence for public claims. It prevents the curated d
 | --- | --- | --- | --- | --- |
 | Product purpose and boundaries | [`overview/product.md`](../overview/product.md) | `README.md`, design decisions, implementation boundaries | Repository review and package map | Verified summary |
 | Toolchain | [`overview/compatibility.md`](../overview/compatibility.md) | [`go.mod`](../../go.mod), CI workflow | `go version`, `.github/workflows/ci.yml` | Verified: module minimum Go 1.25.12; CI Go 1.25.13 |
-| CLI commands and flags | [`reference/cli.md`](../reference/cli.md) | [`internal/cli/cli.go`](../../internal/cli/cli.go) | `go run ./cmd/streamsim help`; targeted command smoke tests | Verified |
+| CLI commands and flags | [`reference/cli.md`](../reference/cli.md) | [`internal/cli/internal/app/cli.go`](../../internal/cli/internal/app/cli.go) | `go run ./cmd/streamsim help`; targeted command smoke tests | Verified |
 | Domain inventory | [`architecture/domains-and-adapters.md`](../architecture/domains-and-adapters.md) | `domains/`, release manifest, shipped-domain tests | `catalog list`; `go test ./internal/schemas` | Verified: eight shipped domains, each validated by the schema test |
 | Adapter inventory | [`architecture/domains-and-adapters.md`](../architecture/domains-and-adapters.md) | `adapters/`, adapter tests | `adapter list`; `adapter verify` | Verified |
 | Event pipeline | [`architecture/pipeline.md`](../architecture/pipeline.md) | `internal/world`, `perturb`, `adapter`, `sink`, `run` | run ledger and golden tests | Verified summary |
 | Determinism/replay | [`architecture/determinism.md`](../architecture/determinism.md) | `internal/run`, run-artifact schema | quickstart `verify`; replay tests | Verified for deterministic local path |
-| MCP director surface | [`reference/mcp.md`](../reference/mcp.md) | `internal/mcp/server.go`, `schemas.go` | MCP strictness tests | Verified |
-| MCP operator surface | [`reference/mcp.md`](../reference/mcp.md) | `internal/mcp/operator.go`, operator endpoint | operator E2E tests | Implemented; environment may block loopback tests |
+| MCP director surface | [`reference/mcp.md`](../reference/mcp.md) | `internal/mcp/internal/app/server.go`, `schemas.go` | MCP strictness tests | Verified |
+| MCP operator surface | [`reference/mcp.md`](../reference/mcp.md) | `internal/mcp/internal/app/operator.go`, operator endpoint | operator E2E tests | Implemented; environment may block loopback tests |
 | Contract schemas | [`reference/contracts.md`](../reference/contracts.md) | `docs/contracts/`; embedded copies in `internal/schemas/` | byte-equality and schema tests | Verified |
-| Run output files | [`reference/artifacts.md`](../reference/artifacts.md) | `internal/run/run.go` | quickstart output inventory | Verified |
+| Run output files | [`reference/artifacts.md`](../reference/artifacts.md) | `internal/run/internal/app/run.go` | quickstart output inventory | Verified |
 | Truth and scoring | [`architecture/truth-and-scoring.md`](../architecture/truth-and-scoring.md) | `internal/truth`, `internal/score`, verdict/truth schemas | truth and score tests | Substantial evidence; release status conditional |
 | Nine non-negotiables | [`architecture/invariants.md`](../architecture/invariants.md) | design archive plus named tests | per-gate test files | Named evidence present; full suite green at snapshot commit |
 | Release posture | [`operations/release.md`](../operations/release.md) | CI, manifest, exact commit | `make ci-check`, `make manifest`, replay | Gates green at snapshot commit; publication still requires fresh evidence for the exact commit |

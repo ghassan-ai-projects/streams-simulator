@@ -1,159 +1,72 @@
-package score
+package score_test
 
 import (
-	"context"
+	"errors"
+	"reflect"
+	"strings"
 	"testing"
 
-	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/truth"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/score"
 )
 
-const (
-	aquaculturePath = "../../docs/examples/aquaculture-pond.domain.json"
-	nativeAdapter   = "../../adapters/native-jsonl.adapter.json"
-)
-
-var pondIDs = []string{"site-a/pond-1", "site-a/pond-2", "site-a/pond-3", "site-a/pond-4",
-	"site-a/pond-5", "site-a/pond-6", "site-a/pond-7", "site-a/pond-8"}
-
-func testBase(t *testing.T) (*domain.Compiled, *model.Adapter) {
-	t.Helper()
-	spec, err := domain.Load(aquaculturePath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	a, err := adapter.Load(nativeAdapter)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return spec, a
+func label() *model.GroundTruthRecord {
+	return &model.GroundTruthRecord{ScenarioID: "d/0001", Domain: "d", Label: "f", ExpectedEpisode: true}
 }
 
-// setupFaultedRun builds a run with a pre-injected fault and the aerator
-// running (so aerator_failure is real). The failure mode is set after setup
-// so the scenario context applies deterministically.
-func setupFaultedRun(t *testing.T, failureMode, faultID string) (*run.Run, *model.GroundTruthRecord) {
-	t.Helper()
-	spec, a := testBase(t)
-	start := model.DefaultStartTimeNS + 4*3600*1e9
-	r, err := run.New(context.Background(), run.Config{
-		Domain: spec, Adapter: a, Seed: 11, SinkName: model.SinkInproc,
-		TimeMode: model.TimeStepped, StartTimeNS: start,
-		ForceFailureMode: "ok",
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	pond := "site-a/pond-1"
-	// Night aerator run.
-	if _, err := r.InvokeEffector("start_aerator", pond, "setup", map[string]any{"pond_id": pond, "level": 1.0}, start); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := r.Advance(context.Background(), start+2*3600*1e9, false); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := r.InjectFault(pond, faultID, 0, nil); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := r.Advance(context.Background(), start+3*3600*1e9, false); err != nil {
-		t.Fatal(err)
-	}
-	if failureMode != "ok" {
-		r.SetFailureMode(failureMode)
-	}
-	// Sealed label via the solver.
-	solver := truth.NewSolver(spec, 11, 60*1e9, 24*3600*1e9)
-	var setup []truth.SetupCall
-	if faultID == "aerator_failure" {
-		setup = []truth.SetupCall{{
-			Effector: "start_aerator", EntityID: pond, CommandID: "setup",
-			Args: map[string]any{"pond_id": pond, "level": 1.0}, AtNS: start,
-		}}
-	}
-	gt, err := truth.BuildRecord(spec, solver, "aquaculture-pond/9001", 11,
-		pond, faultID, start+2*3600*1e9, start, pondIDs, false, nil, setup)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return r, gt
-}
-
-func submitVerdict(t *testing.T, r *run.Run, actions []model.Action, detections []model.Detection) {
-	t.Helper()
-	v := &model.Verdict{
-		SchemaVersion: "0.1",
-		RunID:         r.ID,
-		Consumer:      model.ConsumerInfo{Name: "test", Version: "0.1"},
-		Detections:    detections,
-		Actions:       actions,
-	}
-	if err := r.SubmitVerdict(v); err != nil {
-		t.Fatal(err)
+func TestScoreRefusesARunWithoutASubmittedVerdict(t *testing.T) {
+	t.Parallel()
+	_, err := score.Score(score.Evidence{RunID: "r-1"}, label())
+	if err == nil || !strings.Contains(err.Error(), "no verdict submitted for run r-1") {
+		t.Fatalf("err = %v", err)
 	}
 }
 
-// loopResolved is a test helper: did the aerator output recover?
-func loopResolved(r *run.Run) bool {
-	return r.World.StateValue("site-a/pond-1", "aerator_output", r.World.Clock()) > 0.9
+func TestScoreCarriesRunIdentityAndEvidenceFlagsOntoTheCard(t *testing.T) {
+	t.Parallel()
+	gt := label()
+	card, err := score.Score(score.Evidence{
+		RunID: "r-1", Verdict: &model.Verdict{}, Ledger: []model.LedgerRecord{},
+		Reproducible: true, Unblinded: true,
+	}, gt)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if card.RunID != "r-1" || card.Domain != "d" || card.ScenarioID != "d/0001" || card.GroundTruth != gt {
+		t.Fatalf("card identity = %+v", card)
+	}
+	if !card.Reproducible || !card.Unblinded || card.Bundle == "" {
+		t.Fatalf("card flags = %+v", card)
+	}
 }
 
-// TestLoopResolvesWhenFaultOnsetLandsOnEmissionBoundary: the MCP harness
-// pattern is inject-then-advance, so when the injected onset aligns exactly
-// with an emission the sample at the onset already carries the fault. The
-// pre-onset baseline must be the latest sample strictly before the onset,
-// or the deviation collapses to zero and a correct recovery is scored as
-// unresolved. Regression for the operator-endpoint golden loop.
-func TestLoopResolvesWhenFaultOnsetLandsOnEmissionBoundary(t *testing.T) {
-	spec, a := testBase(t)
-	start := model.DefaultStartTimeNS + 4*3600*1e9
-	r, err := run.New(context.Background(), run.Config{
-		Domain: spec, Adapter: a, Seed: 11, SinkName: model.SinkInproc,
-		TimeMode: model.TimeStepped, StartTimeNS: start,
-		ForceFailureMode: "ok",
-	})
+func TestScoreRefusesAMissingLabelAndToleratesAMissingDomain(t *testing.T) {
+	t.Parallel()
+	ev := score.Evidence{RunID: "r-1", Verdict: &model.Verdict{}, Ledger: []model.LedgerRecord{}}
+	if _, err := score.Score(ev, nil); !errors.Is(err, score.ErrNoLabel) {
+		t.Fatalf("nil label: %v", err)
+	}
+	gt := label()
+	gt.ExpectedEffector = "start_aerator"
+	if _, err := score.Score(ev, gt); err != nil {
+		t.Fatalf("a run without a domain scores without loop recovery levels: %v", err)
+	}
+}
+
+func TestOnlineAndOfflineAgreeOnTheMetricsTheyShare(t *testing.T) {
+	t.Parallel()
+	gt := label()
+	verdict := &model.Verdict{}
+	ledger := []model.LedgerRecord{}
+	online, err := score.Score(score.Evidence{RunID: "r-1", Verdict: verdict, Ledger: ledger}, gt)
 	if err != nil {
 		t.Fatal(err)
 	}
-	pond := "site-a/pond-1"
-	if _, err := r.InvokeEffector("start_aerator", pond, "setup", map[string]any{"pond_id": pond, "level": 1.0}, start); err != nil {
-		t.Fatal(err)
+	offline := score.Offline(verdict, gt, ledger, nil, nil)
+	if !reflect.DeepEqual(online.Consumer, offline.Consumer) || !reflect.DeepEqual(online.Judgment, offline.Judgment) {
+		t.Fatalf("shared metrics differ:\nonline  %+v %+v\noffline %+v %+v", online.Consumer, online.Judgment, offline.Consumer, offline.Judgment)
 	}
-	// Inject-then-advance, with the onset on an emission boundary.
-	onset := start + 2*3600*1e9 // 06:00:00, an emission boundary
-	if _, err := r.InjectFault(pond, "aerator_failure", onset, nil); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := r.Advance(context.Background(), start+5*3600*1e9, false); err != nil {
-		t.Fatal(err)
-	}
-	// Actuate and let the effect propagate.
-	if _, err := r.InvokeEffector("start_aerator", pond, "cmd-boundary", map[string]any{"pond_id": pond, "level": 1.0}, r.World.Clock()); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := r.Advance(context.Background(), r.World.Clock()+4*3600*1e9, false); err != nil {
-		t.Fatal(err)
-	}
-	submitVerdict(t, r, []model.Action{
-		{CommandID: "setup", Effector: "start_aerator", EntityID: pond, IssuedAt: model.FormatTime(start), OutcomeBelieved: model.BelievedSucceeded},
-		{CommandID: "cmd-boundary", Effector: "start_aerator", EntityID: pond, IssuedAt: model.FormatTime(r.World.Clock()), OutcomeBelieved: model.BelievedSucceeded},
-	}, nil)
-	if _, err := r.End(""); err != nil {
-		t.Fatal(err)
-	}
-	gt := &model.GroundTruthRecord{
-		ScenarioID: "score/9002", Domain: "aquaculture-pond", Label: "aerator_failure",
-		EntityID: pond, ExpectedEffector: "start_aerator", ExpectedEpisode: true,
-		InjectionTimeNS: onset, FirstObservableTimeNS: onset, UnavoidableTimeNS: start + 3*3600*1e9,
-		TrivialBaselineVerdict: model.TrivialNonTrivial,
-	}
-	sc, err := Score(r, gt)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !sc.Loop.Resolved {
-		t.Fatalf("recovery must resolve even when the onset lands on an emission boundary: %+v", sc.Loop)
+	if online.Bundle != offline.Bundle {
+		t.Fatalf("bundle online %q offline %q", online.Bundle, offline.Bundle)
 	}
 }

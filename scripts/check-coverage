@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# Fails when a package's `go test -short` statement coverage is below its floor,
+# or when a floor has slack worth ratcheting up. Default floor 70%;
+# scripts/coverage-floors.txt lists lower floors that may only be raised.
+set -eu
+
+repo_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+cd "$repo_root"
+
+report=$(go test -short -count=1 -cover ./... 2>&1) || { printf '%s\n' "$report"; exit 1; }
+printf '%s\n' "$report" | awk -v floors="scripts/coverage-floors.txt" '
+BEGIN {
+  while ((getline line < floors) > 0) {
+    if (line ~ /^#/ || line ~ /^[ \t]*$/) continue
+    split(line, f, /[ \t]+/)
+    floor[f[1]] = f[2] + 0
+  }
+}
+/coverage: [0-9.]+% of statements/ && !/streams-simulator\/test\// {
+  pkg = ""
+  for (i = 1; i <= NF; i++) if ($i ~ /streams-simulator/) pkg = $i
+  sub(/^.*streams-simulator\/?/, "", pkg)
+  if (pkg == "") pkg = "."
+  for (i = 1; i <= NF; i++) if ($i == "coverage:") pct = $(i + 1) + 0
+  seen[pkg] = 1
+  want = (pkg in floor) ? floor[pkg] : 70
+  if (pct < want) { printf "FAIL %s coverage %.1f%% < floor %d%%\n", pkg, pct, want; bad = 1 }
+  if ((pkg in floor) && pct - floor[pkg] >= 2) {
+    printf "FAIL %s is %.1f%%: raise its floor from %d to %d (ratchet)\n", pkg, pct, floor[pkg], int(pct); bad = 1
+  }
+}
+END {
+  for (pkg in floor) if (!(pkg in seen)) { printf "FAIL floors file names unknown package %s\n", pkg; bad = 1 }
+  if (bad) exit 1
+  print "coverage floors satisfied"
+}'

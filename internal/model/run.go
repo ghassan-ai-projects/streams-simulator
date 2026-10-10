@@ -117,3 +117,12 @@ type Counts struct {
 	EffectorCalls   int64 `json:"effector_calls,omitempty"`
 	FaultsInjected  int64 `json:"faults_injected,omitempty"`
 }
+
+// StateSnapshot is the hidden world state of one entity at one emission,
+// kept by a run as director-only history for scoring and export.
+type StateSnapshot struct {
+	Seq    int64              `json:"seq"`
+	TimeNS int64              `json:"time_ns"`
+	Entity string             `json:"entity_id"`
+	States map[string]float64 `json:"states"`
+}

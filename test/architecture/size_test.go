@@ -67,6 +67,7 @@ func TestSourceLinesCountsCommentsBlanksAndFinalLine(t *testing.T) {
 		{"final line", "// comment\npackage example", 2},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			if got := sourceLines([]byte(tc.source)); got != tc.want {
 				t.Fatalf("got %d lines, want %d", got, tc.want)
 			}

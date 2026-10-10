@@ -66,7 +66,7 @@ counter/run_meta` only. Every shipped adapter proves itself against the
 committed 12-event fixture: every rendered record validates against its
 declared output schema, and the full stream byte-matches the committed
 golden. Goldens are regenerated deliberately (`REGEN_GOLDEN=1 go test
-./internal/adapter/ -run TestRegenerateGoldens`), never automatically.
+./internal/adapter/internal/domain/ -run TestRegenerateGoldens`), never automatically.
 
 ### D-09. Effector failures are deterministic per (world, effector)
 Failure modes and ack latencies come from the effector's own substream;
@@ -104,6 +104,10 @@ a test. The validator is closed and reviewed, not a general engine.
 Under `simdet`, `internal/wall.Now` returns the zero time and the http-push
 wall sub-mode cannot link. `make test-simdet` runs the suite with `-tags
 simdet`; CI gates on it, so no test can depend on a wall clock by accident.
+
+*Erratum (2026-10-10):* the code has no http-push wall sub-mode, and most
+clock reads bypass this seam; see `docs/refactoring/modularity-20261010/DEFERRED.md`
+P-01.
 
 ### D-14 (deviation). env.inject is record-only
 Environment faults target a consumer's process, which a simulator must not

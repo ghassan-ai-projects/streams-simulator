@@ -1,10 +1,10 @@
 //go:build simdet
 
 // Package wall is the wall-clock seam of the simulator. Under the simdet
-// build tag the wall clock is unavailable: Now returns the zero time, and
-// the http-push wall sub-mode cannot even be linked. The deterministic test
-// suite builds with -tags simdet, so no test can accidentally depend on a
-// wall clock.
+// build tag the wall clock is unavailable: Now returns the zero time. The
+// deterministic test suite builds with -tags simdet, so no test can
+// accidentally depend on a wall clock (see DEFERRED P-01: most clock reads
+// still bypass this seam).
 package wall
 
 import "time"

@@ -6,6 +6,7 @@ import (
 )
 
 func TestSplitMix64Deterministic(t *testing.T) {
+	t.Parallel()
 	a := NewSplitMix64(42)
 	b := NewSplitMix64(42)
 	for i := 0; i < 100; i++ {
@@ -16,6 +17,7 @@ func TestSplitMix64Deterministic(t *testing.T) {
 }
 
 func TestSubstreamStabilityAndIndependence(t *testing.T) {
+	t.Parallel()
 	s1 := Substream(7, "w/entity/chan/noise")
 	first1, second1 := s1.Next(), s1.Next()
 	// Same seed+name → same stream.
@@ -41,6 +43,7 @@ func TestSubstreamStabilityAndIndependence(t *testing.T) {
 }
 
 func TestFloat64Range(t *testing.T) {
+	t.Parallel()
 	r := NewSplitMix64(1)
 	for i := 0; i < 10000; i++ {
 		f := r.Float64()
@@ -51,6 +54,7 @@ func TestFloat64Range(t *testing.T) {
 }
 
 func TestNormDistribution(t *testing.T) {
+	t.Parallel()
 	r := NewSplitMix64(9)
 	var sum, sumsq float64
 	n := 20000
@@ -69,19 +73,76 @@ func TestNormDistribution(t *testing.T) {
 	}
 }
 
-func TestPicker(t *testing.T) {
-	r := NewSplitMix64(3)
-	p := NewPicker(r, map[string]float64{"a": 0.7, "b": 0.3})
-	counts := map[string]int{}
-	for i := 0; i < 10000; i++ {
-		counts[p.Pick()]++
+func TestIntnCoversTheRangeAndRejectsEmptyRange(t *testing.T) {
+	t.Parallel()
+	r := NewSplitMix64(11)
+	seen := map[int]bool{}
+	for i := 0; i < 1000; i++ {
+		v := r.Intn(7)
+		if v < 0 || v >= 7 {
+			t.Fatalf("Intn(7) = %d", v)
+		}
+		seen[v] = true
 	}
-	if counts["a"] < 6000 || counts["a"] > 8000 {
-		t.Fatalf("picker distribution off: %v", counts)
+	if len(seen) != 7 {
+		t.Fatalf("Intn(7) produced %d distinct values, want 7", len(seen))
 	}
-	// Empty picker returns "".
-	empty := NewPicker(r, nil)
-	if empty.Pick() != "" {
-		t.Fatal("empty picker must return empty string")
+	if r.Intn(1) != 0 {
+		t.Fatal("Intn(1) must be 0")
+	}
+	for _, n := range []int{0, -1} {
+		func() {
+			defer func() {
+				if recover() == nil {
+					t.Fatalf("Intn(%d) must panic", n)
+				}
+			}()
+			r.Intn(n)
+		}()
+	}
+}
+
+func TestExpMeanAndZeroMean(t *testing.T) {
+	t.Parallel()
+	r := NewSplitMix64(5)
+	if r.Exp(0) != 0 || r.Exp(-3) != 0 {
+		t.Fatal("non-positive mean must return 0")
+	}
+	sum := 0.0
+	const n = 20000
+	for i := 0; i < n; i++ {
+		v := r.Exp(2)
+		if v < 0 {
+			t.Fatalf("Exp returned %v", v)
+		}
+		sum += v
+	}
+	if mean := sum / n; math.Abs(mean-2) > 0.1 {
+		t.Fatalf("Exp mean drifted: %v", mean)
+	}
+}
+
+func TestLognormalIsPositiveWithTheRequestedMedianAndSpread(t *testing.T) {
+	t.Parallel()
+	r := NewSplitMix64(9)
+	belowMedian, belowOneSigma := 0, 0
+	const n = 20000
+	for i := 0; i < n; i++ {
+		v := r.Lognormal(1, 0.5)
+		if v <= 0 {
+			t.Fatalf("Lognormal returned %v", v)
+		}
+		if v < math.E {
+			belowMedian++
+		}
+		if v < math.Exp(1.5) {
+			belowOneSigma++
+		}
+	}
+	if frac := float64(belowMedian) / n; math.Abs(frac-0.5) > 0.02 {
+		t.Fatalf("fraction below the median e^mu = %v", frac)
+	}
+	if frac := float64(belowOneSigma) / n; math.Abs(frac-0.8413) > 0.02 {
+		t.Fatalf("fraction below e^(mu+sigma) = %v, want about 0.841", frac)
 	}
 }

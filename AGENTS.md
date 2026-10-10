@@ -40,6 +40,7 @@ Start with these context files:
 - [.agents/context/testing.md](.agents/context/testing.md) for commands and testing bar.
 - [.agents/context/go-style.md](.agents/context/go-style.md) for coding conventions.
 - [.agents/context/review-checklist.md](.agents/context/review-checklist.md) before handoff.
+- [docs/refactoring/modularity-20261010/STANDARD.md](docs/refactoring/modularity-20261010/STANDARD.md) for package kinds, layer rules and the M1-M11 modularity bar; its [PLAN.md](docs/refactoring/modularity-20261010/PLAN.md) tracks the migration rounds and [DEFERRED.md](docs/refactoring/modularity-20261010/DEFERRED.md) lists known defects that are intentionally not fixed by structural rounds.
 
 Use the prompt files under `.agents/prompts/` when the task matches them.
 
@@ -59,7 +60,7 @@ Do not invent architecture outside the documented design. The spec was written t
 The documented shape (see [docs/design/TECHNICAL_DESIGN.md](docs/design/TECHNICAL_DESIGN.md)):
 
 - `cmd/streamsim/main.go` - version metadata and CLI entrypoint
-- `internal/cli` - flags, application wiring, commands, shutdown
+- `internal/cli` - facade (`Main`) over the commands (`app`) and the process, file and serve edges
 - `internal/world` - seeded discrete-event world core; domain specs are data, loaded through one schema
 - `internal/perturb` - perturbation layer between world and adapter (what the observer got, not what happened)
 - `internal/adapter` - declarative output adapters projecting native `sim-event-v0.1` into consumer wire formats
@@ -105,6 +106,21 @@ Important behavior:
 
 See [.agents/context/testing.md](.agents/context/testing.md) for the testing and validation bar. The analytic cross-check (implement the integrator twice, assert agreement) is a non-negotiable correctness oracle, not a consistency check.
 
+## Modularity bar
+
+Every module is a public facade (`internal/<m>`) over private layers
+(`internal/<m>/internal/{domain,app,<edge>}`) with no internal leaks, shaped by
+its kind (pure core, core with an edge, surface; foundations stay single
+packages) as described in [STANDARD.md](docs/refactoring/modularity-20261010/STANDARD.md).
+Domain layers import no `os`/`net`/`exec` and read no wall clock; file, socket
+and clock access sits only in declared edge packages; a facade only delegates;
+`cli` and `mcp` hold wiring and protocol only. Tests live at the layer they
+prove (test bar T1-T10). Use [.agents/prompts/module-refactor.md](.agents/prompts/module-refactor.md)
+to migrate a package. A structural round
+changes no behaviour: run `scripts/behaviour-pin` and diff it against
+`docs/refactoring/modularity-20261010/BEHAVIOUR_PIN.txt`. Defects found during
+a round are added to `DEFERRED.md`, not fixed in the same commit.
+
 ## Go Standards
 
 ### Clean-code and architecture bar
@@ -116,7 +132,7 @@ See [.agents/context/testing.md](.agents/context/testing.md) for the testing and
 - Packages own simulator responsibilities, not generic controller/service/store layers. Preserve the world → perturbation → adapter → sink pipeline and director/operator truth boundary. Create a package only for a distinct responsibility with a concrete caller and a downward dependency direction.
 - Preserve exported signatures, JSON shapes, errors, command/delivery order, RNG draws, digest inputs, locks, cancellation, and effects during refactoring. Record intentional corrections separately and prove them with regression tests.
 - Add meaningful boundary tests in each modified production package. Run focused tests and review the diff before each round's commit; run the full repository gate before handoff.
-- The executable file-size, package-dependency and legacy function-review checks live in `test/architecture`. The strict 15-line AST check runs through `make function-length`, `make ci-check` and the local pre-commit hook. The review criteria and round evidence are in [docs/refactoring/clean-code-20261002/](docs/refactoring/clean-code-20261002/BAR.md).
+- The executable file-size, 15-line function, package-dependency, package kind/layer, I/O-edge inventory and package-documentation gates live in `test/architecture`. The strict 15-line AST check runs through `make function-length`, `make ci-check` and the local pre-commit hook. The review criteria and round evidence are in [docs/refactoring/clean-code-20261002/](docs/refactoring/clean-code-20261002/BAR.md).
 
 - Use `context.Context` as the first parameter for cancellable or I/O work.
 - Use `log/slog` for logging.

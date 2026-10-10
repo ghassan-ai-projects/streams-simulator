@@ -1,0 +1,15 @@
+package run
+
+import layer "github.com/ghassan-ai-projects/streams-simulator/internal/run/internal/app"
+
+// Config pins everything that enters the determinism tuple: the domain, the
+// adapter, the seed, the sink and the world start.
+type Config = layer.Config
+
+// ReplayResult is the outcome of replaying an artifact: whether the trace
+// digest reproduced, the first divergence, and any version mismatch.
+type ReplayResult = layer.ReplayResult
+
+// ErrConsumerNotQuiesced marks an await_consumer timeout. The world has
+// already advanced; the run is incomplete, never silently successful.
+var ErrConsumerNotQuiesced = layer.ErrConsumerNotQuiesced

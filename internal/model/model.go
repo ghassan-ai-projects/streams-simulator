@@ -1,9 +1,10 @@
 // Package model holds the typed forms of every simulator contract: the
 // domain spec, the native sim event, the output adapter, the consumer
 // verdict, the ground-truth record, the run artifact, and the delivery
-// ledger. These types mirror docs/contracts/*.schema.json field for field;
-// validation against the committed schemas happens in the domain and
-// adapter packages.
+// ledger. These types mirror docs/contracts/*.schema.json field for field.
+// Domain and adapter documents are validated by their own packages; this
+// package validates only the consumer verdict and the run artifact, the two
+// contracts that cross the run boundary.
 package model
 
 import (
@@ -57,51 +58,31 @@ func DecodeBytes(b []byte, dst any) error {
 	return Decode(strings.NewReader(string(b)), dst)
 }
 
-// TimeNS is a nanosecond epoch within the simulator's representable range.
-type TimeNS int64
-
 // ValidateVerdict checks a serialized consumer verdict against the
 // committed consumer-verdict schema.
 func ValidateVerdict(raw []byte) error {
-	var doc any
-	if err := DecodeBytes(raw, &doc); err != nil {
-		return fmt.Errorf("model: verdict not valid JSON: %w", err)
-	}
-	sch, err := jsonschema.Compile(mustAny(schemas.ConsumerVerdict()))
-	if err != nil {
-		return fmt.Errorf("model: compile verdict schema: %w", err)
-	}
-	if errs := sch.Validate(doc); len(errs) > 0 {
-		return fmt.Errorf("model: verdict fails consumer-verdict-v0.1: %s", errs[0].Error())
-	}
-	return nil
+	return validateAgainst(raw, "verdict", "consumer-verdict-v0.1", schemas.ConsumerVerdict())
 }
 
 // ValidateRunArtifact checks a serialized run artifact against the
 // committed run-artifact schema.
 func ValidateRunArtifact(raw []byte) error {
-	var doc any
-	if err := DecodeBytes(raw, &doc); err != nil {
-		return fmt.Errorf("model: artifact not valid JSON: %w", err)
-	}
-	sch, err := jsonschema.Compile(mustAny(schemas.RunArtifact()))
-	if err != nil {
-		return fmt.Errorf("model: compile artifact schema: %w", err)
-	}
-	if errs := sch.Validate(doc); len(errs) > 0 {
-		return fmt.Errorf("model: artifact fails run-artifact-v0.1: %s", errs[0].Error())
-	}
-	return nil
+	return validateAgainst(raw, "artifact", "run-artifact-v0.1", schemas.RunArtifact())
 }
 
-func mustAny(b []byte) any {
-	var v any
-	dec := json.NewDecoder(strings.NewReader(string(b)))
-	dec.UseNumber()
-	if err := dec.Decode(&v); err != nil {
-		panic(err)
+func validateAgainst(raw []byte, noun, contract string, schema []byte) error {
+	var doc any
+	if err := DecodeBytes(raw, &doc); err != nil {
+		return fmt.Errorf("model: %s not valid JSON: %w", noun, err)
 	}
-	return v
+	sch, err := jsonschema.CompileJSON(schema)
+	if err != nil {
+		return fmt.Errorf("model: compile %s schema: %w", noun, err)
+	}
+	if errs := sch.Validate(doc); len(errs) > 0 {
+		return fmt.Errorf("model: %s fails %s: %s", noun, contract, errs[0].Error())
+	}
+	return nil
 }
 
 func rejectTrailingJSON(dec *json.Decoder) error {

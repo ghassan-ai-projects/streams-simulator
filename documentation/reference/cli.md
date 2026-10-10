@@ -1,6 +1,6 @@
 # Command-line interface (CLI) reference
 
-> Status: Implemented reference. Authority: `internal/cli/cli.go`. Verified by: `streamsim help` and targeted command smoke tests. Last verified: 2026-08-17.
+> Status: Implemented reference. Authority: `internal/cli/internal/app/cli.go`. Verified by: `streamsim help` and targeted command smoke tests. Last verified: 2026-08-17.
 
 The executable is `streamsim`. During development, run it without installing a binary:
 

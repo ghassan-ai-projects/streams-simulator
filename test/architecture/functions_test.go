@@ -11,17 +11,11 @@ import (
 	"testing"
 )
 
-const functionReviewLines = 60
+// maxFunctionBodyLines is the production function bound (STANDARD M8): the
+// physical lines from opening to closing brace, comments and blanks included.
+const maxFunctionBodyLines = 15
 
-// These cohesive operations were reviewed in REVIEW.md. Growth requires another
-// review; an exception does not grant an unlimited function-size allowance.
-var reviewedFunctions = map[string]int{
-	"internal/canonical/encoding.go:writeValue":   66,
-	"internal/mcp/schemas.go:toolSchema":          185,
-	"internal/world/integration.go:World.rk4Step": 72,
-}
-
-func TestProductionFunctionsHaveReviewDecisions(t *testing.T) {
+func TestProductionFunctionsStayWithinTheBodyLimit(t *testing.T) {
 	t.Parallel()
 	root, err := os.OpenRoot("../..")
 	if err != nil {
@@ -32,7 +26,6 @@ func TestProductionFunctionsHaveReviewDecisions(t *testing.T) {
 			t.Error(err)
 		}
 	}()
-	seen := map[string]bool{}
 	err = fs.WalkDir(root.FS(), ".", func(path string, entry fs.DirEntry, err error) error {
 		if err != nil {
 			return fmt.Errorf("inspect functions in %s: %w", path, err)
@@ -58,10 +51,9 @@ func TestProductionFunctionsHaveReviewDecisions(t *testing.T) {
 				continue
 			}
 			key := path + ":" + functionName(fn)
-			seen[key] = true
 			lines := positions.Position(fn.Body.End()).Line - positions.Position(fn.Body.Pos()).Line + 1
-			if !functionLengthReviewed(key, lines) {
-				t.Errorf("%s has a %d-line body: simplify it or record a review decision", key, lines)
+			if lines > maxFunctionBodyLines {
+				t.Errorf("%s has a %d-line body; maximum is %d: extract named steps", key, lines, maxFunctionBodyLines)
 			}
 		}
 		ast.Inspect(file, func(node ast.Node) bool {
@@ -71,7 +63,7 @@ func TestProductionFunctionsHaveReviewDecisions(t *testing.T) {
 			}
 			start := positions.Position(fn.Body.Pos())
 			lines := positions.Position(fn.Body.End()).Line - start.Line + 1
-			if lines > functionReviewLines {
+			if lines > maxFunctionBodyLines {
 				t.Errorf("%s:%d has a %d-line anonymous function: extract a named operation", path, start.Line, lines)
 			}
 			return true
@@ -80,11 +72,6 @@ func TestProductionFunctionsHaveReviewDecisions(t *testing.T) {
 	})
 	if err != nil {
 		t.Fatal(err)
-	}
-	for key := range reviewedFunctions {
-		if !seen[key] {
-			t.Errorf("stale function review: %s", key)
-		}
 	}
 }
 
@@ -100,29 +87,4 @@ func functionName(fn *ast.FuncDecl) string {
 		return name.Name + "." + fn.Name.Name
 	}
 	return fmt.Sprintf("%T.%s", receiver, fn.Name.Name)
-}
-
-func functionLengthReviewed(key string, lines int) bool {
-	return lines <= functionReviewLines || lines <= reviewedFunctions[key]
-}
-
-func TestFunctionReviewRejectsUnreviewedGrowth(t *testing.T) {
-	t.Parallel()
-	for _, tc := range []struct {
-		name     string
-		lines    int
-		approved bool
-	}{
-		{"internal/world/new.go:operation", 60, true},
-		{"internal/world/new.go:operation", 61, false},
-		{"internal/world/integration.go:World.rk4Step", 72, true},
-		{"internal/world/integration.go:World.rk4Step", 73, false},
-		{"internal/world/integration.go:Other.rk4Step", 72, false},
-	} {
-		t.Run(fmt.Sprintf("%s/%d", tc.name, tc.lines), func(t *testing.T) {
-			if got := functionLengthReviewed(tc.name, tc.lines); got != tc.approved {
-				t.Fatalf("reviewed=%v, want %v", got, tc.approved)
-			}
-		})
-	}
 }
