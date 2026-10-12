@@ -26,6 +26,11 @@ pipeline, recorded so that replay reproduces it byte-for-byte.
 | Unblind | Stamping the run permanently so it is excluded from every scorecard | `Unblind`, `UnblindedStamp` | `unblinded`, `unblinded_at` |
 | Reproducible | Whether replay can reproduce the run byte-for-byte (stepped time, quiesced consumer) | `Reproducible` | `reproducible` |
 | Hidden-state history | Director-only per-emission state snapshots | `History`, `model.StateSnapshot` | `world_state_history.jsonl` |
+| Inputs | The domain and adapter a run names, resolved by id from a domains directory and an adapters directory | `LoadInputs` | `--domains-dir`, `--adapters-dir` |
+| Scenario export | The scenario that reproduces a recorded run, with the effector calls the world refused dropped, checked as `run --scenario` would check it, and its file content; loading the artifact and its inputs is part of the entry | `ExportScenarioFile`, `ScenarioExport`, `ScenarioFromArtifact`, `PruneRefusedCalls` | `scenario from-run` |
+| Scenario run | Resolve a scenario's inputs, check it before any sink opens (a violation is a `ScenarioCheckError`), execute it and end the run | `RunScenario`, `RunSummary`, `ScenarioCheckError` | `run`, `run --scenario` |
+| Replay file | Reproduce the run artifact at a path against the domain and adapter it recorded | `ReplayFile`, `Directories` | `replay`, `verify` |
+| Start bound | The latest a run's world may start, the world's own bound | `MaxStartNS` | `--start-time` |
 
 ## Retired words
 

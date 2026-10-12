@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/cli/internal/files"
@@ -53,33 +54,17 @@ func loadScenarioFile(path string) (*model.Scenario, error) {
 }
 
 func executeScenarioRun(source scenarioSource, options runOptions) (any, error) {
-	cfg, err := checkedScenarioConfig(source, options)
+	summary, err := run.RunScenario(context.Background(), source.scenario, run.ScenarioRunOptions{DomainsDir: options.domainsDir,
+		AdaptersDir: options.adaptersDir, SinkName: options.sinkName, SinkTarget: options.sinkTarget, OutDir: options.outDir})
+	var check *run.ScenarioCheckError
+	if errors.As(err, &check) {
+		return nil, scenarioCheckFailure(options, source, check.Err)
+	}
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w", err)
 	}
-	r, err := run.New(context.Background(), cfg)
-	if err != nil {
-		return nil, fmt.Errorf("streamsim: %w", err)
-	}
-	if err := r.ExecuteScenario(context.Background(), source.scenario); err != nil {
-		return nil, fmt.Errorf("streamsim: %w", err)
-	}
-	return publishRun(r, options.outDir)
-}
-
-// checkedScenarioConfig resolves the scenario's domain and adapter and checks
-// the scenario against them before any sink opens.
-func checkedScenarioConfig(source scenarioSource, options runOptions) (run.Config, error) {
-	scenario := source.scenario
-	spec, adap, err := loadSimulatorInputs(options.domainsDir, options.adaptersDir, scenario.Domain, scenario.Adapter)
-	if err != nil {
-		return run.Config{}, err
-	}
-	cfg := run.ScenarioConfig(scenario, spec, adap, options.sinkName, options.sinkTarget)
-	if err := run.CheckScenario(context.Background(), cfg, scenario); err != nil {
-		return run.Config{}, scenarioCheckFailure(options, source, err)
-	}
-	return cfg, nil
+	return map[string]any{"run_id": summary.RunID, "trace_digest": summary.TraceDigest,
+		"reproducible": summary.Reproducible, "emitted": summary.Emitted, "ledger": summary.Ledger}, nil
 }
 
 // scenarioCheckFailure is a scenario file's violation, or, for a scenario the
@@ -89,13 +74,4 @@ func scenarioCheckFailure(options runOptions, source scenarioSource, err error) 
 		return fmt.Errorf("streamsim: %w", model.WithSource(err, options.scenarioPath))
 	}
 	return flagScenarioFailure(err, source.origins)
-}
-
-func publishRun(r *run.Run, out string) (any, error) {
-	art, err := r.End(out)
-	if err != nil {
-		return nil, fmt.Errorf("streamsim: %w", err)
-	}
-	return map[string]any{"run_id": art.RunID, "trace_digest": art.ExpectedTraceDigest,
-		"reproducible": art.Reproducible, "emitted": art.Counts.Emitted, "ledger": len(r.Ledger())}, nil
 }

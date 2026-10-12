@@ -1,7 +1,10 @@
 # Ubiquitous language — cli
 
 The command-line module turns argv into one of the simulator's use cases and
-prints one JSON document. It owns no simulator rules.
+prints one JSON document. It owns no simulator rules and no I/O beyond the
+process streams and the files its flags name: every command calls the facade of
+the module that owns the work. `test/architecture/cli_wiring_test.go` holds the
+line: a file, an import or a construct beyond wiring fails the build.
 
 | Term | Meaning | Code name | Wire / artifact name |
 | --- | --- | --- | --- |
@@ -18,9 +21,10 @@ prints one JSON document. It owns no simulator rules.
 | Scenario file | A run defined by a `scenario-v0.1` file instead of flags. Not a domain's profile, and not a suite's generated scenario | `loadScenarioFile` | `run --scenario` |
 | Scenario export | The scenario that reproduces a recorded run | `cmdScenario`, `exportScenario` | `scenario from-run` |
 | Build | The version and commit the binary was linked with | `Build` | `sim` in the manifest |
-| Release manifest | The signed record of simulator, domain, adapter, suite and consumer digests with author and reviewer identity | `cmdManifest` | `release-manifest.json` |
-| Director / operator endpoint | The stdio director session and the optional HTTP operator listener of `mcp` | `serve.Director` | `--operator-addr` |
-| Device serve | The device emulator on a unix socket until interrupted | `serve.Device` | `device serve --socket` |
+| Release manifest | The signed record of simulator, domain, adapter, suite and consumer digests with author and reviewer identity; written by the `release` module | `cmdManifest`, `release.Publish` | `release-manifest.json` |
+| Director / operator endpoint | The stdio director session and the optional HTTP operator listener of `mcp`; served by the `mcp` module | `mcp.ServeDirector` | `--operator-addr` |
+| Device serve | The device emulator on a unix socket until interrupted; composed by `deviceworld`, served by `device` | `deviceworld.OpenDevice`, `device.Serve` | `device serve --socket` |
+| Wiring | What the command layer may hold: flag parsing, scenario from flags, the command registry, JSON output and failure documents; each file declares the facades it may import and a line cap | `cliAppFiles`, `cliEdges` (gate) | – |
 | Stdout owner | A command whose stdout is a protocol, so no document is printed there | `command.ownsStdout` | `mcp` |
 | Environment | What a command may reach of its process: stdout, stderr, wall clock | `process.Env` | — |
 
@@ -31,3 +35,4 @@ prints one JSON document. It owns no simulator rules.
 | `cli.Version`, `cli.Commit` (exported variables) | `cli.Build` passed to `cli.Main` | the facade exports no mutable state |
 | `flag.ExitOnError` | `usageExit` | commands must be runnable in-process under test |
 | `printJSON` inside commands | the dispatcher prints the returned result | one output site |
+| `serve` edge, manifest signing, score workflow, catalog and adapter directory loading, device-world wiring, reference-consumer orchestration | the `mcp`, `device`, `release`, `grading`, `domain`/`adapter`, `deviceworld` and `refconsumer` modules | the CLI is wiring; the module that owns the work owns its code |

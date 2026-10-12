@@ -1,18 +1,12 @@
 package app
 
 import (
-	"crypto/ed25519"
-	"crypto/sha256"
-	"encoding/hex"
-	"encoding/json"
 	"io"
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
 func TestRunOptionsPreserveDefaultsEpochZeroAndFileTarget(t *testing.T) {
@@ -58,72 +52,6 @@ func TestFlagsDescribeFaultsThenPerturbationsThenEffectorsThenTheAdvance(t *test
 	}
 	if end := scenario.Commands[3].Args["to_ns"]; end != int64(1000+10e9) {
 		t.Fatalf("advance = %v, want start + duration", end)
-	}
-}
-
-func TestManifestSignsCanonicalBodyDigest(t *testing.T) {
-	t.Parallel()
-	seed := make([]byte, ed25519.SeedSize)
-	path := filepath.Join(t.TempDir(), "test-key")
-	if err := os.WriteFile(path, []byte(hex.EncodeToString(seed)), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	body := []byte(`{"test":true}`)
-	signature, err := signManifest(body, path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	decoded, err := hex.DecodeString(signature)
-	if err != nil {
-		t.Fatal(err)
-	}
-	digest := sha256.Sum256(body)
-	public := ed25519.NewKeyFromSeed(seed).Public().(ed25519.PublicKey)
-	if !ed25519.Verify(public, digest[:], decoded) {
-		t.Fatal("signature must cover the canonical body digest")
-	}
-	if signature, err := signManifest(body, ""); err != nil || signature != "" {
-		t.Fatalf("unsigned manifest: signature=%s error=%v", signature, err)
-	}
-}
-
-func TestScriptedEffectorsCarryTheirArgumentsAndDeterministicIds(t *testing.T) {
-	t.Parallel()
-	dir := t.TempDir()
-	const pond = "site-a/pond-1"
-	args := `{"pond_id":"` + pond + `","level":1}`
-	runArgs := []string{"run", "--domains-dir", testsupport.DomainsDir(), "--adapters-dir", testsupport.AdaptersDir(),
-		"--domain", pondDomain, "--seed", "3", "--duration", "600",
-		"--effector", "start_aerator@" + pond + "@10@" + args,
-		"--effector", "start_aerator@" + pond + "@20@" + args}
-	logs := make([]string, 2)
-	for i := range logs {
-		out := filepath.Join(dir, "run"+string(rune('a'+i)))
-		invoke(t, append(runArgs, "--out", out)...).mustSucceed(t)
-		raw, err := os.ReadFile(filepath.Join(out, "run.json"))
-		if err != nil {
-			t.Fatal(err)
-		}
-		var artifact struct {
-			CommandLog []map[string]any `json:"command_log"`
-		}
-		if err := json.Unmarshal(raw, &artifact); err != nil {
-			t.Fatal(err)
-		}
-		var ids []string
-		for _, command := range artifact.CommandLog {
-			if command["op"] == model.OpEffectorInvoke {
-				call, _ := command["args"].(map[string]any)
-				ids = append(ids, call["command_id"].(string))
-				if call["args"] == nil {
-					t.Fatalf("the scripted arguments must reach the world: %v", call)
-				}
-			}
-		}
-		logs[i] = strings.Join(ids, ",")
-	}
-	if logs[0] != "cli-0,cli-1" || logs[1] != logs[0] {
-		t.Fatalf("scripted command ids = %q and %q, want cli-0,cli-1 both times", logs[0], logs[1])
 	}
 }
 

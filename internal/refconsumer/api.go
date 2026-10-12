@@ -1,6 +1,9 @@
 package refconsumer
 
-import layer "github.com/ghassan-ai-projects/streams-simulator/internal/refconsumer/internal/domain"
+import (
+	"github.com/ghassan-ai-projects/streams-simulator/internal/refconsumer/internal/app"
+	layer "github.com/ghassan-ai-projects/streams-simulator/internal/refconsumer/internal/domain"
+)
 
 // Config tunes the reference detector: z-score threshold, trailing window,
 // consecutive readings before declaring, the effector to actuate on detection
@@ -29,3 +32,12 @@ type VerdictSink = layer.VerdictSink
 
 // QuiescenceReporter asserts the consumer's quiescence watermark.
 type QuiescenceReporter = layer.QuiescenceReporter
+
+// ConsumeOptions say which trace to consume, where the verdict goes, how the
+// detector is tuned, and, when MCPEndpoint is set, the operator endpoint,
+// capability token and run the consumer actuates and reports against.
+type ConsumeOptions = app.Options
+
+// ConsumeSummary is what a consumed trace left behind: the verdict file and
+// how many detections it reports.
+type ConsumeSummary = app.Summary

@@ -17,6 +17,8 @@ The binary holds no consumer's field names or framing rules.
 | Run meta | Run-level bindings the framing reads (run id, versions, world times, seed) | `meta` | `run_meta` |
 | Fixture | The committed 12-event native trace every adapter's golden is rendered from | `FixtureEvents` | `testdata/fixture.jsonl` |
 | Golden | The committed expected output of an adapter over the fixture | – | `adapters/golden/*.jsonl` |
+| Adapter directory | Every `*.json` adapter in a directory, keyed by id; an empty directory name selects `adapters`, and a directory with no adapter is refused | `LoadDir`, `files.LoadDir` | `--adapters-dir` |
+| Verify failure | The decision that a verification failed: a declared check failed, or the adapter declares no check so nothing was compared | `VerifyFailure` | `adapter_verify_failed` |
 | Conformance | Rendering the fixture, validating against the declared output schema and byte-comparing the golden | `Verify`, `VerifyResult` | `adapter verify` |
 
 ## Retired words

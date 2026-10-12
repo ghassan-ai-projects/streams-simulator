@@ -10,6 +10,7 @@ system under test has, and it never sees truth.
 | Operator | The role the consumer uses: nameplate, effectors, verdict; no truth, no ledger | `NewOperatorServerResolver` | `sim.nameplate.read`, `sim.effector.*`, `sim.consumer.report` |
 | Capability token | Opaque unguessable bearer value that names exactly one world to the operator role | `capability.NewToken` | `token`, `t-…` |
 | Operator endpoint | The URL a director advertises for operators to connect to | `SetOperatorEndpoint` | `operator_endpoint` |
+| Serving | Running the director role over stdio until the session ends, with the operator role optionally bound over streamable HTTP; the `transport` edge holds the listener and the session | `ServeDirector`, `transport.Serve` | `mcp --role director --operator-addr` |
 | Tool | One named, schema-validated MCP operation; unknown properties are refused | `director_tools.go`, `operator_tools.go` | tool name |
 | Stable error code | The machine-readable refusal class carried in the tool error text | `errors.go` | `code` in error content |
 
@@ -19,3 +20,4 @@ system under test has, and it never sees truth.
 | --- | --- | --- |
 | `internal/mcp` flat package symbols | the facade (`Director`, `NewDirectorServer`, `NewOperatorServerResolver`, `SetOperatorEndpoint`) | handlers and schemas moved behind `internal/mcp/internal/{app,protocol}` |
 | `capabilityToken` | `capability.NewToken` | entropy is an I/O edge, not a use-case concern |
+| `serve.Director` (in `cli`) | `mcp.ServeDirector` | serving MCP is the protocol module's work, not command-line wiring |

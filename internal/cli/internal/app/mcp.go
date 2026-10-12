@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/ghassan-ai-projects/streams-simulator/internal/cli/internal/serve"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/mcp"
 )
 
@@ -41,21 +40,10 @@ func parseMCPOptions(args []string, stderr io.Writer) (mcpOptions, error) {
 }
 
 func serveDirector(s *session, options mcpOptions) error {
-	d, err := loadDirector(options)
+	err := mcp.ServeDirector(context.Background(), s.stderr, mcp.ServeOptions{DomainsDir: options.domainsDir,
+		AdaptersDir: options.adaptersDir, OutDir: options.outDir, OperatorAddr: options.operatorAddr})
 	if err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
-	return serve.Director(s.stderr, d, options.operatorAddr)
-}
-
-func loadDirector(options mcpOptions) (*mcp.Director, error) {
-	cat, err := loadCatalog(options.domainsDir)
-	if err != nil {
-		return nil, fmt.Errorf("streamsim: %w", err)
-	}
-	adapters, err := loadAdapters(options.adaptersDir)
-	if err != nil {
-		return nil, fmt.Errorf("streamsim: %w", err)
-	}
-	return mcp.NewDirector(context.Background(), cat, adapters, options.outDir), nil
+	return nil
 }

@@ -203,3 +203,32 @@ func ScenarioFromArtifact(art *model.RunArtifact) (*model.Scenario, int) {
 func (r *Run) ExecuteScenario(ctx context.Context, scenario *model.Scenario) error {
 	return r.run.ExecuteScenario(ctx, scenario)
 }
+
+// LoadInputs resolves the domain and adapter a run names from a domains
+// directory and an adapters directory; an empty directory selects the
+// repository layout ("domains", "adapters").
+func LoadInputs(domainsDir, adaptersDir, domainID, adapterID string) (*domain.Compiled, *model.Adapter, error) {
+	return layer.LoadInputs(domainsDir, adaptersDir, domainID, adapterID)
+}
+
+// ExportScenarioFile expresses the run recorded in the artifact at
+// artifactPath as a scenario, against the domain and adapter it recorded,
+// found in the directories. A run that cannot be expressed as a runnable
+// scenario exports nothing.
+func ExportScenarioFile(ctx context.Context, artifactPath string, dirs Directories) (ScenarioExport, error) {
+	return layer.ExportScenarioFile(ctx, artifactPath, dirs)
+}
+
+// ReplayFile reproduces the run artifact at artifactPath against the domain
+// and adapter it recorded, found in the directories, and reports whether the
+// trace digest matched.
+func ReplayFile(ctx context.Context, artifactPath string, dirs Directories) (*ReplayResult, error) {
+	return layer.ReplayFile(ctx, artifactPath, dirs)
+}
+
+// RunScenario resolves the scenario's domain and adapter, checks the scenario
+// before any sink opens (a violation is a *ScenarioCheckError), executes its
+// commands in order and ends the run.
+func RunScenario(ctx context.Context, scenario *model.Scenario, options ScenarioRunOptions) (RunSummary, error) {
+	return layer.RunScenario(ctx, scenario, options)
+}

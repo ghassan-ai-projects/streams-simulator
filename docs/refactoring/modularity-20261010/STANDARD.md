@@ -20,9 +20,9 @@ layers from outside the module; gates forbid the facade from leaking them.
 
 | Module kind | Shape | Modules |
 | --- | --- | --- |
-| **Pure core** (rules, no I/O) | facade · `internal/domain` | `world`, `perturb`, `truth`, `audit`, `score`, `suite`, `deviceworld` |
-| **Core with an edge** (rules plus files, sockets, timers) | facade · `internal/domain` · one edge package per external system · `internal/app` only when use cases orchestrate several layers and edges (`run`) | `run`, `device`, `adapter`, `domain`, `sink`, `refconsumer` |
-| **Surface** (protocol or CLI) | facade · `internal/app` · edge/protocol packages | `mcp`, `cli` |
+| **Pure core** (rules, no I/O) | facade · `internal/domain` | `world`, `perturb`, `truth`, `audit`, `score` |
+| **Core with an edge** (rules plus files, sockets, timers) | facade · `internal/domain` · one edge package per external system · `internal/app` only when use cases orchestrate several layers and edges (`run`, `deviceworld`, `grading`, `release`, `refconsumer`, `suite`) | `run`, `device`, `adapter`, `domain`, `sink`, `refconsumer`, `deviceworld`, `grading`, `release`, `suite` |
+| **Surface** (protocol or CLI) | facade · `internal/app` · edge/protocol packages | `mcp` (app · protocol · capability and transport edges), `cli` (wiring only: app · files and process edges, held to it by `TestCLIHoldsOnlyWiring`) |
 | **Foundation** (stateless library every module uses) | one package, no layers | `canonical`, `jsonschema`, `model`, `randutil`, `schemas`, `wall` |
 
 Foundations are the standard's explicit "N/A": the sibling repository leaves

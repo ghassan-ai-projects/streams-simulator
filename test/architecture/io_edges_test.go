@@ -37,6 +37,7 @@ var ioEdges = map[string]ioEdge{
 	"internal/sink/internal/files/file.go":           {uses: []string{"import:os"}, why: "file sink: create, write, sync and read back the trace file"},
 	"internal/sink/internal/httppush/httppush.go":    {uses: []string{"import:net/http"}, why: "http-push sink: POST each line"},
 	"internal/mcp/internal/capability/capability.go": {uses: []string{"import:crypto/rand"}, why: "operator capability token entropy"},
+	"internal/mcp/internal/transport/transport.go":   {uses: []string{"go-statement", "import:net", "import:net/http"}, why: "operator role bound over streamable HTTP and the director session served until its transport closes"},
 
 	"internal/domain/internal/files/files.go":   {uses: []string{"import:os"}, why: "domain file and directory loading"},
 	"internal/adapter/internal/files/files.go":  {uses: []string{"import:os"}, why: "adapter file loading"},
@@ -47,9 +48,16 @@ var ioEdges = map[string]ioEdge{
 	"internal/run/internal/quiesce/quiesce.go":  {uses: []string{"call:time.NewTimer"}, why: "wall-clock deadline for await_consumer waits"},
 	"internal/cli/internal/process/process.go":  {uses: []string{"call:time.Now", "import:os"}, why: "standard streams and wall clock of the running process"},
 	"internal/cli/internal/files/files.go":      {uses: []string{"import:os"}, why: "files and directories named on the command line"},
-	"internal/cli/internal/serve/serve.go":      {uses: []string{"go-statement", "import:net", "import:net/http", "import:os", "import:os/signal", "import:syscall"}, why: "device socket and MCP director session served until interrupted"},
 	"internal/testsupport/testsupport.go":       {uses: []string{"import:os"}, why: "repository root discovery and short socket directories for tests"},
 	"internal/device/internal/uds/uds.go":       {uses: []string{"go-statement", "import:net", "import:os"}, why: "unix socket listener, accept loop and session"},
+	"internal/device/internal/uds/serve.go":     {uses: []string{"import:net", "import:os", "import:os/signal", "import:syscall"}, why: "device socket served until the process is interrupted"},
+	"internal/device/internal/files/files.go":   {uses: []string{"import:os"}, why: "device capability catalog file loading"},
+
+	"internal/deviceworld/internal/files/files.go": {uses: []string{"import:os"}, why: "device-to-world binding catalog file loading"},
+	"internal/suite/internal/files/files.go":       {uses: []string{"import:os"}, why: "directory and file a generated suite is written to"},
+	"internal/grading/internal/files/files.go":     {uses: []string{"import:os"}, why: "files a run published beside its artifact"},
+	"internal/release/internal/files/files.go":     {uses: []string{"import:os"}, why: "digested release inputs, signing key file and the manifest file"},
+	"internal/refconsumer/internal/files/files.go": {uses: []string{"import:os"}, why: "trace the reference consumer reads and the verdict it writes"},
 }
 
 func TestIOStaysInDeclaredEdges(t *testing.T) {

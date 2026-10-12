@@ -1,43 +1,12 @@
 package app
 
 import (
-	"encoding/json"
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
-
-// runPond executes a short scripted run and returns its output directory.
-func runPond(t *testing.T, extra ...string) string {
-	t.Helper()
-	dir := t.TempDir()
-	args := append([]string{"run", "--domains-dir", testsupport.DomainsDir(), "--adapters-dir", testsupport.AdaptersDir(), "--domain", pondDomain,
-		"--seed", "7", "--duration", "900", "--sink", "file", "--out", dir}, extra...)
-	got := invoke(t, args...).mustSucceed(t).json(t)
-	if got["run_id"] == "" || got["reproducible"] != true {
-		t.Fatalf("run result = %v", got)
-	}
-	return dir
-}
-
-func TestRunPublishesEvidenceThatReplayAndVerifyReproduce(t *testing.T) {
-	t.Parallel()
-	dir := runPond(t, "--perturb", "drop@1@2")
-	for _, name := range []string{"run.json", "trace.jsonl", "ledger.jsonl"} {
-		if _, err := os.Stat(filepath.Join(dir, name)); err != nil {
-			t.Fatalf("run evidence %s: %v", name, err)
-		}
-	}
-	for _, command := range []string{"replay", "verify"} {
-		got := invoke(t, command, "--domains-dir", testsupport.DomainsDir(), "--adapters-dir", testsupport.AdaptersDir(), filepath.Join(dir, "run.json")).mustSucceed(t).json(t)
-		if got["matches"] != true || got["version_match"] != true {
-			t.Fatalf("%s result = %v", command, got)
-		}
-	}
-}
 
 func TestReplayNamesAnArtifactThatCannotBeRead(t *testing.T) {
 	t.Parallel()
@@ -89,22 +58,6 @@ func TestFlagIssuesNameTheFlagBehindThem(t *testing.T) {
 	}
 }
 
-func TestRefconsumerConsumesATraceAndScoreReadsItsVerdict(t *testing.T) {
-	t.Parallel()
-	dir := runPond(t)
-	verdict := filepath.Join(dir, "verdict.json")
-	consumed := invoke(t, "refconsumer", "--trace", filepath.Join(dir, "trace.jsonl"), "--out", verdict).mustSucceed(t).json(t)
-	if consumed["verdict_written"] != verdict {
-		t.Fatalf("refconsumer result = %v", consumed)
-	}
-	label := writeNominalLabel(t, dir)
-	scored := invoke(t, "score", "--run", filepath.Join(dir, "run.json"), "--label", label,
-		"--domains-dir", testsupport.DomainsDir(), "--adapters-dir", testsupport.AdaptersDir()).mustSucceed(t).json(t)
-	if len(scored) == 0 {
-		t.Fatal("score printed an empty scorecard")
-	}
-}
-
 func TestRefconsumerAndScoreNameWhatTheyCannotRead(t *testing.T) {
 	t.Parallel()
 	missing := filepath.Join(t.TempDir(), "absent")
@@ -124,44 +77,5 @@ func TestRefconsumerAndScoreNameWhatTheyCannotRead(t *testing.T) {
 				t.Fatalf("%v: %+v, want %q", tc.args, got, tc.want)
 			}
 		})
-	}
-}
-
-func TestVerifyFailsTheCommandWhenTheReplayDoesNotReproduceTheArtifact(t *testing.T) {
-	t.Parallel()
-	dir := runPond(t)
-	path := filepath.Join(dir, "run.json")
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	var artifact map[string]any
-	if err := json.Unmarshal(raw, &artifact); err != nil {
-		t.Fatal(err)
-	}
-	artifact["expected_trace_digest"] = "sha256:" + strings.Repeat("0", 64)
-	tampered, err := json.Marshal(artifact)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(path, tampered, 0o600); err != nil {
-		t.Fatal(err)
-	}
-	flags := []string{"--domains-dir", testsupport.DomainsDir(), "--adapters-dir", testsupport.AdaptersDir(), path}
-
-	verified := invoke(t, append([]string{"verify"}, flags...)...)
-	if verified.code != 1 || !strings.HasPrefix(verified.stderr, "streamsim: verify: replay does not reproduce the artifact") {
-		t.Fatalf("verify of a tampered artifact: %+v", verified)
-	}
-	failure := verified.failure(t)
-	if failure["code"] != "replay_mismatch" {
-		t.Fatalf("verify failure code = %v, want replay_mismatch", failure["code"])
-	}
-	if result, _ := failure["result"].(map[string]any); result["matches"] != false {
-		t.Fatalf("verify must carry the replay report as its result: %v", failure)
-	}
-	replayed := invoke(t, append([]string{"replay"}, flags...)...).mustSucceed(t).json(t)
-	if replayed["matches"] != false {
-		t.Fatalf("replay reports the mismatch without failing: %v", replayed)
 	}
 }

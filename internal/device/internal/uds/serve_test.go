@@ -1,4 +1,4 @@
-package serve
+package uds
 
 import (
 	"bytes"
@@ -14,8 +14,7 @@ import (
 	"syscall"
 	"testing"
 
-	"github.com/ghassan-ai-projects/streams-simulator/internal/device"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/mcp"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/device/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
@@ -49,7 +48,7 @@ func TestDeviceListensUntilStoppedThenClosesItsSocket(t *testing.T) {
 	stop := make(chan os.Signal, 1)
 	done := make(chan error, 1)
 	go func() {
-		done <- deviceUntil(stderr, socket, device.New(device.Config{}), "streamsim device: listening on "+socket, stop)
+		done <- serveUntil(stderr, socket, domain.New(domain.Config{}), "streamsim device: listening on "+socket, stop)
 	}()
 	<-stderr.ready
 	conn, err := dial(socket)
@@ -78,7 +77,7 @@ func TestDeviceStopsOnAnInterruptRegisteredBeforeBinding(t *testing.T) {
 	stderr := &readyWriter{ready: make(chan struct{})}
 	done := make(chan error, 1)
 	go func() {
-		done <- Device(stderr, socket, device.New(device.Config{}), "streamsim device: listening on "+socket)
+		done <- Serve(stderr, socket, domain.New(domain.Config{}), "streamsim device: listening on "+socket)
 	}()
 	<-stderr.ready
 	if err := syscall.Kill(syscall.Getpid(), syscall.SIGINT); err != nil {
@@ -99,36 +98,19 @@ func TestDeviceRefusesASocketPathItCannotBind(t *testing.T) {
 		t.Fatal(err)
 	}
 	var stderr bytes.Buffer
-	err := deviceUntil(&stderr, blocker, device.New(device.Config{}), "banner", make(chan os.Signal))
+	err := serveUntil(&stderr, blocker, domain.New(domain.Config{}), "banner", make(chan os.Signal))
 	if err == nil || !strings.HasPrefix(err.Error(), "streamsim: ") || stderr.Len() != 0 {
 		t.Fatalf("err = %v, stderr = %q", err, stderr.String())
-	}
-}
-
-func TestOperatorEndpointAnnouncesItsAddressAndRefusesABadOne(t *testing.T) {
-	t.Parallel()
-	var stderr bytes.Buffer
-	d := mcp.NewDirector(t.Context(), nil, nil, t.TempDir())
-	server, err := operatorEndpoint(&stderr, d, "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = server.Close() })
-	if !strings.HasPrefix(stderr.String(), "operator endpoint: http://127.0.0.1:") {
-		t.Fatalf("stderr = %q", stderr.String())
-	}
-	if _, err := operatorEndpoint(&stderr, d, "not-an-address"); err == nil || !strings.Contains(err.Error(), "mcp operator listener:") {
-		t.Fatalf("a bad listen address must be refused: %v", err)
 	}
 }
 
 func TestAListenFailureNamesTheSocketPath(t *testing.T) {
 	t.Parallel()
 	socket := filepath.Join(filepath.Dir(testsupport.SocketPath(t)), "absent", "d.sock")
-	err := deviceUntil(io.Discard, socket, device.New(device.Config{}), "banner", make(chan os.Signal))
+	err := serveUntil(io.Discard, socket, domain.New(domain.Config{}), "banner", make(chan os.Signal))
 	var pathFailure *os.PathError
 	if !errors.As(err, &pathFailure) || pathFailure.Path != socket || !errors.Is(err, fs.ErrNotExist) {
-		t.Fatalf("deviceUntil = %v, want a path failure naming %s that is a missing directory", err, socket)
+		t.Fatalf("serveUntil = %v, want a path failure naming %s that is a missing directory", err, socket)
 	}
 	wrapped := listenFailure(socket, pathFailure)
 	if !errors.Is(wrapped, pathFailure) {

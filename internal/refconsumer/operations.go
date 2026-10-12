@@ -2,12 +2,20 @@ package refconsumer
 
 import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/refconsumer/internal/app"
 	layer "github.com/ghassan-ai-projects/streams-simulator/internal/refconsumer/internal/domain"
 )
 
 // DefaultConfig is the reference detector's default tuning.
 func DefaultConfig() Config {
 	return layer.DefaultConfig()
+}
+
+// Consume reads the trace the options name, detects episodes in it and writes
+// the verdict. With an operator endpoint the consumer connects to it, actuates
+// the configured effector on detection and reports through it.
+func Consume(options ConsumeOptions) (ConsumeSummary, error) {
+	return app.Consume(options)
 }
 
 // Process detects episodes in a native JSONL trace, actuates when configured

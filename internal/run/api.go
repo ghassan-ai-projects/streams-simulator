@@ -1,6 +1,9 @@
 package run
 
-import layer "github.com/ghassan-ai-projects/streams-simulator/internal/run/internal/app"
+import (
+	layer "github.com/ghassan-ai-projects/streams-simulator/internal/run/internal/app"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
+)
 
 // Config pins everything that enters the determinism tuple: the domain, the
 // adapter, the seed, the sink and the world start.
@@ -28,3 +31,27 @@ var ErrConsumerNotQuiesced = layer.ErrConsumerNotQuiesced
 
 // WorldStatus is a consistent read of the world's clock and queues.
 type WorldStatus = layer.WorldStatus
+
+// Directories say where the domains and adapters a run names are looked up.
+type Directories = layer.Directories
+
+// ScenarioExport is a run expressed as a scenario: the scenario, the number of
+// command-log entries it omits, the number of refused effector calls it drops,
+// and its file content.
+type ScenarioExport = layer.ScenarioExport
+
+// ScenarioRunOptions say where a scenario's domain and adapter are looked up,
+// which sink delivers the run and where its evidence is published (empty
+// publishes nothing).
+type ScenarioRunOptions = layer.ScenarioRunOptions
+
+// RunSummary is what a finished scenario run left behind.
+type RunSummary = layer.RunSummary
+
+// ScenarioCheckError is the violation the static check or dry run found in a
+// scenario, before any sink opened; Err is the violation itself.
+type ScenarioCheckError = layer.ScenarioCheckError
+
+// MaxStartNS is the latest a run's world may start; a start outside
+// [0, MaxStartNS] is refused.
+const MaxStartNS = world.MaxStartNS

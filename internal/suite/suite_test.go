@@ -66,3 +66,18 @@ func TestGenerateIsDeterministicAndLabelsEveryScenario(t *testing.T) {
 		t.Fatalf("%d labels for %d scenarios", len(first.Labels), len(first.Scenarios))
 	}
 }
+
+func TestPublishWritesASuiteFileAndRefusesAnUnknownProfile(t *testing.T) {
+	t.Parallel()
+	options := suite.PublishOptions{DomainsDir: testsupport.DomainsDir(), DomainID: "aquaculture-pond", Profile: "nominal",
+		Out: t.TempDir(), N: 2, Seed: 1}
+	published, err := suite.Publish(options)
+	if err != nil || published.Scenarios == 0 {
+		t.Fatalf("published = %+v, %v", published, err)
+	}
+	options.Profile = "no-such-profile"
+	var unknown *suite.UnknownProfileError
+	if _, err := suite.Publish(options); !errors.As(err, &unknown) || unknown.Profile != "no-such-profile" {
+		t.Fatalf("err = %v, want an UnknownProfileError", err)
+	}
+}

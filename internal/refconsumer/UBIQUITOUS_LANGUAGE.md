@@ -13,6 +13,7 @@ the benchmark's baseline: config-driven, with no domain knowledge.
 | Nameplate | The static world description the consumer is given | `Nameplate` | `sim.nameplate.read` |
 | Port | The narrow interface the consumer actuates and reports through | `EffectorInvoker`, `VerdictSink`, `QuiescenceReporter` | – |
 | Operator client | The out-of-process client of the MCP operator endpoint, holding a capability token | `MCPOperator` | `--mcp`, `--token`, `--run` |
+| Consume | Read a trace file, detect episodes, write the verdict file; with an operator endpoint, also actuate on detection and report over it | `Consume`, `ConsumeOptions`, `ConsumeSummary` | `refconsumer --trace --out` |
 | Verdict | What the consumer reports: detections, admission outcomes, actions | `model.Verdict` | `verdict.json` |
 
 ## Retired words
@@ -20,3 +21,4 @@ the benchmark's baseline: config-driven, with no domain knowledge.
 | Word | Replaced by | Why |
 | --- | --- | --- |
 | consumer identity literals in three places | one set in the operator client and the verdict | single source (DEFERRED duplicates list) |
+| `consumeReferenceTrace`, `connectReferenceConsumer` (in `cli`) | `Consume` | the reference consumer's orchestration is the module's work, not the command line's |

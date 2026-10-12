@@ -14,6 +14,8 @@ the graded benchmark a consumer is scored against.
 | Trivial case | A scenario the audit rejected; kept as a regression fixture, never counted | `TrivialCase` | `trivial_excluded[]` |
 | Terminal state | The reported reason a domain could not produce the requested admitted scenarios | `TerminalState` | `terminal_state` |
 | Attempt | One draw of the generate-audit-regenerate loop | `Attempts` | `attempts` |
+| Publication | Generate the audited suite of a domain and profile and write it as `<domain>-<profile>-suite.json`; a profile the domain does not declare is refused first | `Publish`, `FileName`, `UnknownProfileError` | `suite --domain --profile --out` |
+| Sample period | The channel sampling period a published suite is generated with: two minutes | `DefaultSampleNS` | – |
 
 ## Retired words
 

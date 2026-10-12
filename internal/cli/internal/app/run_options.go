@@ -8,7 +8,6 @@ import (
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
 type runOptions struct {
@@ -76,8 +75,8 @@ func admitRunOptions(options runOptions) (runOptions, error) {
 	if !(options.durationS > 0 && options.durationS*1e9 <= float64(run.MaxRunSpanNS)) {
 		return runOptions{}, usagef("run: --duration must be positive and at most %d seconds (30 days), got %v", run.MaxRunSpanNS/1e9, options.durationS)
 	}
-	if options.startTime < 0 || options.startTime > world.MaxStartNS {
-		return runOptions{}, usagef("run: --start-time must be in [0, %d], got %d", int64(world.MaxStartNS), options.startTime)
+	if options.startTime < 0 || options.startTime > run.MaxStartNS {
+		return runOptions{}, usagef("run: --start-time must be in [0, %d], got %d", int64(run.MaxStartNS), options.startTime)
 	}
 	return admitRunSink(options)
 }

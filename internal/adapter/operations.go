@@ -13,6 +13,12 @@ func Load(path string) (*model.Adapter, error) {
 	return files.Load(path)
 }
 
+// LoadDir loads every adapter file in dir (an empty dir selects "adapters"),
+// keyed by adapter id. A directory that holds no adapter is refused.
+func LoadDir(dir string) (map[string]*model.Adapter, error) {
+	return files.LoadDir(dir)
+}
+
 // LoadBytes validates an adapter from an in-memory source document. It is
 // used by artifact replay so a run can carry its own adapter definition.
 func LoadBytes(raw []byte, src string) (*model.Adapter, error) {
@@ -27,6 +33,14 @@ func LoadBytes(raw []byte, src string) (*model.Adapter, error) {
 // resolve against.
 func Verify(adapterPath, fixturePath, base string) (*VerifyResult, error) {
 	return files.Verify(adapterPath, fixturePath, base)
+}
+
+// VerifyFailure decides whether a verification failed: the message is empty
+// for one that passed, and diverged is true when a declared check ran and
+// failed. An adapter that declares no schema and no golden has nothing to
+// compare, so it never counts as verified.
+func VerifyFailure(res *VerifyResult) (message string, diverged bool) {
+	return layer.VerifyFailure(res)
 }
 
 // FixtureEvents returns the committed 12-event conformance fixture every

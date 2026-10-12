@@ -21,6 +21,8 @@ proof of that effect.
 | Protocol fault | A deterministic device-level fault by accepted ordinal: ack lost, duplicate, disconnect, stuck | `FaultInjection`, `Faults` | `--fault` |
 | Wire fault | A deterministic transport fault by outbound frame index: drop, duplicate, swap | `WireFaults` | – |
 | Gateway link | The newline-delimited stream a host speaks to the device, including the `query_state` control line | `uds` edge | unix socket |
+| Serve | Listening on a unix socket until the process is interrupted, then closing the listener; the banner names socket, device and boot identity | `Serve`, `uds.Serve` | `device serve --socket` |
+| Capability file | The capability catalog read from a path and validated | `LoadCapabilitiesFile`, `files.LoadCapabilities` | `--capabilities` |
 | Contract | The vendored device wire-protocol schemas and conformance fixtures | `device/contract` | `contract/` |
 
 ## Retired words
@@ -29,3 +31,4 @@ proof of that effect.
 | --- | --- | --- |
 | `TargetNames`, `Advance`, `SetFaultSchedule` (device) | removed or domain-layer only | no production caller |
 | `ServeConn`, `EncodeRecord`, `DecodeRecord` (exported) | module test seams | used only by the module's own tests |
+| `serve.Device` (in `cli`) | `device.Serve` | the socket lifetime belongs to the device transport edge |

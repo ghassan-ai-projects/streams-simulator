@@ -4,6 +4,7 @@
 package files
 
 import (
+	"cmp"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -56,4 +57,19 @@ func loadPaths(paths []string) ([]*domain.Compiled, error) {
 		out = append(out, c)
 	}
 	return out, nil
+}
+
+// LoadCatalog loads every domain in a directory into a catalog; an empty dir
+// selects "domains", the layout of the repository. A directory that holds no
+// domain is refused, because an empty catalog would report coverage of nothing.
+func LoadCatalog(dir string) (*domain.Catalog, error) {
+	dir = cmp.Or(dir, "domains")
+	specs, err := LoadAll(dir)
+	if err != nil {
+		return nil, fmt.Errorf("streamsim: %w", err)
+	}
+	if len(specs) == 0 {
+		return nil, fmt.Errorf("no domains found in %s", dir)
+	}
+	return domain.NewCatalog(specs), nil
 }

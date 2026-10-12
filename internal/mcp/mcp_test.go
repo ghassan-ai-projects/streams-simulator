@@ -2,6 +2,8 @@ package mcp_test
 
 import (
 	"context"
+	"io"
+	"strings"
 	"testing"
 
 	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
@@ -97,5 +99,13 @@ func TestSetOperatorEndpointIsAdvertisedByWorldCreate(t *testing.T) {
 	out, _ := res.StructuredContent.(map[string]any)
 	if out["operator_endpoint"] != "http://127.0.0.1:9/operator" {
 		t.Fatalf("world create must advertise the recorded endpoint: %v", out)
+	}
+}
+
+func TestServeDirectorRefusesADomainsDirectoryThatHoldsNoDomain(t *testing.T) {
+	t.Parallel()
+	err := mcp.ServeDirector(t.Context(), io.Discard, mcp.ServeOptions{DomainsDir: t.TempDir(), AdaptersDir: testsupport.AdaptersDir(), OutDir: t.TempDir()})
+	if err == nil || !strings.Contains(err.Error(), "no domains found in") {
+		t.Fatalf("err = %v", err)
 	}
 }

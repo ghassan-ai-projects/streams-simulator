@@ -60,24 +60,27 @@ Do not invent architecture outside the documented design. The spec was written t
 The documented shape (see [docs/design/TECHNICAL_DESIGN.md](docs/design/TECHNICAL_DESIGN.md)):
 
 - `cmd/streamsim/main.go` - version metadata and CLI entrypoint
-- `internal/cli` - facade (`Main`) over the commands (`app`) and the process, file and serve edges
+- `internal/cli` - wiring only: facade (`Main`) over the commands (`app`: flag parsing, scenario from flags, command registry, JSON output and failure documents) and the process and file edges; a gate (`test/architecture/cli_wiring_test.go`) keeps logic out
 - `internal/world` - seeded discrete-event world core; domain specs are data, loaded through one schema
 - `internal/perturb` - perturbation layer between world and adapter (what the observer got, not what happened)
 - `internal/adapter` - declarative output adapters projecting native `sim-event-v0.1` into consumer wire formats
 - `internal/sink` - inproc, file, http-push sinks
-- `internal/mcp` - one MCP server, two roles: `director` (catalog, world, clock, fault, perturb, truth) and `operator` (nameplate, effectors, invoke, verdict)
-- `internal/run` - run orchestration, delivery ledger, artifacts, replay, and quiescence; there is no separate `internal/ledger` package
+- `internal/mcp` - one MCP server, two roles: `director` (catalog, world, clock, fault, perturb, truth) and `operator` (nameplate, effectors, invoke, verdict); it also serves them (`mcp.ServeDirector`: stdio session plus the operator HTTP endpoint, in the `transport` edge)
+- `internal/run` - run orchestration, delivery ledger, artifacts, replay, and quiescence, scenario checking, running, replay and export from files (`run.RunScenario`, `run.ReplayFile`, `run.ExportScenarioFile`), and resolving the domain and adapter a run names (`run.LoadInputs`); there is no separate `internal/ledger` package
+- `internal/grading` - offline grading of a finished run: loads the published files, replays the artifact for its effector calls and scores with `score` (composes `run` and `score`, which do not know each other)
+- `internal/release` - the release manifest: file digests, canonical body, ed25519 signature, writing
 - `internal/truth` - sealed ground truth and independent analytic solver
 - `internal/score` - online/offline scoring policies
-- `internal/audit`, `internal/suite`, `internal/refconsumer` - trivial-baseline audit, scenario generation, shipped reference consumer
-- `internal/device`, `internal/deviceworld` - device emulation and its world integration bridge
-- `internal/domain`, `internal/model`, `internal/jsonschema`, `internal/schemas`, `internal/canonical`, `internal/randutil`, `internal/wall` - data loading, shared records and bounded foundations
+- `internal/audit`, `internal/suite`, `internal/refconsumer` - trivial-baseline audit, scenario generation and publishing (`suite.Publish`), shipped reference consumer (`refconsumer.Consume` runs it over a trace file, optionally over the operator endpoint)
+- `internal/device`, `internal/deviceworld` - device emulation (rules, capability file, unix-socket serving until interrupted) and its world integration bridge (`deviceworld.OpenDevice` composes a device with a bound world)
+- `internal/domain`, `internal/model`, `internal/jsonschema`, `internal/schemas`, `internal/canonical`, `internal/randutil`, `internal/wall` - data loading (directory loading of domains and adapters lives in the `domain` and `adapter` files edges), shared records and bounded foundations
 - `docs/` - the engineering design, research, contracts, fixtures, and evidence archive
 - `documentation/` - curated public product, usage, architecture, benchmark, operations, and governance documentation
 
 Dependency direction:
 
-- `cmd` -> `cli` -> application packages (`mcp`, `run`, `suite`, `score`, `refconsumer`)
+- `cmd` -> `cli` -> the facades it wires (`mcp`, `run`, `suite`, `grading`, `release`, `refconsumer`, `device`, `deviceworld`, `domain`, `adapter`, `model`)
+- `grading` -> `run`/`score`; the CLI holds no business logic, only flags, documents and failures
 - `run` composes `world`/`perturb`/`adapter`/`sink`; truth and scoring consume world/evidence. `deviceworld` bridges `device` and `world` without either core importing the bridge.
 - Dependencies flow downward only.
 - Domain specs, adapters, and effectors are **data** (JSON), never code. If any domain needs a code branch in the binary, the simulator is wrong and the domain found the bug.

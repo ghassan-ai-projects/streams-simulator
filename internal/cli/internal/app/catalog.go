@@ -1,70 +1,16 @@
 package app
 
 import (
+	"cmp"
 	"flag"
 	"fmt"
-	"path/filepath"
 	"sort"
 	"strings"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/cli/internal/files"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
-
-// loadCatalog loads every domain in a directory.
-func loadCatalog(dir string) (*domain.Catalog, error) {
-	if dir == "" {
-		dir = "domains"
-	}
-	specs, err := domain.LoadAll(dir)
-	if err != nil {
-		return nil, fmt.Errorf("streamsim: %w", err)
-	}
-	if len(specs) == 0 {
-		return nil, fmt.Errorf("no domains found in %s", dir)
-	}
-	return domain.NewCatalog(specs), nil
-}
-
-// loadAdapters loads every adapter in a directory.
-func loadAdapters(dir string) (map[string]*model.Adapter, error) {
-	if dir == "" {
-		dir = "adapters"
-	}
-	names, err := files.FileNames(dir)
-	if err != nil {
-		return nil, fmt.Errorf("streamsim: %w", err)
-	}
-	return decodeAdapterDirectory(dir, names)
-}
-
-func decodeAdapterDirectory(dir string, names []string) (map[string]*model.Adapter, error) {
-	out, err := loadAdapterEntries(dir, names)
-	if err != nil {
-		return nil, err
-	}
-	if len(out) == 0 {
-		return nil, fmt.Errorf("no adapters found in %s", dir)
-	}
-	return out, nil
-}
-
-func loadAdapterEntries(dir string, names []string) (map[string]*model.Adapter, error) {
-	out := map[string]*model.Adapter{}
-	for _, name := range names {
-		if !strings.HasSuffix(name, ".json") {
-			continue
-		}
-		a, err := adapter.Load(filepath.Join(dir, name))
-		if err != nil {
-			return nil, fmt.Errorf("streamsim: %w", err)
-		}
-		out[a.ID] = a
-	}
-	return out, nil
-}
 
 func cmdCatalog(s *session, args []string) (any, error) {
 	fs := newFlagSet("catalog", s.stderr)
@@ -73,7 +19,7 @@ func cmdCatalog(s *session, args []string) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	cat, err := loadCatalog(*dir)
+	cat, err := domain.NewCatalogFromDir(*dir)
 	if err != nil {
 		return nil, fmt.Errorf("streamsim: %w", err)
 	}
@@ -186,7 +132,7 @@ func adapterVerb(verb, dir string, args []string) (any, error) {
 }
 
 func listAdapters(dir string) (any, error) {
-	adapters, err := loadAdapters(dir)
+	adapters, err := adapter.LoadDir(dir)
 	if err != nil {
 		return nil, fmt.Errorf("streamsim: %w", err)
 	}
@@ -216,10 +162,7 @@ func verifyAdapterCommand(dir string, args []string) (any, error) {
 	if len(args) < 1 {
 		return nil, usagef("adapter verify requires a path")
 	}
-	if dir == "" {
-		dir = "adapters"
-	}
-	return verifyAdapterFile(args[0], dir)
+	return verifyAdapterFile(args[0], cmp.Or(dir, "adapters"))
 }
 
 func verifyAdapterFile(path, base string) (any, error) {
@@ -230,18 +173,18 @@ func verifyAdapterFile(path, base string) (any, error) {
 	return adapterVerdict(res)
 }
 
-// adapterVerdict fails the command when a declared check failed, or when the
-// adapter declares none, so "verified" always means something was compared.
+// adapterVerdict fails the command when the adapter facade finds the
+// verification failed (a declared check failed, or none was declared).
 func adapterVerdict(res *adapter.VerifyResult) (any, error) {
 	report := adapterVerifyReport(res)
-	if !res.SchemaChecked && !res.GoldenChecked {
-		return nil, adapterVerifyFailure(report, fmt.Sprintf("adapter verify: %s declares no conformance schema or golden to check", res.Adapter))
+	message, diverged := adapter.VerifyFailure(res)
+	if message == "" {
+		return report, nil
 	}
-	if (res.SchemaChecked && !res.SchemaOK) || (res.GoldenChecked && !res.GoldenMatch) {
+	if diverged {
 		report["first_divergence"], report["detail"] = res.FirstDivergence, res.Detail
-		return nil, adapterVerifyFailure(report, "adapter verify FAILED: "+strings.TrimSpace(res.FirstDivergence+" "+res.Detail))
 	}
-	return report, nil
+	return nil, adapterVerifyFailure(report, message)
 }
 
 func adapterVerifyReport(res *adapter.VerifyResult) map[string]any {

@@ -1,13 +1,10 @@
 package app
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
 
-	"github.com/ghassan-ai-projects/streams-simulator/internal/cli/internal/files"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/refconsumer"
 )
 
@@ -16,37 +13,14 @@ func cmdRefconsumer(s *session, args []string) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	raw, err := files.Read(options.trace)
+	summary, err := refconsumer.Consume(refconsumer.ConsumeOptions{Trace: options.trace, Out: options.out,
+		Effector: options.effector, MCPEndpoint: options.mcpEndpoint, Token: options.token, RunID: options.runID,
+		Threshold: options.threshold, Window: options.window})
 	if err != nil {
-		return nil, fmt.Errorf("streamsim: %w", err)
+		return nil, fmt.Errorf("%w", err)
 	}
-	return consumeReferenceTrace(raw, options)
+	return map[string]any{"verdict_written": summary.Out, "detections": summary.Detections}, nil
 }
-
-func connectReferenceConsumer(endpoint, token, runID string) (*refconsumer.Nameplate, *refconsumer.MCPOperator, error) {
-	operator, err := refconsumer.NewMCPOperator(endpoint, token, runID)
-	if err != nil {
-		return nil, nil, fmt.Errorf("%w", err)
-	}
-	nameplate, err := operator.Nameplate()
-	if err != nil {
-		_ = operator.Close()
-		return nil, nil, fmt.Errorf("%w", err)
-	}
-	return nameplate, operator, nil
-}
-
-func writeConsumerVerdict(v *model.Verdict, out string) error {
-	rawV, _ := json.MarshalIndent(v, "", "  ")
-	if err := files.Write(out, rawV); err != nil {
-		return fmt.Errorf("streamsim: %w", err)
-	}
-	return nil
-}
-
-type fileSink struct{}
-
-func (f *fileSink) SubmitVerdict(v *model.Verdict) error { return nil }
 
 type refconsumerOptions struct {
 	trace, out, effector, mcpEndpoint, token, runID string
@@ -86,30 +60,4 @@ func registerRefconsumerFlags(fs *flag.FlagSet, options *refconsumerOptions) {
 	fs.StringVar(&options.mcpEndpoint, "mcp", "", "operator endpoint URL (closes the loop over MCP)")
 	fs.StringVar(&options.token, "token", "", "capability token from sim.world.create")
 	fs.StringVar(&options.runID, "run", "", "run id to report against")
-}
-
-func consumeReferenceTrace(raw []byte, options refconsumerOptions) (any, error) {
-	if options.mcpEndpoint == "" {
-		return runReferenceConsumer(raw, options, &refconsumer.Nameplate{WorldID: "cli"}, nil, &fileSink{}, "cli")
-	}
-	np, operator, err := connectReferenceConsumer(options.mcpEndpoint, options.token, options.runID)
-	if err != nil {
-		return nil, fmt.Errorf("streamsim: %w", err)
-	}
-	defer func() { _ = operator.Close() }()
-	return runReferenceConsumer(raw, options, np, operator, operator, options.runID)
-}
-
-func runReferenceConsumer(raw []byte, options refconsumerOptions, np *refconsumer.Nameplate, invoker refconsumer.EffectorInvoker, sink refconsumer.VerdictSink, id string) (any, error) {
-	cfg := refconsumer.Config{Threshold: options.threshold, Window: options.window, MinConsecutive: 3,
-		AbsenceFactor: 3, OnDetectionEffector: options.effector}
-	r := refconsumer.New(cfg, np, invoker, sink, id)
-	v, err := r.Process(raw, 0)
-	if err != nil {
-		return nil, fmt.Errorf("streamsim: %w", err)
-	}
-	if err := writeConsumerVerdict(v, options.out); err != nil {
-		return nil, err
-	}
-	return map[string]any{"verdict_written": options.out, "detections": len(v.Detections)}, nil
 }
