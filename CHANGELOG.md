@@ -4,6 +4,13 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **Supervisory control: setpoints, sequencer, responder, lease** (`docs/design/DOMAIN_SPEC_V0_2.md` section 18; phase P6d,
+  review items D3 and S2). A condition may compare against a setpoint state (`threshold_state`, with `threshold` as an
+  offset); `f1.form: "sequencer"` stages a plant up and down within a band; an effector `responder` applies a delayed effect
+  chosen by whether its argument names an active fault, and may clear it; an effector `lease` falls back (`safe_off`,
+  `revert`, `hold_last`) unless renewed. The utility fixture gains an air system with a pressure band, a compressor
+  sequencer, a leased boost and a work-order responder. Shipped domains and every pinned output are unchanged.
+
 - **Protection: trips, lockouts, anti-recycle, boundaries, preconditions** (`docs/design/DOMAIN_SPEC_V0_2.md` section 17;
   phase P6c, review item S14). A shared closed `condition` (`lt`, `lte`, `gt`, `gte`); `f1.form: "trip"` latches (a lockout,
   reset when `reset_on` changes) or clears; `f1.form: "anti_recycle"` is a timer after an edge; `kinds[].boundaries` name trip

@@ -12,7 +12,7 @@ var proseMembers = []string{"description", "title", "stresses", "not_applicable"
 var identifierMembers = []string{"name", "id_template", "command_id", "instance", "fmu", "enum_values"}
 
 var referenceMembers = []string{"assign_from_arg", "channel", "channel_a", "channel_b", "confirmation_channels", "effector", "expected_effector",
-	"from", "from_arg", "inputs", "observes", "outputs", "reset_on", "scale", "selector", "state", "target", "to", "trigger_state", "watch"}
+	"from", "from_arg", "inputs", "observes", "outputs", "reset_on", "scale", "selector", "state", "target", "to", "trigger_state", "watch", "threshold_state", "match_arg", "arg"}
 
 var openObjectMembers = []string{"args_schema", "args", "params", "inputs", "outputs"}
 

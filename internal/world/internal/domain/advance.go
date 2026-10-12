@@ -77,7 +77,7 @@ func (w *World) valueAt(ent *Entity, dyn *model.Dynamics, t int64) float64 {
 }
 
 func isDiscrete(dyn *model.Dynamics) bool {
-	return dyn.F1 != nil && (dyn.F1.Form == model.FormTrip || dyn.F1.Form == model.FormAntiRecycle)
+	return dyn.F1 != nil && (dyn.F1.Form == model.FormTrip || dyn.F1.Form == model.FormAntiRecycle || dyn.F1.Form == model.FormSequencer)
 }
 
 func isStore(dyn *model.Dynamics) bool { return dyn.F1 != nil && dyn.F1.Form == model.FormStore }

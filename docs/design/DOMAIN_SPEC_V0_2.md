@@ -5,7 +5,7 @@
 - **Contract**: [`docs/contracts/domain-spec-v0.2.schema.json`](../contracts/domain-spec-v0.2.schema.json), embedded in the binary
   (`internal/schemas`), parity-tested against the committed copy. v0.1 is removed: the project is pre-release and the eight shipped
   domains are rewritten in the same change.
-- **Later parts**: `store` and `flow` are section 13 (P6a), `schedule`, `regime` and `peak` section 16 (P6b), protection section 17 (P6c); `responder`, aggregation over links and the event
+- **Later parts**: `store` and `flow` are section 13 (P6a), `schedule`, `regime` and `peak` section 16 (P6b), protection section 17 (P6c), supervisory control section 18 (P6d); aggregation over links and the event
   clock are P6. Nothing in this part depends on them.
 
 ## 1. Why
@@ -352,3 +352,40 @@ time after the clock. `tripped_value` must differ from the state's initial value
 Cross-checks: the trip fires on the step computed from the analytic crossing of an F0 ramp (`floor(t_c) + 1 + for_s + 1`);
 latch, clear and reset at the expected boundaries; the anti-recycle timer reads 599 s one step after its edge; preconditions
 refuse during the timer, while locked out and while isolated; a call dated ahead of the clock leaves earlier readings unchanged.
+
+## 18. Supervisory control: setpoints, sequencer, responder, lease (phase P6d)
+
+Review items D3 and S2: the factory is commanded at supervisory level (setpoints, bands, demand limits) and the plant's own
+sequencers act on them, so actions do not fight contactor-level logic.
+
+- **Setpoints in conditions.** A `condition` may name `threshold_state`; its threshold is then that state's value plus
+  `threshold` (an offset or deadband). A supervisory effector assigns the setpoint state (`assign_from_arg`), and every trip,
+  precondition and sequencer reading it follows.
+- **`f1.form: "sequencer"`** = `{stage_up: condition, stage_down: condition, stages, hold_s}`: the target counts running stages
+  (0 to `stages`). At each step boundary, once `hold_s` has passed since the last change, one stage starts while `stage_up`
+  holds, or one stops while `stage_down` holds (start wins). Other dynamics use the count as an input (compressor output).
+- **`effectors[e].responder`** = `{match_arg, delay_s, on_match, on_miss, clear_fault}`: a simulated person or crew. When the
+  call is acknowledged, the responder arrives `delay_s` later; if the string argument `match_arg` names a fault active on the
+  entity at the arrival time (as known when the call is made), `on_match` applies at arrival and `clear_fault` clears the
+  fault, otherwise `on_miss` applies. The outcome shows only through states; the acknowledgement is the same either way.
+  Responder availability, reports and approvals are the reference scenario's (S6, P12).
+- **`effectors[e].lease`** = `{arg, fallback: safe_off|hold_last|revert, safe_deltas}`: an acknowledged call holds its effect for
+  the seconds in its numeric argument `arg`. Unless the same effector is acknowledged again on the entity before the lease lapses
+  (which withdraws the pending fallback and starts a new lease), the fallback applies at the lapse: `safe_off` sets each
+  `safe_deltas` state to its `delta`, `revert` undoes the call's additive deltas (an assigning effect cannot be reverted,
+  `/…/lease/fallback`), `hold_last` keeps the effect. A refused or unacknowledged call does not renew.
+- **Lease timing.** A lease counts from the effect's start (the call time plus the effect's dead time). A `revert` fallback
+  undoes the total additive contribution of every call in the lease chain (a renewal carries the withdrawn revert into the
+  new one), with the effect's own time constant, so the state returns to where it started. A call without the lease
+  argument neither renews nor ends the lease. Only acknowledged calls (`ok`, `slow`, `ack_lost`) arm a lease or dispatch a
+  responder; a `partial`, `confirmed_no_effect` or `silent_no_effect` call does neither.
+- **Responder timing.** The match is decided when the call is acknowledged, from the faults injected so far; a fault injected
+  later, or cleared later by the director, does not change an already scheduled outcome.
+- **Sequencer start-up.** The first stage change waits `hold_s` from the entity's first step (world start or birth).
+- **Issues:** an undeclared `threshold_state`, a responder `match_arg` that is no string argument, a lease `arg` that is no
+  numeric argument, a `safe_off` lease without `safe_deltas` or with a delta read from an argument, a responder delta reading
+  an argument that is no numeric argument, a delta on an undeclared state.
+
+Cross-checks: the sequencer stages at the exact boundaries implied by the band crossings and `hold_s`, up and down, capped at
+`stages` and 0; a responder told the active fault clears it at arrival and applies `on_match`, a wrong cause applies `on_miss`
+and leaves the fault; a lease falls back at its lapse (safe value and revert) unless renewed, and renewal moves the lapse.

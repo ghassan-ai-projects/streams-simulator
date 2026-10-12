@@ -7,11 +7,28 @@ import (
 )
 
 func (checks domainChecks) f1Trip(f1 *model.F1Dyn) error {
-	switch {
-	case !checks.hasState(f1.When.State):
-		return checks.bad("/when/state", "trip condition state %q is not a declared state", f1.When.State)
-	case f1.Latch && !checks.hasState(f1.ResetOn):
+	if err := checks.condition("/when", f1.When); err != nil {
+		return err
+	}
+	if f1.Latch && !checks.hasState(f1.ResetOn) {
 		return checks.bad("/reset_on", "a latched trip needs reset_on naming a declared state, not %q", f1.ResetOn)
+	}
+	return nil
+}
+
+func (checks domainChecks) f1Sequencer(f1 *model.F1Dyn) error {
+	if err := checks.condition("/stage_up", f1.StageUp); err != nil {
+		return err
+	}
+	return checks.condition("/stage_down", f1.StageDown)
+}
+
+func (checks domainChecks) condition(member string, c *model.Condition) error {
+	if !checks.hasState(c.State) {
+		return checks.bad(member+"/state", "condition on %q, which is not a declared state", c.State)
+	}
+	if c.ThresholdState != "" && !checks.hasState(c.ThresholdState) {
+		return checks.bad(member+"/threshold_state", "condition threshold %q is not a declared state", c.ThresholdState)
 	}
 	return nil
 }
@@ -40,9 +57,9 @@ func (checks domainChecks) checkBoundaries() error {
 }
 
 func (checks domainChecks) effectorRequires(e *model.Effector) error {
-	for i, condition := range e.Requires {
-		if !checks.hasState(condition.State) {
-			return checks.bad(fmt.Sprintf("/requires/%d/state", i), "effector %q requires undeclared state %q", e.Name, condition.State)
+	for i := range e.Requires {
+		if err := checks.condition(fmt.Sprintf("/requires/%d", i), &e.Requires[i]); err != nil {
+			return err
 		}
 	}
 	return nil

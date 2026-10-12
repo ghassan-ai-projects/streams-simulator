@@ -36,6 +36,7 @@ func (w *World) initializeRuntime(seed uint64) {
 	w.subs = map[string]*randutil.SplitMix64{}
 	w.entities = map[string]*Entity{}
 	w.kicks = map[driverKey][]*kick{}
+	w.leases = map[driverKey][]*kick{}
 	w.shadow = map[driverKey][]*kick{}
 	w.faultsByState = map[string][]*activeFault{}
 	w.faultsByID = map[string]*activeFault{}

@@ -7,7 +7,7 @@ import (
 )
 
 func (checks domainChecks) checkEffector(e *model.Effector) error {
-	for _, check := range []func(*model.Effector) error{checks.effectorStates, checks.effectorInterlock, checks.effectorAutonomousAction, checks.effectorConfirmation, checks.effectorDeadTime, checks.effectorRequires} {
+	for _, check := range []func(*model.Effector) error{checks.effectorStates, checks.effectorInterlock, checks.effectorAutonomousAction, checks.effectorConfirmation, checks.effectorDeadTime, checks.effectorRequires, checks.effectorResponder, checks.effectorLease} {
 		if err := check(e); err != nil {
 			return err
 		}

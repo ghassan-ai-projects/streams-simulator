@@ -16,16 +16,23 @@ type protectionState struct {
 }
 
 func (w *World) conditionHolds(entityID string, c *model.Condition, atNS int64) bool {
-	v := w.stateAt(entityID, c.State, atNS)
-	switch c.Operator {
+	threshold := c.Threshold
+	if c.ThresholdState != "" {
+		threshold += w.stateAt(entityID, c.ThresholdState, atNS)
+	}
+	return compare(c.Operator, w.stateAt(entityID, c.State, atNS), threshold)
+}
+
+func compare(operator string, v, threshold float64) bool {
+	switch operator {
 	case "lt":
-		return v < c.Threshold
+		return v < threshold
 	case "lte":
-		return v <= c.Threshold
+		return v <= threshold
 	case "gt":
-		return v > c.Threshold
+		return v > threshold
 	case "gte":
-		return v >= c.Threshold
+		return v >= threshold
 	}
 	return false
 }

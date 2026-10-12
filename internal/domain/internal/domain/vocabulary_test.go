@@ -38,3 +38,30 @@ func TestTripAntiRecycleBoundaryAndPreconditionRulesAreLocated(t *testing.T) {
 		{"a precondition on an undeclared state", func(d map[string]any) { put(d, "door", "kinds", 1, "effectors", 1, "requires", 0, "state") }, "/kinds/1/effectors/1/requires/0/state"},
 	})
 }
+
+func TestSequencerResponderAndLeaseRulesAreLocated(t *testing.T) {
+	t.Parallel()
+	runFixtureViolations(t, testsupport.UtilityDomain(), []violationCase{
+		{"a band on an undeclared state", func(d map[string]any) {
+			put(d, "band_mid", "kinds", 2, "dynamics", 2, "f1", "stage_up", "threshold_state")
+		}, "/kinds/2/dynamics/2/f1/stage_up/threshold_state"},
+		{"a sequencer without stages", func(d map[string]any) { delete(at(d, "kinds", 2, "dynamics", 2, "f1").(map[string]any), "stages") }, "/kinds/2/dynamics/2/f1/stages"},
+		{"a responder matching an undeclared argument", func(d map[string]any) { put(d, "reason", "kinds", 2, "effectors", 2, "responder", "match_arg") }, "/kinds/2/effectors/2/responder/match_arg"},
+		{"a responder acting on an undeclared state", func(d map[string]any) {
+			put(d, "valve", "kinds", 2, "effectors", 2, "responder", "on_match", 0, "state")
+		}, "/kinds/2/effectors/2/responder/on_match/0/state"},
+		{"a lease reading a string argument", func(d map[string]any) {
+			put(d, map[string]any{"type": "string"}, "kinds", 2, "effectors", 1, "args_schema", "properties", "lease_s")
+		}, "/kinds/2/effectors/1/lease/arg"},
+		{"a safe-off lease without a safe state", func(d map[string]any) {
+			delete(at(d, "kinds", 2, "effectors", 1, "lease").(map[string]any), "safe_deltas")
+		}, "/kinds/2/effectors/1/lease/safe_deltas"},
+		{"a safe state read from an argument", func(d map[string]any) {
+			put(d, "rate", "kinds", 2, "effectors", 1, "lease", "safe_deltas", 0, "from_arg")
+		}, "/kinds/2/effectors/1/lease/safe_deltas/0"},
+		{"a responder delta reading an undeclared argument", func(d map[string]any) {
+			put(d, "hours", "kinds", 2, "effectors", 2, "responder", "on_miss", 0, "from_arg")
+		}, "/kinds/2/effectors/2/responder/on_miss/0/from_arg"},
+		{"a revert lease of an assignment", func(d map[string]any) { put(d, "revert", "kinds", 2, "effectors", 1, "lease", "fallback") }, "/kinds/2/effectors/1/lease/fallback"},
+	})
+}

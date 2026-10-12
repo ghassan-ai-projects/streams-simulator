@@ -28,6 +28,10 @@ An exogenous profile (a tariff, a daily load shape) is an `f0.schedule` of point
 
 A protection trip is `f1.form: "trip"` with a `when` condition (`lt`, `lte`, `gt`, `gte` against a threshold) held for `for_s`; `latch: true` makes it a lockout that a change of `reset_on` clears. `anti_recycle` is a timer started by an edge of a watched state. `boundaries` mark trip states as safety boundaries with a severity. An effector's `requires` lists the conditions the device checks before acting (not locked out, timer elapsed, not isolated, not in hand mode). Rules: [DOMAIN_SPEC_V0_2.md](../../docs/design/DOMAIN_SPEC_V0_2.md) section 17; the chiller in `internal/testsupport/testdata/utility-plant.domain.json`.
 
+## Supervisory control
+
+Command the plant at supervisory level: an effector assigns a setpoint state, and conditions compare against it with `threshold_state`. A `sequencer` form stages equipment up and down within a band. An effector `responder` models a person or crew whose delayed effect depends on whether the call named the active fault; an effector `lease` falls back to a safe state when not renewed. Rules: [DOMAIN_SPEC_V0_2.md](../../docs/design/DOMAIN_SPEC_V0_2.md) section 18; the air system in `internal/testsupport/testdata/utility-plant.domain.json`.
+
 ## Validate locally
 
 ```bash

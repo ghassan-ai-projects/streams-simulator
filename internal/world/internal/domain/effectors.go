@@ -234,6 +234,7 @@ func (w *World) applyEffectorOutcome(result *InvokeResult, eff *model.Effector, 
 
 func (w *World) applyAcknowledgedEffect(result *InvokeResult, eff *model.Effector, inv invocation) {
 	w.applyEffect(inv.entityID, eff, inv.args, inv.atNS, 1.0, false)
+	w.followUpCall(eff, inv)
 	result.EffectApplied = true
 	result.Accepted = result.Mode != ModeAckLost
 	if !result.Accepted {

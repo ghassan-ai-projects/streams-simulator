@@ -131,6 +131,9 @@ type F1Dyn struct {
 	Watch          string     `json:"watch,omitempty"`
 	Edge           string     `json:"edge,omitempty"`
 	HoldS          float64    `json:"hold_s,omitempty"`
+	StageUp        *Condition `json:"stage_up,omitempty"`
+	StageDown      *Condition `json:"stage_down,omitempty"`
+	Stages         int        `json:"stages,omitempty"`
 	Clamp          *Clamp     `json:"clamp,omitempty"`
 }
 

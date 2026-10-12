@@ -26,7 +26,7 @@ func (checks domainChecks) f1ParameterChecks() map[string]func(*model.F1Dyn) err
 	return map[string]func(*model.F1Dyn) error{
 		"first_order_lag": checks.f1TimeConstant, "dead_time": checks.f1TimeConstant, "rc_network": checks.f1NetworkConstants,
 		"hysteresis": checks.f1Thresholds, "threshold_integrator": checks.f1Direction, "saturation": checks.f1Clamp,
-		model.FormRegime: checks.f1Selector, model.FormTrip: checks.f1Trip, model.FormAntiRecycle: checks.f1AntiRecycle,
+		model.FormRegime: checks.f1Selector, model.FormTrip: checks.f1Trip, model.FormAntiRecycle: checks.f1AntiRecycle, model.FormSequencer: checks.f1Sequencer,
 	}
 }
 

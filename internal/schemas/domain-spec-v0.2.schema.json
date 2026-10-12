@@ -404,7 +404,7 @@
           "description": "First-order forms only. Deliberately not a general expression language: an arbitrary evaluator is a nondeterminism surface and a security surface, and no domain in the catalog needs one. The equations for each form are part of the contract and are defined in TECHNICAL_DESIGN §6.2 — a form name without an equation is not a specification.",
           "required": ["form"],
           "properties": {
-            "form": {"enum": ["first_order_lag", "rc_network", "dead_time", "saturation", "hysteresis", "integrator", "threshold_integrator", "store", "regime", "peak", "trip", "anti_recycle"]},
+            "form": {"enum": ["first_order_lag", "rc_network", "dead_time", "saturation", "hysteresis", "integrator", "threshold_integrator", "store", "regime", "peak", "trip", "anti_recycle", "sequencer"]},
             "selector": {"type": "string", "description": "For regime: the state whose value, read at each step boundary, selects the regime (the target itself for a runaway)."},
             "below": {"$ref": "#/$defs/regime", "description": "For regime: the lag while the selector is below threshold."},
             "above": {"$ref": "#/$defs/regime", "description": "For regime: the lag while the selector is at or above threshold."},
@@ -418,7 +418,10 @@
             "tripped_value": {"type": "number", "description": "For trip: the target's value while tripped; otherwise it holds the state's initial value."},
             "watch": {"type": "string", "description": "For anti_recycle: the state whose edge starts the timer."},
             "edge": {"enum": ["fall", "rise"], "description": "For anti_recycle: the edge of the watched state that starts the timer."},
-            "hold_s": {"type": "number", "exclusiveMinimum": 0, "description": "For anti_recycle: the timer length. The target is the time left in seconds, 0 once elapsed."},
+            "hold_s": {"type": "number", "exclusiveMinimum": 0, "description": "For anti_recycle: the timer length; the target is the time left in seconds, 0 once elapsed. For sequencer: the least time between stage changes."},
+            "stage_up": {"$ref": "#/$defs/condition", "description": "For sequencer: while this holds, one more stage starts once hold_s has passed since the last change."},
+            "stage_down": {"$ref": "#/$defs/condition", "description": "For sequencer: while this holds (and stage_up does not), one stage stops once hold_s has passed since the last change."},
+            "stages": {"type": "integer", "minimum": 1, "description": "For sequencer: the number of stages (the target counts the running stages, 0 to stages)."},
             "previous_peak": {"type": "number", "minimum": 0, "description": "For peak: the previous period's peak at the world start (the state's initial value is the current period's peak so far)."},
             "capacity": {"type": "number", "exclusiveMinimum": 0, "description": "For store: the amount that raises the level by one unit. The level changes by (Σ coef × input + inflows − outflows) / capacity per second."},
             "time_constant_s": {"type": "number", "exclusiveMinimum": 0},
@@ -489,6 +492,10 @@
             {
               "if": {"properties": {"form": {"const": "anti_recycle"}}, "required": ["form"]},
               "then": {"required": ["watch", "edge", "hold_s"]}
+            },
+            {
+              "if": {"properties": {"form": {"const": "sequencer"}}, "required": ["form"]},
+              "then": {"required": ["stage_up", "stage_down", "stages", "hold_s"]}
             }
           ]
         },
@@ -531,10 +538,21 @@
       "type": "object",
       "additionalProperties": false,
       "required": ["state", "operator", "threshold"],
+      "description": "A state compared against a threshold. With threshold_state the threshold is an offset from that state's value (a setpoint or band an operator sets, plus a deadband).",
       "properties": {
         "state": {"type": "string"},
         "operator": {"enum": ["lt", "lte", "gt", "gte"]},
-        "threshold": {"type": "number"}
+        "threshold": {"type": "number"},
+        "threshold_state": {"type": "string"}
+      }
+    },
+    "delta_list": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["state"],
+        "properties": {"state": {"type": "string"}, "delta": {"type": "number"}, "from_arg": {"type": "string"}, "assign_from_arg": {"type": "string"}}
       }
     },
     "regime": {
@@ -826,6 +844,30 @@
                 "delta": {"type": "number"}
               }
             }
+          }
+        },
+        "responder": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["match_arg", "delay_s"],
+          "description": "A simulated person or crew answering the call: after delay_s, if the string argument match_arg names a fault active on the entity, on_match applies (and clear_fault clears it); otherwise on_miss applies. The outcome shows only through the world's states.",
+          "properties": {
+            "match_arg": {"type": "string"},
+            "delay_s": {"type": "number", "minimum": 0},
+            "on_match": {"$ref": "#/$defs/delta_list"},
+            "on_miss": {"$ref": "#/$defs/delta_list"},
+            "clear_fault": {"type": "boolean", "default": false}
+          }
+        },
+        "lease": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["arg", "fallback"],
+          "description": "The call holds its effect for the number of seconds in the numeric argument arg. Unless the same effector is called again on the entity before the lease lapses, the fallback applies at the lapse: safe_off sets each safe_deltas state to its delta value, revert undoes the call's additive deltas, hold_last keeps the effect.",
+          "properties": {
+            "arg": {"type": "string"},
+            "fallback": {"enum": ["safe_off", "hold_last", "revert"]},
+            "safe_deltas": {"$ref": "#/$defs/delta_list"}
           }
         },
         "requires": {

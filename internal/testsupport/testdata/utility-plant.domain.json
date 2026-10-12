@@ -17,7 +17,7 @@
     "time_reference": "wall",
     "value_shape": ["scalar"]
   },
-  "stresses": "Clock-aligned schedules, a billing-period demand peak with a ratchet, and a regime switch whose crossing time is analytic. A chiller adds a latched low-flow lockout, an anti-recycle timer, lockout-tagout and hand-mode preconditions, and safety boundaries.",
+  "stresses": "Clock-aligned schedules, a billing-period demand peak with a ratchet, and a regime switch whose crossing time is analytic. A chiller adds a latched low-flow lockout, an anti-recycle timer, lockout-tagout and hand-mode preconditions, and safety boundaries. An air system closes the loop: a supervisory pressure band, a compressor sequencer, a leased boost and a work-order responder.",
   "kinds": [
     {
       "name": "meter",
@@ -353,11 +353,165 @@
         {"name": "low_flow_trip", "state": "low_flow", "severity": "major"},
         {"name": "oil_hot", "state": "hot", "severity": "critical"}
       ]
+    },
+    {
+      "name": "air",
+      "state": [
+        {"name": "demand", "unit": "m3/min", "initial": 6.0},
+        {"name": "pressure", "unit": "bar", "initial": 7.0, "min": 0.0, "max": 12.0},
+        {"name": "band_low", "unit": "bar", "initial": 6.5},
+        {"name": "band_high", "unit": "bar", "initial": 7.5},
+        {"name": "stages", "unit": "count", "initial": 2.0},
+        {"name": "boost", "unit": "m3/min", "initial": 0.0},
+        {"name": "orders", "unit": "count", "initial": 0.0},
+        {"name": "inspected", "unit": "count", "initial": 0.0}
+      ],
+      "dynamics": [
+        {"target": "demand", "tier": "F0", "f0": {"baseline": 6.0}},
+        {
+          "target": "pressure",
+          "tier": "F1",
+          "dt_ms": 1000,
+          "f1": {
+            "form": "store",
+            "capacity": 600.0,
+            "inputs": [
+              {"state": "stages", "coef": 3.0},
+              {"state": "boost", "coef": 1.0},
+              {"state": "demand", "coef": -1.0}
+            ]
+          }
+        },
+        {
+          "target": "stages",
+          "tier": "F1",
+          "dt_ms": 1000,
+          "f1": {
+            "form": "sequencer",
+            "hold_s": 60,
+            "stage_down": {"state": "pressure", "operator": "gt", "threshold": 0.0, "threshold_state": "band_high"},
+            "stage_up": {"state": "pressure", "operator": "lt", "threshold": 0.0, "threshold_state": "band_low"},
+            "stages": 4
+          }
+        }
+      ],
+      "channels": [
+        {
+          "name": "air.pressure",
+          "unit": "u",
+          "absence": "signal",
+          "cadence": {"mode": "periodic", "period_s": 60},
+          "fidelity": "F1",
+          "noise": {"model": "gaussian", "sigma": 0.02},
+          "observes": "pressure",
+          "resolution": 0.001,
+          "value_type": "number"
+        },
+        {
+          "name": "air.stages",
+          "unit": "u",
+          "absence": "signal",
+          "cadence": {"mode": "periodic", "period_s": 60},
+          "fidelity": "F1",
+          "noise": {"model": "gaussian", "sigma": 0.0001},
+          "observes": "stages",
+          "resolution": 0.001,
+          "value_type": "number"
+        }
+      ],
+      "faults": [
+        {
+          "id": "air_leak",
+          "affects": [{"state": "demand", "delta": 4.0}],
+          "expected_effector": "work_order",
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "air.pressure"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"magnitude": 1.0, "shape": "step"}
+        },
+        {
+          "id": "air_wobble",
+          "affects": [{"state": "demand", "delta": 0.5}],
+          "is_negative_class": true,
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "air.pressure"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"duty_cycle": 0.2, "magnitude": 1.0, "rate_per_hour": 1.0, "shape": "intermittent"}
+        }
+      ],
+      "effectors": [
+        {
+          "name": "set_pressure_band",
+          "ack": {"failure_modes": [{"mode": "ok", "probability": 1.0}], "latency_ms": {"mean": 100, "sigma": 10}},
+          "args_schema": {
+            "additionalProperties": false,
+            "properties": {"high": {"type": "number"}, "low": {"type": "number"}},
+            "required": ["low", "high"],
+            "type": "object"
+          },
+          "confirmation_channels": ["air.pressure"],
+          "effect": {
+            "dead_time_s": 0,
+            "state_deltas": [
+              {"state": "band_low", "assign_from_arg": "low"},
+              {"state": "band_high", "assign_from_arg": "high"}
+            ],
+            "time_constant_s": 0
+          },
+          "idempotency_window_s": 600,
+          "risk_class": "medium"
+        },
+        {
+          "name": "boost_air",
+          "ack": {"failure_modes": [{"mode": "ok", "probability": 1.0}], "latency_ms": {"mean": 100, "sigma": 10}},
+          "args_schema": {
+            "additionalProperties": false,
+            "properties": {"lease_s": {"type": "number"}, "rate": {"type": "number"}},
+            "required": ["rate", "lease_s"],
+            "type": "object"
+          },
+          "confirmation_channels": ["air.pressure"],
+          "effect": {
+            "dead_time_s": 0,
+            "state_deltas": [{"state": "boost", "assign_from_arg": "rate"}],
+            "time_constant_s": 0
+          },
+          "idempotency_window_s": 600,
+          "lease": {"arg": "lease_s", "fallback": "safe_off", "safe_deltas": [{"state": "boost", "delta": 0.0}]},
+          "risk_class": "medium"
+        },
+        {
+          "name": "work_order",
+          "ack": {"failure_modes": [{"mode": "ok", "probability": 1.0}], "latency_ms": {"mean": 100, "sigma": 10}},
+          "args_schema": {
+            "additionalProperties": false,
+            "properties": {"cause": {"type": "string"}},
+            "required": ["cause"],
+            "type": "object"
+          },
+          "confirmation_channels": ["air.pressure"],
+          "effect": {"dead_time_s": 0, "state_deltas": [{"state": "orders", "delta": 1.0}], "time_constant_s": 0},
+          "idempotency_window_s": 600,
+          "responder": {
+            "clear_fault": true,
+            "delay_s": 900,
+            "match_arg": "cause",
+            "on_match": [{"state": "inspected", "delta": 1.0}],
+            "on_miss": [{"state": "inspected", "delta": 1.0}]
+          },
+          "risk_class": "medium"
+        }
+      ]
     }
   ],
   "instances": [
     {"kind": "meter", "id_template": "meter-{n}", "count": {"default": 2, "min": 1, "max": 8}},
-    {"kind": "chiller", "names": ["CH1"]}
+    {"kind": "chiller", "names": ["CH1"]},
+    {"kind": "air", "names": ["AIR1"]}
   ],
   "profiles": [
     {"name": "nominal", "duration_s": 86400, "description": "Two meters over a day, one fault per scenario."},

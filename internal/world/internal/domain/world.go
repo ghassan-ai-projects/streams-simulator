@@ -85,6 +85,7 @@ type World struct {
 	nextIndex   []int
 
 	kicks  map[driverKey][]*kick
+	leases map[driverKey][]*kick
 	shadow map[driverKey][]*kick
 
 	faultsByState map[string][]*activeFault
