@@ -130,20 +130,6 @@ func replayConfig(art *model.RunArtifact, spec *domain.Compiled, adapterSpec *mo
 	return cfg
 }
 
-// executeCommand applies one logged command to a run (replay path).
-func executeCommand(ctx context.Context, r *Run, cmd *model.Command) error {
-	switch cmd.Op {
-	case model.OpClockAdvance:
-		return replayAdvance(ctx, r, cmd.Args)
-	case model.OpFaultInject, model.OpFaultClear:
-		return replayFault(r, cmd)
-	case model.OpPerturbApply, model.OpPerturbClear:
-		return replayPerturb(r, cmd)
-	default:
-		return replayActuation(r, cmd)
-	}
-}
-
 // firstDivergentRecord names the first record the replay is missing or has
 // beyond the original run, from the delivery counts. The artifact carries only
 // the trace digest, not the records, so when the counts agree the position of

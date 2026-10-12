@@ -58,7 +58,7 @@ func parseRefconsumerOptions(args []string, stderr io.Writer) (refconsumerOption
 	var options refconsumerOptions
 	fs := newFlagSet("refconsumer", stderr)
 	registerRefconsumerFlags(fs, &options)
-	if err := parseFlags(fs, args); err != nil {
+	if err := parseOnlyFlags(fs, args); err != nil {
 		return refconsumerOptions{}, err
 	}
 	return admitRefconsumerOptions(options)

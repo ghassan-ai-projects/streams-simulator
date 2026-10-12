@@ -23,6 +23,7 @@ const (
 	ContractGroundTruth     Contract = "ground-truth-v0.1"
 	ContractDeliveryLedger  Contract = "delivery-ledger"
 	ContractStateHistory    Contract = "world-state-history"
+	ContractScenario        Contract = "scenario-v0.1"
 )
 
 // Issue is one way a document fails its contract. A located issue carries an

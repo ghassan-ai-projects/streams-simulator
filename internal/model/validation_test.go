@@ -56,6 +56,8 @@ func TestValidatorsReturnAValidationErrorNamingTheContract(t *testing.T) {
 		{"verdict wrong shape", ValidateVerdict, `{"unexpected":true}`, ContractConsumerVerdict, true},
 		{"artifact wrong shape", ValidateRunArtifact, `[]`, ContractRunArtifact, true},
 		{"ground truth wrong shape", ValidateGroundTruth, `{}`, ContractGroundTruth, true},
+		{"scenario wrong shape", ValidateScenario, `{"schema_version":"0.1"}`, ContractScenario, true},
+		{"scenario not JSON", ValidateScenario, `{`, ContractScenario, false},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

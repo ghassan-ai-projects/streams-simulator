@@ -60,7 +60,7 @@ func TestEveryCommandFailureCodeIsInTheContract(t *testing.T) {
 	t.Parallel()
 	declared := cliOutputCodes(t)
 	codes := []failureCode{codeUsageInvalid, codeFileNotFound, codeDomainNotFound, codeAdapterNotFound, codeDomainInvalid,
-		codeAdapterInvalid, codeArtifactInvalid, codeReplayMismatch, codeAdapterVerifyFailed, codeIOFailed}
+		codeAdapterInvalid, codeArtifactInvalid, codeScenarioInvalid, codeReplayMismatch, codeAdapterVerifyFailed, codeIOFailed}
 	for name, registered := range commands {
 		if !registered.ownsStdout {
 			codes = append(codes, commandFailed(name))

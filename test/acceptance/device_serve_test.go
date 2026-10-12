@@ -3,8 +3,8 @@ package acceptance
 import (
 	"bufio"
 	"context"
-	"io"
 	"encoding/json"
+	"io"
 	"net"
 	"os"
 	"os/exec"

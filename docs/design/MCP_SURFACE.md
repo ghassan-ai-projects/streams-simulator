@@ -111,8 +111,9 @@ rather than accepting an ambiguous empty entity id.
 
 Exactly one of `by_ns` and `to_ns` is required. `by_ns` is a non-negative relative
 nanosecond delta; `to_ns` is an absolute epoch nanosecond timestamp. The clock never moves
-backwards; a request to do so is refused. `emitted` is the number produced by this call,
-while `emitted_total` is cumulative for the world.
+backwards, nor more than 30 days of simulated time past the world's start (the run-span
+bound, `SCENARIO_FILE.md` §3); a request to do either is refused. `emitted` is the number
+produced by this call, while `emitted_total` is cumulative for the world.
 
 `sim.clock.run` is not built. Continuous mode is deliberately cut for this release and
 maps to repeated `sim.clock.advance` calls in a harness.
@@ -146,6 +147,9 @@ the world is open and read the finalized file after close.
 | `sim.perturb.apply` | `{world_id, perturbation, params?, from_ns?, until_ns?}` | `{perturb_id}` |
 | `sim.perturb.clear` | `{world_id, perturb_id}` | — |
 | `sim.env.inject` | `{world_id, target, fault, params?}` | `{env_id}` — record an environment fault against a configured consumer endpoint |
+
+`sim.perturb.apply` refuses a window whose `until_ns` is set and before its `from_ns`: it could
+never act.
 
 Three surfaces, three tools, never conflated: `fault` changes physics, `perturb` changes
 delivery, `env` changes the consumer's environment.

@@ -34,7 +34,7 @@ func parseMCPOptions(args []string, stderr io.Writer) (mcpOptions, error) {
 	fs.StringVar(&options.domainsDir, "domains-dir", "domains", "domain specs directory")
 	fs.StringVar(&options.adaptersDir, "adapters-dir", "adapters", "adapters directory")
 	fs.StringVar(&options.outDir, "out", "runs", "run artifact output directory")
-	if err := parseFlags(fs, args); err != nil {
+	if err := parseOnlyFlags(fs, args); err != nil {
 		return mcpOptions{}, err
 	}
 	return options, nil

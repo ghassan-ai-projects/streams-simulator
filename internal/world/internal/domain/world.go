@@ -10,12 +10,32 @@ package domain
 
 import (
 	"container/heap"
+	"fmt"
+	"math"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/jsonschema"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/randutil"
 )
+
+// MaxStartNS is the latest a world may start: half the 64-bit time range
+// (about the year 2116). Every event a world schedules lies a bounded delay
+// after its clock, so a start in [0, MaxStartNS] keeps every event time
+// representable; a start nearer the end of the range would wrap.
+const MaxStartNS = math.MaxInt64 / 2
+
+// admitWorld refuses a start outside [0, MaxStartNS] and an unknown forced
+// failure mode.
+func admitWorld(startNS int64, opts Options) error {
+	if startNS < 0 || startNS > MaxStartNS {
+		return fmt.Errorf("world: start %d is outside [0, %d]", startNS, int64(MaxStartNS))
+	}
+	if opts.ForceFailureMode != "" && !KnownFailureMode(opts.ForceFailureMode) {
+		return fmt.Errorf("world: unknown failure mode %q", opts.ForceFailureMode)
+	}
+	return nil
+}
 
 // Options tune world construction. Everything here is part of the
 // determinism tuple when it changes output.
@@ -135,6 +155,9 @@ type idempotentResult struct {
 // New creates a world. The world id is derived deterministically from the
 // seed and domain, so replay reconstructs the same id.
 func New(spec *domain.Compiled, seed uint64, id string, startNS int64, opts Options) (*World, error) {
+	if err := admitWorld(startNS, opts); err != nil {
+		return nil, err
+	}
 	id = worldIdentity(spec, seed, id)
 	w := newWorldState(spec, seed, id, startNS, opts)
 	w.initializeRuntime(seed)

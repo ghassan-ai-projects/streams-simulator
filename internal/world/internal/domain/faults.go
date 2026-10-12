@@ -39,7 +39,29 @@ func (w *World) InjectFault(entityID, faultID string, onsetNS int64, params map[
 	return w.admitFaultInjection(fault, entityID, faultID, onsetNS, params)
 }
 
+// faultSeverity is the severity an injection applies: the declared onset
+// magnitude, or the severity parameter.
 func faultSeverity(fault *model.Fault, faultID string, params map[string]any) (float64, error) {
+	severity, err := parameterSeverity(fault, faultID, params)
+	if err != nil {
+		return 0, fmt.Errorf("world: %w", err)
+	}
+	return severity, nil
+}
+
+// CheckFaultParams reports whether the domain declares faultID and params
+// are parameters it accepts, without injecting it. The error states the
+// violation.
+func (w *World) CheckFaultParams(faultID string, params map[string]any) error {
+	fault := w.Spec.Fault(faultID)
+	if fault == nil {
+		return fmt.Errorf("the domain declares no fault %q", faultID)
+	}
+	_, err := parameterSeverity(fault, faultID, params)
+	return err
+}
+
+func parameterSeverity(fault *model.Fault, faultID string, params map[string]any) (float64, error) {
 	severity := 1.0
 	if fault.Onset.Magnitude != 0 {
 		severity = math.Abs(fault.Onset.Magnitude)
@@ -98,7 +120,7 @@ func (w *World) registerFault(fault *model.Fault, entity string, onset int64, se
 func validateFaultParameters(id string, params map[string]any) error {
 	for _, name := range slices.Sorted(maps.Keys(params)) {
 		if name != "severity" {
-			return fmt.Errorf("world: fault %q has no parameter %q (declared: severity)", id, name)
+			return fmt.Errorf("fault %q has no parameter %q (declared: severity)", id, name)
 		}
 	}
 	return nil
@@ -116,12 +138,12 @@ func severityNumber(value any) (float64, error) {
 			return parsed, nil
 		}
 	}
-	return 0, fmt.Errorf("world: severity must be numeric")
+	return 0, fmt.Errorf("severity must be numeric")
 }
 
 func finiteSeverity(severity float64) (float64, error) {
 	if math.IsNaN(severity) || math.IsInf(severity, 0) || severity < 0 {
-		return 0, fmt.Errorf("world: severity must be finite and non-negative")
+		return 0, fmt.Errorf("severity must be finite and non-negative")
 	}
 	return severity, nil
 }

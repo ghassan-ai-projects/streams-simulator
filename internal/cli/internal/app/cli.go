@@ -49,6 +49,7 @@ var commands = map[string]command{
 	"score":       {run: cmdScore},
 	"manifest":    {run: cmdManifest},
 	"device":      {run: cmdDevice},
+	"scenario":    {run: cmdScenario},
 }
 
 // Main runs the command in the current process and returns its exit status.
@@ -142,7 +143,8 @@ Commands:
   catalog list|describe|coverage        Installed domains and axis coverage
   domain validate <path>                Validate a domain spec against the contract
   adapter list|verify [path]            Installed adapters; verify one against its golden
-  run                                   One-shot scripted run
+  run [--scenario <file>]               One-shot run from flags or a scenario file
+  scenario from-run <run.json> --out f  Export the scenario that reproduces a run
   replay <run.json>                     Reproduce a run from its artifact
   verify <run.json>                     Verify a run artifact reproduces
   mcp --role director                   Serve the director role over stdio

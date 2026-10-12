@@ -50,15 +50,14 @@ func parseSuiteOptions(args []string, stderr io.Writer) (suiteOptions, error) {
 	var options suiteOptions
 	fs := newFlagSet("suite", stderr)
 	registerSuiteFlags(fs, &options)
-	if err := parseFlags(fs, args); err != nil {
+	if err := parseOnlyFlags(fs, args); err != nil {
 		return suiteOptions{}, err
 	}
 	return admitSuiteOptions(options)
 }
 
 func registerSuiteFlags(fs *flag.FlagSet, options *suiteOptions) {
-	fs.StringVar(&options.domainsDir, "domains-dir", "domains", "domain specs directory")
-	fs.StringVar(&options.domainID, "domain", "", "domain id")
+	registerDomainFlags(fs, &options.domainsDir, &options.domainID)
 	fs.StringVar(&options.profile, "profile", "nominal", "profile name")
 	fs.IntVar(&options.n, "n", 100, "target scenario count")
 	fs.Uint64Var(&options.seed, "seed", 1, "suite seed")

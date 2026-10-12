@@ -14,7 +14,7 @@ func parseDeviceServeOptions(args []string, stderr io.Writer) (deviceServeOption
 	var options deviceServeOptions
 	fs := newFlagSet("device serve", stderr)
 	registerDeviceServeFlags(fs, &options)
-	if err := parseFlags(fs, args); err != nil {
+	if err := parseOnlyFlags(fs, args); err != nil {
 		return deviceServeOptions{}, err
 	}
 	if options.socket == "" {

@@ -59,6 +59,8 @@ func contractFailureCode(contract model.Contract) (failureCode, bool) {
 		return codeDomainInvalid, true
 	case model.ContractOutputAdapter:
 		return codeAdapterInvalid, true
+	case model.ContractScenario:
+		return codeScenarioInvalid, true
 	case model.ContractRunArtifact, model.ContractConsumerVerdict, model.ContractGroundTruth,
 		model.ContractDeliveryLedger, model.ContractStateHistory:
 		return codeArtifactInvalid, true

@@ -22,7 +22,7 @@ func newReplayRun(ctx context.Context, art *model.RunArtifact, spec *domain.Comp
 
 func replayCommands(ctx context.Context, replay *Run, commands []model.Command) error {
 	for _, command := range commands {
-		if err := executeCommand(ctx, replay, &command); err != nil {
+		if err := executeCommand(ctx, replay, &command, keepEveryRefusal); err != nil {
 			return fmt.Errorf("run: replay command %d (%s): %w", command.Seq, command.Op, err)
 		}
 	}

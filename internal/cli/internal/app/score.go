@@ -86,7 +86,7 @@ func parseScoreOptions(args []string, stderr io.Writer) (scoreOptions, error) {
 	fs.StringVar(&options.label, "label", "", "ground truth label (JSON)")
 	fs.StringVar(&options.domainsDir, "domains-dir", "domains", "domain specs directory (the artifact is replayed to recover the effector calls)")
 	fs.StringVar(&options.adaptersDir, "adapters-dir", "adapters", "adapters directory")
-	if err := parseFlags(fs, args); err != nil {
+	if err := parseOnlyFlags(fs, args); err != nil {
 		return scoreOptions{}, err
 	}
 	if options.artifact == "" {

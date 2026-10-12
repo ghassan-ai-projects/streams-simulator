@@ -12,7 +12,6 @@ import (
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
@@ -31,34 +30,34 @@ func TestRunOptionsPreserveDefaultsEpochZeroAndFileTarget(t *testing.T) {
 	}
 }
 
-func TestScriptedFaultsPrecedePerturbationsInCommandLog(t *testing.T) {
+func TestFlagsDescribeFaultsThenPerturbationsThenEffectorsThenTheAdvance(t *testing.T) {
 	t.Parallel()
-	options, err := parseRunOptions([]string{"--domain", "rotating-machinery", "--domains-dir", testsupport.DomainsDir(), "--adapters-dir", testsupport.AdaptersDir()}, io.Discard)
+	options, err := parseRunOptions([]string{"--domain", "rotating-machinery", "--start-time", "1000", "--duration", "10",
+		"--fault", "site-a/pump-1=bearing_wear@1", "--perturb", "drop@2@3", "--effector", "stop@site-a/pump-1@4"}, io.Discard)
 	if err != nil {
 		t.Fatal(err)
 	}
-	cfg, err := loadRunConfig(options)
+	scenario, origins, err := scenarioFromFlags(options)
 	if err != nil {
 		t.Fatal(err)
 	}
-	r, err := run.New(t.Context(), cfg)
-	if err != nil {
-		t.Fatal(err)
+	wantOrigins := []string{`--fault "site-a/pump-1=bearing_wear@1"`, `--perturb "drop@2@3"`, `--effector "stop@site-a/pump-1@4"`, "--duration 10"}
+	if strings.Join(origins, "|") != strings.Join(wantOrigins, "|") {
+		t.Fatalf("origins = %q, want %q", origins, wantOrigins)
 	}
-	options.faults = listFlag{r.World.EntityIDs()[0] + "=" + cfg.Domain.Spec.Faults[0].ID + "@1"}
-	options.perts = listFlag{"drop@2@3"}
-	if err := applyScriptedFaults(r, options); err != nil {
-		t.Fatal(err)
+	var ops []string
+	for _, command := range scenario.Commands {
+		ops = append(ops, command.Op)
 	}
-	if err := applyScriptedPerturbations(r, options); err != nil {
-		t.Fatal(err)
+	want := []string{model.OpFaultInject, model.OpPerturbApply, model.OpEffectorInvoke, model.OpClockAdvance}
+	if strings.Join(ops, ",") != strings.Join(want, ",") {
+		t.Fatalf("ops = %v, want %v", ops, want)
 	}
-	art, err := r.End("")
-	if err != nil {
-		t.Fatal(err)
+	if onset := scenario.Commands[0].Args["onset_ns"]; onset != int64(1000+1e9) {
+		t.Fatalf("fault onset = %v, want start + 1 s", onset)
 	}
-	if len(art.CommandLog) != 2 || art.CommandLog[0].Op != model.OpFaultInject || art.CommandLog[1].Op != model.OpPerturbApply || art.CommandLog[1].Seq != 1 {
-		t.Fatalf("commands=%+v", art.CommandLog)
+	if end := scenario.Commands[3].Args["to_ns"]; end != int64(1000+10e9) {
+		t.Fatalf("advance = %v, want start + duration", end)
 	}
 }
 
@@ -135,7 +134,7 @@ func TestScriptedEffectorArgumentsMustBeAJSONObject(t *testing.T) {
 		t.Fatalf("err = %v", err)
 	}
 	spec, err := parseEffectorSpec("stop@e-1")
-	if err != nil || spec.offsetS != 0 || len(spec.args) != 0 {
+	if err != nil || spec.offsetNS != 0 || len(spec.args) != 0 {
 		t.Fatalf("spec = %+v, err = %v", spec, err)
 	}
 }

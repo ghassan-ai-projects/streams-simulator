@@ -27,7 +27,7 @@ func TestEveryFailureClassHasItsStableCode(t *testing.T) {
 		{"unreadable trace", "io_failed", []string{"refconsumer", "--trace", t.TempDir()}},
 		{"nothing to verify", "adapter_verify_failed", []string{"adapter", "verify", adapterWithoutConformance(t)}},
 		{"empty catalog", "catalog_failed", []string{"catalog", "list", "--domains-dir", t.TempDir()}},
-		{"refused effector", "run_failed", append([]string{"run", "--domain", pondDomain, "--duration", "60", "--effector", "no_such@no-entity@1"}, inputs...)},
+		{"refusal found by the dry run", "scenario_invalid", append([]string{"run", "--scenario", clearsAnUnknownFault(t)}, inputs...)},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -145,4 +145,14 @@ func TestScoreNamesAMissingRunArtifactFirst(t *testing.T) {
 	if failure["code"] != "file_not_found" || failure["source"] != artifact {
 		t.Fatalf("failure = %v, want file_not_found naming %s", failure, artifact)
 	}
+}
+
+// clearsAnUnknownFault is a scenario file whose fault.clear names a fault
+// instance that was never injected: valid as written, refused when the run
+// reaches it, so the dry run finds it before anything is delivered.
+func clearsAnUnknownFault(t *testing.T) string {
+	t.Helper()
+	return writeFile(t, "clear.scenario.json", `{"schema_version":"0.1","id":"clear-unknown","domain":"aquaculture-pond",`+
+		`"adapter":"native-jsonl","seed":1,"world":{"start_time_ns":1767225600000000000},`+
+		`"commands":[{"op":"fault.clear","args":{"fault_id":"never-injected","at_ns":1767225600000000000}}]}`)
 }

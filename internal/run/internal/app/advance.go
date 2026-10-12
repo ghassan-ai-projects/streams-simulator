@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	rules "github.com/ghassan-ai-projects/streams-simulator/internal/run/internal/domain"
 )
 
 // Advance moves the world to toNS, delivering everything along the way.
@@ -31,6 +32,9 @@ func (r *Run) advanceLocked(toNS int64, awaitConsumer bool) (int, error) {
 	defer r.commandMu.Unlock()
 	if err := r.refuseWhenFinished("Advance"); err != nil {
 		return 0, err
+	}
+	if rules.ExceedsRunSpan(r.worldStartTimeNS, toNS) {
+		return 0, fmt.Errorf("run: advance to %d: %w", toNS, ErrRunSpanExceeded)
 	}
 	return r.advanceThroughBoundary(toNS, awaitConsumer)
 }

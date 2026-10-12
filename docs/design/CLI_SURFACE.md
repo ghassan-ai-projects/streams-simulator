@@ -58,21 +58,22 @@ Codes shared with the MCP taxonomy (`MCP_SURFACE.md` §7) mean the same thing on
 
 | Code | Exit | Raised when |
 |---|---|---|
-| `usage_invalid` | 2 | A flag fails to parse; a required verb, argument or flag is missing; a verb or subcommand is unknown; an argument value is malformed or out of range (`--sink`, `--duration`, `--n`, `--window`, `--threshold`); a named profile is not one of the domain's |
+| `usage_invalid` | 2 | A flag fails to parse; a required verb, argument or flag is missing; a verb or subcommand is unknown; a command or verb is given more positional arguments than it takes; an argument value is malformed or out of range (`--sink`, `--duration`, `--n`, `--window`, `--threshold`); the scenario the `run` flags describe fails its checks (each issue names the flag occurrence and carries no pointer); a flag a `--scenario` file defines is given beside it |
 | `file_not_found` | 1 | A path the command reads, writes into, or binds does not exist (an input file, an output's directory, a socket's directory, a file an adapter refers to) |
 | `domain_not_found` | 1 | A domain id is not in the catalog |
 | `adapter_not_found` | 1 | An adapter id is not in the adapters directory. The MCP director reports the same lookup as `adapter_invalid`; the CLI separates an unknown id from an invalid document |
 | `domain_invalid` | 1 | A domain document fails `domain-spec` or its cross-reference checks |
 | `adapter_invalid` | 1 | An adapter document fails `output-adapter` |
+| `scenario_invalid` | 1 | A scenario file fails `scenario-v0.1`, holds a value a scenario cannot hold, or fails a check against the domain and world (`SCENARIO_FILE.md` §3); `scenario from-run` would write a scenario that fails `scenario-v0.1` or that check (`source` is then the artifact) |
 | `artifact_invalid` | 1 | A run artifact, consumer verdict or ground-truth label is not valid JSON or fails its contract; a delivery ledger or world-state history line does not decode as its record type (unknown fields refused) |
 | `replay_mismatch` | 1 | `replay`, `verify` or `score` cannot reproduce the artifact: the trace digest differs (the replay report is the `result`), or the artifact's domain, adapter or world digest no longer matches the inputs (no `result`: nothing was replayed) |
 | `adapter_verify_failed` | 1 | `adapter verify` found a schema or golden divergence, or the adapter declares nothing to check |
 | `io_failed` | 1 | Reading, writing or binding a path failed for a reason other than absence |
-| `<command>_failed` | 1 | Any other failure of that command: `catalog_failed`, `domain_failed`, `adapter_failed`, `run_failed`, `replay_failed`, `verify_failed`, `suite_failed`, `score_failed`, `manifest_failed`, `refconsumer_failed`, `device_failed` |
+| `<command>_failed` | 1 | Any other failure of that command: `catalog_failed`, `domain_failed`, `adapter_failed`, `run_failed`, `replay_failed`, `verify_failed`, `suite_failed`, `score_failed`, `manifest_failed`, `refconsumer_failed`, `device_failed`, `scenario_failed` |
 
 **Classification precedence** (first match wins): usage, replay or verify mismatch, contract
-violation (by contract: domain → `domain_invalid`, adapter → `adapter_invalid`, others →
-`artifact_invalid`), unknown domain or adapter id, missing file, other file-system failure,
+violation (by contract: domain → `domain_invalid`, adapter → `adapter_invalid`, scenario →
+`scenario_invalid`, others → `artifact_invalid`), unknown domain or adapter id, missing file, other file-system failure,
 the command's own `_failed` code. Classification uses typed errors and sentinels from the
 modules (`errors.As`/`errors.Is`), never message text.
 
@@ -90,6 +91,7 @@ modules (`errors.As`/`errors.Is`), never message text.
 | `replay <run.json>` | `{matches, version_match, got, want, first_divergence, detail}` (exit 0 whatever the outcome) |
 | `verify <run.json>` | The replay document on a match; `replay_mismatch` with the document as `result` otherwise |
 | `suite` | `{suite, scenarios, trivial_excluded, terminal_state}` |
+| `scenario from-run <run.json> --out <file>` | `{scenario_written, commands, omitted, refused}` |
 | `score` | The scorecard (`scorecard-bundle`), see `internal/score` |
 | `refconsumer` | `{verdict_written, detections}` |
 | `manifest` | `{manifest_written, signed, sim}` |

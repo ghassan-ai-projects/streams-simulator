@@ -18,6 +18,7 @@ const (
 	codeDomainInvalid       failureCode = "domain_invalid"
 	codeAdapterInvalid      failureCode = "adapter_invalid"
 	codeArtifactInvalid     failureCode = "artifact_invalid"
+	codeScenarioInvalid     failureCode = "scenario_invalid"
 	codeReplayMismatch      failureCode = "replay_mismatch"
 	codeAdapterVerifyFailed failureCode = "adapter_verify_failed"
 	codeIOFailed            failureCode = "io_failed"
@@ -30,9 +31,17 @@ func commandFailed(command string) failureCode {
 
 // usageError is an invocation the command cannot run as written: a missing
 // or unknown verb, argument or flag value. It exits 2 with usage_invalid.
-type usageError struct{ message string }
+// cause, when set, is the violation behind it, whose issues the failure
+// document carries.
+type usageError struct {
+	message string
+	cause   error
+}
 
 func (e *usageError) Error() string { return e.message }
+
+// Unwrap returns the violation behind the usage failure, if any.
+func (e *usageError) Unwrap() error { return e.cause }
 
 // usagef builds a usageError.
 func usagef(format string, args ...any) error {

@@ -1,5 +1,7 @@
 package domain
 
+import "fmt"
+
 // EntityIDs returns the live entity ids in creation order.
 func (w *World) EntityIDs() []string {
 	var out []string
@@ -24,8 +26,13 @@ func (w *World) InitialEntityIDs() []string {
 }
 
 // AddEntity creates an entity at the given time (entity.add; churn births
-// go through birthAutonomous, which schedules the death).
+// go through birthAutonomous, which schedules the death). An entity cannot
+// be born before the world clock: the world would have to simulate a history
+// that already passed.
 func (w *World) AddEntity(id string, atNS int64) error {
+	if atNS < w.clockNS {
+		return fmt.Errorf("world: entity %q cannot be born at %d, before the world clock %d", id, atNS, w.clockNS)
+	}
 	return w.addEntity(id, atNS)
 }
 

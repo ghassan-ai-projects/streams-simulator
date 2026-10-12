@@ -19,7 +19,7 @@ Use these commands unless the task is documentation-only:
 ## Repository-Specific Behavior
 
 - `make build` builds `cmd/streamsim` into `bin/`.
-- `make ci-check` runs `function-length -> docs-check -> tidy -> build -> vet -> lint-ci -> test-short -> test-simdet -> coverage-check -> deadcode -> vulncheck -> fuzz-soak`.
+- `make ci-check` runs `function-length -> fmt-check -> docs-check -> tidy -> build -> vet -> lint-ci -> test-short -> test-simdet -> coverage-check -> deadcode -> vulncheck -> fuzz-soak`.
 - In restricted environments, lint and loopback MCP tests can fail because they need cache writes or local sockets.
 - `deadcode` and `govulncheck` are release-gate tools; the Makefile fails closed when they are missing.
 

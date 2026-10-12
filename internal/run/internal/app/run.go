@@ -16,6 +16,7 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/perturb"
+	rules "github.com/ghassan-ai-projects/streams-simulator/internal/run/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run/internal/durable"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run/internal/quiesce"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/sink"
@@ -46,6 +47,9 @@ type Config struct {
 	// tests replace the real clock, so it is not part of the public Config.
 	quiescenceClock QuiescenceClock
 	LedgerPath      string // append-only durable ledger path ("" = in-memory only until End)
+	// silent builds a world that emits nothing, for a scenario's dry run; it
+	// is never set outside this layer.
+	silent bool
 }
 
 // DefaultQuiescenceTimeout bounds an await_consumer wait before the run is
@@ -63,6 +67,17 @@ type QuiescenceTimer = quiesce.Timer
 // recorded: the domain, adapter or world digest differs, so the replay cannot
 // reproduce the run.
 var ErrDigestMismatch = errors.New("digest mismatch")
+
+// MaxRunSpanNS bounds how far a run's clock may move past its start.
+const MaxRunSpanNS = rules.MaxRunSpanNS
+
+// ErrRunSpanExceeded marks an advance further past the run's start than the
+// bound on a run's simulated span (rules.MaxRunSpanNS).
+var ErrRunSpanExceeded = errors.New("the run's clock would move further than 30 days past its start")
+
+// ErrUnknownProfile marks a run created with a profile its domain does not
+// declare.
+var ErrUnknownProfile = errors.New("unknown profile")
 
 // ErrConsumerNotQuiesced marks an await_consumer timeout. The world has
 // already advanced; the run is incomplete, never silently successful.

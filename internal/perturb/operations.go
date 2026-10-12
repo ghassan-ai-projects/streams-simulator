@@ -31,6 +31,19 @@ func (l *Layer) Flush(atNS int64) []Delivered {
 	return l.layer.Flush(atNS)
 }
 
+// CheckParams reports whether name is in the catalog and params are
+// parameters it accepts, without applying it. The error states the
+// violation.
+func CheckParams(name string, params map[string]any) error {
+	return layer.CheckParams(name, params)
+}
+
+// CheckWindow reports whether a perturbation's activity window can act:
+// untilNS is 0 (no end) or not before fromNS. Apply refuses any other.
+func CheckWindow(name string, fromNS, untilNS int64) error {
+	return layer.CheckWindow(name, fromNS, untilNS)
+}
+
 // Names returns the perturbation catalog in a stable order. The slice is a
 // copy: changing it does not change which perturbations Apply admits.
 func Names() []string {

@@ -166,3 +166,40 @@ func (r *Run) Status() WorldStatus {
 func (r *Run) Faults() []world.FaultInfo {
 	return r.run.Faults()
 }
+
+// ScenarioConfig is the run configuration a scenario describes; the sink is
+// the caller's choice.
+func ScenarioConfig(scenario *model.Scenario, spec *domain.Compiled, adapterSpec *model.Adapter, sinkName, sinkTarget string) Config {
+	return layer.ScenarioConfig(scenario, spec, adapterSpec, sinkName, sinkTarget)
+}
+
+// CheckScenario checks a scenario against its domain and the world it
+// creates before anything is delivered: a static check, then a dry run on a
+// world that emits nothing. A violation is a *model.ValidationError.
+func CheckScenario(ctx context.Context, cfg Config, scenario *model.Scenario) error {
+	return layer.CheckScenario(ctx, cfg, scenario)
+}
+
+// PruneRefusedCalls is the scenario without the effector calls the run
+// refuses at admission, and how many it dropped; such calls change nothing,
+// so the pruned scenario reproduces the same trace and world.
+func PruneRefusedCalls(ctx context.Context, cfg Config, scenario *model.Scenario) (*model.Scenario, int, error) {
+	return layer.PruneRefusedCalls(ctx, cfg, scenario)
+}
+
+// CheckArtifactInputs reports whether the domain and adapter are the ones a
+// run artifact recorded; a difference wraps ErrDigestMismatch.
+func CheckArtifactInputs(art *model.RunArtifact, spec *domain.Compiled, adapterSpec *model.Adapter) error {
+	return layer.CheckArtifactInputs(art, spec, adapterSpec)
+}
+
+// ScenarioFromArtifact is the scenario that reproduces a recorded run, and
+// the number of command-log entries it omits.
+func ScenarioFromArtifact(art *model.RunArtifact) (*model.Scenario, int) {
+	return layer.ScenarioFromArtifact(art)
+}
+
+// ExecuteScenario runs a checked scenario's commands in order.
+func (r *Run) ExecuteScenario(ctx context.Context, scenario *model.Scenario) error {
+	return r.run.ExecuteScenario(ctx, scenario)
+}

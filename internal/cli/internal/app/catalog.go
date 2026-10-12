@@ -82,8 +82,20 @@ func cmdCatalog(s *session, args []string) (any, error) {
 
 // parseCommandVerb reads a command's verb and flags, with the flags allowed
 // before or after the verb; the arguments after them stay in fs.Args. With
-// no verb it returns defaultVerb.
+// no verb it returns defaultVerb. A known verb given more arguments than it
+// takes is a usage failure.
 func parseCommandVerb(fs *flag.FlagSet, args []string, defaultVerb string) (string, error) {
+	verb, err := readCommandVerb(fs, args, defaultVerb)
+	if err != nil {
+		return "", err
+	}
+	if arity, known := verbArity(verb); known {
+		return verb, refuseExtraArguments(fs, arity)
+	}
+	return verb, nil
+}
+
+func readCommandVerb(fs *flag.FlagSet, args []string, defaultVerb string) (string, error) {
 	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
 		return args[0], parseFlags(fs, args[1:])
 	}
@@ -93,7 +105,18 @@ func parseCommandVerb(fs *flag.FlagSet, args []string, defaultVerb string) (stri
 	if fs.NArg() == 0 {
 		return defaultVerb, nil
 	}
-	return fs.Arg(0), parseFlags(fs, fs.Args()[1:])
+	return fs.Arg(0), keepPositional(fs, fs.Args()[1:])
+}
+
+// verbArity is how many arguments a verb takes, and whether it is a verb.
+func verbArity(verb string) (int, bool) {
+	switch verb {
+	case "list", "coverage":
+		return 0, true
+	case "describe", "validate", "verify", "from-run":
+		return 1, true
+	}
+	return 0, false
 }
 
 func catalogVerb(cat *domain.Catalog, verb string, args []string) (any, error) {

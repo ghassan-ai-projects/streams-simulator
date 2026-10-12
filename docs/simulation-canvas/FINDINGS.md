@@ -6,7 +6,7 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 - **Phase**: a phase id from PLAN.md, or `next-goal` (Agentic Stream / gateway goal), or `—`.
 - **Status**: `open`, `done` (fixed, evidence in the phase review), `next-goal`, `dropped`
   (removed by an owner decision), `not-a-defect` (evidence in the review record).
-- Sources: `REVIEW` = [REVIEW-2026-10-12.md](REVIEW-2026-10-12.md) ids; `R0` = [reviews/P0.md](reviews/P0.md); `R1` = [reviews/P1.md](reviews/P1.md).
+- Sources: `REVIEW` = [REVIEW-2026-10-12.md](REVIEW-2026-10-12.md) ids; `R0` = [reviews/P0.md](reviews/P0.md); `R1` = [reviews/P1.md](reviews/P1.md); `R2` = [reviews/P2.md](reviews/P2.md); `self` = found by the implementer.
 
 ## Design review (REVIEW-2026-10-12)
 
@@ -79,7 +79,7 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 |---|---|---|---|---|---|
 | R0-01 | R0 | High | Evaluate canary test over journal, bridge and page | P3 | open |
 | R0-02 | R0 | High | `.mcp.json` exposure must not give coding agents unblind or reveal | P10 | open |
-| R0-03 | R0 | High | `scenario from-run` export with round-trip digest test | P2 | open |
+| R0-03 | R0 | High | `scenario from-run` export with round-trip digest test | P2 | done |
 | R0-04 | R0 | High | Device-path gate and pinned `device serve` transcript (acceptance test golden) | P1 | done |
 | R0-05 | R0 | High | Plant-wire spec states coexistence with the device path | P7a | open |
 | R0-06 | R0 | Med | CLI output contract: default JSON, exempt commands, deliberate pin change | P1 | done |
@@ -97,7 +97,7 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 | R0-18 | R0 | Med | Playback with no binary; crashed-run and failing-verify badges | P9 | open |
 | R0-19 | R0 | Med | Action-registry parity test | P10 | open |
 | R0-20 | R0 | Med | Thermal twin compared with a recorded bench run | P12 | open |
-| R0-21 | R0 | Low | Terminology: scenario file, journal, in `UBIQUITOUS_LANGUAGE.md` | P2 | open |
+| R0-21 | R0 | Low | Terminology: scenario file, journal, in `UBIQUITOUS_LANGUAGE.md` | P2 | done |
 | R0-22 | R0 | Low | Report includes consumer digests only when recorded | P4 | open |
 | R0-23 | R0 | Med | Status banners on design text superseded by owner decisions | P0 | done |
 
@@ -106,5 +106,21 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 | ID | Source | Sev | Summary | Phase | Status |
 |---|---|---|---|---|---|
 | R1-01 | R1 | Low | A "missing required property" issue points at the parent object; point at the missing member | P5a | open |
-| R1-02 | R1 | Med | An unknown `--perturb` name is `run_failed` while malformed `--fault`/`--effector` are `usage_invalid`; unify through the scenario checks | P2 | open |
-| R1-03 | R1 | Med | `run` and the director accept a profile the domain does not declare; validate in the run module for every surface (the CLI check added in P1 then moves there) | P2 | open |
+| R1-02 | R1 | Med | An unknown `--perturb` name is `run_failed` while malformed `--fault`/`--effector` are `usage_invalid`; unify through the scenario checks | P2 | done |
+| R1-03 | R1 | Med | `run` and the director accept a profile the domain does not declare; validate in the run module for every surface (the CLI check added in P1 then moves there) | P2 | done |
+
+## P2 review: work carried into later phases
+
+| ID | Source | Sev | Summary | Phase | Status |
+|---|---|---|---|---|---|
+| R2-01 | R2 | Med | No file the CLI or director reads has a size bound (scenario, domain, adapter, artifact, verdict, label); bound every input read, with a typed failure, and test each | P13 | open |
+| R2-02 | R2 | Low | Explicit `entity_ids` (scenario `world.entity_ids`, director `sim.world.create`) are not checked against the domain's entity count bounds or id template; decide and enforce with the v0.2 kinds-and-instances model | P5a | open |
+| R2-03 | R2 | Low | Errors from a missing `--domains-dir` repeat the `streamsim:` prefix three times (pre-existing in `loadSimulatorInputs`); wrap once | P4 | open |
+| R2-04 | R2 | Low | Perturbation windows with negative or pre-start times are accepted (negative `until` acts as "no end"); and the run-wide limits have no MCP-level test | P13 | open |
+| R2-05 | R2 | Low | The effector idempotency key compares arguments by `json.Marshal` text, so `3` and `3.0` are different requests | P6a | open |
+
+## Found during implementation
+
+| ID | Source | Sev | Summary | Phase | Status |
+|---|---|---|---|---|---|
+| S-01 | self | High | `sim.effector.invoke` returns the world's internal result (failure `mode`, `effect_applied`, latency) to the consumer, exposing `silent_no_effect` and other hidden outcomes (MCP_SURFACE §4.3, §4.5) | P2b | open |

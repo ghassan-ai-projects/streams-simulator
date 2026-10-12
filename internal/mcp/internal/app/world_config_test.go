@@ -1,6 +1,8 @@
 package app
 
 import (
+	"errors"
+	"strings"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
@@ -41,5 +43,15 @@ func TestWorldConfigPreservesEpochZeroAndSeparateResourceIdentities(t *testing.T
 	}
 	if a.Run.ID == b.Run.ID || first["world_id"] == second["world_id"] || first["token"] == second["token"] {
 		t.Fatal("resource identities must remain distinct")
+	}
+}
+
+func TestCreateWorldRefusesAProfileTheDomainDoesNotDeclare(t *testing.T) {
+	t.Parallel()
+	d := newTestDirector(t)
+	_, err := d.CreateWorld(map[string]any{"domain": "aquaculture-pond", "scenario_profile": "no-such-profile"})
+	var refusal *ToolError
+	if !errors.As(err, &refusal) || refusal.Code != CodeDomainInvalid || !strings.Contains(refusal.Msg, `unknown profile "no-such-profile"`) {
+		t.Fatalf("CreateWorld = %v, want domain_invalid naming the unknown profile", err)
 	}
 }

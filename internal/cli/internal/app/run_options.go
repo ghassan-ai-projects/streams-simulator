@@ -4,76 +4,108 @@ import (
 	"flag"
 	"io"
 	"path/filepath"
+	"strings"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
 type runOptions struct {
 	domainsDir, adaptersDir, domainID, adapterID string
 	sinkName, sinkTarget, outDir, profile        string
+	scenarioPath                                 string
 	faults, perts, effectors                     listFlag
 	seed                                         uint64
 	durationS                                    float64
 	startTime                                    int64
+	explicit                                     []string // flags given on the command line
 }
 
 func parseRunOptions(args []string, stderr io.Writer) (runOptions, error) {
 	var options runOptions
 	fs := newFlagSet("run", stderr)
-	registerRunInputs(fs, &options)
-	registerRunExecution(fs, &options)
-	registerRunScript(fs, &options)
-	if err := parseFlags(fs, args); err != nil {
+	registerScenarioFlags(fs, &options)
+	registerExecutionFlags(fs, &options)
+	if err := parseOnlyFlags(fs, args); err != nil {
 		return runOptions{}, err
 	}
+	fs.Visit(func(set *flag.Flag) { options.explicit = append(options.explicit, set.Name) })
 	return admitRunOptions(options)
 }
 
-func loadRunConfig(options runOptions) (run.Config, error) {
-	spec, adap, err := loadSimulatorInputs(options.domainsDir, options.adaptersDir, options.domainID, options.adapterID)
-	if err != nil {
-		return run.Config{}, err
-	}
-	if options.profile != "" && !spec.HasProfile(options.profile) {
-		return run.Config{}, usagef("run: domain %q has no profile %q", options.domainID, options.profile)
-	}
-	return run.Config{Domain: spec, Adapter: adap, Seed: options.seed, SinkName: options.sinkName,
-		SinkTarget: options.sinkTarget, TimeMode: model.TimeStepped, StartTimeNS: options.startTime,
-		StartTimeSet: true, ScenarioProfile: options.profile}, nil
-}
-
-func registerRunInputs(fs *flag.FlagSet, options *runOptions) {
-	fs.StringVar(&options.domainsDir, "domains-dir", "domains", "domain specs directory")
-	fs.StringVar(&options.adaptersDir, "adapters-dir", "adapters", "adapters directory")
+// registerScenarioFlags registers what a scenario defines: the inputs, the
+// world settings and the scripted commands. A scenario file defines exactly
+// these, so they are refused beside --scenario (scenarioDefinedFlags).
+func registerScenarioFlags(fs *flag.FlagSet, options *runOptions) {
 	fs.StringVar(&options.domainID, "domain", "", "domain id")
 	fs.StringVar(&options.adapterID, "adapter", "native-jsonl", "adapter id")
 	fs.Uint64Var(&options.seed, "seed", 1, "world seed")
-}
-
-func registerRunExecution(fs *flag.FlagSet, options *runOptions) {
-	fs.StringVar(&options.sinkName, "sink", "inproc", "sink: inproc|file|http-push")
-	fs.StringVar(&options.sinkTarget, "sink-target", "", "sink target (file path)")
-	fs.StringVar(&options.outDir, "out", "", "output directory for artifacts")
-	fs.Float64Var(&options.durationS, "duration", 6*3600, "run duration (seconds)")
+	fs.StringVar(&options.profile, "profile", "", "scenario profile")
 	fs.Int64Var(&options.startTime, "start-time", model.DefaultStartTimeNS, "world start (ns epoch)")
-}
-
-func registerRunScript(fs *flag.FlagSet, options *runOptions) {
+	fs.Float64Var(&options.durationS, "duration", 6*3600, "run duration (seconds)")
 	fs.Var(&options.faults, "fault", "repeatable: entity=fault@offset_s")
 	fs.Var(&options.perts, "perturb", "repeatable: name@from_s[@until_s]")
 	fs.Var(&options.effectors, "effector", `repeatable: effector@entity@offset_s[@{"arg":value}]`)
-	fs.StringVar(&options.profile, "profile", "", "scenario profile")
+}
+
+// registerExecutionFlags registers how a scenario is executed: where its
+// inputs are looked up, the scenario file itself and where the run goes.
+func registerExecutionFlags(fs *flag.FlagSet, options *runOptions) {
+	fs.StringVar(&options.domainsDir, "domains-dir", "domains", "domain specs directory")
+	fs.StringVar(&options.adaptersDir, "adapters-dir", "adapters", "adapters directory")
+	fs.StringVar(&options.scenarioPath, "scenario", "", "scenario file (scenario-v0.1) defining the run")
+	fs.StringVar(&options.sinkName, "sink", "inproc", "sink: inproc|file|http-push")
+	fs.StringVar(&options.sinkTarget, "sink-target", "", "sink target (file path)")
+	fs.StringVar(&options.outDir, "out", "", "output directory for artifacts")
+}
+
+// registerDomainFlags registers where the domains live and which one to use.
+func registerDomainFlags(fs *flag.FlagSet, dir, id *string) {
+	fs.StringVar(dir, "domains-dir", "domains", "domain specs directory")
+	fs.StringVar(id, "domain", "", "domain id")
 }
 
 func admitRunOptions(options runOptions) (runOptions, error) {
-	if options.domainID == "" {
-		return runOptions{}, usagef("run requires --domain")
+	if options.scenarioPath != "" {
+		return admitScenarioRun(options)
 	}
-	if options.durationS <= 0 {
-		return runOptions{}, usagef("run: --duration must be positive, got %v", options.durationS)
+	if options.domainID == "" {
+		return runOptions{}, usagef("run requires --domain or --scenario")
+	}
+	if !(options.durationS > 0 && options.durationS*1e9 <= float64(run.MaxRunSpanNS)) {
+		return runOptions{}, usagef("run: --duration must be positive and at most %d seconds (30 days), got %v", run.MaxRunSpanNS/1e9, options.durationS)
+	}
+	if options.startTime < 0 || options.startTime > world.MaxStartNS {
+		return runOptions{}, usagef("run: --start-time must be in [0, %d], got %d", int64(world.MaxStartNS), options.startTime)
 	}
 	return admitRunSink(options)
+}
+
+// admitScenarioRun refuses the flags a scenario file defines.
+func admitScenarioRun(options runOptions) (runOptions, error) {
+	defined := scenarioDefinedFlags()
+	var conflicting []string
+	for _, name := range options.explicit {
+		if defined[name] {
+			conflicting = append(conflicting, "--"+name)
+		}
+	}
+	if len(conflicting) > 0 {
+		return runOptions{}, usagef("run: --scenario defines the run; remove %s", strings.Join(conflicting, ", "))
+	}
+	return admitRunSink(options)
+}
+
+// scenarioDefinedFlags names the flags a scenario file defines: exactly the
+// ones registerScenarioFlags registers, so a new one cannot be missed
+// (docs/design/SCENARIO_FILE.md §3).
+func scenarioDefinedFlags() map[string]bool {
+	fs := flag.NewFlagSet("scenario", flag.ContinueOnError)
+	registerScenarioFlags(fs, &runOptions{})
+	defined := map[string]bool{}
+	fs.VisitAll(func(registered *flag.Flag) { defined[registered.Name] = true })
+	return defined
 }
 
 // admitRunSink checks the sink choice and derives the file target from --out.

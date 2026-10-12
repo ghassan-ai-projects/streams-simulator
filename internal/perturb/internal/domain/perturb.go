@@ -103,13 +103,11 @@ func New(worldID string, seed uint64, spec *domain.Compiled) *Layer {
 }
 
 // Apply activates a perturbation. fromNS/untilNS bound its activity window
-// (0 = from now / no end).
+// (0 = from now / no end); a window that ends before it starts is refused,
+// since it could never act.
 func (l *Layer) Apply(name string, params map[string]any, fromNS, untilNS int64) (string, error) {
-	if !isName(name) {
-		return "", fmt.Errorf("perturb: unknown perturbation %q", name)
-	}
-	if err := validateParams(name, params); err != nil {
-		return "", err
+	if err := CheckApplication(name, params, fromNS, untilNS); err != nil {
+		return "", fmt.Errorf("perturb: %w", err)
 	}
 	active := l.newActive(name, params, fromNS, untilNS)
 	l.active[active.ID] = active

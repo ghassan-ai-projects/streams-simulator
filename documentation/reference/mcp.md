@@ -115,3 +115,9 @@ MCP carries request/response control, actuation, and audit. Event evidence trave
 - [Consumer integration](../guides/consumer-integration.md)
 - [Security model](../architecture/security-model.md)
 - [Truth and scoring](../architecture/truth-and-scoring.md)
+
+## Run-wide limits
+
+A world starts between 0 and 4611686018427387903 ns. `sim.clock.advance` refuses to move the
+clock more than 30 days past the world's start, and `sim.perturb.apply` refuses a window whose
+`until_ns` is set and before its `from_ns`. See `docs/design/SCENARIO_FILE.md` §3.

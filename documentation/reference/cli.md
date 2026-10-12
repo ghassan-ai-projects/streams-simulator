@@ -8,7 +8,10 @@ The executable is `streamsim`. During development, run it without installing a b
 go run ./cmd/streamsim <command> [flags]
 ```
 
-Paths are interpreted by the current process.
+Paths are interpreted by the current process. Flags may come before, between or after
+positional arguments; everything after `--` is positional (a `--` given as a flag's value is
+that value). A command given more positional arguments than it takes fails with
+`usage_invalid` naming the first unexpected one.
 
 ## Output contract
 
@@ -99,11 +102,27 @@ Flags:
 
 ### `run`
 
-Runs one scripted world and writes an artifact when `--out` is supplied.
+Runs one world and writes an artifact when `--out` is supplied. The run is defined either by a
+[scenario file](../../docs/design/SCENARIO_FILE.md) (`--scenario`) or by the flags below; both take
+the same path: the flags build a scenario in memory. Before anything is delivered, the scenario is
+checked against the domain and world: every effector, fault, perturbation and profile named must
+exist; effector arguments and fault and perturbation parameters must be accepted; perturbation
+windows must not end before they start; times must be plain integers; the clock may not move more
+than 30 days past the start. The scenario is then dry-run on the same world with emission off,
+which finds the first command the run would refuse as it unfolds (an entity that does not exist
+at that point, an id already in use, a clear naming an id never assigned). A scenario file that fails is `scenario_invalid`, with every issue
+located in the file. Flags that fail are `usage_invalid`, with every issue naming the flag
+occurrence behind it. During the run, an effector call the world refuses through an interlock or
+a reused command id is a recorded outcome.
+A scenario's `description` is for readers; a scenario without a `clock.advance` emits nothing.
 
 ```text
 streamsim run [flags]
+streamsim run --scenario <file> [--domains-dir d] [--adapters-dir d] [--sink s] [--sink-target t] [--out dir]
 ```
+
+With `--scenario`, the flags the scenario defines (`--domain`, `--adapter`, `--seed`,
+`--profile`, `--start-time`, `--duration`, `--fault`, `--perturb`, `--effector`) are refused.
 
 | Flag | Default | Meaning |
 | --- | --- | --- |
@@ -115,12 +134,33 @@ streamsim run [flags]
 | `--sink` | `inproc` | `inproc`, `file`, or `http-push`. |
 | `--sink-target` | empty | File path or HTTP-push URL. Required for `http-push`; for `file`, `--out` can supply the trace path when this flag is omitted. |
 | `--out` | empty | Artifact output directory. |
-| `--duration` | `21600` | Duration in seconds. |
-| `--start-time` | `2026-01-01T00:00:00Z` | World start as epoch nanoseconds. |
+| `--duration` | `21600` | Duration in seconds; positive and at most 2592000 (30 days). |
+| `--start-time` | `2026-01-01T00:00:00Z` | World start as epoch nanoseconds, between 0 and 4611686018427387903. |
 | `--fault` | empty | Repeatable; each occurrence may be comma-separated `entity=fault@offset_s` entries. |
-| `--perturb` | empty | Repeatable; each occurrence may be comma-separated `name@from_s[@until_s]` entries. The optional end time is a second `@`-separated value. |
+| `--perturb` | empty | Repeatable; each occurrence may be comma-separated `name@from_s[@until_s]` entries. The optional end time is a second `@`-separated value and may not be before the start. |
 | `--effector` | empty | Repeatable. `effector@entity@offset_s[@{"arg":value}]`; the optional JSON object carries the effector arguments (required by every shipped effector). Command ids are `cli-0`, `cli-1`, … in order, so identical invocations record identical command logs. Entries without arguments may still be comma-separated within one occurrence; an entry with arguments takes an occurrence of its own. |
 | `--profile` | empty | Scenario profile name; it must be one of the domain's profiles. |
+
+### `scenario from-run`
+
+Writes the scenario that reproduces a recorded run. Running it with `run --scenario` gives the
+same command log, trace digest and world digest for any run made by the CLI; for a
+director-driven run, the same trace and world digests. A clock advance is exported without
+`await_consumer`, which is pacing of the live session, not an input to the world.
+
+```text
+streamsim scenario from-run <run.json> --out <file> [--domains-dir domains] [--adapters-dir adapters]
+```
+
+The scenario is checked against its contract and then as `run --scenario` would check it, against
+the domain and adapter in the given directories. The artifact's domain and adapter must
+be the ones it recorded (`replay_mismatch` otherwise). Effector calls the world refused at
+admission changed nothing; they are dropped and counted in `refused`. A run that still cannot be
+expressed as a runnable scenario writes nothing and fails with `scenario_invalid` naming the
+artifact; `replay` and `verify` still reproduce it.
+
+Prints `{"scenario_written", "commands", "omitted", "refused"}`; `omitted` counts command-log entries that
+are not scenario commands (lifecycle records and the record-only `env.inject` of director runs).
 
 ### `replay` and `verify`
 

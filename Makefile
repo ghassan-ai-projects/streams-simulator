@@ -31,7 +31,7 @@ HAS_MAIN := $(if $(MAIN_PKGS),yes,no)
 .PHONY: help all build vet fmt tidy lint lint-ci docs-check test test-short test-race \
         test-coverage ci-check deadcode vulncheck fuzz soak fuzz-soak perf \
         manifest clean run cross-compile architecture architecture-baseline function-length \
-        coverage-check behaviour-pin behaviour-pin-check phase-gate
+        coverage-check behaviour-pin behaviour-pin-check phase-gate fmt-check
 
 # ---- Help -----------------------------------------------------------------
 help: ## Show this help message
@@ -79,6 +79,10 @@ vet: ## Run go vet
 	else \
 	  echo "(no packages yet -- skipping vet)"; \
 	fi
+
+fmt-check: ## Fail when a Go file is not gofmt-formatted
+	@unformatted=$$(gofmt -l *.go internal cmd test); \
+	if [ -n "$$unformatted" ]; then echo "not gofmt-formatted:"; echo "$$unformatted"; exit 1; fi
 
 fmt: ## Format code with goimports
 	@if command -v goimports >/dev/null 2>&1; then \
@@ -164,7 +168,7 @@ test-coverage: ## Run tests and produce HTML coverage report
 	fi
 
 # ---- Pipeline -------------------------------------------------------------
-ci-check: function-length docs-check tidy build vet lint-ci test-short test-simdet coverage-check deadcode vulncheck fuzz-soak ## Run the full CI pipeline locally (matches .github/workflows/ci.yml)
+ci-check: function-length fmt-check docs-check tidy build vet lint-ci test-short test-simdet coverage-check deadcode vulncheck fuzz-soak ## Run the full CI pipeline locally (matches .github/workflows/ci.yml)
 	@echo "  CI check passed"
 
 # ---- Tools ----------------------------------------------------------------
@@ -194,6 +198,7 @@ fuzz: ## Bounded native fuzzing of the parsers (10s per target)
 	@if [ "$(HAS_PKGS)" = "yes" ]; then \
 	  go test -fuzz=FuzzDomainParse -fuzztime=10s ./internal/domain/internal/domain/; \
 	  go test -fuzz=FuzzArtifactLoad -fuzztime=10s ./internal/run/internal/app/; \
+	  go test -fuzz=FuzzScenarioCheck -fuzztime=10s ./internal/run/internal/app/; \
 	else \
 	  echo "(no packages yet -- skipping fuzz)"; \
 	fi
@@ -209,6 +214,7 @@ fuzz-soak: ## Bounded fuzz only (soak is an explicit, slower target)
 	@if [ "$(HAS_PKGS)" = "yes" ]; then \
 	  go test -fuzz=FuzzDomainParse -fuzztime=5s ./internal/domain/internal/domain/; \
 	  go test -fuzz=FuzzArtifactLoad -fuzztime=5s ./internal/run/internal/app/; \
+	  go test -fuzz=FuzzScenarioCheck -fuzztime=5s ./internal/run/internal/app/; \
 	else \
 	  echo "(no packages yet -- skipping fuzz)"; \
 	fi

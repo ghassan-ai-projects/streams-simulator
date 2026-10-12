@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://streams-simulator.local/schemas/scenario-v0.1.schema.json",
+  "title": "Streams Simulator Scenario v0.1",
+  "description": "A repeatable run: the domain, adapter, seed and world settings, and the ordered director commands to execute, with arguments exactly as the run records them in its command log. See docs/design/SCENARIO_FILE.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "id", "domain", "adapter", "seed", "world", "commands"],
+  "properties": {
+    "schema_version": {"const": "0.1"},
+    "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]{0,63}$"},
+    "description": {"type": "string", "maxLength": 2000},
+    "domain": {"type": "string", "pattern": "^[a-z][a-z0-9-]{2,63}$"},
+    "adapter": {"type": "string", "minLength": 1, "maxLength": 64},
+    "seed": {"type": "integer", "minimum": 0},
+    "world": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["start_time_ns"],
+      "properties": {
+        "start_time_ns": {"type": "integer"},
+        "profile": {"type": "string"},
+        "entity_ids": {"type": "array", "minItems": 1, "maxItems": 10000, "uniqueItems": true, "items": {"$ref": "#/$defs/name"}},
+        "noiseless": {"type": "boolean"},
+        "force_failure_mode": {"enum": ["ok", "slow", "ack_lost", "reject", "partial", "confirmed_no_effect", "silent_no_effect"]},
+        "clock_multiplier": {"type": "number", "exclusiveMinimum": 0}
+      }
+    },
+    "commands": {"type": "array", "maxItems": 100000, "items": {"$ref": "#/$defs/command"}}
+  },
+  "$defs": {
+    "time": {"type": "integer", "description": "Nanoseconds since the Unix epoch, written as a plain integer: a fraction or an exponent is refused by the scenario check."},
+    "params": {"type": ["object", "null"]},
+    "name": {"type": "string", "minLength": 1, "maxLength": 256, "pattern": "^[^\\x00-\\x1f\\x7f]+$", "description": "An id or name: 1 to 256 characters, no control characters."},
+    "command": {
+      "description": "One director command. The op selects the schema of args, so a violation is reported at the argument it concerns.",
+      "type": "object", "additionalProperties": false, "required": ["op", "args"],
+      "properties": {
+        "op": {"enum": ["clock.advance", "fault.inject", "fault.clear", "perturb.apply", "perturb.clear", "effector.invoke", "entity.add", "entity.retire"]},
+        "args": {"type": "object"}
+      },
+      "allOf": [
+        {"if": {"properties": {"op": {"const": "clock.advance"}}}, "then": {"properties": {"args": {"$ref": "#/$defs/clock_advance"}}}},
+        {"if": {"properties": {"op": {"const": "fault.inject"}}}, "then": {"properties": {"args": {"$ref": "#/$defs/fault_inject"}}}},
+        {"if": {"properties": {"op": {"const": "fault.clear"}}}, "then": {"properties": {"args": {"$ref": "#/$defs/fault_clear"}}}},
+        {"if": {"properties": {"op": {"const": "perturb.apply"}}}, "then": {"properties": {"args": {"$ref": "#/$defs/perturb_apply"}}}},
+        {"if": {"properties": {"op": {"const": "perturb.clear"}}}, "then": {"properties": {"args": {"$ref": "#/$defs/perturb_clear"}}}},
+        {"if": {"properties": {"op": {"const": "effector.invoke"}}}, "then": {"properties": {"args": {"$ref": "#/$defs/effector_invoke"}}}},
+        {"if": {"properties": {"op": {"const": "entity.add"}}}, "then": {"properties": {"args": {"$ref": "#/$defs/entity_add"}}}},
+        {"if": {"properties": {"op": {"const": "entity.retire"}}}, "then": {"properties": {"args": {"$ref": "#/$defs/entity_retire"}}}}
+      ]
+    },
+    "clock_advance": {"type": "object", "additionalProperties": false, "required": ["to_ns"],
+      "properties": {"to_ns": {"$ref": "#/$defs/time"}}},
+    "fault_inject": {"type": "object", "additionalProperties": false, "required": ["entity_id", "fault", "onset_ns", "params"],
+      "properties": {"entity_id": {"$ref": "#/$defs/name"}, "fault": {"$ref": "#/$defs/name"}, "onset_ns": {"$ref": "#/$defs/time"}, "params": {"$ref": "#/$defs/params"}}},
+    "fault_clear": {"type": "object", "additionalProperties": false, "required": ["fault_id", "at_ns"],
+      "properties": {"fault_id": {"$ref": "#/$defs/name"}, "at_ns": {"$ref": "#/$defs/time"}}},
+    "perturb_apply": {"type": "object", "additionalProperties": false, "required": ["perturbation", "params", "from_ns", "until_ns"],
+      "properties": {"perturbation": {"$ref": "#/$defs/name"}, "params": {"$ref": "#/$defs/params"}, "from_ns": {"$ref": "#/$defs/time"}, "until_ns": {"$ref": "#/$defs/time"}}},
+    "perturb_clear": {"type": "object", "additionalProperties": false, "required": ["perturb_id"],
+      "properties": {"perturb_id": {"$ref": "#/$defs/name"}}},
+    "effector_invoke": {"type": "object", "additionalProperties": false, "required": ["effector", "entity_id", "command_id", "args", "at_ns"],
+      "properties": {"effector": {"$ref": "#/$defs/name"}, "entity_id": {"$ref": "#/$defs/name"}, "command_id": {"$ref": "#/$defs/name"}, "args": {"type": "object"}, "at_ns": {"$ref": "#/$defs/time"}}},
+    "entity_add": {"type": "object", "additionalProperties": false, "required": ["entity_id", "at_ns"],
+      "properties": {"entity_id": {"$ref": "#/$defs/name"}, "at_ns": {"$ref": "#/$defs/time"}}},
+    "entity_retire": {"type": "object", "additionalProperties": false, "required": ["entity_id", "reason", "at_ns"],
+      "properties": {"entity_id": {"$ref": "#/$defs/name"}, "reason": {"type": "string", "maxLength": 1000}, "at_ns": {"$ref": "#/$defs/time"}}}
+  }
+}

@@ -50,6 +50,9 @@ func parseReplayOptions(args []string, stderr io.Writer) (*flag.FlagSet, string,
 	if fs.NArg() < 1 {
 		return nil, "", "", usagef("replay requires a run artifact path")
 	}
+	if err := refuseExtraArguments(fs, 1); err != nil {
+		return nil, "", "", err
+	}
 	return fs, *domains, *adapters, nil
 }
 

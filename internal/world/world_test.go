@@ -115,6 +115,9 @@ func TestEntitiesJoinAndLeaveAndTheirStateIsReadable(t *testing.T) {
 	if err := w.AddEntity("site-a/pond-99", at); err == nil || !strings.Contains(err.Error(), "world: entity \"site-a/pond-99\" already exists") {
 		t.Fatal("adding an existing entity must fail")
 	}
+	if err := w.AddEntity("site-a/pond-98", 0); err == nil || !strings.Contains(err.Error(), "cannot be born at 0, before the world clock") {
+		t.Fatalf("an entity born before the clock: %v", err)
+	}
 	if got := w.EntityIDs(); len(got) != 9 || len(w.InitialEntityIDs()) != 8 {
 		t.Fatalf("after add: entities %d, initial %d", len(got), len(w.InitialEntityIDs()))
 	}

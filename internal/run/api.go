@@ -18,6 +18,10 @@ type ReplayEvidence = layer.ReplayEvidence
 // the one the artifact recorded.
 var ErrDigestMismatch = layer.ErrDigestMismatch
 
+// MaxRunSpanNS bounds how far a run's clock may move past its start: 30 days
+// of simulated time. Every surface refuses an advance beyond it.
+const MaxRunSpanNS = layer.MaxRunSpanNS
+
 // ErrConsumerNotQuiesced marks an await_consumer timeout. The world has
 // already advanced; the run is incomplete, never silently successful.
 var ErrConsumerNotQuiesced = layer.ErrConsumerNotQuiesced

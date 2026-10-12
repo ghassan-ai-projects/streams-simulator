@@ -28,6 +28,11 @@ func New(spec *domain.Compiled, seed uint64, id string, startNS int64, opts Opti
 	return &World{ID: inner.ID, Spec: inner.Spec, StartNS: inner.StartNS, world: inner}, nil
 }
 
+// KnownFailureMode reports whether mode is in the failure-mode vocabulary.
+func KnownFailureMode(mode FailureMode) bool {
+	return layer.KnownFailureMode(mode)
+}
+
 // RenderID renders one entity id from the domain's id template, for hosts
 // that must enumerate a domain's entity ids without building a world.
 func RenderID(tmpl string, n int) string {

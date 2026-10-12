@@ -16,7 +16,8 @@
     {"$ref": "#/$defs/suite"},
     {"$ref": "#/$defs/score"},
     {"$ref": "#/$defs/refconsumer"},
-    {"$ref": "#/$defs/manifest"}
+    {"$ref": "#/$defs/manifest"},
+    {"$ref": "#/$defs/scenario_export"}
   ],
   "$defs": {
     "digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
@@ -33,11 +34,11 @@
             "code": {
               "enum": [
                 "usage_invalid", "file_not_found", "domain_not_found", "adapter_not_found",
-                "domain_invalid", "adapter_invalid", "artifact_invalid", "replay_mismatch",
+                "domain_invalid", "adapter_invalid", "scenario_invalid", "artifact_invalid", "replay_mismatch",
                 "adapter_verify_failed", "io_failed",
                 "catalog_failed", "domain_failed", "adapter_failed", "run_failed", "replay_failed",
                 "verify_failed", "suite_failed", "score_failed", "manifest_failed",
-                "refconsumer_failed", "device_failed"
+                "refconsumer_failed", "device_failed", "scenario_failed"
               ]
             },
             "message": {"type": "string", "minLength": 1},
@@ -223,6 +224,17 @@
         "manifest_written": {"type": "string", "minLength": 1},
         "signed": {"type": "boolean"},
         "sim": {"type": "string", "minLength": 1}
+      }
+    },
+    "scenario_export": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scenario_written", "commands", "omitted", "refused"],
+      "properties": {
+        "scenario_written": {"type": "string", "minLength": 1},
+        "commands": {"type": "integer", "minimum": 0},
+        "omitted": {"type": "integer", "minimum": 0},
+        "refused": {"type": "integer", "minimum": 0}
       }
     }
   }

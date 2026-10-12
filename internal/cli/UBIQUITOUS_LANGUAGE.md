@@ -9,10 +9,14 @@ prints one JSON document. It owns no simulator rules.
 | Result | The single JSON document a successful command prints on stdout; commands that serve print nothing | `handler` return value | stdout |
 | Failure document | The single JSON document a failed command prints on stdout: `{"error": {code, message, source?, issues?, result?}}` (`docs/design/CLI_SURFACE.md`) | `failureDocument`, `describeFailure` | `cli-output-v0.1` `$defs/error` |
 | Failure code | The stable classification of a failure, e.g. `usage_invalid`, `domain_invalid`, `replay_mismatch`, `<command>_failed` | `failureCode`, `classifyFailure` | `error.code` |
-| Usage failure | An invocation the command cannot run as written: a flag that does not parse, or a missing or unknown verb, argument or value | `usageExit`, `usageError`, `usagef` | `usage_invalid`, exit 2 |
+| Usage failure | An invocation the command cannot run as written: a flag that does not parse, a missing or unknown verb, argument or value, or an argument beyond those the command or verb takes | `usageExit`, `usageError`, `usagef`, `parseOnlyFlags`, `refuseExtraArguments`, `verbArity` | `usage_invalid`, exit 2 |
 | Outcome failure | A command that ran but whose check failed; it carries the command's result document | `outcomeError` | `replay_mismatch`, `adapter_verify_failed`, `error.result` |
 | Exit status | 0 success or help, 1 failure, 2 usage failure | `Run`, `exitStatusOf` | process exit code |
-| Scripted run | A one-shot run whose faults, perturbations and effectors are given as offsets from the start time | `applyRunScript` | `--fault`, `--perturb`, `--effector` |
+| Scripted run | A run described by flags: faults, perturbations and effectors as offsets from the start time; the flags build a scenario | `scenarioFromFlags` | `--fault`, `--perturb`, `--effector` |
+| Flag origin | The flag occurrence behind a command of a scripted run; a refusal names it instead of pointing into a document the user never wrote | `scripted`, `flagOrigin`, `flagScenarioFailure` | `--effector "…": …` |
+| Scenario-defined flag | A run flag a scenario file defines, refused beside `--scenario`: exactly the flags `registerScenarioFlags` registers | `registerScenarioFlags`, `scenarioDefinedFlags` | `--domain`, `--seed`, … |
+| Scenario file | A run defined by a `scenario-v0.1` file instead of flags. Not a domain's profile, and not a suite's generated scenario | `loadScenarioFile` | `run --scenario` |
+| Scenario export | The scenario that reproduces a recorded run | `cmdScenario`, `exportScenario` | `scenario from-run` |
 | Build | The version and commit the binary was linked with | `Build` | `sim` in the manifest |
 | Release manifest | The signed record of simulator, domain, adapter, suite and consumer digests with author and reviewer identity | `cmdManifest` | `release-manifest.json` |
 | Director / operator endpoint | The stdio director session and the optional HTTP operator listener of `mcp` | `serve.Director` | `--operator-addr` |

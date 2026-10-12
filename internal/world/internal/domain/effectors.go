@@ -23,6 +23,15 @@ const (
 	ModeSilentNoEffect    FailureMode = "silent_no_effect"
 )
 
+// KnownFailureMode reports whether mode is in the failure-mode vocabulary.
+func KnownFailureMode(mode FailureMode) bool {
+	switch mode {
+	case ModeOK, ModeSlow, ModeAckLost, ModeReject, ModePartial, ModeConfirmedNoEffect, ModeSilentNoEffect:
+		return true
+	}
+	return false
+}
+
 // InvokeResult is what an effector invocation returns.
 type InvokeResult struct {
 	Accepted      bool        `json:"accepted"`
@@ -71,7 +80,7 @@ func (w *World) InvokeEffector(effector, entityID, commandID string, args map[st
 	inv := invocation{effector: effector, entityID: entityID, commandID: commandID, args: args, atNS: atNS}
 	eff, err := w.admitInvocation(inv)
 	if err != nil {
-		return nil, err
+		return nil, invalidInvocation{err: err}
 	}
 	if result, known, err := w.replayInvocation(inv); err != nil || known {
 		return result, err

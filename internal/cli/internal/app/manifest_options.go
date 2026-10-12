@@ -13,7 +13,7 @@ func parseManifestOptions(args []string, stderr io.Writer) (manifestOptions, err
 	var options manifestOptions
 	fs := newFlagSet("manifest", stderr)
 	registerManifestFlags(fs, &options)
-	if err := parseFlags(fs, args); err != nil {
+	if err := parseOnlyFlags(fs, args); err != nil {
 		return manifestOptions{}, err
 	}
 	if options.author == "" || options.reviewer == "" {
