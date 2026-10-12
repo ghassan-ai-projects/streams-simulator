@@ -42,7 +42,7 @@ HAS_MAIN := $(if $(MAIN_PKGS),yes,no)
 .PHONY: help all build vet fmt tidy lint lint-ci docs-check test test-short test-race \
         test-coverage test-ci ci-check deadcode vulncheck fuzz $(FUZZ_TARGETS) soak fuzz-soak perf \
         manifest clean run cross-compile architecture architecture-baseline function-length \
-        coverage-check behaviour-pin behaviour-pin-check phase-gate fmt-check
+        coverage-check behaviour-pin behaviour-pin-check phase-gate fmt-check contract-sync
 
 # ---- Help -----------------------------------------------------------------
 help: ## Show this help message
@@ -244,6 +244,14 @@ manifest: ## Write release-manifest.json for the current commit
 	fi
 
 # ---- Cleanup --------------------------------------------------------------
+contract-sync: ## Copy the plant-wire contract from PLANT_WIRE_CONTRACT_DIR (set in .env) into contracts/plant-wire
+	@set -a; [ -f .env ] && . ./.env; set +a; \
+	if [ -z "$$PLANT_WIRE_CONTRACT_DIR" ]; then echo "PLANT_WIRE_CONTRACT_DIR is not set; this repository holds the master copy"; exit 0; fi; \
+	for required in SPEC.md DIGEST schemas fixtures; do \
+		[ -e "$$PLANT_WIRE_CONTRACT_DIR/$$required" ] || { echo "$$PLANT_WIRE_CONTRACT_DIR is not a plant-wire contract (no $$required)"; exit 1; }; \
+	done; \
+	rsync -a --delete "$$PLANT_WIRE_CONTRACT_DIR"/ contracts/plant-wire/ && PLANT_WIRE_CONTRACT_DIR="$$PLANT_WIRE_CONTRACT_DIR" go test -count=1 ./test/contract/
+
 clean: ## Remove build artifacts
 	rm -f coverage.out coverage.html
 	rm -rf bin/

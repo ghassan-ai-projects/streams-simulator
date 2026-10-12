@@ -1,0 +1,8 @@
+{
+  "type": "HSYNC",
+  "protocol_version": 1,
+  "session_id": "s-1",
+  "seq": 4,
+  "lane": "control",
+  "through_seq": 8
+}

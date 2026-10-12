@@ -1,5 +1,8 @@
 # Plant wire protocol — industrial birth/data/death pattern
 
+> **Superseded by [contracts/plant-wire/SPEC.md](../../contracts/plant-wire/SPEC.md) (spec v2, phase P7a).** This proposal is
+> kept as the design record.
+>
 > **Status note (2026-10-12):** parts of this document are superseded by the owner decisions in [REVIEW-2026-10-12.md](REVIEW-2026-10-12.md) §1–§2 and tracked in [FINDINGS.md](FINDINGS.md). The `emergency_shutdown` policy line in §7 is dropped; authentication is deferred; the node coexists with the existing device path in this goal; the document is rewritten as spec v2 in phase P7a.
 
 - **Date**: 2026-10-12

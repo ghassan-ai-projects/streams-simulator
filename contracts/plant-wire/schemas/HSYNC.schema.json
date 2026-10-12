@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:plant-wire:v1:HSYNC",
+  "title": "HSYNC",
+  "description": "Barrier reply: the host has processed every node record up to through_seq and sent its commands for that slice.",
+  "type": "object",
+  "required": [
+    "type",
+    "protocol_version",
+    "session_id",
+    "seq",
+    "lane",
+    "through_seq"
+  ],
+  "properties": {
+    "type": {
+      "const": "HSYNC"
+    },
+    "protocol_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "session_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+    },
+    "seq": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "lane": {
+      "const": "control"
+    },
+    "through_seq": {
+      "type": "integer",
+      "minimum": 0
+    }
+  }
+}

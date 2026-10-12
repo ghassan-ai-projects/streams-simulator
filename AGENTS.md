@@ -77,6 +77,7 @@ The documented shape (see [docs/design/TECHNICAL_DESIGN.md](docs/design/TECHNICA
 - `internal/audit`, `internal/suite`, `internal/refconsumer` - trivial-baseline audit, scenario generation and publishing (`suite.Publish`), shipped reference consumer (`refconsumer.Consume` runs it over a trace file, optionally over the operator endpoint)
 - `internal/device`, `internal/deviceworld` - device emulation (rules, capability file, unix-socket serving until interrupted) and its world integration bridge (`deviceworld.OpenDevice` composes a device with a bound world)
 - `internal/domain`, `internal/model`, `internal/jsonschema`, `internal/schemas`, `internal/canonical`, `internal/randutil`, `internal/wall` - data loading (directory loading of domains and adapters lives in the `domain` and `adapter` files edges), shared records and bounded foundations
+- `contracts/plant-wire/` - the self-contained plant wire contract (spec, one schema per record, fixtures, pinned `DIGEST`); `test/contract` validates it, `make contract-sync` copies it from `PLANT_WIRE_CONTRACT_DIR`
 - `docs/` - the engineering design, research, contracts, fixtures, and evidence archive
 - `documentation/` - curated public product, usage, architecture, benchmark, operations, and governance documentation
 

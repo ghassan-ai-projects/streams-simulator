@@ -16,31 +16,31 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 | M2 | REVIEW | High | Gateway impact analysis missing | next-goal | next-goal |
 | M3 | REVIEW | Med | Cross-repository build order missing | next-goal | next-goal |
 | M4 | REVIEW | Med | Deployment topology (Purdue, zones, who dials whom) | next-goal | next-goal |
-| M5 | REVIEW | High | Plant wire placement inside the simulator architecture | P7a | open |
-| P1 | REVIEW | High | §3 records: node_birth kinds, device_birth instance values, versions, contract digest | P7a | open |
-| P2 | REVIEW | High | Historical flag, values in births, `bd_seq`, death synthesis | P7a | open |
-| P3 | REVIEW | High | One sequence per direction; lanes are transmit priority only | P7a | open |
-| P4 | REVIEW | High | Command freshness, re-check at execution, queue flush, dedup window | P7a | open |
-| P5 | REVIEW | High | `authority_epoch` is host/gateway-side only; decide its v1 status | P7a | open |
+| M5 | REVIEW | High | Plant wire placement inside the simulator architecture | P7a | done |
+| P1 | REVIEW | High | §3 records: node_birth kinds, device_birth instance values, versions, contract digest | P7a | done |
+| P2 | REVIEW | High | Historical flag, values in births, `bd_seq`, death synthesis | P7a | done |
+| P3 | REVIEW | High | One sequence per direction; lanes are transmit priority only | P7a | done |
+| P4 | REVIEW | High | Command freshness, re-check at execution, queue flush, dedup window | P7c | open |
+| P5 | REVIEW | High | `authority_epoch` is host/gateway-side only; decide its v1 status | P7a | done |
 | P6 | REVIEW | High | Board level owns `boot_id` | P5b | done |
-| P7 | REVIEW | High | Field names and refusal codes vs device-wire-v1; PLC refusal codes | P7a | open |
-| P8 | REVIEW | High | Policy example and birth-declared safe-stop/risk class | P7a | open |
+| P7 | REVIEW | High | Field names and refusal codes vs device-wire-v1; PLC refusal codes | P7a | done |
+| P8 | REVIEW | High | Policy example and birth-declared safe-stop/risk class | P7d | open |
 | P9 | REVIEW | High | Commissioning state machine and metadata changes (host side) | next-goal | next-goal |
-| P10 | REVIEW | High | One quality-code mapping table; manual/out-of-service codes | P7a | open |
-| P11 | REVIEW | High | Prompt injection through strings; injection fixtures | P7a | open |
+| P10 | REVIEW | High | One quality-code mapping table; manual/out-of-service codes | P7a | done |
+| P11 | REVIEW | High | Prompt injection through strings; injection fixtures | P7a | done |
 | P12 | REVIEW | High | Quiescence barrier and clock mode with a live host | P7d | open |
-| P13 | REVIEW | Med | Edge realism: time source, scan class, polling failures, buffering | P7a | open |
-| P14 | REVIEW | Med | `host_state` offline semantics, version, heartbeat | P7a | open |
-| P15 | REVIEW | Med | Capability digest definition | P7a | open |
+| P13 | REVIEW | Med | Edge realism: time source, scan class, polling failures, buffering | P7a | done |
+| P14 | REVIEW | Med | `host_state` offline semantics, version, heartbeat | P7b | open |
+| P15 | REVIEW | Med | Capability digest definition | P7a | done |
 | P16 | REVIEW | Med | `notify` alert event type and path to the session | next-goal | next-goal |
-| P17 | REVIEW | Med | Contract sync supply chain: pinned digest, safety floor, minimum version | P7a | open |
+| P17 | REVIEW | Med | Contract sync supply chain: pinned digest, safety floor, minimum version | P7a | done |
 | P18 | REVIEW | Med | Non-negotiables mapped to the wire: reference host, lying results | P7d | open |
 | P19 | REVIEW | Med | Fault layer: existing vs new protocol faults | P7c | open |
 | P20 | REVIEW | Med | Gateway as a safety-relevant component | next-goal | next-goal |
-| P21 | REVIEW | Med | `state` is self-reported; independent feedback for verification | P7a | open |
-| P22 | REVIEW | Low | `device_death` "sensor outage" wording | P7a | open |
-| P23 | REVIEW | Low | Batching, limits, session-boundary sequence, data-model fields | P7a | open |
-| P24 | REVIEW | Low | Experiment naming ambiguity | P7a | open |
+| P21 | REVIEW | Med | `state` is self-reported; independent feedback for verification | P7a | done |
+| P22 | REVIEW | Low | `device_death` "sensor outage" wording | P7a | done |
+| P23 | REVIEW | Low | Batching, limits, session-boundary sequence, data-model fields | P7a | done |
+| P24 | REVIEW | Low | Experiment naming ambiguity | P7a | done |
 | S1 | REVIEW | High | Remove kill switch from the scenario; T1 as protection demands and margin | P12 | open |
 | S2 | REVIEW | High | Supervisory-level actions; plant sequencer in the world | P6d | done |
 | S3 | REVIEW | High | Fault ids collide with pump ids | P12 | open |
@@ -82,7 +82,7 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 | R0-02 | R0 | High | `.mcp.json` exposure must not give coding agents unblind or reveal | P10 | open |
 | R0-03 | R0 | High | `scenario from-run` export with round-trip digest test | P2 | done |
 | R0-04 | R0 | High | Device-path gate and pinned `device serve` transcript (acceptance test golden) | P1 | done |
-| R0-05 | R0 | High | Plant-wire spec states coexistence with the device path | P7a | open |
+| R0-05 | R0 | High | Plant-wire spec states coexistence with the device path | P7a | done |
 | R0-06 | R0 | Med | CLI output contract: default JSON, exempt commands, deliberate pin change | P1 | done |
 | R0-07 | R0 | Med | `godox` and `nolintlint` in the Go lint set | P1 | done |
 | R0-08 | R0 | Med | `make phase-gate` and evidence files | P1 | done |
@@ -90,7 +90,7 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 | R0-10 | R0 | Med | `streamsim domain format` canonical formatter | P5a | done |
 | R0-11 | R0 | Med | Closed-grammar test over the v0.2 schema | P6a | done |
 | R0-12 | R0 | Med | RNG draw-order table for the event clock | P6e | done |
-| R0-13 | R0 | Med | Contract sync target, pinned digest, safety-field floor | P7a | open |
+| R0-13 | R0 | Med | Contract sync target, pinned digest, safety-field floor | P7a | done |
 | R0-14 | R0 | Med | Technology decision record (UI, bridge language and protocol): [canvas-technology.md](canvas-technology.md) | P8a | done |
 | R0-15 | R0 | Med | Bridge threat model with one test per threat | P8b | open |
 | R0-16 | R0 | Med | Stress fixture | P8b | open |
@@ -157,7 +157,7 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 | R6b-01 | self | Low | Calendar billing periods (months of unequal length) and the projected demand of the open block are not modelled; `peak` uses a fixed `period_s` | P12 | open |
 | R6b-02 | R6b | Low | A read of an integrated state further in the past than the entity's longest step returns the current value (the snapshot history covers one longest step); runs read forward, so no output is affected; return a located error or keep a longer history | P13 | open |
 | R6c-01 | R6c | Low | Oracle and audit worlds apply profile setup calls before injecting faults, so a setup call dated after a fault onset is checked (interlock, preconditions) without the fault; inject faults first or refuse setup dated after the onset | P12 | open |
-| R6c-02 | R6c | Low | A precondition refusal of a safe-stop effector becomes `ErrPlantUnavailable` in the device bridge (`completeSafeStop`); decide whether a safe-stop effector may carry `requires` | P7a | open |
+| R6c-02 | R6c | Low | A precondition refusal of a safe-stop effector becomes `ErrPlantUnavailable` in the device bridge (`completeSafeStop`); decide whether a safe-stop effector may carry `requires` | P7c | open |
 | R6e-01 | self | Med | Aggregation of dynamics inputs over typed links (`sum`, `mean`, vocabulary table §7) is in no phase: links are structure only; needed before the reference scenario models a shared header or bus across instances | P12 | open |
 | R6e-02 | R6e | Low | The stochastic fault envelope stream is keyed by the fault declaration, not the injection, so injections of one stochastic fault on several entities share one stream in read order; key it by injection (a determinism-tuple change, pinned outputs move) | P13 | open |
 | R6e-03 | R6e | Low | A direct read of an integrated state ahead of the clock (outside the look-ahead copy) commits integration and changes later emissions; production reads go through the look-ahead, so make the facade's StateValue use it too or refuse future reads | P13 | open |

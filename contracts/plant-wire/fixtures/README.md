@@ -1,0 +1,24 @@
+# Plant wire fixtures
+
+| Folder | Contents | A conformant side |
+|---|---|---|
+| `valid/` | One record per type | Accepts each |
+| `invalid/` | `{schema, fails_at, record}`: a record that breaks one rule, and the member where it breaks | Refuses each (`malformed`), at that member |
+| `must-ignore/` | `{schema, record}` with members no schema knows | Accepts each and ignores the extra members |
+| `injection/` | `{schema, expect, record}` with hostile strings in descriptions and string values | Accepts each as data, quotes the strings when showing them to a model, takes no action from them |
+| `exchanges/` | JSON Lines: a header `{exchange, summary, gap?}`, then steps; `seq` runs from 0 by 1 per direction unless the header declares `gap` | Reproduces the expected reactions |
+
+An exchange step is one of:
+
+- `{"from": "node" | "host", "record": {...}}`: a record one side sends;
+- `{"expect": {"from": ..., "type": ..., "fields": {...}}}`: the other side must next send a record of that type whose
+  members include those fields; the type `verdict` is the host's own conclusion about a command (`verified: false` means the
+  host must not count it as done), not a record;
+- `{"wait_heartbeats": n}`: the host stays silent for `n` heartbeat intervals;
+- `{"now_ns": t}`: the node's time (world time for a simulated node) is now `t`.
+
+Every command fixture's `idempotency_key` is the digest of its content (SPEC §9), except where an exchange reuses a key on
+purpose; `NBIRTH` carries the real `contract_digest` (this folder's `DIGEST`) and `capability_digest` (SPEC §5).
+
+The `lying-result-*` exchanges cover one command per class (setpoint, start, safe stop): the device reports success while the
+observations do not move. `verified-result` is the positive control: the observation moves, so the host counts it done.
