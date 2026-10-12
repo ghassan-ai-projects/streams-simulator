@@ -21,7 +21,6 @@ func TestEmbeddedMatchCommitted(t *testing.T) {
 		got  []byte
 	}{
 		{"domain-spec-v0.2.schema.json", DomainSpec()},
-		{"sim-event-v0.1.schema.json", SimEvent()},
 		{"output-adapter-v0.1.schema.json", OutputAdapter()},
 		{"consumer-verdict-v0.1.schema.json", ConsumerVerdict()},
 		{"ground-truth-v0.1.schema.json", GroundTruth()},

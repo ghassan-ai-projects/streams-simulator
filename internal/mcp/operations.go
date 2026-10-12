@@ -18,12 +18,6 @@ func ServeDirector(ctx context.Context, stderr io.Writer, options ServeOptions) 
 	return protocol.ServeDirector(ctx, stderr, options)
 }
 
-// NewDirectorServer builds the MCP server of the director role: catalog,
-// world, clock, fault, perturbation and truth tools.
-func NewDirectorServer(d *director.Director) *mcpsdk.Server {
-	return protocol.NewDirectorServer(d)
-}
-
 // NewOperatorServerResolver builds the MCP server of the operator role over
 // a director: every call resolves its capability token to one world's
 // operator view, so one endpoint serves every world.

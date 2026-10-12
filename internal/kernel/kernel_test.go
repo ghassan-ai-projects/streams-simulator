@@ -59,9 +59,6 @@ func TestTheKernelFacadeServesAPrivateSocket(t *testing.T) {
 	if _, err := Listen(t.Context(), path); !errors.Is(err, ErrInUse) {
 		t.Fatalf("a second listener = %v", err)
 	}
-	if err := Owned(path, os.ModeSocket); err != nil {
-		t.Fatal(err)
-	}
 	conn, err := DialPrivate(t.Context(), path)
 	if err != nil {
 		t.Fatal(err)

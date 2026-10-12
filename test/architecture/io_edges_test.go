@@ -37,7 +37,7 @@ var ioEdges = map[string]ioEdge{
 	"internal/kernel/internal/files/log.go":               {uses: []string{"import:os"}, why: "owner-only append logs: buffered, flushed at boundaries, synced on close"},
 	"internal/kernel/internal/sockets/sockets.go":         {uses: []string{"import:net", "import:os", "import:syscall"}, why: "unix sockets published owner-only by rename; dialed only when owner-only"},
 	"internal/kernel/internal/process/process.go":         {uses: []string{"import:os", "import:os/signal", "import:syscall"}, why: "a context that ends on interrupt or SIGTERM"},
-	"internal/kernel/operations.go":                       {uses: []string{"import:net", "import:os"}, why: "the facade names the listener, connection and file-mode types it returns"},
+	"internal/kernel/operations.go":                       {uses: []string{"import:net"}, why: "the facade names the listener and connection types it returns"},
 	"internal/wall/wall_clock.go":                         {uses: []string{"call:time.Now"}, why: "the declared wall-clock seam"},
 	"internal/sink/internal/httppush/httppush.go":         {uses: []string{"import:net/http"}, why: "http-push sink: POST each line"},
 	"internal/director/internal/capability/capability.go": {uses: []string{"import:crypto/rand"}, why: "operator capability token entropy"},

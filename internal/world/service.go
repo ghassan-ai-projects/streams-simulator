@@ -35,11 +35,6 @@ func Acknowledge(result *InvokeResult) *model.EffectorAcknowledgement {
 	return layer.Acknowledge(result)
 }
 
-// KnownFailureMode reports whether mode is in the failure-mode vocabulary.
-func KnownFailureMode(mode FailureMode) bool {
-	return layer.KnownFailureMode(mode)
-}
-
 func PopulationIDs(spec *domain.Compiled, firstSetCount int) []string {
 	return layer.PopulationIDs(spec, firstSetCount)
 }

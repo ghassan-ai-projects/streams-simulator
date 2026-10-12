@@ -3,7 +3,6 @@ package kernel
 import (
 	"context"
 	"net"
-	"os"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/kernel/internal/files"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/kernel/internal/process"
@@ -44,10 +43,6 @@ func ListenPrivate(ctx context.Context, path string) (*net.UnixListener, error) 
 
 func DialPrivate(ctx context.Context, path string) (net.Conn, error) {
 	return sockets.DialPrivate(ctx, path)
-}
-
-func Owned(target string, kind os.FileMode) error {
-	return sockets.Owned(target, kind)
 }
 
 func UntilInterrupted(ctx context.Context) (context.Context, context.CancelFunc) {

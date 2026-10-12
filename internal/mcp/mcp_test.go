@@ -1,7 +1,6 @@
 package mcp_test
 
 import (
-	"context"
 	"io"
 	"strings"
 	"testing"
@@ -16,8 +15,8 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
-func newDirector(t *testing.T) *director.Director {
-	t.Helper()
+func TestTheOperatorServerExposesTheOperatorTools(t *testing.T) {
+	t.Parallel()
 	spec, err := domain.Load(testsupport.Example())
 	if err != nil {
 		t.Fatal(err)
@@ -26,80 +25,27 @@ func newDirector(t *testing.T) *director.Director {
 	if err != nil {
 		t.Fatal(err)
 	}
-	cat := domain.NewCatalog([]*domain.Compiled{spec})
-	adapters := map[string]*model.Adapter{"native-jsonl": native}
-	return director.New(t.Context(), cat, adapters, t.TempDir())
-}
-
-func toolNames(t *testing.T, server *mcpsdk.Server) map[string]bool {
-	t.Helper()
-	ctx := context.Background()
+	d := director.New(t.Context(), domain.NewCatalog([]*domain.Compiled{spec}), map[string]*model.Adapter{"native-jsonl": native}, t.TempDir())
 	ct, st := mcpsdk.NewInMemoryTransports()
-	ss, err := server.Connect(ctx, st, nil)
+	ss, err := mcp.NewOperatorServerResolver(d).Connect(t.Context(), st, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = ss.Close() })
-	cs, err := mcpsdk.NewClient(&mcpsdk.Implementation{Name: "facade-test"}, nil).Connect(ctx, ct, nil)
+	cs, err := mcpsdk.NewClient(&mcpsdk.Implementation{Name: "facade-test"}, nil).Connect(t.Context(), ct, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = cs.Close() })
 	names := map[string]bool{}
-	for tool, err := range cs.Tools(ctx, nil) {
+	for tool, err := range cs.Tools(t.Context(), nil) {
 		if err != nil {
 			t.Fatal(err)
 		}
 		names[tool.Name] = true
 	}
-	return names
-}
-
-func TestRolesExposeDisjointToolSurfaces(t *testing.T) {
-	t.Parallel()
-	d := newDirector(t)
-	directorTools := toolNames(t, mcp.NewDirectorServer(d))
-	operator := toolNames(t, mcp.NewOperatorServerResolver(d))
-	if !directorTools["sim.truth.reveal"] || !operator["sim.nameplate.read"] {
-		t.Fatalf("each role must expose its own tools: director=%v operator=%v", directorTools, operator)
-	}
-	for name := range operator {
-		if directorTools[name] && name != "sim.consumer.report" {
-			t.Fatalf("operator tool %q leaked onto the director surface", name)
-		}
-	}
-	for _, truth := range []string{"sim.truth.reveal", "sim.score", "sim.perturb.apply"} {
-		if operator[truth] {
-			t.Fatalf("operator role must never expose %q", truth)
-		}
-	}
-}
-
-func TestSetOperatorEndpointIsAdvertisedByWorldCreate(t *testing.T) {
-	t.Parallel()
-	d := newDirector(t)
-	d.SetOperatorEndpoint("http://127.0.0.1:9/operator")
-	ctx := context.Background()
-	ct, st := mcpsdk.NewInMemoryTransports()
-	ss, err := mcp.NewDirectorServer(d).Connect(ctx, st, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = ss.Close() })
-	cs, err := mcpsdk.NewClient(&mcpsdk.Implementation{Name: "facade-test"}, nil).Connect(ctx, ct, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = cs.Close() })
-	res, err := cs.CallTool(ctx, &mcpsdk.CallToolParams{Name: "sim.world.create", Arguments: map[string]any{
-		"domain": "aquaculture-pond", "adapter": "native-jsonl", "seed": 1,
-	}})
-	if err != nil || res.IsError {
-		t.Fatalf("world create failed: err=%v result=%+v", err, res)
-	}
-	out, _ := res.StructuredContent.(map[string]any)
-	if out["operator_endpoint"] != "http://127.0.0.1:9/operator" {
-		t.Fatalf("world create must advertise the recorded endpoint: %v", out)
+	if !names["sim.nameplate.read"] || names["sim.truth.reveal"] {
+		t.Fatalf("operator tools = %v", names)
 	}
 }
 

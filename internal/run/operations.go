@@ -187,25 +187,6 @@ func (r *Run) Faults() []world.FaultInfo {
 	return r.run.Faults()
 }
 
-// ScenarioConfig is the run configuration a scenario describes; the sink is
-// the caller's choice.
-func ScenarioConfig(scenario *model.Scenario, spec *domain.Compiled, adapterSpec *model.Adapter, sinkName, sinkTarget string) Config {
-	return layer.ScenarioConfig(scenario, spec, adapterSpec, sinkName, sinkTarget)
-}
-
-// CheckScenario checks a scenario against its domain and the world it
-// creates before anything is delivered: a static check, then a dry run on a
-// world that emits nothing. A violation is a *model.ValidationError.
-func CheckScenario(ctx context.Context, cfg Config, scenario *model.Scenario) error {
-	return layer.CheckScenario(ctx, cfg, scenario)
-}
-
-// ScenarioFromArtifact is the scenario that reproduces a recorded run, and
-// the number of command-log entries it omits.
-func ScenarioFromArtifact(art *model.RunArtifact) (*model.Scenario, int) {
-	return layer.ScenarioFromArtifact(art)
-}
-
 // ExecuteScenario runs a checked scenario's commands in order.
 func (r *Run) ExecuteScenario(ctx context.Context, scenario *model.Scenario) error {
 	return r.run.ExecuteScenario(ctx, scenario)

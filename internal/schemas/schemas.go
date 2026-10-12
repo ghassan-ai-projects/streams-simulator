@@ -12,9 +12,6 @@ import (
 //go:embed domain-spec-v0.2.schema.json
 var domainSpec []byte
 
-//go:embed sim-event-v0.1.schema.json
-var simEvent []byte
-
 //go:embed output-adapter-v0.1.schema.json
 var outputAdapter []byte
 
@@ -38,9 +35,6 @@ var runReport []byte
 
 // DomainSpec returns the embedded domain-spec schema.
 func DomainSpec() []byte { return domainSpec }
-
-// SimEvent returns the embedded sim-event schema.
-func SimEvent() []byte { return simEvent }
 
 // OutputAdapter returns the embedded output-adapter schema.
 func OutputAdapter() []byte { return outputAdapter }

@@ -43,12 +43,6 @@ func VerifyFailure(res *VerifyResult) (message string, diverged bool) {
 	return layer.VerifyFailure(res)
 }
 
-// FixtureEvents returns the committed 12-event conformance fixture every
-// adapter's golden file is rendered from.
-func FixtureEvents() ([]model.SimEvent, error) {
-	return layer.FixtureEvents()
-}
-
 // Begin starts a streaming session and returns its framing and preamble
 // records. A session must not be mixed with RenderRun on one Engine.
 func (e *Engine) Begin() ([]string, error) {

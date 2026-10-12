@@ -5,16 +5,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
-func instrumentFrom(ledger []model.LedgerRecord, calls []world.EffectorCall, perturbations []string) InstrumentMetrics {
-	var emitted int64
-	for _, row := range ledger {
-		if row.Seq >= 0 {
-			emitted = max(emitted, row.Seq+1)
-		}
-	}
-	return instrumentEvidence(ledger, calls, perturbations, emitted)
-}
-
 func instrumentEvidence(ledger []model.LedgerRecord, calls []world.EffectorCall, perturbations []string, emitted int64) InstrumentMetrics {
 	m := ledgerMetrics(ledger, emitted)
 	m.PerturbationFidelity = perturbationsObserved(ledger, perturbations)
