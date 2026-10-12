@@ -20,12 +20,22 @@ func loadSpec(t *testing.T) *domain.Compiled {
 	return spec
 }
 
+// loadSmallSpec is the example domain with its nominal profile shrunk to two
+// entities and a six-hour trace. Generating and auditing a candidate runs two
+// full worlds over that span, so the composition and identity rules below hold
+// at a fraction of the cost; the rules do not depend on the trace length.
+func loadSmallSpec(t *testing.T) *domain.Compiled {
+	t.Helper()
+	spec := loadSpec(t)
+	nominal := spec.Profile("nominal")
+	nominal.EntityCount, nominal.DurationS = 2, 6*3600
+	return spec
+}
+
 func TestGenerateSmallSuite(t *testing.T) {
 	t.Parallel()
-	if testing.Short() {
-		t.Skip("suite generation runs full worlds and audits; skipped in -short mode")
-	}
-	spec := loadSpec(t)
+	testsupport.SkipUnderRace(t, "generates and audits whole suites on one goroutine")
+	spec := loadSmallSpec(t)
 	cfg := Config{
 		Domain: spec, Profile: "nominal", N: 10, Seed: 42, SampleNS: 120 * 1e9,
 		MaxAttempts: 40,
@@ -79,10 +89,8 @@ func TestGenerateSmallSuite(t *testing.T) {
 
 func TestNegativeClassFractionAdapts(t *testing.T) {
 	t.Parallel()
-	if testing.Short() {
-		t.Skip("suite generation runs full worlds and audits; skipped in -short mode")
-	}
-	spec := loadSpec(t)
+	testsupport.SkipUnderRace(t, "generates and audits whole suites on one goroutine")
+	spec := loadSmallSpec(t)
 	cfg := Config{Domain: spec, Profile: "nominal", N: 24, Seed: 7, SampleNS: 300 * 1e9, MaxAttempts: 120}
 	s, err := Generate(cfg)
 	if err != nil {
@@ -121,10 +129,8 @@ func TestNegativeClassFractionAdapts(t *testing.T) {
 // identity of later admitted ones.
 func TestGenerateIsByteIdentical(t *testing.T) {
 	t.Parallel()
-	if testing.Short() {
-		t.Skip("suite generation runs full worlds and audits; skipped in -short mode")
-	}
-	spec := loadSpec(t)
+	testsupport.SkipUnderRace(t, "generates and audits whole suites on one goroutine")
+	spec := loadSmallSpec(t)
 	cfg := Config{Domain: spec, Profile: "nominal", N: 6, Seed: 99, SampleNS: 120 * 1e9, MaxAttempts: 40}
 	a, err := Generate(cfg)
 	if err != nil {

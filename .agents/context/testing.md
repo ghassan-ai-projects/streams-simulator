@@ -19,7 +19,19 @@ Use these commands unless the task is documentation-only:
 ## Repository-Specific Behavior
 
 - `make build` builds `cmd/streamsim` into `bin/`.
-- `make ci-check` runs `function-length -> fmt-check -> docs-check -> tidy -> build -> vet -> lint-ci -> test-short -> test-simdet -> coverage-check -> deadcode -> vulncheck -> fuzz-soak`.
+- `make ci-check` runs `function-length -> fmt-check -> docs-check -> tidy -> build -> vet -> lint-ci -> test-ci -> deadcode -> vulncheck -> fuzz-soak`.
+- `make test-ci` (`scripts/test-ci`) is the whole test tier: the suite runs twice and no third time.
+  Run 1 is `-race -shuffle=on -tags simdet` with no coverage (`-race` forces atomic coverage counters,
+  which slow the simulation loops several-fold). Run 2 is without race and without the simdet tag,
+  with cheap `-cover`; the per-package coverage floors are checked from that run's output
+  (`scripts/check-coverage REPORT...`), and because it runs untagged it also tests the real wall-clock
+  implementation in `internal/wall` and `internal/run/internal/clock`. Neither run uses `-short`:
+  the long generation tests are cheap enough to be always on.
+- `make test-short`, `make test-simdet`, `make test-race` and `make coverage-check` remain as standalone
+  targets for working on one concern; `ci-check` does not call them.
+- `make fuzz-soak` runs every fuzz target side by side (`FUZZSOAKTIME`, default 5s each); `make fuzz`
+  runs them one after another (`FUZZTIME`, default 10s). Add a target by appending to `FUZZ_NAMES` and
+  setting `FUZZ_PKG_<name>` in the Makefile. `make soak` stays the explicit slow tier.
 - In restricted environments, lint and loopback MCP tests can fail because they need cache writes or local sockets.
 - `deadcode` and `govulncheck` are release-gate tools; the Makefile fails closed when they are missing.
 
@@ -42,6 +54,15 @@ In short:
   `test/architecture`. Nothing at the repository root.
 - Shipped domains, adapters and short socket paths come from
   `internal/testsupport`; a test never spells `../../domains` itself.
+- A test that only runs one deterministic simulation on one goroutine (generating, auditing or scoring a
+  world) may call `testsupport.SkipUnderRace(t, "<what it computes>")` right after `t.Parallel()`: the race
+  detector slows such a run ten- to twenty-fold and has nothing to find in it, and the test still runs in
+  full in the non-race pass. `test/architecture` refuses the call in a test that starts a goroutine. Tests
+  with goroutines, locks under contention, sockets or processes stay under `-race`.
+- Tests that must generate suites or audit worlds keep them small: a cheap shipped domain
+  (`shipment-exception`), `n=1`, or a shrunken profile (entities, trace length) when the property is
+  independent of scale. Audits run two full worlds per candidate, so scale is the cost.
+- Acceptance tests share one binary build per ldflags value (`test/acceptance/binary_test.go`).
 - Every `Test*` calls `t.Parallel()` first (or `//nolint:paralleltest // why`);
   no test sleeps; negative tests assert which error (`errors.Is/As` or the
   message), not only that one occurred.

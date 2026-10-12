@@ -2,8 +2,10 @@
 # GitHub Actions CI for Go projects
 # ---------------------------------------------------------------------------
 # Runs on push/PR to main. Pipeline:
-#   make ci-check: function-length → fmt-check → docs-check → tidy → build → vet → lint → test (short, simdet)
-#   → coverage-check → deadcode → vulncheck → fuzz-soak
+#   make ci-check: function-length → fmt-check → docs-check → tidy → build → vet → lint
+#   → test-ci (the suite twice, see scripts/test-ci: once with -race -shuffle -tags simdet,
+#     once without race for coverage, floors checked from that run) → deadcode → vulncheck
+#   → fuzz-soak (the fuzz targets side by side)
 #   → cross-compile linux/amd64 → upload artifact (push to main only)
 #
 # Optimized for minimal CI minutes:

@@ -110,7 +110,8 @@ func TestFacadeAuditsAndDescribesTheCatalog(t *testing.T) {
 	if len(adapters) != 1 || adapters[0]["id"] != "native-jsonl" {
 		t.Fatalf("adapters = %v", adapters)
 	}
-	if _, err := d.AuditScenario("aquaculture-pond", "site-a/pond-1", "aerator_failure", 3600e9, 0, 0); err != nil {
+	// A short window: the facade only delegates, the audit length is proved in app.
+	if _, err := d.AuditScenario("aquaculture-pond", "site-a/pond-1", "aerator_failure", 3600e9, 0, 6*3600e9); err != nil {
 		t.Fatal(err)
 	}
 }

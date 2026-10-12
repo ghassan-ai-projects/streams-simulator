@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
@@ -60,6 +61,7 @@ func TestSharedLoopRequiresScenarioEntity(t *testing.T) {
 
 func TestOnlineOfflineParityWithReversedDetections(t *testing.T) {
 	t.Parallel()
+	testsupport.SkipUnderRace(t, "runs one world and scores it on one goroutine")
 	r, gt := setupFaultedRun(t, "ok", "do_probe_fouling")
 	submitVerdict(t, r, nil, []model.Detection{
 		{EntityID: gt.EntityID, Label: "other", DetectedAt: model.FormatTime(gt.FirstObservableTimeNS + 20*60*1e9)},

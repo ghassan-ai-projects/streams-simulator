@@ -5,10 +5,12 @@ import (
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/canonical"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
 func TestBoundedGenerationRegression(t *testing.T) {
 	t.Parallel()
+	testsupport.SkipUnderRace(t, "generates and audits a suite on one goroutine")
 	spec := loadSpec(t)
 	generated, err := Generate(Config{Domain: spec, Profile: "nominal", N: 1, Seed: 91, SampleNS: 300 * 1e9, MaxAttempts: 2})
 	if err != nil {

@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# The ci-check test tier. The suite runs twice, each run proving what only it
+# can, and nothing runs a third time:
+#
+#   1. race: everything with -race -shuffle=on and -tags simdet (the wall
+#      clock removed, so a deterministic package cannot read time). Nothing is
+#      instrumented for coverage here: -race forces atomic coverage counters,
+#      which slow the simulation hot loops several-fold.
+#   2. coverage: everything again without the race detector and without the
+#      simdet tag (so the real wall-clock implementation is tested and
+#      covered), with cheap `set` coverage; the floors are checked from this
+#      run's output.
+#
+# Both runs include the long deterministic-generation tests (no -short).
+set -euo pipefail
+
+repo_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+cd "$repo_root"
+
+report=$(mktemp -d)
+trap 'rm -rf "$report"' EXIT
+
+go test -tags simdet -race -shuffle=on -count=1 ./...
+go test -shuffle=on -count=1 -cover ./... 2>&1 | tee "$report/coverage.txt"
+scripts/check-coverage "$report/coverage.txt"

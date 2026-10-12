@@ -90,6 +90,7 @@ func writeLabel(t *testing.T, dir string, gt *model.GroundTruthRecord) string {
 
 func TestOfflineScoreEqualsTheOnlineScoreOfTheSameRun(t *testing.T) {
 	t.Parallel()
+	testsupport.SkipUnderRace(t, "runs, replays and grades one world on one goroutine")
 	dir := t.TempDir()
 	r, gt := closedLoopRun(t, dir)
 	online, err := score.Score(score.Evidence{
@@ -114,6 +115,7 @@ func TestOfflineScoreEqualsTheOnlineScoreOfTheSameRun(t *testing.T) {
 
 func TestGradeRefusesAnArtifactWhoseReplayDoesNotReproduce(t *testing.T) {
 	t.Parallel()
+	testsupport.SkipUnderRace(t, "runs, replays and grades one world on one goroutine")
 	dir := t.TempDir()
 	_, gt := closedLoopRun(t, dir)
 	label := writeLabel(t, dir, gt)

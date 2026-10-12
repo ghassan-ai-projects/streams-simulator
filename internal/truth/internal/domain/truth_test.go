@@ -62,6 +62,7 @@ func TestAeratorFailureImmediatelyObservable(t *testing.T) {
 
 func TestProbeFoulingObservabilityLag(t *testing.T) {
 	t.Parallel()
+	testsupport.SkipUnderRace(t, "solves a world analytically on one goroutine")
 	// The lethal sensor fault: the probe reads high and stable, so the
 	// single-channel SNR never crosses; only the peer residual against
 	// sibling ponds makes it observable, and only after the fouling ramp
