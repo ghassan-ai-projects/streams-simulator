@@ -30,6 +30,8 @@ func sampleJournal(t *testing.T) *Journal {
 	j.Acknowledged(121, call, &model.EffectorAcknowledgement{Accepted: true, Simulated: true, WorldID: "w-1", CommandID: "c-1"})
 	j.Outcome(122, call, nil, "the effector declined")
 	j.ConsumerReported(120, true)
+	j.Wire(120, "node", map[string]any{"type": "NSYNC", "seq": 3, "through_seq": 2})
+	j.Pacing(120, 3, 15, false)
 	j.Unblinded(130, ReasonRevealed)
 	return j
 }
@@ -126,5 +128,29 @@ func TestJournalFlushReportsAStreamFailure(t *testing.T) {
 	j := New(NewStream(StreamObserver, sink, false), NewStream(StreamDirector, nil, false))
 	if err := j.Flush(); err == nil || !strings.Contains(err.Error(), "observer stream") {
 		t.Fatalf("Flush = %v, want the observer stream failure", err)
+	}
+}
+
+func TestWireAndPacingRecordsLeaveTheReplayableStreamUnchanged(t *testing.T) {
+	t.Parallel()
+	write := func(withWire bool) (string, []byte) {
+		j := NewMemory(true)
+		j.Observation(1, `{"v":1}`)
+		if withWire {
+			j.Wire(1, "node", map[string]any{"type": "NSYNC", "seq": 3})
+			j.Pacing(1, 3, 12, true)
+		}
+		j.Observation(2, `{"v":2}`)
+		observer, _ := j.Bytes(StreamObserver)
+		return j.Digests().Observer, observer
+	}
+	plain, plainBytes := write(false)
+	wired, wiredBytes := write(true)
+	if plain != wired || Digest(wiredBytes) != wired || FirstDifference(plainBytes, wiredBytes) != -1 {
+		t.Fatalf("wire records changed the stream: %s vs %s", plain, wired)
+	}
+	records, err := Read(wiredBytes)
+	if err != nil || len(records) != 4 || records[1].Seq != records[3].Seq || records[1].Type != TypeWire || records[2].Type != TypePacing {
+		t.Fatalf("records %+v, %v", records, err)
 	}
 }

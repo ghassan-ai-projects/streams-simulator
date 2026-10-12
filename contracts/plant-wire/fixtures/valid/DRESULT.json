@@ -6,5 +6,5 @@
   "lane": "control",
   "command_id": "c-1",
   "reported_outcome": "unknown",
-  "boot_id": "boot-1"
+  "boot_id": "board-01-boot-1"
 }

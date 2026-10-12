@@ -6,12 +6,14 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"math"
 	"net"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
@@ -57,7 +59,7 @@ func TestALinkSendsRecordsAndAwaitsTheHostsAnswer(t *testing.T) {
 	if err := link.Send([]map[string]any{{"type": "NSYNC"}}); err != nil {
 		t.Fatal(err)
 	}
-	records, met, err := link.Await(t.Context(), func(r map[string]any) bool { return r["type"] == "HSYNC" })
+	records, met, err := link.Await(t.Context(), func(m domain.Message) bool { return m.Type == "HSYNC" })
 	if err != nil || !met || len(records) != 1 {
 		t.Fatalf("await = %v, %v, %v", records, met, err)
 	}
@@ -80,8 +82,27 @@ func TestASilentHostLetsTheWaitExpire(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer func() { _ = link.Close() }()
-	if records, met, err := link.Await(t.Context(), func(map[string]any) bool { return true }); met || err != nil || len(records) != 0 {
+	if records, met, err := link.Await(t.Context(), func(domain.Message) bool { return true }); met || err != nil || len(records) != 0 {
 		t.Fatalf("await = %v, %v, %v", records, met, err)
+	}
+	if waited := link.WaitedMS(); waited < 50 {
+		t.Fatalf("waited %d ms, want the whole cap", waited)
+	}
+}
+
+func TestAClosedLinkCannotSend(t *testing.T) {
+	t.Parallel()
+	path, listener := privateListener(t)
+	echoHost(t, listener, map[string]any{"type": "HSYNC"})
+	link, err := Dial(t.Context(), path, time.Second)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := link.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if err := link.Send([]map[string]any{{"type": "NSYNC"}}); !errors.Is(err, net.ErrClosed) {
+		t.Fatalf("send on a closed link = %v", err)
 	}
 }
 
@@ -115,12 +136,14 @@ func TestAWaitEndsWhenTheHostHangsUpOrTheCallerCancels(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, _, err := link.Await(t.Context(), func(map[string]any) bool { return false }); !errors.Is(err, io.EOF) {
-		t.Fatalf("await = %v, want the end of the host connection", err)
+	for range 2 {
+		if _, _, err := link.Await(t.Context(), func(domain.Message) bool { return false }); !errors.Is(err, io.EOF) {
+			t.Fatalf("await = %v, want the end of the host connection every time", err)
+		}
 	}
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
-	if _, _, err := link.Await(ctx, func(map[string]any) bool { return false }); !errors.Is(err, context.Canceled) {
+	if _, _, err := link.Await(ctx, func(domain.Message) bool { return false }); !errors.Is(err, context.Canceled) {
 		t.Fatalf("await = %v, want the cancellation", err)
 	}
 	if err := link.Close(); err != nil {
@@ -129,8 +152,8 @@ func TestAWaitEndsWhenTheHostHangsUpOrTheCallerCancels(t *testing.T) {
 	if err := link.Send([]map[string]any{{"type": "NSYNC"}}); !errors.Is(err, net.ErrClosed) {
 		t.Fatalf("send = %v, want a closed link", err)
 	}
-	if err := link.Close(); !errors.Is(err, net.ErrClosed) {
-		t.Fatalf("close = %v, want an already closed link", err)
+	if err := link.Close(); err != nil {
+		t.Fatalf("a second close = %v, want nothing to report", err)
 	}
 }
 
@@ -146,5 +169,20 @@ func TestOnlyAnOwnedSocketInAnOwnedDirectoryIsAccepted(t *testing.T) {
 	}
 	if _, err := Dial(t.Context(), filepath.Join(filepath.Dir(path), "missing.sock"), time.Second); !errors.Is(err, os.ErrNotExist) {
 		t.Fatalf("dial a missing socket = %v", err)
+	}
+}
+
+func TestARecordThatCannotBeEncodedIsNotSent(t *testing.T) {
+	t.Parallel()
+	path, listener := privateListener(t)
+	echoHost(t, listener, map[string]any{"type": "HSYNC"})
+	link, err := Dial(t.Context(), path, time.Second)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = link.Close() }()
+	var unsupported *json.UnsupportedValueError
+	if err := link.Send([]map[string]any{{"type": "DDATA", "value": math.NaN()}}); !errors.As(err, &unsupported) {
+		t.Fatalf("send of NaN = %v", err)
 	}
 }

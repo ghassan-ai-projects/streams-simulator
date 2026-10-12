@@ -56,6 +56,14 @@ func (j *Journal) ConsumerReported(quiescedThroughNS int64, verdictSubmitted boo
 	j.impl.ConsumerReported(quiescedThroughNS, verdictSubmitted)
 }
 
+func (j *Journal) Wire(atNS int64, direction string, record map[string]any) {
+	j.impl.Wire(atNS, direction, record)
+}
+
+func (j *Journal) Pacing(atNS int64, throughSeq uint64, waitedMS int64, missed bool) {
+	j.impl.Pacing(atNS, throughSeq, waitedMS, missed)
+}
+
 // Command records a command-log entry.
 func (j *Journal) Command(atNS int64, command model.Command) {
 	j.impl.Command(atNS, command)

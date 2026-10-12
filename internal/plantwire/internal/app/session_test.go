@@ -104,7 +104,7 @@ func TestNoWireRecordCarriesAFaultOrItsOnset(t *testing.T) {
 	if _, err := r.InjectFault("meter-1", "load_surge", onset, nil); err != nil {
 		t.Fatal(err)
 	}
-	options := Options{Environment: "simulated", ProtocolMax: 1, ContractVersion: "1.0.0", SessionID: "s-1", SliceNS: 60e9, UntilNS: model.DefaultStartTimeNS + 300e9}
+	options := Options{Environment: "simulated", ProtocolMax: 1, SessionID: "s-1", SliceNS: 60e9, UntilNS: model.DefaultStartTimeNS + 300e9}
 	if err := NewSession(r, host, options).Run(t.Context()); err != nil {
 		t.Fatal(err)
 	}
@@ -142,29 +142,6 @@ func TestAHostGoodbyeEndsTheSessionEarly(t *testing.T) {
 	}
 }
 
-func TestACommandIsRefusedAsNotReadyUntilTheNodeExecutesCommands(t *testing.T) {
-	t.Parallel()
-	host := &scriptedHost{t: t, afterSync: func(h *scriptedHost, syncs int) {
-		if syncs == 1 {
-			h.reply("DCMD", map[string]any{"command_id": "c-1", "device": "meter-1"})
-			h.reply("DCMD", map[string]any{"command_id": "c-2", "device": "pump-77"})
-			h.reply("DQUERY", map[string]any{"device": "pump-77"})
-		}
-	}}
-	if _, err := session(t, host, 2); err != nil {
-		t.Fatal(err)
-	}
-	reasons := map[any]any{}
-	for _, record := range host.sent {
-		if record["type"] == "DRECEIPT" {
-			reasons[record["command_id"]] = record["reason"]
-		}
-	}
-	if reasons["c-1"] != "not_ready" || reasons["c-2"] != "unknown_device" || countOf(host.types(), "DSTATE") != 0 {
-		t.Fatalf("receipts %v, records %v", reasons, host.types())
-	}
-}
-
 func TestServingAMissingSocketFails(t *testing.T) {
 	t.Parallel()
 	if err := Serve(t.Context(), utilityRun(t), "/nonexistent/host.sock", time.Second, Options{}); !errors.Is(err, fs.ErrNotExist) {
@@ -192,7 +169,7 @@ func TestDuplicateHostRecordsAreDroppedAndTheEpochOnlyRises(t *testing.T) {
 		}
 	}}
 	r := utilityRun(t)
-	s = NewSession(r, host, Options{Environment: "simulated", ProtocolMax: 1, ContractVersion: "1.0.0", SessionID: "s-1", SliceNS: 60e9, UntilNS: model.DefaultStartTimeNS + 120e9})
+	s = NewSession(r, host, Options{Environment: "simulated", ProtocolMax: 1, SessionID: "s-1", SliceNS: 60e9, UntilNS: model.DefaultStartTimeNS + 120e9})
 	if err := s.Run(t.Context()); err != nil || s.epoch != 3 {
 		t.Fatalf("err %v, epoch floor %d, want 3", err, s.epoch)
 	}

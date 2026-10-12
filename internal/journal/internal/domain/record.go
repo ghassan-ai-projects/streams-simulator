@@ -48,7 +48,8 @@ const (
 	TypeEffectorOutcome  = "effector.outcome"
 	TypeRunUnblinded     = "run.unblinded"
 	TypeRunClosed        = "run.closed"
-	typePacing           = "pacing"
+	TypePacing           = "pacing"
+	TypeWire             = "wire"
 )
 
 // The envelope keys every line carries.
@@ -63,7 +64,7 @@ const (
 // report or live control that is not in the command log, so replay cannot
 // reproduce it. Session records are in the file but outside the stream digest.
 func IsSession(recordType string) bool {
-	return recordType == TypeConsumerReported || recordType == typePacing
+	return recordType == TypeConsumerReported || recordType == TypePacing || recordType == TypeWire
 }
 
 // Record is one journal line: the envelope every line carries and the fields

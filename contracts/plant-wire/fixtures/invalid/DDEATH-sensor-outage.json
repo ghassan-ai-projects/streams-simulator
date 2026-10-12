@@ -8,7 +8,7 @@
     "seq": 3,
     "lane": "control",
     "device": "P1",
-    "boot_id": "boot-1",
+    "boot_id": "board-01-boot-1",
     "reason": "sensor_outage",
     "last_seq": 2
   }

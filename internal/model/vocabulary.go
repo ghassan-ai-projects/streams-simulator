@@ -58,6 +58,7 @@ type Responder struct {
 
 type Lease struct {
 	Arg        string       `json:"arg"`
+	Unit       string       `json:"unit,omitempty"`
 	Fallback   string       `json:"fallback"`
 	SafeDeltas []StateDelta `json:"safe_deltas,omitempty"`
 }

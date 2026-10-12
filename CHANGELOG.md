@@ -4,6 +4,22 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **Plant wire reference host, journal and CLI** (phase P7d). `streamsim plantwire host` is a minimal conformant host
+  (owner-only socket, handshake checks and refusal, commissioned inventory with quarantine, rebirth on a gap, historical data
+  kept out of live values, scripted commands, verification by observation, a configurable barrier delay); `streamsim plantwire
+  node` runs a domain as a node and writes its artifact and journal. The journal gains `wire` and `pacing` session records.
+  New CLI error code `plantwire_failed` and success documents `plantwire_node`, `plantwire_host`.
+
+- **Plant wire commands** (phase P7c). The node executes `DCMD`: checks in the contract's order (device, command, arguments,
+  boot, deadline, epoch floor, policy allow-list) at receipt and again at execution for a command queued until
+  `not_before_ns`; an idempotency ledger replays the stored receipt and result for the same content and refuses other
+  content as `duplicate`; safe-stop commands skip the node's freshness, epoch and policy checks. Commands run through the
+  run's single effector path, so they share its command log and replay. World outcomes map to wire classes (`interlocked`,
+  `permissive_not_met`, `not_ready`, `out_of_range`; a lost acknowledgement sends nothing; a lying device reports
+  `succeeded`). An outbound wire-fault plan (`drop`, `duplicate`, `swap`, `garble`) acts after sequencing. Test domain
+  `pump-board.domain.json` matches the contract fixtures, whose boot ids now follow `<board>-boot-<n>`. An effector `lease`
+  may declare `unit: "ms"`.
+
 - **Plant wire node** (`internal/plantwire`; phase P7b; contract `contracts/plant-wire/SPEC.md`). A run can speak the plant
   wire to a host: it dials the host's owner-only socket (refusing a group- or world-accessible one), sends `NBIRTH` (each kind
   once, the contract and capability digests, the environment marker) and every `DBIRTH` (board, boot, current values, add-or-

@@ -1,0 +1,147 @@
+{
+  "id": "pump-board",
+  "version": "0.1.0",
+  "title": "Pump board",
+  "description": "A test domain matching the plant wire contract fixtures: two pumps on one board with a leased speed setpoint, a start and a safe stop.",
+  "axes": {
+    "absence": "signal",
+    "actuation": "advisory",
+    "cadence": ["periodic"],
+    "cardinality": "fleet",
+    "consequence": ["downtime"],
+    "correlation": ["peer"],
+    "fidelity": ["F0", "F1"],
+    "lateness": "bounded",
+    "rate": "low",
+    "seasonality": ["none"],
+    "time_reference": "wall",
+    "value_shape": ["scalar"]
+  },
+  "stresses": "Commands over the plant wire: leases, boot identity, idempotency and refusals against two devices sharing one board.",
+  "kinds": [
+    {
+      "name": "pump",
+      "state": [
+        {"name": "speed", "unit": "%", "initial": 60.0, "min": 0.0, "max": 100.0},
+        {"name": "running", "unit": "on", "initial": 1.0},
+        {"name": "wear", "unit": "rel", "initial": 0.0}
+      ],
+      "dynamics": [],
+      "channels": [
+        {
+          "name": "flow",
+          "unit": "m3/h",
+          "absence": "signal",
+          "cadence": {"mode": "periodic", "period_s": 60},
+          "fidelity": "F1",
+          "noise": {"model": "gaussian", "sigma": 0.1},
+          "observation_gain": 1.2,
+          "observes": "speed",
+          "range": {"min": 0, "max": 120},
+          "resolution": 0.1,
+          "value_type": "number"
+        },
+        {
+          "name": "speed_setpoint",
+          "unit": "%",
+          "absence": "signal",
+          "cadence": {"mode": "periodic", "period_s": 60},
+          "fidelity": "F1",
+          "noise": {"model": "gaussian", "sigma": 0.0001},
+          "observes": "speed",
+          "range": {"min": 0, "max": 100},
+          "resolution": 1,
+          "value_type": "number"
+        }
+      ],
+      "faults": [
+        {
+          "id": "impeller_wear",
+          "affects": [{"state": "speed", "delta": -20.0}],
+          "expected_effector": "set_speed",
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "flow"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"magnitude": 1.0, "shape": "step"}
+        },
+        {
+          "id": "flow_jitter",
+          "affects": [{"state": "speed", "delta": 1.0}],
+          "is_negative_class": true,
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "flow"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"duty_cycle": 0.2, "magnitude": 1.0, "rate_per_hour": 1.0, "shape": "intermittent"}
+        }
+      ],
+      "effectors": [
+        {
+          "name": "set_speed",
+          "ack": {"failure_modes": [{"mode": "ok", "probability": 1.0}], "latency_ms": {"mean": 50, "sigma": 5}},
+          "args_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "lease_ms": {"minimum": 1000, "type": "integer"},
+              "pct": {"maximum": 100, "minimum": 0, "type": "number", "description": "pump speed setpoint as a share of rated speed", "title": "impeller drive setpoint"}
+            },
+            "required": ["pct", "lease_ms"],
+            "type": "object"
+          },
+          "confirmation_channels": ["flow"],
+          "effect": {
+            "dead_time_s": 0,
+            "state_deltas": [{"state": "speed", "assign_from_arg": "pct"}],
+            "time_constant_s": 0
+          },
+          "idempotency_window_s": 600,
+          "lease": {
+            "unit": "ms",
+            "arg": "lease_ms",
+            "fallback": "safe_off",
+            "safe_deltas": [{"state": "speed", "delta": 0.0}]
+          },
+          "risk_class": "medium"
+        },
+        {
+          "name": "start",
+          "ack": {"failure_modes": [{"mode": "ok", "probability": 1.0}], "latency_ms": {"mean": 50, "sigma": 5}},
+          "args_schema": {"additionalProperties": false, "properties": {}, "required": [], "type": "object"},
+          "confirmation_channels": ["flow"],
+          "effect": {"dead_time_s": 0, "state_deltas": [{"state": "running", "delta": 1.0}], "time_constant_s": 0},
+          "idempotency_window_s": 600,
+          "risk_class": "medium"
+        },
+        {
+          "name": "safe_stop",
+          "ack": {"failure_modes": [{"mode": "ok", "probability": 1.0}], "latency_ms": {"mean": 50, "sigma": 5}},
+          "args_schema": {"additionalProperties": false, "properties": {}, "required": [], "type": "object"},
+          "confirmation_channels": ["flow"],
+          "effect": {"dead_time_s": 0, "state_deltas": [{"state": "running", "delta": -1.0}], "time_constant_s": 0},
+          "idempotency_window_s": 600,
+          "risk_class": "medium"
+        }
+      ]
+    }
+  ],
+  "instances": [{"kind": "pump", "names": ["P1", "P2"]}],
+  "boards": [{"name": "board-01", "members": ["P1", "P2"]}],
+  "profiles": [
+    {"name": "nominal", "duration_s": 3600, "description": "Two pumps."},
+    {
+      "name": "correlated_cascade",
+      "not_applicable": "The pumps share no upstream cause.",
+      "description": "Not applicable."
+    },
+    {
+      "name": "sensor_pathology",
+      "duration_s": 3600,
+      "fault_weights": {"impeller_wear": 1.0},
+      "description": "Only the wear."
+    }
+  ],
+  "ground_truth": {"min_per_label": 10, "min_scenarios": 100, "negative_class_fraction": 0.4, "pre_degraded_fraction": 0.1}
+}

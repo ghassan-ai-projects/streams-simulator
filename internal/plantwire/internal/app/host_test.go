@@ -18,6 +18,10 @@ type scriptedHost struct {
 	sent       []map[string]any
 	pending    []wire.Inbound
 	hangUp     error
+	birthState map[string]any
+	lenient    bool
+	bySync     map[int][]map[string]any
+	syncing    int
 	seq        uint64
 	refusal    string
 	silent     bool
@@ -32,7 +36,7 @@ func (h *scriptedHost) Send(records []map[string]any) error {
 		if err != nil {
 			h.t.Fatal(err)
 		}
-		if _, err := wire.Parse(raw); err != nil {
+		if _, err := wire.Parse(raw); err != nil && !h.lenient {
 			h.t.Fatalf("the node sent an invalid record: %v", err)
 		}
 		h.transcript = append(append(h.transcript, raw...), '\n')
@@ -45,14 +49,18 @@ func (h *scriptedHost) Send(records []map[string]any) error {
 func (h *scriptedHost) react(record map[string]any) {
 	switch record["type"] {
 	case "NBIRTH":
-		if len(h.sent) == 1 {
+		if len(h.sent) == 1 && h.birthState != nil {
+			h.reply("STATE", h.birthState)
+		} else if len(h.sent) == 1 {
 			h.reply("STATE", h.state())
 		}
 	case "NSYNC":
 		h.syncs++
+		h.syncing = h.syncs
 		if h.afterSync != nil {
 			h.afterSync(h, h.syncs)
 		}
+		h.syncing = 0
 		if !h.silent {
 			h.reply("HSYNC", map[string]any{"through_seq": record["seq"]})
 		}
@@ -74,18 +82,36 @@ func (h *scriptedHost) reply(kind string, fields map[string]any) {
 		record[key] = value
 	}
 	h.seq++
-	h.pending = append(h.pending, wire.Inbound{Record: record})
+	h.pending = append(h.pending, h.inbound(record))
+	if h.syncing > 0 && kind != "HSYNC" {
+		if h.bySync == nil {
+			h.bySync = map[int][]map[string]any{}
+		}
+		h.bySync[h.syncing] = append(h.bySync[h.syncing], record)
+	}
 }
 
 func (h *scriptedHost) replyInvalid(record map[string]any) {
 	record["seq"], record["protocol_version"], record["session_id"], record["lane"] = h.seq, 1, "s-1", "control"
 	h.seq++
-	h.pending = append(h.pending, wire.Inbound{Record: record, Invalid: wire.Check(record)})
+	h.pending = append(h.pending, h.inbound(record))
 }
 
-func (h *scriptedHost) Await(_ context.Context, until func(map[string]any) bool) ([]wire.Inbound, bool, error) {
+func (h *scriptedHost) inbound(record map[string]any) wire.Inbound {
+	raw, err := json.Marshal(record)
+	if err != nil {
+		h.t.Fatal(err)
+	}
+	in, ok := wire.Decode(raw)
+	if !ok {
+		h.t.Fatalf("not a record: %s", raw)
+	}
+	return in
+}
+
+func (h *scriptedHost) Await(_ context.Context, until func(wire.Message) bool) ([]wire.Inbound, bool, error) {
 	for i, arrival := range h.pending {
-		if arrival.Invalid == nil && until(arrival.Record) {
+		if arrival.Invalid == nil && until(arrival.Message) {
 			got := h.pending[:i+1]
 			h.pending = h.pending[i+1:]
 			return got, true, nil
@@ -95,6 +121,8 @@ func (h *scriptedHost) Await(_ context.Context, until func(map[string]any) bool)
 	h.pending = nil
 	return got, false, h.hangUp
 }
+
+func (h *scriptedHost) WaitedMS() int64 { return 0 }
 
 func (h *scriptedHost) types() []string {
 	var out []string
@@ -139,6 +167,6 @@ func session(t *testing.T, host *scriptedHost, slices int64) (*run.Run, error) {
 }
 
 func sliceOptions(slices int64) Options {
-	return Options{Environment: "simulated", ProtocolMax: 1, ContractVersion: "1.0.0", SessionID: "s-1",
+	return Options{Environment: "simulated", ProtocolMax: 1, SessionID: "s-1",
 		SliceNS: 60e9, UntilNS: model.DefaultStartTimeNS + slices*60e9}
 }

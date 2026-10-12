@@ -17,10 +17,52 @@
   perturbation acting on the wire therefore drops, duplicates or reorders sequenced records, which the host must handle.
 - **Determinism**: births, data and deaths come from the world in deterministic order and enter the delivery ledger; host
   records enter the command log at the world time of the slice end that processed them; replay reproduces the whole exchange.
+  A run is a pure function of the host records as the node processed them, and so of the host's timing: a record that
+  arrives after a barrier's wall cap is processed at the next slice end. The journal's `wire` and `pacing` records show
+  which slice that was; the artifact's command log replays it exactly.
+- **Typed records**: `domain.Decode` checks a line against its schema and its size (64 KiB, 1 MiB for births) once and
+  reads it into a typed `Message`; an invalid record keeps only its `seq`, `type` and `command_id`, and a record without a
+  usable `seq` consumes none. After the handshake, a record from another session or version is invalid.
 - **Coexistence with the device path (R0-05)**: the device emulator, `deviceworld`, the vendored device-wire-v1 contract and the
   thermal LED/fan experiment stay unchanged and green in this goal. A run uses one host link: the device socket or the plant
   wire. Agentic Stream moves to the plant wire in the next goal, together with the gateway.
 - **Truth canary**: P7b adds a test that injects a fault with a recognisable id and scans every wire record of the run for it.
+- **Commands (P7c)**: a `DCMD` is checked in the SPEC §9 order at receipt (every check, then the idempotency ledger) and,
+  when queued for `not_before_ns`, again at execution; due queued commands run at every slice end until host loss (three
+  missed barriers), and commands that arrive with a lost connection are not run; it runs through `run.InvokeEffector` at the world time of the slice end that processed it, with its
+  `idempotency_key` as the world command id. The node's idempotency ledger lives for the whole run (longer than SPEC §9's
+  24 h minimum for any run the simulator allows). World outcomes map to the wire: accepted (including `partial` and
+  `silent_no_effect`, which the device reports as `succeeded`) → `accepted` and `DRESULT succeeded`; `ack_lost` → no receipt
+  and no result; interlock → `interlocked`; failed precondition → `permissive_not_met`; random reject → `not_ready`; invalid
+  arguments, including a narrowed bound → `out_of_range`. Safe-stop commands are the node's `SafeStop` option, declared
+  `safe_stop: true` in the `NBIRTH`; they are checked only for device, command and boot (one reason), skip the node's
+  deadline, epoch and policy checks, bypass the ledger, are never queued, and act every time they arrive; a node refuses to start when a safe-stop
+  effector carries preconditions or an interlock (R6c-02). A command whose arguments pass the kind's bounds but not an
+  instance's narrowed bound is refused `out_of_range` at execution, a second one-bit fact about the instance. A retry of a
+  command whose acknowledgement was lost learns `accepted` and `succeeded` (SPEC §9 idempotency), a deliberate third one:
+  the MCP path answers `acknowledgement_timeout`. The node keeps at most 1024 queued commands, 65 536 ledger entries and 64
+  waiting repeats of one key (beyond them `not_ready`), and reads at most 4096 host records per barrier (beyond them the
+  host is lost). Argument schemas reach the `NBIRTH` with validation keywords only.
+- **Lease fallback on host loss** (R7c-01): a simulated node ends its session, and the run, on host loss; the domain's own
+  effector leases lapse in the world. Acting on each command's `fallback_on_lease_loss` comes with reconnection (P13).
+- **Journal (P7d)**: the node writes every record it sends and receives as an observer `wire` session record, and one
+  `pacing` session record per barrier (`through_seq`, the wall time waited, whether the cap expired). Both are outside the
+  stream digest: the world is reproduced by the command log, the wire by replaying the host's records.
+- **Reference host (P7d)**: `plantwire host` (module layer `host`, socket edge `uds/listen.go`): a socket published owner-only
+  by rename into an owner-only directory (a stale socket is replaced, a live host or a file is not), one node that must send
+  its `NBIRTH` within 10 s, schema-invalid records ignored (their `seq` consumed), nothing before an accepted `NBIRTH`,
+  handshake checks (protocol range, environment, contract version and digest, version, every commissioned device present in
+  the birth's boards) with refusal and then a close, a commissioned inventory (device to kind; others
+  quarantined), one rebirth request per gap, historical data kept out of live values, scripted commands issued at the barrier
+  whose world time reaches them (with the content-derived key, the epoch and its policy; denied for a device not accepted),
+  verification of each succeeded command by an observation that arrives after its result, within a window (only `good`,
+  current data of the device's born boot counts; a `DDEATH`, a current `NDEATH` or a rebirth as another kind removes the
+  device), and a configurable delay before each `HSYNC`. It trusts no birth for
+  permissions: it only issues what its script says.
+- **Deferred to P13**: reconnection and the faults that need it (split frames, a reset mid-command, a reconnect storm; P19),
+  and acting on `fallback_on_lease_loss` (R7c-01).
+- **Wire faults (P7c)**: an outbound fault plan acts on sequenced records: `drop`, `duplicate`, `swap` (with the next record)
+  and `garble` (a schema-invalid record keeping its `seq`).
 
 ## 2. Disposition of the review findings (REVIEW-2026-10-12 §2–§4)
 
@@ -41,7 +83,7 @@
 | P7 refusal mapping | SPEC §9, §13; node P7c |
 | P8 commissioned safety facts | SPEC §5; reference host P7d; Agentic Stream next goal |
 | P9 commissioning | SPEC §5; reference host P7d; Agentic Stream next goal |
-| P10 quality mapping | SPEC §10; node P7b. **Deferred**: the host's situation-facts column (Agentic Stream, next goal) |
+| P10 quality mapping | SPEC §10; node P7b sends `good` and `warming_up` only (R7d-01). **Deferred**: the host's situation-facts column (Agentic Stream, next goal) |
 | P11 strings | SPEC §4, §10; fixtures; reference host P7d |
 | P12 barrier and clock mode | SPEC §8; node P7d |
 | P13 edge realism | SPEC §4, §7, §8. **Deferred**: NTP/PTP and a drift metric (gateway, next goal) |
@@ -50,10 +92,10 @@
 | P16 alerts through `notify` | Next goal (Agentic Stream) |
 | P17 contract supply chain | SPEC §11; this phase |
 | P18 lying results, reference host | Fixtures; reference host P7d |
-| P19 wire fault layer | Node P7c: split and corrupt frames, reset mid-command, reconnect storm are new work |
+| P19 wire fault layer | Node P7c (drop, duplicate, swap, garble); split and corrupt frames, reset mid-command, reconnect storm: P13 |
 | P20 gateway as a safety point | Next goal (gateway) |
 | P21 self-reported state | SPEC §4 |
-| P22 death reasons | SPEC §4 |
+| P22 death reasons | SPEC §4; the node sends `NDEATH shutdown` only, no `DDEATH` yet (R7d-01) |
 | P23 batching and limits | SPEC §4, §12 |
 | P24 experiment naming | The acceptance test is "assessment Experiment 02"; round-2 experiments are "round-2 #n" |
 | Host liveness of a node over TCP | Next goal, with authentication (no node heartbeat in v1) |

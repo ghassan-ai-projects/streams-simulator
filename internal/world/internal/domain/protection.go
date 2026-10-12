@@ -107,7 +107,7 @@ func (w *World) refusePrecondition(eff *model.Effector, inv invocation) *InvokeR
 	for i := range eff.Requires {
 		if !w.conditionHolds(inv.entityID, &eff.Requires[i], inv.atNS) {
 			w.recordCall(inv, callOutcome{mode: ModeReject, reason: ReasonPreconditionRefused})
-			return &InvokeResult{Simulated: true, WorldID: w.ID, CommandID: inv.commandID, Mode: ModeReject, Reason: "effector_refused"}
+			return &InvokeResult{Simulated: true, WorldID: w.ID, CommandID: inv.commandID, Mode: ModeReject, Reason: "effector_refused", Cause: ReasonPreconditionRefused}
 		}
 	}
 	return nil

@@ -25,33 +25,33 @@ def nbirth(seq=0, env_name="simulated", pmax=1, bd=0, prior=-1):
     return env("NBIRTH", "control", seq, protocol_min=1, protocol_max=pmax, contract_version="1.0.0", contract_digest=CONTRACT, environment=env_name,
         bd_seq=bd, prior_last_seq=prior, capability_digest=CAPABILITY, kinds=kinds, boards=[{"board": "board-01", "members": ["P1", "P2"]}],
         node_metrics={"clock_mode": "virtual", "run_state": "running"})
-def dbirth(seq, dev="P1", boot="boot-1"):
+def dbirth(seq, dev="P1", boot="board-01-boot-1"):
     return env("DBIRTH", "data", seq, device=dev, kind="pump", board="board-01", boot_id=boot, metadata_version=1, birth_time_ns=T0,
         metrics=[{"name": "flow", "alias": 1, "value": 42.0, "quality": "good"}, {"name": "speed_setpoint", "alias": 2, "value": 60, "quality": "good"},
                  {"name": "mode", "alias": 3, "value": "auto", "quality": "good"}])
 def ddata(seq, value=42.0, t=T0 + 60_000_000_000, alias=1, historical=False):
-    return env("DDATA", "data", seq, device="P1", boot_id="boot-1", historical=historical,
+    return env("DDATA", "data", seq, device="P1", boot_id="board-01-boot-1", historical=historical,
         metrics=[{"alias": alias, "value": value, "quality": "good", "event_time_ns": t, "time_source": "device", "uncertainty_ms": 5}])
 def state(seq, epoch=1, hb=0, **kw):
     r = env("STATE", "control", seq, host_id="host-a", online=True, heartbeat=hb, heartbeat_interval_ms=1000, authority_epoch=epoch, protocol_min=1, protocol_max=1)
     r.update(kw); return r
-def dcmd(seq, cid, command="set_speed", args=None, boot="boot-1", epoch=1, deadline=T0 + 120_000_000_000, not_before=0, policy=P):
+def dcmd(seq, cid, command="set_speed", args=None, boot="board-01-boot-1", epoch=1, deadline=T0 + 120_000_000_000, not_before=0, policy=P):
     args = {"pct": 70, "lease_ms": 30000} if args is None else args
     key = sha(canon({"device": "P1", "command": command, "args": args, "expected_boot_id": boot}))
     return env("DCMD", "control", seq, command_id=cid, idempotency_key=key, device="P1", command=command, args=args,
         expected_boot_id=boot, deadline_ns=deadline, not_before_ns=not_before, authority_epoch=epoch, policy_digest=policy, fallback_on_lease_loss="safe_off")
-def receipt(seq, cid, status="accepted", reason=None, boot="boot-1"):
+def receipt(seq, cid, status="accepted", reason=None, boot="board-01-boot-1"):
     r = env("DRECEIPT", "control", seq, command_id=cid, status=status, boot_id=boot)
     if reason: r["reason"] = reason
     return r
-def result(seq, cid, outcome="succeeded", boot="boot-1"):
+def result(seq, cid, outcome="succeeded", boot="board-01-boot-1"):
     return env("DRESULT", "control", seq, command_id=cid, reported_outcome=outcome, boot_id=boot)
 valid = {
  "NBIRTH": nbirth(), "DBIRTH": dbirth(1), "DDATA": ddata(2),
- "DDEATH": env("DDEATH", "control", 3, device="P1", boot_id="boot-1", reason="reboot", last_seq=2),
+ "DDEATH": env("DDEATH", "control", 3, device="P1", boot_id="board-01-boot-1", reason="reboot", last_seq=2),
  "NDEATH": env("NDEATH", "control", 4, bd_seq=0, reason="shutdown"),
  "DRECEIPT": receipt(5, "c-1", "refused", "permissive_not_met"), "DRESULT": result(6, "c-1", "unknown"),
- "DSTATE": env("DSTATE", "control", 7, device="P1", boot_id="boot-1", self_reported=True, safe_state=False, outputs=[{"name": "motor", "value": True}],
+ "DSTATE": env("DSTATE", "control", 7, device="P1", boot_id="board-01-boot-1", self_reported=True, safe_state=False, outputs=[{"name": "motor", "value": True}],
                values=[{"name": "flow", "alias": 1, "value": 41.0, "quality": "good"}]),
  "NSYNC": env("NSYNC", "control", 8, through_seq=7, world_time_ns=T0 + 60_000_000_000),
  "STATE": state(0), "NCMD": env("NCMD", "control", 1, command="rebirth"), "DCMD": dcmd(2, "c-1"),
@@ -136,14 +136,14 @@ exchange("environment-refusal", [N(nbirth(env_name="hardware")), E("host", "STAT
 exchange("gap-rebirth", start + [N(ddata(2)), N(ddata(4, 43.0)), E("host", "NCMD", command="rebirth"),
     H(env("NCMD", "control", 1, command="rebirth")), E("node", "NBIRTH", bd_seq=1), E("node", "DBIRTH", device="P1")],
     "A missing seq (3) outlives the reorder window: the host requests a rebirth and the node republishes every birth.", gap=True)
-exchange("reboot-reconcile", start + [N(env("DDEATH", "control", 2, device="P1", boot_id="boot-1", reason="reboot", last_seq=1)),
-    N(dbirth(3, boot="boot-2")), H(dcmd(1, "c-old", boot="boot-1")), E("node", "DRECEIPT", command_id="c-old", status="refused", reason="wrong_boot"),
-    H(env("DQUERY", "control", 2, device="P1")), E("node", "DSTATE", device="P1", boot_id="boot-2"), H(dcmd(3, "c-new", boot="boot-2")),
+exchange("reboot-reconcile", start + [N(env("DDEATH", "control", 2, device="P1", boot_id="board-01-boot-1", reason="reboot", last_seq=1)),
+    N(dbirth(3, boot="board-01-boot-2")), H(dcmd(1, "c-old", boot="board-01-boot-1")), E("node", "DRECEIPT", command_id="c-old", status="refused", reason="wrong_boot"),
+    H(env("DQUERY", "control", 2, device="P1")), E("node", "DSTATE", device="P1", boot_id="boot-2"), H(dcmd(3, "c-new", boot="board-01-boot-2")),
     E("node", "DRECEIPT", command_id="c-new", status="accepted")],
     "A command naming the old boot is refused; the host reconciles and names the new boot.")
 exchange("queued-across-reboot", start + [NOW(T0), H(dcmd(1, "c-later", not_before=T0 + 30_000_000_000)),
     E("node", "DRECEIPT", command_id="c-later", status="queued"), N(receipt(2, "c-later", "queued")),
-    N(env("DDEATH", "control", 3, device="P1", boot_id="boot-1", reason="reboot", last_seq=2)), N(dbirth(4, boot="boot-2")), NOW(T0 + 30_000_000_000),
+    N(env("DDEATH", "control", 3, device="P1", boot_id="board-01-boot-1", reason="reboot", last_seq=2)), N(dbirth(4, boot="board-01-boot-2")), NOW(T0 + 30_000_000_000),
     E("node", "DRECEIPT", command_id="c-later", status="refused", reason="wrong_boot")],
     "A queued command is re-checked at execution: the board rebooted while it waited, so its terminal receipt refuses it.")
 exchange("expired-command", start + [NOW(T0 + 200_000_000_000), H(dcmd(1, "c-late")),

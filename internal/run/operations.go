@@ -149,12 +149,20 @@ func (r *Run) SetEvidenceRecorder(fn func(model.SimEvent)) {
 	r.run.SetEvidenceRecorder(fn)
 }
 
-// SetQuiesceParkedHook installs a hook fired when a quiescence wait blocks
-// (test harness hook).
+func (r *Run) JournalWire(direction string, record map[string]any) {
+	r.run.JournalWire(direction, record)
+}
+
+func (r *Run) JournalPacing(throughSeq uint64, waitedMS int64, missed bool) {
+	r.run.JournalPacing(throughSeq, waitedMS, missed)
+}
+
 func (r *Run) SetDeliveryObserver(fn func(model.SimEvent)) {
 	r.run.SetDeliveryObserver(fn)
 }
 
+// SetQuiesceParkedHook installs a hook fired when a quiescence wait blocks
+// (test harness hook).
 func (r *Run) SetQuiesceParkedHook(h func()) {
 	r.run.SetQuiesceParkedHook(h)
 }

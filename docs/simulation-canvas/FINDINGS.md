@@ -6,7 +6,7 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 - **Phase**: a phase id from PLAN.md, or `next-goal` (Agentic Stream / gateway goal), or `—`.
 - **Status**: `open`, `done` (fixed, evidence in the phase review), `next-goal`, `dropped`
   (removed by an owner decision), `not-a-defect` (evidence in the review record).
-- Sources: `REVIEW` = [REVIEW-2026-10-12.md](REVIEW-2026-10-12.md) ids; `R0` = [reviews/P0.md](reviews/P0.md); `R1` = [reviews/P1.md](reviews/P1.md); `R2` = [reviews/P2.md](reviews/P2.md); `R2b` = [reviews/P2b.md](reviews/P2b.md); `R2d` = [reviews/P2d.md](reviews/P2d.md); `R5a` = [reviews/P5a.md](reviews/P5a.md); `R5b` = [reviews/P5b.md](reviews/P5b.md); `R6a` = [reviews/P6a.md](reviews/P6a.md); `R6b` = [reviews/P6b.md](reviews/P6b.md); `R6c` = [reviews/P6c.md](reviews/P6c.md); `R6d` = [reviews/P6d.md](reviews/P6d.md); `R6e` = [reviews/P6e.md](reviews/P6e.md); `R2c` = [reviews/P2c.md](reviews/P2c.md); `R3` = [reviews/P3.md](reviews/P3.md); `self` = found by the implementer.
+- Sources: `REVIEW` = [REVIEW-2026-10-12.md](REVIEW-2026-10-12.md) ids; `R0` = [reviews/P0.md](reviews/P0.md); `R1` = [reviews/P1.md](reviews/P1.md); `R2` = [reviews/P2.md](reviews/P2.md); `R2b` = [reviews/P2b.md](reviews/P2b.md); `R2d` = [reviews/P2d.md](reviews/P2d.md); `R5a` = [reviews/P5a.md](reviews/P5a.md); `R5b` = [reviews/P5b.md](reviews/P5b.md); `R6a` = [reviews/P6a.md](reviews/P6a.md); `R6b` = [reviews/P6b.md](reviews/P6b.md); `R6c` = [reviews/P6c.md](reviews/P6c.md); `R6d` = [reviews/P6d.md](reviews/P6d.md); `R6e` = [reviews/P6e.md](reviews/P6e.md); `R7c` = [reviews/P7c.md](reviews/P7c.md); `R7d` = [reviews/P7d.md](reviews/P7d.md); `R2c` = [reviews/P2c.md](reviews/P2c.md); `R3` = [reviews/P3.md](reviews/P3.md); `self` = found by the implementer.
 
 ## Design review (REVIEW-2026-10-12)
 
@@ -20,22 +20,22 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 | P1 | REVIEW | High | §3 records: node_birth kinds, device_birth instance values, versions, contract digest | P7a | done |
 | P2 | REVIEW | High | Historical flag, values in births, `bd_seq`, death synthesis | P7a | done |
 | P3 | REVIEW | High | One sequence per direction; lanes are transmit priority only | P7a | done |
-| P4 | REVIEW | High | Command freshness, re-check at execution, queue flush, dedup window | P7c | open |
+| P4 | REVIEW | High | Command freshness, re-check at execution, queue flush, dedup window | P7c | done |
 | P5 | REVIEW | High | `authority_epoch` is host/gateway-side only; decide its v1 status | P7a | done |
 | P6 | REVIEW | High | Board level owns `boot_id` | P5b | done |
 | P7 | REVIEW | High | Field names and refusal codes vs device-wire-v1; PLC refusal codes | P7a | done |
-| P8 | REVIEW | High | Policy example and birth-declared safe-stop/risk class | P7d | open |
+| P8 | REVIEW | High | Policy example and birth-declared safe-stop/risk class | P7d | done |
 | P9 | REVIEW | High | Commissioning state machine and metadata changes (host side) | next-goal | next-goal |
 | P10 | REVIEW | High | One quality-code mapping table; manual/out-of-service codes | P7a | done |
 | P11 | REVIEW | High | Prompt injection through strings; injection fixtures | P7a | done |
-| P12 | REVIEW | High | Quiescence barrier and clock mode with a live host | P7d | open |
+| P12 | REVIEW | High | Quiescence barrier and clock mode with a live host | P7d | done |
 | P13 | REVIEW | Med | Edge realism: time source, scan class, polling failures, buffering | P7a | done |
 | P14 | REVIEW | Med | `host_state` offline semantics, version, heartbeat | P7b | done |
 | P15 | REVIEW | Med | Capability digest definition | P7a | done |
 | P16 | REVIEW | Med | `notify` alert event type and path to the session | next-goal | next-goal |
 | P17 | REVIEW | Med | Contract sync supply chain: pinned digest, safety floor, minimum version | P7a | done |
-| P18 | REVIEW | Med | Non-negotiables mapped to the wire: reference host, lying results | P7d | open |
-| P19 | REVIEW | Med | Fault layer: existing vs new protocol faults | P7c | open |
+| P18 | REVIEW | Med | Non-negotiables mapped to the wire: reference host, lying results | P7d | done |
+| P19 | REVIEW | Med | Fault layer: existing vs new protocol faults (drop, duplicate, swap, garble done in P7c; split frames, reset mid-command and reconnect storm need reconnection) | P13 | open |
 | P20 | REVIEW | Med | Gateway as a safety-relevant component | next-goal | next-goal |
 | P21 | REVIEW | Med | `state` is self-reported; independent feedback for verification | P7a | done |
 | P22 | REVIEW | Low | `device_death` "sensor outage" wording | P7a | done |
@@ -157,7 +157,15 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 | R6b-01 | self | Low | Calendar billing periods (months of unequal length) and the projected demand of the open block are not modelled; `peak` uses a fixed `period_s` | P12 | open |
 | R6b-02 | R6b | Low | A read of an integrated state further in the past than the entity's longest step returns the current value (the snapshot history covers one longest step); runs read forward, so no output is affected; return a located error or keep a longer history | P13 | open |
 | R6c-01 | R6c | Low | Oracle and audit worlds apply profile setup calls before injecting faults, so a setup call dated after a fault onset is checked (interlock, preconditions) without the fault; inject faults first or refuse setup dated after the onset | P12 | open |
-| R6c-02 | R6c | Low | A precondition refusal of a safe-stop effector becomes `ErrPlantUnavailable` in the device bridge (`completeSafeStop`); decide whether a safe-stop effector may carry `requires` | P7c | open |
+| R6c-02 | R6c | Low | A precondition refusal of a safe-stop effector becomes `ErrPlantUnavailable` in the device bridge (`completeSafeStop`); decide whether a safe-stop effector may carry `requires` | P7c | done |
 | R6e-01 | self | Med | Aggregation of dynamics inputs over typed links (`sum`, `mean`, vocabulary table §7) is in no phase: links are structure only; needed before the reference scenario models a shared header or bus across instances | P12 | open |
 | R6e-02 | R6e | Low | The stochastic fault envelope stream is keyed by the fault declaration, not the injection, so injections of one stochastic fault on several entities share one stream in read order; key it by injection (a determinism-tuple change, pinned outputs move) | P13 | open |
 | R6e-03 | R6e | Low | A direct read of an integrated state ahead of the clock (outside the look-ahead copy) commits integration and changes later emissions; production reads go through the look-ahead, so make the facade's StateValue use it too or refuse future reads | P13 | open |
+| R7c-01 | R7c | Med | `fallback_on_lease_loss` is validated but not acted on: a simulated node ends its session on host loss (the run stops), and the domain's own effector leases lapse in the world; a node that keeps running after host loss (reconnection) must apply each live command's fallback | P13 | open |
+| R7c-02 | R7c | Low | Wire-fault `swap` acts within one transmitted batch, so a swap on a batch's last record (a lone receipt, an `NSYNC`) is a no-op; apply faults over a persistent outbound buffer | P13 | open |
+| R7d-01 | R7d | Med | The node never sends `DDEATH` or quality codes beyond `good` and `warming_up`, and models no reboot (a board's `boot_id` is constant): the world has no device retirement, sensor quality or reboot event to map from (`model.SimEvent` carries no quality); the contract's `reboot-reconcile` and `queued-across-reboot` exchanges run against the host only | P13 | open |
+| R7d-02 | R7d | Low | Host loss is recorded only as three `missed` pacing records and the node's error; SPEC §8 also asks for a command-log entry, and no `NDEATH connection_lost` is synthesised: both come with reconnection | P13 | open |
+| R7d-03 | R7d | Low | SPEC §12 limits are enforced on receipt (64 KiB, 1 MiB for births, 4096 records per barrier) but not checked on send (500 metrics per `DDATA`, kinds, boards and devices per `NBIRTH`) | P13 | open |
+| R7d-04 | R7d | Low | The node checks the socket and its directory by path and does not verify the peer's credentials after dialling (`LOCAL_PEERCRED`/`SO_PEERCRED` need a platform package); the owner-only directory is the protection | next-goal | next-goal |
+| R7d-05 | R7d | Low | The reference host sends one `STATE` and no heartbeats; a simulated node needs none (the barrier is its liveness), a hardware node will | next-goal | next-goal |
+| R7d-06 | R7d | Low | `DSTATE` reports `safe_state: false`, no outputs and quality `good`, and a `DQUERY` for an unknown device is not answered | P13 | open |

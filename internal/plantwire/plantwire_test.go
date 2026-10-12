@@ -92,7 +92,7 @@ func pondRun(t *testing.T) *run.Run {
 func TestANodeServesAWholeSessionOverThePrivateSocket(t *testing.T) {
 	t.Parallel()
 	path, received := hostSocket(t)
-	options := Options{Environment: "simulated", ProtocolMax: 1, ContractVersion: "1.0.0", SessionID: "s-1", SliceNS: 60e9, UntilNS: model.DefaultStartTimeNS + 180e9}
+	options := Options{Environment: "simulated", ProtocolMax: 1, SessionID: "s-1", SliceNS: 60e9, UntilNS: model.DefaultStartTimeNS + 180e9}
 	if err := Serve(t.Context(), pondRun(t), path, 5*time.Second, options); err != nil {
 		t.Fatal(err)
 	}
@@ -114,5 +114,23 @@ func TestANodeRefusesASharedSocketAndAnnouncesThePinnedContract(t *testing.T) {
 	pinned, err := os.ReadFile(filepath.Join(testsupport.RepositoryRoot(), "contracts", "plant-wire", "DIGEST"))
 	if err != nil || ContractDigest() != strings.TrimSpace(string(pinned)) {
 		t.Fatalf("contract digest %s, pinned %s (%v)", ContractDigest(), pinned, err)
+	}
+}
+
+func TestTheHostScriptAndInventoryAreReadStrictly(t *testing.T) {
+	t.Parallel()
+	script, err := ParseScript([]byte(`[{"at_ns":5,"device":"P1","command":"start","args":{}}]`))
+	if err != nil || len(script) != 1 || script[0].Device != "P1" {
+		t.Fatalf("ParseScript = %+v, %v", script, err)
+	}
+	if _, err := ParseScript([]byte(`[{"when":5}]`)); err == nil || !strings.Contains(err.Error(), "plantwire host script") {
+		t.Fatalf("ParseScript with an unknown field = %v", err)
+	}
+	inventory, err := ParseInventory([]byte(`{"P1":"pump"}`))
+	if err != nil || inventory["P1"] != "pump" {
+		t.Fatalf("ParseInventory = %v, %v", inventory, err)
+	}
+	if _, err := ParseInventory([]byte(`[]`)); err == nil || !strings.Contains(err.Error(), "plantwire host inventory") {
+		t.Fatalf("ParseInventory of an array = %v", err)
 	}
 }

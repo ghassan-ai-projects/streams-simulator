@@ -15,7 +15,7 @@
       "pct": 70,
       "lease_ms": 30000
     },
-    "expected_boot_id": "boot-1",
+    "expected_boot_id": "board-01-boot-1",
     "deadline_ns": 1767225720000000000,
     "not_before_ns": 0,
     "authority_epoch": 1,

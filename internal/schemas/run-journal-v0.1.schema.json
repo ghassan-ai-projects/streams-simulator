@@ -20,6 +20,8 @@
     {"if": {"properties": {"type": {"const": "clock.advanced"}}}, "then": {"$ref": "#/$defs/clock_advanced"}},
     {"if": {"properties": {"type": {"const": "effector.acknowledged"}}}, "then": {"$ref": "#/$defs/effector_acknowledged"}},
     {"if": {"properties": {"type": {"const": "consumer.reported"}}}, "then": {"$ref": "#/$defs/consumer_reported"}},
+    {"if": {"properties": {"type": {"const": "wire"}}}, "then": {"$ref": "#/$defs/wire"}},
+    {"if": {"properties": {"type": {"const": "pacing"}}}, "then": {"$ref": "#/$defs/pacing"}},
     {"if": {"properties": {"type": {"const": "command"}}}, "then": {"$ref": "#/$defs/command"}},
     {"if": {"properties": {"type": {"const": "delivery"}}}, "then": {"$ref": "#/$defs/delivery"}},
     {"if": {"properties": {"type": {"const": "state"}}}, "then": {"$ref": "#/$defs/state"}},
@@ -87,6 +89,16 @@
       "description": "Observer, session. A consumer report. Not in the command log, so outside the stream digest.",
       "required": ["quiesced_through_ns", "verdict_submitted"],
       "properties": {"quiesced_through_ns": {"type": "integer", "minimum": 0}, "verdict_submitted": {"type": "boolean"}}
+    },
+    "wire": {
+      "description": "Observer, session. One plant wire record as the node sent (direction node) or received (direction host) it. Outside the stream digest: the wire is reproduced by replaying the host's records.",
+      "required": ["direction", "record"],
+      "properties": {"direction": {"enum": ["node", "host"]}, "record": {"type": "object"}}
+    },
+    "pacing": {
+      "description": "Observer, session. One plant wire barrier: the NSYNC seq it covered, the wall time the node waited and whether the wall cap expired first.",
+      "required": ["through_seq", "waited_ms", "missed"],
+      "properties": {"through_seq": {"type": "integer", "minimum": 0}, "waited_ms": {"type": "integer", "minimum": 0}, "missed": {"type": "boolean"}}
     },
     "command": {
       "description": "Director. A command-log entry.",

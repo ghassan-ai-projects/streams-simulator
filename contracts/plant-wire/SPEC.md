@@ -162,8 +162,14 @@ least 24 h plus transport delay (a gateway across restarts). A repeated key with
 and result with no second effect; with different content it is refused `duplicate`.
 
 **Safe stop.** A command the node itself declares `safe_stop` is checked only for schema, device, command and boot; it skips the
-deadline, epoch, policy and precondition checks, jumps the node's command queue and is never refused for idempotency (repeating
-it is harmless).
+deadline, epoch, policy and precondition checks, is never queued (`not_before_ns` does not apply) and is never refused for
+idempotency (repeating it is harmless). A node refuses to start when one of its safe-stop commands has device preconditions
+or an interlock.
+
+**Repeats.** A repeat of a queued command (same key and content) is answered `queued` and receives the same terminal receipt and
+result when the command runs once. A command whose acknowledgement was lost is not answered; a retry with the same key and
+content receives the stored receipt and result. A node does not check that a key is the digest of its content: a host that
+derives keys otherwise loses the protection.
 
 **Leases.** `fallback_on_lease_loss` is required. A command whose arguments carry `lease_ms` falls back when the lease lapses
 without renewal; every command falls back on host loss.

@@ -69,7 +69,7 @@ Codes shared with the MCP taxonomy (`MCP_SURFACE.md` §7) mean the same thing on
 | `replay_mismatch` | 1 | `replay`, `verify` or `score` cannot reproduce the artifact: the trace digest differs (the replay report is the `result`), or the artifact's domain, adapter or world digest no longer matches the inputs (no `result`: nothing was replayed) |
 | `adapter_verify_failed` | 1 | `adapter verify` found a schema or golden divergence, or the adapter declares nothing to check |
 | `io_failed` | 1 | Reading, writing or binding a path failed for a reason other than absence |
-| `<command>_failed` | 1 | Any other failure of that command: `catalog_failed`, `domain_failed`, `adapter_failed`, `run_failed`, `replay_failed`, `verify_failed`, `suite_failed`, `score_failed`, `manifest_failed`, `refconsumer_failed`, `device_failed`, `scenario_failed`, `report_failed` |
+| `<command>_failed` | 1 | Any other failure of that command: `catalog_failed`, `domain_failed`, `adapter_failed`, `run_failed`, `replay_failed`, `verify_failed`, `suite_failed`, `score_failed`, `manifest_failed`, `refconsumer_failed`, `device_failed`, `scenario_failed`, `report_failed`, `plantwire_failed` |
 
 **Classification precedence** (first match wins): usage, replay or verify mismatch, contract
 violation (by contract: domain → `domain_invalid`, adapter → `adapter_invalid`, scenario →
@@ -97,6 +97,8 @@ modules (`errors.As`/`errors.Is`), never message text.
 | `report <run-dir>` | The report (`run-report-v0.1`, [design](RUN_REPORT.md)); with `--out <file>`, `{report_written, format}` and the file holds the report in the chosen format. `--format markdown` requires `--out`: stdout stays one JSON document, so a Markdown rendering is only ever a file |
 | `refconsumer` | `{verdict_written, detections}` |
 | `manifest` | `{manifest_written, signed, sim}` |
+| `plantwire node` | `{run_id, out}`: the run the node served; its artifact and journal (with `wire` and `pacing` records) are in `out` |
+| `plantwire host` | The reference host's report: `{refused?, quarantined, rebirths, commands: {id: {receipts, result?, verified?}}}` |
 
 The exact shapes are the `$defs` of `cli-output-v0.1`; tests validate every command's real
 output against them.
