@@ -2,8 +2,9 @@ package domain
 
 import (
 	"fmt"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"sort"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
 func (r *Runner) admitDelivery(ev model.SimEvent) bool {

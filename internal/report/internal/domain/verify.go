@@ -1,9 +1,6 @@
 package domain
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
-
 	"github.com/ghassan-ai-projects/streams-simulator/internal/journal"
 )
 
@@ -30,7 +27,7 @@ func recordedDigests(folder Folder) []recorded {
 		return nil
 	}
 	return []recorded{
-		{"trace", art.ExpectedTraceDigest, folder.Trace, fileDigest},
+		{"trace", art.ExpectedTraceDigest, folder.Trace, canonical.DigestBytes},
 		{"journal", art.JournalDigest, folder.Observer, journal.Digest},
 		{"sealed_journal", art.SealedJournalDigest, folder.Director, journal.Digest},
 	}
@@ -59,9 +56,4 @@ func statusOf(checks []Check) string {
 		}
 	}
 	return FilesMatch
-}
-
-func fileDigest(raw []byte) string {
-	sum := sha256.Sum256(raw)
-	return "sha256:" + hex.EncodeToString(sum[:])
 }

@@ -7,6 +7,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"maps"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
 // The two streams of a journal. The observer stream carries what a consumer
@@ -25,8 +27,8 @@ const (
 
 // Run modes stamped on run.opened. An explore run is unblinded from creation.
 const (
-	ModeEvaluate = "evaluate"
-	ModeExplore  = "explore"
+	ModeEvaluate = model.ModeEvaluate
+	ModeExplore  = model.ModeExplore
 )
 
 // Reasons a run was unblinded.

@@ -24,7 +24,7 @@ layers from outside the module; gates forbid the facade from leaking them.
 | **Core with an edge** (rules plus files, sockets, timers) | facade · `internal/domain` · one edge package per external system · `internal/app` only when use cases orchestrate several layers and edges (`run`, `deviceworld`, `grading`, `release`, `refconsumer`, `suite`, `director`) | `run`, `device`, `adapter`, `domain`, `sink`, `refconsumer`, `deviceworld`, `grading`, `release`, `suite`, `director` (domain · app · capability entropy edge) |
 | **Surface** (protocol or CLI) | facade · `internal/app` or `internal/protocol` · edge packages; no rule of its own | `mcp` (protocol only: protocol · transport edge, held to it by `TestMCPHoldsOnlyProtocol`; the use cases live in `director`), `cli` (wiring only: app · files and process edges, held to it by `TestCLIHoldsOnlyWiring`) |
 | **OS edge** (the operating system, no rules) | facade · edge packages only (`files`, `sockets`, `process`); imported only by module edge packages | `kernel` |
-| **Foundation** (stateless library every module uses) | one package, no layers | `canonical`, `jsonschema`, `model`, `randutil`, `schemas`, `wall` |
+| **Foundation** (stateless library every module uses) | one package, no layers | `canonical`, `jsonschema`, `jsonvalue`, `model`, `randutil`, `schemas`, `wall` |
 
 Foundations are the standard's explicit "N/A": the sibling repository leaves
 its stateless libraries (`ids`, `clock`, `contractsv1`, …) single-package for

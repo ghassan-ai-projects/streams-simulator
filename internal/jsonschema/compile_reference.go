@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/jsonvalue"
 )
 
 // refName accepts local definition references only.
@@ -40,7 +42,7 @@ func integerValue(v any) (int, bool) {
 }
 
 func toFloat(v any) (float64, bool) {
-	return asFloat(v)
+	return jsonvalue.Number(v)
 }
 
 func numberInteger(n jsonNumber) (int, bool) {

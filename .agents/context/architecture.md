@@ -47,6 +47,7 @@ The accepted architecture is summarized in [`documentation/architecture/`](../..
 - `internal/schemas`: embedded contract sources
 - `internal/canonical`: canonical JSON encoding and digest operations
 - `internal/randutil`: seeded random streams
+- `internal/jsonvalue`: one reading of decoded JSON values: numbers of any decoded form, documents that refuse undeclared fields
 - `internal/wall`: wall-clock seam and deterministic build replacement
 - `internal/testsupport`: shipped-fixture paths and short socket paths for tests; imported only by `_test.go` files
 - `test/`: integration and end-to-end suites

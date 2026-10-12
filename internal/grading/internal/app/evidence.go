@@ -17,10 +17,10 @@ import (
 // against its contract. An empty label selects label.json in dir.
 func loadReports(dir, label string) (*model.Verdict, *model.GroundTruthRecord, error) {
 	if label == "" {
-		label = filepath.Join(dir, "label.json")
+		label = filepath.Join(dir, model.FileLabel)
 	}
 	var verdict model.Verdict
-	if err := loadDocument(filepath.Join(dir, "verdict.json"), model.ValidateVerdict, &verdict); err != nil {
+	if err := loadDocument(filepath.Join(dir, model.FileVerdict), model.ValidateVerdict, &verdict); err != nil {
 		return nil, nil, err
 	}
 	var gt model.GroundTruthRecord
@@ -46,10 +46,10 @@ func scoringEvidence(ctx context.Context, options Options, art *model.RunArtifac
 	if err != nil {
 		return score.Evidence{}, err
 	}
-	if evidence.Ledger, err = loadLedger(filepath.Join(dir, "ledger.jsonl")); err != nil {
+	if evidence.Ledger, err = loadLedger(filepath.Join(dir, model.FileLedger)); err != nil {
 		return score.Evidence{}, fmt.Errorf("streamsim: %w", err)
 	}
-	if evidence.History, err = loadHistory(filepath.Join(dir, "world_state_history.jsonl")); err != nil {
+	if evidence.History, err = loadHistory(filepath.Join(dir, model.FileHistory)); err != nil {
 		return score.Evidence{}, fmt.Errorf("streamsim: %w", err)
 	}
 	return evidence, nil

@@ -120,6 +120,6 @@ func admitRunSink(options runOptions) (runOptions, error) {
 	case options.outDir == "":
 		return runOptions{}, usagef("--sink=file requires --sink-target or --out")
 	}
-	options.sinkTarget = filepath.Join(options.outDir, "trace.jsonl")
+	options.sinkTarget = filepath.Join(options.outDir, model.FileTrace)
 	return options, nil
 }

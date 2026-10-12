@@ -1,10 +1,11 @@
 package domain
 
 import (
-	"encoding/json"
 	"fmt"
 	"maps"
 	"slices"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/jsonvalue"
 )
 
 // paramCheck validates one declared parameter value. Perturbation parameters
@@ -14,7 +15,7 @@ type paramCheck func(v any) error
 
 func numInRange[T int64 | float64](lo, hi T) paramCheck {
 	return func(v any) error {
-		f, ok := asFloat(v)
+		f, ok := jsonvalue.Number(v)
 		if !ok {
 			return fmt.Errorf("expected a number, got %T", v)
 		}
@@ -125,25 +126,6 @@ func paramsViolation(name string, params map[string]any) error {
 		}
 	}
 	return nil
-}
-
-// asFloat coerces a JSON number to float64 without accepting non-numeric
-// types. JSON numbers arrive as float64 or int64 in-process, as json.Number
-// when decoded from a command-log artifact, or as Go int from callers;
-// strings are never numeric.
-func asFloat(v any) (float64, bool) {
-	switch x := v.(type) {
-	case float64:
-		return x, true
-	case int64:
-		return float64(x), true
-	case int:
-		return float64(x), true
-	case json.Number:
-		f, err := x.Float64()
-		return f, err == nil
-	}
-	return 0, false
 }
 
 func validateParameter(name, key string, value any, rules map[string]paramCheck, declared bool) error {

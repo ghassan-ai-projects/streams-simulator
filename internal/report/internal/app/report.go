@@ -78,13 +78,13 @@ type slot struct {
 }
 
 var consumerSlots = []slot{
-	{"trace.jsonl", func(f *domain.Folder) *domain.Document { return &f.Trace }},
+	{model.FileTrace, func(f *domain.Folder) *domain.Document { return &f.Trace }},
 	{"journal.jsonl", func(f *domain.Folder) *domain.Document { return &f.Observer }},
 }
 
 var directorSlots = []slot{
 	{"sealed/journal.jsonl", func(f *domain.Folder) *domain.Document { return &f.Director }},
-	{"ledger.jsonl", func(f *domain.Folder) *domain.Document { return &f.Ledger }},
+	{model.FileLedger, func(f *domain.Folder) *domain.Document { return &f.Ledger }},
 }
 
 func loadDocuments(dir string, slots []slot) (domain.Folder, error) {
@@ -105,7 +105,7 @@ func readInto(dir string, slots []slot, folder *domain.Folder) error {
 }
 
 func loadArtifact(dir string) (*model.RunArtifact, error) {
-	artifact, err := run.LoadArtifact(filepath.Join(dir, "run.json"))
+	artifact, err := run.LoadArtifact(filepath.Join(dir, model.FileRunArtifact))
 	if errors.Is(err, fs.ErrNotExist) {
 		return nil, nil
 	}
@@ -116,7 +116,7 @@ func loadArtifact(dir string) (*model.RunArtifact, error) {
 }
 
 func loadVerdict(dir string) (*model.Verdict, error) {
-	path := filepath.Join(dir, "verdict.json")
+	path := filepath.Join(dir, model.FileVerdict)
 	doc, err := files.Read(path)
 	if err != nil || !doc.Present {
 		return nil, err

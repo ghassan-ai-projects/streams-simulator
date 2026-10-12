@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/grading"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/report/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/report/internal/files"
@@ -17,11 +19,11 @@ func scoreOf(ctx context.Context, dir string, folder domain.Folder) (*domain.Sco
 	if folder.Artifact == nil || folder.Verdict == nil {
 		return nil, nil
 	}
-	label, err := files.Read(filepath.Join(dir, "label.json"))
+	label, err := files.Read(filepath.Join(dir, model.FileLabel))
 	if err != nil || !label.Present {
 		return nil, err
 	}
-	return grade(ctx, filepath.Join(dir, "run.json"))
+	return grade(ctx, filepath.Join(dir, model.FileRunArtifact))
 }
 
 func grade(ctx context.Context, artifact string) (*domain.Scoring, error) {

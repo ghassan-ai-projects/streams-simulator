@@ -184,7 +184,7 @@ func (d *Director) finalizeRun(w *WorldRecord, worldID string) (map[string]any, 
 		return nil, rules.ToolErrorf(rules.CodeDomainInvalid, "%v", err)
 	}
 	return map[string]any{
-		"run_artifact_path": filepath.Join(dir, "run.json"),
+		"run_artifact_path": filepath.Join(dir, model.FileRunArtifact),
 		"trace_digest":      art.ExpectedTraceDigest,
 		"reproducible":      art.Reproducible,
 	}, nil

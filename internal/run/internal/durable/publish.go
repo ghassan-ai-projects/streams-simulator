@@ -37,7 +37,7 @@ func PublishEvidence(outDir string, e Evidence) error {
 	if err := publishLedger(outDir, e); err != nil {
 		return err
 	}
-	if err := writeJSONL(filepath.Join(outDir, "world_state_history.jsonl"), e.History); err != nil {
+	if err := writeJSONL(filepath.Join(outDir, model.FileHistory), e.History); err != nil {
 		return fmt.Errorf("End: %w", err)
 	}
 	return publishVerdict(outDir, e.Verdict)
@@ -52,7 +52,7 @@ func WriteRunArtifact(outDir string, art *model.RunArtifact) error {
 	if err != nil {
 		return fmt.Errorf("End: %w", err)
 	}
-	if err := kernel.WriteAtomic(filepath.Join(outDir, "run.json"), raw); err != nil {
+	if err := kernel.WriteAtomic(filepath.Join(outDir, model.FileRunArtifact), raw); err != nil {
 		return fmt.Errorf("End: %w", err)
 	}
 	return nil
@@ -70,7 +70,7 @@ func ReadArtifact(path string) ([]byte, error) {
 func publishTrace(outDir string, e Evidence) error {
 	tracePath := e.TracePath
 	if tracePath == "" {
-		tracePath = filepath.Join(outDir, "trace.jsonl")
+		tracePath = filepath.Join(outDir, model.FileTrace)
 	}
 	if err := kernel.WriteAtomic(tracePath, e.Trace); err != nil {
 		return fmt.Errorf("End: %w", err)
@@ -80,7 +80,7 @@ func publishTrace(outDir string, e Evidence) error {
 
 func publishLedger(outDir string, e Evidence) error {
 	if e.WriteLedger {
-		if err := writeJSONL(filepath.Join(outDir, "ledger.jsonl"), e.Ledger); err != nil {
+		if err := writeJSONL(filepath.Join(outDir, model.FileLedger), e.Ledger); err != nil {
 			return fmt.Errorf("End: %w", err)
 		}
 	}
@@ -90,7 +90,7 @@ func publishLedger(outDir string, e Evidence) error {
 func publishVerdict(outDir string, verdict *model.Verdict) error {
 	if verdict != nil {
 		raw, _ := json.MarshalIndent(verdict, "", "  ")
-		if err := kernel.WriteAtomic(filepath.Join(outDir, "verdict.json"), raw); err != nil {
+		if err := kernel.WriteAtomic(filepath.Join(outDir, model.FileVerdict), raw); err != nil {
 			return fmt.Errorf("End: %w", err)
 		}
 	}

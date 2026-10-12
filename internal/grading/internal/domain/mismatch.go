@@ -27,14 +27,11 @@ func (e *ReplayMismatchError) Error() string {
 // from every scorecard.
 var ErrRunUnblinded = errors.New("score: the run is stamped unblinded and is never scored")
 
-// exploreMode is the artifact mode of an explore run (journal.ModeExplore).
-const exploreMode = "explore"
-
 // RequireBlind passes a run that was not unblinded and refuses any other with
 // ErrRunUnblinded. An explore run is refused by its mode as well as by its
 // stamp, so clearing the flag in the artifact does not make it scorable.
 func RequireBlind(art *model.RunArtifact) error {
-	if art.Unblinded || art.Mode == exploreMode {
+	if art.Unblinded || art.Mode == model.ModeExplore {
 		return ErrRunUnblinded
 	}
 	return nil

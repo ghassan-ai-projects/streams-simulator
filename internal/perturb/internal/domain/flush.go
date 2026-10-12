@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"github.com/ghassan-ai-projects/streams-simulator/internal/jsonvalue"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
@@ -38,7 +39,7 @@ func isName(name string) bool {
 }
 
 func paramFloat(params map[string]any, key string, def float64) float64 {
-	if value, ok := asFloat(params[key]); ok {
+	if value, ok := jsonvalue.Number(params[key]); ok {
 		return value
 	}
 	return def

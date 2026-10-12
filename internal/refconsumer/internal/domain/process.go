@@ -3,6 +3,8 @@ package domain
 import (
 	"fmt"
 
+	"github.com/ghassan-ai-projects/streams-simulator/internal/jsonvalue"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
@@ -45,7 +47,7 @@ func (r *Runner) consumeEvent(ev model.SimEvent) int64 {
 }
 
 func (r *Runner) evaluateReading(ev model.SimEvent, s *series, t int64) {
-	v, numeric := asFloat(ev.Value)
+	v, numeric := jsonvalue.Number(ev.Value)
 	if !numeric {
 		// Heartbeats and strings refresh the presence marker.
 		markPresent(s, t)

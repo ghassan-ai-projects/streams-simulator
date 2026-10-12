@@ -81,7 +81,7 @@ func (r *Run) tracePath(outDir string) string {
 	if r.Config.SinkName == model.SinkFile && r.Config.SinkTarget != "" {
 		return r.Config.SinkTarget
 	}
-	return filepath.Join(outDir, "trace.jsonl")
+	return filepath.Join(outDir, model.FileTrace)
 }
 
 func (r *Run) finishTrace() error {

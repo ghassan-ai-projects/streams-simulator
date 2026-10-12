@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ghassan-ai-projects/streams-simulator/internal/jsonvalue"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/canonical"
 )
 
@@ -37,7 +39,7 @@ func matchesType(t string, v any) bool {
 	case "object", "array":
 		return matchesCollectionType(t, v)
 	case "number":
-		_, ok := asFloat(v)
+		_, ok := jsonvalue.Number(v)
 		return ok
 	case "integer":
 		return matchesInteger(v)
@@ -72,36 +74,13 @@ func matchesCollectionType(t string, v any) bool {
 }
 
 func matchesInteger(v any) bool {
-	number, ok := asFloat(v)
+	number, ok := jsonvalue.Number(v)
 	return ok && !math.IsInf(number, 0) && number == math.Trunc(number)
 }
 
 type jsonNumber interface {
 	Float64() (float64, error)
 	String() string
-}
-
-func asFloat(v any) (float64, bool) {
-	switch n := v.(type) {
-	case float64:
-		return n, true
-	case int:
-		return float64(n), true
-	case int64:
-		return float64(n), true
-	case uint64:
-		return float64(n), true
-	default:
-		return jsonFloat(v)
-	}
-}
-
-func jsonFloat(v any) (float64, bool) {
-	if number, ok := v.(jsonNumber); ok {
-		value, err := number.Float64()
-		return value, err == nil
-	}
-	return 0, false
 }
 
 func typeName(v any) string {
@@ -127,7 +106,7 @@ func collectionTypeName(v any) string {
 }
 
 func numericTypeName(v any) string {
-	if _, ok := asFloat(v); ok {
+	if _, ok := jsonvalue.Number(v); ok {
 		return "number"
 	}
 	return "unknown"
