@@ -43,9 +43,7 @@ func (w *World) initializeRuntime(seed uint64) {
 	w.faultsByState = map[string][]*activeFault{}
 	w.faultsByID = map[string]*activeFault{}
 	w.idempotent = map[string]*idempotentResult{}
-	w.interlockActed = map[string]bool{}
 	w.argSchemas = map[*model.Effector]*jsonschema.Schema{}
-	w.churnSeed = seed
 }
 
 func initialEntityIDs(spec *domain.Compiled, ids []string) []string {

@@ -27,9 +27,6 @@ func (r *Run) artifactCounts() model.Counts {
 	}
 }
 
-// countCommands counts the recorded commands of one operation. Faults
-// injected are counted from the command log, not from the faults still
-// active, so clearing a fault does not erase it from the run's counts.
 func (r *Run) countCommands(op string) int64 {
 	var n int64
 	for _, command := range r.commandLog {

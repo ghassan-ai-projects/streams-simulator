@@ -17,7 +17,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/truth"
 )
 
-// WorldRecord is one created world under the director's control.
 type WorldRecord struct {
 	Run       *run.Run
 	Token     string
@@ -27,23 +26,20 @@ type WorldRecord struct {
 	RunEnded  bool
 }
 
-// Director holds the director-role state: the catalog, the installed
-// adapters, the world registry, and the truth store.
 type Director struct {
 	mu               sync.Mutex
 	Catalog          *domain.Catalog
 	Adapters         map[string]*model.Adapter
 	Worlds           map[string]*WorldRecord
-	byRun            map[string]string // run id -> world id
+	byRun            map[string]string
 	byToken          map[string]*WorldRecord
-	OperatorEndpoint string // operator HTTP endpoint served by this process (CLI)
+	OperatorEndpoint string
 	Truth            *truth.Store
 	OutDir           string
 	ctx              context.Context
 	seq              int
 }
 
-// NewDirector builds the director with its registries.
 func NewDirector(ctx context.Context, cat *domain.Catalog, adapters map[string]*model.Adapter, outDir string) *Director {
 	d := &Director{
 		Catalog: cat, Adapters: adapters, Worlds: map[string]*WorldRecord{},
@@ -54,9 +50,6 @@ func NewDirector(ctx context.Context, cat *domain.Catalog, adapters map[string]*
 	return d
 }
 
-// ResolveOperator returns the operator view for a capability token. This is
-// what lets one operator endpoint serve every world: the token, not the
-// connection, names the world.
 func (d *Director) ResolveOperator(token string) (*rules.OperatorView, error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
@@ -67,23 +60,18 @@ func (d *Director) ResolveOperator(token string) (*rules.OperatorView, error) {
 	return rec.Operator, nil
 }
 
-// SetOperatorEndpoint records the operator HTTP endpoint this process serves
-// (CLI wiring); sim.world.create includes it in its response.
 func (d *Director) SetOperatorEndpoint(endpoint string) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	d.OperatorEndpoint = endpoint
 }
 
-// World returns the record for a world id, or nil.
 func (d *Director) World(worldID string) *WorldRecord {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	return d.Worlds[worldID]
 }
 
-// RunOf is the run behind a world, or nil: the test harness's handle on the
-// run beneath the tools (see Director.RunOf in the facade).
 func (d *Director) RunOf(worldID string) *run.Run {
 	if w := d.World(worldID); w != nil {
 		return w.Run
@@ -91,11 +79,6 @@ func (d *Director) RunOf(worldID string) *run.Run {
 	return nil
 }
 
-// openRun marks the world's run opened once its truth is sealed. The seal is
-// read before taking the director lock: the truth store calls back into the
-// director while holding its own lock, so the two are never nested the other
-// way round. The started flag is checked and set in one step, so two callers
-// cannot both open the run.
 func (d *Director) openRun(w *WorldRecord, worldID string) error {
 	if err := d.requireSealedRun(w.Run.ID); err != nil {
 		return err
@@ -109,15 +92,12 @@ func (d *Director) openRun(w *WorldRecord, worldID string) error {
 	return nil
 }
 
-// runLifecycle reports whether the world's run has been opened and ended.
 func (d *Director) runLifecycle(w *WorldRecord) (started, ended bool) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	return w.Started, w.RunEnded
 }
 
-// markRunEnded records that the world's run is over, whether or not it
-// ended cleanly.
 func (d *Director) markRunEnded(w *WorldRecord) {
 	if !w.Run.Finished() {
 		return
@@ -132,7 +112,7 @@ func (d *Director) runIsOpen(runID string) bool {
 	defer d.mu.Unlock()
 	worldID, ok := d.byRun[runID]
 	if !ok {
-		return true // a run the director does not know is never treated as closed
+		return true
 	}
 	w := d.Worlds[worldID]
 	return w != nil && !w.RunEnded

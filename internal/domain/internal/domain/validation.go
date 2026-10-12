@@ -6,10 +6,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-// crossCheck validates every cross-reference in the spec: channels observe
-// declared states, faults affect declared states, effectors touch declared
-// states, detector expressions name declared channels, and so on. The JSON
-// schema cannot express these.
 func crossCheck(c *Compiled, src string) error {
 	checks := domainChecks{compiled: c, source: src}
 	if err := checks.checkInstances(); err != nil {

@@ -5,8 +5,6 @@ import (
 	"fmt"
 )
 
-// stringArg reads a string argument, "" when absent or not a string. The argument
-// readers decode the JSON-RPC argument maps the tools receive.
 func stringArg(args map[string]any, key string) string {
 	if args == nil {
 		return ""
@@ -17,7 +15,6 @@ func stringArg(args map[string]any, key string) string {
 	return ""
 }
 
-// numberArg reads an integer argument, def when absent or not an integer.
 func numberArg(args map[string]any, key string, def int64) int64 {
 	value, ok := intArg(args, key)
 	if ok {
@@ -26,7 +23,6 @@ func numberArg(args map[string]any, key string, def int64) int64 {
 	return def
 }
 
-// intArg reads an integer argument and reports whether it was present and valid.
 func intArg(args map[string]any, key string) (int64, bool) {
 	value, ok := args[key]
 	if !ok {

@@ -19,7 +19,7 @@ type runOptions struct {
 	seed                                         uint64
 	durationS                                    float64
 	startTime                                    int64
-	explicit                                     []string // flags given on the command line
+	explicit                                     []string
 }
 
 func parseRunOptions(args []string, stderr io.Writer) (runOptions, error) {
@@ -34,9 +34,6 @@ func parseRunOptions(args []string, stderr io.Writer) (runOptions, error) {
 	return admitRunOptions(options)
 }
 
-// registerScenarioFlags registers what a scenario defines: the inputs, the
-// world settings and the scripted commands. A scenario file defines exactly
-// these, so they are refused beside --scenario (scenarioDefinedFlags).
 func registerScenarioFlags(fs *flag.FlagSet, options *runOptions) {
 	fs.StringVar(&options.domainID, "domain", "", "domain id")
 	fs.StringVar(&options.adapterID, "adapter", "native-jsonl", "adapter id")
@@ -49,8 +46,6 @@ func registerScenarioFlags(fs *flag.FlagSet, options *runOptions) {
 	fs.Var(&options.effectors, "effector", `repeatable: effector@entity@offset_s[@{"arg":value}]`)
 }
 
-// registerExecutionFlags registers how a scenario is executed: where its
-// inputs are looked up, the scenario file itself and where the run goes.
 func registerExecutionFlags(fs *flag.FlagSet, options *runOptions) {
 	registerInputDirs(fs, &options.domainsDir, &options.adaptersDir)
 	fs.StringVar(&options.scenarioPath, "scenario", "", "scenario file (scenario-v0.1) defining the run")
@@ -60,7 +55,6 @@ func registerExecutionFlags(fs *flag.FlagSet, options *runOptions) {
 	fs.BoolVar(&options.explore, "explore", false, "explore mode: stamp the run unblinded from creation; it is never scored")
 }
 
-// registerDomainFlags registers where the domains live and which one to use.
 func registerDomainFlags(fs *flag.FlagSet, dir, id *string) {
 	registerDomainsDir(fs, dir, "domains")
 	fs.StringVar(id, "domain", "", "domain id")
@@ -82,7 +76,6 @@ func admitRunOptions(options runOptions) (runOptions, error) {
 	return admitRunSink(options)
 }
 
-// admitScenarioRun refuses the flags a scenario file defines.
 func admitScenarioRun(options runOptions) (runOptions, error) {
 	defined := scenarioDefinedFlags()
 	var conflicting []string
@@ -97,9 +90,6 @@ func admitScenarioRun(options runOptions) (runOptions, error) {
 	return admitRunSink(options)
 }
 
-// scenarioDefinedFlags names the flags a scenario file defines: exactly the
-// ones registerScenarioFlags registers, so a new one cannot be missed
-// (docs/design/SCENARIO_FILE.md §3).
 func scenarioDefinedFlags() map[string]bool {
 	fs := flag.NewFlagSet("scenario", flag.ContinueOnError)
 	registerScenarioFlags(fs, &runOptions{})
@@ -108,7 +98,6 @@ func scenarioDefinedFlags() map[string]bool {
 	return defined
 }
 
-// admitRunSink checks the sink choice and derives the file target from --out.
 func admitRunSink(options runOptions) (runOptions, error) {
 	switch {
 	case options.sinkName != model.SinkInproc && options.sinkName != model.SinkFile && options.sinkName != model.SinkHTTPPush:

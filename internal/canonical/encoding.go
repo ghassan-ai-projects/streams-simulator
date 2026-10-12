@@ -128,7 +128,7 @@ func objectKeys(m map[string]any) ([]string, error) {
 		}
 		keys = append(keys, k)
 	}
-	// RFC 8785 §3.2.3: sort by UTF-16 code units, not code points.
+
 	sort.Slice(keys, func(i, j int) bool { return utf16Less(keys[i], keys[j]) })
 	return keys, nil
 }
@@ -175,7 +175,6 @@ func writeStringRune(b *strings.Builder, r rune) {
 	}
 }
 
-// Escapes preserve the existing digest representation, including U+2028/2029.
 var escapedRunes = map[rune]string{
 	'"': `\"`, '\\': `\\`, '\b': `\b`, '\f': `\f`, '\n': `\n`,
 	'\r': `\r`, '\t': `\t`, 0x2028: `\u2028`, 0x2029: `\u2029`,

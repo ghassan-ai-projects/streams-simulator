@@ -6,7 +6,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-// History returns the world-state history (director-only).
 func (r *Run) History() []model.StateSnapshot {
 	r.commandMu.Lock()
 	defer r.commandMu.Unlock()
@@ -18,7 +17,6 @@ func (r *Run) History() []model.StateSnapshot {
 	return out
 }
 
-// RecordHistory snapshots hidden state for post-hoc analysis.
 func (r *Run) RecordHistory(seq int64, atNS int64, entity string, states map[string]float64) {
 	r.history = append(r.history, model.StateSnapshot{Seq: seq, TimeNS: atNS, Entity: entity, States: maps.Clone(states)})
 }

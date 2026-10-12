@@ -4,64 +4,41 @@ import (
 	"sync"
 )
 
-// Config configures a device instance. Identity and firmware digest default to
-// fixed deterministic values matching the vendored contract's golden state
-// frame. When Capabilities is supplied, its canonical digest is authoritative.
 type Config struct {
 	DeviceID         string
 	BootID           string
 	FirmwareDigest   string
 	CapabilityDigest string
-	// Plant is the physical process the device actuates. When nil, the device
-	// derives the output value/energized state from the capability catalog's
-	// declared energize_field (no external plant); bind a world-backed Plant to
-	// make the world the effector oracle.
+
 	Plant Plant
-	// Clock returns the device monotonic time in microseconds. It must be
-	// monotonic non-decreasing. Defaults to a manual clock starting at 0.
+
 	Clock func() int64
-	// Capabilities is the device's data-defined capability catalog (loaded via
-	// LoadCapabilities). When nil the device declares no targets and rejects
-	// every command wrong_target — capabilities are never hard-coded.
+
 	Capabilities *Capabilities
-	// FaultSchedule is an optional deterministic schedule of protocol faults.
-	// Invalid schedules should be rejected with ValidateFaultSchedule before
-	// constructing a device.
+
 	FaultSchedule []FaultInjection
 }
 
-// Faults is the injectable protocol fault state. Zero value is a healthy
-// device. Faults are applied to the next accepted command until cleared.
 type Faults struct {
-	// AckLost withholds the receipt from the wire even though the effect is
-	// applied — the upstream sees an unknown outcome, not a failure.
 	AckLost bool
-	// Stuck accepts and "executes" the command but the plant does not move:
-	// energized stays false. This is the desired≠observed case.
+
 	Stuck bool
 }
 
-// Outcome is the device's response to one command.
 type Outcome struct {
-	Receipt map[string]any // the receipt record (always populated)
-	Result  map[string]any // the terminal result record (always populated)
-	// AckLost is true when an ack_lost fault means the receipt must NOT be
-	// written to the wire, even though Result records what actually happened.
+	Receipt map[string]any
+	Result  map[string]any
+
 	AckLost bool
-	// Duplicate asks the gateway loop to deliver this command to the device a
-	// second time. The device's idempotency ledger still applies it once.
+
 	Duplicate bool
-	// Disconnect asks the gateway loop to close the current connection after
-	// handling this command.
+
 	Disconnect bool
-	// Fault and AcceptedCommand are local evidence for deterministic fault logs;
-	// neither field is serialized onto the device wire.
+
 	Fault           string
 	AcceptedCommand int
 }
 
-// Device is a wire-faithful serial device emulator. It is safe for use by one
-// gateway connection at a time; methods are mutex-guarded.
 type Device struct {
 	mu               sync.Mutex
 	deviceID         string
@@ -75,7 +52,7 @@ type Device struct {
 	faultSchedule    map[int][]string
 	acceptedCommands int
 
-	dedup            map[string]dedupEntry // idempotency_key -> prior semantic command/outcome
+	dedup            map[string]dedupEntry
 	curTarget        string
 	curOp            string
 	curValue         float64
@@ -89,14 +66,12 @@ type dedupEntry struct {
 	outcome Outcome
 }
 
-// New builds a device from cfg, applying deterministic defaults.
 func New(cfg Config) *Device {
 	d := configuredDevice(cfg)
 	if cfg.Clock != nil {
 		d.clock = cfg.Clock
 	} else {
-		// A device built without a clock reads time zero: nothing advances
-		// it, so a lease never expires on its own.
+
 		d.clock = func() int64 { return 0 }
 	}
 	return d

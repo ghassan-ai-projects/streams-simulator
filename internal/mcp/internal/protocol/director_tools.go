@@ -5,10 +5,8 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-// directorTools are the director role's tool handlers over one director.
 type directorTools struct{ *director.Director }
 
-// NewDirectorServer builds the director-role server.
 func NewDirectorServer(dir *director.Director) *mcp.Server {
 	d := directorTools{dir}
 	s := mcp.NewServer(implementation, nil)

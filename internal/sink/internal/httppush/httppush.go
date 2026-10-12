@@ -12,9 +12,6 @@ import (
 	"time"
 )
 
-// HTTPPush posts each line to an endpoint. Delivery is immediate and in
-// order, so the sink is byte-deterministic. There is no real-time (wall)
-// sub-mode: withholding by observed time is the perturbation layer's job.
 type HTTPPush struct {
 	url    string
 	client *http.Client
@@ -23,7 +20,6 @@ type HTTPPush struct {
 	ctx    context.Context
 }
 
-// New builds the sink. ctx cancels the run.
 func New(ctx context.Context, url string) *HTTPPush {
 	return &HTTPPush{
 		url:    url,
@@ -32,7 +28,6 @@ func New(ctx context.Context, url string) *HTTPPush {
 	}
 }
 
-// Write posts one line, recording it for the digest.
 func (s *HTTPPush) Write(line []byte) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -49,7 +44,6 @@ func (s *HTTPPush) Write(line []byte) error {
 	return nil
 }
 
-// Close returns the delivered bytes (in delivery order).
 func (s *HTTPPush) Close() ([]byte, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

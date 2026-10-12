@@ -8,33 +8,26 @@ import (
 )
 
 const (
-	// FaultAckLost withholds a receipt after an otherwise accepted command.
 	FaultAckLost = "ack_lost"
-	// FaultStuck acknowledges a command without applying it to the plant.
+
 	FaultStuck = "stuck"
-	// FaultReboot changes boot identity after the selected command.
+
 	FaultReboot = "reboot"
-	// FaultDuplicate makes the device receive the selected command twice.
+
 	FaultDuplicate = "duplicate"
-	// FaultStale forces a command that passed normal admission to be not_ready.
+
 	FaultStale = "stale"
-	// FaultExpired forces a command that passed normal admission to be expired.
+
 	FaultExpired = "expired"
-	// FaultDisconnect closes the current gateway connection after the command.
+
 	FaultDisconnect = "disconnect"
 )
 
-// FaultInjection schedules one deterministic protocol fault at an admission
-// ordinal. The ordinal counts commands that pass the normal boot, freshness,
-// target, operation, and bounds checks, including a command deliberately
-// changed to stale or expired by this schedule.
 type FaultInjection struct {
 	Name            string
 	AcceptedCommand int
 }
 
-// ValidateFaultSchedule rejects unknown fault names and invalid command
-// ordinals before a device starts listening.
 func ValidateFaultSchedule(schedule []FaultInjection) error {
 	for _, injection := range schedule {
 		if !knownFault(injection.Name) {
@@ -56,9 +49,6 @@ func knownFault(name string) bool {
 	}
 }
 
-// ParseFaultSpec parses the CLI form name[@n], where n is the one-based
-// accepted-command ordinal. Without @n the fault applies to the first
-// admission-valid command.
 func ParseFaultSpec(spec string) (FaultInjection, error) {
 	name, text, present := strings.Cut(spec, "@")
 	if name == "" || strings.Contains(text, "@") {

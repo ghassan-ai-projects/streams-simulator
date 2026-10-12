@@ -1,11 +1,5 @@
 package domain
 
-// World faults: applied inside the world core, they change hidden state and
-// are what a consumer is supposed to diagnose. They are distinct from
-// delivery perturbations (the observer is unreliable) and environment faults
-// (the consumer is broken) — three independently seeded injection surfaces,
-// never conflated.
-
 import (
 	"encoding/json"
 	"fmt"
@@ -17,7 +11,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-// FaultInfo describes one active fault (director role only).
 type FaultInfo struct {
 	FaultID  string  `json:"fault_id"`
 	EntityID string  `json:"entity_id"`
@@ -26,8 +19,6 @@ type FaultInfo struct {
 	Severity float64 `json:"severity,omitempty"`
 }
 
-// InjectFault applies a declared fault to an entity. onsetNS defaults to the
-// current clock. params.severity scales the fault's deltas.
 func (w *World) InjectFault(entityID, faultID string, onsetNS int64, params map[string]any) (string, error) {
 	fault := w.Spec.Fault(faultID)
 	if fault == nil {
@@ -43,8 +34,6 @@ func (w *World) InjectFault(entityID, faultID string, onsetNS int64, params map[
 	return w.admitFaultInjection(fault, entityID, faultID, onsetNS, params)
 }
 
-// faultSeverity is the severity an injection applies: the declared onset
-// magnitude, or the severity parameter.
 func faultSeverity(fault *model.Fault, faultID string, params map[string]any) (float64, error) {
 	severity, err := parameterSeverity(fault, faultID, params)
 	if err != nil {
@@ -53,9 +42,6 @@ func faultSeverity(fault *model.Fault, faultID string, params map[string]any) (f
 	return severity, nil
 }
 
-// CheckFaultParams reports whether the domain declares faultID and params
-// are parameters it accepts, without injecting it. The error states the
-// violation.
 func (w *World) CheckFaultParams(faultID string, params map[string]any) error {
 	fault := w.Spec.Fault(faultID)
 	if fault == nil {
@@ -76,7 +62,6 @@ func parameterSeverity(fault *model.Fault, faultID string, params map[string]any
 	return declaredSeverity(severity, params)
 }
 
-// ClearFault removes a fault's contribution from the given time onward.
 func (w *World) ClearFault(faultID string, atNS int64) error {
 	af, ok := w.faultsByID[faultID]
 	if !ok {
@@ -92,8 +77,6 @@ func (w *World) ClearFault(faultID string, atNS int64) error {
 	return nil
 }
 
-// ListFaults returns the active faults (faults whose contribution is still
-// in force at the current clock).
 func (w *World) ListFaults() []FaultInfo {
 	var out []FaultInfo
 	for _, id := range w.faultOrder {
@@ -106,12 +89,11 @@ func (w *World) ListFaults() []FaultInfo {
 	return out
 }
 
-// ActiveFaultsCount is the number of faults in force at the current clock.
 func (w *World) ActiveFaultsCount() int { return len(w.ListFaults()) }
 
 func (w *World) registerFault(fault *model.Fault, entity string, onset int64, severity float64) string {
 	active := &activeFault{fault: fault, entity: entity, onsetNS: onset, severity: severity}
-	// Stochastic envelopes start at onset, avoiding epoch-length replay.
+
 	if fault.Onset.Shape == "stochastic" {
 		active.walkStep = onset
 	}

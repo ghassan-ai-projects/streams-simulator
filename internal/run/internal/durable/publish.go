@@ -11,22 +11,16 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-// Evidence is what a finished run publishes beside its artifact.
 type Evidence struct {
-	// TracePath is where the delivered trace is written; empty selects
-	// trace.jsonl under the output directory.
 	TracePath string
 	Trace     []byte
-	// Ledger is written as ledger.jsonl unless the ledger was already kept
-	// durably (WriteLedger false).
+
 	Ledger      []model.LedgerRecord
 	WriteLedger bool
 	History     []model.StateSnapshot
 	Verdict     *model.Verdict
 }
 
-// PublishEvidence writes the run's evidence files under outDir: trace,
-// ledger, world-state history and, when one was submitted, the verdict.
 func PublishEvidence(outDir string, e Evidence) error {
 	if err := kernel.PrivateDir(outDir); err != nil {
 		return fmt.Errorf("End: %w", err)
@@ -43,7 +37,6 @@ func PublishEvidence(outDir string, e Evidence) error {
 	return publishVerdict(outDir, e.Verdict)
 }
 
-// WriteRunArtifact writes run.json under outDir ("" writes nothing).
 func WriteRunArtifact(outDir string, art *model.RunArtifact) error {
 	if outDir == "" {
 		return nil
@@ -58,7 +51,6 @@ func WriteRunArtifact(outDir string, art *model.RunArtifact) error {
 	return nil
 }
 
-// ReadArtifact reads the raw bytes of a run artifact file.
 func ReadArtifact(path string) ([]byte, error) {
 	raw, err := kernel.Read(path)
 	if err != nil {

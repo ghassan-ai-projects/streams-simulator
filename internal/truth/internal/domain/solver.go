@@ -17,10 +17,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
-// Solver computes the observability timestamps of a fault by running the
-// world twice — once clean, once faulted, both noiseless — and finding when
-// the detector quantity crosses the declared SNR thresholds. It reuses the
-// verified integrator instead of deriving closed forms per detector form.
 type Solver struct {
 	spec         *domain.Compiled
 	seed         uint64
@@ -28,9 +24,6 @@ type Solver struct {
 	maxHorizonNS int64
 }
 
-// NewSolver builds a solver. sampleNS is the resolution of the onset scan;
-// maxHorizonNS caps how far the scan looks before declaring a fault
-// unobservable.
 func NewSolver(spec *domain.Compiled, seed uint64, sampleNS, maxHorizonNS int64) *Solver {
 	if sampleNS <= 0 {
 		sampleNS = 60 * 1e9
@@ -41,7 +34,6 @@ func NewSolver(spec *domain.Compiled, seed uint64, sampleNS, maxHorizonNS int64)
 	return &Solver{spec: spec, seed: seed, sampleNS: sampleNS, maxHorizonNS: maxHorizonNS}
 }
 
-// result is the solved observability of one injection.
 type result struct {
 	FirstObservableNS int64    `json:"first_observable_time_ns"`
 	UnavoidableNS     int64    `json:"unavoidable_time_ns"`
@@ -50,14 +42,9 @@ type result struct {
 	Method            string   `json:"solution_method"`
 	Channels          []string `json:"channels"`
 
-	// firstFound and unavoidableFound say whether each threshold was
-	// crossed: the timestamps alone cannot, because epoch zero is a legal
-	// time.
 	firstFound, unavoidableFound bool
 }
 
-// solve computes the onset timestamps for a fault injected at onsetNS on
-// entityID. The world ids must be shared so the two runs' substreams align.
 func (s *Solver) solve(entityID, faultID string, onsetNS int64, startNS int64, entityIDs []string, setup []model.SetupCall) (*result, error) {
 	fault := s.spec.Fault(faultID)
 	if fault == nil {
@@ -88,8 +75,6 @@ func (s *Solver) buildWorld(entityID string, startNS int64, entityIDs []string, 
 	return w, nil
 }
 
-// quantity evaluates the detector expression: the deviation between the
-// faulted and clean worlds at time t.
 func (s *Solver) quantity(entityID string, det *model.Detector, clean, faulted *world.World, t int64, entityIDs []string) float64 {
 	switch det.Form {
 	case model.DetectorSingleChannel:
@@ -121,11 +106,6 @@ func (s *Solver) balance(channels []string, w *world.World, t int64, entityID st
 	return sum
 }
 
-// effectiveSigma is the detector's noise floor after the form's propagation
-// rule: a divergence combines sigmas in quadrature, a peer residual pools
-// the sibling variance, a conservation residual sums over the balance.
-// peers is the number of entities the world actually holds: a peer residual
-// pools over those, whether or not the caller named them.
 func (s *Solver) effectiveSigma(entityID string, det *model.Detector, peers int) float64 {
 	switch det.Form {
 	case model.DetectorSingleChannel:

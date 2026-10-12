@@ -1,10 +1,7 @@
 package domain
 
-// transform applies one active perturbation to the records of one event.
 type transform func(l *Layer, a *applied, recs []Delivered, atNS int64) []Delivered
 
-// transforms maps every catalog name to the function that applies it. Apply
-// admits only catalog names, so a name always has an entry.
 var transforms = map[string]transform{
 	DuplicateBurst: (*Layer).duplicateRecords,
 	IDReuse:        (*Layer).reuseIdentity,

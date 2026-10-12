@@ -8,16 +8,12 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-// ErrUnknownDomain is returned by Describe for an id the catalog does not hold.
 var ErrUnknownDomain = errors.New("unknown domain")
 
-// Catalog is the set of installed domains, with list/describe/coverage
-// operations. It is the director role's catalog surface.
 type Catalog struct {
 	domains []*Compiled
 }
 
-// NewCatalog builds a catalog from loaded domain specs, sorted by id.
 func NewCatalog(domains []*Compiled) *Catalog {
 	sorted := make([]*Compiled, len(domains))
 	copy(sorted, domains)
@@ -25,7 +21,6 @@ func NewCatalog(domains []*Compiled) *Catalog {
 	return &Catalog{domains: sorted}
 }
 
-// Entry is one row of the catalog list.
 type Entry struct {
 	ID       string   `json:"id"`
 	Title    string   `json:"title"`
@@ -34,9 +29,6 @@ type Entry struct {
 	Stresses string   `json:"stresses"`
 }
 
-// List returns catalog entries, optionally filtered by group. The group
-// concept is an organizational label in the docs; the binary groups by
-// nothing but id, so the filter matches the domain id prefix.
 func (c *Catalog) List(group string) []Entry {
 	var out []Entry
 	for _, d := range c.domains {
@@ -48,7 +40,6 @@ func (c *Catalog) List(group string) []Entry {
 	return out
 }
 
-// Describe returns the full spec for a domain id.
 func (c *Catalog) Describe(id string) (*Compiled, error) {
 	for _, d := range c.domains {
 		if d.Spec.ID == id {
@@ -58,16 +49,12 @@ func (c *Catalog) Describe(id string) (*Compiled, error) {
 	return nil, fmt.Errorf("catalog: %w %q", ErrUnknownDomain, id)
 }
 
-// CoverageReport is the axis-coverage matrix: which axis values are
-// exercised, and which are thin.
 type CoverageReport struct {
-	// ByAxis maps axis name -> value -> number of domains carrying it.
 	ByAxis map[string]map[string]int `json:"by_axis"`
-	// Thin lists axis values covered by fewer than two domains.
+
 	Thin []string `json:"thin"`
 }
 
-// Coverage computes the axis-coverage matrix across the catalog.
 func (c *Catalog) Coverage() CoverageReport {
 	by := coverageCounts()
 	for _, d := range c.domains {

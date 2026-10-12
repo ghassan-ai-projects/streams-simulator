@@ -6,8 +6,6 @@ import (
 	"slices"
 )
 
-// Compile builds a Schema from a decoded JSON Schema document. Definitions are
-// registered before the root is filled so recursive references remain valid.
 func Compile(doc any) (*Schema, error) {
 	m, ok := doc.(map[string]any)
 	if !ok {

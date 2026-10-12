@@ -8,9 +8,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-// IsScenarioOp reports whether a command-log operation is a scenario command
-// (docs/design/SCENARIO_FILE.md §2). The run's lifecycle records and the
-// record-only env.inject are not.
 func IsScenarioOp(op string) bool {
 	switch op {
 	case model.OpClockAdvance, model.OpFaultInject, model.OpFaultClear, model.OpPerturbApply,
@@ -22,10 +19,6 @@ func IsScenarioOp(op string) bool {
 
 var scenarioIDPattern = regexp.MustCompile(`^[a-z][a-z0-9-]{0,63}$`)
 
-// ScenarioFromArtifact is the scenario that reproduces a recorded run: its
-// inputs and every command-log entry that is a scenario command, in order,
-// with copies of their arguments. It also returns how many entries were
-// omitted.
 func ScenarioFromArtifact(art *model.RunArtifact) (*model.Scenario, int) {
 	scenario := &model.Scenario{SchemaVersion: model.ScenarioSchemaVersion, ID: exportedScenarioID(art.RunID),
 		Domain: art.Domain.ID, Adapter: art.Adapter.ID, Seed: art.Seed, World: scenarioWorld(art.WorldConfig),
@@ -41,9 +34,6 @@ func ScenarioFromArtifact(art *model.RunArtifact) (*model.Scenario, int) {
 	return scenario, omitted
 }
 
-// scenarioArgs copies a logged command's arguments into a scenario command.
-// A clock advance keeps only its target: whether a live consumer was awaited
-// is pacing of that session, not an input to the world (SCENARIO_FILE §2).
 func scenarioArgs(op string, args map[string]any) map[string]any {
 	copied := cloneObject(args)
 	if op == model.OpClockAdvance {
@@ -52,17 +42,11 @@ func scenarioArgs(op string, args map[string]any) map[string]any {
 	return copied
 }
 
-// JournalCommand is a command-log entry as the journal records it. A clock
-// advance keeps only its target, as in a scenario: whether a live session
-// waited for its consumer is pacing, which replay does not reproduce, so it is
-// not part of the journal's replay identity.
 func JournalCommand(command model.Command) model.Command {
 	command.Args = scenarioArgs(command.Op, command.Args)
 	return command
 }
 
-// cloneValue deep-copies a decoded JSON value; a nil object or array stays
-// nil, so it still encodes as null.
 func cloneValue(value any) any {
 	switch typed := value.(type) {
 	case map[string]any:
@@ -96,8 +80,6 @@ func cloneArray(array []any) []any {
 	return copied
 }
 
-// exportedScenarioID names an exported scenario after its run when the run id
-// is a valid scenario id.
 func exportedScenarioID(runID string) string {
 	if scenarioIDPattern.MatchString(runID) {
 		return runID
@@ -111,9 +93,6 @@ func scenarioWorld(config model.WorldConfig) model.ScenarioWorld {
 		ClockMultiplier: config.ClockMultiplier}
 }
 
-// ScenarioFacts answers what the static scenario check needs to know about
-// the domain and the perturbation catalog. A Check method's error states the
-// violation.
 type ScenarioFacts interface {
 	HasProfile(name string) bool
 	HasFault(id string) bool
@@ -125,12 +104,6 @@ type ScenarioFacts interface {
 	CheckEffectorArgs(effector string, args map[string]any) error
 }
 
-// CheckScenario returns every way a scenario's world settings and commands
-// break the domain, the perturbation catalog or the run's rules, as far as
-// that is known before the run unfolds (SCENARIO_FILE §3), each located in
-// the scenario document. Facts that depend on the run as it goes (which
-// entities exist, the ids it assigns) are not checked here. An empty result
-// means the scenario may be tried.
 func CheckScenario(scenario *model.Scenario, facts ScenarioFacts) []model.Issue {
 	var issues []model.Issue
 	if scenario.World.Profile != "" && !facts.HasProfile(scenario.World.Profile) {

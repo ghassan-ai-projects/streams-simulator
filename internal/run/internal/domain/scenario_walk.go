@@ -6,9 +6,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-// scenarioWalk follows a scenario's commands in order, tracking the clock it
-// advances, so each command is checked as it will be when it runs. index is
-// the command being checked, so every issue points at its argument.
 type scenarioWalk struct {
 	facts ScenarioFacts
 	start int64
@@ -20,8 +17,6 @@ func newScenarioWalk(facts ScenarioFacts, startNS int64) *scenarioWalk {
 	return &scenarioWalk{facts: facts, start: startNS, clock: startNS}
 }
 
-// check returns the issues of one command; a command whose times are not
-// exact is not checked further, since its effect cannot be known.
 func (walk *scenarioWalk) check(index int, command *model.ScenarioCommand) []model.Issue {
 	walk.index = index
 	if issues := walk.times(command); len(issues) > 0 {
@@ -30,7 +25,6 @@ func (walk *scenarioWalk) check(index int, command *model.ScenarioCommand) []mod
 	return walk.operation(command)
 }
 
-// times checks that every time argument of the command is an exact integer.
 func (walk *scenarioWalk) times(command *model.ScenarioCommand) []model.Issue {
 	var issues []model.Issue
 	for _, key := range timeArguments(command.Op) {
@@ -41,7 +35,6 @@ func (walk *scenarioWalk) times(command *model.ScenarioCommand) []model.Issue {
 	return issues
 }
 
-// timeArguments names the time arguments of a scenario command.
 func timeArguments(op string) []string {
 	switch op {
 	case model.OpClockAdvance:
@@ -56,7 +49,6 @@ func timeArguments(op string) []string {
 	return nil
 }
 
-// operation checks what the command itself names or changes.
 func (walk *scenarioWalk) operation(command *model.ScenarioCommand) []model.Issue {
 	switch command.Op {
 	case model.OpClockAdvance:
@@ -71,7 +63,6 @@ func (walk *scenarioWalk) operation(command *model.ScenarioCommand) []model.Issu
 	return nil
 }
 
-// issue is one issue of the named argument of the command being checked.
 func (walk *scenarioWalk) issue(field, format string, args ...any) []model.Issue {
 	pointer := fmt.Sprintf("/commands/%d/args/%s", walk.index, field)
 	return []model.Issue{model.LocatedIssue(pointer, fmt.Sprintf(format, args...))}

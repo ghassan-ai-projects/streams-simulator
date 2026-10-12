@@ -9,8 +9,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
-// SelectEntity is the world entity the device targets are bound to: the one
-// named, or the first entity of the world when none is.
 func SelectEntity(w *world.World, entity string) (string, error) {
 	if entity == "" {
 		ids := w.EntityIDs()
@@ -25,9 +23,6 @@ func SelectEntity(w *world.World, entity string) (string, error) {
 	return entity, nil
 }
 
-// ValidateComposition checks the bindings against the world and the device's
-// capability catalog before a listener is opened: every bound target and every
-// safe stop the catalog declares for a bound target must be executable.
 func ValidateComposition(w *world.World, bindings map[string]Binding, caps *device.Capabilities) error {
 	targets := slices.Sorted(maps.Keys(bindings))
 	stops := safeStops(bindings, caps)

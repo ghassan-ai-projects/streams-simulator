@@ -13,8 +13,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/score"
 )
 
-// loadReports reads the consumer's verdict and the sealed label, each checked
-// against its contract. An empty label selects label.json in dir.
 func loadReports(dir, label string) (*model.Verdict, *model.GroundTruthRecord, error) {
 	if label == "" {
 		label = filepath.Join(dir, model.FileLabel)
@@ -38,9 +36,6 @@ func loadDocument(path string, validate func([]byte) error, dst any) error {
 	return domain.DecodeDocument(raw, path, validate, dst)
 }
 
-// scoringEvidence assembles everything the scorer needs except the verdict:
-// the replayed identity, domain and effector calls, and the published ledger
-// and state history.
 func scoringEvidence(ctx context.Context, options Options, art *model.RunArtifact, dir string) (score.Evidence, error) {
 	evidence, err := replayedEvidence(ctx, options, art)
 	if err != nil {
@@ -55,9 +50,6 @@ func scoringEvidence(ctx context.Context, options Options, art *model.RunArtifac
 	return evidence, nil
 }
 
-// replayedEvidence replays the artifact and returns the evidence it can
-// state on its own: identity, domain, effector calls, perturbations, counts
-// and the reproducible/unblinded stamps.
 func replayedEvidence(ctx context.Context, options Options, art *model.RunArtifact) (score.Evidence, error) {
 	spec, adap, err := replayInputs(options, art)
 	if err != nil {

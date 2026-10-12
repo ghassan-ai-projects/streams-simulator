@@ -23,7 +23,6 @@ func substituteEntity(in map[string]any, entity string) map[string]any {
 	return out
 }
 
-// buildCommandLog renders the scenario as replayable commands.
 func buildCommandLog(spec *domain.Compiled, sc *Scenario) []model.Command {
 	var log scenarioCommandLog
 	log.append(model.OpWorldCreate, map[string]any{"domain": spec.Spec.ID, "seed": sc.Seed, "start_time_ns": sc.StartNS, "time_mode": model.TimeStepped}, sc.StartNS)

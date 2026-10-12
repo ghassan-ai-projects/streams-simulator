@@ -181,3 +181,4 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 | R7e-10 | R7e | Med | Truth: the report shows truth whenever a `run.json` exists, without checking it belongs to the run of the journals | P7f | open |
 | R7e-11 | R7e | Med | Tests: no test that a met barrier resets the missed count, that the quiescence watermark never moves back, that a command with a higher epoch is refused, or for a perturbation window end; the host fuzz target is not in `make fuzz` | P7f | open |
 | R7e-12 | R7e | Med | Findings phases: R3-02 belongs to P9 (the Verified badge), R2-01 to P8b (the bridge reads run files), R6a-01 to P12 (factory stores) | P7f | open |
+| R7e-13 | R7e | Low | `TestDirectorServesItsToolsUntilTheSessionEndsThenStopsTheOperatorEndpoint` failed once under a full parallel run (the operator endpoint still accepted a connection right after the session ended); it passes in isolation | P7f | open |

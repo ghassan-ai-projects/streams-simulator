@@ -1,10 +1,5 @@
 package domain
 
-// Conformance verification (`adapter verify`): render the shipped fixture
-// through the adapter, validate every record against the adapter's declared
-// output schema and byte-compare the whole output to the committed golden.
-// The files verification compares against arrive through VerifyFiles.
-
 import (
 	"encoding/json"
 	"fmt"
@@ -15,12 +10,9 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-// VerifyResult is the outcome of `streamsim adapter verify`.
 type VerifyResult struct {
 	Adapter string `json:"adapter"`
-	// SchemaChecked and GoldenChecked say which checks the adapter declares
-	// and the verification ran; SchemaOK and GoldenMatch are meaningful only
-	// for a check that ran.
+
 	SchemaChecked   bool   `json:"schema_checked"`
 	SchemaOK        bool   `json:"schema_ok"`
 	GoldenChecked   bool   `json:"golden_checked"`
@@ -30,18 +22,11 @@ type VerifyResult struct {
 	Detail          string `json:"detail,omitempty"`
 }
 
-// VerifyFiles reads the files a verification compares against, by the paths
-// the adapter declares (already resolved against the base directory).
 type VerifyFiles interface {
 	OutputSchema(path string) ([]byte, error)
 	Golden(path string) ([]byte, error)
 }
 
-// Verify proves an adapter correct with the consumer absent: it renders the
-// fixture, validates every rendered record against the adapter's declared
-// output schema, and byte-compares the full output to the committed golden
-// file. base is the directory the adapter's conformance paths resolve
-// against.
 func Verify(a *model.Adapter, fixture []model.SimEvent, base string, src VerifyFiles) (*VerifyResult, error) {
 	if len(fixture) == 0 {
 		return nil, fmt.Errorf("adapter: the conformance fixture holds no events")
@@ -119,10 +104,6 @@ func verifyGolden(a *model.Adapter, out []byte, base string, src VerifyFiles, re
 	return compareGolden(resolveConformancePath(base, a.Conformance.Golden), out, src, res)
 }
 
-// validateStrictObservedOrder protects the adapter conformance path from a
-// fixture that would violate the simulator's native single-stream ordering
-// guarantee. Deliberate delivery perturbations are applied after this source
-// contract and remain available to exercise consumers' rejection paths.
 func validateStrictObservedOrder(events []model.SimEvent) error {
 	var previous int64
 	for i, ev := range events {
@@ -148,8 +129,6 @@ func resolveConformancePath(base, p string) string {
 	return filepath.Join(base, p)
 }
 
-// splitRecords returns the rendered records: one per non-empty line for
-// jsonl, the elements of the array for json-array.
 func splitRecords(out []byte, encoding string) ([]string, error) {
 	if encoding == "json-array" {
 		return arrayRecords(out)

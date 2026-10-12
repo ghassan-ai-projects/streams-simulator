@@ -1,7 +1,5 @@
 package domain
 
-// fitSilence flags samples that follow a gap longer than minGap in any
-// channel's emission record.
 func fitSilence(labels []float64, channels []string, fault, control emissionLog, startNS, endNS, sampleNS int64) float64 {
 	best := 0.0
 	for _, channel := range channels {
@@ -28,8 +26,6 @@ func silencePredict(n int, startNS, sampleNS int64, emissions []int64, minGap in
 	return out
 }
 
-// fit runs one detector over the faulted series (predictions) and scores
-// balanced accuracy against the labels and the control series.
 func (p *Panel) fit(name string, labels []float64, fault, control map[string][]float64) float64 {
 	switch name {
 	case "fixed_threshold":

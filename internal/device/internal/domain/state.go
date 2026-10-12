@@ -4,9 +4,6 @@ import (
 	"fmt"
 )
 
-// Reboot simulates a power cycle: a new boot identity, safe outputs, and a
-// cleared volatile dedup ledger. Commands bound to the old boot are then
-// rejected wrong_boot, which is exactly what forces upstream reconciliation.
 func (d *Device) Reboot(newBootID string) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
@@ -21,14 +18,12 @@ func (d *Device) rebootLocked(newBootID string) {
 	d.leaseUntilMicros = 0
 }
 
-// BootID returns the current device boot identity.
 func (d *Device) BootID() string {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	return d.bootID
 }
 
-// State returns a fresh device.state record.
 func (d *Device) State() map[string]any {
 	d.mu.Lock()
 	defer d.mu.Unlock()
@@ -40,8 +35,6 @@ func (d *Device) State() map[string]any {
 	return state
 }
 
-// ApplyFrame decodes one command frame, validates that it is a command and
-// applies it, returning the structured outcome the wire edge encodes.
 func (d *Device) ApplyFrame(frame []byte) (Outcome, error) {
 	command, decodeErr := DecodeRecord(frame)
 	if decodeErr != nil {

@@ -11,9 +11,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
-// Binding is a validated data-defined mapping from one device target to a world
-// effector invocation. LoadBindings is the supported construction path; domain
-// mappings are not supplied as Go callbacks.
 type Binding struct {
 	effector         string
 	entity           string
@@ -23,27 +20,17 @@ type Binding struct {
 	safeStopArgs     map[string]bindingArgument
 }
 
-// Plant is a device.Plant backed by a *world.World.
 type Plant struct {
 	w        *world.World
 	bindings map[string]Binding
-	// safeStops counts safe stops per target: each one is its own world
-	// command, so the world's idempotency window never replays an earlier
-	// stop as if it were the current one.
+
 	safeStops map[string]int
 }
 
-// New returns a world-backed plant. bindings maps device targets (e.g.
-// "fan-01") to world effector invocations.
 func New(w *world.World, bindings map[string]Binding) *Plant {
 	return &Plant{w: w, bindings: bindings, safeStops: map[string]int{}}
 }
 
-// Apply invokes the bound world effector for an accepted device command and
-// reports the physical truth. energized reflects whether the world applied the
-// effect (res.EffectApplied) — independent of the acknowledgement, which the
-// device layer handles separately. An unmapped target is unavailable, not a
-// successful no-op, so the device cannot report execution without an effect.
 func (p *Plant) Apply(cmd device.PlantCommand) (device.PlantEffect, error) {
 	binding, err := p.targetBinding(cmd.Target)
 	if err != nil {
@@ -60,9 +47,6 @@ func (p *Plant) Apply(cmd device.PlantCommand) (device.PlantEffect, error) {
 	return p.completeCommand(binding, result, atNS)
 }
 
-// SafeStop invokes the bound world effector with its catalog-owned, literal
-// arguments. It is used when the device lease expires or the device reboots;
-// clearing the device state alone would leave the world oracle unchanged.
 func (p *Plant) SafeStop(target string, atMicros int64) (device.PlantEffect, error) {
 	binding, err := p.targetBinding(target)
 	if err != nil {
@@ -95,7 +79,7 @@ func stateValue(w *world.World, binding Binding) float64 {
 
 func (p *Plant) worldInstant(atMicros int64) int64 {
 	atNS := atMicros * 1000
-	// Accept boot-relative device clocks and the historical epoch-relative test form.
+
 	if atNS < p.w.StartNS {
 		atNS = p.w.StartNS + atNS
 	}

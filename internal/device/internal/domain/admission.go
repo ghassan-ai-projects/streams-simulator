@@ -1,8 +1,5 @@
 package domain
 
-// admit returns "" when the command may execute, or a device reject_code. All
-// target/operation/bound knowledge comes from the data-defined capability
-// catalog, never a code branch.
 func (d *Device) admit(command map[string]any, now int64) string {
 	if reject := d.admitFreshness(command, now); reject != "" {
 		return reject
@@ -58,7 +55,7 @@ func (d *Device) admitTargetOperation(target, operation string, params map[strin
 }
 
 func freshnessWindow(notBefore, expires float64, now int64) string {
-	// Zero is the immediate-dispatch sentinel; other values are boot-relative.
+
 	if notBefore > 0 {
 		if float64(now) < notBefore {
 			return "not_ready"

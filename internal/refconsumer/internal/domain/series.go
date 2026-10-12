@@ -8,7 +8,7 @@ import (
 )
 
 func (r *Runner) admitDelivery(ev model.SimEvent) bool {
-	// Deduplicate exact re-feeds; distinct observed times count separately.
+
 	key := fmt.Sprintf("%d@%s", ev.Seq, ev.ObservedTime)
 	if r.seen[key] {
 		return false
@@ -37,7 +37,7 @@ func recordArrivalGap(s *series, at int64) {
 		if len(s.gaps) > 60 {
 			s.gaps = s.gaps[1:]
 		}
-		s.silenceReported = false // a new sample ends any quiet episode
+		s.silenceReported = false
 	}
 }
 
@@ -69,7 +69,7 @@ func (r *Runner) detectConsecutive(ev model.SimEvent, s *series, at int64) {
 	s.lastSeq = ev.Seq
 	detection := r.detect(ev.EntityID, ev.Channel, at, s)
 	r.actuateDetection(ev.EntityID, at)
-	// Rebuild the baseline from post-anomaly readings.
+
 	s.suspicious = 0
 	s.window = nil
 	r.detections = append(r.detections, detection)

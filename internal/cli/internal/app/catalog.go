@@ -27,10 +27,6 @@ func cmdCatalog(s *session, args []string) (any, error) {
 	return catalogVerb(cat, verb, fs.Args())
 }
 
-// parseCommandVerb reads a command's verb and flags, with the flags allowed
-// before or after the verb; the arguments after them stay in fs.Args. With
-// no verb it returns defaultVerb. A known verb given more arguments than it
-// takes is a usage failure.
 func parseCommandVerb(fs *flag.FlagSet, args []string, defaultVerb string) (string, error) {
 	verb, err := readCommandVerb(fs, args, defaultVerb)
 	if err != nil {
@@ -55,7 +51,6 @@ func readCommandVerb(fs *flag.FlagSet, args []string, defaultVerb string) (strin
 	return fs.Arg(0), keepPositional(fs, fs.Args()[1:])
 }
 
-// verbArity is how many arguments a verb takes, and whether it is a verb.
 func verbArity(verb string) (int, bool) {
 	switch verb {
 	case "list", "coverage":
@@ -189,8 +184,6 @@ func verifyAdapterFile(path, base string) (any, error) {
 	return adapterVerdict(res)
 }
 
-// adapterVerdict fails the command when the adapter facade finds the
-// verification failed (a declared check failed, or none was declared).
 func adapterVerdict(res *adapter.VerifyResult) (any, error) {
 	report := adapterVerifyReport(res)
 	message, diverged := adapter.VerifyFailure(res)

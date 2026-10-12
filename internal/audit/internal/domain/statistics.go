@@ -6,7 +6,6 @@ import (
 	"slices"
 )
 
-// fitThreshold sweeps single-channel level thresholds with hindsight.
 func (p *Panel) fitThreshold(labels []float64, fault, control map[string][]float64) float64 {
 	best := 0.0
 	for _, channel := range sortedChannels(fault) {
@@ -15,7 +14,6 @@ func (p *Panel) fitThreshold(labels []float64, fault, control map[string][]float
 	return best
 }
 
-// fitZScore flags |x - rolling_mean| > k * rolling_std, best k and window.
 func (p *Panel) fitZScore(labels []float64, fault, control map[string][]float64) float64 {
 	best := 0.0
 	for _, channel := range sortedChannels(fault) {
@@ -44,7 +42,6 @@ func zscorePredict(x []float64, window int, k float64) []float64 {
 	return out
 }
 
-// fitFirstDifference flags the largest single-step changes, best threshold.
 func (p *Panel) fitFirstDifference(labels []float64, fault, control map[string][]float64) float64 {
 	best := 0.0
 	for _, channel := range sortedChannels(fault) {
@@ -53,7 +50,6 @@ func (p *Panel) fitFirstDifference(labels []float64, fault, control map[string][
 	return best
 }
 
-// fitMedianResidual flags the residual from a trailing median, best window.
 func (p *Panel) fitMedianResidual(labels []float64, fault, control map[string][]float64) float64 {
 	best := 0.0
 	for _, channel := range sortedChannels(fault) {

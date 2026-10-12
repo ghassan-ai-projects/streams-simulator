@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Fails on dead code (unreachable even from tests) and on production code that
+# only tests reach, unless scripts/test-hooks.txt declares it a test hook.
+set -eu
+cd "$(dirname "$0")/.."
+dead=$(deadcode -test ./...)
+if [ -n "$dead" ]; then
+  printf 'dead code:\n%s\n' "$dead"
+  exit 1
+fi
+hooks=$(grep -v '^#' scripts/test-hooks.txt | awk 'NF {print $1}')
+unexpected=$(deadcode ./cmd/streamsim | sed -E 's|^.*streams-simulator/||; s|:[0-9]+:[0-9]+: unreachable func: |:|' | grep -vxF -f <(printf '%s\n' "$hooks") || true)
+if [ -n "$unexpected" ]; then
+  printf 'production code only tests reach (delete it, or declare a test hook in scripts/test-hooks.txt):\n%s\n' "$unexpected"
+  exit 1
+fi
+stale=$(printf '%s\n' "$hooks" | grep -vxF -f <(deadcode ./cmd/streamsim | sed -E 's|^.*streams-simulator/||; s|:[0-9]+:[0-9]+: unreachable func: |:|') || true)
+if [ -n "$stale" ]; then
+  printf 'stale test hooks (production reaches them, or they are gone):\n%s\n' "$stale"
+  exit 1
+fi

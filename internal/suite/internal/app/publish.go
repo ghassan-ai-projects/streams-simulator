@@ -11,16 +11,12 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/suite/internal/files"
 )
 
-// PublishOptions say which suite to publish: the domain (looked up by id in
-// DomainsDir), its profile, the target scenario count and seed, and the
-// directory the suite file is written to.
 type PublishOptions struct {
 	DomainsDir, DomainID, Profile, Out string
 	N                                  int
 	Seed                               uint64
 }
 
-// Published is the suite file that was written and what the suite holds.
 type Published struct {
 	Path            string
 	Scenarios       int
@@ -28,9 +24,6 @@ type Published struct {
 	TerminalState   string
 }
 
-// Publish generates the audited suite and writes it as
-// <out>/<domain>-<profile>-suite.json. A profile the domain does not declare
-// is refused with a *rules.UnknownProfileError before anything is generated.
 func Publish(options PublishOptions) (Published, error) {
 	spec, err := loadSpec(options)
 	if err != nil {
@@ -44,8 +37,6 @@ func Publish(options PublishOptions) (Published, error) {
 	return write(generated, options)
 }
 
-// loadSpec is the domain with the requested id among those in the directory,
-// checked to declare the profile.
 func loadSpec(options PublishOptions) (*domain.Compiled, error) {
 	cat, err := domain.NewCatalogFromDir(options.DomainsDir)
 	if err != nil {

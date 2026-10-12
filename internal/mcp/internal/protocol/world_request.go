@@ -2,9 +2,6 @@ package protocol
 
 import "github.com/ghassan-ai-projects/streams-simulator/internal/director"
 
-// worldRequest decodes the arguments of sim.world.create into the typed
-// request the director takes. A start_time key that is present, even as
-// zero, is an explicit start.
 func worldRequest(args map[string]any) director.WorldRequest {
 	return director.WorldRequest{
 		Domain: stringArg(args, "domain"), Adapter: stringArg(args, "adapter"),

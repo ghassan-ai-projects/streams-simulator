@@ -6,50 +6,38 @@ import (
 	layer "github.com/ghassan-ai-projects/streams-simulator/internal/refconsumer/internal/domain"
 )
 
-// DefaultConfig is the reference detector's default tuning.
 func DefaultConfig() Config {
 	return layer.DefaultConfig()
 }
 
-// Consume reads the trace the options name, detects episodes in it and writes
-// the verdict. With an operator endpoint the consumer connects to it, actuates
-// the configured effector on detection and reports through it.
 func Consume(options ConsumeOptions) (ConsumeSummary, error) {
 	return app.Consume(options)
 }
 
-// Process detects episodes in a native JSONL trace, actuates when configured
-// and returns the verdict it reports.
 func (r *Runner) Process(trace []byte, endNS int64) (*model.Verdict, error) {
 	return r.runner.Process(trace, endNS)
 }
 
-// Close ends the operator session.
 func (o *MCPOperator) Close() error {
 	return o.operator.Close()
 }
 
-// Nameplate fetches the world description over the operator surface.
 func (o *MCPOperator) Nameplate() (*Nameplate, error) {
 	return o.operator.Nameplate()
 }
 
-// ListEffectors lists the effectors the operator surface exposes.
 func (o *MCPOperator) ListEffectors() ([]EffectorInfo, error) {
 	return o.operator.ListEffectors()
 }
 
-// InvokeEffector actuates an effector over the operator surface.
 func (o *MCPOperator) InvokeEffector(effector, entityID, commandID string, args map[string]any, atNS int64) (*model.EffectorAcknowledgement, error) {
 	return o.operator.InvokeEffector(effector, entityID, commandID, args, atNS)
 }
 
-// SubmitVerdict reports the verdict over the operator surface.
 func (o *MCPOperator) SubmitVerdict(v *model.Verdict) error {
 	return o.operator.SubmitVerdict(v)
 }
 
-// ReportQuiesced reports the consumer's quiescence watermark.
 func (o *MCPOperator) ReportQuiesced(throughNS int64) error {
 	return o.operator.ReportQuiesced(throughNS)
 }

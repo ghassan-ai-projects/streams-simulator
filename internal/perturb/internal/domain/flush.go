@@ -5,10 +5,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-// Flush returns records held by windowing perturbations (reorder windows,
-// producer flaps, gross backfill) at the end of an advance. Callers must
-// process them exactly once, at the boundary where the perturbation's
-// window closes.
 func (l *Layer) Flush(atNS int64) []Delivered {
 	var out []Delivered
 	for _, id := range l.activeIDs() {
@@ -94,7 +90,7 @@ func (a *applied) flushBuffered(atNS int64, birth bool) []Delivered {
 }
 
 func recoveredRecord(record Delivered, atNS int64, birth bool) Delivered {
-	// Producer recovery republishes a birth burst; backfill retains birth flags.
+
 	event := record.Event
 	if birth {
 		event.Birth = true

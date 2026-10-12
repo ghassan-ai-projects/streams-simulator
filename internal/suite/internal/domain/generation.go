@@ -77,7 +77,7 @@ func (g *suiteGeneration) admitScenario(sc *Scenario, label *model.GroundTruthRe
 }
 
 func (g *suiteGeneration) reportShortfalls() {
-	// Aggregate composition and coverage failures into one terminal state.
+
 	var shortfalls []string
 	if missing := uncovered(g.perturbCount); len(missing) > 0 {
 		shortfalls = append(shortfalls, fmt.Sprintf("perturbation coverage not met at the declared size: %v", missing))

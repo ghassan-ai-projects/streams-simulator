@@ -5,7 +5,6 @@ import (
 	"strings"
 )
 
-// Validate checks v against the schema and returns every failure found.
 func (s *Schema) Validate(v any) []Error {
 	var errs []Error
 	s.validate(v, "", &errs)
@@ -25,7 +24,7 @@ func (s *Schema) validate(v any, path string, errs *[]Error) {
 func (s *Schema) validateValueKeywords(v any, fail func(string)) bool {
 	if len(s.types) > 0 && !typeMatches(s.types, v) {
 		fail(fmt.Sprintf("expected type %s, got %s", strings.Join(s.types, "|"), typeName(v)))
-		return false // Type failure short-circuits value keywords.
+		return false
 	}
 	if len(s.enum) > 0 && !enumContains(s.enum, v) {
 		fail("value not in enum")

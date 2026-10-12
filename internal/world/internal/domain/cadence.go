@@ -6,7 +6,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-// cadenceEmits decides whether this tick produces a record.
 func (w *World) cadenceEmits(ch *model.Channel, cs *channelRunState, t int64, raw float64) bool {
 	switch ch.Cadence.Mode {
 	case "report_by_exception":
@@ -17,7 +16,6 @@ func (w *World) cadenceEmits(ch *model.Channel, cs *channelRunState, t int64, ra
 	return true
 }
 
-// nextEmission computes the next scheduled emission time for a channel.
 func (w *World) nextEmission(entityID string, ch *model.Channel, t int64) int64 {
 	switch ch.Cadence.Mode {
 	case "periodic", "batch":
@@ -30,7 +28,6 @@ func (w *World) nextEmission(entityID string, ch *model.Channel, t int64) int64 
 	return 0
 }
 
-// linkDelay samples the channel's transport delay.
 func (w *World) linkDelay(entityID string, ch *model.Channel, t int64) float64 {
 	delay := ch.LinkDelay
 	if delay == nil || delay.Model == "" {

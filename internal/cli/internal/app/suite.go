@@ -22,8 +22,6 @@ func cmdSuite(s *session, args []string) (any, error) {
 		"trivial_excluded": published.TrivialExcluded, "terminal_state": published.TerminalState}, nil
 }
 
-// publishSuite has the suite module generate and write the suite. A profile
-// the domain does not declare is a usage failure.
 func publishSuite(options suiteOptions) (suite.Published, error) {
 	published, err := suite.Publish(suite.PublishOptions{DomainsDir: options.domainsDir, DomainID: options.domainID,
 		Profile: options.profile, Out: options.out, N: options.n, Seed: options.seed})

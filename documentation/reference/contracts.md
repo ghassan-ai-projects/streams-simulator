@@ -1,6 +1,6 @@
 # Contract reference
 
-> Status: Implemented contract index. Authority: machine-readable schemas under `docs/contracts/`. Verified by: schema equality and validation tests. Last verified: 2026-08-17.
+> Status: Implemented contract index. Authority: machine-readable schemas under `docs/contracts/`. Verified by: schema equality and validation tests. Last verified: 2026-10-13.
 
 The JSON schemas under [`docs/contracts/`](../../docs/contracts/) are the canonical contract files for this repository. The copies under [`internal/schemas/`](../../internal/schemas/) are embedded runtime copies; tests prove they are byte-identical to the canonical files.
 
@@ -18,6 +18,11 @@ The JSON schemas under [`docs/contracts/`](../../docs/contracts/) are the canoni
 | [`run-journal-v0.1`](../../docs/contracts/run-journal-v0.1.schema.json) | One line of a run journal: the observer stream `journal.jsonl` or the director stream `sealed/journal.jsonl`, written while a run happens ([design](../../docs/design/RUN_JOURNAL.md)). Embedded: tests validate every record the writer produces against it. |
 | [`run-report-v0.1`](../../docs/contracts/run-report-v0.1.schema.json) | The report `streamsim report <run-dir>` prints: identity, digests, file verification, counts, truth, consumer and scoring of one run folder ([design](../../docs/design/RUN_REPORT.md)). Embedded: tests validate every report against it. |
 | [`cli-output-v0.1`](../../docs/contracts/cli-output-v0.1.schema.json) | The single JSON document every non-exempt CLI command prints on stdout: per-command success shapes and the error document. Not embedded: tests validate real outputs against it. |
+
+The plant wire has its own self-contained contract under
+[`contracts/plant-wire/`](../../contracts/plant-wire/SPEC.md): the specification, one schema per record, fixtures (valid,
+invalid, must-ignore, injection and exchanges) and a pinned `DIGEST`. `internal/plantwire` embeds a byte-identical copy of the
+schemas and announces the digest in every `NBIRTH`; `test/contract` validates the contract.
 
 The device emulator also validates the versioned device command, receipt,
 result, and state records under

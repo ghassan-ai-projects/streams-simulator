@@ -8,10 +8,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-// LoadInputs resolves the domain and the adapter a run names: it loads every
-// domain in domainsDir and every adapter in adaptersDir, then selects the two
-// by id. An unknown id wraps domain.ErrUnknownDomain or
-// adapter.ErrUnknownAdapter.
 func LoadInputs(domainsDir, adaptersDir, domainID, adapterID string) (*domain.Compiled, *model.Adapter, error) {
 	cat, err := domain.NewCatalogFromDir(domainsDir)
 	if err != nil {

@@ -10,12 +10,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
 )
 
-// scenarioFromFlags is the scenario the run flags describe: the scripted
-// faults, then perturbations, then effector invocations, then one clock
-// advance to the end of --duration. Effector command ids are cli-<n> by
-// position, so two identical invocations record identical command logs. It
-// also returns, per command, the flag occurrence it came from, so a refusal
-// names what the user wrote.
 func scenarioFromFlags(options runOptions) (*model.Scenario, []string, error) {
 	script, err := scriptedCommands(options)
 	if err != nil {
@@ -30,7 +24,6 @@ func scenarioFromFlags(options runOptions) (*model.Scenario, []string, error) {
 		World: model.ScenarioWorld{StartTimeNS: options.startTime, Profile: options.profile}}, origins, nil
 }
 
-// splitScript separates the scripted commands from the flags behind them.
 func splitScript(script []scripted) ([]model.ScenarioCommand, []string) {
 	commands, origins := make([]model.ScenarioCommand, len(script)), make([]string, len(script))
 	for i, step := range script {
@@ -39,14 +32,11 @@ func splitScript(script []scripted) ([]model.ScenarioCommand, []string) {
 	return commands, origins
 }
 
-// scripted is one scenario command and the flag occurrence it came from.
 type scripted struct {
 	command model.ScenarioCommand
 	origin  string
 }
 
-// scriptedCommands are the faults, then the perturbations, then the effector
-// invocations the flags script.
 func scriptedCommands(options runOptions) ([]scripted, error) {
 	var script []scripted
 	for _, build := range []func(runOptions) ([]scripted, error){faultCommands, perturbationCommands, effectorCommands} {
@@ -71,7 +61,6 @@ func faultCommands(options runOptions) ([]scripted, error) {
 	return script, nil
 }
 
-// faultCommand reads one entity=fault@offset_s entry.
 func faultCommand(item string, start int64) (scripted, error) {
 	entity, fault, offset, err := parseTriple(item, "=", "@")
 	if err != nil {
@@ -82,8 +71,6 @@ func faultCommand(item string, start int64) (scripted, error) {
 		"entity_id": entity, "fault": fault, "onset_ns": start + onset, "params": nil}}, fmt.Sprintf("--fault %q", item)}, err
 }
 
-// offsetNS reads an offset in seconds from the start as nanoseconds: a
-// finite number within the run span. An absent offset is the start itself.
 func offsetNS(flagName, item, text string) (int64, error) {
 	if text == "" {
 		return 0, nil
@@ -122,8 +109,6 @@ func effectorCommands(options runOptions) ([]scripted, error) {
 	return script, nil
 }
 
-// scriptedPerturbation reads name@from_s[@until_s]; an end that is absent or
-// not after the start offset 0 means no end.
 func scriptedPerturbation(item string, start int64) (string, int64, int64, error) {
 	name, window, _ := strings.Cut(item, "@")
 	fromText, untilText, _ := strings.Cut(window, "@")
@@ -138,15 +123,12 @@ func scriptedPerturbation(item string, start int64) (string, int64, int64, error
 	return name, start + from, start + until, nil
 }
 
-// effectorSpec is one parsed --effector entry.
 type effectorSpec struct {
 	effector, entity string
 	offsetNS         int64
 	args             map[string]any
 }
 
-// parseEffectorSpec reads effector@entity@offset_s[@json-object]. The
-// arguments object is optional: an effector with required arguments needs it.
 func parseEffectorSpec(item string) (effectorSpec, error) {
 	parts := strings.SplitN(item, "@", 4)
 	if len(parts) < 2 {
@@ -161,7 +143,6 @@ func parseEffectorSpec(item string) (effectorSpec, error) {
 	return spec.withArguments(parts[3])
 }
 
-// withArguments reads the arguments object; an absent one is empty.
 func (spec effectorSpec) withArguments(text string) (effectorSpec, error) {
 	if text == "" {
 		return spec, nil

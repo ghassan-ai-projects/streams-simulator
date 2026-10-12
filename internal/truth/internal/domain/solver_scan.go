@@ -51,8 +51,7 @@ func (scan *observabilityScan) searchOnsets(res *result, fault *model.Fault, ons
 
 func (scan *observabilityScan) observeThresholds(res *result, fault *model.Fault, at int64) bool {
 	quantity := scan.solver.quantity(scan.entity, scan.detector, scan.clean, scan.faulted, at, scan.entityIDs)
-	// A zero deviation is never a detection, even where the noise floor
-	// (and so the threshold) is zero.
+
 	if !res.firstFound && quantity > 0 && quantity >= fault.Observability.FirstObservableSNR*scan.sigma {
 		res.FirstObservableNS, res.firstFound = at, true
 	}

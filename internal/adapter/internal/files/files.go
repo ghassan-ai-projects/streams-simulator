@@ -15,9 +15,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-// Load reads and validates an adapter file. The validation covers the
-// output-adapter schema plus adapter-specific cross-checks (transform
-// arity, source names, identity preservation).
 func Load(path string) (*model.Adapter, error) {
 	raw, err := kernel.Read(path)
 	if err != nil {
@@ -26,9 +23,6 @@ func Load(path string) (*model.Adapter, error) {
 	return domain.DecodeFile(raw, path)
 }
 
-// LoadDir loads every adapter in a directory, keyed by adapter id; an empty
-// dir selects "adapters", the layout of the repository. A directory that holds
-// no adapter is refused.
 func LoadDir(dir string) (map[string]*model.Adapter, error) {
 	dir = cmp.Or(dir, "adapters")
 	names, err := kernel.Names(dir)

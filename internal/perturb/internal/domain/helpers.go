@@ -1,8 +1,5 @@
 package domain
 
-// Helpers for the perturbation layer: the reorder window, time-string
-// rewrites, and parameter access.
-
 import (
 	"strings"
 	"time"
@@ -11,12 +8,10 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/randutil"
 )
 
-// reorderWindow buffers records and emits them out of order within a bounded
-// displacement window.
 type reorderWindow struct {
 	maxDisplacement int
 	buf             []Delivered
-	rng             *randutil.SplitMix64 // the perturbation's own stream decides each swap
+	rng             *randutil.SplitMix64
 }
 
 func newReorderWindow(disp int, rng *randutil.SplitMix64) *reorderWindow {
@@ -46,7 +41,6 @@ func (w *reorderWindow) flush(atNS int64) []Delivered {
 	return out
 }
 
-// addSeconds re-renders an RFC 3339 timestamp shifted by a delay.
 func addSeconds(ts string, secs float64) string {
 	t, err := time.Parse(time.RFC3339Nano, ts)
 	if err != nil {
@@ -55,8 +49,6 @@ func addSeconds(ts string, secs float64) string {
 	return model.FormatTime(t.UnixNano() + int64(secs*1e9))
 }
 
-// alternateEncoding re-renders a timestamp with a different but equivalent
-// RFC 3339 encoding ("Z" vs "+00:00"), testing identical normalization.
 func alternateEncoding(ts string) string {
 	t, err := time.Parse(time.RFC3339Nano, ts)
 	if err != nil {
@@ -68,8 +60,6 @@ func alternateEncoding(ts string) string {
 	return t.UTC().Format(time.RFC3339Nano)
 }
 
-// truncatePrecision drops fractional-second digits below microseconds,
-// testing sub-microsecond retention.
 func truncatePrecision(ts string) string {
 	t, err := time.Parse(time.RFC3339Nano, ts)
 	if err != nil {
@@ -79,7 +69,7 @@ func truncatePrecision(ts string) string {
 }
 
 func (w *reorderWindow) popDisplaced(_ int64) (Delivered, Delivered, bool) {
-	// Emit the later record first when displacing an out-of-order pair.
+
 	head := w.buf[0]
 	w.buf = w.buf[1:]
 	if len(w.buf) > 0 && w.rng.Intn(2) == 0 {

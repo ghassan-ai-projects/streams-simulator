@@ -8,7 +8,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/cli"
 )
 
-// Version and Commit are set via -ldflags in the Makefile.
 var (
 	Version = "dev"
 	Commit  = "none"

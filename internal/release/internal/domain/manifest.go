@@ -12,18 +12,12 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/canonical"
 )
 
-// SchemaVersion names the manifest layout.
 const SchemaVersion = "release-manifest-v0.1"
 
-// Identity is who and what a release claims to be: the simulator build, the
-// author and the independent reviewer, and the instant it was stamped.
 type Identity struct {
 	Version, Commit, Author, Reviewer, CreatedAt string
 }
 
-// Body is the manifest: identity plus the digests of every domain and adapter
-// file. The domain and adapter maps are keyed by file name; values are
-// map[string]any entries for the canonical marshaler.
 func Body(identity Identity, domains, adapters map[string]any) map[string]any {
 	return map[string]any{"schema_version": SchemaVersion,
 		"sim":     map[string]any{"version": identity.Version, "commit": identity.Commit, "go": runtime.Version()},
@@ -33,8 +27,6 @@ func Body(identity Identity, domains, adapters map[string]any) map[string]any {
 		"author":   identity.Author, "reviewer": identity.Reviewer, "created_at": identity.CreatedAt}
 }
 
-// Canonical is the RFC 8785 canonical encoding of the manifest body, the bytes
-// a signature covers.
 func Canonical(body map[string]any) ([]byte, error) {
 	raw, err := canonical.Marshal(body)
 	if err != nil {
@@ -43,8 +35,6 @@ func Canonical(body map[string]any) ([]byte, error) {
 	return raw, nil
 }
 
-// Document is the published file: the canonical body beside its signature
-// ("" when unsigned).
 func Document(body []byte, signature string) ([]byte, error) {
 	doc := map[string]any{"manifest": json.RawMessage(body), "signature": signature}
 	raw, err := json.MarshalIndent(doc, "", "  ")
@@ -54,8 +44,6 @@ func Document(body []byte, signature string) ([]byte, error) {
 	return raw, nil
 }
 
-// FileNames selects the files a release digests: every name that is not
-// hidden, sorted.
 func FileNames(entries []string) []string {
 	names := make([]string, 0, len(entries))
 	for _, name := range entries {

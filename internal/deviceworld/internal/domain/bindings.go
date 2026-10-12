@@ -7,9 +7,6 @@ import (
 	"slices"
 )
 
-// bindingArgument is a data-defined source for one world effector argument.
-// The adapter supports only generic sources; domain values live in the binding
-// catalog, not in Go callbacks.
 type bindingArgument struct {
 	source    string
 	parameter string
@@ -38,9 +35,6 @@ type argumentDocument struct {
 	Value     json.RawMessage `json:"value,omitempty"`
 }
 
-// LoadBindings parses a strict device-target to world-effector binding catalog.
-// Entity-source arguments resolve to the supplied runtime world entity; all
-// other mapping and literal values come from the JSON catalog.
 func LoadBindings(data []byte, entity string) (map[string]Binding, error) {
 	document, err := decodeBindings(data)
 	if err != nil {

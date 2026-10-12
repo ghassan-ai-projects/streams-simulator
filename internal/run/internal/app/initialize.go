@@ -17,7 +17,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
-// New creates a run: world, perturbation layer, adapter engine and sink.
 func New(ctx context.Context, cfg Config) (*Run, error) {
 	r, err := newRun(ctx, defaultConfig(cfg))
 	if err != nil {
@@ -98,9 +97,6 @@ func (r *Run) openPipeline() error {
 	return r.beginTrace()
 }
 
-// releaseOpened closes the durable ledger and the sink a failed New had
-// already opened, so a failed start leaks no file descriptor. Errors are
-// dropped: the start failure is the one to report.
 func (r *Run) releaseOpened() {
 	if r.durableLedger != nil {
 		_ = r.durableLedger.Finish()
@@ -112,7 +108,7 @@ func (r *Run) releaseOpened() {
 }
 
 func (r *Run) attachWorld() {
-	// Reproducible unless the wall clock drives delivery.
+
 	r.reproducible = r.Config.TimeMode != model.TimeWall
 	r.World.SetEmitter(r.onEmit)
 }
@@ -207,16 +203,12 @@ func (r *Run) beginTrace() error {
 	return nil
 }
 
-// Trace returns the delivered trace bytes (available after End).
 func (r *Run) Trace() []byte {
 	r.commandMu.Lock()
 	defer r.commandMu.Unlock()
 	return append([]byte(nil), r.trace...)
 }
 
-// SetEvidenceRecorder installs a hook invoked for every delivered event
-// (post-perturbation, pre-render). The prefix-indistinguishability harness
-// uses it to compare what consumers would actually see.
 func (r *Run) SetEvidenceRecorder(fn func(model.SimEvent)) {
 	r.evidenceRec = fn
 }

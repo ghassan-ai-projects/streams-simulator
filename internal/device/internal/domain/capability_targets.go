@@ -60,7 +60,6 @@ func sortedStringKeys[V any](values map[string]V) []string {
 	return keys
 }
 
-// Digest returns the canonical identity of the loaded capability catalog.
 func (c *Capabilities) Digest() string {
 	if c == nil {
 		return ""
@@ -76,8 +75,6 @@ func (c *Capabilities) hasSafeStop(target string) bool {
 	return ok
 }
 
-// SafeStopNames returns the catalog's explicit safe-stop targets in
-// deterministic order.
 func (c *Capabilities) SafeStopNames() []string {
 	if c == nil {
 		return nil

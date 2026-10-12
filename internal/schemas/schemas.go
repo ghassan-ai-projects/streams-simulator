@@ -33,25 +33,18 @@ var runJournal []byte
 //go:embed run-report-v0.1.schema.json
 var runReport []byte
 
-// DomainSpec returns the embedded domain-spec schema.
 func DomainSpec() []byte { return domainSpec }
 
-// OutputAdapter returns the embedded output-adapter schema.
 func OutputAdapter() []byte { return outputAdapter }
 
-// ConsumerVerdict returns the embedded consumer-verdict schema.
 func ConsumerVerdict() []byte { return consumerVerdict }
 
-// GroundTruth returns the embedded ground-truth schema.
 func GroundTruth() []byte { return groundTruth }
 
-// RunArtifact returns the embedded run-artifact schema.
 func RunArtifact() []byte { return runArtifact }
 
-// Scenario returns the embedded scenario schema.
 func Scenario() []byte { return scenario }
 
-// RunJournal returns the embedded run-journal schema.
 func RunJournal() []byte { return runJournal }
 
 func RunReport() []byte { return runReport }

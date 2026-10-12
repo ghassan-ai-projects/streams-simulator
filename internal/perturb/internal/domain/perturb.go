@@ -16,7 +16,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/randutil"
 )
 
-// Perturbation names (the catalog in TECHNICAL_DESIGN §5.2).
 const (
 	DuplicateBurst = "duplicate_burst"
 	IDReuse        = "id_reuse"
@@ -39,8 +38,6 @@ const (
 	InjectionProbe = "injection_probe"
 )
 
-// catalogNames is the full catalog in a stable order. It is the admission
-// list for Apply, so it is never exposed as a mutable slice.
 var catalogNames = []string{
 	DuplicateBurst, IDReuse, Reorder, DelayTail, GrossBackfill, Drop,
 	ClockSkew, NonMonotonic, OutOfEnum, OutOfRange, UnitMismatch, Oversize,
@@ -48,15 +45,10 @@ var catalogNames = []string{
 	InjectionProbe,
 }
 
-// CatalogNames returns a copy of the full perturbation catalog in a stable
-// order; mutating it cannot change which perturbations are admitted.
 func CatalogNames() []string {
 	return slices.Clone(catalogNames)
 }
 
-// Delivered is one delivered record: the (possibly modified) event plus its
-// ledger metadata. Drop yields Delivered=false; duplicate yields extra
-// records with the same seq.
 type Delivered struct {
 	DeliveryID uint64
 	Event      model.SimEvent
@@ -65,7 +57,6 @@ type Delivered struct {
 	Malformed  bool
 }
 
-// applied is one applied perturbation.
 type applied struct {
 	ID      string
 	Name    string
@@ -74,11 +65,10 @@ type applied struct {
 	UntilNS int64
 	window  *reorderWindow
 	rng     *randutil.SplitMix64
-	// producer-flap buffer
+
 	buffer []Delivered
 }
 
-// Layer applies active perturbations to a native event stream.
 type Layer struct {
 	worldID string
 	seed    uint64
@@ -90,9 +80,6 @@ type Layer struct {
 	pending []Delivered
 }
 
-// New builds a perturbation layer for a world. The domain spec is needed
-// only for contract knowledge (declared enums, ranges, units, attacker-
-// controlled channels); consumer knowledge never enters here.
 func New(worldID string, seed uint64, spec *domain.Compiled) *Layer {
 	return &Layer{
 		worldID: worldID,
@@ -102,9 +89,6 @@ func New(worldID string, seed uint64, spec *domain.Compiled) *Layer {
 	}
 }
 
-// Apply activates a perturbation. fromNS/untilNS bound its activity window
-// (0 = from now / no end); a window that ends before it starts is refused,
-// since it could never act.
 func (l *Layer) Apply(name string, params map[string]any, fromNS, untilNS int64) (string, error) {
 	if err := CheckApplication(name, params, fromNS, untilNS); err != nil {
 		return "", fmt.Errorf("perturb: %w", err)
@@ -115,7 +99,6 @@ func (l *Layer) Apply(name string, params map[string]any, fromNS, untilNS int64)
 	return active.ID, nil
 }
 
-// Clear deactivates a perturbation.
 func (l *Layer) Clear(id string) error {
 	active, ok := l.active[id]
 	if !ok {
@@ -129,7 +112,6 @@ func (l *Layer) Clear(id string) error {
 	return nil
 }
 
-// activeIDs lists the active perturbation ids in application order.
 func (l *Layer) activeIDs() []string {
 	var out []string
 	for _, id := range l.order {
@@ -140,11 +122,8 @@ func (l *Layer) activeIDs() []string {
 	return out
 }
 
-// Process applies every active perturbation to one native event at world
-// time atNS, returning the delivered records. An event may produce zero
-// (drop), one, or several records (duplicate, storm).
 func (l *Layer) Process(ev model.SimEvent, atNS int64) []Delivered {
-	// Unchanged by default; each active perturbation transforms the list.
+
 	l.nextID++
 	recs := []Delivered{{DeliveryID: l.nextID, Event: ev, Reason: model.DeliveryOK, Delivered: true}}
 	for _, id := range l.activeIDs() {

@@ -7,9 +7,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
-// Run is one deterministic execution: world, perturbation layer, adapter
-// engine, sink and delivery ledger behind one command log. ID, Config and
-// World are fixed at construction.
 type Run struct {
 	ID     string
 	Config Config
@@ -18,7 +15,6 @@ type Run struct {
 	run *layer.Run
 }
 
-// New creates a run: world, perturbation layer, adapter engine and sink.
 func New(ctx context.Context, cfg Config) (*Run, error) {
 	inner, err := layer.New(ctx, cfg)
 	if err != nil {

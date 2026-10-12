@@ -7,10 +7,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/perturb"
 )
 
-// appendLedger records one delivery row in memory and, when durable
-// persistence is configured, appends it to the ledger file immediately. The
-// file is flushed at command boundaries, so a crash between boundaries loses
-// nothing that was acknowledged at a boundary.
 func (r *Run) appendLedger(rec model.LedgerRecord) {
 	r.ledger = append(r.ledger, rec)
 	r.journal.Delivery(r.journalNow(), rec)
@@ -19,8 +15,6 @@ func (r *Run) appendLedger(rec model.LedgerRecord) {
 	}
 }
 
-// flushDurable pushes the ledger writer and the file sink (when present) to
-// their file descriptors. Called at every command boundary; End adds fsync.
 func (r *Run) flushDurable() error {
 	if r.durableLedger != nil {
 		if err := r.durableLedger.Flush(); err != nil {
@@ -54,10 +48,6 @@ func (r *Run) deliver(d perturb.Delivered) {
 	r.deliverRendered(d)
 }
 
-// noteTraceArrival records the latest arrival timestamp that was rendered
-// into the trace. Perturbations can rewrite an event's observed_time after
-// the world has emitted it, so the trailer must use delivered records rather
-// than the world clock or the native emission watermark.
 func (r *Run) noteTraceArrival(ev model.SimEvent) {
 	arrivalNS, err := model.ParseTime(ev.ObservedTime)
 	if err != nil {
@@ -69,9 +59,6 @@ func (r *Run) noteTraceArrival(ev model.SimEvent) {
 	}
 }
 
-// traceEndTime returns a deterministic trailer horizon strictly after every
-// rendered event arrival while preserving the scenario horizon when it is
-// already later.
 func (r *Run) traceEndTime() int64 {
 	end := r.worldEndTimeNS
 	if r.hasTraceArrivalTime && r.lastTraceArrivalNS >= end {
@@ -132,7 +119,7 @@ func (r *Run) recordTerminalDelivery(ev model.SimEvent, id uint64, delivered boo
 }
 
 func (r *Run) deliverMalformedEvent(ev model.SimEvent, id uint64) bool {
-	// A broken line exercises rejection without poisoning the rest of the file.
+
 	if err := r.writeMalformed(ev); err != nil {
 		r.recordTerminalDelivery(ev, id, false, model.DeliverySinkError)
 		r.fail(err)

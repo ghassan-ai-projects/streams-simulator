@@ -8,7 +8,6 @@ import (
 	"fmt"
 )
 
-// NewToken returns a fresh unguessable capability token.
 func NewToken() (string, error) {
 	buf := make([]byte, 32)
 	if _, err := rand.Read(buf); err != nil {

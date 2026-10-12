@@ -13,7 +13,7 @@ func instrumentEvidence(ledger []model.LedgerRecord, calls []world.EffectorCall,
 }
 
 func perturbationsObserved(ledger []model.LedgerRecord, perturbations []string) bool {
-	// Each applied perturbation must leave its expected delivery mark.
+
 	for _, name := range perturbations {
 		if !ledgerShowsPerturbation(ledger, name) {
 			return false

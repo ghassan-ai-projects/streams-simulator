@@ -22,7 +22,7 @@ func channelDivergence(entity string, det *model.Detector, clean, faulted *world
 }
 
 func (s *Solver) peerDeviation(entity, channel string, clean, faulted *world.World, at int64) float64 {
-	// Compare the entity's deviation from the mean of its siblings in each world.
+
 	faulty := s.peerResidual(entity, channel, faulted, at)
 	baseline := s.peerResidual(entity, channel, clean, at)
 	return math.Abs(faulty - baseline)

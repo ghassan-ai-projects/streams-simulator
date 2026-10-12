@@ -80,7 +80,6 @@ func (w *World) enumReading(ent *Entity, ch *model.Channel) (bool, any) {
 	return true, ch.EnumValues[rng.Intn(len(ch.EnumValues))]
 }
 
-// quantize rounds v to the channel's declared resolution.
 func quantize(v, resolution float64) float64 {
 	if resolution <= 0 {
 		return v

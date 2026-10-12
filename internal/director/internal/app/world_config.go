@@ -7,17 +7,13 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
 )
 
-// WorldRequest is the typed input of CreateWorld: what a caller asks for,
-// decoded by the surface. Empty strings select the documented defaults; a nil
-// StartTimeNS selects the default start, which is distinct from an explicit
-// epoch-zero start.
 type WorldRequest struct {
 	Domain, Adapter, Sink, SinkTarget, TimeMode string
 	Seed                                        int64
 	StartTimeNS                                 *int64
 	Entities                                    []string
 	ScenarioProfile, Label                      string
-	// Explore stamps the world's run unblinded from creation: it is never scored.
+
 	Explore bool
 }
 
@@ -56,7 +52,7 @@ func worldDeliveryOptions(req WorldRequest) (string, string) {
 }
 
 func worldStartTime(req WorldRequest) (int64, bool) {
-	// Presence distinguishes the default from a legal epoch-zero start.
+
 	if req.StartTimeNS != nil {
 		return *req.StartTimeNS, true
 	}

@@ -5,21 +5,14 @@ import (
 	rules "github.com/ghassan-ai-projects/streams-simulator/internal/director/internal/domain"
 )
 
-// WorldRequest is what a caller asks sim.world.create for: domain, seed,
-// adapter, sink and time mode. Empty strings select the documented defaults.
 type WorldRequest = layer.WorldRequest
 
-// Code is a stable refusal code from the taxonomy in MCP_SURFACE section 7.
 type Code = rules.Code
 
-// Nameplate is the static description of a world the operator may read.
 type Nameplate = rules.Nameplate
 
-// EffectorInfo is one declared effector, as the nameplate describes it.
 type EffectorInfo = rules.EffectorInfo
 
-// Error taxonomy. Operator-facing codes are deliberately coarse so the text
-// cannot leak state.
 const (
 	CodeDomainInvalid       = rules.CodeDomainInvalid
 	CodeAdapterInvalid      = rules.CodeAdapterInvalid

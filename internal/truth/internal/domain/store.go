@@ -1,9 +1,5 @@
 package domain
 
-// The sealed truth store. A label is sealed at run begin and revealed only
-// after the run closes, or earlier with unblind:true, which stamps the run
-// permanently and excludes it from every scorecard.
-
 import (
 	"fmt"
 	"sync"
@@ -11,20 +7,14 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-// Store holds the sealed truth for runs under the director role. It is
-// deliberately a separate object from any operator-facing view.
 type Store struct {
 	mu        sync.Mutex
-	labels    map[string]*model.GroundTruthRecord // by run id
+	labels    map[string]*model.GroundTruthRecord
 	sealed    map[string]bool
 	unblinded map[string]bool
 	runIsOpen func(runID string) bool
 }
 
-// NewStore builds an empty truth store. runIsOpen reports whether a run is
-// still open; Reveal refuses an open run unless it is unblinded. The check is
-// required: a nil check counts every run as open, so a store built without
-// one refuses to reveal rather than leaking the label.
 func NewStore(runIsOpen func(runID string) bool) *Store {
 	if runIsOpen == nil {
 		runIsOpen = func(string) bool { return true }
@@ -37,7 +27,6 @@ func NewStore(runIsOpen func(runID string) bool) *Store {
 	}
 }
 
-// Seal records the label for a run and seals it.
 func (s *Store) Seal(runID string, rec *model.GroundTruthRecord) error {
 	if err := s.checkSealInput(runID, rec); err != nil {
 		return err
@@ -63,8 +52,6 @@ func (s *Store) record(runID string, rec *model.GroundTruthRecord) error {
 	return nil
 }
 
-// Reveal returns the sealed label. unblind permits revealing on an open
-// run, permanently stamping it.
 func (s *Store) Reveal(runID string, unblind bool) (*model.GroundTruthRecord, error) {
 	if s == nil {
 		return nil, ErrNoStore
@@ -88,7 +75,6 @@ func (s *Store) reveal(runID string, unblind bool) (*model.GroundTruthRecord, er
 	return cloneRecord(rec), nil
 }
 
-// SealStatus reports the sealing state.
 func (s *Store) SealStatus(runID string) (sealed, unblinded bool, err error) {
 	if s == nil {
 		return false, false, ErrNoStore
@@ -101,8 +87,6 @@ func (s *Store) SealStatus(runID string) (sealed, unblinded bool, err error) {
 	return s.sealed[runID], s.unblinded[runID], nil
 }
 
-// cloneRecord returns a defensive copy so callers cannot mutate the sealed
-// oracle through shared slices, maps, or pointers.
 func cloneRecord(in *model.GroundTruthRecord) *model.GroundTruthRecord {
 	out := *in
 	out.Observability.Channels = append([]string(nil), in.Observability.Channels...)

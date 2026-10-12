@@ -14,14 +14,10 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/schemas"
 )
 
-// DecodeFile validates an adapter document read from a file: the same checks
-// as LoadBytes, with the multi-line error layout used for files.
 func DecodeFile(raw []byte, path string) (*model.Adapter, error) {
 	return decodeAdapter(raw, path, "\n  ")
 }
 
-// LoadBytes validates an adapter from an in-memory source document. It is
-// used by artifact replay so a run can carry its own adapter definition.
 func LoadBytes(raw []byte, src string) (*model.Adapter, error) {
 	return decodeAdapter(raw, src, " ")
 }

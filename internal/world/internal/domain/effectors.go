@@ -8,11 +8,8 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-// FailureMode is how an effector invocation went: the closed vocabulary of
-// InvokeResult.Mode. Its JSON form is the plain string.
 type FailureMode string
 
-// Effector failure modes.
 const (
 	ModeOK                FailureMode = "ok"
 	ModeSlow              FailureMode = "slow"
@@ -23,14 +20,8 @@ const (
 	ModeSilentNoEffect    FailureMode = "silent_no_effect"
 )
 
-// ReasonAcknowledgementTimeout is what a consumer sees of a lost
-// acknowledgement: no answer, so no way to know whether the effect applied.
 const ReasonAcknowledgementTimeout = "acknowledgement_timeout"
 
-// Acknowledge is what the consumer learns from the invocation: the
-// result without its failure mode, effect flag or latency. A lost
-// acknowledgement reads as a timeout, without the effect time that would
-// betray that the effect applied.
 func Acknowledge(r *InvokeResult) *model.EffectorAcknowledgement {
 	ack := &model.EffectorAcknowledgement{Accepted: r.Accepted, Simulated: r.Simulated, WorldID: r.WorldID,
 		CommandID: r.CommandID, EffectETANS: r.EffectETANS, Reason: r.Reason}
@@ -40,7 +31,6 @@ func Acknowledge(r *InvokeResult) *model.EffectorAcknowledgement {
 	return ack
 }
 
-// KnownFailureMode reports whether mode is in the failure-mode vocabulary.
 func KnownFailureMode(mode FailureMode) bool {
 	switch mode {
 	case ModeOK, ModeSlow, ModeAckLost, ModeReject, ModePartial, ModeConfirmedNoEffect, ModeSilentNoEffect:
@@ -49,7 +39,6 @@ func KnownFailureMode(mode FailureMode) bool {
 	return false
 }
 
-// InvokeResult is what an effector invocation returns.
 type InvokeResult struct {
 	Accepted      bool        `json:"accepted"`
 	Simulated     bool        `json:"simulated"`
@@ -63,16 +52,10 @@ type InvokeResult struct {
 	Cause         string      `json:"-"`
 }
 
-// ErrInterlockRefused is the terminal refusal of an independent safety
-// system. Refusal is not a retryable error.
 var ErrInterlockRefused = fmt.Errorf("world: interlock refused")
 
-// ErrCommandIDReused is returned when a command_id still inside its
-// idempotency window names a different request than it first did.
 var ErrCommandIDReused = errors.New("world: command_id already used for a different request")
 
-// invocation is one effector actuation request: what was asked, of which
-// entity, under which idempotency key, at what world time.
 type invocation struct {
 	effector  string
 	entityID  string
@@ -81,7 +64,6 @@ type invocation struct {
 	atNS      int64
 }
 
-// callOutcome is what became of an invocation, as recorded in the call log.
 type callOutcome struct {
 	mode          FailureMode
 	accepted      bool
@@ -91,9 +73,6 @@ type callOutcome struct {
 	effectApplied bool
 }
 
-// InvokeEffector actuates an effector. commandID is the idempotency key;
-// repeating a call with the same command_id inside the declared window
-// returns the original result and applies no second effect.
 func (w *World) InvokeEffector(effector, entityID, commandID string, args map[string]any, atNS int64) (*InvokeResult, error) {
 	inv := invocation{effector: effector, entityID: entityID, commandID: commandID, args: args, atNS: atNS}
 	eff, err := w.admitInvocation(inv)
@@ -135,10 +114,6 @@ func (w *World) invocationIdentity(effector, entityID, commandID string) (*model
 	return eff, nil
 }
 
-// A command inside its idempotency window replays, byte for byte, the result
-// of the request it first carried, without another effect. The same command_id
-// naming a different request is refused: replaying the first answer to it
-// would acknowledge an actuation that never happened.
 func (w *World) replayInvocation(inv invocation) (*InvokeResult, bool, error) {
 	prev, known := w.idempotent[inv.commandID]
 	if !known {
@@ -155,9 +130,6 @@ func (w *World) replayInvocation(inv invocation) (*InvokeResult, bool, error) {
 	return &replayed, true, nil
 }
 
-// requestKey identifies what an invocation asks for: effector, entity and
-// arguments (json.Marshal sorts map keys, so equal arguments give equal keys).
-// Omitted arguments and an empty object are the same request.
 func requestKey(inv invocation) string {
 	args := inv.args
 	if args == nil {
@@ -165,13 +137,12 @@ func requestKey(inv invocation) string {
 	}
 	raw, err := json.Marshal([]any{inv.effector, inv.entityID, numbersByValue(args)})
 	if err != nil {
-		// fmt prints map keys in sorted order, so the fallback is stable too.
+
 		return fmt.Sprintf("%q|%q|%v", inv.effector, inv.entityID, args)
 	}
 	return string(raw)
 }
 
-// Safety refusal is terminal and may execute its independent autonomous action.
 func (w *World) refuseInterlock(eff *model.Effector, inv invocation) bool {
 	if eff.Interlock == nil || !w.interlockHolds(inv.entityID, eff.Interlock, inv.atNS) {
 		return false
@@ -226,8 +197,7 @@ func (w *World) applyEffectorOutcome(result *InvokeResult, eff *model.Effector, 
 	case ModePartial, ModeSilentNoEffect:
 		w.applyUnconfirmedEffect(result, eff, inv)
 	case ModeConfirmedNoEffect:
-		// The ack lies, down to the effect it promises; confirmation channels
-		// report truth.
+
 		result.Accepted = true
 		result.EffectETANS = inv.atNS + int64(eff.Effect.DeadTimeS*secondsPerNS)
 	}
@@ -244,7 +214,6 @@ func (w *World) applyAcknowledgedEffect(result *InvokeResult, eff *model.Effecto
 	result.EffectETANS = inv.atNS + int64(eff.Effect.DeadTimeS*secondsPerNS)
 }
 
-// Silent-no-effect applies to shadow state only; partial applies half physically.
 func (w *World) applyUnconfirmedEffect(result *InvokeResult, eff *model.Effector, inv invocation) {
 	strength, shadow := 0.5, false
 	if result.Mode == ModeSilentNoEffect {

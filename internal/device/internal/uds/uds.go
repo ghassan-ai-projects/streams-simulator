@@ -17,27 +17,12 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/kernel"
 )
 
-// ErrInjectedDisconnect identifies a deterministic disconnect fault. The
-// listener closes the current connection and remains available for the next
-// gateway connection.
 var ErrInjectedDisconnect = errors.New("device: injected disconnect")
 
-// ServeConn runs one device over a byte-stream connection using newline-delimited
-// framing. On connect it emits the current device.state; then for each inbound
-// command line it applies the command and writes the ordered receipt and
-// terminal result. Under an ack_lost fault it writes NOTHING for that command
-// — the effect is still applied, so the upstream must reconcile via a later
-// state query before retrying.
-//
-// Raw serial framing (COBS, checksums, reconnect, device identity) is a gateway
-// concern; this NDJSON line framing is the debug/emulator transport.
 func ServeConn(conn io.ReadWriter, d *domain.Device) error {
 	return ServeConnWithFaults(conn, d, WireFaults{})
 }
 
-// ServeConnWithFaults is ServeConn with a deterministic transport-fault plan
-// applied to the outbound frames (state/receipt/result), indexed by emission
-// order across the connection. See WireFaults.
 func ServeConnWithFaults(conn io.ReadWriter, d *domain.Device, faults WireFaults) error {
 	gate := newWireGate(conn, faults)
 	if err := sendInitialState(d, gate); err != nil {
@@ -54,9 +39,6 @@ func ServeConnWithFaults(conn io.ReadWriter, d *domain.Device, faults WireFaults
 	return gate.flush()
 }
 
-// QueryStateControl is the host→device gateway-link control line that asks the
-// device for a fresh state record. It is transport control, not one of the four
-// device wire records, so it carries only message_type.
 const QueryStateControl = `{"message_type":"query_state"}`
 
 func isQueryState(frame []byte) bool {
@@ -91,10 +73,6 @@ func malformedResult() map[string]any {
 	}
 }
 
-// Listen serves a single device on a Unix domain socket at path until the
-// listener is closed. Each accepted connection is handled sequentially — one
-// device speaks to one gateway link at a time. It removes a stale socket file
-// at path before binding, but never removes a regular file or directory.
 func Listen(path string, d *domain.Device) (*net.UnixListener, error) {
 	listener, err := kernel.Listen(context.Background(), path)
 	if err != nil {

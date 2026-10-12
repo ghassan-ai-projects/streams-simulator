@@ -12,15 +12,12 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-// BalancedAccuracyCutoff is the hindsight-fitted bar for triviality.
 const BalancedAccuracyCutoff = 0.9
 
-// DetectorNames is the panel in a stable order.
 var DetectorNames = []string{
 	"fixed_threshold", "zscore", "first_difference", "moving_median_residual", "channel_silence",
 }
 
-// Verdict is the audit outcome for one scenario.
 type Verdict struct {
 	Trivial   bool               `json:"trivial"`
 	Scores    map[string]float64 `json:"scores"`
@@ -30,16 +27,12 @@ type Verdict struct {
 	Samples   int                `json:"samples"`
 }
 
-// Panel audits one injection: it runs the world twice (clean control and
-// faulted), samples the delivered channel readings on a grid, and fits each
-// trivial detector with hindsight on the labeled series.
 type Panel struct {
 	spec     *domain.Compiled
 	seed     uint64
 	sampleNS int64
 }
 
-// NewPanel builds the audit panel.
 func NewPanel(spec *domain.Compiled, seed uint64, sampleNS int64) *Panel {
 	if sampleNS <= 0 {
 		sampleNS = 60 * 1e9
@@ -47,8 +40,6 @@ func NewPanel(spec *domain.Compiled, seed uint64, sampleNS int64) *Panel {
 	return &Panel{spec: spec, seed: seed, sampleNS: sampleNS}
 }
 
-// Perturbation is one delivery perturbation the audit applies to the
-// delivered stream, exactly as the scenario declares it.
 type Perturbation struct {
 	Name    string         `json:"name"`
 	Params  map[string]any `json:"params,omitempty"`
@@ -56,14 +47,6 @@ type Perturbation struct {
 	UntilNS int64          `json:"until_ns,omitempty"`
 }
 
-// Audit runs the panel on one injection. The control is the domain's
-// declared negative-class scenario (transient_none-style) when one exists,
-// else a clean world: the design's bar is separating the fault from its
-// negative controls, not from an empty trace. setup applies pre-fault
-// effector calls to both worlds (scenario context such as an aerator
-// running at night). The detector inputs are the immutable delivered
-// stream — world, perturbation layer and adapter projection — in monotonic
-// order, never random access on a mutable world.
 func (p *Panel) Audit(entityID, faultID string, onsetNS, startNS int64, entityIDs []string, durationNS int64, setup []model.SetupCall, perturbations []Perturbation) (*Verdict, error) {
 	clean, cleanEmissions, err := p.build(entityID, startNS, entityIDs, map[string]int64{p.controlFault(faultID): onsetNS}, setup, perturbations, durationNS)
 	if err != nil {

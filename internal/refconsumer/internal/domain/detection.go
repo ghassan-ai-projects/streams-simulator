@@ -20,8 +20,7 @@ func (r *Runner) suspicious(s *series, v float64) bool {
 }
 
 func (r *Runner) detect(entity, channel string, t int64, s *series) model.Detection {
-	// Evidence refs: the scoring side validates citations against delivered
-	// records; the consumer cites the channel it detected on.
+
 	return model.Detection{
 		EntityID:     entity,
 		DetectedAt:   model.FormatTime(t),
@@ -42,9 +41,6 @@ func (r *Runner) issue(entity string, t int64) model.Action {
 	return r.issuedAction(cmdID, entity, t, model.BelievedUnknown)
 }
 
-// argsFor constructs a minimal argument set for the detection effector:
-// required string properties named *_id are bound to the entity id. This is
-// consumer configuration made from the nameplate, not simulator knowledge.
 func (r *Runner) argsFor(entity string) map[string]any {
 	out := map[string]any{}
 	schema := r.detectionEffectorSchema()

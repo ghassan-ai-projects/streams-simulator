@@ -1,11 +1,5 @@
 package domain
 
-// The adapter conformance fixture: a fixed 12-event native trace, committed
-// with the simulator. Every adapter's golden file is rendered from exactly
-// this fixture, so `adapter verify` is a byte-comparison against a stable
-// input. Verified by hand before first use: each value, timestamp and digest
-// below was computed by a human, not by the simulator.
-
 import (
 	_ "embed"
 	"fmt"
@@ -17,7 +11,6 @@ import (
 //go:embed testdata/fixture.jsonl
 var fixtureJSONL string
 
-// FixtureEvents returns the parsed 12-event fixture.
 func FixtureEvents() ([]model.SimEvent, error) {
 	var out []model.SimEvent
 	for i, line := range strings.Split(strings.TrimSpace(fixtureJSONL), "\n") {
@@ -34,8 +27,6 @@ func FixtureEvents() ([]model.SimEvent, error) {
 	return out, nil
 }
 
-// DecodeFixtureRecords decodes a JSONL native-event fixture supplied by the
-// caller instead of the embedded one.
 func DecodeFixtureRecords(raw []byte) ([]model.SimEvent, error) {
 	var out []model.SimEvent
 	for _, line := range strings.Split(strings.TrimSpace(string(raw)), "\n") {

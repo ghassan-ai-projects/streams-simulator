@@ -7,7 +7,7 @@ import (
 )
 
 func (r *Runner) reportProcessedWatermark(now int64) error {
-	// Assert processing through the later observed or declared batch end.
+
 	if r.quiescence != nil {
 		if err := r.quiescence.ReportQuiesced(now); err != nil {
 			return fmt.Errorf("Process: report quiescence: %w", err)

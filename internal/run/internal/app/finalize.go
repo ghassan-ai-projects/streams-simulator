@@ -10,18 +10,12 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/sink"
 )
 
-// End finalizes the run: closes the sink, computes the trace digest, and
-// writes the run artifact, ledger, world-state history and (if any) verdict
-// into outDir.
 func (r *Run) End(outDir string) (*model.RunArtifact, error) {
 	r.commandMu.Lock()
 	defer r.commandMu.Unlock()
 	return r.endLocked(outDir)
 }
 
-// Finished reports whether End has closed the run, cleanly or not: a run
-// that failed mid-way and was ended is finished, and takes no further
-// commands.
 func (r *Run) Finished() bool {
 	r.commandMu.Lock()
 	defer r.commandMu.Unlock()
@@ -36,8 +30,7 @@ func (r *Run) endLocked(outDir string) (*model.RunArtifact, error) {
 }
 
 func (r *Run) finishRun(outDir string) (*model.RunArtifact, error) {
-	// The sink and ledger are closed by now whatever happened, so the run is
-	// over: it takes no further commands even when its end failed.
+
 	traceErr := r.finishTrace()
 	r.closeJournal()
 	r.finished = true
@@ -47,9 +40,6 @@ func (r *Run) finishRun(outDir string) (*model.RunArtifact, error) {
 	return r.publishArtifact(outDir)
 }
 
-// publishArtifact writes the run's evidence and artifact. The artifact is
-// returned with a publication error too: the run is over and its evidence is
-// in memory, so a caller can still use it.
 func (r *Run) publishArtifact(outDir string) (*model.RunArtifact, error) {
 	art := r.artifact()
 	if err := r.publishRequestedEvidence(outDir); err != nil {
@@ -75,8 +65,6 @@ func (r *Run) publishRequestedEvidence(outDir string) error {
 	})
 }
 
-// tracePath is where the delivered trace is published: the file sink's own
-// target when it has one, otherwise trace.jsonl under outDir.
 func (r *Run) tracePath(outDir string) string {
 	if r.Config.SinkName == model.SinkFile && r.Config.SinkTarget != "" {
 		return r.Config.SinkTarget
@@ -87,8 +75,7 @@ func (r *Run) tracePath(outDir string) string {
 func (r *Run) finishTrace() error {
 	r.finishPostamble()
 	trace, err := r.Sink.Close()
-	// The ledger is closed even when the sink fails to close, or its file
-	// descriptor would outlive the run.
+
 	ledgerErr := r.closeDurableLedger()
 	if err != nil {
 		return fmt.Errorf("End: %w", err)

@@ -6,8 +6,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-// reading computes the observed (pre-quantization) value and whether this
-// tick emits, per the channel's cadence mode.
 func (w *World) reading(ent *Entity, ch *model.Channel, cs *channelRunState, t int64) (bool, any) {
 	switch ch.ValueType {
 	case "none":
@@ -19,7 +17,6 @@ func (w *World) reading(ent *Entity, ch *model.Channel, cs *channelRunState, t i
 	}
 }
 
-// observe applies the channel's observation function to the hidden state.
 func (w *World) observe(ent *Entity, ch *model.Channel, cs *channelRunState, t int64) float64 {
 	value := w.stateAt(ent.ID, ch.Observes, t)
 	if w.isConfirmationChannel(ent, ch.Name) {
@@ -33,7 +30,6 @@ func (w *World) observe(ent *Entity, ch *model.Channel, cs *channelRunState, t i
 	return quantize(reading, ch.Resolution)
 }
 
-// drift advances the reading drift (linear or random walk).
 func (w *World) drift(ent *Entity, ch *model.Channel, cs *channelRunState, t int64, d *model.Drift) float64 {
 	if cs.walkLastNS == 0 {
 		cs.walkLastNS = t

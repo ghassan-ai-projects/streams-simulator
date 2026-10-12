@@ -9,8 +9,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run/internal/durable"
 )
 
-// journalStream pairs a journal stream with its file under the run directory,
-// the digest the artifact recorded and the digest the replay produced.
 type journalStream struct {
 	name, file, recorded, replayed string
 }
@@ -22,10 +20,6 @@ func journalStreams(replay *Run, art *model.RunArtifact) []journalStream {
 	}
 }
 
-// noteJournalDivergence fails the replay for each journal stream whose rebuilt
-// digest differs from the one the artifact recorded. A run that ended
-// incomplete closed its journal in a way replay cannot reproduce, so its
-// journals are not compared.
 func noteJournalDivergence(replay *Run, art *model.RunArtifact, result *ReplayResult) {
 	if art.Incomplete {
 		return
@@ -44,9 +38,6 @@ func divergeJournal(result *ReplayResult, stream, note string) {
 	result.Matches = false
 }
 
-// checkJournalFiles compares the journal files beside the artifact with the
-// replayed streams, byte for byte on the replayable records, and names the
-// first record that differs. A run without journal files is not checked.
 func checkJournalFiles(dir string, replay *Run, art *model.RunArtifact, result *ReplayResult) error {
 	if art.Incomplete {
 		return nil

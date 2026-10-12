@@ -10,7 +10,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
 )
 
-// CreateWorld builds a world (sim.world.create).
 func (d *Director) CreateWorld(req WorldRequest) (map[string]any, error) {
 	cfg, err := d.worldConfig(req)
 	if err != nil {

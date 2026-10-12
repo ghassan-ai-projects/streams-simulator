@@ -9,19 +9,13 @@ import (
 	"sync"
 )
 
-// Sink receives complete journal lines (each ends in a newline). The file
-// edge implements it; a stream without a sink keeps only its digest.
 type Sink interface {
 	Write(line []byte) error
 	Flush() error
-	// Close flushes, syncs and closes the destination.
+
 	Close() error
 }
 
-// Stream is one append-only stream of records. It numbers records, writes each
-// as one line and keeps a running SHA-256 of the lines replay can reproduce.
-// A failure to encode or write is remembered and returned by Flush and Close:
-// a record is never dropped silently.
 type Stream struct {
 	mu     sync.Mutex
 	name   string
@@ -34,8 +28,6 @@ type Stream struct {
 	closed bool
 }
 
-// NewStream starts a stream. A nil sink keeps the digest only; retain also
-// keeps every line in memory (replay compares them).
 func NewStream(name string, sink Sink, retain bool) *Stream {
 	s := &Stream{name: name, sink: sink, hash: sha256.New()}
 	if retain {
@@ -44,9 +36,6 @@ func NewStream(name string, sink Sink, retain bool) *Stream {
 	return s
 }
 
-// Append writes one record. Replayable records take the next seq and the given
-// world time; a session record keeps the seq of the replayable record that
-// follows it and the time of the one before.
 func (s *Stream) Append(recordType string, atNS int64, fields map[string]any) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -62,8 +51,6 @@ func (s *Stream) Append(recordType string, atNS int64, fields map[string]any) {
 	s.commit(rec, append(line, '\n'))
 }
 
-// next is the record the stream writes next: a session record keeps the seq of
-// the replayable record that follows it and the time of the one before.
 func (s *Stream) next(recordType string, atNS int64, fields map[string]any) Record {
 	if IsSession(recordType) {
 		atNS = s.atNS
@@ -85,8 +72,6 @@ func (s *Stream) commit(rec Record, line []byte) {
 	}
 }
 
-// Flush pushes buffered lines to the destination and returns the first failure
-// the stream has met.
 func (s *Stream) Flush() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -96,8 +81,6 @@ func (s *Stream) Flush() error {
 	return s.err
 }
 
-// Close ends the stream: it syncs and closes the destination and returns the
-// stream's digest with the first failure. Closing twice returns the same.
 func (s *Stream) Close() (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -108,14 +91,12 @@ func (s *Stream) Close() (string, error) {
 	return s.digest(), s.err
 }
 
-// Digest is the SHA-256 of the replayable lines written so far.
 func (s *Stream) Digest() string {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.digest()
 }
 
-// Bytes returns the retained lines (nil unless the stream retains them).
 func (s *Stream) Bytes() []byte {
 	s.mu.Lock()
 	defer s.mu.Unlock()

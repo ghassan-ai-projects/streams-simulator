@@ -6,15 +6,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-// stateAt is the full observable hidden value of a state at time t:
-// natural dynamics plus the contributions of the state's drivers.
-//
-// Faults and effect kicks are both drivers of the same state, and the
-// most recently activated driver rules: a fault stops a running aerator
-// (kick active, fault newer), and a later start_aerator fixes it (kick
-// newer than the fault). Without a recency rule the domain's expected
-// responses could never work — a permanent additive -1.0 fault would either
-// cancel a +1.0 kick forever or be itself uncancellable.
 func (w *World) stateAt(entity, state string, t int64) float64 {
 	ent := w.entities[entity]
 	if ent == nil {
@@ -24,7 +15,7 @@ func (w *World) stateAt(entity, state string, t int64) float64 {
 	value, lastKick, anyKick := w.applyStateKicks(value, entity, state, t)
 	lastFault, anyFault := w.latestStateFault(entity, state, t)
 	if anyFault && (!anyKick || lastFault > lastKick) {
-		// The newer fault rules; discard contributions from older kicks.
+
 		value = w.applyStateFaults(w.naturalValue(ent, state, t), entity, state, t)
 	}
 	return w.clampState(ent, state, value)
@@ -41,7 +32,6 @@ func (w *World) applyStateKicks(v float64, entity, state string, t int64) (float
 	return v, drivers.last, drivers.any
 }
 
-// activeAt reports whether the fault's contribution is in force at t.
 func (f *activeFault) activeAt(t int64) bool {
 	if t < f.onsetNS {
 		return false
@@ -52,8 +42,6 @@ func (f *activeFault) activeAt(t int64) bool {
 	return true
 }
 
-// shadowValue is the state value a confirmation channel reports under a
-// silent_no_effect shadow: the real value plus the shadow kicks.
 func (w *World) shadowValue(entity, state string, t int64) float64 {
 	v := w.stateAt(entity, state, t)
 	for _, k := range w.shadow[driverKey{entity: entity, state: state}] {
@@ -69,9 +57,6 @@ func (w *World) clampState(ent *Entity, state string, v float64) float64 {
 	return v
 }
 
-// clampToBounds limits v to [lower, upper]; a state declaring neither bound
-// (both zero) is unbounded. It allocates nothing, because it runs on every
-// state read.
 func clampToBounds(v, lower, upper float64) float64 {
 	switch {
 	case lower == 0 && upper == 0:
@@ -97,7 +82,6 @@ func clamp(v float64, c *model.Clamp) float64 {
 	return v
 }
 
-// recordDelay pushes u into the dead-time ring buffer.
 func (s *stateValue) recordDelay(u float64, f1 *model.F1Dyn, dt int64) {
 	capacity := delayCapacity(f1, dt)
 	if len(s.delayed) < capacity {
@@ -110,7 +94,6 @@ func (s *stateValue) recordDelay(u float64, f1 *model.F1Dyn, dt int64) {
 	}
 }
 
-// delayedValue reads the ring buffer entry dead_time behind.
 func (s *stateValue) delayedValue(current float64) float64 {
 	if !s.delayFull {
 		return current
@@ -118,7 +101,6 @@ func (s *stateValue) delayedValue(current float64) float64 {
 	return s.delayed[s.delayHead]
 }
 
-// dtFor returns the integration step for a state (ns), or 0.
 func dtFor(kind *model.Kind, state string) int64 {
 	dyn := kind.DynamicsOf(state)
 	if dyn == nil || (dyn.Tier != "F1" && dyn.Tier != "F2") {

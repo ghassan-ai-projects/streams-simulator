@@ -15,9 +15,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-// Parse reads, schema-validates and structurally validates a domain spec from
-// an in-memory document. The returned Compiled carries the spec, its canonical
-// digest, and resolved defaults. src names the source for error messages.
 func Parse(raw []byte, src string) (*Compiled, error) {
 	doc, err := validateDocument(raw, src)
 	if err != nil {
@@ -26,11 +23,10 @@ func Parse(raw []byte, src string) (*Compiled, error) {
 	return compileDocument(raw, doc, src)
 }
 
-// Compiled is the typed, validated, digest-carrying form of a domain spec.
 type Compiled struct {
 	Spec   *model.DomainSpec
 	Digest string
-	// Raw is the validated source document embedded in run artifacts.
+
 	Raw []byte
 
 	channels  map[string]bool
@@ -43,8 +39,7 @@ type Compiled struct {
 	effective  []*model.Kind
 	lookup     []*model.Kind
 
-	// Resolved defaults (schema defaults applied).
-	channelGain map[string]float64 // channel -> observation_gain
+	channelGain map[string]float64
 }
 
 func (c *Compiled) HasChannel(name string) bool { return c.channels[name] }

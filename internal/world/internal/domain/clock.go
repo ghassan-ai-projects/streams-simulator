@@ -9,7 +9,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/randutil"
 )
 
-// NextEventNS is the time of the next scheduled event.
 func (w *World) NextEventNS() int64 {
 	if w.queue.Len() == 0 {
 		return 0
@@ -17,13 +16,8 @@ func (w *World) NextEventNS() int64 {
 	return w.queue[0].timeNS
 }
 
-// ErrClockBackwards is returned when an advance would move the clock before
-// the current world time.
 var ErrClockBackwards = errors.New("world: clock would move backwards")
 
-// Advance processes every event scheduled at or before to, then sets the
-// clock to to, and reports how many native events were emitted and how many
-// effect kicks started. Moving the clock backwards is refused.
 func (w *World) Advance(to int64) (emitted, effectsApplied int, err error) {
 	if to < w.clockNS {
 		return 0, 0, fmt.Errorf("%w (%d -> %d)", ErrClockBackwards, w.clockNS, to)
@@ -35,22 +29,16 @@ func (w *World) Advance(to int64) (emitted, effectsApplied int, err error) {
 	return w.emittedThisAdvance, w.effectsAppliedThis, nil
 }
 
-// Clock is the current world time.
 func (w *World) Clock() int64 { return w.clockNS }
 
 func (w *World) StreamKey() string { return w.streamKey }
 
-// SetEmitter installs the event sink. Events flow world -> emitter.
 func (w *World) SetEmitter(emitter func(model.SimEvent)) {
 	w.emitter = emitter
 }
 
-// EmittedCount is the total number of native events produced.
 func (w *World) EmittedCount() int64 { return w.seq }
 
-// substream returns the cached PRNG for a named substream under this world's
-// seed. Names are "<world_id>/<entity>/<channel>/<purpose>"; the world id
-// prefix keeps distinct worlds independent even under the same seed.
 func (w *World) substream(name string) *randutil.SplitMix64 {
 	full := w.streamKey + "/" + name
 	if s, ok := w.subs[full]; ok {

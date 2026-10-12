@@ -16,18 +16,12 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
-// OpenOptions say which device to open: its identity, its capability catalog
-// and fault schedule, and, when WorldBindings is set, the world it is bound
-// to. Now is the clock the plant counts device microseconds from.
 type OpenOptions struct {
 	Capabilities, WorldBindings, WorldDomain, WorldEntity, BootID, DeviceID string
 	FaultSchedule                                                           []device.FaultInjection
 	Now                                                                     func() time.Time
 }
 
-// OpenDevice builds the device the options describe. With WorldBindings the
-// device's plant is the world bound by that catalog, which is returned too;
-// without, the device has no plant and the world is nil.
 func OpenDevice(options OpenOptions) (*device.Device, *world.World, error) {
 	caps, err := device.LoadCapabilitiesFile(options.Capabilities)
 	if err != nil {
@@ -90,7 +84,6 @@ func bindPlant(w *world.World, data []byte, entity string, caps *device.Capabili
 	return rules.New(w, bindings), w, deviceClock(now), nil
 }
 
-// deviceClock counts the microseconds of the injected clock since this call.
 func deviceClock(now func() time.Time) func() int64 {
 	started := now()
 	return func() int64 { return now().Sub(started).Microseconds() }

@@ -14,12 +14,8 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/jsonschema"
 )
 
-// ProtocolVersion is the device wire protocol version this emulator speaks. It
-// must match the vendored contract (contract/schemas + contract/SOURCE.md).
 const ProtocolVersion = 1
 
-// MaxFrameBytes bounds a single decoded record, matching the Agentic Stream
-// codec so the two ends agree on the oversize-frame boundary.
 const MaxFrameBytes = 64 * 1024
 
 var (
@@ -27,7 +23,6 @@ var (
 	compiled = map[string]*jsonschema.Schema{}
 )
 
-// schemaForMessageType returns the compiled schema for a device message_type.
 func schemaForMessageType(messageType string) (*jsonschema.Schema, error) {
 	file, err := messageSchemaFile(messageType)
 	if err != nil {

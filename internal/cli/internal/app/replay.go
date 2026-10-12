@@ -9,9 +9,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
 )
 
-// cmdVerify replays the artifact like cmdReplay but fails the command when
-// the replay does not reproduce the recorded trace, so scripts can gate on
-// the exit status. The result document is still printed.
 func cmdVerify(s *session, args []string) (any, error) {
 	res, err := replayFile(s, args)
 	if err != nil {
@@ -24,8 +21,6 @@ func cmdVerify(s *session, args []string) (any, error) {
 	return nil, &outcomeError{code: codeReplayMismatch, message: message, result: replayResult(res)}
 }
 
-// cmdReplay reproduces the run and reports whether the trace digest matches;
-// it exits 0 whatever the outcome (see cmdVerify).
 func cmdReplay(s *session, args []string) (any, error) {
 	res, err := replayFile(s, args)
 	if err != nil {

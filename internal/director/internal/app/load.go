@@ -8,8 +8,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 )
 
-// LoadDirector builds the director over every domain in domainsDir and every
-// adapter in adaptersDir; its runs publish evidence under outDir.
 func LoadDirector(ctx context.Context, domainsDir, adaptersDir, outDir string) (*Director, error) {
 	cat, err := domain.NewCatalogFromDir(domainsDir)
 	if err != nil {

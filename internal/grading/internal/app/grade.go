@@ -13,17 +13,8 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/score"
 )
 
-// Options name the run to grade: its artifact, the sealed label (empty selects
-// label.json beside the artifact), and the directories the artifact's domain
-// and adapter are looked up in to replay it.
 type Options struct{ Artifact, Label, DomainsDir, AdaptersDir string }
 
-// Grade scores a finished run from its artifacts with the same scorer the
-// director uses online, so the two scorecards agree. Delivery and state
-// evidence come from the files the run published; the effector calls come
-// from replaying the artifact, because the command log records the
-// invocations but not whether each took effect. A replay that does not
-// reproduce the recorded trace is refused rather than graded.
 func Grade(ctx context.Context, options Options) (*score.Scorecard, error) {
 	art, err := run.LoadArtifact(options.Artifact)
 	if err != nil {
@@ -35,7 +26,6 @@ func Grade(ctx context.Context, options Options) (*score.Scorecard, error) {
 	return gradeArtifact(ctx, options, art)
 }
 
-// gradeArtifact grades a loaded artifact against the reports beside it.
 func gradeArtifact(ctx context.Context, options Options, art *model.RunArtifact) (*score.Scorecard, error) {
 	dir := filepath.Dir(options.Artifact)
 	verdict, gt, err := loadReports(dir, options.Label)

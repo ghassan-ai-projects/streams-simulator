@@ -8,15 +8,11 @@ import (
 	"fmt"
 )
 
-// completeLines returns the lines of raw that end in a newline. An unterminated
-// last line is a torn write and is ignored.
 func completeLines(raw []byte) [][]byte {
 	lines := bytes.Split(raw, []byte{'\n'})
 	return lines[:len(lines)-1]
 }
 
-// Read decodes every complete line of a journal. It stops at the first line
-// that is not a record and returns the records before it with the error.
 func Read(raw []byte) ([]Record, error) {
 	var records []Record
 	for index, line := range completeLines(raw) {
@@ -90,9 +86,6 @@ func takeInt(fields map[string]any, key string) (int64, error) {
 	return value, nil
 }
 
-// replayableLines are the complete lines that are not session records, in
-// order. A line that cannot be read counts as replayable, so damage changes
-// the digest.
 func replayableLines(raw []byte) [][]byte {
 	var kept [][]byte
 	for _, line := range completeLines(raw) {
@@ -106,9 +99,6 @@ func replayableLines(raw []byte) [][]byte {
 	return kept
 }
 
-// Digest is the SHA-256 of the replayable lines of a journal, the value a
-// stream reports when it is written: session records and a torn last line do
-// not change it.
 func Digest(raw []byte) string {
 	sum := sha256.New()
 	for _, line := range replayableLines(raw) {
@@ -118,8 +108,6 @@ func Digest(raw []byte) string {
 	return "sha256:" + hex.EncodeToString(sum.Sum(nil))
 }
 
-// FirstDifference is the index, among the replayable records, of the first one
-// where two journals differ or one ends early; -1 when they agree.
 func FirstDifference(a, b []byte) int {
 	left, right := replayableLines(a), replayableLines(b)
 	for i := range min(len(left), len(right)) {

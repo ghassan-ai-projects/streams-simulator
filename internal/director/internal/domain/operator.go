@@ -1,13 +1,5 @@
 package domain
 
-// The operator role: everything reachable from it must be computable from
-// the delivered evidence alone. The OperatorView struct therefore holds
-// only the nameplate, the effector table, a narrow invocation surface, and
-// a verdict sink. It has no field for the truth store, the fault registry,
-// the perturbation log, or hidden world state — there is no field to leak,
-// so a leak requires adding one: a visible diff in the one file a reviewer
-// must read.
-
 import (
 	"errors"
 
@@ -15,21 +7,15 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
-// EffectorInvoker is the narrow surface the operator may actuate through.
-// Implemented by the run; the operator view never sees the run itself.
 type EffectorInvoker interface {
 	InvokeEffectorNow(effector, entityID, commandID string, args map[string]any) (*world.InvokeResult, error)
 }
 
-// VerdictSink accepts consumer reports and quiescence assertions.
 type VerdictSink interface {
 	SubmitVerdict(v *model.Verdict) error
 	ReportQuiesced(throughNS int64)
 }
 
-// EffectorInfo is one declared effector, as the nameplate describes it:
-// name, argument schema, risk class. No failure-mode detail, no effect
-// internals.
 type EffectorInfo struct {
 	Name        string         `json:"name"`
 	Description string         `json:"description,omitempty"`
@@ -37,10 +23,6 @@ type EffectorInfo struct {
 	RiskClass   string         `json:"risk_class"`
 }
 
-// Nameplate is the static, time-invariant description of a world: exactly
-// the information an instrument datasheet gives you. A nameplate field that
-// changes as the world evolves would be a covert evidence channel, and is
-// forbidden.
 type Nameplate struct {
 	WorldID       string             `json:"world_id"`
 	Domain        string             `json:"domain"`
@@ -51,14 +33,12 @@ type Nameplate struct {
 	Simulated     bool               `json:"simulated"`
 }
 
-// NameplateEntity describes one entity.
 type NameplateEntity struct {
 	ID       string `json:"id"`
 	Type     string `json:"type"`
 	BornAtNS int64  `json:"born_at_ns"`
 }
 
-// NameplateChannel describes one channel.
 type NameplateChannel struct {
 	Name       string  `json:"name"`
 	Unit       string  `json:"unit,omitempty"`
@@ -67,23 +47,18 @@ type NameplateChannel struct {
 	Resolution float64 `json:"resolution"`
 }
 
-// OperatorView is the entire operator surface. Constructed per world from
-// data the world's author declares; never from runtime state.
 type OperatorView struct {
 	WorldID string
-	Token   string // capability token minted at world creation
-	// RunID is the run this capability reports against. A report naming any
-	// other run is refused; empty means the view is not bound to one run.
+	Token   string
+
 	RunID     string
 	Nameplate *Nameplate
 	Invoker   EffectorInvoker
 	Verdicts  VerdictSink
-	// Effector names are validated against this table; the binary contains
-	// no effector name of its own.
+
 	effectors map[string]bool
 }
 
-// NewOperatorView builds the view for one world.
 func NewOperatorView(worldID, token string, nameplate *Nameplate, invoker EffectorInvoker, verdicts VerdictSink) *OperatorView {
 	eff := map[string]bool{}
 	for _, e := range nameplate.Effectors {
@@ -95,7 +70,6 @@ func NewOperatorView(worldID, token string, nameplate *Nameplate, invoker Effect
 	}
 }
 
-// ReadNameplate returns the static nameplate.
 func (v *OperatorView) ReadNameplate(token string) (*Nameplate, error) {
 	if !v.authorized(token) {
 		return nil, errTool(CodeCapabilityDenied, "capability token required")
@@ -103,7 +77,6 @@ func (v *OperatorView) ReadNameplate(token string) (*Nameplate, error) {
 	return v.Nameplate, nil
 }
 
-// ListEffectors returns the declared effectors.
 func (v *OperatorView) ListEffectors(token string) ([]EffectorInfo, error) {
 	if !v.authorized(token) {
 		return nil, errTool(CodeCapabilityDenied, "capability token required")
@@ -111,10 +84,6 @@ func (v *OperatorView) ListEffectors(token string) ([]EffectorInfo, error) {
 	return v.Nameplate.Effectors, nil
 }
 
-// Invoke validates the effector name against the loaded spec and actuates.
-// The consumer gets the acknowledgement only (MCP_SURFACE §4.3, §4.5): the
-// failure mode, whether the effect applied and the latency stay sealed. The
-// world id is asserted in it, so simulated actuation is unmistakable.
 func (v *OperatorView) Invoke(token, effector, entityID, commandID string, args map[string]any) (*model.EffectorAcknowledgement, error) {
 	if err := v.admitInvocation(token, effector, commandID); err != nil {
 		return nil, err
@@ -129,15 +98,11 @@ func (v *OperatorView) Invoke(token, effector, entityID, commandID string, args 
 	return world.Acknowledge(res), nil
 }
 
-// Report records the consumer's verdict and quiescence assertion. It
-// returns an acknowledgement and never a score: submitting cannot be used
-// to probe for the answer.
 func (v *OperatorView) Report(token, runID string, quiescedThroughNS int64, verdict *model.Verdict) error {
 	if err := v.admitReport(token, runID); err != nil {
 		return err
 	}
-	// The verdict is judged first: a refused report changes nothing, so a
-	// consumer cannot advance quiescence with a verdict that will not stand.
+
 	if err := v.submit(verdict); err != nil {
 		return err
 	}
@@ -167,9 +132,6 @@ func (v *OperatorView) admitReport(token, runID string) error {
 	return nil
 }
 
-// authorized checks the capability token. Together with command_id this is
-// how the simulator declines to be actuated by anything other than a
-// consumer's deliberate, identified dispatch.
 func (v *OperatorView) authorized(token string) bool {
 	return v.Token != "" && token == v.Token
 }

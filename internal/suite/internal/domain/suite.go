@@ -12,11 +12,8 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-// Perturbation is one delivery perturbation in a scenario: the same record
-// the audit applies, so a scenario is audited exactly as declared.
 type Perturbation = audit.Perturbation
 
-// Scenario is one executable scenario recipe.
 type Scenario struct {
 	ID            string            `json:"id"`
 	Seed          uint64            `json:"seed"`
@@ -32,8 +29,6 @@ type Scenario struct {
 	CommandLog    []model.Command   `json:"command_log"`
 }
 
-// TrivialCase is a scenario the audit rejected, kept as a mechanism
-// regression fixture.
 type TrivialCase struct {
 	ScenarioID string             `json:"scenario_id"`
 	Fault      string             `json:"fault"`
@@ -41,7 +36,6 @@ type TrivialCase struct {
 	Best       string             `json:"best"`
 }
 
-// Suite is a generated graded suite.
 type Suite struct {
 	DomainID        string                    `json:"domain"`
 	Profile         string                    `json:"profile"`
@@ -53,7 +47,6 @@ type Suite struct {
 	TerminalState   string                    `json:"terminal_state,omitempty"`
 }
 
-// Config pins suite generation.
 type Config struct {
 	Domain      *domain.Compiled
 	Profile     string
@@ -63,7 +56,6 @@ type Config struct {
 	MaxAttempts int
 }
 
-// Generate builds a suite with the generate-audit-regenerate loop.
 func Generate(cfg Config) (*Suite, error) {
 	generation, err := newSuiteGeneration(cfg)
 	if err != nil {

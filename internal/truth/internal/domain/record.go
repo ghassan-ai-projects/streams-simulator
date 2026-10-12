@@ -9,8 +9,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-// Injection is one scenario's fault injection: the facts a sealed label is
-// built from.
 type Injection struct {
 	ScenarioID    string
 	Seed          uint64
@@ -24,14 +22,12 @@ type Injection struct {
 	Setup         []model.SetupCall
 }
 
-// Errors a facade re-exports so callers can test them with errors.Is.
 var (
 	ErrNoSpec   = errors.New("truth: a domain spec is required")
 	ErrNoSolver = errors.New("truth: a solver is required")
 	ErrNoStore  = errors.New("truth: a store is required")
 )
 
-// BuildRecord assembles one sealed label for a scenario.
 func BuildRecord(spec *domain.Compiled, solver *Solver, in Injection) (*model.GroundTruthRecord, error) {
 	fault, err := faultOf(spec, solver, in.FaultID)
 	if err != nil {
@@ -47,8 +43,6 @@ func BuildRecord(spec *domain.Compiled, solver *Solver, in Injection) (*model.Gr
 	return rec, nil
 }
 
-// faultOf resolves the injected fault, refusing a build with no spec or no
-// solver first.
 func faultOf(spec *domain.Compiled, solver *Solver, faultID string) (*model.Fault, error) {
 	if spec == nil {
 		return nil, ErrNoSpec

@@ -1,16 +1,11 @@
 package domain
 
-// Capabilities is the device's declared, data-defined capability catalog. The
-// canonical route catalog is reduced to the target-level admission data the
-// device needs, while its safe-stop declarations remain available to the
-// device lifecycle.
 type Capabilities struct {
 	targets   map[string]TargetCapability
 	safeStops map[string]safeStopCapability
 	digest    string
 }
 
-// TargetCapability is one target's declared capability.
 type TargetCapability struct {
 	Operation      string
 	EnergizeField  string
@@ -49,10 +44,6 @@ type safeStopDocument struct {
 	ExpiresAfterMS int    `json:"expires_after_ms"`
 }
 
-// canonicalCatalogDocument mirrors the typed representation used by the
-// paired Agentic Stream loader. Omitted route bounds stay omitted from the
-// digest preimage; this is part of the cross-repository contract rather than a
-// property of the source file's whitespace.
 type canonicalCatalogDocument struct {
 	ProtocolVersion int                               `json:"protocol_version"`
 	Routes          map[string]canonicalRouteDocument `json:"routes"`

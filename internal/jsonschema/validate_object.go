@@ -22,7 +22,7 @@ func (s *Schema) validateRequired(obj map[string]any, path string, errs *[]Error
 }
 
 func (s *Schema) validateProperties(obj map[string]any, path string, errs *[]Error) {
-	// Sorted names preserve the stable diagnostic order.
+
 	for _, name := range slices.Sorted(maps.Keys(s.properties)) {
 		val, ok := obj[name]
 		if !ok {

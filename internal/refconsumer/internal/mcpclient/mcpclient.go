@@ -3,11 +3,6 @@
 // endpoint, the documented deployable process boundary.
 package mcpclient
 
-// MCPOperator is the reference consumer's out-of-process operator client:
-// it actuates and reports through the director process's operator endpoint,
-// the documented deployable process boundary. Everything it does goes over
-// the operator tools; it never sees a director tool, the ledger, or truth.
-
 import (
 	"context"
 	"encoding/json"
@@ -19,15 +14,12 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/refconsumer/internal/domain"
 )
 
-// MCPOperator is a VerdictSink, QuiescenceReporter and EffectorInvoker over
-// the MCP operator surface.
 type MCPOperator struct {
 	session *mcpsdk.ClientSession
 	token   string
 	runID   string
 }
 
-// NewMCPOperator connects to an operator endpoint with a capability token.
 func NewMCPOperator(endpoint, token, runID string) (*MCPOperator, error) {
 	if endpoint == "" || token == "" || runID == "" {
 		return nil, fmt.Errorf("refconsumer: --mcp, --token and --run are required together")
@@ -40,7 +32,6 @@ func NewMCPOperator(endpoint, token, runID string) (*MCPOperator, error) {
 	return &MCPOperator{session: session, token: token, runID: runID}, nil
 }
 
-// Close ends the session.
 func (o *MCPOperator) Close() error {
 	if err := o.session.Close(); err != nil {
 		return fmt.Errorf("refconsumer: close session: %w", err)
@@ -48,9 +39,6 @@ func (o *MCPOperator) Close() error {
 	return nil
 }
 
-// errorText extracts the first text content of a refused tool result. The
-// simulator's operator errors carry the stable code and reason in the
-// content; discarding it would hide capability and effector refusals.
 func errorText(res *mcpsdk.CallToolResult) string {
 	for _, c := range res.Content {
 		if t, ok := c.(*mcpsdk.TextContent); ok && t.Text != "" {
@@ -60,7 +48,6 @@ func errorText(res *mcpsdk.CallToolResult) string {
 	return ""
 }
 
-// call invokes one operator tool and decodes the structured result.
 func (o *MCPOperator) call(name string, args map[string]any, out any) error {
 	res, err := o.session.CallTool(context.Background(), &mcpsdk.CallToolParams{Name: name, Arguments: args})
 	if err != nil {
@@ -72,7 +59,6 @@ func (o *MCPOperator) call(name string, args map[string]any, out any) error {
 	return decodeOperatorResult(name, res.StructuredContent, out)
 }
 
-// nameplateShape mirrors the simulator's nameplate over the wire.
 type nameplateShape struct {
 	WorldID       string `json:"world_id"`
 	Domain        string `json:"domain"`
@@ -95,7 +81,6 @@ type nameplateShape struct {
 	} `json:"effectors"`
 }
 
-// Nameplate reads the world's static nameplate over the operator surface.
 func (o *MCPOperator) Nameplate() (*domain.Nameplate, error) {
 	var np nameplateShape
 	if err := o.call("sim.nameplate.read", map[string]any{"token": o.token}, &np); err != nil {
@@ -108,7 +93,6 @@ func (o *MCPOperator) Nameplate() (*domain.Nameplate, error) {
 	return out, nil
 }
 
-// ListEffectors reads the declared effectors over sim.effector.list.
 func (o *MCPOperator) ListEffectors() ([]domain.EffectorInfo, error) {
 	var raw []struct {
 		Name       string         `json:"name"`
@@ -124,7 +108,6 @@ func (o *MCPOperator) ListEffectors() ([]domain.EffectorInfo, error) {
 	return out, nil
 }
 
-// InvokeEffector actuates through sim.effector.invoke.
 func (o *MCPOperator) InvokeEffector(effector, entityID, commandID string, args map[string]any, atNS int64) (*model.EffectorAcknowledgement, error) {
 	var res model.EffectorAcknowledgement
 	if err := o.call("sim.effector.invoke", map[string]any{
@@ -136,15 +119,12 @@ func (o *MCPOperator) InvokeEffector(effector, entityID, commandID string, args 
 	return &res, nil
 }
 
-// SubmitVerdict submits the final report through sim.consumer.report.
 func (o *MCPOperator) SubmitVerdict(v *model.Verdict) error {
 	return o.call("sim.consumer.report", map[string]any{
 		"token": o.token, "run_id": o.runID, "verdict": v,
 	}, nil)
 }
 
-// ReportQuiesced asserts the consumer's watermark through
-// sim.consumer.report.
 func (o *MCPOperator) ReportQuiesced(throughNS int64) error {
 	return o.call("sim.consumer.report", map[string]any{
 		"token": o.token, "run_id": o.runID, "quiesced_through_ns": throughNS,

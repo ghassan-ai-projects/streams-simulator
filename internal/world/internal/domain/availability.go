@@ -8,9 +8,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/randutil"
 )
 
-// updateAvailability advances the producer up/down renewal process. The
-// exponential sojourns are in seconds and converted to ns, like every other
-// Exp() usage in the world.
 func (w *World) updateAvailability(ent *Entity, ch *model.Channel, cs *channelRunState, t int64) error {
 	rng := w.substream(ent.ID + "/" + ch.Name + "/availability")
 	a := ch.Availability

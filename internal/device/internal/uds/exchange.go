@@ -8,11 +8,11 @@ import (
 )
 
 func serveDeviceFrame(d *domain.Device, gate *wireGate, frame []byte) error {
-	// query_state is gateway-link control, separate from device wire records.
+
 	if isQueryState(frame) {
 		return sendEncodedRecord(gate, d.State(), "state")
 	}
-	// Execution truth is read via state; results report terminal status only.
+
 	outcome, err := d.ApplyFrame(frame)
 	if err != nil {
 		return sendMalformedExchange(gate)
@@ -21,7 +21,7 @@ func serveDeviceFrame(d *domain.Device, gate *wireGate, frame []byte) error {
 }
 
 func sendMalformedExchange(gate *wireGate) error {
-	// Malformed commands receive an ordered rejection receipt/result pair.
+
 	if err := sendEncodedRecord(gate, malformedReceipt(), "malformed receipt"); err != nil {
 		return err
 	}
@@ -72,7 +72,7 @@ func encodeCommandOutcome(outcome domain.Outcome) ([]byte, []byte, error) {
 
 func replayDuplicateCommand(d *domain.Device, frame []byte, outcome domain.Outcome) error {
 	if outcome.Duplicate {
-		// Exercise idempotency internally; retain one protocol exchange.
+
 		if _, err := d.ApplyFrame(frame); err != nil {
 			return fmt.Errorf("device: duplicate command: %w", err)
 		}

@@ -9,10 +9,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/canonical"
 )
 
-// LoadCapabilities parses and validates a device capability catalog from
-// JSON. The canonical route form is the cross-repository contract. Unknown fields and trailing JSON are rejected so a typo cannot silently
-// change the device's safety envelope. The canonical digest is retained as
-// the identity advertised in the device.state handshake.
 func LoadCapabilities(data []byte) (*Capabilities, error) {
 	doc, err := decodeCapabilities(data)
 	if err != nil {

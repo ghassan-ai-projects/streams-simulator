@@ -23,9 +23,6 @@ func mapArg(args map[string]any, key string) map[string]any {
 	return nil
 }
 
-// templateParam extracts a value from a resolved resource URI template. The
-// SDK resolves templates before invoking the handler, so the parameter is
-// parsed from the concrete URI.
 func templateParam(req *mcp.ReadResourceRequest, key string) (string, error) {
 	uri := ""
 	if req.Params != nil {

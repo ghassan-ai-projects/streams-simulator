@@ -1,10 +1,5 @@
 package model
 
-// SimEvent is one observation emitted by a simulated world, matching
-// docs/contracts/sim-event-v0.1.schema.json. Deliberately minimal: anything
-// a consumer could compute from the nameplate is not carried here, and the
-// envelope must never carry perturbation metadata, fault identity, hidden
-// state, or scenario labels.
 type SimEvent struct {
 	Seq          int64  `json:"seq"`
 	WorldID      string `json:"world_id"`
@@ -18,9 +13,6 @@ type SimEvent struct {
 	Birth        bool   `json:"birth,omitempty"`
 }
 
-// Delivery reasons recorded in the ledger for one native event. They are the
-// mechanism that makes a transport miss distinguishable from a reasoning
-// miss.
 const (
 	DeliveryOK               = "ok"
 	DeliveryDroppedByPerturb = "dropped_by_perturbation"
@@ -33,8 +25,6 @@ const (
 	DeliverySinkError        = "sink_error"
 )
 
-// LedgerRecord is one row of the delivery ledger: what the world emitted and
-// what the sink actually delivered. Director-side, always.
 type LedgerRecord struct {
 	DeliveryID     uint64 `json:"delivery_id"`
 	Seq            int64  `json:"seq"`

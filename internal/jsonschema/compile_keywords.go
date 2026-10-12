@@ -7,8 +7,6 @@ import (
 	"sort"
 )
 
-// fill populates a Schema from its JSON form (the compile body, without the
-// $ref shortcut).
 func fill(s *Schema, m map[string]any, defs map[string]any, reg map[string]*Schema, depth int) error {
 	for _, fillKeywords := range []func(*Schema, map[string]any, map[string]any, map[string]*Schema, int) error{fillValueKeywords, fillObjectKeywords, fillArrayKeywords, fillStringKeywords, fillNumberKeywords, fillCompositionKeywords, fillConditionalKeywords} {
 		if err := fillKeywords(s, m, defs, reg, depth); err != nil {
@@ -147,7 +145,6 @@ func fillArrayCardinality(s *Schema, m map[string]any) error {
 	return err
 }
 
-// booleanKeyword reads an optional boolean keyword, false when absent.
 func booleanKeyword(m map[string]any, key string) (bool, error) {
 	raw, ok := m[key]
 	if !ok {

@@ -19,7 +19,7 @@ func finalizeScenario(spec *domain.Compiled, sc *Scenario, label *model.GroundTr
 }
 
 func (g *suiteGeneration) drawOnset() (int64, bool) {
-	// Keep onset draws in order; pre-degraded faults start before the trace.
+
 	degraded := g.rng.Float64() < g.cfg.Domain.Spec.GroundTruth.PreDegradedFraction
 	var onset int64
 	if degraded {

@@ -10,7 +10,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
-// InjectFault records and applies a world fault.
 func (r *Run) InjectFault(entityID, faultID string, onsetNS int64, params map[string]any) (string, error) {
 	r.commandMu.Lock()
 	defer r.commandMu.Unlock()
@@ -25,7 +24,6 @@ func (r *Run) InjectFault(entityID, faultID string, onsetNS int64, params map[st
 	return fid, nil
 }
 
-// ClearFault records and clears a fault.
 func (r *Run) ClearFault(faultID string, atNS int64) error {
 	r.commandMu.Lock()
 	defer r.commandMu.Unlock()
@@ -40,7 +38,6 @@ func (r *Run) ClearFault(faultID string, atNS int64) error {
 	return nil
 }
 
-// ApplyPerturb records and applies a delivery perturbation.
 func (r *Run) ApplyPerturb(name string, params map[string]any, fromNS, untilNS int64) (string, error) {
 	r.commandMu.Lock()
 	defer r.commandMu.Unlock()
@@ -56,7 +53,6 @@ func (r *Run) ApplyPerturb(name string, params map[string]any, fromNS, untilNS i
 	return id, nil
 }
 
-// ClearPerturb records and deactivates a perturbation.
 func (r *Run) ClearPerturb(id string) error {
 	r.commandMu.Lock()
 	defer r.commandMu.Unlock()
@@ -89,7 +85,7 @@ func (r *Run) invokeEffector(effector, entityID, commandID string, args map[stri
 	}
 	result, err := r.World.InvokeEffector(effector, entityID, commandID, args, atNS)
 	r.journalEffectorCall(journal.Call{Effector: effector, EntityID: entityID, CommandID: commandID}, result, err)
-	// Record refusals as well as successful calls so replay reproduces both.
+
 	r.recordWorldCommand(model.OpEffectorInvoke, map[string]any{"effector": effector, "entity_id": entityID, "command_id": commandID, "args": args, "at_ns": atNS})
 	if err != nil {
 		return nil, fmt.Errorf("InvokeEffector: %w", err)
@@ -97,7 +93,6 @@ func (r *Run) invokeEffector(effector, entityID, commandID string, args map[stri
 	return result, nil
 }
 
-// AddEntity records and performs an entity birth.
 func (r *Run) AddEntity(id string, atNS int64) error {
 	r.commandMu.Lock()
 	defer r.commandMu.Unlock()
@@ -112,7 +107,6 @@ func (r *Run) AddEntity(id string, atNS int64) error {
 	return nil
 }
 
-// RetireEntity records and performs an entity retirement.
 func (r *Run) RetireEntity(entityID, reason string, atNS int64) error {
 	r.commandMu.Lock()
 	defer r.commandMu.Unlock()
@@ -125,7 +119,6 @@ func (r *Run) RetireEntity(entityID, reason string, atNS int64) error {
 	return nil
 }
 
-// ConfigureEnvTarget records an env.inject target (pause/kill/partition).
 func (r *Run) ConfigureEnvTarget(target string, allow bool) {
 	r.commandMu.Lock()
 	defer r.commandMu.Unlock()
@@ -133,9 +126,6 @@ func (r *Run) ConfigureEnvTarget(target string, allow bool) {
 	r.allowEnv = r.allowEnv || allow
 }
 
-// EnvInject records an environment fault against a configured target. No
-// environment-fault parameters are declared yet, so any params are rejected
-// rather than recorded and ignored.
 func (r *Run) EnvInject(target, fault string, params map[string]any, atNS int64) (string, error) {
 	r.commandMu.Lock()
 	defer r.commandMu.Unlock()
@@ -163,8 +153,6 @@ func (r *Run) recordCommandAt(op string, atNS int64, args map[string]any) {
 	r.flushJournal()
 }
 
-// refuseWhenFinished is the one place a mutating command learns the run is
-// over: a finished run's command log, world and evidence are sealed.
 func (r *Run) refuseWhenFinished(command string) error {
 	if r.finished {
 		return fmt.Errorf("%s: run is finished", command)

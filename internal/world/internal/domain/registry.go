@@ -7,7 +7,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-// EntityIDs returns the live entity ids in creation order.
 func (w *World) EntityIDs() []string {
 	var out []string
 	for _, id := range w.entityOrder {
@@ -32,8 +31,6 @@ func (w *World) PeerIDs(entityID string) []string {
 	return out
 }
 
-// InitialEntityIDs returns the entities created at world construction, in
-// order (before any churn or entity.add).
 func (w *World) InitialEntityIDs() []string {
 	var out []string
 	for _, id := range w.entityOrder {
@@ -44,10 +41,6 @@ func (w *World) InitialEntityIDs() []string {
 	return out
 }
 
-// AddEntity creates an entity at the given time (entity.add; churn births
-// go through birthAutonomous, which schedules the death). An entity cannot
-// be born before the world clock: the world would have to simulate a history
-// that already passed.
 func (w *World) AddEntity(id string, atNS int64) error {
 	if atNS < w.clockNS {
 		return fmt.Errorf("world: entity %q cannot be born at %d, before the world clock %d", id, atNS, w.clockNS)
@@ -59,8 +52,6 @@ func (w *World) AddEntity(id string, atNS int64) error {
 	return w.addEntity(id, set, atNS)
 }
 
-// Entity returns a snapshot of the entity by id, or nil. The caller gets a
-// copy of the identity fields: writing to it cannot change the world.
 func (w *World) Entity(id string) *Entity {
 	live := w.entities[id]
 	if live == nil {

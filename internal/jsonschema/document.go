@@ -7,12 +7,8 @@ import (
 	"strings"
 )
 
-// maxReportedErrors bounds how many validation errors FormatErrors prints.
 const maxReportedErrors = 10
 
-// CompileJSON decodes a JSON Schema document, keeping number literals as
-// json.Number, and compiles it. It is the one way contract schemas embedded
-// in the binary become validators.
 func CompileJSON(raw []byte) (*Schema, error) {
 	var doc any
 	decoder := json.NewDecoder(bytes.NewReader(raw))
@@ -23,8 +19,6 @@ func CompileJSON(raw []byte) (*Schema, error) {
 	return Compile(doc)
 }
 
-// FormatErrors renders validation errors one per line, indented two spaces,
-// stopping after ten with a count of the rest.
 func FormatErrors(errs []Error) string {
 	var b strings.Builder
 	for i, e := range errs {

@@ -15,9 +15,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/kernel"
 )
 
-// Load reads, schema-validates and structurally validates a domain spec from
-// a path. The returned Compiled carries the spec, its canonical digest, and
-// resolved defaults.
 func Load(path string) (*domain.Compiled, error) {
 	raw, err := kernel.Read(path)
 	if err != nil {
@@ -26,9 +23,6 @@ func Load(path string) (*domain.Compiled, error) {
 	return domain.Parse(raw, path)
 }
 
-// LoadAll loads every domain spec in a directory (non-recursive), sorted by
-// path. A single unloadable domain fails the whole load: the catalog is a
-// fixed, reviewed set, and a silent skip would make coverage reports lie.
 func LoadAll(dir string) ([]*domain.Compiled, error) {
 	names, err := kernel.Names(dir)
 	if err != nil {
@@ -60,9 +54,6 @@ func loadPaths(paths []string) ([]*domain.Compiled, error) {
 	return out, nil
 }
 
-// LoadCatalog loads every domain in a directory into a catalog; an empty dir
-// selects "domains", the layout of the repository. A directory that holds no
-// domain is refused, because an empty catalog would report coverage of nothing.
 func LoadCatalog(dir string) (*domain.Catalog, error) {
 	dir = cmp.Or(dir, "domains")
 	specs, err := LoadAll(dir)

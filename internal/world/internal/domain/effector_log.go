@@ -12,8 +12,7 @@ func (w *World) recordCall(inv invocation, outcome callOutcome) {
 }
 
 func resultDigest(c *EffectorCall) string {
-	// Best-effort short digest of the outcome; digests for the run artifact
-	// are computed by the run layer from canonical JSON.
+
 	b, _ := json.Marshal(map[string]any{
 		"mode": c.Mode, "accepted": c.Accepted, "reason": c.Reason,
 		"effect_applied": c.EffectApplied,
@@ -21,8 +20,6 @@ func resultDigest(c *EffectorCall) string {
 	return string(b)
 }
 
-// EffectorCalls returns the effector call log (the authority when scoring
-// actions).
 func (w *World) EffectorCalls() []EffectorCall {
 	out := make([]EffectorCall, len(w.effectorCalls))
 	copy(out, w.effectorCalls)
@@ -32,9 +29,6 @@ func (w *World) EffectorCalls() []EffectorCall {
 	return out
 }
 
-// cloneArgs deep-copies effector arguments (objects and arrays), so neither
-// the caller that issued a command nor a reader of the call log can change
-// what the log says was asked.
 func cloneArgs(args map[string]any) map[string]any {
 	if args == nil {
 		return nil

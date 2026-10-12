@@ -50,7 +50,7 @@ func (l *Layer) duplicateDelivery(record Delivered) Delivered {
 }
 
 func shiftedIdentityValue(value any) any {
-	// Same event identity with a deliberately different payload.
+
 	switch value := value.(type) {
 	case float64:
 		return value + 100

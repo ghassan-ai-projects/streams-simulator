@@ -9,10 +9,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/canonical"
 )
 
-// EncodeRecord validates one device record and returns exactly one canonical
-// NDJSON line (sorted keys, trailing newline) — the byte layout the Agentic
-// Stream codec also produces. Raw serial framing is layered above this by the
-// gateway.
 func EncodeRecord(document map[string]any) ([]byte, error) {
 	if document == nil {
 		return nil, fmt.Errorf("device: record is required")
@@ -23,9 +19,6 @@ func EncodeRecord(document map[string]any) ([]byte, error) {
 	return encodeRecordLine(document)
 }
 
-// DecodeRecord decodes and validates exactly one device record from a frame. It
-// fails closed on empty, oversized, non-object, trailing-content, unknown-type,
-// and schema-invalid input — an invalid frame must never yield a usable record.
 func DecodeRecord(frame []byte) (map[string]any, error) {
 	if err := admitFrameSize(frame); err != nil {
 		return nil, err

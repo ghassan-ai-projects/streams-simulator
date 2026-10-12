@@ -1,6 +1,5 @@
 package domain
 
-// birthAutonomous creates an entity on the churn schedule.
 func (w *World) birthAutonomous(set int, atNS int64) {
 	churn := w.Spec.Spec.Instances[set].Churn
 	if churn == nil {
@@ -15,8 +14,6 @@ func (w *World) birthAutonomous(set int, atNS int64) {
 	w.schedule(kindBirth, "", "", next, set)
 }
 
-// Retire removes an entity and its scheduled emissions. Used for churn and
-// by the run layer for entity.retire commands.
 func (w *World) Retire(entityID, reason string, atNS int64) {
 	w.retire(entityID, reason, atNS)
 }
@@ -27,8 +24,7 @@ func (w *World) retire(entityID, reason string, atNS int64) {
 		return
 	}
 	ent.alive = false
-	// Scheduled emissions are dropped when popped (processEmission checks
-	// liveness).
+
 }
 
 func (w *World) reserveBirthID(set int) string {

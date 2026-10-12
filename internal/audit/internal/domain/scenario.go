@@ -7,10 +7,8 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/perturb"
 )
 
-// emissionLog records the delivered events of one world, keyed by channel.
 type emissionLog map[string][]int64
 
-// gridValue holds the last delivered value at or before the sample.
 func gridValue(series []float64, i int) float64 {
 	if i >= 0 && i < len(series) {
 		return series[i]
@@ -18,10 +16,6 @@ func gridValue(series []float64, i int) float64 {
 	return 0
 }
 
-// build runs one world through the real delivery pipeline — perturbation
-// layer then capture of the delivered records in monotonic order — and
-// returns the per-channel series on the audit grid plus the delivered
-// emission log. The series are immutable evidence, never live world reads.
 func (p *Panel) build(entityID string, startNS int64, entityIDs []string, faults map[string]int64, setup []model.SetupCall, perturbations []Perturbation, durationNS int64) (map[string][]float64, emissionLog, error) {
 	w, layer, err := p.prepareWorld(startNS, entityIDs, setup, perturbations)
 	if err != nil {
@@ -46,8 +40,7 @@ type auditCapture struct {
 }
 
 func (capture *auditCapture) deliver(d perturb.Delivered) {
-	// The audit is per-entity: only the audited entity's delivered
-	// records form the series, exactly as a per-entity Reading did.
+
 	if d.Malformed || !d.Delivered || d.Event.EntityID != capture.entityID {
 		return
 	}
@@ -60,7 +53,7 @@ func (capture *auditCapture) deliver(d perturb.Delivered) {
 }
 
 func (capture *auditCapture) sampleGrid(p *Panel, startNS, horizon int64) map[string][]float64 {
-	// Hold the last delivered value at each sample; zero before delivery.
+
 	n := int((horizon-startNS)/p.sampleNS) + 1
 	grid := map[string][]float64{}
 	for _, channel := range p.spec.ChannelNames() {

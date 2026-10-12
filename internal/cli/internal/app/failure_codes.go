@@ -10,9 +10,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
 )
 
-// classifyFailure applies the precedence of CLI_SURFACE §3: usage, a failed
-// check, a contract violation, an unknown id, a missing path, another I/O
-// failure, then the command's own code. It uses typed errors only.
 func classifyFailure(command string, err error) failureCode {
 	if code, ok := knownFailureCode(err); ok {
 		return code
@@ -39,8 +36,6 @@ func isUsageFailure(err error) bool {
 	return flagUsage || argumentUsage
 }
 
-// checkFailureCode classifies a check that ran and failed: an outcome the
-// command reports, or a replay whose recorded inputs no longer match.
 func checkFailureCode(err error) (failureCode, bool) {
 	if outcome, ok := asOutcomeError(err); ok {
 		return outcome.code, true
@@ -51,8 +46,6 @@ func checkFailureCode(err error) (failureCode, bool) {
 	return "", false
 }
 
-// contractFailureCode maps every contract to its code; a contract without a
-// mapping is a programming error a test catches.
 func contractFailureCode(contract model.Contract) (failureCode, bool) {
 	switch contract {
 	case model.ContractDomainSpec:
@@ -83,7 +76,6 @@ func missingOrIOCode(err error) (failureCode, bool) {
 	return "", false
 }
 
-// exitStatusOf is 2 for a usage failure and 1 for any other.
 func exitStatusOf(err error) int {
 	if isUsageFailure(err) {
 		return 2
