@@ -14,19 +14,8 @@ type Nameplate = rules.Nameplate
 type EffectorInfo = rules.EffectorInfo
 
 const (
-	CodeDomainInvalid       = rules.CodeDomainInvalid
-	CodeAdapterInvalid      = rules.CodeAdapterInvalid
-	CodeWorldNotFound       = rules.CodeWorldNotFound
-	CodeClockBackwards      = rules.CodeClockBackwards
-	CodeConsumerNotQuiesced = rules.CodeConsumerNotQuiesced
-	CodeProfileRateExceeded = rules.CodeProfileRateExceeded
-	CodeTruthSealed         = rules.CodeTruthSealed
-	CodeRunUnblinded        = rules.CodeRunUnblinded
-	CodeUnknownEffector     = rules.CodeUnknownEffector
-	CodeInvalidArgs         = rules.CodeInvalidArgs
-	CodeMissingCommandID    = rules.CodeMissingCommandID
-	CodeCapabilityDenied    = rules.CodeCapabilityDenied
-	CodeEffectorRefused     = rules.CodeEffectorRefused
-	CodeInterlockRefused    = rules.CodeInterlockRefused
-	CodeNotImplemented      = rules.CodeNotImplemented
+	CodeDomainInvalid    = rules.CodeDomainInvalid
+	CodeInvalidArgs      = rules.CodeInvalidArgs
+	CodeCapabilityDenied = rules.CodeCapabilityDenied
+	CodeNotImplemented   = rules.CodeNotImplemented
 )
