@@ -7,6 +7,7 @@ package domain
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter"
@@ -14,6 +15,7 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
 type verdictCapture struct{ got *model.Verdict }
@@ -21,6 +23,18 @@ type verdictCapture struct{ got *model.Verdict }
 func (c *verdictCapture) SubmitVerdict(v *model.Verdict) error {
 	c.got = v
 	return nil
+}
+
+// consumerView lets a run act as the operator: the consumer gets the
+// acknowledgement only, as through sim.effector.invoke.
+type consumerView struct{ r *run.Run }
+
+func (v consumerView) InvokeEffector(effector, entityID, commandID string, args map[string]any, atNS int64) (*model.EffectorAcknowledgement, error) {
+	res, err := v.r.InvokeEffector(effector, entityID, commandID, args, atNS)
+	if err != nil {
+		return nil, fmt.Errorf("refconsumer test: %w", err)
+	}
+	return world.Acknowledge(res), nil
 }
 
 func TestProcessUsesEndTimeAndCountsRecords(t *testing.T) {
@@ -104,7 +118,7 @@ func TestDetectsFaultAndActs(t *testing.T) {
 	// The run is the invoker; the verdict is captured (the run is already
 	// ended, so its own sink refuses post-End submissions).
 	capture := &verdictCapture{}
-	rc := New(cfg, np, r, capture, r.ID)
+	rc := New(cfg, np, consumerView{r}, capture, r.ID)
 	verdict, err := rc.Process(r.Trace(), 0)
 	if err != nil {
 		t.Fatal(err)

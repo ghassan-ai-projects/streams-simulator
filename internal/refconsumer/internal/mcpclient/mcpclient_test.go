@@ -40,7 +40,7 @@ func operatorOver(t *testing.T, f *fakeOperator) *MCPOperator {
 		"effectors": []any{map[string]any{"name": "act", "args_schema": map[string]any{"type": "object"}}},
 	}))
 	mcpsdk.AddTool(server, &mcpsdk.Tool{Name: "sim.effector.list", InputSchema: object}, f.handler("sim.effector.list", []any{map[string]any{"name": "act", "args_schema": map[string]any{"type": "object"}}}))
-	mcpsdk.AddTool(server, &mcpsdk.Tool{Name: "sim.effector.invoke", InputSchema: object}, f.handler("sim.effector.invoke", map[string]any{"accepted": true, "command_id": "c-1", "mode": "ok"}))
+	mcpsdk.AddTool(server, &mcpsdk.Tool{Name: "sim.effector.invoke", InputSchema: object}, f.handler("sim.effector.invoke", map[string]any{"accepted": true, "command_id": "c-1"}))
 	mcpsdk.AddTool(server, &mcpsdk.Tool{Name: "sim.consumer.report", InputSchema: object}, f.handler("sim.consumer.report", map[string]any{"ok": true}))
 	clientTransport, serverTransport := mcpsdk.NewInMemoryTransports()
 	serverSession, err := server.Connect(t.Context(), serverTransport, nil)

@@ -23,6 +23,23 @@ const (
 	ModeSilentNoEffect    FailureMode = "silent_no_effect"
 )
 
+// ReasonAcknowledgementTimeout is what a consumer sees of a lost
+// acknowledgement: no answer, so no way to know whether the effect applied.
+const ReasonAcknowledgementTimeout = "acknowledgement_timeout"
+
+// Acknowledge is what the consumer learns from the invocation: the
+// result without its failure mode, effect flag or latency. A lost
+// acknowledgement reads as a timeout, without the effect time that would
+// betray that the effect applied.
+func Acknowledge(r *InvokeResult) *model.EffectorAcknowledgement {
+	ack := &model.EffectorAcknowledgement{Accepted: r.Accepted, Simulated: r.Simulated, WorldID: r.WorldID,
+		CommandID: r.CommandID, EffectETANS: r.EffectETANS, Reason: r.Reason}
+	if r.Mode == ModeAckLost {
+		ack.EffectETANS, ack.Reason = 0, ReasonAcknowledgementTimeout
+	}
+	return ack
+}
+
 // KnownFailureMode reports whether mode is in the failure-mode vocabulary.
 func KnownFailureMode(mode FailureMode) bool {
 	switch mode {
@@ -208,7 +225,10 @@ func (w *World) applyEffectorOutcome(result *InvokeResult, eff *model.Effector, 
 	case ModePartial, ModeSilentNoEffect:
 		w.applyUnconfirmedEffect(result, eff, inv)
 	case ModeConfirmedNoEffect:
-		result.Accepted = true // The ack lies; confirmation channels report truth.
+		// The ack lies, down to the effect it promises; confirmation channels
+		// report truth.
+		result.Accepted = true
+		result.EffectETANS = inv.atNS + int64(eff.Effect.DeadTimeS*secondsPerNS)
 	}
 }
 

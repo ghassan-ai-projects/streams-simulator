@@ -134,9 +134,10 @@ func (v *OperatorView) ListEffectors(token string) ([]EffectorInfo, error) {
 }
 
 // Invoke validates the effector name against the loaded spec and actuates.
-// The world id is asserted in the result, so simulated actuation is
-// unmistakable.
-func (v *OperatorView) Invoke(token, effector, entityID, commandID string, args map[string]any, atNS int64) (*world.InvokeResult, error) {
+// The consumer gets the acknowledgement only (MCP_SURFACE §4.3, §4.5): the
+// failure mode, whether the effect applied and the latency stay sealed. The
+// world id is asserted in it, so simulated actuation is unmistakable.
+func (v *OperatorView) Invoke(token, effector, entityID, commandID string, args map[string]any, atNS int64) (*model.EffectorAcknowledgement, error) {
 	if err := v.admitInvocation(token, effector, commandID); err != nil {
 		return nil, err
 	}
@@ -147,7 +148,7 @@ func (v *OperatorView) Invoke(token, effector, entityID, commandID string, args 
 	if err != nil {
 		return nil, errTool(CodeEffectorRefused, "the effector declined")
 	}
-	return res, nil
+	return world.Acknowledge(res), nil
 }
 
 // Report records the consumer's verdict and quiescence assertion. It

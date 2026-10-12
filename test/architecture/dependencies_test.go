@@ -25,7 +25,7 @@ var packageDependencies = map[string]string{
 	"internal/score":           "domain model world",
 	"internal/suite":           "audit domain model perturb randutil truth world",
 	"internal/audit":           "domain model perturb world",
-	"internal/refconsumer":     "canonical model world",
+	"internal/refconsumer":     "canonical model",
 	"internal/deviceworld":     "device model world",
 	"internal/device":          "canonical jsonschema device/contract",
 	"internal/world":           "domain jsonschema model randutil",

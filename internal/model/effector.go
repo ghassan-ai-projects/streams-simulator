@@ -86,3 +86,19 @@ type GroundTruth struct {
 	MinScenarios          int     `json:"min_scenarios,omitempty"`
 	MinPerLabel           int     `json:"min_per_label,omitempty"`
 }
+
+// EffectorAcknowledgement is everything a consumer learns from invoking an
+// effector (MCP_SURFACE §4.3): whether the call was acknowledged, the world
+// and command it names, when the effect is due, and why it was not
+// acknowledged. It never carries the failure mode, whether the effect
+// applied, or the acknowledgement latency: those are truth, and an
+// acknowledgement that silently had no effect must read exactly like one that
+// worked.
+type EffectorAcknowledgement struct {
+	Accepted    bool   `json:"accepted"`
+	Simulated   bool   `json:"simulated"`
+	WorldID     string `json:"world_id"`
+	CommandID   string `json:"command_id"`
+	EffectETANS int64  `json:"effect_eta_ns,omitempty"`
+	Reason      string `json:"reason,omitempty"`
+}

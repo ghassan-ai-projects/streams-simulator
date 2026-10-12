@@ -3,7 +3,6 @@ package refconsumer
 import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	layer "github.com/ghassan-ai-projects/streams-simulator/internal/refconsumer/internal/domain"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
 // DefaultConfig is the reference detector's default tuning.
@@ -33,7 +32,7 @@ func (o *MCPOperator) ListEffectors() ([]EffectorInfo, error) {
 }
 
 // InvokeEffector actuates an effector over the operator surface.
-func (o *MCPOperator) InvokeEffector(effector, entityID, commandID string, args map[string]any, atNS int64) (*world.InvokeResult, error) {
+func (o *MCPOperator) InvokeEffector(effector, entityID, commandID string, args map[string]any, atNS int64) (*model.EffectorAcknowledgement, error) {
 	return o.operator.InvokeEffector(effector, entityID, commandID, args, atNS)
 }
 

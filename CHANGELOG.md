@@ -4,6 +4,14 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **Fix (truth leak):** `sim.effector.invoke` returned the world's internal result to the
+  consumer, including the failure `mode`, `effect_applied` and `ack_latency_ms`, which exposed
+  `silent_no_effect`. The operator now returns only the acknowledgement fields of MCP_SURFACE
+  §4.3 (`model.EffectorAcknowledgement`), and every acknowledging mode returns a byte-identical
+  response (`confirmed_no_effect` now promises an effect time like the others). A lost
+  acknowledgement reads as `reason: "acknowledgement_timeout"` with no effect time. The reference
+  consumer reads the same acknowledgement.
+
 - **Scenario files** (`docs/design/SCENARIO_FILE.md`, `scenario-v0.1`): `run --scenario <file>`
   runs a repeatable scenario; run flags build the same scenario in memory, so there is one
   execution path, and the behaviour pin shows every existing run unchanged. `scenario from-run`

@@ -230,6 +230,15 @@ domain spec.
 
 → `{accepted, simulated: true, world_id, command_id, effect_eta_ns?, reason?}`
 
+These six fields are the whole response (`model.EffectorAcknowledgement`); nothing else of the
+world's result reaches the operator. Every failure mode that acknowledges the call (`ok`, `slow`,
+`partial`, `confirmed_no_effect`, `silent_no_effect`) returns a byte-identical response, the
+promised `effect_eta_ns` included, so a consumer learns whether the effect happened only from
+the world it observes. A call that is not acknowledged reads as `accepted: false` with no effect time and
+either `reason: "effector_refused"` (`reject`) or `reason: "acknowledgement_timeout"` (`ack_lost`,
+whose effect did apply: a consumer cannot tell from the response, exactly as with a real
+timeout).
+
 One tool for every effector in every domain. `effector` is a string validated against the
 loaded spec; `args` is validated against that effector's declared schema. **The binary
 contains no effector name.**
@@ -241,8 +250,8 @@ contains no effector name.**
 - **A capability token is required**, minted at world creation. Together with
   `command_id` this is how the simulator declines to be actuated by anything other than a
   consumer's deliberate, identified dispatch.
-- Any of the seven failure modes in [TECHNICAL_DESIGN §8.2](TECHNICAL_DESIGN.md) may be
-  returned, per the injected configuration.
+- Any of the seven failure modes in [TECHNICAL_DESIGN §8.2](TECHNICAL_DESIGN.md) may occur,
+  per the injected configuration; the response never names it.
 - Every call is recorded with full arguments and the resulting world delta. That log, not
   the consumer's claim, is the authority when scoring actions.
 

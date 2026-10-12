@@ -7,13 +7,12 @@ package domain
 
 import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
 // EffectorInvoker is the narrow surface a consumer actuates through
 // (satisfied by the simulator's run and the operator view).
 type EffectorInvoker interface {
-	InvokeEffector(effector, entityID, commandID string, args map[string]any, atNS int64) (*world.InvokeResult, error)
+	InvokeEffector(effector, entityID, commandID string, args map[string]any, atNS int64) (*model.EffectorAcknowledgement, error)
 }
 
 // VerdictSink accepts the final report.

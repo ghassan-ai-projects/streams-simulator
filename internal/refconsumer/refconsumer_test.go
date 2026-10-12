@@ -11,7 +11,6 @@ import (
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/refconsumer"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
 type recordingSink struct{ verdicts []*model.Verdict }
@@ -23,7 +22,7 @@ func (s *recordingSink) SubmitVerdict(v *model.Verdict) error {
 
 type noInvoker struct{}
 
-func (noInvoker) InvokeEffector(string, string, string, map[string]any, int64) (*world.InvokeResult, error) {
+func (noInvoker) InvokeEffector(string, string, string, map[string]any, int64) (*model.EffectorAcknowledgement, error) {
 	return nil, nil
 }
 

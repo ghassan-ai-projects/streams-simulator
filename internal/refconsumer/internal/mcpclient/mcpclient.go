@@ -17,7 +17,6 @@ import (
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/refconsumer/internal/domain"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
 // MCPOperator is a VerdictSink, QuiescenceReporter and EffectorInvoker over
@@ -126,8 +125,8 @@ func (o *MCPOperator) ListEffectors() ([]domain.EffectorInfo, error) {
 }
 
 // InvokeEffector actuates through sim.effector.invoke.
-func (o *MCPOperator) InvokeEffector(effector, entityID, commandID string, args map[string]any, atNS int64) (*world.InvokeResult, error) {
-	var res world.InvokeResult
+func (o *MCPOperator) InvokeEffector(effector, entityID, commandID string, args map[string]any, atNS int64) (*model.EffectorAcknowledgement, error) {
+	var res model.EffectorAcknowledgement
 	if err := o.call("sim.effector.invoke", map[string]any{
 		"token": o.token, "effector": effector, "entity_id": entityID,
 		"command_id": commandID, "args": args, "at_ns": atNS,

@@ -6,7 +6,7 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 - **Phase**: a phase id from PLAN.md, or `next-goal` (Agentic Stream / gateway goal), or `—`.
 - **Status**: `open`, `done` (fixed, evidence in the phase review), `next-goal`, `dropped`
   (removed by an owner decision), `not-a-defect` (evidence in the review record).
-- Sources: `REVIEW` = [REVIEW-2026-10-12.md](REVIEW-2026-10-12.md) ids; `R0` = [reviews/P0.md](reviews/P0.md); `R1` = [reviews/P1.md](reviews/P1.md); `R2` = [reviews/P2.md](reviews/P2.md); `self` = found by the implementer.
+- Sources: `REVIEW` = [REVIEW-2026-10-12.md](REVIEW-2026-10-12.md) ids; `R0` = [reviews/P0.md](reviews/P0.md); `R1` = [reviews/P1.md](reviews/P1.md); `R2` = [reviews/P2.md](reviews/P2.md); `R2b` = [reviews/P2b.md](reviews/P2b.md); `self` = found by the implementer.
 
 ## Design review (REVIEW-2026-10-12)
 
@@ -118,9 +118,10 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 | R2-03 | R2 | Low | Errors from a missing `--domains-dir` repeat the `streamsim:` prefix three times (pre-existing in `loadSimulatorInputs`); wrap once | P4 | open |
 | R2-04 | R2 | Low | Perturbation windows with negative or pre-start times are accepted (negative `until` acts as "no end"); and the run-wide limits have no MCP-level test | P13 | open |
 | R2-05 | R2 | Low | The effector idempotency key compares arguments by `json.Marshal` text, so `3` and `3.0` are different requests | P6a | open |
+| R2b-01 | R2b | Low | The operator maps every invocation error to `effector_refused`; MCP_SURFACE lists `interlock_refused` and `invalid_args`, which are never emitted. Decide the taxonomy without revealing hidden outcomes, and add a protocol-level (wire) test of the acknowledgement | P10 | open |
 
 ## Found during implementation
 
 | ID | Source | Sev | Summary | Phase | Status |
 |---|---|---|---|---|---|
-| S-01 | self | High | `sim.effector.invoke` returns the world's internal result (failure `mode`, `effect_applied`, latency) to the consumer, exposing `silent_no_effect` and other hidden outcomes (MCP_SURFACE §4.3, §4.5) | P2b | open |
+| S-01 | self | High | `sim.effector.invoke` returns the world's internal result (failure `mode`, `effect_applied`, latency) to the consumer, exposing `silent_no_effect` and other hidden outcomes (MCP_SURFACE §4.3, §4.5) | P2b | done |
