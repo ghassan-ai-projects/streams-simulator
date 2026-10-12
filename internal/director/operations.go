@@ -141,8 +141,8 @@ func (d *Director) OperatorEffectors(token string) ([]EffectorInfo, error) {
 }
 
 // OperatorInvoke actuates an effector of the token's world; the consumer gets the acknowledgement only.
-func (d *Director) OperatorInvoke(token, effector, entityID, commandID string, args map[string]any, atNS int64) (*model.EffectorAcknowledgement, error) {
-	return d.impl.OperatorInvoke(token, effector, entityID, commandID, args, atNS)
+func (d *Director) OperatorInvoke(token, effector, entityID, commandID string, args map[string]any) (*model.EffectorAcknowledgement, error) {
+	return d.impl.OperatorInvoke(token, effector, entityID, commandID, args)
 }
 
 // OperatorReport records the consumer's quiescence and verdict; returns the world id and never a score.

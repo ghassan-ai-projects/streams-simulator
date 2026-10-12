@@ -38,6 +38,8 @@ func (w *World) Advance(to int64) (emitted, effectsApplied int, err error) {
 // Clock is the current world time.
 func (w *World) Clock() int64 { return w.clockNS }
 
+func (w *World) StreamKey() string { return w.streamKey }
+
 // SetEmitter installs the event sink. Events flow world -> emitter.
 func (w *World) SetEmitter(emitter func(model.SimEvent)) {
 	w.emitter = emitter
@@ -50,7 +52,7 @@ func (w *World) EmittedCount() int64 { return w.seq }
 // seed. Names are "<world_id>/<entity>/<channel>/<purpose>"; the world id
 // prefix keeps distinct worlds independent even under the same seed.
 func (w *World) substream(name string) *randutil.SplitMix64 {
-	full := w.ID + "/" + name
+	full := w.streamKey + "/" + name
 	if s, ok := w.subs[full]; ok {
 		return s
 	}

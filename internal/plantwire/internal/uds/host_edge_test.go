@@ -69,7 +69,7 @@ func TestAHostReplacesAStaleSocketButNotALiveHostOrAFile(t *testing.T) {
 func TestAHostThatIsDoneClosesTheConnection(t *testing.T) {
 	t.Parallel()
 	path := testsupport.SocketPath(t)
-	served := serveInBackground(t, path, &stubPeer{done: true}, Pacing{Handshake: time.Second})
+	served := serveInBackground(t, path, &stubPeer{doneOnFirst: true}, Pacing{Handshake: time.Second})
 	conn := dialHost(t, path)
 	if _, err := conn.Write([]byte("{\"type\":\"NBIRTH\"}\n{\"type\":\"NSYNC\"}\n")); err != nil {
 		t.Fatal(err)

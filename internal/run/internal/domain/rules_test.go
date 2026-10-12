@@ -10,18 +10,13 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-func TestCanonicalHashIsStableForADomainAndSeed(t *testing.T) {
+func TestTheRunIdNamesTheDomainAndCarriesNoSeed(t *testing.T) {
 	t.Parallel()
-	if a, b := CanonicalHash("aquaculture-pond", 7), CanonicalHash("aquaculture-pond", 7); a != b {
-		t.Fatal("the hash must be a pure function of its inputs")
+	if RunHash("aquaculture-pond") == RunHash("cold-chain-transit") {
+		t.Fatal("the run id must name the domain")
 	}
-	if CanonicalHash("aquaculture-pond", 7) == CanonicalHash("aquaculture-pond", 8) ||
-		CanonicalHash("aquaculture-pond", 7) == CanonicalHash("cold-chain-transit", 7) {
-		t.Fatal("domain and seed must both enter the hash")
-	}
-	const pinned = uint64(16477993674043595849)
-	if got := CanonicalHash("aquaculture-pond", 7); got != pinned {
-		t.Fatalf("run id hash drifted: %d, pinned %d", got, pinned)
+	if got := RunHash("aquaculture-pond"); got != RunHash("aquaculture-pond") || got == 16477993674043595849 {
+		t.Fatalf("the run id hash %d still carries the seed or is not stable", got)
 	}
 }
 

@@ -80,9 +80,8 @@ func CountLedger(ledger []model.LedgerRecord, reasons ...string) int {
 	return n
 }
 
-// CanonicalHash derives a short stable id from the domain and seed.
-func CanonicalHash(domainID string, seed uint64) uint64 {
-	b, _ := canonical.MarshalString(map[string]any{"d": domainID, "s": seed})
+func RunHash(domainID string) uint64 {
+	b, _ := canonical.MarshalString(map[string]any{"d": domainID})
 	return fnv([]byte(b))
 }
 

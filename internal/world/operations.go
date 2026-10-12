@@ -14,6 +14,10 @@ func (w *World) Clock() int64 {
 	return w.world.Clock()
 }
 
+func (w *World) StreamKey() string {
+	return w.world.StreamKey()
+}
+
 // NextEventNS is the time of the next scheduled event, 0 when none.
 func (w *World) NextEventNS() int64 {
 	return w.world.NextEventNS()

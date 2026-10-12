@@ -43,7 +43,7 @@ func TestInvokeRefusesWhatIsNotDeclaredOrNotIdentified(t *testing.T) {
 	}
 	for name, tc := range cases {
 		var refusal *ToolError
-		_, err := view.Invoke(tc.token, tc.effector, "e-1", tc.commandID, nil, 0)
+		_, err := view.Invoke(tc.token, tc.effector, "e-1", tc.commandID, nil)
 		if !errors.As(err, &refusal) || refusal.Code != tc.want {
 			t.Errorf("%s: err = %v, want code %s", name, err, tc.want)
 		}

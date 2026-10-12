@@ -11,16 +11,18 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/randutil"
 )
 
-func worldIdentity(spec *domain.Compiled, seed uint64, id string) string {
-	if id == "" {
-		id = "w-" + strconv.FormatUint(randutil.Fnv1a64(spec.Spec.ID+":"+strconv.FormatUint(seed, 10))%0xffffff, 36)
+func worldIdentity(spec *domain.Compiled, seed uint64, id string) (string, string) {
+	if id != "" {
+		return id, id
 	}
-	return id
+	key := "w-" + strconv.FormatUint(randutil.Fnv1a64(spec.Spec.ID+":"+strconv.FormatUint(seed, 10))%0xffffff, 36)
+	return "w-" + strconv.FormatUint(randutil.Fnv1a64(spec.Spec.ID)%0xffffff, 36), key
 }
 
-func newWorldState(spec *domain.Compiled, seed uint64, id string, startNS int64, opts Options) *World {
+func newWorldState(spec *domain.Compiled, seed uint64, id, key string, startNS int64, opts Options) *World {
 	return &World{
 		ID:               id,
+		streamKey:        key,
 		Spec:             spec,
 		seed:             seed,
 		StartNS:          startNS,

@@ -129,7 +129,7 @@ func (o *MCPOperator) InvokeEffector(effector, entityID, commandID string, args 
 	var res model.EffectorAcknowledgement
 	if err := o.call("sim.effector.invoke", map[string]any{
 		"token": o.token, "effector": effector, "entity_id": entityID,
-		"command_id": commandID, "args": args, "at_ns": atNS,
+		"command_id": commandID, "args": args,
 	}, &res); err != nil {
 		return nil, err
 	}

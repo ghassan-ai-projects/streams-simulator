@@ -71,10 +71,19 @@ func (r *Run) ClearPerturb(id string) error {
 	return nil
 }
 
-// InvokeEffector records and performs an effector call.
 func (r *Run) InvokeEffector(effector, entityID, commandID string, args map[string]any, atNS int64) (*world.InvokeResult, error) {
 	r.commandMu.Lock()
 	defer r.commandMu.Unlock()
+	return r.invokeEffector(effector, entityID, commandID, args, atNS)
+}
+
+func (r *Run) InvokeEffectorNow(effector, entityID, commandID string, args map[string]any) (*world.InvokeResult, error) {
+	r.commandMu.Lock()
+	defer r.commandMu.Unlock()
+	return r.invokeEffector(effector, entityID, commandID, args, r.World.Clock())
+}
+
+func (r *Run) invokeEffector(effector, entityID, commandID string, args map[string]any, atNS int64) (*world.InvokeResult, error) {
 	if err := r.refuseWhenFinished("InvokeEffector"); err != nil {
 		return nil, err
 	}

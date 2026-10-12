@@ -60,7 +60,7 @@ func newRunWorld(cfg Config) (*world.World, error) {
 }
 
 func newRunState(ctx context.Context, cfg Config, w *world.World) (*Run, error) {
-	layer, err := perturb.New(w.ID, cfg.Seed, cfg.Domain)
+	layer, err := perturb.New(w.StreamKey(), cfg.Seed, cfg.Domain)
 	if err != nil {
 		return nil, fmt.Errorf("streamsim: %w", err)
 	}
@@ -132,7 +132,7 @@ func defaultConfig(cfg Config) Config {
 
 func defaultRunIdentity(cfg Config) Config {
 	if cfg.RunID == "" {
-		cfg.RunID = "r-" + strconv.FormatUint(rules.CanonicalHash(cfg.Domain.Spec.ID, cfg.Seed), 36)
+		cfg.RunID = "r-" + strconv.FormatUint(rules.RunHash(cfg.Domain.Spec.ID), 36)
 	}
 	if cfg.quiescenceClock == nil {
 		cfg.quiescenceClock = quiesce.RealClock{}

@@ -62,6 +62,10 @@ func (r *Run) InvokeEffector(effector, entityID, commandID string, args map[stri
 	return r.run.InvokeEffector(effector, entityID, commandID, args, atNS)
 }
 
+func (r *Run) InvokeEffectorNow(effector, entityID, commandID string, args map[string]any) (*world.InvokeResult, error) {
+	return r.run.InvokeEffectorNow(effector, entityID, commandID, args)
+}
+
 // RetireEntity retires an entity and records the command.
 func (r *Run) RetireEntity(entityID, reason string, atNS int64) error {
 	return r.run.RetireEntity(entityID, reason, atNS)

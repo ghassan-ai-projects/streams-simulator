@@ -18,7 +18,7 @@ import (
 // EffectorInvoker is the narrow surface the operator may actuate through.
 // Implemented by the run; the operator view never sees the run itself.
 type EffectorInvoker interface {
-	InvokeEffector(effector, entityID, commandID string, args map[string]any, atNS int64) (*world.InvokeResult, error)
+	InvokeEffectorNow(effector, entityID, commandID string, args map[string]any) (*world.InvokeResult, error)
 }
 
 // VerdictSink accepts consumer reports and quiescence assertions.
@@ -115,11 +115,11 @@ func (v *OperatorView) ListEffectors(token string) ([]EffectorInfo, error) {
 // The consumer gets the acknowledgement only (MCP_SURFACE §4.3, §4.5): the
 // failure mode, whether the effect applied and the latency stay sealed. The
 // world id is asserted in it, so simulated actuation is unmistakable.
-func (v *OperatorView) Invoke(token, effector, entityID, commandID string, args map[string]any, atNS int64) (*model.EffectorAcknowledgement, error) {
+func (v *OperatorView) Invoke(token, effector, entityID, commandID string, args map[string]any) (*model.EffectorAcknowledgement, error) {
 	if err := v.admitInvocation(token, effector, commandID); err != nil {
 		return nil, err
 	}
-	res, err := v.Invoker.InvokeEffector(effector, entityID, commandID, args, atNS)
+	res, err := v.Invoker.InvokeEffectorNow(effector, entityID, commandID, args)
 	if errors.Is(err, world.ErrCommandIDReused) {
 		return nil, errTool(CodeInvalidArgs, "command_id was already used for a different request")
 	}

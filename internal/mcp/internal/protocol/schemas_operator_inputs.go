@@ -19,7 +19,6 @@ func effectorInvokeInput() toolInput {
 			"entity_id":  stringSchema(),
 			"command_id": stringSchema(),
 			"args":       objectSchema(),
-			"at_ns":      integerSchema(),
 		},
 		Required: []string{"token", "effector", "entity_id", "command_id"},
 	}

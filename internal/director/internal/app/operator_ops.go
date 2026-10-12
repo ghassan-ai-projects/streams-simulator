@@ -32,12 +32,12 @@ func (d *Director) OperatorEffectors(token string) ([]rules.EffectorInfo, error)
 
 // OperatorInvoke actuates an effector of the token's world; the consumer gets
 // the acknowledgement only.
-func (d *Director) OperatorInvoke(token, effector, entityID, commandID string, args map[string]any, atNS int64) (*model.EffectorAcknowledgement, error) {
+func (d *Director) OperatorInvoke(token, effector, entityID, commandID string, args map[string]any) (*model.EffectorAcknowledgement, error) {
 	v, err := d.ResolveOperator(token)
 	if err != nil {
 		return nil, err
 	}
-	return v.Invoke(token, effector, entityID, commandID, args, atNS)
+	return v.Invoke(token, effector, entityID, commandID, args)
 }
 
 // OperatorReport records the consumer's quiescence and verdict and returns

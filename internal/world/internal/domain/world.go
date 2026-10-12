@@ -80,6 +80,7 @@ type World struct {
 	hasObservedTimeNS bool
 
 	subs        map[string]*randutil.SplitMix64
+	streamKey   string
 	entities    map[string]*Entity
 	entityOrder []string
 	nextIndex   []int
@@ -161,8 +162,8 @@ func New(spec *domain.Compiled, seed uint64, id string, startNS int64, opts Opti
 	if err := admitWorld(startNS, opts); err != nil {
 		return nil, err
 	}
-	id = worldIdentity(spec, seed, id)
-	w := newWorldState(spec, seed, id, startNS, opts)
+	id, key := worldIdentity(spec, seed, id)
+	w := newWorldState(spec, seed, id, key, startNS, opts)
 	w.initializeRuntime(seed)
 	heap.Init(&w.queue)
 	ids := initialEntityIDs(spec, opts.InitialEntities)

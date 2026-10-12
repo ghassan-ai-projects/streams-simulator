@@ -135,7 +135,7 @@ func TestFacadeOperatorOperationsNeedTheWorldsCapabilityToken(t *testing.T) {
 		t.Fatalf("effectors = %v, %v", effectors, err)
 	}
 	entity := created["entity_ids"].([]string)[0]
-	ack, err := d.OperatorInvoke(token, effectors[0].Name, entity, "c-1", argsForSchema(effectors[0].ArgsSchema, entity), 0)
+	ack, err := d.OperatorInvoke(token, effectors[0].Name, entity, "c-1", argsForSchema(effectors[0].ArgsSchema, entity))
 	if err != nil || !ack.Accepted {
 		t.Fatalf("ack = %+v, %v", ack, err)
 	}

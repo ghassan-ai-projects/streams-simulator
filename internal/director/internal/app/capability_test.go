@@ -30,13 +30,13 @@ func TestCapabilityTokenEnforced(t *testing.T) {
 		t.Fatalf("nameplate incomplete: %+v", np)
 	}
 	// Unknown effector refused with a stable code.
-	_, err = w.Operator.Invoke(w.Token, "no_such_effector", "site-a/pond-1", "cmd-x", nil, 0)
+	_, err = w.Operator.Invoke(w.Token, "no_such_effector", "site-a/pond-1", "cmd-x", nil)
 	var te *rules.ToolError
 	if !errors.As(err, &te) || te.Code != rules.CodeUnknownEffector {
 		t.Fatalf("expected unknown_effector, got %v", err)
 	}
 	// Missing command_id refused.
-	_, err = w.Operator.Invoke(w.Token, "start_aerator", "site-a/pond-1", "", nil, 0)
+	_, err = w.Operator.Invoke(w.Token, "start_aerator", "site-a/pond-1", "", nil)
 	if err == nil || !strings.Contains(err.Error(), "missing_command_id: command_id is the idempotency key and is required") {
 		t.Fatal("missing command_id must fail")
 	}
@@ -117,7 +117,7 @@ func TestClosedLoopThroughMCPSurface(t *testing.T) {
 	}
 	// The operator invokes the effector through the narrow surface.
 	res, err := w.Operator.Invoke(w.Token, "start_aerator", pond, "cmd-mcp-1",
-		map[string]any{"pond_id": pond, "level": 1.0}, w.Run.World.Clock())
+		map[string]any{"pond_id": pond, "level": 1.0})
 	if err != nil {
 		t.Fatalf("invoke failed: %v", err)
 	}
