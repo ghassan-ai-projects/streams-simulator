@@ -40,9 +40,9 @@ func (g *suiteGeneration) scenarioIdentity(seed, idx uint64, entity, fault strin
 }
 
 func negativeFault(cfg Config) (string, bool) {
-	for i := range cfg.Domain.Spec.Faults {
-		if cfg.Domain.Spec.Faults[i].IsNegativeClass {
-			return cfg.Domain.Spec.Faults[i].ID, true
+	for _, fault := range declaredFaults(cfg.Domain) {
+		if fault.IsNegativeClass {
+			return fault.ID, true
 		}
 	}
 	return "", false
@@ -79,9 +79,9 @@ func orderedFaultWeights(prof *model.Profile) ([]string, float64) {
 
 func uniformPositiveFault(cfg Config, rng *randutil.SplitMix64) string {
 	var positives []string
-	for i := range cfg.Domain.Spec.Faults {
-		if !cfg.Domain.Spec.Faults[i].IsNegativeClass {
-			positives = append(positives, cfg.Domain.Spec.Faults[i].ID)
+	for _, fault := range declaredFaults(cfg.Domain) {
+		if !fault.IsNegativeClass {
+			positives = append(positives, fault.ID)
 		}
 	}
 	if len(positives) == 0 {

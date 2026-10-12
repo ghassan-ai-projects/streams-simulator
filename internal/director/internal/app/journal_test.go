@@ -17,7 +17,7 @@ func TestWorldWritesBothJournalStreamsInItsRunDirectory(t *testing.T) {
 	d := newTestDirector(t)
 	worldID := createWorld(t, d)
 	world := d.RunOf(worldID)
-	fault := world.Domain().Spec.Faults[0].ID
+	fault := world.Domain().Spec.Kinds[0].Faults[0].ID
 	if _, err := d.InjectFault(worldID, world.World.EntityIDs()[0], fault, world.World.Clock()+60e9, nil); err != nil {
 		t.Fatal(err)
 	}

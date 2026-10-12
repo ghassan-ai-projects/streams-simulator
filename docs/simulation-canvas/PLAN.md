@@ -72,3 +72,4 @@ The commit hash of a phase is recorded by the first commit of the next phase.
 | P2e | Done | `63881c1` (merged in `f8f9d5a`) | `make ci-check` 1:24 after merging P3 (was about 4 min); details in `.agents/context/testing.md` and `docs/DECISIONS.md` D-13 | not separately reviewed (test-only; every oracle still runs) |
 | P4 | Done | `1657a47` | [evidence/P4.md](evidence/P4.md) | [reviews/P4.md](reviews/P4.md) |
 | P5a | Done | `2509ee6` | [evidence/P5a.md](evidence/P5a.md) | [reviews/P5a.md](reviews/P5a.md) |
+| P5a2 | Done | (this commit) | [evidence/P5a2.md](evidence/P5a2.md) | [reviews/P5a2.md](reviews/P5a2.md) |

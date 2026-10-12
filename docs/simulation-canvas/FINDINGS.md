@@ -143,5 +143,5 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 
 | ID | Source | Sev | Summary | Phase | Status |
 |---|---|---|---|---|---|
-| R5a-01 | R5a | Med | v0.2 allows one kind; several kinds and per-instance overrides need a world change (per-kind runtime set, kind reference per entity, namespacing, solver and cross-check over kinds, draw order) | P5a2 | open |
+| R5a-01 | R5a | Med | v0.2 allows one kind; several kinds and per-instance overrides need a world change (per-kind runtime set, kind reference per entity, namespacing, solver and cross-check over kinds, draw order) | P5a2 | done |
 | R5a-02 | R5a | Med | The explicit entity-id check matches every id against one `id_template`; named instances must be accepted (id in the set's names or matching its template) | P5b | open |

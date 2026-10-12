@@ -4,6 +4,11 @@ import (
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
 func TestLoadBindingsFromData(t *testing.T) {
@@ -123,5 +128,31 @@ func TestLoadBindingsReportsTheFirstBrokenTargetByName(t *testing.T) {
 		if err == nil || !strings.Contains(err.Error(), `target "alpha"`) {
 			t.Fatalf("err = %v, want the alphabetically first broken target", err)
 		}
+	}
+}
+
+func TestBindingEffectorsAreLookedUpOnTheBoundEntitysKind(t *testing.T) {
+	t.Parallel()
+	spec, err := domain.Load(testsupport.TwoKindDomain())
+	if err != nil {
+		t.Fatal(err)
+	}
+	w, err := world.New(spec, 1, "w-two-kind", model.DefaultStartTimeNS, world.Options{EmitDisabled: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	arguments := map[string]bindingArgument{"tank_id": {source: "entity"}}
+	onTank := map[string]Binding{"valve": {effector: "refill", entity: "tank-1", arguments: arguments, safeStopEffector: "refill", safeStopArgs: arguments}}
+	if err := validateBindingCatalog(w, onTank); err != nil {
+		t.Fatalf("a tank effector on a tank: %v", err)
+	}
+	onPump := map[string]Binding{"valve": {effector: "refill", entity: "pump-1", arguments: arguments}}
+	if err := validateBindingCatalog(w, onPump); err == nil || !strings.Contains(err.Error(), `effector references unknown effector "refill"`) {
+		t.Fatalf("a tank effector on a pump: %v, want an unknown-effector refusal", err)
+	}
+	pumpArguments := map[string]bindingArgument{"pump_id": {source: "entity"}}
+	onPump["valve"] = Binding{effector: "boost", entity: "pump-1", arguments: pumpArguments, safeStopEffector: "refill", safeStopArgs: arguments}
+	if err := validateBindingCatalog(w, onPump); err == nil || !strings.Contains(err.Error(), `safe_stop references unknown effector "refill"`) {
+		t.Fatalf("a tank safe stop on a pump: %v, want an unknown-effector refusal", err)
 	}
 }

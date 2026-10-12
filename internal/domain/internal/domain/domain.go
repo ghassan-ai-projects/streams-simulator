@@ -8,6 +8,8 @@ package domain
 
 import (
 	"fmt"
+	"regexp"
+	"sort"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
@@ -30,32 +32,25 @@ type Compiled struct {
 	// Raw is the validated source document embedded in run artifacts.
 	Raw []byte
 
-	states    map[string]bool
 	channels  map[string]bool
 	faults    map[string]bool
 	effectors map[string]bool
 	profiles  map[string]bool
 
+	idPatterns []*regexp.Regexp
+
 	// Resolved defaults (schema defaults applied).
 	channelGain map[string]float64 // channel -> observation_gain
 }
 
-// HasState reports whether the state name is declared.
-func (c *Compiled) HasState(name string) bool { return c.states[name] }
-
-// HasChannel reports whether the channel name is declared.
 func (c *Compiled) HasChannel(name string) bool { return c.channels[name] }
 
-// HasFault reports whether the fault id is declared.
 func (c *Compiled) HasFault(id string) bool { return c.faults[id] }
 
-// HasEffector reports whether the effector name is declared.
 func (c *Compiled) HasEffector(name string) bool { return c.effectors[name] }
 
-// HasProfile reports whether the profile name is declared.
 func (c *Compiled) HasProfile(name string) bool { return c.profiles[name] }
 
-// ChannelGain returns the resolved observation gain for a channel.
 func (c *Compiled) ChannelGain(ch string) float64 {
 	if g, ok := c.channelGain[ch]; ok {
 		return g
@@ -63,43 +58,79 @@ func (c *Compiled) ChannelGain(ch string) float64 {
 	return 1
 }
 
-// StateNames returns the declared state names, sorted.
-func (c *Compiled) StateNames() []string { return sortedKeys(c.states) }
+func (c *Compiled) Kind(name string) *model.Kind {
+	for i := range c.Spec.Kinds {
+		if c.Spec.Kinds[i].Name == name {
+			return &c.Spec.Kinds[i]
+		}
+	}
+	return nil
+}
 
-// ChannelNames returns the declared channel names, sorted.
+func (c *Compiled) StateNames(kind string) []string {
+	var out []string
+	if k := c.Kind(kind); k != nil {
+		for i := range k.State {
+			out = append(out, k.State[i].Name)
+		}
+	}
+	sort.Strings(out)
+	return out
+}
+
 func (c *Compiled) ChannelNames() []string { return sortedKeys(c.channels) }
 
-// Fault returns the fault by id, or nil.
+func (c *Compiled) KindChannelNames(kind string) []string {
+	var out []string
+	if k := c.Kind(kind); k != nil {
+		for i := range k.Channels {
+			out = append(out, k.Channels[i].Name)
+		}
+	}
+	sort.Strings(out)
+	return out
+}
+
+func (c *Compiled) FaultCount() int { return len(c.faults) }
+
+func (c *Compiled) EffectorCount() int { return len(c.effectors) }
+
 func (c *Compiled) Fault(id string) *model.Fault {
-	for i := range c.Spec.Faults {
-		if c.Spec.Faults[i].ID == id {
-			return &c.Spec.Faults[i]
+	for i := range c.Spec.Kinds {
+		if f := c.Spec.Kinds[i].FaultDecl(id); f != nil {
+			return f
 		}
 	}
 	return nil
 }
 
-// Effector returns the effector by name, or nil.
+func (c *Compiled) FaultKind(id string) *model.Kind {
+	for i := range c.Spec.Kinds {
+		if c.Spec.Kinds[i].FaultDecl(id) != nil {
+			return &c.Spec.Kinds[i]
+		}
+	}
+	return nil
+}
+
 func (c *Compiled) Effector(name string) *model.Effector {
-	for i := range c.Spec.Effectors {
-		if c.Spec.Effectors[i].Name == name {
-			return &c.Spec.Effectors[i]
+	for i := range c.Spec.Kinds {
+		if e := c.Spec.Kinds[i].EffectorDecl(name); e != nil {
+			return e
 		}
 	}
 	return nil
 }
 
-// Channel returns the channel by name, or nil.
 func (c *Compiled) Channel(name string) *model.Channel {
-	for i := range c.Spec.Channels {
-		if c.Spec.Channels[i].Name == name {
-			return &c.Spec.Channels[i]
+	for i := range c.Spec.Kinds {
+		if ch := c.Spec.Kinds[i].ChannelDecl(name); ch != nil {
+			return ch
 		}
 	}
 	return nil
 }
 
-// Profile returns the profile by name, or nil.
 func (c *Compiled) Profile(name string) *model.Profile {
 	for i := range c.Spec.Profiles {
 		if c.Spec.Profiles[i].Name == name {
@@ -111,6 +142,10 @@ func (c *Compiled) Profile(name string) *model.Profile {
 
 func compile(spec *model.DomainSpec, digest, src string) (*Compiled, error) {
 	c := newCompiled(spec, digest)
+	if err := c.checkInstanceKinds(src); err != nil {
+		return nil, err
+	}
+	c.compileIDPatterns()
 	if err := c.registerSymbols(src); err != nil {
 		return nil, err
 	}

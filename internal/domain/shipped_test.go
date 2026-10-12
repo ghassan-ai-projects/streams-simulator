@@ -31,8 +31,8 @@ func TestAllShippedDomainsLoad(t *testing.T) {
 			t.Fatalf("domain %s must declare nominal/correlated_cascade/sensor_pathology profiles", c.Spec.ID)
 		}
 		hasNegative := false
-		for i := range c.Spec.Faults {
-			if c.Spec.Faults[i].IsNegativeClass {
+		for i := range c.Spec.Kinds[0].Faults {
+			if c.Spec.Kinds[0].Faults[i].IsNegativeClass {
 				hasNegative = true
 			}
 		}

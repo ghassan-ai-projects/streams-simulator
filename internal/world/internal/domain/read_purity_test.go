@@ -12,8 +12,8 @@ import (
 func TestStateValueDoesNotDependOnTheReadSchedule(t *testing.T) {
 	t.Parallel()
 	spec := testSpec(t, func(s *model.DomainSpec) {
-		s.Dynamics[0].DTMs = 1000
-		s.Dynamics[0].F1.TimeConstantS = 600
+		s.Kinds[0].Dynamics[0].DTMs = 1000
+		s.Kinds[0].Dynamics[0].F1.TimeConstantS = 600
 	})
 	start := model.DefaultStartTimeNS
 	final := start + 3*3600*secondsPerNS + 137_000_000 // off the 1 s grid
@@ -39,7 +39,7 @@ func TestStateValueDoesNotDependOnTheReadSchedule(t *testing.T) {
 func TestStochasticFaultEnvelopeDoesNotDependOnTheReadSchedule(t *testing.T) {
 	t.Parallel()
 	spec := testSpec(t, func(s *model.DomainSpec) {
-		s.Faults[0].Onset = model.FaultOnset{Shape: "stochastic", RatePerHour: 0.8}
+		s.Kinds[0].Faults[0].Onset = model.FaultOnset{Shape: "stochastic", RatePerHour: 0.8}
 	})
 	start := model.DefaultStartTimeNS
 	onset := start + 600*secondsPerNS

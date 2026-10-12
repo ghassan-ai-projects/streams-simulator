@@ -123,9 +123,9 @@ func TestConservationAtScaleBeyondTenThousand(t *testing.T) {
 	// A 1ms heartbeat produces >10,000 deliveries in a short stepped run
 	// (the same recipe as TestHistoryIsNotSilentlyCapped).
 	found := false
-	for i := range spec.Spec.Channels {
-		if spec.Spec.Channels[i].Name == "pond.heartbeat" {
-			spec.Spec.Channels[i].Cadence.PeriodS = 0.001
+	for i := range spec.Spec.Kinds[0].Channels {
+		if spec.Spec.Kinds[0].Channels[i].Name == "pond.heartbeat" {
+			spec.Spec.Kinds[0].Channels[i].Cadence.PeriodS = 0.001
 			found = true
 		}
 	}

@@ -33,7 +33,7 @@ func newObservabilityScan(s *Solver, entity string, fault *model.Fault, clean, f
 	return &observabilityScan{
 		solver: s, entity: entity, detector: detector,
 		clean: clean, faulted: faulted, entityIDs: entityIDs,
-		sigma: s.effectiveSigma(entity, detector, len(clean.EntityIDs())),
+		sigma: s.effectiveSigma(entity, detector, len(clean.PeerIDs(entity))),
 	}
 }
 

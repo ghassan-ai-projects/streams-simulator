@@ -13,14 +13,14 @@ func TestGaussianNoiseMomentsOracle(t *testing.T) {
 	t.Parallel()
 	start := model.DefaultStartTimeNS
 	spec := testSpec(t, func(s *model.DomainSpec) {
-		s.Dynamics = nil
-		s.Channels = []model.Channel{{
+		s.Kinds[0].Dynamics = nil
+		s.Kinds[0].Channels = []model.Channel{{
 			Name: "noisy", ValueType: "number", Unit: "u", Resolution: 1e-9,
 			Fidelity: "F0", Absence: "signal", Observes: "x",
 			Cadence: model.Cadence{Mode: "periodic", PeriodS: 0.01},
 			Noise:   model.Noise{Model: "gaussian", Sigma: 0.25},
 		}}
-		s.Faults[0].Observability.Detector.Channel = "noisy"
+		s.Kinds[0].Faults[0].Observability.Detector.Channel = "noisy"
 	})
 	w, err := New(spec, 5, "w-noise", start, Options{})
 	if err != nil {
@@ -53,15 +53,15 @@ func TestQuantizationNoiseOracle(t *testing.T) {
 	t.Parallel()
 	start := model.DefaultStartTimeNS
 	spec := testSpec(t, func(s *model.DomainSpec) {
-		s.Dynamics = nil
-		s.State[0].Initial = 2.25
-		s.Channels = []model.Channel{{
+		s.Kinds[0].Dynamics = nil
+		s.Kinds[0].State[0].Initial = 2.25
+		s.Kinds[0].Channels = []model.Channel{{
 			Name: "quant", ValueType: "number", Unit: "u", Resolution: 1e-9,
 			Fidelity: "F0", Absence: "signal", Observes: "x",
 			Cadence: model.Cadence{Mode: "periodic", PeriodS: 0.01},
 			Noise:   model.Noise{Model: "quantization", Sigma: 0.5},
 		}}
-		s.Faults[0].Observability.Detector.Channel = "quant"
+		s.Kinds[0].Faults[0].Observability.Detector.Channel = "quant"
 	})
 	w, err := New(spec, 5, "w-quant", start, Options{})
 	if err != nil {
@@ -114,8 +114,8 @@ func TestAvailabilitySojournOracle(t *testing.T) {
 	t.Parallel()
 	start := model.DefaultStartTimeNS
 	spec := testSpec(t, func(s *model.DomainSpec) {
-		s.Dynamics = nil
-		s.Channels = []model.Channel{{
+		s.Kinds[0].Dynamics = nil
+		s.Kinds[0].Channels = []model.Channel{{
 			Name: "avail", ValueType: "number", Unit: "u", Resolution: 1e-9,
 			Fidelity: "F0", Absence: "signal", Observes: "x",
 			Cadence: model.Cadence{Mode: "periodic", PeriodS: 30},
@@ -124,7 +124,7 @@ func TestAvailabilitySojournOracle(t *testing.T) {
 				Uptime: 0.5, MTTRS: 60,
 			},
 		}}
-		s.Faults[0].Observability.Detector.Channel = "avail"
+		s.Kinds[0].Faults[0].Observability.Detector.Channel = "avail"
 	})
 	w, err := New(spec, 5, "w-avail", start, Options{})
 	if err != nil {

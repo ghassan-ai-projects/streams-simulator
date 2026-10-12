@@ -42,6 +42,10 @@ func Example() string {
 	return filepath.Join(RepositoryRoot(), "docs", "examples", "aquaculture-pond.domain.json")
 }
 
+func TwoKindDomain() string {
+	return filepath.Join(RepositoryRoot(), "internal", "testsupport", "testdata", "two-kind-plant.domain.json")
+}
+
 // Contract is the path of the committed contract schema with the given file
 // stem, e.g. "cli-output-v0.1".
 func Contract(stem string) string {

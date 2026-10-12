@@ -7,18 +7,18 @@ a bug in the simulator.
 
 | Term | Meaning | Code name | Wire / artifact name |
 | --- | --- | --- | --- |
-| Domain spec | The declarative JSON document for one world: kinds and instances | `model.DomainDocument` (the document), `model.DomainSpec` (the runtime form it compiles to) | `*.domain.json`, domain-spec-v0.2 |
-| Kind | The template of an entity: its state, dynamics, channels, faults and effectors; its name is the `entity_type` of every instance. Part 1 allows one kind per domain | `model.Kind` | `kinds[]` |
-| Instance set | The named entities of a kind: id template, count bounds, churn. Explicit entity ids a run is given must fit it | `model.InstanceSet`, `Compiled.CheckEntityIDs` | `instances[]` |
-| Runtime form | The flat v0.1-shaped spec every kind and instance set lowers to; the only form the world, perturbation, adapter, truth, score and run code read | `model.DomainSpec`, `Compiled.Spec` | `catalog describe` spec |
+| Domain spec | The declarative JSON document for one world: one or more kinds and instance sets. The validated document is also the runtime form every module reads | `model.DomainSpec`, `Compiled.Spec` | `*.domain.json`, domain-spec-v0.2, `catalog describe` spec |
+| Kind | The template of an entity: its state, dynamics, channels, faults and effectors; its name is the `entity_type` of every instance. A domain may declare several; its references resolve inside the kind | `model.Kind`, `Compiled.Kind` | `kinds[]` |
+| Instance set | A templated population of one kind: id template, count bounds, churn. A kind may have several; explicit entity ids a run is given must fit one of them | `model.InstanceSet`, `Compiled.InstanceSetFor`, `Compiled.CheckEntityIDs` | `instances[]` |
+| Domain-wide name | A channel name, fault id or effector name: unique across all kinds, so it resolves to one declaration (state names are scoped to their kind) | `Compiled.Channel`, `Fault`, `Effector`, `FaultKind` | `channel`, `fault_id`, `effector` |
 | Canonical formatting | The one layout of a domain file (member order, line-fitting objects) so a hand edit and a tool edit produce the same bytes; never changes the digest | `Format` | `domain format` |
 | Compiled domain | A spec that passed schema validation and cross-checks, with its canonical digest and resolved defaults | `Compiled` | `domain_digest`, `domain_spec` in the run artifact |
 | Digest | RFC 8785 canonical-JSON hash of the validated v0.2 document | `Compiled.Digest` | `domain_digest` |
 | Validation error | A domain that fails its schema or a cross-reference check; every issue carries a JSON pointer into the v0.2 document, except that a document that is not JSON has none | `model.ValidationError` (contract `domain-spec-v0.2`) | CLI `domain_invalid` |
 | Unknown domain | A catalog lookup for an id the catalog does not hold | `ErrUnknownDomain` | CLI `domain_not_found` |
 | Raw | The validated source document embedded in run artifacts | `Compiled.Raw` | `domain_spec` |
-| State | A hidden physical quantity the world evolves | `HasState`, `StateNames` | state names |
-| Channel | An observable stream derived from state with noise, cadence and absence | `Channel`, `ChannelNames` | channel names |
+| State | A hidden physical quantity the world evolves; named within its kind | `Kind.StateDecl`, `StateNames(kind)` | state names |
+| Channel | An observable stream derived from state with noise, cadence and absence | `Channel`, `ChannelNames`, `KindChannelNames` | channel names |
 | Fault | A declared physical fault with onset, effects and observability | `Fault` | `fault_id` |
 | Effector | A declared actuation with ack, failure modes and effect | `Effector` | `effector` |
 | Profile | A named scenario shape the domain supports | `Profile` | `profile` |

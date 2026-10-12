@@ -1,18 +1,18 @@
 package domain
 
 // birthAutonomous creates an entity on the churn schedule.
-func (w *World) birthAutonomous(atNS int64) {
-	churn := w.Spec.Spec.Entities.Churn
+func (w *World) birthAutonomous(set int, atNS int64) {
+	churn := w.Spec.Spec.Instances[set].Churn
 	if churn == nil {
 		return
 	}
-	id := w.reserveBirthID()
-	if err := w.addEntity(id, atNS); err == nil {
+	id := w.reserveBirthID(set)
+	if err := w.addEntity(id, set, atNS); err == nil {
 		w.scheduleLifetime(id, atNS, churn.MeanLifetimeS)
 	}
-	rng := w.substream("churn/births")
+	rng := w.substream(birthStream(set))
 	next := atNS + int64(rng.Exp(3600*secondsPerNS/churn.BirthsPerHour))
-	w.schedule(kindBirth, "", "", next, nil)
+	w.schedule(kindBirth, "", "", next, set)
 }
 
 // Retire removes an entity and its scheduled emissions. Used for churn and
@@ -31,12 +31,13 @@ func (w *World) retire(entityID, reason string, atNS int64) {
 	// liveness).
 }
 
-func (w *World) reserveBirthID() string {
-	w.nextIndex++
-	id := renderID(w.Spec.Spec.Entities.IDTemplate, w.nextIndex, nil)
+func (w *World) reserveBirthID(set int) string {
+	template := w.Spec.Spec.Instances[set].IDTemplate
+	w.nextIndex[set]++
+	id := renderID(template, w.nextIndex[set], nil)
 	for id == "" || w.entities[id] != nil {
-		w.nextIndex++
-		id = renderID(w.Spec.Spec.Entities.IDTemplate, w.nextIndex, nil)
+		w.nextIndex[set]++
+		id = renderID(template, w.nextIndex[set], nil)
 	}
 	return id
 }

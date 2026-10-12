@@ -46,8 +46,7 @@
     "kinds": {
       "type": "array",
       "minItems": 1,
-      "maxItems": 1,
-      "description": "Entity kinds: a kind is the template every instance of it follows, defining its hidden state, dynamics, observation channels, faults and effectors. Part 1 of v0.2 compiles exactly one kind per domain; several kinds arrive with system entities.",
+      "description": "Entity kinds: a kind is the template every instance of it follows, defining its hidden state, dynamics, observation channels, faults and effectors. A domain may declare several kinds. Channel, fault and effector names are unique across the whole domain; state names are unique within their kind.",
       "items": {
         "type": "object",
         "additionalProperties": false,
@@ -555,8 +554,7 @@
     "instances": {
       "type": "array",
       "minItems": 1,
-      "maxItems": 1,
-      "description": "Instances: named entities of a kind. Part 1 declares one instance set per kind, a templated population. Explicit entity ids supplied to a run must fit the id_template and the count bounds.",
+      "description": "Instances: entities of a kind. Each instance set is a templated population of one kind, and every kind is named by at least one set. Explicit entity ids supplied to a run must fit the id_template of an instance set and its count bounds.",
       "items": {
         "type": "object",
         "additionalProperties": false,

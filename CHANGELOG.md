@@ -4,6 +4,20 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **Multi-kind world** (`docs/design/DOMAIN_SPEC_V0_2.md` §2.3 and §3; phase P5a2, finding R5a-01). A domain may declare
+  several **kinds** and several **instance sets**, each set following a kind with its own `id_template`, `count` and
+  `churn`; the `maxItems: 1` limits on `kinds` and `instances` are lifted. Channel, fault and effector names are unique
+  across the domain, state names are unique within a kind, and every reference (observes, dynamics, affects, effects,
+  detector channels, expected effector, confirmation channels) resolves inside its own kind; a kind with no instance
+  set is refused. The validated document is now the runtime form (`model.DomainSpec` holds `Kinds` and `Instances`; the
+  P5a lowering is removed). Each world entity carries its kind, which selects its state, dynamics, channels, faults and
+  effectors: injecting a fault or invoking an effector on an entity of another kind is refused, a peer-residual
+  detector pools only the entity's kind, a suite scenario draws its entity from the fault's kind and the audit uses
+  that kind's channels and control fault. Single-kind domains are bit-identical (runtime-equivalence digests,
+  trace, ledger and history in the behaviour pin). **Behaviour changes:** `catalog describe` prints the v0.2 document
+  (`kinds`, `instances`) instead of the flat runtime shape; an explicit entity-id list is matched to an instance set
+  and counted per set; `world.RenderID` is replaced by `world.PopulationIDs`.
+
 - **Domain spec v0.2, kinds and instances** (`docs/design/DOMAIN_SPEC_V0_2.md`, `domain-spec-v0.2`, replacing
   `domain-spec-v0.1`; phase P5a). A domain declares one **kind** (the entity template: state, dynamics, channels,
   faults, effectors; its name is the `entity_type`) and one **instance set** (`id_template`, `count`, `churn`) that

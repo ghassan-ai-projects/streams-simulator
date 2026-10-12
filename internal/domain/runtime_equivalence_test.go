@@ -28,19 +28,51 @@ func TestEveryShippedDomainCompilesToItsV01RuntimeWorld(t *testing.T) {
 	for id, want := range v01RuntimeDigests {
 		t.Run(id, func(t *testing.T) {
 			t.Parallel()
-			raw, err := json.Marshal(shipped(t, id).Spec)
-			if err != nil {
-				t.Fatal(err)
-			}
-			var doc any
-			if err := model.DecodeBytes(raw, &doc); err != nil {
-				t.Fatal(err)
-			}
-			got, err := canonical.Digest(doc)
+			got, err := canonical.Digest(v01Form(t, shipped(t, id).Spec))
 			if err != nil || got != want {
 				t.Fatalf("runtime spec digest = %s (%v), want the v0.1 runtime %s", got, err, want)
 			}
 		})
+	}
+}
+
+func v01Form(t *testing.T, spec *model.DomainSpec) map[string]any {
+	t.Helper()
+	if len(spec.Kinds) != 1 || len(spec.Instances) != 1 {
+		t.Fatalf("%s declares %d kinds and %d instance sets, but the v0.1 form holds one of each", spec.ID, len(spec.Kinds), len(spec.Instances))
+	}
+	whole, kind, instances := generic(t, spec), generic(t, spec.Kinds[0]), generic(t, spec.Instances[0])
+	flat := map[string]any{}
+	for _, member := range []string{"id", "version", "title", "description", "axes", "stresses", "profiles", "ground_truth"} {
+		copyMember(flat, whole, member)
+	}
+	for _, member := range []string{"state", "dynamics", "channels", "faults", "effectors"} {
+		copyMember(flat, kind, member)
+	}
+	entities := map[string]any{"entity_type": spec.Kinds[0].Name}
+	for _, member := range []string{"id_template", "count", "churn"} {
+		copyMember(entities, instances, member)
+	}
+	flat["entities"] = entities
+	return flat
+}
+
+func generic(t *testing.T, value any) map[string]any {
+	t.Helper()
+	raw, err := json.Marshal(value)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var out map[string]any
+	if err := model.DecodeBytes(raw, &out); err != nil {
+		t.Fatal(err)
+	}
+	return out
+}
+
+func copyMember(into, from map[string]any, member string) {
+	if value, ok := from[member]; ok {
+		into[member] = value
 	}
 }
 

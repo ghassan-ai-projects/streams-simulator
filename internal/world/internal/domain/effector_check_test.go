@@ -10,14 +10,13 @@ import (
 func TestCheckEffectorArgsJudgesWithoutInvoking(t *testing.T) {
 	t.Parallel()
 	spec := testSpec(t, func(s *model.DomainSpec) {
-		s.Effectors = []model.Effector{{
+		s.Kinds[0].Effectors = []model.Effector{{
 			Name:       "act",
 			ArgsSchema: map[string]any{"type": "object", "required": []any{"level"}},
 			Ack:        model.Ack{LatencyMS: model.Latency{Mean: 100}},
 			Effect:     model.Effect{StateDeltas: []model.StateDelta{{State: "x", Delta: 1}}},
 		}}
 	})
-	w := newTestWorld(t, spec, 1, 0)
 	cases := []struct {
 		name, effector string
 		args           map[string]any
@@ -30,11 +29,12 @@ func TestCheckEffectorArgsJudgesWithoutInvoking(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			w := newTestWorld(t, spec, 1, 0)
 			assertViolation(t, w.CheckEffectorArgs(tc.effector, tc.args), tc.want)
+			if calls := w.EffectorCalls(); len(calls) != 0 {
+				t.Fatalf("checking invoked the effector: %+v", calls)
+			}
 		})
-	}
-	if calls := w.EffectorCalls(); len(calls) != 0 {
-		t.Fatalf("checking invoked the effector: %+v", calls)
 	}
 }
 

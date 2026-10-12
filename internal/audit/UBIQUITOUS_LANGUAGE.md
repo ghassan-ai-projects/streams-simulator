@@ -6,7 +6,7 @@ from its control, the scenario is not evidence that reasoning helped.
 
 | Term | Meaning | Code name | Wire / artifact name |
 | --- | --- | --- | --- |
-| Panel | The set of one-line baseline detectors run against one injection | `Panel` | – |
+| Panel | The set of one-line baseline detectors run against one injection; its channels and negative-class control fault are those of the injected fault's kind | `Panel` | – |
 | Trivial baseline | A detector so simple it needs no reasoning: fixed threshold, z-score, first difference, moving-median residual, channel silence | `DetectorNames` (domain layer) | `scores` keys |
 | Hindsight fit | Fitting the detector's parameters on the scenario's own labeled series, deliberately unfair to the scenario | – | – |
 | Balanced accuracy | The score of a detector separating fault series from control series | `Verdict.Scores`, `BalancedAccuracyCutoff` (0.9) | `scores`, `best_score` |

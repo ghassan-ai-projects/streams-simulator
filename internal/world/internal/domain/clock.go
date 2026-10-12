@@ -81,7 +81,7 @@ func (w *World) processScheduledEvent(event *item) {
 			w.effectsAppliedThis++
 		}
 	case kindBirth:
-		w.birthAutonomous(event.timeNS)
+		w.birthAutonomous(event.payload.(int), event.timeNS)
 	case kindDeath:
 		w.retire(event.entity, "lifetime", event.timeNS)
 	}

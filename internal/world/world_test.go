@@ -38,7 +38,7 @@ func TestWorldExposesItsIdentityAndEntities(t *testing.T) {
 		t.Fatalf("identity = %q %d %v", w.ID, w.StartNS, w.Spec)
 	}
 	ids := w.EntityIDs()
-	if len(ids) != 8 || ids[0] != world.RenderID(w.Spec.Spec.Entities.IDTemplate, 1) {
+	if len(ids) != 8 || ids[0] != world.PopulationIDs(w.Spec, 0)[0] {
 		t.Fatalf("entities = %v", ids)
 	}
 	if e := w.Entity(ids[0]); e == nil || e.ID != ids[0] || e.Type != "pond" {

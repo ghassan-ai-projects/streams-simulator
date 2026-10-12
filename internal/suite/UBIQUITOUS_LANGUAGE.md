@@ -6,7 +6,7 @@ the graded benchmark a consumer is scored against.
 | Term | Meaning | Code name | Wire / artifact name |
 | --- | --- | --- | --- |
 | Suite | A generated graded set of scenarios with their sealed labels | `Suite` | `<domain>-<profile>-suite.json` |
-| Scenario | One executable recipe: entity, fault, onset, duration, perturbations, setup, command log | `Scenario` | `scenarios[]` |
+| Scenario | One executable recipe: entity, fault, onset, duration, perturbations, setup, command log. The entity is drawn from the entities of the fault's kind, and setup calls apply only when that kind declares the effector | `Scenario` | `scenarios[]` |
 | Profile | A named scenario shape declared by the domain (nominal, correlated cascade, sensor pathology) | `Config.Profile` | `profile` |
 | Negative class | A scenario whose fault expects no episode; its fraction is declared by the domain | `negative_class_fraction` | `is_negative_class` |
 | Pre-degraded | A scenario that starts with the entity already degraded | `PreDegraded` | `pre_degraded` |

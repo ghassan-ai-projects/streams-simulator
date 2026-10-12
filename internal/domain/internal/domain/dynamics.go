@@ -6,9 +6,9 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-func rejectDynamicsCycles(spec *model.DomainSpec, c *Compiled, src string) error {
-	traversal := dynamicsTraversal{dependencies: dynamicsDependencies(spec), targets: dynamicsTargets(spec), state: make(map[string]uint8), source: src}
-	for _, name := range c.StateNames() {
+func rejectDynamicsCycles(kind *model.Kind, at string, c *Compiled, src string) error {
+	traversal := dynamicsTraversal{dependencies: dynamicsDependencies(kind), targets: dynamicsTargets(kind), state: make(map[string]uint8), source: src, base: at}
+	for _, name := range c.StateNames(kind.Name) {
 		if err := traversal.visit(name); err != nil {
 			return err
 		}
@@ -34,15 +34,6 @@ func (checks domainChecks) checkDetector(d *model.Detector, who string) error {
 	default:
 		return checks.bad("/form", "%s: unknown detector form %q", who, d.Form)
 	}
-}
-
-func dynamicsFor(c *Compiled, state string) *model.Dynamics {
-	for i := range c.Spec.Dynamics {
-		if c.Spec.Dynamics[i].Target == state {
-			return &c.Spec.Dynamics[i]
-		}
-	}
-	return nil
 }
 
 func sortedKeys(m map[string]bool) []string {

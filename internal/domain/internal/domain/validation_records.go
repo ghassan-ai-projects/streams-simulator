@@ -18,14 +18,13 @@ func (checks domainChecks) checkChannel(ch *model.Channel) error {
 }
 
 func (checks domainChecks) channelReferences(ch *model.Channel) error {
-	c := checks.compiled
-	if ch.Observes != "" && !c.HasState(ch.Observes) {
+	if ch.Observes != "" && !checks.hasState(ch.Observes) {
 		return checks.bad("/observes", "channel %q observes undeclared state %q", ch.Name, ch.Observes)
 	}
-	if ch.ObservationBias != nil && !c.HasState(ch.ObservationBias.State) {
+	if ch.ObservationBias != nil && !checks.hasState(ch.ObservationBias.State) {
 		return checks.bad("/observation_bias/state", "channel %q bias references undeclared state %q", ch.Name, ch.ObservationBias.State)
 	}
-	if ch.Cadence.Mode == "event_driven" && ch.Cadence.TriggerState != "" && !c.HasState(ch.Cadence.TriggerState) {
+	if ch.Cadence.Mode == "event_driven" && ch.Cadence.TriggerState != "" && !checks.hasState(ch.Cadence.TriggerState) {
 		return checks.bad("/cadence/trigger_state", "channel %q trigger references undeclared state %q", ch.Name, ch.Cadence.TriggerState)
 	}
 	return nil
@@ -66,7 +65,7 @@ func (checks domainChecks) checkDynamic(d *model.Dynamics) error {
 }
 
 func (checks domainChecks) dynamicTarget(d *model.Dynamics) error {
-	if !checks.compiled.HasState(d.Target) {
+	if !checks.hasState(d.Target) {
 		return checks.bad("/target", "dynamics target %q is not a declared state", d.Target)
 	}
 	return nil
@@ -95,7 +94,7 @@ func (checks domainChecks) dynamicF1(d *model.Dynamics) error {
 func (checks domainChecks) dynamicF2(d *model.Dynamics) error {
 	if d.F2 != nil {
 		for _, name := range slices.Sorted(maps.Keys(d.F2.Inputs)) {
-			if !checks.compiled.HasState(name) {
+			if !checks.hasState(name) {
 				return checks.bad("/f2/inputs"+memberPointer(name), "f2 model %q input %q is not a declared state", d.F2.Model, name)
 			}
 		}
@@ -121,7 +120,7 @@ func (checks domainChecks) faultRate(f *model.Fault) error {
 
 func (checks domainChecks) faultStates(f *model.Fault) error {
 	for i, a := range f.Affects {
-		if !checks.compiled.HasState(a.State) {
+		if !checks.hasState(a.State) {
 			return checks.bad(fmt.Sprintf("/affects/%d/state", i), "fault %q affects undeclared state %q", f.ID, a.State)
 		}
 	}
@@ -136,7 +135,7 @@ func (checks domainChecks) faultDetector(f *model.Fault) error {
 }
 
 func (checks domainChecks) faultEffector(f *model.Fault) error {
-	if f.ExpectedEffector != "" && !checks.compiled.HasEffector(f.ExpectedEffector) {
+	if f.ExpectedEffector != "" && checks.kind.EffectorDecl(f.ExpectedEffector) == nil {
 		return checks.bad("/expected_effector", "fault %q expects undeclared effector %q", f.ID, f.ExpectedEffector)
 	}
 	return nil

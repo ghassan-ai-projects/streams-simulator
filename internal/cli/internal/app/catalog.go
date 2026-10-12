@@ -122,7 +122,7 @@ func validateDomainFile(path string) (any, error) {
 	if err != nil {
 		return nil, fmt.Errorf("streamsim: %w", err)
 	}
-	return map[string]any{"valid": true, "id": c.Spec.ID, "digest": c.Digest, "channels": len(c.Spec.Channels), "faults": len(c.Spec.Faults), "effectors": len(c.Spec.Effectors)}, nil
+	return map[string]any{"valid": true, "id": c.Spec.ID, "digest": c.Digest, "channels": len(c.ChannelNames()), "faults": c.FaultCount(), "effectors": c.EffectorCount()}, nil
 }
 
 func cmdAdapter(s *session, args []string) (any, error) {

@@ -6,7 +6,7 @@ Streams Simulator extends through data files, not per-domain or per-consumer cod
 
 ## Domains
 
-A domain specification declares the world as a **kind** (the template: state variables, dynamics, channels, faults, effectors) and the **instances** that follow it (id template, count bounds, churn), plus profiles and property axes. The loader compiles the kinds-and-instances document to the runtime world, so the simulator core never sees the difference. The loader validates the JSON against the domain contract, computes a digest, and exposes it through the catalog.
+A domain specification declares the world as one or more **kinds** (the template: state variables, dynamics, channels, faults, effectors) and the **instance sets** that follow them (id template, count bounds, churn), plus profiles and property axes. Channel, fault and effector names are unique across the domain; every other reference resolves inside its kind. The validated document is the form the simulator core reads. The loader validates the JSON against the domain contract, computes a digest, and exposes it through the catalog.
 
 The committed domain set is under [`domains/`](../../domains/): eight domains, each validated against the embedded schema by the shipped-domain test. The design catalog describes more domains than are currently committed. See [limitations](../limitations.md).
 

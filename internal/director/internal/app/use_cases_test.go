@@ -15,7 +15,7 @@ func TestWorldCommandsDriveAWorldWithoutAnyProtocol(t *testing.T) {
 	worldID := createWorld(t, d)
 	w := d.World(worldID)
 	entity := w.Run.World.EntityIDs()[0]
-	fault := w.Run.Domain().Spec.Faults[0].ID
+	fault := w.Run.Domain().Spec.Kinds[0].Faults[0].ID
 
 	if described, err := d.DescribeWorld(worldID); err != nil || described["world_id"] != worldID {
 		t.Fatalf("describe = %v, %v", described, err)

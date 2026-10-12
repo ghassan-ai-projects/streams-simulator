@@ -2,6 +2,7 @@ package domain
 
 import (
 	"encoding/json"
+	"slices"
 	"strings"
 	"testing"
 
@@ -20,7 +21,7 @@ func TestLoadAquaculturePond(t *testing.T) {
 	if c.Spec.ID != "aquaculture-pond" {
 		t.Fatalf("wrong id: %s", c.Spec.ID)
 	}
-	if !c.HasState("dissolved_oxygen_true") {
+	if !slices.Contains(c.StateNames("pond"), "dissolved_oxygen_true") {
 		t.Fatal("missing state")
 	}
 	if !c.HasChannel("pond.dissolved_oxygen") {
@@ -136,7 +137,7 @@ func TestCatalogCoverage(t *testing.T) {
 func TestF2Rejected(t *testing.T) {
 	t.Parallel()
 	spec := minimalSpec()
-	spec.Dynamics = []model.Dynamics{{
+	spec.Kinds[0].Dynamics = []model.Dynamics{{
 		Target: "x",
 		Tier:   "F2",
 		DTMs:   1000,
@@ -146,7 +147,7 @@ func TestF2Rejected(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Parse(testsupport.AsKinds(raw), "f2"); err == nil || !strings.Contains(err.Error(), "not_implemented") {
+	if _, err := Parse(raw, "f2"); err == nil || !strings.Contains(err.Error(), "not_implemented") {
 		t.Fatalf("expected F2 not_implemented rejection, got %v", err)
 	}
 }
@@ -156,12 +157,12 @@ func TestF2Rejected(t *testing.T) {
 func TestPinkNoiseRejected(t *testing.T) {
 	t.Parallel()
 	spec := minimalSpec()
-	spec.Channels[0].Noise = model.Noise{Model: "pink", Sigma: 0.5}
+	spec.Kinds[0].Channels[0].Noise = model.Noise{Model: "pink", Sigma: 0.5}
 	raw, err := json.Marshal(spec)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Parse(testsupport.AsKinds(raw), "pink"); err == nil || !strings.Contains(err.Error(), "not implemented") {
+	if _, err := Parse(raw, "pink"); err == nil || !strings.Contains(err.Error(), "not implemented") {
 		t.Fatalf("expected pink not-implemented rejection, got %v", err)
 	}
 }
@@ -171,22 +172,22 @@ func TestPinkNoiseRejected(t *testing.T) {
 func TestNoneNoiseWithSigmaRejected(t *testing.T) {
 	t.Parallel()
 	spec := minimalSpec()
-	spec.Channels[0].Noise = model.Noise{Model: "none", Sigma: 0.5}
+	spec.Kinds[0].Channels[0].Noise = model.Noise{Model: "none", Sigma: 0.5}
 	raw, err := json.Marshal(spec)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Parse(testsupport.AsKinds(raw), "none-sigma"); err == nil || !strings.Contains(err.Error(), "sigma must be 0") {
+	if _, err := Parse(raw, "none-sigma"); err == nil || !strings.Contains(err.Error(), "sigma must be 0") {
 		t.Fatalf("expected none+sigma rejection, got %v", err)
 	}
 
 	// The legitimate "no noise" declaration still loads.
-	spec.Channels[0].Noise = model.Noise{Model: "none", Sigma: 0}
+	spec.Kinds[0].Channels[0].Noise = model.Noise{Model: "none", Sigma: 0}
 	raw, err = json.Marshal(spec)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Parse(testsupport.AsKinds(raw), "none"); err != nil {
+	if _, err := Parse(raw, "none"); err != nil {
 		t.Fatalf("none with sigma 0 must load: %v", err)
 	}
 }
@@ -195,7 +196,7 @@ func TestDeadTimeDoubleApplicationRejected(t *testing.T) {
 	t.Parallel()
 	// An effector with dead_time_s driving a dead_time state must be refused.
 	spec := minimalSpec()
-	spec.Effectors = []model.Effector{{
+	spec.Kinds[0].Effectors = []model.Effector{{
 		Name:       "do_it",
 		ArgsSchema: map[string]any{"type": "object"},
 		Ack:        model.Ack{LatencyMS: model.Latency{Mean: 100}},
@@ -205,7 +206,7 @@ func TestDeadTimeDoubleApplicationRejected(t *testing.T) {
 			DeadTimeS:     50,
 		},
 	}}
-	spec.Dynamics = []model.Dynamics{{
+	spec.Kinds[0].Dynamics = []model.Dynamics{{
 		Target: "x",
 		Tier:   "F1",
 		DTMs:   1000,
@@ -215,7 +216,7 @@ func TestDeadTimeDoubleApplicationRejected(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Parse(testsupport.AsKinds(raw), "dt"); err == nil || !strings.Contains(err.Error(), "twice") {
+	if _, err := Parse(raw, "dt"); err == nil || !strings.Contains(err.Error(), "twice") {
 		t.Fatalf("expected double-dead-time rejection, got %v", err)
 	}
 }
@@ -223,17 +224,17 @@ func TestDeadTimeDoubleApplicationRejected(t *testing.T) {
 func TestDynamicsCycleRejected(t *testing.T) {
 	t.Parallel()
 	spec := minimalSpec()
-	spec.State = []model.State{{Name: "x", Initial: 0}, {Name: "y", Initial: 0}}
-	spec.Dynamics = []model.Dynamics{
+	spec.Kinds[0].State = []model.State{{Name: "x", Initial: 0}, {Name: "y", Initial: 0}}
+	spec.Kinds[0].Dynamics = []model.Dynamics{
 		{Target: "x", Tier: "F1", DTMs: 1000, F1: &model.F1Dyn{Form: "first_order_lag", TimeConstantS: 1, Gain: 1, Inputs: []model.F1Input{{State: "y", Coef: 1}}}},
 		{Target: "y", Tier: "F1", DTMs: 1000, F1: &model.F1Dyn{Form: "first_order_lag", TimeConstantS: 1, Gain: 1, Inputs: []model.F1Input{{State: "x", Coef: 1}}}},
 	}
-	spec.Channels[0].Observes = "x"
+	spec.Kinds[0].Channels[0].Observes = "x"
 	raw, err := json.Marshal(spec)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Parse(testsupport.AsKinds(raw), "cycle"); err == nil || !strings.Contains(err.Error(), "cycle") {
+	if _, err := Parse(raw, "cycle"); err == nil || !strings.Contains(err.Error(), "cycle") {
 		t.Fatalf("expected dynamics cycle rejection, got %v", err)
 	}
 }
@@ -252,24 +253,22 @@ func minimalSpec() *model.DomainSpec {
 			Seasonality: []string{"none"}, Actuation: "observe_only",
 			Consequence: []string{"cost"}, Fidelity: []string{"F0"},
 		},
-		Entities: model.Entities{IDTemplate: "e-{n}", Count: struct {
-			Default int `json:"default"`
-			Min     int `json:"min,omitempty"`
-			Max     int `json:"max,omitempty"`
-		}{Default: 1}},
-		State: []model.State{{Name: "x", Initial: 0}},
-		Channels: []model.Channel{{
-			Name: "ch", ValueType: "number", Unit: "u", Resolution: 0.1,
-			Fidelity: "F0", Absence: "signal", Observes: "x",
-			Cadence: model.Cadence{Mode: "periodic", PeriodS: 60},
-			Noise:   model.Noise{Model: "gaussian", Sigma: 0.1},
-		}},
-		Faults: []model.Fault{{
-			ID: "f1", Onset: model.FaultOnset{Shape: "step"},
-			Affects: []model.FaultEffect{{State: "x", Delta: 1}},
-			Observability: model.Observability{
-				Detector: model.Detector{Form: "single_channel_snr", Channel: "ch"},
-			},
+		Instances: []model.InstanceSet{{Kind: "minimal", IDTemplate: "e-{n}", Count: model.EntityCount{Default: 1}}},
+		Kinds: []model.Kind{{Name: "minimal",
+			State: []model.State{{Name: "x", Initial: 0}},
+			Channels: []model.Channel{{
+				Name: "ch", ValueType: "number", Unit: "u", Resolution: 0.1,
+				Fidelity: "F0", Absence: "signal", Observes: "x",
+				Cadence: model.Cadence{Mode: "periodic", PeriodS: 60},
+				Noise:   model.Noise{Model: "gaussian", Sigma: 0.1},
+			}},
+			Faults: []model.Fault{{
+				ID: "f1", Onset: model.FaultOnset{Shape: "step"},
+				Affects: []model.FaultEffect{{State: "x", Delta: 1}},
+				Observability: model.Observability{
+					Detector: model.Detector{Form: "single_channel_snr", Channel: "ch"},
+				},
+			}},
 		}},
 		Profiles: []model.Profile{
 			{Name: "nominal", Description: "x"},

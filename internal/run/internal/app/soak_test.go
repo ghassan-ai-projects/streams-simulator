@@ -26,9 +26,9 @@ func TestSoakConservationAtScale(t *testing.T) {
 		t.Skip("soak run requires SOAK=1 (make soak)")
 	}
 	spec, a := testBase(t)
-	for i := range spec.Spec.Channels {
-		if spec.Spec.Channels[i].Name == "pond.heartbeat" {
-			spec.Spec.Channels[i].Cadence.PeriodS = 0.001
+	for i := range spec.Spec.Kinds[0].Channels {
+		if spec.Spec.Kinds[0].Channels[i].Name == "pond.heartbeat" {
+			spec.Spec.Kinds[0].Channels[i].Cadence.PeriodS = 0.001
 		}
 	}
 	start := model.DefaultStartTimeNS

@@ -65,7 +65,7 @@ type Perturbation struct {
 // stream — world, perturbation layer and adapter projection — in monotonic
 // order, never random access on a mutable world.
 func (p *Panel) Audit(entityID, faultID string, onsetNS, startNS int64, entityIDs []string, durationNS int64, setup []model.SetupCall, perturbations []Perturbation) (*Verdict, error) {
-	clean, cleanEmissions, err := p.build(entityID, startNS, entityIDs, map[string]int64{p.controlFault(): onsetNS}, setup, perturbations, durationNS)
+	clean, cleanEmissions, err := p.build(entityID, startNS, entityIDs, map[string]int64{p.controlFault(faultID): onsetNS}, setup, perturbations, durationNS)
 	if err != nil {
 		return nil, fmt.Errorf("Audit: %w", err)
 	}
@@ -73,6 +73,6 @@ func (p *Panel) Audit(entityID, faultID string, onsetNS, startNS int64, entityID
 	if err != nil {
 		return nil, fmt.Errorf("Audit: %w", err)
 	}
-	evidence := p.sampleEvidence(clean, faulted, onsetNS, startNS, durationNS)
+	evidence := p.sampleEvidence(faultID, clean, faulted, onsetNS, startNS, durationNS)
 	return p.gradeEvidence(evidence, cleanEmissions, faultEmissions, startNS, durationNS), nil
 }

@@ -33,8 +33,12 @@ func (w *World) InjectFault(entityID, faultID string, onsetNS int64, params map[
 	if fault == nil {
 		return "", fmt.Errorf("world: unknown fault %q", faultID)
 	}
-	if _, ok := w.entities[entityID]; !ok {
+	ent, ok := w.entities[entityID]
+	if !ok {
 		return "", fmt.Errorf("world: unknown entity %q", entityID)
+	}
+	if ent.kind.FaultDecl(faultID) == nil {
+		return "", fmt.Errorf("world: fault %q is not declared by the kind %q of entity %q", faultID, ent.Type, entityID)
 	}
 	return w.admitFaultInjection(fault, entityID, faultID, onsetNS, params)
 }

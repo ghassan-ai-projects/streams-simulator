@@ -8,7 +8,7 @@ import (
 
 func (checks domainChecks) f1Inputs(f1 *model.F1Dyn) error {
 	for i, in := range f1.Inputs {
-		if !checks.compiled.HasState(in.State) {
+		if !checks.hasState(in.State) {
 			return checks.bad(fmt.Sprintf("/inputs/%d", i), "f1 form %q input %q is not a declared state", f1.Form, in.State)
 		}
 	}
@@ -67,15 +67,14 @@ func (checks domainChecks) f1Clamp(f1 *model.F1Dyn) error {
 }
 
 func (checks domainChecks) detectorChannel(d *model.Detector, who string) error {
-	if d.Channel == "" || !checks.compiled.HasChannel(d.Channel) {
+	if d.Channel == "" || !checks.hasChannel(d.Channel) {
 		return checks.bad("/channel", "%s: detector %s requires a declared channel", who, d.Form)
 	}
 	return nil
 }
 
 func (checks domainChecks) detectorDivergence(d *model.Detector, who string) error {
-	c := checks.compiled
-	if d.ChannelA == "" || d.ChannelB == "" || !c.HasChannel(d.ChannelA) || !c.HasChannel(d.ChannelB) {
+	if d.ChannelA == "" || d.ChannelB == "" || !checks.hasChannel(d.ChannelA) || !checks.hasChannel(d.ChannelB) {
 		return checks.bad("/channel_a", "%s: channel_divergence requires declared channel_a and channel_b", who)
 	}
 	return nil
@@ -90,9 +89,13 @@ func (checks domainChecks) detectorConservation(d *model.Detector, who string) e
 
 func (checks domainChecks) undeclaredChannels(member string, names []string, who string) error {
 	for i, ch := range names {
-		if !checks.compiled.HasChannel(ch) {
+		if !checks.hasChannel(ch) {
 			return checks.bad(fmt.Sprintf("/%s/%d", member, i), "%s: conservation_residual references undeclared channel %q", who, ch)
 		}
 	}
 	return nil
 }
+
+func (checks domainChecks) hasState(name string) bool { return checks.kind.StateDecl(name) != nil }
+
+func (checks domainChecks) hasChannel(name string) bool { return checks.kind.ChannelDecl(name) != nil }

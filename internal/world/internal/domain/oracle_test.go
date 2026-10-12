@@ -34,10 +34,10 @@ func TestRCNNetworkAnalyticOracle(t *testing.T) {
 		for _, tau2 := range []float64{100, 1200} {
 			for _, g := range []float64{0.5, 2} {
 				w := constWorld(t, func(s *model.DomainSpec) {
-					s.Dynamics[0].F1.Form = "rc_network"
-					s.Dynamics[0].F1.TimeConstantS = tau1
-					s.Dynamics[0].F1.TimeConstant2S = tau2
-					s.Dynamics[0].F1.Gain = g
+					s.Kinds[0].Dynamics[0].F1.Form = "rc_network"
+					s.Kinds[0].Dynamics[0].F1.TimeConstantS = tau1
+					s.Kinds[0].Dynamics[0].F1.TimeConstant2S = tau2
+					s.Kinds[0].Dynamics[0].F1.Gain = g
 				}, start)
 				u := 2.0 // testSpec state u initial
 				horizon := 3 * math.Max(tau1, tau2)
@@ -61,8 +61,8 @@ func TestIntegratorAnalyticOracle(t *testing.T) {
 	start := model.DefaultStartTimeNS
 	for _, g := range []float64{0.5, 1, 3} {
 		w := constWorld(t, func(s *model.DomainSpec) {
-			s.Dynamics[0].F1.Form = "integrator"
-			s.Dynamics[0].F1.Gain = g
+			s.Kinds[0].Dynamics[0].F1.Form = "integrator"
+			s.Kinds[0].Dynamics[0].F1.Gain = g
 		}, start)
 		u := 2.0
 		for _, hours := range []float64{0.5, 2, 6} {
@@ -76,18 +76,20 @@ func TestIntegratorAnalyticOracle(t *testing.T) {
 	}
 }
 
+func thresholdWorld(t *testing.T, threshold float64, start int64) *World {
+	return constWorld(t, func(s *model.DomainSpec) {
+		f1 := s.Kinds[0].Dynamics[0].F1
+		f1.Form, f1.Gain, f1.Threshold, f1.Direction = "threshold_integrator", 2, threshold, "below"
+	}, start)
+}
+
 // TestThresholdIntegratorAnalyticOracle: dx/dt = g*max(0, threshold-u)
 // (direction below): linear while u is below the threshold, frozen above.
 func TestThresholdIntegratorAnalyticOracle(t *testing.T) {
 	t.Parallel()
 	start := model.DefaultStartTimeNS
 	// u = 2 constant; threshold 1.5 -> u above threshold -> frozen.
-	w := constWorld(t, func(s *model.DomainSpec) {
-		s.Dynamics[0].F1.Form = "threshold_integrator"
-		s.Dynamics[0].F1.Gain = 2
-		s.Dynamics[0].F1.Threshold = 1.5
-		s.Dynamics[0].F1.Direction = "below"
-	}, start)
+	w := thresholdWorld(t, 1.5, start)
 	for _, hours := range []float64{1, 5} {
 		tNS := start + int64(hours*3600*secondsPerNS)
 		if got := w.StateValue("e-1", "x", tNS); got != 0 {
@@ -95,12 +97,7 @@ func TestThresholdIntegratorAnalyticOracle(t *testing.T) {
 		}
 	}
 	// Threshold 5 -> u below -> linear growth at g*(5-2)=6 per second.
-	w = constWorld(t, func(s *model.DomainSpec) {
-		s.Dynamics[0].F1.Form = "threshold_integrator"
-		s.Dynamics[0].F1.Gain = 2
-		s.Dynamics[0].F1.Threshold = 5
-		s.Dynamics[0].F1.Direction = "below"
-	}, start)
+	w = thresholdWorld(t, 5, start)
 	tS := 2 * 3600.0
 	got := w.StateValue("e-1", "x", start+int64(tS*secondsPerNS))
 	if want := 6 * tS; math.Abs(got-want) > 1e-6 {
@@ -158,13 +155,13 @@ func TestDeadTimeDiscreteOracle(t *testing.T) {
 		return x
 	}
 	w := constWorld(t, func(s *model.DomainSpec) {
-		s.Dynamics[0].F1.Form = "dead_time"
-		s.Dynamics[0].F1.TimeConstantS = tau
-		s.Dynamics[0].F1.DeadTimeS = deadTimeS
-		s.Dynamics[0].F1.Gain = gain
-		s.Dynamics[0].DTMs = 1000 // 1s steps
+		s.Kinds[0].Dynamics[0].F1.Form = "dead_time"
+		s.Kinds[0].Dynamics[0].F1.TimeConstantS = tau
+		s.Kinds[0].Dynamics[0].F1.DeadTimeS = deadTimeS
+		s.Kinds[0].Dynamics[0].F1.Gain = gain
+		s.Kinds[0].Dynamics[0].DTMs = 1000
 		// A fault on the driving state u: baseline before the onset, +1 after.
-		s.Faults = append(s.Faults, model.Fault{
+		s.Kinds[0].Faults = append(s.Kinds[0].Faults, model.Fault{
 			ID: "ufault", Onset: model.FaultOnset{Shape: "step"},
 			Affects: []model.FaultEffect{{State: "u", Delta: 1}},
 			Observability: model.Observability{
@@ -192,9 +189,9 @@ func TestF0TrendSeasonalityOracle(t *testing.T) {
 	t.Parallel()
 	start := model.DefaultStartTimeNS
 	w := constWorld(t, func(s *model.DomainSpec) {
-		s.Dynamics[0].Tier = "F0"
-		s.Dynamics[0].F1 = nil
-		s.Dynamics[0].F0 = &model.F0Dyn{
+		s.Kinds[0].Dynamics[0].Tier = "F0"
+		s.Kinds[0].Dynamics[0].F1 = nil
+		s.Kinds[0].Dynamics[0].F0 = &model.F0Dyn{
 			Baseline:     2.0,
 			TrendPerHour: 0.5,
 			DriftPerHour: 0.1,
@@ -230,9 +227,9 @@ func TestFaultEnvelopeOracles(t *testing.T) {
 	for _, shape := range []string{"step", "ramp", "exponential", "intermittent"} {
 		tau := 3600.0
 		w := constWorld(t, func(s *model.DomainSpec) {
-			s.Dynamics[0].F1.TimeConstantS = tau
-			s.Faults[0].Onset.Shape = shape
-			s.Faults[0].Onset.RatePerHour = rate
+			s.Kinds[0].Dynamics[0].F1.TimeConstantS = tau
+			s.Kinds[0].Faults[0].Onset.Shape = shape
+			s.Kinds[0].Faults[0].Onset.RatePerHour = rate
 		}, start)
 		if _, err := w.InjectFault("e-1", "f1", 0, nil); err != nil {
 			t.Fatal(err)

@@ -140,13 +140,15 @@ world, and those are not `env.inject`. D-14 does not apply to them, and the two 
 what they target: the consumer's process (record-only) or the simulated plant (a world command).
 Part 1 of v0.2 adds neither.
 
-### D-15 (deviation). Domain specs are kinds and instances; the runtime form is unchanged
+### D-15 (deviation). Domain specs are kinds and instances
 Domain-spec v0.2 (P5a, [`DOMAIN_SPEC_V0_2.md`](design/DOMAIN_SPEC_V0_2.md)) replaces the flat v0.1
 document with `kinds` (the template) and `instances` (the population). The v0.1 contract is
-removed. The document compiles to the v0.1-shaped runtime form, so the world, perturbation, adapter,
-truth, score and run code are unchanged; the domain digest is the digest of the v0.2 document and
-`sim_version` is `0.3.0`. Explicit entity ids are checked against the instance set's template and
-count bounds when the run is created.
+removed. The domain digest is the digest of the v0.2 document and `sim_version` is `0.3.0`.
+Explicit entity ids are checked against the instance sets' templates and count bounds when the run
+is created. P5a compiled the document to the v0.1-shaped runtime form with one kind; P5a2 removes
+that lowering: the validated document is the runtime form, a domain may declare several kinds and
+instance sets, channel, fault and effector names are unique across the domain, and every
+reference resolves inside its kind. Single-kind domains are bit-identical to P5a.
 
 ## Frozen constants
 

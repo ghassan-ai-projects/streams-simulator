@@ -13,7 +13,7 @@ import (
 func TestReadingNeverAltersWhatARunEmits(t *testing.T) {
 	t.Parallel()
 	spec := testSpec(t, func(s *model.DomainSpec) {
-		s.Channels[0].Drift = &model.Drift{Model: "random_walk", RatePerHour: 0.5}
+		s.Kinds[0].Channels[0].Drift = &model.Drift{Model: "random_walk", RatePerHour: 0.5}
 	})
 	start := model.DefaultStartTimeNS
 	trace := func(withReads bool) []model.SimEvent {

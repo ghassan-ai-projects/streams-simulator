@@ -7,13 +7,6 @@ import (
 	"strings"
 )
 
-// RenderID renders one entity id from the domain's id template. Exported
-// for hosts that must enumerate the domain's entity ids without building a
-// world (the audit path).
-func RenderID(tmpl string, n int) string {
-	return renderID(tmpl, n, nil)
-}
-
 // renderID expands the id template.
 func renderID(tmpl string, n int, params map[string]any) string {
 	out := strings.ReplaceAll(tmpl, "{n}", strconv.Itoa(n))
@@ -28,11 +21,11 @@ func renderID(tmpl string, n int, params map[string]any) string {
 
 // addEntity creates an entity with initial hidden state and schedules its
 // first emissions.
-func (w *World) addEntity(id string, atNS int64) error {
+func (w *World) addEntity(id string, set int, atNS int64) error {
 	if _, exists := w.entities[id]; exists {
 		return fmt.Errorf("world: entity %q already exists", id)
 	}
-	ent := w.newEntity(id, atNS)
+	ent := w.newEntity(id, set, atNS)
 	w.initializeEntityState(ent, atNS)
 	w.entities[id] = ent
 	w.entityOrder = append(w.entityOrder, id)
@@ -40,15 +33,21 @@ func (w *World) addEntity(id string, atNS int64) error {
 	return nil
 }
 
-// scheduleChurn seeds autonomous entity births.
-func (w *World) scheduleChurn(startNS int64) {
-	ch := w.Spec.Spec.Entities.Churn
+func (w *World) scheduleChurn(set int, startNS int64) {
+	ch := w.Spec.Spec.Instances[set].Churn
 	if ch == nil || ch.BirthsPerHour <= 0 {
 		return
 	}
-	rng := w.substream("churn/births")
+	rng := w.substream(birthStream(set))
 	next := startNS + int64(rng.Exp(3600*secondsPerNS/ch.BirthsPerHour))
-	w.schedule(kindBirth, "", "", next, nil)
+	w.schedule(kindBirth, "", "", next, set)
+}
+
+func birthStream(set int) string {
+	if set == 0 {
+		return "churn/births"
+	}
+	return "churn/births/" + strconv.Itoa(set)
 }
 
 // Schedule pushes an event onto the DES queue with a monotonic tiebreak.
@@ -79,24 +78,21 @@ func entityTemplateValue(params map[string]any, name string) string {
 	return "a"
 }
 
-func (w *World) newEntity(id string, at int64) *Entity {
-	kind := w.Spec.Spec.Entities.EntityType
-	if kind == "" {
-		kind = strings.Split(w.Spec.Spec.ID, "-")[0]
-	}
-	return &Entity{ID: id, Type: kind, BornNS: at, states: map[string]*stateValue{}, channels: map[string]*channelRunState{}, alive: true}
+func (w *World) newEntity(id string, set int, at int64) *Entity {
+	kind := w.Spec.Kind(w.Spec.Spec.Instances[set].Kind)
+	return &Entity{ID: id, Type: kind.Name, BornNS: at, kind: kind, set: set, states: map[string]*stateValue{}, channels: map[string]*channelRunState{}, alive: true}
 }
 
 func (w *World) initializeEntityState(ent *Entity, at int64) {
-	for i := range w.Spec.Spec.State {
-		state := &w.Spec.Spec.State[i]
+	for i := range ent.kind.State {
+		state := &ent.kind.State[i]
 		ent.states[state.Name] = &stateValue{x: state.Initial, lastStep: at}
 	}
 }
 
 func (w *World) initializeEntityChannels(ent *Entity, id string, at int64) {
-	for i := range w.Spec.Spec.Channels {
-		channel := &w.Spec.Spec.Channels[i]
+	for i := range ent.kind.Channels {
+		channel := &ent.kind.Channels[i]
 		ent.channels[channel.Name] = &channelRunState{lastTrigger: w.stateAt(id, channel.Cadence.TriggerState, at)}
 		w.scheduleNextEmission(id, channel.Name, channel, at)
 	}

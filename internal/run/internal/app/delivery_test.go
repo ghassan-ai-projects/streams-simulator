@@ -91,9 +91,9 @@ func TestHistoryIsNotSilentlyCapped(t *testing.T) {
 	// A heartbeat at 1ms produces more than the old 10,000-entry cap in a
 	// short stepped run without availability gating.
 	found := false
-	for i := range spec.Spec.Channels {
-		if spec.Spec.Channels[i].Name == "pond.heartbeat" {
-			spec.Spec.Channels[i].Cadence.PeriodS = 0.001
+	for i := range spec.Spec.Kinds[0].Channels {
+		if spec.Spec.Kinds[0].Channels[i].Name == "pond.heartbeat" {
+			spec.Spec.Kinds[0].Channels[i].Cadence.PeriodS = 0.001
 			found = true
 		}
 	}

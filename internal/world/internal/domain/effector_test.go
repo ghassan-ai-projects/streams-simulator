@@ -13,15 +13,15 @@ func TestEffectorIdempotencyAndInterlock(t *testing.T) {
 	t.Parallel()
 	spec := testSpec(t, func(s *model.DomainSpec) {
 		// start_aerator-style effector on state x, interlocked on state u.
-		s.Effectors = []model.Effector{{
+		s.Kinds[0].Effectors = []model.Effector{{
 			Name:       "act",
 			ArgsSchema: map[string]any{"type": "object"},
 			Ack:        model.Ack{LatencyMS: model.Latency{Mean: 100}},
 			Effect:     model.Effect{StateDeltas: []model.StateDelta{{State: "x", Delta: 1}}, TimeConstantS: 100},
 			Interlock:  &model.Interlock{State: "u", Operator: "gt", Threshold: 1},
 		}}
-		s.Faults = nil
-		s.Faults = []model.Fault{{
+		s.Kinds[0].Faults = nil
+		s.Kinds[0].Faults = []model.Fault{{
 			ID: "f1", Onset: model.FaultOnset{Shape: "step"},
 			Affects: []model.FaultEffect{{State: "x", Delta: 1}},
 			Observability: model.Observability{
@@ -47,7 +47,7 @@ func TestEffectorIdempotencyAndInterlock(t *testing.T) {
 func TestEffectsAreEntityScoped(t *testing.T) {
 	t.Parallel()
 	spec := testSpec(t, func(s *model.DomainSpec) {
-		s.Effectors = []model.Effector{{
+		s.Kinds[0].Effectors = []model.Effector{{
 			Name:       "act",
 			ArgsSchema: map[string]any{"type": "object"},
 			Ack:        model.Ack{LatencyMS: model.Latency{Mean: 1}},
@@ -79,7 +79,7 @@ func TestEffectsAreEntityScoped(t *testing.T) {
 func TestChurnAllocatesAndContinuesAfterBirths(t *testing.T) {
 	t.Parallel()
 	spec := testSpec(t, func(s *model.DomainSpec) {
-		s.Entities.Churn = &model.Churn{BirthsPerHour: 3600, MeanLifetimeS: 1e6}
+		s.Instances[0].Churn = &model.Churn{BirthsPerHour: 3600, MeanLifetimeS: 1e6}
 	})
 	start := model.DefaultStartTimeNS
 	w := newTestWorld(t, spec, 19, start)
@@ -101,8 +101,8 @@ func TestChurnAllocatesAndContinuesAfterBirths(t *testing.T) {
 func TestFaultOnsetMagnitudeScalesDeclaredDelta(t *testing.T) {
 	t.Parallel()
 	spec := testSpec(t, func(s *model.DomainSpec) {
-		s.Faults[0].Onset.Magnitude = 2
-		s.Faults[0].Affects[0].Delta = 1
+		s.Kinds[0].Faults[0].Onset.Magnitude = 2
+		s.Kinds[0].Faults[0].Affects[0].Delta = 1
 	})
 	start := model.DefaultStartTimeNS
 	w := newTestWorld(t, spec, 23, start)
@@ -139,13 +139,13 @@ func TestInjectFaultRejectsUnknownParams(t *testing.T) {
 func TestDeclaredValueTypesReachNativeEvents(t *testing.T) {
 	t.Parallel()
 	spec := testSpec(t, func(s *model.DomainSpec) {
-		s.Dynamics = nil
-		s.State[1].Initial = 1
-		s.Channels = []model.Channel{
+		s.Kinds[0].Dynamics = nil
+		s.Kinds[0].State[1].Initial = 1
+		s.Kinds[0].Channels = []model.Channel{
 			{Name: "flag", ValueType: "boolean", Resolution: 1, Fidelity: "F0", Absence: "signal", Observes: "x", Cadence: model.Cadence{Mode: "periodic", PeriodS: 60}, Noise: model.Noise{Model: "none"}},
 			{Name: "count", ValueType: "counter", Unit: "items", Resolution: 1, Fidelity: "F0", Absence: "signal", Observes: "x", Cadence: model.Cadence{Mode: "periodic", PeriodS: 60}, Noise: model.Noise{Model: "none"}},
 		}
-		s.Faults[0].Observability.Detector.Channel = "flag"
+		s.Kinds[0].Faults[0].Observability.Detector.Channel = "flag"
 	})
 	start := model.DefaultStartTimeNS
 	w, err := New(spec, 29, "w-types", start, Options{})
@@ -172,8 +172,8 @@ func TestDeclaredValueTypesReachNativeEvents(t *testing.T) {
 func TestAvailabilityStartsUpAndUsesRenewalTransitions(t *testing.T) {
 	t.Parallel()
 	spec := testSpec(t, func(s *model.DomainSpec) {
-		s.Dynamics = nil
-		s.Channels[0].Availability = &model.Availability{Uptime: 0.5, MTTRS: 60}
+		s.Kinds[0].Dynamics = nil
+		s.Kinds[0].Channels[0].Availability = &model.Availability{Uptime: 0.5, MTTRS: 60}
 	})
 	start := model.DefaultStartTimeNS
 	w, err := New(spec, 31, "w-availability", start, Options{})

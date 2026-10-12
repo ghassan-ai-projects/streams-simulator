@@ -16,11 +16,12 @@ func (w *World) latestStateFault(entity, state string, at int64) (int64, bool) {
 }
 
 func (w *World) applyStateFaults(value float64, entity, state string, at int64) float64 {
+	kind := w.entities[entity].kind
 	for _, fault := range w.faultsByState[state] {
 		if fault.entity != entity || !fault.activeAt(at) {
 			continue
 		}
-		add, mult := fault.contributionAt(state, at, w.substream(faultSubstream(fault, state)), w.dtFor(state))
+		add, mult := fault.contributionAt(state, at, w.substream(faultSubstream(fault, state)), dtFor(kind, state))
 		if mult != 0 {
 			value = value*(1+mult) + add
 		} else {

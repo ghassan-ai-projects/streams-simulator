@@ -35,9 +35,9 @@ func TestAnOnsetObservableAtTimeZeroIsObservable(t *testing.T) {
 func TestAnUnknownDetectorFormIsRefusedNotTreatedAsObservable(t *testing.T) {
 	t.Parallel()
 	spec := loadSpec(t)
-	for i := range spec.Spec.Faults {
-		if spec.Spec.Faults[i].ID == "aerator_failure" {
-			spec.Spec.Faults[i].Observability.Detector.Form = "no_such_form"
+	for i := range spec.Spec.Kinds[0].Faults {
+		if spec.Spec.Kinds[0].Faults[i].ID == "aerator_failure" {
+			spec.Spec.Kinds[0].Faults[i].Observability.Detector.Form = "no_such_form"
 		}
 	}
 	solver := NewSolver(spec, 42, 60*1e9, 3600*1e9)
@@ -52,9 +52,9 @@ func TestAnUnknownDetectorFormIsRefusedNotTreatedAsObservable(t *testing.T) {
 func TestPeerResidualSigmaCountsTheEntitiesTheWorldHolds(t *testing.T) {
 	t.Parallel()
 	spec := loadSpec(t)
-	for i := range spec.Spec.Faults {
-		if spec.Spec.Faults[i].ID == "aerator_failure" {
-			spec.Spec.Faults[i].Observability.Detector = model.Detector{Form: model.DetectorPeerResidual, Channel: "pond.aerator_current"}
+	for i := range spec.Spec.Kinds[0].Faults {
+		if spec.Spec.Kinds[0].Faults[i].ID == "aerator_failure" {
+			spec.Spec.Kinds[0].Faults[i].Observability.Detector = model.Detector{Form: model.DetectorPeerResidual, Channel: "pond.aerator_current"}
 		}
 	}
 	solver := NewSolver(spec, 42, 60*1e9, 3600*1e9)
@@ -62,7 +62,7 @@ func TestPeerResidualSigmaCountsTheEntitiesTheWorldHolds(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	peers := float64(spec.Spec.Entities.Count.Default)
+	peers := float64(spec.Spec.Instances[0].Count.Default)
 	want := 0.2 * math.Sqrt(1+1/(peers-1))
 	if math.Abs(res.EffectiveSigma-want) > 1e-9 {
 		t.Fatalf("effective sigma = %v, want %v for %v peers", res.EffectiveSigma, want, peers)
@@ -74,9 +74,9 @@ func TestPeerResidualSigmaCountsTheEntitiesTheWorldHolds(t *testing.T) {
 func TestAFaultWithNoEffectIsNotObservableEvenWithoutNoise(t *testing.T) {
 	t.Parallel()
 	spec := loadSpec(t)
-	for i := range spec.Spec.Channels {
-		if spec.Spec.Channels[i].Name == "pond.aerator_current" {
-			spec.Spec.Channels[i].Noise.Sigma = 0
+	for i := range spec.Spec.Kinds[0].Channels {
+		if spec.Spec.Kinds[0].Channels[i].Name == "pond.aerator_current" {
+			spec.Spec.Kinds[0].Channels[i].Noise.Sigma = 0
 		}
 	}
 	solver := NewSolver(spec, 42, 60*1e9, 3600*1e9)

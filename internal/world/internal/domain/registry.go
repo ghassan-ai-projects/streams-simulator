@@ -13,6 +13,20 @@ func (w *World) EntityIDs() []string {
 	return out
 }
 
+func (w *World) PeerIDs(entityID string) []string {
+	ent := w.entities[entityID]
+	if ent == nil {
+		return nil
+	}
+	var out []string
+	for _, id := range w.EntityIDs() {
+		if w.entities[id].kind == ent.kind {
+			out = append(out, id)
+		}
+	}
+	return out
+}
+
 // InitialEntityIDs returns the entities created at world construction, in
 // order (before any churn or entity.add).
 func (w *World) InitialEntityIDs() []string {
@@ -33,7 +47,11 @@ func (w *World) AddEntity(id string, atNS int64) error {
 	if atNS < w.clockNS {
 		return fmt.Errorf("world: entity %q cannot be born at %d, before the world clock %d", id, atNS, w.clockNS)
 	}
-	return w.addEntity(id, atNS)
+	set := w.instanceSetOf(id)
+	if set < 0 {
+		return fmt.Errorf("world: entity id %q fits no instance set of the domain", id)
+	}
+	return w.addEntity(id, set, atNS)
 }
 
 // Entity returns a snapshot of the entity by id, or nil. The caller gets a

@@ -52,7 +52,8 @@ func (g *suiteGeneration) auditScenario(sc *Scenario) (*audit.Verdict, error) {
 func (g *suiteGeneration) drawScenario(seed, idx uint64, sampleFrac float64) *Scenario {
 	negative := g.rng.Float64() < sampleFrac
 	fault := g.suite.pickFault(g.cfg, g.prof, g.rng, negative)
-	entity := g.entities[g.rng.Intn(len(g.entities))]
+	candidates := g.faultEntities(fault)
+	entity := candidates[g.rng.Intn(len(candidates))]
 	onset, preDegraded := g.drawOnset()
 	perturbations := drawPerturbations(g.rng, g.perturbCount, g.startNS, g.durationNS)
 	scenario := g.scenarioIdentity(seed, idx, entity, fault, onset, preDegraded, perturbations)
@@ -109,8 +110,9 @@ func (s *Suite) defaultSetup(spec *domain.Compiled, entity string, startNS int64
 		return nil
 	}
 	var out []model.SetupCall
+	kind := kindOfEntity(spec, entity)
 	for i, setup := range prof.Setup {
-		if setup.Effector == "" || spec.Effector(setup.Effector) == nil {
+		if setup.Effector == "" || kind.EffectorDecl(setup.Effector) == nil {
 			continue
 		}
 		out = append(out, scenarioSetupCall(setup.Effector, setup.CommandID, setup.Args, i, entity, startNS))

@@ -1,13 +1,15 @@
 package domain
 
 import (
+	"maps"
 	"math"
+	"slices"
 )
 
 // fitThreshold sweeps single-channel level thresholds with hindsight.
 func (p *Panel) fitThreshold(labels []float64, fault, control map[string][]float64) float64 {
 	best := 0.0
-	for _, channel := range p.spec.ChannelNames() {
+	for _, channel := range sortedChannels(fault) {
 		best = fitChannelThreshold(best, labels, fault[channel], control[channel])
 	}
 	return best
@@ -16,7 +18,7 @@ func (p *Panel) fitThreshold(labels []float64, fault, control map[string][]float
 // fitZScore flags |x - rolling_mean| > k * rolling_std, best k and window.
 func (p *Panel) fitZScore(labels []float64, fault, control map[string][]float64) float64 {
 	best := 0.0
-	for _, channel := range p.spec.ChannelNames() {
+	for _, channel := range sortedChannels(fault) {
 		for _, window := range []int{5, 10, 30, 60} {
 			for _, threshold := range zscoreThresholds() {
 				predictions := zscorePredict(fault[channel], window, threshold)
@@ -45,7 +47,7 @@ func zscorePredict(x []float64, window int, k float64) []float64 {
 // fitFirstDifference flags the largest single-step changes, best threshold.
 func (p *Panel) fitFirstDifference(labels []float64, fault, control map[string][]float64) float64 {
 	best := 0.0
-	for _, channel := range p.spec.ChannelNames() {
+	for _, channel := range sortedChannels(fault) {
 		best = fitChannelDifference(best, labels, fault[channel], control[channel])
 	}
 	return best
@@ -54,7 +56,7 @@ func (p *Panel) fitFirstDifference(labels []float64, fault, control map[string][
 // fitMedianResidual flags the residual from a trailing median, best window.
 func (p *Panel) fitMedianResidual(labels []float64, fault, control map[string][]float64) float64 {
 	best := 0.0
-	for _, channel := range p.spec.ChannelNames() {
+	for _, channel := range sortedChannels(fault) {
 		for _, window := range []int{5, 11, 21, 41} {
 			for _, threshold := range []float64{0.1, 0.25, 0.5, 1.0, 2.0} {
 				predictions := medianResidualPredict(fault[channel], window, threshold)
@@ -75,4 +77,8 @@ func medianResidualPredict(x []float64, window int, th float64) []float64 {
 		}
 	}
 	return out
+}
+
+func sortedChannels(series map[string][]float64) []string {
+	return slices.Sorted(maps.Keys(series))
 }
