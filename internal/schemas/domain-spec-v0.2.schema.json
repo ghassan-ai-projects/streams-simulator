@@ -714,11 +714,14 @@
           "additionalProperties": false,
           "required": ["shape"],
           "properties": {
-            "shape": {"enum": ["step", "ramp", "exponential", "intermittent", "stochastic"]},
+            "shape": {"enum": ["step", "ramp", "exponential", "intermittent", "stochastic", "pulse"]},
             "rate_per_hour": {"type": "number"},
             "magnitude": {"type": "number"},
-            "duty_cycle": {"type": "number", "minimum": 0, "maximum": 1}
-          }
+            "duty_cycle": {"type": "number", "minimum": 0, "maximum": 1},
+            "duration_s": {"type": "number", "exclusiveMinimum": 0, "description": "For pulse: how long the fault acts from its onset (a voltage sag of 0.3 s). Its start and end are event-clock instants: trips sample their condition there and event-driven channels are checked there, inside a step."}
+          },
+          "if": {"properties": {"shape": {"const": "pulse"}}, "required": ["shape"]},
+          "then": {"required": ["duration_s"]}
         },
         "affects": {
           "type": "array",

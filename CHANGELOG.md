@@ -4,6 +4,12 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **Event clock** (`docs/design/DOMAIN_SPEC_V0_2.md` section 19; phase P6e, review item S11, finding R0-12). A `pulse` fault
+  shape acts for `duration_s` and its start and end are event instants: trips sample their condition there (a 0.3 s sag trips
+  a 0.2 s ride-through trip, a 0.1 s sag does not), and event-driven channels are checked there, so a power-quality channel
+  records a sag at its exact time. A trip now shows at the boundary where `for_s` has elapsed since its first true sample (one
+  step earlier than in P6c). The spec gains the RNG draw-order table. Shipped domains and every pinned output are unchanged.
+
 - **Supervisory control: setpoints, sequencer, responder, lease** (`docs/design/DOMAIN_SPEC_V0_2.md` section 18; phase P6d,
   review items D3 and S2). A condition may compare against a setpoint state (`threshold_state`, with `threshold` as an
   offset); `f1.form: "sequencer"` stages a plant up and down within a band; an effector `responder` applies a delayed effect

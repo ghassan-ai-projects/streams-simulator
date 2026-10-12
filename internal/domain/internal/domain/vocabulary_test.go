@@ -62,6 +62,8 @@ func TestSequencerResponderAndLeaseRulesAreLocated(t *testing.T) {
 		{"a responder delta reading an undeclared argument", func(d map[string]any) {
 			put(d, "hours", "kinds", 2, "effectors", 2, "responder", "on_miss", 0, "from_arg")
 		}, "/kinds/2/effectors/2/responder/on_miss/0/from_arg"},
+		{"a pulse without a duration", func(d map[string]any) { delete(at(d, "kinds", 1, "faults", 2, "onset").(map[string]any), "duration_s") }, "/kinds/1/faults/2/onset/duration_s"},
+		{"a duration on a step fault", func(d map[string]any) { put(d, 2.0, "kinds", 1, "faults", 0, "onset", "duration_s") }, "/kinds/1/faults/0/onset/duration_s"},
 		{"a revert lease of an assignment", func(d map[string]any) { put(d, "revert", "kinds", 2, "effectors", 1, "lease", "fallback") }, "/kinds/2/effectors/1/lease/fallback"},
 	})
 }

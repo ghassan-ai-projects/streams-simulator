@@ -27,6 +27,7 @@ const (
 	FormTrip        = "trip"
 	FormAntiRecycle = "anti_recycle"
 	FormSequencer   = "sequencer"
+	ShapePulse      = "pulse"
 	FallbackSafeOff = "safe_off"
 	FallbackHold    = "hold_last"
 	FallbackRevert  = "revert"

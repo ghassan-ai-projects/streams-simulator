@@ -260,6 +260,7 @@ type FaultOnset struct {
 	RatePerHour float64 `json:"rate_per_hour,omitempty"`
 	Magnitude   float64 `json:"magnitude,omitempty"`
 	DutyCycle   float64 `json:"duty_cycle,omitempty"`
+	DurationS   float64 `json:"duration_s,omitempty"`
 }
 
 // FaultEffect is one state delta a fault applies.

@@ -31,6 +31,7 @@ func TestVocabularyFixtureRunsAreByteReproducibleAndReplayToTheSameDigest(t *tes
 		{"utility", testsupport.UtilityDomain(), "meter-1", "load_surge", "shed_load", "meter_id"},
 		{"chiller", testsupport.UtilityDomain(), "CH1", "flow_loss", "start_chiller", "chiller_id"},
 		{"air", testsupport.UtilityDomain(), "AIR1", "air_leak", "work_order", "cause"},
+		{"sag", testsupport.UtilityDomain(), "CH1", "voltage_sag", "reset_chiller", "chiller_id"},
 	} {
 		t.Run(f.name, func(t *testing.T) {
 			t.Parallel()

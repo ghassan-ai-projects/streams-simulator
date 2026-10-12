@@ -3,9 +3,12 @@ package transport
 import (
 	"bytes"
 	"context"
+	"errors"
 	"net"
+	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -53,10 +56,20 @@ func TestServeRunsTheDirectorUntilTheSessionEndsThenStopsTheOperatorEndpoint(t *
 	if err := <-done; err != nil {
 		t.Fatalf("director session: %v", err)
 	}
-	conn, err := (&net.Dialer{}).DialContext(context.Background(), "tcp", strings.TrimPrefix(announced, "http://"))
-	if err == nil {
-		_ = conn.Close()
-		t.Fatalf("operator endpoint %s still accepts connections after the session ended", announced)
+	probe, err := (&net.ListenConfig{}).Listen(context.Background(), "tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	served := make(chan error, 1)
+	go func() { served <- endpoint.server.Serve(probe) }()
+	select {
+	case err := <-served:
+		if !errors.Is(err, http.ErrServerClosed) {
+			t.Fatalf("operator endpoint %s: %v", announced, err)
+		}
+	case <-time.After(5 * time.Second):
+		_ = probe.Close()
+		t.Fatalf("operator endpoint %s still serves after the session ended", announced)
 	}
 }
 

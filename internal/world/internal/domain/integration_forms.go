@@ -35,7 +35,7 @@ func (w *World) stepVocabularyForm(ent *Entity, dyn *model.Dynamics, s *stateVal
 func (w *World) stepProtectionForm(ent *Entity, dyn *model.Dynamics, s *stateValue, at, dt int64) bool {
 	switch dyn.F1.Form {
 	case model.FormTrip:
-		w.stepTrip(ent, dyn, s, at)
+		w.stepTrip(ent, dyn, s, at, dt)
 	case model.FormAntiRecycle:
 		w.stepAntiRecycle(ent, dyn, s, at, dt)
 	case model.FormSequencer:

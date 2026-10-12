@@ -74,3 +74,10 @@ func (checks domainChecks) dynamicTripValue(d *model.Dynamics) error {
 	}
 	return nil
 }
+
+func (checks domainChecks) faultDuration(f *model.Fault) error {
+	if f.Onset.DurationS != 0 && f.Onset.Shape != model.ShapePulse {
+		return checks.bad("/onset/duration_s", "fault %q declares duration_s, which only a pulse uses", f.ID)
+	}
+	return nil
+}

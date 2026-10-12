@@ -51,7 +51,7 @@ func TestATripFiresOnTheStepAfterItsConditionHeldForItsDuration(t *testing.T) {
 	w := protectionWorld(t, false)
 	crossing := (60.0 - 50) / (36.0 / 3600)
 	firstSample := math.Floor(crossing) + 1
-	visible := firstSample + 30 + 1
+	visible := firstSample + 30
 	if got := w.StateValue("e-1", "hot", at(visible-0.5)); got != 0 {
 		t.Fatalf("tripped at %v s, before %v s", visible-0.5, visible)
 	}
@@ -74,11 +74,11 @@ func TestALatchedTripHoldsUntilResetAndAnUnlatchedOneClears(t *testing.T) {
 	}{{latch: true, afterRestore: 1, atEnd: 0}, {latch: false, afterRestore: 0, atEnd: 0}} {
 		w := protectionWorld(t, tc.latch)
 		invoke(t, w, "cut", 100)
-		if got := w.StateValue("e-1", "low_flow", at(111)); got != 0 {
-			t.Fatalf("latch=%v: low flow tripped at 111 s, a step early", tc.latch)
+		if got := w.StateValue("e-1", "low_flow", at(110)); got != 0 {
+			t.Fatalf("latch=%v: low flow tripped at 110 s, a step early", tc.latch)
 		}
-		if got := w.StateValue("e-1", "low_flow", at(112)); got != 1 {
-			t.Fatalf("latch=%v: low flow not tripped at 112 s", tc.latch)
+		if got := w.StateValue("e-1", "low_flow", at(111)); got != 1 {
+			t.Fatalf("latch=%v: low flow not tripped at 111 s", tc.latch)
 		}
 		invoke(t, w, "restore", 200)
 		if got := w.StateValue("e-1", "low_flow", at(250)); got != tc.afterRestore {
@@ -126,7 +126,7 @@ func TestACallDatedAheadOfTheClockDoesNotChangeEarlierReadings(t *testing.T) {
 	}
 	clean := protectionWorld(t, true)
 	invoke(t, clean, "cut", 100)
-	for _, seconds := range []float64{50, 105, 111, 112, 500} {
+	for _, seconds := range []float64{50, 105, 110, 111, 500} {
 		if got, want := ahead.StateValue("e-1", "low_flow", at(seconds)), clean.StateValue("e-1", "low_flow", at(seconds)); got != want {
 			t.Fatalf("t=%v: %v after a call dated 900 s, %v without it", seconds, got, want)
 		}
@@ -140,7 +140,7 @@ func TestReadingBoundariesAheadOfTheClockChangesNothingEarlier(t *testing.T) {
 		t.Fatalf("violated at 5000 s = %v, want the oil boundary", got)
 	}
 	invoke(t, w, "cut", 100)
-	if got := w.StateValue("e-1", "low_flow", at(112)); got != 1 {
-		t.Fatalf("low flow at 112 s = %v after an earlier read ahead of the clock, want 1", got)
+	if got := w.StateValue("e-1", "low_flow", at(111)); got != 1 {
+		t.Fatalf("low flow at 111 s = %v after an earlier read ahead of the clock, want 1", got)
 	}
 }

@@ -6,7 +6,7 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 - **Phase**: a phase id from PLAN.md, or `next-goal` (Agentic Stream / gateway goal), or `—`.
 - **Status**: `open`, `done` (fixed, evidence in the phase review), `next-goal`, `dropped`
   (removed by an owner decision), `not-a-defect` (evidence in the review record).
-- Sources: `REVIEW` = [REVIEW-2026-10-12.md](REVIEW-2026-10-12.md) ids; `R0` = [reviews/P0.md](reviews/P0.md); `R1` = [reviews/P1.md](reviews/P1.md); `R2` = [reviews/P2.md](reviews/P2.md); `R2b` = [reviews/P2b.md](reviews/P2b.md); `R2d` = [reviews/P2d.md](reviews/P2d.md); `R5a` = [reviews/P5a.md](reviews/P5a.md); `R5b` = [reviews/P5b.md](reviews/P5b.md); `R6a` = [reviews/P6a.md](reviews/P6a.md); `R6b` = [reviews/P6b.md](reviews/P6b.md); `R6c` = [reviews/P6c.md](reviews/P6c.md); `R6d` = [reviews/P6d.md](reviews/P6d.md); `R2c` = [reviews/P2c.md](reviews/P2c.md); `R3` = [reviews/P3.md](reviews/P3.md); `self` = found by the implementer.
+- Sources: `REVIEW` = [REVIEW-2026-10-12.md](REVIEW-2026-10-12.md) ids; `R0` = [reviews/P0.md](reviews/P0.md); `R1` = [reviews/P1.md](reviews/P1.md); `R2` = [reviews/P2.md](reviews/P2.md); `R2b` = [reviews/P2b.md](reviews/P2b.md); `R2d` = [reviews/P2d.md](reviews/P2d.md); `R5a` = [reviews/P5a.md](reviews/P5a.md); `R5b` = [reviews/P5b.md](reviews/P5b.md); `R6a` = [reviews/P6a.md](reviews/P6a.md); `R6b` = [reviews/P6b.md](reviews/P6b.md); `R6c` = [reviews/P6c.md](reviews/P6c.md); `R6d` = [reviews/P6d.md](reviews/P6d.md); `R6e` = [reviews/P6e.md](reviews/P6e.md); `R2c` = [reviews/P2c.md](reviews/P2c.md); `R3` = [reviews/P3.md](reviews/P3.md); `self` = found by the implementer.
 
 ## Design review (REVIEW-2026-10-12)
 
@@ -51,7 +51,7 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 | S8 | REVIEW | High | Baselines and held-out discipline (D7) | next-goal | next-goal |
 | S9 | REVIEW | Med | Demand charge block alignment, `peak_mtd`, ratchet | P6b | done |
 | S10 | REVIEW | Med | Air pressure band, sequencer, generator transfer | P12 | open |
-| S11 | REVIEW | Med | Time resolution and event clock | P6e | open |
+| S11 | REVIEW | Med | Time resolution and event clock | P6e | done |
 | S12 | REVIEW | Med | Alarm management (priorities, ack, shelving, combined flood) | P12 | open |
 | S13 | REVIEW | Med | Cause-code vocabulary authored on the host side; rotating decoys | P12 | open |
 | S14 | REVIEW | Med | Vocabulary: `kind` row, `lockout` naming, closed comparators, crossing times | P6c | done |
@@ -89,7 +89,7 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 | R0-09 | R0 | Med | Consumer-knowledge gate over Go and canvas sources | P1 | done |
 | R0-10 | R0 | Med | `streamsim domain format` canonical formatter | P5a | done |
 | R0-11 | R0 | Med | Closed-grammar test over the v0.2 schema | P6a | done |
-| R0-12 | R0 | Med | RNG draw-order table for the event clock | P6e | open |
+| R0-12 | R0 | Med | RNG draw-order table for the event clock | P6e | done |
 | R0-13 | R0 | Med | Contract sync target, pinned digest, safety-field floor | P7a | open |
 | R0-14 | R0 | Med | Technology decision record (UI, bridge language and protocol): [canvas-technology.md](canvas-technology.md) | P8a | done |
 | R0-15 | R0 | Med | Bridge threat model with one test per threat | P8b | open |
@@ -158,3 +158,6 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 | R6b-02 | R6b | Low | A read of an integrated state further in the past than the entity's longest step returns the current value (the snapshot history covers one longest step); runs read forward, so no output is affected; return a located error or keep a longer history | P13 | open |
 | R6c-01 | R6c | Low | Oracle and audit worlds apply profile setup calls before injecting faults, so a setup call dated after a fault onset is checked (interlock, preconditions) without the fault; inject faults first or refuse setup dated after the onset | P12 | open |
 | R6c-02 | R6c | Low | A precondition refusal of a safe-stop effector becomes `ErrPlantUnavailable` in the device bridge (`completeSafeStop`); decide whether a safe-stop effector may carry `requires` | P7a | open |
+| R6e-01 | self | Med | Aggregation of dynamics inputs over typed links (`sum`, `mean`, vocabulary table §7) is in no phase: links are structure only; needed before the reference scenario models a shared header or bus across instances | P12 | open |
+| R6e-02 | R6e | Low | The stochastic fault envelope stream is keyed by the fault declaration, not the injection, so injections of one stochastic fault on several entities share one stream in read order; key it by injection (a determinism-tuple change, pinned outputs move) | P13 | open |
+| R6e-03 | R6e | Low | A direct read of an integrated state ahead of the clock (outside the look-ahead copy) commits integration and changes later emissions; production reads go through the look-ahead, so make the facade's StateValue use it too or refuse future reads | P13 | open |

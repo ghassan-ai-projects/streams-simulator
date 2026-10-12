@@ -18,6 +18,7 @@ const (
 	kindEffectStart                  // an effect kick becomes active (dead time elapsed)
 	kindBirth                        // autonomous entity birth
 	kindDeath                        // autonomous entity retirement
+	kindEventCheck
 )
 
 // item is one scheduled event.

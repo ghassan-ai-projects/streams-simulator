@@ -176,7 +176,9 @@
         {"name": "hand", "unit": "on", "initial": 0.0},
         {"name": "low_flow", "unit": "tripped", "initial": 0.0},
         {"name": "hot", "unit": "tripped", "initial": 0.0},
-        {"name": "recycle", "unit": "s", "initial": 0.0}
+        {"name": "recycle", "unit": "s", "initial": 0.0},
+        {"name": "voltage", "unit": "%", "initial": 100.0},
+        {"name": "sag_trip", "unit": "tripped", "initial": 0.0}
       ],
       "dynamics": [
         {"target": "flow", "tier": "F0", "f0": {"baseline": 100.0}},
@@ -210,6 +212,19 @@
           "tier": "F1",
           "dt_ms": 1000,
           "f1": {"form": "anti_recycle", "edge": "fall", "hold_s": 600, "watch": "running"}
+        },
+        {
+          "target": "sag_trip",
+          "tier": "F1",
+          "dt_ms": 1000,
+          "f1": {
+            "form": "trip",
+            "for_s": 0.2,
+            "latch": true,
+            "reset_on": "resets",
+            "tripped_value": 1.0,
+            "when": {"state": "voltage", "operator": "lt", "threshold": 85.0}
+          }
         }
       ],
       "channels": [
@@ -245,6 +260,17 @@
           "observes": "low_flow",
           "resolution": 0.001,
           "value_type": "number"
+        },
+        {
+          "name": "chiller.voltage_event",
+          "unit": "%",
+          "absence": "signal",
+          "cadence": {"mode": "event_driven", "period_s": 60},
+          "fidelity": "F1",
+          "noise": {"model": "gaussian", "sigma": 0.05},
+          "observes": "voltage",
+          "resolution": 0.1,
+          "value_type": "number"
         }
       ],
       "faults": [
@@ -269,6 +295,28 @@
             "unavoidable_snr": 10.0
           },
           "onset": {"duty_cycle": 0.2, "magnitude": 1.0, "rate_per_hour": 1.0, "shape": "intermittent"}
+        },
+        {
+          "id": "voltage_sag",
+          "affects": [{"state": "voltage", "delta": -20.0}],
+          "expected_effector": "reset_chiller",
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "chiller.voltage_event"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"duration_s": 0.3, "magnitude": 1.0, "shape": "pulse"}
+        },
+        {
+          "id": "voltage_blip",
+          "affects": [{"state": "voltage", "delta": -20.0}],
+          "is_negative_class": true,
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "chiller.voltage_event"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"duration_s": 0.1, "magnitude": 1.0, "shape": "pulse"}
         }
       ],
       "effectors": [
@@ -302,7 +350,8 @@
             {"state": "low_flow", "operator": "lt", "threshold": 0.5},
             {"state": "recycle", "operator": "lte", "threshold": 0.0},
             {"state": "isolated", "operator": "lt", "threshold": 0.5},
-            {"state": "hand", "operator": "lt", "threshold": 0.5}
+            {"state": "hand", "operator": "lt", "threshold": 0.5},
+            {"state": "sag_trip", "operator": "lt", "threshold": 0.5}
           ],
           "risk_class": "medium"
         },

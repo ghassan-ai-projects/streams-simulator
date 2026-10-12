@@ -5,8 +5,7 @@
 - **Contract**: [`docs/contracts/domain-spec-v0.2.schema.json`](../contracts/domain-spec-v0.2.schema.json), embedded in the binary
   (`internal/schemas`), parity-tested against the committed copy. v0.1 is removed: the project is pre-release and the eight shipped
   domains are rewritten in the same change.
-- **Later parts**: `store` and `flow` are section 13 (P6a), `schedule`, `regime` and `peak` section 16 (P6b), protection section 17 (P6c), supervisory control section 18 (P6d); aggregation over links and the event
-  clock are P6. Nothing in this part depends on them.
+- **Later parts**: `store` and `flow` are section 13 (P6a), `schedule`, `regime` and `peak` section 16 (P6b), protection section 17 (P6c), supervisory control section 18 (P6d), the event clock section 19 (P6e). Aggregation of dynamics inputs over links (`sum`, `mean`) is not built yet (finding R6e-01).
 
 ## 1. Why
 
@@ -389,3 +388,56 @@ sequencers act on them, so actions do not fight contactor-level logic.
 Cross-checks: the sequencer stages at the exact boundaries implied by the band crossings and `hold_s`, up and down, capped at
 `stages` and 0; a responder told the active fault clears it at arrival and applies `on_match`, a wrong cause applies `on_miss`
 and leaves the fault; a lease falls back at its lapse (safe value and revert) unless renewed, and renewal moves the lapse.
+
+## 19. Event clock (phase P6e)
+
+Review item S11: steps of a second or a minute cannot see a 100–500 ms voltage sag. Dynamics keep their step grid; the event
+clock adds exact instants between steps.
+
+- **`onset.shape: "pulse"`** with `duration_s`: the fault acts on `[onset, onset + duration_s)` and then clears by itself (a
+  director clear may end it earlier). Its start and end are **event instants**. `duration_s` on any other shape is refused
+  (`/…/onset/duration_s`).
+- **Trips on the event clock.** A trip samples its condition at its step start and at every event instant of its entity inside
+  the step. Between samples the condition is taken as constant, and the trip fires when the condition has held from a sample up
+  to the next sample (or the step end) for at least `for_s`. A 0.3 s sag trips a 0.2 s ride-through trip; a 0.1 s sag rides
+  through. The tripped value appears from the next step boundary, as for every trip; an unlatched trip that fired and cleared
+  inside one step leaves no mark at a boundary (latch it, or use a boundary over a longer `for_s`). This also makes a trip
+  visible at the boundary where `for_s` has elapsed since the first true sample (one step earlier than in P6c).
+- **Event-driven channels on the event clock.** When a pulse fault is injected, each event-driven channel of the entity that
+  observes (or is triggered by) a state the pulse affects is checked at its start and end, besides its regular checks, so a
+  power-quality channel records the sag and the recovery at their exact times. A channel that does not see the pulse is never
+  checked at its instants, so its records cannot reveal an injection time. A check emits only when the reading changed by the
+  channel's resolution, does not move the regular checks, and is never scheduled before the world clock.
+- **Clearing.** A director or responder clear can only shorten a fault, never extend one that already ended; an early clear of
+  a pulse is itself an event instant and is checked.
+- **Trip timing.** A trip fires when its condition has held from a sample up to the next sample for `for_s` **and** still holds
+  just before that next sample, so a hold that ends inside the last step does not trip.
+- **Unchanged worlds.** Only pulse faults create event instants, so a world without them integrates, samples and draws exactly
+  as before (behaviour pin unchanged).
+
+**RNG draw order (finding R0-12).** Every random draw comes from a named substream, seeded from the run seed and the full name
+`<world_id>/<name>`; substreams are independent, and within one the draws happen in the order of the events that consume them
+(world events in time order, ties in scheduling order). The event clock adds no substream: its only draws are those of the
+readings it emits, from that channel's own substreams.
+
+| Substream (`<world_id>/` omitted) | Consumed by | When |
+|---|---|---|
+| `<entity>/<channel>/noise` | Measurement noise | Each reading (regular or event-clock check) with sigma > 0, unless the model is `quantization` or the world is noiseless |
+| `<entity>/<channel>/drift` | Sensor drift | Each reading after the first, for a `random_walk` drift |
+| `<entity>/<channel>/enum` | String channel values | A change of an event-driven string channel |
+| `<entity>/<channel>/jitter` | Periodic cadence jitter | Scheduling the next regular emission when `jitter_s` > 0 and the world is not noiseless |
+| `<entity>/<channel>/human` | Human-driven cadence | Scheduling the next human emission |
+| `<entity>/<channel>/availability` | Outages | Advancing the channel's availability when uptime < 1 (an event-clock check advances it too) |
+| `link/<entity>/<channel>/delay` | Transport delay | Each emitted record, unless the model is `constant` |
+| `<entity>/<effector>/fault_shape` | Effector failure mode | Each executed call (after interlock and preconditions) of an effector that declares failure modes |
+| `<entity>/<effector>/delay` | Acknowledgement latency | Each executed call |
+| `fault/<fault>/<state>` | Stochastic fault envelope | Advancing the envelope's random walk; keyed by the fault's declaration, so stochastic injections of one fault on several entities share one stream in read order |
+| `churn/births`, `churn/births/<set>` | Churn births | Each birth of the instance set |
+| `churn/lifetimes/<entity>` | Churn lifetimes | Each churned entity's birth |
+
+Integration (every F1 form, stores, trips, sequencers), schedules, responders, leases, preconditions and the event clock's
+trip samples draw nothing.
+
+Cross-checks: a 0.3 s sag between step boundaries trips a 0.2 s ride-through trip and a 0.1 s sag does not, while the voltage at
+both neighbouring boundaries is nominal (so a boundary-sampled trip would miss both); an event-driven channel records the sag at
+600.4 s and the recovery at 600.7 s; the periodic channel's records are identical with and without the sag.

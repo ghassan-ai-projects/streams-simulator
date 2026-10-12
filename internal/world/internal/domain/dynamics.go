@@ -94,7 +94,7 @@ func (f *activeFault) onsetEnvelope(elapsed, at int64, rng *randutil.SplitMix64,
 
 func (f *activeFault) deterministicEnvelope(elapsed int64, rate float64) float64 {
 	switch f.fault.Onset.Shape {
-	case "step":
+	case "step", model.ShapePulse:
 		return 1
 	case "ramp":
 		return math.Min(rate*(float64(elapsed)/secondsPerNS/3600), 1)

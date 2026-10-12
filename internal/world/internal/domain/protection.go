@@ -37,18 +37,30 @@ func compare(operator string, v, threshold float64) bool {
 	return false
 }
 
-func (w *World) stepTrip(ent *Entity, dyn *model.Dynamics, s *stateValue, at int64) {
+func (w *World) stepTrip(ent *Entity, dyn *model.Dynamics, s *stateValue, at, dt int64) {
 	f1, p := dyn.F1, s.protectionOf()
 	if f1.ResetOn != "" && p.changed(w.stateAt(ent.ID, f1.ResetOn, at)) {
 		p.latched = false
 	}
-	p.track(w.conditionHolds(ent.ID, f1.When, at), at)
-	tripped := p.latched || (p.holding && at-p.heldSince >= int64(f1.ForS*secondsPerNS))
-	p.latched = f1.Latch && tripped
+	tripped := w.sampleTrip(ent, f1, p, at, dt)
 	s.x = w.initial(ent, dyn.Target)
 	if tripped {
 		s.x = f1.TrippedValue
 	}
+}
+
+func (w *World) sampleTrip(ent *Entity, f1 *model.F1Dyn, p *protectionState, at, dt int64) bool {
+	samples, tripped := append([]int64{at}, w.pulseInstants(ent.ID, at, at+dt)...), false
+	for i, sample := range samples {
+		p.track(w.conditionHolds(ent.ID, f1.When, sample), sample)
+		until := at + dt
+		if i+1 < len(samples) {
+			until = samples[i+1]
+		}
+		tripped = p.latched || (p.holding && until-p.heldSince >= int64(f1.ForS*secondsPerNS) && w.conditionHolds(ent.ID, f1.When, until-1))
+		p.latched = f1.Latch && tripped
+	}
+	return tripped
 }
 
 func (w *World) stepAntiRecycle(ent *Entity, dyn *model.Dynamics, s *stateValue, at, dt int64) {

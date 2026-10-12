@@ -32,6 +32,10 @@ A protection trip is `f1.form: "trip"` with a `when` condition (`lt`, `lte`, `gt
 
 Command the plant at supervisory level: an effector assigns a setpoint state, and conditions compare against it with `threshold_state`. A `sequencer` form stages equipment up and down within a band. An effector `responder` models a person or crew whose delayed effect depends on whether the call named the active fault; an effector `lease` falls back to a safe state when not renewed. Rules: [DOMAIN_SPEC_V0_2.md](../../docs/design/DOMAIN_SPEC_V0_2.md) section 18; the air system in `internal/testsupport/testdata/utility-plant.domain.json`.
 
+## Short events
+
+A disturbance shorter than a step (a voltage sag) is a fault with `onset.shape: "pulse"` and `duration_s`. Trips see it on the event clock, and an `event_driven` channel records its start and end. Rules: [DOMAIN_SPEC_V0_2.md](../../docs/design/DOMAIN_SPEC_V0_2.md) section 19, which also lists every random substream and when it draws.
+
 ## Validate locally
 
 ```bash
