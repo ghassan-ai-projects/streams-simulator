@@ -4,6 +4,17 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **Named instances, overrides, links, system entities and boards** (`docs/design/DOMAIN_SPEC_V0_2.md` sections 8 to 12;
+  phase P5b, finding R5a-02). An instance set may list `names` instead of or beside an `id_template`; an explicit entity id
+  is accepted when it is a name or fits a template. `override` on an instance set adds states, dynamics (for added states),
+  channels, faults and effectors, or narrows a state's bounds, a channel's range or an effector argument's bounds; removing
+  or retyping is refused with a located issue, and the world gives each entity the effective kind of its set. `kinds[].system`
+  marks a plant-wide kind with exactly one named instance. `link_types` and `links` declare typed topology between
+  instances; `boards` group the instances hosted on one device and own the `boot_id` (structure only, no run-time behaviour).
+  The domain-spec contract moves its definitions of state, dynamics, channel, fault and effector into `$defs` so a kind and
+  an override share them. Shipped domains and every pinned output are unchanged. New world methods `StateNamesOf` and
+  `EffectorOf`; new fixture `structured-plant.domain.json`.
+
 - **Multi-kind world** (`docs/design/DOMAIN_SPEC_V0_2.md` §2.3 and §3; phase P5a2, finding R5a-01). A domain may declare
   several **kinds** and several **instance sets**, each set following a kind with its own `id_template`, `count` and
   `churn`; the `maxItems: 1` limits on `kinds` and `instances` are lifted. Channel, fault and effector names are unique

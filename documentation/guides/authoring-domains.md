@@ -12,6 +12,10 @@ A domain declares one or more **kinds** (the template: state, dynamics, channels
 
 The design catalog is a planning document, not proof that a domain is shipped. A domain becomes shipped only when it is intentionally committed, loaded by the catalog, covered by schema/conformance tests, and included in the release evidence.
 
+## Instances, overrides, links and boards
+
+An instance set may list `names` (`M1`) next to or instead of an `id_template`. `override` on a set adds states, channels, faults and effectors or narrows a state bound, a channel range or an effector argument bound; it never removes or retypes. A plant-wide measurement belongs to a kind with `system: true` and one named instance. `link_types` and `links` give the typed topology between instances, and `boards` group the instances hosted on one device (the board owns the `boot_id`). Every rule and its pointer is in [DOMAIN_SPEC_V0_2.md](../../docs/design/DOMAIN_SPEC_V0_2.md) sections 8 to 12; `internal/testsupport/testdata/structured-plant.domain.json` exercises all of them.
+
 ## Validate locally
 
 ```bash

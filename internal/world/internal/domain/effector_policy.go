@@ -96,7 +96,7 @@ func (w *World) interlockHolds(entityID string, il *model.Interlock, atNS int64)
 }
 
 func (w *World) effectorArgumentSchema(eff *model.Effector) (*jsonschema.Schema, error) {
-	schema := w.argSchemas[eff.Name]
+	schema := w.argSchemas[eff]
 	if schema != nil {
 		return schema, nil
 	}
@@ -104,7 +104,7 @@ func (w *World) effectorArgumentSchema(eff *model.Effector) (*jsonschema.Schema,
 	if err != nil {
 		return nil, fmt.Errorf("world: effector %q args schema: %w", eff.Name, err)
 	}
-	w.argSchemas[eff.Name] = schema
+	w.argSchemas[eff] = schema
 	return schema, nil
 }
 

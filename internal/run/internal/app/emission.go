@@ -39,7 +39,7 @@ func (r *Run) captureEmissionState(ev model.SimEvent, atNS int64) {
 	// World-state history: what was actually happening when the record was
 	// emitted (director-only, for post-hoc analysis).
 	states := map[string]float64{}
-	for _, name := range r.Config.Domain.StateNames(ev.EntityType) {
+	for _, name := range r.World.StateNamesOf(ev.EntityID) {
 		states[name] = r.World.StateValue(ev.EntityID, name, atNS)
 	}
 	snapshot := model.StateSnapshot{Seq: ev.Seq, TimeNS: atNS, Entity: ev.EntityID, States: states}

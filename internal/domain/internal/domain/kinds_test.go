@@ -1,9 +1,7 @@
 package domain
 
 import (
-	"encoding/json"
 	"errors"
-	"os"
 	"strings"
 	"testing"
 
@@ -13,20 +11,7 @@ import (
 
 func twoKindDocument(t *testing.T, change func(doc map[string]any)) []byte {
 	t.Helper()
-	raw, err := os.ReadFile(testsupport.TwoKindDomain())
-	if err != nil {
-		t.Fatal(err)
-	}
-	var doc map[string]any
-	if err := json.Unmarshal(raw, &doc); err != nil {
-		t.Fatal(err)
-	}
-	change(doc)
-	out, err := json.Marshal(doc)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return out
+	return documentOf(t, testsupport.TwoKindDomain(), change)
 }
 
 func kindAt(doc map[string]any, index int) map[string]any {

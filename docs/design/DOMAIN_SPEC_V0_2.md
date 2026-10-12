@@ -1,12 +1,12 @@
 # Domain spec v0.2, semantics part 1: kinds and instances
 
 - **Status**: implemented in phase P5a of the simulation-canvas goal ([PLAN](../simulation-canvas/PLAN.md)); amended in phase P5a2
-  (several kinds and instance sets per domain, sections 2.3 and 3).
+  (several kinds and instance sets per domain, sections 2.3 and 3); continued in phase P5b (sections 8 to 12).
 - **Contract**: [`docs/contracts/domain-spec-v0.2.schema.json`](../contracts/domain-spec-v0.2.schema.json), embedded in the binary
   (`internal/schemas`), parity-tested against the committed copy. v0.1 is removed: the project is pre-release and the eight shipped
   domains are rewritten in the same change.
-- **Later parts**: add-or-narrow overrides, typed links, system entities and the board are P5b; the new dynamics vocabulary
-  (`store`, `flow`, `regime`, `trip`, ...) and the event clock are P6. Nothing in this part depends on them.
+- **Later parts**: the new dynamics vocabulary (`store`, `flow`, `regime`, `trip`, ...), aggregation over links and the event
+  clock are P6. Nothing in this part depends on them.
 
 ## 1. Why
 
@@ -46,8 +46,8 @@ An instance set is a *templated population*: `id_template` renders ids (`{n}` is
 renders `a`), `count.default` instances exist at the start, and `churn` births and retires instances during a run. Each set has its
 own template, count and churn; a kind may have several sets, and a domain several kinds.
 
-**Per-instance parameters.** v0.1 allowed no variation between entities, so part 1 has none to carry. Variation is the add-or-narrow
-override of P5b; named instances (`M1`, `AC1`) arrive there with it.
+**Per-instance parameters.** v0.1 allowed no variation between entities. Variation is the add-or-narrow override of section 9,
+and named instances (`M1`, `AC1`) are section 8 (both P5b).
 
 ### 2.3 Several kinds (P5a2)
 
@@ -150,7 +150,7 @@ scenario file, director, replay) is covered once:
    `/instances/i/count/default`).
 
 An empty list selects the default population: each set's `count.default` ids, sets in declaration order. A violation is a refusal at world creation (a scenario violation at `/world`).
-`Compiled.CheckEntityIDs` implements the rule. Ids that fit the template are all the template can render, so churned births are
+`Compiled.CheckEntityIDs` implements the rule; P5b extends it to names (section 8). Ids that fit the template are all the template can render, so churned births are
 unaffected.
 
 ## 6. Canonical formatting
@@ -160,8 +160,8 @@ function of the document:
 
 - two-space indentation, newline at the end of the file, strings written as UTF-8 without HTML escaping, number text preserved;
 - object members in a fixed order: the document's members in schema order (`id`, `version`, `title`, `description`, `axes`,
-  `stresses`, `kinds`, `instances`, `profiles`, `ground_truth`); within any other object the identifying and structural members first
-  (`id`, `name`, `kind`, `id_template`, `count`, `churn`, `target`, `tier`, `form`, `state`, `unit`, `initial`, `default`, `min`,
+  `stresses`, `kinds`, `instances`, `link_types`, `links`, `boards`, `profiles`, `ground_truth`); within any other object the
+  identifying and structural members first (`id`, `name`, `kind`, `system`, `names`, `id_template`, `count`, `churn`, `target`, `tier`, `form`, `state`, `unit`, `initial`, `default`, `min`,
   `max`, `dynamics`, `channels`, `faults`, `effectors`), then the rest alphabetically, then `description`;
 - array order is semantic and never changed;
 - an object or array that fits in 110 columns is written on one line, otherwise one member per line.
@@ -173,3 +173,70 @@ The canvas and agents call it so a hand edit and a canvas edit of the same world
 
 [`DECISIONS.md`](../DECISIONS.md) D-03, D-04 and D-14 carry deviation entries describing what v0.2 does and does not change in them.
 Part 1 changes none of their runtime behaviour.
+
+## 8. Named instances (finding R5a-02)
+
+`instances[i]` may carry `names`, a list of explicit entity ids (`M1`, `AC1`). A set needs `names`, an `id_template`, or both.
+Sections 8 to 12 are phase P5b; every issue is located at a pointer into the document.
+
+- The initial population of a set is its names in order, then `count.default` templated ids. `count` belongs to the template: it
+  is required with an `id_template` and refused without one, and so is `churn` (births render ids from the template).
+- A name is unique across the domain, matches the entity-id alphabet of `sim-event`, and must not fit the `id_template` of **any**
+  set (a template could render it too, and churn or `entity.add` could then collide with it).
+- `Compiled.InstanceSetFor(id)` tries names across all sets first, then templates in set order, so a name wins over a template
+  of an earlier set. `CheckEntityIDs`, the world (`AddEntity`, initial population) and the links and boards below all use it. In
+  the explicit-id rule (section 5) a name is accepted and not counted against `count.min` or `count.max`.
+
+## 9. Overrides: add or narrow, never remove or retype
+
+`instances[i].override` varies the instances of **one set** (a named instance is a set of one name). The effective kind of the
+set is the kind plus the override; a set without an override shares the kind itself.
+
+| Member | Meaning | Rule |
+|---|---|---|
+| `state`, `channels`, `faults`, `effectors` | Added declarations | Same definitions as in a kind. Channel, fault and effector names stay unique across the domain, so redeclaring a kind's is the duplicate issue; a state name must not repeat one of the kind (or of the override) |
+| `dynamics` | Added dynamics | May drive only states the override adds (changing how an existing state evolves would retype it); inputs may read any state of the effective kind; cycles are refused |
+| `narrow.state[]` | `{name, min, max}` | Names a state of the kind; `min < max`; inside the kind's bounds when it has any (a state with neither bound is unbounded); the initial value lies inside |
+| `narrow.channels[]` | `{name, range{min,max}}` | Names a channel of the kind; `min < max`; inside the kind's range when it has one |
+| `narrow.effectors[]` | `{name, args{<arg>{minimum?, maximum?}}}` | Names an effector of the kind and a numeric property of its `args_schema`; a bound may only tighten the kind's `minimum` or `maximum`; `minimum <= maximum` |
+
+Nothing else is expressible: the schema has no member for removal and refuses unknown members, so removing or retyping (a unit, a
+value type) is a located schema issue. Added items are validated by the same checks as a kind's, against the **effective** kind, at
+`/instances/i/override/...`.
+
+**Runtime.** The world gives each entity the effective kind of its instance set, so an added state integrates, an added channel
+emits, an added fault or effector is accepted only on entities of that set (others are refused as for any other kind), and a
+narrowed state bound clamps that entity's reads. A narrowed effector argument is enforced when that entity is invoked; a narrowed
+channel range is the range `out_of_range` perturbation exceeds for that entity. Domain-wide lookups (`Compiled.Fault`, `Channel`,
+`Effector`, `FaultKind`) also find added declarations; `EntityChannel(id, name)` and `InstanceKind(set)` give the entity's view.
+Peers (section 2.3) remain the entities of the same kind, overridden or not. Draw order: substream names carry the entity id, so
+an override changes only the draws of its own entities.
+
+**Limits.** The scenario checker and the operator nameplate list effectors and channels domain-wide, so they show a kind's
+declaration; a narrowed argument is enforced at invocation, not by the scenario pre-check. A suite scenario draws its entity from
+those that carry the fault, so a fault added by an override is only injected into the entities of that set.
+
+## 10. System entities
+
+`kinds[k].system: true` marks a kind of plant-wide measurements (`air_header`, `power_bus`). Decision: a system kind is named by
+**exactly one** instance set with **exactly one name and no `id_template`** (so no churn). A channel therefore belongs to exactly
+one entity; for any other kind the channel belongs to each entity of the kind. Issues: `/kinds/k/system` (not one set),
+`/instances/i/names` (not one name, or a template), and a `peer_residual` fault of a system kind (one entity has no peers) at its
+detector form.
+
+## 11. Typed links
+
+`link_types[]` = `{name, from, to, description?}` declares a kind of link between two kinds (`feeds`: `tank` to `pump`).
+`links[]` = `{type, from, to}` joins two instances. Issues: duplicate link type name (`/link_types/i/name`), undeclared `from` or
+`to` kind (`/link_types/i/from`), undeclared type (`/links/i/type`), an endpoint that is no name and fits no template
+(`/links/i/from`), an endpoint of the wrong kind, and a link stated twice (`/links/i`). Endpoints must be identifiable instances;
+whether an index lies within the starting population is not checked. Links are structure only: the aggregation of dynamics inputs
+over links (`sum`, `mean`) is P6.
+
+## 12. Boards
+
+`boards[]` = `{name, members[], description?}` groups the instances hosted on one device. Decision: the **board owns the `boot_id`**
+(plant wire [section 14](../simulation-canvas/plant-wire-protocol.md) and finding P6 of the review): a reboot affects every member
+together. Rules: board names are unique (`/boards/i/name`); each member is an identifiable instance (`/boards/i/members/j`); an
+instance is on at most one board, including twice on the same board. System entities may be members. Only the grouping is modelled
+here. Issuing `boot_id`, rebirth after a reboot and the lease and safe state of a board belong to the plant-wire phases (P7).

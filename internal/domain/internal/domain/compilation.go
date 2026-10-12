@@ -15,10 +15,12 @@ func newCompiled(spec *model.DomainSpec, digest string) *Compiled {
 }
 
 func (c *Compiled) registerSymbols(src string) error {
-	if err := c.registerKinds(src); err != nil {
-		return err
+	for _, register := range []func(string) error{c.registerInstanceNames, c.registerKinds, c.registerOverrides, c.registerProfiles} {
+		if err := register(src); err != nil {
+			return err
+		}
 	}
-	return c.registerProfiles(src)
+	return nil
 }
 
 func (c *Compiled) registerKinds(src string) error {
@@ -54,10 +56,12 @@ func registerSymbol(symbols map[string]bool, name, kind, pointer, src string) er
 }
 
 func (c *Compiled) registerStates(kind *model.Kind, at, src string) error {
-	states := map[string]bool{}
-	for i := range kind.State {
-		item := &kind.State[i]
-		if err := registerSymbol(states, item.Name, "state", at+itemPointer("state", i)+"/name", src); err != nil {
+	return registerStateList(map[string]bool{}, kind.State, at, src)
+}
+
+func registerStateList(states map[string]bool, items []model.State, at, src string) error {
+	for i := range items {
+		if err := registerSymbol(states, items[i].Name, "state", at+itemPointer("state", i)+"/name", src); err != nil {
 			return err
 		}
 	}

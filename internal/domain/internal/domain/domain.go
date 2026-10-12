@@ -9,6 +9,7 @@ package domain
 import (
 	"fmt"
 	"regexp"
+	"slices"
 	"sort"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
@@ -38,6 +39,9 @@ type Compiled struct {
 	profiles  map[string]bool
 
 	idPatterns []*regexp.Regexp
+	names      []map[string]bool
+	effective  []*model.Kind
+	lookup     []*model.Kind
 
 	// Resolved defaults (schema defaults applied).
 	channelGain map[string]float64 // channel -> observation_gain
@@ -82,12 +86,19 @@ func (c *Compiled) ChannelNames() []string { return sortedKeys(c.channels) }
 
 func (c *Compiled) KindChannelNames(kind string) []string {
 	var out []string
-	if k := c.Kind(kind); k != nil {
-		for i := range k.Channels {
-			out = append(out, k.Channels[i].Name)
+	for _, k := range c.lookup {
+		if k.Name == kind {
+			out = append(out, channelNames(k)...)
 		}
 	}
-	sort.Strings(out)
+	return slices.Compact(slices.Sorted(slices.Values(out)))
+}
+
+func channelNames(kind *model.Kind) []string {
+	out := make([]string, len(kind.Channels))
+	for i := range kind.Channels {
+		out[i] = kind.Channels[i].Name
+	}
 	return out
 }
 
@@ -96,8 +107,8 @@ func (c *Compiled) FaultCount() int { return len(c.faults) }
 func (c *Compiled) EffectorCount() int { return len(c.effectors) }
 
 func (c *Compiled) Fault(id string) *model.Fault {
-	for i := range c.Spec.Kinds {
-		if f := c.Spec.Kinds[i].FaultDecl(id); f != nil {
+	for _, kind := range c.lookup {
+		if f := kind.FaultDecl(id); f != nil {
 			return f
 		}
 	}
@@ -105,17 +116,17 @@ func (c *Compiled) Fault(id string) *model.Fault {
 }
 
 func (c *Compiled) FaultKind(id string) *model.Kind {
-	for i := range c.Spec.Kinds {
-		if c.Spec.Kinds[i].FaultDecl(id) != nil {
-			return &c.Spec.Kinds[i]
+	for _, kind := range c.lookup {
+		if kind.FaultDecl(id) != nil {
+			return kind
 		}
 	}
 	return nil
 }
 
 func (c *Compiled) Effector(name string) *model.Effector {
-	for i := range c.Spec.Kinds {
-		if e := c.Spec.Kinds[i].EffectorDecl(name); e != nil {
+	for _, kind := range c.lookup {
+		if e := kind.EffectorDecl(name); e != nil {
 			return e
 		}
 	}
@@ -123,8 +134,8 @@ func (c *Compiled) Effector(name string) *model.Effector {
 }
 
 func (c *Compiled) Channel(name string) *model.Channel {
-	for i := range c.Spec.Kinds {
-		if ch := c.Spec.Kinds[i].ChannelDecl(name); ch != nil {
+	for _, kind := range c.lookup {
+		if ch := kind.ChannelDecl(name); ch != nil {
 			return ch
 		}
 	}
@@ -145,12 +156,13 @@ func compile(spec *model.DomainSpec, digest, src string) (*Compiled, error) {
 	if err := c.checkInstanceKinds(src); err != nil {
 		return nil, err
 	}
-	c.compileIDPatterns()
+	c.compileInstanceIDs()
 	if err := c.registerSymbols(src); err != nil {
 		return nil, err
 	}
 	if err := crossCheck(c, src); err != nil {
 		return nil, fmt.Errorf("streamsim: %w", err)
 	}
+	c.indexLookup()
 	return c, nil
 }

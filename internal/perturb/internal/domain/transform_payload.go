@@ -27,7 +27,7 @@ func (l *Layer) mangleRange(a *applied, recs []Delivered, atNS int64) []Delivere
 		if !r.Delivered || a.rng.Float64() >= paramFloat(a.Params, "rate", 0.01) {
 			return []Delivered{r}
 		}
-		ch := l.domain.Channel(r.Event.Channel)
+		ch := l.domain.EntityChannel(r.Event.EntityID, r.Event.Channel)
 		if ch == nil || ch.Range == nil {
 			return []Delivered{r}
 		}

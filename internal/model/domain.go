@@ -9,12 +9,16 @@ type DomainSpec struct {
 	Stresses    string        `json:"stresses"`
 	Kinds       []Kind        `json:"kinds"`
 	Instances   []InstanceSet `json:"instances"`
+	LinkTypes   []LinkType    `json:"link_types,omitempty"`
+	Links       []Link        `json:"links,omitempty"`
+	Boards      []Board       `json:"boards,omitempty"`
 	Profiles    []Profile     `json:"profiles"`
 	GroundTruth GroundTruth   `json:"ground_truth"`
 }
 
 type Kind struct {
 	Name      string     `json:"name"`
+	System    bool       `json:"system,omitempty"`
 	State     []State    `json:"state,omitempty"`
 	Dynamics  []Dynamics `json:"dynamics,omitempty"`
 	Channels  []Channel  `json:"channels"`
@@ -24,9 +28,11 @@ type Kind struct {
 
 type InstanceSet struct {
 	Kind       string      `json:"kind"`
-	IDTemplate string      `json:"id_template"`
+	Names      []string    `json:"names,omitempty"`
+	IDTemplate string      `json:"id_template,omitempty"`
 	Count      EntityCount `json:"count"`
 	Churn      *Churn      `json:"churn,omitempty"`
+	Override   *Override   `json:"override,omitempty"`
 }
 
 // Axes is the twelve-axis property vector.

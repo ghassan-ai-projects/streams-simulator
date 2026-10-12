@@ -6,6 +6,7 @@ import (
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/jsonschema"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/randutil"
 )
 
@@ -39,7 +40,7 @@ func (w *World) initializeRuntime(seed uint64) {
 	w.faultsByID = map[string]*activeFault{}
 	w.idempotent = map[string]*idempotentResult{}
 	w.interlockActed = map[string]bool{}
-	w.argSchemas = map[string]*jsonschema.Schema{}
+	w.argSchemas = map[*model.Effector]*jsonschema.Schema{}
 	w.churnSeed = seed
 }
 
@@ -58,9 +59,16 @@ func PopulationIDs(spec *domain.Compiled, firstSetCount int) []string {
 		if i == 0 && firstSetCount > 0 {
 			count = firstSetCount
 		}
-		for n := 1; n <= max(count, 1); n++ {
-			ids = append(ids, renderID(set.IDTemplate, n, nil))
-		}
+		ids = append(ids, set.Names...)
+		ids = append(ids, templatedIDs(set, count)...)
+	}
+	return ids
+}
+
+func templatedIDs(set *model.InstanceSet, count int) []string {
+	var ids []string
+	for n := 1; set.IDTemplate != "" && n <= max(count, 1); n++ {
+		ids = append(ids, renderID(set.IDTemplate, n, nil))
 	}
 	return ids
 }
@@ -72,7 +80,9 @@ func (w *World) populateInitialEntities(ids []string, startNS int64) error {
 		if err := w.addEntity(id, set, startNS); err != nil {
 			return fmt.Errorf("streamsim: %w", err)
 		}
-		w.nextIndex[set]++
+		if !w.Spec.IsInstanceName(id) {
+			w.nextIndex[set]++
+		}
 	}
 	return nil
 }

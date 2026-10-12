@@ -79,7 +79,7 @@ func entityTemplateValue(params map[string]any, name string) string {
 }
 
 func (w *World) newEntity(id string, set int, at int64) *Entity {
-	kind := w.Spec.Kind(w.Spec.Spec.Instances[set].Kind)
+	kind := w.Spec.InstanceKind(set)
 	return &Entity{ID: id, Type: kind.Name, BornNS: at, kind: kind, set: set, states: map[string]*stateValue{}, channels: map[string]*channelRunState{}, alive: true}
 }
 

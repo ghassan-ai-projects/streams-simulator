@@ -126,3 +126,11 @@ func (w *World) CheckEffectorArgs(effector string, args map[string]any) error {
 func (w *World) CheckFaultParams(faultID string, params map[string]any) error {
 	return w.world.CheckFaultParams(faultID, params)
 }
+
+func (w *World) StateNamesOf(entityID string) []string {
+	return w.world.StateNamesOf(entityID)
+}
+
+func (w *World) EffectorOf(entityID, name string) *model.Effector {
+	return w.world.EffectorOf(entityID, name)
+}

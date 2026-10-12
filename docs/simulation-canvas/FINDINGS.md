@@ -6,7 +6,7 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 - **Phase**: a phase id from PLAN.md, or `next-goal` (Agentic Stream / gateway goal), or `—`.
 - **Status**: `open`, `done` (fixed, evidence in the phase review), `next-goal`, `dropped`
   (removed by an owner decision), `not-a-defect` (evidence in the review record).
-- Sources: `REVIEW` = [REVIEW-2026-10-12.md](REVIEW-2026-10-12.md) ids; `R0` = [reviews/P0.md](reviews/P0.md); `R1` = [reviews/P1.md](reviews/P1.md); `R2` = [reviews/P2.md](reviews/P2.md); `R2b` = [reviews/P2b.md](reviews/P2b.md); `R2d` = [reviews/P2d.md](reviews/P2d.md); `R5a` = [reviews/P5a.md](reviews/P5a.md); `R2c` = [reviews/P2c.md](reviews/P2c.md); `R3` = [reviews/P3.md](reviews/P3.md); `self` = found by the implementer.
+- Sources: `REVIEW` = [REVIEW-2026-10-12.md](REVIEW-2026-10-12.md) ids; `R0` = [reviews/P0.md](reviews/P0.md); `R1` = [reviews/P1.md](reviews/P1.md); `R2` = [reviews/P2.md](reviews/P2.md); `R2b` = [reviews/P2b.md](reviews/P2b.md); `R2d` = [reviews/P2d.md](reviews/P2d.md); `R5a` = [reviews/P5a.md](reviews/P5a.md); `R5b` = [reviews/P5b.md](reviews/P5b.md); `R2c` = [reviews/P2c.md](reviews/P2c.md); `R3` = [reviews/P3.md](reviews/P3.md); `self` = found by the implementer.
 
 ## Design review (REVIEW-2026-10-12)
 
@@ -22,7 +22,7 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 | P3 | REVIEW | High | One sequence per direction; lanes are transmit priority only | P7a | open |
 | P4 | REVIEW | High | Command freshness, re-check at execution, queue flush, dedup window | P7a | open |
 | P5 | REVIEW | High | `authority_epoch` is host/gateway-side only; decide its v1 status | P7a | open |
-| P6 | REVIEW | High | Board level owns `boot_id` | P5b | open |
+| P6 | REVIEW | High | Board level owns `boot_id` | P5b | done |
 | P7 | REVIEW | High | Field names and refusal codes vs device-wire-v1; PLC refusal codes | P7a | open |
 | P8 | REVIEW | High | Policy example and birth-declared safe-stop/risk class | P7a | open |
 | P9 | REVIEW | High | Commissioning state machine and metadata changes (host side) | next-goal | next-goal |
@@ -144,4 +144,12 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 | ID | Source | Sev | Summary | Phase | Status |
 |---|---|---|---|---|---|
 | R5a-01 | R5a | Med | v0.2 allows one kind; several kinds and per-instance overrides need a world change (per-kind runtime set, kind reference per entity, namespacing, solver and cross-check over kinds, draw order) | P5a2 | done |
-| R5a-02 | R5a | Med | The explicit entity-id check matches every id against one `id_template`; named instances must be accepted (id in the set's names or matching its template) | P5b | open |
+| R5a-02 | R5a | Med | The explicit entity-id check matches every id against one `id_template`; named instances must be accepted (id in the set's names or matching its template) | P5b | done |
+
+## P5b review: work carried into later phases
+
+| ID | Source | Sev | Summary | Phase | Status |
+|---|---|---|---|---|---|
+| R5b-01 | R5b | Low | Peer sigma pooling is by kind: a `peer_residual` detector on a channel added by an override pools peers that lack the channel | P6a | open |
+| R5b-02 | R5b | Low | Narrowing validation gaps: two narrow entries naming the same state, channel or argument are not refused; an argument `minimum` above the declared `maximum` (or the reverse) is not refused | P6a | open |
+| R5b-03 | R5b | Low | A profile's `entity_count` is ignored when the first instance set has names only | P6a | open |

@@ -22,7 +22,7 @@ func (w *World) reading(ent *Entity, ch *model.Channel, cs *channelRunState, t i
 // observe applies the channel's observation function to the hidden state.
 func (w *World) observe(ent *Entity, ch *model.Channel, cs *channelRunState, t int64) float64 {
 	value := w.stateAt(ent.ID, ch.Observes, t)
-	if w.isConfirmationChannel(ch.Name) {
+	if w.isConfirmationChannel(ent, ch.Name) {
 		value = w.shadowValue(ent.ID, ch.Observes, t)
 	}
 	reading := w.biasedObservation(ent, ch, value, t)

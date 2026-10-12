@@ -41,14 +41,10 @@ func mtbfSeconds(uptime, mttr float64) float64 {
 	return mttrSeconds(mttr) * uptime / (1 - uptime)
 }
 
-// isConfirmationChannel reports whether the channel independently reports an
-// effector's physical effect (the confirmation_channels declarations).
-func (w *World) isConfirmationChannel(name string) bool {
-	for k := range w.Spec.Spec.Kinds {
-		for _, effector := range w.Spec.Spec.Kinds[k].Effectors {
-			if slices.Contains(effector.ConfirmationChannels, name) {
-				return true
-			}
+func (w *World) isConfirmationChannel(ent *Entity, name string) bool {
+	for _, effector := range ent.kind.Effectors {
+		if slices.Contains(effector.ConfirmationChannels, name) {
+			return true
 		}
 	}
 	return false

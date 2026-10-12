@@ -6,14 +6,23 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-func rejectDynamicsCycles(kind *model.Kind, at string, c *Compiled, src string) error {
+func rejectDynamicsCycles(kind *model.Kind, at string, src string) error {
 	traversal := dynamicsTraversal{dependencies: dynamicsDependencies(kind), targets: dynamicsTargets(kind), state: make(map[string]uint8), source: src, base: at}
-	for _, name := range c.StateNames(kind.Name) {
+	for _, name := range sortedStateNames(kind) {
 		if err := traversal.visit(name); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func sortedStateNames(kind *model.Kind) []string {
+	names := make([]string, len(kind.State))
+	for i := range kind.State {
+		names[i] = kind.State[i].Name
+	}
+	sort.Strings(names)
+	return names
 }
 
 func (checks domainChecks) checkF1(f1 *model.F1Dyn) error {
