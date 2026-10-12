@@ -5,7 +5,7 @@
   "seq": 7,
   "lane": "control",
   "device": "P1",
-  "boot_id": "boot-1",
+  "boot_id": "board-01-boot-1",
   "self_reported": true,
   "safe_state": false,
   "outputs": [

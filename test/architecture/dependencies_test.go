@@ -32,7 +32,7 @@ var packageDependencies = map[string]string{
 	"internal/refconsumer":        "canonical model",
 	"internal/deviceworld":        "device domain model world",
 	"internal/device":             "canonical jsonschema device/contract",
-	"internal/plantwire":          "canonical domain jsonschema model plantwire/contract run",
+	"internal/plantwire":          "canonical domain jsonschema model plantwire/contract run world",
 	"internal/plantwire/contract": "",
 	"internal/world":              "domain jsonschema model randutil",
 	"internal/truth":              "domain model world",

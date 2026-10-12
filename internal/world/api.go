@@ -51,6 +51,8 @@ var ErrCommandIDReused = layer.ErrCommandIDReused
 // refused arguments): the world is exactly as it was without the call.
 var ErrInvalidInvocation = layer.ErrInvalidInvocation
 
+const ReasonPreconditionRefused = layer.ReasonPreconditionRefused
+
 // MaxStartNS is the latest a world may start; a start outside [0,
 // MaxStartNS] is refused, so every event time stays representable.
 const MaxStartNS = layer.MaxStartNS

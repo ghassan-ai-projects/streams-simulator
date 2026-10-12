@@ -29,6 +29,8 @@ func Int(value any) int64 {
 		return int64(number)
 	case int64:
 		return number
+	case float64:
+		return int64(number)
 	}
 	return 0
 }
@@ -37,6 +39,8 @@ func Seq(value any) uint64 {
 	switch number := value.(type) {
 	case uint64:
 		return number
+	case float64:
+		return uint64(max(number, 0))
 	case fmt.Stringer:
 		parsed, _ := strconv.ParseUint(number.String(), 10, 64)
 		return parsed

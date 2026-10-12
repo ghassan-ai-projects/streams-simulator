@@ -21,6 +21,20 @@
   thermal LED/fan experiment stay unchanged and green in this goal. A run uses one host link: the device socket or the plant
   wire. Agentic Stream moves to the plant wire in the next goal, together with the gateway.
 - **Truth canary**: P7b adds a test that injects a fault with a recognisable id and scans every wire record of the run for it.
+- **Commands (P7c)**: a `DCMD` is checked in the SPEC §9 order at receipt and, when queued for `not_before_ns`, again at
+  execution; it runs through `run.InvokeEffector` at the world time of the slice end that processed it, with its
+  `idempotency_key` as the world command id. The node's idempotency ledger lives for the whole run (longer than SPEC §9's
+  24 h minimum for any run the simulator allows). World outcomes map to the wire: accepted (including `partial` and
+  `silent_no_effect`, which the device reports as `succeeded`) → `accepted` and `DRESULT succeeded`; `ack_lost` → no receipt
+  and no result; interlock → `interlocked`; failed precondition → `permissive_not_met`; random reject → `not_ready`; invalid
+  arguments, including a narrowed bound → `out_of_range`. Safe-stop commands are the node's `SafeStop` option; they skip the
+  node's deadline, epoch and policy checks, bypass the ledger and are never queued; a node refuses to start when a safe-stop
+  effector carries preconditions or an interlock (R6c-02). A command whose arguments pass the kind's bounds but not an
+  instance's narrowed bound is refused `out_of_range` at execution, a second one-bit fact about the instance.
+- **Lease fallback on host loss** (R7c-01): a simulated node ends its session, and the run, on host loss; the domain's own
+  effector leases lapse in the world. Acting on each command's `fallback_on_lease_loss` comes with reconnection (P7d).
+- **Wire faults (P7c)**: an outbound fault plan acts on sequenced records: `drop`, `duplicate`, `swap` (with the next record)
+  and `garble` (a schema-invalid record keeping its `seq`).
 
 ## 2. Disposition of the review findings (REVIEW-2026-10-12 §2–§4)
 

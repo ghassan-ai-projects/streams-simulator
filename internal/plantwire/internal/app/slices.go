@@ -32,16 +32,35 @@ func (s *Session) data() []domain.Record {
 }
 
 func (s *Session) barrier(ctx context.Context, syncSeq uint64) error {
-	inbound, met, err := s.link.Await(ctx, func(record map[string]any) bool {
-		return record["type"] == "HSYNC" && domain.Seq(record["through_seq"]) >= syncSeq
-	})
+	inbound, met, err := s.awaitSync(ctx, syncSeq)
 	if processed := s.process(inbound); processed != nil || s.finished {
 		return processed
 	}
 	if err != nil {
+		s.queued = nil
 		return fmt.Errorf("%w: %w", ErrHostLost, err)
 	}
-	return s.countBarrier(met)
+	return s.afterBarrier(met)
+}
+
+func (s *Session) afterBarrier(met bool) error {
+	if !met {
+		return s.countBarrier(false)
+	}
+	if err := s.runQueue(); err != nil {
+		return err
+	}
+	return s.countBarrier(true)
+}
+
+func (s *Session) awaitSync(ctx context.Context, syncSeq uint64) ([]domain.Inbound, bool, error) {
+	inbound, met, err := s.link.Await(ctx, func(record map[string]any) bool {
+		return record["type"] == "HSYNC" && domain.Seq(record["through_seq"]) >= syncSeq
+	})
+	if err != nil {
+		return inbound, met, fmt.Errorf("plantwire: barrier: %w", err)
+	}
+	return inbound, met, nil
 }
 
 func (s *Session) countBarrier(met bool) error {
@@ -51,6 +70,7 @@ func (s *Session) countBarrier(met bool) error {
 	}
 	s.missed++
 	if s.missed >= missedBarriersForHostLoss {
+		s.queued = nil
 		return ErrHostLost
 	}
 	return nil

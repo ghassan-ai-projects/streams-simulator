@@ -98,3 +98,18 @@ func TestALeaseFallsBackUnlessRenewed(t *testing.T) {
 		}
 	}
 }
+
+func TestALeaseInMillisecondsLapsesOnTime(t *testing.T) {
+	t.Parallel()
+	w := constWorld(t, func(s *model.DomainSpec) {
+		kind := &s.Kinds[0]
+		kind.State = append(kind.State, model.State{Name: "fan", Initial: 0})
+		fan := followUpEffector("run_fan", map[string]any{"speed": map[string]any{"type": "number"}, "lease_ms": map[string]any{"type": "number"}}, []model.StateDelta{{State: "fan", AssignFromArg: "speed"}})
+		fan.Lease = &model.Lease{Arg: "lease_ms", Unit: "ms", Fallback: model.FallbackSafeOff, SafeDeltas: []model.StateDelta{{State: "fan", Delta: 0}}}
+		kind.Effectors = []model.Effector{fan}
+	}, model.DefaultStartTimeNS)
+	call(t, w, "run_fan", "a", 100, map[string]any{"speed": 5.0, "lease_ms": 30000.0})
+	if before, after := w.StateValue("e-1", "fan", at(129)), w.StateValue("e-1", "fan", at(131)); before != 5 || after != 0 {
+		t.Fatalf("fan %v before and %v after a 30000 ms lease", before, after)
+	}
+}

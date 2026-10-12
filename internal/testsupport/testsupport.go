@@ -111,3 +111,7 @@ func ReportRun() string {
 func ReportGolden(name string) string {
 	return filepath.Join(RepositoryRoot(), "internal", "report", "testdata", name)
 }
+
+func PumpBoardDomain() string {
+	return filepath.Join(RepositoryRoot(), "internal", "testsupport", "testdata", "pump-board.domain.json")
+}

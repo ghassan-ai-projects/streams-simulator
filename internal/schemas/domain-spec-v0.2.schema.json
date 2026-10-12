@@ -866,9 +866,10 @@
           "type": "object",
           "additionalProperties": false,
           "required": ["arg", "fallback"],
-          "description": "The call holds its effect for the number of seconds in the numeric argument arg. Unless the same effector is called again on the entity before the lease lapses, the fallback applies at the lapse: safe_off sets each safe_deltas state to its delta value, revert undoes the call's additive deltas, hold_last keeps the effect.",
+          "description": "The call holds its effect for the numeric argument arg, in unit (s by default, or ms). Unless the same effector is called again on the entity before the lease lapses, the fallback applies at the lapse: safe_off sets each safe_deltas state to its delta value, revert undoes the call's additive deltas, hold_last keeps the effect.",
           "properties": {
             "arg": {"type": "string"},
+            "unit": {"enum": ["s", "ms"], "default": "s"},
             "fallback": {"enum": ["safe_off", "hold_last", "revert"]},
             "safe_deltas": {"$ref": "#/$defs/delta_list"}
           }

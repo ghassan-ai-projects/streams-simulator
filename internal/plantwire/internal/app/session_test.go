@@ -142,29 +142,6 @@ func TestAHostGoodbyeEndsTheSessionEarly(t *testing.T) {
 	}
 }
 
-func TestACommandIsRefusedAsNotReadyUntilTheNodeExecutesCommands(t *testing.T) {
-	t.Parallel()
-	host := &scriptedHost{t: t, afterSync: func(h *scriptedHost, syncs int) {
-		if syncs == 1 {
-			h.reply("DCMD", map[string]any{"command_id": "c-1", "device": "meter-1"})
-			h.reply("DCMD", map[string]any{"command_id": "c-2", "device": "pump-77"})
-			h.reply("DQUERY", map[string]any{"device": "pump-77"})
-		}
-	}}
-	if _, err := session(t, host, 2); err != nil {
-		t.Fatal(err)
-	}
-	reasons := map[any]any{}
-	for _, record := range host.sent {
-		if record["type"] == "DRECEIPT" {
-			reasons[record["command_id"]] = record["reason"]
-		}
-	}
-	if reasons["c-1"] != "not_ready" || reasons["c-2"] != "unknown_device" || countOf(host.types(), "DSTATE") != 0 {
-		t.Fatalf("receipts %v, records %v", reasons, host.types())
-	}
-}
-
 func TestServingAMissingSocketFails(t *testing.T) {
 	t.Parallel()
 	if err := Serve(t.Context(), utilityRun(t), "/nonexistent/host.sock", time.Second, Options{}); !errors.Is(err, fs.ErrNotExist) {

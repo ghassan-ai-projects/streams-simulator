@@ -8,14 +8,14 @@
     "seq": 2,
     "lane": "control",
     "command_id": "c-1",
-    "idempotency_key": "sha256:d3ecf79211d7758e4c4a7f619197c6aad9b6765c9d86192fb5b4f0c27015bda9",
+    "idempotency_key": "sha256:80f43ea83bf83014412e6861b2b1a43a18df67abca91d82fb745f110442dfbac",
     "device": "P1",
     "command": "set_speed",
     "args": {
       "pct": 70,
       "lease_ms": 30000
     },
-    "expected_boot_id": "boot-1",
+    "expected_boot_id": "board-01-boot-1",
     "deadline_ns": -1,
     "not_before_ns": 0,
     "authority_epoch": 1,

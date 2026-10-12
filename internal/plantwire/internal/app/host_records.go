@@ -47,19 +47,10 @@ func (s *Session) deviceRequest(record map[string]any) error {
 
 func (s *Session) refuseMalformed(record map[string]any) error {
 	commandID, named := record["command_id"].(string)
-	if record["type"] != "DCMD" || !named || commandID == "" {
+	if record["type"] != "DCMD" || !named || domain.WireID(commandID) != commandID {
 		return nil
 	}
 	return s.send(domain.Receipt(commandID, "refused", "malformed", "none"))
-}
-
-func (s *Session) command(record map[string]any) error {
-	boot, known := s.devices.bootOf(record["device"].(string))
-	reason := "not_ready"
-	if !known {
-		reason = "unknown_device"
-	}
-	return s.send(domain.Receipt(record["command_id"].(string), "refused", reason, boot))
 }
 
 func (s *Session) hostState(record map[string]any) {

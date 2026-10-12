@@ -27,6 +27,9 @@ type Options struct {
 	UntilNS         int64
 	BDSeq           uint64
 	PriorLastSeq    int64
+	Policies        []string
+	SafeStop        []string
+	WireFaults      []domain.WireFault
 }
 
 var ErrBadOptions = errors.New("plantwire: invalid node options")
@@ -60,17 +63,19 @@ type Session struct {
 	missed   int
 	events   []model.SimEvent
 	finished bool
+	ledger   domain.Ledger
+	queued   []domain.Command
 }
 
 func NewSession(r *run.Run, link Link, options Options) *Session {
-	s := &Session{run: r, link: link, options: options, out: domain.NewTransmitter(options.SessionID), devices: newDevices(r), bdSeq: options.BDSeq}
+	s := &Session{run: r, link: link, options: options, out: domain.NewTransmitter(options.SessionID), devices: newDevices(r), bdSeq: options.BDSeq, ledger: domain.Ledger{}}
 	r.SetDeliveryObserver(func(event model.SimEvent) { s.events = append(s.events, event) })
 	return s
 }
 
 func (s *Session) Run(ctx context.Context) error {
-	if err := validate(s.options); err != nil {
-		return err
+	if err := errors.Join(validate(s.options), s.devices.safeStopsUnguarded(s.options.SafeStop)); err != nil {
+		return fmt.Errorf("plantwire: %w", err)
 	}
 	if err := s.handshake(ctx); err != nil {
 		return err
@@ -122,7 +127,7 @@ func (s *Session) send(records ...domain.Record) error {
 	for _, record := range records {
 		s.out.Queue(record)
 	}
-	if err := s.link.Send(s.out.Drain()); err != nil {
+	if err := s.link.Send(domain.ApplyWireFaults(s.out.Drain(), s.options.WireFaults)); err != nil {
 		return fmt.Errorf("plantwire: send: %w", err)
 	}
 	return nil

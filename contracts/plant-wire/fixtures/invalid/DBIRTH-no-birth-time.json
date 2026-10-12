@@ -10,7 +10,7 @@
     "device": "P1",
     "kind": "pump",
     "board": "board-01",
-    "boot_id": "boot-1",
+    "boot_id": "board-01-boot-1",
     "metadata_version": 1,
     "metrics": [
       {

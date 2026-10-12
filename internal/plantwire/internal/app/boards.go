@@ -1,6 +1,11 @@
 package app
 
-import "github.com/ghassan-ai-projects/streams-simulator/internal/model"
+import (
+	"fmt"
+	"slices"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+)
 
 func (d *devices) board(id string) string {
 	if board := d.domainBoard(id); board != "" {
@@ -41,4 +46,15 @@ func (d *devices) wireMembers(members []string) []string {
 		out[i] = d.wireOf(member)
 	}
 	return out
+}
+
+func (d *devices) safeStopsUnguarded(names []string) error {
+	for _, kind := range d.kinds() {
+		for i := range kind.Effectors {
+			if eff := &kind.Effectors[i]; slices.Contains(names, eff.Name) && (len(eff.Requires) > 0 || eff.Interlock != nil) {
+				return fmt.Errorf("%w: safe stop %q carries preconditions or an interlock", ErrBadOptions, eff.Name)
+			}
+		}
+	}
+	return nil
 }

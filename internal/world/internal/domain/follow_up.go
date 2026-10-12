@@ -58,7 +58,7 @@ func (w *World) scheduleDeltas(entityID string, deltas []model.StateDelta, args 
 }
 
 func (w *World) armLease(eff *model.Effector, inv invocation) {
-	seconds, ok := argFloat(inv.args, eff.Lease.Arg)
+	seconds, ok := leaseSeconds(eff.Lease, inv.args)
 	if !ok {
 		return
 	}
@@ -115,4 +115,12 @@ func (w *World) withdrawKick(k *kick) {
 	key := driverKey{entity: k.entity, state: k.state}
 	w.kicks[key] = slices.DeleteFunc(w.kicks[key], func(candidate *kick) bool { return candidate == k })
 	k.applied = true
+}
+
+func leaseSeconds(lease *model.Lease, args map[string]any) (float64, bool) {
+	value, ok := argFloat(args, lease.Arg)
+	if lease.Unit == "ms" {
+		value /= 1000
+	}
+	return value, ok
 }
