@@ -25,7 +25,7 @@ var moduleShapes = map[string][]string{
 	"internal/journal":     {"domain", "files"},
 	"internal/adapter":     {"domain", "files"},
 	"internal/device":      {"domain", "uds", "files"},
-	"internal/plantwire":   {"domain", "app", "uds"},
+	"internal/plantwire":   {"domain", "app", "host", "uds"},
 	"internal/run":         {"domain", "app", "durable", "quiesce", "clock"},
 	"internal/refconsumer": {"domain", "mcpclient", "app", "files"},
 	"internal/grading":     {"domain", "app", "files"},

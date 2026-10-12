@@ -32,7 +32,19 @@
   effector carries preconditions or an interlock (R6c-02). A command whose arguments pass the kind's bounds but not an
   instance's narrowed bound is refused `out_of_range` at execution, a second one-bit fact about the instance.
 - **Lease fallback on host loss** (R7c-01): a simulated node ends its session, and the run, on host loss; the domain's own
-  effector leases lapse in the world. Acting on each command's `fallback_on_lease_loss` comes with reconnection (P7d).
+  effector leases lapse in the world. Acting on each command's `fallback_on_lease_loss` comes with reconnection (P13).
+- **Journal (P7d)**: the node writes every record it sends and receives as an observer `wire` session record, and one
+  `pacing` session record per barrier (`through_seq`, the wall time waited, whether the cap expired). Both are outside the
+  stream digest: the world is reproduced by the command log, the wire by replaying the host's records.
+- **Reference host (P7d)**: `plantwire host` (module layer `host`, socket edge `uds/listen.go`): owner-only socket in an
+  owner-only directory, one node, schema-invalid records ignored (their `seq` consumed), nothing before an accepted `NBIRTH`,
+  handshake checks (protocol range, environment, contract digest, version) with refusal and silence after it, a commissioned inventory (device to kind; others
+  quarantined), one rebirth request per gap, historical data kept out of live values, scripted commands issued at the barrier
+  whose world time reaches them (with the content-derived key, the epoch and its policy; denied for a device not accepted),
+  verification of each succeeded command by an observation that arrives after its result, within a window, and a configurable delay before each `HSYNC`. It trusts no birth for
+  permissions: it only issues what its script says.
+- **Deferred to P13**: reconnection and the faults that need it (split frames, a reset mid-command, a reconnect storm; P19),
+  and acting on `fallback_on_lease_loss` (R7c-01).
 - **Wire faults (P7c)**: an outbound fault plan acts on sequenced records: `drop`, `duplicate`, `swap` (with the next record)
   and `garble` (a schema-invalid record keeping its `seq`).
 

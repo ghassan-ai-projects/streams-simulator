@@ -33,6 +33,7 @@ func (s *Session) data() []domain.Record {
 
 func (s *Session) barrier(ctx context.Context, syncSeq uint64) error {
 	inbound, met, err := s.awaitSync(ctx, syncSeq)
+	s.run.JournalPacing(syncSeq, s.link.WaitedMS(), !met)
 	if processed := s.process(inbound); processed != nil || s.finished {
 		return processed
 	}

@@ -9,6 +9,7 @@ import (
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/domain"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/host"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/uds"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
 )
@@ -16,6 +17,7 @@ import (
 type Link interface {
 	Send(records []map[string]any) error
 	Await(ctx context.Context, until func(record map[string]any) bool) (inbound []domain.Inbound, met bool, err error)
+	WaitedMS() int64
 }
 
 type Options struct {
@@ -117,6 +119,9 @@ func (s *Session) adopt(state map[string]any) error {
 
 func (s *Session) awaitState(ctx context.Context) (map[string]any, error) {
 	inbound, met, err := s.link.Await(ctx, isType("STATE"))
+	for _, arrival := range inbound {
+		s.run.JournalWire("host", arrival.Record)
+	}
 	if err != nil || !met || len(inbound) != 1 || inbound[0].Invalid != nil {
 		return nil, fmt.Errorf("plantwire: no valid STATE first after NBIRTH: %w", errors.Join(err, ErrHostLost))
 	}
@@ -127,7 +132,11 @@ func (s *Session) send(records ...domain.Record) error {
 	for _, record := range records {
 		s.out.Queue(record)
 	}
-	if err := s.link.Send(domain.ApplyWireFaults(s.out.Drain(), s.options.WireFaults)); err != nil {
+	wireRecords := domain.ApplyWireFaults(s.out.Drain(), s.options.WireFaults)
+	for _, record := range wireRecords {
+		s.run.JournalWire("node", record)
+	}
+	if err := s.link.Send(wireRecords); err != nil {
 		return fmt.Errorf("plantwire: send: %w", err)
 	}
 	return nil
@@ -151,4 +160,12 @@ func Serve(ctx context.Context, r *run.Run, socketPath string, barrierCap time.D
 		return fmt.Errorf("plantwire: %w", err)
 	}
 	return nil
+}
+
+func ServeHost(ctx context.Context, socketPath string, delay time.Duration, options host.Options) (host.Report, error) {
+	reference := host.New(options)
+	if err := uds.ServeHost(ctx, socketPath, reference.Receive, delay, options.Ready); err != nil {
+		return reference.Report(), fmt.Errorf("plantwire: %w", err)
+	}
+	return reference.Report(), nil
 }

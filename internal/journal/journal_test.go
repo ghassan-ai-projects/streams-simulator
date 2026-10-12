@@ -69,10 +69,15 @@ func TestEveryRecordVerbReachesItsStream(t *testing.T) {
 	j.Delivery(4, model.LedgerRecord{DeliveryID: 1})
 	j.State(4, model.StateSnapshot{Entity: "x"})
 	j.Outcome(5, Call{CommandID: "c"}, nil, "declined")
+	j.Wire(6, "node", map[string]any{"type": "NSYNC"})
+	j.Pacing(6, 1, 0, false)
+	if err := j.Flush(); err != nil {
+		t.Fatal(err)
+	}
 	observer, _ := j.Bytes(StreamObserver)
 	director, _ := j.Bytes(StreamDirector)
-	if got, _ := Read(observer); len(got) != 5 {
-		t.Fatalf("observer records = %d, want 5", len(got))
+	if got, _ := Read(observer); len(got) != 7 {
+		t.Fatalf("observer records = %d, want 7", len(got))
 	}
 	if got, _ := Read(director); len(got) != 4 {
 		t.Fatalf("director records = %d, want 4", len(got))

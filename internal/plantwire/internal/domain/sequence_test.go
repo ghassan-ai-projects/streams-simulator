@@ -20,7 +20,7 @@ func TestControlRecordsTransmitFirstAndSequencesHaveNoGaps(t *testing.T) {
 func TestTheReceiverTellsInOrderDuplicateAndGap(t *testing.T) {
 	t.Parallel()
 	var in Receiver
-	if in.Accept(0) != InOrder || in.Accept(0) != Duplicate || in.Accept(2) != Gap || in.Accept(1) != InOrder {
+	if in.Accept(0) != InOrder || in.Accept(0) != Duplicate || in.Accept(2) != Gap || in.Accept(3) != InOrder || in.Accept(1) != Duplicate {
 		t.Fatal("receiver arrivals")
 	}
 }

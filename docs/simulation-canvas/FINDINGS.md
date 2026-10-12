@@ -24,18 +24,18 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 | P5 | REVIEW | High | `authority_epoch` is host/gateway-side only; decide its v1 status | P7a | done |
 | P6 | REVIEW | High | Board level owns `boot_id` | P5b | done |
 | P7 | REVIEW | High | Field names and refusal codes vs device-wire-v1; PLC refusal codes | P7a | done |
-| P8 | REVIEW | High | Policy example and birth-declared safe-stop/risk class | P7d | open |
+| P8 | REVIEW | High | Policy example and birth-declared safe-stop/risk class | P7d | done |
 | P9 | REVIEW | High | Commissioning state machine and metadata changes (host side) | next-goal | next-goal |
 | P10 | REVIEW | High | One quality-code mapping table; manual/out-of-service codes | P7a | done |
 | P11 | REVIEW | High | Prompt injection through strings; injection fixtures | P7a | done |
-| P12 | REVIEW | High | Quiescence barrier and clock mode with a live host | P7d | open |
+| P12 | REVIEW | High | Quiescence barrier and clock mode with a live host | P7d | done |
 | P13 | REVIEW | Med | Edge realism: time source, scan class, polling failures, buffering | P7a | done |
 | P14 | REVIEW | Med | `host_state` offline semantics, version, heartbeat | P7b | done |
 | P15 | REVIEW | Med | Capability digest definition | P7a | done |
 | P16 | REVIEW | Med | `notify` alert event type and path to the session | next-goal | next-goal |
 | P17 | REVIEW | Med | Contract sync supply chain: pinned digest, safety floor, minimum version | P7a | done |
-| P18 | REVIEW | Med | Non-negotiables mapped to the wire: reference host, lying results | P7d | open |
-| P19 | REVIEW | Med | Fault layer: existing vs new protocol faults (drop, duplicate, swap, garble done in P7c; split frames, reset mid-command and reconnect storm need reconnection) | P7d | open |
+| P18 | REVIEW | Med | Non-negotiables mapped to the wire: reference host, lying results | P7d | done |
+| P19 | REVIEW | Med | Fault layer: existing vs new protocol faults (drop, duplicate, swap, garble done in P7c; split frames, reset mid-command and reconnect storm need reconnection) | P13 | open |
 | P20 | REVIEW | Med | Gateway as a safety-relevant component | next-goal | next-goal |
 | P21 | REVIEW | Med | `state` is self-reported; independent feedback for verification | P7a | done |
 | P22 | REVIEW | Low | `device_death` "sensor outage" wording | P7a | done |
@@ -161,5 +161,5 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 | R6e-01 | self | Med | Aggregation of dynamics inputs over typed links (`sum`, `mean`, vocabulary table §7) is in no phase: links are structure only; needed before the reference scenario models a shared header or bus across instances | P12 | open |
 | R6e-02 | R6e | Low | The stochastic fault envelope stream is keyed by the fault declaration, not the injection, so injections of one stochastic fault on several entities share one stream in read order; key it by injection (a determinism-tuple change, pinned outputs move) | P13 | open |
 | R6e-03 | R6e | Low | A direct read of an integrated state ahead of the clock (outside the look-ahead copy) commits integration and changes later emissions; production reads go through the look-ahead, so make the facade's StateValue use it too or refuse future reads | P13 | open |
-| R7c-01 | R7c | Med | `fallback_on_lease_loss` is validated but not acted on: a simulated node ends its session on host loss (the run stops), and the domain's own effector leases lapse in the world; a node that keeps running after host loss (reconnection) must apply each live command's fallback | P7d | open |
+| R7c-01 | R7c | Med | `fallback_on_lease_loss` is validated but not acted on: a simulated node ends its session on host loss (the run stops), and the domain's own effector leases lapse in the world; a node that keeps running after host loss (reconnection) must apply each live command's fallback | P13 | open |
 | R7c-02 | R7c | Low | Wire-fault `swap` acts within one transmitted batch, so a swap on a batch's last record (a lone receipt, an `NSYNC`) is a no-op; apply faults over a persistent outbound buffer | P13 | open |

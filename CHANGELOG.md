@@ -4,6 +4,12 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **Plant wire reference host, journal and CLI** (phase P7d). `streamsim plantwire host` is a minimal conformant host
+  (owner-only socket, handshake checks and refusal, commissioned inventory with quarantine, rebirth on a gap, historical data
+  kept out of live values, scripted commands, verification by observation, a configurable barrier delay); `streamsim plantwire
+  node` runs a domain as a node and writes its artifact and journal. The journal gains `wire` and `pacing` session records.
+  New CLI error code `plantwire_failed` and success documents `plantwire_node`, `plantwire_host`.
+
 - **Plant wire commands** (phase P7c). The node executes `DCMD`: checks in the contract's order (device, command, arguments,
   boot, deadline, epoch floor, policy allow-list) at receipt and again at execution for a command queued until
   `not_before_ns`; an idempotency ledger replays the stored receipt and result for the same content and refuses other

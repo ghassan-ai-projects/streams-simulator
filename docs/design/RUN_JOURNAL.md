@@ -53,8 +53,8 @@ it and the `at_ns` of the one before, and is outside the stream digest (§3).
 | `clock.advanced` | `to_ns` | After each advance |
 | `effector.acknowledged` | `command_id`, `effector`, `entity_id`, `response` (`model.EffectorAcknowledgement`, exactly what the operator received) | Per acknowledged invocation |
 | `consumer.reported` (session) | `quiesced_through_ns`, `verdict_submitted` | Per consumer report |
-| `wire` | Reserved for the plant wire (phase P7) | - |
-| `pacing` (session) | Reserved for live control (phase P10) | - |
+| `wire` (session) | One plant wire record: `direction` (`node` sent it, `host` sent it to the node) and the `record` exactly as on the wire (phase P7d). Outside the stream digest; the wire is reproduced by replaying the host's records | - |
+| `pacing` (session) | One plant wire barrier: `through_seq`, `waited_ms` (wall time), `missed` (phase P7d); live control adds its own pacing in P10 | - |
 | `run.closed` | `incomplete` | At `End` |
 
 An effector call the world declines is not acknowledged: the operator received a refusal, not an
@@ -142,8 +142,7 @@ one whose truth was revealed while it was open.
 
 ## 7. Not in this phase
 
-- The `wire` records of the plant wire (P7) and the `pacing` records of live control (P10): their
-  names are reserved in the contract, and `pacing` is already a session type.
+- The `pacing` records of live control (P10).
 - Journal rotation or size bounds: a journal is as large as the run (a delivery produces one
   observation, one delivery row and one state row).
 - Reading a journal while it grows (follow, offsets): the files are plain append-only JSON Lines,

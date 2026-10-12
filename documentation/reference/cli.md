@@ -108,6 +108,31 @@ Flags:
   ordinal is one. Fault application is logged to stderr; duplicate delivery
   remains idempotent and disconnect closes only the current UDS connection.
 
+### `plantwire node` and `plantwire host`
+
+Speaks the plant wire ([contract](../../contracts/plant-wire/SPEC.md)). `plantwire node` runs a domain as a node: it dials the
+host's owner-only Unix socket, sends births, data in slices closed by an `NSYNC`/`HSYNC` barrier, executes the host's commands
+through the run's effector path, and writes the run's artifact and journal (with `wire` and `pacing` records) to `--out`.
+`plantwire host` is the reference host: it creates an owner-only socket, accepts one node, checks the environment, version
+and contract digest, quarantines devices its inventory does not list, requests a rebirth on a gap, issues scripted commands
+when the world reaches their time, verifies them against later observations, and prints its report.
+
+```text
+streamsim plantwire host --socket <path> [--script <commands.json>] [--inventory <devices.json>] [--environment simulated]
+                         [--policy <digest>] [--epoch <n>] [--delay-ms <n>]
+streamsim plantwire node --host-socket <path> --domain <id> --out <dir> [--domains-dir domains] [--adapter <id>] [--adapters-dir adapters]
+                         [--session-id <id>] [--seed <n>] [--slice-s 60] [--duration 3600] [--barrier-cap-ms 30000]
+                         [--policy <digest>]... [--safe-stop <command>]...
+```
+
+The socket's directory must be owner-only (it is created `0700` when missing). The script is a JSON array of
+`{at_ns, device, command, args, verify?: {metric, equals, tolerance, within_ns}}`, issued in `at_ns` order; a command to a
+device that is quarantined or never born is not sent and is reported `denied`. A command is verified only by a sample that
+arrives after its result. The inventory is a JSON object of device to kind; without one, every device is accepted. After a
+refusal the host answers nothing more. The node accepts commands signed by a `--policy` it lists; `--safe-stop` names commands that
+skip freshness, epoch and policy checks. `--barrier-cap-ms` (default 30000) bounds the wall time the node waits for each
+`HSYNC`; `--delay-ms` makes the reference host slow.
+
 ### `run`
 
 Runs one world and writes an artifact when `--out` is supplied. The run is defined either by a

@@ -62,5 +62,6 @@ func (r *Receiver) Accept(seq uint64) Arrival {
 	case seq < r.next:
 		return Duplicate
 	}
+	r.next = seq + 1
 	return Gap
 }

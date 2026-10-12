@@ -110,6 +110,8 @@ func (h *scriptedHost) Await(_ context.Context, until func(map[string]any) bool)
 	return got, false, h.hangUp
 }
 
+func (h *scriptedHost) WaitedMS() int64 { return 0 }
+
 func (h *scriptedHost) types() []string {
 	var out []string
 	for _, record := range h.sent {

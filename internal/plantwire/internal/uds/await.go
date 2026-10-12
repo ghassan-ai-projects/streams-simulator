@@ -39,8 +39,9 @@ func firstError(err, fallback error) error {
 }
 
 func (l *Link) Await(ctx context.Context, until func(map[string]any) bool) ([]domain.Inbound, bool, error) {
-	timer := time.NewTimer(l.wait)
+	timer, started := time.NewTimer(l.wait), time.Now()
 	defer timer.Stop()
+	defer func() { l.waited = time.Since(started).Milliseconds() }()
 	var inbound []domain.Inbound
 	for {
 		got, expired, err := l.next(ctx, timer.C)
@@ -63,3 +64,5 @@ func (l *Link) next(ctx context.Context, expiry <-chan time.Time) (domain.Inboun
 		return got.inbound, false, got.err
 	}
 }
+
+func (l *Link) WaitedMS() int64 { return l.waited }

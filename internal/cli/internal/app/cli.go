@@ -51,6 +51,7 @@ var commands = map[string]command{
 	"manifest":    {run: cmdManifest},
 	"device":      {run: cmdDevice},
 	"scenario":    {run: cmdScenario},
+	"plantwire":   {run: cmdPlantWire},
 }
 
 // Main runs the command in the current process and returns its exit status.

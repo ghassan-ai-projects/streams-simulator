@@ -8,6 +8,7 @@ import (
 
 func (s *Session) process(inbound []domain.Inbound) error {
 	for _, arrival := range inbound {
+		s.run.JournalWire("host", arrival.Record)
 		switch s.in.Accept(domain.Seq(arrival.Record["seq"])) {
 		case domain.Duplicate:
 			continue

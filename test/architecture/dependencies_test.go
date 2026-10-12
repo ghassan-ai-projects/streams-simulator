@@ -19,7 +19,7 @@ var packageDependencies = map[string]string{
 	".":                           "",
 	"tools":                       "",
 	"cmd/streamsim":               "cli",
-	"internal/cli":                "adapter device deviceworld domain grading mcp model refconsumer release report run suite",
+	"internal/cli":                "adapter device deviceworld domain grading mcp model plantwire refconsumer release report run suite",
 	"internal/director":           "adapter audit domain model run score truth world",
 	"internal/mcp":                "director model schemas",
 	"internal/run":                "adapter canonical domain journal model perturb sink wall world",

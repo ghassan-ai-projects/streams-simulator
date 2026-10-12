@@ -112,3 +112,15 @@ func waitForQuiescence(ctx context.Context, timer QuiescenceTimer, ch chan struc
 		return fmt.Errorf("run: %w: quiesced through %d, asked for %d", ErrConsumerNotQuiesced, through, toNS)
 	}
 }
+
+func (r *Run) JournalWire(direction string, record map[string]any) {
+	r.commandMu.Lock()
+	defer r.commandMu.Unlock()
+	r.journal.Wire(r.journalNow(), direction, record)
+}
+
+func (r *Run) JournalPacing(throughSeq uint64, waitedMS int64, missed bool) {
+	r.commandMu.Lock()
+	defer r.commandMu.Unlock()
+	r.journal.Pacing(r.journalNow(), throughSeq, waitedMS, missed)
+}

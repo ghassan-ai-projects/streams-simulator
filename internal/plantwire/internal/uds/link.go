@@ -30,6 +30,7 @@ type Link struct {
 	done     chan struct{}
 	wait     time.Duration
 	stop     func() bool
+	waited   int64
 }
 
 func Dial(ctx context.Context, path string, wait time.Duration) (*Link, error) {

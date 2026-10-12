@@ -116,3 +116,21 @@ func TestANodeRefusesASharedSocketAndAnnouncesThePinnedContract(t *testing.T) {
 		t.Fatalf("contract digest %s, pinned %s (%v)", ContractDigest(), pinned, err)
 	}
 }
+
+func TestTheHostScriptAndInventoryAreReadStrictly(t *testing.T) {
+	t.Parallel()
+	script, err := ParseScript([]byte(`[{"at_ns":5,"device":"P1","command":"start","args":{}}]`))
+	if err != nil || len(script) != 1 || script[0].Device != "P1" {
+		t.Fatalf("ParseScript = %+v, %v", script, err)
+	}
+	if _, err := ParseScript([]byte(`[{"when":5}]`)); err == nil || !strings.Contains(err.Error(), "plantwire host script") {
+		t.Fatalf("ParseScript with an unknown field = %v", err)
+	}
+	inventory, err := ParseInventory([]byte(`{"P1":"pump"}`))
+	if err != nil || inventory["P1"] != "pump" {
+		t.Fatalf("ParseInventory = %v, %v", inventory, err)
+	}
+	if _, err := ParseInventory([]byte(`[]`)); err == nil || !strings.Contains(err.Error(), "plantwire host inventory") {
+		t.Fatalf("ParseInventory of an array = %v", err)
+	}
+}

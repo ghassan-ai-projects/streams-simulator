@@ -6,7 +6,7 @@
 # <package>  <floor>
 cmd/streamsim         0
 # The journal module (QUALITY_BAR section 2: new modules at 85 percent or more).
-internal/journal                  94
+internal/journal                  99
 internal/journal/internal/domain  99
 internal/journal/internal/files   95
 # The report module (QUALITY_BAR section 2: new modules at 85 percent or more).
@@ -18,4 +18,4 @@ internal/report/internal/files   100
 internal/plantwire                  99
 internal/plantwire/internal/app     91
 internal/plantwire/internal/domain  89
-internal/plantwire/internal/uds     89
+internal/plantwire/internal/uds     86

@@ -30,6 +30,8 @@ func sampleJournal(t *testing.T) *Journal {
 	j.Acknowledged(121, call, &model.EffectorAcknowledgement{Accepted: true, Simulated: true, WorldID: "w-1", CommandID: "c-1"})
 	j.Outcome(122, call, nil, "the effector declined")
 	j.ConsumerReported(120, true)
+	j.Wire(120, "node", map[string]any{"type": "NSYNC", "seq": 3, "through_seq": 2})
+	j.Pacing(120, 3, 15, false)
 	j.Unblinded(130, ReasonRevealed)
 	return j
 }

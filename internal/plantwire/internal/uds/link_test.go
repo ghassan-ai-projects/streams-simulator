@@ -83,6 +83,25 @@ func TestASilentHostLetsTheWaitExpire(t *testing.T) {
 	if records, met, err := link.Await(t.Context(), func(map[string]any) bool { return true }); met || err != nil || len(records) != 0 {
 		t.Fatalf("await = %v, %v, %v", records, met, err)
 	}
+	if waited := link.WaitedMS(); waited < 50 {
+		t.Fatalf("waited %d ms, want the whole cap", waited)
+	}
+}
+
+func TestAClosedLinkCannotSend(t *testing.T) {
+	t.Parallel()
+	path, listener := privateListener(t)
+	echoHost(t, listener, map[string]any{"type": "HSYNC"})
+	link, err := Dial(t.Context(), path, time.Second)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := link.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if err := link.Send([]map[string]any{{"type": "NSYNC"}}); !errors.Is(err, net.ErrClosed) {
+		t.Fatalf("send on a closed link = %v", err)
+	}
 }
 
 func TestASocketOthersCanReachIsRefused(t *testing.T) {
