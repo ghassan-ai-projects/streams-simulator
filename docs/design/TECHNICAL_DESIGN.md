@@ -284,7 +284,7 @@ miss from a reasoning miss. The ledger is director-side, always.
 
 ### 6.1 Channel model
 
-Declared per [domain-spec-v0.1](../contracts/domain-spec-v0.1.schema.json): name, value
+Declared per [domain-spec-v0.2](../contracts/domain-spec-v0.2.schema.json) (kinds and instances, [DOMAIN_SPEC_V0_2](DOMAIN_SPEC_V0_2.md)): name, value
 type, unit, mandatory `resolution`, cadence (with a mandatory deadband when
 report-by-exception), fidelity tier, the hidden state observed, noise, drift, absence
 semantics, availability, link delay, and `attacker_controlled`.

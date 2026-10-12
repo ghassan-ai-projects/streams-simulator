@@ -9,6 +9,7 @@
     {"$ref": "#/$defs/catalog_describe"},
     {"$ref": "#/$defs/catalog_coverage"},
     {"$ref": "#/$defs/domain_validate"},
+    {"$ref": "#/$defs/domain_format"},
     {"$ref": "#/$defs/adapter_list"},
     {"$ref": "#/$defs/adapter_verify"},
     {"$ref": "#/$defs/run"},
@@ -114,6 +115,16 @@
         "channels": {"type": "integer", "minimum": 0},
         "faults": {"type": "integer", "minimum": 0},
         "effectors": {"type": "integer", "minimum": 0}
+      }
+    },
+    "domain_format": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["formatted", "changed", "digest"],
+      "properties": {
+        "formatted": {"type": "string", "minLength": 1},
+        "changed": {"type": "boolean"},
+        "digest": {"$ref": "#/$defs/digest"}
       }
     },
     "adapter_list": {

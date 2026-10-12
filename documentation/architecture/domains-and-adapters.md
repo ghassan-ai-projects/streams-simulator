@@ -6,7 +6,7 @@ Streams Simulator extends through data files, not per-domain or per-consumer cod
 
 ## Domains
 
-A domain specification declares the world’s entities and the behavior that makes a scenario useful: channels, state variables, dynamics, faults, effectors, profiles, and property axes. The loader validates the JSON against the domain contract, computes a digest, and exposes it through the catalog.
+A domain specification declares the world as a **kind** (the template: state variables, dynamics, channels, faults, effectors) and the **instances** that follow it (id template, count bounds, churn), plus profiles and property axes. The loader compiles the kinds-and-instances document to the runtime world, so the simulator core never sees the difference. The loader validates the JSON against the domain contract, computes a digest, and exposes it through the catalog.
 
 The committed domain set is under [`domains/`](../../domains/): eight domains, each validated against the embedded schema by the shipped-domain test. The design catalog describes more domains than are currently committed. See [limitations](../limitations.md).
 
@@ -18,6 +18,7 @@ Use the common path to inspect and validate data:
 go run ./cmd/streamsim catalog list
 go run ./cmd/streamsim catalog describe rotating-machinery
 go run ./cmd/streamsim domain validate domains/rotating-machinery.domain.json
+go run ./cmd/streamsim domain format domains/rotating-machinery.domain.json
 ```
 
 ## Adapters

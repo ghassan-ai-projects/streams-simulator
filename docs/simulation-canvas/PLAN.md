@@ -18,7 +18,7 @@ the plant wire (P7), then the canvas (P8–P11), then reference worlds and harde
 The canvas starts after the structures it displays exist, so no view is built twice (confirmed
 by the owner on 2026-10-12: finish the preparation before working on the UI).
 
-Execution order: P3 → P2e → P4 → P5a → P5b → P6a–e → P7a–d → P8a → P8b → P9 → P10 →
+Execution order: P3 → P2e → P4 → P5a → P5a2 → P5b → P6a–e → P7a–d → P8a → P8b → P9 → P10 →
 P11a–c → P12 → P13.
 
 ## Phases
@@ -35,6 +35,7 @@ P11a–c → P12 → P13.
 | P3 | Run journal | Journal spec and `run-journal-v0.1`: every record type tagged truth-bearing or not; who may read an in-progress run folder; sealed truth stream; unblinded (Explore) stream; pacing and lifecycle records; a reserved, versioned wire-exchange record type that P7 fills; crash behaviour | Journal appended during CLI and director runs; truth-bearing records only in the sealed stream until sealing; `verify` checks the journal against replay; fuzz target for the journal reader | Journal identical across replays; partial journal after an injected crash valid to its end; **canary test**: a distinctive injected fault in an Evaluate run appears in no consumer-readable file before sealing; Explore run stamped unblinded and refused by scoring |
 | P4 | Report | `run-report-v0.1` and Markdown rules; consumer-side digests included only when the run recorded them | `streamsim report <run-dir>` (JSON and Markdown) | Pure function of the run folder; schema-valid; golden tests |
 | P5a | Domain-spec v0.2: kinds and instances | v0.2 semantics part 1; `DECISIONS.md` deviation entries (incl. D-03, D-04, D-14 where affected) | Schema, loader, compiler and digest for kinds and instances compiling to the runtime world; the eight domains rewritten to v0.2; `streamsim domain format` (canonical formatting); manifest, goldens and schema suite updated | Every rewritten domain compiles to a runtime world identical to its v0.1 one (oracles, determinism, replay unchanged); every validation issue carries a JSON pointer |
+| P5a2 | Multi-kind world (found in the P5a review) | v0.2 semantics part 1 amended: several kinds and instance sets per domain; namespacing of channel, fault and effector names and of profile fault weights; RNG draw order across kinds | Runtime spec with a per-kind set; each entity references its kind (state, channels, faults, effectors); one id template, count and churn per instance set; truth solver and analytic cross-check loop over kinds; `maxItems: 1` lifted | Every single-kind domain bit-identical (runtime digest test and behaviour pin); a two-kind world passes the analytic cross-check and replay identity |
 | P5b | v0.2: overrides, links, system entities, board | v0.2 semantics part 1 (cont.) | Add-or-narrow overrides; typed links; system entities; board (`boot_id` owner) | Override, link and board rules proven at the domain layer; device path gate green |
 | P6a | Vocabulary: `store`, `flow` | v0.2 semantics part 2 for these forms | Both forms with an independent second implementation | Analytic cross-check across swept parameters; closed-grammar test (no free-text expression anywhere in the schema) |
 | P6b | Vocabulary: `regime`, `schedule`, block `peak` (`peak_mtd`, ratchet) | Same | Same | Crossing times derived independently and agreeing; same |
@@ -70,3 +71,4 @@ The commit hash of a phase is recorded by the first commit of the next phase.
 | P3 | Done | `d1d4db8` | [evidence/P3.md](evidence/P3.md) | [reviews/P3.md](reviews/P3.md) |
 | P2e | Done | `63881c1` (merged in `f8f9d5a`) | `make ci-check` 1:24 after merging P3 (was about 4 min); details in `.agents/context/testing.md` and `docs/DECISIONS.md` D-13 | not separately reviewed (test-only; every oracle still runs) |
 | P4 | Done | `1657a47` | [evidence/P4.md](evidence/P4.md) | [reviews/P4.md](reviews/P4.md) |
+| P5a | Done | (this commit) | [evidence/P5a.md](evidence/P5a.md) | [reviews/P5a.md](reviews/P5a.md) |

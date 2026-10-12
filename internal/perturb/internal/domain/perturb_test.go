@@ -6,6 +6,7 @@ import (
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
 func testSpec(t *testing.T) *domain.Compiled {
@@ -28,7 +29,7 @@ func testSpec(t *testing.T) *domain.Compiled {
 		],
 		"ground_truth": {"negative_class_fraction": 0.4}
 	}`
-	c, err := domain.Parse([]byte(doc), "test")
+	c, err := domain.Parse(testsupport.AsKinds([]byte(doc)), "test")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -63,7 +63,7 @@ func TestHelpPrintsUsageOnStderrAndNothingOnStdout(t *testing.T) {
 		{"help", []string{"help"}, "Commands:"},
 		{"short help flag", []string{"-h"}, "Commands:"},
 		{"flag help", []string{"catalog", "-h"}, "-domains-dir"},
-		{"verb flag help", []string{"domain", "validate", "-h"}, "Usage of domain validate"},
+		{"verb flag help", []string{"domain", "validate", "-h"}, "Usage of domain"},
 		{"subcommand help", []string{"device", "-h"}, "Usage: streamsim device serve"},
 		{"subcommand flag help", []string{"device", "serve", "-h"}, "-capabilities"},
 	}
@@ -91,7 +91,7 @@ func TestUsageFailuresExitTwoWithAUsageDocument(t *testing.T) {
 		{"bad flag", []string{"catalog", "--no-such-flag"}, "flag provided but not defined"},
 		{"catalog verb", append([]string{"catalog", "nope"}, domains...), `catalog: unknown verb "nope"`},
 		{"describe without id", append([]string{"catalog", "describe"}, domains...), "catalog describe requires a domain id"},
-		{"domain usage", []string{"domain"}, "usage: streamsim domain validate <path>"},
+		{"domain usage", []string{"domain"}, "usage: streamsim domain validate|format <path>"},
 		{"domain verb", []string{"domain", "lint", "x"}, `domain: unknown verb "lint"`},
 		{"adapter verb", append([]string{"adapter", "nope"}, adapters...), `adapter: unknown verb "nope"`},
 		{"adapter verify without path", append([]string{"adapter", "verify"}, adapters...), "adapter verify requires a path"},

@@ -51,15 +51,15 @@ func compileWithDigest(spec *model.DomainSpec, doc any, src string) (*Compiled, 
 }
 
 func decodeSpec(raw []byte, src string) (*model.DomainSpec, error) {
-	var spec model.DomainSpec
-	if err := json.Unmarshal(raw, &spec); err != nil {
+	var document model.DomainDocument
+	if err := json.Unmarshal(raw, &document); err != nil {
 		return nil, model.NotJSONError(model.ContractDomainSpec, src, fmt.Sprintf("domain: %s: decode", src), err)
 	}
-	return &spec, nil
+	return lower(&document, src)
 }
 
 // schemaViolation reports a domain that fails the domain-spec schema.
 func schemaViolation(src string, errs []jsonschema.Error) *model.ValidationError {
-	summary := fmt.Sprintf("domain: %s fails domain-spec-v0.1 validation:\n  %s", src, jsonschema.FormatErrors(errs))
+	summary := fmt.Sprintf("domain: %s fails domain-spec-v0.2 validation:\n  %s", src, jsonschema.FormatErrors(errs))
 	return &model.ValidationError{Contract: model.ContractDomainSpec, Source: src, Summary: summary, Issues: model.SchemaIssues(errs)}
 }

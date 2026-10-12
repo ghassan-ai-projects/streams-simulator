@@ -178,7 +178,7 @@ func TestPathReporting(t *testing.T) {
 	t.Parallel()
 	s := compileDoc(t, `{"type": "object", "properties": {"a": {"type": "array", "items": {"type": "object", "required": ["x"]}}}}`)
 	errs := validateDoc(t, s, `{"a": [{"x": 1}, {}]}`)
-	if len(errs) != 1 || errs[0].Path != "/a/1" {
+	if len(errs) != 1 || errs[0].Path != "/a/1/x" {
 		t.Fatalf("path wrong: %v", errs)
 	}
 }

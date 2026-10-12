@@ -1,8 +1,5 @@
 package model
 
-// DomainSpec is the typed form of docs/contracts/domain-spec-v0.1.schema.json.
-// A simulated world, as data: the simulator binary contains no domain
-// behavior.
 type DomainSpec struct {
 	ID          string      `json:"id"`
 	Version     string      `json:"version"`
@@ -38,14 +35,16 @@ type Axes struct {
 
 // Entities describes the entity population.
 type Entities struct {
-	IDTemplate string `json:"id_template"`
-	EntityType string `json:"entity_type,omitempty"`
-	Count      struct {
-		Default int `json:"default"`
-		Min     int `json:"min,omitempty"`
-		Max     int `json:"max,omitempty"`
-	} `json:"count"`
-	Churn *Churn `json:"churn,omitempty"`
+	IDTemplate string      `json:"id_template"`
+	EntityType string      `json:"entity_type,omitempty"`
+	Count      EntityCount `json:"count"`
+	Churn      *Churn      `json:"churn,omitempty"`
+}
+
+type EntityCount struct {
+	Default int `json:"default"`
+	Min     int `json:"min,omitempty"`
+	Max     int `json:"max,omitempty"`
 }
 
 // Churn models entity birth and death during a run.

@@ -26,10 +26,11 @@ func TestProfileValidationNamesTheSortedFirstUndeclaredFault(t *testing.T) {
 	}
 	profile := doc["profiles"].([]any)[0].(map[string]any)
 	profile["fault_weights"] = map[string]any{"zz_unknown": 1.0, "aa_unknown": 1.0, "mm_unknown": 1.0}
-	broken, err := json.Marshal(doc)
+	flat, err := json.Marshal(doc)
 	if err != nil {
 		t.Fatal(err)
 	}
+	broken := testsupport.AsKinds(flat)
 	for range 20 {
 		if _, err := Parse(broken, "broken"); err == nil || !strings.Contains(err.Error(), `undeclared fault "aa_unknown"`) {
 			t.Fatalf("err = %v, want the sorted-first undeclared fault", err)

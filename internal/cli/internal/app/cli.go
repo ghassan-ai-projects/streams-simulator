@@ -143,6 +143,7 @@ Usage: streamsim <command> [flags]
 Commands:
   catalog list|describe|coverage        Installed domains and axis coverage
   domain validate <path>                Validate a domain spec against the contract
+  domain format <path>                  Rewrite a domain spec in canonical formatting
   adapter list|verify [path]            Installed adapters; verify one against its golden
   run [--scenario <file>]               One-shot run from flags or a scenario file
   scenario from-run <run.json> --out f  Export the scenario that reproduces a run

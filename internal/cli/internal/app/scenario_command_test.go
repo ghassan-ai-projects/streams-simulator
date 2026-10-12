@@ -101,7 +101,7 @@ func TestAScenarioFileThatBreaksItsContractOrDomainIsScenarioInvalid(t *testing.
 	cases := []struct {
 		name, content, pointer string
 	}{
-		{"schema", `{"schema_version":"0.1"}`, ""},
+		{"schema", `{"schema_version":"0.1"}`, "/adapter"},
 		{"domain", `{"schema_version":"0.1","id":"bad-fault","domain":"aquaculture-pond","adapter":"native-jsonl","seed":1,` +
 			`"world":{"start_time_ns":0},"commands":[{"op":"fault.inject","args":{"entity_id":"site-a/pond-1",` +
 			`"fault":"no_such_fault","onset_ns":0,"params":null}}]}`, "/commands/0/args/fault"},

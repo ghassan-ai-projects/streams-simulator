@@ -9,6 +9,7 @@ import (
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
 // testSpec builds a tiny valid domain spec for world tests.
@@ -73,7 +74,7 @@ func testSpec(t *testing.T, mutate func(*model.DomainSpec)) *domain.Compiled {
 	if err != nil {
 		t.Fatal(err)
 	}
-	c, err := domain.Parse(raw, "test")
+	c, err := domain.Parse(testsupport.AsKinds(raw), "test")
 	if err != nil {
 		t.Fatal(err)
 	}

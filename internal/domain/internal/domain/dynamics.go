@@ -7,7 +7,7 @@ import (
 )
 
 func rejectDynamicsCycles(spec *model.DomainSpec, c *Compiled, src string) error {
-	traversal := dynamicsTraversal{dependencies: dynamicsDependencies(spec), state: make(map[string]uint8), source: src}
+	traversal := dynamicsTraversal{dependencies: dynamicsDependencies(spec), targets: dynamicsTargets(spec), state: make(map[string]uint8), source: src}
 	for _, name := range c.StateNames() {
 		if err := traversal.visit(name); err != nil {
 			return err
@@ -16,16 +16,14 @@ func rejectDynamicsCycles(spec *model.DomainSpec, c *Compiled, src string) error
 	return nil
 }
 
-func checkF1(f1 *model.F1Dyn, c *Compiled, src string) error {
-	checks := domainChecks{compiled: c, source: src}
+func (checks domainChecks) checkF1(f1 *model.F1Dyn) error {
 	if err := checks.f1Inputs(f1); err != nil {
 		return err
 	}
 	return checks.f1Parameters(f1)
 }
 
-func checkDetector(d *model.Detector, c *Compiled, src, who string) error {
-	checks := domainChecks{compiled: c, source: src}
+func (checks domainChecks) checkDetector(d *model.Detector, who string) error {
 	switch d.Form {
 	case model.DetectorSingleChannel, model.DetectorPeerResidual:
 		return checks.detectorChannel(d, who)
@@ -34,7 +32,7 @@ func checkDetector(d *model.Detector, c *Compiled, src, who string) error {
 	case model.DetectorConservation:
 		return checks.detectorConservation(d, who)
 	default:
-		return checks.bad("%s: unknown detector form %q", who, d.Form)
+		return checks.bad("/form", "%s: unknown detector form %q", who, d.Form)
 	}
 }
 

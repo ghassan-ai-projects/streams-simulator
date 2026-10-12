@@ -9,7 +9,7 @@ import (
 	_ "embed"
 )
 
-//go:embed domain-spec-v0.1.schema.json
+//go:embed domain-spec-v0.2.schema.json
 var domainSpec []byte
 
 //go:embed sim-event-v0.1.schema.json

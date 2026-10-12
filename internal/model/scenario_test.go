@@ -15,8 +15,8 @@ func TestAMalformedCommandIsReportedAtItsArgument(t *testing.T) {
 	cases := []struct {
 		name, command, pointer, message string
 	}{
-		{"missing member", `{"op":"fault.clear","args":{"fault_id":"f-0"}}`, "/commands/0/args", `missing required property "at_ns"`},
-		{"unknown member", `{"op":"clock.advance","args":{"to_ns":5,"await_consumer":true}}`, "/commands/0/args", `additional property "await_consumer" not allowed`},
+		{"missing member", `{"op":"fault.clear","args":{"fault_id":"f-0"}}`, "/commands/0/args/at_ns", `missing required property "at_ns"`},
+		{"unknown member", `{"op":"clock.advance","args":{"to_ns":5,"await_consumer":true}}`, "/commands/0/args/await_consumer", `additional property "await_consumer" not allowed`},
 		{"wrong type", `{"op":"entity.add","args":{"entity_id":"e","at_ns":"soon"}}`, "/commands/0/args/at_ns", ""},
 		{"unknown op", `{"op":"world.create","args":{}}`, "/commands/0/op", ""},
 	}

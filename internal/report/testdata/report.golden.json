@@ -6,11 +6,11 @@
     "complete": true,
     "ended": true,
     "unblinded": false,
-    "sim_version": "0.2.0",
+    "sim_version": "0.3.0",
     "domain": {
       "id": "aquaculture-pond",
       "version": "0.1.0",
-      "digest": "sha256:4e779d9f920434371f3358287e981d7716222585dd2ec8fdddd7149bca3cbe07"
+      "digest": "sha256:dfb37e19c2c3137194d23652a5531a07605fb909bce59e2f63724191545adbe1"
     },
     "adapter": {
       "id": "native-jsonl",
@@ -25,9 +25,9 @@
     "entity_count": 8
   },
   "digests": {
-    "world": "sha256:6c66b4a3e8f1dc2f8552fe668773599f196dab71f72e3ae617894356b4574f91",
+    "world": "sha256:5c7456ac4fe6b8b6d703efd5b558dbac5cb9b6bc5d59fcc6b3998d23882b61d9",
     "trace": "sha256:8dc7384ce72c35382466ad0cf5c6092b2287cea91a0d62c6fde4464392ed0014",
-    "journal": "sha256:d37a8c9b154a16524effc2f4d34702b1fffdea12007a6f6b6d1e3878e65d27b9",
+    "journal": "sha256:a162e96357eb16362aa4977e7760223a473cdd5d12cad7932e90a0ca50de51d0",
     "sealed_journal": "sha256:c4db42470bc98dcb32abe365f82a5e12c9b238626d75c002dfe0ec1aae96e4e0"
   },
   "verification": {
@@ -42,8 +42,8 @@
       {
         "name": "journal",
         "status": "match",
-        "recorded": "sha256:d37a8c9b154a16524effc2f4d34702b1fffdea12007a6f6b6d1e3878e65d27b9",
-        "computed": "sha256:d37a8c9b154a16524effc2f4d34702b1fffdea12007a6f6b6d1e3878e65d27b9"
+        "recorded": "sha256:a162e96357eb16362aa4977e7760223a473cdd5d12cad7932e90a0ca50de51d0",
+        "computed": "sha256:a162e96357eb16362aa4977e7760223a473cdd5d12cad7932e90a0ca50de51d0"
       },
       {
         "name": "sealed_journal",

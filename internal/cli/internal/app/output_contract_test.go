@@ -166,7 +166,7 @@ func TestAContractViolationListsEveryIssueWithItsPointer(t *testing.T) {
 		}
 		pointers[pointer] = true
 	}
-	if !pointers["/id"] || !pointers[""] {
+	if !pointers["/id"] || !pointers["/axes"] {
 		t.Fatalf("issues = %v, want the /id pattern violation and the root's missing properties", issues)
 	}
 	if message := failure["message"].(string); strings.Contains(message, "\n") {
@@ -174,7 +174,7 @@ func TestAContractViolationListsEveryIssueWithItsPointer(t *testing.T) {
 	}
 }
 
-func TestACrossReferenceViolationIsADomainIssueWithoutAPointer(t *testing.T) {
+func TestACrossReferenceViolationIsADomainIssueAtItsPointer(t *testing.T) {
 	t.Parallel()
 	raw, err := os.ReadFile(testsupport.Domain(pondDomain))
 	if err != nil {
@@ -184,7 +184,9 @@ func TestACrossReferenceViolationIsADomainIssueWithoutAPointer(t *testing.T) {
 	if err := json.Unmarshal(raw, &doc); err != nil {
 		t.Fatal(err)
 	}
-	faults, _ := doc["faults"].([]any)
+	kinds, _ := doc["kinds"].([]any)
+	kind, _ := kinds[0].(map[string]any)
+	faults, _ := kind["faults"].([]any)
 	first, _ := faults[0].(map[string]any)
 	first["expected_effector"] = "no_such_effector"
 	broken, err := json.Marshal(doc)
@@ -194,8 +196,8 @@ func TestACrossReferenceViolationIsADomainIssueWithoutAPointer(t *testing.T) {
 	failure := invoke(t, "domain", "validate", writeFile(t, "x.domain.json", string(broken))).failure(t)
 	issues, _ := failure["issues"].([]any)
 	issue, _ := issues[0].(map[string]any)
-	if failure["code"] != "domain_invalid" || len(issues) != 1 || issue["pointer"] != nil ||
+	if failure["code"] != "domain_invalid" || len(issues) != 1 || issue["pointer"] != "/kinds/0/faults/0/expected_effector" ||
 		!strings.Contains(issue["message"].(string), "no_such_effector") {
-		t.Fatalf("failure = %v, want one unlocated domain_invalid issue naming the effector", failure)
+		t.Fatalf("failure = %v, want one domain_invalid issue at the expected_effector member naming the effector", failure)
 	}
 }

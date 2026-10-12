@@ -79,7 +79,7 @@ func TestSchemaValidationRejectsMalformed(t *testing.T) {
 	// A spec missing required fields must fail the schema, not the
 	// cross-check.
 	bad := `{"id": "x"}`
-	if _, err := Parse([]byte(bad), "bad"); err == nil || !strings.Contains(err.Error(), "domain: bad fails domain-spec-v0.1 validation") {
+	if _, err := Parse([]byte(bad), "bad"); err == nil || !strings.Contains(err.Error(), "domain: bad fails domain-spec-v0.2 validation") {
 		t.Fatal("malformed spec accepted")
 	}
 	// A numeric channel without a unit must fail.
@@ -96,7 +96,7 @@ func TestSchemaValidationRejectsMalformed(t *testing.T) {
 		],
 		"ground_truth": {"negative_class_fraction": 0.4}
 	}`
-	if _, err := Parse([]byte(noUnit), "nounit"); err == nil || !strings.Contains(err.Error(), "unit") {
+	if _, err := Parse(testsupport.AsKinds([]byte(noUnit)), "nounit"); err == nil || !strings.Contains(err.Error(), "unit") {
 		t.Fatalf("expected unit requirement error, got %v", err)
 	}
 }
@@ -146,7 +146,7 @@ func TestF2Rejected(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Parse(raw, "f2"); err == nil || !strings.Contains(err.Error(), "not_implemented") {
+	if _, err := Parse(testsupport.AsKinds(raw), "f2"); err == nil || !strings.Contains(err.Error(), "not_implemented") {
 		t.Fatalf("expected F2 not_implemented rejection, got %v", err)
 	}
 }
@@ -161,7 +161,7 @@ func TestPinkNoiseRejected(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Parse(raw, "pink"); err == nil || !strings.Contains(err.Error(), "not implemented") {
+	if _, err := Parse(testsupport.AsKinds(raw), "pink"); err == nil || !strings.Contains(err.Error(), "not implemented") {
 		t.Fatalf("expected pink not-implemented rejection, got %v", err)
 	}
 }
@@ -176,7 +176,7 @@ func TestNoneNoiseWithSigmaRejected(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Parse(raw, "none-sigma"); err == nil || !strings.Contains(err.Error(), "sigma must be 0") {
+	if _, err := Parse(testsupport.AsKinds(raw), "none-sigma"); err == nil || !strings.Contains(err.Error(), "sigma must be 0") {
 		t.Fatalf("expected none+sigma rejection, got %v", err)
 	}
 
@@ -186,7 +186,7 @@ func TestNoneNoiseWithSigmaRejected(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Parse(raw, "none"); err != nil {
+	if _, err := Parse(testsupport.AsKinds(raw), "none"); err != nil {
 		t.Fatalf("none with sigma 0 must load: %v", err)
 	}
 }
@@ -215,7 +215,7 @@ func TestDeadTimeDoubleApplicationRejected(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Parse(raw, "dt"); err == nil || !strings.Contains(err.Error(), "twice") {
+	if _, err := Parse(testsupport.AsKinds(raw), "dt"); err == nil || !strings.Contains(err.Error(), "twice") {
 		t.Fatalf("expected double-dead-time rejection, got %v", err)
 	}
 }
@@ -233,7 +233,7 @@ func TestDynamicsCycleRejected(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Parse(raw, "cycle"); err == nil || !strings.Contains(err.Error(), "cycle") {
+	if _, err := Parse(testsupport.AsKinds(raw), "cycle"); err == nil || !strings.Contains(err.Error(), "cycle") {
 		t.Fatalf("expected dynamics cycle rejection, got %v", err)
 	}
 }

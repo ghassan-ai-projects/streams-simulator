@@ -36,7 +36,7 @@ Tools may branch on the exit status or on the presence of `error`.
 {
   "error": {
     "code": "domain_invalid",
-    "message": "domain: domains/x.domain.json fails domain-spec-v0.1 validation: …",
+    "message": "domain: domains/x.domain.json fails domain-spec-v0.2 validation: …",
     "source": "domains/x.domain.json",
     "issues": [ { "pointer": "/channels/2/unit", "message": "missing required property \"unit\"" } ],
     "result": { }
@@ -49,7 +49,7 @@ Tools may branch on the exit status or on the presence of `error`.
 | `code` | Always | Stable code from §3 |
 | `message` | Always | Human-readable cause on one line, without repeated `streamsim:` prefixes; for a contract violation the issues carry the details |
 | `source` | When a file is at fault | The path as given on the command line |
-| `issues` | Validation failures | One entry per violation; `pointer` (RFC 6901) is present when the location is known. Contract-schema violations always carry one; until domain-spec v0.2 (phase P5a) cross-reference checks in domains may omit it |
+| `issues` | Validation failures | One entry per violation; `pointer` (RFC 6901) is present when the location is known. Contract-schema violations always carry one, a "missing required property" or "additional property" issue pointing at the member itself; domain cross-reference issues carry one since domain-spec v0.2 (phase P5a). A document that is not JSON, adapter cross-reference checks and run-flag issues have no location and omit it |
 | `result` | `replay_mismatch`, `adapter_verify_failed` | The command's result document describing the failure (e.g. the replay report with `first_divergence`) |
 
 ## 3. Error codes
@@ -85,6 +85,7 @@ modules (`errors.As`/`errors.Is`), never message text.
 | `catalog describe <id>` | `{digest, spec}` |
 | `catalog coverage` | `{by_axis, thin}` |
 | `domain validate <path>` | `{valid: true, id, digest, channels, faults, effectors}` |
+| `domain format <path>` | `{formatted, changed, digest}`; rewrites the file in canonical formatting ([DOMAIN_SPEC_V0_2](DOMAIN_SPEC_V0_2.md) §6) |
 | `adapter list` | `{adapters: [{id, version, encoding, title}]}` |
 | `adapter verify <path>` | `{adapter, schema_checked, schema_ok, golden_checked, golden_match, records}` |
 | `run` | `{run_id, trace_digest, reproducible, emitted, ledger}` |

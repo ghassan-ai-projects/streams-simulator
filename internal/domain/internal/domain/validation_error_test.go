@@ -21,7 +21,7 @@ func TestEveryDomainRejectionIsAValidationErrorNamingItsSource(t *testing.T) {
 	}{
 		{"not JSON", "{", false},
 		{"schema violation", `{"id":"x"}`, true},
-		{"cross-reference", string(breakChannelReference(t, example)), false},
+		{"cross-reference", string(breakChannelReference(t, example)), true},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -66,5 +66,5 @@ func breakChannelReference(t *testing.T, c *Compiled) []byte {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return broken
+	return testsupport.AsKinds(broken)
 }

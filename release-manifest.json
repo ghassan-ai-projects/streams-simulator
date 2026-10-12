@@ -9,22 +9,22 @@
       "name": "streamsim-refconsumer",
       "version": "0.1.0"
     },
-    "created_at": "2026-09-13T21:34:27Z",
+    "created_at": "2026-10-12T16:41:45Z",
     "domains": {
-      "aquaculture-pond.domain.json": "sha256:df484e75ecf86db494e925111b8a8b75c8a8f7ec42918178bd2e9cfc4b919d85",
-      "cold-chain-transit.domain.json": "sha256:ce92364ada1325f89e72d95c9b7283d34813bda17b31f13b1a3071f1905192fa",
-      "discrete-line-oee.domain.json": "sha256:b8b81d1567327bc393c1fcaf6c9e2d863a54b5a93a4dfa0bb819072a1e049a94",
-      "host-system-health.domain.json": "sha256:6a730a241b425a02f8ee1864c9cfbc45d6d1a31e0d0a1c7b6f5c638df45cd759",
-      "k8s-cluster.domain.json": "sha256:df2e4d1b45895d9f5f949499a5e8bc272d714b1345e59ae36e76804c6014765e",
-      "open-field-irrigation.domain.json": "sha256:11b00bdd68faac133bfd646326589d69bed5b225b30e4721d9f9c7786c85f197",
-      "rotating-machinery.domain.json": "sha256:a6ddc0bd56820965f93ba327f4ae69018b9f280438894bba8b8f33c7c1d37d0a",
-      "shipment-exception.domain.json": "sha256:c120666b839dbf31fcb1157c3f3bfa305dd1834797df8800674db11f4e4e3815"
+      "aquaculture-pond.domain.json": "sha256:e2a716e25081639d5940320fe202706b29c0e9b70780b8291b825e3ced64bd5e",
+      "cold-chain-transit.domain.json": "sha256:bb3bab273bd8ff5f082a337771372a86562274f8b0dcb7c679619a9257606b9e",
+      "discrete-line-oee.domain.json": "sha256:0135d71876eb8285df6490583939b25f98150f003b52c18b671f0e8682ee835d",
+      "host-system-health.domain.json": "sha256:416acb2c3099b4bba36c54d43cdfa2e1894b888d650800c86de80ee7cc13102d",
+      "k8s-cluster.domain.json": "sha256:0500ef306cf07753a32ba428e59e5ad1489fb72a684cba88f42347b3c85e9b00",
+      "open-field-irrigation.domain.json": "sha256:2760f93605014cdf7e8954464f5f2c6ed0bbdec1dfbb48051034367432d39cf4",
+      "rotating-machinery.domain.json": "sha256:8e678743646125c2d914767ee81749a5603a6a29285b12d047a93be361b8512a",
+      "shipment-exception.domain.json": "sha256:c579ff2b841f79842fd4dc2aa2939c2b21760805f4d4c5be432653432ee31264"
     },
     "reviewer": "Independent review \u003creview@streams-simulator.local\u003e",
     "schema_version": "release-manifest-v0.1",
     "sim": {
-      "commit": "523fb77",
-      "go": "go1.27.1",
+      "commit": "07d0ad6",
+      "go": "go1.27.2",
       "version": "dev"
     },
     "suite": {

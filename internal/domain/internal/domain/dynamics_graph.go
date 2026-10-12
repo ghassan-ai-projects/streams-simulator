@@ -9,6 +9,7 @@ import (
 type dynamicsTraversal struct {
 	dependencies map[string][]string
 	state        map[string]uint8
+	targets      map[string]int
 	stack        []string
 	source       string
 }
@@ -29,7 +30,7 @@ func dynamicsDependencies(spec *model.DomainSpec) map[string][]string {
 func (traversal *dynamicsTraversal) visit(name string) error {
 	switch traversal.state[name] {
 	case 1:
-		return invalidDomain(traversal.source, fmt.Sprintf("dynamics dependency cycle at state %q (path %v)", name, append(traversal.stack, name)))
+		return invalidDomain(traversal.source, itemPointer("dynamics", traversal.targets[name])+"/target", fmt.Sprintf("dynamics dependency cycle at state %q (path %v)", name, append(traversal.stack, name)))
 	case 2:
 		return nil
 	}
@@ -54,4 +55,12 @@ func (traversal *dynamicsTraversal) visitDependencies(name string) error {
 		}
 	}
 	return nil
+}
+
+func dynamicsTargets(spec *model.DomainSpec) map[string]int {
+	targets := make(map[string]int)
+	for i, d := range spec.Dynamics {
+		targets[d.Target] = i
+	}
+	return targets
 }

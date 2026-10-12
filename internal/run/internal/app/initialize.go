@@ -44,6 +44,9 @@ func newRun(ctx context.Context, cfg Config) (*Run, error) {
 }
 
 func newRunWorld(cfg Config) (*world.World, error) {
+	if err := cfg.Domain.CheckEntityIDs(cfg.EntityIDs); err != nil {
+		return nil, fmt.Errorf("streamsim: %w", err)
+	}
 	w, err := world.New(cfg.Domain, cfg.Seed, cfg.WorldID, cfg.StartTimeNS, world.Options{
 		InitialEntities:  cfg.EntityIDs,
 		Noiseless:        cfg.Noiseless,

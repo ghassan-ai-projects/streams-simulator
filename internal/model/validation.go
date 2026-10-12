@@ -16,7 +16,7 @@ type Contract string
 
 // The contracts whose violations surfaces report with a stable code.
 const (
-	ContractDomainSpec      Contract = "domain-spec-v0.1"
+	ContractDomainSpec      Contract = "domain-spec-v0.2"
 	ContractOutputAdapter   Contract = "output-adapter-v0.1"
 	ContractRunArtifact     Contract = "run-artifact-v0.1"
 	ContractConsumerVerdict Contract = "consumer-verdict-v0.1"

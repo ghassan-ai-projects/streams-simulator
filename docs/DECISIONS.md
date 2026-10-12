@@ -30,6 +30,14 @@ lag across the swept parameter space) and keeps the integrator simple. It is
 first-order accurate in the couplings, which is acceptable for a test
 instrument; the gate is what the design specifies.
 
+*Deviation (2026-10-12, domain-spec v0.2, P5a):* the rule is stated per kind, not per domain. A
+kind's dynamics apply to every instance of the kind independently, so the coupling stays inside one
+entity and a state never reads another instance's state. Part 1 of v0.2 (kinds and instances) leaves
+the integrator and the step-boundary freezing unchanged: the rewritten domains run bit-identically.
+The v0.2 vocabulary of P6 (`store`, `flow`, `regime`, `trip`, and the event clock of P6e) supersedes
+"each state advances with its own declared dt" by a shared event schedule between which the system
+is linear; that revision is recorded here when it lands, with its RNG draw-order table.
+
 ### D-04. Faults and effect kicks are recency-ruled drivers of a state
 A state's value is `natural + contributions`, but when both a fault and an
 effect kick target the same state, the **most recently activated** driver
@@ -37,6 +45,13 @@ rules. This is the only semantics under which the domain's expected
 responses work: `start_aerator` must recover an `aerator_failure`, and a
 fault must break a running aerator. Purely additive offsets would make one
 of those impossible.
+
+*Deviation (2026-10-12, domain-spec v0.2, P5a):* faults and effectors belong to the kind, so a fault
+or an effect kick drives a state of one instance and the recency rule is evaluated per instance.
+Part 1 changes no precedence. The new driver forms of P6 (`regime`, `trip`, latched `lockout`,
+`responder` effects) also act on states; where one of them can compete with a fault or a kick, the
+precedence is decided in the v0.2 semantics part 2 and recorded here before that phase ships. Until
+then a domain that needs it cannot be expressed, so the recency rule stays the only rule.
 
 ### D-05. Silent-no-effect shadows are per-state kick lists
 The counterfactual is carried as shadow kicks added to the real value for
@@ -117,11 +132,27 @@ Environment faults target a consumer's process, which a simulator must not
 act on. `sim.env.inject` validates the target is configured, records the
 command, and never signals anything. Replay treats it as a record.
 
+*Deviation (2026-10-12, domain-spec v0.2, P5a):* unchanged and narrowed. An environment fault still
+targets a consumer's process and stays record-only. What v0.2 adds is separate: system entities
+(weather, tariff, plant-wide measurements, P5b) and the plant wire (P7) make some environment
+changes world commands that the simulated plant does act on, as effectors and schedules of the
+world, and those are not `env.inject`. D-14 does not apply to them, and the two are told apart by
+what they target: the consumer's process (record-only) or the simulated plant (a world command).
+Part 1 of v0.2 adds neither.
+
+### D-15 (deviation). Domain specs are kinds and instances; the runtime form is unchanged
+Domain-spec v0.2 (P5a, [`DOMAIN_SPEC_V0_2.md`](design/DOMAIN_SPEC_V0_2.md)) replaces the flat v0.1
+document with `kinds` (the template) and `instances` (the population). The v0.1 contract is
+removed. The document compiles to the v0.1-shaped runtime form, so the world, perturbation, adapter,
+truth, score and run code are unchanged; the domain digest is the digest of the v0.2 document and
+`sim_version` is `0.3.0`. Explicit entity ids are checked against the instance set's template and
+count bounds when the run is created.
+
 ## Frozen constants
 
 | Constant | Value | Where |
 |---|---|---|
-| `sim_version` | `0.1.0` | `internal/model` |
+| `sim_version` | `0.3.0` | `internal/model` |
 | default world start | `2026-01-01T00:00:00Z` | `internal/model` |
 | RFC 8785 canonical JSON | all digests | `internal/canonical` |
 | intermittent fault period | 3600 s (or 3600/rate_per_hour) | `internal/world` |

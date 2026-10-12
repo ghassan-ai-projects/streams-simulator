@@ -23,9 +23,9 @@ func (c *Compiled) registerSymbols(src string) error {
 	return nil
 }
 
-func registerSymbol(symbols map[string]bool, name, kind, src string) error {
+func registerSymbol(symbols map[string]bool, name, kind, pointer, src string) error {
 	if symbols[name] {
-		return invalidDomain(src, fmt.Sprintf("duplicate %s %q", kind, name))
+		return invalidDomain(src, pointer, fmt.Sprintf("duplicate %s %q", kind, name))
 	}
 	symbols[name] = true
 	return nil
@@ -34,7 +34,7 @@ func registerSymbol(symbols map[string]bool, name, kind, src string) error {
 func (c *Compiled) registerStates(src string) error {
 	for i := range c.Spec.State {
 		item := &c.Spec.State[i]
-		if err := registerSymbol(c.states, item.Name, "state", src); err != nil {
+		if err := registerSymbol(c.states, item.Name, "state", itemPointer("state", i)+"/name", src); err != nil {
 			return err
 		}
 	}
@@ -44,7 +44,7 @@ func (c *Compiled) registerStates(src string) error {
 func (c *Compiled) registerChannels(src string) error {
 	for i := range c.Spec.Channels {
 		item := &c.Spec.Channels[i]
-		if err := registerSymbol(c.channels, item.Name, "channel", src); err != nil {
+		if err := registerSymbol(c.channels, item.Name, "channel", itemPointer("channels", i)+"/name", src); err != nil {
 			return err
 		}
 		c.channelGain[item.Name] = observationGain(item.ObservationGain)
@@ -55,7 +55,7 @@ func (c *Compiled) registerChannels(src string) error {
 func (c *Compiled) registerFaults(src string) error {
 	for i := range c.Spec.Faults {
 		item := &c.Spec.Faults[i]
-		if err := registerSymbol(c.faults, item.ID, "fault", src); err != nil {
+		if err := registerSymbol(c.faults, item.ID, "fault", itemPointer("faults", i)+"/id", src); err != nil {
 			return err
 		}
 	}
@@ -65,7 +65,7 @@ func (c *Compiled) registerFaults(src string) error {
 func (c *Compiled) registerEffectors(src string) error {
 	for i := range c.Spec.Effectors {
 		item := &c.Spec.Effectors[i]
-		if err := registerSymbol(c.effectors, item.Name, "effector", src); err != nil {
+		if err := registerSymbol(c.effectors, item.Name, "effector", itemPointer("effectors", i)+"/name", src); err != nil {
 			return err
 		}
 	}
@@ -75,7 +75,7 @@ func (c *Compiled) registerEffectors(src string) error {
 func (c *Compiled) registerProfiles(src string) error {
 	for i := range c.Spec.Profiles {
 		item := &c.Spec.Profiles[i]
-		if err := registerSymbol(c.profiles, item.Name, "profile", src); err != nil {
+		if err := registerSymbol(c.profiles, item.Name, "profile", itemPointer("profiles", i)+"/name", src); err != nil {
 			return err
 		}
 	}

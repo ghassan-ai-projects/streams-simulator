@@ -55,6 +55,14 @@ Validates one domain file and reports its ID, digest, channel count, fault count
 streamsim domain validate <path>
 ```
 
+### `domain format`
+
+Rewrites one valid domain file in the canonical layout and prints `{formatted, changed, digest}`. It is idempotent and never changes the digest; a document that does not validate is refused and left untouched.
+
+```text
+streamsim domain format <path>
+```
+
 ### `adapter`
 
 Lists adapters or verifies one against its schema and golden fixture.

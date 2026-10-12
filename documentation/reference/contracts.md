@@ -10,7 +10,7 @@ The JSON schemas under [`docs/contracts/`](../../docs/contracts/) are the canoni
 | --- | --- |
 | [`sim-event-v0.1`](../../docs/contracts/sim-event-v0.1.schema.json) | Native event envelope emitted by the world. |
 | [`output-adapter-v0.1`](../../docs/contracts/output-adapter-v0.1.schema.json) | Declarative projection from native events to consumer output. |
-| [`domain-spec-v0.1`](../../docs/contracts/domain-spec-v0.1.schema.json) | Data-defined world, channels, dynamics, faults, effectors, and profiles. |
+| [`domain-spec-v0.2`](../../docs/contracts/domain-spec-v0.2.schema.json) | Data-defined world as kinds and instances: state, dynamics, channels, faults, effectors, profiles. |
 | [`ground-truth-v0.1`](../../docs/contracts/ground-truth-v0.1.schema.json) | Sealed oracle record used after the consumer phase. |
 | [`consumer-verdict-v0.1`](../../docs/contracts/consumer-verdict-v0.1.schema.json) | Consumer detections, actions, and resource evidence. |
 | [`run-artifact-v0.1`](../../docs/contracts/run-artifact-v0.1.schema.json) | Replay inputs, command log, digests, counts, and completion state. |

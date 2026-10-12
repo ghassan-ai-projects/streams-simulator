@@ -5,11 +5,13 @@ package domain
 
 import (
 	"testing"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
 func FuzzDomainParse(f *testing.F) {
 	for _, seed := range [][]byte{
-		[]byte(exampleJSON),
+		testsupport.AsKinds([]byte(exampleJSON)),
 		[]byte(`{"id":"x","version":"0.1.0","stresses":"` + repeat("z", 40) + `"}`),
 		[]byte(`{}`),
 		[]byte(`null`),

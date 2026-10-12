@@ -6,7 +6,7 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 - **Phase**: a phase id from PLAN.md, or `next-goal` (Agentic Stream / gateway goal), or `—`.
 - **Status**: `open`, `done` (fixed, evidence in the phase review), `next-goal`, `dropped`
   (removed by an owner decision), `not-a-defect` (evidence in the review record).
-- Sources: `REVIEW` = [REVIEW-2026-10-12.md](REVIEW-2026-10-12.md) ids; `R0` = [reviews/P0.md](reviews/P0.md); `R1` = [reviews/P1.md](reviews/P1.md); `R2` = [reviews/P2.md](reviews/P2.md); `R2b` = [reviews/P2b.md](reviews/P2b.md); `R2d` = [reviews/P2d.md](reviews/P2d.md); `R2c` = [reviews/P2c.md](reviews/P2c.md); `R3` = [reviews/P3.md](reviews/P3.md); `self` = found by the implementer.
+- Sources: `REVIEW` = [REVIEW-2026-10-12.md](REVIEW-2026-10-12.md) ids; `R0` = [reviews/P0.md](reviews/P0.md); `R1` = [reviews/P1.md](reviews/P1.md); `R2` = [reviews/P2.md](reviews/P2.md); `R2b` = [reviews/P2b.md](reviews/P2b.md); `R2d` = [reviews/P2d.md](reviews/P2d.md); `R5a` = [reviews/P5a.md](reviews/P5a.md); `R2c` = [reviews/P2c.md](reviews/P2c.md); `R3` = [reviews/P3.md](reviews/P3.md); `self` = found by the implementer.
 
 ## Design review (REVIEW-2026-10-12)
 
@@ -55,7 +55,7 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 | S12 | REVIEW | Med | Alarm management (priorities, ack, shelving, combined flood) | P12 | open |
 | S13 | REVIEW | Med | Cause-code vocabulary authored on the host side; rotating decoys | P12 | open |
 | S14 | REVIEW | Med | Vocabulary: `kind` row, `lockout` naming, closed comparators, crossing times | P6a | open |
-| S15 | REVIEW | Med | DECISIONS D-03/D-04/D-14 revision recorded | P5a | open |
+| S15 | REVIEW | Med | DECISIONS D-03/D-04/D-14 revision recorded | P5a | done |
 | S16 | REVIEW | Med | Negative-class operations events | P12 | open |
 | S17 | REVIEW | Low | Synthetic boundaries labelled; parameters sourced | P12 | open |
 | A1 | REVIEW | High | Thermal example, replays and Tamoz fixtures rewrite | next-goal | next-goal |
@@ -87,7 +87,7 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 | R0-07 | R0 | Med | `godox` and `nolintlint` in the Go lint set | P1 | done |
 | R0-08 | R0 | Med | `make phase-gate` and evidence files | P1 | done |
 | R0-09 | R0 | Med | Consumer-knowledge gate over Go and canvas sources | P1 | done |
-| R0-10 | R0 | Med | `streamsim domain format` canonical formatter | P5a | open |
+| R0-10 | R0 | Med | `streamsim domain format` canonical formatter | P5a | done |
 | R0-11 | R0 | Med | Closed-grammar test over the v0.2 schema | P6a | open |
 | R0-12 | R0 | Med | RNG draw-order table for the event clock | P6e | open |
 | R0-13 | R0 | Med | Contract sync target, pinned digest, safety-field floor | P7a | open |
@@ -106,7 +106,7 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 
 | ID | Source | Sev | Summary | Phase | Status |
 |---|---|---|---|---|---|
-| R1-01 | R1 | Low | A "missing required property" issue points at the parent object; point at the missing member | P5a | open |
+| R1-01 | R1 | Low | A "missing required property" issue points at the parent object; point at the missing member | P5a | done |
 | R1-02 | R1 | Med | An unknown `--perturb` name is `run_failed` while malformed `--fault`/`--effector` are `usage_invalid`; unify through the scenario checks | P2 | done |
 | R1-03 | R1 | Med | `run` and the director accept a profile the domain does not declare; validate in the run module for every surface (the CLI check added in P1 then moves there) | P2 | done |
 
@@ -115,7 +115,7 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 | ID | Source | Sev | Summary | Phase | Status |
 |---|---|---|---|---|---|
 | R2-01 | R2 | Med | No file the CLI or director reads has a size bound (scenario, domain, adapter, artifact, verdict, label); bound every input read, with a typed failure, and test each | P13 | open |
-| R2-02 | R2 | Low | Explicit `entity_ids` (scenario `world.entity_ids`, director `sim.world.create`) are not checked against the domain's entity count bounds or id template; decide and enforce with the v0.2 kinds-and-instances model | P5a | open |
+| R2-02 | R2 | Low | Explicit `entity_ids` (scenario `world.entity_ids`, director `sim.world.create`) are not checked against the domain's entity count bounds or id template; decide and enforce with the v0.2 kinds-and-instances model | P5a | done |
 | R2-03 | R2 | Low | Errors from a missing `--domains-dir` repeat the `streamsim:` prefix three times (pre-existing in `loadSimulatorInputs`); wrap once; the fix is the same as R2c-02, so it is carried there | P13 | open |
 | R2-04 | R2 | Low | Perturbation windows with negative or pre-start times are accepted (negative `until` acts as "no end"); and the run-wide limits have no MCP-level test | P13 | open |
 | R2-05 | R2 | Low | The effector idempotency key compares arguments by `json.Marshal` text, so `3` and `3.0` are different requests | P6a | open |
@@ -138,3 +138,10 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 | ID | Source | Sev | Summary | Phase | Status |
 |---|---|---|---|---|---|
 | S-01 | self | High | `sim.effector.invoke` returns the world's internal result (failure `mode`, `effect_applied`, latency) to the consumer, exposing `silent_no_effect` and other hidden outcomes (MCP_SURFACE §4.3, §4.5) | P2b | done |
+
+## P5a review: work carried into later phases
+
+| ID | Source | Sev | Summary | Phase | Status |
+|---|---|---|---|---|---|
+| R5a-01 | R5a | Med | v0.2 allows one kind; several kinds and per-instance overrides need a world change (per-kind runtime set, kind reference per entity, namespacing, solver and cross-check over kinds, draw order) | P5a2 | open |
+| R5a-02 | R5a | Med | The explicit entity-id check matches every id against one `id_template`; named instances must be accepted (id in the set's names or matching its template) | P5b | open |

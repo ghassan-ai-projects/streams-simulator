@@ -11,8 +11,8 @@ mode: evaluate | complete: yes | ended: yes | verification: files_match
 | Complete | yes |
 | Ended | yes |
 | Unblinded | no |
-| Simulator version | 0.2.0 |
-| Domain | aquaculture-pond 0.1.0 `sha256:4e779d9f920434371f3358287e981d7716222585dd2ec8fdddd7149bca3cbe07` |
+| Simulator version | 0.3.0 |
+| Domain | aquaculture-pond 0.1.0 `sha256:dfb37e19c2c3137194d23652a5531a07605fb909bce59e2f63724191545adbe1` |
 | Adapter | native-jsonl 0.1.0 `sha256:6c01da6f343fa8e671962f14df015450fdf2327690147413310c8b0242241804` |
 | Seed | 7 |
 | Sink | inproc |
@@ -25,9 +25,9 @@ mode: evaluate | complete: yes | ended: yes | verification: files_match
 
 | Field | Value |
 |---|---|
-| World | `sha256:6c66b4a3e8f1dc2f8552fe668773599f196dab71f72e3ae617894356b4574f91` |
+| World | `sha256:5c7456ac4fe6b8b6d703efd5b558dbac5cb9b6bc5d59fcc6b3998d23882b61d9` |
 | Trace | `sha256:8dc7384ce72c35382466ad0cf5c6092b2287cea91a0d62c6fde4464392ed0014` |
-| Observer journal | `sha256:d37a8c9b154a16524effc2f4d34702b1fffdea12007a6f6b6d1e3878e65d27b9` |
+| Observer journal | `sha256:a162e96357eb16362aa4977e7760223a473cdd5d12cad7932e90a0ca50de51d0` |
 | Director journal | `sha256:c4db42470bc98dcb32abe365f82a5e12c9b238626d75c002dfe0ec1aae96e4e0` |
 
 ## Verification
@@ -37,7 +37,7 @@ Status: files_match
 | Check | Status | Recorded | Computed |
 |---|---|---|---|
 | trace | match | `sha256:8dc7384ce72c35382466ad0cf5c6092b2287cea91a0d62c6fde4464392ed0014` | `sha256:8dc7384ce72c35382466ad0cf5c6092b2287cea91a0d62c6fde4464392ed0014` |
-| journal | match | `sha256:d37a8c9b154a16524effc2f4d34702b1fffdea12007a6f6b6d1e3878e65d27b9` | `sha256:d37a8c9b154a16524effc2f4d34702b1fffdea12007a6f6b6d1e3878e65d27b9` |
+| journal | match | `sha256:a162e96357eb16362aa4977e7760223a473cdd5d12cad7932e90a0ca50de51d0` | `sha256:a162e96357eb16362aa4977e7760223a473cdd5d12cad7932e90a0ca50de51d0` |
 | sealed_journal | match | `sha256:c4db42470bc98dcb32abe365f82a5e12c9b238626d75c002dfe0ec1aae96e4e0` | `sha256:c4db42470bc98dcb32abe365f82a5e12c9b238626d75c002dfe0ec1aae96e4e0` |
 
 ## Deliveries

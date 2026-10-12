@@ -16,7 +16,7 @@ func sampleJournal(t *testing.T) *Journal {
 	t.Helper()
 	j := NewMemory(true)
 	digest := "sha256:" + strings.Repeat("a", 64)
-	j.Opened(Opened{RunID: "r-1", SimVersion: "0.2.0", Domain: model.ArtifactRef{ID: "d", Version: "1", Digest: digest},
+	j.Opened(Opened{RunID: "r-1", SimVersion: "0.3.0", Domain: model.ArtifactRef{ID: "d", Version: "1", Digest: digest},
 		Adapter: model.ArtifactRef{ID: "a", Version: "1", Digest: digest}, Seed: 7, StartTimeNS: 100, EntityIDs: []string{"e-1"}, Mode: ModeEvaluate})
 	line := `{"seq":3,"entity_id":"e-1","channel":"temp","value":1.5}`
 	j.State(110, model.StateSnapshot{Seq: 0, TimeNS: 110, Entity: "e-1", States: map[string]float64{"temp_true": 1.5}})

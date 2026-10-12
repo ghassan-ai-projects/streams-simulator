@@ -41,7 +41,7 @@ func probeSpec(t *testing.T) *domain.Compiled {
 		],
 		"ground_truth": {"negative_class_fraction": 0.4}
 	}`
-	c, err := domain.Parse([]byte(doc), "probe")
+	c, err := domain.Parse(testsupport.AsKinds([]byte(doc)), "probe")
 	if err != nil {
 		t.Fatal(err)
 	}

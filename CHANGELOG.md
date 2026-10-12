@@ -4,6 +4,27 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **Domain spec v0.2, kinds and instances** (`docs/design/DOMAIN_SPEC_V0_2.md`, `domain-spec-v0.2`, replacing
+  `domain-spec-v0.1`; phase P5a). A domain declares one **kind** (the entity template: state, dynamics, channels,
+  faults, effectors; its name is the `entity_type`) and one **instance set** (`id_template`, `count`, `churn`) that
+  follows it. The document compiles to the v0.1-shaped runtime form, so the world, perturbation, adapter, truth,
+  score and run code are unchanged; the eight shipped domains are rewritten and each compiles to the runtime world
+  its v0.1 form produced (the recorded trace, ledger, world-state history, replay and suite outputs are
+  byte-identical). **Behaviour changes:** `domain_digest` is the digest of the v0.2 document (every shipped domain's
+  digest, every run artifact's `domain_spec` and `world_digest` change once); `sim_version` is `0.3.0`; run artifacts
+  recorded before this change no longer replay (their `domain_spec` is v0.1); `catalog describe` prints the runtime
+  form and the new digest.
+- `streamsim domain format <path>` rewrites a valid domain file in the canonical layout (stable member order,
+  line-fitting objects) and prints `{formatted, changed, digest}`; idempotent, digest unchanged, an invalid
+  document is refused and left untouched. `cli-output-v0.1` gains `domain_format`.
+- **Validation issues are located** (findings R1-01, R0-10, S15): a "missing required property" or "additional
+  property" issue from any contract points at the member, not its parent, and every domain cross-reference issue
+  carries a JSON pointer into the v0.2 document (for example `/kinds/0/channels/1/observes`). Domain cross-checks
+  also reject a `count.default` outside `count.min`..`count.max`.
+- **Explicit entity ids are checked** (finding R2-02): a scenario's `world.entity_ids` and the director's world
+  creation must fit the domain's instance id template and count bounds; a violation refuses the world (a scenario
+  violation at `/world`).
+
 - **Run report** (`docs/design/RUN_REPORT.md`, `run-report-v0.1`, new `internal/report` module):
   `streamsim report <run-dir> [--format json|markdown] [--out <file>]` summarises a run folder as one
   deterministic document, a pure function of its files: identity and inputs, recorded digests,
