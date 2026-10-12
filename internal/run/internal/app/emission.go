@@ -42,12 +42,19 @@ func (r *Run) captureEmissionState(ev model.SimEvent, atNS int64) {
 	for _, name := range r.Config.Domain.StateNames() {
 		states[name] = r.World.StateValue(ev.EntityID, name, atNS)
 	}
-	r.history = append(r.history, model.StateSnapshot{Seq: ev.Seq, TimeNS: atNS, Entity: ev.EntityID, States: states})
+	snapshot := model.StateSnapshot{Seq: ev.Seq, TimeNS: atNS, Entity: ev.EntityID, States: states}
+	r.history = append(r.history, snapshot)
+	r.journal.State(r.journalNow(), snapshot)
+}
+
+// malformedLine is the broken line a consumer receives for a mangled event.
+func malformedLine(ev model.SimEvent) string {
+	return `{"seq":` + strconv.FormatInt(ev.Seq, 10) + `,"broken":`
 }
 
 func (r *Run) writeMalformed(ev model.SimEvent) error {
 	// A broken line in the adapter's encoding: unterminated JSON.
-	if err := r.Sink.Write([]byte(`{"seq":` + strconv.FormatInt(ev.Seq, 10) + `,"broken":`)); err != nil {
+	if err := r.Sink.Write([]byte(malformedLine(ev))); err != nil {
 		return fmt.Errorf("write malformed event %d: %w", ev.Seq, err)
 	}
 	return nil

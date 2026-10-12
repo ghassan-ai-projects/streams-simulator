@@ -9,9 +9,11 @@ import (
 
 // ScenarioRunOptions say where a scenario's domain and adapter are looked up,
 // which sink delivers the run and where its evidence is published (empty
-// publishes nothing).
+// publishes nothing). A run with an OutDir also writes its journal there while
+// it runs; Explore stamps the run unblinded from creation.
 type ScenarioRunOptions struct {
 	DomainsDir, AdaptersDir, SinkName, SinkTarget, OutDir string
+	Explore                                               bool
 }
 
 // RunSummary is what a finished scenario run left behind.
@@ -46,6 +48,7 @@ func RunScenario(ctx context.Context, scenario *model.Scenario, options Scenario
 	if err := CheckScenario(ctx, cfg, scenario); err != nil {
 		return RunSummary{}, &ScenarioCheckError{Err: err}
 	}
+	cfg.JournalDir, cfg.Explore = options.OutDir, options.Explore
 	return execute(ctx, cfg, scenario, options.OutDir)
 }
 

@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/ghassan-ai-projects/streams-simulator/internal/journal"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	rules "github.com/ghassan-ai-projects/streams-simulator/internal/run/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
@@ -77,6 +79,7 @@ func (r *Run) InvokeEffector(effector, entityID, commandID string, args map[stri
 		return nil, err
 	}
 	result, err := r.World.InvokeEffector(effector, entityID, commandID, args, atNS)
+	r.journalEffectorCall(journal.Call{Effector: effector, EntityID: entityID, CommandID: commandID}, result, err)
 	// Record refusals as well as successful calls so replay reproduces both.
 	r.recordWorldCommand(model.OpEffectorInvoke, map[string]any{"effector": effector, "entity_id": entityID, "command_id": commandID, "args": args, "at_ns": atNS})
 	if err != nil {
@@ -145,9 +148,10 @@ func (r *Run) recordWorldCommand(op string, args map[string]any) {
 }
 
 func (r *Run) recordCommandAt(op string, atNS int64, args map[string]any) {
-	r.commandLog = append(r.commandLog, model.Command{
-		Seq: int64(len(r.commandLog)), AtNS: atNS, Op: op, Args: args,
-	})
+	command := model.Command{Seq: int64(len(r.commandLog)), AtNS: atNS, Op: op, Args: args}
+	r.commandLog = append(r.commandLog, command)
+	r.journal.Command(r.journalNow(), rules.JournalCommand(command))
+	r.flushJournal()
 }
 
 // refuseWhenFinished is the one place a mutating command learns the run is

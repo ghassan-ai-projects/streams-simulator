@@ -22,7 +22,7 @@ var packageDependencies = map[string]string{
 	"internal/cli":             "adapter device deviceworld domain grading mcp model refconsumer release run suite",
 	"internal/director":        "adapter audit domain model run score truth world",
 	"internal/mcp":             "director model schemas",
-	"internal/run":             "adapter canonical domain model perturb sink wall world",
+	"internal/run":             "adapter canonical domain journal model perturb sink wall world",
 	"internal/grading":         "domain model run score world",
 	"internal/release":         "canonical",
 	"internal/score":           "domain model world",
@@ -37,6 +37,7 @@ var packageDependencies = map[string]string{
 	"internal/adapter":         "canonical jsonschema model schemas",
 	"internal/domain":          "canonical jsonschema model schemas",
 	"internal/model":           "jsonschema schemas",
+	"internal/journal":         "model",
 	"internal/jsonschema":      "canonical",
 	"internal/canonical":       "",
 	"internal/device/contract": "",
@@ -53,7 +54,7 @@ func TestPackageDependencies(t *testing.T) {
 		if err != nil {
 			return fmt.Errorf("inspect dependency in %s: %w", path, err)
 		}
-		if entry.IsDir() && entry.Name() == ".git" {
+		if entry.IsDir() && isAgentWorkspace(path) {
 			return filepath.SkipDir
 		}
 		if entry.IsDir() || !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") {

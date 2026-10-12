@@ -30,6 +30,9 @@ var runArtifact []byte
 //go:embed scenario-v0.1.schema.json
 var scenario []byte
 
+//go:embed run-journal-v0.1.schema.json
+var runJournal []byte
+
 // DomainSpec returns the embedded domain-spec schema.
 func DomainSpec() []byte { return domainSpec }
 
@@ -50,3 +53,6 @@ func RunArtifact() []byte { return runArtifact }
 
 // Scenario returns the embedded scenario schema.
 func Scenario() []byte { return scenario }
+
+// RunJournal returns the embedded run-journal schema.
+func RunJournal() []byte { return runJournal }

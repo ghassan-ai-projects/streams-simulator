@@ -13,6 +13,7 @@ import (
 // nothing that was acknowledged at a boundary.
 func (r *Run) appendLedger(rec model.LedgerRecord) {
 	r.ledger = append(r.ledger, rec)
+	r.journal.Delivery(r.journalNow(), rec)
 	if r.durableLedger != nil {
 		r.durableLedger.Append(rec)
 	}
@@ -26,6 +27,13 @@ func (r *Run) flushDurable() error {
 			return err
 		}
 	}
+	if err := r.journal.Flush(); err != nil {
+		return fmt.Errorf("run: %w", err)
+	}
+	return r.flushSink()
+}
+
+func (r *Run) flushSink() error {
 	if f, ok := r.Sink.(interface{ Flush() error }); ok {
 		if err := f.Flush(); err != nil {
 			return fmt.Errorf("run: flush sink: %w", err)
@@ -102,6 +110,7 @@ func (r *Run) writePendingDelivery(d perturb.Delivered, line string) {
 		return
 	}
 	r.noteTraceArrival(d.Event)
+	r.journal.Observation(r.journalNow(), line)
 	atNS, _ := model.ParseTime(d.Event.EventTime)
 	observedNS, _ := model.ParseTime(d.Event.ObservedTime)
 	r.recordDelivery(d.Event, d.DeliveryID, atNS, observedNS, true, d.Reason)
@@ -124,6 +133,7 @@ func (r *Run) deliverMalformedEvent(ev model.SimEvent, id uint64) bool {
 		r.fail(err)
 		return false
 	}
+	r.journal.Malformed(r.journalNow(), malformedLine(ev))
 	r.recordTerminalDelivery(ev, id, true, model.DeliveryMangled)
 	return true
 }

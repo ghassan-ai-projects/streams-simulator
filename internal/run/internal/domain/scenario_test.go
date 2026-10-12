@@ -145,3 +145,19 @@ func assertPointers(t *testing.T, issues []model.Issue, want []string) {
 		}
 	}
 }
+
+func TestJournalCommandDropsPacingFromAnAdvanceAndLeavesTheRest(t *testing.T) {
+	t.Parallel()
+	advance := model.Command{Seq: 2, AtNS: 5, Op: model.OpClockAdvance, Args: map[string]any{"to_ns": int64(9), "await_consumer": true}}
+	got := JournalCommand(advance)
+	if _, awaited := got.Args["await_consumer"]; awaited || got.Args["to_ns"] != int64(9) || got.Seq != 2 || got.AtNS != 5 {
+		t.Fatalf("JournalCommand(advance) = %+v", got)
+	}
+	if _, kept := advance.Args["await_consumer"]; !kept {
+		t.Fatal("the command log's own entry must keep its pacing")
+	}
+	invoke := model.Command{Op: model.OpEffectorInvoke, Args: map[string]any{"await_consumer": true}}
+	if _, kept := JournalCommand(invoke).Args["await_consumer"]; !kept {
+		t.Fatal("only an advance drops await_consumer")
+	}
+}

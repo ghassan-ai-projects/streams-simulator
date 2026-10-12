@@ -14,6 +14,7 @@ and `score` (policies), which do not know each other.
 | State history | The director-only hidden-state snapshots, one per emission | `DecodeHistory` | `world_state_history.jsonl` |
 | Replayed evidence | The effector calls, perturbations and counts recovered by replaying the artifact, because the command log records invocations but not whether each took effect | `ArtifactEvidence` | – |
 | Replay mismatch | The refusal to grade a run whose replay does not reproduce its recorded trace | `ReplayMismatchError` | CLI `replay_mismatch` |
+| Unblinded run | A run stamped unblinded (an explore run, or one whose truth was revealed while it was open); it is never scored | `ErrRunUnblinded`, `RequireBlind` | `unblinded`, `mode: "explore"` in `run.json`; CLI `score_failed` |
 
 ## Retired words
 

@@ -17,6 +17,8 @@ type WorldRequest struct {
 	StartTimeNS                                 *int64
 	Entities                                    []string
 	ScenarioProfile, Label                      string
+	// Explore stamps the world's run unblinded from creation: it is never scored.
+	Explore bool
 }
 
 func (d *Director) worldAdapter(req WorldRequest) (*model.Adapter, error) {
@@ -38,7 +40,7 @@ func configuredWorld(spec *domain.Compiled, adapter *model.Adapter, req WorldReq
 	start, present := worldStartTime(req)
 	return run.Config{Domain: spec, Adapter: adapter, Seed: seed, SinkName: sink, SinkTarget: req.SinkTarget,
 		TimeMode: timeMode, StartTimeNS: start, StartTimeSet: present, EntityIDs: req.Entities,
-		ScenarioProfile: req.ScenarioProfile, Label: req.Label}
+		ScenarioProfile: req.ScenarioProfile, Label: req.Label, Explore: req.Explore}
 }
 
 func worldDeliveryOptions(req WorldRequest) (string, string) {

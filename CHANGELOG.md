@@ -4,6 +4,32 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **Run journal** (`docs/design/RUN_JOURNAL.md`, `run-journal-v0.1`, new `internal/journal` module):
+  two append-only JSON Lines streams written while a run happens. The observer stream
+  (`journal.jsonl`) holds what a consumer could know: the run's identity, every delivered
+  observation exactly as the sink received it (the adapter's rendered line), clock advances, the acknowledgement each effector call returned,
+  consumer reports and the close; never the seed (MCP_SURFACE §4.5). The director stream (`sealed/journal.jsonl`) holds commands,
+  delivery rows, world state, effector outcomes, unblinding and the close. Truth-bearing records
+  never enter the observer stream (canary test). `run --out <dir>` and a director world write both in
+  the run directory; no `--out`, no files. Both streams are pure functions of the run;
+  `run.json` records `journal_digest` and `sealed_journal_digest`; `replay` rebuilds both in memory
+  and `verify` fails with `replay_mismatch` naming the stream (and, from the files beside the
+  artifact, the first differing record). Journals are buffered, flushed at command boundaries and
+  synced at the end; a torn last line is ignored by the reader; an unencodable record fails the run.
+  Consumer reports are session records: in the file, outside the digest (replay cannot reproduce
+  them). A `clock.advance` is journaled with its target only (`await_consumer` is pacing).
+  Fuzz target `FuzzJournalRead` in `make fuzz` and `make fuzz-soak`.
+- **Explore mode:** `run --explore` and `sim.world.create {explore: true}` stamp the run unblinded
+  from creation (`mode: "explore"` and `unblinded: true` in `run.json`, `run.opened.mode`, a
+  `run.unblinded` record). **Behaviour change:** `streamsim score` refuses every run stamped
+  unblinded (`score_failed`), as the director's `sim.score` already did; it used to print a
+  scorecard carrying `unblinded: true`.
+- `run.json` gains `mode`, `journal_digest` and `sealed_journal_digest` (behaviour pin: only
+  `run.json` lines change, and the journal files are pinned). `sim_version` is unchanged: the trace,
+  ledger, world digest and determinism tuple are identical.
+- Director composition tests moved to `test/acceptance` (finding R2d-01); `Director.RunOf` is the
+  documented test-harness handle on the run behind a world, replacing the `export_test.go` seam.
+
 - **Fix (truth leak):** `sim.effector.invoke` returned the world's internal result to the
   consumer, including the failure `mode`, `effect_applied` and `ack_latency_ms`, which exposed
   `silent_no_effect`. The operator now returns only the acknowledgement fields of MCP_SURFACE

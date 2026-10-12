@@ -180,19 +180,6 @@ func CheckScenario(ctx context.Context, cfg Config, scenario *model.Scenario) er
 	return layer.CheckScenario(ctx, cfg, scenario)
 }
 
-// PruneRefusedCalls is the scenario without the effector calls the run
-// refuses at admission, and how many it dropped; such calls change nothing,
-// so the pruned scenario reproduces the same trace and world.
-func PruneRefusedCalls(ctx context.Context, cfg Config, scenario *model.Scenario) (*model.Scenario, int, error) {
-	return layer.PruneRefusedCalls(ctx, cfg, scenario)
-}
-
-// CheckArtifactInputs reports whether the domain and adapter are the ones a
-// run artifact recorded; a difference wraps ErrDigestMismatch.
-func CheckArtifactInputs(art *model.RunArtifact, spec *domain.Compiled, adapterSpec *model.Adapter) error {
-	return layer.CheckArtifactInputs(art, spec, adapterSpec)
-}
-
 // ScenarioFromArtifact is the scenario that reproduces a recorded run, and
 // the number of command-log entries it omits.
 func ScenarioFromArtifact(art *model.RunArtifact) (*model.Scenario, int) {

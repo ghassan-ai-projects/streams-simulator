@@ -43,6 +43,7 @@ var ioEdges = map[string]ioEdge{
 	"internal/adapter/internal/files/files.go":  {uses: []string{"import:os"}, why: "adapter file loading"},
 	"internal/adapter/internal/files/verify.go": {uses: []string{"import:os"}, why: "adapter verify: fixture, output schema and golden files"},
 	"internal/device/operations.go":             {uses: []string{"import:net"}, why: "Listen returns the unix listener type; the socket code is the uds edge"},
+	"internal/journal/internal/files/files.go":  {uses: []string{"import:os"}, why: "the observer and director journal files of a run"},
 	"internal/run/internal/durable/ledger.go":   {uses: []string{"import:os"}, why: "append-only delivery ledger file"},
 	"internal/run/internal/durable/publish.go":  {uses: []string{"import:os"}, why: "published evidence files and the artifact reader"},
 	"internal/run/internal/quiesce/quiesce.go":  {uses: []string{"call:time.NewTimer"}, why: "wall-clock deadline for await_consumer waits"},

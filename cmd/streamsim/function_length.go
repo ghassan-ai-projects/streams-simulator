@@ -35,7 +35,7 @@ func functionFileVisitor(violations *int) fs.WalkDirFunc {
 		if err != nil {
 			return err
 		}
-		if entry.IsDir() && entry.Name() == ".git" {
+		if entry.IsDir() && (entry.Name() == ".git" || strings.HasSuffix(filepath.ToSlash(path), ".claude/worktrees")) {
 			return fs.SkipDir
 		}
 		if !isProductionGoSource(path, entry) {

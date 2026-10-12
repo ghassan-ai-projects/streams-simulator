@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/journal"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
@@ -16,6 +17,9 @@ func newReplayRun(ctx context.Context, art *model.RunArtifact, spec *domain.Comp
 	}
 	if art.WorldDigest != "" && replay.Digest() != art.WorldDigest {
 		return nil, fmt.Errorf("run: world %w: artifact=%s current=%s", ErrDigestMismatch, art.WorldDigest, replay.Digest())
+	}
+	if art.Unblinded && art.Mode != journal.ModeExplore {
+		replay.Unblind() // the close of an unblinded run records it
 	}
 	return replay, nil
 }
@@ -39,12 +43,32 @@ func finishReplayResult(replay *Run, art *model.RunArtifact, result *ReplayResul
 	if art.Incomplete && result.Detail == "" {
 		result.Detail = art.Error
 	}
-	if result.GotDigest != result.WantDigest {
+	traceMatches := result.GotDigest == result.WantDigest
+	if !traceMatches {
 		noteReplayDivergence(replay, art, result)
-		return result
 	}
-	result.Matches = true
+	result.Matches = noteIdentityDivergence(replay, art, result) && traceMatches
 	return result
+}
+
+// noteIdentityDivergence compares what the trace digest does not cover: the
+// journal digests and the unblinded stamp. It reports whether both agree.
+func noteIdentityDivergence(replay *Run, art *model.RunArtifact, result *ReplayResult) bool {
+	noteJournalDivergence(replay, art, result)
+	stampMatches := noteStampDivergence(replay, art, result)
+	return stampMatches && len(result.JournalDiverged) == 0
+}
+
+// noteStampDivergence fails a replay whose unblinded stamp differs from the
+// artifact's: an explore run is unblinded by its mode, so clearing the flag in
+// run.json does not make it scorable.
+func noteStampDivergence(replay *Run, art *model.RunArtifact, result *ReplayResult) bool {
+	if replay.unblinded == art.Unblinded {
+		return true
+	}
+	result.Detail = divergenceDetail(result.Detail,
+		fmt.Sprintf("the artifact says unblinded=%v, the replay of a %s run is unblinded=%v", art.Unblinded, replay.mode(), replay.unblinded))
+	return false
 }
 
 func noteReplayDivergence(replay *Run, art *model.RunArtifact, result *ReplayResult) {

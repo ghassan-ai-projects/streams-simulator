@@ -1,19 +1,12 @@
 package director_test
 
 import (
-	"context"
-	"net"
-	"net/http"
 	"strings"
 	"testing"
-	"time"
-
-	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/director"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/mcp"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
@@ -32,42 +25,6 @@ func newTestDirector(t *testing.T) *director.Director {
 	}
 	cat := domain.NewCatalog([]*domain.Compiled{spec})
 	return director.New(t.Context(), cat, map[string]*model.Adapter{"native-jsonl": native}, t.TempDir())
-}
-
-// connect returns a client session to the server over in-memory transports.
-func connect(t *testing.T, server *mcpsdk.Server) *mcpsdk.ClientSession {
-	t.Helper()
-	ctx := context.Background()
-	ct, st := mcpsdk.NewInMemoryTransports()
-	ss, err := server.Connect(ctx, st, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = ss.Close() })
-	cs, err := mcpsdk.NewClient(&mcpsdk.Implementation{Name: "test"}, nil).Connect(ctx, ct, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = cs.Close() })
-	return cs
-}
-
-// startOperatorEndpoint binds the operator role over streamable HTTP, the
-// same wiring the CLI's --operator-addr uses.
-func startOperatorEndpoint(t *testing.T, d *director.Director) string {
-	t.Helper()
-	opServer := mcp.NewOperatorServerResolver(d)
-	handler := mcpsdk.NewStreamableHTTPHandler(func(*http.Request) *mcpsdk.Server { return opServer }, nil)
-	ln, err := (&net.ListenConfig{}).Listen(context.Background(), "tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	srv := &http.Server{Handler: handler, ReadHeaderTimeout: 10 * time.Second}
-	go func() { _ = srv.Serve(ln) }()
-	t.Cleanup(func() { _ = srv.Close() })
-	endpoint := "http://" + ln.Addr().String()
-	d.SetOperatorEndpoint(endpoint)
-	return endpoint
 }
 
 // argsForSchema synthesizes arguments for an effector from its declared

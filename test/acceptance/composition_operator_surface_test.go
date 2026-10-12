@@ -1,4 +1,4 @@
-package director_test
+package acceptance
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 
 	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
 
-	"github.com/ghassan-ai-projects/streams-simulator/internal/director"
+	directormod "github.com/ghassan-ai-projects/streams-simulator/internal/director"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/mcp"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
@@ -21,9 +21,9 @@ import (
 func TestPrefixIndistinguishability(t *testing.T) {
 	t.Parallel()
 	start := model.DefaultStartTimeNS + 4*3600*1e9
-	mk := func(seed int64) (*director.Director, string, string) {
-		d := newTestDirector(t)
-		res, err := d.CreateWorld(director.WorldRequest{
+	mk := func(seed int64) (*directormod.Director, string, string) {
+		d := newCompositionDirector(t)
+		res, err := d.CreateWorld(directormod.WorldRequest{
 			Domain: "aquaculture-pond", Seed: seed, Adapter: "native-jsonl",
 			Sink: model.SinkInproc, TimeMode: model.TimeStepped, StartTimeNS: &start,
 		})
@@ -34,8 +34,8 @@ func TestPrefixIndistinguishability(t *testing.T) {
 	}
 	dA, idA, tokenA := mk(7)
 	dB, idB, tokenB := mk(7)
-	wA := director.RunOf(dA, idA)
-	wB := director.RunOf(dB, idB)
+	wA := dA.RunOf(idA)
+	wB := dB.RunOf(idB)
 	pond := "site-a/pond-1"
 	// Record the delivered evidence (post-perturbation, pre-render).
 	evA := evidence{}
@@ -118,7 +118,7 @@ func (e *evidence) equalPrefix(o *evidence) bool {
 // tool layer — nameplate, effector list, an invocation, a quiescence
 // report, and the capability-denied error path — as one byte string. Two
 // worlds with identical delivered prefixes must produce identical bytes.
-func operatorResponseSet(t *testing.T, d *director.Director, token string, atNS int64) (string, error) {
+func operatorResponseSet(t *testing.T, d *directormod.Director, token string, atNS int64) (string, error) {
 	t.Helper()
 	cs := connect(t, mcp.NewOperatorServerResolver(d))
 	call := func(name string, args map[string]any) (string, error) {
@@ -138,7 +138,7 @@ func operatorResponseSet(t *testing.T, d *director.Director, token string, atNS 
 		return "", err
 	}
 	invoked := "none"
-	var effList []director.EffectorInfo
+	var effList []directormod.EffectorInfo
 	if err := json.Unmarshal([]byte(effs), &effList); err == nil && len(effList) > 0 {
 		invoked, err = call("sim.effector.invoke", map[string]any{
 			"token": token, "effector": effList[0].Name,

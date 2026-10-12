@@ -77,5 +77,6 @@ func worldCreationProperties() map[string]any {
 		"time_mode":        enumSchema(model.TimeStepped, model.TimeWall),
 		"start_time":       integerSchema(),
 		"label":            stringSchema(),
+		"explore":          booleanSchema(),
 	}
 }

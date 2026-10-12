@@ -199,6 +199,7 @@ fuzz: ## Bounded native fuzzing of the parsers (10s per target)
 	  go test -fuzz=FuzzDomainParse -fuzztime=10s ./internal/domain/internal/domain/; \
 	  go test -fuzz=FuzzArtifactLoad -fuzztime=10s ./internal/run/internal/app/; \
 	  go test -fuzz=FuzzScenarioCheck -fuzztime=10s ./internal/run/internal/app/; \
+	  go test -fuzz=FuzzJournalRead -fuzztime=10s ./internal/journal/internal/domain/; \
 	else \
 	  echo "(no packages yet -- skipping fuzz)"; \
 	fi
@@ -215,6 +216,7 @@ fuzz-soak: ## Bounded fuzz only (soak is an explicit, slower target)
 	  go test -fuzz=FuzzDomainParse -fuzztime=5s ./internal/domain/internal/domain/; \
 	  go test -fuzz=FuzzArtifactLoad -fuzztime=5s ./internal/run/internal/app/; \
 	  go test -fuzz=FuzzScenarioCheck -fuzztime=5s ./internal/run/internal/app/; \
+	  go test -fuzz=FuzzJournalRead -fuzztime=5s ./internal/journal/internal/domain/; \
 	else \
 	  echo "(no packages yet -- skipping fuzz)"; \
 	fi

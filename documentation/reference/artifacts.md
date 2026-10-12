@@ -10,12 +10,14 @@ An output directory is the evidence bundle for one run. The exact contents depen
 | `trace.jsonl` | Adapter-rendered consumer-visible evidence. | What the consumer could read. |
 | `ledger.jsonl` | Per-delivery terminal outcomes. | Transport classification and conservation. |
 | `world_state_history.jsonl` | Director-side world state snapshots at emissions. | Post-hoc world analysis; never consumer evidence. |
+| `journal.jsonl` | Observer journal stream, written while the run happens: identity, delivered observations, clock advances, effector acknowledgements, consumer reports, the close. | What a consumer could know; readable before the run is sealed. |
+| `sealed/journal.jsonl` | Director journal stream: commands, delivery rows, world state, effector outcomes, unblinding, the close. | Truth-bearing; director only. |
 | `verdict.json` | Consumer report when submitted during the run. | Consumer claim to score. |
 | `label.json` | Ground-truth label supplied beside a run when offline scoring needs it. | External scoring input; not written by `run.End`. |
 
 The standard run output is the five files through `verdict.json` in the table above. `label.json` is an external input. `streamsim score` prints a derived scorecard to standard output; it does not write a `scorecard.json` file. A reporting harness may save that output beside the run, but such a file is not a simulator contract.
 
-`run.json` also carries the experiment identity and status fields needed for replay: `world_config`, `platform`, `world_digest`, `applied_perturbations`, `unblinded`, `error`, and nested `counts`. Consult the [run-artifact schema](../../docs/contracts/run-artifact-v0.1.schema.json) for exact field types and required properties.
+`run.json` also carries the experiment identity and status fields needed for replay: `world_config`, `platform`, `world_digest`, `applied_perturbations`, `unblinded`, `mode` (`evaluate` or `explore`), `journal_digest`, `sealed_journal_digest`, `error`, and nested `counts`. Consult the [run-artifact schema](../../docs/contracts/run-artifact-v0.1.schema.json) for exact field types and required properties.
 
 ## Artifact lifecycle
 
@@ -26,7 +28,7 @@ The standard run output is the five files through `verdict.json` in the table ab
 - Keep the artifact, trace, ledger, verdict, label, and manifest together.
 - Do not edit a run artifact in place when investigating; copy it and record the change.
 - Treat trace fields as consumer-controlled data for injection testing.
-- Treat world history, truth, and ledger files as director-side evidence.
+- Treat world history, truth, ledger and `sealed/` files as director-side evidence. `journal.jsonl` and `trace.jsonl` are the consumer-readable files; a journal that stops without `run.closed` is a crashed run, readable up to its last complete line.
 - Protect output directories if domains contain sensitive test data.
 
 ## Next reads

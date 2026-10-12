@@ -14,6 +14,7 @@ type runOptions struct {
 	domainsDir, adaptersDir, domainID, adapterID string
 	sinkName, sinkTarget, outDir, profile        string
 	scenarioPath                                 string
+	explore                                      bool
 	faults, perts, effectors                     listFlag
 	seed                                         uint64
 	durationS                                    float64
@@ -56,7 +57,8 @@ func registerExecutionFlags(fs *flag.FlagSet, options *runOptions) {
 	fs.StringVar(&options.scenarioPath, "scenario", "", "scenario file (scenario-v0.1) defining the run")
 	fs.StringVar(&options.sinkName, "sink", "inproc", "sink: inproc|file|http-push")
 	fs.StringVar(&options.sinkTarget, "sink-target", "", "sink target (file path)")
-	fs.StringVar(&options.outDir, "out", "", "output directory for artifacts")
+	fs.StringVar(&options.outDir, "out", "", "output directory for artifacts and the run journal")
+	fs.BoolVar(&options.explore, "explore", false, "explore mode: stamp the run unblinded from creation; it is never scored")
 }
 
 // registerDomainFlags registers where the domains live and which one to use.

@@ -10,6 +10,10 @@ import (
 // and adapter are looked up in to replay it.
 type Options = app.Options
 
+// ErrRunUnblinded is the refusal to grade a run stamped unblinded (an explore
+// run, or one whose truth was revealed while it was open).
+var ErrRunUnblinded = layer.ErrRunUnblinded
+
 // ReplayMismatchError is the refusal to grade a run whose replay does not
 // reproduce its recorded trace; Result is the replay report.
 type ReplayMismatchError = layer.ReplayMismatchError
