@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/ghassan-ai-projects/streams-simulator/internal/cli/internal/serve"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/mcp"
 )
 
@@ -18,9 +17,9 @@ func cmdMCP(s *session, args []string) (any, error) {
 	case "director":
 		return nil, serveDirector(s, options)
 	case "operator":
-		return nil, fmt.Errorf("the operator role is served from a director process; start `streamsim mcp --role director --operator-addr 127.0.0.1:PORT` and use the sim.world.create token")
+		return nil, usagef("the operator role is served from a director process; start `streamsim mcp --role director --operator-addr 127.0.0.1:PORT` and use the sim.world.create token")
 	default:
-		return nil, fmt.Errorf("mcp requires --role director|operator")
+		return nil, usagef("mcp requires --role director|operator")
 	}
 }
 
@@ -34,28 +33,17 @@ func parseMCPOptions(args []string, stderr io.Writer) (mcpOptions, error) {
 	fs.StringVar(&options.domainsDir, "domains-dir", "domains", "domain specs directory")
 	fs.StringVar(&options.adaptersDir, "adapters-dir", "adapters", "adapters directory")
 	fs.StringVar(&options.outDir, "out", "runs", "run artifact output directory")
-	if err := parseFlags(fs, args); err != nil {
+	if err := parseOnlyFlags(fs, args); err != nil {
 		return mcpOptions{}, err
 	}
 	return options, nil
 }
 
 func serveDirector(s *session, options mcpOptions) error {
-	d, err := loadDirector(options)
+	err := mcp.ServeDirector(context.Background(), s.stderr, mcp.ServeOptions{DomainsDir: options.domainsDir,
+		AdaptersDir: options.adaptersDir, OutDir: options.outDir, OperatorAddr: options.operatorAddr})
 	if err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
-	return serve.Director(s.stderr, d, options.operatorAddr)
-}
-
-func loadDirector(options mcpOptions) (*mcp.Director, error) {
-	cat, err := loadCatalog(options.domainsDir)
-	if err != nil {
-		return nil, fmt.Errorf("streamsim: %w", err)
-	}
-	adapters, err := loadAdapters(options.adaptersDir)
-	if err != nil {
-		return nil, fmt.Errorf("streamsim: %w", err)
-	}
-	return mcp.NewDirector(context.Background(), cat, adapters, options.outDir), nil
+	return nil
 }

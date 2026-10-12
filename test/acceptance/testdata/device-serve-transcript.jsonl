@@ -1,0 +1,10 @@
+{"boot_id":"boot-A","capability_digest":"sha256:0d61225286c628cfba8cbf7aea514e1fdc95918b514b4b810516dbe0fc44fc76","dedup_ledger":{"persistent":false,"size":0},"device_id":"dev-01","firmware_digest":"sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc","message_type":"state","protocol_version":1,"safe_state":true}
+{"accepted":true,"boot_id":"boot-A","command_id":"cmd-01","message_type":"receipt","protocol_version":1,"received_mono_us":"MASKED"}
+{"boot_id":"boot-A","command_id":"cmd-01","completed_mono_us":"MASKED","detail":"output energized","message_type":"result","protocol_version":1,"status":"executed"}
+{"accepted":true,"boot_id":"boot-A","command_id":"cmd-01","message_type":"receipt","protocol_version":1,"received_mono_us":"MASKED"}
+{"boot_id":"boot-A","command_id":"cmd-01","completed_mono_us":"MASKED","detail":"output energized","message_type":"result","protocol_version":1,"status":"executed"}
+{"accepted":false,"boot_id":"unknown","command_id":"unknown","message_type":"receipt","protocol_version":1,"reject_code":"malformed"}
+{"boot_id":"unknown","command_id":"unknown","error_code":"malformed","message_type":"result","protocol_version":1,"status":"rejected"}
+{"accepted":false,"boot_id":"boot-A","command_id":"cmd-02","message_type":"receipt","protocol_version":1,"received_mono_us":"MASKED","reject_code":"wrong_boot"}
+{"boot_id":"boot-A","command_id":"cmd-02","error_code":"wrong_boot","message_type":"result","protocol_version":1,"status":"rejected"}
+{"boot_id":"boot-A","capability_digest":"sha256:0d61225286c628cfba8cbf7aea514e1fdc95918b514b4b810516dbe0fc44fc76","current_output":{"energized":true,"operation":"set_pwm_lease","target":"fan-01","value":450},"dedup_ledger":{"persistent":false,"size":1},"device_id":"dev-01","firmware_digest":"sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc","message_type":"state","protocol_version":1,"safe_state":false}

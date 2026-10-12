@@ -1,11 +1,15 @@
 package domain
 
 import (
+	"errors"
 	"fmt"
 	"sort"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
+
+// ErrUnknownDomain is returned by Describe for an id the catalog does not hold.
+var ErrUnknownDomain = errors.New("unknown domain")
 
 // Catalog is the set of installed domains, with list/describe/coverage
 // operations. It is the director role's catalog surface.
@@ -51,7 +55,7 @@ func (c *Catalog) Describe(id string) (*Compiled, error) {
 			return d, nil
 		}
 	}
-	return nil, fmt.Errorf("catalog: unknown domain %q", id)
+	return nil, fmt.Errorf("catalog: %w %q", ErrUnknownDomain, id)
 }
 
 // CoverageReport is the axis-coverage matrix: which axis values are

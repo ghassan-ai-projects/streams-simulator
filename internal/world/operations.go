@@ -108,3 +108,17 @@ func (w *World) Retire(entityID, reason string, atNS int64) {
 func (w *World) Entity(id string) *Entity {
 	return w.world.Entity(id)
 }
+
+// CheckEffectorArgs reports whether effector is declared by the domain and
+// args satisfy its args_schema, without invoking it. The error states the
+// violation.
+func (w *World) CheckEffectorArgs(effector string, args map[string]any) error {
+	return w.world.CheckEffectorArgs(effector, args)
+}
+
+// CheckFaultParams reports whether the domain declares faultID and params are
+// parameters it accepts, without injecting it. The error states the
+// violation.
+func (w *World) CheckFaultParams(faultID string, params map[string]any) error {
+	return w.world.CheckFaultParams(faultID, params)
+}

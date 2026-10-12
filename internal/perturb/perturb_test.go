@@ -67,6 +67,25 @@ func TestApplyAdmitsOnlyCatalogNamesWithDeclaredParameters(t *testing.T) {
 	}
 }
 
+func TestTheChecksJudgeWithoutApplying(t *testing.T) {
+	t.Parallel()
+	if err := perturb.CheckParams("drop", map[string]any{"rate": 0.5}); err != nil {
+		t.Fatalf("declared rate refused: %v", err)
+	}
+	if err := perturb.CheckParams("drop", map[string]any{"rate": 2.0}); err == nil || !strings.Contains(err.Error(), "drop rate") {
+		t.Fatalf("out-of-range rate: %v", err)
+	}
+	if err := perturb.CheckParams("no_such_perturbation", nil); err == nil || !strings.Contains(err.Error(), `unknown perturbation "no_such_perturbation"`) {
+		t.Fatalf("an unknown perturbation: %v", err)
+	}
+	if err := perturb.CheckWindow("drop", 20, 10); err == nil || !strings.Contains(err.Error(), "drop window would end at 10") {
+		t.Fatalf("CheckWindow of a window that ends before it starts: %v", err)
+	}
+	if _, err := shippedLayer(t).Apply("drop", nil, 20, 10); err == nil || !strings.Contains(err.Error(), "perturb: drop window would end at 10, before it starts at 20") {
+		t.Fatalf("Apply of a window that ends before it starts: %v", err)
+	}
+}
+
 func TestProcessAppliesAnActivePerturbationUntilItIsCleared(t *testing.T) {
 	t.Parallel()
 	layer := shippedLayer(t)

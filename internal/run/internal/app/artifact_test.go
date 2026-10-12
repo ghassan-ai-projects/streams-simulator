@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -40,8 +41,13 @@ func TestReplayRejectsInputDigestMismatch(t *testing.T) {
 	bad := *art
 	bad.Domain = art.Domain
 	bad.Domain.Digest = "sha256:" + strings.Repeat("0", 64)
-	if _, err := ReplayArtifact(context.Background(), &bad, spec, a, ""); err == nil || !strings.Contains(err.Error(), "run: domain digest mismatch") {
-		t.Fatal("replay must reject a changed domain digest before execution")
+	if _, err := ReplayArtifact(context.Background(), &bad, spec, a, ""); !errors.Is(err, ErrDigestMismatch) || !strings.Contains(err.Error(), "run: domain digest mismatch") {
+		t.Fatalf("replay must reject a changed domain digest before execution with ErrDigestMismatch: %v", err)
+	}
+	world := *art
+	world.WorldDigest = "sha256:" + strings.Repeat("0", 64)
+	if _, err := ReplayArtifact(context.Background(), &world, spec, a, ""); !errors.Is(err, ErrDigestMismatch) || !strings.Contains(err.Error(), "run: world digest mismatch") {
+		t.Fatalf("replay must reject a changed world digest with ErrDigestMismatch: %v", err)
 	}
 }
 

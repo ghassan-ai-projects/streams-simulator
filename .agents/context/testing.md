@@ -9,6 +9,7 @@ Use these commands unless the task is documentation-only:
 - `make build`
 - `make lint`
 - `make ci-check`
+- `make phase-gate` (`ci-check` plus `make architecture`; the simulation-canvas phase gate)
 - `make function-length`
 - `make coverage-check` (per-package floor, default 70%, ratchet file `scripts/coverage-floors.txt`)
 - `make behaviour-pin` (diff against `docs/refactoring/modularity-20261010/BEHAVIOUR_PIN.txt` after any structural change)
@@ -18,7 +19,7 @@ Use these commands unless the task is documentation-only:
 ## Repository-Specific Behavior
 
 - `make build` builds `cmd/streamsim` into `bin/`.
-- `make ci-check` runs `function-length -> docs-check -> tidy -> build -> vet -> lint-ci -> test-short -> test-simdet -> coverage-check -> deadcode -> vulncheck -> fuzz-soak`.
+- `make ci-check` runs `function-length -> fmt-check -> docs-check -> tidy -> build -> vet -> lint-ci -> test-short -> test-simdet -> coverage-check -> deadcode -> vulncheck -> fuzz-soak`.
 - In restricted environments, lint and loopback MCP tests can fail because they need cache writes or local sockets.
 - `deadcode` and `govulncheck` are release-gate tools; the Makefile fails closed when they are missing.
 

@@ -1,7 +1,7 @@
 package protocol
 
 import (
-	"github.com/ghassan-ai-projects/streams-simulator/internal/mcp/internal/app"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/director"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
@@ -34,7 +34,7 @@ func templateParam(req *mcp.ReadResourceRequest, key string) (string, error) {
 	if key == "id" {
 		return domainTemplateID(uri)
 	}
-	return "", app.ToolErrorf(app.CodeDomainInvalid, "unknown template parameter %q", key)
+	return "", director.ToolErrorf(director.CodeDomainInvalid, "unknown template parameter %q", key)
 }
 
 func indexByte(s string, b byte) int {
@@ -57,5 +57,5 @@ func domainTemplateID(uri string) (string, error) {
 			return id, nil
 		}
 	}
-	return "", app.ToolErrorf(app.CodeDomainInvalid, "cannot parse domain id from %q", uri)
+	return "", director.ToolErrorf(director.CodeDomainInvalid, "cannot parse domain id from %q", uri)
 }

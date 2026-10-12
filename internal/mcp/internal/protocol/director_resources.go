@@ -5,13 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/ghassan-ai-projects/streams-simulator/internal/mcp/internal/app"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 func (d directorTools) readCatalogResource(_ context.Context, _ *mcp.ReadResourceRequest) (*mcp.ReadResourceResult, error) {
-	entries := d.Catalog.List("")
-	data, _ := json.Marshal(entries)
+	data, _ := json.Marshal(d.CatalogList("")["domains"])
 	return jsonResource("sim://catalog", data), nil
 }
 
@@ -20,11 +18,11 @@ func (d directorTools) readDomainResource(_ context.Context, req *mcp.ReadResour
 	if err != nil {
 		return nil, fmt.Errorf("mcp: %w", err)
 	}
-	compiled, err := d.Catalog.Describe(id)
+	spec, err := d.DomainSpec(id)
 	if err != nil {
-		return nil, app.ToolErrorf(app.CodeDomainInvalid, "%v", err)
+		return nil, err
 	}
-	data, _ := json.Marshal(compiled.Spec)
+	data, _ := json.Marshal(spec)
 	return jsonResource(req.Params.URI, data), nil
 }
 

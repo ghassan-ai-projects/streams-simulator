@@ -65,27 +65,11 @@ func TestDigestStable(t *testing.T) {
 
 func TestCrossCheckRejectsBadReferences(t *testing.T) {
 	t.Parallel()
-	// Copy the example and break one cross-reference.
 	c, err := Load(testsupport.Example())
 	if err != nil {
 		t.Fatal(err)
 	}
-	raw, err := json.Marshal(c.Spec)
-	if err != nil {
-		t.Fatal(err)
-	}
-	var doc map[string]any
-	if err := json.Unmarshal(raw, &doc); err != nil {
-		t.Fatal(err)
-	}
-	channels := doc["channels"].([]any)
-	ch0 := channels[0].(map[string]any)
-	ch0["observes"] = "no_such_state"
-	b, err := json.Marshal(doc)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := Parse(b, "broken"); err == nil || !strings.Contains(err.Error(), "undeclared state") {
+	if _, err := Parse(breakChannelReference(t, c), "broken"); err == nil || !strings.Contains(err.Error(), "undeclared state") {
 		t.Fatalf("expected undeclared-state error, got %v", err)
 	}
 }

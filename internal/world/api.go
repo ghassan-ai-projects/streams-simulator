@@ -46,6 +46,15 @@ var ErrInterlockRefused = layer.ErrInterlockRefused
 // its idempotency window names a different request than it first did.
 var ErrCommandIDReused = layer.ErrCommandIDReused
 
+// ErrInvalidInvocation marks an effector invocation refused at admission
+// (missing command id, unknown or retired entity, undeclared effector,
+// refused arguments): the world is exactly as it was without the call.
+var ErrInvalidInvocation = layer.ErrInvalidInvocation
+
+// MaxStartNS is the latest a world may start; a start outside [0,
+// MaxStartNS] is refused, so every event time stays representable.
+const MaxStartNS = layer.MaxStartNS
+
 // ErrClockBackwards is returned by Advance when the target time is before the
 // current world time.
 var ErrClockBackwards = layer.ErrClockBackwards

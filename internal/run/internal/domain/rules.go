@@ -7,22 +7,27 @@ package domain
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"math"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/canonical"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
+
+// errTrailingDocument is the cause of an artifact followed by another JSON value.
+var errTrailingDocument = errors.New("a second JSON value follows the artifact")
 
 // ValidateArtifactDocument checks that raw is a JSON document that satisfies
 // the run-artifact schema.
 func ValidateArtifactDocument(raw []byte, path string) error {
 	var doc any
 	if err := model.DecodeBytes(raw, &doc); err != nil {
-		return fmt.Errorf("run: %s not valid JSON: %w", path, err)
+		return model.NotJSONError(model.ContractRunArtifact, path, fmt.Sprintf("run: %s not valid JSON", path), err)
 	}
 	if err := model.ValidateRunArtifact(raw); err != nil {
-		return fmt.Errorf("streamsim: %w", err)
+		return fmt.Errorf("streamsim: %w", model.WithSource(err, path))
 	}
 	return nil
 }
@@ -34,7 +39,7 @@ func DecodeArtifact(raw []byte) (*model.RunArtifact, error) {
 	decoder := json.NewDecoder(bytes.NewReader(raw))
 	decoder.UseNumber()
 	if err := decoder.Decode(&artifact); err != nil {
-		return nil, fmt.Errorf("run: decode artifact: %w", err)
+		return nil, model.NotJSONError(model.ContractRunArtifact, "", "run: decode artifact", err)
 	}
 	if err := rejectArtifactTrailingJSON(decoder); err != nil {
 		return nil, err
@@ -46,9 +51,9 @@ func rejectArtifactTrailingJSON(decoder *json.Decoder) error {
 	var extra any
 	if err := decoder.Decode(&extra); err != io.EOF {
 		if err == nil {
-			return fmt.Errorf("run: artifact has trailing JSON")
+			return model.NotJSONError(model.ContractRunArtifact, "", "run: artifact has trailing JSON", errTrailingDocument)
 		}
-		return fmt.Errorf("run: artifact trailing data: %w", err)
+		return model.NotJSONError(model.ContractRunArtifact, "", "run: artifact trailing data", err)
 	}
 	return nil
 }
@@ -146,19 +151,27 @@ func CommandString(args map[string]any, key string) string {
 	return ""
 }
 
-// CommandTime reads a nanosecond time argument of a recorded command.
+// CommandTime reads a nanosecond time argument of a recorded command, 0 when
+// it is absent or not an exact time (see ExactTime).
 func CommandTime(args map[string]any, key string) int64 {
+	value, _ := ExactTime(args, key)
+	return value
+}
+
+// ExactTime reads a nanosecond time argument, reporting false unless it is an
+// integer that fits in 64 bits. A decoded document's time must be written as
+// a plain integer: a fraction or an exponent is not an exact time.
+func ExactTime(args map[string]any, key string) (int64, bool) {
 	switch value := args[key].(type) {
-	case float64:
-		return int64(value)
 	case int64:
-		return value
+		return value, true
+	case float64:
+		return int64(value), value == math.Trunc(value) && math.Abs(value) < math.MaxInt64
 	case json.Number:
-		if n, err := value.Int64(); err == nil {
-			return n
-		}
+		n, err := value.Int64()
+		return n, err == nil
 	}
-	return 0
+	return 0, false
 }
 
 // AsMap views a decoded JSON value as an object, nil when it is not one.

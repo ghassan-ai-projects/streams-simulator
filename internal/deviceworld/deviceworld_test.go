@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/device"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/deviceworld"
@@ -128,5 +129,21 @@ func TestLeaseExpiryDrivesTheWorldSafeStopThroughTheFacadePlant(t *testing.T) {
 	}
 	if calls := w.EffectorCalls(); len(calls) != 2 || calls[1].CommandID != "safe-stop/fan-01/1" {
 		t.Fatalf("the world must see the safe-stop invocation: %+v", calls)
+	}
+}
+
+func TestOpenDeviceComposesACapabilityCatalogWithABoundWorld(t *testing.T) {
+	t.Parallel()
+	dev, w, err := deviceworld.OpenDevice(deviceworld.OpenOptions{
+		Capabilities:  testsupport.DeviceCapabilities(),
+		WorldBindings: testsupport.DeviceWorldBindings(),
+		WorldDomain:   testsupport.Domain("cold-chain-transit"),
+		BootID:        "boot-A", DeviceID: "dev-01", Now: time.Now,
+	})
+	if err != nil || dev == nil || w == nil {
+		t.Fatalf("device = %v, world = %v, err = %v", dev, w, err)
+	}
+	if state := dev.State(); state["message_type"] != "state" {
+		t.Fatalf("state = %v", state)
 	}
 }

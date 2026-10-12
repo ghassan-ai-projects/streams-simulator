@@ -31,6 +31,9 @@ func New(ctx context.Context, cfg Config) (*Run, error) {
 }
 
 func newRun(ctx context.Context, cfg Config) (*Run, error) {
+	if cfg.ScenarioProfile != "" && !cfg.Domain.HasProfile(cfg.ScenarioProfile) {
+		return nil, fmt.Errorf("run: %w %q in domain %q", ErrUnknownProfile, cfg.ScenarioProfile, cfg.Domain.Spec.ID)
+	}
 	w, err := newRunWorld(cfg)
 	if err != nil {
 		return nil, err
@@ -43,6 +46,7 @@ func newRunWorld(cfg Config) (*world.World, error) {
 		InitialEntities:  cfg.EntityIDs,
 		Noiseless:        cfg.Noiseless,
 		ForceFailureMode: cfg.ForceFailureMode,
+		EmitDisabled:     cfg.silent,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("streamsim: %w", err)

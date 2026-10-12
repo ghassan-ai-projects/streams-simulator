@@ -20,7 +20,9 @@ func crossCheck(a *model.Adapter, src string) error {
 type adapterChecks struct{ source string }
 
 func (checks adapterChecks) bad(format string, args ...any) error {
-	return fmt.Errorf("adapter: %s: %s", checks.source, fmt.Sprintf(format, args...))
+	message := fmt.Sprintf(format, args...)
+	return &model.ValidationError{Contract: model.ContractOutputAdapter, Source: checks.source,
+		Summary: fmt.Sprintf("adapter: %s: %s", checks.source, message), Issues: []model.Issue{model.UnlocatedIssue(message)}}
 }
 
 func (checks adapterChecks) checkTemplate(t model.RecordTemplate) error {

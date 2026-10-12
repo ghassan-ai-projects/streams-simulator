@@ -2,18 +2,21 @@ package mcp_test
 
 import (
 	"context"
+	"io"
+	"strings"
 	"testing"
 
 	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/director"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/mcp"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
-func newDirector(t *testing.T) *mcp.Director {
+func newDirector(t *testing.T) *director.Director {
 	t.Helper()
 	spec, err := domain.Load(testsupport.Example())
 	if err != nil {
@@ -25,7 +28,7 @@ func newDirector(t *testing.T) *mcp.Director {
 	}
 	cat := domain.NewCatalog([]*domain.Compiled{spec})
 	adapters := map[string]*model.Adapter{"native-jsonl": native}
-	return mcp.NewDirector(t.Context(), cat, adapters, t.TempDir())
+	return director.New(t.Context(), cat, adapters, t.TempDir())
 }
 
 func toolNames(t *testing.T, server *mcpsdk.Server) map[string]bool {
@@ -55,13 +58,13 @@ func toolNames(t *testing.T, server *mcpsdk.Server) map[string]bool {
 func TestRolesExposeDisjointToolSurfaces(t *testing.T) {
 	t.Parallel()
 	d := newDirector(t)
-	director := toolNames(t, mcp.NewDirectorServer(d))
+	directorTools := toolNames(t, mcp.NewDirectorServer(d))
 	operator := toolNames(t, mcp.NewOperatorServerResolver(d))
-	if !director["sim.truth.reveal"] || !operator["sim.nameplate.read"] {
-		t.Fatalf("each role must expose its own tools: director=%v operator=%v", director, operator)
+	if !directorTools["sim.truth.reveal"] || !operator["sim.nameplate.read"] {
+		t.Fatalf("each role must expose its own tools: director=%v operator=%v", directorTools, operator)
 	}
 	for name := range operator {
-		if director[name] && name != "sim.consumer.report" {
+		if directorTools[name] && name != "sim.consumer.report" {
 			t.Fatalf("operator tool %q leaked onto the director surface", name)
 		}
 	}
@@ -97,5 +100,13 @@ func TestSetOperatorEndpointIsAdvertisedByWorldCreate(t *testing.T) {
 	out, _ := res.StructuredContent.(map[string]any)
 	if out["operator_endpoint"] != "http://127.0.0.1:9/operator" {
 		t.Fatalf("world create must advertise the recorded endpoint: %v", out)
+	}
+}
+
+func TestServeDirectorRefusesADomainsDirectoryThatHoldsNoDomain(t *testing.T) {
+	t.Parallel()
+	err := mcp.ServeDirector(t.Context(), io.Discard, mcp.ServeOptions{DomainsDir: t.TempDir(), AdaptersDir: testsupport.AdaptersDir(), OutDir: t.TempDir()})
+	if err == nil || !strings.Contains(err.Error(), "no domains found in") {
+		t.Fatalf("err = %v", err)
 	}
 }

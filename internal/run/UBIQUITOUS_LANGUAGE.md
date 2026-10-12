@@ -9,6 +9,14 @@ pipeline, recorded so that replay reproduces it byte-for-byte.
 | Determinism tuple | `(sim_version, domain_digest, adapter_digest, seed, command_log, sink)`: everything a run is a pure function of | `Config`, `Digest` | `world_config`, digests |
 | Command | A recorded mutation of the run: advance, fault, perturb, effector, entity, env | `model.Command` | `command_log[]` |
 | Command log | The ordered commands that, replayed, reproduce the run | `commandLog` | `command_log` |
+| Scenario | A repeatable run as a file: domain, adapter, seed, world settings and the ordered director commands; flags and files both execute one | `model.Scenario`, `ScenarioConfig`, `ExecuteScenario` | `scenario-v0.1` |
+| Scenario command | One director operation with the arguments the command log records, without `seq` and `at_ns`; a clock advance carries only its target | `model.ScenarioCommand`, `rules.IsScenarioOp` | `commands[]` |
+| Scenario check | Every way a scenario breaks its domain or the run's rules, found before anything is delivered: a static check, then a dry run | `CheckScenario`, `rules.CheckScenario`, `rules.ScenarioFacts` | `scenario_invalid` issues |
+| Dry run | A scenario executed through the run's executor on its world with emission off and nothing opened, to find the first command the run would refuse as it unfolds | `newShadow`, `dryRunScenario` | `/commands/<i>` issue |
+| Refused call | An effector call the world refused at admission (gone or unknown entity, undeclared effector, refused arguments): it changed nothing, so an export drops it | `PruneRefusedCalls`, `world.ErrInvalidInvocation` | `refused` in the export result |
+| Run span | How far a run's clock may move past its start: 30 days of simulated time, on every surface | `rules.MaxRunSpanNS`, `rules.ExceedsRunSpan`, `ErrRunSpanExceeded` | `--duration` bound |
+| Command executor | The one executor behind replay and scenario runs; its refusal policy keeps every recorded effector refusal on replay and only the world's run-time refusals (interlock, reused command id) for authored commands | `executeCommand`, `refusalPolicy` | — |
+| Unknown profile | A run created with a profile its domain does not declare; refused on every surface, replay included | `app.ErrUnknownProfile` | — |
 | Delivery ledger | One row per emitted event with its terminal delivery reason, kept in memory and optionally durably | `ledger`, `durable.Ledger` | `ledger.jsonl`, `delivery_reason` |
 | Trace | The delivered byte stream the sink produced; its digest is the replay oracle | `Trace`, `traceDigest` | `trace.jsonl`, `expected_trace_digest` |
 | Run artifact | The self-contained record of a finished run: inputs, command log, counts, digests | `model.RunArtifact` | `run.json` |
@@ -18,6 +26,11 @@ pipeline, recorded so that replay reproduces it byte-for-byte.
 | Unblind | Stamping the run permanently so it is excluded from every scorecard | `Unblind`, `UnblindedStamp` | `unblinded`, `unblinded_at` |
 | Reproducible | Whether replay can reproduce the run byte-for-byte (stepped time, quiesced consumer) | `Reproducible` | `reproducible` |
 | Hidden-state history | Director-only per-emission state snapshots | `History`, `model.StateSnapshot` | `world_state_history.jsonl` |
+| Inputs | The domain and adapter a run names, resolved by id from a domains directory and an adapters directory | `LoadInputs` | `--domains-dir`, `--adapters-dir` |
+| Scenario export | The scenario that reproduces a recorded run, with the effector calls the world refused dropped, checked as `run --scenario` would check it, and its file content; loading the artifact and its inputs is part of the entry | `ExportScenarioFile`, `ScenarioExport`, `ScenarioFromArtifact`, `PruneRefusedCalls` | `scenario from-run` |
+| Scenario run | Resolve a scenario's inputs, check it before any sink opens (a violation is a `ScenarioCheckError`), execute it and end the run | `RunScenario`, `RunSummary`, `ScenarioCheckError` | `run`, `run --scenario` |
+| Replay file | Reproduce the run artifact at a path against the domain and adapter it recorded | `ReplayFile`, `Directories` | `replay`, `verify` |
+| Start bound | The latest a run's world may start, the world's own bound | `MaxStartNS` | `--start-time` |
 
 ## Retired words
 

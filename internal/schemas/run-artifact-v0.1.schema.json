@@ -150,7 +150,7 @@
           "type": "boolean"
         },
         "force_failure_mode": {
-          "type": "string"
+          "enum": ["ok", "slow", "ack_lost", "reject", "partial", "confirmed_no_effect", "silent_no_effect"]
         }
       }
     },

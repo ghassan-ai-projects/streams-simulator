@@ -85,10 +85,39 @@ var paramRules = map[string]map[string]paramCheck{
 	InjectionProbe: {"payloads": payloadsCheck},
 }
 
-func validateParams(name string, params map[string]any) error {
-	if params == nil {
-		return nil
+// CheckApplication reports whether applying name with params over the window
+// from fromNS to untilNS is admitted, without applying it: the name is in
+// the catalog, the window can act (CheckWindow) and params holds only
+// declared parameters, in range (CheckParams). The error states the
+// violation.
+func CheckApplication(name string, params map[string]any, fromNS, untilNS int64) error {
+	if err := CheckParams(name, params); err != nil {
+		return err
 	}
+	return CheckWindow(name, fromNS, untilNS)
+}
+
+// CheckParams reports whether name is in the catalog and params are
+// parameters it accepts.
+func CheckParams(name string, params map[string]any) error {
+	if !isName(name) {
+		return fmt.Errorf("unknown perturbation %q", name)
+	}
+	return paramsViolation(name, params)
+}
+
+// CheckWindow reports whether an activity window can act: untilNS is 0 (no
+// end) or not before fromNS.
+func CheckWindow(name string, fromNS, untilNS int64) error {
+	if untilNS != 0 && untilNS < fromNS {
+		return fmt.Errorf("%s window would end at %d, before it starts at %d", name, untilNS, fromNS)
+	}
+	return nil
+}
+
+// paramsViolation is the first parameter, in key order, that the
+// perturbation does not accept.
+func paramsViolation(name string, params map[string]any) error {
 	rules, declared := paramRules[name]
 	for _, key := range slices.Sorted(maps.Keys(params)) {
 		if err := validateParameter(name, key, params[key], rules, declared); err != nil {
@@ -119,14 +148,14 @@ func asFloat(v any) (float64, bool) {
 
 func validateParameter(name, key string, value any, rules map[string]paramCheck, declared bool) error {
 	if !declared {
-		return fmt.Errorf("perturb: %s accepts no parameters (got %q)", name, key)
+		return fmt.Errorf("%s accepts no parameters (got %q)", name, key)
 	}
 	check, ok := rules[key]
 	if !ok {
-		return fmt.Errorf("perturb: %s has no parameter %q", name, key)
+		return fmt.Errorf("%s has no parameter %q", name, key)
 	}
 	if err := check(value); err != nil {
-		return fmt.Errorf("perturb: %s %s: %w", name, key, err)
+		return fmt.Errorf("%s %s: %w", name, key, err)
 	}
 	return nil
 }

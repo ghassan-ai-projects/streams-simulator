@@ -70,8 +70,8 @@ func TestNestedContractSchemasAreAdvertised(t *testing.T) {
 	d := newTestDirector(t)
 	check(t, NewDirectorServer(d), "sim.truth.seal", "ground_truth")
 	d2 := newTestDirector(t)
-	worldID := createWorld(t, d2)
-	check(t, NewOperatorServer(d2.Worlds[worldID].Operator), "sim.consumer.report", "verdict")
+	createWorld(t, d2)
+	check(t, NewOperatorServerResolver(d2), "sim.consumer.report", "verdict")
 }
 
 func validVerdict(runID string) map[string]any {
@@ -85,10 +85,9 @@ func validVerdict(runID string) map[string]any {
 func TestVerdictContractEnforcedOverWire(t *testing.T) {
 	t.Parallel()
 	d := newTestDirector(t)
-	worldID := createWorld(t, d)
-	runID := d.Worlds[worldID].Run.ID
-	w := d.Worlds[worldID]
-	cs, _ := connect(t, NewOperatorServer(w.Operator))
+	w := newWorld(t, d)
+	runID := w.runID
+	cs, _ := connect(t, NewOperatorServerResolver(d))
 
 	report := func(args map[string]any) (*mcp.CallToolResult, error) {
 		return cs.CallTool(context.Background(), &mcp.CallToolParams{
@@ -98,7 +97,7 @@ func TestVerdictContractEnforcedOverWire(t *testing.T) {
 
 	// A structurally valid verdict is accepted.
 	res, err := report(map[string]any{
-		"token": w.Token, "run_id": runID,
+		"token": w.token, "run_id": runID,
 		"quiesced_through_ns": int64(0), "verdict": validVerdict(runID),
 	})
 	if err != nil {
@@ -111,7 +110,7 @@ func TestVerdictContractEnforcedOverWire(t *testing.T) {
 	// An unknown top-level verdict key violates the contract.
 	bad := validVerdict(runID)
 	bad["bogus_field"] = 1
-	res, err = report(map[string]any{"token": w.Token, "run_id": runID, "verdict": bad})
+	res, err = report(map[string]any{"token": w.token, "run_id": runID, "verdict": bad})
 	if err == nil && !res.IsError {
 		t.Fatal("verdict with unknown top-level key must be rejected")
 	}
@@ -119,7 +118,7 @@ func TestVerdictContractEnforcedOverWire(t *testing.T) {
 	// A missing required field is rejected.
 	missing := validVerdict(runID)
 	delete(missing, "consumer")
-	res, err = report(map[string]any{"token": w.Token, "run_id": runID, "verdict": missing})
+	res, err = report(map[string]any{"token": w.token, "run_id": runID, "verdict": missing})
 	if err == nil && !res.IsError {
 		t.Fatal("verdict missing consumer must be rejected")
 	}
@@ -128,8 +127,7 @@ func TestVerdictContractEnforcedOverWire(t *testing.T) {
 func TestGroundTruthContractEnforcedOverWire(t *testing.T) {
 	t.Parallel()
 	d := newTestDirector(t)
-	worldID := createWorld(t, d)
-	runID := d.Worlds[worldID].Run.ID
+	runID := newWorld(t, d).runID
 	cs, _ := connect(t, NewDirectorServer(d))
 
 	seal := func(gt map[string]any) (*mcp.CallToolResult, error) {
@@ -207,11 +205,11 @@ func TestPerturbApplyRejectsUnknownParamKeys(t *testing.T) {
 func TestWorldCreateHonorsExplicitZeroStartTime(t *testing.T) {
 	t.Parallel()
 	d := newTestDirector(t)
-	res, err := d.CreateWorld(map[string]any{
+	res, err := d.CreateWorld(worldRequest(map[string]any{
 		"domain": "aquaculture-pond", "seed": float64(1), "adapter": "native-jsonl",
 		"sink": model.SinkInproc, "time_mode": model.TimeStepped,
 		"start_time": float64(0),
-	})
+	}))
 	if err != nil {
 		t.Fatalf("explicit epoch-0 start rejected: %v", err)
 	}
@@ -220,10 +218,10 @@ func TestWorldCreateHonorsExplicitZeroStartTime(t *testing.T) {
 	}
 
 	// Absent start_time keeps the documented default.
-	res, err = d.CreateWorld(map[string]any{
+	res, err = d.CreateWorld(worldRequest(map[string]any{
 		"domain": "aquaculture-pond", "seed": float64(2), "adapter": "native-jsonl",
 		"sink": model.SinkInproc, "time_mode": model.TimeStepped,
-	})
+	}))
 	if err != nil {
 		t.Fatal(err)
 	}

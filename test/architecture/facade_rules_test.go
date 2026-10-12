@@ -33,6 +33,21 @@ var aliasedValueTypes = map[string]aliasReview{
 			"HasEffector", "HasFault", "HasProfile", "HasState", "Profile", "StateNames"},
 		reason: "compiled domain spec: lookups over its own declared names; Spec is deliberately mutable for tests",
 	},
+	"internal/grading:ReplayMismatchError": {
+		target:  "ReplayMismatchError",
+		methods: []string{"Error"},
+		reason:  "the refusal to grade a replay that diverged: an error whose only method renders its message, carrying the replay report",
+	},
+	"internal/suite:UnknownProfileError": {
+		target:  "UnknownProfileError",
+		methods: []string{"Error"},
+		reason:  "the refusal to publish a suite for a profile the domain does not declare: an error whose only method renders its message",
+	},
+	"internal/run:ScenarioCheckError": {
+		target:  "ScenarioCheckError",
+		methods: []string{"Error", "Unwrap"},
+		reason:  "the violation a scenario check found, marked so a surface can restate it in its own terms: an error whose methods render and unwrap the violation",
+	},
 	"internal/device:Capabilities": {
 		target:  "Capabilities",
 		methods: []string{"Digest", "SafeStopNames"},

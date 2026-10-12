@@ -20,15 +20,15 @@ func (failingSink) Write([]byte) error { return errors.New("injected sink failur
 func (failingSink) Close() ([]byte, error) { return nil, nil }
 
 // testBase loads the aquaculture-pond domain and native-jsonl adapter.
-func testBase(t *testing.T) (*domain.Compiled, *model.Adapter) {
-	t.Helper()
+func testBase(tb testing.TB) (*domain.Compiled, *model.Adapter) {
+	tb.Helper()
 	spec, err := domain.Load(testsupport.Example())
 	if err != nil {
-		t.Fatal(err)
+		tb.Fatal(err)
 	}
 	a, err := adapter.Load(testsupport.Adapter("native-jsonl"))
 	if err != nil {
-		t.Fatal(err)
+		tb.Fatal(err)
 	}
 	return spec, a
 }

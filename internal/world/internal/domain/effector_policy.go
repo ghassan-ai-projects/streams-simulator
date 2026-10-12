@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"errors"
 	"fmt"
 	"math"
 
@@ -10,6 +11,25 @@ import (
 )
 
 func (w *World) validateArgs(eff *model.Effector, args map[string]any) error {
+	if err := w.argsViolation(eff, args); err != nil {
+		return fmt.Errorf("world: invalid args for %q: %w", eff.Name, err)
+	}
+	return nil
+}
+
+// CheckEffectorArgs reports whether effector is declared by the domain and
+// args satisfy its args_schema, without invoking it. The error states the
+// violation.
+func (w *World) CheckEffectorArgs(effector string, args map[string]any) error {
+	eff := w.Spec.Effector(effector)
+	if eff == nil {
+		return fmt.Errorf("the domain declares no effector %q", effector)
+	}
+	return w.argsViolation(eff, args)
+}
+
+// argsViolation is the first way args break the effector's args_schema.
+func (w *World) argsViolation(eff *model.Effector, args map[string]any) error {
 	if len(eff.ArgsSchema) == 0 {
 		return nil
 	}
@@ -17,8 +37,8 @@ func (w *World) validateArgs(eff *model.Effector, args map[string]any) error {
 	if err != nil {
 		return err
 	}
-	if errors := schema.Validate(args); len(errors) > 0 {
-		return fmt.Errorf("world: invalid args for %q: %s", eff.Name, errors[0].Msg)
+	if violations := schema.Validate(args); len(violations) > 0 {
+		return errors.New(violations[0].Msg)
 	}
 	return nil
 }

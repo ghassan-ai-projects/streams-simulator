@@ -29,7 +29,7 @@ func dynamicsDependencies(spec *model.DomainSpec) map[string][]string {
 func (traversal *dynamicsTraversal) visit(name string) error {
 	switch traversal.state[name] {
 	case 1:
-		return fmt.Errorf("domain: %s: dynamics dependency cycle at state %q (path %v)", traversal.source, name, append(traversal.stack, name))
+		return invalidDomain(traversal.source, fmt.Sprintf("dynamics dependency cycle at state %q (path %v)", name, append(traversal.stack, name)))
 	case 2:
 		return nil
 	}

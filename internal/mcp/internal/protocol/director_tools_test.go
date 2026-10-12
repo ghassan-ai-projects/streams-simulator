@@ -101,10 +101,8 @@ func TestDirectorInjectionToolsInjectListAndClear(t *testing.T) {
 	t.Parallel()
 	d := newTestDirector(t)
 	cs, _ := connect(t, NewDirectorServer(d))
-	worldID := createWorld(t, d)
-	w := d.World(worldID)
-	entity := w.Run.World.EntityIDs()[0]
-	fault := w.Run.Domain().Spec.Faults[0].ID
+	w := newWorld(t, d)
+	worldID, entity, fault := w.id, w.entity, "aerator_failure"
 
 	injected := mustCall(t, cs, "sim.fault.inject", map[string]any{"world_id": worldID, "entity_id": entity, "fault": fault})
 	faultID, _ := injected["fault_id"].(string)
@@ -131,10 +129,8 @@ func TestDirectorTruthAndRunToolsEnforceTheSealOrder(t *testing.T) {
 	t.Parallel()
 	d := newTestDirector(t)
 	cs, _ := connect(t, NewDirectorServer(d))
-	worldID := createWorld(t, d)
-	w := d.World(worldID)
-	runID := w.Run.ID
-	entity := w.Run.World.EntityIDs()[0]
+	w := newWorld(t, d)
+	worldID, runID, entity := w.id, w.runID, w.entity
 
 	if _, refusal := toolCall(t, cs, "sim.run.begin", map[string]any{"world_id": worldID}); !strings.HasPrefix(refusal, "truth_sealed: ") {
 		t.Fatalf("run.begin before sealing = %q", refusal)
@@ -171,8 +167,8 @@ func TestDirectorEntityRetireAndAuditRefuseWhatTheyCannotDo(t *testing.T) {
 	t.Parallel()
 	d := newTestDirector(t)
 	cs, _ := connect(t, NewDirectorServer(d))
-	worldID := createWorld(t, d)
-	entity := d.World(worldID).Run.World.EntityIDs()[0]
+	w := newWorld(t, d)
+	worldID, entity := w.id, w.entity
 
 	retired := mustCall(t, cs, "sim.entity.retire", map[string]any{"world_id": worldID, "entity_id": entity, "reason": "decommissioned"})
 	if retired["retired"] != true {
@@ -221,8 +217,7 @@ func TestAdvanceErrorsKeepTheirOwnCodes(t *testing.T) {
 	}
 
 	worldID = createWorld(t, d)
-	w := d.World(worldID)
-	if _, err := w.Run.End(""); err != nil {
+	if _, err := d.EndRun(worldID); err != nil {
 		t.Fatal(err)
 	}
 	_, refusal = toolCall(t, cs, "sim.clock.advance", map[string]any{"world_id": worldID, "by_ns": 60 * 1e9})
@@ -266,7 +261,7 @@ func TestWorldCreateReturnsTheRunIdTruthIsSealedAgainst(t *testing.T) {
 	cs, _ := connect(t, NewDirectorServer(d))
 	created := mustCall(t, cs, "sim.world.create", map[string]any{"domain": "aquaculture-pond"})
 	runID, _ := created["run_id"].(string)
-	if runID == "" || runID != d.World(created["world_id"].(string)).Run.ID {
+	if err := d.SealTruth(runID, &model.GroundTruthRecord{ScenarioID: "x", Domain: "aquaculture-pond", Label: "l", EntityID: "e"}); runID == "" || err != nil {
 		t.Fatalf("world.create must name the run: %v", created)
 	}
 }

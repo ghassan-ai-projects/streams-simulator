@@ -111,8 +111,9 @@ rather than accepting an ambiguous empty entity id.
 
 Exactly one of `by_ns` and `to_ns` is required. `by_ns` is a non-negative relative
 nanosecond delta; `to_ns` is an absolute epoch nanosecond timestamp. The clock never moves
-backwards; a request to do so is refused. `emitted` is the number produced by this call,
-while `emitted_total` is cumulative for the world.
+backwards, nor more than 30 days of simulated time past the world's start (the run-span
+bound, `SCENARIO_FILE.md` §3); a request to do either is refused. `emitted` is the number
+produced by this call, while `emitted_total` is cumulative for the world.
 
 `sim.clock.run` is not built. Continuous mode is deliberately cut for this release and
 maps to repeated `sim.clock.advance` calls in a harness.
@@ -146,6 +147,9 @@ the world is open and read the finalized file after close.
 | `sim.perturb.apply` | `{world_id, perturbation, params?, from_ns?, until_ns?}` | `{perturb_id}` |
 | `sim.perturb.clear` | `{world_id, perturb_id}` | — |
 | `sim.env.inject` | `{world_id, target, fault, params?}` | `{env_id}` — record an environment fault against a configured consumer endpoint |
+
+`sim.perturb.apply` refuses a window whose `until_ns` is set and before its `from_ns`: it could
+never act.
 
 Three surfaces, three tools, never conflated: `fault` changes physics, `perturb` changes
 delivery, `env` changes the consumer's environment.
@@ -226,6 +230,15 @@ domain spec.
 
 → `{accepted, simulated: true, world_id, command_id, effect_eta_ns?, reason?}`
 
+These six fields are the whole response (`model.EffectorAcknowledgement`); nothing else of the
+world's result reaches the operator. Every failure mode that acknowledges the call (`ok`, `slow`,
+`partial`, `confirmed_no_effect`, `silent_no_effect`) returns a byte-identical response, the
+promised `effect_eta_ns` included, so a consumer learns whether the effect happened only from
+the world it observes. A call that is not acknowledged reads as `accepted: false` with no effect time and
+either `reason: "effector_refused"` (`reject`) or `reason: "acknowledgement_timeout"` (`ack_lost`,
+whose effect did apply: a consumer cannot tell from the response, exactly as with a real
+timeout).
+
 One tool for every effector in every domain. `effector` is a string validated against the
 loaded spec; `args` is validated against that effector's declared schema. **The binary
 contains no effector name.**
@@ -237,8 +250,8 @@ contains no effector name.**
 - **A capability token is required**, minted at world creation. Together with
   `command_id` this is how the simulator declines to be actuated by anything other than a
   consumer's deliberate, identified dispatch.
-- Any of the seven failure modes in [TECHNICAL_DESIGN §8.2](TECHNICAL_DESIGN.md) may be
-  returned, per the injected configuration.
+- Any of the seven failure modes in [TECHNICAL_DESIGN §8.2](TECHNICAL_DESIGN.md) may occur,
+  per the injected configuration; the response never names it.
 - Every call is recorded with full arguments and the resulting world delta. That log, not
   the consumer's claim, is the authority when scoring actions.
 

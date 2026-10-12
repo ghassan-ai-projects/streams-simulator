@@ -2,10 +2,15 @@ package device_test
 
 import (
 	"errors"
+	"io"
+	"io/fs"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/device"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
 func TestFacadeAppliesACommandReportsStateAndSetsFaults(t *testing.T) {
@@ -49,5 +54,26 @@ func TestPlantErrorsAreTheFacadeSentinels(t *testing.T) {
 	t.Parallel()
 	if errors.Is(device.ErrPlantUnavailable, device.ErrPlantInterlocked) {
 		t.Fatal("the plant refusals must stay distinct")
+	}
+}
+
+func TestFacadeLoadsCapabilitiesFromAFileAndRefusesAMissingOne(t *testing.T) {
+	t.Parallel()
+	caps, err := device.LoadCapabilitiesFile(testsupport.DeviceCapabilities())
+	if err != nil || caps.Digest() == "" {
+		t.Fatalf("capabilities = %v, %v", caps, err)
+	}
+	if _, err := device.LoadCapabilitiesFile(filepath.Join(t.TempDir(), "absent.json")); !errors.Is(err, fs.ErrNotExist) {
+		t.Fatalf("a missing catalog: err = %v, want ErrNotExist", err)
+	}
+}
+
+func TestServeRefusesASocketPathItCannotBindAndNamesIt(t *testing.T) {
+	t.Parallel()
+	socket := filepath.Join(t.TempDir(), "absent", "d.sock")
+	err := device.Serve(io.Discard, socket, device.New(device.Config{}), "banner")
+	var pathFailure *os.PathError
+	if !errors.As(err, &pathFailure) || pathFailure.Path != socket {
+		t.Fatalf("Serve = %v, want a path failure naming %s", err, socket)
 	}
 }

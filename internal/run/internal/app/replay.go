@@ -38,7 +38,11 @@ func LoadArtifact(path string) (*model.RunArtifact, error) {
 	if err := rules.ValidateArtifactDocument(raw, path); err != nil {
 		return nil, err
 	}
-	return rules.DecodeArtifact(raw)
+	artifact, err := rules.DecodeArtifact(raw)
+	if err != nil {
+		return nil, fmt.Errorf("streamsim: %w", model.WithSource(err, path))
+	}
+	return artifact, nil
 }
 
 // ReplayArtifact re-executes a run artifact's command log against a fresh
@@ -102,11 +106,11 @@ func replayInputs(art *model.RunArtifact, spec *domain.Compiled, adapterSpec *mo
 
 func validateReplayInputs(art *model.RunArtifact, spec *domain.Compiled, adapterSpec *model.Adapter) error {
 	if spec.Spec.ID != art.Domain.ID || spec.Spec.Version != art.Domain.Version || spec.Digest != art.Domain.Digest {
-		return fmt.Errorf("run: domain digest mismatch: artifact=%s current=%s", art.Domain.Digest, spec.Digest)
+		return fmt.Errorf("run: domain %w: artifact=%s current=%s", ErrDigestMismatch, art.Domain.Digest, spec.Digest)
 	}
 	currentAdapterDigest := rules.AdapterDigest(adapterSpec)
 	if adapterSpec.ID != art.Adapter.ID || adapterSpec.Version != art.Adapter.Version || currentAdapterDigest != art.Adapter.Digest {
-		return fmt.Errorf("run: adapter digest mismatch: artifact=%s current=%s", art.Adapter.Digest, currentAdapterDigest)
+		return fmt.Errorf("run: adapter %w: artifact=%s current=%s", ErrDigestMismatch, art.Adapter.Digest, currentAdapterDigest)
 	}
 	return nil
 }
@@ -124,20 +128,6 @@ func replayConfig(art *model.RunArtifact, spec *domain.Compiled, adapterSpec *mo
 		cfg.SinkName = model.SinkFile
 	}
 	return cfg
-}
-
-// executeCommand applies one logged command to a run (replay path).
-func executeCommand(ctx context.Context, r *Run, cmd *model.Command) error {
-	switch cmd.Op {
-	case model.OpClockAdvance:
-		return replayAdvance(ctx, r, cmd.Args)
-	case model.OpFaultInject, model.OpFaultClear:
-		return replayFault(r, cmd)
-	case model.OpPerturbApply, model.OpPerturbClear:
-		return replayPerturb(r, cmd)
-	default:
-		return replayActuation(r, cmd)
-	}
 }
 
 // firstDivergentRecord names the first record the replay is missing or has

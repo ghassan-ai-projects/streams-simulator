@@ -18,16 +18,19 @@ var moduleShapes = map[string][]string{
 	"internal/world":       {"domain"},
 	"internal/score":       {"domain"},
 	"internal/audit":       {"domain"},
-	"internal/suite":       {"domain"},
-	"internal/deviceworld": {"domain"},
+	"internal/suite":       {"domain", "app", "files"},
+	"internal/deviceworld": {"domain", "app", "files"},
 	"internal/sink":        {"domain", "files", "httppush"},
 	"internal/domain":      {"domain", "files"},
 	"internal/adapter":     {"domain", "files"},
-	"internal/device":      {"domain", "uds"},
+	"internal/device":      {"domain", "uds", "files"},
 	"internal/run":         {"domain", "app", "durable", "quiesce", "clock"},
-	"internal/refconsumer": {"domain", "mcpclient"},
-	"internal/mcp":         {"app", "capability", "protocol"},
-	"internal/cli":         {"app", "files", "process", "serve"},
+	"internal/refconsumer": {"domain", "mcpclient", "app", "files"},
+	"internal/grading":     {"domain", "app", "files"},
+	"internal/release":     {"domain", "app", "files"},
+	"internal/director":    {"domain", "app", "capability"},
+	"internal/mcp":         {"protocol", "transport"},
+	"internal/cli":         {"app", "files", "process"},
 }
 
 func TestEveryModuleIsMigrated(t *testing.T) {
@@ -69,8 +72,8 @@ func TestModuleShapeMatchesItsKind(t *testing.T) {
 		if packages[module].kind != kindSurface && !layers[module]["domain"] {
 			t.Errorf("%s: declared as migrated but has no internal/domain layer", module)
 		}
-		if packages[module].kind == kindSurface && !layers[module]["app"] {
-			t.Errorf("%s: a surface module has an internal/app layer", module)
+		if packages[module].kind == kindSurface && !layers[module]["app"] && !layers[module]["protocol"] {
+			t.Errorf("%s: a surface module has neither an internal/app nor an internal/protocol layer", module)
 		}
 		for layer := range layers[module] {
 			if !slices.Contains(allowed, layer) {

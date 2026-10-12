@@ -19,6 +19,16 @@ func LoadAll(dir string) ([]*Compiled, error) {
 	return files.LoadAll(dir)
 }
 
+// NewCatalogFromDir loads every domain spec in dir (an empty dir selects
+// "domains") into a catalog. A directory that holds no domain is refused.
+func NewCatalogFromDir(dir string) (*Catalog, error) {
+	inner, err := files.LoadCatalog(dir)
+	if err != nil {
+		return nil, err
+	}
+	return &Catalog{catalog: inner}, nil
+}
+
 // Parse reads, schema-validates and structurally validates a domain spec from
 // an in-memory document. src names the source for error messages.
 func Parse(raw []byte, src string) (*Compiled, error) {

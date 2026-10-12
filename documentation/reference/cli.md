@@ -1,6 +1,6 @@
 # Command-line interface (CLI) reference
 
-> Status: Implemented reference. Authority: `internal/cli/internal/app/cli.go`. Verified by: `streamsim help` and targeted command smoke tests. Last verified: 2026-08-17.
+> Status: Implemented reference. Authority: `internal/cli/internal/app/cli.go` and [`cli-output-v0.1`](../../docs/contracts/cli-output-v0.1.schema.json). Verified by: `streamsim help`, targeted command smoke tests, and contract tests over every command's output. Last verified: 2026-10-12.
 
 The executable is `streamsim`. During development, run it without installing a binary:
 
@@ -8,7 +8,29 @@ The executable is `streamsim`. During development, run it without installing a b
 go run ./cmd/streamsim <command> [flags]
 ```
 
-Most successful command results are JSON. The help surface is human-readable, and the long-running `mcp` command serves its protocol transports instead of returning a JSON result. Paths are interpreted by the current process.
+Paths are interpreted by the current process. Flags may come before, between or after
+positional arguments; everything after `--` is positional (a `--` given as a flag's value is
+that value). A command given more positional arguments than it takes fails with
+`usage_invalid` naming the first unexpected one.
+
+## Output contract
+
+Every command except `help` and `mcp` prints exactly **one JSON document** on stdout, for
+success and for failure ([design](../../docs/design/CLI_SURFACE.md), [schema](../../docs/contracts/cli-output-v0.1.schema.json)). stderr carries human diagnostics only.
+
+| Exit | stdout |
+| --- | --- |
+| 0 | The command's result document (help prints nothing) |
+| 1 | `{"error": {"code", "message", "source"?, "issues"?, "result"?}}` |
+| 2 | The same error document with code `usage_invalid` |
+
+Error codes: `usage_invalid`, `file_not_found`, `domain_not_found`, `adapter_not_found`,
+`domain_invalid`, `adapter_invalid`, `artifact_invalid`, `replay_mismatch`,
+`adapter_verify_failed`, `io_failed`, and `<command>_failed` for any other failure of that
+command. `issues` lists every contract violation, with an RFC 6901 `pointer` when the location
+is known; `result` carries the command's report for a failed check (for example the replay
+report of a failed `verify`). `mcp` owns its stdout for the protocol and reports failures on
+stderr only; `device serve` prints no success document while it serves.
 
 ## Commands
 
@@ -80,11 +102,27 @@ Flags:
 
 ### `run`
 
-Runs one scripted world and writes an artifact when `--out` is supplied.
+Runs one world and writes an artifact when `--out` is supplied. The run is defined either by a
+[scenario file](../../docs/design/SCENARIO_FILE.md) (`--scenario`) or by the flags below; both take
+the same path: the flags build a scenario in memory. Before anything is delivered, the scenario is
+checked against the domain and world: every effector, fault, perturbation and profile named must
+exist; effector arguments and fault and perturbation parameters must be accepted; perturbation
+windows must not end before they start; times must be plain integers; the clock may not move more
+than 30 days past the start. The scenario is then dry-run on the same world with emission off,
+which finds the first command the run would refuse as it unfolds (an entity that does not exist
+at that point, an id already in use, a clear naming an id never assigned). A scenario file that fails is `scenario_invalid`, with every issue
+located in the file. Flags that fail are `usage_invalid`, with every issue naming the flag
+occurrence behind it. During the run, an effector call the world refuses through an interlock or
+a reused command id is a recorded outcome.
+A scenario's `description` is for readers; a scenario without a `clock.advance` emits nothing.
 
 ```text
 streamsim run [flags]
+streamsim run --scenario <file> [--domains-dir d] [--adapters-dir d] [--sink s] [--sink-target t] [--out dir]
 ```
+
+With `--scenario`, the flags the scenario defines (`--domain`, `--adapter`, `--seed`,
+`--profile`, `--start-time`, `--duration`, `--fault`, `--perturb`, `--effector`) are refused.
 
 | Flag | Default | Meaning |
 | --- | --- | --- |
@@ -96,16 +134,37 @@ streamsim run [flags]
 | `--sink` | `inproc` | `inproc`, `file`, or `http-push`. |
 | `--sink-target` | empty | File path or HTTP-push URL. Required for `http-push`; for `file`, `--out` can supply the trace path when this flag is omitted. |
 | `--out` | empty | Artifact output directory. |
-| `--duration` | `21600` | Duration in seconds. |
-| `--start-time` | `2026-01-01T00:00:00Z` | World start as epoch nanoseconds. |
+| `--duration` | `21600` | Duration in seconds; positive and at most 2592000 (30 days). |
+| `--start-time` | `2026-01-01T00:00:00Z` | World start as epoch nanoseconds, between 0 and 4611686018427387903. |
 | `--fault` | empty | Repeatable; each occurrence may be comma-separated `entity=fault@offset_s` entries. |
-| `--perturb` | empty | Repeatable; each occurrence may be comma-separated `name@from_s[@until_s]` entries. The optional end time is a second `@`-separated value. |
+| `--perturb` | empty | Repeatable; each occurrence may be comma-separated `name@from_s[@until_s]` entries. The optional end time is a second `@`-separated value and may not be before the start. |
 | `--effector` | empty | Repeatable. `effector@entity@offset_s[@{"arg":value}]`; the optional JSON object carries the effector arguments (required by every shipped effector). Command ids are `cli-0`, `cli-1`, … in order, so identical invocations record identical command logs. Entries without arguments may still be comma-separated within one occurrence; an entry with arguments takes an occurrence of its own. |
-| `--profile` | empty | Scenario profile name. |
+| `--profile` | empty | Scenario profile name; it must be one of the domain's profiles. |
+
+### `scenario from-run`
+
+Writes the scenario that reproduces a recorded run. Running it with `run --scenario` gives the
+same command log, trace digest and world digest for any run made by the CLI; for a
+director-driven run, the same trace and world digests. A clock advance is exported without
+`await_consumer`, which is pacing of the live session, not an input to the world.
+
+```text
+streamsim scenario from-run <run.json> --out <file> [--domains-dir domains] [--adapters-dir adapters]
+```
+
+The scenario is checked against its contract and then as `run --scenario` would check it, against
+the domain and adapter in the given directories. The artifact's domain and adapter must
+be the ones it recorded (`replay_mismatch` otherwise). Effector calls the world refused at
+admission changed nothing; they are dropped and counted in `refused`. A run that still cannot be
+expressed as a runnable scenario writes nothing and fails with `scenario_invalid` naming the
+artifact; `replay` and `verify` still reproduce it.
+
+Prints `{"scenario_written", "commands", "omitted", "refused"}`; `omitted` counts command-log entries that
+are not scenario commands (lifecycle records and the record-only `env.inject` of director runs).
 
 ### `replay` and `verify`
 
-Both load a run artifact, replay its command log and print the result as one JSON document. `replay` exits 0 whatever the outcome; `verify` exits 1 when the replay does not reproduce the recorded trace digest (a simulator-version difference alone does not fail it; it is reported in `version_match` and `detail`), so scripts can gate on it. The current CLI also loads the matching domain and adapter from `domains/` and `adapters/`; keep those directories available or override them with the flags.
+Both load a run artifact and replay its command log. `replay` prints the replay report and exits 0 whatever the outcome. `verify` prints the same report when the replay reproduces the recorded trace digest; otherwise it exits 1 with a `replay_mismatch` error document whose `result` is the report (a simulator-version difference alone does not fail it; it is reported in `version_match` and `detail`), so scripts can gate on it. An artifact whose domain, adapter or world digest no longer matches is also `replay_mismatch`. The current CLI also loads the matching domain and adapter from `domains/` and `adapters/`; keep those directories available or override them with the flags.
 
 ```text
 streamsim replay <run.json> [--domains-dir <path>] [--adapters-dir <path>]

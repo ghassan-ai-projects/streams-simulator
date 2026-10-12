@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"testing"
 
-	"github.com/ghassan-ai-projects/streams-simulator/internal/mcp/internal/app"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/director"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
@@ -18,7 +19,7 @@ import (
 
 // newTestDirector builds a director with the aquaculture-pond domain and
 // the native-jsonl adapter.
-func newTestDirector(t *testing.T) *app.Director {
+func newTestDirector(t *testing.T) *director.Director {
 	t.Helper()
 	spec, err := domain.Load(testsupport.Example())
 	if err != nil {
@@ -29,7 +30,7 @@ func newTestDirector(t *testing.T) *app.Director {
 		t.Fatal(err)
 	}
 	cat := domain.NewCatalog([]*domain.Compiled{spec})
-	d := app.NewDirector(context.Background(), cat, map[string]*model.Adapter{"native-jsonl": a}, t.TempDir())
+	d := director.New(context.Background(), cat, map[string]*model.Adapter{"native-jsonl": a}, t.TempDir())
 	return d
 }
 
@@ -81,8 +82,8 @@ func TestRoleSeparation(t *testing.T) {
 	}
 	// Operator server advertises exactly the four operator tools.
 	d2 := newTestDirector(t)
-	world := createWorld(t, d2)
-	opServer := NewOperatorServer(d2.Worlds[world].Operator)
+	createWorld(t, d2)
+	opServer := NewOperatorServerResolver(d2)
 	for _, name := range []string{"sim.nameplate.read", "sim.effector.list", "sim.effector.invoke", "sim.consumer.report"} {
 		if !serverHasTool(t, opServer, name) {
 			t.Fatalf("operator server missing %s", name)
@@ -99,8 +100,8 @@ func TestToolSchemasAreClosedAndMachineReadable(t *testing.T) {
 	t.Parallel()
 	d := newTestDirector(t)
 	servers := map[string]*mcp.Server{"director": NewDirectorServer(d)}
-	worldID := createWorld(t, d)
-	servers["operator"] = NewOperatorServer(d.Worlds[worldID].Operator)
+	createWorld(t, d)
+	servers["operator"] = NewOperatorServerResolver(d)
 
 	for role, server := range servers {
 		client, _ := connect(t, server)
@@ -147,7 +148,7 @@ func TestMCPRejectsUnknownAndMissingArguments(t *testing.T) {
 	if !res.IsError {
 		t.Fatal("unknown argument must be rejected")
 	}
-	if len(d.Worlds) != 0 {
+	if _, err := d.DescribeWorld("w-1"); err == nil || !strings.HasPrefix(err.Error(), "world_not_found: ") {
 		t.Fatal("rejected catalog call must not mutate director state")
 	}
 
@@ -173,17 +174,16 @@ func TestMCPRejectsUnknownAndMissingArguments(t *testing.T) {
 func TestClockAdvanceSupportsRelativeTimeAndReportsTotal(t *testing.T) {
 	t.Parallel()
 	d := newTestDirector(t)
-	created, err := d.CreateWorld(map[string]any{
-		"domain": "aquaculture-pond", "seed": float64(42), "adapter": "native-jsonl",
-		"sink": model.SinkInproc, "time_mode": model.TimeStepped,
+	created, err := d.CreateWorld(director.WorldRequest{
+		Domain: "aquaculture-pond", Seed: 42, Adapter: "native-jsonl",
+		Sink: model.SinkInproc, TimeMode: model.TimeStepped,
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	worldID := created["world_id"].(string)
-	w := d.World(worldID)
-	if got := w.Run.World.Clock(); got != model.DefaultStartTimeNS {
-		t.Fatalf("default MCP start time = %d, want %d", got, model.DefaultStartTimeNS)
+	if got, want := created["clock"], model.FormatTime(model.DefaultStartTimeNS); got != want {
+		t.Fatalf("default MCP start time = %v, want %v", got, want)
 	}
 
 	res, err := callTool(t, NewDirectorServer(d), "sim.clock.advance", map[string]any{
@@ -203,11 +203,15 @@ func TestClockAdvanceSupportsRelativeTimeAndReportsTotal(t *testing.T) {
 	if err := json.Unmarshal(raw, &out); err != nil {
 		t.Fatal(err)
 	}
-	if out["emitted_total"] != float64(w.Run.World.EmittedCount()) {
-		t.Fatalf("emitted_total = %v, want %d", out["emitted_total"], w.Run.World.EmittedCount())
+	described, err := d.DescribeWorld(worldID)
+	if err != nil {
+		t.Fatal(err)
 	}
-	if w.Run.World.Clock() != model.DefaultStartTimeNS+60*1e9 {
-		t.Fatalf("relative advance clock = %d", w.Run.World.Clock())
+	if out["emitted_total"] != float64(described["emitted"].(int64)) {
+		t.Fatalf("emitted_total = %v, want %v", out["emitted_total"], described["emitted"])
+	}
+	if want := model.FormatTime(model.DefaultStartTimeNS + 60*1e9); out["clock"] != want || described["clock"] != want {
+		t.Fatalf("relative advance clock = %v / %v, want %v", out["clock"], described["clock"], want)
 	}
 }
 
@@ -226,17 +230,29 @@ func serverHasTool(t *testing.T, server *mcp.Server, name string) bool {
 	return false
 }
 
-func createWorld(t *testing.T, d *app.Director) string {
+func createWorld(t *testing.T, d *director.Director) string {
 	t.Helper()
-	res, err := d.CreateWorld(map[string]any{
-		"domain": "aquaculture-pond", "seed": float64(42), "adapter": "native-jsonl",
-		"sink": model.SinkInproc, "time_mode": model.TimeStepped,
-		"start_time": float64(model.DefaultStartTimeNS + 4*3600*1e9),
+	return newWorld(t, d).id
+}
+
+// createdWorld is what sim.world.create hands its caller: the identities a
+// test needs to drive the world through its tools.
+type createdWorld struct{ id, runID, token, entity string }
+
+func newWorld(t *testing.T, d *director.Director) createdWorld {
+	t.Helper()
+	start := model.DefaultStartTimeNS + 4*3600*1e9
+	res, err := d.CreateWorld(director.WorldRequest{
+		Domain: "aquaculture-pond", Seed: 42, Adapter: "native-jsonl",
+		Sink: model.SinkInproc, TimeMode: model.TimeStepped, StartTimeNS: &start,
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	return res["world_id"].(string)
+	return createdWorld{
+		id: res["world_id"].(string), runID: res["run_id"].(string), token: res["token"].(string),
+		entity: res["entity_ids"].([]string)[0],
+	}
 }
 
 // A client that reads the server's identity sees the simulator it is

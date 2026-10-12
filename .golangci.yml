@@ -36,6 +36,8 @@ linters:
     - gocyclo        # M8: cyclomatic complexity
     - nestif         # M8: nested if statements
     - dupl           # M8/M11: no token clone of 75+ tokens
+    - godox          # QUALITY_BAR §2: no TODO/FIXME/XXX shipped
+    - nolintlint     # QUALITY_BAR §2: every //nolint names its linter and a reason
 
   # Linter exclusions: skip these paths entirely (analyzed but not reported).
   # v2 moved this from a top-level `exclusions:` block to `linters.exclusions`.
@@ -81,8 +83,14 @@ linters:
       # The rule is about calls *into* a layer: an edge layer still has to
       # wrap the OS and network errors it receives, because os and net/http
       # are not ignored.
+      #
+      # The director's facade returns coded refusals (director.ToolErrorf),
+      # whose text is the wire text of the tool error: the protocol layer
+      # hands them to the SDK as they are, because wrapping would change the
+      # error codes' text.
       ignore-package-globs:
         - "*/streams-simulator/internal/*/internal/*"
+        - "*/streams-simulator/internal/director"
 
     # STANDARD M8: the mechanical floor for the clean-function bar. Do not
     # raise these to make a diff pass.
@@ -101,6 +109,14 @@ linters:
 
     misspell:
       locale: US
+
+    godox:
+      keywords: [TODO, FIXME, XXX, HACK]
+
+    nolintlint:
+      require-explanation: true
+      require-specific: true
+      allow-unused: false
 
     thelper:
       # v2 renamed bench/tb/fuzz flags into named sub-blocks (test, benchmark, tb).

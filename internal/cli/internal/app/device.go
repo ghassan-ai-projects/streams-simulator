@@ -5,25 +5,26 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ghassan-ai-projects/streams-simulator/internal/cli/internal/files"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/cli/internal/serve"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/device"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/deviceworld"
 )
 
-// cmdDevice serves the wire-faithful serial device emulator as a gateway link.
-// It is the device end of the Real-World Sensor HIL-0 loop: the Agentic Stream
-// serial effector connects to this socket and speaks the device gateway link
-// (state/command/receipt/result; execution truth is queried as state).
+// cmdDevice serves the wire-faithful serial device emulator as a gateway link:
+// the device end of a hardware-in-the-loop experiment, speaking the device
+// gateway link (state/command/receipt/result; execution truth is queried as
+// state).
 func cmdDevice(s *session, args []string) (any, error) {
 	if len(args) == 0 {
-		return nil, fmt.Errorf("device requires a subcommand: serve")
+		return nil, usagef("device requires a subcommand: serve")
 	}
 	switch args[0] {
 	case "serve":
 		return nil, cmdDeviceServe(s, args[1:])
+	case "-h", "--help":
+		_, _ = fmt.Fprintln(s.stderr, "Usage: streamsim device serve --socket <path> --capabilities <path> [flags]\nRun `streamsim device serve -h` for the flags.")
+		return nil, usageExit{code: 0}
 	default:
-		return nil, fmt.Errorf("device: unknown subcommand %q (want: serve)", args[0])
+		return nil, usagef("device: unknown subcommand %q (want: serve)", args[0])
 	}
 }
 
@@ -32,47 +33,25 @@ func cmdDeviceServe(s *session, args []string) error {
 	if err != nil {
 		return err
 	}
-	dev, _, err := newDeviceServeDevice(options, s.now)
+	dev, _, err := deviceworld.OpenDevice(deviceOpenOptions(options, s.now))
 	if err != nil {
 		return fmt.Errorf("streamsim: %w", err)
 	}
+	return serveDevice(s, options, dev)
+}
+
+func serveDevice(s *session, options deviceServeOptions, dev *device.Device) error {
 	banner := fmt.Sprintf("streamsim device: listening on %s (device_id=%s boot_id=%s)", options.socket, options.deviceID, options.bootID)
-	return serve.Device(s.stderr, options.socket, dev, banner)
+	if err := device.Serve(s.stderr, options.socket, dev, banner); err != nil {
+		return fmt.Errorf("%w", err)
+	}
+	return nil
 }
 
-func newDeviceServeDevice(options deviceServeOptions, now func() time.Time) (*device.Device, *world.World, error) {
-	caps, err := loadDeviceCapabilities(options.capabilities)
-	if err != nil {
-		return nil, nil, err
-	}
-	if err := device.ValidateFaultSchedule(options.faultSchedule.entries); err != nil {
-		return nil, nil, fmt.Errorf("validate fault schedule: %w", err)
-	}
-	plant, worldState, clock, err := prepareDeviceWorld(options, caps, now)
-	if err != nil {
-		return nil, nil, err
-	}
-	return device.New(deviceConfig(options, caps, plant, clock)), worldState, nil
-}
-
-func deviceConfig(options deviceServeOptions, caps *device.Capabilities, plant device.Plant, clock func() int64) device.Config {
-	return device.Config{BootID: options.bootID, DeviceID: options.deviceID, Capabilities: caps,
-		Plant: plant, Clock: clock, FaultSchedule: options.faultSchedule.entries}
-}
-
-func prepareDeviceWorld(options deviceServeOptions, caps *device.Capabilities, now func() time.Time) (device.Plant, *world.World, func() int64, error) {
-	if options.worldBindings == "" {
-		return nil, nil, nil, nil
-	}
-	data, err := files.Read(options.worldBindings)
-	if err != nil {
-		return nil, nil, nil, fmt.Errorf("read world bindings: %w", err)
-	}
-	w, err := createDeviceWorld(options.worldDomain)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	return bindDeviceWorld(w, data, options.worldEntity, caps, now)
+func deviceOpenOptions(options deviceServeOptions, now func() time.Time) deviceworld.OpenOptions {
+	return deviceworld.OpenOptions{Capabilities: options.capabilities, WorldBindings: options.worldBindings,
+		WorldDomain: options.worldDomain, WorldEntity: options.worldEntity, BootID: options.bootID,
+		DeviceID: options.deviceID, FaultSchedule: options.faultSchedule.entries, Now: now}
 }
 
 type faultSpecFlag struct {

@@ -13,14 +13,14 @@ import (
 func validateDocument(raw []byte, src string) (any, error) {
 	var doc any
 	if err := model.DecodeBytes(raw, &doc); err != nil {
-		return nil, fmt.Errorf("domain: %s: not valid JSON: %w", src, err)
+		return nil, model.NotJSONError(model.ContractDomainSpec, src, fmt.Sprintf("domain: %s: not valid JSON", src), err)
 	}
 	sch, err := jsonschema.CompileJSON(schemas.DomainSpec())
 	if err != nil {
 		return nil, fmt.Errorf("domain: compile contract schema: %w", err)
 	}
 	if errs := sch.Validate(doc); len(errs) > 0 {
-		return nil, fmt.Errorf("domain: %s fails domain-spec-v0.1 validation:\n  %s", src, jsonschema.FormatErrors(errs))
+		return nil, schemaViolation(src, errs)
 	}
 	return doc, nil
 }
@@ -53,7 +53,13 @@ func compileWithDigest(spec *model.DomainSpec, doc any, src string) (*Compiled, 
 func decodeSpec(raw []byte, src string) (*model.DomainSpec, error) {
 	var spec model.DomainSpec
 	if err := json.Unmarshal(raw, &spec); err != nil {
-		return nil, fmt.Errorf("domain: %s: decode: %w", src, err)
+		return nil, model.NotJSONError(model.ContractDomainSpec, src, fmt.Sprintf("domain: %s: decode", src), err)
 	}
 	return &spec, nil
+}
+
+// schemaViolation reports a domain that fails the domain-spec schema.
+func schemaViolation(src string, errs []jsonschema.Error) *model.ValidationError {
+	summary := fmt.Sprintf("domain: %s fails domain-spec-v0.1 validation:\n  %s", src, jsonschema.FormatErrors(errs))
+	return &model.ValidationError{Contract: model.ContractDomainSpec, Source: src, Summary: summary, Issues: model.SchemaIssues(errs)}
 }

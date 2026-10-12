@@ -2,6 +2,7 @@ package world
 
 import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	layer "github.com/ghassan-ai-projects/streams-simulator/internal/world/internal/domain"
 )
 
@@ -26,6 +27,17 @@ func New(spec *domain.Compiled, seed uint64, id string, startNS int64, opts Opti
 		return nil, err
 	}
 	return &World{ID: inner.ID, Spec: inner.Spec, StartNS: inner.StartNS, world: inner}, nil
+}
+
+// Acknowledge is what the consumer learns from an invocation: its
+// acknowledgement, without the failure mode, effect flag or latency.
+func Acknowledge(result *InvokeResult) *model.EffectorAcknowledgement {
+	return layer.Acknowledge(result)
+}
+
+// KnownFailureMode reports whether mode is in the failure-mode vocabulary.
+func KnownFailureMode(mode FailureMode) bool {
+	return layer.KnownFailureMode(mode)
 }
 
 // RenderID renders one entity id from the domain's id template, for hosts

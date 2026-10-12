@@ -19,14 +19,17 @@ var packageDependencies = map[string]string{
 	".":                        "",
 	"tools":                    "",
 	"cmd/streamsim":            "cli",
-	"internal/cli":             "adapter canonical device deviceworld domain mcp model refconsumer run score suite world",
-	"internal/mcp":             "audit domain model run schemas score truth world",
+	"internal/cli":             "adapter device deviceworld domain grading mcp model refconsumer release run suite",
+	"internal/director":        "adapter audit domain model run score truth world",
+	"internal/mcp":             "director model schemas",
 	"internal/run":             "adapter canonical domain model perturb sink wall world",
+	"internal/grading":         "domain model run score world",
+	"internal/release":         "canonical",
 	"internal/score":           "domain model world",
 	"internal/suite":           "audit domain model perturb randutil truth world",
 	"internal/audit":           "domain model perturb world",
-	"internal/refconsumer":     "canonical model world",
-	"internal/deviceworld":     "device model world",
+	"internal/refconsumer":     "canonical model",
+	"internal/deviceworld":     "device domain model world",
 	"internal/device":          "canonical jsonschema device/contract",
 	"internal/world":           "domain jsonschema model randutil",
 	"internal/truth":           "domain model world",
@@ -119,7 +122,7 @@ func dependencyAllowed(owner, imported string) bool {
 	// Only application surfaces speak MCP. Foundations and the deterministic
 	// pipeline do not gain external dependencies through transport convenience.
 	return imported == "github.com/modelcontextprotocol/go-sdk/mcp" &&
-		(owner == "internal/cli" || owner == "internal/mcp" || owner == "internal/refconsumer")
+		(owner == "internal/mcp" || owner == "internal/refconsumer")
 }
 
 func TestDependencyGuardRejectsUpwardAndExternalEdges(t *testing.T) {

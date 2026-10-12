@@ -1,94 +1,68 @@
 package app
 
 import (
+	"cmp"
 	"flag"
 	"fmt"
-	"path/filepath"
 	"sort"
 	"strings"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/cli/internal/files"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-// loadCatalog loads every domain in a directory.
-func loadCatalog(dir string) (*domain.Catalog, error) {
-	if dir == "" {
-		dir = "domains"
-	}
-	specs, err := domain.LoadAll(dir)
-	if err != nil {
-		return nil, fmt.Errorf("streamsim: %w", err)
-	}
-	if len(specs) == 0 {
-		return nil, fmt.Errorf("no domains found in %s", dir)
-	}
-	return domain.NewCatalog(specs), nil
-}
-
-// loadAdapters loads every adapter in a directory.
-func loadAdapters(dir string) (map[string]*model.Adapter, error) {
-	if dir == "" {
-		dir = "adapters"
-	}
-	names, err := files.FileNames(dir)
-	if err != nil {
-		return nil, fmt.Errorf("streamsim: %w", err)
-	}
-	return decodeAdapterDirectory(dir, names)
-}
-
-func decodeAdapterDirectory(dir string, names []string) (map[string]*model.Adapter, error) {
-	out, err := loadAdapterEntries(dir, names)
-	if err != nil {
-		return nil, err
-	}
-	if len(out) == 0 {
-		return nil, fmt.Errorf("no adapters found in %s", dir)
-	}
-	return out, nil
-}
-
-func loadAdapterEntries(dir string, names []string) (map[string]*model.Adapter, error) {
-	out := map[string]*model.Adapter{}
-	for _, name := range names {
-		if !strings.HasSuffix(name, ".json") {
-			continue
-		}
-		a, err := adapter.Load(filepath.Join(dir, name))
-		if err != nil {
-			return nil, fmt.Errorf("streamsim: %w", err)
-		}
-		out[a.ID] = a
-	}
-	return out, nil
-}
-
 func cmdCatalog(s *session, args []string) (any, error) {
 	fs := newFlagSet("catalog", s.stderr)
 	dir := fs.String("domains-dir", "", "directory of domain specs")
-	verb, err := parseCommandVerb(fs, args)
+	verb, err := parseCommandVerb(fs, args, "list")
 	if err != nil {
 		return nil, err
 	}
-	cat, err := loadCatalog(*dir)
+	cat, err := domain.NewCatalogFromDir(*dir)
 	if err != nil {
 		return nil, fmt.Errorf("streamsim: %w", err)
 	}
 	return catalogVerb(cat, verb, fs.Args())
 }
 
-func parseCommandVerb(fs *flag.FlagSet, args []string) (string, error) {
-	verb := "list"
+// parseCommandVerb reads a command's verb and flags, with the flags allowed
+// before or after the verb; the arguments after them stay in fs.Args. With
+// no verb it returns defaultVerb. A known verb given more arguments than it
+// takes is a usage failure.
+func parseCommandVerb(fs *flag.FlagSet, args []string, defaultVerb string) (string, error) {
+	verb, err := readCommandVerb(fs, args, defaultVerb)
+	if err != nil {
+		return "", err
+	}
+	if arity, known := verbArity(verb); known {
+		return verb, refuseExtraArguments(fs, arity)
+	}
+	return verb, nil
+}
+
+func readCommandVerb(fs *flag.FlagSet, args []string, defaultVerb string) (string, error) {
 	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
-		verb, args = args[0], args[1:]
+		return args[0], parseFlags(fs, args[1:])
 	}
 	if err := parseFlags(fs, args); err != nil {
 		return "", err
 	}
-	return verb, nil
+	if fs.NArg() == 0 {
+		return defaultVerb, nil
+	}
+	return fs.Arg(0), keepPositional(fs, fs.Args()[1:])
+}
+
+// verbArity is how many arguments a verb takes, and whether it is a verb.
+func verbArity(verb string) (int, bool) {
+	switch verb {
+	case "list", "coverage":
+		return 0, true
+	case "describe", "validate", "verify", "from-run":
+		return 1, true
+	}
+	return 0, false
 }
 
 func catalogVerb(cat *domain.Catalog, verb string, args []string) (any, error) {
@@ -100,12 +74,12 @@ func catalogVerb(cat *domain.Catalog, verb string, args []string) (any, error) {
 	case "coverage":
 		return cat.Coverage(), nil
 	}
-	return nil, fmt.Errorf("catalog: unknown verb %q", verb)
+	return nil, usagef("catalog: unknown verb %q", verb)
 }
 
 func describeCatalogDomain(cat *domain.Catalog, args []string) (any, error) {
 	if len(args) == 0 {
-		return nil, fmt.Errorf("catalog describe requires a domain id")
+		return nil, usagef("catalog describe requires a domain id")
 	}
 	compiled, err := cat.Describe(args[0])
 	if err != nil {
@@ -115,18 +89,18 @@ func describeCatalogDomain(cat *domain.Catalog, args []string) (any, error) {
 }
 
 func cmdDomain(s *session, args []string) (any, error) {
-	fs := newFlagSet("domain", s.stderr)
-	if err := parseFlags(fs, args); err != nil {
+	fs := newFlagSet("domain validate", s.stderr)
+	verb, err := parseCommandVerb(fs, args, "")
+	if err != nil {
 		return nil, err
 	}
-	if fs.NArg() < 2 {
-		return nil, fmt.Errorf("usage: streamsim domain validate <path>")
+	if verb != "" && verb != "validate" {
+		return nil, usagef("domain: unknown verb %q", verb)
 	}
-	switch fs.Arg(0) {
-	case "validate":
-		return validateDomainFile(fs.Arg(1))
+	if verb == "" || fs.NArg() < 1 {
+		return nil, usagef("usage: streamsim domain validate <path>")
 	}
-	return nil, fmt.Errorf("domain: unknown verb %q", fs.Arg(0))
+	return validateDomainFile(fs.Arg(0))
 }
 
 func validateDomainFile(path string) (any, error) {
@@ -140,7 +114,7 @@ func validateDomainFile(path string) (any, error) {
 func cmdAdapter(s *session, args []string) (any, error) {
 	fs := newFlagSet("adapter", s.stderr)
 	dir := fs.String("adapters-dir", "", "directory of adapter files")
-	verb, err := parseCommandVerb(fs, args)
+	verb, err := parseCommandVerb(fs, args, "list")
 	if err != nil {
 		return nil, err
 	}
@@ -154,11 +128,11 @@ func adapterVerb(verb, dir string, args []string) (any, error) {
 	case "verify":
 		return verifyAdapterCommand(dir, args)
 	}
-	return nil, fmt.Errorf("adapter: unknown verb %q", verb)
+	return nil, usagef("adapter: unknown verb %q", verb)
 }
 
 func listAdapters(dir string) (any, error) {
-	adapters, err := loadAdapters(dir)
+	adapters, err := adapter.LoadDir(dir)
 	if err != nil {
 		return nil, fmt.Errorf("streamsim: %w", err)
 	}
@@ -186,12 +160,9 @@ func sortedAdapterIDs(adapters map[string]*model.Adapter) []string {
 
 func verifyAdapterCommand(dir string, args []string) (any, error) {
 	if len(args) < 1 {
-		return nil, fmt.Errorf("adapter verify requires a path")
+		return nil, usagef("adapter verify requires a path")
 	}
-	if dir == "" {
-		dir = "adapters"
-	}
-	return verifyAdapterFile(args[0], dir)
+	return verifyAdapterFile(args[0], cmp.Or(dir, "adapters"))
 }
 
 func verifyAdapterFile(path, base string) (any, error) {
@@ -202,15 +173,25 @@ func verifyAdapterFile(path, base string) (any, error) {
 	return adapterVerdict(res)
 }
 
-// adapterVerdict fails the command when a declared check failed, or when the
-// adapter declares none, so "verified" always means something was compared.
+// adapterVerdict fails the command when the adapter facade finds the
+// verification failed (a declared check failed, or none was declared).
 func adapterVerdict(res *adapter.VerifyResult) (any, error) {
-	if !res.SchemaChecked && !res.GoldenChecked {
-		return nil, fmt.Errorf("adapter verify: %s declares no conformance schema or golden to check", res.Adapter)
+	report := adapterVerifyReport(res)
+	message, diverged := adapter.VerifyFailure(res)
+	if message == "" {
+		return report, nil
 	}
-	if (res.SchemaChecked && !res.SchemaOK) || (res.GoldenChecked && !res.GoldenMatch) {
-		return nil, fmt.Errorf("adapter verify FAILED: %s", strings.TrimSpace(res.FirstDivergence+" "+res.Detail))
+	if diverged {
+		report["first_divergence"], report["detail"] = res.FirstDivergence, res.Detail
 	}
+	return nil, adapterVerifyFailure(report, message)
+}
+
+func adapterVerifyReport(res *adapter.VerifyResult) map[string]any {
 	return map[string]any{"adapter": res.Adapter, "schema_ok": res.SchemaOK, "golden_match": res.GoldenMatch,
-		"schema_checked": res.SchemaChecked, "golden_checked": res.GoldenChecked, "records": res.RecordCount}, nil
+		"schema_checked": res.SchemaChecked, "golden_checked": res.GoldenChecked, "records": res.RecordCount}
+}
+
+func adapterVerifyFailure(report map[string]any, message string) error {
+	return &outcomeError{code: codeAdapterVerifyFailed, message: message, result: report}
 }

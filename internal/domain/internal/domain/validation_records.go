@@ -75,10 +75,10 @@ func (checks domainChecks) dynamicTarget(d *model.Dynamics) error {
 func (checks domainChecks) dynamicTier(d *model.Dynamics) error {
 	// Unsupported tiers fail loudly rather than silently leave simulated state static.
 	if d.Tier == "F3" {
-		return fmt.Errorf("domain: %s: F3/FMU dynamics are the specified-but-unbuilt seam; not_implemented", checks.source)
+		return checks.bad("F3/FMU dynamics are the specified-but-unbuilt seam; not_implemented")
 	}
 	if d.Tier == "F2" {
-		return fmt.Errorf("domain: %s: F2 reference models are the specified-but-unbuilt seam; not_implemented", checks.source)
+		return checks.bad("F2 reference models are the specified-but-unbuilt seam; not_implemented")
 	}
 	return nil
 }

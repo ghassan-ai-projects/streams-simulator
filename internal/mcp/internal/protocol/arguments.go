@@ -1,0 +1,59 @@
+package protocol
+
+import (
+	"encoding/json"
+	"fmt"
+)
+
+// stringArg reads a string argument, "" when absent or not a string. The argument
+// readers decode the JSON-RPC argument maps the tools receive.
+func stringArg(args map[string]any, key string) string {
+	if args == nil {
+		return ""
+	}
+	if s, ok := args[key].(string); ok {
+		return s
+	}
+	return ""
+}
+
+// numberArg reads an integer argument, def when absent or not an integer.
+func numberArg(args map[string]any, key string, def int64) int64 {
+	value, ok := intArg(args, key)
+	if ok {
+		return value
+	}
+	return def
+}
+
+// intArg reads an integer argument and reports whether it was present and valid.
+func intArg(args map[string]any, key string) (int64, bool) {
+	value, ok := args[key]
+	if !ok {
+		return 0, false
+	}
+	return integerArgument(value)
+}
+
+func integerArgument(value any) (int64, bool) {
+	switch n := value.(type) {
+	case float64:
+		return int64(n), true
+	case int64:
+		return n, true
+	case json.Number:
+		value, err := n.Int64()
+		return value, err == nil
+	case string:
+		return parseIntegerArgument(n)
+	}
+	return 0, false
+}
+
+func parseIntegerArgument(text string) (int64, bool) {
+	var value int64
+	if _, err := fmt.Sscanf(text, "%d", &value); err == nil {
+		return value, true
+	}
+	return 0, false
+}

@@ -26,27 +26,3 @@ func Write(path string, data []byte) error {
 	}
 	return nil
 }
-
-// EnsureDir creates dir and its parents, accessible by the owner only.
-func EnsureDir(dir string) error {
-	if err := os.MkdirAll(dir, 0o700); err != nil {
-		return fmt.Errorf("%w", err)
-	}
-	return nil
-}
-
-// FileNames lists the names of the non-directory entries of dir in directory
-// order (sorted by name).
-func FileNames(dir string) ([]string, error) {
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return nil, fmt.Errorf("%w", err)
-	}
-	names := make([]string, 0, len(entries))
-	for _, entry := range entries {
-		if !entry.IsDir() {
-			names = append(names, entry.Name())
-		}
-	}
-	return names, nil
-}

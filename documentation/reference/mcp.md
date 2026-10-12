@@ -1,6 +1,6 @@
 # Model Context Protocol (MCP) reference
 
-> Status: Implemented reference. Authority: `internal/mcp/internal/protocol/` (`schemas.go`, tool registration) and `internal/mcp/internal/app/` (`operator.go`, `director.go`). Verified by: MCP strictness and operator tests. Last verified: 2026-08-17.
+> Status: Implemented reference. Authority: `internal/mcp/internal/protocol/` (`schemas.go`, tool registration) and `internal/director/` (`internal/domain/operator.go`, `internal/app/director.go`). Verified by: MCP strictness and operator tests. Last verified: 2026-08-17.
 
 Streams Simulator exposes one MCP server with two role surfaces:
 
@@ -115,3 +115,9 @@ MCP carries request/response control, actuation, and audit. Event evidence trave
 - [Consumer integration](../guides/consumer-integration.md)
 - [Security model](../architecture/security-model.md)
 - [Truth and scoring](../architecture/truth-and-scoring.md)
+
+## Run-wide limits
+
+A world starts between 0 and 4611686018427387903 ns. `sim.clock.advance` refuses to move the
+clock more than 30 days past the world's start, and `sim.perturb.apply` refuses a window whose
+`until_ns` is set and before its `from_ns`. See `docs/design/SCENARIO_FILE.md` §3.

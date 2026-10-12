@@ -48,53 +48,71 @@ func (o outcome) mustSucceed(t *testing.T) outcome {
 	return o
 }
 
-func TestUsageAndExitStatuses(t *testing.T) {
+func TestHelpPrintsUsageOnStderrAndNothingOnStdout(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
 		name   string
 		args   []string
-		code   int
 		stderr string
 	}{
-		{"no command", nil, 2, "Usage: streamsim <command>"},
-		{"help", []string{"help"}, 0, "Commands:"},
-		{"short help flag", []string{"-h"}, 0, "Commands:"},
-		{"unknown command", []string{"frobnicate"}, 2, `unknown command "frobnicate"`},
-		{"bad flag", []string{"catalog", "--no-such-flag"}, 2, "flag provided but not defined"},
-		{"flag help", []string{"catalog", "-h"}, 0, "-domains-dir"},
+		{"help", []string{"help"}, "Commands:"},
+		{"short help flag", []string{"-h"}, "Commands:"},
+		{"flag help", []string{"catalog", "-h"}, "-domains-dir"},
+		{"verb flag help", []string{"domain", "validate", "-h"}, "Usage of domain validate"},
+		{"subcommand help", []string{"device", "-h"}, "Usage: streamsim device serve"},
+		{"subcommand flag help", []string{"device", "serve", "-h"}, "-capabilities"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			got := invoke(t, tc.args...)
-			if got.code != tc.code || !strings.Contains(got.stderr, tc.stderr) || strings.Count(got.stderr, tc.stderr) != 1 || got.stdout != "" {
-				t.Fatalf("exit %d stdout %q stderr %q; want exit %d with %q", got.code, got.stdout, got.stderr, tc.code, tc.stderr)
+			if got.code != 0 || strings.Count(got.stderr, tc.stderr) != 1 || got.stdout != "" {
+				t.Fatalf("exit %d stdout %q stderr %q; want exit 0, nothing on stdout, %q once on stderr", got.code, got.stdout, got.stderr, tc.stderr)
 			}
 		})
 	}
 }
 
-func TestCommandErrorsExitOneWithThePrefixedMessage(t *testing.T) {
+func TestUsageFailuresExitTwoWithAUsageDocument(t *testing.T) {
 	t.Parallel()
+	domains, adapters := []string{"--domains-dir", testsupport.DomainsDir()}, []string{"--adapters-dir", testsupport.AdaptersDir()}
 	cases := []struct {
-		name string
-		args []string
-		want string
+		name   string
+		args   []string
+		stderr string
 	}{
-		{"catalog verb", []string{"catalog", "nope", "--domains-dir", testsupport.DomainsDir()}, `catalog: unknown verb "nope"`},
-		{"describe without id", []string{"catalog", "describe", "--domains-dir", testsupport.DomainsDir()}, "catalog describe requires a domain id"},
-		{"describe unknown", []string{"catalog", "describe", "--domains-dir", testsupport.DomainsDir(), "no-such"}, "no-such"},
+		{"no command", nil, "Usage: streamsim <command>"},
+		{"unknown command", []string{"frobnicate"}, `unknown command "frobnicate"`},
+		{"bad flag", []string{"catalog", "--no-such-flag"}, "flag provided but not defined"},
+		{"catalog verb", append([]string{"catalog", "nope"}, domains...), `catalog: unknown verb "nope"`},
+		{"describe without id", append([]string{"catalog", "describe"}, domains...), "catalog describe requires a domain id"},
 		{"domain usage", []string{"domain"}, "usage: streamsim domain validate <path>"},
 		{"domain verb", []string{"domain", "lint", "x"}, `domain: unknown verb "lint"`},
-		{"adapter verb", []string{"adapter", "nope", "--adapters-dir", testsupport.AdaptersDir()}, `adapter: unknown verb "nope"`},
-		{"adapter verify without path", []string{"adapter", "verify", "--adapters-dir", testsupport.AdaptersDir()}, "adapter verify requires a path"},
+		{"adapter verb", append([]string{"adapter", "nope"}, adapters...), `adapter: unknown verb "nope"`},
+		{"adapter verify without path", append([]string{"adapter", "verify"}, adapters...), "adapter verify requires a path"},
 		{"run without domain", []string{"run"}, "run requires --domain"},
+		{"file sink without target", []string{"run", "--domain", pondDomain, "--sink", "file"}, "--sink=file requires --sink-target or --out"},
+		{"unknown sink", []string{"run", "--domain", pondDomain, "--sink", "bogus"}, `--sink must be inproc, file or http-push, got "bogus"`},
+		{"push sink without target", []string{"run", "--domain", pondDomain, "--sink", "http-push"}, "--sink=http-push requires --sink-target"},
+		{"non-positive duration", []string{"run", "--domain", pondDomain, "--duration", "-5"}, "--duration must be positive"},
+		{"duration beyond the run span", []string{"run", "--domain", pondDomain, "--duration", "1e12"}, "at most 2592000 seconds (30 days)"},
+		{"duration not a number", []string{"run", "--domain", pondDomain, "--duration", "NaN"}, "--duration must be positive"},
+		{"start beyond the world range", []string{"run", "--domain", pondDomain, "--start-time", "9223372036854775000"}, "--start-time must be in [0,"},
+		{"fault offset not a number", []string{"run", "--domain", pondDomain, "--fault", "site-a/pond-1=aerator_failure@NaN"}, `--fault "site-a/pond-1=aerator_failure@NaN": offset "NaN" must be a number of seconds`},
+		{"fault offset unreadable", []string{"run", "--domain", pondDomain, "--fault", "site-a/pond-1=aerator_failure@soon"}, `offset "soon" must be a number of seconds`},
+		{"perturbation beyond the run span", []string{"run", "--domain", pondDomain, "--perturb", "drop@1e30"}, `--perturb "drop@1e30": offset "1e30"`},
+		{"effector offset infinite", []string{"run", "--domain", pondDomain, "--effector", "start_aerator@site-a/pond-1@-Inf"}, `offset "-Inf" must be a number of seconds`},
+		{"unknown run profile", append([]string{"run", "--domain", pondDomain, "--profile", "bogus"}, append(domains, adapters...)...), `has no profile "bogus"`},
+		{"suite without domain", []string{"suite"}, "suite requires --domain"},
+		{"suite of no scenarios", []string{"suite", "--domain", pondDomain, "--n", "0"}, "--n must be at least 1"},
+		{"unknown suite profile", append([]string{"suite", "--domain", pondDomain, "--profile", "bogus"}, domains...), `has no profile "bogus"`},
+		{"refconsumer empty window", []string{"refconsumer", "--trace", "t.jsonl", "--window", "0"}, "--window must be at least 1"},
+		{"malformed fault", append([]string{"run", "--domain", pondDomain, "--duration", "1", "--fault", "no-separator"}, append(domains, adapters...)...), `bad triple "no-separator"`},
 		{"replay without artifact", []string{"replay"}, "replay requires a run artifact path"},
 		{"score without run", []string{"score"}, "score requires --run"},
 		{"refconsumer without trace", []string{"refconsumer"}, "refconsumer requires --trace"},
+		{"refconsumer effector without endpoint", []string{"refconsumer", "--trace", "t.jsonl", "--effector", "x"}, "--effector requires --mcp"},
 		{"manifest without identity", []string{"manifest"}, "manifest requires --author and --reviewer"},
-		{"mcp without role", []string{"mcp"}, "mcp requires --role director|operator"},
-		{"mcp operator role", []string{"mcp", "--role", "operator"}, "the operator role is served from a director process"},
 		{"device without subcommand", []string{"device"}, "device requires a subcommand: serve"},
 		{"device unknown subcommand", []string{"device", "boot"}, `device: unknown subcommand "boot"`},
 		{"device serve without socket", []string{"device", "serve"}, "device serve requires --socket"},
@@ -103,10 +121,23 @@ func TestCommandErrorsExitOneWithThePrefixedMessage(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			got := invoke(t, tc.args...)
-			if got.code != 1 || !strings.HasPrefix(got.stderr, "streamsim: ") || !strings.Contains(got.stderr, tc.want) || got.stdout != "" {
-				t.Fatalf("exit %d stdout %q stderr %q; want exit 1 naming %q", got.code, got.stdout, got.stderr, tc.want)
+			if got.code != 2 || strings.Count(got.stderr, tc.stderr) != 1 {
+				t.Fatalf("exit %d stderr %q; want exit 2 naming %q once", got.code, got.stderr, tc.stderr)
+			}
+			if failure := got.failure(t); failure["code"] != "usage_invalid" {
+				t.Fatalf("failure = %v, want usage_invalid", failure)
 			}
 		})
+	}
+}
+
+func TestMCPNeverPrintsADocumentOnTheStdoutItOwns(t *testing.T) {
+	t.Parallel()
+	for _, args := range [][]string{{"mcp"}, {"mcp", "--role", "operator"}} {
+		got := invoke(t, args...)
+		if got.code != 2 || got.stdout != "" || !strings.HasPrefix(got.stderr, "streamsim: ") {
+			t.Fatalf("%v: exit %d stdout %q stderr %q; want exit 2, empty stdout, the reason on stderr", args, got.code, got.stdout, got.stderr)
+		}
 	}
 }
 
@@ -188,5 +219,14 @@ func TestManifestRefusesAMissingDirectoryAndAShortKey(t *testing.T) {
 	short := invoke(t, append(identity, "--domains-dir", testsupport.DomainsDir(), "--adapters-dir", testsupport.AdaptersDir(), "--key", key)...)
 	if short.code != 1 || !strings.Contains(short.stderr, "manifest: key must be 64 hex chars") {
 		t.Fatalf("short key: %+v", short)
+	}
+}
+
+func TestFlagsMayPrecedeTheVerb(t *testing.T) {
+	t.Parallel()
+	path := testsupport.Adapter("native-jsonl")
+	got := invoke(t, "adapter", "--adapters-dir", testsupport.AdaptersDir(), "verify", path).mustSucceed(t).document(t, "adapter_verify")
+	if got["adapter"] != "native-jsonl" {
+		t.Fatalf("adapter verify with leading flags = %v, want the native adapter verified", got)
 	}
 }

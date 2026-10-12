@@ -74,3 +74,25 @@ done
 # Manifest (author/reviewer fixed, created_at masked).
 capture manifest "$bin" manifest --author "a <a@example.test>" --reviewer "b <b@example.test>" --out "$work/manifest.json"
 emit manifest-file "$work/manifest.json"
+
+# Failure documents (docs/design/CLI_SURFACE.md): one case per failure class,
+# with stdout (the document) and stderr plus exit status pinned separately so
+# a stream swap shows.
+capture_streams() { # label cmd...
+  label=$1; shift
+  status=0
+  "$@" >"$work/stdout.txt" 2>"$work/stderr.txt" || status=$?
+  echo "exit=$status" >>"$work/stderr.txt"
+  sed -i.bak "s|$work|WORK|g" "$work/stdout.txt" "$work/stderr.txt"
+  emit "$label/stdout" "$work/stdout.txt"
+  emit "$label/stderr" "$work/stderr.txt"
+}
+printf '{"id":"X"}' >"$work/bad.domain.json"
+capture_streams failure/domain-invalid "$bin" domain validate "$work/bad.domain.json"
+capture_streams failure/usage "$bin" catalog no-such-verb
+capture_streams failure/unknown-command "$bin" no-such-command
+capture_streams failure/domain-not-found "$bin" catalog describe no-such-domain
+capture_streams failure/file-not-found "$bin" replay "$work/absent.json"
+sed -E 's/"expected_trace_digest": *"[^"]*"/"expected_trace_digest":"sha256:0000000000000000000000000000000000000000000000000000000000000000"/' \
+  "$out/run.json" >"$work/tampered.json"
+capture_streams failure/replay-mismatch "$bin" verify "$work/tampered.json"

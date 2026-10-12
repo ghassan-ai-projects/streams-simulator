@@ -1,12 +1,11 @@
 package app
 
 import (
-	"encoding/json"
+	"errors"
+	"flag"
 	"fmt"
 	"io"
-	"path/filepath"
 
-	"github.com/ghassan-ai-projects/streams-simulator/internal/cli/internal/files"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/suite"
 )
 
@@ -15,15 +14,27 @@ func cmdSuite(s *session, args []string) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	spec, err := loadDomainSpec(options.domainsDir, options.domainID)
+	published, err := publishSuite(options)
 	if err != nil {
 		return nil, err
 	}
-	generated, err := suite.Generate(suite.Config{Domain: spec, Profile: options.profile, N: options.n, Seed: options.seed, SampleNS: 120 * 1e9})
-	if err != nil {
-		return nil, fmt.Errorf("streamsim: %w", err)
+	return map[string]any{"suite": published.Path, "scenarios": published.Scenarios,
+		"trivial_excluded": published.TrivialExcluded, "terminal_state": published.TerminalState}, nil
+}
+
+// publishSuite has the suite module generate and write the suite. A profile
+// the domain does not declare is a usage failure.
+func publishSuite(options suiteOptions) (suite.Published, error) {
+	published, err := suite.Publish(suite.PublishOptions{DomainsDir: options.domainsDir, DomainID: options.domainID,
+		Profile: options.profile, Out: options.out, N: options.n, Seed: options.seed})
+	var unknown *suite.UnknownProfileError
+	if errors.As(err, &unknown) {
+		return suite.Published{}, usagef("%s", unknown.Error())
 	}
-	return publishSuite(generated, options.out, spec.Spec.ID, options.profile)
+	if err != nil {
+		return suite.Published{}, fmt.Errorf("%w", err)
+	}
+	return published, nil
 }
 
 type suiteOptions struct {
@@ -35,27 +46,27 @@ type suiteOptions struct {
 func parseSuiteOptions(args []string, stderr io.Writer) (suiteOptions, error) {
 	var options suiteOptions
 	fs := newFlagSet("suite", stderr)
-	fs.StringVar(&options.domainsDir, "domains-dir", "domains", "domain specs directory")
-	fs.StringVar(&options.domainID, "domain", "", "domain id")
+	registerSuiteFlags(fs, &options)
+	if err := parseOnlyFlags(fs, args); err != nil {
+		return suiteOptions{}, err
+	}
+	return admitSuiteOptions(options)
+}
+
+func registerSuiteFlags(fs *flag.FlagSet, options *suiteOptions) {
+	registerDomainFlags(fs, &options.domainsDir, &options.domainID)
 	fs.StringVar(&options.profile, "profile", "nominal", "profile name")
 	fs.IntVar(&options.n, "n", 100, "target scenario count")
 	fs.Uint64Var(&options.seed, "seed", 1, "suite seed")
 	fs.StringVar(&options.out, "out", "suites", "output directory")
-	if err := parseFlags(fs, args); err != nil {
-		return suiteOptions{}, err
-	}
-	return options, nil
 }
 
-func publishSuite(s *suite.Suite, out, domain, profile string) (any, error) {
-	if err := files.EnsureDir(out); err != nil {
-		return nil, fmt.Errorf("streamsim: %w", err)
+func admitSuiteOptions(options suiteOptions) (suiteOptions, error) {
+	if options.domainID == "" {
+		return suiteOptions{}, usagef("suite requires --domain")
 	}
-	raw, _ := json.MarshalIndent(s, "", "  ")
-	path := filepath.Join(out, fmt.Sprintf("%s-%s-suite.json", domain, profile))
-	if err := files.Write(path, raw); err != nil {
-		return nil, fmt.Errorf("streamsim: %w", err)
+	if options.n < 1 {
+		return suiteOptions{}, usagef("suite: --n must be at least 1, got %d", options.n)
 	}
-	return map[string]any{"suite": path, "scenarios": len(s.Scenarios),
-		"trivial_excluded": len(s.TrivialExcluded), "terminal_state": s.TerminalState}, nil
+	return options, nil
 }

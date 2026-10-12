@@ -3,8 +3,10 @@
 // verdict, the ground-truth record, the run artifact, and the delivery
 // ledger. These types mirror docs/contracts/*.schema.json field for field.
 // Domain and adapter documents are validated by their own packages; this
-// package validates only the consumer verdict and the run artifact, the two
-// contracts that cross the run boundary.
+// package validates the consumer verdict, the ground-truth record and the run
+// artifact, the contracts that cross the run boundary. It also holds the
+// shared validation-error record (ValidationError, Issue, Contract) every
+// module reports a contract violation with.
 package model
 
 import (
@@ -59,28 +61,36 @@ func DecodeBytes(b []byte, dst any) error {
 }
 
 // ValidateVerdict checks a serialized consumer verdict against the
-// committed consumer-verdict schema.
+// committed consumer-verdict schema. A failure is a *ValidationError.
 func ValidateVerdict(raw []byte) error {
-	return validateAgainst(raw, "verdict", "consumer-verdict-v0.1", schemas.ConsumerVerdict())
+	return validateAgainst(raw, "verdict", ContractConsumerVerdict, schemas.ConsumerVerdict())
+}
+
+// ValidateGroundTruth checks a serialized ground-truth record (a scenario's
+// label) against the committed ground-truth schema. A failure is a
+// *ValidationError.
+func ValidateGroundTruth(raw []byte) error {
+	return validateAgainst(raw, "ground truth", ContractGroundTruth, schemas.GroundTruth())
 }
 
 // ValidateRunArtifact checks a serialized run artifact against the
-// committed run-artifact schema.
+// committed run-artifact schema. A failure is a *ValidationError.
 func ValidateRunArtifact(raw []byte) error {
-	return validateAgainst(raw, "artifact", "run-artifact-v0.1", schemas.RunArtifact())
+	return validateAgainst(raw, "artifact", ContractRunArtifact, schemas.RunArtifact())
 }
 
-func validateAgainst(raw []byte, noun, contract string, schema []byte) error {
+func validateAgainst(raw []byte, noun string, contract Contract, schema []byte) error {
 	var doc any
 	if err := DecodeBytes(raw, &doc); err != nil {
-		return fmt.Errorf("model: %s not valid JSON: %w", noun, err)
+		return NotJSONError(contract, "", fmt.Sprintf("model: %s not valid JSON", noun), err)
 	}
 	sch, err := jsonschema.CompileJSON(schema)
 	if err != nil {
 		return fmt.Errorf("model: compile %s schema: %w", noun, err)
 	}
 	if errs := sch.Validate(doc); len(errs) > 0 {
-		return fmt.Errorf("model: %s fails %s: %s", noun, contract, errs[0].Error())
+		summary := fmt.Sprintf("model: %s fails %s: %s", noun, contract, errs[0].Error())
+		return &ValidationError{Contract: contract, Summary: summary, Issues: SchemaIssues(errs)}
 	}
 	return nil
 }

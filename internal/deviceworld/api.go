@@ -3,6 +3,7 @@ package deviceworld
 import (
 	"errors"
 
+	"github.com/ghassan-ai-projects/streams-simulator/internal/deviceworld/internal/app"
 	layer "github.com/ghassan-ai-projects/streams-simulator/internal/deviceworld/internal/domain"
 )
 
@@ -17,3 +18,8 @@ var ErrNoWorld = errors.New("deviceworld: a world is required")
 
 // ErrNoPlant is returned by a nil or zero Plant that was not built by New.
 var ErrNoPlant = errors.New("deviceworld: a plant built by New is required")
+
+// OpenOptions say which device to open: its identity, its capability catalog
+// and fault schedule, and, when WorldBindings is set, the world it is bound to.
+// Now is the clock the plant counts device microseconds from.
+type OpenOptions = app.OpenOptions

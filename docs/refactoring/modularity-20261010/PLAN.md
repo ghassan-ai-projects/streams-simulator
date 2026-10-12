@@ -72,7 +72,7 @@ and goldens unchanged.
 | M12 | `run` (summary row; delivered by M12a and M12b) | facade · app · domain · durable · quiesce edges | RunID, ledger flush/fsync points, artifact write order, replay |
 | M13 | `refconsumer` | facade · app · domain · mcpclient edge | detection bytes, verdict JSON |
 | M14 | `mcp` | facade · app (director/operator use cases) · protocol edge | tool schemas, error codes and precedence |
-| M15 | `cli` | facade · app (commands) · process/files/serve edges | flag defaults, exit codes, output text, manifest bytes; `cmd` changes only to pass `cli.Build` |
+| M15 | `cli` | facade · app (commands) · process/files edges (serving moved to `mcp` and `device`, business logic to `grading`, `release`, `deviceworld`, `refconsumer`, `run`, `domain`, `adapter` by simulation-canvas P2c) | flag defaults, exit codes, output text, manifest bytes; `cmd` changes only to pass `cli.Build` |
 
 A module that proves larger than one reviewable diff is split (`M12a`,
 `M12b`) and the table updated, not rewritten.

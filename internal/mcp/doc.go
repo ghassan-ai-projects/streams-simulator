@@ -4,7 +4,9 @@
 // Every tool is domain-agnostic: the binary contains no effector name, no
 // consumer name, no consumer schema.
 //
-// The package is a facade: the use cases live in its private app layer, the
-// protocol wiring (tools, schemas, SDK registration) in its protocol layer, and
-// the capability-token entropy in its capability edge.
+// The package is a facade over protocol only: tool definitions, schemas,
+// argument decoding and SDK registration live in its protocol layer, the
+// stdio session and operator HTTP endpoint in its transport edge. The
+// director's use cases (worlds, runs, truth, scoring, the operator view) live
+// in the director module, which mcp reaches only through its facade.
 package mcp

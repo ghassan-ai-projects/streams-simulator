@@ -1,6 +1,8 @@
 package domain_test
 
 import (
+	"errors"
+	"io/fs"
 	"strings"
 	"testing"
 
@@ -27,7 +29,7 @@ func TestCatalogListsDescribesAndReportsCoverage(t *testing.T) {
 	if got, err := catalog.Describe("rotating-machinery"); err != nil || got != pumps {
 		t.Fatalf("describe = %v, %v", got, err)
 	}
-	if _, err := catalog.Describe("no-such-domain"); err == nil || !strings.Contains(err.Error(), "no-such-domain") {
+	if _, err := catalog.Describe("no-such-domain"); !errors.Is(err, domain.ErrUnknownDomain) || !strings.Contains(err.Error(), "no-such-domain") {
 		t.Fatalf("unknown domain: %v", err)
 	}
 	report := catalog.Coverage()
@@ -59,5 +61,23 @@ func TestParseNamesTheSourceOfAnInvalidDocument(t *testing.T) {
 	t.Parallel()
 	if _, err := domain.Parse([]byte(`{"id":`), "broken.json"); err == nil || !strings.Contains(err.Error(), "broken.json") {
 		t.Fatalf("err = %v", err)
+	}
+}
+
+func TestNewCatalogFromDirLoadsEveryShippedDomainAndRefusesAnEmptyOne(t *testing.T) {
+	t.Parallel()
+	catalog, err := domain.NewCatalogFromDir(testsupport.DomainsDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := len(catalog.List("")); got < 2 {
+		t.Fatalf("catalog lists %d domains, want every shipped one", got)
+	}
+	empty := t.TempDir()
+	if _, err := domain.NewCatalogFromDir(empty); err == nil || err.Error() != "no domains found in "+empty {
+		t.Fatalf("an empty directory: err = %v", err)
+	}
+	if _, err := domain.NewCatalogFromDir(empty + "/absent"); !errors.Is(err, fs.ErrNotExist) {
+		t.Fatalf("a missing directory: err = %v, want ErrNotExist", err)
 	}
 }

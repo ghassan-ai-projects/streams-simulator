@@ -2,9 +2,18 @@ package deviceworld
 
 import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/device"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/deviceworld/internal/app"
 	layer "github.com/ghassan-ai-projects/streams-simulator/internal/deviceworld/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
+
+// OpenDevice builds the device the options describe, proving the composition
+// before any listener opens. With WorldBindings the device's plant is the world
+// bound by that catalog, which is returned too; without, the device has no
+// plant and the world is nil.
+func OpenDevice(options OpenOptions) (*device.Device, *world.World, error) {
+	return app.OpenDevice(options)
+}
 
 // LoadBindings parses a strict device-target to world-effector binding
 // catalog. Entity-source arguments resolve to the supplied runtime world

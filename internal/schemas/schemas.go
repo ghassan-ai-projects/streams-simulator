@@ -27,6 +27,9 @@ var groundTruth []byte
 //go:embed run-artifact-v0.1.schema.json
 var runArtifact []byte
 
+//go:embed scenario-v0.1.schema.json
+var scenario []byte
+
 // DomainSpec returns the embedded domain-spec schema.
 func DomainSpec() []byte { return domainSpec }
 
@@ -44,3 +47,6 @@ func GroundTruth() []byte { return groundTruth }
 
 // RunArtifact returns the embedded run-artifact schema.
 func RunArtifact() []byte { return runArtifact }
+
+// Scenario returns the embedded scenario schema.
+func Scenario() []byte { return scenario }

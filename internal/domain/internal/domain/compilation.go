@@ -25,7 +25,7 @@ func (c *Compiled) registerSymbols(src string) error {
 
 func registerSymbol(symbols map[string]bool, name, kind, src string) error {
 	if symbols[name] {
-		return fmt.Errorf("domain: %s: duplicate %s %q", src, kind, name)
+		return invalidDomain(src, fmt.Sprintf("duplicate %s %q", kind, name))
 	}
 	symbols[name] = true
 	return nil
