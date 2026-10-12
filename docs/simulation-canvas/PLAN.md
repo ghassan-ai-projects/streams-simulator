@@ -75,4 +75,4 @@ The commit hash of a phase is recorded by the first commit of the next phase.
 | P5a2 | Done | `91b0eec` | [evidence/P5a2.md](evidence/P5a2.md) | [reviews/P5a2.md](reviews/P5a2.md) |
 | P5b | Done | `0853114` | [evidence/P5b.md](evidence/P5b.md) | [reviews/P5b.md](reviews/P5b.md) |
 | P6a | Done | `2e1e5e0` | [evidence/P6a.md](evidence/P6a.md) | [reviews/P6a.md](reviews/P6a.md) |
-| P6b | Done | (this commit) | [evidence/P6b.md](evidence/P6b.md) | [reviews/P6b.md](reviews/P6b.md) |
+| P6b | Done | `c918425` | [evidence/P6b.md](evidence/P6b.md) | [reviews/P6b.md](reviews/P6b.md) |
