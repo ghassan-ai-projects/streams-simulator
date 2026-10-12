@@ -26,6 +26,10 @@ func (w *World) stepVocabularyForm(ent *Entity, dyn *model.Dynamics, s *stateVal
 		w.stepRegime(ent, dyn, s, at, seconds)
 	case model.FormPeak:
 		w.stepPeak(ent, dyn, s, at, dt)
+	case model.FormTrip:
+		w.stepTrip(ent, dyn, s, at)
+	case model.FormAntiRecycle:
+		w.stepAntiRecycle(ent, dyn, s, at, dt)
 	default:
 		return false
 	}

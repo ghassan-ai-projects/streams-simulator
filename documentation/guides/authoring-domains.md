@@ -24,6 +24,10 @@ A level that accumulates (a tank, a pressure header) is a state with `f1.form: "
 
 An exogenous profile (a tariff, a daily load shape) is an `f0.schedule` of points, repeating with `period_s` and aligned to the clock. A behaviour that changes past a threshold (transformer oil, tower capacity against wet bulb) is `f1.form: "regime"` with a `selector`, a `threshold` and a `below` and `above` lag. A demand charge is `f1.form: "peak"` over one input with `block_s`, `period_s` and an optional `ratchet`. Rules: [DOMAIN_SPEC_V0_2.md](../../docs/design/DOMAIN_SPEC_V0_2.md) section 16; `internal/testsupport/testdata/utility-plant.domain.json` uses all three.
 
+## Trips, lockouts and preconditions
+
+A protection trip is `f1.form: "trip"` with a `when` condition (`lt`, `lte`, `gt`, `gte` against a threshold) held for `for_s`; `latch: true` makes it a lockout that a change of `reset_on` clears. `anti_recycle` is a timer started by an edge of a watched state. `boundaries` mark trip states as safety boundaries with a severity. An effector's `requires` lists the conditions the device checks before acting (not locked out, timer elapsed, not isolated, not in hand mode). Rules: [DOMAIN_SPEC_V0_2.md](../../docs/design/DOMAIN_SPEC_V0_2.md) section 17; the chiller in `internal/testsupport/testdata/utility-plant.domain.json`.
+
 ## Validate locally
 
 ```bash

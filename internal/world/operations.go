@@ -83,6 +83,10 @@ func (w *World) StateValue(entity, state string, t int64) float64 {
 	return w.world.StateValue(entity, state, t)
 }
 
+func (w *World) ViolatedBoundaries(entityID string, t int64) []string {
+	return w.world.ViolatedBoundaries(entityID, t)
+}
+
 // EntityIDs returns the live entity ids in creation order.
 func (w *World) EntityIDs() []string {
 	return w.world.EntityIDs()

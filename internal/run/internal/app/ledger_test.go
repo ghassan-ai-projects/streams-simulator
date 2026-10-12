@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 	"os"
 	"path/filepath"
 	"testing"
@@ -119,6 +120,7 @@ func TestDurableLedgerSurvivesCrash(t *testing.T) {
 // beyond 10,000 records — the G4 evidence the in-memory ledger never had.
 func TestConservationAtScaleBeyondTenThousand(t *testing.T) {
 	t.Parallel()
+	testsupport.SkipUnderRace(t, "ledger conservation over a long run")
 	spec, a := testBase(t)
 	// A 1ms heartbeat produces >10,000 deliveries in a short stepped run
 	// (the same recipe as TestHistoryIsNotSilentlyCapped).

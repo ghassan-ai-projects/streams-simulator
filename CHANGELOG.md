@@ -4,6 +4,14 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **Protection: trips, lockouts, anti-recycle, boundaries, preconditions** (`docs/design/DOMAIN_SPEC_V0_2.md` section 17;
+  phase P6c, review item S14). A shared closed `condition` (`lt`, `lte`, `gt`, `gte`); `f1.form: "trip"` latches (a lockout,
+  reset when `reset_on` changes) or clears; `f1.form: "anti_recycle"` is a timer after an edge; `kinds[].boundaries` name trip
+  states with a severity; `effectors[].requires` refuses a call whose preconditions fail (locked out, recycling, isolated,
+  hand mode) with the generic `effector_refused`, the director log recording `precondition_refused`. **Fix:** interlocks and
+  preconditions of a call dated after the world clock are evaluated on a copy of the entity's state, so they no longer change
+  earlier readings. The utility fixture gains a chiller. Shipped domains and every pinned output are unchanged.
+
 - **Schedule, regime and peak** (`docs/design/DOMAIN_SPEC_V0_2.md` section 16; phase P6b, review item S9). `f0.schedule` adds
   a clock-aligned piecewise profile (step or linear) to an F0 state; `f1.form: "regime"` is a lag whose gain and time constant
   switch when a selector state crosses a threshold at a step boundary; `f1.form: "peak"` is the billing-period demand peak: the

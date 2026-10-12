@@ -381,7 +381,7 @@ state.
 | `invalid_args` | operator | failed the effector's declared schema |
 | `missing_command_id` | operator | required idempotency key absent |
 | `capability_denied` | operator | bad or absent token |
-| `effector_refused` | operator | the effector declined — generic; see §4.5 |
+| `effector_refused` | operator | the effector declined, a failed precondition included (the director log says `precondition_refused`) — generic; see §4.5 |
 | `interlock_refused` | operator | an independent safety system declined |
 | `not_implemented` | both | F3/FMU dynamics, broker sink, binary adapter encodings |
 

@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 	"reflect"
 	"testing"
 
@@ -75,6 +76,7 @@ func TestTheSilentWorldIsTheEmittingWorldWithoutItsEmissions(t *testing.T) {
 // run.
 func TestARefusedCallIsDroppedAndTheRunStillReproduces(t *testing.T) {
 	t.Parallel()
+	testsupport.SkipUnderRace(t, "an exported scenario rerun")
 	cfg := churnConfig(t)
 	original := recordedArtifact(t, cfg, churnScenario(cfg.StartTimeNS))
 	exported, _ := ScenarioFromArtifact(original)

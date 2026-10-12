@@ -22,3 +22,22 @@ type Regime struct {
 	Gain          float64 `json:"gain"`
 	TimeConstantS float64 `json:"time_constant_s"`
 }
+
+const (
+	FormTrip        = "trip"
+	FormAntiRecycle = "anti_recycle"
+	EdgeFall        = "fall"
+	EdgeRise        = "rise"
+)
+
+type Condition struct {
+	State     string  `json:"state"`
+	Operator  string  `json:"operator"`
+	Threshold float64 `json:"threshold"`
+}
+
+type Boundary struct {
+	Name     string `json:"name"`
+	State    string `json:"state"`
+	Severity string `json:"severity"`
+}

@@ -18,6 +18,7 @@ type stateValue struct {
 	hysteresis bool
 	history    []*stateValue
 	peak       *peakState
+	protection *protectionState
 }
 
 // naturalValue computes the fault- and kick-free value of a state at time t,
@@ -61,6 +62,10 @@ func (s *stateValue) clone() *stateValue {
 	if s.peak != nil {
 		peak := *s.peak
 		c.peak = &peak
+	}
+	if s.protection != nil {
+		protection := *s.protection
+		c.protection = &protection
 	}
 	return &c
 }

@@ -17,7 +17,7 @@
     "time_reference": "wall",
     "value_shape": ["scalar"]
   },
-  "stresses": "Clock-aligned schedules, a billing-period demand peak with a ratchet, and a regime switch whose crossing time is analytic.",
+  "stresses": "Clock-aligned schedules, a billing-period demand peak with a ratchet, and a regime switch whose crossing time is analytic. A chiller adds a latched low-flow lockout, an anti-recycle timer, lockout-tagout and hand-mode preconditions, and safety boundaries.",
   "kinds": [
     {
       "name": "meter",
@@ -164,9 +164,201 @@
           "risk_class": "low"
         }
       ]
+    },
+    {
+      "name": "chiller",
+      "state": [
+        {"name": "flow", "unit": "%", "initial": 100.0},
+        {"name": "temp", "unit": "C", "initial": 40.0},
+        {"name": "running", "unit": "on", "initial": 1.0},
+        {"name": "resets", "unit": "count", "initial": 0.0},
+        {"name": "isolated", "unit": "on", "initial": 0.0},
+        {"name": "hand", "unit": "on", "initial": 0.0},
+        {"name": "low_flow", "unit": "tripped", "initial": 0.0},
+        {"name": "hot", "unit": "tripped", "initial": 0.0},
+        {"name": "recycle", "unit": "s", "initial": 0.0}
+      ],
+      "dynamics": [
+        {"target": "flow", "tier": "F0", "f0": {"baseline": 100.0}},
+        {"target": "temp", "tier": "F0", "f0": {"baseline": 40.0}},
+        {
+          "target": "low_flow",
+          "tier": "F1",
+          "dt_ms": 1000,
+          "f1": {
+            "form": "trip",
+            "for_s": 8,
+            "latch": true,
+            "reset_on": "resets",
+            "tripped_value": 1.0,
+            "when": {"state": "flow", "operator": "lt", "threshold": 60.0}
+          }
+        },
+        {
+          "target": "hot",
+          "tier": "F1",
+          "dt_ms": 1000,
+          "f1": {
+            "form": "trip",
+            "for_s": 30,
+            "tripped_value": 1.0,
+            "when": {"state": "temp", "operator": "gt", "threshold": 60.0}
+          }
+        },
+        {
+          "target": "recycle",
+          "tier": "F1",
+          "dt_ms": 1000,
+          "f1": {"form": "anti_recycle", "edge": "fall", "hold_s": 600, "watch": "running"}
+        }
+      ],
+      "channels": [
+        {
+          "name": "chiller.flow",
+          "unit": "u",
+          "absence": "signal",
+          "cadence": {"mode": "periodic", "period_s": 60},
+          "fidelity": "F1",
+          "noise": {"model": "gaussian", "sigma": 0.5},
+          "observes": "flow",
+          "resolution": 0.001,
+          "value_type": "number"
+        },
+        {
+          "name": "chiller.running",
+          "unit": "u",
+          "absence": "signal",
+          "cadence": {"mode": "periodic", "period_s": 60},
+          "fidelity": "F1",
+          "noise": {"model": "gaussian", "sigma": 0.0001},
+          "observes": "running",
+          "resolution": 0.001,
+          "value_type": "number"
+        },
+        {
+          "name": "chiller.lockout",
+          "unit": "u",
+          "absence": "signal",
+          "cadence": {"mode": "periodic", "period_s": 60},
+          "fidelity": "F1",
+          "noise": {"model": "gaussian", "sigma": 0.0001},
+          "observes": "low_flow",
+          "resolution": 0.001,
+          "value_type": "number"
+        }
+      ],
+      "faults": [
+        {
+          "id": "flow_loss",
+          "affects": [{"state": "flow", "delta": -60.0}],
+          "expected_effector": "reset_chiller",
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "chiller.flow"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"magnitude": 1.0, "shape": "step"}
+        },
+        {
+          "id": "flow_wobble",
+          "affects": [{"state": "flow", "delta": -5.0}],
+          "is_negative_class": true,
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "chiller.flow"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"duty_cycle": 0.2, "magnitude": 1.0, "rate_per_hour": 1.0, "shape": "intermittent"}
+        }
+      ],
+      "effectors": [
+        {
+          "name": "stop_chiller",
+          "ack": {"failure_modes": [{"mode": "ok", "probability": 1.0}], "latency_ms": {"mean": 100, "sigma": 10}},
+          "args_schema": {
+            "additionalProperties": false,
+            "properties": {"chiller_id": {"type": "string"}},
+            "required": ["chiller_id"],
+            "type": "object"
+          },
+          "confirmation_channels": ["chiller.running"],
+          "effect": {"dead_time_s": 0, "state_deltas": [{"state": "running", "delta": -1.0}], "time_constant_s": 0},
+          "idempotency_window_s": 600,
+          "risk_class": "medium"
+        },
+        {
+          "name": "start_chiller",
+          "ack": {"failure_modes": [{"mode": "ok", "probability": 1.0}], "latency_ms": {"mean": 100, "sigma": 10}},
+          "args_schema": {
+            "additionalProperties": false,
+            "properties": {"chiller_id": {"type": "string"}},
+            "required": ["chiller_id"],
+            "type": "object"
+          },
+          "confirmation_channels": ["chiller.running"],
+          "effect": {"dead_time_s": 0, "state_deltas": [{"state": "running", "delta": 1.0}], "time_constant_s": 0},
+          "idempotency_window_s": 600,
+          "requires": [
+            {"state": "low_flow", "operator": "lt", "threshold": 0.5},
+            {"state": "recycle", "operator": "lte", "threshold": 0.0},
+            {"state": "isolated", "operator": "lt", "threshold": 0.5},
+            {"state": "hand", "operator": "lt", "threshold": 0.5}
+          ],
+          "risk_class": "medium"
+        },
+        {
+          "name": "reset_chiller",
+          "ack": {"failure_modes": [{"mode": "ok", "probability": 1.0}], "latency_ms": {"mean": 100, "sigma": 10}},
+          "args_schema": {
+            "additionalProperties": false,
+            "properties": {"chiller_id": {"type": "string"}},
+            "required": ["chiller_id"],
+            "type": "object"
+          },
+          "confirmation_channels": ["chiller.running"],
+          "effect": {"dead_time_s": 0, "state_deltas": [{"state": "resets", "delta": 1.0}], "time_constant_s": 0},
+          "idempotency_window_s": 600,
+          "risk_class": "medium"
+        },
+        {
+          "name": "isolate_chiller",
+          "ack": {"failure_modes": [{"mode": "ok", "probability": 1.0}], "latency_ms": {"mean": 100, "sigma": 10}},
+          "args_schema": {
+            "additionalProperties": false,
+            "properties": {"chiller_id": {"type": "string"}},
+            "required": ["chiller_id"],
+            "type": "object"
+          },
+          "confirmation_channels": ["chiller.running"],
+          "effect": {"dead_time_s": 0, "state_deltas": [{"state": "isolated", "delta": 1.0}], "time_constant_s": 0},
+          "idempotency_window_s": 600,
+          "risk_class": "medium"
+        },
+        {
+          "name": "release_chiller",
+          "ack": {"failure_modes": [{"mode": "ok", "probability": 1.0}], "latency_ms": {"mean": 100, "sigma": 10}},
+          "args_schema": {
+            "additionalProperties": false,
+            "properties": {"chiller_id": {"type": "string"}},
+            "required": ["chiller_id"],
+            "type": "object"
+          },
+          "confirmation_channels": ["chiller.running"],
+          "effect": {"dead_time_s": 0, "state_deltas": [{"state": "isolated", "delta": -1.0}], "time_constant_s": 0},
+          "idempotency_window_s": 600,
+          "risk_class": "medium"
+        }
+      ],
+      "boundaries": [
+        {"name": "low_flow_trip", "state": "low_flow", "severity": "major"},
+        {"name": "oil_hot", "state": "hot", "severity": "critical"}
+      ]
     }
   ],
-  "instances": [{"kind": "meter", "id_template": "meter-{n}", "count": {"default": 2, "min": 1, "max": 8}}],
+  "instances": [
+    {"kind": "meter", "id_template": "meter-{n}", "count": {"default": 2, "min": 1, "max": 8}},
+    {"kind": "chiller", "names": ["CH1"]}
+  ],
   "profiles": [
     {"name": "nominal", "duration_s": 86400, "description": "Two meters over a day, one fault per scenario."},
     {

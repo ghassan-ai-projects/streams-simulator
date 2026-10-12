@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 	"os"
 	"path/filepath"
 	"strings"
@@ -127,6 +128,7 @@ func TestEnvInjectRejectsUndefinedParams(t *testing.T) {
 
 func TestReplayDivergenceSaysWhatIsAndIsNotKnown(t *testing.T) {
 	t.Parallel()
+	testsupport.SkipUnderRace(t, "replay of a long run")
 	spec, a := testBase(t)
 	cfg := Config{
 		Domain: spec, Adapter: a, Seed: 5, SinkName: model.SinkInproc,

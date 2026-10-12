@@ -5,7 +5,7 @@
 - **Contract**: [`docs/contracts/domain-spec-v0.2.schema.json`](../contracts/domain-spec-v0.2.schema.json), embedded in the binary
   (`internal/schemas`), parity-tested against the committed copy. v0.1 is removed: the project is pre-release and the eight shipped
   domains are rewritten in the same change.
-- **Later parts**: `store` and `flow` are section 13 (P6a), `schedule`, `regime` and `peak` section 16 (P6b); `trip` and the rest of the vocabulary, aggregation over links and the event
+- **Later parts**: `store` and `flow` are section 13 (P6a), `schedule`, `regime` and `peak` section 16 (P6b), protection section 17 (P6c); `responder`, aggregation over links and the event
   clock are P6. Nothing in this part depends on them.
 
 ## 1. Why
@@ -314,3 +314,41 @@ expression (`expr`, `formula`, `condition`, `script`, ...).
 Cross-checks: the schedule against direct table values at boundary and interpolated times; the regime against the piecewise
 closed form switching at `ceil(τ_below · ln((g·u − x0)/(g·u − threshold)))` (1e-6); the peak against an independent recomputation
 of block means, period roll-over and ratchet over two days (1e-9).
+
+## 17. Protection: conditions, trips, anti-recycle, boundaries, preconditions (phase P6c)
+
+Review item S14 separates three things the word `lockout` covered: a **latched trip** (`lockout`), a **timer** (`anti_recycle`)
+and **lockout-tagout isolation** (a state that a precondition checks).
+
+- **`condition`** = `{state, operator: lt|lte|gt|gte, threshold}`: the one closed comparator set, shared with the interlock.
+- **`f1.form: "trip"`** = `{when: condition, for_s, tripped_value, latch?, reset_on?}`. The condition is sampled at each step
+  boundary; once it has been sampled true for `for_s` the target takes `tripped_value` from the next boundary, otherwise it holds
+  the state's `initial`. An unlatched trip clears when the condition stops holding; a latched trip (a lockout) stays tripped until
+  the `reset_on` state changes at a boundary (a reset command adds 1 to a counter), and trips again at once if the condition
+  still holds. A latched trip needs `reset_on` (`/…/f1/reset_on`).
+- **`f1.form: "anti_recycle"`** = `{watch, edge: fall|rise, hold_s}`: an edge of the watched state at a boundary starts a timer;
+  the target is the time left in seconds, 0 once elapsed.
+- **`kinds[k].boundaries[]`** = `{name, state, severity: critical|major|minor}`: a safety boundary is a trip state, so a
+  boundary and a trip share one evaluator; the world reports the boundaries violated at a time (`world.ViolatedBoundaries`) for
+  scoring (P12). The state must be a trip (`/kinds/k/boundaries/i/state`).
+- **`effectors[e].requires[]`**: preconditions the device checks at the call time. Not locked out, anti-recycle elapsed, not
+  isolated, not in hand mode are each a condition on a state. A failed precondition refuses the call with no effect and no
+  random draw; the operator reads the generic `effector_refused` (MCP_SURFACE §4.5) and the director's call log records
+  `precondition_refused`.
+- **Effects start strictly after their time**, as before: a command at `t` is seen by a condition sampled after `t`.
+
+**Look-ahead.** A command may be dated after the world clock (a scenario file lists its calls before the clock advances). Its
+interlock and preconditions are evaluated on a throwaway copy of the entity's integration state, so evaluating them never
+commits integration past the clock and never changes a reading at an earlier time. Before this, a future-dated call integrated
+the entity ahead and an earlier emission read the later value; that affected interlocks on integrated states too.
+
+**Notes.** A refused precondition, like an interlock refusal, is not cached for idempotency: a retry with the same
+`command_id` is evaluated again and may succeed once the condition holds. `anti_recycle` and `reset_on` react to any change of
+their state, so they should watch discrete states (a run flag, a reset counter), not a continuously moving one. The
+conditions of `trip`, `anti_recycle` and `regime` are read at each step's start, so a cycle through them is a one-step delay,
+not an algebraic loop; the dependency graph does not list them. A boundary is read on the look-ahead copy when asked about a
+time after the clock. `tripped_value` must differ from the state's initial value (`/…/f1/tripped_value`).
+
+Cross-checks: the trip fires on the step computed from the analytic crossing of an F0 ramp (`floor(t_c) + 1 + for_s + 1`);
+latch, clear and reset at the expected boundaries; the anti-recycle timer reads 599 s one step after its edge; preconditions
+refuse during the timer, while locked out and while isolated; a call dated ahead of the clock leaves earlier readings unchanged.

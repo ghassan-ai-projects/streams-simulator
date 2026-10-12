@@ -65,7 +65,7 @@ func (w *World) valueAt(ent *Entity, dyn *model.Dynamics, t int64) float64 {
 	if dyn.F1 != nil && dyn.F1.Form == model.FormPeak {
 		return billedPeak(dyn.F1, s)
 	}
-	if s.lastStep >= t {
+	if s.lastStep >= t || isDiscrete(dyn) {
 		return s.x
 	}
 	if isStore(dyn) {
@@ -74,6 +74,10 @@ func (w *World) valueAt(ent *Entity, dyn *model.Dynamics, t int64) float64 {
 	probe := s.clone()
 	w.rk4Step(ent, dyn, probe, probe.lastStep, t-probe.lastStep)
 	return probe.x
+}
+
+func isDiscrete(dyn *model.Dynamics) bool {
+	return dyn.F1 != nil && (dyn.F1.Form == model.FormTrip || dyn.F1.Form == model.FormAntiRecycle)
 }
 
 func isStore(dyn *model.Dynamics) bool { return dyn.F1 != nil && dyn.F1.Form == model.FormStore }

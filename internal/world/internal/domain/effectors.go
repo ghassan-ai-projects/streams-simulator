@@ -102,8 +102,8 @@ func (w *World) InvokeEffector(effector, entityID, commandID string, args map[st
 	if result, known, err := w.replayInvocation(inv); err != nil || known {
 		return result, err
 	}
-	if w.refuseInterlock(eff, inv) {
-		return nil, ErrInterlockRefused
+	if refusal, err := w.refuseInvocation(eff, inv); refusal != nil || err != nil {
+		return refusal, err
 	}
 	return w.executeInvocation(eff, inv), nil
 }

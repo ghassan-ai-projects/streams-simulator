@@ -86,6 +86,21 @@
             "items": {"$ref": "#/$defs/fault"}
           },
 
+          "boundaries": {
+            "type": "array",
+            "description": "Safety boundaries of the kind for scoring: each names a trip state whose tripped value means the boundary is violated, with a severity class. The trip's condition and duration are the boundary's rule, so a boundary and a trip share one evaluator.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["name", "state", "severity"],
+              "properties": {
+                "name": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$"},
+                "state": {"type": "string"},
+                "severity": {"enum": ["critical", "major", "minor"]}
+              }
+            }
+          },
+
           "effectors": {
             "type": "array",
             "description": "Invoked through the single generic sim.effector.invoke tool under the operator role; the binary contains no effector name. Every call requires a command_id and a capability token. That is the simulator's only opinion about a consumer's internals — an actuator is driven by a deliberate, identified dispatch — and it holds no opinion about who inside the consumer was permitted to decide it.",
@@ -389,13 +404,21 @@
           "description": "First-order forms only. Deliberately not a general expression language: an arbitrary evaluator is a nondeterminism surface and a security surface, and no domain in the catalog needs one. The equations for each form are part of the contract and are defined in TECHNICAL_DESIGN §6.2 — a form name without an equation is not a specification.",
           "required": ["form"],
           "properties": {
-            "form": {"enum": ["first_order_lag", "rc_network", "dead_time", "saturation", "hysteresis", "integrator", "threshold_integrator", "store", "regime", "peak"]},
+            "form": {"enum": ["first_order_lag", "rc_network", "dead_time", "saturation", "hysteresis", "integrator", "threshold_integrator", "store", "regime", "peak", "trip", "anti_recycle"]},
             "selector": {"type": "string", "description": "For regime: the state whose value, read at each step boundary, selects the regime (the target itself for a runaway)."},
             "below": {"$ref": "#/$defs/regime", "description": "For regime: the lag while the selector is below threshold."},
             "above": {"$ref": "#/$defs/regime", "description": "For regime: the lag while the selector is at or above threshold."},
             "block_s": {"type": "number", "exclusiveMinimum": 0, "description": "For peak: the demand block, aligned to the Unix epoch; a multiple of the step."},
             "period_s": {"type": "number", "exclusiveMinimum": 0, "description": "For peak: the billing period, aligned to the Unix epoch; a multiple of block_s."},
             "ratchet": {"type": "number", "minimum": 0, "maximum": 1, "description": "For peak: the billed peak is at least this share of the previous period's peak."},
+            "when": {"$ref": "#/$defs/condition", "description": "For trip: the condition sampled at each step boundary."},
+            "for_s": {"type": "number", "minimum": 0, "description": "For trip: how long the condition must hold before the trip acts."},
+            "latch": {"type": "boolean", "default": false, "description": "For trip: a latched trip (a lockout) stays tripped until reset_on changes; an unlatched trip clears when the condition stops holding."},
+            "reset_on": {"type": "string", "description": "For a latched trip: the state whose change at a step boundary resets the latch (a reset command's counter)."},
+            "tripped_value": {"type": "number", "description": "For trip: the target's value while tripped; otherwise it holds the state's initial value."},
+            "watch": {"type": "string", "description": "For anti_recycle: the state whose edge starts the timer."},
+            "edge": {"enum": ["fall", "rise"], "description": "For anti_recycle: the edge of the watched state that starts the timer."},
+            "hold_s": {"type": "number", "exclusiveMinimum": 0, "description": "For anti_recycle: the timer length. The target is the time left in seconds, 0 once elapsed."},
             "previous_peak": {"type": "number", "minimum": 0, "description": "For peak: the previous period's peak at the world start (the state's initial value is the current period's peak so far)."},
             "capacity": {"type": "number", "exclusiveMinimum": 0, "description": "For store: the amount that raises the level by one unit. The level changes by (Σ coef × input + inflows − outflows) / capacity per second."},
             "time_constant_s": {"type": "number", "exclusiveMinimum": 0},
@@ -458,6 +481,14 @@
             {
               "if": {"properties": {"form": {"const": "peak"}}, "required": ["form"]},
               "then": {"required": ["inputs", "block_s", "period_s"]}
+            },
+            {
+              "if": {"properties": {"form": {"const": "trip"}}, "required": ["form"]},
+              "then": {"required": ["when", "tripped_value"]}
+            },
+            {
+              "if": {"properties": {"form": {"const": "anti_recycle"}}, "required": ["form"]},
+              "then": {"required": ["watch", "edge", "hold_s"]}
             }
           ]
         },
@@ -495,6 +526,16 @@
           "then": {"properties": {"tier": {"enum": ["F1"]}}}
         }
       ]
+    },
+    "condition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "operator", "threshold"],
+      "properties": {
+        "state": {"type": "string"},
+        "operator": {"enum": ["lt", "lte", "gt", "gte"]},
+        "threshold": {"type": "number"}
+      }
     },
     "regime": {
       "type": "object",
@@ -786,6 +827,11 @@
               }
             }
           }
+        },
+        "requires": {
+          "type": "array",
+          "description": "Preconditions the device itself checks: every condition must hold at the call time, or the call is refused with no effect: the operator reads the generic effector_refused and the director log records precondition_refused. Not locked out, not isolated (lockout-tagout), not in hand mode and an elapsed anti-recycle timer are all conditions on states.",
+          "items": {"$ref": "#/$defs/condition"}
         },
         "confirmation_channels": {
           "type": "array",
