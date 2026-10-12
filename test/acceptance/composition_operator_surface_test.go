@@ -12,6 +12,7 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/mcp"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
 // TestPrefixIndistinguishability: run two worlds with different faults from
@@ -143,7 +144,7 @@ func operatorResponseSet(t *testing.T, d *directormod.Director, token string, at
 		invoked, err = call("sim.effector.invoke", map[string]any{
 			"token": token, "effector": effList[0].Name,
 			"entity_id": "site-a/pond-1", "command_id": "prefix-1",
-			"args": argsForSchema(effList[0].ArgsSchema, "site-a/pond-1"), "at_ns": atNS,
+			"args": testsupport.ArgsForSchema(effList[0].ArgsSchema, "site-a/pond-1"), "at_ns": atNS,
 		})
 		if err != nil {
 			return "", err

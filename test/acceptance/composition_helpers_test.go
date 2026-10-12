@@ -4,7 +4,6 @@ import (
 	"context"
 	"net"
 	"net/http"
-	"strings"
 	"testing"
 	"time"
 
@@ -74,30 +73,4 @@ func startOperatorEndpoint(t *testing.T, d *directormod.Director) string {
 	endpoint := "http://" + ln.Addr().String()
 	d.SetOperatorEndpoint(endpoint)
 	return endpoint
-}
-
-// argsForSchema synthesizes arguments for an effector from its declared
-// argument schema: required *_id strings bind to the entity, numbers to 1.
-func argsForSchema(schema map[string]any, entity string) map[string]any {
-	out := map[string]any{}
-	props, _ := schema["properties"].(map[string]any)
-	required, _ := schema["required"].([]any)
-	for _, r := range required {
-		name, _ := r.(string)
-		p, _ := props[name].(map[string]any)
-		switch p["type"] {
-		case "string":
-			out[name] = "x"
-			if strings.HasSuffix(name, "_id") {
-				out[name] = entity
-			}
-		case "number", "integer":
-			out[name] = 1
-		case "boolean":
-			out[name] = true
-		default:
-			out[name] = ""
-		}
-	}
-	return out
 }

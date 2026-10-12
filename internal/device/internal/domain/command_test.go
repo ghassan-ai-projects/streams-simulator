@@ -26,7 +26,6 @@ func TestRejections(t *testing.T) {
 		}, 0, "out_of_range"},
 	}
 	for _, tc := range cases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			mono := tc.clock

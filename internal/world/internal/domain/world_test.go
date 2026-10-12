@@ -113,11 +113,6 @@ func TestAnalyticCrossCheck(t *testing.T) {
 			for _, u := range us {
 				for _, dt := range dts {
 					for _, h := range horizons {
-						tau := tau
-						g := g
-						u := u
-						dt := dt
-						h := h
 						t.Run(fmt.Sprintf("tau=%v/g=%v/u=%v/dt=%d/h=%v", tau, g, u, dt, h), func(t *testing.T) {
 							t.Parallel()
 							spec := testSpec(t, func(s *model.DomainSpec) {
