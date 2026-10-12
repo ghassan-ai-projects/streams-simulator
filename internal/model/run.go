@@ -34,6 +34,13 @@ type RunArtifact struct {
 	Platform             Platform        `json:"platform,omitempty"`
 	Counts               Counts          `json:"counts,omitempty"`
 	AppliedPerturbations []string        `json:"applied_perturbations,omitempty"`
+	// Mode is "evaluate" or "explore"; an explore run is unblinded from creation.
+	Mode string `json:"mode,omitempty"`
+	// JournalDigest and SealedJournalDigest are the digests of the run's
+	// observer and director journal streams (run-journal-v0.1); replay rebuilds
+	// both and verify compares them.
+	JournalDigest       string `json:"journal_digest,omitempty"`
+	SealedJournalDigest string `json:"sealed_journal_digest,omitempty"`
 }
 
 // ArtifactRef identifies a versioned data artifact (domain spec or adapter)

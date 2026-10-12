@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
 // TestOnlineOfflineScoringIdentity (F-0, P0): online and offline scoring
@@ -15,6 +16,7 @@ import (
 // structurally, not for equality.
 func TestOnlineOfflineScoringIdentity(t *testing.T) {
 	t.Parallel()
+	testsupport.SkipUnderRace(t, "runs one world and scores it on one goroutine")
 	r, gt := setupFaultedRun(t, "silent_no_effect", "aerator_failure")
 	pond := "site-a/pond-1"
 	if _, err := r.InvokeEffector("start_aerator", pond, "cmd-id", map[string]any{"pond_id": pond, "level": 1.0}, r.World.Clock()); err != nil {
@@ -68,6 +70,7 @@ func TestOnlineOfflineScoringIdentity(t *testing.T) {
 // failure. A consumer reporting success has recorded a false outcome.
 func TestSilentNoEffectFalseSuccess(t *testing.T) {
 	t.Parallel()
+	testsupport.SkipUnderRace(t, "runs one world and scores it on one goroutine")
 	r, gt := setupFaultedRun(t, "silent_no_effect", "aerator_failure")
 	pond := "site-a/pond-1"
 	// Actuate; the shadow state takes the effect, the real world does not.
@@ -114,6 +117,7 @@ func TestSilentNoEffectFalseSuccess(t *testing.T) {
 // consumer reports unknown and the metric reads zero.
 func TestSilentNoEffectHonestConsumer(t *testing.T) {
 	t.Parallel()
+	testsupport.SkipUnderRace(t, "runs one world and scores it on one goroutine")
 	r, gt := setupFaultedRun(t, "silent_no_effect", "aerator_failure")
 	pond := "site-a/pond-1"
 	if _, err := r.InvokeEffector("start_aerator", pond, "cmd-92", map[string]any{"pond_id": pond, "level": 1.0}, r.World.Clock()); err != nil {

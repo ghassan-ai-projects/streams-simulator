@@ -33,3 +33,18 @@ func TestArtifactEvidenceCarriesTheStampsAndCountsOfTheArtifact(t *testing.T) {
 		t.Fatalf("evidence = %+v", evidence)
 	}
 }
+
+func TestRequireBlindRefusesOnlyAnUnblindedRun(t *testing.T) {
+	t.Parallel()
+	if err := RequireBlind(&model.RunArtifact{}); err != nil {
+		t.Fatalf("a blind run must be gradable: %v", err)
+	}
+	for name, art := range map[string]*model.RunArtifact{
+		"unblinded":                     {Unblinded: true},
+		"explore with the flag cleared": {Mode: "explore"},
+	} {
+		if err := RequireBlind(art); !errors.Is(err, ErrRunUnblinded) {
+			t.Fatalf("%s run = %v, want %v", name, err, ErrRunUnblinded)
+		}
+	}
+}

@@ -27,6 +27,9 @@ type ReplayResult struct {
 	Emitted         int64  `json:"emitted"`
 	Incomplete      bool   `json:"incomplete,omitempty"` // the original run did not reach a clean end
 	Detail          string `json:"detail,omitempty"`
+	// JournalDiverged names the journal streams ("observer", "director") whose
+	// replay differs from the recorded digest or from the file beside the artifact.
+	JournalDiverged []string `json:"journal_diverged,omitempty"`
 }
 
 // LoadArtifact reads and validates a run artifact.
@@ -49,18 +52,25 @@ func LoadArtifact(path string) (*model.RunArtifact, error) {
 // world and compares the delivered trace to the expected digest. sinkTarget
 // selects the replay sink ("" = inproc).
 func ReplayArtifact(ctx context.Context, art *model.RunArtifact, spec *domain.Compiled, adapterSpec *model.Adapter, sinkTarget string) (*ReplayResult, error) {
+	result, _, err := replayArtifactRun(ctx, art, spec, adapterSpec, sinkTarget)
+	return result, err
+}
+
+// replayArtifactRun is ReplayArtifact that also returns the replayed run, so
+// the caller can compare the journal bytes it rebuilt.
+func replayArtifactRun(ctx context.Context, art *model.RunArtifact, spec *domain.Compiled, adapterSpec *model.Adapter, sinkTarget string) (*ReplayResult, *Run, error) {
 	spec, adapterSpec, result, err := prepareReplay(art, spec, adapterSpec)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	replay, err := newReplayRun(ctx, art, spec, adapterSpec, sinkTarget)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if err := replayCommands(ctx, replay, art.CommandLog); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return finishReplayResult(replay, art, result), nil
+	return finishReplayResult(replay, art, result), replay, nil
 }
 
 // ReplayEvidence is what replaying an artifact recovers beyond the digest

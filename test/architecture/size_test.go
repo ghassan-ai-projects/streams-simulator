@@ -26,7 +26,7 @@ func TestGoFileSize(t *testing.T) {
 		if err != nil {
 			return fmt.Errorf("inspect Go file %s: %w", path, err)
 		}
-		if entry.IsDir() && entry.Name() == ".git" {
+		if entry.IsDir() && isAgentWorkspace(path) {
 			return fs.SkipDir
 		}
 		if entry.IsDir() || !strings.HasSuffix(path, ".go") {

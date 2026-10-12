@@ -39,6 +39,7 @@ func runningAerator() []model.SetupCall {
 // threshold rule already gets right must not enter the graded suite.
 func TestLoudFaultIsTrivial(t *testing.T) {
 	t.Parallel()
+	testsupport.SkipUnderRace(t, "audits two worlds on one goroutine")
 	spec := loadSpec(t)
 	start := model.DefaultStartTimeNS + 4*3600*1e9
 	onset := start + 2*3600*1e9
@@ -62,6 +63,7 @@ func TestLoudFaultIsTrivial(t *testing.T) {
 // diurnal range. The audit must keep it out of the trivial bucket.
 func TestProbeFoulingIsNonTrivial(t *testing.T) {
 	t.Parallel()
+	testsupport.SkipUnderRace(t, "audits two worlds on one goroutine")
 	spec := loadSpec(t)
 	start := model.DefaultStartTimeNS + 4*3600*1e9
 	onset := start + 2*3600*1e9

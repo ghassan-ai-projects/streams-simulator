@@ -12,6 +12,7 @@ func worldRequest(args map[string]any) director.WorldRequest {
 		SinkTarget: stringArg(args, "sink_target"), TimeMode: stringArg(args, "time_mode"),
 		StartTimeNS: worldStartTime(args), Entities: worldEntityArguments(args),
 		ScenarioProfile: stringArg(args, "scenario_profile"), Label: stringArg(args, "label"),
+		Explore: boolArg(args, "explore"),
 	}
 }
 

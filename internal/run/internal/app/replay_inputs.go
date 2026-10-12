@@ -5,6 +5,7 @@ import (
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/journal"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
@@ -40,6 +41,9 @@ func baseReplayConfig(art *model.RunArtifact, spec *domain.Compiled, adapterSpec
 		TimeMode:   art.TimeMode,
 		RunID:      art.RunID,
 		Label:      "replay",
+		Explore:    art.Mode == journal.ModeExplore,
+		// Replay compares the journal bytes it rebuilds with the recorded ones.
+		retainJournal: true,
 	}
 }
 

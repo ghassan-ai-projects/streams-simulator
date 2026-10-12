@@ -18,6 +18,7 @@ func (r *Run) ReportQuiesced(throughNS int64) {
 	defer r.quiesceMu.Unlock()
 	if throughNS > r.quiescedThroughNS {
 		r.quiescedThroughNS = throughNS
+		r.journal.ConsumerReported(throughNS, false)
 		close(r.quiesceNotify)
 		r.quiesceNotify = make(chan struct{})
 	}
@@ -78,6 +79,12 @@ func (r *Run) appliedPerturbations() []string {
 	out := make([]string, len(r.perturbHistory))
 	copy(out, r.perturbHistory)
 	return out
+}
+
+func (r *Run) quiescedThrough() int64 {
+	r.quiesceMu.Lock()
+	defer r.quiesceMu.Unlock()
+	return r.quiescedThroughNS
 }
 
 func (r *Run) quiescenceStatus(toNS int64) (chan struct{}, int64, bool) {

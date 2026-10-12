@@ -50,6 +50,7 @@ func (r *Run) advanceThroughBoundary(toNS int64, awaitConsumer bool) (int, error
 		return emitted, r.runErr
 	}
 	// Log the moved world before quiescence, even when the consumer never reports.
+	r.journal.ClockAdvanced(r.journalNow(), toNS)
 	r.recordWorldCommand(model.OpClockAdvance, map[string]any{"to_ns": toNS, "await_consumer": awaitConsumer})
 	return emitted, r.persistAdvanceBoundary()
 }

@@ -52,6 +52,15 @@ func scenarioArgs(op string, args map[string]any) map[string]any {
 	return copied
 }
 
+// JournalCommand is a command-log entry as the journal records it. A clock
+// advance keeps only its target, as in a scenario: whether a live session
+// waited for its consumer is pacing, which replay does not reproduce, so it is
+// not part of the journal's replay identity.
+func JournalCommand(command model.Command) model.Command {
+	command.Args = scenarioArgs(command.Op, command.Args)
+	return command
+}
+
 // cloneValue deep-copies a decoded JSON value; a nil object or array stays
 // nil, so it still encodes as null.
 func cloneValue(value any) any {

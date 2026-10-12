@@ -15,6 +15,11 @@ import (
 
 const pondDomain = "aquaculture-pond"
 
+// suiteDomain is the shipped domain the suite command tests generate from:
+// generating audits every candidate over a full simulated day, so they use the
+// domain whose audit is cheapest. What the command does does not depend on it.
+const suiteDomain = "shipment-exception"
+
 var fixedNow = time.Date(2026, 10, 10, 12, 0, 0, 0, time.UTC)
 
 type outcome struct {
@@ -176,7 +181,7 @@ func TestAdapterListAndVerify(t *testing.T) {
 func TestSuiteWritesTheGeneratedSuiteFile(t *testing.T) {
 	t.Parallel()
 	out := filepath.Join(t.TempDir(), "suites")
-	got := invoke(t, "suite", "--domains-dir", testsupport.DomainsDir(), "--domain", pondDomain, "--n", "1", "--out", out).mustSucceed(t).json(t)
+	got := invoke(t, "suite", "--domains-dir", testsupport.DomainsDir(), "--domain", suiteDomain, "--n", "1", "--out", out).mustSucceed(t).json(t)
 	path, _ := got["suite"].(string)
 	if filepath.Dir(path) != out || got["scenarios"] == nil {
 		t.Fatalf("suite result = %v", got)

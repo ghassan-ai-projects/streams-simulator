@@ -24,6 +24,8 @@ pipeline, recorded so that replay reproduces it byte-for-byte.
 | Quiescence | The consumer reporting it has processed everything through a time; `await_consumer` waits for it | `ReportQuiesced`, `Advance(awaitConsumer)` | `consumer_not_quiesced` |
 | Verdict | The consumer's conclusion for the run, submitted once | `SubmitVerdict`, `Verdict` | `verdict.json` |
 | Unblind | Stamping the run permanently so it is excluded from every scorecard | `Unblind`, `UnblindedStamp` | `unblinded`, `unblinded_at` |
+| Explore mode | A run unblinded from creation (`run --explore`, a world created with `explore`); it is never scored and `score` refuses it | `Config.Explore` | `mode: "explore"`, `unblinded` |
+| Run journal | The two JSON Lines streams a run writes while it happens (observer `journal.jsonl`, director `sealed/journal.jsonl`); replay rebuilds both and verify compares their digests | `Run.journal`, `Config.JournalDir`, `journal.Journal` | `journal_digest`, `sealed_journal_digest` |
 | Reproducible | Whether replay can reproduce the run byte-for-byte (stepped time, quiesced consumer) | `Reproducible` | `reproducible` |
 | Hidden-state history | Director-only per-emission state snapshots | `History`, `model.StateSnapshot` | `world_state_history.jsonl` |
 | Inputs | The domain and adapter a run names, resolved by id from a domains directory and an adapters directory | `LoadInputs` | `--domains-dir`, `--adapters-dir` |

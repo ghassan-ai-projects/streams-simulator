@@ -14,6 +14,7 @@ import (
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/journal"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/perturb"
 	rules "github.com/ghassan-ai-projects/streams-simulator/internal/run/internal/domain"
@@ -47,6 +48,15 @@ type Config struct {
 	// tests replace the real clock, so it is not part of the public Config.
 	quiescenceClock QuiescenceClock
 	LedgerPath      string // append-only durable ledger path ("" = in-memory only until End)
+	// JournalDir is where the run's two journal streams are written while it
+	// runs (journal.jsonl, sealed/journal.jsonl); empty keeps them in memory
+	// with only their digests.
+	JournalDir string
+	// Explore stamps the run unblinded from creation: it is never scored.
+	Explore bool
+	// retainJournal keeps the journal bytes in memory so replay can compare
+	// them; only this layer's replay sets it.
+	retainJournal bool
 	// silent builds a world that emits nothing, for a scenario's dry run; it
 	// is never set outside this layer.
 	silent bool
@@ -105,6 +115,8 @@ type Run struct {
 	evidenceRec       func(model.SimEvent) // delivered-event hook (test harness)
 	quiesceParked     func()               // fired when a quiescence wait blocks (test harness)
 	durableLedger     *durable.Ledger
+	journal           *journal.Journal
+	journalDigests    journal.Digests
 
 	finished     bool
 	incomplete   bool

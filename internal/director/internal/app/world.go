@@ -19,6 +19,7 @@ func (d *Director) CreateWorld(req WorldRequest) (map[string]any, error) {
 	worldID, runID := d.reserveWorldIdentity()
 	cfg.RunID = runID
 	cfg.LedgerPath = filepath.Join(d.OutDir, worldID, "ledger.jsonl")
+	cfg.JournalDir = filepath.Join(d.OutDir, worldID)
 	r, err := run.New(d.ctx, cfg)
 	if err != nil {
 		return nil, rules.ToolErrorf(rules.CodeDomainInvalid, "%v", err)

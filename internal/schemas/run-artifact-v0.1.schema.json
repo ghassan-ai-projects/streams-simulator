@@ -278,6 +278,20 @@
         }
       }
     },
+    "mode": {
+      "enum": ["evaluate", "explore"],
+      "description": "explore marks a run unblinded from creation (unblinded is then true); it is never scored. An absent mode is evaluate."
+    },
+    "journal_digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "description": "Digest of the replayable lines of the observer journal stream (journal.jsonl, run-journal-v0.1). `verify` rebuilds the stream by replay and fails with replay_mismatch when it differs."
+    },
+    "sealed_journal_digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "description": "Digest of the replayable lines of the director journal stream (sealed/journal.jsonl). `verify` compares it like journal_digest."
+    },
     "applied_perturbations": {
       "type": "array",
       "description": "The perturbations applied during the run, in application order; feeds offline scoring's perturbation-fidelity and clock-skew metrics identically to the online path.",

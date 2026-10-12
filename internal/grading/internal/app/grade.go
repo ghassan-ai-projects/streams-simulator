@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/ghassan-ai-projects/streams-simulator/internal/grading/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/score"
@@ -27,6 +28,9 @@ func Grade(ctx context.Context, options Options) (*score.Scorecard, error) {
 	art, err := run.LoadArtifact(options.Artifact)
 	if err != nil {
 		return nil, fmt.Errorf("streamsim: %w", err)
+	}
+	if err := domain.RequireBlind(art); err != nil {
+		return nil, err
 	}
 	return gradeArtifact(ctx, options, art)
 }

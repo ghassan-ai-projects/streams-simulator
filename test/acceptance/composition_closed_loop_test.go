@@ -1,12 +1,15 @@
-package director_test
+package acceptance
 
 import (
 	"context"
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
-	"github.com/ghassan-ai-projects/streams-simulator/internal/director"
+	directormod "github.com/ghassan-ai-projects/streams-simulator/internal/director"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/journal"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/refconsumer"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/score"
@@ -24,16 +27,16 @@ func nativeTrace(evs []model.SimEvent) []byte {
 	return out
 }
 
-// TestGoldenClosedLoopOverOperatorEndpoint: the reference consumer closes
+// TestClosedLoopOverTheOperatorEndpointResolves: the reference consumer closes
 // the loop out-of-process. The harness drives the world; the consumer reads
 // evidence, detects, actuates over MCP, asserts quiescence, submits a
 // verdict; the harness scores and the loop resolves.
-func TestGoldenClosedLoopOverOperatorEndpoint(t *testing.T) {
+func TestClosedLoopOverTheOperatorEndpointResolves(t *testing.T) {
 	t.Parallel()
-	d := newTestDirector(t)
+	d := newCompositionDirector(t)
 	endpoint := startOperatorEndpoint(t, d)
 	start := model.DefaultStartTimeNS + 4*3600*1e9
-	created, err := d.CreateWorld(director.WorldRequest{
+	created, err := d.CreateWorld(directormod.WorldRequest{
 		Domain: "aquaculture-pond", Seed: 5, Adapter: "native-jsonl",
 		Sink: model.SinkInproc, TimeMode: model.TimeStepped, StartTimeNS: &start,
 	})
@@ -44,7 +47,7 @@ func TestGoldenClosedLoopOverOperatorEndpoint(t *testing.T) {
 		t.Fatalf("world.create must return the operator endpoint, got %v", got)
 	}
 	worldID := created["world_id"].(string)
-	w := director.RunOf(d, worldID)
+	w := d.RunOf(worldID)
 	token, runID := created["token"].(string), created["run_id"].(string)
 	pond := "site-a/pond-1"
 
@@ -147,9 +150,11 @@ func TestGoldenClosedLoopOverOperatorEndpoint(t *testing.T) {
 	if got := w.World.StateValue(pond, "aerator_output", w.World.Clock()); got <= 0.9 {
 		t.Fatalf("the aerator must have recovered after the consumer's actuation: %v", got)
 	}
-	if _, err := d.EndRun(worldID); err != nil {
+	ended, err := d.EndRun(worldID)
+	if err != nil {
 		t.Fatal(err)
 	}
+	checkClosedLoopJournal(t, d, ended["run_artifact_path"].(string))
 	out, err := d.Score(runID)
 	if err != nil {
 		t.Fatal(err)
@@ -160,5 +165,35 @@ func TestGoldenClosedLoopOverOperatorEndpoint(t *testing.T) {
 	}
 	if !sc.Loop.Resolved {
 		t.Fatalf("closed loop did not resolve: %+v", sc.Loop)
+	}
+}
+
+// checkClosedLoopJournal holds the journals the director wrote in the world's
+// run directory: the consumer's acknowledgement and report are in the observer
+// stream, and the run, consumer reports included, still verifies by replay.
+func checkClosedLoopJournal(t *testing.T, d *directormod.Director, artifact string) {
+	t.Helper()
+	dir := filepath.Dir(artifact)
+	observer, err := os.ReadFile(filepath.Join(dir, journal.ObserverFile))
+	if err != nil {
+		t.Fatal(err)
+	}
+	records, err := journal.Read(observer)
+	if err != nil {
+		t.Fatal(err)
+	}
+	seen := map[string]int{}
+	for _, rec := range records {
+		seen[rec.Type]++
+	}
+	if seen["effector.acknowledged"] == 0 || seen["consumer.reported"] == 0 || seen["run.closed"] != 1 {
+		t.Fatalf("observer journal record counts = %v", seen)
+	}
+	if _, err := os.Stat(filepath.Join(dir, journal.DirectorFile)); err != nil {
+		t.Fatal(err)
+	}
+	verified, err := d.VerifyRun(artifact)
+	if err != nil || verified["matches"] != true {
+		t.Fatalf("verify = %v, %v; a closed-loop run must reproduce, consumer reports included", verified, err)
 	}
 }

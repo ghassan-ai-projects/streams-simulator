@@ -20,6 +20,7 @@ func TestNewPanelRefusesAMissingSpec(t *testing.T) {
 
 func TestAuditReportsEveryDetectorScoreAndABestDetector(t *testing.T) {
 	t.Parallel()
+	testsupport.SkipUnderRace(t, "audits two worlds on one goroutine")
 	spec, err := domain.Load(testsupport.Domain("aquaculture-pond"))
 	if err != nil {
 		t.Fatal(err)

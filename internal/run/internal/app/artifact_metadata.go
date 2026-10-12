@@ -85,4 +85,11 @@ func (r *Run) attachArtifactState(artifact *model.RunArtifact, commands []model.
 	artifact.Platform = model.CurrentPlatform()
 	artifact.Counts = counts
 	artifact.AppliedPerturbations = r.appliedPerturbations()
+	r.attachArtifactJournal(artifact)
+}
+
+func (r *Run) attachArtifactJournal(artifact *model.RunArtifact) {
+	artifact.Mode = r.mode()
+	artifact.JournalDigest = r.journalDigests.Observer
+	artifact.SealedJournalDigest = r.journalDigests.Director
 }

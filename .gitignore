@@ -48,3 +48,6 @@ runs/
 .enola/
 # /tmp/
 # /var/
+
+# Local coding-agent workspace (worktrees, settings)
+.claude/

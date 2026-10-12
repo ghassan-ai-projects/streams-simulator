@@ -20,6 +20,7 @@ func (r *Run) SubmitVerdict(v *model.Verdict) error {
 		return err
 	}
 	r.verdict = rules.CloneVerdict(v)
+	r.journal.ConsumerReported(r.quiescedThrough(), true)
 	return nil
 }
 

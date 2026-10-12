@@ -141,3 +141,21 @@ func isClosed(l *Ledger) bool {
 	_, err := l.file.Stat()
 	return errors.Is(err, os.ErrClosed)
 }
+
+func TestReadJournalReportsPresenceAndFailures(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "journal.jsonl"), []byte("x\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	raw, present, err := ReadJournal(dir, "journal.jsonl")
+	if err != nil || !present || string(raw) != "x\n" {
+		t.Fatalf("read = %q, %v, %v", raw, present, err)
+	}
+	if _, present, err := ReadJournal(dir, "sealed/journal.jsonl"); err != nil || present {
+		t.Fatalf("an absent journal is not an error: present %v, %v", present, err)
+	}
+	if _, _, err := ReadJournal(dir, "journal.jsonl/inner"); err == nil || !strings.Contains(err.Error(), "run: read journal") {
+		t.Fatalf("a file used as a directory = %v", err)
+	}
+}

@@ -18,6 +18,9 @@ renders in its own terms.
 | Nameplate | The static, time-invariant description of a world | `Nameplate`, `EffectorInfo` | `nameplate` |
 | Capability token | Opaque unguessable bearer value that names exactly one world to the operator | `capability.NewToken` | `token`, `t-…` |
 | Operator endpoint | The URL the director advertises for operators to connect to | `SetOperatorEndpoint` | `operator_endpoint` |
+| Explore world | A world created with `explore: true`: its run is unblinded from creation and `sim.score` refuses it | `WorldRequest.Explore` | `explore` in `sim.world.create` |
+| Run directory | Where a world's run publishes its evidence: the ledger and the two journal streams while it runs, the artifact at the end | `Director.OutDir/<world_id>` | `ledger.jsonl`, `journal.jsonl`, `sealed/journal.jsonl` |
+| Harness run handle | The run behind a world, for composition tests only (the MCP surface cannot name its type) | `Director.RunOf` | – |
 | Refusal | A typed failure carrying a stable code; operator-facing codes are deliberately coarse | `Code`, `ToolErrorf` | `code` in the tool error text |
 
 ## Retired words

@@ -27,6 +27,7 @@ func TestEmbeddedMatchCommitted(t *testing.T) {
 		{"ground-truth-v0.1.schema.json", GroundTruth()},
 		{"run-artifact-v0.1.schema.json", RunArtifact()},
 		{"scenario-v0.1.schema.json", Scenario()},
+		{"run-journal-v0.1.schema.json", RunJournal()},
 	}
 	for _, tc := range cases {
 		want, err := os.ReadFile(filepath.Join("..", "..", "docs", "contracts", tc.name))

@@ -103,7 +103,8 @@ a test. The validator is closed and reviewed, not a general engine.
 ### D-13 (deviation). `simdet` build tag semantics
 Under `simdet`, `internal/wall.Now` returns the zero time and the http-push
 wall sub-mode cannot link. `make test-simdet` runs the suite with `-tags
-simdet`; CI gates on it, so no test can depend on a wall clock by accident.
+simdet`, and the race run of `make test-ci` (the `ci-check` test tier) carries the same
+tag; CI gates on it, so no test can depend on a wall clock by accident.
 
 *Erratum (2026-10-10, hardening):* the code has no http-push wall sub-mode.
 The seam is now used by the run module's clock edge, so under `simdet` the

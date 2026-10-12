@@ -68,15 +68,25 @@ func (w *World) clampState(ent *Entity, state string, v float64) float64 {
 		if st.Name != state {
 			continue
 		}
-		if st.Min != 0 || st.Max != 0 {
-			return clamp(v, &model.Clamp{Min: fptr(st.Min), Max: fptr(st.Max)})
-		}
-		return v
+		return clampToBounds(v, st.Min, st.Max)
 	}
 	return v
 }
 
-func fptr(f float64) *float64 { return &f }
+// clampToBounds limits v to [lower, upper]; a state declaring neither bound
+// (both zero) is unbounded. It allocates nothing, because it runs on every
+// state read.
+func clampToBounds(v, lower, upper float64) float64 {
+	switch {
+	case lower == 0 && upper == 0:
+		return v
+	case v < lower:
+		return lower
+	case v > upper:
+		return upper
+	}
+	return v
+}
 
 func clamp(v float64, c *model.Clamp) float64 {
 	if c == nil {

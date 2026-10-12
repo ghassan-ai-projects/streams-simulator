@@ -5,6 +5,7 @@ import (
 
 	rules "github.com/ghassan-ai-projects/streams-simulator/internal/director/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
 )
 
 // CreateWorld creates a world from a typed request (sim.world.create).
@@ -152,4 +153,14 @@ func (d *Director) OperatorReport(token, runID string, quiescedThroughNS int64, 
 // ToolErrorf builds a coded refusal for a surface's own checks.
 func ToolErrorf(code Code, format string, args ...any) error {
 	return rules.ToolErrorf(code, format, args...)
+}
+
+// RunOf is the test harness's handle on the run behind a world, nil for an
+// unknown world. Composition tests (test/acceptance) use it to observe and
+// park the run beneath the tools, as run.SetEvidenceRecorder and
+// run.SetQuiesceParkedHook are used; no surface may. The MCP surface cannot
+// reach it either: it may not import the run module (TestMCPHoldsOnlyProtocol),
+// so it cannot name the type RunOf returns.
+func (d *Director) RunOf(worldID string) *run.Run {
+	return d.impl.RunOf(worldID)
 }

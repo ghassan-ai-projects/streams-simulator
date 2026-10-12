@@ -90,6 +90,7 @@ func writeLabel(t *testing.T, dir string, gt *model.GroundTruthRecord) string {
 
 func TestOfflineScoreEqualsTheOnlineScoreOfTheSameRun(t *testing.T) {
 	t.Parallel()
+	testsupport.SkipUnderRace(t, "runs, replays and grades one world on one goroutine")
 	dir := t.TempDir()
 	r, gt := closedLoopRun(t, dir)
 	online, err := score.Score(score.Evidence{
@@ -114,6 +115,7 @@ func TestOfflineScoreEqualsTheOnlineScoreOfTheSameRun(t *testing.T) {
 
 func TestGradeRefusesAnArtifactWhoseReplayDoesNotReproduce(t *testing.T) {
 	t.Parallel()
+	testsupport.SkipUnderRace(t, "runs, replays and grades one world on one goroutine")
 	dir := t.TempDir()
 	_, gt := closedLoopRun(t, dir)
 	label := writeLabel(t, dir, gt)
@@ -186,5 +188,29 @@ func TestLoadLedgerAndHistoryNameAMissingFileOrADirectory(t *testing.T) {
 	}
 	if _, err := loadHistory(missing); err == nil || !strings.HasPrefix(err.Error(), "open state history "+missing+": ") {
 		t.Fatalf("a missing history: err = %v", err)
+	}
+}
+
+func TestGradeRefusesARunStampedUnblinded(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	_, gt := closedLoopRun(t, dir)
+	label := writeLabel(t, dir, gt)
+	artifact := filepath.Join(dir, "run.json")
+	raw, err := os.ReadFile(artifact)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var doc map[string]any
+	if err := json.Unmarshal(raw, &doc); err != nil {
+		t.Fatal(err)
+	}
+	doc["unblinded"], doc["mode"] = true, "explore"
+	stamped, _ := json.Marshal(doc)
+	if err := os.WriteFile(artifact, stamped, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Grade(t.Context(), gradeOptions(dir, label)); !errors.Is(err, rules.ErrRunUnblinded) {
+		t.Fatalf("Grade of an unblinded run = %v, want %v", err, rules.ErrRunUnblinded)
 	}
 }

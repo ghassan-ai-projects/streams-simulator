@@ -66,7 +66,7 @@ func parseFiles(root string, tests bool) ([]productionFile, error) {
 			return fmt.Errorf("inspect %s: %w", path, err)
 		}
 		if entry.IsDir() {
-			return skipDirectory(entry.Name())
+			return skipDirectory(path, entry.Name())
 		}
 		if !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") != tests {
 			return nil
@@ -84,8 +84,8 @@ func parseFiles(root string, tests bool) ([]productionFile, error) {
 	return files, nil
 }
 
-func skipDirectory(name string) error {
-	if name == ".git" || name == ".enola" || name == "testdata" {
+func skipDirectory(path, name string) error {
+	if isAgentWorkspace(path) || name == ".enola" || name == "testdata" {
 		return fs.SkipDir
 	}
 	return nil
@@ -172,4 +172,13 @@ func repositoryRoot(t *testing.T) *os.Root {
 		}
 	})
 	return root
+}
+
+// isAgentWorkspace names the directories that are not the repository's own
+// source: git's, and the git worktrees a coding agent works in beside this
+// checkout (.claude/worktrees, each a second copy of the source tree that must
+// not be gated here). Only the worktrees are skipped, not the rest of .claude.
+func isAgentWorkspace(path string) bool {
+	slashed := filepath.ToSlash(path)
+	return filepath.Base(path) == ".git" || strings.HasSuffix(slashed, ".claude/worktrees")
 }

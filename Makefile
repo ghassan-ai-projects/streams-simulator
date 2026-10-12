@@ -12,6 +12,17 @@ VERSION   := $(shell git describe --tags 2>/dev/null || echo dev)
 COMMIT    := $(shell git rev-parse --short HEAD 2>/dev/null || echo none)
 LDFLAGS   := -ldflags="-X main.Version=$(VERSION) -X main.Commit=$(COMMIT)"
 ENOLA     ?= enola
+# Fuzz durations: `make fuzz` (one target at a time) and `make fuzz-soak` (the
+# three targets side by side, so each gets a third of the cores for longer).
+FUZZTIME     ?= 10s
+FUZZSOAKTIME ?= 5s
+# To add a fuzz target: append its name to FUZZ_NAMES and give it a package.
+FUZZ_NAMES := FuzzDomainParse FuzzArtifactLoad FuzzScenarioCheck FuzzJournalRead
+FUZZ_PKG_FuzzDomainParse   := ./internal/domain/internal/domain/
+FUZZ_PKG_FuzzArtifactLoad  := ./internal/run/internal/app/
+FUZZ_PKG_FuzzScenarioCheck := ./internal/run/internal/app/
+FUZZ_PKG_FuzzJournalRead   := ./internal/journal/internal/domain/
+FUZZ_TARGETS := $(addprefix fuzz-,$(FUZZ_NAMES))
 
 # Detect if any Go packages exist (after the user adds code). Used to skip
 # targets gracefully in a freshly-cloned template.
@@ -29,7 +40,7 @@ HAS_MAIN := $(if $(MAIN_PKGS),yes,no)
 
 # ---- Phony declarations ---------------------------------------------------
 .PHONY: help all build vet fmt tidy lint lint-ci docs-check test test-short test-race \
-        test-coverage ci-check deadcode vulncheck fuzz soak fuzz-soak perf \
+        test-coverage test-ci ci-check deadcode vulncheck fuzz $(FUZZ_TARGETS) soak fuzz-soak perf \
         manifest clean run cross-compile architecture architecture-baseline function-length \
         coverage-check behaviour-pin behaviour-pin-check phase-gate fmt-check
 
@@ -113,7 +124,7 @@ architecture: ## Reject new Enola cycle or layer findings against the baseline
 function-length: ## Check the 15-line maximum for production function bodies
 	go run cmd/streamsim/function_length.go
 
-coverage-check: ## Fail when a package is below its statement-coverage floor
+coverage-check: ## Fail when a package is below its statement-coverage floor (standalone re-run; ci-check checks the test-ci run)
 	./scripts/check-coverage
 
 behaviour-pin: ## Print deterministic CLI output hashes (diff against the baseline)
@@ -137,19 +148,22 @@ test: ## Run all tests with race + shuffle + coverage
 	  echo "(no packages yet -- skipping test)"; \
 	fi
 
-test-short: ## Run tests in short mode (skip integration)
+test-short: ## Run tests in short mode with race + shuffle (standalone; ci-check uses test-ci)
 	@if [ "$(HAS_PKGS)" = "yes" ]; then \
 	  go test -short -race -count=1 -shuffle=on $(PKGS); \
 	else \
 	  echo "(no packages yet -- skipping test)"; \
 	fi
 
-test-simdet: ## Run the deterministic suite with the wall clock removed
+test-simdet: ## Run the deterministic suite with the wall clock removed (standalone; ci-check uses test-ci)
 	@if [ "$(HAS_PKGS)" = "yes" ]; then \
 	  go test -tags simdet -count=1 $(PKGS); \
 	else \
 	  echo "(no packages yet -- skipping test)"; \
 	fi
+
+test-ci: ## The ci-check test tier: whole suite once (race, shuffle, simdet, coverage), floors checked from that run
+	./scripts/test-ci
 
 test-race: ## Run tests with race detector
 	@if [ "$(HAS_PKGS)" = "yes" ]; then \
@@ -168,7 +182,7 @@ test-coverage: ## Run tests and produce HTML coverage report
 	fi
 
 # ---- Pipeline -------------------------------------------------------------
-ci-check: function-length fmt-check docs-check tidy build vet lint-ci test-short test-simdet coverage-check deadcode vulncheck fuzz-soak ## Run the full CI pipeline locally (matches .github/workflows/ci.yml)
+ci-check: function-length fmt-check docs-check tidy build vet lint-ci test-ci deadcode vulncheck fuzz-soak ## Run the full CI pipeline locally (matches .github/workflows/ci.yml)
 	@echo "  CI check passed"
 
 # ---- Tools ----------------------------------------------------------------
@@ -194,14 +208,15 @@ vulncheck: ## Run govulncheck
 	  echo "(no packages yet -- skipping vulncheck)"; \
 	fi
 
-fuzz: ## Bounded native fuzzing of the parsers (10s per target)
-	@if [ "$(HAS_PKGS)" = "yes" ]; then \
-	  go test -fuzz=FuzzDomainParse -fuzztime=10s ./internal/domain/internal/domain/; \
-	  go test -fuzz=FuzzArtifactLoad -fuzztime=10s ./internal/run/internal/app/; \
-	  go test -fuzz=FuzzScenarioCheck -fuzztime=10s ./internal/run/internal/app/; \
-	else \
-	  echo "(no packages yet -- skipping fuzz)"; \
-	fi
+# The fuzz targets are independent processes. `fuzz` runs them one after
+# another; `fuzz-soak` (the ci-check step) runs them side by side. -run='^$$'
+# skips the package's ordinary tests (the test tiers already run them); the
+# seed corpus still runs as the fuzzer's baseline.
+fuzz: ## Bounded native fuzzing of the parsers (10s per target, one after another)
+	@$(MAKE) --no-print-directory FUZZTIME=10s $(FUZZ_TARGETS)
+
+$(FUZZ_TARGETS): fuzz-%:
+	@go test -run='^$$' -fuzz='^$*$$' -fuzztime=$(FUZZTIME) $(FUZZ_PKG_$*)
 
 soak: ## Deterministic soak: >1M delivered records, conservation + replay identity
 	@if [ "$(HAS_PKGS)" = "yes" ]; then \
@@ -210,14 +225,8 @@ soak: ## Deterministic soak: >1M delivered records, conservation + replay identi
 	  echo "(no packages yet -- skipping soak)"; \
 	fi
 
-fuzz-soak: ## Bounded fuzz only (soak is an explicit, slower target)
-	@if [ "$(HAS_PKGS)" = "yes" ]; then \
-	  go test -fuzz=FuzzDomainParse -fuzztime=5s ./internal/domain/internal/domain/; \
-	  go test -fuzz=FuzzArtifactLoad -fuzztime=5s ./internal/run/internal/app/; \
-	  go test -fuzz=FuzzScenarioCheck -fuzztime=5s ./internal/run/internal/app/; \
-	else \
-	  echo "(no packages yet -- skipping fuzz)"; \
-	fi
+fuzz-soak: ## Bounded fuzz only, the targets in parallel (soak is an explicit, slower target)
+	@$(MAKE) --no-print-directory -j3 FUZZTIME=$(FUZZSOAKTIME) $(FUZZ_TARGETS)
 
 perf: ## Benchmarks for the emission and ledger paths
 	@if [ "$(HAS_PKGS)" = "yes" ]; then \

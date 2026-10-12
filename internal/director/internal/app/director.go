@@ -82,6 +82,15 @@ func (d *Director) World(worldID string) *WorldRecord {
 	return d.Worlds[worldID]
 }
 
+// RunOf is the run behind a world, or nil: the test harness's handle on the
+// run beneath the tools (see Director.RunOf in the facade).
+func (d *Director) RunOf(worldID string) *run.Run {
+	if w := d.World(worldID); w != nil {
+		return w.Run
+	}
+	return nil
+}
+
 // openRun marks the world's run opened once its truth is sealed. The seal is
 // read before taking the director lock: the truth store calls back into the
 // director while holding its own lock, so the two are never nested the other

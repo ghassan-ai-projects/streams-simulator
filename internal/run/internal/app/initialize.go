@@ -8,6 +8,7 @@ import (
 	rules "github.com/ghassan-ai-projects/streams-simulator/internal/run/internal/domain"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/journal"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/perturb"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run/internal/durable"
@@ -27,6 +28,7 @@ func New(ctx context.Context, cfg Config) (*Run, error) {
 		return nil, err
 	}
 	r.attachWorld()
+	r.journalOpened()
 	return r, nil
 }
 
@@ -73,11 +75,15 @@ func runWith(ctx context.Context, cfg Config, w *world.World, layer *perturb.Lay
 		worldEndTimeNS:   cfg.StartTimeNS,
 		envTargets:       map[string]string{},
 		quiesceNotify:    make(chan struct{}),
+		journal:          journal.NewMemory(cfg.retainJournal),
 	}
 }
 
 func (r *Run) openPipeline() error {
 	if err := r.openLedger(); err != nil {
+		return err
+	}
+	if err := r.openJournal(); err != nil {
 		return err
 	}
 	if err := r.openAdapter(); err != nil {
@@ -96,6 +102,7 @@ func (r *Run) releaseOpened() {
 	if r.durableLedger != nil {
 		_ = r.durableLedger.Finish()
 	}
+	_, _ = r.journal.Close(r.worldStartTimeNS, true, "the run did not start")
 	if r.Sink != nil {
 		_, _ = r.Sink.Close()
 	}

@@ -39,6 +39,7 @@ func (r *Run) finishRun(outDir string) (*model.RunArtifact, error) {
 	// The sink and ledger are closed by now whatever happened, so the run is
 	// over: it takes no further commands even when its end failed.
 	traceErr := r.finishTrace()
+	r.closeJournal()
 	r.finished = true
 	if traceErr != nil {
 		return nil, traceErr

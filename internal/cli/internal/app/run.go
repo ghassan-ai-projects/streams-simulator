@@ -55,7 +55,7 @@ func loadScenarioFile(path string) (*model.Scenario, error) {
 
 func executeScenarioRun(source scenarioSource, options runOptions) (any, error) {
 	summary, err := run.RunScenario(context.Background(), source.scenario, run.ScenarioRunOptions{DomainsDir: options.domainsDir,
-		AdaptersDir: options.adaptersDir, SinkName: options.sinkName, SinkTarget: options.sinkTarget, OutDir: options.outDir})
+		AdaptersDir: options.adaptersDir, SinkName: options.sinkName, SinkTarget: options.sinkTarget, OutDir: options.outDir, Explore: options.explore})
 	var check *run.ScenarioCheckError
 	if errors.As(err, &check) {
 		return nil, scenarioCheckFailure(options, source, check.Err)

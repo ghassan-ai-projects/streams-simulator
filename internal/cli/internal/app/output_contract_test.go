@@ -101,7 +101,7 @@ func TestEveryRunWorkflowDocumentMatchesTheContract(t *testing.T) {
 	invoke(t, "refconsumer", "--trace", filepath.Join(dir, "trace.jsonl"), "--out", verdict).mustSucceed(t).document(t, "refconsumer")
 	label := writeNominalLabel(t, dir)
 	invoke(t, append([]string{"score", "--run", artifact, "--label", label}, inputs...)...).mustSucceed(t).document(t, "score")
-	suite := []string{"suite", "--domains-dir", testsupport.DomainsDir(), "--domain", pondDomain, "--n", "1", "--out", t.TempDir()}
+	suite := []string{"suite", "--domains-dir", testsupport.DomainsDir(), "--domain", suiteDomain, "--n", "1", "--out", t.TempDir()}
 	invoke(t, suite...).mustSucceed(t).document(t, "suite")
 	manifest := []string{"manifest", "--out", filepath.Join(t.TempDir(), "m.json"), "--author", "A <a@x>", "--reviewer", "R <r@x>"}
 	invoke(t, append(manifest, inputs...)...).mustSucceed(t).document(t, "manifest")

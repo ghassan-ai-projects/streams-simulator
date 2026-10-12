@@ -118,7 +118,7 @@ A scenario's `description` is for readers; a scenario without a `clock.advance` 
 
 ```text
 streamsim run [flags]
-streamsim run --scenario <file> [--domains-dir d] [--adapters-dir d] [--sink s] [--sink-target t] [--out dir]
+streamsim run --scenario <file> [--domains-dir d] [--adapters-dir d] [--sink s] [--sink-target t] [--out dir] [--explore]
 ```
 
 With `--scenario`, the flags the scenario defines (`--domain`, `--adapter`, `--seed`,
@@ -133,7 +133,8 @@ With `--scenario`, the flags the scenario defines (`--domain`, `--adapter`, `--s
 | `--seed` | `1` | World seed. |
 | `--sink` | `inproc` | `inproc`, `file`, or `http-push`. |
 | `--sink-target` | empty | File path or HTTP-push URL. Required for `http-push`; for `file`, `--out` can supply the trace path when this flag is omitted. |
-| `--out` | empty | Artifact output directory. |
+| `--out` | empty | Artifact output directory. With `--out`, the run also writes its [run journal](../../docs/design/RUN_JOURNAL.md) while it runs: `journal.jsonl` (what a consumer could know) and `sealed/journal.jsonl` (truth-bearing, director only). Without `--out` there is no journal file. |
+| `--explore` | `false` | Explore mode: the run is stamped unblinded from creation (`mode: "explore"`, `unblinded: true` in `run.json`, a `run.unblinded` journal record) and `score` refuses it. Allowed beside `--scenario`. |
 | `--duration` | `21600` | Duration in seconds; positive and at most 2592000 (30 days). |
 | `--start-time` | `2026-01-01T00:00:00Z` | World start as epoch nanoseconds, between 0 and 4611686018427387903. |
 | `--fault` | empty | Repeatable; each occurrence may be comma-separated `entity=fault@offset_s` entries. |
@@ -164,7 +165,7 @@ are not scenario commands (lifecycle records and the record-only `env.inject` of
 
 ### `replay` and `verify`
 
-Both load a run artifact and replay its command log. `replay` prints the replay report and exits 0 whatever the outcome. `verify` prints the same report when the replay reproduces the recorded trace digest; otherwise it exits 1 with a `replay_mismatch` error document whose `result` is the report (a simulator-version difference alone does not fail it; it is reported in `version_match` and `detail`), so scripts can gate on it. An artifact whose domain, adapter or world digest no longer matches is also `replay_mismatch`. The current CLI also loads the matching domain and adapter from `domains/` and `adapters/`; keep those directories available or override them with the flags.
+Both load a run artifact and replay its command log. `replay` prints the replay report and exits 0 whatever the outcome. `verify` prints the same report when the replay reproduces the recorded trace digest; otherwise it exits 1 with a `replay_mismatch` error document whose `result` is the report (a simulator-version difference alone does not fail it; it is reported in `version_match` and `detail`), so scripts can gate on it. An artifact whose domain, adapter or world digest no longer matches is also `replay_mismatch`. Replay also rebuilds both journal streams in memory: `verify` fails with `replay_mismatch` when either differs from the digest in `run.json` (`journal_digest`, `sealed_journal_digest`), or from `journal.jsonl` or `sealed/journal.jsonl` beside the artifact, and the `detail` names the stream and the first differing record. A run that ended incomplete is not compared (its close cannot be reproduced). The current CLI also loads the matching domain and adapter from `domains/` and `adapters/`; keep those directories available or override them with the flags.
 
 ```text
 streamsim replay <run.json> [--domains-dir <path>] [--adapters-dir <path>]
@@ -221,7 +222,7 @@ Flags:
 
 ### `score`
 
-Scores a run from the files it published, with the scorer the director uses online, so the offline and online scorecards of one run agree. The one input the files cannot carry is a `reveal` with `unblind:true` made after the run ended: the artifact stamps unblinding at its end, so that later reveal affects only the online scorer. `--run` is required; `--label` defaults to `label.json` beside the run artifact. The command reads `verdict.json`, `ledger.jsonl` and `world_state_history.jsonl` beside the artifact, and replays the artifact (against `--domains-dir` and `--adapters-dir`) to recover the effector calls the command log cannot state. A replay that does not reproduce the recorded trace is refused, not graded.
+Scores a run from the files it published, with the scorer the director uses online, so the offline and online scorecards of one run agree. The one input the files cannot carry is a `reveal` with `unblind:true` made after the run ended: the artifact stamps unblinding at its end, so that later reveal affects only the online scorer. `--run` is required; `--label` defaults to `label.json` beside the run artifact. The command reads `verdict.json`, `ledger.jsonl` and `world_state_history.jsonl` beside the artifact, and replays the artifact (against `--domains-dir` and `--adapters-dir`) to recover the effector calls the command log cannot state. A replay that does not reproduce the recorded trace is refused, not graded, and so is a run stamped unblinded (an `--explore` run, or one whose truth was revealed while it was open): it fails with `score_failed`.
 
 ```text
 streamsim score --run <run.json> [--label <label.json>] [--domains-dir <path>] [--adapters-dir <path>]

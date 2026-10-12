@@ -3,6 +3,7 @@ package durable
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -109,4 +110,17 @@ func writeJSONL[T any](path string, records []T) error {
 		}
 	}
 	return nil
+}
+
+// ReadJournal reads the journal file name under dir; present is false when the
+// run left no such file.
+func ReadJournal(dir, name string) (raw []byte, present bool, err error) {
+	raw, err = os.ReadFile(filepath.Join(dir, name))
+	if errors.Is(err, os.ErrNotExist) {
+		return nil, false, nil
+	}
+	if err != nil {
+		return nil, false, fmt.Errorf("run: read journal %s: %w", name, err)
+	}
+	return raw, true, nil
 }
