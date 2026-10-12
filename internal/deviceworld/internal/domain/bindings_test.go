@@ -13,7 +13,7 @@ import (
 
 func TestLoadBindingsFromData(t *testing.T) {
 	t.Parallel()
-	data, err := os.ReadFile("../../testdata/thermal.bindings.json")
+	data, err := os.ReadFile(testsupport.DeviceWorldBindings())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -85,7 +85,7 @@ func TestLoadBindingsFailsClosed(t *testing.T) {
 
 func TestLoadBindingsRequiresEntitySourceValue(t *testing.T) {
 	t.Parallel()
-	data, err := os.ReadFile("../../testdata/thermal.bindings.json")
+	data, err := os.ReadFile(testsupport.DeviceWorldBindings())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -98,7 +98,7 @@ func TestValidateBindingsChecksWorldCompositionBeforeListen(t *testing.T) {
 	t.Parallel()
 	w := coldChainWorld(t, 1)
 	entity := w.EntityIDs()[0]
-	data, err := os.ReadFile("../../testdata/thermal.bindings.json")
+	data, err := os.ReadFile(testsupport.DeviceWorldBindings())
 	if err != nil {
 		t.Fatal(err)
 	}

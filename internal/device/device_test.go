@@ -15,7 +15,7 @@ import (
 
 func TestFacadeAppliesACommandReportsStateAndSetsFaults(t *testing.T) {
 	t.Parallel()
-	d := device.New(device.Config{Capabilities: testCaps(t)})
+	d := device.New(device.Config{Capabilities: testCaps(t), FaultSchedule: []device.FaultInjection{{Name: device.FaultAckLost, AcceptedCommand: 2}}})
 	if state := d.State(); state["message_type"] != "state" {
 		t.Fatalf("state = %v", state)
 	}
@@ -23,7 +23,6 @@ func TestFacadeAppliesACommandReportsStateAndSetsFaults(t *testing.T) {
 	if accepted.Receipt["accepted"] != true {
 		t.Fatalf("receipt = %v", accepted.Receipt)
 	}
-	d.SetFaults(device.Faults{AckLost: true})
 	again := d.ApplyCommand(validCommand(t, func(c map[string]any) { c["command_id"] = "cmd-lost"; c["idempotency_key"] = "key-lost" }))
 	if !again.AckLost {
 		t.Fatalf("an ack_lost fault must withhold the receipt: %+v", again)

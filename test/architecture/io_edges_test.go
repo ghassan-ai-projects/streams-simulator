@@ -43,7 +43,6 @@ var ioEdges = map[string]ioEdge{
 	"internal/director/internal/capability/capability.go": {uses: []string{"import:crypto/rand"}, why: "operator capability token entropy"},
 	"internal/mcp/internal/transport/transport.go":        {uses: []string{"go-statement", "import:net", "import:net/http"}, why: "operator role bound over streamable HTTP and the director session served until its transport closes"},
 
-	"internal/device/operations.go":             {uses: []string{"import:net"}, why: "Listen returns the unix listener type; the socket code is the uds edge"},
 	"internal/run/internal/quiesce/quiesce.go":  {uses: []string{"call:time.NewTimer"}, why: "wall-clock deadline for await_consumer waits"},
 	"internal/cli/internal/process/process.go":  {uses: []string{"call:time.Now", "import:os"}, why: "standard streams and wall clock of the running process"},
 	"internal/testsupport/testsupport.go":       {uses: []string{"import:os"}, why: "repository root discovery and short socket directories for tests"},

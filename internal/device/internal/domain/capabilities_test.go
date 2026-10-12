@@ -4,16 +4,17 @@ import (
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
 // This digest is shared with Agentic Stream's conformance fixture. A mismatch
 // prevents the live device handshake even when each repository passes alone.
 const thermalCapabilityCatalogDigest = "sha256:0d61225286c628cfba8cbf7aea514e1fdc95918b514b4b810516dbe0fc44fc76"
-const legacyCapabilityCatalogDigest = "sha256:ed9ebf9685f9933c15578f06c65e059f906cfd1edcd8f75b778b6a4f794cc494"
 
 func TestLoadCanonicalCapabilityCatalogAndDigest(t *testing.T) {
 	t.Parallel()
-	data, err := os.ReadFile("../../testdata/thermal_capability_catalog.json")
+	data, err := os.ReadFile(testsupport.DeviceCapabilities())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -60,33 +61,21 @@ func TestLoadCapabilitiesFromData(t *testing.T) {
 	}
 }
 
-func TestLegacyCapabilityCatalogDigestRemainsUnscoped(t *testing.T) {
-	t.Parallel()
-	data, err := os.ReadFile("../../testdata/thermal.capabilities.json")
-	if err != nil {
-		t.Fatal(err)
-	}
-	caps, err := LoadCapabilities(data)
-	if err != nil {
-		t.Fatalf("load legacy catalog: %v", err)
-	}
-	if got := caps.Digest(); got != legacyCapabilityCatalogDigest {
-		t.Fatalf("legacy catalog digest = %q, want historical digest %q", got, legacyCapabilityCatalogDigest)
-	}
-}
-
 func TestLoadCapabilitiesFailsClosed(t *testing.T) {
 	t.Parallel()
-	const target = `"x": {"operation": "o", "energize_field": "f", "bounds": {"f": {"min": 0, "max": 1}}`
+	const presets = `"presets": {"on": {"f": 1}}`
+	const route = `"x": {"operation": "o", "target": "t", "selector_field": "s", "expires_after_ms": 1000, ` + presets
 	cases := map[string]struct{ body, want string }{
-		"bad-json":             {`{`, "unexpected EOF"},
-		"wrong-version":        {`{"protocol_version": 2, "targets": {` + target + `}}}`, "protocol_version 2 != 1"},
-		"no-targets":           {`{"protocol_version": 1, "targets": {}}`, "declare no routes or targets"},
-		"no-operation":         {`{"protocol_version": 1, "targets": {"x": {"energize_field": "f", "bounds": {"f": {"min": 0, "max": 1}}}}}`, "declares no operation"},
-		"energize-not-bounded": {`{"protocol_version": 1, "targets": {"x": {"operation": "o", "energize_field": "f", "bounds": {"g": {"min": 0, "max": 1}}}}}`, "is not a bounded parameter"},
-		"max-below-min":        {`{"protocol_version": 1, "targets": {"x": {"operation": "o", "energize_field": "f", "bounds": {"f": {"min": 5, "max": 1}}}}}`, "max < min"},
-		"unknown-field":        {`{"protocol_version": 1, "targets": {` + target + `, "typo": true}}}`, `unknown field "typo"`},
-		"trailing-json":        {`{"protocol_version": 1, "targets": {` + target + `}}} {}`, "trailing JSON"},
+		"bad-json":        {`{`, "unexpected EOF"},
+		"wrong-version":   {`{"protocol_version": 2, "routes": {` + route + `}}}`, "protocol_version 2 != 1"},
+		"no-routes":       {`{"protocol_version": 1, "routes": {}}`, "declare no routes"},
+		"legacy-targets":  {`{"protocol_version": 1, "targets": {}}`, `unknown field "targets"`},
+		"no-operation":    {`{"protocol_version": 1, "routes": {"x": {"target": "t", "selector_field": "s", "expires_after_ms": 1000, ` + presets + `}}}`, "must set operation"},
+		"no-presets":      {`{"protocol_version": 1, "routes": {"x": {"operation": "o", "target": "t", "selector_field": "s", "expires_after_ms": 1000}}}`, "has no presets"},
+		"max-below-min":   {`{"protocol_version": 1, "routes": {` + route + `, "bounds": {"f": {"min": 5, "max": 1}}}}}`, "max < min"},
+		"unknown-field":   {`{"protocol_version": 1, "routes": {` + route + `, "typo": true}}}`, `unknown field "typo"`},
+		"trailing-json":   {`{"protocol_version": 1, "routes": {` + route + `}}} {}`, "trailing JSON"},
+		"duplicate-route": {`{"protocol_version": 1, "routes": {` + route + `}, "y": {"operation": "o", "target": "t", "selector_field": "s", "expires_after_ms": 1000, ` + presets + `}}}`, "multiple routes"},
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -32,7 +31,7 @@ func coldChain(t *testing.T) (*world.World, string) {
 
 func thermalBindings(t *testing.T, entity string) map[string]deviceworld.Binding {
 	t.Helper()
-	data, err := os.ReadFile(filepath.Join("testdata", "thermal.bindings.json"))
+	data, err := os.ReadFile(testsupport.DeviceWorldBindings())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -101,7 +100,7 @@ func TestLeaseExpiryDrivesTheWorldSafeStopThroughTheFacadePlant(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	catalog, err := os.ReadFile(filepath.Join("..", "device", "testdata", "thermal_capability_catalog.json"))
+	catalog, err := os.ReadFile(testsupport.DeviceCapabilities())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -109,7 +108,7 @@ func TestLeaseExpiryDrivesTheWorldSafeStopThroughTheFacadePlant(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	command, err := os.ReadFile(filepath.Join("..", "device", "contract", "conformance", "v1", "valid", "command.json"))
+	command, err := os.ReadFile(testsupport.DeviceConformance("valid", "command.json"))
 	if err != nil {
 		t.Fatal(err)
 	}

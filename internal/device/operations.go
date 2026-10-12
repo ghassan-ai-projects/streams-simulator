@@ -2,7 +2,6 @@ package device
 
 import (
 	"io"
-	"net"
 
 	layer "github.com/ghassan-ai-projects/streams-simulator/internal/device/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/device/internal/files"
@@ -30,12 +29,6 @@ func ParseFaultSpec(spec string) (FaultInjection, error) {
 	return layer.ParseFaultSpec(spec)
 }
 
-// Listen serves the device over a unix-domain socket at path, one gateway
-// connection at a time, and returns the listener to close.
-func Listen(path string, d *Device) (*net.UnixListener, error) {
-	return uds.Listen(path, d.device)
-}
-
 // Serve serves d on the unix socket at path, announces the banner on stderr,
 // and returns after the process is interrupted and the listener is closed.
 func Serve(stderr io.Writer, socket string, d *Device, banner string) error {
@@ -50,9 +43,4 @@ func (d *Device) ApplyCommand(command map[string]any) Outcome {
 // State returns the current device.state record.
 func (d *Device) State() map[string]any {
 	return d.device.State()
-}
-
-// SetFaults sets the injectable protocol fault state.
-func (d *Device) SetFaults(faults Faults) {
-	d.device.SetFaults(faults)
 }

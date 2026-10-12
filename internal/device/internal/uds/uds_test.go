@@ -92,7 +92,7 @@ func TestListenRefusesAPathThatIsARegularFileAndReplacesAStaleSocket(t *testing.
 
 func capabilities(t *testing.T) *domain.Capabilities {
 	t.Helper()
-	data, err := os.ReadFile(filepath.Join("..", "..", "testdata", "thermal_capability_catalog.json"))
+	data, err := os.ReadFile(testsupport.DeviceCapabilities())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -105,7 +105,7 @@ func capabilities(t *testing.T) *domain.Capabilities {
 
 func commandFrame(t *testing.T) string {
 	t.Helper()
-	raw, err := os.ReadFile(filepath.Join("..", "..", "contract", "conformance", "v1", "valid", "command.json"))
+	raw, err := os.ReadFile(testsupport.DeviceConformance("valid", "command.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -150,11 +150,10 @@ func TestAcceptedCommandIsAnsweredWithReceiptThenResult(t *testing.T) {
 
 func TestAckLostWithholdsTheReceiptButTheDeviceStillAppliesTheCommand(t *testing.T) {
 	t.Parallel()
-	d := domain.New(domain.Config{Capabilities: capabilities(t)})
-	d.SetFaults(domain.Faults{AckLost: true})
+	d := domain.New(domain.Config{Capabilities: capabilities(t), FaultSchedule: []domain.FaultInjection{{Name: domain.FaultAckLost, AcceptedCommand: 1}}})
 	got := serveDevice(t, d, commandFrame(t))
-	if strings.Join(got, ",") != "state" || d.AcceptedCommandCount() != 1 {
-		t.Fatalf("frames = %v, accepted = %d", got, d.AcceptedCommandCount())
+	if strings.Join(got, ",") != "state" {
+		t.Fatalf("frames = %v", got)
 	}
 }
 

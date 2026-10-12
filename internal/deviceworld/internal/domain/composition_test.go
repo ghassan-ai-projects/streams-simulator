@@ -28,7 +28,7 @@ func TestSelectEntityDefaultsToTheFirstEntityAndRefusesAnUnknownOne(t *testing.T
 func TestValidateCompositionRequiresTheSafeStopsTheCatalogDeclares(t *testing.T) {
 	t.Parallel()
 	w := coldChainWorld(t, 1)
-	data, err := os.ReadFile("../../testdata/thermal.bindings.json")
+	data, err := os.ReadFile(testsupport.DeviceWorldBindings())
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -7,7 +7,6 @@ import (
 	"io"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/canonical"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/jsonschema"
 )
 
 // EncodeRecord validates one device record and returns exactly one canonical
@@ -53,7 +52,7 @@ func validateRecord(document map[string]any) error {
 		return err
 	}
 	if errs := schema.Validate(document); len(errs) > 0 {
-		return fmt.Errorf("device: validate %s record: %w", messageType, jsonschema.Error(errs[0]))
+		return fmt.Errorf("device: validate %s record: %w", messageType, errs[0])
 	}
 	return nil
 }

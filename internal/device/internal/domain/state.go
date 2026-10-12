@@ -4,21 +4,6 @@ import (
 	"fmt"
 )
 
-// SetFaults installs the fault state applied to subsequent accepted commands.
-func (d *Device) SetFaults(f Faults) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	d.faults = f
-}
-
-// AcceptedCommandCount returns the number of commands that reached the
-// schedule's admission ordinal. It is useful for deterministic test evidence.
-func (d *Device) AcceptedCommandCount() int {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	return d.acceptedCommands
-}
-
 // Reboot simulates a power cycle: a new boot identity, safe outputs, and a
 // cleared volatile dedup ledger. Commands bound to the old boot are then
 // rejected wrong_boot, which is exactly what forces upstream reconciliation.

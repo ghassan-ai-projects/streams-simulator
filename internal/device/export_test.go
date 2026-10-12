@@ -25,8 +25,3 @@ const (
 func ServeConn(conn io.ReadWriter, d *Device) error {
 	return uds.ServeConn(conn, d.device)
 }
-
-// AcceptedCommandCount reports how many commands the device accepted.
-func (d *Device) AcceptedCommandCount() int {
-	return d.device.AcceptedCommandCount()
-}

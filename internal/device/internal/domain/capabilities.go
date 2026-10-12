@@ -3,8 +3,7 @@ package domain
 // Capabilities is the device's declared, data-defined capability catalog. The
 // canonical route catalog is reduced to the target-level admission data the
 // device needs, while its safe-stop declarations remain available to the
-// device lifecycle. The legacy targets shape is also accepted for backwards
-// compatibility with existing simulator fixtures.
+// device lifecycle.
 type Capabilities struct {
 	targets   map[string]TargetCapability
 	safeStops map[string]safeStopCapability
@@ -21,15 +20,13 @@ type TargetCapability struct {
 }
 
 type safeStopCapability struct {
-	operation      string
 	expiresAfterMS int
 }
 
 type capabilitiesDoc struct {
-	ProtocolVersion int                             `json:"protocol_version"`
-	Routes          map[string]routeDocument        `json:"routes"`
-	SafeStops       map[string]safeStopDocument     `json:"safe_stops"`
-	Targets         map[string]legacyTargetDocument `json:"targets"`
+	ProtocolVersion int                         `json:"protocol_version"`
+	Routes          map[string]routeDocument    `json:"routes"`
+	SafeStops       map[string]safeStopDocument `json:"safe_stops"`
 }
 
 type routeDocument struct {
@@ -50,17 +47,6 @@ type routeBoundDocument struct {
 type safeStopDocument struct {
 	Operation      string `json:"operation"`
 	ExpiresAfterMS int    `json:"expires_after_ms"`
-}
-
-type legacyTargetDocument struct {
-	Operation     string                         `json:"operation"`
-	EnergizeField string                         `json:"energize_field"`
-	Bounds        map[string]legacyBoundDocument `json:"bounds"`
-}
-
-type legacyBoundDocument struct {
-	Min float64 `json:"min"`
-	Max float64 `json:"max"`
 }
 
 // canonicalCatalogDocument mirrors the typed representation used by the

@@ -6,6 +6,8 @@ import (
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
 type countingPlant struct {
@@ -38,7 +40,7 @@ func (p *countingPlant) SafeStop(string, int64) (PlantEffect, error) {
 // same data-not-code path the emulator uses at runtime.
 func testCaps(t *testing.T) *Capabilities {
 	t.Helper()
-	data, err := os.ReadFile("../../testdata/thermal_capability_catalog.json")
+	data, err := os.ReadFile(testsupport.DeviceCapabilities())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -54,7 +56,7 @@ func testCaps(t *testing.T) *Capabilities {
 // applies optional mutations.
 func validCommand(t *testing.T, mutate func(map[string]any)) map[string]any {
 	t.Helper()
-	raw, err := os.ReadFile("../../contract/conformance/v1/valid/command.json")
+	raw, err := os.ReadFile(testsupport.DeviceConformance("valid", "command.json"))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -10,10 +10,6 @@ import (
 // frame. When Capabilities is supplied, its canonical digest is authoritative.
 type Config = layer.Config
 
-// Faults is the injectable protocol fault state. The zero value is a healthy
-// device; faults apply to the next accepted command until cleared.
-type Faults = layer.Faults
-
 // Outcome is the device's response to one command: the receipt, the terminal
 // result and the delivery hints for the gateway loop.
 type Outcome = layer.Outcome
