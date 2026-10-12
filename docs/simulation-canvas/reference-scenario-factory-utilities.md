@@ -1,5 +1,7 @@
 # Reference scenario — Factory utilities plant
 
+> **Status note (2026-10-12):** parts of this document are superseded by the owner decisions in [REVIEW-2026-10-12.md](REVIEW-2026-10-12.md) §1–§2 and tracked in [FINDINGS.md](FINDINGS.md). The agent-involved emergency shutdown (§5.2, §6.3, L4, B3) is dropped; the document is rewritten in phase P12.
+
 - **Date**: 2026-10-12
 - **Status**: design proposal; acceptance target for domain-spec v0.2 and the simulation canvas MVP. **No code, schema or domain artifact changed.**
 - **Depends on**: [idea.md](idea.md), [../product-strategy-20261011/DESIGN-baseline-ladder.md](../product-strategy-20261011/DESIGN-baseline-ladder.md), [../product-strategy-20261011/DESIGN-outcome-economics.md](../product-strategy-20261011/DESIGN-outcome-economics.md)

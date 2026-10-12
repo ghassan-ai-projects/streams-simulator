@@ -1,5 +1,7 @@
 # Impact analysis — Tamoz
 
+> **Status note (2026-10-12):** parts of this document are superseded by the owner decisions in [REVIEW-2026-10-12.md](REVIEW-2026-10-12.md) §1–§2 and tracked in [FINDINGS.md](FINDINGS.md). The kill-switch constraint (§4.1) no longer applies (agent-involved shutdown dropped); remaining items belong to the next goal.
+
 - **Date**: 2026-10-12
 - **Status**: analysis; **no code changed in Tamoz or here**
 - **Scope**: what the simulation-canvas direction ([plant-wire-protocol.md](plant-wire-protocol.md),

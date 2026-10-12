@@ -1,0 +1,102 @@
+# Findings register — simulation canvas goal
+
+Every review finding has exactly one row. A gate in `test/architecture` fails when a finding
+whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
+
+- **Phase**: a phase id from PLAN.md, or `next-goal` (Agentic Stream / gateway goal), or `—`.
+- **Status**: `open`, `done` (fixed, evidence in the phase review), `next-goal`, `dropped`
+  (removed by an owner decision), `not-a-defect` (evidence in the review record).
+- Sources: `REVIEW` = [REVIEW-2026-10-12.md](REVIEW-2026-10-12.md) ids; `R0` = [reviews/P0.md](reviews/P0.md).
+
+## Design review (REVIEW-2026-10-12)
+
+| ID | Source | Sev | Summary | Phase | Status |
+|---|---|---|---|---|---|
+| M1 | REVIEW | High | Canvas design document missing | P0 | done |
+| M2 | REVIEW | High | Gateway impact analysis missing | next-goal | next-goal |
+| M3 | REVIEW | Med | Cross-repository build order missing | next-goal | next-goal |
+| M4 | REVIEW | Med | Deployment topology (Purdue, zones, who dials whom) | next-goal | next-goal |
+| M5 | REVIEW | High | Plant wire placement inside the simulator architecture | P7a | open |
+| P1 | REVIEW | High | §3 records: node_birth kinds, device_birth instance values, versions, contract digest | P7a | open |
+| P2 | REVIEW | High | Historical flag, values in births, `bd_seq`, death synthesis | P7a | open |
+| P3 | REVIEW | High | One sequence per direction; lanes are transmit priority only | P7a | open |
+| P4 | REVIEW | High | Command freshness, re-check at execution, queue flush, dedup window | P7a | open |
+| P5 | REVIEW | High | `authority_epoch` is host/gateway-side only; decide its v1 status | P7a | open |
+| P6 | REVIEW | High | Board level owns `boot_id` | P5b | open |
+| P7 | REVIEW | High | Field names and refusal codes vs device-wire-v1; PLC refusal codes | P7a | open |
+| P8 | REVIEW | High | Policy example and birth-declared safe-stop/risk class | P7a | open |
+| P9 | REVIEW | High | Commissioning state machine and metadata changes (host side) | next-goal | next-goal |
+| P10 | REVIEW | High | One quality-code mapping table; manual/out-of-service codes | P7a | open |
+| P11 | REVIEW | High | Prompt injection through strings; injection fixtures | P7a | open |
+| P12 | REVIEW | High | Quiescence barrier and clock mode with a live host | P7d | open |
+| P13 | REVIEW | Med | Edge realism: time source, scan class, polling failures, buffering | P7a | open |
+| P14 | REVIEW | Med | `host_state` offline semantics, version, heartbeat | P7a | open |
+| P15 | REVIEW | Med | Capability digest definition | P7a | open |
+| P16 | REVIEW | Med | `notify` alert event type and path to the session | next-goal | next-goal |
+| P17 | REVIEW | Med | Contract sync supply chain: pinned digest, safety floor, minimum version | P7a | open |
+| P18 | REVIEW | Med | Non-negotiables mapped to the wire: reference host, lying results | P7d | open |
+| P19 | REVIEW | Med | Fault layer: existing vs new protocol faults | P7c | open |
+| P20 | REVIEW | Med | Gateway as a safety-relevant component | next-goal | next-goal |
+| P21 | REVIEW | Med | `state` is self-reported; independent feedback for verification | P7a | open |
+| P22 | REVIEW | Low | `device_death` "sensor outage" wording | P7a | open |
+| P23 | REVIEW | Low | Batching, limits, session-boundary sequence, data-model fields | P7a | open |
+| P24 | REVIEW | Low | Experiment naming ambiguity | P7a | open |
+| S1 | REVIEW | High | Remove kill switch from the scenario; T1 as protection demands and margin | P12 | open |
+| S2 | REVIEW | High | Supervisory-level actions; plant sequencer in the world | P6d | open |
+| S3 | REVIEW | High | Fault ids collide with pump ids | P12 | open |
+| S4 | REVIEW | High | Channel names as kind.metric; missing sensors; channel count | P12 | open |
+| S5 | REVIEW | High | Cooling signatures and pump physics | P12 | open |
+| S6 | REVIEW | High | Responders leak truth; availability; one approval path; work orders | P12 | open |
+| S7 | REVIEW | High | Scoring gameability and statistics | next-goal | next-goal |
+| S8 | REVIEW | High | Baselines and held-out discipline (D7) | next-goal | next-goal |
+| S9 | REVIEW | Med | Demand charge block alignment, `peak_mtd`, ratchet | P6b | open |
+| S10 | REVIEW | Med | Air pressure band, sequencer, generator transfer | P12 | open |
+| S11 | REVIEW | Med | Time resolution and event clock | P6e | open |
+| S12 | REVIEW | Med | Alarm management (priorities, ack, shelving, combined flood) | P12 | open |
+| S13 | REVIEW | Med | Cause-code vocabulary authored on the host side; rotating decoys | P12 | open |
+| S14 | REVIEW | Med | Vocabulary: `kind` row, `lockout` naming, closed comparators, crossing times | P6a | open |
+| S15 | REVIEW | Med | DECISIONS D-03/D-04/D-14 revision recorded | P5a | open |
+| S16 | REVIEW | Med | Negative-class operations events | P12 | open |
+| S17 | REVIEW | Low | Synthetic boundaries labelled; parameters sourced | P12 | open |
+| A1 | REVIEW | High | Thermal example, replays and Tamoz fixtures rewrite | next-goal | next-goal |
+| A2 | REVIEW | High | Agentic Stream replay is report-only; sources depend on ReplaySimulator | next-goal | next-goal |
+| A3 | REVIEW | Med | SituationSpec derived features and unit checks | next-goal | next-goal |
+| A4 | REVIEW | Med | Kill-switch and revocation text in the impact analyses | next-goal | next-goal |
+| A5 | REVIEW | Med | Tamoz memory and improvement are per customer | next-goal | next-goal |
+| A6 | REVIEW | Med | One-system scoring vs Tamoz protocol | next-goal | next-goal |
+| A7 | REVIEW | Low | Route cross-check against recorded births | next-goal | next-goal |
+| I1 | REVIEW | High | Isolation beyond GitHub (provider logs, transcripts, CI, dumps) | next-goal | next-goal |
+| I2 | REVIEW | High | Improvement-loop review gate | next-goal | next-goal |
+| I3 | REVIEW | Med | Customer workspace marker, ignore rules and check | P8a | open |
+| X1 | REVIEW §8 | Low | Observation scoping from idea.md | P13 | open |
+| X2 | REVIEW §8 | Low | "Tamoz plus one independent agent" from idea.md | P13 | open |
+| X3 | REVIEW §8 | Low | Idea's 30 °C / 55 °C case mapping | P13 | open |
+| D6 | REVIEW §2 | Med | LLM hosting and provider terms documented as an open decision | P13 | open |
+
+## P0 review: work carried into phases
+
+| ID | Source | Sev | Summary | Phase | Status |
+|---|---|---|---|---|---|
+| R0-01 | R0 | High | Evaluate canary test over journal, bridge and page | P3 | open |
+| R0-02 | R0 | High | `.mcp.json` exposure must not give coding agents unblind or reveal | P10 | open |
+| R0-03 | R0 | High | `scenario from-run` export with round-trip digest test | P2 | open |
+| R0-04 | R0 | High | Device-path gate and pinned `device serve` transcript | P1 | open |
+| R0-05 | R0 | High | Plant-wire spec states coexistence with the device path | P7a | open |
+| R0-06 | R0 | Med | CLI output contract: default JSON, exempt commands, deliberate pin change | P1 | open |
+| R0-07 | R0 | Med | `godox` and `nolintlint` in the Go lint set | P1 | open |
+| R0-08 | R0 | Med | `make phase-gate` and evidence files | P1 | open |
+| R0-09 | R0 | Med | Consumer-knowledge gate over Go and canvas sources | P1 | open |
+| R0-10 | R0 | Med | `streamsim domain format` canonical formatter | P5a | open |
+| R0-11 | R0 | Med | Closed-grammar test over the v0.2 schema | P6a | open |
+| R0-12 | R0 | Med | RNG draw-order table for the event clock | P6e | open |
+| R0-13 | R0 | Med | Contract sync target, pinned digest, safety-field floor | P7a | open |
+| R0-14 | R0 | Med | Technology decision record (UI, bridge language and protocol) | P8a | open |
+| R0-15 | R0 | Med | Bridge threat model with one test per threat | P8b | open |
+| R0-16 | R0 | Med | Stress fixture | P8b | open |
+| R0-17 | R0 | Med | Numeric performance budgets enforced in CI | P9 | open |
+| R0-18 | R0 | Med | Playback with no binary; crashed-run and failing-verify badges | P9 | open |
+| R0-19 | R0 | Med | Action-registry parity test | P10 | open |
+| R0-20 | R0 | Med | Thermal twin compared with a recorded bench run | P12 | open |
+| R0-21 | R0 | Low | Terminology: scenario file, journal, in `UBIQUITOUS_LANGUAGE.md` | P2 | open |
+| R0-22 | R0 | Low | Report includes consumer digests only when recorded | P4 | open |
+| R0-23 | R0 | Med | Status banners on design text superseded by owner decisions | P0 | done |
