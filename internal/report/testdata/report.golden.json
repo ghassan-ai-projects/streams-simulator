@@ -1,0 +1,149 @@
+{
+  "schema_version": "0.1",
+  "run": {
+    "run_id": "r-3h6wx9adsnlft",
+    "mode": "evaluate",
+    "complete": true,
+    "ended": true,
+    "unblinded": false,
+    "sim_version": "0.2.0",
+    "domain": {
+      "id": "aquaculture-pond",
+      "version": "0.1.0",
+      "digest": "sha256:4e779d9f920434371f3358287e981d7716222585dd2ec8fdddd7149bca3cbe07"
+    },
+    "adapter": {
+      "id": "native-jsonl",
+      "version": "0.1.0",
+      "digest": "sha256:6c01da6f343fa8e671962f14df015450fdf2327690147413310c8b0242241804"
+    },
+    "seed": 7,
+    "sink": "inproc",
+    "time_mode": "stepped",
+    "start_time_ns": 1767225600000000000,
+    "end_time_ns": 1767225720000000000,
+    "entity_count": 8
+  },
+  "digests": {
+    "world": "sha256:6c66b4a3e8f1dc2f8552fe668773599f196dab71f72e3ae617894356b4574f91",
+    "trace": "sha256:8dc7384ce72c35382466ad0cf5c6092b2287cea91a0d62c6fde4464392ed0014",
+    "journal": "sha256:d37a8c9b154a16524effc2f4d34702b1fffdea12007a6f6b6d1e3878e65d27b9",
+    "sealed_journal": "sha256:c4db42470bc98dcb32abe365f82a5e12c9b238626d75c002dfe0ec1aae96e4e0"
+  },
+  "verification": {
+    "status": "files_match",
+    "checks": [
+      {
+        "name": "trace",
+        "status": "match",
+        "recorded": "sha256:8dc7384ce72c35382466ad0cf5c6092b2287cea91a0d62c6fde4464392ed0014",
+        "computed": "sha256:8dc7384ce72c35382466ad0cf5c6092b2287cea91a0d62c6fde4464392ed0014"
+      },
+      {
+        "name": "journal",
+        "status": "match",
+        "recorded": "sha256:d37a8c9b154a16524effc2f4d34702b1fffdea12007a6f6b6d1e3878e65d27b9",
+        "computed": "sha256:d37a8c9b154a16524effc2f4d34702b1fffdea12007a6f6b6d1e3878e65d27b9"
+      },
+      {
+        "name": "sealed_journal",
+        "status": "match",
+        "recorded": "sha256:c4db42470bc98dcb32abe365f82a5e12c9b238626d75c002dfe0ec1aae96e4e0",
+        "computed": "sha256:c4db42470bc98dcb32abe365f82a5e12c9b238626d75c002dfe0ec1aae96e4e0"
+      }
+    ]
+  },
+  "counts": {
+    "emitted": 52,
+    "observed": 21,
+    "ledger_rows": 53,
+    "delivered": 21,
+    "dropped": 32,
+    "delivered_by_reason": {
+      "duplicated": 1,
+      "ok": 20
+    },
+    "dropped_by_reason": {
+      "dropped_by_perturbation": 32
+    }
+  },
+  "truth": {
+    "faults": [
+      {
+        "seq": 0,
+        "at_ns": 1767225600000000000,
+        "action": "inject",
+        "entity_id": "site-a/pond-1",
+        "fault": "aerator_failure",
+        "onset_ns": 1767225630000000000
+      }
+    ],
+    "perturbations": [
+      {
+        "seq": 1,
+        "at_ns": 1767225600000000000,
+        "action": "apply",
+        "perturbation": "drop",
+        "from_ns": 1767225650000000000,
+        "until_ns": 1767225662000000000,
+        "params": {
+          "rate": 1.0
+        }
+      },
+      {
+        "seq": 2,
+        "at_ns": 1767225600000000000,
+        "action": "apply",
+        "perturbation": "duplicate_burst",
+        "from_ns": 1767225662000000000,
+        "until_ns": 1767225720000000000,
+        "params": {
+          "rate": 0.5
+        }
+      }
+    ],
+    "environment": [],
+    "effector_calls": [
+      {
+        "seq": 3,
+        "at_ns": 1767225640000000000,
+        "command_id": "act-1",
+        "effector": "start_aerator",
+        "entity_id": "site-a/pond-1",
+        "args": {
+          "level": 1.0,
+          "pond_id": "site-a/pond-1"
+        },
+        "outcome": {
+          "accepted": true,
+          "mode": "silent_no_effect",
+          "effect_applied": true,
+          "ack_latency_ms": 644
+        }
+      },
+      {
+        "seq": 4,
+        "at_ns": 1767225700000000000,
+        "command_id": "act-2",
+        "effector": "start_aerator",
+        "entity_id": "site-a/pond-2",
+        "args": {
+          "level": 0.5,
+          "pond_id": "site-a/pond-2"
+        },
+        "outcome": {
+          "accepted": true,
+          "mode": "silent_no_effect",
+          "effect_applied": true,
+          "ack_latency_ms": 491
+        }
+      }
+    ]
+  },
+  "consumer": {
+    "name": "fixture-consumer",
+    "version": "1.0.0",
+    "arm": "baseline",
+    "config_digest": "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+  }
+}

@@ -28,6 +28,7 @@ The accepted architecture is summarized in [`documentation/architecture/`](../..
 - `internal/run`: run orchestration, delivery ledger, artifacts, replay, and quiescence, scenario checking and export (`ExportScenarioFile`), `ReplayFile`, `RunScenario`, and `LoadInputs` (the domain and adapter a run names); facade over `internal/run/internal/app` (orchestration), `domain` (pure rules) and the `durable`, `quiesce` and `clock` edges
 - `internal/journal`: the run journal (`run-journal-v0.1`): two append-only JSON Lines streams written while a run happens, the observer stream (`journal.jsonl`, what a consumer could know) and the director stream (`sealed/journal.jsonl`, truth-bearing), each with a stream digest and a reader that tolerates a torn last line; facade over `internal/journal/internal/domain` (records, encoding, digest, reader) and a `files` edge (the two files)
 - `internal/truth`: ground-truth generation and independent analytic solver; facade over `internal/truth/internal/domain`
+- `internal/report`: the run report (`run-report-v0.1`): one deterministic JSON or Markdown document summarising a run folder (identity, digests, file-versus-recorded-digest verification, delivery counts, faults, perturbations and effector outcomes from the command log, consumer, scoring); facade over `internal/report/internal/domain` (assembly and renderings), `app` (read, grade, assemble) and a `files` edge; composes `run`, `journal` and `grading`
 - `internal/grading`: offline grading of a finished run from its published files (replay for effector calls, then `score`); facade over `internal/grading/internal/domain` (decoding, evidence rules), `app` (workflow) and a `files` edge; composes `run` and `score`
 - `internal/release`: the release manifest (file digests, canonical body, ed25519 signature, writing); facade over `internal/release/internal/domain`, `app` and a `files` edge
 - `internal/score`: instrument and consumer scoring, shared online/offline policies; facade over `internal/score/internal/domain`; the host packs a `score.Evidence`
@@ -56,8 +57,8 @@ The accepted architecture is summarized in [`documentation/architecture/`](../..
 ## Dependency Direction
 
 - `mcp` -> `director` + foundations; `director` -> `run`/`score`/`truth`/`audit`/`world`/`adapter`/`domain`/`model`
-- `cmd` -> `cli` -> the facades it wires: `mcp`/`run`/`suite`/`grading`/`release`/`refconsumer`/`device`/`deviceworld`/`domain`/`adapter`/`model`
-- `grading` -> `run`/`score`/`domain`/`world`/`model`; `release` -> `canonical`
+- `cmd` -> `cli` -> the facades it wires: `mcp`/`run`/`suite`/`grading`/`report`/`release`/`refconsumer`/`device`/`deviceworld`/`domain`/`adapter`/`model`
+- `grading` -> `run`/`score`/`domain`/`world`/`model`; `report` -> `grading`/`run`/`journal`/`model`; `release` -> `canonical`
 - `run` -> `world`/`perturb`/`adapter`/`sink`/`journal`/`domain`/`model`/`canonical`; `journal` -> `model`
 - `truth` -> `world`/`domain`/`model`; `score` -> `domain`/`world`/`model` (hosts pack a `score.Evidence`)
 - `deviceworld` -> `device`/`domain`/`world`/`model`; neither core imports the bridge

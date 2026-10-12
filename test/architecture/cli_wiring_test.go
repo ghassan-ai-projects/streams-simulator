@@ -57,6 +57,7 @@ var cliAppFiles = map[string]cliFile{
 	"replay.go":           {"command: replay and verify", []string{"internal/run"}, 85},
 	"run.go":              {"command: run", []string{cliF, "internal/model", "internal/run"}, 95},
 	"scenario.go":         {"command: scenario from-run", []string{cliF, "internal/run"}, 85},
+	"report.go":           {"command: report", []string{cliF, "internal/report"}, 80},
 	"score.go":            {"command: score", []string{"internal/grading"}, 70},
 	"suite.go":            {"command: suite", []string{"internal/suite"}, 80},
 }

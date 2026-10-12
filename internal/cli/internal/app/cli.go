@@ -47,6 +47,7 @@ var commands = map[string]command{
 	"refconsumer": {run: cmdRefconsumer},
 	"suite":       {run: cmdSuite},
 	"score":       {run: cmdScore},
+	"report":      {run: cmdReport},
 	"manifest":    {run: cmdManifest},
 	"device":      {run: cmdDevice},
 	"scenario":    {run: cmdScenario},
@@ -156,6 +157,8 @@ Commands:
                                         the loop over the operator endpoint)
   suite --domain --profile              Generate an audited graded suite
   score --run --label                   Offline scorecard from artifacts
+  report <run-dir>                      Summarize a run folder (--format json|markdown,
+                                        --out <file>; markdown requires --out)
   manifest                              Write release-manifest.json (author +
                                         reviewer identity, optional ed25519)
   device serve --socket <path>          Serve the device emulator over a UDS

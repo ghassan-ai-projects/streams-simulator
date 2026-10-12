@@ -99,7 +99,7 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 | R0-19 | R0 | Med | Action-registry parity test | P10 | open |
 | R0-20 | R0 | Med | Thermal twin compared with a recorded bench run | P12 | open |
 | R0-21 | R0 | Low | Terminology: scenario file, journal, in `UBIQUITOUS_LANGUAGE.md` | P2 | done |
-| R0-22 | R0 | Low | Report includes consumer digests only when recorded | P4 | open |
+| R0-22 | R0 | Low | Report includes consumer digests only when recorded | P4 | done |
 | R0-23 | R0 | Med | Status banners on design text superseded by owner decisions | P0 | done |
 
 ## P1 review: work carried into later phases
@@ -116,7 +116,7 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 |---|---|---|---|---|---|
 | R2-01 | R2 | Med | No file the CLI or director reads has a size bound (scenario, domain, adapter, artifact, verdict, label); bound every input read, with a typed failure, and test each | P13 | open |
 | R2-02 | R2 | Low | Explicit `entity_ids` (scenario `world.entity_ids`, director `sim.world.create`) are not checked against the domain's entity count bounds or id template; decide and enforce with the v0.2 kinds-and-instances model | P5a | open |
-| R2-03 | R2 | Low | Errors from a missing `--domains-dir` repeat the `streamsim:` prefix three times (pre-existing in `loadSimulatorInputs`); wrap once | P4 | open |
+| R2-03 | R2 | Low | Errors from a missing `--domains-dir` repeat the `streamsim:` prefix three times (pre-existing in `loadSimulatorInputs`); wrap once; the fix is the same as R2c-02, so it is carried there | P13 | open |
 | R2-04 | R2 | Low | Perturbation windows with negative or pre-start times are accepted (negative `until` acts as "no end"); and the run-wide limits have no MCP-level test | P13 | open |
 | R2-05 | R2 | Low | The effector idempotency key compares arguments by `json.Marshal` text, so `3` and `3.0` are different requests | P6a | open |
 | R2b-01 | R2b | Low | The operator maps every invocation error to `effector_refused`; MCP_SURFACE lists `interlock_refused` and `invalid_args`, which are never emitted. Decide the taxonomy without revealing hidden outcomes, and add a protocol-level (wire) test of the acknowledgement | P10 | open |

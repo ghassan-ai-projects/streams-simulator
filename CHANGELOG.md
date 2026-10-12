@@ -4,6 +4,21 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **Run report** (`docs/design/RUN_REPORT.md`, `run-report-v0.1`, new `internal/report` module):
+  `streamsim report <run-dir> [--format json|markdown] [--out <file>]` summarises a run folder as one
+  deterministic document, a pure function of its files: identity and inputs, recorded digests,
+  `verification` (do the files still agree with the recorded digests; not a replay), delivery counts
+  with drop reasons from the ledger, faults, perturbations, environment faults and effector calls
+  with the world's real outcomes from the command log, mode (`evaluate` or `explore`), whether the
+  run is complete and ended, the consumer from `verdict.json` (its `config_digest` only when the
+  verdict recorded one) and the scorecard when `verdict.json` and `label.json` are present. The
+  truth sections appear only for a run that has ended or an Explore run; the report of an open
+  Evaluate run reads neither the ledger nor `sealed/`, so it cannot be used to read ahead. JSON is the command's one stdout document; Markdown
+  requires `--out` and stdout then names the file (`{report_written, format}`), keeping stdout one
+  JSON document. `cli-output-v0.1` gains `report` and `report_written` and the `report_failed` code.
+- `grading.Options` with no domains or adapters directory now grades from the domain and adapter the
+  artifact embeds (`run.EmbeddedInputs`); `streamsim score` still passes its directories.
+
 - **Run journal** (`docs/design/RUN_JOURNAL.md`, `run-journal-v0.1`, new `internal/journal` module):
   two append-only JSON Lines streams written while a run happens. The observer stream
   (`journal.jsonl`) holds what a consumer could know: the run's identity, every delivered

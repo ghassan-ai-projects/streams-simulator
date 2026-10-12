@@ -84,3 +84,7 @@ func annotateReplayVersion(result *ReplayResult, artifact *model.RunArtifact, in
 		result.Detail += fmt.Sprintf("; its recorded input digests were not reproduced (%v)", inputs)
 	}
 }
+
+func EmbeddedInputs(art *model.RunArtifact) (*domain.Compiled, *model.Adapter, error) {
+	return replayInputs(art, nil, nil)
+}

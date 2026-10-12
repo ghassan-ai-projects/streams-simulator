@@ -16,6 +16,7 @@ The JSON schemas under [`docs/contracts/`](../../docs/contracts/) are the canoni
 | [`run-artifact-v0.1`](../../docs/contracts/run-artifact-v0.1.schema.json) | Replay inputs, command log, digests, counts, and completion state. |
 | [`scenario-v0.1`](../../docs/contracts/scenario-v0.1.schema.json) | A repeatable run: inputs, world settings and the ordered director commands ([design](../../docs/design/SCENARIO_FILE.md)). Embedded: `run --scenario` validates every file against it. |
 | [`run-journal-v0.1`](../../docs/contracts/run-journal-v0.1.schema.json) | One line of a run journal: the observer stream `journal.jsonl` or the director stream `sealed/journal.jsonl`, written while a run happens ([design](../../docs/design/RUN_JOURNAL.md)). Embedded: tests validate every record the writer produces against it. |
+| [`run-report-v0.1`](../../docs/contracts/run-report-v0.1.schema.json) | The report `streamsim report <run-dir>` prints: identity, digests, file verification, counts, truth, consumer and scoring of one run folder ([design](../../docs/design/RUN_REPORT.md)). Embedded: tests validate every report against it. |
 | [`cli-output-v0.1`](../../docs/contracts/cli-output-v0.1.schema.json) | The single JSON document every non-exempt CLI command prints on stdout: per-command success shapes and the error document. Not embedded: tests validate real outputs against it. |
 
 The device emulator also validates the versioned device command, receipt,

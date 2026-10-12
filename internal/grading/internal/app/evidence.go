@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	catalog "github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/grading/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/grading/internal/files"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
@@ -58,7 +59,7 @@ func scoringEvidence(ctx context.Context, options Options, art *model.RunArtifac
 // state on its own: identity, domain, effector calls, perturbations, counts
 // and the reproducible/unblinded stamps.
 func replayedEvidence(ctx context.Context, options Options, art *model.RunArtifact) (score.Evidence, error) {
-	spec, adap, err := run.LoadInputs(options.DomainsDir, options.AdaptersDir, art.Domain.ID, art.Adapter.ID)
+	spec, adap, err := replayInputs(options, art)
 	if err != nil {
 		return score.Evidence{}, fmt.Errorf("%w", err)
 	}
@@ -86,4 +87,19 @@ func loadHistory(path string) ([]model.StateSnapshot, error) {
 		return nil, fmt.Errorf("open state history %s: %w", path, err)
 	}
 	return domain.DecodeHistory(raw, path)
+}
+
+func replayInputs(options Options, art *model.RunArtifact) (*catalog.Compiled, *model.Adapter, error) {
+	var spec *catalog.Compiled
+	var adap *model.Adapter
+	var err error
+	if options.DomainsDir == "" && options.AdaptersDir == "" {
+		spec, adap, err = run.EmbeddedInputs(art)
+	} else {
+		spec, adap, err = run.LoadInputs(options.DomainsDir, options.AdaptersDir, art.Domain.ID, art.Adapter.ID)
+	}
+	if err != nil {
+		return nil, nil, fmt.Errorf("%w", err)
+	}
+	return spec, adap, nil
 }

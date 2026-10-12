@@ -14,6 +14,10 @@ func LoadArtifact(path string) (*model.RunArtifact, error) {
 	return layer.LoadArtifact(path)
 }
 
+func EmbeddedInputs(art *model.RunArtifact) (*domain.Compiled, *model.Adapter, error) {
+	return layer.EmbeddedInputs(art)
+}
+
 // ReplayArtifact reproduces a run from its artifact with no server running
 // and reports whether the trace digest matched.
 func ReplayArtifact(ctx context.Context, art *model.RunArtifact, spec *domain.Compiled, adapterSpec *model.Adapter, sinkTarget string) (*ReplayResult, error) {

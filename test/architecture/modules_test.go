@@ -29,6 +29,7 @@ var moduleShapes = map[string][]string{
 	"internal/refconsumer": {"domain", "mcpclient", "app", "files"},
 	"internal/grading":     {"domain", "app", "files"},
 	"internal/release":     {"domain", "app", "files"},
+	"internal/report":      {"domain", "app", "files"},
 	"internal/director":    {"domain", "app", "capability"},
 	"internal/mcp":         {"protocol", "transport"},
 	"internal/cli":         {"app", "files", "process"},

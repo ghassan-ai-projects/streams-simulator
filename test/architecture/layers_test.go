@@ -55,6 +55,7 @@ var packages = map[string]packageInfo{
 	"internal/grading":         {kindEdgeCore, 6},
 	"internal/suite":           {kindEdgeCore, 6},
 	"internal/director":        {kindEdgeCore, 6},
+	"internal/report":          {kindEdgeCore, 7},
 	"internal/mcp":             {kindSurface, 7},
 	"internal/cli":             {kindSurface, 8},
 	"cmd/streamsim":            {kindSurface, 9},

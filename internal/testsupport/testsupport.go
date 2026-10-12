@@ -87,3 +87,11 @@ func SocketPath(tb testing.TB) string {
 	})
 	return filepath.Join(dir, "d.sock")
 }
+
+func ReportRun() string {
+	return filepath.Join(RepositoryRoot(), "internal", "report", "testdata", "run")
+}
+
+func ReportGolden(name string) string {
+	return filepath.Join(RepositoryRoot(), "internal", "report", "testdata", name)
+}
