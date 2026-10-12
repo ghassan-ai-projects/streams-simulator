@@ -9,7 +9,7 @@ import (
 
 func TestShippedFixturesExistWhereTheHelpersSayTheyDo(t *testing.T) {
 	t.Parallel()
-	for _, path := range []string{Domain("aquaculture-pond"), Example(), Adapter("native-jsonl"), DomainsDir(), AdaptersDir()} {
+	for _, path := range []string{Domain("aquaculture-pond"), Example(), Adapter("native-jsonl"), DomainsDir(), AdaptersDir(), ReportRun(), ReportGolden("report.golden.json")} {
 		if _, err := os.Stat(path); err != nil {
 			t.Errorf("fixture %s: %v", path, err)
 		}

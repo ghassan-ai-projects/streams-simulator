@@ -10,7 +10,7 @@ import (
 func TestEffectorValidatesArgumentsBeforeIdempotentReplay(t *testing.T) {
 	t.Parallel()
 	spec := testSpec(t, func(s *model.DomainSpec) {
-		s.Effectors = []model.Effector{{Name: "act", ArgsSchema: map[string]any{"type": "object", "required": []any{"level"}, "properties": map[string]any{"level": map[string]any{"type": "number"}}}, Effect: model.Effect{StateDeltas: []model.StateDelta{{State: "x", Delta: 3}}}}}
+		s.Kinds[0].Effectors = []model.Effector{{Name: "act", ArgsSchema: map[string]any{"type": "object", "required": []any{"level"}, "properties": map[string]any{"level": map[string]any{"type": "number"}}}, Effect: model.Effect{StateDeltas: []model.StateDelta{{State: "x", Delta: 3}}}}}
 	})
 	w := newTestWorld(t, spec, 17, model.DefaultStartTimeNS)
 	w.SetFailureMode(ModeOK)

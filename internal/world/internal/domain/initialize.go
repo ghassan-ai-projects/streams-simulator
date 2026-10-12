@@ -47,29 +47,46 @@ func initialEntityIDs(spec *domain.Compiled, ids []string) []string {
 	if len(ids) > 0 {
 		return ids
 	}
-	count := spec.Spec.Entities.Count.Default
-	if count < 1 {
-		count = 1
-	}
-	for i := 1; i <= count; i++ {
-		ids = append(ids, renderID(spec.Spec.Entities.IDTemplate, i, nil))
+	return PopulationIDs(spec, 0)
+}
+
+func PopulationIDs(spec *domain.Compiled, firstSetCount int) []string {
+	var ids []string
+	for i := range spec.Spec.Instances {
+		set := &spec.Spec.Instances[i]
+		count := set.Count.Default
+		if i == 0 && firstSetCount > 0 {
+			count = firstSetCount
+		}
+		for n := 1; n <= max(count, 1); n++ {
+			ids = append(ids, renderID(set.IDTemplate, n, nil))
+		}
 	}
 	return ids
 }
 
 func (w *World) populateInitialEntities(ids []string, startNS int64) error {
+	w.nextIndex = make([]int, len(w.Spec.Spec.Instances))
 	for _, id := range ids {
-		if err := w.addEntity(id, startNS); err != nil {
+		set := max(w.instanceSetOf(id), 0)
+		if err := w.addEntity(id, set, startNS); err != nil {
 			return fmt.Errorf("streamsim: %w", err)
 		}
+		w.nextIndex[set]++
 	}
-	// Births also probe for free IDs when initial IDs were supplied by callers.
-	w.nextIndex = len(ids)
 	return nil
 }
 
+func (w *World) instanceSetOf(id string) int {
+	set := w.Spec.InstanceSetFor(id)
+	if set < 0 && len(w.Spec.Spec.Instances) == 1 {
+		return 0
+	}
+	return set
+}
+
 func (w *World) scheduleInitialChurn(startNS int64) {
-	if churn := w.Spec.Spec.Entities.Churn; churn != nil && churn.BirthsPerHour > 0 {
-		w.scheduleChurn(startNS)
+	for set := range w.Spec.Spec.Instances {
+		w.scheduleChurn(set, startNS)
 	}
 }

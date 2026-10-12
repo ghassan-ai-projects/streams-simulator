@@ -47,6 +47,7 @@ var commands = map[string]command{
 	"refconsumer": {run: cmdRefconsumer},
 	"suite":       {run: cmdSuite},
 	"score":       {run: cmdScore},
+	"report":      {run: cmdReport},
 	"manifest":    {run: cmdManifest},
 	"device":      {run: cmdDevice},
 	"scenario":    {run: cmdScenario},
@@ -142,6 +143,7 @@ Usage: streamsim <command> [flags]
 Commands:
   catalog list|describe|coverage        Installed domains and axis coverage
   domain validate <path>                Validate a domain spec against the contract
+  domain format <path>                  Rewrite a domain spec in canonical formatting
   adapter list|verify [path]            Installed adapters; verify one against its golden
   run [--scenario <file>]               One-shot run from flags or a scenario file
   scenario from-run <run.json> --out f  Export the scenario that reproduces a run
@@ -156,6 +158,8 @@ Commands:
                                         the loop over the operator endpoint)
   suite --domain --profile              Generate an audited graded suite
   score --run --label                   Offline scorecard from artifacts
+  report <run-dir>                      Summarize a run folder (--format json|markdown,
+                                        --out <file>; markdown requires --out)
   manifest                              Write release-manifest.json (author +
                                         reviewer identity, optional ed25519)
   device serve --socket <path>          Serve the device emulator over a UDS

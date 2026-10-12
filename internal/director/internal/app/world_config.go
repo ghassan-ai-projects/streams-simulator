@@ -71,24 +71,34 @@ func appendNameplateEntities(np *rules.Nameplate, r *run.Run) {
 }
 
 func appendNameplateChannels(np *rules.Nameplate, spec *domain.Compiled) {
-	for i := range spec.Spec.Channels {
-		channel := &spec.Spec.Channels[i]
-		item := rules.NameplateChannel{Name: channel.Name, Unit: channel.Unit, Resolution: channel.Resolution}
-		if channel.Range != nil {
-			item.RangeMin, item.RangeMax = channel.Range.Min, channel.Range.Max
+	for k := range spec.Spec.Kinds {
+		for i := range spec.Spec.Kinds[k].Channels {
+			np.Channels = append(np.Channels, nameplateChannel(&spec.Spec.Kinds[k].Channels[i]))
 		}
-		np.Channels = append(np.Channels, item)
 	}
 }
 
-func appendNameplateEffectors(np *rules.Nameplate, spec *domain.Compiled) {
-	for i := range spec.Spec.Effectors {
-		effector := &spec.Spec.Effectors[i]
-		risk := effector.RiskClass
-		if risk == "" {
-			risk = "medium"
-		}
-		np.Effectors = append(np.Effectors, rules.EffectorInfo{Name: effector.Name, Description: effector.Description,
-			ArgsSchema: effector.ArgsSchema, RiskClass: risk})
+func nameplateChannel(channel *model.Channel) rules.NameplateChannel {
+	item := rules.NameplateChannel{Name: channel.Name, Unit: channel.Unit, Resolution: channel.Resolution}
+	if channel.Range != nil {
+		item.RangeMin, item.RangeMax = channel.Range.Min, channel.Range.Max
 	}
+	return item
+}
+
+func appendNameplateEffectors(np *rules.Nameplate, spec *domain.Compiled) {
+	for k := range spec.Spec.Kinds {
+		for i := range spec.Spec.Kinds[k].Effectors {
+			np.Effectors = append(np.Effectors, nameplateEffector(&spec.Spec.Kinds[k].Effectors[i]))
+		}
+	}
+}
+
+func nameplateEffector(effector *model.Effector) rules.EffectorInfo {
+	risk := effector.RiskClass
+	if risk == "" {
+		risk = "medium"
+	}
+	return rules.EffectorInfo{Name: effector.Name, Description: effector.Description,
+		ArgsSchema: effector.ArgsSchema, RiskClass: risk}
 }

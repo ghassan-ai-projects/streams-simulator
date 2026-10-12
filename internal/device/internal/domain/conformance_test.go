@@ -42,17 +42,17 @@ func TestConformanceInvalidFramesRejected(t *testing.T) {
 	rejections := map[string]string{
 		"command-bad-idempotency-key.json":           "validate command record: /idempotency_key: string does not match pattern",
 		"command-expires-after-ms-zero.json":         "validate command record: /expires_after_ms: number 0 below minimum 1",
-		"command-missing-operation.json":             `validate command record: missing required property "operation"`,
-		"command-missing-policy-digest.json":         `validate command record: missing required property "policy_digest"`,
+		"command-missing-operation.json":             `validate command record: /operation: missing required property "operation"`,
+		"command-missing-policy-digest.json":         `validate command record: /policy_digest: missing required property "policy_digest"`,
 		"command-protocol-version-out-of-range.json": "validate command record: /protocol_version: value does not match const",
-		"command-unknown-field.json":                 `validate command record: additional property "pin" not allowed`,
-		"command-wrong-message-type.json":            `validate receipt record: missing required property "accepted"`,
-		"receipt-missing-boot-id.json":               `validate receipt record: missing required property "boot_id"`,
-		"receipt-rejected-without-reject-code.json":  `validate receipt record: missing required property "reject_code"`,
+		"command-unknown-field.json":                 `validate command record: /pin: additional property "pin" not allowed`,
+		"command-wrong-message-type.json":            `validate receipt record: /accepted: missing required property "accepted"`,
+		"receipt-missing-boot-id.json":               `validate receipt record: /boot_id: missing required property "boot_id"`,
+		"receipt-rejected-without-reject-code.json":  `validate receipt record: /reject_code: missing required property "reject_code"`,
 		"receipt-unknown-reject-code.json":           "validate receipt record: /reject_code: value not in enum",
 		"result-bad-status.json":                     "validate result record: /status: value not in enum",
 		"state-bad-firmware-digest.json":             "validate state record: /firmware_digest: string does not match pattern",
-		"state-missing-capability-digest.json":       `validate state record: missing required property "capability_digest"`,
+		"state-missing-capability-digest.json":       `validate state record: /capability_digest: missing required property "capability_digest"`,
 	}
 	for _, file := range files {
 		file := file

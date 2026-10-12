@@ -1,0 +1,67 @@
+package domain
+
+import (
+	"crypto/sha256"
+	"encoding/hex"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/journal"
+)
+
+type recorded struct {
+	name    string
+	digest  string
+	doc     Document
+	compute func([]byte) string
+}
+
+func verify(folder Folder) Verification {
+	checks := []Check{}
+	for _, entry := range recordedDigests(folder) {
+		if entry.digest != "" {
+			checks = append(checks, check(entry))
+		}
+	}
+	return Verification{Status: statusOf(checks), Checks: checks}
+}
+
+func recordedDigests(folder Folder) []recorded {
+	art := folder.Artifact
+	if art == nil {
+		return nil
+	}
+	return []recorded{
+		{"trace", art.ExpectedTraceDigest, folder.Trace, fileDigest},
+		{"journal", art.JournalDigest, folder.Observer, journal.Digest},
+		{"sealed_journal", art.SealedJournalDigest, folder.Director, journal.Digest},
+	}
+}
+
+func check(entry recorded) Check {
+	result := Check{Name: entry.name, Recorded: entry.digest, Status: CheckMissing}
+	if !entry.doc.Present {
+		return result
+	}
+	result.Computed = entry.compute(entry.doc.Raw)
+	result.Status = CheckMatch
+	if result.Computed != entry.digest {
+		result.Status = CheckDiffers
+	}
+	return result
+}
+
+func statusOf(checks []Check) string {
+	if len(checks) == 0 {
+		return NotChecked
+	}
+	for _, c := range checks {
+		if c.Status != CheckMatch {
+			return FilesDiffer
+		}
+	}
+	return FilesMatch
+}
+
+func fileDigest(raw []byte) string {
+	sum := sha256.Sum256(raw)
+	return "sha256:" + hex.EncodeToString(sum[:])
+}

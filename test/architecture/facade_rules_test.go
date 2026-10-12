@@ -29,8 +29,9 @@ type aliasReview struct {
 var aliasedValueTypes = map[string]aliasReview{
 	"internal/domain:Compiled": {
 		target: "Compiled",
-		methods: []string{"Channel", "ChannelGain", "ChannelNames", "Effector", "Fault", "HasChannel",
-			"HasEffector", "HasFault", "HasProfile", "HasState", "Profile", "StateNames"},
+		methods: []string{"Channel", "ChannelGain", "ChannelNames", "CheckEntityIDs", "Effector", "EffectorCount", "Fault",
+			"FaultCount", "FaultKind", "HasChannel", "HasEffector", "HasFault", "HasProfile", "InstanceSetFor", "Kind",
+			"KindChannelNames", "Profile", "StateNames"},
 		reason: "compiled domain spec: lookups over its own declared names; Spec is deliberately mutable for tests",
 	},
 	"internal/grading:ReplayMismatchError": {

@@ -29,6 +29,10 @@ func NewCatalogFromDir(dir string) (*Catalog, error) {
 	return &Catalog{catalog: inner}, nil
 }
 
+func Format(path string) (*FormatResult, error) {
+	return files.Format(path)
+}
+
 // Parse reads, schema-validates and structurally validates a domain spec from
 // an in-memory document. src names the source for error messages.
 func Parse(raw []byte, src string) (*Compiled, error) {

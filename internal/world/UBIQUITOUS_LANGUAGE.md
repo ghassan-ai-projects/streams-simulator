@@ -7,7 +7,9 @@ dynamics, faults and effectors. What an observer later receives is the
 | Term | Meaning | Code name | Wire / artifact name |
 | --- | --- | --- | --- |
 | World | One seeded, single-goroutine simulated world built from a compiled domain | `World` | `world_id` |
-| Entity | One simulated producer (a pond, a pump) with its own hidden state | `Entity` | `entity_id`, `entity_type` |
+| Entity | One simulated producer (a pond, a pump) with its own hidden state; it belongs to one kind, which selects its state, dynamics, channels, faults and effectors | `Entity` | `entity_id`, `entity_type` (the kind name) |
+| Peers | The live entities of the same kind as an entity | `PeerIDs` | – |
+| Population | The entity ids a world starts with: each instance set's default count, sets in declaration order | `PopulationIDs` | `entity_ids` |
 | Hidden state | A true physical quantity the consumer never sees directly | `StateValue` | state names in the domain spec |
 | Reading | The noise-free value of a channel (the observed form is a native event) | `Reading` | – |
 | Native event | One emission of a channel, before any perturbation | `model.SimEvent` | `sim-event-v0.1` |
@@ -19,7 +21,7 @@ dynamics, faults and effectors. What an observer later receives is the
 | Interlock | An independent safety predicate that refuses an invocation terminally | `ErrInterlockRefused` | `interlock_refused` |
 | Kick | A scheduled state delta an applied effect produces | `PendingKicks` | – |
 | Substream | A named seeded random stream; names fix the draw order | `substream` | `<world>/<entity>/<channel>/<purpose>` |
-| Churn | Autonomous birth and retirement of entities on a schedule | `birthAutonomous`, `Retire` | – |
+| Churn | Autonomous birth and retirement of entities on a schedule; each instance set has its own (the first draws `churn/births`, set `i` draws `churn/births/i`) | `birthAutonomous`, `Retire` | – |
 
 ## Retired words
 

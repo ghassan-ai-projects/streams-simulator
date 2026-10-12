@@ -52,7 +52,7 @@ func TestArtifactCountsEveryInjectedFaultEvenOnceCleared(t *testing.T) {
 		t.Fatal(err)
 	}
 	entities := r.World.EntityIDs()
-	fault := spec.Spec.Faults[0].ID
+	fault := spec.Spec.Kinds[0].Faults[0].ID
 	onset := r.World.Clock() + 60e9
 	first, err := r.InjectFault(entities[0], fault, onset, nil)
 	if err != nil {

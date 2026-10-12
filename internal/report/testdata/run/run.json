@@ -1,0 +1,1149 @@
+{
+  "schema_version": "0.1",
+  "sim_version": "0.3.0",
+  "run_id": "r-3h6wx9adsnlft",
+  "created_at": "2026-10-12T16:02:42.510201Z",
+  "domain": {
+    "id": "aquaculture-pond",
+    "version": "0.1.0",
+    "digest": "sha256:dfb37e19c2c3137194d23652a5531a07605fb909bce59e2f63724191545adbe1"
+  },
+  "domain_spec": {
+    "id": "aquaculture-pond",
+    "version": "0.1.0",
+    "title": "Aquaculture pond water quality",
+    "description": "Eight shrimp ponds. Dissolved oxygen falls through the night as respiration outpaces photosynthesis and recovers after sunrise. Below roughly 2 mg/L the stock begins to die within about an hour. The closed-loop showcase domain: detect, reason, propose, authorize, actuate, and observe recovery, all inside a physical deadline.",
+    "axes": {
+      "absence": "signal",
+      "actuation": "fast_physical",
+      "cadence": [
+        "periodic"
+      ],
+      "cardinality": "small",
+      "consequence": [
+        "safety",
+        "cost"
+      ],
+      "correlation": [
+        "coupled"
+      ],
+      "fidelity": [
+        "F1"
+      ],
+      "lateness": "bounded",
+      "rate": "medium",
+      "seasonality": [
+        "diurnal"
+      ],
+      "time_reference": "wall",
+      "value_shape": [
+        "scalar",
+        "enum"
+      ]
+    },
+    "stresses": "A fast nonlinear failure with a hard deadline: every other domain tolerates a slow agent, and this one measures it in dead stock. The whole chain — admit, band, trigger, reason, validate, authorize, dispatch, actuate — must complete inside a physical window the world does not extend.",
+    "kinds": [
+      {
+        "name": "pond",
+        "state": [
+          {
+            "name": "dissolved_oxygen_true",
+            "unit": "mg/L",
+            "initial": 6.5,
+            "min": 0.0,
+            "max": 14.0,
+            "description": "The actual dissolved oxygen in the pond. Never observable directly; the probe channel observes it through noise, drift, and possible fouling."
+          },
+          {
+            "name": "do_forcing",
+            "unit": "mg/L",
+            "initial": 5.6,
+            "min": 0.0,
+            "max": 12.0,
+            "description": "The solar diurnal cycle: the equilibrium oxygen level the pond tracks before aeration, feeding and bloom state. Minimum around 05:00, which is what produces the pre-dawn crash this domain exists for."
+          },
+          {
+            "name": "water_temp_true",
+            "unit": "degC",
+            "initial": 28.0,
+            "min": 15.0,
+            "max": 40.0
+          },
+          {
+            "name": "ammonia_true",
+            "unit": "mg/L",
+            "initial": 0.2,
+            "min": 0.0,
+            "max": 8.0
+          },
+          {
+            "name": "ph_true",
+            "unit": "pH",
+            "initial": 7.9,
+            "min": 5.0,
+            "max": 10.0,
+            "description": "No free dynamics: piecewise constant, moved by faults and effectors only."
+          },
+          {
+            "name": "algae_biomass",
+            "unit": "rel",
+            "initial": 1.0,
+            "min": 0.0,
+            "max": 5.0,
+            "description": "Drives the oxygen balance: a bloom raises it, a crash converts the oxygen source into an oxygen sink."
+          },
+          {
+            "name": "aerator_output",
+            "unit": "rel",
+            "initial": 0.0,
+            "min": 0.0,
+            "max": 1.0,
+            "description": "No free dynamics: changed only by effector effects (90 s dead time, 20-minute lag, declared on start_aerator) and by faults. Modelling the spin-up here as well would apply the dead time twice."
+          },
+          {
+            "name": "probe_fouling",
+            "unit": "rel",
+            "initial": 0.0,
+            "min": 0.0,
+            "max": 1.0,
+            "description": "A fouled membrane reads high and stable while the pond suffocates. Acts on the dissolved_oxygen channel through its observation_bias — the lethal sensor fault, and the reason a threshold on the probe channel alone is not a safe design."
+          },
+          {
+            "name": "feed_load",
+            "unit": "rel",
+            "initial": 1.0,
+            "min": 0.0,
+            "max": 3.0,
+            "description": "No free dynamics: a baseline of 1.0, moved by the overfeeding fault and the halt_feeding effector."
+          },
+          {
+            "name": "stock_mortality",
+            "unit": "frac",
+            "initial": 0.0,
+            "min": 0.0,
+            "max": 1.0,
+            "description": "The counterfactual outcome variable. Accumulates while dissolved_oxygen_true is below the lethal threshold. Director-only; never observed by any channel."
+          }
+        ],
+        "dynamics": [
+          {
+            "target": "do_forcing",
+            "tier": "F0",
+            "f0": {
+              "baseline": 5.6,
+              "drift_per_hour": 0.0,
+              "seasonality": [
+                {
+                  "amplitude": 3.0,
+                  "period_s": 86400,
+                  "phase_rad": -2.88
+                }
+              ]
+            }
+          },
+          {
+            "target": "dissolved_oxygen_true",
+            "tier": "F1",
+            "dt_ms": 1000,
+            "f1": {
+              "form": "first_order_lag",
+              "clamp": {
+                "min": 0.0,
+                "max": 14.0
+              },
+              "gain": 1.0,
+              "inputs": [
+                {
+                  "state": "do_forcing",
+                  "coef": 1.0
+                },
+                {
+                  "state": "algae_biomass",
+                  "coef": 1.5
+                },
+                {
+                  "state": "aerator_output",
+                  "coef": 2.2
+                },
+                {
+                  "state": "feed_load",
+                  "coef": -0.6
+                }
+              ],
+              "time_constant_s": 3600
+            }
+          },
+          {
+            "target": "water_temp_true",
+            "tier": "F0",
+            "f0": {
+              "baseline": 28.0,
+              "drift_per_hour": 0.0,
+              "seasonality": [
+                {
+                  "amplitude": 2.2,
+                  "period_s": 86400,
+                  "phase_rad": -1.6
+                }
+              ]
+            }
+          },
+          {
+            "target": "algae_biomass",
+            "tier": "F1",
+            "dt_ms": 60000,
+            "f1": {
+              "form": "first_order_lag",
+              "gain": 1.0,
+              "inputs": [
+                "feed_load"
+              ],
+              "time_constant_s": 172800
+            }
+          },
+          {
+            "target": "ammonia_true",
+            "tier": "F1",
+            "dt_ms": 60000,
+            "f1": {
+              "form": "first_order_lag",
+              "clamp": {
+                "min": 0.0,
+                "max": 8.0
+              },
+              "gain": 0.2,
+              "inputs": [
+                "feed_load"
+              ],
+              "time_constant_s": 43200
+            }
+          },
+          {
+            "target": "stock_mortality",
+            "tier": "F1",
+            "dt_ms": 60000,
+            "f1": {
+              "form": "threshold_integrator",
+              "clamp": {
+                "min": 0.0,
+                "max": 1.0
+              },
+              "direction": "below",
+              "gain": 0.00014,
+              "inputs": [
+                "dissolved_oxygen_true"
+              ],
+              "threshold": 2.0
+            }
+          }
+        ],
+        "channels": [
+          {
+            "name": "pond.dissolved_oxygen",
+            "unit": "mg/L",
+            "absence": "signal",
+            "availability": {
+              "mttr_s": 600,
+              "uptime": 0.999
+            },
+            "cadence": {
+              "jitter_s": 2,
+              "mode": "periodic",
+              "period_s": 60
+            },
+            "drift": {
+              "model": "linear",
+              "rate_per_hour": 0.0
+            },
+            "fidelity": "F1",
+            "iso13374_role": "data_acquisition",
+            "link_delay": {
+              "max_s": 30,
+              "mean_s": 1.5,
+              "model": "exponential"
+            },
+            "noise": {
+              "model": "gaussian",
+              "sigma": 0.08
+            },
+            "observation_bias": {
+              "state": "probe_fouling",
+              "coef": 2.5,
+              "noise_scale_at_full": 0.1
+            },
+            "observes": "dissolved_oxygen_true",
+            "range": {
+              "min": 0.0,
+              "max": 14.0
+            },
+            "resolution": 0.01,
+            "value_type": "number",
+            "description": "The probe. Fouling biases it high and collapses its variance — it reads plausible and stable while the pond suffocates, which is exactly what makes do_probe_fouling lethal."
+          },
+          {
+            "name": "pond.water_temperature",
+            "unit": "degC",
+            "absence": "signal",
+            "cadence": {
+              "jitter_s": 5,
+              "mode": "periodic",
+              "period_s": 300
+            },
+            "fidelity": "F1",
+            "iso13374_role": "data_acquisition",
+            "link_delay": {
+              "max_s": 30,
+              "mean_s": 1.5,
+              "model": "exponential"
+            },
+            "noise": {
+              "model": "gaussian",
+              "sigma": 0.05
+            },
+            "observes": "water_temp_true",
+            "range": {
+              "min": 15.0,
+              "max": 40.0
+            },
+            "resolution": 0.1,
+            "value_type": "number"
+          },
+          {
+            "name": "pond.ammonia",
+            "unit": "mg/L",
+            "absence": "signal",
+            "cadence": {
+              "mode": "periodic",
+              "period_s": 900
+            },
+            "fidelity": "F1",
+            "iso13374_role": "data_acquisition",
+            "link_delay": {
+              "max_s": 30,
+              "mean_s": 1.5,
+              "model": "exponential"
+            },
+            "noise": {
+              "model": "gaussian",
+              "sigma": 0.03
+            },
+            "observes": "ammonia_true",
+            "range": {
+              "min": 0.0,
+              "max": 8.0
+            },
+            "resolution": 0.01,
+            "value_type": "number"
+          },
+          {
+            "name": "pond.ph",
+            "unit": "pH",
+            "absence": "signal",
+            "cadence": {
+              "mode": "periodic",
+              "period_s": 900
+            },
+            "fidelity": "F1",
+            "iso13374_role": "data_acquisition",
+            "link_delay": {
+              "max_s": 30,
+              "mean_s": 1.5,
+              "model": "exponential"
+            },
+            "noise": {
+              "model": "gaussian",
+              "sigma": 0.02
+            },
+            "observes": "ph_true",
+            "range": {
+              "min": 5.0,
+              "max": 10.0
+            },
+            "resolution": 0.01,
+            "value_type": "number"
+          },
+          {
+            "name": "pond.aerator_current",
+            "unit": "A",
+            "absence": "signal",
+            "cadence": {
+              "mode": "periodic",
+              "period_s": 60
+            },
+            "fidelity": "F1",
+            "iso13374_role": "state_detection",
+            "link_delay": {
+              "mean_s": 1.0,
+              "model": "constant"
+            },
+            "noise": {
+              "model": "gaussian",
+              "sigma": 0.2
+            },
+            "observation_gain": 18.0,
+            "observation_offset": 0.4,
+            "observes": "aerator_output",
+            "range": {
+              "min": 0.0,
+              "max": 25.0
+            },
+            "resolution": 0.1,
+            "value_type": "number",
+            "description": "Independent confirmation that the aerator is actually running — the declared confirmation channel for start_aerator. Under confirmed_no_effect this channel keeps telling the truth and catches the lie by direct comparison. Under silent_no_effect it reports the counterfactual — current as if running — and only the absent oxygen recovery betrays the failure."
+          },
+          {
+            "name": "pond.heartbeat",
+            "absence": "signal",
+            "cadence": {
+              "mode": "periodic",
+              "period_s": 60
+            },
+            "fidelity": "F0",
+            "iso13374_role": "data_acquisition",
+            "link_delay": {
+              "mean_s": 0.5,
+              "model": "constant"
+            },
+            "noise": {
+              "model": "none",
+              "sigma": 0
+            },
+            "resolution": 1.0,
+            "value_type": "none"
+          },
+          {
+            "name": "pond.feeding_event",
+            "absence": "normal",
+            "cadence": {
+              "mode": "event_driven",
+              "trigger_state": "feed_load"
+            },
+            "enum_values": [
+              "scheduled",
+              "manual",
+              "skipped",
+              "halted"
+            ],
+            "fidelity": "F0",
+            "iso13374_role": "data_manipulation",
+            "link_delay": {
+              "mean_s": 2.0,
+              "model": "constant"
+            },
+            "noise": {
+              "model": "none",
+              "sigma": 0
+            },
+            "resolution": 1.0,
+            "value_type": "string"
+          }
+        ],
+        "faults": [
+          {
+            "id": "aerator_failure",
+            "affects": [
+              {
+                "state": "aerator_output",
+                "delta": -1.0
+              }
+            ],
+            "counterfactual": {
+              "if_action_by_deadline": "recovery",
+              "if_no_action": "stock_loss"
+            },
+            "deadline_s": 5400,
+            "expected_effector": "start_aerator",
+            "observability": {
+              "detector": {
+                "form": "single_channel_snr",
+                "channel": "pond.aerator_current"
+              },
+              "first_observable_snr": 3.0,
+              "unavoidable_snr": 10.0
+            },
+            "onset": {
+              "magnitude": -1.0,
+              "shape": "step"
+            },
+            "description": "The aerator stops. Oxygen falls on the natural night curve with no mechanical support. Loud, and the aerator_current channel confirms it — this is the label a threshold rule already gets right, kept as a control."
+          },
+          {
+            "id": "algae_bloom_crash",
+            "affects": [
+              {
+                "state": "algae_biomass",
+                "delta": -2.5
+              },
+              {
+                "state": "ph_true",
+                "delta": -0.7
+              },
+              {
+                "state": "ammonia_true",
+                "delta": 0.9
+              }
+            ],
+            "counterfactual": {
+              "if_action_by_deadline": "partial_recovery",
+              "if_no_action": "stock_loss"
+            },
+            "deadline_s": 10800,
+            "expected_effector": "emergency_water_exchange",
+            "observability": {
+              "detector": {
+                "form": "single_channel_snr",
+                "channel": "pond.dissolved_oxygen"
+              },
+              "first_observable_snr": 3.0,
+              "unavoidable_snr": 10.0
+            },
+            "onset": {
+              "magnitude": -2.5,
+              "rate_per_hour": 0.6,
+              "shape": "exponential"
+            },
+            "description": "A dense bloom collapses; the oxygen source becomes an oxygen sink over a few hours. Multi-channel: pH falls with it, ammonia rises as the biomass decomposes."
+          },
+          {
+            "id": "overfeeding_ammonia",
+            "affects": [
+              {
+                "state": "feed_load",
+                "delta": 1.2
+              },
+              {
+                "state": "ammonia_true",
+                "delta": 1.8
+              }
+            ],
+            "counterfactual": {
+              "if_action_by_deadline": "recovery",
+              "if_no_action": "chronic_stress"
+            },
+            "deadline_s": 172800,
+            "expected_effector": "halt_feeding",
+            "observability": {
+              "detector": {
+                "form": "single_channel_snr",
+                "channel": "pond.ammonia"
+              },
+              "first_observable_snr": 3.0,
+              "unavoidable_snr": 10.0
+            },
+            "onset": {
+              "magnitude": 1.8,
+              "rate_per_hour": 0.05,
+              "shape": "ramp"
+            },
+            "description": "Sustained overfeeding raises ammonia and oxygen demand together over days. Slow; the deadline is generous; the diagnosis requires connecting a feeding pattern to a water-quality trend."
+          },
+          {
+            "id": "do_probe_fouling",
+            "affects": [
+              {
+                "state": "probe_fouling",
+                "delta": 1.0
+              }
+            ],
+            "counterfactual": {
+              "if_action_by_deadline": "recovery",
+              "if_no_action": "stock_loss_undetected"
+            },
+            "deadline_s": 7200,
+            "expected_effector": "start_aerator",
+            "observability": {
+              "detector": {
+                "form": "peer_residual",
+                "channel": "pond.dissolved_oxygen"
+              },
+              "first_observable_snr": 3.0,
+              "unavoidable_snr": 10.0
+            },
+            "onset": {
+              "magnitude": 1.0,
+              "rate_per_hour": 0.04,
+              "shape": "ramp"
+            },
+            "description": "The membrane fouls. The probe reads high and stable while the pond suffocates. The lethal sensor fault: every direct threshold on the oxygen channel is satisfied, and the only evidence of trouble is the divergence between the probe, the diurnal expectation, and the sibling ponds. This is the label the domain exists for."
+          },
+          {
+            "id": "inflow_contamination",
+            "affects": [
+              {
+                "state": "ph_true",
+                "delta": -1.1
+              },
+              {
+                "state": "ammonia_true",
+                "delta": 1.4
+              }
+            ],
+            "counterfactual": {
+              "if_action_by_deadline": "recovery",
+              "if_no_action": "chronic_stress"
+            },
+            "deadline_s": 14400,
+            "expected_effector": "emergency_water_exchange",
+            "observability": {
+              "detector": {
+                "form": "single_channel_snr",
+                "channel": "pond.ph"
+              },
+              "first_observable_snr": 3.0,
+              "unavoidable_snr": 10.0
+            },
+            "onset": {
+              "magnitude": 1.0,
+              "shape": "step"
+            },
+            "description": "Contaminated inflow depresses pH and raises ammonia without an oxygen signature at onset. Tests attribution: the obvious channel is not the affected one."
+          },
+          {
+            "id": "transient_none",
+            "affects": [
+              {
+                "state": "dissolved_oxygen_true",
+                "delta": -1.4
+              }
+            ],
+            "is_negative_class": true,
+            "observability": {
+              "detector": {
+                "form": "single_channel_snr",
+                "channel": "pond.dissolved_oxygen"
+              },
+              "first_observable_snr": 3.0,
+              "unavoidable_snr": 10.0
+            },
+            "onset": {
+              "duty_cycle": 0.15,
+              "magnitude": -1.4,
+              "shape": "intermittent"
+            },
+            "description": "The ordinary pre-dawn oxygen dip, deeper than usual because of a warm still night, recovering on its own after sunrise. The false-positive trap: it looks exactly like the beginning of a real crash for about ninety minutes."
+          },
+          {
+            "id": "warm_night_none",
+            "affects": [
+              {
+                "state": "water_temp_true",
+                "delta": 1.5
+              }
+            ],
+            "is_negative_class": true,
+            "observability": {
+              "detector": {
+                "form": "single_channel_snr",
+                "channel": "pond.water_temperature"
+              },
+              "first_observable_snr": 3.0,
+              "unavoidable_snr": 10.0
+            },
+            "onset": {
+              "magnitude": 1.5,
+              "shape": "step"
+            },
+            "description": "A second negative-class shape: elevated temperature raises respiration and shifts the whole oxygen curve down without any fault. Distinct from transient_none because it is sustained rather than transient, so a sustained_for trigger will not filter it."
+          }
+        ],
+        "effectors": [
+          {
+            "name": "start_aerator",
+            "ack": {
+              "failure_modes": [
+                {
+                  "mode": "ok",
+                  "probability": 0.9
+                },
+                {
+                  "mode": "slow",
+                  "probability": 0.03
+                },
+                {
+                  "mode": "ack_lost",
+                  "probability": 0.02
+                },
+                {
+                  "mode": "reject",
+                  "probability": 0.02
+                },
+                {
+                  "mode": "confirmed_no_effect",
+                  "probability": 0.01
+                },
+                {
+                  "mode": "silent_no_effect",
+                  "probability": 0.02
+                }
+              ],
+              "latency_ms": {
+                "mean": 400,
+                "sigma": 120
+              }
+            },
+            "args_schema": {
+              "additionalProperties": false,
+              "properties": {
+                "level": {
+                  "default": 1,
+                  "maximum": 1,
+                  "minimum": 0,
+                  "type": "number"
+                },
+                "pond_id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "pond_id"
+              ],
+              "type": "object"
+            },
+            "confirmation_channels": [
+              "pond.aerator_current"
+            ],
+            "effect": {
+              "dead_time_s": 90,
+              "state_deltas": [
+                {
+                  "state": "aerator_output",
+                  "delta": 1.0,
+                  "from_arg": "level"
+                }
+              ],
+              "time_constant_s": 1200
+            },
+            "idempotency_window_s": 3600,
+            "risk_class": "low",
+            "description": "Start the paddle-wheel aerator. Ninety-second spin-up, then oxygen rises over roughly twenty minutes."
+          },
+          {
+            "name": "halt_feeding",
+            "ack": {
+              "failure_modes": [
+                {
+                  "mode": "ok",
+                  "probability": 0.97
+                },
+                {
+                  "mode": "ack_lost",
+                  "probability": 0.03
+                }
+              ],
+              "latency_ms": {
+                "mean": 250,
+                "sigma": 60
+              }
+            },
+            "args_schema": {
+              "additionalProperties": false,
+              "properties": {
+                "hours": {
+                  "maximum": 72,
+                  "minimum": 1,
+                  "type": "number"
+                },
+                "pond_id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "pond_id"
+              ],
+              "type": "object"
+            },
+            "effect": {
+              "dead_time_s": 0,
+              "state_deltas": [
+                {
+                  "state": "feed_load",
+                  "delta": -1.0
+                }
+              ],
+              "time_constant_s": 43200
+            },
+            "idempotency_window_s": 7200,
+            "risk_class": "low",
+            "description": "Suspend the feeding schedule. Reduces oxygen demand and ammonia production over about a day."
+          },
+          {
+            "name": "emergency_water_exchange",
+            "ack": {
+              "failure_modes": [
+                {
+                  "mode": "ok",
+                  "probability": 0.88
+                },
+                {
+                  "mode": "partial",
+                  "probability": 0.07
+                },
+                {
+                  "mode": "reject",
+                  "probability": 0.05
+                }
+              ],
+              "latency_ms": {
+                "mean": 1500,
+                "sigma": 400
+              }
+            },
+            "args_schema": {
+              "additionalProperties": false,
+              "properties": {
+                "fraction": {
+                  "maximum": 0.5,
+                  "minimum": 0.05,
+                  "type": "number"
+                },
+                "pond_id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "pond_id",
+                "fraction"
+              ],
+              "type": "object"
+            },
+            "effect": {
+              "dead_time_s": 300,
+              "state_deltas": [
+                {
+                  "state": "dissolved_oxygen_true",
+                  "delta": 2.5
+                },
+                {
+                  "state": "ammonia_true",
+                  "delta": -0.8
+                },
+                {
+                  "state": "algae_biomass",
+                  "delta": -0.5
+                }
+              ],
+              "time_constant_s": 1800
+            },
+            "idempotency_window_s": 10800,
+            "risk_class": "high",
+            "description": "Exchange a fraction of pond volume. Fast and effective, expensive, and stressful to the stock — a genuine cost to a false positive, which is what makes the negative class matter."
+          }
+        ]
+      }
+    ],
+    "instances": [
+      {
+        "kind": "pond",
+        "id_template": "site-a/pond-{n}",
+        "count": {
+          "default": 8,
+          "min": 1,
+          "max": 64
+        }
+      }
+    ],
+    "profiles": [
+      {
+        "name": "nominal",
+        "duration_s": 259200,
+        "entity_count": 8,
+        "setup": [
+          {
+            "args": {
+              "level": 1.0,
+              "pond_id": "{entity_id}"
+            },
+            "command_id": "setup",
+            "effector": "start_aerator"
+          }
+        ],
+        "description": "Eight ponds, one fault sampled per scenario, 72-hour traces spanning three dawn cycles."
+      },
+      {
+        "name": "correlated_cascade",
+        "duration_s": 43200,
+        "entity_count": 8,
+        "fault_weights": {
+          "aerator_failure": 1.0
+        },
+        "setup": [
+          {
+            "args": {
+              "level": 1.0,
+              "pond_id": "{entity_id}"
+            },
+            "command_id": "setup",
+            "effector": "start_aerator"
+          }
+        ],
+        "simultaneous_entities": 8,
+        "description": "A site-wide power dip stops every aerator at once, at 03:40, ninety minutes before sunrise. Eight simultaneous crashes. The alarm-flood case: it should trip a consumer's aggregate cost ceiling and flood check, and it is the scenario in which a per-entity trigger design produces eight parallel episodes and discovers what that costs."
+      },
+      {
+        "name": "sensor_pathology",
+        "duration_s": 172800,
+        "entity_count": 8,
+        "fault_weights": {
+          "do_probe_fouling": 0.7,
+          "transient_none": 0.3
+        },
+        "setup": [
+          {
+            "args": {
+              "level": 1.0,
+              "pond_id": "{entity_id}"
+            },
+            "command_id": "setup",
+            "effector": "start_aerator"
+          }
+        ],
+        "description": "Weighted toward do_probe_fouling: the instrument lies while the process degrades. The label a threshold rule cannot get right, and the one where reasoning has to earn its place."
+      },
+      {
+        "name": "dawn_crash",
+        "duration_s": 28800,
+        "entity_count": 8,
+        "fault_weights": {
+          "aerator_failure": 0.4,
+          "algae_bloom_crash": 0.3,
+          "do_probe_fouling": 0.3
+        },
+        "setup": [
+          {
+            "args": {
+              "level": 1.0,
+              "pond_id": "{entity_id}"
+            },
+            "command_id": "setup",
+            "effector": "start_aerator"
+          }
+        ],
+        "description": "Compressed: every scenario begins four hours before sunrise, so the deadline pressure is maximal and slow reasoning is directly measurable in mortality."
+      }
+    ],
+    "ground_truth": {
+      "min_per_label": 10,
+      "min_scenarios": 100,
+      "negative_class_fraction": 0.4,
+      "pre_degraded_fraction": 0.12
+    }
+  },
+  "seed": 7,
+  "sink": "inproc",
+  "adapter": {
+    "id": "native-jsonl",
+    "version": "0.1.0",
+    "digest": "sha256:6c01da6f343fa8e671962f14df015450fdf2327690147413310c8b0242241804"
+  },
+  "adapter_spec": {
+    "id": "native-jsonl",
+    "version": "0.1.0",
+    "title": "Native sim-event JSONL",
+    "description": "The identity adapter: renders each native sim-event-v0.1 record as one JSONL line, field for field. The trivial case every other adapter is measured against, and the format the reference consumer reads by default.",
+    "encoding": "jsonl",
+    "record": {
+      "fields": [
+        {
+          "name": "seq",
+          "from": {
+            "op": "source",
+            "source": "seq"
+          }
+        },
+        {
+          "name": "world_id",
+          "from": {
+            "op": "source",
+            "source": "world_id"
+          }
+        },
+        {
+          "name": "entity_type",
+          "from": {
+            "op": "source",
+            "source": "entity_type"
+          }
+        },
+        {
+          "name": "entity_id",
+          "from": {
+            "op": "source",
+            "source": "entity_id"
+          }
+        },
+        {
+          "name": "channel",
+          "from": {
+            "op": "source",
+            "source": "channel"
+          }
+        },
+        {
+          "name": "event_time",
+          "from": {
+            "op": "format_time",
+            "layout": "rfc3339_nano",
+            "of": {
+              "op": "source",
+              "source": "event_time"
+            }
+          }
+        },
+        {
+          "name": "observed_time",
+          "from": {
+            "op": "format_time",
+            "layout": "rfc3339_nano",
+            "of": {
+              "op": "source",
+              "source": "observed_time"
+            }
+          }
+        },
+        {
+          "name": "value",
+          "from": {
+            "op": "source",
+            "source": "value"
+          },
+          "omit_when_null": true
+        },
+        {
+          "name": "unit",
+          "from": {
+            "op": "source",
+            "source": "unit"
+          },
+          "omit_when_null": true
+        },
+        {
+          "name": "birth",
+          "from": {
+            "op": "source",
+            "source": "birth"
+          },
+          "omit_when_null": true
+        }
+      ]
+    },
+    "conformance": {
+      "output_schema": "vendor/streamsim/sim-event-v0.1.schema.json",
+      "golden": "golden/native-jsonl.jsonl"
+    }
+  },
+  "time_mode": "stepped",
+  "world_config": {
+    "start_time_ns": 1767225600000000000,
+    "entity_ids": [
+      "site-a/pond-1",
+      "site-a/pond-2",
+      "site-a/pond-3",
+      "site-a/pond-4",
+      "site-a/pond-5",
+      "site-a/pond-6",
+      "site-a/pond-7",
+      "site-a/pond-8"
+    ],
+    "force_failure_mode": "silent_no_effect"
+  },
+  "world_digest": "sha256:5c7456ac4fe6b8b6d703efd5b558dbac5cb9b6bc5d59fcc6b3998d23882b61d9",
+  "command_log": [
+    {
+      "seq": 0,
+      "at_ns": 1767225600000000000,
+      "op": "fault.inject",
+      "args": {
+        "entity_id": "site-a/pond-1",
+        "fault": "aerator_failure",
+        "onset_ns": 1767225630000000000,
+        "params": null
+      }
+    },
+    {
+      "seq": 1,
+      "at_ns": 1767225600000000000,
+      "op": "perturb.apply",
+      "args": {
+        "from_ns": 1767225650000000000,
+        "params": {
+          "rate": 1.0
+        },
+        "perturbation": "drop",
+        "until_ns": 1767225662000000000
+      }
+    },
+    {
+      "seq": 2,
+      "at_ns": 1767225600000000000,
+      "op": "perturb.apply",
+      "args": {
+        "from_ns": 1767225662000000000,
+        "params": {
+          "rate": 0.5
+        },
+        "perturbation": "duplicate_burst",
+        "until_ns": 1767225720000000000
+      }
+    },
+    {
+      "seq": 3,
+      "at_ns": 1767225600000000000,
+      "op": "effector.invoke",
+      "args": {
+        "args": {
+          "level": 1.0,
+          "pond_id": "site-a/pond-1"
+        },
+        "at_ns": 1767225640000000000,
+        "command_id": "act-1",
+        "effector": "start_aerator",
+        "entity_id": "site-a/pond-1"
+      }
+    },
+    {
+      "seq": 4,
+      "at_ns": 1767225600000000000,
+      "op": "effector.invoke",
+      "args": {
+        "args": {
+          "level": 0.5,
+          "pond_id": "site-a/pond-2"
+        },
+        "at_ns": 1767225700000000000,
+        "command_id": "act-2",
+        "effector": "start_aerator",
+        "entity_id": "site-a/pond-2"
+      }
+    },
+    {
+      "seq": 5,
+      "at_ns": 1767225720000000000,
+      "op": "clock.advance",
+      "args": {
+        "await_consumer": false,
+        "to_ns": 1767225720000000000
+      }
+    }
+  ],
+  "expected_trace_digest": "sha256:8dc7384ce72c35382466ad0cf5c6092b2287cea91a0d62c6fde4464392ed0014",
+  "reproducible": true,
+  "platform": {
+    "goos": "darwin",
+    "goarch": "arm64",
+    "go_version": "go1.27.2"
+  },
+  "counts": {
+    "emitted": 52,
+    "perturbed": 33,
+    "dropped_by_design": 32,
+    "effector_calls": 2,
+    "faults_injected": 1
+  },
+  "applied_perturbations": [
+    "drop",
+    "duplicate_burst"
+  ],
+  "mode": "evaluate",
+  "journal_digest": "sha256:a162e96357eb16362aa4977e7760223a473cdd5d12cad7932e90a0ca50de51d0",
+  "sealed_journal_digest": "sha256:c4db42470bc98dcb32abe365f82a5e12c9b238626d75c002dfe0ec1aae96e4e0"
+}

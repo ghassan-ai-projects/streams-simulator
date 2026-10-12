@@ -12,7 +12,32 @@ import (
 // schema cannot express these.
 func crossCheck(c *Compiled, src string) error {
 	checks := domainChecks{compiled: c, source: src}
-	for _, check := range []func() error{checks.checkChannels, checks.checkDynamics, checks.checkDynamicsGraph, checks.checkFaults, checks.checkEffectors, checks.checkProfiles} {
+	if err := checks.checkInstances(); err != nil {
+		return err
+	}
+	for i := range c.Spec.Kinds {
+		if err := checks.inKind(i).checkKind(); err != nil {
+			return err
+		}
+	}
+	return checks.checkProfiles()
+}
+
+type domainChecks struct {
+	compiled *Compiled
+	kind     *model.Kind
+	source   string
+	at       string
+}
+
+func (checks domainChecks) inKind(index int) domainChecks {
+	checks.kind = &checks.compiled.Spec.Kinds[index]
+	checks.at = itemPointer("kinds", index)
+	return checks
+}
+
+func (checks domainChecks) checkKind() error {
+	for _, check := range []func() error{checks.checkChannels, checks.checkDynamics, checks.checkDynamicsGraph, checks.checkFaults, checks.checkEffectors} {
 		if err := check(); err != nil {
 			return err
 		}
@@ -20,70 +45,54 @@ func crossCheck(c *Compiled, src string) error {
 	return nil
 }
 
-type domainChecks struct {
-	compiled *Compiled
-	source   string
+func (checks domainChecks) within(at string) domainChecks {
+	checks.at = at
+	return checks
 }
 
-func (checks domainChecks) bad(format string, args ...any) error {
-	return invalidDomain(checks.source, fmt.Sprintf(format, args...))
+func (checks domainChecks) bad(member, format string, args ...any) error {
+	return invalidDomain(checks.source, checks.at+member, fmt.Sprintf(format, args...))
 }
 
-// invalidDomain reports a domain that breaks a rule the contract schema cannot
-// express. The location is not tracked yet, so the issue is unlocated.
-func invalidDomain(src, message string) *model.ValidationError {
+func invalidDomain(src, pointer, message string) *model.ValidationError {
 	return &model.ValidationError{Contract: model.ContractDomainSpec, Source: src,
-		Summary: fmt.Sprintf("domain: %s: %s", src, message), Issues: []model.Issue{model.UnlocatedIssue(message)}}
+		Summary: fmt.Sprintf("domain: %s: %s", src, message), Issues: []model.Issue{model.LocatedIssue(pointer, message)}}
+}
+
+func (checks domainChecks) each(section string, count int, check func(domainChecks, int) error) error {
+	for i := 0; i < count; i++ {
+		if err := check(checks.within(checks.at+itemPointer(section, i)), i); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (checks domainChecks) checkChannels() error {
-	for i := range checks.compiled.Spec.Channels {
-		if err := checks.checkChannel(&checks.compiled.Spec.Channels[i]); err != nil {
-			return err
-		}
-	}
-	return nil
+	kind := checks.kind
+	return checks.each("channels", len(kind.Channels), func(at domainChecks, i int) error { return at.checkChannel(&kind.Channels[i]) })
 }
 
 func (checks domainChecks) checkDynamics() error {
-	for i := range checks.compiled.Spec.Dynamics {
-		if err := checks.checkDynamic(&checks.compiled.Spec.Dynamics[i]); err != nil {
-			return err
-		}
-	}
-	return nil
+	kind := checks.kind
+	return checks.each("dynamics", len(kind.Dynamics), func(at domainChecks, i int) error { return at.checkDynamic(&kind.Dynamics[i]) })
 }
 
 func (checks domainChecks) checkDynamicsGraph() error {
-	if err := rejectDynamicsCycles(checks.compiled.Spec, checks.compiled, checks.source); err != nil {
-		return err
-	}
-	return nil
+	return rejectDynamicsCycles(checks.kind, checks.at, checks.compiled, checks.source)
 }
 
 func (checks domainChecks) checkFaults() error {
-	for i := range checks.compiled.Spec.Faults {
-		if err := checks.checkFault(&checks.compiled.Spec.Faults[i]); err != nil {
-			return err
-		}
-	}
-	return nil
+	kind := checks.kind
+	return checks.each("faults", len(kind.Faults), func(at domainChecks, i int) error { return at.checkFault(&kind.Faults[i]) })
 }
 
 func (checks domainChecks) checkEffectors() error {
-	for i := range checks.compiled.Spec.Effectors {
-		if err := checks.checkEffector(&checks.compiled.Spec.Effectors[i]); err != nil {
-			return err
-		}
-	}
-	return nil
+	kind := checks.kind
+	return checks.each("effectors", len(kind.Effectors), func(at domainChecks, i int) error { return at.checkEffector(&kind.Effectors[i]) })
 }
 
 func (checks domainChecks) checkProfiles() error {
-	for i := range checks.compiled.Spec.Profiles {
-		if err := checks.checkProfile(&checks.compiled.Spec.Profiles[i]); err != nil {
-			return err
-		}
-	}
-	return nil
+	spec := checks.compiled.Spec
+	return checks.each("profiles", len(spec.Profiles), func(at domainChecks, i int) error { return at.checkProfile(&spec.Profiles[i]) })
 }

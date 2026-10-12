@@ -12,7 +12,7 @@ func (w *World) Reading(entityID, channelName string, t int64) float64 {
 	if ent == nil || !ent.alive {
 		return 0
 	}
-	ch := w.Spec.Channel(channelName)
+	ch := ent.kind.ChannelDecl(channelName)
 	if ch == nil {
 		return 0
 	}
@@ -96,7 +96,7 @@ func (w *World) emissionChannel(entity, channel string) (*Entity, *model.Channel
 	if ent == nil || !ent.alive {
 		return nil, nil, nil
 	}
-	ch := w.Spec.Channel(channel)
+	ch := ent.kind.ChannelDecl(channel)
 	if ch == nil {
 		return nil, nil, nil
 	}

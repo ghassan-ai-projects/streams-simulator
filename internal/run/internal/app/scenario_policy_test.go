@@ -149,3 +149,19 @@ func TestAWorldTheSettingsCannotCreateIsAViolation(t *testing.T) {
 		t.Fatalf("CheckScenario = %+v, want one issue at /world naming the mode", err)
 	}
 }
+
+func TestAScenarioWithEntityIdsOutsideTheDomainInstancesIsAViolation(t *testing.T) {
+	t.Parallel()
+	cfg := pondConfig(t)
+	scenario := &model.Scenario{ID: "bad-ids", World: model.ScenarioWorld{StartTimeNS: cfg.StartTimeNS, EntityIDs: []string{"site-a/pond-1", "tank-9"}}}
+	err := CheckScenario(context.Background(), ScenarioConfig(scenario, cfg.Domain, cfg.Adapter, model.SinkInproc, ""), scenario)
+	var invalid *model.ValidationError
+	if !errors.As(err, &invalid) || len(invalid.Issues) != 1 || invalid.Issues[0].Pointer != "/world" ||
+		!strings.Contains(invalid.Issues[0].Message, `entity id "tank-9" does not fit instance id template`) {
+		t.Fatalf("CheckScenario = %+v, want one issue at /world naming the id", err)
+	}
+	cfg.EntityIDs = []string{"tank-9"}
+	if _, err := New(context.Background(), cfg); err == nil || !strings.Contains(err.Error(), "does not fit instance id template") {
+		t.Fatalf("New = %v, want a refusal of the entity id outside the instances", err)
+	}
+}

@@ -26,15 +26,12 @@ func (w *World) naturalValue(ent *Entity, stateName string, t int64) float64 {
 	if s == nil {
 		return 0
 	}
-	return w.naturalStateValue(ent, stateName, s, w.dynamicsFor(stateName), t)
+	return w.naturalStateValue(ent, stateName, s, ent.kind.DynamicsOf(stateName), t)
 }
 
 func (w *World) initial(ent *Entity, stateName string) float64 {
-	for i := range w.Spec.Spec.State {
-		st := &w.Spec.Spec.State[i]
-		if st.Name == stateName {
-			return st.Initial
-		}
+	if st := ent.kind.StateDecl(stateName); st != nil {
+		return st.Initial
 	}
 	return 0
 }

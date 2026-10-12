@@ -4,6 +4,56 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **Multi-kind world** (`docs/design/DOMAIN_SPEC_V0_2.md` §2.3 and §3; phase P5a2, finding R5a-01). A domain may declare
+  several **kinds** and several **instance sets**, each set following a kind with its own `id_template`, `count` and
+  `churn`; the `maxItems: 1` limits on `kinds` and `instances` are lifted. Channel, fault and effector names are unique
+  across the domain, state names are unique within a kind, and every reference (observes, dynamics, affects, effects,
+  detector channels, expected effector, confirmation channels) resolves inside its own kind; a kind with no instance
+  set is refused. The validated document is now the runtime form (`model.DomainSpec` holds `Kinds` and `Instances`; the
+  P5a lowering is removed). Each world entity carries its kind, which selects its state, dynamics, channels, faults and
+  effectors: injecting a fault or invoking an effector on an entity of another kind is refused, a peer-residual
+  detector pools only the entity's kind, a suite scenario draws its entity from the fault's kind and the audit uses
+  that kind's channels and control fault. Single-kind domains are bit-identical (runtime-equivalence digests,
+  trace, ledger and history in the behaviour pin). **Behaviour changes:** `catalog describe` prints the v0.2 document
+  (`kinds`, `instances`) instead of the flat runtime shape; an explicit entity-id list is matched to an instance set
+  and counted per set; `world.RenderID` is replaced by `world.PopulationIDs`.
+
+- **Domain spec v0.2, kinds and instances** (`docs/design/DOMAIN_SPEC_V0_2.md`, `domain-spec-v0.2`, replacing
+  `domain-spec-v0.1`; phase P5a). A domain declares one **kind** (the entity template: state, dynamics, channels,
+  faults, effectors; its name is the `entity_type`) and one **instance set** (`id_template`, `count`, `churn`) that
+  follows it. The document compiles to the v0.1-shaped runtime form, so the world, perturbation, adapter, truth,
+  score and run code are unchanged; the eight shipped domains are rewritten and each compiles to the runtime world
+  its v0.1 form produced (the recorded trace, ledger, world-state history, replay and suite outputs are
+  byte-identical). **Behaviour changes:** `domain_digest` is the digest of the v0.2 document (every shipped domain's
+  digest, every run artifact's `domain_spec` and `world_digest` change once); `sim_version` is `0.3.0`; run artifacts
+  recorded before this change no longer replay (their `domain_spec` is v0.1); `catalog describe` prints the runtime
+  form and the new digest.
+- `streamsim domain format <path>` rewrites a valid domain file in the canonical layout (stable member order,
+  line-fitting objects) and prints `{formatted, changed, digest}`; idempotent, digest unchanged, an invalid
+  document is refused and left untouched. `cli-output-v0.1` gains `domain_format`.
+- **Validation issues are located** (findings R1-01, R0-10, S15): a "missing required property" or "additional
+  property" issue from any contract points at the member, not its parent, and every domain cross-reference issue
+  carries a JSON pointer into the v0.2 document (for example `/kinds/0/channels/1/observes`). Domain cross-checks
+  also reject a `count.default` outside `count.min`..`count.max`.
+- **Explicit entity ids are checked** (finding R2-02): a scenario's `world.entity_ids` and the director's world
+  creation must fit the domain's instance id template and count bounds; a violation refuses the world (a scenario
+  violation at `/world`).
+
+- **Run report** (`docs/design/RUN_REPORT.md`, `run-report-v0.1`, new `internal/report` module):
+  `streamsim report <run-dir> [--format json|markdown] [--out <file>]` summarises a run folder as one
+  deterministic document, a pure function of its files: identity and inputs, recorded digests,
+  `verification` (do the files still agree with the recorded digests; not a replay), delivery counts
+  with drop reasons from the ledger, faults, perturbations, environment faults and effector calls
+  with the world's real outcomes from the command log, mode (`evaluate` or `explore`), whether the
+  run is complete and ended, the consumer from `verdict.json` (its `config_digest` only when the
+  verdict recorded one) and the scorecard when `verdict.json` and `label.json` are present. The
+  truth sections appear only for a run that has ended or an Explore run; the report of an open
+  Evaluate run reads neither the ledger nor `sealed/`, so it cannot be used to read ahead. JSON is the command's one stdout document; Markdown
+  requires `--out` and stdout then names the file (`{report_written, format}`), keeping stdout one
+  JSON document. `cli-output-v0.1` gains `report` and `report_written` and the `report_failed` code.
+- `grading.Options` with no domains or adapters directory now grades from the domain and adapter the
+  artifact embeds (`run.EmbeddedInputs`); `streamsim score` still passes its directories.
+
 - **Run journal** (`docs/design/RUN_JOURNAL.md`, `run-journal-v0.1`, new `internal/journal` module):
   two append-only JSON Lines streams written while a run happens. The observer stream
   (`journal.jsonl`) holds what a consumer could know: the run's identity, every delivered

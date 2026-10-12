@@ -2,6 +2,7 @@ package domain
 
 import (
 	"math"
+	"slices"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/randutil"
@@ -43,9 +44,9 @@ func mtbfSeconds(uptime, mttr float64) float64 {
 // isConfirmationChannel reports whether the channel independently reports an
 // effector's physical effect (the confirmation_channels declarations).
 func (w *World) isConfirmationChannel(name string) bool {
-	for i := range w.Spec.Spec.Effectors {
-		for _, c := range w.Spec.Spec.Effectors[i].ConfirmationChannels {
-			if c == name {
+	for k := range w.Spec.Spec.Kinds {
+		for _, effector := range w.Spec.Spec.Kinds[k].Effectors {
+			if slices.Contains(effector.ConfirmationChannels, name) {
 				return true
 			}
 		}

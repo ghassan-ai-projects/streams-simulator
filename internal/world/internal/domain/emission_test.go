@@ -11,14 +11,14 @@ import (
 func TestEmitterReceivesEvents(t *testing.T) {
 	t.Parallel()
 	spec := testSpec(t, func(s *model.DomainSpec) {
-		s.Dynamics = nil
-		s.Channels = []model.Channel{{
+		s.Kinds[0].Dynamics = nil
+		s.Kinds[0].Channels = []model.Channel{{
 			Name: "heartbeat", ValueType: "none", Resolution: 1,
 			Fidelity: "F0", Absence: "signal",
 			Cadence: model.Cadence{Mode: "periodic", PeriodS: 60},
 			Noise:   model.Noise{Model: "none", Sigma: 0},
 		}}
-		s.Faults[0].Observability.Detector.Channel = "heartbeat"
+		s.Kinds[0].Faults[0].Observability.Detector.Channel = "heartbeat"
 	})
 	start := model.DefaultStartTimeNS
 	w, err := New(spec, 1, "w-evt", start, Options{})
@@ -57,9 +57,9 @@ func TestEmitterReceivesEvents(t *testing.T) {
 func TestObservedTimesAreStrictlyIncreasingAcrossEmissionTies(t *testing.T) {
 	t.Parallel()
 	spec := testSpec(t, func(s *model.DomainSpec) {
-		s.Entities.Count.Default = 2
-		s.Faults[0].Observability.Detector.Channel = "slow"
-		s.Channels = []model.Channel{
+		s.Instances[0].Count.Default = 2
+		s.Kinds[0].Faults[0].Observability.Detector.Channel = "slow"
+		s.Kinds[0].Channels = []model.Channel{
 			{
 				Name: "slow", ValueType: "number", Unit: "u", Resolution: 0.01,
 				Fidelity: "F0", Absence: "signal", Observes: "x",
@@ -110,14 +110,14 @@ func TestObservedTimesAreStrictlyIncreasingAcrossEmissionTies(t *testing.T) {
 func TestSubstreamIsolation(t *testing.T) {
 	t.Parallel()
 	spec := testSpec(t, func(s *model.DomainSpec) {
-		s.Dynamics = nil
-		s.Channels = []model.Channel{{
+		s.Kinds[0].Dynamics = nil
+		s.Kinds[0].Channels = []model.Channel{{
 			Name: "v", ValueType: "number", Unit: "u", Resolution: 0.01,
 			Fidelity: "F0", Absence: "signal",
 			Cadence: model.Cadence{Mode: "periodic", PeriodS: 60, JitterS: 2},
 			Noise:   model.Noise{Model: "gaussian", Sigma: 0.5},
 		}}
-		s.Faults[0].Observability.Detector.Channel = "v"
+		s.Kinds[0].Faults[0].Observability.Detector.Channel = "v"
 	})
 	run := func(entities []string) []model.SimEvent {
 		w, err := New(spec, 99, "w-iso", model.DefaultStartTimeNS, Options{InitialEntities: entities})

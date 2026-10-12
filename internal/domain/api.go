@@ -4,12 +4,15 @@ import (
 	"errors"
 
 	layer "github.com/ghassan-ai-projects/streams-simulator/internal/domain/internal/domain"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/domain/internal/files"
 )
 
 // Compiled is the typed, validated, digest-carrying form of a domain spec:
 // the spec, its canonical digest, the validated source document, and
 // read-only lookups over its declared names.
 type Compiled = layer.Compiled
+
+type FormatResult = files.FormatResult
 
 // Entry is one catalog row.
 type Entry = layer.Entry

@@ -47,12 +47,7 @@ func faultFor(ev Evidence, label string) *model.Fault {
 	if ev.Domain == nil {
 		return nil
 	}
-	for i := range ev.Domain.Spec.Faults {
-		if ev.Domain.Spec.Faults[i].ID == label {
-			return &ev.Domain.Spec.Faults[i]
-		}
-	}
-	return nil
+	return ev.Domain.Fault(label)
 }
 
 type historySample struct {

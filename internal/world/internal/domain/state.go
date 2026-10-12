@@ -63,11 +63,7 @@ func (w *World) shadowValue(entity, state string, t int64) float64 {
 }
 
 func (w *World) clampState(ent *Entity, state string, v float64) float64 {
-	for i := range w.Spec.Spec.State {
-		st := &w.Spec.Spec.State[i]
-		if st.Name != state {
-			continue
-		}
+	if st := ent.kind.StateDecl(state); st != nil {
 		return clampToBounds(v, st.Min, st.Max)
 	}
 	return v
@@ -123,8 +119,8 @@ func (s *stateValue) delayedValue(current float64) float64 {
 }
 
 // dtFor returns the integration step for a state (ns), or 0.
-func (w *World) dtFor(state string) int64 {
-	dyn := w.dynamicsFor(state)
+func dtFor(kind *model.Kind, state string) int64 {
+	dyn := kind.DynamicsOf(state)
 	if dyn == nil || (dyn.Tier != "F1" && dyn.Tier != "F2") {
 		return 0
 	}

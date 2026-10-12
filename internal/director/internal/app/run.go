@@ -217,15 +217,7 @@ func (d *Director) verifyArtifact(art *model.RunArtifact, spec *domain.Compiled,
 }
 
 func auditEntityIDs(spec *domain.Compiled) []string {
-	var ids []string
-	n := spec.Spec.Entities.Count.Default
-	// Entity ids come from the domain's own template — the binary contains
-	// no domain literal.
-	tmpl := spec.Spec.Entities.IDTemplate
-	for i := 1; i <= n; i++ {
-		ids = append(ids, world.RenderID(tmpl, i))
-	}
-	return ids
+	return world.PopulationIDs(spec, 0)
 }
 
 // scoringEvidence packs a closed run into the scorer's input.

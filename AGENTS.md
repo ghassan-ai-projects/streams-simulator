@@ -69,6 +69,7 @@ The documented shape (see [docs/design/TECHNICAL_DESIGN.md](docs/design/TECHNICA
 - `internal/mcp` - protocol only: one MCP server, two roles, `director` (catalog, world, clock, fault, perturb, truth) and `operator` (nameplate, effectors, invoke, verdict); tool definitions, schemas, argument decoding and transport (`mcp.ServeDirector`: stdio session plus the operator HTTP endpoint, in the `transport` edge); it calls `director` and holds no rule (`test/architecture/mcp_protocol_test.go`)
 - `internal/run` - run orchestration, delivery ledger, artifacts, replay, and quiescence, scenario checking, running, replay and export from files (`run.RunScenario`, `run.ReplayFile`, `run.ExportScenarioFile`), and resolving the domain and adapter a run names (`run.LoadInputs`); there is no separate `internal/ledger` package
 - `internal/journal` - the run journal (`run-journal-v0.1`): observer and director JSON Lines streams written while a run happens
+- `internal/report` - the run report (`run-report-v0.1`): one deterministic JSON or Markdown document summarising a run folder (composes `run`, `journal` and `grading`)
 - `internal/grading` - offline grading of a finished run: loads the published files, replays the artifact for its effector calls and scores with `score` (composes `run` and `score`, which do not know each other)
 - `internal/release` - the release manifest: file digests, canonical body, ed25519 signature, writing
 - `internal/truth` - sealed ground truth and independent analytic solver
@@ -81,9 +82,9 @@ The documented shape (see [docs/design/TECHNICAL_DESIGN.md](docs/design/TECHNICA
 
 Dependency direction:
 
-- `cmd` -> `cli` -> the facades it wires (`mcp`, `run`, `suite`, `grading`, `release`, `refconsumer`, `device`, `deviceworld`, `domain`, `adapter`, `model`)
+- `cmd` -> `cli` -> the facades it wires (`mcp`, `run`, `suite`, `grading`, `report`, `release`, `refconsumer`, `device`, `deviceworld`, `domain`, `adapter`, `model`)
 - `mcp` -> `director`; `director` composes `run`/`score`/`truth`/`audit`/`world`; `mcp` imports none of those directly
-- `grading` -> `run`/`score`; the CLI holds no business logic, only flags, documents and failures
+- `grading` -> `run`/`score`; `report` -> `grading`/`run`/`journal`; the CLI holds no business logic, only flags, documents and failures
 - `run` composes `world`/`perturb`/`adapter`/`sink`; truth and scoring consume world/evidence. `deviceworld` bridges `device` and `world` without either core importing the bridge.
 - Dependencies flow downward only.
 - Domain specs, adapters, and effectors are **data** (JSON), never code. If any domain needs a code branch in the binary, the simulator is wrong and the domain found the bug.
@@ -134,7 +135,7 @@ a round are added to `DEFERRED.md`, not fixed in the same commit.
 
 - Every Go source file, including tests, must be at most **300 total lines** (comments and blank lines count). Split files by a named responsibility within their owning package; do not split functions arbitrarily or compress code to meet the limit.
 - Function names state domain intent. Each function performs one task at one abstraction level. Entry points read as a sequence of simulator operations; put parsing, serialization, record bookkeeping, and concrete mechanics in named steps below their callers.
-- Every production Go function, method and anonymous function must have at most **15 physical body lines**, from the opening brace through the closing brace, including comments and blank lines. Test functions are excluded from this limit. Keep private helpers in stepdown reading order. Extract named responsibilities; do not compress statements or remove useful comments to meet the limit.
+- Every production Go function, method and anonymous function must have at most **15 physical body lines**, from the opening brace through the closing brace, including comments and blank lines. Test functions are excluded from this limit. Keep private helpers in stepdown reading order. Extract named responsibilities; do not compress statements to meet the limit.
 - Apply function-length refactoring to production source only; leave test files unchanged and use the existing tests to validate behavior.
 - Packages own simulator responsibilities, not generic controller/service/store layers. Preserve the world → perturbation → adapter → sink pipeline and director/operator truth boundary. Create a package only for a distinct responsibility with a concrete caller and a downward dependency direction.
 - Preserve exported signatures, JSON shapes, errors, command/delivery order, RNG draws, digest inputs, locks, cancellation, and effects during refactoring. Record intentional corrections separately and prove them with regression tests.
@@ -147,7 +148,7 @@ a round are added to `DEFERRED.md`, not fixed in the same commit.
 - Keep handlers thin; business logic lives in `world`/`perturb`/`adapter`/`truth`, not in MCP handlers.
 - Prefer standard library helpers such as `cmp`, `maps`, and `slices`.
 - Prefer existing package boundaries and local helpers over new abstractions.
-- Document exported symbols.
+- Comments: as few as possible. Each package has its one-line package doc comment (gated); otherwise state intent through names and structure, and add a single short line only where a non-obvious rule cannot be expressed in code. Do not add doc comments to exported symbols by default.
 - Use table-driven tests with `t.Run()` and `t.Parallel()` where safe.
 - Use `t.Context()` in tests when appropriate.
 - RFC 8785 canonical JSON everywhere a digest is computed.

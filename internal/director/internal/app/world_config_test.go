@@ -57,3 +57,21 @@ func TestCreateWorldRefusesAProfileTheDomainDoesNotDeclare(t *testing.T) {
 		t.Fatalf("CreateWorld = %v, want domain_invalid naming the unknown profile", err)
 	}
 }
+
+func TestCreateWorldRefusesEntityIdsThatDoNotFitTheDomainInstances(t *testing.T) {
+	t.Parallel()
+	d := newTestDirector(t)
+	if _, err := d.CreateWorld(WorldRequest{Domain: "aquaculture-pond", Entities: []string{"tank-9"}}); err == nil ||
+		!strings.Contains(err.Error(), `entity id "tank-9" does not fit instance id template`) {
+		t.Fatalf("CreateWorld = %v, want a refusal naming the id and the template", err)
+	}
+	created, err := d.CreateWorld(WorldRequest{Domain: "aquaculture-pond", Entities: []string{"site-a/pond-4"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if _, err := d.World(created["world_id"].(string)).Run.End(""); err != nil {
+			t.Error(err)
+		}
+	})
+}

@@ -40,3 +40,11 @@ const (
 	ObserverFile = layer.ObserverFile
 	DirectorFile = layer.DirectorFile
 )
+
+const (
+	TypeRunOpened       = layer.TypeRunOpened
+	TypeObservation     = layer.TypeObservation
+	TypeClockAdvanced   = layer.TypeClockAdvanced
+	TypeCommand         = layer.TypeCommand
+	TypeEffectorOutcome = layer.TypeEffectorOutcome
+)

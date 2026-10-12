@@ -39,7 +39,7 @@ func (s *Solver) conservationDeviation(entity string, det *model.Detector, clean
 func peerReadings(entity, channel string, w *world.World, at int64) (float64, int) {
 	var sum float64
 	count := 0
-	for _, id := range w.EntityIDs() {
+	for _, id := range w.PeerIDs(entity) {
 		if id == entity {
 			continue
 		}

@@ -113,6 +113,25 @@ func TestOfflineScoreEqualsTheOnlineScoreOfTheSameRun(t *testing.T) {
 	}
 }
 
+func TestGradeFromTheEmbeddedSpecsEqualsGradeFromTheDirectories(t *testing.T) {
+	t.Parallel()
+	testsupport.SkipUnderRace(t, "runs, replays and grades one world on one goroutine")
+	dir := t.TempDir()
+	_, gt := closedLoopRun(t, dir)
+	label := writeLabel(t, dir, gt)
+	fromDirectories, err := Grade(t.Context(), gradeOptions(dir, label))
+	if err != nil {
+		t.Fatal(err)
+	}
+	embedded, err := Grade(t.Context(), Options{Artifact: filepath.Join(dir, "run.json"), Label: label})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(embedded, fromDirectories) {
+		t.Fatalf("embedded scorecard differs\nembedded:    %+v\ndirectories: %+v", embedded, fromDirectories)
+	}
+}
+
 func TestGradeRefusesAnArtifactWhoseReplayDoesNotReproduce(t *testing.T) {
 	t.Parallel()
 	testsupport.SkipUnderRace(t, "runs, replays and grades one world on one goroutine")

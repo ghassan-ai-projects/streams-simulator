@@ -21,7 +21,7 @@ func TestEveryDomainRejectionIsAValidationErrorNamingItsSource(t *testing.T) {
 	}{
 		{"not JSON", "{", false},
 		{"schema violation", `{"id":"x"}`, true},
-		{"cross-reference", string(breakChannelReference(t, example)), false},
+		{"cross-reference", string(breakChannelReference(t, example)), true},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -59,7 +59,9 @@ func breakChannelReference(t *testing.T, c *Compiled) []byte {
 	if err := json.Unmarshal(raw, &doc); err != nil {
 		t.Fatal(err)
 	}
-	channels, _ := doc["channels"].([]any)
+	kinds, _ := doc["kinds"].([]any)
+	kind, _ := kinds[0].(map[string]any)
+	channels, _ := kind["channels"].([]any)
 	first, _ := channels[0].(map[string]any)
 	first["observes"] = "no_such_state"
 	broken, err := json.Marshal(doc)

@@ -1,0 +1,201 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://streams-simulator.local/schemas/run-report-v0.1.schema.json",
+  "title": "Streams Simulator Run Report v0.1",
+  "description": "The report `streamsim report <run-dir>` prints: one document summarising a run folder, a pure function of its files. It carries truth (seed, faults, perturbations, drop reasons, real effector outcomes), so the truth object is present only for a sealed run or an Explore run. See docs/design/RUN_REPORT.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "run", "verification", "counts"],
+  "properties": {
+    "schema_version": {"const": "0.1"},
+    "run": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "complete", "ended", "unblinded"],
+      "properties": {
+        "run_id": {"type": "string", "minLength": 1},
+        "mode": {"enum": ["evaluate", "explore"]},
+        "complete": {"type": "boolean"},
+        "incomplete_reason": {"type": "string", "minLength": 1},
+        "ended": {"type": "boolean", "description": "True when run.json exists: the run ended and its truth may be read."},
+        "unblinded": {"type": "boolean"},
+        "sim_version": {"type": "string"},
+        "domain": {"$ref": "#/$defs/reference"},
+        "adapter": {"$ref": "#/$defs/reference"},
+        "seed": {"type": "integer", "minimum": 0, "maximum": 18446744073709551615, "description": "Present only with the truth object."},
+        "sink": {"type": "string"},
+        "time_mode": {"type": "string"},
+        "start_time_ns": {"type": "integer"},
+        "end_time_ns": {"type": "integer"},
+        "entity_count": {"type": "integer", "minimum": 0}
+      }
+    },
+    "digests": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Digests exactly as run.json recorded them; one the run did not record is absent.",
+      "properties": {
+        "world": {"$ref": "#/$defs/digest"},
+        "trace": {"$ref": "#/$defs/digest"},
+        "journal": {"$ref": "#/$defs/digest"},
+        "sealed_journal": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "checks"],
+      "description": "Whether the files in the folder agree with the digests the run recorded. Not a replay: `streamsim verify` is.",
+      "properties": {
+        "status": {"enum": ["files_match", "files_differ", "not_checked"]},
+        "checks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "status", "recorded"],
+            "properties": {
+              "name": {"enum": ["trace", "journal", "sealed_journal"]},
+              "status": {"enum": ["match", "mismatch", "missing_file"]},
+              "recorded": {"$ref": "#/$defs/digest"},
+              "computed": {"$ref": "#/$defs/digest"}
+            }
+          }
+        }
+      }
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "emitted": {"type": "integer", "minimum": 0},
+        "observed": {"type": "integer", "minimum": 0},
+        "ledger_rows": {"type": "integer", "minimum": 0},
+        "delivered": {"type": "integer", "minimum": 0},
+        "dropped": {"type": "integer", "minimum": 0},
+        "delivered_by_reason": {"$ref": "#/$defs/reason_counts"},
+        "dropped_by_reason": {"$ref": "#/$defs/reason_counts"}
+      }
+    },
+    "truth": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["faults", "perturbations", "environment", "effector_calls"],
+      "properties": {
+        "faults": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["seq", "at_ns", "action"],
+            "properties": {
+              "seq": {"type": "integer", "minimum": 0},
+              "at_ns": {"type": "integer"},
+              "action": {"enum": ["inject", "clear"]},
+              "entity_id": {"type": "string"},
+              "fault": {"type": "string"},
+              "fault_id": {"type": "string"},
+              "onset_ns": {"type": "integer"},
+              "params": {"type": "object"}
+            }
+          }
+        },
+        "perturbations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["seq", "at_ns", "action"],
+            "properties": {
+              "seq": {"type": "integer", "minimum": 0},
+              "at_ns": {"type": "integer"},
+              "action": {"enum": ["apply", "clear"]},
+              "perturbation": {"type": "string"},
+              "perturb_id": {"type": "string"},
+              "from_ns": {"type": "integer"},
+              "until_ns": {"type": "integer"},
+              "params": {"type": "object"}
+            }
+          }
+        },
+        "environment": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["seq", "at_ns", "target", "fault"],
+            "properties": {
+              "seq": {"type": "integer", "minimum": 0},
+              "at_ns": {"type": "integer"},
+              "target": {"type": "string"},
+              "fault": {"type": "string"},
+              "params": {"type": "object"}
+            }
+          }
+        },
+        "effector_calls": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["seq", "at_ns", "command_id", "effector"],
+            "properties": {
+              "seq": {"type": "integer", "minimum": 0},
+              "at_ns": {"type": "integer"},
+              "command_id": {"type": "string"},
+              "effector": {"type": "string"},
+              "entity_id": {"type": "string"},
+              "args": {"type": "object"},
+              "outcome": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "accepted": {"type": "boolean"},
+                  "mode": {"type": "string"},
+                  "effect_applied": {"type": "boolean"},
+                  "ack_latency_ms": {"type": "number"},
+                  "refusal": {"type": "string"}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "consumer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version"],
+      "properties": {
+        "name": {"type": "string"},
+        "version": {"type": "string"},
+        "arm": {"type": "string"},
+        "config_digest": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "scoring": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "status": {"enum": ["scored", "not_scored", "failed"]},
+        "reason": {"type": "string", "minLength": 1},
+        "scorecard": {"type": "object"}
+      }
+    }
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "digest"],
+      "properties": {
+        "id": {"type": "string"},
+        "version": {"type": "string"},
+        "digest": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "reason_counts": {"type": "object", "additionalProperties": {"type": "integer", "minimum": 1}}
+  }
+}

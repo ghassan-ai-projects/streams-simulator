@@ -60,6 +60,6 @@ func decodeSpec(raw []byte, src string) (*model.DomainSpec, error) {
 
 // schemaViolation reports a domain that fails the domain-spec schema.
 func schemaViolation(src string, errs []jsonschema.Error) *model.ValidationError {
-	summary := fmt.Sprintf("domain: %s fails domain-spec-v0.1 validation:\n  %s", src, jsonschema.FormatErrors(errs))
+	summary := fmt.Sprintf("domain: %s fails domain-spec-v0.2 validation:\n  %s", src, jsonschema.FormatErrors(errs))
 	return &model.ValidationError{Contract: model.ContractDomainSpec, Source: src, Summary: summary, Issues: model.SchemaIssues(errs)}
 }

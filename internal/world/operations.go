@@ -88,6 +88,10 @@ func (w *World) EntityIDs() []string {
 	return w.world.EntityIDs()
 }
 
+func (w *World) PeerIDs(entityID string) []string {
+	return w.world.PeerIDs(entityID)
+}
+
 // InitialEntityIDs returns the entities created at world construction, in
 // order (before any churn or entity.add).
 func (w *World) InitialEntityIDs() []string {

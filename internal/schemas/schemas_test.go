@@ -20,7 +20,7 @@ func TestEmbeddedMatchCommitted(t *testing.T) {
 		name string
 		got  []byte
 	}{
-		{"domain-spec-v0.1.schema.json", DomainSpec()},
+		{"domain-spec-v0.2.schema.json", DomainSpec()},
 		{"sim-event-v0.1.schema.json", SimEvent()},
 		{"output-adapter-v0.1.schema.json", OutputAdapter()},
 		{"consumer-verdict-v0.1.schema.json", ConsumerVerdict()},
@@ -28,6 +28,7 @@ func TestEmbeddedMatchCommitted(t *testing.T) {
 		{"run-artifact-v0.1.schema.json", RunArtifact()},
 		{"scenario-v0.1.schema.json", Scenario()},
 		{"run-journal-v0.1.schema.json", RunJournal()},
+		{"run-report-v0.1.schema.json", RunReport()},
 	}
 	for _, tc := range cases {
 		want, err := os.ReadFile(filepath.Join("..", "..", "docs", "contracts", tc.name))
@@ -82,7 +83,7 @@ func TestEmbeddedDomainSchemaValidatesAllShippedDomains(t *testing.T) {
 				t.Fatalf("decode domain: %v", err)
 			}
 			if errs := schema.Validate(doc); len(errs) > 0 {
-				t.Fatalf("domain fails embedded domain-spec-v0.1 schema: %s", errs[0])
+				t.Fatalf("domain fails embedded domain-spec-v0.2 schema: %s", errs[0])
 			}
 		})
 	}

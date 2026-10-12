@@ -6,7 +6,9 @@ A domain is data. The extension workflow should not require a new Go branch.
 
 ## Start from the contract
 
-Read [`docs/contracts/domain-spec-v0.1.schema.json`](../../docs/contracts/domain-spec-v0.1.schema.json) and a committed file under [`domains/`](../../domains/). Identify the axes and runtime behavior the domain is meant to stress before adding fields.
+Read [`docs/contracts/domain-spec-v0.2.schema.json`](../../docs/contracts/domain-spec-v0.2.schema.json), the [kinds and instances semantics](../../docs/design/DOMAIN_SPEC_V0_2.md) and a committed file under [`domains/`](../../domains/). Identify the axes and runtime behavior the domain is meant to stress before adding fields.
+
+A domain declares one or more **kinds** (the template: state, dynamics, channels, faults, effectors) and one or more **instance sets** (the id template, the count bounds and any churn), each following a kind; every kind needs at least one set. The kind name becomes the `entity_type` of every instance. Channel, fault and effector names must be unique across the whole domain, and a state, channel, fault or effector refers only to declarations of its own kind. Explicit entity ids given to a run (a scenario's `world.entity_ids`, the director's world creation) must fit the id template of an instance set and its count bounds.
 
 The design catalog is a planning document, not proof that a domain is shipped. A domain becomes shipped only when it is intentionally committed, loaded by the catalog, covered by schema/conformance tests, and included in the release evidence.
 
@@ -14,9 +16,12 @@ The design catalog is a planning document, not proof that a domain is shipped. A
 
 ```bash
 go run ./cmd/streamsim domain validate domains/my-domain.domain.json
+go run ./cmd/streamsim domain format domains/my-domain.domain.json
 go run ./cmd/streamsim catalog describe my-domain
 go test ./internal/domain/... ./internal/schemas
 ```
+
+`domain format` rewrites the file in the canonical layout (stable member order, line-fitting objects), so a hand edit and a tool edit of the same world produce the same bytes; run it before committing. It never changes the digest. A validation failure reports every issue with a JSON pointer into the document.
 
 Use the exact output digest in review notes. If the domain changes after a run, that run must be treated as a different input set.
 

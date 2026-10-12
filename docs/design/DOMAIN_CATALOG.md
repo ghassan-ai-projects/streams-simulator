@@ -704,7 +704,7 @@ Recorded so the reasoning is not re-litigated:
 
 ## 7. What a domain spec contains
 
-Machine contract: [`domain-spec-v0.1.schema.json`](../contracts/domain-spec-v0.1.schema.json).
+Machine contract: [`domain-spec-v0.2.schema.json`](../contracts/domain-spec-v0.2.schema.json).
 
 ```text
 domain

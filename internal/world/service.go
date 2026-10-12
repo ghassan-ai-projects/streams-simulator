@@ -40,8 +40,6 @@ func KnownFailureMode(mode FailureMode) bool {
 	return layer.KnownFailureMode(mode)
 }
 
-// RenderID renders one entity id from the domain's id template, for hosts
-// that must enumerate a domain's entity ids without building a world.
-func RenderID(tmpl string, n int) string {
-	return layer.RenderID(tmpl, n)
+func PopulationIDs(spec *domain.Compiled, firstSetCount int) []string {
+	return layer.PopulationIDs(spec, firstSetCount)
 }

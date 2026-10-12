@@ -4,7 +4,9 @@
 package files
 
 import (
+	"bytes"
 	"cmp"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -72,4 +74,56 @@ func LoadCatalog(dir string) (*domain.Catalog, error) {
 		return nil, fmt.Errorf("no domains found in %s", dir)
 	}
 	return domain.NewCatalog(specs), nil
+}
+
+type FormatResult struct {
+	Path    string `json:"formatted"`
+	Changed bool   `json:"changed"`
+	Digest  string `json:"digest"`
+}
+
+func Format(path string) (*FormatResult, error) {
+	compiled, err := Load(path)
+	if err != nil {
+		return nil, err
+	}
+	formatted, err := domain.Format(compiled)
+	if err != nil {
+		return nil, fmt.Errorf("domain: %w", err)
+	}
+	changed := !bytes.Equal(compiled.Raw, formatted)
+	if changed {
+		err = writeFormatted(path, formatted)
+	}
+	return &FormatResult{Path: path, Changed: changed, Digest: compiled.Digest}, err
+}
+
+func writeFormatted(path string, content []byte) error {
+	info, err := os.Stat(path)
+	if err != nil {
+		return fmt.Errorf("domain: stat %s: %w", path, err)
+	}
+	temp, err := stageFormatted(path, content, info.Mode().Perm())
+	if err != nil {
+		return err
+	}
+	if err := os.Rename(temp, path); err != nil {
+		_ = os.Remove(temp)
+		return fmt.Errorf("domain: replace %s: %w", path, err)
+	}
+	return nil
+}
+
+func stageFormatted(path string, content []byte, mode os.FileMode) (string, error) {
+	file, err := os.CreateTemp(filepath.Dir(path), ".format-*")
+	if err != nil {
+		return "", fmt.Errorf("domain: stage %s: %w", path, err)
+	}
+	_, writeErr := file.Write(content)
+	closeErr := file.Close()
+	if err := errors.Join(writeErr, closeErr, os.Chmod(file.Name(), mode)); err != nil {
+		_ = os.Remove(file.Name())
+		return "", fmt.Errorf("domain: stage %s: %w", path, err)
+	}
+	return file.Name(), nil
 }

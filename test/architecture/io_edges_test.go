@@ -56,6 +56,7 @@ var ioEdges = map[string]ioEdge{
 
 	"internal/deviceworld/internal/files/files.go": {uses: []string{"import:os"}, why: "device-to-world binding catalog file loading"},
 	"internal/suite/internal/files/files.go":       {uses: []string{"import:os"}, why: "directory and file a generated suite is written to"},
+	"internal/report/internal/files/files.go":      {uses: []string{"import:os"}, why: "the files of a run folder, read to build its report"},
 	"internal/grading/internal/files/files.go":     {uses: []string{"import:os"}, why: "files a run published beside its artifact"},
 	"internal/release/internal/files/files.go":     {uses: []string{"import:os"}, why: "digested release inputs, signing key file and the manifest file"},
 	"internal/refconsumer/internal/files/files.go": {uses: []string{"import:os"}, why: "trace the reference consumer reads and the verdict it writes"},

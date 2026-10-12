@@ -36,7 +36,7 @@ Tools may branch on the exit status or on the presence of `error`.
 {
   "error": {
     "code": "domain_invalid",
-    "message": "domain: domains/x.domain.json fails domain-spec-v0.1 validation: …",
+    "message": "domain: domains/x.domain.json fails domain-spec-v0.2 validation: …",
     "source": "domains/x.domain.json",
     "issues": [ { "pointer": "/channels/2/unit", "message": "missing required property \"unit\"" } ],
     "result": { }
@@ -49,7 +49,7 @@ Tools may branch on the exit status or on the presence of `error`.
 | `code` | Always | Stable code from §3 |
 | `message` | Always | Human-readable cause on one line, without repeated `streamsim:` prefixes; for a contract violation the issues carry the details |
 | `source` | When a file is at fault | The path as given on the command line |
-| `issues` | Validation failures | One entry per violation; `pointer` (RFC 6901) is present when the location is known. Contract-schema violations always carry one; until domain-spec v0.2 (phase P5a) cross-reference checks in domains may omit it |
+| `issues` | Validation failures | One entry per violation; `pointer` (RFC 6901) is present when the location is known. Contract-schema violations always carry one, a "missing required property" or "additional property" issue pointing at the member itself; domain cross-reference issues carry one since domain-spec v0.2 (phase P5a). A document that is not JSON, adapter cross-reference checks and run-flag issues have no location and omit it |
 | `result` | `replay_mismatch`, `adapter_verify_failed` | The command's result document describing the failure (e.g. the replay report with `first_divergence`) |
 
 ## 3. Error codes
@@ -58,7 +58,7 @@ Codes shared with the MCP taxonomy (`MCP_SURFACE.md` §7) mean the same thing on
 
 | Code | Exit | Raised when |
 |---|---|---|
-| `usage_invalid` | 2 | A flag fails to parse; a required verb, argument or flag is missing; a verb or subcommand is unknown; a command or verb is given more positional arguments than it takes; an argument value is malformed or out of range (`--sink`, `--duration`, `--n`, `--window`, `--threshold`); the scenario the `run` flags describe fails its checks (each issue names the flag occurrence and carries no pointer); a flag a `--scenario` file defines is given beside it |
+| `usage_invalid` | 2 | A flag fails to parse; `report --format markdown` without `--out`; a required verb, argument or flag is missing; a verb or subcommand is unknown; a command or verb is given more positional arguments than it takes; an argument value is malformed or out of range (`--sink`, `--duration`, `--n`, `--window`, `--threshold`); the scenario the `run` flags describe fails its checks (each issue names the flag occurrence and carries no pointer); a flag a `--scenario` file defines is given beside it |
 | `file_not_found` | 1 | A path the command reads, writes into, or binds does not exist (an input file, an output's directory, a socket's directory, a file an adapter refers to) |
 | `domain_not_found` | 1 | A domain id is not in the catalog |
 | `adapter_not_found` | 1 | An adapter id is not in the adapters directory. The MCP director reports the same lookup as `adapter_invalid`; the CLI separates an unknown id from an invalid document |
@@ -69,7 +69,7 @@ Codes shared with the MCP taxonomy (`MCP_SURFACE.md` §7) mean the same thing on
 | `replay_mismatch` | 1 | `replay`, `verify` or `score` cannot reproduce the artifact: the trace digest differs (the replay report is the `result`), or the artifact's domain, adapter or world digest no longer matches the inputs (no `result`: nothing was replayed) |
 | `adapter_verify_failed` | 1 | `adapter verify` found a schema or golden divergence, or the adapter declares nothing to check |
 | `io_failed` | 1 | Reading, writing or binding a path failed for a reason other than absence |
-| `<command>_failed` | 1 | Any other failure of that command: `catalog_failed`, `domain_failed`, `adapter_failed`, `run_failed`, `replay_failed`, `verify_failed`, `suite_failed`, `score_failed`, `manifest_failed`, `refconsumer_failed`, `device_failed`, `scenario_failed` |
+| `<command>_failed` | 1 | Any other failure of that command: `catalog_failed`, `domain_failed`, `adapter_failed`, `run_failed`, `replay_failed`, `verify_failed`, `suite_failed`, `score_failed`, `manifest_failed`, `refconsumer_failed`, `device_failed`, `scenario_failed`, `report_failed` |
 
 **Classification precedence** (first match wins): usage, replay or verify mismatch, contract
 violation (by contract: domain → `domain_invalid`, adapter → `adapter_invalid`, scenario →
@@ -85,6 +85,7 @@ modules (`errors.As`/`errors.Is`), never message text.
 | `catalog describe <id>` | `{digest, spec}` |
 | `catalog coverage` | `{by_axis, thin}` |
 | `domain validate <path>` | `{valid: true, id, digest, channels, faults, effectors}` |
+| `domain format <path>` | `{formatted, changed, digest}`; rewrites the file in canonical formatting ([DOMAIN_SPEC_V0_2](DOMAIN_SPEC_V0_2.md) §6) |
 | `adapter list` | `{adapters: [{id, version, encoding, title}]}` |
 | `adapter verify <path>` | `{adapter, schema_checked, schema_ok, golden_checked, golden_match, records}` |
 | `run` | `{run_id, trace_digest, reproducible, emitted, ledger}` |
@@ -93,6 +94,7 @@ modules (`errors.As`/`errors.Is`), never message text.
 | `suite` | `{suite, scenarios, trivial_excluded, terminal_state}` |
 | `scenario from-run <run.json> --out <file>` | `{scenario_written, commands, omitted, refused}` |
 | `score` | The scorecard (`scorecard-bundle`), see `internal/score` |
+| `report <run-dir>` | The report (`run-report-v0.1`, [design](RUN_REPORT.md)); with `--out <file>`, `{report_written, format}` and the file holds the report in the chosen format. `--format markdown` requires `--out`: stdout stays one JSON document, so a Markdown rendering is only ever a file |
 | `refconsumer` | `{verdict_written, detections}` |
 | `manifest` | `{manifest_written, signed, sim}` |
 

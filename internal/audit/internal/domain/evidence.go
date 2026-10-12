@@ -6,19 +6,30 @@ type auditEvidence struct {
 	fault, control map[string][]float64
 }
 
-func (p *Panel) controlFault() string {
-	for i := range p.spec.Spec.Faults {
-		if p.spec.Spec.Faults[i].IsNegativeClass {
-			return p.spec.Spec.Faults[i].ID
+func (p *Panel) controlFault(faultID string) string {
+	kind := p.spec.FaultKind(faultID)
+	if kind == nil {
+		return ""
+	}
+	for i := range kind.Faults {
+		if kind.Faults[i].IsNegativeClass {
+			return kind.Faults[i].ID
 		}
 	}
 	return ""
 }
 
-func (p *Panel) sampleEvidence(clean, faulted map[string][]float64, onset, start, duration int64) auditEvidence {
+func (p *Panel) kindChannels(faultID string) []string {
+	if kind := p.spec.FaultKind(faultID); kind != nil {
+		return p.spec.KindChannelNames(kind.Name)
+	}
+	return p.spec.ChannelNames()
+}
+
+func (p *Panel) sampleEvidence(faultID string, clean, faulted map[string][]float64, onset, start, duration int64) auditEvidence {
 	end := start + duration
 	n := int((end-start)/p.sampleNS) + 1
-	channels := p.spec.ChannelNames()
+	channels := p.kindChannels(faultID)
 	evidence := auditEvidence{labels: make([]float64, n), channels: channels,
 		fault: make(map[string][]float64, len(channels)), control: make(map[string][]float64, len(channels))}
 	for _, channel := range channels {

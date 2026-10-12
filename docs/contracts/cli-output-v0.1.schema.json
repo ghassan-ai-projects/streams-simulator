@@ -9,6 +9,7 @@
     {"$ref": "#/$defs/catalog_describe"},
     {"$ref": "#/$defs/catalog_coverage"},
     {"$ref": "#/$defs/domain_validate"},
+    {"$ref": "#/$defs/domain_format"},
     {"$ref": "#/$defs/adapter_list"},
     {"$ref": "#/$defs/adapter_verify"},
     {"$ref": "#/$defs/run"},
@@ -17,7 +18,9 @@
     {"$ref": "#/$defs/score"},
     {"$ref": "#/$defs/refconsumer"},
     {"$ref": "#/$defs/manifest"},
-    {"$ref": "#/$defs/scenario_export"}
+    {"$ref": "#/$defs/scenario_export"},
+    {"$ref": "#/$defs/report"},
+    {"$ref": "#/$defs/report_written"}
   ],
   "$defs": {
     "digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
@@ -38,7 +41,7 @@
                 "adapter_verify_failed", "io_failed",
                 "catalog_failed", "domain_failed", "adapter_failed", "run_failed", "replay_failed",
                 "verify_failed", "suite_failed", "score_failed", "manifest_failed",
-                "refconsumer_failed", "device_failed", "scenario_failed"
+                "refconsumer_failed", "device_failed", "scenario_failed", "report_failed"
               ]
             },
             "message": {"type": "string", "minLength": 1},
@@ -112,6 +115,16 @@
         "channels": {"type": "integer", "minimum": 0},
         "faults": {"type": "integer", "minimum": 0},
         "effectors": {"type": "integer", "minimum": 0}
+      }
+    },
+    "domain_format": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["formatted", "changed", "digest"],
+      "properties": {
+        "formatted": {"type": "string", "minLength": 1},
+        "changed": {"type": "boolean"},
+        "digest": {"$ref": "#/$defs/digest"}
       }
     },
     "adapter_list": {
@@ -235,6 +248,30 @@
         "commands": {"type": "integer", "minimum": 0},
         "omitted": {"type": "integer", "minimum": 0},
         "refused": {"type": "integer", "minimum": 0}
+      }
+    },
+    "report": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "run", "verification", "counts"],
+      "properties": {
+        "schema_version": {"const": "0.1"},
+        "run": {"type": "object"},
+        "digests": {"type": "object"},
+        "verification": {"type": "object"},
+        "counts": {"type": "object"},
+        "truth": {"type": "object"},
+        "consumer": {"type": "object"},
+        "scoring": {"type": "object"}
+      }
+    },
+    "report_written": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["report_written", "format"],
+      "properties": {
+        "report_written": {"type": "string", "minLength": 1},
+        "format": {"enum": ["json", "markdown"]}
       }
     }
   }

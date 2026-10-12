@@ -9,7 +9,7 @@ from the operator role until the run closes.
 | Ground truth record | The sealed label of one scenario: what was injected and when it can be seen | `model.GroundTruthRecord`, built by `BuildRecord` | `label.json`, ground-truth-v0.1 |
 | Injection | The facts a label is built from: scenario, seed, entity, fault, onset, entities, setup | `Injection` | – |
 | Setup call | A pre-fault effector invocation applied to both oracle worlds so the scenario context exists | `model.SetupCall` | `setup[]` (a suite scenario field, not a label field) |
-| Solver | The oracle: runs a clean and a faulted noiseless world and scans the detector quantity | `Solver` | – |
+| Solver | The oracle: runs a clean and a faulted noiseless world and scans the detector quantity; a peer residual pools only the entities of the faulted entity's kind | `Solver` | – |
 | Injection time | When the fault was applied | `InjectionTimeNS` | `injection_time_ns` |
 | First observable | The first time the detector quantity crosses the declared first-observable SNR | `FirstObservableTimeNS` | `first_observable_time_ns` |
 | Unavoidable | The first time it crosses the unavoidable SNR: no consumer could have missed it | `UnavoidableTimeNS` | `unavoidable_time_ns` |

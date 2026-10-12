@@ -1,0 +1,10 @@
+{
+  "schema_version": "0.1",
+  "run_id": "r-3h6wx9adsnlft",
+  "consumer": {
+    "name": "fixture-consumer",
+    "version": "1.0.0",
+    "arm": "baseline",
+    "config_digest": "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+  }
+}

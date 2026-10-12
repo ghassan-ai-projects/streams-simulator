@@ -1,0 +1,196 @@
+{
+  "id": "two-kind-plant",
+  "version": "0.1.0",
+  "title": "Two-kind plant",
+  "description": "A test domain with two kinds of entity: storage tanks and feed pumps, each with its own state, dynamics, channels, faults and effectors.",
+  "axes": {
+    "absence": "signal",
+    "actuation": "advisory",
+    "cadence": ["periodic"],
+    "cardinality": "fleet",
+    "consequence": ["downtime"],
+    "correlation": ["peer"],
+    "fidelity": ["F0", "F1"],
+    "lateness": "bounded",
+    "rate": "low",
+    "seasonality": ["none"],
+    "time_reference": "wall",
+    "value_shape": ["scalar"]
+  },
+  "stresses": "Two kinds in one world: a fault must reach only entities of the kind that declares it, and a peer comparison must pool only entities of the same kind.",
+  "kinds": [
+    {
+      "name": "tank",
+      "state": [
+        {"name": "level_true", "unit": "m", "initial": 2.0},
+        {"name": "inflow", "unit": "m3/h", "initial": 3.0}
+      ],
+      "dynamics": [
+        {"target": "inflow", "tier": "F0", "f0": {"baseline": 3.0}},
+        {
+          "target": "level_true",
+          "tier": "F1",
+          "dt_ms": 1000,
+          "f1": {
+            "form": "first_order_lag",
+            "gain": 1.0,
+            "inputs": [{"state": "inflow", "coef": 1.0}],
+            "time_constant_s": 600
+          }
+        }
+      ],
+      "channels": [
+        {
+          "name": "tank.level",
+          "unit": "m",
+          "absence": "signal",
+          "cadence": {"mode": "periodic", "period_s": 60},
+          "fidelity": "F1",
+          "link_delay": {"mean_s": 0.1, "model": "constant"},
+          "noise": {"model": "gaussian", "sigma": 0.05},
+          "observes": "level_true",
+          "resolution": 0.001,
+          "value_type": "number"
+        }
+      ],
+      "faults": [
+        {
+          "id": "tank_leak",
+          "affects": [{"state": "level_true", "delta": -1.0}],
+          "expected_effector": "refill",
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "tank.level"},
+            "first_observable_snr": 3.2,
+            "unavoidable_snr": 10.8
+          },
+          "onset": {"magnitude": 1.0, "rate_per_hour": 1.0, "shape": "ramp"}
+        },
+        {
+          "id": "tank_nuisance",
+          "affects": [{"state": "inflow", "delta": 0.5}],
+          "is_negative_class": true,
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "tank.level"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"duty_cycle": 0.2, "magnitude": 0.5, "rate_per_hour": 1.0, "shape": "intermittent"}
+        }
+      ],
+      "effectors": [
+        {
+          "name": "refill",
+          "ack": {"failure_modes": [{"mode": "ok", "probability": 1.0}], "latency_ms": {"mean": 100, "sigma": 10}},
+          "args_schema": {
+            "additionalProperties": false,
+            "properties": {"tank_id": {"type": "string"}},
+            "required": ["tank_id"],
+            "type": "object"
+          },
+          "confirmation_channels": ["tank.level"],
+          "effect": {"dead_time_s": 0, "state_deltas": [{"state": "level_true", "delta": 0.5}], "time_constant_s": 120},
+          "idempotency_window_s": 600,
+          "risk_class": "low"
+        }
+      ]
+    },
+    {
+      "name": "pump",
+      "state": [
+        {"name": "flow_true", "unit": "m3/h", "initial": 0.0},
+        {"name": "demand", "unit": "rel", "initial": 4.0}
+      ],
+      "dynamics": [
+        {"target": "demand", "tier": "F0", "f0": {"baseline": 4.0}},
+        {
+          "target": "flow_true",
+          "tier": "F1",
+          "dt_ms": 500,
+          "f1": {
+            "form": "first_order_lag",
+            "gain": 0.5,
+            "inputs": [{"state": "demand", "coef": 2.0}],
+            "time_constant_s": 300
+          }
+        }
+      ],
+      "channels": [
+        {
+          "name": "pump.flow",
+          "unit": "m3/h",
+          "absence": "signal",
+          "cadence": {"mode": "periodic", "period_s": 30},
+          "fidelity": "F1",
+          "link_delay": {"mean_s": 0.2, "model": "constant"},
+          "noise": {"model": "gaussian", "sigma": 0.1},
+          "observes": "flow_true",
+          "resolution": 0.001,
+          "value_type": "number"
+        }
+      ],
+      "faults": [
+        {
+          "id": "pump_wear",
+          "affects": [{"state": "flow_true", "delta": -2.0}],
+          "expected_effector": "boost",
+          "observability": {
+            "detector": {"form": "peer_residual", "channel": "pump.flow"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"magnitude": 1.0, "rate_per_hour": 2.0, "shape": "ramp"}
+        },
+        {
+          "id": "pump_nuisance",
+          "affects": [{"state": "demand", "delta": 1.0}],
+          "is_negative_class": true,
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "pump.flow"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"duty_cycle": 0.2, "magnitude": 1.0, "rate_per_hour": 1.0, "shape": "intermittent"}
+        }
+      ],
+      "effectors": [
+        {
+          "name": "boost",
+          "ack": {"failure_modes": [{"mode": "ok", "probability": 1.0}], "latency_ms": {"mean": 100, "sigma": 10}},
+          "args_schema": {
+            "additionalProperties": false,
+            "properties": {"pump_id": {"type": "string"}},
+            "required": ["pump_id"],
+            "type": "object"
+          },
+          "confirmation_channels": ["pump.flow"],
+          "effect": {"dead_time_s": 0, "state_deltas": [{"state": "demand", "delta": 1.0}], "time_constant_s": 60},
+          "idempotency_window_s": 600,
+          "risk_class": "low"
+        }
+      ]
+    }
+  ],
+  "instances": [
+    {"kind": "tank", "id_template": "tank-{n}", "count": {"default": 3, "min": 1, "max": 8}},
+    {"kind": "pump", "id_template": "pump-{n}", "count": {"default": 4, "min": 1, "max": 8}}
+  ],
+  "profiles": [
+    {
+      "name": "nominal",
+      "duration_s": 7200,
+      "description": "Three tanks and four pumps, one fault per scenario."
+    },
+    {
+      "name": "correlated_cascade",
+      "not_applicable": "The test plant has no shared upstream cause.",
+      "description": "Not applicable to the test plant."
+    },
+    {
+      "name": "sensor_pathology",
+      "duration_s": 7200,
+      "fault_weights": {"pump_wear": 0.5, "tank_leak": 0.5},
+      "description": "Only the two loud faults."
+    }
+  ],
+  "ground_truth": {"min_per_label": 10, "min_scenarios": 100, "negative_class_fraction": 0.4, "pre_degraded_fraction": 0.1}
+}

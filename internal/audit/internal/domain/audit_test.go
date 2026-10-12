@@ -18,7 +18,7 @@ func loadSpec(t *testing.T) *domain.Compiled {
 }
 
 func ids(spec *domain.Compiled) []string {
-	n := spec.Spec.Entities.Count.Default
+	n := spec.Spec.Instances[0].Count.Default
 	var out []string
 	for i := 1; i <= n; i++ {
 		out = append(out, "site-a/pond-"+string(rune('0'+i)))

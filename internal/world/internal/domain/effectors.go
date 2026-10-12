@@ -127,7 +127,7 @@ func (w *World) invocationIdentity(effector, entityID, commandID string) (*model
 	if ent == nil || !ent.alive {
 		return nil, fmt.Errorf("world: unknown entity %q", entityID)
 	}
-	eff := w.Spec.Effector(effector)
+	eff := ent.kind.EffectorDecl(effector)
 	if eff == nil {
 		return nil, fmt.Errorf("world: unknown effector %q", effector)
 	}

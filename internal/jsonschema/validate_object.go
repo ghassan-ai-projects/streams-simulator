@@ -16,7 +16,7 @@ func (s *Schema) validateObject(obj map[string]any, path string, errs *[]Error) 
 func (s *Schema) validateRequired(obj map[string]any, path string, errs *[]Error) {
 	for _, name := range s.required {
 		if _, ok := obj[name]; !ok {
-			*errs = append(*errs, Error{Path: path, Msg: fmt.Sprintf("missing required property %q", name)})
+			*errs = append(*errs, Error{Path: joinPath(path, name), Msg: fmt.Sprintf("missing required property %q", name)})
 		}
 	}
 }
@@ -39,7 +39,7 @@ func (s *Schema) validateAdditional(obj map[string]any, path string, errs *[]Err
 		case s.additional != nil:
 			s.additional.validate(val, joinPath(path, name), errs)
 		case !s.addAllowed:
-			*errs = append(*errs, Error{Path: path, Msg: fmt.Sprintf("additional property %q not allowed", name)})
+			*errs = append(*errs, Error{Path: joinPath(path, name), Msg: fmt.Sprintf("additional property %q not allowed", name)})
 		}
 	}
 }

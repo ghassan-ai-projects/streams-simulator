@@ -82,7 +82,7 @@ type World struct {
 	subs        map[string]*randutil.SplitMix64
 	entities    map[string]*Entity
 	entityOrder []string
-	nextIndex   int
+	nextIndex   []int
 
 	kicks  map[driverKey][]*kick
 	shadow map[driverKey][]*kick
@@ -111,6 +111,8 @@ type Entity struct {
 	ID       string
 	Type     string
 	BornNS   int64
+	kind     *model.Kind
+	set      int
 	states   map[string]*stateValue
 	channels map[string]*channelRunState
 	alive    bool

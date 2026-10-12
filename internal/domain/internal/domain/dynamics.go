@@ -6,9 +6,9 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-func rejectDynamicsCycles(spec *model.DomainSpec, c *Compiled, src string) error {
-	traversal := dynamicsTraversal{dependencies: dynamicsDependencies(spec), state: make(map[string]uint8), source: src}
-	for _, name := range c.StateNames() {
+func rejectDynamicsCycles(kind *model.Kind, at string, c *Compiled, src string) error {
+	traversal := dynamicsTraversal{dependencies: dynamicsDependencies(kind), targets: dynamicsTargets(kind), state: make(map[string]uint8), source: src, base: at}
+	for _, name := range c.StateNames(kind.Name) {
 		if err := traversal.visit(name); err != nil {
 			return err
 		}
@@ -16,16 +16,14 @@ func rejectDynamicsCycles(spec *model.DomainSpec, c *Compiled, src string) error
 	return nil
 }
 
-func checkF1(f1 *model.F1Dyn, c *Compiled, src string) error {
-	checks := domainChecks{compiled: c, source: src}
+func (checks domainChecks) checkF1(f1 *model.F1Dyn) error {
 	if err := checks.f1Inputs(f1); err != nil {
 		return err
 	}
 	return checks.f1Parameters(f1)
 }
 
-func checkDetector(d *model.Detector, c *Compiled, src, who string) error {
-	checks := domainChecks{compiled: c, source: src}
+func (checks domainChecks) checkDetector(d *model.Detector, who string) error {
 	switch d.Form {
 	case model.DetectorSingleChannel, model.DetectorPeerResidual:
 		return checks.detectorChannel(d, who)
@@ -34,17 +32,8 @@ func checkDetector(d *model.Detector, c *Compiled, src, who string) error {
 	case model.DetectorConservation:
 		return checks.detectorConservation(d, who)
 	default:
-		return checks.bad("%s: unknown detector form %q", who, d.Form)
+		return checks.bad("/form", "%s: unknown detector form %q", who, d.Form)
 	}
-}
-
-func dynamicsFor(c *Compiled, state string) *model.Dynamics {
-	for i := range c.Spec.Dynamics {
-		if c.Spec.Dynamics[i].Target == state {
-			return &c.Spec.Dynamics[i]
-		}
-	}
-	return nil
 }
 
 func sortedKeys(m map[string]bool) []string {

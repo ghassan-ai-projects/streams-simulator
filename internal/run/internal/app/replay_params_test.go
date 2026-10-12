@@ -7,6 +7,7 @@ package app
 import (
 	"context"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
@@ -46,5 +47,25 @@ func TestReplayRoundTripsCommandParams(t *testing.T) {
 	}
 	if !res.Matches {
 		t.Fatalf("replay diverged: %s vs %s", res.GotDigest, res.WantDigest)
+	}
+}
+
+func TestEmbeddedInputsAreTheSpecsTheArtifactCarries(t *testing.T) {
+	t.Parallel()
+	spec, a := testBase(t)
+	r, err := New(context.Background(), Config{Domain: spec, Adapter: a, Seed: 5, SinkName: model.SinkInproc, TimeMode: model.TimeStepped})
+	if err != nil {
+		t.Fatal(err)
+	}
+	art, err := r.End("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	embeddedSpec, embeddedAdapter, err := EmbeddedInputs(art)
+	if err != nil || embeddedSpec.Digest != spec.Digest || embeddedAdapter.ID != a.ID {
+		t.Fatalf("embedded inputs = %v %v (%v), want the run's domain and adapter", embeddedSpec, embeddedAdapter, err)
+	}
+	if _, _, err := EmbeddedInputs(&model.RunArtifact{}); err == nil || !strings.Contains(err.Error(), "or their embedded artifact specs") {
+		t.Fatalf("err = %v, want the refusal of an artifact with no embedded specs", err)
 	}
 }

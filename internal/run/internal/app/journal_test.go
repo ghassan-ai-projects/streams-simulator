@@ -35,7 +35,7 @@ func scriptedJournalRun(t *testing.T, dir string, edit func(*Config)) (*model.Ru
 	if _, err := r.ApplyPerturb("duplicate_burst", nil, 0, 0); err != nil {
 		t.Fatal(err)
 	}
-	fault, err := r.InjectFault(pond, spec.Spec.Faults[0].ID, now+1200e9, nil)
+	fault, err := r.InjectFault(pond, spec.Spec.Kinds[0].Faults[0].ID, now+1200e9, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -74,7 +74,7 @@ func TestEvaluateRunKeepsInjectedTruthOutOfConsumerReadableFiles(t *testing.T) {
 	dir := t.TempDir()
 	spec, _ := testBase(t)
 	_, fault := scriptedJournalRun(t, dir, nil)
-	secrets := []string{`"` + fault + `"`, spec.Spec.Faults[0].ID, "duplicate_burst", `"seed"`, strconv.Itoa(canarySeed)}
+	secrets := []string{`"` + fault + `"`, spec.Spec.Kinds[0].Faults[0].ID, "duplicate_burst", `"seed"`, strconv.Itoa(canarySeed)}
 	for _, name := range []string{journal.ObserverFile, "trace.jsonl"} {
 		raw := readFile(t, filepath.Join(dir, name))
 		for _, secret := range secrets {

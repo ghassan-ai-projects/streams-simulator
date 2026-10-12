@@ -26,39 +26,38 @@ func testSpec(t *testing.T, mutate func(*model.DomainSpec)) *domain.Compiled {
 			Seasonality: []string{"none"}, Actuation: "observe_only",
 			Consequence: []string{"cost"}, Fidelity: []string{"F0"},
 		},
-		Entities: model.Entities{IDTemplate: "e-{n}", Count: struct {
-			Default int `json:"default"`
-			Min     int `json:"min,omitempty"`
-			Max     int `json:"max,omitempty"`
-		}{Default: 1}},
-		State: []model.State{
-			{Name: "u", Initial: 2},
-			{Name: "x", Initial: 0},
-		},
-		Dynamics: []model.Dynamics{{
-			Target: "x",
-			Tier:   "F1",
-			DTMs:   1000,
-			F1: &model.F1Dyn{
-				Form:          "first_order_lag",
-				TimeConstantS: 3600,
-				Gain:          1,
-				Inputs:        []model.F1Input{{State: "u", Coef: 1}},
+		Kinds: []model.Kind{{
+			Name: "test",
+			State: []model.State{
+				{Name: "u", Initial: 2},
+				{Name: "x", Initial: 0},
 			},
+			Dynamics: []model.Dynamics{{
+				Target: "x",
+				Tier:   "F1",
+				DTMs:   1000,
+				F1: &model.F1Dyn{
+					Form:          "first_order_lag",
+					TimeConstantS: 3600,
+					Gain:          1,
+					Inputs:        []model.F1Input{{State: "u", Coef: 1}},
+				},
+			}},
+			Channels: []model.Channel{{
+				Name: "ch", ValueType: "number", Unit: "u", Resolution: 0.01,
+				Fidelity: "F1", Absence: "signal", Observes: "x",
+				Cadence: model.Cadence{Mode: "periodic", PeriodS: 60},
+				Noise:   model.Noise{Model: "gaussian", Sigma: 0.1},
+			}},
+			Faults: []model.Fault{{
+				ID: "f1", Onset: model.FaultOnset{Shape: "step"},
+				Affects: []model.FaultEffect{{State: "x", Delta: 1}},
+				Observability: model.Observability{
+					Detector: model.Detector{Form: "single_channel_snr", Channel: "ch"},
+				},
+			}},
 		}},
-		Channels: []model.Channel{{
-			Name: "ch", ValueType: "number", Unit: "u", Resolution: 0.01,
-			Fidelity: "F1", Absence: "signal", Observes: "x",
-			Cadence: model.Cadence{Mode: "periodic", PeriodS: 60},
-			Noise:   model.Noise{Model: "gaussian", Sigma: 0.1},
-		}},
-		Faults: []model.Fault{{
-			ID: "f1", Onset: model.FaultOnset{Shape: "step"},
-			Affects: []model.FaultEffect{{State: "x", Delta: 1}},
-			Observability: model.Observability{
-				Detector: model.Detector{Form: "single_channel_snr", Channel: "ch"},
-			},
-		}},
+		Instances: []model.InstanceSet{{Kind: "test", IDTemplate: "e-{n}", Count: model.EntityCount{Default: 1}}},
 		Profiles: []model.Profile{
 			{Name: "nominal", Description: "x"},
 			{Name: "correlated_cascade", Description: "x", NotApplicable: strings.Repeat("y", 20)},
@@ -122,10 +121,10 @@ func TestAnalyticCrossCheck(t *testing.T) {
 						t.Run(fmt.Sprintf("tau=%v/g=%v/u=%v/dt=%d/h=%v", tau, g, u, dt, h), func(t *testing.T) {
 							t.Parallel()
 							spec := testSpec(t, func(s *model.DomainSpec) {
-								s.Dynamics[0].DTMs = dt
-								s.Dynamics[0].F1.TimeConstantS = tau
-								s.Dynamics[0].F1.Gain = g
-								s.State[0].Initial = u // driving input
+								s.Kinds[0].Dynamics[0].DTMs = dt
+								s.Kinds[0].Dynamics[0].F1.TimeConstantS = tau
+								s.Kinds[0].Dynamics[0].F1.Gain = g
+								s.Kinds[0].State[0].Initial = u
 							})
 							w := newTestWorld(t, spec, 42, start)
 							horizon := tau * h
@@ -150,9 +149,9 @@ func TestRCNetworkUsesBothTimeConstants(t *testing.T) {
 	t.Parallel()
 	makeWorld := func(tau2 float64) *World {
 		spec := testSpec(t, func(s *model.DomainSpec) {
-			s.Dynamics[0].F1.Form = "rc_network"
-			s.Dynamics[0].F1.TimeConstantS = 10
-			s.Dynamics[0].F1.TimeConstant2S = tau2
+			s.Kinds[0].Dynamics[0].F1.Form = "rc_network"
+			s.Kinds[0].Dynamics[0].F1.TimeConstantS = 10
+			s.Kinds[0].Dynamics[0].F1.TimeConstant2S = tau2
 		})
 		return newTestWorld(t, spec, 41, model.DefaultStartTimeNS)
 	}

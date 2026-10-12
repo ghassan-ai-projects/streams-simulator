@@ -41,42 +41,38 @@ func validateBindingCatalog(w *world.World, bindings map[string]Binding) error {
 	if len(bindings) == 0 {
 		return fmt.Errorf("deviceworld: bindings declare no targets")
 	}
-	states := worldStateSet(w)
 	for _, target := range slices.Sorted(maps.Keys(bindings)) {
-		if err := validateWorldBinding(w, target, bindings[target], states); err != nil {
+		if err := validateWorldBinding(w, target, bindings[target]); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func worldStateSet(w *world.World) map[string]struct{} {
-	states := make(map[string]struct{}, len(w.Spec.StateNames()))
-	for _, name := range w.Spec.StateNames() {
-		states[name] = struct{}{}
-	}
-	return states
-}
-
-func validateWorldBinding(w *world.World, target string, binding Binding, states map[string]struct{}) error {
+func validateWorldBinding(w *world.World, target string, binding Binding) error {
 	if binding.entity == "" || w.Entity(binding.entity) == nil {
 		return fmt.Errorf("deviceworld: target %q references unknown entity %q", target, binding.entity)
 	}
-	if _, ok := states[binding.valueState]; binding.valueState != "" && !ok {
+	if binding.valueState != "" && !slices.Contains(w.Spec.StateNames(w.Entity(binding.entity).Type), binding.valueState) {
 		return fmt.Errorf("deviceworld: target %q references unknown value_state %q", target, binding.valueState)
 	}
-	effector := w.Spec.Effector(binding.effector)
+	effector := kindEffector(w, binding.entity, binding.effector)
 	if err := validateEffectorBinding(target, "effector", binding.effector, effector, binding.arguments); err != nil {
 		return err
 	}
 	return validateSafeStopBinding(w, target, binding)
 }
 
+func kindEffector(w *world.World, entityID, name string) *model.Effector {
+	kind := w.Spec.Kind(w.Entity(entityID).Type)
+	return kind.EffectorDecl(name)
+}
+
 func validateSafeStopBinding(w *world.World, target string, binding Binding) error {
 	if binding.safeStopEffector == "" {
 		return nil
 	}
-	effector := w.Spec.Effector(binding.safeStopEffector)
+	effector := kindEffector(w, binding.entity, binding.safeStopEffector)
 	return validateEffectorBinding(target, "safe_stop", binding.safeStopEffector, effector, binding.safeStopArgs)
 }
 

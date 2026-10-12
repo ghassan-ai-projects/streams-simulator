@@ -9,7 +9,7 @@ import (
 	_ "embed"
 )
 
-//go:embed domain-spec-v0.1.schema.json
+//go:embed domain-spec-v0.2.schema.json
 var domainSpec []byte
 
 //go:embed sim-event-v0.1.schema.json
@@ -32,6 +32,9 @@ var scenario []byte
 
 //go:embed run-journal-v0.1.schema.json
 var runJournal []byte
+
+//go:embed run-report-v0.1.schema.json
+var runReport []byte
 
 // DomainSpec returns the embedded domain-spec schema.
 func DomainSpec() []byte { return domainSpec }
@@ -56,3 +59,5 @@ func Scenario() []byte { return scenario }
 
 // RunJournal returns the embedded run-journal schema.
 func RunJournal() []byte { return runJournal }
+
+func RunReport() []byte { return runReport }

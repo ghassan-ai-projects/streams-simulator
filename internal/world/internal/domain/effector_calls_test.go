@@ -10,7 +10,7 @@ import (
 func callLogSpec(t *testing.T, interlock *model.Interlock) *World {
 	t.Helper()
 	spec := testSpec(t, func(s *model.DomainSpec) {
-		s.Effectors = []model.Effector{{
+		s.Kinds[0].Effectors = []model.Effector{{
 			Name:               "act",
 			ArgsSchema:         map[string]any{"type": "object"},
 			Ack:                model.Ack{LatencyMS: model.Latency{Mean: 100}},
