@@ -22,8 +22,7 @@ func parseManifestOptions(args []string, stderr io.Writer) (manifestOptions, err
 
 func registerManifestFlags(fs *flag.FlagSet, options *manifestOptions) {
 	fs.StringVar(&options.out, "out", "release-manifest.json", "output path")
-	fs.StringVar(&options.domainsDir, "domains-dir", "domains", "domains directory")
-	fs.StringVar(&options.adaptersDir, "adapters-dir", "adapters", "adapters directory")
+	registerInputDirs(fs, &options.domainsDir, &options.adaptersDir)
 	fs.StringVar(&options.author, "author", "", "release author identity (name <email>)")
 	fs.StringVar(&options.reviewer, "reviewer", "", "independent review identity (name <email>)")
 	fs.StringVar(&options.keyFile, "key", "", "ed25519 private key (64 hex seed chars) to sign the manifest digest")

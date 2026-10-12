@@ -48,8 +48,8 @@ func replayFile(s *session, args []string) (*run.ReplayResult, error) {
 
 func parseReplayOptions(args []string, stderr io.Writer) (*flag.FlagSet, string, string, error) {
 	fs := newFlagSet("replay", stderr)
-	domains := fs.String("domains-dir", "domains", "domain specs directory")
-	adapters := fs.String("adapters-dir", "adapters", "adapters directory")
+	var domains, adapters string
+	registerInputDirs(fs, &domains, &adapters)
 	if err := parseFlags(fs, args); err != nil {
 		return nil, "", "", err
 	}
@@ -59,7 +59,7 @@ func parseReplayOptions(args []string, stderr io.Writer) (*flag.FlagSet, string,
 	if err := refuseExtraArguments(fs, 1); err != nil {
 		return nil, "", "", err
 	}
-	return fs, *domains, *adapters, nil
+	return fs, domains, adapters, nil
 }
 
 func replayResult(res *run.ReplayResult) map[string]any {

@@ -42,8 +42,7 @@ func parseScoreOptions(args []string, stderr io.Writer) (scoreOptions, error) {
 	fs := newFlagSet("score", stderr)
 	fs.StringVar(&options.artifact, "run", "", "run artifact (run.json)")
 	fs.StringVar(&options.label, "label", "", "ground truth label (JSON)")
-	fs.StringVar(&options.domainsDir, "domains-dir", "domains", "domain specs directory (the artifact is replayed to recover the effector calls)")
-	fs.StringVar(&options.adaptersDir, "adapters-dir", "adapters", "adapters directory")
+	registerInputDirs(fs, &options.domainsDir, &options.adaptersDir)
 	if err := parseOnlyFlags(fs, args); err != nil {
 		return scoreOptions{}, err
 	}

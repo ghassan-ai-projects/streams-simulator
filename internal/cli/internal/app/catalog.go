@@ -14,12 +14,13 @@ import (
 
 func cmdCatalog(s *session, args []string) (any, error) {
 	fs := newFlagSet("catalog", s.stderr)
-	dir := fs.String("domains-dir", "", "directory of domain specs")
+	var dir string
+	registerDomainsDir(fs, &dir, "")
 	verb, err := parseCommandVerb(fs, args, "list")
 	if err != nil {
 		return nil, err
 	}
-	cat, err := domain.NewCatalogFromDir(*dir)
+	cat, err := domain.NewCatalogFromDir(dir)
 	if err != nil {
 		return nil, fmt.Errorf("streamsim: %w", err)
 	}
@@ -127,12 +128,13 @@ func validateDomainFile(path string) (any, error) {
 
 func cmdAdapter(s *session, args []string) (any, error) {
 	fs := newFlagSet("adapter", s.stderr)
-	dir := fs.String("adapters-dir", "", "directory of adapter files")
+	var dir string
+	registerAdaptersDir(fs, &dir, "")
 	verb, err := parseCommandVerb(fs, args, "list")
 	if err != nil {
 		return nil, err
 	}
-	return adapterVerb(verb, *dir, fs.Args())
+	return adapterVerb(verb, dir, fs.Args())
 }
 
 func adapterVerb(verb, dir string, args []string) (any, error) {

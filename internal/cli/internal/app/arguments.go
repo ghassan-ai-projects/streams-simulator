@@ -164,3 +164,20 @@ func parseTriple(s, sep1, sep2 string) (string, string, string, error) {
 	second, third, _ := strings.Cut(rest, sep2)
 	return first, second, third, nil
 }
+
+func registerInputDirs(fs *flag.FlagSet, domains, adapters *string) {
+	registerDomainsDir(fs, domains, "domains")
+	registerAdaptersDir(fs, adapters, "adapters")
+}
+
+func registerDomainsDir(fs *flag.FlagSet, dst *string, def string) {
+	fs.StringVar(dst, "domains-dir", def, "directory of domain specs")
+}
+
+func registerAdaptersDir(fs *flag.FlagSet, dst *string, def string) {
+	fs.StringVar(dst, "adapters-dir", def, "directory of adapter files")
+}
+
+func registerRunFolder(fs *flag.FlagSet, dst *string, def string) {
+	fs.StringVar(dst, "out", def, "run folder for the artifact and the journal")
+}

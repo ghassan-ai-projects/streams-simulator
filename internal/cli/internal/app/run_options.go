@@ -52,18 +52,17 @@ func registerScenarioFlags(fs *flag.FlagSet, options *runOptions) {
 // registerExecutionFlags registers how a scenario is executed: where its
 // inputs are looked up, the scenario file itself and where the run goes.
 func registerExecutionFlags(fs *flag.FlagSet, options *runOptions) {
-	fs.StringVar(&options.domainsDir, "domains-dir", "domains", "domain specs directory")
-	fs.StringVar(&options.adaptersDir, "adapters-dir", "adapters", "adapters directory")
+	registerInputDirs(fs, &options.domainsDir, &options.adaptersDir)
 	fs.StringVar(&options.scenarioPath, "scenario", "", "scenario file (scenario-v0.1) defining the run")
 	fs.StringVar(&options.sinkName, "sink", "inproc", "sink: inproc|file|http-push")
 	fs.StringVar(&options.sinkTarget, "sink-target", "", "sink target (file path)")
-	fs.StringVar(&options.outDir, "out", "", "output directory for artifacts and the run journal")
+	registerRunFolder(fs, &options.outDir, "")
 	fs.BoolVar(&options.explore, "explore", false, "explore mode: stamp the run unblinded from creation; it is never scored")
 }
 
 // registerDomainFlags registers where the domains live and which one to use.
 func registerDomainFlags(fs *flag.FlagSet, dir, id *string) {
-	fs.StringVar(dir, "domains-dir", "domains", "domain specs directory")
+	registerDomainsDir(fs, dir, "domains")
 	fs.StringVar(id, "domain", "", "domain id")
 }
 

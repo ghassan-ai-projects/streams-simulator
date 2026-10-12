@@ -28,8 +28,7 @@ func parseScenarioExport(args []string, stderr io.Writer) (exportOptions, error)
 	var options exportOptions
 	fs := newFlagSet("scenario from-run", stderr)
 	fs.StringVar(&options.out, "out", "", "scenario file to write (required)")
-	fs.StringVar(&options.domainsDir, "domains-dir", "domains", "domain specs directory (the export is checked against its domain)")
-	fs.StringVar(&options.adaptersDir, "adapters-dir", "adapters", "adapters directory")
+	registerInputDirs(fs, &options.domainsDir, &options.adaptersDir)
 	verb, err := parseCommandVerb(fs, args, "")
 	if err != nil {
 		return exportOptions{}, err
