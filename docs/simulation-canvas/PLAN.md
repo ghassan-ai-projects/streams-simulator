@@ -68,4 +68,4 @@ The commit hash of a phase is recorded by the first commit of the next phase.
 | P2c | Done | `31b6a18` | [evidence/P2c.md](evidence/P2c.md) | [reviews/P2c.md](reviews/P2c.md) |
 | P2d | Done | `75d26e7` | [evidence/P2d.md](evidence/P2d.md) | [reviews/P2d.md](reviews/P2d.md) |
 | P3 | Done | `d1d4db8` | [evidence/P3.md](evidence/P3.md) | [reviews/P3.md](reviews/P3.md) |
-| P2e | In progress (parallel, branch `fast-tests`) | — | — | — |
+| P2e | Done | `63881c1` (merged in `f8f9d5a`) | `make ci-check` 1:24 after merging P3 (was about 4 min); details in `.agents/context/testing.md` and `docs/DECISIONS.md` D-13 | not separately reviewed (test-only; every oracle still runs) |
