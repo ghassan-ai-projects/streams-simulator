@@ -1,0 +1,185 @@
+{
+  "id": "utility-plant",
+  "version": "0.1.0",
+  "title": "Utility plant",
+  "description": "A test domain of exogenous schedules, a block demand peak and a two-regime transformer: a tariff and a site load follow the clock, the demand peak is the largest 15-minute mean of the load, and the transformer oil heats faster once it passes a threshold.",
+  "axes": {
+    "absence": "signal",
+    "actuation": "advisory",
+    "cadence": ["periodic"],
+    "cardinality": "fleet",
+    "consequence": ["downtime"],
+    "correlation": ["peer"],
+    "fidelity": ["F0", "F1"],
+    "lateness": "bounded",
+    "rate": "low",
+    "seasonality": ["none"],
+    "time_reference": "wall",
+    "value_shape": ["scalar"]
+  },
+  "stresses": "Clock-aligned schedules, a billing-period demand peak with a ratchet, and a regime switch whose crossing time is analytic.",
+  "kinds": [
+    {
+      "name": "meter",
+      "state": [
+        {"name": "tariff", "unit": "EUR/kWh", "initial": 0.1},
+        {"name": "load", "unit": "kW", "initial": 50.0, "min": 0.0, "max": 500.0},
+        {"name": "demand", "unit": "kW", "initial": 0.0},
+        {"name": "oil", "unit": "C", "initial": 30.0}
+      ],
+      "dynamics": [
+        {
+          "target": "tariff",
+          "tier": "F0",
+          "f0": {
+            "schedule": {
+              "interpolation": "step",
+              "period_s": 86400,
+              "points": [{"at_s": 0, "value": 0.1}, {"at_s": 25200, "value": 0.3}, {"at_s": 75600, "value": 0.12}]
+            }
+          }
+        },
+        {
+          "target": "load",
+          "tier": "F0",
+          "f0": {
+            "baseline": 40.0,
+            "schedule": {
+              "interpolation": "linear",
+              "period_s": 86400,
+              "points": [{"at_s": 21600, "value": 10.0}, {"at_s": 43200, "value": 60.0}, {"at_s": 64800, "value": 20.0}]
+            }
+          }
+        },
+        {
+          "target": "demand",
+          "tier": "F1",
+          "dt_ms": 60000,
+          "f1": {
+            "form": "peak",
+            "block_s": 900,
+            "inputs": ["load"],
+            "period_s": 86400,
+            "previous_peak": 90.0,
+            "ratchet": 0.6
+          }
+        },
+        {
+          "target": "oil",
+          "tier": "F1",
+          "dt_ms": 1000,
+          "f1": {
+            "form": "regime",
+            "above": {"gain": 1.2, "time_constant_s": 900},
+            "below": {"gain": 0.8, "time_constant_s": 1800},
+            "inputs": ["load"],
+            "selector": "oil",
+            "threshold": 65.0
+          }
+        }
+      ],
+      "channels": [
+        {
+          "name": "meter.tariff",
+          "unit": "u",
+          "absence": "signal",
+          "cadence": {"mode": "periodic", "period_s": 60},
+          "fidelity": "F1",
+          "noise": {"model": "gaussian", "sigma": 0.0001},
+          "observes": "tariff",
+          "resolution": 0.001,
+          "value_type": "number"
+        },
+        {
+          "name": "meter.load",
+          "unit": "u",
+          "absence": "signal",
+          "cadence": {"mode": "periodic", "period_s": 60},
+          "fidelity": "F1",
+          "noise": {"model": "gaussian", "sigma": 0.5},
+          "observes": "load",
+          "resolution": 0.001,
+          "value_type": "number"
+        },
+        {
+          "name": "meter.demand",
+          "unit": "u",
+          "absence": "signal",
+          "cadence": {"mode": "periodic", "period_s": 60},
+          "fidelity": "F1",
+          "noise": {"model": "gaussian", "sigma": 0.5},
+          "observes": "demand",
+          "resolution": 0.001,
+          "value_type": "number"
+        },
+        {
+          "name": "meter.oil",
+          "unit": "u",
+          "absence": "signal",
+          "cadence": {"mode": "periodic", "period_s": 60},
+          "fidelity": "F1",
+          "noise": {"model": "gaussian", "sigma": 0.2},
+          "observes": "oil",
+          "resolution": 0.001,
+          "value_type": "number"
+        }
+      ],
+      "faults": [
+        {
+          "id": "load_surge",
+          "affects": [{"state": "load", "delta": 30.0}],
+          "expected_effector": "shed_load",
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "meter.load"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"magnitude": 1.0, "shape": "step"}
+        },
+        {
+          "id": "meter_jitter",
+          "affects": [{"state": "load", "delta": 2.0}],
+          "is_negative_class": true,
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "meter.load"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"duty_cycle": 0.2, "magnitude": 1.0, "rate_per_hour": 1.0, "shape": "intermittent"}
+        }
+      ],
+      "effectors": [
+        {
+          "name": "shed_load",
+          "ack": {"failure_modes": [{"mode": "ok", "probability": 1.0}], "latency_ms": {"mean": 100, "sigma": 10}},
+          "args_schema": {
+            "additionalProperties": false,
+            "properties": {"meter_id": {"type": "string"}},
+            "required": ["meter_id"],
+            "type": "object"
+          },
+          "confirmation_channels": ["meter.load"],
+          "effect": {"dead_time_s": 0, "state_deltas": [{"state": "load", "delta": -20.0}], "time_constant_s": 0},
+          "idempotency_window_s": 600,
+          "risk_class": "low"
+        }
+      ]
+    }
+  ],
+  "instances": [{"kind": "meter", "id_template": "meter-{n}", "count": {"default": 2, "min": 1, "max": 8}}],
+  "profiles": [
+    {"name": "nominal", "duration_s": 86400, "description": "Two meters over a day, one fault per scenario."},
+    {
+      "name": "correlated_cascade",
+      "not_applicable": "The meters share no upstream cause.",
+      "description": "Not applicable to the test plant."
+    },
+    {
+      "name": "sensor_pathology",
+      "duration_s": 86400,
+      "fault_weights": {"load_surge": 1.0},
+      "description": "Only the surge."
+    }
+  ],
+  "ground_truth": {"min_per_label": 10, "min_scenarios": 100, "negative_class_fraction": 0.4, "pre_degraded_fraction": 0.1}
+}

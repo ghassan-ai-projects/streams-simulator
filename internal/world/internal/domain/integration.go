@@ -17,6 +17,7 @@ type stateValue struct {
 	delayFull  bool
 	hysteresis bool
 	history    []*stateValue
+	peak       *peakState
 }
 
 // naturalValue computes the fault- and kick-free value of a state at time t,
@@ -45,7 +46,7 @@ func (w *World) f0Value(dyn *model.Dynamics, t int64) float64 {
 	}
 	hours := float64(t-w.StartNS) / secondsPerNS / 3600
 	value := f0.Baseline + f0.TrendPerHour*hours + f0.DriftPerHour*hours
-	return seasonalValue(f0, value, t-w.StartNS)
+	return seasonalValue(f0, value, t-w.StartNS) + scheduleValue(f0.Schedule, t, w.StartNS)
 }
 
 func (w *World) integrateF1(ent *Entity, dyn *model.Dynamics, t int64) float64 {
@@ -57,6 +58,10 @@ func (s *stateValue) clone() *stateValue {
 	c := *s
 	c.delayed = slices.Clone(s.delayed)
 	c.history = nil
+	if s.peak != nil {
+		peak := *s.peak
+		c.peak = &peak
+	}
 	return &c
 }
 

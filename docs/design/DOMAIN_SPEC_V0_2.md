@@ -5,7 +5,7 @@
 - **Contract**: [`docs/contracts/domain-spec-v0.2.schema.json`](../contracts/domain-spec-v0.2.schema.json), embedded in the binary
   (`internal/schemas`), parity-tested against the committed copy. v0.1 is removed: the project is pre-release and the eight shipped
   domains are rewritten in the same change.
-- **Later parts**: `store` and `flow` are section 13 (P6a); `regime`, `trip` and the rest of the vocabulary, aggregation over links and the event
+- **Later parts**: `store` and `flow` are section 13 (P6a), `schedule`, `regime` and `peak` section 16 (P6b); `trip` and the rest of the vocabulary, aggregation over links and the event
   clock are P6. Nothing in this part depends on them.
 
 ## 1. Why
@@ -287,3 +287,30 @@ expression (`expr`, `formula`, `condition`, `script`, ...).
 - **A profile's entity count** sizes the first instance set that has an `id_template` (R5b-03).
 - **Idempotency** compares argument numbers by value: `3` and `3.0` are the same request (R2-05). Numbers are compared as
   64-bit floats, so integers above 2^53 that differ only beyond that precision are one request.
+
+## 16. Schedule, regime and peak (phase P6b)
+
+- **`f0.schedule`** = `{period_s?, interpolation: step|linear, points[{at_s, value}]}` adds an exogenous piecewise profile to the
+  F0 value (a tariff, an order book, a load shape). With `period_s` the profile repeats and `at_s` is the offset within a period
+  aligned to the Unix epoch, so a daily profile follows the clock whatever the world start; without it `at_s` counts from the
+  world start. `step` holds the last point reached (before the first point: the last point of the previous period, or the first
+  point when not periodic); `linear` interpolates between neighbours, across the period boundary when periodic. Points are in
+  strictly increasing `at_s`, inside the period (`/…/f0/schedule/points/i/at_s`).
+- **`f1.form: "regime"`** = `{selector, threshold, below: {gain, time_constant_s}, above: {…}, inputs}`: a first-order lag toward
+  `gain × Σ coef × input` whose gain and time constant switch when the selector state is at or above the threshold. The selector
+  (the target itself for a runaway) is read at each step boundary, so the switch happens at the first step boundary at or after
+  the analytic crossing time; between switches each regime has its exact exponential. An undeclared selector is refused at
+  `/…/f1/selector`.
+- **`f1.form: "peak"`** = `{inputs: [one], block_s, period_s, ratchet?, previous_peak?}`: the demand peak. The input is sampled at
+  each step start; a block (aligned to the Unix epoch) closes when a step crosses its boundary, and its mean raises the period's
+  peak; a billing period (aligned the same way) rolls the peak into the previous peak and starts again from zero. The value is
+  `max(period peak so far, ratchet × previous peak)`; the state's `initial` seeds the period peak so far and `previous_peak` the
+  previous period's peak (S9: seeded `peak_mtd` and ratchet). The value changes only when a block closes, so a read between
+  steps returns the committed value. When the world starts (or an entity is born) inside a block, its first block is partial:
+  it closes at the clock boundary with the samples it has. `block_s` is a whole number of steps and `period_s` a whole number of blocks
+  (`/…/f1/block_s`, `/…/f1/period_s`). A calendar month is not a fixed `period_s`; billing periods of unequal length, and the
+  projected demand of the open block, are left to the reference scenario (P12).
+
+Cross-checks: the schedule against direct table values at boundary and interpolated times; the regime against the piecewise
+closed form switching at `ceil(τ_below · ln((g·u − x0)/(g·u − threshold)))` (1e-6); the peak against an independent recomputation
+of block means, period roll-over and ratchet over two days (1e-9).

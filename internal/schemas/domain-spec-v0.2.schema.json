@@ -360,7 +360,27 @@
                 }
               }
             },
-            "drift_per_hour": {"type": "number"}
+            "drift_per_hour": {"type": "number"},
+            "schedule": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "An exogenous piecewise profile added to the baseline (a tariff, an order book). With period_s the profile repeats and at_s is the offset within a period aligned to the Unix epoch, so a daily profile follows the clock; without it at_s is the offset from the world start. Step holds the last point reached; linear interpolates between neighbours.",
+              "required": ["interpolation", "points"],
+              "properties": {
+                "period_s": {"type": "number", "exclusiveMinimum": 0},
+                "interpolation": {"enum": ["step", "linear"]},
+                "points": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["at_s", "value"],
+                    "properties": {"at_s": {"type": "number", "minimum": 0}, "value": {"type": "number"}}
+                  }
+                }
+              }
+            }
           }
         },
         "f1": {
@@ -369,7 +389,14 @@
           "description": "First-order forms only. Deliberately not a general expression language: an arbitrary evaluator is a nondeterminism surface and a security surface, and no domain in the catalog needs one. The equations for each form are part of the contract and are defined in TECHNICAL_DESIGN §6.2 — a form name without an equation is not a specification.",
           "required": ["form"],
           "properties": {
-            "form": {"enum": ["first_order_lag", "rc_network", "dead_time", "saturation", "hysteresis", "integrator", "threshold_integrator", "store"]},
+            "form": {"enum": ["first_order_lag", "rc_network", "dead_time", "saturation", "hysteresis", "integrator", "threshold_integrator", "store", "regime", "peak"]},
+            "selector": {"type": "string", "description": "For regime: the state whose value, read at each step boundary, selects the regime (the target itself for a runaway)."},
+            "below": {"$ref": "#/$defs/regime", "description": "For regime: the lag while the selector is below threshold."},
+            "above": {"$ref": "#/$defs/regime", "description": "For regime: the lag while the selector is at or above threshold."},
+            "block_s": {"type": "number", "exclusiveMinimum": 0, "description": "For peak: the demand block, aligned to the Unix epoch; a multiple of the step."},
+            "period_s": {"type": "number", "exclusiveMinimum": 0, "description": "For peak: the billing period, aligned to the Unix epoch; a multiple of block_s."},
+            "ratchet": {"type": "number", "minimum": 0, "maximum": 1, "description": "For peak: the billed peak is at least this share of the previous period's peak."},
+            "previous_peak": {"type": "number", "minimum": 0, "description": "For peak: the previous period's peak at the world start (the state's initial value is the current period's peak so far)."},
             "capacity": {"type": "number", "exclusiveMinimum": 0, "description": "For store: the amount that raises the level by one unit. The level changes by (Σ coef × input + inflows − outflows) / capacity per second."},
             "time_constant_s": {"type": "number", "exclusiveMinimum": 0},
             "time_constant_2_s": {"type": "number", "exclusiveMinimum": 0, "description": "Second lag, for rc_network."},
@@ -393,7 +420,7 @@
                 ]
               }
             },
-            "threshold": {"type": "number", "description": "For threshold_integrator: the level beyond which the deficit accumulates."},
+            "threshold": {"type": "number", "description": "For threshold_integrator: the level beyond which the deficit accumulates. For regime: the selector value at which the above regime starts."},
             "direction": {"enum": ["below", "above"], "description": "For threshold_integrator: 'below' integrates max(0, threshold − input); 'above' integrates max(0, input − threshold)."},
             "threshold_low": {"type": "number", "description": "For hysteresis."},
             "threshold_high": {"type": "number", "description": "For hysteresis."},
@@ -423,6 +450,14 @@
             {
               "if": {"properties": {"form": {"const": "store"}}, "required": ["form"]},
               "then": {"required": ["capacity"]}
+            },
+            {
+              "if": {"properties": {"form": {"const": "regime"}}, "required": ["form"]},
+              "then": {"required": ["selector", "threshold", "below", "above"]}
+            },
+            {
+              "if": {"properties": {"form": {"const": "peak"}}, "required": ["form"]},
+              "then": {"required": ["inputs", "block_s", "period_s"]}
             }
           ]
         },
@@ -460,6 +495,12 @@
           "then": {"properties": {"tier": {"enum": ["F1"]}}}
         }
       ]
+    },
+    "regime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["gain", "time_constant_s"],
+      "properties": {"gain": {"type": "number"}, "time_constant_s": {"type": "number", "exclusiveMinimum": 0}}
     },
     "flow": {
       "type": "object",

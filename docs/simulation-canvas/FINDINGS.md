@@ -6,7 +6,7 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 - **Phase**: a phase id from PLAN.md, or `next-goal` (Agentic Stream / gateway goal), or `—`.
 - **Status**: `open`, `done` (fixed, evidence in the phase review), `next-goal`, `dropped`
   (removed by an owner decision), `not-a-defect` (evidence in the review record).
-- Sources: `REVIEW` = [REVIEW-2026-10-12.md](REVIEW-2026-10-12.md) ids; `R0` = [reviews/P0.md](reviews/P0.md); `R1` = [reviews/P1.md](reviews/P1.md); `R2` = [reviews/P2.md](reviews/P2.md); `R2b` = [reviews/P2b.md](reviews/P2b.md); `R2d` = [reviews/P2d.md](reviews/P2d.md); `R5a` = [reviews/P5a.md](reviews/P5a.md); `R5b` = [reviews/P5b.md](reviews/P5b.md); `R6a` = [reviews/P6a.md](reviews/P6a.md); `R2c` = [reviews/P2c.md](reviews/P2c.md); `R3` = [reviews/P3.md](reviews/P3.md); `self` = found by the implementer.
+- Sources: `REVIEW` = [REVIEW-2026-10-12.md](REVIEW-2026-10-12.md) ids; `R0` = [reviews/P0.md](reviews/P0.md); `R1` = [reviews/P1.md](reviews/P1.md); `R2` = [reviews/P2.md](reviews/P2.md); `R2b` = [reviews/P2b.md](reviews/P2b.md); `R2d` = [reviews/P2d.md](reviews/P2d.md); `R5a` = [reviews/P5a.md](reviews/P5a.md); `R5b` = [reviews/P5b.md](reviews/P5b.md); `R6a` = [reviews/P6a.md](reviews/P6a.md); `R6b` = [reviews/P6b.md](reviews/P6b.md); `R2c` = [reviews/P2c.md](reviews/P2c.md); `R3` = [reviews/P3.md](reviews/P3.md); `self` = found by the implementer.
 
 ## Design review (REVIEW-2026-10-12)
 
@@ -49,7 +49,7 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 | S6 | REVIEW | High | Responders leak truth; availability; one approval path; work orders | P12 | open |
 | S7 | REVIEW | High | Scoring gameability and statistics | next-goal | next-goal |
 | S8 | REVIEW | High | Baselines and held-out discipline (D7) | next-goal | next-goal |
-| S9 | REVIEW | Med | Demand charge block alignment, `peak_mtd`, ratchet | P6b | open |
+| S9 | REVIEW | Med | Demand charge block alignment, `peak_mtd`, ratchet | P6b | done |
 | S10 | REVIEW | Med | Air pressure band, sequencer, generator transfer | P12 | open |
 | S11 | REVIEW | Med | Time resolution and event clock | P6e | open |
 | S12 | REVIEW | Med | Alarm management (priorities, ack, shelving, combined flood) | P12 | open |
@@ -154,3 +154,5 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 | R5b-02 | R5b | Low | Narrowing validation gaps: two narrow entries naming the same state, channel or argument are not refused; an argument `minimum` above the declared `maximum` (or the reverse) is not refused | P6a | done |
 | R5b-03 | R5b | Low | A profile's `entity_count` is ignored when the first instance set has names only | P6a | done |
 | R6a-01 | R6a | Low | Store stiffness and flow sign are unchecked: nothing bounds `conductance / capacity × dt` (RK4 diverges near 2.8) and a negative scale state reverses a flow; validate the bound and keep health scales non-negative | P13 | open |
+| R6b-01 | self | Low | Calendar billing periods (months of unequal length) and the projected demand of the open block are not modelled; `peak` uses a fixed `period_s` | P12 | open |
+| R6b-02 | R6b | Low | A read of an integrated state further in the past than the entity's longest step returns the current value (the snapshot history covers one longest step); runs read forward, so no output is affected; return a located error or keep a longer history | P13 | open |

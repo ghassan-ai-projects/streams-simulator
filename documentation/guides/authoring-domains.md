@@ -20,6 +20,10 @@ An instance set may list `names` (`M1`) next to or instead of an `id_template`. 
 
 A level that accumulates (a tank, a pressure header) is a state with `f1.form: "store"` and a `capacity`. `flows` on the kind move `conductance × Π scale × (from − to)` per second between two stores, or drain one store toward zero; `scale` names actuator and health states such as a pump speed or a pipe health a fault lowers. Model faults on a flow through a health state in `scale`. Every store of a kind shares one `dt_ms`. Rules and pointers: [DOMAIN_SPEC_V0_2.md](../../docs/design/DOMAIN_SPEC_V0_2.md) section 13; `internal/testsupport/testdata/transfer-plant.domain.json` is a worked example.
 
+## Schedules, regimes and demand peaks
+
+An exogenous profile (a tariff, a daily load shape) is an `f0.schedule` of points, repeating with `period_s` and aligned to the clock. A behaviour that changes past a threshold (transformer oil, tower capacity against wet bulb) is `f1.form: "regime"` with a `selector`, a `threshold` and a `below` and `above` lag. A demand charge is `f1.form: "peak"` over one input with `block_s`, `period_s` and an optional `ratchet`. Rules: [DOMAIN_SPEC_V0_2.md](../../docs/design/DOMAIN_SPEC_V0_2.md) section 16; `internal/testsupport/testdata/utility-plant.domain.json` uses all three.
+
 ## Validate locally
 
 ```bash

@@ -92,6 +92,7 @@ type F0Dyn struct {
 	TrendPerHour float64       `json:"trend_per_hour,omitempty"`
 	Seasonality  []Seasonality `json:"seasonality,omitempty"`
 	DriftPerHour float64       `json:"drift_per_hour,omitempty"`
+	Schedule     *Schedule     `json:"schedule,omitempty"`
 }
 
 // Seasonality is one sinusoidal component.
@@ -114,6 +115,13 @@ type F1Dyn struct {
 	ThresholdLow   float64   `json:"threshold_low,omitempty"`
 	ThresholdHigh  float64   `json:"threshold_high,omitempty"`
 	Capacity       float64   `json:"capacity,omitempty"`
+	Selector       string    `json:"selector,omitempty"`
+	Below          *Regime   `json:"below,omitempty"`
+	Above          *Regime   `json:"above,omitempty"`
+	BlockS         float64   `json:"block_s,omitempty"`
+	PeriodS        float64   `json:"period_s,omitempty"`
+	Ratchet        float64   `json:"ratchet,omitempty"`
+	PreviousPeak   float64   `json:"previous_peak,omitempty"`
 	Clamp          *Clamp    `json:"clamp,omitempty"`
 }
 

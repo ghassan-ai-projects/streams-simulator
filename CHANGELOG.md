@@ -4,6 +4,12 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **Schedule, regime and peak** (`docs/design/DOMAIN_SPEC_V0_2.md` section 16; phase P6b, review item S9). `f0.schedule` adds
+  a clock-aligned piecewise profile (step or linear) to an F0 state; `f1.form: "regime"` is a lag whose gain and time constant
+  switch when a selector state crosses a threshold at a step boundary; `f1.form: "peak"` is the billing-period demand peak: the
+  largest epoch-aligned block mean of one input, with a ratchet on the previous period's peak and seeded `initial` and
+  `previous_peak`. New fixture `utility-plant.domain.json`. Shipped domains and every pinned output are unchanged.
+
 - **Stores and flows** (`docs/design/DOMAIN_SPEC_V0_2.md` sections 13 to 15; phase P6a, findings R0-11, R2-05,
   R5b-01..03). `f1.form: "store"` with a `capacity` accumulates its inputs and flows; `kinds[].flows` move
   `conductance × Π scale × (from − to)` between stores of one entity, or drain a store without `to`. Every store of an

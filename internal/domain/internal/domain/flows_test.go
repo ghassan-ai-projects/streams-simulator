@@ -25,16 +25,7 @@ func TestFlowsJoinStoresOfTheirKind(t *testing.T) {
 		}, "/instances/0/override/dynamics/0/dt_ms"},
 		{"a store without a capacity", func(d map[string]any) { delete(at(d, "kinds", 0, "dynamics", 2, "f1").(map[string]any), "capacity") }, "/kinds/0/dynamics/2/f1/capacity"},
 	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			_, err := Parse(documentOf(t, testsupport.TransferDomain(), tc.change), "transfer.json")
-			var invalid *model.ValidationError
-			if !errors.As(err, &invalid) || len(invalid.Issues) == 0 || invalid.Issues[0].Pointer != tc.pointer {
-				t.Fatalf("err = %v, want an issue at %s", err, tc.pointer)
-			}
-		})
-	}
+	runFixtureViolations(t, testsupport.TransferDomain(), cases)
 }
 
 func TestTheTransferDomainKeepsItsStoresAndFlows(t *testing.T) {
@@ -46,5 +37,19 @@ func TestTheTransferDomainKeepsItsStoresAndFlows(t *testing.T) {
 	kind := &c.Spec.Kinds[0]
 	if len(kind.Flows) != 2 || !kind.IsStore("upper") || !kind.IsStore("lower") || kind.IsStore("feed") || kind.Flows[1].To != "" {
 		t.Fatalf("kind = %+v", kind)
+	}
+}
+
+func runFixtureViolations(t *testing.T, path string, cases []violationCase) {
+	t.Helper()
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			_, err := Parse(documentOf(t, path, tc.change), path)
+			var invalid *model.ValidationError
+			if !errors.As(err, &invalid) || len(invalid.Issues) == 0 || invalid.Issues[0].Pointer != tc.pointer {
+				t.Fatalf("err = %v, want an issue at %s", err, tc.pointer)
+			}
+		})
 	}
 }

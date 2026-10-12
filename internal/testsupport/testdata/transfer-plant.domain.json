@@ -30,12 +30,23 @@
       ],
       "dynamics": [
         {"target": "feed", "tier": "F0", "f0": {"baseline": 0.02}},
-        {"target": "upper", "tier": "F1", "dt_ms": 1000, "f1": {"form": "store", "capacity": 4.0, "inputs": ["feed"]}},
+        {
+          "target": "upper",
+          "tier": "F1",
+          "dt_ms": 1000,
+          "f1": {"form": "store", "capacity": 4.0, "inputs": ["feed"]}
+        },
         {"target": "lower", "tier": "F1", "dt_ms": 1000, "f1": {"form": "store", "capacity": 2.0}}
       ],
       "flows": [
-        {"name": "transfer", "from": "upper", "to": "lower", "conductance": 0.01, "scale": ["pump_speed", "pipe_health"]},
-        {"name": "outlet", "from": "lower", "conductance": 0.015}
+        {
+          "name": "transfer",
+          "conductance": 0.01,
+          "from": "upper",
+          "scale": ["pump_speed", "pipe_health"],
+          "to": "lower"
+        },
+        {"name": "outlet", "conductance": 0.015, "from": "lower"}
       ],
       "channels": [
         {
@@ -103,13 +114,20 @@
       ]
     }
   ],
-  "instances": [
-    {"kind": "cell", "id_template": "cell-{n}", "count": {"default": 3, "min": 1, "max": 8}}
-  ],
+  "instances": [{"kind": "cell", "id_template": "cell-{n}", "count": {"default": 3, "min": 1, "max": 8}}],
   "profiles": [
     {"name": "nominal", "duration_s": 7200, "description": "Three cells, one fault per scenario."},
-    {"name": "correlated_cascade", "not_applicable": "The cells share no upstream cause.", "description": "Not applicable to the test plant."},
-    {"name": "sensor_pathology", "duration_s": 7200, "fault_weights": {"pipe_blockage": 1.0}, "description": "Only the blockage."}
+    {
+      "name": "correlated_cascade",
+      "not_applicable": "The cells share no upstream cause.",
+      "description": "Not applicable to the test plant."
+    },
+    {
+      "name": "sensor_pathology",
+      "duration_s": 7200,
+      "fault_weights": {"pipe_blockage": 1.0},
+      "description": "Only the blockage."
+    }
   ],
   "ground_truth": {"min_per_label": 10, "min_scenarios": 100, "negative_class_fraction": 0.4, "pre_degraded_fraction": 0.1}
 }

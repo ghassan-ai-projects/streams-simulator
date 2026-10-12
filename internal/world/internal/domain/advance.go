@@ -62,6 +62,9 @@ func (s *stateValue) at(t int64) *stateValue {
 
 func (w *World) valueAt(ent *Entity, dyn *model.Dynamics, t int64) float64 {
 	s := ent.states[dyn.Target].at(t)
+	if dyn.F1 != nil && dyn.F1.Form == model.FormPeak {
+		return billedPeak(dyn.F1, s)
+	}
 	if s.lastStep >= t {
 		return s.x
 	}

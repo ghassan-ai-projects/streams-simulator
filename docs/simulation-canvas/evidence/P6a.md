@@ -44,7 +44,7 @@
 | `TestTheSolverFindsTheClosedFormCrossingOfAPipeBlockage` (truth) | First 60 s grid time where the matrix-exponential gap in the lower level reaches 3σ and 10σ | Exact |
 | `TestAStateFedByAnIntegratedStateDoesNotDependOnReadOrder` (world) | A lag fed by a store and a lag fed by a lag, read in three orders | Bit-identical |
 | `TestAStoreLevelStaysWithinItsStateBounds` (world) | Overfilled store never commits above its state max | Pass |
-| `TestATransferRunIsByteReproducibleAndReplaysToTheSameDigest` (run) | Two runs byte-identical; replay digest matches | Pass |
+| `TestVocabularyFixtureRunsAreByteReproducibleAndReplayToTheSameDigest` (run, transfer case) | Two runs byte-identical; replay digest matches | Pass |
 
 End to end with the binary: `run` of the transfer plant with `cell-1=pipe_blockage@1800` emits 720 records; after the
 blockage the upper level rises faster and the lower level falls; `replay` matches the digest.
