@@ -151,6 +151,10 @@ func (r *Run) SetEvidenceRecorder(fn func(model.SimEvent)) {
 
 // SetQuiesceParkedHook installs a hook fired when a quiescence wait blocks
 // (test harness hook).
+func (r *Run) SetDeliveryObserver(fn func(model.SimEvent)) {
+	r.run.SetDeliveryObserver(fn)
+}
+
 func (r *Run) SetQuiesceParkedHook(h func()) {
 	r.run.SetQuiesceParkedHook(h)
 }

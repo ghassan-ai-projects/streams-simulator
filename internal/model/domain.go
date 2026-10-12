@@ -9,24 +9,32 @@ type DomainSpec struct {
 	Stresses    string        `json:"stresses"`
 	Kinds       []Kind        `json:"kinds"`
 	Instances   []InstanceSet `json:"instances"`
+	LinkTypes   []LinkType    `json:"link_types,omitempty"`
+	Links       []Link        `json:"links,omitempty"`
+	Boards      []Board       `json:"boards,omitempty"`
 	Profiles    []Profile     `json:"profiles"`
 	GroundTruth GroundTruth   `json:"ground_truth"`
 }
 
 type Kind struct {
-	Name      string     `json:"name"`
-	State     []State    `json:"state,omitempty"`
-	Dynamics  []Dynamics `json:"dynamics,omitempty"`
-	Channels  []Channel  `json:"channels"`
-	Faults    []Fault    `json:"faults"`
-	Effectors []Effector `json:"effectors,omitempty"`
+	Name       string     `json:"name"`
+	System     bool       `json:"system,omitempty"`
+	State      []State    `json:"state,omitempty"`
+	Dynamics   []Dynamics `json:"dynamics,omitempty"`
+	Flows      []Flow     `json:"flows,omitempty"`
+	Channels   []Channel  `json:"channels"`
+	Faults     []Fault    `json:"faults"`
+	Effectors  []Effector `json:"effectors,omitempty"`
+	Boundaries []Boundary `json:"boundaries,omitempty"`
 }
 
 type InstanceSet struct {
 	Kind       string      `json:"kind"`
-	IDTemplate string      `json:"id_template"`
+	Names      []string    `json:"names,omitempty"`
+	IDTemplate string      `json:"id_template,omitempty"`
 	Count      EntityCount `json:"count"`
 	Churn      *Churn      `json:"churn,omitempty"`
+	Override   *Override   `json:"override,omitempty"`
 }
 
 // Axes is the twelve-axis property vector.
@@ -85,6 +93,7 @@ type F0Dyn struct {
 	TrendPerHour float64       `json:"trend_per_hour,omitempty"`
 	Seasonality  []Seasonality `json:"seasonality,omitempty"`
 	DriftPerHour float64       `json:"drift_per_hour,omitempty"`
+	Schedule     *Schedule     `json:"schedule,omitempty"`
 }
 
 // Seasonality is one sinusoidal component.
@@ -96,17 +105,36 @@ type Seasonality struct {
 
 // F1Dyn is a first-order dynamics form integrated with fixed-step RK4.
 type F1Dyn struct {
-	Form           string    `json:"form"`
-	TimeConstantS  float64   `json:"time_constant_s,omitempty"`
-	TimeConstant2S float64   `json:"time_constant_2_s,omitempty"`
-	DeadTimeS      float64   `json:"dead_time_s,omitempty"`
-	Gain           float64   `json:"gain,omitempty"`
-	Inputs         []F1Input `json:"inputs,omitempty"`
-	Threshold      float64   `json:"threshold,omitempty"`
-	Direction      string    `json:"direction,omitempty"`
-	ThresholdLow   float64   `json:"threshold_low,omitempty"`
-	ThresholdHigh  float64   `json:"threshold_high,omitempty"`
-	Clamp          *Clamp    `json:"clamp,omitempty"`
+	Form           string     `json:"form"`
+	TimeConstantS  float64    `json:"time_constant_s,omitempty"`
+	TimeConstant2S float64    `json:"time_constant_2_s,omitempty"`
+	DeadTimeS      float64    `json:"dead_time_s,omitempty"`
+	Gain           float64    `json:"gain,omitempty"`
+	Inputs         []F1Input  `json:"inputs,omitempty"`
+	Threshold      float64    `json:"threshold,omitempty"`
+	Direction      string     `json:"direction,omitempty"`
+	ThresholdLow   float64    `json:"threshold_low,omitempty"`
+	ThresholdHigh  float64    `json:"threshold_high,omitempty"`
+	Capacity       float64    `json:"capacity,omitempty"`
+	Selector       string     `json:"selector,omitempty"`
+	Below          *Regime    `json:"below,omitempty"`
+	Above          *Regime    `json:"above,omitempty"`
+	BlockS         float64    `json:"block_s,omitempty"`
+	PeriodS        float64    `json:"period_s,omitempty"`
+	Ratchet        float64    `json:"ratchet,omitempty"`
+	PreviousPeak   float64    `json:"previous_peak,omitempty"`
+	When           *Condition `json:"when,omitempty"`
+	ForS           float64    `json:"for_s,omitempty"`
+	Latch          bool       `json:"latch,omitempty"`
+	ResetOn        string     `json:"reset_on,omitempty"`
+	TrippedValue   float64    `json:"tripped_value,omitempty"`
+	Watch          string     `json:"watch,omitempty"`
+	Edge           string     `json:"edge,omitempty"`
+	HoldS          float64    `json:"hold_s,omitempty"`
+	StageUp        *Condition `json:"stage_up,omitempty"`
+	StageDown      *Condition `json:"stage_down,omitempty"`
+	Stages         int        `json:"stages,omitempty"`
+	Clamp          *Clamp     `json:"clamp,omitempty"`
 }
 
 // F1Input is a driving state, with an optional coefficient. The schema
@@ -232,6 +260,7 @@ type FaultOnset struct {
 	RatePerHour float64 `json:"rate_per_hour,omitempty"`
 	Magnitude   float64 `json:"magnitude,omitempty"`
 	DutyCycle   float64 `json:"duty_cycle,omitempty"`
+	DurationS   float64 `json:"duration_s,omitempty"`
 }
 
 // FaultEffect is one state delta a fault applies.

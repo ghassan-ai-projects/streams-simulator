@@ -79,24 +79,12 @@ func (w *World) ackLatency(entityID string, eff *model.Effector, mode FailureMod
 	return math.Round(latency)
 }
 
-// interlockHolds evaluates the interlock predicate over hidden state.
 func (w *World) interlockHolds(entityID string, il *model.Interlock, atNS int64) bool {
-	v := w.stateAt(entityID, il.State, atNS)
-	switch il.Operator {
-	case "lt":
-		return v < il.Threshold
-	case "lte":
-		return v <= il.Threshold
-	case "gt":
-		return v > il.Threshold
-	case "gte":
-		return v >= il.Threshold
-	}
-	return false
+	return w.conditionHolds(entityID, &model.Condition{State: il.State, Operator: il.Operator, Threshold: il.Threshold}, atNS)
 }
 
 func (w *World) effectorArgumentSchema(eff *model.Effector) (*jsonschema.Schema, error) {
-	schema := w.argSchemas[eff.Name]
+	schema := w.argSchemas[eff]
 	if schema != nil {
 		return schema, nil
 	}
@@ -104,7 +92,7 @@ func (w *World) effectorArgumentSchema(eff *model.Effector) (*jsonschema.Schema,
 	if err != nil {
 		return nil, fmt.Errorf("world: effector %q args schema: %w", eff.Name, err)
 	}
-	w.argSchemas[eff.Name] = schema
+	w.argSchemas[eff] = schema
 	return schema, nil
 }
 

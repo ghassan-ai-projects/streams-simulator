@@ -1,5 +1,7 @@
 package domain
 
+import "slices"
+
 type auditEvidence struct {
 	labels         []float64
 	channels       []string
@@ -19,17 +21,23 @@ func (p *Panel) controlFault(faultID string) string {
 	return ""
 }
 
-func (p *Panel) kindChannels(faultID string) []string {
-	if kind := p.spec.FaultKind(faultID); kind != nil {
-		return p.spec.KindChannelNames(kind.Name)
+func (p *Panel) kindChannels(entityID, faultID string) []string {
+	if p.spec.FaultKind(faultID) == nil {
+		return p.spec.ChannelNames()
 	}
-	return p.spec.ChannelNames()
+	kind := p.spec.InstanceKind(max(p.spec.InstanceSetFor(entityID), 0))
+	names := make([]string, len(kind.Channels))
+	for i := range kind.Channels {
+		names[i] = kind.Channels[i].Name
+	}
+	slices.Sort(names)
+	return names
 }
 
-func (p *Panel) sampleEvidence(faultID string, clean, faulted map[string][]float64, onset, start, duration int64) auditEvidence {
+func (p *Panel) sampleEvidence(entityID, faultID string, clean, faulted map[string][]float64, onset, start, duration int64) auditEvidence {
 	end := start + duration
 	n := int((end-start)/p.sampleNS) + 1
-	channels := p.kindChannels(faultID)
+	channels := p.kindChannels(entityID, faultID)
 	evidence := auditEvidence{labels: make([]float64, n), channels: channels,
 		fault: make(map[string][]float64, len(channels)), control: make(map[string][]float64, len(channels))}
 	for _, channel := range channels {

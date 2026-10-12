@@ -2,10 +2,12 @@ package domain
 
 import (
 	"fmt"
+	"slices"
 	"strconv"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/jsonschema"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/randutil"
 )
 
@@ -34,12 +36,13 @@ func (w *World) initializeRuntime(seed uint64) {
 	w.subs = map[string]*randutil.SplitMix64{}
 	w.entities = map[string]*Entity{}
 	w.kicks = map[driverKey][]*kick{}
+	w.leases = map[driverKey][]*kick{}
 	w.shadow = map[driverKey][]*kick{}
 	w.faultsByState = map[string][]*activeFault{}
 	w.faultsByID = map[string]*activeFault{}
 	w.idempotent = map[string]*idempotentResult{}
 	w.interlockActed = map[string]bool{}
-	w.argSchemas = map[string]*jsonschema.Schema{}
+	w.argSchemas = map[*model.Effector]*jsonschema.Schema{}
 	w.churnSeed = seed
 }
 
@@ -52,15 +55,27 @@ func initialEntityIDs(spec *domain.Compiled, ids []string) []string {
 
 func PopulationIDs(spec *domain.Compiled, firstSetCount int) []string {
 	var ids []string
+	counted := firstTemplatedSet(spec)
 	for i := range spec.Spec.Instances {
 		set := &spec.Spec.Instances[i]
 		count := set.Count.Default
-		if i == 0 && firstSetCount > 0 {
+		if i == counted && firstSetCount > 0 {
 			count = firstSetCount
 		}
-		for n := 1; n <= max(count, 1); n++ {
-			ids = append(ids, renderID(set.IDTemplate, n, nil))
-		}
+		ids = append(ids, set.Names...)
+		ids = append(ids, templatedIDs(set, count)...)
+	}
+	return ids
+}
+
+func firstTemplatedSet(spec *domain.Compiled) int {
+	return slices.IndexFunc(spec.Spec.Instances, func(set model.InstanceSet) bool { return set.IDTemplate != "" })
+}
+
+func templatedIDs(set *model.InstanceSet, count int) []string {
+	var ids []string
+	for n := 1; set.IDTemplate != "" && n <= max(count, 1); n++ {
+		ids = append(ids, renderID(set.IDTemplate, n, nil))
 	}
 	return ids
 }
@@ -72,7 +87,9 @@ func (w *World) populateInitialEntities(ids []string, startNS int64) error {
 		if err := w.addEntity(id, set, startNS); err != nil {
 			return fmt.Errorf("streamsim: %w", err)
 		}
-		w.nextIndex[set]++
+		if !w.Spec.IsInstanceName(id) {
+			w.nextIndex[set]++
+		}
 	}
 	return nil
 }

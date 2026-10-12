@@ -1,0 +1,227 @@
+# Plant wire v1 — specification
+
+- **Status**: contract v1.0.0, pre-release. Versioning rules apply from v1; compatibility is promised from the first field
+  deployment.
+- **Scope**: the session between a **node** (a simulated world, or an edge gateway in front of hardware) and a **host** (a plant
+  supervisor). Field protocols below a gateway are out of scope; section 13 maps the one this contract meets first.
+- **This folder is self-contained**: `SPEC.md`, `schemas/` (one JSON Schema per record), `fixtures/` (see `fixtures/README.md`)
+  and `DIGEST`. It refers to nothing outside itself.
+
+## 1. Pattern and roles
+
+Devices announce themselves, then report; the host discovers rather than being configured. Semantics and record names follow
+Sparkplug B, so a Sparkplug/MQTT binding remains possible; v1 is JSON Lines over one full-duplex stream, with no broker.
+Receipts, results, state queries and the time barrier are extensions Sparkplug lacks.
+
+| Role | Meaning |
+|---|---|
+| Node | One simulated world, or one edge gateway. The **node dials the host**. |
+| Board | One physical controller. It owns the `boot_id`, the leases and the safe state; a reboot affects every device on it. |
+| Device | One instance (`M1`, `pump-3`, `air_header`). Kind and id are immutable for a session. |
+| Host | The supervisor. It owns permissions; births grant nothing. |
+
+## 2. Security (v1)
+
+v1 has **no authentication**. It is therefore carried only over a Unix socket that the host creates with owner-only permissions
+(mode 0600, in a directory of mode 0700); a node refuses to dial a socket that is group- or world-accessible. TCP is not allowed
+until mutual authentication is specified. `NBIRTH.environment` (`simulated` or `hardware`) must match the host's own setting.
+
+## 3. Envelope
+
+Every record is one JSON object on one line:
+
+| Member | Rule |
+|---|---|
+| `type` | The record type (section 4). |
+| `protocol_version` | The version in force for the session (section 6). |
+| `session_id` | Chosen by the node for one connection; deterministic for a simulated node (run id and connection count). |
+| `seq` | One sequence **per direction** per session, from 0, by 1, without wrap. A writer assigns `seq` **when it transmits** the record, so the stream is always in `seq` order. |
+| `lane` | `control` or `data`, fixed per type. A writer transmits queued control records before queued data; because `seq` is assigned at transmission, priority never creates a gap. |
+
+**Versioning and unknown members.** A receiver ignores members it does not know in every record except `DCMD`, which is strict:
+any unknown member makes it `malformed`, so a misspelt safety member can never be dropped silently. Enumerated values are
+closed: a new value is a new protocol version. Integers are exact 64-bit (times in nanoseconds exceed 2^53); a receiver that
+cannot parse them exactly must refuse the record.
+
+## 4. Records
+
+Node → host:
+
+| Type | Lane | Carries |
+|---|---|---|
+| `NBIRTH` | control | `protocol_min`, `protocol_max`, `contract_version`, `contract_digest` (section 11), `environment`, `bd_seq`, `prior_last_seq` (last `seq` of the node's previous session, or -1), `capability_digest`, `kinds`, `boards`, `node_metrics` |
+| `DBIRTH` | data | `device`, `kind`, `board`, `boot_id`, `metadata_version`, `birth_time_ns`, `overrides`, the **current value** of every metric (`null` with quality `warming_up` before its first sample) |
+| `DDATA` | data | `device`, `boot_id`, `historical`, `metrics`: one or more `{alias, value, quality, event_time_ns, time_source, uncertainty_ms?, device_mono_us?}` |
+| `DDEATH` | control | `device`, `boot_id`, `reason` (`offline`, `link_down`, `retired`, `reboot`, `poll_failure`), `last_seq` |
+| `NDEATH` | control | `bd_seq`, `reason` (`shutdown`, `connection_lost`) |
+| `DRECEIPT` | control | `command_id`, `status`, `reason` (exactly when `status` is `refused`), `boot_id` |
+| `DRESULT` | control | `command_id`, `reported_outcome` (`succeeded`, `failed`, `unknown`), `boot_id`; **self-reported**, it may lie |
+| `DSTATE` | control | `device`, `boot_id`, `self_reported` (always `true`), `safe_state`, `outputs`, `values` |
+| `NSYNC` | control | `through_seq`, `world_time_ns` (section 8) |
+
+Host → node:
+
+| Type | Lane | Carries |
+|---|---|---|
+| `STATE` | control | `host_id`, `online`, `heartbeat`, `heartbeat_interval_ms`, `authority_epoch`, `protocol_min`, `protocol_max`, `refusal` (section 6) |
+| `NCMD` | control | `command`: `rebirth` |
+| `DCMD` | control | `command_id`, `idempotency_key`, `device`, `command`, `args`, `expected_boot_id`, `deadline_ns`, `not_before_ns`, `authority_epoch`, `policy_digest`, `fallback_on_lease_loss` (`revert_to_local`, `hold_last`, `safe_off`) |
+| `DQUERY` | control | `device` |
+| `HSYNC` | control | `through_seq` |
+
+Ids and names (devices, kinds, metrics, commands, boards, hosts) match `^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$`: no spaces and no
+prose, so an id cannot carry an instruction.
+
+## 5. Births, metadata and commissioning
+
+- `NBIRTH` declares each **kind once**: metrics (`data_type` in `number`, `integer`, `boolean`, `enum`, `string`; `unit` in UCUM;
+  `eu_range`, optional `instrument_range`, `resolution`, `scan_class`, `deadband`, `description`, `writable`) and commands
+  (argument schema, `risk_class`, `safe_stop`). `writable` means the metric is a setpoint some command assigns.
+- `DBIRTH` names its kind and carries only instance values and **overrides**: `add` declares metrics whose names the kind does
+  not have; `narrow` gives an `eu_range` inside the kind's. A host refuses a birth whose override widens, renames or adds
+  commands. `birth_time_ns` dates the current values.
+- **What a birth never says**: fault catalogue, onsets, affected states, expected effectors, deadlines, counterfactuals, effect
+  models, failure-mode probabilities, latency distributions, true state, ground truth, profile weights. A simulated node
+  sends no free-text description from its domain (domain descriptions are author notes) and strips descriptions from argument
+  schemas.
+- **Births are claims, not grants.** The host takes `risk_class`, `safe_stop` and argument bounds from its **commissioned
+  inventory** (`discovered → reviewed → accepted`), never from a birth. A birth whose kind, id or command set differs from the
+  commissioned one is quarantined and its commands denied. A changed `metadata_version` needs a new session and the host's
+  acknowledgement before the host acts on the device.
+- `capability_digest` is `sha256:` and the SHA-256 of the RFC 8785 canonical JSON of the array of `{kind, commands}` objects,
+  sorted by `kind`, each `commands` array sorted by `name`, taken from `NBIRTH.kinds`.
+
+## 6. Handshake, sessions and rebirth
+
+1. The node connects and sends `NBIRTH` with `protocol_version` 1 (the handshake envelope is always version 1).
+2. The host answers `STATE`. If it accepts, `protocol_version` in `STATE` is the highest version within both ranges, and every
+   later record in either direction uses it. If it refuses, it sends `STATE {online: false, refusal}` with `refusal` one of
+   `version_unsupported`, `contract_unsupported` (a `contract_version` below the host's minimum, or a `contract_digest` it does
+   not know at that version), `environment_mismatch`, `inventory_mismatch`, `protocol_invalid` (`protocol_min` above
+   `protocol_max`), then closes. A node does not reconnect after a refusal without an operator's action.
+3. The node sends every `DBIRTH`, then data.
+
+A **session** is one connection: a new connection has a new `session_id`, starts both sequences at 0, increments `bd_seq` and
+reports the previous session's last `seq` in `prior_last_seq`. A **rebirth** (on `NCMD rebirth`) keeps the session and its
+sequences: the node sends `NBIRTH` with the next `bd_seq`, then every `DBIRTH`. The host sends at most one `NCMD rebirth` until
+the `NBIRTH` that answers it arrives.
+
+## 7. Ordering, gaps, store-and-forward
+
+- A receiver processes records in `seq` order. A record whose `seq` is ahead is held for at most 256 records or two heartbeat
+  intervals; an exact duplicate (same `seq`, same content) is dropped. A gap that outlives the window makes the host send `NCMD
+  rebirth` and makes the node end the session (it reconnects). Over an ordered stream (a Unix socket) nothing can arrive
+  ahead, so a receiver may treat any gap as final and any repeated `seq` as a duplicate.
+- A record that fails its schema still consumes its `seq`: a node answers an invalid `DCMD` that names a `command_id` with a
+  `malformed` receipt and ignores any other invalid record.
+- A late `NDEATH` whose `bd_seq` is older than the current birth is ignored. On socket loss the host synthesises `NDEATH`.
+- **Store-and-forward**: data buffered while the host was unreachable is replayed with `historical: true`; the host never updates
+  live state or fires real-time rules from it. Buffers are bounded by bytes and age; overflow drops the oldest and marks the next
+  live metrics `stale`.
+- A reboot is a `DDEATH` (`reboot`) for every device on the board, then each `DBIRTH` with the new `boot_id`.
+
+## 8. Time
+
+- **Time base.** A simulated node runs in **virtual time**: `deadline_ns`, `not_before_ns`, `event_time_ns` and heartbeats are
+  world time. A hardware node runs in wall time (UTC), and its `uncertainty_ms` covers clock skew.
+- **Barrier (quiescence).** A simulated world advances in slices. At the end of a slice the node sends `NSYNC {through_seq,
+  world_time_ns}` and waits for `HSYNC` whose `through_seq` is at least the `NSYNC` record's own `seq` (so the barrier
+  covers the `NSYNC` itself, and a late answer to an earlier slice never satisfies a later one). The node processes host records only at
+  slice ends; a host record takes the world time of the slice end at which it is processed, so its effect is deterministic and
+  recorded in the run's command log. The wall time waited is recorded as host latency. If no `HSYNC` arrives within the run's
+  `barrier_wall_cap_ms`, the node records a missed barrier and advances; a slow host is never outrun silently.
+- **Liveness.** The host sends `STATE` with an increasing `heartbeat` every `heartbeat_interval_ms` (wall time). A hardware
+  node treats three missed heartbeats as host loss; a simulated node treats three consecutive missed barriers as host loss, and
+  records it in the command log. On host loss the node stops executing commands, flushes its queue, lets leases lapse into their
+  fallback and buffers data. `STATE {online: false}` is a graceful goodbye only.
+- **Deterministic ids.** A simulated node derives `session_id`, `boot_id` and `bd_seq` from the run and its counters, never from
+  the wall clock.
+
+## 9. Commands
+
+**Lifecycle.** Each `DCMD` receives at most one `DRECEIPT {status: queued}` and then exactly one terminal `DRECEIPT`
+(`accepted` or `refused`); a terminal receipt supersedes a queued one. An accepted command receives exactly one `DRESULT`.
+Commands still queued when a session ends get no receipt; the host counts them as refused (`session_ending`).
+
+**Checks**, in this order, at receipt and **again at execution** for a queued command:
+
+| Check | Refusal |
+|---|---|
+| Schema, known device, known command, argument bounds | `malformed`, `unknown_device`, `unknown_command`, `out_of_range` |
+| `deadline_ns` not passed, not more than 24 h ahead; `not_before_ns` reached (else queued) | `expired`, `out_of_range` |
+| `expected_boot_id` equals the board's current boot | `wrong_boot` |
+| `authority_epoch` equals the **epoch floor**: the highest epoch any accepted `STATE` announced; a `STATE` with a lower epoch is ignored; a gateway persists the floor | `stale_epoch` |
+| `policy_digest` is allowed (a bench allow-list; for a plant, an OT-owned limits envelope that host policy can only narrow) | `policy_not_allowed` |
+| The host is alive | `session_ending` |
+| Idempotency (below) | `duplicate` |
+| The device's own preconditions, mode and interlocks | `local_control`, `permissive_not_met`, `locked_out`, `maintenance_isolated`, `interlocked`, `not_ready` |
+
+**Idempotency.** A command's content is `{device, command, args, expected_boot_id}`; `idempotency_key` is `sha256:` and the
+SHA-256 of its RFC 8785 canonical JSON. A node keeps, per key, the content digest, the terminal receipt and the result, for at
+least 24 h plus transport delay (a gateway across restarts). A repeated key with the same content replays the stored receipt
+and result with no second effect; with different content it is refused `duplicate`.
+
+**Safe stop.** A command the node itself declares `safe_stop` is checked only for schema, device, command and boot; it skips the
+deadline, epoch, policy and precondition checks, jumps the node's command queue and is never refused for idempotency (repeating
+it is harmless).
+
+**Leases.** `fallback_on_lease_loss` is required. A command whose arguments carry `lease_ms` falls back when the lease lapses
+without renewal; every command falls back on host loss.
+
+**Refusal classes.** A node says which class of refusal applies, never which fault caused it: a simulated node reports a failed
+effector precondition as `permissive_not_met`, an interlock as `interlocked`, a random failure as `not_ready`. A precondition on a
+hidden state therefore reveals one bit about it; domain authors put preconditions on observable states.
+
+**Verification.** Receipt ≠ result ≠ observation ≠ verification: a host never counts a command done from a receipt or a
+self-reported result.
+
+## 10. Quality and truth
+
+| Wire quality | Host envelope | Meaning |
+|---|---|---|
+| `good` | good | Valid measurement |
+| `warming_up` | uncertain | Settling after start |
+| `suspect` | uncertain | Plausibility check failed |
+| `out_of_range` | bad | Outside `instrument_range` |
+| `stale` | stale | Not refreshed within its scan class |
+| `disconnected` | bad | Sensor link lost inside a live device |
+| `manual_override` | uncertain | Value forced by a person |
+| `out_of_service` | bad | Instrument taken out of service |
+
+A non-`good` value never satisfies a control precondition. A single failed sensor inside a live device is a quality code, not a
+`DDEATH`. A simulated node derives quality codes and death reasons only from declared observable models (channel availability,
+perturbations, entity lifecycle), never from fault state, and no record member carries text about a fault.
+
+Strings never carry instructions: descriptions (at most 200 characters) are for people; string metrics are bounded; a host quotes
+every string it shows a model and never follows one.
+
+## 11. The contract and its guards
+
+- **Digest.** `DIGEST` holds `sha256:` and the SHA-256 of, for every schema in file-name order, the file name, a newline, the
+  schema's RFC 8785 canonical JSON and a newline. It is the `contract_digest` a node announces. A schema change needs a reviewed
+  `DIGEST` change.
+- **Safety-field floor.** Each repository tests that the members carrying safety and owner decisions stay required and their
+  enumerations keep their safety values (commands, receipts, results, births, state, data).
+- **Sync.** A repository vendors this whole folder byte-identically; its programs embed the schemas and never read a path at
+  run time. A sync copies the folder from a configured master; release builds ignore that configuration.
+
+## 12. Limits
+
+A record is at most 64 KiB, except `NBIRTH` and `DBIRTH`, at most 1 MiB. A non-finite number (NaN, infinity) is never sent. A `DDATA` carries at most 500 metrics; an `NBIRTH`
+declares at most 256 kinds and 4096 boards of at most 4096 devices.
+
+## 13. Mapping to device-wire-v1 (for gateways)
+
+| Plant wire | device-wire-v1 |
+|---|---|
+| `device`, `command`, `args` | `target`, `operation`, `parameters` |
+| `deadline_ns` (absolute) | `expires_after_ms` = deadline − gateway now; refused `expired` when ≤ 0 |
+| `not_before_ns` | `not_before_mono_us` on the device's monotonic clock |
+| `expected_boot_id`, `idempotency_key`, `policy_digest` | same names |
+| Refusals `malformed`, `out_of_range`, `expired`, `wrong_boot`, `duplicate`, `interlocked`, `not_ready` | same codes |
+| `unknown_device`, `unknown_command` | `wrong_target`, `unknown_operation` |
+| `DRESULT` `succeeded` | result `executed` |
+| `DRESULT` `failed` | `rejected`, `expired`, `superseded` |
+| `DRESULT` `unknown` | no result before the deadline |
+| `DSTATE.safe_state` | result `safe_state`, or state query |
+| `authority_epoch`, `stale_epoch`, `policy_not_allowed` | gateway only; device firmware is unchanged |

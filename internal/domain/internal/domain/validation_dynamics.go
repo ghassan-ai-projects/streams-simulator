@@ -16,19 +16,18 @@ func (checks domainChecks) f1Inputs(f1 *model.F1Dyn) error {
 }
 
 func (checks domainChecks) f1Parameters(f1 *model.F1Dyn) error {
-	switch f1.Form {
-	case "first_order_lag", "dead_time":
-		return checks.f1TimeConstant(f1)
-	case "rc_network":
-		return checks.f1NetworkConstants(f1)
-	case "hysteresis":
-		return checks.f1Thresholds(f1)
-	case "threshold_integrator":
-		return checks.f1Direction(f1)
-	case "saturation":
-		return checks.f1Clamp(f1)
+	if check, known := checks.f1ParameterChecks()[f1.Form]; known {
+		return check(f1)
 	}
 	return nil
+}
+
+func (checks domainChecks) f1ParameterChecks() map[string]func(*model.F1Dyn) error {
+	return map[string]func(*model.F1Dyn) error{
+		"first_order_lag": checks.f1TimeConstant, "dead_time": checks.f1TimeConstant, "rc_network": checks.f1NetworkConstants,
+		"hysteresis": checks.f1Thresholds, "threshold_integrator": checks.f1Direction, "saturation": checks.f1Clamp,
+		model.FormRegime: checks.f1Selector, model.FormTrip: checks.f1Trip, model.FormAntiRecycle: checks.f1AntiRecycle, model.FormSequencer: checks.f1Sequencer,
+	}
 }
 
 func (checks domainChecks) f1TimeConstant(f1 *model.F1Dyn) error {

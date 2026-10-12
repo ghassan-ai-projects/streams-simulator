@@ -37,6 +37,8 @@ The accepted architecture is summarized in [`documentation/architecture/`](../..
 - `internal/refconsumer`: shipped reference detector and operator-client integration; facade over `internal/refconsumer/internal/domain`, `app` (`Consume`: trace file in, verdict file out, optionally over the operator endpoint), the `mcpclient` edge and a `files` edge
 - `internal/device`: data-defined capability admission and vendored device transport; facade over `internal/device/internal/domain` (rules, codec), the `uds` transport edge (including `Serve`, the socket served until interrupted) and a `files` edge (capability catalog)
 - `internal/device/contract`: the vendored device wire-protocol schemas (embedded) and conformance fixtures
+- `internal/plantwire`: the plant wire node: a run spoken to a host as births, data, the `NSYNC`/`HSYNC` barrier and host records over the host's owner-only socket; facade over `internal/plantwire/internal/domain` (records, digests, schema checks, sequencing), `app` (the session) and a `uds` edge
+- `internal/plantwire/contract`: the embedded plant wire schemas, byte-identical with `contracts/plant-wire/schemas`
 - `internal/deviceworld`: device-to-world effector binding and `OpenDevice` (capabilities, fault schedule, bindings, world and plant composed before any listener opens); facade over `internal/deviceworld/internal/domain`, `app` and a `files` edge
 - `internal/domain`: load, validate, compile and digest domain data, including a directory into a catalog (`NewCatalogFromDir`); facade over `internal/domain/internal/domain` with a `files` edge
 - `internal/model`: shared simulator records and strict JSON decoding

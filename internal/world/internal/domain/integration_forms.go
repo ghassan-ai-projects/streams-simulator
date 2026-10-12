@@ -15,6 +15,32 @@ func (w *World) stepSpecialForm(ent *Entity, dyn *model.Dynamics, s *stateValue,
 	case "rc_network":
 		w.stepRCNetwork(ent, dyn, s, at, seconds)
 	default:
+		return w.stepVocabularyForm(ent, dyn, s, at, dt, seconds)
+	}
+	return true
+}
+
+func (w *World) stepVocabularyForm(ent *Entity, dyn *model.Dynamics, s *stateValue, at, dt int64, seconds float64) bool {
+	switch dyn.F1.Form {
+	case model.FormRegime:
+		w.stepRegime(ent, dyn, s, at, seconds)
+	case model.FormPeak:
+		w.stepPeak(ent, dyn, s, at, dt)
+	default:
+		return w.stepProtectionForm(ent, dyn, s, at, dt)
+	}
+	return true
+}
+
+func (w *World) stepProtectionForm(ent *Entity, dyn *model.Dynamics, s *stateValue, at, dt int64) bool {
+	switch dyn.F1.Form {
+	case model.FormTrip:
+		w.stepTrip(ent, dyn, s, at, dt)
+	case model.FormAntiRecycle:
+		w.stepAntiRecycle(ent, dyn, s, at, dt)
+	case model.FormSequencer:
+		w.stepSequencer(ent, dyn, s, at)
+	default:
 		return false
 	}
 	return true

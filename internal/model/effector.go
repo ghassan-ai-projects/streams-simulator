@@ -10,6 +10,9 @@ type Effector struct {
 	Ack                  Ack            `json:"ack"`
 	ConfirmationChannels []string       `json:"confirmation_channels,omitempty"`
 	Interlock            *Interlock     `json:"interlock,omitempty"`
+	Requires             []Condition    `json:"requires,omitempty"`
+	Responder            *Responder     `json:"responder,omitempty"`
+	Lease                *Lease         `json:"lease,omitempty"`
 	Effect               Effect         `json:"effect"`
 	IdempotencyWindowS   float64        `json:"idempotency_window_s,omitempty"`
 }

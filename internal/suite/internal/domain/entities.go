@@ -10,22 +10,21 @@ func defaultEntities(spec *domain.Compiled, prof *model.Profile) []string {
 	return world.PopulationIDs(spec, prof.EntityCount)
 }
 
-func kindOfEntity(spec *domain.Compiled, id string) *model.Kind {
-	return spec.Kind(spec.Spec.Instances[max(spec.InstanceSetFor(id), 0)].Kind)
-}
-
 func (g *suiteGeneration) faultEntities(fault string) []string {
-	kind := g.cfg.Domain.FaultKind(fault)
-	if kind == nil || len(g.cfg.Domain.Spec.Kinds) == 1 {
+	if g.cfg.Domain.FaultKind(fault) == nil {
 		return g.entities
 	}
 	var out []string
 	for _, id := range g.entities {
-		if kindOfEntity(g.cfg.Domain, id) == kind {
+		if kindOfEntity(g.cfg.Domain, id).FaultDecl(fault) != nil {
 			out = append(out, id)
 		}
 	}
 	return out
+}
+
+func kindOfEntity(spec *domain.Compiled, id string) *model.Kind {
+	return spec.InstanceKind(max(spec.InstanceSetFor(id), 0))
 }
 
 func declaredFaults(spec *domain.Compiled) []*model.Fault {

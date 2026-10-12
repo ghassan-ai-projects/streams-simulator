@@ -20,24 +20,35 @@ func crossCheck(c *Compiled, src string) error {
 			return err
 		}
 	}
-	return checks.checkProfiles()
+	return checks.checkRest()
+}
+
+func (checks domainChecks) checkRest() error {
+	for _, check := range []func() error{checks.checkOverrides, checks.checkStructure, checks.checkProfiles} {
+		if err := check(); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 type domainChecks struct {
 	compiled *Compiled
 	kind     *model.Kind
+	subject  *model.Kind
 	source   string
 	at       string
 }
 
 func (checks domainChecks) inKind(index int) domainChecks {
 	checks.kind = &checks.compiled.Spec.Kinds[index]
+	checks.subject = checks.kind
 	checks.at = itemPointer("kinds", index)
 	return checks
 }
 
 func (checks domainChecks) checkKind() error {
-	for _, check := range []func() error{checks.checkChannels, checks.checkDynamics, checks.checkDynamicsGraph, checks.checkFaults, checks.checkEffectors} {
+	for _, check := range []func() error{checks.checkChannels, checks.checkDynamics, checks.checkDynamicsGraph, checks.checkFlows, checks.checkStoreSteps, checks.checkFaults, checks.checkEffectors, checks.checkBoundaries} {
 		if err := check(); err != nil {
 			return err
 		}
@@ -69,26 +80,26 @@ func (checks domainChecks) each(section string, count int, check func(domainChec
 }
 
 func (checks domainChecks) checkChannels() error {
-	kind := checks.kind
+	kind := checks.subject
 	return checks.each("channels", len(kind.Channels), func(at domainChecks, i int) error { return at.checkChannel(&kind.Channels[i]) })
 }
 
 func (checks domainChecks) checkDynamics() error {
-	kind := checks.kind
+	kind := checks.subject
 	return checks.each("dynamics", len(kind.Dynamics), func(at domainChecks, i int) error { return at.checkDynamic(&kind.Dynamics[i]) })
 }
 
 func (checks domainChecks) checkDynamicsGraph() error {
-	return rejectDynamicsCycles(checks.kind, checks.at, checks.compiled, checks.source)
+	return rejectDynamicsCycles(checks.subject, checks.at, checks.source)
 }
 
 func (checks domainChecks) checkFaults() error {
-	kind := checks.kind
+	kind := checks.subject
 	return checks.each("faults", len(kind.Faults), func(at domainChecks, i int) error { return at.checkFault(&kind.Faults[i]) })
 }
 
 func (checks domainChecks) checkEffectors() error {
-	kind := checks.kind
+	kind := checks.subject
 	return checks.each("effectors", len(kind.Effectors), func(at domainChecks, i int) error { return at.checkEffector(&kind.Effectors[i]) })
 }
 

@@ -4,6 +4,66 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **Plant wire node** (`internal/plantwire`; phase P7b; contract `contracts/plant-wire/SPEC.md`). A run can speak the plant
+  wire to a host: it dials the host's owner-only socket (refusing a group- or world-accessible one), sends `NBIRTH` (each kind
+  once, the contract and capability digests, the environment marker) and every `DBIRTH` (board, boot, current values, add-or-
+  narrow overrides), negotiates the version or stops on a refusal, advances the world slice by slice with `DDATA` and an
+  `NSYNC`/`HSYNC` barrier capped in wall time, processes host records in sequence order (epoch floor, rebirth in the same
+  session, state queries, graceful goodbye), ends on a host sequence gap or three missed barriers, and closes with `NDEATH`.
+  Commands are refused `not_ready` until P7c. Entity ids are mapped to wire-safe ids; no domain description reaches the wire.
+  New `run.SetDeliveryObserver` (every delivered event after perturbation, before the adapter). Contract changes: a birth's
+  current value may be `null` only with quality `warming_up`; an invalid host record still consumes its `seq`; the barrier
+  rule is explicit; the contract digest moves. A new fuzz target `FuzzWireParse`.
+
+- **Event clock** (`docs/design/DOMAIN_SPEC_V0_2.md` section 19; phase P6e, review item S11, finding R0-12). A `pulse` fault
+  shape acts for `duration_s` and its start and end are event instants: trips sample their condition there (a 0.3 s sag trips
+  a 0.2 s ride-through trip, a 0.1 s sag does not), and event-driven channels are checked there, so a power-quality channel
+  records a sag at its exact time. A trip now shows at the boundary where `for_s` has elapsed since its first true sample (one
+  step earlier than in P6c). The spec gains the RNG draw-order table. Shipped domains and every pinned output are unchanged.
+
+- **Supervisory control: setpoints, sequencer, responder, lease** (`docs/design/DOMAIN_SPEC_V0_2.md` section 18; phase P6d,
+  review items D3 and S2). A condition may compare against a setpoint state (`threshold_state`, with `threshold` as an
+  offset); `f1.form: "sequencer"` stages a plant up and down within a band; an effector `responder` applies a delayed effect
+  chosen by whether its argument names an active fault, and may clear it; an effector `lease` falls back (`safe_off`,
+  `revert`, `hold_last`) unless renewed. The utility fixture gains an air system with a pressure band, a compressor
+  sequencer, a leased boost and a work-order responder. Shipped domains and every pinned output are unchanged.
+
+- **Protection: trips, lockouts, anti-recycle, boundaries, preconditions** (`docs/design/DOMAIN_SPEC_V0_2.md` section 17;
+  phase P6c, review item S14). A shared closed `condition` (`lt`, `lte`, `gt`, `gte`); `f1.form: "trip"` latches (a lockout,
+  reset when `reset_on` changes) or clears; `f1.form: "anti_recycle"` is a timer after an edge; `kinds[].boundaries` name trip
+  states with a severity; `effectors[].requires` refuses a call whose preconditions fail (locked out, recycling, isolated,
+  hand mode) with the generic `effector_refused`, the director log recording `precondition_refused`. **Fix:** interlocks and
+  preconditions of a call dated after the world clock are evaluated on a copy of the entity's state, so they no longer change
+  earlier readings. The utility fixture gains a chiller. Shipped domains and every pinned output are unchanged.
+
+- **Schedule, regime and peak** (`docs/design/DOMAIN_SPEC_V0_2.md` section 16; phase P6b, review item S9). `f0.schedule` adds
+  a clock-aligned piecewise profile (step or linear) to an F0 state; `f1.form: "regime"` is a lag whose gain and time constant
+  switch when a selector state crosses a threshold at a step boundary; `f1.form: "peak"` is the billing-period demand peak: the
+  largest epoch-aligned block mean of one input, with a ratchet on the previous period's peak and seeded `initial` and
+  `previous_peak`. New fixture `utility-plant.domain.json`. Shipped domains and every pinned output are unchanged.
+
+- **Stores and flows** (`docs/design/DOMAIN_SPEC_V0_2.md` sections 13 to 15; phase P6a, findings R0-11, R2-05,
+  R5b-01..03). `f1.form: "store"` with a `capacity` accumulates its inputs and flows; `kinds[].flows` move
+  `conductance × Π scale × (from − to)` between stores of one entity, or drain a store without `to`. Every store of an
+  entity is integrated jointly on one shared grid; every store of a kind shares one `dt_ms`. **Integrator fix:** every
+  integrated state of an entity now advances together, earliest step first, and an input is read at its exact step
+  boundary, so no value depends on the order states are read (before, a lag fed by a lag read ahead could see a later
+  value, and an emitting world could differ from the silent oracle world). A test proves the domain schema holds no free-text expression. Narrowing refuses a target named twice and
+  argument bounds that leave no value; a `peer_residual` fault added by an override may not watch a channel only the
+  override adds; a profile's entity count sizes the first templated instance set; idempotency compares argument numbers
+  by value. New fixture `transfer-plant.domain.json`. Shipped domains and every pinned output are unchanged.
+
+- **Named instances, overrides, links, system entities and boards** (`docs/design/DOMAIN_SPEC_V0_2.md` sections 8 to 12;
+  phase P5b, finding R5a-02). An instance set may list `names` instead of or beside an `id_template`; an explicit entity id
+  is accepted when it is a name or fits a template. `override` on an instance set adds states, dynamics (for added states),
+  channels, faults and effectors, or narrows a state's bounds, a channel's range or an effector argument's bounds; removing
+  or retyping is refused with a located issue, and the world gives each entity the effective kind of its set. `kinds[].system`
+  marks a plant-wide kind with exactly one named instance. `link_types` and `links` declare typed topology between
+  instances; `boards` group the instances hosted on one device and own the `boot_id` (structure only, no run-time behaviour).
+  The domain-spec contract moves its definitions of state, dynamics, channel, fault and effector into `$defs` so a kind and
+  an override share them. Shipped domains and every pinned output are unchanged. New world methods `StateNamesOf` and
+  `EffectorOf`; new fixture `structured-plant.domain.json`.
+
 - **Multi-kind world** (`docs/design/DOMAIN_SPEC_V0_2.md` §2.3 and §3; phase P5a2, finding R5a-01). A domain may declare
   several **kinds** and several **instance sets**, each set following a kind with its own `id_template`, `count` and
   `churn`; the `maxItems: 1` limits on `kinds` and `instances` are lifted. Channel, fault and effector names are unique

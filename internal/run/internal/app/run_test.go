@@ -37,6 +37,7 @@ func testBase(tb testing.TB) (*domain.Compiled, *model.Adapter) {
 // artifact replays to a matching digest.
 func TestRunByteReproducible(t *testing.T) {
 	t.Parallel()
+	testsupport.SkipUnderRace(t, "two identical runs compared byte for byte")
 	spec, a := testBase(t)
 	start := model.DefaultStartTimeNS + 4*3600*1e9 // 04:00, pre-dawn
 	cfg := func() Config {

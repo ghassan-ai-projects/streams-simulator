@@ -29,8 +29,9 @@ type aliasReview struct {
 var aliasedValueTypes = map[string]aliasReview{
 	"internal/domain:Compiled": {
 		target: "Compiled",
-		methods: []string{"Channel", "ChannelGain", "ChannelNames", "CheckEntityIDs", "Effector", "EffectorCount", "Fault",
-			"FaultCount", "FaultKind", "HasChannel", "HasEffector", "HasFault", "HasProfile", "InstanceSetFor", "Kind",
+		methods: []string{"Channel", "ChannelGain", "ChannelNames", "CheckEntityIDs", "DeclaredChannels",
+			"DeclaredEffectors", "Effector", "EffectorCount", "EntityChannel", "Fault", "FaultCount", "FaultKind", "HasChannel",
+			"HasEffector", "HasFault", "HasProfile", "InstanceKind", "InstanceSetFor", "IsInstanceName", "Kind",
 			"KindChannelNames", "Profile", "StateNames"},
 		reason: "compiled domain spec: lookups over its own declared names; Spec is deliberately mutable for tests",
 	},

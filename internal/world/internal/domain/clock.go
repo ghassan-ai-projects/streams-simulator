@@ -76,13 +76,19 @@ func (w *World) processScheduledEvent(event *item) {
 	case kindEmission:
 		w.processEmission(event.entity, event.channel, event.timeNS)
 	case kindEffectStart:
-		if kick, ok := event.payload.(*kick); ok && !kick.applied {
-			kick.applied = true
-			w.effectsAppliedThis++
-		}
+		w.startEffect(event)
 	case kindBirth:
 		w.birthAutonomous(event.payload.(int), event.timeNS)
 	case kindDeath:
 		w.retire(event.entity, "lifetime", event.timeNS)
+	case kindEventCheck:
+		w.processEventCheck(event.entity, event.channel, event.timeNS)
+	}
+}
+
+func (w *World) startEffect(event *item) {
+	if kick, ok := event.payload.(*kick); ok && !kick.applied {
+		kick.applied = true
+		w.effectsAppliedThis++
 	}
 }

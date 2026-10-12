@@ -53,7 +53,7 @@ func validateWorldBinding(w *world.World, target string, binding Binding) error 
 	if binding.entity == "" || w.Entity(binding.entity) == nil {
 		return fmt.Errorf("deviceworld: target %q references unknown entity %q", target, binding.entity)
 	}
-	if binding.valueState != "" && !slices.Contains(w.Spec.StateNames(w.Entity(binding.entity).Type), binding.valueState) {
+	if binding.valueState != "" && !slices.Contains(w.StateNamesOf(binding.entity), binding.valueState) {
 		return fmt.Errorf("deviceworld: target %q references unknown value_state %q", target, binding.valueState)
 	}
 	effector := kindEffector(w, binding.entity, binding.effector)
@@ -64,8 +64,7 @@ func validateWorldBinding(w *world.World, target string, binding Binding) error 
 }
 
 func kindEffector(w *world.World, entityID, name string) *model.Effector {
-	kind := w.Spec.Kind(w.Entity(entityID).Type)
-	return kind.EffectorDecl(name)
+	return w.EffectorOf(entityID, name)
 }
 
 func validateSafeStopBinding(w *world.World, target string, binding Binding) error {

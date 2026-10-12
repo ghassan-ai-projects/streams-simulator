@@ -1,0 +1,580 @@
+{
+  "id": "utility-plant",
+  "version": "0.1.0",
+  "title": "Utility plant",
+  "description": "A test domain of exogenous schedules, a block demand peak and a two-regime transformer: a tariff and a site load follow the clock, the demand peak is the largest 15-minute mean of the load, and the transformer oil heats faster once it passes a threshold.",
+  "axes": {
+    "absence": "signal",
+    "actuation": "advisory",
+    "cadence": ["periodic"],
+    "cardinality": "fleet",
+    "consequence": ["downtime"],
+    "correlation": ["peer"],
+    "fidelity": ["F0", "F1"],
+    "lateness": "bounded",
+    "rate": "low",
+    "seasonality": ["none"],
+    "time_reference": "wall",
+    "value_shape": ["scalar"]
+  },
+  "stresses": "Clock-aligned schedules, a billing-period demand peak with a ratchet, and a regime switch whose crossing time is analytic. A chiller adds a latched low-flow lockout, an anti-recycle timer, lockout-tagout and hand-mode preconditions, and safety boundaries. An air system closes the loop: a supervisory pressure band, a compressor sequencer, a leased boost and a work-order responder.",
+  "kinds": [
+    {
+      "name": "meter",
+      "state": [
+        {"name": "tariff", "unit": "EUR/kWh", "initial": 0.1},
+        {"name": "load", "unit": "kW", "initial": 50.0, "min": 0.0, "max": 500.0},
+        {"name": "demand", "unit": "kW", "initial": 0.0},
+        {"name": "oil", "unit": "C", "initial": 30.0}
+      ],
+      "dynamics": [
+        {
+          "target": "tariff",
+          "tier": "F0",
+          "f0": {
+            "schedule": {
+              "interpolation": "step",
+              "period_s": 86400,
+              "points": [{"at_s": 0, "value": 0.1}, {"at_s": 25200, "value": 0.3}, {"at_s": 75600, "value": 0.12}]
+            }
+          }
+        },
+        {
+          "target": "load",
+          "tier": "F0",
+          "f0": {
+            "baseline": 40.0,
+            "schedule": {
+              "interpolation": "linear",
+              "period_s": 86400,
+              "points": [{"at_s": 21600, "value": 10.0}, {"at_s": 43200, "value": 60.0}, {"at_s": 64800, "value": 20.0}]
+            }
+          }
+        },
+        {
+          "target": "demand",
+          "tier": "F1",
+          "dt_ms": 60000,
+          "f1": {
+            "form": "peak",
+            "block_s": 900,
+            "inputs": ["load"],
+            "period_s": 86400,
+            "previous_peak": 90.0,
+            "ratchet": 0.6
+          }
+        },
+        {
+          "target": "oil",
+          "tier": "F1",
+          "dt_ms": 1000,
+          "f1": {
+            "form": "regime",
+            "above": {"gain": 1.2, "time_constant_s": 900},
+            "below": {"gain": 0.8, "time_constant_s": 1800},
+            "inputs": ["load"],
+            "selector": "oil",
+            "threshold": 65.0
+          }
+        }
+      ],
+      "channels": [
+        {
+          "name": "meter.tariff",
+          "unit": "u",
+          "absence": "signal",
+          "cadence": {"mode": "periodic", "period_s": 60},
+          "fidelity": "F1",
+          "noise": {"model": "gaussian", "sigma": 0.0001},
+          "observes": "tariff",
+          "resolution": 0.001,
+          "value_type": "number"
+        },
+        {
+          "name": "meter.load",
+          "unit": "u",
+          "absence": "signal",
+          "cadence": {"mode": "periodic", "period_s": 60},
+          "fidelity": "F1",
+          "noise": {"model": "gaussian", "sigma": 0.5},
+          "observes": "load",
+          "resolution": 0.001,
+          "value_type": "number"
+        },
+        {
+          "name": "meter.demand",
+          "unit": "u",
+          "absence": "signal",
+          "cadence": {"mode": "periodic", "period_s": 60},
+          "fidelity": "F1",
+          "noise": {"model": "gaussian", "sigma": 0.5},
+          "observes": "demand",
+          "resolution": 0.001,
+          "value_type": "number"
+        },
+        {
+          "name": "meter.oil",
+          "unit": "u",
+          "absence": "signal",
+          "cadence": {"mode": "periodic", "period_s": 60},
+          "fidelity": "F1",
+          "noise": {"model": "gaussian", "sigma": 0.2},
+          "observes": "oil",
+          "resolution": 0.001,
+          "value_type": "number"
+        }
+      ],
+      "faults": [
+        {
+          "id": "load_surge",
+          "affects": [{"state": "load", "delta": 30.0}],
+          "expected_effector": "shed_load",
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "meter.load"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"magnitude": 1.0, "shape": "step"}
+        },
+        {
+          "id": "meter_jitter",
+          "affects": [{"state": "load", "delta": 2.0}],
+          "is_negative_class": true,
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "meter.load"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"duty_cycle": 0.2, "magnitude": 1.0, "rate_per_hour": 1.0, "shape": "intermittent"}
+        }
+      ],
+      "effectors": [
+        {
+          "name": "shed_load",
+          "ack": {"failure_modes": [{"mode": "ok", "probability": 1.0}], "latency_ms": {"mean": 100, "sigma": 10}},
+          "args_schema": {
+            "additionalProperties": false,
+            "properties": {"meter_id": {"type": "string"}},
+            "required": ["meter_id"],
+            "type": "object"
+          },
+          "confirmation_channels": ["meter.load"],
+          "effect": {"dead_time_s": 0, "state_deltas": [{"state": "load", "delta": -20.0}], "time_constant_s": 0},
+          "idempotency_window_s": 600,
+          "risk_class": "low"
+        }
+      ]
+    },
+    {
+      "name": "chiller",
+      "state": [
+        {"name": "flow", "unit": "%", "initial": 100.0},
+        {"name": "temp", "unit": "C", "initial": 40.0},
+        {"name": "running", "unit": "on", "initial": 1.0},
+        {"name": "resets", "unit": "count", "initial": 0.0},
+        {"name": "isolated", "unit": "on", "initial": 0.0},
+        {"name": "hand", "unit": "on", "initial": 0.0},
+        {"name": "low_flow", "unit": "tripped", "initial": 0.0},
+        {"name": "hot", "unit": "tripped", "initial": 0.0},
+        {"name": "recycle", "unit": "s", "initial": 0.0},
+        {"name": "voltage", "unit": "%", "initial": 100.0},
+        {"name": "sag_trip", "unit": "tripped", "initial": 0.0}
+      ],
+      "dynamics": [
+        {"target": "flow", "tier": "F0", "f0": {"baseline": 100.0}},
+        {"target": "temp", "tier": "F0", "f0": {"baseline": 40.0}},
+        {
+          "target": "low_flow",
+          "tier": "F1",
+          "dt_ms": 1000,
+          "f1": {
+            "form": "trip",
+            "for_s": 8,
+            "latch": true,
+            "reset_on": "resets",
+            "tripped_value": 1.0,
+            "when": {"state": "flow", "operator": "lt", "threshold": 60.0}
+          }
+        },
+        {
+          "target": "hot",
+          "tier": "F1",
+          "dt_ms": 1000,
+          "f1": {
+            "form": "trip",
+            "for_s": 30,
+            "tripped_value": 1.0,
+            "when": {"state": "temp", "operator": "gt", "threshold": 60.0}
+          }
+        },
+        {
+          "target": "recycle",
+          "tier": "F1",
+          "dt_ms": 1000,
+          "f1": {"form": "anti_recycle", "edge": "fall", "hold_s": 600, "watch": "running"}
+        },
+        {
+          "target": "sag_trip",
+          "tier": "F1",
+          "dt_ms": 1000,
+          "f1": {
+            "form": "trip",
+            "for_s": 0.2,
+            "latch": true,
+            "reset_on": "resets",
+            "tripped_value": 1.0,
+            "when": {"state": "voltage", "operator": "lt", "threshold": 85.0}
+          }
+        }
+      ],
+      "channels": [
+        {
+          "name": "chiller.flow",
+          "unit": "u",
+          "absence": "signal",
+          "cadence": {"mode": "periodic", "period_s": 60},
+          "fidelity": "F1",
+          "noise": {"model": "gaussian", "sigma": 0.5},
+          "observes": "flow",
+          "resolution": 0.001,
+          "value_type": "number"
+        },
+        {
+          "name": "chiller.running",
+          "unit": "u",
+          "absence": "signal",
+          "cadence": {"mode": "periodic", "period_s": 60},
+          "fidelity": "F1",
+          "noise": {"model": "gaussian", "sigma": 0.0001},
+          "observes": "running",
+          "resolution": 0.001,
+          "value_type": "number"
+        },
+        {
+          "name": "chiller.lockout",
+          "unit": "u",
+          "absence": "signal",
+          "cadence": {"mode": "periodic", "period_s": 60},
+          "fidelity": "F1",
+          "noise": {"model": "gaussian", "sigma": 0.0001},
+          "observes": "low_flow",
+          "resolution": 0.001,
+          "value_type": "number"
+        },
+        {
+          "name": "chiller.voltage_event",
+          "unit": "%",
+          "absence": "signal",
+          "cadence": {"mode": "event_driven", "period_s": 60},
+          "fidelity": "F1",
+          "noise": {"model": "gaussian", "sigma": 0.05},
+          "observes": "voltage",
+          "resolution": 0.1,
+          "value_type": "number"
+        }
+      ],
+      "faults": [
+        {
+          "id": "flow_loss",
+          "affects": [{"state": "flow", "delta": -60.0}],
+          "expected_effector": "reset_chiller",
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "chiller.flow"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"magnitude": 1.0, "shape": "step"}
+        },
+        {
+          "id": "flow_wobble",
+          "affects": [{"state": "flow", "delta": -5.0}],
+          "is_negative_class": true,
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "chiller.flow"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"duty_cycle": 0.2, "magnitude": 1.0, "rate_per_hour": 1.0, "shape": "intermittent"}
+        },
+        {
+          "id": "voltage_sag",
+          "affects": [{"state": "voltage", "delta": -20.0}],
+          "expected_effector": "reset_chiller",
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "chiller.voltage_event"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"duration_s": 0.3, "magnitude": 1.0, "shape": "pulse"}
+        },
+        {
+          "id": "voltage_blip",
+          "affects": [{"state": "voltage", "delta": -20.0}],
+          "is_negative_class": true,
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "chiller.voltage_event"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"duration_s": 0.1, "magnitude": 1.0, "shape": "pulse"}
+        }
+      ],
+      "effectors": [
+        {
+          "name": "stop_chiller",
+          "ack": {"failure_modes": [{"mode": "ok", "probability": 1.0}], "latency_ms": {"mean": 100, "sigma": 10}},
+          "args_schema": {
+            "additionalProperties": false,
+            "properties": {"chiller_id": {"type": "string"}},
+            "required": ["chiller_id"],
+            "type": "object"
+          },
+          "confirmation_channels": ["chiller.running"],
+          "effect": {"dead_time_s": 0, "state_deltas": [{"state": "running", "delta": -1.0}], "time_constant_s": 0},
+          "idempotency_window_s": 600,
+          "risk_class": "medium"
+        },
+        {
+          "name": "start_chiller",
+          "ack": {"failure_modes": [{"mode": "ok", "probability": 1.0}], "latency_ms": {"mean": 100, "sigma": 10}},
+          "args_schema": {
+            "additionalProperties": false,
+            "properties": {"chiller_id": {"type": "string"}},
+            "required": ["chiller_id"],
+            "type": "object"
+          },
+          "confirmation_channels": ["chiller.running"],
+          "effect": {"dead_time_s": 0, "state_deltas": [{"state": "running", "delta": 1.0}], "time_constant_s": 0},
+          "idempotency_window_s": 600,
+          "requires": [
+            {"state": "low_flow", "operator": "lt", "threshold": 0.5},
+            {"state": "recycle", "operator": "lte", "threshold": 0.0},
+            {"state": "isolated", "operator": "lt", "threshold": 0.5},
+            {"state": "hand", "operator": "lt", "threshold": 0.5},
+            {"state": "sag_trip", "operator": "lt", "threshold": 0.5}
+          ],
+          "risk_class": "medium"
+        },
+        {
+          "name": "reset_chiller",
+          "ack": {"failure_modes": [{"mode": "ok", "probability": 1.0}], "latency_ms": {"mean": 100, "sigma": 10}},
+          "args_schema": {
+            "additionalProperties": false,
+            "properties": {"chiller_id": {"type": "string"}},
+            "required": ["chiller_id"],
+            "type": "object"
+          },
+          "confirmation_channels": ["chiller.running"],
+          "effect": {"dead_time_s": 0, "state_deltas": [{"state": "resets", "delta": 1.0}], "time_constant_s": 0},
+          "idempotency_window_s": 600,
+          "risk_class": "medium"
+        },
+        {
+          "name": "isolate_chiller",
+          "ack": {"failure_modes": [{"mode": "ok", "probability": 1.0}], "latency_ms": {"mean": 100, "sigma": 10}},
+          "args_schema": {
+            "additionalProperties": false,
+            "properties": {"chiller_id": {"type": "string"}},
+            "required": ["chiller_id"],
+            "type": "object"
+          },
+          "confirmation_channels": ["chiller.running"],
+          "effect": {"dead_time_s": 0, "state_deltas": [{"state": "isolated", "delta": 1.0}], "time_constant_s": 0},
+          "idempotency_window_s": 600,
+          "risk_class": "medium"
+        },
+        {
+          "name": "release_chiller",
+          "ack": {"failure_modes": [{"mode": "ok", "probability": 1.0}], "latency_ms": {"mean": 100, "sigma": 10}},
+          "args_schema": {
+            "additionalProperties": false,
+            "properties": {"chiller_id": {"type": "string"}},
+            "required": ["chiller_id"],
+            "type": "object"
+          },
+          "confirmation_channels": ["chiller.running"],
+          "effect": {"dead_time_s": 0, "state_deltas": [{"state": "isolated", "delta": -1.0}], "time_constant_s": 0},
+          "idempotency_window_s": 600,
+          "risk_class": "medium"
+        }
+      ],
+      "boundaries": [
+        {"name": "low_flow_trip", "state": "low_flow", "severity": "major"},
+        {"name": "oil_hot", "state": "hot", "severity": "critical"}
+      ]
+    },
+    {
+      "name": "air",
+      "state": [
+        {"name": "demand", "unit": "m3/min", "initial": 6.0},
+        {"name": "pressure", "unit": "bar", "initial": 7.0, "min": 0.0, "max": 12.0},
+        {"name": "band_low", "unit": "bar", "initial": 6.5},
+        {"name": "band_high", "unit": "bar", "initial": 7.5},
+        {"name": "stages", "unit": "count", "initial": 2.0},
+        {"name": "boost", "unit": "m3/min", "initial": 0.0},
+        {"name": "orders", "unit": "count", "initial": 0.0},
+        {"name": "inspected", "unit": "count", "initial": 0.0}
+      ],
+      "dynamics": [
+        {"target": "demand", "tier": "F0", "f0": {"baseline": 6.0}},
+        {
+          "target": "pressure",
+          "tier": "F1",
+          "dt_ms": 1000,
+          "f1": {
+            "form": "store",
+            "capacity": 600.0,
+            "inputs": [
+              {"state": "stages", "coef": 3.0},
+              {"state": "boost", "coef": 1.0},
+              {"state": "demand", "coef": -1.0}
+            ]
+          }
+        },
+        {
+          "target": "stages",
+          "tier": "F1",
+          "dt_ms": 1000,
+          "f1": {
+            "form": "sequencer",
+            "hold_s": 60,
+            "stage_down": {"state": "pressure", "operator": "gt", "threshold": 0.0, "threshold_state": "band_high"},
+            "stage_up": {"state": "pressure", "operator": "lt", "threshold": 0.0, "threshold_state": "band_low"},
+            "stages": 4
+          }
+        }
+      ],
+      "channels": [
+        {
+          "name": "air.pressure",
+          "unit": "u",
+          "absence": "signal",
+          "cadence": {"mode": "periodic", "period_s": 60},
+          "fidelity": "F1",
+          "noise": {"model": "gaussian", "sigma": 0.02},
+          "observes": "pressure",
+          "resolution": 0.001,
+          "value_type": "number"
+        },
+        {
+          "name": "air.stages",
+          "unit": "u",
+          "absence": "signal",
+          "cadence": {"mode": "periodic", "period_s": 60},
+          "fidelity": "F1",
+          "noise": {"model": "gaussian", "sigma": 0.0001},
+          "observes": "stages",
+          "resolution": 0.001,
+          "value_type": "number"
+        }
+      ],
+      "faults": [
+        {
+          "id": "air_leak",
+          "affects": [{"state": "demand", "delta": 4.0}],
+          "expected_effector": "work_order",
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "air.pressure"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"magnitude": 1.0, "shape": "step"}
+        },
+        {
+          "id": "air_wobble",
+          "affects": [{"state": "demand", "delta": 0.5}],
+          "is_negative_class": true,
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "air.pressure"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"duty_cycle": 0.2, "magnitude": 1.0, "rate_per_hour": 1.0, "shape": "intermittent"}
+        }
+      ],
+      "effectors": [
+        {
+          "name": "set_pressure_band",
+          "ack": {"failure_modes": [{"mode": "ok", "probability": 1.0}], "latency_ms": {"mean": 100, "sigma": 10}},
+          "args_schema": {
+            "additionalProperties": false,
+            "properties": {"high": {"type": "number"}, "low": {"type": "number"}},
+            "required": ["low", "high"],
+            "type": "object"
+          },
+          "confirmation_channels": ["air.pressure"],
+          "effect": {
+            "dead_time_s": 0,
+            "state_deltas": [
+              {"state": "band_low", "assign_from_arg": "low"},
+              {"state": "band_high", "assign_from_arg": "high"}
+            ],
+            "time_constant_s": 0
+          },
+          "idempotency_window_s": 600,
+          "risk_class": "medium"
+        },
+        {
+          "name": "boost_air",
+          "ack": {"failure_modes": [{"mode": "ok", "probability": 1.0}], "latency_ms": {"mean": 100, "sigma": 10}},
+          "args_schema": {
+            "additionalProperties": false,
+            "properties": {"lease_s": {"type": "number"}, "rate": {"type": "number"}},
+            "required": ["rate", "lease_s"],
+            "type": "object"
+          },
+          "confirmation_channels": ["air.pressure"],
+          "effect": {
+            "dead_time_s": 0,
+            "state_deltas": [{"state": "boost", "assign_from_arg": "rate"}],
+            "time_constant_s": 0
+          },
+          "idempotency_window_s": 600,
+          "lease": {"arg": "lease_s", "fallback": "safe_off", "safe_deltas": [{"state": "boost", "delta": 0.0}]},
+          "risk_class": "medium"
+        },
+        {
+          "name": "work_order",
+          "ack": {"failure_modes": [{"mode": "ok", "probability": 1.0}], "latency_ms": {"mean": 100, "sigma": 10}},
+          "args_schema": {
+            "additionalProperties": false,
+            "properties": {"cause": {"type": "string"}},
+            "required": ["cause"],
+            "type": "object"
+          },
+          "confirmation_channels": ["air.pressure"],
+          "effect": {"dead_time_s": 0, "state_deltas": [{"state": "orders", "delta": 1.0}], "time_constant_s": 0},
+          "idempotency_window_s": 600,
+          "responder": {
+            "clear_fault": true,
+            "delay_s": 900,
+            "match_arg": "cause",
+            "on_match": [{"state": "inspected", "delta": 1.0}],
+            "on_miss": [{"state": "inspected", "delta": 1.0}]
+          },
+          "risk_class": "medium"
+        }
+      ]
+    }
+  ],
+  "instances": [
+    {"kind": "meter", "id_template": "meter-{n}", "count": {"default": 2, "min": 1, "max": 8}},
+    {"kind": "chiller", "names": ["CH1"]},
+    {"kind": "air", "names": ["AIR1"]}
+  ],
+  "profiles": [
+    {"name": "nominal", "duration_s": 86400, "description": "Two meters over a day, one fault per scenario."},
+    {
+      "name": "correlated_cascade",
+      "not_applicable": "The meters share no upstream cause.",
+      "description": "Not applicable to the test plant."
+    },
+    {
+      "name": "sensor_pathology",
+      "duration_s": 86400,
+      "fault_weights": {"load_surge": 1.0},
+      "description": "Only the surge."
+    }
+  ],
+  "ground_truth": {"min_per_label": 10, "min_scenarios": 100, "negative_class_fraction": 0.4, "pre_degraded_fraction": 0.1}
+}

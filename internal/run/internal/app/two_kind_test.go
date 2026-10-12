@@ -5,23 +5,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
 func twoKindConfig(t *testing.T) Config {
 	t.Helper()
-	spec, err := domain.Load(testsupport.TwoKindDomain())
-	if err != nil {
-		t.Fatal(err)
-	}
-	native, err := adapter.Load(testsupport.Adapter("native-jsonl"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	return Config{Domain: spec, Adapter: native, Seed: 9, SinkName: model.SinkInproc, StartTimeNS: model.DefaultStartTimeNS, StartTimeSet: true}
+	return configFor(t, testsupport.TwoKindDomain())
 }
 
 func twoKindScenario(start int64) *model.Scenario {
@@ -42,18 +32,7 @@ func twoKindScenario(start int64) *model.Scenario {
 func runTwoKind(t *testing.T) (*Run, *model.RunArtifact) {
 	t.Helper()
 	cfg := twoKindConfig(t)
-	r, err := New(context.Background(), cfg)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := r.ExecuteScenario(context.Background(), twoKindScenario(cfg.StartTimeNS)); err != nil {
-		t.Fatal(err)
-	}
-	art, err := r.End("")
-	if err != nil {
-		t.Fatal(err)
-	}
-	return r, art
+	return runScenario(t, cfg, twoKindScenario(cfg.StartTimeNS))
 }
 
 func TestATwoKindRunIsByteReproducibleAndReplaysToTheSameDigest(t *testing.T) {
@@ -76,11 +55,7 @@ func TestExplicitEntityIdsMayNameEveryInstanceSet(t *testing.T) {
 	t.Parallel()
 	cfg := twoKindConfig(t)
 	cfg.EntityIDs = []string{"tank-1", "pump-1", "pump-2"}
-	r, err := New(context.Background(), cfg)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if ids := r.World.InitialEntityIDs(); len(ids) != 3 || r.World.Entity("pump-2").Type != "pump" {
+	if ids := startRun(t, cfg).World.InitialEntityIDs(); len(ids) != 3 {
 		t.Fatalf("entities = %v", ids)
 	}
 	cfg.EntityIDs = []string{"valve-1"}

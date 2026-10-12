@@ -34,7 +34,7 @@ func (w *World) noiseFreeObservation(ent *Entity, ch *model.Channel, t int64) fl
 // change to the channel's emission state, so asking never alters a run.
 func (w *World) quietObservation(ent *Entity, ch *model.Channel, t int64) float64 {
 	value := w.stateAt(ent.ID, ch.Observes, t)
-	if w.isConfirmationChannel(ch.Name) {
+	if w.isConfirmationChannel(ent, ch.Name) {
 		value = w.shadowValue(ent.ID, ch.Observes, t)
 	}
 	reading := w.biasedObservation(ent, ch, value, t)

@@ -85,7 +85,10 @@ func (w *World) ClearFault(faultID string, atNS int64) error {
 	if atNS <= 0 {
 		atNS = w.clockNS
 	}
-	af.clearedNS = atNS
+	if af.clearedNS == 0 || atNS < af.clearedNS {
+		af.clearedNS = atNS
+		w.checkPulseEdge(af, atNS)
+	}
 	return nil
 }
 
@@ -164,7 +167,11 @@ func (w *World) admitFaultInjection(fault *model.Fault, entityID, faultID string
 	if err != nil {
 		return "", err
 	}
-	return w.registerFault(fault, entityID, onsetNS, severity), nil
+	id := w.registerFault(fault, entityID, onsetNS, severity)
+	if fault.Onset.Shape == model.ShapePulse {
+		w.schedulePulse(w.faultsByID[id], int64(fault.Onset.DurationS*secondsPerNS))
+	}
+	return id, nil
 }
 
 func declaredSeverity(severity float64, params map[string]any) (float64, error) {

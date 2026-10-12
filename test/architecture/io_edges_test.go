@@ -53,6 +53,8 @@ var ioEdges = map[string]ioEdge{
 	"internal/device/internal/uds/uds.go":       {uses: []string{"go-statement", "import:net", "import:os"}, why: "unix socket listener, accept loop and session"},
 	"internal/device/internal/uds/serve.go":     {uses: []string{"import:net", "import:os", "import:os/signal", "import:syscall"}, why: "device socket served until the process is interrupted"},
 	"internal/device/internal/files/files.go":   {uses: []string{"import:os"}, why: "device capability catalog file loading"},
+	"internal/plantwire/internal/uds/link.go":   {uses: []string{"call:time.Now", "go-statement", "import:net", "import:os", "import:syscall"}, why: "plant wire node: dial the host's owner-only socket (owner checked), read its records, write with a deadline"},
+	"internal/plantwire/internal/uds/await.go":  {uses: []string{"call:time.NewTimer"}, why: "wall-time cap of the plant wire barrier"},
 
 	"internal/deviceworld/internal/files/files.go": {uses: []string{"import:os"}, why: "device-to-world binding catalog file loading"},
 	"internal/suite/internal/files/files.go":       {uses: []string{"import:os"}, why: "directory and file a generated suite is written to"},

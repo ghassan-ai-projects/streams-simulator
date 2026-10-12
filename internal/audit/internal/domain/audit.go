@@ -73,6 +73,6 @@ func (p *Panel) Audit(entityID, faultID string, onsetNS, startNS int64, entityID
 	if err != nil {
 		return nil, fmt.Errorf("Audit: %w", err)
 	}
-	evidence := p.sampleEvidence(faultID, clean, faulted, onsetNS, startNS, durationNS)
+	evidence := p.sampleEvidence(entityID, faultID, clean, faulted, onsetNS, startNS, durationNS)
 	return p.gradeEvidence(evidence, cleanEmissions, faultEmissions, startNS, durationNS), nil
 }

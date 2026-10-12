@@ -1,12 +1,11 @@
 # Domain spec v0.2, semantics part 1: kinds and instances
 
 - **Status**: implemented in phase P5a of the simulation-canvas goal ([PLAN](../simulation-canvas/PLAN.md)); amended in phase P5a2
-  (several kinds and instance sets per domain, sections 2.3 and 3).
+  (several kinds and instance sets per domain, sections 2.3 and 3); continued in phase P5b (sections 8 to 12).
 - **Contract**: [`docs/contracts/domain-spec-v0.2.schema.json`](../contracts/domain-spec-v0.2.schema.json), embedded in the binary
   (`internal/schemas`), parity-tested against the committed copy. v0.1 is removed: the project is pre-release and the eight shipped
   domains are rewritten in the same change.
-- **Later parts**: add-or-narrow overrides, typed links, system entities and the board are P5b; the new dynamics vocabulary
-  (`store`, `flow`, `regime`, `trip`, ...) and the event clock are P6. Nothing in this part depends on them.
+- **Later parts**: `store` and `flow` are section 13 (P6a), `schedule`, `regime` and `peak` section 16 (P6b), protection section 17 (P6c), supervisory control section 18 (P6d), the event clock section 19 (P6e). Aggregation of dynamics inputs over links (`sum`, `mean`) is not built yet (finding R6e-01).
 
 ## 1. Why
 
@@ -46,8 +45,8 @@ An instance set is a *templated population*: `id_template` renders ids (`{n}` is
 renders `a`), `count.default` instances exist at the start, and `churn` births and retires instances during a run. Each set has its
 own template, count and churn; a kind may have several sets, and a domain several kinds.
 
-**Per-instance parameters.** v0.1 allowed no variation between entities, so part 1 has none to carry. Variation is the add-or-narrow
-override of P5b; named instances (`M1`, `AC1`) arrive there with it.
+**Per-instance parameters.** v0.1 allowed no variation between entities. Variation is the add-or-narrow override of section 9,
+and named instances (`M1`, `AC1`) are section 8 (both P5b).
 
 ### 2.3 Several kinds (P5a2)
 
@@ -150,7 +149,7 @@ scenario file, director, replay) is covered once:
    `/instances/i/count/default`).
 
 An empty list selects the default population: each set's `count.default` ids, sets in declaration order. A violation is a refusal at world creation (a scenario violation at `/world`).
-`Compiled.CheckEntityIDs` implements the rule. Ids that fit the template are all the template can render, so churned births are
+`Compiled.CheckEntityIDs` implements the rule; P5b extends it to names (section 8). Ids that fit the template are all the template can render, so churned births are
 unaffected.
 
 ## 6. Canonical formatting
@@ -160,8 +159,8 @@ function of the document:
 
 - two-space indentation, newline at the end of the file, strings written as UTF-8 without HTML escaping, number text preserved;
 - object members in a fixed order: the document's members in schema order (`id`, `version`, `title`, `description`, `axes`,
-  `stresses`, `kinds`, `instances`, `profiles`, `ground_truth`); within any other object the identifying and structural members first
-  (`id`, `name`, `kind`, `id_template`, `count`, `churn`, `target`, `tier`, `form`, `state`, `unit`, `initial`, `default`, `min`,
+  `stresses`, `kinds`, `instances`, `link_types`, `links`, `boards`, `profiles`, `ground_truth`); within any other object the
+  identifying and structural members first (`id`, `name`, `kind`, `system`, `names`, `id_template`, `count`, `churn`, `target`, `tier`, `form`, `state`, `unit`, `initial`, `default`, `min`,
   `max`, `dynamics`, `channels`, `faults`, `effectors`), then the rest alphabetically, then `description`;
 - array order is semantic and never changed;
 - an object or array that fits in 110 columns is written on one line, otherwise one member per line.
@@ -173,3 +172,272 @@ The canvas and agents call it so a hand edit and a canvas edit of the same world
 
 [`DECISIONS.md`](../DECISIONS.md) D-03, D-04 and D-14 carry deviation entries describing what v0.2 does and does not change in them.
 Part 1 changes none of their runtime behaviour.
+
+## 8. Named instances (finding R5a-02)
+
+`instances[i]` may carry `names`, a list of explicit entity ids (`M1`, `AC1`). A set needs `names`, an `id_template`, or both.
+Sections 8 to 12 are phase P5b; every issue is located at a pointer into the document.
+
+- The initial population of a set is its names in order, then `count.default` templated ids. `count` belongs to the template: it
+  is required with an `id_template` and refused without one, and so is `churn` (births render ids from the template).
+- A name is unique across the domain, matches the entity-id alphabet of `sim-event`, and must not fit the `id_template` of **any**
+  set (a template could render it too, and churn or `entity.add` could then collide with it).
+- `Compiled.InstanceSetFor(id)` tries names across all sets first, then templates in set order, so a name wins over a template
+  of an earlier set. `CheckEntityIDs`, the world (`AddEntity`, initial population) and the links and boards below all use it. In
+  the explicit-id rule (section 5) a name is accepted and not counted against `count.min` or `count.max`.
+
+## 9. Overrides: add or narrow, never remove or retype
+
+`instances[i].override` varies the instances of **one set** (a named instance is a set of one name). The effective kind of the
+set is the kind plus the override; a set without an override shares the kind itself.
+
+| Member | Meaning | Rule |
+|---|---|---|
+| `state`, `channels`, `faults`, `effectors` | Added declarations | Same definitions as in a kind. Channel, fault and effector names stay unique across the domain, so redeclaring a kind's is the duplicate issue; a state name must not repeat one of the kind (or of the override) |
+| `dynamics` | Added dynamics | May drive only states the override adds (changing how an existing state evolves would retype it); inputs may read any state of the effective kind; cycles are refused |
+| `narrow.state[]` | `{name, min, max}` | Names a state of the kind; `min < max`; inside the kind's bounds when it has any (a state with neither bound is unbounded); the initial value lies inside |
+| `narrow.channels[]` | `{name, range{min,max}}` | Names a channel of the kind; `min < max`; inside the kind's range when it has one |
+| `narrow.effectors[]` | `{name, args{<arg>{minimum?, maximum?}}}` | Names an effector of the kind and a numeric property of its `args_schema`; a bound may only tighten the kind's `minimum` or `maximum`; `minimum <= maximum` |
+
+Nothing else is expressible: the schema has no member for removal and refuses unknown members, so removing or retyping (a unit, a
+value type) is a located schema issue. Added items are validated by the same checks as a kind's, against the **effective** kind, at
+`/instances/i/override/...`.
+
+**Runtime.** The world gives each entity the effective kind of its instance set, so an added state integrates, an added channel
+emits, an added fault or effector is accepted only on entities of that set (others are refused as for any other kind), and a
+narrowed state bound clamps that entity's reads. A narrowed effector argument is enforced when that entity is invoked; a narrowed
+channel range is the range `out_of_range` perturbation exceeds for that entity. Domain-wide lookups (`Compiled.Fault`, `Channel`,
+`Effector`, `FaultKind`) also find added declarations; `EntityChannel(id, name)` and `InstanceKind(set)` give the entity's view.
+Peers (section 2.3) remain the entities of the same kind, overridden or not. Draw order: substream names carry the entity id, so
+an override changes only the draws of its own entities.
+
+**Limits.** The scenario checker and the operator nameplate list effectors and channels domain-wide, so they show a kind's
+declaration; a narrowed argument is enforced at invocation, not by the scenario pre-check. A suite scenario draws its entity from
+those that carry the fault, so a fault added by an override is only injected into the entities of that set.
+
+## 10. System entities
+
+`kinds[k].system: true` marks a kind of plant-wide measurements (`air_header`, `power_bus`). Decision: a system kind is named by
+**exactly one** instance set with **exactly one name and no `id_template`** (so no churn). A channel therefore belongs to exactly
+one entity; for any other kind the channel belongs to each entity of the kind. Issues: `/kinds/k/system` (not one set),
+`/instances/i/names` (not one name, or a template), and a `peer_residual` fault of a system kind (one entity has no peers) at its
+detector form.
+
+## 11. Typed links
+
+`link_types[]` = `{name, from, to, description?}` declares a kind of link between two kinds (`feeds`: `tank` to `pump`).
+`links[]` = `{type, from, to}` joins two instances. Issues: duplicate link type name (`/link_types/i/name`), undeclared `from` or
+`to` kind (`/link_types/i/from`), undeclared type (`/links/i/type`), an endpoint that is no name and fits no template
+(`/links/i/from`), an endpoint of the wrong kind, and a link stated twice (`/links/i`). Endpoints must be identifiable instances;
+whether an index lies within the starting population is not checked. Links are structure only: the aggregation of dynamics inputs
+over links (`sum`, `mean`) is P6.
+
+## 12. Boards
+
+`boards[]` = `{name, members[], description?}` groups the instances hosted on one device. Decision: the **board owns the `boot_id`**
+(plant wire [section 14](../simulation-canvas/plant-wire-protocol.md) and finding P6 of the review): a reboot affects every member
+together. Rules: board names are unique (`/boards/i/name`); each member is an identifiable instance (`/boards/i/members/j`); an
+instance is on at most one board, including twice on the same board. System entities may be members. Only the grouping is modelled
+here. Issuing `boot_id`, rebirth after a reboot and the lease and safe state of a board belong to the plant-wire phases (P7).
+
+## 13. Stores and flows (phase P6a)
+
+`f1.form: "store"` with `capacity` (> 0) is an accumulator: its level changes by `(Σ coef × input + inflows − outflows) /
+capacity` per second, kept within the state's `min`/`max` and the form's `clamp`. `kinds[k].flows[]` = `{name, from, to?,
+conductance, scale[]}` moves `conductance × Π scale × (from − to)` per second from one store to another; without `to` it drains
+toward zero. `scale` names actuator and health states (a pump speed, a pipe health a fault lowers).
+
+Decisions:
+
+- **Integration order.** Every integrated state of an entity advances together, earliest step first, and every store of an
+  entity steps on one grid with one RK4 over the vector of levels. Each state keeps snapshots of its last steps back to the
+  entity's longest step, so a state reading another at a step boundary gets its value at that exact time. Without this the
+  result depended on which state was read first (finding 1 of the P6a review, which also held for a lag fed by a lag before
+  P6a), so an emitting world and a silent oracle world could differ. Every store of a kind, override additions included,
+  shares one `dt_ms` (`/kinds/k/dynamics/i/dt_ms`). A level is kept within the form's `clamp` and the state's `min`/`max`.
+- **Hybrid determinism.** Inputs and scale states are read at the step boundary and held for the step, so the system is linear
+  between steps, as the vocabulary's rule requires. A fault or effect between boundaries acts on a flow from the next boundary.
+- **Faults act through scale states.** A flow reads the integrated level of each store, not a fault or effect laid over it; a
+  blockage or a leak is modelled by a health state in `scale`.
+- **Scope.** Flows join stores of one entity. Flows between instances (along links) are the link aggregation of a later phase.
+  An override may add a store state but not a flow.
+- **Issues:** a duplicate flow name (`/kinds/k/flows/i/name`), a `from` that is no store, a `to` that is no other store, an
+  undeclared scale state (`/kinds/k/flows/i/scale/j`), a store without `capacity`.
+
+The analytic cross-check is independent of the RK4: two stores against the closed form (conservation of `C_a·a + C_b·b` and
+exponential decay of `a − b`), a drained store with inflow against its exponential, the transfer plant fixture against the 2×2
+matrix exponential, and the observability solver's crossing of a pipe blockage against crossing times derived from that matrix
+exponential. Tolerance 1e-6 absolute; the crossing times agree exactly on the 60 s grid.
+
+## 14. Closed grammar (finding R0-11)
+
+The schema holds no expression. A test walks the embedded contract and classifies every unconstrained string member as prose
+(`description`, `title`, `unit`, ...), an identifier (`name`, `id_template`, ...) or a reference the cross-check resolves
+(`state`, `channel`, `from`, `scale`, ...); a new free string fails it until classified. Objects of unchecked members are limited
+to effector argument schemas and arguments, reference-model parameters and profile weights, and no member is named like an
+expression (`expr`, `formula`, `condition`, `script`, ...).
+
+## 15. Smaller rules settled in P6a
+
+- **Narrowing** names each state, channel and effector once, and an argument's narrowed bounds must leave a value: a minimum
+  above the declared maximum is refused (R5b-02).
+- **A `peer_residual` fault added by an override** may not watch a channel only that override adds: its set has no peers that
+  carry the channel (R5b-01).
+- **A profile's entity count** sizes the first instance set that has an `id_template` (R5b-03).
+- **Idempotency** compares argument numbers by value: `3` and `3.0` are the same request (R2-05). Numbers are compared as
+  64-bit floats, so integers above 2^53 that differ only beyond that precision are one request.
+
+## 16. Schedule, regime and peak (phase P6b)
+
+- **`f0.schedule`** = `{period_s?, interpolation: step|linear, points[{at_s, value}]}` adds an exogenous piecewise profile to the
+  F0 value (a tariff, an order book, a load shape). With `period_s` the profile repeats and `at_s` is the offset within a period
+  aligned to the Unix epoch, so a daily profile follows the clock whatever the world start; without it `at_s` counts from the
+  world start. `step` holds the last point reached (before the first point: the last point of the previous period, or the first
+  point when not periodic); `linear` interpolates between neighbours, across the period boundary when periodic. Points are in
+  strictly increasing `at_s`, inside the period (`/…/f0/schedule/points/i/at_s`).
+- **`f1.form: "regime"`** = `{selector, threshold, below: {gain, time_constant_s}, above: {…}, inputs}`: a first-order lag toward
+  `gain × Σ coef × input` whose gain and time constant switch when the selector state is at or above the threshold. The selector
+  (the target itself for a runaway) is read at each step boundary, so the switch happens at the first step boundary at or after
+  the analytic crossing time; between switches each regime has its exact exponential. An undeclared selector is refused at
+  `/…/f1/selector`.
+- **`f1.form: "peak"`** = `{inputs: [one], block_s, period_s, ratchet?, previous_peak?}`: the demand peak. The input is sampled at
+  each step start; a block (aligned to the Unix epoch) closes when a step crosses its boundary, and its mean raises the period's
+  peak; a billing period (aligned the same way) rolls the peak into the previous peak and starts again from zero. The value is
+  `max(period peak so far, ratchet × previous peak)`; the state's `initial` seeds the period peak so far and `previous_peak` the
+  previous period's peak (S9: seeded `peak_mtd` and ratchet). The value changes only when a block closes, so a read between
+  steps returns the committed value. When the world starts (or an entity is born) inside a block, its first block is partial:
+  it closes at the clock boundary with the samples it has. `block_s` is a whole number of steps and `period_s` a whole number of blocks
+  (`/…/f1/block_s`, `/…/f1/period_s`). A calendar month is not a fixed `period_s`; billing periods of unequal length, and the
+  projected demand of the open block, are left to the reference scenario (P12).
+
+Cross-checks: the schedule against direct table values at boundary and interpolated times; the regime against the piecewise
+closed form switching at `ceil(τ_below · ln((g·u − x0)/(g·u − threshold)))` (1e-6); the peak against an independent recomputation
+of block means, period roll-over and ratchet over two days (1e-9).
+
+## 17. Protection: conditions, trips, anti-recycle, boundaries, preconditions (phase P6c)
+
+Review item S14 separates three things the word `lockout` covered: a **latched trip** (`lockout`), a **timer** (`anti_recycle`)
+and **lockout-tagout isolation** (a state that a precondition checks).
+
+- **`condition`** = `{state, operator: lt|lte|gt|gte, threshold}`: the one closed comparator set, shared with the interlock.
+- **`f1.form: "trip"`** = `{when: condition, for_s, tripped_value, latch?, reset_on?}`. The condition is sampled at each step
+  boundary; once it has been sampled true for `for_s` the target takes `tripped_value` from the next boundary, otherwise it holds
+  the state's `initial`. An unlatched trip clears when the condition stops holding; a latched trip (a lockout) stays tripped until
+  the `reset_on` state changes at a boundary (a reset command adds 1 to a counter), and trips again at once if the condition
+  still holds. A latched trip needs `reset_on` (`/…/f1/reset_on`).
+- **`f1.form: "anti_recycle"`** = `{watch, edge: fall|rise, hold_s}`: an edge of the watched state at a boundary starts a timer;
+  the target is the time left in seconds, 0 once elapsed.
+- **`kinds[k].boundaries[]`** = `{name, state, severity: critical|major|minor}`: a safety boundary is a trip state, so a
+  boundary and a trip share one evaluator; the world reports the boundaries violated at a time (`world.ViolatedBoundaries`) for
+  scoring (P12). The state must be a trip (`/kinds/k/boundaries/i/state`).
+- **`effectors[e].requires[]`**: preconditions the device checks at the call time. Not locked out, anti-recycle elapsed, not
+  isolated, not in hand mode are each a condition on a state. A failed precondition refuses the call with no effect and no
+  random draw; the operator reads the generic `effector_refused` (MCP_SURFACE §4.5) and the director's call log records
+  `precondition_refused`.
+- **Effects start strictly after their time**, as before: a command at `t` is seen by a condition sampled after `t`.
+
+**Look-ahead.** A command may be dated after the world clock (a scenario file lists its calls before the clock advances). Its
+interlock and preconditions are evaluated on a throwaway copy of the entity's integration state, so evaluating them never
+commits integration past the clock and never changes a reading at an earlier time. Before this, a future-dated call integrated
+the entity ahead and an earlier emission read the later value; that affected interlocks on integrated states too.
+
+**Notes.** A refused precondition, like an interlock refusal, is not cached for idempotency: a retry with the same
+`command_id` is evaluated again and may succeed once the condition holds. `anti_recycle` and `reset_on` react to any change of
+their state, so they should watch discrete states (a run flag, a reset counter), not a continuously moving one. The
+conditions of `trip`, `anti_recycle` and `regime` are read at each step's start, so a cycle through them is a one-step delay,
+not an algebraic loop; the dependency graph does not list them. A boundary is read on the look-ahead copy when asked about a
+time after the clock. `tripped_value` must differ from the state's initial value (`/…/f1/tripped_value`).
+
+Cross-checks: the trip fires on the step computed from the analytic crossing of an F0 ramp (`floor(t_c) + 1 + for_s + 1`);
+latch, clear and reset at the expected boundaries; the anti-recycle timer reads 599 s one step after its edge; preconditions
+refuse during the timer, while locked out and while isolated; a call dated ahead of the clock leaves earlier readings unchanged.
+
+## 18. Supervisory control: setpoints, sequencer, responder, lease (phase P6d)
+
+Review items D3 and S2: the factory is commanded at supervisory level (setpoints, bands, demand limits) and the plant's own
+sequencers act on them, so actions do not fight contactor-level logic.
+
+- **Setpoints in conditions.** A `condition` may name `threshold_state`; its threshold is then that state's value plus
+  `threshold` (an offset or deadband). A supervisory effector assigns the setpoint state (`assign_from_arg`), and every trip,
+  precondition and sequencer reading it follows.
+- **`f1.form: "sequencer"`** = `{stage_up: condition, stage_down: condition, stages, hold_s}`: the target counts running stages
+  (0 to `stages`). At each step boundary, once `hold_s` has passed since the last change, one stage starts while `stage_up`
+  holds, or one stops while `stage_down` holds (start wins). Other dynamics use the count as an input (compressor output).
+- **`effectors[e].responder`** = `{match_arg, delay_s, on_match, on_miss, clear_fault}`: a simulated person or crew. When the
+  call is acknowledged, the responder arrives `delay_s` later; if the string argument `match_arg` names a fault active on the
+  entity at the arrival time (as known when the call is made), `on_match` applies at arrival and `clear_fault` clears the
+  fault, otherwise `on_miss` applies. The outcome shows only through states; the acknowledgement is the same either way.
+  Responder availability, reports and approvals are the reference scenario's (S6, P12).
+- **`effectors[e].lease`** = `{arg, fallback: safe_off|hold_last|revert, safe_deltas}`: an acknowledged call holds its effect for
+  the seconds in its numeric argument `arg`. Unless the same effector is acknowledged again on the entity before the lease lapses
+  (which withdraws the pending fallback and starts a new lease), the fallback applies at the lapse: `safe_off` sets each
+  `safe_deltas` state to its `delta`, `revert` undoes the call's additive deltas (an assigning effect cannot be reverted,
+  `/…/lease/fallback`), `hold_last` keeps the effect. A refused or unacknowledged call does not renew.
+- **Lease timing.** A lease counts from the effect's start (the call time plus the effect's dead time). A `revert` fallback
+  undoes the total additive contribution of every call in the lease chain (a renewal carries the withdrawn revert into the
+  new one), with the effect's own time constant, so the state returns to where it started. A call without the lease
+  argument neither renews nor ends the lease. Only acknowledged calls (`ok`, `slow`, `ack_lost`) arm a lease or dispatch a
+  responder; a `partial`, `confirmed_no_effect` or `silent_no_effect` call does neither.
+- **Responder timing.** The match is decided when the call is acknowledged, from the faults injected so far; a fault injected
+  later, or cleared later by the director, does not change an already scheduled outcome.
+- **Sequencer start-up.** The first stage change waits `hold_s` from the entity's first step (world start or birth).
+- **Issues:** an undeclared `threshold_state`, a responder `match_arg` that is no string argument, a lease `arg` that is no
+  numeric argument, a `safe_off` lease without `safe_deltas` or with a delta read from an argument, a responder delta reading
+  an argument that is no numeric argument, a delta on an undeclared state.
+
+Cross-checks: the sequencer stages at the exact boundaries implied by the band crossings and `hold_s`, up and down, capped at
+`stages` and 0; a responder told the active fault clears it at arrival and applies `on_match`, a wrong cause applies `on_miss`
+and leaves the fault; a lease falls back at its lapse (safe value and revert) unless renewed, and renewal moves the lapse.
+
+## 19. Event clock (phase P6e)
+
+Review item S11: steps of a second or a minute cannot see a 100–500 ms voltage sag. Dynamics keep their step grid; the event
+clock adds exact instants between steps.
+
+- **`onset.shape: "pulse"`** with `duration_s`: the fault acts on `[onset, onset + duration_s)` and then clears by itself (a
+  director clear may end it earlier). Its start and end are **event instants**. `duration_s` on any other shape is refused
+  (`/…/onset/duration_s`).
+- **Trips on the event clock.** A trip samples its condition at its step start and at every event instant of its entity inside
+  the step. Between samples the condition is taken as constant, and the trip fires when the condition has held from a sample up
+  to the next sample (or the step end) for at least `for_s`. A 0.3 s sag trips a 0.2 s ride-through trip; a 0.1 s sag rides
+  through. The tripped value appears from the next step boundary, as for every trip; an unlatched trip that fired and cleared
+  inside one step leaves no mark at a boundary (latch it, or use a boundary over a longer `for_s`). This also makes a trip
+  visible at the boundary where `for_s` has elapsed since the first true sample (one step earlier than in P6c).
+- **Event-driven channels on the event clock.** When a pulse fault is injected, each event-driven channel of the entity that
+  observes (or is triggered by) a state the pulse affects is checked at its start and end, besides its regular checks, so a
+  power-quality channel records the sag and the recovery at their exact times. A channel that does not see the pulse is never
+  checked at its instants, so its records cannot reveal an injection time. A check emits only when the reading changed by the
+  channel's resolution, does not move the regular checks, and is never scheduled before the world clock.
+- **Clearing.** A director or responder clear can only shorten a fault, never extend one that already ended; an early clear of
+  a pulse is itself an event instant and is checked.
+- **Trip timing.** A trip fires when its condition has held from a sample up to the next sample for `for_s` **and** still holds
+  just before that next sample, so a hold that ends inside the last step does not trip.
+- **Unchanged worlds.** Only pulse faults create event instants, so a world without them integrates, samples and draws exactly
+  as before (behaviour pin unchanged).
+
+**RNG draw order (finding R0-12).** Every random draw comes from a named substream, seeded from the run seed and the full name
+`<world_id>/<name>`; substreams are independent, and within one the draws happen in the order of the events that consume them
+(world events in time order, ties in scheduling order). The event clock adds no substream: its only draws are those of the
+readings it emits, from that channel's own substreams.
+
+| Substream (`<world_id>/` omitted) | Consumed by | When |
+|---|---|---|
+| `<entity>/<channel>/noise` | Measurement noise | Each reading (regular or event-clock check) with sigma > 0, unless the model is `quantization` or the world is noiseless |
+| `<entity>/<channel>/drift` | Sensor drift | Each reading after the first, for a `random_walk` drift |
+| `<entity>/<channel>/enum` | String channel values | A change of an event-driven string channel |
+| `<entity>/<channel>/jitter` | Periodic cadence jitter | Scheduling the next regular emission when `jitter_s` > 0 and the world is not noiseless |
+| `<entity>/<channel>/human` | Human-driven cadence | Scheduling the next human emission |
+| `<entity>/<channel>/availability` | Outages | Advancing the channel's availability when uptime < 1 (an event-clock check advances it too) |
+| `link/<entity>/<channel>/delay` | Transport delay | Each emitted record, unless the model is `constant` |
+| `<entity>/<effector>/fault_shape` | Effector failure mode | Each executed call (after interlock and preconditions) of an effector that declares failure modes |
+| `<entity>/<effector>/delay` | Acknowledgement latency | Each executed call |
+| `fault/<fault>/<state>` | Stochastic fault envelope | Advancing the envelope's random walk; keyed by the fault's declaration, so stochastic injections of one fault on several entities share one stream in read order |
+| `churn/births`, `churn/births/<set>` | Churn births | Each birth of the instance set |
+| `churn/lifetimes/<entity>` | Churn lifetimes | Each churned entity's birth |
+
+Integration (every F1 form, stores, trips, sequencers), schedules, responders, leases, preconditions and the event clock's
+trip samples draw nothing.
+
+Cross-checks: a 0.3 s sag between step boundaries trips a 0.2 s ride-through trip and a 0.1 s sag does not, while the voltage at
+both neighbouring boundaries is nominal (so a boundary-sampled trip would miss both); an event-driven channel records the sag at
+600.4 s and the recovery at 600.7 s; the periodic channel's records are identical with and without the sag.

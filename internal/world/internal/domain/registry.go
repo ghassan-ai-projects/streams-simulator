@@ -1,6 +1,11 @@
 package domain
 
-import "fmt"
+import (
+	"fmt"
+	"slices"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+)
 
 // EntityIDs returns the live entity ids in creation order.
 func (w *World) EntityIDs() []string {
@@ -20,7 +25,7 @@ func (w *World) PeerIDs(entityID string) []string {
 	}
 	var out []string
 	for _, id := range w.EntityIDs() {
-		if w.entities[id].kind == ent.kind {
+		if w.entities[id].Type == ent.Type {
 			out = append(out, id)
 		}
 	}
@@ -62,4 +67,25 @@ func (w *World) Entity(id string) *Entity {
 		return nil
 	}
 	return &Entity{ID: live.ID, Type: live.Type, BornNS: live.BornNS, alive: live.alive}
+}
+
+func (w *World) StateNamesOf(entityID string) []string {
+	ent := w.entities[entityID]
+	if ent == nil {
+		return nil
+	}
+	names := make([]string, len(ent.kind.State))
+	for i := range ent.kind.State {
+		names[i] = ent.kind.State[i].Name
+	}
+	slices.Sort(names)
+	return names
+}
+
+func (w *World) EffectorOf(entityID, name string) *model.Effector {
+	ent := w.entities[entityID]
+	if ent == nil {
+		return nil
+	}
+	return ent.kind.EffectorDecl(name)
 }

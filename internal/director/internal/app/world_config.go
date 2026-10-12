@@ -71,10 +71,8 @@ func appendNameplateEntities(np *rules.Nameplate, r *run.Run) {
 }
 
 func appendNameplateChannels(np *rules.Nameplate, spec *domain.Compiled) {
-	for k := range spec.Spec.Kinds {
-		for i := range spec.Spec.Kinds[k].Channels {
-			np.Channels = append(np.Channels, nameplateChannel(&spec.Spec.Kinds[k].Channels[i]))
-		}
+	for _, channel := range spec.DeclaredChannels() {
+		np.Channels = append(np.Channels, nameplateChannel(channel))
 	}
 }
 
@@ -87,10 +85,8 @@ func nameplateChannel(channel *model.Channel) rules.NameplateChannel {
 }
 
 func appendNameplateEffectors(np *rules.Nameplate, spec *domain.Compiled) {
-	for k := range spec.Spec.Kinds {
-		for i := range spec.Spec.Kinds[k].Effectors {
-			np.Effectors = append(np.Effectors, nameplateEffector(&spec.Spec.Kinds[k].Effectors[i]))
-		}
+	for _, effector := range spec.DeclaredEffectors() {
+		np.Effectors = append(np.Effectors, nameplateEffector(effector))
 	}
 }
 

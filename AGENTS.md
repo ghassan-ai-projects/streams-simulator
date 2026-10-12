@@ -75,8 +75,10 @@ The documented shape (see [docs/design/TECHNICAL_DESIGN.md](docs/design/TECHNICA
 - `internal/truth` - sealed ground truth and independent analytic solver
 - `internal/score` - online/offline scoring policies
 - `internal/audit`, `internal/suite`, `internal/refconsumer` - trivial-baseline audit, scenario generation and publishing (`suite.Publish`), shipped reference consumer (`refconsumer.Consume` runs it over a trace file, optionally over the operator endpoint)
+- `internal/plantwire` - the plant wire node: a run spoken to a host over the host's owner-only socket (births from the domain through an allow-list, data, the `NSYNC`/`HSYNC` barrier, host records in sequence order); schemas embedded from `contracts/plant-wire`
 - `internal/device`, `internal/deviceworld` - device emulation (rules, capability file, unix-socket serving until interrupted) and its world integration bridge (`deviceworld.OpenDevice` composes a device with a bound world)
 - `internal/domain`, `internal/model`, `internal/jsonschema`, `internal/schemas`, `internal/canonical`, `internal/randutil`, `internal/wall` - data loading (directory loading of domains and adapters lives in the `domain` and `adapter` files edges), shared records and bounded foundations
+- `contracts/plant-wire/` - the self-contained plant wire contract (spec, one schema per record, fixtures, pinned `DIGEST`); `test/contract` validates it, `make contract-sync` copies it from `PLANT_WIRE_CONTRACT_DIR`
 - `docs/` - the engineering design, research, contracts, fixtures, and evidence archive
 - `documentation/` - curated public product, usage, architecture, benchmark, operations, and governance documentation
 
@@ -85,7 +87,7 @@ Dependency direction:
 - `cmd` -> `cli` -> the facades it wires (`mcp`, `run`, `suite`, `grading`, `report`, `release`, `refconsumer`, `device`, `deviceworld`, `domain`, `adapter`, `model`)
 - `mcp` -> `director`; `director` composes `run`/`score`/`truth`/`audit`/`world`; `mcp` imports none of those directly
 - `grading` -> `run`/`score`; `report` -> `grading`/`run`/`journal`; the CLI holds no business logic, only flags, documents and failures
-- `run` composes `world`/`perturb`/`adapter`/`sink`; truth and scoring consume world/evidence. `deviceworld` bridges `device` and `world` without either core importing the bridge.
+- `run` composes `world`/`perturb`/`adapter`/`sink`; truth and scoring consume world/evidence. `plantwire` drives a `run` as a plant wire node. `deviceworld` bridges `device` and `world` without either core importing the bridge.
 - Dependencies flow downward only.
 - Domain specs, adapters, and effectors are **data** (JSON), never code. If any domain needs a code branch in the binary, the simulator is wrong and the domain found the bug.
 - The simulator has no knowledge of its consumers. No consumer name, schema, field, or behaviour appears in the binary.

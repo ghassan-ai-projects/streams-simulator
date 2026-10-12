@@ -56,7 +56,7 @@ func (checks domainChecks) channelAvailability(ch *model.Channel) error {
 }
 
 func (checks domainChecks) checkDynamic(d *model.Dynamics) error {
-	for _, check := range []func(*model.Dynamics) error{checks.dynamicTarget, checks.dynamicTier, checks.dynamicF1, checks.dynamicF2} {
+	for _, check := range []func(*model.Dynamics) error{checks.dynamicTarget, checks.dynamicTier, checks.dynamicF1, checks.dynamicF2, checks.dynamicSchedule, checks.dynamicPeak, checks.dynamicTripValue} {
 		if err := check(d); err != nil {
 			return err
 		}
@@ -103,7 +103,7 @@ func (checks domainChecks) dynamicF2(d *model.Dynamics) error {
 }
 
 func (checks domainChecks) checkFault(f *model.Fault) error {
-	for _, check := range []func(*model.Fault) error{checks.faultRate, checks.faultStates, checks.faultDetector, checks.faultEffector} {
+	for _, check := range []func(*model.Fault) error{checks.faultRate, checks.faultStates, checks.faultDetector, checks.faultEffector, checks.faultDuration} {
 		if err := check(f); err != nil {
 			return err
 		}

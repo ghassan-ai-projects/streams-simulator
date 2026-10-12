@@ -102,8 +102,8 @@ func (w *World) InvokeEffector(effector, entityID, commandID string, args map[st
 	if result, known, err := w.replayInvocation(inv); err != nil || known {
 		return result, err
 	}
-	if w.refuseInterlock(eff, inv) {
-		return nil, ErrInterlockRefused
+	if refusal, err := w.refuseInvocation(eff, inv); refusal != nil || err != nil {
+		return refusal, err
 	}
 	return w.executeInvocation(eff, inv), nil
 }
@@ -162,7 +162,7 @@ func requestKey(inv invocation) string {
 	if args == nil {
 		args = map[string]any{}
 	}
-	raw, err := json.Marshal([]any{inv.effector, inv.entityID, args})
+	raw, err := json.Marshal([]any{inv.effector, inv.entityID, numbersByValue(args)})
 	if err != nil {
 		// fmt prints map keys in sorted order, so the fallback is stable too.
 		return fmt.Sprintf("%q|%q|%v", inv.effector, inv.entityID, args)
@@ -234,6 +234,7 @@ func (w *World) applyEffectorOutcome(result *InvokeResult, eff *model.Effector, 
 
 func (w *World) applyAcknowledgedEffect(result *InvokeResult, eff *model.Effector, inv invocation) {
 	w.applyEffect(inv.entityID, eff, inv.args, inv.atNS, 1.0, false)
+	w.followUpCall(eff, inv)
 	result.EffectApplied = true
 	result.Accepted = result.Mode != ModeAckLost
 	if !result.Accepted {

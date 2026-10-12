@@ -18,10 +18,10 @@ func TestTheAuditControlAndChannelsBelongToTheKindOfTheFault(t *testing.T) {
 	if p.controlFault("pump_wear") != "pump_nuisance" || p.controlFault("tank_leak") != "tank_nuisance" || p.controlFault("none") != "" {
 		t.Fatal("the control fault is not the negative class of the fault's own kind")
 	}
-	if got := p.kindChannels("pump_wear"); !slices.Equal(got, []string{"pump.flow"}) {
+	if got := p.kindChannels("pump-1", "pump_wear"); !slices.Equal(got, []string{"pump.flow"}) {
 		t.Fatalf("pump channels = %v", got)
 	}
-	if got := p.kindChannels("none"); len(got) != 2 {
+	if got := p.kindChannels("tank-1", "none"); len(got) != 2 {
 		t.Fatalf("an unknown fault falls back to every channel, got %v", got)
 	}
 }

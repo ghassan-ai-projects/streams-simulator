@@ -85,6 +85,7 @@ type World struct {
 	nextIndex   []int
 
 	kicks  map[driverKey][]*kick
+	leases map[driverKey][]*kick
 	shadow map[driverKey][]*kick
 
 	faultsByState map[string][]*activeFault
@@ -94,7 +95,7 @@ type World struct {
 	effectorCalls  []EffectorCall
 	idempotent     map[string]*idempotentResult
 	interlockActed map[string]bool
-	argSchemas     map[string]*jsonschema.Schema
+	argSchemas     map[*model.Effector]*jsonschema.Schema
 
 	emitter func(model.SimEvent)
 

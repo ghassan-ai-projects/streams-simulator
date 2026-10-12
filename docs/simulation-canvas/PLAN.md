@@ -40,7 +40,7 @@ P11a–c → P12 → P13.
 | P6a | Vocabulary: `store`, `flow` | v0.2 semantics part 2 for these forms | Both forms with an independent second implementation | Analytic cross-check across swept parameters; closed-grammar test (no free-text expression anywhere in the schema) |
 | P6b | Vocabulary: `regime`, `schedule`, block `peak` (`peak_mtd`, ratchet) | Same | Same | Crossing times derived independently and agreeing; same |
 | P6c | Vocabulary: `boundary`, `trip`, latched `lockout`, `anti_recycle`, LOTO isolation | Same | Same | Same |
-| P6d | Vocabulary: `precondition`, `responder` (closed comparator set), `fallback_on_lease_loss`, plant sequencer entity | Same | Same | Same; no expression language |
+| P6d | Vocabulary: `responder` (closed comparator set; `precondition` landed in P6c as effector `requires`), `fallback_on_lease_loss`, plant sequencer entity | Same | Same | Same; no expression language |
 | P6e | Event clock | Event-clock semantics with an RNG draw-order table | Sub-step events (trips, short sags) on an event clock | v0.1-equivalent worlds bit-identical; draw order proven |
 | P7a | Plant wire: spec and contract | Plant-wire spec v2 applying REVIEW §4 (each item: node, reference host or next goal), D1–D5, M5 placement, the pipeline amendment (perturbation after sequencing), quiescence barrier and clock mode, `authority_epoch` decision, coexistence with the device path | `contracts/plant-wire/` schemas and fixtures (valid, invalid, scripted exchanges, lying results per command class, injection strings, must-ignore); `make contract-sync`, pinned digest, safety-field floor test | Contract reviewed; fixtures validate against the schemas |
 | P7b | Plant wire: node sessions | — | Node module: node dials host (D2), handshake (version range, contract digest, environment marker), births from kinds with current values, one sequence per direction, lanes, `bd_seq`, heartbeat, rebirth; private socket | Session fixtures pass; owner-only socket; host refuses an environment mismatch |
@@ -73,3 +73,11 @@ The commit hash of a phase is recorded by the first commit of the next phase.
 | P4 | Done | `1657a47` | [evidence/P4.md](evidence/P4.md) | [reviews/P4.md](reviews/P4.md) |
 | P5a | Done | `2509ee6` | [evidence/P5a.md](evidence/P5a.md) | [reviews/P5a.md](reviews/P5a.md) |
 | P5a2 | Done | `91b0eec` | [evidence/P5a2.md](evidence/P5a2.md) | [reviews/P5a2.md](reviews/P5a2.md) |
+| P5b | Done | `0853114` | [evidence/P5b.md](evidence/P5b.md) | [reviews/P5b.md](reviews/P5b.md) |
+| P6a | Done | `2e1e5e0` | [evidence/P6a.md](evidence/P6a.md) | [reviews/P6a.md](reviews/P6a.md) |
+| P6b | Done | `c918425` | [evidence/P6b.md](evidence/P6b.md) | [reviews/P6b.md](reviews/P6b.md) |
+| P6c | Done | `85329ba` | [evidence/P6c.md](evidence/P6c.md) | [reviews/P6c.md](reviews/P6c.md) |
+| P6d | Done | `51587e3` | [evidence/P6d.md](evidence/P6d.md) | [reviews/P6d.md](reviews/P6d.md) |
+| P6e | Done | `750842f` | [evidence/P6e.md](evidence/P6e.md) | [reviews/P6e.md](reviews/P6e.md) |
+| P7a | Done | `3fac34a` | [evidence/P7a.md](evidence/P7a.md) | [reviews/P7a.md](reviews/P7a.md) |
+| P7b | Done | `5f7bd2d` | [evidence/P7b.md](evidence/P7b.md) | [reviews/P7b.md](reviews/P7b.md) |
