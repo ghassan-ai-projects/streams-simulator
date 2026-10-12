@@ -1,19 +1,32 @@
 package host
 
 import (
+	"maps"
+	"slices"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/domain"
 )
 
-func (h *Host) Receive(record map[string]any) []map[string]any {
-	arrival := h.in.Accept(domain.Seq(record["seq"]))
-	if arrival == domain.Duplicate || h.report.Refused != "" {
+func (h *Host) Receive(in domain.Inbound) []map[string]any {
+	if in.Unsequenced || h.Done() {
+		return nil
+	}
+	arrival := h.in.Accept(in.Seq)
+	if arrival == domain.Duplicate {
 		return nil
 	}
 	asked := h.askRebirth(arrival)
-	if domain.Check(record) != nil || (!h.accepted && record["type"] != "NBIRTH") {
+	if !h.admits(&in) {
 		return asked
 	}
-	return append(asked, h.dispatch(record)...)
+	return append(asked, h.dispatch(in.Message)...)
+}
+
+func (h *Host) admits(in *domain.Inbound) bool {
+	if h.accepted {
+		in.Within(h.session, h.version)
+	}
+	return in.Invalid == nil && (h.accepted || in.Type == "NBIRTH")
 }
 
 func (h *Host) askRebirth(arrival domain.Arrival) []map[string]any {
@@ -25,50 +38,84 @@ func (h *Host) askRebirth(arrival domain.Arrival) []map[string]any {
 	return h.reply(control("NCMD", map[string]any{"command": "rebirth"}))
 }
 
-func (h *Host) dispatch(record map[string]any) []map[string]any {
-	switch record["type"] {
+func (h *Host) dispatch(m domain.Message) []map[string]any {
+	switch m.Type {
 	case "NBIRTH":
-		return h.nodeBirth(record)
-	case "DBIRTH":
-		h.deviceBirth(record)
-	case "DDATA":
-		h.data(record)
-	case "DRECEIPT", "DRESULT":
-		h.answer(record)
+		return h.nodeBirth(m)
+	case "NDEATH":
+		h.nodeDeath(m)
 	case "NSYNC":
-		return h.sync(record)
+		return h.sync(m)
+	default:
+		h.deviceRecord(m)
 	}
 	return nil
 }
 
-func (h *Host) nodeBirth(record map[string]any) []map[string]any {
-	h.asked = false
+func (h *Host) deviceRecord(m domain.Message) {
+	switch m.Type {
+	case "DBIRTH":
+		h.deviceBirth(m)
+	case "DDATA":
+		h.data(m)
+	case "DDEATH":
+		delete(h.devices, m.Device)
+	case "DRECEIPT", "DRESULT":
+		h.answer(m)
+	}
+}
+
+func (h *Host) nodeBirth(m domain.Message) []map[string]any {
+	h.asked, h.bdSeq = false, m.BDSeq
 	if h.accepted {
 		return nil
 	}
-	h.out = domain.NewTransmitter(record["session_id"].(string))
-	if refusal := h.refusal(record); refusal != "" {
+	h.out = domain.NewTransmitter(m.SessionID)
+	if refusal := h.refusal(m); refusal != "" {
 		h.report.Refused = refusal
 		return h.reply(control("STATE", h.state(false, refusal)))
 	}
-	h.accepted = true
-	h.out.UseVersion(int(min(domain.Int(record["protocol_max"]), int64(h.options.ProtocolMax))))
+	h.accepted, h.session = true, m.SessionID
+	h.version = int(min(m.ProtocolMax, int64(h.options.ProtocolMax)))
+	h.out.UseVersion(h.version)
 	return h.reply(control("STATE", h.state(true, "")))
 }
 
-func (h *Host) refusal(record map[string]any) string {
-	low, high := domain.Int(record["protocol_min"]), domain.Int(record["protocol_max"])
+func (h *Host) nodeDeath(m domain.Message) {
+	if m.BDSeq >= h.bdSeq {
+		clear(h.devices)
+	}
+}
+
+func (h *Host) refusal(m domain.Message) string {
 	switch {
-	case low > high:
+	case m.ProtocolMin > m.ProtocolMax:
 		return "protocol_invalid"
-	case record["environment"] != h.options.Environment:
+	case m.Environment != h.options.Environment:
 		return "environment_mismatch"
-	case record["contract_digest"] != domain.ContractDigest():
+	case m.ContractVersion != domain.ContractVersion || m.ContractDigest != domain.ContractDigest():
 		return "contract_unsupported"
-	case low > int64(h.options.ProtocolMax) || high < domain.Version:
+	case m.ProtocolMin > int64(h.options.ProtocolMax) || m.ProtocolMax < domain.Version:
 		return "version_unsupported"
+	case h.missingFromBirth(m):
+		return "inventory_mismatch"
 	}
 	return ""
+}
+
+func (h *Host) missingFromBirth(m domain.Message) bool {
+	present := map[string]bool{}
+	for _, board := range m.Boards {
+		for _, member := range board.Members {
+			present[member] = true
+		}
+	}
+	for _, device := range slices.Sorted(maps.Keys(h.options.Inventory)) {
+		if !present[device] {
+			return true
+		}
+	}
+	return false
 }
 
 func (h *Host) state(online bool, refusal string) map[string]any {

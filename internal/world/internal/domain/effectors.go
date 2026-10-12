@@ -60,6 +60,7 @@ type InvokeResult struct {
 	Mode          FailureMode `json:"mode,omitempty"`
 	AckLatencyMS  float64     `json:"ack_latency_ms,omitempty"`
 	EffectApplied bool        `json:"effect_applied,omitempty"`
+	Cause         string      `json:"-"`
 }
 
 // ErrInterlockRefused is the terminal refusal of an independent safety

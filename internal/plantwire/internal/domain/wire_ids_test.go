@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"encoding/json"
 	"errors"
 	"math"
 	"testing"
@@ -22,20 +23,24 @@ func TestWireIDsAreSafeDistinctAndKeepSafeIdsAsTheyAre(t *testing.T) {
 	}
 }
 
-func TestArgumentSchemasLoseTheirDescriptionsAtEveryDepth(t *testing.T) {
+func TestArgumentSchemasKeepOnlyValidationKeywordsAtEveryDepth(t *testing.T) {
 	t.Parallel()
-	schema := map[string]any{"description": "x", "properties": map[string]any{"pct": map[string]any{"type": "number", "description": "y"}},
-		"anyOf": []any{map[string]any{"description": "z", "type": "object"}}}
-	got := withoutDescriptions(schema).(map[string]any)
-	if got["description"] != nil || got["properties"].(map[string]any)["pct"].(map[string]any)["description"] != nil ||
-		got["anyOf"].([]any)[0].(map[string]any)["description"] != nil || got["properties"].(map[string]any)["pct"].(map[string]any)["type"] != "number" {
-		t.Fatalf("stripped %v", got)
+	schema := map[string]any{"description": "x", "title": "t", "$comment": "c", "examples": []any{1}, "default": 3, "x-note": "n",
+		"type": "object", "required": []any{"description"},
+		"properties": map[string]any{"pct": map[string]any{"type": "number", "description": "y", "maximum": 100},
+			"description": map[string]any{"type": "string", "title": "named description"}},
+		"anyOf": []any{map[string]any{"description": "z", "type": "object"}}, "items": map[string]any{"enum": []any{"a"}, "title": "i"}}
+	got, _ := json.Marshal(validationOnly(schema))
+	want := `{"anyOf":[{"type":"object"}],"items":{"enum":["a"]},"properties":{"description":{"type":"string"},` +
+		`"pct":{"maximum":100,"type":"number"}},"required":["description"],"type":"object"}`
+	if string(got) != want {
+		t.Fatalf("validation-only schema\n got %s\nwant %s", got, want)
 	}
 }
 
 func TestNegotiationRespectsTheHostsRange(t *testing.T) {
 	t.Parallel()
-	if _, err := Negotiate(map[string]any{"online": true, "protocol_version": 1, "protocol_min": 2, "protocol_max": 3}, 3); !errors.Is(err, ErrRefused) {
+	if _, err := Negotiate(Message{Online: true, ProtocolVersion: 1, ProtocolMin: 2, ProtocolMax: 3}, 3); !errors.Is(err, ErrRefused) {
 		t.Fatalf("negotiate = %v, want a refusal of a version below the host's minimum", err)
 	}
 }

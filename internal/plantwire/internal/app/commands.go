@@ -6,24 +6,39 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/domain"
 )
 
-const maxQueued = 1024
+const (
+	maxQueued  = 1024
+	maxLedger  = 65536
+	maxWaiting = 64
+)
 
-func (s *Session) command(record map[string]any) error {
-	c := domain.CommandOf(record)
-	if s.safeStop(c) {
+func (s *Session) command(m domain.Message) error {
+	c := domain.CommandOf(m)
+	switch {
+	case c.Content() == "":
+		return s.answer(c.ID, c, refused("malformed"))
+	case s.safeStop(c):
 		return s.executeSafeStop(c)
 	}
-	entry, conflict := s.ledger.Recall(c)
-	if conflict || entry != nil {
+	return s.checked(c)
+}
+
+func (s *Session) checked(c domain.Command) error {
+	if reason := s.admit(c); reason != "" {
+		return s.answer(c.ID, c, refused(reason))
+	}
+	if entry, conflict := s.ledger.Recall(c); conflict || entry != nil {
 		return s.repeat(c, entry)
 	}
-	return s.admitAndRun(c)
+	return s.perform(c)
 }
 
 func (s *Session) repeat(c domain.Command, entry *domain.Entry) error {
 	switch {
 	case entry == nil:
 		return s.answer(c.ID, c, refused("duplicate"))
+	case entry.Pending && len(entry.Waiting) >= maxWaiting:
+		return s.answer(c.ID, c, refused("not_ready"))
 	case entry.Pending:
 		entry.Waiting = append(entry.Waiting, c.ID)
 		return s.send(domain.Receipt(c.ID, "queued", "", s.boot(c)))
@@ -31,9 +46,9 @@ func (s *Session) repeat(c domain.Command, entry *domain.Entry) error {
 	return s.answer(c.ID, c, replayed(entry.Answer))
 }
 
-func (s *Session) admitAndRun(c domain.Command) error {
-	if reason := s.admit(c); reason != "" {
-		return s.answer(c.ID, c, refused(reason))
+func (s *Session) perform(c domain.Command) error {
+	if len(s.ledger) >= maxLedger {
+		return s.answer(c.ID, c, refused("not_ready"))
 	}
 	if c.NotBeforeNS > s.now() {
 		return s.hold(c)

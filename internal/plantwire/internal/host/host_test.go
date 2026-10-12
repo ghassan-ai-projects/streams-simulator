@@ -12,7 +12,7 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
-func record(t *testing.T, kind string, seq uint64, fields map[string]any) map[string]any {
+func record(t *testing.T, kind string, seq uint64, fields map[string]any) domain.Inbound {
 	t.Helper()
 	raw, err := os.ReadFile(filepath.Join(testsupport.RepositoryRoot(), "contracts", "plant-wire", "fixtures", "valid", kind+".json"))
 	if err != nil {
@@ -28,27 +28,31 @@ func record(t *testing.T, kind string, seq uint64, fields map[string]any) map[st
 	}
 	merged["seq"] = seq
 	line, _ := json.Marshal(merged)
-	parsed, err := domain.Parse(line)
-	if err != nil {
-		t.Fatalf("%s: %v", kind, err)
+	in, ok := domain.Decode(line)
+	if !ok || in.Invalid != nil {
+		t.Fatalf("%s: %v", kind, in.Invalid)
 	}
-	return parsed
+	return in
 }
 
-func birth(t *testing.T, environment string) map[string]any {
-	return record(t, "NBIRTH", 0, map[string]any{"environment": environment, "contract_digest": domain.ContractDigest(), "protocol_min": 1, "protocol_max": 1})
+func birth(t *testing.T, environment string, changes ...map[string]any) domain.Inbound {
+	fields := map[string]any{"environment": environment, "contract_digest": domain.ContractDigest(), "protocol_min": 1, "protocol_max": 1}
+	for _, change := range changes {
+		maps.Copy(fields, change)
+	}
+	return record(t, "NBIRTH", 0, fields)
 }
 
-func pumpBirth(t *testing.T, seq uint64, device string) map[string]any {
+func pumpBirth(t *testing.T, seq uint64, device string) domain.Inbound {
 	return record(t, "DBIRTH", seq, map[string]any{"device": device})
 }
 
-func sample(t *testing.T, seq uint64, value float64, historical bool) map[string]any {
+func sample(t *testing.T, seq uint64, value float64, historical bool) domain.Inbound {
 	return record(t, "DDATA", seq, map[string]any{"historical": historical, "metrics": []any{map[string]any{"alias": 1, "value": value, "quality": "good",
 		"event_time_ns": 1767225660000000000, "time_source": "device", "uncertainty_ms": 5}}})
 }
 
-func sync(t *testing.T, seq uint64, worldNS int64) map[string]any {
+func sync(t *testing.T, seq uint64, worldNS int64) domain.Inbound {
 	return record(t, "NSYNC", seq, map[string]any{"through_seq": seq - 1, "world_time_ns": worldNS})
 }
 
@@ -67,9 +71,7 @@ func TestTheHandshakeAcceptsItsEnvironmentAndRefusesAnother(t *testing.T) {
 		"version_unsupported":  {"protocol_min": 2, "protocol_max": 2},
 	} {
 		h := New(Options{Environment: "simulated", ProtocolMax: 1})
-		node := birth(t, "simulated")
-		maps.Copy(node, change)
-		if h.Receive(node); h.Report().Refused != refusal {
+		if h.Receive(birth(t, "simulated", change)); h.Report().Refused != refusal {
 			t.Fatalf("refused %q, want %q", h.Report().Refused, refusal)
 		}
 		if replies := h.Receive(sync(t, 1, 0)); len(replies) != 0 {
@@ -91,7 +93,8 @@ func TestAGarbledRecordIsIgnoredButConsumesItsSeq(t *testing.T) {
 	h := New(Options{Environment: "simulated", ProtocolMax: 1})
 	h.Receive(birth(t, "simulated"))
 	for seq, kind := range []string{"DBIRTH", "DDATA", "DRECEIPT", "DRESULT", "NSYNC", "NBIRTH"} {
-		if replies := h.Receive(map[string]any{"seq": json.Number(string(rune('1' + seq))), "type": kind}); len(replies) != 0 {
+		garbled, _ := domain.Decode([]byte(`{"seq":` + string(rune('1'+seq)) + `,"type":"` + kind + `"}`))
+		if replies := h.Receive(garbled); len(replies) != 0 || garbled.Invalid == nil {
 			t.Fatalf("%s: replies %v", kind, replies)
 		}
 	}
@@ -152,14 +155,14 @@ func TestScriptedCommandsAreIssuedAtTheirTimeAndVerifiedByObservation(t *testing
 	if len(replies) != 3 || replies[0]["type"] != "DCMD" || domain.Check(replies[0]) != nil || replies[2]["type"] != "HSYNC" {
 		t.Fatalf("replies %v", replies)
 	}
-	seq := succeed(t, h, 5, "ref-1", "ref-2")
+	seq := succeed(t, h, 5, "ref-1", "ref-3")
 	h.Receive(sample(t, seq, 50, false))
 	if replies := h.Receive(sync(t, seq+1, 300)); len(replies) != 1 {
 		t.Fatalf("a command went to a quarantined device: %v", replies)
 	}
 	report := h.Report()
 	if !*report.Commands["ref-1"].Verified || report.Commands["ref-1"].Receipts[0] != "accepted" || len(report.Quarantined) != 1 ||
-		report.Commands["ref-3"].Denied != "not_commissioned" {
+		report.Commands["ref-2"].Denied != "not_commissioned" {
 		t.Fatalf("report %+v", report)
 	}
 }

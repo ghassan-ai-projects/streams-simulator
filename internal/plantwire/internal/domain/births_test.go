@@ -42,7 +42,7 @@ func TestBirthsOfEveryDomainMatchTheContract(t *testing.T) {
 		for i := range spec.Spec.Kinds {
 			kinds[i] = &spec.Spec.Kinds[i]
 		}
-		records := []Record{NodeBirth(NodeIdentity{Environment: "simulated", ProtocolMax: 1, ContractVersion: "1.0.0", PriorLastSeq: -1}, kinds, spec.Spec.Boards)}
+		records := []Record{NodeBirth(NodeIdentity{Environment: "simulated", ProtocolMax: 1, PriorLastSeq: -1}, kinds, spec.Spec.Boards)}
 		for set := range spec.Spec.Instances {
 			effective := spec.InstanceKind(set)
 			id := DeviceIdentity{Device: "dev-" + effective.Name, Kind: effective.Name, Board: "board-1", BootID: "board-1-boot-1"}
@@ -92,5 +92,22 @@ func TestOverridesAddAndNarrowOnlyWhatTheInstanceChanges(t *testing.T) {
 	plain := spec.InstanceKind(spec.InstanceSetFor("tank-1"))
 	if got := overridesOf(spec.Kind(plain.Name), plain); len(got) != 0 {
 		t.Fatalf("overrides of tank-1 = %v, want none", got)
+	}
+}
+
+func TestTheNodeBirthDeclaresItsSafeStops(t *testing.T) {
+	t.Parallel()
+	spec, err := domain.Load(testsupport.PumpBoardDomain())
+	if err != nil {
+		t.Fatal(err)
+	}
+	kinds := []*model.Kind{&spec.Spec.Kinds[0]}
+	birth := NodeBirth(NodeIdentity{Environment: "simulated", ProtocolMax: 1, PriorLastSeq: -1, SafeStops: []string{"safe_stop"}}, kinds, nil)
+	declared := map[string]bool{}
+	for _, command := range birth.Fields["kinds"].([]any)[0].(map[string]any)["commands"].([]any) {
+		declared[command.(map[string]any)["name"].(string)] = command.(map[string]any)["safe_stop"].(bool)
+	}
+	if !declared["safe_stop"] || declared["start"] || declared["set_speed"] {
+		t.Fatalf("declared safe stops %v", declared)
 	}
 }

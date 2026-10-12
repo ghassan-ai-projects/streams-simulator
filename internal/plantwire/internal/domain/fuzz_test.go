@@ -16,8 +16,8 @@ func FuzzWireParse(f *testing.F) {
 		}
 	}
 	f.Fuzz(func(t *testing.T, line []byte) {
-		record, err := Parse(line)
-		if err == nil && record["type"] == nil {
+		in, ok := Decode(line)
+		if ok && in.Invalid == nil && in.Type == "" {
 			t.Fatalf("a record without a type passed: %s", line)
 		}
 	})

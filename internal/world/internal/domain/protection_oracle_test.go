@@ -98,8 +98,9 @@ func TestPreconditionsRefuseALockedOutRecyclingOrIsolatedDevice(t *testing.T) {
 	if left := w.StateValue("e-1", "recycle", at(102)); left != 599 {
 		t.Fatalf("anti-recycle left %v s at 102 s, want 599", left)
 	}
-	if result := invoke(t, w, "start", 300); result.Accepted || result.Reason != "effector_refused" {
-		t.Fatalf("start during anti-recycle = %+v, want the generic refusal", result)
+	result := invoke(t, w, "start", 300)
+	if result.Accepted || result.Reason != "effector_refused" || result.Cause != ReasonPreconditionRefused {
+		t.Fatalf("start during anti-recycle = %+v, want the generic refusal with its cause", result)
 	}
 	if calls := w.EffectorCalls(); calls[len(calls)-1].Reason != ReasonPreconditionRefused {
 		t.Fatalf("the director's call log reason = %q, want %q", calls[len(calls)-1].Reason, ReasonPreconditionRefused)

@@ -10,16 +10,9 @@ type Command struct {
 	DeadlineNS, NotBeforeNS, Epoch      int64
 }
 
-func CommandOf(record map[string]any) Command {
-	args, _ := record["args"].(map[string]any)
-	return Command{ID: text(record, "command_id"), Key: text(record, "idempotency_key"), Device: text(record, "device"),
-		Name: text(record, "command"), Boot: text(record, "expected_boot_id"), Policy: text(record, "policy_digest"), Args: args,
-		DeadlineNS: Int(record["deadline_ns"]), NotBeforeNS: Int(record["not_before_ns"]), Epoch: Int(record["authority_epoch"])}
-}
-
-func text(record map[string]any, key string) string {
-	value, _ := record[key].(string)
-	return value
+func CommandOf(m Message) Command {
+	return Command{ID: m.CommandID, Key: m.IdempotencyKey, Device: m.Device, Name: m.Command, Boot: m.ExpectedBootID,
+		Policy: m.PolicyDigest, Args: m.Args, DeadlineNS: m.DeadlineNS, NotBeforeNS: m.NotBeforeNS, Epoch: m.AuthorityEpoch}
 }
 
 func (c Command) Content() string {

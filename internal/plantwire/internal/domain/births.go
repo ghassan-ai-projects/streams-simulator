@@ -2,18 +2,20 @@ package domain
 
 import "github.com/ghassan-ai-projects/streams-simulator/internal/model"
 
+const ContractVersion = "1.0.0"
+
 type NodeIdentity struct {
-	Environment     string
-	ProtocolMax     int
-	ContractVersion string
-	BDSeq           uint64
-	PriorLastSeq    int64
+	Environment  string
+	ProtocolMax  int
+	BDSeq        uint64
+	PriorLastSeq int64
+	SafeStops    []string
 }
 
 func NodeBirth(identity NodeIdentity, kinds []*model.Kind, boards []model.Board) Record {
-	templates := KindTemplates(kinds)
+	templates := KindTemplates(kinds, identity.SafeStops)
 	return newRecord("NBIRTH", LaneControl, map[string]any{
-		"protocol_min": Version, "protocol_max": identity.ProtocolMax, "contract_version": identity.ContractVersion,
+		"protocol_min": Version, "protocol_max": identity.ProtocolMax, "contract_version": ContractVersion,
 		"contract_digest": ContractDigest(), "environment": identity.Environment, "bd_seq": identity.BDSeq,
 		"prior_last_seq": identity.PriorLastSeq, "capability_digest": CapabilityDigest(templates), "kinds": templates,
 		"boards": boardList(boards), "node_metrics": map[string]any{"clock_mode": "virtual", "run_state": "running"}})
@@ -46,7 +48,7 @@ func currentValues(kind *model.Kind, current map[string]any) []any {
 func currentValue(kind *model.Kind, channel string, current map[string]any) map[string]any {
 	value, seen := current[channel]
 	quality := "good"
-	if !seen {
+	if !seen || value == nil {
 		quality = "warming_up"
 	}
 	return map[string]any{"name": channel, "alias": Alias(kind, channel), "value": value, "quality": quality}

@@ -6,28 +6,31 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/domain"
 )
 
-func (h *Host) deviceBirth(record map[string]any) {
-	name := record["device"].(string)
-	if h.quarantine(name, record["kind"].(string)) {
+const maxDevices = 4096
+
+func (h *Host) deviceBirth(m domain.Message) {
+	if h.quarantine(m.Device, m.Kind) {
+		delete(h.devices, m.Device)
 		return
 	}
-	d := &device{boot: record["boot_id"].(string), aliases: map[int64]string{}, values: map[string]float64{}, updated: map[string]int64{}}
-	h.devices[name] = d
-	for _, metric := range record["metrics"].([]any) {
-		entry := metric.(map[string]any)
-		d.aliases[domain.Int(entry["alias"])] = entry["name"].(string)
-		h.sample(d, entry["name"].(string), entry["value"])
+	d := &device{boot: m.BootID, aliases: map[int64]string{}, values: map[string]float64{}, updated: map[string]int64{}}
+	h.devices[m.Device] = d
+	for _, metric := range m.Metrics {
+		d.aliases[metric.Alias] = metric.Name
+		if metric.Quality == "good" {
+			h.sample(d, metric.Name, metric.Value)
+		}
 	}
 }
 
-func (h *Host) data(record map[string]any) {
-	d := h.devices[record["device"].(string)]
-	if d == nil || record["historical"] == true {
+func (h *Host) data(m domain.Message) {
+	d := h.devices[m.Device]
+	if d == nil || m.Historical || m.BootID != d.boot {
 		return
 	}
-	for _, sample := range record["metrics"].([]any) {
-		if entry := sample.(map[string]any); entry["quality"] == "good" {
-			h.sample(d, d.aliases[domain.Int(entry["alias"])], entry["value"])
+	for _, metric := range m.Metrics {
+		if metric.Quality == "good" {
+			h.sample(d, d.aliases[metric.Alias], metric.Value)
 		}
 	}
 }
@@ -52,10 +55,11 @@ func number(value any) (float64, bool) {
 
 func (h *Host) quarantine(name, kind string) bool {
 	expected, listed := h.options.Inventory[name]
-	if len(h.options.Inventory) == 0 || (listed && expected == kind) {
+	commissioned := len(h.options.Inventory) == 0 || (listed && expected == kind)
+	if commissioned && (len(h.devices) < maxDevices || h.devices[name] != nil) {
 		return false
 	}
-	if !slices.Contains(h.report.Quarantined, name) {
+	if len(h.report.Quarantined) < maxDevices && !slices.Contains(h.report.Quarantined, name) {
 		h.report.Quarantined = append(h.report.Quarantined, name)
 	}
 	return true

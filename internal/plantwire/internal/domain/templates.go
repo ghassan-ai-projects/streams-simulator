@@ -7,10 +7,10 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-func KindTemplates(kinds []*model.Kind) []any {
+func KindTemplates(kinds []*model.Kind, safeStops []string) []any {
 	templates := make([]any, 0, len(kinds))
 	for _, kind := range kinds {
-		templates = append(templates, map[string]any{"kind": kind.Name, "metrics": metricTemplates(kind, kind.Channels), "commands": commandTemplates(kind)})
+		templates = append(templates, map[string]any{"kind": kind.Name, "metrics": metricTemplates(kind, kind.Channels), "commands": commandTemplates(kind, safeStops)})
 	}
 	return templates
 }
@@ -70,11 +70,12 @@ func assigned(kind *model.Kind, state string) bool {
 	return false
 }
 
-func commandTemplates(kind *model.Kind) []any {
+func commandTemplates(kind *model.Kind, safeStops []string) []any {
 	commands := make([]any, 0, len(kind.Effectors))
 	for i := range kind.Effectors {
 		eff := &kind.Effectors[i]
-		commands = append(commands, map[string]any{"name": eff.Name, "args_schema": withoutDescriptions(eff.ArgsSchema), "risk_class": riskClass(eff.RiskClass), "safe_stop": false})
+		commands = append(commands, map[string]any{"name": eff.Name, "args_schema": validationOnly(eff.ArgsSchema),
+			"risk_class": riskClass(eff.RiskClass), "safe_stop": slices.Contains(safeStops, eff.Name)})
 	}
 	return commands
 }
@@ -87,26 +88,61 @@ func riskClass(declared string) string {
 	return "high"
 }
 
-func withoutDescriptions(value any) any {
-	switch typed := value.(type) {
-	case map[string]any:
-		return objectWithoutDescriptions(typed)
-	case []any:
-		out := make([]any, len(typed))
-		for i, item := range typed {
-			out[i] = withoutDescriptions(item)
-		}
-		return out
+var (
+	valueKeywords = []string{"type", "minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum", "multipleOf", "minLength",
+		"maxLength", "pattern", "minItems", "maxItems", "uniqueItems", "minProperties", "maxProperties", "required", "enum", "const"}
+	schemaKeywords = []string{"items", "additionalProperties", "not"}
+	listKeywords   = []string{"anyOf", "oneOf", "allOf", "prefixItems"}
+)
+
+func validationOnly(value any) any {
+	schema, isObject := value.(map[string]any)
+	if !isObject {
+		return value
 	}
-	return value
+	out := map[string]any{}
+	for _, key := range slices.Sorted(maps.Keys(schema)) {
+		if kept, ok := keyword(key, schema[key]); ok {
+			out[key] = kept
+		}
+	}
+	return out
 }
 
-func objectWithoutDescriptions(object map[string]any) map[string]any {
-	out := make(map[string]any, len(object))
-	for _, key := range slices.Sorted(maps.Keys(object)) {
-		if key != "description" {
-			out[key] = withoutDescriptions(object[key])
-		}
+func keyword(key string, value any) (any, bool) {
+	switch {
+	case slices.Contains(valueKeywords, key):
+		return value, true
+	case slices.Contains(schemaKeywords, key):
+		return validationOnly(value), true
+	case slices.Contains(listKeywords, key):
+		return each(value, validationOnly), true
+	case key == "properties":
+		return namedSchemas(value), true
+	}
+	return nil, false
+}
+
+func each(value any, apply func(any) any) any {
+	list, isList := value.([]any)
+	if !isList {
+		return value
+	}
+	out := make([]any, len(list))
+	for i, item := range list {
+		out[i] = apply(item)
+	}
+	return out
+}
+
+func namedSchemas(value any) any {
+	named, isObject := value.(map[string]any)
+	if !isObject {
+		return value
+	}
+	out := make(map[string]any, len(named))
+	for _, name := range slices.Sorted(maps.Keys(named)) {
+		out[name] = validationOnly(named[name])
 	}
 	return out
 }

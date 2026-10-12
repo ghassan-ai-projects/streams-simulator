@@ -29,11 +29,6 @@ func compileSchemas() map[string]*jsonschema.Schema {
 	return compiled
 }
 
-type Inbound struct {
-	Record  map[string]any
-	Invalid error
-}
-
 func Parse(line []byte) (map[string]any, error) {
 	var record map[string]any
 	if err := decode(line, &record); err != nil {

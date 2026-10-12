@@ -92,7 +92,7 @@ func pondRun(t *testing.T) *run.Run {
 func TestANodeServesAWholeSessionOverThePrivateSocket(t *testing.T) {
 	t.Parallel()
 	path, received := hostSocket(t)
-	options := Options{Environment: "simulated", ProtocolMax: 1, ContractVersion: "1.0.0", SessionID: "s-1", SliceNS: 60e9, UntilNS: model.DefaultStartTimeNS + 180e9}
+	options := Options{Environment: "simulated", ProtocolMax: 1, SessionID: "s-1", SliceNS: 60e9, UntilNS: model.DefaultStartTimeNS + 180e9}
 	if err := Serve(t.Context(), pondRun(t), path, 5*time.Second, options); err != nil {
 		t.Fatal(err)
 	}

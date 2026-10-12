@@ -27,10 +27,10 @@ func TestTheReceiverTellsInOrderDuplicateAndGap(t *testing.T) {
 
 func TestNegotiationTakesTheHostsVersionOrRefuses(t *testing.T) {
 	t.Parallel()
-	if version, err := Negotiate(map[string]any{"online": true, "protocol_version": 1, "protocol_min": 1, "protocol_max": 1}, 2); err != nil || version != 1 {
+	if version, err := Negotiate(Message{Online: true, ProtocolVersion: 1, ProtocolMin: 1, ProtocolMax: 1}, 2); err != nil || version != 1 {
 		t.Fatalf("negotiate = %d, %v", version, err)
 	}
-	for _, state := range []map[string]any{{"online": false, "refusal": "environment_mismatch"}, {"online": true, "protocol_version": 3, "protocol_min": 1, "protocol_max": 3}} {
+	for _, state := range []Message{{Refusal: "environment_mismatch"}, {Online: true, ProtocolVersion: 3, ProtocolMin: 1, ProtocolMax: 3}} {
 		if _, err := Negotiate(state, 2); !errors.Is(err, ErrRefused) {
 			t.Fatalf("negotiate %v = %v, want a refusal", state, err)
 		}

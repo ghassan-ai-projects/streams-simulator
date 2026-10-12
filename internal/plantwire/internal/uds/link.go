@@ -18,19 +18,15 @@ import (
 
 var ErrSocketNotPrivate = errors.New("plantwire: the host socket is not owner-only")
 
-type arrival struct {
-	inbound domain.Inbound
-	err     error
-}
-
 type Link struct {
 	conn     net.Conn
 	writer   *bufio.Writer
-	incoming chan arrival
+	incoming chan domain.Inbound
 	done     chan struct{}
 	wait     time.Duration
 	stop     func() bool
 	waited   int64
+	failed   error
 }
 
 func Dial(ctx context.Context, path string, wait time.Duration) (*Link, error) {
@@ -41,7 +37,7 @@ func Dial(ctx context.Context, path string, wait time.Duration) (*Link, error) {
 	if err != nil {
 		return nil, fmt.Errorf("plantwire: dial %s: %w", path, err)
 	}
-	link := &Link{conn: conn, writer: bufio.NewWriter(conn), incoming: make(chan arrival, 64), done: make(chan struct{}), wait: wait}
+	link := &Link{conn: conn, writer: bufio.NewWriter(conn), incoming: make(chan domain.Inbound, 64), done: make(chan struct{}), wait: wait}
 	link.stop = context.AfterFunc(ctx, func() { _ = conn.Close() })
 	go link.read()
 	return link, nil
@@ -73,7 +69,7 @@ func (l *Link) Close() error {
 	default:
 		close(l.done)
 	}
-	if err := l.conn.Close(); err != nil {
+	if err := l.conn.Close(); err != nil && !errors.Is(err, net.ErrClosed) {
 		return fmt.Errorf("plantwire: close: %w", err)
 	}
 	return nil

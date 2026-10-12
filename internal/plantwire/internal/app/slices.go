@@ -34,29 +34,34 @@ func (s *Session) data() []domain.Record {
 func (s *Session) barrier(ctx context.Context, syncSeq uint64) error {
 	inbound, met, err := s.awaitSync(ctx, syncSeq)
 	s.run.JournalPacing(syncSeq, s.link.WaitedMS(), !met)
+	if err != nil {
+		return s.hostLost(inbound, err)
+	}
 	if processed := s.process(inbound); processed != nil || s.finished {
 		return processed
 	}
-	if err != nil {
-		s.queued = nil
-		return fmt.Errorf("%w: %w", ErrHostLost, err)
-	}
-	return s.afterBarrier(met)
-}
-
-func (s *Session) afterBarrier(met bool) error {
-	if !met {
-		return s.countBarrier(false)
-	}
-	if err := s.runQueue(); err != nil {
+	if err := s.countBarrier(met); err != nil {
 		return err
 	}
-	return s.countBarrier(true)
+	return s.runQueue()
+}
+
+func (s *Session) hostLost(inbound []domain.Inbound, cause error) error {
+	for i := range inbound {
+		s.run.JournalWire("host", inbound[i].Record)
+		if inbound[i].Within(s.options.SessionID, s.version); inbound[i].Invalid == nil && inbound[i].Type == "STATE" {
+			s.hostState(inbound[i].Message)
+		}
+	}
+	if s.finished {
+		return nil
+	}
+	return fmt.Errorf("%w: %w", ErrHostLost, cause)
 }
 
 func (s *Session) awaitSync(ctx context.Context, syncSeq uint64) ([]domain.Inbound, bool, error) {
-	inbound, met, err := s.link.Await(ctx, func(record map[string]any) bool {
-		return record["type"] == "HSYNC" && domain.Seq(record["through_seq"]) >= syncSeq
+	inbound, met, err := s.link.Await(ctx, func(m domain.Message) bool {
+		return m.Type == "HSYNC" && m.ThroughSeq >= syncSeq
 	})
 	if err != nil {
 		return inbound, met, fmt.Errorf("plantwire: barrier: %w", err)
@@ -71,7 +76,6 @@ func (s *Session) countBarrier(met bool) error {
 	}
 	s.missed++
 	if s.missed >= missedBarriersForHostLoss {
-		s.queued = nil
 		return ErrHostLost
 	}
 	return nil

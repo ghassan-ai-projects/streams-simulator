@@ -168,23 +168,25 @@ func TestALostAcknowledgementIsSilentAndASilentNoEffectStillReportsSuccess(t *te
 	}
 }
 
-func TestAQueuedCommandNeverRunsAfterTheHostIsLost(t *testing.T) {
+func TestAQueuedCommandRunsAtAMissedBarrierButNeverAfterTheHostIsLost(t *testing.T) {
 	t.Parallel()
-	host := &scriptedHost{t: t, afterSync: func(h *scriptedHost, syncs int) {
-		if syncs == 1 {
-			h.reply("DCMD", set(commandFields("c-later", "meter-1", "shed_load", map[string]any{"meter_id": "m"}, sliceEnd(1)), "not_before_ns", sliceEnd(2)))
-			h.reply("HSYNC", map[string]any{"through_seq": uint64(0)})
-			h.silent = true
+	for dueSlice, wantCalls := range map[int]int{2: 1, 3: 0} {
+		host := &scriptedHost{t: t, afterSync: func(h *scriptedHost, syncs int) {
+			if syncs == 1 {
+				h.reply("DCMD", set(commandFields("c-later", "meter-1", "shed_load", map[string]any{"meter_id": "m"}, sliceEnd(1)), "not_before_ns", sliceEnd(dueSlice)))
+				h.reply("HSYNC", map[string]any{"through_seq": uint64(0)})
+				h.silent = true
+			}
+		}}
+		options := sliceOptions(6)
+		options.Policies = []string{policy}
+		r := utilityRun(t)
+		if err := NewSession(r, host, options).Run(t.Context()); !errors.Is(err, ErrHostLost) {
+			t.Fatalf("due at slice %d: err = %v, want host loss", dueSlice, err)
 		}
-	}}
-	options := sliceOptions(6)
-	options.Policies = []string{policy}
-	r := utilityRun(t)
-	if err := NewSession(r, host, options).Run(t.Context()); !errors.Is(err, ErrHostLost) {
-		t.Fatalf("err = %v, want host loss", err)
-	}
-	if calls := r.World.EffectorCalls(); len(calls) != 0 || countOf(host.types(), "DRECEIPT") != 1 {
-		t.Fatalf("calls %v, records %v", calls, host.types())
+		if calls := r.World.EffectorCalls(); len(calls) != wantCalls || countOf(host.types(), "NSYNC") != 3 {
+			t.Fatalf("due at slice %d: calls %v, records %v", dueSlice, calls, host.types())
+		}
 	}
 }
 

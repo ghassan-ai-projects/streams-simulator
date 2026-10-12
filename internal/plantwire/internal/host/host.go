@@ -23,6 +23,7 @@ type Options struct {
 }
 
 type Scripted struct {
+	ID      string         `json:"id,omitempty"`
 	AtNS    int64          `json:"at_ns"`
 	Device  string         `json:"device"`
 	Command string         `json:"command"`
@@ -65,6 +66,9 @@ type Host struct {
 	report   Report
 	asked    bool
 	accepted bool
+	session  string
+	version  int
+	bdSeq    uint64
 }
 
 type device struct {
@@ -75,7 +79,7 @@ type device struct {
 }
 
 func New(options Options) *Host {
-	script := slices.Clone(options.Script)
+	script := named(options.Script)
 	slices.SortStableFunc(script, func(a, b Scripted) int { return cmp.Compare(a.AtNS, b.AtNS) })
 	return &Host{options: options, out: domain.NewTransmitter(""), devices: map[string]*device{}, script: script,
 		issued: map[string]Scripted{}, issuedAt: map[string]int64{}, resultAt: map[string]int64{},
@@ -89,23 +93,37 @@ func ParseScript(raw []byte) ([]Scripted, error) {
 	if err := decodeStrict(raw, &script); err != nil {
 		return nil, fmt.Errorf("plantwire host script: %w", err)
 	}
+	script = named(script)
+	seen := map[string]bool{}
 	for i := range script {
-		if err := checkStep(&script[i]); err != nil {
+		if err := checkStep(&script[i], seen); err != nil {
 			return nil, fmt.Errorf("plantwire host script: step %d: %w", i, err)
 		}
 	}
 	return script, nil
 }
 
-var ErrInvalidStep = errors.New("a step needs a device, a command, and a verification with a positive window and no negative tolerance")
+func named(script []Scripted) []Scripted {
+	named := slices.Clone(script)
+	for i := range named {
+		if named[i].ID == "" {
+			named[i].ID = fmt.Sprintf("ref-%d", i+1)
+		}
+	}
+	return named
+}
 
-func checkStep(step *Scripted) error {
+var ErrInvalidStep = errors.New("a step needs a unique wire-safe id, a device, a command, and a verification with a positive window and no negative tolerance")
+
+func checkStep(step *Scripted, seen map[string]bool) error {
 	if step.Args == nil {
 		step.Args = map[string]any{}
 	}
-	if step.Device == "" || step.Command == "" || (step.Verify != nil && (step.Verify.WithinNS <= 0 || step.Verify.Tolerance < 0)) {
+	badVerify := step.Verify != nil && (step.Verify.WithinNS <= 0 || step.Verify.Tolerance < 0)
+	if seen[step.ID] || domain.WireID(step.ID) != step.ID || step.Device == "" || step.Command == "" || badVerify {
 		return ErrInvalidStep
 	}
+	seen[step.ID] = true
 	return nil
 }
 
@@ -125,3 +143,7 @@ func decodeStrict(raw []byte, target any) error {
 	}
 	return nil
 }
+
+func (h *Host) Accepted() bool { return h.accepted }
+
+func (h *Host) Done() bool { return h.report.Refused != "" }

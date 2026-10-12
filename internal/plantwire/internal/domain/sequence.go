@@ -1,6 +1,9 @@
 package domain
 
-import "maps"
+import (
+	"maps"
+	"math"
+)
 
 type Transmitter struct {
 	session string
@@ -56,11 +59,13 @@ const (
 
 func (r *Receiver) Accept(seq uint64) Arrival {
 	switch {
+	case seq < r.next:
+		return Duplicate
+	case seq == math.MaxUint64:
+		return Gap
 	case seq == r.next:
 		r.next++
 		return InOrder
-	case seq < r.next:
-		return Duplicate
 	}
 	r.next = seq + 1
 	return Gap

@@ -1,7 +1,6 @@
 package host
 
 import (
-	"fmt"
 	"math"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/domain"
@@ -9,8 +8,8 @@ import (
 
 const commandLifetimeNS = int64(120e9)
 
-func (h *Host) sync(record map[string]any) []map[string]any {
-	now := domain.Int(record["world_time_ns"])
+func (h *Host) sync(m domain.Message) []map[string]any {
+	now := m.WorldTimeNS
 	h.verify(now)
 	var records []domain.Record
 	for len(h.script) > 0 && h.script[0].AtNS <= now {
@@ -19,12 +18,12 @@ func (h *Host) sync(record map[string]any) []map[string]any {
 		}
 		h.script = h.script[1:]
 	}
-	records = append(records, control("HSYNC", map[string]any{"through_seq": domain.Seq(record["seq"])}))
+	records = append(records, control("HSYNC", map[string]any{"through_seq": m.Seq}))
 	return h.reply(records...)
 }
 
 func (h *Host) issue(step Scripted, now int64) (domain.Record, bool) {
-	id := fmt.Sprintf("ref-%d", len(h.report.Commands)+1)
+	id := step.ID
 	h.report.Commands[id] = &Status{Receipts: []string{}}
 	d := h.devices[step.Device]
 	if d == nil {
@@ -38,25 +37,24 @@ func (h *Host) issue(step Scripted, now int64) (domain.Record, bool) {
 		"authority_epoch": h.options.Epoch, "policy_digest": h.options.Policy, "fallback_on_lease_loss": "safe_off"}), true
 }
 
-func (h *Host) answer(record map[string]any) {
-	id, _ := record["command_id"].(string)
-	status := h.report.Commands[id]
+func (h *Host) answer(m domain.Message) {
+	status := h.report.Commands[m.CommandID]
 	if status == nil {
 		return
 	}
-	if record["type"] == "DRECEIPT" {
-		status.Receipts = append(status.Receipts, record["status"].(string)+reasonOf(record))
+	if m.Type == "DRECEIPT" {
+		status.Receipts = append(status.Receipts, receipt(m))
 		return
 	}
-	status.Result = record["reported_outcome"].(string)
-	h.resultAt[id] = h.samples
+	status.Result = m.ReportedOutcome
+	h.resultAt[m.CommandID] = h.samples
 }
 
-func reasonOf(record map[string]any) string {
-	if reason, ok := record["reason"].(string); ok {
-		return ":" + reason
+func receipt(m domain.Message) string {
+	if m.Reason != "" {
+		return m.Status + ":" + m.Reason
 	}
-	return ""
+	return m.Status
 }
 
 func (h *Host) verify(now int64) {

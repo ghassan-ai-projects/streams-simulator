@@ -104,7 +104,7 @@ func TestNoWireRecordCarriesAFaultOrItsOnset(t *testing.T) {
 	if _, err := r.InjectFault("meter-1", "load_surge", onset, nil); err != nil {
 		t.Fatal(err)
 	}
-	options := Options{Environment: "simulated", ProtocolMax: 1, ContractVersion: "1.0.0", SessionID: "s-1", SliceNS: 60e9, UntilNS: model.DefaultStartTimeNS + 300e9}
+	options := Options{Environment: "simulated", ProtocolMax: 1, SessionID: "s-1", SliceNS: 60e9, UntilNS: model.DefaultStartTimeNS + 300e9}
 	if err := NewSession(r, host, options).Run(t.Context()); err != nil {
 		t.Fatal(err)
 	}
@@ -169,7 +169,7 @@ func TestDuplicateHostRecordsAreDroppedAndTheEpochOnlyRises(t *testing.T) {
 		}
 	}}
 	r := utilityRun(t)
-	s = NewSession(r, host, Options{Environment: "simulated", ProtocolMax: 1, ContractVersion: "1.0.0", SessionID: "s-1", SliceNS: 60e9, UntilNS: model.DefaultStartTimeNS + 120e9})
+	s = NewSession(r, host, Options{Environment: "simulated", ProtocolMax: 1, SessionID: "s-1", SliceNS: 60e9, UntilNS: model.DefaultStartTimeNS + 120e9})
 	if err := s.Run(t.Context()); err != nil || s.epoch != 3 {
 		t.Fatalf("err %v, epoch floor %d, want 3", err, s.epoch)
 	}

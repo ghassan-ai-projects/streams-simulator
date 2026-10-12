@@ -35,7 +35,7 @@ func TestEveryShippedDomainSpeaksValidWire(t *testing.T) {
 
 func TestTheWireCarriesNoFaultFailureModeOrOnsetInAnyShippedDomain(t *testing.T) {
 	t.Parallel()
-	for _, path := range shippedDomains(t) {
+	for _, path := range append(shippedDomains(t), testsupport.PumpBoardDomain()) {
 		r := runOf(t, path)
 		spec, entity := r.Domain(), r.World.EntityIDs()[0]
 		kind := spec.InstanceKind(spec.InstanceSetFor(entity))
@@ -47,7 +47,7 @@ func TestTheWireCarriesNoFaultFailureModeOrOnsetInAnyShippedDomain(t *testing.T)
 		if err := NewSession(r, host, sliceOptions(3)).Run(t.Context()); err != nil {
 			t.Fatal(err)
 		}
-		for _, secret := range wireSecrets(spec.Spec.Kinds, onset) {
+		for _, secret := range append(wireSecrets(spec.Spec.Kinds, onset), hiddenFacts(spec.Spec)...) {
 			if bytes.Contains(host.transcript, []byte(secret)) {
 				t.Errorf("%s: the wire carries %q", filepath.Base(path), secret)
 			}

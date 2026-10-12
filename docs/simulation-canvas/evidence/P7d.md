@@ -29,6 +29,17 @@
 | CLI tests | `plantwire node` writes its run folder and matches its contract document; `plantwire host` reports quarantine; usage errors exit 2 |
 | Device path | `internal/device`, `internal/deviceworld` and `test/acceptance` unchanged and green in the gate |
 
+## Quality round (after the PR opened)
+
+| Change | Why |
+|---|---|
+| Typed inbound records: `domain.Decode` validates a line against its schema once and reads it into `domain.Message`; the node and the host read typed fields | No handler type-asserts on wire data; an invalid record keeps only its `seq`, `type` and `command_id` |
+| `TestTheContractsExchangesDriveTheReferenceHost` | The host is proven against the contract's eight host-side exchanges (session start, refusal, negotiation, gap and rebirth, the verified and three lying results), not only against this repository's node; each host `DCMD` must match the contract's record, including its content-derived `idempotency_key`. Breaking the verdict, the key, the environment check, the rebirth or the version makes it fail |
+| `FuzzTheHostSurvivesAnyLine` | Any line, decoded and received, never panics the host (3.4 million executions locally) |
+| A script step may carry its `id` | Commands are named as the contract names them; ids are unique and wire-safe |
+| Coverage floors: host 91, uds 88, domain 91 | Encoding failures on both socket sides are tested |
+| Three independent reviews (protocol, safety, determinism and tests) | 30 dispositions in [reviews/P7d.md](../reviews/P7d.md); R7d-01 to R7d-06 registered |
+
 ## Gates
 
 - `make phase-gate`: see the commit; behaviour pin unchanged.

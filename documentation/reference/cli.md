@@ -113,8 +113,8 @@ Flags:
 Speaks the plant wire ([contract](../../contracts/plant-wire/SPEC.md)). `plantwire node` runs a domain as a node: it dials the
 host's owner-only Unix socket, sends births, data in slices closed by an `NSYNC`/`HSYNC` barrier, executes the host's commands
 through the run's effector path, and writes the run's artifact and journal (with `wire` and `pacing` records) to `--out`.
-`plantwire host` is the reference host: it creates an owner-only socket, accepts one node, checks the environment, version
-and contract digest, quarantines devices its inventory does not list, requests a rebirth on a gap, issues scripted commands
+`plantwire host` is the reference host: it creates an owner-only socket, accepts one node, checks the environment, version,
+contract and that every commissioned device is in the node's birth, quarantines devices its inventory does not list, requests a rebirth on a gap, issues scripted commands
 when the world reaches their time, verifies them against later observations, and prints its report.
 
 ```text
@@ -125,11 +125,14 @@ streamsim plantwire node --host-socket <path> --domain <id> --out <dir> [--domai
                          [--policy <digest>]... [--safe-stop <command>]...
 ```
 
-The socket's directory must be owner-only (it is created `0700` when missing). The script is a JSON array of
-`{at_ns, device, command, args, verify?: {metric, equals, tolerance, within_ns}}`, issued in `at_ns` order; a command to a
+The socket's directory must be owner-only (it is created `0700` when missing); a stale socket left by a crash is replaced,
+a live host or a regular file at the path is not. Both commands stop on interrupt or `SIGTERM`, and the node still writes its
+run folder. The script is a JSON array of
+`{id?, at_ns, device, command, args, verify?: {metric, equals, tolerance, within_ns}}`, issued in `at_ns` order; `id` (a
+unique wire-safe name, default `ref-<n>` by position) becomes the command's `command_id`; a command to a
 device that is quarantined or never born is not sent and is reported `denied`. A command is verified only by a sample that
-arrives after its result. The inventory is a JSON object of device to kind; without one, every device is accepted. After a
-refusal the host answers nothing more. The node accepts commands signed by a `--policy` it lists; `--safe-stop` names commands that
+arrives after its result. The inventory is a JSON object of device to kind; without one, every device is accepted. A node
+must send its birth within 10 s; after a refusal the host closes the connection. The node accepts commands signed by a `--policy` it lists; `--safe-stop` names commands that
 skip freshness, epoch and policy checks. `--barrier-cap-ms` (default 30000) bounds the wall time the node waits for each
 `HSYNC`; `--delay-ms` makes the reference host slow.
 

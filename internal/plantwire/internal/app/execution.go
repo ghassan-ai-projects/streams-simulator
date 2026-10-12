@@ -1,7 +1,9 @@
 package app
 
 import (
+	"cmp"
 	"errors"
+	"fmt"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
@@ -13,16 +15,17 @@ func (s *Session) execute(c domain.Command) error {
 }
 
 func (s *Session) executeSafeStop(c domain.Command) error {
-	if reason := s.identify(c) + s.onBoot(c); reason != "" {
+	if reason := cmp.Or(s.identify(c), s.onBoot(c)); reason != "" {
 		return s.answer(c.ID, c, refused(reason))
 	}
-	return s.answer(c.ID, c, s.invoke(c, c.ID))
+	s.safeStops++
+	return s.answer(c.ID, c, s.invoke(c, fmt.Sprintf("%s#%d", c.ID, s.safeStops)))
 }
 
 func (s *Session) invoke(c domain.Command, worldID string) domain.Answer {
 	entity, _ := s.devices.entity(c.Device)
 	result, err := s.run.InvokeEffector(c.Name, entity, worldID, c.Args, s.now())
-	return s.outcome(result, err)
+	return outcome(result, err)
 }
 
 func (s *Session) answerAll(c domain.Command, waiting []string, answer domain.Answer) error {
@@ -35,7 +38,7 @@ func (s *Session) answerAll(c domain.Command, waiting []string, answer domain.An
 	return nil
 }
 
-func (s *Session) outcome(result *world.InvokeResult, err error) domain.Answer {
+func outcome(result *world.InvokeResult, err error) domain.Answer {
 	switch {
 	case errors.Is(err, world.ErrInterlockRefused):
 		return refused("interlocked")
@@ -46,27 +49,19 @@ func (s *Session) outcome(result *world.InvokeResult, err error) domain.Answer {
 	case err != nil:
 		return refused("not_ready")
 	}
-	return s.acknowledged(result)
+	return acknowledged(result)
 }
 
-func (s *Session) acknowledged(result *world.InvokeResult) domain.Answer {
+func acknowledged(result *world.InvokeResult) domain.Answer {
 	switch {
 	case result.Mode == world.ModeAckLost:
 		return domain.Answer{Status: "accepted", Outcome: "succeeded", Silent: true}
 	case result.Accepted:
 		return domain.Answer{Status: "accepted", Outcome: "succeeded"}
-	case s.lastCallReason() == world.ReasonPreconditionRefused:
+	case result.Cause == world.ReasonPreconditionRefused:
 		return refused("permissive_not_met")
 	}
 	return refused("not_ready")
-}
-
-func (s *Session) lastCallReason() string {
-	calls := s.run.World.EffectorCalls()
-	if len(calls) == 0 {
-		return ""
-	}
-	return calls[len(calls)-1].Reason
 }
 
 func (s *Session) runQueue() error {

@@ -14,7 +14,7 @@ func WireID(id string) string {
 		return id
 	}
 	safe := strings.Map(wireRune, id)
-	if !wireID.MatchString(safe[:1]) {
+	if safe == "" || !wireID.MatchString(safe[:1]) {
 		safe = "d" + safe
 	}
 	return safe[:min(len(safe), 128)]

@@ -49,7 +49,7 @@ func TestAPlantWireHostReportsItsSession(t *testing.T) {
 		hosted <- invoke(t, "plantwire", "host", "--socket", path, "--script", script, "--inventory", inventory)
 	}()
 	waitForSocket(t, path)
-	options := plantwire.Options{Environment: "simulated", ProtocolMax: 1, ContractVersion: "1.0.0", SessionID: "s-1", SliceNS: 60e9, UntilNS: 1767225600000000000 + 180e9}
+	options := plantwire.Options{Environment: "simulated", ProtocolMax: 1, SessionID: "s-1", SliceNS: 60e9, UntilNS: 1767225600000000000 + 180e9}
 	if err := plantwire.Serve(t.Context(), pumpBoardRun(t), path, 5*time.Second, options); err != nil {
 		t.Fatal(err)
 	}

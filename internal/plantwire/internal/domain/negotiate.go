@@ -3,47 +3,48 @@ package domain
 import (
 	"errors"
 	"fmt"
+	"math"
 	"strconv"
 )
 
 var ErrRefused = errors.New("plantwire: the host refused the session")
 
-func Negotiate(state map[string]any, nodeMax int) (int, error) {
-	if online, _ := state["online"].(bool); !online {
-		return 0, fmt.Errorf("%w: %v", ErrRefused, state["refusal"])
+func Negotiate(state Message, nodeMax int) (int, error) {
+	if !state.Online {
+		return 0, fmt.Errorf("%w: %s", ErrRefused, state.Refusal)
 	}
-	version := Int(state["protocol_version"])
-	low, high := max(Version, Int(state["protocol_min"])), min(int64(nodeMax), Int(state["protocol_max"]))
-	if version < low || version > high {
+	version := state.ProtocolVersion
+	low, high := max(Version, state.ProtocolMin), min(int64(nodeMax), state.ProtocolMax)
+	if version != high || low > high {
 		return 0, fmt.Errorf("%w: version %d outside %d-%d", ErrRefused, version, low, high)
 	}
 	return int(version), nil
 }
 
-func Int(value any) int64 {
-	switch number := value.(type) {
-	case interface{ Int64() (int64, error) }:
-		parsed, _ := number.Int64()
-		return parsed
-	case int:
-		return int64(number)
-	case int64:
-		return number
-	case float64:
-		return int64(number)
-	}
-	return 0
+func Seq(value any) uint64 {
+	seq, _ := SeqOf(value)
+	return seq
 }
 
-func Seq(value any) uint64 {
+func SeqOf(value any) (uint64, bool) {
 	switch number := value.(type) {
 	case uint64:
-		return number
+		return number, true
 	case float64:
-		return uint64(max(number, 0))
+		return wholeSeq(number)
 	case fmt.Stringer:
-		parsed, _ := strconv.ParseUint(number.String(), 10, 64)
-		return parsed
+		if parsed, err := strconv.ParseUint(number.String(), 10, 64); err == nil {
+			return parsed, true
+		}
+		parsed, err := strconv.ParseFloat(number.String(), 64)
+		return wholeSeq(map[bool]float64{true: parsed, false: -1}[err == nil])
 	}
-	return 0
+	return 0, false
+}
+
+func wholeSeq(number float64) (uint64, bool) {
+	if number < 0 || number != math.Trunc(number) || number >= 1<<53 {
+		return 0, false
+	}
+	return uint64(number), true
 }

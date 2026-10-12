@@ -130,3 +130,27 @@ func TestJournalFlushReportsAStreamFailure(t *testing.T) {
 		t.Fatalf("Flush = %v, want the observer stream failure", err)
 	}
 }
+
+func TestWireAndPacingRecordsLeaveTheReplayableStreamUnchanged(t *testing.T) {
+	t.Parallel()
+	write := func(withWire bool) (string, []byte) {
+		j := NewMemory(true)
+		j.Observation(1, `{"v":1}`)
+		if withWire {
+			j.Wire(1, "node", map[string]any{"type": "NSYNC", "seq": 3})
+			j.Pacing(1, 3, 12, true)
+		}
+		j.Observation(2, `{"v":2}`)
+		observer, _ := j.Bytes(StreamObserver)
+		return j.Digests().Observer, observer
+	}
+	plain, plainBytes := write(false)
+	wired, wiredBytes := write(true)
+	if plain != wired || Digest(wiredBytes) != wired || FirstDifference(plainBytes, wiredBytes) != -1 {
+		t.Fatalf("wire records changed the stream: %s vs %s", plain, wired)
+	}
+	records, err := Read(wiredBytes)
+	if err != nil || len(records) != 4 || records[1].Seq != records[3].Seq || records[1].Type != TypeWire || records[2].Type != TypePacing {
+		t.Fatalf("records %+v, %v", records, err)
+	}
+}

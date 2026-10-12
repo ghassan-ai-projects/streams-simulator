@@ -56,7 +56,7 @@ func pumpRun(t *testing.T) *run.Run {
 
 var journalDirs sync.Map
 
-func pair(t *testing.T, hostOptions HostOptions, delay time.Duration, prepare func(*run.Run)) pairing {
+func pair(t *testing.T, hostOptions HostOptions, delay, barrierCap time.Duration, prepare func(*run.Run)) pairing {
 	t.Helper()
 	path := filepath.Join(filepath.Dir(testsupport.SocketPath(t)), "h.sock")
 	ready, hosted := make(chan struct{}), make(chan pairing, 1)
@@ -70,9 +70,9 @@ func pair(t *testing.T, hostOptions HostOptions, delay time.Duration, prepare fu
 	if prepare != nil {
 		prepare(r)
 	}
-	options := Options{Environment: "simulated", ProtocolMax: 1, ContractVersion: "1.0.0", SessionID: "s-1", SliceNS: 60e9,
+	options := Options{Environment: "simulated", ProtocolMax: 1, SessionID: "s-1", SliceNS: 60e9,
 		UntilNS: model.DefaultStartTimeNS + 300e9, Policies: []string{hostPolicy}, SafeStop: []string{"safe_stop"}}
-	nodeErr := Serve(t.Context(), r, path, 5*time.Second, options)
+	nodeErr := Serve(t.Context(), r, path, barrierCap, options)
 	result := <-hosted
 	result.node, result.run = nodeErr, r
 	return result
@@ -84,7 +84,7 @@ func referenceOptions() HostOptions {
 
 func TestASlowReferenceHostIsNeverOutrunAndVerifiesItsCommand(t *testing.T) {
 	t.Parallel()
-	result := pair(t, referenceOptions(), 30*time.Millisecond, nil)
+	result := pair(t, referenceOptions(), 30*time.Millisecond, 5*time.Second, nil)
 	if result.node != nil || result.host != nil {
 		t.Fatalf("node %v, host %v", result.node, result.host)
 	}
@@ -92,16 +92,37 @@ func TestASlowReferenceHostIsNeverOutrunAndVerifiesItsCommand(t *testing.T) {
 	if status == nil || status.Result != "succeeded" || status.Verified == nil || !*status.Verified {
 		t.Fatalf("command status %+v", status)
 	}
-	for _, pacing := range journalRecords(t, result.run, "pacing") {
-		if waited, _ := pacing["waited_ms"].(json.Number).Int64(); pacing["missed"] == true || waited < 30 {
+	barriers := journalRecords(t, result.run, "pacing")
+	if len(barriers) != 5 {
+		t.Fatalf("%d barriers recorded, want 5", len(barriers))
+	}
+	for _, pacing := range barriers {
+		if waited, _ := pacing["waited_ms"].(json.Number).Int64(); pacing["missed"] == true || waited < 25 {
 			t.Fatalf("a barrier was outrun: %v", pacing)
+		}
+	}
+}
+
+func TestAHostSlowerThanTheCapIsRecordedAsMissedBarriersThenLost(t *testing.T) {
+	t.Parallel()
+	result := pair(t, referenceOptions(), 400*time.Millisecond, 150*time.Millisecond, nil)
+	if !errors.Is(result.node, ErrHostLost) {
+		t.Fatalf("node %v, want host loss", result.node)
+	}
+	pacing := journalRecords(t, result.run, "pacing")
+	if len(pacing) != 3 {
+		t.Fatalf("pacing %v, want three missed barriers", pacing)
+	}
+	for _, barrier := range pacing {
+		if waited, _ := barrier["waited_ms"].(json.Number).Int64(); barrier["missed"] != true || waited < 150 {
+			t.Fatalf("a missed barrier was not recorded: %v", barrier)
 		}
 	}
 }
 
 func TestTheReferenceHostCatchesALyingResult(t *testing.T) {
 	t.Parallel()
-	result := pair(t, referenceOptions(), 0, func(r *run.Run) { r.SetFailureMode(world.ModeSilentNoEffect) })
+	result := pair(t, referenceOptions(), 0, 5*time.Second, func(r *run.Run) { r.SetFailureMode(world.ModeSilentNoEffect) })
 	if status := result.report.Commands["ref-1"]; status.Result != "succeeded" || status.Verified == nil || *status.Verified {
 		t.Fatalf("a silent no-effect command was not caught: %+v", status)
 	}
@@ -111,12 +132,12 @@ func TestTheReferenceHostRefusesAnotherEnvironmentAndQuarantinesTheUncommissione
 	t.Parallel()
 	wrong := referenceOptions()
 	wrong.Environment = "hardware"
-	if result := pair(t, wrong, 0, nil); !errors.Is(result.node, ErrRefused) || result.report.Refused != "environment_mismatch" {
+	if result := pair(t, wrong, 0, 5*time.Second, nil); !errors.Is(result.node, ErrRefused) || result.report.Refused != "environment_mismatch" {
 		t.Fatalf("node %v, report %+v", result.node, result.report)
 	}
 	partial := referenceOptions()
 	partial.Inventory = map[string]string{"P1": "pump"}
-	if result := pair(t, partial, 0, nil); len(result.report.Quarantined) != 1 || result.report.Quarantined[0] != "P2" {
+	if result := pair(t, partial, 0, 5*time.Second, nil); len(result.report.Quarantined) != 1 || result.report.Quarantined[0] != "P2" {
 		t.Fatalf("quarantined %v", result.report.Quarantined)
 	}
 }
@@ -124,7 +145,7 @@ func TestTheReferenceHostRefusesAnotherEnvironmentAndQuarantinesTheUncommissione
 func TestTwoRunsWithTheSameHostGiveTheSameWire(t *testing.T) {
 	t.Parallel()
 	wires := func() []byte {
-		result := pair(t, referenceOptions(), 0, nil)
+		result := pair(t, referenceOptions(), 0, 5*time.Second, nil)
 		var out bytes.Buffer
 		for _, wire := range journalRecords(t, result.run, "wire") {
 			raw, _ := json.Marshal(wire)

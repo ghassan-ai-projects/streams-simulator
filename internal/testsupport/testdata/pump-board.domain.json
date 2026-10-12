@@ -86,7 +86,7 @@
             "additionalProperties": false,
             "properties": {
               "lease_ms": {"minimum": 1000, "type": "integer"},
-              "pct": {"maximum": 100, "minimum": 0, "type": "number"}
+              "pct": {"maximum": 100, "minimum": 0, "type": "number", "description": "pump speed setpoint as a share of rated speed", "title": "impeller drive setpoint"}
             },
             "required": ["pct", "lease_ms"],
             "type": "object"
