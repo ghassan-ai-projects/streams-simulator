@@ -91,7 +91,7 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 | R0-11 | R0 | Med | Closed-grammar test over the v0.2 schema | P6a | open |
 | R0-12 | R0 | Med | RNG draw-order table for the event clock | P6e | open |
 | R0-13 | R0 | Med | Contract sync target, pinned digest, safety-field floor | P7a | open |
-| R0-14 | R0 | Med | Technology decision record (UI, bridge language and protocol) | P8a | open |
+| R0-14 | R0 | Med | Technology decision record (UI, bridge language and protocol) | P8a | done: [canvas-technology.md](canvas-technology.md) |
 | R0-15 | R0 | Med | Bridge threat model with one test per threat | P8b | open |
 | R0-16 | R0 | Med | Stress fixture | P8b | open |
 | R0-17 | R0 | Med | Numeric performance budgets enforced in CI | P9 | open |

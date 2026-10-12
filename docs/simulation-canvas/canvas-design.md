@@ -303,10 +303,10 @@ Stream and Tamoz live belong to the next goal, see GOAL.md)
 
 ## 11. Open questions
 
-1. **Technology stack.** TypeScript is assumed; UI framework and graph library to be chosen
-   against the §9 bar (bundle size, accessibility, performance at the factory's size).
-2. **Bridge language.** TypeScript (same toolchain as the UI) or a small Go command in the
-   simulator; the rule in §6.1 holds either way.
+1. **Technology stack.** Decided: TypeScript, React + Vite + React Flow
+   ([canvas-technology.md](canvas-technology.md)).
+2. **Bridge language.** Decided: Go, `streamsim canvas`, HTTP JSON + Server-Sent Events
+   ([canvas-technology.md](canvas-technology.md)); the rule in §6.1 holds.
 3. **Clock mode with a live LLM host** (REVIEW P12): lockstep, real time, or virtual time with
    recorded agent latency.
 4. **Where the plant-wire node sits in the simulator** (REVIEW M5), which the journal depends on.
