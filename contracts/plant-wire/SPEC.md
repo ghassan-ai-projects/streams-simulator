@@ -50,7 +50,7 @@ Node → host:
 | Type | Lane | Carries |
 |---|---|---|
 | `NBIRTH` | control | `protocol_min`, `protocol_max`, `contract_version`, `contract_digest` (section 11), `environment`, `bd_seq`, `prior_last_seq` (last `seq` of the node's previous session, or -1), `capability_digest`, `kinds`, `boards`, `node_metrics` |
-| `DBIRTH` | data | `device`, `kind`, `board`, `boot_id`, `metadata_version`, `birth_time_ns`, `overrides`, the **current value** of every metric |
+| `DBIRTH` | data | `device`, `kind`, `board`, `boot_id`, `metadata_version`, `birth_time_ns`, `overrides`, the **current value** of every metric (`null` with quality `warming_up` before its first sample) |
 | `DDATA` | data | `device`, `boot_id`, `historical`, `metrics`: one or more `{alias, value, quality, event_time_ns, time_source, uncertainty_ms?, device_mono_us?}` |
 | `DDEATH` | control | `device`, `boot_id`, `reason` (`offline`, `link_down`, `retired`, `reboot`, `poll_failure`), `last_seq` |
 | `NDEATH` | control | `bd_seq`, `reason` (`shutdown`, `connection_lost`) |
@@ -81,7 +81,9 @@ prose, so an id cannot carry an instruction.
   not have; `narrow` gives an `eu_range` inside the kind's. A host refuses a birth whose override widens, renames or adds
   commands. `birth_time_ns` dates the current values.
 - **What a birth never says**: fault catalogue, onsets, affected states, expected effectors, deadlines, counterfactuals, effect
-  models, failure-mode probabilities, latency distributions, true state, ground truth, profile weights.
+  models, failure-mode probabilities, latency distributions, true state, ground truth, profile weights. A simulated node
+  sends no free-text description from its domain (domain descriptions are author notes) and strips descriptions from argument
+  schemas.
 - **Births are claims, not grants.** The host takes `risk_class`, `safe_stop` and argument bounds from its **commissioned
   inventory** (`discovered → reviewed → accepted`), never from a birth. A birth whose kind, id or command set differs from the
   commissioned one is quarantined and its commands denied. A changed `metadata_version` needs a new session and the host's
@@ -108,7 +110,10 @@ the `NBIRTH` that answers it arrives.
 
 - A receiver processes records in `seq` order. A record whose `seq` is ahead is held for at most 256 records or two heartbeat
   intervals; an exact duplicate (same `seq`, same content) is dropped. A gap that outlives the window makes the host send `NCMD
-  rebirth` and makes the node end the session (it reconnects).
+  rebirth` and makes the node end the session (it reconnects). Over an ordered stream (a Unix socket) nothing can arrive
+  ahead, so a receiver may treat any gap as final and any repeated `seq` as a duplicate.
+- A record that fails its schema still consumes its `seq`: a node answers an invalid `DCMD` that names a `command_id` with a
+  `malformed` receipt and ignores any other invalid record.
 - A late `NDEATH` whose `bd_seq` is older than the current birth is ignored. On socket loss the host synthesises `NDEATH`.
 - **Store-and-forward**: data buffered while the host was unreachable is replayed with `historical: true`; the host never updates
   live state or fires real-time rules from it. Buffers are bounded by bytes and age; overflow drops the oldest and marks the next
@@ -120,7 +125,8 @@ the `NBIRTH` that answers it arrives.
 - **Time base.** A simulated node runs in **virtual time**: `deadline_ns`, `not_before_ns`, `event_time_ns` and heartbeats are
   world time. A hardware node runs in wall time (UTC), and its `uncertainty_ms` covers clock skew.
 - **Barrier (quiescence).** A simulated world advances in slices. At the end of a slice the node sends `NSYNC {through_seq,
-  world_time_ns}` and waits for `HSYNC` with `through_seq` at least that of the `NSYNC`. The node processes host records only at
+  world_time_ns}` and waits for `HSYNC` whose `through_seq` is at least the `NSYNC` record's own `seq` (so the barrier
+  covers the `NSYNC` itself, and a late answer to an earlier slice never satisfies a later one). The node processes host records only at
   slice ends; a host record takes the world time of the slice end at which it is processed, so its effect is deterministic and
   recorded in the run's command log. The wall time waited is recorded as host latency. If no `HSYNC` arrives within the run's
   `barrier_wall_cap_ms`, the node records a missed barrier and advances; a slow host is never outrun silently.
@@ -201,7 +207,7 @@ every string it shows a model and never follows one.
 
 ## 12. Limits
 
-A record is at most 64 KiB, except `NBIRTH` and `DBIRTH`, at most 1 MiB. A `DDATA` carries at most 500 metrics; an `NBIRTH`
+A record is at most 64 KiB, except `NBIRTH` and `DBIRTH`, at most 1 MiB. A non-finite number (NaN, infinity) is never sent. A `DDATA` carries at most 500 metrics; an `NBIRTH`
 declares at most 256 kinds and 4096 boards of at most 4096 devices.
 
 ## 13. Mapping to device-wire-v1 (for gateways)

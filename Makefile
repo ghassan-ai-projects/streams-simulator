@@ -17,11 +17,12 @@ ENOLA     ?= enola
 FUZZTIME     ?= 10s
 FUZZSOAKTIME ?= 5s
 # To add a fuzz target: append its name to FUZZ_NAMES and give it a package.
-FUZZ_NAMES := FuzzDomainParse FuzzArtifactLoad FuzzScenarioCheck FuzzJournalRead
+FUZZ_NAMES := FuzzDomainParse FuzzArtifactLoad FuzzScenarioCheck FuzzJournalRead FuzzWireParse
 FUZZ_PKG_FuzzDomainParse   := ./internal/domain/internal/domain/
 FUZZ_PKG_FuzzArtifactLoad  := ./internal/run/internal/app/
 FUZZ_PKG_FuzzScenarioCheck := ./internal/run/internal/app/
 FUZZ_PKG_FuzzJournalRead   := ./internal/journal/internal/domain/
+FUZZ_PKG_FuzzWireParse     := ./internal/plantwire/internal/domain/
 FUZZ_TARGETS := $(addprefix fuzz-,$(FUZZ_NAMES))
 
 # Detect if any Go packages exist (after the user adds code). Used to skip

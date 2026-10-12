@@ -113,7 +113,8 @@ type Run struct {
 	quiesceMu         sync.Mutex
 	quiesceNotify     chan struct{}
 	evidenceRec       func(model.SimEvent) // delivered-event hook (test harness)
-	quiesceParked     func()               // fired when a quiescence wait blocks (test harness)
+	deliveryObserver  func(model.SimEvent)
+	quiesceParked     func() // fired when a quiescence wait blocks (test harness)
 	durableLedger     *durable.Ledger
 	journal           *journal.Journal
 	journalDigests    journal.Digests

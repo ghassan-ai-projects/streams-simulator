@@ -4,6 +4,17 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **Plant wire node** (`internal/plantwire`; phase P7b; contract `contracts/plant-wire/SPEC.md`). A run can speak the plant
+  wire to a host: it dials the host's owner-only socket (refusing a group- or world-accessible one), sends `NBIRTH` (each kind
+  once, the contract and capability digests, the environment marker) and every `DBIRTH` (board, boot, current values, add-or-
+  narrow overrides), negotiates the version or stops on a refusal, advances the world slice by slice with `DDATA` and an
+  `NSYNC`/`HSYNC` barrier capped in wall time, processes host records in sequence order (epoch floor, rebirth in the same
+  session, state queries, graceful goodbye), ends on a host sequence gap or three missed barriers, and closes with `NDEATH`.
+  Commands are refused `not_ready` until P7c. Entity ids are mapped to wire-safe ids; no domain description reaches the wire.
+  New `run.SetDeliveryObserver` (every delivered event after perturbation, before the adapter). Contract changes: a birth's
+  current value may be `null` only with quality `warming_up`; an invalid host record still consumes its `seq`; the barrier
+  rule is explicit; the contract digest moves. A new fuzz target `FuzzWireParse`.
+
 - **Event clock** (`docs/design/DOMAIN_SPEC_V0_2.md` section 19; phase P6e, review item S11, finding R0-12). A `pulse` fault
   shape acts for `duration_s` and its start and end are event instants: trips sample their condition there (a 0.3 s sag trips
   a 0.2 s ride-through trip, a 0.1 s sag does not), and event-driven channels are checked there, so a power-quality channel

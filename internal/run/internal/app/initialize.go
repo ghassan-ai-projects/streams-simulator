@@ -220,3 +220,7 @@ func (r *Run) Trace() []byte {
 func (r *Run) SetEvidenceRecorder(fn func(model.SimEvent)) {
 	r.evidenceRec = fn
 }
+
+func (r *Run) SetDeliveryObserver(fn func(model.SimEvent)) {
+	r.deliveryObserver = fn
+}

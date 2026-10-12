@@ -30,7 +30,7 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 | P11 | REVIEW | High | Prompt injection through strings; injection fixtures | P7a | done |
 | P12 | REVIEW | High | Quiescence barrier and clock mode with a live host | P7d | open |
 | P13 | REVIEW | Med | Edge realism: time source, scan class, polling failures, buffering | P7a | done |
-| P14 | REVIEW | Med | `host_state` offline semantics, version, heartbeat | P7b | open |
+| P14 | REVIEW | Med | `host_state` offline semantics, version, heartbeat | P7b | done |
 | P15 | REVIEW | Med | Capability digest definition | P7a | done |
 | P16 | REVIEW | Med | `notify` alert event type and path to the session | next-goal | next-goal |
 | P17 | REVIEW | Med | Contract sync supply chain: pinned digest, safety floor, minimum version | P7a | done |

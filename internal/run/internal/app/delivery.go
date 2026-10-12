@@ -89,6 +89,7 @@ func (r *Run) recordDelivery(ev model.SimEvent, deliveryID uint64, atNS, observe
 }
 
 func (r *Run) deliverRendered(d perturb.Delivered) {
+	r.observeDelivery(d.Event)
 	line, err := r.Engine.RenderStreamRecord(&d.Event)
 	if err != nil {
 		r.failPendingDelivery(d, err)
@@ -98,10 +99,14 @@ func (r *Run) deliverRendered(d perturb.Delivered) {
 		r.recordTerminalDelivery(d.Event, d.DeliveryID, false, model.DeliveryOmitted)
 		return
 	}
-	if r.evidenceRec != nil {
-		r.evidenceRec(d.Event)
-	}
+	r.recordEvidence(d.Event)
 	r.writePendingDelivery(d, line)
+}
+
+func (r *Run) recordEvidence(event model.SimEvent) {
+	if r.evidenceRec != nil {
+		r.evidenceRec(event)
+	}
 }
 
 func (r *Run) writePendingDelivery(d perturb.Delivered, line string) {
@@ -136,4 +141,10 @@ func (r *Run) deliverMalformedEvent(ev model.SimEvent, id uint64) bool {
 	r.journal.Malformed(r.journalNow(), malformedLine(ev))
 	r.recordTerminalDelivery(ev, id, true, model.DeliveryMangled)
 	return true
+}
+
+func (r *Run) observeDelivery(event model.SimEvent) {
+	if r.deliveryObserver != nil {
+		r.deliveryObserver(event)
+	}
 }
