@@ -46,7 +46,7 @@ func TestAHostReplacesAStaleSocketButNotALiveHostOrAFile(t *testing.T) {
 	}
 	stale.(*net.UnixListener).SetUnlinkOnClose(false)
 	_ = stale.Close()
-	served := serveInBackground(t, path, &stubPeer{done: true}, Pacing{Handshake: time.Second})
+	served := serveInBackground(t, path, &stubPeer{doneOnFirst: true}, Pacing{Handshake: time.Second})
 	if err := ServeHost(t.Context(), path, &stubPeer{}, Pacing{}, nil); !errors.Is(err, ErrSocketInUse) {
 		t.Fatalf("a second host on a live socket = %v", err)
 	}

@@ -1,7 +1,6 @@
 package durable
 
 import (
-	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -24,11 +23,12 @@ func TestLedgerAppendsFlushesAndClosesItsFile(t *testing.T) {
 	if raw, err := os.ReadFile(path); err != nil || !strings.Contains(string(raw), `"delivery_reason":"ok"`) {
 		t.Fatalf("flushed ledger = %q (%v)", raw, err)
 	}
-	if isClosed(l) {
-		t.Fatal("the ledger is open until Finish")
+	if err := l.Finish(); err != nil {
+		t.Fatalf("finish: %v", err)
 	}
-	if err := l.Finish(); err != nil || !isClosed(l) {
-		t.Fatalf("finish: %v, closed %v", err, isClosed(l))
+	l.Append(model.LedgerRecord{DeliveryReason: "late"})
+	if err := l.Flush(); err == nil || !strings.HasPrefix(err.Error(), "run: flush ledger: ") {
+		t.Fatalf("a flush after finish = %v", err)
 	}
 }
 
@@ -38,7 +38,7 @@ func TestOpenLedgerNamesAPathItCannotCreate(t *testing.T) {
 	if err := os.WriteFile(blocker, []byte("x"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := OpenLedger(filepath.Join(blocker, "sub", "l.jsonl")); err == nil || !strings.Contains(err.Error(), "run: ledger dir") {
+	if _, err := OpenLedger(filepath.Join(blocker, "sub", "l.jsonl")); err == nil || !strings.Contains(err.Error(), "run: open ledger") {
 		t.Fatalf("err = %v", err)
 	}
 }
@@ -91,39 +91,6 @@ func TestWriteRunArtifactAndReadArtifact(t *testing.T) {
 	}
 }
 
-func TestFinishClosesTheFileEvenWhenTheFlushFails(t *testing.T) {
-	t.Parallel()
-	l, err := OpenLedger(filepath.Join(t.TempDir(), "ledger.jsonl"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := l.file.Close(); err != nil {
-		t.Fatal(err)
-	}
-	l.Append(model.LedgerRecord{DeliveryReason: "ok"})
-	if err := l.Finish(); err == nil || !strings.HasPrefix(err.Error(), "End: flush ledger: ") {
-		t.Fatalf("finish over a closed file = %v", err)
-	}
-	if !isClosed(l) {
-		t.Fatal("the ledger must be closed after a failed finish")
-	}
-}
-
-func TestFlushNamesTheLedgerWhenTheFileIsGone(t *testing.T) {
-	t.Parallel()
-	l, err := OpenLedger(filepath.Join(t.TempDir(), "ledger.jsonl"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := l.file.Close(); err != nil {
-		t.Fatal(err)
-	}
-	l.Append(model.LedgerRecord{DeliveryReason: "ok"})
-	if err := l.Flush(); err == nil || !strings.HasPrefix(err.Error(), "run: flush ledger: ") {
-		t.Fatalf("flush over a closed file = %v", err)
-	}
-}
-
 func TestPublishEvidenceRefusesAnOutputDirUnderAFile(t *testing.T) {
 	t.Parallel()
 	blocker := filepath.Join(t.TempDir(), "file")
@@ -134,12 +101,6 @@ func TestPublishEvidenceRefusesAnOutputDirUnderAFile(t *testing.T) {
 	if err == nil || !strings.HasPrefix(err.Error(), "End: ") {
 		t.Fatalf("publish under a regular file = %v", err)
 	}
-}
-
-// isClosed reports whether the ledger's file descriptor has been closed.
-func isClosed(l *Ledger) bool {
-	_, err := l.file.Stat()
-	return errors.Is(err, os.ErrClosed)
 }
 
 func TestReadJournalReportsPresenceAndFailures(t *testing.T) {

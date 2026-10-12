@@ -8,7 +8,7 @@ cmd/streamsim         0
 # The journal module (QUALITY_BAR section 2: new modules at 85 percent or more).
 internal/journal                  99
 internal/journal/internal/domain  99
-internal/journal/internal/files   95
+internal/journal/internal/files   100
 # The report module (QUALITY_BAR section 2: new modules at 85 percent or more).
 internal/report                  100
 internal/report/internal/domain  96

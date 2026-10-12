@@ -2,12 +2,12 @@
 package durable
 
 import (
+	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 
+	"github.com/ghassan-ai-projects/streams-simulator/internal/kernel"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
@@ -28,7 +28,7 @@ type Evidence struct {
 // PublishEvidence writes the run's evidence files under outDir: trace,
 // ledger, world-state history and, when one was submitted, the verdict.
 func PublishEvidence(outDir string, e Evidence) error {
-	if err := os.MkdirAll(outDir, 0o700); err != nil {
+	if err := kernel.PrivateDir(outDir); err != nil {
 		return fmt.Errorf("End: %w", err)
 	}
 	if err := publishTrace(outDir, e); err != nil {
@@ -52,7 +52,7 @@ func WriteRunArtifact(outDir string, art *model.RunArtifact) error {
 	if err != nil {
 		return fmt.Errorf("End: %w", err)
 	}
-	if err := os.WriteFile(filepath.Join(outDir, "run.json"), raw, 0o600); err != nil {
+	if err := kernel.WriteAtomic(filepath.Join(outDir, "run.json"), raw); err != nil {
 		return fmt.Errorf("End: %w", err)
 	}
 	return nil
@@ -60,7 +60,7 @@ func WriteRunArtifact(outDir string, art *model.RunArtifact) error {
 
 // ReadArtifact reads the raw bytes of a run artifact file.
 func ReadArtifact(path string) ([]byte, error) {
-	raw, err := os.ReadFile(path)
+	raw, err := kernel.Read(path)
 	if err != nil {
 		return nil, fmt.Errorf("run: read artifact %s: %w", path, err)
 	}
@@ -72,7 +72,7 @@ func publishTrace(outDir string, e Evidence) error {
 	if tracePath == "" {
 		tracePath = filepath.Join(outDir, "trace.jsonl")
 	}
-	if err := os.WriteFile(tracePath, e.Trace, 0o600); err != nil {
+	if err := kernel.WriteAtomic(tracePath, e.Trace); err != nil {
 		return fmt.Errorf("End: %w", err)
 	}
 	return nil
@@ -90,7 +90,7 @@ func publishLedger(outDir string, e Evidence) error {
 func publishVerdict(outDir string, verdict *model.Verdict) error {
 	if verdict != nil {
 		raw, _ := json.MarshalIndent(verdict, "", "  ")
-		if err := os.WriteFile(filepath.Join(outDir, "verdict.json"), raw, 0o600); err != nil {
+		if err := kernel.WriteAtomic(filepath.Join(outDir, "verdict.json"), raw); err != nil {
 			return fmt.Errorf("End: %w", err)
 		}
 	}
@@ -98,29 +98,21 @@ func publishVerdict(outDir string, verdict *model.Verdict) error {
 }
 
 func writeJSONL[T any](path string, records []T) error {
-	file, err := os.Create(path)
-	if err != nil {
-		return fmt.Errorf("streamsim: %w", err)
-	}
-	defer func() { _ = file.Close() }()
+	var lines bytes.Buffer
 	for _, record := range records {
 		raw, _ := json.Marshal(record)
-		if _, err := file.Write(append(raw, '\n')); err != nil {
-			return fmt.Errorf("streamsim: %w", err)
-		}
+		lines.Write(append(raw, '\n'))
+	}
+	if err := kernel.WriteAtomic(path, lines.Bytes()); err != nil {
+		return fmt.Errorf("streamsim: %w", err)
 	}
 	return nil
 }
 
-// ReadJournal reads the journal file name under dir; present is false when the
-// run left no such file.
 func ReadJournal(dir, name string) (raw []byte, present bool, err error) {
-	raw, err = os.ReadFile(filepath.Join(dir, name))
-	if errors.Is(err, os.ErrNotExist) {
-		return nil, false, nil
-	}
+	raw, present, err = kernel.ReadIfPresent(filepath.Join(dir, name))
 	if err != nil {
 		return nil, false, fmt.Errorf("run: read journal %s: %w", name, err)
 	}
-	return raw, true, nil
+	return raw, present, nil
 }

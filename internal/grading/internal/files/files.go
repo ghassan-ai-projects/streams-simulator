@@ -2,17 +2,8 @@
 // files a run published beside its artifact.
 package files
 
-import (
-	"fmt"
-	"os"
-)
+import "github.com/ghassan-ai-projects/streams-simulator/internal/kernel"
 
-// Read returns the contents of the file at path.
 func Read(path string) ([]byte, error) {
-	// #nosec G304 G703 -- a CLI flag naming a file is user intent.
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("%w", err)
-	}
-	return raw, nil
+	return kernel.Read(path)
 }

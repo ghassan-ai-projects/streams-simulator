@@ -11,6 +11,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ghassan-ai-projects/streams-simulator/internal/kernel"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/device/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
@@ -74,7 +76,7 @@ func TestListenRefusesAPathThatIsARegularFileAndReplacesAStaleSocket(t *testing.
 	if err := os.WriteFile(regular, []byte("x"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Listen(regular, domain.New(domain.Config{})); err == nil || !strings.Contains(err.Error(), "device: refusing to remove non-socket path") {
+	if _, err := Listen(regular, domain.New(domain.Config{})); err == nil || !errors.Is(err, kernel.ErrInUse) {
 		t.Fatal("a regular file at the socket path must be refused")
 	}
 	for i := 0; i < 2; i++ {

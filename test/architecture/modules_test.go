@@ -21,6 +21,7 @@ var moduleShapes = map[string][]string{
 	"internal/suite":       {"domain", "app", "files"},
 	"internal/deviceworld": {"domain", "app", "files"},
 	"internal/sink":        {"domain", "files", "httppush"},
+	"internal/kernel":      {"files", "process", "sockets"},
 	"internal/domain":      {"domain", "files"},
 	"internal/journal":     {"domain", "files"},
 	"internal/adapter":     {"domain", "files"},
@@ -69,6 +70,9 @@ func TestModuleShapeMatchesItsKind(t *testing.T) {
 	}
 	for _, module := range migratedModules() {
 		allowed := moduleShapes[module]
+		if packages[module].kind == kindOS {
+			continue
+		}
 		if packages[module].kind != kindSurface && !slices.Contains(allowed, "domain") {
 			t.Errorf("%s: a migrated module declares a domain layer", module)
 		}

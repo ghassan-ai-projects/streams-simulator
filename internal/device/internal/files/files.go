@@ -5,15 +5,13 @@ package files
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/device/internal/domain"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/kernel"
 )
 
-// LoadCapabilities reads and validates the capability catalog at path.
 func LoadCapabilities(path string) (*domain.Capabilities, error) {
-	// #nosec G304 G703 -- a CLI flag naming a file is user intent.
-	data, err := os.ReadFile(path)
+	data, err := kernel.Read(path)
 	if err != nil {
 		return nil, fmt.Errorf("read capabilities: %w", err)
 	}

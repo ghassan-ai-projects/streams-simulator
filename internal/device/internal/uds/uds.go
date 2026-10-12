@@ -5,15 +5,16 @@ package uds
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"log/slog"
 	"net"
-	"os"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/device/internal/domain"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/kernel"
 )
 
 // ErrInjectedDisconnect identifies a deterministic disconnect fault. The
@@ -95,33 +96,12 @@ func malformedResult() map[string]any {
 // device speaks to one gateway link at a time. It removes a stale socket file
 // at path before binding, but never removes a regular file or directory.
 func Listen(path string, d *domain.Device) (*net.UnixListener, error) {
-	if err := removeStaleSocket(path); err != nil {
-		return nil, err
-	}
-	addr, err := net.ResolveUnixAddr("unix", path)
-	if err != nil {
-		return nil, fmt.Errorf("device: resolve socket %s: %w", path, err)
-	}
-	listener, err := net.ListenUnix("unix", addr)
+	listener, err := kernel.Listen(context.Background(), path)
 	if err != nil {
 		return nil, fmt.Errorf("device: listen on %s: %w", path, err)
 	}
 	go acceptDeviceConnections(listener, d)
 	return listener, nil
-}
-
-func removeStaleSocket(path string) error {
-	info, err := os.Lstat(path)
-	if errors.Is(err, os.ErrNotExist) {
-		return nil
-	}
-	if err != nil {
-		return fmt.Errorf("device: inspect socket path %s: %w", path, err)
-	}
-	if info.Mode()&os.ModeSocket == 0 {
-		return fmt.Errorf("device: refusing to remove non-socket path %s", path)
-	}
-	return clearSocketPath(path)
 }
 
 func sendInitialState(d *domain.Device, gate *wireGate) error {
@@ -166,11 +146,4 @@ func serveAcceptedConnection(conn *net.UnixConn, d *domain.Device) {
 	if err := conn.Close(); err != nil {
 		slog.Error("device connection close failed", "error", err)
 	}
-}
-
-func clearSocketPath(path string) error {
-	if err := os.Remove(path); err != nil {
-		return fmt.Errorf("device: clear stale socket %s: %w", path, err)
-	}
-	return nil
 }

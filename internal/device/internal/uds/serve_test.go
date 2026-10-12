@@ -45,7 +45,7 @@ func TestDeviceListensUntilStoppedThenClosesItsSocket(t *testing.T) {
 	t.Parallel()
 	socket := testsupport.SocketPath(t)
 	stderr := &readyWriter{ready: make(chan struct{})}
-	stop := make(chan os.Signal, 1)
+	stop := make(chan struct{}, 1)
 	done := make(chan error, 1)
 	go func() {
 		done <- serveUntil(stderr, socket, domain.New(domain.Config{}), "streamsim device: listening on "+socket, stop)
@@ -56,7 +56,7 @@ func TestDeviceListensUntilStoppedThenClosesItsSocket(t *testing.T) {
 		t.Fatalf("the device must accept a link while served: %v", err)
 	}
 	_ = conn.Close()
-	stop <- os.Interrupt
+	stop <- struct{}{}
 	if err := <-done; err != nil {
 		t.Fatalf("serve: %v", err)
 	}
@@ -98,7 +98,7 @@ func TestDeviceRefusesASocketPathItCannotBind(t *testing.T) {
 		t.Fatal(err)
 	}
 	var stderr bytes.Buffer
-	err := serveUntil(&stderr, blocker, domain.New(domain.Config{}), "banner", make(chan os.Signal))
+	err := serveUntil(&stderr, blocker, domain.New(domain.Config{}), "banner", make(chan struct{}))
 	if err == nil || !strings.HasPrefix(err.Error(), "streamsim: ") || stderr.Len() != 0 {
 		t.Fatalf("err = %v, stderr = %q", err, stderr.String())
 	}
@@ -107,7 +107,7 @@ func TestDeviceRefusesASocketPathItCannotBind(t *testing.T) {
 func TestAListenFailureNamesTheSocketPath(t *testing.T) {
 	t.Parallel()
 	socket := filepath.Join(filepath.Dir(testsupport.SocketPath(t)), "absent", "d.sock")
-	err := serveUntil(io.Discard, socket, domain.New(domain.Config{}), "banner", make(chan os.Signal))
+	err := serveUntil(io.Discard, socket, domain.New(domain.Config{}), "banner", make(chan struct{}))
 	var pathFailure *os.PathError
 	if !errors.As(err, &pathFailure) || pathFailure.Path != socket || !errors.Is(err, fs.ErrNotExist) {
 		t.Fatalf("serveUntil = %v, want a path failure naming %s that is a missing directory", err, socket)

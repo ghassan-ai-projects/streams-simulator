@@ -2,12 +2,16 @@ package device_test
 
 import (
 	"bufio"
+	"errors"
 	"net"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
 	"time"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/kernel"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/device"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
@@ -74,7 +78,7 @@ func TestListenRefusesRegularFilePath(t *testing.T) {
 	if err := os.WriteFile(path, []byte("keep me"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := device.Listen(path, device.New(device.Config{Capabilities: testCaps(t)})); err == nil || !strings.Contains(err.Error(), "device: refusing to remove non-socket path") {
+	if _, err := device.Listen(path, device.New(device.Config{Capabilities: testCaps(t)})); err == nil || !errors.Is(err, kernel.ErrInUse) {
 		t.Fatal("device listener must refuse a regular file path")
 	}
 	data, err := os.ReadFile(path)

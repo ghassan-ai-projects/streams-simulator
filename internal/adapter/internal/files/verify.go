@@ -2,7 +2,8 @@ package files
 
 import (
 	"fmt"
-	"os"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/kernel"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
@@ -28,7 +29,7 @@ func loadFixture(path string) ([]model.SimEvent, error) {
 	if path == "" {
 		return embeddedFixture()
 	}
-	raw, err := os.ReadFile(path)
+	raw, err := kernel.Read(path)
 	if err != nil {
 		return nil, fmt.Errorf("adapter: adapter: %w", err)
 	}
@@ -59,7 +60,7 @@ func (verificationFiles) Golden(path string) ([]byte, error) {
 }
 
 func readFile(path string) ([]byte, error) {
-	raw, err := os.ReadFile(path)
+	raw, err := kernel.Read(path)
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}
