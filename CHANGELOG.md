@@ -4,6 +4,17 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **Stores and flows** (`docs/design/DOMAIN_SPEC_V0_2.md` sections 13 to 15; phase P6a, findings R0-11, R2-05,
+  R5b-01..03). `f1.form: "store"` with a `capacity` accumulates its inputs and flows; `kinds[].flows` move
+  `conductance × Π scale × (from − to)` between stores of one entity, or drain a store without `to`. Every store of an
+  entity is integrated jointly on one shared grid; every store of a kind shares one `dt_ms`. **Integrator fix:** every
+  integrated state of an entity now advances together, earliest step first, and an input is read at its exact step
+  boundary, so no value depends on the order states are read (before, a lag fed by a lag read ahead could see a later
+  value, and an emitting world could differ from the silent oracle world). A test proves the domain schema holds no free-text expression. Narrowing refuses a target named twice and
+  argument bounds that leave no value; a `peer_residual` fault added by an override may not watch a channel only the
+  override adds; a profile's entity count sizes the first templated instance set; idempotency compares argument numbers
+  by value. New fixture `transfer-plant.domain.json`. Shipped domains and every pinned output are unchanged.
+
 - **Named instances, overrides, links, system entities and boards** (`docs/design/DOMAIN_SPEC_V0_2.md` sections 8 to 12;
   phase P5b, finding R5a-02). An instance set may list `names` instead of or beside an `id_template`; an explicit entity id
   is accepted when it is a name or fits a template. `override` on an instance set adds states, dynamics (for added states),

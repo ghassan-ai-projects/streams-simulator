@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"encoding/json"
 	"errors"
 	"math"
 	"testing"
@@ -39,5 +40,15 @@ func TestUnencodableArgumentsStillDistinguishRequests(t *testing.T) {
 	_, err := w.InvokeEffector("act", "e-1", "cmd-1", map[string]any{"k": math.NaN(), "other": 1.0}, at)
 	if !errors.Is(err, ErrCommandIDReused) {
 		t.Fatalf("err = %v, want ErrCommandIDReused", err)
+	}
+}
+
+func TestAnArgumentNumberIsTheSameRequestHoweverItIsWritten(t *testing.T) {
+	t.Parallel()
+	whole := invocation{effector: "e", entityID: "x", args: map[string]any{"level": json.Number("3"), "steps": []any{json.Number("1e1")}}}
+	decimal := invocation{effector: "e", entityID: "x", args: map[string]any{"level": json.Number("3.0"), "steps": []any{10.0}}}
+	other := invocation{effector: "e", entityID: "x", args: map[string]any{"level": json.Number("3.5"), "steps": []any{10.0}}}
+	if requestKey(whole) != requestKey(decimal) || requestKey(whole) == requestKey(other) {
+		t.Fatalf("keys: %s %s %s", requestKey(whole), requestKey(decimal), requestKey(other))
 	}
 }

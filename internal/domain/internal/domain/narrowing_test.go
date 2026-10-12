@@ -68,3 +68,23 @@ func TestNarrowingWithinTheDeclaredBoundsIsAccepted(t *testing.T) {
 		}
 	}
 }
+
+func TestNarrowingNamesEachTargetOnceAndLeavesAValue(t *testing.T) {
+	t.Parallel()
+	repeat := func(section string) func(d map[string]any) {
+		return func(d map[string]any) {
+			entries := at(d, "instances", 3, "override", "narrow", section).([]any)
+			put(d, append(entries, entries[0]), "instances", 3, "override", "narrow", section)
+		}
+	}
+	runViolations(t, []violationCase{
+		{"a channel narrowed twice", repeat("channels"), "/instances/3/override/narrow/channels/1/name"},
+		{"an effector narrowed twice", repeat("effectors"), "/instances/3/override/narrow/effectors/1/name"},
+		{"an argument minimum above the declared maximum", func(d map[string]any) {
+			put(d, map[string]any{"minimum": 120.0}, "instances", 3, "override", "narrow", "effectors", 0, "args", "speed")
+		}, "/instances/3/override/narrow/effectors/0/args/speed/maximum"},
+		{"a peer residual on a channel only the override adds", func(d map[string]any) {
+			put(d, "peer_residual", "instances", 1, "override", "faults", 0, "observability", "detector", "form")
+		}, "/instances/1/override/faults/0/observability/detector/channel"},
+	})
+}

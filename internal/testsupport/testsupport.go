@@ -46,6 +46,10 @@ func StructuredDomain() string {
 	return filepath.Join(RepositoryRoot(), "internal", "testsupport", "testdata", "structured-plant.domain.json")
 }
 
+func TransferDomain() string {
+	return filepath.Join(RepositoryRoot(), "internal", "testsupport", "testdata", "transfer-plant.domain.json")
+}
+
 func TwoKindDomain() string {
 	return filepath.Join(RepositoryRoot(), "internal", "testsupport", "testdata", "two-kind-plant.domain.json")
 }

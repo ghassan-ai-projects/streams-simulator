@@ -21,6 +21,7 @@ type Kind struct {
 	System    bool       `json:"system,omitempty"`
 	State     []State    `json:"state,omitempty"`
 	Dynamics  []Dynamics `json:"dynamics,omitempty"`
+	Flows     []Flow     `json:"flows,omitempty"`
 	Channels  []Channel  `json:"channels"`
 	Faults    []Fault    `json:"faults"`
 	Effectors []Effector `json:"effectors,omitempty"`
@@ -112,6 +113,7 @@ type F1Dyn struct {
 	Direction      string    `json:"direction,omitempty"`
 	ThresholdLow   float64   `json:"threshold_low,omitempty"`
 	ThresholdHigh  float64   `json:"threshold_high,omitempty"`
+	Capacity       float64   `json:"capacity,omitempty"`
 	Clamp          *Clamp    `json:"clamp,omitempty"`
 }
 

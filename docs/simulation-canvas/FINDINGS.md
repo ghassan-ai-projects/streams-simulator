@@ -6,7 +6,7 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 - **Phase**: a phase id from PLAN.md, or `next-goal` (Agentic Stream / gateway goal), or `—`.
 - **Status**: `open`, `done` (fixed, evidence in the phase review), `next-goal`, `dropped`
   (removed by an owner decision), `not-a-defect` (evidence in the review record).
-- Sources: `REVIEW` = [REVIEW-2026-10-12.md](REVIEW-2026-10-12.md) ids; `R0` = [reviews/P0.md](reviews/P0.md); `R1` = [reviews/P1.md](reviews/P1.md); `R2` = [reviews/P2.md](reviews/P2.md); `R2b` = [reviews/P2b.md](reviews/P2b.md); `R2d` = [reviews/P2d.md](reviews/P2d.md); `R5a` = [reviews/P5a.md](reviews/P5a.md); `R5b` = [reviews/P5b.md](reviews/P5b.md); `R2c` = [reviews/P2c.md](reviews/P2c.md); `R3` = [reviews/P3.md](reviews/P3.md); `self` = found by the implementer.
+- Sources: `REVIEW` = [REVIEW-2026-10-12.md](REVIEW-2026-10-12.md) ids; `R0` = [reviews/P0.md](reviews/P0.md); `R1` = [reviews/P1.md](reviews/P1.md); `R2` = [reviews/P2.md](reviews/P2.md); `R2b` = [reviews/P2b.md](reviews/P2b.md); `R2d` = [reviews/P2d.md](reviews/P2d.md); `R5a` = [reviews/P5a.md](reviews/P5a.md); `R5b` = [reviews/P5b.md](reviews/P5b.md); `R6a` = [reviews/P6a.md](reviews/P6a.md); `R2c` = [reviews/P2c.md](reviews/P2c.md); `R3` = [reviews/P3.md](reviews/P3.md); `self` = found by the implementer.
 
 ## Design review (REVIEW-2026-10-12)
 
@@ -54,7 +54,7 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 | S11 | REVIEW | Med | Time resolution and event clock | P6e | open |
 | S12 | REVIEW | Med | Alarm management (priorities, ack, shelving, combined flood) | P12 | open |
 | S13 | REVIEW | Med | Cause-code vocabulary authored on the host side; rotating decoys | P12 | open |
-| S14 | REVIEW | Med | Vocabulary: `kind` row, `lockout` naming, closed comparators, crossing times | P6a | open |
+| S14 | REVIEW | Med | Vocabulary: `kind` row, `lockout` naming, closed comparators, crossing times | P6c | open |
 | S15 | REVIEW | Med | DECISIONS D-03/D-04/D-14 revision recorded | P5a | done |
 | S16 | REVIEW | Med | Negative-class operations events | P12 | open |
 | S17 | REVIEW | Low | Synthetic boundaries labelled; parameters sourced | P12 | open |
@@ -88,7 +88,7 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 | R0-08 | R0 | Med | `make phase-gate` and evidence files | P1 | done |
 | R0-09 | R0 | Med | Consumer-knowledge gate over Go and canvas sources | P1 | done |
 | R0-10 | R0 | Med | `streamsim domain format` canonical formatter | P5a | done |
-| R0-11 | R0 | Med | Closed-grammar test over the v0.2 schema | P6a | open |
+| R0-11 | R0 | Med | Closed-grammar test over the v0.2 schema | P6a | done |
 | R0-12 | R0 | Med | RNG draw-order table for the event clock | P6e | open |
 | R0-13 | R0 | Med | Contract sync target, pinned digest, safety-field floor | P7a | open |
 | R0-14 | R0 | Med | Technology decision record (UI, bridge language and protocol): [canvas-technology.md](canvas-technology.md) | P8a | done |
@@ -118,7 +118,7 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 | R2-02 | R2 | Low | Explicit `entity_ids` (scenario `world.entity_ids`, director `sim.world.create`) are not checked against the domain's entity count bounds or id template; decide and enforce with the v0.2 kinds-and-instances model | P5a | done |
 | R2-03 | R2 | Low | Errors from a missing `--domains-dir` repeat the `streamsim:` prefix three times (pre-existing in `loadSimulatorInputs`); wrap once; the fix is the same as R2c-02, so it is carried there | P13 | open |
 | R2-04 | R2 | Low | Perturbation windows with negative or pre-start times are accepted (negative `until` acts as "no end"); and the run-wide limits have no MCP-level test | P13 | open |
-| R2-05 | R2 | Low | The effector idempotency key compares arguments by `json.Marshal` text, so `3` and `3.0` are different requests | P6a | open |
+| R2-05 | R2 | Low | The effector idempotency key compares arguments by `json.Marshal` text, so `3` and `3.0` are different requests | P6a | done |
 | R2b-01 | R2b | Low | The operator maps every invocation error to `effector_refused`; MCP_SURFACE lists `interlock_refused` and `invalid_args`, which are never emitted. Decide the taxonomy without revealing hidden outcomes, and add a protocol-level (wire) test of the acknowledgement | P10 | open |
 | R2d-01 | R2d | Med | Director composition tests (`closed_loop_test.go`, `operator_surface_test.go`) import `mcp`, inverting layers in test code; move them to `test/acceptance` with a test-support seam instead of `export_test.go` `RunOf` | P3 | done |
 | R2d-02 | R2d | Low | The director returns wire-shaped `map[string]any` results and messages naming tool arguments; return typed results and let `mcp/protocol` shape the wire (also removes protocol knowing result keys, and narrows the `wrapcheck` exemption for the director facade) | P10 | open |
@@ -150,6 +150,7 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 
 | ID | Source | Sev | Summary | Phase | Status |
 |---|---|---|---|---|---|
-| R5b-01 | R5b | Low | Peer sigma pooling is by kind: a `peer_residual` detector on a channel added by an override pools peers that lack the channel | P6a | open |
-| R5b-02 | R5b | Low | Narrowing validation gaps: two narrow entries naming the same state, channel or argument are not refused; an argument `minimum` above the declared `maximum` (or the reverse) is not refused | P6a | open |
-| R5b-03 | R5b | Low | A profile's `entity_count` is ignored when the first instance set has names only | P6a | open |
+| R5b-01 | R5b | Low | Peer sigma pooling is by kind: a `peer_residual` detector on a channel added by an override pools peers that lack the channel | P6a | done |
+| R5b-02 | R5b | Low | Narrowing validation gaps: two narrow entries naming the same state, channel or argument are not refused; an argument `minimum` above the declared `maximum` (or the reverse) is not refused | P6a | done |
+| R5b-03 | R5b | Low | A profile's `entity_count` is ignored when the first instance set has names only | P6a | done |
+| R6a-01 | R6a | Low | Store stiffness and flow sign are unchecked: nothing bounds `conductance / capacity × dt` (RK4 diverges near 2.8) and a negative scale state reverses a flow; validate the bound and keep health scales non-negative | P13 | open |

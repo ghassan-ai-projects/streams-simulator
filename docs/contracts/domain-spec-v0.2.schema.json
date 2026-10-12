@@ -66,6 +66,12 @@
             "items": {"$ref": "#/$defs/dynamics"}
           },
 
+          "flows": {
+            "type": "array",
+            "description": "Linear conductances between store states of the kind. A flow moves conductance × product(scale states) × (from − to) per second out of `from` and into `to`; without `to` it drains to zero. Scale states are read at step boundaries, so the system is linear between steps.",
+            "items": {"$ref": "#/$defs/flow"}
+          },
+
           "channels": {
             "type": "array",
             "minItems": 1,
@@ -363,7 +369,8 @@
           "description": "First-order forms only. Deliberately not a general expression language: an arbitrary evaluator is a nondeterminism surface and a security surface, and no domain in the catalog needs one. The equations for each form are part of the contract and are defined in TECHNICAL_DESIGN §6.2 — a form name without an equation is not a specification.",
           "required": ["form"],
           "properties": {
-            "form": {"enum": ["first_order_lag", "rc_network", "dead_time", "saturation", "hysteresis", "integrator", "threshold_integrator"]},
+            "form": {"enum": ["first_order_lag", "rc_network", "dead_time", "saturation", "hysteresis", "integrator", "threshold_integrator", "store"]},
+            "capacity": {"type": "number", "exclusiveMinimum": 0, "description": "For store: the amount that raises the level by one unit. The level changes by (Σ coef × input + inflows − outflows) / capacity per second."},
             "time_constant_s": {"type": "number", "exclusiveMinimum": 0},
             "time_constant_2_s": {"type": "number", "exclusiveMinimum": 0, "description": "Second lag, for rc_network."},
             "dead_time_s": {"type": "number", "minimum": 0},
@@ -412,6 +419,10 @@
             {
               "if": {"properties": {"form": {"const": "threshold_integrator"}}, "required": ["form"]},
               "then": {"required": ["threshold", "direction"]}
+            },
+            {
+              "if": {"properties": {"form": {"const": "store"}}, "required": ["form"]},
+              "then": {"required": ["capacity"]}
             }
           ]
         },
@@ -449,6 +460,18 @@
           "then": {"properties": {"tier": {"enum": ["F1"]}}}
         }
       ]
+    },
+    "flow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "from", "conductance"],
+      "properties": {
+        "name": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$"},
+        "from": {"type": "string", "description": "A state whose dynamics are a store."},
+        "to": {"type": "string", "description": "A store state; absent means the flow drains to zero."},
+        "conductance": {"type": "number", "exclusiveMinimum": 0},
+        "scale": {"type": "array", "description": "Actuator and health states the conductance is multiplied by.", "items": {"type": "string"}}
+      }
     },
     "channel": {
       "type": "object",

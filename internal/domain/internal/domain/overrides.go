@@ -70,6 +70,9 @@ func (checks domainChecks) checkAdditions(effective *model.Kind, set *model.Inst
 	if err := checks.addedDynamicsTargets(); err != nil {
 		return err
 	}
+	if err := checks.addedPeerResiduals(); err != nil {
+		return err
+	}
 	return checks.checkKind()
 }
 

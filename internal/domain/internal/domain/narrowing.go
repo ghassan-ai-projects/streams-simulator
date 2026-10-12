@@ -26,8 +26,13 @@ func (checks domainChecks) narrowStates(base *model.Kind, n *model.Narrowing) er
 }
 
 func narrowEach[D, T any](checks domainChecks, what string, items []T, name func(*T) string, declared func(string) *D, violation func(*D, *T) (string, string)) error {
+	seen := map[string]bool{}
 	return checks.each(what, len(items), func(at domainChecks, i int) error {
 		decl := declared(name(&items[i]))
+		if seen[name(&items[i])] {
+			return at.bad("/name", "narrowing names %s %q twice", what, name(&items[i]))
+		}
+		seen[name(&items[i])] = true
 		if decl == nil {
 			return at.bad("/name", "narrowing names %s %q, which the kind does not declare", what, name(&items[i]))
 		}
@@ -74,9 +79,14 @@ func rangeViolation(decl *model.Channel, n *model.ChannelNarrowing) (string, str
 }
 
 func (checks domainChecks) narrowEffectors(base *model.Kind, n *model.Narrowing) error {
+	seen := map[string]bool{}
 	return checks.each("effectors", len(n.Effectors), func(at domainChecks, i int) error {
 		item := &n.Effectors[i]
 		decl := base.EffectorDecl(item.Name)
+		if seen[item.Name] {
+			return at.bad("/name", "narrowing names effector %q twice", item.Name)
+		}
+		seen[item.Name] = true
 		if decl == nil {
 			return at.bad("/name", "narrowing names effector %q, which the kind does not declare", item.Name)
 		}
@@ -110,8 +120,20 @@ func boundsViolation(property map[string]any, arg string, b model.ArgBounds) (st
 		return "/minimum", fmt.Sprintf("argument %q minimum %v widens the declared %v", arg, *b.Minimum, lo)
 	case b.Maximum != nil && hasHi && *b.Maximum > hi:
 		return "/maximum", fmt.Sprintf("argument %q maximum %v widens the declared %v", arg, *b.Maximum, hi)
-	case b.Minimum != nil && b.Maximum != nil && *b.Minimum > *b.Maximum:
-		return "/maximum", fmt.Sprintf("argument %q needs minimum at most maximum", arg)
+	}
+	return emptyBounds(arg, narrowedBound(b.Minimum, lo, hasLo), narrowedBound(b.Maximum, hi, hasHi))
+}
+
+func narrowedBound(narrowed *float64, declared float64, hasDeclared bool) *float64 {
+	if narrowed == nil && hasDeclared {
+		return &declared
+	}
+	return narrowed
+}
+
+func emptyBounds(arg string, lo, hi *float64) (string, string) {
+	if lo != nil && hi != nil && *lo > *hi {
+		return "/maximum", fmt.Sprintf("argument %q bounds leave no value: minimum %v above maximum %v", arg, *lo, *hi)
 	}
 	return "", ""
 }

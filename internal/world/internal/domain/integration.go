@@ -16,6 +16,7 @@ type stateValue struct {
 	delayHead  int
 	delayFull  bool
 	hysteresis bool
+	history    []*stateValue
 }
 
 // naturalValue computes the fault- and kick-free value of a state at time t,
@@ -47,39 +48,15 @@ func (w *World) f0Value(dyn *model.Dynamics, t int64) float64 {
 	return seasonalValue(f0, value, t-w.StartNS)
 }
 
-// integrateF1 returns an F1 state's value at t. The committed state advances
-// only in whole dt-sized RK4 steps from the world start, so the integration
-// grid is the same whoever reads and whenever (a run that reads at every
-// emission and an oracle that never emits integrate identically); the part
-// of the last step up to t is evaluated on a copy and discarded.
 func (w *World) integrateF1(ent *Entity, dyn *model.Dynamics, t int64) float64 {
-	s := ent.states[dyn.Target]
-	dt := dyn.DTMs * 1e6 // ms -> ns
-	if dt <= 0 {
-		dt = secondsPerNS
-	}
-	for s.lastStep+dt <= t {
-		w.rk4Step(ent, dyn, s, s.lastStep, dt)
-	}
-	return w.partialStepValue(ent, dyn, s, t)
+	w.advanceEntity(ent, t)
+	return w.valueAt(ent, dyn, t)
 }
 
-// partialStepValue is the state at t, between the committed step and the next
-// grid point, computed on a copy.
-func (w *World) partialStepValue(ent *Entity, dyn *model.Dynamics, s *stateValue, t int64) float64 {
-	if s.lastStep >= t {
-		return s.x
-	}
-	probe := s.clone()
-	w.rk4Step(ent, dyn, probe, probe.lastStep, t-probe.lastStep)
-	return probe.x
-}
-
-// clone copies the integration state, including the dead-time buffer, so a
-// read can step a copy without touching the committed state.
 func (s *stateValue) clone() *stateValue {
 	c := *s
 	c.delayed = slices.Clone(s.delayed)
+	c.history = nil
 	return &c
 }
 

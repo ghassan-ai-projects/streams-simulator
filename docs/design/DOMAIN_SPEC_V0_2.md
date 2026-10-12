@@ -5,7 +5,7 @@
 - **Contract**: [`docs/contracts/domain-spec-v0.2.schema.json`](../contracts/domain-spec-v0.2.schema.json), embedded in the binary
   (`internal/schemas`), parity-tested against the committed copy. v0.1 is removed: the project is pre-release and the eight shipped
   domains are rewritten in the same change.
-- **Later parts**: the new dynamics vocabulary (`store`, `flow`, `regime`, `trip`, ...), aggregation over links and the event
+- **Later parts**: `store` and `flow` are section 13 (P6a); `regime`, `trip` and the rest of the vocabulary, aggregation over links and the event
   clock are P6. Nothing in this part depends on them.
 
 ## 1. Why
@@ -240,3 +240,50 @@ over links (`sum`, `mean`) is P6.
 together. Rules: board names are unique (`/boards/i/name`); each member is an identifiable instance (`/boards/i/members/j`); an
 instance is on at most one board, including twice on the same board. System entities may be members. Only the grouping is modelled
 here. Issuing `boot_id`, rebirth after a reboot and the lease and safe state of a board belong to the plant-wire phases (P7).
+
+## 13. Stores and flows (phase P6a)
+
+`f1.form: "store"` with `capacity` (> 0) is an accumulator: its level changes by `(Σ coef × input + inflows − outflows) /
+capacity` per second, kept within the state's `min`/`max` and the form's `clamp`. `kinds[k].flows[]` = `{name, from, to?,
+conductance, scale[]}` moves `conductance × Π scale × (from − to)` per second from one store to another; without `to` it drains
+toward zero. `scale` names actuator and health states (a pump speed, a pipe health a fault lowers).
+
+Decisions:
+
+- **Integration order.** Every integrated state of an entity advances together, earliest step first, and every store of an
+  entity steps on one grid with one RK4 over the vector of levels. Each state keeps snapshots of its last steps back to the
+  entity's longest step, so a state reading another at a step boundary gets its value at that exact time. Without this the
+  result depended on which state was read first (finding 1 of the P6a review, which also held for a lag fed by a lag before
+  P6a), so an emitting world and a silent oracle world could differ. Every store of a kind, override additions included,
+  shares one `dt_ms` (`/kinds/k/dynamics/i/dt_ms`). A level is kept within the form's `clamp` and the state's `min`/`max`.
+- **Hybrid determinism.** Inputs and scale states are read at the step boundary and held for the step, so the system is linear
+  between steps, as the vocabulary's rule requires. A fault or effect between boundaries acts on a flow from the next boundary.
+- **Faults act through scale states.** A flow reads the integrated level of each store, not a fault or effect laid over it; a
+  blockage or a leak is modelled by a health state in `scale`.
+- **Scope.** Flows join stores of one entity. Flows between instances (along links) are the link aggregation of a later phase.
+  An override may add a store state but not a flow.
+- **Issues:** a duplicate flow name (`/kinds/k/flows/i/name`), a `from` that is no store, a `to` that is no other store, an
+  undeclared scale state (`/kinds/k/flows/i/scale/j`), a store without `capacity`.
+
+The analytic cross-check is independent of the RK4: two stores against the closed form (conservation of `C_a·a + C_b·b` and
+exponential decay of `a − b`), a drained store with inflow against its exponential, the transfer plant fixture against the 2×2
+matrix exponential, and the observability solver's crossing of a pipe blockage against crossing times derived from that matrix
+exponential. Tolerance 1e-6 absolute; the crossing times agree exactly on the 60 s grid.
+
+## 14. Closed grammar (finding R0-11)
+
+The schema holds no expression. A test walks the embedded contract and classifies every unconstrained string member as prose
+(`description`, `title`, `unit`, ...), an identifier (`name`, `id_template`, ...) or a reference the cross-check resolves
+(`state`, `channel`, `from`, `scale`, ...); a new free string fails it until classified. Objects of unchecked members are limited
+to effector argument schemas and arguments, reference-model parameters and profile weights, and no member is named like an
+expression (`expr`, `formula`, `condition`, `script`, ...).
+
+## 15. Smaller rules settled in P6a
+
+- **Narrowing** names each state, channel and effector once, and an argument's narrowed bounds must leave a value: a minimum
+  above the declared maximum is refused (R5b-02).
+- **A `peer_residual` fault added by an override** may not watch a channel only that override adds: its set has no peers that
+  carry the channel (R5b-01).
+- **A profile's entity count** sizes the first instance set that has an `id_template` (R5b-03).
+- **Idempotency** compares argument numbers by value: `3` and `3.0` are the same request (R2-05). Numbers are compared as
+  64-bit floats, so integers above 2^53 that differ only beyond that precision are one request.

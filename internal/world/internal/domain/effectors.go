@@ -162,7 +162,7 @@ func requestKey(inv invocation) string {
 	if args == nil {
 		args = map[string]any{}
 	}
-	raw, err := json.Marshal([]any{inv.effector, inv.entityID, args})
+	raw, err := json.Marshal([]any{inv.effector, inv.entityID, numbersByValue(args)})
 	if err != nil {
 		// fmt prints map keys in sorted order, so the fallback is stable too.
 		return fmt.Sprintf("%q|%q|%v", inv.effector, inv.entityID, args)

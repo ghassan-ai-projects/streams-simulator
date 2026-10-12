@@ -1,0 +1,115 @@
+{
+  "id": "transfer-plant",
+  "version": "0.1.0",
+  "title": "Transfer plant",
+  "description": "A test domain of stores and flows: a feed fills an upper tank, a pumped pipe transfers to a lower tank, and the lower tank drains through an outlet.",
+  "axes": {
+    "absence": "signal",
+    "actuation": "advisory",
+    "cadence": ["periodic"],
+    "cardinality": "fleet",
+    "consequence": ["downtime"],
+    "correlation": ["peer"],
+    "fidelity": ["F0", "F1"],
+    "lateness": "bounded",
+    "rate": "low",
+    "seasonality": ["none"],
+    "time_reference": "wall",
+    "value_shape": ["scalar"]
+  },
+  "stresses": "Coupled stores: a blockage in the transfer pipe shows as the upper level rising and the lower level falling, and the pump speed scales the transfer.",
+  "kinds": [
+    {
+      "name": "cell",
+      "state": [
+        {"name": "feed", "unit": "m3/s", "initial": 0.02},
+        {"name": "pump_speed", "unit": "rel", "initial": 1.0, "min": 0.0, "max": 2.0},
+        {"name": "pipe_health", "unit": "rel", "initial": 1.0, "min": 0.0, "max": 1.0},
+        {"name": "upper", "unit": "m", "initial": 2.0, "min": 0.0, "max": 10.0},
+        {"name": "lower", "unit": "m", "initial": 1.0, "min": 0.0, "max": 10.0}
+      ],
+      "dynamics": [
+        {"target": "feed", "tier": "F0", "f0": {"baseline": 0.02}},
+        {"target": "upper", "tier": "F1", "dt_ms": 1000, "f1": {"form": "store", "capacity": 4.0, "inputs": ["feed"]}},
+        {"target": "lower", "tier": "F1", "dt_ms": 1000, "f1": {"form": "store", "capacity": 2.0}}
+      ],
+      "flows": [
+        {"name": "transfer", "from": "upper", "to": "lower", "conductance": 0.01, "scale": ["pump_speed", "pipe_health"]},
+        {"name": "outlet", "from": "lower", "conductance": 0.015}
+      ],
+      "channels": [
+        {
+          "name": "cell.upper",
+          "unit": "m",
+          "absence": "signal",
+          "cadence": {"mode": "periodic", "period_s": 60},
+          "fidelity": "F1",
+          "noise": {"model": "gaussian", "sigma": 0.01},
+          "observes": "upper",
+          "resolution": 0.001,
+          "value_type": "number"
+        },
+        {
+          "name": "cell.lower",
+          "unit": "m",
+          "absence": "signal",
+          "cadence": {"mode": "periodic", "period_s": 60},
+          "fidelity": "F1",
+          "noise": {"model": "gaussian", "sigma": 0.01},
+          "observes": "lower",
+          "resolution": 0.001,
+          "value_type": "number"
+        }
+      ],
+      "faults": [
+        {
+          "id": "pipe_blockage",
+          "affects": [{"state": "pipe_health", "delta": -0.6}],
+          "expected_effector": "speed_up",
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "cell.lower"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"magnitude": 1.0, "shape": "step"}
+        },
+        {
+          "id": "feed_surge",
+          "affects": [{"state": "feed", "delta": 0.002}],
+          "is_negative_class": true,
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "cell.upper"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"duty_cycle": 0.2, "magnitude": 1.0, "rate_per_hour": 1.0, "shape": "intermittent"}
+        }
+      ],
+      "effectors": [
+        {
+          "name": "speed_up",
+          "ack": {"failure_modes": [{"mode": "ok", "probability": 1.0}], "latency_ms": {"mean": 100, "sigma": 10}},
+          "args_schema": {
+            "additionalProperties": false,
+            "properties": {"cell_id": {"type": "string"}},
+            "required": ["cell_id"],
+            "type": "object"
+          },
+          "confirmation_channels": ["cell.lower"],
+          "effect": {"dead_time_s": 0, "state_deltas": [{"state": "pump_speed", "delta": 0.5}], "time_constant_s": 0},
+          "idempotency_window_s": 600,
+          "risk_class": "low"
+        }
+      ]
+    }
+  ],
+  "instances": [
+    {"kind": "cell", "id_template": "cell-{n}", "count": {"default": 3, "min": 1, "max": 8}}
+  ],
+  "profiles": [
+    {"name": "nominal", "duration_s": 7200, "description": "Three cells, one fault per scenario."},
+    {"name": "correlated_cascade", "not_applicable": "The cells share no upstream cause.", "description": "Not applicable to the test plant."},
+    {"name": "sensor_pathology", "duration_s": 7200, "fault_weights": {"pipe_blockage": 1.0}, "description": "Only the blockage."}
+  ],
+  "ground_truth": {"min_per_label": 10, "min_scenarios": 100, "negative_class_fraction": 0.4, "pre_degraded_fraction": 0.1}
+}
