@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/audit"
+	rules "github.com/ghassan-ai-projects/streams-simulator/internal/director/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
@@ -18,7 +19,7 @@ import (
 func (d *Director) BeginRun(worldID, label string) (map[string]any, error) {
 	w := d.World(worldID)
 	if w == nil {
-		return nil, errTool(CodeWorldNotFound, "unknown world %q", worldID)
+		return nil, rules.ToolErrorf(rules.CodeWorldNotFound, "unknown world %q", worldID)
 	}
 	if err := d.openRun(w, worldID); err != nil {
 		return nil, err
@@ -31,13 +32,13 @@ func (d *Director) BeginRun(worldID, label string) (map[string]any, error) {
 func (d *Director) SealTruth(runID string, rec *model.GroundTruthRecord) error {
 	w := d.worldByRun(runID)
 	if w == nil {
-		return errTool(CodeWorldNotFound, "unknown run %q", runID)
+		return rules.ToolErrorf(rules.CodeWorldNotFound, "unknown run %q", runID)
 	}
 	if started, ended := d.runLifecycle(w); started || ended {
-		return errTool(CodeTruthSealed, "truth must be sealed before run.begin")
+		return rules.ToolErrorf(rules.CodeTruthSealed, "truth must be sealed before run.begin")
 	}
 	if err := d.Truth.Seal(runID, rec); err != nil {
-		return errTool(CodeTruthSealed, "%v", err)
+		return rules.ToolErrorf(rules.CodeTruthSealed, "%v", err)
 	}
 	return nil
 }
@@ -46,7 +47,7 @@ func (d *Director) SealTruth(runID string, rec *model.GroundTruthRecord) error {
 func (d *Director) EndRun(worldID string) (map[string]any, error) {
 	w := d.World(worldID)
 	if w == nil {
-		return nil, errTool(CodeWorldNotFound, "unknown world %q", worldID)
+		return nil, rules.ToolErrorf(rules.CodeWorldNotFound, "unknown world %q", worldID)
 	}
 	return d.finalizeRun(w, worldID)
 }
@@ -56,7 +57,7 @@ func (d *Director) EndRun(worldID string) (map[string]any, error) {
 func (d *Director) RevealTruth(runID string, unblind bool) (map[string]any, error) {
 	rec, err := d.Truth.Reveal(runID, unblind)
 	if err != nil {
-		return nil, errTool(CodeTruthSealed, "%v", err)
+		return nil, rules.ToolErrorf(rules.CodeTruthSealed, "%v", err)
 	}
 	if unblind {
 		if w := d.worldByRun(runID); w != nil {
@@ -70,7 +71,7 @@ func (d *Director) RevealTruth(runID string, unblind bool) (map[string]any, erro
 func (d *Director) SealStatus(runID string) (map[string]any, error) {
 	sealed, unblinded, err := d.Truth.SealStatus(runID)
 	if err != nil {
-		return nil, errTool(CodeWorldNotFound, "%v", err)
+		return nil, rules.ToolErrorf(rules.CodeWorldNotFound, "%v", err)
 	}
 	return map[string]any{"sealed": sealed, "unblinded": unblinded}, nil
 }
@@ -79,10 +80,10 @@ func (d *Director) SealStatus(runID string) (map[string]any, error) {
 func (d *Director) Score(runID string) (map[string]any, error) {
 	w := d.worldByRun(runID)
 	if w == nil {
-		return nil, errTool(CodeWorldNotFound, "unknown run %q", runID)
+		return nil, rules.ToolErrorf(rules.CodeWorldNotFound, "unknown run %q", runID)
 	}
 	if w.Run.UnblindedStamp() {
-		return nil, errTool(CodeRunUnblinded, "scoring refused; the run is stamped unblinded")
+		return nil, rules.ToolErrorf(rules.CodeRunUnblinded, "scoring refused; the run is stamped unblinded")
 	}
 	return d.scoreClosedRun(w, runID)
 }
@@ -91,15 +92,15 @@ func (d *Director) Score(runID string) (map[string]any, error) {
 func (d *Director) VerifyRun(artifactPath string) (map[string]any, error) {
 	art, err := run.LoadArtifact(artifactPath)
 	if err != nil {
-		return nil, errTool(CodeDomainInvalid, "%v", err)
+		return nil, rules.ToolErrorf(rules.CodeDomainInvalid, "%v", err)
 	}
 	spec, err := d.Catalog.Describe(art.Domain.ID)
 	if err != nil {
-		return nil, errTool(CodeDomainInvalid, "%v", err)
+		return nil, rules.ToolErrorf(rules.CodeDomainInvalid, "%v", err)
 	}
 	adap, ok := d.Adapters[art.Adapter.ID]
 	if !ok {
-		return nil, errTool(CodeAdapterInvalid, "unknown adapter %q", art.Adapter.ID)
+		return nil, rules.ToolErrorf(rules.CodeAdapterInvalid, "unknown adapter %q", art.Adapter.ID)
 	}
 	return d.verifyArtifact(art, spec, adap)
 }
@@ -113,7 +114,7 @@ func (d *Director) AuditScenario(domainID, entityID, fault string, onsetNS, star
 	startNS, durationNS = auditWindow(startNS, durationNS)
 	v, err := panel.Audit(entityID, fault, onsetNS, startNS, auditEntityIDs(spec), durationNS, nil, nil)
 	if err != nil {
-		return nil, errTool(CodeDomainInvalid, "%v", err)
+		return nil, rules.ToolErrorf(rules.CodeDomainInvalid, "%v", err)
 	}
 	return map[string]any{"trivial": v.Trivial, "scores": v.Scores, "best": v.Best, "samples": v.Samples}, nil
 }
@@ -143,11 +144,11 @@ func auditWindow(startNS, durationNS int64) (int64, int64) {
 func (d *Director) auditPanel(domainID string) (*domain.Compiled, *audit.Panel, error) {
 	spec, err := d.Catalog.Describe(domainID)
 	if err != nil {
-		return nil, nil, errTool(CodeDomainInvalid, "%v", err)
+		return nil, nil, rules.ToolErrorf(rules.CodeDomainInvalid, "%v", err)
 	}
 	panel, err := audit.NewPanel(spec, auditSeed, auditSampleNS)
 	if err != nil {
-		return nil, nil, errTool(CodeDomainInvalid, "%v", err)
+		return nil, nil, rules.ToolErrorf(rules.CodeDomainInvalid, "%v", err)
 	}
 	return spec, panel, nil
 }
@@ -165,10 +166,10 @@ func (d *Director) worldByRun(runID string) *WorldRecord {
 func (d *Director) requireSealedRun(runID string) error {
 	sealed, unblinded, err := d.Truth.SealStatus(runID)
 	if err != nil || !sealed {
-		return errTool(CodeTruthSealed, "ground truth must be sealed before run.begin")
+		return rules.ToolErrorf(rules.CodeTruthSealed, "ground truth must be sealed before run.begin")
 	}
 	if unblinded {
-		return errTool(CodeRunUnblinded, "run is already stamped unblinded")
+		return rules.ToolErrorf(rules.CodeRunUnblinded, "run is already stamped unblinded")
 	}
 	return nil
 }
@@ -180,7 +181,7 @@ func (d *Director) finalizeRun(w *WorldRecord, worldID string) (map[string]any, 
 	// make its truth unrevealable and its score unobtainable forever.
 	d.markRunEnded(w)
 	if err != nil {
-		return nil, errTool(CodeDomainInvalid, "%v", err)
+		return nil, rules.ToolErrorf(rules.CodeDomainInvalid, "%v", err)
 	}
 	return map[string]any{
 		"run_artifact_path": filepath.Join(dir, "run.json"),
@@ -192,11 +193,11 @@ func (d *Director) finalizeRun(w *WorldRecord, worldID string) (map[string]any, 
 func (d *Director) scoreClosedRun(w *WorldRecord, runID string) (map[string]any, error) {
 	gt, err := d.Truth.Reveal(runID, false)
 	if err != nil {
-		return nil, errTool(CodeTruthSealed, "%v", err)
+		return nil, rules.ToolErrorf(rules.CodeTruthSealed, "%v", err)
 	}
 	sc, err := score.Score(scoringEvidence(w.Run), gt)
 	if err != nil {
-		return nil, errTool(CodeDomainInvalid, "%v", err)
+		return nil, rules.ToolErrorf(rules.CodeDomainInvalid, "%v", err)
 	}
 	if !w.Run.Reproducible() {
 		sc.Detail = "non-reproducible run (wall-clock delivery or consumer not quiesced); hash-equality metrics refused"
@@ -207,7 +208,7 @@ func (d *Director) scoreClosedRun(w *WorldRecord, runID string) (map[string]any,
 func (d *Director) verifyArtifact(art *model.RunArtifact, spec *domain.Compiled, adap *model.Adapter) (map[string]any, error) {
 	res, err := run.ReplayArtifact(d.ctx, art, spec, adap, "")
 	if err != nil {
-		return nil, errTool(CodeDomainInvalid, "%v", err)
+		return nil, rules.ToolErrorf(rules.CodeDomainInvalid, "%v", err)
 	}
 	return map[string]any{
 		"matches": res.Matches, "version_match": res.VersionMatch,

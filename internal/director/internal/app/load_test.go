@@ -10,7 +10,7 @@ import (
 func TestLoadDirectorServesEveryShippedDomainAndAdapter(t *testing.T) {
 	t.Parallel()
 	out := t.TempDir()
-	d, err := LoadDirector(t.Context(), ServeOptions{DomainsDir: testsupport.DomainsDir(), AdaptersDir: testsupport.AdaptersDir(), OutDir: out})
+	d, err := LoadDirector(t.Context(), testsupport.DomainsDir(), testsupport.AdaptersDir(), out)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -22,11 +22,11 @@ func TestLoadDirectorServesEveryShippedDomainAndAdapter(t *testing.T) {
 func TestLoadDirectorNamesTheInputItCannotLoad(t *testing.T) {
 	t.Parallel()
 	empty := t.TempDir()
-	_, err := LoadDirector(t.Context(), ServeOptions{DomainsDir: empty, AdaptersDir: testsupport.AdaptersDir()})
+	_, err := LoadDirector(t.Context(), empty, testsupport.AdaptersDir(), "")
 	if err == nil || !strings.HasSuffix(err.Error(), "no domains found in "+empty) {
 		t.Fatalf("an empty domains directory: err = %v", err)
 	}
-	_, err = LoadDirector(t.Context(), ServeOptions{DomainsDir: testsupport.DomainsDir(), AdaptersDir: empty})
+	_, err = LoadDirector(t.Context(), testsupport.DomainsDir(), empty, "")
 	if err == nil || !strings.HasSuffix(err.Error(), "no adapters found in "+empty) {
 		t.Fatalf("an empty adapters directory: err = %v", err)
 	}

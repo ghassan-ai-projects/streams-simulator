@@ -1,9 +1,16 @@
+// Package app implements the director's use cases: the registry of worlds and
+// runs, the world commands (advance, fault, perturb, env), the run lifecycle
+// (begin, end, seal and reveal truth, score, verify, audit) and the operator
+// operations a capability token resolves to. The surface that calls it owns
+// protocol framing and argument decoding; the simulator's rules live in the
+// modules it composes.
 package app
 
 import (
 	"context"
 	"sync"
 
+	rules "github.com/ghassan-ai-projects/streams-simulator/internal/director/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
@@ -14,8 +21,8 @@ import (
 type WorldRecord struct {
 	Run       *run.Run
 	Token     string
-	Nameplate *Nameplate
-	Operator  *OperatorView
+	Nameplate *rules.Nameplate
+	Operator  *rules.OperatorView
 	Started   bool
 	RunEnded  bool
 }
@@ -50,12 +57,12 @@ func NewDirector(ctx context.Context, cat *domain.Catalog, adapters map[string]*
 // ResolveOperator returns the operator view for a capability token. This is
 // what lets one operator endpoint serve every world: the token, not the
 // connection, names the world.
-func (d *Director) ResolveOperator(token string) (*OperatorView, error) {
+func (d *Director) ResolveOperator(token string) (*rules.OperatorView, error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	rec := d.byToken[token]
 	if rec == nil {
-		return nil, errTool(CodeCapabilityDenied, "capability token required")
+		return nil, rules.ToolErrorf(rules.CodeCapabilityDenied, "capability token required")
 	}
 	return rec.Operator, nil
 }
@@ -87,7 +94,7 @@ func (d *Director) openRun(w *WorldRecord, worldID string) error {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	if w.Started {
-		return errTool(CodeDomainInvalid, "a run is already open for %q", worldID)
+		return rules.ToolErrorf(rules.CodeDomainInvalid, "a run is already open for %q", worldID)
 	}
 	w.Started = true
 	return nil

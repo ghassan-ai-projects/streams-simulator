@@ -28,7 +28,8 @@ var moduleShapes = map[string][]string{
 	"internal/refconsumer": {"domain", "mcpclient", "app", "files"},
 	"internal/grading":     {"domain", "app", "files"},
 	"internal/release":     {"domain", "app", "files"},
-	"internal/mcp":         {"app", "capability", "protocol", "transport"},
+	"internal/director":    {"domain", "app", "capability"},
+	"internal/mcp":         {"protocol", "transport"},
 	"internal/cli":         {"app", "files", "process"},
 }
 
@@ -71,8 +72,8 @@ func TestModuleShapeMatchesItsKind(t *testing.T) {
 		if packages[module].kind != kindSurface && !layers[module]["domain"] {
 			t.Errorf("%s: declared as migrated but has no internal/domain layer", module)
 		}
-		if packages[module].kind == kindSurface && !layers[module]["app"] {
-			t.Errorf("%s: a surface module has an internal/app layer", module)
+		if packages[module].kind == kindSurface && !layers[module]["app"] && !layers[module]["protocol"] {
+			t.Errorf("%s: a surface module has neither an internal/app nor an internal/protocol layer", module)
 		}
 		for layer := range layers[module] {
 			if !slices.Contains(allowed, layer) {

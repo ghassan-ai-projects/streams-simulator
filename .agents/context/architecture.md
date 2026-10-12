@@ -23,7 +23,8 @@ The accepted architecture is summarized in [`documentation/architecture/`](../..
 - `internal/adapter`: declarative output adapters projecting native `sim-event-v0.1` into consumer wire formats; facade over `internal/adapter/internal/domain` with a `files` edge
 - `internal/adapter` also loads an adapter directory (`adapter.LoadDir`) and owns `adapter verify` (`adapter.Verify`): renders the fixture, validates the declared output schema and byte-compares the golden
 - `internal/sink`: inproc, file, http-push; facade over `internal/sink/internal/domain` with `files` and `httppush` edge packages
-- `internal/mcp`: facade over `internal/mcp/internal/app` (use cases, `LoadDirector`), `internal/mcp/internal/protocol` (tool registration, schemas, SDK, `ServeDirector`) and the `transport` edge (stdio session and operator HTTP endpoint); one server, two roles — `director` (catalog · world · clock · fault · perturb · truth) and `operator` (nameplate · effectors · invoke · verdict)
+- `internal/director`: the director and operator logic behind the MCP tools — world registry and identities, world commands (advance, fault, perturb, env, retire), run lifecycle (begin, end, seal and reveal truth, score, verify, audit), the operator view a capability token resolves to, the refusal taxonomy; typed inputs, no protocol knowledge; facade over `internal/director/internal/domain` (refusal codes, operator view), `app` (registry and use cases, `LoadDirector`) and the `capability` edge (token entropy); composes `run`, `score`, `truth`, `audit`, `world`
+- `internal/mcp`: protocol only — facade over `internal/mcp/internal/protocol` (tool definitions, closed schemas, argument decoding into typed director values, SDK registration, `ServeDirector`) and the `transport` edge (stdio session and operator HTTP endpoint); one server, two roles — `director` (catalog · world · clock · fault · perturb · truth) and `operator` (nameplate · effectors · invoke · verdict); reaches the simulator only through `director` and foundations, held to it by `test/architecture/mcp_protocol_test.go`
 - `internal/run`: run orchestration, delivery ledger, artifacts, replay, and quiescence, scenario checking and export (`ExportScenarioFile`), `ReplayFile`, `RunScenario`, and `LoadInputs` (the domain and adapter a run names); facade over `internal/run/internal/app` (orchestration), `domain` (pure rules) and the `durable`, `quiesce` and `clock` edges
 - `internal/truth`: ground-truth generation and independent analytic solver; facade over `internal/truth/internal/domain`
 - `internal/grading`: offline grading of a finished run from its published files (replay for effector calls, then `score`); facade over `internal/grading/internal/domain` (decoding, evidence rules), `app` (workflow) and a `files` edge; composes `run` and `score`
@@ -53,6 +54,7 @@ The accepted architecture is summarized in [`documentation/architecture/`](../..
 
 ## Dependency Direction
 
+- `mcp` -> `director` + foundations; `director` -> `run`/`score`/`truth`/`audit`/`world`/`adapter`/`domain`/`model`
 - `cmd` -> `cli` -> the facades it wires: `mcp`/`run`/`suite`/`grading`/`release`/`refconsumer`/`device`/`deviceworld`/`domain`/`adapter`/`model`
 - `grading` -> `run`/`score`/`domain`/`world`/`model`; `release` -> `canonical`
 - `run` -> `world`/`perturb`/`adapter`/`sink`/`domain`/`model`/`canonical`

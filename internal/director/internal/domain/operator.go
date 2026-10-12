@@ -1,4 +1,4 @@
-package app
+package domain
 
 // The operator role: everything reachable from it must be computable from
 // the delivered evidence alone. The OperatorView struct therefore holds
@@ -25,28 +25,6 @@ type EffectorInvoker interface {
 type VerdictSink interface {
 	SubmitVerdict(v *model.Verdict) error
 	ReportQuiesced(throughNS int64)
-}
-
-// OperatorResolver returns the operator view for a capability token. One
-// operator endpoint can serve every world of a director process: the token,
-// not the connection, names the world. Implemented by the director and by
-// single-view test wrappers.
-type OperatorResolver interface {
-	ResolveOperator(token string) (*OperatorView, error)
-}
-
-// SingleView resolves every token against one OperatorView, which authorizes
-// it: a single world served on its own.
-func SingleView(v *OperatorView) OperatorResolver { return viewResolver{v: v} }
-
-// viewResolver adapts one OperatorView to the resolver interface.
-type viewResolver struct{ v *OperatorView }
-
-func (r viewResolver) ResolveOperator(token string) (*OperatorView, error) {
-	if !r.v.authorized(token) {
-		return nil, errTool(CodeCapabilityDenied, "capability token required")
-	}
-	return r.v, nil
 }
 
 // EffectorInfo is one declared effector, as the nameplate describes it:

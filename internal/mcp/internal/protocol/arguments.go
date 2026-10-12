@@ -1,13 +1,13 @@
-package app
+package protocol
 
 import (
 	"encoding/json"
 	"fmt"
 )
 
-// Str reads a string argument, "" when absent or not a string. The argument
-// readers are shared with the protocol layer, which decodes the same maps.
-func Str(args map[string]any, key string) string {
+// stringArg reads a string argument, "" when absent or not a string. The argument
+// readers decode the JSON-RPC argument maps the tools receive.
+func stringArg(args map[string]any, key string) string {
 	if args == nil {
 		return ""
 	}
@@ -17,17 +17,17 @@ func Str(args map[string]any, key string) string {
 	return ""
 }
 
-// Num reads an integer argument, def when absent or not an integer.
-func Num(args map[string]any, key string, def int64) int64 {
-	value, ok := IntArg(args, key)
+// numberArg reads an integer argument, def when absent or not an integer.
+func numberArg(args map[string]any, key string, def int64) int64 {
+	value, ok := intArg(args, key)
 	if ok {
 		return value
 	}
 	return def
 }
 
-// IntArg reads an integer argument and reports whether it was present and valid.
-func IntArg(args map[string]any, key string) (int64, bool) {
+// intArg reads an integer argument and reports whether it was present and valid.
+func intArg(args map[string]any, key string) (int64, bool) {
 	value, ok := args[key]
 	if !ok {
 		return 0, false

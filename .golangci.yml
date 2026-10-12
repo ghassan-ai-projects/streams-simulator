@@ -83,8 +83,14 @@ linters:
       # The rule is about calls *into* a layer: an edge layer still has to
       # wrap the OS and network errors it receives, because os and net/http
       # are not ignored.
+      #
+      # The director's facade returns coded refusals (director.ToolErrorf),
+      # whose text is the wire text of the tool error: the protocol layer
+      # hands them to the SDK as they are, because wrapping would change the
+      # error codes' text.
       ignore-package-globs:
         - "*/streams-simulator/internal/*/internal/*"
+        - "*/streams-simulator/internal/director"
 
     # STANDARD M8: the mechanical floor for the clean-function bar. Do not
     # raise these to make a diff pass.

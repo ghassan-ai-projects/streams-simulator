@@ -5,17 +5,19 @@ import (
 	"strings"
 	"testing"
 
+	rules "github.com/ghassan-ai-projects/streams-simulator/internal/director/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
 func TestWorldConfigPreservesEpochZeroAndSeparateResourceIdentities(t *testing.T) {
 	t.Parallel()
 	d := newTestDirector(t)
-	first, err := d.CreateWorld(map[string]any{"domain": "aquaculture-pond", "start_time": float64(0)})
+	epochZero := int64(0)
+	first, err := d.CreateWorld(WorldRequest{Domain: "aquaculture-pond", StartTimeNS: &epochZero})
 	if err != nil {
 		t.Fatal(err)
 	}
-	second, err := d.CreateWorld(map[string]any{"domain": "aquaculture-pond"})
+	second, err := d.CreateWorld(WorldRequest{Domain: "aquaculture-pond"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -49,9 +51,9 @@ func TestWorldConfigPreservesEpochZeroAndSeparateResourceIdentities(t *testing.T
 func TestCreateWorldRefusesAProfileTheDomainDoesNotDeclare(t *testing.T) {
 	t.Parallel()
 	d := newTestDirector(t)
-	_, err := d.CreateWorld(map[string]any{"domain": "aquaculture-pond", "scenario_profile": "no-such-profile"})
-	var refusal *ToolError
-	if !errors.As(err, &refusal) || refusal.Code != CodeDomainInvalid || !strings.Contains(refusal.Msg, `unknown profile "no-such-profile"`) {
+	_, err := d.CreateWorld(WorldRequest{Domain: "aquaculture-pond", ScenarioProfile: "no-such-profile"})
+	var refusal *rules.ToolError
+	if !errors.As(err, &refusal) || refusal.Code != rules.CodeDomainInvalid || !strings.Contains(refusal.Msg, `unknown profile "no-such-profile"`) {
 		t.Fatalf("CreateWorld = %v, want domain_invalid naming the unknown profile", err)
 	}
 }

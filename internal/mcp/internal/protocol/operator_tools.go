@@ -4,23 +4,18 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/ghassan-ai-projects/streams-simulator/internal/mcp/internal/app"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/director"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-// NewOperatorServer builds the operator-role server for one world's view.
-// It advertises exactly the four operator tools and nothing else.
-func NewOperatorServer(v *app.OperatorView) *mcp.Server {
-	return NewOperatorServerResolver(app.SingleView(v))
-}
-
-// NewOperatorServerResolver builds the operator-role server for a token
-// resolver. One endpoint serves every world: each tool call resolves the
-// capability token to its owning OperatorView before dispatching.
-func NewOperatorServerResolver(r app.OperatorResolver) *mcp.Server {
+// NewOperatorServerResolver builds the operator-role server over a director.
+// One endpoint serves every world: each tool call resolves the capability
+// token to its owning world before dispatching. It advertises exactly the
+// four operator tools and nothing else.
+func NewOperatorServerResolver(dir *director.Director) *mcp.Server {
 	s := mcp.NewServer(implementation, nil)
-	handlers := operatorToolHandlers{resolver: r}
+	handlers := operatorToolHandlers{dir}
 	addTool(s, toolDef{name: "sim.nameplate.read", description: "The static world nameplate: entities, channels, effectors.", schema: toolSchema("sim.nameplate.read"), handler: handlers.handleNameplateRead})
 	addTool(s, toolDef{name: "sim.effector.list", description: "The declared effectors and their argument schemas.", schema: toolSchema("sim.effector.list"), handler: handlers.handleEffectorList})
 	addTool(s, toolDef{name: "sim.effector.invoke", description: "Invoke an effector by name with a command_id (idempotency key) and capability token.", schema: toolSchema("sim.effector.invoke"), handler: handlers.handleEffectorInvoke})
@@ -28,47 +23,29 @@ func NewOperatorServerResolver(r app.OperatorResolver) *mcp.Server {
 	return s
 }
 
-type operatorToolHandlers struct{ resolver app.OperatorResolver }
+type operatorToolHandlers struct{ *director.Director }
 
-func (h operatorToolHandlers) resolve(args map[string]any) (*app.OperatorView, error) {
-	v, err := h.resolver.ResolveOperator(app.Str(args, "token"))
-	if err != nil {
-		return nil, app.ToolErrorf(app.CodeCapabilityDenied, "capability token required")
-	}
-	return v, nil
-}
 func (h operatorToolHandlers) handleNameplateRead(_ context.Context, args map[string]any) (any, error) {
-	v, err := h.resolve(args)
-	if err != nil {
-		return nil, err
-	}
-	return v.ReadNameplate(app.Str(args, "token"))
+	return h.OperatorNameplate(stringArg(args, "token"))
 }
 func (h operatorToolHandlers) handleEffectorList(_ context.Context, args map[string]any) (any, error) {
-	v, err := h.resolve(args)
-	if err != nil {
-		return nil, err
-	}
-	return v.ListEffectors(app.Str(args, "token"))
+	return h.OperatorEffectors(stringArg(args, "token"))
 }
 func (h operatorToolHandlers) handleEffectorInvoke(_ context.Context, args map[string]any) (any, error) {
-	v, err := h.resolve(args)
-	if err != nil {
-		return nil, err
-	}
-	return v.Invoke(app.Str(args, "token"), app.Str(args, "effector"), app.Str(args, "entity_id"), app.Str(args, "command_id"), mapArg(args, "args"), app.Num(args, "at_ns", 0))
+	return h.OperatorInvoke(stringArg(args, "token"), stringArg(args, "effector"), stringArg(args, "entity_id"), stringArg(args, "command_id"), mapArg(args, "args"), numberArg(args, "at_ns", 0))
 }
 func (h operatorToolHandlers) handleConsumerReport(_ context.Context, args map[string]any) (any, error) {
-	v, err := h.resolve(args)
-	if err != nil {
+	token := stringArg(args, "token")
+	if err := h.RequireOperator(token); err != nil {
 		return nil, err
 	}
 	verdict, err := consumerVerdictArgument(args)
 	if err != nil {
 		return nil, err
 	}
-	if err := v.Report(app.Str(args, "token"), app.Str(args, "run_id"), app.Num(args, "quiesced_through_ns", 0), verdict); err != nil {
+	worldID, err := h.OperatorReport(token, stringArg(args, "run_id"), numberArg(args, "quiesced_through_ns", 0), verdict)
+	if err != nil {
 		return nil, fmt.Errorf("mcp: %w", err)
 	}
-	return map[string]any{"accepted": true, "world_id": v.WorldID, "simulated": true}, nil
+	return map[string]any{"accepted": true, "world_id": worldID, "simulated": true}, nil
 }

@@ -9,7 +9,7 @@ import (
 
 	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
 
-	"github.com/ghassan-ai-projects/streams-simulator/internal/mcp/internal/app"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/director"
 )
 
 func TestDirectorServesItsToolsUntilTheSessionEndsThenStopsTheOperatorEndpoint(t *testing.T) {
@@ -17,7 +17,7 @@ func TestDirectorServesItsToolsUntilTheSessionEndsThenStopsTheOperatorEndpoint(t
 	var stderr bytes.Buffer
 	client, server := mcpsdk.NewInMemoryTransports()
 	done := make(chan error, 1)
-	d := app.NewDirector(t.Context(), nil, nil, t.TempDir())
+	d := director.New(t.Context(), nil, nil, t.TempDir())
 	go func() { done <- serveDirectorOn(t.Context(), &stderr, d, "127.0.0.1:0", server) }()
 
 	session, err := mcpsdk.NewClient(&mcpsdk.Implementation{Name: "serve-test"}, nil).Connect(context.Background(), client, nil)
@@ -48,7 +48,7 @@ func TestDirectorServesItsToolsUntilTheSessionEndsThenStopsTheOperatorEndpoint(t
 func TestDirectorRefusesAnOperatorAddressItCannotListenOn(t *testing.T) {
 	t.Parallel()
 	_, server := mcpsdk.NewInMemoryTransports()
-	d := app.NewDirector(t.Context(), nil, nil, t.TempDir())
+	d := director.New(t.Context(), nil, nil, t.TempDir())
 	err := serveDirectorOn(t.Context(), &bytes.Buffer{}, d, "not-an-address", server)
 	if err == nil || !strings.Contains(err.Error(), "mcp operator listener:") {
 		t.Fatalf("err = %v", err)
@@ -57,7 +57,7 @@ func TestDirectorRefusesAnOperatorAddressItCannotListenOn(t *testing.T) {
 
 func TestServeDirectorRefusesInputsItCannotLoad(t *testing.T) {
 	t.Parallel()
-	err := ServeDirector(t.Context(), &bytes.Buffer{}, app.ServeOptions{DomainsDir: t.TempDir(), AdaptersDir: t.TempDir(), OutDir: t.TempDir()})
+	err := ServeDirector(t.Context(), &bytes.Buffer{}, ServeOptions{DomainsDir: t.TempDir(), AdaptersDir: t.TempDir(), OutDir: t.TempDir()})
 	if err == nil || !strings.Contains(err.Error(), "no domains found in") {
 		t.Fatalf("an empty domains directory: err = %v", err)
 	}

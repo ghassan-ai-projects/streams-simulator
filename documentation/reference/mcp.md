@@ -1,6 +1,6 @@
 # Model Context Protocol (MCP) reference
 
-> Status: Implemented reference. Authority: `internal/mcp/internal/protocol/` (`schemas.go`, tool registration) and `internal/mcp/internal/app/` (`operator.go`, `director.go`). Verified by: MCP strictness and operator tests. Last verified: 2026-08-17.
+> Status: Implemented reference. Authority: `internal/mcp/internal/protocol/` (`schemas.go`, tool registration) and `internal/director/` (`internal/domain/operator.go`, `internal/app/director.go`). Verified by: MCP strictness and operator tests. Last verified: 2026-08-17.
 
 Streams Simulator exposes one MCP server with two role surfaces:
 

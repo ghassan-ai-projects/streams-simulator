@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	rules "github.com/ghassan-ai-projects/streams-simulator/internal/director/internal/domain"
 )
 
 // A run whose End failed is finished all the same. Destroying its world must
@@ -22,9 +24,9 @@ func TestDestroyWorldAfterAFailedEndCanBeRetried(t *testing.T) {
 		t.Fatal(err)
 	}
 	_, err := d.DestroyWorld(worldID)
-	var toolErr *ToolError
-	if !errors.As(err, &toolErr) || toolErr.Code != CodeDomainInvalid {
-		t.Fatalf("err = %v, want a %s tool error for the failed End", err, CodeDomainInvalid)
+	var toolErr *rules.ToolError
+	if !errors.As(err, &toolErr) || toolErr.Code != rules.CodeDomainInvalid {
+		t.Fatalf("err = %v, want a %s tool error for the failed End", err, rules.CodeDomainInvalid)
 	}
 	if _, err := d.DestroyWorld(worldID); err != nil {
 		t.Fatalf("the retry must destroy the world: %v", err)

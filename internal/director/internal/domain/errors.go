@@ -1,9 +1,8 @@
-// Package app implements the MCP surface's use cases: the director registry
-// of worlds and runs, the operator view a capability token resolves to, the
-// use-case methods behind both roles' tools, and the error taxonomy. The
-// protocol framing is the MCP Go SDK's; the simulator's rules live in the
-// modules it calls.
-package app
+// Package domain holds the director module's vocabulary: the refusal
+// taxonomy (stable codes and the typed failure that carries them) and the
+// operator view, the only surface a consumer is given. It is pure: it reads
+// no clock and touches no file or socket.
+package domain
 
 import "fmt"
 

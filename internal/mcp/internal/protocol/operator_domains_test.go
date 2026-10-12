@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ghassan-ai-projects/streams-simulator/internal/mcp/internal/app"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/director"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
@@ -27,23 +27,22 @@ func TestOperatorEndpointPerShippedDomain(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	d := app.NewDirector(context.Background(), domain.NewCatalog(specs), map[string]*model.Adapter{"native-jsonl": adap}, t.TempDir())
+	d := director.New(context.Background(), domain.NewCatalog(specs), map[string]*model.Adapter{"native-jsonl": adap}, t.TempDir())
 	endpoint := startOperatorEndpoint(t, d)
 
 	for _, spec := range specs {
 		id := spec.Spec.ID
 		t.Run(id, func(t *testing.T) {
 			t.Parallel()
-			created, err := d.CreateWorld(map[string]any{
-				"domain": id, "seed": float64(7), "adapter": "native-jsonl",
-				"sink": model.SinkInproc, "time_mode": model.TimeStepped,
+			created, err := d.CreateWorld(director.WorldRequest{
+				Domain: id, Seed: 7, Adapter: "native-jsonl",
+				Sink: model.SinkInproc, TimeMode: model.TimeStepped,
 			})
 			if err != nil {
 				t.Fatalf("world.create: %v", err)
 			}
-			worldID := created["world_id"].(string)
-			w := d.World(worldID)
-			op, err := refconsumer.NewMCPOperator(endpoint, w.Token, w.Run.ID)
+			token, runID := created["token"].(string), created["run_id"].(string)
+			op, err := refconsumer.NewMCPOperator(endpoint, token, runID)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -70,11 +69,11 @@ func TestOperatorEndpointPerShippedDomain(t *testing.T) {
 					t.Fatalf("invoke %s on %s not accepted: %+v", effs[0].Name, id, res)
 				}
 			}
-			if err := op.ReportQuiesced(w.Run.World.Clock()); err != nil {
+			if err := op.ReportQuiesced(model.DefaultStartTimeNS); err != nil {
 				t.Fatalf("quiescence report: %v", err)
 			}
 			if err := op.SubmitVerdict(&model.Verdict{
-				SchemaVersion: "0.1", RunID: w.Run.ID,
+				SchemaVersion: "0.1", RunID: runID,
 				Consumer: model.ConsumerInfo{Name: "e2e", Version: "0.0.1"},
 			}); err != nil {
 				t.Fatalf("verdict submission: %v", err)

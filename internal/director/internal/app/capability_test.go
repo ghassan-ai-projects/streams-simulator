@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	rules "github.com/ghassan-ai-projects/streams-simulator/internal/director/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/score"
 )
@@ -30,8 +31,8 @@ func TestCapabilityTokenEnforced(t *testing.T) {
 	}
 	// Unknown effector refused with a stable code.
 	_, err = w.Operator.Invoke(w.Token, "no_such_effector", "site-a/pond-1", "cmd-x", nil, 0)
-	var te *ToolError
-	if !errors.As(err, &te) || te.Code != CodeUnknownEffector {
+	var te *rules.ToolError
+	if !errors.As(err, &te) || te.Code != rules.CodeUnknownEffector {
 		t.Fatalf("expected unknown_effector, got %v", err)
 	}
 	// Missing command_id refused.
@@ -74,9 +75,9 @@ func TestDirectorPassesSinkTarget(t *testing.T) {
 	t.Parallel()
 	d := newTestDirector(t)
 	target := t.TempDir() + "/trace.jsonl"
-	res, err := d.CreateWorld(map[string]any{
-		"domain": "aquaculture-pond", "seed": float64(9), "adapter": "native-jsonl",
-		"sink": model.SinkFile, "sink_target": target,
+	res, err := d.CreateWorld(WorldRequest{
+		Domain: "aquaculture-pond", Seed: 9, Adapter: "native-jsonl",
+		Sink: model.SinkFile, SinkTarget: target,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -176,8 +177,8 @@ func TestRevealRefusesALabelForARunTheDirectorDoesNotKnow(t *testing.T) {
 		t.Fatal(err)
 	}
 	_, err := d.RevealTruth("r-unknown", false)
-	var tool *ToolError
-	if !errors.As(err, &tool) || tool.Code != CodeTruthSealed || !strings.Contains(tool.Msg, "open run") {
+	var tool *rules.ToolError
+	if !errors.As(err, &tool) || tool.Code != rules.CodeTruthSealed || !strings.Contains(tool.Msg, "open run") {
 		t.Fatalf("an unknown run must be treated as open: err = %v", err)
 	}
 }
@@ -217,9 +218,9 @@ func TestConcurrentBeginRunOpensTheRunOnce(t *testing.T) {
 func TestARunThatEndedWithAFailureIsStillClosed(t *testing.T) {
 	t.Parallel()
 	d := newTestDirector(t)
-	created, err := d.CreateWorld(map[string]any{
-		"domain": "aquaculture-pond", "seed": float64(3), "adapter": "native-jsonl",
-		"sink": model.SinkHTTPPush, "sink_target": "http://127.0.0.1:1/unreachable", "time_mode": model.TimeStepped,
+	created, err := d.CreateWorld(WorldRequest{
+		Domain: "aquaculture-pond", Seed: 3, Adapter: "native-jsonl",
+		Sink: model.SinkHTTPPush, SinkTarget: "http://127.0.0.1:1/unreachable", TimeMode: model.TimeStepped,
 	})
 	if err != nil {
 		t.Fatal(err)

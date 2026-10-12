@@ -31,13 +31,13 @@ type ioEdge struct {
 // A file that uses a capability not listed here fails the gate, and a listed
 // capability a file no longer uses fails it too, so the table only shrinks.
 var ioEdges = map[string]ioEdge{
-	"cmd/streamsim/main.go":                          {uses: []string{"import:os"}, why: "process exit"},
-	"cmd/streamsim/function_length.go":               {uses: []string{"call:filepath.WalkDir", "import:os"}, why: "development tool, build-ignored"},
-	"internal/wall/wall_clock.go":                    {uses: []string{"call:time.Now"}, why: "the declared wall-clock seam"},
-	"internal/sink/internal/files/file.go":           {uses: []string{"import:os"}, why: "file sink: create, write, sync and read back the trace file"},
-	"internal/sink/internal/httppush/httppush.go":    {uses: []string{"import:net/http"}, why: "http-push sink: POST each line"},
-	"internal/mcp/internal/capability/capability.go": {uses: []string{"import:crypto/rand"}, why: "operator capability token entropy"},
-	"internal/mcp/internal/transport/transport.go":   {uses: []string{"go-statement", "import:net", "import:net/http"}, why: "operator role bound over streamable HTTP and the director session served until its transport closes"},
+	"cmd/streamsim/main.go":                               {uses: []string{"import:os"}, why: "process exit"},
+	"cmd/streamsim/function_length.go":                    {uses: []string{"call:filepath.WalkDir", "import:os"}, why: "development tool, build-ignored"},
+	"internal/wall/wall_clock.go":                         {uses: []string{"call:time.Now"}, why: "the declared wall-clock seam"},
+	"internal/sink/internal/files/file.go":                {uses: []string{"import:os"}, why: "file sink: create, write, sync and read back the trace file"},
+	"internal/sink/internal/httppush/httppush.go":         {uses: []string{"import:net/http"}, why: "http-push sink: POST each line"},
+	"internal/director/internal/capability/capability.go": {uses: []string{"import:crypto/rand"}, why: "operator capability token entropy"},
+	"internal/mcp/internal/transport/transport.go":        {uses: []string{"go-statement", "import:net", "import:net/http"}, why: "operator role bound over streamable HTTP and the director session served until its transport closes"},
 
 	"internal/domain/internal/files/files.go":   {uses: []string{"import:os"}, why: "domain file and directory loading"},
 	"internal/adapter/internal/files/files.go":  {uses: []string{"import:os"}, why: "adapter file loading"},

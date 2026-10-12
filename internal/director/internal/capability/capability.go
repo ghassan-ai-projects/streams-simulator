@@ -1,4 +1,4 @@
-// Package capability is the entropy edge of the MCP module: it mints the
+// Package capability is the entropy edge of the director module: it mints the
 // opaque capability tokens that name one world to the operator role.
 package capability
 

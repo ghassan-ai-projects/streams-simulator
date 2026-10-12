@@ -1,16 +1,16 @@
 package protocol
 
 import (
-	"github.com/ghassan-ai-projects/streams-simulator/internal/mcp/internal/app"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/director"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 // directorTools are the director role's tool handlers over one director.
-type directorTools struct{ *app.Director }
+type directorTools struct{ *director.Director }
 
 // NewDirectorServer builds the director-role server.
-func NewDirectorServer(director *app.Director) *mcp.Server {
-	d := directorTools{director}
+func NewDirectorServer(dir *director.Director) *mcp.Server {
+	d := directorTools{dir}
 	s := mcp.NewServer(implementation, nil)
 	registerCatalogTools(s, d)
 	registerWorldTools(s, d)

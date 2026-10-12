@@ -1,4 +1,4 @@
-package protocol
+package director_test
 
 import (
 	"context"
@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/ghassan-ai-projects/streams-simulator/internal/mcp/internal/app"
+	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
 
-	"github.com/modelcontextprotocol/go-sdk/mcp"
-
+	"github.com/ghassan-ai-projects/streams-simulator/internal/director"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/mcp"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
 )
 
 // TestPrefixIndistinguishability: run two worlds with different faults from
@@ -20,31 +21,30 @@ import (
 func TestPrefixIndistinguishability(t *testing.T) {
 	t.Parallel()
 	start := model.DefaultStartTimeNS + 4*3600*1e9
-	mk := func(seed uint64) (*app.Director, string) {
+	mk := func(seed int64) (*director.Director, string, string) {
 		d := newTestDirector(t)
-		res, err := d.CreateWorld(map[string]any{
-			"domain": "aquaculture-pond", "seed": float64(seed), "adapter": "native-jsonl",
-			"sink": model.SinkInproc, "time_mode": model.TimeStepped,
-			"start_time": float64(start),
+		res, err := d.CreateWorld(director.WorldRequest{
+			Domain: "aquaculture-pond", Seed: seed, Adapter: "native-jsonl",
+			Sink: model.SinkInproc, TimeMode: model.TimeStepped, StartTimeNS: &start,
 		})
 		if err != nil {
 			t.Fatal(err)
 		}
-		return d, res["world_id"].(string)
+		return d, res["world_id"].(string), res["token"].(string)
 	}
-	dA, idA := mk(7)
-	dB, idB := mk(7)
-	wA := dA.Worlds[idA]
-	wB := dB.Worlds[idB]
+	dA, idA, tokenA := mk(7)
+	dB, idB, tokenB := mk(7)
+	wA := director.RunOf(dA, idA)
+	wB := director.RunOf(dB, idB)
 	pond := "site-a/pond-1"
 	// Record the delivered evidence (post-perturbation, pre-render).
 	evA := evidence{}
 	evB := evidence{}
-	wA.Run.SetEvidenceRecorder(func(e model.SimEvent) { evA.record(e) })
-	wB.Run.SetEvidenceRecorder(func(e model.SimEvent) { evB.record(e) })
+	wA.SetEvidenceRecorder(func(e model.SimEvent) { evA.record(e) })
+	wB.SetEvidenceRecorder(func(e model.SimEvent) { evB.record(e) })
 	// Same setup.
-	for _, w := range []*app.WorldRecord{wA, wB} {
-		if _, err := w.Run.InvokeEffector("start_aerator", pond, "setup", map[string]any{"pond_id": pond, "level": 1.0}, start); err != nil {
+	for _, w := range []*run.Run{wA, wB} {
+		if _, err := w.InvokeEffector("start_aerator", pond, "setup", map[string]any{"pond_id": pond, "level": 1.0}, start); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -78,11 +78,11 @@ func TestPrefixIndistinguishability(t *testing.T) {
 	// Before the divergence the operator responses were identical: replay
 	// the same calls against the pre-divergence state.
 	before := divergedAt - step
-	ra, err := operatorResponseSet(t, wA.Operator, wA.Token, before)
+	ra, err := operatorResponseSet(t, dA, tokenA, before)
 	if err != nil {
 		t.Fatal(err)
 	}
-	rb, err := operatorResponseSet(t, wB.Operator, wB.Token, before)
+	rb, err := operatorResponseSet(t, dB, tokenB, before)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -118,11 +118,11 @@ func (e *evidence) equalPrefix(o *evidence) bool {
 // tool layer — nameplate, effector list, an invocation, a quiescence
 // report, and the capability-denied error path — as one byte string. Two
 // worlds with identical delivered prefixes must produce identical bytes.
-func operatorResponseSet(t *testing.T, v *app.OperatorView, token string, atNS int64) (string, error) {
+func operatorResponseSet(t *testing.T, d *director.Director, token string, atNS int64) (string, error) {
 	t.Helper()
-	cs, _ := connect(t, NewOperatorServer(v))
+	cs := connect(t, mcp.NewOperatorServerResolver(d))
 	call := func(name string, args map[string]any) (string, error) {
-		res, err := cs.CallTool(context.Background(), &mcp.CallToolParams{Name: name, Arguments: args})
+		res, err := cs.CallTool(context.Background(), &mcpsdk.CallToolParams{Name: name, Arguments: args})
 		if err != nil {
 			return "", fmt.Errorf("operator call %s: %w", name, err)
 		}
@@ -138,7 +138,7 @@ func operatorResponseSet(t *testing.T, v *app.OperatorView, token string, atNS i
 		return "", err
 	}
 	invoked := "none"
-	var effList []app.EffectorInfo
+	var effList []director.EffectorInfo
 	if err := json.Unmarshal([]byte(effs), &effList); err == nil && len(effList) > 0 {
 		invoked, err = call("sim.effector.invoke", map[string]any{
 			"token": token, "effector": effList[0].Name,

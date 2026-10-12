@@ -1,11 +1,11 @@
 package app
 
 import (
-	"encoding/json"
 	"errors"
 	"strings"
 	"testing"
 
+	rules "github.com/ghassan-ai-projects/streams-simulator/internal/director/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
@@ -57,8 +57,8 @@ func TestWorldCommandsNameAnUnknownWorld(t *testing.T) {
 		"perturb":  func() error { _, err := d.ApplyPerturb("w-9", "drop", nil, 0, 0); return err },
 	}
 	for name, call := range calls {
-		var tool *ToolError
-		if err := call(); !errors.As(err, &tool) || tool.Code != CodeWorldNotFound {
+		var tool *rules.ToolError
+		if err := call(); !errors.As(err, &tool) || tool.Code != rules.CodeWorldNotFound {
 			t.Errorf("%s on an unknown world: %v", name, err)
 		}
 	}
@@ -95,26 +95,5 @@ func TestSealStatusAndVerifyRunFollowTheRunLifecycle(t *testing.T) {
 	}
 	if _, err := d.VerifyRun(t.TempDir() + "/absent.json"); err == nil || !strings.Contains(err.Error(), "absent.json") {
 		t.Fatalf("verifying a missing artifact must name it: %v", err)
-	}
-}
-
-func TestArgumentReadersAcceptTheNumberFormsAJSONClientSends(t *testing.T) {
-	t.Parallel()
-	args := map[string]any{
-		"float": float64(7), "int": int64(8), "number": json.Number("9"), "text": "10", "word": "x", "fraction": 1.5,
-	}
-	for key, want := range map[string]int64{"float": 7, "int": 8, "number": 9, "text": 10} {
-		if got, ok := IntArg(args, key); !ok || got != want {
-			t.Errorf("IntArg(%s) = %d, %v; want %d", key, got, ok, want)
-		}
-	}
-	if _, ok := IntArg(args, "word"); ok {
-		t.Error("a non-numeric string is not an integer")
-	}
-	if got := Num(args, "absent", 42); got != 42 {
-		t.Errorf("Num default = %d", got)
-	}
-	if got := Str(args, "text"); got != "10" {
-		t.Errorf("Str = %q", got)
 	}
 }

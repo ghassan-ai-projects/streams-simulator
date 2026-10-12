@@ -6,7 +6,7 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 - **Phase**: a phase id from PLAN.md, or `next-goal` (Agentic Stream / gateway goal), or `—`.
 - **Status**: `open`, `done` (fixed, evidence in the phase review), `next-goal`, `dropped`
   (removed by an owner decision), `not-a-defect` (evidence in the review record).
-- Sources: `REVIEW` = [REVIEW-2026-10-12.md](REVIEW-2026-10-12.md) ids; `R0` = [reviews/P0.md](reviews/P0.md); `R1` = [reviews/P1.md](reviews/P1.md); `R2` = [reviews/P2.md](reviews/P2.md); `R2b` = [reviews/P2b.md](reviews/P2b.md); `R2c` = [reviews/P2c.md](reviews/P2c.md); `self` = found by the implementer.
+- Sources: `REVIEW` = [REVIEW-2026-10-12.md](REVIEW-2026-10-12.md) ids; `R0` = [reviews/P0.md](reviews/P0.md); `R1` = [reviews/P1.md](reviews/P1.md); `R2` = [reviews/P2.md](reviews/P2.md); `R2b` = [reviews/P2b.md](reviews/P2b.md); `R2d` = [reviews/P2d.md](reviews/P2d.md); `R2c` = [reviews/P2c.md](reviews/P2c.md); `self` = found by the implementer.
 
 ## Design review (REVIEW-2026-10-12)
 
@@ -119,6 +119,8 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 | R2-04 | R2 | Low | Perturbation windows with negative or pre-start times are accepted (negative `until` acts as "no end"); and the run-wide limits have no MCP-level test | P13 | open |
 | R2-05 | R2 | Low | The effector idempotency key compares arguments by `json.Marshal` text, so `3` and `3.0` are different requests | P6a | open |
 | R2b-01 | R2b | Low | The operator maps every invocation error to `effector_refused`; MCP_SURFACE lists `interlock_refused` and `invalid_args`, which are never emitted. Decide the taxonomy without revealing hidden outcomes, and add a protocol-level (wire) test of the acknowledgement | P10 | open |
+| R2d-01 | R2d | Med | Director composition tests (`closed_loop_test.go`, `operator_surface_test.go`) import `mcp`, inverting layers in test code; move them to `test/acceptance` with a test-support seam instead of `export_test.go` `RunOf` | P3 | open |
+| R2d-02 | R2d | Low | The director returns wire-shaped `map[string]any` results and messages naming tool arguments; return typed results and let `mcp/protocol` shape the wire (also removes protocol knowing result keys, and narrows the `wrapcheck` exemption for the director facade) | P10 | open |
 | R2c-01 | R2c | Low | Each module that reads or writes files repeats the same `Read`/`Write` wrapper (`fmt.Errorf("%w", err)`, mode `0o600`, `#nosec`) in its own `files` edge (cli, grading, release, refconsumer, suite, sink, adapter, domain); decide whether one shared file edge in a foundation is worth the coupling, or record the duplication as the price of independent edges | P13 | open |
 | R2c-02 | R2c | Low | Modules emit the CLI's `streamsim: ` error prefix themselves (`domain`, `run`, `grading`, `suite`, `refconsumer`, `device`), so library errors carry a command-line concern. R2-03 covers the doubled prefix on a missing `--domains-dir`; the fix for both is the same: modules return unprefixed errors and `cli` adds the prefix once, with the failure-document and stderr text updated together | P13 | open |
 

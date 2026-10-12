@@ -65,7 +65,8 @@ The documented shape (see [docs/design/TECHNICAL_DESIGN.md](docs/design/TECHNICA
 - `internal/perturb` - perturbation layer between world and adapter (what the observer got, not what happened)
 - `internal/adapter` - declarative output adapters projecting native `sim-event-v0.1` into consumer wire formats
 - `internal/sink` - inproc, file, http-push sinks
-- `internal/mcp` - one MCP server, two roles: `director` (catalog, world, clock, fault, perturb, truth) and `operator` (nameplate, effectors, invoke, verdict); it also serves them (`mcp.ServeDirector`: stdio session plus the operator HTTP endpoint, in the `transport` edge)
+- `internal/director` - the director and operator logic behind the MCP tools: world registry, world commands, run lifecycle (seal and reveal truth, score, verify, audit), the operator view a capability token resolves to; typed inputs, no protocol knowledge
+- `internal/mcp` - protocol only: one MCP server, two roles, `director` (catalog, world, clock, fault, perturb, truth) and `operator` (nameplate, effectors, invoke, verdict); tool definitions, schemas, argument decoding and transport (`mcp.ServeDirector`: stdio session plus the operator HTTP endpoint, in the `transport` edge); it calls `director` and holds no rule (`test/architecture/mcp_protocol_test.go`)
 - `internal/run` - run orchestration, delivery ledger, artifacts, replay, and quiescence, scenario checking, running, replay and export from files (`run.RunScenario`, `run.ReplayFile`, `run.ExportScenarioFile`), and resolving the domain and adapter a run names (`run.LoadInputs`); there is no separate `internal/ledger` package
 - `internal/grading` - offline grading of a finished run: loads the published files, replays the artifact for its effector calls and scores with `score` (composes `run` and `score`, which do not know each other)
 - `internal/release` - the release manifest: file digests, canonical body, ed25519 signature, writing
@@ -80,6 +81,7 @@ The documented shape (see [docs/design/TECHNICAL_DESIGN.md](docs/design/TECHNICA
 Dependency direction:
 
 - `cmd` -> `cli` -> the facades it wires (`mcp`, `run`, `suite`, `grading`, `release`, `refconsumer`, `device`, `deviceworld`, `domain`, `adapter`, `model`)
+- `mcp` -> `director`; `director` composes `run`/`score`/`truth`/`audit`/`world`; `mcp` imports none of those directly
 - `grading` -> `run`/`score`; the CLI holds no business logic, only flags, documents and failures
 - `run` composes `world`/`perturb`/`adapter`/`sink`; truth and scoring consume world/evidence. `deviceworld` bridges `device` and `world` without either core importing the bridge.
 - Dependencies flow downward only.

@@ -29,9 +29,9 @@ func newTestDirector(t *testing.T) *Director {
 // createWorld creates a seeded aquaculture-pond world and returns its id.
 func createWorld(t *testing.T, d *Director) string {
 	t.Helper()
-	res, err := d.CreateWorld(map[string]any{
-		"domain": "aquaculture-pond", "seed": float64(42), "adapter": "native-jsonl",
-		"sink": model.SinkInproc, "time_mode": model.TimeStepped,
+	res, err := d.CreateWorld(WorldRequest{
+		Domain: "aquaculture-pond", Seed: 42, Adapter: "native-jsonl",
+		Sink: model.SinkInproc, TimeMode: model.TimeStepped,
 	})
 	if err != nil {
 		t.Fatal(err)
