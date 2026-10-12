@@ -28,19 +28,27 @@ type session struct {
 // when the command prints nothing.
 type handler func(s *session, args []string) (any, error)
 
-var commandHandlers = map[string]handler{
-	"catalog":     cmdCatalog,
-	"domain":      cmdDomain,
-	"adapter":     cmdAdapter,
-	"run":         cmdRun,
-	"replay":      cmdReplay,
-	"verify":      cmdVerify,
-	"mcp":         cmdMCP,
-	"refconsumer": cmdRefconsumer,
-	"suite":       cmdSuite,
-	"score":       cmdScore,
-	"manifest":    cmdManifest,
-	"device":      cmdDevice,
+// command is one registered command. A command that owns stdout writes its
+// own protocol there, so the CLI never prints a document for it
+// (CLI_SURFACE §1).
+type command struct {
+	run        handler
+	ownsStdout bool
+}
+
+var commands = map[string]command{
+	"catalog":     {run: cmdCatalog},
+	"domain":      {run: cmdDomain},
+	"adapter":     {run: cmdAdapter},
+	"run":         {run: cmdRun},
+	"replay":      {run: cmdReplay},
+	"verify":      {run: cmdVerify},
+	"mcp":         {run: cmdMCP, ownsStdout: true},
+	"refconsumer": {run: cmdRefconsumer},
+	"suite":       {run: cmdSuite},
+	"score":       {run: cmdScore},
+	"manifest":    {run: cmdManifest},
+	"device":      {run: cmdDevice},
 }
 
 // Main runs the command in the current process and returns its exit status.
@@ -53,7 +61,7 @@ func Run(args []string, build Build, env process.Env) int {
 	s := &session{build: build, stderr: env.Stderr, now: env.Now}
 	if len(args) < 2 {
 		s.usage()
-		return 2
+		return s.fail(env.Stdout, "", usageExit{code: 2, message: "a command is required"})
 	}
 	if isHelpCommand(args[1]) {
 		s.usage()
@@ -63,45 +71,54 @@ func Run(args []string, build Build, env process.Env) int {
 }
 
 func (s *session) dispatch(stdout io.Writer, name string, args []string) int {
-	command, known := commandHandlers[name]
+	registered, known := commands[name]
 	if !known {
-		return s.unknownCommand(name)
+		return s.unknownCommand(stdout, name)
 	}
-	return s.execute(stdout, command, args)
+	if registered.ownsStdout {
+		return s.execute(stdout, io.Discard, name, registered.run, args)
+	}
+	return s.execute(stdout, stdout, name, registered.run, args)
 }
 
 func isHelpCommand(command string) bool {
 	return command == "help" || command == "-h" || command == "--help"
 }
 
-func (s *session) unknownCommand(command string) int {
+func (s *session) unknownCommand(stdout io.Writer, command string) int {
 	_, _ = fmt.Fprintf(s.stderr, "streamsim: unknown command %q\n\n", command)
 	s.usage()
-	return 2
+	return s.fail(stdout, "", usageExit{code: 2, message: fmt.Sprintf("unknown command %q", command)})
 }
 
-// execute runs the handler, prints its result as indented JSON on stdout
-// (even when the command also fails, as verify does) and returns the exit
+// execute runs the handler and prints exactly one JSON document on stdout:
+// its result, or the failure document (CLI_SURFACE §1). It returns the exit
 // status.
-func (s *session) execute(stdout io.Writer, command handler, args []string) int {
-	result, err := command(s, args)
-	if result != nil {
-		if printErr := printJSON(stdout, result); err == nil {
-			err = printErr
-		}
+func (s *session) execute(stdout, documents io.Writer, name string, run handler, args []string) int {
+	result, err := run(s, args)
+	if err != nil {
+		return s.fail(documents, name, err)
 	}
-	return s.exitStatus(err)
-}
-
-func (s *session) exitStatus(err error) int {
-	if err == nil {
+	if result == nil {
 		return 0
 	}
-	if exit, ok := asUsageExit(err); ok {
-		return exit.code
+	if err := printJSON(stdout, result); err != nil {
+		return s.fail(documents, name, err)
 	}
-	_, _ = fmt.Fprintf(s.stderr, "streamsim: %v\n", err)
-	return 1
+	return 0
+}
+
+// fail reports err on stderr for people and on documents as a failure
+// document for tools. Help (-h) is not a failure.
+func (s *session) fail(documents io.Writer, name string, err error) int {
+	if exit, ok := asUsageExit(err); ok && exit.code == 0 {
+		return 0
+	}
+	if _, flagReported := asUsageExit(err); !flagReported {
+		_, _ = fmt.Fprintf(s.stderr, "streamsim: %v\n", err)
+	}
+	_ = printJSON(documents, describeFailure(name, err))
+	return exitStatusOf(err)
 }
 
 func printJSON(stdout io.Writer, v any) error {

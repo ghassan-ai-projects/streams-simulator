@@ -2,7 +2,6 @@ package app
 
 import (
 	"flag"
-	"fmt"
 	"io"
 	"path/filepath"
 
@@ -36,6 +35,9 @@ func loadRunConfig(options runOptions) (run.Config, error) {
 	if err != nil {
 		return run.Config{}, err
 	}
+	if options.profile != "" && !spec.HasProfile(options.profile) {
+		return run.Config{}, usagef("run: domain %q has no profile %q", options.domainID, options.profile)
+	}
 	return run.Config{Domain: spec, Adapter: adap, Seed: options.seed, SinkName: options.sinkName,
 		SinkTarget: options.sinkTarget, TimeMode: model.TimeStepped, StartTimeNS: options.startTime,
 		StartTimeSet: true, ScenarioProfile: options.profile}, nil
@@ -66,13 +68,26 @@ func registerRunScript(fs *flag.FlagSet, options *runOptions) {
 
 func admitRunOptions(options runOptions) (runOptions, error) {
 	if options.domainID == "" {
-		return runOptions{}, fmt.Errorf("run requires --domain")
+		return runOptions{}, usagef("run requires --domain")
 	}
-	if options.sinkName == model.SinkFile && options.sinkTarget == "" {
-		if options.outDir == "" {
-			return runOptions{}, fmt.Errorf("--sink=file requires --sink-target or --out")
-		}
-		options.sinkTarget = filepath.Join(options.outDir, "trace.jsonl")
+	if options.durationS <= 0 {
+		return runOptions{}, usagef("run: --duration must be positive, got %v", options.durationS)
 	}
+	return admitRunSink(options)
+}
+
+// admitRunSink checks the sink choice and derives the file target from --out.
+func admitRunSink(options runOptions) (runOptions, error) {
+	switch {
+	case options.sinkName != model.SinkInproc && options.sinkName != model.SinkFile && options.sinkName != model.SinkHTTPPush:
+		return runOptions{}, usagef("run: --sink must be inproc, file or http-push, got %q", options.sinkName)
+	case options.sinkName == model.SinkHTTPPush && options.sinkTarget == "":
+		return runOptions{}, usagef("--sink=http-push requires --sink-target")
+	case options.sinkName != model.SinkFile || options.sinkTarget != "":
+		return options, nil
+	case options.outDir == "":
+		return runOptions{}, usagef("--sink=file requires --sink-target or --out")
+	}
+	options.sinkTarget = filepath.Join(options.outDir, "trace.jsonl")
 	return options, nil
 }

@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"net"
 	"os"
@@ -118,5 +119,19 @@ func TestOperatorEndpointAnnouncesItsAddressAndRefusesABadOne(t *testing.T) {
 	}
 	if _, err := operatorEndpoint(&stderr, d, "not-an-address"); err == nil || !strings.Contains(err.Error(), "mcp operator listener:") {
 		t.Fatalf("a bad listen address must be refused: %v", err)
+	}
+}
+
+func TestAListenFailureNamesTheSocketPath(t *testing.T) {
+	t.Parallel()
+	socket := filepath.Join(filepath.Dir(testsupport.SocketPath(t)), "absent", "d.sock")
+	err := deviceUntil(io.Discard, socket, device.New(device.Config{}), "banner", make(chan os.Signal))
+	var pathFailure *os.PathError
+	if !errors.As(err, &pathFailure) || pathFailure.Path != socket || !errors.Is(err, fs.ErrNotExist) {
+		t.Fatalf("deviceUntil = %v, want a path failure naming %s that is a missing directory", err, socket)
+	}
+	wrapped := listenFailure(socket, pathFailure)
+	if !errors.Is(wrapped, pathFailure) {
+		t.Fatal("an existing path failure must be returned as it is")
 	}
 }

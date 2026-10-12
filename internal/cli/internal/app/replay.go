@@ -22,7 +22,8 @@ func cmdVerify(s *session, args []string) (any, error) {
 	if report["matches"] == true {
 		return result, nil
 	}
-	return result, fmt.Errorf("verify: replay does not reproduce the artifact: %v", report["detail"])
+	message := fmt.Sprintf("verify: replay does not reproduce the artifact: %v", report["detail"])
+	return nil, &outcomeError{code: codeReplayMismatch, message: message, result: report}
 }
 
 // cmdReplay reproduces the run and reports whether the trace digest matches;
@@ -47,7 +48,7 @@ func parseReplayOptions(args []string, stderr io.Writer) (*flag.FlagSet, string,
 		return nil, "", "", err
 	}
 	if fs.NArg() < 1 {
-		return nil, "", "", fmt.Errorf("replay requires a run artifact path")
+		return nil, "", "", usagef("replay requires a run artifact path")
 	}
 	return fs, *domains, *adapters, nil
 }

@@ -6,7 +6,7 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 - **Phase**: a phase id from PLAN.md, or `next-goal` (Agentic Stream / gateway goal), or `—`.
 - **Status**: `open`, `done` (fixed, evidence in the phase review), `next-goal`, `dropped`
   (removed by an owner decision), `not-a-defect` (evidence in the review record).
-- Sources: `REVIEW` = [REVIEW-2026-10-12.md](REVIEW-2026-10-12.md) ids; `R0` = [reviews/P0.md](reviews/P0.md).
+- Sources: `REVIEW` = [REVIEW-2026-10-12.md](REVIEW-2026-10-12.md) ids; `R0` = [reviews/P0.md](reviews/P0.md); `R1` = [reviews/P1.md](reviews/P1.md).
 
 ## Design review (REVIEW-2026-10-12)
 
@@ -80,12 +80,12 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 | R0-01 | R0 | High | Evaluate canary test over journal, bridge and page | P3 | open |
 | R0-02 | R0 | High | `.mcp.json` exposure must not give coding agents unblind or reveal | P10 | open |
 | R0-03 | R0 | High | `scenario from-run` export with round-trip digest test | P2 | open |
-| R0-04 | R0 | High | Device-path gate and pinned `device serve` transcript | P1 | open |
+| R0-04 | R0 | High | Device-path gate and pinned `device serve` transcript (acceptance test golden) | P1 | done |
 | R0-05 | R0 | High | Plant-wire spec states coexistence with the device path | P7a | open |
-| R0-06 | R0 | Med | CLI output contract: default JSON, exempt commands, deliberate pin change | P1 | open |
-| R0-07 | R0 | Med | `godox` and `nolintlint` in the Go lint set | P1 | open |
-| R0-08 | R0 | Med | `make phase-gate` and evidence files | P1 | open |
-| R0-09 | R0 | Med | Consumer-knowledge gate over Go and canvas sources | P1 | open |
+| R0-06 | R0 | Med | CLI output contract: default JSON, exempt commands, deliberate pin change | P1 | done |
+| R0-07 | R0 | Med | `godox` and `nolintlint` in the Go lint set | P1 | done |
+| R0-08 | R0 | Med | `make phase-gate` and evidence files | P1 | done |
+| R0-09 | R0 | Med | Consumer-knowledge gate over Go and canvas sources | P1 | done |
 | R0-10 | R0 | Med | `streamsim domain format` canonical formatter | P5a | open |
 | R0-11 | R0 | Med | Closed-grammar test over the v0.2 schema | P6a | open |
 | R0-12 | R0 | Med | RNG draw-order table for the event clock | P6e | open |
@@ -100,3 +100,11 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 | R0-21 | R0 | Low | Terminology: scenario file, journal, in `UBIQUITOUS_LANGUAGE.md` | P2 | open |
 | R0-22 | R0 | Low | Report includes consumer digests only when recorded | P4 | open |
 | R0-23 | R0 | Med | Status banners on design text superseded by owner decisions | P0 | done |
+
+## P1 review: work carried into later phases
+
+| ID | Source | Sev | Summary | Phase | Status |
+|---|---|---|---|---|---|
+| R1-01 | R1 | Low | A "missing required property" issue points at the parent object; point at the missing member | P5a | open |
+| R1-02 | R1 | Med | An unknown `--perturb` name is `run_failed` while malformed `--fault`/`--effector` are `usage_invalid`; unify through the scenario checks | P2 | open |
+| R1-03 | R1 | Med | `run` and the director accept a profile the domain does not declare; validate in the run module for every surface (the CLI check added in P1 then moves there) | P2 | open |

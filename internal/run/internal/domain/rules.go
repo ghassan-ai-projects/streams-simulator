@@ -7,6 +7,7 @@ package domain
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 
@@ -14,15 +15,18 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
+// errTrailingDocument is the cause of an artifact followed by another JSON value.
+var errTrailingDocument = errors.New("a second JSON value follows the artifact")
+
 // ValidateArtifactDocument checks that raw is a JSON document that satisfies
 // the run-artifact schema.
 func ValidateArtifactDocument(raw []byte, path string) error {
 	var doc any
 	if err := model.DecodeBytes(raw, &doc); err != nil {
-		return fmt.Errorf("run: %s not valid JSON: %w", path, err)
+		return model.NotJSONError(model.ContractRunArtifact, path, fmt.Sprintf("run: %s not valid JSON", path), err)
 	}
 	if err := model.ValidateRunArtifact(raw); err != nil {
-		return fmt.Errorf("streamsim: %w", err)
+		return fmt.Errorf("streamsim: %w", model.WithSource(err, path))
 	}
 	return nil
 }
@@ -34,7 +38,7 @@ func DecodeArtifact(raw []byte) (*model.RunArtifact, error) {
 	decoder := json.NewDecoder(bytes.NewReader(raw))
 	decoder.UseNumber()
 	if err := decoder.Decode(&artifact); err != nil {
-		return nil, fmt.Errorf("run: decode artifact: %w", err)
+		return nil, model.NotJSONError(model.ContractRunArtifact, "", "run: decode artifact", err)
 	}
 	if err := rejectArtifactTrailingJSON(decoder); err != nil {
 		return nil, err
@@ -46,9 +50,9 @@ func rejectArtifactTrailingJSON(decoder *json.Decoder) error {
 	var extra any
 	if err := decoder.Decode(&extra); err != io.EOF {
 		if err == nil {
-			return fmt.Errorf("run: artifact has trailing JSON")
+			return model.NotJSONError(model.ContractRunArtifact, "", "run: artifact has trailing JSON", errTrailingDocument)
 		}
-		return fmt.Errorf("run: artifact trailing data: %w", err)
+		return model.NotJSONError(model.ContractRunArtifact, "", "run: artifact trailing data", err)
 	}
 	return nil
 }

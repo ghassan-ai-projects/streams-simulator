@@ -115,3 +115,18 @@ func TestVerifyNamesAnAdapterFileItCannotLoad(t *testing.T) {
 		t.Fatalf("err = %v", err)
 	}
 }
+
+func TestLookupReturnsErrUnknownAdapterThroughTheFacade(t *testing.T) {
+	t.Parallel()
+	native, err := adapter.Load(testsupport.Adapter("native-jsonl"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	set := map[string]*model.Adapter{native.ID: native}
+	if got, err := adapter.Lookup(set, native.ID); err != nil || got != native {
+		t.Fatalf("Lookup(%s) = %v, %v", native.ID, got, err)
+	}
+	if _, err := adapter.Lookup(set, "no-such"); !errors.Is(err, adapter.ErrUnknownAdapter) {
+		t.Fatalf("Lookup(no-such) = %v, want ErrUnknownAdapter", err)
+	}
+}

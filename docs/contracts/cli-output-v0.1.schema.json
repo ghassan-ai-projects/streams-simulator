@@ -1,0 +1,229 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://streams-simulator.local/schemas/cli-output-v0.1.schema.json",
+  "title": "Streams Simulator CLI output v0.1",
+  "description": "The single JSON document a non-exempt streamsim command prints on stdout: the command's success document, or an error document. See docs/design/CLI_SURFACE.md. Each command's success shape is a $defs entry; tests validate real outputs against the entry for their command.",
+  "oneOf": [
+    {"$ref": "#/$defs/error"},
+    {"$ref": "#/$defs/catalog_list"},
+    {"$ref": "#/$defs/catalog_describe"},
+    {"$ref": "#/$defs/catalog_coverage"},
+    {"$ref": "#/$defs/domain_validate"},
+    {"$ref": "#/$defs/adapter_list"},
+    {"$ref": "#/$defs/adapter_verify"},
+    {"$ref": "#/$defs/run"},
+    {"$ref": "#/$defs/replay"},
+    {"$ref": "#/$defs/suite"},
+    {"$ref": "#/$defs/score"},
+    {"$ref": "#/$defs/refconsumer"},
+    {"$ref": "#/$defs/manifest"}
+  ],
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "error": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["error"],
+      "properties": {
+        "error": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["code", "message"],
+          "properties": {
+            "code": {
+              "enum": [
+                "usage_invalid", "file_not_found", "domain_not_found", "adapter_not_found",
+                "domain_invalid", "adapter_invalid", "artifact_invalid", "replay_mismatch",
+                "adapter_verify_failed", "io_failed",
+                "catalog_failed", "domain_failed", "adapter_failed", "run_failed", "replay_failed",
+                "verify_failed", "suite_failed", "score_failed", "manifest_failed",
+                "refconsumer_failed", "device_failed"
+              ]
+            },
+            "message": {"type": "string", "minLength": 1},
+            "source": {"type": "string", "minLength": 1},
+            "issues": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["message"],
+                "properties": {
+                  "pointer": {"type": "string", "pattern": "^(/([^~/]|~[01])*)*$"},
+                  "message": {"type": "string", "minLength": 1}
+                }
+              }
+            },
+            "result": {"type": "object"}
+          }
+        }
+      }
+    },
+    "catalog_list": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["domains"],
+      "properties": {
+        "domains": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "title", "version", "axes", "stresses"],
+            "properties": {
+              "id": {"type": "string"},
+              "title": {"type": "string"},
+              "version": {"type": "string"},
+              "axes": {"type": "array", "items": {"type": "string"}},
+              "stresses": {"type": "string"}
+            }
+          }
+        }
+      }
+    },
+    "catalog_describe": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["digest", "spec"],
+      "properties": {
+        "digest": {"$ref": "#/$defs/digest"},
+        "spec": {"type": "object", "required": ["id", "version", "title"]}
+      }
+    },
+    "catalog_coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["by_axis", "thin"],
+      "properties": {
+        "by_axis": {"type": "object", "additionalProperties": {"type": "object", "additionalProperties": {"type": "integer", "minimum": 0}}},
+        "thin": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "domain_validate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["valid", "id", "digest", "channels", "faults", "effectors"],
+      "properties": {
+        "valid": {"const": true},
+        "id": {"type": "string"},
+        "digest": {"$ref": "#/$defs/digest"},
+        "channels": {"type": "integer", "minimum": 0},
+        "faults": {"type": "integer", "minimum": 0},
+        "effectors": {"type": "integer", "minimum": 0}
+      }
+    },
+    "adapter_list": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["adapters"],
+      "properties": {
+        "adapters": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "version", "encoding", "title"],
+            "properties": {
+              "id": {"type": "string"},
+              "version": {"type": "string"},
+              "encoding": {"type": "string"},
+              "title": {"type": "string"}
+            }
+          }
+        }
+      }
+    },
+    "adapter_verify": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["adapter", "schema_checked", "schema_ok", "golden_checked", "golden_match", "records"],
+      "properties": {
+        "adapter": {"type": "string"},
+        "schema_checked": {"type": "boolean"},
+        "schema_ok": {"type": "boolean"},
+        "golden_checked": {"type": "boolean"},
+        "golden_match": {"type": "boolean"},
+        "records": {"type": "integer", "minimum": 0},
+        "first_divergence": {"type": "string"},
+        "detail": {"type": "string"}
+      }
+    },
+    "run": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["run_id", "trace_digest", "reproducible", "emitted", "ledger"],
+      "properties": {
+        "run_id": {"type": "string", "minLength": 1},
+        "trace_digest": {"$ref": "#/$defs/digest"},
+        "reproducible": {"type": "boolean"},
+        "emitted": {"type": "integer", "minimum": 0},
+        "ledger": {"type": "integer", "minimum": 0}
+      }
+    },
+    "replay": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["matches", "version_match", "got", "want", "first_divergence", "detail"],
+      "properties": {
+        "matches": {"type": "boolean"},
+        "version_match": {"type": "boolean"},
+        "got": {"type": "string"},
+        "want": {"type": "string"},
+        "first_divergence": {"type": ["integer", "null"], "minimum": 0},
+        "detail": {"type": "string"}
+      }
+    },
+    "suite": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["suite", "scenarios", "trivial_excluded", "terminal_state"],
+      "properties": {
+        "suite": {"type": "string", "minLength": 1},
+        "scenarios": {"type": "integer", "minimum": 0},
+        "trivial_excluded": {"type": "integer", "minimum": 0},
+        "terminal_state": {"type": "string"}
+      }
+    },
+    "score": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "bundle", "run_id", "domain", "ground_truth", "reproducible", "unblinded", "negative_class", "instrument", "consumer", "loop", "judgment"],
+      "properties": {
+        "schema_version": {"type": "string"},
+        "bundle": {"type": "string"},
+        "run_id": {"type": "string"},
+        "domain": {"type": "string"},
+        "scenario_id": {"type": "string"},
+        "ground_truth": {"type": ["object", "null"]},
+        "reproducible": {"type": "boolean"},
+        "unblinded": {"type": "boolean"},
+        "negative_class": {"type": "boolean"},
+        "instrument": {"type": "object"},
+        "consumer": {"type": "object"},
+        "loop": {"type": "object"},
+        "judgment": {"type": "object"},
+        "detail": {"type": "string"}
+      }
+    },
+    "refconsumer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["verdict_written", "detections"],
+      "properties": {
+        "verdict_written": {"type": "string", "minLength": 1},
+        "detections": {"type": "integer", "minimum": 0}
+      }
+    },
+    "manifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["manifest_written", "signed", "sim"],
+      "properties": {
+        "manifest_written": {"type": "string", "minLength": 1},
+        "signed": {"type": "boolean"},
+        "sim": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}

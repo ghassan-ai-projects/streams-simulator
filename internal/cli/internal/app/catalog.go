@@ -69,7 +69,7 @@ func loadAdapterEntries(dir string, names []string) (map[string]*model.Adapter, 
 func cmdCatalog(s *session, args []string) (any, error) {
 	fs := newFlagSet("catalog", s.stderr)
 	dir := fs.String("domains-dir", "", "directory of domain specs")
-	verb, err := parseCommandVerb(fs, args)
+	verb, err := parseCommandVerb(fs, args, "list")
 	if err != nil {
 		return nil, err
 	}
@@ -80,15 +80,20 @@ func cmdCatalog(s *session, args []string) (any, error) {
 	return catalogVerb(cat, verb, fs.Args())
 }
 
-func parseCommandVerb(fs *flag.FlagSet, args []string) (string, error) {
-	verb := "list"
+// parseCommandVerb reads a command's verb and flags, with the flags allowed
+// before or after the verb; the arguments after them stay in fs.Args. With
+// no verb it returns defaultVerb.
+func parseCommandVerb(fs *flag.FlagSet, args []string, defaultVerb string) (string, error) {
 	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
-		verb, args = args[0], args[1:]
+		return args[0], parseFlags(fs, args[1:])
 	}
 	if err := parseFlags(fs, args); err != nil {
 		return "", err
 	}
-	return verb, nil
+	if fs.NArg() == 0 {
+		return defaultVerb, nil
+	}
+	return fs.Arg(0), parseFlags(fs, fs.Args()[1:])
 }
 
 func catalogVerb(cat *domain.Catalog, verb string, args []string) (any, error) {
@@ -100,12 +105,12 @@ func catalogVerb(cat *domain.Catalog, verb string, args []string) (any, error) {
 	case "coverage":
 		return cat.Coverage(), nil
 	}
-	return nil, fmt.Errorf("catalog: unknown verb %q", verb)
+	return nil, usagef("catalog: unknown verb %q", verb)
 }
 
 func describeCatalogDomain(cat *domain.Catalog, args []string) (any, error) {
 	if len(args) == 0 {
-		return nil, fmt.Errorf("catalog describe requires a domain id")
+		return nil, usagef("catalog describe requires a domain id")
 	}
 	compiled, err := cat.Describe(args[0])
 	if err != nil {
@@ -115,18 +120,18 @@ func describeCatalogDomain(cat *domain.Catalog, args []string) (any, error) {
 }
 
 func cmdDomain(s *session, args []string) (any, error) {
-	fs := newFlagSet("domain", s.stderr)
-	if err := parseFlags(fs, args); err != nil {
+	fs := newFlagSet("domain validate", s.stderr)
+	verb, err := parseCommandVerb(fs, args, "")
+	if err != nil {
 		return nil, err
 	}
-	if fs.NArg() < 2 {
-		return nil, fmt.Errorf("usage: streamsim domain validate <path>")
+	if verb != "" && verb != "validate" {
+		return nil, usagef("domain: unknown verb %q", verb)
 	}
-	switch fs.Arg(0) {
-	case "validate":
-		return validateDomainFile(fs.Arg(1))
+	if verb == "" || fs.NArg() < 1 {
+		return nil, usagef("usage: streamsim domain validate <path>")
 	}
-	return nil, fmt.Errorf("domain: unknown verb %q", fs.Arg(0))
+	return validateDomainFile(fs.Arg(0))
 }
 
 func validateDomainFile(path string) (any, error) {
@@ -140,7 +145,7 @@ func validateDomainFile(path string) (any, error) {
 func cmdAdapter(s *session, args []string) (any, error) {
 	fs := newFlagSet("adapter", s.stderr)
 	dir := fs.String("adapters-dir", "", "directory of adapter files")
-	verb, err := parseCommandVerb(fs, args)
+	verb, err := parseCommandVerb(fs, args, "list")
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +159,7 @@ func adapterVerb(verb, dir string, args []string) (any, error) {
 	case "verify":
 		return verifyAdapterCommand(dir, args)
 	}
-	return nil, fmt.Errorf("adapter: unknown verb %q", verb)
+	return nil, usagef("adapter: unknown verb %q", verb)
 }
 
 func listAdapters(dir string) (any, error) {
@@ -186,7 +191,7 @@ func sortedAdapterIDs(adapters map[string]*model.Adapter) []string {
 
 func verifyAdapterCommand(dir string, args []string) (any, error) {
 	if len(args) < 1 {
-		return nil, fmt.Errorf("adapter verify requires a path")
+		return nil, usagef("adapter verify requires a path")
 	}
 	if dir == "" {
 		dir = "adapters"
@@ -205,12 +210,22 @@ func verifyAdapterFile(path, base string) (any, error) {
 // adapterVerdict fails the command when a declared check failed, or when the
 // adapter declares none, so "verified" always means something was compared.
 func adapterVerdict(res *adapter.VerifyResult) (any, error) {
+	report := adapterVerifyReport(res)
 	if !res.SchemaChecked && !res.GoldenChecked {
-		return nil, fmt.Errorf("adapter verify: %s declares no conformance schema or golden to check", res.Adapter)
+		return nil, adapterVerifyFailure(report, fmt.Sprintf("adapter verify: %s declares no conformance schema or golden to check", res.Adapter))
 	}
 	if (res.SchemaChecked && !res.SchemaOK) || (res.GoldenChecked && !res.GoldenMatch) {
-		return nil, fmt.Errorf("adapter verify FAILED: %s", strings.TrimSpace(res.FirstDivergence+" "+res.Detail))
+		report["first_divergence"], report["detail"] = res.FirstDivergence, res.Detail
+		return nil, adapterVerifyFailure(report, "adapter verify FAILED: "+strings.TrimSpace(res.FirstDivergence+" "+res.Detail))
 	}
+	return report, nil
+}
+
+func adapterVerifyReport(res *adapter.VerifyResult) map[string]any {
 	return map[string]any{"adapter": res.Adapter, "schema_ok": res.SchemaOK, "golden_match": res.GoldenMatch,
-		"schema_checked": res.SchemaChecked, "golden_checked": res.GoldenChecked, "records": res.RecordCount}, nil
+		"schema_checked": res.SchemaChecked, "golden_checked": res.GoldenChecked, "records": res.RecordCount}
+}
+
+func adapterVerifyFailure(report map[string]any, message string) error {
+	return &outcomeError{code: codeAdapterVerifyFailed, message: message, result: report}
 }

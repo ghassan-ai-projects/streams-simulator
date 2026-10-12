@@ -28,15 +28,29 @@ func cmdScore(s *session, args []string) (any, error) {
 	return scoreArtifact(options)
 }
 
-func loadJSON(path string, dst any) error {
+// loadContractDocument reads one JSON document, checks it against its
+// contract with validate and decodes it; a violation is a
+// *model.ValidationError naming the file.
+func loadContractDocument(path string, validate func([]byte) error, dst any) error {
 	raw, err := files.Read(path)
 	if err != nil {
 		return fmt.Errorf("read %s: %w", path, err)
+	}
+	if err := validate(raw); err != nil {
+		return fmt.Errorf("streamsim: %w", model.WithSource(err, path))
 	}
 	if err := json.Unmarshal(raw, dst); err != nil {
 		return fmt.Errorf("decode %s: %w", path, err)
 	}
 	return nil
+}
+
+// strictRecordDecoder decodes a JSON Lines file of one record type, refusing a
+// field the record type does not declare.
+func strictRecordDecoder(raw []byte) *json.Decoder {
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	decoder.DisallowUnknownFields()
+	return decoder
 }
 
 // loadLedger reads the newline-delimited delivery ledger written by Run.End.
@@ -47,7 +61,7 @@ func loadLedger(path string) ([]model.LedgerRecord, error) {
 	if err != nil {
 		return nil, fmt.Errorf("open ledger %s: %w", path, err)
 	}
-	return decodeLedger(json.NewDecoder(bytes.NewReader(raw)), path)
+	return decodeLedger(strictRecordDecoder(raw), path)
 }
 
 func decodeLedger(dec *json.Decoder, path string) ([]model.LedgerRecord, error) {
@@ -59,7 +73,7 @@ func decodeLedger(dec *json.Decoder, path string) ([]model.LedgerRecord, error) 
 			return ledger, nil
 		}
 		if err != nil {
-			return nil, fmt.Errorf("decode ledger %s: %w", path, err)
+			return nil, model.NotJSONError(model.ContractDeliveryLedger, path, "decode ledger "+path, err)
 		}
 		ledger = append(ledger, record)
 	}
@@ -76,7 +90,7 @@ func parseScoreOptions(args []string, stderr io.Writer) (scoreOptions, error) {
 		return scoreOptions{}, err
 	}
 	if options.artifact == "" {
-		return scoreOptions{}, fmt.Errorf("score requires --run")
+		return scoreOptions{}, usagef("score requires --run")
 	}
 	return options, nil
 }
@@ -86,12 +100,12 @@ func loadScoreReports(dir, label string) (*model.Verdict, *model.GroundTruthReco
 		label = filepath.Join(dir, "label.json")
 	}
 	var verdict model.Verdict
-	if err := loadJSON(filepath.Join(dir, "verdict.json"), &verdict); err != nil {
-		return nil, nil, fmt.Errorf("streamsim: %w", err)
+	if err := loadContractDocument(filepath.Join(dir, "verdict.json"), model.ValidateVerdict, &verdict); err != nil {
+		return nil, nil, err
 	}
 	var gt model.GroundTruthRecord
-	if err := loadJSON(label, &gt); err != nil {
-		return nil, nil, fmt.Errorf("streamsim: %w", err)
+	if err := loadContractDocument(label, model.ValidateGroundTruth, &gt); err != nil {
+		return nil, nil, err
 	}
 	return &verdict, &gt, nil
 }
@@ -103,12 +117,21 @@ func loadScoreReports(dir, label string) (*model.Verdict, *model.GroundTruthReco
 // invocations but not whether each took effect. A replay that does not
 // reproduce the recorded trace is refused rather than graded.
 func scoreArtifact(options scoreOptions) (any, error) {
+	art, err := run.LoadArtifact(options.artifact)
+	if err != nil {
+		return nil, fmt.Errorf("streamsim: %w", err)
+	}
+	return gradeArtifact(options, art)
+}
+
+// gradeArtifact grades a loaded artifact against the reports beside it.
+func gradeArtifact(options scoreOptions, art *model.RunArtifact) (any, error) {
 	dir := filepath.Dir(options.artifact)
 	verdict, gt, err := loadScoreReports(dir, options.label)
 	if err != nil {
 		return nil, err
 	}
-	evidence, err := scoringEvidence(options, dir)
+	evidence, err := scoringEvidence(options, art, dir)
 	if err != nil {
 		return nil, err
 	}
@@ -127,8 +150,8 @@ func gradeRun(evidence score.Evidence, gt *model.GroundTruthRecord) (any, error)
 // scoringEvidence assembles everything the scorer needs except the verdict:
 // the replayed identity, domain and effector calls, and the published ledger
 // and state history.
-func scoringEvidence(options scoreOptions, dir string) (score.Evidence, error) {
-	evidence, err := replayedEvidence(options)
+func scoringEvidence(options scoreOptions, art *model.RunArtifact, dir string) (score.Evidence, error) {
+	evidence, err := replayedEvidence(options, art)
 	if err != nil {
 		return score.Evidence{}, err
 	}
@@ -144,11 +167,7 @@ func scoringEvidence(options scoreOptions, dir string) (score.Evidence, error) {
 // replayedEvidence replays the artifact and returns the evidence it can
 // state on its own: identity, domain, effector calls, perturbations, counts
 // and the reproducible/unblinded stamps.
-func replayedEvidence(options scoreOptions) (score.Evidence, error) {
-	art, err := run.LoadArtifact(options.artifact)
-	if err != nil {
-		return score.Evidence{}, fmt.Errorf("streamsim: %w", err)
-	}
+func replayedEvidence(options scoreOptions, art *model.RunArtifact) (score.Evidence, error) {
 	spec, adap, err := loadSimulatorInputs(options.domainsDir, options.adaptersDir, art.Domain.ID, art.Adapter.ID)
 	if err != nil {
 		return score.Evidence{}, err
@@ -173,7 +192,8 @@ func replayReproducing(art *model.RunArtifact, spec *domain.Compiled, adap *mode
 		return nil, fmt.Errorf("streamsim: %w", err)
 	}
 	if !replayed.Result.Matches {
-		return nil, fmt.Errorf("score: replay does not reproduce the artifact, so its effector calls cannot be graded: %s", replayed.Result.Detail)
+		message := "score: replay does not reproduce the artifact, so its effector calls cannot be graded: " + replayed.Result.Detail
+		return nil, &outcomeError{code: codeReplayMismatch, message: message, result: replayResult(replayed.Result)}
 	}
 	return replayed, nil
 }
@@ -185,9 +205,9 @@ func loadHistory(path string) ([]model.StateSnapshot, error) {
 	if err != nil {
 		return nil, fmt.Errorf("open state history %s: %w", path, err)
 	}
-	history, err := decodeHistory(json.NewDecoder(bytes.NewReader(raw)))
+	history, err := decodeHistory(strictRecordDecoder(raw))
 	if err != nil {
-		return nil, fmt.Errorf("decode state history %s: %w", path, err)
+		return nil, model.NotJSONError(model.ContractStateHistory, path, "decode state history "+path, err)
 	}
 	return history, nil
 }

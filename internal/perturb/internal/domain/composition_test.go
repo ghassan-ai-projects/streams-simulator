@@ -28,8 +28,7 @@ func TestComposedPerturbationStreamRegression(t *testing.T) {
 	for seq := int64(0); seq < 100; seq++ {
 		records = append(records, layer.Process(ev(seq, "num", float64(seq)), 1e9+seq*1e9)...)
 	}
-	// Private delivery records are characterized here, not exposed as a wire contract.
-	raw, err := json.Marshal(records) //nolint:musttag
+	raw, err := json.Marshal(records) //nolint:musttag // private delivery records are characterized here, not a wire contract
 	if err != nil {
 		t.Fatal(err)
 	}

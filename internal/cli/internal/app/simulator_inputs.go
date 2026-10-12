@@ -3,6 +3,8 @@ package app
 import (
 	"fmt"
 
+	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
@@ -24,9 +26,9 @@ func describeSimulatorInputs(cat *domain.Catalog, adapters map[string]*model.Ada
 	if err != nil {
 		return nil, nil, fmt.Errorf("streamsim: %w", err)
 	}
-	adap, ok := adapters[adapterID]
-	if !ok {
-		return nil, nil, fmt.Errorf("unknown adapter %q", adapterID)
+	adap, err := adapter.Lookup(adapters, adapterID)
+	if err != nil {
+		return nil, nil, fmt.Errorf("streamsim: %w", err)
 	}
 	return spec, adap, nil
 }

@@ -61,11 +61,18 @@ func parseRefconsumerOptions(args []string, stderr io.Writer) (refconsumerOption
 	if err := parseFlags(fs, args); err != nil {
 		return refconsumerOptions{}, err
 	}
+	return admitRefconsumerOptions(options)
+}
+
+func admitRefconsumerOptions(options refconsumerOptions) (refconsumerOptions, error) {
 	if options.trace == "" {
-		return refconsumerOptions{}, fmt.Errorf("refconsumer requires --trace")
+		return refconsumerOptions{}, usagef("refconsumer requires --trace")
+	}
+	if options.window < 1 || options.threshold <= 0 {
+		return refconsumerOptions{}, usagef("refconsumer: --window must be at least 1 and --threshold positive, got %d and %v", options.window, options.threshold)
 	}
 	if options.effector != "" && options.mcpEndpoint == "" {
-		return refconsumerOptions{}, fmt.Errorf("refconsumer: --effector requires --mcp (actuation needs the operator surface)")
+		return refconsumerOptions{}, usagef("refconsumer: --effector requires --mcp (actuation needs the operator surface)")
 	}
 	return options, nil
 }

@@ -14,6 +14,7 @@ The JSON schemas under [`docs/contracts/`](../../docs/contracts/) are the canoni
 | [`ground-truth-v0.1`](../../docs/contracts/ground-truth-v0.1.schema.json) | Sealed oracle record used after the consumer phase. |
 | [`consumer-verdict-v0.1`](../../docs/contracts/consumer-verdict-v0.1.schema.json) | Consumer detections, actions, and resource evidence. |
 | [`run-artifact-v0.1`](../../docs/contracts/run-artifact-v0.1.schema.json) | Replay inputs, command log, digests, counts, and completion state. |
+| [`cli-output-v0.1`](../../docs/contracts/cli-output-v0.1.schema.json) | The single JSON document every non-exempt CLI command prints on stdout: per-command success shapes and the error document. Not embedded: tests validate real outputs against it. |
 
 The device emulator also validates the versioned device command, receipt,
 result, and state records under

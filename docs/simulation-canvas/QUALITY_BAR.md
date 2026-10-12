@@ -45,7 +45,7 @@ per package), plus:
 | New modules (journal, report, scenario, plant-wire node, reference host) ≥ 85 % statement coverage | rows in `scripts/coverage-floors.txt`, `make coverage-check` |
 | Every new parser of untrusted input (scenario file, journal reader, plant-wire records) has a fuzz target in `make fuzz` | Makefile, review |
 | New package registered: package comment, package map, `UBIQUITOUS_LANGUAGE.md`, packages table (kind, layer), import allowlist, `ioEdges` for any file/socket/clock use | `test/architecture` gates |
-| Behaviour change recorded in `CHANGELOG.md` with a simulator version bump | review |
+| Every behaviour change recorded in `CHANGELOG.md`; `model.SimVersion` (part of the determinism tuple) bumped when a change can alter a run's trace, artifact or digest | review |
 | No new Go module dependency | `go.mod` diff, review |
 
 ## 3. Canvas (TypeScript) bar
@@ -77,7 +77,7 @@ All canvas gates run through `make canvas-check`.
 | `make ci-check` | The repository's full pipeline |
 | `make canvas-check` | From P8a onward |
 | `make architecture` | Enola, against a baseline pinned before the phase's first structural edit |
-| Device path | `internal/device`, `internal/deviceworld` and CLI device tests, the device conformance fixtures, and a pinned `device serve` transcript in `scripts/behaviour-pin` (added in P1) |
+| Device path | `internal/device`, `internal/deviceworld` and CLI device tests, the device conformance fixtures, and the pinned `device serve` transcript (`test/acceptance/device_serve_test.go`, added in P1), all inside `make ci-check` |
 | Findings | No finding in [FINDINGS.md](FINDINGS.md) assigned to a finished phase is open (`test/architecture`) |
 | Consumer knowledge | No consumer name in Go or canvas sources outside the recorded exception (`test/architecture`, added in P1) |
 | Whitespace | `git diff --check` |

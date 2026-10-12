@@ -2,6 +2,8 @@ package domain
 
 import (
 	"fmt"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
 // crossCheck validates every cross-reference in the spec: channels observe
@@ -24,7 +26,14 @@ type domainChecks struct {
 }
 
 func (checks domainChecks) bad(format string, args ...any) error {
-	return fmt.Errorf("domain: %s: %s", checks.source, fmt.Sprintf(format, args...))
+	return invalidDomain(checks.source, fmt.Sprintf(format, args...))
+}
+
+// invalidDomain reports a domain that breaks a rule the contract schema cannot
+// express. The location is not tracked yet, so the issue is unlocated.
+func invalidDomain(src, message string) *model.ValidationError {
+	return &model.ValidationError{Contract: model.ContractDomainSpec, Source: src,
+		Summary: fmt.Sprintf("domain: %s: %s", src, message), Issues: []model.Issue{model.UnlocatedIssue(message)}}
 }
 
 func (checks domainChecks) checkChannels() error {

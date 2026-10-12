@@ -57,9 +57,11 @@ func closedLoopRun(t *testing.T, dir string) (*run.Run, *model.GroundTruthRecord
 	if _, err := r.End(dir); err != nil {
 		t.Fatal(err)
 	}
-	gt := &model.GroundTruthRecord{ScenarioID: "parity/1", Domain: "aquaculture-pond", Seed: 5, EntityID: pond,
+	gt := &model.GroundTruthRecord{ScenarioID: "parity/0001", Domain: "aquaculture-pond", Seed: 5, EntityID: pond,
 		Label: "aerator_failure", ExpectedEpisode: true, ExpectedEffector: "start_aerator",
 		InjectionTimeNS: faultAt, FirstObservableTimeNS: faultAt, UnavoidableTimeNS: start + 3*3600*1e9,
+		Observability: model.ObservabilityInfo{DetectorForm: "single_channel_snr", Channels: []string{"pond.dissolved_oxygen"},
+			EffectiveSigma: 0.1, FirstObservableSNR: 3, UnavoidableSNR: 10},
 		TrivialBaselineVerdict: model.TrivialNonTrivial}
 	return r, gt
 }

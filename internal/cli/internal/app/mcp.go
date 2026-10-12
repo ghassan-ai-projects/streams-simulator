@@ -18,9 +18,9 @@ func cmdMCP(s *session, args []string) (any, error) {
 	case "director":
 		return nil, serveDirector(s, options)
 	case "operator":
-		return nil, fmt.Errorf("the operator role is served from a director process; start `streamsim mcp --role director --operator-addr 127.0.0.1:PORT` and use the sim.world.create token")
+		return nil, usagef("the operator role is served from a director process; start `streamsim mcp --role director --operator-addr 127.0.0.1:PORT` and use the sim.world.create token")
 	default:
-		return nil, fmt.Errorf("mcp requires --role director|operator")
+		return nil, usagef("mcp requires --role director|operator")
 	}
 }
 

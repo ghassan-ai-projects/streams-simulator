@@ -1,6 +1,7 @@
 package domain_test
 
 import (
+	"errors"
 	"strings"
 	"testing"
 
@@ -27,7 +28,7 @@ func TestCatalogListsDescribesAndReportsCoverage(t *testing.T) {
 	if got, err := catalog.Describe("rotating-machinery"); err != nil || got != pumps {
 		t.Fatalf("describe = %v, %v", got, err)
 	}
-	if _, err := catalog.Describe("no-such-domain"); err == nil || !strings.Contains(err.Error(), "no-such-domain") {
+	if _, err := catalog.Describe("no-such-domain"); !errors.Is(err, domain.ErrUnknownDomain) || !strings.Contains(err.Error(), "no-such-domain") {
 		t.Fatalf("unknown domain: %v", err)
 	}
 	report := catalog.Coverage()

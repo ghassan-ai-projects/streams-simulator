@@ -32,7 +32,7 @@ func decodeAdapter(raw []byte, src, separator string) (*model.Adapter, error) {
 	}
 	var a model.Adapter
 	if err := json.Unmarshal(raw, &a); err != nil {
-		return nil, fmt.Errorf("adapter: %s: decode: %w", src, err)
+		return nil, model.NotJSONError(model.ContractOutputAdapter, src, fmt.Sprintf("adapter: %s: decode", src), err)
 	}
 	if err := crossCheck(&a, src); err != nil {
 		return nil, fmt.Errorf("adapter: %w", err)
@@ -44,7 +44,7 @@ func decodeAdapter(raw []byte, src, separator string) (*model.Adapter, error) {
 func validateAdapterDocument(raw []byte, src, separator string) error {
 	var doc any
 	if err := model.DecodeBytes(raw, &doc); err != nil {
-		return fmt.Errorf("adapter: %s: not valid JSON: %w", src, err)
+		return model.NotJSONError(model.ContractOutputAdapter, src, fmt.Sprintf("adapter: %s: not valid JSON", src), err)
 	}
 	return validateAdapterSchema(doc, src, separator)
 }
@@ -55,7 +55,8 @@ func validateAdapterSchema(doc any, src, separator string) error {
 		return fmt.Errorf("adapter: compile contract schema: %w", err)
 	}
 	if errs := schema.Validate(doc); len(errs) > 0 {
-		return fmt.Errorf("adapter: %s fails output-adapter-v0.1 validation:%s%s", src, separator, jsonschema.FormatErrors(errs))
+		summary := fmt.Sprintf("adapter: %s fails output-adapter-v0.1 validation:%s%s", src, separator, jsonschema.FormatErrors(errs))
+		return &model.ValidationError{Contract: model.ContractOutputAdapter, Source: src, Summary: summary, Issues: model.SchemaIssues(errs)}
 	}
 	return nil
 }

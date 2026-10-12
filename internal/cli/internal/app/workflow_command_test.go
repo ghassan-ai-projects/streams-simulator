@@ -68,13 +68,7 @@ func TestRefconsumerConsumesATraceAndScoreReadsItsVerdict(t *testing.T) {
 	if consumed["verdict_written"] != verdict {
 		t.Fatalf("refconsumer result = %v", consumed)
 	}
-	label := filepath.Join(dir, "label.json")
-	record := `{"scenario_id":"s-1","domain":"aquaculture-pond","seed":7,"entity_id":"","label":"nominal",` +
-		`"expected_episode":false,"injection_time_ns":0,"first_observable_time_ns":0,"unavoidable_time_ns":0,` +
-		`"observability":{},"trivial_baseline_verdict":"non_trivial"}`
-	if err := os.WriteFile(label, []byte(record), 0o600); err != nil {
-		t.Fatal(err)
-	}
+	label := writeNominalLabel(t, dir)
 	scored := invoke(t, "score", "--run", filepath.Join(dir, "run.json"), "--label", label,
 		"--domains-dir", testsupport.DomainsDir(), "--adapters-dir", testsupport.AdaptersDir()).mustSucceed(t).json(t)
 	if len(scored) == 0 {
@@ -91,8 +85,7 @@ func TestRefconsumerAndScoreNameWhatTheyCannotRead(t *testing.T) {
 		want string
 	}{
 		{"missing trace", []string{"refconsumer", "--trace", missing}, "no such file or directory"},
-		{"effector without endpoint", []string{"refconsumer", "--trace", missing, "--effector", "x"}, "--effector requires --mcp"},
-		{"missing verdict", []string{"score", "--run", filepath.Join(missing, "run.json")}, "read " + filepath.Join(missing, "verdict.json")},
+		{"missing run artifact", []string{"score", "--run", filepath.Join(missing, "run.json")}, "run: read artifact " + filepath.Join(missing, "run.json")},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -131,8 +124,12 @@ func TestVerifyFailsTheCommandWhenTheReplayDoesNotReproduceTheArtifact(t *testin
 	if verified.code != 1 || !strings.HasPrefix(verified.stderr, "streamsim: verify: replay does not reproduce the artifact") {
 		t.Fatalf("verify of a tampered artifact: %+v", verified)
 	}
-	if got := verified.json(t); got["matches"] != false {
-		t.Fatalf("verify must still print the result: %v", got)
+	failure := verified.failure(t)
+	if failure["code"] != "replay_mismatch" {
+		t.Fatalf("verify failure code = %v, want replay_mismatch", failure["code"])
+	}
+	if result, _ := failure["result"].(map[string]any); result["matches"] != false {
+		t.Fatalf("verify must carry the replay report as its result: %v", failure)
 	}
 	replayed := invoke(t, append([]string{"replay"}, flags...)...).mustSucceed(t).json(t)
 	if replayed["matches"] != false {

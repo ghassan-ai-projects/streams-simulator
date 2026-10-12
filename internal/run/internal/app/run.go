@@ -59,6 +59,11 @@ type QuiescenceClock = quiesce.Clock
 // QuiescenceTimer is one deadline from a QuiescenceClock.
 type QuiescenceTimer = quiesce.Timer
 
+// ErrDigestMismatch marks a replay whose inputs are not the ones the artifact
+// recorded: the domain, adapter or world digest differs, so the replay cannot
+// reproduce the run.
+var ErrDigestMismatch = errors.New("digest mismatch")
+
 // ErrConsumerNotQuiesced marks an await_consumer timeout. The world has
 // already advanced; the run is incomplete, never silently successful.
 var ErrConsumerNotQuiesced = errors.New("consumer_not_quiesced")

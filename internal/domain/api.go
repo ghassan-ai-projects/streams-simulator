@@ -17,5 +17,8 @@ type Entry = layer.Entry
 // CoverageReport is the catalog's axis coverage over the installed domains.
 type CoverageReport = layer.CoverageReport
 
+// ErrUnknownDomain is returned by Describe for an id the catalog does not hold.
+var ErrUnknownDomain = layer.ErrUnknownDomain
+
 // ErrNoCatalog is returned by Describe on a nil or zero Catalog.
 var ErrNoCatalog = errors.New("domain: a catalog built by NewCatalog is required")

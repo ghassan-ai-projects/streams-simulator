@@ -31,7 +31,7 @@ HAS_MAIN := $(if $(MAIN_PKGS),yes,no)
 .PHONY: help all build vet fmt tidy lint lint-ci docs-check test test-short test-race \
         test-coverage ci-check deadcode vulncheck fuzz soak fuzz-soak perf \
         manifest clean run cross-compile architecture architecture-baseline function-length \
-        coverage-check behaviour-pin
+        coverage-check behaviour-pin behaviour-pin-check phase-gate
 
 # ---- Help -----------------------------------------------------------------
 help: ## Show this help message
@@ -114,6 +114,15 @@ coverage-check: ## Fail when a package is below its statement-coverage floor
 
 behaviour-pin: ## Print deterministic CLI output hashes (diff against the baseline)
 	./scripts/behaviour-pin
+
+behaviour-pin-check: ## Fail when CLI behaviour drifts from the committed behaviour pin
+	@./scripts/behaviour-pin > "$${TMPDIR:-/tmp}/streamsim-behaviour-pin.txt"
+	@diff -u docs/refactoring/modularity-20261010/BEHAVIOUR_PIN.txt "$${TMPDIR:-/tmp}/streamsim-behaviour-pin.txt"
+	@echo "  Behaviour pin matches"
+
+phase-gate: ci-check architecture behaviour-pin-check ## Simulation-canvas phase gate: CI pipeline, Enola check, behaviour pin
+	@git diff --check HEAD
+	@echo "  Phase gate passed"
 
 # ---- Test -----------------------------------------------------------------
 test: ## Run all tests with race + shuffle + coverage

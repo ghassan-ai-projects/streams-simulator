@@ -8,6 +8,8 @@ The binary holds no consumer's field names or framing rules.
 | --- | --- | --- | --- |
 | Adapter | The declarative projection of native events into a wire format | `model.Adapter` | `*.adapter.json`, output-adapter-v0.1 |
 | Engine | The renderer for one run: framing, record template, transforms, id rewrite | `Engine` | – |
+| Validation error | An adapter that fails its schema or a cross-check, with every issue found | `model.ValidationError` (contract `output-adapter-v0.1`) | CLI `adapter_invalid` |
+| Unknown adapter | A lookup in a loaded adapter set for an id it does not hold | `Lookup`, `ErrUnknownAdapter` | CLI `adapter_not_found` |
 | Streaming session | `Begin`, then `RenderStreamRecord` per delivered event, then `End`; the lifecycle the run layer uses | `Begin`, `End` | – |
 | Whole-run render | The same output produced in one call over an event list (conformance) | `RenderRun` | – |
 | Record template | The field list rendered per event, with an optional when-guard | `model.RecordTemplate` | `record` |

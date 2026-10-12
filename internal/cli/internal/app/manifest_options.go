@@ -2,7 +2,6 @@ package app
 
 import (
 	"flag"
-	"fmt"
 	"io"
 	"runtime"
 	"time"
@@ -18,7 +17,7 @@ func parseManifestOptions(args []string, stderr io.Writer) (manifestOptions, err
 		return manifestOptions{}, err
 	}
 	if options.author == "" || options.reviewer == "" {
-		return manifestOptions{}, fmt.Errorf("manifest requires --author and --reviewer (independent review identity)")
+		return manifestOptions{}, usagef("manifest requires --author and --reviewer (independent review identity)")
 	}
 	return options, nil
 }

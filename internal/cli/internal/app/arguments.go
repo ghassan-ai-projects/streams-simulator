@@ -9,10 +9,19 @@ import (
 )
 
 // usageExit ends a command with an exit status after the flag package has
-// already told the user what was wrong (or printed help for -h).
-type usageExit struct{ code int }
+// already told the user what was wrong (or printed help for -h). message is
+// the flag package's diagnosis, empty for help.
+type usageExit struct {
+	code    int
+	message string
+}
 
-func (u usageExit) Error() string { return fmt.Sprintf("usage exit %d", u.code) }
+func (u usageExit) Error() string {
+	if u.message == "" {
+		return fmt.Sprintf("usage exit %d", u.code)
+	}
+	return u.message
+}
 
 func asUsageExit(err error) (usageExit, bool) {
 	var exit usageExit
@@ -37,7 +46,7 @@ func parseFlags(fs *flag.FlagSet, args []string) error {
 	if errors.Is(err, flag.ErrHelp) {
 		return usageExit{code: 0}
 	}
-	return usageExit{code: 2}
+	return usageExit{code: 2, message: err.Error()}
 }
 
 // listFlag is a repeatable string flag: every occurrence adds one value.
@@ -80,7 +89,7 @@ func splitCSV(s string) []string {
 func parseTriple(s, sep1, sep2 string) (string, string, float64, error) {
 	index := strings.Index(s, sep1)
 	if index < 0 {
-		return "", "", 0, fmt.Errorf("bad triple %q", s)
+		return "", "", 0, usagef("bad triple %q", s)
 	}
 	first := s[:index]
 	second, offset := parseOffset(s[index+len(sep1):], sep2)

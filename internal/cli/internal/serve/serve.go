@@ -34,10 +34,21 @@ func Device(stderr io.Writer, socket string, dev *device.Device, banner string) 
 func deviceUntil(stderr io.Writer, socket string, dev *device.Device, banner string, stop <-chan os.Signal) error {
 	listener, err := device.Listen(socket, dev)
 	if err != nil {
-		return fmt.Errorf("streamsim: %w", err)
+		return fmt.Errorf("streamsim: %w", listenFailure(socket, err))
 	}
 	_, _ = fmt.Fprintln(stderr, banner)
 	return shutDown(stderr, listener, stop)
+}
+
+// listenFailure reports a socket that cannot be bound as a failure of its
+// path, so the command names the socket and classifies the cause like any
+// file-system failure.
+func listenFailure(socket string, err error) error {
+	var pathFailure *os.PathError
+	if errors.As(err, &pathFailure) {
+		return err
+	}
+	return &os.PathError{Op: "listen", Path: socket, Err: err}
 }
 
 func shutDown(stderr io.Writer, listener *net.UnixListener, stop <-chan os.Signal) error {

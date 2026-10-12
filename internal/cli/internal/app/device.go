@@ -11,19 +11,22 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
-// cmdDevice serves the wire-faithful serial device emulator as a gateway link.
-// It is the device end of the Real-World Sensor HIL-0 loop: the Agentic Stream
-// serial effector connects to this socket and speaks the device gateway link
-// (state/command/receipt/result; execution truth is queried as state).
+// cmdDevice serves the wire-faithful serial device emulator as a gateway link:
+// the device end of a hardware-in-the-loop experiment, speaking the device
+// gateway link (state/command/receipt/result; execution truth is queried as
+// state).
 func cmdDevice(s *session, args []string) (any, error) {
 	if len(args) == 0 {
-		return nil, fmt.Errorf("device requires a subcommand: serve")
+		return nil, usagef("device requires a subcommand: serve")
 	}
 	switch args[0] {
 	case "serve":
 		return nil, cmdDeviceServe(s, args[1:])
+	case "-h", "--help":
+		_, _ = fmt.Fprintln(s.stderr, "Usage: streamsim device serve --socket <path> --capabilities <path> [flags]\nRun `streamsim device serve -h` for the flags.")
+		return nil, usageExit{code: 0}
 	default:
-		return nil, fmt.Errorf("device: unknown subcommand %q (want: serve)", args[0])
+		return nil, usagef("device: unknown subcommand %q (want: serve)", args[0])
 	}
 }
 

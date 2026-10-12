@@ -90,6 +90,7 @@ Determinism: a run is a pure function of `(sim_version, domain_digest, adapter_d
 Primary commands:
 
 - `make ci-check`
+- `make phase-gate` (simulation-canvas goal: `ci-check` plus the Enola check)
 - `make function-length`
 - `make build`
 - `go vet ./...`

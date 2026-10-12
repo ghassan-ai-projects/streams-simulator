@@ -2,7 +2,6 @@ package app
 
 import (
 	"flag"
-	"fmt"
 	"io"
 )
 
@@ -19,10 +18,10 @@ func parseDeviceServeOptions(args []string, stderr io.Writer) (deviceServeOption
 		return deviceServeOptions{}, err
 	}
 	if options.socket == "" {
-		return deviceServeOptions{}, fmt.Errorf("device serve requires --socket")
+		return deviceServeOptions{}, usagef("device serve requires --socket")
 	}
 	if options.capabilities == "" {
-		return deviceServeOptions{}, fmt.Errorf("device serve requires --capabilities")
+		return deviceServeOptions{}, usagef("device serve requires --capabilities")
 	}
 	return options, nil
 }

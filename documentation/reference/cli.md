@@ -1,6 +1,6 @@
 # Command-line interface (CLI) reference
 
-> Status: Implemented reference. Authority: `internal/cli/internal/app/cli.go`. Verified by: `streamsim help` and targeted command smoke tests. Last verified: 2026-08-17.
+> Status: Implemented reference. Authority: `internal/cli/internal/app/cli.go` and [`cli-output-v0.1`](../../docs/contracts/cli-output-v0.1.schema.json). Verified by: `streamsim help`, targeted command smoke tests, and contract tests over every command's output. Last verified: 2026-10-12.
 
 The executable is `streamsim`. During development, run it without installing a binary:
 
@@ -8,7 +8,26 @@ The executable is `streamsim`. During development, run it without installing a b
 go run ./cmd/streamsim <command> [flags]
 ```
 
-Most successful command results are JSON. The help surface is human-readable, and the long-running `mcp` command serves its protocol transports instead of returning a JSON result. Paths are interpreted by the current process.
+Paths are interpreted by the current process.
+
+## Output contract
+
+Every command except `help` and `mcp` prints exactly **one JSON document** on stdout, for
+success and for failure ([design](../../docs/design/CLI_SURFACE.md), [schema](../../docs/contracts/cli-output-v0.1.schema.json)). stderr carries human diagnostics only.
+
+| Exit | stdout |
+| --- | --- |
+| 0 | The command's result document (help prints nothing) |
+| 1 | `{"error": {"code", "message", "source"?, "issues"?, "result"?}}` |
+| 2 | The same error document with code `usage_invalid` |
+
+Error codes: `usage_invalid`, `file_not_found`, `domain_not_found`, `adapter_not_found`,
+`domain_invalid`, `adapter_invalid`, `artifact_invalid`, `replay_mismatch`,
+`adapter_verify_failed`, `io_failed`, and `<command>_failed` for any other failure of that
+command. `issues` lists every contract violation, with an RFC 6901 `pointer` when the location
+is known; `result` carries the command's report for a failed check (for example the replay
+report of a failed `verify`). `mcp` owns its stdout for the protocol and reports failures on
+stderr only; `device serve` prints no success document while it serves.
 
 ## Commands
 
@@ -101,11 +120,11 @@ streamsim run [flags]
 | `--fault` | empty | Repeatable; each occurrence may be comma-separated `entity=fault@offset_s` entries. |
 | `--perturb` | empty | Repeatable; each occurrence may be comma-separated `name@from_s[@until_s]` entries. The optional end time is a second `@`-separated value. |
 | `--effector` | empty | Repeatable. `effector@entity@offset_s[@{"arg":value}]`; the optional JSON object carries the effector arguments (required by every shipped effector). Command ids are `cli-0`, `cli-1`, … in order, so identical invocations record identical command logs. Entries without arguments may still be comma-separated within one occurrence; an entry with arguments takes an occurrence of its own. |
-| `--profile` | empty | Scenario profile name. |
+| `--profile` | empty | Scenario profile name; it must be one of the domain's profiles. |
 
 ### `replay` and `verify`
 
-Both load a run artifact, replay its command log and print the result as one JSON document. `replay` exits 0 whatever the outcome; `verify` exits 1 when the replay does not reproduce the recorded trace digest (a simulator-version difference alone does not fail it; it is reported in `version_match` and `detail`), so scripts can gate on it. The current CLI also loads the matching domain and adapter from `domains/` and `adapters/`; keep those directories available or override them with the flags.
+Both load a run artifact and replay its command log. `replay` prints the replay report and exits 0 whatever the outcome. `verify` prints the same report when the replay reproduces the recorded trace digest; otherwise it exits 1 with a `replay_mismatch` error document whose `result` is the report (a simulator-version difference alone does not fail it; it is reported in `version_match` and `detail`), so scripts can gate on it. An artifact whose domain, adapter or world digest no longer matches is also `replay_mismatch`. The current CLI also loads the matching domain and adapter from `domains/` and `adapters/`; keep those directories available or override them with the flags.
 
 ```text
 streamsim replay <run.json> [--domains-dir <path>] [--adapters-dir <path>]

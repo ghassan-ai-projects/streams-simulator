@@ -14,6 +14,10 @@ type ReplayResult = layer.ReplayResult
 // replayed world made, for offline scoring of the closed loop.
 type ReplayEvidence = layer.ReplayEvidence
 
+// ErrDigestMismatch marks a replay whose domain, adapter or world digest is not
+// the one the artifact recorded.
+var ErrDigestMismatch = layer.ErrDigestMismatch
+
 // ErrConsumerNotQuiesced marks an await_consumer timeout. The world has
 // already advanced; the run is incomplete, never silently successful.
 var ErrConsumerNotQuiesced = layer.ErrConsumerNotQuiesced

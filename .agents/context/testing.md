@@ -9,6 +9,7 @@ Use these commands unless the task is documentation-only:
 - `make build`
 - `make lint`
 - `make ci-check`
+- `make phase-gate` (`ci-check` plus `make architecture`; the simulation-canvas phase gate)
 - `make function-length`
 - `make coverage-check` (per-package floor, default 70%, ratchet file `scripts/coverage-floors.txt`)
 - `make behaviour-pin` (diff against `docs/refactoring/modularity-20261010/BEHAVIOUR_PIN.txt` after any structural change)

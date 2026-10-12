@@ -72,7 +72,7 @@ type effectorSpec struct {
 func parseEffectorSpec(item string) (effectorSpec, error) {
 	parts := strings.SplitN(item, "@", 4)
 	if len(parts) < 2 {
-		return effectorSpec{}, fmt.Errorf("bad triple %q", item)
+		return effectorSpec{}, usagef("bad triple %q", item)
 	}
 	spec := effectorSpec{effector: parts[0], entity: parts[1], args: map[string]any{}}
 	if len(parts) > 2 {
@@ -86,7 +86,7 @@ func parseEffectorSpec(item string) (effectorSpec, error) {
 
 func (spec effectorSpec) withArguments(text string) (effectorSpec, error) {
 	if err := model.DecodeBytes([]byte(text), &spec.args); err != nil {
-		return effectorSpec{}, fmt.Errorf("effector %s: arguments must be a JSON object: %w", spec.effector, err)
+		return effectorSpec{}, usagef("effector %s: arguments must be a JSON object: %v", spec.effector, err)
 	}
 	return spec, nil
 }

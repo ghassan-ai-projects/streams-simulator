@@ -13,8 +13,8 @@ import (
 func TestNewDeviceServeDeviceBindsWorldPlant(t *testing.T) {
 	t.Parallel()
 	dev, worldState, err := newDeviceServeDevice(deviceServeOptions{
-		capabilities:  "../../../device/testdata/thermal_capability_catalog.json",
-		worldBindings: "../../../deviceworld/testdata/thermal.bindings.json",
+		capabilities:  testsupport.DeviceCapabilities(),
+		worldBindings: testsupport.DeviceWorldBindings(),
 		worldDomain:   testsupport.Domain("cold-chain-transit"),
 		bootID:        "boot-A", deviceID: "dev-01",
 	}, time.Now)
@@ -25,7 +25,7 @@ func TestNewDeviceServeDeviceBindsWorldPlant(t *testing.T) {
 		t.Fatal("world binding must construct a world")
 	}
 
-	commandData, err := os.ReadFile("../../../device/contract/conformance/v1/valid/command.json")
+	commandData, err := os.ReadFile(testsupport.DeviceConformance("valid", "command.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -67,7 +67,7 @@ func TestDeviceWorldClockCountsMicrosecondsOfTheInjectedClock(t *testing.T) {
 	now := fixedNow
 	clock := func() time.Time { return now }
 	_, _, deviceClock, err := prepareDeviceWorld(deviceServeOptions{
-		worldBindings: testsupport.RepositoryRoot() + "/internal/deviceworld/testdata/thermal.bindings.json",
+		worldBindings: testsupport.DeviceWorldBindings(),
 		worldDomain:   testsupport.Domain("cold-chain-transit"),
 	}, mustCapabilities(t), clock)
 	if err != nil {
@@ -84,7 +84,7 @@ func TestDeviceWorldClockCountsMicrosecondsOfTheInjectedClock(t *testing.T) {
 
 func mustCapabilities(t *testing.T) *device.Capabilities {
 	t.Helper()
-	caps, err := loadDeviceCapabilities(testsupport.RepositoryRoot() + "/internal/device/testdata/thermal_capability_catalog.json")
+	caps, err := loadDeviceCapabilities(testsupport.DeviceCapabilities())
 	if err != nil {
 		t.Fatal(err)
 	}

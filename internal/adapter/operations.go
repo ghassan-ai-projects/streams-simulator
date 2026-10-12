@@ -64,3 +64,9 @@ func (e *Engine) End(worldEndNS int64) ([]string, error) {
 func (e *Engine) RenderRun(events []model.SimEvent, worldEndNS int64) ([]byte, error) {
 	return e.engine.RenderRun(events, worldEndNS)
 }
+
+// Lookup returns the adapter with the given id from a loaded set, or
+// ErrUnknownAdapter.
+func Lookup(adapters map[string]*model.Adapter, id string) (*model.Adapter, error) {
+	return layer.Lookup(adapters, id)
+}
