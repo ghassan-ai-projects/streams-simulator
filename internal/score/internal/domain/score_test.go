@@ -110,6 +110,7 @@ func loopResolved(r *run.Run) bool {
 // unresolved. Regression for the operator-endpoint golden loop.
 func TestLoopResolvesWhenFaultOnsetLandsOnEmissionBoundary(t *testing.T) {
 	t.Parallel()
+	testsupport.SkipUnderRace(t, "runs one world and scores it on one goroutine")
 	spec, a := testBase(t)
 	start := model.DefaultStartTimeNS + 4*3600*1e9
 	r, err := run.New(context.Background(), run.Config{

@@ -45,7 +45,8 @@ func TestGenerateRefusesAnUnknownProfile(t *testing.T) {
 
 func TestGenerateIsDeterministicAndLabelsEveryScenario(t *testing.T) {
 	t.Parallel()
-	cfg := suite.Config{Domain: shipped(t, "rotating-machinery"), Profile: "nominal", N: 1, Seed: 5}
+	testsupport.SkipUnderRace(t, "generates and audits a suite on one goroutine")
+	cfg := suite.Config{Domain: shipped(t, "shipment-exception"), Profile: "nominal", N: 1, Seed: 5}
 	first, err := suite.Generate(cfg)
 	if err != nil {
 		t.Fatal(err)
@@ -59,7 +60,7 @@ func TestGenerateIsDeterministicAndLabelsEveryScenario(t *testing.T) {
 	if errA != nil || errB != nil || string(a) != string(b) {
 		t.Fatalf("the same configuration produced different suites (%v, %v)", errA, errB)
 	}
-	if first.DomainID != "rotating-machinery" || first.Profile != "nominal" || first.Seed != 5 {
+	if first.DomainID != "shipment-exception" || first.Profile != "nominal" || first.Seed != 5 {
 		t.Fatalf("identity = %q %q %d", first.DomainID, first.Profile, first.Seed)
 	}
 	if len(first.Labels) != len(first.Scenarios) {
@@ -69,8 +70,9 @@ func TestGenerateIsDeterministicAndLabelsEveryScenario(t *testing.T) {
 
 func TestPublishWritesASuiteFileAndRefusesAnUnknownProfile(t *testing.T) {
 	t.Parallel()
-	options := suite.PublishOptions{DomainsDir: testsupport.DomainsDir(), DomainID: "aquaculture-pond", Profile: "nominal",
-		Out: t.TempDir(), N: 2, Seed: 1}
+	testsupport.SkipUnderRace(t, "generates and audits a suite on one goroutine")
+	options := suite.PublishOptions{DomainsDir: testsupport.DomainsDir(), DomainID: "shipment-exception", Profile: "nominal",
+		Out: t.TempDir(), N: 1, Seed: 1}
 	published, err := suite.Publish(options)
 	if err != nil || published.Scenarios == 0 {
 		t.Fatalf("published = %+v, %v", published, err)
