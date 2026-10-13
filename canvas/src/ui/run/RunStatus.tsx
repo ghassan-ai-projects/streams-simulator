@@ -74,6 +74,8 @@ function warnings(state: ReviewState): readonly string[] {
   const report = state.report.value;
   const delivered = report.counts.delivered ?? 0;
   const list: string[] = [];
+  if (state.verified.phase === "failed")
+    list.push(`streamsim verify could not check this run: ${state.verified.failure.message}`);
   if (report.verification === "files_differ")
     list.push("The run's files differ from what the run wrote: playback shows the files as they are now.");
   if (state.playback.phase === "failed")
