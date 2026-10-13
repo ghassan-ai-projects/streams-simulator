@@ -3,8 +3,10 @@ package domain
 import "fmt"
 
 type Digests struct {
-	Observer string
-	Director string
+	Observer     string
+	Director     string
+	ObserverFile string
+	DirectorFile string
 }
 
 type Journal struct {
@@ -30,7 +32,8 @@ func (j *Journal) Close(atNS int64, incomplete bool, runError string) (Digests, 
 	j.director.Append(TypeRunClosed, atNS, closedFields(incomplete, runError))
 	observer, observerErr := j.observer.Close()
 	director, directorErr := j.director.Close()
-	return Digests{Observer: observer, Director: director}, firstError(observerErr, directorErr)
+	digests := Digests{Observer: observer, Director: director, ObserverFile: j.observer.FileDigest(), DirectorFile: j.director.FileDigest()}
+	return digests, firstError(observerErr, directorErr)
 }
 
 func firstError(errs ...error) error {
@@ -51,7 +54,7 @@ func closedFields(incomplete bool, runError string) map[string]any {
 }
 
 func (j *Journal) Digests() Digests {
-	return Digests{Observer: j.observer.Digest(), Director: j.director.Digest()}
+	return Digests{Observer: j.observer.Digest(), Director: j.director.Digest(), ObserverFile: j.observer.FileDigest(), DirectorFile: j.director.FileDigest()}
 }
 
 func (j *Journal) Bytes(stream string) ([]byte, error) {

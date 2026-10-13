@@ -91,6 +91,7 @@ func (r *Run) attachArtifactJournal(artifact *model.RunArtifact) {
 	artifact.Mode = r.mode()
 	artifact.JournalDigest = r.journalDigests.Observer
 	artifact.SealedJournalDigest = r.journalDigests.Director
+	artifact.JournalFileDigest, artifact.SealedFileDigest = r.journalDigests.ObserverFile, r.journalDigests.DirectorFile
 	artifact.LedgerDigest, artifact.HistoryDigest = r.evidenceDigests()
 }
 

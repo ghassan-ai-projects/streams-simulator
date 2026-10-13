@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/canonical"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/journal"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
@@ -52,6 +53,27 @@ func TestARunSealsItsKPITruthIntoTheDirectorJournalOnceBeforeItCloses(t *testing
 	for _, record := range observer {
 		if record.Type == journal.TypeKPITruth {
 			t.Fatal("the observer journal carries the KPI truth; it is sealed")
+		}
+	}
+}
+
+func TestTheArtifactRecordsTheDigestOfEachJournalFileAsWritten(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	cfg := pondConfig(t)
+	cfg.JournalDir = dir
+	r, err := New(context.Background(), cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	advanceAndReport(t, r, cfg.StartTimeNS+900e9)
+	art, err := r.End("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for file, recorded := range map[string]string{journal.ObserverFile: art.JournalFileDigest, journal.DirectorFile: art.SealedFileDigest} {
+		if got := canonical.DigestBytes(readFile(t, filepath.Join(dir, file))); got != recorded || recorded == "" {
+			t.Errorf("%s: the file digests to %s, the artifact records %q", file, got, recorded)
 		}
 	}
 }

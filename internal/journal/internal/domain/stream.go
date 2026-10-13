@@ -21,6 +21,7 @@ type Stream struct {
 	name   string
 	sink   Sink
 	hash   hash.Hash
+	file   hash.Hash
 	keep   *bytes.Buffer
 	seq    int64
 	atNS   int64
@@ -29,7 +30,7 @@ type Stream struct {
 }
 
 func NewStream(name string, sink Sink, retain bool) *Stream {
-	s := &Stream{name: name, sink: sink, hash: sha256.New()}
+	s := &Stream{name: name, sink: sink, hash: sha256.New(), file: sha256.New()}
 	if retain {
 		s.keep = &bytes.Buffer{}
 	}
@@ -64,6 +65,7 @@ func (s *Stream) commit(rec Record, line []byte) {
 		s.seq++
 		s.atNS = rec.AtNS
 	}
+	s.file.Write(line)
 	if s.keep != nil {
 		s.keep.Write(line)
 	}
@@ -95,6 +97,12 @@ func (s *Stream) Digest() string {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.digest()
+}
+
+func (s *Stream) FileDigest() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return "sha256:" + hex.EncodeToString(s.file.Sum(nil))
 }
 
 func (s *Stream) Bytes() []byte {

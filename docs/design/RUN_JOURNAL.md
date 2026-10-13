@@ -81,7 +81,9 @@ Both streams are pure functions of the run (no wall-clock reads, maps encoded in
 A stream's **digest** is the SHA-256 (`sha256:` and hex) of its replayable lines, newline
 included. The run artifact records `journal_digest` (observer) and `sealed_journal_digest`
 (director). Computing a digest needs no file: a run with no journal directory keeps the digests
-only.
+only. It also records `journal_file_digest` and `sealed_journal_file_digest`, the SHA-256 of every line as written, session
+records (`consumer.reported`, `wire`, `pacing`) included (R7e-08): replay cannot reproduce session records, so `verify`
+does not compare these, but the run report checks the files against them, so an edited session record is evident.
 
 `replay` also compares the artifact's `unblinded` flag with the stamp the replay derives (an explore
 run is unblinded by its `mode`): clearing the flag in `run.json` fails `verify`, and `score` refuses

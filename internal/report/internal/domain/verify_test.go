@@ -45,3 +45,21 @@ func TestVerifyComparesRecordedDigestsWithTheFiles(t *testing.T) {
 		})
 	}
 }
+
+func TestAChangedSessionRecordShowsInTheJournalFileCheckButNotInTheReplayableDigest(t *testing.T) {
+	t.Parallel()
+	opened := `{"stream":"observer","seq":0,"type":"run.opened","at_ns":0,"run_id":"r-1"}`
+	written := []byte(opened + "\n" + `{"stream":"observer","seq":1,"type":"pacing","at_ns":0,"through_seq":0,"waited_ms":5,"missed":false}` + "\n")
+	edited := []byte(opened + "\n" + `{"stream":"observer","seq":1,"type":"pacing","at_ns":0,"through_seq":0,"waited_ms":0,"missed":false}` + "\n")
+	art := &model.RunArtifact{JournalDigest: journal.Digest(written), JournalFileDigest: canonical.DigestBytes(written)}
+	for name, raw := range map[string][]byte{"as written": written, "a pacing record edited": edited} {
+		got := verify(Folder{Artifact: art, Observer: Document{Raw: raw, Present: true}})
+		want := []string{CheckMatch, CheckMatch}
+		if name != "as written" {
+			want = []string{CheckMatch, CheckDiffers}
+		}
+		if len(got.Checks) != 2 || got.Checks[0].Status != want[0] || got.Checks[1].Status != want[1] || got.Checks[1].Name != "journal_file" {
+			t.Errorf("%s: checks %+v, want %v", name, got.Checks, want)
+		}
+	}
+}
