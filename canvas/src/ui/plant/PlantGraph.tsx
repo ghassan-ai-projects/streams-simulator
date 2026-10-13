@@ -30,6 +30,15 @@ function frame(instance: ReactFlowInstance<FlowNode>): void {
   });
 }
 
+function minimapClass(node: FlowNode): string {
+  if (node.type === "frame") return "minimap-frame";
+  return node.selected === true ? "minimap-selected" : "";
+}
+
+function Navigator() {
+  return <MiniMap pannable zoomable position="bottom-right" ariaLabel="Navigator" nodeClassName={minimapClass} />;
+}
+
 export function PlantGraph({ view, viewKey, selected, readings, onSelect, onOpenHall }: PlantGraphProps) {
   const nodes = useMemo(() => flowNodes(view, selected, readings ?? null), [view, selected, readings]);
   const edges = useMemo(() => flowEdges(view), [view]);
@@ -59,15 +68,7 @@ export function PlantGraph({ view, viewKey, selected, readings, onSelect, onOpen
       >
         <Background gap={16} />
         <Controls showInteractive={false} position="top-right" />
-        <MiniMap
-          pannable
-          zoomable
-          position="bottom-right"
-          ariaLabel="Navigator"
-          nodeClassName={(node) =>
-            node.type === "frame" ? "minimap-frame" : node.selected === true ? "minimap-selected" : ""
-          }
-        />
+        <Navigator />
       </ReactFlow>
     </div>
   );
