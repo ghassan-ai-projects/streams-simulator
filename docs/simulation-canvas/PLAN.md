@@ -92,4 +92,4 @@ The commit hash of a phase is recorded by the first commit of the next phase.
 | P7c | Done | `87db74d` | [evidence/P7c.md](evidence/P7c.md) | [reviews/P7c.md](reviews/P7c.md) |
 | P7d | Done | 8eb57c5 | [evidence/P7d.md](evidence/P7d.md) | [reviews/P7d.md](reviews/P7d.md) |
 | P7e | Done | 4bf3610 | [evidence/P7e.md](evidence/P7e.md) | [reviews/P7e.md](reviews/P7e.md) |
-| P7g | Done | (this commit) | [evidence/P7g.md](evidence/P7g.md) | [reviews/P7g.md](reviews/P7g.md) |
+| P7g | Done | c03ff2b | [evidence/P7g.md](evidence/P7g.md) | [reviews/P7g.md](reviews/P7g.md) |
