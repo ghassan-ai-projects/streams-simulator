@@ -91,9 +91,9 @@ measurement point; a name that breaks the length or pattern rules.
 | all | a state `<point>__bias` (instrument unit, initial 0, no dynamics) is added once per attached point that has faults; the channel gets `observation_bias {state: <point>__bias, coef: 1, noise_scale_at_full: 1}`; the fault id is `<kind>__<point>__<id>`; its detector is `single_channel_snr` on the channel with `first_observable_snr` 3 and `unavoidable_snr` 10; `is_negative_class` is copied |
 | `offset` | `affects [{state: bias, delta: magnitude}]`, onset `step`, magnitude 1 |
 | `drift` | `magnitude` is per hour and `duration_s` (required) is the time to full drift: `delta = magnitude · duration_s / 3600`, onset `ramp` with `rate_per_hour = 3600 / duration_s`, magnitude 1 |
+| `stuck`, `freeze`, `dropout`, `scale`, `noise` | no bias state: the domain fault carries `observation: {channel: <kind>.<point>, form, value?, factor?, quality?}` (domain-spec v0.2 §25), onset `step`, magnitude 1; `stuck` sticks at the `low` or `high` end of the channel's converted range (`stuck_at`); `scale` and `noise` copy `factor`; `quality` is copied |
 
-Magnitudes are in the instrument's unit (fractions of the span with `scaling: span`). `noise`, `stuck`, `freeze`, `dropout` and
-`scale` need world semantics and arrive with P7i; until then an instrument may not declare them.
+Offset and drift magnitudes are in the instrument's unit (fractions of the span with `scaling: span`).
 
 ## 4. Compositions (`composition-v0.1`)
 

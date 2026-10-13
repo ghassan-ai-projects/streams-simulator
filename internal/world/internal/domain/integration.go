@@ -19,6 +19,7 @@ type stateValue struct {
 	peak       *peakState
 	protection *protectionState
 	controller *controllerState
+	alarm      *alarmState
 }
 
 func (w *World) naturalValue(ent *Entity, stateName string, t int64) float64 {
@@ -58,6 +59,7 @@ func (s *stateValue) clone() *stateValue {
 	c.peak = clonePointer(s.peak)
 	c.protection = clonePointer(s.protection)
 	c.controller = clonePointer(s.controller)
+	c.alarm = clonePointer(s.alarm)
 	return &c
 }
 

@@ -41,3 +41,34 @@ func TestAPIDControllerIsValidatedByItsReadsGainsAndLimits(t *testing.T) {
 		})
 	}
 }
+
+func TestAnAlarmNamesOneLimitAndDeclaredStates(t *testing.T) {
+	t.Parallel()
+	alarm := func(extra map[string]any) map[string]any {
+		out := map[string]any{"watch": "level", "limit": 120.0, "direction": "high", "priority": "high"}
+		for k, v := range extra {
+			out[k] = v
+		}
+		return map[string]any{"target": "avg_flow", "tier": "F1", "dt_ms": 1000, "f1": map[string]any{"form": "alarm", "alarm": out}}
+	}
+	cases := []struct {
+		name     string
+		dynamics map[string]any
+		pointer  string
+	}{
+		{"a valid alarm", alarm(map[string]any{"acknowledge": "inflow", "shelve": "draw", "deadband": 1.0, "on_delay_s": 5.0}), ""},
+		{"no limit", alarm(map[string]any{"limit": nil}), "/kinds/1/dynamics/3/f1/alarm/limit"},
+		{"two limits", alarm(map[string]any{"limit_state": "draw"}), "/kinds/1/dynamics/3/f1/alarm/limit"},
+		{"an undeclared watch", alarm(map[string]any{"watch": "temp"}), "/kinds/1/dynamics/3/f1/alarm/watch"},
+		{"an undeclared acknowledgement", alarm(map[string]any{"acknowledge": "acks"}), "/kinds/1/dynamics/3/f1/alarm/acknowledge"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			if alarmDoc := tc.dynamics["f1"].(map[string]any)["alarm"].(map[string]any); alarmDoc["limit"] == nil {
+				delete(alarmDoc, "limit")
+			}
+			violationIn(t, testsupport.CoupledDomain(), func(d map[string]any) { put(d, tc.dynamics, "kinds", 1, "dynamics", 3) }, tc.pointer)
+		})
+	}
+}

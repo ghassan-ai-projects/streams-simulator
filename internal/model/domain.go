@@ -154,6 +154,7 @@ type F1Dyn struct {
 	Clamp          *Clamp      `json:"clamp,omitempty"`
 	Table          *Table      `json:"table,omitempty"`
 	PID            *Controller `json:"pid,omitempty"`
+	Alarm          *Alarm      `json:"alarm,omitempty"`
 }
 
 type F1Input struct {

@@ -51,3 +51,12 @@ P7i lands in steps, one commit each. Domain-spec v0.2 §22 onwards holds the rul
 | Validation: channel of the kind, numeric, noisy for noise, factor and value required, detector on the channel | `TestAnObservationFaultNamesANumericChannelOfItsKindAndIsDetectedThere` |
 | The plant wire carries the quality (R7d-01, quality part) | `TestASampleCarriesTheInstrumentsQualityOrGood` |
 | Shipped traces unchanged | Behaviour pin: traces identical; `run.json`, journals and the release manifest moved because the native adapter gained the `quality` field (re-recorded) |
+
+## Step 6 — ISA-18.2 alarm (domain-spec §26) and the instrument contract
+
+| Check | Result |
+|---|---|
+| An alarm follows the ISA-18.2 state machine: on-delay, deadband, off-delay, acknowledgement, re-activation, shelving and unshelving, return unacknowledged; a world read first at a late time agrees | `TestAnAlarmFollowsTheISA182StateMachine` (13 hand-traced instants) |
+| Mutations caught | Without the deadband the 350 s instant fails; without re-arming acknowledgement on activation the 140 s instant fails |
+| One limit, declared states | `TestAnAlarmNamesOneLimitAndDeclaredStates` |
+| Instruments may declare stuck, freeze, dropout, scale and noise faults | `instrument-v0.1` schema; COMPONENTS §3 expansion row; library files still validate (`test/contract`) |

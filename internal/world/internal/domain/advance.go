@@ -6,7 +6,7 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-var discreteForms = []string{model.FormTrip, model.FormAntiRecycle, model.FormSequencer, model.FormPID}
+var discreteForms = []string{model.FormTrip, model.FormAntiRecycle, model.FormSequencer, model.FormPID, model.FormAlarm}
 
 func (w *World) advanceEntity(ent *Entity, t int64) {
 	w.advanceReaders(ent, t)

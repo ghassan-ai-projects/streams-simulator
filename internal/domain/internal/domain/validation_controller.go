@@ -30,3 +30,16 @@ func (checks domainChecks) controllerStates(c *model.Controller) error {
 	}
 	return nil
 }
+
+func (checks domainChecks) f1Alarm(f1 *model.F1Dyn) error {
+	a := f1.Alarm
+	if (a.Limit == nil) == (a.LimitState == "") {
+		return checks.bad("/alarm/limit", "an alarm names exactly one of limit and limit_state")
+	}
+	for _, read := range [][2]string{{"watch", a.Watch}, {"limit_state", a.LimitState}, {"acknowledge", a.Acknowledge}, {"shelve", a.Shelve}} {
+		if read[1] != "" && !checks.hasState(read[1]) {
+			return checks.bad("/alarm/"+read[0], "alarm %s %q is not a declared state", read[0], read[1])
+		}
+	}
+	return nil
+}

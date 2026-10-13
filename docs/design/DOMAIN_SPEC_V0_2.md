@@ -564,3 +564,22 @@ where the instrument vouches for a wrong value. The native adapter passes `quali
 fault needs a noisy channel, and the detector is `single_channel_snr` on that channel. The truth solver measures an
 observation fault by what it does to the channel: the change in the noise-free reading plus the change in the noise sigma, and
 an immediate detection for a dropout.
+
+## 26. Alarm: ISA-18.2 (phase P7i)
+
+An `alarm` dynamics watches a state against a limit and holds an ISA-18.2 state code as its target: `0` normal, `1`
+unacknowledged, `2` acknowledged, `3` returned to normal unacknowledged, `4` shelved. It is sampled at each step boundary and
+its code holds from the end of the step, like a control system's alarm scan.
+
+- **Condition**: `direction: high` is `watch > limit`, `low` is `watch < limit`; `limit` is a number or `limit_state` a state
+  (exactly one). Once active, the alarm stays active until the value is `deadband` back inside the limit.
+- **Delays**: the condition must hold for `on_delay_s` at successive samples before the alarm activates, and the clear condition
+  for `off_delay_s` before it returns.
+- **Acknowledgement**: a change of the `acknowledge` state (an acknowledge command's counter) acknowledges: an active alarm
+  becomes acknowledged, a returned one becomes normal. Every new activation needs a new acknowledgement.
+- **Shelving**: while the `shelve` state is at least 0.5 the code is `4`; the alarm keeps its state underneath and shows it again
+  when unshelved. A lease on a shelve command (§18) gives a timed shelve.
+- **Priority** (`low`, `medium`, `high`, `critical`) is declared for the alarm-system KPIs (rate, standing and chattering
+  alarms), which belong to the KPI truth of P7k.
+
+A channel that observes the alarm state shows annunciation to a consumer; acknowledge and shelve are ordinary effectors.

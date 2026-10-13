@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/ghassan-ai-projects/streams-simulator/docs/contracts/instrument-v0.1.schema.json",
   "title": "instrument-v0.1",
-  "description": "A reusable sensor: attached at a measurement point it becomes a channel (COMPONENTS_V0_1.md \u00a73).",
+  "description": "A reusable sensor: attached at a measurement point it becomes a channel (COMPONENTS_V0_1.md §3).",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -113,8 +113,7 @@
         "additionalProperties": false,
         "required": [
           "id",
-          "form",
-          "magnitude"
+          "form"
         ],
         "properties": {
           "id": {
@@ -125,9 +124,14 @@
           "form": {
             "enum": [
               "offset",
-              "drift"
+              "drift",
+              "stuck",
+              "freeze",
+              "dropout",
+              "scale",
+              "noise"
             ],
-            "description": "v0.1 forms the world produces through a hidden bias state; noise, stuck, freeze, dropout and scale arrive with P7i."
+            "description": "offset and drift act through a hidden bias state (COMPONENTS §3); stuck, freeze, dropout, scale and noise are observation faults (domain-spec v0.2 §25)."
           },
           "magnitude": {
             "type": "number",
@@ -140,6 +144,28 @@
             "type": "number",
             "exclusiveMinimum": 0,
             "description": "drift: the time to full drift."
+          },
+          "stuck_at": {
+            "enum": [
+              "low",
+              "high"
+            ],
+            "description": "stuck: the end of the channel's converted range the reading sticks at."
+          },
+          "factor": {
+            "type": "number",
+            "minimum": 0,
+            "description": "scale: the gain at full fault; noise: the noise multiplier at full fault."
+          },
+          "quality": {
+            "enum": [
+              "good",
+              "suspect",
+              "out_of_range",
+              "stale",
+              "disconnected"
+            ],
+            "description": "The quality the channel reports while an observation fault acts."
           }
         },
         "allOf": [
@@ -153,7 +179,53 @@
             },
             "then": {
               "required": [
-                "duration_s"
+                "duration_s",
+                "magnitude"
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "form": {
+                  "const": "offset"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "magnitude"
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "form": {
+                  "const": "stuck"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "stuck_at"
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "form": {
+                  "enum": [
+                    "scale",
+                    "noise"
+                  ]
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "factor"
               ]
             }
           }

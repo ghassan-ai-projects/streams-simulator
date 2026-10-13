@@ -440,7 +440,7 @@
           "description": "First-order forms only. Deliberately not a general expression language: an arbitrary evaluator is a nondeterminism surface and a security surface, and no domain in the catalog needs one. The equations for each form are part of the contract and are defined in TECHNICAL_DESIGN §6.2 — a form name without an equation is not a specification.",
           "required": ["form"],
           "properties": {
-            "form": {"enum": ["first_order_lag", "rc_network", "dead_time", "saturation", "hysteresis", "integrator", "threshold_integrator", "store", "regime", "peak", "trip", "anti_recycle", "sequencer", "curve", "product", "sum", "pid"]},
+            "form": {"enum": ["first_order_lag", "rc_network", "dead_time", "saturation", "hysteresis", "integrator", "threshold_integrator", "store", "regime", "peak", "trip", "anti_recycle", "sequencer", "curve", "product", "sum", "pid", "alarm"]},
             "selector": {"type": "string", "description": "For regime: the state whose value, read at each step boundary, selects the regime (the target itself for a runaway)."},
             "below": {"$ref": "#/$defs/regime", "description": "For regime: the lag while the selector is below threshold."},
             "above": {"$ref": "#/$defs/regime", "description": "For regime: the lag while the selector is at or above threshold."},
@@ -524,6 +524,24 @@
                 "manual": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$", "description": "A state that selects manual mode while at least 0.5."},
                 "manual_output": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$", "description": "The state the output follows in manual mode."}
               }
+            },
+            "alarm": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["watch", "direction", "priority"],
+              "description": "For alarm: an ISA-18.2 alarm on a state; the target is its state code: 0 normal, 1 unacknowledged, 2 acknowledged, 3 returned unacknowledged, 4 shelved (domain-spec v0.2 §26).",
+              "properties": {
+                "watch": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$"},
+                "limit": {"type": "number"},
+                "limit_state": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$"},
+                "direction": {"enum": ["high", "low"]},
+                "deadband": {"type": "number", "minimum": 0, "description": "How far back inside the limit the watched value must come to clear."},
+                "on_delay_s": {"type": "number", "minimum": 0},
+                "off_delay_s": {"type": "number", "minimum": 0},
+                "priority": {"enum": ["low", "medium", "high", "critical"]},
+                "acknowledge": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$", "description": "A state whose change acknowledges the alarm (an acknowledge command's counter)."},
+                "shelve": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$", "description": "A state that shelves the alarm while at least 0.5."}
+              }
             }
           },
           "allOf": [
@@ -578,6 +596,10 @@
             {
               "if": {"properties": {"form": {"const": "pid"}}, "required": ["form"]},
               "then": {"required": ["pid", "clamp"]}
+            },
+            {
+              "if": {"properties": {"form": {"const": "alarm"}}, "required": ["form"]},
+              "then": {"required": ["alarm"]}
             }
           ]
         },
