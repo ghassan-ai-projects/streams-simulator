@@ -22,7 +22,7 @@ func titleID(id string) string {
 	if id == "" {
 		return "unknown"
 	}
-	return id
+	return escapeText(id)
 }
 
 func statusLine(report *Report) string {
@@ -37,6 +37,7 @@ func sectionsOf(report *Report) []section {
 		{"Digests", digestLines(report.Digests)},
 		{"Verification", verificationLines(report.Verification)},
 		{"Deliveries", countLines(report.Counts)},
+		{"Torn tail", tornLines(report.TornTail)},
 	}
 	sections = append(sections, truthSections(report)...)
 	return append(sections, section{"Consumer", consumerLines(report.Consumer)}, section{"Scoring", scoringLines(report.Scoring)})

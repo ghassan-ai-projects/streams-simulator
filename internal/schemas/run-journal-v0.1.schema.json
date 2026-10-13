@@ -55,9 +55,9 @@
       }
     },
     "observation": {
-      "description": "Observer. A delivered record exactly as the sink received it: the adapter's rendered line, with nothing of the native event the consumer was not given. malformed marks a line delivered broken.",
+      "description": "Observer. A record exactly as the sink received it: the adapter's rendered line, with nothing of the native event the consumer was not given. malformed marks a line delivered broken; framing marks an adapter preamble or postamble line, which is in the trace but is no delivered event.",
       "required": ["line"],
-      "properties": {"line": {"type": "string"}, "malformed": {"const": true}}
+      "properties": {"line": {"type": "string"}, "malformed": {"const": true}, "framing": {"enum": ["preamble", "postamble"]}}
     },
     "clock_advanced": {
       "description": "Observer. The world clock moved.",

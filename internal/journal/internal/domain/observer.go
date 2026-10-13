@@ -31,6 +31,10 @@ func (j *Journal) Observation(atNS int64, line string) {
 	j.observer.Append(TypeObservation, atNS, map[string]any{"line": line})
 }
 
+func (j *Journal) Framing(atNS int64, kind, line string) {
+	j.observer.Append(TypeObservation, atNS, map[string]any{"line": line, "framing": kind})
+}
+
 func (j *Journal) Malformed(atNS int64, line string) {
 	j.observer.Append(TypeObservation, atNS, map[string]any{"line": line, "malformed": true})
 }

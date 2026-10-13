@@ -5,9 +5,9 @@ import (
 	"path/filepath"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/canonical"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/journal"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run/internal/durable"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/sink"
 )
 
 func (r *Run) End(outDir string) (*model.RunArtifact, error) {
@@ -89,7 +89,7 @@ func (r *Run) finishPostamble() {
 	if r.runErr == nil {
 		if lines, err := r.Engine.End(r.traceEndTime()); err != nil {
 			r.fail(fmt.Errorf("End: adapter postamble: %w", err))
-		} else if err := writeSinkLines(r.Sink, lines); err != nil {
+		} else if err := r.writeFraming(journal.FramingPostamble, lines); err != nil {
 			r.fail(fmt.Errorf("End: adapter postamble: %w", err))
 		}
 	}
@@ -102,11 +102,12 @@ func (r *Run) closeDurableLedger() error {
 	return r.durableLedger.Finish()
 }
 
-func writeSinkLines(dst sink.Sink, lines []string) error {
+func (r *Run) writeFraming(kind string, lines []string) error {
 	for _, line := range lines {
-		if err := dst.Write([]byte(line)); err != nil {
+		if err := r.Sink.Write([]byte(line)); err != nil {
 			return fmt.Errorf("write sink line: %w", err)
 		}
+		r.journal.Framing(r.journalNow(), kind, line)
 	}
 	return nil
 }

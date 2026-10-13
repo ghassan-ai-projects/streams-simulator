@@ -38,7 +38,7 @@ Status: files_match
 |---|---|---|---|
 | trace | match | `sha256:8dc7384ce72c35382466ad0cf5c6092b2287cea91a0d62c6fde4464392ed0014` | `sha256:8dc7384ce72c35382466ad0cf5c6092b2287cea91a0d62c6fde4464392ed0014` |
 | journal | match | `sha256:a162e96357eb16362aa4977e7760223a473cdd5d12cad7932e90a0ca50de51d0` | `sha256:a162e96357eb16362aa4977e7760223a473cdd5d12cad7932e90a0ca50de51d0` |
-| sealed_journal | match | `sha256:c4db42470bc98dcb32abe365f82a5e12c9b238626d75c002dfe0ec1aae96e4e0` | `sha256:c4db42470bc98dcb32abe365f82a5e12c9b238626d75c002dfe0ec1aae96e4e0` |
+| sealed\_journal | match | `sha256:c4db42470bc98dcb32abe365f82a5e12c9b238626d75c002dfe0ec1aae96e4e0` | `sha256:c4db42470bc98dcb32abe365f82a5e12c9b238626d75c002dfe0ec1aae96e4e0` |
 
 ## Deliveries
 
@@ -61,20 +61,20 @@ Status: files_match
 
 | Reason | Rows |
 |---|---|
-| dropped_by_perturbation | 32 |
+| dropped\_by\_perturbation | 32 |
 
 ## Faults
 
 | Seq | At | Action | Entity | Fault | Onset | Params |
 |---|---|---|---|---|---|---|
-| 0 | 2026-01-01T00:00:00Z (+0s) | inject | site-a/pond-1 | aerator_failure | 2026-01-01T00:00:30Z (+30s) |  |
+| 0 | 2026-01-01T00:00:00Z (+0s) | inject | site-a/pond-1 | aerator\_failure | 2026-01-01T00:00:30Z (+30s) |  |
 
 ## Perturbations
 
 | Seq | At | Action | Perturbation | From | Until | Params |
 |---|---|---|---|---|---|---|
 | 1 | 2026-01-01T00:00:00Z (+0s) | apply | drop | 2026-01-01T00:00:50Z (+50s) | 2026-01-01T00:01:02Z (+62s) | `{"rate":1.0}` |
-| 2 | 2026-01-01T00:00:00Z (+0s) | apply | duplicate_burst | 2026-01-01T00:01:02Z (+62s) | 2026-01-01T00:02:00Z (+120s) | `{"rate":0.5}` |
+| 2 | 2026-01-01T00:00:00Z (+0s) | apply | duplicate\_burst | 2026-01-01T00:01:02Z (+62s) | 2026-01-01T00:02:00Z (+120s) | `{"rate":0.5}` |
 
 ## Environment
 
@@ -84,8 +84,8 @@ None.
 
 | Seq | At | Command | Effector | Entity | Args | Outcome |
 |---|---|---|---|---|---|---|
-| 3 | 2026-01-01T00:00:40Z (+40s) | act-1 | start_aerator | site-a/pond-1 | `{"level":1.0,"pond_id":"site-a/pond-1"}` | mode=silent_no_effect accepted=yes effect_applied=yes ack_latency_ms=644 |
-| 4 | 2026-01-01T00:01:40Z (+100s) | act-2 | start_aerator | site-a/pond-2 | `{"level":0.5,"pond_id":"site-a/pond-2"}` | mode=silent_no_effect accepted=yes effect_applied=yes ack_latency_ms=491 |
+| 3 | 2026-01-01T00:00:40Z (+40s) | act-1 | start\_aerator | site-a/pond-1 | `{"level":1.0,"pond_id":"site-a/pond-1"}` | mode=silent\_no\_effect accepted=yes effect\_applied=yes ack\_latency\_ms=644 |
+| 4 | 2026-01-01T00:01:40Z (+100s) | act-2 | start\_aerator | site-a/pond-2 | `{"level":0.5,"pond_id":"site-a/pond-2"}` | mode=silent\_no\_effect accepted=yes effect\_applied=yes ack\_latency\_ms=491 |
 
 ## Consumer
 

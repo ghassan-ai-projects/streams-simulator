@@ -10,7 +10,7 @@ const withheld = "Truth withheld: the run has not ended (no run.json)."
 func truthSections(report *Report) []section {
 	truth, start := report.Truth, report.Run.StartTimeNS
 	if truth == nil {
-		return []section{{"Truth", []string{withheld}}}
+		return []section{{"Truth", []string{withheldReason(report)}}}
 	}
 	return []section{
 		{"Faults", listOrNone(len(truth.Faults), faultLines(truth.Faults, start))},
@@ -18,6 +18,13 @@ func truthSections(report *Report) []section {
 		{"Environment", listOrNone(len(truth.Environment), environmentLines(truth.Environment, start))},
 		{"Effector calls", listOrNone(len(truth.EffectorCalls), effectorLines(truth.EffectorCalls, start))},
 	}
+}
+
+func withheldReason(report *Report) string {
+	if report.TruthUnavailable != "" {
+		return "Truth unavailable: " + escapeText(report.TruthUnavailable)
+	}
+	return withheld
 }
 
 func listOrNone(count int, lines []string) []string {

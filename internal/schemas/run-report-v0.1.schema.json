@@ -79,6 +79,8 @@
         "dropped_by_reason": {"$ref": "#/$defs/reason_counts"}
       }
     },
+    "truth_unavailable": {"type": "string", "minLength": 1, "description": "Present when a file of the folder belongs to another run than the journals: the reason, and the truth object is absent."},
+    "torn_tail": {"type": "array", "minItems": 1, "items": {"enum": ["journal.jsonl", "sealed/journal.jsonl", "ledger.jsonl"]}, "description": "Files whose last line was cut short, as by a crash, and was dropped."},
     "truth": {
       "type": "object",
       "additionalProperties": false,

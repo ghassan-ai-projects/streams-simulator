@@ -141,7 +141,7 @@ the world is open and read the finalized file after close.
 
 | Tool | Args | Returns |
 |---|---|---|
-| `sim.fault.inject` | `{world_id, entity_id, fault, onset_ns?, params?}` | `{fault_id}` |
+| `sim.fault.inject` | `{world_id, entity_id, fault, onset_ns?, params?}` | `{fault_id}`; `domain_invalid` when `onset_ns` is before the clock of a world that has already advanced |
 | `sim.fault.clear` | `{world_id, fault_id}` | — |
 | `sim.fault.list` | `{world_id}` | active faults — **director only** |
 | `sim.perturb.apply` | `{world_id, perturbation, params?, from_ns?, until_ns?}` | `{perturb_id}` |

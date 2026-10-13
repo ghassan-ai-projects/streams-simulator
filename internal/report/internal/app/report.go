@@ -48,14 +48,21 @@ func load(dir string) (domain.Folder, error) {
 	if err != nil {
 		return domain.Folder{}, err
 	}
-	if domain.TruthAllowed(folder) {
-		err = readInto(dir, directorSlots, &folder)
-	}
-	if err != nil {
+	if folder, err = loadSealedSide(dir, domain.Reconcile(folder)); err != nil {
 		return domain.Folder{}, err
 	}
 	folder.Verdict, err = loadVerdict(dir)
 	return folder, err
+}
+
+func loadSealedSide(dir string, folder domain.Folder) (domain.Folder, error) {
+	if !domain.TruthAllowed(folder) {
+		return folder, nil
+	}
+	if err := readInto(dir, directorSlots, &folder); err != nil {
+		return domain.Folder{}, err
+	}
+	return domain.ReconcileSealed(folder), nil
 }
 
 func loadConsumerSide(dir string) (domain.Folder, error) {
