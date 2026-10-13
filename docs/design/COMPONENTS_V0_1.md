@@ -117,9 +117,11 @@ provide); its `type` fixes the unit family. A connection joins a `provides` port
 else is a compose error. Compose writes one `link_type` per port type and kind pair, named `<type>__<from kind>__<to kind>`, and one
 `link` per connection.
 
-P7h gives links their value: it adds the two port names to a link, and an instance whose consuming port has incoming links reads
-the aggregate of the providing states in place of the consuming state's own dynamics; an instance without links keeps its own
-dynamics (so connected and unconnected instances of one entry stay one kind). Until then links are structure only.
+Links carry values through domain-spec v0.2 §21 (P7h): compose writes a consuming port's state as `follow` (aggregate `sum`)
+over the port's link type, so an instance with incoming links takes the sum of the providing states, and an instance without
+links keeps its own dynamics; connected and unconnected instances of one entry stay one kind. A component reads other
+aggregates (`mean`, `min`, `max`, `count_running`) through linked inputs in its own dynamics. Compose rejects a composition
+whose connections make kinds read each other in a cycle.
 
 ## 6. Vocabulary (`vocabulary.json`)
 

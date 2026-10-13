@@ -5,20 +5,26 @@ import (
 	"fmt"
 )
 
+type f1InputWire struct {
+	State string     `json:"state"`
+	Coef  *float64   `json:"coef,omitempty"`
+	Link  *InputLink `json:"link,omitempty"`
+}
+
 func (f F1Input) MarshalJSON() ([]byte, error) {
-	type wire struct {
-		State string   `json:"state"`
-		Coef  *float64 `json:"coef,omitempty"`
-	}
-	out := wire{State: f.State}
-	if f.CoefSet || f.Coef != 0 {
-		out.Coef = &f.Coef
-	}
-	raw, err := json.Marshal(out)
+	raw, err := json.Marshal(f.wire())
 	if err != nil {
 		return nil, fmt.Errorf("model: marshal f1 input: %w", err)
 	}
 	return raw, nil
+}
+
+func (f F1Input) wire() f1InputWire {
+	out := f1InputWire{State: f.State, Link: f.Link}
+	if f.CoefSet || f.Coef != 0 {
+		out.Coef = &f.Coef
+	}
+	return out
 }
 
 func (f *F1Input) UnmarshalJSON(b []byte) error {
@@ -36,7 +42,7 @@ func (f *F1Input) unmarshalObject(b []byte) error {
 	if err := json.Unmarshal(b, &value); err != nil {
 		return fmt.Errorf("UnmarshalJSON: %w", err)
 	}
-	f.State, f.Coef = value.State, value.Coef
+	f.State, f.Coef, f.Link = value.State, value.Coef, value.Link
 	return f.resolveCoefficient(b)
 }
 

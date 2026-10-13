@@ -97,12 +97,15 @@ func (w *World) inputValue(ent *Entity, dyn *model.Dynamics, t int64) float64 {
 	}
 	var u float64
 	for _, in := range f1.Inputs {
-		u += in.Coef * w.stateAt(ent.ID, in.State, t)
+		u += in.Coef * w.inputState(ent, in, t)
 	}
 	return u
 }
 
 func (w *World) naturalStateValue(ent *Entity, name string, s *stateValue, dyn *model.Dynamics, at int64) float64 {
+	if value, linked := w.followValue(ent, dyn, at); linked {
+		return value
+	}
 	switch {
 	case dyn == nil:
 		return w.initial(ent, name)

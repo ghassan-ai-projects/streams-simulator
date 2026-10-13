@@ -1,18 +1,14 @@
 package domain
 
 import (
-	"fmt"
-
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-type dynamicsTraversal struct {
+type cycleTraversal struct {
 	dependencies map[string][]string
 	state        map[string]uint8
-	targets      map[string]int
 	stack        []string
-	source       string
-	base         string
+	cycle        func(name string, path []string) error
 }
 
 func dynamicsDependencies(kind *model.Kind) map[string][]string {
@@ -22,23 +18,25 @@ func dynamicsDependencies(kind *model.Kind) map[string][]string {
 			continue
 		}
 		for _, in := range d.F1.Inputs {
-			deps[d.Target] = append(deps[d.Target], in.State)
+			if in.Link == nil {
+				deps[d.Target] = append(deps[d.Target], in.State)
+			}
 		}
 	}
 	return deps
 }
 
-func (traversal *dynamicsTraversal) visit(name string) error {
+func (traversal *cycleTraversal) visit(name string) error {
 	switch traversal.state[name] {
 	case 1:
-		return invalidDomain(traversal.source, traversal.base+itemPointer("dynamics", traversal.targets[name])+"/target", fmt.Sprintf("dynamics dependency cycle at state %q (path %v)", name, append(traversal.stack, name)))
+		return traversal.cycle(name, append(traversal.stack, name))
 	case 2:
 		return nil
 	}
 	return traversal.visitUnseen(name)
 }
 
-func (traversal *dynamicsTraversal) visitUnseen(name string) error {
+func (traversal *cycleTraversal) visitUnseen(name string) error {
 	traversal.state[name] = 1
 	traversal.stack = append(traversal.stack, name)
 	if err := traversal.visitDependencies(name); err != nil {
@@ -49,7 +47,7 @@ func (traversal *dynamicsTraversal) visitUnseen(name string) error {
 	return nil
 }
 
-func (traversal *dynamicsTraversal) visitDependencies(name string) error {
+func (traversal *cycleTraversal) visitDependencies(name string) error {
 	for _, dep := range traversal.dependencies[name] {
 		if err := traversal.visit(dep); err != nil {
 			return err

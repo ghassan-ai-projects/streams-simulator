@@ -99,3 +99,7 @@ func ReportGolden(name string) string {
 func PumpBoardDomain() string {
 	return filepath.Join(RepositoryRoot(), "internal", "testsupport", "testdata", "pump-board.domain.json")
 }
+
+func CoupledDomain() string {
+	return filepath.Join(RepositoryRoot(), "internal", "testsupport", "testdata", "coupled-plant.domain.json")
+}

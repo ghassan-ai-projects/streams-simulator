@@ -5,7 +5,7 @@ import (
 )
 
 func (checks domainChecks) checkStructure() error {
-	for _, check := range []func() error{checks.checkSystemKinds, checks.checkLinkTypes, checks.checkLinks, checks.checkBoards} {
+	for _, check := range []func() error{checks.checkSystemKinds, checks.checkLinkTypes, checks.checkLinks, checks.checkCoupling, checks.checkBoards} {
 		if err := check(); err != nil {
 			return err
 		}

@@ -44,6 +44,7 @@ func (w *World) initializeRuntime(seed uint64) {
 	w.faultsByID = map[string]*activeFault{}
 	w.idempotent = map[string]*idempotentResult{}
 	w.argSchemas = map[*model.Effector]*jsonschema.Schema{}
+	w.coupling = newCoupling(w.Spec)
 }
 
 func initialEntityIDs(spec *domain.Compiled, ids []string) []string {

@@ -79,21 +79,24 @@ type World struct {
 	idempotent    map[string]*idempotentResult
 	argSchemas    map[*model.Effector]*jsonschema.Schema
 
-	emitter func(model.SimEvent)
+	emitter  func(model.SimEvent)
+	coupling coupling
 
 	emittedThisAdvance int
 	effectsAppliedThis int
 }
 
 type Entity struct {
-	ID       string
-	Type     string
-	BornNS   int64
-	kind     *model.Kind
-	set      int
-	states   map[string]*stateValue
-	channels map[string]*channelRunState
-	alive    bool
+	ID        string
+	Type      string
+	BornNS    int64
+	kind      *model.Kind
+	set       int
+	states    map[string]*stateValue
+	channels  map[string]*channelRunState
+	alive     bool
+	retiredNS int64
+	readersAt int64
 }
 
 type channelRunState struct {

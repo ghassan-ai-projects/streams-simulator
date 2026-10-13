@@ -1,13 +1,17 @@
 package domain
 
 import (
+	"fmt"
 	"sort"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
 func rejectDynamicsCycles(kind *model.Kind, at string, src string) error {
-	traversal := dynamicsTraversal{dependencies: dynamicsDependencies(kind), targets: dynamicsTargets(kind), state: make(map[string]uint8), source: src, base: at}
+	targets := dynamicsTargets(kind)
+	traversal := cycleTraversal{dependencies: dynamicsDependencies(kind), state: make(map[string]uint8), cycle: func(name string, path []string) error {
+		return invalidDomain(src, at+itemPointer("dynamics", targets[name])+"/target", fmt.Sprintf("dynamics dependency cycle at state %q (path %v)", name, path))
+	}}
 	for _, name := range sortedStateNames(kind) {
 		if err := traversal.visit(name); err != nil {
 			return err

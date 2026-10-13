@@ -384,6 +384,13 @@
       "properties": {
         "target": {"type": "string", "description": "A state variable name."},
         "tier": {"enum": ["F0", "F1", "F2", "F3"]},
+        "follow": {"type": "object", "additionalProperties": false, "required": ["link", "state", "aggregate"],
+          "description": "While the instance has incoming links of this type, the state is the aggregate of the linked instances' state; otherwise its own dynamics apply (domain-spec v0.2 §21).",
+          "properties": {
+            "link": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$"},
+            "state": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$"},
+            "aggregate": {"enum": ["sum", "mean", "min", "max", "count_running"]}
+          }},
         "dt_ms": {"type": "integer", "minimum": 1, "description": "Required for F1 and F2 (enforced below)."},
         "f0": {
           "type": "object",
@@ -469,7 +476,13 @@
                     "required": ["state"],
                     "properties": {
                       "state": {"type": "string"},
-                      "coef": {"type": "number", "default": 1.0}
+                      "coef": {"type": "number", "default": 1.0},
+                      "link": {"type": "object", "additionalProperties": false, "required": ["type", "aggregate"], "description": "Read the state over the instances linked into this one by the link type (domain-spec v0.2 §21).",
+                        "properties": {
+                          "type": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$"},
+                          "aggregate": {"enum": ["sum", "mean", "min", "max", "count_running"]},
+                          "default": {"type": "number", "description": "mean, min and max over no linked instance."}
+                        }}
                     }
                   }
                 ]

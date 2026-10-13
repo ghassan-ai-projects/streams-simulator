@@ -97,13 +97,14 @@ type State struct {
 }
 
 type Dynamics struct {
-	Target string `json:"target"`
-	Tier   string `json:"tier"`
-	DTMs   int64  `json:"dt_ms,omitempty"`
-	F0     *F0Dyn `json:"f0,omitempty"`
-	F1     *F1Dyn `json:"f1,omitempty"`
-	F2     *F2Dyn `json:"f2,omitempty"`
-	F3     *F3Dyn `json:"f3,omitempty"`
+	Target string  `json:"target"`
+	Tier   string  `json:"tier"`
+	Follow *Follow `json:"follow,omitempty"`
+	DTMs   int64   `json:"dt_ms,omitempty"`
+	F0     *F0Dyn  `json:"f0,omitempty"`
+	F1     *F1Dyn  `json:"f1,omitempty"`
+	F2     *F2Dyn  `json:"f2,omitempty"`
+	F3     *F3Dyn  `json:"f3,omitempty"`
 }
 
 type F0Dyn struct {
@@ -154,9 +155,10 @@ type F1Dyn struct {
 }
 
 type F1Input struct {
-	State   string  `json:"state"`
-	Coef    float64 `json:"coef,omitempty"`
-	CoefSet bool    `json:"-"`
+	State   string     `json:"state"`
+	Coef    float64    `json:"coef,omitempty"`
+	CoefSet bool       `json:"-"`
+	Link    *InputLink `json:"link,omitempty"`
 }
 
 type Clamp struct {

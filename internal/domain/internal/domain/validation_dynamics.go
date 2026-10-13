@@ -7,12 +7,7 @@ import (
 )
 
 func (checks domainChecks) f1Inputs(f1 *model.F1Dyn) error {
-	for i, in := range f1.Inputs {
-		if !checks.hasState(in.State) {
-			return checks.bad(fmt.Sprintf("/inputs/%d", i), "f1 form %q input %q is not a declared state", f1.Form, in.State)
-		}
-	}
-	return nil
+	return checks.each("inputs", len(f1.Inputs), func(at domainChecks, i int) error { return at.f1Input(f1.Form, f1.Inputs[i]) })
 }
 
 func (checks domainChecks) f1Parameters(f1 *model.F1Dyn) error {

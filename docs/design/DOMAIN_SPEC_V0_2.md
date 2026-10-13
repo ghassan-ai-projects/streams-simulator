@@ -450,3 +450,38 @@ came from: component id, major version, the component file's digest, the preset,
 each measurement point and each instrument file's digest; [COMPONENTS_V0_1](COMPONENTS_V0_1.md) §7). A domain may carry `site`
 (`name`, `timezone`, `areas` with parents) and a channel `tag` (the ISA-5.1 letters of its measurement point). All are structure
 only: the world never reads them, and they enter the domain digest like any other member.
+
+## 21. Coupling over links (phase P7h)
+
+A kind reads the states of the instances linked **into** it, over a declared link type whose `to` is that kind. Two forms:
+
+- **A linked input**: an F1 input `{state, coef, link: {type, aggregate, default?}}` contributes `coef × aggregate`, where the
+  aggregate is taken over the `state` of every instance linked into this one by `type`. It works in every form that reads inputs
+  (lags, integrators, stores, regimes).
+- **`follow`** on a dynamics entry, `{link, state, aggregate}`: while at least one linked instance is present, the target state
+  is the aggregate of the linked instances' `state`; otherwise the entry's own `f0` or `f1` applies, and it keeps integrating in
+  the background. A store, peak, trip, anti-recycle or sequencer state cannot follow.
+
+| Aggregate | Value | With no linked instance present |
+|---|---|---|
+| `sum` | the sum | 0 |
+| `mean`, `min`, `max` | the mean, the least, the greatest | the input's `default` (required); `follow` falls back to its own dynamics |
+| `count_running` | how many linked states are at least 0.5 | 0 |
+
+Rules:
+
+- A linked instance is present at `t` when it was born at or before `t` and, if retired, retired at or after `t`; an instance a link
+  names that does not exist contributes nothing. Values are read through the source's full state path (dynamics, faults, effector
+  kicks, clamp), and the sum runs in sorted instance-id order, so the value does not depend on which instance was read first.
+- Validation: the link type is declared, its `to` is the reading kind, its `from` kind declares the state, and `mean`, `min` and
+  `max` inputs carry a `default`. Kinds may not read each other in a cycle over links, a kind reading itself included; a
+  feedback loop needs an explicit delay form, not yet specified. A linked input is no dependency inside the reading kind.
+- Determinism: a source keeps its history back to the oldest time any instance downstream of it (its readers, their readers,
+  and so on) can still read, so a read never falls on pruned history. Before a source steps past `t` the world also steps its
+  readers to `t` (a retired reader only to its retirement), which bounds that history. A value read forward in time therefore does
+  not depend on which instances were read first or how often; the world tests prove it against an independent recursion for a
+  three-level chain with unaligned steps, a relay with no history of its own, and seeded random forward read schedules.
+- Reading into the past: like any state, a linked value is defined back to the start of the history its sources keep; a
+  `follow` state, which keeps no history of its own, is no exception. A retired instance's states are defined up to its
+  retirement while its sources still keep that history.
+- A domain without linked inputs or `follow` behaves exactly as before: links remain structure only.
