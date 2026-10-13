@@ -60,7 +60,7 @@ func ExportScenarioFile(ctx context.Context, artifactPath string, dirs Directori
 	if err != nil {
 		return ScenarioExport{}, fmt.Errorf("streamsim: %w", err)
 	}
-	spec, adap, err := LoadInputs(dirs.Domains, dirs.Adapters, art.Domain.ID, art.Adapter.ID)
+	spec, adap, err := ResolveInputs(art, dirs)
 	if err != nil {
 		return ScenarioExport{}, fmt.Errorf("%w", err)
 	}

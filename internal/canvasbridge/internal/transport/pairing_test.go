@@ -20,7 +20,7 @@ func TestPairingSetsAnHttpOnlyStrictSessionCookie(t *testing.T) {
 		t.Fatalf("cookies = %v", got.Cookies)
 	}
 	cookie := got.Cookies[0]
-	if cookie.Name != cookieName || cookie.Value != goodSession || !cookie.HttpOnly || cookie.SameSite != http.SameSiteStrictMode ||
+	if cookie.Name != r.cookieName() || cookie.Value != goodSession || !cookie.HttpOnly || cookie.SameSite != http.SameSiteStrictMode ||
 		cookie.Path != "/" || cookie.Domain != "" || cookie.MaxAge != 12*60*60 {
 		t.Fatalf("session cookie = %+v", cookie)
 	}
@@ -68,7 +68,7 @@ func TestAPIPairingFailuresMapToUnauthorized(t *testing.T) {
 func TestTheSessionIsReadFromAmongOtherCookies(t *testing.T) {
 	t.Parallel()
 	r := newRig(t)
-	header := map[string]string{"Cookie": "theme=dark; " + cookieName + "=" + goodSession + "; other=1"}
+	header := map[string]string{"Cookie": "theme=dark; " + r.cookieName() + "=" + goodSession + "; other=1"}
 	if got := r.do(t, req{Path: "/api/workspace", Header: header}); got.Status != http.StatusOK {
 		t.Fatalf("%d %s", got.Status, got.Body)
 	}

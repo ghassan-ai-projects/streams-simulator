@@ -57,14 +57,7 @@ func withReplayedRecords(evidence score.Evidence, replayed *run.ReplayEvidence) 
 }
 
 func replayInputs(options Options, art *model.RunArtifact) (*catalog.Compiled, *model.Adapter, error) {
-	var spec *catalog.Compiled
-	var adap *model.Adapter
-	var err error
-	if options.DomainsDir == "" && options.AdaptersDir == "" {
-		spec, adap, err = run.EmbeddedInputs(art)
-	} else {
-		spec, adap, err = run.LoadInputs(options.DomainsDir, options.AdaptersDir, art.Domain.ID, art.Adapter.ID)
-	}
+	spec, adap, err := run.ResolveInputs(art, run.Directories{Domains: options.DomainsDir, Adapters: options.AdaptersDir})
 	if err != nil {
 		return nil, nil, fmt.Errorf("%w", err)
 	}

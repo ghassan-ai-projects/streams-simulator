@@ -17,7 +17,6 @@ import (
 )
 
 const (
-	cookieName      = "streamsim_canvas"
 	maxFileBody     = domain.MaxFileBytes + 1<<20
 	maxActionBody   = 1 << 20
 	sessionMaxAge   = 12 * 60 * 60

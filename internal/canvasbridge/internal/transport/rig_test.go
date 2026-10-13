@@ -146,6 +146,8 @@ func newRig(t *testing.T) *rig {
 	return &rig{service: service, server: server, uiDir: uiDir, bound: bound}
 }
 
+func (r *rig) cookieName() string { return domain.SessionCookieName(r.bound) }
+
 func writeUI(t *testing.T, dir, rel, content string) {
 	t.Helper()
 	path := filepath.Join(dir, filepath.FromSlash(rel))
@@ -188,7 +190,7 @@ func (r *rig) do(t *testing.T, q req) reply {
 	}
 	if q.Paired {
 		//nolint:gosec // G124: a request cookie of the test client
-		request.AddCookie(&http.Cookie{Name: cookieName, Value: goodSession})
+		request.AddCookie(&http.Cookie{Name: r.cookieName(), Value: goodSession})
 	}
 	for key, value := range q.Header {
 		request.Header.Set(key, value)

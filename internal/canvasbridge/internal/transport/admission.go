@@ -13,7 +13,7 @@ func (s *Server) admitted(handler http.HandlerFunc, needsSession bool) http.Hand
 			writeError(w, err)
 			return
 		}
-		if needsSession && !s.service.Admits(domain.CookieValue(r.Header.Get("Cookie"), cookieName)) {
+		if needsSession && !s.service.Admits(domain.CookieValue(r.Header.Get("Cookie"), s.cookieName())) {
 			writeError(w, domain.ErrUnpaired)
 			return
 		}
@@ -21,8 +21,10 @@ func (s *Server) admitted(handler http.HandlerFunc, needsSession bool) http.Hand
 	}
 }
 
+func (s *Server) cookieName() string { return domain.SessionCookieName(s.bound) }
+
 func (s *Server) sessionStatus(w http.ResponseWriter, r *http.Request) {
-	paired := s.service.Admits(domain.CookieValue(r.Header.Get("Cookie"), cookieName))
+	paired := s.service.Admits(domain.CookieValue(r.Header.Get("Cookie"), s.cookieName()))
 	writeJSON(w, http.StatusOK, map[string]bool{"paired": paired})
 }
 
@@ -38,11 +40,11 @@ func (s *Server) pair(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err)
 		return
 	}
-	http.SetCookie(w, sessionCookie(session))
+	http.SetCookie(w, sessionCookie(s.cookieName(), session))
 	writeJSON(w, http.StatusOK, map[string]bool{"paired": true})
 }
 
-func sessionCookie(session string) *http.Cookie {
+func sessionCookie(name, session string) *http.Cookie {
 	//nolint:gosec // G124: Secure stays unset because the bridge serves plain HTTP on loopback
-	return &http.Cookie{Name: cookieName, Value: session, Path: "/", HttpOnly: true, SameSite: http.SameSiteStrictMode, MaxAge: sessionMaxAge}
+	return &http.Cookie{Name: name, Value: session, Path: "/", HttpOnly: true, SameSite: http.SameSiteStrictMode, MaxAge: sessionMaxAge}
 }

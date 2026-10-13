@@ -4,6 +4,15 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **Verify review fixes** (findings E3-2, E3-3, E3-6, E3-8, E3-10). `streamsim verify` and `replay` report an artifact whose own
+  recorded digests do not hold (the embedded domain or adapter spec does not hash to its digest, or the recorded specs replay
+  to a different world digest) as `matches: false` with a `detail`, in the `result` of `replay_mismatch`, instead of an error
+  with no result; a missing or unreadable `run.json` stays an error. `verify` also compares `trace.jsonl` beside the artifact
+  with the digest `run.json` recorded. `scenario from-run` and `score` replay the specs recorded in `run.json`
+  (`run.ResolveInputs`, shared with `replay`/`verify`), so a later domain edit does not break them. `domain_changed` is omitted
+  when the current domain is unknown. The canvas bridge names its session cookie `streamsim_canvas_<port>`, so two bridges on
+  one host no longer unpair each other.
+
 - **Factory utilities world, scale and KPI truth** (phase P7l). `examples/factory-utilities` is composed from the library only;
   a 2,032-tag campus runs at 109x real time through the run pipeline. Breaking: `follow` takes `sources: [{link, state}]`
   (several link types into one state) instead of `link` and `state`. New: `kinds[].kpis`, the sealed `kpi.truth` director

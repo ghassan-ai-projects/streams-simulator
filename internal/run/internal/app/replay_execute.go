@@ -16,7 +16,7 @@ func newReplayRun(ctx context.Context, art *model.RunArtifact, spec *domain.Comp
 		return nil, fmt.Errorf("streamsim: %w", err)
 	}
 	if art.WorldDigest != "" && replay.Digest() != art.WorldDigest {
-		return nil, fmt.Errorf("run: world %w: artifact=%s current=%s", ErrDigestMismatch, art.WorldDigest, replay.Digest())
+		return nil, &digestMismatch{"world", art.WorldDigest, replay.Digest()}
 	}
 	if art.Unblinded && art.Mode != journal.ModeExplore {
 		replay.Unblind()

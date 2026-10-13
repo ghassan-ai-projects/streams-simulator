@@ -60,7 +60,7 @@ func TestEveryAPIRouteButSessionNeedsThePairedSession(t *testing.T) {
 		if got.Status != http.StatusUnauthorized || got.errorCode(t) != "unpaired" {
 			t.Errorf("%s %s unpaired: %d %s", route.method, route.path, got.Status, got.Body)
 		}
-		wrong := r.do(t, req{Method: route.method, Path: route.path, Body: route.body, Header: map[string]string{"Cookie": cookieName + "=guess"}})
+		wrong := r.do(t, req{Method: route.method, Path: route.path, Body: route.body, Header: map[string]string{"Cookie": r.cookieName() + "=guess"}})
 		if wrong.Status != http.StatusUnauthorized {
 			t.Errorf("%s %s with a guessed session: %d", route.method, route.path, wrong.Status)
 		}

@@ -20,7 +20,7 @@ The world also records its start time, entity selection, scenario profile, time 
 6. End the run and write the artifact, trace digest, counts, and ledger evidence.
 7. Replay the artifact’s command log against a fresh world and compare the trace digest.
 
-The replay library can use embedded domain and adapter specifications when available. The current `streamsim replay` and `streamsim verify` commands still load the matching files from `domains/` and `adapters/`, so those directories must be present unless the caller uses the library directly. The commands verify identity/digest matches against those current files. Replay does not re-run an MCP conversation or trust a human to reproduce calls in the same order.
+`streamsim replay`, `streamsim verify`, `streamsim scenario from-run` and `streamsim score` use the domain and adapter specifications recorded in `run.json`, so editing a domain afterwards does not break earlier runs; the `domains/` and `adapters/` directories are read only for an older artifact that records no specifications, and (for `replay` and `verify`) to report `domain_changed` when the domain on disk now has a different digest. A recorded specification that no longer hashes to its recorded digest, or a recorded world that replays to a different world digest, is a verdict (`matches: false` with a `detail`), not a failure to run; `verify` also compares `trace.jsonl` beside the artifact with the digest `run.json` recorded. Replay does not re-run an MCP conversation or trust a human to reproduce calls in the same order.
 
 ## What breaks reproducibility
 

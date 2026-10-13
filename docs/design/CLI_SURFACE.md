@@ -66,7 +66,7 @@ Codes shared with the MCP taxonomy (`MCP_SURFACE.md` §7) mean the same thing on
 | `adapter_invalid` | 1 | An adapter document fails `output-adapter` |
 | `scenario_invalid` | 1 | A scenario file fails `scenario-v0.1`, holds a value a scenario cannot hold, or fails a check against the domain and world (`SCENARIO_FILE.md` §3); `scenario from-run` would write a scenario that fails `scenario-v0.1` or that check (`source` is then the artifact) |
 | `artifact_invalid` | 1 | A run artifact, consumer verdict or ground-truth label is not valid JSON or fails its contract; a delivery ledger or world-state history line does not decode as its record type (unknown fields refused) |
-| `replay_mismatch` | 1 | `replay`, `verify` or `score` cannot reproduce the artifact: the trace digest differs (the replay report is the `result`), or the artifact's recorded domain, adapter or world digest does not match what it records (no `result`: nothing was replayed) |
+| `replay_mismatch` | 1 | `replay`, `verify` or `score` cannot reproduce the artifact: the trace digest differs (the replay report is the `result`), or the artifact's own recorded digests do not hold: the embedded domain or adapter spec does not hash to its recorded digest, the recorded specs replay to a different world digest, or `trace.jsonl`, `ledger.jsonl` or `world_state_history.jsonl` beside the artifact differs from the digest `run.json` recorded (the replay report is then the `result`, with `matches: false` and a `detail` naming the reason, so a verdict is told from a failure to run). An artifact that records no specs and meets a changed domain on disk, a missing `run.json` and unreadable files stay errors with no `result` (`ErrDigestMismatch` still names the first) |
 | `domain_lint` | 1 | `domain lint` found at least one error-severity finding in the nominal day; the lint report is the `result` |
 | `adapter_verify_failed` | 1 | `adapter verify` found a schema or golden divergence, or the adapter declares nothing to check |
 | `io_failed` | 1 | Reading, writing or binding a path failed for a reason other than absence |
@@ -91,11 +91,11 @@ modules (`errors.As`/`errors.Is`), never message text.
 | `adapter list` | `{adapters: [{id, version, encoding, title}]}` |
 | `adapter verify <path>` | `{adapter, schema_checked, schema_ok, golden_checked, golden_match, records}` |
 | `run` | `{run_id, trace_digest, reproducible, emitted, ledger}` |
-| `replay <run.json>` | `{matches, version_match, got, want, first_divergence, detail}` (exit 0 whatever the outcome); replays the artifact's recorded domain and adapter specs, and adds `domain_changed: true` and `current_domain_digest` when the domains directory now holds a different digest for the run's domain (information, not failure) |
-| `verify <run.json>` | The replay document on a match; `replay_mismatch` with the document as `result` otherwise |
+| `replay <run.json>` | `{matches, version_match, got, want, first_divergence, detail}` (exit 0 whatever the outcome); replays the artifact's recorded domain and adapter specs, and adds `domain_changed: true` and `current_domain_digest` when the domains directory now holds a different digest for the run's domain (information, not failure); the keys are omitted when the current domain cannot be read (no catalog in the directory, or the run's domain is no longer in it), so an absent `domain_changed` means unknown, not unchanged |
+| `verify <run.json>` | The replay document on a match; `replay_mismatch` with the document as `result` otherwise (a broken recorded digest is `matches: false` with `got` empty, `want` the recorded trace digest and a `detail` such as "the recorded domain spec does not match its digest"; a changed `trace.jsonl` is "trace.jsonl differs from the digest run.json recorded") |
 | `suite` | `{suite, scenarios, trivial_excluded, terminal_state}` |
-| `scenario from-run <run.json> --out <file>` | `{scenario_written, commands, omitted, refused}` |
-| `score` | The scorecard (`scorecard-bundle`), see `internal/score` |
+| `scenario from-run <run.json> --out <file>` | `{scenario_written, commands, omitted, refused}`; the scenario is checked against the domain and adapter specs recorded in `run.json`, not the files on disk |
+| `score` | The scorecard (`scorecard-bundle`), see `internal/score`; the artifact is replayed from its recorded domain and adapter specs, whatever the directories now hold |
 | `report <run-dir>` | The report (`run-report-v0.1`, [design](RUN_REPORT.md)); with `--out <file>`, `{report_written, format}` and the file holds the report in the chosen format. `--format markdown` requires `--out`: stdout stays one JSON document, so a Markdown rendering is only ever a file |
 | `refconsumer` | `{verdict_written, detections}` |
 | `manifest` | `{manifest_written, signed, sim}` |

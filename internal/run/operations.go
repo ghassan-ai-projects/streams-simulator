@@ -17,10 +17,6 @@ func LoadArtifact(path string) (*model.RunArtifact, error) {
 	return layer.LoadArtifact(path)
 }
 
-func EmbeddedInputs(art *model.RunArtifact) (*domain.Compiled, *model.Adapter, error) {
-	return layer.EmbeddedInputs(art)
-}
-
 func ReplayArtifact(ctx context.Context, art *model.RunArtifact, spec *domain.Compiled, adapterSpec *model.Adapter, sinkTarget string) (*ReplayResult, error) {
 	return layer.ReplayArtifact(ctx, art, spec, adapterSpec, sinkTarget)
 }
@@ -159,6 +155,10 @@ func (r *Run) ExecuteScenario(ctx context.Context, scenario *model.Scenario) err
 
 func LoadInputs(domainsDir, adaptersDir, domainID, adapterID string) (*domain.Compiled, *model.Adapter, error) {
 	return layer.LoadInputs(domainsDir, adaptersDir, domainID, adapterID)
+}
+
+func ResolveInputs(art *model.RunArtifact, dirs Directories) (*domain.Compiled, *model.Adapter, error) {
+	return layer.ResolveInputs(art, dirs)
 }
 
 func ExportScenarioFile(ctx context.Context, artifactPath string, dirs Directories) (ScenarioExport, error) {

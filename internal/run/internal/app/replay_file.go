@@ -19,10 +19,30 @@ func ReplayFile(ctx context.Context, artifactPath string, dirs Directories) (*Re
 	}
 	res, err := replayRecordedInputs(ctx, art, dirs, filepath.Dir(artifactPath))
 	if err != nil {
+		res, err = brokenRecordedDigests(art, err)
+	}
+	if err != nil {
 		return nil, err
 	}
 	noteDomainChange(res, art, dirs.Domains)
 	return res, nil
+}
+
+func ResolveInputs(art *model.RunArtifact, dirs Directories) (*domain.Compiled, *model.Adapter, error) {
+	spec, adap, err := recordedInputs(art, dirs)
+	if err != nil {
+		return nil, nil, fmt.Errorf("%w", err)
+	}
+	return replayInputs(art, spec, adap)
+}
+
+func brokenRecordedDigests(art *model.RunArtifact, err error) (*ReplayResult, error) {
+	var mismatch *digestMismatch
+	if !errors.As(err, &mismatch) || len(art.DomainSpec) == 0 || len(art.AdapterSpec) == 0 {
+		return nil, err
+	}
+	return &ReplayResult{VersionMatch: art.SimVersion == model.SimVersion, WantDigest: art.ExpectedTraceDigest,
+		Incomplete: art.Incomplete, Detail: mismatch.verdict()}, nil
 }
 
 func replayRecordedInputs(ctx context.Context, art *model.RunArtifact, dirs Directories, runDir string) (*ReplayResult, error) {

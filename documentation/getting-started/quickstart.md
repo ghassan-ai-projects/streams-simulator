@@ -43,7 +43,7 @@ The command prints the run ID, trace digest, reproducibility flag, emitted count
 go run ./cmd/streamsim verify /tmp/streamsim-quickstart/run.json
 ```
 
-Verification loads the artifact, loads the matching current files from `domains/` and `adapters/`, replays the command log against a fresh world, and compares the resulting trace digest. A mismatch is evidence to investigate, not a result to average away. The replay library can use embedded specifications, but the CLI currently requires those directories.
+Verification loads the artifact, replays the command log against a fresh world built from the domain and adapter specifications recorded in `run.json`, and compares the resulting trace digest, and the trace, ledger, history and journal files beside the artifact, with what the run recorded. Editing a domain afterwards does not break it; the result says `domain_changed` instead. A mismatch is evidence to investigate, not a result to average away.
 
 ## 5. Explore the next layer
 

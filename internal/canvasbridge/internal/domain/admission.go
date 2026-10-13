@@ -66,6 +66,10 @@ func loopback(host string) bool {
 	return true
 }
 
+func SessionCookieName(bound string) string {
+	return "streamsim_canvas_" + bound[strings.LastIndex(bound, ":")+1:]
+}
+
 func CookieValue(header, name string) string {
 	for part := range strings.SplitSeq(header, ";") {
 		if key, value, found := strings.Cut(strings.TrimSpace(part), "="); found && key == name {

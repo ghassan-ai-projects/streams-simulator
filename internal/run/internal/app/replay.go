@@ -103,11 +103,11 @@ func replayInputs(art *model.RunArtifact, spec *domain.Compiled, adapterSpec *mo
 
 func validateReplayInputs(art *model.RunArtifact, spec *domain.Compiled, adapterSpec *model.Adapter) error {
 	if spec.Spec.ID != art.Domain.ID || spec.Spec.Version != art.Domain.Version || spec.Digest != art.Domain.Digest {
-		return fmt.Errorf("run: domain %w: artifact=%s current=%s", ErrDigestMismatch, art.Domain.Digest, spec.Digest)
+		return &digestMismatch{"domain", art.Domain.Digest, spec.Digest}
 	}
 	currentAdapterDigest := rules.AdapterDigest(adapterSpec)
 	if adapterSpec.ID != art.Adapter.ID || adapterSpec.Version != art.Adapter.Version || currentAdapterDigest != art.Adapter.Digest {
-		return fmt.Errorf("run: adapter %w: artifact=%s current=%s", ErrDigestMismatch, art.Adapter.Digest, currentAdapterDigest)
+		return &digestMismatch{"adapter", art.Adapter.Digest, currentAdapterDigest}
 	}
 	return nil
 }

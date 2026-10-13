@@ -40,7 +40,7 @@ removes it from every error and result it relays.
 |---|---|---|
 | `GET /`, `GET /assets/*` | — | The built UI from `--ui-dir`, with a strict CSP |
 | `GET /api/session` | — | `{paired}` |
-| `POST /api/session` | `{code}` | `{paired: true}` and an `HttpOnly`, `SameSite=Strict` session cookie that lasts 12 hours (`Max-Age`), so a browser restart does not need a new code; the code itself stays single use and the session lives in the bridge's memory only |
+| `POST /api/session` | `{code}` | `{paired: true}` and an `HttpOnly`, `SameSite=Strict` session cookie that lasts 12 hours (`Max-Age`), so a browser restart does not need a new code; the code itself stays single use and the session lives in the bridge's memory only; the cookie is named `streamsim_canvas_<port>` after the bridge's bound port, because browsers share cookies across ports of one host and two bridges on `127.0.0.1` would otherwise unpair each other |
 | `GET /api/workspace` | — | `{name, domains[], compositions[], scenarios[], layouts[], runs[]}`; a domain or composition entry is `{path, id, title}` (read from the file's top-level `id` and `title`, nothing else), a run `{world_id, ended, explore}` (`explore` true for an Explore run, false otherwise) |
 | `GET /api/file?path=` | — | `{path, content, etag}` |
 | `PUT /api/file` | `{path, content, etag}` | `{path, etag}`; `etag` is the version the edit started from (`""` for a new file); a different file on disk is `409 conflict` with the current `etag`; content over 8 MiB is `413` (the write limit is the read limit) |
