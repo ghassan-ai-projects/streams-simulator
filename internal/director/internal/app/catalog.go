@@ -7,11 +7,11 @@ import (
 )
 
 func (d *Director) CatalogList(group string) map[string]any {
-	return map[string]any{"domains": d.Catalog.List(group)}
+	return map[string]any{"domains": d.catalog().List(group)}
 }
 
 func (d *Director) CatalogDescribe(domainID string) (map[string]any, error) {
-	c, err := d.Catalog.Describe(domainID)
+	c, err := d.catalog().Describe(domainID)
 	if err != nil {
 		return nil, rules.ToolErrorf(rules.CodeDomainInvalid, "%v", err)
 	}
@@ -19,11 +19,11 @@ func (d *Director) CatalogDescribe(domainID string) (map[string]any, error) {
 }
 
 func (d *Director) CatalogCoverage() any {
-	return d.Catalog.Coverage()
+	return d.catalog().Coverage()
 }
 
 func (d *Director) DomainSpec(domainID string) (any, error) {
-	compiled, err := d.Catalog.Describe(domainID)
+	compiled, err := d.catalog().Describe(domainID)
 	if err != nil {
 		return nil, rules.ToolErrorf(rules.CodeDomainInvalid, "%v", err)
 	}

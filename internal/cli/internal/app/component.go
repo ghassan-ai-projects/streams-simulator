@@ -42,6 +42,13 @@ func (s *session) componentDirs(flags listFlag) []string {
 	return append(dirs, filepath.SplitList(s.getenv(componentsDirsEnv))...)
 }
 
+func (s *session) declaredComponentDirs(flags listFlag) []string {
+	if len(flags) == 0 && (s.getenv == nil || s.getenv(componentsDirsEnv) == "") {
+		return nil
+	}
+	return s.componentDirs(flags)
+}
+
 func componentVerb(verb string, library *component.Library, directories, args []string) (any, error) {
 	switch {
 	case verb == "show":

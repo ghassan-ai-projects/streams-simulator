@@ -21,7 +21,7 @@ var packageDependencies = map[string]string{
 	"cmd/streamsim":               "cli",
 	"internal/component":          "canonical domain jsonschema jsonvalue kernel model schemas",
 	"internal/cli":                "adapter component device deviceworld domain grading kernel lint mcp model plantwire refconsumer release report run suite",
-	"internal/director":           "adapter audit domain model run score truth world",
+	"internal/director":           "adapter audit component domain model run score truth world",
 	"internal/mcp":                "director model schemas",
 	"internal/run":                "adapter canonical domain journal kernel model perturb sink wall world",
 	"internal/grading":            "domain kernel model run score world",

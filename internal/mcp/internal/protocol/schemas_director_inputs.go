@@ -19,6 +19,14 @@ func catalogDescribeInput() toolInput {
 	}
 }
 
+func componentDescribeInput() toolInput {
+	return toolInput{Properties: map[string]any{"ref": stringSchema()}, Required: []string{"ref"}}
+}
+
+func domainComposeInput() toolInput {
+	return toolInput{Properties: map[string]any{"composition": objectSchema(), "install": booleanSchema()}, Required: []string{"composition"}}
+}
+
 func emptyToolInput() toolInput {
 	return toolInput{
 		Properties: map[string]any{},

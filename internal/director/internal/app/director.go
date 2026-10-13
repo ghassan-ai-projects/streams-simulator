@@ -10,6 +10,7 @@ import (
 	"context"
 	"sync"
 
+	"github.com/ghassan-ai-projects/streams-simulator/internal/component"
 	rules "github.com/ghassan-ai-projects/streams-simulator/internal/director/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
@@ -29,6 +30,8 @@ type WorldRecord struct {
 type Director struct {
 	mu               sync.Mutex
 	Catalog          *domain.Catalog
+	catalogMu        sync.RWMutex
+	library          *component.Library
 	Adapters         map[string]*model.Adapter
 	Worlds           map[string]*WorldRecord
 	byRun            map[string]string

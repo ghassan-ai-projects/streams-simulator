@@ -23,7 +23,10 @@ func cmdMCP(s *session, args []string) (any, error) {
 	}
 }
 
-type mcpOptions struct{ role, operatorAddr, domainsDir, adaptersDir, outDir string }
+type mcpOptions struct {
+	role, operatorAddr, domainsDir, adaptersDir, outDir string
+	componentsDirs                                      listFlag
+}
 
 func parseMCPOptions(args []string, stderr io.Writer) (mcpOptions, error) {
 	var options mcpOptions
@@ -32,6 +35,7 @@ func parseMCPOptions(args []string, stderr io.Writer) (mcpOptions, error) {
 	fs.StringVar(&options.operatorAddr, "operator-addr", "", "serve the operator role over streamable HTTP at this listen address (e.g. 127.0.0.1:0); sim.world.create returns the endpoint with the token")
 	registerInputDirs(fs, &options.domainsDir, &options.adaptersDir)
 	registerRunFolder(fs, &options.outDir, "runs")
+	registerComponentDirs(fs, &options.componentsDirs)
 	if err := parseOnlyFlags(fs, args); err != nil {
 		return mcpOptions{}, err
 	}
@@ -40,7 +44,8 @@ func parseMCPOptions(args []string, stderr io.Writer) (mcpOptions, error) {
 
 func serveDirector(s *session, options mcpOptions) error {
 	err := mcp.ServeDirector(context.Background(), s.stderr, mcp.ServeOptions{DomainsDir: options.domainsDir,
-		AdaptersDir: options.adaptersDir, OutDir: options.outDir, OperatorAddr: options.operatorAddr})
+		AdaptersDir: options.adaptersDir, OutDir: options.outDir, OperatorAddr: options.operatorAddr,
+		ComponentsDirs: s.declaredComponentDirs(options.componentsDirs)})
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
