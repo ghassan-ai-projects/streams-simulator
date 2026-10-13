@@ -3,6 +3,7 @@ import { Handle, Position } from "@xyflow/react";
 import { ChevronRight } from "lucide-react";
 import type { CSSProperties } from "react";
 import type { Reading } from "../../model/playback";
+import { describeNode } from "../../model/plantView";
 import { formatReading, shortChannel } from "../../model/playback";
 import { familyNames, shapeOf } from "../../model/ports";
 import type { Pin } from "../../model/ports";
@@ -83,7 +84,9 @@ export function InstanceNode({ data, selected }: NodeProps<InstanceNodeType>) {
   const { view } = data;
   return (
     <div
-      className={cx(styles.node, selected && styles.selected)}
+      className={cx(styles.node, selected && styles.selected, data.active && styles.active)}
+      role="group"
+      aria-label={describeNode(view, selected)}
       style={{ "--cat": `var(--cat-${view.category})` } as CSSProperties}
     >
       <Handle type="target" position={Position.Left} id="in" className={styles.anchor} isConnectable={false} />
@@ -103,7 +106,11 @@ export function InstanceNode({ data, selected }: NodeProps<InstanceNodeType>) {
 export function HallNode({ data, selected }: NodeProps<HallNodeType>) {
   const { view } = data;
   return (
-    <div className={cx(styles.node, styles.hall, selected && styles.selected)}>
+    <div
+      className={cx(styles.node, styles.hall, selected && styles.selected, data.active && styles.active)}
+      role="group"
+      aria-label={describeNode(view, selected)}
+    >
       <Handle type="target" position={Position.Left} id="in" className={styles.plain} isConnectable={false} />
       <div className={styles.header}>
         <span className={styles.id}>{view.label}</span>

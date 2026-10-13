@@ -37,7 +37,7 @@ export function Inspector({ plant, selected }: { readonly plant: Plant; readonly
   const instance = plant.instances.find((entry) => entry.id === selected);
   if (instance === undefined) {
     return (
-      <aside className={styles.inspector} aria-label="Inspector">
+      <aside className={styles.inspector} aria-label="Inspector" tabIndex={0}>
         <p className={styles.hint}>
           Select an instance to see its kind: states, channels, faults, effectors and links.
         </p>
@@ -48,7 +48,8 @@ export function Inspector({ plant, selected }: { readonly plant: Plant; readonly
   const { incoming, outgoing } = linksOf(plant, instance.id);
   const end = (id: string, port: string | null) => (port === null ? id : `${id}.${port}`);
   return (
-    <aside className={styles.inspector} aria-label="Inspector">
+    <aside className={styles.inspector} aria-label="Inspector" tabIndex={0}>
+      <p className="sr-only" aria-live="polite">{`${instance.id} selected, ${instance.kind}`}</p>
       <header className={styles.inspectorHead}>
         <h2 className={styles.mono}>{instance.id}</h2>
         <p className={styles.muted}>{[instance.kind, instance.area, instance.component].filter(Boolean).join(" · ")}</p>

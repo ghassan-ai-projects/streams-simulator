@@ -10,6 +10,7 @@ import { HomeScreen } from "./home/HomeScreen";
 import { PairingScreen } from "./pairing/PairingScreen";
 import { PlantScreen } from "./plant/PlantScreen";
 import { RunScreen } from "./run/RunScreen";
+import { KeyHelp } from "./shell/KeyHelp";
 import { Shell } from "./shell/Shell";
 import { TopBar } from "./shell/TopBar";
 import { Unreachable } from "./shell/Unreachable";
@@ -91,6 +92,7 @@ export function App({ stores }: { readonly stores: Stores }) {
       {state.phase === "checking" && <p role="status">Connecting to the bridge…</p>}
       {state.phase === "unreachable" && <Unreachable failure={state.failure} />}
       {state.phase === "paired" && <Screen stores={stores} route={route} />}
+      <KeyHelp />
     </Shell>
   );
 }

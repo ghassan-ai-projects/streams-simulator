@@ -16,7 +16,7 @@ test("a recorded run plays back with the binary's report and a Verified badge", 
   await expect(report.getByRole("region", { name: "Verification" })).toContainText("files match");
   await expect(report.getByRole("region", { name: "KPI truth" })).toContainText("CH-1");
   await expect(page.getByRole("status").filter({ hasText: /^[\d,]+ observations$/ })).toBeVisible({ timeout: 60_000 });
-  const chiller = page.getByRole("group", { name: "CH-1, chiller" });
+  const chiller = page.getByRole("group", { name: /^CH-1, chiller,/ });
   await expect(chiller.locator("dl")).toContainText("power");
   const slider = page.getByRole("slider", { name: "Playback time" });
   await expect(slider).toHaveAttribute("aria-valuetext", "00:30:00");

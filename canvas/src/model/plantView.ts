@@ -174,3 +174,11 @@ export function plantView(plant: Plant, specs: Specs, open: string | null, reado
     (instance) => hallOf(instance.id) === open || (hallOf(instance.id) === null && touching.has(instance.id)),
   );
 }
+
+export function describeNode(node: ViewNode, selected: boolean): string {
+  const ports =
+    node.instance === null
+      ? `${String(node.members)} instances, Enter opens the hall`
+      : `${String(node.pins.ins.length)} inputs, ${String(node.pins.outs.length)} outputs`;
+  return `${node.label}, ${node.detail}, ${ports}${selected ? ", selected" : ""}`;
+}

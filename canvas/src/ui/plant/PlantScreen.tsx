@@ -6,6 +6,7 @@ import type { PlantState, PlantStore } from "../../app/plantStore";
 import type { WorkspaceStore } from "../../app/workspaceStore";
 import { plantView } from "../../model/plantView";
 import type { Route } from "../../model/route";
+import { useScreen } from "../useScreen";
 import { useStore } from "../useStore";
 import { Navigator, ZoomBar } from "./GraphControls";
 import { Inspector } from "./Inspector";
@@ -44,6 +45,7 @@ function Crumbs({
   readonly navigation: NavigationStore;
 }) {
   const title = state.plant.title || state.plant.id;
+  const heading = useScreen(hall === null ? `${title} · plant` : `${hall} · ${title}`);
   const trail: readonly Crumb[] = [
     { label: "Workspace", route: { screen: "home" } },
     ...(hall === null ? [] : [{ label: title, route: { screen: "plant", domain: state.path, hall: null } } as const]),
@@ -64,7 +66,7 @@ function Crumbs({
           <ChevronRight size={14} aria-hidden="true" />
         </Fragment>
       ))}
-      <h1 aria-current="location" className={styles.here}>
+      <h1 aria-current="location" className={styles.here} ref={heading} tabIndex={-1}>
         {hall ?? title}
       </h1>
       <span className={styles.summary}>{summary(state)}</span>
@@ -94,6 +96,9 @@ function Graph({
       }}
       onOpenHall={(name) => {
         navigation.go({ screen: "plant", domain: state.path, hall: name });
+      }}
+      onEscape={() => {
+        if (hall !== null) navigation.go({ screen: "plant", domain: state.path, hall: null });
       }}
     />
   );

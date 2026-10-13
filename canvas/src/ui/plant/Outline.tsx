@@ -37,11 +37,11 @@ interface SectionProps {
 
 function Section({ title, items, current, marks, onPick }: SectionProps) {
   return (
-    <section aria-label={title}>
-      <h2 className={shared.sectionTitle}>
+    <details open className={styles.group}>
+      <summary className={shared.sectionTitle}>
         {title}
         <span className={styles.count}>{items.length}</span>
-      </h2>
+      </summary>
       <ul className={styles.tree}>
         {items.map((item) => (
           <li key={item}>
@@ -59,7 +59,7 @@ function Section({ title, items, current, marks, onPick }: SectionProps) {
           </li>
         ))}
       </ul>
-    </section>
+    </details>
   );
 }
 

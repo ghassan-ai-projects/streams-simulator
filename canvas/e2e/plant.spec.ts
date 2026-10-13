@@ -11,7 +11,7 @@ test("the factory opens from the workspace as a typed plant graph", async ({ pag
   await expect(graph.getByText("23 instances · 59 links")).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Outline" }).getByRole("button")).toHaveCount(23);
   await expect(page.locator(".react-flow__edge").first()).toBeVisible();
-  await expect(page.getByRole("group", { name: "CT-1, cooling_tower" })).toBeVisible();
+  await expect(page.getByRole("group", { name: /^CT-1, cooling_tower,/ })).toBeVisible();
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 });
 
@@ -25,4 +25,24 @@ test("selecting an instance in the outline shows its kind in the inspector", asy
   await expect(inspector.getByRole("region", { name: "Faults" })).toContainText("cooling_tower__fan_failure");
   await page.getByRole("button", { name: "Workspace", exact: true }).click();
   await expect(page.getByRole("heading", { name: "lab-workspace" })).toBeVisible();
+});
+
+test("the graph works from the keyboard: arrows move, Enter selects, Escape clears, ? lists the keys", async ({
+  page,
+}) => {
+  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Ffactory-utilities.domain.json`);
+  await expect(page).toHaveTitle("Factory utilities · plant · Streams Simulator");
+  const graph = page.getByRole("application", { name: "Plant graph" });
+  await graph.focus();
+  await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("Enter");
+  const inspector = page.getByRole("complementary", { name: "Inspector" });
+  await expect(inspector.getByRole("heading", { level: 2 })).toBeVisible();
+  await expect(graph.locator("[aria-live=polite]")).toContainText("selected");
+  await page.keyboard.press("Escape");
+  await expect(inspector).toContainText("Select an instance");
+  await page.keyboard.press("?");
+  await expect(page.getByRole("dialog", { name: "Keyboard" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog", { name: "Keyboard" })).toBeHidden();
 });

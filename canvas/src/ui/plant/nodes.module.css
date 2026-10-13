@@ -241,3 +241,15 @@
   font: 600 var(--text-md) var(--font-mono);
   font-variant-numeric: tabular-nums;
 }
+
+.active {
+  outline: 2px dashed var(--focus-ring);
+  outline-offset: 4px;
+}
+
+.selected.active {
+  outline-style: solid;
+  box-shadow:
+    0 0 0 7px var(--surface-selected),
+    var(--shadow-panel);
+}

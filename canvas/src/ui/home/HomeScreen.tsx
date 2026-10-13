@@ -4,6 +4,7 @@ import type { NavigationStore } from "../../app/navigationStore";
 import type { WorkspaceStore } from "../../app/workspaceStore";
 import type { Definition, RunEntry, Workspace } from "../../model/bridge";
 import { workspaceEmpty, workspaceSummary } from "../../model/workspace";
+import { useScreen } from "../useScreen";
 import { useStore } from "../useStore";
 import styles from "./HomeScreen.module.css";
 
@@ -109,6 +110,7 @@ function EmptyWorkspace({ name }: { readonly name: string }) {
 }
 
 function Contents({ workspace, navigation }: { readonly workspace: Workspace; readonly navigation: NavigationStore }) {
+  const heading = useScreen(workspace.name);
   const openPlant = (item: Definition) => {
     navigation.go({ screen: "plant", domain: item.path, hall: null });
   };
@@ -118,7 +120,9 @@ function Contents({ workspace, navigation }: { readonly workspace: Workspace; re
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <h1 className={styles.name}>{workspace.name}</h1>
+        <h1 className={styles.name} ref={heading} tabIndex={-1}>
+          {workspace.name}
+        </h1>
         <span className={styles.summary}>{workspaceSummary(workspace)}</span>
       </header>
       <div className={styles.grid}>

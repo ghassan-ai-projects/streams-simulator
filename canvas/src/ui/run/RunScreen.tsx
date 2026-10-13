@@ -11,6 +11,7 @@ import { badgeLabels, badgeOf, runSpan } from "../../model/report";
 import { readoutHeight } from "../plant/nodes";
 import { Navigator, ZoomBar } from "../plant/GraphControls";
 import { PlantGraph } from "../plant/PlantGraph";
+import { useScreen } from "../useScreen";
 import { useStore } from "../useStore";
 import { ReportPanel } from "./ReportPanel";
 import { Scrubber } from "./Scrubber";
@@ -60,6 +61,7 @@ function Header({
   readonly navigation: NavigationStore;
   readonly worldId: string;
 }) {
+  const heading = useScreen(`${worldId} · review`);
   const progress =
     state.playback.phase === "loading"
       ? `loading observations · ${state.playback.records.toLocaleString("en-US")}`
@@ -76,7 +78,9 @@ function Header({
         Workspace
       </button>
       <ChevronRight size={14} aria-hidden="true" />
-      <h1 className={styles.here}>{worldId}</h1>
+      <h1 className={styles.here} ref={heading} tabIndex={-1}>
+        {worldId}
+      </h1>
       <Badges state={state} />
       <span className={styles.progress} role="status">
         {progress}

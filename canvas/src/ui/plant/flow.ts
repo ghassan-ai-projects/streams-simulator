@@ -2,7 +2,7 @@ import type { Edge, Node } from "@xyflow/react";
 import type { Reading } from "../../model/playback";
 import type { PlantView, ViewNode } from "../../model/plantView";
 
-type InstanceData = Readonly<{ view: ViewNode; readings: readonly Reading[] | null }>;
+type InstanceData = Readonly<{ view: ViewNode; readings: readonly Reading[] | null; active: boolean }>;
 type FrameData = Readonly<{ title: string; count: number }>;
 
 export type InstanceNodeType = Node<InstanceData, "instance">;
@@ -32,6 +32,7 @@ export function flowNodes(
   view: PlantView,
   selected: string | null,
   readings: ((id: string) => readonly Reading[]) | null = null,
+  active: string | null = null,
 ): FlowNode[] {
   const nodes = view.nodes.map((node): InstanceNodeType | HallNodeType => {
     const box = view.layout.nodes.get(node.id) ?? { x: 0, y: 0, width: 0, height: 0 };
@@ -39,13 +40,12 @@ export function flowNodes(
       id: node.id,
       type: node.instance === null ? "hall" : "instance",
       position: { x: box.x, y: box.y },
-      data: { view: node, readings: readings === null ? null : readings(node.id) },
+      data: { view: node, readings: readings === null ? null : readings(node.id), active: node.id === active },
       selected: node.id === selected,
       draggable: false,
       width: box.width,
       height: box.height,
       style: { width: box.width },
-      ariaLabel: `${node.label}, ${node.detail}`,
     };
   });
   return [...frames(view), ...nodes];
@@ -61,6 +61,6 @@ export function flowEdges(view: PlantView): Edge[] {
     className: `wire family-${edge.family ?? "none"}`,
     label: edge.count > 1 ? `×${String(edge.count)}` : undefined,
     ariaLabel: `${edge.from} to ${edge.to}${edge.count > 1 ? `, ${String(edge.count)} links` : ""}`,
-    focusable: true,
+    focusable: false,
   }));
 }
