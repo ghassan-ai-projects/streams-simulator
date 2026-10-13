@@ -502,3 +502,6 @@ Rules:
 - **Leases**: the lease argument's schema declares `minimum` or `exclusiveMinimum` of at least 0, so a negative lease is refused
   at invocation (R7e-04).
 - **Observation bias**: an absent `noise_scale_at_full` is 1, as the schema documents (R7g-01; before, it silenced the noise).
+- **The operator view** of an effector (nameplate and `sim.effector.list`) is its name, risk class and argument schema with the
+  annotation keywords (`description`, `title`, `$comment`, `examples`) removed at every depth; effector descriptions are
+  director-side text and may name the faults an effector remedies (R7e-09).

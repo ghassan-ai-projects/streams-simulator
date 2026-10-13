@@ -17,10 +17,9 @@ type VerdictSink interface {
 }
 
 type EffectorInfo struct {
-	Name        string         `json:"name"`
-	Description string         `json:"description,omitempty"`
-	ArgsSchema  map[string]any `json:"args_schema"`
-	RiskClass   string         `json:"risk_class"`
+	Name       string         `json:"name"`
+	ArgsSchema map[string]any `json:"args_schema"`
+	RiskClass  string         `json:"risk_class"`
 }
 
 type Nameplate struct {

@@ -14,3 +14,10 @@ P7i lands in steps, one commit each. Domain-spec v0.2 §22 onwards holds the rul
 | Id templates rendering a common id are refused (exact, both orders) | `TestTwoIDTemplatesOverlapWhenOneIDFitsBoth`, `TestAnInstanceSetMayNotRenderAnotherSetsIDs` |
 | A lease argument cannot be negative | `TestALeaseArgumentMustNotAllowANegativeLease` |
 | Shipped worlds unchanged | Behaviour pin: run, trace and replay hashes identical; only `catalog describe` output changed, because explicit zero bounds now survive the model (re-recorded with the v0.1 runtime equivalence digests) |
+
+## Step 2 — operator truth boundary (R7e-09)
+
+| Check | Result |
+|---|---|
+| The operator's effector view carries no description and no schema annotation at any depth; validation keywords stay; the director's schema is untouched | `TestTheOperatorSeesNoEffectorDescriptionOrSchemaAnnotation` |
+| Shipped runs unchanged | Behaviour pin identical |
