@@ -19,9 +19,25 @@ func TestCheckRefusesAMissingSpec(t *testing.T) {
 
 func TestCheckRefusesHoursOutsideTheNominalSpan(t *testing.T) {
 	t.Parallel()
-	for _, hours := range []float64{0, -1, math.NaN(), math.Inf(1), MaxHours + 1} {
+	for _, hours := range []float64{0, -1, math.NaN(), math.Inf(1), maxHours + 1} {
 		if _, err := Check(compile(t, nil), Options{Seed: 1, Hours: hours}); !errors.Is(err, ErrInvalidHours) {
 			t.Errorf("hours %v: error = %v, want ErrInvalidHours", hours, err)
+		}
+	}
+}
+
+func TestTheDefaultNominalDayIsAcceptedAndFailedFollowsTheErrorCount(t *testing.T) {
+	t.Parallel()
+	if _, err := Check(compile(t, nil), Options{Seed: DefaultSeed, Hours: DefaultHours}); err != nil {
+		t.Fatalf("the defaults are refused: %v", err)
+	}
+	cases := []struct {
+		report Report
+		failed bool
+	}{{Report{}, false}, {Report{Warnings: 3}, false}, {Report{Errors: 1, Warnings: 3}, true}}
+	for _, tc := range cases {
+		if got := Failed(&tc.report); got != tc.failed {
+			t.Errorf("Failed(%+v) = %v, want %v", tc.report, got, tc.failed)
 		}
 	}
 }

@@ -15,7 +15,7 @@ type grid struct {
 }
 
 func newGrid(startNS int64, hours float64) (*grid, error) {
-	if !(hours > 0 && hours <= MaxHours) {
+	if !(hours > 0 && hours <= maxHours) {
 		return nil, fmt.Errorf("%w, got %v", ErrInvalidHours, hours)
 	}
 	g := &grid{startNS: startNS, endNS: startNS + int64(hours*float64(hourNS))}

@@ -14,4 +14,7 @@ var ErrNoSpec = layer.ErrNoSpec
 
 var ErrInvalidHours = layer.ErrInvalidHours
 
-const MaxHours = layer.MaxHours
+const (
+	DefaultHours = layer.DefaultHours
+	DefaultSeed  = layer.DefaultSeed
+)

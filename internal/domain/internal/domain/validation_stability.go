@@ -53,10 +53,7 @@ func regimeTau(r *model.Regime) float64 {
 }
 
 func stepSeconds(dyn *model.Dynamics) float64 {
-	if dyn.DTMs <= 0 {
-		return 1
-	}
-	return float64(dyn.DTMs) / 1000
+	return float64(dyn.StepMs()) / 1000
 }
 
 func (checks domainChecks) storeStiffness(dyn *model.Dynamics) error {

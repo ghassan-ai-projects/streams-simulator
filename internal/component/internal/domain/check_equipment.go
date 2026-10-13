@@ -201,5 +201,7 @@ func (l *Library) checkPort(port Port, index *kindIndex, at string, issues *issu
 		issues.addf(at+"/state", "state %q is not declared by the kind", port.State)
 	case !l.vocabulary.hasUnit(portType.UnitFamily, unit):
 		issues.addf(at+"/state", "state %q has unit %q, which is not a unit of family %q fixed by port type %q", port.State, unit, portType.UnitFamily, port.Type)
+	case port.SampleS > 0 && port.Direction != "consumes":
+		issues.addf(at+"/sample_s", "port %q provides; only a consuming port reads by sample", port.Name)
 	}
 }

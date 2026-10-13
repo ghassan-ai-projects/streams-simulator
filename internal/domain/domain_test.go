@@ -81,3 +81,24 @@ func TestNewCatalogFromDirLoadsEveryShippedDomainAndRefusesAnEmptyOne(t *testing
 		t.Fatalf("a missing directory: err = %v, want ErrNotExist", err)
 	}
 }
+
+func TestNewCatalogWithGrowsACatalogAndRefusesAMissingOne(t *testing.T) {
+	t.Parallel()
+	if _, err := domain.NewCatalogWith(nil, shipped(t, "aquaculture-pond")); !errors.Is(err, domain.ErrNoCatalog) {
+		t.Fatalf("error = %v, want ErrNoCatalog", err)
+	}
+	base := domain.NewCatalog([]*domain.Compiled{shipped(t, "rotating-machinery")})
+	grown, err := domain.NewCatalogWith(base, shipped(t, "aquaculture-pond"))
+	if err != nil || len(grown.List("")) != 2 || len(base.List("")) != 1 {
+		t.Fatalf("grown = %v (%v), base %d, want 2 domains and an unchanged base", grown.List(""), err, len(base.List("")))
+	}
+}
+
+func TestSummarizeNamesTheDomainAndCountsItsParts(t *testing.T) {
+	t.Parallel()
+	pond := shipped(t, "aquaculture-pond")
+	got := domain.Summarize(pond)
+	if got.ID != "aquaculture-pond" || got.Digest != pond.Digest || got.Channels != len(pond.ChannelNames()) || got.Faults != pond.FaultCount() || got.Effectors != pond.EffectorCount() {
+		t.Fatalf("Summarize = %+v", got)
+	}
+}

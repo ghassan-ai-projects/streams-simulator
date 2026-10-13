@@ -42,5 +42,5 @@ func (l *Library) Counts() (equipment, instruments int) {
 }
 
 func CustomerDirectories(flags []string, environment string) []string {
-	return layer.CustomerDirectories(flags, environment)
+	return files.CustomerDirectories(flags, environment)
 }

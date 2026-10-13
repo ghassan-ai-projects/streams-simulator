@@ -3,6 +3,7 @@
 # ---------------------------------------------------------------------------
 # Runs on push/PR to main. Pipeline:
 #   make ci-check: function-length → fmt-check → docs-check → tidy → build → vet → lint
+#   → gate-ratchet (no gate cap, allow-list, coverage floor or test hook looser than at the branch point from main)
 #   → test-ci (the suite twice, see scripts/test-ci: once with -race -shuffle -tags simdet,
 #     once without race for coverage, floors checked from that run) → deadcode → vulncheck
 #   → fuzz-soak (the fuzz targets side by side)

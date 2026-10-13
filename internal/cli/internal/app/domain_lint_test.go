@@ -1,10 +1,12 @@
 package app
 
 import (
+	"io"
 	"os"
 	"strings"
 	"testing"
 
+	"github.com/ghassan-ai-projects/streams-simulator/internal/lint"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
@@ -27,6 +29,18 @@ func TestDomainLintReportsANominalDayAndExitsZeroWithoutErrors(t *testing.T) {
 	doc := got.document(t, "domain_lint")
 	if doc["domain"] != pondDomain || doc["hours"] != 2.0 || doc["seed"] != 5.0 || doc["samples"] != 121.0 || doc["errors"] != 0.0 {
 		t.Fatalf("lint = %v, want the pond over 2 h with seed 5, 121 samples and no errors", doc)
+	}
+}
+
+func TestDomainLintDefaultsAreTheLintModulesDefaults(t *testing.T) {
+	t.Parallel()
+	fs := newFlagSet("domain", io.Discard)
+	flags := registerLintFlags(fs)
+	if err := parseFlags(fs, nil); err != nil {
+		t.Fatal(err)
+	}
+	if flags.hours != lint.DefaultHours || flags.seed != lint.DefaultSeed {
+		t.Fatalf("flag defaults = %v h seed %d, want %v h seed %d", flags.hours, flags.seed, float64(lint.DefaultHours), lint.DefaultSeed)
 	}
 }
 

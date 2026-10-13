@@ -21,10 +21,11 @@ type MeasurementPoint struct {
 }
 
 type Port struct {
-	Name      string `json:"name"`
-	Type      string `json:"type"`
-	Direction string `json:"direction"`
-	State     string `json:"state"`
+	Name      string  `json:"name"`
+	Type      string  `json:"type"`
+	Direction string  `json:"direction"`
+	State     string  `json:"state"`
+	SampleS   float64 `json:"sample_s,omitempty"`
 }
 
 type Preset struct {
@@ -101,9 +102,13 @@ type Entry struct {
 	Parameters  map[string]any    `json:"parameters"`
 	Names       []string          `json:"names"`
 	IDTemplate  string            `json:"id_template"`
-	Count       map[string]any    `json:"count"`
+	Count       model.EntityCount `json:"count"`
 	Area        string            `json:"area"`
 	Instruments InstrumentChanges `json:"instruments"`
+}
+
+func (e Entry) instances() model.InstanceSet {
+	return model.InstanceSet{Names: e.Names, IDTemplate: e.IDTemplate, Count: e.Count}
 }
 
 type Connection struct {

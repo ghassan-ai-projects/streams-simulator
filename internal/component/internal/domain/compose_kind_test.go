@@ -155,3 +155,14 @@ func TestComposeRejectsACompositionThatBreaksItsSchema(t *testing.T) {
 	_, err = compose(t, baseLibrary(t), `not json`)
 	wantViolation(t, err, "composition-v0.1")
 }
+
+func TestComposeSummarisesTheDomainItComposed(t *testing.T) {
+	t.Parallel()
+	composed, err := ComposeDomain(baseLibrary(t), []byte(withEquipment(t, kilnEntry(nil))), "test.composition.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if composed.Summary.ID != composed.Domain.Spec.ID || composed.Summary.Digest != composed.Domain.Digest || composed.Summary.Channels == 0 {
+		t.Fatalf("summary = %+v, want the composed domain's identity and counts", composed.Summary)
+	}
+}

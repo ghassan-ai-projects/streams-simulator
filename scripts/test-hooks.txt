@@ -2,6 +2,7 @@
 # Format: <file>:<func>  <reason>. scripts/check-deadcode fails on any other.
 internal/adapter/operations.go:Load  tests build runs from one adapter file; the binary loads directories
 internal/domain/operations.go:LoadAll  tests load the shipped catalog; the binary builds catalogs through NewCatalog's callers
+internal/domain/service.go:NewCatalog  tests build a director catalog without the CLI
 internal/director/service.go:New  acceptance tests drive a director without the MCP transport
 internal/director/operations.go:Director.RunOf  acceptance tests read the run behind a world (director-side only)
 internal/director/internal/app/director.go:Director.RunOf  the facade's delegate for the hook above

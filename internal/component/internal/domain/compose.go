@@ -17,8 +17,9 @@ type composer struct {
 }
 
 type Composed struct {
-	Bytes  []byte
-	Domain *specs.Compiled
+	Bytes   []byte
+	Domain  *specs.Compiled
+	Summary specs.Summary
 }
 
 func ComposeDomain(lib *Library, raw []byte, source string) (*Composed, error) {
@@ -78,7 +79,7 @@ func render(document map[string]any, source string) (*Composed, error) {
 	if err != nil {
 		return nil, fmt.Errorf("component: format the domain composed from %s: %w", source, err)
 	}
-	return &Composed{Bytes: formatted, Domain: compiled}, nil
+	return &Composed{Bytes: formatted, Domain: compiled, Summary: specs.Summarize(compiled)}, nil
 }
 
 func (c *composer) declareAreas() error {

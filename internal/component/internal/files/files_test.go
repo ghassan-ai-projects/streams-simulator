@@ -187,3 +187,12 @@ func TestLoadRefusesABuiltInLibraryItCannotList(t *testing.T) {
 		t.Fatalf("error = %v, want the listing failure naming the built-in library", err)
 	}
 }
+
+func TestCustomerDirectoriesSplitTheEnvironmentOnThePlatformListSeparator(t *testing.T) {
+	t.Parallel()
+	list := strings.Join([]string{"/acme/shared", "", "/acme/site"}, string(filepath.ListSeparator))
+	got := CustomerDirectories([]string{"/acme/lib"}, list)
+	if want := []string{"/acme/lib", "/acme/shared", "/acme/site"}; strings.Join(got, "|") != strings.Join(want, "|") {
+		t.Fatalf("directories = %v, want %v", got, want)
+	}
+}

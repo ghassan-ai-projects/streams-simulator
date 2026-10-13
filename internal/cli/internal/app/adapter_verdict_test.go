@@ -30,7 +30,7 @@ func TestAdapterVerdictFailsOnlyForADeclaredCheckOrForNothingToCheck(t *testing.
 			case tc.wantErr != "" && (err == nil || !strings.Contains(err.Error(), tc.wantErr)):
 				t.Fatalf("err = %v, want %q", err, tc.wantErr)
 			}
-			if outcome, failed := asOutcomeError(err); failed && (outcome.code != "adapter_verify_failed" || outcome.result["adapter"] != "a") {
+			if outcome, failed := asOutcomeError(err); failed && (outcome.code != "adapter_verify_failed" || outcome.result.(map[string]any)["adapter"] != "a") {
 				t.Fatalf("outcome = %+v, want adapter_verify_failed carrying the verification report", outcome)
 			}
 		})

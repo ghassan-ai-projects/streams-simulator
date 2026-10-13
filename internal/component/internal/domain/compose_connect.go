@@ -1,17 +1,21 @@
 package domain
 
-import "strings"
+import (
+	"strings"
+
+	specs "github.com/ghassan-ai-projects/streams-simulator/internal/domain"
+)
 
 type linkSet struct {
 	types   []any
 	links   []any
 	seen    map[string]bool
 	follows []follow
-	edges   map[string][]string
 }
 
 type follow struct {
 	kind, state, link, source string
+	sampleS                   float64
 }
 
 type endpoint struct {
@@ -21,14 +25,11 @@ type endpoint struct {
 }
 
 func (c *composer) connect(entries []*built) (*linkSet, error) {
-	set := &linkSet{seen: map[string]bool{}, edges: map[string][]string{}}
+	set := &linkSet{seen: map[string]bool{}}
 	for index, connection := range c.composition.Connections {
 		if err := c.connectOne(entries, set, index, connection); err != nil {
 			return nil, err
 		}
-	}
-	if err := c.rejectCycle(set); err != nil {
-		return nil, err
 	}
 	return set, c.applyFollows(entries, set)
 }
@@ -73,7 +74,7 @@ func (c *composer) portOf(owner *built, instance, name, direction, at string) (P
 
 func findInstance(entries []*built, instance string) *built {
 	for _, entry := range entries {
-		if hasInstance(entry.entry, instance) {
+		if specs.InstanceRenders(entry.entry.instances(), instance) {
 			return entry
 		}
 	}
@@ -87,8 +88,7 @@ func (s *linkSet) add(c *composer, from, to endpoint, at string) error {
 		s.types = append(s.types, map[string]any{"name": name, "from": from.owner.kindName, "to": to.owner.kindName})
 	}
 	s.links = append(s.links, map[string]any{"type": name, "from": from.instance, "to": to.instance})
-	s.edges[from.owner.kindName] = append(s.edges[from.owner.kindName], to.owner.kindName)
-	return s.record(c, follow{kind: to.owner.kindName, state: to.port.State, link: name, source: from.port.State}, at)
+	return s.record(c, follow{kind: to.owner.kindName, state: to.port.State, link: name, source: from.port.State, sampleS: to.port.SampleS}, at)
 }
 
 func (s *linkSet) record(c *composer, wanted follow, at string) error {
