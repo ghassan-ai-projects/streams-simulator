@@ -644,7 +644,10 @@ director journal as one `kpi.truth` record at the close; the report shows it wit
 
 - **Sampling**: from the entity's birth, on a grid of its kind's shortest alarm step (60 s without an alarm), until its
   retirement; samples run on the world clock in time order with the world's events, after the events of the same instant,
-  and never in a look-ahead copy. A KPI is the mean, minimum and maximum of its samples.
+  and never in a look-ahead copy. A sample at the instant an advance ends is taken by the next advance or at the close, so
+  a command issued at that instant (a fault with the default onset) is in it, as if it had been scripted before the advance.
+  A KPI is the mean, minimum and maximum of its samples. A retired entity's alarms end at its retirement and are not
+  standing at the end.
 - **Alarms** (ISA-18.2 / EEMUA 191): an alarm is active while its code is `1` or `2`; an activation is a sample where it turns
   active after the first sample (unshelving an active alarm annunciates it again). Per alarm: `activations`, `chattering`
   (three activations within 60 s), `active_s`, `longest_active_s` and `active_at_end`. For the alarm system:

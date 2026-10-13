@@ -111,6 +111,9 @@ func (w *World) producerAvailable(entityID, channelName string, ent *Entity, ch 
 }
 
 func (w *World) scheduleNextEmission(entity, channel string, ch *model.Channel, at int64) {
+	if w.unobserved {
+		return
+	}
 	next := w.nextEmission(entity, ch, at)
 	if next > 0 {
 		w.schedule(kindEmission, entity, channel, next, nil)

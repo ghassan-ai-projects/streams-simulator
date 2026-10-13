@@ -61,13 +61,13 @@ func (k *kpiTrack) value() model.KPIValue {
 	return value
 }
 
-func (k *kpiTrack) alarmKPI(endNS int64) model.AlarmKPI {
+func (k *kpiTrack) alarmKPI(endNS int64, retired bool) model.AlarmKPI {
 	active, longest := k.activeNS, k.longestNS
 	if k.activeSince >= 0 {
 		active, longest = active+endNS-k.activeSince, max(longest, endNS-k.activeSince)
 	}
 	return model.AlarmKPI{State: k.state, Priority: k.priority, Activations: len(k.activations), Chattering: chattering(k.activations),
-		ActiveS: float64(active) / secondsPerNS, LongestActiveS: float64(longest) / secondsPerNS, ActiveAtEnd: k.activeSince >= 0}
+		ActiveS: float64(active) / secondsPerNS, LongestActiveS: float64(longest) / secondsPerNS, ActiveAtEnd: k.activeSince >= 0 && !retired}
 }
 
 func chattering(activations []int64) bool {

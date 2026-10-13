@@ -42,4 +42,6 @@ var ErrClockBackwards = layer.ErrClockBackwards
 
 var ErrFaultOnsetInPast = layer.ErrFaultOnsetInPast
 
+var ErrFaultClearInPast = layer.ErrFaultClearInPast
+
 var ErrNoSpec = errors.New("world: a domain spec is required")

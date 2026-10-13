@@ -22,6 +22,8 @@ type FaultInfo struct {
 
 var ErrFaultOnsetInPast = errors.New("world: fault onset is before the clock of a world that has already run")
 
+var ErrFaultClearInPast = errors.New("world: fault clear is before the clock of a world that has already run")
+
 func (w *World) InjectFault(entityID, faultID string, onsetNS int64, params map[string]any) (string, error) {
 	fault := w.Spec.Fault(faultID)
 	if fault == nil {
@@ -70,8 +72,9 @@ func (w *World) ClearFault(faultID string, atNS int64) error {
 	if !ok {
 		return fmt.Errorf("world: unknown fault id %q", faultID)
 	}
-	if atNS <= 0 {
-		atNS = w.clockNS
+	atNS, err := w.admitClear(atNS)
+	if err != nil {
+		return err
 	}
 	if af.clearedNS == 0 || atNS < af.clearedNS {
 		af.clearedNS = atNS
@@ -155,6 +158,16 @@ func (w *World) admitFaultInjection(fault *model.Fault, entityID, faultID string
 		w.schedulePulse(w.faultsByID[id], int64(fault.Onset.DurationS*secondsPerNS))
 	}
 	return id, nil
+}
+
+func (w *World) admitClear(atNS int64) (int64, error) {
+	if atNS <= 0 {
+		return w.clockNS, nil
+	}
+	if atNS < w.clockNS && w.clockNS > w.StartNS {
+		return 0, fmt.Errorf("%w (clear %d, clock %d)", ErrFaultClearInPast, atNS, w.clockNS)
+	}
+	return atNS, nil
 }
 
 func (w *World) admitOnset(onsetNS int64) (int64, error) {

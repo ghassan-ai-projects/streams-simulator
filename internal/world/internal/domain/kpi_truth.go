@@ -17,25 +17,32 @@ func (w *World) KPITruth() *model.KPITruth {
 	if w.kpis == nil || len(w.kpis.order) == 0 {
 		return nil
 	}
+	w.sampleKPIsThrough(w.clockNS)
 	truth := &model.KPITruth{FromNS: w.StartNS, ToNS: w.clockNS, Entities: []model.EntityKPIs{}}
-	var activations []int64
-	for _, id := range w.kpis.order {
-		entity, times := w.kpis.entities[id].truth(id, w.kpis.endOf(id, w.clockNS))
-		truth.Entities = append(truth.Entities, entity)
-		activations = append(activations, times...)
-	}
+	activations := w.collectKPIs(truth)
 	truth.AlarmSystem = alarmSystem(truth.Entities, activations)
 	return truth
 }
 
-func (k *kpiTracker) endOf(id string, clockNS int64) int64 {
-	if done := k.entities[id].doneNS; done >= 0 {
-		return done
+func (w *World) collectKPIs(truth *model.KPITruth) []int64 {
+	var activations []int64
+	for _, id := range w.kpis.order {
+		end, retired := w.kpiEnd(id)
+		entity, times := w.kpis.entities[id].truth(id, end, retired)
+		truth.Entities = append(truth.Entities, entity)
+		activations = append(activations, times...)
 	}
-	return clockNS
+	return activations
 }
 
-func (e *entityKPIs) truth(id string, endNS int64) (model.EntityKPIs, []int64) {
+func (w *World) kpiEnd(id string) (int64, bool) {
+	if ent := w.entities[id]; !ent.alive && ent.retiredNS <= w.clockNS {
+		return ent.retiredNS, true
+	}
+	return w.clockNS, false
+}
+
+func (e *entityKPIs) truth(id string, endNS int64, retired bool) (model.EntityKPIs, []int64) {
 	entity := model.EntityKPIs{EntityID: id}
 	var activations []int64
 	for _, track := range e.tracks {
@@ -43,7 +50,7 @@ func (e *entityKPIs) truth(id string, endNS int64) (model.EntityKPIs, []int64) {
 			entity.KPIs = append(entity.KPIs, track.value())
 			continue
 		}
-		entity.Alarms = append(entity.Alarms, track.alarmKPI(endNS))
+		entity.Alarms = append(entity.Alarms, track.alarmKPI(endNS, retired))
 		activations = append(activations, track.activations...)
 	}
 	return entity, activations

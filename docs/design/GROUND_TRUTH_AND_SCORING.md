@@ -114,8 +114,9 @@ against a single channel's raw σ would put `first_observable_time` at a fiction
 worse, in the too-early direction, which turns correct detections into false `suspicious`
 flags on exactly the domains where reasoning matters most.
 
-How the solver gets its worlds (P7l, findings R7h-01 and R7e-05): it runs a clean and a faulted noiseless world from the
-scenario's own world seed, and advances both to every instant it samples, so the scenario's births, retirements, lease
+How the solver gets its worlds (P7l, findings R7h-01 and R7e-05): it runs a clean and a faulted noiseless world built as
+a run builds its world (the scenario's own world seed and the world identity derived from the domain and that seed, so
+every random substream is the run's), and advances both, clean first, to every instant it samples, so the scenario's births, retirements, lease
 lapses and responder arrivals happen in the oracle as they do in the run; a presence-sensitive link aggregate in a churning
 domain is therefore the run's. A `pulse` fault is judged only at the instants its detector channels record (an
 event-driven channel at the pulse's edges, a periodic channel on its own grid), so a sag that falls between a periodic

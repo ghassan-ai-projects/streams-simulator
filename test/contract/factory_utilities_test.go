@@ -2,6 +2,7 @@ package contract
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"path/filepath"
 	"slices"
@@ -136,10 +137,26 @@ func factoryEvents(t *testing.T, spec *domain.Compiled, track bool) []model.SimE
 	if _, err := w.InjectFault("CT-1", "cooling_tower__fan_failure", model.DefaultStartTimeNS+600e9, nil); err != nil {
 		t.Fatal(err)
 	}
-	if _, _, err := w.Advance(model.DefaultStartTimeNS + hourNS); err != nil {
-		t.Fatal(err)
+	for hour := int64(1); hour <= 6; hour++ {
+		if _, _, err := w.Advance(model.DefaultStartTimeNS + hour*hourNS); err != nil {
+			t.Fatal(err)
+		}
+		factoryCommands(t, w, hour)
 	}
 	return events
+}
+
+func factoryCommands(t *testing.T, w *world.World, hour int64) {
+	t.Helper()
+	at := model.DefaultStartTimeNS + hour*hourNS
+	if _, err := w.InvokeEffector("chiller__set_setpoint", "CH-1", fmt.Sprintf("c-%d", hour), map[string]any{"chiller_id": "CH-1", "setpoint_c": 6.0 + float64(hour%3)}, at+1e9); err != nil {
+		t.Fatal(err)
+	}
+	if hour == 3 {
+		if _, err := w.InjectFault("TX-1", "transformer__cooling_fan_failure", 0, nil); err != nil {
+			t.Fatal(err)
+		}
+	}
 }
 
 func TestTrackingKPITruthChangesNoEmittedEvent(t *testing.T) {

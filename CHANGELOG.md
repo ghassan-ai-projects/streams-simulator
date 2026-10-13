@@ -4,6 +4,17 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **Factory utilities world, scale and KPI truth** (phase P7l). `examples/factory-utilities` is composed from the library only;
+  a 2,032-tag campus runs at 109x real time through the run pipeline. Breaking: `follow` takes `sources: [{link, state}]`
+  (several link types into one state) instead of `link` and `state`. New: `kinds[].kpis`, the sealed `kpi.truth` director
+  record and `truth.kpis` in the report (domain-spec v0.2 §29); `journal_file_digest` and `sealed_journal_file_digest` in the
+  run artifact, checked by the report; framing records in the observer journal; `world.ErrFaultOnsetInPast` and
+  `world.ErrFaultClearInPast` for an onset or clear before the clock of a world that has run. Truth oracle worlds are built
+  as a run builds its world (the scenario's seed and the derived world identity), are advanced in time order (clean before
+  faulted) to every sampled instant, schedule no emission unless a pulse needs recordings, and judge a pulse only at its
+  detector channels' recordings. KPI samples at the instant an advance ends are taken at the next advance or at the close,
+  and a retired entity's alarms end at its retirement.
+
 - **Simulator version 0.3.1** (review P7e). `sim_version` is `0.3.1`: the P6a integration fix changed faulted hidden-state
   numbers, which changes the digest inputs of a faulted run. The behaviour pin is regenerated (only the `run.json` and
   `journal.jsonl` lines change) and gains a day-long run with two faults and three perturbations. The operator endpoint of
