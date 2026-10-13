@@ -1,10 +1,14 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import axe from "axe-core";
 import { describe, expect, it } from "vitest";
+import { SessionStore } from "../app/sessionStore";
 import { ThemeStore } from "../app/themeStore";
+import { WorkspaceStore } from "../app/workspaceStore";
+import { failed } from "../model/bridge";
+import { FakeBridge, failure } from "../test/fakeBridge";
 import { App } from "./App";
 
-function store() {
+function themes() {
   let value: string | null = null;
   return new ThemeStore(
     { read: () => value, write: (_k, v) => (value = v) },
@@ -12,19 +16,51 @@ function store() {
   );
 }
 
-describe("App shell", () => {
-  it("shows the workspace sections, the empty state and no accessibility violation", async () => {
-    const { container } = render(<App themes={store()} />);
-    expect(screen.getByRole("heading", { name: "No workspace connected" })).toBeInTheDocument();
-    expect(screen.getByRole("navigation", { name: "Workspace contents" })).toBeInTheDocument();
-    const results = await axe.run(container);
-    expect(results.violations).toEqual([]);
+function renderApp(bridge: FakeBridge) {
+  return render(<App themes={themes()} session={new SessionStore(bridge)} workspace={new WorkspaceStore(bridge)} />);
+}
+
+describe("App", () => {
+  it("asks an unpaired browser for the pairing code", async () => {
+    renderApp(new FakeBridge());
+    expect(await screen.findByRole("heading", { name: "Pair this browser" })).toBeInTheDocument();
   });
 
-  it("cycles the theme from the top bar and marks the document", () => {
-    render(<App themes={store()} />);
+  it("opens the workspace once paired, with no accessibility violation", async () => {
+    const bridge = new FakeBridge();
+    bridge.paired = true;
+    const { container } = renderApp(bridge);
+    expect(await screen.findByRole("heading", { name: "lab-workspace" })).toBeInTheDocument();
+    expect((await axe.run(container)).violations).toEqual([]);
+  });
+
+  it("explains an unreachable bridge", async () => {
+    const bridge = new FakeBridge();
+    bridge.sessionOutcome = failed(failure("unreachable", 0, "The bridge did not answer."));
+    renderApp(bridge);
+    expect(await screen.findByRole("heading", { name: "The bridge is not reachable" })).toBeInTheDocument();
+    expect(screen.getByText(/The bridge did not answer\./)).toBeInTheDocument();
+  });
+
+  it("cycles the theme from the top bar and marks the document", async () => {
+    const bridge = new FakeBridge();
+    bridge.paired = true;
+    renderApp(bridge);
+    await screen.findByRole("heading", { name: "lab-workspace" });
     fireEvent.click(screen.getByRole("button", { name: "Theme: follow the system" }));
     expect(screen.getByRole("button", { name: "Theme: light" })).toBeInTheDocument();
     expect(document.documentElement.dataset.theme).toBe("light");
+  });
+
+  it("goes from pairing to the workspace", async () => {
+    const bridge = new FakeBridge();
+    renderApp(bridge);
+    const field = await screen.findByLabelText("Pairing code");
+    fireEvent.change(field, { target: { value: "aaaa-bbbb-cccc" } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Pair" }));
+      await Promise.resolve();
+    });
+    expect(await screen.findByRole("heading", { name: "lab-workspace" })).toBeInTheDocument();
   });
 });

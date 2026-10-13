@@ -149,6 +149,11 @@ def alarm_times(run):
     }
 
 
+def world_id(run):
+    with open(os.path.join(run, "trace.jsonl")) as f:
+        return json.loads(f.readline())["world_id"]
+
+
 def human(times):
     return {k.replace("_s", "_time"): (None if v is None else hms(v)) for k, v in times.items()}
 
@@ -215,13 +220,13 @@ def evaluate_section():
     series_t = [now - 3 * HOUR + (i + 1) * 15 * MIN for i in range(12)]
     snaps, _, total, _ = scan_trace(os.path.join(run, "trace.jsonl"), [now] + series_t, factory_keep)
     _, hseries = scan_history(os.path.join(run, "world_state_history.jsonl"), [now],
-                              {"AC-1": ["running"]}, track=["AC-1.running"])
+                              {"AC-1": ["healthy"]}, track=["AC-1.healthy"])
     delivered, dropped = ledger_counts(os.path.join(run, "ledger.jsonl"))
     out = human(alarm_times(probe))
     out.update({
         "now": hms(now),
         "seen_in_final_run": human(alarm_times(run)),
-        "truth_trip_time": optional_hms(first_time(hseries.get("AC-1.running", []), lambda v: v == 0)),
+        "truth_trip_time": optional_hms(first_time(hseries.get("AC-1.healthy", []), lambda v: v == 0)),
         "at_now": snaps[now],
         "series": pick_series(snaps, ["AC-1.discharge_temp"], series_t),
         "counts": {"observed_at_now": total, "delivered": delivered, "dropped": dropped},
@@ -236,7 +241,7 @@ def review_section():
     snaps, _, total, _ = scan_trace(os.path.join(run, "trace.jsonl"), [at], factory_keep)
     times = alarm_times(run)
     hsnaps, hseries = scan_history(os.path.join(run, "world_state_history.jsonl"), [at],
-                                   dict(TRUTH_WANTED, **{"AC-1": ["running"]}), track=["AC-1.running"])
+                                   dict(TRUTH_WANTED, **{"AC-1": ["healthy"]}), track=["AC-1.healthy"])
     delivered, dropped = ledger_counts(os.path.join(run, "ledger.jsonl"))
     ack_cmd = int(open(os.path.join(SCRATCH, "review_ack_s.txt")).read())
     return {
@@ -244,7 +249,7 @@ def review_section():
         "verify": json.load(open(os.path.join(SCRATCH, "review.verify.json"))),
         "alarm_time": hms(times["alarm_s"]), "ack_time": hms(times["ack_s"]), "trip_time": hms(times["trip_s"]),
         "return_time": optional_hms(times["return_s"]),
-        "truth_trip_time": optional_hms(first_time(hseries["AC-1.running"], lambda v: v == 0)),
+        "truth_trip_time": optional_hms(first_time(hseries["AC-1.healthy"], lambda v: v == 0)),
         "ack_commanded_at": hms(ack_cmd),
         "at_0945": snaps[at],
         "truth_0945": truth_pack({k: v for k, v in hsnaps[at].items() if not k.startswith("AC-1")}),
@@ -262,7 +267,7 @@ def campus_section():
         if "/" not in entity:
             return entity == "WX-1"
         hall, name = entity.split("/", 1)
-        return name in ("MM-1", "AC-1") or hall in detail
+        return name in ("MM-1", "AC-1") or hall[1:] in detail
 
     watch = lambda k: k == "h07/AC-1.alarm_state"
     snaps, changes, total, counts = scan_trace(os.path.join(run, "trace.jsonl"), [now], keep, watch,
@@ -294,6 +299,9 @@ def campus_section():
 
 
 def main():
+    if len(sys.argv) >= 3 and sys.argv[1] == "worldid":
+        print(world_id(sys.argv[2]))
+        return
     if len(sys.argv) >= 3 and sys.argv[1] == "alarms":
         print(json.dumps(alarm_times(sys.argv[2])))
         return

@@ -20,6 +20,7 @@ START_04=1767240000000000000
 cd "$ROOT"
 mkdir -p "$SCRATCH/bin" "$DOM" "$COMP" "$RUNS"
 : > "$TIMINGS"
+: > "$SCRATCH/workspace_map.txt"
 
 wants() { [[ " $ONLY " == *" $1 "* ]]; }
 
@@ -132,6 +133,35 @@ if wants campus; then
   run campus -domain factory-utilities-campus-26 -seed 3 -explore -start-time "$START_04" -duration 18750 \
     -fault "h07/AC-1=${AC_FAULT}@12600" -fault "h19/CT-1=${CT_FAULT}@12000"
 fi
+
+echo "== workspace"
+WS="$SCRATCH/workspace"
+rm -rf "$WS"
+mkdir -p "$WS/domains" "$WS/compositions" "$WS/runs"
+cp "$DOM/factory-utilities.domain.json" "$WS/domains/factory-utilities.domain.json"
+cp "$DOM/campus.domain.json" "$WS/domains/factory-utilities-campus-26.domain.json"
+cp examples/compositions/factory-utilities.composition.json "$WS/compositions/factory-utilities.composition.json"
+for name in review evaluate explore twin campus; do
+  [[ -f "$RUNS/$name/run.json" ]] || continue
+  wid="$(python3 "$EXTRACT" worldid "$RUNS/$name")"
+  dest="$WS/runs/$wid"
+  [[ -e "$dest" ]] && dest="$WS/runs/$wid-$name"
+  cp -cR "$RUNS/$name" "$dest" 2> /dev/null || cp -R "$RUNS/$name" "$dest"
+  echo "$name -> runs/$(basename "$dest")" | tee -a "$SCRATCH/workspace_map.txt"
+done
+
+echo "== bridge check"
+mkdir -p "$SCRATCH/ui" && echo '<!doctype html><title>ui</title>' > "$SCRATCH/ui/index.html"
+"$BIN" canvas --workspace "$WS" --ui-dir "$SCRATCH/ui" --addr 127.0.0.1:0 2> "$SCRATCH/bridge.err" > /dev/null &
+BRIDGE_PID=$!
+trap 'kill "$BRIDGE_PID" 2> /dev/null || true' EXIT
+for _ in $(seq 1 50); do grep -q "pairing code" "$SCRATCH/bridge.err" 2> /dev/null && break; sleep 0.2; done
+URL="$(sed -n 's/^canvas: \(http.*\)$/\1/p' "$SCRATCH/bridge.err" | head -1)"
+CODE="$(sed -n 's/^canvas: pairing code \(.*\)$/\1/p' "$SCRATCH/bridge.err")"
+curl -s -c "$SCRATCH/jar" -H "Content-Type: application/json" -d "{\"code\":\"$CODE\"}" "$URL/api/session" > /dev/null
+curl -s -b "$SCRATCH/jar" "$URL/api/workspace" | python3 -m json.tool > "$SCRATCH/workspace.api.json"
+cat "$SCRATCH/workspace.api.json"
+kill "$BRIDGE_PID" 2> /dev/null || true
 
 echo "== done; timings:"
 cat "$TIMINGS"
