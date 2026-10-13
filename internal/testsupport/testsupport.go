@@ -107,3 +107,11 @@ func CoupledDomain() string {
 func LoopDomain() string {
 	return filepath.Join(RepositoryRoot(), "internal", "testsupport", "testdata", "loop-plant.domain.json")
 }
+
+func ComponentsDir() string {
+	return filepath.Join(RepositoryRoot(), "internal", "component", "internal", "files", "builtin")
+}
+
+func PilotComposition() string {
+	return filepath.Join(RepositoryRoot(), "examples", "compositions", "chiller-pilot.composition.json")
+}

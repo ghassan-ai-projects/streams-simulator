@@ -10,11 +10,6 @@ import (
 // build-tagged tools package. A package anywhere else needs the owner's
 // approval (AGENTS.md, MUST 4).
 
-// temporaryPlacementExceptions lists the package directories that sit outside
-// that rule today. The owner moves components/ (the embedded built-in library)
-// under internal/ later; this list never grows and loses its entry then.
-var temporaryPlacementExceptions = []string{"components"}
-
 func TestGoPackagesLiveUnderCmdAndInternal(t *testing.T) {
 	t.Parallel()
 	var directories []string
@@ -23,15 +18,8 @@ func TestGoPackagesLiveUnderCmdAndInternal(t *testing.T) {
 			directories = append(directories, file.pkgDir)
 		}
 	}
-	for _, violation := range placementViolations(directories, temporaryPlacementExceptions) {
+	for _, violation := range placementViolations(directories, nil) {
 		t.Error(violation)
-	}
-}
-
-func TestThePlacementExceptionListNeverGrows(t *testing.T) {
-	t.Parallel()
-	if got := temporaryPlacementExceptions; len(got) != 1 || got[0] != "components" {
-		t.Fatalf("temporaryPlacementExceptions = %v, want only components; a new top-level package needs the owner's approval", got)
 	}
 }
 

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/ghassan-ai-projects/streams-simulator/contracts/component-vocabulary-v0.1.schema.json",
   "title": "component-vocabulary-v0.1",
-  "description": "Units, unit families, port types and ISA-5.1 tag letters a component library uses (COMPONENTS_V0_1.md \u00a76). The built-in vocabulary is components/vocabulary.json; a custom library may add entries in its own file.",
+  "description": "Units, unit families, port types and ISA-5.1 tag letters a component library uses (COMPONENTS_V0_1.md \u00a76). The built-in vocabulary is internal/component/internal/files/builtin/vocabulary.json; a custom library may add entries in its own file.",
   "type": "object",
   "additionalProperties": false,
   "required": [

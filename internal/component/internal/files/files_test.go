@@ -22,7 +22,7 @@ func write(t *testing.T, path, content string) {
 	}
 }
 
-func builtInDir() string { return filepath.Join(testsupport.RepositoryRoot(), "components") }
+func builtInDir() string { return testsupport.ComponentsDir() }
 
 func loadCustomer(dirs ...string) (int, int, error) {
 	library, err := LoadWith(fstest.MapFS{}, dirs)

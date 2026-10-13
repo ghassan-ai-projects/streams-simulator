@@ -12,11 +12,9 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
-func builtInComponents() string { return filepath.Join(testsupport.RepositoryRoot(), "components") }
+func builtInComponents() string { return testsupport.ComponentsDir() }
 
-func pilotComposition() string {
-	return filepath.Join(builtInComponents(), "compositions", "chiller-pilot.composition.json")
-}
+func pilotComposition() string { return testsupport.PilotComposition() }
 
 func invokeWithEnvironment(t *testing.T, environment map[string]string, args ...string) outcome {
 	t.Helper()

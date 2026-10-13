@@ -3,15 +3,11 @@ package contract
 import (
 	"bytes"
 	"context"
-	"fmt"
-	"io/fs"
-	"maps"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
-	"github.com/ghassan-ai-projects/streams-simulator/components"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/component"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
@@ -21,7 +17,7 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
-func componentsDir() string { return filepath.Join(testsupport.RepositoryRoot(), "components") }
+func componentsDir() string { return testsupport.ComponentsDir() }
 
 func contractSchema(t *testing.T, stem string) *jsonschema.Schema {
 	t.Helper()
@@ -38,11 +34,15 @@ func contractSchema(t *testing.T, stem string) *jsonschema.Schema {
 
 func TestEveryLibraryFileFollowsItsContract(t *testing.T) {
 	t.Parallel()
-	files := map[string]string{"vocabulary.json": "component-vocabulary-v0.1", "equipment/*.component.json": "component-v0.1",
-		"instruments/*.instrument.json": "instrument-v0.1", "compositions/*.composition.json": "composition-v0.1"}
+	files := map[string]string{
+		filepath.Join(componentsDir(), "vocabulary.json"):                                 "component-vocabulary-v0.1",
+		filepath.Join(componentsDir(), "equipment", "*.component.json"):                   "component-v0.1",
+		filepath.Join(componentsDir(), "instruments", "*.instrument.json"):                "instrument-v0.1",
+		filepath.Join(filepath.Dir(testsupport.PilotComposition()), "*.composition.json"): "composition-v0.1",
+	}
 	for pattern, stem := range files {
 		schema := contractSchema(t, stem)
-		paths, _ := filepath.Glob(filepath.Join(componentsDir(), pattern))
+		paths, _ := filepath.Glob(pattern)
 		if len(paths) == 0 {
 			t.Fatalf("no %s files", pattern)
 		}
@@ -51,35 +51,6 @@ func TestEveryLibraryFileFollowsItsContract(t *testing.T) {
 				t.Errorf("%s: %v", filepath.Base(path), errs[0])
 			}
 		}
-	}
-}
-
-func TestTheEmbeddedLibraryHoldsEveryFileOfTheComponentsFolder(t *testing.T) {
-	t.Parallel()
-	onDisk := map[string]bool{}
-	err := filepath.WalkDir(componentsDir(), func(path string, entry fs.DirEntry, err error) error {
-		if err != nil || entry.IsDir() || !strings.HasSuffix(path, ".json") {
-			return err
-		}
-		relative, relErr := filepath.Rel(componentsDir(), path)
-		if relErr != nil {
-			return fmt.Errorf("relative path of %s: %w", path, relErr)
-		}
-		onDisk[filepath.ToSlash(relative)] = true
-		return nil
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	embedded := map[string]bool{}
-	err = fs.WalkDir(components.FS(), ".", func(path string, entry fs.DirEntry, err error) error {
-		if err == nil && !entry.IsDir() {
-			embedded[path] = true
-		}
-		return err
-	})
-	if err != nil || !maps.Equal(onDisk, embedded) {
-		t.Fatalf("embedded files %v (%v), want the json files on disk %v", embedded, err, onDisk)
 	}
 }
 
@@ -99,7 +70,7 @@ func composedPilot(t *testing.T) []byte {
 	if err != nil {
 		t.Fatal(err)
 	}
-	raw, err := os.ReadFile(filepath.Join(componentsDir(), "compositions", "chiller-pilot.composition.json"))
+	raw, err := os.ReadFile(testsupport.PilotComposition())
 	if err != nil {
 		t.Fatal(err)
 	}

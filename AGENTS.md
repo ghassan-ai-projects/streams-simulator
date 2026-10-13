@@ -41,8 +41,8 @@ These rules are binding for every agent and every subagent. A change that breaks
    The owner's approval is a commit line `Owner-approved-gate-change: <reason>`.
 4. **No new module, package or top-level folder without a design.** State its kind, layer, responsibility and callers
    ([MODULARITY_STANDARD](governance/MODULARITY_STANDARD.md)) before writing it. Go packages live under `cmd/` and
-   `internal/` (plus the root `doc.go`); anything else needs owner approval (`TestGoPackagesLiveUnderCmdAndInternal`; `components/` is the one
-   temporary exception).
+   `internal/` (plus the root `doc.go`); anything else needs owner approval (`TestGoPackagesLiveUnderCmdAndInternal`). Data a module
+   embeds lives in that module's edge package (the built-in component library is in `internal/component/internal/files/builtin`).
 5. **Delegated work is reviewed at the boundary.** The agent that delegates reviews every diff its subagents make to
    `test/architecture`, `scripts/`, `AGENTS.md` and module facades before merging. Each PR lists every gate change and its
    reason: run `git diff main -- test/architecture scripts` and justify each line.

@@ -1,6 +1,6 @@
 # P7k catalog spec (working brief)
 
-Authoring brief for the built-in library under `components/`. Rules: [COMPONENTS_V0_1](../design/COMPONENTS_V0_1.md), world
+Authoring brief for the built-in library under `internal/component/internal/files/builtin/`. Rules: [COMPONENTS_V0_1](../design/COMPONENTS_V0_1.md), world
 forms: domain-spec v0.2 (§13 stores, §16 schedules and site clock, §18 supervisory, §21 links and `follow`, §23 `curve` /
 `product` / `sum`, §24 `pid`, §25 observation faults, §26 `alarm`). Fidelity goal: decisions matter correctly, not engineering
 accuracy. Units SI-ish as in `components/vocabulary.json` (extend the vocabulary when a family is missing).

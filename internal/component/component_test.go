@@ -33,7 +33,7 @@ func TestTheBuiltInLibraryListsItsEquipmentAndInstruments(t *testing.T) {
 
 func builtInFileCounts(t *testing.T) (equipment, instruments int) {
 	t.Helper()
-	root := filepath.Join(testsupport.RepositoryRoot(), "components")
+	root := testsupport.ComponentsDir()
 	equipmentFiles, err := filepath.Glob(filepath.Join(root, "equipment", "*.component.json"))
 	if err != nil {
 		t.Fatal(err)
@@ -58,7 +58,7 @@ func TestTheBuiltInLibraryDescribesAnEntryByItsReferenceOrItsHighestMajor(t *tes
 
 func TestComposeWritesTheBuiltInPilotAsADomain(t *testing.T) {
 	t.Parallel()
-	raw, err := os.ReadFile(filepath.Join(testsupport.RepositoryRoot(), "components", "compositions", "chiller-pilot.composition.json"))
+	raw, err := os.ReadFile(testsupport.PilotComposition())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -103,8 +103,8 @@ func TestTheBuiltInLibraryLoadsWithoutAnyDirectoryAndIgnoresEmptyEntries(t *test
 		if err != nil {
 			t.Fatalf("%s: %v", name, err)
 		}
-		wantEquipment, _ := filepath.Glob(filepath.Join(testsupport.RepositoryRoot(), "components", "equipment", "*.component.json"))
-		wantInstruments, _ := filepath.Glob(filepath.Join(testsupport.RepositoryRoot(), "components", "instruments", "*.instrument.json"))
+		wantEquipment, _ := filepath.Glob(filepath.Join(testsupport.ComponentsDir(), "equipment", "*.component.json"))
+		wantInstruments, _ := filepath.Glob(filepath.Join(testsupport.ComponentsDir(), "instruments", "*.instrument.json"))
 		if equipment, instruments := library.Counts(); equipment != len(wantEquipment) || instruments != len(wantInstruments) {
 			t.Errorf("%s: library = %d equipment, %d instruments, want %d and %d", name, equipment, instruments, len(wantEquipment), len(wantInstruments))
 		}
@@ -114,7 +114,7 @@ func TestTheBuiltInLibraryLoadsWithoutAnyDirectoryAndIgnoresEmptyEntries(t *test
 func TestACustomerDirectoryCannotUseTheStreamsimNamespace(t *testing.T) {
 	t.Parallel()
 	customer := t.TempDir()
-	raw, err := os.ReadFile(filepath.Join(testsupport.RepositoryRoot(), "components", "equipment", "ahu.component.json"))
+	raw, err := os.ReadFile(filepath.Join(testsupport.ComponentsDir(), "equipment", "ahu.component.json"))
 	if err != nil {
 		t.Fatal(err)
 	}

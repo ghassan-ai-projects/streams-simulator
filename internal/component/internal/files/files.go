@@ -4,6 +4,7 @@
 package files
 
 import (
+	"embed"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -11,14 +12,20 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/ghassan-ai-projects/streams-simulator/components"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/component/internal/domain"
 )
 
 const vocabularyFile = "vocabulary.json"
 
+//go:embed builtin/vocabulary.json builtin/equipment/*.component.json builtin/instruments/*.instrument.json
+var builtInLibrary embed.FS
+
 func Load(customerDirs []string) (*domain.Library, error) {
-	return LoadWith(components.FS(), customerDirs)
+	library, err := fs.Sub(builtInLibrary, "builtin")
+	if err != nil {
+		return nil, fmt.Errorf("component: built-in library: %w", err)
+	}
+	return LoadWith(library, customerDirs)
 }
 
 func LoadWith(builtIn fs.FS, customerDirs []string) (*domain.Library, error) {

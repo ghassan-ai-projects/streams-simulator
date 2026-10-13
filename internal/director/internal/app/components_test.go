@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -16,7 +15,7 @@ import (
 
 func pilotComposition(t *testing.T) map[string]any {
 	t.Helper()
-	raw, err := os.ReadFile(filepath.Join(testsupport.RepositoryRoot(), "components", "compositions", "chiller-pilot.composition.json"))
+	raw, err := os.ReadFile(testsupport.PilotComposition())
 	if err != nil {
 		t.Fatal(err)
 	}

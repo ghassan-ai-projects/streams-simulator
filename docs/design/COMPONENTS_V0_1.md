@@ -7,8 +7,8 @@
   [`instrument-v0.1`](../../contracts/instrument-v0.1.schema.json),
   [`composition-v0.1`](../../contracts/composition-v0.1.schema.json),
   [`component-vocabulary-v0.1`](../../contracts/component-vocabulary-v0.1.schema.json).
-- **Data**: built-in files under [`components/`](../../components/), embedded in the binary by the Go package `components`; customer libraries in directories outside the repository.
-- **Worked example**: [`components/compositions/chiller-pilot.composition.json`](../../components/compositions/chiller-pilot.composition.json)
+- **Data**: built-in files under [`internal/component/internal/files/builtin/`](../../internal/component/internal/files/builtin/), embedded in the binary by the Go package `components`; customer libraries in directories outside the repository.
+- **Worked example**: [`examples/compositions/chiller-pilot.composition.json`](../../examples/compositions/chiller-pilot.composition.json)
   composes to [`examples/chiller-pilot.domain.json`](../../examples/chiller-pilot.domain.json) by the rules below.
 
 A **component** is reusable equipment: the process it models (a domain-spec v0.2 kind without channels), the points where it can
@@ -23,7 +23,7 @@ writes an ordinary domain (copy-in), so a world never depends on the library at 
 - `version` is a major number. A change that can alter a composed domain is a new major; a reference is `streamsim/chiller@1`.
 - A library is a directory holding `equipment/*.component.json`, `instruments/*.instrument.json` and optionally
   `vocabulary.json`. The built-in library is embedded in the binary (the Go package `components` embeds `vocabulary.json`,
-  `equipment/`, `instruments/` and `compositions/` of the repository's `components/` folder), so it is always loaded first and
+  `equipment/`, `instruments/` and `compositions/` of the repository's `internal/component/internal/files/builtin/` folder), so it is always loaded first and
   never depends on the working directory. Each customer directory follows, in order: `--components-dir` is repeatable and
   `STREAMSIM_COMPONENTS_DIRS` (a path list) is appended after the flags; empty entries are ignored. With no customer directory
   the library is the built-in one. The pair (id, version) is the key: the same pair in two places is an error, whatever the
@@ -189,4 +189,4 @@ Every part of the library is data, so a user adds equipment, instruments and voc
   consumer must not read. A composed effector carries no description, and its `args_schema` loses the annotation keywords (`description`, `title`,
   `$comment`, `examples`) at every depth, as the operator view does (domain spec section 22).
 - The same composition with the same library files gives the same domain bytes: no directory listing order, environment variable
-  or clock enters compose. A gate keeps every id under `components/` in the `streamsim` namespace.
+  or clock enters compose. A gate keeps every id under `internal/component/internal/files/builtin/` in the `streamsim` namespace.

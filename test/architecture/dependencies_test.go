@@ -18,9 +18,8 @@ const modulePrefix = "github.com/ghassan-ai-projects/streams-simulator/"
 var packageDependencies = map[string]string{
 	".":                           "",
 	"tools":                       "",
-	"components":                  "",
 	"cmd/streamsim":               "cli",
-	"internal/component":          "canonical components domain jsonschema jsonvalue kernel model schemas",
+	"internal/component":          "canonical domain jsonschema jsonvalue kernel model schemas",
 	"internal/cli":                "adapter component device deviceworld domain grading kernel lint mcp model plantwire refconsumer release report run suite",
 	"internal/director":           "adapter audit component domain model run score truth world",
 	"internal/mcp":                "director model schemas",

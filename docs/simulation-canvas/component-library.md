@@ -17,7 +17,7 @@ choose how they are instrumented, connect them, and get a valid, realistic, dete
 
 | # | Question | Decision | Why |
 |---|---|---|---|
-| D1 | Where the library lives | Go repository, as data files with their own schema; built-in components in `components/`, customer components in directories outside the repository | One source for CLI, MCP, plant wire and UI; Go validation and tests apply; customer data never enters GitHub |
+| D1 | Where the library lives | Go repository, as data files with their own schema; built-in components in `internal/component/internal/files/builtin/`, customer components in directories outside the repository | One source for CLI, MCP, plant wire and UI; Go validation and tests apply; customer data never enters GitHub |
 | D2 | What a component is | Two catalogs: **equipment** (the process: states, dynamics, actions, faults, measurement points, ports) and **instruments** (the sensor: value type, unit family, range, noise, drift, cadence, availability, instrument faults) | Factories differ in instrumentation more than in equipment; a user picks equipment, then accepts or changes its default instruments |
 | D3 | How a component enters a world | **Copy-in**: composing writes concrete `kinds`, `instances` and `links` into an ordinary domain file, with a `provenance` record (component id, version, digest, preset, parameters) | Domains stay self-contained; digests, replay and validation are unchanged; a domain without the library still loads |
 | D4 | How components are sized | **Presets plus bounded parameters**, substituted at declared JSON pointers; no arithmetic | The forbidden list excludes an expression language; presets (`small`, `medium`, `large`) carry consistent derived values, parameters cover the few free choices (setpoint, range, count) |
@@ -30,7 +30,7 @@ choose how they are instrumented, connect them, and get a valid, realistic, dete
 ## 3. Shapes
 
 The contracts and their rules are [COMPONENTS_V0_1](../design/COMPONENTS_V0_1.md) (phase P7g); the worked example is
-[`components/compositions/chiller-pilot.composition.json`](../../components/compositions/chiller-pilot.composition.json) and the
+[`examples/compositions/chiller-pilot.composition.json`](../../examples/compositions/chiller-pilot.composition.json) and the
 domain it composes to, [`examples/chiller-pilot.domain.json`](../../examples/chiller-pilot.domain.json).
 
 ## 4. Architecture
@@ -86,7 +86,7 @@ They change the design as follows.
 | Tag naming, hierarchy and quality codes | P7g adds ISA-95 site/area/unit and ISA-5.1 tags as instance metadata; quality codes on events (R7d-01) land with the instrument faults in P7i |
 | Scale | P7l adds a 2,000-tag fixture and a speed budget |
 | Prerequisites | R6a-01 and R7e-04 (stability validated by the validator), R7e-09 (descriptions to the operator) land before the catalog |
-| Provenance and determinism | Provenance records component id, version and library digest; compose depends on no directory order or environment variable; duplicate ids across directories are an error; a gate keeps customer namespaces out of `components/` |
+| Provenance and determinism | Provenance records component id, version and library digest; compose depends on no directory order or environment variable; duplicate ids across directories are an error; a gate keeps customer namespaces out of `internal/component/internal/files/builtin/` |
 | Pilot first | The module phase composes one chiller with three instruments end to end before the catalog |
 
 ## 7. Plan (before P8a)

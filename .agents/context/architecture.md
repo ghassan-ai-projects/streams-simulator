@@ -46,7 +46,7 @@ The accepted architecture is summarized in [`documentation/architecture/`](../..
 - `internal/component`: the component library and `Compose`: load the embedded built-in library, then customer directories (`NewLibrary`), of equipment, instruments and vocabulary, check them, list and describe them, and compose a composition into an ordinary domain; facade over `internal/component/internal/domain` (library rules, targets, presets, instruments, ports, links) and a `files` edge; composes `domain` for validation and formatting
 - `internal/model`: shared simulator records and strict JSON decoding
 - `internal/jsonschema`: core schema compilation and validation
-- `components`: the built-in component library (vocabulary, equipment, instruments, compositions) embedded as an `fs.FS`; imports nothing internal
+- the built-in component library (vocabulary, equipment, instruments) is data in `internal/component/internal/files/builtin`, embedded by that files edge; example compositions are in `examples/compositions`
 - `internal/schemas`: embedded contract sources
 - `internal/canonical`: canonical JSON encoding and digest operations
 - `internal/randutil`: seeded random streams
