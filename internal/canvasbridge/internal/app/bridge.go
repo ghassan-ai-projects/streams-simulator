@@ -1,0 +1,90 @@
+// Package app holds the use cases of the canvas bridge: pair a browser, list
+// the workspace, read and write its files, run a registered action through the
+// director or a streamsim command, follow a run's observer journal and watch
+// the workspace for changes. It decides nothing itself: the rules are in the
+// domain layer and every effect goes through an edge.
+package app
+
+import (
+	"context"
+	"encoding/json"
+	"sync"
+	"time"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/canvasbridge/internal/domain"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/canvasbridge/internal/files"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/canvasbridge/internal/process"
+)
+
+type Director interface {
+	Call(ctx context.Context, tool string, args map[string]any) (process.ToolResult, error)
+	Close() error
+}
+
+type Edges struct {
+	Workspace     *files.Workspace
+	Tick          func(every time.Duration) (<-chan time.Time, func())
+	StartDirector func(ctx context.Context) (Director, error)
+	RunCommand    func(ctx context.Context, argv []string) (process.CommandResult, error)
+	NewSession    func() (string, error)
+}
+
+type Settings struct {
+	WorkspaceDir  string
+	AdaptersDir   string
+	ComponentDirs []string
+	PairingCode   string
+}
+
+type Bridge struct {
+	edges    Edges
+	settings Settings
+	mu       sync.Mutex
+	pairing  *domain.Pairing
+	director Director
+	catalog  string
+	worlds   map[string]bool
+}
+
+func New(edges Edges, settings Settings) *Bridge {
+	return &Bridge{edges: edges, settings: settings, pairing: domain.NewPairing(settings.PairingCode), worlds: map[string]bool{}}
+}
+
+func (b *Bridge) Pair(code string) (string, error) {
+	session, err := b.edges.NewSession()
+	if err != nil {
+		return "", err
+	}
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if err := b.pairing.Pair(code, session); err != nil {
+		return "", err
+	}
+	return session, nil
+}
+
+func (b *Bridge) Admits(session string) bool {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.pairing.Admits(session)
+}
+
+func (b *Bridge) Actions() []domain.Action {
+	return domain.Actions()
+}
+
+func (b *Bridge) Close() error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.director == nil {
+		return nil
+	}
+	return b.director.Close()
+}
+
+func decode(raw []byte) (json.RawMessage, error) {
+	if !json.Valid(raw) {
+		return nil, &domain.Failure{Code: "command_failed", Message: "streamsim printed no JSON document"}
+	}
+	return json.RawMessage(raw), nil
+}
