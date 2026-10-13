@@ -20,6 +20,7 @@ type session struct {
 	build  Build
 	stderr io.Writer
 	now    func() time.Time
+	getenv func(string) string
 }
 
 type handler func(s *session, args []string) (any, error)
@@ -32,6 +33,7 @@ type command struct {
 var commands = map[string]command{
 	"catalog":     {run: cmdCatalog},
 	"domain":      {run: cmdDomain},
+	"component":   {run: cmdComponent},
 	"adapter":     {run: cmdAdapter},
 	"run":         {run: cmdRun},
 	"replay":      {run: cmdReplay},
@@ -52,7 +54,7 @@ func Main(args []string, version, commit string) int {
 }
 
 func Run(args []string, build Build, env process.Env) int {
-	s := &session{build: build, stderr: env.Stderr, now: env.Now}
+	s := &session{build: build, stderr: env.Stderr, now: env.Now, getenv: env.Getenv}
 	if len(args) < 2 {
 		s.usage()
 		return s.fail(env.Stdout, "", usageExit{code: 2, message: "a command is required"})
@@ -131,6 +133,9 @@ Commands:
   catalog list|describe|coverage        Installed domains and axis coverage
   domain validate <path>                Validate a domain spec against the contract
   domain format <path>                  Rewrite a domain spec in canonical formatting
+  domain compose <composition> [--out]  Compose a plant from the component library into a domain
+  component list|show <ref>|validate    The component library: equipment, instruments, vocabulary
+                                        (--components-dir, repeatable; STREAMSIM_COMPONENTS_DIRS)
   adapter list|verify [path]            Installed adapters; verify one against its golden
   run [--scenario <file>]               One-shot run from flags or a scenario file
   scenario from-run <run.json> --out f  Export the scenario that reproduces a run

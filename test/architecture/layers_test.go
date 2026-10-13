@@ -48,6 +48,7 @@ var packages = map[string]packageInfo{
 	"internal/domain":             {kindEdgeCore, 3},
 	"internal/journal":            {kindEdgeCore, 3},
 	"internal/adapter":            {kindEdgeCore, 3},
+	"internal/component":          {kindEdgeCore, 4},
 	"internal/world":              {kindCore, 4},
 	"internal/perturb":            {kindCore, 4},
 	"internal/run":                {kindEdgeCore, 5},

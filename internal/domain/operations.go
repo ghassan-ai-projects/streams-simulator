@@ -49,3 +49,7 @@ func (c *Catalog) Coverage() CoverageReport {
 	}
 	return c.catalog.Coverage()
 }
+
+func Render(c *Compiled) ([]byte, error) {
+	return layer.Format(c)
+}

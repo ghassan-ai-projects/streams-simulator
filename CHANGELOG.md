@@ -4,6 +4,16 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **Component module, compose and CLI** (`docs/design/COMPONENTS_V0_1.md`; phase P7j). `internal/component` loads component
+  libraries (equipment, instruments, vocabulary; built-in directory first, customer directories after, the `streamsim/`
+  namespace reserved to the first) with every load-time check of the spec, and composes a composition into an ordinary domain:
+  presets then parameters, keyed targets, instruments with unit conversion and span scaling, instrument faults including the
+  observation forms (`stuck`, `freeze`, `dropout`, `scale`, `noise`), qualified names, provenance digests, site and areas, and
+  connections as link types and links with `follow` (aggregate `sum`) on the consuming state. New commands `streamsim component
+  list|show|validate` and `streamsim domain compose`, each with repeatable `--components-dir` and `STREAMSIM_COMPONENTS_DIRS`;
+  new error codes `component_invalid`, `composition_invalid`. `examples/chiller-pilot.domain.json` is now what compose writes
+  (the air-handling link carries the load into the small chiller).
+
 - **Plant wire reference host, journal and CLI** (phase P7d). `streamsim plantwire host` is a minimal conformant host
   (owner-only socket, handshake checks and refusal, commissioned inventory with quarantine, rebirth on a gap, historical data
   kept out of live values, scripted commands, verification by observation, a configurable barrier delay); `streamsim plantwire

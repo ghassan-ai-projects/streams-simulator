@@ -71,6 +71,7 @@ The documented shape (see [docs/design/TECHNICAL_DESIGN.md](docs/design/TECHNICA
 - `internal/journal` - the run journal (`run-journal-v0.1`): observer and director JSON Lines streams written while a run happens
 - `internal/report` - the run report (`run-report-v0.1`): one deterministic JSON or Markdown document summarising a run folder (composes `run`, `journal` and `grading`)
 - `internal/grading` - offline grading of a finished run: loads the published files, replays the artifact for its effector calls and scores with `score` (composes `run` and `score`, which do not know each other)
+- `internal/component` - the component library (equipment, instruments, vocabulary as data) and `Compose`, which writes a composition as an ordinary domain; composes `domain` for validation and formatting
 - `internal/release` - the release manifest: file digests, canonical body, ed25519 signature, writing
 - `internal/truth` - sealed ground truth and independent analytic solver
 - `internal/score` - online/offline scoring policies

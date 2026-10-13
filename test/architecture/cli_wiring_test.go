@@ -50,6 +50,7 @@ var cliAppFiles = map[string]cliFile{
 	"failures.go":          {"failure document", nil, 80},
 	"run_flag_issues.go":   {"failure document", []string{"internal/model"}, 65},
 	"catalog.go":           {"command: catalog, domain and adapter", []string{"internal/adapter", "internal/domain", "internal/model"}, 220},
+	"component.go":         {"command: component library and domain compose", []string{cliF, "internal/component", "internal/domain"}, 150},
 	"device.go":            {"command: device serve", []string{"internal/device", "internal/deviceworld"}, 100},
 	"manifest.go":          {"command: manifest", []string{"internal/release"}, 40},
 	"mcp.go":               {"command: mcp", []string{"internal/mcp"}, 60},

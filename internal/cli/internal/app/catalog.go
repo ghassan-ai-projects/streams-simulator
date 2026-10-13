@@ -55,7 +55,7 @@ func verbArity(verb string) (int, bool) {
 	switch verb {
 	case "list", "coverage":
 		return 0, true
-	case "describe", "validate", "format", "verify", "from-run":
+	case "describe", "validate", "format", "verify", "from-run", "show":
 		return 1, true
 	}
 	return 0, false
@@ -85,6 +85,9 @@ func describeCatalogDomain(cat *domain.Catalog, args []string) (any, error) {
 }
 
 func cmdDomain(s *session, args []string) (any, error) {
+	if len(args) > 0 && args[0] == "compose" {
+		return cmdCompose(s, args[1:])
+	}
 	fs := newFlagSet("domain", s.stderr)
 	verb, err := parseCommandVerb(fs, args, "")
 	if err != nil {
@@ -100,7 +103,7 @@ func domainVerb(verb string, args []string) (any, error) {
 	case verb == "format" && len(args) > 0:
 		return formatDomainFile(args[0])
 	case verb == "" || verb == "validate" || verb == "format":
-		return nil, usagef("usage: streamsim domain validate|format <path>")
+		return nil, usagef("usage: streamsim domain validate|format <path> | compose <composition>")
 	}
 	return nil, usagef("domain: unknown verb %q", verb)
 }

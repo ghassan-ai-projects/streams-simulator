@@ -23,6 +23,18 @@
       "$ref": "#/$defs/domain_format"
     },
     {
+      "$ref": "#/$defs/domain_compose"
+    },
+    {
+      "$ref": "#/$defs/component_list"
+    },
+    {
+      "$ref": "#/$defs/component_show"
+    },
+    {
+      "$ref": "#/$defs/component_validate"
+    },
+    {
       "$ref": "#/$defs/adapter_list"
     },
     {
@@ -92,6 +104,8 @@
                 "adapter_invalid",
                 "scenario_invalid",
                 "artifact_invalid",
+                "component_invalid",
+                "composition_invalid",
                 "replay_mismatch",
                 "adapter_verify_failed",
                 "io_failed",
@@ -108,6 +122,7 @@
                 "device_failed",
                 "scenario_failed",
                 "report_failed",
+                "component_failed",
                 "plantwire_failed"
               ]
             },
@@ -717,6 +732,157 @@
               }
             }
           }
+        }
+      }
+    },
+    "component_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "kind",
+        "title",
+        "class",
+        "tags",
+        "digest",
+        "file"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "kind": {
+          "enum": [
+            "equipment",
+            "instrument"
+          ]
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "class": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "file": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "component_list": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "components"
+      ],
+      "properties": {
+        "components": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/component_summary"
+          }
+        }
+      }
+    },
+    "component_show": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "entry",
+        "document"
+      ],
+      "properties": {
+        "entry": {
+          "$ref": "#/$defs/component_summary"
+        },
+        "document": {
+          "type": "object"
+        }
+      }
+    },
+    "component_validate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "valid",
+        "directories",
+        "equipment",
+        "instruments"
+      ],
+      "properties": {
+        "valid": {
+          "const": true
+        },
+        "directories": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "equipment": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "instruments": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "domain_compose": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "digest",
+        "channels",
+        "faults",
+        "effectors"
+      ],
+      "description": "The composed domain's summary, as domain validate reports it; composed names the file written by --out, otherwise domain carries the composed spec.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "channels": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "faults": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "effectors": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "composed": {
+          "type": "string",
+          "minLength": 1
+        },
+        "domain": {
+          "type": "object"
         }
       }
     }

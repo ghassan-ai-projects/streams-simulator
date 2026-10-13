@@ -75,3 +75,16 @@ func compactJSON(t *testing.T, raw []byte) []byte {
 	}
 	return out.Bytes()
 }
+
+func TestRenderGivesTheCanonicalLayoutOfACompactDomainWithoutTouchingTheDigest(t *testing.T) {
+	t.Parallel()
+	loaded := shipped(t, "k8s-cluster")
+	compact, err := domain.Parse(compactJSON(t, loaded.Raw), "compact.domain.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	rendered, err := domain.Render(compact)
+	if err != nil || !bytes.Equal(rendered, loaded.Raw) || compact.Digest != loaded.Digest {
+		t.Fatalf("Render = %d bytes (%v), want the shipped layout of %d bytes with the same digest", len(rendered), err, len(loaded.Raw))
+	}
+}
