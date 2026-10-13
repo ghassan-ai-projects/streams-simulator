@@ -50,7 +50,7 @@ func checkFactoryReport(t *testing.T, b *binary, dir string) {
 	truth, _ := report["truth"].(map[string]any)
 	faults, _ := truth["faults"].([]any)
 	if report["truth_unavailable"] != nil || len(faults) != 2 {
-		t.Fatalf("report truth = %v (%v), want the two injected faults of the run it summarises", truth, report["truth_unavailable"])
+		t.Fatalf("report truth = %v (%v), want the two injected faults of the run it summarizes", truth, report["truth_unavailable"])
 	}
 	for i, want := range []string{"cooling_tower__fan_failure", "air_receiver__drain_stuck_open"} {
 		if got := faults[i].(map[string]any)["fault"]; got != want {

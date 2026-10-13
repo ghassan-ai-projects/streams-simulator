@@ -37,9 +37,9 @@ writes an ordinary domain (copy-in), so a world never depends on the library at 
 | `id`, `version`, `title`, `description` | Identity; descriptions are library text and are never copied into a domain |
 | `class` | Equipment class path, ISO 14224 where one exists: `static/heat_exchanger/chiller`; first segment open |
 | `tags`, `icon` | Search and display hints |
-| `kind` | A domain-spec v0.2 kind without `name` and `channels`: `state`, `dynamics`, `flows`, `system`, `faults`, `effectors`, `boundaries` |
+| `kind` | A domain-spec v0.2 kind without `name` and `channels`: `state`, `dynamics`, `flows`, `system`, `faults`, `effectors`, `boundaries`, `kpis` (the KPI states a run seals the truth of, domain-spec v0.2 §29) |
 | `measurement_points[]` | `{name, state, unit_family, range, tag, default_instrument, optional?}` |
-| `ports[]` | `{name, type, direction: provides|consumes, state}` (section 5) |
+| `ports[]` | `{name, type, direction: provides|consumes, state, sample_s?}` (section 5); a consuming port with `sample_s` reads by sample and closes a loop (domain-spec v0.2 §28) |
 | `presets`, `default_preset` | Complete named variants; `default_preset` is required when `presets` exists |
 | `parameters[]` | `{name, title, unit?, type: number|integer|enum, min?, max?, values?, cases?, default, targets?}` |
 

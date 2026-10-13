@@ -24,10 +24,6 @@ type stateValue struct {
 	alarm      *alarmState
 }
 
-func (w *World) naturalValue(ent *Entity, stateName string, t int64) float64 {
-	return w.naturalOf(ent, stateName, ent.states[stateName], t)
-}
-
 func (w *World) naturalOf(ent *Entity, stateName string, s *stateValue, t int64) float64 {
 	if s == nil {
 		return 0

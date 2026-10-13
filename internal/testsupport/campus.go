@@ -16,14 +16,26 @@ func Campus(composition []byte, halls int, shared ...string) ([]byte, error) {
 	if err := json.Unmarshal(composition, &doc); err != nil {
 		return nil, fmt.Errorf("testsupport: campus: %w", err)
 	}
+	newCampus(halls, shared).replicate(doc)
+	raw, err := json.Marshal(doc)
+	if err != nil {
+		return nil, fmt.Errorf("testsupport: campus: %w", err)
+	}
+	return raw, nil
+}
+
+func newCampus(halls int, shared []string) campus {
 	c := campus{halls: halls, shared: map[string]bool{}}
 	for _, name := range shared {
 		c.shared[name] = true
 	}
-	doc["id"], doc["title"] = fmt.Sprintf("%v-campus-%d", doc["id"], halls), fmt.Sprintf("%v campus of %d halls", doc["title"], halls)
+	return c
+}
+
+func (c campus) replicate(doc map[string]any) {
+	doc["id"], doc["title"] = fmt.Sprintf("%v-campus-%d", doc["id"], c.halls), fmt.Sprintf("%v campus of %d halls", doc["title"], c.halls)
 	c.replicateEquipment(doc["equipment"].([]any))
 	doc["connections"] = c.replicateConnections(doc["connections"].([]any))
-	return json.Marshal(doc)
 }
 
 func (c campus) hallName(hall int, name string) string {
