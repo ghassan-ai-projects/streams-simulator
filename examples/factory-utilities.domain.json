@@ -1165,7 +1165,8 @@
           "idempotency_window_s": 3600,
           "risk_class": "medium"
         }
-      ]
+      ],
+      "kpis": ["specific_power", "cycle_time", "scrap_pct"]
     },
     {
       "name": "cnc",
@@ -1755,7 +1756,8 @@
           "idempotency_window_s": 3600,
           "risk_class": "medium"
         }
-      ]
+      ],
+      "kpis": ["specific_power", "cycle_time", "scrap_pct"]
     },
     {
       "name": "packaging_line",
@@ -2348,7 +2350,8 @@
           "idempotency_window_s": 3600,
           "risk_class": "medium"
         }
-      ]
+      ],
+      "kpis": ["specific_power", "cycle_time", "scrap_pct"]
     },
     {
       "name": "ahu",
@@ -3401,7 +3404,8 @@
           "lease": {"arg": "duration_s", "fallback": "revert"},
           "risk_class": "medium"
         }
-      ]
+      ],
+      "kpis": ["specific_power", "load_frac"]
     },
     {
       "name": "compressor_lag",
@@ -4053,7 +4057,8 @@
           "lease": {"arg": "duration_s", "fallback": "revert"},
           "risk_class": "medium"
         }
-      ]
+      ],
+      "kpis": ["specific_power", "load_frac"]
     },
     {
       "name": "air_receiver",
@@ -4960,7 +4965,8 @@
           "lease": {"arg": "duration_s", "fallback": "revert"},
           "risk_class": "low"
         }
-      ]
+      ],
+      "kpis": ["regen_duty"]
     },
     {
       "name": "chiller",
@@ -5571,7 +5577,8 @@
           "requires": [{"state": "running", "operator": "gte", "threshold": 0.5}],
           "risk_class": "high"
         }
-      ]
+      ],
+      "kpis": ["cop", "specific_power"]
     },
     {
       "name": "cooling_tower",
@@ -5913,7 +5920,8 @@
           "idempotency_window_s": 3600,
           "risk_class": "medium"
         }
-      ]
+      ],
+      "kpis": ["approach"]
     },
     {
       "name": "chw_pump",
@@ -6319,7 +6327,8 @@
           "idempotency_window_s": 3600,
           "risk_class": "medium"
         }
-      ]
+      ],
+      "kpis": ["specific_energy"]
     },
     {
       "name": "cw_pump",
@@ -6725,13 +6734,14 @@
           "idempotency_window_s": 3600,
           "risk_class": "medium"
         }
-      ]
+      ],
+      "kpis": ["specific_energy"]
     },
     {
       "name": "air_meter",
       "state": [
         {"name": "power", "unit": "kW", "initial": 105.0192, "min": 0},
-        {"name": "demand", "unit": "kW", "initial": 187.5, "min": 0},
+        {"name": "demand", "unit": "kW", "initial": 0, "min": 0},
         {"name": "energy", "unit": "kWh", "initial": 80000, "min": 0},
         {"name": "current", "unit": "A", "initial": 168.0307, "min": 0},
         {"name": "loading", "unit": "%", "initial": 42.0077, "min": 0},
@@ -6766,7 +6776,7 @@
             "block_s": 900,
             "inputs": [{"state": "power", "coef": 1}],
             "period_s": 2592000,
-            "previous_peak": 190,
+            "previous_peak": 0,
             "ratchet": 0.8
           }
         },
@@ -7070,13 +7080,14 @@
           "observation": {"form": "scale", "channel": "air_meter.current", "factor": 1.25},
           "onset": {"magnitude": 1, "shape": "step"}
         }
-      ]
+      ],
+      "kpis": ["loading"]
     },
     {
       "name": "cooling_meter",
       "state": [
         {"name": "power", "unit": "kW", "initial": 105.0192, "min": 0},
-        {"name": "demand", "unit": "kW", "initial": 187.5, "min": 0},
+        {"name": "demand", "unit": "kW", "initial": 0, "min": 0},
         {"name": "energy", "unit": "kWh", "initial": 80000, "min": 0},
         {"name": "current", "unit": "A", "initial": 168.0307, "min": 0},
         {"name": "loading", "unit": "%", "initial": 42.0077, "min": 0},
@@ -7112,7 +7123,7 @@
             "block_s": 900,
             "inputs": [{"state": "power", "coef": 1}],
             "period_s": 2592000,
-            "previous_peak": 190,
+            "previous_peak": 0,
             "ratchet": 0.8
           }
         },
@@ -7416,13 +7427,14 @@
           "observation": {"form": "scale", "channel": "cooling_meter.current", "factor": 1.25},
           "onset": {"magnitude": 1, "shape": "step"}
         }
-      ]
+      ],
+      "kpis": ["loading"]
     },
     {
       "name": "process_meter",
       "state": [
         {"name": "power", "unit": "kW", "initial": 330.06396, "min": 0},
-        {"name": "demand", "unit": "kW", "initial": 600, "min": 0},
+        {"name": "demand", "unit": "kW", "initial": 0, "min": 0},
         {"name": "energy", "unit": "kWh", "initial": 250000, "min": 0},
         {"name": "current", "unit": "A", "initial": 528.102335, "min": 0},
         {"name": "loading", "unit": "%", "initial": 41.257995, "min": 0},
@@ -7457,7 +7469,7 @@
             "block_s": 900,
             "inputs": [{"state": "power", "coef": 1}],
             "period_s": 2592000,
-            "previous_peak": 640,
+            "previous_peak": 0,
             "ratchet": 0.8
           }
         },
@@ -7761,16 +7773,17 @@
           "observation": {"form": "scale", "channel": "process_meter.current", "factor": 1.25},
           "onset": {"magnitude": 1, "shape": "step"}
         }
-      ]
+      ],
+      "kpis": ["loading"]
     },
     {
       "name": "main_meter",
       "state": [
-        {"name": "power", "unit": "kW", "initial": 330.06396, "min": 0},
-        {"name": "demand", "unit": "kW", "initial": 600, "min": 0},
-        {"name": "energy", "unit": "kWh", "initial": 250000, "min": 0},
-        {"name": "current", "unit": "A", "initial": 528.102335, "min": 0},
-        {"name": "loading", "unit": "%", "initial": 41.257995, "min": 0},
+        {"name": "power", "unit": "kW", "initial": 1030.2004, "min": 0},
+        {"name": "demand", "unit": "kW", "initial": 0, "min": 0},
+        {"name": "energy", "unit": "kWh", "initial": 900000, "min": 0},
+        {"name": "current", "unit": "A", "initial": 1648.3207, "min": 0},
+        {"name": "loading", "unit": "%", "initial": 41.208, "min": 0},
         {"name": "power__bias", "unit": "kW", "initial": 0},
         {"name": "demand__bias", "unit": "kW", "initial": 0},
         {"name": "current__bias", "unit": "A", "initial": 0}
@@ -7780,9 +7793,9 @@
           "target": "power",
           "tier": "F0",
           "f0": {
-            "baseline": 480,
+            "baseline": 1500,
             "drift_per_hour": 0,
-            "seasonality": [{"amplitude": 150, "period_s": 86400, "phase_rad": -1.6}]
+            "seasonality": [{"amplitude": 470, "period_s": 86400, "phase_rad": -1.6}]
           },
           "follow": {
             "aggregate": "sum",
@@ -7802,7 +7815,7 @@
             "block_s": 900,
             "inputs": [{"state": "power", "coef": 1}],
             "period_s": 2592000,
-            "previous_peak": 640,
+            "previous_peak": 0,
             "ratchet": 0.8
           }
         },
@@ -7820,7 +7833,7 @@
         {
           "target": "loading",
           "tier": "F1",
-          "f1": {"form": "sum", "inputs": [{"state": "power", "coef": 0.125}]}
+          "f1": {"form": "sum", "inputs": [{"state": "power", "coef": 0.04}]}
         }
       ],
       "channels": [
@@ -7831,10 +7844,10 @@
           "availability": {"mttr_s": 600, "uptime": 0.999},
           "cadence": {"mode": "periodic", "period_s": 15},
           "fidelity": "F1",
-          "noise": {"model": "gaussian", "sigma": 2},
+          "noise": {"model": "gaussian", "sigma": 6.25},
           "observation_bias": {"state": "power__bias", "coef": 1, "noise_scale_at_full": 1},
           "observes": "power",
-          "range": {"min": 0, "max": 1000},
+          "range": {"min": 0, "max": 3125},
           "resolution": 0.1,
           "tag": "JT",
           "value_type": "number"
@@ -7846,10 +7859,10 @@
           "availability": {"mttr_s": 600, "uptime": 0.999},
           "cadence": {"mode": "periodic", "period_s": 15},
           "fidelity": "F1",
-          "noise": {"model": "gaussian", "sigma": 2},
+          "noise": {"model": "gaussian", "sigma": 6.25},
           "observation_bias": {"state": "demand__bias", "coef": 1, "noise_scale_at_full": 1},
           "observes": "demand",
-          "range": {"min": 0, "max": 1000},
+          "range": {"min": 0, "max": 3125},
           "resolution": 0.1,
           "tag": "JT",
           "value_type": "number"
@@ -7875,10 +7888,10 @@
           "availability": {"mttr_s": 600, "uptime": 0.999},
           "cadence": {"mode": "periodic", "period_s": 5},
           "fidelity": "F1",
-          "noise": {"model": "gaussian", "sigma": 7.5},
+          "noise": {"model": "gaussian", "sigma": 24},
           "observation_bias": {"state": "current__bias", "coef": 1, "noise_scale_at_full": 1},
           "observes": "current",
-          "range": {"min": 0, "max": 2500},
+          "range": {"min": 0, "max": 5000},
           "resolution": 0.1,
           "tag": "IT",
           "value_type": "number"
@@ -7918,7 +7931,7 @@
         },
         {
           "id": "main_meter__power__offset",
-          "affects": [{"state": "power__bias", "delta": 50}],
+          "affects": [{"state": "power__bias", "delta": 156.25}],
           "observability": {
             "detector": {"form": "single_channel_snr", "channel": "main_meter.power"},
             "first_observable_snr": 3,
@@ -7968,7 +7981,7 @@
         },
         {
           "id": "main_meter__demand__offset",
-          "affects": [{"state": "demand__bias", "delta": 50}],
+          "affects": [{"state": "demand__bias", "delta": 156.25}],
           "observability": {
             "detector": {"form": "single_channel_snr", "channel": "main_meter.demand"},
             "first_observable_snr": 3,
@@ -8048,7 +8061,7 @@
         },
         {
           "id": "main_meter__current__offset",
-          "affects": [{"state": "current__bias", "delta": 100}],
+          "affects": [{"state": "current__bias", "delta": 320}],
           "observability": {
             "detector": {"form": "single_channel_snr", "channel": "main_meter.current"},
             "first_observable_snr": 3,
@@ -8058,7 +8071,7 @@
         },
         {
           "id": "main_meter__current__drift",
-          "affects": [{"state": "current__bias", "delta": 120}],
+          "affects": [{"state": "current__bias", "delta": 384}],
           "observability": {
             "detector": {"form": "single_channel_snr", "channel": "main_meter.current"},
             "first_observable_snr": 3,
@@ -8106,7 +8119,8 @@
           "observation": {"form": "scale", "channel": "main_meter.current", "factor": 1.25},
           "onset": {"magnitude": 1, "shape": "step"}
         }
-      ]
+      ],
+      "kpis": ["loading"]
     },
     {
       "name": "transformer",
@@ -8544,7 +8558,8 @@
           "lease": {"arg": "duration_s", "fallback": "safe_off", "safe_deltas": [{"state": "shelve", "delta": 0}]},
           "risk_class": "medium"
         }
-      ]
+      ],
+      "kpis": ["loading"]
     },
     {
       "name": "generator",
@@ -9007,7 +9022,7 @@
       "area": "Production hall",
       "provenance": {
         "component": "streamsim/production-line",
-        "digest": "sha256:dce6c1eab5cc2d5797dcf7ae68b6e9f7ab070c45ad5426bf1559da6ffc49034a",
+        "digest": "sha256:7e2becab6f59ca139fa9e46b9dec3442b6b30b641281e6b9f9eab92722cef79a",
         "instrument_digests": {
           "streamsim/accelerometer@1": "sha256:02a05a3e0037888d7f61ba9da7c4e4173f3dee74783caf5c7b53f24c19d11ff1",
           "streamsim/power-meter@1": "sha256:d2d2e745c5cb4e16a75a348c0ca43869c215400e56e9ef30743c9c4bdc941c81",
@@ -9031,7 +9046,7 @@
       "area": "Production hall",
       "provenance": {
         "component": "streamsim/production-line",
-        "digest": "sha256:dce6c1eab5cc2d5797dcf7ae68b6e9f7ab070c45ad5426bf1559da6ffc49034a",
+        "digest": "sha256:7e2becab6f59ca139fa9e46b9dec3442b6b30b641281e6b9f9eab92722cef79a",
         "instrument_digests": {
           "streamsim/accelerometer@1": "sha256:02a05a3e0037888d7f61ba9da7c4e4173f3dee74783caf5c7b53f24c19d11ff1",
           "streamsim/power-meter@1": "sha256:d2d2e745c5cb4e16a75a348c0ca43869c215400e56e9ef30743c9c4bdc941c81",
@@ -9055,7 +9070,7 @@
       "area": "Production hall",
       "provenance": {
         "component": "streamsim/packaging-line",
-        "digest": "sha256:05bd3df01a491e3bcc5119ebfc4a4f9061b1fea068d5dd199318a9828829b0da",
+        "digest": "sha256:56a12c916a7a2cd3886a9920c1d1c6437e900a67cd4acfb911847754d11fa46a",
         "instrument_digests": {
           "streamsim/accelerometer@1": "sha256:02a05a3e0037888d7f61ba9da7c4e4173f3dee74783caf5c7b53f24c19d11ff1",
           "streamsim/power-meter@1": "sha256:d2d2e745c5cb4e16a75a348c0ca43869c215400e56e9ef30743c9c4bdc941c81",
@@ -9096,7 +9111,7 @@
       "area": "Compressor room",
       "provenance": {
         "component": "streamsim/air-compressor",
-        "digest": "sha256:cf1df8ae6cc024ac619a33019cf356a47680f2b84467074467c94a8f3cf3b0c8",
+        "digest": "sha256:e089e33b67eff854e90ee64b68c39e9fd7bf0741807b7b9f22bd6e0c902d87be",
         "instrument_digests": {
           "streamsim/accelerometer@1": "sha256:02a05a3e0037888d7f61ba9da7c4e4173f3dee74783caf5c7b53f24c19d11ff1",
           "streamsim/annunciator@1": "sha256:a47feedfb4e993eada8567c6b627847e6fb63b7c2686600f4f2870eb34422cd4",
@@ -9125,7 +9140,7 @@
       "area": "Compressor room",
       "provenance": {
         "component": "streamsim/air-compressor",
-        "digest": "sha256:cf1df8ae6cc024ac619a33019cf356a47680f2b84467074467c94a8f3cf3b0c8",
+        "digest": "sha256:e089e33b67eff854e90ee64b68c39e9fd7bf0741807b7b9f22bd6e0c902d87be",
         "instrument_digests": {
           "streamsim/accelerometer@1": "sha256:02a05a3e0037888d7f61ba9da7c4e4173f3dee74783caf5c7b53f24c19d11ff1",
           "streamsim/annunciator@1": "sha256:a47feedfb4e993eada8567c6b627847e6fb63b7c2686600f4f2870eb34422cd4",
@@ -9178,7 +9193,7 @@
       "area": "Compressor room",
       "provenance": {
         "component": "streamsim/air-dryer",
-        "digest": "sha256:cbf4d2b8ace8d44a08a7006c6fb074deacf4d8ae291b0ab1943bdaffda03ddaa",
+        "digest": "sha256:315861e8721c0316e3430edba8404056367409161ec8566e03cfaed684703165",
         "instrument_digests": {
           "streamsim/power-meter@1": "sha256:d2d2e745c5cb4e16a75a348c0ca43869c215400e56e9ef30743c9c4bdc941c81",
           "streamsim/pressure-transmitter@1": "sha256:27b43198bfab62c47f90e47612b2ece1d41c551fe27db2e0c4a918dddfd296c0",
@@ -9202,7 +9217,7 @@
       "area": "Chiller plant",
       "provenance": {
         "component": "streamsim/chiller",
-        "digest": "sha256:4a21aafec34b00b7beac5e00504934a44ed1d88363e91b8209eeb3f906c710c6",
+        "digest": "sha256:7500d757c2ce27c4e5297cfcc7dadeec8ca84ab92a08fda2acddb7cc05133d60",
         "instrument_digests": {
           "streamsim/power-meter@1": "sha256:d2d2e745c5cb4e16a75a348c0ca43869c215400e56e9ef30743c9c4bdc941c81",
           "streamsim/rtd@1": "sha256:bceb694b0f3a120a3889afe298ebe5580e6e287af8e8a22e7b982b5eb41f084c"
@@ -9224,7 +9239,7 @@
       "area": "Chiller plant",
       "provenance": {
         "component": "streamsim/cooling-tower",
-        "digest": "sha256:2a25c65bd3eb97914addffb7b7387b87db7c57b9e2fe0df7fe828f25b19f0a09",
+        "digest": "sha256:c4af089ebb66c7135cc8ef602ba8529ccc674538f411c59bc32403303dae1915",
         "instrument_digests": {
           "streamsim/power-meter@1": "sha256:d2d2e745c5cb4e16a75a348c0ca43869c215400e56e9ef30743c9c4bdc941c81",
           "streamsim/rtd@1": "sha256:bceb694b0f3a120a3889afe298ebe5580e6e287af8e8a22e7b982b5eb41f084c"
@@ -9241,7 +9256,7 @@
       "area": "Chiller plant",
       "provenance": {
         "component": "streamsim/pump",
-        "digest": "sha256:556c70d3faac861f44a11a91af324308a7af938da25f1a0fcb7e12eb7a0d57ed",
+        "digest": "sha256:53760ab470f5810d47da8984061e710fff1bfc03ecfdfa34e68196fb213e8b26",
         "instrument_digests": {
           "streamsim/mag-flow-meter@1": "sha256:e233724c219cba8709bd042ccfad87bb053391d8d5854cbd638716a7dd5a6e3a",
           "streamsim/power-meter@1": "sha256:d2d2e745c5cb4e16a75a348c0ca43869c215400e56e9ef30743c9c4bdc941c81"
@@ -9258,7 +9273,7 @@
       "area": "Chiller plant",
       "provenance": {
         "component": "streamsim/pump",
-        "digest": "sha256:556c70d3faac861f44a11a91af324308a7af938da25f1a0fcb7e12eb7a0d57ed",
+        "digest": "sha256:53760ab470f5810d47da8984061e710fff1bfc03ecfdfa34e68196fb213e8b26",
         "instrument_digests": {
           "streamsim/mag-flow-meter@1": "sha256:e233724c219cba8709bd042ccfad87bb053391d8d5854cbd638716a7dd5a6e3a",
           "streamsim/power-meter@1": "sha256:d2d2e745c5cb4e16a75a348c0ca43869c215400e56e9ef30743c9c4bdc941c81"
@@ -9275,7 +9290,7 @@
       "area": "Substation",
       "provenance": {
         "component": "streamsim/feeder-meter",
-        "digest": "sha256:a4c40de30fbc8870de5f7da991e3e49330409a80bbae81ad99ba8efc5ae8909e",
+        "digest": "sha256:a29abd4b43e4276185defe32f8a68bf7e5c55fbf7cf023c84c2eac2278da75e2",
         "instrument_digests": {
           "streamsim/current-clamp@1": "sha256:ee670102b446fc02c306b8c611074cfd155c9a1e76b7566c38250d06d1dafe20",
           "streamsim/energy-meter@1": "sha256:f6d615952adcfa6bd249e82733b1445e82f7965846cae7368c87b65a1cb41dc3",
@@ -9298,7 +9313,7 @@
       "area": "Substation",
       "provenance": {
         "component": "streamsim/feeder-meter",
-        "digest": "sha256:a4c40de30fbc8870de5f7da991e3e49330409a80bbae81ad99ba8efc5ae8909e",
+        "digest": "sha256:a29abd4b43e4276185defe32f8a68bf7e5c55fbf7cf023c84c2eac2278da75e2",
         "instrument_digests": {
           "streamsim/current-clamp@1": "sha256:ee670102b446fc02c306b8c611074cfd155c9a1e76b7566c38250d06d1dafe20",
           "streamsim/energy-meter@1": "sha256:f6d615952adcfa6bd249e82733b1445e82f7965846cae7368c87b65a1cb41dc3",
@@ -9321,7 +9336,7 @@
       "area": "Substation",
       "provenance": {
         "component": "streamsim/feeder-meter",
-        "digest": "sha256:a4c40de30fbc8870de5f7da991e3e49330409a80bbae81ad99ba8efc5ae8909e",
+        "digest": "sha256:a29abd4b43e4276185defe32f8a68bf7e5c55fbf7cf023c84c2eac2278da75e2",
         "instrument_digests": {
           "streamsim/current-clamp@1": "sha256:ee670102b446fc02c306b8c611074cfd155c9a1e76b7566c38250d06d1dafe20",
           "streamsim/energy-meter@1": "sha256:f6d615952adcfa6bd249e82733b1445e82f7965846cae7368c87b65a1cb41dc3",
@@ -9344,7 +9359,7 @@
       "area": "Substation",
       "provenance": {
         "component": "streamsim/feeder-meter",
-        "digest": "sha256:a4c40de30fbc8870de5f7da991e3e49330409a80bbae81ad99ba8efc5ae8909e",
+        "digest": "sha256:a29abd4b43e4276185defe32f8a68bf7e5c55fbf7cf023c84c2eac2278da75e2",
         "instrument_digests": {
           "streamsim/current-clamp@1": "sha256:ee670102b446fc02c306b8c611074cfd155c9a1e76b7566c38250d06d1dafe20",
           "streamsim/energy-meter@1": "sha256:f6d615952adcfa6bd249e82733b1445e82f7965846cae7368c87b65a1cb41dc3",
@@ -9357,7 +9372,7 @@
           "power": "streamsim/power-meter@1"
         },
         "parameters": {"demand_block": "quarter_hour", "ratchet": 0.8},
-        "preset": "medium",
+        "preset": "large",
         "version": 1
       }
     },
@@ -9367,7 +9382,7 @@
       "area": "Substation",
       "provenance": {
         "component": "streamsim/transformer",
-        "digest": "sha256:2282e1c11cd30cf865f6b11272159b829a7be1bbc925ffbfe1f9a085a84faa80",
+        "digest": "sha256:8c217ff18579afe7ebbb236c4d60f2704bf73e6f3f466488b4fe234862a46ba3",
         "instrument_digests": {
           "streamsim/power-meter@1": "sha256:d2d2e745c5cb4e16a75a348c0ca43869c215400e56e9ef30743c9c4bdc941c81",
           "streamsim/rtd@1": "sha256:bceb694b0f3a120a3889afe298ebe5580e6e287af8e8a22e7b982b5eb41f084c",

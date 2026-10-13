@@ -72,10 +72,11 @@ type Counts struct {
 }
 
 type Truth struct {
-	Faults        []Fault        `json:"faults"`
-	Perturbations []Perturbation `json:"perturbations"`
-	Environment   []Environment  `json:"environment"`
-	EffectorCalls []EffectorCall `json:"effector_calls"`
+	Faults        []Fault         `json:"faults"`
+	Perturbations []Perturbation  `json:"perturbations"`
+	Environment   []Environment   `json:"environment"`
+	EffectorCalls []EffectorCall  `json:"effector_calls"`
+	KPIs          *model.KPITruth `json:"kpis,omitempty"`
 }
 
 type Fault struct {

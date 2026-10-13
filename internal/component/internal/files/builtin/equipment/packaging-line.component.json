@@ -762,6 +762,11 @@
         }
       }
     ],
+    "kpis": [
+      "specific_power",
+      "cycle_time",
+      "scrap_pct"
+    ],
     "faults": [
       {
         "id": "tooling_wear",

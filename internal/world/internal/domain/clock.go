@@ -56,9 +56,11 @@ func (w *World) processScheduledEvents(to int64) {
 			break
 		}
 		heap.Pop(&w.queue)
+		w.sampleKPIsThrough(event.timeNS - 1)
 		w.clockNS = event.timeNS
 		w.processScheduledEvent(event)
 	}
+	w.sampleKPIsThrough(to)
 }
 
 func (w *World) processScheduledEvent(event *item) {

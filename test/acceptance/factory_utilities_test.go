@@ -57,4 +57,29 @@ func checkFactoryReport(t *testing.T, b *binary, dir string) {
 			t.Errorf("truth fault %d = %v, want %s", i, got, want)
 		}
 	}
+	checkFactoryKPIs(t, truth)
+}
+
+func checkFactoryKPIs(t *testing.T, truth map[string]any) {
+	t.Helper()
+	kpis, _ := truth["kpis"].(map[string]any)
+	entities, _ := kpis["entities"].([]any)
+	found := map[string]bool{}
+	for _, raw := range entities {
+		entity := raw.(map[string]any)
+		for _, key := range []string{"kpis", "alarms"} {
+			items, _ := entity[key].([]any)
+			for _, item := range items {
+				found[entity["entity_id"].(string)+"."+item.(map[string]any)["state"].(string)] = true
+			}
+		}
+	}
+	for _, want := range []string{"CH-1.cop", "CT-1.approach", "AC-1.specific_power", "AC-1.temp_alarm", "TX-1.temp_alarm", "MM-1.loading"} {
+		if !found[want] {
+			t.Errorf("KPI truth has no %s: %v", want, kpis)
+		}
+	}
+	if system, _ := kpis["alarm_system"].(map[string]any); system == nil {
+		t.Errorf("KPI truth has no alarm-system KPIs: %v", kpis)
+	}
 }

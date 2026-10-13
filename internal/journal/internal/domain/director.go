@@ -24,6 +24,10 @@ func (j *Journal) Outcome(atNS int64, call Call, result any, refusal string) {
 	j.director.Append(TypeEffectorOutcome, atNS, fields)
 }
 
+func (j *Journal) KPITruth(atNS int64, truth *model.KPITruth) {
+	j.director.Append(TypeKPITruth, atNS, map[string]any{"kpis": truth})
+}
+
 func (j *Journal) Unblinded(atNS int64, reason string) {
 	j.director.Append(TypeRunUnblinded, atNS, map[string]any{"reason": reason})
 }

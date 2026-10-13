@@ -31,6 +31,7 @@ func newWorldState(spec *domain.Compiled, seed uint64, id, key string, startNS i
 		emitDisabled:     opts.EmitDisabled,
 		forceEffectorOK:  opts.ForceEffectorOK,
 		forceFailureMode: opts.ForceFailureMode,
+		kpis:             newKPITracker(opts.TrackKPIs),
 	}
 }
 

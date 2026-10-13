@@ -22,7 +22,7 @@
       {
         "name": "demand",
         "unit": "kW",
-        "initial": 600,
+        "initial": 0,
         "min": 0
       },
       {
@@ -69,7 +69,7 @@
           "block_s": 900,
           "period_s": 2592000,
           "ratchet": 0.8,
-          "previous_peak": 640,
+          "previous_peak": 0,
           "inputs": [
             {
               "state": "power",
@@ -119,6 +119,9 @@
           ]
         }
       }
+    ],
+    "kpis": [
+      "loading"
     ],
     "faults": [
       {
@@ -261,11 +264,9 @@
         "state/power/initial": 105.0192,
         "state/current/initial": 168.0307,
         "state/loading/initial": 42.0077,
-        "state/demand/initial": 187.5,
         "state/energy/initial": 80000,
         "dynamics/power/f0/baseline": 150,
         "dynamics/power/f0/seasonality/0/amplitude": 45,
-        "dynamics/demand/f1/previous_peak": 190,
         "dynamics/loading/f1/inputs/power/coef": 0.4,
         "measurement_points/power/range/max": 312.5,
         "measurement_points/demand/range/max": 312.5,
@@ -282,11 +283,9 @@
         "state/power/initial": 1030.2004,
         "state/current/initial": 1648.3207,
         "state/loading/initial": 41.208,
-        "state/demand/initial": 1875,
         "state/energy/initial": 900000,
         "dynamics/power/f0/baseline": 1500,
         "dynamics/power/f0/seasonality/0/amplitude": 470,
-        "dynamics/demand/f1/previous_peak": 2000,
         "dynamics/loading/f1/inputs/power/coef": 0.04,
         "measurement_points/power/range/max": 3125,
         "measurement_points/demand/range/max": 3125,

@@ -72,6 +72,7 @@ mode the world chose.
 | `state` | `state`: the world-state snapshot taken at an emission |
 | `effector.outcome` | `command_id`, `effector`, `entity_id` and either `result` (the world's `InvokeResult`: failure mode, whether the effect applied, latency) or `refused` (why the call was declined) |
 | `run.unblinded` | `reason`: `explore` (written right after `run.opened`, at creation) or `revealed` (truth was revealed on the open run; written at the close, before `run.closed`, so replay can reproduce it). The wall-clock moment is in the artifact (`unblinded_at`), not in the stream |
+| `kpi.truth` | `kpis`: the run's KPI truth (domain-spec v0.2 §29), written once at the close, before `run.unblinded` and `run.closed`, so replay reproduces it |
 | `run.closed` | `incomplete`, `error` (when the run failed) |
 
 ## 3. Determinism and verification

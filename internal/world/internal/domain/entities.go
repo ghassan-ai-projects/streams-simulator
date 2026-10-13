@@ -27,6 +27,7 @@ func (w *World) addEntity(id string, set int, atNS int64) error {
 	w.entities[id] = ent
 	w.entityOrder = append(w.entityOrder, id)
 	w.initializeEntityChannels(ent, id, atNS)
+	w.trackKPIs(ent, atNS)
 	return nil
 }
 

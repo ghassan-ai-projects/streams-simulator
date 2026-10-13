@@ -634,3 +634,26 @@ draw on it.
   the world tests prove a tank and cooler loop against an independent recurrence and against random read schedules.
 - **History**: a source keeps history for a sampled reader back to the reader's progress minus the sample period and four of its
   steps, so a loop keeps a bounded history.
+
+## 29. KPI truth (phase P7l)
+
+`kinds[k].kpis` names the states that are the kind's key performance indicators (specific power, COP, approach, loading);
+each is a declared state, at most once (`/kinds/k/kpis/i`). A component declares them in its `kind` and compose copies them.
+A run's world tracks the KPI truth of every entity whose kind has KPIs or an `alarm` state, and the run seals it into its
+director journal as one `kpi.truth` record at the close; the report shows it with the rest of the truth.
+
+- **Sampling**: from the entity's birth, on a grid of its kind's shortest alarm step (60 s without an alarm), until its
+  retirement; samples run on the world clock in time order with the world's events, after the events of the same instant,
+  and never in a look-ahead copy. A KPI is the mean, minimum and maximum of its samples.
+- **Alarms** (ISA-18.2 / EEMUA 191): an alarm is active while its code is `1` or `2`; an activation is a sample where it turns
+  active after the first sample (unshelving an active alarm annunciates it again). Per alarm: `activations`, `chattering`
+  (three activations within 60 s), `active_s`, `longest_active_s` and `active_at_end`. For the alarm system:
+  `activations`, `peak_per_10_min` (the most activations in any 600 s window), `flood_intervals` (epoch-aligned 10-minute
+  intervals with more than 10 activations), `chattering`, `stale` (alarms active for 24 h or more) and `standing_at_end`.
+- **Determinism**: the samples read the states the world would read anyway, so tracking changes no trace, ledger or
+  state history; the record is in the director journal's digest and a replay reproduces it. Worlds outside a run (truth
+  oracles, the lint, the audit) do not track.
+
+Cross-checks: a scripted alarm's activations, active time and state at the end against an independent scan of its code on
+the alarm grid (two horizons); a KPI's mean, minimum and maximum against the same samples read from a world that does not
+track; chattering, peak rate and flood intervals on constructed activation times.

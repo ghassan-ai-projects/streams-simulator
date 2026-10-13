@@ -41,6 +41,8 @@ type Options struct {
 	ForceEffectorOK bool
 
 	ForceFailureMode FailureMode
+
+	TrackKPIs bool
 }
 
 type World struct {
@@ -55,6 +57,7 @@ type World struct {
 	forceFailureMode FailureMode
 
 	queue    priorityQueue
+	kpis     *kpiTracker
 	tiebreak uint64
 	seq      int64
 

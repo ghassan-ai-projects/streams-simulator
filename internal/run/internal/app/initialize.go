@@ -53,16 +53,16 @@ func newRunWorld(cfg Config) (*world.World, error) {
 	if err := cfg.Domain.CheckEntityIDs(cfg.EntityIDs); err != nil {
 		return nil, fmt.Errorf("streamsim: %w", err)
 	}
-	w, err := world.New(cfg.Domain, cfg.Seed, cfg.WorldID, cfg.StartTimeNS, world.Options{
-		InitialEntities:  cfg.EntityIDs,
-		Noiseless:        cfg.Noiseless,
-		ForceFailureMode: cfg.ForceFailureMode,
-		EmitDisabled:     cfg.silent,
-	})
+	w, err := world.New(cfg.Domain, cfg.Seed, cfg.WorldID, cfg.StartTimeNS, runWorldOptions(cfg))
 	if err != nil {
 		return nil, fmt.Errorf("streamsim: %w", err)
 	}
 	return w, nil
+}
+
+func runWorldOptions(cfg Config) world.Options {
+	return world.Options{InitialEntities: cfg.EntityIDs, Noiseless: cfg.Noiseless, ForceFailureMode: cfg.ForceFailureMode,
+		EmitDisabled: cfg.silent, TrackKPIs: !cfg.silent}
 }
 
 func newRunState(ctx context.Context, cfg Config, w *world.World) (*Run, error) {

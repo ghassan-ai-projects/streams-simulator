@@ -680,7 +680,8 @@
           "requires": [{"state": "running", "operator": "gte", "threshold": 0.5}],
           "risk_class": "high"
         }
-      ]
+      ],
+      "kpis": ["cop", "specific_power"]
     },
     {
       "name": "chiller_small",
@@ -1278,7 +1279,8 @@
           "requires": [{"state": "running", "operator": "gte", "threshold": 0.5}],
           "risk_class": "high"
         }
-      ]
+      ],
+      "kpis": ["cop", "specific_power"]
     },
     {
       "name": "ahu",
@@ -1682,7 +1684,7 @@
       "area": "Chiller hall",
       "provenance": {
         "component": "streamsim/chiller",
-        "digest": "sha256:4a21aafec34b00b7beac5e00504934a44ed1d88363e91b8209eeb3f906c710c6",
+        "digest": "sha256:7500d757c2ce27c4e5297cfcc7dadeec8ca84ab92a08fda2acddb7cc05133d60",
         "instrument_digests": {
           "streamsim/mag-flow-meter@1": "sha256:e233724c219cba8709bd042ccfad87bb053391d8d5854cbd638716a7dd5a6e3a",
           "streamsim/power-meter@1": "sha256:d2d2e745c5cb4e16a75a348c0ca43869c215400e56e9ef30743c9c4bdc941c81",
@@ -1706,7 +1708,7 @@
       "area": "Chiller hall",
       "provenance": {
         "component": "streamsim/chiller",
-        "digest": "sha256:4a21aafec34b00b7beac5e00504934a44ed1d88363e91b8209eeb3f906c710c6",
+        "digest": "sha256:7500d757c2ce27c4e5297cfcc7dadeec8ca84ab92a08fda2acddb7cc05133d60",
         "instrument_digests": {
           "streamsim/power-meter@1": "sha256:d2d2e745c5cb4e16a75a348c0ca43869c215400e56e9ef30743c9c4bdc941c81",
           "streamsim/rtd@1": "sha256:bceb694b0f3a120a3889afe298ebe5580e6e287af8e8a22e7b982b5eb41f084c"

@@ -50,6 +50,7 @@ const (
 	TypeRunClosed        = "run.closed"
 	TypePacing           = "pacing"
 	TypeWire             = "wire"
+	TypeKPITruth         = "kpi.truth"
 )
 
 const (

@@ -86,6 +86,12 @@
             "items": {"$ref": "#/$defs/fault"}
           },
 
+          "kpis": {
+            "type": "array",
+            "uniqueItems": true,
+            "description": "States that are key performance indicators of the kind (specific power, COP, approach). A run seals their true mean, minimum and maximum, with the ISA-18.2 KPIs of every alarm state, into its director journal (domain-spec v0.2 §29).",
+            "items": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$"}
+          },
           "boundaries": {
             "type": "array",
             "description": "Safety boundaries of the kind for scoring: each names a trip state whose tripped value means the boundary is violated, with a severity class. The trip's condition and duration are the boundary's rule, so a boundary and a trip share one evaluator.",

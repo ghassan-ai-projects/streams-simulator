@@ -434,6 +434,9 @@
         }
       }
     ],
+    "kpis": [
+      "approach"
+    ],
     "faults": [
       {
         "id": "fan_failure",

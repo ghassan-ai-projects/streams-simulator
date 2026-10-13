@@ -459,6 +459,10 @@
         }
       }
     ],
+    "kpis": [
+      "specific_power",
+      "load_frac"
+    ],
     "faults": [
       {
         "id": "airend_wear",

@@ -454,6 +454,9 @@
         }
       }
     ],
+    "kpis": [
+      "specific_energy"
+    ],
     "faults": [
       {
         "id": "impeller_wear",

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -121,5 +122,31 @@ func TestTheFactoryClosesItsAirAndCoolingLoopsWithSampledReads(t *testing.T) {
 		if dyn == nil || dyn.Follow == nil || dyn.Follow.SampleS != sample {
 			t.Errorf("%s.%s: follow %+v, want a read sampled every %v s", key[0], key[1], dyn, sample)
 		}
+	}
+}
+
+func factoryEvents(t *testing.T, spec *domain.Compiled, track bool) []model.SimEvent {
+	t.Helper()
+	w, err := world.New(spec, 9, "factory", model.DefaultStartTimeNS, world.Options{TrackKPIs: track})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var events []model.SimEvent
+	w.SetEmitter(func(event model.SimEvent) { events = append(events, event) })
+	if _, err := w.InjectFault("CT-1", "cooling_tower__fan_failure", model.DefaultStartTimeNS+600e9, nil); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := w.Advance(model.DefaultStartTimeNS + hourNS); err != nil {
+		t.Fatal(err)
+	}
+	return events
+}
+
+func TestTrackingKPITruthChangesNoEmittedEvent(t *testing.T) {
+	t.Parallel()
+	spec := factoryUtilities(t)
+	plain, tracked := factoryEvents(t, spec, false), factoryEvents(t, spec, true)
+	if len(plain) == 0 || !slices.Equal(plain, tracked) {
+		t.Fatalf("%d events without KPI tracking and %d with it, or they differ", len(plain), len(tracked))
 	}
 }

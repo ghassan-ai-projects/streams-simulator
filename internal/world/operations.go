@@ -70,6 +70,10 @@ func (w *World) ReadingDropped(entityID, channelName string, t int64) bool {
 	return w.world.ReadingDropped(entityID, channelName, t)
 }
 
+func (w *World) KPITruth() *model.KPITruth {
+	return w.world.KPITruth()
+}
+
 func (w *World) StateValue(entity, state string, t int64) float64 {
 	return w.world.StateValue(entity, state, t)
 }

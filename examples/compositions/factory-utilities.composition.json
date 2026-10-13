@@ -29,7 +29,7 @@
     {"use": "streamsim/feeder-meter@1", "as": "air_meter", "preset": "small", "names": ["MB-AIR"], "area": "Substation"},
     {"use": "streamsim/feeder-meter@1", "as": "cooling_meter", "preset": "small", "names": ["MB-COOL"], "area": "Substation"},
     {"use": "streamsim/feeder-meter@1", "as": "process_meter", "names": ["MB-PROC"], "area": "Substation"},
-    {"use": "streamsim/feeder-meter@1", "as": "main_meter", "names": ["MM-1"], "area": "Substation"},
+    {"use": "streamsim/feeder-meter@1", "as": "main_meter", "preset": "large", "names": ["MM-1"], "area": "Substation"},
     {"use": "streamsim/transformer@1", "preset": "large", "names": ["TX-1"], "area": "Substation"},
     {"use": "streamsim/generator@1", "names": ["G-1"], "area": "Substation"}
   ],

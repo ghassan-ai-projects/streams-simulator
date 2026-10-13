@@ -27,6 +27,7 @@ type Kind struct {
 	Faults     []Fault    `json:"faults"`
 	Effectors  []Effector `json:"effectors,omitempty"`
 	Boundaries []Boundary `json:"boundaries,omitempty"`
+	KPIs       []string   `json:"kpis,omitempty"`
 }
 
 type InstanceSet struct {

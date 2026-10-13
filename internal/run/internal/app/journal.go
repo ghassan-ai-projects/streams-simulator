@@ -64,6 +64,9 @@ func (r *Run) journalEffectorCall(call journal.Call, result *world.InvokeResult,
 }
 
 func (r *Run) closeJournal() {
+	if truth := r.World.KPITruth(); truth != nil {
+		r.journal.KPITruth(r.journalNow(), truth)
+	}
 	if r.unblinded && !r.Config.Explore {
 		r.journal.Unblinded(r.journalNow(), journal.ReasonRevealed)
 	}

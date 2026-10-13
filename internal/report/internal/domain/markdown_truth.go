@@ -12,12 +12,12 @@ func truthSections(report *Report) []section {
 	if truth == nil {
 		return []section{{"Truth", []string{withheldReason(report)}}}
 	}
-	return []section{
+	return append([]section{
 		{"Faults", listOrNone(len(truth.Faults), faultLines(truth.Faults, start))},
 		{"Perturbations", listOrNone(len(truth.Perturbations), perturbationLines(truth.Perturbations, start))},
 		{"Environment", listOrNone(len(truth.Environment), environmentLines(truth.Environment, start))},
 		{"Effector calls", listOrNone(len(truth.EffectorCalls), effectorLines(truth.EffectorCalls, start))},
-	}
+	}, kpiSections(truth.KPIs)...)
 }
 
 func withheldReason(report *Report) string {

@@ -129,6 +129,10 @@ shows what the world actually did. The values are the world's record verbatim: f
 `silent_no_effect` the effect is applied to shadow state only and `effect_applied` still reads
 `true`, so read `mode` first.
 
+`kpis` is the director stream's `kpi.truth` record verbatim (domain-spec v0.2 §29), absent when the stream has none.
+The Markdown report shows it as three tables: KPIs (mean, minimum, maximum, samples), alarms (priority, activations,
+chattering, active and longest active seconds, active at the end) and the alarm system.
+
 ## 6. Scoring
 
 `scoring` is present only when `verdict.json` and `label.json` both exist and `run.json` exists.

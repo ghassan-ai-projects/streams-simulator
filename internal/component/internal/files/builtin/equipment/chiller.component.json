@@ -601,6 +601,10 @@
         }
       }
     ],
+    "kpis": [
+      "cop",
+      "specific_power"
+    ],
     "faults": [
       {
         "id": "condenser_fouling",

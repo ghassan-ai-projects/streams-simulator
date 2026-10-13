@@ -78,15 +78,23 @@ func withTruth(report *Report, art *model.RunArtifact, in streams) (*Report, err
 	if !report.Run.Ended && report.Run.Mode != journal.ModeExplore {
 		return report, nil
 	}
-	commands, err := commandsOf(art, in.director)
+	truth, err := truthFrom(art, in.director)
 	if err != nil {
 		return nil, err
 	}
-	report.Truth = truthOf(commands, in.director)
+	report.Truth = truth
 	if art == nil {
 		report.Run.Seed = directorSeed(in.director)
 	}
 	return report, nil
+}
+
+func truthFrom(art *model.RunArtifact, director []journal.Record) (*Truth, error) {
+	commands, err := commandsOf(art, director)
+	if err != nil {
+		return nil, err
+	}
+	return truthOf(commands, director)
 }
 
 func consumerOf(verdict *model.Verdict) *Consumer {
