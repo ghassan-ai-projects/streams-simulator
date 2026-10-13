@@ -1,0 +1,66 @@
+{
+  "id": "lint-sane",
+  "version": "0.1.0",
+  "title": "lint sane plant",
+  "stresses": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+  "axes": {
+    "rate": "low",
+    "cardinality": "singleton",
+    "value_shape": ["scalar"],
+    "cadence": ["periodic"],
+    "lateness": "none",
+    "absence": "signal",
+    "time_reference": "wall",
+    "correlation": ["independent"],
+    "seasonality": ["none"],
+    "actuation": "observe_only",
+    "consequence": ["cost"],
+    "fidelity": ["F1"]
+  },
+  "kinds": [
+    {
+      "name": "plant",
+      "state": [
+        {"name": "u", "initial": 2},
+        {"name": "x", "initial": 2, "min": 0, "max": 10}
+      ],
+      "dynamics": [
+        {
+          "target": "x",
+          "tier": "F1",
+          "dt_ms": 1000,
+          "f1": {"form": "first_order_lag", "time_constant_s": 600, "gain": 1, "inputs": [{"state": "u", "coef": 1}]}
+        }
+      ],
+      "channels": [
+        {
+          "name": "flow_in", "value_type": "number", "unit": "u", "resolution": 0.01, "fidelity": "F1", "absence": "signal",
+          "observes": "u", "range": {"min": 0, "max": 10}, "cadence": {"mode": "periodic", "period_s": 60},
+          "noise": {"model": "gaussian", "sigma": 0.1}
+        },
+        {
+          "name": "flow_out", "value_type": "number", "unit": "u", "resolution": 0.01, "fidelity": "F1", "absence": "signal",
+          "observes": "x", "range": {"min": 0, "max": 10}, "cadence": {"mode": "periodic", "period_s": 60},
+          "noise": {"model": "gaussian", "sigma": 0.1}
+        }
+      ],
+      "faults": [
+        {
+          "id": "leak",
+          "onset": {"shape": "step"},
+          "affects": [{"state": "x", "delta": -1}],
+          "observability": {"detector": {"form": "conservation_residual", "inputs": ["flow_in"], "outputs": ["flow_out"]}}
+        }
+      ]
+    }
+  ],
+  "instances": [
+    {"kind": "plant", "id_template": "p-{n}", "count": {"default": 2}}
+  ],
+  "profiles": [
+    {"name": "nominal", "description": "x"},
+    {"name": "correlated_cascade", "description": "x", "not_applicable": "yyyyyyyyyyyyyyyyyyyyyyyy"},
+    {"name": "sensor_pathology", "description": "x"}
+  ],
+  "ground_truth": {"negative_class_fraction": 0.4}
+}

@@ -34,6 +34,7 @@ The accepted architecture is summarized in [`documentation/architecture/`](../..
 - `internal/release`: the release manifest (file digests, canonical body, ed25519 signature, writing); facade over `internal/release/internal/domain`, `app` and a `files` edge
 - `internal/score`: instrument and consumer scoring, shared online/offline policies; facade over `internal/score/internal/domain`; the host packs a `score.Evidence`
 - `internal/audit`: trivial-baseline evaluation over delivered evidence; facade over `internal/audit/internal/domain`
+- `internal/lint`: the domain plausibility check (`domain lint`): a noiseless nominal day of a domain sampled on a fixed grid and judged by five rules (non-finite, out-of-range, pinned-at-bound, not-settled, conservation residual); facade over `internal/lint/internal/domain`; composes `world` and `domain`
 - `internal/suite`: scenario generation, composition and admission, and `Publish` (generate and write a suite file); facade over `internal/suite/internal/domain`, `app` and a `files` edge
 - `internal/refconsumer`: shipped reference detector and operator-client integration; facade over `internal/refconsumer/internal/domain`, `app` (`Consume`: trace file in, verdict file out, optionally over the operator endpoint), the `mcpclient` edge and a `files` edge
 - `internal/device`: data-defined capability admission and vendored device transport; facade over `internal/device/internal/domain` (rules, codec), the `uds` transport edge (including `Serve`, the socket served until interrupted) and a `files` edge (capability catalog)
@@ -61,9 +62,10 @@ The accepted architecture is summarized in [`documentation/architecture/`](../..
 ## Dependency Direction
 
 - `mcp` -> `director` + foundations; `director` -> `run`/`score`/`truth`/`audit`/`world`/`adapter`/`domain`/`model`
-- `cmd` -> `cli` -> the facades it wires: `mcp`/`run`/`suite`/`grading`/`report`/`release`/`refconsumer`/`device`/`deviceworld`/`domain`/`adapter`/`model`
+- `cmd` -> `cli` -> the facades it wires: `mcp`/`run`/`suite`/`grading`/`report`/`release`/`refconsumer`/`device`/`deviceworld`/`domain`/`adapter`/`lint`/`model`
 - `grading` -> `run`/`score`/`domain`/`world`/`model`; `report` -> `grading`/`run`/`journal`/`model`; `release` -> `canonical`
 - `run` -> `world`/`perturb`/`adapter`/`sink`/`journal`/`domain`/`model`/`canonical`; `journal` -> `model`
+- `lint` -> `world`/`domain`/`model`
 - `truth` -> `world`/`domain`/`model`; `score` -> `domain`/`world`/`model` (hosts pack a `score.Evidence`)
 - `deviceworld` -> `device`/`domain`/`world`/`model`; neither core imports the bridge
 - Dependencies flow downward only.

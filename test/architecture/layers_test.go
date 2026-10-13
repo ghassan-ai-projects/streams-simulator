@@ -56,6 +56,7 @@ var packages = map[string]packageInfo{
 	"internal/deviceworld":        {kindEdgeCore, 5},
 	"internal/audit":              {kindCore, 5},
 	"internal/score":              {kindCore, 5},
+	"internal/lint":               {kindCore, 5},
 	"internal/grading":            {kindEdgeCore, 6},
 	"internal/suite":              {kindEdgeCore, 6},
 	"internal/director":           {kindEdgeCore, 6},

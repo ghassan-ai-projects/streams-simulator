@@ -25,7 +25,7 @@ success and for failure ([design](../../docs/design/CLI_SURFACE.md), [schema](..
 | 2 | The same error document with code `usage_invalid` |
 
 Error codes: `usage_invalid`, `file_not_found`, `domain_not_found`, `adapter_not_found`,
-`domain_invalid`, `adapter_invalid`, `artifact_invalid`, `replay_mismatch`,
+`domain_invalid`, `adapter_invalid`, `artifact_invalid`, `replay_mismatch`, `domain_lint`,
 `adapter_verify_failed`, `io_failed`, and `<command>_failed` for any other failure of that
 command. `issues` lists every contract violation, with an RFC 6901 `pointer` when the location
 is known; `result` carries the command's report for a failed check (for example the replay
@@ -54,6 +54,17 @@ Validates one domain file and reports its ID, digest, channel count, fault count
 ```text
 streamsim domain validate <path>
 ```
+
+### `domain lint`
+
+Simulates a nominal day of one domain (noiseless, default population, no faults, no effector calls) and judges it with five rules: a non-finite state or reading, a channel reading outside its declared range, a state pinned at its bound, an integrated state that has not settled by the end of the run, and a conservation balance that does not close. It prints `{domain, digest, seed, hours, samples, findings, errors, warnings}`; each finding carries `severity`, `code`, `entity`, `channel`, `state` or `fault`, `at_s` and a `detail`. Any `error` finding exits 1 with a `domain_lint` error document whose `result` is the same report; warnings alone exit 0. The output is deterministic for a domain, seed and hours.
+
+```bash
+streamsim domain lint <path> [--hours 24] [--seed 1]
+```
+
+- `--hours <n>` — simulated hours of the nominal day, above 0 and at most 720; defaults to `24`.
+- `--seed <n>` — world seed; defaults to `1`.
 
 ### `domain format`
 

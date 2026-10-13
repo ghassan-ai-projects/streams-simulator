@@ -141,6 +141,12 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
   detection (D-12) that scenario is correctly unobservable and the nominal
   suite excludes it; the domain should name the channel the fault affects.
   Changing the domain changes its digest, so it is left to the domain owner.
+- **D-53 (domain data)** `domain lint` (P7j) finds `discrete-line-oee` out of range on a
+  nominal day: `cycle_time_s` observes `line_speed` with `observation_gain: 60` and `observation_offset: 1`
+  (3601 at 60 ppm) but declares `range` `[0.5, 10]`; the channel means seconds per part, which is
+  `60 / line_speed`, and a linear observation cannot express that. The `units` counter also saturates at its
+  `1000000` maximum within the day (a warning). Changing the domain changes its digest, so it is left
+  to the domain owner; `internal/lint/lint_test.go` lists the four error findings as known and fails when they change.
 
 > **D-50 closed as not a defect.** `exceptionCadence` does not update
 > `lastSent` itself, but its only caller (`numericReading`) sets
