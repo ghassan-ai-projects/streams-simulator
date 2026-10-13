@@ -23,6 +23,9 @@
       "$ref": "#/$defs/domain_format"
     },
     {
+      "$ref": "#/$defs/domain_lint"
+    },
+    {
       "$ref": "#/$defs/adapter_list"
     },
     {
@@ -93,6 +96,7 @@
                 "scenario_invalid",
                 "artifact_invalid",
                 "replay_mismatch",
+                "domain_lint",
                 "adapter_verify_failed",
                 "io_failed",
                 "catalog_failed",
@@ -290,6 +294,103 @@
         },
         "digest": {
           "$ref": "#/$defs/digest"
+        }
+      }
+    },
+    "domain_lint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "domain",
+        "digest",
+        "seed",
+        "hours",
+        "samples",
+        "findings",
+        "errors",
+        "warnings"
+      ],
+      "properties": {
+        "domain": {
+          "type": "string"
+        },
+        "digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "hours": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "samples": {
+          "type": "integer",
+          "minimum": 2
+        },
+        "findings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "severity",
+              "code",
+              "entity",
+              "at_s",
+              "detail"
+            ],
+            "properties": {
+              "severity": {
+                "enum": [
+                  "error",
+                  "warning"
+                ]
+              },
+              "code": {
+                "enum": [
+                  "non_finite",
+                  "out_of_range",
+                  "pinned_at_bound",
+                  "not_settled",
+                  "conservation_residual"
+                ]
+              },
+              "entity": {
+                "type": "string",
+                "minLength": 1
+              },
+              "channel": {
+                "type": "string",
+                "minLength": 1
+              },
+              "state": {
+                "type": "string",
+                "minLength": 1
+              },
+              "fault": {
+                "type": "string",
+                "minLength": 1
+              },
+              "at_s": {
+                "type": "number",
+                "minimum": 0
+              },
+              "detail": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        "errors": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "warnings": {
+          "type": "integer",
+          "minimum": 0
         }
       }
     },

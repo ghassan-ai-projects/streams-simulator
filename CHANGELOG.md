@@ -4,6 +4,11 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **Domain lint** (phase P7j). `streamsim domain lint <domain.json> [--hours H] [--seed S]` simulates a noiseless nominal day
+  (default population, no faults, no effector calls, sampled every 60 s) and reports `non_finite` and `out_of_range` errors and
+  `pinned_at_bound`, `not_settled` and `conservation_residual` warnings; an error finding exits 1 with the new code
+  `domain_lint`. New module `internal/lint`, success document `domain_lint`. Domain spec section 27.
+
 - **Plant wire reference host, journal and CLI** (phase P7d). `streamsim plantwire host` is a minimal conformant host
   (owner-only socket, handshake checks and refusal, commissioned inventory with quarantine, rebirth on a gap, historical data
   kept out of live values, scripted commands, verification by observation, a configurable barrier delay); `streamsim plantwire

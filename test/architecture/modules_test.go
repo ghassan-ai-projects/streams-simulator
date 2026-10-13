@@ -18,6 +18,7 @@ var moduleShapes = map[string][]string{
 	"internal/world":       {"domain"},
 	"internal/score":       {"domain"},
 	"internal/audit":       {"domain"},
+	"internal/lint":        {"domain"},
 	"internal/suite":       {"domain", "app", "files"},
 	"internal/deviceworld": {"domain", "app", "files"},
 	"internal/sink":        {"domain", "files", "httppush"},
