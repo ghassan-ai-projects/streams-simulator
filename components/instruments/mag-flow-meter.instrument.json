@@ -1,0 +1,32 @@
+{
+  "schema_version": "0.1",
+  "id": "streamsim/mag-flow-meter",
+  "version": 1,
+  "title": "Electromagnetic flow meter",
+  "description": "Full-bore magnetic flow meter on a water line; noisy at low flow, offset after a lost empty-pipe calibration.",
+  "tag": "FT",
+  "unit_family": "volumetric_flow",
+  "unit": "m3/h",
+  "channel": {
+    "value_type": "number",
+    "resolution": 0.1,
+    "fidelity": "F1",
+    "absence": "signal",
+    "cadence": {
+      "mode": "periodic",
+      "period_s": 5
+    },
+    "noise": {
+      "model": "gaussian",
+      "sigma": 0.003
+    }
+  },
+  "faults": [
+    {
+      "id": "offset",
+      "form": "offset",
+      "magnitude": 0.03
+    }
+  ],
+  "scaling": "span"
+}

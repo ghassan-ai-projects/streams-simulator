@@ -442,3 +442,11 @@ trip samples draw nothing.
 Cross-checks: a 0.3 s sag between step boundaries trips a 0.2 s ride-through trip and a 0.1 s sag does not, while the voltage at
 both neighbouring boundaries is nominal (so a boundary-sampled trip would miss both); an event-driven channel records the sag at
 600.4 s and the recovery at 600.7 s; the periodic channel's records are identical with and without the sag.
+
+## 20. Composed instance sets: `area` and `provenance` (phase P7g)
+
+An instance set may carry `area` (an ISA-95 area or unit name, for display and grouping) and `provenance` (where a composed set
+came from: component id, major version, the component file's digest, the preset, parameter values, the instrument attached at
+each measurement point and each instrument file's digest; [COMPONENTS_V0_1](COMPONENTS_V0_1.md) §7). A domain may carry `site`
+(`name`, `timezone`, `areas` with parents) and a channel `tag` (the ISA-5.1 letters of its measurement point). All are structure
+only: the world never reads them, and they enter the domain digest like any other member.

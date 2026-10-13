@@ -11,6 +11,7 @@ type DomainSpec struct {
 	Instances   []InstanceSet `json:"instances"`
 	LinkTypes   []LinkType    `json:"link_types,omitempty"`
 	Links       []Link        `json:"links,omitempty"`
+	Site        *Site         `json:"site,omitempty"`
 	Boards      []Board       `json:"boards,omitempty"`
 	Profiles    []Profile     `json:"profiles"`
 	GroundTruth GroundTruth   `json:"ground_truth"`
@@ -35,6 +36,29 @@ type InstanceSet struct {
 	Count      EntityCount `json:"count"`
 	Churn      *Churn      `json:"churn,omitempty"`
 	Override   *Override   `json:"override,omitempty"`
+	Area       string      `json:"area,omitempty"`
+	Provenance *Provenance `json:"provenance,omitempty"`
+}
+
+type Provenance struct {
+	Component         string            `json:"component"`
+	Version           int               `json:"version"`
+	Digest            string            `json:"digest"`
+	Preset            string            `json:"preset,omitempty"`
+	Parameters        map[string]any    `json:"parameters,omitempty"`
+	Instruments       map[string]string `json:"instruments,omitempty"`
+	InstrumentDigests map[string]string `json:"instrument_digests,omitempty"`
+}
+
+type Site struct {
+	Name     string `json:"name"`
+	Timezone string `json:"timezone,omitempty"`
+	Areas    []Area `json:"areas,omitempty"`
+}
+
+type Area struct {
+	Name   string `json:"name"`
+	Parent string `json:"parent,omitempty"`
 }
 
 type Axes struct {
@@ -166,6 +190,7 @@ type Channel struct {
 	ObservationOffset  float64       `json:"observation_offset,omitempty"`
 	ObservationBias    *Bias         `json:"observation_bias,omitempty"`
 	Fidelity           string        `json:"fidelity"`
+	Tag                string        `json:"tag,omitempty"`
 	ISO13374Role       string        `json:"iso13374_role,omitempty"`
 	Cadence            Cadence       `json:"cadence"`
 	Noise              Noise         `json:"noise"`

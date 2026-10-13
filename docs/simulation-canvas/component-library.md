@@ -29,62 +29,9 @@ choose how they are instrumented, connect them, and get a valid, realistic, dete
 
 ## 3. Shapes
 
-### 3.1 Equipment (`component-v0.1`, `components/equipment/*.component.json`)
-
-```json
-{
-  "id": "streamsim/chiller", "version": 1, "class": "static/heat_exchanger/chiller",
-  "title": "Water-cooled chiller", "tags": ["hvac", "utilities"], "icon": "chiller",
-  "kind": { "name": "chiller", "state": [...], "dynamics": [...], "effectors": [...], "faults": [...] },
-  "measurement_points": [
-    {"name": "chw_supply_temp", "state": "chw_supply", "unit_family": "temperature", "default_instrument": "streamsim/rtd@1", "tag": "TT"}
-  ],
-  "ports": [
-    {"name": "load_in", "type": "thermal_load", "direction": "in"},
-    {"name": "condenser_heat_out", "type": "thermal_load", "direction": "out"},
-    {"name": "power_in", "type": "electrical", "direction": "in"}
-  ],
-  "presets": {"small": {"/kind/state/0/max": 350, "...": 0}, "large": {"...": 0}},
-  "parameters": [{"name": "setpoint_c", "pointer": "/kind/state/2/initial", "min": 4, "max": 12, "default": 7}]
-}
-```
-
-- `kind` is an ordinary domain-spec v0.2 kind **without channels**: channels come from instruments attached at measurement
-  points.
-- `presets` and `parameters` only replace values at JSON pointers inside the component; the result must validate as a kind.
-
-### 3.2 Instrument (`instrument-v0.1`, `components/instruments/*.instrument.json`)
-
-```json
-{
-  "id": "streamsim/rtd", "version": 1, "tag": "TT", "unit_family": "temperature", "unit": "degC",
-  "channel": {"value_type": "number", "resolution": 0.1, "cadence": {"mode": "periodic", "period_s": 10},
-              "noise": {"model": "gaussian", "sigma": 0.05}, "drift": {"model": "linear", "rate_per_hour": 0.001}},
-  "faults": ["stuck_at", "drift", "open_circuit", "noise_burst"]
-}
-```
-
-Attaching an instrument at a measurement point produces a channel that observes the point's state; the instrument's faults
-become kind faults on that channel's state path (the existing observation offset and bias forms).
-
-### 3.3 Composition (`composition-v0.1`)
-
-The input of `streamsim domain compose` and of the builder:
-
-```json
-{
-  "id": "factory-utilities", "title": "Factory utilities",
-  "equipment": [
-    {"use": "streamsim/chiller@1", "names": ["CH-1", "CH-2", "CH-3"], "preset": "large", "parameters": {"setpoint_c": 6.5},
-     "instruments": {"remove": ["condenser_flow"], "replace": {"chw_supply_temp": "streamsim/thermistor@1"}}}
-  ],
-  "connections": [{"from": "AHU-1.chilled_water_in", "to": "CH-1.load_in"}],
-  "profiles": [...]
-}
-```
-
-`compose` is deterministic: the same composition and library give the same domain bytes (formatted with `domain format`),
-with `provenance` on each instance set.
+The contracts and their rules are [COMPONENTS_V0_1](../design/COMPONENTS_V0_1.md) (phase P7g); the worked example is
+[`components/compositions/chiller-pilot.composition.json`](../../components/compositions/chiller-pilot.composition.json) and the
+domain it composes to, [`docs/examples/chiller-pilot.domain.json`](../examples/chiller-pilot.domain.json).
 
 ## 4. Architecture
 

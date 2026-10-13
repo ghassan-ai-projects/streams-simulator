@@ -1,0 +1,103 @@
+{
+  "schema_version": "0.1",
+  "id": "streamsim/ahu",
+  "version": 1,
+  "title": "Air-handling unit",
+  "description": "Air-handling unit with a chilled-water coil: its cooling load follows occupancy over the day and is the load a chiller serves.",
+  "class": "rotating/fan/air_handling_unit",
+  "tags": [
+    "hvac",
+    "utilities"
+  ],
+  "icon": "ahu",
+  "kind": {
+    "state": [
+      {
+        "name": "cooling_load",
+        "unit": "kW",
+        "initial": 180,
+        "min": 0
+      },
+      {
+        "name": "supply_air",
+        "unit": "degC",
+        "initial": 13
+      }
+    ],
+    "dynamics": [
+      {
+        "target": "cooling_load",
+        "tier": "F0",
+        "f0": {
+          "baseline": 180,
+          "drift_per_hour": 0,
+          "seasonality": [
+            {
+              "amplitude": 60,
+              "period_s": 86400,
+              "phase_rad": -1.6
+            }
+          ]
+        }
+      },
+      {
+        "target": "supply_air",
+        "tier": "F0",
+        "f0": {
+          "baseline": 13,
+          "drift_per_hour": 0,
+          "seasonality": []
+        }
+      }
+    ],
+    "faults": [
+      {
+        "id": "coil_valve_stuck_closed",
+        "affects": [
+          {
+            "state": "supply_air",
+            "delta": 5
+          },
+          {
+            "state": "cooling_load",
+            "delta": -0.6,
+            "multiplicative": true
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "supply_air_temp"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "shape": "step"
+        }
+      }
+    ]
+  },
+  "measurement_points": [
+    {
+      "name": "supply_air_temp",
+      "state": "supply_air",
+      "unit_family": "temperature",
+      "range": {
+        "min": 0,
+        "max": 40
+      },
+      "tag": "TT",
+      "default_instrument": "streamsim/rtd@1"
+    }
+  ],
+  "ports": [
+    {
+      "name": "load_out",
+      "type": "thermal_load",
+      "direction": "provides",
+      "state": "cooling_load"
+    }
+  ]
+}
