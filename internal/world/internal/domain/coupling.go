@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"cmp"
 	"math"
 	"slices"
 
@@ -10,7 +11,12 @@ import (
 
 type coupling struct {
 	sources map[string]map[string][]string
-	readers map[string][]string
+	readers map[string][]readerEdge
+}
+
+type readerEdge struct {
+	reader string
+	reach  int64
 }
 
 type retention struct {
@@ -19,21 +25,50 @@ type retention struct {
 }
 
 func newCoupling(spec *domain.Compiled) coupling {
-	c := coupling{sources: map[string]map[string][]string{}, readers: map[string][]string{}}
+	c := coupling{sources: map[string]map[string][]string{}, readers: map[string][]readerEdge{}}
 	for _, link := range spec.Spec.Links {
-		if slices.Contains(spec.InstanceKind(spec.InstanceSetFor(link.To)).LinkReads(), link.Type) {
-			c.add(link)
+		if reach, read := sampleReach(spec.InstanceKind(spec.InstanceSetFor(link.To)), link.Type); read {
+			c.add(link, reach)
 		}
 	}
 	return c
 }
 
-func (c coupling) add(link model.Link) {
+func sampleReach(reader *model.Kind, linkType string) (int64, bool) {
+	var reach int64
+	read := false
+	for _, r := range reader.LinkReadsDetailed() {
+		if r.Type != linkType {
+			continue
+		}
+		if r.SampleS == 0 || (read && reach == 0) {
+			reach, read = 0, true
+			continue
+		}
+		reach, read = max(reach, int64(r.SampleS*secondsPerNS)), true
+	}
+	return reach, read
+}
+
+func (c coupling) add(link model.Link, reach int64) {
 	if c.sources[link.To] == nil {
 		c.sources[link.To] = map[string][]string{}
 	}
 	c.sources[link.To][link.Type] = insertSorted(c.sources[link.To][link.Type], link.From)
-	c.readers[link.From] = insertSorted(c.readers[link.From], link.To)
+	c.readers[link.From] = mergeReader(c.readers[link.From], readerEdge{reader: link.To, reach: reach})
+}
+
+func mergeReader(edges []readerEdge, edge readerEdge) []readerEdge {
+	at, found := slices.BinarySearchFunc(edges, edge.reader, func(e readerEdge, id string) int { return cmp.Compare(e.reader, id) })
+	if !found {
+		return slices.Insert(edges, at, edge)
+	}
+	if edges[at].reach == 0 || edge.reach == 0 {
+		edges[at].reach = 0
+	} else {
+		edges[at].reach = max(edges[at].reach, edge.reach)
+	}
+	return edges
 }
 
 func insertSorted(ids []string, id string) []string {
@@ -57,8 +92,8 @@ func (w *World) advanceReaders(source *Entity, t int64) {
 		return
 	}
 	source.readersAt = t
-	for _, id := range w.coupling.readers[source.ID] {
-		if reader := w.entities[id]; reader != nil {
+	for _, edge := range w.coupling.readers[source.ID] {
+		if reader := w.entities[edge.reader]; reader != nil {
 			w.advanceEntity(reader, reader.lastAliveAt(t))
 		}
 	}
@@ -66,12 +101,30 @@ func (w *World) advanceReaders(source *Entity, t int64) {
 
 func (w *World) readersFloor(source *Entity) int64 {
 	floor := int64(math.MaxInt64)
-	for _, id := range w.coupling.readers[source.ID] {
-		if reader := w.entities[id]; reader != nil && !reader.finishedFor(source) {
-			floor = min(floor, w.retainedFrom(reader))
+	for _, edge := range w.coupling.readers[source.ID] {
+		if reader := w.entities[edge.reader]; reader != nil && !reader.finishedFor(source) {
+			floor = min(floor, w.readerNeed(reader, edge.reach))
 		}
 	}
 	return floor
+}
+
+func (w *World) readerNeed(reader *Entity, reach int64) int64 {
+	if reach == 0 {
+		return w.retainedFrom(reader)
+	}
+	return reader.frontier() - reach - 4*kindSteps(reader.kind)
+}
+
+func (e *Entity) frontier() int64 {
+	front := e.BornNS
+	first := true
+	for i := range e.kind.Dynamics {
+		if s := e.states[e.kind.Dynamics[i].Target]; s != nil && e.kind.Dynamics[i].Integrated() && (first || s.lastStep < front) {
+			front, first = s.lastStep, false
+		}
+	}
+	return front
 }
 
 func (w *World) retainedFrom(ent *Entity) int64 {

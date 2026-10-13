@@ -26,7 +26,7 @@ func (checks domainChecks) linkInput(in model.F1Input) error {
 	if in.Link.NeedsDefault() && in.Link.Default == nil {
 		return checks.bad("/link/default", "input %q takes the %s over link %q and needs a default for an instance with no linked instances", in.State, in.Link.Aggregate, in.Link.Type)
 	}
-	return nil
+	return checks.sampledRead(in.Link.Type, in.Link.SampleS, "/link/sample_s")
 }
 
 func (checks domainChecks) dynamicFollow(d *model.Dynamics) error {
@@ -36,7 +36,10 @@ func (checks domainChecks) dynamicFollow(d *model.Dynamics) error {
 	if d.F1 != nil && slices.Contains(unfollowableForms, d.F1.Form) {
 		return checks.bad("/follow", "state %q keeps its own %s form and cannot follow linked instances", d.Target, d.F1.Form)
 	}
-	return checks.linkRead(d.Follow.Link, d.Follow.State, "/follow/link", "/follow/state")
+	if err := checks.linkRead(d.Follow.Link, d.Follow.State, "/follow/link", "/follow/state"); err != nil {
+		return err
+	}
+	return checks.sampledRead(d.Follow.Link, d.Follow.SampleS, "/follow/sample_s")
 }
 
 func (checks domainChecks) linkRead(linkType, state, typeMember, stateMember string) error {
@@ -58,7 +61,7 @@ func (checks domainChecks) checkCoupling() error {
 	kinds := checks.compiled.Spec.Kinds
 	traversal := cycleTraversal{dependencies: graph, state: map[string]uint8{}, cycle: func(name string, path []string) error {
 		at := itemPointer("kinds", slices.IndexFunc(kinds, func(k model.Kind) bool { return k.Name == name }))
-		return invalidDomain(checks.source, at, fmt.Sprintf("kinds read each other over links in a cycle (path %v); a link read must not lead back to its own kind", path))
+		return invalidDomain(checks.source, at, fmt.Sprintf("kinds read each other over links in a cycle (path %v); a cycle needs a sampled read (sample_s)", path))
 	}}
 	for i := range kinds {
 		if err := traversal.visit(kinds[i].Name); err != nil {
@@ -71,8 +74,8 @@ func (checks domainChecks) checkCoupling() error {
 func (checks domainChecks) couplingGraph() map[string][]string {
 	graph := map[string][]string{}
 	for _, kind := range checks.readingKinds() {
-		for _, linkType := range kind.LinkReads() {
-			if lt := checks.linkType(linkType); lt != nil && !slices.Contains(graph[kind.Name], lt.From) {
+		for _, read := range kind.LinkReadsDetailed() {
+			if lt := checks.linkType(read.Type); lt != nil && read.SampleS == 0 && !slices.Contains(graph[kind.Name], lt.From) {
 				graph[kind.Name] = append(graph[kind.Name], lt.From)
 			}
 		}

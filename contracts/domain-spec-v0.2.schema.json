@@ -389,7 +389,8 @@
           "properties": {
             "link": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$"},
             "state": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$"},
-            "aggregate": {"enum": ["sum", "mean", "min", "max", "count_running"]}
+            "aggregate": {"enum": ["sum", "mean", "min", "max", "count_running"]},
+            "sample_s": {"type": "number", "exclusiveMinimum": 0, "description": "Follow the linked states as they were at the previous sample instant (domain-spec v0.2 §28)."}
           }},
         "dt_ms": {"type": "integer", "minimum": 1, "description": "Required for F1 and F2 (enforced below)."},
         "f0": {
@@ -482,7 +483,8 @@
                         "properties": {
                           "type": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$"},
                           "aggregate": {"enum": ["sum", "mean", "min", "max", "count_running"]},
-                          "default": {"type": "number", "description": "mean, min and max over no linked instance."}
+                          "default": {"type": "number", "description": "mean, min and max over no linked instance."},
+                          "sample_s": {"type": "number", "exclusiveMinimum": 0, "description": "Read the linked states as they were at the previous sample instant (a grid of this period from the world start): a sampled read may close a feedback loop between kinds (domain-spec v0.2 §28)."}
                         }}
                     }
                   }

@@ -103,3 +103,7 @@ func PumpBoardDomain() string {
 func CoupledDomain() string {
 	return filepath.Join(RepositoryRoot(), "internal", "testsupport", "testdata", "coupled-plant.domain.json")
 }
+
+func LoopDomain() string {
+	return filepath.Join(RepositoryRoot(), "internal", "testsupport", "testdata", "loop-plant.domain.json")
+}

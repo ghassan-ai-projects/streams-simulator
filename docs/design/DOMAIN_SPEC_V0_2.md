@@ -617,3 +617,18 @@ output. Any `error` finding makes the command fail with code `domain_lint` (exit
 
 **Limits.** The lint judges the nominal day only: it exercises no effector and injects no fault, so a state that moves only
 under command is idle here. Its thresholds are fixed; a warning is a prompt to look, not a defect.
+
+## 28. Feedback loops: sampled link reads (phase P7k)
+
+A linked input or a `follow` may declare `sample_s`: it then reads the linked states as they were at the latest instant of a
+grid of that period, counted from the world start, strictly before the read (the world start itself for the first period).
+A sampled read closes a feedback loop between kinds, such as a chiller and its cooling tower or a header and the consumers that
+draw on it.
+
+- **Validation**: kinds may read each other in a cycle only when every cycle contains a sampled read; `sample_s` is a whole
+  number of milliseconds and a multiple of every integrated step of the source kind, so a sampled read always falls on the
+  source's step boundaries; a kind read by sample does not churn.
+- **Determinism**: a sampled read looks strictly into the past, so a loop never asks a state for a value it is still computing;
+  the world tests prove a tank and cooler loop against an independent recurrence and against random read schedules.
+- **History**: a source keeps history for a sampled reader back to the reader's progress minus the sample period and four of its
+  steps, so a loop keeps a bounded history.
