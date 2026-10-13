@@ -47,6 +47,14 @@ function dropCommands(path: string, op: string): void {
   writeFileSync(path, JSON.stringify({ ...artifact, command_log: kept }, null, 2));
 }
 
+function retitleRecordedPlant(path: string): void {
+  const artifact = JSON.parse(readFileSync(path, "utf8")) as { domain_spec: Record<string, unknown> };
+  writeFileSync(
+    path,
+    JSON.stringify({ ...artifact, domain_spec: { ...artifact.domain_spec, title: "Tampered" } }, null, 2),
+  );
+}
+
 function editDescription(path: string): void {
   const domain = JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>;
   writeFileSync(path, JSON.stringify({ ...domain, description: "Edited after the runs were recorded." }, null, 2));
@@ -71,6 +79,8 @@ export function buildFixture(): Fixture {
   appendFileSync(join(workspace, "runs", "w-edited", "trace.jsonl"), "\n");
   record(binary, workspace, "w-diverged", ["-fault", "CT-1=cooling_tower__fan_failure@600"]);
   dropCommands(join(workspace, "runs", "w-diverged", "run.json"), "fault.inject");
+  record(binary, workspace, "w-tampered", []);
+  retitleRecordedPlant(join(workspace, "runs", "w-tampered", "run.json"));
   editDescription(join(workspace, "domains", "factory-utilities.domain.json"));
   return { binary, workspace, root };
 }

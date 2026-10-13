@@ -34,6 +34,9 @@ test("a run whose files were edited after it ended is Not verified", async ({ pa
     page.getByRole("complementary", { name: "Run details" }).getByRole("region", { name: "File check" }),
   ).toContainText("files differ");
   await expect(page.getByRole("alert").filter({ hasText: "differ from what the run wrote" })).toBeVisible();
+  await expect(
+    page.getByRole("complementary", { name: "Run details" }).getByRole("region", { name: "Replay check" }),
+  ).toContainText("Does not reproduce");
   const graph = await page.getByRole("application", { name: "Plant graph" }).boundingBox();
   expect(graph?.height ?? 0).toBeGreaterThan(300);
 });
@@ -48,4 +51,12 @@ test("a run that does not reproduce reads Not verified with verify's own verdict
   await replay.getByText("What differs").click();
   await expect(replay.locator("pre")).not.toBeEmpty();
   await expect(page.getByRole("note")).toContainText("This run did not verify");
+});
+
+test("a run whose recorded plant was tampered with reads Not verified, not Not checked", async ({ page }) => {
+  await page.goto(`${env("CANVAS_APP_URL")}/#/run?world=w-tampered`);
+  await expect(page.getByRole("status").filter({ hasText: /^Not verified$/ })).toHaveCount(1, { timeout: 60_000 });
+  const replay = page.getByRole("complementary", { name: "Run details" }).getByRole("region", { name: "Replay check" });
+  await replay.getByText("What differs").click();
+  await expect(replay.locator("pre")).toContainText("does not match its digest");
 });
