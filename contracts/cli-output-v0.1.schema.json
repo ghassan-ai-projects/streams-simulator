@@ -548,6 +548,12 @@
         },
         "detail": {
           "type": "string"
+        },
+        "domain_changed": {
+          "type": "boolean"
+        },
+        "current_domain_digest": {
+          "type": "string"
         }
       }
     },

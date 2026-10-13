@@ -42,14 +42,27 @@ func TestEachDomainErrorMapsToItsStatusAndCode(t *testing.T) {
 	}
 }
 
-func TestAToolOrCommandFailureKeepsItsCodeMessageAndIssues(t *testing.T) {
+func TestAToolOrCommandFailureKeepsItsCodeMessageIssuesAndResult(t *testing.T) {
 	t.Parallel()
-	r := newRig(t)
-	r.service.fileErr = &domain.Failure{Code: "domain_invalid", Message: "bad", Issues: []byte(`[{"pointer":"/x"}]`)}
-	got := r.do(t, req{Method: http.MethodPost, Path: "/api/actions/domain.validate", Body: `{"args":{}}`, Paired: true})
-	want := `{"error":{"code":"domain_invalid","message":"bad","issues":[{"pointer":"/x"}]}}`
-	if got.Status != http.StatusUnprocessableEntity || strings.TrimSpace(got.Body) != want {
-		t.Fatalf("%d %s", got.Status, got.Body)
+	cases := map[string]struct {
+		failure *domain.Failure
+		want    string
+	}{
+		"issues": {&domain.Failure{Code: "domain_invalid", Message: "bad", Issues: []byte(`[{"pointer":"/x"}]`)},
+			`{"error":{"code":"domain_invalid","message":"bad","issues":[{"pointer":"/x"}]}}`},
+		"result": {&domain.Failure{Code: "replay_mismatch", Message: "no", Result: []byte(`{"matches":false}`)},
+			`{"error":{"code":"replay_mismatch","message":"no","result":{"matches":false}}}`},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			r := newRig(t)
+			r.service.fileErr = tc.failure
+			got := r.do(t, req{Method: http.MethodPost, Path: "/api/actions/domain.validate", Body: `{"args":{}}`, Paired: true})
+			if got.Status != http.StatusUnprocessableEntity || strings.TrimSpace(got.Body) != tc.want {
+				t.Fatalf("%d %s", got.Status, got.Body)
+			}
+		})
 	}
 }
 

@@ -103,3 +103,18 @@ func TestCommandActionsRunWithAbsoluteWorkspacePathsAndTheirFlags(t *testing.T) 
 		t.Fatalf("an unknown action: %v", err)
 	}
 }
+
+func TestAVerifyThatDoesNotReproduceKeepsItsResultWithoutTheWorkspacePath(t *testing.T) {
+	t.Parallel()
+	h := newHarness(t)
+	document := `{"error":{"code":"replay_mismatch","message":"does not reproduce","result":{"matches":false,"detail":"` + h.dir + `/runs/w-1"}}}`
+	h.command = process.CommandResult{ExitCode: 1, Stdout: []byte(document)}
+	var failure *domain.Failure
+	_, err := h.bridge.RunAction(context.Background(), "run.verify", map[string]any{"run": "w-1"})
+	if !errors.As(err, &failure) || failure.Code != "replay_mismatch" {
+		t.Fatalf("err = %v", err)
+	}
+	if want := `{"matches":false,"detail":"runs/w-1"}`; string(failure.Result) != want {
+		t.Fatalf("result = %s, want %s", failure.Result, want)
+	}
+}

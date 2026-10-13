@@ -12,6 +12,7 @@ type Failure struct {
 	Code    string          `json:"code"`
 	Message string          `json:"message"`
 	Issues  json.RawMessage `json:"issues,omitempty"`
+	Result  json.RawMessage `json:"result,omitempty"`
 }
 
 func (f *Failure) Error() string {

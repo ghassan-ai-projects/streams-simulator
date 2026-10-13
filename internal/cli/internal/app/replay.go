@@ -58,6 +58,10 @@ func parseReplayOptions(args []string, stderr io.Writer) (*flag.FlagSet, string,
 }
 
 func replayResult(res *run.ReplayResult) map[string]any {
-	return map[string]any{"matches": res.Matches, "version_match": res.VersionMatch,
+	doc := map[string]any{"matches": res.Matches, "version_match": res.VersionMatch,
 		"got": res.GotDigest, "want": res.WantDigest, "first_divergence": res.FirstDivergence, "detail": res.Detail}
+	if res.DomainChanged {
+		doc["domain_changed"], doc["current_domain_digest"] = true, res.CurrentDomainDigest
+	}
+	return doc
 }

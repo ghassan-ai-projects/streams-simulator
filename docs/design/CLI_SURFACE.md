@@ -66,7 +66,7 @@ Codes shared with the MCP taxonomy (`MCP_SURFACE.md` §7) mean the same thing on
 | `adapter_invalid` | 1 | An adapter document fails `output-adapter` |
 | `scenario_invalid` | 1 | A scenario file fails `scenario-v0.1`, holds a value a scenario cannot hold, or fails a check against the domain and world (`SCENARIO_FILE.md` §3); `scenario from-run` would write a scenario that fails `scenario-v0.1` or that check (`source` is then the artifact) |
 | `artifact_invalid` | 1 | A run artifact, consumer verdict or ground-truth label is not valid JSON or fails its contract; a delivery ledger or world-state history line does not decode as its record type (unknown fields refused) |
-| `replay_mismatch` | 1 | `replay`, `verify` or `score` cannot reproduce the artifact: the trace digest differs (the replay report is the `result`), or the artifact's domain, adapter or world digest no longer matches the inputs (no `result`: nothing was replayed) |
+| `replay_mismatch` | 1 | `replay`, `verify` or `score` cannot reproduce the artifact: the trace digest differs (the replay report is the `result`), or the artifact's recorded domain, adapter or world digest does not match what it records (no `result`: nothing was replayed) |
 | `domain_lint` | 1 | `domain lint` found at least one error-severity finding in the nominal day; the lint report is the `result` |
 | `adapter_verify_failed` | 1 | `adapter verify` found a schema or golden divergence, or the adapter declares nothing to check |
 | `io_failed` | 1 | Reading, writing or binding a path failed for a reason other than absence |
@@ -91,7 +91,7 @@ modules (`errors.As`/`errors.Is`), never message text.
 | `adapter list` | `{adapters: [{id, version, encoding, title}]}` |
 | `adapter verify <path>` | `{adapter, schema_checked, schema_ok, golden_checked, golden_match, records}` |
 | `run` | `{run_id, trace_digest, reproducible, emitted, ledger}` |
-| `replay <run.json>` | `{matches, version_match, got, want, first_divergence, detail}` (exit 0 whatever the outcome) |
+| `replay <run.json>` | `{matches, version_match, got, want, first_divergence, detail}` (exit 0 whatever the outcome); replays the artifact's recorded domain and adapter specs, and adds `domain_changed: true` and `current_domain_digest` when the domains directory now holds a different digest for the run's domain (information, not failure) |
 | `verify <run.json>` | The replay document on a match; `replay_mismatch` with the document as `result` otherwise |
 | `suite` | `{suite, scenarios, trivial_excluded, terminal_state}` |
 | `scenario from-run <run.json> --out <file>` | `{scenario_written, commands, omitted, refused}` |

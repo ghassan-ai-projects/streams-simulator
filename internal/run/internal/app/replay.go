@@ -23,6 +23,9 @@ type ReplayResult struct {
 	Detail          string `json:"detail,omitempty"`
 
 	JournalDiverged []string `json:"journal_diverged,omitempty"`
+
+	DomainChanged       bool   `json:"domain_changed,omitempty"`
+	CurrentDomainDigest string `json:"current_domain_digest,omitempty"`
 }
 
 func LoadArtifact(path string) (*model.RunArtifact, error) {

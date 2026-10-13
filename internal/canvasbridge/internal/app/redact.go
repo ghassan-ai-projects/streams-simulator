@@ -19,7 +19,7 @@ func redact(err error, root string) error {
 	var failure *domain.Failure
 	if errors.As(err, &failure) {
 		return &domain.Failure{Code: failure.Code, Message: domain.Scrub(failure.Message, root),
-			Issues: []byte(domain.Scrub(string(failure.Issues), root))}
+			Issues: []byte(domain.Scrub(string(failure.Issues), root)), Result: []byte(domain.Scrub(string(failure.Result), root))}
 	}
 	if text := domain.Scrub(err.Error(), root); text != err.Error() {
 		return &redacted{err: err, text: text}

@@ -28,7 +28,8 @@ the `STREAMSIM_CUSTOMER_WORKSPACE` marker is served like any other, and must liv
 
 ## 2. Protocol
 
-All bodies are JSON. Errors are `{"error": {"code", "message", "issues"?}}` with the HTTP status of the class (400 invalid,
+All bodies are JSON. Errors are `{"error": {"code", "message", "issues"?, "result"?}}` (`result` is the command's own result document when it
+failed after checking, e.g. `run.verify` with `matches: false`) with the HTTP status of the class (400 invalid,
 401 unpaired, 403 refused, 404 absent, 409 conflict, 413 too large, 422 a director tool or streamsim command refused the
 request with its own `code`, `message` and `issues`, 500 the bridge itself failed). Any other `GET /api/...` path is
 `404 not_found` (never the UI) and passes the same admission as the API. A conflict from a write or from `domain.compose`
