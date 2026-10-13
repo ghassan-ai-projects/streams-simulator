@@ -1,0 +1,37 @@
+{
+  "schema_version": "0.1",
+  "id": "streamsim/current-clamp",
+  "version": 1,
+  "title": "Current transformer and transmitter",
+  "description": "Split-core current transformer with a 4-20 mA transmitter on a motor feeder; a wrong ratio shows as a gain error.",
+  "tag": "IT",
+  "unit_family": "current",
+  "unit": "A",
+  "channel": {
+    "value_type": "number",
+    "resolution": 0.1,
+    "fidelity": "F1",
+    "absence": "signal",
+    "cadence": {
+      "mode": "periodic",
+      "period_s": 5
+    },
+    "noise": {
+      "model": "gaussian",
+      "sigma": 0.005
+    }
+  },
+  "faults": [
+    {
+      "id": "scale",
+      "form": "scale",
+      "factor": 1.08
+    },
+    {
+      "id": "offset",
+      "form": "offset",
+      "magnitude": 0.03
+    }
+  ],
+  "scaling": "span"
+}

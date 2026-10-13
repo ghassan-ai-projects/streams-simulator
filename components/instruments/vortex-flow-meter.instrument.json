@@ -1,0 +1,38 @@
+{
+  "schema_version": "0.1",
+  "id": "streamsim/vortex-flow-meter",
+  "version": 1,
+  "title": "Vortex flow meter",
+  "description": "Vortex-shedding flow meter on a gas, steam or liquid line; noisy at low flow, offset after a bad zero.",
+  "tag": "FT",
+  "unit_family": "volumetric_flow",
+  "unit": "m3/h",
+  "channel": {
+    "value_type": "number",
+    "resolution": 0.1,
+    "fidelity": "F1",
+    "absence": "signal",
+    "cadence": {
+      "mode": "periodic",
+      "period_s": 5
+    },
+    "noise": {
+      "model": "gaussian",
+      "sigma": 0.004
+    }
+  },
+  "faults": [
+    {
+      "id": "offset",
+      "form": "offset",
+      "magnitude": 0.02
+    },
+    {
+      "id": "noise",
+      "form": "noise",
+      "factor": 4.0,
+      "is_negative_class": true
+    }
+  ],
+  "scaling": "span"
+}

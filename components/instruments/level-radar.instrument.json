@@ -1,0 +1,38 @@
+{
+  "schema_version": "0.1",
+  "id": "streamsim/level-radar",
+  "version": 1,
+  "title": "Radar level transmitter",
+  "description": "Non-contact radar level transmitter; stable and accurate, can lock onto a false echo and stick.",
+  "tag": "LT",
+  "unit_family": "level",
+  "unit": "m",
+  "channel": {
+    "value_type": "number",
+    "resolution": 0.001,
+    "fidelity": "F1",
+    "absence": "signal",
+    "cadence": {
+      "mode": "periodic",
+      "period_s": 10
+    },
+    "noise": {
+      "model": "gaussian",
+      "sigma": 0.001
+    }
+  },
+  "faults": [
+    {
+      "id": "offset",
+      "form": "offset",
+      "magnitude": 0.01
+    },
+    {
+      "id": "stuck",
+      "form": "stuck",
+      "stuck_at": "high",
+      "quality": "suspect"
+    }
+  ],
+  "scaling": "span"
+}

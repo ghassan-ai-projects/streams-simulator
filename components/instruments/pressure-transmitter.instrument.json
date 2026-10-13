@@ -1,0 +1,47 @@
+{
+  "schema_version": "0.1",
+  "id": "streamsim/pressure-transmitter",
+  "version": 1,
+  "title": "Pressure transmitter (4-20 mA)",
+  "description": "Gauge pressure transmitter on a process or utility line; span-relative noise, offset after a zero-trim error and slow calibration drift.",
+  "tag": "PT",
+  "unit_family": "pressure",
+  "unit": "kPa",
+  "range": {
+    "min": -100,
+    "max": 40000
+  },
+  "channel": {
+    "value_type": "number",
+    "resolution": 0.1,
+    "fidelity": "F1",
+    "absence": "signal",
+    "cadence": {
+      "mode": "periodic",
+      "period_s": 5
+    },
+    "noise": {
+      "model": "gaussian",
+      "sigma": 0.002
+    }
+  },
+  "faults": [
+    {
+      "id": "offset",
+      "form": "offset",
+      "magnitude": 0.01
+    },
+    {
+      "id": "drift",
+      "form": "drift",
+      "magnitude": 0.0005,
+      "duration_s": 172800
+    },
+    {
+      "id": "stuck",
+      "form": "stuck",
+      "stuck_at": "low"
+    }
+  ],
+  "scaling": "span"
+}

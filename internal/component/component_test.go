@@ -23,8 +23,8 @@ func TestTheBuiltInLibraryListsItsEquipmentAndInstruments(t *testing.T) {
 	t.Parallel()
 	library := builtInLibrary(t)
 	equipment, instruments := library.Counts()
-	if equipment != 2 || instruments != 3 || len(library.List()) != 5 {
-		t.Fatalf("library = %d equipment, %d instruments, %d entries; want 2, 3, 5", equipment, instruments, len(library.List()))
+	if equipment < 2 || instruments < 3 || len(library.List()) != equipment+instruments {
+		t.Fatalf("library = %d equipment, %d instruments, %d entries; want at least 2 and 3, and one entry each", equipment, instruments, len(library.List()))
 	}
 }
 

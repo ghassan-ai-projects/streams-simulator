@@ -1,0 +1,25 @@
+{
+  "schema_version": "0.1",
+  "id": "streamsim/run-status",
+  "version": 1,
+  "title": "Run status contact",
+  "description": "Digital run or state contact from a motor starter or a valve limit switch; reports 1 while the equipment is on and 0 when it is off.",
+  "tag": "YS",
+  "unit_family": "state",
+  "unit": "on",
+  "channel": {
+    "value_type": "number",
+    "resolution": 1,
+    "fidelity": "F1",
+    "absence": "signal",
+    "cadence": {
+      "mode": "periodic",
+      "period_s": 10
+    },
+    "noise": {
+      "model": "none",
+      "sigma": 0
+    }
+  },
+  "faults": []
+}

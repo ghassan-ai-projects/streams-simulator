@@ -1,0 +1,37 @@
+{
+  "schema_version": "0.1",
+  "id": "streamsim/valve-position",
+  "version": 1,
+  "title": "Valve position transmitter",
+  "description": "Position feedback of a control valve or damper (0 to 100 percent travel); the linkage can slip or the sensor stick.",
+  "tag": "ZT",
+  "unit_family": "fraction",
+  "unit": "%",
+  "channel": {
+    "value_type": "number",
+    "resolution": 0.1,
+    "fidelity": "F1",
+    "absence": "signal",
+    "cadence": {
+      "mode": "periodic",
+      "period_s": 5
+    },
+    "noise": {
+      "model": "gaussian",
+      "sigma": 0.002
+    }
+  },
+  "faults": [
+    {
+      "id": "offset",
+      "form": "offset",
+      "magnitude": 0.02
+    },
+    {
+      "id": "stuck",
+      "form": "stuck",
+      "stuck_at": "low"
+    }
+  ],
+  "scaling": "span"
+}

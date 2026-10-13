@@ -1,0 +1,37 @@
+{
+  "schema_version": "0.1",
+  "id": "streamsim/accelerometer",
+  "version": 1,
+  "title": "Vibration velocity transmitter",
+  "description": "Industrial accelerometer with integrated velocity output (mm/s RMS) mounted on a bearing housing.",
+  "tag": "VT",
+  "unit_family": "vibration_velocity",
+  "unit": "mm/s",
+  "channel": {
+    "value_type": "number",
+    "resolution": 0.01,
+    "fidelity": "F1",
+    "absence": "signal",
+    "cadence": {
+      "mode": "periodic",
+      "period_s": 10
+    },
+    "noise": {
+      "model": "gaussian",
+      "sigma": 0.01
+    }
+  },
+  "faults": [
+    {
+      "id": "offset",
+      "form": "offset",
+      "magnitude": 0.06
+    },
+    {
+      "id": "noise",
+      "form": "noise",
+      "factor": 5.0
+    }
+  ],
+  "scaling": "span"
+}

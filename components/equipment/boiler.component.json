@@ -1,0 +1,806 @@
+{
+  "schema_version": "0.1",
+  "id": "streamsim/boiler",
+  "version": 1,
+  "title": "Gas-fired steam boiler",
+  "description": "Steam boiler holding header pressure: a PI controller moves the firing rate to keep pressure at the setpoint against the demand. Scale on the heat-exchange surface lowers efficiency, so the controller burns more fuel and the stack runs hotter while pressure stays on target. A flame failure trips the burner until it is acknowledged and reset, and low pressure raises an ISA-18.2 alarm.",
+  "class": "static/boiler/steam_boiler",
+  "tags": [
+    "heat",
+    "utilities",
+    "steam"
+  ],
+  "icon": "boiler",
+  "kind": {
+    "state": [
+      {
+        "name": "running",
+        "unit": "on",
+        "initial": 1,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "pressure_setpoint",
+        "unit": "kPa",
+        "initial": 1000,
+        "min": 500,
+        "max": 1300
+      },
+      {
+        "name": "reset_count",
+        "unit": "count",
+        "initial": 0
+      },
+      {
+        "name": "ack_count",
+        "unit": "count",
+        "initial": 0
+      },
+      {
+        "name": "alarm_shelved",
+        "unit": "on",
+        "initial": 0,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "steam_demand",
+        "unit": "kg/s",
+        "initial": 0.70009,
+        "min": 0
+      },
+      {
+        "name": "flame_signal",
+        "unit": "ratio",
+        "initial": 1
+      },
+      {
+        "name": "flame_ok",
+        "unit": "on",
+        "initial": 1
+      },
+      {
+        "name": "burner_on",
+        "unit": "on",
+        "initial": 1
+      },
+      {
+        "name": "fouling",
+        "unit": "ratio",
+        "initial": 0,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "steam_loss",
+        "unit": "kg/s",
+        "initial": 0,
+        "min": 0
+      },
+      {
+        "name": "firing_rate",
+        "unit": "%",
+        "initial": 49.2704
+      },
+      {
+        "name": "efficiency",
+        "unit": "%",
+        "initial": 87.2847
+      },
+      {
+        "name": "steam_generation",
+        "unit": "kg/s",
+        "initial": 0.70009
+      },
+      {
+        "name": "steam_pressure",
+        "unit": "kPa",
+        "initial": 1000,
+        "min": 0,
+        "max": 1500
+      },
+      {
+        "name": "steam_flow",
+        "unit": "kg/s",
+        "initial": 0.70009
+      },
+      {
+        "name": "fuel_flow",
+        "unit": "m3/h",
+        "initial": 187.686
+      },
+      {
+        "name": "stack_temp",
+        "unit": "degC",
+        "initial": 132.172
+      },
+      {
+        "name": "low_pressure_alarm",
+        "unit": "on",
+        "initial": 0
+      }
+    ],
+    "dynamics": [
+      {
+        "target": "steam_demand",
+        "tier": "F0",
+        "f0": {
+          "baseline": 0.91,
+          "drift_per_hour": 0,
+          "seasonality": [
+            {
+              "amplitude": 0.21,
+              "period_s": 86400,
+              "phase_rad": -1.6
+            }
+          ]
+        }
+      },
+      {
+        "target": "flame_ok",
+        "tier": "F1",
+        "dt_ms": 1000,
+        "f1": {
+          "form": "trip",
+          "when": {
+            "state": "flame_signal",
+            "operator": "lt",
+            "threshold": 0.5
+          },
+          "for_s": 3,
+          "tripped_value": 0,
+          "latch": true,
+          "reset_on": "reset_count"
+        }
+      },
+      {
+        "target": "burner_on",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "running",
+              "coef": 1
+            },
+            {
+              "state": "flame_ok",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "firing_rate",
+        "tier": "F1",
+        "dt_ms": 1000,
+        "f1": {
+          "form": "pid",
+          "pid": {
+            "pv": "steam_pressure",
+            "sp": "pressure_setpoint",
+            "kp": 1.7,
+            "ki": 0.014,
+            "kd": 0,
+            "action": "reverse"
+          },
+          "clamp": {
+            "min": 0,
+            "max": 100
+          }
+        }
+      },
+      {
+        "target": "efficiency",
+        "tier": "F1",
+        "f1": {
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "firing_rate",
+              "coef": 1
+            },
+            {
+              "state": "fouling",
+              "coef": 1
+            }
+          ],
+          "table": {
+            "x": [
+              10,
+              30,
+              60,
+              100
+            ],
+            "y": [
+              0,
+              0.15,
+              0.3
+            ],
+            "grid": [
+              [
+                80,
+                77,
+                74
+              ],
+              [
+                86,
+                83,
+                80
+              ],
+              [
+                88,
+                85,
+                82
+              ],
+              [
+                86,
+                83,
+                80
+              ]
+            ]
+          }
+        }
+      },
+      {
+        "target": "steam_generation",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "firing_rate",
+              "coef": 0.014
+            },
+            {
+              "state": "burner_on",
+              "coef": 1
+            },
+            {
+              "state": "efficiency",
+              "coef": 0.0116279
+            }
+          ]
+        }
+      },
+      {
+        "target": "steam_pressure",
+        "tier": "F1",
+        "dt_ms": 1000,
+        "f1": {
+          "form": "store",
+          "capacity": 1.4,
+          "inputs": [
+            {
+              "state": "steam_generation",
+              "coef": 1
+            },
+            {
+              "state": "steam_demand",
+              "coef": -1
+            },
+            {
+              "state": "steam_loss",
+              "coef": -1
+            }
+          ]
+        }
+      },
+      {
+        "target": "steam_flow",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "steam_demand",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "fuel_flow",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "firing_rate",
+              "coef": 3.8093
+            },
+            {
+              "state": "burner_on",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "stack_temp",
+        "tier": "F1",
+        "dt_ms": 1000,
+        "f1": {
+          "form": "first_order_lag",
+          "time_constant_s": 120,
+          "gain": 1,
+          "inputs": [
+            {
+              "state": "burner_on",
+              "coef": 110
+            },
+            {
+              "state": "firing_rate",
+              "coef": 0.45
+            },
+            {
+              "state": "fouling",
+              "coef": 120
+            }
+          ]
+        }
+      },
+      {
+        "target": "low_pressure_alarm",
+        "tier": "F1",
+        "dt_ms": 1000,
+        "f1": {
+          "form": "alarm",
+          "alarm": {
+            "watch": "steam_pressure",
+            "limit": 900,
+            "direction": "low",
+            "deadband": 20,
+            "on_delay_s": 10,
+            "off_delay_s": 20,
+            "priority": "high",
+            "acknowledge": "ack_count",
+            "shelve": "alarm_shelved"
+          }
+        }
+      }
+    ],
+    "faults": [
+      {
+        "id": "scaling",
+        "affects": [
+          {
+            "state": "fouling",
+            "delta": 0.3
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "stack_temp"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "shape": "ramp",
+          "rate_per_hour": 0.01
+        }
+      },
+      {
+        "id": "flame_failure",
+        "affects": [
+          {
+            "state": "flame_signal",
+            "delta": -1
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "steam_pressure"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "shape": "pulse",
+          "duration_s": 10
+        }
+      },
+      {
+        "id": "safety_valve_simmering",
+        "affects": [
+          {
+            "state": "steam_loss",
+            "delta": 0.07
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "fuel_flow"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "shape": "step"
+        }
+      },
+      {
+        "id": "steam_demand_surge",
+        "affects": [
+          {
+            "state": "steam_demand",
+            "delta": 0.3,
+            "multiplicative": true
+          }
+        ],
+        "is_negative_class": true,
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "steam_flow"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "shape": "pulse",
+          "duration_s": 1800
+        }
+      }
+    ],
+    "effectors": [
+      {
+        "name": "set_running",
+        "risk_class": "high",
+        "idempotency_window_s": 3600,
+        "ack": {
+          "failure_modes": [
+            {
+              "mode": "ok",
+              "probability": 1.0
+            }
+          ],
+          "latency_ms": {
+            "mean": 300,
+            "sigma": 50
+          }
+        },
+        "args_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "boiler_id",
+            "running"
+          ],
+          "properties": {
+            "boiler_id": {
+              "type": "string"
+            },
+            "running": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        },
+        "effect": {
+          "dead_time_s": 0,
+          "time_constant_s": 0,
+          "state_deltas": [
+            {
+              "state": "running",
+              "assign_from_arg": "running"
+            }
+          ]
+        }
+      },
+      {
+        "name": "set_pressure_setpoint",
+        "risk_class": "medium",
+        "idempotency_window_s": 3600,
+        "ack": {
+          "failure_modes": [
+            {
+              "mode": "ok",
+              "probability": 1.0
+            }
+          ],
+          "latency_ms": {
+            "mean": 300,
+            "sigma": 50
+          }
+        },
+        "args_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "boiler_id",
+            "pressure_kpa"
+          ],
+          "properties": {
+            "boiler_id": {
+              "type": "string"
+            },
+            "pressure_kpa": {
+              "type": "number",
+              "minimum": 500,
+              "maximum": 1300
+            }
+          }
+        },
+        "effect": {
+          "dead_time_s": 0,
+          "time_constant_s": 0,
+          "state_deltas": [
+            {
+              "state": "pressure_setpoint",
+              "assign_from_arg": "pressure_kpa"
+            }
+          ]
+        }
+      },
+      {
+        "name": "acknowledge_reset",
+        "risk_class": "low",
+        "idempotency_window_s": 3600,
+        "ack": {
+          "failure_modes": [
+            {
+              "mode": "ok",
+              "probability": 1.0
+            }
+          ],
+          "latency_ms": {
+            "mean": 300,
+            "sigma": 50
+          }
+        },
+        "args_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "boiler_id"
+          ],
+          "properties": {
+            "boiler_id": {
+              "type": "string"
+            }
+          }
+        },
+        "effect": {
+          "dead_time_s": 0,
+          "time_constant_s": 0,
+          "state_deltas": [
+            {
+              "state": "ack_count",
+              "delta": 1
+            },
+            {
+              "state": "reset_count",
+              "delta": 1
+            }
+          ]
+        }
+      },
+      {
+        "name": "shelve_alarm",
+        "risk_class": "medium",
+        "idempotency_window_s": 3600,
+        "ack": {
+          "failure_modes": [
+            {
+              "mode": "ok",
+              "probability": 1.0
+            }
+          ],
+          "latency_ms": {
+            "mean": 300,
+            "sigma": 50
+          }
+        },
+        "args_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "boiler_id",
+            "duration_s"
+          ],
+          "properties": {
+            "boiler_id": {
+              "type": "string"
+            },
+            "duration_s": {
+              "type": "number",
+              "minimum": 60,
+              "maximum": 28800
+            }
+          }
+        },
+        "effect": {
+          "dead_time_s": 0,
+          "time_constant_s": 0,
+          "state_deltas": [
+            {
+              "state": "alarm_shelved",
+              "delta": 1
+            }
+          ]
+        },
+        "lease": {
+          "arg": "duration_s",
+          "fallback": "revert"
+        }
+      }
+    ]
+  },
+  "measurement_points": [
+    {
+      "name": "steam_pressure",
+      "state": "steam_pressure",
+      "unit_family": "pressure",
+      "range": {
+        "min": 0,
+        "max": 1600
+      },
+      "tag": "PT",
+      "default_instrument": "streamsim/pressure-transmitter@1"
+    },
+    {
+      "name": "steam_flow",
+      "state": "steam_flow",
+      "unit_family": "mass_flow",
+      "range": {
+        "min": 0,
+        "max": 1.82
+      },
+      "tag": "FT",
+      "default_instrument": "streamsim/mass-flow-meter@1"
+    },
+    {
+      "name": "fuel_flow",
+      "state": "fuel_flow",
+      "unit_family": "volumetric_flow",
+      "range": {
+        "min": 0,
+        "max": 495.209
+      },
+      "tag": "FT",
+      "default_instrument": "streamsim/vortex-flow-meter@1"
+    },
+    {
+      "name": "stack_temp",
+      "state": "stack_temp",
+      "unit_family": "temperature",
+      "range": {
+        "min": 0,
+        "max": 300
+      },
+      "tag": "TT",
+      "default_instrument": "streamsim/rtd@1"
+    },
+    {
+      "name": "firing_rate",
+      "state": "firing_rate",
+      "unit_family": "fraction",
+      "range": {
+        "min": 0,
+        "max": 100
+      },
+      "tag": "ZT",
+      "default_instrument": "streamsim/valve-position@1"
+    },
+    {
+      "name": "burner_status",
+      "state": "burner_on",
+      "unit_family": "state",
+      "range": {
+        "min": 0,
+        "max": 1
+      },
+      "tag": "YS",
+      "default_instrument": "streamsim/run-status@1"
+    },
+    {
+      "name": "alarm_state",
+      "state": "low_pressure_alarm",
+      "unit_family": "state",
+      "range": {
+        "min": 0,
+        "max": 4
+      },
+      "tag": "YA",
+      "default_instrument": "streamsim/annunciator@1"
+    }
+  ],
+  "ports": [
+    {
+      "name": "demand_in",
+      "type": "steam",
+      "direction": "consumes",
+      "state": "steam_demand"
+    },
+    {
+      "name": "steam_out",
+      "type": "steam",
+      "direction": "provides",
+      "state": "steam_flow"
+    },
+    {
+      "name": "pressure_out",
+      "type": "pressure",
+      "direction": "provides",
+      "state": "steam_pressure"
+    }
+  ],
+  "default_preset": "medium",
+  "presets": {
+    "small": {
+      "title": "Small (about 1.4 t/h steam)",
+      "values": {
+        "dynamics/fuel_flow/f1/inputs/firing_rate/coef": 1.08837,
+        "dynamics/steam_demand/f0/baseline": 0.26,
+        "dynamics/steam_demand/f0/seasonality/0/amplitude": 0.06,
+        "dynamics/steam_generation/f1/inputs/firing_rate/coef": 0.004,
+        "dynamics/steam_pressure/f1/capacity": 0.4,
+        "faults/safety_valve_simmering/affects/steam_loss/delta": 0.02,
+        "measurement_points/fuel_flow/range/max": 141.488,
+        "measurement_points/steam_flow/range/max": 0.52,
+        "state/fuel_flow/initial": 53.6245,
+        "state/steam_demand/initial": 0.200026,
+        "state/steam_flow/initial": 0.200026,
+        "state/steam_generation/initial": 0.200026
+      }
+    },
+    "medium": {
+      "title": "Medium (about 5 t/h steam)",
+      "values": {}
+    },
+    "large": {
+      "title": "Large (about 20 t/h steam)",
+      "values": {
+        "dynamics/fuel_flow/f1/inputs/firing_rate/coef": 15.2372,
+        "dynamics/steam_demand/f0/baseline": 3.64,
+        "dynamics/steam_demand/f0/seasonality/0/amplitude": 0.84,
+        "dynamics/steam_generation/f1/inputs/firing_rate/coef": 0.056,
+        "dynamics/steam_pressure/f1/capacity": 5.6,
+        "faults/safety_valve_simmering/affects/steam_loss/delta": 0.28,
+        "measurement_points/fuel_flow/range/max": 1980.84,
+        "measurement_points/steam_flow/range/max": 7.28,
+        "state/fuel_flow/initial": 750.743,
+        "state/steam_demand/initial": 2.80036,
+        "state/steam_flow/initial": 2.80036,
+        "state/steam_generation/initial": 2.80036
+      }
+    }
+  },
+  "parameters": [
+    {
+      "name": "alarm_limit_kpa",
+      "title": "Low steam pressure alarm",
+      "unit": "kPa",
+      "type": "number",
+      "min": 700,
+      "max": 980,
+      "default": 900,
+      "targets": [
+        "dynamics/low_pressure_alarm/f1/alarm/limit"
+      ]
+    },
+    {
+      "name": "pressure_loop_gain",
+      "title": "Pressure controller proportional gain",
+      "unit": "%/kPa",
+      "type": "number",
+      "min": 0.5,
+      "max": 4.0,
+      "default": 1.7,
+      "targets": [
+        "dynamics/firing_rate/f1/pid/kp"
+      ]
+    }
+  ]
+}

@@ -48,8 +48,8 @@ func customerLibrary(t *testing.T) string {
 func TestComponentListPrintsEveryLibraryEntry(t *testing.T) {
 	t.Parallel()
 	doc := invoke(t, "component", "list", "--components-dir", builtInComponents()).mustSucceed(t).document(t, "component_list")
-	if entries, _ := doc["components"].([]any); len(entries) != 5 {
-		t.Fatalf("components = %d, want 5: %v", len(entries), doc)
+	if entries, _ := doc["components"].([]any); len(entries) < 5 {
+		t.Fatalf("components = %d, want at least the 5 pilot entries: %v", len(entries), doc)
 	}
 }
 
@@ -74,8 +74,10 @@ func TestComponentShowPrintsTheEntryAndItsDocument(t *testing.T) {
 func TestComponentValidateCountsTheLibrary(t *testing.T) {
 	t.Parallel()
 	doc := invoke(t, "component", "validate", "--components-dir", builtInComponents()).mustSucceed(t).document(t, "component_validate")
-	if doc["equipment"] != float64(2) || doc["instruments"] != float64(3) {
-		t.Fatalf("validate = %v, want 2 equipment and 3 instruments", doc)
+	equipment, _ := doc["equipment"].(float64)
+	instruments, _ := doc["instruments"].(float64)
+	if doc["valid"] != true || equipment < 2 || instruments < 3 {
+		t.Fatalf("validate = %v, want a valid library of at least 2 equipment and 3 instruments", doc)
 	}
 }
 
@@ -85,7 +87,8 @@ func TestComponentDirectoriesFromTheEnvironmentComeAfterTheFlags(t *testing.T) {
 	doc := invokeWithEnvironment(t, environment, "component", "validate", "--components-dir", builtInComponents()).
 		mustSucceed(t).document(t, "component_validate")
 	directories, _ := doc["directories"].([]any)
-	if len(directories) != 2 || directories[0] != builtInComponents() || directories[1] != environment["STREAMSIM_COMPONENTS_DIRS"] || doc["equipment"] != float64(3) {
+	equipment, _ := doc["equipment"].(float64)
+	if len(directories) != 2 || directories[0] != builtInComponents() || directories[1] != environment["STREAMSIM_COMPONENTS_DIRS"] || equipment < 3 {
 		t.Fatalf("validate = %v, want the flag directory then the environment directory", doc)
 	}
 }

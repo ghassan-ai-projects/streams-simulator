@@ -30,8 +30,8 @@ func TestLoadReadsTheBuiltInLibrary(t *testing.T) {
 		t.Fatal(err)
 	}
 	equipment, instruments := library.Counts()
-	if equipment != 2 || instruments != 3 {
-		t.Fatalf("library = %d equipment and %d instruments, want 2 and 3", equipment, instruments)
+	if equipment < 2 || instruments < 3 {
+		t.Fatalf("library = %d equipment and %d instruments, want at least 2 and 3", equipment, instruments)
 	}
 }
 

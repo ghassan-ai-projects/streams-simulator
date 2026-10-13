@@ -17,7 +17,8 @@
     "humidity": {"base": "%RH", "units": {"%RH": {"scale": 1}}},
     "count": {"base": "count", "units": {"count": {"scale": 1}}},
     "state": {"base": "on", "units": {"on": {"scale": 1}}},
-    "duration": {"base": "s", "units": {"s": {"scale": 1}, "min": {"scale": 60}, "h": {"scale": 3600}}}
+    "duration": {"base": "s", "units": {"s": {"scale": 1}, "min": {"scale": 60}, "h": {"scale": 3600}}},
+    "torque": {"base": "N.m", "units": {"N.m": {"scale": 1}, "kN.m": {"scale": 1000}}}
   },
   "port_types": {
     "thermal_load": {"unit_family": "power"},
@@ -27,7 +28,13 @@
     "hot_water": {"unit_family": "volumetric_flow"},
     "steam": {"unit_family": "mass_flow"},
     "compressed_air": {"unit_family": "volumetric_flow"},
-    "electrical": {"unit_family": "power"}
+    "electrical": {"unit_family": "power"},
+    "air_flow": {"unit_family": "volumetric_flow"},
+    "pressure": {"unit_family": "pressure"},
+    "dew_point": {"unit_family": "temperature"},
+    "liquid_flow": {"unit_family": "volumetric_flow"},
+    "level": {"unit_family": "level"},
+    "load_torque": {"unit_family": "torque"}
   },
   "tag_letters": {
     "TT": {"measures": ["temperature"]},
@@ -42,6 +49,7 @@
     "ST": {"measures": ["speed", "frequency"]},
     "MT": {"measures": ["humidity"]},
     "QT": {"measures": ["count"]},
-    "YS": {"measures": ["state"]}
+    "YS": {"measures": ["state"]},
+    "YA": {"measures": ["state"]}
   }
 }
