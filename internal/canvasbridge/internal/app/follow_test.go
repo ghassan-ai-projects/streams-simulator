@@ -63,6 +63,7 @@ func TestWatchingTellsEachChangeOfTheWorkspace(t *testing.T) {
 		})
 	}()
 	h.ticks <- time.Time{}
+	h.ticks <- time.Time{}
 	h.write(t, plant, "{}")
 	h.ticks <- time.Time{}
 	<-changes
