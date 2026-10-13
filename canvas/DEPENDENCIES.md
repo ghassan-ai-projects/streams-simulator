@@ -5,10 +5,11 @@ version was published at least two weeks before it was pinned.
 
 ## Runtime
 
-| Package              | Why                                                             |
-| -------------------- | --------------------------------------------------------------- |
-| `react`, `react-dom` | UI framework (decision record: React with Vite)                 |
-| `lucide-react`       | The one icon set: consistent stroke icons, tree-shaken per icon |
+| Package              | Why                                                                                                                             |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `react`, `react-dom` | UI framework (decision record: React with Vite)                                                                                 |
+| `lucide-react`       | The one icon set: consistent stroke icons, tree-shaken per icon                                                                 |
+| `@xyflow/react`      | The plant graph: pan, zoom, custom nodes and typed handles, visible-only rendering for the campus (decision record: React Flow) |
 
 ## Build and test
 

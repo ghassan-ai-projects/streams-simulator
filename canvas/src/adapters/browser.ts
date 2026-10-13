@@ -1,4 +1,4 @@
-import type { PreferenceStore, SystemTheme } from "../app/ports";
+import type { Location, PreferenceStore, SystemTheme } from "../app/ports";
 
 export function localPreferences(storage: Storage): PreferenceStore {
   return {
@@ -26,6 +26,21 @@ export function mediaSystemTheme(media: MediaQueryList): SystemTheme {
       media.addEventListener("change", listener);
       return () => {
         media.removeEventListener("change", listener);
+      };
+    },
+  };
+}
+
+export function hashLocation(window: Window): Location {
+  return {
+    read: () => window.location.hash,
+    write(hash) {
+      if (window.location.hash !== hash) window.location.hash = hash;
+    },
+    subscribe(listener) {
+      window.addEventListener("hashchange", listener);
+      return () => {
+        window.removeEventListener("hashchange", listener);
       };
     },
   };

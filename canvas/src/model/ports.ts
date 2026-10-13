@@ -1,0 +1,124 @@
+import type { Instance, Plant } from "./plant";
+
+export type Family = "air" | "pressure" | "water" | "cw" | "temp" | "heat" | "power" | "signal" | "env";
+export type Shape = "circle" | "square" | "diamond";
+
+const families: Readonly<Record<string, Family>> = {
+  compressed_air: "air",
+  pressure: "pressure",
+  chilled_water: "water",
+  hot_water: "water",
+  liquid_flow: "water",
+  level: "water",
+  steam: "water",
+  condenser_water: "cw",
+  temperature: "temp",
+  cooling_water_temp: "temp",
+  dew_point: "temp",
+  thermal_load: "heat",
+  heat_rejection: "heat",
+  electrical: "power",
+  load_torque: "power",
+  shift: "signal",
+  tariff: "signal",
+  dry_bulb_temp: "env",
+  wet_bulb_temp: "env",
+};
+
+const shapes: Readonly<Record<Family, Shape>> = {
+  air: "circle",
+  water: "circle",
+  cw: "circle",
+  heat: "square",
+  power: "square",
+  pressure: "diamond",
+  temp: "diamond",
+  signal: "diamond",
+  env: "diamond",
+};
+
+export const familyNames: Readonly<Record<Family, string>> = {
+  air: "Compressed air",
+  pressure: "Pressure",
+  water: "Water",
+  cw: "Condenser water",
+  temp: "Temperature",
+  heat: "Heat",
+  power: "Power",
+  signal: "Signal",
+  env: "Weather",
+};
+
+export function familyOf(type: string): Family | null {
+  return families[type] ?? null;
+}
+
+export function shapeOf(family: Family): Shape {
+  return shapes[family];
+}
+
+export interface PortSpec {
+  readonly name: string;
+  readonly type: string;
+  readonly direction: "in" | "out";
+}
+
+export interface Pin {
+  readonly name: string;
+  readonly type: string;
+  readonly family: Family | null;
+  readonly connected: boolean;
+}
+
+export interface Pins {
+  readonly ins: readonly Pin[];
+  readonly outs: readonly Pin[];
+}
+
+function field(value: unknown, key: string): unknown {
+  return typeof value === "object" && value !== null ? (value as Record<string, unknown>)[key] : undefined;
+}
+
+function text(value: unknown): string {
+  return typeof value === "string" ? value : "";
+}
+
+export function parsePorts(document: unknown): readonly PortSpec[] {
+  const ports = field(document, "ports");
+  return (Array.isArray(ports) ? ports : []).map((port: unknown) => ({
+    name: text(field(port, "name")),
+    type: text(field(port, "type")),
+    direction: field(port, "direction") === "provides" ? ("out" as const) : ("in" as const),
+  }));
+}
+
+function used(plant: Plant, id: string): { readonly ins: ReadonlySet<string>; readonly outs: ReadonlySet<string> } {
+  const ins = new Set<string>();
+  const outs = new Set<string>();
+  for (const link of plant.links) {
+    if (link.to === id && link.toPort !== null) ins.add(link.toPort);
+    if (link.from === id && link.fromPort !== null) outs.add(link.fromPort);
+  }
+  return { ins, outs };
+}
+
+function fromLinks(names: ReadonlySet<string>): readonly Pin[] {
+  return [...names].sort().map((name) => ({ name, type: "", family: null, connected: true }));
+}
+
+export function pinsOf(plant: Plant, instance: Instance, specs: readonly PortSpec[] | undefined): Pins {
+  const connected = used(plant, instance.id);
+  if (specs === undefined || specs.length === 0) {
+    return { ins: fromLinks(connected.ins), outs: fromLinks(connected.outs) };
+  }
+  const pin = (spec: PortSpec, names: ReadonlySet<string>): Pin => ({
+    name: spec.name,
+    type: spec.type,
+    family: familyOf(spec.type),
+    connected: names.has(spec.name),
+  });
+  return {
+    ins: specs.filter((spec) => spec.direction === "in").map((spec) => pin(spec, connected.ins)),
+    outs: specs.filter((spec) => spec.direction === "out").map((spec) => pin(spec, connected.outs)),
+  };
+}

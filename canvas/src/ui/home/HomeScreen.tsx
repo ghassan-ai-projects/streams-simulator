@@ -1,5 +1,6 @@
 import { Boxes, FileJson, Play, Radio } from "lucide-react";
 import type { ReactNode } from "react";
+import type { NavigationStore } from "../../app/navigationStore";
 import type { WorkspaceStore } from "../../app/workspaceStore";
 import type { Definition, RunEntry, Workspace } from "../../model/bridge";
 import { workspaceEmpty, workspaceSummary } from "../../model/workspace";
@@ -26,7 +27,13 @@ function Section({
   );
 }
 
-function DefinitionRows({ items, empty }: { readonly items: readonly Definition[]; readonly empty: string }) {
+interface RowsProps {
+  readonly items: readonly Definition[];
+  readonly empty: string;
+  readonly onOpen?: (item: Definition) => void;
+}
+
+function DefinitionRows({ items, empty, onOpen }: RowsProps) {
   if (items.length === 0) {
     return <p className={styles.none}>{empty}</p>;
   }
@@ -38,6 +45,18 @@ function DefinitionRows({ items, empty }: { readonly items: readonly Definition[
           <span className={styles.id}>{item.id || item.path}</span>
           <span className={styles.title}>{item.title}</span>
           <span className={styles.path}>{item.path}</span>
+          {onOpen && (
+            <button
+              type="button"
+              className={styles.open}
+              onClick={() => {
+                onOpen(item);
+              }}
+              aria-label={`Open plant ${item.id || item.path}`}
+            >
+              Open
+            </button>
+          )}
         </li>
       ))}
     </ul>
@@ -77,7 +96,10 @@ function EmptyWorkspace({ name }: { readonly name: string }) {
   );
 }
 
-function Contents({ workspace }: { readonly workspace: Workspace }) {
+function Contents({ workspace, navigation }: { readonly workspace: Workspace; readonly navigation: NavigationStore }) {
+  const openPlant = (item: Definition) => {
+    navigation.go({ screen: "plant", domain: item.path, hall: null });
+  };
   if (workspaceEmpty(workspace)) {
     return <EmptyWorkspace name={workspace.name} />;
   }
@@ -89,7 +111,7 @@ function Contents({ workspace }: { readonly workspace: Workspace }) {
       </header>
       <div className={styles.grid}>
         <Section title="Plants" folder="domains/">
-          <DefinitionRows items={workspace.domains} empty="No domains yet." />
+          <DefinitionRows items={workspace.domains} empty="No domains yet." onOpen={openPlant} />
         </Section>
         <Section title="Runs" folder="runs/">
           <RunRows runs={workspace.runs} />
@@ -105,7 +127,13 @@ function Contents({ workspace }: { readonly workspace: Workspace }) {
   );
 }
 
-export function HomeScreen({ workspace }: { readonly workspace: WorkspaceStore }) {
+export function HomeScreen({
+  workspace,
+  navigation,
+}: {
+  readonly workspace: WorkspaceStore;
+  readonly navigation: NavigationStore;
+}) {
   const state = useStore(workspace);
   if (state.phase === "loading") {
     return (
@@ -121,5 +149,5 @@ export function HomeScreen({ workspace }: { readonly workspace: WorkspaceStore }
       </p>
     );
   }
-  return <Contents workspace={state.workspace} />;
+  return <Contents workspace={state.workspace} navigation={navigation} />;
 }

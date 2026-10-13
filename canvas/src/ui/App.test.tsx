@@ -2,6 +2,8 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import axe from "axe-core";
 import { describe, expect, it } from "vitest";
 import { SessionStore } from "../app/sessionStore";
+import { NavigationStore } from "../app/navigationStore";
+import { PlantStore } from "../app/plantStore";
 import { ThemeStore } from "../app/themeStore";
 import { WorkspaceStore } from "../app/workspaceStore";
 import { failed } from "../model/bridge";
@@ -17,7 +19,15 @@ function themes() {
 }
 
 function renderApp(bridge: FakeBridge) {
-  return render(<App themes={themes()} session={new SessionStore(bridge)} workspace={new WorkspaceStore(bridge)} />);
+  const location = { read: () => "#/", write: () => undefined, subscribe: () => () => undefined };
+  const stores = {
+    themes: themes(),
+    session: new SessionStore(bridge),
+    workspace: new WorkspaceStore(bridge),
+    navigation: new NavigationStore(location),
+    plants: new PlantStore(bridge),
+  };
+  return render(<App stores={stores} />);
 }
 
 describe("App", () => {

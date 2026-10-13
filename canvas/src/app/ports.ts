@@ -18,3 +18,9 @@ export interface Bridge {
   action(name: string, args: Readonly<Record<string, unknown>>): Promise<Outcome<unknown>>;
   watchWorkspace(onChange: () => void): () => void;
 }
+
+export interface Location {
+  read(): string;
+  write(hash: string): void;
+  subscribe(listener: () => void): () => void;
+}
