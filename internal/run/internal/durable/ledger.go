@@ -17,7 +17,7 @@ type Ledger struct {
 }
 
 func OpenLedger(path string) (*Ledger, error) {
-	log, err := kernel.NewLog(path, true)
+	log, err := kernel.NewLog(path, false)
 	if err != nil {
 		return nil, fmt.Errorf("run: open ledger %s: %w", path, err)
 	}

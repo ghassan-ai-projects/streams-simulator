@@ -89,13 +89,17 @@ func publishVerdict(outDir string, verdict *model.Verdict) error {
 	return nil
 }
 
-func writeJSONL[T any](path string, records []T) error {
+func JSONLines[T any](records []T) []byte {
 	var lines bytes.Buffer
 	for _, record := range records {
 		raw, _ := json.Marshal(record)
 		lines.Write(append(raw, '\n'))
 	}
-	if err := kernel.WriteAtomic(path, lines.Bytes()); err != nil {
+	return lines.Bytes()
+}
+
+func writeJSONL[T any](path string, records []T) error {
+	if err := kernel.WriteAtomic(path, JSONLines(records)); err != nil {
 		return fmt.Errorf("streamsim: %w", err)
 	}
 	return nil

@@ -93,5 +93,5 @@ func digestsOf(art *model.RunArtifact) *Digests {
 		return nil
 	}
 	return &Digests{World: art.WorldDigest, Trace: art.ExpectedTraceDigest,
-		Journal: art.JournalDigest, SealedJournal: art.SealedJournalDigest}
+		Journal: art.JournalDigest, SealedJournal: art.SealedJournalDigest, Ledger: art.LedgerDigest, History: art.HistoryDigest}
 }

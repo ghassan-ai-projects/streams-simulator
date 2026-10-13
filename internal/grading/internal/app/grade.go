@@ -32,7 +32,7 @@ func gradeArtifact(ctx context.Context, options Options, art *model.RunArtifact)
 	if err != nil {
 		return nil, err
 	}
-	evidence, err := scoringEvidence(ctx, options, art, dir)
+	evidence, err := replayedEvidence(ctx, options, art)
 	if err != nil {
 		return nil, err
 	}

@@ -31,6 +31,7 @@ func recordedDigests(folder Folder) []recorded {
 		{"trace", art.ExpectedTraceDigest, folder.Trace, canonical.DigestBytes},
 		{"journal", art.JournalDigest, folder.Observer, journal.Digest},
 		{"sealed_journal", art.SealedJournalDigest, folder.Director, journal.Digest},
+		{"ledger", art.LedgerDigest, folder.Ledger, canonical.DigestBytes},
 	}
 }
 

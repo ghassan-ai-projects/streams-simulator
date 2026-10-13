@@ -292,6 +292,16 @@
       "pattern": "^sha256:[0-9a-f]{64}$",
       "description": "Digest of the replayable lines of the director journal stream (sealed/journal.jsonl). `verify` compares it like journal_digest."
     },
+    "ledger_digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "description": "Digest of ledger.jsonl (one JSON line per delivery row). `verify` compares it with the file and with the replay; `report` checks the file against it."
+    },
+    "history_digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "description": "Digest of world_state_history.jsonl. `verify` compares it with the file and with the replay."
+    },
     "applied_perturbations": {
       "type": "array",
       "description": "The perturbations applied during the run, in application order; feeds offline scoring's perturbation-fidelity and clock-skew metrics identically to the online path.",

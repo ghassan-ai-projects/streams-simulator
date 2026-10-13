@@ -27,6 +27,8 @@ func TestVerifyComparesRecordedDigestsWithTheFiles(t *testing.T) {
 			FilesMatch, []string{CheckMatch, CheckMatch}},
 		{"edited trace", Folder{Artifact: artifact("sha256:00", "", ""), Trace: trace}, FilesDiffer, []string{CheckDiffers}},
 		{"missing sealed journal", Folder{Artifact: artifact("", "", "sha256:00")}, FilesDiffer, []string{CheckMissing}},
+		{"edited ledger", Folder{Artifact: &model.RunArtifact{LedgerDigest: canonical.DigestBytes([]byte("row\n"))}, Ledger: Document{Raw: []byte("other\n"), Present: true}},
+			FilesDiffer, []string{CheckDiffers}},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

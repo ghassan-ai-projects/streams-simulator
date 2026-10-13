@@ -23,7 +23,7 @@ var packageDependencies = map[string]string{
 	"internal/director":           "adapter audit domain model run score truth world",
 	"internal/mcp":                "director model schemas",
 	"internal/run":                "adapter canonical domain journal kernel model perturb sink wall world",
-	"internal/grading":            "domain jsonvalue kernel model run score world",
+	"internal/grading":            "domain kernel model run score world",
 	"internal/report":             "canonical grading journal kernel model run",
 	"internal/release":            "canonical kernel",
 	"internal/score":              "domain model world",

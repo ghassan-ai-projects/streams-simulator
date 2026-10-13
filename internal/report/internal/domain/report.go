@@ -43,6 +43,8 @@ type Digests struct {
 	Trace         string `json:"trace,omitempty"`
 	Journal       string `json:"journal,omitempty"`
 	SealedJournal string `json:"sealed_journal,omitempty"`
+	Ledger        string `json:"ledger,omitempty"`
+	History       string `json:"history,omitempty"`
 }
 
 type Verification struct {

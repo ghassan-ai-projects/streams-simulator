@@ -61,8 +61,10 @@ func replayArtifactRun(ctx context.Context, art *model.RunArtifact, spec *domain
 }
 
 type ReplayEvidence struct {
-	Result *ReplayResult
-	Calls  []world.EffectorCall
+	Result  *ReplayResult
+	Calls   []world.EffectorCall
+	Ledger  []model.LedgerRecord
+	History []model.StateSnapshot
 }
 
 func ReplayArtifactEvidence(ctx context.Context, art *model.RunArtifact, spec *domain.Compiled, adapterSpec *model.Adapter) (*ReplayEvidence, error) {
@@ -78,7 +80,7 @@ func ReplayArtifactEvidence(ctx context.Context, art *model.RunArtifact, spec *d
 		return nil, err
 	}
 	calls := append([]world.EffectorCall{}, replay.World.EffectorCalls()...)
-	return &ReplayEvidence{Result: finishReplayResult(replay, art, result), Calls: calls}, nil
+	return &ReplayEvidence{Result: finishReplayResult(replay, art, result), Calls: calls, Ledger: replay.ledger, History: replay.history}, nil
 }
 
 func replayInputs(art *model.RunArtifact, spec *domain.Compiled, adapterSpec *model.Adapter) (*domain.Compiled, *model.Adapter, error) {
