@@ -94,6 +94,11 @@
   background: currentColor !important;
 }
 
+.unknown {
+  border-style: dashed !important;
+  opacity: 0.8;
+}
+
 .plain {
   width: 8px !important;
   height: 8px !important;
@@ -200,6 +205,11 @@
   height: auto;
   min-height: 28px;
   padding: 4px var(--space-3);
+}
+
+:global(.tier-compact) .members,
+:global(.tier-overview) .members {
+  font-size: calc(11px / var(--zoom));
 }
 
 :global(.tier-compact) .readout dd {

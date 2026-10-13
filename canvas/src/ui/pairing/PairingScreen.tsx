@@ -48,7 +48,7 @@ function CodeField({ session, state }: { readonly session: SessionStore; readonl
         autoFocus
         placeholder="XXXX-XXXX-XXXX"
       />
-      <div id="pairing-status" className={styles.status} aria-live="polite">
+      <div id="pairing-status" className={styles.status}>
         <Status state={state} />
       </div>
     </>

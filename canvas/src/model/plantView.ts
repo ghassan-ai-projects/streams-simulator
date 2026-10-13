@@ -4,6 +4,7 @@ import type { Instance, Link, Plant } from "./plant";
 import { areaOf } from "./plant";
 import type { Category, ComponentSpec, Family, Pins } from "./ports";
 import { familyOf, pinsOf } from "./ports";
+import { humanise } from "./report";
 
 export interface ViewNode {
   readonly id: string;
@@ -54,7 +55,7 @@ function instanceNode(plant: Plant, instance: Instance, specs: Specs): ViewNode 
   return {
     id: instance.id,
     label: instance.id,
-    detail: instance.kind,
+    detail: humanise(instance.kind),
     group: areaOf(plant, instance),
     instance,
     category: spec?.category ?? "env",
@@ -129,7 +130,8 @@ function nodeBox(node: ViewNode, readout: number): LayoutNode {
 function finish(context: Context, nodes: readonly ViewNode[], edges: readonly ViewEdge[]): PlantView {
   const order = ["Halls", ...context.plant.areas.map((area) => area.name)];
   const boxes = nodes.map((node) => nodeBox(node, context.readout));
-  return { nodes, edges, layout: layout(boxes, edges, order), halls: context.halls };
+  const rows = (group: string, count: number) => (group === "Halls" ? Math.ceil(Math.sqrt(count)) : 3);
+  return { nodes, edges, layout: layout(boxes, edges, order, rows), halls: context.halls };
 }
 
 function hallLevel(context: Context): PlantView {
@@ -145,7 +147,20 @@ function hallLevel(context: Context): PlantView {
     ...halls.map((hall) => hallNode(hall, counts.get(hall) ?? 0)),
   ];
   const key = (id: string) => hallOf(id) ?? id;
-  return finish(context, nodes, bundle(plant, plant.links, key, specs, false));
+  const edges = bundle(plant, plant.links, key, specs, false);
+  const feedsAll = new Set(
+    shared
+      .map((instance) => instance.id)
+      .filter((id) => halls.every((hall) => edges.some((edge) => edge.from === id && edge.to === hall))),
+  );
+  const marked = nodes.map((node) =>
+    feedsAll.has(node.id) ? { ...node, detail: `${node.detail} · feeds all ${String(halls.length)} halls` } : node,
+  );
+  return finish(
+    context,
+    marked,
+    edges.filter((edge) => !(feedsAll.has(edge.from) && halls.includes(edge.to))),
+  );
 }
 
 function instanceLevel(context: Context, keep: (instance: Instance) => boolean): PlantView {
@@ -154,6 +169,16 @@ function instanceLevel(context: Context, keep: (instance: Instance) => boolean):
   const nodes = kept.map((instance) => instanceNode(context.plant, instance, context.specs));
   const key = (id: string) => (ids.has(id) ? id : null);
   return finish(context, nodes, bundle(context.plant, context.plant.links, key, context.specs, true));
+}
+
+function withinHall(view: PlantView, hall: string): PlantView {
+  const prefix = `${hall}/`;
+  return {
+    ...view,
+    nodes: view.nodes.map((node) =>
+      node.label.startsWith(prefix) ? { ...node, label: node.label.slice(prefix.length) } : node,
+    ),
+  };
 }
 
 export function plantView(plant: Plant, specs: Specs, open: string | null, readout = 0): PlantView {
@@ -169,10 +194,9 @@ export function plantView(plant: Plant, specs: Specs, open: string | null, reado
       .filter((link) => hallOf(link.to) === open || hallOf(link.from) === open)
       .flatMap((link) => [link.from, link.to]),
   );
-  return instanceLevel(
-    context,
-    (instance) => hallOf(instance.id) === open || (hallOf(instance.id) === null && touching.has(instance.id)),
-  );
+  const keep = (instance: Instance) =>
+    hallOf(instance.id) === open || (hallOf(instance.id) === null && touching.has(instance.id));
+  return withinHall(instanceLevel(context, keep), open);
 }
 
 export function describeNode(node: ViewNode, selected: boolean): string {
@@ -181,4 +205,10 @@ export function describeNode(node: ViewNode, selected: boolean): string {
       ? `${String(node.members)} instances, Enter opens the hall`
       : `${String(node.pins.ins.length)} inputs, ${String(node.pins.outs.length)} outputs`;
   return `${node.label}, ${node.detail}, ${ports}${selected ? ", selected" : ""}`;
+}
+
+export function viewSummary(view: PlantView): string {
+  const links = view.edges.reduce((sum, edge) => sum + edge.count, 0);
+  const instances = view.nodes.reduce((sum, node) => sum + node.members, 0);
+  return `${String(instances)} instances · ${String(links)} links in view`;
 }

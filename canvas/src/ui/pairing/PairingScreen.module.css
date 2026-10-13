@@ -106,3 +106,7 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+.code[aria-invalid="true"]:focus-visible {
+  outline-color: var(--status-alarm);
+}

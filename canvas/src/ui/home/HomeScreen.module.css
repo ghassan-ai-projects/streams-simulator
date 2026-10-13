@@ -93,7 +93,8 @@
 }
 
 .title {
-  min-width: 0;
+  flex: 1 1 auto;
+  min-width: 96px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -101,13 +102,19 @@
 }
 
 .path {
+  flex: 0 1 auto;
+  min-width: 0;
   margin-left: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-family: var(--font-mono);
   font-size: var(--text-xs);
   white-space: nowrap;
 }
 
 .badge,
+.explore,
+.verified,
 .state,
 .live {
   display: inline-flex;
@@ -175,4 +182,19 @@
 
 .open:hover {
   background: var(--surface-hover);
+}
+
+.explore {
+  background: var(--status-truth-bg);
+  color: var(--status-truth);
+}
+
+.verified {
+  background: var(--status-ok-bg);
+  color: var(--status-ok);
+}
+
+.state + .state,
+.state + .verified {
+  margin-left: 0;
 }

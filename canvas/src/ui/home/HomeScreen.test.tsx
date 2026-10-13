@@ -34,12 +34,28 @@ describe("home screen", () => {
     const runs = screen.getByRole("region", { name: "Runs" });
     expect(within(runs).getByText("w-1")).toBeInTheDocument();
     expect(within(runs).getByText("Evaluate")).toBeInTheDocument();
-    expect(within(runs).getByText("running")).toBeInTheDocument();
+    expect(within(runs).getByText("not closed")).toBeInTheDocument();
+    expect(within(runs).getAllByText("not checked yet")).toHaveLength(2);
+    expect(within(runs).getAllByRole("button", { name: /Open review of/ })).toHaveLength(2);
     expect(within(screen.getByRole("region", { name: "Plants" })).getByText("factory-utilities")).toBeInTheDocument();
     expect(
       within(screen.getByRole("region", { name: "Scenarios" })).getByText("No scenarios yet."),
     ).toBeInTheDocument();
     expect((await axe.run(view.container)).violations).toEqual([]);
+  });
+
+  it("shows the badge of a run already checked in this session", async () => {
+    const bridge = new FakeBridge();
+    const store = new WorkspaceStore(bridge);
+    await store.reload();
+    render(
+      <HomeScreen
+        workspace={store}
+        navigation={navigation().store}
+        badgeFor={(id) => (id === "w-1" ? "verified" : null)}
+      />,
+    );
+    expect(screen.getByText("Verified")).toBeInTheDocument();
   });
 
   it("opens a plant from its row", async () => {

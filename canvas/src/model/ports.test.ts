@@ -41,11 +41,20 @@ describe("ports and pins", () => {
     const chiller = plant.instances[0];
     if (chiller === undefined) throw new Error("fixture");
     const pins = pinsOf(plant, chiller, parsePorts(chillerPorts));
-    expect(pins.ins.map((pin) => [pin.name, pin.connected, pin.family])).toEqual([
-      ["cond_in", true, "temp"],
-      ["spare_in", false, "water"],
+    expect(pins.ins.map((pin) => [pin.name, pin.connection, pin.family])).toEqual([
+      ["cond_in", "connected", "temp"],
+      ["spare_in", "open", "water"],
     ]);
-    expect(pins.outs.map((pin) => pin.connected)).toEqual([true, true]);
+    expect(pins.outs.map((pin) => pin.connection)).toEqual(["connected", "connected"]);
+  });
+
+  it("marks a component's pins unknown when its links do not name ports", () => {
+    const plant = parsePlant(domain);
+    const chiller = plant.instances[0];
+    if (chiller === undefined) throw new Error("fixture");
+    const pins = pinsOf(plant, chiller, parsePorts(chillerPorts));
+    expect(pins.ins.map((pin) => pin.connection)).toEqual(["unknown", "unknown"]);
+    expect(pins.outs.map((pin) => pin.connection)).toEqual(["unknown", "unknown"]);
   });
 
   it("falls back to the ports the links name, untyped, when the component is unknown", () => {
@@ -53,7 +62,7 @@ describe("ports and pins", () => {
     const meter = plant.instances[2];
     if (meter === undefined) throw new Error("fixture");
     expect(pinsOf(plant, meter, undefined)).toEqual({
-      ins: [{ name: "loads_in", type: "", family: null, connected: true }],
+      ins: [{ name: "loads_in", type: "", family: null, connection: "connected" }],
       outs: [],
     });
     expect(pinsOf(parsePlant(domain), meter, undefined)).toEqual({ ins: [], outs: [] });

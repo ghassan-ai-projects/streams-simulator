@@ -1,7 +1,7 @@
 import type { BridgeFailure } from "../model/bridge";
 import { PlaybackIndex, parseJournalRecord } from "../model/playback";
-import type { Report } from "../model/report";
-import { parseReport, verifyMatches } from "../model/report";
+import type { Badge, Report } from "../model/report";
+import { badgeOf, parseReport, verifyMatches } from "../model/report";
 import { Observable } from "./observable";
 import type { Bridge } from "./ports";
 
@@ -40,6 +40,7 @@ const idle: ReviewState = {
 
 export class ReviewStore extends Observable<ReviewState> {
   index = new PlaybackIndex();
+  private readonly badges = new Map<string, Badge>();
   private stop: (() => void) | null = null;
   private pending = 0;
 
@@ -77,6 +78,17 @@ export class ReviewStore extends Observable<ReviewState> {
   close(): void {
     this.stop?.();
     this.stop = null;
+  }
+
+  badgeFor(worldId: string): Badge | null {
+    return this.badges.get(worldId) ?? null;
+  }
+
+  protected override set(next: ReviewState): void {
+    if (next.worldId !== null && next.report.phase === "ready" && next.verified.phase !== "loading") {
+      this.badges.set(next.worldId, badgeOf(next.report.value, next.verified));
+    }
+    super.set(next);
   }
 
   seek(positionNs: number): void {

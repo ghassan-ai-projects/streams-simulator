@@ -17,6 +17,12 @@ function pinLook(pin: Pin): { readonly family: string; readonly shape: string; r
   return { family: pin.family, shape: shapeOf(pin.family), typeName: familyNames[pin.family] };
 }
 
+const connectionWords = {
+  connected: "connected",
+  open: "not connected",
+  unknown: "link without a recorded port",
+} as const;
+
 function PinRow({ pin, side }: { readonly pin: Pin; readonly side: "in" | "out" }) {
   const look = pinLook(pin);
   return (
@@ -28,11 +34,11 @@ function PinRow({ pin, side }: { readonly pin: Pin; readonly side: "in" | "out" 
         type={side === "in" ? "target" : "source"}
         position={side === "in" ? Position.Left : Position.Right}
         id={pin.name}
-        className={cx(styles.dot, styles[look.shape], pin.connected && styles.connected, `family-${look.family}`)}
+        className={cx(styles.dot, styles[look.shape], styles[pin.connection], `family-${look.family}`)}
         isConnectable={false}
       />
       <span className={styles.pinName}>{pin.name}</span>
-      <span className="sr-only">{`, ${look.typeName}, ${pin.connected ? "connected" : "not connected"}`}</span>
+      <span className="sr-only">{`, ${look.typeName}, ${connectionWords[pin.connection]}`}</span>
     </div>
   );
 }

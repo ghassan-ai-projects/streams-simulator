@@ -29,8 +29,9 @@
   width: 26px;
   height: 26px;
   border-radius: var(--radius-md);
-  background: var(--accent);
-  color: var(--text-on-accent);
+  background: var(--surface-hover);
+  border: 1px solid var(--border-strong);
+  color: var(--text-primary);
 }
 
 .spacer {

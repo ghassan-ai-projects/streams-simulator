@@ -70,7 +70,7 @@ export function ranks(ids: readonly string[], edges: readonly LayoutEdge[]): Map
   return rank;
 }
 
-function columnsOf(nodes: readonly LayoutNode[], edges: readonly LayoutEdge[]): LayoutNode[][] {
+function columnsOf(nodes: readonly LayoutNode[], edges: readonly LayoutEdge[], rows: number): LayoutNode[][] {
   const rank = ranks(
     nodes.map((node) => node.id),
     edges,
@@ -83,13 +83,13 @@ function columnsOf(nodes: readonly LayoutNode[], edges: readonly LayoutEdge[]): 
   return orderByPredecessors(
     columns.filter((column) => column.length > 0),
     edges,
-  ).flatMap(wrap);
+  ).flatMap((column) => wrap(column, rows));
 }
 
-function wrap(column: LayoutNode[]): LayoutNode[][] {
+function wrap(column: LayoutNode[], rows: number): LayoutNode[][] {
   const parts: LayoutNode[][] = [];
-  for (let start = 0; start < column.length; start += spacing.maxRows) {
-    parts.push(column.slice(start, start + spacing.maxRows));
+  for (let start = 0; start < column.length; start += rows) {
+    parts.push(column.slice(start, start + rows));
   }
   return parts;
 }
@@ -130,35 +130,51 @@ function placeGroup(columns: readonly LayoutNode[][], origin: { x: number; y: nu
   };
 }
 
-export function layout(
-  nodes: readonly LayoutNode[],
-  edges: readonly LayoutEdge[],
-  groupOrder: readonly string[],
-): Layout {
+type RowsFor = (group: string, count: number) => number;
+
+function groupsOf(nodes: readonly LayoutNode[], groupOrder: readonly string[]) {
   const byGroup = new Map<string, LayoutNode[]>();
   nodes.forEach((node) => {
     byGroup.set(node.group, [...(byGroup.get(node.group) ?? []), node]);
   });
-  const order = [
-    ...groupOrder.filter((group) => byGroup.has(group)),
-    ...[...byGroup.keys()].filter((group) => !groupOrder.includes(group)).sort(),
-  ];
-  const placed = new Map<string, Box>();
-  const groups = new Map<string, Box>();
-  let cursor = { x: 0, y: 0 };
-  let rowHeight = 0;
-  for (const group of order) {
-    const box = placeGroup(columnsOf(byGroup.get(group) ?? [], edges), cursor, placed);
+  const known = groupOrder.filter((group) => byGroup.has(group));
+  const rest = [...byGroup.keys()].filter((group) => !groupOrder.includes(group)).sort();
+  return { byGroup, order: [...known, ...rest] };
+}
+
+class Shelf {
+  readonly placed = new Map<string, Box>();
+  readonly groups = new Map<string, Box>();
+  private cursor = { x: 0, y: 0 };
+  private rowHeight = 0;
+
+  add(group: string, columns: readonly LayoutNode[][]): void {
+    const trial = new Map<string, Box>();
+    let box = placeGroup(columns, this.cursor, trial);
     if (box.x > 0 && box.x + box.width > spacing.maxWidth) {
-      cursor = { x: 0, y: cursor.y + rowHeight + spacing.group };
-      rowHeight = 0;
-      groups.set(group, placeGroup(columnsOf(byGroup.get(group) ?? [], edges), cursor, placed));
-    } else {
-      groups.set(group, box);
+      this.cursor = { x: 0, y: this.cursor.y + this.rowHeight + spacing.group };
+      this.rowHeight = 0;
+      trial.clear();
+      box = placeGroup(columns, this.cursor, trial);
     }
-    const final = groups.get(group) ?? box;
-    rowHeight = Math.max(rowHeight, final.height);
-    cursor = { x: final.x + final.width + spacing.group, y: cursor.y };
+    trial.forEach((value, key) => this.placed.set(key, value));
+    this.groups.set(group, box);
+    this.rowHeight = Math.max(this.rowHeight, box.height);
+    this.cursor = { x: box.x + box.width + spacing.group, y: this.cursor.y };
   }
-  return { nodes: placed, groups };
+}
+
+export function layout(
+  nodes: readonly LayoutNode[],
+  edges: readonly LayoutEdge[],
+  groupOrder: readonly string[],
+  rowsFor: RowsFor = () => spacing.maxRows,
+): Layout {
+  const { byGroup, order } = groupsOf(nodes, groupOrder);
+  const shelf = new Shelf();
+  for (const group of order) {
+    const members = byGroup.get(group) ?? [];
+    shelf.add(group, columnsOf(members, edges, rowsFor(group, members.length)));
+  }
+  return { nodes: shelf.placed, groups: shelf.groups };
 }

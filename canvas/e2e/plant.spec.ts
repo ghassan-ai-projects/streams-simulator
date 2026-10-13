@@ -11,7 +11,7 @@ test("the factory opens from the workspace as a typed plant graph", async ({ pag
   await expect(graph.getByText("23 instances · 59 links")).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Outline" }).getByRole("button")).toHaveCount(23);
   await expect(page.locator(".react-flow__edge").first()).toBeVisible();
-  await expect(page.getByRole("group", { name: /^CT-1, cooling_tower,/ })).toBeVisible();
+  await expect(page.getByRole("group", { name: /^CT-1, cooling tower,/ })).toBeVisible();
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 });
 

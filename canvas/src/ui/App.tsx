@@ -28,6 +28,10 @@ export interface Stores {
 
 function useSession({ session, workspace }: Stores) {
   const state = useStore(session);
+  const listing = useStore(workspace);
+  useEffect(() => {
+    if (listing.phase === "failed" && listing.failure.code === "unpaired") void session.check();
+  }, [listing, session]);
   useEffect(() => {
     void session.check();
   }, [session]);
@@ -66,7 +70,13 @@ function Screen({ stores, route }: { readonly stores: Stores; readonly route: Ro
       />
     );
   }
-  return <HomeScreen workspace={stores.workspace} navigation={stores.navigation} />;
+  return (
+    <HomeScreen
+      workspace={stores.workspace}
+      navigation={stores.navigation}
+      badgeFor={(worldId) => stores.review.badgeFor(worldId)}
+    />
+  );
 }
 
 export function App({ stores }: { readonly stores: Stores }) {

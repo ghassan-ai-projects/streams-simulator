@@ -98,11 +98,13 @@ export function parseComponent(shown: unknown): ComponentSpec {
   return { ports: parsePorts(field(shown, "document")), category: categoryOf(text(field(entry, "class")), tagList) };
 }
 
+type Connection = "connected" | "open" | "unknown";
+
 export interface Pin {
   readonly name: string;
   readonly type: string;
   readonly family: Family | null;
-  readonly connected: boolean;
+  readonly connection: Connection;
 }
 
 export interface Pins {
@@ -127,18 +129,29 @@ export function parsePorts(document: unknown): readonly PortSpec[] {
   }));
 }
 
-function used(plant: Plant, id: string): { readonly ins: ReadonlySet<string>; readonly outs: ReadonlySet<string> } {
+interface Used {
+  readonly ins: ReadonlySet<string>;
+  readonly outs: ReadonlySet<string>;
+  readonly unknownIn: boolean;
+  readonly unknownOut: boolean;
+}
+
+function used(plant: Plant, id: string): Used {
   const ins = new Set<string>();
   const outs = new Set<string>();
+  let unknownIn = false;
+  let unknownOut = false;
   for (const link of plant.links) {
+    if (link.to === id && link.toPort === null) unknownIn = true;
     if (link.to === id && link.toPort !== null) ins.add(link.toPort);
+    if (link.from === id && link.fromPort === null) unknownOut = true;
     if (link.from === id && link.fromPort !== null) outs.add(link.fromPort);
   }
-  return { ins, outs };
+  return { ins, outs, unknownIn, unknownOut };
 }
 
 function fromLinks(names: ReadonlySet<string>): readonly Pin[] {
-  return [...names].sort().map((name) => ({ name, type: "", family: null, connected: true }));
+  return [...names].sort().map((name) => ({ name, type: "", family: null, connection: "connected" as const }));
 }
 
 export function pinsOf(plant: Plant, instance: Instance, specs: readonly PortSpec[] | undefined): Pins {
@@ -146,14 +159,16 @@ export function pinsOf(plant: Plant, instance: Instance, specs: readonly PortSpe
   if (specs === undefined || specs.length === 0) {
     return { ins: fromLinks(connected.ins), outs: fromLinks(connected.outs) };
   }
-  const pin = (spec: PortSpec, names: ReadonlySet<string>): Pin => ({
+  const pin = (spec: PortSpec, names: ReadonlySet<string>, unknown: boolean): Pin => ({
     name: spec.name,
     type: spec.type,
     family: familyOf(spec.type),
-    connected: names.has(spec.name),
+    connection: names.has(spec.name) ? "connected" : unknown ? "unknown" : "open",
   });
   return {
-    ins: specs.filter((spec) => spec.direction === "in").map((spec) => pin(spec, connected.ins)),
-    outs: specs.filter((spec) => spec.direction === "out").map((spec) => pin(spec, connected.outs)),
+    ins: specs.filter((spec) => spec.direction === "in").map((spec) => pin(spec, connected.ins, connected.unknownIn)),
+    outs: specs
+      .filter((spec) => spec.direction === "out")
+      .map((spec) => pin(spec, connected.outs, connected.unknownOut)),
   };
 }

@@ -4,7 +4,7 @@ import { Fragment, useEffect, useMemo } from "react";
 import type { NavigationStore } from "../../app/navigationStore";
 import type { PlantState, PlantStore } from "../../app/plantStore";
 import type { WorkspaceStore } from "../../app/workspaceStore";
-import { plantView } from "../../model/plantView";
+import { plantView, viewSummary } from "../../model/plantView";
 import type { Route } from "../../model/route";
 import { useScreen } from "../useScreen";
 import { useStore } from "../useStore";
@@ -30,9 +30,13 @@ interface Crumb {
   readonly route: Route;
 }
 
-function summary(state: Ready): string {
-  const ports = state.composition === null ? " · no composition, ports unknown" : "";
-  return `${String(state.plant.instances.length)} instances · ${String(state.plant.links.length)} links${ports}`;
+function summary(state: Ready, hall: string | null): string {
+  const ports = state.plant.links.some((link) => link.fromPort === null) ? " · some links record no ports" : "";
+  const figures =
+    hall === null
+      ? `${String(state.plant.instances.length)} instances · ${String(state.plant.links.length)} links`
+      : viewSummary(plantView(state.plant, state.specs, hall));
+  return `${figures}${ports}`;
 }
 
 function Crumbs({
@@ -69,7 +73,7 @@ function Crumbs({
       <h1 aria-current="location" className={styles.here} ref={heading} tabIndex={-1}>
         {hall ?? title}
       </h1>
-      <span className={styles.summary}>{summary(state)}</span>
+      <span className={styles.summary}>{summary(state, hall)}</span>
     </nav>
   );
 }
