@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ghassan-ai-projects/streams-simulator/internal/journal"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
@@ -24,5 +25,18 @@ func TestKPITruthRendersAsKPIAlarmAndAlarmSystemTables(t *testing.T) {
 		if got := strings.Join(sections[i].lines, "\n"); !strings.Contains(got, want) {
 			t.Errorf("section %s:\n%s\nwant a row %s", sections[i].title, got, want)
 		}
+	}
+}
+
+func TestTheReportReadsTheSealedKPITruthAndRefusesAMalformedOne(t *testing.T) {
+	t.Parallel()
+	sealed := journal.Record{Seq: 4, Type: journal.TypeKPITruth, Fields: map[string]any{"kpis": map[string]any{"to_ns": 9, "entities": []any{}}}}
+	truth, err := truthOf(nil, []journal.Record{sealed})
+	if err != nil || truth.KPIs == nil || truth.KPIs.ToNS != 9 {
+		t.Fatalf("truth = %+v (%v), want the sealed KPI truth", truth, err)
+	}
+	sealed.Fields["kpis"] = "not an object"
+	if _, err := truthOf(nil, []journal.Record{sealed}); err == nil || !strings.Contains(err.Error(), "record 4") {
+		t.Fatalf("a malformed kpi.truth record gives %v, want an error naming the record", err)
 	}
 }
