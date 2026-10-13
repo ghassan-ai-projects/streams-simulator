@@ -53,6 +53,11 @@
       "description": "Present for numeric and counter channels, absent otherwise. Carried verbatim; the simulator performs no unit conversion and neither should an adapter."
     },
 
+    "quality": {
+      "enum": ["suspect", "out_of_range", "stale", "disconnected"],
+      "description": "Present only when the instrument reports a value it does not vouch for (the plant-wire quality vocabulary); absent means good. A fault that leaves the instrument reporting good is the harder case and leaves this absent."
+    },
+
     "birth": {
       "type": "boolean",
       "default": false,

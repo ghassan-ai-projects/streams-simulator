@@ -783,7 +783,8 @@
     "fault": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "onset", "affects", "observability"],
+      "required": ["id", "onset", "observability"],
+      "anyOf": [{"required": ["affects"]}, {"required": ["observation"]}],
       "properties": {
         "id": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$"},
         "description": {"type": "string", "maxLength": 600},
@@ -805,6 +806,23 @@
           },
           "if": {"properties": {"shape": {"const": "pulse"}}, "required": ["shape"]},
           "then": {"required": ["duration_s"]}
+        },
+        "observation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["channel", "form"],
+          "description": "A fault of the instrument rather than the process: it changes what a channel reports while the fault's envelope is above zero (domain-spec v0.2 §25).",
+          "properties": {
+            "channel": {"type": "string", "pattern": "^[a-z][a-z0-9_.]{0,63}$"},
+            "form": {"enum": ["stuck", "freeze", "dropout", "scale", "noise"], "description": "stuck: reports value. freeze: repeats its noise-free reading at onset. dropout: reports nothing. scale: multiplies the reading by 1 + (factor − 1)·envelope. noise: multiplies the noise sigma by 1 + (factor − 1)·envelope."},
+            "value": {"type": "number", "description": "For stuck."},
+            "factor": {"type": "number", "minimum": 0, "description": "For scale and noise."},
+            "quality": {"enum": ["good", "suspect", "out_of_range", "stale", "disconnected"], "default": "good", "description": "The quality the instrument reports while the fault acts; good is the silent case."}
+          },
+          "allOf": [
+            {"if": {"properties": {"form": {"const": "stuck"}}}, "then": {"required": ["value"]}},
+            {"if": {"properties": {"form": {"enum": ["scale", "noise"]}}}, "then": {"required": ["factor"]}}
+          ]
         },
         "affects": {
           "type": "array",

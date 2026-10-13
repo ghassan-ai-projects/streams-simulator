@@ -186,3 +186,21 @@ func TestARecordThatCannotBeEncodedIsNotSent(t *testing.T) {
 		t.Fatalf("send of NaN = %v", err)
 	}
 }
+
+func TestAHandshakeAwaitsTheHostsAnswerWithItsOwnFloor(t *testing.T) {
+	t.Parallel()
+	path, listener := privateListener(t)
+	echoHost(t, listener, map[string]any{"type": "HSYNC", "protocol_version": 1, "session_id": "s-1", "seq": 0, "lane": "control", "through_seq": 0})
+	link, err := Dial(t.Context(), path, time.Millisecond)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = link.Close() }()
+	if err := link.Send([]map[string]any{{"type": "NSYNC"}}); err != nil {
+		t.Fatal(err)
+	}
+	records, met, err := link.AwaitHandshake(t.Context(), func(m domain.Message) bool { return m.Type == "HSYNC" })
+	if err != nil || !met || len(records) != 1 {
+		t.Fatalf("a handshake with a 1 ms wait still waits at least HandshakeWait: %v, %v, %v", records, met, err)
+	}
+}

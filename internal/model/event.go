@@ -10,6 +10,7 @@ type SimEvent struct {
 	ObservedTime string `json:"observed_time"`
 	Value        any    `json:"value,omitempty"`
 	Unit         string `json:"unit,omitempty"`
+	Quality      string `json:"quality,omitempty"`
 	Birth        bool   `json:"birth,omitempty"`
 }
 

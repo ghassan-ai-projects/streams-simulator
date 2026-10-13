@@ -103,7 +103,7 @@ func (checks domainChecks) dynamicF2(d *model.Dynamics) error {
 }
 
 func (checks domainChecks) checkFault(f *model.Fault) error {
-	for _, check := range []func(*model.Fault) error{checks.faultRate, checks.faultStates, checks.faultDetector, checks.faultEffector, checks.faultDuration} {
+	for _, check := range []func(*model.Fault) error{checks.faultRate, checks.faultStates, checks.faultObservation, checks.faultDetector, checks.faultEffector, checks.faultDuration} {
 		if err := check(f); err != nil {
 			return err
 		}

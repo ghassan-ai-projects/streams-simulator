@@ -48,7 +48,8 @@ type activeFault struct {
 	clearedNS int64
 	severity  float64
 
-	walks map[string][]float64
+	walks  map[string][]float64
+	frozen *float64
 }
 
 func (f *activeFault) envelopeAt(state string, t int64, rng *randutil.SplitMix64, dtNS int64) float64 {

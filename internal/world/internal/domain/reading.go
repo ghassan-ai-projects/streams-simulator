@@ -22,10 +22,13 @@ func (w *World) observe(ent *Entity, ch *model.Channel, cs *channelRunState, t i
 	if w.isConfirmationChannel(ent, ch.Name) {
 		value = w.shadowValue(ent.ID, ch.Observes, t)
 	}
-	reading := w.biasedObservation(ent, ch, value, t)
+	reading := w.scaledObservation(ent, ch, w.biasedObservation(ent, ch, value, t), t)
 	reading = w.noisyObservation(ent, ch, reading, t)
 	if drift := ch.Drift; drift != nil && drift.RatePerHour != 0 {
 		reading += w.drift(ent, ch, cs, t, drift)
+	}
+	if held, ok := w.heldObservation(ent, ch, t); ok {
+		return held
 	}
 	return quantize(reading, ch.Resolution)
 }

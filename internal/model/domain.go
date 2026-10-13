@@ -182,15 +182,16 @@ type F3Dyn struct {
 }
 
 type Fault struct {
-	ID               string          `json:"id"`
-	Description      string          `json:"description,omitempty"`
-	IsNegativeClass  bool            `json:"is_negative_class,omitempty"`
-	Onset            FaultOnset      `json:"onset"`
-	Affects          []FaultEffect   `json:"affects"`
-	Observability    Observability   `json:"observability"`
-	ExpectedEffector string          `json:"expected_effector,omitempty"`
-	DeadlineS        float64         `json:"deadline_s,omitempty"`
-	Counterfactual   *Counterfactual `json:"counterfactual,omitempty"`
+	ID               string            `json:"id"`
+	Description      string            `json:"description,omitempty"`
+	IsNegativeClass  bool              `json:"is_negative_class,omitempty"`
+	Onset            FaultOnset        `json:"onset"`
+	Affects          []FaultEffect     `json:"affects,omitempty"`
+	Observation      *ObservationFault `json:"observation,omitempty"`
+	Observability    Observability     `json:"observability"`
+	ExpectedEffector string            `json:"expected_effector,omitempty"`
+	DeadlineS        float64           `json:"deadline_s,omitempty"`
+	Counterfactual   *Counterfactual   `json:"counterfactual,omitempty"`
 }
 
 type FaultOnset struct {

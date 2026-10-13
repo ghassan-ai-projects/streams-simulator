@@ -123,9 +123,12 @@ func (ctx recordContext) addEvent(ev *model.SimEvent) {
 }
 
 func (ctx recordContext) addOptionalEventFields(ev *model.SimEvent) {
-	ctx["unit"], ctx["birth"] = nil, nil
+	ctx["unit"], ctx["quality"], ctx["birth"] = nil, nil, nil
 	if ev.Unit != "" {
 		ctx["unit"] = ev.Unit
+	}
+	if ev.Quality != "" {
+		ctx["quality"] = ev.Quality
 	}
 	if ev.Birth {
 		ctx["birth"] = true

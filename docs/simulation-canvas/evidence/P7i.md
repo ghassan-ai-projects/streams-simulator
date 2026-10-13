@@ -39,3 +39,15 @@ P7i lands in steps, one commit each. Domain-spec v0.2 §22 onwards holds the rul
 | The output leaves saturation within a step of the error reversing | `TestAControllerLeavesSaturationAsSoonAsItsErrorReverses` |
 | Mutations caught | Without anti-windup both tests fail; without bumpless manual transfer the manual case fails |
 | Reads, gains, manual pairing and output limits are validated | `TestAPIDControllerIsValidatedByItsReadsGainsAndLimits` (8 cases) |
+
+## Step 5 — observation faults and quality (domain-spec §25)
+
+| Check | Result |
+|---|---|
+| Stuck, freeze, scale, noise and dropout change only what the instrument reports, from their onset | `TestEachObservationFaultChangesOnlyWhatTheInstrumentReports` |
+| A dropped-out channel emits nothing from its onset; events carry the declared quality only while the fault acts | `TestADroppedOutChannelEmitsNothingAndOthersReportTheirQuality` |
+| A frozen reading is captured at onset whatever the read schedule (mutation: without the capture event the emitted value is wrong) | `TestAFrozenReadingIsCapturedAtOnsetWhateverTheReadSchedule` |
+| Ground truth: a dropout is observable at onset; a fivefold noise burst is first observable at onset and never unavoidable (SNR 4) | `TestInstrumentFaultsAreObservableByWhatTheyDoToTheChannel` |
+| Validation: channel of the kind, numeric, noisy for noise, factor and value required, detector on the channel | `TestAnObservationFaultNamesANumericChannelOfItsKindAndIsDetectedThere` |
+| The plant wire carries the quality (R7d-01, quality part) | `TestASampleCarriesTheInstrumentsQualityOrGood` |
+| Shipped traces unchanged | Behaviour pin: traces identical; `run.json`, journals and the release manifest moved because the native adapter gained the `quality` field (re-recorded) |

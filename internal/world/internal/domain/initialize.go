@@ -41,6 +41,7 @@ func (w *World) initializeRuntime(seed uint64) {
 	w.leases = map[driverKey][]*kick{}
 	w.shadow = map[driverKey][]*kick{}
 	w.faultsByState = map[string][]*activeFault{}
+	w.faultsByChannel = map[driverKey][]*activeFault{}
 	w.faultsByID = map[string]*activeFault{}
 	w.idempotent = map[string]*idempotentResult{}
 	w.argSchemas = map[*model.Effector]*jsonschema.Schema{}

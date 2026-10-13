@@ -538,3 +538,29 @@ reverse` (the output rises while `pv` is below `sp`) and `s = −1` for `direct`
 
 Gains are non-negative and `kp` or `ki` is non-zero. A cascade chains controllers: an outer controller's target is an inner
 controller's `sp`. Closed-loop stability is the domain author's: the validator cannot know the plant.
+
+## 25. Observation faults and quality (phase P7i)
+
+A fault may act on an instrument rather than the process: `observation: {channel, form, value?, factor?, quality?}` in place of
+(or beside) `affects`. While the fault's envelope (onset shape × severity) is above zero, the channel of that entity reports:
+
+| Form | Report |
+|---|---|
+| `stuck` | `value`, quantized |
+| `freeze` | its noise-free reading at the fault's onset, captured when the world reaches the onset |
+| `dropout` | nothing: no event, as when the producer is down |
+| `scale` | the reading multiplied by `1 + (factor − 1)·envelope` (a gain error; a ramp onset makes it grow) |
+| `noise` | the noise sigma multiplied by `1 + (factor − 1)·envelope` (a noise burst) |
+
+The process is untouched: states, other channels and confirmations read the true values. Several faults may act at once; the
+latest stuck or freeze wins, and scale and noise factors multiply.
+
+**Quality.** An event carries `quality` (`suspect`, `out_of_range`, `stale`, `disconnected`, the plant-wire vocabulary) while an
+acting observation fault declares one; the worst wins. Absent means good, and `quality: good` (the default) is the silent case
+where the instrument vouches for a wrong value. The native adapter passes `quality` through, and the plant wire sends it in
+`DDATA` instead of `good`.
+
+**Validation and truth.** The channel is a number or counter channel of the fault's kind (any channel for `dropout`), a `noise`
+fault needs a noisy channel, and the detector is `single_channel_snr` on that channel. The truth solver measures an
+observation fault by what it does to the channel: the change in the noise-free reading plus the change in the noise sigma, and
+an immediate detection for a dropout.

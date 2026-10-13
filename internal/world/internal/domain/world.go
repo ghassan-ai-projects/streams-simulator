@@ -71,9 +71,10 @@ type World struct {
 	leases map[driverKey][]*kick
 	shadow map[driverKey][]*kick
 
-	faultsByState map[string][]*activeFault
-	faultsByID    map[string]*activeFault
-	faultOrder    []string
+	faultsByState   map[string][]*activeFault
+	faultsByChannel map[driverKey][]*activeFault
+	faultsByID      map[string]*activeFault
+	faultOrder      []string
 
 	effectorCalls []EffectorCall
 	idempotent    map[string]*idempotentResult

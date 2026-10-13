@@ -127,7 +127,7 @@
           ]
         },
         "source": {
-          "enum": ["seq", "world_id", "entity_type", "entity_id", "channel", "event_time", "observed_time", "value", "unit", "birth"],
+          "enum": ["seq", "world_id", "entity_type", "entity_id", "channel", "event_time", "observed_time", "value", "unit", "quality", "birth"],
           "description": "For op=source: which native event field."
         },
         "value": {"description": "For op=const."},

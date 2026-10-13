@@ -12,6 +12,7 @@ const (
 	kindBirth
 	kindDeath
 	kindEventCheck
+	kindObservationCapture
 )
 
 type item struct {

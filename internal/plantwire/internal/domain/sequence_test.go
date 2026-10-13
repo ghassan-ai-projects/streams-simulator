@@ -8,9 +8,9 @@ import (
 func TestControlRecordsTransmitFirstAndSequencesHaveNoGaps(t *testing.T) {
 	t.Parallel()
 	out := NewTransmitter("s-1")
-	out.Queue(DeviceData("P1", "b", false, []map[string]any{Sample(1, 1.0, 1)}))
+	out.Queue(DeviceData("P1", "b", false, []map[string]any{Sample(1, 1.0, "", 1)}))
 	out.Queue(Sync(0, 1))
-	out.Queue(DeviceData("P1", "b", false, []map[string]any{Sample(1, 2.0, 2)}))
+	out.Queue(DeviceData("P1", "b", false, []map[string]any{Sample(1, 2.0, "", 2)}))
 	records := out.Drain()
 	if records[0]["type"] != "NSYNC" || records[0]["seq"] != uint64(0) || records[2]["seq"] != uint64(2) || out.LastSeq() != 2 {
 		t.Fatalf("transmitted %v", records)
@@ -33,6 +33,15 @@ func TestNegotiationTakesTheHostsVersionOrRefuses(t *testing.T) {
 	for _, state := range []Message{{Refusal: "environment_mismatch"}, {Online: true, ProtocolVersion: 3, ProtocolMin: 1, ProtocolMax: 3}} {
 		if _, err := Negotiate(state, 2); !errors.Is(err, ErrRefused) {
 			t.Fatalf("negotiate %v = %v, want a refusal", state, err)
+		}
+	}
+}
+
+func TestASampleCarriesTheInstrumentsQualityOrGood(t *testing.T) {
+	t.Parallel()
+	for quality, want := range map[string]string{"": "good", "out_of_range": "out_of_range", "suspect": "suspect"} {
+		if got := Sample(3, 1.5, quality, 7)["quality"]; got != want {
+			t.Fatalf("a sample of quality %q carries %v, want %s", quality, got, want)
 		}
 	}
 }
