@@ -18,11 +18,15 @@ type opened struct {
 	Mode        string            `json:"mode"`
 }
 
-func runOf(art *model.RunArtifact, observer []journal.Record) Run {
-	if art == nil {
-		return openRun(observer)
+func runOf(folder Folder, observer []journal.Record) Run {
+	if folder.Artifact != nil {
+		return endedRun(folder.Artifact)
 	}
-	return endedRun(art)
+	run := openRun(observer)
+	if folder.Mismatch != "" {
+		run.IncompleteReason = folder.Mismatch
+	}
+	return run
 }
 
 func endedRun(art *model.RunArtifact) Run {

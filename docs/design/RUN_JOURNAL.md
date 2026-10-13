@@ -49,7 +49,7 @@ it and the `at_ns` of the one before, and is outside the stream digest (§3).
 | `type` | Fields | Written |
 |---|---|---|
 | `run.opened` | `run_id`, `sim_version`, `domain {id, version, digest}`, `adapter {id, version, digest}`, `start_time_ns`, `entity_ids`, `mode` (`evaluate` or `explore`). **No seed**: MCP_SURFACE §4.5 never exposes it, and with the seed and the domain a consumer could regenerate the fault-free world and diff it against what it received | At creation |
-| `observation` | `line`: the record exactly as the sink received it (the adapter's rendered line); `malformed: true` when that line was delivered broken | Per delivered record, in delivery order |
+| `observation` | `line`: the record exactly as the sink received it (the adapter's rendered line); `malformed: true` when that line was delivered broken; `framing: "preamble"` or `"postamble"` for an adapter framing line, which is in the trace but is no delivered event | Per delivered record, in delivery order; the preamble after `run.opened`, the postamble before `run.closed` |
 | `clock.advanced` | `to_ns` | After each advance |
 | `effector.acknowledged` | `command_id`, `effector`, `entity_id`, `response` (`model.EffectorAcknowledgement`, exactly what the operator received) | Per acknowledged invocation |
 | `consumer.reported` (session) | `quiesced_through_ns`, `verdict_submitted` | Per consumer report |

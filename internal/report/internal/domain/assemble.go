@@ -14,6 +14,9 @@ type streams struct {
 }
 
 func TruthAllowed(folder Folder) bool {
+	if folder.Mismatch != "" {
+		return false
+	}
 	if folder.Artifact != nil {
 		return true
 	}
@@ -29,18 +32,24 @@ func Assemble(folder Folder, scoring *Scoring) (*Report, error) {
 	if err != nil {
 		return nil, err
 	}
-	return withTruth(newReport(folder, in, scoring), folder.Artifact, in)
+	report := newReport(folder, in, scoring)
+	if folder.Mismatch != "" {
+		return report, nil
+	}
+	return withTruth(report, folder.Artifact, in)
 }
 
 func newReport(folder Folder, in streams, scoring *Scoring) *Report {
 	return &Report{
-		SchemaVersion: SchemaVersion,
-		Run:           runOf(folder.Artifact, in.observer),
-		Digests:       digestsOf(folder.Artifact),
-		Verification:  verify(folder),
-		Counts:        countsOf(folder, in),
-		Consumer:      consumerOf(folder.Verdict),
-		Scoring:       scoring,
+		SchemaVersion:    SchemaVersion,
+		TruthUnavailable: folder.Mismatch,
+		TornTail:         tornFiles(folder),
+		Run:              runOf(folder, in.observer),
+		Digests:          digestsOf(folder.Artifact),
+		Verification:     verify(folder),
+		Counts:           countsOf(folder, in),
+		Consumer:         consumerOf(folder.Verdict),
+		Scoring:          scoring,
 	}
 }
 

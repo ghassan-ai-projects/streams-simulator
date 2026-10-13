@@ -22,13 +22,20 @@ func New(ctx context.Context, cfg Config) (*Run, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := r.openPipeline(); err != nil {
+	if err := r.begin(); err != nil {
 		r.releaseOpened()
 		return nil, err
 	}
+	return r, nil
+}
+
+func (r *Run) begin() error {
+	if err := r.openPipeline(); err != nil {
+		return err
+	}
 	r.attachWorld()
 	r.journalOpened()
-	return r, nil
+	return r.beginTrace()
 }
 
 func newRun(ctx context.Context, cfg Config) (*Run, error) {
@@ -94,7 +101,7 @@ func (r *Run) openPipeline() error {
 	if err := r.openSink(); err != nil {
 		return err
 	}
-	return r.beginTrace()
+	return nil
 }
 
 func (r *Run) releaseOpened() {
@@ -197,7 +204,7 @@ func (r *Run) beginTrace() error {
 
 	if lines, err := r.Engine.Begin(); err != nil {
 		return fmt.Errorf("run: adapter begin: %w", err)
-	} else if err := writeSinkLines(r.Sink, lines); err != nil {
+	} else if err := r.writeFraming(journal.FramingPreamble, lines); err != nil {
 		return fmt.Errorf("run: adapter preamble: %w", err)
 	}
 	return nil

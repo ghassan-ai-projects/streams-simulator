@@ -40,4 +40,6 @@ const MaxStartNS = layer.MaxStartNS
 
 var ErrClockBackwards = layer.ErrClockBackwards
 
+var ErrFaultOnsetInPast = layer.ErrFaultOnsetInPast
+
 var ErrNoSpec = errors.New("world: a domain spec is required")

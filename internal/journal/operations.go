@@ -25,6 +25,10 @@ func (j *Journal) Observation(atNS int64, line string) {
 	j.impl.Observation(atNS, line)
 }
 
+func (j *Journal) Framing(atNS int64, kind, line string) {
+	j.impl.Framing(atNS, kind, line)
+}
+
 func (j *Journal) Malformed(atNS int64, line string) {
 	j.impl.Malformed(atNS, line)
 }

@@ -16,7 +16,7 @@ import (
 )
 
 func scoreOf(ctx context.Context, dir string, folder domain.Folder) (*domain.Scoring, error) {
-	if folder.Artifact == nil || folder.Verdict == nil {
+	if folder.Artifact == nil || folder.Verdict == nil || folder.Mismatch != "" {
 		return nil, nil
 	}
 	label, err := files.Read(filepath.Join(dir, model.FileLabel))

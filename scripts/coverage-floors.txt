@@ -11,7 +11,7 @@ internal/journal/internal/domain  99
 internal/journal/internal/files   100
 # The report module (QUALITY_BAR section 2: new modules at 85 percent or more).
 internal/report                  100
-internal/report/internal/domain  96
+internal/report/internal/domain  98
 internal/report/internal/app     87
 internal/report/internal/files   100
 # The plant wire node (QUALITY_BAR section 2: new modules at 85 percent or more).

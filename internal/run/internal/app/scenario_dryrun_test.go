@@ -10,6 +10,7 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
 // churnConfig is the k8s cluster, whose pods are born and die as the run
@@ -78,6 +79,9 @@ func TestTheDryRunFindsWhatTheRunWouldRefuse(t *testing.T) {
 		{"an entity that is never born", []model.ScenarioCommand{
 			{Op: model.OpFaultInject, Args: map[string]any{"entity_id": "cluster-a/pod-9999", "fault": "crash_loop", "onset_ns": start, "params": nil}}},
 			"/commands/0", "unknown entity"},
+		{"a fault whose onset is before the clock", []model.ScenarioCommand{advanceTo(start + 3600e9),
+			{Op: model.OpFaultInject, Args: map[string]any{"entity_id": "cluster-a/pod-1", "fault": "crash_loop", "onset_ns": start + 60e9, "params": nil}}},
+			"/commands/1", "fault onset is before the clock"},
 		{"clearing a fault never injected", []model.ScenarioCommand{
 			{Op: model.OpFaultClear, Args: map[string]any{"fault_id": "f-7", "at_ns": start}}}, "/commands/0", `unknown fault id "f-7"`},
 		{"clearing a perturbation never applied", []model.ScenarioCommand{
@@ -139,5 +143,23 @@ func TestAChurningRunExportsToAScenarioThatReproducesIt(t *testing.T) {
 	}
 	if reproduced := executedArtifact(t, scenarioCfg, scenario); reproduced.ExpectedTraceDigest != original.ExpectedTraceDigest {
 		t.Fatalf("trace %s, want %s", reproduced.ExpectedTraceDigest, original.ExpectedTraceDigest)
+	}
+}
+
+func TestARunRefusesAFaultWhoseOnsetIsBeforeItsClock(t *testing.T) {
+	t.Parallel()
+	cfg := churnConfig(t)
+	r, err := New(context.Background(), cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.Advance(context.Background(), cfg.StartTimeNS+3600e9, false); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.InjectFault("cluster-a/pod-1", "crash_loop", cfg.StartTimeNS+60e9, nil); !errors.Is(err, world.ErrFaultOnsetInPast) {
+		t.Fatalf("InjectFault before the clock = %v, want world.ErrFaultOnsetInPast", err)
+	}
+	if len(r.Faults()) != 0 {
+		t.Fatalf("the refused fault was registered: %v", r.Faults())
 	}
 }
