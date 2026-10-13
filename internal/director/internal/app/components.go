@@ -2,23 +2,11 @@ package app
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/component"
 	rules "github.com/ghassan-ai-projects/streams-simulator/internal/director/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 )
-
-func (d *Director) LoadLibrary(dirs []string) error {
-	library, err := component.NewLibraryFromDirs(dirs)
-	if err != nil {
-		return fmt.Errorf("streamsim: %w", err)
-	}
-	d.catalogMu.Lock()
-	defer d.catalogMu.Unlock()
-	d.library = library
-	return nil
-}
 
 func (d *Director) catalog() *domain.Catalog {
 	d.catalogMu.RLock()
@@ -27,10 +15,8 @@ func (d *Director) catalog() *domain.Catalog {
 }
 
 func (d *Director) componentLibrary() (*component.Library, error) {
-	d.catalogMu.RLock()
-	defer d.catalogMu.RUnlock()
 	if d.library == nil {
-		return nil, rules.ToolErrorf(rules.CodeNoLibrary, "this director was started without a component library (--components-dir)")
+		return nil, rules.ToolErrorf(rules.CodeNoLibrary, "this director has no component library")
 	}
 	return d.library, nil
 }

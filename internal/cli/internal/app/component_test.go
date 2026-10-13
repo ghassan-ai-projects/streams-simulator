@@ -47,23 +47,23 @@ func customerLibrary(t *testing.T) string {
 
 func TestComponentListPrintsEveryLibraryEntry(t *testing.T) {
 	t.Parallel()
-	doc := invoke(t, "component", "list", "--components-dir", builtInComponents()).mustSucceed(t).document(t, "component_list")
+	doc := invoke(t, "component", "list").mustSucceed(t).document(t, "component_list")
 	if entries, _ := doc["components"].([]any); len(entries) != 5 {
 		t.Fatalf("components = %d, want 5: %v", len(entries), doc)
 	}
 }
 
-func TestComponentWithoutADirectoryReadsTheComponentsDirectoryOfTheWorkingDirectory(t *testing.T) {
+func TestComponentWithoutADirectoryListsTheBuiltInLibraryWhateverTheWorkingDirectory(t *testing.T) {
 	t.Parallel()
-	failure := invoke(t, "component").failure(t)
-	if failure["code"] != "file_not_found" || failure["source"] != "components" {
-		t.Fatalf("failure = %v, want file_not_found for the default components directory", failure)
+	doc := invoke(t, "component").mustSucceed(t).document(t, "component_list")
+	if entries, _ := doc["components"].([]any); len(entries) != 5 {
+		t.Fatalf("components = %d, want the 5 built-in entries: %v", len(entries), doc)
 	}
 }
 
 func TestComponentShowPrintsTheEntryAndItsDocument(t *testing.T) {
 	t.Parallel()
-	doc := invoke(t, "component", "show", "streamsim/rtd", "--components-dir", builtInComponents()).mustSucceed(t).document(t, "component_show")
+	doc := invoke(t, "component", "show", "streamsim/rtd").mustSucceed(t).document(t, "component_show")
 	entry, _ := doc["entry"].(map[string]any)
 	document, _ := doc["document"].(map[string]any)
 	if entry["id"] != "streamsim/rtd" || entry["kind"] != "instrument" || document["tag"] != "TT" {
@@ -73,7 +73,7 @@ func TestComponentShowPrintsTheEntryAndItsDocument(t *testing.T) {
 
 func TestComponentValidateCountsTheLibrary(t *testing.T) {
 	t.Parallel()
-	doc := invoke(t, "component", "validate", "--components-dir", builtInComponents()).mustSucceed(t).document(t, "component_validate")
+	doc := invoke(t, "component", "validate").mustSucceed(t).document(t, "component_validate")
 	if doc["equipment"] != float64(2) || doc["instruments"] != float64(3) {
 		t.Fatalf("validate = %v, want 2 equipment and 3 instruments", doc)
 	}
@@ -81,12 +81,25 @@ func TestComponentValidateCountsTheLibrary(t *testing.T) {
 
 func TestComponentDirectoriesFromTheEnvironmentComeAfterTheFlags(t *testing.T) {
 	t.Parallel()
+	flagged := t.TempDir()
 	environment := map[string]string{"STREAMSIM_COMPONENTS_DIRS": customerLibrary(t)}
-	doc := invokeWithEnvironment(t, environment, "component", "validate", "--components-dir", builtInComponents()).
+	doc := invokeWithEnvironment(t, environment, "component", "validate", "--components-dir", flagged).
 		mustSucceed(t).document(t, "component_validate")
 	directories, _ := doc["directories"].([]any)
-	if len(directories) != 2 || directories[0] != builtInComponents() || directories[1] != environment["STREAMSIM_COMPONENTS_DIRS"] || doc["equipment"] != float64(3) {
+	if len(directories) != 2 || directories[0] != flagged || directories[1] != environment["STREAMSIM_COMPONENTS_DIRS"] || doc["equipment"] != float64(3) {
 		t.Fatalf("validate = %v, want the flag directory then the environment directory", doc)
+	}
+}
+
+func TestComponentEmptyDirectoryEntriesAreIgnored(t *testing.T) {
+	t.Parallel()
+	custom := customerLibrary(t)
+	environment := map[string]string{"STREAMSIM_COMPONENTS_DIRS": custom + string(os.PathListSeparator)}
+	doc := invokeWithEnvironment(t, environment, "component", "validate", "--components-dir", "").
+		mustSucceed(t).document(t, "component_validate")
+	directories, _ := doc["directories"].([]any)
+	if len(directories) != 1 || directories[0] != custom || doc["equipment"] != float64(3) {
+		t.Fatalf("validate = %v, want only the named directory", doc)
 	}
 }
 
@@ -94,17 +107,16 @@ func TestComponentEnvironmentListsSplitAtThePathListSeparator(t *testing.T) {
 	t.Parallel()
 	first, second := customerLibrary(t), t.TempDir()
 	environment := map[string]string{"STREAMSIM_COMPONENTS_DIRS": first + string(os.PathListSeparator) + second}
-	doc := invokeWithEnvironment(t, environment, "component", "validate", "--components-dir", builtInComponents()).
+	doc := invokeWithEnvironment(t, environment, "component", "validate").
 		mustSucceed(t).document(t, "component_validate")
 	directories, _ := doc["directories"].([]any)
-	if len(directories) != 3 || directories[1] != first || directories[2] != second {
-		t.Fatalf("directories = %v, want the flag directory, then both environment entries", directories)
+	if len(directories) != 2 || directories[0] != first || directories[1] != second {
+		t.Fatalf("directories = %v, want both environment entries", directories)
 	}
 }
 
 func TestComponentCommandsRefuseWhatTheyCannotDo(t *testing.T) {
 	t.Parallel()
-	dir := []string{"--components-dir", builtInComponents()}
 	cases := []struct {
 		name string
 		args []string
@@ -121,7 +133,7 @@ func TestComponentCommandsRefuseWhatTheyCannotDo(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			got := invoke(t, append(tc.args, dir...)...)
+			got := invoke(t, tc.args...)
 			if got.code != tc.exit {
 				t.Fatalf("exit %d, want %d: %+v", got.code, tc.exit, got)
 			}
@@ -144,7 +156,7 @@ func TestComponentValidateReportsAnInvalidLibraryFileWithItsPointers(t *testing.
 	if err := os.WriteFile(path, []byte(broken), 0o600); err != nil { //nolint:gosec // G703: the path is under t.TempDir and the name is a test constant
 		t.Fatal(err)
 	}
-	failure := invoke(t, "component", "validate", "--components-dir", builtInComponents(), "--components-dir", dir).failure(t)
+	failure := invoke(t, "component", "validate", "--components-dir", dir).failure(t)
 	pointers := map[any]bool{}
 	issues, _ := failure["issues"].([]any)
 	for _, issue := range issues {

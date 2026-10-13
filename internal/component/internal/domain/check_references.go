@@ -1,6 +1,9 @@
 package domain
 
-var detectorChannels = []string{"channel", "channel_a", "channel_b"}
+var (
+	detectorChannels     = []string{"channel", "channel_a", "channel_b"}
+	detectorChannelLists = []string{"inputs", "outputs"}
+)
 
 type pointReference struct {
 	name string
@@ -31,11 +34,24 @@ func faultReferences(fault map[string]any, at string) []pointReference {
 }
 
 func detectorReferences(fault map[string]any, at string) []pointReference {
-	var references []pointReference
 	detector := mapOf(mapOf(fault["observability"])["detector"])
+	what := "the detector of fault " + stringOf(fault["id"])
+	base := at + "/observability/detector/"
+	var references []pointReference
 	for _, member := range detectorChannels {
 		if name, named := detector[member].(string); named {
-			references = append(references, pointReference{name, at + "/observability/detector/" + member, "the detector of fault " + stringOf(fault["id"])})
+			references = append(references, pointReference{name, base + member, what})
+		}
+	}
+	return append(references, detectorListReferences(detector, base, what)...)
+}
+
+func detectorListReferences(detector map[string]any, base, what string) []pointReference {
+	var references []pointReference
+	for _, member := range detectorChannelLists {
+		names, _ := detector[member].([]any)
+		for i, raw := range names {
+			references = append(references, pointReference{stringOf(raw), base + member + "/" + indexPart(i), what})
 		}
 	}
 	return references

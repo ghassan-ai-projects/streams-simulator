@@ -4,16 +4,14 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"strings"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/cli/internal/files"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/component"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 )
 
-const (
-	defaultComponentsDir = "components"
-	componentsDirsEnv    = "STREAMSIM_COMPONENTS_DIRS"
-)
+const componentsDirsEnv = "STREAMSIM_COMPONENTS_DIRS"
 
 func cmdComponent(s *session, args []string) (any, error) {
 	fs := newFlagSet("component", s.stderr)
@@ -24,7 +22,7 @@ func cmdComponent(s *session, args []string) (any, error) {
 		return nil, err
 	}
 	directories := s.componentDirs(dirs)
-	library, err := component.NewLibraryFromDirs(directories)
+	library, err := component.NewLibrary(directories)
 	if err != nil {
 		return nil, fmt.Errorf("streamsim: %w", err)
 	}
@@ -32,21 +30,21 @@ func cmdComponent(s *session, args []string) (any, error) {
 }
 
 func (s *session) componentDirs(flags listFlag) []string {
-	dirs := []string(flags)
-	if len(dirs) == 0 {
-		dirs = []string{defaultComponentsDir}
+	declared := append([]string{}, flags...)
+	if s.getenv != nil {
+		declared = append(declared, filepath.SplitList(s.getenv(componentsDirsEnv))...)
 	}
-	if s.getenv == nil {
-		return dirs
-	}
-	return append(dirs, filepath.SplitList(s.getenv(componentsDirsEnv))...)
+	return namedDirs(declared)
 }
 
-func (s *session) declaredComponentDirs(flags listFlag) []string {
-	if len(flags) == 0 && (s.getenv == nil || s.getenv(componentsDirsEnv) == "") {
-		return nil
+func namedDirs(declared []string) []string {
+	named := []string{}
+	for _, dir := range declared {
+		if strings.TrimSpace(dir) != "" {
+			named = append(named, dir)
+		}
 	}
-	return s.componentDirs(flags)
+	return named
 }
 
 func componentVerb(verb string, library *component.Library, directories, args []string) (any, error) {
@@ -93,7 +91,7 @@ func cmdCompose(s *session, args []string) (any, error) {
 	if err != nil {
 		return nil, fmt.Errorf("streamsim: %w", err)
 	}
-	library, err := component.NewLibraryFromDirs(s.componentDirs(options.dirs))
+	library, err := component.NewLibrary(s.componentDirs(options.dirs))
 	if err != nil {
 		return nil, fmt.Errorf("streamsim: %w", err)
 	}

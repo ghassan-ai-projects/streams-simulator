@@ -10,4 +10,4 @@ type Summary = layer.Summary
 
 type Detail = layer.Detail
 
-var ErrNoLibrary = errors.New("component: a library built by LoadLibrary is required")
+var ErrNoLibrary = errors.New("component: a library built by NewLibrary is required")

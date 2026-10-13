@@ -48,7 +48,18 @@
     "profiles": {
       "type": "array",
       "minItems": 1,
-      "description": "Copied into the domain; fault weights name composed (qualified) fault ids."
+      "description": "Copied into the domain; fault weights name composed (qualified) fault ids.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "not_applicable": {
+            "type": "string",
+            "minLength": 20,
+            "maxLength": 400,
+            "description": "In place of a profile definition: why this family is fiction in this domain."
+          }
+        }
+      }
     },
     "ground_truth": {
       "type": "object",

@@ -46,7 +46,7 @@ func (b *entryBuild) reading(point MeasurementPoint, instrument *Instrument) (re
 	if lo >= hi {
 		return reading{}, b.refuse(relative("instruments", "replace", point.Name), "range of %q in %s is empty: %v to %v", point.Name, instrument.Unit, lo, hi)
 	}
-	return reading{conv: conv, lo: lo, hi: hi, scale: spanScale(instrument, hi-lo)}, nil
+	return reading{conv: conv, lo: lo, hi: hi, scale: spanScale(instrument, convertedSpan(point, conv))}, nil
 }
 
 func convertedRange(point MeasurementPoint, instrument *Instrument, conv conversion) (float64, float64) {
@@ -55,6 +55,10 @@ func convertedRange(point MeasurementPoint, instrument *Instrument, conv convers
 		lo, hi = max(lo, instrument.Range.Min), min(hi, instrument.Range.Max)
 	}
 	return lo, hi
+}
+
+func convertedSpan(point MeasurementPoint, conv conversion) float64 {
+	return conv.apply(point.Range.Max) - conv.apply(point.Range.Min)
 }
 
 func spanScale(instrument *Instrument, span float64) float64 {

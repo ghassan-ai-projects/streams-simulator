@@ -24,11 +24,11 @@ func (l *Library) List() []Summary {
 }
 
 func summarizeEquipment(e *Equipment) Summary {
-	return Summary{ID: e.ID, Version: e.Version, Kind: KindEquipment, Title: e.Title, Class: e.Class, Tags: orEmpty(e.Tags), Digest: e.Digest, File: e.File}
+	return Summary{ID: e.ID, Version: e.Version, Kind: KindEquipment, Title: e.Title, Class: e.Class, Tags: orEmpty(e.Tags), Digest: e.Digest}
 }
 
 func summarizeInstrument(i *Instrument) Summary {
-	return Summary{ID: i.ID, Version: i.Version, Kind: KindInstrument, Title: i.Title, Class: i.UnitFamily, Tags: []string{i.Tag}, Digest: i.Digest, File: i.File}
+	return Summary{ID: i.ID, Version: i.Version, Kind: KindInstrument, Title: i.Title, Class: i.UnitFamily, Tags: []string{i.Tag}, Digest: i.Digest}
 }
 
 func orEmpty(values []string) []string {

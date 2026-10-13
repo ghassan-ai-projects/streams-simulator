@@ -40,12 +40,5 @@ func bindOperator(ctx context.Context, stderr io.Writer, d *director.Director, a
 }
 
 func newDirector(ctx context.Context, options ServeOptions) (*director.Director, error) {
-	d, err := director.NewFromDirs(ctx, options.DomainsDir, options.AdaptersDir, options.OutDir)
-	if err != nil || len(options.ComponentsDirs) == 0 {
-		return d, err
-	}
-	if err := d.LoadLibrary(options.ComponentsDirs); err != nil {
-		return nil, err
-	}
-	return d, nil
+	return director.NewFromDirs(ctx, options.DomainsDir, options.AdaptersDir, options.OutDir, options.ComponentsDirs)
 }

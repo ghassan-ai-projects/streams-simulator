@@ -16,7 +16,7 @@ const (
 var discreteForms = []string{model.FormTrip, model.FormAntiRecycle, model.FormSequencer, model.FormPID, model.FormAlarm}
 
 func pinnedAtBound(s *series, g *grid) (Finding, bool) {
-	if s.state == nil || s.dynamic == nil || spanOf(s.values) == 0 {
+	if !pinnable(s) {
 		return Finding{}, false
 	}
 	hits, bound := dominantBound(s.state, s.values)
@@ -53,12 +53,17 @@ func notSettled(s *series, g *grid) (Finding, bool) {
 	return s.finding(severityWarning, codeNotSettled, from, g, detail), true
 }
 
+func pinnable(s *series) bool {
+	return integrated(s) && s.dynamic.Follow == nil
+}
+
 func settles(s *series) bool {
+	return integrated(s) && !cyclic(s.spec, s.kind, s.name)
+}
+
+func integrated(s *series) bool {
 	dyn := s.dynamic
-	if s.state == nil || dyn == nil || !dyn.Integrated() || slices.Contains(discreteForms, dyn.F1.Form) {
-		return false
-	}
-	return !cyclic(s.kind, s.name, map[string]bool{})
+	return s.state != nil && dyn != nil && dyn.Integrated() && !slices.Contains(discreteForms, dyn.F1.Form)
 }
 
 func spanOf(values []float64) float64 {

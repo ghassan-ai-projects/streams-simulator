@@ -135,7 +135,8 @@ Commands:
   domain format <path>                  Rewrite a domain spec in canonical formatting
   domain compose <composition> [--out]  Compose a plant from the component library into a domain
   component list|show <ref>|validate    The component library: equipment, instruments, vocabulary
-                                        (--components-dir, repeatable; STREAMSIM_COMPONENTS_DIRS)
+                                        (built in; --components-dir adds customer
+                                        directories, repeatable; STREAMSIM_COMPONENTS_DIRS)
   adapter list|verify [path]            Installed adapters; verify one against its golden
   run [--scenario <file>]               One-shot run from flags or a scenario file
   scenario from-run <run.json> --out f  Export the scenario that reproduces a run

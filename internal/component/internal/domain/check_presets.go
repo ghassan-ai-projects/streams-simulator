@@ -36,19 +36,36 @@ func checkPreset(e *Equipment, name string, claimed map[string]string, issues *i
 func parameterTargets(e *Equipment) map[string]string {
 	claimed := map[string]string{}
 	for _, parameter := range e.Parameters {
-		for _, target := range parameter.Targets {
+		for _, target := range writtenTargets(parameter) {
 			claimed[target] = parameter.Name
-		}
-		for _, name := range slices.Sorted(maps.Keys(parameter.Cases)) {
-			for _, target := range slices.Sorted(maps.Keys(parameter.Cases[name])) {
-				claimed[target] = parameter.Name
-			}
 		}
 	}
 	return claimed
 }
 
+func writtenTargets(parameter Parameter) []string {
+	targets := slices.Clone(parameter.Targets)
+	for _, name := range slices.Sorted(maps.Keys(parameter.Cases)) {
+		targets = append(targets, slices.Sorted(maps.Keys(parameter.Cases[name]))...)
+	}
+	slices.Sort(targets)
+	return slices.Compact(targets)
+}
+
+func checkSharedTargets(e *Equipment, issues *issueList) {
+	owners := map[string]string{}
+	for i, parameter := range e.Parameters {
+		for _, target := range writtenTargets(parameter) {
+			if first, taken := owners[target]; taken {
+				issues.addf(pointer("parameters", indexPart(i)), "target %q is also written by parameter %q", target, first)
+			}
+			owners[target] = parameter.Name
+		}
+	}
+}
+
 func (l *Library) checkParameters(e *Equipment, issues *issueList) {
+	checkSharedTargets(e, issues)
 	for i, parameter := range e.Parameters {
 		at := pointer("parameters", indexPart(i))
 		if parameter.Type == "enum" {

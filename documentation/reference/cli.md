@@ -58,7 +58,7 @@ streamsim domain validate <path>
 
 ### `domain lint`
 
-Simulates a nominal day of one domain (noiseless, default population, no faults, no effector calls) and judges it with five rules: a non-finite state or reading, a channel reading outside its declared range, a state pinned at its bound, an integrated state that has not settled by the end of the run, and a conservation balance that does not close. It prints `{domain, digest, seed, hours, samples, findings, errors, warnings}`; each finding carries `severity`, `code`, `entity`, `channel`, `state` or `fault`, `at_s` and a `detail`. Any `error` finding exits 1 with a `domain_lint` error document whose `result` is the same report; warnings alone exit 0. The output is deterministic for a domain, seed and hours.
+Simulates a nominal day of one domain (noiseless, default population, no faults, no effector calls) and judges it with five rules: a non-finite state or reading, a channel reading outside its declared range, an integrated state pinned at its bound, an integrated state that has not settled by the end of the run, and a conservation balance that does not close. It prints `{domain, digest, seed, hours, samples, findings, errors, warnings}`; each finding carries `severity`, `code`, `entity`, `channel`, `state` or `fault`, `at_s` and a `detail`. Any `error` finding exits 1 with a `domain_lint` error document whose `result` is the same report; warnings alone exit 0. The output is deterministic for a domain, seed and hours.
 
 ```bash
 streamsim domain lint <path> [--hours 24] [--seed 1]
@@ -84,7 +84,7 @@ streamsim domain compose <composition.json> [--out <file>] [--components-dir <di
 ```
 
 - `--out <file>` — write the domain there; without it the composed spec is printed inside the output document (`domain`).
-- `--components-dir <dir>` — a library directory, repeatable; defaults to `components`. The first directory is the built-in library (the only one that may hold `streamsim/` ids); `STREAMSIM_COMPONENTS_DIRS` (a path list, `:` on Unix) is appended after the flags.
+- `--components-dir <dir>` — a customer library directory, repeatable. The built-in library is embedded in the binary and always loaded first, so no directory is needed and the working directory does not matter; it is the only library that may hold `streamsim/` ids. `STREAMSIM_COMPONENTS_DIRS` (a path list, `:` on Unix) is appended after the flags; empty entries (a trailing `:`) are ignored.
 
 It prints `{id, digest, channels, faults, effectors}` as `domain validate` does, plus `composed` (the file written). A composition that breaks a library rule fails with `composition_invalid`, each issue at its pointer in the composition (`/equipment/0/preset`, `/connections/1`); a composed domain that fails its own contract fails with `domain_invalid`.
 
@@ -96,9 +96,9 @@ Lists, shows and validates the component library: equipment, instruments and voc
 streamsim component [list|show <namespace/name[@major]>|validate] [--components-dir <dir>]...
 ```
 
-- `component list` — every entry as `{id, version, kind, title, class, tags, digest, file}`, sorted by id and version. For an instrument `class` is its unit family and `tags` its ISA-5.1 letters.
+- `component list` — every entry as `{id, version, kind, title, class, tags, digest}` (no file path), sorted by id and version. For an instrument `class` is its unit family and `tags` its ISA-5.1 letters.
 - `component show <ref>` — the entry and the file's document; `ns/name` without a major selects the highest major.
-- `component validate` — loads and checks every file of the directories and prints `{valid, directories, equipment, instruments}`. A file that breaks its schema or a library rule fails with `component_invalid`, naming the file and listing every issue with its pointer.
+- `component validate` — loads and checks every file of the directories and prints `{valid, directories, equipment, instruments}`, where `directories` are the customer directories (the built-in library is always checked and counted). A file that breaks its schema or a library rule fails with `component_invalid`, naming the file and listing every issue with its pointer.
 
 ### `adapter`
 

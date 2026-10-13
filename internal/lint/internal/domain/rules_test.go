@@ -72,14 +72,39 @@ func TestAFindingIsReportedOncePerSeriesAtItsFirstSample(t *testing.T) {
 	}
 }
 
-func TestAnIdleStateAtItsBoundIsNotPinned(t *testing.T) {
+func TestAnIntegratedStateThatNeverMovesFromItsBoundIsPinned(t *testing.T) {
 	t.Parallel()
 	report := lintOf(t, 2, func(s *model.DomainSpec) {
 		plantKind(s).State[1].Initial, plantKind(s).State[0].Initial = 0, 0
 		plantKind(s).State[1].Min = new(float64)
 	})
-	if _, pinned := findingFor(report, codePinnedAtBound, "p-1", "x"); pinned {
-		t.Fatalf("a state that never moves was reported as pinned: %+v", report.Findings)
+	if finding, pinned := findingFor(report, codePinnedAtBound, "p-1", "x"); !pinned || finding.Detail != "state sits at its declared min 0 in 121 of 121 samples" {
+		t.Fatalf("an integrated state with no span at its bound was not reported: %+v", report.Findings)
+	}
+}
+
+func TestOnlyIntegratedStatesAreReportedAsPinned(t *testing.T) {
+	t.Parallel()
+	cases := map[string]func(*model.DomainSpec){
+		"a state of tier F0": func(s *model.DomainSpec) {
+			plantKind(s).Dynamics[0] = model.Dynamics{Target: "x", Tier: "F0", F0: &model.F0Dyn{Baseline: 0}}
+		},
+		"a discrete form": func(s *model.DomainSpec) {
+			plantKind(s).Dynamics[0].F1 = &model.F1Dyn{Form: model.FormTrip, When: &model.Condition{State: "u", Operator: "gt", Threshold: 100}, ForS: 1, TrippedValue: 1}
+		},
+		"a state with no dynamics": func(s *model.DomainSpec) { plantKind(s).Dynamics = nil },
+	}
+	for name, mutate := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			report := lintOf(t, 2, func(s *model.DomainSpec) {
+				plantKind(s).State[1].Initial, plantKind(s).State[1].Min = 0, new(float64)
+				mutate(s)
+			})
+			if finding, pinned := findingFor(report, codePinnedAtBound, "p-1", "x"); pinned {
+				t.Fatalf("%s at its bound was reported as pinned: %+v", name, finding)
+			}
+		})
 	}
 }
 

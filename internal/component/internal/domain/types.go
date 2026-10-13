@@ -141,7 +141,6 @@ type Summary struct {
 	Class   string   `json:"class"`
 	Tags    []string `json:"tags"`
 	Digest  string   `json:"digest"`
-	File    string   `json:"file"`
 }
 
 type Detail struct {

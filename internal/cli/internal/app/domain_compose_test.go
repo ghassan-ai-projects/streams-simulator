@@ -13,7 +13,7 @@ import (
 func TestDomainComposeWritesTheDomainTheExampleHolds(t *testing.T) {
 	t.Parallel()
 	out := filepath.Join(t.TempDir(), "pilot.domain.json")
-	doc := invoke(t, "domain", "compose", pilotComposition(), "--components-dir", builtInComponents(), "--out", out).
+	doc := invoke(t, "domain", "compose", pilotComposition(), "--out", out).
 		mustSucceed(t).document(t, "domain_compose")
 	if doc["composed"] != out || doc["id"] != "chiller-pilot" || doc["domain"] != nil {
 		t.Fatalf("compose = %v, want the file named and no inline domain", doc)
@@ -31,7 +31,7 @@ func TestDomainComposeWritesTheDomainTheExampleHolds(t *testing.T) {
 
 func TestDomainComposeWithoutOutPrintsTheDomainInTheDocument(t *testing.T) {
 	t.Parallel()
-	doc := invoke(t, "domain", "compose", "--components-dir", builtInComponents(), pilotComposition()).
+	doc := invoke(t, "domain", "compose", pilotComposition()).
 		mustSucceed(t).document(t, "domain_compose")
 	spec, _ := doc["domain"].(map[string]any)
 	if _, written := doc["composed"]; written || spec["id"] != "chiller-pilot" {
@@ -49,7 +49,7 @@ func TestDomainComposeReadsTheLibraryDirectoriesInOrder(t *testing.T) {
 	swapped := strings.Replace(string(raw), `"use": "streamsim/ahu@1"`, `"use": "acme/ahu@1"`, 1)
 	path := writeFile(t, "custom.composition.json", swapped)
 	environment := map[string]string{"STREAMSIM_COMPONENTS_DIRS": custom}
-	doc := invokeWithEnvironment(t, environment, "domain", "compose", path, "--components-dir", builtInComponents()).
+	doc := invokeWithEnvironment(t, environment, "domain", "compose", path).
 		mustSucceed(t).document(t, "domain_compose")
 	if doc["id"] != "chiller-pilot" {
 		t.Fatalf("compose = %v", doc)
@@ -63,7 +63,7 @@ func TestDomainComposeReportsACompositionThatBreaksALibraryRule(t *testing.T) {
 		t.Fatal(err)
 	}
 	path := writeFile(t, "bad.composition.json", strings.Replace(string(raw), `"preset": "large"`, `"preset": "huge"`, 1))
-	failure := invoke(t, "domain", "compose", path, "--components-dir", builtInComponents()).failure(t)
+	failure := invoke(t, "domain", "compose", path).failure(t)
 	issues, _ := failure["issues"].([]any)
 	issue, _ := issues[0].(map[string]any)
 	if failure["code"] != "composition_invalid" || failure["source"] != path || issue["pointer"] != "/equipment/0/preset" {
@@ -78,7 +78,7 @@ func TestDomainComposeReportsADomainThatFailsItsOwnContract(t *testing.T) {
 		t.Fatal(err)
 	}
 	path := writeFile(t, "weights.composition.json", strings.Replace(string(raw), "chiller_large__chw_supply_temp__offset", "no_such_fault", 1))
-	failure := invoke(t, "domain", "compose", path, "--components-dir", builtInComponents()).failure(t)
+	failure := invoke(t, "domain", "compose", path).failure(t)
 	if failure["code"] != "domain_invalid" {
 		t.Fatalf("failure = %v, want domain_invalid", failure)
 	}
@@ -92,10 +92,10 @@ func TestDomainComposeRefusesWhatItCannotRead(t *testing.T) {
 		code string
 		exit int
 	}{
-		{"no composition", []string{"domain", "compose", "--components-dir", builtInComponents()}, "usage_invalid", 2},
+		{"no composition", []string{"domain", "compose"}, "usage_invalid", 2},
 		{"two compositions", []string{"domain", "compose", "a.json", "b.json"}, "usage_invalid", 2},
 		{"an unknown flag", []string{"domain", "compose", "--frobnicate", "a.json"}, "usage_invalid", 2},
-		{"a composition that does not exist", []string{"domain", "compose", "absent.composition.json", "--components-dir", builtInComponents()}, "file_not_found", 1},
+		{"a composition that does not exist", []string{"domain", "compose", "absent.composition.json"}, "file_not_found", 1},
 		{"a library that does not exist", []string{"domain", "compose", pilotComposition(), "--components-dir", "no-such-dir"}, "file_not_found", 1},
 	}
 	for _, tc := range cases {

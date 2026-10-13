@@ -314,7 +314,7 @@ Cross-checks: the schedule against direct table values at boundary and interpola
 closed form switching at `ceil(τ_below · ln((g·u − x0)/(g·u − threshold)))` (1e-6); the peak against an independent recomputation
 of block means, period roll-over and ratchet over two days (1e-9).
 
-**Site clock (P7k).** A periodic schedule may declare `utc_offset_s`: its `at_s` is then local time within the period, so a
+**Site clock (P7k).** A periodic schedule may declare `utc_offset_s` (it needs `period_s`: a non-zero offset without a period is refused at `/…/f0/schedule/utc_offset_s`): its `at_s` is then local time within the period, so a
 daily profile or a weekly shift calendar follows the site's clock. In an epoch-aligned weekly period, Monday 00:00 is
 `at_s` 345600 (1970-01-01 was a Thursday).
 
@@ -606,8 +606,8 @@ sample that triggers it.
 |---|---|---|
 | `non_finite` | error | a state or reading is NaN or infinite; the other rules skip that series |
 | `out_of_range` | error | a channel that declares a `range` reads outside it; `detail` gives the worst reading and how many samples are outside |
-| `pinned_at_bound` | warning | a state with dynamics sits at its declared `min` or `max` in more than 50 % of the samples; a state that never moves in the whole run is idle, not pinned, and is not reported |
-| `not_settled` | warning | an integrated state (tier F1, not algebraic, not a discrete form: `trip`, `anti_recycle`, `sequencer`, `pid`, `alarm`) changes between the start of the last 10 % of the run and the end by more than 5 % of its observed span per hour; a state driven, through its inputs, by a seasonal or scheduled F0 source cycles daily and is not reported |
+| `pinned_at_bound` | warning | an integrated state (tier F1, not algebraic, not a discrete form: `trip`, `anti_recycle`, `sequencer`, `pid`, `alarm`, and not the target of a `follow`) sits at its declared `min` or `max` in more than 50 % of the samples, whatever its span: an integrated state that never leaves its bound (span 0) is reported too. A tier F0, scheduled, binary-flag, discrete-form, algebraic or followed state is never reported |
+| `not_settled` | warning | an integrated state (as above, without the follow exclusion) changes between the start of the last 10 % of the run and the end by more than 5 % of its observed span per hour; a state driven by a seasonal or scheduled F0 source cycles daily and is not reported. Drivers are followed through its F1 inputs (a linked input reads the providing kind), through its `follow` to the providing kind's state and that state's dynamics, and, for a store, through the flows it takes part in to the other store and the scale states |
 | `conservation_residual` | warning | for a fault whose detector is `conservation_residual`, the balance of its channels (inputs minus outputs, as the truth solver sums them) exceeds 3 times the combined noise sigma (the root of the summed squared sigmas of all its channels) at any sample; `detail` gives the worst residual and the limit |
 
 **Output.** One `cli-output-v0.1` document `{domain, digest, seed, hours, samples, findings, errors, warnings}`, findings

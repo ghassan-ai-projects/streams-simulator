@@ -286,7 +286,7 @@
             "drift_per_hour": 0,
             "seasonality": [{"amplitude": 75, "period_s": 86400, "phase_rad": -1.6}]
           },
-          "follow": {"state": "cooling_load", "aggregate": "sum", "link": "thermal_load__ahu__chiller_small"}
+          "follow": {"state": "cooling_load", "aggregate": "sum", "link": "chiller_small__load_in__ahu"}
         },
         {"target": "chw_flow", "tier": "F0", "f0": {"baseline": 43, "drift_per_hour": 0, "seasonality": []}},
         {
@@ -611,8 +611,8 @@
       }
     }
   ],
-  "link_types": [{"name": "thermal_load__ahu__chiller_small", "from": "ahu", "to": "chiller_small"}],
-  "links": [{"from": "AHU-1", "to": "CH-3", "type": "thermal_load__ahu__chiller_small"}],
+  "link_types": [{"name": "chiller_small__load_in__ahu", "from": "ahu", "to": "chiller_small"}],
+  "links": [{"from": "AHU-1", "to": "CH-3", "type": "chiller_small__load_in__ahu"}],
   "profiles": [
     {
       "name": "nominal",

@@ -31,6 +31,7 @@ type packageInfo struct {
 // packages classifies every production package directory; a package that is
 // not listed fails TestEveryPackageIsClassified.
 var packages = map[string]packageInfo{
+	"components":                  {kindFoundation, 0},
 	"internal/canonical":          {kindFoundation, 0},
 	"internal/jsonvalue":          {kindFoundation, 0},
 	"internal/device/contract":    {kindFoundation, 0},

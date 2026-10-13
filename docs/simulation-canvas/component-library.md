@@ -46,7 +46,7 @@ domain it composes to, [`examples/chiller-pilot.domain.json`](../../examples/chi
   from the library.
 - **Domain spec v0.2 additions**: `provenance` on instance sets (structure only); aggregation of dynamics inputs over typed
   links (`sum`, `mean`), closing R6e-01 — the only change to world semantics, with an analytic oracle.
-- **Customer libraries**: `--components-dir` (repeatable) and `STREAMSIM_COMPONENTS_DIRS`; ids carry a namespace, so a
+- **Customer libraries**: the built-in library is embedded in the binary; `--components-dir` (repeatable) and `STREAMSIM_COMPONENTS_DIRS` add customer directories after it; ids carry a namespace, so a
   customer's `acme/...` never collides with `streamsim/...`; nothing customer-specific is committed.
 
 ## 5. First catalog (factory utilities)

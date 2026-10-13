@@ -1,9 +1,6 @@
 package domain
 
-import (
-	"regexp"
-	"strings"
-)
+import "strings"
 
 type linkSet struct {
 	types   []any
@@ -22,8 +19,6 @@ type endpoint struct {
 	instance string
 	port     Port
 }
-
-var placeholder = regexp.MustCompile(`\{[^{}]*\}`)
 
 func (c *composer) connect(entries []*built) (*linkSet, error) {
 	set := &linkSet{seen: map[string]bool{}, edges: map[string][]string{}}
@@ -85,39 +80,8 @@ func findInstance(entries []*built, instance string) *built {
 	return nil
 }
 
-func hasInstance(entry Entry, instance string) bool {
-	for _, name := range entry.Names {
-		if name == instance {
-			return true
-		}
-	}
-	return entry.IDTemplate != "" && templatePattern(entry.IDTemplate).MatchString(instance)
-}
-
-func templatePattern(template string) *regexp.Regexp {
-	literals := placeholder.Split(template, -1)
-	holders := placeholder.FindAllString(template, -1)
-	var pattern strings.Builder
-	pattern.WriteString("^")
-	for i, literal := range literals {
-		pattern.WriteString(regexp.QuoteMeta(literal))
-		if i < len(holders) {
-			pattern.WriteString(holderPattern(holders[i]))
-		}
-	}
-	pattern.WriteString("$")
-	return regexp.MustCompile(pattern.String())
-}
-
-func holderPattern(holder string) string {
-	if holder == "{n}" {
-		return "[0-9]+"
-	}
-	return "[A-Za-z0-9_.-]+"
-}
-
 func (s *linkSet) add(c *composer, from, to endpoint, at string) error {
-	name := from.port.Type + "__" + from.owner.kindName + "__" + to.owner.kindName
+	name := to.owner.kindName + "__" + to.port.Name + "__" + from.owner.kindName
 	if !s.seen[name] {
 		s.seen[name] = true
 		s.types = append(s.types, map[string]any{"name": name, "from": from.owner.kindName, "to": to.owner.kindName})

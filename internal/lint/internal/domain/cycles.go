@@ -3,17 +3,90 @@ package domain
 import (
 	"slices"
 
+	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-func cyclic(kind *model.Kind, state string, seen map[string]bool) bool {
-	dyn := kind.DynamicsOf(state)
-	if dyn == nil || seen[state] {
+type source struct {
+	kind  *model.Kind
+	state string
+}
+
+func cyclic(spec *domain.Compiled, kind *model.Kind, state string) bool {
+	return reachesCycle(spec, source{kind, state}, map[source]bool{})
+}
+
+func reachesCycle(spec *domain.Compiled, from source, seen map[source]bool) bool {
+	if seen[from] {
 		return false
 	}
-	seen[state] = true
-	if dyn.F0 != nil && (len(dyn.F0.Seasonality) > 0 || dyn.F0.Schedule != nil) {
+	seen[from] = true
+	if periodic(from.kind.DynamicsOf(from.state)) {
 		return true
 	}
-	return dyn.F1 != nil && slices.ContainsFunc(dyn.F1.Inputs, func(in model.F1Input) bool { return cyclic(kind, in.State, seen) })
+	return slices.ContainsFunc(drivers(spec, from), func(driver source) bool { return reachesCycle(spec, driver, seen) })
+}
+
+func periodic(dyn *model.Dynamics) bool {
+	return dyn != nil && dyn.F0 != nil && (len(dyn.F0.Seasonality) > 0 || dyn.F0.Schedule != nil)
+}
+
+func drivers(spec *domain.Compiled, from source) []source {
+	return slices.Concat(inputDrivers(spec, from), followDriver(spec, from), flowDrivers(from))
+}
+
+func inputDrivers(spec *domain.Compiled, from source) []source {
+	dyn := from.kind.DynamicsOf(from.state)
+	if dyn == nil || dyn.F1 == nil {
+		return nil
+	}
+	var found []source
+	for _, input := range dyn.F1.Inputs {
+		if owner := inputOwner(spec, from.kind, input); owner != nil {
+			found = append(found, source{owner, input.State})
+		}
+	}
+	return found
+}
+
+func inputOwner(spec *domain.Compiled, reader *model.Kind, input model.F1Input) *model.Kind {
+	if input.Link == nil {
+		return reader
+	}
+	return providerOf(spec, input.Link.Type)
+}
+
+func followDriver(spec *domain.Compiled, from source) []source {
+	dyn := from.kind.DynamicsOf(from.state)
+	if dyn == nil || dyn.Follow == nil {
+		return nil
+	}
+	if provider := providerOf(spec, dyn.Follow.Link); provider != nil {
+		return []source{{provider, dyn.Follow.State}}
+	}
+	return nil
+}
+
+func providerOf(spec *domain.Compiled, linkType string) *model.Kind {
+	for _, candidate := range spec.Spec.LinkTypes {
+		if candidate.Name == linkType {
+			return spec.Kind(candidate.From)
+		}
+	}
+	return nil
+}
+
+func flowDrivers(from source) []source {
+	var found []source
+	for _, flow := range from.kind.Flows {
+		if flow.From != from.state && flow.To != from.state {
+			continue
+		}
+		for _, state := range slices.Concat([]string{flow.From, flow.To}, flow.Scale) {
+			if state != "" && state != from.state {
+				found = append(found, source{from.kind, state})
+			}
+		}
+	}
+	return found
 }

@@ -43,9 +43,10 @@ The accepted architecture is summarized in [`documentation/architecture/`](../..
 - `internal/plantwire/contract`: the embedded plant wire schemas, byte-identical with `contracts/plant-wire/schemas`
 - `internal/deviceworld`: device-to-world effector binding and `OpenDevice` (capabilities, fault schedule, bindings, world and plant composed before any listener opens); facade over `internal/deviceworld/internal/domain`, `app` and a `files` edge
 - `internal/domain`: load, validate, compile and digest domain data, including a directory into a catalog (`NewCatalogFromDir`); facade over `internal/domain/internal/domain` with a `files` edge
-- `internal/component`: the component library and `Compose`: load equipment, instruments and vocabulary from directories (`NewLibraryFromDirs`), check them, list and describe them, and compose a composition into an ordinary domain; facade over `internal/component/internal/domain` (library rules, targets, presets, instruments, ports, links) and a `files` edge; composes `domain` for validation and formatting
+- `internal/component`: the component library and `Compose`: load the embedded built-in library, then customer directories (`NewLibrary`), of equipment, instruments and vocabulary, check them, list and describe them, and compose a composition into an ordinary domain; facade over `internal/component/internal/domain` (library rules, targets, presets, instruments, ports, links) and a `files` edge; composes `domain` for validation and formatting
 - `internal/model`: shared simulator records and strict JSON decoding
 - `internal/jsonschema`: core schema compilation and validation
+- `components`: the built-in component library (vocabulary, equipment, instruments, compositions) embedded as an `fs.FS`; imports nothing internal
 - `internal/schemas`: embedded contract sources
 - `internal/canonical`: canonical JSON encoding and digest operations
 - `internal/randutil`: seeded random streams

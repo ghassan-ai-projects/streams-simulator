@@ -47,13 +47,26 @@ func TestComposeKeepsLibraryDescriptionsOutOfTheDomain(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, leaked := range []string{"library text that must not leak", "state text", "fault text", "effector text"} {
+	for _, leaked := range []string{"library text that must not leak", "state text", "fault text", "effector text", "args title text", "comment text", "nested arg text", "example text"} {
 		if strings.Contains(string(out), leaked) {
 			t.Errorf("the composed domain carries library text %q", leaked)
 		}
 	}
 	if !strings.Contains(string(out), "A composition for tests.") {
 		t.Error("the composition's own description is missing")
+	}
+}
+
+func TestComposeKeepsTheArgumentSchemaOfAnEffectorWithoutItsAnnotationsAtAnyDepth(t *testing.T) {
+	t.Parallel()
+	doc := composeOK(t, baseLibrary(t), withEquipment(t, kilnEntry(nil)))
+	schema := member(t, doc, "kinds", 0, "effectors", 0, "args_schema").(map[string]any)
+	setpoint := member(t, schema, "properties", "setpoint").(map[string]any)
+	if len(schema) != 4 || number(t, setpoint["maximum"]) != 200 || len(setpoint) != 3 {
+		t.Fatalf("args_schema = %v, want type, additionalProperties, required and properties with the bounds kept and the annotations gone", schema)
+	}
+	if _, annotated := member(t, schema, "properties", "kiln_id").(map[string]any)["$comment"]; annotated {
+		t.Error("a nested $comment reached the composed domain")
 	}
 }
 
@@ -122,7 +135,7 @@ func TestComposeReportsAnInvalidComposedDomainAsADomainViolation(t *testing.T) {
 	raw := mutate(t, withEquipment(t, kilnEntry(nil)), func(doc map[string]any) {
 		doc["profiles"] = []any{map[string]any{"name": "nominal", "duration_s": 3600},
 			map[string]any{"name": "sensor_pathology", "duration_s": 3600, "fault_weights": map[string]any{"kiln__no_such_fault": 1}},
-			map[string]any{"name": "correlated_cascade", "not_applicable": "none"}}
+			map[string]any{"name": "correlated_cascade", "not_applicable": "the test plant has no cascade at all"}}
 	})
 	_, err := compose(t, baseLibrary(t), raw)
 	invalid := asViolation(t, err, "domain-spec-v0.2")

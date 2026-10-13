@@ -43,8 +43,9 @@ const kilnJSON = `{
       "onset": {"magnitude": 1, "shape": "step"}}],
     "effectors": [{"name": "set_setpoint", "description": "effector text", "risk_class": "medium", "idempotency_window_s": 60,
       "ack": {"failure_modes": [{"mode": "ok", "probability": 1}], "latency_ms": {"mean": 100, "sigma": 10}},
-      "args_schema": {"type": "object", "additionalProperties": false, "required": ["kiln_id", "setpoint"],
-        "properties": {"kiln_id": {"type": "string"}, "setpoint": {"type": "number", "minimum": 0, "maximum": 200}}},
+      "args_schema": {"type": "object", "additionalProperties": false, "required": ["kiln_id", "setpoint"], "title": "args title text",
+        "properties": {"kiln_id": {"type": "string", "$comment": "comment text"},
+          "setpoint": {"type": "number", "minimum": 0, "maximum": 200, "description": "nested arg text", "examples": ["example text"]}}},
       "effect": {"dead_time_s": 0, "time_constant_s": 0, "state_deltas": [{"state": "setpoint", "assign_from_arg": "setpoint"}]}}]
   },
   "measurement_points": [

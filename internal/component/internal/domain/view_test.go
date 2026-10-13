@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"testing"
@@ -33,8 +34,30 @@ func TestListDescribesEquipmentAndInstrumentsForSearching(t *testing.T) {
 	if kiln.Title != "Kiln" || kiln.Class != "static/furnace/kiln" || strings.Join(kiln.Tags, ",") != "thermal" || !strings.HasPrefix(kiln.Digest, "sha256:") {
 		t.Errorf("kiln entry = %+v", kiln)
 	}
-	if probe.Class != "temperature" || strings.Join(probe.Tags, ",") != "TT" || probe.File != "lib/instruments/probe.instrument.json" {
+	if probe.Class != "temperature" || strings.Join(probe.Tags, ",") != "TT" {
 		t.Errorf("probe entry = %+v, want its family as class and its tag letters as tags", probe)
+	}
+}
+
+func TestListingsAndDescriptionsNameNoFilePath(t *testing.T) {
+	t.Parallel()
+	library := baseLibrary(t)
+	raw, err := json.Marshal(library.List())
+	if err != nil {
+		t.Fatal(err)
+	}
+	detail, err := library.Describe("acme/probe@1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	described, err := json.Marshal(detail)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, text := range []string{string(raw), string(described)} {
+		if strings.Contains(text, "lib/") || strings.Contains(text, ".json") || strings.Contains(text, `"file"`) {
+			t.Errorf("output exposes a file path: %s", text)
+		}
 	}
 }
 

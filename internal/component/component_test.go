@@ -5,6 +5,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
@@ -12,7 +13,7 @@ import (
 
 func builtInLibrary(t *testing.T) *Library {
 	t.Helper()
-	library, err := NewLibraryFromDirs([]string{filepath.Join(testsupport.RepositoryRoot(), "components")})
+	library, err := NewLibrary(nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -74,7 +75,40 @@ func TestALibraryThatWasNeverBuiltRefusesEveryOperation(t *testing.T) {
 
 func TestALibraryDirectoryThatDoesNotExistIsRefused(t *testing.T) {
 	t.Parallel()
-	if _, err := NewLibraryFromDirs([]string{filepath.Join(t.TempDir(), "absent")}); !errors.Is(err, fs.ErrNotExist) {
+	if _, err := NewLibrary([]string{filepath.Join(t.TempDir(), "absent")}); !errors.Is(err, fs.ErrNotExist) {
 		t.Fatalf("error = %v, want a not-exist error", err)
+	}
+}
+
+func TestTheBuiltInLibraryLoadsWithoutAnyDirectoryAndIgnoresEmptyEntries(t *testing.T) {
+	t.Parallel()
+	for name, dirs := range map[string][]string{"none": nil, "empty entries": {"", " ", ""}} {
+		library, err := NewLibrary(dirs)
+		if err != nil {
+			t.Fatalf("%s: %v", name, err)
+		}
+		if equipment, instruments := library.Counts(); equipment != 2 || instruments != 3 {
+			t.Errorf("%s: library = %d equipment, %d instruments, want 2 and 3", name, equipment, instruments)
+		}
+	}
+}
+
+func TestACustomerDirectoryCannotUseTheStreamsimNamespace(t *testing.T) {
+	t.Parallel()
+	customer := t.TempDir()
+	raw, err := os.ReadFile(filepath.Join(testsupport.RepositoryRoot(), "components", "equipment", "ahu.component.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	folder := filepath.Join(customer, "equipment")
+	if err := os.MkdirAll(folder, 0o750); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(folder, "ahu.component.json"), raw, 0o600); err != nil { //nolint:gosec // G703: the path is under t.TempDir and the name is a test constant
+		t.Fatal(err)
+	}
+	_, err = NewLibrary([]string{customer})
+	if err == nil || !strings.Contains(err.Error(), `reserved "streamsim/" namespace`) {
+		t.Fatalf("error = %v, want the reserved namespace refused", err)
 	}
 }

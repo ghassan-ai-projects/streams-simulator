@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/ghassan-ai-projects/streams-simulator/internal/component"
 	rules "github.com/ghassan-ai-projects/streams-simulator/internal/director/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
@@ -23,6 +24,15 @@ func pilotComposition(t *testing.T) map[string]any {
 		t.Fatal(err)
 	}
 	return composition
+}
+
+func withBuiltInLibrary(t *testing.T, d *Director) {
+	t.Helper()
+	library, err := component.NewLibrary(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	d.library = library
 }
 
 func toolCode(err error) rules.Code {
@@ -49,9 +59,7 @@ func TestADirectorWithoutALibraryRefusesTheComponentTools(t *testing.T) {
 func TestADirectorComposesAnInstallableDomainFromItsLibrary(t *testing.T) {
 	t.Parallel()
 	d := newTestDirector(t)
-	if err := d.LoadLibrary([]string{filepath.Join(testsupport.RepositoryRoot(), "components")}); err != nil {
-		t.Fatal(err)
-	}
+	withBuiltInLibrary(t, d)
 	if list, err := d.ComponentList(); err != nil || list["components"] == nil {
 		t.Fatalf("list = %v, %v", list, err)
 	}
@@ -80,9 +88,7 @@ func TestADirectorComposesAnInstallableDomainFromItsLibrary(t *testing.T) {
 func TestADifferentDomainCannotTakeAnInstalledID(t *testing.T) {
 	t.Parallel()
 	d := newTestDirector(t)
-	if err := d.LoadLibrary([]string{filepath.Join(testsupport.RepositoryRoot(), "components")}); err != nil {
-		t.Fatal(err)
-	}
+	withBuiltInLibrary(t, d)
 	composition := pilotComposition(t)
 	composition["id"] = "aquaculture-pond"
 	if _, err := d.ComposeDomain(composition, true); toolCode(err) != rules.CodeDomainInvalid {

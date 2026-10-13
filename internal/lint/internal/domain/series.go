@@ -7,6 +7,7 @@ import (
 )
 
 type series struct {
+	spec    *domain.Compiled
 	entity  string
 	kind    *model.Kind
 	name    string
@@ -26,7 +27,7 @@ type plant struct {
 func samplePlants(w *world.World, spec *domain.Compiled, g *grid) []*plant {
 	var plants []*plant
 	for _, id := range w.EntityIDs() {
-		plants = append(plants, newPlant(id, spec.InstanceKind(max(spec.InstanceSetFor(id), 0)), len(g.timesNS)))
+		plants = append(plants, newPlant(spec, id, spec.InstanceKind(max(spec.InstanceSetFor(id), 0)), len(g.timesNS)))
 	}
 	for i, t := range g.timesNS {
 		for _, p := range plants {
@@ -36,15 +37,15 @@ func samplePlants(w *world.World, spec *domain.Compiled, g *grid) []*plant {
 	return plants
 }
 
-func newPlant(id string, kind *model.Kind, count int) *plant {
+func newPlant(spec *domain.Compiled, id string, kind *model.Kind, count int) *plant {
 	p := &plant{id: id, kind: kind, channels: map[string]*series{}}
 	for i := range kind.State {
 		state := &kind.State[i]
-		p.all = append(p.all, &series{entity: id, kind: kind, name: state.Name, state: state, dynamic: kind.DynamicsOf(state.Name), values: make([]float64, count)})
+		p.all = append(p.all, &series{spec: spec, entity: id, kind: kind, name: state.Name, state: state, dynamic: kind.DynamicsOf(state.Name), values: make([]float64, count)})
 	}
 	for i := range kind.Channels {
 		if channel := &kind.Channels[i]; isNumeric(channel) {
-			p.channels[channel.Name] = &series{entity: id, kind: kind, name: channel.Name, channel: channel, values: make([]float64, count)}
+			p.channels[channel.Name] = &series{spec: spec, entity: id, kind: kind, name: channel.Name, channel: channel, values: make([]float64, count)}
 			p.all = append(p.all, p.channels[channel.Name])
 		}
 	}

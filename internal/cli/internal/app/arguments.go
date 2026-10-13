@@ -154,7 +154,7 @@ func registerAdaptersDir(fs *flag.FlagSet, dst *string, def string) {
 }
 
 func registerComponentDirs(fs *flag.FlagSet, dst *listFlag) {
-	fs.Var(dst, "components-dir", "component library directory, repeatable; the first is the built-in library (default components)")
+	fs.Var(dst, "components-dir", "customer component library directory, repeatable; the built-in library is always loaded first")
 }
 
 func registerRunFolder(fs *flag.FlagSet, dst *string, def string) {

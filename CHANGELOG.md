@@ -4,6 +4,18 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **Component and lint review fixes** (phase P7j). The built-in component library is embedded in the binary (package
+  `components`): `component.NewLibrary(customerDirs)` loads it first, then `--components-dir` and
+  `STREAMSIM_COMPONENTS_DIRS` directories (empty entries ignored); a customer file with a `streamsim/` id is refused, the MCP
+  director always serves the library, and no `components` working-directory default remains. Link types are named
+  `<to kind>__<to port>__<from kind>` (one per consuming port and providing kind), conservation detector `inputs` and
+  `outputs` are checked and qualified like other channel references, annotation keywords are stripped at every depth of a
+  copied `args_schema`, two parameters writing one target is a load error, an id-template connection endpoint must render a
+  valid id, span scaling uses the converted point span, library listings carry no file path, `utc_offset_s` needs `period_s`,
+  and the composition schema gives `not_applicable` a minimum length of 20. Lint: `pinned_at_bound` applies to integrated
+  states only (an idle integrated state at its bound is reported) and the `not_settled` cyclic exemption follows `follow`,
+  linked inputs and flows. `examples/chiller-pilot.domain.json` is regenerated for the new link type name.
+
 - **Domain lint** (phase P7j). `streamsim domain lint <domain.json> [--hours H] [--seed S]` simulates a noiseless nominal day
   (default population, no faults, no effector calls, sampled every 60 s) and reports `non_finite` and `out_of_range` errors and
   `pinned_at_bound`, `not_settled` and `conservation_residual` warnings; an error finding exits 1 with the new code

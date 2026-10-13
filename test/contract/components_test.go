@@ -3,11 +3,15 @@ package contract
 import (
 	"bytes"
 	"context"
+	"fmt"
+	"io/fs"
+	"maps"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/ghassan-ai-projects/streams-simulator/components"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/component"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
@@ -50,6 +54,35 @@ func TestEveryLibraryFileFollowsItsContract(t *testing.T) {
 	}
 }
 
+func TestTheEmbeddedLibraryHoldsEveryFileOfTheComponentsFolder(t *testing.T) {
+	t.Parallel()
+	onDisk := map[string]bool{}
+	err := filepath.WalkDir(componentsDir(), func(path string, entry fs.DirEntry, err error) error {
+		if err != nil || entry.IsDir() || !strings.HasSuffix(path, ".json") {
+			return err
+		}
+		relative, relErr := filepath.Rel(componentsDir(), path)
+		if relErr != nil {
+			return fmt.Errorf("relative path of %s: %w", path, relErr)
+		}
+		onDisk[filepath.ToSlash(relative)] = true
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	embedded := map[string]bool{}
+	err = fs.WalkDir(components.FS(), ".", func(path string, entry fs.DirEntry, err error) error {
+		if err == nil && !entry.IsDir() {
+			embedded[path] = true
+		}
+		return err
+	})
+	if err != nil || !maps.Equal(onDisk, embedded) {
+		t.Fatalf("embedded files %v (%v), want the json files on disk %v", embedded, err, onDisk)
+	}
+}
+
 func TestBuiltInLibraryFilesUseTheStreamsimNamespace(t *testing.T) {
 	t.Parallel()
 	paths, _ := filepath.Glob(filepath.Join(componentsDir(), "*", "*.json"))
@@ -62,7 +95,7 @@ func TestBuiltInLibraryFilesUseTheStreamsimNamespace(t *testing.T) {
 
 func composedPilot(t *testing.T) []byte {
 	t.Helper()
-	library, err := component.NewLibraryFromDirs([]string{componentsDir()})
+	library, err := component.NewLibrary(nil)
 	if err != nil {
 		t.Fatal(err)
 	}

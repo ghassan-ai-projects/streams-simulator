@@ -846,8 +846,7 @@
         "title",
         "class",
         "tags",
-        "digest",
-        "file"
+        "digest"
       ],
       "properties": {
         "id": {
@@ -880,10 +879,6 @@
         },
         "digest": {
           "$ref": "#/$defs/digest"
-        },
-        "file": {
-          "type": "string",
-          "minLength": 1
         }
       }
     },

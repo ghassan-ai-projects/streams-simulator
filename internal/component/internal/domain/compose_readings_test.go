@@ -96,6 +96,19 @@ func TestComposeScalesNoiseAndFaultMagnitudesByTheSpan(t *testing.T) {
 	near(t, "absolute sigma", member(t, temp, "noise", "sigma"), 0.05)
 }
 
+func TestComposeScalesBySpanOfTheConvertedPointRangeNotOfTheNarrowerInstrumentRange(t *testing.T) {
+	t.Parallel()
+	narrow := file("instruments/meter-w.instrument.json", mutate(t, meterJSON, func(doc map[string]any) {
+		doc["id"], doc["unit"], doc["range"] = "acme/meter-w", "W", map[string]any{"min": 0, "max": 50000}
+	}))
+	doc := composeOK(t, libraryWith(t, narrow), withEquipment(t, replacing("power", "acme/meter-w@1")))
+	power := channelOf(t, doc, "power")
+	near(t, "range max", member(t, power, "range", "max"), 50000)
+	near(t, "sigma", member(t, power, "noise", "sigma"), 0.01*100000)
+	fault := named(t, member(t, doc, "kinds", 0, "faults"), "fault", "id", "kiln__power__offset")
+	near(t, "offset delta", member(t, fault, "affects", 0, "delta"), 0.05*100000)
+}
+
 func TestComposeKeepsTheInstrumentChannelMembers(t *testing.T) {
 	t.Parallel()
 	channel := channelOf(t, composeOK(t, baseLibrary(t), withEquipment(t, kilnEntry(nil))), "temp")

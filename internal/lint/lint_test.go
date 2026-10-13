@@ -69,3 +69,18 @@ func TestTheSameDomainSeedAndHoursGiveTheSameBytes(t *testing.T) {
 		t.Fatalf("reports differ:\n%s\n%s", first, second)
 	}
 }
+
+func TestTheComposedChillerPilotLintsCleanBecauseTheSmallChillerFollowsTheSeasonalAirHandlingUnit(t *testing.T) {
+	t.Parallel()
+	spec, err := domain.Load(filepath.Join(testsupport.RepositoryRoot(), "examples", "chiller-pilot.domain.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	report, err := lint.Check(spec, lint.Options{Seed: 1, Hours: 24})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, finding := range report.Findings {
+		t.Errorf("finding %+v, want none on the pilot", finding)
+	}
+}

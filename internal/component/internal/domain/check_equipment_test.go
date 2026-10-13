@@ -75,6 +75,12 @@ func TestLoadRefusesParametersThatBreakTheirOwnDeclaration(t *testing.T) {
 		{"a fractional integer default", "/parameters/2/default", "is not whole", func(doc map[string]any) { list(t, doc, "parameters")[2].(map[string]any)["default"] = 1.5 }},
 		{"an enum default outside its values", "/parameters/1/default", "is not one of the values", func(doc map[string]any) { list(t, doc, "parameters")[1].(map[string]any)["default"] = "foam" }},
 		{"cases that differ from the values", "/parameters/1/cases", "differ from values", func(doc map[string]any) { delete(object(t, doc, "parameters", 1, "cases"), "poor") }},
+		{"two parameters writing one target", "/parameters/2", `target "state/setpoint/initial" is also written by parameter "setpoint_c"`, func(doc map[string]any) {
+			list(t, doc, "parameters")[2].(map[string]any)["targets"] = []any{"state/setpoint/initial"}
+		}},
+		{"a parameter writing a target an enum case writes", "/parameters/2", `target "dynamics/temp/f1/time_constant_s" is also written by parameter "insulation"`, func(doc map[string]any) {
+			list(t, doc, "parameters")[2].(map[string]any)["targets"] = []any{"dynamics/temp/f1/time_constant_s"}
+		}},
 		{"a parameter declared twice", "/parameters/1/name", `parameter "setpoint_c" is declared twice`, func(doc map[string]any) { list(t, doc, "parameters")[1].(map[string]any)["name"] = "setpoint_c" }},
 	}
 	for _, tc := range cases {

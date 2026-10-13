@@ -9,10 +9,9 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
-func TestTheDirectorServesItsComponentLibraryWhenGivenOne(t *testing.T) {
+func TestTheDirectorServesItsComponentLibraryWithoutAnyDirectory(t *testing.T) {
 	t.Parallel()
-	options := ServeOptions{DomainsDir: testsupport.DomainsDir(), AdaptersDir: testsupport.AdaptersDir(), OutDir: t.TempDir(),
-		ComponentsDirs: []string{filepath.Join(testsupport.RepositoryRoot(), "components")}}
+	options := ServeOptions{DomainsDir: testsupport.DomainsDir(), AdaptersDir: testsupport.AdaptersDir(), OutDir: t.TempDir()}
 	d, err := newDirector(t.Context(), options)
 	if err != nil {
 		t.Fatal(err)

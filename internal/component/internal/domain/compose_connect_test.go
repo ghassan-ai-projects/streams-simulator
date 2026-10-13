@@ -55,17 +55,17 @@ func connected(t *testing.T, connections []any, entries ...map[string]any) strin
 
 func link(from, to string) map[string]any { return map[string]any{"from": from, "to": to} }
 
-func TestConnectionsWriteALinkTypePerPortTypeAndKindPair(t *testing.T) {
+func TestConnectionsWriteALinkTypePerConsumingPortAndProvidingKind(t *testing.T) {
 	t.Parallel()
 	raw := connected(t, []any{link("S-1.out_load", "K-1.load_in"), link("S-2.out_load", "K-1.load_in")},
 		entryOf("acme/source@1", "source", "S-1", "S-2"), entryOf("acme/kiln@1", "kiln", "K-1"))
 	doc := composeOK(t, plantLibrary(t), raw)
 	types := member(t, doc, "link_types").([]any)
-	if len(types) != 1 || member(t, types[0], "name") != "thermal_load__source__kiln" || member(t, types[0], "from") != "source" || member(t, types[0], "to") != "kiln" {
-		t.Fatalf("link types = %v, want the one thermal_load__source__kiln", types)
+	if len(types) != 1 || member(t, types[0], "name") != "kiln__load_in__source" || member(t, types[0], "from") != "source" || member(t, types[0], "to") != "kiln" {
+		t.Fatalf("link types = %v, want the one kiln__load_in__source", types)
 	}
 	links := member(t, doc, "links").([]any)
-	if len(links) != 2 || member(t, links[1], "from") != "S-2" || member(t, links[1], "to") != "K-1" || member(t, links[1], "type") != "thermal_load__source__kiln" {
+	if len(links) != 2 || member(t, links[1], "from") != "S-2" || member(t, links[1], "to") != "K-1" || member(t, links[1], "type") != "kiln__load_in__source" {
 		t.Fatalf("links = %v, want one link per connection in order", links)
 	}
 }
@@ -76,8 +76,8 @@ func TestConnectionsMakeTheConsumingStateFollowTheSumOfTheProvidingStates(t *tes
 	doc := composeOK(t, plantLibrary(t), raw)
 	dynamics := member(t, doc, "kinds", 1, "dynamics")
 	follow := member(t, named(t, dynamics, "dynamics", "target", "load"), "follow").(map[string]any)
-	if follow["link"] != "thermal_load__source__kiln" || follow["state"] != "out" || follow["aggregate"] != "sum" {
-		t.Fatalf("follow = %v, want sum of out over thermal_load__source__kiln", follow)
+	if follow["link"] != "kiln__load_in__source" || follow["state"] != "out" || follow["aggregate"] != "sum" {
+		t.Fatalf("follow = %v, want sum of out over kiln__load_in__source", follow)
 	}
 	if _, present := named(t, member(t, doc, "kinds", 0, "dynamics"), "dynamics", "target", "out")["follow"]; present {
 		t.Error("the providing kind follows something")
@@ -159,5 +159,88 @@ func TestConnectionsThatRepeatALinkAreADomainViolation(t *testing.T) {
 	invalid := asViolation(t, err, "domain-spec-v0.2")
 	if !strings.Contains(invalid.Error(), "link") {
 		t.Fatalf("error = %v, want the domain's complaint about the repeated link", err)
+	}
+}
+
+func twoLoadPortsLibrary(t *testing.T) *Library {
+	t.Helper()
+	node := mutate(t, nodeJSON, func(doc map[string]any) {
+		ports := member(t, doc, "ports").([]any)
+		doc["ports"] = append(ports, map[string]any{"name": "in_load_two", "type": "thermal_load", "direction": "consumes", "state": "outflow"})
+	})
+	files := baseFiles()
+	files.equipment = append(files.equipment, file("equipment/source.component.json", sourceJSON), file("equipment/node.component.json", node))
+	return loadLibrary(t, files.directory("lib"))
+}
+
+func TestTwoPortPairsBetweenTheSameInstancesGetOneLinkTypeEach(t *testing.T) {
+	t.Parallel()
+	raw := connected(t, []any{link("S-1.out_load", "N-1.in_load"), link("S-1.out_load", "N-1.in_load_two")},
+		entryOf("acme/source@1", "source", "S-1"), entryOf("acme/node@1", "node", "N-1"))
+	doc := composeOK(t, twoLoadPortsLibrary(t), raw)
+	types := member(t, doc, "link_types").([]any)
+	if len(types) != 2 || member(t, types[0], "name") != "node__in_load__source" || member(t, types[1], "name") != "node__in_load_two__source" {
+		t.Fatalf("link types = %v, want one per consuming port", types)
+	}
+	links := member(t, doc, "links").([]any)
+	if len(links) != 2 || member(t, links[0], "type") == member(t, links[1], "type") {
+		t.Fatalf("links = %v, want two links of different types", links)
+	}
+	dynamics := member(t, doc, "kinds", 1, "dynamics")
+	for state, link := range map[string]string{"inflow": "node__in_load__source", "outflow": "node__in_load_two__source"} {
+		if got := member(t, named(t, dynamics, "dynamics", "target", state), "follow", "link"); got != link {
+			t.Errorf("%s follows %v, want %s", state, got, link)
+		}
+	}
+}
+
+func TestALinkTypeNameFitsTheLongestKindAndPortNames(t *testing.T) {
+	t.Parallel()
+	long := func(n int) string { return strings.Repeat("a", n) }
+	files := baseFiles()
+	node := mutate(t, nodeJSON, func(doc map[string]any) { member(t, doc, "ports", 0).(map[string]any)["name"] = long(20) })
+	files.equipment = append(files.equipment, file("equipment/source.component.json", sourceJSON), file("equipment/node.component.json", node))
+	raw := connected(t, []any{link("S-1.out_load", "N-1."+long(20))},
+		entryOf("acme/source@1", long(19)+"b", "S-1"), entryOf("acme/node@1", long(19)+"c", "N-1"))
+	doc := composeOK(t, loadLibrary(t, files.directory("lib")), raw)
+	name := member(t, doc, "link_types", 0, "name").(string)
+	if len(name) != 64 {
+		t.Fatalf("link type %q has %d characters, want the 64 the longest names reach", name, len(name))
+	}
+}
+
+func templatedSource(template string, count map[string]any) map[string]any {
+	return map[string]any{"use": "acme/source@1", "as": "source", "id_template": template, "count": count}
+}
+
+func TestConnectionsAcceptOnlyIdsATemplateRenders(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name, instance, template string
+		count                    map[string]any
+		renders                  bool
+	}{
+		{"the last default index", "line.2", "line.{n}", map[string]any{"default": 2}, true},
+		{"an index beyond the default without a maximum", "line.3", "line.{n}", map[string]any{"default": 2}, false},
+		{"an index up to the maximum", "line.5", "line.{n}", map[string]any{"default": 2, "max": 5}, true},
+		{"an index beyond the maximum", "line.6", "line.{n}", map[string]any{"default": 2, "max": 5}, false},
+		{"index zero", "line.0", "line.{n}", map[string]any{"default": 2}, false},
+		{"a leading zero the template does not render", "line.02", "line.{n}", map[string]any{"default": 2}, false},
+		{"a named placeholder renders a", "a.1", "{site}.{n}", map[string]any{"default": 2}, true},
+		{"a named placeholder that was filled in", "north.1", "{site}.{n}", map[string]any{"default": 2}, false},
+		{"another literal", "row.1", "line.{n}", map[string]any{"default": 2}, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			raw := connected(t, []any{link(tc.instance+".out_load", "K-1.load_in")}, templatedSource(tc.template, tc.count), entryOf("acme/kiln@1", "kiln", "K-1"))
+			_, err := compose(t, plantLibrary(t), raw)
+			if tc.renders && err != nil {
+				t.Fatalf("%s: %v", tc.instance, err)
+			}
+			if !tc.renders {
+				wantIssue(t, err, "composition-v0.1", "/connections/0/from", "names no instance of the composition")
+			}
+		})
 	}
 }

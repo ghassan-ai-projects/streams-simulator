@@ -45,7 +45,7 @@ func parseMCPOptions(args []string, stderr io.Writer) (mcpOptions, error) {
 func serveDirector(s *session, options mcpOptions) error {
 	err := mcp.ServeDirector(context.Background(), s.stderr, mcp.ServeOptions{DomainsDir: options.domainsDir,
 		AdaptersDir: options.adaptersDir, OutDir: options.outDir, OperatorAddr: options.operatorAddr,
-		ComponentsDirs: s.declaredComponentDirs(options.componentsDirs)})
+		ComponentsDirs: s.componentDirs(options.componentsDirs)})
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}

@@ -98,8 +98,6 @@ func (d *Director) DomainSpec(domainID string) (any, error) { return d.impl.Doma
 
 func (d *Director) ListAdapters() map[string]any { return d.impl.ListAdapters() }
 
-func (d *Director) LoadLibrary(dirs []string) error { return d.impl.LoadLibrary(dirs) }
-
 func (d *Director) ComponentList() (map[string]any, error) { return d.impl.ComponentList() }
 
 func (d *Director) ComponentDescribe(ref string) (any, error) { return d.impl.ComponentDescribe(ref) }

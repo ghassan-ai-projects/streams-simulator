@@ -5,8 +5,8 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/component/internal/files"
 )
 
-func NewLibraryFromDirs(dirs []string) (*Library, error) {
-	inner, err := files.Load(dirs)
+func NewLibrary(customerDirs []string) (*Library, error) {
+	inner, err := files.Load(customerDirs)
 	if err != nil {
 		return nil, err
 	}
