@@ -3,7 +3,7 @@ package domain
 import "github.com/ghassan-ai-projects/streams-simulator/internal/model"
 
 func (w *World) advanceEntity(ent *Entity, t int64) {
-	horizon := longestStep(ent)
+	horizon := historyHorizon(ent)
 	for dyn := nextStep(ent, t); dyn != nil; dyn = nextStep(ent, t) {
 		w.commitStep(ent, dyn, horizon)
 	}
@@ -25,12 +25,12 @@ func nextStep(ent *Entity, t int64) *model.Dynamics {
 	return next
 }
 
-func longestStep(ent *Entity) int64 {
-	var longest int64
+func historyHorizon(ent *Entity) int64 {
+	var steps int64
 	for i := range ent.kind.Dynamics {
-		longest = max(longest, stepNS(&ent.kind.Dynamics[i]))
+		steps += stepNS(&ent.kind.Dynamics[i])
 	}
-	return longest
+	return 2 * steps
 }
 
 func (w *World) commitStep(ent *Entity, dyn *model.Dynamics, horizon int64) {
