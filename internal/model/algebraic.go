@@ -27,3 +27,12 @@ func (d *Dynamics) Algebraic() bool {
 func (d *Dynamics) Integrated() bool {
 	return d.Tier == "F1" && d.F1 != nil && !d.Algebraic()
 }
+
+const DefaultStepMs = 1000
+
+func (d *Dynamics) StepMs() int64 {
+	if d.DTMs <= 0 {
+		return DefaultStepMs
+	}
+	return d.DTMs
+}

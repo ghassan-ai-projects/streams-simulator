@@ -8,3 +8,7 @@ import (
 func Check(spec *domain.Compiled, options Options) (*Report, error) {
 	return layer.Check(spec, options)
 }
+
+func Failed(report *Report) bool {
+	return layer.Failed(report)
+}

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/component"
@@ -66,11 +67,11 @@ func TestADirectorComposesAnInstallableDomainFromItsLibrary(t *testing.T) {
 	if _, err := d.ComponentDescribe("streamsim/no-such"); toolCode(err) != rules.CodeComponentInvalid {
 		t.Fatalf("an unknown ref = %v", err)
 	}
-	if _, err := d.ComposeDomain(map[string]any{"id": "x"}, false); toolCode(err) != rules.CodeComponentInvalid {
-		t.Fatalf("an invalid composition = %v", err)
+	if _, err := d.ComposeDomain(map[string]any{"id": "x"}, false); toolCode(err) != rules.CodeCompositionInvalid || !strings.Contains(err.Error(), "/equipment: missing required property") {
+		t.Fatalf("an invalid composition = %v, want composition_invalid keeping the pointers", err)
 	}
 	composed, err := d.ComposeDomain(pilotComposition(t), true)
-	if err != nil || composed["installed"] != true {
+	if got, _ := composed.(composedDomain); err != nil || !got.Installed || got.ID != "chiller-pilot" || got.Channels == 0 {
 		t.Fatalf("compose = %v, %v", composed, err)
 	}
 	if _, err := d.ComposeDomain(pilotComposition(t), true); err != nil {
@@ -93,5 +94,17 @@ func TestADifferentDomainCannotTakeAnInstalledID(t *testing.T) {
 	composition["id"] = "aquaculture-pond"
 	if _, err := d.ComposeDomain(composition, true); toolCode(err) != rules.CodeDomainInvalid {
 		t.Fatalf("taking an installed id = %v", err)
+	}
+}
+
+func TestAComposedDomainThatFailsDomainValidationKeepsTheDomainContractAndItsPointer(t *testing.T) {
+	t.Parallel()
+	d := newTestDirector(t)
+	withBuiltInLibrary(t, d)
+	composition := pilotComposition(t)
+	composition["connections"] = []any{map[string]any{"from": "no-such.port", "to": "no-such.port"}}
+	_, err := d.ComposeDomain(composition, false)
+	if toolCode(err) != rules.CodeCompositionInvalid || !strings.Contains(err.Error(), "/connections/0/from") {
+		t.Fatalf("a connection naming no instance = %v, want composition_invalid at /connections/0/from", err)
 	}
 }

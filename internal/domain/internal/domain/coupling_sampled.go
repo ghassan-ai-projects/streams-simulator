@@ -26,18 +26,11 @@ func (checks domainChecks) sampleOnSteps(source *model.Kind, sampleMs int64, mem
 		return nil
 	}
 	for i := range source.Dynamics {
-		if dyn := &source.Dynamics[i]; dyn.Integrated() && sampleMs%stepMs(dyn) != 0 {
-			return checks.bad(member, "a sample period of %d ms is not a multiple of the %d ms step of %s state %q", sampleMs, stepMs(dyn), source.Name, dyn.Target)
+		if dyn := &source.Dynamics[i]; dyn.Integrated() && sampleMs%dyn.StepMs() != 0 {
+			return checks.bad(member, "a sample period of %d ms is not a multiple of the %d ms step of %s state %q", sampleMs, dyn.StepMs(), source.Name, dyn.Target)
 		}
 	}
 	return nil
-}
-
-func stepMs(dyn *model.Dynamics) int64 {
-	if dyn.DTMs <= 0 {
-		return 1000
-	}
-	return dyn.DTMs
 }
 
 func (checks domainChecks) sampledSourcesStay(kind, member string) error {

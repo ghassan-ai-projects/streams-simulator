@@ -29,7 +29,7 @@ type WorldRecord struct {
 
 type Director struct {
 	mu               sync.Mutex
-	Catalog          *domain.Catalog
+	domains          *domain.Catalog
 	catalogMu        sync.RWMutex
 	library          *component.Library
 	Adapters         map[string]*model.Adapter
@@ -45,7 +45,7 @@ type Director struct {
 
 func NewDirector(ctx context.Context, cat *domain.Catalog, adapters map[string]*model.Adapter, outDir string) *Director {
 	d := &Director{
-		Catalog: cat, Adapters: adapters, Worlds: map[string]*WorldRecord{},
+		domains: cat, Adapters: adapters, Worlds: map[string]*WorldRecord{},
 		byRun: map[string]string{}, byToken: map[string]*WorldRecord{},
 		OutDir: outDir, ctx: ctx,
 	}

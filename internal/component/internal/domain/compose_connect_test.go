@@ -120,7 +120,7 @@ func TestConnectionsRefuseWhatDoesNotJoin(t *testing.T) {
 	}
 }
 
-func TestConnectionsRefuseKindsThatReadEachOtherInACycle(t *testing.T) {
+func TestConnectionsRefuseKindsThatReadEachOtherInACycleWithoutASampledRead(t *testing.T) {
 	t.Parallel()
 	a, b := entryOf("acme/node@1", "node_a", "A-1"), entryOf("acme/node@1", "node_b", "B-1")
 	cases := []struct {
@@ -129,16 +129,51 @@ func TestConnectionsRefuseKindsThatReadEachOtherInACycle(t *testing.T) {
 		entries     []map[string]any
 		want        string
 	}{
-		{"a kind reading itself", []any{link("A-1.out_load", "A-1.in_load")}, []map[string]any{a}, "node_a -> node_a"},
-		{"two kinds reading each other", []any{link("A-1.out_load", "B-1.in_load"), link("B-1.out_load", "A-1.in_load")}, []map[string]any{a, b}, "node_a -> node_b -> node_a"},
+		{"a kind reading itself", []any{link("A-1.out_load", "A-1.in_load")}, []map[string]any{a}, "[node_a node_a]"},
+		{"two kinds reading each other", []any{link("A-1.out_load", "B-1.in_load"), link("B-1.out_load", "A-1.in_load")}, []map[string]any{a, b}, "[node_a node_b node_a]"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			_, err := compose(t, plantLibrary(t), connected(t, tc.connections, tc.entries...))
-			wantIssue(t, err, "composition-v0.1", "/connections", "in a cycle: "+tc.want)
+			invalid := asViolation(t, err, "domain-spec-v0.2")
+			for _, part := range []string{"in a cycle", tc.want, "test.composition.json"} {
+				if !strings.Contains(err.Error(), part) {
+					t.Fatalf("error = %v (%v), want it to name %q", err, invalid.Issues, part)
+				}
+			}
 		})
 	}
+}
+
+func sampledNodeLibrary(t *testing.T) *Library {
+	t.Helper()
+	node := mutate(t, nodeJSON, func(doc map[string]any) { member(t, doc, "ports", 0).(map[string]any)["sample_s"] = 60 })
+	files := baseFiles()
+	files.equipment = append(files.equipment, file("equipment/source.component.json", sourceJSON), file("equipment/node.component.json", node))
+	return loadLibrary(t, files.directory("lib"))
+}
+
+func TestAComponentLoopComposesWhenOneConsumingPortIsSampled(t *testing.T) {
+	t.Parallel()
+	a, b := entryOf("acme/node@1", "node_a", "A-1"), entryOf("acme/node@1", "node_b", "B-1")
+	raw := connected(t, []any{link("A-1.out_load", "B-1.in_load"), link("B-1.out_load", "A-1.in_load")}, a, b)
+	doc := composeOK(t, sampledNodeLibrary(t), raw)
+	for kind := 0; kind < 2; kind++ {
+		follow := member(t, named(t, member(t, doc, "kinds", kind, "dynamics"), "dynamics", "target", "inflow"), "follow").(map[string]any)
+		if follow["sample_s"] == nil || number(t, follow["sample_s"]) != 60 {
+			t.Fatalf("kind %d follow = %v, want sample_s 60 copied from the consuming port", kind, follow)
+		}
+	}
+}
+
+func TestASamplePeriodOnAProvidingPortIsRefused(t *testing.T) {
+	t.Parallel()
+	node := mutate(t, nodeJSON, func(doc map[string]any) { member(t, doc, "ports", 3).(map[string]any)["sample_s"] = 60 })
+	files := baseFiles()
+	files.equipment = append(files.equipment, file("equipment/node.component.json", node))
+	_, err := LoadLibrary([]Directory{files.directory("lib")})
+	wantIssue(t, err, "component-v0.1", "/ports/3/sample_s", "only a consuming port reads by sample")
 }
 
 func TestConnectionsAcceptAChainWithoutACycle(t *testing.T) {
@@ -226,8 +261,7 @@ func TestConnectionsAcceptOnlyIdsATemplateRenders(t *testing.T) {
 		{"an index beyond the maximum", "line.6", "line.{n}", map[string]any{"default": 2, "max": 5}, false},
 		{"index zero", "line.0", "line.{n}", map[string]any{"default": 2}, false},
 		{"a leading zero the template does not render", "line.02", "line.{n}", map[string]any{"default": 2}, false},
-		{"a named placeholder renders a", "a.1", "{site}.{n}", map[string]any{"default": 2}, true},
-		{"a named placeholder that was filled in", "north.1", "{site}.{n}", map[string]any{"default": 2}, false},
+		{"a named placeholder takes the characters of an id", "north.1", "{site}.{n}", map[string]any{"default": 2}, true},
 		{"another literal", "row.1", "line.{n}", map[string]any{"default": 2}, false},
 	}
 	for _, tc := range cases {

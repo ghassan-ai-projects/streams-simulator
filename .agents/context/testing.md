@@ -19,7 +19,7 @@ Use these commands unless the task is documentation-only:
 ## Repository-Specific Behavior
 
 - `make build` builds `cmd/streamsim` into `bin/`.
-- `make ci-check` runs `function-length -> fmt-check -> docs-check -> tidy -> build -> vet -> lint-ci -> test-ci -> deadcode -> vulncheck -> fuzz-soak`.
+- `make ci-check` runs `function-length -> fmt-check -> docs-check -> tidy -> build -> vet -> lint-ci -> gate-ratchet -> test-ci -> deadcode -> vulncheck -> fuzz-soak`.
 - `make test-ci` (`scripts/test-ci`) is the whole test tier: the suite runs twice and no third time.
   Run 1 is `-race -shuffle=on -tags simdet` with no coverage (`-race` forces atomic coverage counters,
   which slow the simulation loops several-fold). Run 2 is without race and without the simdet tag,

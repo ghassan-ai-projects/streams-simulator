@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"path/filepath"
 	"slices"
 	"strings"
 
@@ -26,7 +27,7 @@ func LoadWith(builtIn fs.FS, customerDirs []string) (*domain.Library, error) {
 		return nil, err
 	}
 	directories := []domain.Directory{first}
-	for _, dir := range withoutEmpty(customerDirs) {
+	for _, dir := range domain.CustomerDirectories(customerDirs, nil) {
 		directory, err := readDirectory(diskTree{}, dir)
 		if err != nil {
 			return nil, err
@@ -34,10 +35,6 @@ func LoadWith(builtIn fs.FS, customerDirs []string) (*domain.Library, error) {
 		directories = append(directories, directory)
 	}
 	return domain.LoadLibrary(directories)
-}
-
-func withoutEmpty(dirs []string) []string {
-	return slices.DeleteFunc(slices.Clone(dirs), func(dir string) bool { return strings.TrimSpace(dir) == "" })
 }
 
 func readDirectory(source tree, dir string) (domain.Directory, error) {
@@ -104,4 +101,8 @@ func readVocabulary(source tree, dir string) (*domain.File, error) {
 		return nil, nil
 	}
 	return &domain.File{Path: source.label(path), Raw: raw}, nil
+}
+
+func CustomerDirectories(flags []string, environment string) []string {
+	return domain.CustomerDirectories(flags, filepath.SplitList(environment))
 }

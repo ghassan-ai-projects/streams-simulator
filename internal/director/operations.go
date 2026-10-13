@@ -102,7 +102,7 @@ func (d *Director) ComponentList() (map[string]any, error) { return d.impl.Compo
 
 func (d *Director) ComponentDescribe(ref string) (any, error) { return d.impl.ComponentDescribe(ref) }
 
-func (d *Director) ComposeDomain(composition map[string]any, install bool) (map[string]any, error) {
+func (d *Director) ComposeDomain(composition map[string]any, install bool) (any, error) {
 	return d.impl.ComposeDomain(composition, install)
 }
 

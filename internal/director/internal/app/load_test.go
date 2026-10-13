@@ -14,8 +14,8 @@ func TestLoadDirectorServesEveryShippedDomainAndAdapter(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if d.library == nil || d.OutDir != out || len(d.Adapters) < 2 || len(d.Catalog.List("")) < 2 {
-		t.Fatalf("director = out %q, %d adapters, %d domains", d.OutDir, len(d.Adapters), len(d.Catalog.List("")))
+	if d.library == nil || d.OutDir != out || len(d.Adapters) < 2 || len(d.domains.List("")) < 2 {
+		t.Fatalf("director = out %q, %d adapters, %d domains", d.OutDir, len(d.Adapters), len(d.domains.List("")))
 	}
 }
 

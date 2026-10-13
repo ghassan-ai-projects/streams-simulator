@@ -43,7 +43,7 @@ HAS_MAIN := $(if $(MAIN_PKGS),yes,no)
 .PHONY: help all build vet fmt tidy lint lint-ci docs-check test test-short test-race \
         test-coverage test-ci ci-check deadcode vulncheck fuzz $(FUZZ_TARGETS) soak fuzz-soak perf \
         manifest clean run cross-compile architecture architecture-baseline function-length \
-        coverage-check behaviour-pin behaviour-pin-check phase-gate fmt-check contract-sync
+        coverage-check behaviour-pin behaviour-pin-check phase-gate fmt-check contract-sync gate-ratchet
 
 # ---- Help -----------------------------------------------------------------
 help: ## Show this help message
@@ -125,6 +125,9 @@ architecture: ## Reject new Enola cycle or layer findings against the baseline
 function-length: ## Check the 15-line maximum for production function bodies
 	go run cmd/streamsim/function_length.go
 
+gate-ratchet: ## Fail when a gate cap, allow-list, coverage floor or test hook got looser than at the branch point from main
+	go test -count=1 -run '^TestGateRatchetHoldsAgainstTheMainBranch$$' ./test/architecture/
+
 coverage-check: ## Fail when a package is below its statement-coverage floor (standalone re-run; ci-check checks the test-ci run)
 	./scripts/check-coverage
 
@@ -189,7 +192,7 @@ test-coverage: ## Run tests and produce HTML coverage report
 	fi
 
 # ---- Pipeline -------------------------------------------------------------
-ci-check: function-length fmt-check docs-check tidy build vet lint-ci test-ci deadcode vulncheck fuzz-soak ## Run the full CI pipeline locally (matches .github/workflows/ci.yml)
+ci-check: function-length fmt-check docs-check tidy build vet lint-ci gate-ratchet test-ci deadcode vulncheck fuzz-soak ## Run the full CI pipeline locally (matches .github/workflows/ci.yml)
 	@echo "  CI check passed"
 
 # ---- Tools ----------------------------------------------------------------

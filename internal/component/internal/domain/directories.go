@@ -1,13 +1,15 @@
 package domain
 
 import (
-	"path/filepath"
+	"slices"
 	"strings"
 )
 
-func CustomerDirectories(flags []string, environment string) []string {
+const DirectoriesEnv = "STREAMSIM_COMPONENTS_DIRS"
+
+func CustomerDirectories(flags, fromEnvironment []string) []string {
 	named := []string{}
-	for _, dir := range append(append([]string{}, flags...), filepath.SplitList(environment)...) {
+	for _, dir := range slices.Concat(flags, fromEnvironment) {
 		if strings.TrimSpace(dir) != "" {
 			named = append(named, dir)
 		}

@@ -84,3 +84,10 @@ func TestTheComposedChillerPilotLintsCleanBecauseTheSmallChillerFollowsTheSeason
 		t.Errorf("finding %+v, want none on the pilot", finding)
 	}
 }
+
+func TestFailedIsTrueOnlyForAReportWithErrorFindings(t *testing.T) {
+	t.Parallel()
+	if lint.Failed(&lint.Report{Warnings: 2}) || !lint.Failed(&lint.Report{Errors: 1}) {
+		t.Fatal("Failed must follow the error count, never the warnings")
+	}
+}

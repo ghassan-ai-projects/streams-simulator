@@ -182,6 +182,11 @@
           "state": {
             "type": "string",
             "pattern": "^[a-z][a-z0-9_]{0,63}$"
+          },
+          "sample_s": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "description": "A consuming port reads the provided state as it was at the previous sample instant of this period, which lets a loop between components close (domain-spec v0.2 section 28)."
           }
         }
       }

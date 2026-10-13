@@ -3,6 +3,8 @@ package domain
 import (
 	"cmp"
 	"slices"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
 type built struct {
@@ -97,12 +99,23 @@ func (b *entryBuild) instanceSet() map[string]any {
 	}
 	if b.entry.IDTemplate != "" {
 		set["id_template"] = b.entry.IDTemplate
-		set["count"] = b.entry.Count
+		set["count"] = countDocument(b.entry.Count)
 	}
 	if b.entry.Area != "" {
 		set["area"] = b.entry.Area
 	}
 	return set
+}
+
+func countDocument(count model.EntityCount) map[string]any {
+	document := map[string]any{"default": count.Default}
+	if count.Min > 0 {
+		document["min"] = count.Min
+	}
+	if count.Max > 0 {
+		document["max"] = count.Max
+	}
+	return document
 }
 
 func stringList(values []string) []any {

@@ -12,7 +12,10 @@ import (
 )
 
 const (
-	MaxHours = 720
+	maxHours = 720
+
+	DefaultHours = 24
+	DefaultSeed  = 1
 
 	severityError   = "error"
 	severityWarning = "warning"
@@ -66,6 +69,10 @@ func newReport(spec *domain.Compiled, options Options, g *grid, findings []Findi
 		report.count(finding)
 	}
 	return report
+}
+
+func Failed(report *Report) bool {
+	return report.Errors > 0
 }
 
 func (r *Report) count(finding Finding) {

@@ -3,6 +3,7 @@ package domain
 import (
 	layer "github.com/ghassan-ai-projects/streams-simulator/internal/domain/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain/internal/files"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
 func Load(path string) (*Compiled, error) {
@@ -52,4 +53,23 @@ func (c *Catalog) Coverage() CoverageReport {
 
 func Render(c *Compiled) ([]byte, error) {
 	return layer.Format(c)
+}
+
+func InstanceRenders(set model.InstanceSet, id string) bool {
+	return layer.InstanceRenders(set, id)
+}
+
+func Summarize(c *Compiled) Summary {
+	return layer.Summarize(c)
+}
+
+func NewCatalogWith(base *Catalog, compiled *Compiled) (*Catalog, error) {
+	if base == nil || base.catalog == nil {
+		return nil, ErrNoCatalog
+	}
+	inner, err := layer.CatalogWith(base.catalog, compiled)
+	if err != nil {
+		return nil, err
+	}
+	return &Catalog{catalog: inner}, nil
 }

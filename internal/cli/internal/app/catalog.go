@@ -127,7 +127,12 @@ func validateDomainFile(path string) (any, error) {
 	if err != nil {
 		return nil, fmt.Errorf("streamsim: %w", err)
 	}
-	return map[string]any{"valid": true, "id": c.Spec.ID, "digest": c.Digest, "channels": len(c.ChannelNames()), "faults": c.FaultCount(), "effectors": c.EffectorCount()}, nil
+	return domainValidation{Summary: domain.Summarize(c), Valid: true}, nil
+}
+
+type domainValidation struct {
+	domain.Summary
+	Valid bool `json:"valid"`
 }
 
 func cmdAdapter(s *session, args []string) (any, error) {

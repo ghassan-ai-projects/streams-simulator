@@ -97,10 +97,7 @@ func dtFor(kind *model.Kind, state string) int64 {
 	if dyn == nil || (dyn.Tier != "F1" && dyn.Tier != "F2") {
 		return 0
 	}
-	if dyn.DTMs <= 0 {
-		return secondsPerNS
-	}
-	return dyn.DTMs * 1e6
+	return stepNS(dyn)
 }
 
 func faultSubstream(f *activeFault, state string) string {

@@ -8,8 +8,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/component"
 )
 
-const componentsDirsEnv = "STREAMSIM_COMPONENTS_DIRS"
-
 func cmdComponent(s *session, args []string) (any, error) {
 	fs := newFlagSet("component", s.stderr)
 	var dirs listFlag
@@ -29,7 +27,7 @@ func cmdComponent(s *session, args []string) (any, error) {
 func (s *session) componentDirs(flags listFlag) []string {
 	environment := ""
 	if s.getenv != nil {
-		environment = s.getenv(componentsDirsEnv)
+		environment = s.getenv(component.DirectoriesEnv)
 	}
 	return component.CustomerDirectories(flags, environment)
 }
@@ -100,25 +98,29 @@ func parseComposeOptions(args []string, stderr io.Writer) (composeOptions, error
 	return options, nil
 }
 
+type composedDomain struct {
+	component.DomainSummary
+	Composed string `json:"composed,omitempty"`
+	Domain   any    `json:"domain,omitempty"`
+}
+
 func composeDomain(library *component.Library, raw []byte, options composeOptions) (any, error) {
 	composed, err := component.Compose(library, raw, options.composition)
 	if err != nil {
 		return nil, fmt.Errorf("streamsim: %w", err)
 	}
-	compiled := composed.Domain
-	result := map[string]any{"id": compiled.Spec.ID, "digest": compiled.Digest, "channels": len(compiled.ChannelNames()),
-		"faults": compiled.FaultCount(), "effectors": compiled.EffectorCount()}
-	return placeComposed(result, compiled.Spec, composed.Bytes, options.out)
+	result := composedDomain{DomainSummary: composed.Summary}
+	return placeComposed(result, composed, options.out)
 }
 
-func placeComposed(result map[string]any, spec any, composed []byte, out string) (any, error) {
+func placeComposed(result composedDomain, composed *component.Composed, out string) (any, error) {
 	if out == "" {
-		result["domain"] = spec
+		result.Domain = composed.Domain.Spec
 		return result, nil
 	}
-	if err := files.Write(out, composed); err != nil {
+	if err := files.Write(out, composed.Bytes); err != nil {
 		return nil, fmt.Errorf("streamsim: %w", err)
 	}
-	result["composed"] = out
+	result.Composed = out
 	return result, nil
 }

@@ -11,7 +11,7 @@ import (
 func (d *Director) catalog() *domain.Catalog {
 	d.catalogMu.RLock()
 	defer d.catalogMu.RUnlock()
-	return d.Catalog
+	return d.domains
 }
 
 func (d *Director) componentLibrary() (*component.Library, error) {
@@ -36,25 +36,31 @@ func (d *Director) ComponentDescribe(ref string) (any, error) {
 	}
 	detail, err := library.Describe(ref)
 	if err != nil {
-		return nil, rules.ToolErrorf(rules.CodeComponentInvalid, "%v", err)
+		return nil, rules.ValidationToolError(err, rules.CodeComponentInvalid)
 	}
 	return detail, nil
 }
 
-func (d *Director) ComposeDomain(composition map[string]any, install bool) (map[string]any, error) {
-	compiled, err := d.composed(composition)
+type composedDomain struct {
+	domain.Summary
+	Domain    any  `json:"domain"`
+	Installed bool `json:"installed"`
+}
+
+func (d *Director) ComposeDomain(composition map[string]any, install bool) (any, error) {
+	composed, err := d.composed(composition)
 	if err != nil {
 		return nil, err
 	}
 	if install {
-		if err := d.installDomain(compiled); err != nil {
+		if err := d.installDomain(composed.Domain); err != nil {
 			return nil, err
 		}
 	}
-	return map[string]any{"domain": compiled.Spec, "digest": compiled.Digest, "installed": install}, nil
+	return composedDomain{Summary: composed.Summary, Domain: composed.Domain.Spec, Installed: install}, nil
 }
 
-func (d *Director) composed(composition map[string]any) (*domain.Compiled, error) {
+func (d *Director) composed(composition map[string]any) (*component.Composed, error) {
 	library, err := d.componentLibrary()
 	if err != nil {
 		return nil, err
@@ -65,7 +71,7 @@ func (d *Director) composed(composition map[string]any) (*domain.Compiled, error
 	}
 	composed, err := component.Compose(library, raw, "composition")
 	if err != nil {
-		return nil, rules.ToolErrorf(rules.CodeComponentInvalid, "%v", err)
+		return nil, rules.ValidationToolError(err, rules.CodeComponentInvalid)
 	}
-	return composed.Domain, nil
+	return composed, nil
 }

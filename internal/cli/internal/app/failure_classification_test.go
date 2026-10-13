@@ -80,7 +80,7 @@ func TestEveryCommandFailureCodeIsInTheContract(t *testing.T) {
 func TestEveryContractMapsToAFailureCode(t *testing.T) {
 	t.Parallel()
 	for _, contract := range declaredContracts(t) {
-		if _, ok := contractFailureCode(contract); !ok {
+		if _, ok := contract.FailureCode(); !ok {
 			t.Errorf("contract %s has no failure code", contract)
 		}
 	}
