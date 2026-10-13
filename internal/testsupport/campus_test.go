@@ -15,9 +15,11 @@ func TestACampusRepeatsEveryHallInstanceAndConnectionAndSharesTheNamedOnes(t *te
 		t.Fatal(err)
 	}
 	var doc struct {
-		ID          string                     `json:"id"`
-		Equipment   []struct{ Names []string } `json:"equipment"`
-		Connections []map[string]string        `json:"connections"`
+		ID        string `json:"id"`
+		Equipment []struct {
+			Names []string `json:"names"`
+		} `json:"equipment"`
+		Connections []map[string]string `json:"connections"`
 	}
 	if err := json.Unmarshal(raw, &doc); err != nil {
 		t.Fatal(err)
