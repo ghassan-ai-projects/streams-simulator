@@ -190,8 +190,8 @@
           "table": {
             "x": [
               0,
-              720,
-              780,
+              820,
+              860,
               2000
             ],
             "values": [
@@ -719,13 +719,13 @@
   },
   "parameters": [
     {
-      "name": "unload_pressure_kpa",
-      "title": "Pressure where the compressors start to unload",
+      "name": "relief_pressure_kpa",
+      "title": "Pressure where the safety relief starts to open",
       "unit": "kPa",
       "type": "number",
-      "min": 705,
-      "max": 760,
-      "default": 720,
+      "min": 760,
+      "max": 850,
+      "default": 820,
       "targets": [
         "dynamics/relief_open/f1/table/x/1"
       ]

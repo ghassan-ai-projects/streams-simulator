@@ -762,7 +762,8 @@
       "name": "chw_in",
       "type": "temperature",
       "direction": "consumes",
-      "state": "chw_supply_in"
+      "state": "chw_supply_in",
+      "sample_s": 10
     },
     {
       "name": "outdoor_in",

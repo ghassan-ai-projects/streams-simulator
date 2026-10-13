@@ -63,7 +63,7 @@ func TestTheTransferWorldFollowsTheMatrixExponential(t *testing.T) {
 		t.Fatal(err)
 	}
 	solver := NewSolver(spec, 42, 0, 0)
-	w, err := solver.newOracleWorld(model.DefaultStartTimeNS, []string{"cell-1"})
+	w, err := solver.oracleWorld(model.DefaultStartTimeNS, []string{"cell-1"}, false)
 	if err != nil {
 		t.Fatal(err)
 	}

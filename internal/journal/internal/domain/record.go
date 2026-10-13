@@ -32,6 +32,11 @@ const (
 )
 
 const (
+	FramingPreamble  = "preamble"
+	FramingPostamble = "postamble"
+)
+
+const (
 	TypeRunOpened        = "run.opened"
 	TypeObservation      = "observation"
 	TypeClockAdvanced    = "clock.advanced"
@@ -45,6 +50,7 @@ const (
 	TypeRunClosed        = "run.closed"
 	TypePacing           = "pacing"
 	TypeWire             = "wire"
+	TypeKPITruth         = "kpi.truth"
 )
 
 const (

@@ -462,9 +462,11 @@ A kind reads the states of the instances linked **into** it, over a declared lin
 - **A linked input**: an F1 input `{state, coef, link: {type, aggregate, default?}}` contributes `coef × aggregate`, where the
   aggregate is taken over the `state` of every instance linked into this one by `type`. It works in every form that reads inputs
   (lags, integrators, stores, regimes).
-- **`follow`** on a dynamics entry, `{link, state, aggregate}`: while at least one linked instance is present, the target state
-  is the aggregate of the linked instances' `state`; otherwise the entry's own `f0` or `f1` applies, and it keeps integrating in
-  the background. A store, peak, trip, anti-recycle or sequencer state cannot follow.
+- **`follow`** on a dynamics entry, `{sources: [{link, state}], aggregate}`: while at least one instance linked in over any of
+  the sources' link types is present, the target state is the aggregate over all of them, each source's instances read at its
+  `state` (sources in their order, each in sorted instance-id order), so one header sums the air demand of several kinds of line
+  (R7k-02); otherwise the entry's own `f0` or `f1` applies, and it keeps integrating in the background. A link type appears in
+  one source of a follow at most. A store, peak, trip, anti-recycle or sequencer state cannot follow.
 
 | Aggregate | Value | With no linked instance present |
 |---|---|---|
@@ -607,7 +609,7 @@ sample that triggers it.
 | `non_finite` | error | a state or reading is NaN or infinite; the other rules skip that series |
 | `out_of_range` | error | a channel that declares a `range` reads outside it; `detail` gives the worst reading and how many samples are outside |
 | `pinned_at_bound` | warning | an integrated state (tier F1, not algebraic, not a discrete form: `trip`, `anti_recycle`, `sequencer`, `pid`, `alarm`, and not the target of a `follow`) sits at its declared `min` or `max` in more than 50 % of the samples, whatever its span: an integrated state that never leaves its bound (span 0) is reported too. A tier F0, scheduled, binary-flag, discrete-form, algebraic or followed state is never reported |
-| `not_settled` | warning | an integrated state (as above, without the follow exclusion) changes between the start of the last 10 % of the run and the end by more than 5 % of its observed span per hour; a state driven by a seasonal or scheduled F0 source cycles daily and is not reported. Drivers are followed through its F1 inputs (a linked input reads the providing kind), through its `follow` to the providing kind's state and that state's dynamics, and, for a store, through the flows it takes part in to the other store and the scale states |
+| `not_settled` | warning | an integrated state (as above, without the follow exclusion) changes between the start of the last 10 % of the run and the end by more than 5 % of its observed span per hour; a state driven by a seasonal or scheduled F0 source cycles daily and is not reported. Drivers are followed through its F1 inputs (a linked input reads the providing kind), through the states the conditions of its form read (a sequencer's stage conditions, a trip's condition, a regime's selector, an anti-recycle's watch, so a compressor that loads and unloads on a cycling header pressure is cyclic), through its `follow` to the providing kind's state and that state's dynamics, and, for a store, through the flows it takes part in to the other store and the scale states |
 | `conservation_residual` | warning | for a fault whose detector is `conservation_residual`, the balance of its channels (inputs minus outputs, as the truth solver sums them) exceeds 3 times the combined noise sigma (the root of the summed squared sigmas of all its channels) at any sample; `detail` gives the worst residual and the limit |
 
 **Output.** One `cli-output-v0.1` document `{domain, digest, seed, hours, samples, findings, errors, warnings}`, findings
@@ -632,3 +634,26 @@ draw on it.
   the world tests prove a tank and cooler loop against an independent recurrence and against random read schedules.
 - **History**: a source keeps history for a sampled reader back to the reader's progress minus the sample period and four of its
   steps, so a loop keeps a bounded history.
+
+## 29. KPI truth (phase P7l)
+
+`kinds[k].kpis` names the states that are the kind's key performance indicators (specific power, COP, approach, loading);
+each is a declared state, at most once (`/kinds/k/kpis/i`). A component declares them in its `kind` and compose copies them.
+A run's world tracks the KPI truth of every entity whose kind has KPIs or an `alarm` state, and the run seals it into its
+director journal as one `kpi.truth` record at the close; the report shows it with the rest of the truth.
+
+- **Sampling**: from the entity's birth, on a grid of its kind's shortest alarm step (60 s without an alarm), until its
+  retirement; samples run on the world clock in time order with the world's events, after the events of the same instant,
+  and never in a look-ahead copy. A KPI is the mean, minimum and maximum of its samples.
+- **Alarms** (ISA-18.2 / EEMUA 191): an alarm is active while its code is `1` or `2`; an activation is a sample where it turns
+  active after the first sample (unshelving an active alarm annunciates it again). Per alarm: `activations`, `chattering`
+  (three activations within 60 s), `active_s`, `longest_active_s` and `active_at_end`. For the alarm system:
+  `activations`, `peak_per_10_min` (the most activations in any 600 s window), `flood_intervals` (epoch-aligned 10-minute
+  intervals with more than 10 activations), `chattering`, `stale` (alarms active for 24 h or more) and `standing_at_end`.
+- **Determinism**: the samples read the states the world would read anyway, so tracking changes no trace, ledger or
+  state history; the record is in the director journal's digest and a replay reproduces it. Worlds outside a run (truth
+  oracles, the lint, the audit) do not track.
+
+Cross-checks: a scripted alarm's activations, active time and state at the end against an independent scan of its code on
+the alarm grid (two horizons); a KPI's mean, minimum and maximum against the same samples read from a world that does not
+track; chattering, peak rate and flood intervals on constructed activation times.

@@ -16,7 +16,7 @@ func countsOf(folder Folder, in streams) Counts {
 		counts.Emitted = &emitted
 	}
 	if folder.Observer.Present {
-		observed := countType(in.observer, journal.TypeObservation)
+		observed := countDelivered(in.observer)
 		counts.Observed = &observed
 	}
 	if folder.Ledger.Present {
@@ -25,10 +25,10 @@ func countsOf(folder Folder, in streams) Counts {
 	return counts
 }
 
-func countType(records []journal.Record, recordType string) int64 {
+func countDelivered(records []journal.Record) int64 {
 	var n int64
 	for _, record := range records {
-		if record.Type == recordType {
+		if _, framing := record.Fields["framing"]; record.Type == journal.TypeObservation && !framing {
 			n++
 		}
 	}
@@ -56,7 +56,7 @@ func tally(counts *Counts, row model.LedgerRecord) {
 
 func readLedger(doc Document) ([]model.LedgerRecord, error) {
 	var rows []model.LedgerRecord
-	for index, line := range bytes.Split(doc.Raw, []byte{'\n'}) {
+	for index, line := range committedLines(doc.Raw) {
 		if len(line) == 0 {
 			continue
 		}
@@ -67,4 +67,9 @@ func readLedger(doc Document) ([]model.LedgerRecord, error) {
 		rows = append(rows, row)
 	}
 	return rows, nil
+}
+
+func committedLines(raw []byte) [][]byte {
+	lines := bytes.Split(raw, []byte{'\n'})
+	return lines[:len(lines)-1]
 }

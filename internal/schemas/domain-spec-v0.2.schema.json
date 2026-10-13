@@ -86,6 +86,12 @@
             "items": {"$ref": "#/$defs/fault"}
           },
 
+          "kpis": {
+            "type": "array",
+            "uniqueItems": true,
+            "description": "States that are key performance indicators of the kind (specific power, COP, approach). A run seals their true mean, minimum and maximum, with the ISA-18.2 KPIs of every alarm state, into its director journal (domain-spec v0.2 §29).",
+            "items": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$"}
+          },
           "boundaries": {
             "type": "array",
             "description": "Safety boundaries of the kind for scoring: each names a trip state whose tripped value means the boundary is violated, with a severity class. The trip's condition and duration are the boundary's rule, so a boundary and a trip share one evaluator.",
@@ -384,11 +390,13 @@
       "properties": {
         "target": {"type": "string", "description": "A state variable name."},
         "tier": {"enum": ["F0", "F1", "F2", "F3"]},
-        "follow": {"type": "object", "additionalProperties": false, "required": ["link", "state", "aggregate"],
-          "description": "While the instance has incoming links of this type, the state is the aggregate of the linked instances' state; otherwise its own dynamics apply (domain-spec v0.2 §21).",
+        "follow": {"type": "object", "additionalProperties": false, "required": ["sources", "aggregate"],
+          "description": "While the instance has a present instance linked into it over any of the sources' link types, the state is the aggregate of those instances' states, each read as its source names; otherwise its own dynamics apply (domain-spec v0.2 §21).",
           "properties": {
-            "link": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$"},
-            "state": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$"},
+            "sources": {"type": "array", "minItems": 1, "items": {"type": "object", "additionalProperties": false, "required": ["link", "state"],
+              "properties": {
+                "link": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$"},
+                "state": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$"}}}},
             "aggregate": {"enum": ["sum", "mean", "min", "max", "count_running"]},
             "sample_s": {"type": "number", "exclusiveMinimum": 0, "description": "Follow the linked states as they were at the previous sample instant (domain-spec v0.2 §28)."}
           }},

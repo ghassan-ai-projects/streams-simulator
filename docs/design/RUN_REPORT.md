@@ -49,6 +49,17 @@ the rule is on `run.json`, not on the ledger. The report of an open Evaluate run
 be used to read ahead. For an open Explore run the seed comes from the director `run.opened`
 record.
 
+A file belongs to the run of the journals or it is not used. `run.json` must carry the `run_id`,
+`sim_version`, `domain` and `adapter` of the observer `run.opened`; `sealed/journal.jsonl` must carry
+the `run_id` of that run (and the seed of `run.json`). A folder holding a file of another run reports
+`truth_unavailable` with the reason (it names the fields that differ, never their values), shows no
+`truth` object or seed, is not scored, and takes `run.json` (or the sealed journal and the ledger)
+out of the report as if absent.
+
+A run that crashed mid-write may end a journal or the ledger on a line without its newline. The report
+drops that last line, lists the file in `torn_tail` and builds the rest; a damaged line anywhere
+else still fails the report. The ledger rows of such a line are not counted.
+
 ## 3. Contents
 
 Contract: [`run-report-v0.1`](../../contracts/run-report-v0.1.schema.json).
@@ -75,8 +86,8 @@ without one yields a `consumer` section without the key.
 
 **Counts.** `delivered` and `dropped` are ledger rows by `delivered`; the `*_by_reason` maps
 count rows by the ledger's `delivery_reason`. A `duplicated` row is a delivery, so `ledger_rows`
-can exceed `emitted`. `observed` counts the observer stream's `observation` records and equals
-the trace's line count.
+can exceed `emitted`. `observed` counts the observer stream's `observation` records that are not adapter framing
+(`framing` absent): the delivered lines, not the preamble and postamble.
 
 ## 4. Verification
 
@@ -89,6 +100,8 @@ proof; the report's check is cheap and needs no inputs.
 | `trace` | SHA-256 of `trace.jsonl` | `expected_trace_digest` |
 | `journal` | digest of the replayable lines of `journal.jsonl` | `journal_digest` |
 | `sealed_journal` | digest of the replayable lines of `sealed/journal.jsonl` | `sealed_journal_digest` |
+| `journal_file` | SHA-256 of `journal.jsonl`, session records included | `journal_file_digest` |
+| `sealed_journal_file` | SHA-256 of `sealed/journal.jsonl`, session records included | `sealed_journal_file_digest` |
 
 Each check has `status` `match`, `mismatch` or `missing_file` (a digest was recorded and the file
 is absent), plus `recorded` and `computed` digests. A digest the run did not record is not
@@ -118,6 +131,10 @@ shows what the world actually did. The values are the world's record verbatim: f
 `silent_no_effect` the effect is applied to shadow state only and `effect_applied` still reads
 `true`, so read `mode` first.
 
+`kpis` is the director stream's `kpi.truth` record verbatim (domain-spec v0.2 §29), absent when the stream has none.
+The Markdown report shows it as three tables: KPIs (mean, minimum, maximum, samples), alarms (priority, activations,
+chattering, active and longest active seconds, active at the end) and the alarm system.
+
 ## 6. Scoring
 
 `scoring` is present only when `verdict.json` and `label.json` both exist and `run.json` exists.
@@ -143,14 +160,17 @@ a person needs. Rules, so that the output is byte-stable:
    Perturbations, Environment, Effector calls, Consumer, Scoring. A section whose source is
    absent is omitted. A truth section of a run with truth and nothing to list reads `None.`; a run
    without truth gets one `## Truth` section holding the line
-   `Truth withheld: the run has not ended (no run.json).` in place of the four truth sections.
+   `Truth withheld: the run has not ended (no run.json).` in place of the four truth sections, or
+   `Truth unavailable: <reason>` when a file belongs to another run.
 4. Key-value content is a two-column table `| Field | Value |`; lists are tables with a fixed
    column order; maps (`by_reason`) are tables with sorted keys.
 5. Times are RFC 3339 UTC with the shortest fractional part (`model.FormatTime`), followed by
    `+<seconds>s` from the run start where the run start is known. Durations and counts are plain
    integers.
-6. Cell text has `|` escaped as `\|` and line breaks replaced by a space. Digests and JSON
-   values (`params`, `args`) are written in a code span; JSON is compact with sorted keys.
+6. Cell text has `\`, `|`, `*`, `_`, `` ` ``, `[`, `]`, `<`, `>` and `&` escaped with a backslash and
+   line breaks replaced by a space; the title is escaped the same way. Digests and JSON values
+   (`params`, `args`) are written in a code span, in which only `|` is escaped; JSON is compact with
+   sorted keys. A `## Torn tail` section lists the files in `torn_tail`.
 7. The scorecard is shown as a table of its scalar metrics grouped by section
    (`instrument`, `consumer`, `loop`, `judgment`), keys sorted; the full scorecard is in the JSON
    report.
@@ -191,3 +211,5 @@ reads). It composes `run` (artifact loading), `journal` (reading and digesting s
   `ledger.jsonl` and `sealed/` left in place, no fault, perturbation, seed, ledger count or drop
   reason appears in the JSON or Markdown of an Evaluate run).
 - A tampered `trace.jsonl` reports `files_differ`.
+- A `run.json` or sealed journal of another run reports `truth_unavailable` and leaks no truth; a
+  torn last line is dropped and named in `torn_tail`, a damaged middle line fails.

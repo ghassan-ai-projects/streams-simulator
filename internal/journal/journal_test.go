@@ -9,6 +9,22 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
+func TestFramingIsAnObservationMarkedWithItsKind(t *testing.T) {
+	t.Parallel()
+	j := NewMemory(true)
+	j.Framing(5, FramingPreamble, `{"record_type":"runtime_config"}`)
+	j.Framing(9, FramingPostamble, `{"record_type":"trace_end"}`)
+	raw, err := j.Bytes(StreamObserver)
+	if err != nil {
+		t.Fatal(err)
+	}
+	records, err := Read(raw)
+	if err != nil || len(records) != 2 || records[0].Type != TypeObservation || records[0].Fields["framing"] != FramingPreamble ||
+		records[1].Fields["framing"] != FramingPostamble {
+		t.Fatalf("Read = %+v (%v), want a preamble and a postamble observation", records, err)
+	}
+}
+
 func TestNewMemoryKeepsDigestsAndBytesWithoutFiles(t *testing.T) {
 	t.Parallel()
 	j := NewMemory(true)

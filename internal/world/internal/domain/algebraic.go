@@ -13,25 +13,25 @@ func (w *World) algebraicValue(ent *Entity, dyn *model.Dynamics, at int64) float
 	case model.FormSum:
 		value = w.inputValue(ent, dyn, at)
 	case model.FormProduct:
-		value = product(w.weightedInputs(ent, f1, at))
+		value = w.weightedProduct(ent, f1, at)
 	default:
-		value = curveValue(f1.Table, w.weightedInputs(ent, f1, at))
+		var axes [2]float64
+		value = curveValue(f1.Table, w.weightedInputs(axes[:len(f1.Inputs)], ent, f1, at))
 	}
 	return clamp(value, f1.Clamp)
 }
 
-func (w *World) weightedInputs(ent *Entity, f1 *model.F1Dyn, at int64) []float64 {
-	values := make([]float64, len(f1.Inputs))
+func (w *World) weightedInputs(values []float64, ent *Entity, f1 *model.F1Dyn, at int64) []float64 {
 	for i, in := range f1.Inputs {
 		values[i] = in.Coef * w.inputState(ent, in, at)
 	}
 	return values
 }
 
-func product(factors []float64) float64 {
+func (w *World) weightedProduct(ent *Entity, f1 *model.F1Dyn, at int64) float64 {
 	result := 1.0
-	for _, factor := range factors {
-		result *= factor
+	for _, in := range f1.Inputs {
+		result *= in.Coef * w.inputState(ent, in, at)
 	}
 	return result
 }

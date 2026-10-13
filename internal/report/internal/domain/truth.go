@@ -52,13 +52,14 @@ func convert(from, to any) error {
 	return nil
 }
 
-func truthOf(commands []model.Command, director []journal.Record) *Truth {
-	return &Truth{
+func truthOf(commands []model.Command, director []journal.Record) (*Truth, error) {
+	truth := &Truth{
 		Faults:        collect(commands, faultOf),
 		Perturbations: collect(commands, perturbationOf),
 		Environment:   collect(commands, environmentOf),
 		EffectorCalls: effectorCalls(commands, director),
 	}
+	return truth, truth.readKPIs(director)
 }
 
 func collect[T any](commands []model.Command, build func(model.Command) (T, bool)) []T {

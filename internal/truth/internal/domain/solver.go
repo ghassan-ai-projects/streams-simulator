@@ -34,6 +34,12 @@ func NewSolver(spec *domain.Compiled, seed uint64, sampleNS, maxHorizonNS int64)
 	return &Solver{spec: spec, seed: seed, sampleNS: sampleNS, maxHorizonNS: maxHorizonNS}
 }
 
+func (s *Solver) forWorldSeed(seed uint64) *Solver {
+	scenario := *s
+	scenario.seed = seed
+	return &scenario
+}
+
 type result struct {
 	FirstObservableNS int64    `json:"first_observable_time_ns"`
 	UnavoidableNS     int64    `json:"unavoidable_time_ns"`
@@ -53,16 +59,19 @@ func (s *Solver) solve(entityID, faultID string, onsetNS int64, startNS int64, e
 	if !knownDetectorForm(fault.Observability.Detector.Form) {
 		return nil, fmt.Errorf("truth: fault %q declares unknown detector form %q", faultID, fault.Observability.Detector.Form)
 	}
-	res := &result{Channels: detectorChannels(&fault.Observability.Detector), Method: model.SolveNumeric}
 	scan, err := s.prepareScan(entityID, faultID, fault, onsetNS, startNS, entityIDs, setup)
 	if err != nil {
 		return nil, err
 	}
-	return scan.searchOnsets(res, fault, onsetNS, startNS), nil
+	return scan.searchOnsets(onsetNS, startNS)
 }
 
 func (s *Solver) buildWorld(entityID string, startNS int64, entityIDs []string, faults map[string]int64, setup []model.SetupCall) (*world.World, error) {
-	w, err := s.newOracleWorld(startNS, entityIDs)
+	return s.buildOracle(entityID, startNS, entityIDs, faults, setup, false)
+}
+
+func (s *Solver) buildOracle(entityID string, startNS int64, entityIDs []string, faults map[string]int64, setup []model.SetupCall, records bool) (*world.World, error) {
+	w, err := s.oracleWorld(startNS, entityIDs, records)
 	if err != nil {
 		return nil, err
 	}
@@ -142,10 +151,10 @@ func detectorChannels(det *model.Detector) []string {
 	return out
 }
 
-func (s *Solver) newOracleWorld(startNS int64, entityIDs []string) (*world.World, error) {
+func (s *Solver) oracleWorld(startNS int64, entityIDs []string, records bool) (*world.World, error) {
 	w, err := world.New(s.spec, s.seed, "w-solver", startNS, world.Options{
 		Noiseless:       true,
-		EmitDisabled:    true,
+		EmitDisabled:    !records,
 		InitialEntities: entityIDs,
 		ForceEffectorOK: true,
 	})

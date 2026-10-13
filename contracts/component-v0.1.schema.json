@@ -94,6 +94,13 @@
         },
         "boundaries": {
           "type": "array"
+        },
+        "kpis": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "States that are the equipment's key performance indicators; compose copies them to the kind (domain-spec v0.2 section 29)."
         }
       },
       "additionalProperties": false

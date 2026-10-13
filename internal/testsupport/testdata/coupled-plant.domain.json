@@ -84,7 +84,7 @@
         {"name": "units_running", "unit": "1", "initial": 0.0}
       ],
       "dynamics": [
-        {"target": "inflow", "tier": "F0", "f0": {"baseline": 5.0}, "follow": {"link": "feed", "state": "flow", "aggregate": "sum"}},
+        {"target": "inflow", "tier": "F0", "f0": {"baseline": 5.0}, "follow": {"sources": [{"link": "feed", "state": "flow"}], "aggregate": "sum"}},
         {"target": "draw", "tier": "F0", "f0": {"baseline": 20.0}},
         {
           "target": "level",
@@ -103,9 +103,9 @@
             "time_constant_s": 50
           }
         },
-        {"target": "peak", "tier": "F0", "f0": {"baseline": -1.0}, "follow": {"link": "feed", "state": "flow", "aggregate": "max"}},
-        {"target": "low", "tier": "F0", "f0": {"baseline": -1.0}, "follow": {"link": "feed", "state": "flow", "aggregate": "min"}},
-        {"target": "units_running", "tier": "F0", "f0": {"baseline": 0.0}, "follow": {"link": "feed", "state": "running", "aggregate": "count_running"}}
+        {"target": "peak", "tier": "F0", "f0": {"baseline": -1.0}, "follow": {"sources": [{"link": "feed", "state": "flow"}], "aggregate": "max"}},
+        {"target": "low", "tier": "F0", "f0": {"baseline": -1.0}, "follow": {"sources": [{"link": "feed", "state": "flow"}], "aggregate": "min"}},
+        {"target": "units_running", "tier": "F0", "f0": {"baseline": 0.0}, "follow": {"sources": [{"link": "feed", "state": "running"}], "aggregate": "count_running"}}
       ],
       "channels": [
         {
@@ -136,7 +136,7 @@
     },
     {
       "name": "plant",
-      "state": [{"name": "supply", "unit": "m3/h", "initial": 0.0}],
+      "state": [{"name": "supply", "unit": "m3/h", "initial": 0.0}, {"name": "metered", "unit": "m3/h", "initial": 0.0}],
       "dynamics": [
         {
           "target": "supply",
@@ -148,7 +148,8 @@
             "inputs": [{"state": "avg_flow", "coef": 1.0, "link": {"type": "supply", "aggregate": "max", "default": 0.0}}],
             "time_constant_s": 900
           }
-        }
+        },
+        {"target": "metered", "tier": "F0", "f0": {"baseline": 0.0}, "follow": {"sources": [{"link": "supply", "state": "inflow"}, {"link": "direct", "state": "flow"}], "aggregate": "sum"}}
       ],
       "channels": [
         {
@@ -185,14 +186,16 @@
   ],
   "link_types": [
     {"name": "feed", "from": "unit", "to": "header", "description": "A unit discharges into a header."},
-    {"name": "supply", "from": "header", "to": "plant", "description": "A header supplies the plant."}
+    {"name": "supply", "from": "header", "to": "plant", "description": "A header supplies the plant."},
+    {"name": "direct", "from": "unit", "to": "plant", "description": "A unit also supplies the plant directly."}
   ],
   "links": [
     {"from": "unit-1", "to": "hdr-a", "type": "feed"},
     {"from": "unit-2", "to": "hdr-a", "type": "feed"},
     {"from": "unit-3", "to": "hdr-a", "type": "feed"},
     {"from": "hdr-a", "to": "plant-1", "type": "supply"},
-    {"from": "hdr-b", "to": "plant-1", "type": "supply"}
+    {"from": "hdr-b", "to": "plant-1", "type": "supply"},
+    {"from": "unit-1", "to": "plant-1", "type": "direct"}
   ],
   "profiles": [
     {"name": "nominal", "duration_s": 7200, "description": "Three units and two headers, one fault per scenario."},

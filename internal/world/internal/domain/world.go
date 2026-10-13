@@ -41,6 +41,8 @@ type Options struct {
 	ForceEffectorOK bool
 
 	ForceFailureMode FailureMode
+
+	TrackKPIs bool
 }
 
 type World struct {
@@ -55,6 +57,7 @@ type World struct {
 	forceFailureMode FailureMode
 
 	queue    priorityQueue
+	kpis     *kpiTracker
 	tiebreak uint64
 	seq      int64
 
@@ -94,10 +97,16 @@ type Entity struct {
 	kind      *model.Kind
 	set       int
 	states    map[string]*stateValue
+	steps     []step
 	channels  map[string]*channelRunState
 	alive     bool
 	retiredNS int64
 	readersAt int64
+}
+
+type step struct {
+	dyn   *model.Dynamics
+	state *stateValue
 }
 
 type channelRunState struct {

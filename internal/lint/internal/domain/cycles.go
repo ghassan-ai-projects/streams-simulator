@@ -32,7 +32,31 @@ func periodic(dyn *model.Dynamics) bool {
 }
 
 func drivers(spec *domain.Compiled, from source) []source {
-	return slices.Concat(inputDrivers(spec, from), followDriver(spec, from), flowDrivers(from))
+	return slices.Concat(inputDrivers(spec, from), conditionDrivers(from), followDriver(spec, from), flowDrivers(from))
+}
+
+func conditionDrivers(from source) []source {
+	dyn := from.kind.DynamicsOf(from.state)
+	if dyn == nil || dyn.F1 == nil {
+		return nil
+	}
+	var found []source
+	for _, state := range conditionStates(dyn.F1) {
+		if state != "" && state != from.state {
+			found = append(found, source{from.kind, state})
+		}
+	}
+	return found
+}
+
+func conditionStates(f1 *model.F1Dyn) []string {
+	states := []string{f1.Selector, f1.Watch}
+	for _, condition := range []*model.Condition{f1.When, f1.StageUp, f1.StageDown} {
+		if condition != nil {
+			states = append(states, condition.State, condition.ThresholdState)
+		}
+	}
+	return states
 }
 
 func inputDrivers(spec *domain.Compiled, from source) []source {
@@ -61,10 +85,13 @@ func followDriver(spec *domain.Compiled, from source) []source {
 	if dyn == nil || dyn.Follow == nil {
 		return nil
 	}
-	if provider := providerOf(spec, dyn.Follow.Link); provider != nil {
-		return []source{{provider, dyn.Follow.State}}
+	var found []source
+	for _, followed := range dyn.Follow.Sources {
+		if provider := providerOf(spec, followed.Link); provider != nil {
+			found = append(found, source{provider, followed.State})
+		}
 	}
-	return nil
+	return found
 }
 
 func providerOf(spec *domain.Compiled, linkType string) *model.Kind {

@@ -763,6 +763,11 @@
         }
       }
     ],
+    "kpis": [
+      "specific_power",
+      "cycle_time",
+      "scrap_pct"
+    ],
     "faults": [
       {
         "id": "tooling_wear",
@@ -1092,19 +1097,22 @@
       "name": "air_in",
       "type": "pressure",
       "direction": "consumes",
-      "state": "air_pressure"
+      "state": "air_pressure",
+      "sample_s": 10
     },
     {
       "name": "coolant_in",
       "type": "temperature",
       "direction": "consumes",
-      "state": "coolant_temp"
+      "state": "coolant_temp",
+      "sample_s": 10
     },
     {
       "name": "dew_point_in",
       "type": "dew_point",
       "direction": "consumes",
-      "state": "dew_point"
+      "state": "dew_point",
+      "sample_s": 10
     },
     {
       "name": "heat_out",

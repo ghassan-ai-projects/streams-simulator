@@ -27,6 +27,7 @@ func (w *World) addEntity(id string, set int, atNS int64) error {
 	w.entities[id] = ent
 	w.entityOrder = append(w.entityOrder, id)
 	w.initializeEntityChannels(ent, id, atNS)
+	w.trackKPIs(ent, atNS)
 	return nil
 }
 
@@ -82,7 +83,18 @@ func (w *World) newEntity(id string, set int, at int64) *Entity {
 func (w *World) initializeEntityState(ent *Entity, at int64) {
 	for i := range ent.kind.State {
 		state := &ent.kind.State[i]
-		ent.states[state.Name] = &stateValue{x: state.Initial, lastStep: at}
+		ent.states[state.Name] = &stateValue{dyn: ent.kind.DynamicsOf(state.Name), decl: state, x: state.Initial, lastStep: at}
+	}
+	ent.bindSteps()
+}
+
+func (ent *Entity) bindSteps() {
+	ent.steps = ent.steps[:0:0]
+	for i := range ent.kind.Dynamics {
+		dyn := &ent.kind.Dynamics[i]
+		if s := ent.states[dyn.Target]; dyn.Integrated() && s != nil {
+			ent.steps = append(ent.steps, step{dyn: dyn, state: s})
+		}
 	}
 }
 

@@ -33,7 +33,7 @@ func BuildRecord(spec *domain.Compiled, solver *Solver, in Injection) (*model.Gr
 	if err != nil {
 		return nil, err
 	}
-	res, err := solver.solve(in.EntityID, in.FaultID, in.OnsetNS, in.StartNS, in.EntityIDs, in.Setup)
+	res, err := solver.forWorldSeed(in.Seed).solve(in.EntityID, in.FaultID, in.OnsetNS, in.StartNS, in.EntityIDs, in.Setup)
 	if err != nil {
 		return nil, fmt.Errorf("streamsim: %w", err)
 	}

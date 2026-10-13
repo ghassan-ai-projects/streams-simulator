@@ -3,7 +3,7 @@ package domain
 func (w *World) latestStateFault(entity, state string, at int64) (int64, bool) {
 	last := int64(-1)
 	any := false
-	for _, fault := range w.faultsByState[state] {
+	for _, fault := range w.faultsOn(state) {
 		if fault.entity != entity || !fault.activeAt(at) {
 			continue
 		}
@@ -13,6 +13,13 @@ func (w *World) latestStateFault(entity, state string, at int64) (int64, bool) {
 		}
 	}
 	return last, any
+}
+
+func (w *World) faultsOn(state string) []*activeFault {
+	if len(w.faultsByState) == 0 {
+		return nil
+	}
+	return w.faultsByState[state]
 }
 
 func (w *World) applyStateFaults(value float64, entity, state string, at int64) float64 {

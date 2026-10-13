@@ -37,8 +37,7 @@ func table(headers []string, rows [][]string) []string {
 func row(cells []string) string {
 	escaped := make([]string, len(cells))
 	for i, cell := range cells {
-		cell = strings.NewReplacer("|", `\|`, "\r\n", " ", "\n", " ", "\r", " ").Replace(cell)
-		escaped[i] = strings.TrimSpace(cell)
+		escaped[i] = escapeCell(cell)
 	}
 	return "| " + strings.Join(escaped, " | ") + " |"
 }
@@ -60,7 +59,7 @@ func code(value string) string {
 	if value == "" {
 		return ""
 	}
-	return "`" + value + "`"
+	return spanMark + value + spanMark
 }
 
 func codeJSON(value any) string {

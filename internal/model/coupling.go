@@ -18,10 +18,14 @@ type InputLink struct {
 }
 
 type Follow struct {
-	Link      string  `json:"link"`
-	State     string  `json:"state"`
-	Aggregate string  `json:"aggregate"`
-	SampleS   float64 `json:"sample_s,omitempty"`
+	Sources   []FollowSource `json:"sources"`
+	Aggregate string         `json:"aggregate"`
+	SampleS   float64        `json:"sample_s,omitempty"`
+}
+
+type FollowSource struct {
+	Link  string `json:"link"`
+	State string `json:"state"`
 }
 
 func (a InputLink) NeedsDefault() bool {
@@ -45,12 +49,21 @@ func (k *Kind) LinkReads() []string {
 func (k *Kind) LinkReadsDetailed() []LinkRead {
 	var reads []LinkRead
 	for _, d := range k.Dynamics {
-		if d.Follow != nil {
-			reads = append(reads, LinkRead{Type: d.Follow.Link, State: d.Follow.State, SampleS: d.Follow.SampleS})
-		}
+		reads = append(reads, d.Follow.reads()...)
 		for _, in := range d.F1.linkedInputs() {
 			reads = append(reads, LinkRead{Type: in.Link.Type, State: in.State, SampleS: in.Link.SampleS})
 		}
+	}
+	return reads
+}
+
+func (f *Follow) reads() []LinkRead {
+	if f == nil {
+		return nil
+	}
+	reads := make([]LinkRead, 0, len(f.Sources))
+	for _, source := range f.Sources {
+		reads = append(reads, LinkRead{Type: source.Link, State: source.State, SampleS: f.SampleS})
 	}
 	return reads
 }

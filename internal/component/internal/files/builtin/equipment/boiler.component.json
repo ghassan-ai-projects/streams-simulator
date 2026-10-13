@@ -361,6 +361,9 @@
         }
       }
     ],
+    "kpis": [
+      "efficiency"
+    ],
     "faults": [
       {
         "id": "scaling",

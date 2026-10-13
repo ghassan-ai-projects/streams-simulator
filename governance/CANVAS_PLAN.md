@@ -93,3 +93,8 @@ The commit hash of a phase is recorded by the first commit of the next phase.
 | P7d | Done | 8eb57c5 | [evidence/P7d.md](../docs/simulation-canvas/evidence/P7d.md) | [reviews/P7d.md](../docs/simulation-canvas/reviews/P7d.md) |
 | P7e | Done | 4bf3610 | [evidence/P7e.md](../docs/simulation-canvas/evidence/P7e.md) | [reviews/P7e.md](../docs/simulation-canvas/reviews/P7e.md) |
 | P7g | Done | c03ff2b | [evidence/P7g.md](../docs/simulation-canvas/evidence/P7g.md) | [reviews/P7g.md](../docs/simulation-canvas/reviews/P7g.md) |
+| P7h | Done | ec6b05e | [evidence/P7h.md](../docs/simulation-canvas/evidence/P7h.md) | [reviews/P7h.md](../docs/simulation-canvas/reviews/P7h.md) |
+| P7i | Done | f3c9c45 | [evidence/P7i.md](../docs/simulation-canvas/evidence/P7i.md) | not separately reviewed (oracle and mutation check per form; reviewed with P7j) |
+| P7j | Done | eecb4fb | `make phase-gate`; the pilot composes, validates, lints and runs (`test/contract/components_test.go`) | [reviews/P7j.md](../docs/simulation-canvas/reviews/P7j.md) |
+| P7k | Done | 8a0917d | [evidence/P7k.md](../docs/simulation-canvas/evidence/P7k.md) | reviewed with P7j and the architecture audit of PR #30 |
+| P7l | Done | recorded by P8a | [evidence/P7l.md](../docs/simulation-canvas/evidence/P7l.md) | independent review in progress; its record lands on this pull request |

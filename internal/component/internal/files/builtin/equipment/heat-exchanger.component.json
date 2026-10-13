@@ -512,6 +512,10 @@
         }
       }
     ],
+    "kpis": [
+      "approach_k",
+      "duty"
+    ],
     "faults": [
       {
         "id": "fouling",

@@ -2,6 +2,7 @@ package domain
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"maps"
 	"math"
@@ -18,6 +19,8 @@ type FaultInfo struct {
 	OnsetNS  int64   `json:"onset_ns"`
 	Severity float64 `json:"severity,omitempty"`
 }
+
+var ErrFaultOnsetInPast = errors.New("world: fault onset is before the clock of a world that has already run")
 
 func (w *World) InjectFault(entityID, faultID string, onsetNS int64, params map[string]any) (string, error) {
 	fault := w.Spec.Fault(faultID)
@@ -139,8 +142,9 @@ func (fault *activeFault) info(id string) FaultInfo {
 }
 
 func (w *World) admitFaultInjection(fault *model.Fault, entityID, faultID string, onsetNS int64, params map[string]any) (string, error) {
-	if onsetNS <= 0 {
-		onsetNS = w.clockNS
+	onsetNS, err := w.admitOnset(onsetNS)
+	if err != nil {
+		return "", err
 	}
 	severity, err := faultSeverity(fault, faultID, params)
 	if err != nil {
@@ -151,6 +155,16 @@ func (w *World) admitFaultInjection(fault *model.Fault, entityID, faultID string
 		w.schedulePulse(w.faultsByID[id], int64(fault.Onset.DurationS*secondsPerNS))
 	}
 	return id, nil
+}
+
+func (w *World) admitOnset(onsetNS int64) (int64, error) {
+	if onsetNS <= 0 {
+		return w.clockNS, nil
+	}
+	if onsetNS < w.clockNS && w.clockNS > w.StartNS {
+		return 0, fmt.Errorf("%w (onset %d, clock %d)", ErrFaultOnsetInPast, onsetNS, w.clockNS)
+	}
+	return onsetNS, nil
 }
 
 func declaredSeverity(severity float64, params map[string]any) (float64, error) {

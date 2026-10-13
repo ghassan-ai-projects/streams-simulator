@@ -76,7 +76,7 @@ func TestConnectionsMakeTheConsumingStateFollowTheSumOfTheProvidingStates(t *tes
 	doc := composeOK(t, plantLibrary(t), raw)
 	dynamics := member(t, doc, "kinds", 1, "dynamics")
 	follow := member(t, named(t, dynamics, "dynamics", "target", "load"), "follow").(map[string]any)
-	if follow["link"] != "kiln__load_in__source" || follow["state"] != "out" || follow["aggregate"] != "sum" {
+	if sources := follow["sources"].([]any); len(sources) != 1 || member(t, sources[0], "link") != "kiln__load_in__source" || member(t, sources[0], "state") != "out" || follow["aggregate"] != "sum" {
 		t.Fatalf("follow = %v, want sum of out over kiln__load_in__source", follow)
 	}
 	if _, present := named(t, member(t, doc, "kinds", 0, "dynamics"), "dynamics", "target", "out")["follow"]; present {
@@ -107,8 +107,6 @@ func TestConnectionsRefuseWhatDoesNotJoin(t *testing.T) {
 		{"a consuming port at the from end", "/connections/0/from", "must be a port that provides", []any{link("K-1.load_in", "K-1.load_in")}, []map[string]any{kiln}},
 		{"a providing port at the to end", "/connections/0/to", "must be a port that consumes", []any{link("S-1.out_load", "S-1.out_heat")}, []map[string]any{source}},
 		{"a type mismatch", "/connections/0", `of type "heat_rejection", port K-1.load_in of type "thermal_load"`, []any{link("K-1.heat_out", "K-1.load_in")}, []map[string]any{kiln}},
-		{"two link types into one consuming state", "/connections/1", "one link type and one provided state per consuming state",
-			[]any{link("S-1.out_load", "N-1.in_load"), link("S-1.out_heat", "N-1.in_heat")}, []map[string]any{source, node}},
 		{"a consuming state without dynamics", "/connections", `kind node has no dynamics for state "bare"`, []any{link("S-1.out_load", "N-1.in_bare")}, []map[string]any{source, node}},
 	}
 	for _, tc := range cases {
@@ -223,7 +221,7 @@ func TestTwoPortPairsBetweenTheSameInstancesGetOneLinkTypeEach(t *testing.T) {
 	}
 	dynamics := member(t, doc, "kinds", 1, "dynamics")
 	for state, link := range map[string]string{"inflow": "node__in_load__source", "outflow": "node__in_load_two__source"} {
-		if got := member(t, named(t, dynamics, "dynamics", "target", state), "follow", "link"); got != link {
+		if got := member(t, named(t, dynamics, "dynamics", "target", state), "follow", "sources", 0, "link"); got != link {
 			t.Errorf("%s follows %v, want %s", state, got, link)
 		}
 	}

@@ -49,7 +49,7 @@ it and the `at_ns` of the one before, and is outside the stream digest (§3).
 | `type` | Fields | Written |
 |---|---|---|
 | `run.opened` | `run_id`, `sim_version`, `domain {id, version, digest}`, `adapter {id, version, digest}`, `start_time_ns`, `entity_ids`, `mode` (`evaluate` or `explore`). **No seed**: MCP_SURFACE §4.5 never exposes it, and with the seed and the domain a consumer could regenerate the fault-free world and diff it against what it received | At creation |
-| `observation` | `line`: the record exactly as the sink received it (the adapter's rendered line); `malformed: true` when that line was delivered broken | Per delivered record, in delivery order |
+| `observation` | `line`: the record exactly as the sink received it (the adapter's rendered line); `malformed: true` when that line was delivered broken; `framing: "preamble"` or `"postamble"` for an adapter framing line, which is in the trace but is no delivered event | Per delivered record, in delivery order; the preamble after `run.opened`, the postamble before `run.closed` |
 | `clock.advanced` | `to_ns` | After each advance |
 | `effector.acknowledged` | `command_id`, `effector`, `entity_id`, `response` (`model.EffectorAcknowledgement`, exactly what the operator received) | Per acknowledged invocation |
 | `consumer.reported` (session) | `quiesced_through_ns`, `verdict_submitted` | Per consumer report |
@@ -72,6 +72,7 @@ mode the world chose.
 | `state` | `state`: the world-state snapshot taken at an emission |
 | `effector.outcome` | `command_id`, `effector`, `entity_id` and either `result` (the world's `InvokeResult`: failure mode, whether the effect applied, latency) or `refused` (why the call was declined) |
 | `run.unblinded` | `reason`: `explore` (written right after `run.opened`, at creation) or `revealed` (truth was revealed on the open run; written at the close, before `run.closed`, so replay can reproduce it). The wall-clock moment is in the artifact (`unblinded_at`), not in the stream |
+| `kpi.truth` | `kpis`: the run's KPI truth (domain-spec v0.2 §29), written once at the close, before `run.unblinded` and `run.closed`, so replay reproduces it |
 | `run.closed` | `incomplete`, `error` (when the run failed) |
 
 ## 3. Determinism and verification
@@ -80,7 +81,9 @@ Both streams are pure functions of the run (no wall-clock reads, maps encoded in
 A stream's **digest** is the SHA-256 (`sha256:` and hex) of its replayable lines, newline
 included. The run artifact records `journal_digest` (observer) and `sealed_journal_digest`
 (director). Computing a digest needs no file: a run with no journal directory keeps the digests
-only.
+only. It also records `journal_file_digest` and `sealed_journal_file_digest`, the SHA-256 of every line as written, session
+records (`consumer.reported`, `wire`, `pacing`) included (R7e-08): replay cannot reproduce session records, so `verify`
+does not compare these, but the run report checks the files against them, so an edited session record is evident.
 
 `replay` also compares the artifact's `unblinded` flag with the stamp the replay derives (an explore
 run is unblinded by its `mode`): clearing the flag in `run.json` fails `verify`, and `score` refuses

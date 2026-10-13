@@ -292,6 +292,16 @@
       "pattern": "^sha256:[0-9a-f]{64}$",
       "description": "Digest of the replayable lines of the director journal stream (sealed/journal.jsonl). `verify` compares it like journal_digest."
     },
+    "journal_file_digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "description": "Digest of every line of journal.jsonl as written, session records (consumer.reported, wire, pacing) included. A replay cannot reproduce session records (pacing holds wall-clock waits), so `verify` does not compare it; the run report checks the file against it, which makes a changed session record evident."
+    },
+    "sealed_journal_file_digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "description": "Digest of every line of sealed/journal.jsonl as written, session records included; checked by the run report like journal_file_digest."
+    },
     "ledger_digest": {
       "type": "string",
       "pattern": "^sha256:[0-9a-f]{64}$",

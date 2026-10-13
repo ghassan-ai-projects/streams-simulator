@@ -115,3 +115,7 @@ func ComponentsDir() string {
 func PilotComposition() string {
 	return filepath.Join(RepositoryRoot(), "examples", "compositions", "chiller-pilot.composition.json")
 }
+
+func FactoryComposition() string {
+	return filepath.Join(RepositoryRoot(), "examples", "compositions", "factory-utilities.composition.json")
+}

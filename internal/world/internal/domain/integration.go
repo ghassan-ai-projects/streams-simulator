@@ -8,6 +8,8 @@ import (
 )
 
 type stateValue struct {
+	dyn        *model.Dynamics
+	decl       *model.State
 	x          float64
 	lastStep   int64
 	aux        float64
@@ -22,12 +24,11 @@ type stateValue struct {
 	alarm      *alarmState
 }
 
-func (w *World) naturalValue(ent *Entity, stateName string, t int64) float64 {
-	s := ent.states[stateName]
+func (w *World) naturalOf(ent *Entity, stateName string, s *stateValue, t int64) float64 {
 	if s == nil {
 		return 0
 	}
-	return w.naturalStateValue(ent, stateName, s, ent.kind.DynamicsOf(stateName), t)
+	return w.naturalStateValue(ent, stateName, s, s.dyn, t)
 }
 
 func (w *World) initial(ent *Entity, stateName string) float64 {

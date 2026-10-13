@@ -680,7 +680,8 @@
           "requires": [{"state": "running", "operator": "gte", "threshold": 0.5}],
           "risk_class": "high"
         }
-      ]
+      ],
+      "kpis": ["cop", "specific_power"]
     },
     {
       "name": "chiller_small",
@@ -719,7 +720,7 @@
             "drift_per_hour": 0,
             "seasonality": [{"amplitude": 75, "period_s": 86400, "phase_rad": -1.5708}]
           },
-          "follow": {"state": "cooling_load", "aggregate": "sum", "link": "chiller_small__load_in__ahu"}
+          "follow": {"aggregate": "sum", "sources": [{"state": "cooling_load", "link": "chiller_small__load_in__ahu"}]}
         },
         {
           "target": "cond_water_in",
@@ -1278,7 +1279,8 @@
           "requires": [{"state": "running", "operator": "gte", "threshold": 0.5}],
           "risk_class": "high"
         }
-      ]
+      ],
+      "kpis": ["cop", "specific_power"]
     },
     {
       "name": "ahu",
@@ -1682,7 +1684,7 @@
       "area": "Chiller hall",
       "provenance": {
         "component": "streamsim/chiller",
-        "digest": "sha256:52df731ac4bc3f9c1099f0d79ea8a3bb583fbdf4b5bd40efa971f6bf4cfcbda4",
+        "digest": "sha256:7500d757c2ce27c4e5297cfcc7dadeec8ca84ab92a08fda2acddb7cc05133d60",
         "instrument_digests": {
           "streamsim/mag-flow-meter@1": "sha256:e233724c219cba8709bd042ccfad87bb053391d8d5854cbd638716a7dd5a6e3a",
           "streamsim/power-meter@1": "sha256:d2d2e745c5cb4e16a75a348c0ca43869c215400e56e9ef30743c9c4bdc941c81",
@@ -1706,7 +1708,7 @@
       "area": "Chiller hall",
       "provenance": {
         "component": "streamsim/chiller",
-        "digest": "sha256:52df731ac4bc3f9c1099f0d79ea8a3bb583fbdf4b5bd40efa971f6bf4cfcbda4",
+        "digest": "sha256:7500d757c2ce27c4e5297cfcc7dadeec8ca84ab92a08fda2acddb7cc05133d60",
         "instrument_digests": {
           "streamsim/power-meter@1": "sha256:d2d2e745c5cb4e16a75a348c0ca43869c215400e56e9ef30743c9c4bdc941c81",
           "streamsim/rtd@1": "sha256:bceb694b0f3a120a3889afe298ebe5580e6e287af8e8a22e7b982b5eb41f084c"
@@ -1728,7 +1730,7 @@
       "area": "Office block",
       "provenance": {
         "component": "streamsim/ahu",
-        "digest": "sha256:b5d34de8bdef4f71178a3589db93e4b3a5e581bebe882c7feeec8190bb71fd0d",
+        "digest": "sha256:05714201b9cdfbd161e8ec6a4ad18ce3ed6d33e5a326e1fa3373b9a6a9118f09",
         "instrument_digests": {
           "streamsim/power-meter@1": "sha256:d2d2e745c5cb4e16a75a348c0ca43869c215400e56e9ef30743c9c4bdc941c81",
           "streamsim/rtd@1": "sha256:bceb694b0f3a120a3889afe298ebe5580e6e287af8e8a22e7b982b5eb41f084c"

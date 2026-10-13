@@ -56,7 +56,7 @@ The closed set, with the arguments the run records (`internal/run`):
 | `op` | `args` |
 |---|---|
 | `clock.advance` | `to_ns` |
-| `fault.inject` | `entity_id`, `fault`, `onset_ns`, `params` (object or null) |
+| `fault.inject` | `entity_id`, `fault`, `onset_ns`, `params` (object or null). An `onset_ns` before the world clock is refused (`ErrFaultOnsetInPast`) once the clock has moved past the start, because readings already emitted cannot be rewritten; before the first advance an earlier onset means a fault already under way (a pre-degraded start) |
 | `fault.clear` | `fault_id`, `at_ns` |
 | `perturb.apply` | `perturbation`, `params` (object or null), `from_ns`, `until_ns` |
 | `perturb.clear` | `perturb_id` |

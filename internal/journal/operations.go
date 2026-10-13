@@ -25,6 +25,10 @@ func (j *Journal) Observation(atNS int64, line string) {
 	j.impl.Observation(atNS, line)
 }
 
+func (j *Journal) Framing(atNS int64, kind, line string) {
+	j.impl.Framing(atNS, kind, line)
+}
+
 func (j *Journal) Malformed(atNS int64, line string) {
 	j.impl.Malformed(atNS, line)
 }
@@ -59,6 +63,10 @@ func (j *Journal) Delivery(atNS int64, row model.LedgerRecord) {
 
 func (j *Journal) State(atNS int64, snapshot model.StateSnapshot) {
 	j.impl.State(atNS, snapshot)
+}
+
+func (j *Journal) KPITruth(atNS int64, truth *model.KPITruth) {
+	j.impl.KPITruth(atNS, truth)
 }
 
 func (j *Journal) Outcome(atNS int64, call Call, result any, refusal string) {

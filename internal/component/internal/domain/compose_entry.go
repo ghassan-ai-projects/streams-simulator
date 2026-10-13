@@ -151,7 +151,7 @@ func (b *entryBuild) instrumentRecords() (map[string]any, map[string]any) {
 
 func (b *entryBuild) kindDocument() map[string]any {
 	kind := map[string]any{"name": b.name, "channels": b.channels, "faults": b.allFaults()}
-	for _, section := range []string{"system", "dynamics", "flows", "effectors", "boundaries"} {
+	for _, section := range []string{"system", "dynamics", "flows", "effectors", "boundaries", "kpis"} {
 		if value, present := b.ws.kind[section]; present {
 			kind[section] = value
 		}

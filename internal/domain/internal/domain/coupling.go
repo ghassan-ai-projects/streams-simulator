@@ -3,6 +3,7 @@ package domain
 import (
 	"fmt"
 	"slices"
+	"strconv"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
@@ -36,10 +37,23 @@ func (checks domainChecks) dynamicFollow(d *model.Dynamics) error {
 	if d.F1 != nil && slices.Contains(unfollowableForms, d.F1.Form) {
 		return checks.bad("/follow", "state %q keeps its own %s form and cannot follow linked instances", d.Target, d.F1.Form)
 	}
-	if err := checks.linkRead(d.Follow.Link, d.Follow.State, "/follow/link", "/follow/state"); err != nil {
+	for i, source := range d.Follow.Sources {
+		if err := checks.followSource(d.Follow, i, source); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (checks domainChecks) followSource(f *model.Follow, index int, source model.FollowSource) error {
+	at := "/follow/sources/" + strconv.Itoa(index)
+	if slices.ContainsFunc(f.Sources[:index], func(earlier model.FollowSource) bool { return earlier.Link == source.Link }) {
+		return checks.bad(at+"/link", "link type %q is named by two sources of one follow", source.Link)
+	}
+	if err := checks.linkRead(source.Link, source.State, at+"/link", at+"/state"); err != nil {
 		return err
 	}
-	return checks.sampledRead(d.Follow.Link, d.Follow.SampleS, "/follow/sample_s")
+	return checks.sampledRead(source.Link, f.SampleS, "/follow/sample_s")
 }
 
 func (checks domainChecks) linkRead(linkType, state, typeMember, stateMember string) error {

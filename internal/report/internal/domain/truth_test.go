@@ -22,8 +22,8 @@ func TestTruthListsEachKindOfCommandInOrder(t *testing.T) {
 		command(t, 4, model.OpEnvInject, map[string]any{"target": "t", "fault": "kill"}),
 		command(t, 5, model.OpClockAdvance, map[string]any{"to_ns": 9}),
 	}
-	truth := truthOf(commands, nil)
-	if len(truth.Faults) != 2 || truth.Faults[1].Action != "clear" || truth.Faults[1].FaultID != "f-1" ||
+	truth, err := truthOf(commands, nil)
+	if err != nil || truth.KPIs != nil || len(truth.Faults) != 2 || truth.Faults[1].Action != "clear" || truth.Faults[1].FaultID != "f-1" ||
 		len(truth.Perturbations) != 2 || truth.Perturbations[0].Params["rate"] != 0.5 ||
 		len(truth.Environment) != 1 || len(truth.EffectorCalls) != 0 {
 		t.Fatalf("truth = %+v, want 2 faults, 2 perturbations, 1 environment and no calls", truth)

@@ -33,9 +33,15 @@ const (
 )
 
 const (
+	FramingPreamble  = layer.FramingPreamble
+	FramingPostamble = layer.FramingPostamble
+)
+
+const (
 	TypeRunOpened       = layer.TypeRunOpened
 	TypeObservation     = layer.TypeObservation
 	TypeClockAdvanced   = layer.TypeClockAdvanced
 	TypeCommand         = layer.TypeCommand
 	TypeEffectorOutcome = layer.TypeEffectorOutcome
+	TypeKPITruth        = layer.TypeKPITruth
 )

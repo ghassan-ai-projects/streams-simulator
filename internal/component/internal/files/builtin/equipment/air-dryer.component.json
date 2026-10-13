@@ -366,6 +366,9 @@
         }
       }
     ],
+    "kpis": [
+      "regen_duty"
+    ],
     "flows": [
       {
         "name": "bed_regeneration",

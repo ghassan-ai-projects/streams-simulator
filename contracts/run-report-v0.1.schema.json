@@ -79,6 +79,8 @@
         "dropped_by_reason": {"$ref": "#/$defs/reason_counts"}
       }
     },
+    "truth_unavailable": {"type": "string", "minLength": 1, "description": "Present when a file of the folder belongs to another run than the journals: the reason, and the truth object is absent."},
+    "torn_tail": {"type": "array", "minItems": 1, "items": {"enum": ["journal.jsonl", "sealed/journal.jsonl", "ledger.jsonl"]}, "description": "Files whose last line was cut short, as by a crash, and was dropped."},
     "truth": {
       "type": "object",
       "additionalProperties": false,
@@ -160,6 +162,17 @@
                 }
               }
             }
+          }
+        },
+        "kpis": {
+          "type": "object",
+          "description": "The run's KPI truth from its sealed journal (domain-spec v0.2 section 29): the true mean, minimum and maximum of every KPI state, and the ISA-18.2 KPIs of every alarm state and of the alarm system.",
+          "required": ["from_ns", "to_ns", "entities", "alarm_system"],
+          "properties": {
+            "from_ns": {"type": "integer"},
+            "to_ns": {"type": "integer"},
+            "entities": {"type": "array", "items": {"type": "object", "required": ["entity_id"]}},
+            "alarm_system": {"type": "object", "required": ["activations", "peak_per_10_min", "flood_intervals", "chattering", "stale", "standing_at_end"]}
           }
         }
       }

@@ -10,14 +10,16 @@ import (
 const SchemaVersion = "0.1"
 
 type Report struct {
-	SchemaVersion string       `json:"schema_version"`
-	Run           Run          `json:"run"`
-	Digests       *Digests     `json:"digests,omitempty"`
-	Verification  Verification `json:"verification"`
-	Counts        Counts       `json:"counts"`
-	Truth         *Truth       `json:"truth,omitempty"`
-	Consumer      *Consumer    `json:"consumer,omitempty"`
-	Scoring       *Scoring     `json:"scoring,omitempty"`
+	SchemaVersion    string       `json:"schema_version"`
+	Run              Run          `json:"run"`
+	Digests          *Digests     `json:"digests,omitempty"`
+	Verification     Verification `json:"verification"`
+	Counts           Counts       `json:"counts"`
+	Truth            *Truth       `json:"truth,omitempty"`
+	TruthUnavailable string       `json:"truth_unavailable,omitempty"`
+	TornTail         []string     `json:"torn_tail,omitempty"`
+	Consumer         *Consumer    `json:"consumer,omitempty"`
+	Scoring          *Scoring     `json:"scoring,omitempty"`
 }
 
 type Run struct {
@@ -70,10 +72,11 @@ type Counts struct {
 }
 
 type Truth struct {
-	Faults        []Fault        `json:"faults"`
-	Perturbations []Perturbation `json:"perturbations"`
-	Environment   []Environment  `json:"environment"`
-	EffectorCalls []EffectorCall `json:"effector_calls"`
+	Faults        []Fault         `json:"faults"`
+	Perturbations []Perturbation  `json:"perturbations"`
+	Environment   []Environment   `json:"environment"`
+	EffectorCalls []EffectorCall  `json:"effector_calls"`
+	KPIs          *model.KPITruth `json:"kpis,omitempty"`
 }
 
 type Fault struct {
@@ -155,6 +158,7 @@ type Document struct {
 }
 
 type Folder struct {
+	Mismatch string
 	Artifact *model.RunArtifact
 	Verdict  *model.Verdict
 	Trace    Document

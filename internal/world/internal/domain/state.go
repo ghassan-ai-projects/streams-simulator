@@ -12,17 +12,24 @@ func (w *World) stateAt(entity, state string, t int64) float64 {
 	if ent == nil {
 		return 0
 	}
-	value := w.naturalValue(ent, state, t)
-	value, lastKick, anyKick := w.applyStateKicks(value, entity, state, t)
-	lastFault, anyFault := w.latestStateFault(entity, state, t)
-	if anyFault && (!anyKick || lastFault > lastKick) {
+	return w.stateOf(ent, state, t)
+}
 
-		value = w.applyStateFaults(w.naturalValue(ent, state, t), entity, state, t)
+func (w *World) stateOf(ent *Entity, state string, t int64) float64 {
+	s := ent.states[state]
+	value := w.naturalOf(ent, state, s, t)
+	value, lastKick, anyKick := w.applyStateKicks(value, ent.ID, state, t)
+	lastFault, anyFault := w.latestStateFault(ent.ID, state, t)
+	if anyFault && (!anyKick || lastFault > lastKick) {
+		value = w.applyStateFaults(w.naturalOf(ent, state, s, t), ent.ID, state, t)
 	}
-	return w.clampState(ent, state, value)
+	return s.clamp(value)
 }
 
 func (w *World) applyStateKicks(v float64, entity, state string, t int64) (float64, int64, bool) {
+	if len(w.kicks) == 0 {
+		return v, 0, false
+	}
 	kicks := w.kicks[driverKey{entity: entity, state: state}]
 	drivers := latestKickDrivers(kicks, t)
 	return drivenValue(v, kicks, t, t), drivers.last, drivers.any
@@ -44,10 +51,14 @@ func (w *World) shadowValue(entity, state string, t int64) float64 {
 }
 
 func (w *World) clampState(ent *Entity, state string, v float64) float64 {
-	if st := ent.kind.StateDecl(state); st != nil {
-		return clampToBounds(v, st.Min, st.Max)
+	return ent.states[state].clamp(v)
+}
+
+func (s *stateValue) clamp(v float64) float64 {
+	if s == nil {
+		return v
 	}
-	return v
+	return clampToBounds(v, s.decl.Min, s.decl.Max)
 }
 
 func clampToBounds(v float64, lower, upper *float64) float64 {
