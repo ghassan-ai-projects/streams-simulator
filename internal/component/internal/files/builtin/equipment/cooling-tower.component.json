@@ -1,0 +1,685 @@
+{
+  "schema_version": "0.1",
+  "id": "streamsim/cooling-tower",
+  "version": 1,
+  "title": "Cooling tower",
+  "description": "Evaporative cooling tower. The basin temperature follows the wet-bulb temperature plus an approach that rises with heat load and falls with fan speed; fan power follows the cube of the speed.",
+  "class": "static/heat_exchanger/cooling_tower",
+  "tags": [
+    "hvac",
+    "utilities",
+    "condenser-water"
+  ],
+  "icon": "cooling-tower",
+  "kind": {
+    "state": [
+      {
+        "name": "fan_speed",
+        "unit": "ratio",
+        "initial": 0.6,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "fan_health",
+        "unit": "ratio",
+        "initial": 1,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "fan_trim",
+        "unit": "ratio",
+        "initial": 1,
+        "min": 0
+      },
+      {
+        "name": "heat_in",
+        "unit": "kW",
+        "initial": 420,
+        "min": 0
+      },
+      {
+        "name": "wet_bulb_in",
+        "unit": "degC",
+        "initial": 17.8787
+      },
+      {
+        "name": "water_flow",
+        "unit": "m3/h",
+        "initial": 211,
+        "min": 0
+      },
+      {
+        "name": "fan_eff",
+        "unit": "ratio",
+        "initial": 0.6,
+        "min": 0
+      },
+      {
+        "name": "fan_cube",
+        "unit": "ratio",
+        "initial": 0.24376,
+        "min": 0
+      },
+      {
+        "name": "fan_power",
+        "unit": "kW",
+        "initial": 4.50956,
+        "min": 0
+      },
+      {
+        "name": "load_frac",
+        "unit": "ratio",
+        "initial": 0.311111,
+        "min": 0
+      },
+      {
+        "name": "flow_ratio",
+        "unit": "ratio",
+        "initial": 1,
+        "min": 0
+      },
+      {
+        "name": "range_k",
+        "unit": "degC",
+        "initial": 1.71111,
+        "min": 0
+      },
+      {
+        "name": "approach",
+        "unit": "degC",
+        "initial": 4.07084,
+        "min": 0
+      },
+      {
+        "name": "basin_temp",
+        "unit": "degC",
+        "initial": 21.9495
+      },
+      {
+        "name": "hot_water_temp",
+        "unit": "degC",
+        "initial": 23.6606
+      }
+    ],
+    "dynamics": [
+      {
+        "target": "heat_in",
+        "tier": "F0",
+        "f0": {
+          "baseline": 750,
+          "drift_per_hour": 0,
+          "seasonality": [
+            {
+              "amplitude": 330,
+              "period_s": 86400,
+              "phase_rad": -1.5708
+            }
+          ]
+        }
+      },
+      {
+        "target": "wet_bulb_in",
+        "tier": "F0",
+        "f0": {
+          "baseline": 20,
+          "drift_per_hour": 0,
+          "seasonality": [
+            {
+              "amplitude": 3,
+              "period_s": 86400,
+              "phase_rad": -2.35619
+            }
+          ]
+        }
+      },
+      {
+        "target": "water_flow",
+        "tier": "F0",
+        "f0": {
+          "baseline": 211,
+          "drift_per_hour": 0,
+          "seasonality": []
+        }
+      },
+      {
+        "target": "fan_eff",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "fan_speed",
+              "coef": 1
+            },
+            {
+              "state": "fan_health",
+              "coef": 1
+            },
+            {
+              "state": "fan_trim",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "fan_cube",
+        "tier": "F1",
+        "f1": {
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "fan_eff",
+              "coef": 1
+            }
+          ],
+          "table": {
+            "x": [
+              0,
+              0.25,
+              0.5,
+              0.75,
+              1,
+              1.1
+            ],
+            "values": [
+              0,
+              0.0156,
+              0.125,
+              0.4219,
+              1,
+              1.331
+            ]
+          }
+        }
+      },
+      {
+        "target": "fan_power",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "fan_cube",
+              "coef": 18.5
+            }
+          ]
+        }
+      },
+      {
+        "target": "load_frac",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "heat_in",
+              "coef": 0.000740741
+            }
+          ]
+        }
+      },
+      {
+        "target": "flow_ratio",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "water_flow",
+              "coef": 0.00473934
+            }
+          ]
+        }
+      },
+      {
+        "target": "range_k",
+        "tier": "F1",
+        "f1": {
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "load_frac",
+              "coef": 1
+            },
+            {
+              "state": "flow_ratio",
+              "coef": 1
+            }
+          ],
+          "table": {
+            "x": [
+              0,
+              1.5
+            ],
+            "y": [
+              0.5,
+              0.75,
+              1,
+              1.25,
+              1.5
+            ],
+            "grid": [
+              [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              [
+                16.5,
+                11,
+                8.25,
+                6.6,
+                5.5
+              ]
+            ]
+          }
+        }
+      },
+      {
+        "target": "approach",
+        "tier": "F1",
+        "f1": {
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "load_frac",
+              "coef": 1
+            },
+            {
+              "state": "fan_eff",
+              "coef": 1
+            }
+          ],
+          "table": {
+            "x": [
+              0,
+              0.25,
+              0.5,
+              0.75,
+              1,
+              1.3
+            ],
+            "y": [
+              0,
+              0.25,
+              0.5,
+              0.75,
+              1,
+              1.1
+            ],
+            "grid": [
+              [
+                14.708,
+                5.8311,
+                3.5052,
+                2.5044,
+                1.95,
+                1.7919
+              ],
+              [
+                18.385,
+                7.2888,
+                4.3815,
+                3.1305,
+                2.4375,
+                2.2399
+              ],
+              [
+                22.062,
+                8.7466,
+                5.2578,
+                3.7566,
+                2.925,
+                2.6879
+              ],
+              [
+                25.74,
+                10.204,
+                6.1341,
+                4.3827,
+                3.4125,
+                3.1358
+              ],
+              [
+                29.417,
+                11.662,
+                7.0104,
+                5.0088,
+                3.9,
+                3.5838
+              ],
+              [
+                33.829,
+                13.411,
+                8.062,
+                5.7601,
+                4.485,
+                4.1214
+              ]
+            ]
+          }
+        }
+      },
+      {
+        "target": "basin_temp",
+        "tier": "F1",
+        "dt_ms": 5000,
+        "f1": {
+          "form": "first_order_lag",
+          "time_constant_s": 240,
+          "gain": 1,
+          "inputs": [
+            {
+              "state": "wet_bulb_in",
+              "coef": 1
+            },
+            {
+              "state": "approach",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "hot_water_temp",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "basin_temp",
+              "coef": 1
+            },
+            {
+              "state": "range_k",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "fan_trim",
+        "tier": "F1",
+        "f1": {
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "load_frac",
+              "coef": 1
+            }
+          ],
+          "table": {
+            "x": [
+              0,
+              0.2,
+              0.311111,
+              0.5,
+              0.8,
+              1.2
+            ],
+            "values": [
+              0.8,
+              0.93,
+              1.0,
+              1.1,
+              1.22,
+              1.3
+            ]
+          }
+        }
+      }
+    ],
+    "faults": [
+      {
+        "id": "fan_failure",
+        "affects": [
+          {
+            "state": "fan_health",
+            "delta": -0.9
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "basin_temp"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "rate_per_hour": 1.0,
+          "shape": "ramp"
+        }
+      },
+      {
+        "id": "fill_fouling",
+        "affects": [
+          {
+            "state": "approach",
+            "delta": 0.35,
+            "multiplicative": true
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "basin_temp"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "rate_per_hour": 0.1,
+          "shape": "ramp"
+        }
+      },
+      {
+        "id": "humid_spell",
+        "affects": [
+          {
+            "state": "wet_bulb_in",
+            "delta": 3.5
+          }
+        ],
+        "is_negative_class": true,
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "basin_temp"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "shape": "pulse",
+          "duration_s": 10800
+        }
+      }
+    ],
+    "effectors": [
+      {
+        "name": "set_fan_speed",
+        "risk_class": "medium",
+        "idempotency_window_s": 3600,
+        "ack": {
+          "failure_modes": [
+            {
+              "mode": "ok",
+              "probability": 0.97
+            },
+            {
+              "mode": "slow",
+              "probability": 0.02
+            },
+            {
+              "mode": "ack_lost",
+              "probability": 0.01
+            }
+          ],
+          "latency_ms": {
+            "mean": 300,
+            "sigma": 50
+          }
+        },
+        "confirmation_channels": [
+          "fan_power"
+        ],
+        "args_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "tower_id",
+            "speed"
+          ],
+          "properties": {
+            "tower_id": {
+              "type": "string"
+            },
+            "speed": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        },
+        "effect": {
+          "dead_time_s": 0,
+          "time_constant_s": 20,
+          "state_deltas": [
+            {
+              "state": "fan_speed",
+              "assign_from_arg": "speed"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "measurement_points": [
+    {
+      "name": "basin_temp",
+      "state": "basin_temp",
+      "unit_family": "temperature",
+      "range": {
+        "min": 0,
+        "max": 50
+      },
+      "tag": "TT",
+      "default_instrument": "streamsim/rtd@1"
+    },
+    {
+      "name": "fan_power",
+      "state": "fan_power",
+      "unit_family": "power",
+      "range": {
+        "min": 0,
+        "max": 27.75
+      },
+      "tag": "JT",
+      "default_instrument": "streamsim/power-meter@1"
+    },
+    {
+      "name": "hot_water_temp",
+      "state": "hot_water_temp",
+      "unit_family": "temperature",
+      "range": {
+        "min": 0,
+        "max": 60
+      },
+      "tag": "TT",
+      "default_instrument": "streamsim/rtd@1",
+      "optional": true
+    }
+  ],
+  "ports": [
+    {
+      "name": "heat_in",
+      "type": "heat_rejection",
+      "direction": "consumes",
+      "state": "heat_in"
+    },
+    {
+      "name": "wet_bulb_in",
+      "type": "wet_bulb_temp",
+      "direction": "consumes",
+      "state": "wet_bulb_in"
+    },
+    {
+      "name": "cw_flow_in",
+      "type": "condenser_water",
+      "direction": "consumes",
+      "state": "water_flow"
+    },
+    {
+      "name": "basin_out",
+      "type": "cooling_water_temp",
+      "direction": "provides",
+      "state": "basin_temp"
+    }
+  ],
+  "default_preset": "medium",
+  "presets": {
+    "small": {
+      "title": "Small (about 450 kW rejection)",
+      "values": {
+        "dynamics/fan_power/f1/inputs/fan_cube/coef": 5.5,
+        "dynamics/flow_ratio/f1/inputs/water_flow/coef": 0.0142857,
+        "dynamics/heat_in/f0/baseline": 250,
+        "dynamics/heat_in/f0/seasonality/0/amplitude": 110,
+        "dynamics/load_frac/f1/inputs/heat_in/coef": 0.00222222,
+        "dynamics/water_flow/f0/baseline": 70,
+        "measurement_points/fan_power/range/max": 8.25,
+        "state/fan_power/initial": 1.34068,
+        "state/flow_ratio/initial": 0.999999,
+        "state/heat_in/initial": 140,
+        "state/water_flow/initial": 70
+      }
+    },
+    "medium": {
+      "title": "Medium (about 1350 kW rejection)",
+      "values": {}
+    },
+    "large": {
+      "title": "Large (about 3600 kW rejection)",
+      "values": {
+        "dynamics/fan_power/f1/inputs/fan_cube/coef": 55,
+        "dynamics/flow_ratio/f1/inputs/water_flow/coef": 0.0017762,
+        "dynamics/heat_in/f0/baseline": 2000,
+        "dynamics/heat_in/f0/seasonality/0/amplitude": 900,
+        "dynamics/load_frac/f1/inputs/heat_in/coef": 0.000277778,
+        "dynamics/water_flow/f0/baseline": 563,
+        "measurement_points/fan_power/range/max": 82.5,
+        "state/approach/initial": 4.05359,
+        "state/basin_temp/initial": 21.9323,
+        "state/fan_power/initial": 13.4068,
+        "state/heat_in/initial": 1100,
+        "state/hot_water_temp/initial": 23.6128,
+        "state/load_frac/initial": 0.305556,
+        "state/range_k/initial": 1.68056,
+        "state/water_flow/initial": 563
+      }
+    }
+  },
+  "parameters": [
+    {
+      "name": "fan_speed",
+      "title": "Fan speed",
+      "unit": "ratio",
+      "type": "number",
+      "min": 0.2,
+      "max": 1.0,
+      "default": 0.6,
+      "targets": [
+        "state/fan_speed/initial"
+      ]
+    }
+  ]
+}

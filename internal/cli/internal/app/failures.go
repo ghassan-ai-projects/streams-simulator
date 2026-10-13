@@ -16,7 +16,10 @@ const (
 	codeAdapterInvalid      failureCode = "adapter_invalid"
 	codeArtifactInvalid     failureCode = "artifact_invalid"
 	codeScenarioInvalid     failureCode = "scenario_invalid"
+	codeComponentInvalid    failureCode = "component_invalid"
+	codeCompositionInvalid  failureCode = "composition_invalid"
 	codeReplayMismatch      failureCode = "replay_mismatch"
+	codeDomainLint          failureCode = "domain_lint"
 	codeAdapterVerifyFailed failureCode = "adapter_verify_failed"
 	codeIOFailed            failureCode = "io_failed"
 )
@@ -41,7 +44,7 @@ func usagef(format string, args ...any) error {
 type outcomeError struct {
 	code    failureCode
 	message string
-	result  map[string]any
+	result  any
 }
 
 func (e *outcomeError) Error() string { return e.message }

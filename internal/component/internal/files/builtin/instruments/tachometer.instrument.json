@@ -1,0 +1,50 @@
+{
+  "schema_version": "0.1",
+  "id": "streamsim/tachometer",
+  "version": 1,
+  "title": "Shaft speed transmitter",
+  "description": "Proximity or encoder based speed transmitter reporting shaft or pulley speed in rpm.",
+  "tag": "ST",
+  "unit_family": "speed",
+  "unit": "rpm",
+  "channel": {
+    "value_type": "number",
+    "resolution": 0.1,
+    "fidelity": "F1",
+    "absence": "signal",
+    "cadence": {
+      "mode": "periodic",
+      "period_s": 5
+    },
+    "noise": {
+      "model": "gaussian",
+      "sigma": 0.001
+    },
+    "availability": {
+      "uptime": 0.999,
+      "mttr_s": 600
+    }
+  },
+  "faults": [
+    {
+      "id": "offset",
+      "form": "offset",
+      "magnitude": 0.02
+    },
+    {
+      "id": "stuck",
+      "form": "stuck",
+      "stuck_at": "low"
+    },
+    {
+      "id": "pulses_per_rev",
+      "form": "scale",
+      "factor": 1.05
+    },
+    {
+      "id": "dropout",
+      "form": "dropout"
+    }
+  ],
+  "scaling": "span"
+}

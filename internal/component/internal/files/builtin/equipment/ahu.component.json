@@ -1,0 +1,840 @@
+{
+  "schema_version": "0.1",
+  "id": "streamsim/ahu",
+  "version": 1,
+  "title": "Air-handling unit",
+  "description": "Air-handling unit with a chilled-water coil. Its cooling load is the occupancy-driven internal gain, the outdoor-air load and a constant envelope gain; the coil cannot hold the supply-air setpoint when the chilled water is too warm.",
+  "class": "rotating/fan/air_handling_unit",
+  "tags": [
+    "hvac",
+    "utilities"
+  ],
+  "icon": "ahu",
+  "kind": {
+    "state": [
+      {
+        "name": "occupancy",
+        "unit": "ratio",
+        "initial": 0.05,
+        "min": 0
+      },
+      {
+        "name": "outdoor_temp",
+        "unit": "degC",
+        "initial": 23.7573
+      },
+      {
+        "name": "chw_supply_in",
+        "unit": "degC",
+        "initial": 7
+      },
+      {
+        "name": "supply_air_sp",
+        "unit": "degC",
+        "initial": 13,
+        "min": 10,
+        "max": 18
+      },
+      {
+        "name": "envelope_gain",
+        "unit": "kW",
+        "initial": 30,
+        "min": 0
+      },
+      {
+        "name": "occ_gain",
+        "unit": "kW",
+        "initial": 3,
+        "min": 0
+      },
+      {
+        "name": "outdoor_factor",
+        "unit": "ratio",
+        "initial": 0.33908,
+        "min": 0
+      },
+      {
+        "name": "outdoor_load",
+        "unit": "kW",
+        "initial": 30.5172,
+        "min": 0
+      },
+      {
+        "name": "cooling_load",
+        "unit": "kW",
+        "initial": 63.5172,
+        "min": 0
+      },
+      {
+        "name": "coil_margin",
+        "unit": "degC",
+        "initial": 6
+      },
+      {
+        "name": "shortfall",
+        "unit": "degC",
+        "initial": 0,
+        "min": 0
+      },
+      {
+        "name": "supply_air",
+        "unit": "degC",
+        "initial": 13
+      },
+      {
+        "name": "humidity_base",
+        "unit": "%RH",
+        "initial": 40,
+        "min": 0,
+        "max": 100
+      },
+      {
+        "name": "return_humidity",
+        "unit": "%RH",
+        "initial": 40.3,
+        "min": 0,
+        "max": 100
+      },
+      {
+        "name": "supply_humidity",
+        "unit": "%RH",
+        "initial": 78,
+        "min": 0,
+        "max": 100
+      }
+    ],
+    "dynamics": [
+      {
+        "target": "occupancy",
+        "tier": "F0",
+        "f0": {
+          "baseline": 0,
+          "drift_per_hour": 0,
+          "seasonality": [],
+          "schedule": {
+            "period_s": 604800,
+            "utc_offset_s": 0,
+            "interpolation": "linear",
+            "points": [
+              {
+                "at_s": 0,
+                "value": 0.05
+              },
+              {
+                "at_s": 23400,
+                "value": 0.05
+              },
+              {
+                "at_s": 28800,
+                "value": 0.85
+              },
+              {
+                "at_s": 43200,
+                "value": 1
+              },
+              {
+                "at_s": 46800,
+                "value": 0.8
+              },
+              {
+                "at_s": 61200,
+                "value": 0.85
+              },
+              {
+                "at_s": 68400,
+                "value": 0.1
+              },
+              {
+                "at_s": 86400,
+                "value": 0.05
+              },
+              {
+                "at_s": 109800,
+                "value": 0.05
+              },
+              {
+                "at_s": 115200,
+                "value": 0.85
+              },
+              {
+                "at_s": 129600,
+                "value": 1
+              },
+              {
+                "at_s": 133200,
+                "value": 0.8
+              },
+              {
+                "at_s": 147600,
+                "value": 0.85
+              },
+              {
+                "at_s": 154800,
+                "value": 0.1
+              },
+              {
+                "at_s": 172800,
+                "value": 0.05
+              },
+              {
+                "at_s": 196200,
+                "value": 0.05
+              },
+              {
+                "at_s": 201600,
+                "value": 0.05
+              },
+              {
+                "at_s": 216000,
+                "value": 0.05
+              },
+              {
+                "at_s": 219600,
+                "value": 0.05
+              },
+              {
+                "at_s": 234000,
+                "value": 0.05
+              },
+              {
+                "at_s": 241200,
+                "value": 0.05
+              },
+              {
+                "at_s": 259200,
+                "value": 0.05
+              },
+              {
+                "at_s": 282600,
+                "value": 0.05
+              },
+              {
+                "at_s": 288000,
+                "value": 0.05
+              },
+              {
+                "at_s": 302400,
+                "value": 0.05
+              },
+              {
+                "at_s": 306000,
+                "value": 0.05
+              },
+              {
+                "at_s": 320400,
+                "value": 0.05
+              },
+              {
+                "at_s": 327600,
+                "value": 0.05
+              },
+              {
+                "at_s": 345600,
+                "value": 0.05
+              },
+              {
+                "at_s": 369000,
+                "value": 0.05
+              },
+              {
+                "at_s": 374400,
+                "value": 0.85
+              },
+              {
+                "at_s": 388800,
+                "value": 1
+              },
+              {
+                "at_s": 392400,
+                "value": 0.8
+              },
+              {
+                "at_s": 406800,
+                "value": 0.85
+              },
+              {
+                "at_s": 414000,
+                "value": 0.1
+              },
+              {
+                "at_s": 432000,
+                "value": 0.05
+              },
+              {
+                "at_s": 455400,
+                "value": 0.05
+              },
+              {
+                "at_s": 460800,
+                "value": 0.85
+              },
+              {
+                "at_s": 475200,
+                "value": 1
+              },
+              {
+                "at_s": 478800,
+                "value": 0.8
+              },
+              {
+                "at_s": 493200,
+                "value": 0.85
+              },
+              {
+                "at_s": 500400,
+                "value": 0.1
+              },
+              {
+                "at_s": 518400,
+                "value": 0.05
+              },
+              {
+                "at_s": 541800,
+                "value": 0.05
+              },
+              {
+                "at_s": 547200,
+                "value": 0.85
+              },
+              {
+                "at_s": 561600,
+                "value": 1
+              },
+              {
+                "at_s": 565200,
+                "value": 0.8
+              },
+              {
+                "at_s": 579600,
+                "value": 0.85
+              },
+              {
+                "at_s": 586800,
+                "value": 0.1
+              }
+            ]
+          }
+        }
+      },
+      {
+        "target": "outdoor_temp",
+        "tier": "F0",
+        "f0": {
+          "baseline": 28,
+          "drift_per_hour": 0,
+          "seasonality": [
+            {
+              "amplitude": 6,
+              "period_s": 86400,
+              "phase_rad": -2.35619
+            }
+          ]
+        }
+      },
+      {
+        "target": "chw_supply_in",
+        "tier": "F0",
+        "f0": {
+          "baseline": 7,
+          "drift_per_hour": 0,
+          "seasonality": []
+        }
+      },
+      {
+        "target": "envelope_gain",
+        "tier": "F0",
+        "f0": {
+          "baseline": 30,
+          "drift_per_hour": 0,
+          "seasonality": []
+        }
+      },
+      {
+        "target": "occ_gain",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "occupancy",
+              "coef": 60
+            }
+          ]
+        }
+      },
+      {
+        "target": "outdoor_factor",
+        "tier": "F1",
+        "f1": {
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "outdoor_temp",
+              "coef": 1
+            }
+          ],
+          "table": {
+            "x": [
+              12,
+              18,
+              24,
+              30,
+              36,
+              42
+            ],
+            "values": [
+              0,
+              0.08,
+              0.35,
+              0.7,
+              1,
+              1.25
+            ]
+          }
+        }
+      },
+      {
+        "target": "outdoor_load",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "outdoor_factor",
+              "coef": 90
+            }
+          ]
+        }
+      },
+      {
+        "target": "cooling_load",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "occ_gain",
+              "coef": 1
+            },
+            {
+              "state": "outdoor_load",
+              "coef": 1
+            },
+            {
+              "state": "envelope_gain",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "coil_margin",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "supply_air_sp",
+              "coef": 1
+            },
+            {
+              "state": "chw_supply_in",
+              "coef": -1
+            }
+          ]
+        }
+      },
+      {
+        "target": "shortfall",
+        "tier": "F1",
+        "f1": {
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "coil_margin",
+              "coef": 1
+            }
+          ],
+          "table": {
+            "x": [
+              -5,
+              3,
+              30
+            ],
+            "values": [
+              8,
+              0,
+              0
+            ]
+          }
+        }
+      },
+      {
+        "target": "supply_air",
+        "tier": "F1",
+        "dt_ms": 5000,
+        "f1": {
+          "form": "first_order_lag",
+          "time_constant_s": 120,
+          "gain": 1,
+          "inputs": [
+            {
+              "state": "supply_air_sp",
+              "coef": 1
+            },
+            {
+              "state": "shortfall",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "humidity_base",
+        "tier": "F0",
+        "f0": {
+          "baseline": 40,
+          "drift_per_hour": 0,
+          "seasonality": []
+        }
+      },
+      {
+        "target": "return_humidity",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "humidity_base",
+              "coef": 1
+            },
+            {
+              "state": "occupancy",
+              "coef": 6
+            }
+          ]
+        }
+      },
+      {
+        "target": "supply_humidity",
+        "tier": "F1",
+        "f1": {
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "supply_air",
+              "coef": 1
+            }
+          ],
+          "table": {
+            "x": [
+              8,
+              10,
+              13,
+              16,
+              20,
+              25
+            ],
+            "values": [
+              92,
+              88,
+              78,
+              70,
+              60,
+              48
+            ]
+          }
+        }
+      }
+    ],
+    "faults": [
+      {
+        "id": "coil_fouling",
+        "affects": [
+          {
+            "state": "supply_air",
+            "delta": 3
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "supply_air_temp"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "rate_per_hour": 0.2,
+          "shape": "ramp"
+        }
+      },
+      {
+        "id": "damper_stuck_open",
+        "affects": [
+          {
+            "state": "outdoor_load",
+            "delta": 0.45,
+            "multiplicative": true
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "cooling_load"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "rate_per_hour": 0.5,
+          "shape": "ramp"
+        }
+      },
+      {
+        "id": "coil_valve_stuck_closed",
+        "affects": [
+          {
+            "state": "supply_air",
+            "delta": 5
+          },
+          {
+            "state": "cooling_load",
+            "delta": -0.6,
+            "multiplicative": true
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "supply_air_temp"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "shape": "step"
+        }
+      },
+      {
+        "id": "afterhours_event",
+        "affects": [
+          {
+            "state": "occupancy",
+            "delta": 0.7
+          }
+        ],
+        "is_negative_class": true,
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "cooling_load"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "duty_cycle": 0.3,
+          "magnitude": 1.0,
+          "rate_per_hour": 2.0,
+          "shape": "intermittent"
+        }
+      }
+    ],
+    "effectors": [
+      {
+        "name": "set_supply_air_setpoint",
+        "risk_class": "medium",
+        "idempotency_window_s": 3600,
+        "ack": {
+          "failure_modes": [
+            {
+              "mode": "ok",
+              "probability": 0.97
+            },
+            {
+              "mode": "slow",
+              "probability": 0.02
+            },
+            {
+              "mode": "ack_lost",
+              "probability": 0.01
+            }
+          ],
+          "latency_ms": {
+            "mean": 300,
+            "sigma": 50
+          }
+        },
+        "confirmation_channels": [
+          "supply_air_temp"
+        ],
+        "args_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "ahu_id",
+            "supply_air_c"
+          ],
+          "properties": {
+            "ahu_id": {
+              "type": "string"
+            },
+            "supply_air_c": {
+              "type": "number",
+              "minimum": 10,
+              "maximum": 18
+            }
+          }
+        },
+        "effect": {
+          "dead_time_s": 0,
+          "time_constant_s": 0,
+          "state_deltas": [
+            {
+              "state": "supply_air_sp",
+              "assign_from_arg": "supply_air_c"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "measurement_points": [
+    {
+      "name": "supply_air_temp",
+      "state": "supply_air",
+      "unit_family": "temperature",
+      "range": {
+        "min": 0,
+        "max": 40
+      },
+      "tag": "TT",
+      "default_instrument": "streamsim/rtd@1"
+    },
+    {
+      "name": "cooling_load",
+      "state": "cooling_load",
+      "unit_family": "power",
+      "range": {
+        "min": 0,
+        "max": 300
+      },
+      "tag": "JT",
+      "default_instrument": "streamsim/power-meter@1"
+    },
+    {
+      "name": "return_humidity",
+      "state": "return_humidity",
+      "unit_family": "humidity",
+      "range": {
+        "min": 0,
+        "max": 100
+      },
+      "tag": "MT",
+      "default_instrument": "streamsim/humidity@1",
+      "optional": true
+    },
+    {
+      "name": "supply_humidity",
+      "state": "supply_humidity",
+      "unit_family": "humidity",
+      "range": {
+        "min": 0,
+        "max": 100
+      },
+      "tag": "MT",
+      "default_instrument": "streamsim/humidity@1",
+      "optional": true
+    }
+  ],
+  "ports": [
+    {
+      "name": "load_out",
+      "type": "thermal_load",
+      "direction": "provides",
+      "state": "cooling_load"
+    },
+    {
+      "name": "chw_in",
+      "type": "temperature",
+      "direction": "consumes",
+      "state": "chw_supply_in"
+    },
+    {
+      "name": "outdoor_in",
+      "type": "dry_bulb_temp",
+      "direction": "consumes",
+      "state": "outdoor_temp"
+    },
+    {
+      "name": "shift_in",
+      "type": "shift",
+      "direction": "consumes",
+      "state": "occupancy"
+    }
+  ],
+  "default_preset": "medium",
+  "presets": {
+    "small": {
+      "title": "Small (about 90 kW peak coil load)",
+      "values": {
+        "dynamics/envelope_gain/f0/baseline": 15,
+        "dynamics/occ_gain/f1/inputs/occupancy/coef": 30,
+        "dynamics/outdoor_load/f1/inputs/outdoor_factor/coef": 45,
+        "measurement_points/cooling_load/range/max": 150,
+        "state/cooling_load/initial": 31.7586,
+        "state/envelope_gain/initial": 15,
+        "state/occ_gain/initial": 1.5,
+        "state/outdoor_load/initial": 15.2586
+      }
+    },
+    "medium": {
+      "title": "Medium (about 180 kW peak coil load)",
+      "values": {}
+    },
+    "large": {
+      "title": "Large (about 450 kW peak coil load)",
+      "values": {
+        "dynamics/envelope_gain/f0/baseline": 75,
+        "dynamics/occ_gain/f1/inputs/occupancy/coef": 150,
+        "dynamics/outdoor_load/f1/inputs/outdoor_factor/coef": 225,
+        "measurement_points/cooling_load/range/max": 750,
+        "state/cooling_load/initial": 158.793,
+        "state/envelope_gain/initial": 75,
+        "state/occ_gain/initial": 7.5,
+        "state/outdoor_load/initial": 76.2931
+      }
+    }
+  },
+  "parameters": [
+    {
+      "name": "supply_air_c",
+      "title": "Supply-air setpoint",
+      "unit": "degC",
+      "type": "number",
+      "min": 10,
+      "max": 18,
+      "default": 13,
+      "targets": [
+        "state/supply_air_sp/initial",
+        "state/supply_air/initial"
+      ]
+    },
+    {
+      "name": "utc_offset_s",
+      "title": "Site offset from UTC",
+      "unit": "s",
+      "type": "number",
+      "min": -50400,
+      "max": 50400,
+      "default": 0,
+      "targets": [
+        "dynamics/occupancy/f0/schedule/utc_offset_s"
+      ]
+    }
+  ]
+}

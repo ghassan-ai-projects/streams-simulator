@@ -1,0 +1,354 @@
+{
+  "schema_version": "0.1",
+  "unit_families": {
+    "temperature": {
+      "base": "degC",
+      "units": {
+        "degC": {
+          "scale": 1
+        },
+        "degF": {
+          "scale": 0.5555555555555556,
+          "offset": -17.77777777777778
+        },
+        "K": {
+          "scale": 1,
+          "offset": -273.15
+        }
+      }
+    },
+    "pressure": {
+      "base": "kPa",
+      "units": {
+        "kPa": {
+          "scale": 1
+        },
+        "bar": {
+          "scale": 100
+        },
+        "psi": {
+          "scale": 6.894757293168361
+        },
+        "Pa": {
+          "scale": 0.001
+        }
+      }
+    },
+    "volumetric_flow": {
+      "base": "m3/h",
+      "units": {
+        "m3/h": {
+          "scale": 1
+        },
+        "L/min": {
+          "scale": 0.06
+        },
+        "L/s": {
+          "scale": 3.6
+        },
+        "gpm": {
+          "scale": 0.2271247
+        }
+      }
+    },
+    "mass_flow": {
+      "base": "kg/s",
+      "units": {
+        "kg/s": {
+          "scale": 1
+        },
+        "kg/h": {
+          "scale": 0.0002777777777777778
+        }
+      }
+    },
+    "power": {
+      "base": "kW",
+      "units": {
+        "kW": {
+          "scale": 1
+        },
+        "W": {
+          "scale": 0.001
+        },
+        "hp": {
+          "scale": 0.7456998715822702
+        },
+        "TR": {
+          "scale": 3.516852842067
+        }
+      }
+    },
+    "energy": {
+      "base": "kWh",
+      "units": {
+        "kWh": {
+          "scale": 1
+        },
+        "MJ": {
+          "scale": 0.2777777777777778
+        }
+      }
+    },
+    "current": {
+      "base": "A",
+      "units": {
+        "A": {
+          "scale": 1
+        }
+      }
+    },
+    "voltage": {
+      "base": "V",
+      "units": {
+        "V": {
+          "scale": 1
+        },
+        "kV": {
+          "scale": 1000
+        }
+      }
+    },
+    "frequency": {
+      "base": "Hz",
+      "units": {
+        "Hz": {
+          "scale": 1
+        }
+      }
+    },
+    "speed": {
+      "base": "rpm",
+      "units": {
+        "rpm": {
+          "scale": 1
+        }
+      }
+    },
+    "fraction": {
+      "base": "%",
+      "units": {
+        "%": {
+          "scale": 1
+        },
+        "ratio": {
+          "scale": 100
+        }
+      }
+    },
+    "level": {
+      "base": "m",
+      "units": {
+        "m": {
+          "scale": 1
+        },
+        "mm": {
+          "scale": 0.001
+        }
+      }
+    },
+    "vibration_velocity": {
+      "base": "mm/s",
+      "units": {
+        "mm/s": {
+          "scale": 1
+        },
+        "in/s": {
+          "scale": 25.4
+        }
+      }
+    },
+    "humidity": {
+      "base": "%RH",
+      "units": {
+        "%RH": {
+          "scale": 1
+        }
+      }
+    },
+    "count": {
+      "base": "count",
+      "units": {
+        "count": {
+          "scale": 1
+        }
+      }
+    },
+    "tariff": {
+      "base": "currency/kWh",
+      "units": {
+        "currency/kWh": {
+          "scale": 1
+        }
+      }
+    },
+    "state": {
+      "base": "on",
+      "units": {
+        "on": {
+          "scale": 1
+        }
+      }
+    },
+    "duration": {
+      "base": "s",
+      "units": {
+        "s": {
+          "scale": 1
+        },
+        "min": {
+          "scale": 60
+        },
+        "h": {
+          "scale": 3600
+        }
+      }
+    },
+    "torque": {
+      "base": "N.m",
+      "units": {
+        "N.m": {
+          "scale": 1
+        },
+        "kN.m": {
+          "scale": 1000
+        }
+      }
+    }
+  },
+  "port_types": {
+    "thermal_load": {
+      "unit_family": "power"
+    },
+    "heat_rejection": {
+      "unit_family": "power"
+    },
+    "temperature": {
+      "unit_family": "temperature"
+    },
+    "cooling_water_temp": {
+      "unit_family": "temperature"
+    },
+    "dry_bulb_temp": {
+      "unit_family": "temperature"
+    },
+    "wet_bulb_temp": {
+      "unit_family": "temperature"
+    },
+    "shift": {
+      "unit_family": "fraction"
+    },
+    "tariff": {
+      "unit_family": "tariff"
+    },
+    "chilled_water": {
+      "unit_family": "volumetric_flow"
+    },
+    "condenser_water": {
+      "unit_family": "volumetric_flow"
+    },
+    "hot_water": {
+      "unit_family": "volumetric_flow"
+    },
+    "steam": {
+      "unit_family": "mass_flow"
+    },
+    "compressed_air": {
+      "unit_family": "volumetric_flow"
+    },
+    "electrical": {
+      "unit_family": "power"
+    },
+    "pressure": {
+      "unit_family": "pressure"
+    },
+    "dew_point": {
+      "unit_family": "temperature"
+    },
+    "liquid_flow": {
+      "unit_family": "volumetric_flow"
+    },
+    "level": {
+      "unit_family": "level"
+    },
+    "load_torque": {
+      "unit_family": "torque"
+    }
+  },
+  "tag_letters": {
+    "TT": {
+      "measures": [
+        "temperature"
+      ]
+    },
+    "PT": {
+      "measures": [
+        "pressure"
+      ]
+    },
+    "FT": {
+      "measures": [
+        "volumetric_flow",
+        "mass_flow"
+      ]
+    },
+    "LT": {
+      "measures": [
+        "level",
+        "fraction"
+      ]
+    },
+    "VT": {
+      "measures": [
+        "vibration_velocity"
+      ]
+    },
+    "IT": {
+      "measures": [
+        "current"
+      ]
+    },
+    "ET": {
+      "measures": [
+        "voltage"
+      ]
+    },
+    "JT": {
+      "measures": [
+        "power",
+        "energy"
+      ]
+    },
+    "ZT": {
+      "measures": [
+        "fraction"
+      ]
+    },
+    "ST": {
+      "measures": [
+        "speed",
+        "frequency"
+      ]
+    },
+    "MT": {
+      "measures": [
+        "humidity"
+      ]
+    },
+    "QT": {
+      "measures": [
+        "count"
+      ]
+    },
+    "YS": {
+      "measures": [
+        "state"
+      ]
+    },
+    "YA": {
+      "measures": [
+        "state"
+      ]
+    }
+  }
+}

@@ -12,10 +12,11 @@ import (
 
 type ServeOptions struct {
 	DomainsDir, AdaptersDir, OutDir, OperatorAddr string
+	ComponentsDirs                                []string
 }
 
 func ServeDirector(ctx context.Context, stderr io.Writer, options ServeOptions) error {
-	d, err := director.NewFromDirs(ctx, options.DomainsDir, options.AdaptersDir, options.OutDir)
+	d, err := newDirector(ctx, options)
 	if err != nil {
 		return err
 	}
@@ -36,4 +37,8 @@ func bindOperator(ctx context.Context, stderr io.Writer, d *director.Director, a
 		return nil, nil
 	}
 	return transport.BindOperator(ctx, stderr, NewOperatorServerResolver(d), addr, d.SetOperatorEndpoint)
+}
+
+func newDirector(ctx context.Context, options ServeOptions) (*director.Director, error) {
+	return director.NewFromDirs(ctx, options.DomainsDir, options.AdaptersDir, options.OutDir, options.ComponentsDirs)
 }

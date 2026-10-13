@@ -24,6 +24,9 @@ const (
 	CodeEffectorRefused     Code = "effector_refused"
 	CodeInterlockRefused    Code = "interlock_refused"
 	CodeNotImplemented      Code = "not_implemented"
+	CodeComponentInvalid    Code = "component_invalid"
+	CodeCompositionInvalid  Code = "composition_invalid"
+	CodeNoLibrary           Code = "no_component_library"
 )
 
 type ToolError struct {

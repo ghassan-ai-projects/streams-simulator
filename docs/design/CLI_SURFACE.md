@@ -50,7 +50,7 @@ Tools may branch on the exit status or on the presence of `error`.
 | `message` | Always | Human-readable cause on one line, without repeated `streamsim:` prefixes; for a contract violation the issues carry the details |
 | `source` | When a file is at fault | The path as given on the command line |
 | `issues` | Validation failures | One entry per violation; `pointer` (RFC 6901) is present when the location is known. Contract-schema violations always carry one, a "missing required property" or "additional property" issue pointing at the member itself; domain cross-reference issues carry one since domain-spec v0.2 (phase P5a). A document that is not JSON, adapter cross-reference checks and run-flag issues have no location and omit it |
-| `result` | `replay_mismatch`, `adapter_verify_failed` | The command's result document describing the failure (e.g. the replay report with `first_divergence`) |
+| `result` | `replay_mismatch`, `adapter_verify_failed`, `domain_lint` | The command's result document describing the failure (e.g. the replay report with `first_divergence`) |
 
 ## 3. Error codes
 
@@ -67,6 +67,7 @@ Codes shared with the MCP taxonomy (`MCP_SURFACE.md` §7) mean the same thing on
 | `scenario_invalid` | 1 | A scenario file fails `scenario-v0.1`, holds a value a scenario cannot hold, or fails a check against the domain and world (`SCENARIO_FILE.md` §3); `scenario from-run` would write a scenario that fails `scenario-v0.1` or that check (`source` is then the artifact) |
 | `artifact_invalid` | 1 | A run artifact, consumer verdict or ground-truth label is not valid JSON or fails its contract; a delivery ledger or world-state history line does not decode as its record type (unknown fields refused) |
 | `replay_mismatch` | 1 | `replay`, `verify` or `score` cannot reproduce the artifact: the trace digest differs (the replay report is the `result`), or the artifact's domain, adapter or world digest no longer matches the inputs (no `result`: nothing was replayed) |
+| `domain_lint` | 1 | `domain lint` found at least one error-severity finding in the nominal day; the lint report is the `result` |
 | `adapter_verify_failed` | 1 | `adapter verify` found a schema or golden divergence, or the adapter declares nothing to check |
 | `io_failed` | 1 | Reading, writing or binding a path failed for a reason other than absence |
 | `<command>_failed` | 1 | Any other failure of that command: `catalog_failed`, `domain_failed`, `adapter_failed`, `run_failed`, `replay_failed`, `verify_failed`, `suite_failed`, `score_failed`, `manifest_failed`, `refconsumer_failed`, `device_failed`, `scenario_failed`, `report_failed`, `plantwire_failed` |
@@ -85,6 +86,7 @@ modules (`errors.As`/`errors.Is`), never message text.
 | `catalog describe <id>` | `{digest, spec}` |
 | `catalog coverage` | `{by_axis, thin}` |
 | `domain validate <path>` | `{valid: true, id, digest, channels, faults, effectors}` |
+| `domain lint <path> [--hours H] [--seed S]` | `{domain, digest, seed, hours, samples, findings, errors, warnings}`; a nominal-day plausibility check ([DOMAIN_SPEC_V0_2](DOMAIN_SPEC_V0_2.md) §27); exit 1 with `domain_lint` when a finding is an error |
 | `domain format <path>` | `{formatted, changed, digest}`; rewrites the file in canonical formatting ([DOMAIN_SPEC_V0_2](DOMAIN_SPEC_V0_2.md) §6) |
 | `adapter list` | `{adapters: [{id, version, encoding, title}]}` |
 | `adapter verify <path>` | `{adapter, schema_checked, schema_ok, golden_checked, golden_match, records}` |

@@ -22,3 +22,21 @@ func TestAKindListsEachLinkTypeItReadsOnce(t *testing.T) {
 		t.Fatal("mean, min and max need a default; sum and count_running do not")
 	}
 }
+
+func TestADynamicsStepsEveryDefaultStepUnlessItDeclaresOne(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name string
+		dyn  Dynamics
+		want int64
+	}{
+		{"none declared", Dynamics{}, DefaultStepMs},
+		{"a negative step", Dynamics{DTMs: -5}, DefaultStepMs},
+		{"a declared step", Dynamics{DTMs: 250}, 250},
+	}
+	for _, tc := range cases {
+		if got := tc.dyn.StepMs(); got != tc.want {
+			t.Errorf("%s: StepMs = %d, want %d", tc.name, got, tc.want)
+		}
+	}
+}

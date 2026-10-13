@@ -1,0 +1,695 @@
+{
+  "schema_version": "0.1",
+  "id": "streamsim/air-dryer",
+  "version": 1,
+  "title": "Heat-reactivated desiccant air dryer",
+  "description": "Twin-tower desiccant dryer: the bed saturates with the moisture that passes, a timed regeneration removes it, and the pressure dew point follows the bed state and how much of the desiccant still works. A worn bed raises the dew point over days; a manual regeneration clears the saturation but cannot cure a worn bed, and costs heater power and purge air.",
+  "class": "static/dryer/air_dryer",
+  "tags": [
+    "compressed-air",
+    "utilities",
+    "drying"
+  ],
+  "icon": "dryer",
+  "kind": {
+    "state": [
+      {
+        "name": "running",
+        "unit": "on",
+        "initial": 1,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "inlet_flow",
+        "unit": "m3/h",
+        "initial": 595.045,
+        "min": 0
+      },
+      {
+        "name": "regen_duty",
+        "unit": "ratio",
+        "initial": 0.5
+      },
+      {
+        "name": "adsorption_health",
+        "unit": "ratio",
+        "initial": 1,
+        "min": 0.2,
+        "max": 1
+      },
+      {
+        "name": "manual_regen",
+        "unit": "on",
+        "initial": 0,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "auto_regen",
+        "unit": "ratio",
+        "initial": 0.5
+      },
+      {
+        "name": "manual_active",
+        "unit": "on",
+        "initial": 0
+      },
+      {
+        "name": "regen_active",
+        "unit": "ratio",
+        "initial": 0.5
+      },
+      {
+        "name": "regen_scale",
+        "unit": "ratio",
+        "initial": 0.5
+      },
+      {
+        "name": "loading_rate",
+        "unit": "1/h",
+        "initial": 0.191264
+      },
+      {
+        "name": "bed_saturation",
+        "unit": "ratio",
+        "initial": 0.255019,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "dew_target",
+        "unit": "degC",
+        "initial": -40
+      },
+      {
+        "name": "dew_point",
+        "unit": "degC",
+        "initial": -40
+      },
+      {
+        "name": "pressure_drop",
+        "unit": "kPa",
+        "initial": 18.0652
+      },
+      {
+        "name": "power",
+        "unit": "kW",
+        "initial": 4.1
+      },
+      {
+        "name": "purge_flow",
+        "unit": "m3/h",
+        "initial": 8.92567
+      }
+    ],
+    "dynamics": [
+      {
+        "target": "inlet_flow",
+        "tier": "F0",
+        "f0": {
+          "baseline": 700,
+          "drift_per_hour": 0,
+          "seasonality": [
+            {
+              "amplitude": 105,
+              "period_s": 86400,
+              "phase_rad": -1.6
+            }
+          ]
+        }
+      },
+      {
+        "target": "regen_duty",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "inlet_flow",
+              "coef": 0.000840272
+            }
+          ]
+        }
+      },
+      {
+        "target": "auto_regen",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "running",
+              "coef": 1
+            },
+            {
+              "state": "regen_duty",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "manual_active",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "manual_regen",
+              "coef": 1
+            },
+            {
+              "state": "running",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "regen_active",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "auto_regen",
+              "coef": 1
+            },
+            {
+              "state": "manual_active",
+              "coef": 1
+            }
+          ],
+          "clamp": {
+            "min": 0,
+            "max": 1
+          }
+        }
+      },
+      {
+        "target": "regen_scale",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "regen_active",
+              "coef": 1
+            },
+            {
+              "state": "adsorption_health",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "loading_rate",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "inlet_flow",
+              "coef": 0.000321429
+            }
+          ]
+        }
+      },
+      {
+        "target": "bed_saturation",
+        "tier": "F1",
+        "dt_ms": 1000,
+        "f1": {
+          "form": "store",
+          "capacity": 3600,
+          "inputs": [
+            {
+              "state": "loading_rate",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "dew_target",
+        "tier": "F1",
+        "f1": {
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "bed_saturation",
+              "coef": 1
+            },
+            {
+              "state": "adsorption_health",
+              "coef": 1
+            }
+          ],
+          "table": {
+            "x": [
+              0,
+              0.4,
+              0.7,
+              1.0
+            ],
+            "y": [
+              0.4,
+              0.7,
+              1.0
+            ],
+            "grid": [
+              [
+                -40,
+                -40,
+                -40
+              ],
+              [
+                -30,
+                -37,
+                -40
+              ],
+              [
+                -12,
+                -28,
+                -36
+              ],
+              [
+                5,
+                -8,
+                -15
+              ]
+            ]
+          }
+        }
+      },
+      {
+        "target": "dew_point",
+        "tier": "F1",
+        "dt_ms": 1000,
+        "f1": {
+          "form": "first_order_lag",
+          "time_constant_s": 60,
+          "gain": 1,
+          "inputs": [
+            {
+              "state": "dew_target",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "pressure_drop",
+        "tier": "F1",
+        "f1": {
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "inlet_flow",
+              "coef": 1
+            }
+          ],
+          "table": {
+            "x": [
+              0,
+              350.0,
+              700,
+              875.0,
+              1050.0,
+              1400
+            ],
+            "values": [
+              0,
+              6.25,
+              25,
+              39.0625,
+              56.25,
+              100
+            ]
+          }
+        }
+      },
+      {
+        "target": "power",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "running",
+              "coef": 0.6
+            },
+            {
+              "state": "regen_active",
+              "coef": 7
+            }
+          ]
+        }
+      },
+      {
+        "target": "purge_flow",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "regen_active",
+              "coef": 1
+            },
+            {
+              "state": "inlet_flow",
+              "coef": 0.03
+            }
+          ]
+        }
+      }
+    ],
+    "flows": [
+      {
+        "name": "bed_regeneration",
+        "from": "bed_saturation",
+        "conductance": 1.5,
+        "scale": [
+          "regen_scale"
+        ]
+      }
+    ],
+    "faults": [
+      {
+        "id": "desiccant_exhaustion",
+        "affects": [
+          {
+            "state": "adsorption_health",
+            "delta": -0.5
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "dew_point"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "shape": "ramp",
+          "rate_per_hour": 0.015
+        }
+      },
+      {
+        "id": "regen_valve_stuck",
+        "affects": [
+          {
+            "state": "regen_duty",
+            "delta": 0.5
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "power"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "shape": "step"
+        }
+      },
+      {
+        "id": "prefilter_clogging",
+        "affects": [
+          {
+            "state": "pressure_drop",
+            "delta": 2,
+            "multiplicative": true
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "pressure_drop"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "shape": "ramp",
+          "rate_per_hour": 0.1
+        }
+      },
+      {
+        "id": "flow_surge",
+        "affects": [
+          {
+            "state": "inlet_flow",
+            "delta": 0.3,
+            "multiplicative": true
+          }
+        ],
+        "is_negative_class": true,
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "pressure_drop"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "shape": "pulse",
+          "duration_s": 3600
+        }
+      }
+    ],
+    "effectors": [
+      {
+        "name": "set_running",
+        "risk_class": "medium",
+        "idempotency_window_s": 3600,
+        "ack": {
+          "failure_modes": [
+            {
+              "mode": "ok",
+              "probability": 1.0
+            }
+          ],
+          "latency_ms": {
+            "mean": 300,
+            "sigma": 50
+          }
+        },
+        "args_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "dryer_id",
+            "running"
+          ],
+          "properties": {
+            "dryer_id": {
+              "type": "string"
+            },
+            "running": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        },
+        "effect": {
+          "dead_time_s": 0,
+          "time_constant_s": 0,
+          "state_deltas": [
+            {
+              "state": "running",
+              "assign_from_arg": "running"
+            }
+          ]
+        }
+      },
+      {
+        "name": "regenerate",
+        "risk_class": "low",
+        "idempotency_window_s": 3600,
+        "ack": {
+          "failure_modes": [
+            {
+              "mode": "ok",
+              "probability": 1.0
+            }
+          ],
+          "latency_ms": {
+            "mean": 300,
+            "sigma": 50
+          }
+        },
+        "args_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "dryer_id",
+            "duration_s"
+          ],
+          "properties": {
+            "dryer_id": {
+              "type": "string"
+            },
+            "duration_s": {
+              "type": "number",
+              "minimum": 300,
+              "maximum": 14400
+            }
+          }
+        },
+        "effect": {
+          "dead_time_s": 0,
+          "time_constant_s": 0,
+          "state_deltas": [
+            {
+              "state": "manual_regen",
+              "delta": 1
+            }
+          ]
+        },
+        "lease": {
+          "arg": "duration_s",
+          "fallback": "revert"
+        }
+      }
+    ]
+  },
+  "measurement_points": [
+    {
+      "name": "dew_point",
+      "state": "dew_point",
+      "unit_family": "temperature",
+      "range": {
+        "min": -60,
+        "max": 20
+      },
+      "tag": "TT",
+      "default_instrument": "streamsim/rtd@1"
+    },
+    {
+      "name": "pressure_drop",
+      "state": "pressure_drop",
+      "unit_family": "pressure",
+      "range": {
+        "min": 0,
+        "max": 120
+      },
+      "tag": "PT",
+      "default_instrument": "streamsim/pressure-transmitter@1"
+    },
+    {
+      "name": "power",
+      "state": "power",
+      "unit_family": "power",
+      "range": {
+        "min": 0,
+        "max": 9.88
+      },
+      "tag": "JT",
+      "default_instrument": "streamsim/power-meter@1"
+    },
+    {
+      "name": "run_status",
+      "state": "running",
+      "unit_family": "state",
+      "range": {
+        "min": 0,
+        "max": 1
+      },
+      "tag": "YS",
+      "default_instrument": "streamsim/run-status@1"
+    }
+  ],
+  "ports": [
+    {
+      "name": "air_in",
+      "type": "compressed_air",
+      "direction": "consumes",
+      "state": "inlet_flow"
+    },
+    {
+      "name": "dew_point_out",
+      "type": "dew_point",
+      "direction": "provides",
+      "state": "dew_point"
+    },
+    {
+      "name": "power_out",
+      "type": "electrical",
+      "direction": "provides",
+      "state": "power"
+    }
+  ],
+  "default_preset": "medium",
+  "presets": {
+    "small": {
+      "title": "Small (200 m3/h)",
+      "values": {
+        "dynamics/inlet_flow/f0/baseline": 200,
+        "dynamics/inlet_flow/f0/seasonality/0/amplitude": 30,
+        "dynamics/loading_rate/f1/inputs/inlet_flow/coef": 0.001125,
+        "dynamics/power/f1/inputs/regen_active/coef": 2.2,
+        "dynamics/power/f1/inputs/running/coef": 0.3,
+        "dynamics/pressure_drop/f1/table/x/1": 100.0,
+        "dynamics/pressure_drop/f1/table/x/2": 200,
+        "dynamics/pressure_drop/f1/table/x/3": 250.0,
+        "dynamics/pressure_drop/f1/table/x/4": 300.0,
+        "dynamics/pressure_drop/f1/table/x/5": 400,
+        "measurement_points/power/range/max": 3.25,
+        "state/inlet_flow/initial": 170.013,
+        "state/power/initial": 1.4,
+        "state/purge_flow/initial": 2.55019,
+        "dynamics/regen_duty/f1/inputs/inlet_flow/coef": 0.00294089
+      }
+    },
+    "medium": {
+      "title": "Medium (700 m3/h)",
+      "values": {}
+    },
+    "large": {
+      "title": "Large (2400 m3/h)",
+      "values": {
+        "dynamics/inlet_flow/f0/baseline": 2400,
+        "dynamics/inlet_flow/f0/seasonality/0/amplitude": 360,
+        "dynamics/loading_rate/f1/inputs/inlet_flow/coef": 9.375e-05,
+        "dynamics/power/f1/inputs/regen_active/coef": 24,
+        "dynamics/power/f1/inputs/running/coef": 1.5,
+        "dynamics/pressure_drop/f1/table/x/1": 1200.0,
+        "dynamics/pressure_drop/f1/table/x/2": 2400,
+        "dynamics/pressure_drop/f1/table/x/3": 3000.0,
+        "dynamics/pressure_drop/f1/table/x/4": 3600.0,
+        "dynamics/pressure_drop/f1/table/x/5": 4800,
+        "measurement_points/power/range/max": 33.15,
+        "state/inlet_flow/initial": 2040.15,
+        "state/power/initial": 13.5,
+        "state/purge_flow/initial": 30.6023,
+        "dynamics/regen_duty/f1/inputs/inlet_flow/coef": 0.000245082
+      }
+    }
+  },
+  "parameters": [
+    {
+      "name": "purge_share",
+      "title": "Purge air as a share of the inlet flow while regenerating",
+      "unit": "ratio",
+      "type": "number",
+      "min": 0.01,
+      "max": 0.15,
+      "default": 0.03,
+      "targets": [
+        "dynamics/purge_flow/f1/inputs/inlet_flow/coef"
+      ]
+    }
+  ]
+}

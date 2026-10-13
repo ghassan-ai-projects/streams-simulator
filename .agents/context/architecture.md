@@ -34,6 +34,7 @@ The accepted architecture is summarized in [`documentation/architecture/`](../..
 - `internal/release`: the release manifest (file digests, canonical body, ed25519 signature, writing); facade over `internal/release/internal/domain`, `app` and a `files` edge
 - `internal/score`: instrument and consumer scoring, shared online/offline policies; facade over `internal/score/internal/domain`; the host packs a `score.Evidence`
 - `internal/audit`: trivial-baseline evaluation over delivered evidence; facade over `internal/audit/internal/domain`
+- `internal/lint`: the domain plausibility check (`domain lint`): a noiseless nominal day of a domain sampled on a fixed grid and judged by five rules (non-finite, out-of-range, pinned-at-bound, not-settled, conservation residual); facade over `internal/lint/internal/domain`; composes `world` and `domain`
 - `internal/suite`: scenario generation, composition and admission, and `Publish` (generate and write a suite file); facade over `internal/suite/internal/domain`, `app` and a `files` edge
 - `internal/refconsumer`: shipped reference detector and operator-client integration; facade over `internal/refconsumer/internal/domain`, `app` (`Consume`: trace file in, verdict file out, optionally over the operator endpoint), the `mcpclient` edge and a `files` edge
 - `internal/device`: data-defined capability admission and vendored device transport; facade over `internal/device/internal/domain` (rules, codec), the `uds` transport edge (including `Serve`, the socket served until interrupted) and a `files` edge (capability catalog)
@@ -42,8 +43,10 @@ The accepted architecture is summarized in [`documentation/architecture/`](../..
 - `internal/plantwire/contract`: the embedded plant wire schemas, byte-identical with `contracts/plant-wire/schemas`
 - `internal/deviceworld`: device-to-world effector binding and `OpenDevice` (capabilities, fault schedule, bindings, world and plant composed before any listener opens); facade over `internal/deviceworld/internal/domain`, `app` and a `files` edge
 - `internal/domain`: load, validate, compile and digest domain data, including a directory into a catalog (`NewCatalogFromDir`); facade over `internal/domain/internal/domain` with a `files` edge
+- `internal/component`: the component library and `Compose`: load the embedded built-in library, then customer directories (`NewLibrary`), of equipment, instruments and vocabulary, check them, list and describe them, and compose a composition into an ordinary domain; facade over `internal/component/internal/domain` (library rules, targets, presets, instruments, ports, links) and a `files` edge; composes `domain` for validation and formatting
 - `internal/model`: shared simulator records and strict JSON decoding
 - `internal/jsonschema`: core schema compilation and validation
+- the built-in component library (vocabulary, equipment, instruments) is data in `internal/component/internal/files/builtin`, embedded by that files edge; example compositions are in `examples/compositions`
 - `internal/schemas`: embedded contract sources
 - `internal/canonical`: canonical JSON encoding and digest operations
 - `internal/randutil`: seeded random streams
@@ -61,9 +64,11 @@ The accepted architecture is summarized in [`documentation/architecture/`](../..
 ## Dependency Direction
 
 - `mcp` -> `director` + foundations; `director` -> `run`/`score`/`truth`/`audit`/`world`/`adapter`/`domain`/`model`
-- `cmd` -> `cli` -> the facades it wires: `mcp`/`run`/`suite`/`grading`/`report`/`release`/`refconsumer`/`device`/`deviceworld`/`domain`/`adapter`/`model`
+- `component` -> `domain`/`canonical`/`jsonschema`/`schemas`/`model`
+- `cmd` -> `cli` -> the facades it wires: `mcp`/`run`/`suite`/`grading`/`report`/`release`/`refconsumer`/`device`/`deviceworld`/`domain`/`adapter`/`lint`/`model`
 - `grading` -> `run`/`score`/`domain`/`world`/`model`; `report` -> `grading`/`run`/`journal`/`model`; `release` -> `canonical`
 - `run` -> `world`/`perturb`/`adapter`/`sink`/`journal`/`domain`/`model`/`canonical`; `journal` -> `model`
+- `lint` -> `world`/`domain`/`model`
 - `truth` -> `world`/`domain`/`model`; `score` -> `domain`/`world`/`model` (hosts pack a `score.Evidence`)
 - `deviceworld` -> `device`/`domain`/`world`/`model`; neither core imports the bridge
 - Dependencies flow downward only.

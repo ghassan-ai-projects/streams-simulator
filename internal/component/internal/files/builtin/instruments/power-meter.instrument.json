@@ -1,0 +1,56 @@
+{
+  "schema_version": "0.1",
+  "id": "streamsim/power-meter",
+  "version": 1,
+  "title": "Three-phase power meter",
+  "description": "Revenue-grade three-phase meter reporting active power; a wrong CT ratio scales the reading and a lost communication link leaves the register frozen.",
+  "tag": "JT",
+  "unit_family": "power",
+  "unit": "kW",
+  "channel": {
+    "value_type": "number",
+    "resolution": 0.1,
+    "fidelity": "F1",
+    "absence": "signal",
+    "cadence": {
+      "mode": "periodic",
+      "period_s": 15
+    },
+    "noise": {
+      "model": "gaussian",
+      "sigma": 0.002
+    },
+    "availability": {
+      "uptime": 0.999,
+      "mttr_s": 600
+    }
+  },
+  "faults": [
+    {
+      "id": "offset",
+      "form": "offset",
+      "magnitude": 0.05
+    },
+    {
+      "id": "ct_ratio",
+      "form": "scale",
+      "factor": 1.2
+    },
+    {
+      "id": "stale",
+      "form": "freeze",
+      "quality": "stale"
+    },
+    {
+      "id": "dropout",
+      "form": "dropout"
+    },
+    {
+      "id": "noise_burst",
+      "form": "noise",
+      "factor": 15,
+      "quality": "suspect"
+    }
+  ],
+  "scaling": "span"
+}

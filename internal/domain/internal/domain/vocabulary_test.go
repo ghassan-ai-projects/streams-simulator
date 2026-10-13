@@ -15,6 +15,11 @@ func TestScheduleRegimeAndPeakRulesAreLocated(t *testing.T) {
 		{"a schedule point beyond its period", func(d map[string]any) {
 			put(d, 90000.0, "kinds", 0, "dynamics", 0, "f0", "schedule", "points", 2, "at_s")
 		}, "/kinds/0/dynamics/0/f0/schedule/points/2/at_s"},
+		{"a utc offset without a period", func(d map[string]any) {
+			schedule := at(d, "kinds", 0, "dynamics", 0, "f0", "schedule").(map[string]any)
+			delete(schedule, "period_s")
+			schedule["utc_offset_s"] = 3600.0
+		}, "/kinds/0/dynamics/0/f0/schedule/utc_offset_s"},
 		{"a peak over two inputs", func(d map[string]any) { put(d, []any{"load", "tariff"}, "kinds", 0, "dynamics", 2, "f1", "inputs") }, "/kinds/0/dynamics/2/f1/inputs"},
 		{"a peak block that is not whole steps", func(d map[string]any) { put(d, 930.0, "kinds", 0, "dynamics", 2, "f1", "block_s") }, "/kinds/0/dynamics/2/f1/block_s"},
 		{"a peak period that is not whole blocks", func(d map[string]any) { put(d, 1000.0, "kinds", 0, "dynamics", 2, "f1", "period_s") }, "/kinds/0/dynamics/2/f1/period_s"},

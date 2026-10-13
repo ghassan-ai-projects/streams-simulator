@@ -1,0 +1,34 @@
+{
+  "schema_version": "0.1",
+  "id": "streamsim/annunciator",
+  "version": 1,
+  "title": "Alarm annunciation point",
+  "description": "Alarm state code from the control system: 0 normal, 1 unacknowledged, 2 acknowledged, 3 returned unacknowledged, 4 shelved.",
+  "tag": "YA",
+  "unit_family": "state",
+  "unit": "on",
+  "channel": {
+    "value_type": "number",
+    "resolution": 1,
+    "fidelity": "F1",
+    "absence": "signal",
+    "cadence": {
+      "mode": "periodic",
+      "period_s": 5
+    },
+    "noise": {
+      "model": "none",
+      "sigma": 0
+    },
+    "availability": {
+      "uptime": 0.999,
+      "mttr_s": 600
+    }
+  },
+  "faults": [
+    {
+      "id": "dropout",
+      "form": "dropout"
+    }
+  ]
+}

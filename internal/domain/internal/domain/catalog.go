@@ -3,12 +3,16 @@ package domain
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"sort"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-var ErrUnknownDomain = errors.New("unknown domain")
+var (
+	ErrUnknownDomain = errors.New("unknown domain")
+	ErrDomainIDTaken = errors.New("domain id is already installed with another digest")
+)
 
 type Catalog struct {
 	domains []*Compiled
@@ -19,6 +23,17 @@ func NewCatalog(domains []*Compiled) *Catalog {
 	copy(sorted, domains)
 	sort.Slice(sorted, func(i, j int) bool { return sorted[i].Spec.ID < sorted[j].Spec.ID })
 	return &Catalog{domains: sorted}
+}
+
+func CatalogWith(base *Catalog, compiled *Compiled) (*Catalog, error) {
+	existing, err := base.Describe(compiled.Spec.ID)
+	switch {
+	case err != nil:
+		return NewCatalog(append(slices.Clone(base.domains), compiled)), nil
+	case existing.Digest == compiled.Digest:
+		return base, nil
+	}
+	return nil, fmt.Errorf("catalog: %w: %q", ErrDomainIDTaken, compiled.Spec.ID)
 }
 
 type Entry struct {

@@ -24,8 +24,8 @@ func knownFailureCode(err error) (failureCode, bool) {
 	if code, ok := checkFailureCode(err); ok {
 		return code, true
 	}
-	if invalid, ok := asValidationError(err); ok {
-		return contractFailureCode(invalid.Contract)
+	if code, ok := model.FailureCodeOf(err); ok {
+		return failureCode(code), true
 	}
 	return missingOrIOCode(err)
 }
@@ -42,21 +42,6 @@ func checkFailureCode(err error) (failureCode, bool) {
 	}
 	if errors.Is(err, run.ErrDigestMismatch) {
 		return codeReplayMismatch, true
-	}
-	return "", false
-}
-
-func contractFailureCode(contract model.Contract) (failureCode, bool) {
-	switch contract {
-	case model.ContractDomainSpec:
-		return codeDomainInvalid, true
-	case model.ContractOutputAdapter:
-		return codeAdapterInvalid, true
-	case model.ContractScenario:
-		return codeScenarioInvalid, true
-	case model.ContractRunArtifact, model.ContractConsumerVerdict, model.ContractGroundTruth,
-		model.ContractDeliveryLedger, model.ContractStateHistory:
-		return codeArtifactInvalid, true
 	}
 	return "", false
 }

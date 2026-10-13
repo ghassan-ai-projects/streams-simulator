@@ -98,6 +98,14 @@ func (d *Director) DomainSpec(domainID string) (any, error) { return d.impl.Doma
 
 func (d *Director) ListAdapters() map[string]any { return d.impl.ListAdapters() }
 
+func (d *Director) ComponentList() (map[string]any, error) { return d.impl.ComponentList() }
+
+func (d *Director) ComponentDescribe(ref string) (any, error) { return d.impl.ComponentDescribe(ref) }
+
+func (d *Director) ComposeDomain(composition map[string]any, install bool) (any, error) {
+	return d.impl.ComposeDomain(composition, install)
+}
+
 func (d *Director) SetOperatorEndpoint(endpoint string) { d.impl.SetOperatorEndpoint(endpoint) }
 
 func (d *Director) RequireOperator(token string) error { return d.impl.RequireOperator(token) }

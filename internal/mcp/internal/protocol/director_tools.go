@@ -24,6 +24,13 @@ func registerCatalogTools(s *mcp.Server, d directorTools) {
 	addTool(s, toolDef{name: "sim.catalog.describe", description: "Describe a domain: channels, faults, effectors, profiles, fidelity tiers.", schema: toolSchema("sim.catalog.describe"), handler: d.handleCatalogDescribe})
 	addTool(s, toolDef{name: "sim.catalog.coverage", description: "The axis-coverage matrix; which axes are thin.", schema: toolSchema("sim.catalog.coverage"), handler: d.handleCatalogCoverage})
 	addTool(s, toolDef{name: "sim.adapter.list", description: "Installed output adapters.", schema: toolSchema("sim.adapter.list"), handler: d.handleAdapterList})
+	registerComponentTools(s, d)
+}
+
+func registerComponentTools(s *mcp.Server, d directorTools) {
+	addTool(s, toolDef{name: "sim.component.list", description: "List the component library: equipment and instruments with class and tags.", schema: toolSchema("sim.component.list"), handler: d.handleComponentList})
+	addTool(s, toolDef{name: "sim.component.describe", description: "Describe a library entry by ref (namespace/name or namespace/name@major).", schema: toolSchema("sim.component.describe"), handler: d.handleComponentDescribe})
+	addTool(s, toolDef{name: "sim.domain.compose", description: "Compose a composition into a domain; install it to create worlds from it.", schema: toolSchema("sim.domain.compose"), handler: d.handleDomainCompose})
 }
 
 func registerWorldTools(s *mcp.Server, d directorTools) {

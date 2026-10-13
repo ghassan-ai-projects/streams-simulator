@@ -42,8 +42,8 @@ func (checks domainChecks) checkStoreSteps() error {
 	step := firstStoreStep(checks.kind)
 	return checks.each("dynamics", len(checks.subject.Dynamics), func(at domainChecks, i int) error {
 		dyn := &checks.subject.Dynamics[i]
-		if dyn.F1 != nil && dyn.F1.Form == model.FormStore && dyn.DTMs != step {
-			return at.bad("/dt_ms", "store %q steps every %d ms; every store of a kind shares one step (%d ms)", dyn.Target, dyn.DTMs, step)
+		if dyn.F1 != nil && dyn.F1.Form == model.FormStore && dyn.StepMs() != step {
+			return at.bad("/dt_ms", "store %q steps every %d ms; every store of a kind shares one step (%d ms)", dyn.Target, dyn.StepMs(), step)
 		}
 		return nil
 	})
@@ -52,7 +52,7 @@ func (checks domainChecks) checkStoreSteps() error {
 func firstStoreStep(kind *model.Kind) int64 {
 	for i := range kind.Dynamics {
 		if kind.IsStore(kind.Dynamics[i].Target) {
-			return kind.Dynamics[i].DTMs
+			return kind.Dynamics[i].StepMs()
 		}
 	}
 	return 0

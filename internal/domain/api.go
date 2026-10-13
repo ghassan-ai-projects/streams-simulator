@@ -13,8 +13,12 @@ type FormatResult = files.FormatResult
 
 type Entry = layer.Entry
 
+type Summary = layer.Summary
+
 type CoverageReport = layer.CoverageReport
 
 var ErrUnknownDomain = layer.ErrUnknownDomain
+
+var ErrDomainIDTaken = layer.ErrDomainIDTaken
 
 var ErrNoCatalog = errors.New("domain: a catalog built by NewCatalog is required")

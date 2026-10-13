@@ -12,6 +12,13 @@ func (checks domainChecks) dynamicSchedule(d *model.Dynamics) error {
 		return nil
 	}
 	schedule := d.F0.Schedule
+	if schedule.UTCOffsetS != 0 && schedule.PeriodS == 0 {
+		return checks.bad("/f0/schedule/utc_offset_s", "utc_offset_s needs period_s: the offset places at_s within a repeating period")
+	}
+	return checks.schedulePoints(schedule)
+}
+
+func (checks domainChecks) schedulePoints(schedule *model.Schedule) error {
 	for i, point := range schedule.Points {
 		if i > 0 && point.AtS <= schedule.Points[i-1].AtS {
 			return checks.bad(fmt.Sprintf("/f0/schedule/points/%d/at_s", i), "schedule points must be in strictly increasing at_s")

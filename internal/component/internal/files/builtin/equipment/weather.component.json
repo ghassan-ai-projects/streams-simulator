@@ -1,0 +1,367 @@
+{
+  "schema_version": "0.1",
+  "id": "streamsim/weather",
+  "version": 1,
+  "title": "Weather",
+  "description": "Outdoor conditions of the site: dry-bulb temperature with a daily and an annual cycle, relative humidity, and the wet-bulb temperature that follows from both. Heat waves, cold fronts and humid spells are ordinary weather, not faults.",
+  "class": "environment/site/weather",
+  "tags": [
+    "environment",
+    "site"
+  ],
+  "icon": "weather",
+  "kind": {
+    "state": [
+      {
+        "name": "dry_bulb",
+        "unit": "degC",
+        "initial": 25.1109
+      },
+      {
+        "name": "humidity",
+        "unit": "%RH",
+        "initial": 68.4853,
+        "min": 0,
+        "max": 100
+      },
+      {
+        "name": "wet_bulb",
+        "unit": "degC",
+        "initial": 20.818
+      }
+    ],
+    "dynamics": [
+      {
+        "target": "dry_bulb",
+        "tier": "F0",
+        "f0": {
+          "baseline": 20,
+          "drift_per_hour": 0,
+          "seasonality": [
+            {
+              "amplitude": 5.5,
+              "period_s": 86400,
+              "phase_rad": -2.35619
+            },
+            {
+              "amplitude": 9,
+              "period_s": 31557600,
+              "phase_rad": 1.5708
+            }
+          ]
+        }
+      },
+      {
+        "target": "humidity",
+        "tier": "F0",
+        "f0": {
+          "baseline": 60,
+          "drift_per_hour": 0,
+          "seasonality": [
+            {
+              "amplitude": -12,
+              "period_s": 86400,
+              "phase_rad": -2.35619
+            }
+          ]
+        }
+      },
+      {
+        "target": "wet_bulb",
+        "tier": "F1",
+        "f1": {
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "dry_bulb",
+              "coef": 1
+            },
+            {
+              "state": "humidity",
+              "coef": 1
+            }
+          ],
+          "table": {
+            "x": [
+              -10,
+              0,
+              10,
+              20,
+              25,
+              30,
+              35,
+              40,
+              45
+            ],
+            "y": [
+              10,
+              30,
+              50,
+              70,
+              90,
+              100
+            ],
+            "grid": [
+              [
+                -11.876,
+                -11.859,
+                -12.098,
+                -11.669,
+                -10.781,
+                -10.203
+              ],
+              [
+                -4.638,
+                -4.2939,
+                -3.4978,
+                -2.3519,
+                -0.93049,
+                -0.13165
+              ],
+              [
+                1.1781,
+                3.263,
+                5.1013,
+                6.9643,
+                8.9197,
+                9.9393
+              ],
+              [
+                6.9612,
+                10.817,
+                13.699,
+                16.28,
+                18.77,
+                20.01
+              ],
+              [
+                9.8491,
+                14.593,
+                17.998,
+                20.938,
+                23.695,
+                25.046
+              ],
+              [
+                12.736,
+                18.368,
+                22.297,
+                25.596,
+                28.62,
+                30.081
+              ],
+              [
+                15.622,
+                22.144,
+                26.595,
+                30.253,
+                33.544,
+                35.116
+              ],
+              [
+                18.507,
+                25.919,
+                30.894,
+                34.911,
+                38.469,
+                40.152
+              ],
+              [
+                21.392,
+                29.695,
+                35.192,
+                39.569,
+                43.394,
+                45.187
+              ]
+            ]
+          }
+        }
+      }
+    ],
+    "faults": [
+      {
+        "id": "heat_wave",
+        "affects": [
+          {
+            "state": "dry_bulb",
+            "delta": 10
+          }
+        ],
+        "is_negative_class": true,
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "dry_bulb_temp"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "rate_per_hour": 0.5,
+          "shape": "ramp"
+        }
+      },
+      {
+        "id": "cold_front",
+        "affects": [
+          {
+            "state": "dry_bulb",
+            "delta": -8
+          }
+        ],
+        "is_negative_class": true,
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "dry_bulb_temp"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "rate_per_hour": 1.0,
+          "shape": "ramp"
+        }
+      },
+      {
+        "id": "humid_spell",
+        "affects": [
+          {
+            "state": "humidity",
+            "delta": 20
+          }
+        ],
+        "is_negative_class": true,
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "wet_bulb_temp"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "rate_per_hour": 1.0,
+          "shape": "ramp"
+        }
+      }
+    ],
+    "system": true
+  },
+  "measurement_points": [
+    {
+      "name": "dry_bulb_temp",
+      "state": "dry_bulb",
+      "unit_family": "temperature",
+      "range": {
+        "min": -30,
+        "max": 60
+      },
+      "tag": "TT",
+      "default_instrument": "streamsim/rtd@1"
+    },
+    {
+      "name": "wet_bulb_temp",
+      "state": "wet_bulb",
+      "unit_family": "temperature",
+      "range": {
+        "min": -30,
+        "max": 45
+      },
+      "tag": "TT",
+      "default_instrument": "streamsim/rtd@1"
+    },
+    {
+      "name": "humidity_rh",
+      "state": "humidity",
+      "unit_family": "humidity",
+      "range": {
+        "min": 0,
+        "max": 100
+      },
+      "tag": "MT",
+      "default_instrument": "streamsim/humidity@1"
+    }
+  ],
+  "ports": [
+    {
+      "name": "dry_bulb_out",
+      "type": "dry_bulb_temp",
+      "direction": "provides",
+      "state": "dry_bulb"
+    },
+    {
+      "name": "wet_bulb_out",
+      "type": "wet_bulb_temp",
+      "direction": "provides",
+      "state": "wet_bulb"
+    }
+  ],
+  "default_preset": "medium",
+  "presets": {
+    "small": {
+      "title": "Mild maritime climate",
+      "values": {
+        "dynamics/dry_bulb/f0/baseline": 14,
+        "dynamics/dry_bulb/f0/seasonality/0/amplitude": 4,
+        "dynamics/dry_bulb/f0/seasonality/1/amplitude": 7,
+        "dynamics/humidity/f0/baseline": 70,
+        "dynamics/humidity/f0/seasonality/0/amplitude": -8,
+        "faults/heat_wave/affects/dry_bulb/delta": 8,
+        "state/dry_bulb/initial": 18.1716,
+        "state/humidity/initial": 75.6569,
+        "state/wet_bulb/initial": 15.2533
+      }
+    },
+    "medium": {
+      "title": "Temperate continental climate",
+      "values": {}
+    },
+    "large": {
+      "title": "Hot humid climate",
+      "values": {
+        "dynamics/dry_bulb/f0/baseline": 27,
+        "dynamics/dry_bulb/f0/seasonality/0/amplitude": 4,
+        "dynamics/dry_bulb/f0/seasonality/1/amplitude": 5,
+        "dynamics/humidity/f0/baseline": 75,
+        "dynamics/humidity/f0/seasonality/0/amplitude": -10,
+        "faults/heat_wave/affects/dry_bulb/delta": 7,
+        "state/dry_bulb/initial": 29.1716,
+        "state/humidity/initial": 82.0711,
+        "state/wet_bulb/initial": 26.6227
+      }
+    }
+  },
+  "parameters": [
+    {
+      "name": "season",
+      "title": "Season at the start of the run",
+      "type": "enum",
+      "values": [
+        "summer",
+        "autumn",
+        "winter",
+        "spring"
+      ],
+      "default": "summer",
+      "cases": {
+        "summer": {
+          "dynamics/dry_bulb/f0/seasonality/1/phase_rad": 1.570796
+        },
+        "autumn": {
+          "dynamics/dry_bulb/f0/seasonality/1/phase_rad": 3.141593
+        },
+        "winter": {
+          "dynamics/dry_bulb/f0/seasonality/1/phase_rad": -1.570796
+        },
+        "spring": {
+          "dynamics/dry_bulb/f0/seasonality/1/phase_rad": 0
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "schema_version": "0.1",
+  "id": "streamsim/mass-flow-meter",
+  "version": 1,
+  "title": "Coriolis or density-compensated mass flow meter",
+  "description": "Mass flow meter on a steam or gas line, reporting kg/s; the zero drifts, wet steam makes the reading noisy, a wrong density compensation scales it and a lost link silences it.",
+  "tag": "FT",
+  "unit_family": "mass_flow",
+  "unit": "kg/s",
+  "channel": {
+    "value_type": "number",
+    "resolution": 0.001,
+    "fidelity": "F1",
+    "absence": "signal",
+    "cadence": {
+      "mode": "periodic",
+      "period_s": 5
+    },
+    "noise": {
+      "model": "gaussian",
+      "sigma": 0.003
+    },
+    "availability": {
+      "uptime": 0.999,
+      "mttr_s": 600
+    }
+  },
+  "faults": [
+    {
+      "id": "offset",
+      "form": "offset",
+      "magnitude": 0.02
+    },
+    {
+      "id": "drift",
+      "form": "drift",
+      "magnitude": 0.0005,
+      "duration_s": 172800
+    },
+    {
+      "id": "wet_steam",
+      "form": "noise",
+      "factor": 12,
+      "quality": "suspect"
+    },
+    {
+      "id": "density_comp",
+      "form": "scale",
+      "factor": 1.04
+    },
+    {
+      "id": "dropout",
+      "form": "dropout"
+    }
+  ],
+  "scaling": "span"
+}

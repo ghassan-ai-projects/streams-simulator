@@ -22,6 +22,31 @@ Use these priorities in order:
 
 If two options both work, choose the one that is easier to read, easier to test, and easier for the next agent to extend.
 
+## MUST: architecture integrity
+
+These rules are binding for every agent and every subagent. A change that breaks one is not done, whatever the gates say.
+
+1. **Logic lives in its module.** Every rule, validation, default, policy, derived value and orchestration step belongs to
+   the domain layer (or app layer) of the module that owns it. `internal/cli` holds only flag parsing, one facade call per use
+   case, the output document and the failure mapping. `internal/mcp` holds only the protocol. A facade only delegates.
+2. **One use case, one implementation.** When two surfaces (CLI, director/MCP, plant wire, canvas bridge) need the same
+   operation, the owning module exposes it once and both call it. A surface never re-parses, re-validates, re-computes or
+   re-shapes a module's result beyond its own output document.
+3. **Never loosen a gate to pass.** Do not raise a line cap, add an allowed import, lower a coverage floor, add a test hook,
+   or remove or weaken any check in `test/architecture` or `scripts/` to make a change pass. Move the code instead. A gate
+   change is allowed only when the owner approved it in the conversation, and the commit message names that approval.
+   Registering a genuinely new package with the kind, layer and imports the standard prescribes is not loosening.
+   `make gate-ratchet` (part of `ci-check`) enforces this against the branch point from main: a cap may fall, never rise;
+   an allow-list may shrink, never grow; a coverage floor may rise, never fall; a test hook may be removed, never added.
+   The owner's approval is a commit line `Owner-approved-gate-change: <reason>`.
+4. **No new module, package or top-level folder without a design.** State its kind, layer, responsibility and callers
+   ([MODULARITY_STANDARD](governance/MODULARITY_STANDARD.md)) before writing it. Go packages live under `cmd/` and
+   `internal/` (plus the root `doc.go`); anything else needs owner approval (`TestGoPackagesLiveUnderCmdAndInternal`). Data a module
+   embeds lives in that module's edge package (the built-in component library is in `internal/component/internal/files/builtin`).
+5. **Delegated work is reviewed at the boundary.** The agent that delegates reviews every diff its subagents make to
+   `test/architecture`, `scripts/`, `AGENTS.md` and module facades before merging. Each PR lists every gate change and its
+   reason: run `git diff main -- test/architecture scripts` and justify each line.
+
 ## Read Order
 
 Before editing:
@@ -71,6 +96,8 @@ The documented shape (see [docs/design/TECHNICAL_DESIGN.md](docs/design/TECHNICA
 - `internal/journal` - the run journal (`run-journal-v0.1`): observer and director JSON Lines streams written while a run happens
 - `internal/report` - the run report (`run-report-v0.1`): one deterministic JSON or Markdown document summarising a run folder (composes `run`, `journal` and `grading`)
 - `internal/grading` - offline grading of a finished run: loads the published files, replays the artifact for its effector calls and scores with `score` (composes `run` and `score`, which do not know each other)
+- `internal/component` - the component library (equipment, instruments, vocabulary as data) and `Compose`, which writes a composition as an ordinary domain (id templates, cycles and every other domain rule are the `domain` module's, checked on the composed domain); composes `domain` for validation and formatting
+- `internal/lint` - the domain plausibility check (`streamsim domain lint`): a noiseless nominal day of a domain sampled on a fixed grid and judged by five rules; composes `world` and `domain`
 - `internal/release` - the release manifest: file digests, canonical body, ed25519 signature, writing
 - `internal/truth` - sealed ground truth and independent analytic solver
 - `internal/score` - online/offline scoring policies
@@ -103,8 +130,11 @@ Determinism: a run is a pure function of `(sim_version, domain_digest, adapter_d
 
 Primary commands:
 
+- `make quick` (inner loop, about 30 s with the test cache: fmt, function length, build, vet, short tests including `test/architecture`)
 - `make ci-check`
 - `make phase-gate` (simulation-canvas goal: `ci-check` plus the Enola check)
+
+Use `make quick` while working. Run `make phase-gate` once per pull request, before pushing (CI runs `ci-check` again); not after every step.
 - `make function-length`
 - `make build`
 - `go vet ./...`

@@ -1,13 +1,14 @@
 # Components v0.1: equipment, instruments and compositions
 
 - **Status**: contracts of phase P7g of the simulation-canvas goal ([PLAN](../../governance/CANVAS_PLAN.md),
-  [design and reviews](../simulation-canvas/component-library.md)). The module that loads and composes them is P7j.
+  [design and reviews](../simulation-canvas/component-library.md)). `internal/component` loads and composes them
+  (P7j): `streamsim component list|show|validate` and `streamsim domain compose`.
 - **Contracts**: [`component-v0.1`](../../contracts/component-v0.1.schema.json),
   [`instrument-v0.1`](../../contracts/instrument-v0.1.schema.json),
   [`composition-v0.1`](../../contracts/composition-v0.1.schema.json),
   [`component-vocabulary-v0.1`](../../contracts/component-vocabulary-v0.1.schema.json).
-- **Data**: built-in files under [`components/`](../../components/); customer libraries in directories outside the repository.
-- **Worked example**: [`components/compositions/chiller-pilot.composition.json`](../../components/compositions/chiller-pilot.composition.json)
+- **Data**: built-in files under [`internal/component/internal/files/builtin/`](../../internal/component/internal/files/builtin/), embedded in the binary by the Go package `components`; customer libraries in directories outside the repository.
+- **Worked example**: [`examples/compositions/chiller-pilot.composition.json`](../../examples/compositions/chiller-pilot.composition.json)
   composes to [`examples/chiller-pilot.domain.json`](../../examples/chiller-pilot.domain.json) by the rules below.
 
 A **component** is reusable equipment: the process it models (a domain-spec v0.2 kind without channels), the points where it can
@@ -18,11 +19,16 @@ writes an ordinary domain (copy-in), so a world never depends on the library at 
 ## 1. Identity, versions, libraries
 
 - An id is `namespace/name`: `streamsim/chiller`. `namespace` and `name` match `^[a-z][a-z0-9-]{1,31}$`. The `streamsim`
-  namespace is reserved for the built-in library: compose refuses a `streamsim/` file found in any other directory.
+  namespace is reserved for the built-in library: the library refuses a `streamsim/` file found in any customer directory.
 - `version` is a major number. A change that can alter a composed domain is a new major; a reference is `streamsim/chiller@1`.
 - A library is a directory holding `equipment/*.component.json`, `instruments/*.instrument.json` and optionally
-  `vocabulary.json`. Compose reads the built-in library and then each `--components-dir` in command-line order. The pair
-  (id, version) is the key: the same pair in two places is an error, whatever the content.
+  `vocabulary.json`. The built-in library is embedded in the binary (the Go package `components` embeds `vocabulary.json`,
+  `equipment/`, `instruments/` and `compositions/` of the repository's `internal/component/internal/files/builtin/` folder), so it is always loaded first and
+  never depends on the working directory. Each customer directory follows, in order: `--components-dir` is repeatable and
+  `STREAMSIM_COMPONENTS_DIRS` (a path list) is appended after the flags; empty entries are ignored. With no customer directory
+  the library is the built-in one. The pair (id, version) is the key: the same pair in two places is an error, whatever the
+  content. Files are read in sorted name order; a missing `equipment/` or `instruments/` folder is an empty one, a missing
+  customer directory is an error. A listing or description of an entry shows its digest and document, never a file path.
 
 ## 2. Equipment (`component-v0.1`)
 
@@ -52,14 +58,18 @@ Examples: `state/setpoint/initial`, `dynamics/chw_supply/f1/inputs/load/coef`, `
 **Presets and parameters.** A composition entry without `preset` uses `default_preset`. The preset's values are applied first,
 then each parameter (the entry's value or the parameter's default): a `number`/`integer` parameter writes its value to each of
 its `targets`; an `enum` parameter writes, for the chosen value, the target values listed in `cases[value]`. A target named both by
-the preset and by a parameter is a load error. Every preset of a component must yield a valid kind; there is no arithmetic, so a
+the preset and by a parameter, or by two parameters, is a load error. Every preset of a component must yield a valid kind; there is no arithmetic, so a
 preset writes every size-dependent value (capacities, coefficients, ranges, fault deltas) itself.
 
 **Load-time checks** (P7j refuses the library): a target that resolves to nothing; a preset or parameter naming an unknown
 target; a parameter default outside `min`/`max`/`values`; `cases` keys that differ from `values`; a measurement point or port whose
 state is undeclared; a point `unit_family`, a port `type` or a `tag` absent from the merged vocabulary; a `default_instrument`
-that resolves to no instrument or to one of another family or tag; a fault detector or confirmation channel that names no
-measurement point; a name that breaks the length or pattern rules.
+that resolves to no instrument or to one of another family or tag; a fault detector, observation or confirmation channel that
+names no measurement point (a conservation detector's `inputs` and `outputs` included), or an `expected_effector` that names no effector; a name that breaks the length or pattern rules.
+Also refused: a state whose unit is not in the point's (or the port type's) unit family, a tag that does not measure the point's
+family, an inverted range, a name declared twice, a target value of another JSON type than the member it replaces, a target
+that is an object or a list, a kind section holding something other than objects. That every preset yields a valid kind is not
+checked at load: compose validates the composed domain.
 
 ## 3. Instruments (`instrument-v0.1`)
 
@@ -69,9 +79,11 @@ measurement point; a name that breaks the length or pattern rules.
 | `tag` | ISA-5.1 letters; must equal the tag of the point it is attached to |
 | `unit_family`, `unit` | What it measures and the unit it reports; the unit belongs to the family |
 | `range` | The instrument's own range, in its unit (optional) |
-| `scaling` | `absolute` (default) or `span`: with `span`, `channel.noise.sigma` and fault magnitudes are fractions of the point's span |
+| `scaling` | `absolute` (default) or `span`: with `span`, `channel.noise.sigma` and fault magnitudes are fractions of the point's span (its range converted to the instrument unit, before the intersection with `range`) |
 | `channel` | `value_type`, `resolution`, `fidelity`, `absence`, `cadence`, `noise`, `drift`, `availability`, `link_delay` (domain-spec v0.2 channel members; they may name no state) |
 | `faults[]` | `{id, form, magnitude, duration_s?, is_negative_class?}` |
+
+An instrument's `class` in a listing is its unit family and its `tags` the one tag letter.
 
 **Attaching** an instrument at a measurement point writes one channel:
 
@@ -79,16 +91,20 @@ measurement point; a name that breaks the length or pattern rules.
 |---|---|
 | `name` | `<kind>.<point>` |
 | `observes` | the point's `state` |
-| `unit` | the instrument's unit |
+| `unit` | the instrument's unit; written for `number` and `counter` channels only (the domain contract forbids it on a boolean channel) |
 | `observation_gain`, `observation_offset` | the conversion from the state's unit to the instrument's unit, both in the point's family: with `base = s·x + o` for the state unit and `base = s'·y + o'` for the instrument unit, gain `s/s'` and offset `(o − o')/s'`; omitted when the units are equal |
 | `range` | the point's range (in the state's unit) converted to the instrument's unit, intersected with the instrument's range |
-| other members | the instrument's `channel` members; `noise.sigma` multiplied by the converted span when `scaling` is `span` |
+| other members | the instrument's `channel` members; `noise.sigma` multiplied by the span of the converted point range when `scaling` is `span` |
+
+The **span** that scales noise and fault magnitudes is the point's range converted to the instrument's unit, before it is
+intersected with the instrument's own range: a narrower instrument range changes the channel's `range`, not the size of its
+noise.
 
 **Instrument faults** (forms the world produces today, through a hidden bias state):
 
 | Form | Domain fault |
 |---|---|
-| all | a state `<point>__bias` (instrument unit, initial 0, no dynamics) is added once per attached point that has faults; the channel gets `observation_bias {state: <point>__bias, coef: 1, noise_scale_at_full: 1}`; the fault id is `<kind>__<point>__<id>`; its detector is `single_channel_snr` on the channel with `first_observable_snr` 3 and `unavoidable_snr` 10; `is_negative_class` is copied |
+| all | a state `<point>__bias` (instrument unit, initial 0, no dynamics) is added once per attached point whose instrument has an `offset` or `drift` fault; the channel gets `observation_bias {state: <point>__bias, coef: 1, noise_scale_at_full: 1}`; the fault id is `<kind>__<point>__<id>`; its detector is `single_channel_snr` on the channel with `first_observable_snr` 3 and `unavoidable_snr` 10; `is_negative_class` is copied |
 | `offset` | `affects [{state: bias, delta: magnitude}]`, onset `step`, magnitude 1 |
 | `drift` | `magnitude` is per hour and `duration_s` (required) is the time to full drift: `delta = magnitude · duration_s / 3600`, onset `ramp` with `rate_per_hour = 3600 / duration_s`, magnitude 1 |
 | `stuck`, `freeze`, `dropout`, `scale`, `noise` | no bias state: the domain fault carries `observation: {channel: <kind>.<point>, form, value?, factor?, quality?}` (domain-spec v0.2 §25), onset `step`, magnitude 1; `stuck` sticks at the `low` or `high` end of the channel's converted range (`stuck_at`); `scale` and `noise` copy `factor`; `quality` is copied |
@@ -103,23 +119,31 @@ Offset and drift magnitudes are in the instrument's unit (fractions of the span 
 | `site` | `{name, timezone}`, copied to the domain's `site` (structure only until the site calendar of P7k) |
 | `areas[]` | `{name, parent?}`: the ISA-95 hierarchy, copied to `site.areas`; a parent must be declared earlier |
 | `equipment[]` | `{use, as?, preset?, parameters?, names[] and/or (id_template, count), area?, instruments?}`; `area` must be declared in `areas` |
-| `connections[]` | `{from: "<instance id>.<port>", to: "<instance id>.<port>"}`; an endpoint splits at its last dot |
+| `connections[]` | `{from: "<instance id>.<port>", to: "<instance id>.<port>"}`; an endpoint splits at its last dot and must name an id the entry renders |
 
-`names`, `id_template` and `count` follow domain-spec v0.2 instance sets (§2.2, §8). `instruments` changes an entry's default
+A profile's `not_applicable` reason is at least 20 characters, as in the domain schema. `names`, `id_template` and `count` follow domain-spec v0.2 instance sets (§2.2, §8). `instruments` changes an entry's default
 instrumentation: `replace` (point to reference), `remove` (points) and `add` (optional points). Removing or replacing an absent
-point, adding a non-optional one, or removing a point a fault's detector or an effector's confirmation needs, is a compose error.
+point (an optional point not added is absent), adding a non-optional one, or leaving unattached a point a fault's detector or
+observation or an effector's confirmation needs, is a compose error. A replacement must keep the point's tag and unit family.
 One entry is one kind: instances of an entry are identical apart from their ids; a variation needs another entry.
 
 ## 5. Ports and connections
 
 A port **provides** a state (read by what it connects to) or **consumes** into a state (which receives what connected ports
 provide); its `type` fixes the unit family. A connection joins a `provides` port to a `consumes` port of the same type; anything
-else is a compose error. Compose writes one `link_type` per port type and kind pair, named `<type>__<from kind>__<to kind>`, and one
-`link` per connection.
+else is a compose error. Compose writes one `link_type` per consuming kind, consuming port and providing kind, named
+`<to kind>__<to port>__<from kind>` (a kind and a port are at most 20 characters each, so the name fits the domain's 64), and
+one `link` per connection. Two consuming ports of one kind never share a link type, so two port pairs between the same two
+instances are two distinct links. An endpoint names an instance of the composition and splits at its last dot: a name, or an id
+the entry's `id_template` renders. `{n}` renders the 1-based index without leading zeros and any other placeholder renders `a`;
+the index must lie within `count.max`, or within `count.default` when there is no `max`, so `line.02` or `line.9` for a
+template `line.{n}` with a default of 3 names no instance.
 
 Links carry values through domain-spec v0.2 §21 (P7h): compose writes a consuming port's state as `follow` (aggregate `sum`)
-over the port's link type, so an instance with incoming links takes the sum of the providing states, and an instance without
-links keeps its own dynamics; connected and unconnected instances of one entry stay one kind. A component reads other
+over the consuming port's link type, so an instance with incoming links takes the sum of the providing states, and an instance without
+links keeps its own dynamics; connected and unconnected instances of one entry stay one kind. One consuming state of a kind takes
+one link type and one providing state: connections that feed it otherwise are a compose error, as is a consuming state with no
+dynamics entry to carry the `follow`. A component reads other
 aggregates (`mean`, `min`, `max`, `count_running`) through linked inputs in its own dynamics. Compose rejects a composition
 whose connections make kinds read each other in a cycle.
 
@@ -130,14 +154,17 @@ whose connections make kinds read each other in a cycle.
 - **Port types**, each with a unit family that exists. **Tag letters** (ISA-5.1), each with the unit families it accepts.
 - **Merging**: compose merges the built-in vocabulary with every library's, entry by entry: a library may add a unit to a family,
   a family, a port type, a tag letter or a family to a tag's `measures`. Defining an existing unit, port type or base differently
-  is an error.
+  is an error. After each merge a family's base must be a unit with scale 1 and no offset, and every port type and tag must name
+  a family that exists, so a library may add a unit to a built-in family without repeating the other units.
 
 ## 7. Names and metadata in a composed domain
 
 - The kind is the entry's `as`, or the component's name with hyphens as underscores; two entries with one kind name are an error.
 - A channel is `<kind>.<point>`; an equipment fault `<kind>__<id>`; an effector `<kind>__<name>`; an instrument fault
-  `<kind>__<point>__<id>`; a bias state `<point>__bias` (states are scoped to their kind).
-- Every reference compose copies is qualified: fault detectors (`channel`, `channel_a`, `channel_b`), `expected_effector`,
+  `<kind>__<point>__<id>`; a bias state `<point>__bias` (states are scoped to their kind); a link type
+  `<to kind>__<to port>__<from kind>`.
+- Every reference compose copies is qualified: fault detectors (`channel`, `channel_a`, `channel_b`, and the `inputs` and
+  `outputs` of a conservation detector), `expected_effector`,
   `confirmation_channels`, and boundary and dynamics members that name channels.
 - A channel carries its point's ISA-5.1 letters in `tag`; an instance set carries `area` and `provenance` (domain-spec v0.2 §20):
   component, version, the component file's digest, the preset used (the default included), every parameter value (defaults
@@ -159,6 +186,7 @@ Every part of the library is data, so a user adds equipment, instruments and voc
 ## 9. Truth and determinism
 
 - Library descriptions are never copied into a domain's state, channel, fault or effector descriptions: they name failure modes a
-  consumer must not read. A composed effector carries no description.
+  consumer must not read. A composed effector carries no description, and its `args_schema` loses the annotation keywords (`description`, `title`,
+  `$comment`, `examples`) at every depth, as the operator view does (domain spec section 22).
 - The same composition with the same library files gives the same domain bytes: no directory listing order, environment variable
-  or clock enters compose. A gate keeps every id under `components/` in the `streamsim` namespace.
+  or clock enters compose. A gate keeps every id under `internal/component/internal/files/builtin/` in the `streamsim` namespace.

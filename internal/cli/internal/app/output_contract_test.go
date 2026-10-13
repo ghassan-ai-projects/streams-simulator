@@ -79,6 +79,7 @@ func TestEveryCatalogAndAdapterDocumentMatchesTheContract(t *testing.T) {
 		{"catalog_describe", append([]string{"catalog", "describe"}, append(domains, pondDomain)...)},
 		{"catalog_coverage", append([]string{"catalog", "coverage"}, domains...)},
 		{"domain_validate", []string{"domain", "validate", testsupport.Domain(pondDomain)}},
+		{"domain_lint", []string{"domain", "lint", testsupport.Domain(pondDomain), "--hours", "2"}},
 		{"adapter_list", append([]string{"adapter", "list"}, adapters...)},
 		{"adapter_verify", append([]string{"adapter", "verify"}, append(adapters, testsupport.Adapter("native-jsonl"))...)},
 	}

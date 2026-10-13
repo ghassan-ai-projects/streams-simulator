@@ -1,0 +1,907 @@
+{
+  "schema_version": "0.1",
+  "id": "streamsim/air-compressor",
+  "version": 1,
+  "title": "Oil-injected screw air compressor",
+  "description": "Screw compressor delivering compressed air: delivered air is the product of running, loaded, a healthy airend and the rated capacity. Specific energy rises as the airend wears; a compressor that fails to load still reads loaded. High discharge temperature raises an ISA-18.2 alarm and trips the unit until it is acknowledged and reset.",
+  "class": "rotating/compressor/air_compressor",
+  "tags": [
+    "compressed-air",
+    "utilities",
+    "rotating"
+  ],
+  "icon": "compressor",
+  "kind": {
+    "state": [
+      {
+        "name": "running",
+        "unit": "on",
+        "initial": 1,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "load_command",
+        "unit": "on",
+        "initial": 1,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "intake_valve",
+        "unit": "ratio",
+        "initial": 1,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "airend_eff",
+        "unit": "ratio",
+        "initial": 1,
+        "min": 0.3,
+        "max": 1
+      },
+      {
+        "name": "ambient",
+        "unit": "degC",
+        "initial": 21.0017
+      },
+      {
+        "name": "healthy",
+        "unit": "on",
+        "initial": 1
+      },
+      {
+        "name": "ack_count",
+        "unit": "count",
+        "initial": 0
+      },
+      {
+        "name": "reset_count",
+        "unit": "count",
+        "initial": 0
+      },
+      {
+        "name": "alarm_shelved",
+        "unit": "on",
+        "initial": 0,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "enable",
+        "unit": "on",
+        "initial": 1
+      },
+      {
+        "name": "cmd_loaded",
+        "unit": "on",
+        "initial": 1
+      },
+      {
+        "name": "load_frac",
+        "unit": "ratio",
+        "initial": 1
+      },
+      {
+        "name": "ambient_power",
+        "unit": "kW",
+        "initial": 6.30051,
+        "min": 0
+      },
+      {
+        "name": "air_target",
+        "unit": "m3/h",
+        "initial": 700
+      },
+      {
+        "name": "air_flow",
+        "unit": "m3/h",
+        "initial": 700,
+        "min": 0
+      },
+      {
+        "name": "power_target",
+        "unit": "kW",
+        "initial": 75
+      },
+      {
+        "name": "power",
+        "unit": "kW",
+        "initial": 75,
+        "min": 0
+      },
+      {
+        "name": "motor_current",
+        "unit": "A",
+        "initial": 127.5,
+        "min": 0
+      },
+      {
+        "name": "discharge_temp",
+        "unit": "degC",
+        "initial": 89.0017
+      },
+      {
+        "name": "vibration",
+        "unit": "mm/s",
+        "initial": 2.6,
+        "min": 0
+      },
+      {
+        "name": "temp_alarm",
+        "unit": "on",
+        "initial": 0
+      },
+      {
+        "name": "specific_power",
+        "unit": "kWh/m3",
+        "initial": 0.107143
+      }
+    ],
+    "dynamics": [
+      {
+        "target": "ambient",
+        "tier": "F0",
+        "f0": {
+          "baseline": 25,
+          "drift_per_hour": 0,
+          "seasonality": [
+            {
+              "amplitude": 4,
+              "period_s": 86400,
+              "phase_rad": -1.6
+            }
+          ]
+        }
+      },
+      {
+        "target": "enable",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "running",
+              "coef": 1
+            },
+            {
+              "state": "healthy",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "cmd_loaded",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "enable",
+              "coef": 1
+            },
+            {
+              "state": "load_command",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "load_frac",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "cmd_loaded",
+              "coef": 1
+            },
+            {
+              "state": "intake_valve",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "ambient_power",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "enable",
+              "coef": 1
+            },
+            {
+              "state": "ambient",
+              "coef": 0.3
+            }
+          ]
+        }
+      },
+      {
+        "target": "air_target",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "load_frac",
+              "coef": 1
+            },
+            {
+              "state": "airend_eff",
+              "coef": 700
+            }
+          ]
+        }
+      },
+      {
+        "target": "air_flow",
+        "tier": "F1",
+        "dt_ms": 1000,
+        "f1": {
+          "form": "first_order_lag",
+          "time_constant_s": 12,
+          "gain": 1,
+          "inputs": [
+            {
+              "state": "air_target",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "power_target",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "enable",
+              "coef": 16.19949
+            },
+            {
+              "state": "load_frac",
+              "coef": 52.5
+            },
+            {
+              "state": "ambient_power",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "power",
+        "tier": "F1",
+        "dt_ms": 1000,
+        "f1": {
+          "form": "first_order_lag",
+          "time_constant_s": 4,
+          "gain": 1,
+          "inputs": [
+            {
+              "state": "power_target",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "motor_current",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "power",
+              "coef": 1.7
+            }
+          ]
+        }
+      },
+      {
+        "target": "discharge_temp",
+        "tier": "F1",
+        "dt_ms": 1000,
+        "f1": {
+          "form": "first_order_lag",
+          "time_constant_s": 120,
+          "gain": 1,
+          "inputs": [
+            {
+              "state": "ambient",
+              "coef": 1
+            },
+            {
+              "state": "enable",
+              "coef": 30
+            },
+            {
+              "state": "load_frac",
+              "coef": 38
+            }
+          ]
+        }
+      },
+      {
+        "target": "vibration",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "enable",
+              "coef": 1.8
+            },
+            {
+              "state": "load_frac",
+              "coef": 0.8
+            }
+          ]
+        }
+      },
+      {
+        "target": "healthy",
+        "tier": "F1",
+        "dt_ms": 1000,
+        "f1": {
+          "form": "trip",
+          "when": {
+            "state": "discharge_temp",
+            "operator": "gt",
+            "threshold": 108
+          },
+          "for_s": 10,
+          "tripped_value": 0,
+          "latch": true,
+          "reset_on": "reset_count"
+        }
+      },
+      {
+        "target": "temp_alarm",
+        "tier": "F1",
+        "dt_ms": 1000,
+        "f1": {
+          "form": "alarm",
+          "alarm": {
+            "watch": "discharge_temp",
+            "limit": 102,
+            "direction": "high",
+            "deadband": 3,
+            "on_delay_s": 5,
+            "off_delay_s": 10,
+            "priority": "high",
+            "acknowledge": "ack_count",
+            "shelve": "alarm_shelved"
+          }
+        }
+      },
+      {
+        "target": "specific_power",
+        "tier": "F1",
+        "f1": {
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "airend_eff",
+              "coef": 1
+            }
+          ],
+          "table": {
+            "x": [
+              0.3,
+              0.5,
+              0.7,
+              0.85,
+              1.0
+            ],
+            "values": [
+              0.357143,
+              0.214286,
+              0.153061,
+              0.12605,
+              0.107143
+            ]
+          }
+        }
+      }
+    ],
+    "faults": [
+      {
+        "id": "airend_wear",
+        "affects": [
+          {
+            "state": "airend_eff",
+            "delta": -0.15
+          },
+          {
+            "state": "discharge_temp",
+            "delta": 6
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "air_flow"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "shape": "ramp",
+          "rate_per_hour": 0.02
+        }
+      },
+      {
+        "id": "fails_to_load",
+        "affects": [
+          {
+            "state": "intake_valve",
+            "delta": -1
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "air_flow"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "shape": "step"
+        }
+      },
+      {
+        "id": "oil_cooler_fouling",
+        "affects": [
+          {
+            "state": "discharge_temp",
+            "delta": 25
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "discharge_temp"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "shape": "ramp",
+          "rate_per_hour": 0.25
+        }
+      },
+      {
+        "id": "bearing_wear",
+        "affects": [
+          {
+            "state": "vibration",
+            "delta": 6
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "vibration"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "shape": "ramp",
+          "rate_per_hour": 0.1
+        }
+      },
+      {
+        "id": "hot_intake_air",
+        "affects": [
+          {
+            "state": "ambient",
+            "delta": 6
+          }
+        ],
+        "is_negative_class": true,
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "discharge_temp"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "shape": "pulse",
+          "duration_s": 7200
+        }
+      }
+    ],
+    "effectors": [
+      {
+        "name": "set_running",
+        "risk_class": "medium",
+        "idempotency_window_s": 3600,
+        "ack": {
+          "failure_modes": [
+            {
+              "mode": "ok",
+              "probability": 1.0
+            }
+          ],
+          "latency_ms": {
+            "mean": 300,
+            "sigma": 50
+          }
+        },
+        "args_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "compressor_id",
+            "running"
+          ],
+          "properties": {
+            "compressor_id": {
+              "type": "string"
+            },
+            "running": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        },
+        "effect": {
+          "dead_time_s": 0,
+          "time_constant_s": 0,
+          "state_deltas": [
+            {
+              "state": "running",
+              "assign_from_arg": "running"
+            }
+          ]
+        }
+      },
+      {
+        "name": "set_loaded",
+        "risk_class": "low",
+        "idempotency_window_s": 3600,
+        "ack": {
+          "failure_modes": [
+            {
+              "mode": "ok",
+              "probability": 1.0
+            }
+          ],
+          "latency_ms": {
+            "mean": 300,
+            "sigma": 50
+          }
+        },
+        "args_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "compressor_id",
+            "loaded"
+          ],
+          "properties": {
+            "compressor_id": {
+              "type": "string"
+            },
+            "loaded": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        },
+        "effect": {
+          "dead_time_s": 0,
+          "time_constant_s": 0,
+          "state_deltas": [
+            {
+              "state": "load_command",
+              "assign_from_arg": "loaded"
+            }
+          ]
+        }
+      },
+      {
+        "name": "acknowledge_reset",
+        "risk_class": "low",
+        "idempotency_window_s": 3600,
+        "ack": {
+          "failure_modes": [
+            {
+              "mode": "ok",
+              "probability": 1.0
+            }
+          ],
+          "latency_ms": {
+            "mean": 300,
+            "sigma": 50
+          }
+        },
+        "args_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "compressor_id"
+          ],
+          "properties": {
+            "compressor_id": {
+              "type": "string"
+            }
+          }
+        },
+        "effect": {
+          "dead_time_s": 0,
+          "time_constant_s": 0,
+          "state_deltas": [
+            {
+              "state": "ack_count",
+              "delta": 1
+            },
+            {
+              "state": "reset_count",
+              "delta": 1
+            }
+          ]
+        }
+      },
+      {
+        "name": "shelve_alarm",
+        "risk_class": "medium",
+        "idempotency_window_s": 3600,
+        "ack": {
+          "failure_modes": [
+            {
+              "mode": "ok",
+              "probability": 1.0
+            }
+          ],
+          "latency_ms": {
+            "mean": 300,
+            "sigma": 50
+          }
+        },
+        "args_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "compressor_id",
+            "duration_s"
+          ],
+          "properties": {
+            "compressor_id": {
+              "type": "string"
+            },
+            "duration_s": {
+              "type": "number",
+              "minimum": 60,
+              "maximum": 28800
+            }
+          }
+        },
+        "effect": {
+          "dead_time_s": 0,
+          "time_constant_s": 0,
+          "state_deltas": [
+            {
+              "state": "alarm_shelved",
+              "delta": 1
+            }
+          ]
+        },
+        "lease": {
+          "arg": "duration_s",
+          "fallback": "revert"
+        }
+      }
+    ]
+  },
+  "measurement_points": [
+    {
+      "name": "air_flow",
+      "state": "air_flow",
+      "unit_family": "volumetric_flow",
+      "range": {
+        "min": 0,
+        "max": 1120
+      },
+      "tag": "FT",
+      "default_instrument": "streamsim/vortex-flow-meter@1"
+    },
+    {
+      "name": "discharge_temp",
+      "state": "discharge_temp",
+      "unit_family": "temperature",
+      "range": {
+        "min": 0,
+        "max": 140
+      },
+      "tag": "TT",
+      "default_instrument": "streamsim/rtd@1"
+    },
+    {
+      "name": "power",
+      "state": "power",
+      "unit_family": "power",
+      "range": {
+        "min": 0,
+        "max": 105
+      },
+      "tag": "JT",
+      "default_instrument": "streamsim/power-meter@1"
+    },
+    {
+      "name": "vibration",
+      "state": "vibration",
+      "unit_family": "vibration_velocity",
+      "range": {
+        "min": 0,
+        "max": 20
+      },
+      "tag": "VT",
+      "default_instrument": "streamsim/accelerometer@1"
+    },
+    {
+      "name": "run_status",
+      "state": "enable",
+      "unit_family": "state",
+      "range": {
+        "min": 0,
+        "max": 1
+      },
+      "tag": "YS",
+      "default_instrument": "streamsim/run-status@1"
+    },
+    {
+      "name": "load_status",
+      "state": "cmd_loaded",
+      "unit_family": "state",
+      "range": {
+        "min": 0,
+        "max": 1
+      },
+      "tag": "YS",
+      "default_instrument": "streamsim/run-status@1"
+    },
+    {
+      "name": "alarm_state",
+      "state": "temp_alarm",
+      "unit_family": "state",
+      "range": {
+        "min": 0,
+        "max": 4
+      },
+      "tag": "YA",
+      "default_instrument": "streamsim/annunciator@1"
+    },
+    {
+      "name": "motor_current",
+      "state": "motor_current",
+      "unit_family": "current",
+      "range": {
+        "min": 0,
+        "max": 408
+      },
+      "tag": "IT",
+      "default_instrument": "streamsim/current-clamp@1",
+      "optional": true
+    }
+  ],
+  "ports": [
+    {
+      "name": "air_out",
+      "type": "compressed_air",
+      "direction": "provides",
+      "state": "air_flow"
+    },
+    {
+      "name": "power_out",
+      "type": "electrical",
+      "direction": "provides",
+      "state": "power"
+    }
+  ],
+  "default_preset": "medium",
+  "presets": {
+    "small": {
+      "title": "Small (22 kW, 200 m3/h)",
+      "values": {
+        "dynamics/air_target/f1/inputs/airend_eff/coef": 200,
+        "dynamics/power_target/f1/inputs/enable/coef": 4.75185,
+        "dynamics/power_target/f1/inputs/load_frac/coef": 15.4,
+        "dynamics/specific_power/f1/table/values/0": 0.366667,
+        "dynamics/specific_power/f1/table/values/1": 0.22,
+        "dynamics/specific_power/f1/table/values/2": 0.157143,
+        "dynamics/specific_power/f1/table/values/3": 0.129412,
+        "dynamics/specific_power/f1/table/values/4": 0.11,
+        "dynamics/vibration/f1/inputs/enable/coef": 1.2,
+        "measurement_points/air_flow/range/max": 320,
+        "measurement_points/motor_current/range/max": 119.68,
+        "measurement_points/power/range/max": 30.8,
+        "state/air_flow/initial": 200,
+        "state/air_target/initial": 200,
+        "state/motor_current/initial": 37.4,
+        "state/power/initial": 22,
+        "state/power_target/initial": 22,
+        "state/specific_power/initial": 0.11,
+        "state/vibration/initial": 2,
+        "dynamics/ambient_power/f1/inputs/ambient/coef": 0.088,
+        "state/ambient_power/initial": 1.84815
+      }
+    },
+    "medium": {
+      "title": "Medium (75 kW, 700 m3/h)",
+      "values": {}
+    },
+    "large": {
+      "title": "Large (250 kW, 2400 m3/h)",
+      "values": {
+        "dynamics/air_target/f1/inputs/airend_eff/coef": 2400,
+        "dynamics/power_target/f1/inputs/enable/coef": 53.99829,
+        "dynamics/power_target/f1/inputs/load_frac/coef": 175,
+        "dynamics/specific_power/f1/table/values/0": 0.347222,
+        "dynamics/specific_power/f1/table/values/1": 0.208333,
+        "dynamics/specific_power/f1/table/values/2": 0.14881,
+        "dynamics/specific_power/f1/table/values/3": 0.122549,
+        "dynamics/specific_power/f1/table/values/4": 0.104167,
+        "dynamics/vibration/f1/inputs/enable/coef": 2.6,
+        "measurement_points/air_flow/range/max": 3840,
+        "measurement_points/motor_current/range/max": 1360,
+        "measurement_points/power/range/max": 350,
+        "state/air_flow/initial": 2400,
+        "state/air_target/initial": 2400,
+        "state/motor_current/initial": 425,
+        "state/power/initial": 250,
+        "state/power_target/initial": 250,
+        "state/specific_power/initial": 0.104167,
+        "state/vibration/initial": 3.4,
+        "dynamics/ambient_power/f1/inputs/ambient/coef": 1.0,
+        "state/ambient_power/initial": 21.00171
+      }
+    }
+  },
+  "parameters": [
+    {
+      "name": "alarm_limit_c",
+      "title": "High discharge temperature alarm",
+      "unit": "degC",
+      "type": "number",
+      "min": 90,
+      "max": 115,
+      "default": 102,
+      "targets": [
+        "dynamics/temp_alarm/f1/alarm/limit"
+      ]
+    },
+    {
+      "name": "trip_temp_c",
+      "title": "Overtemperature trip",
+      "unit": "degC",
+      "type": "number",
+      "min": 100,
+      "max": 125,
+      "default": 108,
+      "targets": [
+        "dynamics/healthy/f1/when/threshold"
+      ]
+    }
+  ]
+}

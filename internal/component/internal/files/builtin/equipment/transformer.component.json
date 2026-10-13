@@ -1,0 +1,566 @@
+{
+  "schema_version": "0.1",
+  "id": "streamsim/transformer",
+  "version": 1,
+  "title": "Distribution transformer",
+  "description": "A distribution transformer: winding and oil temperature follow the square of the loading with thermal lags, copper losses rise above a hot-spot threshold, the rating derates with temperature, and a high winding temperature raises an ISA-18.2 alarm.",
+  "class": "electrical/transformer/distribution",
+  "tags": [
+    "electrical",
+    "transformer",
+    "alarm"
+  ],
+  "icon": "transformer",
+  "kind": {
+    "state": [
+      {
+        "name": "load",
+        "unit": "kW",
+        "initial": 344.064812,
+        "min": 0
+      },
+      {
+        "name": "ambient",
+        "unit": "degC",
+        "initial": 22.001279
+      },
+      {
+        "name": "loading",
+        "unit": "ratio",
+        "initial": 0.430081,
+        "min": 0
+      },
+      {
+        "name": "loading_sq",
+        "unit": "ratio",
+        "initial": 0.18497,
+        "min": 0
+      },
+      {
+        "name": "winding_temp",
+        "unit": "degC",
+        "initial": 35.874005
+      },
+      {
+        "name": "oil_temp",
+        "unit": "degC",
+        "initial": 31.249763
+      },
+      {
+        "name": "derate",
+        "unit": "ratio",
+        "initial": 1,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "available_power",
+        "unit": "kW",
+        "initial": 800,
+        "min": 0
+      },
+      {
+        "name": "temp_alarm",
+        "unit": "on",
+        "initial": 0,
+        "min": 0,
+        "max": 4
+      },
+      {
+        "name": "ack_count",
+        "unit": "on",
+        "initial": 0,
+        "min": 0
+      },
+      {
+        "name": "shelve",
+        "unit": "on",
+        "initial": 0,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "dynamics": [
+      {
+        "target": "load",
+        "tier": "F0",
+        "f0": {
+          "baseline": 496,
+          "drift_per_hour": 0,
+          "seasonality": [
+            {
+              "amplitude": 152,
+              "period_s": 86400,
+              "phase_rad": -1.6
+            }
+          ]
+        }
+      },
+      {
+        "target": "ambient",
+        "tier": "F0",
+        "f0": {
+          "baseline": 25,
+          "drift_per_hour": 0,
+          "seasonality": [
+            {
+              "amplitude": 3,
+              "period_s": 86400,
+              "phase_rad": -1.6
+            }
+          ]
+        }
+      },
+      {
+        "target": "loading",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "load",
+              "coef": 0.00125
+            }
+          ]
+        }
+      },
+      {
+        "target": "loading_sq",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "loading",
+              "coef": 1
+            },
+            {
+              "state": "loading",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "winding_temp",
+        "tier": "F1",
+        "dt_ms": 10000,
+        "f1": {
+          "form": "regime",
+          "selector": "winding_temp",
+          "threshold": 100,
+          "below": {
+            "gain": 1.0,
+            "time_constant_s": 1200
+          },
+          "above": {
+            "gain": 1.1,
+            "time_constant_s": 1200
+          },
+          "inputs": [
+            {
+              "state": "ambient",
+              "coef": 1
+            },
+            {
+              "state": "loading_sq",
+              "coef": 75
+            }
+          ]
+        }
+      },
+      {
+        "target": "oil_temp",
+        "tier": "F1",
+        "dt_ms": 10000,
+        "f1": {
+          "form": "first_order_lag",
+          "time_constant_s": 7200,
+          "gain": 1,
+          "inputs": [
+            {
+              "state": "ambient",
+              "coef": 1
+            },
+            {
+              "state": "loading_sq",
+              "coef": 50
+            }
+          ]
+        }
+      },
+      {
+        "target": "derate",
+        "tier": "F1",
+        "f1": {
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "winding_temp",
+              "coef": 1
+            }
+          ],
+          "table": {
+            "x": [
+              100,
+              110,
+              120,
+              140
+            ],
+            "values": [
+              1,
+              0.95,
+              0.85,
+              0.7
+            ]
+          }
+        }
+      },
+      {
+        "target": "available_power",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "derate",
+              "coef": 800
+            }
+          ]
+        }
+      },
+      {
+        "target": "temp_alarm",
+        "tier": "F1",
+        "dt_ms": 10000,
+        "f1": {
+          "form": "alarm",
+          "alarm": {
+            "watch": "winding_temp",
+            "limit": 110,
+            "direction": "high",
+            "deadband": 5,
+            "on_delay_s": 60,
+            "off_delay_s": 120,
+            "priority": "high",
+            "acknowledge": "ack_count",
+            "shelve": "shelve"
+          }
+        }
+      }
+    ],
+    "faults": [
+      {
+        "id": "cooling_fan_failure",
+        "affects": [
+          {
+            "state": "winding_temp",
+            "delta": 0.15,
+            "multiplicative": true
+          },
+          {
+            "state": "oil_temp",
+            "delta": 0.25,
+            "multiplicative": true
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "winding_temp"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "rate_per_hour": 0.5,
+          "shape": "ramp"
+        }
+      },
+      {
+        "id": "overload",
+        "affects": [
+          {
+            "state": "load",
+            "delta": 0.4,
+            "multiplicative": true
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "load"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "rate_per_hour": 1.0,
+          "shape": "ramp"
+        }
+      },
+      {
+        "id": "hot_day",
+        "affects": [
+          {
+            "state": "ambient",
+            "delta": 10
+          }
+        ],
+        "is_negative_class": true,
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "ambient_temp"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "duration_s": 21600,
+          "magnitude": 1.0,
+          "shape": "pulse"
+        }
+      }
+    ],
+    "effectors": [
+      {
+        "name": "acknowledge_alarm",
+        "risk_class": "low",
+        "idempotency_window_s": 3600,
+        "ack": {
+          "failure_modes": [
+            {
+              "mode": "ok",
+              "probability": 1.0
+            }
+          ],
+          "latency_ms": {
+            "mean": 200,
+            "sigma": 40
+          }
+        },
+        "args_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "transformer_id"
+          ],
+          "properties": {
+            "transformer_id": {
+              "type": "string"
+            }
+          }
+        },
+        "effect": {
+          "dead_time_s": 0,
+          "time_constant_s": 0,
+          "state_deltas": [
+            {
+              "state": "ack_count",
+              "delta": 1
+            }
+          ]
+        }
+      },
+      {
+        "name": "shelve_alarm",
+        "risk_class": "medium",
+        "idempotency_window_s": 3600,
+        "ack": {
+          "failure_modes": [
+            {
+              "mode": "ok",
+              "probability": 1.0
+            }
+          ],
+          "latency_ms": {
+            "mean": 200,
+            "sigma": 40
+          }
+        },
+        "args_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "transformer_id",
+            "duration_s"
+          ],
+          "properties": {
+            "transformer_id": {
+              "type": "string"
+            },
+            "duration_s": {
+              "type": "number",
+              "minimum": 60,
+              "maximum": 28800
+            }
+          }
+        },
+        "lease": {
+          "arg": "duration_s",
+          "fallback": "safe_off",
+          "safe_deltas": [
+            {
+              "state": "shelve",
+              "delta": 0
+            }
+          ]
+        },
+        "effect": {
+          "dead_time_s": 0,
+          "time_constant_s": 0,
+          "state_deltas": [
+            {
+              "state": "shelve",
+              "delta": 1
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "measurement_points": [
+    {
+      "name": "load",
+      "state": "load",
+      "unit_family": "power",
+      "range": {
+        "min": 0,
+        "max": 1400
+      },
+      "tag": "JT",
+      "default_instrument": "streamsim/power-meter@1"
+    },
+    {
+      "name": "winding_temp",
+      "state": "winding_temp",
+      "unit_family": "temperature",
+      "range": {
+        "min": 0,
+        "max": 200
+      },
+      "tag": "TT",
+      "default_instrument": "streamsim/rtd@1"
+    },
+    {
+      "name": "oil_temp",
+      "state": "oil_temp",
+      "unit_family": "temperature",
+      "range": {
+        "min": 0,
+        "max": 150
+      },
+      "tag": "TT",
+      "default_instrument": "streamsim/rtd@1"
+    },
+    {
+      "name": "ambient_temp",
+      "state": "ambient",
+      "unit_family": "temperature",
+      "range": {
+        "min": -20,
+        "max": 60
+      },
+      "tag": "TT",
+      "default_instrument": "streamsim/thermistor@1"
+    },
+    {
+      "name": "alarm_active",
+      "state": "temp_alarm",
+      "unit_family": "state",
+      "range": {
+        "min": 0,
+        "max": 4
+      },
+      "tag": "YA",
+      "default_instrument": "streamsim/annunciator@1",
+      "optional": true
+    }
+  ],
+  "ports": [
+    {
+      "name": "load_in",
+      "type": "electrical",
+      "direction": "consumes",
+      "state": "load"
+    }
+  ],
+  "default_preset": "medium",
+  "presets": {
+    "small": {
+      "title": "Small (about 250 kVA)",
+      "values": {
+        "state/load/initial": 86.0162,
+        "state/available_power/initial": 200,
+        "dynamics/load/f0/baseline": 124,
+        "dynamics/load/f0/seasonality/0/amplitude": 38,
+        "dynamics/loading/f1/inputs/load/coef": 0.005,
+        "dynamics/available_power/f1/inputs/derate/coef": 200,
+        "dynamics/winding_temp/f1/below/time_constant_s": 900,
+        "dynamics/winding_temp/f1/above/time_constant_s": 900,
+        "dynamics/oil_temp/f1/time_constant_s": 5400,
+        "measurement_points/load/range/max": 350
+      }
+    },
+    "medium": {
+      "title": "Medium (about 1000 kVA)",
+      "values": {}
+    },
+    "large": {
+      "title": "Large (about 4000 kVA)",
+      "values": {
+        "state/load/initial": 1376.2592,
+        "state/available_power/initial": 3200,
+        "dynamics/load/f0/baseline": 1984,
+        "dynamics/load/f0/seasonality/0/amplitude": 608,
+        "dynamics/loading/f1/inputs/load/coef": 0.0003125,
+        "dynamics/available_power/f1/inputs/derate/coef": 3200,
+        "dynamics/winding_temp/f1/below/time_constant_s": 1800,
+        "dynamics/winding_temp/f1/above/time_constant_s": 1800,
+        "dynamics/oil_temp/f1/time_constant_s": 10800,
+        "measurement_points/load/range/max": 5600
+      }
+    }
+  },
+  "parameters": [
+    {
+      "name": "alarm_limit_c",
+      "title": "Winding temperature alarm limit",
+      "unit": "degC",
+      "type": "number",
+      "min": 90,
+      "max": 130,
+      "default": 110,
+      "targets": [
+        "dynamics/temp_alarm/f1/alarm/limit"
+      ]
+    },
+    {
+      "name": "cooling",
+      "title": "Cooling method",
+      "type": "enum",
+      "values": [
+        "natural",
+        "forced"
+      ],
+      "default": "natural",
+      "cases": {
+        "natural": {
+          "dynamics/winding_temp/f1/inputs/loading_sq/coef": 75,
+          "dynamics/oil_temp/f1/inputs/loading_sq/coef": 50,
+          "state/winding_temp/initial": 35.874,
+          "state/oil_temp/initial": 31.2498
+        },
+        "forced": {
+          "dynamics/winding_temp/f1/inputs/loading_sq/coef": 60,
+          "dynamics/oil_temp/f1/inputs/loading_sq/coef": 40,
+          "state/winding_temp/initial": 33.0995,
+          "state/oil_temp/initial": 29.4001
+        }
+      }
+    }
+  ]
+}

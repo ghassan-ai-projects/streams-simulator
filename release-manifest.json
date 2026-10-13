@@ -2,18 +2,18 @@
   "manifest": {
     "adapters": {
       "agentic-stream.adapter.json": "sha256:b2dad97d71bd4fa1eeb4a261ccd297682c618da3370cc0870b76f33073e794fa",
-      "native-jsonl.adapter.json": "sha256:370a803df9d3f98e4713c1fa0e70b1a98dbe27a6f13c8641bd899c3bea0c8f54"
+      "native-jsonl.adapter.json": "sha256:42e7faa172cba2bcce35e3b72c03ae7a9194e5bb171b05737449501acce6e020"
     },
     "author": "Streams Simulator maintainers \u003cmaintainers@streams-simulator.local\u003e",
     "consumer": {
       "name": "streamsim-refconsumer",
       "version": "0.1.0"
     },
-    "created_at": "2026-10-12T16:41:45Z",
+    "created_at": "2026-10-13T11:31:41Z",
     "domains": {
       "aquaculture-pond.domain.json": "sha256:e2a716e25081639d5940320fe202706b29c0e9b70780b8291b825e3ced64bd5e",
       "cold-chain-transit.domain.json": "sha256:bb3bab273bd8ff5f082a337771372a86562274f8b0dcb7c679619a9257606b9e",
-      "discrete-line-oee.domain.json": "sha256:0135d71876eb8285df6490583939b25f98150f003b52c18b671f0e8682ee835d",
+      "discrete-line-oee.domain.json": "sha256:7ba90799b41843a221dced02f5b7d40a53396dfcb05012320454d940e3d9c767",
       "host-system-health.domain.json": "sha256:416acb2c3099b4bba36c54d43cdfa2e1894b888d650800c86de80ee7cc13102d",
       "k8s-cluster.domain.json": "sha256:0500ef306cf07753a32ba428e59e5ad1489fb72a684cba88f42347b3c85e9b00",
       "open-field-irrigation.domain.json": "sha256:2760f93605014cdf7e8954464f5f2c6ed0bbdec1dfbb48051034367432d39cf4",
@@ -23,7 +23,7 @@
     "reviewer": "Independent review \u003creview@streams-simulator.local\u003e",
     "schema_version": "release-manifest-v0.1",
     "sim": {
-      "commit": "07d0ad6",
+      "commit": "daad36e",
       "go": "go1.27.2",
       "version": "dev"
     },

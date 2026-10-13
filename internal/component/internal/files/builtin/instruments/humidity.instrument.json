@@ -1,0 +1,66 @@
+{
+  "schema_version": "0.1",
+  "id": "streamsim/humidity",
+  "version": 1,
+  "title": "Capacitive humidity sensor",
+  "description": "Polymer capacitive relative-humidity probe with temperature compensation: +-2 %RH, drifts as the polymer ages or contaminates, saturates when wetted.",
+  "tag": "MT",
+  "unit_family": "humidity",
+  "unit": "%RH",
+  "range": {
+    "min": 0,
+    "max": 100
+  },
+  "channel": {
+    "value_type": "number",
+    "resolution": 0.1,
+    "fidelity": "F1",
+    "absence": "signal",
+    "cadence": {
+      "mode": "periodic",
+      "period_s": 30
+    },
+    "noise": {
+      "model": "gaussian",
+      "sigma": 0.3
+    },
+    "availability": {
+      "uptime": 0.999,
+      "mttr_s": 600
+    }
+  },
+  "faults": [
+    {
+      "id": "offset",
+      "form": "offset",
+      "magnitude": 4.0
+    },
+    {
+      "id": "drift",
+      "form": "drift",
+      "magnitude": 0.5,
+      "duration_s": 43200
+    },
+    {
+      "id": "saturated",
+      "form": "stuck",
+      "stuck_at": "high",
+      "quality": "suspect"
+    },
+    {
+      "id": "dropout",
+      "form": "dropout"
+    },
+    {
+      "id": "noise_burst",
+      "form": "noise",
+      "factor": 15,
+      "quality": "suspect"
+    },
+    {
+      "id": "calibration",
+      "form": "scale",
+      "factor": 0.9
+    }
+  ]
+}

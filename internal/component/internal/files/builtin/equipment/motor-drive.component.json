@@ -1,0 +1,797 @@
+{
+  "schema_version": "0.1",
+  "id": "streamsim/motor-drive",
+  "version": 1,
+  "title": "Variable-frequency motor drive",
+  "description": "Induction motor on a frequency converter: speed follows the setpoint through the drive ramp, shaft power is torque times speed, and the current follows the power. Winding temperature heats with the square of the current and runs away above a threshold. Overload and over-temperature trip and stay tripped until reset.",
+  "class": "rotating/electric_motor/motor_drive",
+  "tags": [
+    "drives",
+    "utilities",
+    "rotating"
+  ],
+  "icon": "motor",
+  "kind": {
+    "state": [
+      {
+        "name": "running",
+        "unit": "on",
+        "initial": 1,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "speed_setpoint",
+        "unit": "rpm",
+        "initial": 1200,
+        "min": 100,
+        "max": 1480.0
+      },
+      {
+        "name": "reset_count",
+        "unit": "count",
+        "initial": 0
+      },
+      {
+        "name": "load_torque",
+        "unit": "N.m",
+        "initial": 152.806,
+        "min": 0
+      },
+      {
+        "name": "ambient",
+        "unit": "degC",
+        "initial": 21.0017
+      },
+      {
+        "name": "overload_ok",
+        "unit": "on",
+        "initial": 1
+      },
+      {
+        "name": "overtemp_ok",
+        "unit": "on",
+        "initial": 1
+      },
+      {
+        "name": "enable",
+        "unit": "on",
+        "initial": 1
+      },
+      {
+        "name": "speed_target",
+        "unit": "rpm",
+        "initial": 1200
+      },
+      {
+        "name": "speed",
+        "unit": "rpm",
+        "initial": 1200,
+        "min": 0
+      },
+      {
+        "name": "shaft_power",
+        "unit": "kW",
+        "initial": 19.2008
+      },
+      {
+        "name": "power_target",
+        "unit": "kW",
+        "initial": 21.386
+      },
+      {
+        "name": "power",
+        "unit": "kW",
+        "initial": 21.386,
+        "min": 0
+      },
+      {
+        "name": "motor_current",
+        "unit": "A",
+        "initial": 56.8912
+      },
+      {
+        "name": "current_ratio",
+        "unit": "ratio",
+        "initial": 0.831135
+      },
+      {
+        "name": "thermal_load",
+        "unit": "degC",
+        "initial": 44.901
+      },
+      {
+        "name": "winding_temp",
+        "unit": "degC",
+        "initial": 65.9027
+      },
+      {
+        "name": "vibration",
+        "unit": "mm/s",
+        "initial": 1.94
+      },
+      {
+        "name": "efficiency",
+        "unit": "%",
+        "initial": 93.0758
+      }
+    ],
+    "dynamics": [
+      {
+        "target": "load_torque",
+        "tier": "F0",
+        "f0": {
+          "baseline": 167.125,
+          "drift_per_hour": 0,
+          "seasonality": [
+            {
+              "amplitude": 14.325,
+              "period_s": 86400,
+              "phase_rad": -1.6
+            }
+          ]
+        }
+      },
+      {
+        "target": "ambient",
+        "tier": "F0",
+        "f0": {
+          "baseline": 25,
+          "drift_per_hour": 0,
+          "seasonality": [
+            {
+              "amplitude": 4,
+              "period_s": 86400,
+              "phase_rad": -1.6
+            }
+          ]
+        }
+      },
+      {
+        "target": "overload_ok",
+        "tier": "F1",
+        "dt_ms": 1000,
+        "f1": {
+          "form": "trip",
+          "when": {
+            "state": "current_ratio",
+            "operator": "gt",
+            "threshold": 1.35
+          },
+          "for_s": 10,
+          "tripped_value": 0,
+          "latch": true,
+          "reset_on": "reset_count"
+        }
+      },
+      {
+        "target": "overtemp_ok",
+        "tier": "F1",
+        "dt_ms": 1000,
+        "f1": {
+          "form": "trip",
+          "when": {
+            "state": "winding_temp",
+            "operator": "gt",
+            "threshold": 140
+          },
+          "for_s": 10,
+          "tripped_value": 0,
+          "latch": true,
+          "reset_on": "reset_count"
+        }
+      },
+      {
+        "target": "enable",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "running",
+              "coef": 1
+            },
+            {
+              "state": "overload_ok",
+              "coef": 1
+            },
+            {
+              "state": "overtemp_ok",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "speed_target",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "speed_setpoint",
+              "coef": 1
+            },
+            {
+              "state": "enable",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "speed",
+        "tier": "F1",
+        "dt_ms": 1000,
+        "f1": {
+          "form": "first_order_lag",
+          "time_constant_s": 4,
+          "gain": 1,
+          "inputs": [
+            {
+              "state": "speed_target",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "shaft_power",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "load_torque",
+              "coef": 1
+            },
+            {
+              "state": "speed",
+              "coef": 0.000104712
+            }
+          ]
+        }
+      },
+      {
+        "target": "power_target",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "shaft_power",
+              "coef": 1.07527
+            },
+            {
+              "state": "enable",
+              "coef": 0.74
+            }
+          ]
+        }
+      },
+      {
+        "target": "power",
+        "tier": "F1",
+        "dt_ms": 1000,
+        "f1": {
+          "form": "first_order_lag",
+          "time_constant_s": 3,
+          "gain": 1,
+          "inputs": [
+            {
+              "state": "power_target",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "motor_current",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "power",
+              "coef": 1.7
+            },
+            {
+              "state": "enable",
+              "coef": 20.535
+            }
+          ]
+        }
+      },
+      {
+        "target": "current_ratio",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "motor_current",
+              "coef": 0.0146092
+            }
+          ]
+        }
+      },
+      {
+        "target": "thermal_load",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "current_ratio",
+              "coef": 65
+            },
+            {
+              "state": "current_ratio",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "winding_temp",
+        "tier": "F1",
+        "dt_ms": 1000,
+        "f1": {
+          "form": "regime",
+          "selector": "winding_temp",
+          "threshold": 130,
+          "below": {
+            "gain": 1,
+            "time_constant_s": 900
+          },
+          "above": {
+            "gain": 1.6,
+            "time_constant_s": 600
+          },
+          "inputs": [
+            {
+              "state": "ambient",
+              "coef": 1
+            },
+            {
+              "state": "thermal_load",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "vibration",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "enable",
+              "coef": 0.5
+            },
+            {
+              "state": "speed",
+              "coef": 0.0012
+            }
+          ]
+        }
+      },
+      {
+        "target": "efficiency",
+        "tier": "F1",
+        "f1": {
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "shaft_power",
+              "coef": 0.027027
+            }
+          ],
+          "table": {
+            "x": [
+              0,
+              0.1,
+              0.25,
+              0.5,
+              0.75,
+              1.0,
+              1.25
+            ],
+            "values": [
+              0,
+              72,
+              88,
+              93,
+              94,
+              93.5,
+              92
+            ]
+          }
+        }
+      }
+    ],
+    "faults": [
+      {
+        "id": "bearing_wear",
+        "affects": [
+          {
+            "state": "vibration",
+            "delta": 5
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "vibration"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "shape": "ramp",
+          "rate_per_hour": 0.1
+        }
+      },
+      {
+        "id": "excess_load",
+        "affects": [
+          {
+            "state": "load_torque",
+            "delta": 1.5,
+            "multiplicative": true
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "motor_current"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "shape": "ramp",
+          "rate_per_hour": 1.0
+        }
+      },
+      {
+        "id": "winding_overheat",
+        "affects": [
+          {
+            "state": "thermal_load",
+            "delta": 1.5,
+            "multiplicative": true
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "winding_temp"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "shape": "ramp",
+          "rate_per_hour": 0.5
+        }
+      },
+      {
+        "id": "load_step",
+        "affects": [
+          {
+            "state": "load_torque",
+            "delta": 0.25,
+            "multiplicative": true
+          }
+        ],
+        "is_negative_class": true,
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "power"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "shape": "pulse",
+          "duration_s": 1200
+        }
+      }
+    ],
+    "effectors": [
+      {
+        "name": "set_running",
+        "risk_class": "medium",
+        "idempotency_window_s": 3600,
+        "ack": {
+          "failure_modes": [
+            {
+              "mode": "ok",
+              "probability": 1.0
+            }
+          ],
+          "latency_ms": {
+            "mean": 300,
+            "sigma": 50
+          }
+        },
+        "args_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "drive_id",
+            "running"
+          ],
+          "properties": {
+            "drive_id": {
+              "type": "string"
+            },
+            "running": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        },
+        "effect": {
+          "dead_time_s": 0,
+          "time_constant_s": 0,
+          "state_deltas": [
+            {
+              "state": "running",
+              "assign_from_arg": "running"
+            }
+          ]
+        }
+      },
+      {
+        "name": "set_speed",
+        "risk_class": "medium",
+        "idempotency_window_s": 3600,
+        "ack": {
+          "failure_modes": [
+            {
+              "mode": "ok",
+              "probability": 1.0
+            }
+          ],
+          "latency_ms": {
+            "mean": 300,
+            "sigma": 50
+          }
+        },
+        "args_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "drive_id",
+            "speed_rpm"
+          ],
+          "properties": {
+            "drive_id": {
+              "type": "string"
+            },
+            "speed_rpm": {
+              "type": "number",
+              "minimum": 100,
+              "maximum": 1480.0
+            }
+          }
+        },
+        "effect": {
+          "dead_time_s": 0,
+          "time_constant_s": 0,
+          "state_deltas": [
+            {
+              "state": "speed_setpoint",
+              "assign_from_arg": "speed_rpm"
+            }
+          ]
+        }
+      },
+      {
+        "name": "reset_trip",
+        "risk_class": "low",
+        "idempotency_window_s": 3600,
+        "ack": {
+          "failure_modes": [
+            {
+              "mode": "ok",
+              "probability": 1.0
+            }
+          ],
+          "latency_ms": {
+            "mean": 300,
+            "sigma": 50
+          }
+        },
+        "args_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "drive_id"
+          ],
+          "properties": {
+            "drive_id": {
+              "type": "string"
+            }
+          }
+        },
+        "effect": {
+          "dead_time_s": 0,
+          "time_constant_s": 0,
+          "state_deltas": [
+            {
+              "state": "reset_count",
+              "delta": 1
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "measurement_points": [
+    {
+      "name": "speed",
+      "state": "speed",
+      "unit_family": "speed",
+      "range": {
+        "min": 0,
+        "max": 1800
+      },
+      "tag": "ST",
+      "default_instrument": "streamsim/tachometer@1"
+    },
+    {
+      "name": "power",
+      "state": "power",
+      "unit_family": "power",
+      "range": {
+        "min": 0,
+        "max": 51.8
+      },
+      "tag": "JT",
+      "default_instrument": "streamsim/power-meter@1"
+    },
+    {
+      "name": "motor_current",
+      "state": "motor_current",
+      "unit_family": "current",
+      "range": {
+        "min": 0,
+        "max": 150.59
+      },
+      "tag": "IT",
+      "default_instrument": "streamsim/current-clamp@1"
+    },
+    {
+      "name": "winding_temp",
+      "state": "winding_temp",
+      "unit_family": "temperature",
+      "range": {
+        "min": 0,
+        "max": 200
+      },
+      "tag": "TT",
+      "default_instrument": "streamsim/rtd@1"
+    },
+    {
+      "name": "vibration",
+      "state": "vibration",
+      "unit_family": "vibration_velocity",
+      "range": {
+        "min": 0,
+        "max": 20
+      },
+      "tag": "VT",
+      "default_instrument": "streamsim/accelerometer@1"
+    },
+    {
+      "name": "run_status",
+      "state": "enable",
+      "unit_family": "state",
+      "range": {
+        "min": 0,
+        "max": 1
+      },
+      "tag": "YS",
+      "default_instrument": "streamsim/run-status@1"
+    }
+  ],
+  "ports": [
+    {
+      "name": "load_in",
+      "type": "load_torque",
+      "direction": "consumes",
+      "state": "load_torque"
+    },
+    {
+      "name": "power_out",
+      "type": "electrical",
+      "direction": "provides",
+      "state": "power"
+    }
+  ],
+  "default_preset": "medium",
+  "presets": {
+    "small": {
+      "title": "Small (5.5 kW)",
+      "values": {
+        "dynamics/current_ratio/f1/inputs/motor_current/coef": 0.0982801,
+        "dynamics/efficiency/f1/inputs/shaft_power/coef": 0.181818,
+        "dynamics/load_torque/f0/baseline": 24.8429,
+        "dynamics/load_torque/f0/seasonality/0/amplitude": 2.12939,
+        "dynamics/motor_current/f1/inputs/enable/coef": 3.0525,
+        "dynamics/power_target/f1/inputs/enable/coef": 0.11,
+        "dynamics/vibration/f1/inputs/enable/coef": 0.4,
+        "dynamics/vibration/f1/inputs/speed/coef": 0.00096,
+        "measurement_points/motor_current/range/max": 22.385,
+        "measurement_points/power/range/max": 7.7,
+        "state/load_torque/initial": 22.7144,
+        "state/motor_current/initial": 8.4568,
+        "state/power/initial": 3.179,
+        "state/power_target/initial": 3.179,
+        "state/shaft_power/initial": 2.85417,
+        "state/vibration/initial": 1.552
+      }
+    },
+    "medium": {
+      "title": "Medium (37 kW)",
+      "values": {}
+    },
+    "large": {
+      "title": "Large (250 kW)",
+      "values": {
+        "dynamics/current_ratio/f1/inputs/motor_current/coef": 0.00216216,
+        "dynamics/efficiency/f1/inputs/shaft_power/coef": 0.004,
+        "dynamics/load_torque/f0/baseline": 1129.22,
+        "dynamics/load_torque/f0/seasonality/0/amplitude": 96.7905,
+        "dynamics/motor_current/f1/inputs/enable/coef": 138.75,
+        "dynamics/power_target/f1/inputs/enable/coef": 5,
+        "dynamics/vibration/f1/inputs/enable/coef": 0.7,
+        "dynamics/vibration/f1/inputs/speed/coef": 0.00168,
+        "measurement_points/motor_current/range/max": 1017.5,
+        "measurement_points/power/range/max": 350,
+        "state/load_torque/initial": 1032.47,
+        "state/motor_current/initial": 384.4,
+        "state/power/initial": 144.5,
+        "state/power_target/initial": 144.5,
+        "state/shaft_power/initial": 129.735,
+        "state/vibration/initial": 2.716
+      }
+    }
+  },
+  "parameters": [
+    {
+      "name": "overload_trip_ratio",
+      "title": "Overload trip current as a multiple of rated",
+      "unit": "ratio",
+      "type": "number",
+      "min": 1.1,
+      "max": 1.8,
+      "default": 1.35,
+      "targets": [
+        "dynamics/overload_ok/f1/when/threshold"
+      ]
+    },
+    {
+      "name": "winding_trip_c",
+      "title": "Winding over-temperature trip",
+      "unit": "degC",
+      "type": "number",
+      "min": 110,
+      "max": 160,
+      "default": 140,
+      "targets": [
+        "dynamics/overtemp_ok/f1/when/threshold"
+      ]
+    }
+  ]
+}

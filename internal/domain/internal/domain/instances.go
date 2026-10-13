@@ -235,7 +235,7 @@ func idTemplatePattern(template string) *regexp.Regexp {
 
 func placeholderPattern(placeholder string) string {
 	if placeholder == "{n}" {
-		return "[0-9]+"
+		return "([0-9]+)"
 	}
 	return "[A-Za-z0-9_.-]+"
 }

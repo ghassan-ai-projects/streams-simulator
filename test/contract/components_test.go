@@ -1,6 +1,7 @@
 package contract
 
 import (
+	"bytes"
 	"context"
 	"os"
 	"path/filepath"
@@ -8,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/component"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/jsonschema"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
@@ -15,7 +17,7 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
-func componentsDir() string { return filepath.Join(testsupport.RepositoryRoot(), "components") }
+func componentsDir() string { return testsupport.ComponentsDir() }
 
 func contractSchema(t *testing.T, stem string) *jsonschema.Schema {
 	t.Helper()
@@ -32,11 +34,15 @@ func contractSchema(t *testing.T, stem string) *jsonschema.Schema {
 
 func TestEveryLibraryFileFollowsItsContract(t *testing.T) {
 	t.Parallel()
-	files := map[string]string{"vocabulary.json": "component-vocabulary-v0.1", "equipment/*.component.json": "component-v0.1",
-		"instruments/*.instrument.json": "instrument-v0.1", "compositions/*.composition.json": "composition-v0.1"}
+	files := map[string]string{
+		filepath.Join(componentsDir(), "vocabulary.json"):                                 "component-vocabulary-v0.1",
+		filepath.Join(componentsDir(), "equipment", "*.component.json"):                   "component-v0.1",
+		filepath.Join(componentsDir(), "instruments", "*.instrument.json"):                "instrument-v0.1",
+		filepath.Join(filepath.Dir(testsupport.PilotComposition()), "*.composition.json"): "composition-v0.1",
+	}
 	for pattern, stem := range files {
 		schema := contractSchema(t, stem)
-		paths, _ := filepath.Glob(filepath.Join(componentsDir(), pattern))
+		paths, _ := filepath.Glob(pattern)
 		if len(paths) == 0 {
 			t.Fatalf("no %s files", pattern)
 		}
@@ -58,9 +64,52 @@ func TestBuiltInLibraryFilesUseTheStreamsimNamespace(t *testing.T) {
 	}
 }
 
-func TestTheHandComposedPilotValidatesAndRunsDeterministically(t *testing.T) {
+func composedPilot(t *testing.T) []byte {
+	t.Helper()
+	library, err := component.NewLibrary(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, err := os.ReadFile(testsupport.PilotComposition())
+	if err != nil {
+		t.Fatal(err)
+	}
+	composed, err := component.Compose(library, raw, "chiller-pilot.composition.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return composed.Bytes
+}
+
+func TestComposingThePilotCompositionReproducesTheExampleByteForByte(t *testing.T) {
 	t.Parallel()
-	spec, err := domain.Load(filepath.Join(testsupport.RepositoryRoot(), "examples", "chiller-pilot.domain.json"))
+	want, err := os.ReadFile(filepath.Join(testsupport.RepositoryRoot(), "examples", "chiller-pilot.domain.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := composedPilot(t); !bytes.Equal(got, want) {
+		t.Fatalf("the committed pilot example is not what streamsim domain compose writes; regenerate it with domain compose --out (%d bytes composed, %d committed)", len(got), len(want))
+	}
+}
+
+func TestThePilotLinkCarriesTheAirHandlingLoadIntoTheSmallChiller(t *testing.T) {
+	t.Parallel()
+	var spec model.DomainSpec
+	if err := model.DecodeBytes(composedPilot(t), &spec); err != nil {
+		t.Fatal(err)
+	}
+	for _, kind := range spec.Kinds {
+		dynamics := kind.DynamicsOf("load")
+		linked := kind.Name == "chiller_small"
+		if linked != (dynamics != nil && dynamics.Follow != nil) {
+			t.Errorf("%s: follow = %+v, want a follow only on chiller_small", kind.Name, dynamics)
+		}
+	}
+}
+
+func TestTheComposedPilotValidatesAndRunsDeterministically(t *testing.T) {
+	t.Parallel()
+	spec, err := domain.Parse(composedPilot(t), "chiller-pilot.composition.json")
 	if err != nil {
 		t.Fatal(err)
 	}

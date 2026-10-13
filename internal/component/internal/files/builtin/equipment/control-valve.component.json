@@ -1,0 +1,593 @@
+{
+  "schema_version": "0.1",
+  "id": "streamsim/control-valve",
+  "version": 1,
+  "title": "Pneumatic control valve with positioner",
+  "description": "Control valve driven by a command: the stem follows the command except inside a stiction band, flow is the opening characteristic times the supply pressure effect. Sticking widens the band, so the stem lags the command in steps; positioner drift offsets the stem; plugging cuts flow at the same position.",
+  "class": "rotating/valve/control_valve",
+  "tags": [
+    "fluids",
+    "utilities",
+    "valve"
+  ],
+  "icon": "valve",
+  "kind": {
+    "state": [
+      {
+        "name": "position_setpoint",
+        "unit": "%",
+        "initial": 45.002132,
+        "min": 0,
+        "max": 100
+      },
+      {
+        "name": "position",
+        "unit": "%",
+        "initial": 45.002132,
+        "min": 0,
+        "max": 100
+      },
+      {
+        "name": "positioner_offset",
+        "unit": "%",
+        "initial": 0
+      },
+      {
+        "name": "friction_gain",
+        "unit": "ratio",
+        "initial": 1,
+        "min": 0.02,
+        "max": 1
+      },
+      {
+        "name": "upstream_pressure",
+        "unit": "kPa",
+        "initial": 380.008528,
+        "min": 0
+      },
+      {
+        "name": "actual_position",
+        "unit": "%",
+        "initial": 45.002132
+      },
+      {
+        "name": "command_error",
+        "unit": "%",
+        "initial": 0
+      },
+      {
+        "name": "travel_deviation",
+        "unit": "%",
+        "initial": 0
+      },
+      {
+        "name": "stick_metric",
+        "unit": "%",
+        "initial": 0
+      },
+      {
+        "name": "opening",
+        "unit": "ratio",
+        "initial": 0.118538
+      },
+      {
+        "name": "supply_factor",
+        "unit": "ratio",
+        "initial": 0.963315
+      },
+      {
+        "name": "flow",
+        "unit": "m3/h",
+        "initial": 57.0947
+      }
+    ],
+    "dynamics": [
+      {
+        "target": "position_setpoint",
+        "tier": "F0",
+        "f0": {
+          "baseline": 50.0,
+          "drift_per_hour": 0,
+          "seasonality": [
+            {
+              "amplitude": 2.0,
+              "period_s": 21600,
+              "phase_rad": -1.6
+            },
+            {
+              "amplitude": 3.0,
+              "period_s": 86400,
+              "phase_rad": -1.6
+            }
+          ]
+        }
+      },
+      {
+        "target": "upstream_pressure",
+        "tier": "F0",
+        "f0": {
+          "baseline": 400,
+          "drift_per_hour": 0,
+          "seasonality": [
+            {
+              "amplitude": 20,
+              "period_s": 86400,
+              "phase_rad": -1.6
+            }
+          ]
+        }
+      },
+      {
+        "target": "position",
+        "tier": "F1",
+        "dt_ms": 1000,
+        "f1": {
+          "form": "regime",
+          "selector": "stick_metric",
+          "threshold": 0.3,
+          "below": {
+            "gain": 1,
+            "time_constant_s": 86400
+          },
+          "above": {
+            "gain": 1,
+            "time_constant_s": 6
+          },
+          "inputs": [
+            {
+              "state": "position_setpoint",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "actual_position",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "position",
+              "coef": 1
+            },
+            {
+              "state": "positioner_offset",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "command_error",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "position_setpoint",
+              "coef": 1
+            },
+            {
+              "state": "actual_position",
+              "coef": -1
+            }
+          ]
+        }
+      },
+      {
+        "target": "travel_deviation",
+        "tier": "F1",
+        "f1": {
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "command_error",
+              "coef": 1
+            }
+          ],
+          "table": {
+            "x": [
+              -100,
+              0,
+              100
+            ],
+            "values": [
+              100,
+              0,
+              100
+            ]
+          }
+        }
+      },
+      {
+        "target": "stick_metric",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "travel_deviation",
+              "coef": 1
+            },
+            {
+              "state": "friction_gain",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "opening",
+        "tier": "F1",
+        "f1": {
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "actual_position",
+              "coef": 1
+            }
+          ],
+          "table": {
+            "x": [
+              0,
+              10,
+              20,
+              30,
+              40,
+              50,
+              60,
+              70,
+              80,
+              90,
+              100
+            ],
+            "values": [
+              0,
+              0.0295752,
+              0.0437345,
+              0.0646727,
+              0.0956352,
+              0.141421,
+              0.209128,
+              0.309249,
+              0.457305,
+              0.676243,
+              1
+            ]
+          }
+        }
+      },
+      {
+        "target": "supply_factor",
+        "tier": "F1",
+        "f1": {
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "upstream_pressure",
+              "coef": 1
+            }
+          ],
+          "table": {
+            "x": [
+              0,
+              100,
+              200,
+              300,
+              400,
+              600,
+              800,
+              1000
+            ],
+            "values": [
+              0,
+              0,
+              0.57735,
+              0.816497,
+              1,
+              1.29099,
+              1.52753,
+              1.73205
+            ]
+          }
+        }
+      },
+      {
+        "target": "flow",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "opening",
+              "coef": 500
+            },
+            {
+              "state": "supply_factor",
+              "coef": 1
+            }
+          ]
+        }
+      }
+    ],
+    "faults": [
+      {
+        "id": "sticking",
+        "affects": [
+          {
+            "state": "friction_gain",
+            "delta": -0.95
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "channel_divergence",
+            "channel_a": "position",
+            "channel_b": "command"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "shape": "ramp",
+          "rate_per_hour": 0.25
+        }
+      },
+      {
+        "id": "positioner_drift",
+        "affects": [
+          {
+            "state": "positioner_offset",
+            "delta": 6
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "channel_divergence",
+            "channel_a": "position",
+            "channel_b": "command"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "shape": "ramp",
+          "rate_per_hour": 0.2
+        }
+      },
+      {
+        "id": "plugging",
+        "affects": [
+          {
+            "state": "flow",
+            "delta": -0.35,
+            "multiplicative": true
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "flow"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "shape": "ramp",
+          "rate_per_hour": 0.1
+        }
+      },
+      {
+        "id": "supply_pressure_dip",
+        "affects": [
+          {
+            "state": "upstream_pressure",
+            "delta": -0.25,
+            "multiplicative": true
+          }
+        ],
+        "is_negative_class": true,
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "flow"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "shape": "pulse",
+          "duration_s": 1800
+        }
+      }
+    ],
+    "effectors": [
+      {
+        "name": "set_position_setpoint",
+        "risk_class": "medium",
+        "idempotency_window_s": 3600,
+        "ack": {
+          "failure_modes": [
+            {
+              "mode": "ok",
+              "probability": 1.0
+            }
+          ],
+          "latency_ms": {
+            "mean": 300,
+            "sigma": 50
+          }
+        },
+        "args_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "valve_id",
+            "position_pct"
+          ],
+          "properties": {
+            "valve_id": {
+              "type": "string"
+            },
+            "position_pct": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100
+            }
+          }
+        },
+        "effect": {
+          "dead_time_s": 0,
+          "time_constant_s": 0,
+          "state_deltas": [
+            {
+              "state": "position_setpoint",
+              "assign_from_arg": "position_pct"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "measurement_points": [
+    {
+      "name": "position",
+      "state": "actual_position",
+      "unit_family": "fraction",
+      "range": {
+        "min": 0,
+        "max": 100
+      },
+      "tag": "ZT",
+      "default_instrument": "streamsim/valve-position@1"
+    },
+    {
+      "name": "command",
+      "state": "position_setpoint",
+      "unit_family": "fraction",
+      "range": {
+        "min": 0,
+        "max": 100
+      },
+      "tag": "ZT",
+      "default_instrument": "streamsim/valve-position@1"
+    },
+    {
+      "name": "flow",
+      "state": "flow",
+      "unit_family": "volumetric_flow",
+      "range": {
+        "min": 0,
+        "max": 250
+      },
+      "tag": "FT",
+      "default_instrument": "streamsim/mag-flow-meter@1"
+    },
+    {
+      "name": "supply_pressure",
+      "state": "upstream_pressure",
+      "unit_family": "pressure",
+      "range": {
+        "min": 0,
+        "max": 1000
+      },
+      "tag": "PT",
+      "default_instrument": "streamsim/pressure-transmitter@1",
+      "optional": true
+    }
+  ],
+  "ports": [
+    {
+      "name": "pressure_in",
+      "type": "pressure",
+      "direction": "consumes",
+      "state": "upstream_pressure"
+    },
+    {
+      "name": "flow_out",
+      "type": "liquid_flow",
+      "direction": "provides",
+      "state": "flow"
+    }
+  ],
+  "default_preset": "medium",
+  "presets": {
+    "small": {
+      "title": "Small (DN25, 70 m3/h at full open)",
+      "values": {
+        "dynamics/flow/f1/inputs/opening/coef": 70,
+        "measurement_points/flow/range/max": 35,
+        "state/flow/initial": 7.9933
+      }
+    },
+    "medium": {
+      "title": "Medium (DN80, 500 m3/h at full open)",
+      "values": {}
+    },
+    "large": {
+      "title": "Large (DN200, 3000 m3/h at full open)",
+      "values": {
+        "dynamics/flow/f1/inputs/opening/coef": 3000,
+        "measurement_points/flow/range/max": 1500,
+        "state/flow/initial": 342.5679
+      }
+    }
+  },
+  "parameters": [
+    {
+      "name": "stiction_band_pct",
+      "title": "Healthy stiction band",
+      "unit": "%",
+      "type": "number",
+      "min": 0.05,
+      "max": 2.0,
+      "default": 0.3,
+      "targets": [
+        "dynamics/position/f1/threshold"
+      ]
+    },
+    {
+      "name": "characteristic",
+      "title": "Inherent flow characteristic",
+      "type": "enum",
+      "values": [
+        "equal_percentage",
+        "linear"
+      ],
+      "default": "equal_percentage",
+      "cases": {
+        "equal_percentage": {
+          "dynamics/opening/f1/table/values/0": 0.0,
+          "dynamics/opening/f1/table/values/1": 0.029575,
+          "dynamics/opening/f1/table/values/2": 0.043734,
+          "dynamics/opening/f1/table/values/3": 0.064673,
+          "dynamics/opening/f1/table/values/4": 0.095635,
+          "dynamics/opening/f1/table/values/5": 0.141421,
+          "dynamics/opening/f1/table/values/6": 0.209128,
+          "dynamics/opening/f1/table/values/7": 0.309249,
+          "dynamics/opening/f1/table/values/8": 0.457305,
+          "dynamics/opening/f1/table/values/9": 0.676243,
+          "dynamics/opening/f1/table/values/10": 1.0
+        },
+        "linear": {
+          "dynamics/opening/f1/table/values/0": 0.0,
+          "dynamics/opening/f1/table/values/1": 0.1,
+          "dynamics/opening/f1/table/values/2": 0.2,
+          "dynamics/opening/f1/table/values/3": 0.3,
+          "dynamics/opening/f1/table/values/4": 0.4,
+          "dynamics/opening/f1/table/values/5": 0.5,
+          "dynamics/opening/f1/table/values/6": 0.6,
+          "dynamics/opening/f1/table/values/7": 0.7,
+          "dynamics/opening/f1/table/values/8": 0.8,
+          "dynamics/opening/f1/table/values/9": 0.9,
+          "dynamics/opening/f1/table/values/10": 1.0
+        }
+      }
+    }
+  ]
+}

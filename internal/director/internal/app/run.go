@@ -82,7 +82,7 @@ func (d *Director) VerifyRun(artifactPath string) (map[string]any, error) {
 	if err != nil {
 		return nil, rules.ToolErrorf(rules.CodeDomainInvalid, "%v", err)
 	}
-	spec, err := d.Catalog.Describe(art.Domain.ID)
+	spec, err := d.catalog().Describe(art.Domain.ID)
 	if err != nil {
 		return nil, rules.ToolErrorf(rules.CodeDomainInvalid, "%v", err)
 	}
@@ -123,7 +123,7 @@ func auditWindow(startNS, durationNS int64) (int64, int64) {
 }
 
 func (d *Director) auditPanel(domainID string) (*domain.Compiled, *audit.Panel, error) {
-	spec, err := d.Catalog.Describe(domainID)
+	spec, err := d.catalog().Describe(domainID)
 	if err != nil {
 		return nil, nil, rules.ToolErrorf(rules.CodeDomainInvalid, "%v", err)
 	}

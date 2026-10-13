@@ -153,10 +153,10 @@ func errOf(_ string, err error) error { return err }
 
 func TestFacadeConstructorsAndRefusals(t *testing.T) {
 	t.Parallel()
-	if _, err := director.NewFromDirs(t.Context(), t.TempDir(), testsupport.AdaptersDir(), t.TempDir()); err == nil || !strings.Contains(err.Error(), "no domains found in") {
+	if _, err := director.NewFromDirs(t.Context(), t.TempDir(), testsupport.AdaptersDir(), t.TempDir(), nil); err == nil || !strings.Contains(err.Error(), "no domains found in") {
 		t.Fatalf("an empty domains directory: %v", err)
 	}
-	d, err := director.NewFromDirs(t.Context(), testsupport.DomainsDir(), testsupport.AdaptersDir(), t.TempDir())
+	d, err := director.NewFromDirs(t.Context(), testsupport.DomainsDir(), testsupport.AdaptersDir(), t.TempDir(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}

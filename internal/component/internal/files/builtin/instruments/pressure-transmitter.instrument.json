@@ -1,0 +1,67 @@
+{
+  "schema_version": "0.1",
+  "id": "streamsim/pressure-transmitter",
+  "version": 1,
+  "title": "Gauge pressure transmitter (4-20 mA)",
+  "description": "Piezoresistive gauge pressure transmitter with 0.075 % of span accuracy; its zero shifts with mounting stress, its span with a bad calibration, and a lost loop reads zero.",
+  "tag": "PT",
+  "unit_family": "pressure",
+  "unit": "kPa",
+  "range": {
+    "min": -100,
+    "max": 6000
+  },
+  "channel": {
+    "value_type": "number",
+    "resolution": 0.1,
+    "fidelity": "F1",
+    "absence": "signal",
+    "cadence": {
+      "mode": "periodic",
+      "period_s": 2
+    },
+    "noise": {
+      "model": "gaussian",
+      "sigma": 0.00075
+    },
+    "availability": {
+      "uptime": 0.999,
+      "mttr_s": 600
+    }
+  },
+  "faults": [
+    {
+      "id": "offset",
+      "form": "offset",
+      "magnitude": 0.01
+    },
+    {
+      "id": "drift",
+      "form": "drift",
+      "magnitude": 0.001,
+      "duration_s": 86400
+    },
+    {
+      "id": "loop_lost",
+      "form": "stuck",
+      "stuck_at": "low",
+      "quality": "out_of_range"
+    },
+    {
+      "id": "dropout",
+      "form": "dropout"
+    },
+    {
+      "id": "pulsation",
+      "form": "noise",
+      "factor": 15,
+      "quality": "suspect"
+    },
+    {
+      "id": "span_error",
+      "form": "scale",
+      "factor": 1.05
+    }
+  ],
+  "scaling": "span"
+}

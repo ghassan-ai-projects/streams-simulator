@@ -1,0 +1,381 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ghassan-ai-projects/streams-simulator/contracts/component-v0.1.schema.json",
+  "title": "component-v0.1",
+  "description": "Reusable equipment: a domain-spec v0.2 kind without channels or name, its measurement points, ports, presets and parameters (COMPONENTS_V0_1.md \u00a72).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "id",
+    "version",
+    "title",
+    "class",
+    "kind",
+    "measurement_points"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.1"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{1,31}/[a-z][a-z0-9-]{1,31}$"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 4000
+    },
+    "class": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{1,31}(/[a-z][a-z0-9_]{1,31}){1,3}$",
+      "description": "Equipment class path, ISO 14224 where one exists (rotating, static, electrical, instrumentation); open for process loads and sources."
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9-]{1,31}$"
+      },
+      "uniqueItems": true
+    },
+    "icon": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{1,31}$"
+    },
+    "kind": {
+      "type": "object",
+      "description": "A domain-spec v0.2 kind without name and channels: compose names it and attaches instruments. Its members are validated by the domain validator after compose.",
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "name"
+            ]
+          },
+          {
+            "required": [
+              "channels"
+            ]
+          }
+        ]
+      },
+      "required": [
+        "state"
+      ],
+      "properties": {
+        "state": {
+          "type": "array",
+          "minItems": 1
+        },
+        "dynamics": {
+          "type": "array"
+        },
+        "faults": {
+          "type": "array"
+        },
+        "effectors": {
+          "type": "array"
+        },
+        "flows": {
+          "type": "array"
+        },
+        "system": {
+          "type": "boolean"
+        },
+        "boundaries": {
+          "type": "array"
+        }
+      },
+      "additionalProperties": false
+    },
+    "measurement_points": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "state",
+          "unit_family",
+          "range",
+          "tag",
+          "default_instrument"
+        ],
+        "properties": {
+          "name": {
+            "$ref": "#/$defs/short_name"
+          },
+          "state": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,63}$"
+          },
+          "unit_family": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{1,31}$"
+          },
+          "range": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "min",
+              "max"
+            ],
+            "properties": {
+              "min": {
+                "type": "number"
+              },
+              "max": {
+                "type": "number"
+              }
+            }
+          },
+          "tag": {
+            "type": "string",
+            "pattern": "^[A-Z]{1,3}$"
+          },
+          "default_instrument": {
+            "$ref": "#/$defs/reference"
+          },
+          "optional": {
+            "type": "boolean",
+            "description": "An optional point is attached only when a composition adds it."
+          }
+        }
+      }
+    },
+    "ports": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "type",
+          "direction",
+          "state"
+        ],
+        "properties": {
+          "name": {
+            "$ref": "#/$defs/short_name"
+          },
+          "type": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{1,19}$"
+          },
+          "direction": {
+            "enum": [
+              "provides",
+              "consumes"
+            ]
+          },
+          "state": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,63}$"
+          },
+          "sample_s": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "description": "A consuming port reads the provided state as it was at the previous sample instant of this period, which lets a loop between components close (domain-spec v0.2 section 28)."
+          }
+        }
+      }
+    },
+    "default_preset": {
+      "$ref": "#/$defs/preset_name"
+    },
+    "presets": {
+      "type": "object",
+      "propertyNames": {
+        "$ref": "#/$defs/preset_name"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "title",
+          "values"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "values": {
+            "type": "object",
+            "propertyNames": {
+              "$ref": "#/$defs/target"
+            },
+            "additionalProperties": {
+              "type": [
+                "number",
+                "string",
+                "boolean"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "parameters": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "title",
+          "type",
+          "default"
+        ],
+        "oneOf": [
+          {
+            "properties": {
+              "type": {
+                "enum": [
+                  "number",
+                  "integer"
+                ]
+              }
+            },
+            "required": [
+              "targets"
+            ],
+            "not": {
+              "required": [
+                "cases"
+              ]
+            }
+          },
+          {
+            "properties": {
+              "type": {
+                "const": "enum"
+              }
+            },
+            "required": [
+              "values",
+              "cases"
+            ],
+            "not": {
+              "required": [
+                "targets"
+              ]
+            }
+          }
+        ],
+        "properties": {
+          "name": {
+            "$ref": "#/$defs/name"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "unit": {
+            "type": "string",
+            "pattern": "^[A-Za-z%][A-Za-z0-9%/._^-]{0,15}$"
+          },
+          "type": {
+            "enum": [
+              "number",
+              "integer",
+              "enum"
+            ]
+          },
+          "min": {
+            "type": "number"
+          },
+          "max": {
+            "type": "number"
+          },
+          "values": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_-]{0,63}$"
+            }
+          },
+          "default": {
+            "type": [
+              "number",
+              "string"
+            ]
+          },
+          "targets": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/$defs/target"
+            }
+          },
+          "cases": {
+            "type": "object",
+            "description": "enum: for each value, the target values it writes.",
+            "propertyNames": {
+              "pattern": "^[a-z][a-z0-9_-]{0,63}$"
+            },
+            "additionalProperties": {
+              "type": "object",
+              "propertyNames": {
+                "$ref": "#/$defs/target"
+              },
+              "additionalProperties": {
+                "type": [
+                  "number",
+                  "string",
+                  "boolean"
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*$",
+      "maxLength": 48,
+      "description": "No double underscore: compose uses it to qualify names."
+    },
+    "preset_name": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]{0,31}$"
+    },
+    "reference": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{1,31}/[a-z][a-z0-9-]{1,31}@[1-9][0-9]*$"
+    },
+    "target": {
+      "type": "string",
+      "pattern": "^(state|dynamics|flows|effectors|faults|measurement_points)/[a-z][a-z0-9_]{0,63}(/[A-Za-z0-9_]+)+$",
+      "description": "<section>/<name>/<path>: an item of a keyed array (inputs, affects, state_deltas, failure_modes) is selected by its key; only unkeyed arrays by position."
+    },
+    "short_name": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*$",
+      "maxLength": 20,
+      "description": "Measurement points and ports: short enough that qualified names stay within 64 characters."
+    }
+  },
+  "dependentRequired": {
+    "presets": [
+      "default_preset"
+    ]
+  }
+}

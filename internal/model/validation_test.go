@@ -102,3 +102,33 @@ func TestWithSourceNamesOnlyAnUnnamedValidationError(t *testing.T) {
 		t.Fatal("nil must stay nil")
 	}
 }
+
+func TestEveryContractMapsToAStableFailureCode(t *testing.T) {
+	t.Parallel()
+	cases := map[Contract]string{
+		ContractDomainSpec: "domain_invalid", ContractOutputAdapter: "adapter_invalid", ContractScenario: "scenario_invalid",
+		ContractRunArtifact: "artifact_invalid", ContractConsumerVerdict: "artifact_invalid", ContractGroundTruth: "artifact_invalid",
+		ContractDeliveryLedger: "artifact_invalid", ContractStateHistory: "artifact_invalid",
+		ContractComponent: "component_invalid", ContractInstrument: "component_invalid", ContractVocabulary: "component_invalid",
+		ContractComposition: "composition_invalid",
+	}
+	for contract, want := range cases {
+		if got, ok := contract.FailureCode(); !ok || got != want {
+			t.Errorf("%s FailureCode = %q, %v, want %q", contract, got, ok, want)
+		}
+	}
+	if code, ok := Contract("unknown").FailureCode(); ok {
+		t.Errorf("an unknown contract has code %q", code)
+	}
+}
+
+func TestFailureCodeOfReadsTheContractOfAWrappedValidationError(t *testing.T) {
+	t.Parallel()
+	invalid := &ValidationError{Contract: ContractComposition, Summary: "bad"}
+	if code, ok := FailureCodeOf(fmt.Errorf("compose: %w", invalid)); !ok || code != "composition_invalid" {
+		t.Fatalf("FailureCodeOf = %q, %v, want composition_invalid", code, ok)
+	}
+	if code, ok := FailureCodeOf(errors.New("plain")); ok {
+		t.Fatalf("a plain error has code %q", code)
+	}
+}

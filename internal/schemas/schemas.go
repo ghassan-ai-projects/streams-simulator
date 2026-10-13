@@ -48,3 +48,23 @@ func Scenario() []byte { return scenario }
 func RunJournal() []byte { return runJournal }
 
 func RunReport() []byte { return runReport }
+
+//go:embed component-v0.1.schema.json
+var component []byte
+
+//go:embed instrument-v0.1.schema.json
+var instrument []byte
+
+//go:embed composition-v0.1.schema.json
+var composition []byte
+
+//go:embed component-vocabulary-v0.1.schema.json
+var componentVocabulary []byte
+
+func Component() []byte { return component }
+
+func Instrument() []byte { return instrument }
+
+func Composition() []byte { return composition }
+
+func ComponentVocabulary() []byte { return componentVocabulary }

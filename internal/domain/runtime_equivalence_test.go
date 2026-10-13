@@ -15,7 +15,7 @@ import (
 var v01RuntimeDigests = map[string]string{
 	"aquaculture-pond":      "sha256:07239180fb86a73b75393acaf02c6618972f0927de6ed6a65b325868cafe7908",
 	"cold-chain-transit":    "sha256:527b81cf10a6e8dd3a5f19d199efc415780c7bea071ef6d2a6707ba84eb2cbfe",
-	"discrete-line-oee":     "sha256:c5312b22db603334c249c1e30313cae0ac71d42a929c36365a1c9fa95a1d644b",
+	"discrete-line-oee":     "sha256:015934c98370189516b3a537616c18a35484e0a1b38ead788936f1b6a03179b9",
 	"host-system-health":    "sha256:da36450f72d9e46cdcf0999b9f38a2704f9535d9524b0c0c03bdd50153e2904c",
 	"k8s-cluster":           "sha256:f823d642be85b19560d02bcda39ab435d087016e296f1bf6b1e211a3bd8388ab",
 	"open-field-irrigation": "sha256:936ae49fc4c7b0f182a5368b642e764127f2541b4d40ad8ecf7bf8c1f5060121",

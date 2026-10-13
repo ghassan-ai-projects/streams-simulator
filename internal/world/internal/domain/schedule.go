@@ -32,7 +32,8 @@ func scheduleOffset(schedule *model.Schedule, t, startNS int64) float64 {
 		return float64(t-startNS) / secondsPerNS
 	}
 	periodNS := int64(schedule.PeriodS * secondsPerNS)
-	return float64((t%periodNS+periodNS)%periodNS) / secondsPerNS
+	local := t + int64(schedule.UTCOffsetS*secondsPerNS)
+	return float64((local%periodNS+periodNS)%periodNS) / secondsPerNS
 }
 
 func pointBefore(schedule *model.Schedule, reached int) model.SchedulePoint {

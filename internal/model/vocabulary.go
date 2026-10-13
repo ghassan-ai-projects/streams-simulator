@@ -9,6 +9,7 @@ const (
 
 type Schedule struct {
 	PeriodS       float64         `json:"period_s,omitempty"`
+	UTCOffsetS    float64         `json:"utc_offset_s,omitempty"`
 	Interpolation string          `json:"interpolation"`
 	Points        []SchedulePoint `json:"points"`
 }

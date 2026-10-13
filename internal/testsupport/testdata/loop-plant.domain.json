@@ -1,0 +1,133 @@
+{
+  "id": "loop-plant",
+  "version": "0.2.0",
+  "title": "Loop plant",
+  "description": "A tank and a cooler that read each other over links; the tank reads the cooler by sample.",
+  "axes": {
+    "absence": "signal",
+    "actuation": "advisory",
+    "cadence": ["periodic"],
+    "cardinality": "fleet",
+    "consequence": ["downtime"],
+    "correlation": ["peer"],
+    "fidelity": ["F0", "F1"],
+    "lateness": "bounded",
+    "rate": "low",
+    "seasonality": ["none"],
+    "time_reference": "wall",
+    "value_shape": ["scalar"]
+  },
+  "stresses": "A feedback loop between kinds closed by a sampled link read.",
+  "kinds": [
+    {
+      "name": "tank",
+      "state": [{"name": "heat_in", "unit": "kW", "initial": 10.0}, {"name": "temp", "unit": "C", "initial": 0.0}],
+      "dynamics": [
+        {"target": "heat_in", "tier": "F0", "f0": {"baseline": 10.0}},
+        {
+          "target": "temp",
+          "tier": "F1",
+          "dt_ms": 1000,
+          "f1": {
+            "form": "first_order_lag",
+            "gain": 1.0,
+            "inputs": [
+              {"state": "heat_in", "coef": 1.0},
+              {"state": "duty", "coef": -1.0, "link": {"aggregate": "sum", "sample_s": 10, "type": "cooling"}}
+            ],
+            "time_constant_s": 200
+          }
+        }
+      ],
+      "channels": [
+        {
+          "name": "tank.temp",
+          "unit": "u",
+          "absence": "signal",
+          "cadence": {"mode": "periodic", "period_s": 60},
+          "fidelity": "F1",
+          "link_delay": {"mean_s": 0.1, "model": "constant"},
+          "noise": {"model": "gaussian", "sigma": 0.05},
+          "observes": "temp",
+          "resolution": 0.001,
+          "value_type": "number"
+        }
+      ],
+      "faults": [
+        {
+          "id": "tank_heat",
+          "affects": [{"state": "heat_in", "delta": 1.0}],
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "tank.temp"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"magnitude": 1.0, "shape": "step"}
+        }
+      ]
+    },
+    {
+      "name": "cooler",
+      "state": [{"name": "duty", "unit": "kW", "initial": 0.0}],
+      "dynamics": [
+        {
+          "target": "duty",
+          "tier": "F1",
+          "dt_ms": 2000,
+          "f1": {
+            "form": "first_order_lag",
+            "gain": 1.0,
+            "inputs": [{"state": "temp", "coef": 0.5, "link": {"aggregate": "sum", "type": "heat"}}],
+            "time_constant_s": 50
+          }
+        }
+      ],
+      "channels": [
+        {
+          "name": "cooler.duty",
+          "unit": "u",
+          "absence": "signal",
+          "cadence": {"mode": "periodic", "period_s": 60},
+          "fidelity": "F1",
+          "link_delay": {"mean_s": 0.1, "model": "constant"},
+          "noise": {"model": "gaussian", "sigma": 0.05},
+          "observes": "duty",
+          "resolution": 0.001,
+          "value_type": "number"
+        }
+      ],
+      "faults": [
+        {
+          "id": "cooler_boost",
+          "affects": [{"state": "duty", "delta": 1.0}],
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "cooler.duty"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"magnitude": 1.0, "shape": "step"}
+        }
+      ]
+    }
+  ],
+  "instances": [{"kind": "tank", "names": ["tank-1"]}, {"kind": "cooler", "names": ["cooler-1"]}],
+  "link_types": [{"name": "heat", "from": "tank", "to": "cooler"}, {"name": "cooling", "from": "cooler", "to": "tank"}],
+  "links": [
+    {"from": "tank-1", "to": "cooler-1", "type": "heat"},
+    {"from": "cooler-1", "to": "tank-1", "type": "cooling"}
+  ],
+  "profiles": [
+    {"name": "nominal", "duration_s": 7200, "description": "One loop."},
+    {
+      "name": "correlated_cascade",
+      "not_applicable": "The test plant has one loop only.",
+      "description": "Not applicable."
+    },
+    {
+      "name": "sensor_pathology",
+      "not_applicable": "The test plant has no sensor faults.",
+      "description": "Not applicable."
+    }
+  ],
+  "ground_truth": {"min_per_label": 10, "min_scenarios": 100, "negative_class_fraction": 0.4, "pre_degraded_fraction": 0.1}
+}

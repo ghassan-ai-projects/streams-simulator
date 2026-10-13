@@ -53,10 +53,7 @@ func storeState(s *stateValue, at int64) *stateValue {
 }
 
 func stepNS(dyn *model.Dynamics) int64 {
-	if dyn.DTMs <= 0 {
-		return secondsPerNS
-	}
-	return dyn.DTMs * 1e6
+	return dyn.StepMs() * 1e6
 }
 
 func (group *storeGroup) index(name string) int {

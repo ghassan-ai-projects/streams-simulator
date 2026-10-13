@@ -1,0 +1,257 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ghassan-ai-projects/streams-simulator/contracts/composition-v0.1.schema.json",
+  "title": "composition-v0.1",
+  "description": "A plant built from library equipment and instruments; streamsim domain compose writes it as an ordinary domain (COMPONENTS_V0_1.md \u00a74).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "id",
+    "version",
+    "title",
+    "stresses",
+    "axes",
+    "equipment",
+    "profiles",
+    "ground_truth"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.1"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{2,63}$"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 4000
+    },
+    "stresses": {
+      "type": "string",
+      "minLength": 20
+    },
+    "axes": {
+      "type": "object",
+      "description": "Copied into the domain; validated by domain-spec v0.2."
+    },
+    "profiles": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Copied into the domain; fault weights name composed (qualified) fault ids.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "not_applicable": {
+            "type": "string",
+            "minLength": 20,
+            "maxLength": 400,
+            "description": "In place of a profile definition: why this family is fiction in this domain."
+          }
+        }
+      }
+    },
+    "ground_truth": {
+      "type": "object",
+      "description": "Copied into the domain."
+    },
+    "site": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._/-]{0,127}$"
+        },
+        "timezone": {
+          "type": "string",
+          "pattern": "^[A-Za-z_]+(/[A-Za-z0-9_+-]+){0,2}$"
+        }
+      }
+    },
+    "areas": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "$ref": "#/$defs/area"
+          },
+          "parent": {
+            "$ref": "#/$defs/area"
+          }
+        }
+      }
+    },
+    "equipment": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "use"
+        ],
+        "properties": {
+          "use": {
+            "$ref": "#/$defs/reference"
+          },
+          "as": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*$",
+            "maxLength": 20,
+            "description": "The kind name in the composed domain; defaults to the component's name with hyphens as underscores."
+          },
+          "preset": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_-]{0,31}$"
+          },
+          "parameters": {
+            "type": "object",
+            "propertyNames": {
+              "pattern": "^[a-z][a-z0-9_]{0,47}$"
+            },
+            "additionalProperties": {
+              "type": [
+                "number",
+                "string"
+              ]
+            }
+          },
+          "names": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,255}$"
+            }
+          },
+          "id_template": {
+            "type": "string",
+            "minLength": 1
+          },
+          "count": {
+            "type": "object",
+            "required": [
+              "default"
+            ],
+            "properties": {
+              "default": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "min": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "max": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "additionalProperties": false
+          },
+          "area": {
+            "$ref": "#/$defs/area"
+          },
+          "instruments": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "replace": {
+                "type": "object",
+                "propertyNames": {
+                  "pattern": "^[a-z][a-z0-9_]{0,47}$"
+                },
+                "additionalProperties": {
+                  "$ref": "#/$defs/reference"
+                }
+              },
+              "remove": {
+                "type": "array",
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]{0,47}$"
+                }
+              },
+              "add": {
+                "type": "array",
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]{0,47}$"
+                }
+              }
+            }
+          }
+        },
+        "anyOf": [
+          {
+            "required": [
+              "names"
+            ]
+          },
+          {
+            "required": [
+              "id_template",
+              "count"
+            ]
+          }
+        ]
+      }
+    },
+    "connections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "from",
+          "to"
+        ],
+        "properties": {
+          "from": {
+            "$ref": "#/$defs/endpoint"
+          },
+          "to": {
+            "$ref": "#/$defs/endpoint"
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "reference": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{1,31}/[a-z][a-z0-9-]{1,31}@[1-9][0-9]*$"
+    },
+    "area": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._/-]{0,127}$"
+    },
+    "endpoint": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,255}\\.[a-z][a-z0-9_]{0,47}$",
+      "description": "<instance id>.<port name>"
+    }
+  }
+}

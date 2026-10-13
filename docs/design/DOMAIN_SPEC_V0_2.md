@@ -314,6 +314,10 @@ Cross-checks: the schedule against direct table values at boundary and interpola
 closed form switching at `ceil(τ_below · ln((g·u − x0)/(g·u − threshold)))` (1e-6); the peak against an independent recomputation
 of block means, period roll-over and ratchet over two days (1e-9).
 
+**Site clock (P7k).** A periodic schedule may declare `utc_offset_s` (it needs `period_s`: a non-zero offset without a period is refused at `/…/f0/schedule/utc_offset_s`): its `at_s` is then local time within the period, so a
+daily profile or a weekly shift calendar follows the site's clock. In an epoch-aligned weekly period, Monday 00:00 is
+`at_s` 345600 (1970-01-01 was a Thursday).
+
 ## 17. Protection: conditions, trips, anti-recycle, boundaries, preconditions (phase P6c)
 
 Review item S14 separates three things the word `lockout` covered: a **latched trip** (`lockout`), a **timer** (`anti_recycle`)
@@ -583,3 +587,48 @@ its code holds from the end of the step, like a control system's alarm scan.
   alarms), which belong to the KPI truth of P7k.
 
 A channel that observes the alarm state shows annunciation to a consumer; acknowledge and shelve are ordinary effectors.
+
+## 27. Domain lint (phase P7j)
+
+`streamsim domain lint <domain.json> [--hours H] [--seed S]` judges a domain that already validates by simulating it: a nominal
+day, so a composed plant that is valid but behaves absurdly is caught before use. It reads the domain and changes nothing.
+
+**The nominal day.** A noiseless world (`Noiseless`, `EmitDisabled`) with the default population, seed `S` (default 1), from
+the default world start for `H` simulated hours (default 24, at most 720), with no fault and no effector call. Every entity's
+every state (`StateValue`) and every number or counter channel (the noise-free `Reading`) is sampled every 60 s from the start,
+plus the end of the run. Samples are read in time order across all entities.
+
+**Findings.** Each carries `severity` (`error` or `warning`), `code`, `entity`, the `channel`, `state` or `fault` it concerns,
+`at_s` (simulated seconds since the start) and a `detail` with the numbers. A series is reported once per code, at the first
+sample that triggers it.
+
+| Code | Severity | Fires when |
+|---|---|---|
+| `non_finite` | error | a state or reading is NaN or infinite; the other rules skip that series |
+| `out_of_range` | error | a channel that declares a `range` reads outside it; `detail` gives the worst reading and how many samples are outside |
+| `pinned_at_bound` | warning | an integrated state (tier F1, not algebraic, not a discrete form: `trip`, `anti_recycle`, `sequencer`, `pid`, `alarm`, and not the target of a `follow`) sits at its declared `min` or `max` in more than 50 % of the samples, whatever its span: an integrated state that never leaves its bound (span 0) is reported too. A tier F0, scheduled, binary-flag, discrete-form, algebraic or followed state is never reported |
+| `not_settled` | warning | an integrated state (as above, without the follow exclusion) changes between the start of the last 10 % of the run and the end by more than 5 % of its observed span per hour; a state driven by a seasonal or scheduled F0 source cycles daily and is not reported. Drivers are followed through its F1 inputs (a linked input reads the providing kind), through its `follow` to the providing kind's state and that state's dynamics, and, for a store, through the flows it takes part in to the other store and the scale states |
+| `conservation_residual` | warning | for a fault whose detector is `conservation_residual`, the balance of its channels (inputs minus outputs, as the truth solver sums them) exceeds 3 times the combined noise sigma (the root of the summed squared sigmas of all its channels) at any sample; `detail` gives the worst residual and the limit |
+
+**Output.** One `cli-output-v0.1` document `{domain, digest, seed, hours, samples, findings, errors, warnings}`, findings
+sorted by entity, then channel, state or fault, then code, then time. The same domain, seed and hours give byte-identical
+output. Any `error` finding makes the command fail with code `domain_lint` (exit 1), with the same report as the failure
+`result`; warnings alone exit 0.
+
+**Limits.** The lint judges the nominal day only: it exercises no effector and injects no fault, so a state that moves only
+under command is idle here. Its thresholds are fixed; a warning is a prompt to look, not a defect.
+
+## 28. Feedback loops: sampled link reads (phase P7k)
+
+A linked input or a `follow` may declare `sample_s`: it then reads the linked states as they were at the latest instant of a
+grid of that period, counted from the world start, strictly before the read (the world start itself for the first period).
+A sampled read closes a feedback loop between kinds, such as a chiller and its cooling tower or a header and the consumers that
+draw on it.
+
+- **Validation**: kinds may read each other in a cycle only when every cycle contains a sampled read; `sample_s` is a whole
+  number of milliseconds and a multiple of every integrated step of the source kind, so a sampled read always falls on the
+  source's step boundaries; a kind read by sample does not churn.
+- **Determinism**: a sampled read looks strictly into the past, so a loop never asks a state for a value it is still computing;
+  the world tests prove a tank and cooler loop against an independent recurrence and against random read schedules.
+- **History**: a source keeps history for a sampled reader back to the reader's progress minus the sample period and four of its
+  steps, so a loop keeps a bounded history.

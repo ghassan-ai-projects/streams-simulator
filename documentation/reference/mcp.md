@@ -15,6 +15,8 @@ The director runs over stdio. A director may also serve a streamable HTTP operat
 go run ./cmd/streamsim mcp --role director --operator-addr 127.0.0.1:0 --out runs
 ```
 
+The built-in component library is embedded in the binary and always served; `--components-dir <dir>` (repeatable) and `STREAMSIM_COMPONENTS_DIRS` add customer libraries after it.
+
 The `sim.world.create` response includes the endpoint when configured and always includes the world capability token. Never commit or log the token.
 
 ## Director tools
@@ -25,6 +27,9 @@ The `sim.world.create` response includes the endpoint when configured and always
 | `sim.catalog.describe` | Describe one domain. | `domain`. |
 | `sim.catalog.coverage` | Return axis coverage. | None. |
 | `sim.adapter.list` | List installed adapters. | None. |
+| `sim.component.list` | List the component library: the built-in one plus any `--components-dir` customer directories. | None. |
+| `sim.component.describe` | Describe a library entry. | `ref` (`namespace/name` or `namespace/name@major`). |
+| `sim.domain.compose` | Compose a composition into a domain; with `install` it joins the catalog so `sim.world.create` can use it (an id already installed with another digest is refused). | `composition` (object), `install` (boolean). |
 | `sim.world.create` | Create a seeded world and operator capability. | `domain`; `sink_target` for file/http-push sinks. |
 | `sim.world.describe` | Report world configuration, clock, and emitted count. | `world_id`. |
 | `sim.world.destroy` | End and remove a world. | `world_id`. |
