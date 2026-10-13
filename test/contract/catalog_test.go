@@ -75,6 +75,9 @@ func TestCatalogSkipListStaysEmpty(t *testing.T) {
 func TestCatalogEveryEquipmentPreset(t *testing.T) {
 	t.Parallel()
 	testsupport.SkipUnderRace(t, "simulates every component of the library")
+	if testing.Short() {
+		t.Skip("simulates every component of the library; runs in ci-check, not in make quick")
+	}
 	cases := catalogCases(t)
 	if len(cases) == 0 {
 		t.Fatal("the library holds no equipment")
