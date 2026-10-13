@@ -30,3 +30,12 @@ P7i lands in steps, one commit each. Domain-spec v0.2 §22 onwards holds the rul
 | A curve holds its end values and hits its points | `TestACurveClampsAtItsEndsAndHitsItsPoints` |
 | A fault overlays an algebraic state | `TestAFaultOnAnAlgebraicStateOverlaysItsValue` |
 | Table shape, axis order, arity and algebraic loops are validated; no `dt_ms` is needed | `TestCurveTablesAndProductsAreValidatedByShape` (9 cases) |
+
+## Step 4 — `pid` controller (domain-spec §24)
+
+| Check | Result |
+|---|---|
+| Closed loops with a first-order plant agree with an independent recurrence: PID with derivative, anti-windup with a setpoint drop, manual and back, direct action | `TestAClosedLoopAgreesWithAnIndependentRecurrence` (1e-9 over 1200 s) |
+| The output leaves saturation within a step of the error reversing | `TestAControllerLeavesSaturationAsSoonAsItsErrorReverses` |
+| Mutations caught | Without anti-windup both tests fail; without bumpless manual transfer the manual case fails |
+| Reads, gains, manual pairing and output limits are validated | `TestAPIDControllerIsValidatedByItsReadsGainsAndLimits` (8 cases) |

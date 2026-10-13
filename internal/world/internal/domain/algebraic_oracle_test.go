@@ -11,7 +11,9 @@ func algebraicWorld(t *testing.T) *World {
 	t.Helper()
 	return constWorld(t, func(s *model.DomainSpec) {
 		kind := &s.Kinds[0]
-		in := func(state string, coef float64) model.F1Input { return model.F1Input{State: state, Coef: coef, CoefSet: true} }
+		in := func(state string, coef float64) model.F1Input {
+			return model.F1Input{State: state, Coef: coef, CoefSet: true}
+		}
 		kind.State = append(kind.State, model.State{Name: "s"}, model.State{Name: "p"}, model.State{Name: "c"}, model.State{Name: "g"}, model.State{Name: "chain"})
 		kind.Dynamics = append(kind.Dynamics,
 			model.Dynamics{Target: "s", Tier: "F1", F1: &model.F1Dyn{Form: model.FormSum, Inputs: []model.F1Input{in("u", 1), in("x", -0.5)}}},

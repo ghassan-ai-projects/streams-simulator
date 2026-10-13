@@ -1,6 +1,12 @@
 package domain
 
-import "github.com/ghassan-ai-projects/streams-simulator/internal/model"
+import (
+	"slices"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+)
+
+var discreteForms = []string{model.FormTrip, model.FormAntiRecycle, model.FormSequencer, model.FormPID}
 
 func (w *World) advanceEntity(ent *Entity, t int64) {
 	w.advanceReaders(ent, t)
@@ -74,7 +80,7 @@ func (w *World) valueAt(ent *Entity, dyn *model.Dynamics, t int64) float64 {
 }
 
 func isDiscrete(dyn *model.Dynamics) bool {
-	return dyn.F1 != nil && (dyn.F1.Form == model.FormTrip || dyn.F1.Form == model.FormAntiRecycle || dyn.F1.Form == model.FormSequencer)
+	return dyn.F1 != nil && slices.Contains(discreteForms, dyn.F1.Form)
 }
 
 func isStore(dyn *model.Dynamics) bool { return dyn.F1 != nil && dyn.F1.Form == model.FormStore }

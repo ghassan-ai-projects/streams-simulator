@@ -522,3 +522,19 @@ Axes increase strictly and hold at least two points; `values` has one entry per 
 Algebraic states take part in the dynamics dependency check, so an algebraic loop is refused. These are tables and bounded
 products, not an expression language: an efficiency curve, a pump or fan law, a heat duty `flow × ΔT` (with `ΔT` a `sum`), or a
 power that scales with `running` (R7g-02) is written with them.
+
+## 24. Controller: `pid` (phase P7i)
+
+A `pid` dynamics is a sampled controller: at each step boundary `t` it reads `pv` and `sp` and computes its output, which the
+target holds from the end of the step (one scan of latency, like a control system's output). With `s = +1` for `action:
+reverse` (the output rises while `pv` is below `sp`) and `s = −1` for `direct`, step `h` seconds and the previous step's `pv`:
+
+- error `e = s·(sp − pv)`; proportional `kp·e`; derivative on the measurement `−s·kd·(pv − pv_prev)/h`;
+- integral `I + ki·e·h`, kept only when the unclamped output does not push further past a limit (conditional integration: no
+  windup); the output is `clamp(P + I + D)` with a required `clamp` of `min` below `max`;
+- the integral starts at the target's initial value, so the first output is near it;
+- while the `manual` state is at least 0.5 the output follows `manual_output` (clamped) and the integral is set to
+  `output − P − D`, so returning to automatic does not bump.
+
+Gains are non-negative and `kp` or `ki` is non-zero. A cascade chains controllers: an outer controller's target is an inner
+controller's `sp`. Closed-loop stability is the domain author's: the validator cannot know the plant.

@@ -440,7 +440,7 @@
           "description": "First-order forms only. Deliberately not a general expression language: an arbitrary evaluator is a nondeterminism surface and a security surface, and no domain in the catalog needs one. The equations for each form are part of the contract and are defined in TECHNICAL_DESIGN §6.2 — a form name without an equation is not a specification.",
           "required": ["form"],
           "properties": {
-            "form": {"enum": ["first_order_lag", "rc_network", "dead_time", "saturation", "hysteresis", "integrator", "threshold_integrator", "store", "regime", "peak", "trip", "anti_recycle", "sequencer", "curve", "product", "sum"]},
+            "form": {"enum": ["first_order_lag", "rc_network", "dead_time", "saturation", "hysteresis", "integrator", "threshold_integrator", "store", "regime", "peak", "trip", "anti_recycle", "sequencer", "curve", "product", "sum", "pid"]},
             "selector": {"type": "string", "description": "For regime: the state whose value, read at each step boundary, selects the regime (the target itself for a runaway)."},
             "below": {"$ref": "#/$defs/regime", "description": "For regime: the lag while the selector is below threshold."},
             "above": {"$ref": "#/$defs/regime", "description": "For regime: the lag while the selector is at or above threshold."},
@@ -508,6 +508,22 @@
                 "y": {"type": "array", "minItems": 2, "items": {"type": "number"}},
                 "grid": {"type": "array", "minItems": 2, "items": {"type": "array", "minItems": 2, "items": {"type": "number"}}}
               }
+            },
+            "pid": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["pv", "sp", "action"],
+              "description": "For pid: a sampled PID controller whose output is the target, held between steps and bounded by clamp (domain-spec v0.2 §24).",
+              "properties": {
+                "pv": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$", "description": "The process variable state."},
+                "sp": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$", "description": "The setpoint state; an outer controller's output for a cascade."},
+                "kp": {"type": "number", "minimum": 0},
+                "ki": {"type": "number", "minimum": 0, "description": "Integral gain per second."},
+                "kd": {"type": "number", "minimum": 0, "description": "Derivative gain in seconds, on the measurement."},
+                "action": {"enum": ["reverse", "direct"], "description": "reverse: the output rises while pv is below sp (heating, filling); direct: the output rises while pv is above sp (cooling, draining)."},
+                "manual": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$", "description": "A state that selects manual mode while at least 0.5."},
+                "manual_output": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$", "description": "The state the output follows in manual mode."}
+              }
             }
           },
           "allOf": [
@@ -558,6 +574,10 @@
             {
               "if": {"properties": {"form": {"enum": ["product", "sum"]}}, "required": ["form"]},
               "then": {"required": ["inputs"]}
+            },
+            {
+              "if": {"properties": {"form": {"const": "pid"}}, "required": ["form"]},
+              "then": {"required": ["pid", "clamp"]}
             }
           ]
         },

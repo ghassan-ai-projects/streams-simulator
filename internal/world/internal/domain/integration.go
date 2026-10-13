@@ -18,6 +18,7 @@ type stateValue struct {
 	history    []*stateValue
 	peak       *peakState
 	protection *protectionState
+	controller *controllerState
 }
 
 func (w *World) naturalValue(ent *Entity, stateName string, t int64) float64 {
@@ -54,14 +55,17 @@ func (s *stateValue) clone() *stateValue {
 	c := *s
 	c.delayed = slices.Clone(s.delayed)
 	c.history = nil
-	if s.peak != nil {
-		peak := *s.peak
-		c.peak = &peak
+	c.peak = clonePointer(s.peak)
+	c.protection = clonePointer(s.protection)
+	c.controller = clonePointer(s.controller)
+	return &c
+}
+
+func clonePointer[T any](p *T) *T {
+	if p == nil {
+		return nil
 	}
-	if s.protection != nil {
-		protection := *s.protection
-		c.protection = &protection
-	}
+	c := *p
 	return &c
 }
 

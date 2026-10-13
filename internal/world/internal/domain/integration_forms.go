@@ -40,6 +40,8 @@ func (w *World) stepProtectionForm(ent *Entity, dyn *model.Dynamics, s *stateVal
 		w.stepAntiRecycle(ent, dyn, s, at, dt)
 	case model.FormSequencer:
 		w.stepSequencer(ent, dyn, s, at)
+	case model.FormPID:
+		w.stepController(ent, dyn, s, at, dt)
 	default:
 		return false
 	}
