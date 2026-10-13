@@ -96,7 +96,7 @@ func TestADirectorRunExportsToAScenarioThatReproducesIt(t *testing.T) {
 		t.Fatal(err)
 	}
 	r.ConfigureEnvTarget("consumer-1", true)
-	r.ReportQuiesced(start + 3600e9)
+	r.SetQuiesceParkedHook(func() { r.ReportQuiesced(start + 3600e9) })
 	steps := []error{
 		firstError(r.EnvInject("consumer-1", "pause", nil, start)),
 		firstError(r.Advance(context.Background(), start+3600e9, true)),

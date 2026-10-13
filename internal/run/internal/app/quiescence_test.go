@@ -8,6 +8,7 @@ package app
 import (
 	"context"
 	"errors"
+	"math"
 	"path/filepath"
 	"sync"
 	"testing"
@@ -180,9 +181,10 @@ func TestQuiescenceFastPathHonorsReportBetweenAdvances(t *testing.T) {
 	parked := make(chan struct{}, 4)
 	r.SetQuiesceParkedHook(func() { parked <- struct{}{} })
 
-	// The consumer reported quiescence through T2 before the harness issued
-	// the advance: the wait returns immediately without blocking.
 	t2 := start + int64(time.Hour)
+	if _, err := r.Advance(context.Background(), t2, false); err != nil {
+		t.Fatal(err)
+	}
 	r.ReportQuiesced(t2)
 	if _, err := r.Advance(context.Background(), t2, true); err != nil {
 		t.Fatalf("fast path failed: %v", err)
@@ -262,5 +264,19 @@ func TestReplayOfTimedOutAdvanceReportsIncomplete(t *testing.T) {
 	}
 	if res.Detail == "" {
 		t.Fatal("replay must surface the original failure detail")
+	}
+}
+
+func TestAConsumerCannotReportQuiescenceAheadOfTheWorld(t *testing.T) {
+	t.Parallel()
+	spec, a := testBase(t)
+	r, err := New(context.Background(), Config{Domain: spec, Adapter: a, Seed: 77, SinkName: model.SinkInproc,
+		TimeMode: model.TimeStepped, StartTimeNS: model.DefaultStartTimeNS, quiescenceClock: &fakeQuiescenceClock{}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	r.ReportQuiesced(math.MaxInt64)
+	if got := r.quiescedThrough(); got != model.DefaultStartTimeNS {
+		t.Fatalf("watermark = %d, want the world clock %d", got, model.DefaultStartTimeNS)
 	}
 }
