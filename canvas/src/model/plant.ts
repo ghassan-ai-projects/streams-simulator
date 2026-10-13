@@ -168,6 +168,30 @@ export function linksOf(
   };
 }
 
+const listedLinks = 12;
+
+function linkEnd(id: string, port: string | null): string {
+  return port === null ? id : `${id}.${port}`;
+}
+
+function counted(n: number, noun: string): string {
+  return `${String(n)} ${noun}${n === 1 ? "" : "s"}`;
+}
+
+export function linkLines(links: readonly Link[], self: string, side: "in" | "out"): readonly string[] {
+  const own = (link: Link) => (side === "in" ? link.toPort : link.fromPort) ?? self;
+  const other = (link: Link) => (side === "in" ? linkEnd(link.from, link.fromPort) : linkEnd(link.to, link.toPort));
+  if (links.length <= listedLinks)
+    return links.map((link) => (side === "in" ? `${other(link)} → ${own(link)}` : `${own(link)} → ${other(link)}`));
+  const groups = new Map<string, Link[]>();
+  for (const link of links) groups.set(own(link), [...(groups.get(own(link)) ?? []), link]);
+  return [...groups].map(([port, group]) => {
+    const ends = new Set(group.map((link) => (side === "in" ? link.from : link.to))).size;
+    const count = `${counted(group.length, "link")}, ${counted(ends, "instance")}`;
+    return side === "in" ? `${count} → ${port}` : `${port} → ${count}`;
+  });
+}
+
 export function stateUnit(plant: Plant, entity: string, state: string): string {
   const kind = plant.instances.find((instance) => instance.id === entity)?.kind;
   return (kind === undefined ? undefined : plant.kinds.get(kind)?.units.get(state)) ?? "";

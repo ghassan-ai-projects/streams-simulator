@@ -23,7 +23,10 @@ describe("inspector", () => {
     expect(
       within(screen.getByRole("region", { name: "Links in" })).getByText("CT-1.basin_out → cond_in"),
     ).toBeInTheDocument();
-    expect(within(screen.getByRole("region", { name: "Faults" })).getByText("chiller__fouling")).toBeInTheDocument();
+    expect(within(screen.getByRole("region", { name: "Faults" })).getByText("fouling")).toHaveAttribute(
+      "title",
+      "chiller__fouling",
+    );
     expect((await axe.run(view.container)).violations).toEqual([]);
   });
 

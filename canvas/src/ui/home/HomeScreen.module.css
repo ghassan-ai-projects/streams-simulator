@@ -110,6 +110,8 @@
   font-family: var(--font-mono);
   font-size: var(--text-xs);
   white-space: nowrap;
+  direction: rtl;
+  text-align: left;
 }
 
 .badge,

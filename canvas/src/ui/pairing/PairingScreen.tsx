@@ -2,6 +2,7 @@ import { KeyRound, Lock, XCircle } from "lucide-react";
 import type { SubmitEvent } from "react";
 import type { SessionState, SessionStore } from "../../app/sessionStore";
 import { PAIRING_CODE_LENGTH, pairingBlocked, pairingMessage } from "../../model/bridge";
+import { useScreen } from "../useScreen";
 import { useStore } from "../useStore";
 import styles from "./PairingScreen.module.css";
 
@@ -57,6 +58,7 @@ function CodeField({ session, state }: { readonly session: SessionStore; readonl
 
 export function PairingScreen({ session }: { readonly session: SessionStore }) {
   const state = useStore(session);
+  useScreen("Pair this browser");
   if (state.phase !== "unpaired") {
     return null;
   }

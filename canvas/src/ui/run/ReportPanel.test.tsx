@@ -8,8 +8,13 @@ import { Scrubber } from "./Scrubber";
 
 describe("report panel", () => {
   it("lists every section of the binary's report with no accessibility violation", async () => {
-    const view = render(<ReportPanel report={parseReport(report)} unit={() => ""} entity={null} />);
-    expect(within(screen.getByRole("region", { name: "Verification" })).getByText("trace")).toBeInTheDocument();
+    const view = render(
+      <ReportPanel report={parseReport(report)} unit={() => ""} entity={null} replay="Verified: it reproduced." />,
+    );
+    expect(within(screen.getByRole("region", { name: "File check" })).getByText("trace")).toBeInTheDocument();
+    expect(
+      within(screen.getByRole("region", { name: "Replay check" })).getByText("Verified: it reproduced."),
+    ).toBeInTheDocument();
     expect(
       within(screen.getByRole("region", { name: "Deliveries" })).getByText("dropped by perturbation"),
     ).toBeInTheDocument();

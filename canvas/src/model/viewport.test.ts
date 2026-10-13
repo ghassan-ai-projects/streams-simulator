@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { centreOf, inView, tierOf } from "./viewport";
+import type { Tier } from "./viewport";
+import { anchorsOnly, centreOf, inView, tierOf } from "./viewport";
 
 describe("viewport", () => {
   const screen = { width: 800, height: 600 };
@@ -11,7 +12,20 @@ describe("viewport", () => {
   });
 
   it("picks the node tier for a zoom, so text never shrinks below its size", () => {
-    expect([1, 0.85, 0.6, 0.45, 0.3].map(tierOf)).toEqual(["full", "full", "compact", "compact", "overview"]);
+    expect([1, 0.85, 0.6, 0.5, 0.3, 0.2].map(tierOf)).toEqual([
+      "full",
+      "full",
+      "compact",
+      "compact",
+      "overview",
+      "map",
+    ]);
+    expect(["full", "compact", "overview", "map"].map((tier) => anchorsOnly(tier as Tier))).toEqual([
+      false,
+      false,
+      true,
+      true,
+    ]);
   });
 
   it("finds a box's centre", () => {

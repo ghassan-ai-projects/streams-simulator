@@ -6,7 +6,9 @@ const keys: readonly (readonly [string, string])[] = [
   ["Arrow keys (graph)", "move to the nearest instance in that direction"],
   ["Enter or Space (graph)", "select the instance, or open the hall"],
   ["Escape (graph)", "clear the selection, then leave the hall"],
-  ["Arrow keys (playback)", "step the playback time; Page Up and Page Down jump further"],
+  ["+ and − (graph)", "zoom in and out"],
+  ["0 (graph)", "fit the plant in view"],
+  ["Arrow keys (playback)", "step one second; Shift and arrow one minute; Page Up and Page Down further"],
   ["Previous and next event", "jump between disturbances and effector calls"],
   ["?", "show or hide this list"],
 ];
@@ -51,8 +53,15 @@ function KeyList() {
 export function KeyHelp() {
   const [open, setOpen] = useToggle();
   const close = useRef<HTMLButtonElement>(null);
+  const previous = useRef<Element | null>(null);
   useEffect(() => {
-    if (open) close.current?.focus();
+    if (open) {
+      previous.current = document.activeElement;
+      close.current?.focus();
+    } else if (previous.current instanceof HTMLElement) {
+      previous.current.focus();
+      previous.current = null;
+    }
   }, [open]);
   if (!open) return null;
   return (

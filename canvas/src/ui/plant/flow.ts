@@ -56,13 +56,13 @@ export function flowNodes(
   return [...frames(view), ...nodes];
 }
 
-export function flowEdges(view: PlantView): Edge[] {
+export function flowEdges(view: PlantView, anchors = false): Edge[] {
   return view.edges.map((edge) => ({
     id: edge.id,
     source: edge.from,
     target: edge.to,
-    sourceHandle: edge.fromHandle ?? "out",
-    targetHandle: edge.toHandle ?? "in",
+    sourceHandle: anchors ? "out" : (edge.fromHandle ?? "out"),
+    targetHandle: anchors ? "in" : (edge.toHandle ?? "in"),
     className: `wire family-${edge.family ?? "none"}`,
     label: edge.count > 1 ? `×${String(edge.count)}` : undefined,
     ariaLabel: `${edge.from} to ${edge.to}${edge.count > 1 ? `, ${String(edge.count)} links` : ""}`,

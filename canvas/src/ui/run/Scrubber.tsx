@@ -58,6 +58,7 @@ function Lane({ marks, fraction, startNs, onSeek }: LaneProps) {
   const rows = laneRows(
     marks.map((mark) => fraction(mark.atNs) * width),
     chipWidth + 4,
+    2,
   );
   return (
     <ol

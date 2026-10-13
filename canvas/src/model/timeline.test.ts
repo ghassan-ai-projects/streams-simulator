@@ -47,7 +47,8 @@ describe("timeline", () => {
 describe("event lane", () => {
   it("puts close events on separate rows and reuses a row once it is free", () => {
     expect(laneRows([0, 5, 10, 30, 31], 20)).toEqual([0, 1, 2, 0, 1]);
-    expect(laneRows([0, 1, 2, 3], 20, 2)).toEqual([0, 1, 0, 1]);
+    expect(laneRows([0, 25, 26], 20, 2)).toEqual([0, 0, 1]);
+    expect(laneRows([0, 1, 2, 3], 20, 2)).toEqual([0, 1, -1, -1]);
     expect(laneRows([], 20)).toEqual([]);
   });
 });

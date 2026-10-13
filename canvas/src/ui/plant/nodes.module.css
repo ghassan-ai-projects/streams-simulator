@@ -12,8 +12,8 @@
 }
 
 .selected {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+  outline: calc(2px / var(--zoom, 1)) solid var(--accent);
+  outline-offset: calc(2px / var(--zoom, 1));
 }
 
 .header {
@@ -164,19 +164,87 @@
 
 :global(.tier-compact) .pinName,
 :global(.tier-compact) .kind,
-:global(.tier-compact) .readout dt,
 :global(.tier-overview) .kind,
-:global(.tier-overview) .none {
+:global(.tier-map) .kind,
+:global(.tier-overview) .pins,
+:global(.tier-map) .pins,
+:global(.tier-overview) .readout,
+:global(.tier-map) .readout,
+:global(.tier-overview) .none,
+:global(.tier-map) .none,
+:global(.tier-overview) .members,
+:global(.tier-map) .members,
+:global(.tier-map) .id,
+:global(.tier-map) .open {
   display: none;
 }
 
-:global(.tier-overview) .pins,
-:global(.tier-overview) .readout {
-  visibility: hidden;
+:global(.tier-compact) .id {
+  font-size: min(calc(12.5px / var(--zoom)), 22px);
+}
+
+:global(.tier-compact) .readout {
+  grid-template-columns: 1fr;
+  gap: 0;
+}
+
+:global(.tier-compact) .readout div {
+  display: flex;
+  align-items: baseline;
+  gap: calc(4px / var(--zoom));
+}
+
+:global(.tier-compact) .readout div:nth-child(n + 3) {
+  display: none;
+}
+
+:global(.tier-compact) .readout dt {
+  font-size: calc(11px / var(--zoom));
+}
+
+:global(.tier-compact) .readout dd,
+:global(.tier-compact) .more {
+  font-size: calc(12.5px / var(--zoom));
+}
+
+:global(.tier-compact) .unit {
+  font-size: calc(11px / var(--zoom));
+}
+
+:global(.tier-compact) .members {
+  font-size: calc(11px / var(--zoom));
+}
+
+:global(.tier-compact) .dot {
+  width: calc(10px / var(--zoom)) !important;
+  height: calc(10px / var(--zoom)) !important;
+}
+
+:global(.tier-overview) .node,
+:global(.tier-map) .node {
+  height: 100%;
+}
+
+:global(.tier-overview) .header,
+:global(.tier-map) .header {
+  height: 100%;
+  border-radius: 7px;
+}
+
+:global(.tier-overview) .id {
+  font-size: min(calc(12.5px / var(--zoom)), 46px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+:global(.tier-overview) .anchor,
+:global(.tier-map) .anchor {
+  top: 50% !important;
 }
 
 :global(.tier-compact) .frameTitle,
-:global(.tier-overview) .frameTitle {
+:global(.tier-overview) .frameTitle,
+:global(.tier-map) .frameTitle {
   position: absolute;
   left: 0;
   right: 0;
@@ -188,40 +256,9 @@
 }
 
 :global(.tier-compact) .frameCount,
-:global(.tier-overview) .frameCount {
+:global(.tier-overview) .frameCount,
+:global(.tier-map) .frameCount {
   font-size: calc(12px / var(--zoom));
-}
-
-:global(.tier-compact) .id,
-:global(.tier-overview) .id {
-  font-size: calc(12.5px / var(--zoom));
-  overflow: hidden;
-  text-overflow: ellipsis;
-  flex: 1;
-}
-
-:global(.tier-compact) .header,
-:global(.tier-overview) .header {
-  height: auto;
-  min-height: 28px;
-  padding: 4px var(--space-3);
-}
-
-:global(.tier-compact) .members,
-:global(.tier-overview) .members {
-  font-size: calc(11px / var(--zoom));
-}
-
-:global(.tier-compact) .readout dd {
-  font-size: calc(13px / var(--zoom));
-}
-
-:global(.tier-compact) .readout div:nth-child(n + 3) {
-  display: none;
-}
-
-:global(.tier-compact) .readout {
-  grid-template-columns: 1fr;
 }
 
 .readout {

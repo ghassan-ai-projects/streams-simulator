@@ -47,7 +47,7 @@ function DefinitionRows({ items, empty, onOpen }: RowsProps) {
           <FileJson size={14} aria-hidden="true" className={styles.icon} />
           <span className={styles.id}>{item.id || item.path}</span>
           <span className={styles.title}>{item.title}</span>
-          <span className={styles.path}>{item.path}</span>
+          <span className={styles.path} title={item.path}>{`\u200e${item.path}\u200e`}</span>
           {onOpen && (
             <button
               type="button"

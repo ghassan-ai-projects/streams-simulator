@@ -30,9 +30,14 @@ export function centreOf(box: Rect): { readonly x: number; readonly y: number } 
   return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
 }
 
-export type Tier = "full" | "compact" | "overview";
+export type Tier = "full" | "compact" | "overview" | "map";
 
 export function tierOf(zoom: number): Tier {
   if (zoom >= 0.85) return "full";
-  return zoom >= 0.45 ? "compact" : "overview";
+  if (zoom >= 0.5) return "compact";
+  return zoom >= 0.25 ? "overview" : "map";
+}
+
+export function anchorsOnly(tier: Tier): boolean {
+  return tier === "overview" || tier === "map";
 }

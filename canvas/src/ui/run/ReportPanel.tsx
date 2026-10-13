@@ -64,18 +64,25 @@ function Rows({
 const fixed = (value: number) =>
   Math.abs(value) >= 100 ? value.toFixed(0) : Math.abs(value) >= 10 ? value.toFixed(1) : value.toFixed(2);
 const named = (id: string): Cell => ({ text: humanise(id), title: id });
+const words = (text: string): Cell => ({ text, title: text });
 const count = (report: Report, key: string) =>
   report.ended ? (report.counts[key] ?? 0).toLocaleString("en-US") : "n/a";
 
-function Facts({ report }: { readonly report: Report }) {
+function Facts({ report, replay }: { readonly report: Report; readonly replay: string }) {
   const dropped = Object.entries(report.dropped).map(([reason, n]) => [
     reason.replaceAll("_", " "),
     n.toLocaleString("en-US"),
   ]);
   return (
     <>
-      <Section title="Verification" note={report.verification.replaceAll("_", " ") || "not recorded"}>
-        <Rows rows={report.checks.map((check) => [check.name, check.status])} columns={["id", "text"]} />
+      <Section title="Replay check" note="streamsim verify">
+        <p className={styles.verdict}>{replay}</p>
+      </Section>
+      <Section title="File check" note={report.verification.replaceAll("_", " ") || "not recorded"}>
+        <p className={styles.muted}>
+          The report compares the files in the run folder with the digests the run recorded.
+        </p>
+        <Rows rows={report.checks.map((check) => [check.name, check.status])} columns={["text", "text"]} />
       </Section>
       <Section title="Deliveries" note={report.ended ? undefined : "run not closed"}>
         <Rows
@@ -98,21 +105,21 @@ function Truth({ report, unit, entity }: TruthProps) {
   const at = (ns: number) => wallClock(ns, report.startNs);
   return (
     <>
-      <Section title="Disturbances" note="onset · set at">
+      <Section title="Disturbances" note="at onset; hover for when it was set">
         <Rows
-          rows={report.disturbances.map((d) => [
-            at(d.onsetNs),
-            d.injectedNs === d.onsetNs ? "" : `set ${at(d.injectedNs)}`,
-            d.target,
-            named(d.name),
-          ])}
-          columns={["clock", "clock", "id", "label"]}
+          rows={report.disturbances.map((d) => [at(d.onsetNs), d.target, named(d.name)])}
+          columns={["clock", "id", "label"]}
         />
       </Section>
       <Section title="Effector calls">
         <Rows
-          rows={report.effectorCalls.map((call) => [at(call.atNs), call.entity, named(call.effector), call.outcome])}
-          columns={["clock", "id", "label", "text"]}
+          rows={report.effectorCalls.map((call) => [
+            at(call.atNs),
+            call.entity,
+            named(call.effector),
+            words(call.outcome),
+          ])}
+          columns={["clock", "id", "label", "label"]}
         />
       </Section>
       <KpiTruth report={report} unit={unit} entity={entity} />
@@ -155,16 +162,20 @@ function KpiTruth({ report, unit, entity }: TruthProps) {
   );
 }
 
-export function ReportPanel({ report, unit, entity, only }: TruthProps) {
+const notClosed = "Not available: the run is not closed, so its truth is still sealed.";
+
+export function ReportPanel({ report, unit, entity, only, replay = "" }: TruthProps & { readonly replay?: string }) {
   if (only === "kpi") {
-    return report.truthUnavailable ? null : <KpiTruth report={report} unit={unit} entity={entity} />;
+    return report.truthUnavailable || !report.ended ? null : <KpiTruth report={report} unit={unit} entity={entity} />;
   }
   return (
     <>
-      <Facts report={report} />
-      {report.truthUnavailable ? (
+      <Facts report={report} replay={replay} />
+      {report.truthUnavailable || !report.ended ? (
         <Section title="Truth">
-          <p className={styles.muted}>{`Not available: ${report.truthUnavailable}`}</p>
+          <p className={styles.muted}>
+            {report.truthUnavailable ? `Not available: ${report.truthUnavailable}` : notClosed}
+          </p>
         </Section>
       ) : (
         <Truth report={report} unit={unit} entity={entity} />

@@ -13,7 +13,8 @@ test("a recorded run plays back with the binary's report and a Verified badge", 
   await expect(page.getByText("Verified", { exact: true })).toBeVisible({ timeout: 60_000 });
   await expect(page.getByText("Evaluate · ended")).toBeVisible();
   const report = page.getByRole("complementary", { name: "Run details" });
-  await expect(report.getByRole("region", { name: "Verification" })).toContainText("files match");
+  await expect(report.getByRole("region", { name: "File check" })).toContainText("files match");
+  await expect(report.getByRole("region", { name: "Replay check" })).toContainText("reproduced its trace");
   await expect(report.getByRole("region", { name: "KPI truth" })).toContainText("CH-1");
   await expect(page.getByRole("status").filter({ hasText: /^[\d,]+ observations$/ })).toBeVisible({ timeout: 60_000 });
   const chiller = page.getByRole("group", { name: /^CH-1, chiller,/ });
@@ -29,7 +30,9 @@ test("a run whose files were edited after it ended is Not verified", async ({ pa
   await page.goto(`${env("CANVAS_APP_URL")}/#/run?world=w-edited`);
   await expect(page.getByText("Not verified", { exact: true })).toBeVisible({ timeout: 60_000 });
   await expect(
-    page.getByRole("complementary", { name: "Run details" }).getByRole("region", { name: "Verification" }),
+    page.getByRole("complementary", { name: "Run details" }).getByRole("region", { name: "File check" }),
   ).toContainText("files differ");
   await expect(page.getByRole("alert").filter({ hasText: "differ from what the run wrote" })).toBeVisible();
+  const graph = await page.getByRole("application", { name: "Plant graph" }).boundingBox();
+  expect(graph?.height ?? 0).toBeGreaterThan(300);
 });

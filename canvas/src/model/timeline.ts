@@ -48,7 +48,8 @@ export function laneRows(positions: readonly number[], width: number, rows = 3):
   const ends: number[] = [];
   return positions.map((position) => {
     const free = ends.findIndex((end) => end <= position);
-    const row = free >= 0 ? free : ends.length < rows ? ends.length : ends.indexOf(Math.min(...ends));
+    const row = free >= 0 ? free : ends.length < rows ? ends.length : -1;
+    if (row < 0) return -1;
     ends[row] = position + width;
     return row;
   });

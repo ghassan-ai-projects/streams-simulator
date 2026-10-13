@@ -61,7 +61,6 @@ function Header({
         {worldId}
       </h1>
       <Status state={state} />
-      <ZoomBar />
     </div>
   );
 }
@@ -121,15 +120,22 @@ function Graph({
     );
   }
   return (
-    <PlantGraph
-      view={view}
-      viewKey="review"
-      selected={state.selected}
-      live={live}
-      onSelect={(id) => {
-        review.select(id);
-      }}
-    />
+    <div className={styles.graphArea}>
+      <div className={styles.graphBar}>
+        <span className={styles.muted}>Plant at the playback time · values are observations</span>
+        <ZoomBar />
+      </div>
+      <PlantGraph
+        minFitZoom={0.5}
+        view={view}
+        viewKey="review"
+        selected={state.selected}
+        live={live}
+        onSelect={(id) => {
+          review.select(id);
+        }}
+      />
+    </div>
   );
 }
 
