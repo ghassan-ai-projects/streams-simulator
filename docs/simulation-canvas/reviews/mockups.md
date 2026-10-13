@@ -64,7 +64,7 @@ Scores: director 2/5, accessibility 2/5, engineer 3/5. Verdict: changes required
 | Engineer | F12 | Medium | Fixed: 20 kinds, 23 instances, 20 entries, 59 connections, 548 campus instances, chiller 8 ports, pump 5, no `fan_status` |
 | Engineer | F13 | Medium | Fixed: one Hall 07 figure; "Compare" removed (and shown as a "not available yet" specimen) |
 | Engineer | F14 | Medium | Fixed: effector calls section, units on KPI truth, mean and min–max only |
-| Engineer | F15 | Medium | Accepted with reason: `sim.run.begin` seals truth for every run, so Evaluate from the canvas is sealed; scoring needs a consumer verdict (`sim.score`), which is the consumer's, so Review shows "not scored" |
+| Engineer | F15 | Medium | Accepted with reason (corrected in round 2): the canvas never calls `run.begin`; `world.create` → `clock.advance` → `run.end` writes `sealed/journal.jsonl` in both modes, and Review reads the run folder and `streamsim report`. Scoring needs a consumer verdict (`sim.score`), which is the consumer's, so Review shows "not scored" |
 | Engineer | F16 | Medium | Fixed: the 12-hour claim is now true (bridge cookie `Max-Age` 12 h since P8b); empty, wrong-code and locked states mocked |
 | Engineer | F17 | Low | Fixed: legend with glyphs and the 19-to-9 mapping |
 
@@ -72,3 +72,74 @@ Walkthrough targets after round 1 (to be re-timed by the reviewers): W1 drag pum
 `CH-1.flow_in`, drag power_out, rename (4). W2 click "Go to wire" (1). W3 Simulate, Start Explore run (2). W4 select
 CT-1, "Inject a fault on CT-1…", choose `fan_failure`, inject (3–4); the effect shows on MB-COOL and MM-1 without
 navigation. W5 click Hall 07 in Needs attention, Open hall (2). W6 run row "Open review" (1).
+
+## Round 2
+
+Scores: director 3/5, accessibility 3/5, engineer 3/5. Verdict: changes required (director 6 High, accessibility 3 High,
+engineer 2 High).
+
+### Systemic changes
+
+| Change | Answers |
+|---|---|
+| Every value on every screen comes from real runs of the binary: `tools/runs.sh` runs five scenarios (Explore with `fan_failure`, its fault-free twin, Evaluate with `oil_cooler_fouling`, a 18 h review run with report and verify, the 26-hall campus) and `tools/extract.py` writes `data.json`, which the generators read | Engineer R2-1, R2-2, R2-3, R2-6, R2-7, R2-8 |
+| Node readouts show observed channels only; true values appear only in Explore, in purple with the eye icon | Engineer R2-1, R2-4 |
+| Change markers are Δ against a fault-free twin world with the same seed, which the canvas runs beside the live world with `world.create` and the same `clock.advance` steps; the trace chip says so | Engineer R2-2 |
+| Layout gate: tooltips inside the graph are checked, text wrapped in a fixed box is caught, chart text must stay inside its chart, overlays may not cover nodes or frame titles | Director Gate-1; accessibility gate gaps |
+| Contrast gate: 229 pairs, now with every port colour on every frame tint (normal and dimmed), dimmed-node text, and text on the soft badge fills | Director Gate-2; accessibility R2-1 |
+| Heat is a double line (a 1 px core in the canvas colour), so the two pink families differ in shape as well as colour | Director Gate-3 |
+| Back edges are routed out right, along a lane below both nodes and in from the left, instead of under node bodies | Director "Wires" |
+| C4 amended: red also marks a validation error that blocks the next step, in Build and Pairing only, always with an icon and words. Reason: an error that blocks compile or pairing needs "look here" exactly as an alarm does, and Blueprints marks compile errors red; Run and Review chrome stay alarm-only | Director C4; accessibility R2-2 |
+
+### Findings and dispositions
+
+| Reviewer | Id | Sev | Disposition |
+|---|---|---|---|
+| A11y | R2-1 | High | Fixed: dimmed nodes at 80 % (`--dim-node`), pair added |
+| A11y | R2-2 | High | Fixed by amending C4 (above) |
+| A11y | R2-3 | High | Fixed: hint repositioned inside the graph; gate now checks `.tip` |
+| A11y | R2-4 | Medium | Fixed: `aria-disabled` keeps focus, reason inline and referenced by `aria-describedby` ("Fix 1 compile error to simulate") |
+| A11y | R2-5 | Medium | Fixed: full-tier pin rows 24 px; the compact tier shows readings only and is not wired (zoom in or use the Details ports table) |
+| A11y | R2-6 | Medium | Fixed: F8 / Shift F8, ⌘Z / ⇧⌘Z, Space, Esc cancels a wire, single keys only with the graph focused, Enter opens Inspect in Run and Review |
+| A11y | R2-7 | Medium | Fixed: escaped `&lt;name&gt;` |
+| A11y | R2-8 | Low | Fixed: ellipsis with a title |
+| A11y | R2-9 | Low | Fixed: real inputs for the code, `aria-invalid`, `role=alert`, labelled slider, disabled boxes when locked or used |
+| A11y | R2-10 | Low | Fixed: `<main>` landmark, tabs carry `aria-selected` only |
+| A11y | R2-11, R2-12 | Low | Fixed: label offset; recovery hint added (generic, the canvas does not reason about types) |
+| Director | W4 | High | Fixed: `live-inject.html`, select CT-1, "Inject a fault on CT-1…", pick `fan_failure` (3); the 13 faults come from `catalog.describe`, parameters are edited afterwards |
+| Director | C13-a, C13-b | High | Fixed (as accessibility R2-3, R2-8) |
+| Director | C2 | High | Fixed: light `--t-env` #737b8b, light `--t-signal` #3f4552 to keep separation, dark `--t-env` #97a0ae for dimmed wires on frame tints; all in the gate |
+| Director | C4 | High | Fixed by the amendment |
+| Director | Gate-1 | High | Fixed (systemic) |
+| Director | Gate-2, Gate-3 | Medium | Fixed (systemic) |
+| Director | S3 | Medium | Fixed: one trunk across the top with a stub per column and a tick into each hall; the pill sits 8 px below the Site node |
+| Director | Wires | Medium | Fixed: lane routing for back edges |
+| Director | C7 | Medium | Fixed: collapsed areas show the bare count (▸ 5) |
+| Director | S7 | Medium | Fixed: node hover lifts 1 px with a `--line-3` border; wire hover is 3 px with enlarged ends |
+| Director | C12 | Medium | Fixed: selection is always a 2 px ring 2 px out; keyboard focus is the same ring dashed; both together add a soft halo; selected + fault and selected + alarm specimens added |
+| Director | 1920 | Medium | Fixed in part: graph content centres on wide viewports (container units). Accepted with reason for the rest: fit-to-view at load is a P9 behaviour; text never scales with zoom (C1), so a wider viewport shows more context rather than larger nodes |
+| Director | Copy, Trend | Medium, Low | Fixed |
+| Director | Compact | Low | Fixed: no kind label at the compact tier (it is in the tooltip) |
+| Director | Nav | Low | Fixed: Hall 07 cell outlined in the accent |
+| Director | Legend | Low | Accepted with reason: every pin tooltip names the type and the legend is one click in the graph header; opening it on first use covers the graph the user came to edit |
+| Engineer | R2-1 | High | Fixed: Evaluate shows observed channels only; COP and line heat removed |
+| Engineer | R2-2 | High | Fixed: real values; Δ against the twin; no main-meter claim beyond the measured Δ |
+| Engineer | R2-3 | Medium | Fixed: fan power from the run (it falls); `fan_eff` = speed × health × trim |
+| Engineer | R2-4 | Medium | Fixed (systemic) |
+| Engineer | R2-5 | Medium | Fixed as director W4 |
+| Engineer | R2-6 | Medium | Fixed: times from the runs; review shows alarm, acknowledge, trip and return |
+| Engineer | R2-7 | Medium | Fixed: KPI rows from the real report and its names |
+| Engineer | R2-8 | Low | Fixed: counts from the runs |
+| Engineer | R2-9 | Low | Fixed: no counter (the bridge does not report one); `pairing-used.html` added |
+| Engineer | R2-10 | Low | Fixed: w-3 Explore listed |
+| Engineer | R2-11 | Low | Fixed: F15 reason corrected above |
+
+## Decision after round 2 (2026-10-13)
+
+The owner asked why the screens were not built on the real workspace files. Agreed: the direction is settled (all three
+reviewers accept it), and the remaining findings are about numbers that a static page has to invent. The mockups are
+frozen at this commit as the visual spec — `bp.css` tokens, `states.html`, the screen layouts, the keyboard model — and
+formal approval moves to the real UI: the same BRIEF, the same three gates run against the live pages, the same three
+reviewers in Chrome, on a real workspace that `tools/runs.sh` builds from real runs and the bridge serves. The round 2
+fixes above are in the frozen spec; the data findings (engineer R2-1 to R2-8) are closed by construction, because the UI
+shows only what the bridge returns.

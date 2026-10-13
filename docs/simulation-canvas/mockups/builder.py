@@ -1,4 +1,4 @@
-from bp import ic, page, write, node_html, frame, wire, legend, minimap, navigator, zoom_bar, topbar, doc_tabs, Node, Pin
+from bp import connect, ic, page, write, node_html, frame, wire, legend, minimap, navigator, zoom_bar, topbar, doc_tabs, Node, Pin
 from plant import build, place, links, type_of
 
 DOCS = [("factory-utilities", "composition", "blocks"), ("factory-utilities", "plant", "plant"), ("w-3", "live run", "run")]
@@ -10,7 +10,7 @@ VIA = {("CH-1", "load_in"): "← M-1 – M-4, AHU-1", ("CH-1", "tariff_in"): "�
        ("MM-1", "power_out"): "→ TX-1, G-1"}
 
 
-def nodes(error=False, connect=False):
+def nodes(error=False, wiring=False):
     n = build("full", SHOWN)
     n["P-1"].id, n["P-1"].kind = "P-1 – P-3", "pump · chw · ×3"
     for (nid, port), via in VIA.items():
@@ -20,11 +20,11 @@ def nodes(error=False, connect=False):
     if error:
         n["P-4"].outs[1].err = True
         n["CH-1"].ins[1].err = True
-    if connect:
+    if wiring:
         for node in n.values():
             for p in node.ins:
                 p.state = "compat" if (node.id, p.name) == ("CH-1", "flow_in") else ("incompat" if p.typ != "water" else "")
-    if connect:
+    if wiring:
         new = build("full", ["P-4"])["P-4"]
         new.id, new.kind = "P-5", "pump · chw · new"
         for p in new.outs:
@@ -41,9 +41,9 @@ def graph_wires(n, error=False):
         src = "P-1" if a in ("P-1", "P-2", "P-3") else a
         if src in n and b in n and (a, b) not in (("P-2", "CH-1"), ("P-3", "CH-1"), ("P-2", "MB-COOL"), ("P-3", "MB-COOL")):
             style = "sel" if "CT-1" in (a, b) else ""
-            svg += wire(n[src].out_xy(ap), n[b].in_xy(bp), type_of(n, src, ap), style)
+            svg += connect(n[src], ap, n[b], bp, type_of(n, src, ap), style)
     if error:
-        svg += wire(n["P-4"].out_xy("cw_flow_out"), n["CH-1"].in_xy("flow_in"), "cw", "err")
+        svg += connect(n["P-4"], "cw_flow_out", n["CH-1"], "flow_in", "cw", "err")
     return svg
 
 
@@ -51,11 +51,11 @@ def stack(n):
     return "".join(f'<div class="node full" style="left:{n.x + 6 * k}px;top:{n.y + 6 * k}px;height:{n.height()}px;--nw:{n.w}px;opacity:.6" aria-hidden="true"></div>' for k in (2, 1))
 
 
-def graph(error=False, connect=False, extra=""):
-    n = nodes(error, connect)
+def graph(error=False, wiring=False, extra=""):
+    n = nodes(error, wiring)
     frames = frame("Chiller plant", 16, 16, 832, 380, "cool", "4 entries · 6 instances") + frame("Substation", 16, 404, 832, 196, "elec", "4 of 6 shown · TX-1, G-1 off-screen")
-    svg = f'<svg class="wires" width="900" height="700" aria-hidden="true">{graph_wires(n, error)}{extra_wires(n, connect)}</svg>'
-    body = stack(n["P-1"]) + "".join(node_html(v, sel="P-5" if connect else "CT-1") for v in n.values())
+    svg = f'<svg class="wires" width="900" height="700" aria-hidden="true">{graph_wires(n, error)}{extra_wires(n, wiring)}</svg>'
+    body = stack(n["P-1"]) + "".join(node_html(v, sel="P-5" if wiring else "CT-1") for v in n.values())
     flags = ""
     if error:
         flags = (f'<div class="badge alarm" style="position:absolute;left:330px;top:166px">{ic("x", 12)} /connections/29</div>')
@@ -68,8 +68,8 @@ def nav():
                   (136, 10, 54, 30, "color-mix(in srgb,var(--c-env) 45%,transparent)")], (66, 6, 70, 100), "2 of 5 areas in view")
 
 
-def extra_wires(n, connect):
-    if not connect:
+def extra_wires(n, wiring):
+    if not wiring:
         return ""
     from bp import curve
     return f'<path d="{curve(n["P-5"].out_xy("flow_out"), n["CH-1"].in_xy("flow_in"))}" stroke="var(--t-water)" stroke-width="3" fill="none" stroke-dasharray="2 5" stroke-linecap="round"/>'
@@ -101,16 +101,16 @@ def left():
     return (f'<aside class="panel" style="border-right:1px solid var(--line)"><div class="ph">Outline<span class="r">23 instances · 20 entries</span></div>'
             f'<div class="tree" role="tree" aria-label="Plant outline" style="padding:4px 0">{t}</div>'
             f'<div class="ph" style="border-top:1px solid var(--line)">Library<span class="r">drag onto the graph, or press A</span></div>'
-            f'<div style="padding:8px 12px"><label class="input">{ic("search", 13)}<span class="muted">Search components</span></label></div>'
+            f'<div style="padding:8px 12px"><label class="input">{ic("search", 13)}<input class="input" style="border:0;height:24px;padding:0;background:transparent" placeholder="Search components" aria-label="Search components"></label></div>'
             f'<div class="tree" role="tree" aria-label="Component library">{rows}</div>{nav()}</aside>')
 
 
 def right():
-    params = (f'<div class="field"><label for="nm">Name</label><div class="input mono" id="nm">CT-1</div></div>'
+    params = (f'<div class="field"><label for="nm">Name</label><input class="input mono" id="nm" value="CT-1"></div>'
               f'<div class="field"><label>Area</label><button class="input" aria-haspopup="listbox">Chiller plant<span style="margin-left:auto">{ic("chev", 11)}</span></button></div>'
               f'<div class="field"><label>Preset</label><div class="seg" role="group"><button aria-pressed="false">small</button><button aria-pressed="true">medium</button><button aria-pressed="false">large</button></div></div>'
               f'<div class="field"><label>fan_speed</label><div style="display:flex;align-items:center;gap:8px"><div style="flex:1;height:4px;border-radius:2px;background:var(--line-3);position:relative">'
-              f'<div style="position:absolute;width:50%;height:4px;border-radius:2px;background:var(--accent)"></div><div role="slider" aria-valuenow="0.6" aria-valuemin="0.2" aria-valuemax="1" style="position:absolute;left:calc(50% - 7px);top:-5px;width:14px;height:14px;border-radius:50%;background:var(--tx)"></div></div>'
+              f'<div style="position:absolute;width:50%;height:4px;border-radius:2px;background:var(--accent)"></div><div role="slider" aria-label="fan_speed" tabindex="0" aria-valuenow="0.6" aria-valuemin="0.2" aria-valuemax="1" style="position:absolute;left:calc(50% - 7px);top:-5px;width:14px;height:14px;border-radius:50%;background:var(--tx)"></div></div>'
               f'<span class="mono">0.60</span><span class="muted">0.20–1.00</span></div></div>')
     ports = [("heat_in", "heat", "CH-1.heat_out"), ("wet_bulb_in", "env", "WX-1.wet_bulb_out"), ("cw_flow_in", "cw", "P-4.cw_flow_out"),
              ("basin_out", "temp", "CH-1.cond_water_in"), ("power_out", "power", "MB-COOL.loads_in")]
@@ -134,13 +134,13 @@ def go(label):
 
 def results(error=False):
     if error:
-        rows = [("alarm", "x", "Compose failed: port P-4.cw_flow_out is of type condenser_water, port CH-1.flow_in of type chilled_water", "/connections/29", "Go to wire")]
+        rows = [("alarm", "x", "Compose failed: port P-4.cw_flow_out is of type condenser_water, port CH-1.flow_in of type chilled_water. Change the wire in the graph, then compile again.", "/connections/29", "Go to wire")]
     else:
         rows = [("ok", "check", "Composed factory-utilities.composition.json → domains/factory-utilities.domain.json", "20 kinds · 74 channels · 34 effectors · 399 faults", ""),
                 ("ok", "check", "Lint · a nominal day, 1,441 samples, seed 1", "0 errors · 0 warnings", "")]
     r = "".join(f'<tr><td style="width:28px"><span class="ico-{s}">{ic(i, 14)}</span></td><td style="color:var(--tx);white-space:normal">{m}</td><td class="mono" style="text-align:right">{d}</td>'
                 f'<td style="width:96px;text-align:right">{go(g)}</td></tr>' for s, i, m, d, g in rows)
-    status = (f'<span class="badge alarm-soft">{ic("x", 11)} 1 error</span><span class="muted" style="text-transform:none;letter-spacing:0;font-weight:400">compose reports the first issue only</span>'
+    status = (f'<span class="badge alarm-soft">{ic("x", 11)} 1 error</span><span id="simwhy" class="reason" style="text-transform:none;letter-spacing:0;font-weight:400">Simulate is off until this is fixed · compose reports the first issue only</span>'
               if error else f'<span class="badge ok">{ic("check", 11)} 0 issues</span>')
     return (f'<section class="panel" style="border-top:1px solid var(--line)" aria-label="Compiler results"><div class="ph"><div class="tabs" role="tablist"><span class="tab" role="tab" aria-selected="true">Compiler results</span><span class="tab" role="tab" aria-selected="false">Output</span></div>{status}</div>'
             f'<table class="r" aria-live="polite">{r}</table></section>')
@@ -149,8 +149,9 @@ def results(error=False):
 def toolbar(error=False):
     compile_btn = (f'<button class="b solid compile-err"><span class="st">{ic("x", 13)}</span> Compile · 1 error</button>' if error
                    else f'<button class="b solid compile-ok"><span class="st">{ic("check", 13)}</span> Compiled</button>')
-    return (f'<button class="b solid">{ic("file")} Save <span class="kbd">⌘S</span></button>{compile_btn}'
-            f'<button class="b primary" aria-haspopup="menu" {"disabled" if error else ""}>{ic("play", 12)} Simulate {ic("chev", 11)}</button>')
+    simulate = (f'<button class="b primary" aria-disabled="true" aria-describedby="simwhy" title="Fix 1 compile error to simulate">{ic("play", 12)} Simulate {ic("chev", 11)}</button>' if error
+                else f'<button class="b primary" aria-haspopup="menu">{ic("play", 12)} Simulate {ic("chev", 11)}</button>')
+    return f'<button class="b solid">{ic("file")} Save <span class="kbd">⌘S</span></button>{compile_btn}{simulate}'
 
 
 def simulate_menu():
@@ -158,20 +159,20 @@ def simulate_menu():
             f'<div class="field"><label>Mode</label><div class="seg" role="group"><button aria-pressed="true">Explore</button><button aria-pressed="false">Evaluate</button></div></div>'
             f'<div class="field" style="padding-top:0"><span></span><span class="sub" style="font-size:11px">Explore shows true state; Evaluate seals it until the run ends.</span></div>'
             f'<div class="field"><label>Profile</label><button class="input">nominal · 24 h<span style="margin-left:auto">{ic("chev", 11)}</span></button></div>'
-            f'<div class="field"><label>Seed</label><div class="input mono">7</div></div>'
+            f'<div class="field"><label for="seed">Seed</label><input class="input mono" id="seed" value="7"></div>'
             f'<div class="field"><label>Adapter</label><button class="input">native-jsonl<span style="margin-left:auto">{ic("chev", 11)}</span></button></div>'
             f'<div class="field"><label>Clock step</label><div class="seg" role="group"><button aria-pressed="false">1 s</button><button aria-pressed="true">10 s</button><button aria-pressed="false">60 s</button></div></div>'
             f'<div class="sep"></div><div style="display:flex;justify-content:flex-end;gap:8px;padding:2px 12px"><button class="b">Cancel</button><button class="b primary">{ic("play", 12)} Start Explore run</button></div></div>')
 
 
-def screen(theme="dark", error=False, connect=False, menu=False, show_legend=False):
+def screen(theme="dark", error=False, wiring=False, menu=False, show_legend=False):
     extra = legend() if show_legend else ""
-    if connect:
-        extra += '<div class="tip" style="left:600px;top:20px">chilled_water → CH-1.flow_in · release to connect</div>'
-    g = graph(error, connect, extra)
+    if wiring:
+        extra += '<div class="tip" style="left:456px;top:206px">chilled_water → CH-1.flow_in · release to connect</div>'
+    g = graph(error, wiring, extra)
     center = (f'<div style="display:grid;grid-template-rows:auto minmax(0,1fr) 168px;min-width:0;min-height:0;overflow:hidden">'
               f'{graph_bar(crumbs_factory(), zoom_bar(100, show_legend))}{g}{results(error)}</div>')
-    body = topbar("Build", toolbar(error)) + doc_tabs(0, DOCS) + f'<div class="main" style="grid-template-columns:264px minmax(0,1fr) 320px">{left()}{center}{right()}</div>'
+    body = topbar("Build", toolbar(error)) + doc_tabs(0, DOCS) + f'<div class="main" style="grid-template-columns:264px minmax(0,1fr) 320px">{left()}<main style="display:contents">{center}</main>{right()}</div>'
     if menu:
         body += simulate_menu()
     return page("Builder", body, theme)
@@ -179,5 +180,5 @@ def screen(theme="dark", error=False, connect=False, menu=False, show_legend=Fal
 
 write("builder.html", screen())
 write("builder-error.html", screen(error=True))
-write("builder-connect.html", screen(connect=True))
+write("builder-connect.html", screen(wiring=True))
 write("builder-simulate.html", screen(menu=True))

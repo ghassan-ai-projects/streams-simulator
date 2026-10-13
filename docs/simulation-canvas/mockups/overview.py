@@ -1,4 +1,4 @@
-from bp import ic, page, write, node_html, frame, wire, navigator, zoom_bar, topbar, doc_tabs, Node, Pin, check_layout, curve
+from bp import connect, ic, page, write, node_html, frame, wire, navigator, zoom_bar, topbar, doc_tabs, Node, Pin, check_layout, curve
 from liverun import kpis, runbar, graph_bar, macro, eval_nodes, eval_right, links, type_of, ALARM_BADGE
 from plant import build, place
 
@@ -26,18 +26,15 @@ def campus_graph():
     site = Node("Site", "▸ 2 instances", "env", [], [Pin("signals ×4", "signal")], [("wet bulb", "22.9", "°C", "", ""), ("shift", "day", "", "", "")], tier="compact")
     site.x, site.y = 16, 220
     sx, sy = site.out_xy("signals ×4")
-    bus_x = X0 - 20
-    svg = f'<path d="M{sx:.0f},{sy:.0f} L{bus_x},{sy:.0f}" stroke="var(--t-signal)" stroke-width="4" stroke-dasharray="7 5" fill="none"/>'
-    top, bottom = halls[0].y - 12, halls[-1].y - 12
-    svg += f'<path d="M{bus_x},{top} L{bus_x},{bottom}" stroke="var(--t-signal)" stroke-width="4" stroke-dasharray="7 5" fill="none"/>'
-    for row in range(5):
-        top_y = Y0 + row * DY - 12
-        last = X0 + (min(COLS, 26 - row * COLS) - 1) * DX
-        svg += f'<path d="M{bus_x},{top_y} L{last - 4},{top_y}" stroke="var(--t-signal)" stroke-width="2" stroke-dasharray="7 5" fill="none"/>'
-        for col in range(min(COLS, 26 - row * COLS)):
-            x = X0 + col * DX - 4
-            svg += f'<path d="M{x},{top_y} L{x},{top_y + 46} L{x + 3},{top_y + 46}" stroke="var(--t-signal)" stroke-width="1.5" fill="none"/>'
-    label = f'<div class="badge o" style="position:absolute;left:{bus_x - 150}px;top:{sy + 12:.0f}px;background:var(--panel)">×26 · shift, tariff, dry bulb, wet bulb</div>'
+    bus_x, top_y = X0 - 20, Y0 - 14
+    pen = 'stroke="var(--t-signal)" stroke-dasharray="7 5" fill="none"'
+    svg = f'<path d="M{sx:.0f},{sy:.0f} H{bus_x} V{top_y} H{X0 + (COLS - 1) * DX - 4}" stroke-width="3" {pen}/>'
+    for col in range(COLS):
+        rows = [r for r in range(5) if r * COLS + col < 26]
+        x = X0 + col * DX - 4
+        svg += f'<path d="M{x},{top_y} V{Y0 + rows[-1] * DY + 34}" stroke-width="1.5" {pen}/>'
+        svg += "".join(f'<path d="M{x},{Y0 + r * DY + 34} H{x + 3}" stroke="var(--t-signal)" stroke-width="1.5"/>' for r in rows)
+    label = f'<div class="badge o" style="position:absolute;left:16px;top:{site.y + site.height() + 8:.0f}px;background:var(--panel)">×26 · shift, tariff, dry bulb, wet bulb</div>'
     body = node_html(site) + "".join(hall_html(h) for h in halls)
     return f'<div class="graph run" tabindex="0" aria-label="Campus graph, 26 halls">{svg_wrap(svg)}{body}{label}</div>'
 
@@ -72,7 +69,7 @@ def campus_left():
                f'<button class="badge alarm-soft" aria-pressed="false">{ic("bell", 11)} Alarms 1</button><button class="badge alarm-soft" aria-pressed="false">{ic("bolt", 11)} Faults 1</button></div>')
     order = [7, 19] + [n for n in range(1, 27) if n not in (7, 19)]
     rows = "".join(f'<div class="li{" on" if n == 7 else ""}"><span class="mono" style="color:var(--tx)">Hall {n:02d}</span>{state_icon(n)}<span class="mono" style="margin-left:auto">{power(n)}<span class="u">kW</span></span></div>' for n in order[:7])
-    blocks = [(8 + (i % 6) * 31, 8 + (i // 6) * 22, 26, 16, "var(--alarm)" if i == 6 else ("transparent;border:2px dashed var(--alarm)" if i == 18 else "color-mix(in srgb,var(--c-env) 55%,transparent)")) for i in range(26)]
+    blocks = [(8 + (i % 6) * 31, 8 + (i // 6) * 22, 26, 16, "var(--alarm);outline:2px solid var(--accent);outline-offset:1px" if i == 6 else ("transparent;border:2px dashed var(--alarm)" if i == 18 else "color-mix(in srgb,var(--c-env) 55%,transparent)")) for i in range(26)]
     return (f'<aside class="panel" style="border-right:1px solid var(--line)"><div style="padding:8px 12px"><label class="input">{ic("search", 13)}<span class="muted">Filter halls, instances, tags</span></label></div>{filters}'
             f'<div class="ph" style="border-top:1px solid var(--line)">Needs attention<span class="r">2</span></div><div class="list">{a}</div>'
             f'<div class="ph" style="border-top:1px solid var(--line)">Halls<span class="r">attention first</span></div><div class="list">{rows}<div class="li muted">19 more · all normal</div></div>'
@@ -101,7 +98,7 @@ def campus(theme="dark"):
     center = (f'<div style="display:grid;grid-template-rows:auto auto minmax(0,1fr);min-width:0;min-height:0;overflow:hidden">{campus_kpis()}'
               f'{graph_bar(crumbs, zoom_bar(100))}{campus_graph()}</div>')
     docs = [("factory-utilities-campus-26", "plant", "plant"), ("c-1", "live run", "run")]
-    body = topbar("Run", runbar("explore", "09:12:30"), workspace=False, compact=True) + doc_tabs(1, docs) + f'<div class="main" style="grid-template-columns:256px minmax(0,1fr) 320px">{campus_left()}{center}{campus_right()}</div>'
+    body = topbar("Run", runbar("explore", "09:12:30"), workspace=False, compact=True) + doc_tabs(1, docs) + f'<div class="main" style="grid-template-columns:256px minmax(0,1fr) 320px">{campus_left()}<main style="display:contents">{center}</main>{campus_right()}</div>'
     return page("Campus overview", body, theme)
 
 
@@ -119,12 +116,12 @@ def hall_inside():
     svg = ""
     for a, ap, b, bp in links():
         if a in n and b in n:
-            svg += wire(n[a].out_xy(ap), n[b].in_xy(bp), type_of(n, a, ap), "trace" if "AC-1" in (a, b) else "")
-    svg += wire(m["Production hall"].out_xy("air_out"), n["R-1"].in_xy("demand_in"), "air", "dim")
-    svg += wire(n["R-1"].out_xy("pressure_out"), m["Production hall"].in_xy("air_in"), "pressure", "dim")
-    svg += wire(n["D-1"].out_xy("dew_point_out"), m["Production hall"].in_xy("dew_point_in"), "temp", "dim")
+            svg += connect(n[a], ap, n[b], bp, type_of(n, a, ap), "trace" if "AC-1" in (a, b) else "")
+    svg += connect(m["Production hall"], "air_out", n["R-1"], "demand_in", "air", "dim")
+    svg += connect(n["R-1"], "pressure_out", m["Production hall"], "air_in", "pressure", "dim")
+    svg += connect(n["D-1"], "dew_point_out", m["Production hall"], "dew_point_in", "temp", "dim")
     for k in ("AC-1", "AC-2", "D-1"):
-        svg += wire(n[k].out_xy("power_out"), m["Substation"].in_xy("loads_in"), "power", "dim")
+        svg += connect(n[k], "power_out", m["Substation"], "loads_in", "power", "dim")
     portals = ""
     targets = [("shift_out", "signal", "Production hall", "shift_in"), ("dry_bulb_out", "env", "Production hall", "outdoor_in"),
                ("tariff_out", "signal", "Chiller plant", "tariff_in"), ("wet_bulb_out", "env", "Chiller plant", "wet_bulb_in")]
@@ -156,7 +153,7 @@ def macro_screen(theme="dark"):
     sealed = right[right.index('<div class="sect"><div class="sh"><svg width="12" height="12" aria-hidden="true"><use href="#i-lock"/>'):right.index('</aside>')]
     right = right.replace(sealed, TRUTH_H07)
     docs = [("factory-utilities-campus-26", "plant", "plant"), ("c-1", "live run", "run")]
-    body = topbar("Run", runbar("explore", "09:12:30"), workspace=False, compact=True) + doc_tabs(1, docs) + f'<div class="main" style="grid-template-columns:256px minmax(0,1fr) 336px">{campus_left()}{center}{right}</div>'
+    body = topbar("Run", runbar("explore", "09:12:30"), workspace=False, compact=True) + doc_tabs(1, docs) + f'<div class="main" style="grid-template-columns:256px minmax(0,1fr) 336px">{campus_left()}<main style="display:contents">{center}</main>{right}</div>'
     return page("Hall 07", body, theme)
 
 

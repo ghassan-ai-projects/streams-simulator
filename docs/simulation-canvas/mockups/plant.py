@@ -1,4 +1,4 @@
-from bp import Node, Pin
+from bp import connect, Node, Pin
 
 PORTS = {
     "compressor": ([("pressure_in", "pressure", "1 s")], [("air_out", "air"), ("power_out", "power")]),
@@ -90,5 +90,5 @@ def wires_between(nodes, style_of=lambda link: ""):
     for link in links():
         a, ap, b, bp = link
         if a in nodes and b in nodes:
-            svg += wire(nodes[a].out_xy(ap), nodes[b].in_xy(bp), type_of(nodes, a, ap), style_of(link))
+            svg += connect(nodes[a], ap, nodes[b], bp, type_of(nodes, a, ap), style_of(link))
     return svg

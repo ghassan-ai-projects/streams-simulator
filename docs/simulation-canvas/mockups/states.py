@@ -15,15 +15,15 @@ def row(title, cells, note=""):
 def controls():
     b = [("Default", '<button class="b solid">Save</button>'), ("Hover", '<button class="b solid is-hover">Save</button>'),
          ("Keyboard focus", '<button class="b solid is-focus">Save</button>'), ("Pressed / on", '<button class="b" aria-pressed="true">Run</button>'),
-         ("Disabled · not available yet", f'<button class="b solid" disabled title="Not available yet: the bridge has no action for this">Compare halls</button><div class="tip" style="position:static;margin-top:8px;display:inline-block">Not available yet: the bridge has no action for this</div>'),
+         ("Disabled · reason inline, still focusable", f'<button class="b solid" aria-disabled="true" aria-describedby="why1">Compare halls</button><div class="reason" id="why1" style="margin-top:6px">{ic("alert", 11)} Not available yet: no bridge action</div>'),
          ("Primary", f'<button class="b primary">{ic("play", 12)} Simulate</button>'), ("Primary · focus", f'<button class="b primary is-focus">{ic("play", 12)} Simulate</button>'),
-         ("Primary · disabled", f'<button class="b primary" disabled>{ic("play", 12)} Simulate</button>')]
-    i = [("Input", '<div class="input mono">CT-1</div>'), ("Input · focus", '<div class="input mono is-focus">CT-1</div>'),
-         ("Read only", f'<div class="input ro">{ic("lock", 12)} streamsim/cooling-tower@1</div>'),
-         ("Invalid", f'<div class="input bad mono">CT 1</div><div style="color:var(--alarm);font-size:11px;margin-top:4px;display:flex;gap:4px">{ic("x", 12)} Names may not contain spaces</div>'),
+         ("Primary · disabled with reason", f'<button class="b primary" aria-disabled="true" aria-describedby="why2">{ic("play", 12)} Simulate</button><div class="reason" id="why2" style="margin-top:6px">{ic("x", 11)} Fix 1 compile error to simulate</div>')]
+    i = [("Input", '<input class="input mono" aria-label="Name" value="CT-1">'), ("Input · focus", '<input class="input mono is-focus" aria-label="Name" value="CT-1">'),
+         ("Read only", f'<div class="input ro" title="streamsim/cooling-tower@1">{ic("lock", 12)}<span>streamsim/cooling-tower@1</span></div>'),
+         ("Invalid", f'<input class="input bad mono" aria-label="Name" aria-invalid="true" aria-describedby="bad1" value="CT 1"><div id="bad1" role="alert" style="color:var(--alarm);font-size:11px;margin-top:4px;display:flex;gap:4px">{ic("x", 12)} Names may not contain spaces</div>'),
          ("Segmented", '<div class="seg"><button aria-pressed="false">small</button><button aria-pressed="true">medium</button><button aria-pressed="false">large</button></div>'),
          ("Tabs", '<div class="tabs" style="height:32px"><span class="tab" aria-selected="true">Details</span><span class="tab" aria-selected="false">Component</span></div>')]
-    return row("Controls", [cell(l, x, 200) for l, x in b + i], "Focus is a 2 px accent ring with 2 px offset. Disabled is 50 % with a reason on hover. Read only is a dashed border with a lock.")
+    return row("Controls", [cell(l, x, 200) for l, x in b + i], "Focus is a 2 px accent ring with 2 px offset. Disabled is 50 %, stays focusable (aria-disabled) and shows its reason inline. Read only is a dashed border with a lock.")
 
 
 def nodes():
@@ -34,7 +34,7 @@ def nodes():
     specs = [("Default", "", None, None, "build"), ("Hover", "is-hover", None, None, "build"), ("Selected", "", "CT-1", None, "build"), ("Keyboard focus", "", None, "CT-1", "build"),
              ("Selected and focused", "", "CT-1", "CT-1", "build"), ("Run · neutral header, category stripe", "", None, None, "run"),
              ("Fault injected · dashed red", "fault", None, None, "run"), ("Alarm · solid red", "alarm", None, None, "run"),
-             ("Stopped · amber", "stopped", None, None, "run"), ("Not on the trace · 55 %", "dim", None, None, "run")]
+             ("Stopped · amber", "stopped", None, None, "run"), ("Selected and fault injected", "fault", "CT-1", None, "run"), ("Selected and in alarm", "alarm", "CT-1", None, "run"), ("Not on the trace · 80 %", "dim", None, None, "run")]
     cells = []
     for label, state, sel, focus, mode in specs:
         n = mk(state)
@@ -87,18 +87,19 @@ def chips():
              ("Not verified", f'<span class="badge n">{ic("x", 11)} Not verified</span>'), ("Incomplete", f'<span class="badge n">{ic("alert", 11)} Incomplete</span>'),
              ("Alarm", f'<span class="badge alarm">{ic("bell", 11)} alarm</span>'), ("Fault injected", f'<span class="badge alarm-soft">{ic("bolt", 11)} fault injected</span>'),
              ("Stopped", f'<span class="badge warn">{ic("square", 9)} stopped</span>'), ("Read only", f'<span class="badge o">{ic("lock", 11)} read only</span>')]
-    return row("Status chips", [cell(l, x, 180) for l, x in specs], "Red is only alarms and faults, amber only warnings and stopped equipment, purple only truth and Explore, accent blue only selection, focus and the primary action. Every chip carries an icon and a word.")
+    return row("Status chips", [cell(l, x, 180) for l, x in specs], "Red is only alarms and faults (and, in Build and Pairing, an error that blocks the next step), amber only warnings and stopped equipment, purple only truth and Explore, accent blue only selection, focus and the primary action. Every chip carries an icon and a word.")
 
 
 def keyboard():
     keys = [("Tab / Shift Tab", "top bar → left panel → graph → details → results"), ("Arrows", "move to the nearest node in that direction (the graph is one tab stop)"),
             ("Enter", "go into the node's pins; Up and Down move between pins"), ("Left / Right on a pin", "jump along its wire to the connected pin"),
             ("C", "start a wire from the focused pin; Tab cycles compatible pins; Enter connects"), ("Delete", "remove the selected wire or node"),
-            ("A", "search the library and add at the focus"), ("F6", "next compile issue"), ("/ or ⌘K", "search"), ("+ − 0", "zoom in, out, fit"),
-            ("Shift Arrows", "nudge the selection 16 px"), ("Esc", "back out: pins → node → area → site")]
+            ("A", "search the library and add at the focus"), ("F8 / Shift F8", "next and previous compile issue"), ("⌘Z / ⇧⌘Z", "undo and redo every edit, including Delete"),
+            ("Space", "toggle the selection of the focused node or wire"), ("Esc while wiring", "cancel the wire"), ("/ or ⌘K", "search"), ("+ − 0", "zoom in, out, fit"),
+            ("Shift Arrows", "nudge the selection 16 px"), ("Esc", "back out: pins → node → area → site"), ("Enter in Run and Review", "open the node in Inspect; the graph is read only")]
     t = "".join(f'<tr><td style="width:200px"><span class="kbd">{k}</span></td><td style="white-space:normal">{v}</td></tr>' for k, v in keys)
-    note = ("<p class='sub' style='margin:8px 0 0'>An Outline tree is the non-graph view of every instance and wire. Compile results and new alarms are announced through a polite live region. "
-            "Animations stop under prefers-reduced-motion. Pin hit areas are 24 px.</p>")
+    note = ("<p class='sub' style='margin:8px 0 0;max-width:760px'>Single-letter keys (C, A) act only while the graph has focus. The Outline tree and the Details Ports table are the non-graph way to wire: every port lists its connections and a Connect… menu of compatible ports. "
+            "Compile results and new alarms are announced through a polite live region. Animations stop under prefers-reduced-motion. Full-tier pin rows are 24 px; the compact tier shows readings only and is not wired — zoom in or use Details.</p>")
     return row("Keyboard", [f'<div style="width:760px;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden"><table class="r">{t}</table></div>{note}'])
 
 

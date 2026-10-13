@@ -7,28 +7,28 @@ def boxes(chars, state=""):
     out = ""
     for i in range(12):
         c = chars[i] if i < len(chars) else ""
-        border = "var(--alarm)" if state == "wrong" else ("var(--accent)" if i == len(chars) and state == "" else "var(--line-3)")
-        ring = "outline:2px solid var(--accent);outline-offset:2px;" if i == len(chars) and state == "" else ""
-        out += (f'<div style="width:40px;height:52px;border:1px solid {border};{ring}border-radius:8px;display:grid;place-items:center;font:600 22px var(--font-mono);'
-                f'background:var(--panel-2);{"opacity:.5;" if state == "locked" else ""}">{c}</div>')
+        attrs = ' aria-invalid="true" aria-describedby="code-msg"' if state == "wrong" else (" disabled" if state in ("locked", "used") else "")
+        focus = ' style="outline:2px solid var(--accent);outline-offset:2px;border-color:var(--accent)"' if i == len(chars) and state == "" else ""
+        out += f'<input class="code" maxlength="1" value="{c}" aria-label="Character {i + 1} of 12"{attrs}{focus}>'
         if i in (3, 7):
             out += '<span class="muted" style="font-size:20px" aria-hidden="true">–</span>'
     return f'<div role="group" aria-label="Pairing code, 12 characters" style="display:flex;align-items:center;gap:6px">{out}</div>'
 
 
 def pairing(state="", theme="dark"):
-    chars = {"": CODE, "wrong": "3S2QK7MPLXQ4", "locked": ""}[state]
+    chars = {"": CODE, "wrong": "3S2QK7MPLXQ4", "locked": "", "used": ""}[state]
     msg = {"": f'<span class="sub">{len(chars)} of 12 characters</span>',
-           "wrong": f'<span class="ico-alarm">{ic("x", 14)}</span><span style="color:var(--alarm);font-weight:600">That code did not match. 4 tries left.</span>',
+           "wrong": f'<span class="ico-alarm">{ic("x", 14)}</span><span style="color:var(--alarm);font-weight:600">That code did not match. Check the code in your terminal and try again.</span>',
+           "used": f'<span class="ico-alarm">{ic("lock", 14)}</span><span style="color:var(--alarm);font-weight:600">This code was already used. Restart streamsim canvas to pair another browser.</span>',
            "locked": f'<span class="ico-alarm">{ic("lock", 14)}</span><span style="color:var(--alarm);font-weight:600">Pairing is locked after 5 wrong codes. Restart streamsim canvas for a new code.</span>'}[state]
-    disabled = "disabled" if state in ("", "locked") else ""
+    disabled = "disabled" if state in ("", "locked", "used") else ""
     card = (f'<main style="width:640px;background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:32px">'
             f'<div style="display:flex;align-items:center;gap:10px"><span class="logo" style="width:30px;height:30px">{ic("run", 16)}</span><span style="font-weight:600;font-size:16px">Streams Simulator</span></div>'
             f'<h1 style="font-size:22px;margin:24px 0 8px;font-weight:600">Pair this browser</h1>'
             f'<p style="margin:0 0 20px;color:var(--tx-2);font-size:13px">Type the 12-character code that <span class="mono" style="color:var(--tx)">streamsim canvas</span> printed in your terminal. '
             f'The code works once; this browser then stays paired for 12 hours.</p>{boxes(chars, state)}'
-            f'<div style="display:flex;align-items:center;gap:8px;margin-top:12px;min-height:20px" aria-live="polite">{msg}</div>'
-            f'<div style="display:flex;align-items:center;gap:12px;margin-top:20px"><button class="b primary" style="height:36px;padding:0 18px" {disabled}>Pair</button>'
+            f'<div id="code-msg" {"role=alert" if state else ""} style="display:flex;align-items:center;gap:8px;margin-top:12px;min-height:20px" aria-live="polite">{msg}</div>'
+            f'<div style="display:flex;align-items:center;gap:12px;margin-top:20px"><button class="b primary" style="height:36px;padding:0 18px" {disabled} aria-describedby="code-msg">Pair</button>'
             f'<span class="sub">Five wrong codes lock pairing until the bridge restarts.</span></div>'
             f'<div style="margin-top:24px;padding-top:16px;border-top:1px solid var(--line);color:var(--tx-2);font-size:12px">Workspace <span class="mono" style="color:var(--tx)">lab-workspace</span> · bridge '
             f'<span class="mono" style="color:var(--tx)">127.0.0.1:47811</span> · loopback only</div></main>')
@@ -53,7 +53,8 @@ def card(name, meta, src, cats):
             f'<button class="b solid">{ic("plant", 13)} Open</button><button class="b solid">{ic("play", 11)} Simulate</button></div></article>')
 
 
-RUNS = [("w-4", "factory-utilities", "Evaluate", ("n live", '<span class="pulse"></span>', "live"), "running · 08:40", "Open live run"),
+RUNS = [("w-3", "factory-utilities", "Explore", ("n live", '<span class="pulse"></span>', "live"), "running · 10:25", "Open live run"),
+        ("w-4", "factory-utilities", "Evaluate", ("n live", '<span class="pulse"></span>', "live"), "running · 08:40", "Open live run"),
         ("w-2", "factory-utilities", "Evaluate", ("ok", ic("check", 11), "Verified"), "12 h · 57,908 events", "Open review"),
         ("w-1", "factory-utilities", "Evaluate", ("n", ic("x", 11), "Not verified"), "files differ from the run", "Open review"),
         ("p-4", "chiller-pilot", "Evaluate", ("n", ic("alert", 11), "Incomplete"), "stopped at 01:12", "Open review")]
@@ -70,7 +71,7 @@ def home(theme="dark"):
     comps = "".join(f'<tr><td class="mono" style="color:var(--tx)">{n}</td><td>{d}</td><td style="text-align:right"><button class="b solid">{ic("blocks", 13)} Edit</button></td></tr>'
                     for n, d in [("factory-utilities", "20 entries · 59 connections"), ("chiller-pilot", "3 entries · 1 connection")])
     main = (f'<div style="padding:24px 32px;overflow:auto;max-width:1600px"><div style="display:flex;align-items:flex-end;gap:12px"><h1 style="margin:0;font-size:20px;font-weight:600">lab-workspace</h1>'
-            f'<span class="sub">4 plants · 2 compositions · 4 runs</span><span style="flex:1"></span>'
+            f'<span class="sub">4 plants · 2 compositions · 5 runs</span><span style="flex:1"></span>'
             f'<button class="b solid">{ic("blocks")} New composition</button><button class="b primary">{ic("plus", 12)} Build a plant</button></div>'
             f'<section style="margin-top:22px">{h2("Plants", "domains/")}<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px">{cards}</div></section>'
             f'<div style="display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:16px;margin-top:22px"><section>{h2("Runs", "runs/")}'
@@ -81,8 +82,8 @@ def home(theme="dark"):
 
 
 def home_empty(theme="dark"):
-    steps = [("1", "Build a plant", "Drag equipment from the library and wire it. The canvas writes compositions/<name>.composition.json."),
-             ("2", "Compile", "streamsim composes it into domains/<name>.domain.json and checks it."),
+    steps = [("1", "Build a plant", "Drag equipment from the library and wire it. The canvas writes compositions/&lt;name&gt;.composition.json."),
+             ("2", "Compile", "streamsim composes it into domains/&lt;name&gt;.domain.json and checks it."),
              ("3", "Simulate", "Start an Explore run and watch it live.")]
     s = "".join(f'<li style="display:flex;gap:12px;align-items:flex-start;padding:10px 0"><span class="badge n" style="flex:none">{n}</span><div><div style="font-weight:600">{t}</div><div class="sub">{d}</div></div></li>' for n, t, d in steps)
     main = (f'<div style="display:grid;place-items:center;height:100%"><main style="width:560px;text-align:left"><h1 style="margin:0 0 8px;font-size:20px;font-weight:600">lab-workspace is empty</h1>'
@@ -97,5 +98,6 @@ def home_empty(theme="dark"):
 write("pairing.html", pairing())
 write("pairing-wrong.html", pairing("wrong"))
 write("pairing-locked.html", pairing("locked"))
+write("pairing-used.html", pairing("used"))
 write("home.html", home())
 write("home-empty.html", home_empty())

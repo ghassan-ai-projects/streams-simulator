@@ -1,4 +1,4 @@
-from bp import ic, page, write, node_html, frame, wire, navigator, zoom_bar, topbar, doc_tabs, check_layout
+from bp import connect, ic, page, write, node_html, frame, wire, navigator, zoom_bar, topbar, doc_tabs, check_layout
 from liverun import explore_nodes, links, type_of, MACRO_LINKS, graph_bar, UP, DOWN
 
 MARKS = [(17.4, "alarm", "bell", "AC-1 alarm 08:05", 0, "l"), (27.8, "n", "bolt", "drop 5 % 09:20", 1, "l"), (30.6, "alarm", "bolt", "f-1 CT-1 09:40", 0, "r")]
@@ -17,11 +17,11 @@ def review_graph():
     for a, ap, b, bp in links():
         src = "P-1" if a in ("P-1", "P-2", "P-3") else a
         if src in n and b in n and a not in ("P-2", "P-3"):
-            svg += wire(n[src].out_xy(ap), n[b].in_xy(bp), type_of(n, src, ap))
+            svg += connect(n[src], ap, n[b], bp, type_of(n, src, ap))
     for a, ap, b, bp, t in MACRO_LINKS:
-        svg += wire(m[a].out_xy(ap), n[b].in_xy(bp), t)
+        svg += connect(m[a], ap, n[b], bp, t)
     frames = frame("Chiller plant", 204, 8, 660, 314, "cool", "6 instances") + frame("Substation", 204, 330, 660, 246, "elec", "4 of 6")
-    lock = f'<div class="badge o lock" style="position:absolute;right:12px;bottom:12px;background:var(--panel);height:28px">{ic("lock", 12)} Read only · finished run</div>'
+    lock = f'<div class="badge o lock fixed" style="position:absolute;right:12px;bottom:12px;background:var(--panel);height:28px">{ic("lock", 12)} Read only · finished run</div>'
     body = "".join(node_html(v) for v in m.values()) + "".join(node_html(v, sel="CH-1") for v in n.values())
     return f'<div class="graph run" tabindex="0" aria-label="Plant at 09:45:00, read only">{frames}<svg class="wires" width="900" height="600" aria-hidden="true">{svg}</svg>{body}{lock}</div>'
 
@@ -91,7 +91,7 @@ def screen(theme="dark"):
               f'<div class="seg" role="group" style="margin-left:12px"><button aria-pressed="false" style="padding:0 10px">Reported</button><button aria-pressed="true" style="padding:0 10px">True vs reported</button></div>')
     center = f'<div style="display:grid;grid-template-rows:auto auto minmax(0,1fr);min-width:0;min-height:0;overflow:hidden">{scrubber()}{graph_bar(crumbs, zoom_bar(80))}{review_graph()}</div>'
     docs = [("factory-utilities", "plant", "plant"), ("w-2", "review", "check")]
-    body = topbar("Review", topbar_right(), workspace=False, compact=True) + doc_tabs(1, docs) + f'<div class="main" style="grid-template-columns:200px minmax(0,1fr) 368px">{runs_left()}{center}{report()}</div>'
+    body = topbar("Review", topbar_right(), workspace=False, compact=True) + doc_tabs(1, docs) + f'<div class="main" style="grid-template-columns:200px minmax(0,1fr) 368px">{runs_left()}<main style="display:contents">{center}</main>{report()}</div>'
     return page("Review", body, theme)
 
 

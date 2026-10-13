@@ -1,4 +1,4 @@
-from bp import ic, page, write, node_html, frame, wire, navigator, zoom_bar, topbar, doc_tabs, Node, Pin, check_layout
+from bp import connect, ic, page, write, node_html, frame, wire, navigator, zoom_bar, topbar, doc_tabs, Node, Pin, check_layout
 from plant import build, place, links, type_of
 
 UP, DOWN = "▲", "▼"
@@ -14,7 +14,7 @@ MACROS = {
 
 def macro(name, readout, x, y, used=()):
     cat, ins, outs, members = MACROS[name]
-    n = Node(name, f"▸ {COUNT[name]} instances", cat, [Pin(*p, on=p[0] in used) for p in ins], [Pin(*p, on=p[0] in used) for p in outs], readout, tier="compact")
+    n = Node(name, f"▸ {COUNT[name]}", cat, [Pin(*p, on=p[0] in used) for p in ins], [Pin(*p, on=p[0] in used) for p in outs], readout, tier="compact")
     n.x, n.y = x, y
     return n
 
@@ -52,9 +52,9 @@ def explore_wires(n, m):
         src = "P-1" if a in ("P-1", "P-2", "P-3") else a
         if src in n and b in n and not (a in ("P-2", "P-3")):
             style = "trace" if (a, b) in TRACE else "dim"
-            svg += wire(n[src].out_xy(ap), n[b].in_xy(bp), type_of(n, src, ap), style)
+            svg += connect(n[src], ap, n[b], bp, type_of(n, src, ap), style)
     for a, ap, b, bp, t in MACRO_LINKS:
-        svg += wire(m[a].out_xy(ap), n[b].in_xy(bp), t, "dim")
+        svg += connect(m[a], ap, n[b], bp, t, "dim")
     return svg
 
 
@@ -180,7 +180,7 @@ def graph_bar(crumbs, right):
 
 def screen(left, kp, bar, g, tl, right, docs, clock, mode, theme):
     center = f'<div style="display:grid;grid-template-rows:auto auto minmax(0,1fr) 136px;min-width:0;min-height:0;overflow:hidden">{kp}{bar}{g}{tl}</div>'
-    body = topbar("Run", runbar(mode, clock), workspace=False, compact=True) + doc_tabs(2, docs) + f'<div class="main" style="grid-template-columns:232px minmax(0,1fr) 336px">{left}{center}{right}</div>'
+    body = topbar("Run", runbar(mode, clock), workspace=False, compact=True) + doc_tabs(2, docs) + f'<div class="main" style="grid-template-columns:232px minmax(0,1fr) 336px">{left}<main style="display:contents">{center}</main>{right}</div>'
     return page("Live run", body, theme)
 
 
@@ -218,12 +218,12 @@ def eval_graph():
     svg = ""
     for a, ap, b, bp in links():
         if a in n and b in n:
-            svg += wire(n[a].out_xy(ap), n[b].in_xy(bp), type_of(n, a, ap), "trace" if "AC-1" in (a, b) else "")
-    svg += wire(m["Production hall"].out_xy("air_out"), n["R-1"].in_xy("demand_in"), "air", "dim")
-    svg += wire(n["R-1"].out_xy("pressure_out"), m["Production hall"].in_xy("air_in"), "pressure", "dim")
-    svg += wire(n["D-1"].out_xy("dew_point_out"), m["Production hall"].in_xy("dew_point_in"), "temp", "dim")
-    svg += wire(m["Chiller plant"].out_xy("power_out"), n["MM-1"].in_xy("loads_in"), "power", "dim")
-    svg += wire(m["Production hall"].out_xy("power_out"), n["MM-1"].in_xy("loads_in"), "power", "dim")
+            svg += connect(n[a], ap, n[b], bp, type_of(n, a, ap), "trace" if "AC-1" in (a, b) else "")
+    svg += connect(m["Production hall"], "air_out", n["R-1"], "demand_in", "air", "dim")
+    svg += connect(n["R-1"], "pressure_out", m["Production hall"], "air_in", "pressure", "dim")
+    svg += connect(n["D-1"], "dew_point_out", m["Production hall"], "dew_point_in", "temp", "dim")
+    svg += connect(m["Chiller plant"], "power_out", n["MM-1"], "loads_in", "power", "dim")
+    svg += connect(m["Production hall"], "power_out", n["MM-1"], "loads_in", "power", "dim")
     frames = frame("Compressor room", 204, 8, 412, 360, "air", "4 instances") + frame("Substation", 652, 8, 212, 320, "elec", "2 of 6")
     body = "".join(node_html(v) for v in m.values()) + "".join(node_html(v, sel="AC-1") for v in n.values())
     return f'<div class="graph run" tabindex="0" aria-label="Live plant graph">{frames}<svg class="wires" width="900" height="600" aria-hidden="true">{svg}</svg>{body}</div>'
@@ -246,7 +246,7 @@ def discharge_trend():
     xs = "".join(f'<text x="{x(i):.0f}" y="{h - 4}" text-anchor="{a}" class="ax">{t}</text>' for i, t, a in [(0, "05:40", "start"), (7, "07:10", "middle"), (14, "08:40", "end")])
     return (f'<svg width="{w}" height="{h}" role="img" aria-label="AC-1 discharge temperature, 05:40 to 08:40: 89.0 °C rising to 105.7 °C; alarm limit 102 °C crossed at 08:05">'
             f'<style>.ax{{font:11px var(--font-mono);fill:var(--tx-2)}}</style>{grid}{xs}<text x="4" y="12" class="ax">°C</text>'
-            f'<line x1="{l}" x2="{w - 10}" y1="{y(102):.0f}" y2="{y(102):.0f}" stroke="var(--alarm)" stroke-dasharray="5 3"/><text x="{l + 4}" y="{y(102) - 5:.0f}" class="ax" style="fill:var(--alarm)">limit 102</text>'
+            f'<line x1="{l}" x2="{w - 10}" y1="{y(102):.0f}" y2="{y(102):.0f}" stroke="var(--alarm)" stroke-dasharray="5 3"/><text x="{x(1.56) + 12:.0f}" y="{y(102) - 5:.0f}" class="ax" style="fill:var(--alarm)">limit 102</text>'
             f'<line x1="{x(1.56):.0f}" x2="{x(1.56):.0f}" y1="18" y2="{h - 22}" stroke="var(--tx-2)" stroke-dasharray="3 3"/><text x="{x(1.56) + 4:.0f}" y="28" class="ax">sent 06:00</text>'
             f'<line x1="{x(11.28):.0f}" x2="{x(11.28):.0f}" y1="18" y2="{h - 22}" stroke="var(--alarm)" stroke-width="1.5"/><text x="{x(11.28) - 4:.0f}" y="{h - 28}" text-anchor="end" class="ax" style="fill:var(--alarm)">alarm 08:05</text>'
             f'<polyline points="{line}" fill="none" stroke="var(--t-temp)" stroke-width="2.2"/></svg>')
@@ -291,6 +291,71 @@ def evaluate(theme="dark"):
     return screen(eval_left(), eval_kpis(), bar, eval_graph(), eval_timeline(), eval_right(), docs, "08:40:00", "evaluate", theme)
 
 
+def prefault_graph():
+    n, m = explore_nodes()
+    pre = {"CT-1": [("basin", "27.0", "°C", "", ""), ("fan power", "4.0", "kW", "", "")],
+           "CH-1": [("cond water", "27.0", "°C", "", ""), ("COP", "5.79", "", "", ""), ("power", "193", "kW", "", ""), ("supply", "7.00", "°C", "", "")],
+           "MB-COOL": [("power", "249", "kW", "", "")], "MM-1": [("power", "875", "kW", "", "")]}
+    for k, v in pre.items():
+        n[k].readout = v
+    n["CT-1"].state, n["CT-1"].foot = "", ""
+    svg = ""
+    for a, ap, b, bp in links():
+        src = "P-1" if a in ("P-1", "P-2", "P-3") else a
+        if src in n and b in n and a not in ("P-2", "P-3"):
+            svg += connect(n[src], ap, n[b], bp, type_of(n, src, ap))
+    for a, ap, b, bp, t in MACRO_LINKS:
+        svg += connect(m[a], ap, n[b], bp, t)
+    frames = frame("Chiller plant", 204, 8, 660, 314, "cool", "6 instances") + frame("Substation", 204, 330, 660, 246, "elec", "4 of 6 · TX-1, G-1 off-view")
+    body = "".join(node_html(v) for v in m.values()) + "".join(node_html(v, sel="CT-1") for v in n.values())
+    return f'<div class="graph run" tabindex="0" aria-label="Live plant graph">{frames}<svg class="wires" width="900" height="600" aria-hidden="true">{svg}</svg>{body}</div>'
+
+
+FAULTS = [("Equipment", [("fan_failure", "ramp · 1/h · fan_health −0.9"), ("fill_fouling", "ramp · 0.1/h · approach ×1.35"), ("humid_spell", "pulse 3 h · negative class")]),
+          ("basin_temp · RTD", [("offset", ""), ("drift", ""), ("open_circuit", ""), ("dropout", ""), ("noise_burst", "")]),
+          ("fan_power · power meter", [("offset", ""), ("ct_ratio", ""), ("stale", ""), ("dropout", ""), ("noise_burst", "")])]
+
+
+def inject_menu():
+    rows = ""
+    for group, items in FAULTS:
+        rows += f'<div class="mh">{group}</div>'
+        rows += "".join(f'<div class="mi{" on" if n == "fan_failure" else ""}" role="menuitem" tabindex="-1"><span class="mono">{n}</span><span class="sub" style="margin-left:auto;font-size:11px">{d}</span></div>' for n, d in items[:3 if group != "Equipment" else 3])
+        if len(items) > 3 and group != "Equipment":
+            rows += f'<div class="mi sub" role="menuitem" style="font-size:11px">+ {len(items) - 3} more</div>'
+    return (f'<div class="menu" role="menu" aria-label="Inject a fault on CT-1" style="right:8px;bottom:40px;width:324px">'
+            f'<div class="mh" style="text-transform:none;letter-spacing:0;color:var(--tx)">Inject now with the default profile · 13 faults</div>{rows}'
+            f'<div class="sep"></div><div class="sub" style="padding:0 12px 4px;font-size:11px;white-space:normal">Onset is the current clock (09:39:50). Change rate or magnitude afterwards in the disturbance card.</div></div>')
+
+
+def prefault_right():
+    rows = [("basin_temp", "27.0", "°C", "TT · good"), ("fan_power", "4.0", "kW", "JT · good")]
+    r = "".join(f'<tr><td class="mono">{n}</td><td class="num">{v}<span class="u">{u}</span></td><td style="text-align:right">{q}</td></tr>' for n, v, u, q in rows)
+    truth = [("fan_health", "1.00"), ("fan_eff", "0.60"), ("fan_speed", "0.60"), ("approach", "4.1 K")]
+    t = "".join(f'<tr><td class="mono">{n}</td><td class="num" style="color:var(--truth)">{v}</td></tr>' for n, v in truth)
+    return (f'<aside class="panel" style="border-left:1px solid var(--line)"><div class="ph"><div class="tabs" role="tablist"><span class="tab" role="tab" aria-selected="true">Inspect</span><span class="tab" role="tab" aria-selected="false">Watch · 4</span></div></div>'
+            f'{inspector_head("CT-1", "Cooling tower · Chiller plant", "")}'
+            f'<div class="sect"><div class="sh">Readings <span class="r">observed</span></div><table class="r">{r}</table></div>'
+            f'<div class="sect" style="background:var(--truth-soft)"><div class="sh" style="color:var(--truth)">{ic("eye", 12)} True state <span class="r">Explore only</span></div><table class="r">{t}</table></div>'
+            f'<div class="sect"><div class="sh">Disturbances on CT-1</div><div class="sub" style="padding:0 12px">None.</div>'
+            f'<div style="padding:8px 12px"><button class="b solid is-focus" aria-haspopup="menu" aria-expanded="true" style="width:100%;justify-content:center">{ic("bolt", 13)} Inject a fault on CT-1…</button></div></div></aside>')
+
+
+def explore_inject(theme="dark"):
+    crumbs = f'{ic("plant", 13)}<span style="color:var(--tx);font-weight:600">Factory</span><span class="muted">· 3 areas collapsed</span>'
+    tl = timeline([("Disturbances", '<span class="muted" style="line-height:28px">none yet</span>'), ("Alarms", '<span class="muted" style="line-height:28px">no alarms in this run</span>')],
+                  [(0, "08:40"), (25, "08:55"), (50, "09:10"), (75, "09:25"), (100, "09:40")], "following live")
+    flat = [.5, .52, .49, .51, .5, .5, .52, .5, .49, .5]
+    kp = kpis([("Site power", "875", "kW", "", flat, ""), ("Header pressure", "692", "kPa", "R-1", flat, ""), ("CHW supply", "7.00", "°C", "sp 7.00", flat, ""),
+               ("Chiller COP", "5.79", "", "", flat, ""), ("Active alarms", "0", "", "", [0] * 10, "")])
+    left = explore_left().replace("change since 09:40", "now").replace(f"{UP}6.4", "").replace(f"{UP}5.9", "").replace(f"{UP}73", "")
+    left = left.replace("33.4 °C", "27.0 °C").replace("38.9 °C", "33.0 °C").replace("266 kW", "193 kW").replace("948 kW", "875 kW")
+    left = left.replace("auto-step running · 10 s steps", "auto-step running · 10 s steps").replace('<div class="li" style="align-items:flex-start;padding-top:6px;padding-bottom:6px;white-space:normal"><span class="mono muted" style="flex:none">09:40:00</span><span>you injected fan_failure on CT-1 (f-0)</span></div>', "").replace("10:25:00", "09:39:50")
+    html = screen(left, kp, graph_bar(crumbs, zoom_bar(80)), prefault_graph(), tl, prefault_right(), DOCS, "09:39:50", "explore", theme)
+    return html.replace('</div><div class="sr-only"', inject_menu() + '</div><div class="sr-only"', 1)
+
+
 if __name__ == "__main__":
     write("live-run.html", explore())
     write("live-evaluate.html", evaluate())
+    write("live-inject.html", explore_inject())
