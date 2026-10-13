@@ -3,6 +3,9 @@ package domain
 func (w *World) latestStateFault(entity, state string, at int64) (int64, bool) {
 	last := int64(-1)
 	any := false
+	if len(w.faultsByState) == 0 {
+		return last, any
+	}
 	for _, fault := range w.faultsByState[state] {
 		if fault.entity != entity || !fault.activeAt(at) {
 			continue

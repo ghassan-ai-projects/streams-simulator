@@ -94,10 +94,16 @@ type Entity struct {
 	kind      *model.Kind
 	set       int
 	states    map[string]*stateValue
+	steps     []step
 	channels  map[string]*channelRunState
 	alive     bool
 	retiredNS int64
 	readersAt int64
+}
+
+type step struct {
+	dyn   *model.Dynamics
+	state *stateValue
 }
 
 type channelRunState struct {

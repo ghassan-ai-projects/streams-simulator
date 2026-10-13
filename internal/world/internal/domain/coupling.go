@@ -119,8 +119,8 @@ func (w *World) readerNeed(reader *Entity, reach int64) int64 {
 func (e *Entity) frontier() int64 {
 	front := e.BornNS
 	first := true
-	for i := range e.kind.Dynamics {
-		if s := e.states[e.kind.Dynamics[i].Target]; s != nil && e.kind.Dynamics[i].Integrated() && (first || s.lastStep < front) {
+	for _, step := range e.steps {
+		if s := step.state; first || s.lastStep < front {
 			front, first = s.lastStep, false
 		}
 	}
@@ -129,10 +129,8 @@ func (e *Entity) frontier() int64 {
 
 func (w *World) retainedFrom(ent *Entity) int64 {
 	oldest := w.readersFloor(ent)
-	for i := range ent.kind.Dynamics {
-		if s := ent.states[ent.kind.Dynamics[i].Target]; s != nil && ent.kind.Dynamics[i].Integrated() {
-			oldest = min(oldest, s.oldest())
-		}
+	for _, step := range ent.steps {
+		oldest = min(oldest, step.state.oldest())
 	}
 	return oldest
 }

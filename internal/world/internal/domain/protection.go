@@ -143,13 +143,14 @@ func (w *World) lookAhead(entityID string, atNS int64) func() {
 	if ent == nil || atNS <= w.clockNS {
 		return func() {}
 	}
-	committed := ent.states
+	committed, steps := ent.states, ent.steps
 	ent.states = make(map[string]*stateValue, len(committed))
 	// determinism-safe: copies a map; no order reaches output.
 	for name, value := range committed {
 		ent.states[name] = value.withHistory()
 	}
-	return func() { ent.states = committed }
+	ent.bindSteps()
+	return func() { ent.states, ent.steps = committed, steps }
 }
 
 func (s *stateValue) withHistory() *stateValue {

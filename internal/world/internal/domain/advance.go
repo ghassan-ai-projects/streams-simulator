@@ -23,14 +23,9 @@ func (w *World) advanceEntity(ent *Entity, t int64) {
 func nextStep(ent *Entity, t int64) *model.Dynamics {
 	var next *model.Dynamics
 	var from int64
-	for i := range ent.kind.Dynamics {
-		dyn := &ent.kind.Dynamics[i]
-		s := ent.states[dyn.Target]
-		if !dyn.Integrated() || s == nil || s.lastStep+stepNS(dyn) > t {
-			continue
-		}
-		if next == nil || s.lastStep < from {
-			next, from = dyn, s.lastStep
+	for _, candidate := range ent.steps {
+		if s := candidate.state; s.lastStep+stepNS(candidate.dyn) <= t && (next == nil || s.lastStep < from) {
+			next, from = candidate.dyn, s.lastStep
 		}
 	}
 	return next

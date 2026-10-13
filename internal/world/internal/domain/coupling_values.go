@@ -15,7 +15,7 @@ type linkAggregate struct {
 
 func (w *World) inputState(ent *Entity, in model.F1Input, t int64) float64 {
 	if in.Link == nil {
-		return w.stateAt(ent.ID, in.State, t)
+		return w.stateOf(ent, in.State, t)
 	}
 	var fallback float64
 	if in.Link.Default != nil {
@@ -50,7 +50,7 @@ func (w *World) gather(agg *linkAggregate, ent *Entity, read linkRead, t int64) 
 	at := w.sampleInstant(t, read.sampleS)
 	for _, id := range w.coupling.sources[ent.ID][read.linkType] {
 		if source := w.entities[id]; source != nil && source.presentAt(at) {
-			agg.add(w.stateAt(id, read.state, at))
+			agg.add(w.stateOf(source, read.state, at))
 		}
 	}
 }
