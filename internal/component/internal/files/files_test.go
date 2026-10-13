@@ -30,8 +30,10 @@ func TestLoadReadsTheBuiltInLibrary(t *testing.T) {
 		t.Fatal(err)
 	}
 	equipment, instruments := library.Counts()
-	if equipment != 2 || instruments != 3 {
-		t.Fatalf("library = %d equipment and %d instruments, want 2 and 3", equipment, instruments)
+	equipmentFiles, _ := filepath.Glob(filepath.Join(builtInDir(), "equipment", "*.component.json"))
+	instrumentFiles, _ := filepath.Glob(filepath.Join(builtInDir(), "instruments", "*.instrument.json"))
+	if equipment != len(equipmentFiles) || instruments != len(instrumentFiles) || equipment == 0 || instruments == 0 {
+		t.Fatalf("library = %d equipment and %d instruments, want the %d and %d files", equipment, instruments, len(equipmentFiles), len(instrumentFiles))
 	}
 }
 

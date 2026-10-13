@@ -24,13 +24,26 @@
       "state": [
         {"name": "running", "unit": "on", "initial": 1, "min": 0, "max": 1},
         {"name": "setpoint", "unit": "degC", "initial": 6.5, "min": 4, "max": 12},
-        {"name": "load", "unit": "kW", "initial": 2000, "min": 0},
+        {"name": "load", "unit": "kW", "initial": 1400, "min": 0},
+        {"name": "cond_water_in", "unit": "degC", "initial": 27.5},
+        {"name": "tariff", "unit": "currency/kWh", "initial": 0.15, "min": 0},
+        {"name": "chw_flow", "unit": "m3/h", "initial": 440, "min": 0},
+        {"name": "idle", "unit": "ratio", "initial": 0},
+        {"name": "cooling", "unit": "kW", "initial": 1400, "min": 0},
+        {"name": "part_load", "unit": "ratio", "initial": 0.497689, "min": 0},
+        {"name": "supply_error", "unit": "degC", "initial": 0},
         {"name": "chw_supply", "unit": "degC", "initial": 6.5},
-        {"name": "chw_flow", "unit": "m3/h", "initial": 344, "min": 0},
-        {"name": "power", "unit": "kW", "initial": 280, "min": 0},
-        {"name": "cond_temp", "unit": "degC", "initial": 33},
-        {"name": "heat_rejected", "unit": "kW", "initial": 1680, "min": 0},
+        {"name": "delta_t", "unit": "degC", "initial": 2.73729},
+        {"name": "chw_return", "unit": "degC", "initial": 9.73729},
+        {"name": "specific_power", "unit": "ratio", "initial": 0.132073, "min": 0},
+        {"name": "power", "unit": "kW", "initial": 184.902, "min": 0},
+        {"name": "cop_curve", "unit": "ratio", "initial": 7.61673, "min": 0},
+        {"name": "cop", "unit": "ratio", "initial": 7.61673, "min": 0},
+        {"name": "cond_temp", "unit": "degC", "initial": 31.9931},
+        {"name": "heat_rejected", "unit": "kW", "initial": 1584.9, "min": 0},
+        {"name": "cost_rate", "unit": "currency/h", "initial": 27.7352, "min": 0},
         {"name": "chw_supply_temp__bias", "unit": "degC", "initial": 0},
+        {"name": "chw_return_temp__bias", "unit": "degC", "initial": 0},
         {"name": "cond_temp__bias", "unit": "degC", "initial": 0},
         {"name": "power__bias", "unit": "kW", "initial": 0},
         {"name": "chw_flow__bias", "unit": "m3/h", "initial": 0}
@@ -42,10 +55,48 @@
           "f0": {
             "baseline": 2000,
             "drift_per_hour": 0,
-            "seasonality": [{"amplitude": 600, "period_s": 86400, "phase_rad": -1.6}]
+            "seasonality": [{"amplitude": 600, "period_s": 86400, "phase_rad": -1.5708}]
           }
         },
-        {"target": "chw_flow", "tier": "F0", "f0": {"baseline": 344, "drift_per_hour": 0, "seasonality": []}},
+        {
+          "target": "cond_water_in",
+          "tier": "F0",
+          "f0": {
+            "baseline": 29,
+            "drift_per_hour": 0,
+            "seasonality": [{"amplitude": 1.5, "period_s": 86400, "phase_rad": -1.5708}]
+          }
+        },
+        {"target": "tariff", "tier": "F0", "f0": {"baseline": 0.15, "drift_per_hour": 0, "seasonality": []}},
+        {"target": "chw_flow", "tier": "F0", "f0": {"baseline": 440, "drift_per_hour": 0, "seasonality": []}},
+        {
+          "target": "idle",
+          "tier": "F1",
+          "f1": {
+            "form": "curve",
+            "inputs": [{"state": "running", "coef": 1}],
+            "table": {"values": [1, 0], "x": [0, 1]}
+          }
+        },
+        {
+          "target": "cooling",
+          "tier": "F1",
+          "f1": {"form": "product", "inputs": [{"state": "running", "coef": 1}, {"state": "load", "coef": 1}]}
+        },
+        {
+          "target": "part_load",
+          "tier": "F1",
+          "f1": {"form": "sum", "inputs": [{"state": "cooling", "coef": 0.000355492}]}
+        },
+        {
+          "target": "supply_error",
+          "tier": "F1",
+          "f1": {
+            "form": "curve",
+            "inputs": [{"state": "part_load", "coef": 1}],
+            "table": {"values": [0, 0, 1.5, 3.5], "x": [0, 1, 1.25, 1.5]}
+          }
+        },
         {
           "target": "chw_supply",
           "tier": "F1",
@@ -53,20 +104,88 @@
           "f1": {
             "form": "first_order_lag",
             "gain": 1,
-            "inputs": [{"state": "setpoint", "coef": 1}, {"state": "load", "coef": 0.000175}],
+            "inputs": [
+              {"state": "setpoint", "coef": 1},
+              {"state": "supply_error", "coef": 1},
+              {"state": "idle", "coef": 5}
+            ],
             "time_constant_s": 300
+          }
+        },
+        {
+          "target": "delta_t",
+          "tier": "F1",
+          "f1": {
+            "form": "curve",
+            "inputs": [{"state": "part_load", "coef": 1}, {"state": "chw_flow", "coef": 0.00227273}],
+            "table": {
+              "grid": [[0, 0, 0, 0, 0], [16.5, 11, 8.25, 6.6, 5.5]],
+              "x": [0, 1.5],
+              "y": [0.5, 0.75, 1, 1.25, 1.5]
+            }
+          }
+        },
+        {
+          "target": "chw_return",
+          "tier": "F1",
+          "f1": {"form": "sum", "inputs": [{"state": "chw_supply", "coef": 1}, {"state": "delta_t", "coef": 1}]}
+        },
+        {
+          "target": "specific_power",
+          "tier": "F1",
+          "f1": {
+            "form": "curve",
+            "inputs": [{"state": "part_load", "coef": 1}, {"state": "cond_water_in", "coef": 1}],
+            "table": {
+              "grid": [
+                [0.1675, 0.2125, 0.25, 0.2875, 0.3175],
+                [0.1139, 0.1445, 0.17, 0.1955, 0.2159],
+                [0.09246, 0.1173, 0.138, 0.1587, 0.17526],
+                [0.0938, 0.119, 0.14, 0.161, 0.1778],
+                [0.10854, 0.1377, 0.162, 0.1863, 0.20574],
+                [0.12395, 0.15725, 0.185, 0.21275, 0.23495]
+              ],
+              "x": [0.1, 0.25, 0.5, 0.75, 1, 1.2],
+              "y": [18, 24, 29, 34, 38]
+            }
           }
         },
         {
           "target": "power",
           "tier": "F1",
-          "dt_ms": 5000,
           "f1": {
-            "form": "first_order_lag",
-            "gain": 1,
-            "inputs": [{"state": "load", "coef": 0.2}],
-            "time_constant_s": 60
+            "form": "product",
+            "inputs": [
+              {"state": "running", "coef": 1},
+              {"state": "load", "coef": 1},
+              {"state": "specific_power", "coef": 1}
+            ]
           }
+        },
+        {
+          "target": "cop_curve",
+          "tier": "F1",
+          "f1": {
+            "form": "curve",
+            "inputs": [{"state": "part_load", "coef": 1}, {"state": "cond_water_in", "coef": 1}],
+            "table": {
+              "grid": [
+                [5.97015, 4.70588, 4, 3.47826, 3.14961],
+                [8.77963, 6.92042, 5.88235, 5.11509, 4.63177],
+                [10.8155, 8.52515, 7.24638, 6.3012, 5.70581],
+                [10.661, 8.40336, 7.14286, 6.21118, 5.6243],
+                [9.21319, 7.26216, 6.17284, 5.36769, 4.8605],
+                [8.06777, 6.3593, 5.40541, 4.70035, 4.25622]
+              ],
+              "x": [0.1, 0.25, 0.5, 0.75, 1, 1.2],
+              "y": [18, 24, 29, 34, 38]
+            }
+          }
+        },
+        {
+          "target": "cop",
+          "tier": "F1",
+          "f1": {"form": "product", "inputs": [{"state": "running", "coef": 1}, {"state": "cop_curve", "coef": 1}]}
         },
         {
           "target": "cond_temp",
@@ -75,7 +194,11 @@
           "f1": {
             "form": "first_order_lag",
             "gain": 1,
-            "inputs": [{"state": "load", "coef": 0.0021}, {"state": "running", "coef": 30}],
+            "inputs": [
+              {"state": "cond_water_in", "coef": 1},
+              {"state": "running", "coef": 3},
+              {"state": "part_load", "coef": 3}
+            ],
             "time_constant_s": 600
           }
         },
@@ -86,9 +209,14 @@
           "f1": {
             "form": "first_order_lag",
             "gain": 1,
-            "inputs": [{"state": "load", "coef": 1}, {"state": "power", "coef": 1}],
+            "inputs": [{"state": "cooling", "coef": 1}, {"state": "power", "coef": 1}],
             "time_constant_s": 120
           }
+        },
+        {
+          "target": "cost_rate",
+          "tier": "F1",
+          "f1": {"form": "product", "inputs": [{"state": "power", "coef": 1}, {"state": "tariff", "coef": 1}]}
         }
       ],
       "channels": [
@@ -102,6 +230,20 @@
           "observation_bias": {"state": "chw_supply_temp__bias", "coef": 1, "noise_scale_at_full": 1},
           "observes": "chw_supply",
           "range": {"min": 0, "max": 25},
+          "resolution": 0.1,
+          "tag": "TT",
+          "value_type": "number"
+        },
+        {
+          "name": "chiller_large.chw_return_temp",
+          "unit": "degC",
+          "absence": "signal",
+          "cadence": {"mode": "periodic", "period_s": 10},
+          "fidelity": "F1",
+          "noise": {"model": "gaussian", "sigma": 0.05},
+          "observation_bias": {"state": "chw_return_temp__bias", "coef": 1, "noise_scale_at_full": 1},
+          "observes": "chw_return",
+          "range": {"min": 0, "max": 35},
           "resolution": 0.1,
           "tag": "TT",
           "value_type": "number"
@@ -152,7 +294,11 @@
       "faults": [
         {
           "id": "chiller_large__condenser_fouling",
-          "affects": [{"state": "cond_temp", "delta": 6}, {"state": "power", "delta": 0.18, "multiplicative": true}],
+          "affects": [
+            {"state": "cond_temp", "delta": 6},
+            {"state": "power", "delta": 0.18, "multiplicative": true},
+            {"state": "cop", "delta": -0.15, "multiplicative": true}
+          ],
           "observability": {
             "detector": {"form": "single_channel_snr", "channel": "chiller_large.cond_temp"},
             "first_observable_snr": 3,
@@ -162,7 +308,11 @@
         },
         {
           "id": "chiller_large__refrigerant_undercharge",
-          "affects": [{"state": "chw_supply", "delta": 1.8}, {"state": "power", "delta": -0.08, "multiplicative": true}],
+          "affects": [
+            {"state": "chw_supply", "delta": 1.8},
+            {"state": "power", "delta": -0.08, "multiplicative": true},
+            {"state": "cop", "delta": -0.08, "multiplicative": true}
+          ],
           "observability": {
             "detector": {"form": "single_channel_snr", "channel": "chiller_large.chw_supply_temp"},
             "first_observable_snr": 3,
@@ -171,8 +321,21 @@
           "onset": {"magnitude": 1, "rate_per_hour": 0.1, "shape": "ramp"}
         },
         {
+          "id": "chiller_large__compressor_wear",
+          "affects": [
+            {"state": "power", "delta": 0.1, "multiplicative": true},
+            {"state": "cop", "delta": -0.09, "multiplicative": true}
+          ],
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "chiller_large.power"},
+            "first_observable_snr": 3,
+            "unavoidable_snr": 10
+          },
+          "onset": {"magnitude": 1, "rate_per_hour": 0.08, "shape": "ramp"}
+        },
+        {
           "id": "chiller_large__load_swing",
-          "affects": [{"state": "load", "delta": 340}],
+          "affects": [{"state": "load", "delta": 200}],
           "is_negative_class": true,
           "observability": {
             "detector": {"form": "single_channel_snr", "channel": "chiller_large.power"},
@@ -196,6 +359,26 @@
           "affects": [{"state": "chw_supply_temp__bias", "delta": 1.2}],
           "observability": {
             "detector": {"form": "single_channel_snr", "channel": "chiller_large.chw_supply_temp"},
+            "first_observable_snr": 3,
+            "unavoidable_snr": 10
+          },
+          "onset": {"magnitude": 1, "rate_per_hour": 0.041666666666666664, "shape": "ramp"}
+        },
+        {
+          "id": "chiller_large__chw_return_temp__offset",
+          "affects": [{"state": "chw_return_temp__bias", "delta": 2}],
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "chiller_large.chw_return_temp"},
+            "first_observable_snr": 3,
+            "unavoidable_snr": 10
+          },
+          "onset": {"magnitude": 1, "shape": "step"}
+        },
+        {
+          "id": "chiller_large__chw_return_temp__drift",
+          "affects": [{"state": "chw_return_temp__bias", "delta": 1.2}],
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "chiller_large.chw_return_temp"},
             "first_observable_snr": 3,
             "unavoidable_snr": 10
           },
@@ -245,13 +428,21 @@
       "effectors": [
         {
           "name": "chiller_large__set_setpoint",
-          "ack": {"failure_modes": [{"mode": "ok", "probability": 1}], "latency_ms": {"mean": 300, "sigma": 50}},
+          "ack": {
+            "failure_modes": [
+              {"mode": "ok", "probability": 0.97},
+              {"mode": "slow", "probability": 0.02},
+              {"mode": "ack_lost", "probability": 0.01}
+            ],
+            "latency_ms": {"mean": 300, "sigma": 50}
+          },
           "args_schema": {
             "additionalProperties": false,
             "properties": {"chiller_id": {"type": "string"}, "setpoint_c": {"maximum": 12, "minimum": 4, "type": "number"}},
             "required": ["chiller_id", "setpoint_c"],
             "type": "object"
           },
+          "confirmation_channels": ["chiller_large.chw_supply_temp"],
           "effect": {
             "dead_time_s": 0,
             "state_deltas": [{"state": "setpoint", "assign_from_arg": "setpoint_c"}],
@@ -259,6 +450,50 @@
           },
           "idempotency_window_s": 3600,
           "risk_class": "medium"
+        },
+        {
+          "name": "chiller_large__start",
+          "ack": {
+            "failure_modes": [
+              {"mode": "ok", "probability": 0.97},
+              {"mode": "slow", "probability": 0.02},
+              {"mode": "ack_lost", "probability": 0.01}
+            ],
+            "latency_ms": {"mean": 300, "sigma": 50}
+          },
+          "args_schema": {
+            "additionalProperties": false,
+            "properties": {"chiller_id": {"type": "string"}},
+            "required": ["chiller_id"],
+            "type": "object"
+          },
+          "confirmation_channels": ["chiller_large.power"],
+          "effect": {"dead_time_s": 0, "state_deltas": [{"state": "running", "delta": 1}], "time_constant_s": 30},
+          "idempotency_window_s": 3600,
+          "requires": [{"state": "running", "operator": "lt", "threshold": 0.5}],
+          "risk_class": "medium"
+        },
+        {
+          "name": "chiller_large__stop",
+          "ack": {
+            "failure_modes": [
+              {"mode": "ok", "probability": 0.97},
+              {"mode": "slow", "probability": 0.02},
+              {"mode": "ack_lost", "probability": 0.01}
+            ],
+            "latency_ms": {"mean": 300, "sigma": 50}
+          },
+          "args_schema": {
+            "additionalProperties": false,
+            "properties": {"chiller_id": {"type": "string"}},
+            "required": ["chiller_id"],
+            "type": "object"
+          },
+          "confirmation_channels": ["chiller_large.power"],
+          "effect": {"dead_time_s": 0, "state_deltas": [{"state": "running", "delta": -1}], "time_constant_s": 10},
+          "idempotency_window_s": 3600,
+          "requires": [{"state": "running", "operator": "gte", "threshold": 0.5}],
+          "risk_class": "high"
         }
       ]
     },
@@ -267,13 +502,26 @@
       "state": [
         {"name": "running", "unit": "on", "initial": 1, "min": 0, "max": 1},
         {"name": "setpoint", "unit": "degC", "initial": 7, "min": 4, "max": 12},
-        {"name": "load", "unit": "kW", "initial": 250, "min": 0},
+        {"name": "load", "unit": "kW", "initial": 175, "min": 0},
+        {"name": "cond_water_in", "unit": "degC", "initial": 27.5},
+        {"name": "tariff", "unit": "currency/kWh", "initial": 0.15, "min": 0},
+        {"name": "chw_flow", "unit": "m3/h", "initial": 59, "min": 0},
+        {"name": "idle", "unit": "ratio", "initial": 0},
+        {"name": "cooling", "unit": "kW", "initial": 175, "min": 0},
+        {"name": "part_load", "unit": "ratio", "initial": 0.460527, "min": 0},
+        {"name": "supply_error", "unit": "degC", "initial": 0},
         {"name": "chw_supply", "unit": "degC", "initial": 7},
-        {"name": "chw_flow", "unit": "m3/h", "initial": 43, "min": 0},
-        {"name": "power", "unit": "kW", "initial": 35, "min": 0},
-        {"name": "cond_temp", "unit": "degC", "initial": 33},
-        {"name": "heat_rejected", "unit": "kW", "initial": 210, "min": 0},
+        {"name": "delta_t", "unit": "degC", "initial": 2.53289},
+        {"name": "chw_return", "unit": "degC", "initial": 9.53289},
+        {"name": "specific_power", "unit": "ratio", "initial": 0.136615, "min": 0},
+        {"name": "power", "unit": "kW", "initial": 23.9077, "min": 0},
+        {"name": "cop_curve", "unit": "ratio", "initial": 7.40324, "min": 0},
+        {"name": "cop", "unit": "ratio", "initial": 7.40324, "min": 0},
+        {"name": "cond_temp", "unit": "degC", "initial": 31.8816},
+        {"name": "heat_rejected", "unit": "kW", "initial": 198.908, "min": 0},
+        {"name": "cost_rate", "unit": "currency/h", "initial": 3.58615, "min": 0},
         {"name": "chw_supply_temp__bias", "unit": "degC", "initial": 0},
+        {"name": "chw_return_temp__bias", "unit": "degC", "initial": 0},
         {"name": "cond_temp__bias", "unit": "degC", "initial": 0},
         {"name": "power__bias", "unit": "kW", "initial": 0}
       ],
@@ -284,11 +532,49 @@
           "f0": {
             "baseline": 250,
             "drift_per_hour": 0,
-            "seasonality": [{"amplitude": 75, "period_s": 86400, "phase_rad": -1.6}]
+            "seasonality": [{"amplitude": 75, "period_s": 86400, "phase_rad": -1.5708}]
           },
           "follow": {"state": "cooling_load", "aggregate": "sum", "link": "thermal_load__ahu__chiller_small"}
         },
-        {"target": "chw_flow", "tier": "F0", "f0": {"baseline": 43, "drift_per_hour": 0, "seasonality": []}},
+        {
+          "target": "cond_water_in",
+          "tier": "F0",
+          "f0": {
+            "baseline": 29,
+            "drift_per_hour": 0,
+            "seasonality": [{"amplitude": 1.5, "period_s": 86400, "phase_rad": -1.5708}]
+          }
+        },
+        {"target": "tariff", "tier": "F0", "f0": {"baseline": 0.15, "drift_per_hour": 0, "seasonality": []}},
+        {"target": "chw_flow", "tier": "F0", "f0": {"baseline": 59, "drift_per_hour": 0, "seasonality": []}},
+        {
+          "target": "idle",
+          "tier": "F1",
+          "f1": {
+            "form": "curve",
+            "inputs": [{"state": "running", "coef": 1}],
+            "table": {"values": [1, 0], "x": [0, 1]}
+          }
+        },
+        {
+          "target": "cooling",
+          "tier": "F1",
+          "f1": {"form": "product", "inputs": [{"state": "running", "coef": 1}, {"state": "load", "coef": 1}]}
+        },
+        {
+          "target": "part_load",
+          "tier": "F1",
+          "f1": {"form": "sum", "inputs": [{"state": "cooling", "coef": 0.00263158}]}
+        },
+        {
+          "target": "supply_error",
+          "tier": "F1",
+          "f1": {
+            "form": "curve",
+            "inputs": [{"state": "part_load", "coef": 1}],
+            "table": {"values": [0, 0, 1.5, 3.5], "x": [0, 1, 1.25, 1.5]}
+          }
+        },
         {
           "target": "chw_supply",
           "tier": "F1",
@@ -296,20 +582,88 @@
           "f1": {
             "form": "first_order_lag",
             "gain": 1,
-            "inputs": [{"state": "setpoint", "coef": 1}, {"state": "load", "coef": 0.0014}],
+            "inputs": [
+              {"state": "setpoint", "coef": 1},
+              {"state": "supply_error", "coef": 1},
+              {"state": "idle", "coef": 5}
+            ],
             "time_constant_s": 300
+          }
+        },
+        {
+          "target": "delta_t",
+          "tier": "F1",
+          "f1": {
+            "form": "curve",
+            "inputs": [{"state": "part_load", "coef": 1}, {"state": "chw_flow", "coef": 0.0169492}],
+            "table": {
+              "grid": [[0, 0, 0, 0, 0], [16.5, 11, 8.25, 6.6, 5.5]],
+              "x": [0, 1.5],
+              "y": [0.5, 0.75, 1, 1.25, 1.5]
+            }
+          }
+        },
+        {
+          "target": "chw_return",
+          "tier": "F1",
+          "f1": {"form": "sum", "inputs": [{"state": "chw_supply", "coef": 1}, {"state": "delta_t", "coef": 1}]}
+        },
+        {
+          "target": "specific_power",
+          "tier": "F1",
+          "f1": {
+            "form": "curve",
+            "inputs": [{"state": "part_load", "coef": 1}, {"state": "cond_water_in", "coef": 1}],
+            "table": {
+              "grid": [
+                [0.1675, 0.2125, 0.25, 0.2875, 0.3175],
+                [0.1139, 0.1445, 0.17, 0.1955, 0.2159],
+                [0.09246, 0.1173, 0.138, 0.1587, 0.17526],
+                [0.0938, 0.119, 0.14, 0.161, 0.1778],
+                [0.10854, 0.1377, 0.162, 0.1863, 0.20574],
+                [0.12395, 0.15725, 0.185, 0.21275, 0.23495]
+              ],
+              "x": [0.1, 0.25, 0.5, 0.75, 1, 1.2],
+              "y": [18, 24, 29, 34, 38]
+            }
           }
         },
         {
           "target": "power",
           "tier": "F1",
-          "dt_ms": 5000,
           "f1": {
-            "form": "first_order_lag",
-            "gain": 1,
-            "inputs": [{"state": "load", "coef": 0.2}],
-            "time_constant_s": 60
+            "form": "product",
+            "inputs": [
+              {"state": "running", "coef": 1},
+              {"state": "load", "coef": 1},
+              {"state": "specific_power", "coef": 1}
+            ]
           }
+        },
+        {
+          "target": "cop_curve",
+          "tier": "F1",
+          "f1": {
+            "form": "curve",
+            "inputs": [{"state": "part_load", "coef": 1}, {"state": "cond_water_in", "coef": 1}],
+            "table": {
+              "grid": [
+                [5.97015, 4.70588, 4, 3.47826, 3.14961],
+                [8.77963, 6.92042, 5.88235, 5.11509, 4.63177],
+                [10.8155, 8.52515, 7.24638, 6.3012, 5.70581],
+                [10.661, 8.40336, 7.14286, 6.21118, 5.6243],
+                [9.21319, 7.26216, 6.17284, 5.36769, 4.8605],
+                [8.06777, 6.3593, 5.40541, 4.70035, 4.25622]
+              ],
+              "x": [0.1, 0.25, 0.5, 0.75, 1, 1.2],
+              "y": [18, 24, 29, 34, 38]
+            }
+          }
+        },
+        {
+          "target": "cop",
+          "tier": "F1",
+          "f1": {"form": "product", "inputs": [{"state": "running", "coef": 1}, {"state": "cop_curve", "coef": 1}]}
         },
         {
           "target": "cond_temp",
@@ -318,7 +672,11 @@
           "f1": {
             "form": "first_order_lag",
             "gain": 1,
-            "inputs": [{"state": "load", "coef": 0.0168}, {"state": "running", "coef": 30}],
+            "inputs": [
+              {"state": "cond_water_in", "coef": 1},
+              {"state": "running", "coef": 3},
+              {"state": "part_load", "coef": 3}
+            ],
             "time_constant_s": 600
           }
         },
@@ -329,9 +687,14 @@
           "f1": {
             "form": "first_order_lag",
             "gain": 1,
-            "inputs": [{"state": "load", "coef": 1}, {"state": "power", "coef": 1}],
+            "inputs": [{"state": "cooling", "coef": 1}, {"state": "power", "coef": 1}],
             "time_constant_s": 120
           }
+        },
+        {
+          "target": "cost_rate",
+          "tier": "F1",
+          "f1": {"form": "product", "inputs": [{"state": "power", "coef": 1}, {"state": "tariff", "coef": 1}]}
         }
       ],
       "channels": [
@@ -345,6 +708,20 @@
           "observation_bias": {"state": "chw_supply_temp__bias", "coef": 1, "noise_scale_at_full": 1},
           "observes": "chw_supply",
           "range": {"min": 0, "max": 25},
+          "resolution": 0.1,
+          "tag": "TT",
+          "value_type": "number"
+        },
+        {
+          "name": "chiller_small.chw_return_temp",
+          "unit": "degC",
+          "absence": "signal",
+          "cadence": {"mode": "periodic", "period_s": 10},
+          "fidelity": "F1",
+          "noise": {"model": "gaussian", "sigma": 0.05},
+          "observation_bias": {"state": "chw_return_temp__bias", "coef": 1, "noise_scale_at_full": 1},
+          "observes": "chw_return",
+          "range": {"min": 0, "max": 35},
           "resolution": 0.1,
           "tag": "TT",
           "value_type": "number"
@@ -381,7 +758,11 @@
       "faults": [
         {
           "id": "chiller_small__condenser_fouling",
-          "affects": [{"state": "cond_temp", "delta": 6}, {"state": "power", "delta": 0.18, "multiplicative": true}],
+          "affects": [
+            {"state": "cond_temp", "delta": 6},
+            {"state": "power", "delta": 0.18, "multiplicative": true},
+            {"state": "cop", "delta": -0.15, "multiplicative": true}
+          ],
           "observability": {
             "detector": {"form": "single_channel_snr", "channel": "chiller_small.cond_temp"},
             "first_observable_snr": 3,
@@ -391,7 +772,11 @@
         },
         {
           "id": "chiller_small__refrigerant_undercharge",
-          "affects": [{"state": "chw_supply", "delta": 1.8}, {"state": "power", "delta": -0.08, "multiplicative": true}],
+          "affects": [
+            {"state": "chw_supply", "delta": 1.8},
+            {"state": "power", "delta": -0.08, "multiplicative": true},
+            {"state": "cop", "delta": -0.08, "multiplicative": true}
+          ],
           "observability": {
             "detector": {"form": "single_channel_snr", "channel": "chiller_small.chw_supply_temp"},
             "first_observable_snr": 3,
@@ -400,8 +785,21 @@
           "onset": {"magnitude": 1, "rate_per_hour": 0.1, "shape": "ramp"}
         },
         {
+          "id": "chiller_small__compressor_wear",
+          "affects": [
+            {"state": "power", "delta": 0.1, "multiplicative": true},
+            {"state": "cop", "delta": -0.09, "multiplicative": true}
+          ],
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "chiller_small.power"},
+            "first_observable_snr": 3,
+            "unavoidable_snr": 10
+          },
+          "onset": {"magnitude": 1, "rate_per_hour": 0.08, "shape": "ramp"}
+        },
+        {
           "id": "chiller_small__load_swing",
-          "affects": [{"state": "load", "delta": 43}],
+          "affects": [{"state": "load", "delta": 40}],
           "is_negative_class": true,
           "observability": {
             "detector": {"form": "single_channel_snr", "channel": "chiller_small.power"},
@@ -425,6 +823,26 @@
           "affects": [{"state": "chw_supply_temp__bias", "delta": 1.2}],
           "observability": {
             "detector": {"form": "single_channel_snr", "channel": "chiller_small.chw_supply_temp"},
+            "first_observable_snr": 3,
+            "unavoidable_snr": 10
+          },
+          "onset": {"magnitude": 1, "rate_per_hour": 0.041666666666666664, "shape": "ramp"}
+        },
+        {
+          "id": "chiller_small__chw_return_temp__offset",
+          "affects": [{"state": "chw_return_temp__bias", "delta": 2}],
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "chiller_small.chw_return_temp"},
+            "first_observable_snr": 3,
+            "unavoidable_snr": 10
+          },
+          "onset": {"magnitude": 1, "shape": "step"}
+        },
+        {
+          "id": "chiller_small__chw_return_temp__drift",
+          "affects": [{"state": "chw_return_temp__bias", "delta": 1.2}],
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "chiller_small.chw_return_temp"},
             "first_observable_snr": 3,
             "unavoidable_snr": 10
           },
@@ -464,13 +882,21 @@
       "effectors": [
         {
           "name": "chiller_small__set_setpoint",
-          "ack": {"failure_modes": [{"mode": "ok", "probability": 1}], "latency_ms": {"mean": 300, "sigma": 50}},
+          "ack": {
+            "failure_modes": [
+              {"mode": "ok", "probability": 0.97},
+              {"mode": "slow", "probability": 0.02},
+              {"mode": "ack_lost", "probability": 0.01}
+            ],
+            "latency_ms": {"mean": 300, "sigma": 50}
+          },
           "args_schema": {
             "additionalProperties": false,
             "properties": {"chiller_id": {"type": "string"}, "setpoint_c": {"maximum": 12, "minimum": 4, "type": "number"}},
             "required": ["chiller_id", "setpoint_c"],
             "type": "object"
           },
+          "confirmation_channels": ["chiller_small.chw_supply_temp"],
           "effect": {
             "dead_time_s": 0,
             "state_deltas": [{"state": "setpoint", "assign_from_arg": "setpoint_c"}],
@@ -478,27 +904,215 @@
           },
           "idempotency_window_s": 3600,
           "risk_class": "medium"
+        },
+        {
+          "name": "chiller_small__start",
+          "ack": {
+            "failure_modes": [
+              {"mode": "ok", "probability": 0.97},
+              {"mode": "slow", "probability": 0.02},
+              {"mode": "ack_lost", "probability": 0.01}
+            ],
+            "latency_ms": {"mean": 300, "sigma": 50}
+          },
+          "args_schema": {
+            "additionalProperties": false,
+            "properties": {"chiller_id": {"type": "string"}},
+            "required": ["chiller_id"],
+            "type": "object"
+          },
+          "confirmation_channels": ["chiller_small.power"],
+          "effect": {"dead_time_s": 0, "state_deltas": [{"state": "running", "delta": 1}], "time_constant_s": 30},
+          "idempotency_window_s": 3600,
+          "requires": [{"state": "running", "operator": "lt", "threshold": 0.5}],
+          "risk_class": "medium"
+        },
+        {
+          "name": "chiller_small__stop",
+          "ack": {
+            "failure_modes": [
+              {"mode": "ok", "probability": 0.97},
+              {"mode": "slow", "probability": 0.02},
+              {"mode": "ack_lost", "probability": 0.01}
+            ],
+            "latency_ms": {"mean": 300, "sigma": 50}
+          },
+          "args_schema": {
+            "additionalProperties": false,
+            "properties": {"chiller_id": {"type": "string"}},
+            "required": ["chiller_id"],
+            "type": "object"
+          },
+          "confirmation_channels": ["chiller_small.power"],
+          "effect": {"dead_time_s": 0, "state_deltas": [{"state": "running", "delta": -1}], "time_constant_s": 10},
+          "idempotency_window_s": 3600,
+          "requires": [{"state": "running", "operator": "gte", "threshold": 0.5}],
+          "risk_class": "high"
         }
       ]
     },
     {
       "name": "ahu",
       "state": [
-        {"name": "cooling_load", "unit": "kW", "initial": 180, "min": 0},
+        {"name": "occupancy", "unit": "ratio", "initial": 0.05, "min": 0},
+        {"name": "outdoor_temp", "unit": "degC", "initial": 23.7573},
+        {"name": "chw_supply_in", "unit": "degC", "initial": 7},
+        {"name": "supply_air_sp", "unit": "degC", "initial": 13, "min": 10, "max": 18},
+        {"name": "envelope_gain", "unit": "kW", "initial": 30, "min": 0},
+        {"name": "occ_gain", "unit": "kW", "initial": 3, "min": 0},
+        {"name": "outdoor_factor", "unit": "ratio", "initial": 0.33908, "min": 0},
+        {"name": "outdoor_load", "unit": "kW", "initial": 30.5172, "min": 0},
+        {"name": "cooling_load", "unit": "kW", "initial": 63.5172, "min": 0},
+        {"name": "coil_margin", "unit": "degC", "initial": 6},
+        {"name": "shortfall", "unit": "degC", "initial": 0, "min": 0},
         {"name": "supply_air", "unit": "degC", "initial": 13},
-        {"name": "supply_air_temp__bias", "unit": "degC", "initial": 0}
+        {"name": "supply_air_temp__bias", "unit": "degC", "initial": 0},
+        {"name": "cooling_load__bias", "unit": "kW", "initial": 0}
       ],
       "dynamics": [
         {
-          "target": "cooling_load",
+          "target": "occupancy",
           "tier": "F0",
           "f0": {
-            "baseline": 180,
+            "baseline": 0,
             "drift_per_hour": 0,
-            "seasonality": [{"amplitude": 60, "period_s": 86400, "phase_rad": -1.6}]
+            "schedule": {
+              "interpolation": "linear",
+              "period_s": 604800,
+              "points": [
+                {"at_s": 0, "value": 0.05},
+                {"at_s": 23400, "value": 0.05},
+                {"at_s": 28800, "value": 0.85},
+                {"at_s": 43200, "value": 1},
+                {"at_s": 46800, "value": 0.8},
+                {"at_s": 61200, "value": 0.85},
+                {"at_s": 68400, "value": 0.1},
+                {"at_s": 86400, "value": 0.05},
+                {"at_s": 109800, "value": 0.05},
+                {"at_s": 115200, "value": 0.85},
+                {"at_s": 129600, "value": 1},
+                {"at_s": 133200, "value": 0.8},
+                {"at_s": 147600, "value": 0.85},
+                {"at_s": 154800, "value": 0.1},
+                {"at_s": 172800, "value": 0.05},
+                {"at_s": 196200, "value": 0.05},
+                {"at_s": 201600, "value": 0.05},
+                {"at_s": 216000, "value": 0.05},
+                {"at_s": 219600, "value": 0.05},
+                {"at_s": 234000, "value": 0.05},
+                {"at_s": 241200, "value": 0.05},
+                {"at_s": 259200, "value": 0.05},
+                {"at_s": 282600, "value": 0.05},
+                {"at_s": 288000, "value": 0.05},
+                {"at_s": 302400, "value": 0.05},
+                {"at_s": 306000, "value": 0.05},
+                {"at_s": 320400, "value": 0.05},
+                {"at_s": 327600, "value": 0.05},
+                {"at_s": 345600, "value": 0.05},
+                {"at_s": 369000, "value": 0.05},
+                {"at_s": 374400, "value": 0.85},
+                {"at_s": 388800, "value": 1},
+                {"at_s": 392400, "value": 0.8},
+                {"at_s": 406800, "value": 0.85},
+                {"at_s": 414000, "value": 0.1},
+                {"at_s": 432000, "value": 0.05},
+                {"at_s": 455400, "value": 0.05},
+                {"at_s": 460800, "value": 0.85},
+                {"at_s": 475200, "value": 1},
+                {"at_s": 478800, "value": 0.8},
+                {"at_s": 493200, "value": 0.85},
+                {"at_s": 500400, "value": 0.1},
+                {"at_s": 518400, "value": 0.05},
+                {"at_s": 541800, "value": 0.05},
+                {"at_s": 547200, "value": 0.85},
+                {"at_s": 561600, "value": 1},
+                {"at_s": 565200, "value": 0.8},
+                {"at_s": 579600, "value": 0.85},
+                {"at_s": 586800, "value": 0.1}
+              ],
+              "utc_offset_s": 0
+            },
+            "seasonality": []
           }
         },
-        {"target": "supply_air", "tier": "F0", "f0": {"baseline": 13, "drift_per_hour": 0, "seasonality": []}}
+        {
+          "target": "outdoor_temp",
+          "tier": "F0",
+          "f0": {
+            "baseline": 28,
+            "drift_per_hour": 0,
+            "seasonality": [{"amplitude": 6, "period_s": 86400, "phase_rad": -2.35619}]
+          }
+        },
+        {
+          "target": "chw_supply_in",
+          "tier": "F0",
+          "f0": {"baseline": 7, "drift_per_hour": 0, "seasonality": []}
+        },
+        {
+          "target": "envelope_gain",
+          "tier": "F0",
+          "f0": {"baseline": 30, "drift_per_hour": 0, "seasonality": []}
+        },
+        {
+          "target": "occ_gain",
+          "tier": "F1",
+          "f1": {"form": "sum", "inputs": [{"state": "occupancy", "coef": 60}]}
+        },
+        {
+          "target": "outdoor_factor",
+          "tier": "F1",
+          "f1": {
+            "form": "curve",
+            "inputs": [{"state": "outdoor_temp", "coef": 1}],
+            "table": {"values": [0, 0.08, 0.35, 0.7, 1, 1.25], "x": [12, 18, 24, 30, 36, 42]}
+          }
+        },
+        {
+          "target": "outdoor_load",
+          "tier": "F1",
+          "f1": {"form": "sum", "inputs": [{"state": "outdoor_factor", "coef": 90}]}
+        },
+        {
+          "target": "cooling_load",
+          "tier": "F1",
+          "f1": {
+            "form": "sum",
+            "inputs": [
+              {"state": "occ_gain", "coef": 1},
+              {"state": "outdoor_load", "coef": 1},
+              {"state": "envelope_gain", "coef": 1}
+            ]
+          }
+        },
+        {
+          "target": "coil_margin",
+          "tier": "F1",
+          "f1": {
+            "form": "sum",
+            "inputs": [{"state": "supply_air_sp", "coef": 1}, {"state": "chw_supply_in", "coef": -1}]
+          }
+        },
+        {
+          "target": "shortfall",
+          "tier": "F1",
+          "f1": {
+            "form": "curve",
+            "inputs": [{"state": "coil_margin", "coef": 1}],
+            "table": {"values": [8, 0, 0], "x": [-5, 3, 30]}
+          }
+        },
+        {
+          "target": "supply_air",
+          "tier": "F1",
+          "dt_ms": 5000,
+          "f1": {
+            "form": "first_order_lag",
+            "gain": 1,
+            "inputs": [{"state": "supply_air_sp", "coef": 1}, {"state": "shortfall", "coef": 1}],
+            "time_constant_s": 120
+          }
+        }
       ],
       "channels": [
         {
@@ -514,9 +1128,43 @@
           "resolution": 0.1,
           "tag": "TT",
           "value_type": "number"
+        },
+        {
+          "name": "ahu.cooling_load",
+          "unit": "kW",
+          "absence": "signal",
+          "cadence": {"mode": "periodic", "period_s": 15},
+          "fidelity": "F1",
+          "noise": {"model": "gaussian", "sigma": 0.6},
+          "observation_bias": {"state": "cooling_load__bias", "coef": 1, "noise_scale_at_full": 1},
+          "observes": "cooling_load",
+          "range": {"min": 0, "max": 300},
+          "resolution": 0.1,
+          "tag": "JT",
+          "value_type": "number"
         }
       ],
       "faults": [
+        {
+          "id": "ahu__coil_fouling",
+          "affects": [{"state": "supply_air", "delta": 3}],
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "ahu.supply_air_temp"},
+            "first_observable_snr": 3,
+            "unavoidable_snr": 10
+          },
+          "onset": {"magnitude": 1, "rate_per_hour": 0.2, "shape": "ramp"}
+        },
+        {
+          "id": "ahu__damper_stuck_open",
+          "affects": [{"state": "outdoor_load", "delta": 0.45, "multiplicative": true}],
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "ahu.cooling_load"},
+            "first_observable_snr": 3,
+            "unavoidable_snr": 10
+          },
+          "onset": {"magnitude": 1, "rate_per_hour": 0.5, "shape": "ramp"}
+        },
         {
           "id": "ahu__coil_valve_stuck_closed",
           "affects": [
@@ -529,6 +1177,17 @@
             "unavoidable_snr": 10
           },
           "onset": {"magnitude": 1, "shape": "step"}
+        },
+        {
+          "id": "ahu__afterhours_event",
+          "affects": [{"state": "occupancy", "delta": 0.7}],
+          "is_negative_class": true,
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "ahu.cooling_load"},
+            "first_observable_snr": 3,
+            "unavoidable_snr": 10
+          },
+          "onset": {"duty_cycle": 0.3, "magnitude": 1, "rate_per_hour": 2, "shape": "intermittent"}
         },
         {
           "id": "ahu__supply_air_temp__offset",
@@ -549,6 +1208,43 @@
             "unavoidable_snr": 10
           },
           "onset": {"magnitude": 1, "rate_per_hour": 0.041666666666666664, "shape": "ramp"}
+        },
+        {
+          "id": "ahu__cooling_load__offset",
+          "affects": [{"state": "cooling_load__bias", "delta": 15}],
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "ahu.cooling_load"},
+            "first_observable_snr": 3,
+            "unavoidable_snr": 10
+          },
+          "onset": {"magnitude": 1, "shape": "step"}
+        }
+      ],
+      "effectors": [
+        {
+          "name": "ahu__set_supply_air_setpoint",
+          "ack": {
+            "failure_modes": [
+              {"mode": "ok", "probability": 0.97},
+              {"mode": "slow", "probability": 0.02},
+              {"mode": "ack_lost", "probability": 0.01}
+            ],
+            "latency_ms": {"mean": 300, "sigma": 50}
+          },
+          "args_schema": {
+            "additionalProperties": false,
+            "properties": {"ahu_id": {"type": "string"}, "supply_air_c": {"maximum": 18, "minimum": 10, "type": "number"}},
+            "required": ["ahu_id", "supply_air_c"],
+            "type": "object"
+          },
+          "confirmation_channels": ["ahu.supply_air_temp"],
+          "effect": {
+            "dead_time_s": 0,
+            "state_deltas": [{"state": "supply_air_sp", "assign_from_arg": "supply_air_c"}],
+            "time_constant_s": 0
+          },
+          "idempotency_window_s": 3600,
+          "risk_class": "medium"
         }
       ]
     }
@@ -560,7 +1256,7 @@
       "area": "Chiller hall",
       "provenance": {
         "component": "streamsim/chiller",
-        "digest": "sha256:ad678e00a2a4a0c3af2840ee3c58bead448af596979af78b2b33ad43a92c2941",
+        "digest": "sha256:52df731ac4bc3f9c1099f0d79ea8a3bb583fbdf4b5bd40efa971f6bf4cfcbda4",
         "instrument_digests": {
           "streamsim/mag-flow-meter@1": "sha256:7d93ca35b0eebcbb17f4eaad52b45344e484d631a7068c15110e15d1c82cfffe",
           "streamsim/power-meter@1": "sha256:e3c5ecc79f0164c6a64b608998e548660ba073e395ca115a35c3a2d0fc5a75b6",
@@ -568,6 +1264,7 @@
         },
         "instruments": {
           "chw_flow": "streamsim/mag-flow-meter@1",
+          "chw_return_temp": "streamsim/rtd@1",
           "chw_supply_temp": "streamsim/rtd@1",
           "cond_temp": "streamsim/rtd@1",
           "power": "streamsim/power-meter@1"
@@ -583,12 +1280,13 @@
       "area": "Chiller hall",
       "provenance": {
         "component": "streamsim/chiller",
-        "digest": "sha256:ad678e00a2a4a0c3af2840ee3c58bead448af596979af78b2b33ad43a92c2941",
+        "digest": "sha256:52df731ac4bc3f9c1099f0d79ea8a3bb583fbdf4b5bd40efa971f6bf4cfcbda4",
         "instrument_digests": {
           "streamsim/power-meter@1": "sha256:e3c5ecc79f0164c6a64b608998e548660ba073e395ca115a35c3a2d0fc5a75b6",
           "streamsim/rtd@1": "sha256:0f9722a4aef603aadaf69f8523eb7780ee9baf632ae89fe770aa262657821917"
         },
         "instruments": {
+          "chw_return_temp": "streamsim/rtd@1",
           "chw_supply_temp": "streamsim/rtd@1",
           "cond_temp": "streamsim/rtd@1",
           "power": "streamsim/power-meter@1"
@@ -604,9 +1302,14 @@
       "area": "Office block",
       "provenance": {
         "component": "streamsim/ahu",
-        "digest": "sha256:fd92c330879a2f5d3ed35b36121602ec4d6fb485f095cc7b9894b9cfd9038a5c",
-        "instrument_digests": {"streamsim/rtd@1": "sha256:0f9722a4aef603aadaf69f8523eb7780ee9baf632ae89fe770aa262657821917"},
-        "instruments": {"supply_air_temp": "streamsim/rtd@1"},
+        "digest": "sha256:b383d87c99618a40bf36797be2ebf56def014df9c117b38beeb34250df7e4b37",
+        "instrument_digests": {
+          "streamsim/power-meter@1": "sha256:e3c5ecc79f0164c6a64b608998e548660ba073e395ca115a35c3a2d0fc5a75b6",
+          "streamsim/rtd@1": "sha256:0f9722a4aef603aadaf69f8523eb7780ee9baf632ae89fe770aa262657821917"
+        },
+        "instruments": {"cooling_load": "streamsim/power-meter@1", "supply_air_temp": "streamsim/rtd@1"},
+        "parameters": {"supply_air_c": 13, "utc_offset_s": 0},
+        "preset": "medium",
         "version": 1
       }
     }

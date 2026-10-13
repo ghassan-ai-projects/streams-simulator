@@ -19,12 +19,27 @@ func builtInLibrary(t *testing.T) *Library {
 	return library
 }
 
+func builtInFileCounts(t *testing.T) (equipment, instruments int) {
+	t.Helper()
+	root := filepath.Join(testsupport.RepositoryRoot(), "components")
+	equipmentFiles, err := filepath.Glob(filepath.Join(root, "equipment", "*.component.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	instrumentFiles, err := filepath.Glob(filepath.Join(root, "instruments", "*.instrument.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return len(equipmentFiles), len(instrumentFiles)
+}
+
 func TestTheBuiltInLibraryListsItsEquipmentAndInstruments(t *testing.T) {
 	t.Parallel()
 	library := builtInLibrary(t)
 	equipment, instruments := library.Counts()
-	if equipment != 2 || instruments != 3 || len(library.List()) != 5 {
-		t.Fatalf("library = %d equipment, %d instruments, %d entries; want 2, 3, 5", equipment, instruments, len(library.List()))
+	wantEquipment, wantInstruments := builtInFileCounts(t)
+	if equipment != wantEquipment || instruments != wantInstruments || len(library.List()) != wantEquipment+wantInstruments {
+		t.Fatalf("library = %d equipment, %d instruments, %d entries; want %d, %d files", equipment, instruments, len(library.List()), wantEquipment, wantInstruments)
 	}
 }
 

@@ -14,6 +14,19 @@ import (
 
 func builtInComponents() string { return filepath.Join(testsupport.RepositoryRoot(), "components") }
 
+func builtInFileCounts(t *testing.T) (equipment, instruments int) {
+	t.Helper()
+	equipmentFiles, err := filepath.Glob(filepath.Join(builtInComponents(), "equipment", "*.component.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	instrumentFiles, err := filepath.Glob(filepath.Join(builtInComponents(), "instruments", "*.instrument.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return len(equipmentFiles), len(instrumentFiles)
+}
+
 func pilotComposition() string {
 	return filepath.Join(builtInComponents(), "compositions", "chiller-pilot.composition.json")
 }
@@ -48,8 +61,9 @@ func customerLibrary(t *testing.T) string {
 func TestComponentListPrintsEveryLibraryEntry(t *testing.T) {
 	t.Parallel()
 	doc := invoke(t, "component", "list", "--components-dir", builtInComponents()).mustSucceed(t).document(t, "component_list")
-	if entries, _ := doc["components"].([]any); len(entries) != 5 {
-		t.Fatalf("components = %d, want 5: %v", len(entries), doc)
+	equipment, instruments := builtInFileCounts(t)
+	if entries, _ := doc["components"].([]any); len(entries) != equipment+instruments {
+		t.Fatalf("components = %d, want %d: %v", len(entries), equipment+instruments, doc)
 	}
 }
 
@@ -74,8 +88,9 @@ func TestComponentShowPrintsTheEntryAndItsDocument(t *testing.T) {
 func TestComponentValidateCountsTheLibrary(t *testing.T) {
 	t.Parallel()
 	doc := invoke(t, "component", "validate", "--components-dir", builtInComponents()).mustSucceed(t).document(t, "component_validate")
-	if doc["equipment"] != float64(2) || doc["instruments"] != float64(3) {
-		t.Fatalf("validate = %v, want 2 equipment and 3 instruments", doc)
+	equipment, instruments := builtInFileCounts(t)
+	if doc["equipment"] != float64(equipment) || doc["instruments"] != float64(instruments) {
+		t.Fatalf("validate = %v, want %d equipment and %d instruments", doc, equipment, instruments)
 	}
 }
 
@@ -85,7 +100,8 @@ func TestComponentDirectoriesFromTheEnvironmentComeAfterTheFlags(t *testing.T) {
 	doc := invokeWithEnvironment(t, environment, "component", "validate", "--components-dir", builtInComponents()).
 		mustSucceed(t).document(t, "component_validate")
 	directories, _ := doc["directories"].([]any)
-	if len(directories) != 2 || directories[0] != builtInComponents() || directories[1] != environment["STREAMSIM_COMPONENTS_DIRS"] || doc["equipment"] != float64(3) {
+	builtInEquipment, _ := builtInFileCounts(t)
+	if len(directories) != 2 || directories[0] != builtInComponents() || directories[1] != environment["STREAMSIM_COMPONENTS_DIRS"] || doc["equipment"] != float64(builtInEquipment+1) {
 		t.Fatalf("validate = %v, want the flag directory then the environment directory", doc)
 	}
 }

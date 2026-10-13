@@ -3,7 +3,7 @@
   "id": "streamsim/chiller",
   "version": 1,
   "title": "Water-cooled chiller",
-  "description": "Vapour-compression chiller on a chilled-water loop: supply temperature follows the setpoint and rises slightly with load; power and heat rejection follow the load. Start and stop arrive with state products (P7i).",
+  "description": "Vapour-compression chiller on a chilled-water loop. Supply temperature follows the setpoint and degrades above capacity or when stopped; power follows load through a part-load efficiency curve that also depends on the entering condenser water; COP, return temperature and energy cost rate are derived; start and stop act through the running state.",
   "class": "static/heat_exchanger/chiller",
   "tags": [
     "hvac",
@@ -30,8 +30,47 @@
       {
         "name": "load",
         "unit": "kW",
-        "initial": 700,
+        "initial": 490,
         "min": 0
+      },
+      {
+        "name": "cond_water_in",
+        "unit": "degC",
+        "initial": 27.5
+      },
+      {
+        "name": "tariff",
+        "unit": "currency/kWh",
+        "initial": 0.15,
+        "min": 0
+      },
+      {
+        "name": "chw_flow",
+        "unit": "m3/h",
+        "initial": 165,
+        "min": 0
+      },
+      {
+        "name": "idle",
+        "unit": "ratio",
+        "initial": 0
+      },
+      {
+        "name": "cooling",
+        "unit": "kW",
+        "initial": 490,
+        "min": 0
+      },
+      {
+        "name": "part_load",
+        "unit": "ratio",
+        "initial": 0.464455,
+        "min": 0
+      },
+      {
+        "name": "supply_error",
+        "unit": "degC",
+        "initial": 0
       },
       {
         "name": "chw_supply",
@@ -39,26 +78,54 @@
         "initial": 7
       },
       {
-        "name": "chw_flow",
-        "unit": "m3/h",
-        "initial": 120,
+        "name": "delta_t",
+        "unit": "degC",
+        "initial": 2.5545
+      },
+      {
+        "name": "chw_return",
+        "unit": "degC",
+        "initial": 9.5545
+      },
+      {
+        "name": "specific_power",
+        "unit": "ratio",
+        "initial": 0.136135,
         "min": 0
       },
       {
         "name": "power",
         "unit": "kW",
-        "initial": 98,
+        "initial": 66.7062,
+        "min": 0
+      },
+      {
+        "name": "cop_curve",
+        "unit": "ratio",
+        "initial": 7.42581,
+        "min": 0
+      },
+      {
+        "name": "cop",
+        "unit": "ratio",
+        "initial": 7.42581,
         "min": 0
       },
       {
         "name": "cond_temp",
         "unit": "degC",
-        "initial": 33
+        "initial": 31.8934
       },
       {
         "name": "heat_rejected",
         "unit": "kW",
-        "initial": 588,
+        "initial": 556.706,
+        "min": 0
+      },
+      {
+        "name": "cost_rate",
+        "unit": "currency/h",
+        "initial": 10.0059,
         "min": 0
       }
     ],
@@ -73,18 +140,122 @@
             {
               "amplitude": 210,
               "period_s": 86400,
-              "phase_rad": -1.6
+              "phase_rad": -1.5708
             }
           ]
+        }
+      },
+      {
+        "target": "cond_water_in",
+        "tier": "F0",
+        "f0": {
+          "baseline": 29,
+          "drift_per_hour": 0,
+          "seasonality": [
+            {
+              "amplitude": 1.5,
+              "period_s": 86400,
+              "phase_rad": -1.5708
+            }
+          ]
+        }
+      },
+      {
+        "target": "tariff",
+        "tier": "F0",
+        "f0": {
+          "baseline": 0.15,
+          "drift_per_hour": 0,
+          "seasonality": []
         }
       },
       {
         "target": "chw_flow",
         "tier": "F0",
         "f0": {
-          "baseline": 120,
+          "baseline": 165,
           "drift_per_hour": 0,
           "seasonality": []
+        }
+      },
+      {
+        "target": "idle",
+        "tier": "F1",
+        "f1": {
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "running",
+              "coef": 1
+            }
+          ],
+          "table": {
+            "x": [
+              0,
+              1
+            ],
+            "values": [
+              1,
+              0
+            ]
+          }
+        }
+      },
+      {
+        "target": "cooling",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "running",
+              "coef": 1
+            },
+            {
+              "state": "load",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "part_load",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "cooling",
+              "coef": 0.000947867
+            }
+          ]
+        }
+      },
+      {
+        "target": "supply_error",
+        "tier": "F1",
+        "f1": {
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "part_load",
+              "coef": 1
+            }
+          ],
+          "table": {
+            "x": [
+              0,
+              1,
+              1.25,
+              1.5
+            ],
+            "values": [
+              0,
+              0,
+              1.5,
+              3.5
+            ]
+          }
         }
       },
       {
@@ -101,24 +272,269 @@
               "coef": 1
             },
             {
-              "state": "load",
-              "coef": 0.0005
+              "state": "supply_error",
+              "coef": 1
+            },
+            {
+              "state": "idle",
+              "coef": 5
             }
           ]
         }
       },
       {
-        "target": "power",
+        "target": "delta_t",
         "tier": "F1",
-        "dt_ms": 5000,
         "f1": {
-          "form": "first_order_lag",
-          "time_constant_s": 60,
-          "gain": 1,
+          "form": "curve",
           "inputs": [
             {
+              "state": "part_load",
+              "coef": 1
+            },
+            {
+              "state": "chw_flow",
+              "coef": 0.00606061
+            }
+          ],
+          "table": {
+            "x": [
+              0,
+              1.5
+            ],
+            "y": [
+              0.5,
+              0.75,
+              1,
+              1.25,
+              1.5
+            ],
+            "grid": [
+              [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              [
+                16.5,
+                11,
+                8.25,
+                6.6,
+                5.5
+              ]
+            ]
+          }
+        }
+      },
+      {
+        "target": "chw_return",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "chw_supply",
+              "coef": 1
+            },
+            {
+              "state": "delta_t",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "specific_power",
+        "tier": "F1",
+        "f1": {
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "part_load",
+              "coef": 1
+            },
+            {
+              "state": "cond_water_in",
+              "coef": 1
+            }
+          ],
+          "table": {
+            "x": [
+              0.1,
+              0.25,
+              0.5,
+              0.75,
+              1,
+              1.2
+            ],
+            "y": [
+              18,
+              24,
+              29,
+              34,
+              38
+            ],
+            "grid": [
+              [
+                0.1675,
+                0.2125,
+                0.25,
+                0.2875,
+                0.3175
+              ],
+              [
+                0.1139,
+                0.1445,
+                0.17,
+                0.1955,
+                0.2159
+              ],
+              [
+                0.09246,
+                0.1173,
+                0.138,
+                0.1587,
+                0.17526
+              ],
+              [
+                0.0938,
+                0.119,
+                0.14,
+                0.161,
+                0.1778
+              ],
+              [
+                0.10854,
+                0.1377,
+                0.162,
+                0.1863,
+                0.20574
+              ],
+              [
+                0.12395,
+                0.15725,
+                0.185,
+                0.21275,
+                0.23495
+              ]
+            ]
+          }
+        }
+      },
+      {
+        "target": "power",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "running",
+              "coef": 1
+            },
+            {
               "state": "load",
-              "coef": 0.2
+              "coef": 1
+            },
+            {
+              "state": "specific_power",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "cop_curve",
+        "tier": "F1",
+        "f1": {
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "part_load",
+              "coef": 1
+            },
+            {
+              "state": "cond_water_in",
+              "coef": 1
+            }
+          ],
+          "table": {
+            "x": [
+              0.1,
+              0.25,
+              0.5,
+              0.75,
+              1,
+              1.2
+            ],
+            "y": [
+              18,
+              24,
+              29,
+              34,
+              38
+            ],
+            "grid": [
+              [
+                5.97015,
+                4.70588,
+                4,
+                3.47826,
+                3.14961
+              ],
+              [
+                8.77963,
+                6.92042,
+                5.88235,
+                5.11509,
+                4.63177
+              ],
+              [
+                10.8155,
+                8.52515,
+                7.24638,
+                6.3012,
+                5.70581
+              ],
+              [
+                10.661,
+                8.40336,
+                7.14286,
+                6.21118,
+                5.6243
+              ],
+              [
+                9.21319,
+                7.26216,
+                6.17284,
+                5.36769,
+                4.8605
+              ],
+              [
+                8.06777,
+                6.3593,
+                5.40541,
+                4.70035,
+                4.25622
+              ]
+            ]
+          }
+        }
+      },
+      {
+        "target": "cop",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "running",
+              "coef": 1
+            },
+            {
+              "state": "cop_curve",
+              "coef": 1
             }
           ]
         }
@@ -133,12 +549,16 @@
           "gain": 1,
           "inputs": [
             {
-              "state": "load",
-              "coef": 0.006
+              "state": "cond_water_in",
+              "coef": 1
             },
             {
               "state": "running",
-              "coef": 30
+              "coef": 3
+            },
+            {
+              "state": "part_load",
+              "coef": 3
             }
           ]
         }
@@ -153,11 +573,28 @@
           "gain": 1,
           "inputs": [
             {
-              "state": "load",
+              "state": "cooling",
               "coef": 1
             },
             {
               "state": "power",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "cost_rate",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "power",
+              "coef": 1
+            },
+            {
+              "state": "tariff",
               "coef": 1
             }
           ]
@@ -175,6 +612,11 @@
           {
             "state": "power",
             "delta": 0.18,
+            "multiplicative": true
+          },
+          {
+            "state": "cop",
+            "delta": -0.15,
             "multiplicative": true
           }
         ],
@@ -203,6 +645,11 @@
             "state": "power",
             "delta": -0.08,
             "multiplicative": true
+          },
+          {
+            "state": "cop",
+            "delta": -0.08,
+            "multiplicative": true
           }
         ],
         "observability": {
@@ -216,6 +663,34 @@
         "onset": {
           "magnitude": 1.0,
           "rate_per_hour": 0.1,
+          "shape": "ramp"
+        }
+      },
+      {
+        "id": "compressor_wear",
+        "affects": [
+          {
+            "state": "power",
+            "delta": 0.1,
+            "multiplicative": true
+          },
+          {
+            "state": "cop",
+            "delta": -0.09,
+            "multiplicative": true
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "power"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "rate_per_hour": 0.08,
           "shape": "ramp"
         }
       },
@@ -253,7 +728,15 @@
           "failure_modes": [
             {
               "mode": "ok",
-              "probability": 1.0
+              "probability": 0.97
+            },
+            {
+              "mode": "slow",
+              "probability": 0.02
+            },
+            {
+              "mode": "ack_lost",
+              "probability": 0.01
             }
           ],
           "latency_ms": {
@@ -261,6 +744,9 @@
             "sigma": 50
           }
         },
+        "confirmation_channels": [
+          "chw_supply_temp"
+        ],
         "args_schema": {
           "type": "object",
           "additionalProperties": false,
@@ -289,6 +775,120 @@
             }
           ]
         }
+      },
+      {
+        "name": "start",
+        "risk_class": "medium",
+        "idempotency_window_s": 3600,
+        "ack": {
+          "failure_modes": [
+            {
+              "mode": "ok",
+              "probability": 0.97
+            },
+            {
+              "mode": "slow",
+              "probability": 0.02
+            },
+            {
+              "mode": "ack_lost",
+              "probability": 0.01
+            }
+          ],
+          "latency_ms": {
+            "mean": 300,
+            "sigma": 50
+          }
+        },
+        "confirmation_channels": [
+          "power"
+        ],
+        "requires": [
+          {
+            "state": "running",
+            "operator": "lt",
+            "threshold": 0.5
+          }
+        ],
+        "args_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "chiller_id"
+          ],
+          "properties": {
+            "chiller_id": {
+              "type": "string"
+            }
+          }
+        },
+        "effect": {
+          "dead_time_s": 0,
+          "time_constant_s": 30,
+          "state_deltas": [
+            {
+              "state": "running",
+              "delta": 1
+            }
+          ]
+        }
+      },
+      {
+        "name": "stop",
+        "risk_class": "high",
+        "idempotency_window_s": 3600,
+        "ack": {
+          "failure_modes": [
+            {
+              "mode": "ok",
+              "probability": 0.97
+            },
+            {
+              "mode": "slow",
+              "probability": 0.02
+            },
+            {
+              "mode": "ack_lost",
+              "probability": 0.01
+            }
+          ],
+          "latency_ms": {
+            "mean": 300,
+            "sigma": 50
+          }
+        },
+        "confirmation_channels": [
+          "power"
+        ],
+        "requires": [
+          {
+            "state": "running",
+            "operator": "gte",
+            "threshold": 0.5
+          }
+        ],
+        "args_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "chiller_id"
+          ],
+          "properties": {
+            "chiller_id": {
+              "type": "string"
+            }
+          }
+        },
+        "effect": {
+          "dead_time_s": 0,
+          "time_constant_s": 10,
+          "state_deltas": [
+            {
+              "state": "running",
+              "delta": -1
+            }
+          ]
+        }
       }
     ]
   },
@@ -300,6 +900,17 @@
       "range": {
         "min": 0,
         "max": 25
+      },
+      "tag": "TT",
+      "default_instrument": "streamsim/rtd@1"
+    },
+    {
+      "name": "chw_return_temp",
+      "state": "chw_return",
+      "unit_family": "temperature",
+      "range": {
+        "min": 0,
+        "max": 35
       },
       "tag": "TT",
       "default_instrument": "streamsim/rtd@1"
@@ -337,6 +948,18 @@
       "tag": "FT",
       "default_instrument": "streamsim/mag-flow-meter@1",
       "optional": true
+    },
+    {
+      "name": "cond_water_temp",
+      "state": "cond_water_in",
+      "unit_family": "temperature",
+      "range": {
+        "min": 10,
+        "max": 50
+      },
+      "tag": "TT",
+      "default_instrument": "streamsim/rtd@1",
+      "optional": true
     }
   ],
   "ports": [
@@ -351,6 +974,36 @@
       "type": "heat_rejection",
       "direction": "provides",
       "state": "heat_rejected"
+    },
+    {
+      "name": "flow_in",
+      "type": "chilled_water",
+      "direction": "consumes",
+      "state": "chw_flow"
+    },
+    {
+      "name": "cond_water_in",
+      "type": "cooling_water_temp",
+      "direction": "consumes",
+      "state": "cond_water_in"
+    },
+    {
+      "name": "supply_out",
+      "type": "temperature",
+      "direction": "provides",
+      "state": "chw_supply"
+    },
+    {
+      "name": "return_out",
+      "type": "temperature",
+      "direction": "provides",
+      "state": "chw_return"
+    },
+    {
+      "name": "tariff_in",
+      "type": "tariff",
+      "direction": "consumes",
+      "state": "tariff"
     }
   ],
   "default_preset": "medium",
@@ -358,18 +1011,27 @@
     "small": {
       "title": "Small (about 100 TR)",
       "values": {
-        "state/load/initial": 250,
+        "dynamics/chw_flow/f0/baseline": 59,
+        "dynamics/delta_t/f1/inputs/chw_flow/coef": 0.0169492,
         "dynamics/load/f0/baseline": 250,
         "dynamics/load/f0/seasonality/0/amplitude": 75,
-        "state/chw_flow/initial": 43,
-        "dynamics/chw_flow/f0/baseline": 43,
-        "state/power/initial": 35,
-        "state/heat_rejected/initial": 210,
-        "dynamics/chw_supply/f1/inputs/load/coef": 0.0014,
-        "dynamics/cond_temp/f1/inputs/load/coef": 0.0168,
-        "faults/load_swing/affects/load/delta": 43,
+        "dynamics/part_load/f1/inputs/cooling/coef": 0.00263158,
+        "faults/load_swing/affects/load/delta": 40,
+        "measurement_points/chw_flow/range/max": 100,
         "measurement_points/power/range/max": 150,
-        "measurement_points/chw_flow/range/max": 100
+        "state/chw_flow/initial": 59,
+        "state/chw_return/initial": 9.53289,
+        "state/cond_temp/initial": 31.8816,
+        "state/cooling/initial": 175,
+        "state/cop/initial": 7.40324,
+        "state/cop_curve/initial": 7.40324,
+        "state/cost_rate/initial": 3.58615,
+        "state/delta_t/initial": 2.53289,
+        "state/heat_rejected/initial": 198.908,
+        "state/load/initial": 175,
+        "state/part_load/initial": 0.460527,
+        "state/power/initial": 23.9077,
+        "state/specific_power/initial": 0.136615
       }
     },
     "medium": {
@@ -379,18 +1041,27 @@
     "large": {
       "title": "Large (about 800 TR)",
       "values": {
-        "state/load/initial": 2000,
+        "dynamics/chw_flow/f0/baseline": 440,
+        "dynamics/delta_t/f1/inputs/chw_flow/coef": 0.00227273,
         "dynamics/load/f0/baseline": 2000,
         "dynamics/load/f0/seasonality/0/amplitude": 600,
-        "state/chw_flow/initial": 344,
-        "dynamics/chw_flow/f0/baseline": 344,
-        "state/power/initial": 280,
-        "state/heat_rejected/initial": 1680,
-        "dynamics/chw_supply/f1/inputs/load/coef": 0.000175,
-        "dynamics/cond_temp/f1/inputs/load/coef": 0.0021,
-        "faults/load_swing/affects/load/delta": 340,
+        "dynamics/part_load/f1/inputs/cooling/coef": 0.000355492,
+        "faults/load_swing/affects/load/delta": 200,
+        "measurement_points/chw_flow/range/max": 800,
         "measurement_points/power/range/max": 1100,
-        "measurement_points/chw_flow/range/max": 800
+        "state/chw_flow/initial": 440,
+        "state/chw_return/initial": 9.73729,
+        "state/cond_temp/initial": 31.9931,
+        "state/cooling/initial": 1400,
+        "state/cop/initial": 7.61673,
+        "state/cop_curve/initial": 7.61673,
+        "state/cost_rate/initial": 27.7352,
+        "state/delta_t/initial": 2.73729,
+        "state/heat_rejected/initial": 1584.9,
+        "state/load/initial": 1400,
+        "state/part_load/initial": 0.497689,
+        "state/power/initial": 184.902,
+        "state/specific_power/initial": 0.132073
       }
     }
   },
