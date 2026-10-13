@@ -1,0 +1,44 @@
+{
+  "schema_version": "0.1",
+  "id": "streamsim/energy-meter",
+  "version": 1,
+  "title": "Energy register (kWh)",
+  "description": "Cumulative active-energy register of a revenue meter; a wrong CT ratio scales the energy, a stale register stops counting.",
+  "tag": "JT",
+  "unit_family": "energy",
+  "unit": "kWh",
+  "channel": {
+    "value_type": "number",
+    "resolution": 0.1,
+    "fidelity": "F1",
+    "absence": "signal",
+    "cadence": {
+      "mode": "periodic",
+      "period_s": 60
+    },
+    "noise": {
+      "model": "gaussian",
+      "sigma": 0.1
+    },
+    "availability": {
+      "uptime": 0.999,
+      "mttr_s": 600
+    }
+  },
+  "faults": [
+    {
+      "id": "ct_ratio",
+      "form": "scale",
+      "factor": 1.2
+    },
+    {
+      "id": "stale",
+      "form": "freeze",
+      "quality": "stale"
+    },
+    {
+      "id": "dropout",
+      "form": "dropout"
+    }
+  ]
+}

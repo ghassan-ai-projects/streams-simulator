@@ -40,9 +40,23 @@ func TestLoadReadsTheEmbeddedBuiltInLibrary(t *testing.T) {
 		t.Fatal(err)
 	}
 	equipment, instruments := library.Counts()
-	if equipment != 2 || instruments != 3 {
-		t.Fatalf("library = %d equipment and %d instruments, want 2 and 3", equipment, instruments)
+	wantEquipment, wantInstruments := builtInFileCounts(t)
+	if equipment != wantEquipment || instruments != wantInstruments {
+		t.Fatalf("library = %d equipment and %d instruments, want %d and %d", equipment, instruments, wantEquipment, wantInstruments)
 	}
+}
+
+func builtInFileCounts(t *testing.T) (equipment, instruments int) {
+	t.Helper()
+	equipmentFiles, err := filepath.Glob(filepath.Join(builtInDir(), "equipment", "*.component.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	instrumentFiles, err := filepath.Glob(filepath.Join(builtInDir(), "instruments", "*.instrument.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return len(equipmentFiles), len(instrumentFiles)
 }
 
 func TestLoadTakesOnlyTheFilesOfTheLibraryLayout(t *testing.T) {

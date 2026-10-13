@@ -1,0 +1,1090 @@
+{
+  "schema_version": "0.1",
+  "id": "streamsim/production-line",
+  "version": 1,
+  "title": "Production line",
+  "description": "A discrete production line: a rate setpoint ramped by the line, heat, compressed air and electrical power proportional to the rate, cycle time and scrap that worsen with low air pressure and warm coolant, gated by a shift calendar.",
+  "class": "process/production/production_line",
+  "tags": [
+    "production",
+    "process-load",
+    "air",
+    "cooling"
+  ],
+  "icon": "production-line",
+  "kind": {
+    "state": [
+      {
+        "name": "shift",
+        "unit": "ratio",
+        "initial": 1,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "air_pressure",
+        "unit": "kPa",
+        "initial": 700,
+        "min": 0
+      },
+      {
+        "name": "coolant_temp",
+        "unit": "degC",
+        "initial": 7
+      },
+      {
+        "name": "running",
+        "unit": "on",
+        "initial": 1,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "rate_setpoint",
+        "unit": "%",
+        "initial": 85,
+        "min": 0,
+        "max": 100
+      },
+      {
+        "name": "rate_target",
+        "unit": "%",
+        "initial": 85,
+        "min": 0,
+        "max": 100
+      },
+      {
+        "name": "rate",
+        "unit": "%",
+        "initial": 85,
+        "min": 0,
+        "max": 100
+      },
+      {
+        "name": "mix_factor",
+        "unit": "ratio",
+        "initial": 1,
+        "min": 0
+      },
+      {
+        "name": "specific_power",
+        "unit": "kW/%",
+        "initial": 2.5,
+        "min": 0
+      },
+      {
+        "name": "base_power",
+        "unit": "kW",
+        "initial": 12,
+        "min": 0
+      },
+      {
+        "name": "drive_power",
+        "unit": "kW",
+        "initial": 212.5,
+        "min": 0
+      },
+      {
+        "name": "power",
+        "unit": "kW",
+        "initial": 224.5,
+        "min": 0
+      },
+      {
+        "name": "heat_load",
+        "unit": "kW",
+        "initial": 153,
+        "min": 0
+      },
+      {
+        "name": "leak_factor",
+        "unit": "ratio",
+        "initial": 1,
+        "min": 0
+      },
+      {
+        "name": "air_demand",
+        "unit": "m3/h",
+        "initial": 255,
+        "min": 0
+      },
+      {
+        "name": "speed_factor",
+        "unit": "ratio",
+        "initial": 1,
+        "min": 0
+      },
+      {
+        "name": "cycle_ratio",
+        "unit": "ratio",
+        "initial": 1,
+        "min": 0
+      },
+      {
+        "name": "cycle_time",
+        "unit": "s",
+        "initial": 6,
+        "min": 0
+      },
+      {
+        "name": "throughput",
+        "unit": "units/h",
+        "initial": 510,
+        "min": 0
+      },
+      {
+        "name": "scrap_pct",
+        "unit": "%",
+        "initial": 1.2,
+        "min": 0,
+        "max": 100
+      },
+      {
+        "name": "reject_rate",
+        "unit": "units/h",
+        "initial": 6.12,
+        "min": 0
+      },
+      {
+        "name": "units_made",
+        "unit": "count",
+        "initial": 180000,
+        "min": 0
+      },
+      {
+        "name": "scrap_count",
+        "unit": "count",
+        "initial": 2200,
+        "min": 0
+      },
+      {
+        "name": "current",
+        "unit": "A",
+        "initial": 381.65,
+        "min": 0
+      },
+      {
+        "name": "vibration",
+        "unit": "mm/s",
+        "initial": 2.499,
+        "min": 0
+      }
+    ],
+    "dynamics": [
+      {
+        "target": "shift",
+        "tier": "F0",
+        "f0": {
+          "baseline": 1,
+          "drift_per_hour": 0,
+          "seasonality": []
+        }
+      },
+      {
+        "target": "air_pressure",
+        "tier": "F0",
+        "f0": {
+          "baseline": 700,
+          "drift_per_hour": 0,
+          "seasonality": []
+        }
+      },
+      {
+        "target": "coolant_temp",
+        "tier": "F0",
+        "f0": {
+          "baseline": 7,
+          "drift_per_hour": 0,
+          "seasonality": []
+        }
+      },
+      {
+        "target": "mix_factor",
+        "tier": "F0",
+        "f0": {
+          "baseline": 1,
+          "drift_per_hour": 0,
+          "seasonality": [
+            {
+              "amplitude": 0.06,
+              "period_s": 7200,
+              "phase_rad": 0
+            }
+          ]
+        }
+      },
+      {
+        "target": "rate_target",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "rate_setpoint",
+              "coef": 1
+            },
+            {
+              "state": "shift",
+              "coef": 1
+            },
+            {
+              "state": "running",
+              "coef": 1
+            }
+          ],
+          "clamp": {
+            "min": 0,
+            "max": 100
+          }
+        }
+      },
+      {
+        "target": "rate",
+        "tier": "F1",
+        "dt_ms": 5000,
+        "f1": {
+          "form": "first_order_lag",
+          "time_constant_s": 180,
+          "gain": 1,
+          "inputs": [
+            {
+              "state": "rate_target",
+              "coef": 1
+            }
+          ],
+          "clamp": {
+            "min": 0,
+            "max": 100
+          }
+        }
+      },
+      {
+        "target": "drive_power",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "rate",
+              "coef": 1
+            },
+            {
+              "state": "specific_power",
+              "coef": 1
+            },
+            {
+              "state": "mix_factor",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "power",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "drive_power",
+              "coef": 1
+            },
+            {
+              "state": "base_power",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "heat_load",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "rate",
+              "coef": 1
+            },
+            {
+              "state": "specific_power",
+              "coef": 0.72
+            },
+            {
+              "state": "mix_factor",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "air_demand",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "rate",
+              "coef": 3
+            },
+            {
+              "state": "leak_factor",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "speed_factor",
+        "tier": "F1",
+        "f1": {
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "air_pressure",
+              "coef": 1
+            },
+            {
+              "state": "coolant_temp",
+              "coef": 1
+            }
+          ],
+          "table": {
+            "x": [
+              500,
+              600,
+              650,
+              700,
+              800
+            ],
+            "y": [
+              4,
+              7,
+              12,
+              20,
+              35
+            ],
+            "grid": [
+              [
+                0.740741,
+                0.740741,
+                0.698812,
+                0.592593,
+                0.43573
+              ],
+              [
+                0.892857,
+                0.892857,
+                0.842318,
+                0.714286,
+                0.52521
+              ],
+              [
+                0.961538,
+                0.961538,
+                0.907112,
+                0.769231,
+                0.565611
+              ],
+              [
+                1,
+                1,
+                0.943396,
+                0.8,
+                0.588235
+              ],
+              [
+                1,
+                1,
+                0.943396,
+                0.8,
+                0.588235
+              ]
+            ]
+          }
+        }
+      },
+      {
+        "target": "cycle_ratio",
+        "tier": "F1",
+        "f1": {
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "air_pressure",
+              "coef": 1
+            },
+            {
+              "state": "coolant_temp",
+              "coef": 1
+            }
+          ],
+          "table": {
+            "x": [
+              500,
+              600,
+              650,
+              700,
+              800
+            ],
+            "y": [
+              4,
+              7,
+              12,
+              20,
+              35
+            ],
+            "grid": [
+              [
+                1.35,
+                1.35,
+                1.431,
+                1.6875,
+                2.295
+              ],
+              [
+                1.12,
+                1.12,
+                1.1872,
+                1.4,
+                1.904
+              ],
+              [
+                1.04,
+                1.04,
+                1.1024,
+                1.3,
+                1.768
+              ],
+              [
+                1,
+                1,
+                1.06,
+                1.25,
+                1.7
+              ],
+              [
+                1,
+                1,
+                1.06,
+                1.25,
+                1.7
+              ]
+            ]
+          }
+        }
+      },
+      {
+        "target": "cycle_time",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "cycle_ratio",
+              "coef": 6
+            }
+          ]
+        }
+      },
+      {
+        "target": "throughput",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "rate",
+              "coef": 6
+            },
+            {
+              "state": "speed_factor",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "scrap_pct",
+        "tier": "F1",
+        "f1": {
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "air_pressure",
+              "coef": 1
+            },
+            {
+              "state": "coolant_temp",
+              "coef": 1
+            }
+          ],
+          "table": {
+            "x": [
+              500,
+              600,
+              650,
+              700,
+              800
+            ],
+            "y": [
+              4,
+              7,
+              12,
+              20,
+              35
+            ],
+            "grid": [
+              [
+                2.95245,
+                2.95245,
+                3.415444,
+                5.157718,
+                11.125124
+              ],
+              [
+                1.685914,
+                1.685914,
+                1.950294,
+                2.94517,
+                6.352689
+              ],
+              [
+                1.349837,
+                1.349837,
+                1.561514,
+                2.358068,
+                5.086319
+              ],
+              [
+                1.2,
+                1.2,
+                1.38818,
+                2.096314,
+                4.521719
+              ],
+              [
+                1.2,
+                1.2,
+                1.38818,
+                2.096314,
+                4.521719
+              ]
+            ]
+          }
+        }
+      },
+      {
+        "target": "reject_rate",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "throughput",
+              "coef": 1
+            },
+            {
+              "state": "scrap_pct",
+              "coef": 0.01
+            }
+          ]
+        }
+      },
+      {
+        "target": "units_made",
+        "tier": "F1",
+        "dt_ms": 10000,
+        "f1": {
+          "form": "integrator",
+          "gain": 0.000277777778,
+          "inputs": [
+            {
+              "state": "throughput",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "scrap_count",
+        "tier": "F1",
+        "dt_ms": 10000,
+        "f1": {
+          "form": "integrator",
+          "gain": 0.000277777778,
+          "inputs": [
+            {
+              "state": "reject_rate",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "current",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "power",
+              "coef": 1.7
+            }
+          ]
+        }
+      },
+      {
+        "target": "vibration",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "rate",
+              "coef": 0.0294
+            }
+          ]
+        }
+      }
+    ],
+    "faults": [
+      {
+        "id": "tooling_wear",
+        "affects": [
+          {
+            "state": "specific_power",
+            "delta": 0.12,
+            "multiplicative": true
+          },
+          {
+            "state": "scrap_pct",
+            "delta": 2.5
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "power"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "rate_per_hour": 0.25,
+          "shape": "ramp"
+        }
+      },
+      {
+        "id": "air_leak",
+        "affects": [
+          {
+            "state": "leak_factor",
+            "delta": 0.3
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "air_flow"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "rate_per_hour": 0.5,
+          "shape": "ramp"
+        }
+      },
+      {
+        "id": "product_jam",
+        "affects": [
+          {
+            "state": "rate",
+            "delta": -0.5,
+            "multiplicative": true
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "power"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "shape": "step"
+        }
+      },
+      {
+        "id": "bearing_wear",
+        "affects": [
+          {
+            "state": "vibration",
+            "delta": 3.5
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "vibration"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "rate_per_hour": 0.2,
+          "shape": "ramp"
+        }
+      },
+      {
+        "id": "rush_order",
+        "affects": [
+          {
+            "state": "rate_target",
+            "delta": 12
+          }
+        ],
+        "is_negative_class": true,
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "power"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "duty_cycle": 0.3,
+          "magnitude": 1.0,
+          "rate_per_hour": 2.0,
+          "shape": "intermittent"
+        }
+      }
+    ],
+    "effectors": [
+      {
+        "name": "set_rate",
+        "risk_class": "medium",
+        "idempotency_window_s": 3600,
+        "ack": {
+          "failure_modes": [
+            {
+              "mode": "ok",
+              "probability": 1.0
+            }
+          ],
+          "latency_ms": {
+            "mean": 300,
+            "sigma": 50
+          }
+        },
+        "args_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "line_id",
+            "rate_pct"
+          ],
+          "properties": {
+            "line_id": {
+              "type": "string"
+            },
+            "rate_pct": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100
+            }
+          }
+        },
+        "effect": {
+          "dead_time_s": 0,
+          "time_constant_s": 600,
+          "state_deltas": [
+            {
+              "state": "rate_setpoint",
+              "assign_from_arg": "rate_pct"
+            }
+          ]
+        }
+      },
+      {
+        "name": "set_running",
+        "risk_class": "medium",
+        "idempotency_window_s": 3600,
+        "ack": {
+          "failure_modes": [
+            {
+              "mode": "ok",
+              "probability": 1.0
+            }
+          ],
+          "latency_ms": {
+            "mean": 300,
+            "sigma": 50
+          }
+        },
+        "args_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "line_id",
+            "run"
+          ],
+          "properties": {
+            "line_id": {
+              "type": "string"
+            },
+            "run": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        },
+        "effect": {
+          "dead_time_s": 5,
+          "time_constant_s": 0,
+          "state_deltas": [
+            {
+              "state": "running",
+              "assign_from_arg": "run"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "measurement_points": [
+    {
+      "name": "power",
+      "state": "power",
+      "unit_family": "power",
+      "range": {
+        "min": 0,
+        "max": 350
+      },
+      "tag": "JT",
+      "default_instrument": "streamsim/power-meter@1"
+    },
+    {
+      "name": "vibration",
+      "state": "vibration",
+      "unit_family": "vibration_velocity",
+      "range": {
+        "min": 0,
+        "max": 20
+      },
+      "tag": "VT",
+      "default_instrument": "streamsim/accelerometer@1"
+    },
+    {
+      "name": "air_flow",
+      "state": "air_demand",
+      "unit_family": "volumetric_flow",
+      "range": {
+        "min": 0,
+        "max": 600
+      },
+      "tag": "FT",
+      "default_instrument": "streamsim/vortex-flow-meter@1"
+    },
+    {
+      "name": "units_made",
+      "state": "units_made",
+      "unit_family": "count",
+      "range": {
+        "min": 0,
+        "max": 10000000
+      },
+      "tag": "QT",
+      "default_instrument": "streamsim/pulse-counter@1"
+    },
+    {
+      "name": "scrap_count",
+      "state": "scrap_count",
+      "unit_family": "count",
+      "range": {
+        "min": 0,
+        "max": 1000000
+      },
+      "tag": "QT",
+      "default_instrument": "streamsim/pulse-counter@1",
+      "optional": true
+    },
+    {
+      "name": "running",
+      "state": "running",
+      "unit_family": "state",
+      "range": {
+        "min": 0,
+        "max": 1
+      },
+      "tag": "YS",
+      "default_instrument": "streamsim/run-status@1",
+      "optional": true
+    },
+    {
+      "name": "current",
+      "state": "current",
+      "unit_family": "current",
+      "range": {
+        "min": 0,
+        "max": 700
+      },
+      "tag": "IT",
+      "default_instrument": "streamsim/current-clamp@1",
+      "optional": true
+    },
+    {
+      "name": "air_pressure",
+      "state": "air_pressure",
+      "unit_family": "pressure",
+      "range": {
+        "min": 0,
+        "max": 1000
+      },
+      "tag": "PT",
+      "default_instrument": "streamsim/pressure-transmitter@1",
+      "optional": true
+    },
+    {
+      "name": "coolant_temp",
+      "state": "coolant_temp",
+      "unit_family": "temperature",
+      "range": {
+        "min": 0,
+        "max": 60
+      },
+      "tag": "TT",
+      "default_instrument": "streamsim/rtd@1",
+      "optional": true
+    }
+  ],
+  "ports": [
+    {
+      "name": "shift_in",
+      "type": "shift",
+      "direction": "consumes",
+      "state": "shift"
+    },
+    {
+      "name": "air_in",
+      "type": "pressure",
+      "direction": "consumes",
+      "state": "air_pressure"
+    },
+    {
+      "name": "coolant_in",
+      "type": "temperature",
+      "direction": "consumes",
+      "state": "coolant_temp"
+    },
+    {
+      "name": "heat_out",
+      "type": "thermal_load",
+      "direction": "provides",
+      "state": "heat_load"
+    },
+    {
+      "name": "air_out",
+      "type": "compressed_air",
+      "direction": "provides",
+      "state": "air_demand"
+    },
+    {
+      "name": "power_out",
+      "type": "electrical",
+      "direction": "provides",
+      "state": "power"
+    }
+  ],
+  "default_preset": "medium",
+  "presets": {
+    "small": {
+      "title": "Small (about 80 kW, 300 units/h)",
+      "values": {
+        "state/specific_power/initial": 0.8,
+        "state/base_power/initial": 4,
+        "state/drive_power/initial": 68,
+        "state/power/initial": 72,
+        "state/heat_load/initial": 51,
+        "state/air_demand/initial": 85,
+        "state/cycle_time/initial": 12,
+        "state/throughput/initial": 255,
+        "state/reject_rate/initial": 3.06,
+        "state/units_made/initial": 60000,
+        "state/scrap_count/initial": 800,
+        "state/current/initial": 122.4,
+        "dynamics/heat_load/f1/inputs/specific_power/coef": 0.75,
+        "dynamics/air_demand/f1/inputs/rate/coef": 1.0,
+        "dynamics/cycle_time/f1/inputs/cycle_ratio/coef": 12,
+        "dynamics/throughput/f1/inputs/rate/coef": 3,
+        "measurement_points/power/range/max": 120,
+        "measurement_points/air_flow/range/max": 250,
+        "measurement_points/current/range/max": 250
+      }
+    },
+    "medium": {
+      "title": "Medium (about 250 kW, 600 units/h)",
+      "values": {}
+    },
+    "large": {
+      "title": "Large (about 800 kW, 1200 units/h)",
+      "values": {
+        "state/specific_power/initial": 8.0,
+        "state/base_power/initial": 40,
+        "state/drive_power/initial": 680,
+        "state/power/initial": 720,
+        "state/heat_load/initial": 510,
+        "state/air_demand/initial": 850,
+        "state/cycle_time/initial": 3,
+        "state/throughput/initial": 1020,
+        "state/reject_rate/initial": 12.24,
+        "state/units_made/initial": 400000,
+        "state/scrap_count/initial": 5000,
+        "state/current/initial": 1224,
+        "dynamics/heat_load/f1/inputs/specific_power/coef": 0.75,
+        "dynamics/air_demand/f1/inputs/rate/coef": 10.0,
+        "dynamics/cycle_time/f1/inputs/cycle_ratio/coef": 3,
+        "dynamics/throughput/f1/inputs/rate/coef": 12,
+        "measurement_points/power/range/max": 1100,
+        "measurement_points/air_flow/range/max": 2000,
+        "measurement_points/current/range/max": 2000
+      }
+    }
+  },
+  "parameters": [
+    {
+      "name": "rate_setpoint_pct",
+      "title": "Rate setpoint",
+      "unit": "%",
+      "type": "number",
+      "min": 0,
+      "max": 100,
+      "default": 85,
+      "targets": [
+        "state/rate_setpoint/initial",
+        "state/rate_target/initial",
+        "state/rate/initial"
+      ]
+    },
+    {
+      "name": "ramp_s",
+      "title": "Rate ramp time constant",
+      "unit": "s",
+      "type": "number",
+      "min": 30,
+      "max": 1800,
+      "default": 180,
+      "targets": [
+        "dynamics/rate/f1/time_constant_s"
+      ]
+    }
+  ]
+}

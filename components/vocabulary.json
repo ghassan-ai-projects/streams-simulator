@@ -27,7 +27,10 @@
     "hot_water": {"unit_family": "volumetric_flow"},
     "steam": {"unit_family": "mass_flow"},
     "compressed_air": {"unit_family": "volumetric_flow"},
-    "electrical": {"unit_family": "power"}
+    "electrical": {"unit_family": "power"},
+    "pressure": {"unit_family": "pressure"},
+    "temperature": {"unit_family": "temperature"},
+    "shift": {"unit_family": "fraction"}
   },
   "tag_letters": {
     "TT": {"measures": ["temperature"]},

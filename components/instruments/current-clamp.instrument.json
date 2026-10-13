@@ -1,0 +1,67 @@
+{
+  "schema_version": "0.1",
+  "id": "streamsim/current-clamp",
+  "version": 1,
+  "title": "Split-core current transformer (clamp-on)",
+  "description": "Clamp-on current transformer with a 4-20 mA converter: accurate to about 1 % of span; the wrong ratio entered at commissioning scales every reading, harmonics from drives add noise.",
+  "tag": "IT",
+  "unit_family": "current",
+  "unit": "A",
+  "range": {
+    "min": 0,
+    "max": 5000
+  },
+  "channel": {
+    "value_type": "number",
+    "resolution": 0.1,
+    "fidelity": "F1",
+    "absence": "signal",
+    "cadence": {
+      "mode": "periodic",
+      "period_s": 5
+    },
+    "noise": {
+      "model": "gaussian",
+      "sigma": 0.003
+    },
+    "availability": {
+      "uptime": 0.999,
+      "mttr_s": 600
+    }
+  },
+  "faults": [
+    {
+      "id": "offset",
+      "form": "offset",
+      "magnitude": 0.04
+    },
+    {
+      "id": "drift",
+      "form": "drift",
+      "magnitude": 0.002,
+      "duration_s": 86400
+    },
+    {
+      "id": "clamp_open",
+      "form": "stuck",
+      "stuck_at": "low",
+      "quality": "suspect"
+    },
+    {
+      "id": "dropout",
+      "form": "dropout"
+    },
+    {
+      "id": "harmonics",
+      "form": "noise",
+      "factor": 15,
+      "quality": "suspect"
+    },
+    {
+      "id": "ct_ratio",
+      "form": "scale",
+      "factor": 1.25
+    }
+  ],
+  "scaling": "span"
+}

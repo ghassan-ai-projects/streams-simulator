@@ -24,9 +24,25 @@ func TestTheBuiltInLibraryListsItsEquipmentAndInstruments(t *testing.T) {
 	t.Parallel()
 	library := builtInLibrary(t)
 	equipment, instruments := library.Counts()
-	if equipment != 2 || instruments != 3 || len(library.List()) != 5 {
-		t.Fatalf("library = %d equipment, %d instruments, %d entries; want 2, 3, 5", equipment, instruments, len(library.List()))
+	wantEquipment, wantInstruments := builtInFileCounts(t)
+	if equipment != wantEquipment || instruments != wantInstruments || len(library.List()) != wantEquipment+wantInstruments {
+		t.Fatalf("library = %d equipment, %d instruments, %d entries; want %d, %d, %d", equipment, instruments, len(library.List()),
+			wantEquipment, wantInstruments, wantEquipment+wantInstruments)
 	}
+}
+
+func builtInFileCounts(t *testing.T) (equipment, instruments int) {
+	t.Helper()
+	root := filepath.Join(testsupport.RepositoryRoot(), "components")
+	equipmentFiles, err := filepath.Glob(filepath.Join(root, "equipment", "*.component.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	instrumentFiles, err := filepath.Glob(filepath.Join(root, "instruments", "*.instrument.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return len(equipmentFiles), len(instrumentFiles)
 }
 
 func TestTheBuiltInLibraryDescribesAnEntryByItsReferenceOrItsHighestMajor(t *testing.T) {
@@ -87,8 +103,10 @@ func TestTheBuiltInLibraryLoadsWithoutAnyDirectoryAndIgnoresEmptyEntries(t *test
 		if err != nil {
 			t.Fatalf("%s: %v", name, err)
 		}
-		if equipment, instruments := library.Counts(); equipment != 2 || instruments != 3 {
-			t.Errorf("%s: library = %d equipment, %d instruments, want 2 and 3", name, equipment, instruments)
+		wantEquipment, _ := filepath.Glob(filepath.Join(testsupport.RepositoryRoot(), "components", "equipment", "*.component.json"))
+		wantInstruments, _ := filepath.Glob(filepath.Join(testsupport.RepositoryRoot(), "components", "instruments", "*.instrument.json"))
+		if equipment, instruments := library.Counts(); equipment != len(wantEquipment) || instruments != len(wantInstruments) {
+			t.Errorf("%s: library = %d equipment, %d instruments, want %d and %d", name, equipment, instruments, len(wantEquipment), len(wantInstruments))
 		}
 	}
 }

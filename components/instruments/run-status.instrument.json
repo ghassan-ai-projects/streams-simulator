@@ -1,0 +1,39 @@
+{
+  "schema_version": "0.1",
+  "id": "streamsim/run-status",
+  "version": 1,
+  "title": "Run-status contact (digital input)",
+  "description": "Auxiliary contact or PLC run bit reporting whether equipment runs; reported on change, silent while nothing changes, lost when the input card fails.",
+  "tag": "YS",
+  "unit_family": "state",
+  "unit": "on",
+  "range": {
+    "min": 0,
+    "max": 1
+  },
+  "channel": {
+    "value_type": "boolean",
+    "resolution": 1,
+    "fidelity": "F1",
+    "absence": "normal",
+    "cadence": {
+      "mode": "report_by_exception",
+      "deadband": 0.5,
+      "period_s": 5
+    },
+    "noise": {
+      "model": "none",
+      "sigma": 0
+    },
+    "availability": {
+      "uptime": 0.999,
+      "mttr_s": 600
+    }
+  },
+  "faults": [
+    {
+      "id": "dropout",
+      "form": "dropout"
+    }
+  ]
+}

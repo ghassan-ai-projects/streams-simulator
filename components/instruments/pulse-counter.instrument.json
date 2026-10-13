@@ -1,0 +1,44 @@
+{
+  "schema_version": "0.1",
+  "id": "streamsim/pulse-counter",
+  "version": 1,
+  "title": "Pulse counter (totaliser)",
+  "description": "Totaliser counting pulses from a sensor or contact: exact until a pulse is missed, a stuck register stops counting, a wrong pulse weight scales the total.",
+  "tag": "QT",
+  "unit_family": "count",
+  "unit": "count",
+  "channel": {
+    "value_type": "counter",
+    "resolution": 1,
+    "fidelity": "F1",
+    "absence": "signal",
+    "cadence": {
+      "mode": "periodic",
+      "period_s": 60
+    },
+    "noise": {
+      "model": "none",
+      "sigma": 0
+    },
+    "availability": {
+      "uptime": 0.999,
+      "mttr_s": 600
+    }
+  },
+  "faults": [
+    {
+      "id": "stale",
+      "form": "freeze",
+      "quality": "stale"
+    },
+    {
+      "id": "dropout",
+      "form": "dropout"
+    },
+    {
+      "id": "pulse_weight",
+      "form": "scale",
+      "factor": 1.1
+    }
+  ]
+}

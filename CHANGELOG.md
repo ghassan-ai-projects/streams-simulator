@@ -15,6 +15,13 @@ This project has not established a formal release stream yet. Until it does, cha
   and the composition schema gives `not_applicable` a minimum length of 20. Lint: `pinned_at_bound` applies to integrated
   states only (an idle integrated state at its bound is reported) and the `not_settled` cyclic exemption follows `follow`,
   linked inputs and flows. `examples/chiller-pilot.domain.json` is regenerated for the new link type name.
+- **Instruments, electrical equipment and process loads** (phase P7k). Ten instruments (`thermistor`, `pressure-transmitter`,
+  `vortex-flow-meter`, `level-radar`, `accelerometer`, `current-clamp`, `valve-position`, `humidity`, `run-status` with a boolean
+  channel, `pulse-counter` with a counter channel) and an `energy-meter` register join `rtd`, `mag-flow-meter` and `power-meter`,
+  each with `stuck` (a quality where the device knows), `drift`, `dropout`, `noise` and `scale` faults where physical; the three
+  existing instruments gain the same. Equipment `feeder-meter`, `transformer`, `generator`, `production-line` and
+  `packaging-line`. The vocabulary gains the port types `pressure`, `temperature` and `shift`. Compose no longer writes a
+  `unit` on a boolean channel, which the domain contract forbids. `examples/chiller-pilot.domain.json` is recomposed.
 
 - **Domain lint** (phase P7j). `streamsim domain lint <domain.json> [--hours H] [--seed S]` simulates a noiseless nominal day
   (default population, no faults, no effector calls, sampled every 60 s) and reports `non_finite` and `out_of_range` errors and
