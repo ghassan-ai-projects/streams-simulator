@@ -165,5 +165,4 @@ and calibration against real plant data.
 1. Copy-in (D3) confirmed by the direction review; an "update from library" action can be added later from provenance.
 2. Which plant families come first after factory utilities (process lines, packaging, food and beverage, data center)?
 3. Generic classes first (both reviews agree); vendor presets can live in customer libraries.
-4. Scope before the UI: all of P7g–P7l, or a smaller first wave (contracts, coupling, curves and controller, the module,
-   six components, a small factory) with the rest alongside the UI?
+4. Scope before the UI: **all of P7g–P7l** (owner decision, 2026-10-13: building the UI first would double the work).
