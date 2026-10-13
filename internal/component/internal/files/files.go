@@ -21,15 +21,11 @@ const vocabularyFile = "vocabulary.json"
 var builtInLibrary embed.FS
 
 func Load(customerDirs []string) (*domain.Library, error) {
-	library, err := fs.Sub(builtInLibrary, "builtin")
-	if err != nil {
-		return nil, fmt.Errorf("component: built-in library: %w", err)
-	}
-	return LoadWith(library, customerDirs)
+	return loadFrom(embeddedTree{files: builtInLibrary, root: "builtin"}, customerDirs)
 }
 
-func LoadWith(builtIn fs.FS, customerDirs []string) (*domain.Library, error) {
-	first, err := readDirectory(embeddedTree{builtIn}, ".")
+func loadFrom(builtIn embeddedTree, customerDirs []string) (*domain.Library, error) {
+	first, err := readDirectory(builtIn, ".")
 	if err != nil {
 		return nil, err
 	}

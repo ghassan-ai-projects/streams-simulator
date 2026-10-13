@@ -32,10 +32,13 @@ func (diskTree) join(parts ...string) string { return filepath.Join(parts...) }
 
 func (diskTree) label(file string) string { return file }
 
-type embeddedTree struct{ files fs.FS }
+type embeddedTree struct {
+	files fs.FS
+	root  string
+}
 
 func (t embeddedTree) names(dir string) ([]string, error) {
-	entries, err := fs.ReadDir(t.files, dir)
+	entries, err := fs.ReadDir(t.files, path.Join(t.root, dir))
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}
@@ -49,7 +52,7 @@ func (t embeddedTree) names(dir string) ([]string, error) {
 }
 
 func (t embeddedTree) read(file string) ([]byte, error) {
-	raw, err := fs.ReadFile(t.files, file)
+	raw, err := fs.ReadFile(t.files, path.Join(t.root, file))
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}

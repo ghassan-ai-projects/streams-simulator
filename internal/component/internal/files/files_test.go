@@ -25,7 +25,7 @@ func write(t *testing.T, path, content string) {
 func builtInDir() string { return testsupport.ComponentsDir() }
 
 func loadCustomer(dirs ...string) (int, int, error) {
-	library, err := LoadWith(fstest.MapFS{}, dirs)
+	library, err := loadFrom(embeddedTree{files: fstest.MapFS{}, root: "."}, dirs)
 	if err != nil {
 		return 0, 0, err
 	}
@@ -157,7 +157,7 @@ func TestLoadReadsTheBuiltInLibraryFromTheFileSystemItIsGiven(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	library, err := LoadWith(fstest.MapFS{"vocabulary.json": {Data: raw}}, nil)
+	library, err := loadFrom(embeddedTree{files: fstest.MapFS{"vocabulary.json": {Data: raw}}, root: "."}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -169,7 +169,7 @@ func TestLoadReadsTheBuiltInLibraryFromTheFileSystemItIsGiven(t *testing.T) {
 func TestLoadNamesTheEmbeddedFileThatFailsToRead(t *testing.T) {
 	t.Parallel()
 	broken := fstest.MapFS{"equipment/kiln.component.json": {Data: []byte("{")}}
-	if _, err := LoadWith(broken, nil); err == nil || !strings.Contains(err.Error(), "builtin:equipment/kiln.component.json") {
+	if _, err := loadFrom(embeddedTree{files: broken, root: "."}, nil); err == nil || !strings.Contains(err.Error(), "builtin:equipment/kiln.component.json") {
 		t.Fatalf("error = %v, want the embedded file named", err)
 	}
 }
@@ -182,7 +182,7 @@ func (unreadableFS) Open(string) (fs.File, error) { return nil, errUnreadableBui
 
 func TestLoadRefusesABuiltInLibraryItCannotList(t *testing.T) {
 	t.Parallel()
-	_, err := LoadWith(unreadableFS{}, nil)
+	_, err := loadFrom(embeddedTree{files: unreadableFS{}, root: "."}, nil)
 	if !errors.Is(err, errUnreadableBuiltIn) || !strings.Contains(err.Error(), "component: list builtin:") {
 		t.Fatalf("error = %v, want the listing failure naming the built-in library", err)
 	}
