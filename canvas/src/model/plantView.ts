@@ -105,68 +105,59 @@ function bundle(
   return [...edges.values()];
 }
 
-function nodeBox(node: ViewNode): LayoutNode {
+interface Context {
+  readonly plant: Plant;
+  readonly specs: Specs;
+  readonly halls: readonly string[];
+  readonly readout: number;
+}
+
+function nodeBox(node: ViewNode, readout: number): LayoutNode {
   if (node.instance === null) {
     return { id: node.id, group: node.group, width: nodeSize.groupWidth, height: nodeSize.groupHeight };
   }
   const rows = Math.max(1, node.pins.ins.length, node.pins.outs.length);
-  return {
-    id: node.id,
-    group: node.group,
-    width: nodeSize.width,
-    height: nodeSize.header + nodeSize.padding + rows * nodeSize.pin,
-  };
+  const height = nodeSize.header + nodeSize.padding + rows * nodeSize.pin + readout;
+  return { id: node.id, group: node.group, width: nodeSize.width, height };
 }
 
-function finish(
-  plant: Plant,
-  nodes: readonly ViewNode[],
-  edges: readonly ViewEdge[],
-  halls: readonly string[],
-): PlantView {
-  const order = ["Halls", ...plant.areas.map((area) => area.name)];
-  return { nodes, edges, layout: layout(nodes.map(nodeBox), edges, order), halls };
+function finish(context: Context, nodes: readonly ViewNode[], edges: readonly ViewEdge[]): PlantView {
+  const order = ["Halls", ...context.plant.areas.map((area) => area.name)];
+  const boxes = nodes.map((node) => nodeBox(node, context.readout));
+  return { nodes, edges, layout: layout(boxes, edges, order), halls: context.halls };
 }
 
-function hallLevel(plant: Plant, halls: readonly string[], specs: Specs): PlantView {
-  const shared = plant.instances.filter((instance) => hallOf(instance.id) === null);
+function hallLevel(context: Context): PlantView {
+  const { plant, specs, halls } = context;
   const counts = new Map<string, number>();
   plant.instances.forEach((instance) => {
     const hall = hallOf(instance.id);
     if (hall !== null) counts.set(hall, (counts.get(hall) ?? 0) + 1);
   });
+  const shared = plant.instances.filter((instance) => hallOf(instance.id) === null);
   const nodes = [
     ...shared.map((instance) => instanceNode(plant, instance, specs)),
     ...halls.map((hall) => hallNode(hall, counts.get(hall) ?? 0)),
   ];
   const key = (id: string) => hallOf(id) ?? id;
-  return finish(plant, nodes, bundle(plant, plant.links, key, specs, false), halls);
+  return finish(context, nodes, bundle(plant, plant.links, key, specs, false));
 }
 
-function instanceLevel(
-  plant: Plant,
-  keep: (instance: Instance) => boolean,
-  specs: Specs,
-  halls: readonly string[],
-): PlantView {
-  const kept = plant.instances.filter(keep);
+function instanceLevel(context: Context, keep: (instance: Instance) => boolean): PlantView {
+  const kept = context.plant.instances.filter(keep);
   const ids = new Set(kept.map((instance) => instance.id));
-  const nodes = kept.map((instance) => instanceNode(plant, instance, specs));
-  return finish(
-    plant,
-    nodes,
-    bundle(plant, plant.links, (id) => (ids.has(id) ? id : null), specs, true),
-    halls,
-  );
+  const nodes = kept.map((instance) => instanceNode(context.plant, instance, context.specs));
+  const key = (id: string) => (ids.has(id) ? id : null);
+  return finish(context, nodes, bundle(context.plant, context.plant.links, key, context.specs, true));
 }
 
-export function plantView(plant: Plant, specs: Specs, open: string | null): PlantView {
-  const halls = hallsOf(plant);
-  if (halls.length === 0) {
-    return instanceLevel(plant, () => true, specs, halls);
+export function plantView(plant: Plant, specs: Specs, open: string | null, readout = 0): PlantView {
+  const context = { plant, specs, halls: hallsOf(plant), readout };
+  if (context.halls.length === 0) {
+    return instanceLevel(context, () => true);
   }
-  if (open === null || !halls.includes(open)) {
-    return hallLevel(plant, halls, specs);
+  if (open === null || !context.halls.includes(open)) {
+    return hallLevel(context);
   }
   const touching = new Set(
     plant.links
@@ -174,9 +165,7 @@ export function plantView(plant: Plant, specs: Specs, open: string | null): Plan
       .flatMap((link) => [link.from, link.to]),
   );
   return instanceLevel(
-    plant,
+    context,
     (instance) => hallOf(instance.id) === open || (hallOf(instance.id) === null && touching.has(instance.id)),
-    specs,
-    halls,
   );
 }

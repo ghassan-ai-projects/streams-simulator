@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { SessionStore } from "../app/sessionStore";
 import { NavigationStore } from "../app/navigationStore";
 import { PlantStore } from "../app/plantStore";
+import { ReviewStore } from "../app/reviewStore";
 import { ThemeStore } from "../app/themeStore";
 import { WorkspaceStore } from "../app/workspaceStore";
 import { failed } from "../model/bridge";
@@ -26,6 +27,7 @@ function renderApp(bridge: FakeBridge) {
     workspace: new WorkspaceStore(bridge),
     navigation: new NavigationStore(location),
     plants: new PlantStore(bridge),
+    review: new ReviewStore(bridge),
   };
   return render(<App stores={stores} />);
 }

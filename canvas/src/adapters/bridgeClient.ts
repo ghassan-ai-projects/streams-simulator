@@ -7,6 +7,8 @@ export interface Transport {
   events(url: string): EventSource;
 }
 
+const streamClosed = 2;
+
 const unreachable: BridgeFailure = {
   status: 0,
   code: "unreachable",
@@ -53,6 +55,22 @@ export function bridgeClient(transport: Transport): Bridge {
     workspace: () => call(transport, "/api/workspace", parseWorkspace),
     readFile: (path) => call(transport, `/api/file?path=${encodeURIComponent(path)}`, parseFile),
     action: (name, args) => call(transport, `/api/actions/${encodeURIComponent(name)}`, result, post({ args })),
+    followRun(worldId, follower) {
+      const source = transport.events(`/api/runs/${encodeURIComponent(worldId)}/events`);
+      source.addEventListener("record", (event: Event) => {
+        follower.record(event instanceof MessageEvent && typeof event.data === "string" ? event.data : "");
+      });
+      source.addEventListener("closed", () => {
+        source.close();
+        follower.closed();
+      });
+      source.addEventListener("error", () => {
+        if (source.readyState === streamClosed) follower.failed();
+      });
+      return () => {
+        source.close();
+      };
+    },
     watchWorkspace(onChange) {
       const source = transport.events("/api/events");
       source.addEventListener("workspace", onChange);

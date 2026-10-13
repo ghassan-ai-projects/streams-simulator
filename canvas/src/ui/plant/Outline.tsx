@@ -2,6 +2,7 @@ import type { NavigationStore } from "../../app/navigationStore";
 import type { PlantState, PlantStore } from "../../app/plantStore";
 import { areaOf } from "../../model/plant";
 import { hallOf, hallsOf } from "../../model/plantView";
+import shared from "../shared.module.css";
 import styles from "./PlantScreen.module.css";
 
 type Ready = Extract<PlantState, { phase: "ready" }>;
@@ -37,7 +38,7 @@ interface SectionProps {
 function Section({ title, items, current, marks, onPick }: SectionProps) {
   return (
     <section aria-label={title}>
-      <h2 className={styles.sectionTitle}>
+      <h2 className={shared.sectionTitle}>
         {title}
         <span className={styles.count}>{items.length}</span>
       </h2>

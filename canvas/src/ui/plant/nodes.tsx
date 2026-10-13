@@ -1,6 +1,8 @@
 import type { NodeProps } from "@xyflow/react";
 import { Handle, Position } from "@xyflow/react";
 import { ChevronRight } from "lucide-react";
+import type { Reading } from "../../model/playback";
+import { formatReading, shortChannel } from "../../model/playback";
 import { familyNames, shapeOf } from "../../model/ports";
 import type { Pin } from "../../model/ports";
 import type { FrameNodeType, HallNodeType, InstanceNodeType } from "./flow";
@@ -54,6 +56,28 @@ function Pins({ ins, outs }: { readonly ins: readonly Pin[]; readonly outs: read
   );
 }
 
+export const readoutHeight = 84;
+
+function Readout({ readings }: { readonly readings: readonly Reading[] }) {
+  if (readings.length === 0) {
+    return (
+      <div className={styles.readout}>
+        <span className={styles.none}>no observation yet</span>
+      </div>
+    );
+  }
+  return (
+    <dl className={styles.readout}>
+      {readings.slice(0, 4).map((reading) => (
+        <div key={reading.channel}>
+          <dt>{shortChannel(reading.channel)}</dt>
+          <dd>{formatReading(reading)}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
 export function InstanceNode({ data, selected }: NodeProps<InstanceNodeType>) {
   const { view } = data;
   return (
@@ -66,6 +90,7 @@ export function InstanceNode({ data, selected }: NodeProps<InstanceNodeType>) {
           {view.detail}
         </span>
       </div>
+      {data.readings !== null && <Readout readings={data.readings} />}
       <Pins ins={view.pins.ins} outs={view.pins.outs} />
     </div>
   );

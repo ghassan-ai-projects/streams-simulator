@@ -7,13 +7,14 @@ function respond(status: number, body: unknown): Response {
 }
 
 function transport(handler: (url: string, init?: RequestInit) => Response | Promise<Response>) {
-  const listeners = new Map<string, () => void>();
+  const listeners = new Map<string, (event?: Event) => void>();
   const close = vi.fn();
   const events = vi.fn(
     () =>
       ({
-        addEventListener: (name: string, fn: () => void) => listeners.set(name, fn),
+        addEventListener: (name: string, fn: (event?: Event) => void) => listeners.set(name, fn),
         close,
+        readyState: 2,
       }) as unknown as EventSource,
   );
   const fetch = vi.fn((url: string, init?: RequestInit) => Promise.resolve(handler(url, init)));
@@ -56,6 +57,22 @@ describe("bridge client", () => {
     expect(await client.action("run.report", { run: "w-1" })).toEqual({ ok: true, value: { ok: 1 } });
     expect(t.fetch.mock.calls[1]?.[1]).toMatchObject({ body: '{"args":{"run":"w-1"}}' });
     expect(await client.workspace()).toMatchObject({ ok: true, value: { runs: [] } });
+  });
+
+  it("follows a run's journal until it closes, and reports a dead stream", () => {
+    const t = transport(() => respond(200, {}));
+    const follower = { record: vi.fn(), closed: vi.fn(), failed: vi.fn() };
+    const stop = bridgeClient(t).followRun("w 1", follower);
+    expect(t.events).toHaveBeenCalledWith("/api/runs/w%201/events");
+    t.listeners.get("record")?.(new MessageEvent("record", { data: '{"seq":1}' }));
+    t.listeners.get("record")?.(new Event("record"));
+    expect(follower.record.mock.calls).toEqual([['{"seq":1}'], [""]]);
+    t.listeners.get("closed")?.();
+    expect(follower.closed).toHaveBeenCalledOnce();
+    expect(t.close).toHaveBeenCalled();
+    t.listeners.get("error")?.();
+    expect(follower.failed).toHaveBeenCalledOnce();
+    stop();
   });
 
   it("listens for workspace changes and closes the stream", () => {

@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import type { NavigationStore } from "../app/navigationStore";
 import type { PlantStore } from "../app/plantStore";
+import type { ReviewStore } from "../app/reviewStore";
 import type { SessionStore } from "../app/sessionStore";
 import type { ThemeStore } from "../app/themeStore";
 import type { WorkspaceStore } from "../app/workspaceStore";
@@ -8,6 +9,7 @@ import type { Route } from "../model/route";
 import { HomeScreen } from "./home/HomeScreen";
 import { PairingScreen } from "./pairing/PairingScreen";
 import { PlantScreen } from "./plant/PlantScreen";
+import { RunScreen } from "./run/RunScreen";
 import { Shell } from "./shell/Shell";
 import { TopBar } from "./shell/TopBar";
 import { Unreachable } from "./shell/Unreachable";
@@ -20,6 +22,7 @@ export interface Stores {
   readonly workspace: WorkspaceStore;
   readonly navigation: NavigationStore;
   readonly plants: PlantStore;
+  readonly review: ReviewStore;
 }
 
 function useSession({ session, workspace }: Stores) {
@@ -48,6 +51,17 @@ function Screen({ stores, route }: { readonly stores: Stores; readonly route: Ro
         navigation={stores.navigation}
         domain={route.domain}
         hall={route.hall}
+      />
+    );
+  }
+  if (route.screen === "run") {
+    return (
+      <RunScreen
+        review={stores.review}
+        plants={stores.plants}
+        workspace={stores.workspace}
+        navigation={stores.navigation}
+        worldId={route.worldId}
       />
     );
   }

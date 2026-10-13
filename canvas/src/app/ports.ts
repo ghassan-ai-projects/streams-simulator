@@ -17,6 +17,13 @@ export interface Bridge {
   readFile(path: string): Promise<Outcome<FileContent>>;
   action(name: string, args: Readonly<Record<string, unknown>>): Promise<Outcome<unknown>>;
   watchWorkspace(onChange: () => void): () => void;
+  followRun(worldId: string, follower: RunFollower): () => void;
+}
+
+export interface RunFollower {
+  record(data: string): void;
+  closed(): void;
+  failed(): void;
 }
 
 export interface Location {

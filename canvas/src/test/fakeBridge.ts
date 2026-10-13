@@ -1,4 +1,4 @@
-import type { Bridge } from "../app/ports";
+import type { Bridge, RunFollower } from "../app/ports";
 import type { BridgeFailure, FileContent, Outcome, Workspace } from "../model/bridge";
 import { failed, success } from "../model/bridge";
 
@@ -52,6 +52,20 @@ export class FakeBridge implements Bridge {
   action(name: string, args: Readonly<Record<string, unknown>>): Promise<Outcome<unknown>> {
     this.calls.push({ name, args });
     return Promise.resolve(this.actions.get(name) ?? failed(failure("unknown_action", 404)));
+  }
+
+  followers = new Map<string, RunFollower>();
+
+  followRun(worldId: string, follower: RunFollower): () => void {
+    this.followers.set(worldId, follower);
+    return () => this.followers.delete(worldId);
+  }
+
+  stream(worldId: string, records: readonly unknown[], end: "closed" | "failed" | null = "closed"): void {
+    const follower = this.followers.get(worldId);
+    records.forEach((record) => follower?.record(JSON.stringify(record)));
+    if (end === "closed") follower?.closed();
+    if (end === "failed") follower?.failed();
   }
 
   watchWorkspace(onChange: () => void): () => void {

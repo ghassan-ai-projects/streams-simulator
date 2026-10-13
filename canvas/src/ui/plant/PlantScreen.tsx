@@ -1,5 +1,3 @@
-import { Background, Controls, MiniMap, ReactFlow } from "@xyflow/react";
-import "@xyflow/react/dist/base.css";
 import { ChevronRight, Network } from "lucide-react";
 import { Fragment, useEffect, useMemo } from "react";
 import type { NavigationStore } from "../../app/navigationStore";
@@ -8,14 +6,11 @@ import type { WorkspaceStore } from "../../app/workspaceStore";
 import { plantView } from "../../model/plantView";
 import type { Route } from "../../model/route";
 import { useStore } from "../useStore";
-import type { FlowNode } from "./flow";
-import { flowEdges, flowNodes } from "./flow";
 import { Inspector } from "./Inspector";
-import { FrameNode, HallNode, InstanceNode } from "./nodes";
 import { Outline } from "./Outline";
+import { PlantGraph } from "./PlantGraph";
+import shared from "../shared.module.css";
 import styles from "./PlantScreen.module.css";
-
-const nodeTypes = { instance: InstanceNode, hall: HallNode, frame: FrameNode };
 
 type Ready = Extract<PlantState, { phase: "ready" }>;
 
@@ -52,12 +47,12 @@ function Crumbs({
     ...(hall === null ? [] : [{ label: title, route: { screen: "plant", domain: state.path, hall: null } } as const]),
   ];
   return (
-    <nav className={styles.crumbs} aria-label="Breadcrumb">
+    <nav className={shared.crumbs} aria-label="Breadcrumb">
       {trail.map((crumb) => (
         <Fragment key={crumb.label}>
           <button
             type="button"
-            className={styles.crumb}
+            className={shared.crumb}
             onClick={() => {
               navigation.go(crumb.route);
             }}
@@ -75,54 +70,30 @@ function Crumbs({
   );
 }
 
-interface GraphProps {
+function Graph({
+  state,
+  hall,
+  plants,
+  navigation,
+}: {
   readonly state: Ready;
   readonly hall: string | null;
   readonly plants: PlantStore;
   readonly navigation: NavigationStore;
-}
-
-function useGraph({ state, hall, plants, navigation }: GraphProps) {
+}) {
   const view = useMemo(() => plantView(state.plant, state.specs, hall), [state.plant, state.specs, hall]);
-  const nodes = useMemo(() => flowNodes(view, state.selected), [view, state.selected]);
-  const edges = useMemo(() => flowEdges(view), [view]);
-  const onNodeClick = (_: unknown, node: FlowNode) => {
-    plants.select(node.type === "frame" ? null : node.id);
-  };
-  const onNodeDoubleClick = (_: unknown, node: FlowNode) => {
-    if (node.type === "hall") navigation.go({ screen: "plant", domain: state.path, hall: node.id });
-  };
-  return { nodes, edges, onNodeClick, onNodeDoubleClick };
-}
-
-function Graph(props: GraphProps) {
-  const { nodes, edges, onNodeClick, onNodeDoubleClick } = useGraph(props);
   return (
-    <div className={styles.graph}>
-      <ReactFlow
-        key={props.hall ?? "plant"}
-        nodes={nodes}
-        edges={edges}
-        nodeTypes={nodeTypes}
-        nodesDraggable={false}
-        nodesConnectable={false}
-        onlyRenderVisibleElements
-        fitView
-        fitViewOptions={{ minZoom: 0.6, maxZoom: 1 }}
-        minZoom={0.05}
-        onNodeClick={onNodeClick}
-        onNodeDoubleClick={onNodeDoubleClick}
-        onPaneClick={() => {
-          props.plants.select(null);
-        }}
-        proOptions={{ hideAttribution: true }}
-        aria-label="Plant graph"
-      >
-        <Background gap={16} />
-        <Controls showInteractive={false} position="top-right" />
-        <MiniMap pannable zoomable position="bottom-right" ariaLabel="Navigator" />
-      </ReactFlow>
-    </div>
+    <PlantGraph
+      view={view}
+      viewKey={hall ?? "plant"}
+      selected={state.selected}
+      onSelect={(id) => {
+        plants.select(id);
+      }}
+      onOpenHall={(name) => {
+        navigation.go({ screen: "plant", domain: state.path, hall: name });
+      }}
+    />
   );
 }
 

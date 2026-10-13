@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync } from "node:fs";
+import { appendFileSync, copyFileSync, existsSync, mkdirSync, mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
@@ -53,5 +53,7 @@ export function buildFixture(): Fixture {
   run(binary, ["domain", "compose", composition, "--out", join(workspace, "domains", "factory-utilities.domain.json")]);
   record(binary, workspace, "w-explore", ["-explore"]);
   record(binary, workspace, "w-evaluate", []);
+  record(binary, workspace, "w-edited", []);
+  appendFileSync(join(workspace, "runs", "w-edited", "trace.jsonl"), "\n");
   return { binary, workspace, root };
 }

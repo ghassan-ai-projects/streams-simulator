@@ -1,5 +1,6 @@
 import type { Plant } from "../../model/plant";
 import { linksOf } from "../../model/plant";
+import shared from "../shared.module.css";
 import styles from "./PlantScreen.module.css";
 
 function List({
@@ -13,7 +14,7 @@ function List({
 }) {
   return (
     <section className={styles.section} aria-label={title}>
-      <h3 className={styles.sectionTitle}>
+      <h3 className={shared.sectionTitle}>
         {title}
         <span className={styles.count}>{items.length}</span>
       </h3>

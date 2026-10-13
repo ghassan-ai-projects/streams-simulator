@@ -4,6 +4,7 @@ import { hashLocation, localPreferences, mediaSystemTheme } from "./adapters/bro
 import { bridgeClient, browserTransport } from "./adapters/bridgeClient";
 import { NavigationStore } from "./app/navigationStore";
 import { PlantStore } from "./app/plantStore";
+import { ReviewStore } from "./app/reviewStore";
 import { SessionStore } from "./app/sessionStore";
 import { ThemeStore } from "./app/themeStore";
 import { WorkspaceStore } from "./app/workspaceStore";
@@ -28,6 +29,7 @@ if (root) {
           workspace: new WorkspaceStore(bridge),
           navigation: new NavigationStore(hashLocation(window)),
           plants: new PlantStore(bridge),
+          review: new ReviewStore(bridge),
         }}
       />
     </StrictMode>,

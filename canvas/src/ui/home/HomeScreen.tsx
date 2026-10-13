@@ -63,7 +63,7 @@ function DefinitionRows({ items, empty, onOpen }: RowsProps) {
   );
 }
 
-function RunRows({ runs }: { readonly runs: readonly RunEntry[] }) {
+function RunRows({ runs, onOpen }: { readonly runs: readonly RunEntry[]; readonly onOpen: (run: RunEntry) => void }) {
   if (runs.length === 0) {
     return <p className={styles.none}>No runs yet. Runs the director writes appear here.</p>;
   }
@@ -77,6 +77,18 @@ function RunRows({ runs }: { readonly runs: readonly RunEntry[] }) {
             {run.ended ? <Play size={12} aria-hidden="true" /> : <Radio size={12} aria-hidden="true" />}
             {run.ended ? "ended" : "running"}
           </span>
+          {run.ended && (
+            <button
+              type="button"
+              className={styles.open}
+              onClick={() => {
+                onOpen(run);
+              }}
+              aria-label={`Open review of ${run.worldId}`}
+            >
+              Review
+            </button>
+          )}
         </li>
       ))}
     </ul>
@@ -114,7 +126,12 @@ function Contents({ workspace, navigation }: { readonly workspace: Workspace; re
           <DefinitionRows items={workspace.domains} empty="No domains yet." onOpen={openPlant} />
         </Section>
         <Section title="Runs" folder="runs/">
-          <RunRows runs={workspace.runs} />
+          <RunRows
+            runs={workspace.runs}
+            onOpen={(run) => {
+              navigation.go({ screen: "run", worldId: run.worldId });
+            }}
+          />
         </Section>
         <Section title="Compositions" folder="compositions/">
           <DefinitionRows items={workspace.compositions} empty="No compositions yet." />
