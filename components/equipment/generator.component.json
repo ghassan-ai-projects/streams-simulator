@@ -1,0 +1,609 @@
+{
+  "schema_version": "0.1",
+  "id": "streamsim/generator",
+  "version": 1,
+  "title": "Standby generator",
+  "description": "A standby diesel generator set: it starts on mains loss or a daily exerciser run (held a least time between changes), carries the linked load, burns fuel from a tank, and refuses a manual restart during the anti-recycle lockout.",
+  "class": "rotating/electric_generator/standby",
+  "tags": [
+    "electrical",
+    "generator",
+    "standby"
+  ],
+  "icon": "generator",
+  "kind": {
+    "state": [
+      {
+        "name": "always_on",
+        "unit": "on",
+        "initial": 1,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "mains",
+        "unit": "on",
+        "initial": 1,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "start_request",
+        "unit": "on",
+        "initial": 0,
+        "max": 1
+      },
+      {
+        "name": "test_call",
+        "unit": "on",
+        "initial": 0,
+        "max": 1
+      },
+      {
+        "name": "call",
+        "unit": "on",
+        "initial": 0,
+        "max": 1
+      },
+      {
+        "name": "running",
+        "unit": "on",
+        "initial": 0,
+        "max": 1
+      },
+      {
+        "name": "recycle_timer",
+        "unit": "s",
+        "initial": 0
+      },
+      {
+        "name": "site_load",
+        "unit": "kW",
+        "initial": 240,
+        "min": 0
+      },
+      {
+        "name": "demand_kw",
+        "unit": "kW",
+        "initial": 0
+      },
+      {
+        "name": "output",
+        "unit": "kW",
+        "initial": 0,
+        "min": 0
+      },
+      {
+        "name": "engine_temp",
+        "unit": "degC",
+        "initial": 40
+      },
+      {
+        "name": "fuel_burn",
+        "unit": "L/h",
+        "initial": 0,
+        "min": 0
+      },
+      {
+        "name": "fuel_level",
+        "unit": "m",
+        "initial": 1.125,
+        "min": 0,
+        "max": 1.5
+      }
+    ],
+    "dynamics": [
+      {
+        "target": "test_call",
+        "tier": "F0",
+        "f0": {
+          "baseline": 0,
+          "drift_per_hour": 0,
+          "seasonality": [],
+          "schedule": {
+            "period_s": 86400,
+            "interpolation": "step",
+            "points": [
+              {
+                "at_s": 0,
+                "value": 0
+              },
+              {
+                "at_s": 36000,
+                "value": 1
+              },
+              {
+                "at_s": 37200,
+                "value": 0
+              }
+            ]
+          }
+        }
+      },
+      {
+        "target": "site_load",
+        "tier": "F0",
+        "f0": {
+          "baseline": 240,
+          "drift_per_hour": 0,
+          "seasonality": []
+        }
+      },
+      {
+        "target": "call",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "always_on",
+              "coef": 1
+            },
+            {
+              "state": "mains",
+              "coef": -1
+            },
+            {
+              "state": "start_request",
+              "coef": 1
+            },
+            {
+              "state": "test_call",
+              "coef": 1
+            }
+          ],
+          "clamp": {
+            "min": 0,
+            "max": 1
+          }
+        }
+      },
+      {
+        "target": "running",
+        "tier": "F1",
+        "dt_ms": 1000,
+        "f1": {
+          "form": "sequencer",
+          "stages": 1,
+          "hold_s": 10,
+          "stage_up": {
+            "state": "call",
+            "operator": "gte",
+            "threshold": 0.5
+          },
+          "stage_down": {
+            "state": "call",
+            "operator": "lt",
+            "threshold": 0.5
+          }
+        }
+      },
+      {
+        "target": "recycle_timer",
+        "tier": "F1",
+        "dt_ms": 1000,
+        "f1": {
+          "form": "anti_recycle",
+          "watch": "running",
+          "edge": "fall",
+          "hold_s": 300
+        }
+      },
+      {
+        "target": "demand_kw",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "running",
+              "coef": 1
+            },
+            {
+              "state": "site_load",
+              "coef": 1
+            }
+          ],
+          "clamp": {
+            "min": 0,
+            "max": 400
+          }
+        }
+      },
+      {
+        "target": "output",
+        "tier": "F1",
+        "dt_ms": 1000,
+        "f1": {
+          "form": "first_order_lag",
+          "time_constant_s": 10,
+          "gain": 1,
+          "inputs": [
+            {
+              "state": "demand_kw",
+              "coef": 1
+            }
+          ],
+          "clamp": {
+            "min": 0,
+            "max": 400
+          }
+        }
+      },
+      {
+        "target": "engine_temp",
+        "tier": "F1",
+        "dt_ms": 5000,
+        "f1": {
+          "form": "first_order_lag",
+          "time_constant_s": 300,
+          "gain": 1,
+          "inputs": [
+            {
+              "state": "always_on",
+              "coef": 40
+            },
+            {
+              "state": "running",
+              "coef": 45
+            }
+          ]
+        }
+      },
+      {
+        "target": "fuel_burn",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "output",
+              "coef": 0.27
+            }
+          ]
+        }
+      },
+      {
+        "target": "fuel_level",
+        "tier": "F1",
+        "dt_ms": 10000,
+        "f1": {
+          "form": "store",
+          "capacity": 667,
+          "inputs": [
+            {
+              "state": "fuel_burn",
+              "coef": -0.000277778
+            }
+          ]
+        }
+      }
+    ],
+    "faults": [
+      {
+        "id": "fails_to_start",
+        "affects": [
+          {
+            "state": "running",
+            "delta": -1,
+            "multiplicative": true
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "running"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "shape": "step"
+        }
+      },
+      {
+        "id": "fuel_low",
+        "affects": [
+          {
+            "state": "fuel_level",
+            "delta": -0.9
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "fuel_level"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "rate_per_hour": 1.0,
+          "shape": "ramp"
+        }
+      },
+      {
+        "id": "cooling_loss",
+        "affects": [
+          {
+            "state": "engine_temp",
+            "delta": 0.35,
+            "multiplicative": true
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "engine_temp"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "rate_per_hour": 0.5,
+          "shape": "ramp"
+        }
+      },
+      {
+        "id": "grid_outage",
+        "affects": [
+          {
+            "state": "mains",
+            "delta": -1
+          }
+        ],
+        "is_negative_class": true,
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "running"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "duration_s": 1800,
+          "magnitude": 1.0,
+          "shape": "pulse"
+        }
+      }
+    ],
+    "effectors": [
+      {
+        "name": "set_run_request",
+        "risk_class": "high",
+        "idempotency_window_s": 3600,
+        "ack": {
+          "failure_modes": [
+            {
+              "mode": "ok",
+              "probability": 1.0
+            }
+          ],
+          "latency_ms": {
+            "mean": 500,
+            "sigma": 100
+          }
+        },
+        "args_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "generator_id",
+            "run"
+          ],
+          "properties": {
+            "generator_id": {
+              "type": "string"
+            },
+            "run": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        },
+        "requires": [
+          {
+            "state": "recycle_timer",
+            "operator": "lte",
+            "threshold": 0
+          }
+        ],
+        "effect": {
+          "dead_time_s": 0,
+          "time_constant_s": 0,
+          "state_deltas": [
+            {
+              "state": "start_request",
+              "assign_from_arg": "run"
+            }
+          ]
+        }
+      },
+      {
+        "name": "refuel",
+        "risk_class": "low",
+        "idempotency_window_s": 3600,
+        "ack": {
+          "failure_modes": [
+            {
+              "mode": "ok",
+              "probability": 1.0
+            }
+          ],
+          "latency_ms": {
+            "mean": 1000,
+            "sigma": 200
+          }
+        },
+        "args_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "generator_id",
+            "metres"
+          ],
+          "properties": {
+            "generator_id": {
+              "type": "string"
+            },
+            "metres": {
+              "type": "number",
+              "minimum": 0.05,
+              "maximum": 2
+            }
+          }
+        },
+        "effect": {
+          "dead_time_s": 0,
+          "time_constant_s": 0,
+          "state_deltas": [
+            {
+              "state": "fuel_level",
+              "from_arg": "metres"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "measurement_points": [
+    {
+      "name": "output",
+      "state": "output",
+      "unit_family": "power",
+      "range": {
+        "min": 0,
+        "max": 520
+      },
+      "tag": "JT",
+      "default_instrument": "streamsim/power-meter@1"
+    },
+    {
+      "name": "running",
+      "state": "running",
+      "unit_family": "state",
+      "range": {
+        "min": 0,
+        "max": 1
+      },
+      "tag": "YS",
+      "default_instrument": "streamsim/run-status@1"
+    },
+    {
+      "name": "fuel_level",
+      "state": "fuel_level",
+      "unit_family": "level",
+      "range": {
+        "min": 0,
+        "max": 1.5
+      },
+      "tag": "LT",
+      "default_instrument": "streamsim/level-radar@1"
+    },
+    {
+      "name": "engine_temp",
+      "state": "engine_temp",
+      "unit_family": "temperature",
+      "range": {
+        "min": 0,
+        "max": 140
+      },
+      "tag": "TT",
+      "default_instrument": "streamsim/rtd@1"
+    },
+    {
+      "name": "mains",
+      "state": "mains",
+      "unit_family": "state",
+      "range": {
+        "min": 0,
+        "max": 1
+      },
+      "tag": "YS",
+      "default_instrument": "streamsim/run-status@1",
+      "optional": true
+    }
+  ],
+  "ports": [
+    {
+      "name": "load_in",
+      "type": "electrical",
+      "direction": "consumes",
+      "state": "site_load"
+    },
+    {
+      "name": "power_out",
+      "type": "electrical",
+      "direction": "provides",
+      "state": "output"
+    }
+  ],
+  "default_preset": "medium",
+  "presets": {
+    "small": {
+      "title": "Small (about 100 kW standby set)",
+      "values": {
+        "state/site_load/initial": 60.0,
+        "state/fuel_level/initial": 0.9,
+        "state/fuel_level/max": 1.2,
+        "dynamics/site_load/f0/baseline": 60.0,
+        "dynamics/demand_kw/f1/clamp/max": 100,
+        "dynamics/output/f1/clamp/max": 100,
+        "dynamics/fuel_level/f1/capacity": 333,
+        "faults/fuel_low/affects/fuel_level/delta": -0.72,
+        "measurement_points/output/range/max": 130,
+        "measurement_points/fuel_level/range/max": 1.2
+      }
+    },
+    "medium": {
+      "title": "Medium (about 400 kW standby set)",
+      "values": {}
+    },
+    "large": {
+      "title": "Large (about 1500 kW standby set)",
+      "values": {
+        "state/site_load/initial": 900.0,
+        "state/fuel_level/initial": 1.5,
+        "state/fuel_level/max": 2.0,
+        "dynamics/site_load/f0/baseline": 900.0,
+        "dynamics/demand_kw/f1/clamp/max": 1500,
+        "dynamics/output/f1/clamp/max": 1500,
+        "dynamics/fuel_level/f1/capacity": 2000,
+        "faults/fuel_low/affects/fuel_level/delta": -1.2,
+        "measurement_points/output/range/max": 1950,
+        "measurement_points/fuel_level/range/max": 2.0
+      }
+    }
+  },
+  "parameters": [
+    {
+      "name": "change_hold_s",
+      "title": "Least time between start and stop",
+      "unit": "s",
+      "type": "number",
+      "min": 5,
+      "max": 60,
+      "default": 10,
+      "targets": [
+        "dynamics/running/f1/hold_s"
+      ]
+    },
+    {
+      "name": "restart_lockout_s",
+      "title": "Restart lockout after a stop",
+      "unit": "s",
+      "type": "number",
+      "min": 60,
+      "max": 900,
+      "default": 300,
+      "targets": [
+        "dynamics/recycle_timer/f1/hold_s"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "schema_version": "0.1",
+  "id": "streamsim/thermistor",
+  "version": 1,
+  "title": "NTC thermistor temperature sensor",
+  "description": "Glass-bead NTC thermistor with a linearising front end: cheap and fast, coarser than an RTD, with a wider noise floor and an ageing drift; an open element reads cold.",
+  "tag": "TT",
+  "unit_family": "temperature",
+  "unit": "degC",
+  "range": {
+    "min": -40,
+    "max": 125
+  },
+  "channel": {
+    "value_type": "number",
+    "resolution": 0.1,
+    "fidelity": "F1",
+    "absence": "signal",
+    "cadence": {
+      "mode": "periodic",
+      "period_s": 10
+    },
+    "noise": {
+      "model": "gaussian",
+      "sigma": 0.1
+    },
+    "availability": {
+      "uptime": 0.999,
+      "mttr_s": 600
+    }
+  },
+  "faults": [
+    {
+      "id": "offset",
+      "form": "offset",
+      "magnitude": 1.5
+    },
+    {
+      "id": "drift",
+      "form": "drift",
+      "magnitude": 0.1,
+      "duration_s": 43200
+    },
+    {
+      "id": "open_circuit",
+      "form": "stuck",
+      "stuck_at": "low",
+      "quality": "out_of_range"
+    },
+    {
+      "id": "dropout",
+      "form": "dropout"
+    },
+    {
+      "id": "noise_burst",
+      "form": "noise",
+      "factor": 15,
+      "quality": "suspect"
+    }
+  ]
+}

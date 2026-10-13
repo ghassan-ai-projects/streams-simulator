@@ -1,0 +1,329 @@
+{
+  "schema_version": "0.1",
+  "id": "streamsim/feeder-meter",
+  "version": 1,
+  "title": "Feeder meter",
+  "description": "A metered feeder: its power is the sum of the loads linked into it, with the billing demand over fifteen-minute blocks and a ratchet, a running energy register, line current and loading.",
+  "class": "electrical/switchgear/feeder_meter",
+  "tags": [
+    "electrical",
+    "metering",
+    "feeder"
+  ],
+  "icon": "feeder-meter",
+  "kind": {
+    "state": [
+      {
+        "name": "power",
+        "unit": "kW",
+        "initial": 330.06396,
+        "min": 0
+      },
+      {
+        "name": "demand",
+        "unit": "kW",
+        "initial": 600,
+        "min": 0
+      },
+      {
+        "name": "energy",
+        "unit": "kWh",
+        "initial": 250000,
+        "min": 0
+      },
+      {
+        "name": "current",
+        "unit": "A",
+        "initial": 528.102335,
+        "min": 0
+      },
+      {
+        "name": "loading",
+        "unit": "%",
+        "initial": 41.257995,
+        "min": 0
+      }
+    ],
+    "dynamics": [
+      {
+        "target": "power",
+        "tier": "F0",
+        "f0": {
+          "baseline": 480,
+          "drift_per_hour": 0,
+          "seasonality": [
+            {
+              "amplitude": 150,
+              "period_s": 86400,
+              "phase_rad": -1.6
+            }
+          ]
+        }
+      },
+      {
+        "target": "demand",
+        "tier": "F1",
+        "dt_ms": 60000,
+        "f1": {
+          "form": "peak",
+          "block_s": 900,
+          "period_s": 2592000,
+          "ratchet": 0.8,
+          "previous_peak": 640,
+          "inputs": [
+            {
+              "state": "power",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "energy",
+        "tier": "F1",
+        "dt_ms": 10000,
+        "f1": {
+          "form": "integrator",
+          "gain": 0.000277777778,
+          "inputs": [
+            {
+              "state": "power",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "current",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "power",
+              "coef": 1.6
+            }
+          ]
+        }
+      },
+      {
+        "target": "loading",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "power",
+              "coef": 0.125
+            }
+          ]
+        }
+      }
+    ],
+    "faults": [
+      {
+        "id": "sustained_overload",
+        "affects": [
+          {
+            "state": "power",
+            "delta": 0.3,
+            "multiplicative": true
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "power"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "rate_per_hour": 0.5,
+          "shape": "ramp"
+        }
+      },
+      {
+        "id": "capacitor_bank_failure",
+        "affects": [
+          {
+            "state": "current",
+            "delta": 0.12,
+            "multiplicative": true
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "current"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "shape": "step"
+        }
+      },
+      {
+        "id": "load_surge",
+        "affects": [
+          {
+            "state": "power",
+            "delta": 0.15,
+            "multiplicative": true
+          }
+        ],
+        "is_negative_class": true,
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "power"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "duty_cycle": 0.3,
+          "magnitude": 1.0,
+          "rate_per_hour": 2.0,
+          "shape": "intermittent"
+        }
+      }
+    ]
+  },
+  "measurement_points": [
+    {
+      "name": "power",
+      "state": "power",
+      "unit_family": "power",
+      "range": {
+        "min": 0,
+        "max": 1000
+      },
+      "tag": "JT",
+      "default_instrument": "streamsim/power-meter@1"
+    },
+    {
+      "name": "demand",
+      "state": "demand",
+      "unit_family": "power",
+      "range": {
+        "min": 0,
+        "max": 1000
+      },
+      "tag": "JT",
+      "default_instrument": "streamsim/power-meter@1"
+    },
+    {
+      "name": "energy",
+      "state": "energy",
+      "unit_family": "energy",
+      "range": {
+        "min": 0,
+        "max": 10000000
+      },
+      "tag": "JT",
+      "default_instrument": "streamsim/energy-meter@1"
+    },
+    {
+      "name": "current",
+      "state": "current",
+      "unit_family": "current",
+      "range": {
+        "min": 0,
+        "max": 2500
+      },
+      "tag": "IT",
+      "default_instrument": "streamsim/current-clamp@1"
+    }
+  ],
+  "ports": [
+    {
+      "name": "loads_in",
+      "type": "electrical",
+      "direction": "consumes",
+      "state": "power"
+    },
+    {
+      "name": "power_out",
+      "type": "electrical",
+      "direction": "provides",
+      "state": "power"
+    }
+  ],
+  "default_preset": "medium",
+  "presets": {
+    "small": {
+      "title": "Small (about 250 kW feeder)",
+      "values": {
+        "state/power/initial": 105.0192,
+        "state/current/initial": 168.0307,
+        "state/loading/initial": 42.0077,
+        "state/demand/initial": 187.5,
+        "state/energy/initial": 80000,
+        "dynamics/power/f0/baseline": 150,
+        "dynamics/power/f0/seasonality/0/amplitude": 45,
+        "dynamics/demand/f1/previous_peak": 190,
+        "dynamics/loading/f1/inputs/power/coef": 0.4,
+        "measurement_points/power/range/max": 312.5,
+        "measurement_points/demand/range/max": 312.5,
+        "measurement_points/current/range/max": 800
+      }
+    },
+    "medium": {
+      "title": "Medium (about 800 kW feeder)",
+      "values": {}
+    },
+    "large": {
+      "title": "Large (about 2.5 MW feeder)",
+      "values": {
+        "state/power/initial": 1030.2004,
+        "state/current/initial": 1648.3207,
+        "state/loading/initial": 41.208,
+        "state/demand/initial": 1875,
+        "state/energy/initial": 900000,
+        "dynamics/power/f0/baseline": 1500,
+        "dynamics/power/f0/seasonality/0/amplitude": 470,
+        "dynamics/demand/f1/previous_peak": 2000,
+        "dynamics/loading/f1/inputs/power/coef": 0.04,
+        "measurement_points/power/range/max": 3125,
+        "measurement_points/demand/range/max": 3125,
+        "measurement_points/current/range/max": 8000
+      }
+    }
+  },
+  "parameters": [
+    {
+      "name": "ratchet",
+      "title": "Demand ratchet",
+      "unit": "ratio",
+      "type": "number",
+      "min": 0,
+      "max": 1,
+      "default": 0.8,
+      "targets": [
+        "dynamics/demand/f1/ratchet"
+      ]
+    },
+    {
+      "name": "demand_block",
+      "title": "Demand block",
+      "type": "enum",
+      "values": [
+        "quarter_hour",
+        "half_hour"
+      ],
+      "default": "quarter_hour",
+      "cases": {
+        "quarter_hour": {
+          "dynamics/demand/f1/block_s": 900
+        },
+        "half_hour": {
+          "dynamics/demand/f1/block_s": 1800
+        }
+      }
+    }
+  ]
+}

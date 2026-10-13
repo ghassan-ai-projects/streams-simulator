@@ -1,0 +1,58 @@
+{
+  "schema_version": "0.1",
+  "id": "streamsim/vortex-flow-meter",
+  "version": 1,
+  "title": "Vortex flow meter",
+  "description": "Vortex-shedding flow meter for steam, air and gas lines: robust and cheap, with a K-factor that depends on line size and fluid, pipe vibration in the signal and a shedder bar that erodes.",
+  "tag": "FT",
+  "unit_family": "volumetric_flow",
+  "unit": "m3/h",
+  "channel": {
+    "value_type": "number",
+    "resolution": 0.1,
+    "fidelity": "F1",
+    "absence": "signal",
+    "cadence": {
+      "mode": "periodic",
+      "period_s": 5
+    },
+    "noise": {
+      "model": "gaussian",
+      "sigma": 0.005
+    },
+    "availability": {
+      "uptime": 0.999,
+      "mttr_s": 600
+    }
+  },
+  "faults": [
+    {
+      "id": "drift",
+      "form": "drift",
+      "magnitude": 0.003,
+      "duration_s": 86400
+    },
+    {
+      "id": "no_vortices",
+      "form": "stuck",
+      "stuck_at": "low",
+      "quality": "suspect"
+    },
+    {
+      "id": "dropout",
+      "form": "dropout"
+    },
+    {
+      "id": "pipe_vibration",
+      "form": "noise",
+      "factor": 15,
+      "quality": "suspect"
+    },
+    {
+      "id": "k_factor",
+      "form": "scale",
+      "factor": 0.85
+    }
+  ],
+  "scaling": "span"
+}

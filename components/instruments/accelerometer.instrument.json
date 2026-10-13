@@ -1,0 +1,55 @@
+{
+  "schema_version": "0.1",
+  "id": "streamsim/accelerometer",
+  "version": 1,
+  "title": "Industrial accelerometer (vibration velocity)",
+  "description": "Stud-mounted piezoelectric accelerometer integrated to RMS velocity (ISO 10816): a loose mount loses sensitivity, a broken cable reads zero.",
+  "tag": "VT",
+  "unit_family": "vibration_velocity",
+  "unit": "mm/s",
+  "range": {
+    "min": 0,
+    "max": 50
+  },
+  "channel": {
+    "value_type": "number",
+    "resolution": 0.01,
+    "fidelity": "F1",
+    "absence": "signal",
+    "cadence": {
+      "mode": "periodic",
+      "period_s": 30
+    },
+    "noise": {
+      "model": "gaussian",
+      "sigma": 0.05
+    },
+    "availability": {
+      "uptime": 0.999,
+      "mttr_s": 600
+    }
+  },
+  "faults": [
+    {
+      "id": "cable_break",
+      "form": "stuck",
+      "stuck_at": "low",
+      "quality": "disconnected"
+    },
+    {
+      "id": "dropout",
+      "form": "dropout"
+    },
+    {
+      "id": "mount_noise",
+      "form": "noise",
+      "factor": 15,
+      "quality": "suspect"
+    },
+    {
+      "id": "loose_mount",
+      "form": "scale",
+      "factor": 0.7
+    }
+  ]
+}

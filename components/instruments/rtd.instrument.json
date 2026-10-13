@@ -3,7 +3,7 @@
   "id": "streamsim/rtd",
   "version": 1,
   "title": "RTD temperature transmitter (Pt100, 4-20 mA)",
-  "description": "Platinum resistance thermometer with a head transmitter; slow, accurate, prone to offset after a bad termination and to slow drift.",
+  "description": "Platinum resistance thermometer with a head transmitter; slow, accurate, prone to offset after a bad termination, to slow drift and to burn-out when the element opens.",
   "tag": "TT",
   "unit_family": "temperature",
   "unit": "degC",
@@ -23,6 +23,10 @@
     "noise": {
       "model": "gaussian",
       "sigma": 0.05
+    },
+    "availability": {
+      "uptime": 0.999,
+      "mttr_s": 600
     }
   },
   "faults": [
@@ -36,6 +40,22 @@
       "form": "drift",
       "magnitude": 0.05,
       "duration_s": 86400
+    },
+    {
+      "id": "open_circuit",
+      "form": "stuck",
+      "stuck_at": "high",
+      "quality": "out_of_range"
+    },
+    {
+      "id": "dropout",
+      "form": "dropout"
+    },
+    {
+      "id": "noise_burst",
+      "form": "noise",
+      "factor": 15,
+      "quality": "suspect"
     }
   ]
 }

@@ -1,0 +1,61 @@
+{
+  "schema_version": "0.1",
+  "id": "streamsim/valve-position",
+  "version": 1,
+  "title": "Valve position transmitter (4-20 mA feedback)",
+  "description": "Feedback potentiometer or Hall sensor on a valve stem: linkage slip shifts the zero, a lost wiper reads zero, a loose travel calibration scales the span.",
+  "tag": "ZT",
+  "unit_family": "fraction",
+  "unit": "%",
+  "range": {
+    "min": 0,
+    "max": 100
+  },
+  "channel": {
+    "value_type": "number",
+    "resolution": 0.1,
+    "fidelity": "F1",
+    "absence": "signal",
+    "cadence": {
+      "mode": "periodic",
+      "period_s": 5
+    },
+    "noise": {
+      "model": "gaussian",
+      "sigma": 0.002
+    },
+    "availability": {
+      "uptime": 0.999,
+      "mttr_s": 600
+    }
+  },
+  "faults": [
+    {
+      "id": "offset",
+      "form": "offset",
+      "magnitude": 0.03
+    },
+    {
+      "id": "drift",
+      "form": "drift",
+      "magnitude": 0.002,
+      "duration_s": 86400
+    },
+    {
+      "id": "wiper_lost",
+      "form": "stuck",
+      "stuck_at": "low",
+      "quality": "out_of_range"
+    },
+    {
+      "id": "dropout",
+      "form": "dropout"
+    },
+    {
+      "id": "travel_cal",
+      "form": "scale",
+      "factor": 0.9
+    }
+  ],
+  "scaling": "span"
+}

@@ -88,7 +88,7 @@ An instrument's `class` in a listing is its unit family and its `tags` the one t
 |---|---|
 | `name` | `<kind>.<point>` |
 | `observes` | the point's `state` |
-| `unit` | the instrument's unit |
+| `unit` | the instrument's unit; written for `number` and `counter` channels only (the domain contract forbids it on a boolean channel) |
 | `observation_gain`, `observation_offset` | the conversion from the state's unit to the instrument's unit, both in the point's family: with `base = s·x + o` for the state unit and `base = s'·y + o'` for the instrument unit, gain `s/s'` and offset `(o − o')/s'`; omitted when the units are equal |
 | `range` | the point's range (in the state's unit) converted to the instrument's unit, intersected with the instrument's range |
 | other members | the instrument's `channel` members; `noise.sigma` multiplied by the converted span when `scaling` is `span` |

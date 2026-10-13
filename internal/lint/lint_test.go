@@ -11,7 +11,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
-
 func shippedDomains(t *testing.T) []string {
 	t.Helper()
 	paths, err := filepath.Glob(filepath.Join(testsupport.DomainsDir(), "*.domain.json"))
