@@ -117,24 +117,53 @@ Instruments: RTD and thermistor (`TT`), pressure transmitter (`PT`), magnetic an
 (`LT`), accelerometer (`VT`), current clamp (`IT`), power meter (`JT`), valve position (`ZT`), humidity (`MT`), run status
 (digital), counter. Each with stuck, drift, dropout and noise-burst faults where physical.
 
-## 6. Plan (before P8a)
+## 6. Review outcome (2026-10-13)
+
+Two independent reviews: one of the direction (verdict: right direction, needs changes before P7g), one of missing pieces.
+They change the design as follows.
+
+| Finding | Change |
+|---|---|
+| Domain-wide name uniqueness breaks copy-in of one component twice (two presets of a chiller) | P7g defines a deterministic qualification rule: kind `chiller_large`, members `chiller_large.chw_supply_temp`; profiles' fault weights and adapters checked against it |
+| Instrument faults such as stuck, open circuit and dropout are not expressible today (only additive bias through a hidden state) | P7i adds observation faults (stuck, freeze, dropout, scale error) as world semantics with a design change; until then an instrument lists only faults the engine can produce |
+| Link coupling is a cross-entity read path (integration order, history, draw order, oracle), and `sum`/`mean` are too small | Coupling becomes its own design-first phase (P7h) before the module; it adds `sum`, `mean`, `min`, `max`, `count_running` and load sharing by capacity, a cycle ban over links, and a system-kind header store pattern |
+| JSON pointers into arrays are brittle; presets cannot keep derived values consistent | Parameters address by name (`state:chw_supply.initial`); presets are full named overlays, each validated and run; a bound moved by a preset must keep its dependants inside it |
+| Overrides are add-or-narrow, so per-instance variation forks kinds | One composition entry is one kind; variation inside it only through add or narrow |
+| Ports did not say what a connection means | A port declares `provides` or `consumes` a state with a unit family; compose emits the link and the aggregation |
+| No nonlinear relations: efficiency curves, pump and fan laws, valve Cv, heat = flow × ΔT | P7i adds a data-defined piecewise-linear `curve` (1-D and 2-D tables) and a bounded `product` of states — tables, not an expression language |
+| No control layer | P7i adds a `controller` form (PID with output limits, anti-windup, auto/manual, cascade by chaining) |
+| No alarm object | P7i adds an ISA-18.2 alarm (limit, on-delay, deadband, priority, acknowledge, shelve) and its KPIs |
+| Units are prose | P7g adds a unit vocabulary with families and conversions; compose rejects a family mismatch |
+| No demand side, weather or calendar | P7k adds process loads, a weather source (dry and wet bulb) and a site calendar (time zone, weekdays, shifts) |
+| No plausibility checking for composed plants | P7j adds `domain lint`: a nominal day with energy and mass balance residuals and efficiency bands |
+| Tag naming, hierarchy and quality codes | P7g adds ISA-95 site/area/unit and ISA-5.1 tags as instance metadata; quality codes on events (R7d-01) land with the instrument faults in P7i |
+| Scale | P7l adds a 2,000-tag fixture and a speed budget |
+| Prerequisites | R6a-01 and R7e-04 (stability validated by the validator), R7e-09 (descriptions to the operator) land before the catalog |
+| Provenance and determinism | Provenance records component id, version and library digest; compose depends on no directory order or environment variable; duplicate ids across directories are an error; a gate keeps customer namespaces out of `components/` |
+| Pilot first | The module phase composes one chiller with three instruments end to end before the catalog |
+
+## 7. Plan (before P8a)
 
 | Phase | Name | Deliverable | Exit evidence |
 |---|---|---|---|
-| P7g | Component library: contracts | The three schemas, this design reviewed, the port and unit-family vocabularies, ISO 14224 / ISA-5.1 mapping table | Schemas validate their fixtures; a reviewed design record |
-| P7h | Component module and compose | `internal/component`, CLI and MCP commands, provenance, customer directories | Compose is deterministic (byte-identical twice); composed domains validate; gates and coverage |
-| P7i | Coupling over links | Aggregation of inputs over typed links (R6e-01) with an analytic oracle | A two-unit loop agrees with its closed form; v0.1-equivalent worlds unchanged |
-| P7j | Instrument catalog | About 12 instruments with their faults | Each instrument attached to a test kind: noise, drift and each fault visible in its channel |
-| P7k | Equipment catalog | About 15 equipment components with presets, measurement points and ports | Per component: 24 h nominal run stays in range and replays; each action moves its state; each fault observable by a default instrument; dt/τ stable; trivial-baseline audit passes |
-| P7l | Factory utilities world | `factory-utilities` composed only from the library (the P12 factory, moved earlier) | Validates, runs, verifies, reports; replay and audit; the composition and the domain are both committed |
+| P7g | Contracts and vocabularies | Equipment, instrument and composition schemas; naming rule; name-addressed parameters and presets; port, unit-family and unit vocabularies; tag and hierarchy metadata | One worked example (a chiller in two sizes, two instrument sets, one AHU link) composed by hand and accepted by the existing domain validator |
+| P7h | Coupling over links | Cross-entity inputs over typed links: `sum`, `mean`, `min`, `max`, `count_running`, load sharing; cycle ban; header-store pattern | Analytic oracle for a header with parallel units; read-order independence; v0.1-equivalent worlds unchanged |
+| P7i | World forms for plants | `curve` tables, bounded `product`, `controller` (PID), ISA-18.2 `alarm`, observation faults and quality codes | Oracles per form; prerequisites R6a-01, R7e-04, R7e-09 done |
+| P7j | Component module, compose and lint | `internal/component`; `component list/show/validate`, `domain compose`, `domain lint`; MCP catalog tools; provenance; customer directories; one chiller pilot | Deterministic compose; the pilot composes, validates, lints and runs |
+| P7k | Catalogs | About 12 instruments; about 15 utility components and process loads, a weather source, a site calendar; an incident set and KPI truth per component | Per component: nominal day in range and replayed, actions move their states, each fault observable above its SNR, stable by validation, trivial-baseline audit |
+| P7l | Factory utilities world | `factory-utilities` composed only from the library; a 2,000-tag fixture and speed budget | Validates, lints, runs, verifies, reports; replay and audit; speed within budget |
 
-The UI phases then build on it: the builder (P11) edits compositions and domains with the catalog as its palette, and the
-bridge (P8b) serves the library.
+## 8. Later (after the UI)
 
-## 7. Open questions for the owner
+Reliability arrivals (MTBF or Weibull drawn into the command log, wear by run hours and starts, planned maintenance), work
+orders and spare parts, SIS voting and bypass, electrical detail (reactive power, power factor, imbalance, transfer),
+historian behaviour (compression, interpolation, backfill), protocol semantics (Modbus, OPC UA, BACnet), multi-site runs,
+and calibration against real plant data.
 
-1. Is copy-in (D3) right, or should a domain keep referencing its components so a library update can flow into existing
-   worlds? Copy-in is simpler and keeps worlds stable; an "update from library" action can be added later from provenance.
+## 9. Open questions for the owner
+
+1. Copy-in (D3) confirmed by the direction review; an "update from library" action can be added later from provenance.
 2. Which plant families come first after factory utilities (process lines, packaging, food and beverage, data center)?
-3. Should the library hold real vendor equipment models (named products) or stay generic classes? Generic first is
-   recommended; vendor-specific presets can live in customer libraries.
+3. Generic classes first (both reviews agree); vendor presets can live in customer libraries.
+4. Scope before the UI: all of P7g–P7l, or a smaller first wave (contracts, coupling, curves and controller, the module,
+   six components, a small factory) with the rest alongside the UI?
