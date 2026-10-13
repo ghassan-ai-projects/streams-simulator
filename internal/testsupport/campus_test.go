@@ -3,6 +3,7 @@ package testsupport
 import (
 	"encoding/json"
 	"slices"
+	"strings"
 	"testing"
 )
 
@@ -42,8 +43,8 @@ func TestACampusRepeatsEveryHallInstanceAndConnectionAndSharesTheNamedOnes(t *te
 
 func TestACampusRefusesAnInvalidComposition(t *testing.T) {
 	t.Parallel()
-	if _, err := Campus([]byte("{"), 2); err == nil {
-		t.Fatal("an invalid composition was accepted")
+	if _, err := Campus([]byte("{"), 2); err == nil || !strings.Contains(err.Error(), "testsupport: campus") {
+		t.Fatalf("an invalid composition gives %v, want the campus error", err)
 	}
 }
 
