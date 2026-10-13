@@ -16,7 +16,9 @@ import (
 )
 
 type Endpoint struct {
-	server *http.Server
+	server   *http.Server
+	listener net.Listener
+	served   chan struct{}
 }
 
 func BindOperator(ctx context.Context, stderr io.Writer, operator *mcpsdk.Server, addr string, announce func(endpoint string)) (*Endpoint, error) {
@@ -29,20 +31,25 @@ func BindOperator(ctx context.Context, stderr io.Writer, operator *mcpsdk.Server
 	announce(endpoint)
 	_, _ = fmt.Fprintf(stderr, "operator endpoint: %s\n", endpoint)
 	httpServer := &http.Server{Handler: handler, ReadHeaderTimeout: 10 * time.Second}
-	go serveOperator(stderr, httpServer, ln)
-	return &Endpoint{server: httpServer}, nil
+	bound := &Endpoint{server: httpServer, listener: ln, served: make(chan struct{})}
+	go serveOperator(stderr, bound)
+	return bound, nil
 }
 
-func serveOperator(stderr io.Writer, server *http.Server, listener net.Listener) {
-	if err := server.Serve(listener); err != nil && !errors.Is(err, http.ErrServerClosed) {
+func serveOperator(stderr io.Writer, e *Endpoint) {
+	defer close(e.served)
+	if err := e.server.Serve(e.listener); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		_, _ = fmt.Fprintf(stderr, "operator endpoint failed: %v\n", err)
 	}
 }
 
 func (e *Endpoint) Close() {
-	if e != nil && e.server != nil {
-		_ = e.server.Close()
+	if e == nil || e.server == nil {
+		return
 	}
+	_ = e.server.Close()
+	_ = e.listener.Close()
+	<-e.served
 }
 
 func Serve(ctx context.Context, director *mcpsdk.Server, operator *Endpoint, transport mcpsdk.Transport) error {

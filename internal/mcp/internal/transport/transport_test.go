@@ -79,3 +79,21 @@ func TestAnEndpointThatIsNotBoundClosesWithoutEffect(t *testing.T) {
 	none.Close()
 	(&Endpoint{}).Close()
 }
+
+func TestCloseRefusesConnectionsOnReturnEvenWhenItRunsBeforeTheServerStarted(t *testing.T) {
+	t.Parallel()
+	for range 200 {
+		var announced string
+		endpoint, err := BindOperator(t.Context(), &bytes.Buffer{}, newServer(), "127.0.0.1:0", func(address string) { announced = address })
+		if err != nil {
+			t.Fatal(err)
+		}
+		endpoint.Close()
+		endpoint.Close()
+		conn, err := (&net.Dialer{}).DialContext(t.Context(), "tcp", strings.TrimPrefix(announced, "http://"))
+		if err == nil {
+			_ = conn.Close()
+			t.Fatalf("operator endpoint %s accepted a connection after Close returned", announced)
+		}
+	}
+}

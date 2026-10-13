@@ -62,6 +62,22 @@ done
 capture scripted-verify "$bin" verify "$out/run.json"
 capture scripted-replay "$bin" replay "$out/run.json"
 
+# Day-long run with two faults on different entities and three perturbations
+# (one windowed drop, one windowed flap, one open-ended reorder): the longer
+# horizon exercises integration, cadence phase and window ends the short run
+# above cannot.
+out="$work/scripted-day"
+mkdir -p "$out"
+capture scripted-day-run "$bin" run --domain aquaculture-pond --adapter native-jsonl \
+  --seed 13 --sink file --out "$out" --duration 86400 \
+  --fault site-a/pond-1=aerator_failure@7200 --fault site-a/pond-2=do_probe_fouling@43200 \
+  --perturb drop@3600@30000 --perturb producer_flap@50000@60000 --perturb reorder@60000
+for f in trace.jsonl ledger.jsonl world_state_history.jsonl run.json journal.jsonl sealed/journal.jsonl; do
+  [ -f "$out/$f" ] && emit "scripted-day/$f" "$out/$f"
+done
+capture scripted-day-verify "$bin" verify "$out/run.json"
+capture scripted-day-replay "$bin" replay "$out/run.json"
+
 # Suite generation (profile and seed fixed).
 for domain in rotating-machinery cold-chain-transit; do
   sd="$work/suite-$domain"
