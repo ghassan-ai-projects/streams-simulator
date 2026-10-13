@@ -1,6 +1,8 @@
 package protocol
 
 import (
+	"errors"
+	"io/fs"
 	"path/filepath"
 	"testing"
 
@@ -23,7 +25,7 @@ func TestTheDirectorServesItsComponentLibraryWhenGivenOne(t *testing.T) {
 		t.Fatal(err)
 	}
 	options.ComponentsDirs = []string{filepath.Join(t.TempDir(), "missing")}
-	if _, err := newDirector(t.Context(), options); err == nil {
-		t.Fatal("a missing library directory must stop the director from starting")
+	if _, err := newDirector(t.Context(), options); !errors.Is(err, fs.ErrNotExist) {
+		t.Fatalf("a missing library directory must stop the director from starting: %v", err)
 	}
 }
