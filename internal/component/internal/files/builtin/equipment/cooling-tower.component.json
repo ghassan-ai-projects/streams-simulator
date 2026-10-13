@@ -623,6 +623,12 @@
       "type": "cooling_water_temp",
       "direction": "provides",
       "state": "basin_temp"
+    },
+    {
+      "name": "power_out",
+      "type": "electrical",
+      "direction": "provides",
+      "state": "fan_power"
     }
   ],
   "default_preset": "medium",

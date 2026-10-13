@@ -66,19 +66,7 @@ func TestBuiltInLibraryFilesUseTheStreamsimNamespace(t *testing.T) {
 
 func composedPilot(t *testing.T) []byte {
 	t.Helper()
-	library, err := component.NewLibrary(nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	raw, err := os.ReadFile(testsupport.PilotComposition())
-	if err != nil {
-		t.Fatal(err)
-	}
-	composed, err := component.Compose(library, raw, "chiller-pilot.composition.json")
-	if err != nil {
-		t.Fatal(err)
-	}
-	return composed.Bytes
+	return composedExample(t, testsupport.PilotComposition())
 }
 
 func TestComposingThePilotCompositionReproducesTheExampleByteForByte(t *testing.T) {
@@ -136,4 +124,21 @@ func TestTheComposedPilotValidatesAndRunsDeterministically(t *testing.T) {
 	if digests[0] != digests[1] {
 		t.Fatalf("two runs of the pilot differ: %v", digests)
 	}
+}
+
+func composedExample(t *testing.T, path string) []byte {
+	t.Helper()
+	library, err := component.NewLibrary(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	composed, err := component.Compose(library, raw, filepath.Base(path))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return composed.Bytes
 }

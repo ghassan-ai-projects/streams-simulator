@@ -985,7 +985,8 @@
       "name": "cond_water_in",
       "type": "cooling_water_temp",
       "direction": "consumes",
-      "state": "cond_water_in"
+      "state": "cond_water_in",
+      "sample_s": 10
     },
     {
       "name": "supply_out",
@@ -1004,6 +1005,12 @@
       "type": "tariff",
       "direction": "consumes",
       "state": "tariff"
+    },
+    {
+      "name": "power_out",
+      "type": "electrical",
+      "direction": "provides",
+      "state": "power"
     }
   ],
   "default_preset": "medium",

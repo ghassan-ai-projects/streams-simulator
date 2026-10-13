@@ -767,6 +767,12 @@
       "type": "level",
       "direction": "consumes",
       "state": "suction_level"
+    },
+    {
+      "name": "power_out",
+      "type": "electrical",
+      "direction": "provides",
+      "state": "power"
     }
   ],
   "default_preset": "medium",

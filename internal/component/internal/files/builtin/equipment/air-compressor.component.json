@@ -74,6 +74,19 @@
         "initial": 1
       },
       {
+        "name": "header_pressure",
+        "unit": "kPa",
+        "initial": 700,
+        "min": 0
+      },
+      {
+        "name": "auto_load",
+        "unit": "on",
+        "initial": 1,
+        "min": 0,
+        "max": 1
+      },
+      {
         "name": "cmd_loaded",
         "unit": "on",
         "initial": 1
@@ -173,6 +186,35 @@
         }
       },
       {
+        "target": "header_pressure",
+        "tier": "F0",
+        "f0": {
+          "baseline": 700,
+          "drift_per_hour": 0,
+          "seasonality": []
+        }
+      },
+      {
+        "target": "auto_load",
+        "tier": "F1",
+        "dt_ms": 1000,
+        "f1": {
+          "form": "sequencer",
+          "stages": 1,
+          "hold_s": 10,
+          "stage_up": {
+            "state": "header_pressure",
+            "operator": "lt",
+            "threshold": 660
+          },
+          "stage_down": {
+            "state": "header_pressure",
+            "operator": "gt",
+            "threshold": 720
+          }
+        }
+      },
+      {
         "target": "cmd_loaded",
         "tier": "F1",
         "f1": {
@@ -184,6 +226,10 @@
             },
             {
               "state": "load_command",
+              "coef": 1
+            },
+            {
+              "state": "auto_load",
               "coef": 1
             }
           ]
@@ -817,6 +863,13 @@
       "type": "electrical",
       "direction": "provides",
       "state": "power"
+    },
+    {
+      "name": "pressure_in",
+      "type": "pressure",
+      "direction": "consumes",
+      "state": "header_pressure",
+      "sample_s": 1
     }
   ],
   "default_preset": "medium",
@@ -879,6 +932,30 @@
     }
   },
   "parameters": [
+    {
+      "name": "load_kpa",
+      "title": "Header pressure below which the compressor loads",
+      "unit": "kPa",
+      "type": "number",
+      "min": 550,
+      "max": 750,
+      "default": 660,
+      "targets": [
+        "dynamics/auto_load/f1/stage_up/threshold"
+      ]
+    },
+    {
+      "name": "unload_kpa",
+      "title": "Header pressure above which the compressor unloads",
+      "unit": "kPa",
+      "type": "number",
+      "min": 600,
+      "max": 800,
+      "default": 720,
+      "targets": [
+        "dynamics/auto_load/f1/stage_down/threshold"
+      ]
+    },
     {
       "name": "alarm_limit_c",
       "title": "High discharge temperature alarm",
