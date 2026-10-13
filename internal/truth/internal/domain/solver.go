@@ -151,10 +151,6 @@ func detectorChannels(det *model.Detector) []string {
 	return out
 }
 
-func (s *Solver) newOracleWorld(startNS int64, entityIDs []string) (*world.World, error) {
-	return s.oracleWorld(startNS, entityIDs, false)
-}
-
 func (s *Solver) oracleWorld(startNS int64, entityIDs []string, records bool) (*world.World, error) {
 	w, err := world.New(s.spec, s.seed, "w-solver", startNS, world.Options{
 		Noiseless:       true,
