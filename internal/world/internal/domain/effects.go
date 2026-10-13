@@ -7,7 +7,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-// applyAutonomousAction applies the interlock's autonomous state delta.
 func (w *World) applyAutonomousAction(entityID, state string, delta float64, atNS int64) {
 	k := &kick{entity: entityID, state: state, delta: delta, startNS: atNS, tauNS: 0}
 	key := driverKey{entity: entityID, state: state}
@@ -15,8 +14,6 @@ func (w *World) applyAutonomousAction(entityID, state string, delta float64, atN
 	w.schedule(kindEffectStart, entityID, state, atNS, k)
 }
 
-// applyEffect schedules the effect's state deltas as kicks, in the real
-// world or in the shadow world (silent_no_effect).
 func (w *World) applyEffect(entityID string, eff *model.Effector, args map[string]any, atNS int64, scale float64, shadow bool) {
 	start := atNS + int64(eff.Effect.DeadTimeS*secondsPerNS)
 	tau := eff.Effect.TimeConstantS * secondsPerNS
@@ -86,7 +83,6 @@ func additiveEffectValue(delta model.StateDelta, args map[string]any) float64 {
 	return value
 }
 
-// PendingKicks is the number of scheduled-but-unapplied effect kicks.
 func (w *World) PendingKicks() int {
 	n := 0
 	for _, key := range w.sortedKickStates() {
@@ -99,7 +95,6 @@ func (w *World) PendingKicks() int {
 	return n
 }
 
-// sortedKickStates returns the states with pending kicks in a stable order.
 func (w *World) sortedKickStates() []driverKey {
 	var out []driverKey
 	// determinism-safe: collected here, sorted below before any output.

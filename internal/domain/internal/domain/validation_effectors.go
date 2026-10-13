@@ -50,7 +50,7 @@ func (checks domainChecks) effectorConfirmation(e *model.Effector) error {
 }
 
 func (checks domainChecks) effectorDeadTime(e *model.Effector) error {
-	// Model dead time once; targeting a dead_time state would apply the delay twice.
+
 	if e.Effect.DeadTimeS > 0 {
 		for _, d := range e.Effect.StateDeltas {
 			if dyn := checks.kind.DynamicsOf(d.State); dyn != nil && dyn.F1 != nil && dyn.F1.Form == "dead_time" {

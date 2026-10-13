@@ -54,7 +54,7 @@ The authoritative input schemas are defined and enforced beside the handlers in 
 | --- | --- | --- |
 | `sim.nameplate.read` | Read static world identity, entities, channels, and effectors. | `token`. |
 | `sim.effector.list` | Read declared effectors and argument schemas. | `token`. |
-| `sim.effector.invoke` | Invoke a declared effector. | `token`, `effector`, `entity_id`, `command_id`; optional `args`, `at_ns`. |
+| `sim.effector.invoke` | Invoke a declared effector. | `token`, `effector`, `entity_id`, `command_id`; optional `args`. |
 | `sim.consumer.report` | Report quiescence and submit a verdict; never returns a score. | `token`, `run_id`; optional `quiesced_through_ns`, `verdict`. |
 
 The operator view contains no truth store, fault registry, perturbation log, or hidden state field. Its narrow shape is a structural leak-prevention measure, not only a convention.
@@ -65,7 +65,7 @@ The operator view contains no truth store, fault registry, perturbation log, or 
 | --- | --- |
 | `sim.world.create` | `domain` is required. `seed` defaults to `1` and must be an integer from 0 to 9007199254740991 (2^53-1; larger values would not survive JSON numbers exactly), `adapter` to `native-jsonl`, `sink` to `inproc`, and `time_mode` to `stepped`. `sink_target` is required for `file` and `http-push`. Optional `entities`, `scenario_profile`, `start_time`, and `label` are recorded in the world configuration. `explore: true` stamps the world's run unblinded from creation: it is never scored. The world writes its run journal (`journal.jsonl`, `sealed/journal.jsonl`) in its run directory beside the ledger. |
 | `sim.clock.advance` | `world_id` plus exactly one of `by_ns` or `to_ns` is required. `by_ns` is non-negative. `await_consumer` defaults false; when true, the call waits for the consumer’s quiescence report or returns `consumer_not_quiesced`. |
-| `sim.effector.invoke` | `token`, `effector`, `entity_id`, and unique `command_id` are required. `args` defaults to an empty object and is checked against the domain-declared argument schema. `at_ns` defaults to the current world clock. |
+| `sim.effector.invoke` | `token`, `effector`, `entity_id`, and unique `command_id` are required. `args` defaults to an empty object and is checked against the domain-declared argument schema. The call acts at the current world clock: an operator cannot date a call, because a dated call would probe hidden state at another time. |
 | `sim.consumer.report` | `token` and `run_id` are required. `quiesced_through_ns` is optional; `verdict` is optional when the consumer is reporting only quiescence. The response acknowledges acceptance and never includes a score. |
 | `sim.truth.seal` | `run_id` and a complete `ground_truth` object conforming to `ground-truth-v0.1` are required. It must happen before `sim.run.begin`. |
 | `sim.truth.reveal` | `run_id` is required. `unblind` defaults false; `unblind: true` permanently stamps the run and is allowed only after the scoring decision. |

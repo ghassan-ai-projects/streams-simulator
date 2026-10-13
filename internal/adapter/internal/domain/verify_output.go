@@ -88,11 +88,6 @@ func advanceTextPosition(line, col *int, value byte) {
 	}
 }
 
-// VerifyFailure decides whether a verification failed: "verified" always means
-// something was compared. The message is empty for a verification that passed.
-// diverged is true when a declared check ran and failed, so the result carries
-// the first divergence; it is false for an adapter that declares nothing to
-// check.
 func VerifyFailure(res *VerifyResult) (message string, diverged bool) {
 	if !res.SchemaChecked && !res.GoldenChecked {
 		return fmt.Sprintf("adapter verify: %s declares no conformance schema or golden to check", res.Adapter), false

@@ -41,7 +41,7 @@ func (checks domainChecks) channelDelivery(ch *model.Channel) error {
 }
 
 func (checks domainChecks) channelNoise(ch *model.Channel) error {
-	// Fail closed: declaring no noise with nonzero sigma otherwise uses the gaussian branch.
+
 	if ch.Noise.Model == "none" && ch.Noise.Sigma > 0 {
 		return checks.bad("/noise/sigma", "channel %q declares noise model none with sigma %v; sigma must be 0", ch.Name, ch.Noise.Sigma)
 	}
@@ -72,7 +72,7 @@ func (checks domainChecks) dynamicTarget(d *model.Dynamics) error {
 }
 
 func (checks domainChecks) dynamicTier(d *model.Dynamics) error {
-	// Unsupported tiers fail loudly rather than silently leave simulated state static.
+
 	if d.Tier == "F3" {
 		return checks.bad("/tier", "F3/FMU dynamics are the specified-but-unbuilt seam; not_implemented")
 	}

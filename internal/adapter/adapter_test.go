@@ -2,7 +2,9 @@ package adapter_test
 
 import (
 	"errors"
+	"fmt"
 	"io/fs"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -40,9 +42,25 @@ func TestLoadBytesValidatesADocumentAndNamesItsSource(t *testing.T) {
 	}
 }
 
+func fixtureEvents() ([]model.SimEvent, error) {
+	raw, err := os.ReadFile(filepath.Join(testsupport.RepositoryRoot(), "internal", "adapter", "internal", "domain", "testdata", "fixture.jsonl"))
+	if err != nil {
+		return nil, fmt.Errorf("fixture: %w", err)
+	}
+	var events []model.SimEvent
+	for _, line := range strings.Split(strings.TrimSpace(string(raw)), "\n") {
+		var ev model.SimEvent
+		if err := model.DecodeBytes([]byte(line), &ev); err != nil {
+			return nil, fmt.Errorf("fixture: %w", err)
+		}
+		events = append(events, ev)
+	}
+	return events, nil
+}
+
 func TestEngineRendersAStreamingSessionTheSameAsAWholeRun(t *testing.T) {
 	t.Parallel()
-	events, err := adapter.FixtureEvents()
+	events, err := fixtureEvents()
 	if err != nil || len(events) == 0 {
 		t.Fatalf("fixture: %d events (%v)", len(events), err)
 	}

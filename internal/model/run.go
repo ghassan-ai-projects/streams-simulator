@@ -5,10 +5,6 @@ import (
 	"runtime"
 )
 
-// RunArtifact is the single file that reproduces a run, matching
-// docs/contracts/run-artifact-v0.1.schema.json. If a failure cannot be
-// reduced to one of these, it is not reproducible and the architecture is
-// wrong.
 type RunArtifact struct {
 	SchemaVersion        string          `json:"schema_version"`
 	SimVersion           string          `json:"sim_version"`
@@ -34,39 +30,30 @@ type RunArtifact struct {
 	Platform             Platform        `json:"platform,omitempty"`
 	Counts               Counts          `json:"counts,omitempty"`
 	AppliedPerturbations []string        `json:"applied_perturbations,omitempty"`
-	// Mode is "evaluate" or "explore"; an explore run is unblinded from creation.
+
 	Mode string `json:"mode,omitempty"`
-	// JournalDigest and SealedJournalDigest are the digests of the run's
-	// observer and director journal streams (run-journal-v0.1); replay rebuilds
-	// both and verify compares them.
+
 	JournalDigest       string `json:"journal_digest,omitempty"`
 	SealedJournalDigest string `json:"sealed_journal_digest,omitempty"`
 }
 
-// ArtifactRef identifies a versioned data artifact (domain spec or adapter)
-// by digest.
 type ArtifactRef struct {
 	ID      string `json:"id"`
 	Version string `json:"version"`
 	Digest  string `json:"digest"`
 }
 
-// WorldConfig pins the parts of world creation that enter the determinism
-// tuple.
 type WorldConfig struct {
 	StartTimeNS     int64            `json:"start_time_ns"`
 	EntityIDs       []string         `json:"entity_ids"`
 	ScenarioProfile string           `json:"scenario_profile,omitempty"`
 	Sinks           []map[string]any `json:"sinks,omitempty"`
 	ClockMultiplier float64          `json:"clock_multiplier,omitempty"`
-	// Noiseless and ForceFailureMode are world-identity inputs: the world
-	// digest hashes them, so the artifact must carry them for a replay to
-	// rebuild the same world.
+
 	Noiseless        bool   `json:"noiseless,omitempty"`
 	ForceFailureMode string `json:"force_failure_mode,omitempty"`
 }
 
-// Command is one mutation in the total order that reproduces a run.
 type Command struct {
 	Seq          int64          `json:"seq"`
 	AtNS         int64          `json:"at_ns"`
@@ -75,8 +62,6 @@ type Command struct {
 	ResultDigest string         `json:"result_digest,omitempty"`
 }
 
-// Command operation names, matching the MCP director tools minus the "sim."
-// prefix.
 const (
 	OpWorldCreate    = "world.create"
 	OpEntityAdd      = "entity.add"
@@ -93,42 +78,33 @@ const (
 	OpRunEnd         = "run.end"
 )
 
-// Sink names.
 const (
 	SinkInproc   = "inproc"
 	SinkFile     = "file"
 	SinkHTTPPush = "http-push"
 )
 
-// Time modes. The run-artifact contract also lists "scaled"; nothing
-// implements it, so the simulator accepts only these two.
 const (
 	TimeStepped = "stepped"
 	TimeWall    = "wall"
 )
 
-// Scenario profile names every domain declares (the domain contract's closed
-// set): the suite generator composes a suite from them.
 const (
 	ProfileNominal           = "nominal"
 	ProfileCorrelatedCascade = "correlated_cascade"
 	ProfileSensorPathology   = "sensor_pathology"
 )
 
-// Platform is recorded so cross-architecture digest divergence is
-// diagnosable. Not part of the determinism tuple.
 type Platform struct {
 	GOOS      string `json:"goos,omitempty"`
 	GOARCH    string `json:"goarch,omitempty"`
 	GoVersion string `json:"go_version,omitempty"`
 }
 
-// CurrentPlatform reports the build platform.
 func CurrentPlatform() Platform {
 	return Platform{GOOS: runtime.GOOS, GOARCH: runtime.GOARCH, GoVersion: runtime.Version()}
 }
 
-// Counts summarizes a run.
 type Counts struct {
 	Emitted         int64 `json:"emitted,omitempty"`
 	Perturbed       int64 `json:"perturbed,omitempty"`
@@ -137,8 +113,6 @@ type Counts struct {
 	FaultsInjected  int64 `json:"faults_injected,omitempty"`
 }
 
-// StateSnapshot is the hidden world state of one entity at one emission,
-// kept by a run as director-only history for scoring and export.
 type StateSnapshot struct {
 	Seq    int64              `json:"seq"`
 	TimeNS int64              `json:"time_ns"`

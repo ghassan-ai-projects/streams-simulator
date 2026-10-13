@@ -6,12 +6,8 @@ import (
 	"log/slog"
 )
 
-// applyPlant resolves the output value and energized state for an accepted command.
-// A bound Plant (e.g. the world oracle) is authoritative; otherwise the value is
-// the command's energize_field and energized means that field is positive — both
-// read from the capability catalog, never switched on an operation name.
 func (d *Device) applyPlant(cmd PlantCommand) (value float64, energized bool, err error) {
-	// Stuck devices accept without handing effects to the plant.
+
 	if d.faults.Stuck {
 		return 0, false, nil
 	}
@@ -100,7 +96,7 @@ func (d *Device) recordSafeTransition(confirmed bool) {
 		d.energized = false
 		d.safeState = true
 	} else {
-		// Preserve conservative evidence when a physical stop is unconfirmed.
+
 		d.energized = true
 		d.safeState = false
 	}

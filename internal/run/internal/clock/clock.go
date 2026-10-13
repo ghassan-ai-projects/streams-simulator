@@ -10,7 +10,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/wall"
 )
 
-// Stamp returns the current wall time as RFC 3339 with nanoseconds, UTC.
 func Stamp() string {
 	return wall.Now().UTC().Format(time.RFC3339Nano)
 }

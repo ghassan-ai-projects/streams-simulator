@@ -3,22 +3,9 @@ package domain
 import (
 	"encoding/json"
 	"fmt"
-	"maps"
 	"math"
-	"slices"
 	"sort"
 )
-
-func (c *Capabilities) loadLegacyTargets(targets map[string]legacyTargetDocument) error {
-	for _, name := range sortedStringKeys(targets) {
-		target, err := compileLegacyTarget(name, targets[name])
-		if err != nil {
-			return err
-		}
-		c.targets[name] = target
-	}
-	return nil
-}
 
 func (c *Capabilities) loadSafeStops(stops map[string]safeStopDocument) error {
 	for _, target := range sortedStringKeys(stops) {
@@ -29,7 +16,7 @@ func (c *Capabilities) loadSafeStops(stops map[string]safeStopDocument) error {
 		if stop.ExpiresAfterMS < 1 || stop.ExpiresAfterMS > 86400000 {
 			return fmt.Errorf("device: safe stop %q expires_after_ms must be between 1 and 86400000", target)
 		}
-		c.safeStops[target] = safeStopCapability{operation: stop.Operation, expiresAfterMS: stop.ExpiresAfterMS}
+		c.safeStops[target] = safeStopCapability{expiresAfterMS: stop.ExpiresAfterMS}
 	}
 	return nil
 }
@@ -73,7 +60,6 @@ func sortedStringKeys[V any](values map[string]V) []string {
 	return keys
 }
 
-// Digest returns the canonical identity of the loaded capability catalog.
 func (c *Capabilities) Digest() string {
 	if c == nil {
 		return ""
@@ -89,8 +75,6 @@ func (c *Capabilities) hasSafeStop(target string) bool {
 	return ok
 }
 
-// SafeStopNames returns the catalog's explicit safe-stop targets in
-// deterministic order.
 func (c *Capabilities) SafeStopNames() []string {
 	if c == nil {
 		return nil
@@ -104,43 +88,4 @@ func (c *Capabilities) target(name string) (TargetCapability, bool) {
 	}
 	tc, ok := c.targets[name]
 	return tc, ok
-}
-
-func compileLegacyTarget(name string, target legacyTargetDocument) (TargetCapability, error) {
-	if err := validateLegacyTarget(name, target); err != nil {
-		return TargetCapability{}, err
-	}
-	bounds, err := legacyTargetBounds(name, target.Bounds)
-	if err != nil {
-		return TargetCapability{}, err
-	}
-	if _, ok := bounds[target.EnergizeField]; !ok {
-		return TargetCapability{}, fmt.Errorf("device: target %q energize_field %q is not a bounded parameter", name, target.EnergizeField)
-	}
-	return TargetCapability{Operation: target.Operation, EnergizeField: target.EnergizeField, Bounds: bounds}, nil
-}
-
-func legacyTargetBounds(name string, declared map[string]legacyBoundDocument) (map[string][2]float64, error) {
-	bounds := make(map[string][2]float64, len(declared))
-	for _, field := range slices.Sorted(maps.Keys(declared)) {
-		bound := declared[field]
-		if !finite(bound.Min) || !finite(bound.Max) {
-			return nil, fmt.Errorf("device: target %q field %q has a non-finite bound", name, field)
-		}
-		if bound.Max < bound.Min {
-			return nil, fmt.Errorf("device: target %q field %q has max < min", name, field)
-		}
-		bounds[field] = [2]float64{bound.Min, bound.Max}
-	}
-	return bounds, nil
-}
-
-func validateLegacyTarget(name string, target legacyTargetDocument) error {
-	if target.Operation == "" {
-		return fmt.Errorf("device: target %q declares no operation", name)
-	}
-	if target.EnergizeField == "" {
-		return fmt.Errorf("device: target %q declares no energize_field", name)
-	}
-	return nil
 }

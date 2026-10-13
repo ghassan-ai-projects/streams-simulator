@@ -42,7 +42,7 @@ func baseReplayConfig(art *model.RunArtifact, spec *domain.Compiled, adapterSpec
 		RunID:      art.RunID,
 		Label:      "replay",
 		Explore:    art.Mode == journal.ModeExplore,
-		// Replay compares the journal bytes it rebuilds with the recorded ones.
+
 		retainJournal: true,
 	}
 }
@@ -62,10 +62,6 @@ func prepareReplay(art *model.RunArtifact, spec *domain.Compiled, adapterSpec *m
 	return spec, adapterSpec, result, nil
 }
 
-// checkReplayInputs compares the inputs with the digests the artifact
-// recorded. An artifact from another simulator version may carry digests
-// computed by that version's rules, so there a mismatch is reported in the
-// result and the replay still runs; with the same version it is an error.
 func checkReplayInputs(result *ReplayResult, art *model.RunArtifact, spec *domain.Compiled, adapterSpec *model.Adapter) error {
 	err := validateReplayInputs(art, spec, adapterSpec)
 	if err != nil && result.VersionMatch {

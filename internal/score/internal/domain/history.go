@@ -15,7 +15,7 @@ func hasOutcome(outcomes []string, wanted string) bool {
 
 func historyValue(ev Evidence, entity, state string, atNS int64) (float64, bool) {
 	var before historySample
-	// Prefer the first sample at/after the instant, otherwise the latest before it.
+
 	for _, snap := range ev.History {
 		value, ok := entityStateValue(snap.Entity, entity, snap.States, state)
 		if ok {
@@ -28,10 +28,6 @@ func historyValue(ev Evidence, entity, state string, atNS int64) (float64, bool)
 	return before.value, before.found
 }
 
-// historyValueBefore returns the latest captured sample strictly before t.
-// A pre-onset baseline must not read a sample at or after the onset: when
-// the fault lands on an emission boundary, that sample already carries the
-// fault and the deviation collapses to zero.
 func historyValueBefore(ev Evidence, entity, state string, atNS int64) (float64, bool) {
 	var before historySample
 	for _, snap := range ev.History {

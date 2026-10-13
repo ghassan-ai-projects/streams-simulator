@@ -189,14 +189,14 @@ ci-check: function-length fmt-check docs-check tidy build vet lint-ci test-ci de
 # ---- Tools ----------------------------------------------------------------
 # Level 2: the release gates fail closed when their tools are unavailable —
 # a green ci-check must mean the checks ran, not that they were skipped.
-deadcode: ## Detect unused exported functions
+deadcode: ## Fail on dead code and on production code only tests reach (except declared test hooks)
 	@if ! command -v deadcode >/dev/null 2>&1; then \
 	  echo "ERROR: deadcode is required for the release gate (install: go install golang.org/x/tools/cmd/deadcode@latest)"; \
 	  exit 1; \
 	elif [ "$(HAS_MAIN)" != "yes" ]; then \
 	  echo "(no main package yet -- skipping deadcode)"; \
 	else \
-	  deadcode -test ./...; \
+	  scripts/check-deadcode; \
 	fi
 
 vulncheck: ## Run govulncheck

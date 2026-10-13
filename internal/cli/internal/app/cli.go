@@ -14,23 +14,16 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/cli/internal/process"
 )
 
-// Build is the identity of the running binary; the manifest records it.
 type Build struct{ Version, Commit string }
 
-// session is what one command invocation reaches of its process.
 type session struct {
 	build  Build
 	stderr io.Writer
 	now    func() time.Time
 }
 
-// handler runs one command and returns the JSON document to print, or nil
-// when the command prints nothing.
 type handler func(s *session, args []string) (any, error)
 
-// command is one registered command. A command that owns stdout writes its
-// own protocol there, so the CLI never prints a document for it
-// (CLI_SURFACE §1).
 type command struct {
 	run        handler
 	ownsStdout bool
@@ -54,12 +47,10 @@ var commands = map[string]command{
 	"plantwire":   {run: cmdPlantWire},
 }
 
-// Main runs the command in the current process and returns its exit status.
 func Main(args []string, version, commit string) int {
 	return Run(args, Build{Version: version, Commit: commit}, process.Standard())
 }
 
-// Run dispatches the command and returns its process exit status.
 func Run(args []string, build Build, env process.Env) int {
 	s := &session{build: build, stderr: env.Stderr, now: env.Now}
 	if len(args) < 2 {
@@ -94,9 +85,6 @@ func (s *session) unknownCommand(stdout io.Writer, command string) int {
 	return s.fail(stdout, "", usageExit{code: 2, message: fmt.Sprintf("unknown command %q", command)})
 }
 
-// execute runs the handler and prints exactly one JSON document on stdout:
-// its result, or the failure document (CLI_SURFACE §1). It returns the exit
-// status.
 func (s *session) execute(stdout, documents io.Writer, name string, run handler, args []string) int {
 	result, err := run(s, args)
 	if err != nil {
@@ -111,8 +99,6 @@ func (s *session) execute(stdout, documents io.Writer, name string, run handler,
 	return 0
 }
 
-// fail reports err on stderr for people and on documents as a failure
-// document for tools. Help (-h) is not a failure.
 func (s *session) fail(documents io.Writer, name string, err error) int {
 	if exit, ok := asUsageExit(err); ok && exit.code == 0 {
 		return 0

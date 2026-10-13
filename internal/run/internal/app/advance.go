@@ -9,12 +9,6 @@ import (
 	rules "github.com/ghassan-ai-projects/streams-simulator/internal/run/internal/domain"
 )
 
-// Advance moves the world to toNS, delivering everything along the way.
-// awaitConsumer blocks until quiescence is reported through toNS; the wait
-// is bounded by DefaultQuiescenceTimeout and canceled by ctx. On a
-// quiescence timeout the world has already moved, so the advance is logged
-// (replay reproduces the same state), the run is marked incomplete, and the
-// emitted count is still returned alongside the error.
 func (r *Run) Advance(ctx context.Context, toNS int64, awaitConsumer bool) (int, error) {
 	emitted, err := r.advanceLocked(toNS, awaitConsumer)
 	if err != nil || !awaitConsumer {
@@ -26,7 +20,6 @@ func (r *Run) Advance(ctx context.Context, toNS int64, awaitConsumer bool) (int,
 	return emitted, nil
 }
 
-// advanceLocked advances under the command lock, refusing a finished run.
 func (r *Run) advanceLocked(toNS int64, awaitConsumer bool) (int, error) {
 	r.commandMu.Lock()
 	defer r.commandMu.Unlock()
@@ -39,7 +32,6 @@ func (r *Run) advanceLocked(toNS int64, awaitConsumer bool) (int, error) {
 	return r.advanceThroughBoundary(toNS, awaitConsumer)
 }
 
-// advanceThroughBoundary holds commandMu through delivery and durable logging.
 func (r *Run) advanceThroughBoundary(toNS int64, awaitConsumer bool) (int, error) {
 	emitted, err := r.advanceWorld(toNS)
 	if err != nil {
@@ -49,19 +41,15 @@ func (r *Run) advanceThroughBoundary(toNS int64, awaitConsumer bool) (int, error
 	if r.runErr != nil {
 		return emitted, r.runErr
 	}
-	// Log the moved world before quiescence, even when the consumer never reports.
+
 	r.journal.ClockAdvanced(r.journalNow(), toNS)
 	r.recordWorldCommand(model.OpClockAdvance, map[string]any{"to_ns": toNS, "await_consumer": awaitConsumer})
 	return emitted, r.persistAdvanceBoundary()
 }
 
-// Consumer synchronization releases commandMu so closed-loop effects can land.
 func (r *Run) waitForConsumer(ctx context.Context, toNS int64) error {
 	if err := r.awaitQuiescence(ctx, toNS); err != nil {
-		// Only a timeout is a simulator failure: a canceled wait is a
-		// caller-side abandonment and leaves the run open-loop. The failure
-		// state is written under the command mutex so a concurrent End or
-		// Score never reads it half-written.
+
 		if errors.Is(err, ErrConsumerNotQuiesced) {
 			r.commandMu.Lock()
 			r.fail(err)
@@ -85,14 +73,14 @@ func (r *Run) advanceWorld(toNS int64) (int, error) {
 }
 
 func (r *Run) flushPendingDeliveries(toNS int64) {
-	// Windowing perturbations release their records at the advance boundary.
+
 	for _, delivery := range r.Perturb.Flush(toNS) {
 		r.deliver(delivery)
 	}
 }
 
 func (r *Run) persistAdvanceBoundary() error {
-	// Trace and ledger bytes must reach file descriptors before acknowledgement.
+
 	if err := r.flushDurable(); err != nil {
 		r.fail(err)
 		return err

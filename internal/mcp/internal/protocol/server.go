@@ -12,22 +12,16 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-// Implementation identity advertised by the server.
 var implementation = &mcp.Implementation{Name: "streamsim", Version: model.SimVersion}
 
-// toolDef describes one tool for the SDK wiring.
 type toolDef struct {
 	name        string
 	description string
 	schema      json.RawMessage
-	// handler receives the decoded arguments and returns a JSON value.
+
 	handler func(ctx context.Context, args map[string]any) (any, error)
 }
 
-// addTool registers one tool with the SDK. The SDK validates every call
-// against the tool's declared schema before the handler runs; handlers keep
-// the cross-field and domain-dependent checks the static schema cannot
-// express (e.g. effector arguments validated against the loaded domain).
 func addTool(s *mcp.Server, def toolDef) {
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        def.name,

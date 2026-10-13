@@ -2,12 +2,12 @@
 package host
 
 import (
-	"bytes"
 	"cmp"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"slices"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/jsonvalue"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/domain"
 )
@@ -90,7 +90,7 @@ func (h *Host) Report() Report { return h.report }
 
 func ParseScript(raw []byte) ([]Scripted, error) {
 	var script []Scripted
-	if err := decodeStrict(raw, &script); err != nil {
+	if err := jsonvalue.DecodeStrict(raw, &script); err != nil {
 		return nil, fmt.Errorf("plantwire host script: %w", err)
 	}
 	script = named(script)
@@ -129,19 +129,10 @@ func checkStep(step *Scripted, seen map[string]bool) error {
 
 func ParseInventory(raw []byte) (map[string]string, error) {
 	var inventory map[string]string
-	if err := decodeStrict(raw, &inventory); err != nil {
+	if err := jsonvalue.DecodeStrict(raw, &inventory); err != nil {
 		return nil, fmt.Errorf("plantwire host inventory: %w", err)
 	}
 	return inventory, nil
-}
-
-func decodeStrict(raw []byte, target any) error {
-	decoder := json.NewDecoder(bytes.NewReader(raw))
-	decoder.DisallowUnknownFields()
-	if err := decoder.Decode(target); err != nil {
-		return fmt.Errorf("decode: %w", err)
-	}
-	return nil
 }
 
 func (h *Host) Accepted() bool { return h.accepted }

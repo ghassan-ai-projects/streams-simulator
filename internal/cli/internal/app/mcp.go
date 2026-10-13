@@ -30,9 +30,8 @@ func parseMCPOptions(args []string, stderr io.Writer) (mcpOptions, error) {
 	fs := newFlagSet("mcp", stderr)
 	fs.StringVar(&options.role, "role", "", "director")
 	fs.StringVar(&options.operatorAddr, "operator-addr", "", "serve the operator role over streamable HTTP at this listen address (e.g. 127.0.0.1:0); sim.world.create returns the endpoint with the token")
-	fs.StringVar(&options.domainsDir, "domains-dir", "domains", "domain specs directory")
-	fs.StringVar(&options.adaptersDir, "adapters-dir", "adapters", "adapters directory")
-	fs.StringVar(&options.outDir, "out", "runs", "run artifact output directory")
+	registerInputDirs(fs, &options.domainsDir, &options.adaptersDir)
+	registerRunFolder(fs, &options.outDir, "runs")
 	if err := parseOnlyFlags(fs, args); err != nil {
 		return mcpOptions{}, err
 	}

@@ -5,7 +5,5 @@ package contract
 
 import "embed"
 
-// Schemas holds the four device message schemas, one JSON file per record.
-//
 //go:embed schemas/*.json
 var Schemas embed.FS

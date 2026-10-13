@@ -35,8 +35,7 @@ func (l *Layer) withholdBackfill(a *applied, recs []Delivered, atNS int64) []Del
 		if !r.Delivered {
 			return []Delivered{r}
 		}
-		// Withhold during the gap (fromNS..untilNS); flush handled in
-		// Flush().
+
 		if atNS < a.UntilNS && a.UntilNS > 0 {
 			a.buffer = append(a.buffer, r)
 			return nil
@@ -69,7 +68,7 @@ func (l *Layer) withholdProducerRecords(a *applied, recs []Delivered, atNS int64
 		if !r.Delivered {
 			return []Delivered{r}
 		}
-		// Hold every event during the flap window; Flush republishes.
+
 		a.buffer = append(a.buffer, r)
 		return nil
 	})
@@ -83,8 +82,6 @@ func (l *Layer) truncateTimePrecision(a *applied, recs []Delivered, atNS int64) 
 	return rewriteObservedTimes(recs, truncatePrecision)
 }
 
-// rewriteObservedTimes re-encodes the observed time of every delivered record
-// and marks it rewritten; undelivered records pass through unchanged.
 func rewriteObservedTimes(recs []Delivered, rewrite func(string) string) []Delivered {
 	return mapRecs(recs, func(r Delivered) []Delivered {
 		if r.Delivered {
@@ -99,7 +96,7 @@ func nonMonotonicRecord(record Delivered) Delivered {
 	if !record.Delivered {
 		return record
 	}
-	// Force receipt before event time, which an honest consumer must reject.
+
 	eventTime, err1 := model.ParseTime(record.Event.EventTime)
 	observedTime, err2 := model.ParseTime(record.Event.ObservedTime)
 	if err1 == nil && err2 == nil && observedTime > eventTime {

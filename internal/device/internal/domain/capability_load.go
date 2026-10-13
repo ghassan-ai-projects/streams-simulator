@@ -9,18 +9,12 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/canonical"
 )
 
-// LoadCapabilities parses and validates a device capability catalog from
-// JSON. The canonical route form is the cross-repository contract; the legacy
-// target form remains accepted so old simulator fixtures continue to load.
-// Unknown fields and trailing JSON are rejected so a typo cannot silently
-// change the device's safety envelope. The canonical digest is retained as
-// the identity advertised in the device.state handshake.
 func LoadCapabilities(data []byte) (*Capabilities, error) {
 	doc, err := decodeCapabilities(data)
 	if err != nil {
 		return nil, err
 	}
-	digest, err := capabilitiesDigest(data, doc)
+	digest, err := digestRouteCapabilities(doc)
 	if err != nil {
 		return nil, err
 	}
@@ -47,14 +41,6 @@ func decodeCapabilities(data []byte) (capabilitiesDoc, error) {
 	return doc, nil
 }
 
-func capabilitiesDigest(data []byte, doc capabilitiesDoc) (string, error) {
-	var raw map[string]any
-	if err := json.Unmarshal(data, &raw); err != nil {
-		return "", fmt.Errorf("device: decode capabilities for digest: %w", err)
-	}
-	return digestCapabilitiesDocument(raw, doc)
-}
-
 func canonicalCatalog(doc capabilitiesDoc) canonicalCatalogDocument {
 	routes := make(map[string]canonicalRouteDocument, len(doc.Routes))
 	// determinism-safe: copies a map into a map.
@@ -79,14 +65,8 @@ func canonicalCatalogValue(doc capabilitiesDoc) (map[string]any, error) {
 }
 
 func (c *Capabilities) loadCatalog(doc capabilitiesDoc) error {
-	if len(doc.Routes) > 0 {
-		if err := c.loadRoutes(doc.Routes); err != nil {
-			return err
-		}
-	} else {
-		if err := c.loadLegacyTargets(doc.Targets); err != nil {
-			return err
-		}
+	if err := c.loadRoutes(doc.Routes); err != nil {
+		return err
 	}
 	return c.loadSafeStops(doc.SafeStops)
 }
@@ -105,25 +85,10 @@ func admitCapabilitiesDocument(doc capabilitiesDoc) error {
 	if doc.ProtocolVersion != ProtocolVersion {
 		return fmt.Errorf("device: capabilities protocol_version %d != %d", doc.ProtocolVersion, ProtocolVersion)
 	}
-	if len(doc.Routes) > 0 && len(doc.Targets) > 0 {
-		return fmt.Errorf("device: capabilities must use routes or targets, not both")
-	}
-	if len(doc.Routes) == 0 && len(doc.Targets) == 0 {
-		return fmt.Errorf("device: capabilities declare no routes or targets")
+	if len(doc.Routes) == 0 {
+		return fmt.Errorf("device: capabilities declare no routes")
 	}
 	return nil
-}
-
-func digestCapabilitiesDocument(raw map[string]any, doc capabilitiesDoc) (string, error) {
-	if len(doc.Routes) > 0 {
-		return digestRouteCapabilities(doc)
-	}
-	// Legacy target catalogs retain their historical unscoped identity.
-	digest, err := canonical.Digest(raw)
-	if err != nil {
-		return "", fmt.Errorf("device: digest capabilities: %w", err)
-	}
-	return digest, nil
 }
 
 func digestRouteCapabilities(doc capabilitiesDoc) (string, error) {

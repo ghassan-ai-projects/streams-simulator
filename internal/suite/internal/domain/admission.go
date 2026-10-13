@@ -9,7 +9,7 @@ import (
 
 func (g *suiteGeneration) attemptScenario() error {
 	g.suite.Attempts++
-	// Rejected attempts retain distinct identities and seeds.
+
 	attempt := g.attemptIndex
 	g.attemptIndex++
 	seed := g.cfg.Seed + attempt*0x9e3779b97f4a7c15

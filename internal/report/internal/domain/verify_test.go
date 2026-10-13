@@ -3,6 +3,7 @@ package domain
 import (
 	"testing"
 
+	"github.com/ghassan-ai-projects/streams-simulator/internal/canonical"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/journal"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
@@ -22,7 +23,7 @@ func TestVerifyComparesRecordedDigestsWithTheFiles(t *testing.T) {
 	}{
 		{"no artifact", Folder{}, NotChecked, nil},
 		{"nothing recorded", Folder{Artifact: artifact("", "", "")}, NotChecked, nil},
-		{"all match", Folder{Artifact: artifact(fileDigest(trace.Raw), journal.Digest(observer.Raw), ""), Trace: trace, Observer: observer},
+		{"all match", Folder{Artifact: artifact(canonical.DigestBytes(trace.Raw), journal.Digest(observer.Raw), ""), Trace: trace, Observer: observer},
 			FilesMatch, []string{CheckMatch, CheckMatch}},
 		{"edited trace", Folder{Artifact: artifact("sha256:00", "", ""), Trace: trace}, FilesDiffer, []string{CheckDiffers}},
 		{"missing sealed journal", Folder{Artifact: artifact("", "", "sha256:00")}, FilesDiffer, []string{CheckMissing}},

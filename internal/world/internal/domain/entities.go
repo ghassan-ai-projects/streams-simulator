@@ -7,7 +7,6 @@ import (
 	"strings"
 )
 
-// renderID expands the id template.
 func renderID(tmpl string, n int, params map[string]any) string {
 	out := strings.ReplaceAll(tmpl, "{n}", strconv.Itoa(n))
 	for {
@@ -19,8 +18,6 @@ func renderID(tmpl string, n int, params map[string]any) string {
 	}
 }
 
-// addEntity creates an entity with initial hidden state and schedules its
-// first emissions.
 func (w *World) addEntity(id string, set int, atNS int64) error {
 	if _, exists := w.entities[id]; exists {
 		return fmt.Errorf("world: entity %q already exists", id)
@@ -50,7 +47,6 @@ func birthStream(set int) string {
 	return "churn/births/" + strconv.Itoa(set)
 }
 
-// Schedule pushes an event onto the DES queue with a monotonic tiebreak.
 func (w *World) schedule(kind eventKind, entity, channel string, atNS int64, payload any) {
 	if atNS < 0 {
 		atNS = 0

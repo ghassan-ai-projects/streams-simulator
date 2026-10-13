@@ -1,13 +1,17 @@
 package jsonschema
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/jsonvalue"
+)
 
 func (s *Schema) validatePrimitive(v any, fail func(string)) {
 	s.validatePattern(v, fail)
 	if str, ok := v.(string); ok {
 		s.validateStringLimits(str, fail)
 	}
-	if f, ok := asFloat(v); ok {
+	if f, ok := jsonvalue.Number(v); ok {
 		s.validateNumberLimits(f, fail)
 	}
 }

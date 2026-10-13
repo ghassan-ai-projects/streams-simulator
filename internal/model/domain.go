@@ -37,7 +37,6 @@ type InstanceSet struct {
 	Override   *Override   `json:"override,omitempty"`
 }
 
-// Axes is the twelve-axis property vector.
 type Axes struct {
 	Rate        string   `json:"rate"`
 	Cardinality string   `json:"cardinality"`
@@ -59,14 +58,11 @@ type EntityCount struct {
 	Max     int `json:"max,omitempty"`
 }
 
-// Churn models entity birth and death during a run.
 type Churn struct {
 	BirthsPerHour float64 `json:"births_per_hour,omitempty"`
 	MeanLifetimeS float64 `json:"mean_lifetime_s,omitempty"`
 }
 
-// State is one hidden world variable. Nothing outside the director role may
-// ever read these.
 type State struct {
 	Name        string  `json:"name"`
 	Unit        string  `json:"unit,omitempty"`
@@ -76,7 +72,6 @@ type State struct {
 	Description string  `json:"description,omitempty"`
 }
 
-// Dynamics describes how one hidden state evolves.
 type Dynamics struct {
 	Target string `json:"target"`
 	Tier   string `json:"tier"`
@@ -87,7 +82,6 @@ type Dynamics struct {
 	F3     *F3Dyn `json:"f3,omitempty"`
 }
 
-// F0Dyn is a statistical generator: baseline + trend + seasonality + drift.
 type F0Dyn struct {
 	Baseline     float64       `json:"baseline,omitempty"`
 	TrendPerHour float64       `json:"trend_per_hour,omitempty"`
@@ -96,14 +90,12 @@ type F0Dyn struct {
 	Schedule     *Schedule     `json:"schedule,omitempty"`
 }
 
-// Seasonality is one sinusoidal component.
 type Seasonality struct {
 	PeriodS   float64 `json:"period_s"`
 	Amplitude float64 `json:"amplitude"`
 	PhaseRad  float64 `json:"phase_rad,omitempty"`
 }
 
-// F1Dyn is a first-order dynamics form integrated with fixed-step RK4.
 type F1Dyn struct {
 	Form           string     `json:"form"`
 	TimeConstantS  float64    `json:"time_constant_s,omitempty"`
@@ -137,28 +129,23 @@ type F1Dyn struct {
 	Clamp          *Clamp     `json:"clamp,omitempty"`
 }
 
-// F1Input is a driving state, with an optional coefficient. The schema
-// allows a bare string (coefficient 1.0) or an object.
 type F1Input struct {
 	State   string  `json:"state"`
 	Coef    float64 `json:"coef,omitempty"`
 	CoefSet bool    `json:"-"`
 }
 
-// Clamp is the value interval a state is kept within.
 type Clamp struct {
 	Min *float64 `json:"min,omitempty"`
 	Max *float64 `json:"max,omitempty"`
 }
 
-// F2Dyn is a named reference model from the standard library.
 type F2Dyn struct {
 	Model  string            `json:"model"`
 	Params map[string]any    `json:"params,omitempty"`
 	Inputs map[string]string `json:"inputs,omitempty"`
 }
 
-// F3Dyn is the FMI co-simulation seam: specified, not implemented.
 type F3Dyn struct {
 	FMU      string            `json:"fmu"`
 	Instance string            `json:"instance,omitempty"`
@@ -166,8 +153,6 @@ type F3Dyn struct {
 	Outputs  map[string]string `json:"outputs,omitempty"`
 }
 
-// Channel is one observation channel; it becomes the native event's
-// `channel` field.
 type Channel struct {
 	Name               string        `json:"name"`
 	Description        string        `json:"description,omitempty"`
@@ -191,20 +176,17 @@ type Channel struct {
 	AttackerControlled bool          `json:"attacker_controlled,omitempty"`
 }
 
-// Range is the declared nameplate range.
 type Range struct {
 	Min float64 `json:"min,omitempty"`
 	Max float64 `json:"max,omitempty"`
 }
 
-// Bias lets a hidden state corrupt a channel's reading (a fouled probe).
 type Bias struct {
 	State            string  `json:"state"`
 	Coef             float64 `json:"coef"`
 	NoiseScaleAtFull float64 `json:"noise_scale_at_full,omitempty"`
 }
 
-// Cadence is the emission schedule of a channel.
 type Cadence struct {
 	Mode         string  `json:"mode"`
 	PeriodS      float64 `json:"period_s,omitempty"`
@@ -214,25 +196,21 @@ type Cadence struct {
 	TriggerState string  `json:"trigger_state,omitempty"`
 }
 
-// Noise is the observation noise model.
 type Noise struct {
 	Model string  `json:"model"`
 	Sigma float64 `json:"sigma"`
 }
 
-// Drift is a slow calibration drift on the reading.
 type Drift struct {
 	RatePerHour float64 `json:"rate_per_hour,omitempty"`
 	Model       string  `json:"model,omitempty"`
 }
 
-// Availability is a producer up/down renewal model.
 type Availability struct {
 	Uptime float64 `json:"uptime,omitempty"`
 	MTTRS  float64 `json:"mttr_s,omitempty"`
 }
 
-// LinkDelay models transport delay: observed_time = event_time + delay.
 type LinkDelay struct {
 	Model  string  `json:"model"`
 	MeanS  float64 `json:"mean_s,omitempty"`
@@ -240,8 +218,6 @@ type LinkDelay struct {
 	MaxS   float64 `json:"max_s,omitempty"`
 }
 
-// Fault is a world fault: it changes hidden state and is what the reasoner
-// must diagnose.
 type Fault struct {
 	ID               string          `json:"id"`
 	Description      string          `json:"description,omitempty"`
@@ -254,7 +230,6 @@ type Fault struct {
 	Counterfactual   *Counterfactual `json:"counterfactual,omitempty"`
 }
 
-// FaultOnset is the onset shape of a fault's deviation.
 type FaultOnset struct {
 	Shape       string  `json:"shape"`
 	RatePerHour float64 `json:"rate_per_hour,omitempty"`
@@ -263,22 +238,18 @@ type FaultOnset struct {
 	DurationS   float64 `json:"duration_s,omitempty"`
 }
 
-// FaultEffect is one state delta a fault applies.
 type FaultEffect struct {
 	State          string  `json:"state"`
 	Delta          float64 `json:"delta"`
 	Multiplicative bool    `json:"multiplicative,omitempty"`
 }
 
-// Observability declares how detectability is computed: a detector
-// expression, not a channel name.
 type Observability struct {
 	Detector           Detector `json:"detector"`
 	FirstObservableSNR float64  `json:"first_observable_snr,omitempty"`
 	UnavoidableSNR     float64  `json:"unavoidable_snr,omitempty"`
 }
 
-// Detector is one of the four detector expressions.
 type Detector struct {
 	Form     string   `json:"form"`
 	Channel  string   `json:"channel,omitempty"`
@@ -288,7 +259,6 @@ type Detector struct {
 	Outputs  []string `json:"outputs,omitempty"`
 }
 
-// Counterfactual describes what happens with and without action.
 type Counterfactual struct {
 	IfNoAction         string `json:"if_no_action,omitempty"`
 	IfActionByDeadline string `json:"if_action_by_deadline,omitempty"`

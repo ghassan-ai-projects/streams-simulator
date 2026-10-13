@@ -18,8 +18,6 @@ func loop(ev Evidence, gt *model.GroundTruthRecord) LoopMetrics {
 	return m
 }
 
-// resolveTime scans the world after the first successful expected-effector
-// call for the primary affected state to return toward its pre-fault level.
 func resolveTime(ev Evidence, gt *model.GroundTruthRecord) (bool, int64) {
 	state, faulted, deviation, ok := recoveryTarget(ev, gt)
 	if !ok {
@@ -52,7 +50,7 @@ func recoveryTarget(ev Evidence, gt *model.GroundTruthRecord) (string, float64, 
 }
 
 func recoveryLevels(ev Evidence, gt *model.GroundTruthRecord, state string) (float64, float64, bool) {
-	// Onset samples may already carry the fault; baseline must precede onset.
+
 	baseline, ok := historyValueBefore(ev, gt.EntityID, state, gt.InjectionTimeNS)
 	if !ok {
 		return 0, 0, false
@@ -76,7 +74,7 @@ func firstSuccessfulCall(calls []world.EffectorCall, effector string) int64 {
 }
 
 func recoveryAfter(ev Evidence, entity, state string, start int64, level, deviation float64) (bool, int64) {
-	// Recovery means returning within 50% of the original deviation.
+
 	for _, snap := range ev.History {
 		if snap.Entity != entity || snap.TimeNS < start {
 			continue

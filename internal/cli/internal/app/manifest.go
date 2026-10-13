@@ -6,9 +6,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/release"
 )
 
-// cmdManifest writes the release manifest: the digests of the shipped domains
-// and adapters with the build identity and the author and reviewer identities,
-// optionally signed (CLI_SURFACE §1).
 func cmdManifest(s *session, args []string) (any, error) {
 	options, err := parseManifestOptions(args, s.stderr)
 	if err != nil {

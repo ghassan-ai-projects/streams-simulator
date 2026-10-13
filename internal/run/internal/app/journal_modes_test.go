@@ -188,7 +188,7 @@ func TestJournalDirectoryThatCannotBeCreatedFailsRunCreation(t *testing.T) {
 	}
 	spec, a := testBase(t)
 	_, err := New(t.Context(), Config{Domain: spec, Adapter: a, SinkName: model.SinkInproc, JournalDir: filepath.Join(blocker, "run")})
-	if err == nil || !strings.Contains(err.Error(), "run: journal: directory") {
+	if err == nil || !strings.Contains(err.Error(), "run: journal: open") {
 		t.Fatalf("New = %v", err)
 	}
 }

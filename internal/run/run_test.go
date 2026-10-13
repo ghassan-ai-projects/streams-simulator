@@ -91,7 +91,7 @@ func TestAnInvalidVerdictIsRefusedAndNeverKept(t *testing.T) {
 	if r.Verdict() != nil {
 		t.Fatal("no verdict before one is submitted")
 	}
-	if err := r.SubmitVerdict(&model.Verdict{}); err == nil || !strings.Contains(err.Error(), "run: verdict run_id \"\" does not match run \"r-3h6olxmxbko6q\"") {
+	if err := r.SubmitVerdict(&model.Verdict{}); err == nil || !strings.Contains(err.Error(), "run: verdict run_id \"\" does not match run \""+r.ID+"\"") {
 		t.Fatal("an empty verdict must be refused")
 	}
 	if r.Verdict() != nil {

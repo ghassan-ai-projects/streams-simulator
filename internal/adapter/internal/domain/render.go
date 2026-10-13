@@ -7,8 +7,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-// renderTemplate renders one record template; returns "" when the when-guard
-// excludes it.
 func (e *Engine) renderTemplate(t *model.RecordTemplate, ev *model.SimEvent) (string, error) {
 	ctx, err := e.renderContext(ev)
 	if err != nil {

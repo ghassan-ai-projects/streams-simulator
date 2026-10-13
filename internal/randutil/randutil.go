@@ -17,19 +17,14 @@ import (
 	"math"
 )
 
-// SplitMix64 is a 64-bit deterministic PRNG (the splitmix64 construction).
-// It is fast, seedable from a single uint64, and has good output
-// distribution for simulation noise. Not cryptographically secure.
 type SplitMix64 struct {
 	state uint64
 }
 
-// NewSplitMix64 returns a PRNG with the given seed.
 func NewSplitMix64(seed uint64) *SplitMix64 {
 	return &SplitMix64{state: seed}
 }
 
-// Next returns the next 64-bit value.
 func (s *SplitMix64) Next() uint64 {
 	s.state += 0x9e3779b97f4a7c15
 	z := s.state
@@ -38,12 +33,10 @@ func (s *SplitMix64) Next() uint64 {
 	return z ^ (z >> 31)
 }
 
-// Float64 returns a uniform value in [0, 1) with 53 bits of precision.
 func (s *SplitMix64) Float64() float64 {
 	return float64(s.Next()>>11) * (1.0 / (1 << 53))
 }
 
-// Intn returns a uniform value in [0, n). Panics if n <= 0.
 func (s *SplitMix64) Intn(n int) int {
 	if n <= 0 {
 		panic("randutil: Intn called with n <= 0")
@@ -52,7 +45,6 @@ func (s *SplitMix64) Intn(n int) int {
 	return int(s.Next() % uint64(n))
 }
 
-// Norm returns a standard normal sample via Box-Muller.
 func (s *SplitMix64) Norm() float64 {
 	u1 := s.Float64()
 	if u1 < 1e-300 {
@@ -62,8 +54,6 @@ func (s *SplitMix64) Norm() float64 {
 	return math.Sqrt(-2*math.Log(u1)) * math.Cos(2*math.Pi*u2)
 }
 
-// Exp returns an exponential sample with the given mean (>= 0).
-// A zero mean always returns 0.
 func (s *SplitMix64) Exp(mean float64) float64 {
 	if mean <= 0 {
 		return 0
@@ -75,21 +65,16 @@ func (s *SplitMix64) Exp(mean float64) float64 {
 	return -mean * math.Log(u)
 }
 
-// Lognormal returns a lognormal sample with the given mean and sigma
-// (parameters of the underlying normal distribution).
 func (s *SplitMix64) Lognormal(mean, sigma float64) float64 {
 	return math.Exp(mean + sigma*s.Norm())
 }
 
-// Fnv1a64 is the FNV-1a 64-bit hash of name. Deterministic across runs and
-// platforms.
 func Fnv1a64(name string) uint64 {
 	h := fnv.New64a()
 	_, _ = h.Write([]byte(name))
 	return h.Sum64()
 }
 
-// Substream returns a fresh PRNG for the named substream under seed.
 func Substream(seed uint64, name string) *SplitMix64 {
 	return NewSplitMix64(seed ^ Fnv1a64(name))
 }

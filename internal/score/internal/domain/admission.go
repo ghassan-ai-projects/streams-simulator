@@ -63,7 +63,7 @@ func classifiesLateRecords(ledger []model.LedgerRecord, bySeq map[int64][]string
 }
 
 func rejectsClockSkew(bySeq map[int64][]string, perturbations []string) bool {
-	// Skewed records must be rejected or classified malformed/out-of-contract.
+
 	if !hasPerturbation(perturbations, "clock_skew") {
 		return true
 	}

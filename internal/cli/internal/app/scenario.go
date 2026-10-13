@@ -9,8 +9,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
 )
 
-// cmdScenario exports the scenario that reproduces a recorded run
-// (docs/design/SCENARIO_FILE.md §4).
 func cmdScenario(s *session, args []string) (any, error) {
 	options, err := parseScenarioExport(args, s.stderr)
 	if err != nil {
@@ -19,7 +17,6 @@ func cmdScenario(s *session, args []string) (any, error) {
 	return exportScenario(options)
 }
 
-// exportOptions are scenario from-run's arguments.
 type exportOptions struct {
 	artifact, out, domainsDir, adaptersDir string
 }
@@ -28,8 +25,7 @@ func parseScenarioExport(args []string, stderr io.Writer) (exportOptions, error)
 	var options exportOptions
 	fs := newFlagSet("scenario from-run", stderr)
 	fs.StringVar(&options.out, "out", "", "scenario file to write (required)")
-	fs.StringVar(&options.domainsDir, "domains-dir", "domains", "domain specs directory (the export is checked against its domain)")
-	fs.StringVar(&options.adaptersDir, "adapters-dir", "adapters", "adapters directory")
+	registerInputDirs(fs, &options.domainsDir, &options.adaptersDir)
 	verb, err := parseCommandVerb(fs, args, "")
 	if err != nil {
 		return exportOptions{}, err
@@ -48,11 +44,6 @@ func admitScenarioExport(verb string, options exportOptions) error {
 	return nil
 }
 
-// exportScenario writes the scenario that reproduces a run (SCENARIO_FILE
-// §4): the run's inputs must still be the ones it recorded; effector calls
-// the world refused at admission are dropped; the result is checked against
-// its contract and then as run --scenario would check it. A run that cannot
-// be expressed as a runnable scenario exports nothing.
 func exportScenario(options exportOptions) (any, error) {
 	exported, err := run.ExportScenarioFile(context.Background(), options.artifact,
 		run.Directories{Domains: options.domainsDir, Adapters: options.adaptersDir})

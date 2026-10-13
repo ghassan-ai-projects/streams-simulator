@@ -8,7 +8,7 @@ import (
 func worldDigest(r *Run) string {
 	digest, err := canonical.Digest(worldIdentity(r, initialEntityValues(r)))
 	if err != nil {
-		// Values are canonical-supported types; surface violations rather than empty identity.
+
 		return "invalid-world-digest:" + err.Error()
 	}
 	return digest

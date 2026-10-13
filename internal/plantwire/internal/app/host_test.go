@@ -122,6 +122,10 @@ func (h *scriptedHost) Await(_ context.Context, until func(wire.Message) bool) (
 	return got, false, h.hangUp
 }
 
+func (h *scriptedHost) AwaitHandshake(ctx context.Context, until func(wire.Message) bool) ([]wire.Inbound, bool, error) {
+	return h.Await(ctx, until)
+}
+
 func (h *scriptedHost) WaitedMS() int64 { return 0 }
 
 func (h *scriptedHost) types() []string {

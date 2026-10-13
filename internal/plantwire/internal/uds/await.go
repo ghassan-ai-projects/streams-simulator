@@ -46,11 +46,15 @@ func firstError(err, fallback error) error {
 func (l *Link) Await(ctx context.Context, until func(domain.Message) bool) ([]domain.Inbound, bool, error) {
 	started := time.Now()
 	defer func() { l.waited = time.Since(started).Milliseconds() }()
-	return l.collect(ctx, until)
+	return l.collect(ctx, until, l.wait)
 }
 
-func (l *Link) collect(ctx context.Context, until func(domain.Message) bool) ([]domain.Inbound, bool, error) {
-	timer := time.NewTimer(l.wait)
+func (l *Link) AwaitHandshake(ctx context.Context, until func(domain.Message) bool) ([]domain.Inbound, bool, error) {
+	return l.collect(ctx, until, max(l.wait, HandshakeWait))
+}
+
+func (l *Link) collect(ctx context.Context, until func(domain.Message) bool, wait time.Duration) ([]domain.Inbound, bool, error) {
+	timer := time.NewTimer(wait)
 	defer timer.Stop()
 	var inbound []domain.Inbound
 	for len(inbound) < MaxRecordsPerWait {

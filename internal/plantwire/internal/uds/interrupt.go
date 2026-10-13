@@ -2,11 +2,10 @@ package uds
 
 import (
 	"context"
-	"os"
-	"os/signal"
-	"syscall"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/kernel"
 )
 
 func UntilInterrupted(ctx context.Context) (context.Context, context.CancelFunc) {
-	return signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
+	return kernel.UntilInterrupted(ctx)
 }

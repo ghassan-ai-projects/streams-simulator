@@ -8,12 +8,8 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/grading"
 )
 
-// scoreOptions are the inputs of the offline score command.
 type scoreOptions struct{ artifact, label, domainsDir, adaptersDir string }
 
-// cmdScore grades a finished run from its artifacts (CLI_SURFACE §1). A run
-// whose replay does not reproduce its recorded trace is not graded: the
-// command fails with the replay report as its result.
 func cmdScore(s *session, args []string) (any, error) {
 	options, err := parseScoreOptions(args, s.stderr)
 	if err != nil {
@@ -27,8 +23,6 @@ func cmdScore(s *session, args []string) (any, error) {
 	return card, nil
 }
 
-// gradingFailure restates the refusal to grade a run that does not replay as
-// a failed check carrying the replay report; any other failure is passed on.
 func gradingFailure(err error) error {
 	var mismatch *grading.ReplayMismatchError
 	if !errors.As(err, &mismatch) {
@@ -42,8 +36,7 @@ func parseScoreOptions(args []string, stderr io.Writer) (scoreOptions, error) {
 	fs := newFlagSet("score", stderr)
 	fs.StringVar(&options.artifact, "run", "", "run artifact (run.json)")
 	fs.StringVar(&options.label, "label", "", "ground truth label (JSON)")
-	fs.StringVar(&options.domainsDir, "domains-dir", "domains", "domain specs directory (the artifact is replayed to recover the effector calls)")
-	fs.StringVar(&options.adaptersDir, "adapters-dir", "adapters", "adapters directory")
+	registerInputDirs(fs, &options.domainsDir, &options.adaptersDir)
 	if err := parseOnlyFlags(fs, args); err != nil {
 		return scoreOptions{}, err
 	}

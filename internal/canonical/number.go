@@ -8,10 +8,6 @@ import (
 	"strings"
 )
 
-// canonicalNumber validates a JSON number literal and returns its canonical
-// form. Integer literals are returned verbatim (JSON already forbids leading
-// zeros, plus signs and trailing junk); non-integer literals are re-rendered
-// from their float64 value per ES Number::toString.
 func canonicalNumber(s string) (string, error) {
 	if s == "" {
 		return "", fmt.Errorf("canonical: empty number")
@@ -31,17 +27,13 @@ func integerLiteral(s string) (string, error) {
 	if !ok {
 		return "", fmt.Errorf("canonical: invalid integer literal %q", s)
 	}
-	// ES Number::toString(-0) is "0", including the literal fast path.
+
 	if integer.Sign() == 0 {
 		return "0", nil
 	}
 	return s, nil
 }
 
-// esNumber renders f per ECMAScript Number::toString(x, 10).
-// Shortest round-trip digits come from strconv; the decimal/exponent
-// notation boundaries follow ES: decimal when -6 < n <= 21, else
-// mantissa × 10^exponent with a single digit before the point.
 func esNumber(f float64) (string, error) {
 	if text, err, exact := exactNumber(f); exact {
 		return text, err
@@ -60,7 +52,7 @@ func exactNumber(f float64) (string, error, bool) {
 	if f == 0 {
 		return "0", nil, true
 	}
-	// Integral floats within exact int64 range render as integers.
+
 	if f == math.Trunc(f) && math.Abs(f) <= 1<<53 {
 		return strconv.FormatInt(int64(f), 10), nil, true
 	}
@@ -68,7 +60,7 @@ func exactNumber(f float64) (string, error, bool) {
 }
 
 func scientificDigits(f float64) (string, string, int, error) {
-	e := strconv.FormatFloat(f, 'e', -1, 64) // e.g. "-1.2345e+08"
+	e := strconv.FormatFloat(f, 'e', -1, 64)
 	em := strings.IndexByte(e, 'e')
 	mant, expStr := e[:em], e[em+1:]
 	exp, err := strconv.Atoi(expStr)
@@ -86,7 +78,7 @@ func mantissaDigits(mantissa string) (string, string) {
 		mantissa = mantissa[1:]
 	}
 	digits := strings.ReplaceAll(mantissa, ".", "")
-	// Strip leading zeros in the shortest representation (e.g. 0.5 -> "5").
+
 	return sign, strings.TrimLeft(digits, "0")
 }
 
@@ -98,7 +90,7 @@ func decimalNotation(sign, digits string, exp int) string {
 }
 
 func signedDecimalNotation(sign, digits string, exp int) string {
-	n := exp + 1 // digits before the decimal point
+	n := exp + 1
 	switch {
 	case n > 21 || n <= -6:
 		return sign + exponentNotation(digits, exp)

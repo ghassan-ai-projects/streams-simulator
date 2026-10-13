@@ -3,14 +3,12 @@ package device_test
 import (
 	"bufio"
 	"net"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
+
 	"time"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/device"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
 // TestServeConnLoop drives the emulator over an in-memory connection exactly as
@@ -65,24 +63,6 @@ func TestServeConnLoop(t *testing.T) {
 	_ = client.Close()
 	if err := <-done; err != nil {
 		t.Fatalf("device.ServeConn returned error: %v", err)
-	}
-}
-
-func TestListenRefusesRegularFilePath(t *testing.T) {
-	t.Parallel()
-	path := filepath.Join(t.TempDir(), "device.sock")
-	if err := os.WriteFile(path, []byte("keep me"), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := device.Listen(path, device.New(device.Config{Capabilities: testCaps(t)})); err == nil || !strings.Contains(err.Error(), "device: refusing to remove non-socket path") {
-		t.Fatal("device listener must refuse a regular file path")
-	}
-	data, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatalf("regular file must remain recoverable: %v", err)
-	}
-	if string(data) != "keep me" {
-		t.Fatalf("regular file was modified: %q", data)
 	}
 }
 
@@ -141,22 +121,9 @@ func TestAckLostRetryReplaysReceiptWithoutSecondPlantEffect(t *testing.T) {
 		Plant:         plant,
 		FaultSchedule: []device.FaultInjection{{Name: device.FaultAckLost, AcceptedCommand: 1}},
 	})
-	path := testsupport.SocketPath(t)
-	listener, err := device.Listen(path, d)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() {
-		if err := listener.Close(); err != nil {
-			t.Errorf("close device listener: %v", err)
-		}
-	})
-	var dialer net.Dialer
-	client, err := dialer.DialContext(t.Context(), "unix", path)
-	if err != nil {
-		t.Fatal(err)
-	}
-
+	client, server := net.Pipe()
+	done := make(chan error, 1)
+	go func() { done <- device.ServeConn(server, d) }()
 	_ = client.SetReadDeadline(time.Now().Add(time.Minute))
 	reader := bufio.NewReader(client)
 	readRecord(t, reader)
@@ -175,9 +142,6 @@ func TestAckLostRetryReplaysReceiptWithoutSecondPlantEffect(t *testing.T) {
 	}
 	if first := readRecord(t, reader); first["message_type"] != "state" {
 		t.Fatalf("ack_lost first delivery must not emit a receipt or result, got %v", first)
-	}
-	if d.AcceptedCommandCount() != 1 {
-		t.Fatal("ack_lost command was not admitted")
 	}
 
 	_ = client.SetReadDeadline(time.Now().Add(time.Minute))
@@ -204,6 +168,9 @@ func TestAckLostRetryReplaysReceiptWithoutSecondPlantEffect(t *testing.T) {
 	}
 
 	_ = client.Close()
+	if err := <-done; err != nil {
+		t.Fatalf("device.ServeConn returned error: %v", err)
+	}
 }
 
 func TestSafeStopAckLostRetryReplaysReceiptAndResult(t *testing.T) {

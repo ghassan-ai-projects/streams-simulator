@@ -17,6 +17,7 @@ import (
 type Link interface {
 	Send(records []map[string]any) error
 	Await(ctx context.Context, until func(domain.Message) bool) (inbound []domain.Inbound, met bool, err error)
+	AwaitHandshake(ctx context.Context, until func(domain.Message) bool) (inbound []domain.Inbound, met bool, err error)
 	WaitedMS() int64
 }
 
@@ -119,7 +120,7 @@ func (s *Session) adopt(state domain.Message) error {
 }
 
 func (s *Session) awaitState(ctx context.Context) (domain.Message, error) {
-	inbound, met, err := s.link.Await(ctx, isType("STATE"))
+	inbound, met, err := s.link.AwaitHandshake(ctx, isType("STATE"))
 	for _, arrival := range inbound {
 		s.run.JournalWire("host", arrival.Record)
 	}

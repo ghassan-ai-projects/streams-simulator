@@ -2,7 +2,6 @@ package protocol
 
 import (
 	"context"
-	"strings"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/director"
@@ -61,7 +60,7 @@ func TestOperatorEndpointPerShippedDomain(t *testing.T) {
 			}
 			entity := np.Entities[0].ID
 			if len(effs) > 0 {
-				res, err := op.InvokeEffector(effs[0].Name, entity, "e2e-"+id, argsForSchema(effs[0].Schema, entity), 0)
+				res, err := op.InvokeEffector(effs[0].Name, entity, "e2e-"+id, testsupport.ArgsForSchema(effs[0].Schema, entity), 0)
 				if err != nil {
 					t.Fatalf("invoke %s on %s: %v", effs[0].Name, id, err)
 				}
@@ -80,37 +79,4 @@ func TestOperatorEndpointPerShippedDomain(t *testing.T) {
 			}
 		})
 	}
-}
-
-// argsForSchema synthesizes arguments for an effector from its declared
-// argument schema: required *_id strings bind to the entity, numbers to 1.
-func argsForSchema(schema map[string]any, entity string) map[string]any {
-	out := map[string]any{}
-	if schema == nil {
-		return out
-	}
-	props, _ := schema["properties"].(map[string]any)
-	required, _ := schema["required"].([]any)
-	for _, r := range required {
-		name, _ := r.(string)
-		if name == "" {
-			continue
-		}
-		p, _ := props[name].(map[string]any)
-		switch p["type"] {
-		case "string":
-			if strings.HasSuffix(name, "_id") {
-				out[name] = entity
-			} else {
-				out[name] = "x"
-			}
-		case "number", "integer":
-			out[name] = 1
-		case "boolean":
-			out[name] = true
-		default:
-			out[name] = ""
-		}
-	}
-	return out
 }

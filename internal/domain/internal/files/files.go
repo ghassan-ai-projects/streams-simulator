@@ -6,43 +6,36 @@ package files
 import (
 	"bytes"
 	"cmp"
-	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain/internal/domain"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/kernel"
 )
 
-// Load reads, schema-validates and structurally validates a domain spec from
-// a path. The returned Compiled carries the spec, its canonical digest, and
-// resolved defaults.
 func Load(path string) (*domain.Compiled, error) {
-	raw, err := os.ReadFile(path)
+	raw, err := kernel.Read(path)
 	if err != nil {
 		return nil, fmt.Errorf("domain: read %s: %w", path, err)
 	}
 	return domain.Parse(raw, path)
 }
 
-// LoadAll loads every domain spec in a directory (non-recursive), sorted by
-// path. A single unloadable domain fails the whole load: the catalog is a
-// fixed, reviewed set, and a silent skip would make coverage reports lie.
 func LoadAll(dir string) ([]*domain.Compiled, error) {
-	entries, err := os.ReadDir(dir)
+	names, err := kernel.Names(dir)
 	if err != nil {
 		return nil, fmt.Errorf("domain: list %s: %w", dir, err)
 	}
-	return loadPaths(domainPaths(dir, entries))
+	return loadPaths(domainPaths(dir, names))
 }
 
-func domainPaths(dir string, entries []os.DirEntry) []string {
+func domainPaths(dir string, names []string) []string {
 	var paths []string
-	for _, e := range entries {
-		if !e.IsDir() && strings.HasSuffix(e.Name(), ".json") {
-			paths = append(paths, filepath.Join(dir, e.Name()))
+	for _, name := range names {
+		if strings.HasSuffix(name, ".json") {
+			paths = append(paths, filepath.Join(dir, name))
 		}
 	}
 	sort.Strings(paths)
@@ -61,9 +54,6 @@ func loadPaths(paths []string) ([]*domain.Compiled, error) {
 	return out, nil
 }
 
-// LoadCatalog loads every domain in a directory into a catalog; an empty dir
-// selects "domains", the layout of the repository. A directory that holds no
-// domain is refused, because an empty catalog would report coverage of nothing.
 func LoadCatalog(dir string) (*domain.Catalog, error) {
 	dir = cmp.Or(dir, "domains")
 	specs, err := LoadAll(dir)
@@ -99,31 +89,8 @@ func Format(path string) (*FormatResult, error) {
 }
 
 func writeFormatted(path string, content []byte) error {
-	info, err := os.Stat(path)
-	if err != nil {
-		return fmt.Errorf("domain: stat %s: %w", path, err)
-	}
-	temp, err := stageFormatted(path, content, info.Mode().Perm())
-	if err != nil {
-		return err
-	}
-	if err := os.Rename(temp, path); err != nil {
-		_ = os.Remove(temp)
-		return fmt.Errorf("domain: replace %s: %w", path, err)
+	if err := kernel.Replace(path, content); err != nil {
+		return fmt.Errorf("domain: %w", err)
 	}
 	return nil
-}
-
-func stageFormatted(path string, content []byte, mode os.FileMode) (string, error) {
-	file, err := os.CreateTemp(filepath.Dir(path), ".format-*")
-	if err != nil {
-		return "", fmt.Errorf("domain: stage %s: %w", path, err)
-	}
-	_, writeErr := file.Write(content)
-	closeErr := file.Close()
-	if err := errors.Join(writeErr, closeErr, os.Chmod(file.Name(), mode)); err != nil {
-		_ = os.Remove(file.Name())
-		return "", fmt.Errorf("domain: stage %s: %w", path, err)
-	}
-	return file.Name(), nil
 }

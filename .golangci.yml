@@ -88,9 +88,13 @@ linters:
       # whose text is the wire text of the tool error: the protocol layer
       # hands them to the SDK as they are, because wrapping would change the
       # error codes' text.
+      # The kernel is the operating-system edge itself: its errors already
+      # name the path and the operation, and every caller is an edge.
       ignore-package-globs:
         - "*/streams-simulator/internal/*/internal/*"
         - "*/streams-simulator/internal/director"
+        - "*/streams-simulator/internal/kernel"
+        - "errors"
 
     # STANDARD M8: the mechanical floor for the clean-function bar. Do not
     # raise these to make a diff pass.

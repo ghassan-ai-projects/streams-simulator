@@ -6,28 +6,18 @@ import (
 	layer "github.com/ghassan-ai-projects/streams-simulator/internal/world/internal/domain"
 )
 
-// Options tune world construction. Everything here is part of the
-// determinism tuple when it changes output.
 type Options = layer.Options
 
-// InvokeResult is what an effector invocation returns.
 type InvokeResult = layer.InvokeResult
 
-// EffectorCall is the director-side record of one effector invocation: the
-// authority when scoring actions, not the consumer's claim.
 type EffectorCall = layer.EffectorCall
 
-// FaultInfo describes one active fault instance.
 type FaultInfo = layer.FaultInfo
 
-// Entity is one simulated producer, as hosts may read it.
 type Entity = layer.Entity
 
-// FailureMode is how an effector invocation went; its JSON form is the plain
-// string.
 type FailureMode = layer.FailureMode
 
-// Effector failure modes: the closed vocabulary of InvokeResult.Mode.
 const (
 	ModeOK                = layer.ModeOK
 	ModeSlow              = layer.ModeSlow
@@ -38,28 +28,16 @@ const (
 	ModeSilentNoEffect    = layer.ModeSilentNoEffect
 )
 
-// ErrInterlockRefused is the terminal refusal of an independent safety
-// system. Refusal is not a retryable error.
 var ErrInterlockRefused = layer.ErrInterlockRefused
 
-// ErrCommandIDReused is returned by InvokeEffector when a command_id inside
-// its idempotency window names a different request than it first did.
 var ErrCommandIDReused = layer.ErrCommandIDReused
 
-// ErrInvalidInvocation marks an effector invocation refused at admission
-// (missing command id, unknown or retired entity, undeclared effector,
-// refused arguments): the world is exactly as it was without the call.
 var ErrInvalidInvocation = layer.ErrInvalidInvocation
 
 const ReasonPreconditionRefused = layer.ReasonPreconditionRefused
 
-// MaxStartNS is the latest a world may start; a start outside [0,
-// MaxStartNS] is refused, so every event time stays representable.
 const MaxStartNS = layer.MaxStartNS
 
-// ErrClockBackwards is returned by Advance when the target time is before the
-// current world time.
 var ErrClockBackwards = layer.ErrClockBackwards
 
-// ErrNoSpec is returned by New when no domain spec is given.
 var ErrNoSpec = errors.New("world: a domain spec is required")

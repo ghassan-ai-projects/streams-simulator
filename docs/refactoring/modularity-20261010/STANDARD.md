@@ -21,9 +21,10 @@ layers from outside the module; gates forbid the facade from leaking them.
 | Module kind | Shape | Modules |
 | --- | --- | --- |
 | **Pure core** (rules, no I/O) | facade · `internal/domain` | `world`, `perturb`, `truth`, `audit`, `score` |
-| **Core with an edge** (rules plus files, sockets, timers) | facade · `internal/domain` · one edge package per external system · `internal/app` only when use cases orchestrate several layers and edges (`run`, `deviceworld`, `grading`, `release`, `refconsumer`, `suite`, `director`) | `run`, `device`, `adapter`, `domain`, `sink`, `refconsumer`, `deviceworld`, `grading`, `release`, `suite`, `director` (domain · app · capability entropy edge) |
+| **Core with an edge** (rules plus files, sockets, timers) | facade · `internal/domain` · one edge package per external system · `internal/app` only when use cases orchestrate several layers and edges (`run`, `deviceworld`, `grading`, `release`, `refconsumer`, `suite`, `director`) | `run`, `device`, `adapter`, `domain`, `sink`, `refconsumer`, `deviceworld`, `grading`, `release`, `suite`, `director` (domain · app · capability entropy edge), `journal`, `report`, `plantwire` (domain · app · host · uds) |
 | **Surface** (protocol or CLI) | facade · `internal/app` or `internal/protocol` · edge packages; no rule of its own | `mcp` (protocol only: protocol · transport edge, held to it by `TestMCPHoldsOnlyProtocol`; the use cases live in `director`), `cli` (wiring only: app · files and process edges, held to it by `TestCLIHoldsOnlyWiring`) |
-| **Foundation** (stateless library every module uses) | one package, no layers | `canonical`, `jsonschema`, `model`, `randutil`, `schemas`, `wall` |
+| **OS edge** (the operating system, no rules) | facade · edge packages only (`files`, `sockets`, `process`); imported only by module edge packages | `kernel` |
+| **Foundation** (stateless library every module uses) | one package, no layers | `canonical`, `jsonschema`, `jsonvalue`, `model`, `randutil`, `schemas`, `wall` |
 
 Foundations are the standard's explicit "N/A": the sibling repository leaves
 its stateless libraries (`ids`, `clock`, `contractsv1`, …) single-package for
@@ -36,7 +37,7 @@ protected by `ioEdges`.
 - **Facade** (`internal/<m>`): the module's whole public contract. Files:
   `doc.go` (package comment: the business capability), `api.go` (aliases of
   domain values, constants, sentinel errors), `service.go` (`Config`, `New`,
-  the facade type), `operations.go` (one documented delegating line per
+  the facade type), `operations.go` (one delegating line per
   operation). No loops, no I/O, no decisions. Exported signatures name facade
   types only: a type defined in an internal layer appears through an alias
   declared in `api.go`, never as `domain.X` in a signature (**no leaks**).
@@ -47,7 +48,7 @@ protected by `ioEdges`.
   exported mutable variables. A constructor may instead fail closed by
   *substituting the refusing default* when that default simply refuses the
   guarded operation (`truth.NewStore(nil)` counts every run as open, so reveal
-  is refused); it says so in its doc comment and has a test.
+  is refused); it has a test that says so.
 - **domain** (`internal/<m>/internal/domain`): vocabulary and every rule,
   including the module's in-memory aggregate and its invariants. Pure: no
   `os`, `net`, `os/exec`, clock read, entropy or goroutine. Time, randomness
@@ -108,7 +109,7 @@ fixture path constant copied into 7 packages.
 | agentic-stream | This repository | Why |
 | --- | --- | --- |
 | facade · app · domain · `store` | facade · app · domain · named edge packages (`durable`, `quiesce`, `wire`, `uds`, `files`) | No SQL; the edge is named after the external system. |
-| No comments inside modules | Not adopted (DEFERRED P-02) | Churn without structural value; exported symbols stay documented. |
+| No comments inside modules | Adopted in P7e (owner rule) | Production code keeps only the one-line package doc and gate markers (`//go:`, `//nolint` with a reason, `#nosec`, `determinism-safe`); names and tests carry the intent. |
 | `durableOwners` table ownership gate | `ioEdges` inventory plus an artifact-file ownership rule in `run` | The durable state here is run artifacts and the append-only ledger. |
 | Per-module dated folders | One program folder; `ROUNDS.md` per round | Tracking in one place. |
 

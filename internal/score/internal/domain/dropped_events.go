@@ -2,8 +2,6 @@ package domain
 
 import "github.com/ghassan-ai-projects/streams-simulator/internal/model"
 
-// Each dropped record requires its own detection; retain greedy ledger-order
-// matching so one detection cannot satisfy multiple drops.
 func detectsEachDrop(detections []model.Detection, ledger []model.LedgerRecord) bool {
 	times := detectionTimesByEntity(detections)
 	used := map[string]map[int]bool{}

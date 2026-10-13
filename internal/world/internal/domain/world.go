@@ -19,14 +19,8 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/randutil"
 )
 
-// MaxStartNS is the latest a world may start: half the 64-bit time range
-// (about the year 2116). Every event a world schedules lies a bounded delay
-// after its clock, so a start in [0, MaxStartNS] keeps every event time
-// representable; a start nearer the end of the range would wrap.
 const MaxStartNS = math.MaxInt64 / 2
 
-// admitWorld refuses a start outside [0, MaxStartNS] and an unknown forced
-// failure mode.
 func admitWorld(startNS int64, opts Options) error {
 	if startNS < 0 || startNS > MaxStartNS {
 		return fmt.Errorf("world: start %d is outside [0, %d]", startNS, int64(MaxStartNS))
@@ -37,28 +31,18 @@ func admitWorld(startNS int64, opts Options) error {
 	return nil
 }
 
-// Options tune world construction. Everything here is part of the
-// determinism tuple when it changes output.
 type Options struct {
-	// Noiseless disables channel observation noise: used by the observability
-	// solver, which diffs a faulted world against a clean one.
 	Noiseless bool
-	// EmitDisabled suppresses emission: used by the solver when only hidden
-	// state is needed.
+
 	EmitDisabled bool
-	// InitialEntities overrides the spec's entity count with explicit ids.
+
 	InitialEntities []string
-	// ForceEffectorOK makes every effector invocation apply its effect with
-	// mode ok, bypassing the declared failure-mode distribution: used by the
-	// solver's scenario setup, which must apply deterministically.
+
 	ForceEffectorOK bool
-	// ForceFailureMode forces every effector invocation into the given
-	// failure mode ("" = declared distribution): used by tests that must
-	// exercise a specific mode deterministically.
+
 	ForceFailureMode FailureMode
 }
 
-// World is one seeded simulated world.
 type World struct {
 	ID               string
 	Spec             *domain.Compiled
@@ -73,13 +57,12 @@ type World struct {
 	queue    priorityQueue
 	tiebreak uint64
 	seq      int64
-	// lastObservedNS serializes native delivery timestamps in emission order.
-	// The link-delay model supplies a timestamp candidate; this watermark adds
-	// the deterministic total-order tiebreak required by consumers.
+
 	lastObservedNS    int64
 	hasObservedTimeNS bool
 
 	subs        map[string]*randutil.SplitMix64
+	streamKey   string
 	entities    map[string]*Entity
 	entityOrder []string
 	nextIndex   []int
@@ -92,22 +75,16 @@ type World struct {
 	faultsByID    map[string]*activeFault
 	faultOrder    []string
 
-	effectorCalls  []EffectorCall
-	idempotent     map[string]*idempotentResult
-	interlockActed map[string]bool
-	argSchemas     map[*model.Effector]*jsonschema.Schema
+	effectorCalls []EffectorCall
+	idempotent    map[string]*idempotentResult
+	argSchemas    map[*model.Effector]*jsonschema.Schema
 
 	emitter func(model.SimEvent)
 
-	// deterministic entity-id source for autonomous churn
-	churnSeed uint64
-
-	// AdvanceCounters (per advance call, reset each call)
 	emittedThisAdvance int
 	effectsAppliedThis int
 }
 
-// Entity is one simulated producer.
 type Entity struct {
 	ID       string
 	Type     string
@@ -119,7 +96,6 @@ type Entity struct {
 	alive    bool
 }
 
-// channelRunState is the per-channel scheduling state of one entity.
 type channelRunState struct {
 	availDown   bool
 	availUntil  int64
@@ -131,8 +107,6 @@ type channelRunState struct {
 	walkLastNS  int64
 }
 
-// EffectorCall is the director-side record of one effector invocation: the
-// authority when scoring actions, not the consumer's claim.
 type EffectorCall struct {
 	CommandID        string         `json:"command_id"`
 	Effector         string         `json:"effector"`
@@ -150,19 +124,17 @@ type EffectorCall struct {
 }
 
 type idempotentResult struct {
-	request   string       // effector, entity and arguments the command_id first carried
-	result    InvokeResult // value copy of the answer it first received
+	request   string
+	result    InvokeResult
 	expiresNS int64
 }
 
-// New creates a world. The world id is derived deterministically from the
-// seed and domain, so replay reconstructs the same id.
 func New(spec *domain.Compiled, seed uint64, id string, startNS int64, opts Options) (*World, error) {
 	if err := admitWorld(startNS, opts); err != nil {
 		return nil, err
 	}
-	id = worldIdentity(spec, seed, id)
-	w := newWorldState(spec, seed, id, startNS, opts)
+	id, key := worldIdentity(spec, seed, id)
+	w := newWorldState(spec, seed, id, key, startNS, opts)
 	w.initializeRuntime(seed)
 	heap.Init(&w.queue)
 	ids := initialEntityIDs(spec, opts.InitialEntities)

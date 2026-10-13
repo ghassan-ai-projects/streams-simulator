@@ -12,10 +12,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
-// BeginRun opens a run after the director has sealed its ground-truth record.
-// Truth is intentionally a separate operation because the complete label is
-// generated from the selected scenario and fault, not from the human label
-// carried by run.begin.
 func (d *Director) BeginRun(worldID, label string) (map[string]any, error) {
 	w := d.World(worldID)
 	if w == nil {
@@ -27,8 +23,6 @@ func (d *Director) BeginRun(worldID, label string) (map[string]any, error) {
 	return map[string]any{"run_id": w.Run.ID, "truth_sealed": true}, nil
 }
 
-// SealTruth installs the director-only ground-truth record before a run is
-// opened. The record is copied and cannot be mutated through this pointer.
 func (d *Director) SealTruth(runID string, rec *model.GroundTruthRecord) error {
 	w := d.worldByRun(runID)
 	if w == nil {
@@ -43,7 +37,6 @@ func (d *Director) SealTruth(runID string, rec *model.GroundTruthRecord) error {
 	return nil
 }
 
-// EndRun finalizes the run and writes the artifact.
 func (d *Director) EndRun(worldID string) (map[string]any, error) {
 	w := d.World(worldID)
 	if w == nil {
@@ -52,8 +45,6 @@ func (d *Director) EndRun(worldID string) (map[string]any, error) {
 	return d.finalizeRun(w, worldID)
 }
 
-// RevealTruth returns the sealed label; unblind permits revealing on an
-// open run, permanently stamping it.
 func (d *Director) RevealTruth(runID string, unblind bool) (map[string]any, error) {
 	rec, err := d.Truth.Reveal(runID, unblind)
 	if err != nil {
@@ -67,7 +58,6 @@ func (d *Director) RevealTruth(runID string, unblind bool) (map[string]any, erro
 	return map[string]any{"ground_truth": rec}, nil
 }
 
-// SealStatus reports sealing state.
 func (d *Director) SealStatus(runID string) (map[string]any, error) {
 	sealed, unblinded, err := d.Truth.SealStatus(runID)
 	if err != nil {
@@ -76,7 +66,6 @@ func (d *Director) SealStatus(runID string) (map[string]any, error) {
 	return map[string]any{"sealed": sealed, "unblinded": unblinded}, nil
 }
 
-// Score computes the scorecard for a run's submitted verdict.
 func (d *Director) Score(runID string) (map[string]any, error) {
 	w := d.worldByRun(runID)
 	if w == nil {
@@ -88,7 +77,6 @@ func (d *Director) Score(runID string) (map[string]any, error) {
 	return d.scoreClosedRun(w, runID)
 }
 
-// VerifyRun replays a run artifact and compares digests.
 func (d *Director) VerifyRun(artifactPath string) (map[string]any, error) {
 	art, err := run.LoadArtifact(artifactPath)
 	if err != nil {
@@ -105,7 +93,6 @@ func (d *Director) VerifyRun(artifactPath string) (map[string]any, error) {
 	return d.verifyArtifact(art, spec, adap)
 }
 
-// AuditScenario runs the trivial-baseline audit on one injection.
 func (d *Director) AuditScenario(domainID, entityID, fault string, onsetNS, startNS int64, durationNS int64) (map[string]any, error) {
 	spec, panel, err := d.auditPanel(domainID)
 	if err != nil {
@@ -119,18 +106,12 @@ func (d *Director) AuditScenario(domainID, entityID, fault string, onsetNS, star
 	return map[string]any{"trivial": v.Trivial, "scores": v.Scores, "best": v.Best, "samples": v.Samples}, nil
 }
 
-// The audit defaults mirror the suite generator's (seed 1, 120 s samples, a
-// 72 h scenario from the default world start), so auditing one injection here
-// and generating it in a suite give the same verdict.
 const (
 	auditSeed          = uint64(1) ^ 0x5eed
 	auditSampleNS      = int64(120 * 1e9)
 	auditDefaultWindow = int64(72 * 3600 * 1e9)
 )
 
-// auditWindow fills in an omitted start (the default world start) and an
-// omitted duration (the suite's scenario length) instead of auditing one
-// sample at the Unix epoch.
 func auditWindow(startNS, durationNS int64) (int64, int64) {
 	if startNS == 0 {
 		startNS = model.DefaultStartTimeNS
@@ -177,14 +158,13 @@ func (d *Director) requireSealedRun(runID string) error {
 func (d *Director) finalizeRun(w *WorldRecord, worldID string) (map[string]any, error) {
 	dir := filepath.Join(d.OutDir, worldID)
 	art, err := w.Run.End(dir)
-	// A run that ended with a failure is still over: leaving it open would
-	// make its truth unrevealable and its score unobtainable forever.
+
 	d.markRunEnded(w)
 	if err != nil {
 		return nil, rules.ToolErrorf(rules.CodeDomainInvalid, "%v", err)
 	}
 	return map[string]any{
-		"run_artifact_path": filepath.Join(dir, "run.json"),
+		"run_artifact_path": filepath.Join(dir, model.FileRunArtifact),
 		"trace_digest":      art.ExpectedTraceDigest,
 		"reproducible":      art.Reproducible,
 	}, nil
@@ -220,7 +200,6 @@ func auditEntityIDs(spec *domain.Compiled) []string {
 	return world.PopulationIDs(spec, 0)
 }
 
-// scoringEvidence packs a closed run into the scorer's input.
 func scoringEvidence(r *run.Run) score.Evidence {
 	return score.Evidence{
 		RunID: r.ID, Domain: r.Domain(), Verdict: r.Verdict(), Ledger: r.Ledger(),

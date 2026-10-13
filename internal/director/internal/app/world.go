@@ -10,7 +10,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
 )
 
-// CreateWorld builds a world (sim.world.create).
 func (d *Director) CreateWorld(req WorldRequest) (map[string]any, error) {
 	cfg, err := d.worldConfig(req)
 	if err != nil {
@@ -18,7 +17,7 @@ func (d *Director) CreateWorld(req WorldRequest) (map[string]any, error) {
 	}
 	worldID, runID := d.reserveWorldIdentity()
 	cfg.RunID = runID
-	cfg.LedgerPath = filepath.Join(d.OutDir, worldID, "ledger.jsonl")
+	cfg.LedgerPath = filepath.Join(d.OutDir, worldID, model.FileLedger)
 	cfg.JournalDir = filepath.Join(d.OutDir, worldID)
 	r, err := run.New(d.ctx, cfg)
 	if err != nil {

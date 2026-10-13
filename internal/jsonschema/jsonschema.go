@@ -17,7 +17,6 @@ import (
 	"regexp"
 )
 
-// Error is one validation failure with a JSON-pointer path into the document.
 type Error struct {
 	Path string
 	Msg  string
@@ -30,7 +29,6 @@ func (e Error) Error() string {
 	return e.Path + ": " + e.Msg
 }
 
-// Schema is a compiled JSON Schema.
 type Schema struct {
 	types             []string
 	enum              []any
@@ -38,7 +36,7 @@ type Schema struct {
 	hasConst          bool
 	properties        map[string]*Schema
 	required          []string
-	additional        *Schema // nil means allowed (no constraint); NonNil means constraint
+	additional        *Schema
 	addAllowed        bool
 	items             *Schema
 	minItems          int

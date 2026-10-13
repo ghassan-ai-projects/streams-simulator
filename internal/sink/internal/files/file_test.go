@@ -34,7 +34,7 @@ func TestNewNamesAPathItCannotCreate(t *testing.T) {
 	if err := os.WriteFile(blocker, []byte("x"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := New(filepath.Join(blocker, "child", "trace.jsonl")); err == nil || !strings.Contains(err.Error(), "sink: mkdir") {
+	if _, err := New(filepath.Join(blocker, "child", "trace.jsonl")); err == nil || !strings.Contains(err.Error(), "sink: create") {
 		t.Fatalf("err = %v, want a mkdir failure", err)
 	}
 }
@@ -64,7 +64,7 @@ func TestFlushMakesBufferedLinesVisibleAndAClosedFileRefusesMore(t *testing.T) {
 	if err := f.Flush(); err == nil || !strings.Contains(err.Error(), "sink: flush") {
 		t.Fatalf("flush after close: %v", err)
 	}
-	if _, err := f.Close(); err == nil || !strings.Contains(err.Error(), "sink: flush") {
+	if _, err := f.Close(); err == nil || !strings.Contains(err.Error(), "sink: close") {
 		t.Fatal("closing twice must fail")
 	}
 }

@@ -19,7 +19,7 @@ func newReplayRun(ctx context.Context, art *model.RunArtifact, spec *domain.Comp
 		return nil, fmt.Errorf("run: world %w: artifact=%s current=%s", ErrDigestMismatch, art.WorldDigest, replay.Digest())
 	}
 	if art.Unblinded && art.Mode != journal.ModeExplore {
-		replay.Unblind() // the close of an unblinded run records it
+		replay.Unblind()
 	}
 	return replay, nil
 }
@@ -51,17 +51,12 @@ func finishReplayResult(replay *Run, art *model.RunArtifact, result *ReplayResul
 	return result
 }
 
-// noteIdentityDivergence compares what the trace digest does not cover: the
-// journal digests and the unblinded stamp. It reports whether both agree.
 func noteIdentityDivergence(replay *Run, art *model.RunArtifact, result *ReplayResult) bool {
 	noteJournalDivergence(replay, art, result)
 	stampMatches := noteStampDivergence(replay, art, result)
 	return stampMatches && len(result.JournalDiverged) == 0
 }
 
-// noteStampDivergence fails a replay whose unblinded stamp differs from the
-// artifact's: an explore run is unblinded by its mode, so clearing the flag in
-// run.json does not make it scorable.
 func noteStampDivergence(replay *Run, art *model.RunArtifact, result *ReplayResult) bool {
 	if replay.unblinded == art.Unblinded {
 		return true

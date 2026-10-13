@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/jsonvalue"
 )
 
-// refName accepts local definition references only.
 func refName(ref string) (string, error) {
 	if !strings.HasPrefix(ref, "#/$defs/") {
 		return "", fmt.Errorf("jsonschema: unsupported $ref %q (local #/$defs refs only)", ref)
@@ -14,8 +15,6 @@ func refName(ref string) (string, error) {
 	return strings.TrimPrefix(ref, "#/$defs/"), nil
 }
 
-// toInt reads a schema keyword that must be a non-negative integer. A value
-// of any other kind is reported by the second result rather than read as 0.
 func toInt(v any) (int, bool) {
 	if number, ok := v.(jsonNumber); ok {
 		return numberInteger(number)
@@ -40,7 +39,7 @@ func integerValue(v any) (int, bool) {
 }
 
 func toFloat(v any) (float64, bool) {
-	return asFloat(v)
+	return jsonvalue.Number(v)
 }
 
 func numberInteger(n jsonNumber) (int, bool) {
@@ -48,7 +47,6 @@ func numberInteger(n jsonNumber) (int, bool) {
 	return i, err == nil && i >= 0
 }
 
-// countKeyword reads the non-negative integer keyword key of m, if present.
 func countKeyword(m map[string]any, key string) (value int, present bool, err error) {
 	raw, ok := m[key]
 	if !ok {

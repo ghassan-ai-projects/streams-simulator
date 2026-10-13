@@ -1,10 +1,5 @@
 package app
 
-// Replay and verify: the run artifact is the single file that reproduces a
-// run. Replaying the command log — not re-issuing the original MCP calls —
-// is what makes an improvised session exactly reproducible, and it needs no
-// server.
-
 import (
 	"context"
 	"fmt"
@@ -17,22 +12,19 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
-// ReplayResult is the outcome of replaying a run artifact.
 type ReplayResult struct {
 	Matches         bool   `json:"matches"`
 	VersionMatch    bool   `json:"version_match"`
-	FirstDivergence *int   `json:"first_divergence,omitempty"` // 0-based record index; nil means no divergence
+	FirstDivergence *int   `json:"first_divergence,omitempty"`
 	GotDigest       string `json:"got_digest"`
 	WantDigest      string `json:"want_digest"`
 	Emitted         int64  `json:"emitted"`
-	Incomplete      bool   `json:"incomplete,omitempty"` // the original run did not reach a clean end
+	Incomplete      bool   `json:"incomplete,omitempty"`
 	Detail          string `json:"detail,omitempty"`
-	// JournalDiverged names the journal streams ("observer", "director") whose
-	// replay differs from the recorded digest or from the file beside the artifact.
+
 	JournalDiverged []string `json:"journal_diverged,omitempty"`
 }
 
-// LoadArtifact reads and validates a run artifact.
 func LoadArtifact(path string) (*model.RunArtifact, error) {
 	raw, err := durable.ReadArtifact(path)
 	if err != nil {
@@ -48,16 +40,11 @@ func LoadArtifact(path string) (*model.RunArtifact, error) {
 	return artifact, nil
 }
 
-// ReplayArtifact re-executes a run artifact's command log against a fresh
-// world and compares the delivered trace to the expected digest. sinkTarget
-// selects the replay sink ("" = inproc).
 func ReplayArtifact(ctx context.Context, art *model.RunArtifact, spec *domain.Compiled, adapterSpec *model.Adapter, sinkTarget string) (*ReplayResult, error) {
 	result, _, err := replayArtifactRun(ctx, art, spec, adapterSpec, sinkTarget)
 	return result, err
 }
 
-// replayArtifactRun is ReplayArtifact that also returns the replayed run, so
-// the caller can compare the journal bytes it rebuilt.
 func replayArtifactRun(ctx context.Context, art *model.RunArtifact, spec *domain.Compiled, adapterSpec *model.Adapter, sinkTarget string) (*ReplayResult, *Run, error) {
 	spec, adapterSpec, result, err := prepareReplay(art, spec, adapterSpec)
 	if err != nil {
@@ -73,16 +60,11 @@ func replayArtifactRun(ctx context.Context, art *model.RunArtifact, spec *domain
 	return finishReplayResult(replay, art, result), replay, nil
 }
 
-// ReplayEvidence is what replaying an artifact recovers beyond the digest
-// comparison: the effector calls the original run made, which the artifact's
-// command log cannot state (applied, refused or silent).
 type ReplayEvidence struct {
 	Result *ReplayResult
 	Calls  []world.EffectorCall
 }
 
-// ReplayArtifactEvidence replays like ReplayArtifact and also returns the
-// replayed world's effector calls, so offline scoring can grade the loop.
 func ReplayArtifactEvidence(ctx context.Context, art *model.RunArtifact, spec *domain.Compiled, adapterSpec *model.Adapter) (*ReplayEvidence, error) {
 	spec, adapterSpec, result, err := prepareReplay(art, spec, adapterSpec)
 	if err != nil {
@@ -140,10 +122,6 @@ func replayConfig(art *model.RunArtifact, spec *domain.Compiled, adapterSpec *mo
 	return cfg
 }
 
-// firstDivergentRecord names the first record the replay is missing or has
-// beyond the original run, from the delivery counts. The artifact carries only
-// the trace digest, not the records, so when the counts agree the position of
-// the first differing record is unknown and -1 is returned.
 func firstDivergentRecord(r *Run, art *model.RunArtifact) int {
 	replayed := int64(len(r.ledger))
 	if replayed == art.Counts.Emitted {

@@ -29,10 +29,10 @@ func parsePlantWireNodeOptions(args []string, stderr io.Writer) (plantWireNodeOp
 func registerPlantWireNodeFlags(fs *flag.FlagSet, o *plantWireNodeOptions) {
 	fs.StringVar(&o.hostSocket, "host-socket", "", "the host's owner-only unix socket (required)")
 	fs.StringVar(&o.domain, "domain", "", "domain id (required)")
-	fs.StringVar(&o.domainsDir, "domains-dir", "domains", "domain specs directory")
+	registerDomainsDir(fs, &o.domainsDir, "domains")
 	fs.StringVar(&o.adapter, "adapter", "native-jsonl", "adapter id")
-	fs.StringVar(&o.adaptersDir, "adapters-dir", "adapters", "adapters directory")
-	fs.StringVar(&o.out, "out", "", "run folder for the artifact and the journal (required)")
+	registerAdaptersDir(fs, &o.adaptersDir, "adapters")
+	registerRunFolder(fs, &o.out, "")
 	fs.StringVar(&o.sessionID, "session-id", "node-1", "session id")
 	fs.Uint64Var(&o.seed, "seed", 1, "world seed")
 	fs.Float64Var(&o.sliceS, "slice-s", 60, "world seconds per slice")

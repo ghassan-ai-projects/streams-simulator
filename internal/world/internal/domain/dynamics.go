@@ -7,24 +7,18 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/randutil"
 )
 
-// secondsPerNS converts nanoseconds to seconds.
 const secondsPerNS = 1e9
 
-// kick is a permanent state contribution that approaches its full delta
-// exponentially with a time constant, starting at startNS (after dead time).
 type kick struct {
 	entity  string
 	state   string
 	delta   float64
 	assign  bool
 	startNS int64
-	tauNS   float64 // 0 = instantaneous
-	applied bool    // set when the effect-start event pops
+	tauNS   float64
+	applied bool
 }
 
-// driverKey scopes a physical or shadow driver to one entity and state. A
-// state name alone is not an identity: two producers may expose the same
-// state while remaining physically independent.
 type driverKey struct {
 	entity string
 	state  string
@@ -40,22 +34,17 @@ func (k *kick) valueAt(t int64) float64 {
 	return k.delta * (1 - math.Exp(-float64(t-k.startNS)/k.tauNS))
 }
 
-// activeFault is one injected fault and its current contribution to each
-// affected state.
 type activeFault struct {
 	fault     *model.Fault
 	entity    string
 	onsetNS   int64
-	clearedNS int64 // 0 while active; > 0 once cleared (contribution reverts to 0)
+	clearedNS int64
 	severity  float64
-	// stochastic envelope state, advanced lazily on read.
+
 	walk     float64
 	walkStep int64
 }
 
-// envelopeAt returns the normalized onset envelope e(t) in [0, 1] for the
-// elapsed time since onset. Deterministic: intermittent and stochastic use
-// the fault's own substream, so no other injection surface is affected.
 func (f *activeFault) envelopeAt(t int64, rng *randutil.SplitMix64, dtNS int64) float64 {
 	elapsed := t - f.onsetNS
 	if elapsed < 0 {
@@ -67,8 +56,6 @@ func (f *activeFault) envelopeAt(t int64, rng *randutil.SplitMix64, dtNS int64) 
 	return f.onsetEnvelope(elapsed, t, rng, dtNS)
 }
 
-// contributionAt is this fault's additive or multiplicative contribution to
-// one affected state at time t, scaled by the injected severity.
 func (f *activeFault) contributionAt(state string, t int64, rng *randutil.SplitMix64, dtNS int64) (add, mult float64) {
 	for _, a := range f.fault.Affects {
 		if a.State != state {
@@ -123,8 +110,7 @@ func (f *activeFault) stochasticEnvelope(at int64, rng *randutil.SplitMix64, dt 
 	if dt <= 0 {
 		dt = 60 * secondsPerNS
 	}
-	// Whole steps only: the walk (and its random draws) is a function of the
-	// grid, not of when it is read.
+
 	for f.walkStep+dt <= at {
 		next := f.walkStep + dt
 		hours := float64(next-f.walkStep) / secondsPerNS / 3600

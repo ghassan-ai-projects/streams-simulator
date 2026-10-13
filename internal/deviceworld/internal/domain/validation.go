@@ -9,9 +9,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
-// ValidateBindings checks a complete device/world composition before a
-// listener is opened. The mapping remains data-defined; this function only
-// verifies that its names and argument shape agree with the loaded world.
 func ValidateBindings(w *world.World, bindings map[string]Binding, requiredTargets, requiredSafeStops []string) error {
 	if err := validateBindingCatalog(w, bindings); err != nil {
 		return err

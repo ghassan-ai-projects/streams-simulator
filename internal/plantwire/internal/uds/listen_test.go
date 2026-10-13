@@ -120,12 +120,16 @@ func TestAHostAnswerThatCannotBeEncodedEndsTheSession(t *testing.T) {
 }
 
 type stubPeer struct {
-	replies  []map[string]any
-	accepted bool
-	done     bool
+	replies     []map[string]any
+	accepted    bool
+	done        bool
+	doneOnFirst bool
 }
 
-func (p *stubPeer) Receive(domain.Inbound) []map[string]any { return p.replies }
+func (p *stubPeer) Receive(domain.Inbound) []map[string]any {
+	p.done = p.done || p.doneOnFirst
+	return p.replies
+}
 
 func (p *stubPeer) Accepted() bool { return p.accepted }
 

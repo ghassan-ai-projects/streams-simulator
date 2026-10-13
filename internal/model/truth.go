@@ -1,8 +1,5 @@
 package model
 
-// GroundTruthRecord is the sealed label for one scenario, matching
-// docs/contracts/ground-truth-v0.1.schema.json. Reachable only under the
-// director role.
 type GroundTruthRecord struct {
 	ScenarioID             string             `json:"scenario_id"`
 	Domain                 string             `json:"domain"`
@@ -25,13 +22,11 @@ type GroundTruthRecord struct {
 	WorldStateReference    string             `json:"world_state_reference,omitempty"`
 }
 
-// Trivial-baseline verdicts.
 const (
 	TrivialNonTrivial = "non_trivial"
 	TrivialTrivial    = "trivial"
 )
 
-// ObservabilityInfo records how the onset timestamps were computed.
 type ObservabilityInfo struct {
 	DetectorForm       string   `json:"detector_form"`
 	Channels           []string `json:"channels"`
@@ -41,7 +36,6 @@ type ObservabilityInfo struct {
 	SolutionMethod     string   `json:"solution_method,omitempty"`
 }
 
-// Detector forms.
 const (
 	DetectorSingleChannel = "single_channel_snr"
 	DetectorDivergence    = "channel_divergence"
@@ -49,21 +43,15 @@ const (
 	DetectorConservation  = "conservation_residual"
 )
 
-// Solution methods for the onset solver.
 const (
 	SolveAnalytic = "analytic"
 	SolveNumeric  = "numeric"
 )
 
-// Epithet for the ground truth: "expected episode" is true for the positive
-// class; a missing episode on a positive scenario is a mechanism miss.
 func (g *GroundTruthRecord) IsPositive() bool {
 	return !g.IsNegativeClass && g.ExpectedEpisode
 }
 
-// SetupCall is a pre-fault effector invocation applied to both the clean
-// and faulted worlds, so the scenario context (an aerator running at
-// night) exists before the fault lands.
 type SetupCall struct {
 	Effector  string         `json:"effector"`
 	EntityID  string         `json:"entity_id"`

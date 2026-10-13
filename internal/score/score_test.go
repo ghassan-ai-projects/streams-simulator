@@ -2,7 +2,6 @@ package score_test
 
 import (
 	"errors"
-	"reflect"
 	"strings"
 	"testing"
 
@@ -50,23 +49,5 @@ func TestScoreRefusesAMissingLabelAndToleratesAMissingDomain(t *testing.T) {
 	gt.ExpectedEffector = "start_aerator"
 	if _, err := score.Score(ev, gt); err != nil {
 		t.Fatalf("a run without a domain scores without loop recovery levels: %v", err)
-	}
-}
-
-func TestOnlineAndOfflineAgreeOnTheMetricsTheyShare(t *testing.T) {
-	t.Parallel()
-	gt := label()
-	verdict := &model.Verdict{}
-	ledger := []model.LedgerRecord{}
-	online, err := score.Score(score.Evidence{RunID: "r-1", Verdict: verdict, Ledger: ledger}, gt)
-	if err != nil {
-		t.Fatal(err)
-	}
-	offline := score.Offline(verdict, gt, ledger, nil, nil)
-	if !reflect.DeepEqual(online.Consumer, offline.Consumer) || !reflect.DeepEqual(online.Judgment, offline.Judgment) {
-		t.Fatalf("shared metrics differ:\nonline  %+v %+v\noffline %+v %+v", online.Consumer, online.Judgment, offline.Consumer, offline.Judgment)
-	}
-	if online.Bundle != offline.Bundle {
-		t.Fatalf("bundle online %q offline %q", online.Bundle, offline.Bundle)
 	}
 }

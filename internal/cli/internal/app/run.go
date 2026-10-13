@@ -10,8 +10,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
 )
 
-// cmdRun executes one scenario: the file named by --scenario, or the one the
-// flags describe. Both take the same path (docs/design/SCENARIO_FILE.md §3).
 func cmdRun(s *session, args []string) (any, error) {
 	options, err := parseRunOptions(args, s.stderr)
 	if err != nil {
@@ -24,8 +22,6 @@ func cmdRun(s *session, args []string) (any, error) {
 	return executeScenarioRun(source, options)
 }
 
-// scenarioSource is the scenario a run executes and, for one the flags
-// describe, the flag behind each command.
 type scenarioSource struct {
 	scenario *model.Scenario
 	origins  []string
@@ -40,7 +36,6 @@ func runScenario(options runOptions) (scenarioSource, error) {
 	return scenarioSource{scenario: scenario, origins: origins}, err
 }
 
-// loadScenarioFile reads a scenario and checks it against scenario-v0.1.
 func loadScenarioFile(path string) (*model.Scenario, error) {
 	raw, err := files.Read(path)
 	if err != nil {
@@ -67,8 +62,6 @@ func executeScenarioRun(source scenarioSource, options runOptions) (any, error) 
 		"reproducible": summary.Reproducible, "emitted": summary.Emitted, "ledger": summary.Ledger}, nil
 }
 
-// scenarioCheckFailure is a scenario file's violation, or, for a scenario the
-// flags describe, a usage failure whose issues name the flags.
 func scenarioCheckFailure(options runOptions, source scenarioSource, err error) error {
 	if options.scenarioPath != "" {
 		return fmt.Errorf("streamsim: %w", model.WithSource(err, options.scenarioPath))

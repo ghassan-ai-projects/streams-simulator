@@ -14,22 +14,19 @@ import (
 
 func cmdCatalog(s *session, args []string) (any, error) {
 	fs := newFlagSet("catalog", s.stderr)
-	dir := fs.String("domains-dir", "", "directory of domain specs")
+	var dir string
+	registerDomainsDir(fs, &dir, "")
 	verb, err := parseCommandVerb(fs, args, "list")
 	if err != nil {
 		return nil, err
 	}
-	cat, err := domain.NewCatalogFromDir(*dir)
+	cat, err := domain.NewCatalogFromDir(dir)
 	if err != nil {
 		return nil, fmt.Errorf("streamsim: %w", err)
 	}
 	return catalogVerb(cat, verb, fs.Args())
 }
 
-// parseCommandVerb reads a command's verb and flags, with the flags allowed
-// before or after the verb; the arguments after them stay in fs.Args. With
-// no verb it returns defaultVerb. A known verb given more arguments than it
-// takes is a usage failure.
 func parseCommandVerb(fs *flag.FlagSet, args []string, defaultVerb string) (string, error) {
 	verb, err := readCommandVerb(fs, args, defaultVerb)
 	if err != nil {
@@ -54,7 +51,6 @@ func readCommandVerb(fs *flag.FlagSet, args []string, defaultVerb string) (strin
 	return fs.Arg(0), keepPositional(fs, fs.Args()[1:])
 }
 
-// verbArity is how many arguments a verb takes, and whether it is a verb.
 func verbArity(verb string) (int, bool) {
 	switch verb {
 	case "list", "coverage":
@@ -127,12 +123,13 @@ func validateDomainFile(path string) (any, error) {
 
 func cmdAdapter(s *session, args []string) (any, error) {
 	fs := newFlagSet("adapter", s.stderr)
-	dir := fs.String("adapters-dir", "", "directory of adapter files")
+	var dir string
+	registerAdaptersDir(fs, &dir, "")
 	verb, err := parseCommandVerb(fs, args, "list")
 	if err != nil {
 		return nil, err
 	}
-	return adapterVerb(verb, *dir, fs.Args())
+	return adapterVerb(verb, dir, fs.Args())
 }
 
 func adapterVerb(verb, dir string, args []string) (any, error) {
@@ -187,8 +184,6 @@ func verifyAdapterFile(path, base string) (any, error) {
 	return adapterVerdict(res)
 }
 
-// adapterVerdict fails the command when the adapter facade finds the
-// verification failed (a declared check failed, or none was declared).
 func adapterVerdict(res *adapter.VerifyResult) (any, error) {
 	report := adapterVerifyReport(res)
 	message, diverged := adapter.VerifyFailure(res)

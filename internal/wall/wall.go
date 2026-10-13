@@ -9,8 +9,6 @@ package wall
 
 import "time"
 
-// Now is unavailable under simdet. Any caller that reaches here has a
-// determinism bug.
 func Now() time.Time {
 	return time.Time{}
 }

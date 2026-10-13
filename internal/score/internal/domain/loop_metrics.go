@@ -37,7 +37,7 @@ func gradeEffectCall(m *LoopMetrics, call world.EffectorCall, claims map[string]
 	}
 	m.SilentNoEffectCalls++
 	claim, ok := claims[call.CommandID]
-	// The complete command/effector/entity/outcome tuple must match the authority log.
+
 	if ok && claim.OutcomeBelieved == model.BelievedSucceeded && claim.Effector == call.Effector && claim.EntityID == call.EntityID {
 		return 1
 	}

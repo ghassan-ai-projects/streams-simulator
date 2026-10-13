@@ -2,6 +2,7 @@ package domain
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
@@ -22,11 +23,14 @@ func pondOperatorResponse(t *testing.T, mode world.FailureMode) []byte {
 	if err != nil {
 		t.Fatal(err)
 	}
-	view := NewOperatorView("w-1", "token", &Nameplate{Effectors: []EffectorInfo{{Name: "start_aerator"}}}, w, nil)
+	view := NewOperatorView("w-1", "token", &Nameplate{Effectors: []EffectorInfo{{Name: "start_aerator"}}}, worldNow{w}, nil)
 	pond := w.EntityIDs()[0]
-	ack, err := view.Invoke("token", "start_aerator", pond, "cmd-1", map[string]any{"pond_id": pond, "level": 1.0}, w.Clock())
+	ack, err := view.Invoke("token", "start_aerator", pond, "cmd-1", map[string]any{"pond_id": pond, "level": 1.0})
 	if err != nil {
 		t.Fatal(err)
+	}
+	if calls := w.EffectorCalls(); len(calls) != 1 || calls[0].AtNS != w.Clock() {
+		t.Fatalf("an operator call was not dated at the world clock: %+v", calls)
 	}
 	raw, err := json.Marshal(ack)
 	if err != nil {
@@ -81,4 +85,14 @@ func TestAnUnacknowledgedCallRevealsNoOutcome(t *testing.T) {
 			t.Errorf("%s response %s, want %s", mode, got, want)
 		}
 	}
+}
+
+type worldNow struct{ *world.World }
+
+func (w worldNow) InvokeEffectorNow(effector, entityID, commandID string, args map[string]any) (*world.InvokeResult, error) {
+	result, err := w.InvokeEffector(effector, entityID, commandID, args, w.Clock())
+	if err != nil {
+		return nil, fmt.Errorf("test world: %w", err)
+	}
+	return result, nil
 }

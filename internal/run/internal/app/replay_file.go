@@ -9,12 +9,8 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-// Directories say where the domains and adapters a run names are looked up.
 type Directories struct{ Domains, Adapters string }
 
-// ReplayFile reproduces the run artifact at artifactPath against the domain
-// and adapter it recorded, found in the directories, and reports whether the
-// trace digest matches.
 func ReplayFile(ctx context.Context, artifactPath string, dirs Directories) (*ReplayResult, error) {
 	art, err := LoadArtifact(artifactPath)
 	if err != nil {
@@ -27,8 +23,6 @@ func ReplayFile(ctx context.Context, artifactPath string, dirs Directories) (*Re
 	return replayWithJournalFiles(ctx, art, spec, adap, filepath.Dir(artifactPath))
 }
 
-// replayWithJournalFiles replays the artifact and checks the journal files in
-// dir against the journals the replay rebuilt.
 func replayWithJournalFiles(ctx context.Context, art *model.RunArtifact, spec *domain.Compiled, adap *model.Adapter, dir string) (*ReplayResult, error) {
 	res, replay, err := replayArtifactRun(ctx, art, spec, adap, "")
 	if err != nil {

@@ -4,11 +4,13 @@ import (
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
 func TestCapabilityDigestIsBoundToLoadedData(t *testing.T) {
 	t.Parallel()
-	data, err := os.ReadFile("../../testdata/thermal.capabilities.json")
+	data, err := os.ReadFile(testsupport.DeviceCapabilities())
 	if err != nil {
 		t.Fatal(err)
 	}

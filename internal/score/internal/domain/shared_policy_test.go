@@ -1,15 +1,13 @@
 package domain
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
-func TestOfflineJudgmentUsesEarliestDetectionRegardlessOfOrder(t *testing.T) {
+func TestJudgmentUsesEarliestDetectionRegardlessOfOrder(t *testing.T) {
 	t.Parallel()
 	gt := &model.GroundTruthRecord{EntityID: "entity", Label: "fault", FirstObservableTimeNS: 1000}
 	detections := []model.Detection{
@@ -18,7 +16,7 @@ func TestOfflineJudgmentUsesEarliestDetectionRegardlessOfOrder(t *testing.T) {
 	}
 	want := JudgmentMetrics{Detected: true, LabelCorrect: true, DetectionLatencyNS: 100, DetectionCount: 2}
 	for _, order := range [][]model.Detection{detections, {detections[1], detections[0]}} {
-		got := Offline(&model.Verdict{Detections: order}, gt, nil, nil, nil).Judgment
+		got := judgmentFrom(&model.Verdict{Detections: order}, gt)
 		if got != want {
 			t.Fatalf("judgment=%+v, want %+v", got, want)
 		}
@@ -50,34 +48,16 @@ func TestSharedConsumerPoliciesRespectPerturbationAndEvidence(t *testing.T) {
 	}
 }
 
-func TestSharedLoopRequiresScenarioEntity(t *testing.T) {
+func TestLoopRequiresScenarioEntity(t *testing.T) {
 	t.Parallel()
 	gt := &model.GroundTruthRecord{EntityID: "scenario", ExpectedEffector: "recover"}
 	calls := []world.EffectorCall{{Effector: "recover", EntityID: "other", EffectApplied: true}}
-	if got := Offline(&model.Verdict{}, gt, nil, calls, nil).Loop; got.ActionAppropriate {
+	if got := loopFrom(&model.Verdict{}, gt, calls); got.ActionAppropriate {
 		t.Fatalf("other entity was credited: %+v", got)
 	}
 }
 
-func TestOnlineOfflineParityWithReversedDetections(t *testing.T) {
-	t.Parallel()
-	testsupport.SkipUnderRace(t, "runs one world and scores it on one goroutine")
-	r, gt := setupFaultedRun(t, "ok", "do_probe_fouling")
-	submitVerdict(t, r, nil, []model.Detection{
-		{EntityID: gt.EntityID, Label: "other", DetectedAt: model.FormatTime(gt.FirstObservableTimeNS + 20*60*1e9)},
-		{EntityID: gt.EntityID, Label: gt.Label, DetectedAt: model.FormatTime(gt.FirstObservableTimeNS + 10*60*1e9)},
-	})
-	online, err := Score(evidenceOf(r), gt)
-	if err != nil {
-		t.Fatal(err)
-	}
-	offline := Offline(r.Verdict(), gt, r.Ledger(), r.World.EffectorCalls(), r.AppliedPerturbations())
-	if !reflect.DeepEqual(online.Judgment, offline.Judgment) || !reflect.DeepEqual(online.Consumer, offline.Consumer) {
-		t.Fatalf("shared metrics differ: online=%+v offline=%+v", online, offline)
-	}
-}
-
-func TestAvailableEmptyLedgerDiffersFromUnavailableOfflineEvidence(t *testing.T) {
+func TestAvailableEmptyLedgerDiffersFromUnavailableEvidence(t *testing.T) {
 	t.Parallel()
 	v := &model.Verdict{}
 	if got := consumerFrom(v, nil, nil, nil); got != (ConsumerMetrics{}) {

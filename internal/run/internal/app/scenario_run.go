@@ -7,16 +7,11 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-// ScenarioRunOptions say where a scenario's domain and adapter are looked up,
-// which sink delivers the run and where its evidence is published (empty
-// publishes nothing). A run with an OutDir also writes its journal there while
-// it runs; Explore stamps the run unblinded from creation.
 type ScenarioRunOptions struct {
 	DomainsDir, AdaptersDir, SinkName, SinkTarget, OutDir string
 	Explore                                               bool
 }
 
-// RunSummary is what a finished scenario run left behind.
 type RunSummary struct {
 	RunID, TraceDigest string
 	Reproducible       bool
@@ -24,21 +19,14 @@ type RunSummary struct {
 	Ledger             int
 }
 
-// ScenarioCheckError is the violation the static check or dry run found in a
-// scenario, before any sink opened. Err is the violation itself.
 type ScenarioCheckError struct {
 	Err error
 }
 
-// Error is the violation's message.
 func (e *ScenarioCheckError) Error() string { return e.Err.Error() }
 
-// Unwrap returns the violation.
 func (e *ScenarioCheckError) Unwrap() error { return e.Err }
 
-// RunScenario resolves the scenario's domain and adapter, checks the scenario
-// against them before any sink opens (a violation is a *ScenarioCheckError),
-// then executes its commands in order and ends the run.
 func RunScenario(ctx context.Context, scenario *model.Scenario, options ScenarioRunOptions) (RunSummary, error) {
 	spec, adap, err := LoadInputs(options.DomainsDir, options.AdaptersDir, scenario.Domain, scenario.Adapter)
 	if err != nil {

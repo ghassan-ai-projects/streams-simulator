@@ -15,17 +15,10 @@ import (
 	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-// Endpoint is the operator role bound over streamable HTTP. The zero value
-// and nil are an endpoint that is not bound.
 type Endpoint struct {
 	server *http.Server
 }
 
-// BindOperator binds the operator role over streamable HTTP at addr so a
-// consumer process can connect with the capability token from
-// sim.world.create. Before serving it passes the endpoint URL to announce and
-// prints it on stderr, and it returns the endpoint to close when the director
-// session ends.
 func BindOperator(ctx context.Context, stderr io.Writer, operator *mcpsdk.Server, addr string, announce func(endpoint string)) (*Endpoint, error) {
 	handler := mcpsdk.NewStreamableHTTPHandler(func(*http.Request) *mcpsdk.Server { return operator }, nil)
 	ln, err := (&net.ListenConfig{}).Listen(ctx, "tcp", addr)
@@ -46,16 +39,12 @@ func serveOperator(stderr io.Writer, server *http.Server, listener net.Listener)
 	}
 }
 
-// Close stops the endpoint; closing an endpoint that is not bound does
-// nothing.
 func (e *Endpoint) Close() {
 	if e != nil && e.server != nil {
 		_ = e.server.Close()
 	}
 }
 
-// Serve runs the director server over transport until the session ends, then
-// closes the operator endpoint, if any.
 func Serve(ctx context.Context, director *mcpsdk.Server, operator *Endpoint, transport mcpsdk.Transport) error {
 	err := director.Run(ctx, transport)
 	operator.Close()

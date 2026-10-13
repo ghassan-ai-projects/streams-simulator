@@ -72,7 +72,7 @@ type cliEdge struct {
 }
 
 var cliEdges = map[string]cliEdge{
-	cliF: {[]string{"fmt", "os"}, 40},
+	cliF: {[]string{"github.com/ghassan-ai-projects/streams-simulator/internal/kernel"}, 40},
 	cliP: {[]string{"io", "os", "time"}, 35},
 }
 

@@ -17,9 +17,6 @@ func (w *World) validateArgs(eff *model.Effector, args map[string]any) error {
 	return nil
 }
 
-// CheckEffectorArgs reports whether effector is declared by the domain and
-// args satisfy its args_schema, without invoking it. The error states the
-// violation.
 func (w *World) CheckEffectorArgs(effector string, args map[string]any) error {
 	eff := w.Spec.Effector(effector)
 	if eff == nil {
@@ -28,7 +25,6 @@ func (w *World) CheckEffectorArgs(effector string, args map[string]any) error {
 	return w.argsViolation(eff, args)
 }
 
-// argsViolation is the first way args break the effector's args_schema.
 func (w *World) argsViolation(eff *model.Effector, args map[string]any) error {
 	if len(eff.ArgsSchema) == 0 {
 		return nil
@@ -43,7 +39,6 @@ func (w *World) argsViolation(eff *model.Effector, args map[string]any) error {
 	return nil
 }
 
-// pickFailureMode samples from the declared failure-mode distribution.
 func (w *World) pickFailureMode(entityID string, eff *model.Effector) FailureMode {
 	if w.forceEffectorOK {
 		return ModeOK
@@ -58,14 +53,10 @@ func (w *World) pickFailureMode(entityID string, eff *model.Effector) FailureMod
 	return sampleFailureMode(eff, rng)
 }
 
-// SetFailureMode overrides the failure-mode selection for subsequent
-// invocations ("" restores the declared distribution). Test-only knob; the
-// distribution is fixed per run otherwise.
 func (w *World) SetFailureMode(mode FailureMode) {
 	w.forceFailureMode = mode
 }
 
-// ackLatency samples the ack latency; slow mode is 10x (bounded).
 func (w *World) ackLatency(entityID string, eff *model.Effector, mode FailureMode) float64 {
 	rng := w.substream(entityID + "/" + eff.Name + "/delay")
 	mean := acknowledgementMean(eff)

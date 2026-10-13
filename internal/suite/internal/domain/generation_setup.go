@@ -30,8 +30,6 @@ func prepareGeneration(cfg Config, prof *model.Profile) (*suiteGeneration, error
 		perturbCount: map[string]int{}, negativeFrac: negativeFraction(cfg)}, nil
 }
 
-// generationTools builds the oracle solver and the trivial-baseline panel a
-// suite generation labels and audits scenarios with.
 func generationTools(cfg Config) (*truth.Solver, *audit.Panel, error) {
 	solver, err := truth.NewSolver(cfg.Domain, cfg.Seed, cfg.SampleNS, 72*3600*1e9)
 	if err != nil {

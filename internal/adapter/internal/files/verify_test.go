@@ -20,8 +20,6 @@ func TestShippedAdaptersConform(t *testing.T) {
 	root := testsupport.AdaptersDir()
 	cases := map[string]int{"native-jsonl": 12, "agentic-stream": 14} // events vs preamble+events+postamble
 	for name, want := range cases {
-		name := name
-		want := want
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			res, err := Verify(filepath.Join(root, name+".adapter.json"), "", root)

@@ -19,7 +19,6 @@ func TestConformanceValidFramesDecode(t *testing.T) {
 		t.Fatalf("no valid conformance fixtures found: %v", err)
 	}
 	for _, file := range files {
-		file := file
 		t.Run(filepath.Base(file), func(t *testing.T) {
 			t.Parallel()
 			frame, err := os.ReadFile(file)
@@ -55,7 +54,6 @@ func TestConformanceInvalidFramesRejected(t *testing.T) {
 		"state-missing-capability-digest.json":       `validate state record: /capability_digest: missing required property "capability_digest"`,
 	}
 	for _, file := range files {
-		file := file
 		name := filepath.Base(file)
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()

@@ -2,21 +2,16 @@
 package files
 
 import (
-	"errors"
 	"fmt"
-	"io/fs"
-	"os"
 
+	"github.com/ghassan-ai-projects/streams-simulator/internal/kernel"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/report/internal/domain"
 )
 
 func Read(path string) (domain.Document, error) {
-	raw, err := os.ReadFile(path)
-	if errors.Is(err, fs.ErrNotExist) {
-		return domain.Document{}, nil
-	}
+	raw, present, err := kernel.ReadIfPresent(path)
 	if err != nil {
 		return domain.Document{}, fmt.Errorf("report: %w", err)
 	}
-	return domain.Document{Raw: raw, Present: true}, nil
+	return domain.Document{Raw: raw, Present: present}, nil
 }

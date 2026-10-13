@@ -6,9 +6,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-// crossCheck validates the parts the JSON schema cannot: transform arity,
-// source names, time/counter operand types, run_meta keys, template
-// placeholders, and the mandatory stable event identity.
 func crossCheck(a *model.Adapter, src string) error {
 	checks := adapterChecks{source: src}
 	if err := checks.checkTemplates(a); err != nil {

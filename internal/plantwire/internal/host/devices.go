@@ -3,6 +3,8 @@ package host
 import (
 	"slices"
 
+	"github.com/ghassan-ai-projects/streams-simulator/internal/jsonvalue"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/domain"
 )
 
@@ -36,21 +38,10 @@ func (h *Host) data(m domain.Message) {
 }
 
 func (h *Host) sample(d *device, metric string, raw any) {
-	if value, numeric := number(raw); numeric {
+	if value, numeric := jsonvalue.Number(raw); numeric {
 		h.samples++
 		d.values[metric], d.updated[metric] = value, h.samples
 	}
-}
-
-func number(value any) (float64, bool) {
-	switch typed := value.(type) {
-	case float64:
-		return typed, true
-	case interface{ Float64() (float64, error) }:
-		parsed, err := typed.Float64()
-		return parsed, err == nil
-	}
-	return 0, false
 }
 
 func (h *Host) quarantine(name, kind string) bool {

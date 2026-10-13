@@ -10,7 +10,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/truth"
 )
 
-// buildScenario constructs one candidate scenario and its audit verdict.
 func (g *suiteGeneration) buildScenario(seed, idx uint64, sampleFrac float64) (*Scenario, *model.GroundTruthRecord, *audit.Verdict, error) {
 	scenario := g.drawScenario(seed, idx, sampleFrac)
 	label, err := g.sealScenarioLabel(scenario)
@@ -23,7 +22,6 @@ func (g *suiteGeneration) buildScenario(seed, idx uint64, sampleFrac float64) (*
 	return g.gradeScenario(scenario, label)
 }
 
-// sealScenarioLabel identifies candidates with no observable signal before audit.
 func (g *suiteGeneration) sealScenarioLabel(sc *Scenario) (*model.GroundTruthRecord, error) {
 	var descriptions []string
 	for _, p := range sc.Perturbations {
@@ -40,7 +38,6 @@ func (g *suiteGeneration) sealScenarioLabel(sc *Scenario) (*model.GroundTruthRec
 	return label, nil
 }
 
-// auditScenario evaluates the candidate's delivered, perturbed stream.
 func (g *suiteGeneration) auditScenario(sc *Scenario) (*audit.Verdict, error) {
 	verdict, err := g.panel.Audit(sc.EntityID, sc.Fault, sc.OnsetNS, sc.StartNS, g.entities, sc.DurationNS, sc.Setup, sc.Perturbations)
 	if err != nil {
@@ -57,7 +54,7 @@ func (g *suiteGeneration) drawScenario(seed, idx uint64, sampleFrac float64) *Sc
 	onset, preDegraded := g.drawOnset()
 	perturbations := drawPerturbations(g.rng, g.perturbCount, g.startNS, g.durationNS)
 	scenario := g.scenarioIdentity(seed, idx, entity, fault, onset, preDegraded, perturbations)
-	// Changing context can mask a pre-existing fault; omit setup then.
+
 	if !preDegraded {
 		scenario.Setup = g.suite.defaultSetup(g.cfg.Domain, entity, g.startNS)
 	}
@@ -86,8 +83,6 @@ func verdictTrivialString(v *audit.Verdict) string {
 	return model.TrivialNonTrivial
 }
 
-// pickFault samples a fault id per the profile weights and the negative
-// fraction.
 func (s *Suite) pickFault(cfg Config, prof *model.Profile, rng *randutil.SplitMix64, isNegative bool) string {
 	if isNegative {
 		if fault, found := negativeFault(cfg); found {
@@ -102,8 +97,6 @@ func (s *Suite) pickFault(cfg Config, prof *model.Profile, rng *randutil.SplitMi
 	return uniformPositiveFault(cfg, rng)
 }
 
-// defaultSetup translates profile data into scenario context calls. The
-// simulator never branches on a domain id or effector name here.
 func (s *Suite) defaultSetup(spec *domain.Compiled, entity string, startNS int64) []model.SetupCall {
 	prof := spec.Profile(s.Profile)
 	if prof == nil {

@@ -26,7 +26,6 @@ func TestRejections(t *testing.T) {
 		}, 0, "out_of_range"},
 	}
 	for _, tc := range cases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			mono := tc.clock
@@ -113,8 +112,7 @@ func TestSafeStopAckLostAndRebootWithholdTerminalExchange(t *testing.T) {
 
 func TestStuckActuatorIsDesiredNotObserved(t *testing.T) {
 	t.Parallel()
-	d := New(Config{Capabilities: testCaps(t)})
-	d.SetFaults(Faults{Stuck: true})
+	d := New(Config{Capabilities: testCaps(t), FaultSchedule: []FaultInjection{{Name: FaultStuck, AcceptedCommand: 1}}})
 	out := d.ApplyCommand(validCommand(t, nil))
 	if out.Receipt["accepted"] != true || out.Result["status"] != "executed" {
 		t.Fatalf("stuck actuator is still accepted and executed at the wire level: %v %v", out.Receipt, out.Result)
@@ -127,8 +125,7 @@ func TestStuckActuatorIsDesiredNotObserved(t *testing.T) {
 
 func TestAckLostAppliesEffectButWithholdsReceipt(t *testing.T) {
 	t.Parallel()
-	d := New(Config{Capabilities: testCaps(t)})
-	d.SetFaults(Faults{AckLost: true})
+	d := New(Config{Capabilities: testCaps(t), FaultSchedule: []FaultInjection{{Name: FaultAckLost, AcceptedCommand: 1}}})
 	out := d.ApplyCommand(validCommand(t, nil))
 	if !out.AckLost {
 		t.Fatal("ack_lost must flag the receipt as withheld from the wire")

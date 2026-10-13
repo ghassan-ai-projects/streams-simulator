@@ -1,20 +1,18 @@
 package domain
 
 import (
-	"encoding/json"
 	"fmt"
 	"maps"
 	"slices"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/jsonvalue"
 )
 
-// paramCheck validates one declared parameter value. Perturbation parameters
-// are fail-closed: a misspelled or unknown key is an error, not a silently
-// ignored default, and a declared key must have the declared type and range.
 type paramCheck func(v any) error
 
 func numInRange[T int64 | float64](lo, hi T) paramCheck {
 	return func(v any) error {
-		f, ok := asFloat(v)
+		f, ok := jsonvalue.Number(v)
 		if !ok {
 			return fmt.Errorf("expected a number, got %T", v)
 		}
@@ -40,8 +38,6 @@ func strEnum(values ...string) paramCheck {
 	}
 }
 
-// payloadsCheck validates the injection_probe payload list: a non-empty array
-// of strings. Payloads are the adversarial text families for the probe.
 func payloadsCheck(v any) error {
 	arr, ok := v.([]any)
 	if !ok {
@@ -58,10 +54,6 @@ func payloadsCheck(v any) error {
 	return nil
 }
 
-// paramRules maps each perturbation to its declared parameter keys. A
-// perturbation with no entry accepts no parameters. Every key here is read
-// by applyOne; anything else is rejected so a misspelled option can never be
-// silently approximated by a default.
 var paramRules = map[string]map[string]paramCheck{
 	Drop:           {"rate": numInRange(0.0, 1.0)},
 	DuplicateBurst: {"rate": numInRange(0.0, 1.0)},
@@ -85,11 +77,6 @@ var paramRules = map[string]map[string]paramCheck{
 	InjectionProbe: {"payloads": payloadsCheck},
 }
 
-// CheckApplication reports whether applying name with params over the window
-// from fromNS to untilNS is admitted, without applying it: the name is in
-// the catalog, the window can act (CheckWindow) and params holds only
-// declared parameters, in range (CheckParams). The error states the
-// violation.
 func CheckApplication(name string, params map[string]any, fromNS, untilNS int64) error {
 	if err := CheckParams(name, params); err != nil {
 		return err
@@ -97,8 +84,6 @@ func CheckApplication(name string, params map[string]any, fromNS, untilNS int64)
 	return CheckWindow(name, fromNS, untilNS)
 }
 
-// CheckParams reports whether name is in the catalog and params are
-// parameters it accepts.
 func CheckParams(name string, params map[string]any) error {
 	if !isName(name) {
 		return fmt.Errorf("unknown perturbation %q", name)
@@ -106,8 +91,6 @@ func CheckParams(name string, params map[string]any) error {
 	return paramsViolation(name, params)
 }
 
-// CheckWindow reports whether an activity window can act: untilNS is 0 (no
-// end) or not before fromNS.
 func CheckWindow(name string, fromNS, untilNS int64) error {
 	if untilNS != 0 && untilNS < fromNS {
 		return fmt.Errorf("%s window would end at %d, before it starts at %d", name, untilNS, fromNS)
@@ -115,8 +98,6 @@ func CheckWindow(name string, fromNS, untilNS int64) error {
 	return nil
 }
 
-// paramsViolation is the first parameter, in key order, that the
-// perturbation does not accept.
 func paramsViolation(name string, params map[string]any) error {
 	rules, declared := paramRules[name]
 	for _, key := range slices.Sorted(maps.Keys(params)) {
@@ -125,25 +106,6 @@ func paramsViolation(name string, params map[string]any) error {
 		}
 	}
 	return nil
-}
-
-// asFloat coerces a JSON number to float64 without accepting non-numeric
-// types. JSON numbers arrive as float64 or int64 in-process, as json.Number
-// when decoded from a command-log artifact, or as Go int from callers;
-// strings are never numeric.
-func asFloat(v any) (float64, bool) {
-	switch x := v.(type) {
-	case float64:
-		return x, true
-	case int64:
-		return float64(x), true
-	case int:
-		return float64(x), true
-	case json.Number:
-		f, err := x.Float64()
-		return f, err == nil
-	}
-	return 0, false
 }
 
 func validateParameter(name, key string, value any, rules map[string]paramCheck, declared bool) error {

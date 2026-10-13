@@ -5,25 +5,14 @@ import (
 	"io"
 )
 
-// WireFaults is a deterministic, scripted transport-fault plan applied to the
-// device's OUTBOUND frames (receipt/result/state), indexed by their 1-based
-// emission order across a connection. It models the transport hazards a real
-// serial/gateway link imposes — a lost ack, a duplicated delivery, a reordered
-// pair — without any wall-clock nondeterminism, so a test can assert an exact
-// outcome. (Device-level physical faults — ack_lost/stuck/reboot — live in
-// Faults; this layer is strictly about frames on the wire.)
 type WireFaults struct {
-	// Drop omits the frame at each listed 1-based index entirely.
 	Drop map[int]bool
-	// Duplicate emits the frame at each listed index twice.
+
 	Duplicate map[int]bool
-	// Swap delays the frame at each listed index by one position, so it is
-	// emitted immediately AFTER the next emitted frame (a reordered pair).
-	// Adjacent Swap indices are not supported and should be avoided.
+
 	Swap map[int]bool
 }
 
-// wireGate applies a WireFaults plan to a stream of whole frames.
 type wireGate struct {
 	faults    WireFaults
 	w         io.Writer
@@ -37,8 +26,6 @@ func newWireGate(w io.Writer, faults WireFaults) *wireGate {
 	return &wireGate{faults: faults, w: w}
 }
 
-// send offers one complete frame (including its trailing newline) to the wire,
-// applying drop/duplicate/swap by emission index.
 func (g *wireGate) send(frame []byte) error {
 	g.i++
 	index := g.i
@@ -55,7 +42,6 @@ func (g *wireGate) send(frame []byte) error {
 	return g.flush()
 }
 
-// flush emits any frame still held by a pending swap (e.g. at connection close).
 func (g *wireGate) flush() error {
 	if !g.heldValid {
 		return nil

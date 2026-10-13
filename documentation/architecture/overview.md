@@ -1,6 +1,6 @@
 # Architecture overview
 
-> Status: Implemented summary; release posture is conditional. Authority: current Go code and tests, with accepted deviations in `docs/DECISIONS.md`. Verified by: package map and executable dependency checks. Last verified: 2026-10-03.
+> Status: Implemented summary; release posture is conditional. Authority: current Go code and tests, with accepted deviations in `docs/DECISIONS.md`. Verified by: package map and executable dependency checks. Last verified: 2026-10-13.
 
 Streams Simulator is a layered Go application. The layers are intentionally boring: domain data enters a world, a delivery layer changes the observer’s evidence, a data-defined adapter renders that evidence, and a sink carries it to a consumer.
 
@@ -31,15 +31,24 @@ The ownership direction is downward; this summary omits shared foundation import
 
 ```text
 cmd/streamsim
-    → internal/cli
-        → mcp, run, suite, score, refconsumer, deviceworld
-            → audit, truth, world, perturb, adapter, sink, device
-                → domain, model, jsonschema, schemas, canonical, randutil
-
-deviceworld → device, world (world-backed emulator bridge)
+    → internal/cli                         wiring only
+        → mcp                              protocol only
+            → director                     world registry, run lifecycle, operator view
+        → report → grading → run, score    run folders: report, offline grading
+        → plantwire                        plant wire node and reference host
+        → release, suite, refconsumer, deviceworld → device
+            → run                          orchestration, ledger, replay, quiescence
+                → world, perturb, adapter, sink, journal, truth, audit
+                    → domain               domain specs (data)
+                        → model, jsonschema, jsonvalue, schemas, canonical, randutil, wall
+    every module's file, socket and signal edge → kernel (the one OS edge)
 ```
 
-The complete direct-import map is enforced by [`test/architecture`](../../test/architecture/dependencies_test.go). Application packages compose lower-level responsibilities; the world and device cores do not import their integration bridge. Ledger behavior belongs to `internal/run`.
+The complete direct-import map, each package's kind and layer, the domain-layer purity rule and the declared I/O edges are
+enforced by [`test/architecture`](../../test/architecture/dependencies_test.go). Every module is a facade over private layers
+(`domain`, `app`, named edges); only module edges call `kernel`, so file permissions, atomic writes and socket ownership are
+decided in one place. Application packages compose lower-level responsibilities; the world and device cores do not import
+their integration bridge. Ledger behavior belongs to `internal/run`.
 
 Files within a package separate loading, admission, execution, publication and related tests. Every Go file, including tests, is limited to 300 total lines. New packages require a distinct ownership boundary and a current caller; file size alone does not justify another package or Go module.
 
@@ -52,7 +61,12 @@ Files within a package separate loading, admission, execution, publication and r
 | Perturbation | Transform delivery and preserve a reason for each outcome. | Rewrite director-only world history. |
 | Adapter | Project native events into a declared wire format. | Change scenario semantics. |
 | Sink | Carry rendered records to in-process, file, or HTTP-push destinations. | Pretend external delivery is deterministic when it is not. |
-| MCP | Expose catalog, world control, truth, and operator capabilities. | Carry the event stream as a best-effort control push. |
+| MCP | Expose catalog, world control, truth, and operator capabilities as protocol only. | Hold a rule; carry the event stream as a best-effort control push. |
+| Director | Own the world registry, the run lifecycle and the operator view a token resolves to. | Speak a protocol. |
+| Journal | Write the observer and director streams while a run happens. | Put a truth-bearing record in the observer stream. |
+| Report / grading | Summarise a run folder; grade a finished run by replaying its artifact. | Trust a file that no digest covers. |
+| Plant wire | Speak the plant wire as a node (a run) or as the reference host. | Execute a command outside the run's effector path. |
+| Kernel | Touch the operating system: files, logs, sockets, signals. | Know a record, a file name or a format. |
 | Run/artifact | Record commands, counts, ledger, digests, and replay inputs. | Hide incomplete or divergent runs. |
 | Truth/scoring | Seal truth, accept verdicts, and compare evidence. | Reveal truth to the consumer before unblind. |
 | Device emulator | Enforce the vendored device wire contract and data-defined capability boundary. | Pretend emulator output is physical HIL evidence. |

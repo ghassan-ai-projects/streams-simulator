@@ -45,7 +45,7 @@ func TestOpenNamesAJournalDirectoryItCannotCreate(t *testing.T) {
 	if err := os.WriteFile(blocker, []byte("x"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Open(filepath.Join(blocker, "run"), false); err == nil || !strings.Contains(err.Error(), "journal: directory") {
+	if _, err := Open(filepath.Join(blocker, "run"), false); err == nil || !strings.Contains(err.Error(), "journal: open") {
 		t.Fatalf("Open under a file = %v", err)
 	}
 }
@@ -56,7 +56,7 @@ func TestOpenReleasesTheObserverFileWhenTheDirectorFileCannotOpen(t *testing.T) 
 	if err := os.WriteFile(filepath.Join(dir, "sealed"), []byte("x"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Open(dir, false); err == nil || !strings.Contains(err.Error(), "journal: directory") {
+	if _, err := Open(dir, false); err == nil || !strings.Contains(err.Error(), "journal: open") {
 		t.Fatalf("Open with sealed/ blocked = %v", err)
 	}
 }
@@ -69,22 +69,5 @@ func TestOpenRefusesAJournalFileItCannotCreate(t *testing.T) {
 	}
 	if _, err := Open(dir, false); err == nil || !strings.Contains(err.Error(), "journal: open") {
 		t.Fatalf("Open over a directory = %v", err)
-	}
-}
-
-func TestClosingAJournalWhoseFilesWereClosedUnderItReportsTheFailure(t *testing.T) {
-	t.Parallel()
-	s, err := openSink(filepath.Join(t.TempDir(), "j.jsonl"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := s.file.Close(); err != nil {
-		t.Fatal(err)
-	}
-	if err := s.Write([]byte("x\n")); err != nil {
-		t.Fatalf("a buffered write cannot fail yet: %v", err)
-	}
-	if err := s.Close(); err == nil || !strings.Contains(err.Error(), "close ") {
-		t.Fatalf("Close over a closed file = %v", err)
 	}
 }

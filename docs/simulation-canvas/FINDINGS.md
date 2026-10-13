@@ -6,7 +6,7 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 - **Phase**: a phase id from PLAN.md, or `next-goal` (Agentic Stream / gateway goal), or `—`.
 - **Status**: `open`, `done` (fixed, evidence in the phase review), `next-goal`, `dropped`
   (removed by an owner decision), `not-a-defect` (evidence in the review record).
-- Sources: `REVIEW` = [REVIEW-2026-10-12.md](REVIEW-2026-10-12.md) ids; `R0` = [reviews/P0.md](reviews/P0.md); `R1` = [reviews/P1.md](reviews/P1.md); `R2` = [reviews/P2.md](reviews/P2.md); `R2b` = [reviews/P2b.md](reviews/P2b.md); `R2d` = [reviews/P2d.md](reviews/P2d.md); `R5a` = [reviews/P5a.md](reviews/P5a.md); `R5b` = [reviews/P5b.md](reviews/P5b.md); `R6a` = [reviews/P6a.md](reviews/P6a.md); `R6b` = [reviews/P6b.md](reviews/P6b.md); `R6c` = [reviews/P6c.md](reviews/P6c.md); `R6d` = [reviews/P6d.md](reviews/P6d.md); `R6e` = [reviews/P6e.md](reviews/P6e.md); `R7c` = [reviews/P7c.md](reviews/P7c.md); `R7d` = [reviews/P7d.md](reviews/P7d.md); `R2c` = [reviews/P2c.md](reviews/P2c.md); `R3` = [reviews/P3.md](reviews/P3.md); `self` = found by the implementer.
+- Sources: `REVIEW` = [REVIEW-2026-10-12.md](REVIEW-2026-10-12.md) ids; `R0` = [reviews/P0.md](reviews/P0.md); `R1` = [reviews/P1.md](reviews/P1.md); `R2` = [reviews/P2.md](reviews/P2.md); `R2b` = [reviews/P2b.md](reviews/P2b.md); `R2d` = [reviews/P2d.md](reviews/P2d.md); `R5a` = [reviews/P5a.md](reviews/P5a.md); `R5b` = [reviews/P5b.md](reviews/P5b.md); `R6a` = [reviews/P6a.md](reviews/P6a.md); `R6b` = [reviews/P6b.md](reviews/P6b.md); `R6c` = [reviews/P6c.md](reviews/P6c.md); `R6d` = [reviews/P6d.md](reviews/P6d.md); `R6e` = [reviews/P6e.md](reviews/P6e.md); `R7c` = [reviews/P7c.md](reviews/P7c.md); `R7d` = [reviews/P7d.md](reviews/P7d.md); `R7e` = [reviews/P7e.md](reviews/P7e.md); `R2c` = [reviews/P2c.md](reviews/P2c.md); `R3` = [reviews/P3.md](reviews/P3.md); `self` = found by the implementer.
 
 ## Design review (REVIEW-2026-10-12)
 
@@ -114,7 +114,7 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 
 | ID | Source | Sev | Summary | Phase | Status |
 |---|---|---|---|---|---|
-| R2-01 | R2 | Med | No file the CLI or director reads has a size bound (scenario, domain, adapter, artifact, verdict, label); bound every input read, with a typed failure, and test each | P13 | open |
+| R2-01 | R2 | Med | No file the CLI or director reads has a size bound (scenario, domain, adapter, artifact, verdict, label); bound every input read, with a typed failure, and test each | P8b | open |
 | R2-02 | R2 | Low | Explicit `entity_ids` (scenario `world.entity_ids`, director `sim.world.create`) are not checked against the domain's entity count bounds or id template; decide and enforce with the v0.2 kinds-and-instances model | P5a | done |
 | R2-03 | R2 | Low | Errors from a missing `--domains-dir` repeat the `streamsim:` prefix three times (pre-existing in `loadSimulatorInputs`); wrap once; the fix is the same as R2c-02, so it is carried there | P13 | open |
 | R2-04 | R2 | Low | Perturbation windows with negative or pre-start times are accepted (negative `until` acts as "no end"); and the run-wide limits have no MCP-level test | P13 | open |
@@ -130,7 +130,7 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 | ID | Source | Sev | Summary | Phase | Status |
 |---|---|---|---|---|---|
 | R3-01 | R3 | Med | Consumer-readable files (`journal.jsonl`, `trace.jsonl`) share a run directory with director-only files (`ledger.jsonl`, `world_state_history.jsonl`, `run.json` with the command log); separate them (for example an `observer/` folder) and have the bridge and the director hand out only observer paths | P10 | open |
-| R3-02 | R3 | Low | Setting `incomplete: true` in `run.json` skips the journal comparison in `verify`; at least report that the journals were not compared, or compare up to the last replayable record | P13 | open |
+| R3-02 | R3 | Low | Setting `incomplete: true` in `run.json` skips the journal comparison in `verify`; at least report that the journals were not compared, or compare up to the last replayable record | P9 | open |
 | R3-03 | R3 | Low | Session records (`consumer.reported`, `pacing`) are outside the stream digest and unverified; validate them against the contract and never let scoring trust them | P10 | open |
 
 ## Found during implementation
@@ -153,7 +153,7 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 | R5b-01 | R5b | Low | Peer sigma pooling is by kind: a `peer_residual` detector on a channel added by an override pools peers that lack the channel | P6a | done |
 | R5b-02 | R5b | Low | Narrowing validation gaps: two narrow entries naming the same state, channel or argument are not refused; an argument `minimum` above the declared `maximum` (or the reverse) is not refused | P6a | done |
 | R5b-03 | R5b | Low | A profile's `entity_count` is ignored when the first instance set has names only | P6a | done |
-| R6a-01 | R6a | Low | Store stiffness and flow sign are unchecked: nothing bounds `conductance / capacity × dt` (RK4 diverges near 2.8) and a negative scale state reverses a flow; validate the bound and keep health scales non-negative | P13 | open |
+| R6a-01 | R6a | Low | Store stiffness and flow sign are unchecked: nothing bounds `conductance / capacity × dt` (RK4 diverges near 2.8) and a negative scale state reverses a flow; validate the bound and keep health scales non-negative | P12 | open |
 | R6b-01 | self | Low | Calendar billing periods (months of unequal length) and the projected demand of the open block are not modelled; `peak` uses a fixed `period_s` | P12 | open |
 | R6b-02 | R6b | Low | A read of an integrated state further in the past than the entity's longest step returns the current value (the snapshot history covers one longest step); runs read forward, so no output is affected; return a located error or keep a longer history | P13 | open |
 | R6c-01 | R6c | Low | Oracle and audit worlds apply profile setup calls before injecting faults, so a setup call dated after a fault onset is checked (interlock, preconditions) without the fault; inject faults first or refuse setup dated after the onset | P12 | open |
@@ -169,3 +169,16 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 | R7d-04 | R7d | Low | The node checks the socket and its directory by path and does not verify the peer's credentials after dialling (`LOCAL_PEERCRED`/`SO_PEERCRED` need a platform package); the owner-only directory is the protection | next-goal | next-goal |
 | R7d-05 | R7d | Low | The reference host sends one `STATE` and no heartbeats; a simulated node needs none (the barrier is its liveness), a hardware node will | next-goal | next-goal |
 | R7d-06 | R7d | Low | `DSTATE` reports `safe_state: false`, no outputs and quality `good`, and a `DQUERY` for an unknown device is not answered | P13 | open |
+| R7e-01 | R7e | High | World: snapshot history keeps only the longest step, so a chain of states with differing steps (1 s → 60 s → 45 s) reads trimmed history and depends on the read schedule (up to 0.48 off an independent recursion); `at()` falls back silently | P7f | open |
+| R7e-02 | R7e | High | World: a stochastic fault walk lives on the active fault with one RNG, so a dated effector or boundary check, or a frequent channel read, changes earlier readings; the look-ahead copy does not cover it (also R6e-02) | P7f | open |
+| R7e-03 | R7e | High | World: at one instant the first-issued assignment wins (strict `>`), and a lease renewed exactly at its lapse is overridden by the old fallback kick | P7f | open |
+| R7e-04 | R7e | Med | World: an assign effect with a time constant starts from 0, not from the current value; one-sided state bounds clamp to 0; dt/τ stability is unvalidated for lag, dead time, rc network and regime; overlapping id templates pass validation; a negative lease is accepted | P7f | open |
+| R7e-05 | R7e | Med | World: the P6a integration fix changed faulted hidden-state numbers (~1e-9) without a SimVersion bump; the behaviour pin is fault-free and short; truth labels a pulse observable on a channel that cannot record it; some oracles reuse production code (dead time, peak) | P7f | open |
+| R7e-06 | R7e | High | Run records: a reused run folder appended to `ledger.jsonl` (doubled rows); `verify`, `report` and `score` trust `ledger.jsonl`, the history, `verdict.json` and `label.json`, which no digest covers | P7f | open |
+| R7e-07 | R7e | High | Quiescence: a consumer can report quiescence through any time and switch off every later barrier; the watermark is not clamped to the world clock | P7f | open |
+| R7e-08 | R7e | Med | Run records: preamble and postamble lines are in the trace but not the observer journal; a torn ledger fails the report of a crashed run; a scenario may inject a fault whose onset is before the clock; the Markdown report prints verdict strings unescaped; session records are outside every digest | P7f | open |
+| R7e-09 | R7e | Med | Truth: the nameplate and `sim.effector.list` pass effector descriptions (scoring and fault hints) and full argument schemas to the operator | P7f | open |
+| R7e-10 | R7e | Med | Truth: the report shows truth whenever a `run.json` exists, without checking it belongs to the run of the journals | P7f | open |
+| R7e-11 | R7e | Med | Tests: no test that a met barrier resets the missed count, that the quiescence watermark never moves back, that a command with a higher epoch is refused, or for a perturbation window end; the host fuzz target is not in `make fuzz` | P7f | open |
+| R7e-12 | R7e | Med | Findings phases (done in P7e: R3-02 to P9, R2-01 to P8b, R6a-01 to P12): R3-02 belongs to P9 (the Verified badge), R2-01 to P8b (the bridge reads run files), R6a-01 to P12 (factory stores) | P7e | done |
+| R7e-13 | R7e | Low | `TestDirectorServesItsToolsUntilTheSessionEndsThenStopsTheOperatorEndpoint` failed once under a full parallel run (the operator endpoint still accepted a connection right after the session ended); it passes in isolation | P7f | open |

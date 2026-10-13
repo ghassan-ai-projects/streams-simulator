@@ -76,7 +76,7 @@ func injectAuditFaults(w *world.World, entity string, faults map[string]int64) e
 }
 
 func auditHorizon(start, duration int64) int64 {
-	// The audit is bounded by the scenario window or 24 hours.
+
 	horizon := start + 24*3600*1e9
 	if duration > 0 && start+duration < horizon {
 		horizon = start + duration

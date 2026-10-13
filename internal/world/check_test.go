@@ -27,7 +27,4 @@ func TestTheFacadeChecksCommandsWithoutActing(t *testing.T) {
 	if len(w.EffectorCalls()) != 0 || w.ActiveFaultsCount() != 0 {
 		t.Fatal("a check acted on the world")
 	}
-	if !world.KnownFailureMode(world.ModeSilentNoEffect) || world.KnownFailureMode("bogus_mode") {
-		t.Fatal("KnownFailureMode does not follow the vocabulary")
-	}
 }

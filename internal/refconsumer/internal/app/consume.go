@@ -13,25 +13,17 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/refconsumer/internal/mcpclient"
 )
 
-// Options say which trace to consume, where the verdict goes, how the detector
-// is tuned, and, when MCPEndpoint is set, the operator endpoint, capability
-// token and run the consumer actuates and reports against.
 type Options struct {
 	Trace, Out, Effector, MCPEndpoint, Token, RunID string
 	Threshold                                       float64
 	Window                                          int
 }
 
-// Summary is what a consumed trace left behind: the verdict file and how many
-// detections it reports.
 type Summary struct {
 	Out        string
 	Detections int
 }
 
-// Consume reads the trace, detects episodes in it and writes the verdict. With
-// an operator endpoint the consumer connects to it, actuates the effector on
-// detection and reports through it.
 func Consume(options Options) (Summary, error) {
 	raw, err := files.ReadTrace(options.Trace)
 	if err != nil {
@@ -83,8 +75,6 @@ func writeVerdict(v *model.Verdict, out string) error {
 	return nil
 }
 
-// fileSink accepts the verdict without reporting it anywhere: with no operator
-// endpoint the verdict file is the whole report.
 type fileSink struct{}
 
 func (f *fileSink) SubmitVerdict(v *model.Verdict) error { return nil }

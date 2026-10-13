@@ -6,7 +6,7 @@ import (
 )
 
 func (d *Device) applyIdentifiedCommand(command map[string]any, id, key, digest string, now int64) Outcome {
-	// A matching key replays execution evidence without another plant effect.
+
 	if prior, ok := d.dedup[key]; ok {
 		if prior.digest != digest {
 			return d.rejection(id, now, "duplicate")
@@ -60,8 +60,7 @@ func (d *Device) completeScheduledCommand(outcome Outcome, accepted bool, key, d
 }
 
 func (d *Device) rememberExecution(key, digest string, outcome Outcome) {
-	// Ack loss, duplication and disconnect belong to this wire delivery;
-	// a retry recovers the receipt and result without repeating them.
+
 	outcome.AckLost, outcome.Duplicate, outcome.Disconnect = false, false, false
 	outcome.Fault = ""
 	d.dedup[key] = dedupEntry{digest: digest, outcome: outcome}
@@ -86,7 +85,7 @@ func (d *Device) applyResponseFault(outcome *Outcome, injection string, ordinal 
 		outcome.Disconnect = true
 	case FaultReboot:
 		d.rebootLocked("boot-reboot-" + strconv.Itoa(ordinal))
-		// The old-boot response must not escape after reboot.
+
 		outcome.AckLost = true
 	}
 }

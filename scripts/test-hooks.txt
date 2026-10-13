@@ -1,0 +1,32 @@
+# Production symbols that only tests call, each with the reason it stays.
+# Format: <file>:<func>  <reason>. scripts/check-deadcode fails on any other.
+internal/adapter/operations.go:Load  tests build runs from one adapter file; the binary loads directories
+internal/domain/operations.go:LoadAll  tests load the shipped catalog; the binary builds catalogs through NewCatalog's callers
+internal/domain/service.go:NewCatalog  tests build a director catalog without the CLI
+internal/director/service.go:New  acceptance tests drive a director without the MCP transport
+internal/director/operations.go:Director.RunOf  acceptance tests read the run behind a world (director-side only)
+internal/director/internal/app/director.go:Director.RunOf  the facade's delegate for the hook above
+internal/mcp/operations.go:NewOperatorServerResolver  acceptance tests serve the operator role in process
+internal/refconsumer/service.go:New  run and acceptance tests drive the reference consumer in process
+internal/refconsumer/service.go:NewMCPOperator  acceptance tests connect the reference consumer to an operator endpoint
+internal/refconsumer/operations.go:DefaultConfig  tests configure the in-process reference consumer
+internal/refconsumer/internal/domain/refconsumer.go:DefaultConfig  the facade's delegate for the hook above
+internal/refconsumer/operations.go:Runner.Process  tests feed events to the in-process reference consumer
+internal/refconsumer/operations.go:MCPOperator.Close  the operator client the acceptance tests use
+internal/refconsumer/operations.go:MCPOperator.Nameplate  same
+internal/refconsumer/operations.go:MCPOperator.ListEffectors  same
+internal/refconsumer/operations.go:MCPOperator.InvokeEffector  same
+internal/refconsumer/operations.go:MCPOperator.SubmitVerdict  same
+internal/refconsumer/operations.go:MCPOperator.ReportQuiesced  same
+internal/schemas/schemas.go:RunJournal  contract tests validate journals against the embedded schema
+internal/schemas/schemas.go:RunReport  contract tests validate reports against the embedded schema
+internal/device/operations.go:LoadCapabilities  device tests load catalogs from bytes
+internal/device/operations.go:Device.ApplyCommand  device tests drive the rules without a socket
+internal/device/operations.go:Device.State  same
+internal/device/internal/domain/state.go:Device.Reboot  device reboot, kept for R7d-01 (DDEATH and reboot on the plant wire)
+internal/device/internal/domain/state.go:Device.BootID  same
+internal/deviceworld/operations.go:LoadBindings  deviceworld tests load bindings from bytes
+internal/deviceworld/operations.go:ValidateBindings  same
+internal/deviceworld/operations.go:Plant.Apply  deviceworld tests drive the plant contract directly
+internal/deviceworld/operations.go:Plant.SafeStop  same
+internal/deviceworld/service.go:New  deviceworld tests compose a plant without a socket

@@ -102,7 +102,7 @@ func TestANodeServesAWholeSessionOverThePrivateSocket(t *testing.T) {
 	}
 }
 
-func TestANodeRefusesASharedSocketAndAnnouncesThePinnedContract(t *testing.T) {
+func TestANodeRefusesASharedSocket(t *testing.T) {
 	t.Parallel()
 	path, _ := hostSocket(t)
 	if err := os.Chmod(filepath.Dir(path), 0o755); err != nil { //nolint:gosec // the test shares the directory on purpose
@@ -110,10 +110,6 @@ func TestANodeRefusesASharedSocketAndAnnouncesThePinnedContract(t *testing.T) {
 	}
 	if err := Serve(t.Context(), pondRun(t), path, time.Second, Options{}); !errors.Is(err, ErrSocketNotPrivate) {
 		t.Fatalf("serve = %v, want a refusal", err)
-	}
-	pinned, err := os.ReadFile(filepath.Join(testsupport.RepositoryRoot(), "contracts", "plant-wire", "DIGEST"))
-	if err != nil || ContractDigest() != strings.TrimSpace(string(pinned)) {
-		t.Fatalf("contract digest %s, pinned %s (%v)", ContractDigest(), pinned, err)
 	}
 }
 

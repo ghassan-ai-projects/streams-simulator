@@ -12,16 +12,10 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-// ErrNoLabel is returned when a run is scored without its sealed label.
 var ErrNoLabel = errors.New("score: a sealed label is required")
 
-// scoringBundleVersion names the online/offline scoring bundle. Both paths
-// MUST produce identical results for every metric they share; the bundle
-// version makes that contract machine-checkable on the scorecard.
 const scoringBundleVersion = "scorecard-bundle-v0.2"
 
-// Scorecard is the per-run scoring output (the only artifact anyone outside
-// the project reads, so it is JSON-stable).
 type Scorecard struct {
 	SchemaVersion string                   `json:"schema_version"`
 	Bundle        string                   `json:"bundle"`
@@ -39,7 +33,6 @@ type Scorecard struct {
 	Detail        string                   `json:"detail,omitempty"`
 }
 
-// InstrumentMetrics are the simulator grading itself: no consumer involved.
 type InstrumentMetrics struct {
 	LedgerComplete       bool  `json:"ledger_complete"`
 	PerturbationFidelity bool  `json:"perturbation_fidelity"`
@@ -52,8 +45,6 @@ type InstrumentMetrics struct {
 	Delayed              int64 `json:"delayed"`
 }
 
-// ConsumerMetrics are computed from the submitted verdict against sealed
-// truth and the ledger.
 type ConsumerMetrics struct {
 	DuplicateHandling      bool `json:"duplicate_handling"`
 	IdentityConflict       bool `json:"identity_conflict"`
@@ -67,7 +58,6 @@ type ConsumerMetrics struct {
 	AdmissionExpected      int  `json:"admission_expected"`
 }
 
-// LoopMetrics need actuation; only measurable because the loop closes.
 type LoopMetrics struct {
 	TimeToResolutionNS  int64   `json:"time_to_resolution_ns,omitempty"`
 	Resolved            bool    `json:"resolved"`
@@ -80,7 +70,6 @@ type LoopMetrics struct {
 	EffectCalls         int     `json:"effect_calls"`
 }
 
-// JudgmentMetrics need a model; reported per scenario, never gated in CI.
 type JudgmentMetrics struct {
 	Detected           bool  `json:"detected"`
 	LabelCorrect       bool  `json:"label_correct,omitempty"`
@@ -90,7 +79,6 @@ type JudgmentMetrics struct {
 	DetectionCount     int   `json:"detection_count"`
 }
 
-// Score evaluates one run's evidence against its sealed label.
 func Score(ev Evidence, gt *model.GroundTruthRecord) (*Scorecard, error) {
 	if gt == nil {
 		return nil, ErrNoLabel

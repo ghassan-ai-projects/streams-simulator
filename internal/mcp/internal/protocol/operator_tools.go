@@ -9,10 +9,6 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-// NewOperatorServerResolver builds the operator-role server over a director.
-// One endpoint serves every world: each tool call resolves the capability
-// token to its owning world before dispatching. It advertises exactly the
-// four operator tools and nothing else.
 func NewOperatorServerResolver(dir *director.Director) *mcp.Server {
 	s := mcp.NewServer(implementation, nil)
 	handlers := operatorToolHandlers{dir}
@@ -32,7 +28,7 @@ func (h operatorToolHandlers) handleEffectorList(_ context.Context, args map[str
 	return h.OperatorEffectors(stringArg(args, "token"))
 }
 func (h operatorToolHandlers) handleEffectorInvoke(_ context.Context, args map[string]any) (any, error) {
-	return h.OperatorInvoke(stringArg(args, "token"), stringArg(args, "effector"), stringArg(args, "entity_id"), stringArg(args, "command_id"), mapArg(args, "args"), numberArg(args, "at_ns", 0))
+	return h.OperatorInvoke(stringArg(args, "token"), stringArg(args, "effector"), stringArg(args, "entity_id"), stringArg(args, "command_id"), mapArg(args, "args"))
 }
 func (h operatorToolHandlers) handleConsumerReport(_ context.Context, args map[string]any) (any, error) {
 	token := stringArg(args, "token")

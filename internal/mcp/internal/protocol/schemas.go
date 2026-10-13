@@ -9,7 +9,6 @@ type toolInput struct {
 	AllOf      []any
 }
 
-// toolSchema returns the same public input contract consumed by the handlers.
 func toolSchema(name string) json.RawMessage {
 	factory, known := toolInputFactories[name]
 	if !known {

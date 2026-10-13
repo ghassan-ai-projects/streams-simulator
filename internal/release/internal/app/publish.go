@@ -12,26 +12,18 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/release/internal/files"
 )
 
-// Options say what to publish: the output path, the directories whose files
-// are digested, the author and independent reviewer identities, the optional
-// signing key file, the build identity of the simulator and the clock that
-// stamps the manifest.
 type Options struct {
 	Out, DomainsDir, AdaptersDir, Author, Reviewer, KeyFile string
 	Version, Commit                                         string
 	Now                                                     func() time.Time
 }
 
-// Result is what a publication left behind: the manifest path, whether it was
-// signed, and the simulator identity it records.
 type Result struct {
 	Path   string
 	Signed bool
 	Sim    string
 }
 
-// Publish digests every domain and adapter file, builds the manifest, signs
-// its canonical body when a key is given and writes the manifest document.
 func Publish(options Options) (Result, error) {
 	manifest, err := build(options)
 	if err != nil {
@@ -62,8 +54,6 @@ func build(options Options) (map[string]any, error) {
 	return domain.Body(identity, domains, adapters), nil
 }
 
-// fileDigests digests every file in dir, keyed by base name. Values are
-// map[string]any for the canonical marshaler.
 func fileDigests(dir, kind string) (map[string]any, error) {
 	names, err := files.Names(dir)
 	if err != nil {
@@ -84,8 +74,6 @@ func digestFiles(dir string, names []string) (map[string]any, error) {
 	return out, nil
 }
 
-// sign is the signature of the body under the key file's seed, or "" when no
-// key file is given.
 func sign(body []byte, keyFile string) (string, error) {
 	if keyFile == "" {
 		return "", nil

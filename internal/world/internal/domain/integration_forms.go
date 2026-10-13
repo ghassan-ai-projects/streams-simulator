@@ -91,7 +91,7 @@ func (w *World) stepRCNetwork(ent *Entity, dyn *model.Dynamics, s *stateValue, a
 }
 
 func (s *stateValue) integrateRCStages(f1 *model.F1Dyn, input, dt float64) {
-	// Two cascaded lags: aux is the first stage, x the second.
+
 	tau1, tau2 := f1.TimeConstantS, f1.TimeConstant2S
 	a0, x0 := s.aux, s.x
 	fa := func(a float64) float64 { return (f1.Gain*input - a) / tau1 }

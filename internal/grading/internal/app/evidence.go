@@ -13,14 +13,12 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/score"
 )
 
-// loadReports reads the consumer's verdict and the sealed label, each checked
-// against its contract. An empty label selects label.json in dir.
 func loadReports(dir, label string) (*model.Verdict, *model.GroundTruthRecord, error) {
 	if label == "" {
-		label = filepath.Join(dir, "label.json")
+		label = filepath.Join(dir, model.FileLabel)
 	}
 	var verdict model.Verdict
-	if err := loadDocument(filepath.Join(dir, "verdict.json"), model.ValidateVerdict, &verdict); err != nil {
+	if err := loadDocument(filepath.Join(dir, model.FileVerdict), model.ValidateVerdict, &verdict); err != nil {
 		return nil, nil, err
 	}
 	var gt model.GroundTruthRecord
@@ -38,26 +36,20 @@ func loadDocument(path string, validate func([]byte) error, dst any) error {
 	return domain.DecodeDocument(raw, path, validate, dst)
 }
 
-// scoringEvidence assembles everything the scorer needs except the verdict:
-// the replayed identity, domain and effector calls, and the published ledger
-// and state history.
 func scoringEvidence(ctx context.Context, options Options, art *model.RunArtifact, dir string) (score.Evidence, error) {
 	evidence, err := replayedEvidence(ctx, options, art)
 	if err != nil {
 		return score.Evidence{}, err
 	}
-	if evidence.Ledger, err = loadLedger(filepath.Join(dir, "ledger.jsonl")); err != nil {
+	if evidence.Ledger, err = loadLedger(filepath.Join(dir, model.FileLedger)); err != nil {
 		return score.Evidence{}, fmt.Errorf("streamsim: %w", err)
 	}
-	if evidence.History, err = loadHistory(filepath.Join(dir, "world_state_history.jsonl")); err != nil {
+	if evidence.History, err = loadHistory(filepath.Join(dir, model.FileHistory)); err != nil {
 		return score.Evidence{}, fmt.Errorf("streamsim: %w", err)
 	}
 	return evidence, nil
 }
 
-// replayedEvidence replays the artifact and returns the evidence it can
-// state on its own: identity, domain, effector calls, perturbations, counts
-// and the reproducible/unblinded stamps.
 func replayedEvidence(ctx context.Context, options Options, art *model.RunArtifact) (score.Evidence, error) {
 	spec, adap, err := replayInputs(options, art)
 	if err != nil {

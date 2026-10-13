@@ -7,12 +7,11 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-// stateValue holds the per-entity integration state of one hidden state.
 type stateValue struct {
-	x          float64   // integrated value (F1) or natural value (F0/piecewise)
-	lastStep   int64     // last integration time
-	aux        float64   // second lag value for rc_network
-	delayed    []float64 // dead-time ring buffer
+	x          float64
+	lastStep   int64
+	aux        float64
+	delayed    []float64
 	delayHead  int
 	delayFull  bool
 	hysteresis bool
@@ -21,9 +20,6 @@ type stateValue struct {
 	protection *protectionState
 }
 
-// naturalValue computes the fault- and kick-free value of a state at time t,
-// integrating F1 states forward as needed. Returns the value and the state
-// record (so callers can keep the updated integration state).
 func (w *World) naturalValue(ent *Entity, stateName string, t int64) float64 {
 	s := ent.states[stateName]
 	if s == nil {
@@ -39,7 +35,6 @@ func (w *World) initial(ent *Entity, stateName string) float64 {
 	return 0
 }
 
-// f0Value evaluates an F0 generator analytically at time t.
 func (w *World) f0Value(dyn *model.Dynamics, t int64) float64 {
 	f0 := dyn.F0
 	if f0 == nil {
@@ -72,7 +67,7 @@ func (s *stateValue) clone() *stateValue {
 
 func (w *World) rk4Step(ent *Entity, dyn *model.Dynamics, s *stateValue, t, dt int64) {
 	if dyn.F1 == nil {
-		// Unsupported integrated forms retain their current value.
+
 		s.lastStep = t + dt
 		return
 	}
@@ -95,8 +90,6 @@ func f1Derivative(f1 *model.F1Dyn, x, u float64) float64 {
 	return 0
 }
 
-// inputValue is the weighted sum of the dynamics' declared inputs at time t,
-// evaluated at step boundaries (explicit coupling between states).
 func (w *World) inputValue(ent *Entity, dyn *model.Dynamics, t int64) float64 {
 	f1 := dyn.F1
 	if f1 == nil || len(f1.Inputs) == 0 {

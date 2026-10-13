@@ -3,14 +3,11 @@ package domain
 import (
 	"fmt"
 
+	"github.com/ghassan-ai-projects/streams-simulator/internal/jsonvalue"
+
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-// Process consumes one batch of native-format JSONL sim events (delivery
-// order) and returns the consumer's cumulative verdict. endNS is the world
-// instant the batch covers, used for the quiescence watermark and absence
-// detection. Sequences already processed by an earlier call are skipped, so
-// a harness may re-feed the full trace without double-counting.
 func (r *Runner) Process(trace []byte, endNS int64) (*model.Verdict, error) {
 	now := max(r.processTrace(trace), endNS)
 	r.detectSilence(now)
@@ -22,7 +19,7 @@ func (r *Runner) processTrace(trace []byte) int64 {
 	for _, line := range splitLines(trace) {
 		var ev model.SimEvent
 		if err := model.DecodeBytes([]byte(line), &ev); err != nil {
-			// A malformed record is itself evidence: report it and move on.
+
 			continue
 		}
 		now = max(now, r.consumeEvent(ev))
@@ -37,21 +34,20 @@ func (r *Runner) consumeEvent(ev model.SimEvent) int64 {
 	t, _ := model.ParseTime(ev.ObservedTime)
 	s := r.seriesFor(ev.EntityID, ev.Channel)
 	recordArrivalGap(s, t)
-	// The last record a series delivered is the evidence a later silence
-	// cites, whether or not that record was itself suspicious.
+
 	s.lastSeq = ev.Seq
 	r.evaluateReading(ev, s, t)
 	return t
 }
 
 func (r *Runner) evaluateReading(ev model.SimEvent, s *series, t int64) {
-	v, numeric := asFloat(ev.Value)
+	v, numeric := jsonvalue.Number(ev.Value)
 	if !numeric {
-		// Heartbeats and strings refresh the presence marker.
+
 		markPresent(s, t)
 		return
 	}
-	// Compare against the baseline before adding the anomaly.
+
 	suspicious := r.suspicious(s, v)
 	r.appendReading(s, v, t)
 	r.gradeReading(ev, s, t, suspicious)

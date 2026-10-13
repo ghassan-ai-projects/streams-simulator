@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/app"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/host"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
 )
@@ -24,8 +23,4 @@ func ParseScript(raw []byte) ([]Scripted, error) {
 
 func ParseInventory(raw []byte) (map[string]string, error) {
 	return host.ParseInventory(raw)
-}
-
-func ContractDigest() string {
-	return domain.ContractDigest()
 }

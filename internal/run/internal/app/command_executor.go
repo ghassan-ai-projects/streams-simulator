@@ -11,22 +11,14 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
-// refusalPolicy says which effector refusals a command list keeps as recorded
-// outcomes instead of failing on them.
 type refusalPolicy int
 
 const (
-	// keepEveryRefusal replays a recorded command log. The log holds every
-	// call the world refused, and the original run got the same refusal, so
-	// each one is history being reproduced; a divergence shows in the digests.
 	keepEveryRefusal refusalPolicy = iota
-	// keepWorldRefusals executes authored commands. Only the refusals the
-	// world decides as it runs (an interlock, a reused command id) are
-	// outcomes; any other refusal means the command itself was wrong.
+
 	keepWorldRefusals
 )
 
-// keeps reports whether an effector refusal is a recorded outcome.
 func (policy refusalPolicy) keeps(err error) bool {
 	if policy == keepEveryRefusal {
 		return true
@@ -34,8 +26,6 @@ func (policy refusalPolicy) keeps(err error) bool {
 	return errors.Is(err, world.ErrInterlockRefused) || errors.Is(err, world.ErrCommandIDReused)
 }
 
-// executeCommand applies one command, recorded or authored, to a run: the
-// single executor behind replay and scenario runs.
 func executeCommand(ctx context.Context, r *Run, cmd *model.Command, policy refusalPolicy) error {
 	switch cmd.Op {
 	case model.OpClockAdvance:
@@ -51,8 +41,6 @@ func executeCommand(ctx context.Context, r *Run, cmd *model.Command, policy refu
 	}
 }
 
-// applyAdvance never awaits a consumer: whether a live session waited for its
-// consumer is pacing, and the consumer's own commands are in the list.
 func applyAdvance(ctx context.Context, r *Run, args map[string]any) error {
 	_, err := r.Advance(ctx, rules.CommandTime(args, "to_ns"), false)
 	return wrapExecutionError(err)
@@ -76,8 +64,6 @@ func applyPerturbation(r *Run, cmd *model.Command) error {
 	return wrapExecutionError(err)
 }
 
-// applyInvocation invokes an effector; the policy decides whether a refusal
-// is an outcome or a failure. The run records the call either way.
 func applyInvocation(r *Run, args map[string]any, policy refusalPolicy) error {
 	_, err := r.InvokeEffector(rules.CommandString(args, "effector"), rules.CommandString(args, "entity_id"), rules.CommandString(args, "command_id"), rules.AsMap(args["args"]), rules.CommandTime(args, "at_ns"))
 	if err == nil || policy.keeps(err) {

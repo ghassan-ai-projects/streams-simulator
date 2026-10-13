@@ -9,9 +9,6 @@ import (
 func stringSchema() map[string]any  { return map[string]any{"type": "string"} }
 func integerSchema() map[string]any { return map[string]any{"type": "integer"} }
 
-// maxMCPSeed is the largest seed MCP can carry exactly: JSON numbers reach the
-// handler as float64, and every integer up to 2^53-1 is exact in float64.
-// A larger seed would be rounded without notice, so it is refused instead.
 const maxMCPSeed = 1<<53 - 1
 
 func seedSchema() map[string]any {
@@ -31,8 +28,6 @@ func stringArraySchema() map[string]any {
 	return map[string]any{"type": "array", "items": stringSchema()}
 }
 
-// Embedded contracts omit document annotations when used as nested arguments.
-// The SDK still enforces the exact committed validation keywords over the wire.
 func embeddedContract(contract []byte) map[string]any {
 	doc := map[string]any{}
 	if err := json.Unmarshal(contract, &doc); err != nil {

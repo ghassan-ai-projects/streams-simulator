@@ -17,6 +17,7 @@ const (
 	kindSurface    packageKind = "surface"    // K4: wiring and protocol only
 	kindRoot       packageKind = "root"       // module root and development tools
 	kindTestAid    packageKind = "test-aid"   // shared test fixtures; tests only
+	kindOS         packageKind = "os"         // K0: the operating-system edge; edges only, no rules
 )
 
 // packageInfo is a package's kind and declared layer. An import must point to
@@ -31,13 +32,15 @@ type packageInfo struct {
 // not listed fails TestEveryPackageIsClassified.
 var packages = map[string]packageInfo{
 	"internal/canonical":          {kindFoundation, 0},
+	"internal/jsonvalue":          {kindFoundation, 0},
 	"internal/device/contract":    {kindFoundation, 0},
 	"internal/plantwire/contract": {kindFoundation, 0},
 	"internal/randutil":           {kindFoundation, 0},
 	"internal/schemas":            {kindFoundation, 0},
 	"internal/wall":               {kindSeam, 0},
 	"internal/testsupport":        {kindTestAid, 0},
-	"internal/sink":               {kindEdgeCore, 0},
+	"internal/kernel":             {kindOS, 0},
+	"internal/sink":               {kindEdgeCore, 1},
 	"internal/jsonschema":         {kindFoundation, 1},
 	"internal/release":            {kindEdgeCore, 1},
 	"internal/model":              {kindFoundation, 2},

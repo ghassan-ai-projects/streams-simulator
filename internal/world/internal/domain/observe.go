@@ -4,9 +4,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-// Reading computes the noise-free observation of a channel at time t
-// (the observability solver's signal source). Public because the truth
-// package diffs faulted vs clean readings.
 func (w *World) Reading(entityID, channelName string, t int64) float64 {
 	ent := w.entities[entityID]
 	if ent == nil || !ent.alive {
@@ -19,9 +16,6 @@ func (w *World) Reading(entityID, channelName string, t int64) float64 {
 	return w.noiseFreeObservation(ent, ch, t)
 }
 
-// noiseFreeObservation picks the side-effect-free path: the observability
-// solver's noiseless worlds already observe without noise (and their numbers
-// are pinned); any other world is read quietly.
 func (w *World) noiseFreeObservation(ent *Entity, ch *model.Channel, t int64) float64 {
 	if w.noiseless {
 		return w.observe(ent, ch, ent.ensureChannel(ch.Name), t)
@@ -29,9 +23,6 @@ func (w *World) noiseFreeObservation(ent *Entity, ch *model.Channel, t int64) fl
 	return w.quietObservation(ent, ch, t)
 }
 
-// quietObservation is the noise-free reading of a world that does emit noise:
-// hidden state, bias and the deterministic drift, with no random draw and no
-// change to the channel's emission state, so asking never alters a run.
 func (w *World) quietObservation(ent *Entity, ch *model.Channel, t int64) float64 {
 	value := w.stateAt(ent.ID, ch.Observes, t)
 	if w.isConfirmationChannel(ent, ch.Name) {
@@ -44,7 +35,6 @@ func (w *World) quietObservation(ent *Entity, ch *model.Channel, t int64) float6
 	return quantize(reading, ch.Resolution)
 }
 
-// processEmission emits one native event for (entity, channel) at time t.
 func (w *World) processEmission(entityID, channelName string, t int64) {
 	ent, ch, cs := w.emissionChannel(entityID, channelName)
 	if cs == nil {
@@ -68,11 +58,6 @@ func (w *World) publishNativeEvent(ent *Entity, ch *model.Channel, value any, t,
 	w.emittedThisAdvance++
 }
 
-// serializeObservedTime turns the link-delay candidate into a strict total
-// order in native emission order. Equal candidates receive a one-nanosecond
-// deterministic tiebreak, and a candidate that would move backwards is
-// advanced past the previous timestamp. The adjustment is deliberately in
-// the world layer so every adapter sees the same ordered observed_time.
 func (w *World) serializeObservedTime(candidate int64) int64 {
 	if w.hasObservedTimeNS && candidate <= w.lastObservedNS {
 		candidate = w.lastObservedNS + 1
@@ -143,7 +128,6 @@ func (w *World) emitChannelReading(entityID, channelName string, ent *Entity, ch
 	w.scheduleNextEmission(entityID, channelName, ch, t)
 }
 
-// StateValue exposes a hidden state to the director only (solver and truth).
 func (w *World) StateValue(entity, state string, t int64) float64 {
 	return w.stateAt(entity, state, t)
 }

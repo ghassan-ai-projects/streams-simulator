@@ -1,7 +1,6 @@
 package domain
 
 import (
-	"encoding/json"
 	"math"
 )
 
@@ -34,19 +33,6 @@ func splitLines(b []byte) []string {
 		out = append(out, string(b[start:]))
 	}
 	return out
-}
-
-func asFloat(v any) (float64, bool) {
-	switch x := v.(type) {
-	case float64:
-		return x, true
-	case int64:
-		return float64(x), true
-	case json.Number:
-		f, err := x.Float64()
-		return f, err == nil
-	}
-	return 0, false
 }
 
 func median(xs []int64) int64 {

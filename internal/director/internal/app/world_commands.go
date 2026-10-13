@@ -11,7 +11,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
-// DescribeWorld reports config, digest, clock and emitted count.
 func (d *Director) DescribeWorld(worldID string) (map[string]any, error) {
 	w := d.World(worldID)
 	if w == nil {
@@ -25,7 +24,6 @@ func (d *Director) DescribeWorld(worldID string) (map[string]any, error) {
 	}, nil
 }
 
-// DestroyWorld finalizes and removes a world.
 func (d *Director) DestroyWorld(worldID string) (map[string]any, error) {
 	w := d.World(worldID)
 	if w == nil {
@@ -41,7 +39,6 @@ func (d *Director) DestroyWorld(worldID string) (map[string]any, error) {
 	return map[string]any{"world_id": worldID, "destroyed": true}, nil
 }
 
-// Advance moves the clock (sim.clock.advance).
 func (d *Director) Advance(ctx context.Context, worldID string, toNS int64, await bool) (map[string]any, error) {
 	w := d.World(worldID)
 	if w == nil {
@@ -54,7 +51,6 @@ func (d *Director) Advance(ctx context.Context, worldID string, toNS int64, awai
 	return advanceResult(emitted, w.Run.Status()), nil
 }
 
-// AdvanceBy moves the clock forward by a relative delta (sim.clock.advance).
 func (d *Director) AdvanceBy(ctx context.Context, worldID string, byNS int64, await bool) (map[string]any, error) {
 	toNS, err := d.relativeClockTarget(worldID, byNS)
 	if err != nil {
@@ -78,7 +74,6 @@ func (d *Director) relativeClockTarget(worldID string, byNS int64) (int64, error
 	return w.Run.Status().ClockNS + byNS, nil
 }
 
-// RetireEntity retires an entity at the world's current clock.
 func (d *Director) RetireEntity(worldID, entityID, reason string) (map[string]any, error) {
 	w := d.World(worldID)
 	if w == nil {
@@ -98,7 +93,6 @@ func advanceResult(emitted int, status run.WorldStatus) map[string]any {
 	}
 }
 
-// ClockState reports the clock and queue.
 func (d *Director) ClockState(worldID string) (map[string]any, error) {
 	w := d.World(worldID)
 	if w == nil {
@@ -112,7 +106,6 @@ func (d *Director) ClockState(worldID string) (map[string]any, error) {
 	}, nil
 }
 
-// InjectFault applies a world fault.
 func (d *Director) InjectFault(worldID, entityID, fault string, onsetNS int64, params map[string]any) (map[string]any, error) {
 	w := d.World(worldID)
 	if w == nil {
@@ -125,7 +118,6 @@ func (d *Director) InjectFault(worldID, entityID, fault string, onsetNS int64, p
 	return map[string]any{"fault_id": fid, "simulated": true}, nil
 }
 
-// ClearFault clears a fault.
 func (d *Director) ClearFault(worldID, faultID string) (map[string]any, error) {
 	w := d.World(worldID)
 	if w == nil {
@@ -137,7 +129,6 @@ func (d *Director) ClearFault(worldID, faultID string) (map[string]any, error) {
 	return map[string]any{"cleared": true}, nil
 }
 
-// ListFaults is director-only: active faults, with ids and onsets.
 func (d *Director) ListFaults(worldID string) (map[string]any, error) {
 	w := d.World(worldID)
 	if w == nil {
@@ -146,7 +137,6 @@ func (d *Director) ListFaults(worldID string) (map[string]any, error) {
 	return map[string]any{"faults": w.Run.Faults()}, nil
 }
 
-// ApplyPerturb activates a delivery perturbation.
 func (d *Director) ApplyPerturb(worldID, name string, params map[string]any, fromNS, untilNS int64) (map[string]any, error) {
 	w := d.World(worldID)
 	if w == nil {
@@ -159,7 +149,6 @@ func (d *Director) ApplyPerturb(worldID, name string, params map[string]any, fro
 	return map[string]any{"perturb_id": id}, nil
 }
 
-// ClearPerturb deactivates a perturbation.
 func (d *Director) ClearPerturb(worldID, id string) (map[string]any, error) {
 	w := d.World(worldID)
 	if w == nil {
@@ -171,7 +160,6 @@ func (d *Director) ClearPerturb(worldID, id string) (map[string]any, error) {
 	return map[string]any{"cleared": true}, nil
 }
 
-// EnvInject records an environment fault against a configured target.
 func (d *Director) EnvInject(worldID, target, fault string, params map[string]any) (map[string]any, error) {
 	w := d.World(worldID)
 	if w == nil {
@@ -188,8 +176,7 @@ func (d *Director) finishDestroyedWorld(w *WorldRecord, worldID string) error {
 	if _, ended := d.runLifecycle(w); !ended {
 		dir := filepath.Join(d.OutDir, worldID)
 		_, err := w.Run.End(dir)
-		// An End that failed still finished the run; leaving it open would
-		// make every retry fail with "already finished".
+
 		d.markRunEnded(w)
 		if err != nil {
 			return rules.ToolErrorf(rules.CodeDomainInvalid, "%v", err)

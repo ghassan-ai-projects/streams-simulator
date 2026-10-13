@@ -5,9 +5,6 @@ import (
 	"fmt"
 )
 
-// MarshalJSON writes the object form. The coefficient is left out only when
-// it was never given and is zero; an explicit zero must be written, or the
-// value would reload as the default 1.
 func (f F1Input) MarshalJSON() ([]byte, error) {
 	type wire struct {
 		State string   `json:"state"`
@@ -24,7 +21,6 @@ func (f F1Input) MarshalJSON() ([]byte, error) {
 	return raw, nil
 }
 
-// UnmarshalJSON accepts both the bare-string and object forms.
 func (f *F1Input) UnmarshalJSON(b []byte) error {
 	var state string
 	if err := json.Unmarshal(b, &state); err == nil {

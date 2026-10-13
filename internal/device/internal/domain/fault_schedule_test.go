@@ -21,7 +21,6 @@ func TestScheduledFaultsAreDeterministic(t *testing.T) {
 		{name: FaultReboot, fault: FaultReboot, wantAckLost: true, wantApply: 1, wantBoot: "boot-reboot-1"},
 	}
 	for _, tc := range cases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			plant := &countingPlant{}

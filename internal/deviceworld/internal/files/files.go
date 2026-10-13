@@ -5,13 +5,12 @@ package files
 
 import (
 	"fmt"
-	"os"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/kernel"
 )
 
-// ReadBindings returns the contents of the binding catalog at path.
 func ReadBindings(path string) ([]byte, error) {
-	// #nosec G304 G703 -- a CLI flag naming a file is user intent.
-	data, err := os.ReadFile(path)
+	data, err := kernel.Read(path)
 	if err != nil {
 		return nil, fmt.Errorf("read world bindings: %w", err)
 	}

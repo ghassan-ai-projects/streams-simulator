@@ -74,7 +74,7 @@ func TestWorldSafeStopDoesNotClaimPhysicalEffect(t *testing.T) {
 
 func deviceCommand(t *testing.T, commandID string, atMicros int64) map[string]any {
 	t.Helper()
-	data, err := os.ReadFile("../../../device/contract/conformance/v1/valid/command.json")
+	data, err := os.ReadFile(testsupport.DeviceConformance("valid", "command.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -91,7 +91,7 @@ func deviceCommand(t *testing.T, commandID string, atMicros int64) map[string]an
 // device test.
 func deviceCaps(t *testing.T) *device.Capabilities {
 	t.Helper()
-	data, err := os.ReadFile("../../../device/testdata/thermal_capability_catalog.json")
+	data, err := os.ReadFile(testsupport.DeviceCapabilities())
 	if err != nil {
 		t.Fatal(err)
 	}

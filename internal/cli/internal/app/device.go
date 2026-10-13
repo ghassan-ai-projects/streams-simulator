@@ -9,10 +9,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/deviceworld"
 )
 
-// cmdDevice serves the wire-faithful serial device emulator as a gateway link:
-// the device end of a hardware-in-the-loop experiment, speaking the device
-// gateway link (state/command/receipt/result; execution truth is queried as
-// state).
 func cmdDevice(s *session, args []string) (any, error) {
 	if len(args) == 0 {
 		return nil, usagef("device requires a subcommand: serve")

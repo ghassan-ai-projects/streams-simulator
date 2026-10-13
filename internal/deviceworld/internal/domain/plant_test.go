@@ -31,7 +31,7 @@ func coldChainWorld(t *testing.T, seed uint64) *world.World {
 
 func loadBindings(t *testing.T, entity string) map[string]Binding {
 	t.Helper()
-	data, err := os.ReadFile("../../testdata/thermal.bindings.json")
+	data, err := os.ReadFile(testsupport.DeviceWorldBindings())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -146,11 +146,15 @@ func TestStuckDeviceDoesNotApplyWorldEffect(t *testing.T) {
 	entity := w.EntityIDs()[0]
 	plant := New(w, loadBindings(t, entity))
 	atMicros := w.Clock() / 1000
+	stuck, err := device.ParseFaultSpec("stuck@1")
+	if err != nil {
+		t.Fatal(err)
+	}
 	d := device.New(device.Config{
 		Plant: plant, Capabilities: deviceCaps(t),
-		Clock: func() int64 { return atMicros },
+		Clock:         func() int64 { return atMicros },
+		FaultSchedule: []device.FaultInjection{stuck},
 	})
-	d.SetFaults(device.Faults{Stuck: true})
 
 	out := d.ApplyCommand(deviceCommand(t, "cmd-stuck", atMicros))
 	if out.Receipt["accepted"] != true {

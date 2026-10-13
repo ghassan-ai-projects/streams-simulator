@@ -9,7 +9,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
-// LoadArtifact reads and validates a run artifact from path.
 func LoadArtifact(path string) (*model.RunArtifact, error) {
 	return layer.LoadArtifact(path)
 }
@@ -18,133 +17,106 @@ func EmbeddedInputs(art *model.RunArtifact) (*domain.Compiled, *model.Adapter, e
 	return layer.EmbeddedInputs(art)
 }
 
-// ReplayArtifact reproduces a run from its artifact with no server running
-// and reports whether the trace digest matched.
 func ReplayArtifact(ctx context.Context, art *model.RunArtifact, spec *domain.Compiled, adapterSpec *model.Adapter, sinkTarget string) (*ReplayResult, error) {
 	return layer.ReplayArtifact(ctx, art, spec, adapterSpec, sinkTarget)
 }
 
-// ReplayArtifactEvidence replays an artifact like ReplayArtifact and also
-// returns the effector calls the replayed world made.
 func ReplayArtifactEvidence(ctx context.Context, art *model.RunArtifact, spec *domain.Compiled, adapterSpec *model.Adapter) (*ReplayEvidence, error) {
 	return layer.ReplayArtifactEvidence(ctx, art, spec, adapterSpec)
 }
 
-// Advance moves the world to toNS, delivering what it emits through the
-// perturbation layer, adapter and sink; with awaitConsumer it then waits for
-// the consumer to quiesce.
 func (r *Run) Advance(ctx context.Context, toNS int64, awaitConsumer bool) (int, error) {
 	return r.run.Advance(ctx, toNS, awaitConsumer)
 }
 
-// InjectFault applies a declared fault and records the command.
 func (r *Run) InjectFault(entityID, faultID string, onsetNS int64, params map[string]any) (string, error) {
 	return r.run.InjectFault(entityID, faultID, onsetNS, params)
 }
 
-// ClearFault ends an injected fault and records the command.
 func (r *Run) ClearFault(faultID string, atNS int64) error {
 	return r.run.ClearFault(faultID, atNS)
 }
 
-// ApplyPerturb activates a delivery perturbation and records the command.
 func (r *Run) ApplyPerturb(name string, params map[string]any, fromNS, untilNS int64) (string, error) {
 	return r.run.ApplyPerturb(name, params, fromNS, untilNS)
 }
 
-// ClearPerturb deactivates a perturbation and records the command.
 func (r *Run) ClearPerturb(id string) error {
 	return r.run.ClearPerturb(id)
 }
 
-// InvokeEffector actuates a world effector and records the command.
 func (r *Run) InvokeEffector(effector, entityID, commandID string, args map[string]any, atNS int64) (*world.InvokeResult, error) {
 	return r.run.InvokeEffector(effector, entityID, commandID, args, atNS)
 }
 
-// RetireEntity retires an entity and records the command.
+func (r *Run) InvokeEffectorNow(effector, entityID, commandID string, args map[string]any) (*world.InvokeResult, error) {
+	return r.run.InvokeEffectorNow(effector, entityID, commandID, args)
+}
+
 func (r *Run) RetireEntity(entityID, reason string, atNS int64) error {
 	return r.run.RetireEntity(entityID, reason, atNS)
 }
 
-// EnvInject injects an environment fault where the run allows it.
 func (r *Run) EnvInject(target, fault string, params map[string]any, atNS int64) (string, error) {
 	return r.run.EnvInject(target, fault, params, atNS)
 }
 
-// ReportQuiesced tells the run the consumer has processed everything through
-// throughNS.
 func (r *Run) ReportQuiesced(throughNS int64) {
 	r.run.ReportQuiesced(throughNS)
 }
 
-// SubmitVerdict records the consumer's verdict for the run.
 func (r *Run) SubmitVerdict(v *model.Verdict) error {
 	return r.run.SubmitVerdict(v)
 }
 
-// Verdict returns a copy of the submitted verdict, nil when none.
 func (r *Run) Verdict() *model.Verdict {
 	return r.run.Verdict()
 }
 
-// Ledger returns a copy of the delivery ledger.
 func (r *Run) Ledger() []model.LedgerRecord {
 	return r.run.Ledger()
 }
 
-// History returns the director-only hidden-state history.
 func (r *Run) History() []model.StateSnapshot {
 	return r.run.History()
 }
 
-// AppliedPerturbations lists the perturbation applications of the run.
 func (r *Run) AppliedPerturbations() []string {
 	return r.run.AppliedPerturbations()
 }
 
-// Domain returns the compiled domain the run was built from.
 func (r *Run) Domain() *domain.Compiled {
 	return r.run.Domain()
 }
 
-// Digest returns the world digest of the run's determinism tuple.
 func (r *Run) Digest() string {
 	return r.run.Digest()
 }
 
-// Reproducible reports whether the run is byte-reproducible by replay.
 func (r *Run) Reproducible() bool {
 	return r.run.Reproducible()
 }
 
-// Unblind stamps the run as unblinded, excluding it from every scorecard.
 func (r *Run) Unblind() {
 	r.run.Unblind()
 }
 
-// UnblindedStamp reports whether the run was unblinded.
 func (r *Run) UnblindedStamp() bool {
 	return r.run.UnblindedStamp()
 }
 
-// Finished reports whether End has closed the run, cleanly or not.
 func (r *Run) Finished() bool {
 	return r.run.Finished()
 }
 
-// End closes the run, publishes its evidence under outDir when set, and
-// returns the run artifact.
 func (r *Run) End(outDir string) (*model.RunArtifact, error) {
 	return r.run.End(outDir)
 }
 
-// Trace returns a copy of the delivered trace bytes (test harness hook).
 func (r *Run) Trace() []byte {
 	return r.run.Trace()
 }
 
-// SetEvidenceRecorder installs a per-event delivery hook (test harness hook).
 func (r *Run) SetEvidenceRecorder(fn func(model.SimEvent)) {
 	r.run.SetEvidenceRecorder(fn)
 }
@@ -161,77 +133,38 @@ func (r *Run) SetDeliveryObserver(fn func(model.SimEvent)) {
 	r.run.SetDeliveryObserver(fn)
 }
 
-// SetQuiesceParkedHook installs a hook fired when a quiescence wait blocks
-// (test harness hook).
 func (r *Run) SetQuiesceParkedHook(h func()) {
 	r.run.SetQuiesceParkedHook(h)
 }
 
-// SetFailureMode overrides the effector failure-mode selection (test hook).
 func (r *Run) SetFailureMode(mode world.FailureMode) {
 	r.run.SetFailureMode(mode)
 }
 
-// Status reads the world's clock and queues between commands, so it never
-// overlaps an advance.
 func (r *Run) Status() WorldStatus {
 	return r.run.Status()
 }
 
-// Faults lists the active faults between commands.
 func (r *Run) Faults() []world.FaultInfo {
 	return r.run.Faults()
 }
 
-// ScenarioConfig is the run configuration a scenario describes; the sink is
-// the caller's choice.
-func ScenarioConfig(scenario *model.Scenario, spec *domain.Compiled, adapterSpec *model.Adapter, sinkName, sinkTarget string) Config {
-	return layer.ScenarioConfig(scenario, spec, adapterSpec, sinkName, sinkTarget)
-}
-
-// CheckScenario checks a scenario against its domain and the world it
-// creates before anything is delivered: a static check, then a dry run on a
-// world that emits nothing. A violation is a *model.ValidationError.
-func CheckScenario(ctx context.Context, cfg Config, scenario *model.Scenario) error {
-	return layer.CheckScenario(ctx, cfg, scenario)
-}
-
-// ScenarioFromArtifact is the scenario that reproduces a recorded run, and
-// the number of command-log entries it omits.
-func ScenarioFromArtifact(art *model.RunArtifact) (*model.Scenario, int) {
-	return layer.ScenarioFromArtifact(art)
-}
-
-// ExecuteScenario runs a checked scenario's commands in order.
 func (r *Run) ExecuteScenario(ctx context.Context, scenario *model.Scenario) error {
 	return r.run.ExecuteScenario(ctx, scenario)
 }
 
-// LoadInputs resolves the domain and adapter a run names from a domains
-// directory and an adapters directory; an empty directory selects the
-// repository layout ("domains", "adapters").
 func LoadInputs(domainsDir, adaptersDir, domainID, adapterID string) (*domain.Compiled, *model.Adapter, error) {
 	return layer.LoadInputs(domainsDir, adaptersDir, domainID, adapterID)
 }
 
-// ExportScenarioFile expresses the run recorded in the artifact at
-// artifactPath as a scenario, against the domain and adapter it recorded,
-// found in the directories. A run that cannot be expressed as a runnable
-// scenario exports nothing.
 func ExportScenarioFile(ctx context.Context, artifactPath string, dirs Directories) (ScenarioExport, error) {
 	return layer.ExportScenarioFile(ctx, artifactPath, dirs)
 }
 
-// ReplayFile reproduces the run artifact at artifactPath against the domain
-// and adapter it recorded, found in the directories, and reports whether the
-// trace digest matched.
 func ReplayFile(ctx context.Context, artifactPath string, dirs Directories) (*ReplayResult, error) {
 	return layer.ReplayFile(ctx, artifactPath, dirs)
 }
 
-// RunScenario resolves the scenario's domain and adapter, checks the scenario
-// before any sink opens (a violation is a *ScenarioCheckError), executes its
-// commands in order and ends the run.
 func RunScenario(ctx context.Context, scenario *model.Scenario, options ScenarioRunOptions) (RunSummary, error) {
 	return layer.RunScenario(ctx, scenario, options)
 }
