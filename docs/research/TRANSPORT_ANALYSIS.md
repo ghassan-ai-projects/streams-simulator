@@ -16,7 +16,7 @@ data-plane sink. §3 is why.
 
 Evidence is emitted as `sim-event-v0.1` — the simulator's native envelope, which owes
 nothing to any consumer — and projected into a consumer's wire format by a declarative
-[output adapter](../contracts/output-adapter-v0.1.schema.json). §5 is why, and it is the
+[output adapter](../../contracts/output-adapter-v0.1.schema.json). §5 is why, and it is the
 decision that makes this a product rather than a test rig for one runtime.
 
 ## 2. What the MCP protocol actually offers
@@ -185,7 +185,7 @@ A consumer integrates by doing three things, all of which it can already do:
 
 1. **Read** the adapter's output on whichever profile suits it.
 2. **Optionally call** effector tools over MCP, if it wants the loop closed.
-3. **Optionally submit** a [consumer verdict](../contracts/consumer-verdict-v0.1.schema.json)
+3. **Optionally submit** a [consumer verdict](../../contracts/consumer-verdict-v0.1.schema.json)
    — a neutral statement of what it concluded — if it wants to be scored.
 
 All three are optional except the first. A consumer that only reads traces gets

@@ -1,8 +1,8 @@
 # Run journal
 
 - **Status**: implemented in phase P3 of the simulation canvas goal
-  (`docs/simulation-canvas/PLAN.md`); contract
-  [`run-journal-v0.1`](../contracts/run-journal-v0.1.schema.json); module `internal/journal`
+  (`governance/CANVAS_PLAN.md`); contract
+  [`run-journal-v0.1`](../../contracts/run-journal-v0.1.schema.json); module `internal/journal`
   (a core with a `files` edge); evidence `docs/simulation-canvas/evidence/P3.md`.
 - **Why**: today the trace, the state history and the run artifact are written only when a run
   ends. A person or agent watching a run, and anyone investigating a crashed one, needs a record
@@ -137,7 +137,7 @@ one whose truth was revealed while it was open.
 - **Explore**: an Explore run is stamped unblinded and `score` refuses it; clearing the flag in
   `run.json` fails `verify` and `score` still refuses.
 - **Contract**: every record the writer produces validates against `run-journal-v0.1`; the
-  embedded copy is byte-identical to `docs/contracts`.
+  embedded copy is byte-identical to `contracts`.
 - **Reader**: `FuzzJournalRead` (in `make fuzz` and `make fuzz-soak`).
 
 ## 7. Not in this phase

@@ -4,8 +4,8 @@
 - **Owner direction**: build the simulation canvas as a production-ready part of a critical
   test instrument: no workarounds, no shortcuts, phase by phase, each phase independently
   reviewed and committed. Agentic Stream work follows this goal.
-- **Design**: [canvas-design.md](canvas-design.md) · **Bar**: [QUALITY_BAR.md](QUALITY_BAR.md) ·
-  **Phases**: [PLAN.md](PLAN.md) · **Open findings**: [FINDINGS.md](FINDINGS.md) ·
+- **Design**: [canvas-design.md](canvas-design.md) · **Bar**: [QUALITY_BAR.md](../../governance/CANVAS_QUALITY_BAR.md) ·
+  **Phases**: [PLAN.md](../../governance/CANVAS_PLAN.md) · **Open findings**: [FINDINGS.md](../../governance/FINDINGS.md) ·
   **Design review**: [REVIEW-2026-10-12.md](REVIEW-2026-10-12.md)
 
 ## Outcome
@@ -53,7 +53,7 @@ Each item names the phase whose exit criterion proves it.
    schemas and fixtures, proven against a minimal conformant reference host. The existing
    device path, vendored device contract and adapters stay intact and gated in every phase, so
    the real-world-sensor experiment keeps working until Agentic Stream migrates.
-10. **Quality** (every phase, P13). Every gate in [QUALITY_BAR.md](QUALITY_BAR.md) is green,
+10. **Quality** (every phase, P13). Every gate in [QUALITY_BAR.md](../../governance/CANVAS_QUALITY_BAR.md) is green,
     every phase has an evidence file and an independent review with all findings resolved,
     no finding assigned to a finished phase is open, and documentation describes what exists.
 

@@ -2,7 +2,7 @@
 
 - **Reviewed**: the P5a working-tree diff against `07d0ad6` (2026-10-12)
 - **Reviewer**: one independent subagent, per the owner's direction to keep reviews light.
-- **Outcome**: 0 High, 2 Medium, 4 Low. Resolved below or carried in [FINDINGS.md](../FINDINGS.md).
+- **Outcome**: 0 High, 2 Medium, 4 Low. Resolved below or carried in [FINDINGS.md](../../../governance/FINDINGS.md).
 
 | # | Sev | Finding | Disposition |
 |---|---|---|---|

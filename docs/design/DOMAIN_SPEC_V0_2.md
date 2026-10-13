@@ -1,8 +1,8 @@
 # Domain spec v0.2, semantics part 1: kinds and instances
 
-- **Status**: implemented in phase P5a of the simulation-canvas goal ([PLAN](../simulation-canvas/PLAN.md)); amended in phase P5a2
+- **Status**: implemented in phase P5a of the simulation-canvas goal ([PLAN](../../governance/CANVAS_PLAN.md)); amended in phase P5a2
   (several kinds and instance sets per domain, sections 2.3 and 3); continued in phase P5b (sections 8 to 12).
-- **Contract**: [`docs/contracts/domain-spec-v0.2.schema.json`](../contracts/domain-spec-v0.2.schema.json), embedded in the binary
+- **Contract**: [`contracts/domain-spec-v0.2.schema.json`](../../contracts/domain-spec-v0.2.schema.json), embedded in the binary
   (`internal/schemas`), parity-tested against the committed copy. v0.1 is removed: the project is pre-release and the eight shipped
   domains are rewritten in the same change.
 - **Later parts**: `store` and `flow` are section 13 (P6a), `schedule`, `regime` and `peak` section 16 (P6b), protection section 17 (P6c), supervisory control section 18 (P6d), the event clock section 19 (P6e). Aggregation of dynamics inputs over links (`sum`, `mean`) is not built yet (finding R6e-01).

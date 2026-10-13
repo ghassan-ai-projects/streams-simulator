@@ -1,8 +1,8 @@
 # Scenario file
 
 - **Status**: accepted design for phase P2 of the simulation canvas goal
-  (`docs/simulation-canvas/PLAN.md`); contract
-  [`scenario-v0.1`](../contracts/scenario-v0.1.schema.json).
+  (`governance/CANVAS_PLAN.md`); contract
+  [`scenario-v0.1`](../../contracts/scenario-v0.1.schema.json).
 - **Why**: a repeatable test should be a file a person, the canvas or a coding agent can write,
   review in git and run, instead of a long list of flags; and a run that someone drove by hand
   should be exportable as such a file.

@@ -3,7 +3,7 @@
 - **Reviewed**: the P2b working-tree diff against `ed05e15` (2026-10-12)
 - **Reviewer**: one independent subagent (correctness of the truth boundary), per the owner's
   direction to keep reviews light.
-- **Outcome**: 0 High, 1 Medium, 3 Low. Resolved below or carried in [FINDINGS.md](../FINDINGS.md).
+- **Outcome**: 0 High, 1 Medium, 3 Low. Resolved below or carried in [FINDINGS.md](../../../governance/FINDINGS.md).
 
 | # | Sev | Finding | Disposition |
 |---|---|---|---|

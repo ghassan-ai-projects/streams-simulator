@@ -204,3 +204,35 @@ func TestAHandshakeAwaitsTheHostsAnswerWithItsOwnFloor(t *testing.T) {
 		t.Fatalf("a handshake with a 1 ms wait still waits at least HandshakeWait: %v, %v, %v", records, met, err)
 	}
 }
+
+func TestACancelledCallerStopsBeforeWaiting(t *testing.T) {
+	t.Parallel()
+	path, listener := privateListener(t)
+	echoHost(t, listener, map[string]any{"type": "HSYNC"})
+	link, err := Dial(t.Context(), path, 5*time.Second)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = link.Close() }()
+	stopped, cancel := context.WithCancel(t.Context())
+	cancel()
+	if _, met, err := link.Await(stopped, func(domain.Message) bool { return true }); met || !errors.Is(err, context.Canceled) {
+		t.Fatalf("a wait under a canceled context = %v, %v; want context.Canceled", met, err)
+	}
+}
+
+func TestCancellingTheDialContextClosesTheLink(t *testing.T) {
+	t.Parallel()
+	path, listener := privateListener(t)
+	echoHost(t, listener, map[string]any{"type": "HSYNC"})
+	session, cancel := context.WithCancel(t.Context())
+	link, err := Dial(session, path, 5*time.Second)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = link.Close() }()
+	cancel()
+	if _, met, err := link.Await(t.Context(), func(domain.Message) bool { return true }); met || err == nil {
+		t.Fatalf("a link whose session ended still waits: %v, %v", met, err)
+	}
+}

@@ -44,7 +44,7 @@ The gate includes formatting/module maintenance, build, vet, lint, short/race te
 
 - Domains are loaded from [`domains/`](../../domains/).
 - Adapters are loaded from [`adapters/`](../../adapters/).
-- Machine-readable contracts are maintained in [`docs/contracts/`](../../docs/contracts/) and embedded in [`internal/schemas/`](../../internal/schemas/).
+- Machine-readable contracts are maintained in [`contracts/`](../../contracts/) and embedded in [`internal/schemas/`](../../internal/schemas/).
 - Run artifacts are written to the output directory selected by the command or MCP configuration.
 
 ## Current checkout note

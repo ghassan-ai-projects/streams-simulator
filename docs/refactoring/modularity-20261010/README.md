@@ -6,12 +6,12 @@ adapters, enforced by architecture gates), without changing behaviour.
 
 | File | Purpose |
 | --- | --- |
-| [STANDARD.md](STANDARD.md) | The patterns, quality bar (M1–M11), package kinds and constraints for this repository |
+| [STANDARD.md](../../../governance/MODULARITY_STANDARD.md) | The patterns, quality bar (M1–M11), package kinds and constraints for this repository |
 | [FINDINGS.md](FINDINGS.md) | Structural verdict per package, mapped to rounds |
-| [PLAN.md](PLAN.md) | Rounds, hazards, proof, **status table with commit hashes** |
+| [PLAN.md](../../../governance/MODULARITY_PLAN.md) | Rounds, hazards, proof, **status table with commit hashes** |
 | [ROUNDS.md](ROUNDS.md) | Per-round evidence log: what moved, review findings, results |
-| [DEFERRED.md](DEFERRED.md) | Bugs, risks and improvements found but **not** fixed here |
-| [BEHAVIOUR_PIN.txt](BEHAVIOUR_PIN.txt) | Baseline output hashes; `scripts/behaviour-pin` must reproduce it after every round |
+| [DEFERRED.md](../../../governance/DEFERRED.md) | Bugs, risks and improvements found but **not** fixed here |
+| [BEHAVIOUR_PIN.txt](../../../test/pin/BEHAVIOUR_PIN.txt) | Baseline output hashes; `scripts/behaviour-pin` must reproduce it after every round |
 | [survey/](survey/) | Raw package surveys (read-only, 2026-10-10) |
 
 Reference material in the sibling repo: `AGENTS.md`,
@@ -35,5 +35,5 @@ limits and the direct-import allowlist, already complete).
 - Tests: every package at or above 70 % except the entrypoint; all tests
   parallel and sleep-free; shipped fixtures named once; three cross-module
   acceptance flows against the real binary.
-- Open work is in [DEFERRED.md](DEFERRED.md): defects D-01…D-51 (found, not
+- Open work is in [DEFERRED.md](../../../governance/DEFERRED.md): defects D-01…D-51 (found, not
   fixed), policy items P-01…P-07, and the T-01 ratchet.

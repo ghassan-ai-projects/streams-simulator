@@ -1,6 +1,6 @@
 # Impact analysis — Agentic Stream
 
-> **Status note (2026-10-12):** parts of this document are superseded by the owner decisions in [REVIEW-2026-10-12.md](REVIEW-2026-10-12.md) §1–§2 and tracked in [FINDINGS.md](FINDINGS.md). The kill-switch chain (§6.1) and authority revocation are dropped or deferred; the remaining items belong to the next goal.
+> **Status note (2026-10-12):** parts of this document are superseded by the owner decisions in [REVIEW-2026-10-12.md](REVIEW-2026-10-12.md) §1–§2 and tracked in [FINDINGS.md](../../governance/FINDINGS.md). The kill-switch chain (§6.1) and authority revocation are dropped or deferred; the remaining items belong to the next goal.
 
 - **Date**: 2026-10-12
 - **Status**: analysis; **no code changed in Agentic Stream or here**

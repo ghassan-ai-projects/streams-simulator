@@ -28,5 +28,5 @@ It is a test instrument first. Determinism, sealed ground truth, and analytic or
 - Adding consumer knowledge (names, schemas, behaviours) to the core — forbidden.
 - Weakening determinism (timing, map iteration, non-canonical JSON, unseeded randomness).
 - Building a broker/physics engine/plugin system the cut list removed.
-- Drifting from the documented contracts (`docs/contracts/*.schema.json`).
+- Drifting from the documented contracts (`contracts/*.schema.json`).
 - Documenting commands that do not match actual Makefile/CI behavior.

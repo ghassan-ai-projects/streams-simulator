@@ -15,7 +15,7 @@ Rules for every item:
    consumer could depend on is a **design decision**: it is listed under
    "Needs a decision" with a recommendation and is not applied unprompted.
 4. Source of truth for the findings is
-   [DEFERRED.md](../modularity-20261010/DEFERRED.md); its status column here
+   [DEFERRED.md](../../../governance/DEFERRED.md); its status column here
    is [PLAN.md](PLAN.md).
 
 ## Outcome (2026-10-10)

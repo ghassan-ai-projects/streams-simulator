@@ -11,6 +11,5 @@
 // any byte reads up to its last complete line.
 //
 // The package is a facade: the vocabulary and rules live in its private domain
-// layer and the files in its files edge. The contract is run-journal-v0.1
-// (docs/design/RUN_JOURNAL.md).
+// layer and the files in its files edge. The contract is run-journal-v0.1.
 package journal

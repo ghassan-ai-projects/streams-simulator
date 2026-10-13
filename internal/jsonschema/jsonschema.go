@@ -1,5 +1,5 @@
 // Package jsonschema implements the subset of JSON Schema draft 2020-12
-// that the simulator's own contract schemas (docs/contracts/*.schema.json)
+// that the simulator's own contract schemas (contracts/*.schema.json)
 // actually use, with local $ref resolution only. It exists so that domain
 // specs, adapters, verdicts and run artifacts can be validated against their
 // committed schemas without pulling a schema-engine dependency into the

@@ -1,6 +1,6 @@
 package acceptance
 
-// The run journal through the real binary (docs/design/RUN_JOURNAL.md): what
+// The run journal through the real binary: what
 // an Evaluate run leaves where a consumer can read it, and what Explore mode
 // does to scoring.
 

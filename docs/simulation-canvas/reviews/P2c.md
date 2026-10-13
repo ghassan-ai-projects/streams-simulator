@@ -4,7 +4,7 @@
 - **Reviewer**: one independent subagent (module boundaries and behaviour preservation), per the
   owner's direction to keep reviews light.
 - **Outcome**: behaviour byte-identical, module boundaries sound. 0 High, 2 Medium, 5 Low, 2 carried.
-  Resolved below or carried in [FINDINGS.md](../FINDINGS.md).
+  Resolved below or carried in [FINDINGS.md](../../../governance/FINDINGS.md).
 
 | # | Sev | Finding | Disposition |
 |---|---|---|---|

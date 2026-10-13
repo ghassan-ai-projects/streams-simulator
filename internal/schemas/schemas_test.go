@@ -13,7 +13,7 @@ import (
 )
 
 // TestEmbeddedMatchCommitted proves the embedded schemas never drift from the
-// committed originals in docs/contracts.
+// committed originals in contracts.
 func TestEmbeddedMatchCommitted(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
@@ -30,12 +30,12 @@ func TestEmbeddedMatchCommitted(t *testing.T) {
 		{"run-report-v0.1.schema.json", RunReport()},
 	}
 	for _, tc := range cases {
-		want, err := os.ReadFile(filepath.Join("..", "..", "docs", "contracts", tc.name))
+		want, err := os.ReadFile(filepath.Join("..", "..", "contracts", tc.name))
 		if err != nil {
 			t.Fatalf("read committed schema %s: %v", tc.name, err)
 		}
 		if string(tc.got) != string(want) {
-			t.Errorf("embedded schema %s drifted from docs/contracts: re-run the copy step", tc.name)
+			t.Errorf("embedded schema %s drifted from contracts: re-run the copy step", tc.name)
 		}
 	}
 }

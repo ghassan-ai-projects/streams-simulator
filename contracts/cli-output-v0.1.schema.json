@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://streams-simulator.local/schemas/cli-output-v0.1.schema.json",
   "title": "Streams Simulator CLI output v0.1",
-  "description": "The single JSON document a non-exempt streamsim command prints on stdout: the command's success document, or an error document. See docs/design/CLI_SURFACE.md. Each command's success shape is a $defs entry; tests validate real outputs against the entry for their command.",
+  "description": "The single JSON document a non-exempt streamsim command prints on stdout: the command's success document, or an error document. Each command's success shape is a $defs entry; tests validate real outputs against the entry for their command.",
   "oneOf": [
     {
       "$ref": "#/$defs/error"

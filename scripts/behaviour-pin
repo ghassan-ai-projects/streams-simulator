@@ -3,7 +3,7 @@
 # refactor can prove it changed no behaviour:
 #
 #   scripts/behaviour-pin > /tmp/after.txt
-#   diff docs/refactoring/modularity-20261010/BEHAVIOUR_PIN.txt /tmp/after.txt
+#   diff test/pin/BEHAVIOUR_PIN.txt /tmp/after.txt
 #
 # Wall-clock fields (created_at, unblinded_at) are masked. Everything else is
 # a pure function of the shipped domains/adapters, seeds and commands below.
@@ -75,7 +75,7 @@ done
 capture manifest "$bin" manifest --author "a <a@example.test>" --reviewer "b <b@example.test>" --out "$work/manifest.json"
 emit manifest-file "$work/manifest.json"
 
-# Failure documents (docs/design/CLI_SURFACE.md): one case per failure class,
+# Failure documents: one case per failure class,
 # with stdout (the document) and stderr plus exit status pinned separately so
 # a stream swap shows.
 capture_streams() { # label cmd...

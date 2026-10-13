@@ -6,7 +6,7 @@ An adapter is a declarative projection from native `sim-event-v0.1` to a consume
 
 ## Workflow
 
-1. Read [`docs/contracts/output-adapter-v0.1.schema.json`](../../docs/contracts/output-adapter-v0.1.schema.json).
+1. Read [`contracts/output-adapter-v0.1.schema.json`](../../contracts/output-adapter-v0.1.schema.json).
 2. Copy the shape of a committed adapter under [`adapters/`](../../adapters/).
 3. Define the output encoding, metadata, field mappings, and any declared omission/mangling behavior in JSON.
 4. Add the consumer-facing schema or vendor fixture in the adapter’s own data area.
@@ -29,7 +29,7 @@ go test ./internal/adapter/...
 
 ## Source authority
 
-The authoritative public adapter contracts are in [`docs/contracts/`](../../docs/contracts/). The runtime loader and golden/conformance tests are under [`internal/adapter/`](../../internal/adapter/).
+The authoritative public adapter contracts are in [`contracts/`](../../contracts/). The runtime loader and golden/conformance tests are under [`internal/adapter/`](../../internal/adapter/).
 
 ## Next reads
 

@@ -34,7 +34,7 @@ func DomainsDir() string { return filepath.Join(RepositoryRoot(), "domains") }
 func Domain(id string) string { return filepath.Join(DomainsDir(), id+".domain.json") }
 
 func Example() string {
-	return filepath.Join(RepositoryRoot(), "docs", "examples", "aquaculture-pond.domain.json")
+	return filepath.Join(RepositoryRoot(), "examples", "aquaculture-pond.domain.json")
 }
 
 func StructuredDomain() string {
@@ -54,7 +54,7 @@ func TwoKindDomain() string {
 }
 
 func Contract(stem string) string {
-	return filepath.Join(RepositoryRoot(), "docs", "contracts", stem+".schema.json")
+	return filepath.Join(RepositoryRoot(), "contracts", stem+".schema.json")
 }
 
 func AdaptersDir() string { return filepath.Join(RepositoryRoot(), "adapters") }

@@ -1,6 +1,6 @@
 # Design index
 
-This section gives the public reading order for the simulator design. The detailed design record remains under [`docs/design/`](../../docs/design/) and contains historical plans, reviews, and known contradictions; public summaries must not silently promote those records to implemented behavior. Current runtime behavior is owned by code/tests, contracts by `docs/contracts/`, and accepted deviations by `docs/DECISIONS.md`.
+This section gives the public reading order for the simulator design. The detailed design record remains under [`docs/design/`](../../docs/design/) and contains historical plans, reviews, and known contradictions; public summaries must not silently promote those records to implemented behavior. Current runtime behavior is owned by code/tests, contracts by `contracts/`, and accepted deviations by `docs/DECISIONS.md`.
 
 ## Current design spine
 

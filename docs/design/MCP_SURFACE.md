@@ -270,7 +270,7 @@ open-loop; it simply cannot be used for reproducible closed-loop runs, and the r
 records that.
 
 **The verdict** — a
-[consumer verdict](../contracts/consumer-verdict-v0.1.schema.json): detections, per-event
+[consumer verdict](../../contracts/consumer-verdict-v0.1.schema.json): detections, per-event
 admission outcomes, actions taken, counters, resource usage. Write-only. It returns an
 acknowledgement and never a score, so submitting cannot be used to probe for the answer.
 

@@ -5,7 +5,7 @@
   population that follows a kind). The document compiles to the existing runtime form, so the
   world, perturbation, adapter, truth, score and run code are unchanged. Spec:
   [`docs/design/DOMAIN_SPEC_V0_2.md`](../../design/DOMAIN_SPEC_V0_2.md); contract
-  `docs/contracts/domain-spec-v0.2.schema.json` (v0.1 removed).
+  `contracts/domain-spec-v0.2.schema.json` (v0.1 removed).
 - **Not in this phase** (P5b): add-or-narrow overrides, typed links, system entities, the board.
   Part 1 is one kind and one instance set per domain (`maxItems: 1`), named instances arrive with
   overrides.
@@ -20,7 +20,7 @@
 | `internal/jsonschema` | "missing required property" and "additional property" issues point at the member (R1-01) |
 | `internal/run` | `newRunWorld` refuses explicit entity ids that do not fit the domain's instances (R2-02) |
 | `internal/cli` | `domain format <path>`; `domain_format` in `cli-output-v0.1`; usage text |
-| `domains/`, `docs/examples/` | Eight domains rewritten to v0.2 and formatted with `domain format`; the documented example is the same bytes as the shipped pond |
+| `domains/`, `examples/` | Eight domains rewritten to v0.2 and formatted with `domain format`; the documented example is the same bytes as the shipped pond |
 | Tests | `testsupport.AsKinds` lifts a flat (runtime-shaped) test document into kinds and instances, so inline domain fixtures and the world test spec builder keep their shape |
 | Fixtures | The pinned report run (`internal/report/testdata/run`): `domain_spec` is the v0.2 pond, and the recorded digests that depend on the domain digest or `sim_version` (`journal.jsonl`, `world_digest`, `journal_digest`) and the two report goldens are updated. Its trace digest is unchanged and `streamsim verify` reproduces it |
 | Docs | `DOMAIN_SPEC_V0_2.md`, `DECISIONS.md` (D-03, D-04, D-14 deviation entries, D-15), `CLI_SURFACE.md`, `documentation/{guides/authoring-domains,reference/cli,reference/contracts,architecture/domains-and-adapters}.md`, `internal/domain/UBIQUITOUS_LANGUAGE.md`, `CHANGELOG.md`, `PLAN.md`, `FINDINGS.md` |

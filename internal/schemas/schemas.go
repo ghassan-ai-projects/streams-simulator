@@ -1,5 +1,5 @@
 // Package schemas embeds the simulator's own contract schemas
-// (docs/contracts/*.schema.json) so the binary can validate its data
+// (contracts/*.schema.json) so the binary can validate its data
 // artifacts without any external files. A test in this package proves each
 // embedded copy is byte-identical to the committed original, so the binary
 // can never silently validate against a drifted schema.

@@ -1,14 +1,14 @@
 # Components v0.1: equipment, instruments and compositions
 
-- **Status**: contracts of phase P7g of the simulation-canvas goal ([PLAN](../simulation-canvas/PLAN.md),
+- **Status**: contracts of phase P7g of the simulation-canvas goal ([PLAN](../../governance/CANVAS_PLAN.md),
   [design and reviews](../simulation-canvas/component-library.md)). The module that loads and composes them is P7j.
-- **Contracts**: [`component-v0.1`](../contracts/component-v0.1.schema.json),
-  [`instrument-v0.1`](../contracts/instrument-v0.1.schema.json),
-  [`composition-v0.1`](../contracts/composition-v0.1.schema.json),
-  [`component-vocabulary-v0.1`](../contracts/component-vocabulary-v0.1.schema.json).
+- **Contracts**: [`component-v0.1`](../../contracts/component-v0.1.schema.json),
+  [`instrument-v0.1`](../../contracts/instrument-v0.1.schema.json),
+  [`composition-v0.1`](../../contracts/composition-v0.1.schema.json),
+  [`component-vocabulary-v0.1`](../../contracts/component-vocabulary-v0.1.schema.json).
 - **Data**: built-in files under [`components/`](../../components/); customer libraries in directories outside the repository.
 - **Worked example**: [`components/compositions/chiller-pilot.composition.json`](../../components/compositions/chiller-pilot.composition.json)
-  composes to [`docs/examples/chiller-pilot.domain.json`](../examples/chiller-pilot.domain.json) by the rules below.
+  composes to [`examples/chiller-pilot.domain.json`](../../examples/chiller-pilot.domain.json) by the rules below.
 
 A **component** is reusable equipment: the process it models (a domain-spec v0.2 kind without channels), the points where it can
 be measured, the ports it connects through, and the sizes and settings a user may choose. An **instrument** is a reusable sensor

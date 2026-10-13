@@ -133,7 +133,7 @@ behaviour-pin: ## Print deterministic CLI output hashes (diff against the baseli
 
 behaviour-pin-check: ## Fail when CLI behaviour drifts from the committed behaviour pin
 	@./scripts/behaviour-pin > "$${TMPDIR:-/tmp}/streamsim-behaviour-pin.txt"
-	@diff -u docs/refactoring/modularity-20261010/BEHAVIOUR_PIN.txt "$${TMPDIR:-/tmp}/streamsim-behaviour-pin.txt"
+	@diff -u test/pin/BEHAVIOUR_PIN.txt "$${TMPDIR:-/tmp}/streamsim-behaviour-pin.txt"
 	@echo "  Behaviour pin matches"
 
 phase-gate: ci-check architecture behaviour-pin-check ## Simulation-canvas phase gate: CI pipeline, Enola check, behaviour pin

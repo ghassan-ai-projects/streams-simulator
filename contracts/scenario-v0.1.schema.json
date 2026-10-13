@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://streams-simulator.local/schemas/scenario-v0.1.schema.json",
   "title": "Streams Simulator Scenario v0.1",
-  "description": "A repeatable run: the domain, adapter, seed and world settings, and the ordered director commands to execute, with arguments exactly as the run records them in its command log. See docs/design/SCENARIO_FILE.md.",
+  "description": "A repeatable run: the domain, adapter, seed and world settings, and the ordered director commands to execute, with arguments exactly as the run records them in its command log.",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema_version", "id", "domain", "adapter", "seed", "world", "commands"],

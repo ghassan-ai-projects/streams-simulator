@@ -14,7 +14,7 @@ var consumerNames = regexp.MustCompile(`(?i)agentic[ _-]?stream|tamoz|arduino`)
 // consumerKnowledgeExceptions are the production paths allowed to name a
 // consumer. The device emulator vendors the Agentic Stream device wire
 // contract; the exception is time-boxed and ends when Agentic Stream moves to
-// the plant wire (docs/simulation-canvas/QUALITY_BAR.md §1.7).
+// the plant wire (governance/CANVAS_QUALITY_BAR.md §1.7).
 var consumerKnowledgeExceptions = []string{
 	"internal/device/",
 }

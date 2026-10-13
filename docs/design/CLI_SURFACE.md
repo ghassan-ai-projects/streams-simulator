@@ -1,8 +1,8 @@
 # CLI surface — output contract
 
 - **Status**: accepted design for phase P1 of the simulation canvas goal
-  (`docs/simulation-canvas/PLAN.md`); contract
-  [`cli-output-v0.1`](../contracts/cli-output-v0.1.schema.json).
+  (`governance/CANVAS_PLAN.md`); contract
+  [`cli-output-v0.1`](../../contracts/cli-output-v0.1.schema.json).
 - **Why**: every canvas action has a CLI or MCP equivalent, and a coding agent or the canvas
   bridge must act on results and failures without parsing prose.
 

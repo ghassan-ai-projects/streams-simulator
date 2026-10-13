@@ -86,7 +86,7 @@ func TestEveryMeasurementPointHasAMatchingDefaultInstrument(t *testing.T) {
 func TestThePilotRecordsTheDigestsOfTheFilesItCameFrom(t *testing.T) {
 	t.Parallel()
 	lib := loadLibrary(t)
-	raw, err := os.ReadFile(filepath.Join(testsupport.RepositoryRoot(), "docs", "examples", "chiller-pilot.domain.json"))
+	raw, err := os.ReadFile(filepath.Join(testsupport.RepositoryRoot(), "examples", "chiller-pilot.domain.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -109,7 +109,7 @@ func TestThePilotRecordsTheDigestsOfTheFilesItCameFrom(t *testing.T) {
 
 func TestComposedInstrumentFaultsKeepTheChannelNoise(t *testing.T) {
 	t.Parallel()
-	spec := readJSON(t, filepath.Join(testsupport.RepositoryRoot(), "docs", "examples", "chiller-pilot.domain.json")).(map[string]any)
+	spec := readJSON(t, filepath.Join(testsupport.RepositoryRoot(), "examples", "chiller-pilot.domain.json")).(map[string]any)
 	for _, kind := range spec["kinds"].([]any) {
 		for _, raw := range kind.(map[string]any)["channels"].([]any) {
 			bias, ok := raw.(map[string]any)["observation_bias"].(map[string]any)

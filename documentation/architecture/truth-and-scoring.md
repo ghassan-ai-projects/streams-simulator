@@ -30,7 +30,7 @@ The intended sequence is: install truth, seal it, run the world, accept the cons
 
 ## Verdicts and labels
 
-The consumer verdict and ground-truth record are validated against the versioned contracts under [`docs/contracts/`](../../docs/contracts/). The offline CLI score path reads `verdict.json` and `label.json` beside the run artifact unless a label path is supplied with `--label`.
+The consumer verdict and ground-truth record are validated against the versioned contracts under [`contracts/`](../../contracts/). The offline CLI score path reads `verdict.json` and `label.json` beside the run artifact unless a label path is supplied with `--label`.
 
 The score is meaningful only with the exact run artifact, ledger, truth label, simulator version, domain/adapter digests, and consumer inputs that produced it. A score copied without those inputs is not an auditable benchmark result.
 

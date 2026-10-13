@@ -14,7 +14,7 @@ A consumer integrates by doing one required thing and two optional ones.
 ### Required · read the output
 
 Point the simulator at a sink and read what comes out. An
-[output adapter](../contracts/output-adapter-v0.1.schema.json) projects the native
+[output adapter](../../contracts/output-adapter-v0.1.schema.json) projects the native
 `sim-event-v0.1` into whatever format the consumer already accepts.
 
 Writing an adapter is a JSON file: field mappings drawn from a closed set of transforms,
@@ -41,7 +41,7 @@ nothing else can perform.
 
 ### Optional · be scored
 
-Submit a [consumer verdict](../contracts/consumer-verdict-v0.1.schema.json) through
+Submit a [consumer verdict](../../contracts/consumer-verdict-v0.1.schema.json) through
 `sim.consumer.report`: detections with timestamps and evidence citations, per-event
 admission outcomes, actions taken, counters, resource usage.
 

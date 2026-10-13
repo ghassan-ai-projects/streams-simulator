@@ -126,7 +126,7 @@ Judged from code and tests at this snapshot (lenses 2, 3, 4; lens 4 ran the suit
 
 ### R2 (P1) — G2 gap: supported dynamic/noise forms without analytic oracles
 
-- Evidence: `docs/contracts/domain-spec-v0.1.schema.json:136` declares `saturation` and
+- Evidence: `contracts/domain-spec-v0.1.schema.json:136` declares `saturation` and
   `hysteresis` dynamics; `:309` declares `random_walk` noise; `:329` declares `lognormal`
   and `store_and_forward` link delays. All are implemented (`internal/world/dynamics.go:219-235`,
   `internal/world/observe.go:213-218`, `:308-318`). A repo-wide test grep finds no oracle
@@ -259,7 +259,7 @@ Judged from code and tests at this snapshot (lenses 2, 3, 4; lens 4 ran the suit
 ### R9 (P1) — `sim-event` wire format is unversioned; no recorded evolution policy
 
 - Evidence: `internal/model/event.go:8-19` has no version field;
-  `docs/contracts/sim-event-v0.1.schema.json:6-8` pins `required` with
+  `contracts/sim-event-v0.1.schema.json:6-8` pins `required` with
   `additionalProperties: false` and no version property. Replay is protected (the artifact
   carries `sim_version`), but a stored `trace.jsonl` cannot self-identify its envelope
   version out of band. Notably the agentic-stream *adapter* adds `storage_schema_version`
@@ -588,7 +588,7 @@ The coordinator independently re-verified every P0/P1 citation and a sample of P
 citations against the snapshot tree: the device `go:embed` and Agentic Stream constants
 (`internal/device/contract.go`); the absence of any world test referencing
 `saturation`/`hysteresis`/`random_walk`/`lognormal`/`store_and_forward` while all are
-declared in `docs/contracts/domain-spec-v0.1.schema.json`; the non-canonical adapter
+declared in `contracts/domain-spec-v0.1.schema.json`; the non-canonical adapter
 digest with swallowed error (`internal/run/run.go`); the `ci-check`/`test-short`/`testing.Short`
 skip chain (`Makefile`, `internal/cli/subprocess_test.go`, `internal/suite/suite_test.go`);
 the manifest's zero test references, empty signature, and stale commit

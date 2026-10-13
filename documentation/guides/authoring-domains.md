@@ -6,7 +6,7 @@ A domain is data. The extension workflow should not require a new Go branch.
 
 ## Start from the contract
 
-Read [`docs/contracts/domain-spec-v0.2.schema.json`](../../docs/contracts/domain-spec-v0.2.schema.json), the [kinds and instances semantics](../../docs/design/DOMAIN_SPEC_V0_2.md) and a committed file under [`domains/`](../../domains/). Identify the axes and runtime behavior the domain is meant to stress before adding fields.
+Read [`contracts/domain-spec-v0.2.schema.json`](../../contracts/domain-spec-v0.2.schema.json), the [kinds and instances semantics](../../docs/design/DOMAIN_SPEC_V0_2.md) and a committed file under [`domains/`](../../domains/). Identify the axes and runtime behavior the domain is meant to stress before adding fields.
 
 A domain declares one or more **kinds** (the template: state, dynamics, channels, faults, effectors) and one or more **instance sets** (the id template, the count bounds and any churn), each following a kind; every kind needs at least one set. The kind name becomes the `entity_type` of every instance. Channel, fault and effector names must be unique across the whole domain, and a state, channel, fault or effector refers only to declarations of its own kind. Explicit entity ids given to a run (a scenario's `world.entity_ids`, the director's world creation) must fit the id template of an instance set and its count bounds.
 

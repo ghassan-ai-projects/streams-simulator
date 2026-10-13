@@ -60,7 +60,7 @@ func TestBuiltInLibraryFilesUseTheStreamsimNamespace(t *testing.T) {
 
 func TestTheHandComposedPilotValidatesAndRunsDeterministically(t *testing.T) {
 	t.Parallel()
-	spec, err := domain.Load(filepath.Join(testsupport.RepositoryRoot(), "docs", "examples", "chiller-pilot.domain.json"))
+	spec, err := domain.Load(filepath.Join(testsupport.RepositoryRoot(), "examples", "chiller-pilot.domain.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
