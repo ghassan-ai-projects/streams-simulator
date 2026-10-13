@@ -314,6 +314,10 @@ Cross-checks: the schedule against direct table values at boundary and interpola
 closed form switching at `ceil(τ_below · ln((g·u − x0)/(g·u − threshold)))` (1e-6); the peak against an independent recomputation
 of block means, period roll-over and ratchet over two days (1e-9).
 
+**Site clock (P7k).** A periodic schedule may declare `utc_offset_s`: its `at_s` is then local time within the period, so a
+daily profile or a weekly shift calendar follows the site's clock. In an epoch-aligned weekly period, Monday 00:00 is
+`at_s` 345600 (1970-01-01 was a Thursday).
+
 ## 17. Protection: conditions, trips, anti-recycle, boundaries, preconditions (phase P6c)
 
 Review item S14 separates three things the word `lockout` covered: a **latched trip** (`lockout`), a **timer** (`anti_recycle`)

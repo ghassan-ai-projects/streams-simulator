@@ -419,6 +419,7 @@
               "required": ["interpolation", "points"],
               "properties": {
                 "period_s": {"type": "number", "exclusiveMinimum": 0},
+                "utc_offset_s": {"type": "number", "minimum": -50400, "maximum": 50400, "description": "With period_s: the site's offset from UTC, so at_s is local time within the period (a daily or weekly profile in the site's clock). In an epoch-aligned weekly period, Monday 00:00 is at_s 345600."},
                 "interpolation": {"enum": ["step", "linear"]},
                 "points": {
                   "type": "array",
