@@ -1,0 +1,496 @@
+{
+  "schema_version": "0.1",
+  "id": "streamsim/storage-tank",
+  "version": 1,
+  "title": "Storage tank with level control",
+  "description": "Atmospheric tank whose level integrates the linked inflow and the draw; a make-up valve under PI level control tops up what leaves, so a leak shows first on the make-up flow and only later on the level. Leakage grows with the head.",
+  "class": "static/vessel/storage_tank",
+  "tags": [
+    "fluids",
+    "utilities",
+    "level"
+  ],
+  "icon": "tank",
+  "kind": {
+    "state": [
+      {
+        "name": "inflow",
+        "unit": "m3/h",
+        "initial": 48.0051,
+        "min": 0
+      },
+      {
+        "name": "outflow",
+        "unit": "m3/h",
+        "initial": 48.0051,
+        "min": 0
+      },
+      {
+        "name": "level_setpoint",
+        "unit": "m",
+        "initial": 2.4,
+        "min": 0.2,
+        "max": 3.6
+      },
+      {
+        "name": "level",
+        "unit": "m",
+        "initial": 2.4,
+        "min": 0,
+        "max": 4.0
+      },
+      {
+        "name": "makeup",
+        "unit": "m3/h",
+        "initial": 0,
+        "min": 0,
+        "max": 60
+      },
+      {
+        "name": "makeup_manual",
+        "unit": "on",
+        "initial": 0,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "makeup_manual_output",
+        "unit": "m3/h",
+        "initial": 0,
+        "min": 0,
+        "max": 60
+      },
+      {
+        "name": "leak_rate",
+        "unit": "m3/h",
+        "initial": 0,
+        "min": 0
+      },
+      {
+        "name": "volume",
+        "unit": "m3",
+        "initial": 30
+      }
+    ],
+    "dynamics": [
+      {
+        "target": "inflow",
+        "tier": "F0",
+        "f0": {
+          "baseline": 60,
+          "drift_per_hour": 0,
+          "seasonality": [
+            {
+              "amplitude": 12,
+              "period_s": 86400,
+              "phase_rad": -1.6
+            }
+          ]
+        }
+      },
+      {
+        "target": "outflow",
+        "tier": "F0",
+        "f0": {
+          "baseline": 60,
+          "drift_per_hour": 0,
+          "seasonality": [
+            {
+              "amplitude": 12,
+              "period_s": 86400,
+              "phase_rad": -1.6
+            }
+          ]
+        }
+      },
+      {
+        "target": "level",
+        "tier": "F1",
+        "dt_ms": 1000,
+        "f1": {
+          "form": "store",
+          "capacity": 45000,
+          "inputs": [
+            {
+              "state": "inflow",
+              "coef": 1
+            },
+            {
+              "state": "makeup",
+              "coef": 1
+            },
+            {
+              "state": "outflow",
+              "coef": -1
+            }
+          ]
+        }
+      },
+      {
+        "target": "makeup",
+        "tier": "F1",
+        "dt_ms": 1000,
+        "f1": {
+          "form": "pid",
+          "pid": {
+            "pv": "level",
+            "sp": "level_setpoint",
+            "kp": 75.0,
+            "ki": 0.041666666666666664,
+            "kd": 0,
+            "action": "reverse",
+            "manual": "makeup_manual",
+            "manual_output": "makeup_manual_output"
+          },
+          "clamp": {
+            "min": 0,
+            "max": 60
+          }
+        }
+      },
+      {
+        "target": "volume",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "level",
+              "coef": 12.5
+            }
+          ]
+        }
+      }
+    ],
+    "flows": [
+      {
+        "name": "leak_draw",
+        "from": "level",
+        "conductance": 0.416667,
+        "scale": [
+          "leak_rate"
+        ]
+      }
+    ],
+    "faults": [
+      {
+        "id": "tank_leak",
+        "affects": [
+          {
+            "state": "leak_rate",
+            "delta": 6
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "makeup_flow"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "shape": "ramp",
+          "rate_per_hour": 0.2
+        }
+      },
+      {
+        "id": "makeup_valve_stuck_open",
+        "affects": [
+          {
+            "state": "makeup",
+            "delta": 30
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "level"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "shape": "step"
+        }
+      },
+      {
+        "id": "outlet_blockage",
+        "affects": [
+          {
+            "state": "outflow",
+            "delta": -0.4,
+            "multiplicative": true
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "level"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "shape": "ramp",
+          "rate_per_hour": 0.25
+        }
+      },
+      {
+        "id": "outflow_surge",
+        "affects": [
+          {
+            "state": "outflow",
+            "delta": 0.3,
+            "multiplicative": true
+          }
+        ],
+        "is_negative_class": true,
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "level"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "shape": "pulse",
+          "duration_s": 1800
+        }
+      }
+    ],
+    "effectors": [
+      {
+        "name": "set_level_setpoint",
+        "risk_class": "medium",
+        "idempotency_window_s": 3600,
+        "ack": {
+          "failure_modes": [
+            {
+              "mode": "ok",
+              "probability": 1.0
+            }
+          ],
+          "latency_ms": {
+            "mean": 300,
+            "sigma": 50
+          }
+        },
+        "args_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "tank_id",
+            "level_m"
+          ],
+          "properties": {
+            "tank_id": {
+              "type": "string"
+            },
+            "level_m": {
+              "type": "number",
+              "minimum": 0.2,
+              "maximum": 3.6
+            }
+          }
+        },
+        "effect": {
+          "dead_time_s": 0,
+          "time_constant_s": 0,
+          "state_deltas": [
+            {
+              "state": "level_setpoint",
+              "assign_from_arg": "level_m"
+            }
+          ]
+        }
+      },
+      {
+        "name": "set_makeup_manual",
+        "risk_class": "medium",
+        "idempotency_window_s": 3600,
+        "ack": {
+          "failure_modes": [
+            {
+              "mode": "ok",
+              "probability": 1.0
+            }
+          ],
+          "latency_ms": {
+            "mean": 300,
+            "sigma": 50
+          }
+        },
+        "args_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "tank_id",
+            "manual",
+            "output_m3h"
+          ],
+          "properties": {
+            "tank_id": {
+              "type": "string"
+            },
+            "manual": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "output_m3h": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 60
+            }
+          }
+        },
+        "effect": {
+          "dead_time_s": 0,
+          "time_constant_s": 0,
+          "state_deltas": [
+            {
+              "state": "makeup_manual",
+              "assign_from_arg": "manual"
+            },
+            {
+              "state": "makeup_manual_output",
+              "assign_from_arg": "output_m3h"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "measurement_points": [
+    {
+      "name": "level",
+      "state": "level",
+      "unit_family": "level",
+      "range": {
+        "min": 0,
+        "max": 4
+      },
+      "tag": "LT",
+      "default_instrument": "streamsim/level-radar@1"
+    },
+    {
+      "name": "makeup_flow",
+      "state": "makeup",
+      "unit_family": "volumetric_flow",
+      "range": {
+        "min": 0,
+        "max": 90
+      },
+      "tag": "FT",
+      "default_instrument": "streamsim/mag-flow-meter@1"
+    },
+    {
+      "name": "outflow",
+      "state": "outflow",
+      "unit_family": "volumetric_flow",
+      "range": {
+        "min": 0,
+        "max": 120
+      },
+      "tag": "FT",
+      "default_instrument": "streamsim/mag-flow-meter@1",
+      "optional": true
+    }
+  ],
+  "ports": [
+    {
+      "name": "inflow_in",
+      "type": "liquid_flow",
+      "direction": "consumes",
+      "state": "inflow"
+    },
+    {
+      "name": "outflow_in",
+      "type": "liquid_flow",
+      "direction": "consumes",
+      "state": "outflow"
+    },
+    {
+      "name": "level_out",
+      "type": "level",
+      "direction": "provides",
+      "state": "level"
+    }
+  ],
+  "default_preset": "medium",
+  "presets": {
+    "small": {
+      "title": "Small (16 m3, 10 m3/h)",
+      "values": {
+        "dynamics/inflow/f0/baseline": 10,
+        "dynamics/inflow/f0/seasonality/0/amplitude": 2,
+        "dynamics/level/f1/capacity": 14400,
+        "dynamics/makeup/f1/clamp/max": 10,
+        "dynamics/makeup/f1/pid/ki": 0.013333333333333334,
+        "dynamics/makeup/f1/pid/kp": 24,
+        "dynamics/outflow/f0/baseline": 10,
+        "dynamics/outflow/f0/seasonality/0/amplitude": 2,
+        "dynamics/volume/f1/inputs/level/coef": 4,
+        "effectors/set_makeup_manual/args_schema/properties/output_m3h/maximum": 10,
+        "faults/makeup_valve_stuck_open/affects/makeup/delta": 5,
+        "faults/tank_leak/affects/leak_rate/delta": 1,
+        "measurement_points/makeup_flow/range/max": 15,
+        "measurement_points/outflow/range/max": 20,
+        "state/inflow/initial": 8.00085,
+        "state/makeup/max": 10,
+        "state/makeup_manual_output/max": 10,
+        "state/outflow/initial": 8.00085,
+        "state/volume/initial": 9.6
+      }
+    },
+    "medium": {
+      "title": "Medium (50 m3, 60 m3/h)",
+      "values": {}
+    },
+    "large": {
+      "title": "Large (400 m3, 400 m3/h)",
+      "values": {
+        "dynamics/inflow/f0/baseline": 400,
+        "dynamics/inflow/f0/seasonality/0/amplitude": 80,
+        "dynamics/level/f1/capacity": 360000,
+        "dynamics/makeup/f1/clamp/max": 400,
+        "dynamics/makeup/f1/pid/ki": 0.3333333333333333,
+        "dynamics/makeup/f1/pid/kp": 600,
+        "dynamics/outflow/f0/baseline": 400,
+        "dynamics/outflow/f0/seasonality/0/amplitude": 80,
+        "dynamics/volume/f1/inputs/level/coef": 100,
+        "effectors/set_makeup_manual/args_schema/properties/output_m3h/maximum": 400,
+        "faults/makeup_valve_stuck_open/affects/makeup/delta": 200,
+        "faults/tank_leak/affects/leak_rate/delta": 40,
+        "measurement_points/makeup_flow/range/max": 600,
+        "measurement_points/outflow/range/max": 800,
+        "state/inflow/initial": 320.034,
+        "state/makeup/max": 400,
+        "state/makeup_manual_output/max": 400,
+        "state/outflow/initial": 320.034,
+        "state/volume/initial": 240
+      }
+    }
+  },
+  "parameters": [
+    {
+      "name": "level_setpoint_m",
+      "title": "Level setpoint",
+      "unit": "m",
+      "type": "number",
+      "min": 0.5,
+      "max": 3.5,
+      "default": 2.4,
+      "targets": [
+        "state/level_setpoint/initial",
+        "state/level/initial"
+      ]
+    }
+  ]
+}

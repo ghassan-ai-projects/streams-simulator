@@ -1,0 +1,659 @@
+{
+  "schema_version": "0.1",
+  "id": "streamsim/conveyor",
+  "version": 1,
+  "title": "Belt conveyor",
+  "description": "Belt conveyor with its motor: pulley speed follows the run command, the belt follows the pulley except for slip, and the motor current follows the material load and the idler drag. A jam or an overload trips the drive until it is reset; slip shows only as belt speed below pulley speed.",
+  "class": "rotating/conveyor/belt_conveyor",
+  "tags": [
+    "drives",
+    "material-handling",
+    "rotating"
+  ],
+  "icon": "conveyor",
+  "kind": {
+    "state": [
+      {
+        "name": "running",
+        "unit": "on",
+        "initial": 1,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "reset_count",
+        "unit": "count",
+        "initial": 0
+      },
+      {
+        "name": "grip",
+        "unit": "ratio",
+        "initial": 1,
+        "min": 0.3,
+        "max": 1
+      },
+      {
+        "name": "idler_drag",
+        "unit": "ratio",
+        "initial": 1,
+        "min": 0.5
+      },
+      {
+        "name": "material_load",
+        "unit": "%",
+        "initial": 50.5497,
+        "min": 0,
+        "max": 100
+      },
+      {
+        "name": "overload_ok",
+        "unit": "on",
+        "initial": 1
+      },
+      {
+        "name": "enable",
+        "unit": "on",
+        "initial": 1
+      },
+      {
+        "name": "speed_target",
+        "unit": "rpm",
+        "initial": 85
+      },
+      {
+        "name": "pulley_speed",
+        "unit": "rpm",
+        "initial": 85,
+        "min": 0
+      },
+      {
+        "name": "belt_speed",
+        "unit": "rpm",
+        "initial": 85
+      },
+      {
+        "name": "load_demand",
+        "unit": "%",
+        "initial": 50.5497
+      },
+      {
+        "name": "current_target",
+        "unit": "A",
+        "initial": 36.258
+      },
+      {
+        "name": "motor_current",
+        "unit": "A",
+        "initial": 36.258,
+        "min": 0
+      },
+      {
+        "name": "current_ratio",
+        "unit": "ratio",
+        "initial": 0.653298
+      },
+      {
+        "name": "power",
+        "unit": "kW",
+        "initial": 21.7548
+      },
+      {
+        "name": "vibration",
+        "unit": "mm/s",
+        "initial": 0.658
+      },
+      {
+        "name": "throughput",
+        "unit": "t/h",
+        "initial": 151.649
+      }
+    ],
+    "dynamics": [
+      {
+        "target": "material_load",
+        "tier": "F0",
+        "f0": {
+          "baseline": 55.0,
+          "drift_per_hour": 0,
+          "seasonality": [
+            {
+              "amplitude": 12.0,
+              "period_s": 3600,
+              "phase_rad": 0.3
+            },
+            {
+              "amplitude": 8.0,
+              "period_s": 86400,
+              "phase_rad": -1.6
+            }
+          ]
+        }
+      },
+      {
+        "target": "overload_ok",
+        "tier": "F1",
+        "dt_ms": 1000,
+        "f1": {
+          "form": "trip",
+          "when": {
+            "state": "current_ratio",
+            "operator": "gt",
+            "threshold": 1.35
+          },
+          "for_s": 10,
+          "tripped_value": 0,
+          "latch": true,
+          "reset_on": "reset_count"
+        }
+      },
+      {
+        "target": "enable",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "running",
+              "coef": 1
+            },
+            {
+              "state": "overload_ok",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "speed_target",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "enable",
+              "coef": 85
+            }
+          ]
+        }
+      },
+      {
+        "target": "pulley_speed",
+        "tier": "F1",
+        "dt_ms": 1000,
+        "f1": {
+          "form": "first_order_lag",
+          "time_constant_s": 8,
+          "gain": 1,
+          "inputs": [
+            {
+              "state": "speed_target",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "belt_speed",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "pulley_speed",
+              "coef": 1
+            },
+            {
+              "state": "grip",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "load_demand",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "enable",
+              "coef": 1
+            },
+            {
+              "state": "material_load",
+              "coef": 1
+            },
+            {
+              "state": "idler_drag",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "current_target",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "enable",
+              "coef": 19.425
+            },
+            {
+              "state": "load_demand",
+              "coef": 0.333
+            }
+          ]
+        }
+      },
+      {
+        "target": "motor_current",
+        "tier": "F1",
+        "dt_ms": 1000,
+        "f1": {
+          "form": "first_order_lag",
+          "time_constant_s": 3,
+          "gain": 1,
+          "inputs": [
+            {
+              "state": "current_target",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "current_ratio",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "motor_current",
+              "coef": 0.018018
+            }
+          ]
+        }
+      },
+      {
+        "target": "power",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "motor_current",
+              "coef": 0.6
+            }
+          ]
+        }
+      },
+      {
+        "target": "vibration",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "enable",
+              "coef": 0.42
+            },
+            {
+              "state": "pulley_speed",
+              "coef": 0.0028
+            }
+          ]
+        }
+      },
+      {
+        "target": "throughput",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "material_load",
+              "coef": 3
+            },
+            {
+              "state": "belt_speed",
+              "coef": 0.0117647
+            }
+          ]
+        }
+      }
+    ],
+    "faults": [
+      {
+        "id": "belt_slip",
+        "affects": [
+          {
+            "state": "grip",
+            "delta": -0.15
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "channel_divergence",
+            "channel_a": "belt_speed",
+            "channel_b": "pulley_speed"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "shape": "ramp",
+          "rate_per_hour": 0.25
+        }
+      },
+      {
+        "id": "jam",
+        "affects": [
+          {
+            "state": "idler_drag",
+            "delta": 3,
+            "multiplicative": true
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "motor_current"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "shape": "step"
+        }
+      },
+      {
+        "id": "idler_bearing_wear",
+        "affects": [
+          {
+            "state": "vibration",
+            "delta": 5
+          },
+          {
+            "state": "idler_drag",
+            "delta": 0.3,
+            "multiplicative": true
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "vibration"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "shape": "ramp",
+          "rate_per_hour": 0.1
+        }
+      },
+      {
+        "id": "surge_load",
+        "affects": [
+          {
+            "state": "material_load",
+            "delta": 0.4,
+            "multiplicative": true
+          }
+        ],
+        "is_negative_class": true,
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "motor_current"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "shape": "pulse",
+          "duration_s": 900
+        }
+      }
+    ],
+    "effectors": [
+      {
+        "name": "set_running",
+        "risk_class": "medium",
+        "idempotency_window_s": 3600,
+        "ack": {
+          "failure_modes": [
+            {
+              "mode": "ok",
+              "probability": 1.0
+            }
+          ],
+          "latency_ms": {
+            "mean": 300,
+            "sigma": 50
+          }
+        },
+        "args_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "conveyor_id",
+            "running"
+          ],
+          "properties": {
+            "conveyor_id": {
+              "type": "string"
+            },
+            "running": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        },
+        "effect": {
+          "dead_time_s": 0,
+          "time_constant_s": 0,
+          "state_deltas": [
+            {
+              "state": "running",
+              "assign_from_arg": "running"
+            }
+          ]
+        }
+      },
+      {
+        "name": "reset_trip",
+        "risk_class": "low",
+        "idempotency_window_s": 3600,
+        "ack": {
+          "failure_modes": [
+            {
+              "mode": "ok",
+              "probability": 1.0
+            }
+          ],
+          "latency_ms": {
+            "mean": 300,
+            "sigma": 50
+          }
+        },
+        "args_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "conveyor_id"
+          ],
+          "properties": {
+            "conveyor_id": {
+              "type": "string"
+            }
+          }
+        },
+        "effect": {
+          "dead_time_s": 0,
+          "time_constant_s": 0,
+          "state_deltas": [
+            {
+              "state": "reset_count",
+              "delta": 1
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "measurement_points": [
+    {
+      "name": "pulley_speed",
+      "state": "pulley_speed",
+      "unit_family": "speed",
+      "range": {
+        "min": 0,
+        "max": 127.5
+      },
+      "tag": "ST",
+      "default_instrument": "streamsim/tachometer@1"
+    },
+    {
+      "name": "belt_speed",
+      "state": "belt_speed",
+      "unit_family": "speed",
+      "range": {
+        "min": 0,
+        "max": 127.5
+      },
+      "tag": "ST",
+      "default_instrument": "streamsim/tachometer@1"
+    },
+    {
+      "name": "motor_current",
+      "state": "motor_current",
+      "unit_family": "current",
+      "range": {
+        "min": 0,
+        "max": 122.1
+      },
+      "tag": "IT",
+      "default_instrument": "streamsim/current-clamp@1"
+    },
+    {
+      "name": "power",
+      "state": "power",
+      "unit_family": "power",
+      "range": {
+        "min": 0,
+        "max": 42
+      },
+      "tag": "JT",
+      "default_instrument": "streamsim/power-meter@1"
+    },
+    {
+      "name": "vibration",
+      "state": "vibration",
+      "unit_family": "vibration_velocity",
+      "range": {
+        "min": 0,
+        "max": 20
+      },
+      "tag": "VT",
+      "default_instrument": "streamsim/accelerometer@1"
+    },
+    {
+      "name": "run_status",
+      "state": "enable",
+      "unit_family": "state",
+      "range": {
+        "min": 0,
+        "max": 1
+      },
+      "tag": "YS",
+      "default_instrument": "streamsim/run-status@1"
+    }
+  ],
+  "ports": [
+    {
+      "name": "power_out",
+      "type": "electrical",
+      "direction": "provides",
+      "state": "power"
+    }
+  ],
+  "default_preset": "medium",
+  "presets": {
+    "small": {
+      "title": "Small (7.5 kW, 50 t/h)",
+      "values": {
+        "dynamics/current_ratio/f1/inputs/motor_current/coef": 0.0720721,
+        "dynamics/current_target/f1/inputs/enable/coef": 4.85625,
+        "dynamics/current_target/f1/inputs/load_demand/coef": 0.08325,
+        "dynamics/speed_target/f1/inputs/enable/coef": 120,
+        "dynamics/throughput/f1/inputs/belt_speed/coef": 0.00833333,
+        "dynamics/throughput/f1/inputs/material_load/coef": 0.5,
+        "dynamics/vibration/f1/inputs/enable/coef": 0.3,
+        "dynamics/vibration/f1/inputs/pulley_speed/coef": 0.002,
+        "measurement_points/belt_speed/range/max": 180,
+        "measurement_points/motor_current/range/max": 30.525,
+        "measurement_points/power/range/max": 10.5,
+        "measurement_points/pulley_speed/range/max": 180,
+        "state/belt_speed/initial": 120,
+        "state/current_target/initial": 9.06451,
+        "state/motor_current/initial": 9.06451,
+        "state/power/initial": 5.43871,
+        "state/pulley_speed/initial": 120,
+        "state/speed_target/initial": 120,
+        "state/throughput/initial": 25.2748,
+        "state/vibration/initial": 0.54
+      }
+    },
+    "medium": {
+      "title": "Medium (30 kW, 300 t/h)",
+      "values": {}
+    },
+    "large": {
+      "title": "Large (160 kW, 1500 t/h)",
+      "values": {
+        "dynamics/current_ratio/f1/inputs/motor_current/coef": 0.00337838,
+        "dynamics/current_target/f1/inputs/enable/coef": 103.6,
+        "dynamics/current_target/f1/inputs/load_demand/coef": 1.776,
+        "dynamics/speed_target/f1/inputs/enable/coef": 55,
+        "dynamics/throughput/f1/inputs/belt_speed/coef": 0.0181818,
+        "dynamics/throughput/f1/inputs/material_load/coef": 15,
+        "dynamics/vibration/f1/inputs/enable/coef": 0.6,
+        "dynamics/vibration/f1/inputs/pulley_speed/coef": 0.004,
+        "measurement_points/belt_speed/range/max": 82.5,
+        "measurement_points/motor_current/range/max": 651.2,
+        "measurement_points/power/range/max": 224,
+        "measurement_points/pulley_speed/range/max": 82.5,
+        "state/belt_speed/initial": 55,
+        "state/current_target/initial": 193.376,
+        "state/motor_current/initial": 193.376,
+        "state/power/initial": 116.026,
+        "state/pulley_speed/initial": 55,
+        "state/speed_target/initial": 55,
+        "state/throughput/initial": 758.245,
+        "state/vibration/initial": 0.82
+      }
+    }
+  },
+  "parameters": [
+    {
+      "name": "overload_trip_ratio",
+      "title": "Overload trip current as a multiple of rated",
+      "unit": "ratio",
+      "type": "number",
+      "min": 1.1,
+      "max": 1.8,
+      "default": 1.35,
+      "targets": [
+        "dynamics/overload_ok/f1/when/threshold"
+      ]
+    }
+  ]
+}

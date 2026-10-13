@@ -1,0 +1,727 @@
+{
+  "schema_version": "0.1",
+  "id": "streamsim/air-receiver",
+  "version": 1,
+  "title": "Compressed-air receiver and header",
+  "description": "Receiver vessel holding the header pressure: a store fed by the linked compressors and drained by demand, leaks, the condensate drain and a relief that stands for the compressors unloading. Pressure sags only when the compressors cannot keep up, so a leak or a stuck drain shows as compressors at full duty.",
+  "class": "static/pressure_vessel/air_receiver",
+  "tags": [
+    "compressed-air",
+    "utilities",
+    "pressure"
+  ],
+  "icon": "receiver",
+  "kind": {
+    "state": [
+      {
+        "name": "inflow",
+        "unit": "m3/h",
+        "initial": 651.045,
+        "min": 0
+      },
+      {
+        "name": "demand",
+        "unit": "m3/h",
+        "initial": 595.045,
+        "min": 0
+      },
+      {
+        "name": "leak",
+        "unit": "m3/h",
+        "initial": 56,
+        "min": 0
+      },
+      {
+        "name": "pressure",
+        "unit": "kPa",
+        "initial": 700,
+        "min": 0,
+        "max": 900
+      },
+      {
+        "name": "relief_open",
+        "unit": "ratio",
+        "initial": 0,
+        "max": 1
+      },
+      {
+        "name": "drain_stuck",
+        "unit": "ratio",
+        "initial": 0,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "auto_drain",
+        "unit": "ratio",
+        "initial": 1,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "manual_drain",
+        "unit": "on",
+        "initial": 0,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "isolation_valve",
+        "unit": "ratio",
+        "initial": 1,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "stuck_path",
+        "unit": "ratio",
+        "initial": 0
+      },
+      {
+        "name": "auto_path",
+        "unit": "ratio",
+        "initial": 1
+      },
+      {
+        "name": "drain_open",
+        "unit": "on",
+        "initial": 0
+      },
+      {
+        "name": "drain_flow_ok",
+        "unit": "ratio",
+        "initial": 1
+      },
+      {
+        "name": "drain_loss",
+        "unit": "m3/h",
+        "initial": 0
+      },
+      {
+        "name": "consumption",
+        "unit": "m3/h",
+        "initial": 651.045
+      },
+      {
+        "name": "outlet_flow",
+        "unit": "m3/h",
+        "initial": 651.045
+      },
+      {
+        "name": "leakage",
+        "unit": "m3/h",
+        "initial": 56
+      },
+      {
+        "name": "condensate_fill",
+        "unit": "m/h",
+        "initial": 0.12
+      },
+      {
+        "name": "condensate",
+        "unit": "m",
+        "initial": 0.01,
+        "min": 0,
+        "max": 0.8
+      }
+    ],
+    "dynamics": [
+      {
+        "target": "inflow",
+        "tier": "F0",
+        "f0": {
+          "baseline": 756,
+          "drift_per_hour": 0,
+          "seasonality": [
+            {
+              "amplitude": 105,
+              "period_s": 86400,
+              "phase_rad": -1.6
+            }
+          ]
+        }
+      },
+      {
+        "target": "demand",
+        "tier": "F0",
+        "f0": {
+          "baseline": 700,
+          "drift_per_hour": 0,
+          "seasonality": [
+            {
+              "amplitude": 105,
+              "period_s": 86400,
+              "phase_rad": -1.6
+            }
+          ]
+        }
+      },
+      {
+        "target": "pressure",
+        "tier": "F1",
+        "dt_ms": 1000,
+        "f1": {
+          "form": "store",
+          "capacity": 177.5,
+          "inputs": [
+            {
+              "state": "inflow",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "relief_open",
+        "tier": "F1",
+        "f1": {
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "pressure",
+              "coef": 1
+            }
+          ],
+          "table": {
+            "x": [
+              0,
+              720,
+              780,
+              2000
+            ],
+            "values": [
+              0,
+              0,
+              1,
+              1
+            ]
+          }
+        }
+      },
+      {
+        "target": "stuck_path",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "drain_stuck",
+              "coef": 1
+            },
+            {
+              "state": "isolation_valve",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "auto_path",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "auto_drain",
+              "coef": 1
+            },
+            {
+              "state": "isolation_valve",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "drain_open",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "stuck_path",
+              "coef": 1
+            },
+            {
+              "state": "manual_drain",
+              "coef": 1
+            }
+          ],
+          "clamp": {
+            "min": 0,
+            "max": 1
+          }
+        }
+      },
+      {
+        "target": "drain_flow_ok",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "auto_path",
+              "coef": 1
+            },
+            {
+              "state": "stuck_path",
+              "coef": 1
+            },
+            {
+              "state": "manual_drain",
+              "coef": 1
+            }
+          ],
+          "clamp": {
+            "min": 0,
+            "max": 1
+          }
+        }
+      },
+      {
+        "target": "drain_loss",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "drain_open",
+              "coef": 42
+            }
+          ]
+        }
+      },
+      {
+        "target": "consumption",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "demand",
+              "coef": 1
+            },
+            {
+              "state": "leak",
+              "coef": 1
+            },
+            {
+              "state": "drain_loss",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "outlet_flow",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "consumption",
+              "coef": 1
+            },
+            {
+              "state": "pressure",
+              "coef": 0.00142857
+            }
+          ]
+        }
+      },
+      {
+        "target": "leakage",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "leak",
+              "coef": 1
+            },
+            {
+              "state": "drain_loss",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "condensate",
+        "tier": "F1",
+        "dt_ms": 1000,
+        "f1": {
+          "form": "store",
+          "capacity": 3600,
+          "inputs": [
+            {
+              "state": "condensate_fill",
+              "coef": 1
+            }
+          ]
+        }
+      }
+    ],
+    "flows": [
+      {
+        "name": "demand_draw",
+        "from": "pressure",
+        "conductance": 0.00142857,
+        "scale": [
+          "demand"
+        ]
+      },
+      {
+        "name": "leak_draw",
+        "from": "pressure",
+        "conductance": 0.00142857,
+        "scale": [
+          "leak"
+        ]
+      },
+      {
+        "name": "drain_draw",
+        "from": "pressure",
+        "conductance": 0.00142857,
+        "scale": [
+          "drain_loss"
+        ]
+      },
+      {
+        "name": "relief_draw",
+        "from": "pressure",
+        "conductance": 2.16,
+        "scale": [
+          "relief_open"
+        ]
+      },
+      {
+        "name": "condensate_drain",
+        "from": "condensate",
+        "conductance": 12,
+        "scale": [
+          "drain_flow_ok"
+        ]
+      }
+    ],
+    "faults": [
+      {
+        "id": "drain_stuck_open",
+        "affects": [
+          {
+            "state": "drain_stuck",
+            "delta": 1
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "header_pressure"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "shape": "step"
+        }
+      },
+      {
+        "id": "header_leak",
+        "affects": [
+          {
+            "state": "leak",
+            "delta": 105
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "header_pressure"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "shape": "ramp",
+          "rate_per_hour": 0.05
+        }
+      },
+      {
+        "id": "drain_blocked",
+        "affects": [
+          {
+            "state": "auto_drain",
+            "delta": -1
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "condensate_level"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "shape": "step"
+        }
+      },
+      {
+        "id": "demand_surge",
+        "affects": [
+          {
+            "state": "demand",
+            "delta": 0.12,
+            "multiplicative": true
+          }
+        ],
+        "is_negative_class": true,
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "header_pressure"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "shape": "pulse",
+          "duration_s": 1800
+        }
+      }
+    ],
+    "effectors": [
+      {
+        "name": "drain",
+        "risk_class": "low",
+        "idempotency_window_s": 3600,
+        "ack": {
+          "failure_modes": [
+            {
+              "mode": "ok",
+              "probability": 1.0
+            }
+          ],
+          "latency_ms": {
+            "mean": 300,
+            "sigma": 50
+          }
+        },
+        "args_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "receiver_id",
+            "duration_s"
+          ],
+          "properties": {
+            "receiver_id": {
+              "type": "string"
+            },
+            "duration_s": {
+              "type": "number",
+              "minimum": 30,
+              "maximum": 1800
+            }
+          }
+        },
+        "effect": {
+          "dead_time_s": 0,
+          "time_constant_s": 0,
+          "state_deltas": [
+            {
+              "state": "manual_drain",
+              "delta": 1
+            }
+          ]
+        },
+        "lease": {
+          "arg": "duration_s",
+          "fallback": "revert"
+        }
+      },
+      {
+        "name": "set_drain_isolation",
+        "risk_class": "medium",
+        "idempotency_window_s": 3600,
+        "ack": {
+          "failure_modes": [
+            {
+              "mode": "ok",
+              "probability": 1.0
+            }
+          ],
+          "latency_ms": {
+            "mean": 300,
+            "sigma": 50
+          }
+        },
+        "args_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "receiver_id",
+            "open"
+          ],
+          "properties": {
+            "receiver_id": {
+              "type": "string"
+            },
+            "open": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        },
+        "effect": {
+          "dead_time_s": 0,
+          "time_constant_s": 0,
+          "state_deltas": [
+            {
+              "state": "isolation_valve",
+              "assign_from_arg": "open"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "measurement_points": [
+    {
+      "name": "header_pressure",
+      "state": "pressure",
+      "unit_family": "pressure",
+      "range": {
+        "min": 0,
+        "max": 1000
+      },
+      "tag": "PT",
+      "default_instrument": "streamsim/pressure-transmitter@1"
+    },
+    {
+      "name": "outlet_flow",
+      "state": "outlet_flow",
+      "unit_family": "volumetric_flow",
+      "range": {
+        "min": 0,
+        "max": 1512
+      },
+      "tag": "FT",
+      "default_instrument": "streamsim/vortex-flow-meter@1"
+    },
+    {
+      "name": "condensate_level",
+      "state": "condensate",
+      "unit_family": "level",
+      "range": {
+        "min": 0,
+        "max": 0.8
+      },
+      "tag": "LT",
+      "default_instrument": "streamsim/level-radar@1"
+    },
+    {
+      "name": "drain_status",
+      "state": "drain_open",
+      "unit_family": "state",
+      "range": {
+        "min": 0,
+        "max": 1
+      },
+      "tag": "YS",
+      "default_instrument": "streamsim/run-status@1"
+    }
+  ],
+  "ports": [
+    {
+      "name": "air_in",
+      "type": "air_flow",
+      "direction": "consumes",
+      "state": "inflow"
+    },
+    {
+      "name": "demand_in",
+      "type": "air_flow",
+      "direction": "consumes",
+      "state": "demand"
+    },
+    {
+      "name": "pressure_out",
+      "type": "pressure",
+      "direction": "provides",
+      "state": "pressure"
+    },
+    {
+      "name": "air_out",
+      "type": "air_flow",
+      "direction": "provides",
+      "state": "outlet_flow"
+    }
+  ],
+  "default_preset": "medium",
+  "presets": {
+    "small": {
+      "title": "Small (1 m3, 200 m3/h)",
+      "values": {
+        "dynamics/demand/f0/baseline": 200,
+        "dynamics/demand/f0/seasonality/0/amplitude": 30,
+        "dynamics/drain_loss/f1/inputs/drain_open/coef": 12,
+        "dynamics/inflow/f0/baseline": 216,
+        "dynamics/inflow/f0/seasonality/0/amplitude": 30,
+        "dynamics/pressure/f1/capacity": 35.5,
+        "faults/header_leak/affects/leak/delta": 30,
+        "flows/relief_draw/conductance": 0.617143,
+        "measurement_points/outlet_flow/range/max": 432,
+        "state/consumption/initial": 186.013,
+        "state/demand/initial": 170.013,
+        "state/inflow/initial": 186.013,
+        "state/leak/initial": 16,
+        "state/leakage/initial": 16,
+        "state/outlet_flow/initial": 186.013
+      }
+    },
+    "medium": {
+      "title": "Medium (5 m3, 700 m3/h)",
+      "values": {}
+    },
+    "large": {
+      "title": "Large (20 m3, 2400 m3/h)",
+      "values": {
+        "dynamics/demand/f0/baseline": 2400,
+        "dynamics/demand/f0/seasonality/0/amplitude": 360,
+        "dynamics/drain_loss/f1/inputs/drain_open/coef": 144,
+        "dynamics/inflow/f0/baseline": 2592,
+        "dynamics/inflow/f0/seasonality/0/amplitude": 360,
+        "dynamics/pressure/f1/capacity": 710,
+        "faults/header_leak/affects/leak/delta": 360,
+        "flows/relief_draw/conductance": 7.40571,
+        "measurement_points/outlet_flow/range/max": 5184,
+        "state/consumption/initial": 2232.15,
+        "state/demand/initial": 2040.15,
+        "state/inflow/initial": 2232.15,
+        "state/leak/initial": 192,
+        "state/leakage/initial": 192,
+        "state/outlet_flow/initial": 2232.15
+      }
+    }
+  },
+  "parameters": [
+    {
+      "name": "unload_pressure_kpa",
+      "title": "Pressure where the compressors start to unload",
+      "unit": "kPa",
+      "type": "number",
+      "min": 705,
+      "max": 760,
+      "default": 720,
+      "targets": [
+        "dynamics/relief_open/f1/table/x/1"
+      ]
+    }
+  ]
+}
