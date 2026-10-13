@@ -3,6 +3,7 @@ package domain
 import (
 	"fmt"
 
+	"github.com/ghassan-ai-projects/streams-simulator/internal/jsonvalue"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
@@ -22,17 +23,36 @@ func (checks domainChecks) effectorResponder(e *model.Effector) error {
 
 func (checks domainChecks) effectorLease(e *model.Effector) error {
 	l := e.Lease
-	switch {
-	case l == nil:
+	if l == nil {
 		return nil
-	case !argumentOfType(e, l.Arg, "number", "integer"):
-		return checks.bad("/lease/arg", "lease of %q reads argument %q, which its args_schema does not declare as a number", e.Name, l.Arg)
+	}
+	if err := checks.leaseArgument(e, l.Arg); err != nil {
+		return err
+	}
+	if err := checks.leaseFallback(e, l); err != nil {
+		return err
+	}
+	return checks.safeStates(l.SafeDeltas)
+}
+
+func (checks domainChecks) leaseFallback(e *model.Effector, l *model.Lease) error {
+	switch {
 	case l.Fallback == model.FallbackSafeOff && len(l.SafeDeltas) == 0:
 		return checks.bad("/lease/safe_deltas", "a safe_off lease of %q needs safe_deltas", e.Name)
 	case l.Fallback == model.FallbackRevert && assignsState(e.Effect.StateDeltas):
 		return checks.bad("/lease/fallback", "a revert lease of %q cannot undo an assigned state", e.Name)
 	}
-	return checks.safeStates(l.SafeDeltas)
+	return nil
+}
+
+func (checks domainChecks) leaseArgument(e *model.Effector, arg string) error {
+	if !argumentOfType(e, arg, "number", "integer") {
+		return checks.bad("/lease/arg", "lease of %q reads argument %q, which its args_schema does not declare as a number", e.Name, arg)
+	}
+	if !argumentNonNegative(e, arg) {
+		return checks.bad("/lease/arg", "lease of %q reads argument %q, whose args_schema allows a negative lease; declare minimum or exclusiveMinimum of at least 0", e.Name, arg)
+	}
+	return nil
 }
 
 func (checks domainChecks) safeStates(deltas []model.StateDelta) error {
@@ -72,6 +92,17 @@ func argumentOfType(e *model.Effector, arg string, kinds ...string) bool {
 	kind, _ := property["type"].(string)
 	for _, want := range kinds {
 		if kind == want {
+			return true
+		}
+	}
+	return false
+}
+
+func argumentNonNegative(e *model.Effector, arg string) bool {
+	properties, _ := e.ArgsSchema["properties"].(map[string]any)
+	property, _ := properties[arg].(map[string]any)
+	for _, key := range []string{"minimum", "exclusiveMinimum"} {
+		if bound, ok := jsonvalue.Number(property[key]); ok && bound >= 0 {
 			return true
 		}
 	}

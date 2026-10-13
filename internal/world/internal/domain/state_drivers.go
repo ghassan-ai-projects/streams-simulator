@@ -48,20 +48,28 @@ func latestKickDrivers(kicks []*kick, at int64) kickDrivers {
 	return drivers
 }
 
-func applyAssignedKicks(kicks []*kick, assignment *kick, at int64) float64 {
-	value := assignment.valueAt(at)
-	for _, kick := range kicks {
-		if kick.assign || kick.startNS <= assignment.startNS || at <= kick.startNS {
-			continue
-		}
-		value += kick.valueAt(at)
+func drivenValue(value float64, kicks []*kick, before, at int64) float64 {
+	drivers := latestKickDrivers(kicks, before)
+	if drivers.assignment == nil {
+		return applyAdditiveKicks(value, kicks, before, at)
 	}
-	return value
+	return applyAssignedKicks(value, kicks, drivers.assignment, before, at)
 }
 
-func applyAdditiveKicks(value float64, kicks []*kick, at int64) float64 {
+func applyAssignedKicks(value float64, kicks []*kick, assignment *kick, before, at int64) float64 {
+	driven := assignment.assignedFrom(drivenValue(value, kicks, assignment.startNS, at), at)
 	for _, kick := range kicks {
-		if at > kick.startNS {
+		if kick.assign || kick.startNS <= assignment.startNS || before <= kick.startNS {
+			continue
+		}
+		driven += kick.valueAt(at)
+	}
+	return driven
+}
+
+func applyAdditiveKicks(value float64, kicks []*kick, before, at int64) float64 {
+	for _, kick := range kicks {
+		if before > kick.startNS {
 			value += kick.valueAt(at)
 		}
 	}

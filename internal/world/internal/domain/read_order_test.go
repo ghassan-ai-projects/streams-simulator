@@ -41,7 +41,7 @@ func TestAStoreLevelStaysWithinItsStateBounds(t *testing.T) {
 	t.Parallel()
 	w := constWorld(t, func(s *model.DomainSpec) {
 		kind := &s.Kinds[0]
-		kind.State = append(kind.State, model.State{Name: "a", Initial: 9, Min: 0, Max: 10})
+		kind.State = append(kind.State, model.State{Name: "a", Initial: 9, Min: ptr(0.0), Max: ptr(10.0)})
 		kind.Dynamics = append(kind.Dynamics, model.Dynamics{Target: "a", Tier: "F1", DTMs: 1000,
 			F1: &model.F1Dyn{Form: model.FormStore, Capacity: 1, Inputs: []model.F1Input{{State: "u", Coef: 1, CoefSet: true}}}})
 		kind.Flows = []model.Flow{{Name: "outlet", From: "a", Conductance: 0.1}}

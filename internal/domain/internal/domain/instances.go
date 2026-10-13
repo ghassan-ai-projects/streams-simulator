@@ -11,9 +11,13 @@ import (
 var templatePlaceholder = regexp.MustCompile(`\{[^{}]*\}`)
 
 func (checks domainChecks) checkInstances() error {
-	return checks.each("instances", len(checks.compiled.Spec.Instances), func(at domainChecks, i int) error {
+	err := checks.each("instances", len(checks.compiled.Spec.Instances), func(at domainChecks, i int) error {
 		return at.checkInstance(&checks.compiled.Spec.Instances[i])
 	})
+	if err != nil {
+		return err
+	}
+	return checks.checkTemplateOverlaps()
 }
 
 func (checks domainChecks) checkInstance(set *model.InstanceSet) error {

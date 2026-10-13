@@ -35,7 +35,7 @@ func (w *World) exchangeAt(ent *Entity, group *storeGroup, at int64) *storeExcha
 func (w *World) flowScale(ent *Entity, flow *model.Flow, at int64) float64 {
 	scale := 1.0
 	for _, name := range flow.Scale {
-		scale *= w.stateAt(ent.ID, name, at)
+		scale *= max(w.stateAt(ent.ID, name, at), 0)
 	}
 	return scale
 }

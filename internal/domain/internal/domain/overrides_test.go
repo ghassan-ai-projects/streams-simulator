@@ -17,8 +17,8 @@ func TestAnOverrideBuildsTheEffectiveKindOfItsSetAndLeavesTheKindAlone(t *testin
 	if named.StateDecl("temp") == nil || named.DynamicsOf("temp") == nil || named.ChannelDecl("tank.temp") == nil || named.FaultDecl("tank_overheat") == nil || named.EffectorDecl("chill") == nil {
 		t.Fatal("the effective kind lacks an added declaration")
 	}
-	if level := named.StateDecl("level_true"); level.Min != 0.5 || level.Max != 4 || c.Kind("tank").StateDecl("level_true").Max != 0 {
-		t.Fatalf("narrowed level bounds = [%v, %v]", level.Min, level.Max)
+	if level := named.StateDecl("level_true"); *level.Min != 0.5 || *level.Max != 4 || c.Kind("tank").StateDecl("level_true").Max != nil {
+		t.Fatalf("narrowed level bounds = [%v, %v]", *level.Min, *level.Max)
 	}
 }
 

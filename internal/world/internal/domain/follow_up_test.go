@@ -26,9 +26,10 @@ func followUpWorld(t *testing.T) *World {
 		order := followUpEffector("work_order", map[string]any{"cause": map[string]any{"type": "string"}}, []model.StateDelta{{State: "orders", Delta: 1}})
 		order.Responder = &model.Responder{MatchArg: "cause", DelayS: 900, ClearFault: true,
 			OnMatch: []model.StateDelta{{State: "repaired", Delta: 1}}, OnMiss: []model.StateDelta{{State: "wasted", Delta: 1}}}
-		fan := followUpEffector("run_fan", map[string]any{"speed": number, "lease_s": number}, []model.StateDelta{{State: "fan", AssignFromArg: "speed"}})
+		lease := map[string]any{"type": "number", "minimum": 0.0}
+		fan := followUpEffector("run_fan", map[string]any{"speed": number, "lease_s": lease}, []model.StateDelta{{State: "fan", AssignFromArg: "speed"}})
 		fan.Lease = &model.Lease{Arg: "lease_s", Fallback: model.FallbackSafeOff, SafeDeltas: []model.StateDelta{{State: "fan", Delta: 0}}}
-		heater := followUpEffector("heat", map[string]any{"lease_s": number}, []model.StateDelta{{State: "heat", Delta: 2}})
+		heater := followUpEffector("heat", map[string]any{"lease_s": lease}, []model.StateDelta{{State: "heat", Delta: 2}})
 		heater.Lease = &model.Lease{Arg: "lease_s", Fallback: model.FallbackRevert}
 		kind.Effectors = []model.Effector{order, fan, heater,
 			followUpEffector("drop", nil, []model.StateDelta{{State: "pressure", Delta: -1.5}}), followUpEffector("rise", nil, []model.StateDelta{{State: "pressure", Delta: 3}})}
@@ -104,7 +105,7 @@ func TestALeaseInMillisecondsLapsesOnTime(t *testing.T) {
 	w := constWorld(t, func(s *model.DomainSpec) {
 		kind := &s.Kinds[0]
 		kind.State = append(kind.State, model.State{Name: "fan", Initial: 0})
-		fan := followUpEffector("run_fan", map[string]any{"speed": map[string]any{"type": "number"}, "lease_ms": map[string]any{"type": "number"}}, []model.StateDelta{{State: "fan", AssignFromArg: "speed"}})
+		fan := followUpEffector("run_fan", map[string]any{"speed": map[string]any{"type": "number"}, "lease_ms": map[string]any{"type": "number", "minimum": 0.0}}, []model.StateDelta{{State: "fan", AssignFromArg: "speed"}})
 		fan.Lease = &model.Lease{Arg: "lease_ms", Unit: "ms", Fallback: model.FallbackSafeOff, SafeDeltas: []model.StateDelta{{State: "fan", Delta: 0}}}
 		kind.Effectors = []model.Effector{fan}
 	}, model.DefaultStartTimeNS)

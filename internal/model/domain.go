@@ -88,12 +88,12 @@ type Churn struct {
 }
 
 type State struct {
-	Name        string  `json:"name"`
-	Unit        string  `json:"unit,omitempty"`
-	Initial     float64 `json:"initial"`
-	Min         float64 `json:"min,omitempty"`
-	Max         float64 `json:"max,omitempty"`
-	Description string  `json:"description,omitempty"`
+	Name        string   `json:"name"`
+	Unit        string   `json:"unit,omitempty"`
+	Initial     float64  `json:"initial"`
+	Min         *float64 `json:"min,omitempty"`
+	Max         *float64 `json:"max,omitempty"`
+	Description string   `json:"description,omitempty"`
 }
 
 type Dynamics struct {
@@ -209,9 +209,16 @@ type Range struct {
 }
 
 type Bias struct {
-	State            string  `json:"state"`
-	Coef             float64 `json:"coef"`
-	NoiseScaleAtFull float64 `json:"noise_scale_at_full,omitempty"`
+	State            string   `json:"state"`
+	Coef             float64  `json:"coef"`
+	NoiseScaleAtFull *float64 `json:"noise_scale_at_full,omitempty"`
+}
+
+func (b *Bias) NoiseScale() float64 {
+	if b.NoiseScaleAtFull == nil {
+		return 1
+	}
+	return *b.NoiseScaleAtFull
 }
 
 type Cadence struct {

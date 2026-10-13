@@ -34,6 +34,13 @@ func (k *kick) valueAt(t int64) float64 {
 	return k.delta * (1 - math.Exp(-float64(t-k.startNS)/k.tauNS))
 }
 
+func (k *kick) assignedFrom(underlying float64, t int64) float64 {
+	if k.tauNS <= 0 {
+		return k.delta
+	}
+	return k.delta - (k.delta-underlying)*math.Exp(-float64(t-k.startNS)/k.tauNS)
+}
+
 type activeFault struct {
 	fault     *model.Fault
 	entity    string

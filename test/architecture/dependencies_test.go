@@ -38,7 +38,7 @@ var packageDependencies = map[string]string{
 	"internal/truth":              "domain model world",
 	"internal/perturb":            "domain jsonvalue model randutil",
 	"internal/adapter":            "canonical jsonschema kernel model schemas",
-	"internal/domain":             "canonical jsonschema kernel model schemas",
+	"internal/domain":             "canonical jsonschema jsonvalue kernel model schemas",
 	"internal/model":              "jsonschema schemas",
 	"internal/journal":            "kernel model",
 	"internal/jsonschema":         "canonical jsonvalue",

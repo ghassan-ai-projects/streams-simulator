@@ -485,3 +485,20 @@ Rules:
   `follow` state, which keeps no history of its own, is no exception. A retired instance's states are defined up to its
   retirement while its sources still keep that history.
 - A domain without linked inputs or `follow` behaves exactly as before: links remain structure only.
+
+## 22. Validation and world corrections (phase P7i, prerequisites)
+
+- **State bounds** are independent: `min` alone bounds below, `max` alone bounds above, and a state declares neither to be
+  unbounded (R7e-04; before, `min` alone was ignored and a positive `min` alone clamped to 0).
+- **Assignments with a time constant** approach their target from the value they replace (the state's value with every earlier
+  driver applied): `target − (target − underlying)·e^(−(t − start)/τ)`. A `silent_no_effect` shadow assignment follows the same
+  rule (R7e-04; before, the ramp started from 0).
+- **Stability** is validated (R7e-04, R6a-01): a lag, an RC network stage or a regime must step below `dt/τ = 2.78` (the RK4
+  stability bound), a dead time with a lag below `dt/τ = 2` (explicit Euler). A store must step below `rate·dt = 2.78`, where
+  `rate` is the Gershgorin bound of its exchange: the sum over its flows of `conductance × scale bound / capacity`, doubled for a
+  flow to another store; a scale state's declared `max` bounds its factor, and a scale state with no `max` counts as 1.
+- **Flow scales** are not negative: a scale state below 0 stops the flow instead of reversing it (R6a-01).
+- **Id templates** of two instance sets may not render a common id (exact check over the templates' languages; R7e-04).
+- **Leases**: the lease argument's schema declares `minimum` or `exclusiveMinimum` of at least 0, so a negative lease is refused
+  at invocation (R7e-04).
+- **Observation bias**: an absent `noise_scale_at_full` is 1, as the schema documents (R7g-01; before, it silenced the noise).
