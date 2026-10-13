@@ -1,0 +1,738 @@
+{
+  "schema_version": "0.1",
+  "id": "streamsim/pump",
+  "version": 1,
+  "title": "Centrifugal pump",
+  "description": "Variable-speed centrifugal pump on a circuit with static head. Flow, head and power follow the pump laws through the operating point against the circuit; wear, a blocked strainer and a leaking seal take flow away.",
+  "class": "rotating/pump/centrifugal",
+  "tags": [
+    "fluids",
+    "utilities"
+  ],
+  "icon": "pump",
+  "kind": {
+    "state": [
+      {
+        "name": "running",
+        "unit": "on",
+        "initial": 1,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "speed",
+        "unit": "ratio",
+        "initial": 1,
+        "min": 0,
+        "max": 1.1
+      },
+      {
+        "name": "impeller_health",
+        "unit": "ratio",
+        "initial": 1,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "strainer_clear",
+        "unit": "ratio",
+        "initial": 1,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "seal_tight",
+        "unit": "ratio",
+        "initial": 1,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "speed_eff",
+        "unit": "ratio",
+        "initial": 1,
+        "min": 0
+      },
+      {
+        "name": "flow_ideal",
+        "unit": "ratio",
+        "initial": 1,
+        "min": 0
+      },
+      {
+        "name": "flow",
+        "unit": "m3/h",
+        "initial": 165,
+        "min": 0
+      },
+      {
+        "name": "flow_frac",
+        "unit": "ratio",
+        "initial": 1,
+        "min": 0
+      },
+      {
+        "name": "head_frac",
+        "unit": "ratio",
+        "initial": 1,
+        "min": 0
+      },
+      {
+        "name": "head",
+        "unit": "kPa",
+        "initial": 250,
+        "min": 0
+      },
+      {
+        "name": "power_frac",
+        "unit": "ratio",
+        "initial": 1,
+        "min": 0
+      },
+      {
+        "name": "power",
+        "unit": "kW",
+        "initial": 16.4,
+        "min": 0
+      },
+      {
+        "name": "current",
+        "unit": "A",
+        "initial": 30.34,
+        "min": 0
+      },
+      {
+        "name": "se_rel",
+        "unit": "ratio",
+        "initial": 1,
+        "min": 0
+      },
+      {
+        "name": "specific_energy",
+        "unit": "kWh/m3",
+        "initial": 0.099394,
+        "min": 0
+      }
+    ],
+    "dynamics": [
+      {
+        "target": "speed_eff",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "running",
+              "coef": 1
+            },
+            {
+              "state": "speed",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "flow_ideal",
+        "tier": "F1",
+        "f1": {
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "speed_eff",
+              "coef": 1
+            }
+          ],
+          "table": {
+            "x": [
+              0,
+              0.3,
+              0.4,
+              0.5,
+              0.6,
+              0.7,
+              0.8,
+              0.9,
+              1,
+              1.1
+            ],
+            "values": [
+              0,
+              0,
+              0,
+              0.327327,
+              0.48795,
+              0.626783,
+              0.755929,
+              0.879664,
+              1,
+              1.11803
+            ]
+          }
+        }
+      },
+      {
+        "target": "flow",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "flow_ideal",
+              "coef": 165
+            },
+            {
+              "state": "impeller_health",
+              "coef": 1
+            },
+            {
+              "state": "strainer_clear",
+              "coef": 1
+            },
+            {
+              "state": "seal_tight",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "flow_frac",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "flow",
+              "coef": 0.00606061
+            }
+          ]
+        }
+      },
+      {
+        "target": "head_frac",
+        "tier": "F1",
+        "f1": {
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "flow_frac",
+              "coef": 1
+            }
+          ],
+          "table": {
+            "x": [
+              0,
+              0.5,
+              1,
+              1.3
+            ],
+            "values": [
+              0.2,
+              0.4,
+              1,
+              1.552
+            ]
+          }
+        }
+      },
+      {
+        "target": "head",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "head_frac",
+              "coef": 250
+            },
+            {
+              "state": "running",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "power_frac",
+        "tier": "F1",
+        "f1": {
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "speed_eff",
+              "coef": 1
+            }
+          ],
+          "table": {
+            "x": [
+              0,
+              0.3,
+              0.4,
+              0.5,
+              0.6,
+              0.7,
+              0.8,
+              0.9,
+              1,
+              1.1
+            ],
+            "values": [
+              0,
+              0.0081,
+              0.0192,
+              0.171809,
+              0.274287,
+              0.401174,
+              0.559101,
+              0.755249,
+              1,
+              1.35676
+            ]
+          }
+        }
+      },
+      {
+        "target": "power",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "power_frac",
+              "coef": 16.4
+            },
+            {
+              "state": "impeller_health",
+              "coef": 1
+            },
+            {
+              "state": "strainer_clear",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "current",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "power",
+              "coef": 1.85
+            }
+          ]
+        }
+      },
+      {
+        "target": "se_rel",
+        "tier": "F1",
+        "f1": {
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "flow_frac",
+              "coef": 1
+            }
+          ],
+          "table": {
+            "x": [
+              0.2,
+              0.4,
+              0.6,
+              0.8,
+              1,
+              1.2
+            ],
+            "values": [
+              0.577631,
+              0.532556,
+              0.622519,
+              0.779236,
+              1,
+              1.39669
+            ]
+          }
+        }
+      },
+      {
+        "target": "specific_energy",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "running",
+              "coef": 0.0993939
+            },
+            {
+              "state": "se_rel",
+              "coef": 1
+            }
+          ]
+        }
+      }
+    ],
+    "faults": [
+      {
+        "id": "impeller_wear",
+        "affects": [
+          {
+            "state": "impeller_health",
+            "delta": -0.15
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "flow"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "rate_per_hour": 0.04,
+          "shape": "ramp"
+        }
+      },
+      {
+        "id": "strainer_blockage",
+        "affects": [
+          {
+            "state": "strainer_clear",
+            "delta": -0.25
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "flow"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "rate_per_hour": 0.15,
+          "shape": "ramp"
+        }
+      },
+      {
+        "id": "seal_leak",
+        "affects": [
+          {
+            "state": "seal_tight",
+            "delta": -0.04
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "flow"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "rate_per_hour": 0.06,
+          "shape": "ramp"
+        }
+      },
+      {
+        "id": "system_throttle",
+        "affects": [
+          {
+            "state": "strainer_clear",
+            "delta": -0.1
+          }
+        ],
+        "is_negative_class": true,
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "flow"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "duty_cycle": 0.4,
+          "magnitude": 1.0,
+          "rate_per_hour": 1.0,
+          "shape": "intermittent"
+        }
+      }
+    ],
+    "effectors": [
+      {
+        "name": "start",
+        "risk_class": "medium",
+        "idempotency_window_s": 3600,
+        "ack": {
+          "failure_modes": [
+            {
+              "mode": "ok",
+              "probability": 0.97
+            },
+            {
+              "mode": "slow",
+              "probability": 0.02
+            },
+            {
+              "mode": "ack_lost",
+              "probability": 0.01
+            }
+          ],
+          "latency_ms": {
+            "mean": 300,
+            "sigma": 50
+          }
+        },
+        "confirmation_channels": [
+          "flow"
+        ],
+        "requires": [
+          {
+            "state": "running",
+            "operator": "lt",
+            "threshold": 0.5
+          }
+        ],
+        "args_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "pump_id"
+          ],
+          "properties": {
+            "pump_id": {
+              "type": "string"
+            }
+          }
+        },
+        "effect": {
+          "dead_time_s": 0,
+          "time_constant_s": 10,
+          "state_deltas": [
+            {
+              "state": "running",
+              "delta": 1
+            }
+          ]
+        }
+      },
+      {
+        "name": "stop",
+        "risk_class": "medium",
+        "idempotency_window_s": 3600,
+        "ack": {
+          "failure_modes": [
+            {
+              "mode": "ok",
+              "probability": 0.97
+            },
+            {
+              "mode": "slow",
+              "probability": 0.02
+            },
+            {
+              "mode": "ack_lost",
+              "probability": 0.01
+            }
+          ],
+          "latency_ms": {
+            "mean": 300,
+            "sigma": 50
+          }
+        },
+        "confirmation_channels": [
+          "flow"
+        ],
+        "requires": [
+          {
+            "state": "running",
+            "operator": "gte",
+            "threshold": 0.5
+          }
+        ],
+        "args_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "pump_id"
+          ],
+          "properties": {
+            "pump_id": {
+              "type": "string"
+            }
+          }
+        },
+        "effect": {
+          "dead_time_s": 0,
+          "time_constant_s": 10,
+          "state_deltas": [
+            {
+              "state": "running",
+              "delta": -1
+            }
+          ]
+        }
+      },
+      {
+        "name": "set_speed",
+        "risk_class": "medium",
+        "idempotency_window_s": 3600,
+        "ack": {
+          "failure_modes": [
+            {
+              "mode": "ok",
+              "probability": 0.97
+            },
+            {
+              "mode": "slow",
+              "probability": 0.02
+            },
+            {
+              "mode": "ack_lost",
+              "probability": 0.01
+            }
+          ],
+          "latency_ms": {
+            "mean": 300,
+            "sigma": 50
+          }
+        },
+        "confirmation_channels": [
+          "flow"
+        ],
+        "args_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "pump_id",
+            "speed"
+          ],
+          "properties": {
+            "pump_id": {
+              "type": "string"
+            },
+            "speed": {
+              "type": "number",
+              "minimum": 0.4,
+              "maximum": 1.1
+            }
+          }
+        },
+        "effect": {
+          "dead_time_s": 0,
+          "time_constant_s": 15,
+          "state_deltas": [
+            {
+              "state": "speed",
+              "assign_from_arg": "speed"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "measurement_points": [
+    {
+      "name": "flow",
+      "state": "flow",
+      "unit_family": "volumetric_flow",
+      "range": {
+        "min": 0,
+        "max": 250
+      },
+      "tag": "FT",
+      "default_instrument": "streamsim/mag-flow-meter@1"
+    },
+    {
+      "name": "power",
+      "state": "power",
+      "unit_family": "power",
+      "range": {
+        "min": 0,
+        "max": 30
+      },
+      "tag": "JT",
+      "default_instrument": "streamsim/power-meter@1"
+    }
+  ],
+  "ports": [
+    {
+      "name": "flow_out",
+      "type": "chilled_water",
+      "direction": "provides",
+      "state": "flow"
+    },
+    {
+      "name": "cw_flow_out",
+      "type": "condenser_water",
+      "direction": "provides",
+      "state": "flow"
+    }
+  ],
+  "default_preset": "medium",
+  "presets": {
+    "small": {
+      "title": "Small (about 60 m3/h)",
+      "values": {
+        "dynamics/flow/f1/inputs/flow_ideal/coef": 59,
+        "dynamics/flow_frac/f1/inputs/flow/coef": 0.0169492,
+        "dynamics/head/f1/inputs/head_frac/coef": 150,
+        "dynamics/power/f1/inputs/power_frac/coef": 4,
+        "dynamics/specific_energy/f1/inputs/running/coef": 0.0677966,
+        "measurement_points/flow/range/max": 90,
+        "measurement_points/power/range/max": 8,
+        "state/current/initial": 7.4,
+        "state/flow/initial": 59,
+        "state/head/initial": 150.001,
+        "state/head_frac/initial": 1.00001,
+        "state/power/initial": 4,
+        "state/se_rel/initial": 1.00001,
+        "state/specific_energy/initial": 0.067797
+      }
+    },
+    "medium": {
+      "title": "Medium (about 165 m3/h)",
+      "values": {}
+    },
+    "large": {
+      "title": "Large (about 440 m3/h)",
+      "values": {
+        "dynamics/flow/f1/inputs/flow_ideal/coef": 440,
+        "dynamics/flow_frac/f1/inputs/flow/coef": 0.00227273,
+        "dynamics/head/f1/inputs/head_frac/coef": 350,
+        "dynamics/power/f1/inputs/power_frac/coef": 57.6,
+        "dynamics/specific_energy/f1/inputs/running/coef": 0.130909,
+        "measurement_points/flow/range/max": 660,
+        "measurement_points/power/range/max": 100,
+        "state/current/initial": 106.56,
+        "state/flow/initial": 440,
+        "state/head/initial": 350.001,
+        "state/power/initial": 57.6,
+        "state/specific_energy/initial": 0.130909
+      }
+    }
+  },
+  "parameters": [
+    {
+      "name": "speed",
+      "title": "Speed",
+      "unit": "ratio",
+      "type": "number",
+      "min": 0.4,
+      "max": 1.1,
+      "default": 1.0,
+      "targets": [
+        "state/speed/initial"
+      ]
+    }
+  ]
+}

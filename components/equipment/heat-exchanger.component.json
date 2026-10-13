@@ -1,0 +1,734 @@
+{
+  "schema_version": "0.1",
+  "id": "streamsim/heat-exchanger",
+  "version": 1,
+  "title": "Water-to-water heat exchanger",
+  "description": "Counterflow plate exchanger between a warm and a cool water circuit. Outlet temperatures follow an effectiveness table over the two flows, scaled by cleanliness; the approach temperature is the key performance indicator.",
+  "class": "static/heat_exchanger/plate",
+  "tags": [
+    "hvac",
+    "utilities"
+  ],
+  "icon": "heat-exchanger",
+  "kind": {
+    "state": [
+      {
+        "name": "hot_in",
+        "unit": "degC",
+        "initial": 13
+      },
+      {
+        "name": "cold_in",
+        "unit": "degC",
+        "initial": 7
+      },
+      {
+        "name": "hot_flow",
+        "unit": "m3/h",
+        "initial": 120,
+        "min": 0
+      },
+      {
+        "name": "cold_flow",
+        "unit": "m3/h",
+        "initial": 120,
+        "min": 0
+      },
+      {
+        "name": "fouling",
+        "unit": "ratio",
+        "initial": 1,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "hot_ratio",
+        "unit": "ratio",
+        "initial": 1,
+        "min": 0
+      },
+      {
+        "name": "cold_ratio",
+        "unit": "ratio",
+        "initial": 1,
+        "min": 0
+      },
+      {
+        "name": "eps_hot_base",
+        "unit": "ratio",
+        "initial": 0.66667,
+        "min": 0
+      },
+      {
+        "name": "eps_cold_base",
+        "unit": "ratio",
+        "initial": 0.66667,
+        "min": 0
+      },
+      {
+        "name": "eff_hot",
+        "unit": "ratio",
+        "initial": 0.66667,
+        "min": 0
+      },
+      {
+        "name": "eff_cold",
+        "unit": "ratio",
+        "initial": 0.66667,
+        "min": 0
+      },
+      {
+        "name": "delta_t_in",
+        "unit": "degC",
+        "initial": 6
+      },
+      {
+        "name": "hot_drop",
+        "unit": "degC",
+        "initial": 4.00002
+      },
+      {
+        "name": "cold_rise",
+        "unit": "degC",
+        "initial": 4.00002
+      },
+      {
+        "name": "hot_out",
+        "unit": "degC",
+        "initial": 8.99998
+      },
+      {
+        "name": "cold_out",
+        "unit": "degC",
+        "initial": 11
+      },
+      {
+        "name": "approach_k",
+        "unit": "degC",
+        "initial": 1.99998
+      },
+      {
+        "name": "duty",
+        "unit": "kW",
+        "initial": 558.243
+      }
+    ],
+    "dynamics": [
+      {
+        "target": "hot_in",
+        "tier": "F0",
+        "f0": {
+          "baseline": 14,
+          "drift_per_hour": 0,
+          "seasonality": [
+            {
+              "amplitude": 1,
+              "period_s": 86400,
+              "phase_rad": -1.5708
+            }
+          ]
+        }
+      },
+      {
+        "target": "cold_in",
+        "tier": "F0",
+        "f0": {
+          "baseline": 7,
+          "drift_per_hour": 0,
+          "seasonality": []
+        }
+      },
+      {
+        "target": "hot_flow",
+        "tier": "F0",
+        "f0": {
+          "baseline": 120,
+          "drift_per_hour": 0,
+          "seasonality": []
+        }
+      },
+      {
+        "target": "cold_flow",
+        "tier": "F0",
+        "f0": {
+          "baseline": 120,
+          "drift_per_hour": 0,
+          "seasonality": []
+        }
+      },
+      {
+        "target": "hot_ratio",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "hot_flow",
+              "coef": 0.00833333
+            }
+          ]
+        }
+      },
+      {
+        "target": "cold_ratio",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "cold_flow",
+              "coef": 0.00833333
+            }
+          ]
+        }
+      },
+      {
+        "target": "eps_hot_base",
+        "tier": "F1",
+        "f1": {
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "hot_ratio",
+              "coef": 1
+            },
+            {
+              "state": "cold_ratio",
+              "coef": 1
+            }
+          ],
+          "table": {
+            "x": [
+              0.25,
+              0.5,
+              0.75,
+              1,
+              1.25,
+              1.5
+            ],
+            "y": [
+              0.25,
+              0.5,
+              0.75,
+              1,
+              1.25,
+              1.5
+            ],
+            "grid": [
+              [
+                0.88889,
+                0.99076,
+                0.99678,
+                0.99814,
+                0.99867,
+                0.99894
+              ],
+              [
+                0.49538,
+                0.8,
+                0.8934,
+                0.92742,
+                0.94352,
+                0.95258
+              ],
+              [
+                0.33226,
+                0.5956,
+                0.72727,
+                0.79127,
+                0.82652,
+                0.84819
+              ],
+              [
+                0.24953,
+                0.46371,
+                0.59345,
+                0.66667,
+                0.71091,
+                0.7398
+              ],
+              [
+                0.19973,
+                0.37741,
+                0.49591,
+                0.56873,
+                0.61538,
+                0.6471
+              ],
+              [
+                0.16649,
+                0.31753,
+                0.4241,
+                0.4932,
+                0.53925,
+                0.57143
+              ]
+            ]
+          }
+        }
+      },
+      {
+        "target": "eps_cold_base",
+        "tier": "F1",
+        "f1": {
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "hot_ratio",
+              "coef": 1
+            },
+            {
+              "state": "cold_ratio",
+              "coef": 1
+            }
+          ],
+          "table": {
+            "x": [
+              0.25,
+              0.5,
+              0.75,
+              1,
+              1.25,
+              1.5
+            ],
+            "y": [
+              0.25,
+              0.5,
+              0.75,
+              1,
+              1.25,
+              1.5
+            ],
+            "grid": [
+              [
+                0.88889,
+                0.49538,
+                0.33226,
+                0.24953,
+                0.19973,
+                0.16649
+              ],
+              [
+                0.99076,
+                0.8,
+                0.5956,
+                0.46371,
+                0.37741,
+                0.31753
+              ],
+              [
+                0.99678,
+                0.8934,
+                0.72727,
+                0.59345,
+                0.49591,
+                0.4241
+              ],
+              [
+                0.99814,
+                0.92742,
+                0.79127,
+                0.66667,
+                0.56873,
+                0.4932
+              ],
+              [
+                0.99867,
+                0.94352,
+                0.82652,
+                0.71091,
+                0.61538,
+                0.53925
+              ],
+              [
+                0.99894,
+                0.95258,
+                0.84819,
+                0.7398,
+                0.6471,
+                0.57143
+              ]
+            ]
+          }
+        }
+      },
+      {
+        "target": "eff_hot",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "eps_hot_base",
+              "coef": 1
+            },
+            {
+              "state": "fouling",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "eff_cold",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "eps_cold_base",
+              "coef": 1
+            },
+            {
+              "state": "fouling",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "delta_t_in",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "hot_in",
+              "coef": 1
+            },
+            {
+              "state": "cold_in",
+              "coef": -1
+            }
+          ]
+        }
+      },
+      {
+        "target": "hot_drop",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "eff_hot",
+              "coef": 1
+            },
+            {
+              "state": "delta_t_in",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "cold_rise",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "eff_cold",
+              "coef": 1
+            },
+            {
+              "state": "delta_t_in",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "hot_out",
+        "tier": "F1",
+        "dt_ms": 5000,
+        "f1": {
+          "form": "first_order_lag",
+          "time_constant_s": 60,
+          "gain": 1,
+          "inputs": [
+            {
+              "state": "hot_in",
+              "coef": 1
+            },
+            {
+              "state": "hot_drop",
+              "coef": -1
+            }
+          ]
+        }
+      },
+      {
+        "target": "cold_out",
+        "tier": "F1",
+        "dt_ms": 5000,
+        "f1": {
+          "form": "first_order_lag",
+          "time_constant_s": 60,
+          "gain": 1,
+          "inputs": [
+            {
+              "state": "cold_in",
+              "coef": 1
+            },
+            {
+              "state": "cold_rise",
+              "coef": 1
+            }
+          ]
+        }
+      },
+      {
+        "target": "approach_k",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "hot_out",
+              "coef": 1
+            },
+            {
+              "state": "cold_in",
+              "coef": -1
+            }
+          ]
+        }
+      },
+      {
+        "target": "duty",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "hot_drop",
+              "coef": 1.163
+            },
+            {
+              "state": "hot_flow",
+              "coef": 1
+            }
+          ]
+        }
+      }
+    ],
+    "faults": [
+      {
+        "id": "fouling",
+        "affects": [
+          {
+            "state": "fouling",
+            "delta": -0.35
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "hot_out_temp"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "rate_per_hour": 0.03,
+          "shape": "ramp"
+        }
+      },
+      {
+        "id": "gasket_leak",
+        "affects": [
+          {
+            "state": "hot_out",
+            "delta": -0.8
+          },
+          {
+            "state": "cold_out",
+            "delta": 0.8
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "hot_out_temp"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "rate_per_hour": 0.05,
+          "shape": "ramp"
+        }
+      },
+      {
+        "id": "process_swing",
+        "affects": [
+          {
+            "state": "hot_in",
+            "delta": 4
+          }
+        ],
+        "is_negative_class": true,
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "hot_out_temp"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "shape": "pulse",
+          "duration_s": 7200
+        }
+      }
+    ]
+  },
+  "measurement_points": [
+    {
+      "name": "hot_out_temp",
+      "state": "hot_out",
+      "unit_family": "temperature",
+      "range": {
+        "min": 0,
+        "max": 40
+      },
+      "tag": "TT",
+      "default_instrument": "streamsim/rtd@1"
+    },
+    {
+      "name": "cold_out_temp",
+      "state": "cold_out",
+      "unit_family": "temperature",
+      "range": {
+        "min": 0,
+        "max": 40
+      },
+      "tag": "TT",
+      "default_instrument": "streamsim/rtd@1"
+    },
+    {
+      "name": "hot_in_temp",
+      "state": "hot_in",
+      "unit_family": "temperature",
+      "range": {
+        "min": 0,
+        "max": 40
+      },
+      "tag": "TT",
+      "default_instrument": "streamsim/rtd@1",
+      "optional": true
+    },
+    {
+      "name": "cold_in_temp",
+      "state": "cold_in",
+      "unit_family": "temperature",
+      "range": {
+        "min": 0,
+        "max": 40
+      },
+      "tag": "TT",
+      "default_instrument": "streamsim/rtd@1",
+      "optional": true
+    },
+    {
+      "name": "duty",
+      "state": "duty",
+      "unit_family": "power",
+      "range": {
+        "min": 0,
+        "max": 1500
+      },
+      "tag": "JT",
+      "default_instrument": "streamsim/power-meter@1",
+      "optional": true
+    }
+  ],
+  "ports": [
+    {
+      "name": "hot_in",
+      "type": "temperature",
+      "direction": "consumes",
+      "state": "hot_in"
+    },
+    {
+      "name": "cold_in",
+      "type": "cooling_water_temp",
+      "direction": "consumes",
+      "state": "cold_in"
+    },
+    {
+      "name": "hot_flow_in",
+      "type": "chilled_water",
+      "direction": "consumes",
+      "state": "hot_flow"
+    },
+    {
+      "name": "cold_flow_in",
+      "type": "condenser_water",
+      "direction": "consumes",
+      "state": "cold_flow"
+    },
+    {
+      "name": "hot_out",
+      "type": "temperature",
+      "direction": "provides",
+      "state": "hot_out"
+    },
+    {
+      "name": "cold_out",
+      "type": "cooling_water_temp",
+      "direction": "provides",
+      "state": "cold_out"
+    }
+  ],
+  "default_preset": "medium",
+  "presets": {
+    "small": {
+      "title": "Small (about 40 m3/h per side)",
+      "values": {
+        "dynamics/cold_flow/f0/baseline": 40,
+        "dynamics/cold_ratio/f1/inputs/cold_flow/coef": 0.025,
+        "dynamics/hot_flow/f0/baseline": 40,
+        "dynamics/hot_ratio/f1/inputs/hot_flow/coef": 0.025,
+        "measurement_points/duty/range/max": 500,
+        "state/cold_flow/initial": 40,
+        "state/duty/initial": 186.081,
+        "state/hot_flow/initial": 40
+      }
+    },
+    "medium": {
+      "title": "Medium (about 120 m3/h per side)",
+      "values": {}
+    },
+    "large": {
+      "title": "Large (about 340 m3/h per side)",
+      "values": {
+        "dynamics/cold_flow/f0/baseline": 340,
+        "dynamics/cold_ratio/f1/inputs/cold_flow/coef": 0.00294118,
+        "dynamics/hot_flow/f0/baseline": 340,
+        "dynamics/hot_ratio/f1/inputs/hot_flow/coef": 0.00294118,
+        "measurement_points/duty/range/max": 4000,
+        "state/cold_flow/initial": 340,
+        "state/duty/initial": 1581.69,
+        "state/hot_flow/initial": 340
+      }
+    }
+  },
+  "parameters": [
+    {
+      "name": "cleanliness",
+      "title": "Initial cleanliness",
+      "unit": "ratio",
+      "type": "number",
+      "min": 0.5,
+      "max": 1.0,
+      "default": 1.0,
+      "targets": [
+        "state/fouling/initial"
+      ]
+    }
+  ]
+}

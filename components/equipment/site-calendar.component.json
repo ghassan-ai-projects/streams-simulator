@@ -1,0 +1,808 @@
+{
+  "schema_version": "0.1",
+  "id": "streamsim/site-calendar",
+  "version": 1,
+  "title": "Site calendar",
+  "description": "The operating calendar of a site: a weekly shift schedule in the site's local time, a peak and off-peak tariff and the lighting and plug load that follows the shift. A schedule override stuck on, overtime and a holiday closure are the ways the calendar can be wrong or unusual.",
+  "class": "environment/site/calendar",
+  "tags": [
+    "environment",
+    "site"
+  ],
+  "icon": "calendar",
+  "kind": {
+    "state": [
+      {
+        "name": "shift_plan",
+        "unit": "ratio",
+        "initial": 0
+      },
+      {
+        "name": "shift",
+        "unit": "ratio",
+        "initial": 0
+      },
+      {
+        "name": "tariff",
+        "unit": "currency/kWh",
+        "initial": 0.1,
+        "min": 0
+      },
+      {
+        "name": "site_load",
+        "unit": "kW",
+        "initial": 25,
+        "min": 0
+      }
+    ],
+    "dynamics": [
+      {
+        "target": "shift_plan",
+        "tier": "F0",
+        "f0": {
+          "baseline": 0,
+          "drift_per_hour": 0,
+          "seasonality": [],
+          "schedule": {
+            "period_s": 604800,
+            "utc_offset_s": 0,
+            "interpolation": "linear",
+            "points": [
+              {
+                "at_s": 0,
+                "value": 0
+              },
+              {
+                "at_s": 19800,
+                "value": 0
+              },
+              {
+                "at_s": 21600,
+                "value": 1
+              },
+              {
+                "at_s": 48600,
+                "value": 1
+              },
+              {
+                "at_s": 50400,
+                "value": 1
+              },
+              {
+                "at_s": 77400,
+                "value": 1
+              },
+              {
+                "at_s": 79200,
+                "value": 0
+              },
+              {
+                "at_s": 86400,
+                "value": 0
+              },
+              {
+                "at_s": 106200,
+                "value": 0
+              },
+              {
+                "at_s": 108000,
+                "value": 1
+              },
+              {
+                "at_s": 135000,
+                "value": 1
+              },
+              {
+                "at_s": 136800,
+                "value": 1
+              },
+              {
+                "at_s": 163800,
+                "value": 1
+              },
+              {
+                "at_s": 165600,
+                "value": 0
+              },
+              {
+                "at_s": 172800,
+                "value": 0
+              },
+              {
+                "at_s": 192600,
+                "value": 0
+              },
+              {
+                "at_s": 194400,
+                "value": 0
+              },
+              {
+                "at_s": 221400,
+                "value": 0
+              },
+              {
+                "at_s": 223200,
+                "value": 0
+              },
+              {
+                "at_s": 250200,
+                "value": 0
+              },
+              {
+                "at_s": 252000,
+                "value": 0
+              },
+              {
+                "at_s": 259200,
+                "value": 0
+              },
+              {
+                "at_s": 279000,
+                "value": 0
+              },
+              {
+                "at_s": 280800,
+                "value": 0
+              },
+              {
+                "at_s": 307800,
+                "value": 0
+              },
+              {
+                "at_s": 309600,
+                "value": 0
+              },
+              {
+                "at_s": 336600,
+                "value": 0
+              },
+              {
+                "at_s": 338400,
+                "value": 0
+              },
+              {
+                "at_s": 345600,
+                "value": 0
+              },
+              {
+                "at_s": 365400,
+                "value": 0
+              },
+              {
+                "at_s": 367200,
+                "value": 1
+              },
+              {
+                "at_s": 394200,
+                "value": 1
+              },
+              {
+                "at_s": 396000,
+                "value": 1
+              },
+              {
+                "at_s": 423000,
+                "value": 1
+              },
+              {
+                "at_s": 424800,
+                "value": 0
+              },
+              {
+                "at_s": 432000,
+                "value": 0
+              },
+              {
+                "at_s": 451800,
+                "value": 0
+              },
+              {
+                "at_s": 453600,
+                "value": 1
+              },
+              {
+                "at_s": 480600,
+                "value": 1
+              },
+              {
+                "at_s": 482400,
+                "value": 1
+              },
+              {
+                "at_s": 509400,
+                "value": 1
+              },
+              {
+                "at_s": 511200,
+                "value": 0
+              },
+              {
+                "at_s": 518400,
+                "value": 0
+              },
+              {
+                "at_s": 538200,
+                "value": 0
+              },
+              {
+                "at_s": 540000,
+                "value": 1
+              },
+              {
+                "at_s": 567000,
+                "value": 1
+              },
+              {
+                "at_s": 568800,
+                "value": 1
+              },
+              {
+                "at_s": 595800,
+                "value": 1
+              },
+              {
+                "at_s": 597600,
+                "value": 0
+              }
+            ]
+          }
+        }
+      },
+      {
+        "target": "shift",
+        "tier": "F1",
+        "f1": {
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "shift_plan",
+              "coef": 1
+            }
+          ],
+          "table": {
+            "x": [
+              0,
+              1
+            ],
+            "values": [
+              0,
+              1
+            ]
+          }
+        }
+      },
+      {
+        "target": "tariff",
+        "tier": "F0",
+        "f0": {
+          "baseline": 0,
+          "drift_per_hour": 0,
+          "seasonality": [],
+          "schedule": {
+            "period_s": 604800,
+            "utc_offset_s": 0,
+            "interpolation": "step",
+            "points": [
+              {
+                "at_s": 0,
+                "value": 0.1
+              },
+              {
+                "at_s": 25200,
+                "value": 0.28
+              },
+              {
+                "at_s": 79200,
+                "value": 0.1
+              },
+              {
+                "at_s": 86400,
+                "value": 0.1
+              },
+              {
+                "at_s": 111600,
+                "value": 0.28
+              },
+              {
+                "at_s": 165600,
+                "value": 0.1
+              },
+              {
+                "at_s": 172800,
+                "value": 0.1
+              },
+              {
+                "at_s": 198000,
+                "value": 0.1
+              },
+              {
+                "at_s": 252000,
+                "value": 0.1
+              },
+              {
+                "at_s": 259200,
+                "value": 0.1
+              },
+              {
+                "at_s": 284400,
+                "value": 0.1
+              },
+              {
+                "at_s": 338400,
+                "value": 0.1
+              },
+              {
+                "at_s": 345600,
+                "value": 0.1
+              },
+              {
+                "at_s": 370800,
+                "value": 0.28
+              },
+              {
+                "at_s": 424800,
+                "value": 0.1
+              },
+              {
+                "at_s": 432000,
+                "value": 0.1
+              },
+              {
+                "at_s": 457200,
+                "value": 0.28
+              },
+              {
+                "at_s": 511200,
+                "value": 0.1
+              },
+              {
+                "at_s": 518400,
+                "value": 0.1
+              },
+              {
+                "at_s": 543600,
+                "value": 0.28
+              },
+              {
+                "at_s": 597600,
+                "value": 0.1
+              }
+            ]
+          }
+        }
+      },
+      {
+        "target": "site_load",
+        "tier": "F1",
+        "f1": {
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "shift",
+              "coef": 1
+            }
+          ],
+          "table": {
+            "x": [
+              0,
+              1
+            ],
+            "values": [
+              25,
+              110
+            ]
+          }
+        }
+      }
+    ],
+    "faults": [
+      {
+        "id": "schedule_override_stuck",
+        "affects": [
+          {
+            "state": "shift_plan",
+            "delta": 1
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "site_load"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "shape": "step"
+        }
+      },
+      {
+        "id": "overtime",
+        "affects": [
+          {
+            "state": "shift_plan",
+            "delta": 1
+          }
+        ],
+        "is_negative_class": true,
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "site_load"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "shape": "pulse",
+          "duration_s": 14400
+        }
+      },
+      {
+        "id": "holiday_closure",
+        "affects": [
+          {
+            "state": "shift_plan",
+            "delta": -1,
+            "multiplicative": true
+          }
+        ],
+        "is_negative_class": true,
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "site_load"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "shape": "pulse",
+          "duration_s": 43200
+        }
+      }
+    ],
+    "effectors": [
+      {
+        "name": "extend_shift",
+        "risk_class": "low",
+        "idempotency_window_s": 3600,
+        "ack": {
+          "failure_modes": [
+            {
+              "mode": "ok",
+              "probability": 0.97
+            },
+            {
+              "mode": "slow",
+              "probability": 0.02
+            },
+            {
+              "mode": "ack_lost",
+              "probability": 0.01
+            }
+          ],
+          "latency_ms": {
+            "mean": 300,
+            "sigma": 50
+          }
+        },
+        "confirmation_channels": [
+          "site_load"
+        ],
+        "lease": {
+          "arg": "duration_s",
+          "fallback": "revert"
+        },
+        "args_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "site_id",
+            "duration_s"
+          ],
+          "properties": {
+            "site_id": {
+              "type": "string"
+            },
+            "duration_s": {
+              "type": "number",
+              "minimum": 60,
+              "maximum": 14400
+            }
+          }
+        },
+        "effect": {
+          "dead_time_s": 0,
+          "time_constant_s": 0,
+          "state_deltas": [
+            {
+              "state": "shift_plan",
+              "delta": 1
+            }
+          ]
+        }
+      }
+    ],
+    "system": true
+  },
+  "measurement_points": [
+    {
+      "name": "site_load",
+      "state": "site_load",
+      "unit_family": "power",
+      "range": {
+        "min": 0,
+        "max": 165
+      },
+      "tag": "JT",
+      "default_instrument": "streamsim/power-meter@1"
+    }
+  ],
+  "ports": [
+    {
+      "name": "shift_out",
+      "type": "shift",
+      "direction": "provides",
+      "state": "shift"
+    },
+    {
+      "name": "tariff_out",
+      "type": "tariff",
+      "direction": "provides",
+      "state": "tariff"
+    }
+  ],
+  "default_preset": "medium",
+  "presets": {
+    "small": {
+      "title": "Small site (about 35 kW lighting and plug load)",
+      "values": {
+        "dynamics/site_load/f1/table/values/0": 8,
+        "dynamics/site_load/f1/table/values/1": 35,
+        "measurement_points/site_load/range/max": 52.5,
+        "state/site_load/initial": 8
+      }
+    },
+    "medium": {
+      "title": "Medium site (about 110 kW lighting and plug load)",
+      "values": {}
+    },
+    "large": {
+      "title": "Large site (about 320 kW lighting and plug load)",
+      "values": {
+        "dynamics/site_load/f1/table/values/0": 70,
+        "dynamics/site_load/f1/table/values/1": 320,
+        "measurement_points/site_load/range/max": 480,
+        "state/site_load/initial": 70
+      }
+    }
+  },
+  "parameters": [
+    {
+      "name": "shift_pattern",
+      "title": "Shift pattern",
+      "type": "enum",
+      "values": [
+        "two_shift",
+        "three_shift",
+        "day_shift"
+      ],
+      "default": "two_shift",
+      "cases": {
+        "two_shift": {
+          "dynamics/shift_plan/f0/schedule/points/0/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/1/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/2/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/3/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/4/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/5/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/6/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/7/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/8/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/9/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/10/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/11/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/12/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/13/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/14/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/15/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/16/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/17/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/18/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/19/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/20/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/21/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/22/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/23/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/24/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/25/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/26/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/27/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/28/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/29/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/30/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/31/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/32/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/33/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/34/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/35/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/36/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/37/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/38/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/39/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/40/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/41/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/42/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/43/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/44/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/45/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/46/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/47/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/48/value": 0
+        },
+        "three_shift": {
+          "dynamics/shift_plan/f0/schedule/points/0/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/1/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/2/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/3/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/4/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/5/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/6/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/7/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/8/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/9/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/10/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/11/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/12/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/13/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/14/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/15/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/16/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/17/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/18/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/19/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/20/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/21/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/22/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/23/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/24/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/25/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/26/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/27/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/28/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/29/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/30/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/31/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/32/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/33/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/34/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/35/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/36/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/37/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/38/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/39/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/40/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/41/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/42/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/43/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/44/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/45/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/46/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/47/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/48/value": 1
+        },
+        "day_shift": {
+          "dynamics/shift_plan/f0/schedule/points/0/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/1/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/2/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/3/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/4/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/5/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/6/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/7/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/8/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/9/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/10/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/11/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/12/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/13/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/14/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/15/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/16/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/17/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/18/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/19/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/20/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/21/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/22/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/23/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/24/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/25/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/26/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/27/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/28/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/29/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/30/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/31/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/32/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/33/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/34/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/35/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/36/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/37/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/38/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/39/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/40/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/41/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/42/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/43/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/44/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/45/value": 1,
+          "dynamics/shift_plan/f0/schedule/points/46/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/47/value": 0,
+          "dynamics/shift_plan/f0/schedule/points/48/value": 0
+        }
+      }
+    },
+    {
+      "name": "utc_offset_s",
+      "title": "Site offset from UTC",
+      "unit": "s",
+      "type": "number",
+      "min": -50400,
+      "max": 50400,
+      "default": 0,
+      "targets": [
+        "dynamics/shift_plan/f0/schedule/utc_offset_s",
+        "dynamics/tariff/f0/schedule/utc_offset_s"
+      ]
+    },
+    {
+      "name": "peak_price",
+      "title": "Peak tariff",
+      "unit": "currency/kWh",
+      "type": "number",
+      "min": 0,
+      "max": 2,
+      "default": 0.28,
+      "targets": [
+        "dynamics/tariff/f0/schedule/points/1/value",
+        "dynamics/tariff/f0/schedule/points/4/value",
+        "dynamics/tariff/f0/schedule/points/13/value",
+        "dynamics/tariff/f0/schedule/points/16/value",
+        "dynamics/tariff/f0/schedule/points/19/value"
+      ]
+    },
+    {
+      "name": "offpeak_price",
+      "title": "Off-peak tariff",
+      "unit": "currency/kWh",
+      "type": "number",
+      "min": 0,
+      "max": 2,
+      "default": 0.1,
+      "targets": [
+        "dynamics/tariff/f0/schedule/points/0/value",
+        "dynamics/tariff/f0/schedule/points/2/value",
+        "dynamics/tariff/f0/schedule/points/3/value",
+        "dynamics/tariff/f0/schedule/points/5/value",
+        "dynamics/tariff/f0/schedule/points/6/value",
+        "dynamics/tariff/f0/schedule/points/7/value",
+        "dynamics/tariff/f0/schedule/points/8/value",
+        "dynamics/tariff/f0/schedule/points/9/value",
+        "dynamics/tariff/f0/schedule/points/10/value",
+        "dynamics/tariff/f0/schedule/points/11/value",
+        "dynamics/tariff/f0/schedule/points/12/value",
+        "dynamics/tariff/f0/schedule/points/14/value",
+        "dynamics/tariff/f0/schedule/points/15/value",
+        "dynamics/tariff/f0/schedule/points/17/value",
+        "dynamics/tariff/f0/schedule/points/18/value",
+        "dynamics/tariff/f0/schedule/points/20/value"
+      ]
+    }
+  ]
+}

@@ -22,6 +22,16 @@ This project has not established a formal release stream yet. Until it does, cha
   existing instruments gain the same. Equipment `feeder-meter`, `transformer`, `generator`, `production-line` and
   `packaging-line`. The vocabulary gains the port types `pressure`, `temperature` and `shift`. Compose no longer writes a
   `unit` on a boolean channel, which the domain contract forbids. `examples/chiller-pilot.domain.json` is recomposed.
+- **Catalog harness, cooling group and environment** (phase P7k). `test/contract` proves every equipment of the built-in library
+  and every preset alone: it composes, validates, lints clean, starts at rest, replays byte for byte after a two-hour run with
+  its effectors called and its faults injected, every effector moves a state it names, every fault is observable by the truth
+  solver, and the trivial-baseline audit runs (and finds at least one fault hard to detect); every instrument attaches to a
+  point, every port type has both ends, and every providing port composes with every consuming port of its type. New
+  equipment `cooling-tower`, `pump`, `heat-exchanger`, and the system parts `weather` and `site-calendar`; the chiller gains
+  `running`, start and stop, a part-load efficiency curve with COP, a return temperature and an energy cost rate; the air
+  handling unit gains occupancy, outdoor-air load and coil limits. The vocabulary gains the tariff family and the port types
+  `temperature`, `cooling_water_temp`, `dry_bulb_temp`, `wet_bulb_temp`, `shift` and `tariff`.
+  `examples/chiller-pilot.domain.json` is regenerated.
 
 - **Domain lint** (phase P7j). `streamsim domain lint <domain.json> [--hours H] [--seed S]` simulates a noiseless nominal day
   (default population, no faults, no effector calls, sampled every 60 s) and reports `non_finite` and `out_of_range` errors and
