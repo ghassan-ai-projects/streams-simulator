@@ -102,7 +102,7 @@ func (w *World) scheduleSafeState(entityID string, deltas []model.StateDelta, at
 func (w *World) withdrawLease(key driverKey, at int64) map[string]float64 {
 	carried := map[string]float64{}
 	for _, pending := range w.leases[key] {
-		if pending.startNS > at {
+		if pending.startNS >= at {
 			w.withdrawKick(pending)
 			carried[pending.state] -= pending.delta
 		}

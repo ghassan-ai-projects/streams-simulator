@@ -369,10 +369,11 @@ sequencers act on them, so actions do not fight contactor-level logic.
   fault, otherwise `on_miss` applies. The outcome shows only through states; the acknowledgement is the same either way.
   Responder availability, reports and approvals are the reference scenario's (S6, P12).
 - **`effectors[e].lease`** = `{arg, fallback: safe_off|hold_last|revert, safe_deltas}`: an acknowledged call holds its effect for
-  the seconds in its numeric argument `arg`. Unless the same effector is acknowledged again on the entity before the lease lapses
+  the seconds in its numeric argument `arg`. Unless the same effector is acknowledged again on the entity before or at the instant the lease lapses
   (which withdraws the pending fallback and starts a new lease), the fallback applies at the lapse: `safe_off` sets each
   `safe_deltas` state to its `delta`, `revert` undoes the call's additive deltas (an assigning effect cannot be reverted,
-  `/…/lease/fallback`), `hold_last` keeps the effect. A refused or unacknowledged call does not renew.
+  `/…/lease/fallback`), `hold_last` keeps the effect. A refused or unacknowledged call does not renew. Two assignments to one state at
+  the same instant resolve to the later-issued one.
 - **Lease timing.** A lease counts from the effect's start (the call time plus the effect's dead time). A `revert` fallback
   undoes the total additive contribution of every call in the lease chain (a renewal carries the withdrawn revert into the
   new one), with the effect's own time constant, so the state returns to where it started. A call without the lease
