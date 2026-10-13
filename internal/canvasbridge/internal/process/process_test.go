@@ -2,6 +2,8 @@ package process
 
 import (
 	"context"
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"slices"
@@ -29,12 +31,20 @@ func helper(args []string) int {
 		return 3
 	case "director":
 		return serveHelperDirector()
+	case "stderr-exit":
+		_, _ = os.Stderr.WriteString("domain factory.domain.json: invalid\n")
+		return 3
 	}
 	return 2
 }
 
 func serveHelperDirector() int {
 	server := mcpsdk.NewServer(&mcpsdk.Implementation{Name: "helper", Version: "0"}, nil)
+	mcpsdk.AddTool(server, &mcpsdk.Tool{Name: "sim.die"}, func(context.Context, *mcpsdk.CallToolRequest, map[string]any) (*mcpsdk.CallToolResult, map[string]any, error) {
+		_, _ = os.Stderr.WriteString("director crashed\n")
+		os.Exit(9)
+		return nil, nil, nil
+	})
 	mcpsdk.AddTool(server, &mcpsdk.Tool{Name: "sim.echo"}, func(_ context.Context, _ *mcpsdk.CallToolRequest, in map[string]any) (*mcpsdk.CallToolResult, map[string]any, error) {
 		if in["refuse"] == true {
 			return &mcpsdk.CallToolResult{IsError: true, Content: []mcpsdk.Content{&mcpsdk.TextContent{Text: "world_not_found: no world"}}}, nil, nil
@@ -57,18 +67,18 @@ func self(t *testing.T) string {
 }
 
 func TestCommandsRunWithAScrubbedEnvironmentInTheWorkspace(t *testing.T) {
-	t.Setenv("STREAMSIM_SECRET", "leak")
+	t.Parallel()
 	dir := t.TempDir()
 	result, err := Run(context.Background(), self(t), dir, []string{"--helper", "env"})
-	if err != nil || result.ExitCode != 0 || strings.Contains(string(result.Stdout), "STREAMSIM_SECRET") {
+	if err != nil || result.ExitCode != 0 || len(result.Stdout) != 0 {
 		t.Fatalf("Run = %+v, %v: the child sees no inherited variable", result, err)
 	}
 	failed, err := Run(context.Background(), self(t), dir, []string{"--helper", "fail"})
 	if err != nil || failed.ExitCode != 3 || !strings.HasPrefix(string(failed.Stderr), "refused") {
 		t.Fatalf("a failing command: %+v, %v", failed, err)
 	}
-	if _, err := Run(context.Background(), filepath.Join(dir, "absent"), dir, nil); err == nil {
-		t.Fatal("a missing executable ran")
+	if _, err := Run(context.Background(), filepath.Join(dir, "absent"), dir, nil); !errors.Is(err, fs.ErrNotExist) {
+		t.Fatalf("a missing executable ran: %v", err)
 	}
 }
 
@@ -87,8 +97,8 @@ func TestTheDirectorIsDrivenOverMCPOnStdio(t *testing.T) {
 	if err != nil || refused.Failure != "world_not_found: no world" {
 		t.Fatalf("a refused call: %+v, %v", refused, err)
 	}
-	if _, err := director.Call(context.Background(), "sim.absent", nil); err == nil {
-		t.Fatal("an unknown tool was called")
+	if _, err := director.Call(context.Background(), "sim.absent", nil); err == nil || !strings.Contains(err.Error(), "sim.absent") {
+		t.Fatalf("an unknown tool was called: %v", err)
 	}
 }
 
@@ -100,4 +110,27 @@ func TestTheTickerTicksUntilStoppedAndInterruptsEndTheContext(t *testing.T) {
 	ctx, cancel := UntilInterrupted(context.Background())
 	cancel()
 	<-ctx.Done()
+}
+
+func TestADirectorThatDiesIsReportedGoneWithWhatItSaid(t *testing.T) {
+	t.Parallel()
+	director, err := StartDirector(context.Background(), self(t), []string{"--helper", "director"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = director.Close() }()
+	if _, err := director.Call(context.Background(), "sim.die", nil); !errors.Is(err, ErrGone) || !strings.Contains(err.Error(), "director crashed") {
+		t.Fatalf("a director that exited during a call: %v", err)
+	}
+	if _, err := director.Call(context.Background(), "sim.echo", nil); !errors.Is(err, ErrGone) {
+		t.Fatalf("a call after the director exited: %v", err)
+	}
+}
+
+func TestADirectorThatCannotStartSaysWhy(t *testing.T) {
+	t.Parallel()
+	_, err := StartDirector(context.Background(), self(t), []string{"--helper", "stderr-exit"})
+	if err == nil || !strings.Contains(err.Error(), "factory.domain.json: invalid") {
+		t.Fatalf("a director that exited on start: %v", err)
+	}
 }

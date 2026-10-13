@@ -34,4 +34,5 @@ type Record struct {
 	Type   string
 	Line   json.RawMessage
 	Closes bool
+	Seen   bool
 }

@@ -26,7 +26,7 @@ type Edges struct {
 	Tick          func(every time.Duration) (<-chan time.Time, func())
 	StartDirector func(ctx context.Context) (Director, error)
 	RunCommand    func(ctx context.Context, argv []string) (process.CommandResult, error)
-	NewSession    func() (string, error)
+	NewSession    func() string
 }
 
 type Settings struct {
@@ -37,26 +37,27 @@ type Settings struct {
 }
 
 type Bridge struct {
-	edges    Edges
-	settings Settings
-	mu       sync.Mutex
-	pairing  *domain.Pairing
-	director Director
-	catalog  string
-	worlds   map[string]bool
+	edges      Edges
+	settings   Settings
+	stateMu    sync.Mutex
+	pairing    *domain.Pairing
+	worlds     map[string]bool
+	running    map[string]bool
+	directorMu sync.Mutex
+	director   Director
+	catalog    string
+	writeMu    sync.Mutex
 }
 
 func New(edges Edges, settings Settings) *Bridge {
-	return &Bridge{edges: edges, settings: settings, pairing: domain.NewPairing(settings.PairingCode), worlds: map[string]bool{}}
+	return &Bridge{edges: edges, settings: settings, pairing: domain.NewPairing(settings.PairingCode),
+		worlds: map[string]bool{}, running: map[string]bool{}}
 }
 
 func (b *Bridge) Pair(code string) (string, error) {
-	session, err := b.edges.NewSession()
-	if err != nil {
-		return "", err
-	}
-	b.mu.Lock()
-	defer b.mu.Unlock()
+	session := b.edges.NewSession()
+	b.stateMu.Lock()
+	defer b.stateMu.Unlock()
 	if err := b.pairing.Pair(code, session); err != nil {
 		return "", err
 	}
@@ -64,8 +65,8 @@ func (b *Bridge) Pair(code string) (string, error) {
 }
 
 func (b *Bridge) Admits(session string) bool {
-	b.mu.Lock()
-	defer b.mu.Unlock()
+	b.stateMu.Lock()
+	defer b.stateMu.Unlock()
 	return b.pairing.Admits(session)
 }
 
@@ -74,8 +75,8 @@ func (b *Bridge) Actions() []domain.Action {
 }
 
 func (b *Bridge) Close() error {
-	b.mu.Lock()
-	defer b.mu.Unlock()
+	b.directorMu.Lock()
+	defer b.directorMu.Unlock()
 	if b.director == nil {
 		return nil
 	}

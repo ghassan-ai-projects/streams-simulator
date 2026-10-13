@@ -24,8 +24,18 @@ type follower struct {
 	emit   func(domain.Record) error
 }
 
+func (b *Bridge) OpenRun(worldID string) error {
+	if _, err := domain.RunJournal(worldID); err != nil {
+		return err
+	}
+	if !b.edges.Workspace.Exists("runs/" + worldID) {
+		return fmt.Errorf("%w: run %s", domain.ErrAbsent, worldID)
+	}
+	return nil
+}
+
 func (b *Bridge) Follow(ctx context.Context, worldID string, after int64, emit func(domain.Record) error) error {
-	path, err := domain.ParsePath("runs/" + worldID + "/journal.jsonl")
+	path, err := domain.RunJournal(worldID)
 	if err != nil {
 		return err
 	}
@@ -77,7 +87,8 @@ func (f *follower) handle(line []byte) (bool, error) {
 	}
 	f.line++
 	if record.Index <= f.after {
-		return false, nil
+		record.Seen = true
+		return record.Closes, f.emitSeenClose(record)
 	}
 	if err := f.emit(record); err != nil || record.Closes {
 		return true, err
@@ -93,4 +104,11 @@ func parseRecord(line []byte, index int64) (domain.Record, error) {
 		return domain.Record{}, fmt.Errorf("canvasbridge: journal line %d: %w", index, err)
 	}
 	return domain.Record{Index: index, Type: head.Type, Line: bytes.Clone(line), Closes: head.Type == "run.closed"}, nil
+}
+
+func (f *follower) emitSeenClose(record domain.Record) error {
+	if !record.Closes {
+		return nil
+	}
+	return f.emit(record)
 }

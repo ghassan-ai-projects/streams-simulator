@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -39,13 +40,13 @@ func TestFollowRefusesABadRunAndStopsOnABrokenLineOrTheContext(t *testing.T) {
 		t.Fatalf("a run id that climbs: %v", err)
 	}
 	h.write(t, "runs/w-1/journal.jsonl", "not json\n")
-	if err := h.bridge.Follow(context.Background(), "w-1", -1, nil); err == nil {
-		t.Fatal("a broken journal line was streamed")
+	if err := h.bridge.Follow(context.Background(), "w-1", -1, nil); err == nil || !strings.Contains(err.Error(), "journal line 0") {
+		t.Fatalf("a broken journal line was streamed: %v", err)
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	if err := h.bridge.Follow(ctx, "w-2", -1, nil); err != nil {
-		t.Fatalf("a journal that never appears, cancelled: %v", err)
+		t.Fatalf("a journal that never appears, canceled: %v", err)
 	}
 }
 

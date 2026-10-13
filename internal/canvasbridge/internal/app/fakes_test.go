@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ghassan-ai-projects/streams-simulator/internal/canvasbridge/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/canvasbridge/internal/files"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/canvasbridge/internal/process"
 )
@@ -17,11 +18,22 @@ type fakeDirector struct {
 	results  map[string]process.ToolResult
 	closed   bool
 	lastArgs map[string]any
+	failWith error
+	entered  chan struct{}
+	release  chan struct{}
 }
 
 func (d *fakeDirector) Call(_ context.Context, tool string, args map[string]any) (process.ToolResult, error) {
 	d.calls = append(d.calls, tool)
 	d.lastArgs = args
+	if d.release != nil {
+		d.entered <- struct{}{}
+		<-d.release
+	}
+	if failure := d.failWith; failure != nil {
+		d.failWith = nil
+		return process.ToolResult{}, failure
+	}
 	if result, ok := d.results[tool]; ok {
 		return result, nil
 	}
@@ -40,6 +52,7 @@ type harness struct {
 	argv      [][]string
 	command   process.CommandResult
 	ticks     chan time.Time
+	prepare   func(*fakeDirector)
 }
 
 func newHarness(t *testing.T) *harness {
@@ -53,16 +66,27 @@ func newHarness(t *testing.T) *harness {
 	if err := workspace.Ensure(workspaceFolders); err != nil {
 		t.Fatal(err)
 	}
-	h.bridge = New(Edges{Workspace: workspace, NewSession: func() (string, error) { return "s-1", nil }, Tick: h.tick,
+	h.bridge = New(Edges{Workspace: workspace, NewSession: func() string { return "s-1" }, Tick: h.tick,
 		StartDirector: h.startDirector, RunCommand: h.runCommand}, Settings{WorkspaceDir: h.dir, AdaptersDir: "/adapter-files",
 		ComponentDirs: []string{"/lib"}, PairingCode: "ABCDEFGHJKLM"})
 	return h
+}
+
+func inDomains(name string) string {
+	return domain.DefinitionFolders()[0] + "/" + name
+}
+
+func (h *harness) domainsDir() string {
+	return filepath.Join(h.dir, domain.DefinitionFolders()[0])
 }
 
 func (h *harness) tick(time.Duration) (<-chan time.Time, func()) { return h.ticks, func() {} }
 
 func (h *harness) startDirector(context.Context) (Director, error) {
 	director := &fakeDirector{results: map[string]process.ToolResult{}}
+	if h.prepare != nil {
+		h.prepare(director)
+	}
 	h.directors = append(h.directors, director)
 	return director, nil
 }

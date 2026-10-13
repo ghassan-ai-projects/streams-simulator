@@ -1,6 +1,10 @@
 package domain
 
-import "fmt"
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+)
 
 type RunState struct {
 	Ended   bool
@@ -14,4 +18,12 @@ func ReadableRunFile(path WorkspacePath, state RunState) error {
 		return nil
 	}
 	return fmt.Errorf("%w: %s", ErrSealed, path.Rel)
+}
+
+func ClosedJournal(tail []byte) bool {
+	last := tail[bytes.LastIndexByte(bytes.TrimRight(tail, "\n"), '\n')+1:]
+	var closing struct {
+		Type string `json:"type"`
+	}
+	return json.Unmarshal(bytes.TrimSpace(last), &closing) == nil && closing.Type == "run.closed"
 }

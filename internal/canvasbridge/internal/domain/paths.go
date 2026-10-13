@@ -54,6 +54,13 @@ func ParsePath(rel string) (WorkspacePath, error) {
 	return WorkspacePath{}, fmt.Errorf("%w: %q", ErrBadPath, rel)
 }
 
+func RunJournal(runID string) (WorkspacePath, error) {
+	if badSegment(runID) {
+		return WorkspacePath{}, fmt.Errorf("%w: run id %q", ErrBadPath, runID)
+	}
+	return WorkspacePath{Rel: "runs/" + runID + "/journal.jsonl", Class: ClassRun, RunID: runID, RunFile: "journal.jsonl"}, nil
+}
+
 func badSegment(part string) bool {
 	return !segment.MatchString(part) || part == "." || part == ".."
 }

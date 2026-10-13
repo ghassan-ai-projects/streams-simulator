@@ -3,8 +3,10 @@ package app
 import (
 	"context"
 	"encoding/json"
+	"errors"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/canvasbridge/internal/domain"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/canvasbridge/internal/process"
 )
 
 func (b *Bridge) callTool(ctx context.Context, action domain.Action, args map[string]any) (json.RawMessage, error) {
@@ -12,8 +14,8 @@ func (b *Bridge) callTool(ctx context.Context, action domain.Action, args map[st
 	if err != nil {
 		return nil, err
 	}
-	b.mu.Lock()
-	defer b.mu.Unlock()
+	b.directorMu.Lock()
+	defer b.directorMu.Unlock()
 	result, err := b.call(ctx, action.Tool, toolArgs)
 	if err != nil {
 		return nil, err
@@ -23,6 +25,15 @@ func (b *Bridge) callTool(ctx context.Context, action domain.Action, args map[st
 }
 
 func (b *Bridge) call(ctx context.Context, tool string, args map[string]any) (json.RawMessage, error) {
+	result, err := b.callOnce(ctx, tool, args)
+	if errors.Is(err, process.ErrGone) {
+		b.dropDirector()
+		return b.callOnce(ctx, tool, args)
+	}
+	return result, err
+}
+
+func (b *Bridge) callOnce(ctx context.Context, tool string, args map[string]any) (json.RawMessage, error) {
 	director, err := b.currentDirector(ctx)
 	if err != nil {
 		return nil, err
@@ -39,7 +50,7 @@ func (b *Bridge) call(ctx context.Context, tool string, args map[string]any) (js
 
 func (b *Bridge) currentDirector(ctx context.Context) (Director, error) {
 	catalog := b.edges.Workspace.Fingerprint([]string{"domains"})
-	if b.director != nil && (catalog == b.catalog || len(b.worlds) > 0) {
+	if b.director != nil && (catalog == b.catalog || b.worldsOpen()) {
 		return b.director, nil
 	}
 	b.stopDirector()
@@ -58,18 +69,47 @@ func (b *Bridge) stopDirector() {
 	}
 }
 
+func (b *Bridge) dropDirector() {
+	b.stopDirector()
+	b.stateMu.Lock()
+	defer b.stateMu.Unlock()
+	clear(b.worlds)
+	clear(b.running)
+}
+
+func (b *Bridge) worldsOpen() bool {
+	b.stateMu.Lock()
+	defer b.stateMu.Unlock()
+	return len(b.worlds) > 0
+}
+
+func (b *Bridge) runIsRunning(runID string) bool {
+	b.stateMu.Lock()
+	defer b.stateMu.Unlock()
+	return b.running[runID]
+}
+
 func (b *Bridge) track(action string, args map[string]any, structured json.RawMessage) {
+	b.stateMu.Lock()
+	defer b.stateMu.Unlock()
+	id, _ := args["world_id"].(string)
 	switch action {
 	case "world.create":
-		var created struct {
-			WorldID string `json:"world_id"`
-		}
-		if json.Unmarshal(structured, &created) == nil && created.WorldID != "" {
-			b.worlds[created.WorldID] = true
-		}
+		b.trackCreated(structured)
+	case "run.end":
+		delete(b.running, id)
 	case "world.destroy":
-		if id, ok := args["world_id"].(string); ok {
-			delete(b.worlds, id)
-		}
+		delete(b.worlds, id)
+		delete(b.running, id)
+	}
+}
+
+func (b *Bridge) trackCreated(structured json.RawMessage) {
+	var created struct {
+		WorldID string `json:"world_id"`
+	}
+	if json.Unmarshal(structured, &created) == nil && created.WorldID != "" {
+		b.worlds[created.WorldID] = true
+		b.running[created.WorldID] = true
 	}
 }

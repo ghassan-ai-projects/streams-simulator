@@ -90,9 +90,35 @@ func (w *Workspace) Names(dir string) ([]string, error) {
 	return names, nil
 }
 
+func (w *Workspace) Tail(rel string, limit int64) ([]byte, error) {
+	file, err := w.root.Open(rel)
+	if err != nil {
+		return nil, absent(rel, err)
+	}
+	defer func() { _ = file.Close() }()
+	info, err := file.Stat()
+	if err != nil {
+		return nil, fmt.Errorf("canvasbridge: stat %s: %w", rel, err)
+	}
+	return readSection(file, rel, max(0, info.Size()-limit), limit)
+}
+
+func readSection(file *os.File, rel string, offset, limit int64) ([]byte, error) {
+	content, err := io.ReadAll(io.NewSectionReader(file, offset, limit))
+	if err != nil {
+		return nil, fmt.Errorf("canvasbridge: read %s: %w", rel, err)
+	}
+	return content, nil
+}
+
+const escapeMessage = "path escapes from parent"
+
 func absent(rel string, err error) error {
 	if errors.Is(err, fs.ErrNotExist) {
 		return fmt.Errorf("%w: %s", domain.ErrAbsent, rel)
+	}
+	if strings.Contains(err.Error(), escapeMessage) {
+		return fmt.Errorf("%w: %s leaves the workspace", domain.ErrBadPath, rel)
 	}
 	return fmt.Errorf("canvasbridge: open %s: %w", rel, err)
 }

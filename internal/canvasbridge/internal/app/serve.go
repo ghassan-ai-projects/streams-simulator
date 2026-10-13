@@ -21,7 +21,7 @@ type Config struct {
 	Stderr        io.Writer
 }
 
-var workspaceFolders = []string{"domains", "compositions", "scenarios", "layouts", "runs"}
+var workspaceFolders = append(domain.DefinitionFolders(), "runs")
 
 func Serve(ctx context.Context, cfg Config) error {
 	ctx, stop := process.UntilInterrupted(ctx)
@@ -64,8 +64,7 @@ func settingsOf(cfg Config) (Settings, error) {
 	if err != nil {
 		return Settings{}, err
 	}
-	code, err := entropy.PairingCode()
-	return Settings{WorkspaceDir: dir, AdaptersDir: adapters, ComponentDirs: cfg.ComponentDirs, PairingCode: code}, err
+	return Settings{WorkspaceDir: dir, AdaptersDir: adapters, ComponentDirs: cfg.ComponentDirs, PairingCode: entropy.PairingCode()}, nil
 }
 
 func wire(workspace *files.Workspace, executable string, settings Settings) *Bridge {

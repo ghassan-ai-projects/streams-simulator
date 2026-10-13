@@ -38,6 +38,11 @@ func (s *Server) pair(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err)
 		return
 	}
-	http.SetCookie(w, &http.Cookie{Name: cookieName, Value: session, Path: "/", HttpOnly: true, SameSite: http.SameSiteStrictMode})
+	http.SetCookie(w, sessionCookie(session))
 	writeJSON(w, http.StatusOK, map[string]bool{"paired": true})
+}
+
+func sessionCookie(session string) *http.Cookie {
+	//nolint:gosec // G124: Secure stays unset because the bridge serves plain HTTP on loopback
+	return &http.Cookie{Name: cookieName, Value: session, Path: "/", HttpOnly: true, SameSite: http.SameSiteStrictMode, MaxAge: sessionMaxAge}
 }

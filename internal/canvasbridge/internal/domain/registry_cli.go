@@ -35,7 +35,7 @@ var (
 	cliComponentList = Action{Name: "component.list", Kind: KindCLI, Command: []string{"component", "list"}, Library: true}
 	cliComponentShow = Action{Name: "component.show", Kind: KindCLI, Command: []string{"component", "show"}, Library: true,
 		CLIArgs: []CLIArg{{Key: "ref", Shape: ShapeText, Required: true}}}
-	cliCompose = Action{Name: "domain.compose", Kind: KindCLI, Command: []string{"domain", "compose"}, Library: true, Mutating: true,
+	cliCompose = Action{Name: "domain.compose", Kind: KindCLI, Command: []string{"domain", "compose"}, Library: true, Mutating: true, Etag: true,
 		CLIArgs: []CLIArg{{Key: "composition", Shape: ShapePath, Class: ClassComposition, Required: true},
 			{Key: "out", Flag: "--out", Shape: ShapePath, Class: ClassDomain, Required: true}}}
 	cliValidate = Action{Name: "domain.validate", Kind: KindCLI, Command: []string{"domain", "validate"},
@@ -46,7 +46,7 @@ var (
 		CLIArgs: []CLIArg{{Key: "run", Shape: ShapeRun, RunFile: "run.json", Required: true}}}
 	cliReport = Action{Name: "run.report", Kind: KindCLI, Command: []string{"report"},
 		CLIArgs: []CLIArg{{Key: "run", Shape: ShapeRun, Required: true}}}
-	cliScenario = Action{Name: "scenario.export", Kind: KindCLI, Command: []string{"scenario", "from-run"}, Catalog: true, Mutating: true,
+	cliScenario = Action{Name: "scenario.export", Kind: KindCLI, Command: []string{"scenario", "from-run"}, Catalog: true, Mutating: true, Etag: true,
 		CLIArgs: []CLIArg{{Key: "run", Shape: ShapeRun, RunFile: "run.json", Required: true},
 			{Key: "out", Flag: "--out", Shape: ShapePath, Class: ClassScenario, Required: true}}}
 )
@@ -91,6 +91,9 @@ func (a Action) closedArguments(args map[string]any) error {
 }
 
 func (a Action) takes(key string) bool {
+	if a.Etag && key == etagKey {
+		return true
+	}
 	for _, spec := range a.CLIArgs {
 		if spec.Key == key {
 			return true

@@ -9,6 +9,14 @@ import (
 )
 
 func (b *Bridge) RunAction(ctx context.Context, name string, args map[string]any) (json.RawMessage, error) {
+	result, err := b.dispatch(ctx, name, args)
+	if err != nil {
+		return nil, redact(err, b.settings.WorkspaceDir)
+	}
+	return json.RawMessage(domain.Scrub(string(result), b.settings.WorkspaceDir)), nil
+}
+
+func (b *Bridge) dispatch(ctx context.Context, name string, args map[string]any) (json.RawMessage, error) {
 	action, err := domain.Lookup(name)
 	if err != nil {
 		return nil, err
@@ -24,8 +32,38 @@ func (b *Bridge) runCommand(ctx context.Context, action domain.Action, args map[
 	if err != nil {
 		return nil, err
 	}
-	argv := append(b.absolute(parts), b.flags(action)...)
-	result, err := b.edges.RunCommand(ctx, argv)
+	guard, guarded, err := action.Guarded(args)
+	if err != nil {
+		return nil, err
+	}
+	if guarded {
+		return b.executeGuarded(ctx, action, parts, guard)
+	}
+	return b.execute(ctx, action, parts)
+}
+
+func (b *Bridge) executeGuarded(ctx context.Context, action domain.Action, parts []domain.ArgvPart, guard domain.Guard) (json.RawMessage, error) {
+	b.writeMu.Lock()
+	defer b.writeMu.Unlock()
+	if err := b.checkVersion(guard); err != nil {
+		return nil, err
+	}
+	return b.execute(ctx, action, parts)
+}
+
+func (b *Bridge) checkVersion(guard domain.Guard) error {
+	current, err := b.edges.Workspace.Version(guard.Path, domain.Version, domain.MaxFileBytes)
+	if err != nil {
+		return err
+	}
+	if current != guard.Etag {
+		return &domain.ConflictError{Path: guard.Path, Etag: current}
+	}
+	return nil
+}
+
+func (b *Bridge) execute(ctx context.Context, action domain.Action, parts []domain.ArgvPart) (json.RawMessage, error) {
+	result, err := b.edges.RunCommand(ctx, append(b.absolute(parts), b.flags(action)...))
 	if err != nil {
 		return nil, err
 	}

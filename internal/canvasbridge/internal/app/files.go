@@ -2,7 +2,6 @@ package app
 
 import (
 	"bytes"
-	"fmt"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/canvasbridge/internal/domain"
 )
@@ -27,8 +26,8 @@ func (b *Bridge) WriteFile(rel, content, etag string) (domain.FileDocument, erro
 	if err != nil {
 		return domain.FileDocument{}, err
 	}
-	b.mu.Lock()
-	defer b.mu.Unlock()
+	b.writeMu.Lock()
+	defer b.writeMu.Unlock()
 	version, err := b.edges.Workspace.WriteIfUnchanged(path.Rel, []byte(content), etag, domain.Version, domain.MaxFileBytes)
 	if err != nil {
 		return domain.FileDocument{Path: path.Rel, Etag: version}, err
@@ -40,8 +39,12 @@ func (b *Bridge) runState(runID string) domain.RunState {
 	if runID == "" {
 		return domain.RunState{}
 	}
-	ended := b.edges.Workspace.Exists(fmt.Sprintf("runs/%s/run.json", runID))
-	return domain.RunState{Ended: ended, Explore: b.exploreRun(runID)}
+	return domain.RunState{Ended: b.closedRun(runID) && !b.runIsRunning(runID), Explore: b.exploreRun(runID)}
+}
+
+func (b *Bridge) closedRun(runID string) bool {
+	tail, err := b.edges.Workspace.Tail("runs/"+runID+"/journal.jsonl", closingLimit)
+	return err == nil && domain.ClosedJournal(tail)
 }
 
 func (b *Bridge) exploreRun(runID string) bool {

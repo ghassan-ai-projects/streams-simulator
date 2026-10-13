@@ -9,6 +9,10 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/world"
 )
 
+func FolderUsed(dir string) bool {
+	return layer.FolderUsed(dir)
+}
+
 func LoadArtifact(path string) (*model.RunArtifact, error) {
 	return layer.LoadArtifact(path)
 }

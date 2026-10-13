@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"io/fs"
+	"os/exec"
 	"path/filepath"
 	"testing"
 
@@ -23,14 +25,14 @@ func TestServingRefusesANonLoopbackAddressAfterPreparingTheWorkspace(t *testing.
 			t.Errorf("the workspace folder %s was not created", folder)
 		}
 	}
-	if err := Serve(context.Background(), Config{Workspace: filepath.Join(dir, "absent"), Addr: "127.0.0.1:0"}); err == nil {
-		t.Fatal("a missing workspace was served")
+	if err := Serve(context.Background(), Config{Workspace: filepath.Join(dir, "absent"), Addr: "127.0.0.1:0"}); !errors.Is(err, fs.ErrNotExist) {
+		t.Fatalf("a missing workspace was served: %v", err)
 	}
 }
 
 func TestTheWiredBridgeKnowsItsAbsoluteFoldersAndAFreshCode(t *testing.T) {
 	t.Parallel()
-	settings, err := settingsOf(Config{Workspace: "ws", AdaptersDir: "adapters", ComponentDirs: []string{"/lib"}})
+	settings, err := settingsOf(Config{Workspace: t.TempDir(), AdaptersDir: "adapters", ComponentDirs: []string{"/lib"}})
 	if err != nil || !filepath.IsAbs(settings.WorkspaceDir) || !filepath.IsAbs(settings.AdaptersDir) || len(domain.NormalizeCode(settings.PairingCode)) != 12 {
 		t.Fatalf("settings = %+v, %v", settings, err)
 	}
@@ -38,7 +40,11 @@ func TestTheWiredBridgeKnowsItsAbsoluteFoldersAndAFreshCode(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	bridge := wire(workspace, "/bin/false", settings)
+	falsy, err := exec.LookPath("false")
+	if err != nil {
+		t.Fatal(err)
+	}
+	bridge := wire(workspace, falsy, settings)
 	if bridge.edges.RunCommand == nil || bridge.edges.StartDirector == nil || bridge.edges.Tick == nil || bridge.edges.NewSession == nil {
 		t.Fatal("every edge is wired")
 	}

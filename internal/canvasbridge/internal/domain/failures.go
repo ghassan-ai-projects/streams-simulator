@@ -54,3 +54,16 @@ func ExploreRun(firstJournalLine []byte) bool {
 	var opening RunOpening
 	return json.Unmarshal(firstJournalLine, &opening) == nil && opening.Type == "run.opened" && opening.Mode == "explore"
 }
+
+type ConflictError struct {
+	Path string
+	Etag string
+}
+
+func (c *ConflictError) Error() string {
+	return ErrConflict.Error() + ": " + c.Path
+}
+
+func (c *ConflictError) Is(target error) bool {
+	return target == ErrConflict
+}

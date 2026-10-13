@@ -24,6 +24,7 @@ type Action struct {
 	Withheld []string   `json:"-"`
 	Catalog  bool       `json:"-"`
 	Library  bool       `json:"-"`
+	Etag     bool       `json:"-"`
 	Mutating bool       `json:"mutating"`
 }
 

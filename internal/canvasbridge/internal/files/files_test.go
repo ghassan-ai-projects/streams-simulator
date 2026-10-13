@@ -2,8 +2,11 @@ package files
 
 import (
 	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/canvasbridge/internal/domain"
@@ -56,11 +59,10 @@ func TestReadsStayInsideTheWorkspaceAndWithinTheirLimit(t *testing.T) {
 	if err := os.Symlink(outside, filepath.Join(dir, "plants", "link.json")); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := w.Read("plants/link.json", 100); err == nil {
-		t.Fatal("a symlink out of the workspace was followed")
-	}
-	if _, err := w.Read("../secret.json", 100); err == nil {
-		t.Fatal("a path out of the workspace was read")
+	for _, rel := range []string{"plants/link.json", "../secret.json"} {
+		if _, err := w.Read(rel, 100); !errors.Is(err, domain.ErrBadPath) {
+			t.Errorf("Read(%q) = %v, want a bad path for leaving the workspace", rel, err)
+		}
 	}
 	if _, err := w.Read("plants/none.json", 100); !errors.Is(err, domain.ErrAbsent) {
 		t.Fatalf("an absent file: %v", err)
@@ -105,7 +107,61 @@ func TestListingsTailsAndFingerprintsFollowTheFolder(t *testing.T) {
 
 func TestOpeningAMissingWorkspaceFails(t *testing.T) {
 	t.Parallel()
-	if _, err := Open(filepath.Join(t.TempDir(), "absent")); err == nil {
-		t.Fatal("a missing workspace opened")
+	if _, err := Open(filepath.Join(t.TempDir(), "absent")); !errors.Is(err, fs.ErrNotExist) {
+		t.Fatalf("a missing workspace opened: %v", err)
 	}
 }
+
+func TestAWriteLargerThanTheReadLimitIsRefused(t *testing.T) {
+	t.Parallel()
+	w, _ := workspace(t)
+	if _, err := w.WriteIfUnchanged("plants/big.json", []byte("0123456789"), "", domain.Version, 5); !errors.Is(err, domain.ErrTooLarge) {
+		t.Fatalf("a write over the limit: %v", err)
+	}
+	if w.Exists("plants/big.json") {
+		t.Fatal("the refused write left a file")
+	}
+}
+
+func TestTheTailIsTheLastBytesOfTheFile(t *testing.T) {
+	t.Parallel()
+	w, _ := workspace(t)
+	if _, err := w.WriteIfUnchanged("runs/w-1/journal.jsonl", []byte("line one\nline two\n"), "", domain.Version, 100); err != nil {
+		t.Fatal(err)
+	}
+	for limit, want := range map[int64]string{9: "line two\n", 100: "line one\nline two\n"} {
+		if got, err := w.Tail("runs/w-1/journal.jsonl", limit); err != nil || string(got) != want {
+			t.Errorf("Tail(%d) = %q, %v; want %q", limit, got, err, want)
+		}
+	}
+	if _, err := w.Tail("runs/w-2/journal.jsonl", 9); !errors.Is(err, domain.ErrAbsent) {
+		t.Fatalf("the tail of an absent journal: %v", err)
+	}
+}
+
+func TestFailuresAreNamedWithTheOperationThatFailed(t *testing.T) {
+	t.Parallel()
+	w, dir := workspace(t)
+	if err := os.WriteFile(filepath.Join(dir, "plants", "a.json"), []byte("x"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "plants", ".b.json.tmp-"+strconv.Itoa(os.Getpid())), nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	cases := map[string]error{
+		"canvasbridge: open plants/a.json/x":       second(w.Read("plants/a.json/x", 10)),
+		"canvasbridge: read plants":                second(w.Read("plants", 10)),
+		"canvasbridge: read runs":                  second(w.ReadFrom("runs", 0, 10)),
+		"canvasbridge: read runs/w-1":              second(w.Tail("runs/w-1", 10)),
+		"canvasbridge: list plants/a.json":         second(w.Names("plants/a.json")),
+		"canvasbridge: write plants/.b.json.tmp-":  second(w.WriteIfUnchanged("plants/b.json", []byte("x"), "", domain.Version, 10)),
+		"canvasbridge: create plants/a.json/inner": w.Ensure([]string{"plants/a.json/inner"}),
+	}
+	for want, err := range cases {
+		if err == nil || !strings.Contains(err.Error(), want) {
+			t.Errorf("error = %v, want one naming %q", err, want)
+		}
+	}
+}
+
+func second[T any](_ T, err error) error { return err }

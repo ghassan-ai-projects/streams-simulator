@@ -11,7 +11,7 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/canvasbridge/internal/process"
 )
 
-const plant = "domains/plant.domain.json"
+var plant = inDomains("plant.domain.json")
 
 func TestPairingAdmitsTheSessionItIssued(t *testing.T) {
 	t.Parallel()
@@ -29,11 +29,10 @@ func TestTheWorkspaceListsDefinitionsWithTheirIdsAndRunsWithTheirState(t *testin
 	t.Parallel()
 	h := newHarness(t)
 	h.write(t, plant, `{"id":"plant","title":"Plant"}`)
-	h.write(t, "domains/notes.txt", "x")
+	h.write(t, inDomains("notes.txt"), "x")
 	h.write(t, "compositions/broken.composition.json", "{")
 	h.write(t, "runs/w-1/journal.jsonl", `{"type":"run.opened","mode":"explore"}`+"\n")
-	h.write(t, "runs/w-2/journal.jsonl", `{"type":"run.opened","mode":"evaluate"}`+"\n")
-	h.write(t, "runs/w-2/run.json", "{}")
+	h.write(t, "runs/w-2/journal.jsonl", `{"type":"run.opened","mode":"evaluate"}`+"\n"+`{"type":"run.closed"}`+"\n")
 	h.write(t, "runs/w-3/other.txt", "x")
 	listing, err := h.bridge.Workspace()
 	if err != nil {
@@ -67,9 +66,9 @@ func TestFilesAreReadAndWrittenThroughTheirRules(t *testing.T) {
 	if read, err := h.bridge.ReadFile(plant); err != nil || read.Etag != written.Etag {
 		t.Fatalf("ReadFile = %+v, %v", read, err)
 	}
-	for _, rel := range []string{"runs/w-1/run.json", "../x.domain.json"} {
-		if _, err := h.bridge.WriteFile(rel, "{}", ""); err == nil {
-			t.Errorf("%s was written", rel)
+	for rel, want := range map[string]error{"runs/w-1/run.json": domain.ErrReadOnly, "../x.domain.json": domain.ErrBadPath} {
+		if _, err := h.bridge.WriteFile(rel, "{}", ""); !errors.Is(err, want) {
+			t.Errorf("writing %s = %v, want %v", rel, err, want)
 		}
 	}
 	if _, err := h.bridge.ReadFile("nowhere"); !errors.Is(err, domain.ErrBadPath) {
@@ -83,7 +82,7 @@ func TestCommandActionsRunWithAbsoluteWorkspacePathsAndTheirFlags(t *testing.T) 
 	if _, err := h.bridge.RunAction(context.Background(), "run.verify", map[string]any{"run": "w-1"}); err != nil {
 		t.Fatal(err)
 	}
-	want := []string{"verify", h.dir + "/runs/w-1/run.json", "--domains-dir", h.dir + "/domains", "--adapters-dir", "/adapter-files"}
+	want := []string{"verify", h.dir + "/runs/w-1/run.json", "--domains-dir", h.domainsDir(), "--adapters-dir", "/adapter-files"}
 	if !slices.Equal(h.argv[0], want) {
 		t.Fatalf("argv = %v, want %v", h.argv[0], want)
 	}

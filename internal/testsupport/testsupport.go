@@ -116,6 +116,14 @@ func PilotComposition() string {
 	return filepath.Join(RepositoryRoot(), "examples", "compositions", "chiller-pilot.composition.json")
 }
 
+func WorkspaceDomain(id string) string {
+	return "domains/" + id + ".domain.json"
+}
+
+func FactoryDomain() string {
+	return filepath.Join(RepositoryRoot(), "examples", "factory-utilities.domain.json")
+}
+
 func FactoryComposition() string {
 	return filepath.Join(RepositoryRoot(), "examples", "compositions", "factory-utilities.composition.json")
 }

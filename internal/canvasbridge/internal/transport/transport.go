@@ -20,6 +20,7 @@ const (
 	cookieName      = "streamsim_canvas"
 	maxFileBody     = domain.MaxFileBytes + 1<<20
 	maxActionBody   = 1 << 20
+	sessionMaxAge   = 12 * 60 * 60
 	contentSecurity = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; " +
 		"connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"
 )
@@ -32,6 +33,7 @@ type Service interface {
 	WriteFile(rel, content, etag string) (domain.FileDocument, error)
 	Actions() []domain.Action
 	RunAction(ctx context.Context, name string, args map[string]any) (json.RawMessage, error)
+	OpenRun(worldID string) error
 	Follow(ctx context.Context, worldID string, after int64, emit func(domain.Record) error) error
 	Watch(ctx context.Context, changed func() error) error
 }
@@ -86,6 +88,7 @@ func (s *Server) routes() http.Handler {
 	mux.HandleFunc("POST /api/actions/{name}", s.admitted(s.runAction, true))
 	mux.HandleFunc("GET /api/runs/{world}/events", s.admitted(s.followRun, true))
 	mux.HandleFunc("GET /api/events", s.admitted(s.watch, true))
+	mux.HandleFunc("GET /api/", s.admitted(s.unknownRoute, false))
 	mux.HandleFunc("GET /", s.static)
 	return securityHeaders(mux)
 }

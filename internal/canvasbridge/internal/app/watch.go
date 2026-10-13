@@ -7,12 +7,10 @@ import (
 
 const watchInterval = time.Second
 
-var watchedFolders = []string{"domains", "compositions", "scenarios", "layouts", "runs"}
-
 func (b *Bridge) Watch(ctx context.Context, changed func() error) error {
-	last := b.edges.Workspace.Fingerprint(watchedFolders)
+	last := b.edges.Workspace.Fingerprint(workspaceFolders)
 	return b.everyTick(ctx, watchInterval, func() (bool, error) {
-		current := b.edges.Workspace.Fingerprint(watchedFolders)
+		current := b.edges.Workspace.Fingerprint(workspaceFolders)
 		if current == last {
 			return false, nil
 		}

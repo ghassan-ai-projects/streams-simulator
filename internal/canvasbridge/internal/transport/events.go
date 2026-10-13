@@ -40,6 +40,10 @@ func (e *eventStream) send(id, event string, data []byte) error {
 }
 
 func (s *Server) followRun(w http.ResponseWriter, r *http.Request) {
+	if err := s.service.OpenRun(r.PathValue("world")); err != nil {
+		writeError(w, err)
+		return
+	}
 	stream, ok := openStream(w)
 	if !ok {
 		return
@@ -50,8 +54,13 @@ func (s *Server) followRun(w http.ResponseWriter, r *http.Request) {
 }
 
 func (e *eventStream) record(record domain.Record) error {
-	if err := e.send(strconv.FormatInt(record.Index, 10), "record", record.Line); err != nil || !record.Closes {
-		return err
+	if !record.Seen {
+		if err := e.send(strconv.FormatInt(record.Index, 10), "record", record.Line); err != nil {
+			return err
+		}
+	}
+	if !record.Closes {
+		return nil
 	}
 	return e.send("", "closed", []byte("{}"))
 }

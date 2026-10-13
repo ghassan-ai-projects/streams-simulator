@@ -13,7 +13,7 @@ import (
 )
 
 func (w *Workspace) WriteIfUnchanged(rel string, content []byte, expected string, version func([]byte) string, limit int64) (string, error) {
-	current, err := w.versionOf(rel, version, limit)
+	current, err := w.writableVersion(rel, content, version, limit)
 	if err != nil {
 		return "", err
 	}
@@ -26,7 +26,14 @@ func (w *Workspace) WriteIfUnchanged(rel string, content []byte, expected string
 	return version(content), nil
 }
 
-func (w *Workspace) versionOf(rel string, version func([]byte) string, limit int64) (string, error) {
+func (w *Workspace) writableVersion(rel string, content []byte, version func([]byte) string, limit int64) (string, error) {
+	if int64(len(content)) > limit {
+		return "", fmt.Errorf("%w: %s", domain.ErrTooLarge, rel)
+	}
+	return w.Version(rel, version, limit)
+}
+
+func (w *Workspace) Version(rel string, version func([]byte) string, limit int64) (string, error) {
 	content, err := w.Read(rel, limit)
 	if errors.Is(err, domain.ErrAbsent) {
 		return "", nil

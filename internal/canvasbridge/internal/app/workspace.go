@@ -7,7 +7,10 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/canvasbridge/internal/domain"
 )
 
-const firstLineLimit = 1 << 20
+const (
+	firstLineLimit = 1 << 20
+	closingLimit   = 64 << 10
+)
 
 func (b *Bridge) Workspace() (domain.Listing, error) {
 	listing := domain.Listing{Name: b.edges.Workspace.Name()}
