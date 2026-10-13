@@ -519,7 +519,7 @@
           "ack": {"failure_modes": [{"mode": "ok", "probability": 1.0}], "latency_ms": {"mean": 100, "sigma": 10}},
           "args_schema": {
             "additionalProperties": false,
-            "properties": {"lease_s": {"type": "number"}, "rate": {"type": "number"}},
+            "properties": {"lease_s": {"type": "number", "exclusiveMinimum": 0}, "rate": {"type": "number"}},
             "required": ["rate", "lease_s"],
             "type": "object"
           },

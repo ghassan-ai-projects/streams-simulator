@@ -24,11 +24,18 @@ func (w *World) noiseFreeObservation(ent *Entity, ch *model.Channel, t int64) fl
 }
 
 func (w *World) quietObservation(ent *Entity, ch *model.Channel, t int64) float64 {
+	if held, ok := w.heldObservation(ent, ch, t); ok {
+		return held
+	}
+	return w.unheldQuietObservation(ent, ch, t)
+}
+
+func (w *World) unheldQuietObservation(ent *Entity, ch *model.Channel, t int64) float64 {
 	value := w.stateAt(ent.ID, ch.Observes, t)
 	if w.isConfirmationChannel(ent, ch.Name) {
 		value = w.shadowValue(ent.ID, ch.Observes, t)
 	}
-	reading := w.biasedObservation(ent, ch, value, t)
+	reading := w.scaledObservation(ent, ch, w.biasedObservation(ent, ch, value, t), t)
 	if drift := ch.Drift; drift != nil && drift.RatePerHour != 0 && drift.Model != "random_walk" {
 		reading += drift.RatePerHour * (float64(t-w.StartNS) / secondsPerNS / 3600)
 	}
@@ -52,6 +59,7 @@ func (w *World) publishNativeEvent(ent *Entity, ch *model.Channel, value any, t,
 	}
 	w.seq++
 	event := w.nativeEvent(ent, ch, value, t, observed)
+	event.Quality = w.reportedQuality(ent, ch, t)
 	if w.emitter != nil {
 		w.emitter(event)
 	}
@@ -119,6 +127,10 @@ func (w *World) nativeEvent(ent *Entity, ch *model.Channel, value any, at, obser
 }
 
 func (w *World) emitChannelReading(entityID, channelName string, ent *Entity, ch *model.Channel, cs *channelRunState, t int64) {
+	if w.droppedOut(ent, ch, t) {
+		w.scheduleNextEmission(entityID, channelName, ch, t)
+		return
+	}
 	emit, value := w.reading(ent, ch, cs, t)
 	if emit {
 		delay := w.linkDelay(entityID, ch, t)

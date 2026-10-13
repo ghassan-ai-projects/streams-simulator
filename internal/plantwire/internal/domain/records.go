@@ -21,8 +21,11 @@ func DeviceData(device, bootID string, historical bool, samples []map[string]any
 	return newRecord("DDATA", LaneData, map[string]any{"device": device, "boot_id": bootID, "historical": historical, "metrics": toAny(samples)})
 }
 
-func Sample(alias int, value any, eventTimeNS int64) map[string]any {
-	return map[string]any{"alias": alias, "value": value, "quality": "good", "event_time_ns": eventTimeNS, "time_source": "device"}
+func Sample(alias int, value any, quality string, eventTimeNS int64) map[string]any {
+	if quality == "" {
+		quality = "good"
+	}
+	return map[string]any{"alias": alias, "value": value, "quality": quality, "event_time_ns": eventTimeNS, "time_source": "device"}
 }
 
 func NodeDeath(bdSeq uint64, reason string) Record {

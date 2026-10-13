@@ -18,6 +18,8 @@ type stateValue struct {
 	history    []*stateValue
 	peak       *peakState
 	protection *protectionState
+	controller *controllerState
+	alarm      *alarmState
 }
 
 func (w *World) naturalValue(ent *Entity, stateName string, t int64) float64 {
@@ -54,14 +56,18 @@ func (s *stateValue) clone() *stateValue {
 	c := *s
 	c.delayed = slices.Clone(s.delayed)
 	c.history = nil
-	if s.peak != nil {
-		peak := *s.peak
-		c.peak = &peak
+	c.peak = clonePointer(s.peak)
+	c.protection = clonePointer(s.protection)
+	c.controller = clonePointer(s.controller)
+	c.alarm = clonePointer(s.alarm)
+	return &c
+}
+
+func clonePointer[T any](p *T) *T {
+	if p == nil {
+		return nil
 	}
-	if s.protection != nil {
-		protection := *s.protection
-		c.protection = &protection
-	}
+	c := *p
 	return &c
 }
 
@@ -97,17 +103,22 @@ func (w *World) inputValue(ent *Entity, dyn *model.Dynamics, t int64) float64 {
 	}
 	var u float64
 	for _, in := range f1.Inputs {
-		u += in.Coef * w.stateAt(ent.ID, in.State, t)
+		u += in.Coef * w.inputState(ent, in, t)
 	}
 	return u
 }
 
 func (w *World) naturalStateValue(ent *Entity, name string, s *stateValue, dyn *model.Dynamics, at int64) float64 {
+	if value, linked := w.followValue(ent, dyn, at); linked {
+		return value
+	}
 	switch {
 	case dyn == nil:
 		return w.initial(ent, name)
 	case dyn.Tier == "F0":
 		return w.f0Value(dyn, at)
+	case dyn.Algebraic():
+		return w.algebraicValue(ent, dyn, at)
 	default:
 		return w.integrateF1(ent, dyn, at)
 	}

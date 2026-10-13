@@ -62,6 +62,14 @@ func (w *World) Reading(entityID, channelName string, t int64) float64 {
 	return w.world.Reading(entityID, channelName, t)
 }
 
+func (w *World) ReadingNoise(entityID, channelName string, t int64) float64 {
+	return w.world.ReadingNoise(entityID, channelName, t)
+}
+
+func (w *World) ReadingDropped(entityID, channelName string, t int64) bool {
+	return w.world.ReadingDropped(entityID, channelName, t)
+}
+
 func (w *World) StateValue(entity, state string, t int64) float64 {
 	return w.world.StateValue(entity, state, t)
 }

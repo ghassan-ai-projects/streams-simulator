@@ -1,0 +1,639 @@
+{
+  "id": "chiller-pilot",
+  "version": "0.1.0",
+  "title": "Chiller pilot",
+  "description": "The P7g worked example: two chiller sizes with two instrument sets and an air-handling unit linked to a chiller.",
+  "axes": {
+    "absence": "signal",
+    "actuation": "advisory",
+    "cadence": ["periodic"],
+    "cardinality": "small",
+    "consequence": ["cost"],
+    "correlation": ["independent"],
+    "fidelity": ["F0", "F1"],
+    "lateness": "none",
+    "rate": "low",
+    "seasonality": ["diurnal"],
+    "time_reference": "wall",
+    "value_shape": ["scalar"]
+  },
+  "stresses": "a small chilled-water plant composed only from the component library: instrument offsets against process faults",
+  "kinds": [
+    {
+      "name": "chiller_large",
+      "state": [
+        {"name": "running", "unit": "on", "initial": 1, "min": 0, "max": 1},
+        {"name": "setpoint", "unit": "degC", "initial": 6.5, "min": 4, "max": 12},
+        {"name": "load", "unit": "kW", "initial": 2000, "min": 0},
+        {"name": "chw_supply", "unit": "degC", "initial": 6.5},
+        {"name": "chw_flow", "unit": "m3/h", "initial": 344, "min": 0},
+        {"name": "power", "unit": "kW", "initial": 280, "min": 0},
+        {"name": "cond_temp", "unit": "degC", "initial": 33},
+        {"name": "heat_rejected", "unit": "kW", "initial": 1680, "min": 0},
+        {"name": "chw_supply_temp__bias", "unit": "degC", "initial": 0},
+        {"name": "cond_temp__bias", "unit": "degC", "initial": 0},
+        {"name": "power__bias", "unit": "kW", "initial": 0},
+        {"name": "chw_flow__bias", "unit": "m3/h", "initial": 0}
+      ],
+      "dynamics": [
+        {
+          "target": "load",
+          "tier": "F0",
+          "f0": {
+            "baseline": 2000,
+            "drift_per_hour": 0,
+            "seasonality": [{"amplitude": 600, "period_s": 86400, "phase_rad": -1.6}]
+          }
+        },
+        {"target": "chw_flow", "tier": "F0", "f0": {"baseline": 344, "drift_per_hour": 0, "seasonality": []}},
+        {
+          "target": "chw_supply",
+          "tier": "F1",
+          "dt_ms": 5000,
+          "f1": {
+            "form": "first_order_lag",
+            "gain": 1,
+            "inputs": [{"state": "setpoint", "coef": 1}, {"state": "load", "coef": 0.000175}],
+            "time_constant_s": 300
+          }
+        },
+        {
+          "target": "power",
+          "tier": "F1",
+          "dt_ms": 5000,
+          "f1": {
+            "form": "first_order_lag",
+            "gain": 1,
+            "inputs": [{"state": "load", "coef": 0.2}],
+            "time_constant_s": 60
+          }
+        },
+        {
+          "target": "cond_temp",
+          "tier": "F1",
+          "dt_ms": 5000,
+          "f1": {
+            "form": "first_order_lag",
+            "gain": 1,
+            "inputs": [{"state": "load", "coef": 0.0021}, {"state": "running", "coef": 30}],
+            "time_constant_s": 600
+          }
+        },
+        {
+          "target": "heat_rejected",
+          "tier": "F1",
+          "dt_ms": 5000,
+          "f1": {
+            "form": "first_order_lag",
+            "gain": 1,
+            "inputs": [{"state": "load", "coef": 1}, {"state": "power", "coef": 1}],
+            "time_constant_s": 120
+          }
+        }
+      ],
+      "channels": [
+        {
+          "name": "chiller_large.chw_supply_temp",
+          "unit": "degC",
+          "absence": "signal",
+          "cadence": {"mode": "periodic", "period_s": 10},
+          "fidelity": "F1",
+          "noise": {"model": "gaussian", "sigma": 0.05},
+          "observation_bias": {"state": "chw_supply_temp__bias", "coef": 1, "noise_scale_at_full": 1},
+          "observes": "chw_supply",
+          "range": {"min": 0.0, "max": 25.0},
+          "resolution": 0.1,
+          "tag": "TT",
+          "value_type": "number"
+        },
+        {
+          "name": "chiller_large.cond_temp",
+          "unit": "degC",
+          "absence": "signal",
+          "cadence": {"mode": "periodic", "period_s": 10},
+          "fidelity": "F1",
+          "noise": {"model": "gaussian", "sigma": 0.05},
+          "observation_bias": {"state": "cond_temp__bias", "coef": 1, "noise_scale_at_full": 1},
+          "observes": "cond_temp",
+          "range": {"min": 10.0, "max": 60.0},
+          "resolution": 0.1,
+          "tag": "TT",
+          "value_type": "number"
+        },
+        {
+          "name": "chiller_large.power",
+          "unit": "kW",
+          "absence": "signal",
+          "cadence": {"mode": "periodic", "period_s": 15},
+          "fidelity": "F1",
+          "noise": {"model": "gaussian", "sigma": 2.2},
+          "observation_bias": {"state": "power__bias", "coef": 1, "noise_scale_at_full": 1},
+          "observes": "power",
+          "range": {"min": 0.0, "max": 1100.0},
+          "resolution": 0.1,
+          "tag": "JT",
+          "value_type": "number"
+        },
+        {
+          "name": "chiller_large.chw_flow",
+          "unit": "m3/h",
+          "absence": "signal",
+          "cadence": {"mode": "periodic", "period_s": 5},
+          "fidelity": "F1",
+          "noise": {"model": "gaussian", "sigma": 2.4},
+          "observation_bias": {"state": "chw_flow__bias", "coef": 1, "noise_scale_at_full": 1},
+          "observes": "chw_flow",
+          "range": {"min": 0.0, "max": 800.0},
+          "resolution": 0.1,
+          "tag": "FT",
+          "value_type": "number"
+        }
+      ],
+      "faults": [
+        {
+          "id": "chiller_large__condenser_fouling",
+          "affects": [{"state": "cond_temp", "delta": 6}, {"state": "power", "delta": 0.18, "multiplicative": true}],
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "chiller_large.cond_temp"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"magnitude": 1.0, "rate_per_hour": 0.25, "shape": "ramp"}
+        },
+        {
+          "id": "chiller_large__refrigerant_undercharge",
+          "affects": [{"state": "chw_supply", "delta": 1.8}, {"state": "power", "delta": -0.08, "multiplicative": true}],
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "chiller_large.chw_supply_temp"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"magnitude": 1.0, "rate_per_hour": 0.1, "shape": "ramp"}
+        },
+        {
+          "id": "chiller_large__load_swing",
+          "affects": [{"state": "load", "delta": 340}],
+          "is_negative_class": true,
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "chiller_large.power"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"duty_cycle": 0.3, "magnitude": 1.0, "rate_per_hour": 2.0, "shape": "intermittent"}
+        },
+        {
+          "id": "chiller_large__chw_supply_temp__offset",
+          "affects": [{"state": "chw_supply_temp__bias", "delta": 2.0}],
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "chiller_large.chw_supply_temp"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"magnitude": 1.0, "shape": "step"}
+        },
+        {
+          "id": "chiller_large__chw_supply_temp__drift",
+          "affects": [{"state": "chw_supply_temp__bias", "delta": 1.2}],
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "chiller_large.chw_supply_temp"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"magnitude": 1.0, "rate_per_hour": 0.041666666666666664, "shape": "ramp"}
+        },
+        {
+          "id": "chiller_large__cond_temp__offset",
+          "affects": [{"state": "cond_temp__bias", "delta": 2.0}],
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "chiller_large.cond_temp"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"magnitude": 1.0, "shape": "step"}
+        },
+        {
+          "id": "chiller_large__cond_temp__drift",
+          "affects": [{"state": "cond_temp__bias", "delta": 1.2}],
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "chiller_large.cond_temp"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"magnitude": 1.0, "rate_per_hour": 0.041666666666666664, "shape": "ramp"}
+        },
+        {
+          "id": "chiller_large__power__offset",
+          "affects": [{"state": "power__bias", "delta": 55.0}],
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "chiller_large.power"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"magnitude": 1.0, "shape": "step"}
+        },
+        {
+          "id": "chiller_large__chw_flow__offset",
+          "affects": [{"state": "chw_flow__bias", "delta": 24.0}],
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "chiller_large.chw_flow"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"magnitude": 1.0, "shape": "step"}
+        }
+      ],
+      "effectors": [
+        {
+          "name": "chiller_large__set_setpoint",
+          "ack": {"failure_modes": [{"mode": "ok", "probability": 1.0}], "latency_ms": {"mean": 300, "sigma": 50}},
+          "args_schema": {
+            "additionalProperties": false,
+            "properties": {"chiller_id": {"type": "string"}, "setpoint_c": {"maximum": 12, "minimum": 4, "type": "number"}},
+            "required": ["chiller_id", "setpoint_c"],
+            "type": "object"
+          },
+          "effect": {
+            "dead_time_s": 0,
+            "state_deltas": [{"state": "setpoint", "assign_from_arg": "setpoint_c"}],
+            "time_constant_s": 0
+          },
+          "idempotency_window_s": 3600,
+          "risk_class": "medium"
+        }
+      ]
+    },
+    {
+      "name": "chiller_small",
+      "state": [
+        {"name": "running", "unit": "on", "initial": 1, "min": 0, "max": 1},
+        {"name": "setpoint", "unit": "degC", "initial": 7, "min": 4, "max": 12},
+        {"name": "load", "unit": "kW", "initial": 250, "min": 0},
+        {"name": "chw_supply", "unit": "degC", "initial": 7},
+        {"name": "chw_flow", "unit": "m3/h", "initial": 43, "min": 0},
+        {"name": "power", "unit": "kW", "initial": 35, "min": 0},
+        {"name": "cond_temp", "unit": "degC", "initial": 33},
+        {"name": "heat_rejected", "unit": "kW", "initial": 210, "min": 0},
+        {"name": "chw_supply_temp__bias", "unit": "degC", "initial": 0},
+        {"name": "cond_temp__bias", "unit": "degC", "initial": 0},
+        {"name": "power__bias", "unit": "kW", "initial": 0}
+      ],
+      "dynamics": [
+        {
+          "target": "load",
+          "tier": "F0",
+          "f0": {
+            "baseline": 250,
+            "drift_per_hour": 0,
+            "seasonality": [{"amplitude": 75, "period_s": 86400, "phase_rad": -1.6}]
+          }
+        },
+        {"target": "chw_flow", "tier": "F0", "f0": {"baseline": 43, "drift_per_hour": 0, "seasonality": []}},
+        {
+          "target": "chw_supply",
+          "tier": "F1",
+          "dt_ms": 5000,
+          "f1": {
+            "form": "first_order_lag",
+            "gain": 1,
+            "inputs": [{"state": "setpoint", "coef": 1}, {"state": "load", "coef": 0.0014}],
+            "time_constant_s": 300
+          }
+        },
+        {
+          "target": "power",
+          "tier": "F1",
+          "dt_ms": 5000,
+          "f1": {
+            "form": "first_order_lag",
+            "gain": 1,
+            "inputs": [{"state": "load", "coef": 0.2}],
+            "time_constant_s": 60
+          }
+        },
+        {
+          "target": "cond_temp",
+          "tier": "F1",
+          "dt_ms": 5000,
+          "f1": {
+            "form": "first_order_lag",
+            "gain": 1,
+            "inputs": [{"state": "load", "coef": 0.0168}, {"state": "running", "coef": 30}],
+            "time_constant_s": 600
+          }
+        },
+        {
+          "target": "heat_rejected",
+          "tier": "F1",
+          "dt_ms": 5000,
+          "f1": {
+            "form": "first_order_lag",
+            "gain": 1,
+            "inputs": [{"state": "load", "coef": 1}, {"state": "power", "coef": 1}],
+            "time_constant_s": 120
+          }
+        }
+      ],
+      "channels": [
+        {
+          "name": "chiller_small.chw_supply_temp",
+          "unit": "degC",
+          "absence": "signal",
+          "cadence": {"mode": "periodic", "period_s": 10},
+          "fidelity": "F1",
+          "noise": {"model": "gaussian", "sigma": 0.05},
+          "observation_bias": {"state": "chw_supply_temp__bias", "coef": 1, "noise_scale_at_full": 1},
+          "observes": "chw_supply",
+          "range": {"min": 0.0, "max": 25.0},
+          "resolution": 0.1,
+          "tag": "TT",
+          "value_type": "number"
+        },
+        {
+          "name": "chiller_small.cond_temp",
+          "unit": "degC",
+          "absence": "signal",
+          "cadence": {"mode": "periodic", "period_s": 10},
+          "fidelity": "F1",
+          "noise": {"model": "gaussian", "sigma": 0.05},
+          "observation_bias": {"state": "cond_temp__bias", "coef": 1, "noise_scale_at_full": 1},
+          "observes": "cond_temp",
+          "range": {"min": 10.0, "max": 60.0},
+          "resolution": 0.1,
+          "tag": "TT",
+          "value_type": "number"
+        },
+        {
+          "name": "chiller_small.power",
+          "unit": "kW",
+          "absence": "signal",
+          "cadence": {"mode": "periodic", "period_s": 15},
+          "fidelity": "F1",
+          "noise": {"model": "gaussian", "sigma": 0.3},
+          "observation_bias": {"state": "power__bias", "coef": 1, "noise_scale_at_full": 1},
+          "observes": "power",
+          "range": {"min": 0.0, "max": 150.0},
+          "resolution": 0.1,
+          "tag": "JT",
+          "value_type": "number"
+        }
+      ],
+      "faults": [
+        {
+          "id": "chiller_small__condenser_fouling",
+          "affects": [{"state": "cond_temp", "delta": 6}, {"state": "power", "delta": 0.18, "multiplicative": true}],
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "chiller_small.cond_temp"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"magnitude": 1.0, "rate_per_hour": 0.25, "shape": "ramp"}
+        },
+        {
+          "id": "chiller_small__refrigerant_undercharge",
+          "affects": [{"state": "chw_supply", "delta": 1.8}, {"state": "power", "delta": -0.08, "multiplicative": true}],
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "chiller_small.chw_supply_temp"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"magnitude": 1.0, "rate_per_hour": 0.1, "shape": "ramp"}
+        },
+        {
+          "id": "chiller_small__load_swing",
+          "affects": [{"state": "load", "delta": 43}],
+          "is_negative_class": true,
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "chiller_small.power"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"duty_cycle": 0.3, "magnitude": 1.0, "rate_per_hour": 2.0, "shape": "intermittent"}
+        },
+        {
+          "id": "chiller_small__chw_supply_temp__offset",
+          "affects": [{"state": "chw_supply_temp__bias", "delta": 2.0}],
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "chiller_small.chw_supply_temp"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"magnitude": 1.0, "shape": "step"}
+        },
+        {
+          "id": "chiller_small__chw_supply_temp__drift",
+          "affects": [{"state": "chw_supply_temp__bias", "delta": 1.2}],
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "chiller_small.chw_supply_temp"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"magnitude": 1.0, "rate_per_hour": 0.041666666666666664, "shape": "ramp"}
+        },
+        {
+          "id": "chiller_small__cond_temp__offset",
+          "affects": [{"state": "cond_temp__bias", "delta": 2.0}],
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "chiller_small.cond_temp"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"magnitude": 1.0, "shape": "step"}
+        },
+        {
+          "id": "chiller_small__cond_temp__drift",
+          "affects": [{"state": "cond_temp__bias", "delta": 1.2}],
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "chiller_small.cond_temp"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"magnitude": 1.0, "rate_per_hour": 0.041666666666666664, "shape": "ramp"}
+        },
+        {
+          "id": "chiller_small__power__offset",
+          "affects": [{"state": "power__bias", "delta": 7.5}],
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "chiller_small.power"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"magnitude": 1.0, "shape": "step"}
+        }
+      ],
+      "effectors": [
+        {
+          "name": "chiller_small__set_setpoint",
+          "ack": {"failure_modes": [{"mode": "ok", "probability": 1.0}], "latency_ms": {"mean": 300, "sigma": 50}},
+          "args_schema": {
+            "additionalProperties": false,
+            "properties": {"chiller_id": {"type": "string"}, "setpoint_c": {"maximum": 12, "minimum": 4, "type": "number"}},
+            "required": ["chiller_id", "setpoint_c"],
+            "type": "object"
+          },
+          "effect": {
+            "dead_time_s": 0,
+            "state_deltas": [{"state": "setpoint", "assign_from_arg": "setpoint_c"}],
+            "time_constant_s": 0
+          },
+          "idempotency_window_s": 3600,
+          "risk_class": "medium"
+        }
+      ]
+    },
+    {
+      "name": "ahu",
+      "state": [
+        {"name": "cooling_load", "unit": "kW", "initial": 180, "min": 0},
+        {"name": "supply_air", "unit": "degC", "initial": 13},
+        {"name": "supply_air_temp__bias", "unit": "degC", "initial": 0}
+      ],
+      "dynamics": [
+        {
+          "target": "cooling_load",
+          "tier": "F0",
+          "f0": {
+            "baseline": 180,
+            "drift_per_hour": 0,
+            "seasonality": [{"amplitude": 60, "period_s": 86400, "phase_rad": -1.6}]
+          }
+        },
+        {"target": "supply_air", "tier": "F0", "f0": {"baseline": 13, "drift_per_hour": 0, "seasonality": []}}
+      ],
+      "channels": [
+        {
+          "name": "ahu.supply_air_temp",
+          "unit": "degC",
+          "absence": "signal",
+          "cadence": {"mode": "periodic", "period_s": 10},
+          "fidelity": "F1",
+          "noise": {"model": "gaussian", "sigma": 0.05},
+          "observation_bias": {"state": "supply_air_temp__bias", "coef": 1, "noise_scale_at_full": 1},
+          "observes": "supply_air",
+          "range": {"min": 0.0, "max": 40.0},
+          "resolution": 0.1,
+          "tag": "TT",
+          "value_type": "number"
+        }
+      ],
+      "faults": [
+        {
+          "id": "ahu__coil_valve_stuck_closed",
+          "affects": [
+            {"state": "supply_air", "delta": 5},
+            {"state": "cooling_load", "delta": -0.6, "multiplicative": true}
+          ],
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "ahu.supply_air_temp"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"magnitude": 1.0, "shape": "step"}
+        },
+        {
+          "id": "ahu__supply_air_temp__offset",
+          "affects": [{"state": "supply_air_temp__bias", "delta": 2.0}],
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "ahu.supply_air_temp"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"magnitude": 1.0, "shape": "step"}
+        },
+        {
+          "id": "ahu__supply_air_temp__drift",
+          "affects": [{"state": "supply_air_temp__bias", "delta": 1.2}],
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "ahu.supply_air_temp"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"magnitude": 1.0, "rate_per_hour": 0.041666666666666664, "shape": "ramp"}
+        }
+      ]
+    }
+  ],
+  "instances": [
+    {
+      "kind": "chiller_large",
+      "names": ["CH-1", "CH-2"],
+      "area": "Chiller hall",
+      "provenance": {
+        "component": "streamsim/chiller",
+        "digest": "sha256:ad678e00a2a4a0c3af2840ee3c58bead448af596979af78b2b33ad43a92c2941",
+        "instrument_digests": {
+          "streamsim/mag-flow-meter@1": "sha256:7d93ca35b0eebcbb17f4eaad52b45344e484d631a7068c15110e15d1c82cfffe",
+          "streamsim/power-meter@1": "sha256:e3c5ecc79f0164c6a64b608998e548660ba073e395ca115a35c3a2d0fc5a75b6",
+          "streamsim/rtd@1": "sha256:0f9722a4aef603aadaf69f8523eb7780ee9baf632ae89fe770aa262657821917"
+        },
+        "instruments": {
+          "chw_flow": "streamsim/mag-flow-meter@1",
+          "chw_supply_temp": "streamsim/rtd@1",
+          "cond_temp": "streamsim/rtd@1",
+          "power": "streamsim/power-meter@1"
+        },
+        "parameters": {"setpoint_c": 6.5},
+        "preset": "large",
+        "version": 1
+      }
+    },
+    {
+      "kind": "chiller_small",
+      "names": ["CH-3"],
+      "area": "Chiller hall",
+      "provenance": {
+        "component": "streamsim/chiller",
+        "digest": "sha256:ad678e00a2a4a0c3af2840ee3c58bead448af596979af78b2b33ad43a92c2941",
+        "instrument_digests": {
+          "streamsim/power-meter@1": "sha256:e3c5ecc79f0164c6a64b608998e548660ba073e395ca115a35c3a2d0fc5a75b6",
+          "streamsim/rtd@1": "sha256:0f9722a4aef603aadaf69f8523eb7780ee9baf632ae89fe770aa262657821917"
+        },
+        "instruments": {
+          "chw_supply_temp": "streamsim/rtd@1",
+          "cond_temp": "streamsim/rtd@1",
+          "power": "streamsim/power-meter@1"
+        },
+        "parameters": {"setpoint_c": 7},
+        "preset": "small",
+        "version": 1
+      }
+    },
+    {
+      "kind": "ahu",
+      "names": ["AHU-1"],
+      "area": "Office block",
+      "provenance": {
+        "component": "streamsim/ahu",
+        "digest": "sha256:fd92c330879a2f5d3ed35b36121602ec4d6fb485f095cc7b9894b9cfd9038a5c",
+        "instrument_digests": {"streamsim/rtd@1": "sha256:0f9722a4aef603aadaf69f8523eb7780ee9baf632ae89fe770aa262657821917"},
+        "instruments": {"supply_air_temp": "streamsim/rtd@1"},
+        "version": 1
+      }
+    }
+  ],
+  "link_types": [{"name": "thermal_load__ahu__chiller_small", "from": "ahu", "to": "chiller_small"}],
+  "links": [{"from": "AHU-1", "to": "CH-3", "type": "thermal_load__ahu__chiller_small"}],
+  "profiles": [
+    {
+      "name": "nominal",
+      "duration_s": 86400,
+      "description": "A day of the pilot plant, one fault per scenario."
+    },
+    {
+      "name": "sensor_pathology",
+      "duration_s": 86400,
+      "fault_weights": {"chiller_large__chw_supply_temp__offset": 1.0, "chiller_small__cond_temp__drift": 1.0},
+      "description": "An instrument lies while the process is healthy."
+    },
+    {"name": "correlated_cascade", "not_applicable": "Links carry no value until coupling over links (P7h)."}
+  ],
+  "ground_truth": {"min_per_label": 10, "min_scenarios": 100, "negative_class_fraction": 0.35, "pre_degraded_fraction": 0.0},
+  "site": {
+    "name": "Pilot plant",
+    "areas": [
+      {"name": "Utilities"},
+      {"name": "Chiller hall", "parent": "Utilities"},
+      {"name": "Office block", "parent": "Utilities"}
+    ],
+    "timezone": "Europe/Berlin"
+  }
+}

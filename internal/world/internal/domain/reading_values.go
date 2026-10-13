@@ -51,10 +51,10 @@ func (w *World) biasedObservation(ent *Entity, ch *model.Channel, value float64,
 }
 
 func (w *World) observationSigma(ent *Entity, ch *model.Channel, at int64) float64 {
-	sigma := ch.Noise.Sigma
+	sigma := ch.Noise.Sigma * w.observationFactor(ent, ch, at, model.ObservationNoise)
 	if bias := ch.ObservationBias; bias != nil && sigma > 0 && !w.noiseless {
 		value := math.Min(math.Max(w.stateAt(ent.ID, bias.State, at), 0), 1)
-		scale := 1 + (bias.NoiseScaleAtFull-1)*value
+		scale := 1 + (bias.NoiseScale()-1)*value
 		sigma *= scale
 	}
 	return sigma

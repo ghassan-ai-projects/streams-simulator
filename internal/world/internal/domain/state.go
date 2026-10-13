@@ -25,12 +25,7 @@ func (w *World) stateAt(entity, state string, t int64) float64 {
 func (w *World) applyStateKicks(v float64, entity, state string, t int64) (float64, int64, bool) {
 	kicks := w.kicks[driverKey{entity: entity, state: state}]
 	drivers := latestKickDrivers(kicks, t)
-	if drivers.assignment != nil {
-		v = applyAssignedKicks(kicks, drivers.assignment, t)
-	} else {
-		v = applyAdditiveKicks(v, kicks, t)
-	}
-	return v, drivers.last, drivers.any
+	return drivenValue(v, kicks, t, t), drivers.last, drivers.any
 }
 
 func (f *activeFault) activeAt(t int64) bool {
@@ -44,11 +39,8 @@ func (f *activeFault) activeAt(t int64) bool {
 }
 
 func (w *World) shadowValue(entity, state string, t int64) float64 {
-	v := w.stateAt(entity, state, t)
-	for _, k := range w.shadow[driverKey{entity: entity, state: state}] {
-		v += k.valueAt(t)
-	}
-	return v
+	shadow := w.shadow[driverKey{entity: entity, state: state}]
+	return drivenValue(w.stateAt(entity, state, t), shadow, t, t)
 }
 
 func (w *World) clampState(ent *Entity, state string, v float64) float64 {
@@ -58,14 +50,12 @@ func (w *World) clampState(ent *Entity, state string, v float64) float64 {
 	return v
 }
 
-func clampToBounds(v, lower, upper float64) float64 {
-	switch {
-	case lower == 0 && upper == 0:
-		return v
-	case v < lower:
-		return lower
-	case v > upper:
-		return upper
+func clampToBounds(v float64, lower, upper *float64) float64 {
+	if lower != nil {
+		v = max(v, *lower)
+	}
+	if upper != nil {
+		v = min(v, *upper)
 	}
 	return v
 }

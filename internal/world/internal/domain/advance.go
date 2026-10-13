@@ -1,11 +1,22 @@
 package domain
 
-import "github.com/ghassan-ai-projects/streams-simulator/internal/model"
+import (
+	"slices"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+)
+
+var discreteForms = []string{model.FormTrip, model.FormAntiRecycle, model.FormSequencer, model.FormPID, model.FormAlarm}
 
 func (w *World) advanceEntity(ent *Entity, t int64) {
-	horizon := historyHorizon(ent)
-	for dyn := nextStep(ent, t); dyn != nil; dyn = nextStep(ent, t) {
-		w.commitStep(ent, dyn, horizon)
+	w.advanceReaders(ent, t)
+	dyn := nextStep(ent, t)
+	if dyn == nil {
+		return
+	}
+	keep := retention{horizon: 2 * kindSteps(ent.kind), floor: w.readersFloor(ent)}
+	for ; dyn != nil; dyn = nextStep(ent, t) {
+		w.commitStep(ent, dyn, keep)
 	}
 }
 
@@ -15,7 +26,7 @@ func nextStep(ent *Entity, t int64) *model.Dynamics {
 	for i := range ent.kind.Dynamics {
 		dyn := &ent.kind.Dynamics[i]
 		s := ent.states[dyn.Target]
-		if dyn.Tier == "F0" || s == nil || s.lastStep+stepNS(dyn) > t {
+		if !dyn.Integrated() || s == nil || s.lastStep+stepNS(dyn) > t {
 			continue
 		}
 		if next == nil || s.lastStep < from {
@@ -25,26 +36,18 @@ func nextStep(ent *Entity, t int64) *model.Dynamics {
 	return next
 }
 
-func historyHorizon(ent *Entity) int64 {
-	var steps int64
-	for i := range ent.kind.Dynamics {
-		steps += stepNS(&ent.kind.Dynamics[i])
-	}
-	return 2 * steps
-}
-
-func (w *World) commitStep(ent *Entity, dyn *model.Dynamics, horizon int64) {
+func (w *World) commitStep(ent *Entity, dyn *model.Dynamics, keep retention) {
 	if isStore(dyn) {
-		w.commitStores(ent, horizon)
+		w.commitStores(ent, keep)
 		return
 	}
 	s := ent.states[dyn.Target]
-	s.remember(horizon)
+	s.remember(keep)
 	w.rk4Step(ent, dyn, s, s.lastStep, stepNS(dyn))
 }
 
-func (s *stateValue) remember(horizon int64) {
-	keepFrom := s.lastStep - horizon
+func (s *stateValue) remember(keep retention) {
+	keepFrom := min(s.lastStep-keep.horizon, keep.floor)
 	for len(s.history) > 1 && s.history[1].lastStep <= keepFrom {
 		s.history = s.history[1:]
 	}
@@ -77,7 +80,7 @@ func (w *World) valueAt(ent *Entity, dyn *model.Dynamics, t int64) float64 {
 }
 
 func isDiscrete(dyn *model.Dynamics) bool {
-	return dyn.F1 != nil && (dyn.F1.Form == model.FormTrip || dyn.F1.Form == model.FormAntiRecycle || dyn.F1.Form == model.FormSequencer)
+	return dyn.F1 != nil && slices.Contains(discreteForms, dyn.F1.Form)
 }
 
 func isStore(dyn *model.Dynamics) bool { return dyn.F1 != nil && dyn.F1.Form == model.FormStore }

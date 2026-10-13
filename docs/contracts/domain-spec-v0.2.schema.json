@@ -149,6 +149,22 @@
               "mean_lifetime_s": {"type": "number", "exclusiveMinimum": 0}
             }
           },
+          "area": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._/-]{0,127}$", "description": "The ISA-95 area or unit the set belongs to: display and grouping only, never read by the world."},
+          "provenance": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["component", "version", "digest"],
+            "description": "Where a composed set came from (components v0.1, COMPONENTS_V0_1.md): structure only, never read by the world.",
+            "properties": {
+              "component": {"type": "string", "pattern": "^[a-z][a-z0-9-]{1,31}/[a-z][a-z0-9-]{1,31}$"},
+              "version": {"type": "integer", "minimum": 1},
+              "digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+              "preset": {"type": "string", "pattern": "^[a-z][a-z0-9_-]{0,63}$"},
+              "parameters": {"type": "object", "propertyNames": {"pattern": "^[a-z][a-z0-9_]{0,63}$"}, "additionalProperties": {"oneOf": [{"type": "number"}, {"type": "string", "pattern": "^[a-z][a-z0-9_-]{0,63}$"}]}},
+              "instruments": {"type": "object", "propertyNames": {"pattern": "^[a-z][a-z0-9_]{0,63}$"}, "additionalProperties": {"type": "string", "pattern": "^[a-z][a-z0-9-]{1,31}/[a-z][a-z0-9-]{1,31}@[1-9][0-9]*$"}, "description": "Measurement point to the instrument reference attached there."},
+              "instrument_digests": {"type": "object", "propertyNames": {"pattern": "^[a-z][a-z0-9-]{1,31}/[a-z][a-z0-9-]{1,31}@[1-9][0-9]*$"}, "additionalProperties": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}, "description": "Each attached instrument file's digest."}
+            }
+          },
           "override": {
             "type": "object",
             "additionalProperties": false,
@@ -250,6 +266,19 @@
       }
     },
 
+    "site": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "description": "Where the plant is (components v0.1 compositions): structure only, never read by the world.",
+      "properties": {
+        "name": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._/-]{0,127}$"},
+        "timezone": {"type": "string", "pattern": "^[A-Za-z_]+(/[A-Za-z0-9_+-]+){0,2}$"},
+        "areas": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["name"], "properties": {
+          "name": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._/-]{0,127}$"},
+          "parent": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._/-]{0,127}$"}}}}
+      }
+    },
     "boards": {
       "type": "array",
       "description": "Boards group the instances hosted on one device. The board owns the boot_id, so a reboot affects every member together. An instance is on at most one board.",
@@ -355,6 +384,13 @@
       "properties": {
         "target": {"type": "string", "description": "A state variable name."},
         "tier": {"enum": ["F0", "F1", "F2", "F3"]},
+        "follow": {"type": "object", "additionalProperties": false, "required": ["link", "state", "aggregate"],
+          "description": "While the instance has incoming links of this type, the state is the aggregate of the linked instances' state; otherwise its own dynamics apply (domain-spec v0.2 §21).",
+          "properties": {
+            "link": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$"},
+            "state": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$"},
+            "aggregate": {"enum": ["sum", "mean", "min", "max", "count_running"]}
+          }},
         "dt_ms": {"type": "integer", "minimum": 1, "description": "Required for F1 and F2 (enforced below)."},
         "f0": {
           "type": "object",
@@ -404,7 +440,7 @@
           "description": "First-order forms only. Deliberately not a general expression language: an arbitrary evaluator is a nondeterminism surface and a security surface, and no domain in the catalog needs one. The equations for each form are part of the contract and are defined in TECHNICAL_DESIGN §6.2 — a form name without an equation is not a specification.",
           "required": ["form"],
           "properties": {
-            "form": {"enum": ["first_order_lag", "rc_network", "dead_time", "saturation", "hysteresis", "integrator", "threshold_integrator", "store", "regime", "peak", "trip", "anti_recycle", "sequencer"]},
+            "form": {"enum": ["first_order_lag", "rc_network", "dead_time", "saturation", "hysteresis", "integrator", "threshold_integrator", "store", "regime", "peak", "trip", "anti_recycle", "sequencer", "curve", "product", "sum", "pid", "alarm"]},
             "selector": {"type": "string", "description": "For regime: the state whose value, read at each step boundary, selects the regime (the target itself for a runaway)."},
             "below": {"$ref": "#/$defs/regime", "description": "For regime: the lag while the selector is below threshold."},
             "above": {"$ref": "#/$defs/regime", "description": "For regime: the lag while the selector is at or above threshold."},
@@ -440,7 +476,13 @@
                     "required": ["state"],
                     "properties": {
                       "state": {"type": "string"},
-                      "coef": {"type": "number", "default": 1.0}
+                      "coef": {"type": "number", "default": 1.0},
+                      "link": {"type": "object", "additionalProperties": false, "required": ["type", "aggregate"], "description": "Read the state over the instances linked into this one by the link type (domain-spec v0.2 §21).",
+                        "properties": {
+                          "type": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$"},
+                          "aggregate": {"enum": ["sum", "mean", "min", "max", "count_running"]},
+                          "default": {"type": "number", "description": "mean, min and max over no linked instance."}
+                        }}
                     }
                   }
                 ]
@@ -454,6 +496,52 @@
               "type": "object",
               "additionalProperties": false,
               "properties": {"min": {"type": "number"}, "max": {"type": "number"}}
+            },
+            "table": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["x"],
+              "description": "For curve: a piecewise-linear table over the weighted inputs, clamped at its ends (domain-spec v0.2 §23). With one input, values[i] is the output at x[i]; with two, grid[i][j] is the output at (x[i], y[j]), interpolated bilinearly.",
+              "properties": {
+                "x": {"type": "array", "minItems": 2, "items": {"type": "number"}},
+                "values": {"type": "array", "minItems": 2, "items": {"type": "number"}},
+                "y": {"type": "array", "minItems": 2, "items": {"type": "number"}},
+                "grid": {"type": "array", "minItems": 2, "items": {"type": "array", "minItems": 2, "items": {"type": "number"}}}
+              }
+            },
+            "pid": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["pv", "sp", "action"],
+              "description": "For pid: a sampled PID controller whose output is the target, held between steps and bounded by clamp (domain-spec v0.2 §24).",
+              "properties": {
+                "pv": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$", "description": "The process variable state."},
+                "sp": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$", "description": "The setpoint state; an outer controller's output for a cascade."},
+                "kp": {"type": "number", "minimum": 0},
+                "ki": {"type": "number", "minimum": 0, "description": "Integral gain per second."},
+                "kd": {"type": "number", "minimum": 0, "description": "Derivative gain in seconds, on the measurement."},
+                "action": {"enum": ["reverse", "direct"], "description": "reverse: the output rises while pv is below sp (heating, filling); direct: the output rises while pv is above sp (cooling, draining)."},
+                "manual": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$", "description": "A state that selects manual mode while at least 0.5."},
+                "manual_output": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$", "description": "The state the output follows in manual mode."}
+              }
+            },
+            "alarm": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["watch", "direction", "priority"],
+              "description": "For alarm: an ISA-18.2 alarm on a state; the target is its state code: 0 normal, 1 unacknowledged, 2 acknowledged, 3 returned unacknowledged, 4 shelved (domain-spec v0.2 §26).",
+              "properties": {
+                "watch": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$"},
+                "limit": {"type": "number"},
+                "limit_state": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$"},
+                "direction": {"enum": ["high", "low"]},
+                "deadband": {"type": "number", "minimum": 0, "description": "How far back inside the limit the watched value must come to clear."},
+                "on_delay_s": {"type": "number", "minimum": 0},
+                "off_delay_s": {"type": "number", "minimum": 0},
+                "priority": {"enum": ["low", "medium", "high", "critical"]},
+                "acknowledge": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$", "description": "A state whose change acknowledges the alarm (an acknowledge command's counter)."},
+                "shelve": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$", "description": "A state that shelves the alarm while at least 0.5."}
+              }
             }
           },
           "allOf": [
@@ -496,6 +584,22 @@
             {
               "if": {"properties": {"form": {"const": "sequencer"}}, "required": ["form"]},
               "then": {"required": ["stage_up", "stage_down", "stages", "hold_s"]}
+            },
+            {
+              "if": {"properties": {"form": {"const": "curve"}}, "required": ["form"]},
+              "then": {"required": ["table", "inputs"]}
+            },
+            {
+              "if": {"properties": {"form": {"enum": ["product", "sum"]}}, "required": ["form"]},
+              "then": {"required": ["inputs"]}
+            },
+            {
+              "if": {"properties": {"form": {"const": "pid"}}, "required": ["form"]},
+              "then": {"required": ["pid", "clamp"]}
+            },
+            {
+              "if": {"properties": {"form": {"const": "alarm"}}, "required": ["form"]},
+              "then": {"required": ["alarm"]}
             }
           ]
         },
@@ -525,7 +629,7 @@
       },
       "allOf": [
         {
-          "if": {"properties": {"tier": {"enum": ["F1", "F2"]}}, "required": ["tier"]},
+          "if": {"properties": {"tier": {"enum": ["F1", "F2"]}}, "required": ["tier"], "not": {"required": ["f1"], "properties": {"f1": {"required": ["form"], "properties": {"form": {"enum": ["curve", "product", "sum"]}}}}}},
           "then": {"required": ["dt_ms"]}
         },
         {
@@ -612,6 +716,7 @@
           }
         },
         "fidelity": {"enum": ["F0", "F1", "F2", "F3"]},
+        "tag": {"type": "string", "pattern": "^[A-Z]{1,3}$", "description": "ISA-5.1 instrument letters of the measurement point (components v0.1): metadata only."},
         "iso13374_role": {
           "enum": ["data_acquisition", "data_manipulation", "state_detection", "health_assessment", "prognostic_assessment", "advisory_generation"],
           "description": "ISO 13374 / OSA-CBM block. Documentation only; makes the catalog legible to the condition-monitoring world."
@@ -700,7 +805,8 @@
     "fault": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "onset", "affects", "observability"],
+      "required": ["id", "onset", "observability"],
+      "anyOf": [{"required": ["affects"]}, {"required": ["observation"]}],
       "properties": {
         "id": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$"},
         "description": {"type": "string", "maxLength": 600},
@@ -722,6 +828,23 @@
           },
           "if": {"properties": {"shape": {"const": "pulse"}}, "required": ["shape"]},
           "then": {"required": ["duration_s"]}
+        },
+        "observation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["channel", "form"],
+          "description": "A fault of the instrument rather than the process: it changes what a channel reports while the fault's envelope is above zero (domain-spec v0.2 §25).",
+          "properties": {
+            "channel": {"type": "string", "pattern": "^[a-z][a-z0-9_.]{0,63}$"},
+            "form": {"enum": ["stuck", "freeze", "dropout", "scale", "noise"], "description": "stuck: reports value. freeze: repeats its noise-free reading at onset. dropout: reports nothing. scale: multiplies the reading by 1 + (factor − 1)·envelope. noise: multiplies the noise sigma by 1 + (factor − 1)·envelope."},
+            "value": {"type": "number", "description": "For stuck."},
+            "factor": {"type": "number", "minimum": 0, "description": "For scale and noise."},
+            "quality": {"enum": ["good", "suspect", "out_of_range", "stale", "disconnected"], "default": "good", "description": "The quality the instrument reports while the fault acts; good is the silent case."}
+          },
+          "allOf": [
+            {"if": {"properties": {"form": {"const": "stuck"}}}, "then": {"required": ["value"]}},
+            {"if": {"properties": {"form": {"enum": ["scale", "noise"]}}}, "then": {"required": ["factor"]}}
+          ]
         },
         "affects": {
           "type": "array",

@@ -41,6 +41,18 @@ func (w *World) stepProtectionForm(ent *Entity, dyn *model.Dynamics, s *stateVal
 	case model.FormSequencer:
 		w.stepSequencer(ent, dyn, s, at)
 	default:
+		return w.stepSupervisoryForm(ent, dyn, s, at, dt)
+	}
+	return true
+}
+
+func (w *World) stepSupervisoryForm(ent *Entity, dyn *model.Dynamics, s *stateValue, at, dt int64) bool {
+	switch dyn.F1.Form {
+	case model.FormPID:
+		w.stepController(ent, dyn, s, at, dt)
+	case model.FormAlarm:
+		w.stepAlarm(ent, dyn, s, at)
+	default:
 		return false
 	}
 	return true

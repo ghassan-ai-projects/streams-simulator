@@ -1,0 +1,412 @@
+{
+  "schema_version": "0.1",
+  "id": "streamsim/chiller",
+  "version": 1,
+  "title": "Water-cooled chiller",
+  "description": "Vapour-compression chiller on a chilled-water loop: supply temperature follows the setpoint and rises slightly with load; power and heat rejection follow the load. Start and stop arrive with state products (P7i).",
+  "class": "static/heat_exchanger/chiller",
+  "tags": [
+    "hvac",
+    "utilities",
+    "chilled-water"
+  ],
+  "icon": "chiller",
+  "kind": {
+    "state": [
+      {
+        "name": "running",
+        "unit": "on",
+        "initial": 1,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "setpoint",
+        "unit": "degC",
+        "initial": 7,
+        "min": 4,
+        "max": 12
+      },
+      {
+        "name": "load",
+        "unit": "kW",
+        "initial": 700,
+        "min": 0
+      },
+      {
+        "name": "chw_supply",
+        "unit": "degC",
+        "initial": 7
+      },
+      {
+        "name": "chw_flow",
+        "unit": "m3/h",
+        "initial": 120,
+        "min": 0
+      },
+      {
+        "name": "power",
+        "unit": "kW",
+        "initial": 98,
+        "min": 0
+      },
+      {
+        "name": "cond_temp",
+        "unit": "degC",
+        "initial": 33
+      },
+      {
+        "name": "heat_rejected",
+        "unit": "kW",
+        "initial": 588,
+        "min": 0
+      }
+    ],
+    "dynamics": [
+      {
+        "target": "load",
+        "tier": "F0",
+        "f0": {
+          "baseline": 700,
+          "drift_per_hour": 0,
+          "seasonality": [
+            {
+              "amplitude": 210,
+              "period_s": 86400,
+              "phase_rad": -1.6
+            }
+          ]
+        }
+      },
+      {
+        "target": "chw_flow",
+        "tier": "F0",
+        "f0": {
+          "baseline": 120,
+          "drift_per_hour": 0,
+          "seasonality": []
+        }
+      },
+      {
+        "target": "chw_supply",
+        "tier": "F1",
+        "dt_ms": 5000,
+        "f1": {
+          "form": "first_order_lag",
+          "time_constant_s": 300,
+          "gain": 1,
+          "inputs": [
+            {
+              "state": "setpoint",
+              "coef": 1
+            },
+            {
+              "state": "load",
+              "coef": 0.0005
+            }
+          ]
+        }
+      },
+      {
+        "target": "power",
+        "tier": "F1",
+        "dt_ms": 5000,
+        "f1": {
+          "form": "first_order_lag",
+          "time_constant_s": 60,
+          "gain": 1,
+          "inputs": [
+            {
+              "state": "load",
+              "coef": 0.2
+            }
+          ]
+        }
+      },
+      {
+        "target": "cond_temp",
+        "tier": "F1",
+        "dt_ms": 5000,
+        "f1": {
+          "form": "first_order_lag",
+          "time_constant_s": 600,
+          "gain": 1,
+          "inputs": [
+            {
+              "state": "load",
+              "coef": 0.006
+            },
+            {
+              "state": "running",
+              "coef": 30
+            }
+          ]
+        }
+      },
+      {
+        "target": "heat_rejected",
+        "tier": "F1",
+        "dt_ms": 5000,
+        "f1": {
+          "form": "first_order_lag",
+          "time_constant_s": 120,
+          "gain": 1,
+          "inputs": [
+            {
+              "state": "load",
+              "coef": 1
+            },
+            {
+              "state": "power",
+              "coef": 1
+            }
+          ]
+        }
+      }
+    ],
+    "faults": [
+      {
+        "id": "condenser_fouling",
+        "affects": [
+          {
+            "state": "cond_temp",
+            "delta": 6
+          },
+          {
+            "state": "power",
+            "delta": 0.18,
+            "multiplicative": true
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "cond_temp"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "rate_per_hour": 0.25,
+          "shape": "ramp"
+        }
+      },
+      {
+        "id": "refrigerant_undercharge",
+        "affects": [
+          {
+            "state": "chw_supply",
+            "delta": 1.8
+          },
+          {
+            "state": "power",
+            "delta": -0.08,
+            "multiplicative": true
+          }
+        ],
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "chw_supply_temp"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "magnitude": 1.0,
+          "rate_per_hour": 0.1,
+          "shape": "ramp"
+        }
+      },
+      {
+        "id": "load_swing",
+        "affects": [
+          {
+            "state": "load",
+            "delta": 120
+          }
+        ],
+        "is_negative_class": true,
+        "observability": {
+          "detector": {
+            "form": "single_channel_snr",
+            "channel": "power"
+          },
+          "first_observable_snr": 3.0,
+          "unavoidable_snr": 10.0
+        },
+        "onset": {
+          "duty_cycle": 0.3,
+          "magnitude": 1.0,
+          "rate_per_hour": 2.0,
+          "shape": "intermittent"
+        }
+      }
+    ],
+    "effectors": [
+      {
+        "name": "set_setpoint",
+        "risk_class": "medium",
+        "idempotency_window_s": 3600,
+        "ack": {
+          "failure_modes": [
+            {
+              "mode": "ok",
+              "probability": 1.0
+            }
+          ],
+          "latency_ms": {
+            "mean": 300,
+            "sigma": 50
+          }
+        },
+        "args_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "chiller_id",
+            "setpoint_c"
+          ],
+          "properties": {
+            "chiller_id": {
+              "type": "string"
+            },
+            "setpoint_c": {
+              "type": "number",
+              "minimum": 4,
+              "maximum": 12
+            }
+          }
+        },
+        "effect": {
+          "dead_time_s": 0,
+          "time_constant_s": 0,
+          "state_deltas": [
+            {
+              "state": "setpoint",
+              "assign_from_arg": "setpoint_c"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "measurement_points": [
+    {
+      "name": "chw_supply_temp",
+      "state": "chw_supply",
+      "unit_family": "temperature",
+      "range": {
+        "min": 0,
+        "max": 25
+      },
+      "tag": "TT",
+      "default_instrument": "streamsim/rtd@1"
+    },
+    {
+      "name": "cond_temp",
+      "state": "cond_temp",
+      "unit_family": "temperature",
+      "range": {
+        "min": 10,
+        "max": 60
+      },
+      "tag": "TT",
+      "default_instrument": "streamsim/rtd@1"
+    },
+    {
+      "name": "power",
+      "state": "power",
+      "unit_family": "power",
+      "range": {
+        "min": 0,
+        "max": 400
+      },
+      "tag": "JT",
+      "default_instrument": "streamsim/power-meter@1"
+    },
+    {
+      "name": "chw_flow",
+      "state": "chw_flow",
+      "unit_family": "volumetric_flow",
+      "range": {
+        "min": 0,
+        "max": 300
+      },
+      "tag": "FT",
+      "default_instrument": "streamsim/mag-flow-meter@1",
+      "optional": true
+    }
+  ],
+  "ports": [
+    {
+      "name": "load_in",
+      "type": "thermal_load",
+      "direction": "consumes",
+      "state": "load"
+    },
+    {
+      "name": "heat_out",
+      "type": "heat_rejection",
+      "direction": "provides",
+      "state": "heat_rejected"
+    }
+  ],
+  "default_preset": "medium",
+  "presets": {
+    "small": {
+      "title": "Small (about 100 TR)",
+      "values": {
+        "state/load/initial": 250,
+        "dynamics/load/f0/baseline": 250,
+        "dynamics/load/f0/seasonality/0/amplitude": 75,
+        "state/chw_flow/initial": 43,
+        "dynamics/chw_flow/f0/baseline": 43,
+        "state/power/initial": 35,
+        "state/heat_rejected/initial": 210,
+        "dynamics/chw_supply/f1/inputs/load/coef": 0.0014,
+        "dynamics/cond_temp/f1/inputs/load/coef": 0.0168,
+        "faults/load_swing/affects/load/delta": 43,
+        "measurement_points/power/range/max": 150,
+        "measurement_points/chw_flow/range/max": 100
+      }
+    },
+    "medium": {
+      "title": "Medium (about 300 TR)",
+      "values": {}
+    },
+    "large": {
+      "title": "Large (about 800 TR)",
+      "values": {
+        "state/load/initial": 2000,
+        "dynamics/load/f0/baseline": 2000,
+        "dynamics/load/f0/seasonality/0/amplitude": 600,
+        "state/chw_flow/initial": 344,
+        "dynamics/chw_flow/f0/baseline": 344,
+        "state/power/initial": 280,
+        "state/heat_rejected/initial": 1680,
+        "dynamics/chw_supply/f1/inputs/load/coef": 0.000175,
+        "dynamics/cond_temp/f1/inputs/load/coef": 0.0021,
+        "faults/load_swing/affects/load/delta": 340,
+        "measurement_points/power/range/max": 1100,
+        "measurement_points/chw_flow/range/max": 800
+      }
+    }
+  },
+  "parameters": [
+    {
+      "name": "setpoint_c",
+      "title": "Chilled-water setpoint",
+      "unit": "degC",
+      "type": "number",
+      "min": 4,
+      "max": 12,
+      "default": 7,
+      "targets": [
+        "state/setpoint/initial",
+        "state/chw_supply/initial"
+      ]
+    }
+  ]
+}

@@ -17,6 +17,7 @@
       {"name": "observed_time", "from": {"op": "format_time", "layout": "rfc3339_nano", "of": {"op": "source", "source": "observed_time"}}},
       {"name": "value", "from": {"op": "source", "source": "value"}, "omit_when_null": true},
       {"name": "unit", "from": {"op": "source", "source": "unit"}, "omit_when_null": true},
+      {"name": "quality", "from": {"op": "source", "source": "quality"}, "omit_when_null": true},
       {"name": "birth", "from": {"op": "source", "source": "birth"}, "omit_when_null": true}
     ]
   },

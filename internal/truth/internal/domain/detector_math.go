@@ -8,9 +8,11 @@ import (
 )
 
 func singleChannelDeviation(entity, channel string, clean, faulted *world.World, at int64) float64 {
-	faulty := faulted.Reading(entity, channel, at)
-	baseline := clean.Reading(entity, channel, at)
-	return math.Abs(faulty - baseline)
+	if faulted.ReadingDropped(entity, channel, at) && !clean.ReadingDropped(entity, channel, at) {
+		return math.Inf(1)
+	}
+	level := math.Abs(faulted.Reading(entity, channel, at) - clean.Reading(entity, channel, at))
+	return level + math.Abs(faulted.ReadingNoise(entity, channel, at)-clean.ReadingNoise(entity, channel, at))
 }
 
 func channelDivergence(entity string, det *model.Detector, clean, faulted *world.World, at int64) float64 {

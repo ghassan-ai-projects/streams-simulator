@@ -9,12 +9,12 @@ type storeGroup struct {
 	stepNS   int64
 }
 
-func (w *World) commitStores(ent *Entity, horizon int64) {
+func (w *World) commitStores(ent *Entity, keep retention) {
 	group := storeGroupOf(ent, -1)
 	from := group.values[0].lastStep
 	levels := w.stepStores(ent, group, from, group.stepNS)
 	for i, value := range group.values {
-		value.remember(horizon)
+		value.remember(keep)
 		value.x = w.boundedLevel(ent, group, i, levels[i])
 		value.lastStep = from + group.stepNS
 	}

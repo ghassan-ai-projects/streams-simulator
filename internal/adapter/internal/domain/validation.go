@@ -105,7 +105,7 @@ func hasIdentity(e model.ValueExpr) bool {
 
 func nativeSource(name string) bool {
 	switch name {
-	case "seq", "world_id", "entity_type", "entity_id", "channel", "event_time", "observed_time", "value", "unit", "birth":
+	case "seq", "world_id", "entity_type", "entity_id", "channel", "event_time", "observed_time", "value", "unit", "quality", "birth":
 		return true
 	}
 	return false

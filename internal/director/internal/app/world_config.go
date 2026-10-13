@@ -82,15 +82,6 @@ func nameplateChannel(channel *model.Channel) rules.NameplateChannel {
 
 func appendNameplateEffectors(np *rules.Nameplate, spec *domain.Compiled) {
 	for _, effector := range spec.DeclaredEffectors() {
-		np.Effectors = append(np.Effectors, nameplateEffector(effector))
+		np.Effectors = append(np.Effectors, rules.OperatorEffector(effector))
 	}
-}
-
-func nameplateEffector(effector *model.Effector) rules.EffectorInfo {
-	risk := effector.RiskClass
-	if risk == "" {
-		risk = "medium"
-	}
-	return rules.EffectorInfo{Name: effector.Name, Description: effector.Description,
-		ArgsSchema: effector.ArgsSchema, RiskClass: risk}
 }

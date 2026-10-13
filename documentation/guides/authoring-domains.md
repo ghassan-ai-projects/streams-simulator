@@ -14,7 +14,7 @@ The design catalog is a planning document, not proof that a domain is shipped. A
 
 ## Instances, overrides, links and boards
 
-An instance set may list `names` (`M1`) next to or instead of an `id_template`. `override` on a set adds states, channels, faults and effectors or narrows a state bound, a channel range or an effector argument bound; it never removes or retypes. A plant-wide measurement belongs to a kind with `system: true` and one named instance. `link_types` and `links` give the typed topology between instances, and `boards` group the instances hosted on one device (the board owns the `boot_id`). Every rule and its pointer is in [DOMAIN_SPEC_V0_2.md](../../docs/design/DOMAIN_SPEC_V0_2.md) sections 8 to 12; `internal/testsupport/testdata/structured-plant.domain.json` exercises all of them.
+An instance set may list `names` (`M1`) next to or instead of an `id_template`. `override` on a set adds states, channels, faults and effectors or narrows a state bound, a channel range or an effector argument bound; it never removes or retypes. A plant-wide measurement belongs to a kind with `system: true` and one named instance. `link_types` and `links` give the typed topology between instances; a kind reads the instances linked into it through a linked input or `follow` (`sum`, `mean`, `min`, `max`, `count_running`; section 21, exercised by `internal/testsupport/testdata/coupled-plant.domain.json`), and `boards` group the instances hosted on one device (the board owns the `boot_id`). Every rule and its pointer is in [DOMAIN_SPEC_V0_2.md](../../docs/design/DOMAIN_SPEC_V0_2.md) sections 8 to 12; `internal/testsupport/testdata/structured-plant.domain.json` exercises all of them.
 
 ## Stores and flows
 

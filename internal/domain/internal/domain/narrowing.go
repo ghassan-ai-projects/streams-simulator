@@ -48,14 +48,13 @@ func (checks domainChecks) rejectViolation(member, message string) error {
 }
 
 func stateNarrowingViolation(decl *model.State, n *model.StateNarrowing) (string, string) {
-	bounded := decl.Min != 0 || decl.Max != 0
 	switch {
 	case n.Min >= n.Max:
 		return "/max", fmt.Sprintf("state %q narrowing needs min below max", n.Name)
-	case bounded && n.Min < decl.Min:
-		return "/min", fmt.Sprintf("state %q min %v widens the kind's min %v", n.Name, n.Min, decl.Min)
-	case bounded && n.Max > decl.Max:
-		return "/max", fmt.Sprintf("state %q max %v widens the kind's max %v", n.Name, n.Max, decl.Max)
+	case decl.Min != nil && n.Min < *decl.Min:
+		return "/min", fmt.Sprintf("state %q min %v widens the kind's min %v", n.Name, n.Min, *decl.Min)
+	case decl.Max != nil && n.Max > *decl.Max:
+		return "/max", fmt.Sprintf("state %q max %v widens the kind's max %v", n.Name, n.Max, *decl.Max)
 	case decl.Initial < n.Min || decl.Initial > n.Max:
 		return "/min", fmt.Sprintf("state %q initial %v lies outside the narrowed bounds", n.Name, decl.Initial)
 	}
@@ -155,7 +154,8 @@ func bound(property map[string]any, key string) (float64, bool) {
 func applyNarrowing(kind *model.Kind, n *model.Narrowing) {
 	for _, item := range n.State {
 		state := &kind.State[stateIndex(kind, item.Name)]
-		state.Min, state.Max = item.Min, item.Max
+		lower, upper := item.Min, item.Max
+		state.Min, state.Max = &lower, &upper
 	}
 	narrowChannelRanges(kind, n.Channels)
 	narrowEffectorSchemas(kind, n.Effectors)

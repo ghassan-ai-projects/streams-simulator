@@ -13,14 +13,14 @@ import (
 )
 
 var v01RuntimeDigests = map[string]string{
-	"aquaculture-pond":      "sha256:efb583f5c24fd2897d7d85c245949a30d3b833b214668fb1be7fe494c3ca4420",
-	"cold-chain-transit":    "sha256:2657324d9bd69afb345b104f807c40bb16291bc2134cb729f42c534d0486d81b",
-	"discrete-line-oee":     "sha256:2f88ce0f8a153156d361f7b098b2fbf43eae60c3d8f3a279cee0ff6a2b00726d",
-	"host-system-health":    "sha256:db7136029d8d189bda986373761fa5ffbbc5c8553e50f4e159b8fdaadd45095c",
-	"k8s-cluster":           "sha256:4ec72d2d90943aa8fa321a307c99010ad0a315bdfd68c4cf0e932351ce24d08f",
-	"open-field-irrigation": "sha256:d68c2ceb8f043f2c15272e26986474b03f7dc36e20255cfb5068586f952002cc",
-	"rotating-machinery":    "sha256:4a34e8662c04c28f677011cf66e14b392ebb36ffb290bcb41d4071c53fcb0874",
-	"shipment-exception":    "sha256:d50e7cb1facbdec18299f39551e77a5680ecba5fb91091cf6ec6561cbace3263",
+	"aquaculture-pond":      "sha256:07239180fb86a73b75393acaf02c6618972f0927de6ed6a65b325868cafe7908",
+	"cold-chain-transit":    "sha256:527b81cf10a6e8dd3a5f19d199efc415780c7bea071ef6d2a6707ba84eb2cbfe",
+	"discrete-line-oee":     "sha256:c5312b22db603334c249c1e30313cae0ac71d42a929c36365a1c9fa95a1d644b",
+	"host-system-health":    "sha256:da36450f72d9e46cdcf0999b9f38a2704f9535d9524b0c0c03bdd50153e2904c",
+	"k8s-cluster":           "sha256:f823d642be85b19560d02bcda39ab435d087016e296f1bf6b1e211a3bd8388ab",
+	"open-field-irrigation": "sha256:936ae49fc4c7b0f182a5368b642e764127f2541b4d40ad8ecf7bf8c1f5060121",
+	"rotating-machinery":    "sha256:a871d6ec8ca644afcfd44946238cdb1617684afe58b4a6e68c573018470e0683",
+	"shipment-exception":    "sha256:930a4750e526700d1c1346c61f0da4c8161848dbadf8d70587941c497f89e8e8",
 }
 
 func TestEveryShippedDomainCompilesToItsV01RuntimeWorld(t *testing.T) {

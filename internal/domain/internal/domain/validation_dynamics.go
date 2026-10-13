@@ -7,12 +7,7 @@ import (
 )
 
 func (checks domainChecks) f1Inputs(f1 *model.F1Dyn) error {
-	for i, in := range f1.Inputs {
-		if !checks.hasState(in.State) {
-			return checks.bad(fmt.Sprintf("/inputs/%d", i), "f1 form %q input %q is not a declared state", f1.Form, in.State)
-		}
-	}
-	return nil
+	return checks.each("inputs", len(f1.Inputs), func(at domainChecks, i int) error { return at.f1Input(f1.Form, f1.Inputs[i]) })
 }
 
 func (checks domainChecks) f1Parameters(f1 *model.F1Dyn) error {
@@ -27,6 +22,7 @@ func (checks domainChecks) f1ParameterChecks() map[string]func(*model.F1Dyn) err
 		"first_order_lag": checks.f1TimeConstant, "dead_time": checks.f1TimeConstant, "rc_network": checks.f1NetworkConstants,
 		"hysteresis": checks.f1Thresholds, "threshold_integrator": checks.f1Direction, "saturation": checks.f1Clamp,
 		model.FormRegime: checks.f1Selector, model.FormTrip: checks.f1Trip, model.FormAntiRecycle: checks.f1AntiRecycle, model.FormSequencer: checks.f1Sequencer,
+		model.FormCurve: checks.f1Table, model.FormProduct: checks.f1Factors, model.FormSum: checks.f1Terms, model.FormPID: checks.f1Controller, model.FormAlarm: checks.f1Alarm,
 	}
 }
 

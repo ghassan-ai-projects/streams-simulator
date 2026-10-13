@@ -99,6 +99,7 @@ func (w *World) registerFault(fault *model.Fault, entity string, onset int64, se
 	for _, affected := range fault.Affects {
 		w.faultsByState[affected.State] = append(w.faultsByState[affected.State], active)
 	}
+	w.registerObservationFault(active)
 	return id
 }
 

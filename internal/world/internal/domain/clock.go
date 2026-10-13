@@ -71,8 +71,17 @@ func (w *World) processScheduledEvent(event *item) {
 		w.birthAutonomous(event.payload.(int), event.timeNS)
 	case kindDeath:
 		w.retire(event.entity, "lifetime", event.timeNS)
+	default:
+		w.processChannelEvent(event)
+	}
+}
+
+func (w *World) processChannelEvent(event *item) {
+	switch event.kind {
 	case kindEventCheck:
 		w.processEventCheck(event.entity, event.channel, event.timeNS)
+	case kindObservationCapture:
+		w.captureFrozen(event.payload.(*activeFault))
 	}
 }
 

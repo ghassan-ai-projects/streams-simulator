@@ -24,6 +24,7 @@ func (w *World) retire(entityID, reason string, atNS int64) {
 		return
 	}
 	ent.alive = false
+	ent.retiredNS = atNS
 
 }
 

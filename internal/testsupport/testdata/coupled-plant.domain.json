@@ -1,0 +1,203 @@
+{
+  "id": "coupled-plant",
+  "version": "0.2.0",
+  "title": "Coupled plant",
+  "description": "A test domain with three units feeding a header over typed links: the header follows and reads aggregates of the units' states.",
+  "axes": {
+    "absence": "signal",
+    "actuation": "advisory",
+    "cadence": ["periodic"],
+    "cardinality": "fleet",
+    "consequence": ["downtime"],
+    "correlation": ["peer"],
+    "fidelity": ["F0", "F1"],
+    "lateness": "bounded",
+    "rate": "low",
+    "seasonality": ["none"],
+    "time_reference": "wall",
+    "value_shape": ["scalar"]
+  },
+  "stresses": "Cross-entity coupling: a header's states are aggregates of the states of the units linked into it.",
+  "kinds": [
+    {
+      "name": "unit",
+      "state": [
+        {"name": "running", "unit": "1", "initial": 1.0},
+        {"name": "setpoint", "unit": "m3/h", "initial": 10.0},
+        {"name": "flow", "unit": "m3/h", "initial": 0.0}
+      ],
+      "dynamics": [
+        {"target": "setpoint", "tier": "F0", "f0": {"baseline": 10.0}},
+        {
+          "target": "flow",
+          "tier": "F1",
+          "dt_ms": 1000,
+          "f1": {"form": "first_order_lag", "gain": 1.0, "inputs": [{"state": "setpoint", "coef": 1.0}], "time_constant_s": 100}
+        }
+      ],
+      "channels": [
+        {
+          "name": "unit.flow",
+          "unit": "m3/h",
+          "absence": "signal",
+          "cadence": {"mode": "periodic", "period_s": 60},
+          "fidelity": "F1",
+          "link_delay": {"mean_s": 0.1, "model": "constant"},
+          "noise": {"model": "gaussian", "sigma": 0.05},
+          "observes": "flow",
+          "resolution": 0.001,
+          "value_type": "number"
+        }
+      ],
+      "faults": [
+        {
+          "id": "derate",
+          "affects": [{"state": "setpoint", "delta": -4.0}],
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "unit.flow"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"magnitude": 1.0, "shape": "step"}
+        },
+        {
+          "id": "trip",
+          "affects": [{"state": "running", "delta": -1.0}],
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "unit.flow"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"magnitude": 1.0, "shape": "step"}
+        }
+      ]
+    },
+    {
+      "name": "header",
+      "state": [
+        {"name": "inflow", "unit": "m3/h", "initial": 0.0},
+        {"name": "draw", "unit": "m3/h", "initial": 20.0},
+        {"name": "level", "unit": "m3", "initial": 100.0},
+        {"name": "avg_flow", "unit": "m3/h", "initial": 0.0},
+        {"name": "peak", "unit": "m3/h", "initial": 0.0},
+        {"name": "low", "unit": "m3/h", "initial": 0.0},
+        {"name": "units_running", "unit": "1", "initial": 0.0}
+      ],
+      "dynamics": [
+        {"target": "inflow", "tier": "F0", "f0": {"baseline": 5.0}, "follow": {"link": "feed", "state": "flow", "aggregate": "sum"}},
+        {"target": "draw", "tier": "F0", "f0": {"baseline": 20.0}},
+        {
+          "target": "level",
+          "tier": "F1",
+          "dt_ms": 1000,
+          "f1": {"form": "integrator", "gain": 0.01, "inputs": [{"state": "inflow", "coef": 1.0}, {"state": "draw", "coef": -1.0}]}
+        },
+        {
+          "target": "avg_flow",
+          "tier": "F1",
+          "dt_ms": 70000,
+          "f1": {
+            "form": "first_order_lag",
+            "gain": 1.0,
+            "inputs": [{"state": "flow", "coef": 1.0, "link": {"type": "feed", "aggregate": "mean", "default": 7.0}}],
+            "time_constant_s": 50
+          }
+        },
+        {"target": "peak", "tier": "F0", "f0": {"baseline": -1.0}, "follow": {"link": "feed", "state": "flow", "aggregate": "max"}},
+        {"target": "low", "tier": "F0", "f0": {"baseline": -1.0}, "follow": {"link": "feed", "state": "flow", "aggregate": "min"}},
+        {"target": "units_running", "tier": "F0", "f0": {"baseline": 0.0}, "follow": {"link": "feed", "state": "running", "aggregate": "count_running"}}
+      ],
+      "channels": [
+        {
+          "name": "header.level",
+          "unit": "m3",
+          "absence": "signal",
+          "cadence": {"mode": "periodic", "period_s": 60},
+          "fidelity": "F1",
+          "link_delay": {"mean_s": 0.1, "model": "constant"},
+          "noise": {"model": "gaussian", "sigma": 0.05},
+          "observes": "level",
+          "resolution": 0.001,
+          "value_type": "number"
+        }
+      ],
+      "faults": [
+        {
+          "id": "header_leak",
+          "affects": [{"state": "draw", "delta": 5.0}],
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "header.level"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"magnitude": 1.0, "shape": "step"}
+        }
+      ]
+    },
+    {
+      "name": "plant",
+      "state": [{"name": "supply", "unit": "m3/h", "initial": 0.0}],
+      "dynamics": [
+        {
+          "target": "supply",
+          "tier": "F1",
+          "dt_ms": 600000,
+          "f1": {
+            "form": "first_order_lag",
+            "gain": 1.0,
+            "inputs": [{"state": "avg_flow", "coef": 1.0, "link": {"type": "supply", "aggregate": "max", "default": 0.0}}],
+            "time_constant_s": 900
+          }
+        }
+      ],
+      "channels": [
+        {
+          "name": "plant.supply",
+          "unit": "m3/h",
+          "absence": "signal",
+          "cadence": {"mode": "periodic", "period_s": 600},
+          "fidelity": "F1",
+          "link_delay": {"mean_s": 0.1, "model": "constant"},
+          "noise": {"model": "gaussian", "sigma": 0.05},
+          "observes": "supply",
+          "resolution": 0.001,
+          "value_type": "number"
+        }
+      ],
+      "faults": [
+        {
+          "id": "plant_loss",
+          "affects": [{"state": "supply", "delta": -1.0}],
+          "observability": {
+            "detector": {"form": "single_channel_snr", "channel": "plant.supply"},
+            "first_observable_snr": 3.0,
+            "unavoidable_snr": 10.0
+          },
+          "onset": {"magnitude": 1.0, "shape": "step"}
+        }
+      ]
+    }
+  ],
+  "instances": [
+    {"kind": "unit", "id_template": "unit-{n}", "count": {"default": 3, "min": 1, "max": 6}},
+    {"kind": "header", "names": ["hdr-a", "hdr-b"]},
+    {"kind": "plant", "names": ["plant-1"]}
+  ],
+  "link_types": [
+    {"name": "feed", "from": "unit", "to": "header", "description": "A unit discharges into a header."},
+    {"name": "supply", "from": "header", "to": "plant", "description": "A header supplies the plant."}
+  ],
+  "links": [
+    {"from": "unit-1", "to": "hdr-a", "type": "feed"},
+    {"from": "unit-2", "to": "hdr-a", "type": "feed"},
+    {"from": "unit-3", "to": "hdr-a", "type": "feed"},
+    {"from": "hdr-a", "to": "plant-1", "type": "supply"},
+    {"from": "hdr-b", "to": "plant-1", "type": "supply"}
+  ],
+  "profiles": [
+    {"name": "nominal", "duration_s": 7200, "description": "Three units and two headers, one fault per scenario."},
+    {"name": "correlated_cascade", "not_applicable": "The test plant has no shared upstream cause.", "description": "Not applicable to the test plant."},
+    {"name": "sensor_pathology", "not_applicable": "The test plant has no sensor faults.", "description": "Not applicable to the test plant."}
+  ],
+  "ground_truth": {"min_per_label": 10, "min_scenarios": 100, "negative_class_fraction": 0.4, "pre_degraded_fraction": 0.1}
+}

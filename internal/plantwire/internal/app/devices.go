@@ -69,7 +69,7 @@ func (d *devices) observe(event model.SimEvent) []wire.Record {
 		return records
 	}
 	d.remember(event)
-	sample := wire.Sample(alias, event.Value, mustTime(event.EventTime))
+	sample := wire.Sample(alias, event.Value, event.Quality, mustTime(event.EventTime))
 	return append(records, wire.DeviceData(d.wireOf(event.EntityID), d.boot(event.EntityID), false, []map[string]any{sample}))
 }
 

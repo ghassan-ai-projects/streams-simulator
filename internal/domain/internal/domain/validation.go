@@ -44,7 +44,7 @@ func (checks domainChecks) inKind(index int) domainChecks {
 }
 
 func (checks domainChecks) checkKind() error {
-	for _, check := range []func() error{checks.checkChannels, checks.checkDynamics, checks.checkDynamicsGraph, checks.checkFlows, checks.checkStoreSteps, checks.checkFaults, checks.checkEffectors, checks.checkBoundaries} {
+	for _, check := range []func() error{checks.checkChannels, checks.checkDynamics, checks.checkDynamicsGraph, checks.checkFlows, checks.checkStoreSteps, checks.checkStability, checks.checkFaults, checks.checkEffectors, checks.checkBoundaries} {
 		if err := check(); err != nil {
 			return err
 		}

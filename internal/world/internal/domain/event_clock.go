@@ -43,7 +43,7 @@ func (w *World) pulseInstants(entityID string, from, to int64) []int64 {
 
 func (w *World) processEventCheck(entityID, channelName string, t int64) {
 	ent, ch, cs := w.emissionChannel(entityID, channelName)
-	if cs == nil || w.channelDown(ent, ch, cs, t) {
+	if cs == nil || w.channelDown(ent, ch, cs, t) || w.droppedOut(ent, ch, t) {
 		return
 	}
 	if emit, value := w.reading(ent, ch, cs, t); emit {
