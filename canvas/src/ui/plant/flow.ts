@@ -18,6 +18,8 @@ function frames(view: PlantView): FrameNodeType[] {
     type: "frame",
     position: { x: box.x, y: box.y },
     data: { title, count: counts.get(title) ?? 0 },
+    width: box.width,
+    height: box.height,
     style: { width: box.width, height: box.height },
     selectable: false,
     draggable: false,
@@ -40,6 +42,8 @@ export function flowNodes(
       data: { view: node, readings: readings === null ? null : readings(node.id) },
       selected: node.id === selected,
       draggable: false,
+      width: box.width,
+      height: box.height,
       style: { width: box.width },
       ariaLabel: `${node.label}, ${node.detail}`,
     };

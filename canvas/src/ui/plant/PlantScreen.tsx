@@ -47,7 +47,7 @@ function Crumbs({
     ...(hall === null ? [] : [{ label: title, route: { screen: "plant", domain: state.path, hall: null } } as const]),
   ];
   return (
-    <nav className={shared.crumbs} aria-label="Breadcrumb">
+    <nav className={styles.crumbs} aria-label="Breadcrumb">
       {trail.map((crumb) => (
         <Fragment key={crumb.label}>
           <button

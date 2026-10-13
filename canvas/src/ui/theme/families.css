@@ -128,3 +128,16 @@
 .react-flow__background {
   --xy-background-pattern-color: var(--grid-major);
 }
+
+.react-flow__minimap-node {
+  fill: var(--border-default);
+  stroke: none;
+}
+
+.react-flow__minimap-node.minimap-frame {
+  fill: color-mix(in srgb, var(--border-strong) 18%, transparent);
+}
+
+.react-flow__minimap-node.minimap-selected {
+  fill: var(--accent);
+}
