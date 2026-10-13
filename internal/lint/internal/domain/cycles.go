@@ -61,10 +61,13 @@ func followDriver(spec *domain.Compiled, from source) []source {
 	if dyn == nil || dyn.Follow == nil {
 		return nil
 	}
-	if provider := providerOf(spec, dyn.Follow.Link); provider != nil {
-		return []source{{provider, dyn.Follow.State}}
+	var found []source
+	for _, followed := range dyn.Follow.Sources {
+		if provider := providerOf(spec, followed.Link); provider != nil {
+			found = append(found, source{provider, followed.State})
+		}
 	}
-	return nil
+	return found
 }
 
 func providerOf(spec *domain.Compiled, linkType string) *model.Kind {

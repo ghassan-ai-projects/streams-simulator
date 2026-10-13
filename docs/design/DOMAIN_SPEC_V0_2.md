@@ -462,9 +462,11 @@ A kind reads the states of the instances linked **into** it, over a declared lin
 - **A linked input**: an F1 input `{state, coef, link: {type, aggregate, default?}}` contributes `coef × aggregate`, where the
   aggregate is taken over the `state` of every instance linked into this one by `type`. It works in every form that reads inputs
   (lags, integrators, stores, regimes).
-- **`follow`** on a dynamics entry, `{link, state, aggregate}`: while at least one linked instance is present, the target state
-  is the aggregate of the linked instances' `state`; otherwise the entry's own `f0` or `f1` applies, and it keeps integrating in
-  the background. A store, peak, trip, anti-recycle or sequencer state cannot follow.
+- **`follow`** on a dynamics entry, `{sources: [{link, state}], aggregate}`: while at least one instance linked in over any of
+  the sources' link types is present, the target state is the aggregate over all of them, each source's instances read at its
+  `state` (sources in their order, each in sorted instance-id order), so one header sums the air demand of several kinds of line
+  (R7k-02); otherwise the entry's own `f0` or `f1` applies, and it keeps integrating in the background. A link type appears in
+  one source of a follow at most. A store, peak, trip, anti-recycle or sequencer state cannot follow.
 
 | Aggregate | Value | With no linked instance present |
 |---|---|---|

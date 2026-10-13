@@ -113,6 +113,18 @@ func TestAHeaderFollowsAndReadsTheAggregatesOfItsLinkedUnits(t *testing.T) {
 	}
 }
 
+func TestAFollowSumsEveryLinkTypeItNamesAcrossKinds(t *testing.T) {
+	t.Parallel()
+	w := coupledWorld(t)
+	if _, err := w.InjectFault("unit-1", "derate", atSeconds(0), nil); err != nil {
+		t.Fatal(err)
+	}
+	r := newHeaderReference(map[string]float64{"unit-1": 6, "unit-2": 10, "unit-3": 10}, nil)
+	for _, s := range []float64{60, 1000, 3600} {
+		near(t, "metered", w.StateValue("plant-1", "metered", atSeconds(s)), r.sum(s)+5+r.flows["unit-1"].value("flow", s))
+	}
+}
+
 func TestAnUnlinkedHeaderKeepsItsOwnDynamicsAndTheDefaults(t *testing.T) {
 	t.Parallel()
 	w := coupledWorld(t)

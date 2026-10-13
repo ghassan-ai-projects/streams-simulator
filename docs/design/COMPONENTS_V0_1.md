@@ -140,12 +140,12 @@ the index must lie within `count.max`, or within `count.default` when there is n
 template `line.{n}` with a default of 3 names no instance.
 
 Links carry values through domain-spec v0.2 §21 (P7h): compose writes a consuming port's state as `follow` (aggregate `sum`)
-over the consuming port's link type, so an instance with incoming links takes the sum of the providing states, and an instance without
-links keeps its own dynamics; connected and unconnected instances of one entry stay one kind. One consuming state of a kind takes
-one link type and one providing state: connections that feed it otherwise are a compose error, as is a consuming state with no
-dynamics entry to carry the `follow`. A component reads other
-aggregates (`mean`, `min`, `max`, `count_running`) through linked inputs in its own dynamics. Compose rejects a composition
-whose connections make kinds read each other in a cycle.
+with one source per link type that feeds it (in the order the connections first name them), so an instance with incoming links
+takes the sum of the providing states of every kind connected into it, and an instance without links keeps its own dynamics;
+connected and unconnected instances of one entry stay one kind. A link type carries one providing state, and one consuming state
+has one sample period: connections that feed it otherwise are a compose error, as is a consuming state with no dynamics entry to
+carry the `follow`. A component reads other aggregates (`mean`, `min`, `max`, `count_running`) through linked inputs in its own
+dynamics. Compose rejects a composition whose connections make kinds read each other in a cycle without a sampled port.
 
 ## 6. Vocabulary (`vocabulary.json`)
 

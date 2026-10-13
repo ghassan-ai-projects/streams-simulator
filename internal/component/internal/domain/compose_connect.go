@@ -93,15 +93,25 @@ func (s *linkSet) add(c *composer, from, to endpoint, at string) error {
 
 func (s *linkSet) record(c *composer, wanted follow, at string) error {
 	for _, existing := range s.follows {
-		if existing.kind != wanted.kind || existing.state != wanted.state {
-			continue
+		if existing == wanted {
+			return nil
 		}
-		if existing != wanted {
-			return c.refuse(at, "state %q of kind %s is fed by %s reading %q and by %s reading %q: one link type and one provided state per consuming state",
-				wanted.state, wanted.kind, existing.link, existing.source, wanted.link, wanted.source)
+		if err := c.followConflict(existing, wanted, at); err != nil {
+			return err
 		}
-		return nil
 	}
 	s.follows = append(s.follows, wanted)
+	return nil
+}
+
+func (c *composer) followConflict(existing, wanted follow, at string) error {
+	switch {
+	case existing.link == wanted.link:
+		return c.refuse(at, "link type %s carries %q and %q into state %q of kind %s: one provided state per link type",
+			wanted.link, existing.source, wanted.source, wanted.state, wanted.kind)
+	case existing.kind == wanted.kind && existing.state == wanted.state && existing.sampleS != wanted.sampleS:
+		return c.refuse(at, "state %q of kind %s is read every %v s and every %v s: one sample period per consuming state",
+			wanted.state, wanted.kind, existing.sampleS, wanted.sampleS)
+	}
 	return nil
 }

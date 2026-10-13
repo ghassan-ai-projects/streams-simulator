@@ -719,7 +719,7 @@
             "drift_per_hour": 0,
             "seasonality": [{"amplitude": 75, "period_s": 86400, "phase_rad": -1.5708}]
           },
-          "follow": {"state": "cooling_load", "aggregate": "sum", "link": "chiller_small__load_in__ahu"}
+          "follow": {"aggregate": "sum", "sources": [{"state": "cooling_load", "link": "chiller_small__load_in__ahu"}]}
         },
         {
           "target": "cond_water_in",

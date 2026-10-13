@@ -28,8 +28,16 @@ func linkInput(state, linkType, aggregate string) map[string]any {
 func TestLinkReadsNameADeclaredLinkIntoTheirKindAndAStateOfItsSource(t *testing.T) {
 	t.Parallel()
 	cases := []violationCase{
-		{"a follow over an undeclared link type", func(d map[string]any) { put(d, "nope", "kinds", 1, "dynamics", 0, "follow", "link") }, "/kinds/1/dynamics/0/follow/link"},
-		{"a follow of a state the source lacks", func(d map[string]any) { put(d, "temp", "kinds", 1, "dynamics", 0, "follow", "state") }, "/kinds/1/dynamics/0/follow/state"},
+		{"a follow over an undeclared link type", func(d map[string]any) { put(d, "nope", "kinds", 1, "dynamics", 0, "follow", "sources", 0, "link") }, "/kinds/1/dynamics/0/follow/sources/0/link"},
+		{"a follow of a state the source lacks", func(d map[string]any) { put(d, "temp", "kinds", 1, "dynamics", 0, "follow", "sources", 0, "state") }, "/kinds/1/dynamics/0/follow/sources/0/state"},
+		{"a follow naming one link type twice", func(d map[string]any) {
+			sources := at(d, "kinds", 1, "dynamics", 0, "follow", "sources").([]any)
+			put(d, append(sources, map[string]any{"link": "feed", "state": "setpoint"}), "kinds", 1, "dynamics", 0, "follow", "sources")
+		}, "/kinds/1/dynamics/0/follow/sources/1/link"},
+		{"a second follow source of a state its kind lacks", func(d map[string]any) {
+			sources := at(d, "kinds", 2, "dynamics", 1, "follow", "sources").([]any)
+			put(d, "temp", "kinds", 2, "dynamics", 1, "follow", "sources", len(sources)-1, "state")
+		}, "/kinds/2/dynamics/1/follow/sources/1/state"},
 		{"an input of a state the source lacks", func(d map[string]any) { put(d, "temp", "kinds", 1, "dynamics", 3, "f1", "inputs", 0, "state") }, "/kinds/1/dynamics/3/f1/inputs/0/state"},
 		{"an input over a link out of the kind", func(d map[string]any) {
 			addLinkType(d, "back", "header", "unit")
@@ -70,7 +78,7 @@ func TestALinkInputIsNoDependencyInsideItsOwnKind(t *testing.T) {
 func TestAStatefulFormCannotFollowLinkedInstances(t *testing.T) {
 	t.Parallel()
 	for _, form := range unfollowableForms {
-		d := &model.Dynamics{Target: "level", Follow: &model.Follow{Link: "feed", State: "flow", Aggregate: model.AggregateSum}, F1: &model.F1Dyn{Form: form}}
+		d := &model.Dynamics{Target: "level", Follow: &model.Follow{Sources: []model.FollowSource{{Link: "feed", State: "flow"}}, Aggregate: model.AggregateSum}, F1: &model.F1Dyn{Form: form}}
 		var invalid *model.ValidationError
 		if err := (domainChecks{at: "/kinds/1/dynamics/2"}).dynamicFollow(d); !errors.As(err, &invalid) || invalid.Issues[0].Pointer != "/kinds/1/dynamics/2/follow" {
 			t.Fatalf("form %s: %v", form, err)
@@ -81,7 +89,7 @@ func TestAStatefulFormCannotFollowLinkedInstances(t *testing.T) {
 func TestTheCoupledDomainLoads(t *testing.T) {
 	t.Parallel()
 	c, err := Load(testsupport.CoupledDomain())
-	if err != nil || len(c.Spec.Links) != 5 || c.Kind("header").LinkReads() == nil {
+	if err != nil || len(c.Spec.Links) != 6 || c.Kind("header").LinkReads() == nil {
 		t.Fatalf("coupled domain = %v", err)
 	}
 }

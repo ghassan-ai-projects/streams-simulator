@@ -11,7 +11,7 @@ func TestAKindListsEachLinkTypeItReadsOnce(t *testing.T) {
 		return F1Input{State: state, Coef: 1, Link: &InputLink{Type: linkType, Aggregate: AggregateSum}}
 	}
 	kind := &Kind{Dynamics: []Dynamics{
-		{Target: "a", Follow: &Follow{Link: "feed", State: "x", Aggregate: AggregateSum}},
+		{Target: "a", Follow: &Follow{Sources: []FollowSource{{Link: "feed", State: "x"}}, Aggregate: AggregateSum}},
 		{Target: "b", F1: &F1Dyn{Inputs: []F1Input{{State: "a", Coef: 1}, linked("x", "feed"), linked("y", "supply")}}},
 		{Target: "c", F0: &F0Dyn{}},
 	}}

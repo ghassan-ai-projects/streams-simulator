@@ -13,7 +13,7 @@ func dailyCycle() *model.F0Dyn {
 func followingASeasonalFeeder(spec *model.DomainSpec) {
 	plant := plantKind(spec)
 	plant.Dynamics = append(plant.Dynamics, model.Dynamics{Target: "u", Tier: "F0", F0: &model.F0Dyn{Baseline: 2},
-		Follow: &model.Follow{Link: "plant__u__feeder", State: "u", Aggregate: model.AggregateSum}})
+		Follow: &model.Follow{Sources: []model.FollowSource{{Link: "plant__u__feeder", State: "u"}}, Aggregate: model.AggregateSum}})
 	spec.Kinds = append(spec.Kinds, feederKind(plant))
 	spec.Instances = append(spec.Instances, model.InstanceSet{Kind: "feeder", IDTemplate: "f-{n}", Count: model.EntityCount{Default: 1}})
 	spec.LinkTypes = []model.LinkType{{Name: "plant__u__feeder", From: "feeder", To: "plant"}}
