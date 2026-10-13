@@ -41,11 +41,10 @@ type activeFault struct {
 	clearedNS int64
 	severity  float64
 
-	walk     float64
-	walkStep int64
+	walks map[string][]float64
 }
 
-func (f *activeFault) envelopeAt(t int64, rng *randutil.SplitMix64, dtNS int64) float64 {
+func (f *activeFault) envelopeAt(state string, t int64, rng *randutil.SplitMix64, dtNS int64) float64 {
 	elapsed := t - f.onsetNS
 	if elapsed < 0 {
 		return 0
@@ -53,7 +52,7 @@ func (f *activeFault) envelopeAt(t int64, rng *randutil.SplitMix64, dtNS int64) 
 	if f.clearedNS > 0 && t >= f.clearedNS {
 		return 0
 	}
-	return f.onsetEnvelope(elapsed, t, rng, dtNS)
+	return f.onsetEnvelope(state, elapsed, rng, dtNS)
 }
 
 func (f *activeFault) contributionAt(state string, t int64, rng *randutil.SplitMix64, dtNS int64) (add, mult float64) {
@@ -61,7 +60,7 @@ func (f *activeFault) contributionAt(state string, t int64, rng *randutil.SplitM
 		if a.State != state {
 			continue
 		}
-		e := f.envelopeAt(t, rng, dtNS) * f.severity
+		e := f.envelopeAt(state, t, rng, dtNS) * f.severity
 		if a.Multiplicative {
 			mult += a.Delta * e
 		} else {
@@ -71,10 +70,10 @@ func (f *activeFault) contributionAt(state string, t int64, rng *randutil.SplitM
 	return add, mult
 }
 
-func (f *activeFault) onsetEnvelope(elapsed, at int64, rng *randutil.SplitMix64, dt int64) float64 {
+func (f *activeFault) onsetEnvelope(state string, elapsed int64, rng *randutil.SplitMix64, dt int64) float64 {
 	rate := f.fault.Onset.RatePerHour
 	if f.fault.Onset.Shape == "stochastic" {
-		return f.stochasticEnvelope(at, rng, dt, rate)
+		return f.stochasticEnvelope(state, elapsed, rng, dt, rate)
 	}
 	return f.deterministicEnvelope(elapsed, rate)
 }
@@ -106,18 +105,26 @@ func (f *activeFault) intermittentEnvelope(elapsed int64, rate float64) float64 
 	return 0
 }
 
-func (f *activeFault) stochasticEnvelope(at int64, rng *randutil.SplitMix64, dt int64, rate float64) float64 {
+func (f *activeFault) stochasticEnvelope(state string, elapsed int64, rng *randutil.SplitMix64, dt int64, rate float64) float64 {
 	if dt <= 0 {
 		dt = 60 * secondsPerNS
 	}
-
-	for f.walkStep+dt <= at {
-		next := f.walkStep + dt
-		hours := float64(next-f.walkStep) / secondsPerNS / 3600
-		f.walk += rate*hours + 0.5*math.Sqrt(rate*hours+1e-12)*math.Abs(rng.Norm())
-		f.walkStep = next
+	if f.walks == nil {
+		f.walks = map[string][]float64{}
 	}
-	return math.Min(math.Max(f.walk, 0), 1)
+	walk := f.walks[state]
+	for k := int(elapsed / dt); len(walk) <= k; {
+		walk = append(walk, nextWalk(walk, rng, float64(dt)/secondsPerNS/3600*rate))
+	}
+	f.walks[state] = walk
+	return math.Min(math.Max(walk[elapsed/dt], 0), 1)
+}
+
+func nextWalk(walk []float64, rng *randutil.SplitMix64, drift float64) float64 {
+	if len(walk) == 0 {
+		return 0
+	}
+	return walk[len(walk)-1] + drift + 0.5*math.Sqrt(drift+1e-12)*math.Abs(rng.Norm())
 }
 
 func intermittentPeriod(rate float64) int64 {

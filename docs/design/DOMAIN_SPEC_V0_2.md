@@ -78,7 +78,7 @@ kind. A profile's `entity_count` replaces the default count of the **first** ins
 **Explicit entity ids** (section 5) are matched to an instance set by template; an id that fits no set is refused. The checks of
 count bounds apply per set to the ids that fit it.
 
-**RNG draw order.** The world draws only from named substreams (`<entity>/<channel>/noise`, `fault/<id>/<state>`,
+**RNG draw order.** The world draws only from named substreams (`<entity>/<channel>/noise`, `fault/<id>/<entity>/<onset>/<state>`,
 `<entity>/<effector>/fault_shape`, `churn/...`), so the draws of one entity never depend on another entity or kind. The rules that
 keep single-kind worlds bit-identical:
 
@@ -431,7 +431,7 @@ readings it emits, from that channel's own substreams.
 | `link/<entity>/<channel>/delay` | Transport delay | Each emitted record, unless the model is `constant` |
 | `<entity>/<effector>/fault_shape` | Effector failure mode | Each executed call (after interlock and preconditions) of an effector that declares failure modes |
 | `<entity>/<effector>/delay` | Acknowledgement latency | Each executed call |
-| `fault/<fault>/<state>` | Stochastic fault envelope | Advancing the envelope's random walk; keyed by the fault's declaration, so stochastic injections of one fault on several entities share one stream in read order |
+| `fault/<fault>/<entity>/<onset>/<state>` | Stochastic fault envelope | One walk per injection and state on a fixed grid (the state's step, 60 s for an input), drawn in grid order the first time any step is read, so any read order, look-ahead or re-injection gives the same values |
 | `churn/births`, `churn/births/<set>` | Churn births | Each birth of the instance set |
 | `churn/lifetimes/<entity>` | Churn lifetimes | Each churned entity's birth |
 
