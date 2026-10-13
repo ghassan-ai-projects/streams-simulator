@@ -83,16 +83,16 @@ func TestADemandPeakIsTheLargestBlockMeanWithARatchet(t *testing.T) {
 	}, start)
 	for _, seconds := range []float64{3600, 25500, 27000, 86400 + 3600, 86400 + 30000} {
 		got := w.StateValue("e-1", "demand", start+int64(seconds*secondsPerNS))
-		if want := recomputedDemand(power, seconds); math.Abs(got-want) > 1e-9 {
+		if want := recomputedDemand(seconds); math.Abs(got-want) > 1e-9 {
 			t.Fatalf("t=%v: got %v, recomputed %v", seconds, got, want)
 		}
 	}
 }
 
-func recomputedDemand(power *model.Schedule, untilS float64) float64 {
+func recomputedDemand(untilS float64) float64 {
 	previous, peak, sum, samples := 100.0, 0.0, 0.0, 0
 	for at := 0.0; at+60 <= untilS; at += 60 {
-		sum += scheduleValue(power, int64(at*secondsPerNS), 0)
+		sum += powerAt(at)
 		samples++
 		if math.Mod(at+60, 900) == 0 {
 			peak, sum, samples = math.Max(peak, sum/float64(samples)), 0, 0
@@ -102,6 +102,17 @@ func recomputedDemand(power *model.Schedule, untilS float64) float64 {
 		}
 	}
 	return math.Max(peak, 0.5*previous)
+}
+
+func powerAt(atS float64) float64 {
+	clock := math.Mod(atS, 86400)
+	switch {
+	case clock >= 25800:
+		return 80
+	case clock >= 25200:
+		return 120
+	}
+	return 50
 }
 
 func peakWorld(t *testing.T, start int64) *World {

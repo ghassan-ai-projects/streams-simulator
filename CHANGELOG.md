@@ -4,6 +4,11 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **Simulator version 0.3.1** (review P7e). `sim_version` is `0.3.1`: the P6a integration fix changed faulted hidden-state
+  numbers, which changes the digest inputs of a faulted run. The behaviour pin is regenerated (only the `run.json` and
+  `journal.jsonl` lines change) and gains a day-long run with two faults and three perturbations. The operator endpoint of
+  the MCP director is closed, and its serving goroutine finished, before the session returns.
+
 - **Component and lint review fixes** (phase P7j). The built-in component library is embedded in the binary (package
   `components`): `component.NewLibrary(customerDirs)` loads it first, then `--components-dir` and
   `STREAMSIM_COMPONENTS_DIRS` directories (empty entries ignored); a customer file with a `streamsim/` id is refused, the MCP
