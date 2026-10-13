@@ -188,16 +188,24 @@ export function parseReport(value: unknown): Report {
   };
 }
 
-export function verifyMatches(value: unknown): boolean {
-  return obj(value).matches === true;
+export interface Replay {
+  readonly matches: boolean;
+  readonly domainChanged: boolean;
+}
+
+export function parseReplay(value: unknown): Replay | null {
+  const body = obj(value);
+  if (typeof body.matches !== "boolean") return null;
+  return { matches: body.matches, domainChanged: body.domain_changed === true };
 }
 
 export type VerifyState =
-  { readonly phase: "loading" } | { readonly phase: "failed" } | { readonly phase: "ready"; readonly value: boolean };
+  { readonly phase: "loading" } | { readonly phase: "failed" } | { readonly phase: "ready"; readonly value: Replay };
 
 export function badgeOf(report: Report, verify: VerifyState): Badge {
   if (!report.ended || !report.complete) return "incomplete";
-  if (report.verification === "files_differ" || (verify.phase === "ready" && !verify.value)) return "not-verified";
+  if (report.verification === "files_differ" || (verify.phase === "ready" && !verify.value.matches))
+    return "not-verified";
   if (verify.phase === "loading") return "verifying";
   if (verify.phase === "failed") return "not-checked";
   return report.verification === "files_match" ? "verified" : "not-checked";

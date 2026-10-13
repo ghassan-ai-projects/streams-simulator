@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { appendFileSync, copyFileSync, existsSync, mkdirSync, mkdtempSync } from "node:fs";
+import { appendFileSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
@@ -41,6 +41,11 @@ function builtBinary(): string {
   return binary;
 }
 
+function editDescription(path: string): void {
+  const domain = JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>;
+  writeFileSync(path, JSON.stringify({ ...domain, description: "Edited after the runs were recorded." }, null, 2));
+}
+
 export function buildFixture(): Fixture {
   const root = mkdtempSync(join(tmpdir(), "streamsim-canvas-e2e-"));
   const binary = builtBinary();
@@ -55,5 +60,6 @@ export function buildFixture(): Fixture {
   record(binary, workspace, "w-evaluate", []);
   record(binary, workspace, "w-edited", []);
   appendFileSync(join(workspace, "runs", "w-edited", "trace.jsonl"), "\n");
+  editDescription(join(workspace, "domains", "factory-utilities.domain.json"));
   return { binary, workspace, root };
 }

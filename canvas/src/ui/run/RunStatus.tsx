@@ -1,4 +1,4 @@
-import { CircleCheck, CircleHelp, CircleX, Eye, Loader, Lock, TriangleAlert } from "lucide-react";
+import { CircleCheck, CircleHelp, CircleX, Eye, Info, Loader, Lock, TriangleAlert } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { ReviewState } from "../../app/reviewStore";
 import type { Badge, Report } from "../../model/report";
@@ -76,12 +76,7 @@ interface Warning {
 
 function verifyWarning(state: ReviewState): Warning | null {
   if (state.verified.phase !== "failed") return null;
-  const message = state.verified.failure.message;
-  const changed = message.includes("domain digest mismatch");
-  const text = changed
-    ? "Not checked: the plant file changed after this run was recorded. Restore the domain the run used to verify it."
-    : "Not checked: streamsim verify could not replay this run.";
-  return { text, details: message };
+  return { text: "Not checked: streamsim verify could not replay this run.", details: state.verified.failure.message };
 }
 
 function countWarning(state: ReviewState, report: Report): Warning | null {
@@ -116,8 +111,26 @@ function warnings(state: ReviewState): readonly Warning[] {
   );
 }
 
+function DomainNote({ state }: { readonly state: ReviewState }) {
+  if (state.verified.phase !== "ready" || !state.verified.value.domainChanged) return null;
+  return (
+    <p className={styles.domainNote} role="status">
+      <Info size={14} aria-hidden="true" />
+      The plant file changed after this run. The review and the replay use the plant the run recorded.
+    </p>
+  );
+}
+
 export function Banners({ state }: { readonly state: ReviewState }) {
-  const list = warnings(state);
+  return (
+    <div>
+      <DomainNote state={state} />
+      <Alerts list={warnings(state)} />
+    </div>
+  );
+}
+
+function Alerts({ list }: { readonly list: readonly Warning[] }) {
   if (list.length === 0) return null;
   return (
     <div className={styles.banners} role="alert">

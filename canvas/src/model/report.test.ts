@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { report } from "../test/runFixture";
-import { badgeLabels, badgeOf, humanise, parseReport, runSpan, verifyMatches, wallClock } from "./report";
+import { badgeLabels, badgeOf, humanise, parseReport, runSpan, parseReplay, wallClock } from "./report";
 
 describe("run report", () => {
   it("reads the run, counts, verification and truth sections", () => {
@@ -45,7 +45,7 @@ describe("run report", () => {
 
   it("derives the badge from the report and verify, never from its own checks", () => {
     const parsed = parseReport(report);
-    const ready = (value: boolean) => ({ phase: "ready", value }) as const;
+    const ready = (matches: boolean) => ({ phase: "ready", value: { matches, domainChanged: false } }) as const;
     expect(badgeOf(parsed, ready(true))).toBe("verified");
     expect(badgeOf(parsed, { phase: "loading" })).toBe("verifying");
     expect(badgeOf(parsed, { phase: "failed" })).toBe("not-checked");
@@ -55,8 +55,10 @@ describe("run report", () => {
     expect(badgeOf({ ...parsed, complete: false }, ready(true))).toBe("incomplete");
     expect(badgeOf({ ...parsed, ended: false }, ready(true))).toBe("incomplete");
     expect(badgeLabels["not-verified"]).toBe("Not verified");
-    expect(verifyMatches({ matches: true })).toBe(true);
-    expect(verifyMatches({ matches: "yes" })).toBe(false);
+    expect(parseReplay({ matches: true })).toEqual({ matches: true, domainChanged: false });
+    expect(parseReplay({ matches: false, domain_changed: true })).toEqual({ matches: false, domainChanged: true });
+    expect(parseReplay({ matches: "yes" })).toBeNull();
+    expect(parseReplay(null)).toBeNull();
   });
 
   it("spans the run from the report, or from the observations while the report is missing", () => {

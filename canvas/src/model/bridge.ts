@@ -28,6 +28,7 @@ export interface BridgeFailure {
   readonly code: string;
   readonly message: string;
   readonly issues: readonly Issue[];
+  readonly result?: unknown;
 }
 
 export interface FileContent {
@@ -91,7 +92,7 @@ export function parseFailure(status: number, value: unknown): BridgeFailure {
   const body = isRecord(value) && isRecord(value.error) ? value.error : {};
   const code = text(body.code) || "bridge_failed";
   const message = text(body.message) || `The bridge answered ${String(status)}.`;
-  return { status, code, message, issues: list(body.issues).map(issue) };
+  return { status, code, message, issues: list(body.issues).map(issue), result: body.result ?? null };
 }
 
 export function parseFile(value: unknown): FileContent {

@@ -85,7 +85,12 @@ function Readout({ shown }: { readonly shown: readonly Shown[] }) {
           </dd>
         </div>
       ))}
-      {more > 0 && <div className={styles.more}>{`+${String(more + 1)} more in Inspect`}</div>}
+      {more > 0 && (
+        <div className={styles.more}>
+          <dt>{`+${String(more + 1)} more`}</dt>
+          <dd>in Inspect</dd>
+        </div>
+      )}
     </dl>
   );
 }

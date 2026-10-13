@@ -41,12 +41,17 @@ describe("bridge payloads", () => {
       code: "composition_invalid",
       message: "bad",
       issues: [{ pointer: "/connections/29", message: "types differ" }],
+      result: null,
     });
+    expect(
+      parseFailure(422, { error: { code: "replay_mismatch", message: "no", result: { matches: false } } }),
+    ).toMatchObject({ code: "replay_mismatch", result: { matches: false } });
     expect(parseFailure(502, "oops")).toEqual({
       status: 502,
       code: "bridge_failed",
       message: "The bridge answered 502.",
       issues: [],
+      result: null,
     });
   });
 

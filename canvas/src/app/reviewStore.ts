@@ -1,7 +1,8 @@
 import type { BridgeFailure } from "../model/bridge";
 import { PlaybackIndex, parseJournalRecord } from "../model/playback";
 import type { Badge, Report } from "../model/report";
-import { badgeOf, parseReport, verifyMatches } from "../model/report";
+import type { Replay } from "../model/report";
+import { badgeOf, parseReplay, parseReport } from "../model/report";
 import { Observable } from "./observable";
 import type { Bridge } from "./ports";
 
@@ -13,7 +14,7 @@ type Load<T> =
 export interface ReviewState {
   readonly worldId: string | null;
   readonly report: Load<Report>;
-  readonly verified: Load<boolean>;
+  readonly verified: Load<Replay>;
   readonly playback: {
     readonly phase: "loading" | "ready" | "failed";
     readonly records: number;
@@ -159,12 +160,17 @@ export class ReviewStore extends Observable<ReviewState> {
   private async loadVerify(worldId: string): Promise<void> {
     const outcome = await this.bridge.action("run.verify", { run: worldId });
     if (this.snapshot().worldId !== worldId) return;
-    this.set({
-      ...this.snapshot(),
-      verified: outcome.ok
-        ? { phase: "ready", value: verifyMatches(outcome.value) }
-        : { phase: "failed", failure: outcome.failure },
-    });
+    const replay = parseReplay(outcome.ok ? outcome.value : outcome.failure.result);
+    const verified: Load<Replay> =
+      replay !== null
+        ? { phase: "ready", value: replay }
+        : outcome.ok
+          ? {
+              phase: "failed",
+              failure: { status: 0, code: "verify_unreadable", message: "verify gave no verdict", issues: [] },
+            }
+          : { phase: "failed", failure: outcome.failure };
+    this.set({ ...this.snapshot(), verified });
   }
 }
 

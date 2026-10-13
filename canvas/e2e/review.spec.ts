@@ -15,6 +15,7 @@ test("a recorded run plays back with the binary's report and a Verified badge", 
   const report = page.getByRole("complementary", { name: "Run details" });
   await expect(report.getByRole("region", { name: "File check" })).toContainText("files match");
   await expect(report.getByRole("region", { name: "Replay check" })).toContainText("reproduced its trace");
+  await expect(page.getByRole("status").filter({ hasText: "plant file changed after this run" })).toBeVisible();
   await expect(report.getByRole("region", { name: "KPI truth" })).toContainText("CH-1");
   await expect(page.getByRole("status").filter({ hasText: /^[\d,]+ observations$/ })).toBeVisible({ timeout: 60_000 });
   const chiller = page.getByRole("group", { name: /^CH-1, chiller,/ });

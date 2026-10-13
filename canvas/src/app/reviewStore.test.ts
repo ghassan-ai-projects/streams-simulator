@@ -57,7 +57,7 @@ describe("review", () => {
     ]);
     expect(store.snapshot()).toMatchObject({
       report: { phase: "ready", value: { domainId: "mini" } },
-      verified: { phase: "ready", value: true },
+      verified: { phase: "ready", value: { matches: true, domainChanged: false } },
     });
     bridge.stream("w-1", journal);
     flushes.forEach((flush) => {
