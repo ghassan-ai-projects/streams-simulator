@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 
@@ -28,7 +29,7 @@ func replayWithJournalFiles(ctx context.Context, art *model.RunArtifact, spec *d
 	if err != nil {
 		return nil, fmt.Errorf("streamsim: %w", err)
 	}
-	if err := checkJournalFiles(dir, replay, art, res); err != nil {
+	if err := errors.Join(checkJournalFiles(dir, replay, art, res), checkEvidenceFiles(dir, replay, art, res)); err != nil {
 		return nil, fmt.Errorf("streamsim: %w", err)
 	}
 	return res, nil

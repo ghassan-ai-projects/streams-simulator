@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"sort"
 
+	"github.com/ghassan-ai-projects/streams-simulator/internal/canonical"
 	rules "github.com/ghassan-ai-projects/streams-simulator/internal/run/internal/domain"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/run/internal/durable"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run/internal/clock"
@@ -89,4 +91,9 @@ func (r *Run) attachArtifactJournal(artifact *model.RunArtifact) {
 	artifact.Mode = r.mode()
 	artifact.JournalDigest = r.journalDigests.Observer
 	artifact.SealedJournalDigest = r.journalDigests.Director
+	artifact.LedgerDigest, artifact.HistoryDigest = r.evidenceDigests()
+}
+
+func (r *Run) evidenceDigests() (string, string) {
+	return canonical.DigestBytes(durable.JSONLines(r.ledger)), canonical.DigestBytes(durable.JSONLines(r.history))
 }

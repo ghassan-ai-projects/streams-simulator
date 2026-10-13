@@ -2,6 +2,7 @@ package domain
 
 import (
 	"math"
+	"strconv"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
@@ -113,7 +114,7 @@ func dtFor(kind *model.Kind, state string) int64 {
 }
 
 func faultSubstream(f *activeFault, state string) string {
-	return "fault/" + f.fault.ID + "/" + state
+	return "fault/" + f.fault.ID + "/" + f.entity + "/" + strconv.FormatInt(f.onsetNS, 10) + "/" + state
 }
 
 func delayCapacity(f1 *model.F1Dyn, dt int64) int {

@@ -73,7 +73,7 @@ func (drivers *kickDrivers) record(kick *kick) {
 	if kick.startNS > drivers.last {
 		drivers.last = kick.startNS
 	}
-	if kick.assign && (drivers.assignment == nil || kick.startNS > drivers.assignment.startNS) {
+	if kick.assign && (drivers.assignment == nil || kick.startNS >= drivers.assignment.startNS) {
 		drivers.assignment = kick
 	}
 }

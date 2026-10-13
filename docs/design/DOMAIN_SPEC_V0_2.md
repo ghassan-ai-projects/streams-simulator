@@ -78,7 +78,7 @@ kind. A profile's `entity_count` replaces the default count of the **first** ins
 **Explicit entity ids** (section 5) are matched to an instance set by template; an id that fits no set is refused. The checks of
 count bounds apply per set to the ids that fit it.
 
-**RNG draw order.** The world draws only from named substreams (`<entity>/<channel>/noise`, `fault/<id>/<state>`,
+**RNG draw order.** The world draws only from named substreams (`<entity>/<channel>/noise`, `fault/<id>/<entity>/<onset>/<state>`,
 `<entity>/<effector>/fault_shape`, `churn/...`), so the draws of one entity never depend on another entity or kind. The rules that
 keep single-kind worlds bit-identical:
 
@@ -369,10 +369,11 @@ sequencers act on them, so actions do not fight contactor-level logic.
   fault, otherwise `on_miss` applies. The outcome shows only through states; the acknowledgement is the same either way.
   Responder availability, reports and approvals are the reference scenario's (S6, P12).
 - **`effectors[e].lease`** = `{arg, fallback: safe_off|hold_last|revert, safe_deltas}`: an acknowledged call holds its effect for
-  the seconds in its numeric argument `arg`. Unless the same effector is acknowledged again on the entity before the lease lapses
+  the seconds in its numeric argument `arg`. Unless the same effector is acknowledged again on the entity before or at the instant the lease lapses
   (which withdraws the pending fallback and starts a new lease), the fallback applies at the lapse: `safe_off` sets each
   `safe_deltas` state to its `delta`, `revert` undoes the call's additive deltas (an assigning effect cannot be reverted,
-  `/…/lease/fallback`), `hold_last` keeps the effect. A refused or unacknowledged call does not renew.
+  `/…/lease/fallback`), `hold_last` keeps the effect. A refused or unacknowledged call does not renew. Two assignments to one state at
+  the same instant resolve to the later-issued one.
 - **Lease timing.** A lease counts from the effect's start (the call time plus the effect's dead time). A `revert` fallback
   undoes the total additive contribution of every call in the lease chain (a renewal carries the withdrawn revert into the
   new one), with the effect's own time constant, so the state returns to where it started. A call without the lease
@@ -431,7 +432,7 @@ readings it emits, from that channel's own substreams.
 | `link/<entity>/<channel>/delay` | Transport delay | Each emitted record, unless the model is `constant` |
 | `<entity>/<effector>/fault_shape` | Effector failure mode | Each executed call (after interlock and preconditions) of an effector that declares failure modes |
 | `<entity>/<effector>/delay` | Acknowledgement latency | Each executed call |
-| `fault/<fault>/<state>` | Stochastic fault envelope | Advancing the envelope's random walk; keyed by the fault's declaration, so stochastic injections of one fault on several entities share one stream in read order |
+| `fault/<fault>/<entity>/<onset>/<state>` | Stochastic fault envelope | One walk per injection and state on a fixed grid (the state's step, 60 s for an input), drawn in grid order the first time any step is read, so any read order, look-ahead or re-injection gives the same values |
 | `churn/births`, `churn/births/<set>` | Churn births | Each birth of the instance set |
 | `churn/lifetimes/<entity>` | Churn lifetimes | Each churned entity's birth |
 

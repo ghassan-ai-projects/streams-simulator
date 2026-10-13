@@ -93,10 +93,6 @@ func (w *World) ActiveFaultsCount() int { return len(w.ListFaults()) }
 
 func (w *World) registerFault(fault *model.Fault, entity string, onset int64, severity float64) string {
 	active := &activeFault{fault: fault, entity: entity, onsetNS: onset, severity: severity}
-
-	if fault.Onset.Shape == "stochastic" {
-		active.walkStep = onset
-	}
 	id := "f-" + strconv.FormatInt(int64(len(w.faultsByID)), 10)
 	w.faultsByID[id] = active
 	w.faultOrder = append(w.faultOrder, id)

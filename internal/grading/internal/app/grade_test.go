@@ -195,21 +195,6 @@ func TestGradeNamesAMissingArtifactFirst(t *testing.T) {
 	}
 }
 
-func TestLoadLedgerAndHistoryNameAMissingFileOrADirectory(t *testing.T) {
-	t.Parallel()
-	dir := t.TempDir()
-	missing := filepath.Join(dir, "absent.jsonl")
-	if _, err := loadLedger(missing); err == nil || !strings.HasPrefix(err.Error(), "open ledger "+missing+": ") {
-		t.Fatalf("a missing ledger: err = %v", err)
-	}
-	if _, err := loadLedger(dir); err == nil || !strings.HasPrefix(err.Error(), "open ledger "+dir+": ") || !strings.Contains(err.Error(), "is a directory") {
-		t.Fatalf("a ledger that is a directory: err = %v", err)
-	}
-	if _, err := loadHistory(missing); err == nil || !strings.HasPrefix(err.Error(), "open state history "+missing+": ") {
-		t.Fatalf("a missing history: err = %v", err)
-	}
-}
-
 func TestGradeRefusesARunStampedUnblinded(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()

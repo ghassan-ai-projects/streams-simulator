@@ -36,20 +36,6 @@ func loadDocument(path string, validate func([]byte) error, dst any) error {
 	return domain.DecodeDocument(raw, path, validate, dst)
 }
 
-func scoringEvidence(ctx context.Context, options Options, art *model.RunArtifact, dir string) (score.Evidence, error) {
-	evidence, err := replayedEvidence(ctx, options, art)
-	if err != nil {
-		return score.Evidence{}, err
-	}
-	if evidence.Ledger, err = loadLedger(filepath.Join(dir, model.FileLedger)); err != nil {
-		return score.Evidence{}, fmt.Errorf("streamsim: %w", err)
-	}
-	if evidence.History, err = loadHistory(filepath.Join(dir, model.FileHistory)); err != nil {
-		return score.Evidence{}, fmt.Errorf("streamsim: %w", err)
-	}
-	return evidence, nil
-}
-
 func replayedEvidence(ctx context.Context, options Options, art *model.RunArtifact) (score.Evidence, error) {
 	spec, adap, err := replayInputs(options, art)
 	if err != nil {
@@ -62,23 +48,12 @@ func replayedEvidence(ctx context.Context, options Options, art *model.RunArtifa
 	if err := domain.RequireReproduced(replayed); err != nil {
 		return score.Evidence{}, err
 	}
-	return domain.ArtifactEvidence(art, spec, replayed.Calls), nil
+	return withReplayedRecords(domain.ArtifactEvidence(art, spec, replayed.Calls), replayed), nil
 }
 
-func loadLedger(path string) ([]model.LedgerRecord, error) {
-	raw, err := files.Read(path)
-	if err != nil {
-		return nil, fmt.Errorf("open ledger %s: %w", path, err)
-	}
-	return domain.DecodeLedger(raw, path)
-}
-
-func loadHistory(path string) ([]model.StateSnapshot, error) {
-	raw, err := files.Read(path)
-	if err != nil {
-		return nil, fmt.Errorf("open state history %s: %w", path, err)
-	}
-	return domain.DecodeHistory(raw, path)
+func withReplayedRecords(evidence score.Evidence, replayed *run.ReplayEvidence) score.Evidence {
+	evidence.Ledger, evidence.History = replayed.Ledger, replayed.History
+	return evidence
 }
 
 func replayInputs(options Options, art *model.RunArtifact) (*catalog.Compiled, *model.Adapter, error) {

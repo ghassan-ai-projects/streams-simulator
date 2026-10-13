@@ -10,6 +10,7 @@ import (
 )
 
 func (r *Run) ReportQuiesced(throughNS int64) {
+	throughNS = min(throughNS, r.worldClock())
 	r.quiesceMu.Lock()
 	defer r.quiesceMu.Unlock()
 	if throughNS > r.quiescedThroughNS {
@@ -18,6 +19,12 @@ func (r *Run) ReportQuiesced(throughNS int64) {
 		close(r.quiesceNotify)
 		r.quiesceNotify = make(chan struct{})
 	}
+}
+
+func (r *Run) worldClock() int64 {
+	r.commandMu.Lock()
+	defer r.commandMu.Unlock()
+	return r.World.Clock()
 }
 
 func (r *Run) SetQuiesceParkedHook(h func()) {
