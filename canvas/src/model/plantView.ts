@@ -2,7 +2,7 @@ import type { Layout, LayoutNode } from "./layout";
 import { layout } from "./layout";
 import type { Instance, Link, Plant } from "./plant";
 import { areaOf } from "./plant";
-import type { Family, Pins, PortSpec } from "./ports";
+import type { Category, ComponentSpec, Family, Pins } from "./ports";
 import { familyOf, pinsOf } from "./ports";
 
 export interface ViewNode {
@@ -11,6 +11,7 @@ export interface ViewNode {
   readonly detail: string;
   readonly group: string;
   readonly instance: Instance | null;
+  readonly category: Category;
   readonly members: number;
   readonly pins: Pins;
 }
@@ -46,18 +47,19 @@ export function hallsOf(plant: Plant): readonly string[] {
   return halls.size > 1 ? [...halls].sort() : [];
 }
 
-type Specs = ReadonlyMap<string, readonly PortSpec[]>;
+type Specs = ReadonlyMap<string, ComponentSpec>;
 
 function instanceNode(plant: Plant, instance: Instance, specs: Specs): ViewNode {
-  const pins = pinsOf(plant, instance, instance.component === null ? undefined : specs.get(instance.component));
+  const spec = instance.component === null ? undefined : specs.get(instance.component);
   return {
     id: instance.id,
     label: instance.id,
     detail: instance.kind,
     group: areaOf(plant, instance),
     instance,
+    category: spec?.category ?? "env",
     members: 1,
-    pins,
+    pins: pinsOf(plant, instance, spec?.ports),
   };
 }
 
@@ -68,6 +70,7 @@ function hallNode(hall: string, members: number): ViewNode {
     detail: `${String(members)} instances`,
     group: "Halls",
     instance: null,
+    category: "env",
     members,
     pins: { ins: [], outs: [] },
   };
@@ -75,7 +78,9 @@ function hallNode(hall: string, members: number): ViewNode {
 
 function linkFamily(plant: Plant, link: Link, specs: Specs): Family | null {
   const source = plant.instances.find((instance) => instance.id === link.from);
-  const spec = source?.component ? specs.get(source.component)?.find((port) => port.name === link.fromPort) : undefined;
+  const spec = source?.component
+    ? specs.get(source.component)?.ports.find((port) => port.name === link.fromPort)
+    : undefined;
   return spec ? familyOf(spec.type) : null;
 }
 

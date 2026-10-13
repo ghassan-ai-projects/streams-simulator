@@ -1,6 +1,7 @@
 import type { NodeProps } from "@xyflow/react";
 import { Handle, Position } from "@xyflow/react";
 import { ChevronRight } from "lucide-react";
+import type { CSSProperties } from "react";
 import type { Reading } from "../../model/playback";
 import { formatReading, shortChannel } from "../../model/playback";
 import { familyNames, shapeOf } from "../../model/ports";
@@ -81,7 +82,10 @@ function Readout({ readings }: { readonly readings: readonly Reading[] }) {
 export function InstanceNode({ data, selected }: NodeProps<InstanceNodeType>) {
   const { view } = data;
   return (
-    <div className={cx(styles.node, selected && styles.selected)}>
+    <div
+      className={cx(styles.node, selected && styles.selected)}
+      style={{ "--cat": `var(--cat-${view.category})` } as CSSProperties}
+    >
       <Handle type="target" position={Position.Left} id="in" className={styles.anchor} isConnectable={false} />
       <Handle type="source" position={Position.Right} id="out" className={styles.anchor} isConnectable={false} />
       <div className={styles.header}>

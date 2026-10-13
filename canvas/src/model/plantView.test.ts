@@ -5,8 +5,8 @@ import { hallOf, hallsOf, nodeSize, plantView } from "./plantView";
 import { parsePorts } from "./ports";
 
 const specs = new Map([
-  ["lib/chiller", parsePorts(chillerPorts)],
-  ["lib/tower", parsePorts(towerPorts)],
+  ["lib/chiller", { ports: parsePorts(chillerPorts), category: "cool" as const }],
+  ["lib/tower", { ports: parsePorts(towerPorts), category: "cool" as const }],
 ]);
 
 describe("plant view", () => {

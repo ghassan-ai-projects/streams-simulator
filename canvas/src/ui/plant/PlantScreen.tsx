@@ -1,3 +1,4 @@
+import { ReactFlowProvider } from "@xyflow/react";
 import { ChevronRight, Network } from "lucide-react";
 import { Fragment, useEffect, useMemo } from "react";
 import type { NavigationStore } from "../../app/navigationStore";
@@ -6,6 +7,7 @@ import type { WorkspaceStore } from "../../app/workspaceStore";
 import { plantView } from "../../model/plantView";
 import type { Route } from "../../model/route";
 import { useStore } from "../useStore";
+import { Navigator, ZoomBar } from "./GraphControls";
 import { Inspector } from "./Inspector";
 import { Outline } from "./Outline";
 import { PlantGraph } from "./PlantGraph";
@@ -114,16 +116,22 @@ export function PlantScreen({ plants, workspace, navigation, domain, hall }: Pla
     );
   }
   return (
-    <div className={styles.screen}>
-      <Outline state={state} hall={hall} plants={plants} navigation={navigation} />
-      <section className={styles.center} aria-label={`Plant ${state.plant.id}`}>
-        <div className={styles.bar}>
-          <Network size={14} aria-hidden="true" />
-          <Crumbs state={state} hall={hall} navigation={navigation} />
+    <ReactFlowProvider>
+      <div className={styles.screen}>
+        <div className={styles.side}>
+          <Outline state={state} hall={hall} plants={plants} navigation={navigation} />
+          <Navigator />
         </div>
-        <Graph state={state} hall={hall} plants={plants} navigation={navigation} />
-      </section>
-      <Inspector plant={state.plant} selected={state.selected} />
-    </div>
+        <section className={styles.center} aria-label={`Plant ${state.plant.id}`}>
+          <div className={styles.bar}>
+            <Network size={14} aria-hidden="true" />
+            <Crumbs state={state} hall={hall} navigation={navigation} />
+            <ZoomBar />
+          </div>
+          <Graph state={state} hall={hall} plants={plants} navigation={navigation} />
+        </section>
+        <Inspector plant={state.plant} selected={state.selected} />
+      </div>
+    </ReactFlowProvider>
   );
 }

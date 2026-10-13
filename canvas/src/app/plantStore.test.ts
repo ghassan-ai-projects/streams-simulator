@@ -23,7 +23,10 @@ const workspace = {
 describe("plant store", () => {
   it("loads the domain, its composition and each component's ports through the bridge", async () => {
     const fake = bridge();
-    fake.actions.set("component.show", success({ document: chillerPorts }));
+    fake.actions.set(
+      "component.show",
+      success({ entry: { class: "static/heat_exchanger/chiller", tags: ["hvac"] }, document: chillerPorts }),
+    );
     const store = new PlantStore(fake);
     await store.load("domains/mini.domain.json", workspace);
     const state = store.snapshot();
@@ -31,7 +34,7 @@ describe("plant store", () => {
     expect(state.composition).toBe("compositions/mini.composition.json");
     expect(state.plant.links[0]?.fromPort).toBe("heat_out");
     expect(fake.calls.map((call) => call.args)).toEqual([{ ref: "lib/chiller" }, { ref: "lib/tower" }]);
-    expect(state.specs.get("lib/tower")?.map((port) => port.name)).toEqual([
+    expect(state.specs.get("lib/tower")?.ports.map((port) => port.name)).toEqual([
       "cond_in",
       "spare_in",
       "heat_out",
@@ -46,7 +49,7 @@ describe("plant store", () => {
     const state = store.snapshot();
     if (state.phase !== "ready") throw new Error(state.phase);
     expect(state.composition).toBeNull();
-    expect(state.specs.get("lib/chiller")).toEqual([]);
+    expect(state.specs.get("lib/chiller")).toEqual({ ports: [], category: "env" });
   });
 
   it("selects and clears an instance only when a plant is open", async () => {

@@ -1,12 +1,14 @@
-import { Background, Controls, MiniMap, ReactFlow } from "@xyflow/react";
-import type { ReactFlowInstance } from "@xyflow/react";
+import { Background, ReactFlow, useReactFlow, useStore } from "@xyflow/react";
 import "@xyflow/react/dist/base.css";
-import { useMemo } from "react";
+import type { CSSProperties } from "react";
+import { useEffect, useMemo } from "react";
 import type { Reading } from "../../model/playback";
 import type { PlantView } from "../../model/plantView";
+import { centreOf, inView, tierOf } from "../../model/viewport";
 import type { FlowNode } from "./flow";
 import { flowEdges, flowNodes } from "./flow";
 import { FrameNode, HallNode, InstanceNode } from "./nodes";
+import { cx } from "../cx";
 import styles from "./PlantScreen.module.css";
 
 const nodeTypes = { instance: InstanceNode, hall: HallNode, frame: FrameNode };
@@ -20,30 +22,33 @@ export interface PlantGraphProps {
   readonly onOpenHall?: (hall: string) => void;
 }
 
-const readable = 0.7;
-
-function frame(instance: ReactFlowInstance<FlowNode>): void {
-  void instance.fitView({ maxZoom: 1 }).then(() => {
-    if (instance.getZoom() < readable) {
-      void instance.setViewport({ x: 24, y: 24, zoom: readable });
+function useFollowSelection(selected: string | null) {
+  const flow = useReactFlow<FlowNode>();
+  const width = useStore((state) => state.width);
+  const height = useStore((state) => state.height);
+  useEffect(() => {
+    const node = selected === null ? undefined : flow.getInternalNode(selected);
+    if (node === undefined) return;
+    const box = {
+      ...node.internals.positionAbsolute,
+      width: node.measured.width ?? 0,
+      height: node.measured.height ?? 0,
+    };
+    const viewport = flow.getViewport();
+    if (!inView(box, viewport, { width, height })) {
+      const centre = centreOf(box);
+      void flow.setCenter(centre.x, centre.y, { zoom: viewport.zoom, duration: 200 });
     }
-  });
-}
-
-function minimapClass(node: FlowNode): string {
-  if (node.type === "frame") return "minimap-frame";
-  return node.selected === true ? "minimap-selected" : "";
-}
-
-function Navigator() {
-  return <MiniMap pannable zoomable position="bottom-right" ariaLabel="Navigator" nodeClassName={minimapClass} />;
+  }, [flow, selected, width, height]);
 }
 
 export function PlantGraph({ view, viewKey, selected, readings, onSelect, onOpenHall }: PlantGraphProps) {
   const nodes = useMemo(() => flowNodes(view, selected, readings ?? null), [view, selected, readings]);
   const edges = useMemo(() => flowEdges(view), [view]);
+  const zoom = useStore((state) => state.transform[2]);
+  useFollowSelection(selected);
   return (
-    <div className={styles.graph}>
+    <div className={cx(styles.graph, `tier-${tierOf(zoom)}`)} style={{ "--zoom": String(zoom) } as CSSProperties}>
       <ReactFlow
         key={viewKey}
         nodes={nodes}
@@ -52,7 +57,8 @@ export function PlantGraph({ view, viewKey, selected, readings, onSelect, onOpen
         nodesDraggable={false}
         nodesConnectable={false}
         onlyRenderVisibleElements
-        onInit={frame}
+        fitView
+        fitViewOptions={{ padding: 0.04, maxZoom: 1 }}
         minZoom={0.05}
         onNodeClick={(_, node: FlowNode) => {
           onSelect(node.type === "frame" ? null : node.id);
@@ -67,8 +73,6 @@ export function PlantGraph({ view, viewKey, selected, readings, onSelect, onOpen
         aria-label="Plant graph"
       >
         <Background gap={16} />
-        <Controls showInteractive={false} position="top-right" />
-        <Navigator />
       </ReactFlow>
     </div>
   );

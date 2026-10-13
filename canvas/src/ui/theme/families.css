@@ -106,7 +106,8 @@
   font: 600 11px var(--font-mono);
 }
 
-.react-flow {
+.react-flow,
+:root {
   --xy-background-color: var(--surface-canvas);
   --xy-node-boxshadow-selected: none;
   --xy-controls-button-background-color: var(--surface-panel);

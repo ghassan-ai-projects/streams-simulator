@@ -1,3 +1,4 @@
+import { ReactFlowProvider } from "@xyflow/react";
 import { ChevronRight, CircleCheck, CircleX, Eye, Lock, TriangleAlert } from "lucide-react";
 import { useCallback, useEffect, useMemo } from "react";
 import type { NavigationStore } from "../../app/navigationStore";
@@ -8,6 +9,7 @@ import { plantView } from "../../model/plantView";
 import type { Report } from "../../model/report";
 import { badgeLabels, badgeOf, runSpan } from "../../model/report";
 import { readoutHeight } from "../plant/nodes";
+import { Navigator, ZoomBar } from "../plant/GraphControls";
 import { PlantGraph } from "../plant/PlantGraph";
 import { useStore } from "../useStore";
 import { ReportPanel } from "./ReportPanel";
@@ -79,6 +81,7 @@ function Header({
       <span className={styles.progress} role="status">
         {progress}
       </span>
+      <ZoomBar />
     </div>
   );
 }
@@ -159,26 +162,31 @@ export function RunScreen({ review, plants, workspace, navigation, worldId }: Ru
     review.open(worldId);
   }, [review, worldId]);
   return (
-    <div className={styles.screen}>
-      <Header state={state} navigation={navigation} worldId={worldId} />
-      <section className={styles.center} aria-label={`Run ${worldId}`}>
-        <Timeline review={review} state={state} />
-        <Graph review={review} state={state} plants={plants} workspace={workspace} />
-      </section>
-      <aside className={styles.report} aria-label="Report" tabIndex={0}>
-        {state.report.phase === "ready" && <ReportPanel report={state.report.value} />}
-        {state.report.phase === "loading" && (
-          <p className={styles.muted} role="status">
-            streamsim report is reading the run folder…
-          </p>
-        )}
-        {state.report.phase === "failed" && (
-          <p
-            className={styles.failure}
-            role="alert"
-          >{`${state.report.failure.message} (${state.report.failure.code})`}</p>
-        )}
-      </aside>
-    </div>
+    <ReactFlowProvider>
+      <div className={styles.screen}>
+        <Header state={state} navigation={navigation} worldId={worldId} />
+        <div className={styles.side}>
+          <Navigator />
+        </div>
+        <section className={styles.center} aria-label={`Run ${worldId}`}>
+          <Timeline review={review} state={state} />
+          <Graph review={review} state={state} plants={plants} workspace={workspace} />
+        </section>
+        <aside className={styles.report} aria-label="Report" tabIndex={0}>
+          {state.report.phase === "ready" && <ReportPanel report={state.report.value} />}
+          {state.report.phase === "loading" && (
+            <p className={styles.muted} role="status">
+              streamsim report is reading the run folder…
+            </p>
+          )}
+          {state.report.phase === "failed" && (
+            <p
+              className={styles.failure}
+              role="alert"
+            >{`${state.report.failure.message} (${state.report.failure.code})`}</p>
+          )}
+        </aside>
+      </div>
+    </ReactFlowProvider>
   );
 }

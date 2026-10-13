@@ -1,8 +1,8 @@
 import type { BridgeFailure, Workspace } from "../model/bridge";
 import type { Plant } from "../model/plant";
 import { parsePlant } from "../model/plant";
-import type { PortSpec } from "../model/ports";
-import { parsePorts } from "../model/ports";
+import type { ComponentSpec } from "../model/ports";
+import { parseComponent } from "../model/ports";
 import { Observable } from "./observable";
 import type { Bridge } from "./ports";
 
@@ -14,7 +14,7 @@ export type PlantState =
       readonly phase: "ready";
       readonly path: string;
       readonly plant: Plant;
-      readonly specs: ReadonlyMap<string, readonly PortSpec[]>;
+      readonly specs: ReadonlyMap<string, ComponentSpec>;
       readonly composition: string | null;
       readonly selected: string | null;
     };
@@ -25,10 +25,6 @@ function parsed(content: string): unknown {
   } catch {
     return null;
   }
-}
-
-function document(value: unknown): unknown {
-  return typeof value === "object" && value !== null && "document" in value ? value.document : null;
 }
 
 export class PlantStore extends Observable<PlantState> {
@@ -62,14 +58,14 @@ export class PlantStore extends Observable<PlantState> {
     return file.ok ? parsed(file.value.content) : null;
   }
 
-  private async specs(plant: Plant): Promise<ReadonlyMap<string, readonly PortSpec[]>> {
+  private async specs(plant: Plant): Promise<ReadonlyMap<string, ComponentSpec>> {
     const components = [
       ...new Set(plant.instances.map((instance) => instance.component).filter((ref): ref is string => ref !== null)),
     ];
     const entries = await Promise.all(
       components.map(async (ref) => {
         const shown = await this.bridge.action("component.show", { ref });
-        return [ref, shown.ok ? parsePorts(document(shown.value)) : []] as const;
+        return [ref, parseComponent(shown.ok ? shown.value : null)] as const;
       }),
     );
     return new Map(entries);

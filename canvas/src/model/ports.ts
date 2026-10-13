@@ -63,6 +63,41 @@ export interface PortSpec {
   readonly direction: "in" | "out";
 }
 
+export type Category = "air" | "cool" | "prod" | "elec" | "env";
+
+export interface ComponentSpec {
+  readonly ports: readonly PortSpec[];
+  readonly category: Category;
+}
+
+const classCategories: readonly (readonly [string, Category])[] = [
+  ["electrical/", "elec"],
+  ["process/", "prod"],
+  ["environment/", "env"],
+];
+
+const tagCategories: readonly (readonly [string, Category])[] = [
+  ["compressed-air", "air"],
+  ["hvac", "cool"],
+  ["fluids", "cool"],
+  ["heat", "cool"],
+  ["drives", "prod"],
+  ["material-handling", "prod"],
+];
+
+function categoryOf(componentClass: string, tags: readonly string[]): Category {
+  const byClass = classCategories.find(([prefix]) => componentClass.startsWith(prefix));
+  if (byClass) return byClass[1];
+  return tagCategories.find(([tag]) => tags.includes(tag))?.[1] ?? "env";
+}
+
+export function parseComponent(shown: unknown): ComponentSpec {
+  const entry = field(shown, "entry");
+  const tags = field(entry, "tags");
+  const tagList = Array.isArray(tags) ? tags.filter((tag): tag is string => typeof tag === "string") : [];
+  return { ports: parsePorts(field(shown, "document")), category: categoryOf(text(field(entry, "class")), tagList) };
+}
+
 export interface Pin {
   readonly name: string;
   readonly type: string;

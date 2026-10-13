@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { chillerPorts, composition, domain } from "../test/plantFixture";
 import { parsePlant } from "./plant";
-import { familyOf, parsePorts, pinsOf, shapeOf } from "./ports";
+import { familyOf, parseComponent, parsePorts, pinsOf, shapeOf } from "./ports";
 
 describe("ports and pins", () => {
   it("maps every library port type to one of nine families with a shape", () => {
@@ -21,6 +21,19 @@ describe("ports and pins", () => {
       "out:power_out",
     ]);
     expect(parsePorts(null)).toEqual([]);
+  });
+
+  it("names a component's category from its library class, then its tags", () => {
+    const of = (componentClass: string, tags: string[]) =>
+      parseComponent({ entry: { class: componentClass, tags }, document: chillerPorts }).category;
+    expect(of("electrical/switchgear/feeder_meter", ["hvac"])).toBe("elec");
+    expect(of("process/production/line", [])).toBe("prod");
+    expect(of("environment/site/weather", [])).toBe("env");
+    expect(of("rotating/compressor/air", ["compressed-air"])).toBe("air");
+    expect(of("rotating/pump/centrifugal", ["fluids"])).toBe("cool");
+    expect(of("rotating/conveyor/belt", ["drives"])).toBe("prod");
+    expect(of("other/thing", [])).toBe("env");
+    expect(parseComponent({ entry: { class: "x", tags: [1, "hvac"] }, document: chillerPorts }).ports).toHaveLength(4);
   });
 
   it("marks the pins a link uses as connected", () => {
