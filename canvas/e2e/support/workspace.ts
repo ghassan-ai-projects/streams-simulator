@@ -41,6 +41,12 @@ function builtBinary(): string {
   return binary;
 }
 
+function dropCommands(path: string, op: string): void {
+  const artifact = JSON.parse(readFileSync(path, "utf8")) as { command_log: { op: string }[] };
+  const kept = artifact.command_log.filter((command) => command.op !== op);
+  writeFileSync(path, JSON.stringify({ ...artifact, command_log: kept }, null, 2));
+}
+
 function editDescription(path: string): void {
   const domain = JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>;
   writeFileSync(path, JSON.stringify({ ...domain, description: "Edited after the runs were recorded." }, null, 2));
@@ -60,6 +66,8 @@ export function buildFixture(): Fixture {
   record(binary, workspace, "w-evaluate", []);
   record(binary, workspace, "w-edited", []);
   appendFileSync(join(workspace, "runs", "w-edited", "trace.jsonl"), "\n");
+  record(binary, workspace, "w-diverged", ["-fault", "CT-1=cooling_tower__fan_failure@600"]);
+  dropCommands(join(workspace, "runs", "w-diverged", "run.json"), "fault.inject");
   editDescription(join(workspace, "domains", "factory-utilities.domain.json"));
   return { binary, workspace, root };
 }

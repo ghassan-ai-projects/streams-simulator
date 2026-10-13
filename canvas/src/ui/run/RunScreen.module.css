@@ -402,3 +402,11 @@
   padding: 0 var(--space-3) var(--space-2);
   font-weight: 600;
 }
+
+.caution {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-left: 3px solid var(--status-warn);
+  background: var(--status-warn-bg);
+  color: var(--text-primary);
+}

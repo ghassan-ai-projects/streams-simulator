@@ -191,12 +191,25 @@ export function parseReport(value: unknown): Report {
 export interface Replay {
   readonly matches: boolean;
   readonly domainChanged: boolean;
+  readonly detail: string;
 }
 
 export function parseReplay(value: unknown): Replay | null {
   const body = obj(value);
   if (typeof body.matches !== "boolean") return null;
-  return { matches: body.matches, domainChanged: body.domain_changed === true };
+  return {
+    matches: body.matches,
+    domainChanged: body.domain_changed === true,
+    detail: typeof body.detail === "string" ? body.detail : "",
+  };
+}
+
+export function replayLine(verify: VerifyState): string {
+  if (verify.phase === "loading") return "Replaying the run to check that it reproduces…";
+  if (verify.phase === "failed") return "Not checked: streamsim verify could not replay this run.";
+  return verify.value.matches
+    ? "Reproduces: replaying the run gave the same output."
+    : "Does not reproduce: replaying the run gave different output.";
 }
 
 export type VerifyState =

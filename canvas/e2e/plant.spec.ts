@@ -46,3 +46,62 @@ test("the graph works from the keyboard: arrows move, Enter selects, Escape clea
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog", { name: "Keyboard" })).toBeHidden();
 });
+
+function overlapsAndSpills(): string[] {
+  const overlap = (a: DOMRect, b: DOMRect) =>
+    Math.min(a.right, b.right) - Math.max(a.left, b.left) > 1 &&
+    Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 1;
+  const outside = (box: DOMRect, frame: DOMRect) =>
+    box.left < frame.left - 1 || box.right > frame.right + 1 || box.bottom > frame.bottom + 1;
+  const shown = (element: HTMLElement, box: DOMRect) =>
+    box.width > 0 && box.height > 0 && getComputedStyle(element).visibility !== "hidden";
+  const spills = (node: HTMLElement, frame: DOMRect) =>
+    [...node.querySelectorAll<HTMLElement>("*")].some((child) => {
+      const box = child.getBoundingClientRect();
+      return child.closest(".react-flow__handle") === null && shown(child, box) && outside(box, frame);
+    });
+  const nodes = [...document.querySelectorAll<HTMLElement>(".react-flow__node:not(.react-flow__node-frame)")].map(
+    (node) => ({
+      id: node.dataset.id ?? "",
+      box: node.getBoundingClientRect(),
+      node,
+    }),
+  );
+  return nodes.flatMap((a, index) => [
+    ...nodes.slice(index + 1).flatMap((b) => (overlap(a.box, b.box) ? [`${a.id} overlaps ${b.id}`] : [])),
+    ...(spills(a.node, a.box) ? [`${a.id} spills`] : []),
+  ]);
+}
+
+function settledZoom(): Promise<string> {
+  const read = () =>
+    getComputedStyle(document.querySelector("[aria-roledescription='plant graph']") ?? document.body).getPropertyValue(
+      "--zoom",
+    );
+  const before = read();
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        resolve(before === read() ? before : "");
+      });
+    });
+  });
+}
+
+test("no node overlaps another or spills its text at any zoom tier", async ({ page }) => {
+  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Ffactory-utilities.domain.json`);
+  const graph = page.getByRole("application", { name: "Plant graph" });
+  await expect(page.getByRole("group", { name: /^CT-1, cooling tower,/ })).toBeVisible();
+  await graph.focus();
+  await page.keyboard.press("0");
+  const tiers = new Set<string>();
+  let zoom = "";
+  for (let step = 0; step < 8; step += 1) {
+    const previous = zoom;
+    await expect.poll(async () => (zoom = await page.evaluate(settledZoom)) !== "" && zoom !== previous).toBe(true);
+    tiers.add((await graph.getAttribute("class"))?.match(/tier-(\w+)/)?.[1] ?? "");
+    expect(await page.evaluate(overlapsAndSpills)).toEqual([]);
+    await page.keyboard.press("+");
+  }
+  expect([...tiers]).toEqual(expect.arrayContaining(["overview", "compact", "full"]));
+});

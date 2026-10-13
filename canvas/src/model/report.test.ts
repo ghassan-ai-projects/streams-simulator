@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { report } from "../test/runFixture";
-import { badgeLabels, badgeOf, humanise, parseReport, runSpan, parseReplay, wallClock } from "./report";
+import { badgeLabels, badgeOf, humanise, parseReport, runSpan, parseReplay, replayLine, wallClock } from "./report";
 
 describe("run report", () => {
   it("reads the run, counts, verification and truth sections", () => {
@@ -45,7 +45,8 @@ describe("run report", () => {
 
   it("derives the badge from the report and verify, never from its own checks", () => {
     const parsed = parseReport(report);
-    const ready = (matches: boolean) => ({ phase: "ready", value: { matches, domainChanged: false } }) as const;
+    const ready = (matches: boolean) =>
+      ({ phase: "ready", value: { matches, domainChanged: false, detail: "" } }) as const;
     expect(badgeOf(parsed, ready(true))).toBe("verified");
     expect(badgeOf(parsed, { phase: "loading" })).toBe("verifying");
     expect(badgeOf(parsed, { phase: "failed" })).toBe("not-checked");
@@ -55,10 +56,18 @@ describe("run report", () => {
     expect(badgeOf({ ...parsed, complete: false }, ready(true))).toBe("incomplete");
     expect(badgeOf({ ...parsed, ended: false }, ready(true))).toBe("incomplete");
     expect(badgeLabels["not-verified"]).toBe("Not verified");
-    expect(parseReplay({ matches: true })).toEqual({ matches: true, domainChanged: false });
-    expect(parseReplay({ matches: false, domain_changed: true })).toEqual({ matches: false, domainChanged: true });
+    expect(parseReplay({ matches: true })).toEqual({ matches: true, domainChanged: false, detail: "" });
+    expect(parseReplay({ matches: false, domain_changed: true, detail: "trace differs" })).toEqual({
+      matches: false,
+      domainChanged: true,
+      detail: "trace differs",
+    });
     expect(parseReplay({ matches: "yes" })).toBeNull();
     expect(parseReplay(null)).toBeNull();
+    expect(replayLine({ phase: "loading" })).toMatch(/^Replaying/);
+    expect(replayLine({ phase: "failed" })).toMatch(/^Not checked/);
+    expect(replayLine(ready(true))).toMatch(/^Reproduces/);
+    expect(replayLine(ready(false))).toMatch(/^Does not reproduce/);
   });
 
   it("spans the run from the report, or from the observations while the report is missing", () => {

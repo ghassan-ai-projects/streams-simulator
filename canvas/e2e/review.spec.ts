@@ -14,7 +14,7 @@ test("a recorded run plays back with the binary's report and a Verified badge", 
   await expect(page.getByText("Evaluate · ended")).toBeVisible();
   const report = page.getByRole("complementary", { name: "Run details" });
   await expect(report.getByRole("region", { name: "File check" })).toContainText("files match");
-  await expect(report.getByRole("region", { name: "Replay check" })).toContainText("reproduced its trace");
+  await expect(report.getByRole("region", { name: "Replay check" })).toContainText("Reproduces");
   await expect(page.getByRole("status").filter({ hasText: "plant file changed after this run" })).toBeVisible();
   await expect(report.getByRole("region", { name: "KPI truth" })).toContainText("CH-1");
   await expect(page.getByRole("status").filter({ hasText: /^[\d,]+ observations$/ })).toBeVisible({ timeout: 60_000 });
@@ -36,4 +36,16 @@ test("a run whose files were edited after it ended is Not verified", async ({ pa
   await expect(page.getByRole("alert").filter({ hasText: "differ from what the run wrote" })).toBeVisible();
   const graph = await page.getByRole("application", { name: "Plant graph" }).boundingBox();
   expect(graph?.height ?? 0).toBeGreaterThan(300);
+});
+
+test("a run that does not reproduce reads Not verified with verify's own verdict and what differs", async ({
+  page,
+}) => {
+  await page.goto(`${env("CANVAS_APP_URL")}/#/run?world=w-diverged`);
+  await expect(page.getByText("Not verified", { exact: true })).toBeVisible({ timeout: 60_000 });
+  const replay = page.getByRole("complementary", { name: "Run details" }).getByRole("region", { name: "Replay check" });
+  await expect(replay).toContainText("Does not reproduce");
+  await replay.getByText("What differs").click();
+  await expect(replay.locator("pre")).not.toBeEmpty();
+  await expect(page.getByRole("note")).toContainText("This run did not verify");
 });

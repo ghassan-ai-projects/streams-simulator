@@ -57,7 +57,7 @@ describe("review", () => {
     ]);
     expect(store.snapshot()).toMatchObject({
       report: { phase: "ready", value: { domainId: "mini" } },
-      verified: { phase: "ready", value: { matches: true, domainChanged: false } },
+      verified: { phase: "ready", value: { matches: true, domainChanged: false, detail: "" } },
     });
     bridge.stream("w-1", journal);
     flushes.forEach((flush) => {
@@ -104,5 +104,25 @@ describe("review", () => {
     });
     store.close();
     expect(bridge.followers.size).toBe(0);
+  });
+
+  it("reads a verify that exits with a divergence as its verdict, and a verdict-less success as a failure", async () => {
+    const { bridge, store } = setup();
+    bridge.actions.set(
+      "run.verify",
+      failed({ ...failure("replay_mismatch", 422, "no"), result: { matches: false, detail: "trace differs" } }),
+    );
+    store.open("w-1");
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(store.snapshot().verified).toEqual({
+      phase: "ready",
+      value: { matches: false, domainChanged: false, detail: "trace differs" },
+    });
+    bridge.actions.set("run.verify", success({}));
+    store.open("w-2");
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(store.snapshot().verified).toMatchObject({ phase: "failed", failure: { code: "verify_unreadable" } });
   });
 });

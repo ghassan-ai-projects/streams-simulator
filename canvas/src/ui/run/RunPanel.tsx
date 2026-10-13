@@ -3,20 +3,11 @@ import type { ReviewState, ReviewStore } from "../../app/reviewStore";
 import { instrumentOf } from "../../model/plant";
 import { shortChannel } from "../../model/playback";
 import { showReading } from "../../model/readout";
-import type { Badge } from "../../model/report";
-import { badgeOf, wallClock } from "../../model/report";
+import { wallClock } from "../../model/report";
 import { cx } from "../cx";
 import shared from "../shared.module.css";
 import { ReportPanel } from "./ReportPanel";
 import styles from "./RunScreen.module.css";
-
-const replayVerdict: Readonly<Record<Badge, string>> = {
-  verifying: "Replaying the run to check that it reproduces…",
-  "not-checked": "Not checked: streamsim verify could not replay this run (see the banner).",
-  verified: "Verified: replaying the run reproduced its trace.",
-  "not-verified": "Not verified: the replay does not reproduce what the run wrote.",
-  incomplete: "Not checked: the run did not close completely.",
-};
 
 type ReadyPlant = Extract<PlantState, { phase: "ready" }>;
 type Tab = "report" | "inspect";
@@ -125,10 +116,8 @@ function ReportBody({
   readonly state: ReviewState;
   readonly unit: (entity: string, name: string) => string;
 }) {
-  if (state.report.phase === "ready") {
-    const badge = badgeOf(state.report.value, state.verified);
-    return <ReportPanel report={state.report.value} unit={unit} entity={null} replay={replayVerdict[badge]} />;
-  }
+  if (state.report.phase === "ready")
+    return <ReportPanel report={state.report.value} unit={unit} entity={null} verify={state.verified} />;
   if (state.report.phase === "loading")
     return (
       <p className={styles.muted} role="status">

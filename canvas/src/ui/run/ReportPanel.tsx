@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import type { Report } from "../../model/report";
-import { humanise, wallClock } from "../../model/report";
+import type { Report, VerifyState } from "../../model/report";
+import { badgeOf, humanise, replayLine, wallClock } from "../../model/report";
 import { displayUnit } from "../../model/units";
 import shared from "../shared.module.css";
 import styles from "./RunScreen.module.css";
@@ -68,16 +68,29 @@ const words = (text: string): Cell => ({ text, title: text });
 const count = (report: Report, key: string) =>
   report.ended ? (report.counts[key] ?? 0).toLocaleString("en-US") : "n/a";
 
-function Facts({ report, replay }: { readonly report: Report; readonly replay: string }) {
+function ReplayCheck({ verify }: { readonly verify: VerifyState }) {
+  const detail = verify.phase === "ready" ? verify.value.detail : "";
+  return (
+    <Section title="Replay check" note="streamsim verify">
+      <p className={styles.verdict}>{replayLine(verify)}</p>
+      {detail !== "" && (
+        <details className={styles.details}>
+          <summary>What differs</summary>
+          <pre>{detail}</pre>
+        </details>
+      )}
+    </Section>
+  );
+}
+
+function Facts({ report, verify }: { readonly report: Report; readonly verify: VerifyState }) {
   const dropped = Object.entries(report.dropped).map(([reason, n]) => [
     reason.replaceAll("_", " "),
     n.toLocaleString("en-US"),
   ]);
   return (
     <>
-      <Section title="Replay check" note="streamsim verify">
-        <p className={styles.verdict}>{replay}</p>
-      </Section>
+      <ReplayCheck verify={verify} />
       <Section title="File check" note={report.verification.replaceAll("_", " ") || "not recorded"}>
         <p className={styles.muted}>
           The report compares the files in the run folder with the digests the run recorded.
@@ -164,13 +177,27 @@ function KpiTruth({ report, unit, entity }: TruthProps) {
 
 const notClosed = "Not available: the run is not closed, so its truth is still sealed.";
 
-export function ReportPanel({ report, unit, entity, only, replay = "" }: TruthProps & { readonly replay?: string }) {
+const loading: VerifyState = { phase: "loading" };
+const unverifiedTruth = "This run did not verify, so the truth below may not describe the files in the run folder.";
+
+export function ReportPanel({
+  report,
+  unit,
+  entity,
+  only,
+  verify = loading,
+}: TruthProps & { readonly verify?: VerifyState }) {
   if (only === "kpi") {
     return report.truthUnavailable || !report.ended ? null : <KpiTruth report={report} unit={unit} entity={entity} />;
   }
   return (
     <>
-      <Facts report={report} replay={replay} />
+      <Facts report={report} verify={verify} />
+      {badgeOf(report, verify) === "not-verified" && (
+        <p className={styles.caution} role="note">
+          {unverifiedTruth}
+        </p>
+      )}
       {report.truthUnavailable || !report.ended ? (
         <Section title="Truth">
           <p className={styles.muted}>

@@ -9,12 +9,15 @@ import { Scrubber } from "./Scrubber";
 describe("report panel", () => {
   it("lists every section of the binary's report with no accessibility violation", async () => {
     const view = render(
-      <ReportPanel report={parseReport(report)} unit={() => ""} entity={null} replay="Verified: it reproduced." />,
+      <ReportPanel
+        report={parseReport(report)}
+        unit={() => ""}
+        entity={null}
+        verify={{ phase: "ready", value: { matches: true, domainChanged: false, detail: "" } }}
+      />,
     );
     expect(within(screen.getByRole("region", { name: "File check" })).getByText("trace")).toBeInTheDocument();
-    expect(
-      within(screen.getByRole("region", { name: "Replay check" })).getByText("Verified: it reproduced."),
-    ).toBeInTheDocument();
+    expect(within(screen.getByRole("region", { name: "Replay check" })).getByText(/^Reproduces/)).toBeInTheDocument();
     expect(
       within(screen.getByRole("region", { name: "Deliveries" })).getByText("dropped by perturbation"),
     ).toBeInTheDocument();
@@ -98,5 +101,20 @@ describe("scrubber", () => {
     render(<Scrubber startNs={0} endNs={0} positionNs={0} report={null} density={[]} onSeek={vi.fn()} />);
     expect(screen.getByRole("list", { name: "Events" })).toBeEmptyDOMElement();
     expect(screen.getByRole("button", { name: "Next event" })).toBeDisabled();
+  });
+
+  it("states verify's own verdict and detail, and cautions that unverified truth may not describe the files", () => {
+    render(
+      <ReportPanel
+        report={parseReport(report)}
+        unit={() => ""}
+        entity={null}
+        verify={{ phase: "ready", value: { matches: false, domainChanged: false, detail: "trace.jsonl differs" } }}
+      />,
+    );
+    const replay = screen.getByRole("region", { name: "Replay check" });
+    expect(within(replay).getByText(/^Does not reproduce/)).toBeInTheDocument();
+    expect(within(replay).getByText("trace.jsonl differs")).toBeInTheDocument();
+    expect(screen.getByRole("note")).toHaveTextContent("This run did not verify");
   });
 });
