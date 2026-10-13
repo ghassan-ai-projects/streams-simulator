@@ -120,7 +120,7 @@
       {
         "name": "condensate",
         "unit": "m",
-        "initial": 0.01,
+        "initial": 0.3,
         "min": 0,
         "max": 0.8
       }
@@ -152,6 +152,11 @@
               "amplitude": 105,
               "period_s": 86400,
               "phase_rad": -1.6
+            },
+            {
+              "amplitude": 35,
+              "period_s": 21600,
+              "phase_rad": 0
             }
           ]
         }
@@ -398,7 +403,7 @@
       {
         "name": "condensate_drain",
         "from": "condensate",
-        "conductance": 12,
+        "conductance": 0.4,
         "scale": [
           "drain_flow_ok"
         ]
@@ -431,7 +436,7 @@
         "affects": [
           {
             "state": "leak",
-            "delta": 105
+            "delta": 60
           }
         ],
         "observability": {
@@ -640,13 +645,13 @@
   "ports": [
     {
       "name": "air_in",
-      "type": "air_flow",
+      "type": "compressed_air",
       "direction": "consumes",
       "state": "inflow"
     },
     {
       "name": "demand_in",
-      "type": "air_flow",
+      "type": "compressed_air",
       "direction": "consumes",
       "state": "demand"
     },
@@ -658,7 +663,7 @@
     },
     {
       "name": "air_out",
-      "type": "air_flow",
+      "type": "compressed_air",
       "direction": "provides",
       "state": "outlet_flow"
     }
@@ -674,7 +679,7 @@
         "dynamics/inflow/f0/baseline": 216,
         "dynamics/inflow/f0/seasonality/0/amplitude": 30,
         "dynamics/pressure/f1/capacity": 35.5,
-        "faults/header_leak/affects/leak/delta": 30,
+        "faults/header_leak/affects/leak/delta": 17,
         "flows/relief_draw/conductance": 0.617143,
         "measurement_points/outlet_flow/range/max": 432,
         "state/consumption/initial": 186.013,
@@ -682,7 +687,8 @@
         "state/inflow/initial": 186.013,
         "state/leak/initial": 16,
         "state/leakage/initial": 16,
-        "state/outlet_flow/initial": 186.013
+        "state/outlet_flow/initial": 186.013,
+        "dynamics/demand/f0/seasonality/1/amplitude": 10
       }
     },
     "medium": {
@@ -698,7 +704,7 @@
         "dynamics/inflow/f0/baseline": 2592,
         "dynamics/inflow/f0/seasonality/0/amplitude": 360,
         "dynamics/pressure/f1/capacity": 710,
-        "faults/header_leak/affects/leak/delta": 360,
+        "faults/header_leak/affects/leak/delta": 205,
         "flows/relief_draw/conductance": 7.40571,
         "measurement_points/outlet_flow/range/max": 5184,
         "state/consumption/initial": 2232.15,
@@ -706,7 +712,8 @@
         "state/inflow/initial": 2232.15,
         "state/leak/initial": 192,
         "state/leakage/initial": 192,
-        "state/outlet_flow/initial": 2232.15
+        "state/outlet_flow/initial": 2232.15,
+        "dynamics/demand/f0/seasonality/1/amplitude": 120
       }
     }
   },

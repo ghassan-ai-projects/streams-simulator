@@ -19,6 +19,10 @@
     "noise": {
       "model": "gaussian",
       "sigma": 0.001
+    },
+    "availability": {
+      "uptime": 0.999,
+      "mttr_s": 600
     }
   },
   "faults": [
@@ -31,6 +35,15 @@
       "id": "stuck",
       "form": "stuck",
       "stuck_at": "low"
+    },
+    {
+      "id": "pulses_per_rev",
+      "form": "scale",
+      "factor": 1.05
+    },
+    {
+      "id": "dropout",
+      "form": "dropout"
     }
   ],
   "scaling": "span"

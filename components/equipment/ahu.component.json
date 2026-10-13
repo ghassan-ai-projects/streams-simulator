@@ -80,6 +80,27 @@
         "name": "supply_air",
         "unit": "degC",
         "initial": 13
+      },
+      {
+        "name": "humidity_base",
+        "unit": "%RH",
+        "initial": 40,
+        "min": 0,
+        "max": 100
+      },
+      {
+        "name": "return_humidity",
+        "unit": "%RH",
+        "initial": 40.3,
+        "min": 0,
+        "max": 100
+      },
+      {
+        "name": "supply_humidity",
+        "unit": "%RH",
+        "initial": 78,
+        "min": 0,
+        "max": 100
       }
     ],
     "dynamics": [
@@ -467,6 +488,63 @@
             }
           ]
         }
+      },
+      {
+        "target": "humidity_base",
+        "tier": "F0",
+        "f0": {
+          "baseline": 40,
+          "drift_per_hour": 0,
+          "seasonality": []
+        }
+      },
+      {
+        "target": "return_humidity",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "humidity_base",
+              "coef": 1
+            },
+            {
+              "state": "occupancy",
+              "coef": 6
+            }
+          ]
+        }
+      },
+      {
+        "target": "supply_humidity",
+        "tier": "F1",
+        "f1": {
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "supply_air",
+              "coef": 1
+            }
+          ],
+          "table": {
+            "x": [
+              8,
+              10,
+              13,
+              16,
+              20,
+              25
+            ],
+            "values": [
+              92,
+              88,
+              78,
+              70,
+              60,
+              48
+            ]
+          }
+        }
       }
     ],
     "faults": [
@@ -647,6 +725,30 @@
       },
       "tag": "JT",
       "default_instrument": "streamsim/power-meter@1"
+    },
+    {
+      "name": "return_humidity",
+      "state": "return_humidity",
+      "unit_family": "humidity",
+      "range": {
+        "min": 0,
+        "max": 100
+      },
+      "tag": "MT",
+      "default_instrument": "streamsim/humidity@1",
+      "optional": true
+    },
+    {
+      "name": "supply_humidity",
+      "state": "supply_humidity",
+      "unit_family": "humidity",
+      "range": {
+        "min": 0,
+        "max": 100
+      },
+      "tag": "MT",
+      "default_instrument": "streamsim/humidity@1",
+      "optional": true
     }
   ],
   "ports": [

@@ -21,7 +21,7 @@
     {"name": "nominal", "duration_s": 86400, "description": "A day of the pilot plant, one fault per scenario."},
     {"name": "sensor_pathology", "duration_s": 86400, "fault_weights": {"chiller_large__chw_supply_temp__offset": 1.0, "chiller_small__cond_temp__drift": 1.0},
       "description": "An instrument lies while the process is healthy."},
-    {"name": "correlated_cascade", "not_applicable": "Links carry no value until coupling over links (P7h)."}
+    {"name": "correlated_cascade", "not_applicable": "The pilot's one link (the air-handling unit load into a chiller) carries its value, but a single link is too little coupling for a fault to cascade across several pieces of equipment."}
   ],
   "ground_truth": {"min_per_label": 10, "min_scenarios": 100, "negative_class_fraction": 0.35, "pre_degraded_fraction": 0.0}
 }

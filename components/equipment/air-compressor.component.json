@@ -84,6 +84,12 @@
         "initial": 1
       },
       {
+        "name": "ambient_power",
+        "unit": "kW",
+        "initial": 6.30051,
+        "min": 0
+      },
+      {
         "name": "air_target",
         "unit": "m3/h",
         "initial": 700
@@ -201,6 +207,23 @@
         }
       },
       {
+        "target": "ambient_power",
+        "tier": "F1",
+        "f1": {
+          "form": "product",
+          "inputs": [
+            {
+              "state": "enable",
+              "coef": 1
+            },
+            {
+              "state": "ambient",
+              "coef": 0.3
+            }
+          ]
+        }
+      },
+      {
         "target": "air_target",
         "tier": "F1",
         "f1": {
@@ -241,11 +264,15 @@
           "inputs": [
             {
               "state": "enable",
-              "coef": 22.5
+              "coef": 16.19949
             },
             {
               "state": "load_frac",
               "coef": 52.5
+            },
+            {
+              "state": "ambient_power",
+              "coef": 1
             }
           ]
         }
@@ -781,7 +808,7 @@
   "ports": [
     {
       "name": "air_out",
-      "type": "air_flow",
+      "type": "compressed_air",
       "direction": "provides",
       "state": "air_flow"
     },
@@ -798,7 +825,7 @@
       "title": "Small (22 kW, 200 m3/h)",
       "values": {
         "dynamics/air_target/f1/inputs/airend_eff/coef": 200,
-        "dynamics/power_target/f1/inputs/enable/coef": 6.6,
+        "dynamics/power_target/f1/inputs/enable/coef": 4.75185,
         "dynamics/power_target/f1/inputs/load_frac/coef": 15.4,
         "dynamics/specific_power/f1/table/values/0": 0.366667,
         "dynamics/specific_power/f1/table/values/1": 0.22,
@@ -815,7 +842,9 @@
         "state/power/initial": 22,
         "state/power_target/initial": 22,
         "state/specific_power/initial": 0.11,
-        "state/vibration/initial": 2
+        "state/vibration/initial": 2,
+        "dynamics/ambient_power/f1/inputs/ambient/coef": 0.088,
+        "state/ambient_power/initial": 1.84815
       }
     },
     "medium": {
@@ -826,7 +855,7 @@
       "title": "Large (250 kW, 2400 m3/h)",
       "values": {
         "dynamics/air_target/f1/inputs/airend_eff/coef": 2400,
-        "dynamics/power_target/f1/inputs/enable/coef": 75,
+        "dynamics/power_target/f1/inputs/enable/coef": 53.99829,
         "dynamics/power_target/f1/inputs/load_frac/coef": 175,
         "dynamics/specific_power/f1/table/values/0": 0.347222,
         "dynamics/specific_power/f1/table/values/1": 0.208333,
@@ -843,7 +872,9 @@
         "state/power/initial": 250,
         "state/power_target/initial": 250,
         "state/specific_power/initial": 0.104167,
-        "state/vibration/initial": 3.4
+        "state/vibration/initial": 3.4,
+        "dynamics/ambient_power/f1/inputs/ambient/coef": 1.0,
+        "state/ambient_power/initial": 21.00171
       }
     }
   },

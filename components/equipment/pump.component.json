@@ -27,6 +27,24 @@
         "max": 1.1
       },
       {
+        "name": "speed_trim",
+        "unit": "ratio",
+        "initial": 1,
+        "min": 0
+      },
+      {
+        "name": "suction_level",
+        "unit": "m",
+        "initial": 2.4,
+        "min": 0
+      },
+      {
+        "name": "suction_factor",
+        "unit": "ratio",
+        "initial": 1,
+        "min": 0
+      },
+      {
         "name": "impeller_health",
         "unit": "ratio",
         "initial": 1,
@@ -127,6 +145,14 @@
             },
             {
               "state": "speed",
+              "coef": 1
+            },
+            {
+              "state": "speed_trim",
+              "coef": 1
+            },
+            {
+              "state": "suction_factor",
               "coef": 1
             }
           ]
@@ -372,6 +398,59 @@
               "coef": 1
             }
           ]
+        }
+      },
+      {
+        "target": "speed_trim",
+        "tier": "F0",
+        "f0": {
+          "baseline": 1,
+          "drift_per_hour": 0,
+          "seasonality": [
+            {
+              "amplitude": 0.03,
+              "period_s": 86400,
+              "phase_rad": 0
+            }
+          ]
+        }
+      },
+      {
+        "target": "suction_level",
+        "tier": "F0",
+        "f0": {
+          "baseline": 2.4,
+          "drift_per_hour": 0,
+          "seasonality": []
+        }
+      },
+      {
+        "target": "suction_factor",
+        "tier": "F1",
+        "f1": {
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "suction_level",
+              "coef": 1
+            }
+          ],
+          "table": {
+            "x": [
+              0,
+              0.3,
+              0.8,
+              1.2,
+              5
+            ],
+            "values": [
+              0,
+              0.4,
+              0.95,
+              1,
+              1
+            ]
+          }
         }
       }
     ],
@@ -676,6 +755,18 @@
       "type": "condenser_water",
       "direction": "provides",
       "state": "flow"
+    },
+    {
+      "name": "liquid_out",
+      "type": "liquid_flow",
+      "direction": "provides",
+      "state": "flow"
+    },
+    {
+      "name": "level_in",
+      "type": "level",
+      "direction": "consumes",
+      "state": "suction_level"
     }
   ],
   "default_preset": "medium",

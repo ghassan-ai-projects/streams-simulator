@@ -41,7 +41,7 @@
       {
         "name": "material_load",
         "unit": "%",
-        "initial": 50.5497,
+        "initial": 48.00597,
         "min": 0,
         "max": 100
       },
@@ -74,17 +74,17 @@
       {
         "name": "load_demand",
         "unit": "%",
-        "initial": 50.5497
+        "initial": 48.00597
       },
       {
         "name": "current_target",
         "unit": "A",
-        "initial": 36.258
+        "initial": 35.41099
       },
       {
         "name": "motor_current",
         "unit": "A",
-        "initial": 36.258,
+        "initial": 35.41099,
         "min": 0
       },
       {
@@ -95,7 +95,13 @@
       {
         "name": "power",
         "unit": "kW",
-        "initial": 21.7548
+        "initial": 21.24659
+      },
+      {
+        "name": "drive_torque",
+        "unit": "N.m",
+        "initial": 135.25581,
+        "min": 0
       },
       {
         "name": "vibration",
@@ -105,7 +111,7 @@
       {
         "name": "throughput",
         "unit": "t/h",
-        "initial": 151.649
+        "initial": 144.01784
       }
     ],
     "dynamics": [
@@ -113,13 +119,13 @@
         "target": "material_load",
         "tier": "F0",
         "f0": {
-          "baseline": 55.0,
+          "baseline": 62.0,
           "drift_per_hour": 0,
           "seasonality": [
             {
-              "amplitude": 12.0,
-              "period_s": 3600,
-              "phase_rad": 0.3
+              "amplitude": 6.0,
+              "period_s": 10800,
+              "phase_rad": -1.6
             },
             {
               "amplitude": 8.0,
@@ -290,6 +296,19 @@
         }
       },
       {
+        "target": "drive_torque",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "motor_current",
+              "coef": 3.8196
+            }
+          ]
+        }
+      },
+      {
         "target": "vibration",
         "tier": "F1",
         "f1": {
@@ -375,7 +394,7 @@
         "affects": [
           {
             "state": "vibration",
-            "delta": 5
+            "delta": 0.4
           },
           {
             "state": "idler_drag",
@@ -394,7 +413,7 @@
         "onset": {
           "magnitude": 1.0,
           "shape": "ramp",
-          "rate_per_hour": 0.1
+          "rate_per_hour": 0.05
         }
       },
       {
@@ -583,6 +602,12 @@
       "type": "electrical",
       "direction": "provides",
       "state": "power"
+    },
+    {
+      "name": "torque_out",
+      "type": "load_torque",
+      "direction": "provides",
+      "state": "drive_torque"
     }
   ],
   "default_preset": "medium",
@@ -603,13 +628,16 @@
         "measurement_points/power/range/max": 10.5,
         "measurement_points/pulley_speed/range/max": 180,
         "state/belt_speed/initial": 120,
-        "state/current_target/initial": 9.06451,
-        "state/motor_current/initial": 9.06451,
-        "state/power/initial": 5.43871,
+        "state/current_target/initial": 8.85275,
+        "state/motor_current/initial": 8.85275,
+        "state/power/initial": 5.31165,
         "state/pulley_speed/initial": 120,
         "state/speed_target/initial": 120,
-        "state/throughput/initial": 25.2748,
-        "state/vibration/initial": 0.54
+        "state/throughput/initial": 24.00298,
+        "state/vibration/initial": 0.54,
+        "state/material_load/initial": 48.00597,
+        "state/load_demand/initial": 48.00597,
+        "state/drive_torque/initial": 33.81395
       }
     },
     "medium": {
@@ -632,13 +660,16 @@
         "measurement_points/power/range/max": 224,
         "measurement_points/pulley_speed/range/max": 82.5,
         "state/belt_speed/initial": 55,
-        "state/current_target/initial": 193.376,
-        "state/motor_current/initial": 193.376,
-        "state/power/initial": 116.026,
+        "state/current_target/initial": 188.8586,
+        "state/motor_current/initial": 188.8586,
+        "state/power/initial": 113.31516,
         "state/pulley_speed/initial": 55,
         "state/speed_target/initial": 55,
-        "state/throughput/initial": 758.245,
-        "state/vibration/initial": 0.82
+        "state/throughput/initial": 720.08882,
+        "state/vibration/initial": 0.82,
+        "state/material_load/initial": 48.00597,
+        "state/load_demand/initial": 48.00597,
+        "state/drive_torque/initial": 721.36432
       }
     }
   },

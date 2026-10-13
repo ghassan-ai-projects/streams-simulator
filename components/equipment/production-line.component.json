@@ -33,6 +33,11 @@
         "initial": 7
       },
       {
+        "name": "dew_point",
+        "unit": "degC",
+        "initial": -40
+      },
+      {
         "name": "running",
         "unit": "on",
         "initial": 1,
@@ -121,6 +126,12 @@
         "min": 0
       },
       {
+        "name": "moisture_factor",
+        "unit": "ratio",
+        "initial": 1,
+        "min": 0
+      },
+      {
         "name": "cycle_time",
         "unit": "s",
         "initial": 6,
@@ -138,6 +149,18 @@
         "initial": 1.2,
         "min": 0,
         "max": 100
+      },
+      {
+        "name": "scrap_air",
+        "unit": "%",
+        "initial": 1.2,
+        "min": 0
+      },
+      {
+        "name": "moisture_scrap",
+        "unit": "%",
+        "initial": 0,
+        "min": 0
       },
       {
         "name": "reject_rate",
@@ -194,6 +217,15 @@
         "tier": "F0",
         "f0": {
           "baseline": 7,
+          "drift_per_hour": 0,
+          "seasonality": []
+        }
+      },
+      {
+        "target": "dew_point",
+        "tier": "F0",
+        "f0": {
+          "baseline": -40,
           "drift_per_hour": 0,
           "seasonality": []
         }
@@ -475,14 +507,80 @@
         }
       },
       {
+        "target": "moisture_scrap",
+        "tier": "F1",
+        "f1": {
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "dew_point",
+              "coef": 1
+            }
+          ],
+          "table": {
+            "x": [
+              -60,
+              -40,
+              -20,
+              -10,
+              0,
+              10
+            ],
+            "values": [
+              0,
+              0,
+              0,
+              0.3,
+              1.4,
+              4.0
+            ]
+          }
+        }
+      },
+      {
+        "target": "moisture_factor",
+        "tier": "F1",
+        "f1": {
+          "form": "curve",
+          "inputs": [
+            {
+              "state": "dew_point",
+              "coef": 1
+            }
+          ],
+          "table": {
+            "x": [
+              -60,
+              -40,
+              -20,
+              -10,
+              0,
+              10
+            ],
+            "values": [
+              1,
+              1,
+              1,
+              1.05,
+              1.25,
+              1.6
+            ]
+          }
+        }
+      },
+      {
         "target": "cycle_time",
         "tier": "F1",
         "f1": {
-          "form": "sum",
+          "form": "product",
           "inputs": [
             {
               "state": "cycle_ratio",
               "coef": 6
+            },
+            {
+              "state": "moisture_factor",
+              "coef": 1
             }
           ]
         }
@@ -505,7 +603,7 @@
         }
       },
       {
-        "target": "scrap_pct",
+        "target": "scrap_air",
         "tier": "F1",
         "f1": {
           "form": "curve",
@@ -572,6 +670,23 @@
               ]
             ]
           }
+        }
+      },
+      {
+        "target": "scrap_pct",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "scrap_air",
+              "coef": 1
+            },
+            {
+              "state": "moisture_scrap",
+              "coef": 1
+            }
+          ]
         }
       },
       {
@@ -654,12 +769,12 @@
         "affects": [
           {
             "state": "specific_power",
-            "delta": 0.12,
+            "delta": 0.08,
             "multiplicative": true
           },
           {
             "state": "scrap_pct",
-            "delta": 2.5
+            "delta": 0.8
           }
         ],
         "observability": {
@@ -672,7 +787,7 @@
         },
         "onset": {
           "magnitude": 1.0,
-          "rate_per_hour": 0.25,
+          "rate_per_hour": 0.04,
           "shape": "ramp"
         }
       },
@@ -984,6 +1099,12 @@
       "type": "temperature",
       "direction": "consumes",
       "state": "coolant_temp"
+    },
+    {
+      "name": "dew_point_in",
+      "type": "dew_point",
+      "direction": "consumes",
+      "state": "dew_point"
     },
     {
       "name": "heat_out",

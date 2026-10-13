@@ -9,7 +9,7 @@
   "unit": "kWh",
   "channel": {
     "value_type": "number",
-    "resolution": 0.1,
+    "resolution": 0.01,
     "fidelity": "F1",
     "absence": "signal",
     "cadence": {
@@ -17,8 +17,8 @@
       "period_s": 60
     },
     "noise": {
-      "model": "gaussian",
-      "sigma": 0.1
+      "model": "none",
+      "sigma": 0
     },
     "availability": {
       "uptime": 0.999,

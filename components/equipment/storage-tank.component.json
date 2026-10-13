@@ -16,13 +16,13 @@
       {
         "name": "inflow",
         "unit": "m3/h",
-        "initial": 48.0051,
+        "initial": 33.60358,
         "min": 0
       },
       {
         "name": "outflow",
         "unit": "m3/h",
-        "initial": 48.0051,
+        "initial": 48.00512,
         "min": 0
       },
       {
@@ -42,7 +42,7 @@
       {
         "name": "makeup",
         "unit": "m3/h",
-        "initial": 0,
+        "initial": 14.40154,
         "min": 0,
         "max": 60
       },
@@ -77,11 +77,11 @@
         "target": "inflow",
         "tier": "F0",
         "f0": {
-          "baseline": 60,
+          "baseline": 42,
           "drift_per_hour": 0,
           "seasonality": [
             {
-              "amplitude": 12,
+              "amplitude": 8.4,
               "period_s": 86400,
               "phase_rad": -1.6
             }
@@ -428,8 +428,8 @@
     "small": {
       "title": "Small (16 m3, 10 m3/h)",
       "values": {
-        "dynamics/inflow/f0/baseline": 10,
-        "dynamics/inflow/f0/seasonality/0/amplitude": 2,
+        "dynamics/inflow/f0/baseline": 7,
+        "dynamics/inflow/f0/seasonality/0/amplitude": 1.4,
         "dynamics/level/f1/capacity": 14400,
         "dynamics/makeup/f1/clamp/max": 10,
         "dynamics/makeup/f1/pid/ki": 0.013333333333333334,
@@ -442,11 +442,12 @@
         "faults/tank_leak/affects/leak_rate/delta": 1,
         "measurement_points/makeup_flow/range/max": 15,
         "measurement_points/outflow/range/max": 20,
-        "state/inflow/initial": 8.00085,
+        "state/inflow/initial": 5.6006,
         "state/makeup/max": 10,
         "state/makeup_manual_output/max": 10,
         "state/outflow/initial": 8.00085,
-        "state/volume/initial": 9.6
+        "state/volume/initial": 9.6,
+        "state/makeup/initial": 2.40026
       }
     },
     "medium": {
@@ -456,8 +457,8 @@
     "large": {
       "title": "Large (400 m3, 400 m3/h)",
       "values": {
-        "dynamics/inflow/f0/baseline": 400,
-        "dynamics/inflow/f0/seasonality/0/amplitude": 80,
+        "dynamics/inflow/f0/baseline": 280,
+        "dynamics/inflow/f0/seasonality/0/amplitude": 56,
         "dynamics/level/f1/capacity": 360000,
         "dynamics/makeup/f1/clamp/max": 400,
         "dynamics/makeup/f1/pid/ki": 0.3333333333333333,
@@ -470,11 +471,12 @@
         "faults/tank_leak/affects/leak_rate/delta": 40,
         "measurement_points/makeup_flow/range/max": 600,
         "measurement_points/outflow/range/max": 800,
-        "state/inflow/initial": 320.034,
+        "state/inflow/initial": 224.02388,
         "state/makeup/max": 400,
         "state/makeup_manual_output/max": 400,
-        "state/outflow/initial": 320.034,
-        "state/volume/initial": 240
+        "state/outflow/initial": 320.03411,
+        "state/volume/initial": 240,
+        "state/makeup/initial": 96.01023
       }
     }
   },

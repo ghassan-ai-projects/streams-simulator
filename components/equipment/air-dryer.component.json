@@ -120,6 +120,19 @@
         }
       },
       {
+        "target": "regen_duty",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "inlet_flow",
+              "coef": 0.000840272
+            }
+          ]
+        }
+      },
+      {
         "target": "auto_regen",
         "tier": "F1",
         "f1": {
@@ -601,7 +614,7 @@
   "ports": [
     {
       "name": "air_in",
-      "type": "air_flow",
+      "type": "compressed_air",
       "direction": "consumes",
       "state": "inlet_flow"
     },
@@ -636,7 +649,8 @@
         "measurement_points/power/range/max": 3.25,
         "state/inlet_flow/initial": 170.013,
         "state/power/initial": 1.4,
-        "state/purge_flow/initial": 2.55019
+        "state/purge_flow/initial": 2.55019,
+        "dynamics/regen_duty/f1/inputs/inlet_flow/coef": 0.00294089
       }
     },
     "medium": {
@@ -659,7 +673,8 @@
         "measurement_points/power/range/max": 33.15,
         "state/inlet_flow/initial": 2040.15,
         "state/power/initial": 13.5,
-        "state/purge_flow/initial": 30.6023
+        "state/purge_flow/initial": 30.6023,
+        "dynamics/regen_duty/f1/inputs/inlet_flow/coef": 0.000245082
       }
     }
   },

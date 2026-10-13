@@ -19,7 +19,16 @@
     "noise": {
       "model": "none",
       "sigma": 0
+    },
+    "availability": {
+      "uptime": 0.999,
+      "mttr_s": 600
     }
   },
-  "faults": []
+  "faults": [
+    {
+      "id": "dropout",
+      "form": "dropout"
+    }
+  ]
 }

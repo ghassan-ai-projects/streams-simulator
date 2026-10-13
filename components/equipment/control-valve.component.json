@@ -16,14 +16,14 @@
       {
         "name": "position_setpoint",
         "unit": "%",
-        "initial": 47.0013,
+        "initial": 45.002132,
         "min": 0,
         "max": 100
       },
       {
         "name": "position",
         "unit": "%",
-        "initial": 47.0013,
+        "initial": 45.002132,
         "min": 0,
         "max": 100
       },
@@ -42,13 +42,13 @@
       {
         "name": "upstream_pressure",
         "unit": "kPa",
-        "initial": 400,
+        "initial": 380.008528,
         "min": 0
       },
       {
         "name": "actual_position",
         "unit": "%",
-        "initial": 47.0013
+        "initial": 45.002132
       },
       {
         "name": "command_error",
@@ -68,17 +68,17 @@
       {
         "name": "opening",
         "unit": "ratio",
-        "initial": 0.127691
+        "initial": 0.118538
       },
       {
         "name": "supply_factor",
         "unit": "ratio",
-        "initial": 1
+        "initial": 0.963315
       },
       {
         "name": "flow",
         "unit": "m3/h",
-        "initial": 63.8457
+        "initial": 57.0947
       }
     ],
     "dynamics": [
@@ -90,9 +90,9 @@
           "drift_per_hour": 0,
           "seasonality": [
             {
-              "amplitude": 6.0,
-              "period_s": 3600,
-              "phase_rad": 0.0
+              "amplitude": 2.0,
+              "period_s": 21600,
+              "phase_rad": -1.6
             },
             {
               "amplitude": 3.0,
@@ -522,7 +522,7 @@
       "values": {
         "dynamics/flow/f1/inputs/opening/coef": 70,
         "measurement_points/flow/range/max": 35,
-        "state/flow/initial": 8.9384
+        "state/flow/initial": 7.9933
       }
     },
     "medium": {
@@ -534,7 +534,7 @@
       "values": {
         "dynamics/flow/f1/inputs/opening/coef": 3000,
         "measurement_points/flow/range/max": 1500,
-        "state/flow/initial": 383.074
+        "state/flow/initial": 342.5679
       }
     }
   },

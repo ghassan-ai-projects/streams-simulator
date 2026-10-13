@@ -475,8 +475,8 @@
         "min": 0,
         "max": 4
       },
-      "tag": "YS",
-      "default_instrument": "streamsim/run-status@1",
+      "tag": "YA",
+      "default_instrument": "streamsim/annunciator@1",
       "optional": true
     }
   ],

@@ -262,9 +262,6 @@
     "pressure": {
       "unit_family": "pressure"
     },
-    "air_flow": {
-      "unit_family": "volumetric_flow"
-    },
     "dew_point": {
       "unit_family": "temperature"
     },

@@ -274,6 +274,17 @@
       },
       "tag": "TT",
       "default_instrument": "streamsim/rtd@1"
+    },
+    {
+      "name": "humidity_rh",
+      "state": "humidity",
+      "unit_family": "humidity",
+      "range": {
+        "min": 0,
+        "max": 100
+      },
+      "tag": "MT",
+      "default_instrument": "streamsim/humidity@1"
     }
   ],
   "ports": [
