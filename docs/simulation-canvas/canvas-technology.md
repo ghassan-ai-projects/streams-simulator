@@ -13,7 +13,7 @@
 | Graph editor | React Flow (`@xyflow/react`) for the plant and kind views |
 | Bridge language | Go, in this repository, as its own module (`internal/canvasbridge`) behind a `streamsim canvas` command |
 | Browser ⇄ bridge protocol | HTTP JSON for commands and file operations; Server-Sent Events for the live journal stream and party status |
-| Shared types | TypeScript types generated from `docs/contracts/*.schema.json`; never written by hand |
+| Shared types | TypeScript types generated from `contracts/*.schema.json`; never written by hand |
 
 ## Why
 

@@ -1,7 +1,7 @@
 // Package model holds the typed forms of every simulator contract: the
 // domain spec, the native sim event, the output adapter, the consumer
 // verdict, the ground-truth record, the run artifact, and the delivery
-// ledger. These types mirror docs/contracts/*.schema.json field for field.
+// ledger. These types mirror contracts/*.schema.json field for field.
 // Domain and adapter documents are validated by their own packages; this
 // package validates the consumer verdict, the ground-truth record and the run
 // artifact, the contracts that cross the run boundary. It also holds the

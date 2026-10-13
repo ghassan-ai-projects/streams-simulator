@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/ghassan-ai-projects/streams-simulator/docs/contracts/component-v0.1.schema.json",
+  "$id": "https://github.com/ghassan-ai-projects/streams-simulator/contracts/component-v0.1.schema.json",
   "title": "component-v0.1",
   "description": "Reusable equipment: a domain-spec v0.2 kind without channels or name, its measurement points, ports, presets and parameters (COMPONENTS_V0_1.md \u00a72).",
   "type": "object",

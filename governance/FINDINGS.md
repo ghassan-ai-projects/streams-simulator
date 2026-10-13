@@ -1,12 +1,12 @@
 # Findings register — simulation canvas goal
 
 Every review finding has exactly one row. A gate in `test/architecture` fails when a finding
-whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
+whose phase is marked Done in [PLAN.md](CANVAS_PLAN.md) is still `open`.
 
 - **Phase**: a phase id from PLAN.md, or `next-goal` (Agentic Stream / gateway goal), or `—`.
 - **Status**: `open`, `done` (fixed, evidence in the phase review), `next-goal`, `dropped`
   (removed by an owner decision), `not-a-defect` (evidence in the review record).
-- Sources: `REVIEW` = [REVIEW-2026-10-12.md](REVIEW-2026-10-12.md) ids; `R0` = [reviews/P0.md](reviews/P0.md); `R1` = [reviews/P1.md](reviews/P1.md); `R2` = [reviews/P2.md](reviews/P2.md); `R2b` = [reviews/P2b.md](reviews/P2b.md); `R2d` = [reviews/P2d.md](reviews/P2d.md); `R5a` = [reviews/P5a.md](reviews/P5a.md); `R5b` = [reviews/P5b.md](reviews/P5b.md); `R6a` = [reviews/P6a.md](reviews/P6a.md); `R6b` = [reviews/P6b.md](reviews/P6b.md); `R6c` = [reviews/P6c.md](reviews/P6c.md); `R6d` = [reviews/P6d.md](reviews/P6d.md); `R6e` = [reviews/P6e.md](reviews/P6e.md); `R7c` = [reviews/P7c.md](reviews/P7c.md); `R7d` = [reviews/P7d.md](reviews/P7d.md); `R7e` = [reviews/P7e.md](reviews/P7e.md); `R7g` = [reviews/P7g.md](reviews/P7g.md); `R2c` = [reviews/P2c.md](reviews/P2c.md); `R3` = [reviews/P3.md](reviews/P3.md); `self` = found by the implementer.
+- Sources: `REVIEW` = [REVIEW-2026-10-12.md](../docs/simulation-canvas/REVIEW-2026-10-12.md) ids; `R0` = [reviews/P0.md](../docs/simulation-canvas/reviews/P0.md); `R1` = [reviews/P1.md](../docs/simulation-canvas/reviews/P1.md); `R2` = [reviews/P2.md](../docs/simulation-canvas/reviews/P2.md); `R2b` = [reviews/P2b.md](../docs/simulation-canvas/reviews/P2b.md); `R2d` = [reviews/P2d.md](../docs/simulation-canvas/reviews/P2d.md); `R5a` = [reviews/P5a.md](../docs/simulation-canvas/reviews/P5a.md); `R5b` = [reviews/P5b.md](../docs/simulation-canvas/reviews/P5b.md); `R6a` = [reviews/P6a.md](../docs/simulation-canvas/reviews/P6a.md); `R6b` = [reviews/P6b.md](../docs/simulation-canvas/reviews/P6b.md); `R6c` = [reviews/P6c.md](../docs/simulation-canvas/reviews/P6c.md); `R6d` = [reviews/P6d.md](../docs/simulation-canvas/reviews/P6d.md); `R6e` = [reviews/P6e.md](../docs/simulation-canvas/reviews/P6e.md); `R7c` = [reviews/P7c.md](../docs/simulation-canvas/reviews/P7c.md); `R7d` = [reviews/P7d.md](../docs/simulation-canvas/reviews/P7d.md); `R7e` = [reviews/P7e.md](../docs/simulation-canvas/reviews/P7e.md); `R7g` = [reviews/P7g.md](../docs/simulation-canvas/reviews/P7g.md); `R2c` = [reviews/P2c.md](../docs/simulation-canvas/reviews/P2c.md); `R3` = [reviews/P3.md](../docs/simulation-canvas/reviews/P3.md); `self` = found by the implementer.
 
 ## Design review (REVIEW-2026-10-12)
 
@@ -91,7 +91,7 @@ whose phase is marked Done in [PLAN.md](PLAN.md) is still `open`.
 | R0-11 | R0 | Med | Closed-grammar test over the v0.2 schema | P6a | done |
 | R0-12 | R0 | Med | RNG draw-order table for the event clock | P6e | done |
 | R0-13 | R0 | Med | Contract sync target, pinned digest, safety-field floor | P7a | done |
-| R0-14 | R0 | Med | Technology decision record (UI, bridge language and protocol): [canvas-technology.md](canvas-technology.md) | P8a | done |
+| R0-14 | R0 | Med | Technology decision record (UI, bridge language and protocol): [canvas-technology.md](../docs/simulation-canvas/canvas-technology.md) | P8a | done |
 | R0-15 | R0 | Med | Bridge threat model with one test per threat | P8b | open |
 | R0-16 | R0 | Med | Stress fixture | P8b | open |
 | R0-17 | R0 | Med | Numeric performance budgets enforced in CI | P9 | open |

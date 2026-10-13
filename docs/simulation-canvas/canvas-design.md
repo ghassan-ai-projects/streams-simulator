@@ -7,7 +7,7 @@
   (acceptance scenario), [plant-wire-protocol.md](plant-wire-protocol.md) (wire between plant
   and host), [REVIEW-2026-10-12.md](REVIEW-2026-10-12.md) (open findings)
 - **Compatibility**: none required (pre-release).
-- **Goal and phases**: [GOAL.md](GOAL.md), [PLAN.md](PLAN.md). Where this document and PLAN.md
+- **Goal and phases**: [GOAL.md](GOAL.md), [PLAN.md](../../governance/CANVAS_PLAN.md). Where this document and PLAN.md
   differ on sequencing or acceptance, PLAN.md is current.
 
 ## 1. Purpose and principles

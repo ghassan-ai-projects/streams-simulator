@@ -6,12 +6,12 @@ import (
 )
 
 // The simulation-canvas goal tracks every review finding in one register and
-// its phases in one plan (docs/simulation-canvas/QUALITY_BAR.md §4). These
+// its phases in one plan (governance/CANVAS_QUALITY_BAR.md §4). These
 // gates keep the register honest: a finding assigned to finished work cannot
 // stay open, and every assignment names real work.
 const (
-	findingsRegister = "docs/simulation-canvas/FINDINGS.md"
-	findingsPlan     = "docs/simulation-canvas/PLAN.md"
+	findingsRegister = "governance/FINDINGS.md"
+	findingsPlan     = "governance/CANVAS_PLAN.md"
 	nextGoal         = "next-goal"
 )
 

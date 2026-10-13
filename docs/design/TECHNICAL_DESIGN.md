@@ -15,7 +15,7 @@ consumed it.
 
 **It is an independent product.** It has one customer today and knows nothing about that
 customer. No consumer's name, schema, field, or behaviour appears in the binary. A
-consumer is a file — an [output adapter](../contracts/output-adapter-v0.1.schema.json) —
+consumer is a file — an [output adapter](../../contracts/output-adapter-v0.1.schema.json) —
 plus, optionally, an MCP client that invokes effectors and submits a verdict.
 
 It is also a **test instrument**, and that word constrains everything. An instrument less
@@ -130,7 +130,7 @@ total regardless of arrival concurrency.
 ### 3.5 The run artifact
 
 One file reproduces any run — see
-[run-artifact-v0.1](../contracts/run-artifact-v0.1.schema.json). If a failure cannot be
+[run-artifact-v0.1](../../contracts/run-artifact-v0.1.schema.json). If a failure cannot be
 reduced to one of these, it is not reproducible and the architecture is wrong.
 
 ### 3.6 What is *not* deterministic
@@ -284,7 +284,7 @@ miss from a reasoning miss. The ledger is director-side, always.
 
 ### 6.1 Channel model
 
-Declared per [domain-spec-v0.2](../contracts/domain-spec-v0.2.schema.json) (kinds and instances, [DOMAIN_SPEC_V0_2](DOMAIN_SPEC_V0_2.md)): name, value
+Declared per [domain-spec-v0.2](../../contracts/domain-spec-v0.2.schema.json) (kinds and instances, [DOMAIN_SPEC_V0_2](DOMAIN_SPEC_V0_2.md)): name, value
 type, unit, mandatory `resolution`, cadence (with a mandatory deadband when
 report-by-exception), fidelity tier, the hidden state observed, noise, drift, absence
 semantics, availability, link delay, and `attacker_controlled`.

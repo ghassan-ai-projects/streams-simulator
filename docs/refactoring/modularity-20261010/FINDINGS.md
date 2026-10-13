@@ -2,7 +2,7 @@
 
 Evidence: four read-only surveys in [survey/](survey/) (file:line references,
 confidence tags). This page records the verdict per package against the
-[standard](STANDARD.md). Defects are in [DEFERRED.md](DEFERRED.md).
+[standard](../../../governance/MODULARITY_STANDARD.md). Defects are in [DEFERRED.md](../../../governance/DEFERRED.md).
 
 ## Where the repository already meets the bar
 

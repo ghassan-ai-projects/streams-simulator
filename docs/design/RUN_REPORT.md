@@ -1,8 +1,8 @@
 # Run report
 
 - **Status**: implemented in phase P4 of the simulation canvas goal
-  (`docs/simulation-canvas/PLAN.md`); contract
-  [`run-report-v0.1`](../contracts/run-report-v0.1.schema.json); module `internal/report`
+  (`governance/CANVAS_PLAN.md`); contract
+  [`run-report-v0.1`](../../contracts/run-report-v0.1.schema.json); module `internal/report`
   (a core with a `files` edge); command `streamsim report`; evidence
   `docs/simulation-canvas/evidence/P4.md`.
 - **Why**: the evidence of a run is spread over seven files. A person, a coding agent or the
@@ -51,7 +51,7 @@ record.
 
 ## 3. Contents
 
-Contract: [`run-report-v0.1`](../contracts/run-report-v0.1.schema.json).
+Contract: [`run-report-v0.1`](../../contracts/run-report-v0.1.schema.json).
 
 | Section | Content | Source |
 |---|---|---|
@@ -182,7 +182,7 @@ reads). It composes `run` (artifact loading), `journal` (reading and digesting s
 ## 10. Proof
 
 - Every report produced in a test validates against `run-report-v0.1`; the embedded copy in
-  `internal/schemas` is byte-identical to `docs/contracts`.
+  `internal/schemas` is byte-identical to `contracts`.
 - Golden JSON and Markdown for a pinned run folder (`internal/report/testdata/run`) with faults, a
   perturbation, effector calls, a verdict and a duplicated delivery.
 - Determinism: building the same folder twice gives identical bytes.

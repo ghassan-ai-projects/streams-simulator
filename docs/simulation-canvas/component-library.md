@@ -31,7 +31,7 @@ choose how they are instrumented, connect them, and get a valid, realistic, dete
 
 The contracts and their rules are [COMPONENTS_V0_1](../design/COMPONENTS_V0_1.md) (phase P7g); the worked example is
 [`components/compositions/chiller-pilot.composition.json`](../../components/compositions/chiller-pilot.composition.json) and the
-domain it composes to, [`docs/examples/chiller-pilot.domain.json`](../examples/chiller-pilot.domain.json).
+domain it composes to, [`examples/chiller-pilot.domain.json`](../../examples/chiller-pilot.domain.json).
 
 ## 4. Architecture
 
@@ -39,7 +39,7 @@ domain it composes to, [`docs/examples/chiller-pilot.domain.json`](../examples/c
   instrument attachment, port compatibility, composition to domain), files edge through `kernel`, facade. It imports
   `domain` (for validation of the result) and `model`; nothing imports it except `cli`, `director` (catalog tools) and the
   bridge later.
-- **Schemas** `component-v0.1`, `instrument-v0.1`, `composition-v0.1` under `docs/contracts`, embedded copies under
+- **Schemas** `component-v0.1`, `instrument-v0.1`, `composition-v0.1` under `contracts`, embedded copies under
   `internal/schemas`.
 - **CLI**: `streamsim component list|show|validate`, `streamsim domain compose <composition> [--components-dir …]`.
 - **MCP** (director role): `sim.component.list`, `sim.component.describe`, `sim.domain.compose`, so an agent can build a world

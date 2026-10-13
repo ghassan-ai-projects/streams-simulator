@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/ghassan-ai-projects/streams-simulator/docs/contracts/instrument-v0.1.schema.json",
+  "$id": "https://github.com/ghassan-ai-projects/streams-simulator/contracts/instrument-v0.1.schema.json",
   "title": "instrument-v0.1",
   "description": "A reusable sensor: attached at a measurement point it becomes a channel (COMPONENTS_V0_1.md §3).",
   "type": "object",

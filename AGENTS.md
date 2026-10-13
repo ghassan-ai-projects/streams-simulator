@@ -40,7 +40,7 @@ Start with these context files:
 - [.agents/context/testing.md](.agents/context/testing.md) for commands and testing bar.
 - [.agents/context/go-style.md](.agents/context/go-style.md) for coding conventions.
 - [.agents/context/review-checklist.md](.agents/context/review-checklist.md) before handoff.
-- [docs/refactoring/modularity-20261010/STANDARD.md](docs/refactoring/modularity-20261010/STANDARD.md) for package kinds, layer rules and the M1-M11 modularity bar; its [PLAN.md](docs/refactoring/modularity-20261010/PLAN.md) tracks the migration rounds and [DEFERRED.md](docs/refactoring/modularity-20261010/DEFERRED.md) lists known defects that are intentionally not fixed by structural rounds.
+- [governance/MODULARITY_STANDARD.md](governance/MODULARITY_STANDARD.md) for package kinds, layer rules and the M1-M11 modularity bar; its [PLAN.md](governance/MODULARITY_PLAN.md) tracks the migration rounds and [DEFERRED.md](governance/DEFERRED.md) lists known defects that are intentionally not fixed by structural rounds.
 
 Use the prompt files under `.agents/prompts/` when the task matches them.
 
@@ -80,7 +80,11 @@ The documented shape (see [docs/design/TECHNICAL_DESIGN.md](docs/design/TECHNICA
 - `internal/kernel` - the operating-system edge: reads, owner-only directories, atomic owner-only writes, append logs, owner-only unix sockets, interrupt handling; only module edge packages import it, and it knows no record or file name
 - `internal/domain`, `internal/model`, `internal/jsonschema`, `internal/jsonvalue`, `internal/schemas`, `internal/canonical`, `internal/randutil`, `internal/wall` - data loading (directory loading of domains and adapters lives in the `domain` and `adapter` files edges), shared records and bounded foundations
 - `contracts/plant-wire/` - the self-contained plant wire contract (spec, one schema per record, fixtures, pinned `DIGEST`); `test/contract` validates it, `make contract-sync` copies it from `PLANT_WIRE_CONTRACT_DIR`
-- `docs/` - the engineering design, research, contracts, fixtures, and evidence archive
+- `contracts/` - every JSON Schema contract the binary embeds (copies in `internal/schemas`, kept equal by a test) and the plant wire contract
+- `examples/` - example domains the tests load
+- `governance/` - the registers the gates read: findings, phase plans, the modularity standard and deferred defects
+- `test/pin/` - the behaviour pin the phase gate diffs against
+- `docs/` - a working directory for design notes, research and evidence; nothing outside it may read from it (`test/architecture/docs_boundary_test.go`)
 - `documentation/` - curated public product, usage, architecture, benchmark, operations, and governance documentation
 
 Dependency direction:
@@ -122,14 +126,14 @@ See [.agents/context/testing.md](.agents/context/testing.md) for the testing and
 Every module is a public facade (`internal/<m>`) over private layers
 (`internal/<m>/internal/{domain,app,<edge>}`) with no internal leaks, shaped by
 its kind (pure core, core with an edge, surface; foundations stay single
-packages) as described in [STANDARD.md](docs/refactoring/modularity-20261010/STANDARD.md).
+packages) as described in [STANDARD.md](governance/MODULARITY_STANDARD.md).
 Domain layers import no `os`/`net`/`exec` and read no wall clock; file, socket
 and clock access sits only in declared edge packages; a facade only delegates;
 `cli` and `mcp` hold wiring and protocol only. Tests live at the layer they
 prove (test bar T1-T10). Use [.agents/prompts/module-refactor.md](.agents/prompts/module-refactor.md)
 to migrate a package. A structural round
 changes no behaviour: run `scripts/behaviour-pin` and diff it against
-`docs/refactoring/modularity-20261010/BEHAVIOUR_PIN.txt`. Defects found during
+`test/pin/BEHAVIOUR_PIN.txt`. Defects found during
 a round are added to `DEFERRED.md`, not fixed in the same commit.
 
 ## Go Standards
@@ -177,6 +181,7 @@ See [.agents/context/go-style.md](.agents/context/go-style.md) for the repo-spec
 - Do not add top-level dependencies without clear justification. The core has a zero-external-dependency requirement (the MCP Go SDK is the documented exception).
 - Do not add abstraction layers "for future flexibility" without a current concrete need.
 - Do not create duplicate canonical agent files such as `CODEX.md`.
+- Do not put code, contracts, fixtures, examples, pins or gate registers in `docs/`, and do not read from `docs/` in code, tests or scripts.
 - Do not broaden repository instructions with vague policy that cannot be enforced or reviewed.
 - Do not do unrelated refactors while touching implementation files.
 

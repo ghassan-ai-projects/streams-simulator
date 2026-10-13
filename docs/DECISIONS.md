@@ -112,7 +112,7 @@ If a real store is ever needed, the run layer is the single seam.
 The core has a zero-external-dependency requirement. The committed contract
 schemas are validated by `internal/jsonschema`, which implements exactly the
 draft 2020-12 keywords the six contracts use (including recursive `$defs`).
-The embedded schema copies are proven byte-identical to `docs/contracts/` by
+The embedded schema copies are proven byte-identical to `contracts/` by
 a test. The validator is closed and reviewed, not a general engine.
 
 ### D-13 (deviation). `simdet` build tag semantics

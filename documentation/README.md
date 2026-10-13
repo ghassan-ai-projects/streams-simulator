@@ -74,7 +74,7 @@ Public pages explain the current product in reader-friendly terms. They do not r
 
 | Question | Authoritative source |
 | --- | --- |
-| What JSON is accepted or emitted? | Canonical schemas under [`docs/contracts/`](../docs/contracts/); embedded copies under [`internal/schemas/`](../internal/schemas/) are verified against them. |
+| What JSON is accepted or emitted? | Canonical schemas under [`contracts/`](../contracts/); embedded copies under [`internal/schemas/`](../internal/schemas/) are verified against them. |
 | What is implemented? | Go packages under [`internal/`](../internal/) plus their tests. |
 | Why does the architecture work this way? | Accepted deviations in [`docs/DECISIONS.md`](../docs/DECISIONS.md); design history under [`docs/design/`](../docs/design/) is status-labeled. |
 | What evidence supports a release claim? | Exact-commit CI output and manifest, summarized in [benchmark evidence](benchmark/evidence.md). |

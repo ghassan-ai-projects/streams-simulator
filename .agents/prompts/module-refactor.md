@@ -2,12 +2,12 @@
 
 Rebuild one package into the repository's module shape: a public facade over
 private internal layers with no leaks (STANDARD v2 in
-`docs/refactoring/modularity-20261010/STANDARD.md`). Use it when asked to
+`governance/MODULARITY_STANDARD.md`). Use it when asked to
 "migrate", "modularize" or "do the same" for a package.
 
 Standing preferences for this work:
 
-- Plan first in `docs/refactoring/modularity-20261010/PLAN.md`; one module per
+- Plan first in `governance/MODULARITY_PLAN.md`; one module per
   round; one commit per round; a reviewer subagent reads the commit.
 - Behaviour does not change. Defects found go to `DEFERRED.md`, not into the
   round.

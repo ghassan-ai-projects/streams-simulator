@@ -95,7 +95,7 @@ func startsInParallel(function *ast.FuncDecl) bool {
 // fixturePathLiteral matches a string literal that names a shipped domain,
 // adapter or documentation example by path (T9: such a path is defined once,
 // in internal/testsupport).
-var fixturePathLiteral = regexp.MustCompile(`(^|/)(domains|adapters)/|/(domains|adapters)$|docs/examples/`)
+var fixturePathLiteral = regexp.MustCompile(`(^|/)(domains|adapters)/|/(domains|adapters)$|examples/`)
 
 func TestFixturePathsAreDefinedOnce(t *testing.T) {
 	t.Parallel()

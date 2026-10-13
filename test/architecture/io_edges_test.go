@@ -156,7 +156,7 @@ func selectorCapability(file productionFile, selector *ast.SelectorExpr) (string
 // roundIsPlanned reports whether PLAN.md has a status row for the round.
 func roundIsPlanned(t *testing.T, round string) bool {
 	t.Helper()
-	plan, err := repositoryRoot(t).ReadFile("docs/refactoring/modularity-20261010/PLAN.md")
+	plan, err := repositoryRoot(t).ReadFile("governance/MODULARITY_PLAN.md")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -1,10 +1,10 @@
 # Quality bar — simulation canvas goal
 
-- **Date**: 2026-10-12 (revised after the P0 review, [reviews/P0.md](reviews/P0.md))
-- **Applies to**: every phase of [GOAL.md](GOAL.md), in this repository: Go simulator changes
+- **Date**: 2026-10-12 (revised after the P0 review, [reviews/P0.md](../docs/simulation-canvas/reviews/P0.md))
+- **Applies to**: every phase of [GOAL.md](../docs/simulation-canvas/GOAL.md), in this repository: Go simulator changes
   and the `canvas/` TypeScript application.
-- **Precedence**: [AGENTS.md](../../AGENTS.md) and the modularity
-  [STANDARD.md](../refactoring/modularity-20261010/STANDARD.md) apply unchanged; this file adds
+- **Precedence**: [AGENTS.md](../AGENTS.md) and the modularity
+  [STANDARD.md](MODULARITY_STANDARD.md) apply unchanged; this file adds
   to them and never relaxes them.
 
 ## 1. Principles
@@ -90,13 +90,13 @@ phase-gate` output.
 
 | Contract | Location | Embedded in the binary | Change rule |
 |---|---|---|---|
-| CLI output (`cli-output-v0.1`) | `docs/contracts/` | No (tests validate outputs) | Pre-release: additive changes in place; breaking changes bump the minor version and remove the old file |
-| Scenario file (`scenario-v0.1`) | `docs/contracts/` | Yes | Same |
-| Run journal (`run-journal-v0.1`) | `docs/contracts/` | Yes | Same |
-| Run report (`run-report-v0.1`) | `docs/contracts/` | No | Same |
-| Domain spec (`domain-spec-v0.2`) | `docs/contracts/` | Yes | Same |
+| CLI output (`cli-output-v0.1`) | `contracts/` | No (tests validate outputs) | Pre-release: additive changes in place; breaking changes bump the minor version and remove the old file |
+| Scenario file (`scenario-v0.1`) | `contracts/` | Yes | Same |
+| Run journal (`run-journal-v0.1`) | `contracts/` | Yes | Same |
+| Run report (`run-report-v0.1`) | `contracts/` | No | Same |
+| Domain spec (`domain-spec-v0.2`) | `contracts/` | Yes | Same |
 | Canvas layout, connections | `canvas/schemas/` | — (canvas-owned) | Same |
-| Plant wire v1 | `contracts/plant-wire/` | Yes (byte-identical copy) | Exception to `docs/contracts/`: self-contained for cross-repository sync; pinned digest per repository and a safety-field floor test |
+| Plant wire v1 | `contracts/plant-wire/` | Yes (byte-identical copy) | Exception to `contracts/`: self-contained for cross-repository sync; pinned digest per repository and a safety-field floor test |
 | Device wire v1 | `internal/device/contract/` | Yes | Vendored from Agentic Stream; time-boxed exception (§1.7) |
 
 ## 6. Phase protocol

@@ -32,7 +32,7 @@ effectors so the world actually changes, and scores whatever consumed it.
 
 **It is an independent product with no knowledge of its consumers.** No consumer's name,
 schema, field, or behaviour appears in the binary. A consumer is a file — an
-[output adapter](contracts/output-adapter-v0.1.schema.json) — plus, optionally, an MCP
+[output adapter](../contracts/output-adapter-v0.1.schema.json) — plus, optionally, an MCP
 client that invokes effectors and submits a verdict.
 
 It is also a **test instrument**, and that word constrains everything. An instrument less

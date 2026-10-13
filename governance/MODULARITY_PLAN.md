@@ -13,7 +13,7 @@ Tests, vet and `golangci-lint` are green at baseline; every package passes
 3. Proof, in this order, before the commit:
    `gofmt -l` → `go build ./...` → `go vet ./...` → `go test -short ./...` →
    `go test -tags simdet ./...` → `make function-length` → `golangci-lint run` →
-   `scripts/behaviour-pin | diff docs/refactoring/modularity-20261010/BEHAVIOUR_PIN.txt -`.
+   `scripts/behaviour-pin | diff test/pin/BEHAVIOUR_PIN.txt -`.
 4. An independent review subagent reads the diff against STANDARD.md and the
    behaviour hazards; its findings are fixed or recorded in `ROUNDS.md`.
 5. One commit per round (`refactor(<pkg>): …`), staged by explicit path (the

@@ -1,23 +1,23 @@
 # Contract reference
 
-> Status: Implemented contract index. Authority: machine-readable schemas under `docs/contracts/`. Verified by: schema equality and validation tests. Last verified: 2026-10-13.
+> Status: Implemented contract index. Authority: machine-readable schemas under `contracts/`. Verified by: schema equality and validation tests. Last verified: 2026-10-13.
 
-The JSON schemas under [`docs/contracts/`](../../docs/contracts/) are the canonical contract files for this repository. The copies under [`internal/schemas/`](../../internal/schemas/) are embedded runtime copies; tests prove they are byte-identical to the canonical files.
+The JSON schemas under [`contracts/`](../../contracts/) are the canonical contract files for this repository. The copies under [`internal/schemas/`](../../internal/schemas/) are embedded runtime copies; tests prove they are byte-identical to the canonical files.
 
 ## Schema catalog
 
 | Contract | Role |
 | --- | --- |
-| [`sim-event-v0.1`](../../docs/contracts/sim-event-v0.1.schema.json) | Native event envelope emitted by the world. |
-| [`output-adapter-v0.1`](../../docs/contracts/output-adapter-v0.1.schema.json) | Declarative projection from native events to consumer output. |
-| [`domain-spec-v0.2`](../../docs/contracts/domain-spec-v0.2.schema.json) | Data-defined world as kinds and instances: state, dynamics, channels, faults, effectors, profiles. |
-| [`ground-truth-v0.1`](../../docs/contracts/ground-truth-v0.1.schema.json) | Sealed oracle record used after the consumer phase. |
-| [`consumer-verdict-v0.1`](../../docs/contracts/consumer-verdict-v0.1.schema.json) | Consumer detections, actions, and resource evidence. |
-| [`run-artifact-v0.1`](../../docs/contracts/run-artifact-v0.1.schema.json) | Replay inputs, command log, digests, counts, and completion state. |
-| [`scenario-v0.1`](../../docs/contracts/scenario-v0.1.schema.json) | A repeatable run: inputs, world settings and the ordered director commands ([design](../../docs/design/SCENARIO_FILE.md)). Embedded: `run --scenario` validates every file against it. |
-| [`run-journal-v0.1`](../../docs/contracts/run-journal-v0.1.schema.json) | One line of a run journal: the observer stream `journal.jsonl` or the director stream `sealed/journal.jsonl`, written while a run happens ([design](../../docs/design/RUN_JOURNAL.md)). Embedded: tests validate every record the writer produces against it. |
-| [`run-report-v0.1`](../../docs/contracts/run-report-v0.1.schema.json) | The report `streamsim report <run-dir>` prints: identity, digests, file verification, counts, truth, consumer and scoring of one run folder ([design](../../docs/design/RUN_REPORT.md)). Embedded: tests validate every report against it. |
-| [`cli-output-v0.1`](../../docs/contracts/cli-output-v0.1.schema.json) | The single JSON document every non-exempt CLI command prints on stdout: per-command success shapes and the error document. Not embedded: tests validate real outputs against it. |
+| [`sim-event-v0.1`](../../contracts/sim-event-v0.1.schema.json) | Native event envelope emitted by the world. |
+| [`output-adapter-v0.1`](../../contracts/output-adapter-v0.1.schema.json) | Declarative projection from native events to consumer output. |
+| [`domain-spec-v0.2`](../../contracts/domain-spec-v0.2.schema.json) | Data-defined world as kinds and instances: state, dynamics, channels, faults, effectors, profiles. |
+| [`ground-truth-v0.1`](../../contracts/ground-truth-v0.1.schema.json) | Sealed oracle record used after the consumer phase. |
+| [`consumer-verdict-v0.1`](../../contracts/consumer-verdict-v0.1.schema.json) | Consumer detections, actions, and resource evidence. |
+| [`run-artifact-v0.1`](../../contracts/run-artifact-v0.1.schema.json) | Replay inputs, command log, digests, counts, and completion state. |
+| [`scenario-v0.1`](../../contracts/scenario-v0.1.schema.json) | A repeatable run: inputs, world settings and the ordered director commands ([design](../../docs/design/SCENARIO_FILE.md)). Embedded: `run --scenario` validates every file against it. |
+| [`run-journal-v0.1`](../../contracts/run-journal-v0.1.schema.json) | One line of a run journal: the observer stream `journal.jsonl` or the director stream `sealed/journal.jsonl`, written while a run happens ([design](../../docs/design/RUN_JOURNAL.md)). Embedded: tests validate every record the writer produces against it. |
+| [`run-report-v0.1`](../../contracts/run-report-v0.1.schema.json) | The report `streamsim report <run-dir>` prints: identity, digests, file verification, counts, truth, consumer and scoring of one run folder ([design](../../docs/design/RUN_REPORT.md)). Embedded: tests validate every report against it. |
+| [`cli-output-v0.1`](../../contracts/cli-output-v0.1.schema.json) | The single JSON document every non-exempt CLI command prints on stdout: per-command success shapes and the error document. Not embedded: tests validate real outputs against it. |
 
 The plant wire has its own self-contained contract under
 [`contracts/plant-wire/`](../../contracts/plant-wire/SPEC.md): the specification, one schema per record, fixtures (valid,
@@ -38,7 +38,7 @@ The scorecard is a derived Go value returned by the scoring path; it does not cu
 
 ## Ownership rules
 
-- Change the schema under `docs/contracts/` first.
+- Change the schema under `contracts/` first.
 - Update the embedded copy under `internal/schemas/` in the same change.
 - Keep the byte-equality test green.
 - Consider canonicalization, digest, replay, validation, and versioning implications before changing a field.

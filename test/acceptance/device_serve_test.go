@@ -18,7 +18,7 @@ import (
 )
 
 // deviceTranscriptGolden pins the device emulator's wire behavior for the
-// real-world-sensor experiment (docs/simulation-canvas/QUALITY_BAR.md §4,
+// real-world-sensor experiment (governance/CANVAS_QUALITY_BAR.md §4,
 // device-path gate). Only the device's monotonic clock readings are masked.
 const deviceTranscriptGolden = "testdata/device-serve-transcript.jsonl"
 

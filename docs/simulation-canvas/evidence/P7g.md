@@ -4,7 +4,7 @@
 - **Change**: [COMPONENTS_V0_1](../../design/COMPONENTS_V0_1.md); schemas `component-v0.1`, `instrument-v0.1`, `composition-v0.1`,
   `component-vocabulary-v0.1`; `components/` with the vocabulary, two equipment components (chiller in three presets, AHU), three
   instruments (RTD, magnetic flow meter, power meter) and the pilot composition; domain-spec v0.2 §20 (`area`, `provenance` on
-  instance sets, structure only); [`docs/examples/chiller-pilot.domain.json`](../../examples/chiller-pilot.domain.json), the domain
+  instance sets, structure only); [`examples/chiller-pilot.domain.json`](../../../examples/chiller-pilot.domain.json), the domain
   the pilot composes to, produced by applying the documented rules.
 
 ## Exit evidence

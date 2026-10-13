@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://streams-simulator.local/schemas/run-journal-v0.1.schema.json",
   "title": "Streams Simulator Run Journal v0.1",
-  "description": "One line of a run journal: a JSON Lines record of the observer stream (journal.jsonl, readable by a consumer) or of the director stream (sealed/journal.jsonl, truth-bearing, director only). Both are written while the run happens and are pure functions of the run. See docs/design/RUN_JOURNAL.md.",
+  "description": "One line of a run journal: a JSON Lines record of the observer stream (journal.jsonl, readable by a consumer) or of the director stream (sealed/journal.jsonl, truth-bearing, director only). Both are written while the run happens and are pure functions of the run.",
   "type": "object",
   "required": ["stream", "seq", "type", "at_ns"],
   "properties": {

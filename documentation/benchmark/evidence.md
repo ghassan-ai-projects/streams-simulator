@@ -36,7 +36,7 @@ The full gate is green at the snapshot commit and the shipped inventory is eight
 ## Evidence ownership
 
 - Code and tests establish implemented behavior.
-- `docs/contracts/` establishes contract shape.
+- `contracts/` establishes contract shape.
 - The run artifact establishes the experiment inputs and command history.
 - The ledger establishes delivery outcomes.
 - The manifest binds a release claim to exact inputs and identities.

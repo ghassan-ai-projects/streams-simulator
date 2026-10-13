@@ -31,6 +31,6 @@
 
 ## Registered for P7f
 
-R7e-01 to R7e-12 in [FINDINGS.md](../FINDINGS.md): world snapshot depth, stochastic walks, equal-instant ties, effect and
+R7e-01 to R7e-12 in [FINDINGS.md](../../../governance/FINDINGS.md): world snapshot depth, stochastic walks, equal-instant ties, effect and
 bound edge cases, SimVersion and the pin, run-record digests and ledger reuse, the quiescence clamp, journal framing lines,
 operator descriptions, the report's truth gate, missing tests, and findings phases.

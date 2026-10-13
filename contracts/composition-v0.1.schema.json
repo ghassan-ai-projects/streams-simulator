@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/ghassan-ai-projects/streams-simulator/docs/contracts/composition-v0.1.schema.json",
+  "$id": "https://github.com/ghassan-ai-projects/streams-simulator/contracts/composition-v0.1.schema.json",
   "title": "composition-v0.1",
   "description": "A plant built from library equipment and instruments; streamsim domain compose writes it as an ordinary domain (COMPONENTS_V0_1.md \u00a74).",
   "type": "object",

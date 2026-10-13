@@ -17,7 +17,7 @@ func TestDocumentationLinksResolve(t *testing.T) {
 	t.Parallel()
 	root := repositoryRoot(t)
 	pages := []string{"README.md", "AGENTS.md", "CONTRIBUTING.md"}
-	for _, directory := range []string{"documentation", ".agents"} {
+	for _, directory := range []string{"documentation", ".agents", "governance"} {
 		err := fs.WalkDir(root.FS(), directory, func(path string, entry fs.DirEntry, err error) error {
 			if err == nil && !entry.IsDir() && strings.HasSuffix(path, ".md") {
 				pages = append(pages, path)

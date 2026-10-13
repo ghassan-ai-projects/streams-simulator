@@ -181,7 +181,7 @@ other through a submitted verdict.
 | isolation | prefix indistinguishability passes for every domain |
 
 **Consumer metrics** — computed from a submitted
-[verdict](../contracts/consumer-verdict-v0.1.schema.json) against sealed truth and the
+[verdict](../../contracts/consumer-verdict-v0.1.schema.json) against sealed truth and the
 delivery ledger. Stated in neutral terms, so any stream processor can be measured.
 
 | Metric | Gate |

@@ -91,8 +91,8 @@ The repository root remains the home for policy files such as `CONTRIBUTING.md`,
 | `docs/design/IMPLEMENTATION_PLAN.md`, reviews, and readiness notes | `design/README.md` | Publish a status-aware design reading order; keep detailed execution history in the archive. |
 | `docs/design/GROUND_TRUTH_AND_SCORING.md` | `architecture/truth-and-scoring.md` and `guides/benchmark-workflow.md` | Explain model first, procedure second. |
 | `docs/design/DOMAIN_CATALOG.md` | `architecture/domains-and-adapters.md` and `guides/authoring-domains.md` | Keep coverage/catalog detail in the archive and expose the extension path publicly. |
-| `docs/contracts/` | `reference/contracts.md` | Keep JSON schemas authoritative; add a prose index and usage rules. |
-| `docs/adapters/`, `docs/examples/` | `architecture/domains-and-adapters.md` | Treat as historical or test fixtures; link public readers to `adapters/` and `domains/`. |
+| `contracts/` | `reference/contracts.md` | Keep JSON schemas authoritative; add a prose index and usage rules. |
+| `docs/adapters/`, `examples/` | `architecture/domains-and-adapters.md` | Treat as historical or test fixtures; link public readers to `adapters/` and `domains/`. |
 | `adapters/vendor/`, `.github/`, `.agents/`, `release-manifest.json` | `reference/contracts.md`, `benchmark/`, `governance/quality.md` | Document their role without creating duplicate public sources of truth. |
 | `docs/research/` | `research/README.md` | Curate research context and label non-normative material. |
 | `docs/DECISIONS.md` | `adr/README.md` | Curate the small set of public architecture decisions and link to the working record. |
