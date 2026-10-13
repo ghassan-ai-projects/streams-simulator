@@ -111,3 +111,30 @@ jobs:
           path: bin/*-linux-amd64
           retention-days: 3
           if-no-files-found: warn
+
+  canvas:
+    name: "Canvas"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: canvas/package-lock.json
+
+      - name: Install Playwright browser
+        working-directory: canvas
+        run: |
+          npm ci --ignore-scripts --no-fund --no-audit
+          npx playwright install --with-deps chromium
+
+      - name: Canvas check
+        run: make canvas-check
+        env:
+          CI: "true"

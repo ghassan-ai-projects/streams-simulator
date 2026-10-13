@@ -97,4 +97,5 @@ The commit hash of a phase is recorded by the first commit of the next phase.
 | P7i | Done | f3c9c45 | [evidence/P7i.md](../docs/simulation-canvas/evidence/P7i.md) | not separately reviewed (oracle and mutation check per form; reviewed with P7j) |
 | P7j | Done | eecb4fb | `make phase-gate`; the pilot composes, validates, lints and runs (`test/contract/components_test.go`) | [reviews/P7j.md](../docs/simulation-canvas/reviews/P7j.md) |
 | P7k | Done | 8a0917d | [evidence/P7k.md](../docs/simulation-canvas/evidence/P7k.md) | reviewed with P7j and the architecture audit of PR #30 |
-| P7l | Done | recorded by P8a | [evidence/P7l.md](../docs/simulation-canvas/evidence/P7l.md) | [reviews/P7l.md](../docs/simulation-canvas/reviews/P7l.md) |
+| P7l | Done | d1206dd (PR #31), review fixes 4f5a43b | [evidence/P7l.md](../docs/simulation-canvas/evidence/P7l.md) | [reviews/P7l.md](../docs/simulation-canvas/reviews/P7l.md) |
+| P8a | Done | recorded by P8b | [evidence/P8a.md](../docs/simulation-canvas/evidence/P8a.md) | design review in the evidence; independent review with P8b |

@@ -67,7 +67,7 @@ whose phase is marked Done in [PLAN.md](CANVAS_PLAN.md) is still `open`.
 | A7 | REVIEW | Low | Route cross-check against recorded births | next-goal | next-goal |
 | I1 | REVIEW | High | Isolation beyond GitHub (provider logs, transcripts, CI, dumps) | next-goal | next-goal |
 | I2 | REVIEW | High | Improvement-loop review gate | next-goal | next-goal |
-| I3 | REVIEW | Med | Customer workspace marker, ignore rules and check | P8a | open |
+| I3 | REVIEW | Med | Customer workspace marker, ignore rules and check; done in P8a: the STREAMSIM_CUSTOMER_WORKSPACE marker, `/workspaces/` ignored, and TestNoCustomerWorkspaceInsideTheRepository in ci-check | P8a | done |
 | X1 | REVIEW §8 | Low | Observation scoping from idea.md | P13 | open |
 | X2 | REVIEW §8 | Low | "Tamoz plus one independent agent" from idea.md | P13 | open |
 | X3 | REVIEW §8 | Low | Idea's 30 °C / 55 °C case mapping | P13 | open |

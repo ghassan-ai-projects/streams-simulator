@@ -30,7 +30,7 @@ func TestProductionFunctionsStayWithinTheBodyLimit(t *testing.T) {
 		if err != nil {
 			return fmt.Errorf("inspect functions in %s: %w", path, err)
 		}
-		if entry.IsDir() && isAgentWorkspace(path) {
+		if entry.IsDir() && isOutsideRepositoryCode(path) {
 			return fs.SkipDir
 		}
 		if entry.IsDir() || !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") {

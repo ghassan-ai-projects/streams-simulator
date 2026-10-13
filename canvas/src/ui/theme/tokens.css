@@ -1,0 +1,87 @@
+:root {
+  --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --text-xs: 11px;
+  --text-sm: 12px;
+  --text-md: 13px;
+  --text-lg: 15px;
+  --text-xl: 18px;
+  --text-2xl: 24px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --topbar-height: 48px;
+  --sidebar-width: 248px;
+  --inspector-width: 340px;
+  --motion-fast: 120ms;
+  color-scheme: light;
+  --surface-canvas: #f4f6f8;
+  --surface-panel: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-sunken: #eceff3;
+  --surface-hover: #e9edf2;
+  --surface-selected: #dde8fb;
+  --border-subtle: #e1e5ea;
+  --border-strong: #c5ccd5;
+  --text-primary: #17202b;
+  --text-secondary: #4a5563;
+  --text-tertiary: #6b7685;
+  --text-on-accent: #ffffff;
+  --accent: #2458d3;
+  --accent-hover: #1c47ad;
+  --focus-ring: #2458d3;
+  --status-ok: #1b7f4b;
+  --status-ok-bg: #e3f4ea;
+  --status-warn: #9a5b00;
+  --status-warn-bg: #fdf0d9;
+  --status-alarm: #b42318;
+  --status-alarm-bg: #fdecea;
+  --status-info: #1f5fa8;
+  --status-info-bg: #e6f0fb;
+  --status-truth: #6b3fb5;
+  --status-truth-bg: #f1eafb;
+  --shadow-panel: 0 1px 2px rgb(16 24 40 / 6%), 0 1px 3px rgb(16 24 40 / 8%);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface-canvas: #0f141a;
+  --surface-panel: #161c24;
+  --surface-raised: #1c242e;
+  --surface-sunken: #11161d;
+  --surface-hover: #222b36;
+  --surface-selected: #1d3157;
+  --border-subtle: #262f3b;
+  --border-strong: #364252;
+  --text-primary: #e7ecf2;
+  --text-secondary: #aab4c1;
+  --text-tertiary: #8590a0;
+  --text-on-accent: #ffffff;
+  --accent: #5b8dff;
+  --accent-hover: #7aa3ff;
+  --focus-ring: #7aa3ff;
+  --status-ok: #4cc38a;
+  --status-ok-bg: #12301f;
+  --status-warn: #f0b44c;
+  --status-warn-bg: #3a2b0f;
+  --status-alarm: #ff7a6b;
+  --status-alarm-bg: #3d1714;
+  --status-info: #6fb1ff;
+  --status-info-bg: #132a45;
+  --status-truth: #b89cf5;
+  --status-truth-bg: #2a1f42;
+  --shadow-panel: 0 1px 2px rgb(0 0 0 / 40%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-fast: 0ms;
+  }
+}

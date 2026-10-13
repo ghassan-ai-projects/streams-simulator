@@ -51,3 +51,7 @@ runs/
 
 # Local coding-agent workspace (worktrees, settings)
 .claude/
+
+# --- Customer workspaces never live in this repository (governance/CANVAS_UI_ACCEPTANCE.md, REVIEW I3) ---
+# A customer workspace carries a STREAMSIM_CUSTOMER_WORKSPACE marker; test/architecture/canvas_test.go fails if one is here.
+/workspaces/

@@ -192,6 +192,21 @@ a round are added to `DEFERRED.md`, not fixed in the same commit.
 
 See [.agents/context/go-style.md](.agents/context/go-style.md) for the repo-specific style rules.
 
+## Canvas (TypeScript)
+
+- The canvas lives in `canvas/` with its own toolchain (Node 24, npm, exact pinned versions); read `canvas/README.md` and
+  `governance/CANVAS_UI_ACCEPTANCE.md` first. Gates: `make canvas-check` (part of `make phase-gate`).
+- Layers `model` ← `app` ← `adapters`; `ui` uses `app` and `model` only and never touches transport (dependency-cruiser).
+- The canvas computes nothing the binary owns: validation, composition, simulation, truth, scoring and verification come
+  from `streamsim` through the bridge. A missing capability goes into the simulator first.
+- Strict TypeScript (no `any`, no non-null assertion, no ts-ignore); files ≤ 300 lines; functions and components ≤ 40
+  lines; cyclomatic ≤ 10, cognitive ≤ 15; no duplication of 75 tokens; no unused export; zero lint warnings.
+- Tests: unit (`model` ≥ 90 %, `app` ≥ 80 % lines), component tests with axe, Playwright end-to-end against the real binary.
+  No mocks of the binary in end-to-end tests, no fixed sleeps.
+- Desktop only for now (≥ 1280 px). Every UI round ends with a design review in Chrome against the checklist in
+  `governance/CANVAS_UI_ACCEPTANCE.md` §3, recorded in the phase review.
+- Go never imports or embeds anything under `canvas/` (`test/architecture/canvas_test.go`).
+
 ## Enola architecture review
 
 - Use Enola for this repository, with [mcp-arch.yaml](mcp-arch.yaml). Generated snapshots and baselines live in ignored `.enola/`; commit review evidence, not generated state.
