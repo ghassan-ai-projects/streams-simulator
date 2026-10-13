@@ -27,3 +27,21 @@ Scores: director 2/5, accessibility 2/5, engineer 3/5.
 | Engineer P9-5, R9-03; director F7 | Fixed in the simulator: compose writes from_port and to_port on every link; links without them draw dashed "port not recorded" pins |
 | Director F6, F13 | Fixed: square hall grid, a shared instance that feeds every hall says so instead of 52 wires, view figures in the header, hall prefix dropped inside a hall |
 | Engineer P9-9, P9-11; director F8, F15–F18; a11y U13 | Fixed: home lists every run with ended or not closed and the session badge, unclosed runs open in review, names no longer clip, pairing error under focus and one announcement, 401 returns to pairing, port legend, neutral logo, kinds as words. Accepted for now: per-run span and counts on home (each needs the 25 s report) |
+
+## Round 2 (after round 1 fixes)
+
+Scores: director 3/5 (five High: overlapping nodes at the compact zoom, cropped and wrapping report columns, an unreadable review at fit, raw ids and outcomes, campus link lists), accessibility 3/5 (N1 zoom-scaled focus ring, N2 review graph at zero height under a banner), engineer 3/5 (R2-1 zoom tiers, R2-2 a real divergence shown as Not checked because the bridge drops `error.result`, R2-3 the edited plant breaks every earlier verify — R9-06, R2-4 report wording).
+
+### Round 2 dispositions (commit 6b4ff9a)
+
+| Findings | Disposition |
+|---|---|
+| Director H1, M1; engineer R2-1 | Fixed: geometric zoom tiers (full, compact, overview, map) so counter-scaled headers never outgrow their node; edges go to anchors in overview and map; ids hide on the map |
+| A11y N1 | Fixed: focus and selection rings divide by the zoom and stay 2 px on screen |
+| A11y N2; director H3 | Fixed: the review grid has a row for the banners, the graph keeps at least 360 px and opens at no less than 50 % zoom; an end-to-end test asserts the height under a banner |
+| A11y N3, N4 | Fixed: Esc on the key list returns focus where it was; `+`, `-`, `0` zoom while the graph has focus; the list names them and Shift+Arrow |
+| A11y N5–N8 | Fixed: one live message per selection, the hall announcement no longer repeats, Report and Inspect are toggle buttons with `aria-pressed`, a 24 px playback range, the pairing title |
+| Director H2, M2; engineer R2-4 | Fixed: a fixed table layout with column widths; Disturbances in three columns with the set time on hover; effector outcomes and fault names in words with the raw id in the title; a Replay check section with the verify verdict and a File check section |
+| Director H4, M3 | Fixed: banners say what happened in plain words with the binary's message under Details |
+| Director H5, M4–M6, L1–L3 | Fixed: link lists over 12 group by the instance's own port with link and instance counts; the event lane keeps two rows and drops the overflow (events stay reachable with previous and next); home paths truncate from the start with the full path in the title |
+| Engineer R2-2, R2-3 (R9-06) | In progress in the simulator: verify replays the domain the run recorded and reports a changed domain as information; the bridge keeps a CLI failure's result so a real divergence reads Not verified |
