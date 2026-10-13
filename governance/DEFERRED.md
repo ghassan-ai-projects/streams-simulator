@@ -145,8 +145,8 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
   nominal day: `cycle_time_s` observes `line_speed` with `observation_gain: 60` and `observation_offset: 1`
   (3601 at 60 ppm) but declares `range` `[0.5, 10]`; the channel means seconds per part, which is
   `60 / line_speed`, and a linear observation cannot express that. The `units` counter also saturates at its
-  `1000000` maximum within the day (a warning). Changing the domain changes its digest, so it is left
-  to the domain owner; `internal/lint/lint_test.go` lists the four error findings as known and fails when they change.
+  `1000000` maximum within the day (a warning). **Fixed in P7j:** `cycle_time_s` observes a `curve` state
+  (seconds per part against line speed), and the counter integrates parts per minute at gain 1/60; the domain lints clean.
 
 > **D-50 closed as not a defect.** `exceptionCadence` does not update
 > `lastSent` itself, but its only caller (`numericReading`) sets

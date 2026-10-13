@@ -11,7 +11,6 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
-var knownErrors = map[string]int{"discrete-line-oee": 4}
 
 func shippedDomains(t *testing.T) []string {
 	t.Helper()
@@ -29,7 +28,7 @@ func TestCheckRefusesAMissingSpec(t *testing.T) {
 	}
 }
 
-func TestEveryShippedDomainLintsWithoutErrorsOtherThanTheKnownOnes(t *testing.T) {
+func TestEveryShippedDomainLintsWithoutErrors(t *testing.T) {
 	t.Parallel()
 	testsupport.SkipUnderRace(t, "simulates ten domains for a nominal day each")
 	for _, path := range shippedDomains(t) {
@@ -43,27 +42,10 @@ func TestEveryShippedDomainLintsWithoutErrorsOtherThanTheKnownOnes(t *testing.T)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if want := knownErrors[spec.Spec.ID]; report.Errors != want {
-				t.Fatalf("%s: %d error findings, want %d: %+v", spec.Spec.ID, report.Errors, want, report.Findings)
+			if report.Errors != 0 {
+				t.Fatalf("%s: %d error findings: %+v", spec.Spec.ID, report.Errors, report.Findings)
 			}
 		})
-	}
-}
-
-func TestTheKnownErrorsAreTheCycleTimeChannelOutsideItsRange(t *testing.T) {
-	t.Parallel()
-	spec, err := domain.Load(testsupport.Domain("discrete-line-oee"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	report, err := lint.Check(spec, lint.Options{Seed: 1, Hours: 1})
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, f := range report.Findings {
-		if f.Severity == "error" && (f.Code != "out_of_range" || f.Channel != "cycle_time_s") {
-			t.Fatalf("unexpected error finding %+v", f)
-		}
 	}
 }
 
