@@ -169,7 +169,6 @@
 .table {
   width: 100%;
   border-collapse: collapse;
-  table-layout: fixed;
 }
 
 .table td {
@@ -179,24 +178,11 @@
   vertical-align: top;
 }
 
-.clock {
-  width: 76px;
-}
-
-.id {
-  width: 64px;
-}
-
-.number {
-  width: 92px;
-}
-
 .clock,
 .id,
 .number {
+  width: 1%;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
   color: var(--text-primary);
@@ -207,6 +193,8 @@
 }
 
 .label {
+  width: 100%;
+  max-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -321,7 +309,7 @@
   cursor: pointer;
 }
 
-.step:disabled {
+.step[aria-disabled="true"] {
   opacity: 0.5;
   cursor: not-allowed;
 }

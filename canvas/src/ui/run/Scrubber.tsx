@@ -103,9 +103,9 @@ function Steps({ marks, positionNs, clamp, onSeek }: StepsProps) {
     <button
       type="button"
       className={styles.step}
-      aria-label={label}
-      title={label}
-      disabled={target === null}
+      aria-label={target === null ? `${label}: none` : label}
+      title={target === null ? `${label}: none` : label}
+      aria-disabled={target === null}
       onClick={() => {
         if (target !== null) onSeek(target);
       }}

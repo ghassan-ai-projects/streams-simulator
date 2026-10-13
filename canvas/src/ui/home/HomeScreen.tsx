@@ -23,7 +23,9 @@ function Section({
     <section className={styles.section} aria-label={title}>
       <h2 className={styles.heading}>
         {title}
-        <span className={styles.folder}>{folder}</span>
+        <span className={styles.folder} aria-hidden="true">
+          {folder}
+        </span>
       </h2>
       {children}
     </section>

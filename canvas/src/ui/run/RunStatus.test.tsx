@@ -34,7 +34,7 @@ describe("run status", () => {
         <Banners state={divergent} />
       </>,
     );
-    expect(screen.getByText("Not verified")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("Not verified");
     expect(screen.queryByRole("alert")).toBeNull();
   });
 

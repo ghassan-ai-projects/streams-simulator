@@ -100,7 +100,7 @@ describe("scrubber", () => {
   it("works before the report arrives", () => {
     render(<Scrubber startNs={0} endNs={0} positionNs={0} report={null} density={[]} onSeek={vi.fn()} />);
     expect(screen.getByRole("list", { name: "Events" })).toBeEmptyDOMElement();
-    expect(screen.getByRole("button", { name: "Next event" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Next event: none" })).toHaveAttribute("aria-disabled", "true");
   });
 
   it("states verify's own verdict and detail, and cautions that unverified truth may not describe the files", () => {

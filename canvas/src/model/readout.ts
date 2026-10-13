@@ -3,6 +3,13 @@ import { shortChannel } from "./playback";
 import { displayUnit } from "./units";
 
 export type Attention = "alarm" | "warn" | null;
+export type NodeStatus = Attention | "fault";
+
+export const statusWords: Readonly<Record<NonNullable<NodeStatus>, string>> = {
+  alarm: "Alarm",
+  fault: "Fault",
+  warn: "Warning",
+};
 
 export interface Shown {
   readonly channel: string;

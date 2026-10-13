@@ -12,7 +12,7 @@
 }
 
 .selected {
-  outline: calc(2px / var(--zoom, 1)) solid var(--accent);
+  outline: calc(2.5px / var(--zoom, 1)) solid var(--accent);
   outline-offset: calc(2px / var(--zoom, 1));
 }
 
@@ -289,16 +289,38 @@
   font-variant-numeric: tabular-nums;
 }
 
-.active {
-  outline: 2px dashed var(--focus-ring);
-  outline-offset: 4px;
+:global([role="application"]:focus) .active {
+  outline: calc(2.5px / var(--zoom, 1)) dashed var(--focus-ring);
+  outline-offset: calc(4px / var(--zoom, 1));
 }
 
-.selected.active {
+:global([role="application"]:focus) .selected.active {
   outline-style: solid;
   box-shadow:
-    0 0 0 7px var(--surface-selected),
+    0 0 0 calc(7px / var(--zoom, 1)) var(--surface-selected),
     var(--shadow-panel);
+}
+
+.tag {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 3px;
+  padding: 0 5px;
+  border-radius: 4px;
+  font-size: var(--text-xs);
+  font-weight: 600;
+}
+
+.tag-alarm,
+.tag-fault {
+  background: var(--status-alarm-bg);
+  color: var(--status-alarm);
+}
+
+.tag-warn {
+  background: var(--status-warn-bg);
+  color: var(--status-warn);
 }
 
 .unit {
@@ -342,4 +364,23 @@
 
 .status-warn {
   border: 2px solid var(--status-warn);
+}
+
+:global(.tier-compact) .tag {
+  padding: 0 calc(4px / var(--zoom));
+  font-size: min(calc(11px / var(--zoom)), 20px);
+}
+
+:global(.tier-compact) .tag svg,
+:global(.tier-overview) .tag svg,
+:global(.tier-map) .tag svg {
+  width: min(calc(12px / var(--zoom)), 40px);
+  height: min(calc(12px / var(--zoom)), 40px);
+}
+
+:global(.tier-overview) .tag,
+:global(.tier-map) .tag {
+  gap: 0;
+  padding: calc(2px / var(--zoom));
+  font-size: 0;
 }

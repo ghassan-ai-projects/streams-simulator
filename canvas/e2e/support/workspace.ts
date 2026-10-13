@@ -62,6 +62,9 @@ export function buildFixture(): Fixture {
   const composition = join(workspace, "compositions", "factory-utilities.composition.json");
   copyFileSync(join(repository, "examples", "compositions", "factory-utilities.composition.json"), composition);
   run(binary, ["domain", "compose", composition, "--out", join(workspace, "domains", "factory-utilities.domain.json")]);
+  const campus = join(workspace, "compositions", "campus-3.composition.json");
+  copyFileSync(join(import.meta.dirname, "..", "fixtures", "campus-3.composition.json"), campus);
+  run(binary, ["domain", "compose", campus, "--out", join(workspace, "domains", "campus-3.domain.json")]);
   record(binary, workspace, "w-explore", ["-explore"]);
   record(binary, workspace, "w-evaluate", []);
   record(binary, workspace, "w-edited", []);

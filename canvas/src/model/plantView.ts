@@ -4,6 +4,8 @@ import type { Instance, Link, Plant } from "./plant";
 import { areaOf } from "./plant";
 import type { Category, ComponentSpec, Family, Pins } from "./ports";
 import { familyOf, pinsOf } from "./ports";
+import type { NodeStatus } from "./readout";
+import { statusWords } from "./readout";
 import { humanise } from "./report";
 
 export interface ViewNode {
@@ -199,12 +201,13 @@ export function plantView(plant: Plant, specs: Specs, open: string | null, reado
   return withinHall(instanceLevel(context, keep), open);
 }
 
-export function describeNode(node: ViewNode, selected: boolean): string {
+export function describeNode(node: ViewNode, selected: boolean, status: NodeStatus = null): string {
   const ports =
     node.instance === null
       ? "Enter opens the hall"
       : `${String(node.pins.ins.length)} inputs, ${String(node.pins.outs.length)} outputs`;
-  return `${node.label}, ${node.detail}, ${ports}${selected ? ", selected" : ""}`;
+  const state = status === null ? "" : `${statusWords[status]}, `;
+  return `${node.label}, ${state}${node.detail}, ${ports}${selected ? ", selected" : ""}`;
 }
 
 export function viewSummary(view: PlantView): string {

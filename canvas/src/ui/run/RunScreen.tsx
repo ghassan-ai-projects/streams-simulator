@@ -1,6 +1,6 @@
 import { ReactFlowProvider } from "@xyflow/react";
 import { ChevronRight } from "lucide-react";
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { NavigationStore } from "../../app/navigationStore";
 import type { PlantState, PlantStore } from "../../app/plantStore";
 import type { ReviewState, ReviewStore } from "../../app/reviewStore";
@@ -98,27 +98,36 @@ function useLive(review: ReviewStore, state: ReviewState, plant: ReadyPlant | nu
   );
 }
 
+function OpeningPlant() {
+  return (
+    <p className={styles.muted} role="status">
+      Opening the plant this run used…
+    </p>
+  );
+}
+
+interface HallProps {
+  readonly hall: string | null;
+  readonly onHall: (hall: string | null) => void;
+}
+
 function Graph({
   review,
   state,
   plant,
+  hall,
+  onHall,
 }: {
   readonly review: ReviewStore;
   readonly state: ReviewState;
   readonly plant: ReadyPlant | null;
-}) {
+} & HallProps) {
   const view = useMemo(
-    () => (plant === null ? null : plantView(plant.plant, plant.specs, null, readoutHeight)),
-    [plant],
+    () => (plant === null ? null : plantView(plant.plant, plant.specs, hall, readoutHeight)),
+    [plant, hall],
   );
   const live = useLive(review, state, plant);
-  if (view === null) {
-    return (
-      <p className={styles.muted} role="status">
-        Opening the plant this run used…
-      </p>
-    );
-  }
+  if (view === null) return <OpeningPlant />;
   return (
     <div className={styles.graphArea}>
       <div className={styles.graphBar}>
@@ -128,11 +137,15 @@ function Graph({
       <PlantGraph
         minFitZoom={0.5}
         view={view}
-        viewKey="review"
+        viewKey={hall ?? "review"}
         selected={state.selected}
         live={live}
         onSelect={(id) => {
           review.select(id);
+        }}
+        onOpenHall={onHall}
+        onEscape={() => {
+          onHall(null);
         }}
       />
     </div>
@@ -164,21 +177,24 @@ function Side({
   review,
   state,
   plant,
+  hall,
+  onHall,
 }: {
   readonly review: ReviewStore;
   readonly state: ReviewState;
   readonly plant: ReadyPlant | null;
-}) {
+} & HallProps) {
   return (
     <div className={styles.side}>
       {plant !== null && (
         <Outline
           plant={plant.plant}
-          hall={null}
+          hall={hall}
           selected={state.selected}
           onSelect={(id) => {
             review.select(id);
           }}
+          onOpenHall={onHall}
         />
       )}
       <Navigator />
@@ -189,6 +205,7 @@ function Side({
 export function RunScreen({ review, plants, workspace, navigation, worldId }: RunScreenProps) {
   const state = useStore(review);
   const plant = useRunPlant(state, plants, workspace);
+  const [hall, setHall] = useState<string | null>(null);
   useEffect(() => {
     review.open(worldId);
   }, [review, worldId]);
@@ -200,11 +217,11 @@ export function RunScreen({ review, plants, workspace, navigation, worldId }: Ru
     <ReactFlowProvider>
       <div className={styles.screen}>
         <Header state={state} navigation={navigation} worldId={worldId} />
-        <Side review={review} state={state} plant={plant} />
+        <Side review={review} state={state} plant={plant} hall={hall} onHall={setHall} />
         <section className={styles.center} aria-label={`Run ${worldId}`}>
           <Banners state={state} />
           <Timeline review={review} state={state} />
-          <Graph review={review} state={state} plant={plant} />
+          <Graph review={review} state={state} plant={plant} hall={hall} onHall={setHall} />
         </section>
         <RunPanel review={review} state={state} plant={plant} unit={unit} />
       </div>

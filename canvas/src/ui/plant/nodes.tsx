@@ -1,12 +1,13 @@
 import type { NodeProps } from "@xyflow/react";
 import { Handle, Position } from "@xyflow/react";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, OctagonAlert, TriangleAlert, Wrench } from "lucide-react";
 import type { CSSProperties } from "react";
 import { describeNode } from "../../model/plantView";
 import { familyNames, shapeOf } from "../../model/ports";
 import type { Pin } from "../../model/ports";
-import type { Shown } from "../../model/readout";
-import type { FrameNodeType, HallNodeType, InstanceNodeType, NodeLive } from "./flow";
+import type { NodeStatus, Shown } from "../../model/readout";
+import { statusWords } from "../../model/readout";
+import type { FrameNodeType, HallNodeType, InstanceNodeType } from "./flow";
 import { cx } from "../cx";
 import styles from "./nodes.module.css";
 
@@ -95,24 +96,38 @@ function Readout({ shown }: { readonly shown: readonly Shown[] }) {
   );
 }
 
-function statusClass(live: NodeLive | null): string | undefined {
-  const status = live?.status ?? null;
+const statusIcons = { alarm: OctagonAlert, fault: Wrench, warn: TriangleAlert } as const;
+
+function StatusTag({ status }: { readonly status: NodeStatus }) {
+  if (status === null) return null;
+  const Icon = statusIcons[status];
+  return (
+    <span className={cx(styles.tag, styles[`tag-${status}`])} aria-hidden="true">
+      <Icon size={12} />
+      {statusWords[status]}
+    </span>
+  );
+}
+
+function statusClass(status: NodeStatus): string | undefined {
   return status === null ? undefined : styles[`status-${status}`];
 }
 
 export function InstanceNode({ data, selected }: NodeProps<InstanceNodeType>) {
   const { view } = data;
+  const status = data.live?.status ?? null;
   return (
     <div
-      className={cx(styles.node, selected && styles.selected, data.active && styles.active, statusClass(data.live))}
+      className={cx(styles.node, selected && styles.selected, data.active && styles.active, statusClass(status))}
       role="group"
-      aria-label={describeNode(view, selected)}
+      aria-label={describeNode(view, selected, status)}
       style={{ "--cat": `var(--cat-${view.category})` } as CSSProperties}
     >
       <Handle type="target" position={Position.Left} id="in" className={styles.anchor} isConnectable={false} />
       <Handle type="source" position={Position.Right} id="out" className={styles.anchor} isConnectable={false} />
       <div className={styles.header}>
         <span className={styles.id}>{view.label}</span>
+        <StatusTag status={status} />
         <span className={styles.kind} title={view.detail}>
           {view.detail}
         </span>

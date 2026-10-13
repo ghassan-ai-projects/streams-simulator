@@ -37,20 +37,40 @@ function Chip({ badge, label }: { readonly badge: Badge; readonly label: string 
   );
 }
 
+function Announce({ text }: { readonly text: string }) {
+  return (
+    <span className="sr-only" role="status">
+      {text}
+    </span>
+  );
+}
+
+function ReportPending({ loading, elapsed }: { readonly loading: boolean; readonly elapsed: number }) {
+  return (
+    <>
+      <span className={styles.chip}>
+        {loading ? `Report · streamsim report reading the run · ${String(elapsed)} s` : "No report"}
+      </span>
+      <Announce text={loading ? "streamsim report is reading the run" : "No report"} />
+    </>
+  );
+}
+
+function Mode({ report }: { readonly report: Report }) {
+  const explore = report.mode === "explore";
+  return (
+    <span className={explore ? styles.truth : styles.chip}>
+      {explore ? <Eye size={13} aria-hidden="true" /> : <Lock size={13} aria-hidden="true" />}
+      {`${explore ? "Explore · unblinded" : "Evaluate"} · ${report.ended ? "ended" : "not closed"}`}
+    </span>
+  );
+}
+
 export function Status({ state }: { readonly state: ReviewState }) {
   const now = useNow(state.report.phase === "loading" || state.verified.phase === "loading");
   const elapsed = Math.max(0, Math.round((now - state.openedAt) / 1000));
-  if (state.report.phase !== "ready") {
-    const label =
-      state.report.phase === "loading"
-        ? `Report · streamsim report reading the run · ${String(elapsed)} s`
-        : "No report";
-    return (
-      <span className={styles.chip} role="status">
-        {label}
-      </span>
-    );
-  }
+  if (state.report.phase !== "ready")
+    return <ReportPending loading={state.report.phase === "loading"} elapsed={elapsed} />;
   const report = state.report.value;
   const badge = badgeOf(report, state.verified);
   const label = badge === "verifying" ? `Verifying · replaying the run · ${String(elapsed)} s` : badgeLabels[badge];
@@ -58,13 +78,9 @@ export function Status({ state }: { readonly state: ReviewState }) {
   return (
     <>
       <Chip badge={badge} label={label} />
-      <span className={report.mode === "explore" ? styles.truth : styles.chip}>
-        {report.mode === "explore" ? <Eye size={13} aria-hidden="true" /> : <Lock size={13} aria-hidden="true" />}
-        {`${report.mode === "explore" ? "Explore · unblinded" : "Evaluate"} · ${report.ended ? "ended" : "not closed"}`}
-      </span>
-      <span className={styles.progress} role="status">
-        {records}
-      </span>
+      <Announce text={badge === "verifying" ? "Verifying: replaying the run" : badgeLabels[badge]} />
+      <Mode report={report} />
+      <span className={styles.progress}>{records}</span>
     </>
   );
 }

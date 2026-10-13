@@ -1,10 +1,10 @@
 import type { Edge, Node } from "@xyflow/react";
-import type { Attention, Shown } from "../../model/readout";
+import type { NodeStatus, Shown } from "../../model/readout";
 import type { PlantView, ViewNode } from "../../model/plantView";
 
 export interface NodeLive {
   readonly shown: readonly Shown[];
-  readonly status: Attention | "fault";
+  readonly status: NodeStatus;
 }
 
 type InstanceData = Readonly<{ view: ViewNode; live: NodeLive | null; active: boolean }>;

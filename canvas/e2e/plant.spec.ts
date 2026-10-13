@@ -105,3 +105,50 @@ test("no node overlaps another or spills its text at any zoom tier", async ({ pa
   }
   expect([...tiers]).toEqual(expect.arrayContaining(["overview", "compact", "full"]));
 });
+
+function activeRingOnScreen(): number {
+  const graph = document.querySelector<HTMLElement>("[aria-roledescription='plant graph']");
+  const ring = graph?.querySelector<HTMLElement>("[role=group][class*='active']");
+  if (!graph || !ring) return 0;
+  const zoom = Number(graph.style.getPropertyValue("--zoom"));
+  return parseFloat(getComputedStyle(ring).outlineWidth) * zoom;
+}
+
+test("the keyboard ring stays 2 px on screen when zoomed out", async ({ page }) => {
+  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Ffactory-utilities.domain.json`);
+  await expect(page.getByRole("group", { name: /^CT-1, cooling tower,/ })).toBeVisible();
+  await page.getByRole("application", { name: "Plant graph" }).focus();
+  await page.keyboard.press("ArrowRight");
+  await expect.poll(() => page.evaluate(activeRingOnScreen)).toBeGreaterThanOrEqual(1.9);
+  await expect
+    .poll(async () => {
+      await page.keyboard.press("-");
+      return page.getByRole("application", { name: "Plant graph" }).getAttribute("class");
+    })
+    .toMatch(/tier-map/);
+  await expect.poll(() => page.evaluate(activeRingOnScreen)).toBeGreaterThanOrEqual(1.9);
+});
+
+test("Enter opens a hall and the arrows keep working inside it; Escape returns to the hall", async ({ page }) => {
+  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Fcampus-3.domain.json`);
+  const graph = page.getByRole("application", { name: "Plant graph" });
+  const said = graph.locator("[aria-live=polite]");
+  await expect(page.getByRole("group", { name: /^h01,/ })).toBeVisible();
+  await graph.focus();
+  await expect
+    .poll(async () => {
+      await page.keyboard.press("ArrowDown");
+      return said.textContent();
+    })
+    .toMatch(/^h0/);
+  const hall = ((await said.textContent()) ?? "").split(",")[0] ?? "";
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveTitle(new RegExp(`^${hall} · `));
+  await expect(graph).toBeFocused();
+  await page.keyboard.press("ArrowRight");
+  await expect(said).toContainText("inputs");
+  await page.keyboard.press("Escape");
+  await expect(page).toHaveTitle(/· plant ·/);
+  await expect(graph).toBeFocused();
+  await expect(said).toContainText(`${hall},`);
+});

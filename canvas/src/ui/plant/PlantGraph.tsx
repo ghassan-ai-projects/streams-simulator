@@ -8,6 +8,7 @@ import { describeNode } from "../../model/plantView";
 import { anchorsOnly, centreOf, inView, tierOf } from "../../model/viewport";
 import type { FlowNode, NodeLive } from "./flow";
 import { flowEdges, flowNodes } from "./flow";
+import { useZoomActions } from "./GraphControls";
 import { FrameNode, HallNode, InstanceNode } from "./nodes";
 import { cx } from "../cx";
 import styles from "./PlantScreen.module.css";
@@ -27,6 +28,7 @@ export interface PlantGraphProps {
 
 function useFollowSelection(selected: string | null) {
   const flow = useReactFlow<FlowNode>();
+  const zoomTo = useZoomActions();
   const width = useStore((state) => state.width);
   const height = useStore((state) => state.height);
   useEffect(() => {
@@ -40,9 +42,9 @@ function useFollowSelection(selected: string | null) {
     const viewport = flow.getViewport();
     if (!inView(box, viewport, { width, height })) {
       const centre = centreOf(box);
-      void flow.setCenter(centre.x, centre.y, { zoom: viewport.zoom, duration: 200 });
+      zoomTo.centre(centre.x, centre.y, viewport.zoom);
     }
-  }, [flow, selected, width, height]);
+  }, [flow, zoomTo, selected, width, height]);
 }
 
 interface Keys {
@@ -50,26 +52,37 @@ interface Keys {
   readonly announcement: string;
   readonly onKeyDown: (event: KeyboardEvent<HTMLDivElement>) => void;
   readonly onFocus: () => void;
+  readonly point: (id: string | null) => void;
 }
 
 const zoomKeys: Readonly<Record<string, "in" | "out" | "fit">> = { "+": "in", "=": "in", "-": "out", "0": "fit" };
 
 function useZoomKeys() {
-  const flow = useReactFlow<FlowNode>();
+  const zoomTo = useZoomActions();
   return (key: string): boolean => {
     const action = zoomKeys[key];
-    if (action === "in") void flow.zoomIn({ duration: 120 });
-    if (action === "out") void flow.zoomOut({ duration: 120 });
-    if (action === "fit") void flow.fitView({ padding: 0.04, duration: 120 });
+    if (action !== undefined) zoomTo[action]();
     return action !== undefined;
   };
 }
 
-function useGraphKeys({ view, selected, onSelect, onOpenHall, onEscape }: PlantGraphProps): Keys {
+function useViewActive(view: PlantView, viewKey: string) {
   const [active, setActive] = useState<string | null>(null);
+  const [shownKey, setShownKey] = useState(viewKey);
+  if (shownKey !== viewKey) {
+    setShownKey(viewKey);
+    setActive(view.nodes.some((entry) => entry.id === shownKey) ? shownKey : firstOf(view.layout.nodes));
+  }
+  const current = active !== null && view.nodes.some((entry) => entry.id === active) ? active : null;
+  return [current, setActive] as const;
+}
+
+function useGraphKeys({ view, viewKey, selected, live, onSelect, onOpenHall, onEscape }: PlantGraphProps): Keys {
+  const [active, setActive] = useViewActive(view, viewKey);
   const zoomKey = useZoomKeys();
   const node = view.nodes.find((entry) => entry.id === active);
-  const announcement = node === undefined ? "" : describeNode(node, node.id === selected);
+  const announcement =
+    node === undefined ? "" : describeNode(node, node.id === selected, live?.(node.id).status ?? null);
   const activate = (id: string) => {
     if (view.nodes.find((entry) => entry.id === id)?.instance === null) onOpenHall?.(id);
     else onSelect(id);
@@ -94,9 +107,12 @@ function useGraphKeys({ view, selected, onSelect, onOpenHall, onEscape }: PlantG
     }
   };
   const onFocus = () => {
-    setActive((current) => current ?? selected ?? firstOf(view.layout.nodes));
+    if (active === null) setActive(selected ?? firstOf(view.layout.nodes));
   };
-  return { active, announcement, onKeyDown, onFocus };
+  const point = (id: string | null) => {
+    if (id !== null) setActive(id);
+  };
+  return { active, announcement, onKeyDown, onFocus, point };
 }
 
 const fixedProps = {
@@ -171,7 +187,14 @@ export function PlantGraph(props: PlantGraphProps) {
       <p className="sr-only" aria-live="polite">
         {keys.announcement}
       </p>
-      <Flow {...props} active={keys.active} />
+      <Flow
+        {...props}
+        active={keys.active}
+        onSelect={(id) => {
+          keys.point(id);
+          props.onSelect(id);
+        }}
+      />
     </div>
   );
 }
