@@ -1,6 +1,7 @@
 package contract
 
 import (
+	"bytes"
 	"context"
 	"os"
 	"path/filepath"
@@ -8,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/adapter"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/component"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/jsonschema"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
@@ -58,9 +60,52 @@ func TestBuiltInLibraryFilesUseTheStreamsimNamespace(t *testing.T) {
 	}
 }
 
-func TestTheHandComposedPilotValidatesAndRunsDeterministically(t *testing.T) {
+func composedPilot(t *testing.T) []byte {
+	t.Helper()
+	library, err := component.NewLibraryFromDirs([]string{componentsDir()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, err := os.ReadFile(filepath.Join(componentsDir(), "compositions", "chiller-pilot.composition.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	composed, err := component.Compose(library, raw, "chiller-pilot.composition.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return composed
+}
+
+func TestComposingThePilotCompositionReproducesTheExampleByteForByte(t *testing.T) {
 	t.Parallel()
-	spec, err := domain.Load(filepath.Join(testsupport.RepositoryRoot(), "examples", "chiller-pilot.domain.json"))
+	want, err := os.ReadFile(filepath.Join(testsupport.RepositoryRoot(), "examples", "chiller-pilot.domain.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := composedPilot(t); !bytes.Equal(got, want) {
+		t.Fatalf("the committed pilot example is not what streamsim domain compose writes; regenerate it with domain compose --out (%d bytes composed, %d committed)", len(got), len(want))
+	}
+}
+
+func TestThePilotLinkCarriesTheAirHandlingLoadIntoTheSmallChiller(t *testing.T) {
+	t.Parallel()
+	var spec model.DomainSpec
+	if err := model.DecodeBytes(composedPilot(t), &spec); err != nil {
+		t.Fatal(err)
+	}
+	for _, kind := range spec.Kinds {
+		dynamics := kind.DynamicsOf("load")
+		linked := kind.Name == "chiller_small"
+		if linked != (dynamics != nil && dynamics.Follow != nil) {
+			t.Errorf("%s: follow = %+v, want a follow only on chiller_small", kind.Name, dynamics)
+		}
+	}
+}
+
+func TestTheComposedPilotValidatesAndRunsDeterministically(t *testing.T) {
+	t.Parallel()
+	spec, err := domain.Parse(composedPilot(t), "chiller-pilot.composition.json")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -16,6 +16,8 @@ const (
 	codeAdapterInvalid      failureCode = "adapter_invalid"
 	codeArtifactInvalid     failureCode = "artifact_invalid"
 	codeScenarioInvalid     failureCode = "scenario_invalid"
+	codeComponentInvalid    failureCode = "component_invalid"
+	codeCompositionInvalid  failureCode = "composition_invalid"
 	codeReplayMismatch      failureCode = "replay_mismatch"
 	codeDomainLint          failureCode = "domain_lint"
 	codeAdapterVerifyFailed failureCode = "adapter_verify_failed"

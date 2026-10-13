@@ -25,7 +25,8 @@ success and for failure ([design](../../docs/design/CLI_SURFACE.md), [schema](..
 | 2 | The same error document with code `usage_invalid` |
 
 Error codes: `usage_invalid`, `file_not_found`, `domain_not_found`, `adapter_not_found`,
-`domain_invalid`, `adapter_invalid`, `artifact_invalid`, `replay_mismatch`, `domain_lint`,
+`domain_invalid`, `adapter_invalid`, `component_invalid`, `composition_invalid`,
+`artifact_invalid`, `replay_mismatch`, `domain_lint`,
 `adapter_verify_failed`, `io_failed`, and `<command>_failed` for any other failure of that
 command. `issues` lists every contract violation, with an RFC 6901 `pointer` when the location
 is known; `result` carries the command's report for a failed check (for example the replay
@@ -73,6 +74,31 @@ Rewrites one valid domain file in the canonical layout and prints `{formatted, c
 ```text
 streamsim domain format <path>
 ```
+
+### `domain compose`
+
+Composes a plant from the component library into an ordinary domain ([components](../../docs/design/COMPONENTS_V0_1.md)). The result is validated with the domain contract and written in canonical layout, so the same composition and library files always give the same bytes.
+
+```text
+streamsim domain compose <composition.json> [--out <file>] [--components-dir <dir>]...
+```
+
+- `--out <file>` — write the domain there; without it the composed spec is printed inside the output document (`domain`).
+- `--components-dir <dir>` — a library directory, repeatable; defaults to `components`. The first directory is the built-in library (the only one that may hold `streamsim/` ids); `STREAMSIM_COMPONENTS_DIRS` (a path list, `:` on Unix) is appended after the flags.
+
+It prints `{id, digest, channels, faults, effectors}` as `domain validate` does, plus `composed` (the file written). A composition that breaks a library rule fails with `composition_invalid`, each issue at its pointer in the composition (`/equipment/0/preset`, `/connections/1`); a composed domain that fails its own contract fails with `domain_invalid`.
+
+### `component`
+
+Lists, shows and validates the component library: equipment, instruments and vocabulary.
+
+```text
+streamsim component [list|show <namespace/name[@major]>|validate] [--components-dir <dir>]...
+```
+
+- `component list` — every entry as `{id, version, kind, title, class, tags, digest, file}`, sorted by id and version. For an instrument `class` is its unit family and `tags` its ISA-5.1 letters.
+- `component show <ref>` — the entry and the file's document; `ns/name` without a major selects the highest major.
+- `component validate` — loads and checks every file of the directories and prints `{valid, directories, equipment, instruments}`. A file that breaks its schema or a library rule fails with `component_invalid`, naming the file and listing every issue with its pointer.
 
 ### `adapter`
 

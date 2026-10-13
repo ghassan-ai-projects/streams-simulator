@@ -46,19 +46,24 @@ func checkFailureCode(err error) (failureCode, bool) {
 	return "", false
 }
 
+var contractFailureCodes = map[model.Contract]failureCode{
+	model.ContractDomainSpec:      codeDomainInvalid,
+	model.ContractOutputAdapter:   codeAdapterInvalid,
+	model.ContractScenario:        codeScenarioInvalid,
+	model.ContractRunArtifact:     codeArtifactInvalid,
+	model.ContractConsumerVerdict: codeArtifactInvalid,
+	model.ContractGroundTruth:     codeArtifactInvalid,
+	model.ContractDeliveryLedger:  codeArtifactInvalid,
+	model.ContractStateHistory:    codeArtifactInvalid,
+	model.ContractComponent:       codeComponentInvalid,
+	model.ContractInstrument:      codeComponentInvalid,
+	model.ContractVocabulary:      codeComponentInvalid,
+	model.ContractComposition:     codeCompositionInvalid,
+}
+
 func contractFailureCode(contract model.Contract) (failureCode, bool) {
-	switch contract {
-	case model.ContractDomainSpec:
-		return codeDomainInvalid, true
-	case model.ContractOutputAdapter:
-		return codeAdapterInvalid, true
-	case model.ContractScenario:
-		return codeScenarioInvalid, true
-	case model.ContractRunArtifact, model.ContractConsumerVerdict, model.ContractGroundTruth,
-		model.ContractDeliveryLedger, model.ContractStateHistory:
-		return codeArtifactInvalid, true
-	}
-	return "", false
+	code, known := contractFailureCodes[contract]
+	return code, known
 }
 
 func missingOrIOCode(err error) (failureCode, bool) {

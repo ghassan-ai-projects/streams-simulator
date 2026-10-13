@@ -153,6 +153,10 @@ func registerAdaptersDir(fs *flag.FlagSet, dst *string, def string) {
 	fs.StringVar(dst, "adapters-dir", def, "directory of adapter files")
 }
 
+func registerComponentDirs(fs *flag.FlagSet, dst *listFlag) {
+	fs.Var(dst, "components-dir", "component library directory, repeatable; the first is the built-in library (default components)")
+}
+
 func registerRunFolder(fs *flag.FlagSet, dst *string, def string) {
 	fs.StringVar(dst, "out", def, "run folder for the artifact and the journal")
 }

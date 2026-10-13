@@ -43,6 +43,7 @@ The accepted architecture is summarized in [`documentation/architecture/`](../..
 - `internal/plantwire/contract`: the embedded plant wire schemas, byte-identical with `contracts/plant-wire/schemas`
 - `internal/deviceworld`: device-to-world effector binding and `OpenDevice` (capabilities, fault schedule, bindings, world and plant composed before any listener opens); facade over `internal/deviceworld/internal/domain`, `app` and a `files` edge
 - `internal/domain`: load, validate, compile and digest domain data, including a directory into a catalog (`NewCatalogFromDir`); facade over `internal/domain/internal/domain` with a `files` edge
+- `internal/component`: the component library and `Compose`: load equipment, instruments and vocabulary from directories (`NewLibraryFromDirs`), check them, list and describe them, and compose a composition into an ordinary domain; facade over `internal/component/internal/domain` (library rules, targets, presets, instruments, ports, links) and a `files` edge; composes `domain` for validation and formatting
 - `internal/model`: shared simulator records and strict JSON decoding
 - `internal/jsonschema`: core schema compilation and validation
 - `internal/schemas`: embedded contract sources
@@ -62,6 +63,7 @@ The accepted architecture is summarized in [`documentation/architecture/`](../..
 ## Dependency Direction
 
 - `mcp` -> `director` + foundations; `director` -> `run`/`score`/`truth`/`audit`/`world`/`adapter`/`domain`/`model`
+- `component` -> `domain`/`canonical`/`jsonschema`/`schemas`/`model`
 - `cmd` -> `cli` -> the facades it wires: `mcp`/`run`/`suite`/`grading`/`report`/`release`/`refconsumer`/`device`/`deviceworld`/`domain`/`adapter`/`lint`/`model`
 - `grading` -> `run`/`score`/`domain`/`world`/`model`; `report` -> `grading`/`run`/`journal`/`model`; `release` -> `canonical`
 - `run` -> `world`/`perturb`/`adapter`/`sink`/`journal`/`domain`/`model`/`canonical`; `journal` -> `model`

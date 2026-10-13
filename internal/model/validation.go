@@ -19,6 +19,10 @@ const (
 	ContractDeliveryLedger  Contract = "delivery-ledger"
 	ContractStateHistory    Contract = "world-state-history"
 	ContractScenario        Contract = "scenario-v0.1"
+	ContractComponent       Contract = "component-v0.1"
+	ContractInstrument      Contract = "instrument-v0.1"
+	ContractComposition     Contract = "composition-v0.1"
+	ContractVocabulary      Contract = "component-vocabulary-v0.1"
 )
 
 type Issue struct {
