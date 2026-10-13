@@ -77,7 +77,7 @@ func (w *World) readersFloor(source *Entity) int64 {
 func (w *World) retainedFrom(ent *Entity) int64 {
 	oldest := w.readersFloor(ent)
 	for i := range ent.kind.Dynamics {
-		if s := ent.states[ent.kind.Dynamics[i].Target]; s != nil && ent.kind.Dynamics[i].Tier != "F0" {
+		if s := ent.states[ent.kind.Dynamics[i].Target]; s != nil && ent.kind.Dynamics[i].Integrated() {
 			oldest = min(oldest, s.oldest())
 		}
 	}

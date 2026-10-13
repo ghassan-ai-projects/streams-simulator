@@ -20,7 +20,7 @@ func nextStep(ent *Entity, t int64) *model.Dynamics {
 	for i := range ent.kind.Dynamics {
 		dyn := &ent.kind.Dynamics[i]
 		s := ent.states[dyn.Target]
-		if dyn.Tier == "F0" || s == nil || s.lastStep+stepNS(dyn) > t {
+		if !dyn.Integrated() || s == nil || s.lastStep+stepNS(dyn) > t {
 			continue
 		}
 		if next == nil || s.lastStep < from {

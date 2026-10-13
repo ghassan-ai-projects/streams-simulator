@@ -111,6 +111,8 @@ func (w *World) naturalStateValue(ent *Entity, name string, s *stateValue, dyn *
 		return w.initial(ent, name)
 	case dyn.Tier == "F0":
 		return w.f0Value(dyn, at)
+	case dyn.Algebraic():
+		return w.algebraicValue(ent, dyn, at)
 	default:
 		return w.integrateF1(ent, dyn, at)
 	}

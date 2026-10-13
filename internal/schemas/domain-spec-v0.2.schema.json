@@ -440,7 +440,7 @@
           "description": "First-order forms only. Deliberately not a general expression language: an arbitrary evaluator is a nondeterminism surface and a security surface, and no domain in the catalog needs one. The equations for each form are part of the contract and are defined in TECHNICAL_DESIGN §6.2 — a form name without an equation is not a specification.",
           "required": ["form"],
           "properties": {
-            "form": {"enum": ["first_order_lag", "rc_network", "dead_time", "saturation", "hysteresis", "integrator", "threshold_integrator", "store", "regime", "peak", "trip", "anti_recycle", "sequencer"]},
+            "form": {"enum": ["first_order_lag", "rc_network", "dead_time", "saturation", "hysteresis", "integrator", "threshold_integrator", "store", "regime", "peak", "trip", "anti_recycle", "sequencer", "curve", "product", "sum"]},
             "selector": {"type": "string", "description": "For regime: the state whose value, read at each step boundary, selects the regime (the target itself for a runaway)."},
             "below": {"$ref": "#/$defs/regime", "description": "For regime: the lag while the selector is below threshold."},
             "above": {"$ref": "#/$defs/regime", "description": "For regime: the lag while the selector is at or above threshold."},
@@ -496,6 +496,18 @@
               "type": "object",
               "additionalProperties": false,
               "properties": {"min": {"type": "number"}, "max": {"type": "number"}}
+            },
+            "table": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["x"],
+              "description": "For curve: a piecewise-linear table over the weighted inputs, clamped at its ends (domain-spec v0.2 §23). With one input, values[i] is the output at x[i]; with two, grid[i][j] is the output at (x[i], y[j]), interpolated bilinearly.",
+              "properties": {
+                "x": {"type": "array", "minItems": 2, "items": {"type": "number"}},
+                "values": {"type": "array", "minItems": 2, "items": {"type": "number"}},
+                "y": {"type": "array", "minItems": 2, "items": {"type": "number"}},
+                "grid": {"type": "array", "minItems": 2, "items": {"type": "array", "minItems": 2, "items": {"type": "number"}}}
+              }
             }
           },
           "allOf": [
@@ -538,6 +550,14 @@
             {
               "if": {"properties": {"form": {"const": "sequencer"}}, "required": ["form"]},
               "then": {"required": ["stage_up", "stage_down", "stages", "hold_s"]}
+            },
+            {
+              "if": {"properties": {"form": {"const": "curve"}}, "required": ["form"]},
+              "then": {"required": ["table", "inputs"]}
+            },
+            {
+              "if": {"properties": {"form": {"enum": ["product", "sum"]}}, "required": ["form"]},
+              "then": {"required": ["inputs"]}
             }
           ]
         },
@@ -567,7 +587,7 @@
       },
       "allOf": [
         {
-          "if": {"properties": {"tier": {"enum": ["F1", "F2"]}}, "required": ["tier"]},
+          "if": {"properties": {"tier": {"enum": ["F1", "F2"]}}, "required": ["tier"], "not": {"required": ["f1"], "properties": {"f1": {"required": ["form"], "properties": {"form": {"enum": ["curve", "product", "sum"]}}}}}},
           "then": {"required": ["dt_ms"]}
         },
         {

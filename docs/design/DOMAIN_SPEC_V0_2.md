@@ -505,3 +505,20 @@ Rules:
 - **The operator view** of an effector (nameplate and `sim.effector.list`) is its name, risk class and argument schema with the
   annotation keywords (`description`, `title`, `$comment`, `examples`) removed at every depth; effector descriptions are
   director-side text and may name the faults an effector remedies (R7e-09).
+
+## 23. Algebraic forms: `curve`, `product`, `sum` (phase P7i)
+
+Three F1 forms are algebraic: the state is a function of other states at the same instant, evaluated when it is read, with no
+step, no history and no `dt_ms`. Each input is weighted (`coef × state`, or `coef × aggregate` for a linked input, §21); the
+result passes the form's `clamp` and then the state's bounds, faults and effector kicks like any state.
+
+| Form | Value | Shape |
+|---|---|---|
+| `sum` | `Σ coef × input` | one or more inputs |
+| `product` | `Π coef × input` | 2 to 4 inputs |
+| `curve` | a piecewise-linear table of the weighted inputs, held at its end values outside the table | one input: `table: {x, values}`; two inputs: `table: {x, y, grid}`, bilinear, `grid[i][j]` at `(x[i], y[j])` |
+
+Axes increase strictly and hold at least two points; `values` has one entry per `x`, `grid` one row per `x` of one entry per `y`.
+Algebraic states take part in the dynamics dependency check, so an algebraic loop is refused. These are tables and bounded
+products, not an expression language: an efficiency curve, a pump or fan law, a heat duty `flow × ΔT` (with `ΔT` a `sum`), or a
+power that scales with `running` (R7g-02) is written with them.

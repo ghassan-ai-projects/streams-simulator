@@ -21,3 +21,12 @@ P7i lands in steps, one commit each. Domain-spec v0.2 §22 onwards holds the rul
 |---|---|
 | The operator's effector view carries no description and no schema annotation at any depth; validation keywords stay; the director's schema is untouched | `TestTheOperatorSeesNoEffectorDescriptionOrSchemaAnnotation` |
 | Shipped runs unchanged | Behaviour pin identical |
+
+## Step 3 — algebraic forms `curve`, `product`, `sum` (domain-spec §23)
+
+| Check | Result |
+|---|---|
+| Sum, clamped product, 1-D and 2-D curves and a curve of a sum equal their formulas of the inputs at the read time, between steps included | `TestAlgebraicFormsAreExactFunctionsOfTheirInputsAtTheReadTime` (1e-12) |
+| A curve holds its end values and hits its points | `TestACurveClampsAtItsEndsAndHitsItsPoints` |
+| A fault overlays an algebraic state | `TestAFaultOnAnAlgebraicStateOverlaysItsValue` |
+| Table shape, axis order, arity and algebraic loops are validated; no `dt_ms` is needed | `TestCurveTablesAndProductsAreValidatedByShape` (9 cases) |
