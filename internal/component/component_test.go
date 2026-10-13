@@ -47,8 +47,8 @@ func TestComposeWritesTheBuiltInPilotAsADomain(t *testing.T) {
 		t.Fatal(err)
 	}
 	composed, err := Compose(builtInLibrary(t), raw, "chiller-pilot.composition.json")
-	if err != nil || len(composed) == 0 {
-		t.Fatalf("Compose = %d bytes, %v", len(composed), err)
+	if err != nil || len(composed.Bytes) == 0 || composed.Domain.Spec.ID != "chiller-pilot" {
+		t.Fatalf("Compose = %+v, %v", composed, err)
 	}
 }
 
@@ -110,5 +110,12 @@ func TestACustomerDirectoryCannotUseTheStreamsimNamespace(t *testing.T) {
 	_, err = NewLibrary([]string{customer})
 	if err == nil || !strings.Contains(err.Error(), `reserved "streamsim/" namespace`) {
 		t.Fatalf("error = %v, want the reserved namespace refused", err)
+	}
+}
+
+func TestCustomerDirectoriesAreTheFlagsThenTheEnvironment(t *testing.T) {
+	t.Parallel()
+	if got := CustomerDirectories([]string{"/a"}, "/b:"); len(got) != 2 || got[0] != "/a" || got[1] != "/b" {
+		t.Fatalf("directories = %v", got)
 	}
 }

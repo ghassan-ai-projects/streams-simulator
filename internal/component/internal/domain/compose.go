@@ -16,7 +16,12 @@ type composer struct {
 	kinds       map[string]bool
 }
 
-func Compose(lib *Library, raw []byte, source string) ([]byte, error) {
+type Composed struct {
+	Bytes  []byte
+	Domain *specs.Compiled
+}
+
+func ComposeDomain(lib *Library, raw []byte, source string) (*Composed, error) {
 	composition, err := parseComposition(lib.contracts.composition, raw, source)
 	if err != nil {
 		return nil, err
@@ -60,7 +65,7 @@ func (c *composer) buildAll() ([]*built, error) {
 	return entries, nil
 }
 
-func render(document map[string]any, source string) ([]byte, error) {
+func render(document map[string]any, source string) (*Composed, error) {
 	raw, err := canonical.Marshal(document)
 	if err != nil {
 		return nil, fmt.Errorf("component: %s: %w", source, err)
@@ -73,7 +78,7 @@ func render(document map[string]any, source string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("component: format the domain composed from %s: %w", source, err)
 	}
-	return formatted, nil
+	return &Composed{Bytes: formatted, Domain: compiled}, nil
 }
 
 func (c *composer) declareAreas() error {

@@ -3,12 +3,9 @@ package app
 import (
 	"fmt"
 	"io"
-	"path/filepath"
-	"strings"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/cli/internal/files"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/component"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 )
 
 const componentsDirsEnv = "STREAMSIM_COMPONENTS_DIRS"
@@ -30,21 +27,11 @@ func cmdComponent(s *session, args []string) (any, error) {
 }
 
 func (s *session) componentDirs(flags listFlag) []string {
-	declared := append([]string{}, flags...)
+	environment := ""
 	if s.getenv != nil {
-		declared = append(declared, filepath.SplitList(s.getenv(componentsDirsEnv))...)
+		environment = s.getenv(componentsDirsEnv)
 	}
-	return namedDirs(declared)
-}
-
-func namedDirs(declared []string) []string {
-	named := []string{}
-	for _, dir := range declared {
-		if strings.TrimSpace(dir) != "" {
-			named = append(named, dir)
-		}
-	}
-	return named
+	return component.CustomerDirectories(flags, environment)
 }
 
 func componentVerb(verb string, library *component.Library, directories, args []string) (any, error) {
@@ -118,13 +105,10 @@ func composeDomain(library *component.Library, raw []byte, options composeOption
 	if err != nil {
 		return nil, fmt.Errorf("streamsim: %w", err)
 	}
-	compiled, err := domain.Parse(composed, options.composition)
-	if err != nil {
-		return nil, fmt.Errorf("streamsim: %w", err)
-	}
+	compiled := composed.Domain
 	result := map[string]any{"id": compiled.Spec.ID, "digest": compiled.Digest, "channels": len(compiled.ChannelNames()),
 		"faults": compiled.FaultCount(), "effectors": compiled.EffectorCount()}
-	return placeComposed(result, compiled.Spec, composed, options.out)
+	return placeComposed(result, compiled.Spec, composed.Bytes, options.out)
 }
 
 func placeComposed(result map[string]any, spec any, composed []byte, out string) (any, error) {

@@ -136,6 +136,12 @@ behaviour-pin-check: ## Fail when CLI behaviour drifts from the committed behavi
 	@diff -u test/pin/BEHAVIOUR_PIN.txt "$${TMPDIR:-/tmp}/streamsim-behaviour-pin.txt"
 	@echo "  Behaviour pin matches"
 
+quick: ## Fast inner-loop check (about 30 s, cached): fmt, function length, build, vet, short tests, architecture gates
+	@$(MAKE) --no-print-directory fmt-check function-length
+	go build ./...
+	go vet ./...
+	go test -short ./...
+
 phase-gate: ci-check architecture behaviour-pin-check ## Simulation-canvas phase gate: CI pipeline, Enola check, behaviour pin
 	@git diff --check HEAD
 	@echo "  Phase gate passed"

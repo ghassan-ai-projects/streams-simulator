@@ -13,11 +13,11 @@ func NewLibrary(customerDirs []string) (*Library, error) {
 	return &Library{library: inner}, nil
 }
 
-func Compose(lib *Library, composition []byte, source string) ([]byte, error) {
+func Compose(lib *Library, composition []byte, source string) (*Composed, error) {
 	if lib == nil || lib.library == nil {
 		return nil, ErrNoLibrary
 	}
-	return layer.Compose(lib.library, composition, source)
+	return layer.ComposeDomain(lib.library, composition, source)
 }
 
 func (l *Library) List() []Summary {
@@ -39,4 +39,8 @@ func (l *Library) Counts() (equipment, instruments int) {
 		return 0, 0
 	}
 	return l.library.Counts()
+}
+
+func CustomerDirectories(flags []string, environment string) []string {
+	return layer.CustomerDirectories(flags, environment)
 }

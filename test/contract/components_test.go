@@ -107,7 +107,7 @@ func composedPilot(t *testing.T) []byte {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return composed
+	return composed.Bytes
 }
 
 func TestComposingThePilotCompositionReproducesTheExampleByteForByte(t *testing.T) {

@@ -55,18 +55,6 @@ func (d *Director) ComposeDomain(composition map[string]any, install bool) (map[
 }
 
 func (d *Director) composed(composition map[string]any) (*domain.Compiled, error) {
-	out, err := d.composedBytes(composition)
-	if err != nil {
-		return nil, err
-	}
-	compiled, err := domain.Parse(out, "composition")
-	if err != nil {
-		return nil, rules.ToolErrorf(rules.CodeDomainInvalid, "%v", err)
-	}
-	return compiled, nil
-}
-
-func (d *Director) composedBytes(composition map[string]any) ([]byte, error) {
 	library, err := d.componentLibrary()
 	if err != nil {
 		return nil, err
@@ -75,9 +63,9 @@ func (d *Director) composedBytes(composition map[string]any) ([]byte, error) {
 	if err != nil {
 		return nil, rules.ToolErrorf(rules.CodeInvalidArgs, "composition: %v", err)
 	}
-	out, err := component.Compose(library, raw, "composition")
+	composed, err := component.Compose(library, raw, "composition")
 	if err != nil {
 		return nil, rules.ToolErrorf(rules.CodeComponentInvalid, "%v", err)
 	}
-	return out, nil
+	return composed.Domain, nil
 }

@@ -95,7 +95,11 @@ func TestComposeDigestsDependOnTheBytesOfTheLibraryFile(t *testing.T) {
 func composeBytes(t *testing.T, library *Library) []byte {
 	t.Helper()
 	entries := []map[string]any{kilnEntry(map[string]any{"preset": "big"}), kilnEntry(map[string]any{"as": "kiln_b", "names": []any{"K-2"}})}
-	out, err := Compose(library, []byte(withEquipment(t, entries...)), "test.composition.json")
+	composed, err := ComposeDomain(library, []byte(withEquipment(t, entries...)), "test.composition.json")
+	var out []byte
+	if composed != nil {
+		out = composed.Bytes
+	}
 	if err != nil {
 		t.Fatal(err)
 	}

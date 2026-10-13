@@ -43,7 +43,11 @@ func TestComposeNamesTheKindAfterTheComponentWhenNoAsIsGiven(t *testing.T) {
 
 func TestComposeKeepsLibraryDescriptionsOutOfTheDomain(t *testing.T) {
 	t.Parallel()
-	out, err := Compose(baseLibrary(t), []byte(withEquipment(t, kilnEntry(nil))), "test.composition.json")
+	composed, err := ComposeDomain(baseLibrary(t), []byte(withEquipment(t, kilnEntry(nil))), "test.composition.json")
+	var out []byte
+	if composed != nil {
+		out = composed.Bytes
+	}
 	if err != nil {
 		t.Fatal(err)
 	}

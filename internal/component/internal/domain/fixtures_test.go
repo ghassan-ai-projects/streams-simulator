@@ -200,7 +200,11 @@ func wantIssue(t *testing.T, err error, contract model.Contract, pointerWant, me
 
 func compose(t *testing.T, library *Library, raw string) (map[string]any, error) {
 	t.Helper()
-	out, err := Compose(library, []byte(raw), "test.composition.json")
+	composed, err := ComposeDomain(library, []byte(raw), "test.composition.json")
+	var out []byte
+	if composed != nil {
+		out = composed.Bytes
+	}
 	if err != nil {
 		return nil, err
 	}
