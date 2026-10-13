@@ -14,6 +14,38 @@ function setup() {
 }
 
 describe("review", () => {
+  it("draws the domain the run used from run.json, and says when it cannot", async () => {
+    const { bridge, store } = setup();
+    bridge.files.set(
+      "runs/w-1/run.json",
+      success({ path: "runs/w-1/run.json", content: JSON.stringify({ domain_spec: { id: "mini" } }), etag: "e" }),
+    );
+    store.open("w-1");
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(store.snapshot().runDomain).toEqual({ phase: "ready", value: { id: "mini" } });
+    bridge.files.set("runs/w-2/run.json", success({ path: "runs/w-2/run.json", content: "{}", etag: "e" }));
+    store.open("w-2");
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(store.snapshot().runDomain).toMatchObject({ phase: "failed", failure: { code: "no_domain_spec" } });
+    store.open("w-3");
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(store.snapshot().runDomain).toMatchObject({ phase: "failed", failure: { code: "not_found" } });
+  });
+
+  it("opens the inspector on a selection and keeps the chosen tab otherwise", () => {
+    const { store } = setup();
+    store.open("w-1");
+    expect(store.snapshot().tab).toBe("report");
+    store.select("CH-1");
+    expect(store.snapshot().tab).toBe("inspect");
+    store.showTab("report");
+    store.select(null);
+    expect(store.snapshot().tab).toBe("report");
+  });
+
   it("asks the binary for the report and verification and streams the observer journal", async () => {
     const { bridge, store, flushes } = setup();
     store.open("w-1");

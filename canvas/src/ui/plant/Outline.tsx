@@ -1,27 +1,25 @@
-import type { NavigationStore } from "../../app/navigationStore";
-import type { PlantState, PlantStore } from "../../app/plantStore";
+import type { Plant } from "../../model/plant";
 import { areaOf } from "../../model/plant";
 import { hallOf, hallsOf } from "../../model/plantView";
 import shared from "../shared.module.css";
 import styles from "./PlantScreen.module.css";
 
-type Ready = Extract<PlantState, { phase: "ready" }>;
-
 interface OutlineProps {
-  readonly state: Ready;
+  readonly plant: Plant;
   readonly hall: string | null;
-  readonly plants: PlantStore;
-  readonly navigation: NavigationStore;
+  readonly selected: string | null;
+  readonly onSelect: (id: string) => void;
+  readonly onOpenHall?: (hall: string) => void;
 }
 
-function groups(state: Ready, hall: string | null): readonly (readonly [string, readonly string[]])[] {
-  const halls = hallsOf(state.plant);
-  const visible = state.plant.instances.filter(
+function groups(plant: Plant, hall: string | null): readonly (readonly [string, readonly string[]])[] {
+  const halls = hallsOf(plant);
+  const visible = plant.instances.filter(
     (instance) => halls.length === 0 || hallOf(instance.id) === hall || hallOf(instance.id) === null,
   );
   const byArea = new Map<string, string[]>();
   visible.forEach((instance) => {
-    const area = areaOf(state.plant, instance);
+    const area = areaOf(plant, instance);
     byArea.set(area, [...(byArea.get(area) ?? []), instance.id]);
   });
   return [...byArea.entries()];
@@ -63,19 +61,15 @@ function Section({ title, items, current, marks, onPick }: SectionProps) {
   );
 }
 
-export function Outline({ state, hall, plants, navigation }: OutlineProps) {
-  const halls = hallsOf(state.plant);
-  const openHall = (name: string) => {
-    navigation.go({ screen: "plant", domain: state.path, hall: name });
-  };
-  const select = (id: string) => {
-    plants.select(id);
-  };
+export function Outline({ plant, hall, selected, onSelect, onOpenHall }: OutlineProps) {
+  const halls = hallsOf(plant);
   return (
     <nav className={styles.outline} aria-label="Outline">
-      {halls.length > 0 && <Section title="Halls" items={halls} current={hall} marks="location" onPick={openHall} />}
-      {groups(state, hall).map(([area, ids]) => (
-        <Section key={area} title={area} items={ids} current={state.selected} marks="pressed" onPick={select} />
+      {halls.length > 0 && onOpenHall !== undefined && (
+        <Section title="Halls" items={halls} current={hall} marks="location" onPick={onOpenHall} />
+      )}
+      {groups(plant, hall).map(([area, ids]) => (
+        <Section key={area} title={area} items={ids} current={selected} marks="pressed" onPick={onSelect} />
       ))}
     </nav>
   );

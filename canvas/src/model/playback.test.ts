@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { journal, observation } from "../test/runFixture";
-import { formatReading, parseJournalRecord, PlaybackIndex, shortChannel } from "./playback";
+import { parseJournalRecord, PlaybackIndex, shortChannel } from "./playback";
 
 function indexOf(records: readonly unknown[]) {
   const index = new PlaybackIndex();
@@ -50,12 +50,7 @@ describe("playback", () => {
     expect(indexOf(journal).density(0, 40e9, 4)).toEqual([0, 1, 2, 1]);
   });
 
-  it("formats readings with fixed decimals and units", () => {
-    const at = { channel: "x", unit: "kW", atNs: 0 };
-    expect(formatReading({ ...at, value: 892.4 })).toBe("892 kW");
-    expect(formatReading({ ...at, value: 27.04 })).toBe("27.0 kW");
-    expect(formatReading({ ...at, value: 5.954, unit: "" })).toBe("5.95");
-    expect(formatReading({ ...at, value: true })).toBe("true");
+  it("names a channel without its kind", () => {
     expect(shortChannel("cooling_tower.basin_temp")).toBe("basin_temp");
     expect(shortChannel("plain")).toBe("plain");
   });

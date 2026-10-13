@@ -1,8 +1,11 @@
 import type { ReactNode } from "react";
 import type { Report } from "../../model/report";
-import { wallClock } from "../../model/report";
+import { humanise, wallClock } from "../../model/report";
+import { displayUnit } from "../../model/units";
 import shared from "../shared.module.css";
 import styles from "./RunScreen.module.css";
+
+type Cell = string | { readonly text: string; readonly title: string };
 
 function Section({
   title,
@@ -10,7 +13,7 @@ function Section({
   children,
 }: {
   readonly title: string;
-  readonly note?: string;
+  readonly note?: string | undefined;
   readonly children: ReactNode;
 }) {
   return (
@@ -24,23 +27,33 @@ function Section({
   );
 }
 
-function Rows({ rows }: { readonly rows: readonly (readonly string[])[] }) {
-  if (rows.length === 0) {
-    return <p className={styles.muted}>None</p>;
-  }
+function Rows({
+  rows,
+  columns,
+  empty = "None",
+}: {
+  readonly rows: readonly (readonly Cell[])[];
+  readonly columns: readonly string[];
+  readonly empty?: string;
+}) {
+  if (rows.length === 0) return <p className={styles.muted}>{empty}</p>;
   return (
     <table className={styles.table}>
       <tbody>
-        {rows.map((row) => (
-          <tr key={row.join("|")}>
-            {row.map((cell, index) => (
-              <td
-                key={`${String(index)}:${cell}`}
-                className={index > 0 && /^[\d.\-−–, ]+$/.test(cell) ? styles.number : undefined}
-              >
-                {cell}
-              </td>
-            ))}
+        {rows.map((row, r) => (
+          <tr key={r}>
+            {row.map((cell, c) => {
+              const text = typeof cell === "string" ? cell : cell.text;
+              return (
+                <td
+                  key={c}
+                  className={styles[columns[c] ?? "text"]}
+                  title={typeof cell === "string" ? undefined : cell.title}
+                >
+                  {text}
+                </td>
+              );
+            })}
           </tr>
         ))}
       </tbody>
@@ -50,66 +63,113 @@ function Rows({ rows }: { readonly rows: readonly (readonly string[])[] }) {
 
 const fixed = (value: number) =>
   Math.abs(value) >= 100 ? value.toFixed(0) : Math.abs(value) >= 10 ? value.toFixed(1) : value.toFixed(2);
+const named = (id: string): Cell => ({ text: humanise(id), title: id });
+const count = (report: Report, key: string) =>
+  report.ended ? (report.counts[key] ?? 0).toLocaleString("en-US") : "n/a";
 
 function Facts({ report }: { readonly report: Report }) {
-  const counts = ["emitted", "delivered", "dropped"].map((key) => [
-    key,
-    (report.counts[key] ?? 0).toLocaleString("en-US"),
-  ]);
   const dropped = Object.entries(report.dropped).map(([reason, n]) => [
     reason.replaceAll("_", " "),
     n.toLocaleString("en-US"),
   ]);
   return (
     <>
-      <Section title="Verification" note={report.verification.replace("_", " ")}>
-        <Rows rows={report.checks.map((check) => [check.name, check.status])} />
+      <Section title="Verification" note={report.verification.replaceAll("_", " ") || "not recorded"}>
+        <Rows rows={report.checks.map((check) => [check.name, check.status])} columns={["id", "text"]} />
       </Section>
-      <Section title="Deliveries">
-        <Rows rows={[...counts, ...dropped]} />
+      <Section title="Deliveries" note={report.ended ? undefined : "run not closed"}>
+        <Rows
+          rows={[...["emitted", "delivered", "dropped"].map((key) => [key, count(report, key)]), ...dropped]}
+          columns={["text", "number"]}
+        />
       </Section>
     </>
   );
 }
 
-function Truth({ report }: { readonly report: Report }) {
+interface TruthProps {
+  readonly report: Report;
+  readonly unit: (entity: string, state: string) => string;
+  readonly entity: string | null;
+  readonly only?: "kpi";
+}
+
+function Truth({ report, unit, entity }: TruthProps) {
+  const at = (ns: number) => wallClock(ns, report.startNs);
   return (
     <>
-      <Section title="Disturbances" note={report.mode === "evaluate" ? "truth, after sealing" : "explore"}>
-        <Rows rows={report.disturbances.map((d) => [wallClock(d.atNs), d.what, d.target, d.detail])} />
+      <Section title="Disturbances" note="onset · set at">
+        <Rows
+          rows={report.disturbances.map((d) => [
+            at(d.onsetNs),
+            d.injectedNs === d.onsetNs ? "" : `set ${at(d.injectedNs)}`,
+            d.target,
+            named(d.name),
+          ])}
+          columns={["clock", "clock", "id", "label"]}
+        />
       </Section>
       <Section title="Effector calls">
         <Rows
-          rows={report.effectorCalls.map((call) => [wallClock(call.atNs), call.entity, call.effector, call.outcome])}
+          rows={report.effectorCalls.map((call) => [at(call.atNs), call.entity, named(call.effector), call.outcome])}
+          columns={["clock", "id", "label", "text"]}
         />
       </Section>
-      <Section title="KPI truth" note="mean · min – max">
-        <Rows
-          rows={report.kpis.map((row) => [
-            row.entity,
-            row.state,
-            fixed(row.mean),
-            `${fixed(row.min)} – ${fixed(row.max)}`,
-          ])}
-        />
-      </Section>
+      <KpiTruth report={report} unit={unit} entity={entity} />
       <Section title="Alarm system" note="ISA-18.2">
-        <Rows rows={Object.entries(report.alarms).map(([key, n]) => [key.replaceAll("_", " "), String(n)])} />
+        <Rows
+          rows={Object.entries(report.alarms).map(([key, n]) => [key.replaceAll("_", " "), String(n)])}
+          columns={["text", "number"]}
+        />
       </Section>
     </>
   );
 }
 
-export function ReportPanel({ report }: { readonly report: Report }) {
-  const scoring =
-    report.scoring === "not scored" ? "Not scored: no consumer verdict was submitted for this run." : report.scoring;
+function Scoring({ report }: { readonly report: Report }) {
+  const text =
+    report.scoring === null
+      ? "The report has no scoring section."
+      : `${report.scoring.status}${report.scoring.reason ? ` · ${report.scoring.reason}` : ""}`;
+  return (
+    <Section title="Scoring">
+      <p className={styles.muted}>{text}</p>
+    </Section>
+  );
+}
+
+function KpiTruth({ report, unit, entity }: TruthProps) {
+  const kpis = report.kpis.filter((row) => entity === null || row.entity === entity);
+  return (
+    <Section title="KPI truth" note={entity === null ? "mean · min – max" : `${entity} · mean · min – max`}>
+      <Rows
+        rows={kpis.map((row) => [
+          { text: `${row.entity} · ${humanise(row.state)}`, title: `${row.entity} ${row.state}` },
+          `${fixed(row.mean)} ${displayUnit(unit(row.entity, row.state))}`.trim(),
+          `${fixed(row.min)} – ${fixed(row.max)}`,
+        ])}
+        columns={["label", "number", "number"]}
+        empty={entity === null ? "None" : `No KPI truth for ${entity}.`}
+      />
+    </Section>
+  );
+}
+
+export function ReportPanel({ report, unit, entity, only }: TruthProps) {
+  if (only === "kpi") {
+    return report.truthUnavailable ? null : <KpiTruth report={report} unit={unit} entity={entity} />;
+  }
   return (
     <>
       <Facts report={report} />
-      <Truth report={report} />
-      <Section title="Scoring">
-        <p className={styles.muted}>{scoring}</p>
-      </Section>
+      {report.truthUnavailable ? (
+        <Section title="Truth">
+          <p className={styles.muted}>{`Not available: ${report.truthUnavailable}`}</p>
+        </Section>
+      ) : (
+        <Truth report={report} unit={unit} entity={entity} />
+      )}
+      <Scoring report={report} />
     </>
   );
 }

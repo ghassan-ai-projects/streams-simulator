@@ -1,8 +1,13 @@
 import type { Edge, Node } from "@xyflow/react";
-import type { Reading } from "../../model/playback";
+import type { Attention, Shown } from "../../model/readout";
 import type { PlantView, ViewNode } from "../../model/plantView";
 
-type InstanceData = Readonly<{ view: ViewNode; readings: readonly Reading[] | null; active: boolean }>;
+export interface NodeLive {
+  readonly shown: readonly Shown[];
+  readonly status: Attention | "fault";
+}
+
+type InstanceData = Readonly<{ view: ViewNode; live: NodeLive | null; active: boolean }>;
 type FrameData = Readonly<{ title: string; count: number }>;
 
 export type InstanceNodeType = Node<InstanceData, "instance">;
@@ -31,7 +36,7 @@ function frames(view: PlantView): FrameNodeType[] {
 export function flowNodes(
   view: PlantView,
   selected: string | null,
-  readings: ((id: string) => readonly Reading[]) | null = null,
+  live: ((id: string) => NodeLive) | null = null,
   active: string | null = null,
 ): FlowNode[] {
   const nodes = view.nodes.map((node): InstanceNodeType | HallNodeType => {
@@ -40,7 +45,7 @@ export function flowNodes(
       id: node.id,
       type: node.instance === null ? "hall" : "instance",
       position: { x: box.x, y: box.y },
-      data: { view: node, readings: readings === null ? null : readings(node.id), active: node.id === active },
+      data: { view: node, live: live === null ? null : live(node.id), active: node.id === active },
       selected: node.id === selected,
       draggable: false,
       width: box.width,

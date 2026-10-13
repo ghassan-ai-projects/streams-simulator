@@ -104,6 +104,35 @@ function Graph({
   );
 }
 
+function PlantSide({
+  state,
+  hall,
+  plants,
+  navigation,
+}: {
+  readonly state: Ready;
+  readonly hall: string | null;
+  readonly plants: PlantStore;
+  readonly navigation: NavigationStore;
+}) {
+  return (
+    <div className={styles.side}>
+      <Outline
+        plant={state.plant}
+        hall={hall}
+        selected={state.selected}
+        onSelect={(id) => {
+          plants.select(id);
+        }}
+        onOpenHall={(name) => {
+          navigation.go({ screen: "plant", domain: state.path, hall: name });
+        }}
+      />
+      <Navigator />
+    </div>
+  );
+}
+
 export function PlantScreen({ plants, workspace, navigation, domain, hall }: PlantScreenProps) {
   const state = useStore(plants);
   const listing = useStore(workspace);
@@ -123,10 +152,7 @@ export function PlantScreen({ plants, workspace, navigation, domain, hall }: Pla
   return (
     <ReactFlowProvider>
       <div className={styles.screen}>
-        <div className={styles.side}>
-          <Outline state={state} hall={hall} plants={plants} navigation={navigation} />
-          <Navigator />
-        </div>
+        <PlantSide state={state} hall={hall} plants={plants} navigation={navigation} />
         <section className={styles.center} aria-label={`Plant ${state.plant.id}`}>
           <div className={styles.bar}>
             <Network size={14} aria-hidden="true" />

@@ -3,7 +3,12 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   plugins: [react()],
-  build: { outDir: "dist", sourcemap: true, target: "es2023" },
+  build: {
+    outDir: "dist",
+    sourcemap: true,
+    target: "es2023",
+    rollupOptions: { output: { sourcemapExcludeSources: true } },
+  },
   server: { port: 5173, strictPort: true, host: "127.0.0.1" },
   preview: { port: 4173, strictPort: true, host: "127.0.0.1" },
 });

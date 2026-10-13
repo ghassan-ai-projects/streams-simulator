@@ -1,6 +1,10 @@
-import { useMemo } from "react";
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
+import type { KeyboardEvent, ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Report } from "../../model/report";
 import { wallClock } from "../../model/report";
+import type { EventMark } from "../../model/timeline";
+import { eventMarks, laneRows, nextEvent, previousEvent } from "../../model/timeline";
 import styles from "./RunScreen.module.css";
 
 interface ScrubberProps {
@@ -10,55 +14,6 @@ interface ScrubberProps {
   readonly report: Report | null;
   readonly density: readonly number[];
   readonly onSeek: (ns: number) => void;
-}
-
-interface Mark {
-  readonly atNs: number;
-  readonly label: string;
-  readonly tone: "fault" | "other";
-}
-
-function marks(report: Report | null): readonly Mark[] {
-  if (report === null) return [];
-  const disturbances = report.disturbances.map((d): Mark => ({
-    atNs: d.atNs,
-    label: `${d.target} ${d.detail}`,
-    tone: d.what.startsWith("fault") ? "fault" : "other",
-  }));
-  const calls = report.effectorCalls.map((c): Mark => ({
-    atNs: c.atNs,
-    label: `${c.entity} ${c.effector}`,
-    tone: "other",
-  }));
-  return [...disturbances, ...calls].sort((a, b) => a.atNs - b.atNs);
-}
-
-function Marks({
-  list,
-  percent,
-  onSeek,
-}: {
-  readonly list: readonly Mark[];
-  readonly percent: (ns: number) => string;
-  readonly onSeek: (ns: number) => void;
-}) {
-  return (
-    <>
-      {list.map((mark) => (
-        <button
-          key={`${String(mark.atNs)}${mark.label}`}
-          type="button"
-          className={mark.tone === "fault" ? styles.markFault : styles.mark}
-          style={{ left: percent(mark.atNs) }}
-          title={`${wallClock(mark.atNs)} · ${mark.label}`}
-          aria-label={`Jump to ${wallClock(mark.atNs)}, ${mark.label}`}
-          onClick={() => {
-            onSeek(mark.atNs);
-          }}
-        />
-      ))}
-    </>
-  );
 }
 
 function Density({ density }: { readonly density: readonly number[] }) {
@@ -72,32 +27,153 @@ function Density({ density }: { readonly density: readonly number[] }) {
   );
 }
 
+interface LaneProps {
+  readonly marks: readonly EventMark[];
+  readonly fraction: (ns: number) => number;
+  readonly startNs: number;
+  readonly onSeek: (ns: number) => void;
+}
+
+const chipWidth = 168;
+
+function useWidth() {
+  const [width, setWidth] = useState(800);
+  const ref = useRef<HTMLOListElement>(null);
+  useEffect(() => {
+    const node = ref.current;
+    if (node === null || typeof ResizeObserver === "undefined") return undefined;
+    const observer = new ResizeObserver(() => {
+      setWidth(node.clientWidth || 800);
+    });
+    observer.observe(node);
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+  return { ref, width };
+}
+
+function Lane({ marks, fraction, startNs, onSeek }: LaneProps) {
+  const { ref, width } = useWidth();
+  const rows = laneRows(
+    marks.map((mark) => fraction(mark.atNs) * width),
+    chipWidth + 4,
+  );
+  return (
+    <ol
+      ref={ref}
+      className={styles.lane}
+      aria-label="Events"
+      style={{ height: `${String((Math.max(0, ...rows) + 1) * 28)}px` }}
+    >
+      {marks.map((mark, index) => (
+        <li
+          key={`${String(mark.atNs)}${mark.label}`}
+          style={{ left: `${String(fraction(mark.atNs) * 100)}%`, top: `${String((rows[index] ?? 0) * 28)}px` }}
+          className={styles.laneItem}
+        >
+          <button
+            type="button"
+            className={mark.tone === "fault" ? styles.chipFault : styles.chipEvent}
+            title={`${wallClock(mark.atNs, startNs)} · ${mark.raw}`}
+            onClick={() => {
+              onSeek(mark.atNs);
+            }}
+          >
+            {`${wallClock(mark.atNs, startNs)} ${mark.label}`}
+          </button>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+interface StepsProps {
+  readonly marks: readonly EventMark[];
+  readonly positionNs: number;
+  readonly clamp: (ns: number) => number;
+  readonly onSeek: (ns: number) => void;
+}
+
+function Steps({ marks, positionNs, clamp, onSeek }: StepsProps) {
+  const previous = previousEvent(marks, positionNs);
+  const next = nextEvent(marks, positionNs);
+  const button = (label: string, icon: ReactNode, target: number | null) => (
+    <button
+      type="button"
+      className={styles.step}
+      aria-label={label}
+      title={label}
+      disabled={target === null}
+      onClick={() => {
+        if (target !== null) onSeek(target);
+      }}
+    >
+      {icon}
+    </button>
+  );
+  return (
+    <div className={styles.steps} role="group" aria-label="Playback steps">
+      {button("Previous event", <ChevronsLeft size={14} aria-hidden="true" />, previous)}
+      {button("Back 10 minutes", <ChevronLeft size={14} aria-hidden="true" />, clamp(positionNs - 600e9))}
+      {button("Forward 10 minutes", <ChevronRight size={14} aria-hidden="true" />, clamp(positionNs + 600e9))}
+      {button("Next event", <ChevronsRight size={14} aria-hidden="true" />, next)}
+    </div>
+  );
+}
+
+interface RangeProps {
+  readonly startNs: number;
+  readonly span: number;
+  readonly positionNs: number;
+  readonly onSeek: (ns: number) => void;
+  readonly onKeyDown: (event: KeyboardEvent<HTMLInputElement>) => void;
+}
+
+function PlaybackRange({ startNs, span, positionNs, onSeek, onKeyDown }: RangeProps) {
+  return (
+    <input
+      type="range"
+      className={styles.range}
+      min={0}
+      max={Math.round(span / 1e9)}
+      value={Math.round((positionNs - startNs) / 1e9)}
+      onChange={(event) => {
+        onSeek(startNs + Number(event.target.value) * 1e9);
+      }}
+      onKeyDown={onKeyDown}
+      aria-label="Playback time"
+      aria-valuetext={wallClock(positionNs, startNs)}
+      aria-describedby="scrub-keys"
+    />
+  );
+}
+
 export function Scrubber({ startNs, endNs, positionNs, report, density, onSeek }: ScrubberProps) {
   const span = Math.max(1, endNs - startNs);
-  const percent = (ns: number) => `${String(Math.min(100, Math.max(0, ((ns - startNs) / span) * 100)))}%`;
-  const list = useMemo(() => marks(report), [report]);
+  const fraction = (ns: number) => Math.min(1, Math.max(0, (ns - startNs) / span));
+  const clamp = (ns: number) => Math.min(endNs, Math.max(startNs, ns));
+  const marks = useMemo(() => eventMarks(report), [report]);
+  const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (!event.shiftKey || (event.key !== "ArrowLeft" && event.key !== "ArrowRight")) return;
+    event.preventDefault();
+    onSeek(clamp(positionNs + (event.key === "ArrowLeft" ? -60e9 : 60e9)));
+  };
   return (
     <div className={styles.scrubber}>
-      <div className={styles.time} aria-live="polite">
-        {wallClock(positionNs)}
-        <span className={styles.muted}>{` of ${wallClock(startNs)} – ${wallClock(endNs)} UTC`}</span>
+      <div className={styles.timeRow}>
+        <span className={styles.time}>{wallClock(positionNs, startNs)}</span>
+        <span className={styles.muted}>{`of ${wallClock(startNs)} – ${wallClock(endNs, startNs)} UTC`}</span>
+        <Steps marks={marks} positionNs={positionNs} clamp={clamp} onSeek={onSeek} />
       </div>
       <div className={styles.track}>
         <Density density={density} />
-        <input
-          type="range"
-          className={styles.range}
-          min={0}
-          max={Math.round(span / 1e9)}
-          value={Math.round((positionNs - startNs) / 1e9)}
-          onChange={(event) => {
-            onSeek(startNs + Number(event.target.value) * 1e9);
-          }}
-          aria-label="Playback time"
-          aria-valuetext={wallClock(positionNs)}
-        />
-        <Marks list={list} percent={percent} onSeek={onSeek} />
+        <PlaybackRange startNs={startNs} span={span} positionNs={positionNs} onSeek={onSeek} onKeyDown={onKeyDown} />
       </div>
+      <p id="scrub-keys" className="sr-only">
+        Arrow keys move one second, Shift and arrow keys one minute, Page Up and Page Down further.
+      </p>
+      <Lane marks={marks} fraction={fraction} startNs={startNs} onSeek={onSeek} />
     </div>
   );
 }

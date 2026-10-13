@@ -45,3 +45,7 @@ code,
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+[tabindex="-1"]:focus {
+  outline: none;
+}

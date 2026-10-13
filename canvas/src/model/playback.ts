@@ -152,12 +152,3 @@ export function shortChannel(channel: string): string {
   const dot = channel.indexOf(".");
   return dot < 0 ? channel : channel.slice(dot + 1);
 }
-
-export function formatReading(reading: Reading): string {
-  if (typeof reading.value === "number") {
-    const abs = Math.abs(reading.value);
-    const digits = abs >= 100 ? 0 : abs >= 10 ? 1 : 2;
-    return `${reading.value.toFixed(digits)}${reading.unit ? ` ${reading.unit}` : ""}`;
-  }
-  return String(reading.value);
-}

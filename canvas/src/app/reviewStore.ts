@@ -21,6 +21,9 @@ export interface ReviewState {
   };
   readonly positionNs: number;
   readonly selected: string | null;
+  readonly runDomain: Load<unknown>;
+  readonly tab: "report" | "inspect";
+  readonly openedAt: number;
 }
 
 const idle: ReviewState = {
@@ -30,6 +33,9 @@ const idle: ReviewState = {
   playback: { phase: "loading", records: 0, adapter: "" },
   positionNs: 0,
   selected: null,
+  runDomain: { phase: "loading" },
+  tab: "report",
+  openedAt: 0,
 };
 
 export class ReviewStore extends Observable<ReviewState> {
@@ -42,6 +48,7 @@ export class ReviewStore extends Observable<ReviewState> {
     private readonly schedule: (flush: () => void) => void = (flush) => {
       setTimeout(flush, 250);
     },
+    private readonly now: () => number = () => Date.now(),
   ) {
     super(idle);
   }
@@ -50,9 +57,10 @@ export class ReviewStore extends Observable<ReviewState> {
     if (this.snapshot().worldId === worldId) return;
     this.close();
     this.index = new PlaybackIndex();
-    this.set({ ...idle, worldId });
+    this.set({ ...idle, worldId, openedAt: this.now() });
     void this.loadReport(worldId);
     void this.loadVerify(worldId);
+    void this.loadRunDomain(worldId);
     this.stop = this.bridge.followRun(worldId, {
       record: (data) => {
         this.take(worldId, data);
@@ -76,7 +84,11 @@ export class ReviewStore extends Observable<ReviewState> {
   }
 
   select(entity: string | null): void {
-    this.set({ ...this.snapshot(), selected: entity });
+    this.set({ ...this.snapshot(), selected: entity, tab: entity === null ? this.snapshot().tab : "inspect" });
+  }
+
+  showTab(tab: ReviewState["tab"]): void {
+    this.set({ ...this.snapshot(), tab });
   }
 
   private take(worldId: string, data: string): void {
@@ -116,6 +128,22 @@ export class ReviewStore extends Observable<ReviewState> {
     });
   }
 
+  private async loadRunDomain(worldId: string): Promise<void> {
+    const file = await this.bridge.readFile(`runs/${worldId}/run.json`);
+    if (this.snapshot().worldId !== worldId) return;
+    const spec = file.ok ? domainSpec(file.value.content) : null;
+    const runDomain: Load<unknown> =
+      spec !== null
+        ? { phase: "ready", value: spec }
+        : {
+            phase: "failed",
+            failure: file.ok
+              ? { status: 0, code: "no_domain_spec", message: "run.json has no domain_spec", issues: [] }
+              : file.failure,
+          };
+    this.set({ ...this.snapshot(), runDomain });
+  }
+
   private async loadVerify(worldId: string): Promise<void> {
     const outcome = await this.bridge.action("run.verify", { run: worldId });
     if (this.snapshot().worldId !== worldId) return;
@@ -125,5 +153,14 @@ export class ReviewStore extends Observable<ReviewState> {
         ? { phase: "ready", value: verifyMatches(outcome.value) }
         : { phase: "failed", failure: outcome.failure },
     });
+  }
+}
+
+function domainSpec(content: string): unknown {
+  try {
+    const parsed = JSON.parse(content) as unknown;
+    return typeof parsed === "object" && parsed !== null && "domain_spec" in parsed ? parsed.domain_spec : null;
+  } catch {
+    return null;
   }
 }

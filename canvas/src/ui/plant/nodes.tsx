@@ -2,12 +2,11 @@ import type { NodeProps } from "@xyflow/react";
 import { Handle, Position } from "@xyflow/react";
 import { ChevronRight } from "lucide-react";
 import type { CSSProperties } from "react";
-import type { Reading } from "../../model/playback";
 import { describeNode } from "../../model/plantView";
-import { formatReading, shortChannel } from "../../model/playback";
 import { familyNames, shapeOf } from "../../model/ports";
 import type { Pin } from "../../model/ports";
-import type { FrameNodeType, HallNodeType, InstanceNodeType } from "./flow";
+import type { Shown } from "../../model/readout";
+import type { FrameNodeType, HallNodeType, InstanceNodeType, NodeLive } from "./flow";
 import { cx } from "../cx";
 import styles from "./nodes.module.css";
 
@@ -60,31 +59,41 @@ function Pins({ ins, outs }: { readonly ins: readonly Pin[]; readonly outs: read
 
 export const readoutHeight = 84;
 
-function Readout({ readings }: { readonly readings: readonly Reading[] }) {
-  if (readings.length === 0) {
+function Readout({ shown }: { readonly shown: readonly Shown[] }) {
+  if (shown.length === 0) {
     return (
       <div className={styles.readout}>
         <span className={styles.none}>no observation yet</span>
       </div>
     );
   }
+  const more = shown.length - 4;
   return (
     <dl className={styles.readout}>
-      {readings.slice(0, 4).map((reading) => (
-        <div key={reading.channel}>
-          <dt>{shortChannel(reading.channel)}</dt>
-          <dd>{formatReading(reading)}</dd>
+      {shown.slice(0, more > 0 ? 3 : 4).map((entry) => (
+        <div key={entry.channel} className={entry.attention === null ? undefined : styles[entry.attention]}>
+          <dt>{entry.channel}</dt>
+          <dd>
+            {entry.value}
+            {entry.unit !== "" && <span className={styles.unit}>{entry.unit}</span>}
+          </dd>
         </div>
       ))}
+      {more > 0 && <div className={styles.more}>{`+${String(more + 1)} more in Inspect`}</div>}
     </dl>
   );
+}
+
+function statusClass(live: NodeLive | null): string | undefined {
+  const status = live?.status ?? null;
+  return status === null ? undefined : styles[`status-${status}`];
 }
 
 export function InstanceNode({ data, selected }: NodeProps<InstanceNodeType>) {
   const { view } = data;
   return (
     <div
-      className={cx(styles.node, selected && styles.selected, data.active && styles.active)}
+      className={cx(styles.node, selected && styles.selected, data.active && styles.active, statusClass(data.live))}
       role="group"
       aria-label={describeNode(view, selected)}
       style={{ "--cat": `var(--cat-${view.category})` } as CSSProperties}
@@ -97,7 +106,7 @@ export function InstanceNode({ data, selected }: NodeProps<InstanceNodeType>) {
           {view.detail}
         </span>
       </div>
-      {data.readings !== null && <Readout readings={data.readings} />}
+      {data.live !== null && <Readout shown={data.live.shown} />}
       <Pins ins={view.pins.ins} outs={view.pins.outs} />
     </div>
   );

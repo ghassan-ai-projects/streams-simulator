@@ -46,6 +46,14 @@ export class PlantStore extends Observable<PlantState> {
     this.set({ phase: "ready", path, plant, specs: await this.specs(plant), composition, selected: null });
   }
 
+  async show(key: string, domain: unknown): Promise<void> {
+    const state = this.snapshot();
+    if (state.phase !== "idle" && state.path === key) return;
+    this.set({ phase: "loading", path: key });
+    const plant = parsePlant(domain);
+    this.set({ phase: "ready", path: key, plant, specs: await this.specs(plant), composition: null, selected: null });
+  }
+
   select(id: string | null): void {
     const state = this.snapshot();
     if (state.phase === "ready") {

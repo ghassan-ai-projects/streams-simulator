@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { composition, domain } from "../test/plantFixture";
-import { areaOf, linksOf, parsePlant } from "./plant";
+import { areaOf, instrumentOf, linksOf, parsePlant, stateUnit } from "./plant";
 
 describe("plant from a domain file", () => {
   it("reads instances, kinds, areas and links", () => {
@@ -18,6 +18,7 @@ describe("plant from a domain file", () => {
       name: "chiller",
       channels: [{ name: "chiller.power", unit: "kW" }],
       states: ["cop"],
+      units: new Map([["cop", ""]]),
       faults: ["chiller__fouling"],
       effectors: ["start"],
     });
@@ -28,6 +29,27 @@ describe("plant from a domain file", () => {
       fromPort: null,
       toPort: null,
     });
+  });
+
+  it("reads link ports and instruments the domain records, and units and states for KPIs", () => {
+    const plant = parsePlant({
+      ...domain,
+      instances: [
+        {
+          kind: "chiller",
+          names: ["CH-1"],
+          area: "Cooling",
+          provenance: { instruments: { cop_point: "lib/annunciator@1" } },
+        },
+      ],
+      links: [{ from: "CH-1", to: "MB-1", type: "t", from_port: "power_out", to_port: "loads_in" }],
+      kinds: [{ name: "chiller", state: [{ name: "cop", unit: "ratio" }], channels: [] }],
+    });
+    expect(plant.links[0]).toMatchObject({ fromPort: "power_out", toPort: "loads_in" });
+    expect(instrumentOf(plant, "CH-1", "cop_point")).toBe("lib/annunciator@1");
+    expect(instrumentOf(plant, "CH-1", "nothing")).toBe("");
+    expect(stateUnit(plant, "CH-1", "cop")).toBe("ratio");
+    expect(stateUnit(plant, "nobody", "cop")).toBe("");
   });
 
   it("takes link ports from the composition when there is one", () => {
@@ -44,7 +66,7 @@ describe("plant from a domain file", () => {
     expect(plant.instances).toEqual([]);
     expect(plant.links).toEqual([]);
     expect(parsePlant({ instances: [{ id: "solo", kind: "k" }] }).instances).toEqual([
-      { id: "solo", kind: "k", area: "", component: null },
+      { id: "solo", kind: "k", area: "", component: null, instruments: new Map() },
     ]);
   });
 
@@ -52,8 +74,10 @@ describe("plant from a domain file", () => {
     const plant = parsePlant(domain);
     const meter = plant.instances[2];
     expect(meter && areaOf(plant, meter)).toBe("Power");
-    expect(areaOf(plant, { id: "x", kind: "k", area: "", component: null })).toBe("Mini");
-    expect(areaOf(parsePlant({}), { id: "x", kind: "k", area: "", component: null })).toBe("Plant");
+    expect(areaOf(plant, { id: "x", kind: "k", area: "", component: null, instruments: new Map() })).toBe("Mini");
+    expect(areaOf(parsePlant({}), { id: "x", kind: "k", area: "", component: null, instruments: new Map() })).toBe(
+      "Plant",
+    );
     expect(linksOf(plant, "CT-1").incoming.map((link) => link.from)).toEqual(["CH-1"]);
     expect(linksOf(plant, "CT-1").outgoing.map((link) => link.to)).toEqual(["CH-1"]);
   });

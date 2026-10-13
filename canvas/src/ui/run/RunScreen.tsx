@@ -1,21 +1,28 @@
 import { ReactFlowProvider } from "@xyflow/react";
-import { ChevronRight, CircleCheck, CircleX, Eye, Lock, TriangleAlert } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { useCallback, useEffect, useMemo } from "react";
 import type { NavigationStore } from "../../app/navigationStore";
-import type { PlantStore } from "../../app/plantStore";
+import type { PlantState, PlantStore } from "../../app/plantStore";
 import type { ReviewState, ReviewStore } from "../../app/reviewStore";
 import type { WorkspaceStore } from "../../app/workspaceStore";
+import { instrumentOf, stateUnit } from "../../model/plant";
+import { shortChannel } from "../../model/playback";
 import { plantView } from "../../model/plantView";
+import { attentionOf, showReading } from "../../model/readout";
 import type { Report } from "../../model/report";
-import { badgeLabels, badgeOf, runSpan } from "../../model/report";
-import { readoutHeight } from "../plant/nodes";
+import { runSpan } from "../../model/report";
+import { faultedAt } from "../../model/timeline";
+import type { NodeLive } from "../plant/flow";
 import { Navigator, ZoomBar } from "../plant/GraphControls";
+import { Outline } from "../plant/Outline";
+import { readoutHeight } from "../plant/nodes";
 import { PlantGraph } from "../plant/PlantGraph";
+import shared from "../shared.module.css";
 import { useScreen } from "../useScreen";
 import { useStore } from "../useStore";
-import { ReportPanel } from "./ReportPanel";
+import { Banners, Status } from "./RunStatus";
+import { RunPanel } from "./RunPanel";
 import { Scrubber } from "./Scrubber";
-import shared from "../shared.module.css";
 import styles from "./RunScreen.module.css";
 
 interface RunScreenProps {
@@ -26,31 +33,7 @@ interface RunScreenProps {
   readonly worldId: string;
 }
 
-const badgeIcons = { verified: CircleCheck, "not-verified": CircleX, incomplete: TriangleAlert } as const;
-
-function Badges({ state }: { readonly state: ReviewState }) {
-  if (state.report.phase !== "ready") {
-    return (
-      <span className={styles.chip}>{state.report.phase === "loading" ? "Building the report…" : "No report"}</span>
-    );
-  }
-  const report = state.report.value;
-  const matches = state.verified.phase === "ready" ? state.verified.value : null;
-  const badge = badgeOf(report, matches);
-  const Icon = badgeIcons[badge];
-  return (
-    <>
-      <span className={styles[badge]}>
-        <Icon size={13} aria-hidden="true" />
-        {state.verified.phase === "loading" && badge === "verified" ? "Verifying…" : badgeLabels[badge]}
-      </span>
-      <span className={report.mode === "explore" ? styles.truth : styles.chip}>
-        {report.mode === "explore" ? <Eye size={13} aria-hidden="true" /> : <Lock size={13} aria-hidden="true" />}
-        {report.mode === "explore" ? "Explore · unblinded" : "Evaluate · ended"}
-      </span>
-    </>
-  );
-}
+type ReadyPlant = Extract<PlantState, { phase: "ready" }>;
 
 function Header({
   state,
@@ -62,10 +45,6 @@ function Header({
   readonly worldId: string;
 }) {
   const heading = useScreen(`${worldId} · review`);
-  const progress =
-    state.playback.phase === "loading"
-      ? `loading observations · ${state.playback.records.toLocaleString("en-US")}`
-      : `${state.playback.records.toLocaleString("en-US")} observations`;
   return (
     <div className={styles.bar}>
       <button
@@ -81,44 +60,59 @@ function Header({
       <h1 className={styles.here} ref={heading} tabIndex={-1}>
         {worldId}
       </h1>
-      <Badges state={state} />
-      <span className={styles.progress} role="status">
-        {progress}
-      </span>
+      <Status state={state} />
       <ZoomBar />
     </div>
   );
 }
 
-function usePlant(state: ReviewState, plants: PlantStore, workspace: WorkspaceStore) {
+function useRunPlant(state: ReviewState, plants: PlantStore, workspace: WorkspaceStore): ReadyPlant | null {
   const listing = useStore(workspace);
   const plant = useStore(plants);
+  const key = `run:${state.worldId ?? ""}`;
   const domainId = state.report.phase === "ready" ? state.report.value.domainId : null;
-  const path =
+  const fallback =
     listing.phase === "ready" ? listing.workspace.domains.find((entry) => entry.id === domainId)?.path : undefined;
   useEffect(() => {
-    if (path !== undefined && listing.phase === "ready") void plants.load(path, listing.workspace);
-  }, [path, listing, plants]);
-  return plant.phase === "ready" && plant.path === path ? plant : null;
+    if (state.runDomain.phase === "ready") void plants.show(key, state.runDomain.value);
+    else if (state.runDomain.phase === "failed" && fallback !== undefined && listing.phase === "ready")
+      void plants.load(fallback, listing.workspace);
+  }, [state.runDomain, key, fallback, listing, plants]);
+  if (plant.phase !== "ready") return null;
+  return plant.path === key || plant.path === fallback ? plant : null;
+}
+
+function useLive(review: ReviewStore, state: ReviewState, plant: ReadyPlant | null) {
+  const report = state.report.phase === "ready" ? state.report.value : null;
+  const faulted = useMemo(() => faultedAt(report, state.positionNs), [report, state.positionNs]);
+  return useCallback(
+    (id: string): NodeLive => {
+      const shown = review.index
+        .readings(id, state.positionNs)
+        .map((reading) =>
+          showReading(reading, plant === null ? "" : instrumentOf(plant.plant, id, shortChannel(reading.channel))),
+        );
+      const attention = attentionOf(shown);
+      return { shown, status: attention === "alarm" ? "alarm" : faulted.has(id) ? "fault" : attention };
+    },
+    [review, state.positionNs, plant, faulted],
+  );
 }
 
 function Graph({
   review,
   state,
-  plants,
-  workspace,
+  plant,
 }: {
   readonly review: ReviewStore;
   readonly state: ReviewState;
-  readonly plants: PlantStore;
-  readonly workspace: WorkspaceStore;
+  readonly plant: ReadyPlant | null;
 }) {
-  const plant = usePlant(state, plants, workspace);
   const view = useMemo(
     () => (plant === null ? null : plantView(plant.plant, plant.specs, null, readoutHeight)),
     [plant],
   );
-  const readings = useCallback((id: string) => review.index.readings(id, state.positionNs), [review, state.positionNs]);
+  const live = useLive(review, state, plant);
   if (view === null) {
     return (
       <p className={styles.muted} role="status">
@@ -131,7 +125,7 @@ function Graph({
       view={view}
       viewKey="review"
       selected={state.selected}
-      readings={readings}
+      live={live}
       onSelect={(id) => {
         review.select(id);
       }}
@@ -160,36 +154,53 @@ function Timeline({ review, state }: { readonly review: ReviewStore; readonly st
   );
 }
 
+function Side({
+  review,
+  state,
+  plant,
+}: {
+  readonly review: ReviewStore;
+  readonly state: ReviewState;
+  readonly plant: ReadyPlant | null;
+}) {
+  return (
+    <div className={styles.side}>
+      {plant !== null && (
+        <Outline
+          plant={plant.plant}
+          hall={null}
+          selected={state.selected}
+          onSelect={(id) => {
+            review.select(id);
+          }}
+        />
+      )}
+      <Navigator />
+    </div>
+  );
+}
+
 export function RunScreen({ review, plants, workspace, navigation, worldId }: RunScreenProps) {
   const state = useStore(review);
+  const plant = useRunPlant(state, plants, workspace);
   useEffect(() => {
     review.open(worldId);
   }, [review, worldId]);
+  const unit = useCallback(
+    (entity: string, name: string) => (plant === null ? "" : stateUnit(plant.plant, entity, name)),
+    [plant],
+  );
   return (
     <ReactFlowProvider>
       <div className={styles.screen}>
         <Header state={state} navigation={navigation} worldId={worldId} />
-        <div className={styles.side}>
-          <Navigator />
-        </div>
+        <Side review={review} state={state} plant={plant} />
         <section className={styles.center} aria-label={`Run ${worldId}`}>
+          <Banners state={state} />
           <Timeline review={review} state={state} />
-          <Graph review={review} state={state} plants={plants} workspace={workspace} />
+          <Graph review={review} state={state} plant={plant} />
         </section>
-        <aside className={styles.report} aria-label="Report" tabIndex={0}>
-          {state.report.phase === "ready" && <ReportPanel report={state.report.value} />}
-          {state.report.phase === "loading" && (
-            <p className={styles.muted} role="status">
-              streamsim report is reading the run folder…
-            </p>
-          )}
-          {state.report.phase === "failed" && (
-            <p
-              className={styles.failure}
-              role="alert"
-            >{`${state.report.failure.message} (${state.report.failure.code})`}</p>
-          )}
-        </aside>
+        <RunPanel review={review} state={state} plant={plant} unit={unit} />
       </div>
     </ReactFlowProvider>
   );

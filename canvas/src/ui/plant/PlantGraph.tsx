@@ -2,12 +2,11 @@ import { Background, ReactFlow, useReactFlow, useStore } from "@xyflow/react";
 import "@xyflow/react/dist/base.css";
 import type { CSSProperties, KeyboardEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
-import type { Reading } from "../../model/playback";
 import { directionOf, firstOf, nearest } from "../../model/graphKeys";
 import type { PlantView } from "../../model/plantView";
 import { describeNode } from "../../model/plantView";
 import { centreOf, inView, tierOf } from "../../model/viewport";
-import type { FlowNode } from "./flow";
+import type { FlowNode, NodeLive } from "./flow";
 import { flowEdges, flowNodes } from "./flow";
 import { FrameNode, HallNode, InstanceNode } from "./nodes";
 import { cx } from "../cx";
@@ -19,7 +18,7 @@ export interface PlantGraphProps {
   readonly view: PlantView;
   readonly viewKey: string;
   readonly selected: string | null;
-  readonly readings?: (id: string) => readonly Reading[];
+  readonly live?: (id: string) => NodeLive;
   readonly onSelect: (id: string | null) => void;
   readonly onOpenHall?: (hall: string) => void;
   readonly onEscape?: () => void;
@@ -99,12 +98,12 @@ function Flow({
   view,
   viewKey,
   selected,
-  readings,
+  live,
   onSelect,
   onOpenHall,
   active,
 }: PlantGraphProps & { readonly active: string | null }) {
-  const nodes = useMemo(() => flowNodes(view, selected, readings ?? null, active), [view, selected, readings, active]);
+  const nodes = useMemo(() => flowNodes(view, selected, live ?? null, active), [view, selected, live, active]);
   const edges = useMemo(() => flowEdges(view), [view]);
   return (
     <ReactFlow

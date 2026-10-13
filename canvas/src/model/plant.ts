@@ -12,6 +12,7 @@ interface Kind {
   readonly name: string;
   readonly channels: readonly Channel[];
   readonly states: readonly string[];
+  readonly units: ReadonlyMap<string, string>;
   readonly faults: readonly string[];
   readonly effectors: readonly string[];
 }
@@ -21,6 +22,7 @@ export interface Instance {
   readonly kind: string;
   readonly area: string;
   readonly component: string | null;
+  readonly instruments: ReadonlyMap<string, string>;
 }
 
 export interface Link {
@@ -71,6 +73,7 @@ function kind(value: unknown): Kind {
     name: text(entry.name),
     channels,
     states: names(entry.state, "name"),
+    units: new Map(list(entry.state).map((state) => [text(record(state).name), text(record(state).unit)] as const)),
     faults: names(entry.faults, "id"),
     effectors: names(entry.effectors, "name"),
   };
@@ -79,12 +82,16 @@ function kind(value: unknown): Kind {
 function instances(value: unknown): readonly Instance[] {
   return list(value).flatMap((raw) => {
     const entry = record(raw);
-    const component = text(record(entry.provenance).component) || null;
+    const provenance = record(entry.provenance);
+    const component = text(provenance.component) || null;
+    const instruments = new Map(
+      Object.entries(record(provenance.instruments)).map(([point, ref]) => [point, text(ref)] as const),
+    );
     const ids = list(entry.names).map(text);
     const single = text(entry.id);
     return (ids.length > 0 ? ids : [single])
       .filter((id) => id !== "")
-      .map((id) => ({ id, kind: text(entry.kind), area: text(entry.area), component }));
+      .map((id) => ({ id, kind: text(entry.kind), area: text(entry.area), component, instruments }));
   });
 }
 
@@ -93,6 +100,10 @@ function areas(site: Json): readonly Area[] {
     const entry = record(raw);
     return { name: text(entry.name), parent: text(entry.parent) || null };
   });
+}
+
+function present(value: string | undefined): string | undefined {
+  return value === "" ? undefined : value;
 }
 
 function endpoint(value: unknown): { readonly id: string; readonly port: string } {
@@ -119,7 +130,9 @@ function links(value: unknown, composition: unknown): readonly Link[] {
     const from = text(entry.from);
     const to = text(entry.to);
     const ports = queues.get(`${from}\u0000${to}`)?.shift();
-    return { from, to, type: text(entry.type), fromPort: ports?.from ?? null, toPort: ports?.to ?? null };
+    const fromPort = present(text(entry.from_port)) ?? present(ports?.from) ?? null;
+    const toPort = present(text(entry.to_port)) ?? present(ports?.to) ?? null;
+    return { from, to, type: text(entry.type), fromPort, toPort };
   });
 }
 
@@ -153,4 +166,13 @@ export function linksOf(
     incoming: plant.links.filter((link) => link.to === id),
     outgoing: plant.links.filter((link) => link.from === id),
   };
+}
+
+export function stateUnit(plant: Plant, entity: string, state: string): string {
+  const kind = plant.instances.find((instance) => instance.id === entity)?.kind;
+  return (kind === undefined ? undefined : plant.kinds.get(kind)?.units.get(state)) ?? "";
+}
+
+export function instrumentOf(plant: Plant, entity: string, point: string): string {
+  return plant.instances.find((instance) => instance.id === entity)?.instruments.get(point) ?? "";
 }
