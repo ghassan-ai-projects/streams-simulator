@@ -1743,7 +1743,15 @@
     }
   ],
   "link_types": [{"name": "chiller_small__load_in__ahu", "from": "ahu", "to": "chiller_small"}],
-  "links": [{"from": "AHU-1", "to": "CH-3", "type": "chiller_small__load_in__ahu"}],
+  "links": [
+    {
+      "from": "AHU-1",
+      "from_port": "load_out",
+      "to": "CH-3",
+      "to_port": "load_in",
+      "type": "chiller_small__load_in__ahu"
+    }
+  ],
   "profiles": [
     {
       "name": "nominal",

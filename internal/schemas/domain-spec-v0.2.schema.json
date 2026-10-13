@@ -267,7 +267,9 @@
         "properties": {
           "type": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$"},
           "from": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,255}$"},
-          "to": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,255}$"}
+          "to": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,255}$"},
+          "from_port": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$", "description": "The port of the source instance the link leaves by, when a composition named it. Structure only, never read by the world."},
+          "to_port": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$", "description": "The port of the target instance the link enters by, when a composition named it. Structure only, never read by the world."}
         }
       }
     },

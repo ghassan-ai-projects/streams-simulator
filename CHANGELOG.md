@@ -14,6 +14,9 @@ This project has not established a formal release stream yet. Until it does, cha
   faulted) to every sampled instant, schedule no emission unless a pulse needs recordings, and judge a pulse only at its
   detector channels' recordings. KPI samples at the instant an advance ends are taken at the next advance or at the close,
   and a retired entity's alarms end at its retirement.
+- **Link ports in the domain** (finding R9-03). A domain link may carry optional `from_port` and `to_port`; `domain compose`
+  writes them from each connection, so a client reading only the domain sees which port of an instance a link uses. The world
+  ignores them and a link's identity stays `(type, from, to)`. The two composed examples are regenerated.
 
 - **Simulator version 0.3.1** (review P7e). `sim_version` is `0.3.1`: the P6a integration fix changed faulted hidden-state
   numbers, which changes the digest inputs of a faulted run. The behaviour pin is regenerated (only the `run.json` and

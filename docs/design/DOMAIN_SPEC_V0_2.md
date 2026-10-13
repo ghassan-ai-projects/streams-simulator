@@ -226,7 +226,7 @@ detector form.
 ## 11. Typed links
 
 `link_types[]` = `{name, from, to, description?}` declares a kind of link between two kinds (`feeds`: `tank` to `pump`).
-`links[]` = `{type, from, to}` joins two instances. Issues: duplicate link type name (`/link_types/i/name`), undeclared `from` or
+`links[]` = `{type, from, to, from_port?, to_port?}` joins two instances; the optional ports name the port of each instance the link uses (`domain compose` writes them from the composition's connections) and are structure only, never read by the world and not part of a link's identity. Issues: duplicate link type name (`/link_types/i/name`), undeclared `from` or
 `to` kind (`/link_types/i/from`), undeclared type (`/links/i/type`), an endpoint that is no name and fits no template
 (`/links/i/from`), an endpoint of the wrong kind, and a link stated twice (`/links/i`). Endpoints must be identifiable instances;
 whether an index lies within the starting population is not checked. Links are structure only: the aggregation of dynamics inputs

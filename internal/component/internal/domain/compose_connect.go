@@ -87,7 +87,7 @@ func (s *linkSet) add(c *composer, from, to endpoint, at string) error {
 		s.seen[name] = true
 		s.types = append(s.types, map[string]any{"name": name, "from": from.owner.kindName, "to": to.owner.kindName})
 	}
-	s.links = append(s.links, map[string]any{"type": name, "from": from.instance, "to": to.instance})
+	s.links = append(s.links, map[string]any{"type": name, "from": from.instance, "to": to.instance, "from_port": from.port.Name, "to_port": to.port.Name})
 	return s.record(c, follow{kind: to.owner.kindName, state: to.port.State, link: name, source: from.port.State, sampleS: to.port.SampleS}, at)
 }
 
