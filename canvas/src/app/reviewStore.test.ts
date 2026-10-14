@@ -59,7 +59,7 @@ describe("review", () => {
     ]);
     expect(store.snapshot()).toMatchObject({
       report: { phase: "ready", value: { domainId: "mini" } },
-      verified: { phase: "ready", value: { matches: true, domainChanged: false, detail: "" } },
+      verified: { phase: "ready", value: { matches: true, domainChanged: false, detail: "", reason: "", file: "" } },
     });
     bridge.stream("w-1", journal);
     flushes.forEach((flush) => {
@@ -119,7 +119,7 @@ describe("review", () => {
     await Promise.resolve();
     expect(store.snapshot().verified).toEqual({
       phase: "ready",
-      value: { matches: false, domainChanged: false, detail: "trace differs" },
+      value: { matches: false, domainChanged: false, detail: "trace differs", reason: "", file: "" },
     });
     bridge.actions.set("run.verify", success({}));
     store.open("w-2");

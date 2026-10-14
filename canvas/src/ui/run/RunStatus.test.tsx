@@ -12,7 +12,7 @@ function state(overrides: Partial<ReviewState>): ReviewState {
   return {
     worldId: "w-1",
     report: { phase: "ready", value: parsed },
-    verified: { phase: "ready", value: { matches: true, domainChanged: false, detail: "" } },
+    verified: { phase: "ready", value: { matches: true, domainChanged: false, detail: "", reason: "", file: "" } },
     playback: { phase: "ready", records: parsed.counts.delivered ?? 0, adapter: "native-jsonl" },
     positionNs: 0,
     selected: null,
@@ -26,7 +26,10 @@ function state(overrides: Partial<ReviewState>): ReviewState {
 describe("run status", () => {
   it("badges a divergent replay Not verified with no warning banner", () => {
     const divergent = state({
-      verified: { phase: "ready", value: { matches: false, domainChanged: false, detail: "trace differs" } },
+      verified: {
+        phase: "ready",
+        value: { matches: false, domainChanged: false, detail: "trace differs", reason: "", file: "" },
+      },
     });
     render(
       <>
@@ -40,7 +43,7 @@ describe("run status", () => {
 
   it("says when the plant file changed after the run, as information", async () => {
     const changed = state({
-      verified: { phase: "ready", value: { matches: true, domainChanged: true, detail: "" } },
+      verified: { phase: "ready", value: { matches: true, domainChanged: true, detail: "", reason: "", file: "" } },
     });
     const view = render(<Banners state={changed} />);
     expect(screen.getByRole("status")).toHaveTextContent("The plant file changed after this run");

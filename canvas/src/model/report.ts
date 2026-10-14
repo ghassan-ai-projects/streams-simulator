@@ -200,6 +200,8 @@ export interface Replay {
   readonly matches: boolean;
   readonly domainChanged: boolean;
   readonly detail: string;
+  readonly reason: string;
+  readonly file: string;
 }
 
 export function parseReplay(value: unknown): Replay | null {
@@ -209,15 +211,32 @@ export function parseReplay(value: unknown): Replay | null {
     matches: body.matches,
     domainChanged: body.domain_changed === true,
     detail: typeof body.detail === "string" ? body.detail : "",
+    reason: typeof body.reason === "string" ? body.reason : "",
+    file: typeof body.file === "string" ? body.file : "",
   };
 }
+
+const reasons: Readonly<Record<string, (file: string) => string>> = {
+  match: () => "Reproduces: replaying the run gave the same output.",
+  recorded_spec: () => "Does not verify: a spec the run recorded does not match its digest, so nothing was replayed.",
+  world_digest: () => "Does not verify: the recorded specs replay to a different world than the run recorded.",
+  trace_divergence: () => "Does not reproduce: replaying the run gave a different trace.",
+  journal_divergence: () => "Does not reproduce: replaying the run gave a different journal.",
+  evidence_divergence: (file) => `Does not reproduce: replaying the run gave a different ${file || "evidence file"}.`,
+  unblinded_stamp: () => "Does not verify: the run's unblinded stamp does not match its replay.",
+  digest_missing: (file) => `Does not verify: run.json records no digest for ${file || "an evidence file"}.`,
+  file_differs: (file) => `Does not verify: ${file || "a file"} differs from what the run recorded.`,
+  file_missing: (file) => `Does not verify: ${file || "a file"} is missing from the run folder.`,
+};
 
 export function replayLine(verify: VerifyState): string {
   if (verify.phase === "loading") return "Replaying the run to check that it reproduces…";
   if (verify.phase === "failed") return "Not checked: streamsim verify could not replay this run.";
+  const phrase = reasons[verify.value.reason];
+  if (phrase !== undefined) return phrase(verify.value.file);
   return verify.value.matches
     ? "Reproduces: replaying the run gave the same output."
-    : "Does not reproduce: replaying the run gave different output.";
+    : "Does not verify: streamsim verify reported a mismatch.";
 }
 
 export type VerifyState =

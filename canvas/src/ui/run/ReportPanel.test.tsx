@@ -13,7 +13,7 @@ describe("report panel", () => {
         report={parseReport(report)}
         unit={() => ""}
         entity={null}
-        verify={{ phase: "ready", value: { matches: true, domainChanged: false, detail: "" } }}
+        verify={{ phase: "ready", value: { matches: true, domainChanged: false, detail: "", reason: "", file: "" } }}
       />,
     );
     expect(within(screen.getByRole("region", { name: "File check" })).getByText("trace")).toBeInTheDocument();
@@ -100,11 +100,14 @@ describe("scrubber", () => {
         report={parseReport(report)}
         unit={() => ""}
         entity={null}
-        verify={{ phase: "ready", value: { matches: false, domainChanged: false, detail: "trace.jsonl differs" } }}
+        verify={{
+          phase: "ready",
+          value: { matches: false, domainChanged: false, detail: "trace.jsonl differs", reason: "", file: "" },
+        }}
       />,
     );
     const replay = screen.getByRole("region", { name: "Replay check" });
-    expect(within(replay).getByText(/^Does not reproduce/)).toBeInTheDocument();
+    expect(within(replay).getByText(/^Does not verify/)).toBeInTheDocument();
     expect(within(replay).getByText("trace.jsonl differs")).toBeInTheDocument();
     expect(screen.getByRole("note")).toHaveTextContent("This run did not verify");
   });

@@ -15,14 +15,20 @@ function run(binary: string, args: readonly string[]): void {
   execFileSync(binary, args, { cwd: repository, stdio: ["ignore", "ignore", "pipe"] });
 }
 
-function record(binary: string, workspace: string, name: string, extra: readonly string[]): void {
+function record(
+  binary: string,
+  workspace: string,
+  name: string,
+  extra: readonly string[],
+  domain = "factory-utilities",
+): void {
   const domains = join(workspace, "domains");
   run(binary, [
     "run",
     "-domains-dir",
     domains,
     "-domain",
-    "factory-utilities",
+    domain,
     "-seed",
     "7",
     "-duration",
@@ -74,6 +80,8 @@ export function buildFixture(): Fixture {
   copyFileSync(join(import.meta.dirname, "..", "fixtures", "campus-3.composition.json"), campus);
   run(binary, ["domain", "compose", campus, "--out", join(workspace, "domains", "campus-3.domain.json")]);
   record(binary, workspace, "w-explore", ["-explore"]);
+  const jams = ["-fault", "h02/M-1=molder__product_jam@300", "-fault", "h02/M-2=molder__bearing_wear@300"];
+  record(binary, workspace, "w-hall", ["-explore", ...jams], "campus-3");
   record(binary, workspace, "w-evaluate", []);
   record(binary, workspace, "w-edited", []);
   appendFileSync(join(workspace, "runs", "w-edited", "trace.jsonl"), "\n");

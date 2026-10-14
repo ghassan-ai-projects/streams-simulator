@@ -36,7 +36,7 @@ test("a run whose files were edited after it ended is Not verified", async ({ pa
   await expect(page.getByRole("alert").filter({ hasText: "differ from what the run wrote" })).toBeVisible();
   await expect(
     page.getByRole("complementary", { name: "Run details" }).getByRole("region", { name: "Replay check" }),
-  ).toContainText("Does not reproduce");
+  ).toContainText("Does not verify: trace.jsonl differs");
   const graph = await page.getByRole("application", { name: "Plant graph" }).boundingBox();
   expect(graph?.height ?? 0).toBeGreaterThan(300);
 });
@@ -47,7 +47,7 @@ test("a run that does not reproduce reads Not verified with verify's own verdict
   await page.goto(`${env("CANVAS_APP_URL")}/#/run?world=w-diverged`);
   await expect(page.getByRole("status").filter({ hasText: /^Not verified$/ })).toHaveCount(1, { timeout: 60_000 });
   const replay = page.getByRole("complementary", { name: "Run details" }).getByRole("region", { name: "Replay check" });
-  await expect(replay).toContainText("Does not reproduce");
+  await expect(replay).toContainText(/Does not (reproduce|verify)/);
   await replay.getByText("What differs").click();
   await expect(replay.locator("pre")).not.toBeEmpty();
   await expect(page.getByRole("note")).toContainText("This run did not verify");
@@ -58,5 +58,19 @@ test("a run whose recorded plant was tampered with reads Not verified, not Not c
   await expect(page.getByRole("status").filter({ hasText: /^Not verified$/ })).toHaveCount(1, { timeout: 60_000 });
   const replay = page.getByRole("complementary", { name: "Run details" }).getByRole("region", { name: "Replay check" });
   await replay.getByText("What differs").click();
+  await expect(replay).toContainText("nothing was replayed");
   await expect(replay.locator("pre")).toContainText("does not match its digest");
+});
+
+test("a hall carries its faulted members, and inside it each names its fault", async ({ page }) => {
+  await page.goto(`${env("CANVAS_APP_URL")}/#/run?world=w-hall`);
+  await expect(page.getByRole("status").filter({ hasText: /^Verified$/ })).toHaveCount(1, { timeout: 60_000 });
+  const hall = page.getByRole("group", { name: /^h02, Fault in 2, / });
+  await expect(hall).toContainText("Fault 2");
+  await expect(page.getByRole("group", { name: /^h01, / })).not.toContainText("Fault");
+  await page.getByRole("navigation", { name: "Outline" }).getByRole("button", { name: "h02", exact: true }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "h02" })).toBeVisible();
+  await expect(page.getByRole("group", { name: /^M-1, Fault: product jam, / })).toContainText("product jam");
+  await page.getByRole("button", { name: "w-hall" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "w-hall" })).toBeVisible();
 });

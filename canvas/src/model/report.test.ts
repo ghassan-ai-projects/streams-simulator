@@ -56,7 +56,7 @@ describe("run report", () => {
   it("derives the badge from the report and verify, never from its own checks", () => {
     const parsed = parseReport(report);
     const ready = (matches: boolean) =>
-      ({ phase: "ready", value: { matches, domainChanged: false, detail: "" } }) as const;
+      ({ phase: "ready", value: { matches, domainChanged: false, detail: "", reason: "", file: "" } }) as const;
     expect(badgeOf(parsed, ready(true))).toBe("verified");
     expect(badgeOf(parsed, { phase: "loading" })).toBe("verifying");
     expect(badgeOf(parsed, { phase: "failed" })).toBe("not-checked");
@@ -66,18 +66,35 @@ describe("run report", () => {
     expect(badgeOf({ ...parsed, complete: false }, ready(true))).toBe("incomplete");
     expect(badgeOf({ ...parsed, ended: false }, ready(true))).toBe("incomplete");
     expect(badgeLabels["not-verified"]).toBe("Not verified");
-    expect(parseReplay({ matches: true })).toEqual({ matches: true, domainChanged: false, detail: "" });
-    expect(parseReplay({ matches: false, domain_changed: true, detail: "trace differs" })).toEqual({
-      matches: false,
-      domainChanged: true,
-      detail: "trace differs",
+    expect(parseReplay({ matches: true, reason: "match" })).toEqual({
+      matches: true,
+      domainChanged: false,
+      detail: "",
+      reason: "match",
+      file: "",
     });
+    expect(parseReplay({ matches: false, domain_changed: true, detail: "trace differs", file: "trace.jsonl" })).toEqual(
+      {
+        matches: false,
+        domainChanged: true,
+        detail: "trace differs",
+        reason: "",
+        file: "trace.jsonl",
+      },
+    );
     expect(parseReplay({ matches: "yes" })).toBeNull();
     expect(parseReplay(null)).toBeNull();
     expect(replayLine({ phase: "loading" })).toMatch(/^Replaying/);
     expect(replayLine({ phase: "failed" })).toMatch(/^Not checked/);
     expect(replayLine(ready(true))).toMatch(/^Reproduces/);
-    expect(replayLine(ready(false))).toMatch(/^Does not reproduce/);
+    expect(replayLine(ready(false))).toMatch(/^Does not verify: streamsim verify reported/);
+    const because = (reason: string, file = "") =>
+      replayLine({ phase: "ready", value: { matches: false, domainChanged: false, detail: "", reason, file } });
+    expect(because("file_missing", "ledger.jsonl")).toBe(
+      "Does not verify: ledger.jsonl is missing from the run folder.",
+    );
+    expect(because("trace_divergence")).toMatch(/^Does not reproduce: .* different trace/);
+    expect(because("recorded_spec")).toMatch(/nothing was replayed/);
   });
 
   it("spans the run from the report, or from the observations while the report is missing", () => {
