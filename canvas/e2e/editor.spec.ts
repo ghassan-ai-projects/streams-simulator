@@ -26,7 +26,7 @@ function pin(page: Page, node: string, port: string) {
   return page.locator(`.react-flow__node[data-id="${node}"] .react-flow__handle[data-handleid="${port}"]`);
 }
 
-test("a new plant is built in Chrome, refused with the issue on its element, fixed, composed and opened", async ({
+test("a new plant is built in Chrome, a name the binary would refuse is stopped in the field, then it composes and opens", async ({
   page,
 }) => {
   await page.goto(env("CANVAS_APP_URL"));
@@ -40,17 +40,19 @@ test("a new plant is built in Chrome, refused with the issue on its element, fix
   await expect(page.getByRole("heading", { level: 1, name: "Lab cooling" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "No equipment yet" })).toBeVisible();
   await add(page, "Water-cooled chiller", "CH-1");
-  await add(page, "Cooling tower", "CT 1");
-  await pin(page, "CH-1", "heat_out").dragTo(pin(page, "CT 1", "heat_in"));
-  await page.getByRole("navigation", { name: "Outline" }).getByRole("button", { name: "CT 1" }).click();
+  const build = page.getByRole("complementary", { name: "Build" });
+  await build.getByLabel("Find equipment").fill("Cooling");
+  await build.getByLabel("Equipment", { exact: true }).selectOption({ label: "Cooling tower" });
+  await build.getByLabel("Name").fill("CT 1");
+  await expect(build.getByText(/"CT 1" is not a valid name\. An instance name: a letter or digit/)).toBeVisible();
+  await expect(build.getByRole("button", { name: "Add to the plant" })).toHaveAttribute("aria-disabled", "true");
+  await build.getByLabel("Name").fill("CT-1");
+  await build.getByRole("button", { name: "Add to the plant" }).click();
+  await page.getByRole("button", { name: "Close the instance" }).click();
+  await pin(page, "CH-1", "heat_out").dragTo(pin(page, "CT-1", "heat_in"));
+  await page.getByRole("navigation", { name: "Outline" }).getByRole("button", { name: "CT-1" }).click();
   await expect(page.getByRole("heading", { name: "Links 1" })).toBeVisible();
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
-  await page.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByRole("status").filter({ hasText: /^Saved, not composed/ })).toBeVisible();
-  await expect(page.getByRole("group", { name: /^CT 1, .*has issues$/ })).toBeVisible();
-  await expect(page.getByRole("region", { name: "Issues on CT 1" })).toContainText("does not match pattern");
-  await page.getByLabel("Name").fill("CT-1");
-  await page.getByRole("button", { name: "Rename" }).click();
   await page.getByRole("button", { name: "Save" }).click();
   await expect(page.getByRole("status").filter({ hasText: /^Saved\. Composed \d+ channels/ })).toBeVisible();
   const folder = env("CANVAS_WORKSPACE");

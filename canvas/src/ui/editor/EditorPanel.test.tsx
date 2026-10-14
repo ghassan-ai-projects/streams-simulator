@@ -80,7 +80,9 @@ describe("plant editor panel", () => {
     expect(within(form).getByText('Nothing in the library matches "nothing like this".')).toBeInTheDocument();
     choose("Find equipment", "pu", form);
     choose("Equipment", "lib/pump@1", form);
-    expect(within(form).getByLabelText("Name")).toHaveValue("P-1");
+    expect(within(form).getByLabelText("Name")).toHaveValue("");
+    expect(within(form).getByLabelText("Name")).toHaveAttribute("placeholder", "P-1");
+    expect(within(form).getByText(/An instance name: a letter or digit, then letters, digits and/)).toBeInTheDocument();
     expect(await within(form).findByRole("option", { name: "Small" })).toBeInTheDocument();
     choose("Size", "small", form);
     choose("Area", "Yard", form);
@@ -90,6 +92,24 @@ describe("plant editor panel", () => {
     });
     expect(equipmentOf(current(editor)).at(-1)).toMatchObject({ use: "lib/pump@1", preset: "small", area: "Yard" });
     expect(screen.getByRole("status")).toHaveTextContent("Unsaved changes");
+  });
+
+  it("refuses a name the binary's rule rejects, in the add and the rename forms, naming the rule", async () => {
+    const { editor } = await editing();
+    const form = screen.getByRole("form", { name: "Add equipment" });
+    choose("Equipment", "lib/pump@1", form);
+    fireEvent.change(within(form).getByLabelText("Name"), { target: { value: "Pump P 1" } });
+    expect(within(form).getByText(/"Pump P 1" is not a valid name\. An instance name: a letter/)).toBeInTheDocument();
+    fireEvent.click(within(form).getByRole("button", { name: "Add to the plant" }));
+    expect(equipmentOf(current(editor)).flatMap((entry) => entry.names)).not.toContain("Pump P 1");
+    act(() => {
+      editor.select("CH-1");
+    });
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "CH 9" } });
+    expect(screen.getByText(/^Not a valid name\. An instance name/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Rename" }));
+    expect(screen.getByLabelText("Name")).toHaveValue("CH 9");
+    expect(equipmentOf(current(editor)).flatMap((entry) => entry.names)).toContain("CH-1");
   });
 
   it("renames, moves, links, unlinks and deletes the selected instance, and reverts", async () => {

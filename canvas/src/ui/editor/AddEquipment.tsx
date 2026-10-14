@@ -3,6 +3,7 @@ import type { SyntheticEvent } from "react";
 import { useEffect, useState } from "react";
 import type { Draft, EditorStore } from "../../app/editorStore";
 import { areasOf, suggestedName } from "../../model/composition";
+import { instanceNameFits, instanceNameRule } from "../../model/instanceNameRule";
 import type { LibraryEntry, Presets } from "../../model/library";
 import { searchLibrary } from "../../model/library";
 import panel from "../panel.module.css";
@@ -66,17 +67,30 @@ function Choice({
   );
 }
 
-function NameField({ name, setName }: { readonly name: string; readonly setName: (name: string) => void }) {
+interface NameProps {
+  readonly typed: string;
+  readonly suggested: string;
+  readonly setTyped: (name: string) => void;
+}
+
+function NameField({ typed, suggested, setTyped }: NameProps) {
   return (
-    <label className={panel.field}>
-      <span>Name</span>
-      <input
-        value={name}
-        onChange={(event) => {
-          setName(event.target.value);
-        }}
-      />
-    </label>
+    <>
+      <label className={panel.field}>
+        <span>Name</span>
+        <input
+          value={typed}
+          placeholder={suggested}
+          aria-describedby="add-name-rule"
+          onChange={(event) => {
+            setTyped(event.target.value);
+          }}
+        />
+      </label>
+      <p className={panel.hint} id="add-name-rule">
+        {`Used in files and links. Leave empty to use the suggestion. ${instanceNameRule()}`}
+      </p>
+    </>
   );
 }
 
@@ -126,26 +140,29 @@ function sizes(presets: Presets): readonly (readonly [string, string])[] {
 
 function missing(use: string, name: string, area: string): string | null {
   if (use === "") return "Choose equipment from the library.";
-  if (name.trim() === "") return "Give the instance a name.";
+  if (name === "") return "Give the instance a name.";
+  if (!instanceNameFits(name)) return `"${name}" is not a valid name. ${instanceNameRule()}`;
   return area === "" ? "Choose an area." : null;
 }
 
 function useNaming(draft: Draft, use: string) {
-  const [typed, setTyped] = useState<string | null>(null);
+  const [typed, setTyped] = useState("");
   const title = draft.library.find((entry) => entry.ref === use)?.title ?? "";
-  const name = typed ?? (use === "" ? "" : suggestedName(draft.doc, use, title));
+  const suggested = use === "" ? "" : suggestedName(draft.doc, use, title);
   return {
-    name,
-    setName: setTyped,
+    typed,
+    suggested,
+    name: typed.trim() === "" ? suggested : typed.trim(),
+    setTyped,
     reset: () => {
-      setTyped(null);
+      setTyped("");
     },
   };
 }
 
 export function AddEquipment({ draft, editor, request }: AddProps) {
   const [use, setUse] = useState("");
-  const { name, setName, reset } = useNaming(draft, use);
+  const { typed, suggested, name, setTyped, reset } = useNaming(draft, use);
   const areas = areasOf(draft.doc);
   const [area, setArea] = useState(areas[0] ?? "");
   const { presets, preset, setPreset } = usePresets(editor, use);
@@ -154,7 +171,7 @@ export function AddEquipment({ draft, editor, request }: AddProps) {
     event.preventDefault();
     if (problem !== null) return;
     request.ask("instance");
-    void editor.add({ use, preset, name: name.trim(), area });
+    void editor.add({ use, preset, name, area });
     reset();
   };
   return (
@@ -170,7 +187,7 @@ export function AddEquipment({ draft, editor, request }: AddProps) {
       />
       {presets.description !== "" && <p className={styles.describe}>{presets.description}</p>}
       <Choice label="Size" value={preset} options={sizes(presets)} onChange={setPreset} />
-      <NameField name={name} setName={setName} />
+      <NameField typed={typed} suggested={suggested} setTyped={setTyped} />
       <Choice label="Area" value={area} options={areas.map((entry) => [entry, entry] as const)} onChange={setArea} />
       <SubmitRow id="add-reason" reason={problem}>
         <Plus size={14} aria-hidden="true" />

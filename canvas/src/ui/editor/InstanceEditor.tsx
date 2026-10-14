@@ -6,6 +6,7 @@ import type { Draft } from "../../app/editorStore";
 import type { Instance } from "../../model/plant";
 import type { Connection } from "../../model/composition";
 import { areasOf, connectionsOf, endpointOf, linkEnd } from "../../model/composition";
+import { instanceNameFits, instanceNameRule } from "../../model/instanceNameRule";
 import { disconnect, isTemplate, moveInstance, removeInstance, renameInstance } from "../../model/compositionEdits";
 import panel from "../panel.module.css";
 import { ConnectForm } from "./ConnectForm";
@@ -15,6 +16,17 @@ import { useRequestedFocus } from "./panelProps";
 
 type EditorProps = PanelProps & { readonly instance: Instance };
 
+function NameRule({ fits }: { readonly fits: boolean }) {
+  return (
+    <>
+      <span />
+      <span className={panel.hint} id="instance-name-rule">
+        {fits ? instanceNameRule() : `Not a valid name. ${instanceNameRule()}`}
+      </span>
+    </>
+  );
+}
+
 function Rename({
   instance,
   editor,
@@ -23,7 +35,8 @@ function Rename({
 }: Pick<EditorProps, "instance" | "editor" | "request"> & { readonly flagged: boolean }) {
   const [name, setName] = useState(instance.id);
   const input = useRequestedFocus<HTMLInputElement>(request, "name");
-  const ready = name.trim() !== "" && name.trim() !== instance.id;
+  const fits = instanceNameFits(name.trim());
+  const ready = fits && name.trim() !== instance.id;
   const submit = (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!ready) return;
@@ -37,7 +50,8 @@ function Rename({
         <input
           id="instance-name"
           ref={input}
-          aria-describedby={flagged ? "instance-issues" : undefined}
+          aria-invalid={!fits}
+          aria-describedby={flagged ? "instance-issues instance-name-rule" : "instance-name-rule"}
           value={name}
           onChange={(event) => {
             setName(event.target.value);
@@ -47,6 +61,7 @@ function Rename({
           Rename
         </button>
       </span>
+      <NameRule fits={fits} />
     </form>
   );
 }
