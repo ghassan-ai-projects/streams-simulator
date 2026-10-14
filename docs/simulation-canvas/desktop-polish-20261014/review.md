@@ -1,7 +1,7 @@
 # Desktop visual and UX review — 2026-10-14
 
 - Build: baseline `9500b76`; owner-provided local bridge at `http://127.0.0.1:53085`; paired in Chrome.
-- Evidence: live frozen `lab-workspace` with 3 plants and 9 recordings; native Chrome walkthrough at 1728 × 940; an isolated empty workspace at 55693; and root's supplemental real-browser matrix of seven screens at 1280 × 900, 1440 × 900 and 1920 × 1080, each in light and dark. All 44 screenshots are durable under [`screenshots/`](screenshots/), and [`screen-matrix.json`](screen-matrix.json) records the 42 primary captures, axe results, overflow measurements and console errors. I inspected representative screenshots across each width and both themes. The matrix reports zero axe findings and no document-width overflow in all 42 captures. The only captured console error is HTTP 422 on the deliberately tampered-run fixture, whose report correctly explains that verification refused to replay it. The two additional captures show the 1280 Fit graph in both themes.
+- Evidence: live frozen `lab-workspace` with 3 plants and 9 recordings; native Chrome walkthrough at 1728 × 940; an isolated empty workspace at 55693; and root's supplemental real-browser matrix of seven screens at 1280 × 900, 1440 × 900 and 1920 × 1080, each in light and dark. The 44 screenshots are not kept in git; [`screen-matrix.json`](screen-matrix.json) records the 42 primary captures, axe results, overflow measurements and console errors. I inspected representative screenshots across each width and both themes. The matrix reports zero axe findings and no document-width overflow in all 42 captures. The only captured console error is HTTP 422 on the deliberately tampered-run fixture, whose report correctly explains that verification refused to replay it. The two additional captures show the 1280 Fit graph in both themes.
 - Scope: visual and interaction review of the available workspace, plant, editor, launch, playback and report flows. P10/P11 capabilities outside this round's implemented scope are not counted as polish defects. No code changes; the editor add/link probe was undone and returned to `No changes`.
 
 ## Findings and dispositions
@@ -32,7 +32,7 @@ No other actionable visual defect is confirmed. At the factory graph's 50% initi
 - [x] Light and dark theme spot checks
 - [x] Keyboard help, focus, and Tab/graph-key reachability across workspace, plant, editor, launch and report
 - [x] Report loading state observed
-- [x] Exact 1280, 1440 and 1920 screenshots in both themes; representative screenshots independently inspected
+- [x] Exact 1280, 1440 and 1920 screenshots in both themes; representative screenshots independently inspected (not kept in git)
 - [x] Matrix axe and document-width overflow checks: zero findings / no overflow in 42 captures
 - [x] Console-error review: only seeded tampered-fixture 422 observed; report displays the intended integrity reason
 - [x] Empty workspace, example recovery, real command refusal and corrected-plan recovery
