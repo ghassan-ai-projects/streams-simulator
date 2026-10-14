@@ -111,12 +111,19 @@ describe("plant editor panel", () => {
     fireEvent.click(screen.getByRole("button", { name: "Revert" }));
     expect(screen.getByRole("status")).toHaveTextContent("Unsaved changes");
     fireEvent.click(screen.getByRole("button", { name: "Discard changes" }));
+    fireEvent.keyDown(document.body, { key: "z", ctrlKey: true });
+    expect(equipmentOf(current(editor)).map((entry) => entry.names[0])).toEqual(["CT-1"]);
+    fireEvent.click(screen.getByRole("button", { name: "Redo" }));
     expect(current(editor)).toEqual(doc);
     expect(screen.getByRole("status")).toHaveTextContent("No changes");
   });
 
   it("saves, shows the binary's issues on the instance and selects it from the list", async () => {
-    const { fake } = await editing();
+    const { fake, editor } = await editing();
+    expect(screen.getByRole("button", { name: "Save" })).toHaveAttribute("aria-disabled", "true");
+    act(() => {
+      editor.edit((doc) => ({ ...doc, title: "Lab two" }));
+    });
     fake.actions.set(
       "domain.compose",
       failed({
@@ -131,13 +138,18 @@ describe("plant editor panel", () => {
     expect(screen.getByRole("region", { name: "Issues on CH-1" })).toHaveTextContent('has no port "heat_in"');
     expect(screen.getByLabelText("Name")).toHaveAccessibleDescription(/has no port/);
     fake.actions.set("domain.compose", success({ channels: 4, faults: 2, effectors: 0 }));
-    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "CH-2" } });
+    fireEvent.click(screen.getByRole("button", { name: "Rename" }));
+    fireEvent.keyDown(document.body, { key: "s", ctrlKey: true });
     expect(await screen.findByText("Saved. Composed 4 channels, 2 faults, 0 effectors.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Open plant" })).toBeInTheDocument();
   });
 
   it("says why the file was not saved", async () => {
-    const { fake } = await editing();
+    const { fake, editor } = await editing();
+    act(() => {
+      editor.edit((doc) => ({ ...doc, title: "Lab two" }));
+    });
     fake.writeOutcomes.set(path, failed(failure("conflict", 409, "the file changed on disk")));
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     expect(await screen.findByText("Not saved: the file changed on disk")).toBeInTheDocument();

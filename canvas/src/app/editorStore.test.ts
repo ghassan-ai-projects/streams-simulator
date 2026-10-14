@@ -128,4 +128,31 @@ describe("editor store", () => {
     expect(await store.create(path, "lab", "Lab again")).toMatchObject({ code: "plant_exists" });
     expect(fake.writes).toEqual([]);
   });
+
+  it("undoes and redoes every edit, revert included, and forgets the redo after a new edit", async () => {
+    const { store } = await opened();
+    const title = () => {
+      const state = store.snapshot();
+      return state.phase === "ready" ? state.doc.title : "";
+    };
+    store.edit((doc) => ({ ...doc, title: "One" }));
+    store.edit((doc) => ({ ...doc, title: "Two" }));
+    store.revert();
+    expect(title()).toBe("Lab");
+    store.undo();
+    expect(title()).toBe("Two");
+    store.undo();
+    store.undo();
+    store.undo();
+    expect(title()).toBe("Lab");
+    store.redo();
+    expect(title()).toBe("One");
+    store.edit((doc) => ({ ...doc, title: "Three" }));
+    store.redo();
+    expect(title()).toBe("Three");
+    expect(store.snapshot()).toMatchObject({ future: [] });
+    const before = store.snapshot();
+    store.edit((doc) => doc);
+    expect(store.snapshot()).toBe(before);
+  });
 });

@@ -22,6 +22,8 @@ export interface Draft {
   readonly domainEtag: string;
   readonly saved: Composition;
   readonly doc: Composition;
+  readonly past: readonly Composition[];
+  readonly future: readonly Composition[];
   readonly specs: ReadonlyMap<string, ComponentSpec>;
   readonly library: readonly LibraryEntry[];
   readonly selected: string | null;
@@ -53,6 +55,8 @@ function summaryOf(result: unknown): string {
   const count = (key: string) => (typeof body[key] === "number" ? String(body[key]) : "0");
   return `Composed ${count("channels")} channels, ${count("faults")} faults, ${count("effectors")} effectors.`;
 }
+
+const historyLimit = 100;
 
 export class EditorStore extends Observable<EditorState> {
   constructor(private readonly bridge: Bridge) {
@@ -105,7 +109,8 @@ export class EditorStore extends Observable<EditorState> {
 
   private fresh(path: string, etag: string, doc: Composition): Draft {
     const empty = { specs: new Map(), library: [], selected: null, issues: null, outcome: null, failure: null };
-    return { phase: "ready", path, etag, domainEtag: "", saved: doc, doc, saving: false, ...empty };
+    const history = { past: [], future: [] };
+    return { phase: "ready", path, etag, domainEtag: "", saved: doc, doc, saving: false, ...history, ...empty };
   }
 
   select(id: string | null): void {
@@ -113,15 +118,33 @@ export class EditorStore extends Observable<EditorState> {
   }
 
   edit(change: (doc: Composition) => Composition, selected?: string | null): void {
-    this.update((draft) => ({
-      ...draft,
-      doc: change(draft.doc),
-      selected: selected === undefined ? draft.selected : selected,
-    }));
+    this.update((draft) => {
+      const doc = change(draft.doc);
+      if (doc === draft.doc) return draft;
+      const past = [...draft.past, draft.doc].slice(-historyLimit);
+      return { ...draft, doc, past, future: [], selected: selected === undefined ? draft.selected : selected };
+    });
   }
 
   revert(): void {
-    this.update((draft) => ({ ...draft, doc: draft.saved, selected: null }));
+    const draft = this.draft();
+    if (draft !== null) this.edit(() => draft.saved, null);
+  }
+
+  undo(): void {
+    this.update((draft) => {
+      const previous = draft.past.at(-1);
+      if (previous === undefined) return draft;
+      return { ...draft, doc: previous, past: draft.past.slice(0, -1), future: [draft.doc, ...draft.future] };
+    });
+  }
+
+  redo(): void {
+    this.update((draft) => {
+      const next = draft.future[0];
+      if (next === undefined) return draft;
+      return { ...draft, doc: next, past: [...draft.past, draft.doc], future: draft.future.slice(1) };
+    });
   }
 
   async add(entry: NewEquipment): Promise<void> {

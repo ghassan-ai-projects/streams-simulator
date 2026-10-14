@@ -1,4 +1,4 @@
-import { ChevronRight, PenLine, RefreshCw, Save, Undo2 } from "lucide-react";
+import { ChevronRight, PenLine, Redo, RefreshCw, Save, Undo, Undo2 } from "lucide-react";
 import { useState } from "react";
 import type { Draft, EditorStore } from "../../app/editorStore";
 import type { NavigationStore } from "../../app/navigationStore";
@@ -9,6 +9,7 @@ import { cx } from "../cx";
 import shared from "../shared.module.css";
 import { useScreen } from "../useScreen";
 import styles from "./Editor.module.css";
+import { useEditorKeys } from "./useEditorKeys";
 
 interface BarProps {
   readonly draft: Draft;
@@ -61,7 +62,7 @@ function Title({ draft, navigation }: Omit<BarProps, "editor">) {
 }
 
 function OpenPlant({ draft, navigation }: Omit<BarProps, "editor">) {
-  if (draft.outcome?.kind !== "composed" || draft.doc !== draft.saved) return null;
+  if (draft.domainEtag === "" && draft.outcome?.kind !== "composed") return null;
   return (
     <button
       type="button"
@@ -91,6 +92,41 @@ function Reload({ draft, editor }: Omit<BarProps, "navigation">) {
   );
 }
 
+function History({ draft, editor }: Omit<BarProps, "navigation">) {
+  const mac = navigator.platform.toLowerCase().includes("mac");
+  const key = mac ? "⌘" : "Ctrl+";
+  return (
+    <span className={styles.history}>
+      <button
+        type="button"
+        className={styles.icon}
+        aria-label="Undo"
+        aria-keyshortcuts="Control+Z Meta+Z"
+        title={`Undo (${key}Z)`}
+        aria-disabled={draft.past.length === 0}
+        onClick={() => {
+          editor.undo();
+        }}
+      >
+        <Undo size={14} aria-hidden="true" />
+      </button>
+      <button
+        type="button"
+        className={styles.icon}
+        aria-label="Redo"
+        aria-keyshortcuts="Control+Shift+Z Meta+Shift+Z"
+        title={`Redo (${key}Shift+Z)`}
+        aria-disabled={draft.future.length === 0}
+        onClick={() => {
+          editor.redo();
+        }}
+      >
+        <Redo size={14} aria-hidden="true" />
+      </button>
+    </span>
+  );
+}
+
 function Revert({ disabled, editor }: { readonly disabled: boolean; readonly editor: EditorStore }) {
   const [confirming, setConfirming] = useState(false);
   return (
@@ -114,6 +150,7 @@ function Revert({ disabled, editor }: { readonly disabled: boolean; readonly edi
 }
 
 export function EditorBar({ draft, editor, navigation }: BarProps) {
+  useEditorKeys(editor);
   const status = statusOf(draft);
   const clean = draft.doc === draft.saved;
   return (
@@ -125,13 +162,15 @@ export function EditorBar({ draft, editor, navigation }: BarProps) {
       </span>
       <OpenPlant draft={draft} navigation={navigation} />
       <Reload draft={draft} editor={editor} />
+      <History draft={draft} editor={editor} />
       <Revert disabled={clean || draft.saving} editor={editor} />
       <button
         type="button"
         className={styles.save}
-        aria-disabled={draft.saving}
+        aria-disabled={clean || draft.saving}
+        title={clean ? "Nothing to save" : "Save and compose (Ctrl+S)"}
         onClick={() => {
-          void editor.save();
+          if (!clean) void editor.save();
         }}
       >
         <Save size={14} aria-hidden="true" />

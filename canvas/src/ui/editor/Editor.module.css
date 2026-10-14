@@ -171,3 +171,30 @@
   overflow: auto;
   overflow-wrap: anywhere;
 }
+
+.history {
+  display: flex;
+  flex: none;
+  gap: 2px;
+}
+
+.icon {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.icon:hover {
+  background: var(--surface-hover);
+}
+
+.icon[aria-disabled="true"] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
