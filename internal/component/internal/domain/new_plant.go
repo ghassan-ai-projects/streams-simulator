@@ -38,6 +38,16 @@ func emptyPlant(doc map[string]any) {
 		delete(doc, key)
 	}
 	doc["profiles"] = emptyProfiles(doc["profiles"])
+	doc["areas"] = []any{map[string]any{"name": siteAreaName(doc["site"])}}
+}
+
+func siteAreaName(raw any) string {
+	if site, ok := raw.(map[string]any); ok {
+		if name, ok := site["name"].(string); ok {
+			return name
+		}
+	}
+	return "Site"
 }
 
 func emptyProfiles(raw any) []any {

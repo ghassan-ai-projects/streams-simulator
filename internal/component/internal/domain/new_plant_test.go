@@ -65,3 +65,36 @@ func TestAnEmptyPlantAlwaysCarriesTheThreeProfilesTheDomainSpecRequires(t *testi
 		t.Fatalf("profile names = %v", names)
 	}
 }
+
+func TestAnEmptyPlantKeepsItsSiteAndStartsWithOneAreaNamedAfterIt(t *testing.T) {
+	t.Parallel()
+	sited := strings.Replace(basePlant, `"axes":{}`, `"site":{"name":"Pilot plant"},"areas":[{"name":"Utilities"},{"name":"Chiller hall","parent":"Utilities"}],"axes":{}`, 1)
+	empty, err := NewComposition([]byte(sited), NewPlant{ID: "fresh", Title: "Fresh", Empty: true}, "base")
+	if err != nil || areaLayout(empty) != "Pilot plant<" || empty["site"] == nil {
+		t.Fatalf("empty plant areas = %v, site = %v, %v", areaLayout(empty), empty["site"], err)
+	}
+	copied, err := NewComposition([]byte(sited), NewPlant{ID: "copy", Title: "Copy"}, "base")
+	if err != nil || areaLayout(copied) != "Utilities<,Chiller hall<Utilities" {
+		t.Fatalf("copied areas = %v, %v", areaLayout(copied), err)
+	}
+}
+
+func TestAnEmptyPlantWithoutASiteNameStartsWithASiteArea(t *testing.T) {
+	t.Parallel()
+	doc, err := NewComposition([]byte(basePlant), NewPlant{ID: "fresh", Title: "Fresh", Empty: true}, "base")
+	if err != nil || areaLayout(doc) != "Site<" {
+		t.Fatalf("areas = %v, %v", areaLayout(doc), err)
+	}
+}
+
+func areaLayout(doc map[string]any) string {
+	entries, _ := doc["areas"].([]any)
+	var out []string
+	for _, entry := range entries {
+		area, _ := entry.(map[string]any)
+		name, _ := area["name"].(string)
+		parent, _ := area["parent"].(string)
+		out = append(out, name+"<"+parent)
+	}
+	return strings.Join(out, ",")
+}
