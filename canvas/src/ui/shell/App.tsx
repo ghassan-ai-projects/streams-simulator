@@ -1,21 +1,21 @@
 import { useEffect } from "react";
-import type { NavigationStore } from "../app/navigationStore";
-import type { PlantStore } from "../app/plantStore";
-import type { ReviewStore } from "../app/reviewStore";
-import type { SessionStore } from "../app/sessionStore";
-import type { ThemeStore } from "../app/themeStore";
-import type { WorkspaceStore } from "../app/workspaceStore";
-import type { Route } from "../model/route";
-import { HomeScreen } from "./home/HomeScreen";
-import { PairingScreen } from "./pairing/PairingScreen";
-import { PlantScreen } from "./plant/PlantScreen";
-import { RunScreen } from "./run/RunScreen";
-import { KeyHelp } from "./shell/KeyHelp";
-import { Shell } from "./shell/Shell";
-import { TopBar } from "./shell/TopBar";
-import { Unreachable } from "./shell/Unreachable";
-import { useStore } from "./useStore";
-import { useTheme } from "./useTheme";
+import type { NavigationStore } from "../../app/navigationStore";
+import type { PlantStore } from "../../app/plantStore";
+import type { ReviewStore } from "../../app/reviewStore";
+import type { SessionStore } from "../../app/sessionStore";
+import type { ThemeStore } from "../../app/themeStore";
+import type { WorkspaceStore } from "../../app/workspaceStore";
+import type { Route } from "../../model/route";
+import { HomeScreen } from "../home/HomeScreen";
+import { PairingScreen } from "../pairing/PairingScreen";
+import { PlantScreen } from "../plant/PlantScreen";
+import { RunScreen } from "../run/RunScreen";
+import { KeyHelp } from "./KeyHelp";
+import { Shell } from "./Shell";
+import { TopBar } from "./TopBar";
+import { Unreachable } from "./Unreachable";
+import { useStore } from "../useStore";
+import { useTheme } from "../useTheme";
 
 export interface Stores {
   readonly themes: ThemeStore;

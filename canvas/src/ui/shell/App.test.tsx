@@ -1,14 +1,14 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import axe from "axe-core";
 import { describe, expect, it } from "vitest";
-import { SessionStore } from "../app/sessionStore";
-import { NavigationStore } from "../app/navigationStore";
-import { PlantStore } from "../app/plantStore";
-import { ReviewStore } from "../app/reviewStore";
-import { ThemeStore } from "../app/themeStore";
-import { WorkspaceStore } from "../app/workspaceStore";
-import { failed } from "../model/bridge";
-import { FakeBridge, failure } from "../test/fakeBridge";
+import { SessionStore } from "../../app/sessionStore";
+import { NavigationStore } from "../../app/navigationStore";
+import { PlantStore } from "../../app/plantStore";
+import { ReviewStore } from "../../app/reviewStore";
+import { ThemeStore } from "../../app/themeStore";
+import { WorkspaceStore } from "../../app/workspaceStore";
+import { failed } from "../../model/bridge";
+import { FakeBridge, failure } from "../../test/fakeBridge";
 import { App } from "./App";
 
 function themes() {

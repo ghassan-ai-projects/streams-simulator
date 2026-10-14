@@ -8,7 +8,7 @@ import { ReviewStore } from "./app/reviewStore";
 import { SessionStore } from "./app/sessionStore";
 import { ThemeStore } from "./app/themeStore";
 import { WorkspaceStore } from "./app/workspaceStore";
-import { App } from "./ui/App";
+import { App } from "./ui/shell/App";
 import "./ui/theme/tokens.css";
 import "./ui/theme/base.css";
 import "./ui/theme/families.css";
