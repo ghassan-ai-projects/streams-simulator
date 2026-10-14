@@ -4,17 +4,20 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
 func TestMarkdownRendersAScoredRunWithEscapedCells(t *testing.T) {
 	t.Parallel()
-	seed := uint64(3)
+	seed, cleared, by := uint64(3), int64(1_800_000_000_000_000_000), model.ClearedByPulseEnd
 	report := &Report{
 		SchemaVersion: SchemaVersion,
 		Run:           Run{RunID: "r-9", Mode: "evaluate", Complete: true, Ended: true, Seed: &seed},
 		Verification:  Verification{Status: FilesMatch, Checks: []Check{}},
 		Truth: &Truth{
-			Faults: []Fault{{Seq: 0, Action: "inject", EntityID: "a|b", Fault: "line\nbreak"}},
+			Faults: []model.FaultInterval{{FaultID: "f-0", EntityID: "a|b", Fault: "line\nbreak"},
+				{FaultID: "f-1", EntityID: "c", Fault: "pulse", ClearedNS: &cleared, ClearedBy: &by}},
 		},
 		Scoring: &Scoring{Status: Scored, Scorecard: json.RawMessage(`{"instrument":{"emitted":5,"ledger_complete":true},"loop":{"resolved":false}}`)},
 	}
@@ -22,7 +25,8 @@ func TestMarkdownRendersAScoredRunWithEscapedCells(t *testing.T) {
 	for _, want := range []string{
 		"# Run report: r-9\n\nmode: evaluate | complete: yes | ended: yes | verification: files_match\n",
 		"| Seed | 3 |",
-		"| 0 |  | inject | a\\|b | line break |",
+		"| f-0 | a\\|b | line break |",
+		"| f-1 | c | pulse |  |  | 2027-01-15T08:00:00Z | pulse\\_end |",
 		"## Perturbations\n\nNone.",
 		"### instrument\n\n| Metric | Value |\n|---|---|\n| emitted | 5 |\n| ledger\\_complete | true |",
 		"### loop\n\n| Metric | Value |\n|---|---|\n| resolved | false |",
@@ -75,7 +79,7 @@ func TestMarkdownEscapesEveryMarkdownCharacterOfFreeText(t *testing.T) {
 
 func TestMarkdownKeepsACodeSpanLiteralAndOutlivesBackticksInIt(t *testing.T) {
 	t.Parallel()
-	got := string(Markdown(&Report{Truth: &Truth{Faults: []Fault{{Action: "inject", Params: map[string]any{"a_b": "x`y|z"}}}}}))
+	got := string(Markdown(&Report{Truth: &Truth{Perturbations: []Perturbation{{Action: "apply", Params: map[string]any{"a_b": "x`y|z"}}}}}))
 	if !strings.Contains(got, "``{\"a_b\":\"x`y\\|z\"}``") {
 		t.Fatalf("a code span must keep its text literal, fenced past the backtick it holds:\n%s", got)
 	}

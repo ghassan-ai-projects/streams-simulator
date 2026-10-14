@@ -44,9 +44,11 @@ type LinkType struct {
 }
 
 type Link struct {
-	Type string `json:"type"`
-	From string `json:"from"`
-	To   string `json:"to"`
+	Type     string `json:"type"`
+	From     string `json:"from"`
+	To       string `json:"to"`
+	FromPort string `json:"from_port,omitempty"`
+	ToPort   string `json:"to_port,omitempty"`
 }
 
 type Board struct {

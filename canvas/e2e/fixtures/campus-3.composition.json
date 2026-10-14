@@ -1,0 +1,905 @@
+{
+  "schema_version": "0.1",
+  "id": "campus-3",
+  "version": "0.1.0",
+  "title": "Campus of 3 halls",
+  "description": "Three production halls sharing the factory utilities, for the canvas end-to-end tests.",
+  "stresses": "coupled utility subsystems whose faults look alike across subsystems: air leaks against airend wear, tower fan failure against a heat wave, a stale main meter against its sub-meters",
+  "axes": {
+    "absence": "signal",
+    "actuation": "advisory",
+    "cadence": ["periodic"],
+    "cardinality": "fleet",
+    "consequence": ["cost", "downtime"],
+    "correlation": ["coupled", "cascading"],
+    "fidelity": ["F0", "F1"],
+    "lateness": "none",
+    "rate": "medium",
+    "seasonality": ["diurnal", "weekly"],
+    "time_reference": "wall",
+    "value_shape": ["scalar"]
+  },
+  "site": {
+    "name": "Factory",
+    "timezone": "Europe/Berlin"
+  },
+  "areas": [
+    {
+      "name": "Site"
+    },
+    {
+      "name": "Production hall",
+      "parent": "Site"
+    },
+    {
+      "name": "Compressor room",
+      "parent": "Site"
+    },
+    {
+      "name": "Chiller plant",
+      "parent": "Site"
+    },
+    {
+      "name": "Substation",
+      "parent": "Site"
+    }
+  ],
+  "equipment": [
+    {
+      "use": "streamsim/weather@1",
+      "names": ["WX-1"],
+      "area": "Site"
+    },
+    {
+      "use": "streamsim/site-calendar@1",
+      "names": ["CAL-1"],
+      "area": "Site"
+    },
+    {
+      "use": "streamsim/production-line@1",
+      "as": "molder",
+      "names": ["h01/M-1", "h01/M-2", "h02/M-1", "h02/M-2", "h03/M-1", "h03/M-2"],
+      "area": "Production hall"
+    },
+    {
+      "use": "streamsim/production-line@1",
+      "as": "cnc",
+      "preset": "small",
+      "names": ["h01/M-3", "h02/M-3", "h03/M-3"],
+      "area": "Production hall"
+    },
+    {
+      "use": "streamsim/packaging-line@1",
+      "names": ["h01/M-4", "h02/M-4", "h03/M-4"],
+      "area": "Production hall"
+    },
+    {
+      "use": "streamsim/ahu@1",
+      "names": ["h01/AHU-1", "h02/AHU-1", "h03/AHU-1"],
+      "area": "Production hall"
+    },
+    {
+      "use": "streamsim/air-compressor@1",
+      "as": "compressor_lead",
+      "parameters": {
+        "load_kpa": 680,
+        "unload_kpa": 730
+      },
+      "names": ["h01/AC-1", "h02/AC-1", "h03/AC-1"],
+      "area": "Compressor room"
+    },
+    {
+      "use": "streamsim/air-compressor@1",
+      "as": "compressor_lag",
+      "parameters": {
+        "load_kpa": 650,
+        "unload_kpa": 700
+      },
+      "names": ["h01/AC-2", "h02/AC-2", "h03/AC-2"],
+      "area": "Compressor room"
+    },
+    {
+      "use": "streamsim/air-receiver@1",
+      "names": ["h01/R-1", "h02/R-1", "h03/R-1"],
+      "area": "Compressor room"
+    },
+    {
+      "use": "streamsim/air-dryer@1",
+      "names": ["h01/D-1", "h02/D-1", "h03/D-1"],
+      "area": "Compressor room"
+    },
+    {
+      "use": "streamsim/chiller@1",
+      "names": ["h01/CH-1", "h02/CH-1", "h03/CH-1"],
+      "area": "Chiller plant"
+    },
+    {
+      "use": "streamsim/cooling-tower@1",
+      "names": ["h01/CT-1", "h02/CT-1", "h03/CT-1"],
+      "area": "Chiller plant"
+    },
+    {
+      "use": "streamsim/pump@1",
+      "as": "chw_pump",
+      "names": ["h01/P-1", "h01/P-2", "h01/P-3", "h02/P-1", "h02/P-2", "h02/P-3", "h03/P-1", "h03/P-2", "h03/P-3"],
+      "area": "Chiller plant"
+    },
+    {
+      "use": "streamsim/pump@1",
+      "as": "cw_pump",
+      "names": ["h01/P-4", "h02/P-4", "h03/P-4"],
+      "area": "Chiller plant"
+    },
+    {
+      "use": "streamsim/feeder-meter@1",
+      "as": "air_meter",
+      "preset": "small",
+      "names": ["h01/MB-AIR", "h02/MB-AIR", "h03/MB-AIR"],
+      "area": "Substation"
+    },
+    {
+      "use": "streamsim/feeder-meter@1",
+      "as": "cooling_meter",
+      "preset": "small",
+      "names": ["h01/MB-COOL", "h02/MB-COOL", "h03/MB-COOL"],
+      "area": "Substation"
+    },
+    {
+      "use": "streamsim/feeder-meter@1",
+      "as": "process_meter",
+      "names": ["h01/MB-PROC", "h02/MB-PROC", "h03/MB-PROC"],
+      "area": "Substation"
+    },
+    {
+      "use": "streamsim/feeder-meter@1",
+      "as": "main_meter",
+      "preset": "large",
+      "names": ["h01/MM-1", "h02/MM-1", "h03/MM-1"],
+      "area": "Substation"
+    },
+    {
+      "use": "streamsim/transformer@1",
+      "preset": "large",
+      "names": ["h01/TX-1", "h02/TX-1", "h03/TX-1"],
+      "area": "Substation"
+    },
+    {
+      "use": "streamsim/generator@1",
+      "names": ["h01/G-1", "h02/G-1", "h03/G-1"],
+      "area": "Substation"
+    }
+  ],
+  "connections": [
+    {
+      "from": "CAL-1.shift_out",
+      "to": "h01/M-1.shift_in"
+    },
+    {
+      "from": "CAL-1.shift_out",
+      "to": "h02/M-1.shift_in"
+    },
+    {
+      "from": "CAL-1.shift_out",
+      "to": "h03/M-1.shift_in"
+    },
+    {
+      "from": "CAL-1.shift_out",
+      "to": "h01/M-2.shift_in"
+    },
+    {
+      "from": "CAL-1.shift_out",
+      "to": "h02/M-2.shift_in"
+    },
+    {
+      "from": "CAL-1.shift_out",
+      "to": "h03/M-2.shift_in"
+    },
+    {
+      "from": "CAL-1.shift_out",
+      "to": "h01/M-3.shift_in"
+    },
+    {
+      "from": "CAL-1.shift_out",
+      "to": "h02/M-3.shift_in"
+    },
+    {
+      "from": "CAL-1.shift_out",
+      "to": "h03/M-3.shift_in"
+    },
+    {
+      "from": "CAL-1.shift_out",
+      "to": "h01/M-4.shift_in"
+    },
+    {
+      "from": "CAL-1.shift_out",
+      "to": "h02/M-4.shift_in"
+    },
+    {
+      "from": "CAL-1.shift_out",
+      "to": "h03/M-4.shift_in"
+    },
+    {
+      "from": "CAL-1.shift_out",
+      "to": "h01/AHU-1.shift_in"
+    },
+    {
+      "from": "CAL-1.shift_out",
+      "to": "h02/AHU-1.shift_in"
+    },
+    {
+      "from": "CAL-1.shift_out",
+      "to": "h03/AHU-1.shift_in"
+    },
+    {
+      "from": "CAL-1.tariff_out",
+      "to": "h01/CH-1.tariff_in"
+    },
+    {
+      "from": "CAL-1.tariff_out",
+      "to": "h02/CH-1.tariff_in"
+    },
+    {
+      "from": "CAL-1.tariff_out",
+      "to": "h03/CH-1.tariff_in"
+    },
+    {
+      "from": "WX-1.dry_bulb_out",
+      "to": "h01/AHU-1.outdoor_in"
+    },
+    {
+      "from": "WX-1.dry_bulb_out",
+      "to": "h02/AHU-1.outdoor_in"
+    },
+    {
+      "from": "WX-1.dry_bulb_out",
+      "to": "h03/AHU-1.outdoor_in"
+    },
+    {
+      "from": "WX-1.wet_bulb_out",
+      "to": "h01/CT-1.wet_bulb_in"
+    },
+    {
+      "from": "WX-1.wet_bulb_out",
+      "to": "h02/CT-1.wet_bulb_in"
+    },
+    {
+      "from": "WX-1.wet_bulb_out",
+      "to": "h03/CT-1.wet_bulb_in"
+    },
+    {
+      "from": "h01/AC-1.air_out",
+      "to": "h01/R-1.air_in"
+    },
+    {
+      "from": "h02/AC-1.air_out",
+      "to": "h02/R-1.air_in"
+    },
+    {
+      "from": "h03/AC-1.air_out",
+      "to": "h03/R-1.air_in"
+    },
+    {
+      "from": "h01/AC-2.air_out",
+      "to": "h01/R-1.air_in"
+    },
+    {
+      "from": "h02/AC-2.air_out",
+      "to": "h02/R-1.air_in"
+    },
+    {
+      "from": "h03/AC-2.air_out",
+      "to": "h03/R-1.air_in"
+    },
+    {
+      "from": "h01/M-1.air_out",
+      "to": "h01/R-1.demand_in"
+    },
+    {
+      "from": "h02/M-1.air_out",
+      "to": "h02/R-1.demand_in"
+    },
+    {
+      "from": "h03/M-1.air_out",
+      "to": "h03/R-1.demand_in"
+    },
+    {
+      "from": "h01/M-2.air_out",
+      "to": "h01/R-1.demand_in"
+    },
+    {
+      "from": "h02/M-2.air_out",
+      "to": "h02/R-1.demand_in"
+    },
+    {
+      "from": "h03/M-2.air_out",
+      "to": "h03/R-1.demand_in"
+    },
+    {
+      "from": "h01/M-3.air_out",
+      "to": "h01/R-1.demand_in"
+    },
+    {
+      "from": "h02/M-3.air_out",
+      "to": "h02/R-1.demand_in"
+    },
+    {
+      "from": "h03/M-3.air_out",
+      "to": "h03/R-1.demand_in"
+    },
+    {
+      "from": "h01/M-4.air_out",
+      "to": "h01/R-1.demand_in"
+    },
+    {
+      "from": "h02/M-4.air_out",
+      "to": "h02/R-1.demand_in"
+    },
+    {
+      "from": "h03/M-4.air_out",
+      "to": "h03/R-1.demand_in"
+    },
+    {
+      "from": "h01/R-1.air_out",
+      "to": "h01/D-1.air_in"
+    },
+    {
+      "from": "h02/R-1.air_out",
+      "to": "h02/D-1.air_in"
+    },
+    {
+      "from": "h03/R-1.air_out",
+      "to": "h03/D-1.air_in"
+    },
+    {
+      "from": "h01/R-1.pressure_out",
+      "to": "h01/AC-1.pressure_in"
+    },
+    {
+      "from": "h02/R-1.pressure_out",
+      "to": "h02/AC-1.pressure_in"
+    },
+    {
+      "from": "h03/R-1.pressure_out",
+      "to": "h03/AC-1.pressure_in"
+    },
+    {
+      "from": "h01/R-1.pressure_out",
+      "to": "h01/AC-2.pressure_in"
+    },
+    {
+      "from": "h02/R-1.pressure_out",
+      "to": "h02/AC-2.pressure_in"
+    },
+    {
+      "from": "h03/R-1.pressure_out",
+      "to": "h03/AC-2.pressure_in"
+    },
+    {
+      "from": "h01/R-1.pressure_out",
+      "to": "h01/M-1.air_in"
+    },
+    {
+      "from": "h02/R-1.pressure_out",
+      "to": "h02/M-1.air_in"
+    },
+    {
+      "from": "h03/R-1.pressure_out",
+      "to": "h03/M-1.air_in"
+    },
+    {
+      "from": "h01/R-1.pressure_out",
+      "to": "h01/M-2.air_in"
+    },
+    {
+      "from": "h02/R-1.pressure_out",
+      "to": "h02/M-2.air_in"
+    },
+    {
+      "from": "h03/R-1.pressure_out",
+      "to": "h03/M-2.air_in"
+    },
+    {
+      "from": "h01/R-1.pressure_out",
+      "to": "h01/M-3.air_in"
+    },
+    {
+      "from": "h02/R-1.pressure_out",
+      "to": "h02/M-3.air_in"
+    },
+    {
+      "from": "h03/R-1.pressure_out",
+      "to": "h03/M-3.air_in"
+    },
+    {
+      "from": "h01/R-1.pressure_out",
+      "to": "h01/M-4.air_in"
+    },
+    {
+      "from": "h02/R-1.pressure_out",
+      "to": "h02/M-4.air_in"
+    },
+    {
+      "from": "h03/R-1.pressure_out",
+      "to": "h03/M-4.air_in"
+    },
+    {
+      "from": "h01/D-1.dew_point_out",
+      "to": "h01/M-1.dew_point_in"
+    },
+    {
+      "from": "h02/D-1.dew_point_out",
+      "to": "h02/M-1.dew_point_in"
+    },
+    {
+      "from": "h03/D-1.dew_point_out",
+      "to": "h03/M-1.dew_point_in"
+    },
+    {
+      "from": "h01/D-1.dew_point_out",
+      "to": "h01/M-2.dew_point_in"
+    },
+    {
+      "from": "h02/D-1.dew_point_out",
+      "to": "h02/M-2.dew_point_in"
+    },
+    {
+      "from": "h03/D-1.dew_point_out",
+      "to": "h03/M-2.dew_point_in"
+    },
+    {
+      "from": "h01/D-1.dew_point_out",
+      "to": "h01/M-3.dew_point_in"
+    },
+    {
+      "from": "h02/D-1.dew_point_out",
+      "to": "h02/M-3.dew_point_in"
+    },
+    {
+      "from": "h03/D-1.dew_point_out",
+      "to": "h03/M-3.dew_point_in"
+    },
+    {
+      "from": "h01/D-1.dew_point_out",
+      "to": "h01/M-4.dew_point_in"
+    },
+    {
+      "from": "h02/D-1.dew_point_out",
+      "to": "h02/M-4.dew_point_in"
+    },
+    {
+      "from": "h03/D-1.dew_point_out",
+      "to": "h03/M-4.dew_point_in"
+    },
+    {
+      "from": "h01/M-1.heat_out",
+      "to": "h01/CH-1.load_in"
+    },
+    {
+      "from": "h02/M-1.heat_out",
+      "to": "h02/CH-1.load_in"
+    },
+    {
+      "from": "h03/M-1.heat_out",
+      "to": "h03/CH-1.load_in"
+    },
+    {
+      "from": "h01/M-2.heat_out",
+      "to": "h01/CH-1.load_in"
+    },
+    {
+      "from": "h02/M-2.heat_out",
+      "to": "h02/CH-1.load_in"
+    },
+    {
+      "from": "h03/M-2.heat_out",
+      "to": "h03/CH-1.load_in"
+    },
+    {
+      "from": "h01/M-3.heat_out",
+      "to": "h01/CH-1.load_in"
+    },
+    {
+      "from": "h02/M-3.heat_out",
+      "to": "h02/CH-1.load_in"
+    },
+    {
+      "from": "h03/M-3.heat_out",
+      "to": "h03/CH-1.load_in"
+    },
+    {
+      "from": "h01/M-4.heat_out",
+      "to": "h01/CH-1.load_in"
+    },
+    {
+      "from": "h02/M-4.heat_out",
+      "to": "h02/CH-1.load_in"
+    },
+    {
+      "from": "h03/M-4.heat_out",
+      "to": "h03/CH-1.load_in"
+    },
+    {
+      "from": "h01/AHU-1.load_out",
+      "to": "h01/CH-1.load_in"
+    },
+    {
+      "from": "h02/AHU-1.load_out",
+      "to": "h02/CH-1.load_in"
+    },
+    {
+      "from": "h03/AHU-1.load_out",
+      "to": "h03/CH-1.load_in"
+    },
+    {
+      "from": "h01/P-1.flow_out",
+      "to": "h01/CH-1.flow_in"
+    },
+    {
+      "from": "h02/P-1.flow_out",
+      "to": "h02/CH-1.flow_in"
+    },
+    {
+      "from": "h03/P-1.flow_out",
+      "to": "h03/CH-1.flow_in"
+    },
+    {
+      "from": "h01/P-2.flow_out",
+      "to": "h01/CH-1.flow_in"
+    },
+    {
+      "from": "h02/P-2.flow_out",
+      "to": "h02/CH-1.flow_in"
+    },
+    {
+      "from": "h03/P-2.flow_out",
+      "to": "h03/CH-1.flow_in"
+    },
+    {
+      "from": "h01/P-3.flow_out",
+      "to": "h01/CH-1.flow_in"
+    },
+    {
+      "from": "h02/P-3.flow_out",
+      "to": "h02/CH-1.flow_in"
+    },
+    {
+      "from": "h03/P-3.flow_out",
+      "to": "h03/CH-1.flow_in"
+    },
+    {
+      "from": "h01/CH-1.supply_out",
+      "to": "h01/M-1.coolant_in"
+    },
+    {
+      "from": "h02/CH-1.supply_out",
+      "to": "h02/M-1.coolant_in"
+    },
+    {
+      "from": "h03/CH-1.supply_out",
+      "to": "h03/M-1.coolant_in"
+    },
+    {
+      "from": "h01/CH-1.supply_out",
+      "to": "h01/M-2.coolant_in"
+    },
+    {
+      "from": "h02/CH-1.supply_out",
+      "to": "h02/M-2.coolant_in"
+    },
+    {
+      "from": "h03/CH-1.supply_out",
+      "to": "h03/M-2.coolant_in"
+    },
+    {
+      "from": "h01/CH-1.supply_out",
+      "to": "h01/M-3.coolant_in"
+    },
+    {
+      "from": "h02/CH-1.supply_out",
+      "to": "h02/M-3.coolant_in"
+    },
+    {
+      "from": "h03/CH-1.supply_out",
+      "to": "h03/M-3.coolant_in"
+    },
+    {
+      "from": "h01/CH-1.supply_out",
+      "to": "h01/M-4.coolant_in"
+    },
+    {
+      "from": "h02/CH-1.supply_out",
+      "to": "h02/M-4.coolant_in"
+    },
+    {
+      "from": "h03/CH-1.supply_out",
+      "to": "h03/M-4.coolant_in"
+    },
+    {
+      "from": "h01/CH-1.supply_out",
+      "to": "h01/AHU-1.chw_in"
+    },
+    {
+      "from": "h02/CH-1.supply_out",
+      "to": "h02/AHU-1.chw_in"
+    },
+    {
+      "from": "h03/CH-1.supply_out",
+      "to": "h03/AHU-1.chw_in"
+    },
+    {
+      "from": "h01/CH-1.heat_out",
+      "to": "h01/CT-1.heat_in"
+    },
+    {
+      "from": "h02/CH-1.heat_out",
+      "to": "h02/CT-1.heat_in"
+    },
+    {
+      "from": "h03/CH-1.heat_out",
+      "to": "h03/CT-1.heat_in"
+    },
+    {
+      "from": "h01/P-4.cw_flow_out",
+      "to": "h01/CT-1.cw_flow_in"
+    },
+    {
+      "from": "h02/P-4.cw_flow_out",
+      "to": "h02/CT-1.cw_flow_in"
+    },
+    {
+      "from": "h03/P-4.cw_flow_out",
+      "to": "h03/CT-1.cw_flow_in"
+    },
+    {
+      "from": "h01/CT-1.basin_out",
+      "to": "h01/CH-1.cond_water_in"
+    },
+    {
+      "from": "h02/CT-1.basin_out",
+      "to": "h02/CH-1.cond_water_in"
+    },
+    {
+      "from": "h03/CT-1.basin_out",
+      "to": "h03/CH-1.cond_water_in"
+    },
+    {
+      "from": "h01/AC-1.power_out",
+      "to": "h01/MB-AIR.loads_in"
+    },
+    {
+      "from": "h02/AC-1.power_out",
+      "to": "h02/MB-AIR.loads_in"
+    },
+    {
+      "from": "h03/AC-1.power_out",
+      "to": "h03/MB-AIR.loads_in"
+    },
+    {
+      "from": "h01/AC-2.power_out",
+      "to": "h01/MB-AIR.loads_in"
+    },
+    {
+      "from": "h02/AC-2.power_out",
+      "to": "h02/MB-AIR.loads_in"
+    },
+    {
+      "from": "h03/AC-2.power_out",
+      "to": "h03/MB-AIR.loads_in"
+    },
+    {
+      "from": "h01/D-1.power_out",
+      "to": "h01/MB-AIR.loads_in"
+    },
+    {
+      "from": "h02/D-1.power_out",
+      "to": "h02/MB-AIR.loads_in"
+    },
+    {
+      "from": "h03/D-1.power_out",
+      "to": "h03/MB-AIR.loads_in"
+    },
+    {
+      "from": "h01/M-1.power_out",
+      "to": "h01/MB-PROC.loads_in"
+    },
+    {
+      "from": "h02/M-1.power_out",
+      "to": "h02/MB-PROC.loads_in"
+    },
+    {
+      "from": "h03/M-1.power_out",
+      "to": "h03/MB-PROC.loads_in"
+    },
+    {
+      "from": "h01/M-2.power_out",
+      "to": "h01/MB-PROC.loads_in"
+    },
+    {
+      "from": "h02/M-2.power_out",
+      "to": "h02/MB-PROC.loads_in"
+    },
+    {
+      "from": "h03/M-2.power_out",
+      "to": "h03/MB-PROC.loads_in"
+    },
+    {
+      "from": "h01/M-3.power_out",
+      "to": "h01/MB-PROC.loads_in"
+    },
+    {
+      "from": "h02/M-3.power_out",
+      "to": "h02/MB-PROC.loads_in"
+    },
+    {
+      "from": "h03/M-3.power_out",
+      "to": "h03/MB-PROC.loads_in"
+    },
+    {
+      "from": "h01/M-4.power_out",
+      "to": "h01/MB-PROC.loads_in"
+    },
+    {
+      "from": "h02/M-4.power_out",
+      "to": "h02/MB-PROC.loads_in"
+    },
+    {
+      "from": "h03/M-4.power_out",
+      "to": "h03/MB-PROC.loads_in"
+    },
+    {
+      "from": "h01/CH-1.power_out",
+      "to": "h01/MB-COOL.loads_in"
+    },
+    {
+      "from": "h02/CH-1.power_out",
+      "to": "h02/MB-COOL.loads_in"
+    },
+    {
+      "from": "h03/CH-1.power_out",
+      "to": "h03/MB-COOL.loads_in"
+    },
+    {
+      "from": "h01/CT-1.power_out",
+      "to": "h01/MB-COOL.loads_in"
+    },
+    {
+      "from": "h02/CT-1.power_out",
+      "to": "h02/MB-COOL.loads_in"
+    },
+    {
+      "from": "h03/CT-1.power_out",
+      "to": "h03/MB-COOL.loads_in"
+    },
+    {
+      "from": "h01/P-1.power_out",
+      "to": "h01/MB-COOL.loads_in"
+    },
+    {
+      "from": "h02/P-1.power_out",
+      "to": "h02/MB-COOL.loads_in"
+    },
+    {
+      "from": "h03/P-1.power_out",
+      "to": "h03/MB-COOL.loads_in"
+    },
+    {
+      "from": "h01/P-2.power_out",
+      "to": "h01/MB-COOL.loads_in"
+    },
+    {
+      "from": "h02/P-2.power_out",
+      "to": "h02/MB-COOL.loads_in"
+    },
+    {
+      "from": "h03/P-2.power_out",
+      "to": "h03/MB-COOL.loads_in"
+    },
+    {
+      "from": "h01/P-3.power_out",
+      "to": "h01/MB-COOL.loads_in"
+    },
+    {
+      "from": "h02/P-3.power_out",
+      "to": "h02/MB-COOL.loads_in"
+    },
+    {
+      "from": "h03/P-3.power_out",
+      "to": "h03/MB-COOL.loads_in"
+    },
+    {
+      "from": "h01/P-4.power_out",
+      "to": "h01/MB-COOL.loads_in"
+    },
+    {
+      "from": "h02/P-4.power_out",
+      "to": "h02/MB-COOL.loads_in"
+    },
+    {
+      "from": "h03/P-4.power_out",
+      "to": "h03/MB-COOL.loads_in"
+    },
+    {
+      "from": "h01/MB-AIR.power_out",
+      "to": "h01/MM-1.loads_in"
+    },
+    {
+      "from": "h02/MB-AIR.power_out",
+      "to": "h02/MM-1.loads_in"
+    },
+    {
+      "from": "h03/MB-AIR.power_out",
+      "to": "h03/MM-1.loads_in"
+    },
+    {
+      "from": "h01/MB-COOL.power_out",
+      "to": "h01/MM-1.loads_in"
+    },
+    {
+      "from": "h02/MB-COOL.power_out",
+      "to": "h02/MM-1.loads_in"
+    },
+    {
+      "from": "h03/MB-COOL.power_out",
+      "to": "h03/MM-1.loads_in"
+    },
+    {
+      "from": "h01/MB-PROC.power_out",
+      "to": "h01/MM-1.loads_in"
+    },
+    {
+      "from": "h02/MB-PROC.power_out",
+      "to": "h02/MM-1.loads_in"
+    },
+    {
+      "from": "h03/MB-PROC.power_out",
+      "to": "h03/MM-1.loads_in"
+    },
+    {
+      "from": "h01/MM-1.power_out",
+      "to": "h01/TX-1.load_in"
+    },
+    {
+      "from": "h02/MM-1.power_out",
+      "to": "h02/TX-1.load_in"
+    },
+    {
+      "from": "h03/MM-1.power_out",
+      "to": "h03/TX-1.load_in"
+    },
+    {
+      "from": "h01/MM-1.power_out",
+      "to": "h01/G-1.load_in"
+    },
+    {
+      "from": "h02/MM-1.power_out",
+      "to": "h02/G-1.load_in"
+    },
+    {
+      "from": "h03/MM-1.power_out",
+      "to": "h03/G-1.load_in"
+    }
+  ],
+  "profiles": [
+    {
+      "name": "nominal",
+      "duration_s": 86400,
+      "description": "A production day of the factory, one fault per scenario."
+    },
+    {
+      "name": "sensor_pathology",
+      "duration_s": 86400,
+      "description": "An instrument lies while the process is healthy."
+    },
+    {
+      "name": "correlated_cascade",
+      "duration_s": 86400,
+      "description": "A utility fault spreads through the links: low header pressure slows every line, a weak tower warms the chilled water every line and the air handler draw on."
+    }
+  ],
+  "ground_truth": {
+    "min_per_label": 10,
+    "min_scenarios": 100,
+    "negative_class_fraction": 0.35,
+    "pre_degraded_fraction": 0.0
+  }
+}

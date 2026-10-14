@@ -32,7 +32,7 @@ env:
   GO_VERSION: "1.26.9"
   GO_TOOLS_VERSION: "v0.45.0"
   GOVULNCHECK_VERSION: "v1.3.0"
-  GOLANGCI_LINT_VERSION: "v2.12.2"
+  GOLANGCI_LINT_VERSION: "v2.14.0"
 
 permissions:
   contents: read
@@ -111,3 +111,36 @@ jobs:
           path: bin/*-linux-amd64
           retention-days: 3
           if-no-files-found: warn
+
+  canvas:
+    name: "Canvas"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version: "${{ env.GO_VERSION }}"
+          cache: true
+
+      - name: Set up Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: canvas/package-lock.json
+
+      - name: Install Playwright browser
+        working-directory: canvas
+        run: |
+          npm ci --ignore-scripts --no-fund --no-audit
+          npx playwright install --with-deps chromium
+
+      - name: Canvas check
+        run: make canvas-check
+        env:
+          CI: "true"

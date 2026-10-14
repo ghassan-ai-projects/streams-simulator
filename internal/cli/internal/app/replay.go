@@ -10,7 +10,7 @@ import (
 )
 
 func cmdVerify(s *session, args []string) (any, error) {
-	res, err := replayFile(s, args)
+	res, err := replayFile(s, "verify", args)
 	if err != nil {
 		return nil, err
 	}
@@ -22,15 +22,15 @@ func cmdVerify(s *session, args []string) (any, error) {
 }
 
 func cmdReplay(s *session, args []string) (any, error) {
-	res, err := replayFile(s, args)
+	res, err := replayFile(s, "replay", args)
 	if err != nil {
 		return nil, err
 	}
 	return replayResult(res), nil
 }
 
-func replayFile(s *session, args []string) (*run.ReplayResult, error) {
-	fs, domainsDir, adaptersDir, err := parseReplayOptions(args, s.stderr)
+func replayFile(s *session, command string, args []string) (*run.ReplayResult, error) {
+	fs, domainsDir, adaptersDir, err := parseReplayOptions(command, args, s.stderr)
 	if err != nil {
 		return nil, err
 	}
@@ -41,15 +41,15 @@ func replayFile(s *session, args []string) (*run.ReplayResult, error) {
 	return res, nil
 }
 
-func parseReplayOptions(args []string, stderr io.Writer) (*flag.FlagSet, string, string, error) {
-	fs := newFlagSet("replay", stderr)
+func parseReplayOptions(command string, args []string, stderr io.Writer) (*flag.FlagSet, string, string, error) {
+	fs := newFlagSet(command, stderr)
 	var domains, adapters string
 	registerInputDirs(fs, &domains, &adapters)
 	if err := parseFlags(fs, args); err != nil {
 		return nil, "", "", err
 	}
 	if fs.NArg() < 1 {
-		return nil, "", "", usagef("replay requires a run artifact path")
+		return nil, "", "", usagef("%s requires a run artifact path", command)
 	}
 	if err := refuseExtraArguments(fs, 1); err != nil {
 		return nil, "", "", err
@@ -58,6 +58,17 @@ func parseReplayOptions(args []string, stderr io.Writer) (*flag.FlagSet, string,
 }
 
 func replayResult(res *run.ReplayResult) map[string]any {
-	return map[string]any{"matches": res.Matches, "version_match": res.VersionMatch,
-		"got": res.GotDigest, "want": res.WantDigest, "first_divergence": res.FirstDivergence, "detail": res.Detail}
+	doc := map[string]any{"matches": res.Matches, "version_match": res.VersionMatch,
+		"got": res.GotDigest, "want": res.WantDigest, "first_divergence": res.FirstDivergence, "detail": res.Detail, "reason": res.Reason,
+		"emitted": res.Emitted, "incomplete": res.Incomplete}
+	if res.File != "" {
+		doc["file"] = res.File
+	}
+	if len(res.JournalDiverged) > 0 {
+		doc["journal_diverged"] = res.JournalDiverged
+	}
+	if res.DomainChanged {
+		doc["domain_changed"], doc["current_domain_digest"] = true, res.CurrentDomainDigest
+	}
+	return doc
 }

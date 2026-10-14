@@ -60,12 +60,14 @@ func ReadArtifact(path string) ([]byte, error) {
 }
 
 func publishTrace(outDir string, e Evidence) error {
-	tracePath := e.TracePath
-	if tracePath == "" {
-		tracePath = filepath.Join(outDir, model.FileTrace)
+	paths := []string{filepath.Join(outDir, model.FileTrace)}
+	if e.TracePath != "" && e.TracePath != paths[0] {
+		paths = append(paths, e.TracePath)
 	}
-	if err := kernel.WriteAtomic(tracePath, e.Trace); err != nil {
-		return fmt.Errorf("End: %w", err)
+	for _, path := range paths {
+		if err := kernel.WriteAtomic(path, e.Trace); err != nil {
+			return fmt.Errorf("End: %w", err)
+		}
 	}
 	return nil
 }

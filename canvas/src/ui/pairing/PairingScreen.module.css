@@ -1,0 +1,112 @@
+.backdrop {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  min-width: 1280px;
+  background-color: var(--surface-canvas);
+  background-image:
+    linear-gradient(var(--grid-major) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-major) 1px, transparent 1px),
+    linear-gradient(var(--grid-minor) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-minor) 1px, transparent 1px);
+  background-size:
+    128px 128px,
+    128px 128px,
+    16px 16px,
+    16px 16px;
+}
+
+.card {
+  width: 560px;
+  padding: var(--space-8);
+  background: var(--surface-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  box-shadow: var(--shadow-panel);
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-2xl);
+  font-weight: 600;
+}
+
+.lead {
+  margin: 0 0 var(--space-5);
+  color: var(--text-secondary);
+}
+
+.label {
+  display: block;
+  margin-bottom: var(--space-2);
+  font-weight: 600;
+}
+
+.code {
+  width: 100%;
+  height: 52px;
+  padding: 0 var(--space-4);
+  font: 600 24px var(--font-mono);
+  letter-spacing: 0.12em;
+  color: var(--text-primary);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+}
+
+.code[aria-invalid="true"] {
+  border-color: var(--status-alarm);
+}
+
+.code:disabled {
+  opacity: 0.5;
+  border-style: dashed;
+}
+
+.status {
+  min-height: 20px;
+  margin-top: var(--space-3);
+}
+
+.hint {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.error {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--status-alarm);
+  font-weight: 600;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+}
+
+.primary {
+  height: 36px;
+  padding: 0 var(--space-5);
+  font-weight: 600;
+  color: var(--text-on-accent);
+  background: var(--accent-strong);
+  border: 0;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.code[aria-invalid="true"]:focus-visible {
+  outline-color: var(--status-alarm);
+}

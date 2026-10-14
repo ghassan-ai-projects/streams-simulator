@@ -39,6 +39,7 @@ var commands = map[string]command{
 	"replay":      {run: cmdReplay},
 	"verify":      {run: cmdVerify},
 	"mcp":         {run: cmdMCP, ownsStdout: true},
+	"canvas":      {run: cmdCanvas, ownsStdout: true},
 	"refconsumer": {run: cmdRefconsumer},
 	"suite":       {run: cmdSuite},
 	"score":       {run: cmdScore},
@@ -146,6 +147,8 @@ Commands:
                                         (--operator-addr binds the operator role
                                         over streamable HTTP; sim.world.create
                                         returns the endpoint with the token)
+  canvas --workspace <dir> --ui-dir <d> Serve the visual canvas on a loopback address
+                                        (prints the address and a pairing code)
   refconsumer --trace <file>            Detect episodes in a trace; write verdict.json
                                         (--mcp <url> --token <t> --run <id> closes
                                         the loop over the operator endpoint)

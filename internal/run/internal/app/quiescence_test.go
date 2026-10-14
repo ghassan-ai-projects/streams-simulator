@@ -256,8 +256,11 @@ func TestReplayOfTimedOutAdvanceReportsIncomplete(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !res.Matches {
+	if res.GotDigest != res.WantDigest || !Reproduced(res) {
 		t.Fatalf("timed-out run must still replay byte-identically: %s vs %s", res.GotDigest, res.WantDigest)
+	}
+	if res.Matches || res.Reason != ReasonIncomplete {
+		t.Fatalf("an incomplete run is never a match: %+v", res)
 	}
 	if !res.Incomplete {
 		t.Fatal("replay must report the original run as incomplete")

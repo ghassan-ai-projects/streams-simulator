@@ -21,16 +21,38 @@ type ReplayResult struct {
 	Emitted         int64  `json:"emitted"`
 	Incomplete      bool   `json:"incomplete,omitempty"`
 	Detail          string `json:"detail,omitempty"`
+	Reason          string `json:"reason"`
+	File            string `json:"file,omitempty"`
 
 	JournalDiverged []string `json:"journal_diverged,omitempty"`
+
+	DomainChanged       bool   `json:"domain_changed,omitempty"`
+	CurrentDomainDigest string `json:"current_domain_digest,omitempty"`
+}
+
+func Reproduced(r *ReplayResult) bool {
+	return r.Matches || r.Reason == ReasonIncomplete
 }
 
 func LoadArtifact(path string) (*model.RunArtifact, error) {
+	return readArtifact(path, rules.ValidateArtifactDocument)
+}
+
+func LoadArtifactForVerification(path string) (*model.RunArtifact, error) {
+	artifact, err := readArtifact(path, rules.ValidateArtifactDocumentForVerification)
+	if err != nil {
+		return nil, err
+	}
+	artifact.DropMalformedEvidenceDigests()
+	return artifact, nil
+}
+
+func readArtifact(path string, validate func([]byte, string) error) (*model.RunArtifact, error) {
 	raw, err := durable.ReadArtifact(path)
 	if err != nil {
 		return nil, err
 	}
-	if err := rules.ValidateArtifactDocument(raw, path); err != nil {
+	if err := validate(raw, path); err != nil {
 		return nil, err
 	}
 	artifact, err := rules.DecodeArtifact(raw)
@@ -42,7 +64,11 @@ func LoadArtifact(path string) (*model.RunArtifact, error) {
 
 func ReplayArtifact(ctx context.Context, art *model.RunArtifact, spec *domain.Compiled, adapterSpec *model.Adapter, sinkTarget string) (*ReplayResult, error) {
 	result, _, err := replayArtifactRun(ctx, art, spec, adapterSpec, sinkTarget)
-	return result, err
+	if err != nil {
+		return nil, err
+	}
+	concludeIncomplete(art, result)
+	return result, nil
 }
 
 func replayArtifactRun(ctx context.Context, art *model.RunArtifact, spec *domain.Compiled, adapterSpec *model.Adapter, sinkTarget string) (*ReplayResult, *Run, error) {
@@ -68,19 +94,13 @@ type ReplayEvidence struct {
 }
 
 func ReplayArtifactEvidence(ctx context.Context, art *model.RunArtifact, spec *domain.Compiled, adapterSpec *model.Adapter) (*ReplayEvidence, error) {
-	spec, adapterSpec, result, err := prepareReplay(art, spec, adapterSpec)
+	result, replay, err := replayArtifactRun(ctx, art, spec, adapterSpec, "")
 	if err != nil {
 		return nil, err
 	}
-	replay, err := newReplayRun(ctx, art, spec, adapterSpec, "")
-	if err != nil {
-		return nil, err
-	}
-	if err := replayCommands(ctx, replay, art.CommandLog); err != nil {
-		return nil, err
-	}
+	concludeIncomplete(art, result)
 	calls := append([]world.EffectorCall{}, replay.World.EffectorCalls()...)
-	return &ReplayEvidence{Result: finishReplayResult(replay, art, result), Calls: calls, Ledger: replay.ledger, History: replay.history}, nil
+	return &ReplayEvidence{Result: result, Calls: calls, Ledger: replay.ledger, History: replay.history}, nil
 }
 
 func replayInputs(art *model.RunArtifact, spec *domain.Compiled, adapterSpec *model.Adapter) (*domain.Compiled, *model.Adapter, error) {
@@ -100,11 +120,11 @@ func replayInputs(art *model.RunArtifact, spec *domain.Compiled, adapterSpec *mo
 
 func validateReplayInputs(art *model.RunArtifact, spec *domain.Compiled, adapterSpec *model.Adapter) error {
 	if spec.Spec.ID != art.Domain.ID || spec.Spec.Version != art.Domain.Version || spec.Digest != art.Domain.Digest {
-		return fmt.Errorf("run: domain %w: artifact=%s current=%s", ErrDigestMismatch, art.Domain.Digest, spec.Digest)
+		return &digestMismatch{"domain", art.Domain.Digest, spec.Digest}
 	}
 	currentAdapterDigest := rules.AdapterDigest(adapterSpec)
 	if adapterSpec.ID != art.Adapter.ID || adapterSpec.Version != art.Adapter.Version || currentAdapterDigest != art.Adapter.Digest {
-		return fmt.Errorf("run: adapter %w: artifact=%s current=%s", ErrDigestMismatch, art.Adapter.Digest, currentAdapterDigest)
+		return &digestMismatch{"adapter", art.Adapter.Digest, currentAdapterDigest}
 	}
 	return nil
 }

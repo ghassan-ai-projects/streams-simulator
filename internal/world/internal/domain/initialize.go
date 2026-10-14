@@ -21,14 +21,12 @@ func worldIdentity(spec *domain.Compiled, seed uint64, id string) (string, strin
 
 func newWorldState(spec *domain.Compiled, seed uint64, id, key string, startNS int64, opts Options) *World {
 	return &World{
-		ID:               id,
-		streamKey:        key,
-		Spec:             spec,
-		seed:             seed,
+		ID: id, streamKey: key, Spec: spec, seed: seed,
 		StartNS:          startNS,
 		clockNS:          startNS,
 		noiseless:        opts.Noiseless,
-		emitDisabled:     opts.EmitDisabled,
+		emitDisabled:     opts.EmitDisabled || opts.Unobserved,
+		unobserved:       opts.Unobserved,
 		forceEffectorOK:  opts.ForceEffectorOK,
 		forceFailureMode: opts.ForceFailureMode,
 		kpis:             newKPITracker(opts.TrackKPIs),

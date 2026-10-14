@@ -55,6 +55,7 @@ var cliAppFiles = map[string]cliFile{
 	"device.go":            {"command: device serve", []string{"internal/device", "internal/deviceworld"}, 100},
 	"manifest.go":          {"command: manifest", []string{"internal/release"}, 40},
 	"mcp.go":               {"command: mcp", []string{"internal/mcp"}, 60},
+	"canvas.go":            {"command: canvas", []string{"internal/canvasbridge"}, 50},
 	"refconsumer.go":       {"command: refconsumer", []string{"internal/refconsumer"}, 80},
 	"replay.go":            {"command: replay and verify", []string{"internal/run"}, 85},
 	"run.go":               {"command: run", []string{cliF, "internal/model", "internal/run"}, 95},

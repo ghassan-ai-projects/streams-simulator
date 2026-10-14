@@ -46,8 +46,11 @@ Truth is included only when the run has ended, that is when `run.json` exists (i
 count only. `run.ended` is `false`, and there is no `truth` object, seed, ledger count, drop
 reason or verification. A live director world writes its ledger while `run.json` is absent, so
 the rule is on `run.json`, not on the ledger. The report of an open Evaluate run therefore cannot
-be used to read ahead. For an open Explore run the seed comes from the director `run.opened`
-record.
+be used to read ahead. The report says so: `truth_unavailable` is `sealed until the run ends` (the one
+vocabulary of that field: a sentence naming why truth is absent, here and for a file of another run,
+below), so a consumer tells a truth that is sealed until the run ends from one that does not exist.
+For an open Explore run the seed comes from the director `run.opened` record, truth is read and
+`truth_unavailable` is absent.
 
 A file belongs to the run of the journals or it is not used. `run.json` must carry the `run_id`,
 `sim_version`, `domain` and `adapter` of the observer `run.opened`; `sealed/journal.jsonl` must carry
@@ -71,7 +74,7 @@ Contract: [`run-report-v0.1`](../../contracts/run-report-v0.1.schema.json).
 | `digests` | `world`, `trace`, `journal`, `sealed_journal` as the run recorded them; a digest the run did not record is absent | `run.json` |
 | `verification` | `status` and one check per recorded digest | §4 |
 | `counts` | `emitted` (the run's own count), `observed` (observer observations), `ledger_rows`, `delivered`, `dropped`, `delivered_by_reason`, `dropped_by_reason` | `run.json`, observer journal, `ledger.jsonl` |
-| `truth` | `faults`, `perturbations`, `environment`, `effector_calls`, from the command log in command order | §5 |
+| `truth` | `faults` (one interval per fault, from the director stream's `fault.truth` record), `perturbations`, `environment`, `effector_calls` (from the command log in command order) | §5 |
 | `consumer` | `name`, `version`, `arm`, `config_digest` | `verdict.json` |
 | `scoring` | `status` (`scored`, `not_scored`, `failed`), `reason`, `scorecard` | §6 |
 
@@ -102,25 +105,44 @@ proof; the report's check is cheap and needs no inputs.
 | `sealed_journal` | digest of the replayable lines of `sealed/journal.jsonl` | `sealed_journal_digest` |
 | `journal_file` | SHA-256 of `journal.jsonl`, session records included | `journal_file_digest` |
 | `sealed_journal_file` | SHA-256 of `sealed/journal.jsonl`, session records included | `sealed_journal_file_digest` |
+| `ledger` | SHA-256 of `ledger.jsonl` | `ledger_digest` |
+| `history` | SHA-256 of `world_state_history.jsonl` | `history_digest` |
 
-Each check has `status` `match`, `mismatch` or `missing_file` (a digest was recorded and the file
-is absent), plus `recorded` and `computed` digests. A digest the run did not record is not
-checked and has no entry. `verification.status` is `files_differ` when any check is not `match`,
+Each check has `status` `match`, `mismatch`, `missing_file` (a digest was recorded and the file
+is absent) or `digest_missing` (the run ended complete but `run.json` records no usable digest for the
+file: absent, empty or malformed), plus `recorded` and `computed` digests (`recorded` is absent for
+`digest_missing`). The report loads `run.json` as `streamsim verify` does (`run.LoadArtifactForVerification`),
+so an artifact missing digests is a failing verification, not an error. A run that ended incomplete
+need not record every digest: a digest it did not record is not checked and has no entry.
+`verification.status` is `files_differ` when any check is not `match`,
 `files_match` when there is at least one check and all match, and `not_checked` when there are no
-checks (no `run.json`, or an artifact that recorded no digests).
+checks (no `run.json`, or an incomplete run that recorded no digests).
 
 ## 5. Faults, perturbations, environment and effector calls
 
-All four come from the command log (`run.json`; for an Explore run with no `run.json`, from the
-`command` records of the director stream), in command order, each entry carrying the command's
-`seq` and `at_ns`.
+`perturbations`, `environment` and `effector_calls` come from the command log (`run.json`; for an Explore
+run with no `run.json`, from the `command` records of the director stream), in command order, each entry
+carrying the command's `seq` and `at_ns`. `faults` is not a command list: the world owns when a fault is active,
+and a clear command alone does not say it (the clear carries no entity and an effective `at_ns` that may be
+later than its command time; a pulse fault and an effector responder end faults with no command at all).
 
 | List | Commands | Entry |
 |---|---|---|
-| `faults` | `fault.inject`, `fault.clear` | `action` (`inject`, `clear`), `entity_id`, `fault`, `fault_id`, `onset_ns`, `params` as present |
+| `faults` | the director stream's last `fault.truth` record | an interval, below |
 | `perturbations` | `perturb.apply`, `perturb.clear` | `action` (`apply`, `clear`), `perturbation`, `perturb_id`, `from_ns`, `until_ns`, `params` as present |
 | `environment` | `env.inject` | `target`, `fault`, `params` |
 | `effector_calls` | `effector.invoke` | `command_id`, `effector`, `entity_id`, `at_ns`, `args`, and `outcome` |
+
+A `faults` entry is the interval the world gave the fault, in injection order: `fault_id` (the id a clear
+command names), `entity_id`, `fault` (the kind's fault id), `injected_at_ns` (the world clock when the inject
+command ran), `onset_ns`, `cleared_ns` (the instant the world ends the fault, `null` when it is still active at
+the end of the run, including a clear scheduled after the end) and `cleared_by` (`command`: a `fault.clear` took
+effect at its `at_ns`; `pulse_end`: the pulse ran its `duration_s`; `responder`: an effector responder with
+`clear_fault` cleared it at its arrival; `null` while active). The earliest end wins: a clear command ahead of a
+pulse's end shortens the pulse, one at or after it leaves `pulse_end`. The entries exist only in the truth
+section: the director stream is sealed until the run closes in evaluate mode, so the intervals are withheld
+exactly as the rest of the truth. An open Explore run shows the schedule as of the last fault command (an end
+the world has scheduled is shown even when the clock has not reached it).
 
 `outcome` is the director stream's `effector.outcome` record for the call (matched by
 `command_id`, first unused): `accepted`, `mode` (the failure mode the world chose, for example
@@ -211,5 +233,9 @@ reads). It composes `run` (artifact loading), `journal` (reading and digesting s
   `ledger.jsonl` and `sealed/` left in place, no fault, perturbation, seed, ledger count or drop
   reason appears in the JSON or Markdown of an Evaluate run).
 - A tampered `trace.jsonl` reports `files_differ`.
+- A run still open in evaluate mode (no `run.json`) reports `truth_unavailable: "sealed until the run ends"`
+  and no `truth`; an Explore run has truth and no `truth_unavailable`.
+- A `run.json` missing, emptying or malforming an evidence digest reports `verification.status`
+  `files_differ` with a `digest_missing` check instead of failing to load.
 - A `run.json` or sealed journal of another run reports `truth_unavailable` and leaks no truth; a
   torn last line is dropped and named in `torn_tail`, a damaged middle line fails.

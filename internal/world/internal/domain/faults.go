@@ -22,6 +22,8 @@ type FaultInfo struct {
 
 var ErrFaultOnsetInPast = errors.New("world: fault onset is before the clock of a world that has already run")
 
+var ErrFaultClearInPast = errors.New("world: fault clear is before the clock of a world that has already run")
+
 func (w *World) InjectFault(entityID, faultID string, onsetNS int64, params map[string]any) (string, error) {
 	fault := w.Spec.Fault(faultID)
 	if fault == nil {
@@ -66,15 +68,20 @@ func parameterSeverity(fault *model.Fault, faultID string, params map[string]any
 }
 
 func (w *World) ClearFault(faultID string, atNS int64) error {
+	return w.clearFaultBy(faultID, atNS, model.ClearedByCommand)
+}
+
+func (w *World) clearFaultBy(faultID string, atNS int64, by string) error {
 	af, ok := w.faultsByID[faultID]
 	if !ok {
 		return fmt.Errorf("world: unknown fault id %q", faultID)
 	}
-	if atNS <= 0 {
-		atNS = w.clockNS
+	atNS, err := w.admitClear(atNS)
+	if err != nil {
+		return err
 	}
 	if af.clearedNS == 0 || atNS < af.clearedNS {
-		af.clearedNS = atNS
+		af.clearedNS, af.clearedBy = atNS, by
 		w.checkPulseEdge(af, atNS)
 	}
 	return nil
@@ -95,7 +102,7 @@ func (w *World) ListFaults() []FaultInfo {
 func (w *World) ActiveFaultsCount() int { return len(w.ListFaults()) }
 
 func (w *World) registerFault(fault *model.Fault, entity string, onset int64, severity float64) string {
-	active := &activeFault{fault: fault, entity: entity, onsetNS: onset, severity: severity}
+	active := &activeFault{fault: fault, entity: entity, onsetNS: onset, injectedNS: w.clockNS, severity: severity}
 	id := "f-" + strconv.FormatInt(int64(len(w.faultsByID)), 10)
 	w.faultsByID[id] = active
 	w.faultOrder = append(w.faultOrder, id)
@@ -155,6 +162,16 @@ func (w *World) admitFaultInjection(fault *model.Fault, entityID, faultID string
 		w.schedulePulse(w.faultsByID[id], int64(fault.Onset.DurationS*secondsPerNS))
 	}
 	return id, nil
+}
+
+func (w *World) admitClear(atNS int64) (int64, error) {
+	if atNS <= 0 {
+		return w.clockNS, nil
+	}
+	if atNS < w.clockNS && w.clockNS > w.StartNS {
+		return 0, fmt.Errorf("%w (clear %d, clock %d)", ErrFaultClearInPast, atNS, w.clockNS)
+	}
+	return atNS, nil
 }
 
 func (w *World) admitOnset(onsetNS int64) (int64, error) {

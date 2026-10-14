@@ -3053,6 +3053,13 @@
           "observes": "temp_alarm",
           "range": {"min": 0, "max": 4},
           "resolution": 1,
+          "states": [
+            {"name": "normal", "attention": null, "value": 0},
+            {"name": "unacknowledged", "attention": "alarm", "value": 1},
+            {"name": "acknowledged", "attention": "alarm", "value": 2},
+            {"name": "returned unacknowledged", "attention": "warn", "value": 3},
+            {"name": "shelved", "attention": null, "value": 4}
+          ],
           "tag": "YA",
           "value_type": "number"
         }
@@ -3706,6 +3713,13 @@
           "observes": "temp_alarm",
           "range": {"min": 0, "max": 4},
           "resolution": 1,
+          "states": [
+            {"name": "normal", "attention": null, "value": 0},
+            {"name": "unacknowledged", "attention": "alarm", "value": 1},
+            {"name": "acknowledged", "attention": "alarm", "value": 2},
+            {"name": "returned unacknowledged", "attention": "warn", "value": 3},
+            {"name": "shelved", "attention": null, "value": 4}
+          ],
           "tag": "YA",
           "value_type": "number"
         }
@@ -9114,7 +9128,7 @@
         "digest": "sha256:e089e33b67eff854e90ee64b68c39e9fd7bf0741807b7b9f22bd6e0c902d87be",
         "instrument_digests": {
           "streamsim/accelerometer@1": "sha256:02a05a3e0037888d7f61ba9da7c4e4173f3dee74783caf5c7b53f24c19d11ff1",
-          "streamsim/annunciator@1": "sha256:a47feedfb4e993eada8567c6b627847e6fb63b7c2686600f4f2870eb34422cd4",
+          "streamsim/annunciator@1": "sha256:ef3946f693b8bede6385185ee30ba734a45d080f003de0dcf95113de64f36680",
           "streamsim/power-meter@1": "sha256:d2d2e745c5cb4e16a75a348c0ca43869c215400e56e9ef30743c9c4bdc941c81",
           "streamsim/rtd@1": "sha256:bceb694b0f3a120a3889afe298ebe5580e6e287af8e8a22e7b982b5eb41f084c",
           "streamsim/run-status@1": "sha256:f7f883909ecb976be9bc4244840ed801ad650c589cef9fe030e18c54ebbf9fe2",
@@ -9143,7 +9157,7 @@
         "digest": "sha256:e089e33b67eff854e90ee64b68c39e9fd7bf0741807b7b9f22bd6e0c902d87be",
         "instrument_digests": {
           "streamsim/accelerometer@1": "sha256:02a05a3e0037888d7f61ba9da7c4e4173f3dee74783caf5c7b53f24c19d11ff1",
-          "streamsim/annunciator@1": "sha256:a47feedfb4e993eada8567c6b627847e6fb63b7c2686600f4f2870eb34422cd4",
+          "streamsim/annunciator@1": "sha256:ef3946f693b8bede6385185ee30ba734a45d080f003de0dcf95113de64f36680",
           "streamsim/power-meter@1": "sha256:d2d2e745c5cb4e16a75a348c0ca43869c215400e56e9ef30743c9c4bdc941c81",
           "streamsim/rtd@1": "sha256:bceb694b0f3a120a3889afe298ebe5580e6e287af8e8a22e7b982b5eb41f084c",
           "streamsim/run-status@1": "sha256:f7f883909ecb976be9bc4244840ed801ad650c589cef9fe030e18c54ebbf9fe2",
@@ -9475,65 +9489,419 @@
     {"name": "generator__load_in__main_meter", "from": "main_meter", "to": "generator"}
   ],
   "links": [
-    {"from": "CAL-1", "to": "M-1", "type": "molder__shift_in__site_calendar"},
-    {"from": "CAL-1", "to": "M-2", "type": "molder__shift_in__site_calendar"},
-    {"from": "CAL-1", "to": "M-3", "type": "cnc__shift_in__site_calendar"},
-    {"from": "CAL-1", "to": "M-4", "type": "packaging_line__shift_in__site_calendar"},
-    {"from": "CAL-1", "to": "AHU-1", "type": "ahu__shift_in__site_calendar"},
-    {"from": "CAL-1", "to": "CH-1", "type": "chiller__tariff_in__site_calendar"},
-    {"from": "WX-1", "to": "AHU-1", "type": "ahu__outdoor_in__weather"},
-    {"from": "WX-1", "to": "CT-1", "type": "cooling_tower__wet_bulb_in__weather"},
-    {"from": "AC-1", "to": "R-1", "type": "air_receiver__air_in__compressor_lead"},
-    {"from": "AC-2", "to": "R-1", "type": "air_receiver__air_in__compressor_lag"},
-    {"from": "M-1", "to": "R-1", "type": "air_receiver__demand_in__molder"},
-    {"from": "M-2", "to": "R-1", "type": "air_receiver__demand_in__molder"},
-    {"from": "M-3", "to": "R-1", "type": "air_receiver__demand_in__cnc"},
-    {"from": "M-4", "to": "R-1", "type": "air_receiver__demand_in__packaging_line"},
-    {"from": "R-1", "to": "D-1", "type": "air_dryer__air_in__air_receiver"},
-    {"from": "R-1", "to": "AC-1", "type": "compressor_lead__pressure_in__air_receiver"},
-    {"from": "R-1", "to": "AC-2", "type": "compressor_lag__pressure_in__air_receiver"},
-    {"from": "R-1", "to": "M-1", "type": "molder__air_in__air_receiver"},
-    {"from": "R-1", "to": "M-2", "type": "molder__air_in__air_receiver"},
-    {"from": "R-1", "to": "M-3", "type": "cnc__air_in__air_receiver"},
-    {"from": "R-1", "to": "M-4", "type": "packaging_line__air_in__air_receiver"},
-    {"from": "D-1", "to": "M-1", "type": "molder__dew_point_in__air_dryer"},
-    {"from": "D-1", "to": "M-2", "type": "molder__dew_point_in__air_dryer"},
-    {"from": "D-1", "to": "M-3", "type": "cnc__dew_point_in__air_dryer"},
-    {"from": "D-1", "to": "M-4", "type": "packaging_line__dew_point_in__air_dryer"},
-    {"from": "M-1", "to": "CH-1", "type": "chiller__load_in__molder"},
-    {"from": "M-2", "to": "CH-1", "type": "chiller__load_in__molder"},
-    {"from": "M-3", "to": "CH-1", "type": "chiller__load_in__cnc"},
-    {"from": "M-4", "to": "CH-1", "type": "chiller__load_in__packaging_line"},
-    {"from": "AHU-1", "to": "CH-1", "type": "chiller__load_in__ahu"},
-    {"from": "P-1", "to": "CH-1", "type": "chiller__flow_in__chw_pump"},
-    {"from": "P-2", "to": "CH-1", "type": "chiller__flow_in__chw_pump"},
-    {"from": "P-3", "to": "CH-1", "type": "chiller__flow_in__chw_pump"},
-    {"from": "CH-1", "to": "M-1", "type": "molder__coolant_in__chiller"},
-    {"from": "CH-1", "to": "M-2", "type": "molder__coolant_in__chiller"},
-    {"from": "CH-1", "to": "M-3", "type": "cnc__coolant_in__chiller"},
-    {"from": "CH-1", "to": "M-4", "type": "packaging_line__coolant_in__chiller"},
-    {"from": "CH-1", "to": "AHU-1", "type": "ahu__chw_in__chiller"},
-    {"from": "CH-1", "to": "CT-1", "type": "cooling_tower__heat_in__chiller"},
-    {"from": "P-4", "to": "CT-1", "type": "cooling_tower__cw_flow_in__cw_pump"},
-    {"from": "CT-1", "to": "CH-1", "type": "chiller__cond_water_in__cooling_tower"},
-    {"from": "AC-1", "to": "MB-AIR", "type": "air_meter__loads_in__compressor_lead"},
-    {"from": "AC-2", "to": "MB-AIR", "type": "air_meter__loads_in__compressor_lag"},
-    {"from": "D-1", "to": "MB-AIR", "type": "air_meter__loads_in__air_dryer"},
-    {"from": "M-1", "to": "MB-PROC", "type": "process_meter__loads_in__molder"},
-    {"from": "M-2", "to": "MB-PROC", "type": "process_meter__loads_in__molder"},
-    {"from": "M-3", "to": "MB-PROC", "type": "process_meter__loads_in__cnc"},
-    {"from": "M-4", "to": "MB-PROC", "type": "process_meter__loads_in__packaging_line"},
-    {"from": "CH-1", "to": "MB-COOL", "type": "cooling_meter__loads_in__chiller"},
-    {"from": "CT-1", "to": "MB-COOL", "type": "cooling_meter__loads_in__cooling_tower"},
-    {"from": "P-1", "to": "MB-COOL", "type": "cooling_meter__loads_in__chw_pump"},
-    {"from": "P-2", "to": "MB-COOL", "type": "cooling_meter__loads_in__chw_pump"},
-    {"from": "P-3", "to": "MB-COOL", "type": "cooling_meter__loads_in__chw_pump"},
-    {"from": "P-4", "to": "MB-COOL", "type": "cooling_meter__loads_in__cw_pump"},
-    {"from": "MB-AIR", "to": "MM-1", "type": "main_meter__loads_in__air_meter"},
-    {"from": "MB-COOL", "to": "MM-1", "type": "main_meter__loads_in__cooling_meter"},
-    {"from": "MB-PROC", "to": "MM-1", "type": "main_meter__loads_in__process_meter"},
-    {"from": "MM-1", "to": "TX-1", "type": "transformer__load_in__main_meter"},
-    {"from": "MM-1", "to": "G-1", "type": "generator__load_in__main_meter"}
+    {
+      "from": "CAL-1",
+      "from_port": "shift_out",
+      "to": "M-1",
+      "to_port": "shift_in",
+      "type": "molder__shift_in__site_calendar"
+    },
+    {
+      "from": "CAL-1",
+      "from_port": "shift_out",
+      "to": "M-2",
+      "to_port": "shift_in",
+      "type": "molder__shift_in__site_calendar"
+    },
+    {
+      "from": "CAL-1",
+      "from_port": "shift_out",
+      "to": "M-3",
+      "to_port": "shift_in",
+      "type": "cnc__shift_in__site_calendar"
+    },
+    {
+      "from": "CAL-1",
+      "from_port": "shift_out",
+      "to": "M-4",
+      "to_port": "shift_in",
+      "type": "packaging_line__shift_in__site_calendar"
+    },
+    {
+      "from": "CAL-1",
+      "from_port": "shift_out",
+      "to": "AHU-1",
+      "to_port": "shift_in",
+      "type": "ahu__shift_in__site_calendar"
+    },
+    {
+      "from": "CAL-1",
+      "from_port": "tariff_out",
+      "to": "CH-1",
+      "to_port": "tariff_in",
+      "type": "chiller__tariff_in__site_calendar"
+    },
+    {
+      "from": "WX-1",
+      "from_port": "dry_bulb_out",
+      "to": "AHU-1",
+      "to_port": "outdoor_in",
+      "type": "ahu__outdoor_in__weather"
+    },
+    {
+      "from": "WX-1",
+      "from_port": "wet_bulb_out",
+      "to": "CT-1",
+      "to_port": "wet_bulb_in",
+      "type": "cooling_tower__wet_bulb_in__weather"
+    },
+    {
+      "from": "AC-1",
+      "from_port": "air_out",
+      "to": "R-1",
+      "to_port": "air_in",
+      "type": "air_receiver__air_in__compressor_lead"
+    },
+    {
+      "from": "AC-2",
+      "from_port": "air_out",
+      "to": "R-1",
+      "to_port": "air_in",
+      "type": "air_receiver__air_in__compressor_lag"
+    },
+    {
+      "from": "M-1",
+      "from_port": "air_out",
+      "to": "R-1",
+      "to_port": "demand_in",
+      "type": "air_receiver__demand_in__molder"
+    },
+    {
+      "from": "M-2",
+      "from_port": "air_out",
+      "to": "R-1",
+      "to_port": "demand_in",
+      "type": "air_receiver__demand_in__molder"
+    },
+    {
+      "from": "M-3",
+      "from_port": "air_out",
+      "to": "R-1",
+      "to_port": "demand_in",
+      "type": "air_receiver__demand_in__cnc"
+    },
+    {
+      "from": "M-4",
+      "from_port": "air_out",
+      "to": "R-1",
+      "to_port": "demand_in",
+      "type": "air_receiver__demand_in__packaging_line"
+    },
+    {
+      "from": "R-1",
+      "from_port": "air_out",
+      "to": "D-1",
+      "to_port": "air_in",
+      "type": "air_dryer__air_in__air_receiver"
+    },
+    {
+      "from": "R-1",
+      "from_port": "pressure_out",
+      "to": "AC-1",
+      "to_port": "pressure_in",
+      "type": "compressor_lead__pressure_in__air_receiver"
+    },
+    {
+      "from": "R-1",
+      "from_port": "pressure_out",
+      "to": "AC-2",
+      "to_port": "pressure_in",
+      "type": "compressor_lag__pressure_in__air_receiver"
+    },
+    {
+      "from": "R-1",
+      "from_port": "pressure_out",
+      "to": "M-1",
+      "to_port": "air_in",
+      "type": "molder__air_in__air_receiver"
+    },
+    {
+      "from": "R-1",
+      "from_port": "pressure_out",
+      "to": "M-2",
+      "to_port": "air_in",
+      "type": "molder__air_in__air_receiver"
+    },
+    {
+      "from": "R-1",
+      "from_port": "pressure_out",
+      "to": "M-3",
+      "to_port": "air_in",
+      "type": "cnc__air_in__air_receiver"
+    },
+    {
+      "from": "R-1",
+      "from_port": "pressure_out",
+      "to": "M-4",
+      "to_port": "air_in",
+      "type": "packaging_line__air_in__air_receiver"
+    },
+    {
+      "from": "D-1",
+      "from_port": "dew_point_out",
+      "to": "M-1",
+      "to_port": "dew_point_in",
+      "type": "molder__dew_point_in__air_dryer"
+    },
+    {
+      "from": "D-1",
+      "from_port": "dew_point_out",
+      "to": "M-2",
+      "to_port": "dew_point_in",
+      "type": "molder__dew_point_in__air_dryer"
+    },
+    {
+      "from": "D-1",
+      "from_port": "dew_point_out",
+      "to": "M-3",
+      "to_port": "dew_point_in",
+      "type": "cnc__dew_point_in__air_dryer"
+    },
+    {
+      "from": "D-1",
+      "from_port": "dew_point_out",
+      "to": "M-4",
+      "to_port": "dew_point_in",
+      "type": "packaging_line__dew_point_in__air_dryer"
+    },
+    {
+      "from": "M-1",
+      "from_port": "heat_out",
+      "to": "CH-1",
+      "to_port": "load_in",
+      "type": "chiller__load_in__molder"
+    },
+    {
+      "from": "M-2",
+      "from_port": "heat_out",
+      "to": "CH-1",
+      "to_port": "load_in",
+      "type": "chiller__load_in__molder"
+    },
+    {
+      "from": "M-3",
+      "from_port": "heat_out",
+      "to": "CH-1",
+      "to_port": "load_in",
+      "type": "chiller__load_in__cnc"
+    },
+    {
+      "from": "M-4",
+      "from_port": "heat_out",
+      "to": "CH-1",
+      "to_port": "load_in",
+      "type": "chiller__load_in__packaging_line"
+    },
+    {
+      "from": "AHU-1",
+      "from_port": "load_out",
+      "to": "CH-1",
+      "to_port": "load_in",
+      "type": "chiller__load_in__ahu"
+    },
+    {
+      "from": "P-1",
+      "from_port": "flow_out",
+      "to": "CH-1",
+      "to_port": "flow_in",
+      "type": "chiller__flow_in__chw_pump"
+    },
+    {
+      "from": "P-2",
+      "from_port": "flow_out",
+      "to": "CH-1",
+      "to_port": "flow_in",
+      "type": "chiller__flow_in__chw_pump"
+    },
+    {
+      "from": "P-3",
+      "from_port": "flow_out",
+      "to": "CH-1",
+      "to_port": "flow_in",
+      "type": "chiller__flow_in__chw_pump"
+    },
+    {
+      "from": "CH-1",
+      "from_port": "supply_out",
+      "to": "M-1",
+      "to_port": "coolant_in",
+      "type": "molder__coolant_in__chiller"
+    },
+    {
+      "from": "CH-1",
+      "from_port": "supply_out",
+      "to": "M-2",
+      "to_port": "coolant_in",
+      "type": "molder__coolant_in__chiller"
+    },
+    {
+      "from": "CH-1",
+      "from_port": "supply_out",
+      "to": "M-3",
+      "to_port": "coolant_in",
+      "type": "cnc__coolant_in__chiller"
+    },
+    {
+      "from": "CH-1",
+      "from_port": "supply_out",
+      "to": "M-4",
+      "to_port": "coolant_in",
+      "type": "packaging_line__coolant_in__chiller"
+    },
+    {
+      "from": "CH-1",
+      "from_port": "supply_out",
+      "to": "AHU-1",
+      "to_port": "chw_in",
+      "type": "ahu__chw_in__chiller"
+    },
+    {
+      "from": "CH-1",
+      "from_port": "heat_out",
+      "to": "CT-1",
+      "to_port": "heat_in",
+      "type": "cooling_tower__heat_in__chiller"
+    },
+    {
+      "from": "P-4",
+      "from_port": "cw_flow_out",
+      "to": "CT-1",
+      "to_port": "cw_flow_in",
+      "type": "cooling_tower__cw_flow_in__cw_pump"
+    },
+    {
+      "from": "CT-1",
+      "from_port": "basin_out",
+      "to": "CH-1",
+      "to_port": "cond_water_in",
+      "type": "chiller__cond_water_in__cooling_tower"
+    },
+    {
+      "from": "AC-1",
+      "from_port": "power_out",
+      "to": "MB-AIR",
+      "to_port": "loads_in",
+      "type": "air_meter__loads_in__compressor_lead"
+    },
+    {
+      "from": "AC-2",
+      "from_port": "power_out",
+      "to": "MB-AIR",
+      "to_port": "loads_in",
+      "type": "air_meter__loads_in__compressor_lag"
+    },
+    {
+      "from": "D-1",
+      "from_port": "power_out",
+      "to": "MB-AIR",
+      "to_port": "loads_in",
+      "type": "air_meter__loads_in__air_dryer"
+    },
+    {
+      "from": "M-1",
+      "from_port": "power_out",
+      "to": "MB-PROC",
+      "to_port": "loads_in",
+      "type": "process_meter__loads_in__molder"
+    },
+    {
+      "from": "M-2",
+      "from_port": "power_out",
+      "to": "MB-PROC",
+      "to_port": "loads_in",
+      "type": "process_meter__loads_in__molder"
+    },
+    {
+      "from": "M-3",
+      "from_port": "power_out",
+      "to": "MB-PROC",
+      "to_port": "loads_in",
+      "type": "process_meter__loads_in__cnc"
+    },
+    {
+      "from": "M-4",
+      "from_port": "power_out",
+      "to": "MB-PROC",
+      "to_port": "loads_in",
+      "type": "process_meter__loads_in__packaging_line"
+    },
+    {
+      "from": "CH-1",
+      "from_port": "power_out",
+      "to": "MB-COOL",
+      "to_port": "loads_in",
+      "type": "cooling_meter__loads_in__chiller"
+    },
+    {
+      "from": "CT-1",
+      "from_port": "power_out",
+      "to": "MB-COOL",
+      "to_port": "loads_in",
+      "type": "cooling_meter__loads_in__cooling_tower"
+    },
+    {
+      "from": "P-1",
+      "from_port": "power_out",
+      "to": "MB-COOL",
+      "to_port": "loads_in",
+      "type": "cooling_meter__loads_in__chw_pump"
+    },
+    {
+      "from": "P-2",
+      "from_port": "power_out",
+      "to": "MB-COOL",
+      "to_port": "loads_in",
+      "type": "cooling_meter__loads_in__chw_pump"
+    },
+    {
+      "from": "P-3",
+      "from_port": "power_out",
+      "to": "MB-COOL",
+      "to_port": "loads_in",
+      "type": "cooling_meter__loads_in__chw_pump"
+    },
+    {
+      "from": "P-4",
+      "from_port": "power_out",
+      "to": "MB-COOL",
+      "to_port": "loads_in",
+      "type": "cooling_meter__loads_in__cw_pump"
+    },
+    {
+      "from": "MB-AIR",
+      "from_port": "power_out",
+      "to": "MM-1",
+      "to_port": "loads_in",
+      "type": "main_meter__loads_in__air_meter"
+    },
+    {
+      "from": "MB-COOL",
+      "from_port": "power_out",
+      "to": "MM-1",
+      "to_port": "loads_in",
+      "type": "main_meter__loads_in__cooling_meter"
+    },
+    {
+      "from": "MB-PROC",
+      "from_port": "power_out",
+      "to": "MM-1",
+      "to_port": "loads_in",
+      "type": "main_meter__loads_in__process_meter"
+    },
+    {
+      "from": "MM-1",
+      "from_port": "power_out",
+      "to": "TX-1",
+      "to_port": "load_in",
+      "type": "transformer__load_in__main_meter"
+    },
+    {
+      "from": "MM-1",
+      "from_port": "power_out",
+      "to": "G-1",
+      "to_port": "load_in",
+      "type": "generator__load_in__main_meter"
+    }
   ],
   "profiles": [
     {

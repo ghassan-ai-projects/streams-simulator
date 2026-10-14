@@ -226,7 +226,7 @@ detector form.
 ## 11. Typed links
 
 `link_types[]` = `{name, from, to, description?}` declares a kind of link between two kinds (`feeds`: `tank` to `pump`).
-`links[]` = `{type, from, to}` joins two instances. Issues: duplicate link type name (`/link_types/i/name`), undeclared `from` or
+`links[]` = `{type, from, to, from_port?, to_port?}` joins two instances; the optional ports name the port of each instance the link uses (`domain compose` writes them from the composition's connections) and are structure only, never read by the world and not part of a link's identity. Issues: duplicate link type name (`/link_types/i/name`), undeclared `from` or
 `to` kind (`/link_types/i/from`), undeclared type (`/links/i/type`), an endpoint that is no name and fits no template
 (`/links/i/from`), an endpoint of the wrong kind, and a link stated twice (`/links/i`). Endpoints must be identifiable instances;
 whether an index lies within the starting population is not checked. Links are structure only: the aggregation of dynamics inputs
@@ -644,7 +644,10 @@ director journal as one `kpi.truth` record at the close; the report shows it wit
 
 - **Sampling**: from the entity's birth, on a grid of its kind's shortest alarm step (60 s without an alarm), until its
   retirement; samples run on the world clock in time order with the world's events, after the events of the same instant,
-  and never in a look-ahead copy. A KPI is the mean, minimum and maximum of its samples.
+  and never in a look-ahead copy. A sample at the instant an advance ends is taken by the next advance or at the close, so
+  a command issued at that instant (a fault with the default onset) is in it, as if it had been scripted before the advance.
+  A KPI is the mean, minimum and maximum of its samples. A retired entity's alarms end at its retirement and are not
+  standing at the end.
 - **Alarms** (ISA-18.2 / EEMUA 191): an alarm is active while its code is `1` or `2`; an activation is a sample where it turns
   active after the first sample (unshelving an active alarm annunciates it again). Per alarm: `activations`, `chattering`
   (three activations within 60 s), `active_s`, `longest_active_s` and `active_at_end`. For the alarm system:
@@ -657,3 +660,15 @@ director journal as one `kpi.truth` record at the close; the report shows it wit
 Cross-checks: a scripted alarm's activations, active time and state at the end against an independent scan of its code on
 the alarm grid (two horizons); a KPI's mean, minimum and maximum against the same samples read from a world that does not
 track; chattering, peak rate and flood intervals on constructed activation times.
+
+## 30. Channel state vocabulary (phase P9)
+
+A channel that reports a code (an alarm state, an operating mode) may declare what each code means:
+`kinds[k].channels[c].states` is a list of `{value, name, attention}`. `value` is an integer and unique within the channel
+(`/kinds/k/channels/c/states/i/value` names a repeat); `name` is a non-empty word; `attention` is `"alarm"`, `"warn"` or
+`null` (omitted means `null`) and says how much notice a consumer should give the value. `states` is optional on any channel
+and the world ignores it: it changes no reading, only what the domain says about its readings, so a domain and the
+`domain_spec` a run records are self-describing and a consumer (the canvas) decodes a coded channel without a table of its
+own. The member is called `value` and not `code` because the schema's closed-grammar gate rejects a member whose name reads
+as an expression. An instrument declares the same list (`states`, components v0.1 section 3) and compose copies it onto the
+channel it produces; nothing in the binary keys on an instrument id.

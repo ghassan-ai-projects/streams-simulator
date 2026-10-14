@@ -18,7 +18,6 @@ type kpiTracker struct {
 type entityKPIs struct {
 	stepNS int64
 	tracks []*kpiTrack
-	doneNS int64
 }
 
 func newKPITracker(enabled bool) *kpiTracker {
@@ -33,7 +32,7 @@ func (w *World) trackKPIs(ent *Entity, atNS int64) {
 	if w.kpis == nil || len(tracks) == 0 {
 		return
 	}
-	w.kpis.entities[ent.ID] = &entityKPIs{stepNS: kpiStep(ent.kind), tracks: tracks, doneNS: -1}
+	w.kpis.entities[ent.ID] = &entityKPIs{stepNS: kpiStep(ent.kind), tracks: tracks}
 	w.kpis.order = append(w.kpis.order, ent.ID)
 	w.kpis.schedule(ent.ID, atNS)
 }
@@ -76,7 +75,6 @@ func (w *World) sampleKPIsThrough(to int64) {
 func (w *World) sampleKPIs(id string, at int64) {
 	ent, tracked := w.entities[id], w.kpis.entities[id]
 	if !ent.alive && at > ent.retiredNS {
-		tracked.doneNS = ent.retiredNS
 		return
 	}
 	for _, track := range tracked.tracks {

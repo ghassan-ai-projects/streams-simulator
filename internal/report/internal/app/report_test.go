@@ -17,7 +17,7 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
-const withheldLine = "Truth withheld: the run has not ended (no run.json)."
+const withheldLine = "Truth unavailable: sealed until the run ends"
 
 func render(t *testing.T, dir, format string) []byte {
 	t.Helper()
@@ -100,6 +100,9 @@ func TestReportOfARunCutBeforeItsArtifactShowsItIncompleteAndWithholdsTruth(t *t
 	if err := json.Unmarshal(got, &report); err != nil {
 		t.Fatal(err)
 	}
+	if report.TruthUnavailable != domain.TruthSealed {
+		t.Fatalf("truth_unavailable = %q, want %q", report.TruthUnavailable, domain.TruthSealed)
+	}
 	if report.Run.Complete || report.Run.Ended || report.Truth != nil || report.Run.Seed != nil || report.Verification.Status != domain.NotChecked {
 		t.Fatalf("open run report = %+v, want incomplete, not ended, no truth, no seed, not checked", report)
 	}
@@ -132,6 +135,42 @@ func TestReportShowsAnEditedTraceAsFilesDiffer(t *testing.T) {
 	}
 	if built.Verification.Status != domain.FilesDiffer || built.Verification.Checks[0].Status != domain.CheckDiffers {
 		t.Fatalf("verification = %+v, want files_differ with a trace mismatch", built.Verification)
+	}
+}
+
+func TestReportChecksTheStateHistoryFileAgainstItsRecordedDigest(t *testing.T) {
+	t.Parallel()
+	cases := map[string]struct {
+		tamper func(t *testing.T, path string)
+		status string
+	}{
+		"the file as written": {func(*testing.T, string) {}, domain.CheckMatch},
+		"a row deleted": {func(t *testing.T, path string) {
+			if err := os.WriteFile(path, []byte("{}\n"), 0o600); err != nil {
+				t.Fatal(err)
+			}
+		}, domain.CheckDiffers},
+		"the file deleted": {func(t *testing.T, path string) {
+			if err := os.Remove(path); err != nil {
+				t.Fatal(err)
+			}
+		}, domain.CheckMissing},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			dir := copyFolder(t, testsupport.ReportRun())
+			tc.tamper(t, filepath.Join(dir, model.FileHistory))
+			built, err := Build(t.Context(), dir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			checks := built.Verification.Checks
+			last := checks[len(checks)-1]
+			if last.Name != "history" || last.Status != tc.status {
+				t.Fatalf("checks = %+v, want a history check with status %s", checks, tc.status)
+			}
+		})
 	}
 }
 

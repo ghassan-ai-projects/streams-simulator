@@ -17,6 +17,10 @@ func FirstDifference(a, b []byte) int {
 	return layer.FirstDifference(a, b)
 }
 
+func ClosedIncomplete(raw []byte) (incomplete, closed bool) {
+	return layer.ClosedIncomplete(raw)
+}
+
 func (j *Journal) Opened(o Opened) {
 	j.impl.Opened(o)
 }
@@ -67,6 +71,10 @@ func (j *Journal) State(atNS int64, snapshot model.StateSnapshot) {
 
 func (j *Journal) KPITruth(atNS int64, truth *model.KPITruth) {
 	j.impl.KPITruth(atNS, truth)
+}
+
+func (j *Journal) FaultTruth(atNS int64, faults []model.FaultInterval) {
+	j.impl.FaultTruth(atNS, faults)
 }
 
 func (j *Journal) Outcome(atNS int64, call Call, result any, refusal string) {

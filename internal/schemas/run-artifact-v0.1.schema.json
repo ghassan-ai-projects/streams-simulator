@@ -17,6 +17,21 @@
     "command_log",
     "reproducible"
   ],
+  "if": {
+    "required": ["incomplete"],
+    "properties": {"incomplete": {"const": true}}
+  },
+  "else": {
+    "required": [
+      "expected_trace_digest",
+      "journal_digest",
+      "sealed_journal_digest",
+      "journal_file_digest",
+      "sealed_journal_file_digest",
+      "ledger_digest",
+      "history_digest"
+    ]
+  },
   "properties": {
     "schema_version": {
       "const": "0.1"
@@ -212,7 +227,7 @@
     "expected_trace_digest": {
       "type": "string",
       "pattern": "^sha256:[0-9a-f]{64}$",
-      "description": "Digest of the emitted trace. `verify` regenerates and compares; on mismatch it reports the first divergent record index rather than a bare boolean."
+      "description": "Digest of the emitted trace. `verify` regenerates and compares; on mismatch it reports the first divergent record index rather than a bare boolean. Required, with every other evidence digest, unless the run is incomplete: a closed run whose run.json lacks one is not self-verifying."
     },
     "reproducible": {
       "type": "boolean",
@@ -220,7 +235,7 @@
     },
     "incomplete": {
       "type": "boolean",
-      "description": "True when a rendering, sink, or lifecycle error aborted the run before a complete adapter end state was written."
+      "description": "True when a rendering, sink, or lifecycle error aborted the run before a complete adapter end state was written. `verify` never reports such a run as matching (reason `incomplete`), and checks the stamp against the `run.closed` record of each journal and against `reproducible`, which is false for an incomplete run."
     },
     "error": {
       "type": "string",
@@ -295,7 +310,7 @@
     "journal_file_digest": {
       "type": "string",
       "pattern": "^sha256:[0-9a-f]{64}$",
-      "description": "Digest of every line of journal.jsonl as written, session records (consumer.reported, wire, pacing) included. A replay cannot reproduce session records (pacing holds wall-clock waits), so `verify` does not compare it; the run report checks the file against it, which makes a changed session record evident."
+      "description": "Digest of every line of journal.jsonl as written, session records (consumer.reported, wire, pacing) included. A replay cannot reproduce session records (pacing holds wall-clock waits), so `verify` compares the file on disk with this digest and not with the replay; the run report checks the file against it too."
     },
     "sealed_journal_file_digest": {
       "type": "string",
@@ -305,12 +320,12 @@
     "ledger_digest": {
       "type": "string",
       "pattern": "^sha256:[0-9a-f]{64}$",
-      "description": "Digest of ledger.jsonl (one JSON line per delivery row). `verify` compares it with the file and with the replay; `report` checks the file against it."
+      "description": "Digest of ledger.jsonl (one JSON line per delivery row). `verify` compares it with the file and with the replay; `report` checks the file against it. Required for a closed run."
     },
     "history_digest": {
       "type": "string",
       "pattern": "^sha256:[0-9a-f]{64}$",
-      "description": "Digest of world_state_history.jsonl. `verify` compares it with the file and with the replay."
+      "description": "Digest of world_state_history.jsonl. `verify` compares it with the file and with the replay; `report` checks the file against it. Required for a closed run."
     },
     "applied_perturbations": {
       "type": "array",

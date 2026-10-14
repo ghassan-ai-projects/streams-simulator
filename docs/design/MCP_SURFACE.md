@@ -164,7 +164,7 @@ It has no idea what the target is.
 |---|---|---|
 | `sim.run.begin` | `{world_id, label?}` | `{run_id}` |
 | `sim.run.end` | `{world_id}` | `{run_artifact_path, trace_digest}` |
-| `sim.run.verify` | `{run_artifact_path}` | `{matches, first_divergence?}` |
+| `sim.run.verify` | `{run_artifact_path}` | `{matches, version_match, first_divergence?, detail, reason, incomplete}`; an incomplete run is `matches: false`, `reason: incomplete` |
 | `sim.truth.seal` | `{run_id, ground_truth}` | `{run_id, sealed}` |
 | `sim.truth.reveal` | `{run_id, unblind?}` | labels, three onset timestamps, hidden state history |
 | `sim.truth.seal_status` | `{run_id}` | `{sealed, unblinded, unblinded_at}` |

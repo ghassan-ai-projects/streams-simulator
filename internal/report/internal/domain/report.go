@@ -7,7 +7,10 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-const SchemaVersion = "0.1"
+const (
+	SchemaVersion = "0.1"
+	TruthSealed   = "sealed until the run ends"
+)
 
 type Report struct {
 	SchemaVersion    string       `json:"schema_version"`
@@ -57,7 +60,7 @@ type Verification struct {
 type Check struct {
 	Name     string `json:"name"`
 	Status   string `json:"status"`
-	Recorded string `json:"recorded"`
+	Recorded string `json:"recorded,omitempty"`
 	Computed string `json:"computed,omitempty"`
 }
 
@@ -72,22 +75,11 @@ type Counts struct {
 }
 
 type Truth struct {
-	Faults        []Fault         `json:"faults"`
-	Perturbations []Perturbation  `json:"perturbations"`
-	Environment   []Environment   `json:"environment"`
-	EffectorCalls []EffectorCall  `json:"effector_calls"`
-	KPIs          *model.KPITruth `json:"kpis,omitempty"`
-}
-
-type Fault struct {
-	Seq      int64          `json:"seq"`
-	AtNS     int64          `json:"at_ns"`
-	Action   string         `json:"action"`
-	EntityID string         `json:"entity_id,omitempty"`
-	Fault    string         `json:"fault,omitempty"`
-	FaultID  string         `json:"fault_id,omitempty"`
-	OnsetNS  *int64         `json:"onset_ns,omitempty"`
-	Params   map[string]any `json:"params,omitempty"`
+	Faults        []model.FaultInterval `json:"faults"`
+	Perturbations []Perturbation        `json:"perturbations"`
+	Environment   []Environment         `json:"environment"`
+	EffectorCalls []EffectorCall        `json:"effector_calls"`
+	KPIs          *model.KPITruth       `json:"kpis,omitempty"`
 }
 
 type Perturbation struct {
@@ -141,15 +133,16 @@ type Scoring struct {
 }
 
 const (
-	FilesMatch   = "files_match"
-	FilesDiffer  = "files_differ"
-	NotChecked   = "not_checked"
-	CheckMatch   = "match"
-	CheckDiffers = "mismatch"
-	CheckMissing = "missing_file"
-	Scored       = "scored"
-	NotScored    = "not_scored"
-	Failed       = "failed"
+	FilesMatch    = "files_match"
+	FilesDiffer   = "files_differ"
+	NotChecked    = "not_checked"
+	CheckMatch    = "match"
+	CheckDiffers  = "mismatch"
+	CheckMissing  = "missing_file"
+	CheckNoDigest = "digest_missing"
+	Scored        = "scored"
+	NotScored     = "not_scored"
+	Failed        = "failed"
 )
 
 type Document struct {
@@ -165,4 +158,5 @@ type Folder struct {
 	Observer Document
 	Director Document
 	Ledger   Document
+	History  Document
 }

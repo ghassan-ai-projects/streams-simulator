@@ -28,7 +28,7 @@ mode: evaluate | complete: yes | ended: yes | verification: files_match
 | World | `sha256:5c7456ac4fe6b8b6d703efd5b558dbac5cb9b6bc5d59fcc6b3998d23882b61d9` |
 | Trace | `sha256:8dc7384ce72c35382466ad0cf5c6092b2287cea91a0d62c6fde4464392ed0014` |
 | Observer journal | `sha256:a162e96357eb16362aa4977e7760223a473cdd5d12cad7932e90a0ca50de51d0` |
-| Director journal | `sha256:c4db42470bc98dcb32abe365f82a5e12c9b238626d75c002dfe0ec1aae96e4e0` |
+| Director journal | `sha256:8046417473d33861f689ca626612326075500acf5c84cb38f0c0eee13f15e70b` |
 
 ## Verification
 
@@ -38,7 +38,11 @@ Status: files_match
 |---|---|---|---|
 | trace | match | `sha256:8dc7384ce72c35382466ad0cf5c6092b2287cea91a0d62c6fde4464392ed0014` | `sha256:8dc7384ce72c35382466ad0cf5c6092b2287cea91a0d62c6fde4464392ed0014` |
 | journal | match | `sha256:a162e96357eb16362aa4977e7760223a473cdd5d12cad7932e90a0ca50de51d0` | `sha256:a162e96357eb16362aa4977e7760223a473cdd5d12cad7932e90a0ca50de51d0` |
-| sealed\_journal | match | `sha256:c4db42470bc98dcb32abe365f82a5e12c9b238626d75c002dfe0ec1aae96e4e0` | `sha256:c4db42470bc98dcb32abe365f82a5e12c9b238626d75c002dfe0ec1aae96e4e0` |
+| sealed\_journal | match | `sha256:8046417473d33861f689ca626612326075500acf5c84cb38f0c0eee13f15e70b` | `sha256:8046417473d33861f689ca626612326075500acf5c84cb38f0c0eee13f15e70b` |
+| journal\_file | match | `sha256:a162e96357eb16362aa4977e7760223a473cdd5d12cad7932e90a0ca50de51d0` | `sha256:a162e96357eb16362aa4977e7760223a473cdd5d12cad7932e90a0ca50de51d0` |
+| sealed\_journal\_file | match | `sha256:8046417473d33861f689ca626612326075500acf5c84cb38f0c0eee13f15e70b` | `sha256:8046417473d33861f689ca626612326075500acf5c84cb38f0c0eee13f15e70b` |
+| ledger | match | `sha256:e45ac088bf4a38f05c651f1774637a54e64224a6cbfec6d477cad9bf85efc8c0` | `sha256:e45ac088bf4a38f05c651f1774637a54e64224a6cbfec6d477cad9bf85efc8c0` |
+| history | match | `sha256:1aec381503473f6b5e1f6dc649246a962081c62bdc00c4f9bdfe126171c54ea9` | `sha256:1aec381503473f6b5e1f6dc649246a962081c62bdc00c4f9bdfe126171c54ea9` |
 
 ## Deliveries
 
@@ -65,9 +69,9 @@ Status: files_match
 
 ## Faults
 
-| Seq | At | Action | Entity | Fault | Onset | Params |
+| Fault id | Entity | Fault | Injected | Onset | Cleared | Cleared by |
 |---|---|---|---|---|---|---|
-| 0 | 2026-01-01T00:00:00Z (+0s) | inject | site-a/pond-1 | aerator\_failure | 2026-01-01T00:00:30Z (+30s) |  |
+| f-0 | site-a/pond-1 | aerator\_failure | 2026-01-01T00:00:00Z (+0s) | 2026-01-01T00:00:30Z (+30s) |  |  |
 
 ## Perturbations
 

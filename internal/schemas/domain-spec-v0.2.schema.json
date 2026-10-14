@@ -267,7 +267,9 @@
         "properties": {
           "type": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$"},
           "from": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,255}$"},
-          "to": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,255}$"}
+          "to": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,255}$"},
+          "from_port": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$", "description": "The port of the source instance the link leaves by, when a composition named it. Structure only, never read by the world."},
+          "to_port": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$", "description": "The port of the target instance the link enters by, when a composition named it. Structure only, never read by the world."}
         }
       }
     },
@@ -793,6 +795,21 @@
             "mean_s": {"type": "number", "minimum": 0},
             "sigma_s": {"type": "number", "minimum": 0},
             "max_s": {"type": "number", "minimum": 0}
+          }
+        },
+        "states": {
+          "type": "array",
+          "minItems": 1,
+          "description": "The vocabulary of a coded channel: what each value the channel reports means, so a consumer of the domain decodes it without a table of its own. Values are unique; attention says how much notice a value deserves (alarm, warn, or null for none).",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["value", "name"],
+            "properties": {
+              "value": {"type": "integer"},
+              "name": {"type": "string", "minLength": 1, "maxLength": 64},
+              "attention": {"enum": ["alarm", "warn", null]}
+            }
           }
         },
         "attacker_controlled": {

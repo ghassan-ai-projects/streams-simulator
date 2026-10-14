@@ -44,4 +44,5 @@ const (
 	TypeCommand         = layer.TypeCommand
 	TypeEffectorOutcome = layer.TypeEffectorOutcome
 	TypeKPITruth        = layer.TypeKPITruth
+	TypeFaultTruth      = layer.TypeFaultTruth
 )

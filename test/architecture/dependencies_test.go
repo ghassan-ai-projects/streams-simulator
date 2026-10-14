@@ -20,7 +20,8 @@ var packageDependencies = map[string]string{
 	"tools":                       "",
 	"cmd/streamsim":               "cli",
 	"internal/component":          "canonical domain jsonschema jsonvalue kernel model schemas",
-	"internal/cli":                "adapter component device deviceworld domain grading kernel lint mcp model plantwire refconsumer release report run suite",
+	"internal/cli":                "adapter canvasbridge component device deviceworld domain grading kernel lint mcp model plantwire refconsumer release report run suite",
+	"internal/canvasbridge":       "kernel",
 	"internal/director":           "adapter audit component domain model run score truth world",
 	"internal/mcp":                "director model schemas",
 	"internal/run":                "adapter canonical domain journal kernel model perturb sink wall world",
@@ -61,7 +62,7 @@ func TestPackageDependencies(t *testing.T) {
 		if err != nil {
 			return fmt.Errorf("inspect dependency in %s: %w", path, err)
 		}
-		if entry.IsDir() && isAgentWorkspace(path) {
+		if entry.IsDir() && isOutsideRepositoryCode(path) {
 			return filepath.SkipDir
 		}
 		if entry.IsDir() || !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") {
@@ -130,7 +131,7 @@ func dependencyAllowed(owner, imported string) bool {
 	// Only application surfaces speak MCP. Foundations and the deterministic
 	// pipeline do not gain external dependencies through transport convenience.
 	return imported == "github.com/modelcontextprotocol/go-sdk/mcp" &&
-		(owner == "internal/mcp" || owner == "internal/refconsumer")
+		(owner == "internal/mcp" || owner == "internal/refconsumer" || owner == "internal/canvasbridge")
 }
 
 func TestDependencyGuardRejectsUpwardAndExternalEdges(t *testing.T) {

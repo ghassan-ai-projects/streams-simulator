@@ -82,6 +82,7 @@ type Run struct {
 
 	commandLog        []model.Command
 	perturbHistory    []string
+	sealedFaults      []model.FaultInterval
 	ledger            []model.LedgerRecord
 	history           []model.StateSnapshot
 	verdict           *model.Verdict
@@ -95,6 +96,7 @@ type Run struct {
 	durableLedger     *durable.Ledger
 	journal           *journal.Journal
 	journalDigests    journal.Digests
+	replayedDigest    map[string]string
 
 	finished     bool
 	incomplete   bool

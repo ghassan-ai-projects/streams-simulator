@@ -64,6 +64,7 @@ var packages = map[string]packageInfo{
 	"internal/plantwire":          {kindEdgeCore, 6},
 	"internal/report":             {kindEdgeCore, 7},
 	"internal/mcp":                {kindSurface, 7},
+	"internal/canvasbridge":       {kindEdgeCore, 7},
 	"internal/cli":                {kindSurface, 8},
 	"cmd/streamsim":               {kindSurface, 9},
 	".":                           {kindRoot, 10},

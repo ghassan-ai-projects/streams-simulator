@@ -46,3 +46,24 @@ func TestAFaultAlreadyUnderwayAtTheStartOfTheRunIsAccepted(t *testing.T) {
 		t.Fatalf("a pre-degraded onset before the start of an unrun world: %v", err)
 	}
 }
+
+func TestAFaultClearBeforeTheClockIsRefusedAndTheFaultStaysActive(t *testing.T) {
+	t.Parallel()
+	w := constWorld(t, nil, model.DefaultStartTimeNS)
+	id, err := w.InjectFault("e-1", "f1", model.DefaultStartTimeNS+5e9, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := w.Advance(model.DefaultStartTimeNS + 20e9); err != nil {
+		t.Fatal(err)
+	}
+	if err := w.ClearFault(id, model.DefaultStartTimeNS+10e9); !errors.Is(err, ErrFaultClearInPast) {
+		t.Fatalf("a clear before the clock: err = %v, want ErrFaultClearInPast", err)
+	}
+	if faults := w.ListFaults(); len(faults) != 1 {
+		t.Fatalf("faults after a refused clear = %v, want the fault still active", faults)
+	}
+	if err := w.ClearFault(id, 0); err != nil || len(w.ListFaults()) != 0 {
+		t.Fatalf("a clear now: %v, faults %v", err, w.ListFaults())
+	}
+}

@@ -107,6 +107,24 @@ func TestAssembleOfAForeignFolderNamesWhyItHasNoTruth(t *testing.T) {
 	}
 }
 
+func TestAssembleStatesWhyAnOpenEvaluateRunHasNoTruthAndAnExploreRunHasSome(t *testing.T) {
+	t.Parallel()
+	open, err := Assemble(Folder{Observer: doc(openedEvaluate)}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if open.Truth != nil || open.TruthUnavailable != TruthSealed {
+		t.Fatalf("open evaluate run: truth %v, unavailable %q; want none and %q", open.Truth, open.TruthUnavailable, TruthSealed)
+	}
+	explore, err := Assemble(Folder{Observer: doc(openedExplore), Director: doc(directorOpened)}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if explore.Truth == nil || explore.TruthUnavailable != "" {
+		t.Fatalf("open explore run: truth %v, unavailable %q; want truth and no reason", explore.Truth, explore.TruthUnavailable)
+	}
+}
+
 func TestAssembleDropsATornLastLineOfEachStreamAndNamesIt(t *testing.T) {
 	t.Parallel()
 	cut := func(d Document) Document { return Document{Raw: d.Raw[:len(d.Raw)-3], Present: true} }

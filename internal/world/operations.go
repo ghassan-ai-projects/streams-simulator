@@ -54,6 +54,14 @@ func (w *World) ListFaults() []FaultInfo {
 	return w.world.ListFaults()
 }
 
+func (w *World) FaultIntervals() []model.FaultInterval {
+	return w.world.FaultIntervals()
+}
+
+func (w *World) FinalFaultIntervals() []model.FaultInterval {
+	return w.world.FinalFaultIntervals()
+}
+
 func (w *World) ActiveFaultsCount() int {
 	return w.world.ActiveFaultsCount()
 }

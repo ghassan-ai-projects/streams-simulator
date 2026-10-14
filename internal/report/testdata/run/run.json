@@ -1145,5 +1145,9 @@
   ],
   "mode": "evaluate",
   "journal_digest": "sha256:a162e96357eb16362aa4977e7760223a473cdd5d12cad7932e90a0ca50de51d0",
-  "sealed_journal_digest": "sha256:c4db42470bc98dcb32abe365f82a5e12c9b238626d75c002dfe0ec1aae96e4e0"
+  "sealed_journal_digest": "sha256:8046417473d33861f689ca626612326075500acf5c84cb38f0c0eee13f15e70b",
+  "journal_file_digest": "sha256:a162e96357eb16362aa4977e7760223a473cdd5d12cad7932e90a0ca50de51d0",
+  "sealed_journal_file_digest": "sha256:8046417473d33861f689ca626612326075500acf5c84cb38f0c0eee13f15e70b",
+  "ledger_digest": "sha256:e45ac088bf4a38f05c651f1774637a54e64224a6cbfec6d477cad9bf85efc8c0",
+  "history_digest": "sha256:1aec381503473f6b5e1f6dc649246a962081c62bdc00c4f9bdfe126171c54ea9"
 }

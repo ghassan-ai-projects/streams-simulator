@@ -1,0 +1,7 @@
+{
+  "minTokens": 75,
+  "threshold": 0,
+  "reporters": ["console"],
+  "ignore": ["**/*.test.ts", "**/*.test.tsx", "**/generated/**"],
+  "exitCode": 1
+}

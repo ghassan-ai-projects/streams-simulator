@@ -21,7 +21,7 @@ The standard run output is the five files through `verdict.json` in the table ab
 
 ## Artifact lifecycle
 
-`run.json` is written by `run.End`. `streamsim verify` loads it and replays the command log. A successful replay must match the expected trace digest and input digests. An incomplete run remains incomplete; do not normalize it into a successful artifact.
+`run.json` is written by `run.End`. `streamsim verify` loads it and replays the command log. A successful replay must match the expected trace digest and input digests. An incomplete run remains incomplete: `verify` answers `matches: false` with `reason: incomplete`, never `match`; do not normalize it into a successful artifact.
 
 ## Handling rules
 

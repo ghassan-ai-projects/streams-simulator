@@ -92,6 +92,7 @@ var consumerSlots = []slot{
 var directorSlots = []slot{
 	{"sealed/journal.jsonl", func(f *domain.Folder) *domain.Document { return &f.Director }},
 	{model.FileLedger, func(f *domain.Folder) *domain.Document { return &f.Ledger }},
+	{model.FileHistory, func(f *domain.Folder) *domain.Document { return &f.History }},
 }
 
 func loadDocuments(dir string, slots []slot) (domain.Folder, error) {
@@ -112,7 +113,7 @@ func readInto(dir string, slots []slot, folder *domain.Folder) error {
 }
 
 func loadArtifact(dir string) (*model.RunArtifact, error) {
-	artifact, err := run.LoadArtifact(filepath.Join(dir, model.FileRunArtifact))
+	artifact, err := run.LoadArtifactForVerification(filepath.Join(dir, model.FileRunArtifact))
 	if errors.Is(err, fs.ErrNotExist) {
 		return nil, nil
 	}

@@ -4,6 +4,74 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **Incomplete runs and the report's loading** (findings E5-1, E5-2, E5-4; R9-30 to R9-32). Breaking: `streamsim verify` never
+  reports a run that ended `incomplete` as matching. It answers `matches: false` with `reason: incomplete` (exit 1,
+  `replay_mismatch`) even when the replay and every file agree; a more specific reason (a file that differs or is missing, a
+  trace that diverges) wins when one applies. Every evidence file and digest an incomplete run does have is compared with
+  each other; the replayed journals, ledger and history are not compared with the replay (the close of a failed run cannot be
+  reproduced). The `incomplete` stamp is checked against the `run.closed` record of `journal.jsonl` and `sealed/journal.jsonl`
+  and against `reproducible` (an incomplete run is never reproducible): a contradiction, which editing `incomplete` on a closed
+  run's `run.json` produces, is `reason: incomplete_stamp` and names the journal. `cli-output-v0.1` lists both reasons and the
+  `replay` document now carries `incomplete`, `emitted` and `journal_diverged`; the `sim.run.verify` tool carries `reason` and
+  `incomplete`. An empty or malformed evidence digest (`"ledger_digest": ""`) is a verdict (`digest_missing`), not a schema
+  rejection. `streamsim report` loads `run.json` as `verify` does (`run.LoadArtifactForVerification`): a run that ended
+  complete with an evidence digest absent, empty or malformed is `verification.status: files_differ` with a `digest_missing`
+  check (`recorded` absent), where it failed with `artifact_invalid`; `run-report-v0.1` lists the status. A run still open in
+  evaluate mode reports `truth_unavailable: "sealed until the run ends"` (the same field, same vocabulary as the
+  foreign-run reason). The canvas names the two new reasons.
+- **Fault intervals in the run report and a state vocabulary on channels** (findings E4-2, E4-4; R9-20, R9-21). Breaking:
+  `truth.faults` in `streamsim report` is no longer the inject and clear commands; each fault is an interval the world
+  gave it: `fault_id`, `entity_id`, `fault`, `injected_at_ns`, `onset_ns`, `cleared_ns` (`null` while active at the end
+  of the run) and `cleared_by` (`command`, `pulse_end`, `responder` or `null`). A clear command ends the fault at its
+  effective `at_ns`, a pulse at onset plus its duration, an effector responder at its arrival; the earliest end wins.
+  The world records each end (`world.FaultIntervals`, `FinalFaultIntervals`), the run seals them in the director journal
+  as `fault.truth` records (after each fault inject, clear and effector call that changes them, and at the close), and
+  the report takes the last record, so evaluate-mode truth stays sealed until the run closes. Every run with a fault
+  has a new sealed journal digest; the pinned report run, its goldens and the run-report and run-journal schemas change.
+  A channel may declare `states` (`[{value, name, attention}]`, `attention` is `alarm`, `warn` or `null`, `value`
+  unique); an instrument declares the same list and `domain compose` copies it onto its channel. The annunciator
+  instrument declares the five alarm states; `examples/factory-utilities.domain.json` is recomposed. The member is
+  `value`, not `code`: the domain schema's closed-grammar gate rejects a member named like an expression. The report
+  schema now lists the `journal_file` and `sealed_journal_file` checks the report already wrote.
+- **Verify evidence review** (findings E4-1, E4-3, E4-8; R9-15 to R9-17). A run that ended complete must record a digest for every
+  evidence file (`expected_trace_digest`, `journal_digest`, `sealed_journal_digest`, `journal_file_digest`,
+  `sealed_journal_file_digest`, `ledger_digest`, `history_digest`; the run artifact schema requires them unless `incomplete`),
+  and `streamsim verify` requires each file (`trace.jsonl`, `ledger.jsonl`, `world_state_history.jsonl`, `journal.jsonl`,
+  `sealed/journal.jsonl`) beside `run.json`, comparing it with the recorded digest and with the replay; a missing file or
+  digest, which verified as matching before, is `matches: false`. The replay and verify result carries `reason` (`match`,
+  `recorded_spec`, `world_digest`, `trace_divergence`, `journal_divergence`, `evidence_divergence`, `unblinded_stamp`,
+  `digest_missing`, `file_differs`, `file_missing`) and `file`; `cli-output-v0.1` requires `reason`. `streamsim report` checks
+  `world_state_history.jsonl` too, from the same digest list (`RunArtifact.EvidenceDigests`), and its schema names all seven
+  checks. A trace written to a `--sink-target` outside the run folder is also written to `trace.jsonl` in it. `verify --help`
+  prints "Usage of verify". Breaking: older `run.json` files without the digests no longer pass `report` or `score`
+  (`artifact_invalid`) and `verify` reports them as `digest_missing`. The report fixture (`internal/report/testdata/run`) gains
+  the four digests and a three-row `world_state_history.jsonl`, with both goldens, and the behaviour pin is regenerated (the
+  `verify`, `replay` and `failure/replay-mismatch` documents gain `reason`; the `unknown-command` usage line for `canvas` was
+  already missing from it).
+
+- **Verify review fixes** (findings E3-2, E3-3, E3-6, E3-8, E3-10). `streamsim verify` and `replay` report an artifact whose own
+  recorded digests do not hold (the embedded domain or adapter spec does not hash to its digest, or the recorded specs replay
+  to a different world digest) as `matches: false` with a `detail`, in the `result` of `replay_mismatch`, instead of an error
+  with no result; a missing or unreadable `run.json` stays an error. `verify` also compares `trace.jsonl` beside the artifact
+  with the digest `run.json` recorded. `scenario from-run` and `score` replay the specs recorded in `run.json`
+  (`run.ResolveInputs`, shared with `replay`/`verify`), so a later domain edit does not break them. `domain_changed` is omitted
+  when the current domain is unknown. The canvas bridge names its session cookie `streamsim_canvas_<port>`, so two bridges on
+  one host no longer unpair each other.
+
+- **Factory utilities world, scale and KPI truth** (phase P7l). `examples/factory-utilities` is composed from the library only;
+  a 2,032-tag campus runs at 109x real time through the run pipeline. Breaking: `follow` takes `sources: [{link, state}]`
+  (several link types into one state) instead of `link` and `state`. New: `kinds[].kpis`, the sealed `kpi.truth` director
+  record and `truth.kpis` in the report (domain-spec v0.2 §29); `journal_file_digest` and `sealed_journal_file_digest` in the
+  run artifact, checked by the report; framing records in the observer journal; `world.ErrFaultOnsetInPast` and
+  `world.ErrFaultClearInPast` for an onset or clear before the clock of a world that has run. Truth oracle worlds are built
+  as a run builds its world (the scenario's seed and the derived world identity), are advanced in time order (clean before
+  faulted) to every sampled instant, schedule no emission unless a pulse needs recordings, and judge a pulse only at its
+  detector channels' recordings. KPI samples at the instant an advance ends are taken at the next advance or at the close,
+  and a retired entity's alarms end at its retirement.
+- **Link ports in the domain** (finding R9-03). A domain link may carry optional `from_port` and `to_port`; `domain compose`
+  writes them from each connection, so a client reading only the domain sees which port of an instance a link uses. The world
+  ignores them and a link's identity stays `(type, from, to)`. The two composed examples are regenerated.
+
 - **Simulator version 0.3.1** (review P7e). `sim_version` is `0.3.1`: the P6a integration fix changed faulted hidden-state
   numbers, which changes the digest inputs of a faulted run. The behaviour pin is regenerated (only the `run.json` and
   `journal.jsonl` lines change) and gains a day-long run with two faults and three perturbations. The operator endpoint of

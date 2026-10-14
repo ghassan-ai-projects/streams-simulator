@@ -43,6 +43,8 @@ type Options struct {
 	ForceFailureMode FailureMode
 
 	TrackKPIs bool
+
+	Unobserved bool
 }
 
 type World struct {
@@ -53,6 +55,7 @@ type World struct {
 	clockNS          int64
 	noiseless        bool
 	emitDisabled     bool
+	unobserved       bool
 	forceEffectorOK  bool
 	forceFailureMode FailureMode
 

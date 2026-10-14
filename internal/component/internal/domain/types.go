@@ -74,19 +74,20 @@ type InstrumentFault struct {
 }
 
 type Instrument struct {
-	ID         string            `json:"id"`
-	Version    int               `json:"version"`
-	Title      string            `json:"title"`
-	Tag        string            `json:"tag"`
-	UnitFamily string            `json:"unit_family"`
-	Unit       string            `json:"unit"`
-	Range      *Range            `json:"range"`
-	Channel    map[string]any    `json:"channel"`
-	Faults     []InstrumentFault `json:"faults"`
-	Scaling    string            `json:"scaling"`
-	Document   map[string]any    `json:"-"`
-	Digest     string            `json:"-"`
-	File       string            `json:"-"`
+	ID         string               `json:"id"`
+	Version    int                  `json:"version"`
+	Title      string               `json:"title"`
+	Tag        string               `json:"tag"`
+	UnitFamily string               `json:"unit_family"`
+	Unit       string               `json:"unit"`
+	Range      *Range               `json:"range"`
+	Channel    map[string]any       `json:"channel"`
+	Faults     []InstrumentFault    `json:"faults"`
+	Scaling    string               `json:"scaling"`
+	States     []model.ChannelState `json:"states"`
+	Document   map[string]any       `json:"-"`
+	Digest     string               `json:"-"`
+	File       string               `json:"-"`
 }
 
 type InstrumentChanges struct {

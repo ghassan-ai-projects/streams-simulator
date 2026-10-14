@@ -1,0 +1,82 @@
+import { describe, expect, it } from "vitest";
+import { failed, success } from "../model/bridge";
+import { FakeBridge, failure } from "../test/fakeBridge";
+import { SessionStore } from "./sessionStore";
+
+async function unpaired() {
+  const bridge = new FakeBridge();
+  const store = new SessionStore(bridge);
+  await store.check();
+  return { bridge, store };
+}
+
+describe("session", () => {
+  it("starts paired when the bridge already knows this browser", async () => {
+    const bridge = new FakeBridge();
+    bridge.paired = true;
+    const store = new SessionStore(bridge);
+    expect(store.snapshot().phase).toBe("checking");
+    await store.check();
+    expect(store.snapshot()).toEqual({ phase: "paired" });
+  });
+
+  it("reports an unreachable bridge with its failure", async () => {
+    const bridge = new FakeBridge();
+    bridge.sessionOutcome = failed(failure("unreachable", 0, "gone"));
+    const store = new SessionStore(bridge);
+    await store.check();
+    expect(store.snapshot()).toMatchObject({ phase: "unreachable", failure: { code: "unreachable" } });
+  });
+
+  it("pairs only with a complete code and sends the normalised code", async () => {
+    const { bridge, store } = await unpaired();
+    store.type("3s2q-k7mp");
+    expect(store.canPair()).toBe(false);
+    await store.pair();
+    expect(bridge.pairedCodes).toEqual([]);
+    store.type("3s2q-k7mp-lxq4");
+    expect(store.canPair()).toBe(true);
+    await store.pair();
+    expect(bridge.pairedCodes).toEqual(["3S2QK7MPLXQ4"]);
+    expect(store.snapshot()).toEqual({ phase: "paired" });
+  });
+
+  it("keeps the code after a wrong code and clears the error on the next keystroke", async () => {
+    const { bridge, store } = await unpaired();
+    bridge.pairOutcomes.push(failed(failure("wrong_code")));
+    store.type("AAAABBBBCCCC");
+    await store.pair();
+    expect(store.snapshot()).toMatchObject({
+      phase: "unpaired",
+      code: "AAAABBBBCCCC",
+      failure: { code: "wrong_code" },
+    });
+    store.type("AAAABBBBCCCD");
+    expect(store.snapshot()).toMatchObject({ failure: null, code: "AAAABBBBCCCD" });
+  });
+
+  it("blocks typing and pairing once the bridge locks or the code was used", async () => {
+    for (const code of ["pairing_locked", "pairing_used"]) {
+      const { bridge, store } = await unpaired();
+      bridge.pairOutcomes.push(failed(failure(code)));
+      store.type("AAAABBBBCCCC");
+      await store.pair();
+      expect(store.snapshot()).toMatchObject({ phase: "unpaired", code: "", failure: { code } });
+      store.type("AAAABBBBCCCC");
+      expect(store.snapshot()).toMatchObject({ code: "" });
+      expect(store.canPair()).toBe(false);
+    }
+  });
+
+  it("ignores typing and pairing outside the unpaired phase", async () => {
+    const bridge = new FakeBridge();
+    bridge.paired = true;
+    bridge.pairOutcomes.push(success(true));
+    const store = new SessionStore(bridge);
+    await store.check();
+    store.type("AAAA");
+    await store.pair();
+    expect(store.snapshot()).toEqual({ phase: "paired" });
+    expect(bridge.pairedCodes).toEqual([]);
+  });
+});

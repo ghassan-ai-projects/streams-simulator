@@ -25,7 +25,7 @@ The current checkout implements the documented pipeline and passes the repositor
 - The score command reads `verdict.json` and `ledger.jsonl` beside the run artifact and `label.json` beside it unless `--label` is provided. It does not accept a `--verdict` flag.
 - The offline score command does not receive an effector-call log, so action-loop metrics are incomplete. Use the MCP director score path when action evidence is required.
 - Suite generation is not a complete batch runner: it produces audited scenario definitions and labels, while a harness must choose an adapter, execute scenarios, and persist score output.
-- The CLI replay and verify commands require current `domains/` and `adapters/` directories even when the run artifact contains embedded specifications; the replay library is less restrictive.
+- The CLI replay and verify commands replay the domain and adapter specifications recorded in the run artifact, so editing a domain afterwards does not break earlier runs; the result reports `domain_changed` when the domains directory now holds a different digest.
 - The current code uses file-based JSON/JSONL run artifacts; older SQLite language in the design archive is historical or superseded by the accepted decision.
 - No actual external production consumer is shipped; the reference consumer is a test instrument and integration example.
 

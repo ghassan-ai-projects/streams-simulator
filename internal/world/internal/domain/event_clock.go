@@ -7,14 +7,14 @@ import (
 )
 
 func (w *World) schedulePulse(active *activeFault, durationNS int64) {
-	active.clearedNS = active.onsetNS + durationNS
+	active.clearedNS, active.clearedBy = active.onsetNS+durationNS, model.ClearedByPulseEnd
 	w.checkPulseEdge(active, active.onsetNS)
 	w.checkPulseEdge(active, active.clearedNS)
 }
 
 func (w *World) checkPulseEdge(active *activeFault, at int64) {
 	ent := w.entities[active.entity]
-	if ent == nil || active.fault.Onset.Shape != model.ShapePulse {
+	if ent == nil || w.unobserved || active.fault.Onset.Shape != model.ShapePulse {
 		return
 	}
 	for i := range ent.kind.Channels {

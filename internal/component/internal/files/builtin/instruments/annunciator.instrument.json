@@ -25,6 +25,33 @@
       "mttr_s": 600
     }
   },
+  "states": [
+    {
+      "value": 0,
+      "name": "normal",
+      "attention": null
+    },
+    {
+      "value": 1,
+      "name": "unacknowledged",
+      "attention": "alarm"
+    },
+    {
+      "value": 2,
+      "name": "acknowledged",
+      "attention": "alarm"
+    },
+    {
+      "value": 3,
+      "name": "returned unacknowledged",
+      "attention": "warn"
+    },
+    {
+      "value": 4,
+      "name": "shelved",
+      "attention": null
+    }
+  ],
   "faults": [
     {
       "id": "dropout",

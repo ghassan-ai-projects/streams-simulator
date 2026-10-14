@@ -76,6 +76,13 @@ func TestTheKPITruthCountsAlarmActivationsAndActiveTimeOnTheAlarmScanGrid(t *tes
 			t.Fatalf("until %v s: %+v, reference %+v", until, got, ref)
 		}
 	}
+	w := kpiWorld(t, func(*model.DomainSpec) {})
+	if _, _, err := w.Advance(atSeconds(1200)); err != nil {
+		t.Fatal(err)
+	}
+	if system := w.KPITruth().AlarmSystem; system.Activations != 3 || system.PeakPer10Min != 3 || system.StandingAtEnd != 0 {
+		t.Fatalf("alarm system = %+v, want the 3 activations, all within 10 minutes, none standing at 1200 s", system)
+	}
 	if got := len(referenceAlarm(t, 1200).activations); got != 3 {
 		t.Fatalf("the scripted alarm activates %d times, want 3 (140 s, after the second rise, on unshelving at 710 s)", got)
 	}
@@ -124,4 +131,49 @@ func TestAWorldWithoutKPITrackingHasNoKPITruth(t *testing.T) {
 	if truth := alarmWorld(t).KPITruth(); truth != nil {
 		t.Fatalf("KPI truth = %+v, want none without TrackKPIs", truth)
 	}
+}
+
+func TestARetiredEntitysAlarmEndsAtItsRetirementWhateverTheRunDoesAfter(t *testing.T) {
+	t.Parallel()
+	for _, until := range []float64{205, 215, 400} {
+		w := kpiWorld(t, func(*model.DomainSpec) {})
+		if _, _, err := w.Advance(atSeconds(190)); err != nil {
+			t.Fatal(err)
+		}
+		w.Retire("e-1", "test", atSeconds(200))
+		if _, _, err := w.Advance(atSeconds(until)); err != nil {
+			t.Fatal(err)
+		}
+		alarm := w.KPITruth().Entities[0].Alarms[0]
+		if alarm.ActiveS != 60 || alarm.LongestActiveS != 60 || alarm.ActiveAtEnd {
+			t.Fatalf("run to %v s: %+v, want 60 s active from 140 s to the retirement at 200 s and no standing alarm", until, alarm)
+		}
+	}
+}
+
+func TestAFaultInjectedRightAfterAnAdvanceIsInTheSampleAtThatInstant(t *testing.T) {
+	t.Parallel()
+	at := atSeconds(600)
+	scripted, chunked := kpiWorld(t, faultyTemp), kpiWorld(t, faultyTemp)
+	if _, err := scripted.InjectFault("e-1", "hot", at, nil); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := scripted.Advance(at); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := chunked.Advance(at); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := chunked.InjectFault("e-1", "hot", 0, nil); err != nil {
+		t.Fatal(err)
+	}
+	if got, want := chunked.KPITruth().Entities[0].KPIs[0], scripted.KPITruth().Entities[0].KPIs[0]; got != want {
+		t.Fatalf("a fault injected after advancing to its onset gives %+v, scripted before the advance %+v", got, want)
+	}
+}
+
+func faultyTemp(s *model.DomainSpec) {
+	kind := &s.Kinds[0]
+	kind.Faults = append(kind.Faults, model.Fault{ID: "hot", Affects: []model.FaultEffect{{State: "temp", Delta: 30}},
+		Onset: model.FaultOnset{Shape: "step", Magnitude: 1}, Observability: kind.Faults[0].Observability})
 }

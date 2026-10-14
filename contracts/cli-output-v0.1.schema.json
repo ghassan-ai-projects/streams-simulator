@@ -524,11 +524,15 @@
         "got",
         "want",
         "first_divergence",
-        "detail"
+        "detail",
+        "reason",
+        "emitted",
+        "incomplete"
       ],
       "properties": {
         "matches": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "True only when the run is verified: it ended complete and the replay and every evidence file agree with what run.json recorded. A run that ended incomplete is never a match."
         },
         "version_match": {
           "type": "boolean"
@@ -547,6 +551,48 @@
           "minimum": 0
         },
         "detail": {
+          "type": "string"
+        },
+        "reason": {
+          "enum": [
+            "match",
+            "recorded_spec",
+            "world_digest",
+            "trace_divergence",
+            "journal_divergence",
+            "evidence_divergence",
+            "unblinded_stamp",
+            "digest_missing",
+            "file_differs",
+            "file_missing",
+            "incomplete",
+            "incomplete_stamp"
+          ],
+          "description": "Why the result is what it is: match, or the first cause found. recorded_spec: a recorded domain or adapter spec does not match its digest (nothing replayed). world_digest: the recorded specs replay to another world than the recorded world digest. trace_divergence: the replayed trace differs from the recorded trace digest. journal_divergence: a replayed journal stream differs from its recorded digest. evidence_divergence: the replayed ledger or history differs from its recorded digest (file names it). unblinded_stamp: the replay disagrees with the artifact on unblinding. digest_missing: a closed run's run.json records no digest for the file. file_differs: the file on disk differs from its recorded digest or from the replay. file_missing: the file is absent from the run folder. incomplete: the run ended incomplete (`incomplete` is true), so it cannot be verified as complete; matches is false even when the replay and every file it recorded agree. incomplete_stamp: the incomplete stamp of run.json contradicts the evidence (a journal closed with another incomplete value, or an incomplete run recorded as reproducible); file names the journal when a journal contradicts it."
+        },
+        "file": {
+          "type": "string",
+          "description": "The run-folder file the reason names, relative to the run folder; present for digest_missing, file_differs, file_missing, evidence_divergence and, when a journal contradicts the stamp, incomplete_stamp."
+        },
+        "emitted": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Events the replay emitted."
+        },
+        "incomplete": {
+          "type": "boolean",
+          "description": "run.json says the run ended incomplete (a sink failure or a consumer that did not quiesce). verify never reports such a run as matching."
+        },
+        "journal_diverged": {
+          "type": "array",
+          "items": {"enum": ["observer", "director"]},
+          "uniqueItems": true,
+          "description": "The journal streams (observer is journal.jsonl, director is sealed/journal.jsonl) that differ from the replay; omitted when none does."
+        },
+        "domain_changed": {
+          "type": "boolean"
+        },
+        "current_domain_digest": {
           "type": "string"
         }
       }

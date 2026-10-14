@@ -42,11 +42,13 @@ func (k *kick) assignedFrom(underlying float64, t int64) float64 {
 }
 
 type activeFault struct {
-	fault     *model.Fault
-	entity    string
-	onsetNS   int64
-	clearedNS int64
-	severity  float64
+	fault      *model.Fault
+	entity     string
+	onsetNS    int64
+	clearedNS  int64
+	clearedBy  string
+	injectedNS int64
+	severity   float64
 
 	walks  map[string][]float64
 	frozen *float64

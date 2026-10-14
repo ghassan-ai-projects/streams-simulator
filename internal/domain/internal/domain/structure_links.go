@@ -4,20 +4,26 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
+type linkIdentity struct{ linkType, from, to string }
+
 func (checks domainChecks) checkLinks() error {
 	spec := checks.compiled.Spec
-	seen := map[model.Link]bool{}
+	seen := map[linkIdentity]bool{}
 	return checks.each("links", len(spec.Links), func(at domainChecks, i int) error {
-		item := spec.Links[i]
-		if err := at.linkEnds(item); err != nil {
+		if err := at.linkEnds(spec.Links[i]); err != nil {
 			return err
 		}
-		if seen[item] {
-			return at.bad("", "link %q from %q to %q appears twice", item.Type, item.From, item.To)
-		}
-		seen[item] = true
-		return nil
+		return at.linkOnce(spec.Links[i], seen)
 	})
+}
+
+func (checks domainChecks) linkOnce(link model.Link, seen map[linkIdentity]bool) error {
+	identity := linkIdentity{link.Type, link.From, link.To}
+	if seen[identity] {
+		return checks.bad("", "link %q from %q to %q appears twice", link.Type, link.From, link.To)
+	}
+	seen[identity] = true
+	return nil
 }
 
 func (checks domainChecks) linkEnds(link model.Link) error {

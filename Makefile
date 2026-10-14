@@ -17,13 +17,14 @@ ENOLA     ?= enola
 FUZZTIME     ?= 10s
 FUZZSOAKTIME ?= 5s
 # To add a fuzz target: append its name to FUZZ_NAMES and give it a package.
-FUZZ_NAMES := FuzzDomainParse FuzzArtifactLoad FuzzScenarioCheck FuzzJournalRead FuzzWireParse FuzzTheHostSurvivesAnyLine
+FUZZ_NAMES := FuzzDomainParse FuzzArtifactLoad FuzzScenarioCheck FuzzJournalRead FuzzWireParse FuzzTheHostSurvivesAnyLine FuzzBridgeInput
 FUZZ_PKG_FuzzDomainParse   := ./internal/domain/internal/domain/
 FUZZ_PKG_FuzzArtifactLoad  := ./internal/run/internal/app/
 FUZZ_PKG_FuzzScenarioCheck := ./internal/run/internal/app/
 FUZZ_PKG_FuzzJournalRead   := ./internal/journal/internal/domain/
 FUZZ_PKG_FuzzWireParse     := ./internal/plantwire/internal/domain/
 FUZZ_PKG_FuzzTheHostSurvivesAnyLine := ./internal/plantwire/internal/host/
+FUZZ_PKG_FuzzBridgeInput   := ./internal/canvasbridge/internal/domain/
 FUZZ_TARGETS := $(addprefix fuzz-,$(FUZZ_NAMES))
 
 # Detect if any Go packages exist (after the user adds code). Used to skip
@@ -44,7 +45,7 @@ HAS_MAIN := $(if $(MAIN_PKGS),yes,no)
 .PHONY: help all build vet fmt tidy lint lint-ci docs-check test test-short test-race \
         test-coverage test-ci ci-check deadcode vulncheck fuzz $(FUZZ_TARGETS) soak fuzz-soak perf \
         manifest clean run cross-compile architecture architecture-baseline function-length \
-        coverage-check behaviour-pin behaviour-pin-check phase-gate fmt-check contract-sync gate-ratchet
+        coverage-check behaviour-pin behaviour-pin-check canvas-check phase-gate fmt-check contract-sync gate-ratchet
 
 # ---- Help -----------------------------------------------------------------
 help: ## Show this help message
@@ -146,7 +147,11 @@ quick: ## Fast inner-loop check (about 30 s, cached): fmt, function length, buil
 	go vet ./...
 	go test -short ./...
 
-phase-gate: ci-check architecture behaviour-pin-check ## Simulation-canvas phase gate: CI pipeline, Enola check, behaviour pin
+canvas-check: build ## Canvas gates: format, types, lint, layers, duplication, dead code, unit and component tests, build, e2e against the built binary
+	@if ! command -v npm >/dev/null 2>&1; then echo "ERROR: npm is required for canvas-check (Node 24 or later)"; exit 1; fi
+	cd canvas && npm ci --ignore-scripts --no-fund --no-audit && npm audit --audit-level=high && STREAMSIM_BIN=$(abspath $(BINARY)) npm run check
+
+phase-gate: ci-check canvas-check architecture behaviour-pin-check ## Simulation-canvas phase gate: CI pipeline, canvas gates, Enola check, behaviour pin
 	@git diff --check HEAD
 	@echo "  Phase gate passed"
 

@@ -2,58 +2,156 @@ package app
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/canonical"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/journal"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run/internal/durable"
 )
 
 type evidenceFile struct {
-	name, file, recorded, replayed string
+	model.EvidenceDigest
+	replayedDigest string
+	replayedRaw    func() []byte
+	againstDigest  bool
+}
+
+func (f evidenceFile) digestOf(raw []byte) string {
+	if f.Replayable {
+		return journal.Digest(raw)
+	}
+	return canonical.DigestBytes(raw)
 }
 
 func evidenceFiles(replay *Run, art *model.RunArtifact) []evidenceFile {
-	ledger, history := replay.evidenceDigests()
-	return []evidenceFile{
-		{"ledger", model.FileLedger, art.LedgerDigest, ledger},
-		{"history", model.FileHistory, art.HistoryDigest, history},
+	replayed := replay.comparableDigests(art)
+	var files []evidenceFile
+	for _, digest := range art.EvidenceDigests() {
+		file := evidenceFile{EvidenceDigest: digest, replayedDigest: replayed[digest.Name],
+			againstDigest: digest.Name == "ledger" || digest.Name == "history"}
+		if stream, ok := evidenceStreams[digest.Name]; ok {
+			file.replayedRaw = func() []byte { return replay.journalBytes(stream) }
+		}
+		files = append(files, file)
+	}
+	return files
+}
+
+var evidenceStreams = map[string]string{"journal": journal.StreamObserver, "sealed_journal": journal.StreamDirector}
+
+func (r *Run) comparableDigests(art *model.RunArtifact) map[string]string {
+	if art.Incomplete {
+		return nil
+	}
+	return r.replayedDigests()
+}
+
+func (r *Run) replayedDigests() map[string]string {
+	if r.replayedDigest == nil {
+		ledger, history := r.evidenceDigests()
+		r.replayedDigest = map[string]string{"trace": r.traceDigest, "ledger": ledger, "history": history,
+			"journal": r.journalDigests.Observer, "sealed_journal": r.journalDigests.Director}
+	}
+	return r.replayedDigest
+}
+
+func (r *Run) journalBytes(stream string) []byte {
+	raw, _ := r.journal.Bytes(stream)
+	return raw
+}
+
+func noteMissingDigests(art *model.RunArtifact, result *ReplayResult) {
+	if art.Incomplete {
+		return
+	}
+	for _, digest := range art.EvidenceDigests() {
+		if digest.Digest == "" {
+			diverge(result, ReasonDigestMissing, digest.File, fmt.Sprintf("run.json records no usable %s for %s", digest.Field, digest.File))
+		}
+	}
+}
+
+func noteEvidenceDivergence(replay *Run, art *model.RunArtifact, result *ReplayResult) {
+	if art.Incomplete {
+		return
+	}
+	for _, file := range evidenceFiles(replay, art) {
+		if file.againstDigest && file.Digest != "" && file.Digest != file.replayedDigest {
+			diverge(result, ReasonEvidenceDivergence, file.File, fmt.Sprintf("the %s differs from the replay (recorded %s, replayed %s)",
+				file.Name, file.Digest, file.replayedDigest))
+		}
 	}
 }
 
 func checkEvidenceFiles(dir string, replay *Run, art *model.RunArtifact, result *ReplayResult) error {
-	if art.Incomplete {
-		return nil
-	}
-	for _, file := range evidenceFiles(replay, art) {
-		if err := checkEvidenceFile(dir, file, result); err != nil {
+	for _, group := range groupByFile(evidenceFiles(replay, art)) {
+		if err := checkEvidenceGroup(dir, group, art, result); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func checkEvidenceFile(dir string, file evidenceFile, result *ReplayResult) error {
-	if file.recorded == "" {
-		return nil
+func groupByFile(files []evidenceFile) [][]evidenceFile {
+	var groups [][]evidenceFile
+	index := map[string]int{}
+	for _, file := range files {
+		at, seen := index[file.File]
+		if !seen {
+			at = len(groups)
+			index[file.File] = at
+			groups = append(groups, nil)
+		}
+		groups[at] = append(groups[at], file)
 	}
-	if file.recorded != file.replayed {
-		diverge(result, fmt.Sprintf("the %s differs from the replay (recorded %s, replayed %s)", file.name, file.recorded, file.replayed))
-	}
-	return checkFileDigest(dir, file, result)
+	return groups
 }
 
-func checkFileDigest(dir string, file evidenceFile, result *ReplayResult) error {
-	onDisk, present, err := durable.ReadJournal(dir, file.file)
-	if err != nil || !present {
+func checkEvidenceGroup(dir string, group []evidenceFile, art *model.RunArtifact, result *ReplayResult) error {
+	onDisk, present, err := durable.ReadJournal(dir, group[0].File)
+	if err != nil {
 		return err
 	}
-	if canonical.DigestBytes(onDisk) != file.recorded {
-		diverge(result, fmt.Sprintf("%s differs from the digest run.json recorded", file.file))
+	if !present {
+		noteAbsentFile(group, art, result)
+		return nil
 	}
+	for _, file := range group {
+		checkEvidenceBytes(file, onDisk, result)
+	}
+	noteClosingStamp(group[0].File, onDisk, art, result)
 	return nil
 }
 
-func diverge(result *ReplayResult, note string) {
-	result.Detail = divergenceDetail(result.Detail, note)
-	result.Matches = false
+func noteAbsentFile(group []evidenceFile, art *model.RunArtifact, result *ReplayResult) {
+	name := group[0].File
+	if art.Incomplete && !slices.ContainsFunc(group, func(file evidenceFile) bool { return file.Digest != "" }) {
+		return
+	}
+	diverge(result, ReasonFileMissing, name, fmt.Sprintf("%s is missing from the run folder", name))
+}
+
+func checkEvidenceBytes(file evidenceFile, onDisk []byte, result *ReplayResult) {
+	computed := file.digestOf(onDisk)
+	if file.Digest != "" && computed != file.Digest {
+		diverge(result, ReasonFileDiffers, file.File, fmt.Sprintf("%s differs from the digest run.json recorded as %s", file.File, file.Field))
+	}
+	if file.replayedDigest != "" && computed != file.replayedDigest {
+		diverge(result, ReasonFileDiffers, file.File, differsFromReplay(file, onDisk))
+		noteDivergedStream(file, result)
+	}
+}
+
+func noteDivergedStream(file evidenceFile, result *ReplayResult) {
+	if stream, ok := evidenceStreams[file.Name]; ok {
+		noteDivergedJournal(result, stream)
+	}
+}
+
+func differsFromReplay(file evidenceFile, onDisk []byte) string {
+	if file.replayedRaw != nil {
+		return fmt.Sprintf("%s differs from the replay at record %d", file.File, journal.FirstDifference(onDisk, file.replayedRaw()))
+	}
+	return fmt.Sprintf("%s differs from the replay", file.File)
 }

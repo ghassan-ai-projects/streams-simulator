@@ -18,6 +18,8 @@ An instance set may list `names` (`M1`) next to or instead of an `id_template`. 
 
 ## Stores and flows
 
+A channel that reports a code may declare `states`, a list of `{value, name, attention}` (`attention` is `alarm`, `warn` or `null`; `value` is unique in the channel), so the domain says what each code means and a consumer decodes it without a table of its own. The world ignores it. An instrument declares the same list and `domain compose` copies it onto the channel the instrument produces (the built-in annunciator declares the five alarm states). Rules: [DOMAIN_SPEC_V0_2.md](../../docs/design/DOMAIN_SPEC_V0_2.md) section 30.
+
 A level that accumulates (a tank, a pressure header) is a state with `f1.form: "store"` and a `capacity`. `flows` on the kind move `conductance × Π scale × (from − to)` per second between two stores, or drain one store toward zero; `scale` names actuator and health states such as a pump speed or a pipe health a fault lowers. Model faults on a flow through a health state in `scale`. Every store of a kind shares one `dt_ms`. Rules and pointers: [DOMAIN_SPEC_V0_2.md](../../docs/design/DOMAIN_SPEC_V0_2.md) section 13; `internal/testsupport/testdata/transfer-plant.domain.json` is a worked example.
 
 ## Schedules, regimes and demand peaks

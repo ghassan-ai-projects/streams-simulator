@@ -60,7 +60,7 @@ func (w *World) processScheduledEvents(to int64) {
 		w.clockNS = event.timeNS
 		w.processScheduledEvent(event)
 	}
-	w.sampleKPIsThrough(to)
+	w.sampleKPIsThrough(to - 1)
 }
 
 func (w *World) processScheduledEvent(event *item) {

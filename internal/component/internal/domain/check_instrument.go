@@ -1,6 +1,10 @@
 package domain
 
-import "github.com/ghassan-ai-projects/streams-simulator/internal/model"
+import (
+	"fmt"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+)
 
 func (l *Library) checkInstrument(i *Instrument) error {
 	var issues issueList
@@ -9,6 +13,7 @@ func (l *Library) checkInstrument(i *Instrument) error {
 		issues.addf("/range", "range min %v must be below max %v", i.Range.Min, i.Range.Max)
 	}
 	checkInstrumentFaults(i, &issues)
+	checkInstrumentStates(i, &issues)
 	return issues.violation(model.ContractInstrument, i.File)
 }
 
@@ -31,4 +36,10 @@ func checkInstrumentFaults(i *Instrument, issues *issueList) {
 		ids[index] = fault.ID
 	}
 	checkDistinct(ids, "faults", "id", "fault", issues)
+}
+
+func checkInstrumentStates(i *Instrument, issues *issueList) {
+	if index, repeated := model.RepeatedStateCode(i.States); repeated {
+		issues.addf(fmt.Sprintf("/states/%d/value", index), "state value %d is declared twice", i.States[index].Value)
+	}
 }

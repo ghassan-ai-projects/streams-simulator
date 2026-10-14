@@ -40,11 +40,14 @@ func (d *Director) worldConfig(req WorldRequest) (run.Config, error) {
 
 func (d *Director) reserveWorldIdentity() (string, string) {
 	d.mu.Lock()
-	d.seq++
-	seq := d.seq
-	d.mu.Unlock()
-	worldID := "w-" + strconv.Itoa(seq)
-	return worldID, "r-" + strconv.Itoa(seq)
+	defer d.mu.Unlock()
+	for {
+		d.seq++
+		worldID := "w-" + strconv.Itoa(d.seq)
+		if !run.FolderUsed(filepath.Join(d.OutDir, worldID)) {
+			return worldID, "r-" + strconv.Itoa(d.seq)
+		}
+	}
 }
 
 func (d *Director) registerWorld(worldID string, r *run.Run, token string) string {

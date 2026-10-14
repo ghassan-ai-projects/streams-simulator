@@ -58,7 +58,7 @@ func (scan *observabilityScan) searchOnsets(onsetNS, startNS int64) (*result, er
 }
 
 func (scan *observabilityScan) advanceTo(at int64) error {
-	for _, w := range []*world.World{scan.faulted, scan.clean} {
+	for _, w := range []*world.World{scan.clean, scan.faulted} {
 		if _, _, err := w.Advance(at); err != nil {
 			return fmt.Errorf("truth: advance the oracle worlds to %d: %w", at, err)
 		}
