@@ -10,7 +10,10 @@ const keys: readonly (readonly [string, string])[] = [
   ["+ and − (graph)", "zoom in and out"],
   ["0 (graph)", "fit the plant in view"],
   ["Arrow keys (playback)", "step one second; Shift and arrow one minute; Page Up and Page Down further"],
+  ["Space (review)", "play or pause the playback"],
   ["Previous and next event", "jump between disturbances and effector calls"],
+  ["[ and ]", "hide or show the outline panel and the details panel"],
+  ["Ctrl or ⌘ Z, Shift Z (editor)", "undo and redo; Ctrl or ⌘ S saves"],
   ["?", "show or hide this list"],
 ];
 

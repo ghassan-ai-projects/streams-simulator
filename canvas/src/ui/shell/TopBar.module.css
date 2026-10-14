@@ -119,3 +119,12 @@
     animation: none;
   }
 }
+
+.toggles {
+  display: flex;
+  gap: 2px;
+}
+
+.iconButton[aria-pressed="false"] {
+  color: var(--text-tertiary);
+}

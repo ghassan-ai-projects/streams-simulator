@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import type { EditorStore } from "../../app/editorStore";
+import type { PanelStore } from "../../app/panelStore";
 import type { NavigationStore } from "../../app/navigationStore";
 import type { PlantStore } from "../../app/plantStore";
 import type { LaunchStore } from "../../app/launchStore";
@@ -14,6 +15,7 @@ import { PairingScreen } from "../pairing/PairingScreen";
 import { PlantScreen } from "../plant/PlantScreen";
 import { RunScreen } from "../run/RunScreen";
 import { KeyHelp } from "./KeyHelp";
+import { PanelToggles } from "./PanelToggles";
 import { RunIndicator } from "./RunIndicator";
 import { Shell } from "./Shell";
 import { TopBar } from "./TopBar";
@@ -30,6 +32,7 @@ export interface Stores {
   readonly review: ReviewStore;
   readonly launch: LaunchStore;
   readonly editor: EditorStore;
+  readonly panels: PanelStore;
 }
 
 function useSession({ session, workspace }: Stores) {
@@ -96,12 +99,14 @@ export function App({ stores }: { readonly stores: Stores }) {
   const { preference } = useTheme(stores.themes);
   const state = useSession(stores);
   const route = useStore(stores.navigation);
+  const panels = useStore(stores.panels);
   if (state.phase === "unpaired") {
     return <PairingScreen session={stores.session} />;
   }
   const topBar = (
     <TopBar
       status={<RunIndicator launch={stores.launch} navigation={stores.navigation} />}
+      toggles={route.screen === "home" ? null : <PanelToggles panels={stores.panels} />}
       preference={preference}
       onCycleTheme={() => {
         stores.themes.cycle();
@@ -112,7 +117,7 @@ export function App({ stores }: { readonly stores: Stores }) {
     />
   );
   return (
-    <Shell topBar={topBar}>
+    <Shell topBar={topBar} left={panels.left} right={panels.right}>
       {state.phase === "checking" && <p role="status">Connecting to the bridge…</p>}
       {state.phase === "unreachable" && <Unreachable failure={state.failure} />}
       {state.phase === "paired" && <Screen stores={stores} route={route} />}

@@ -4,6 +4,7 @@ import { hashLocation, localPreferences, mediaSystemTheme } from "./adapters/bro
 import { bridgeClient, browserTransport } from "./adapters/bridgeClient";
 import { EditorStore } from "./app/editorStore";
 import { NavigationStore } from "./app/navigationStore";
+import { PanelStore } from "./app/panelStore";
 import { PlantStore } from "./app/plantStore";
 import { LaunchStore } from "./app/launchStore";
 import { ReviewStore } from "./app/reviewStore";
@@ -34,6 +35,7 @@ if (root) {
           review: new ReviewStore(bridge),
           launch: new LaunchStore(bridge),
           editor: new EditorStore(bridge),
+          panels: new PanelStore(localPreferences(window.localStorage)),
         }}
       />
     </StrictMode>,

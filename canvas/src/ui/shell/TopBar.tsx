@@ -6,6 +6,7 @@ import styles from "./TopBar.module.css";
 
 interface TopBarProps {
   readonly status?: ReactNode;
+  readonly toggles?: ReactNode;
   readonly preference: ThemePreference;
   readonly onCycleTheme: () => void;
   readonly onHome: () => void;
@@ -13,7 +14,7 @@ interface TopBarProps {
 
 const themeIcons = { system: Monitor, light: Sun, dark: Moon } as const;
 
-export function TopBar({ status, preference, onCycleTheme, onHome }: TopBarProps) {
+export function TopBar({ status, toggles, preference, onCycleTheme, onHome }: TopBarProps) {
   const ThemeIcon = themeIcons[preference];
   const label = preferenceLabel(preference);
   return (
@@ -26,6 +27,7 @@ export function TopBar({ status, preference, onCycleTheme, onHome }: TopBarProps
       </button>
       <div className={styles.spacer} />
       {status}
+      {toggles}
       <button type="button" className={styles.iconButton} onClick={onCycleTheme} aria-label={label} title={label}>
         <ThemeIcon size={16} strokeWidth={2} aria-hidden="true" />
       </button>

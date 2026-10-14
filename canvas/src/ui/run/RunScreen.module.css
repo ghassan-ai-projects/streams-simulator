@@ -1,4 +1,5 @@
 .screen {
+  composes: panels from "../shared.module.css";
   display: grid;
   grid-template-columns: var(--sidebar-width) minmax(0, 1fr) var(--inspector-width);
   grid-template-rows: 44px minmax(0, 1fr);
@@ -596,4 +597,10 @@
 
 .integrity > summary:hover {
   background: var(--surface-hover);
+}
+
+:global([data-left="closed"]) .screen > :nth-child(2),
+:global([data-right="closed"]) .screen > :last-child {
+  visibility: hidden;
+  overflow: hidden;
 }

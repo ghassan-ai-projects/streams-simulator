@@ -50,3 +50,19 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+.panels {
+  min-width: 0;
+}
+
+:global([data-left="closed"]) .panels {
+  grid-template-columns: 0 minmax(0, 1fr) var(--inspector-width);
+}
+
+:global([data-right="closed"]) .panels {
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr) 0;
+}
+
+:global([data-left="closed"][data-right="closed"]) .panels {
+  grid-template-columns: 0 minmax(0, 1fr) 0;
+}
