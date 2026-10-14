@@ -14,5 +14,6 @@ before any is implemented.
 | B-6 | Communication gap, duplicated or out-of-order readings | Not yet probed (the perturbation layer exists; the canvas does not expose it) | to probe |
 | B-7 | Stuck or dead sensor (flat-line, frozen timestamp) | Not yet probed | to probe |
 | B-8 | Flow and pressure meters as standalone instruments | The library has no standalone flow or pressure meter equipment; measurements are generated per port | missing |
+| B-9 | A pump driven by a variable-frequency drive | `streamsim/motor-drive` consumes a `load_torque` input, but no library equipment offers a `load_torque` output: the pump exposes flow, level and electrical power only, so a pump with its drive cannot be linked (author blocker BLK-4-02) | missing (library data) |
 
 Source: `issues/round-3-authoring.md`, section "Simulator behaviour notes". Later rounds append rows.
