@@ -4,6 +4,12 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **Validation messages in words.** A JSON Schema node with a `pattern` may carry `x-expected`, a phrase naming what the
+  value must be; a value that fails the pattern is then reported as `"bad name" is not an instance name: …` instead
+  of quoting the regular expression. The composition contract describes plant ids and instance names this way.
+  Patterns without the annotation keep their message.
+- **Canvas bridge listing.** Each domain in the workspace listing carries its `instances` count.
+
 - **Starter examples in the binary.** `streamsim component examples` lists the example compositions the binary ships
   (`factory-utilities`, `chiller-pilot`) and `streamsim component example <id>` prints one, so a fresh workspace can start
   from a working plant. The canvas offers them as "Try an example" on an empty workspace and as a starting point in New
