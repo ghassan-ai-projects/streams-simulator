@@ -7,13 +7,18 @@ import styles from "./TopBar.module.css";
 
 const keyOf: Readonly<Record<string, Side>> = { "[": "left", "]": "right" };
 
+function stillShown(element: Element | null): boolean {
+  return (
+    element instanceof HTMLElement && element !== document.body && element.checkVisibility({ visibilityProperty: true })
+  );
+}
+
 function toggleKeepingFocus(panels: PanelStore, side: Side) {
   panels.toggle(side);
   requestAnimationFrame(() => {
-    const active = document.activeElement;
-    if (active instanceof HTMLElement && active !== document.body && active.checkVisibility()) return;
+    if (stillShown(document.activeElement)) return;
     const graph = document.querySelector<HTMLElement>("[role='application']");
-    (graph ?? document.querySelector<HTMLElement>("main h1"))?.focus();
+    (graph ?? document.querySelector<HTMLElement>("h1"))?.focus();
   });
 }
 
