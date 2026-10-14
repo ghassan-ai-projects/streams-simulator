@@ -96,6 +96,21 @@ func (h *harness) runCommand(_ context.Context, argv []string) (process.CommandR
 	return h.command, nil
 }
 
+func (h *harness) replace(t *testing.T, rel, content string) {
+	t.Helper()
+	staged := filepath.Join(t.TempDir(), "staged")
+	if err := os.WriteFile(staged, []byte(content), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(h.dir, filepath.FromSlash(rel))
+	if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Rename(staged, path); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func (h *harness) write(t *testing.T, rel, content string) {
 	t.Helper()
 	path := filepath.Join(h.dir, filepath.FromSlash(rel))
