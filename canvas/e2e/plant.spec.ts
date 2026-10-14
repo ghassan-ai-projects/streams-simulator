@@ -59,6 +59,26 @@ test("the chiller pilot renders target arrow markers at overview scale", async (
   ).toBeVisible();
 });
 
+test("the chiller pilot inspector explains AHU and chiller components from the library", async ({ page }) => {
+  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Fchiller-pilot.domain.json`);
+  const outline = page.getByRole("navigation", { name: "Outline" });
+  const inspector = page.getByRole("complementary", { name: "Inspector" });
+  await outline.getByRole("button", { name: /^AHU-1/ }).click();
+  await expect(inspector).toContainText("Air-handling unit · Office block");
+  await expect(inspector).toContainText("Kind: ahu · streamsim/ahu");
+  await inspector.getByText("What this component models").click();
+  await expect(inspector).toContainText(
+    "Air-handling unit with a chilled-water coil. Its cooling load is the occupancy-driven internal gain, the outdoor-air load and a constant envelope gain; the coil cannot hold the supply-air setpoint when the chilled water is too warm.",
+  );
+  await outline.getByRole("button", { name: /^CH-1/ }).click();
+  await expect(inspector).toContainText("Water-cooled chiller · Chiller hall");
+  await expect(inspector).toContainText("Kind: chiller_large · streamsim/chiller");
+  await inspector.getByText("What this component models").click();
+  await expect(inspector).toContainText(
+    "Vapour-compression chiller on a chilled-water loop. Supply temperature follows the setpoint and degrades above capacity or when stopped; power follows load through a part-load efficiency curve that also depends on the entering condenser water; COP, return temperature and energy cost rate are derived; start and stop act through the running state.",
+  );
+});
+
 test("a shared campus link navigates to its declared receiver in another hall", async ({ page }) => {
   await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Fcampus-3.domain.json`);
   await page.getByRole("navigation", { name: "Outline" }).getByRole("button", { name: "CAL-1" }).click();

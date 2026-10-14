@@ -154,6 +154,7 @@ function PlantInspector({ state, hall, navigation, plants, runs }: RightProps) {
   return (
     <Inspector
       plant={state.plant}
+      specs={state.specs}
       selected={state.selected}
       runs={runs}
       onClose={() => {

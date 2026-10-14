@@ -68,6 +68,8 @@ export type Category = "air" | "cool" | "prod" | "elec" | "env";
 export interface ComponentSpec {
   readonly ports: readonly PortSpec[];
   readonly category: Category;
+  readonly title?: string;
+  readonly description?: string;
 }
 
 export function portsMatching(spec: ComponentSpec | undefined, direction: "in" | "out", type = ""): readonly string[] {
@@ -103,9 +105,17 @@ function categoryOf(componentClass: string, tags: readonly string[]): Category {
 
 export function parseComponent(shown: unknown): ComponentSpec {
   const entry = field(shown, "entry");
+  const document = field(shown, "document");
   const tags = field(entry, "tags");
   const tagList = Array.isArray(tags) ? tags.filter((tag): tag is string => typeof tag === "string") : [];
-  return { ports: parsePorts(field(shown, "document")), category: categoryOf(text(field(entry, "class")), tagList) };
+  const title = optionalText(field(entry, "title")) ?? optionalText(field(document, "title"));
+  const description = optionalText(field(document, "description"));
+  return {
+    ports: parsePorts(document),
+    category: categoryOf(text(field(entry, "class")), tagList),
+    ...(title === undefined ? {} : { title }),
+    ...(description === undefined ? {} : { description }),
+  };
 }
 
 type Connection = "connected" | "open" | "unknown";
@@ -128,6 +138,11 @@ function field(value: unknown, key: string): unknown {
 
 function text(value: unknown): string {
   return typeof value === "string" ? value : "";
+}
+
+function optionalText(value: unknown): string | undefined {
+  const valueText = text(value);
+  return valueText.trim() === "" ? undefined : valueText;
 }
 
 export function parsePorts(document: unknown): readonly PortSpec[] {

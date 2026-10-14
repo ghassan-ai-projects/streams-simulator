@@ -36,6 +36,27 @@ describe("ports and pins", () => {
     expect(parseComponent({ entry: { class: "x", tags: [1, "hvac"] }, document: chillerPorts }).ports).toHaveLength(4);
   });
 
+  it("keeps declared component title and description with a document-title fallback", () => {
+    const declared = parseComponent({
+      entry: { title: "Summary title", class: "x" },
+      document: { title: "Document title", description: "Declared purpose." },
+    });
+    expect([declared.title, declared.description]).toEqual(["Summary title", "Declared purpose."]);
+    expect(parseComponent({ entry: {}, document: { title: "Document title" } }).title).toBe("Document title");
+  });
+
+  it("ignores absent and malformed component metadata", () => {
+    expect(parseComponent(null)).toEqual({ category: "env", ports: [] });
+    expect(parseComponent({ entry: null, document: { title: 12, description: {}, ports: "bad" } })).toEqual({
+      category: "env",
+      ports: [],
+    });
+    expect(parseComponent({ entry: { title: "  " }, document: { title: "", description: " " } })).toEqual({
+      category: "env",
+      ports: [],
+    });
+  });
+
   it("marks the pins a link uses as connected", () => {
     const plant = parsePlant(domain, composition);
     const chiller = plant.instances[0];

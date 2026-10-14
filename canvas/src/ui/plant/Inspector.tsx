@@ -1,5 +1,6 @@
 import type { Instance, Plant } from "../../model/plant";
 import type { ReactNode } from "react";
+import type { ComponentSpec } from "../../model/ports";
 import { linkLines, linksOf } from "../../model/plant";
 import { hallMembers } from "../../model/plantView";
 import { shortChannel } from "../../model/playback";
@@ -116,7 +117,19 @@ function HallSummary({
   );
 }
 
-function Head({ instance, onClose }: { readonly instance: Instance; readonly onClose?: (() => void) | undefined }) {
+function Head({
+  instance,
+  spec,
+  onClose,
+}: {
+  readonly instance: Instance;
+  readonly spec: ComponentSpec | undefined;
+  readonly onClose?: (() => void) | undefined;
+}) {
+  const title = spec?.title ?? humanise(instance.kind);
+  const reference = [spec?.title === undefined ? "" : `Kind: ${instance.kind}`, instance.component ?? ""]
+    .filter(Boolean)
+    .join(" · ");
   return (
     <header className={styles.inspectorHead}>
       <div className={styles.headLine}>
@@ -127,8 +140,14 @@ function Head({ instance, onClose }: { readonly instance: Instance; readonly onC
           </button>
         )}
       </div>
-      <p className={styles.kindLine}>{[humanise(instance.kind), instance.area].filter(Boolean).join(" · ")}</p>
-      {instance.component !== null && <p className={styles.source}>{instance.component}</p>}
+      <p className={styles.kindLine}>{[title, instance.area].filter(Boolean).join(" · ")}</p>
+      {reference !== "" && <p className={styles.source}>{reference}</p>}
+      {spec?.description !== undefined && (
+        <details className={styles.modelDetails}>
+          <summary>What this component models</summary>
+          <p>{spec.description}</p>
+        </details>
+      )}
     </header>
   );
 }
@@ -138,17 +157,19 @@ function InstanceDetails({
   instance,
   onClose,
   onSelect,
+  spec,
 }: {
   readonly plant: Plant;
   readonly instance: Instance;
   readonly onClose?: (() => void) | undefined;
   readonly onSelect?: ((id: string) => void) | undefined;
+  readonly spec: ComponentSpec | undefined;
 }) {
   const kind = plant.kinds.get(instance.kind);
   const { incoming, outgoing } = linksOf(plant, instance.id);
   return (
     <aside className={styles.inspector} aria-label="Inspector" tabIndex={0}>
-      <Head instance={instance} onClose={onClose} />
+      <Head instance={instance} spec={spec} onClose={onClose} />
       <List
         title="Channels"
         items={(kind?.channels ?? []).map((channel) => channel.name)}
@@ -171,12 +192,15 @@ interface InspectorProps {
   readonly runs?: readonly RunRow[];
   readonly onReview?: (worldId: string) => void;
   readonly onSelect?: (id: string) => void;
+  readonly specs?: ReadonlyMap<string, ComponentSpec>;
 }
 
-export function Inspector({ plant, selected, onClose, runs = [], onReview, onSelect }: InspectorProps) {
+export function Inspector({ plant, selected, onClose, runs = [], onReview, onSelect, specs }: InspectorProps) {
   const instance = plant.instances.find((entry) => entry.id === selected);
-  if (instance !== undefined)
-    return <InstanceDetails plant={plant} instance={instance} onClose={onClose} onSelect={onSelect} />;
+  if (instance !== undefined) {
+    const spec = instance.component === null ? undefined : specs?.get(instance.component);
+    return <InstanceDetails plant={plant} instance={instance} onClose={onClose} onSelect={onSelect} spec={spec} />;
+  }
   const members = selected === null ? [] : hallMembers(plant, selected);
   if (selected !== null && members.length > 0) return <HallSummary hall={selected} members={members} />;
   return <PlantOverview plant={plant} runs={runs} onReview={onReview} />;
