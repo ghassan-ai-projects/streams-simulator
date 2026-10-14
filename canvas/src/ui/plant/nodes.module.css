@@ -123,11 +123,6 @@
   box-shadow: inset 0 3px 0 var(--cat-env);
 }
 
-.open {
-  margin-left: auto;
-  color: var(--text-secondary);
-}
-
 .frame {
   position: relative;
   width: 100%;
@@ -177,8 +172,7 @@
 :global(.tier-map) .none,
 :global(.tier-overview) .members,
 :global(.tier-map) .members,
-:global(.tier-map) .id,
-:global(.tier-map) .open {
+:global(.tier-map) .id {
   display: none;
 }
 
@@ -196,7 +190,7 @@
 
 :global(.tier-compact) .kind,
 :global(.tier-compact) .none {
-  font-size: calc(11px / var(--zoom));
+  font-size: calc(11.5px / var(--zoom));
 }
 
 :global(.tier-compact) .readout div:nth-child(n + 3) {
@@ -204,7 +198,7 @@
 }
 
 :global(.tier-compact) .readout dt {
-  font-size: calc(11px / var(--zoom));
+  font-size: calc(11.5px / var(--zoom));
 }
 
 :global(.tier-compact) .readout dd,
@@ -288,7 +282,7 @@
 
 .readout dt {
   flex: 1 1 auto;
-  min-width: 0;
+  min-width: 3.5em;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -402,4 +396,16 @@
   gap: 0;
   padding: calc(2px / var(--zoom));
   font-size: 0;
+}
+
+.readout dd.word {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font: 600 var(--text-sm) var(--font-ui);
+}
+
+:global(.tier-compact) .readout dd.word {
+  font-size: calc(11.5px / var(--zoom));
 }

@@ -142,3 +142,11 @@
 .react-flow__minimap-node.minimap-selected {
   fill: var(--accent);
 }
+
+.react-flow__edge.wire-off {
+  opacity: 0.18;
+}
+
+.react-flow__edge.wire-on .react-flow__edge-path {
+  stroke-width: 3;
+}

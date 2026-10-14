@@ -145,6 +145,7 @@ const fixedProps = {
   nodesFocusable: false,
   edgesFocusable: false,
   disableKeyboardA11y: true,
+  zoomOnDoubleClick: false,
   onlyRenderVisibleElements: true,
   minZoom: 0.05,
   proOptions: { hideAttribution: true },
@@ -162,7 +163,7 @@ function Flow({
   const nodes = useMemo(() => flowNodes(view, selected, live ?? null, active), [view, selected, live, active]);
   const zoom = useStore((state) => state.transform[2]);
   const anchors = anchorsOnly(tierOf(zoom));
-  const edges = useMemo(() => flowEdges(view, anchors), [view, anchors]);
+  const edges = useMemo(() => flowEdges(view, anchors, selected), [view, anchors, selected]);
   return (
     <ReactFlow
       nodes={nodes}

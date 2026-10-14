@@ -1,10 +1,8 @@
 import type { PlantState } from "../../app/plantStore";
 import type { ReviewState, ReviewStore } from "../../app/reviewStore";
-import { statesOf } from "../../model/plant";
-import { channelWords, showReading } from "../../model/readout";
 import { wallClock } from "../../model/report";
-import { cx } from "../cx";
 import shared from "../shared.module.css";
+import { Observed } from "./Observed";
 import { ReportPanel } from "./ReportPanel";
 import styles from "./RunScreen.module.css";
 
@@ -18,44 +16,6 @@ interface RunPanelProps {
   readonly unit: (entity: string, state: string) => string;
 }
 
-function Readings({
-  review,
-  state,
-  plant,
-  entity,
-}: {
-  readonly review: ReviewStore;
-  readonly state: ReviewState;
-  readonly plant: ReadyPlant | null;
-  readonly entity: string;
-}) {
-  const readings = review.index.readings(entity, state.positionNs);
-  if (readings.length === 0) return <p className={styles.muted}>No observation of {entity} at this time.</p>;
-  return (
-    <table className={styles.table}>
-      <tbody>
-        {readings.map((reading) => {
-          const shown = showReading(reading, plant === null ? [] : statesOf(plant.plant, entity, reading.channel));
-          return (
-            <tr key={reading.channel}>
-              <td className={styles.label} title={shown.channel}>
-                {channelWords(shown.channel)}
-              </td>
-              <td className={cx(styles.number, shown.attention !== null && styles[`value-${shown.attention}`])}>
-                {shown.value}
-                {shown.unit !== "" && <span className={styles.unit}>{shown.unit}</span>}
-              </td>
-              <td className={styles.clock} title="time of this observation">
-                {wallClock(reading.atNs)}
-              </td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
-  );
-}
-
 function Inspect(props: RunPanelProps) {
   const entity = props.state.selected;
   if (entity === null)
@@ -64,10 +24,11 @@ function Inspect(props: RunPanelProps) {
     <>
       <section className={styles.section} aria-label={`Observed · ${entity}`}>
         <h2 className={shared.sectionTitle}>
-          {`Observed · ${entity}`}
+          {"Observed · "}
+          <span className={styles.asIs}>{entity}</span>
           <span className={styles.note}>{`at ${wallClock(props.state.positionNs)}`}</span>
         </h2>
-        <Readings review={props.review} state={props.state} plant={props.plant} entity={entity} />
+        <Observed review={props.review} state={props.state} plant={props.plant} entity={entity} />
       </section>
       {props.state.report.phase === "ready" && (
         <ReportPanel report={props.state.report.value} unit={props.unit} entity={entity} only="kpi" />

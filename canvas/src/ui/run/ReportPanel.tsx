@@ -160,7 +160,7 @@ function Truth({ report, unit, entity }: TruthProps) {
       <KpiTruth report={report} unit={unit} entity={entity} />
       <Section title="Alarm system" note="ISA-18.2">
         <Rows
-          rows={Object.entries(report.alarms).map(([key, n]) => [key.replaceAll("_", " "), String(n)])}
+          rows={Object.entries(report.alarms).map(([key, n]) => [key.replaceAll("_", " "), n.toLocaleString("en-US")])}
           columns={["text", "number"]}
           headers={["Measure", "Value"]}
         />

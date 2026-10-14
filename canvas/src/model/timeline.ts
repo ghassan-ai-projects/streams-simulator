@@ -88,3 +88,13 @@ export function placeChips(
     return { left, row };
   });
 }
+
+const tickSteps = [600e9, 900e9, 1800e9, 3600e9, 7200e9, 10_800e9, 21_600e9, 43_200e9, 86_400e9];
+
+export function timeTicks(startNs: number, endNs: number, most = 9): readonly number[] {
+  const span = endNs - startNs;
+  if (span <= 0) return [];
+  const step = tickSteps.find((candidate) => span / candidate <= most) ?? span;
+  const first = Math.ceil(startNs / step) * step;
+  return Array.from({ length: Math.floor((endNs - first) / step) + 1 }, (_, index) => first + index * step);
+}

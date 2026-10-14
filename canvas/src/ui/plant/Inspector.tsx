@@ -1,5 +1,6 @@
-import type { Plant } from "../../model/plant";
+import type { Instance, Plant } from "../../model/plant";
 import { linkLines, linksOf } from "../../model/plant";
+import { hallMembers } from "../../model/plantView";
 import { shortChannel } from "../../model/playback";
 import { channelWords } from "../../model/readout";
 import { humanise } from "../../model/report";
@@ -46,17 +47,26 @@ function channelLine(name: string, channels: readonly { readonly name: string; r
   return `${channelWords(shortChannel(name))}${unit === "" ? "" : ` · ${unit}`}`;
 }
 
-export function Inspector({ plant, selected }: { readonly plant: Plant; readonly selected: string | null }) {
-  const instance = plant.instances.find((entry) => entry.id === selected);
-  if (instance === undefined) {
-    return (
-      <aside className={styles.inspector} aria-label="Inspector" tabIndex={0}>
-        <p className={styles.hint}>
-          Select an instance to see its kind: states, channels, faults, effectors and links.
-        </p>
-      </aside>
-    );
-  }
+function HallSummary({
+  hall,
+  members,
+}: {
+  readonly hall: string;
+  readonly members: readonly (readonly [string, number])[];
+}) {
+  const total = members.reduce((sum, [, n]) => sum + n, 0);
+  return (
+    <aside className={styles.inspector} aria-label="Inspector" tabIndex={0}>
+      <header className={styles.inspectorHead}>
+        <h2 className={styles.mono}>{hall}</h2>
+        <p className={styles.muted}>{`Hall · ${String(total)} instances · Enter or double-click opens it`}</p>
+      </header>
+      <List title="Members" items={members.map(([kind, n]) => `${kind} × ${String(n)}`)} mono={false} count={total} />
+    </aside>
+  );
+}
+
+function InstanceDetails({ plant, instance }: { readonly plant: Plant; readonly instance: Instance }) {
   const kind = plant.kinds.get(instance.kind);
   const { incoming, outgoing } = linksOf(plant, instance.id);
   return (
@@ -76,6 +86,18 @@ export function Inspector({ plant, selected }: { readonly plant: Plant; readonly
       <List title="Faults" items={kind?.faults ?? []} mono={false} show={humanise} />
       <List title="Effectors" items={kind?.effectors ?? []} mono={false} show={humanise} />
       <List title="States" items={kind?.states ?? []} mono={false} show={channelWords} />
+    </aside>
+  );
+}
+
+export function Inspector({ plant, selected }: { readonly plant: Plant; readonly selected: string | null }) {
+  const instance = plant.instances.find((entry) => entry.id === selected);
+  if (instance !== undefined) return <InstanceDetails plant={plant} instance={instance} />;
+  const members = selected === null ? [] : hallMembers(plant, selected);
+  if (selected !== null && members.length > 0) return <HallSummary hall={selected} members={members} />;
+  return (
+    <aside className={styles.inspector} aria-label="Inspector" tabIndex={0}>
+      <p className={styles.hint}>Select an instance to see its kind: states, channels, faults, effectors and links.</p>
     </aside>
   );
 }

@@ -17,6 +17,7 @@ export interface Shown {
   readonly value: string;
   readonly unit: string;
   readonly attention: Attention;
+  readonly word: boolean;
 }
 
 function number(value: number): string {
@@ -29,12 +30,14 @@ export function showReading(reading: Reading, states: readonly ChannelState[]): 
   if (states.length > 0 && typeof reading.value === "number") {
     const value = reading.value;
     const state = states.find((entry) => entry.value === value);
-    return { channel, value: state?.name ?? `state ${String(value)}`, unit: "", attention: state?.attention ?? null };
+    const name = state?.name ?? `state ${String(value)}`;
+    return { channel, value: name, unit: "", attention: state?.attention ?? null, word: true };
   }
   if (typeof reading.value === "number") {
-    return { channel, value: number(reading.value), unit: displayUnit(reading.unit), attention: null };
+    return { channel, value: number(reading.value), unit: displayUnit(reading.unit), attention: null, word: false };
   }
-  return { channel, value: String(reading.value), unit: "", attention: null };
+  const value = typeof reading.value === "boolean" ? (reading.value ? "on" : "off") : reading.value;
+  return { channel, value, unit: "", attention: null, word: true };
 }
 
 export function attentionOf(shown: readonly Shown[]): Attention {
@@ -67,5 +70,7 @@ export function worstOf(statuses: readonly NodeStatus[]): { readonly status: Nod
 }
 
 export function withFault(shown: readonly Shown[], fault: string): readonly Shown[] {
-  return fault === "" ? shown : [{ channel: "fault", value: fault, unit: "", attention: "alarm" }, ...shown];
+  return fault === ""
+    ? shown
+    : [{ channel: "fault", value: fault, unit: "", attention: "alarm", word: true }, ...shown];
 }

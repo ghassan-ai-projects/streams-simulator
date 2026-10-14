@@ -1,6 +1,6 @@
 import type { NodeProps } from "@xyflow/react";
 import { Handle, Position } from "@xyflow/react";
-import { ChevronRight, OctagonAlert, TriangleAlert, Wrench } from "lucide-react";
+import { OctagonAlert, TriangleAlert, Wrench } from "lucide-react";
 import type { CSSProperties } from "react";
 import { describeNode } from "../../model/plantView";
 import { familyNames, shapeOf } from "../../model/ports";
@@ -80,7 +80,7 @@ function Readout({ shown }: { readonly shown: readonly Shown[] }) {
       {shown.slice(0, more > 0 ? 3 : 4).map((entry) => (
         <div key={entry.channel} className={entry.attention === null ? undefined : styles[entry.attention]}>
           <dt title={entry.channel}>{channelWords(entry.channel)}</dt>
-          <dd>
+          <dd className={entry.word ? styles.word : undefined} title={entry.word ? entry.value : undefined}>
             {entry.value}
             {entry.unit !== "" && <span className={styles.unit}>{entry.unit}</span>}
           </dd>
@@ -159,7 +159,6 @@ export function HallNode({ data, selected }: NodeProps<HallNodeType>) {
       <div className={styles.header}>
         <span className={styles.id}>{view.label}</span>
         <StatusTag status={status} count={count} />
-        <ChevronRight size={14} aria-hidden="true" className={styles.open} />
       </div>
       <div className={styles.members}>{view.detail}</div>
       <Handle type="source" position={Position.Right} id="out" className={styles.plain} isConnectable={false} />

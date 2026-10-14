@@ -32,14 +32,22 @@ describe("readouts", () => {
       value: "33.1",
       unit: "°C",
       attention: null,
+      word: false,
     });
     expect(showReading(at("meter.power", 852.4, "kW"), [])).toMatchObject({ value: "852", unit: "kW" });
     expect(showReading(at("x.cop", 5.954), [])).toMatchObject({ value: "5.95", unit: "" });
-    expect(showReading(at("x.run_status", true), [])).toMatchObject({ value: "true", unit: "" });
+    expect(showReading(at("x.run_status", true), [])).toMatchObject({ value: "on", unit: "", word: true });
+    expect(showReading(at("x.mode", "auto"), [])).toMatchObject({ value: "auto", word: true });
   });
 
   it("raises a node's attention to its worst readout", () => {
-    const shown = (attention: "alarm" | "warn" | null) => ({ channel: "c", value: "v", unit: "", attention });
+    const shown = (attention: "alarm" | "warn" | null) => ({
+      channel: "c",
+      value: "v",
+      unit: "",
+      attention,
+      word: true,
+    });
     expect(attentionOf([shown(null), shown("warn")])).toBe("warn");
     expect(attentionOf([shown("warn"), shown("alarm")])).toBe("alarm");
     expect(attentionOf([])).toBeNull();
@@ -55,6 +63,7 @@ describe("readouts", () => {
       value: "1",
       unit: "",
       attention,
+      word: false,
     });
     const order = abnormalFirst([entry("a", null), entry("b", "warn"), entry("c", "alarm"), entry("d", null)]);
     expect(order.map((shown) => shown.channel)).toEqual(["c", "b", "a", "d"]);

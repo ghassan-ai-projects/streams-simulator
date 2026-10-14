@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { campus, chillerPorts, composition, domain, towerPorts } from "../test/plantFixture";
 import { parsePlant } from "./plant";
-import { describeNode, hallOf, hallsOf, nodeSize, plantView, viewSummary } from "./plantView";
+import { describeNode, hallMembers, hallOf, hallsOf, nodeSize, plantView, viewSummary } from "./plantView";
 import { parsePorts } from "./ports";
 
 const specs = new Map([
@@ -73,5 +73,14 @@ describe("plant view", () => {
     const node = plantView(parsePlant(domain), new Map(), null).nodes.find((entry) => entry.id === "CH-1");
     expect(node && describeNode(node, false, "alarm")).toMatch(/^CH-1, Alarm, /);
     expect(node && describeNode(node, true)).toMatch(/^CH-1, [^A].*, selected$/);
+  });
+
+  it("counts a hall's members by kind", () => {
+    const plant = parsePlant(campus(3));
+    const hall = hallsOf(plant)[0] ?? "";
+    expect(hallMembers(plant, hall).reduce((sum, [, n]) => sum + n, 0)).toBe(
+      plant.instances.filter((instance) => hallOf(instance.id) === hall).length,
+    );
+    expect(hallMembers(plant, "nowhere")).toEqual([]);
   });
 });

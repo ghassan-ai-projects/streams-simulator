@@ -58,14 +58,19 @@ export function flowNodes(
   return [...frames(view), ...nodes];
 }
 
-export function flowEdges(view: PlantView, anchors = false): Edge[] {
+function emphasis(selected: string | null, from: string, to: string): string {
+  if (selected === null) return "";
+  return from === selected || to === selected ? " wire-on" : " wire-off";
+}
+
+export function flowEdges(view: PlantView, anchors = false, selected: string | null = null): Edge[] {
   return view.edges.map((edge) => ({
     id: edge.id,
     source: edge.from,
     target: edge.to,
     sourceHandle: anchors ? "out" : (edge.fromHandle ?? "out"),
     targetHandle: anchors ? "in" : (edge.toHandle ?? "in"),
-    className: `wire family-${edge.family ?? "none"}`,
+    className: `wire family-${edge.family ?? "none"}${emphasis(selected, edge.from, edge.to)}`,
     label: edge.count > 1 ? `×${String(edge.count)}` : undefined,
     ariaLabel: `${edge.from} to ${edge.to}${edge.count > 1 ? `, ${String(edge.count)} links` : ""}`,
     focusable: false,

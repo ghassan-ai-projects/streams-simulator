@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { Report } from "../../model/report";
 import { wallClock } from "../../model/report";
 import type { ChipPlace, EventMark } from "../../model/timeline";
-import { eventMarks, nextEvent, placeChips, previousEvent } from "../../model/timeline";
+import { eventMarks, nextEvent, placeChips, previousEvent, timeTicks } from "../../model/timeline";
 import styles from "./RunScreen.module.css";
 
 interface ScrubberProps {
@@ -69,6 +69,24 @@ function Chip({ mark, chip, text, startNs, pick }: ChipProps) {
   );
 }
 
+interface TicksProps {
+  readonly startNs: number;
+  readonly endNs: number;
+  readonly fraction: (ns: number) => number;
+}
+
+function Ticks({ startNs, endNs, fraction }: TicksProps) {
+  return (
+    <div className={styles.ticks} aria-hidden="true">
+      {timeTicks(startNs, endNs).map((ns) => (
+        <span key={ns} style={{ left: `${String(fraction(ns) * 100)}%` }}>
+          {wallClock(ns, startNs).slice(0, -3)}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 function usePick(startNs: number, onSeek: (ns: number) => void, onEvent: ((mark: EventMark) => void) | undefined) {
   const [said, setSaid] = useState("");
   const pick = (mark: EventMark) => {
@@ -77,6 +95,26 @@ function usePick(startNs: number, onSeek: (ns: number) => void, onEvent: ((mark:
     setSaid(`${chipText(mark, startNs)}: moved to ${wallClock(mark.atNs, startNs)}, ${mark.entity} selected`);
   };
   return { said, pick };
+}
+
+function LaneNotes({
+  said,
+  empty,
+  hidden,
+}: {
+  readonly said: string;
+  readonly empty: boolean;
+  readonly hidden: number;
+}) {
+  return (
+    <>
+      <p className="sr-only" aria-live="polite">
+        {said}
+      </p>
+      {empty && <p className={styles.laneMore}>No disturbances or effector calls in this run.</p>}
+      {hidden > 0 && <p className={styles.laneMore}>{`${String(hidden)} more events: use Previous and Next event`}</p>}
+    </>
+  );
 }
 
 function Lane({ marks, fraction, startNs, onSeek, onEvent }: LaneProps) {
@@ -95,7 +133,9 @@ function Lane({ marks, fraction, startNs, onSeek, onEvent }: LaneProps) {
         ref={ref}
         className={styles.lane}
         aria-label="Events"
-        style={{ height: `${String((Math.max(0, ...chips.map((chip) => chip.row)) + 1) * 28)}px` }}
+        style={{
+          height: `${String(marks.length === 0 ? 0 : (Math.max(0, ...chips.map((chip) => chip.row)) + 1) * 28)}px`,
+        }}
       >
         {marks.map((mark, index) => {
           const chip = chips[index];
@@ -111,10 +151,7 @@ function Lane({ marks, fraction, startNs, onSeek, onEvent }: LaneProps) {
           );
         })}
       </ol>
-      <p className="sr-only" aria-live="polite">
-        {said}
-      </p>
-      {hidden > 0 && <p className={styles.laneMore}>{`${String(hidden)} more events: use Previous and Next event`}</p>}
+      <LaneNotes said={said} empty={marks.length === 0} hidden={hidden} />
     </>
   );
 }
@@ -197,6 +234,7 @@ export function Scrubber({ startNs, endNs, positionNs, report, onSeek, onEvent }
         <span className={styles.muted}>{`of ${wallClock(startNs)} – ${wallClock(endNs, startNs)} UTC`}</span>
         <Steps marks={marks} positionNs={positionNs} clamp={clamp} onSeek={onSeek} />
       </div>
+      <Ticks startNs={startNs} endNs={endNs} fraction={fraction} />
       <div className={styles.track}>
         <PlaybackRange startNs={startNs} span={span} positionNs={positionNs} onSeek={onSeek} onKeyDown={onKeyDown} />
       </div>

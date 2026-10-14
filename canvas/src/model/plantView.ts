@@ -232,3 +232,11 @@ export function viewSummary(view: PlantView): string {
   const instances = view.nodes.reduce((sum, node) => sum + node.members, 0);
   return `${String(instances)} instances · ${String(links)} links in view`;
 }
+
+export function hallMembers(plant: Plant, hall: string): readonly (readonly [string, number])[] {
+  const counts = new Map<string, number>();
+  for (const instance of plant.instances) {
+    if (hallOf(instance.id) === hall) counts.set(instance.kind, (counts.get(instance.kind) ?? 0) + 1);
+  }
+  return [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+}

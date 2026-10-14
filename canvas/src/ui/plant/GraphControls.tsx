@@ -29,6 +29,14 @@ function Legend() {
           <span className={cx(styles.swatch, styles.unknown, "family-none")} aria-hidden="true" />
           Port not recorded
         </li>
+        <li>
+          <span className={cx(styles.swatch, "family-none")} aria-hidden="true" />
+          Filled: connected
+        </li>
+        <li>
+          <span className={cx(styles.swatch, styles.hollow, "family-none")} aria-hidden="true" />
+          Hollow: not connected
+        </li>
       </ul>
     </div>
   );
