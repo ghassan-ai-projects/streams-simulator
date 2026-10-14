@@ -62,6 +62,10 @@ function count(n: number, one: string, many: string): string {
   return n === 0 ? "" : `${String(n)} ${n === 1 ? one : many}`;
 }
 
+function clearedFaults(report: Report): number {
+  return report.disturbances.filter((d) => d.kind === "fault" && d.clearedNs !== null).length;
+}
+
 function leftOut(report: Report): readonly string[] {
   const kinds = (kind: string) => report.disturbances.filter((d) => d.kind === kind).length;
   return [
@@ -69,6 +73,8 @@ function leftOut(report: Report): readonly string[] {
     report.endNs - report.startNs < 60e9 ? "a length under one minute (one minute is used)" : "",
     count(kinds("perturbation"), "delivery perturbation", "delivery perturbations"),
     count(kinds("environment"), "environment change", "environment changes"),
+    count(report.effectorCalls.length, "effector call", "effector calls"),
+    count(clearedFaults(report), "fault clear (the fault stays on)", "fault clears (the faults stay on)"),
   ].filter((part) => part !== "");
 }
 
