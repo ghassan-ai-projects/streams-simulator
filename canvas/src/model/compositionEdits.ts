@@ -1,6 +1,7 @@
 import type { Issue } from "./bridge";
 import type { Composition, NewEquipment } from "./composition";
-import { connectionsOf, endpointOf, equipmentOf } from "./composition";
+import { componentOf, connectionsOf, endpointOf, equipmentOf, shortKind } from "./composition";
+import { freeKind, joinable, kindOf } from "./kindNames";
 
 type Json = Readonly<Record<string, unknown>>;
 
@@ -24,6 +25,24 @@ export function isTemplate(doc: Composition, id: string): boolean {
   return entries(doc).some((entry) => namesOf(entry).length === 0 && entry.id_template === id);
 }
 
+function withName(entries_: readonly Json[], at: number, name: string): readonly Json[] {
+  return entries_.map((entry, index) => (index === at ? { ...entry, names: [...namesOf(entry), name] } : entry));
+}
+
+function distinctKind(all: readonly Json[], entry: Json): Json {
+  const kinds = new Set(all.map(kindOf));
+  const base = shortKind(componentOf(String(entry.use)));
+  if (!kinds.has(kindOf(entry))) return entry;
+  return { ...entry, as: freeKind(base, kinds) };
+}
+
+function placed(all: readonly Json[], entry: Json): readonly Json[] {
+  const at = all.findIndex((existing) => joinable(existing, entry));
+  const name = namesOf(entry)[0];
+  if (at >= 0 && name !== undefined) return withName(all, at, name);
+  return [...all, distinctKind(all, entry)];
+}
+
 export function addEquipment(doc: Composition, added: NewEquipment): Composition {
   const entry: Json = {
     use: added.use,
@@ -31,7 +50,7 @@ export function addEquipment(doc: Composition, added: NewEquipment): Composition
     names: [added.name],
     area: added.area,
   };
-  return { ...doc, equipment: [...entries(doc), entry] };
+  return { ...doc, equipment: placed(entries(doc), entry) };
 }
 
 function renamed(endpoint: string, from: string, to: string): string {
@@ -68,16 +87,24 @@ export function removeInstance(doc: Composition, id: string): Composition {
   return { ...doc, equipment, connections: wires(doc).filter((wire) => !touches(wire, id)) };
 }
 
-export function moveInstance(doc: Composition, id: string, area: string): Composition {
-  const equipment = entries(doc).flatMap((entry) => {
-    if (!holds(entry, id)) return [entry];
-    if (namesOf(entry).length <= 1) return [{ ...entry, area }];
-    return [
-      { ...entry, names: namesOf(entry).filter((name) => name !== id) },
-      { ...entry, names: [id], area },
-    ];
+function without(all: readonly Json[], source: Json, id: string): readonly Json[] {
+  return all.flatMap((entry) => {
+    if (entry !== source) return [entry];
+    const names = namesOf(entry).filter((name) => name !== id);
+    return names.length === 0 ? [] : [{ ...entry, names }];
   });
-  return { ...doc, equipment };
+}
+
+export function moveInstance(doc: Composition, id: string, area: string): Composition {
+  const all = entries(doc);
+  const source = all.find((entry) => holds(entry, id));
+  if (source === undefined) return doc;
+  const moved = { ...source, names: [id], area };
+  const others = all.filter((entry) => entry !== source);
+  if (namesOf(source).length <= 1 && !others.some((entry) => joinable(entry, moved))) {
+    return { ...doc, equipment: all.map((entry) => (entry === source ? moved : entry)) };
+  }
+  return { ...doc, equipment: placed(without(all, source, id), moved) };
 }
 
 export function connect(doc: Composition, from: string, to: string): Composition {
