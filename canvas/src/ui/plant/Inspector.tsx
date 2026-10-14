@@ -1,4 +1,5 @@
 import type { Instance, Plant } from "../../model/plant";
+import type { ReactNode } from "react";
 import { linkLines, linksOf } from "../../model/plant";
 import { hallMembers } from "../../model/plantView";
 import { shortChannel } from "../../model/playback";
@@ -10,6 +11,7 @@ import type { RunRow } from "../../model/workspace";
 import shared from "../shared.module.css";
 import { PlantOverview } from "./PlantOverview";
 import styles from "./PlantScreen.module.css";
+import { InspectorLinks } from "./InspectorLinks";
 
 interface ListProps {
   readonly title: string;
@@ -18,6 +20,7 @@ interface ListProps {
   readonly show?: ((item: string) => string) | undefined;
   readonly count?: number;
   readonly folded?: boolean;
+  readonly extra?: ReactNode;
 }
 
 function Items({ items, mono = true, show }: Pick<ListProps, "items" | "mono" | "show">) {
@@ -33,7 +36,7 @@ function Items({ items, mono = true, show }: Pick<ListProps, "items" | "mono" | 
   );
 }
 
-function List({ title, items, mono, show, count = items.length, folded = false }: ListProps) {
+function List({ title, items, mono, show, count = items.length, folded = false, extra }: ListProps) {
   const heading = (
     <>
       {title}
@@ -46,6 +49,7 @@ function List({ title, items, mono, show, count = items.length, folded = false }
         <details>
           <summary className={shared.sectionTitle}>{heading}</summary>
           <Items items={items} mono={mono} show={show} />
+          {extra}
         </details>
       </section>
     );
@@ -54,6 +58,7 @@ function List({ title, items, mono, show, count = items.length, folded = false }
     <section className={styles.section} aria-label={title}>
       <h3 className={shared.sectionTitle}>{heading}</h3>
       <Items items={items} mono={mono} show={show} />
+      {extra}
     </section>
   );
 }
@@ -61,6 +66,30 @@ function List({ title, items, mono, show, count = items.length, folded = false }
 function channelLine(name: string, channels: readonly { readonly name: string; readonly unit: string }[]): string {
   const unit = displayUnit(channels.find((channel) => channel.name === name)?.unit ?? "");
   return `${channelWords(shortChannel(name))}${unit === "" ? "" : ` · ${unit}`}`;
+}
+
+function LinkList({
+  title,
+  links,
+  instance,
+  side,
+  onSelect,
+}: {
+  readonly title: string;
+  readonly links: ReturnType<typeof linksOf>["incoming"];
+  readonly instance: Instance;
+  readonly side: "in" | "out";
+  readonly onSelect?: ((id: string) => void) | undefined;
+}) {
+  return (
+    <List
+      title={title}
+      items={linkLines(links, instance.id, side)}
+      count={links.length}
+      mono={false}
+      extra={<InspectorLinks links={links} side={side} onSelect={onSelect} />}
+    />
+  );
 }
 
 function HallSummary({
@@ -108,10 +137,12 @@ function InstanceDetails({
   plant,
   instance,
   onClose,
+  onSelect,
 }: {
   readonly plant: Plant;
   readonly instance: Instance;
   readonly onClose?: (() => void) | undefined;
+  readonly onSelect?: ((id: string) => void) | undefined;
 }) {
   const kind = plant.kinds.get(instance.kind);
   const { incoming, outgoing } = linksOf(plant, instance.id);
@@ -124,8 +155,8 @@ function InstanceDetails({
         mono={false}
         show={(name) => channelLine(name, kind?.channels ?? [])}
       />
-      <List title="Links in" items={linkLines(incoming, instance.id, "in")} count={incoming.length} mono={false} />
-      <List title="Links out" items={linkLines(outgoing, instance.id, "out")} count={outgoing.length} mono={false} />
+      <LinkList title="Links in" links={incoming} instance={instance} side="in" onSelect={onSelect} />
+      <LinkList title="Links out" links={outgoing} instance={instance} side="out" onSelect={onSelect} />
       <List title="Faults" items={kind?.faults ?? []} mono={false} show={humanise} folded />
       <List title="Effectors" items={kind?.effectors ?? []} mono={false} show={humanise} />
       <List title="States" items={kind?.states ?? []} mono={false} show={channelWords} folded />
@@ -139,11 +170,13 @@ interface InspectorProps {
   readonly onClose?: () => void;
   readonly runs?: readonly RunRow[];
   readonly onReview?: (worldId: string) => void;
+  readonly onSelect?: (id: string) => void;
 }
 
-export function Inspector({ plant, selected, onClose, runs = [], onReview }: InspectorProps) {
+export function Inspector({ plant, selected, onClose, runs = [], onReview, onSelect }: InspectorProps) {
   const instance = plant.instances.find((entry) => entry.id === selected);
-  if (instance !== undefined) return <InstanceDetails plant={plant} instance={instance} onClose={onClose} />;
+  if (instance !== undefined)
+    return <InstanceDetails plant={plant} instance={instance} onClose={onClose} onSelect={onSelect} />;
   const members = selected === null ? [] : hallMembers(plant, selected);
   if (selected !== null && members.length > 0) return <HallSummary hall={selected} members={members} />;
   return <PlantOverview plant={plant} runs={runs} onReview={onReview} />;

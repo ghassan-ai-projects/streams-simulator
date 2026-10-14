@@ -327,6 +327,22 @@
   text-decoration: underline;
 }
 
+.linkDetails {
+  padding: var(--space-2) var(--space-3);
+  color: var(--text-secondary);
+}
+
+.linkSummary {
+  cursor: pointer;
+  color: var(--accent);
+}
+
+.linkGroup {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+}
+
 :global([data-left="closed"]) .screen > :first-child,
 :global([data-right="closed"]) .screen > :last-child {
   visibility: hidden;

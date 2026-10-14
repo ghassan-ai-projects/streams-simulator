@@ -27,6 +27,16 @@ test("selecting an instance in the outline shows its kind in the inspector", asy
   await expect(page.getByRole("heading", { name: "lab-workspace" })).toBeVisible();
 });
 
+test("a shared campus link navigates to its declared receiver in another hall", async ({ page }) => {
+  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Fcampus-3.domain.json`);
+  await page.getByRole("navigation", { name: "Outline" }).getByRole("button", { name: "CAL-1" }).click();
+  const inspector = page.getByRole("complementary", { name: "Inspector" });
+  await inspector.getByText("Browse outgoing links (18)").click();
+  await inspector.getByRole("button", { name: /Select receiver h02\/M-1; CAL-1 shift out/ }).click();
+  await expect(page.getByRole("heading", { name: "h02", level: 1 })).toBeVisible();
+  await expect(inspector.getByRole("heading", { name: "h02/M-1", level: 2 })).toBeVisible();
+});
+
 test("the graph works from the keyboard: arrows move, Enter selects, Escape clears, ? lists the keys", async ({
   page,
 }) => {

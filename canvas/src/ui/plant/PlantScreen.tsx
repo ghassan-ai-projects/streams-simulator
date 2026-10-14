@@ -5,7 +5,7 @@ import type { LaunchStore } from "../../app/launchStore";
 import type { NavigationStore } from "../../app/navigationStore";
 import type { PlantState, PlantStore } from "../../app/plantStore";
 import type { WorkspaceStore } from "../../app/workspaceStore";
-import { hallCount, plantView } from "../../model/plantView";
+import { hallCount, hallOf, hallsOf, plantView } from "../../model/plantView";
 import type { RunRow } from "../../model/workspace";
 import { runRows } from "../../model/workspace";
 import type { Crumb } from "../shell/Breadcrumb";
@@ -141,6 +141,7 @@ function PlantSide({
 
 interface RightProps {
   readonly state: Ready;
+  readonly hall: string | null;
   readonly launch: LaunchStore;
   readonly navigation: NavigationStore;
   readonly launching: boolean;
@@ -149,7 +150,7 @@ interface RightProps {
   readonly runs: readonly RunRow[];
 }
 
-function PlantInspector({ state, navigation, plants, runs }: RightProps) {
+function PlantInspector({ state, hall, navigation, plants, runs }: RightProps) {
   return (
     <Inspector
       plant={state.plant}
@@ -160,6 +161,13 @@ function PlantInspector({ state, navigation, plants, runs }: RightProps) {
       }}
       onReview={(worldId) => {
         navigation.go({ screen: "run", worldId });
+      }}
+      onSelect={(id) => {
+        plants.select(id);
+        const destination = hallOf(id);
+        if (destination !== null && hallsOf(state.plant).includes(destination) && destination !== hall) {
+          navigation.go({ screen: "plant", domain: state.path, hall: destination });
+        }
       }}
     />
   );
@@ -252,6 +260,7 @@ export function PlantScreen(props: PlantScreenProps) {
         </section>
         <RightPanel
           state={state}
+          hall={hall}
           launch={launch}
           navigation={navigation}
           launching={run.launching}
