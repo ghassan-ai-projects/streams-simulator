@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import type { NavigationStore } from "../../app/navigationStore";
 import type { PlantStore } from "../../app/plantStore";
+import type { LaunchStore } from "../../app/launchStore";
 import type { ReviewStore } from "../../app/reviewStore";
 import type { SessionStore } from "../../app/sessionStore";
 import type { ThemeStore } from "../../app/themeStore";
@@ -24,6 +25,7 @@ export interface Stores {
   readonly navigation: NavigationStore;
   readonly plants: PlantStore;
   readonly review: ReviewStore;
+  readonly launch: LaunchStore;
 }
 
 function useSession({ session, workspace }: Stores) {
@@ -54,6 +56,7 @@ function Screen({ stores, route }: { readonly stores: Stores; readonly route: Ro
         plants={stores.plants}
         workspace={stores.workspace}
         navigation={stores.navigation}
+        launch={stores.launch}
         domain={route.domain}
         hall={route.hall}
       />

@@ -33,6 +33,7 @@ export class PlantStore extends Observable<PlantState> {
   }
 
   async load(path: string, workspace: Workspace): Promise<void> {
+    if (this.holds(path)) return;
     this.set({ phase: "loading", path });
     const file = await this.bridge.readFile(path);
     if (!file.ok) {
@@ -47,8 +48,7 @@ export class PlantStore extends Observable<PlantState> {
   }
 
   async show(key: string, domain: unknown): Promise<void> {
-    const state = this.snapshot();
-    if (state.phase !== "idle" && state.path === key) return;
+    if (this.holds(key)) return;
     this.set({ phase: "loading", path: key });
     const plant = parsePlant(domain);
     this.set({ phase: "ready", path: key, plant, specs: await this.specs(plant), composition: null, selected: null });
@@ -59,6 +59,11 @@ export class PlantStore extends Observable<PlantState> {
     if (state.phase === "ready") {
       this.set({ ...state, selected: id });
     }
+  }
+
+  private holds(path: string): boolean {
+    const state = this.snapshot();
+    return (state.phase === "ready" || state.phase === "loading") && state.path === path;
   }
 
   private async composition(path: string): Promise<unknown> {

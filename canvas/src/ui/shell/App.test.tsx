@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import axe from "axe-core";
 import { describe, expect, it } from "vitest";
 import { SessionStore } from "../../app/sessionStore";
+import { LaunchStore } from "../../app/launchStore";
 import { NavigationStore } from "../../app/navigationStore";
 import { PlantStore } from "../../app/plantStore";
 import { ReviewStore } from "../../app/reviewStore";
@@ -28,6 +29,7 @@ function renderApp(bridge: FakeBridge) {
     navigation: new NavigationStore(location),
     plants: new PlantStore(bridge),
     review: new ReviewStore(bridge),
+    launch: new LaunchStore(bridge),
   };
   return render(<App stores={stores} />);
 }

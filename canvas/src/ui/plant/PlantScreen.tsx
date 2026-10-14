@@ -1,6 +1,7 @@
 import { ReactFlowProvider } from "@xyflow/react";
-import { ChevronRight, Network } from "lucide-react";
-import { Fragment, useEffect, useMemo } from "react";
+import { ChevronRight, Network, Play } from "lucide-react";
+import { Fragment, useEffect, useMemo, useState } from "react";
+import type { LaunchStore } from "../../app/launchStore";
 import type { NavigationStore } from "../../app/navigationStore";
 import type { PlantState, PlantStore } from "../../app/plantStore";
 import type { WorkspaceStore } from "../../app/workspaceStore";
@@ -9,6 +10,7 @@ import type { Route } from "../../model/route";
 import { useScreen } from "../useScreen";
 import { useStore } from "../useStore";
 import { Navigator, ZoomBar } from "./GraphControls";
+import { LaunchPanel } from "../launch/LaunchPanel";
 import { Inspector } from "./Inspector";
 import { Outline } from "./Outline";
 import { PlantGraph } from "./PlantGraph";
@@ -21,6 +23,7 @@ interface PlantScreenProps {
   readonly plants: PlantStore;
   readonly workspace: WorkspaceStore;
   readonly navigation: NavigationStore;
+  readonly launch: LaunchStore;
   readonly domain: string;
   readonly hall: string | null;
 }
@@ -137,22 +140,62 @@ function PlantSide({
   );
 }
 
-export function PlantScreen({ plants, workspace, navigation, domain, hall }: PlantScreenProps) {
+function RightPanel({
+  state,
+  launch,
+  navigation,
+  launching,
+  setLaunching,
+}: {
+  readonly state: Ready;
+  readonly launch: LaunchStore;
+  readonly navigation: NavigationStore;
+  readonly launching: boolean;
+  readonly setLaunching: (open: boolean) => void;
+}) {
+  if (!launching) return <Inspector plant={state.plant} selected={state.selected} />;
+  return (
+    <LaunchPanel
+      launch={launch}
+      plant={state.plant}
+      onClose={() => {
+        setLaunching(false);
+      }}
+      onFinished={(worldId) => {
+        navigation.go({ screen: "run", worldId });
+      }}
+    />
+  );
+}
+
+function RunButton({ launching, onOpen }: { readonly launching: boolean; readonly onOpen: () => void }) {
+  return (
+    <button type="button" className={styles.run} aria-pressed={launching} onClick={onOpen}>
+      <Play size={14} aria-hidden="true" />
+      Run plant
+    </button>
+  );
+}
+
+function NotReady({ state, domain }: { readonly state: PlantState; readonly domain: string }) {
+  const failed = state.phase === "failed" && state.path === domain;
+  return (
+    <p className={failed ? styles.failure : styles.loading} role={failed ? "alert" : "status"}>
+      {state.phase === "failed" && failed
+        ? `The plant could not be opened: ${state.failure.message} (${state.failure.code})`
+        : "Opening the plant…"}
+    </p>
+  );
+}
+
+export function PlantScreen({ plants, workspace, navigation, launch, domain, hall }: PlantScreenProps) {
+  const [launching, setLaunching] = useState(false);
   const state = useStore(plants);
   const listing = useStore(workspace);
   useEffect(() => {
     if (listing.phase === "ready") void plants.load(domain, listing.workspace);
   }, [plants, domain, listing]);
-  if (state.phase !== "ready" || state.path !== domain) {
-    const failed = state.phase === "failed" && state.path === domain;
-    return (
-      <p className={failed ? styles.failure : styles.loading} role={failed ? "alert" : "status"}>
-        {failed
-          ? `The plant could not be opened: ${state.failure.message} (${state.failure.code})`
-          : "Opening the plant…"}
-      </p>
-    );
-  }
+  if (state.phase !== "ready" || state.path !== domain) return <NotReady state={state} domain={domain} />;
   return (
     <ReactFlowProvider>
       <div className={styles.screen}>
@@ -161,11 +204,23 @@ export function PlantScreen({ plants, workspace, navigation, domain, hall }: Pla
           <div className={styles.bar}>
             <Network size={14} aria-hidden="true" />
             <Crumbs state={state} hall={hall} navigation={navigation} />
+            <RunButton
+              launching={launching}
+              onOpen={() => {
+                setLaunching(true);
+              }}
+            />
             <ZoomBar />
           </div>
           <Graph state={state} hall={hall} plants={plants} navigation={navigation} />
         </section>
-        <Inspector plant={state.plant} selected={state.selected} />
+        <RightPanel
+          state={state}
+          launch={launch}
+          navigation={navigation}
+          launching={launching}
+          setLaunching={setLaunching}
+        />
       </div>
     </ReactFlowProvider>
   );

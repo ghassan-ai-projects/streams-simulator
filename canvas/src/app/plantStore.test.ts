@@ -73,4 +73,13 @@ describe("plant store", () => {
     await store.load("domains/bad.domain.json", workspace);
     expect(store.snapshot()).toMatchObject({ phase: "ready", plant: { instances: [] } });
   });
+
+  it("keeps the open plant and its selection when the workspace listing changes", async () => {
+    const store = new PlantStore(bridge());
+    await store.load("domains/mini.domain.json", sampleWorkspace);
+    store.select("CH-1");
+    const open = store.snapshot();
+    await store.load("domains/mini.domain.json", { ...sampleWorkspace, runs: [] });
+    expect(store.snapshot()).toBe(open);
+  });
 });
