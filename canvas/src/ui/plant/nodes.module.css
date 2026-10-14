@@ -227,7 +227,7 @@
 
 :global(.tier-compact) .kind,
 :global(.tier-compact) .none {
-  font-size: calc(11.5px / var(--zoom));
+  font-size: calc(10.5px / var(--zoom));
 }
 
 :global(.tier-compact) .readout div:nth-child(n + 3) {

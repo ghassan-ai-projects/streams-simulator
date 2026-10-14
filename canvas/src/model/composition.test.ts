@@ -6,6 +6,7 @@ import {
   linkEnd,
   parseComposition,
   serialise,
+  shortKind,
   suggestedName,
 } from "./composition";
 import {
@@ -139,5 +140,13 @@ describe("composition", () => {
     if (first === undefined) throw new Error("no link");
     expect(linkEnd(first, "CH-1")).toEqual({ outgoing: true, port: "heat out", other: "CT-1", otherPort: "heat in" });
     expect(linkEnd(first, "CT-1")).toEqual({ outgoing: false, port: "heat in", other: "CH-1", otherPort: "heat out" });
+  });
+
+  it("names a kind the way the plant screen does, from the component's last segment", () => {
+    expect([shortKind("streamsim/air-receiver"), shortKind("chiller"), shortKind("lib/a/b-c-d")]).toEqual([
+      "air_receiver",
+      "chiller",
+      "b_c_d",
+    ]);
   });
 });

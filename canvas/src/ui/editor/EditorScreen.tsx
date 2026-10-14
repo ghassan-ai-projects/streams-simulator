@@ -3,7 +3,7 @@ import { ReactFlowProvider } from "@xyflow/react";
 import { useEffect, useMemo, useState } from "react";
 import type { Draft, EditorStore } from "../../app/editorStore";
 import type { NavigationStore } from "../../app/navigationStore";
-import { compositionPlant } from "../../model/composition";
+import { compositionPlant, shortKind } from "../../model/composition";
 import { connect } from "../../model/compositionEdits";
 import type { PlantView } from "../../model/plantView";
 import { plantView } from "../../model/plantView";
@@ -25,11 +25,7 @@ interface EditorScreenProps {
 }
 
 function usePlant(draft: Draft, aspect: number | undefined) {
-  const titles = useMemo(() => new Map(draft.library.map((entry) => [entry.component, entry.title])), [draft.library]);
-  const plant = useMemo(
-    () => compositionPlant(draft.doc, (component) => titles.get(component) ?? component),
-    [draft.doc, titles],
-  );
+  const plant = useMemo(() => compositionPlant(draft.doc, shortKind), [draft.doc]);
   const view = useMemo(() => plantView(plant, draft.specs, null, 0, aspect), [plant, draft.specs, aspect]);
   const flagged = useMemo(() => new Set(draft.issues?.instances.keys() ?? []), [draft.issues]);
   return { plant, view, flagged };

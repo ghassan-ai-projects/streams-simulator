@@ -1,6 +1,8 @@
+import { humanise } from "../../model/report";
 import { Box, Trash2, X } from "lucide-react";
 import type { SyntheticEvent } from "react";
 import { useState } from "react";
+import type { Draft } from "../../app/editorStore";
 import type { Instance } from "../../model/plant";
 import type { Connection } from "../../model/composition";
 import { areasOf, connectionsOf, endpointOf, linkEnd } from "../../model/composition";
@@ -179,6 +181,11 @@ function Editing({ draft, plant, editor, request, instance }: EditorProps) {
   );
 }
 
+function kindLine(draft: Draft, instance: Instance): string {
+  const title = draft.library.find((entry) => entry.component === instance.component)?.title;
+  return title === undefined ? humanise(instance.kind) : `${title} · ${humanise(instance.kind)}`;
+}
+
 export function InstanceEditor(props: EditorProps) {
   const { draft, editor, request, instance } = props;
   return (
@@ -187,7 +194,7 @@ export function InstanceEditor(props: EditorProps) {
       <div className={panel.body}>
         <Problems id={instance.id} messages={draft.issues?.instances.get(instance.id) ?? []} />
         <p className={panel.hint} title={instance.component ?? undefined}>
-          {instance.kind}
+          {kindLine(draft, instance)}
         </p>
         <Editing {...props} />
         <Links draft={draft} instance={instance} editor={editor} />

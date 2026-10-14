@@ -91,6 +91,10 @@ function link(connection: Connection): Link {
   return { from: from.id, to: to.id, type: "", fromPort: from.port || null, toPort: to.port || null };
 }
 
+export function shortKind(component: string): string {
+  return (component.split("/").at(-1) ?? component).replaceAll("-", "_");
+}
+
 export function compositionPlant(doc: Composition, titleOf: (component: string) => string): Plant {
   const instances: Instance[] = equipmentOf(doc).flatMap((entry) =>
     entry.names.map((id) => ({
