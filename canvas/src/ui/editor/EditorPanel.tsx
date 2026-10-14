@@ -3,6 +3,7 @@ import panel from "../panel.module.css";
 import type { IssueGroup } from "../../model/compositionEdits";
 import { groupIssues } from "../../model/compositionEdits";
 import { AddArea } from "./AddArea";
+import { AreaEditor } from "./AreaEditor";
 import { AddEquipment } from "./AddEquipment";
 import styles from "./Editor.module.css";
 import { InstanceEditor } from "./InstanceEditor";
@@ -70,6 +71,7 @@ function Build({ draft, plant, editor, request }: PanelProps) {
         <Issues draft={draft} editor={editor} request={request} />
         <AddEquipment draft={draft} plant={plant} editor={editor} request={request} />
         <AddArea draft={draft} editor={editor} />
+        <AreaEditor draft={draft} editor={editor} />
         <p className={panel.hint}>
           Select an instance to rename, move, link or delete it. To link two instances, drag from an output pin to an
           input pin, or use “Link an output” on the selected instance.

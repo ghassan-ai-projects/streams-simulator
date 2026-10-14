@@ -4,18 +4,13 @@ import { useState } from "react";
 import type { Draft, EditorStore } from "../../app/editorStore";
 import type { AreaNode } from "../../model/areaTree";
 import { areaNodesOf } from "../../model/composition";
-import { addArea } from "../../model/compositionEdits";
+import { addArea, areaNameProblem } from "../../model/compositionEdits";
 import panel from "../panel.module.css";
 import { SubmitRow } from "./SubmitRow";
 
 interface AreaProps {
   readonly draft: Draft;
   readonly editor: EditorStore;
-}
-
-function problem(name: string, taken: readonly string[]): string | null {
-  if (name === "") return "Give the area a name.";
-  return taken.includes(name) ? `There is already an area named "${name}".` : null;
 }
 
 interface ParentProps {
@@ -49,10 +44,7 @@ export function AddArea({ draft, editor }: AreaProps) {
   const [name, setName] = useState("");
   const [parent, setParent] = useState("");
   const nodes = areaNodesOf(draft.doc);
-  const reason = problem(
-    name.trim(),
-    nodes.map((node) => node.name),
-  );
+  const reason = areaNameProblem(draft.doc, name.trim(), null);
   const submit = (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (reason !== null) return;

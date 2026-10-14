@@ -53,10 +53,54 @@ export function addEquipment(doc: Composition, added: NewEquipment): Composition
   return { ...doc, equipment: placed(entries(doc), entry) };
 }
 
+function areasOf(doc: Composition): readonly Json[] {
+  return Array.isArray(doc.areas) ? (doc.areas as readonly Json[]) : [];
+}
+
+export function areaNameProblem(doc: Composition, name: string, current: string | null): string | null {
+  if (name === "") return "Give the area a name.";
+  const taken = name !== current && areasOf(doc).some((area) => area.name === name);
+  return taken ? `There is already an area named "${name}".` : null;
+}
+
 export function addArea(doc: Composition, name: string, parent: string): Composition {
-  const areas = Array.isArray(doc.areas) ? (doc.areas as readonly Json[]) : [];
-  if (areas.some((area) => area.name === name)) return doc;
-  return { ...doc, areas: [...areas, { name, ...(parent === "" ? {} : { parent }) }] };
+  if (areaNameProblem(doc, name, null) !== null) return doc;
+  return { ...doc, areas: [...areasOf(doc), { name, ...(parent === "" ? {} : { parent }) }] };
+}
+
+function renamedArea(area: Json, from: string, to: string): Json {
+  const name = area.name === from ? to : area.name;
+  return area.parent === from ? { ...area, name, parent: to } : { ...area, name };
+}
+
+export function renameArea(doc: Composition, from: string, to: string): Composition {
+  if (from === to || areaNameProblem(doc, to, from) !== null) return doc;
+  return {
+    ...doc,
+    areas: areasOf(doc).map((area) => renamedArea(area, from, to)),
+    equipment: entries(doc).map((entry) => (entry.area === from ? { ...entry, area: to } : entry)),
+  };
+}
+
+function instanceCount(entry: Json): number {
+  const names = namesOf(entry);
+  const count = entry.count as { readonly default?: number } | undefined;
+  return names.length > 0 ? names.length : (count?.default ?? 1);
+}
+
+export function areaInUse(doc: Composition, name: string): string | null {
+  const holding = entries(doc).filter((entry) => entry.area === name);
+  const inside = areasOf(doc).filter((area) => area.parent === name).length;
+  const instances = holding.reduce((sum, entry) => sum + instanceCount(entry), 0);
+  if (instances > 0)
+    return `Move the ${String(instances)} ${instances === 1 ? "instance" : "instances"} out of it first.`;
+  if (inside > 0) return `Delete the ${String(inside)} ${inside === 1 ? "area" : "areas"} inside it first.`;
+  return null;
+}
+
+export function removeArea(doc: Composition, name: string): Composition {
+  if (areaInUse(doc, name) !== null) return doc;
+  return { ...doc, areas: areasOf(doc).filter((area) => area.name !== name) };
 }
 
 function renamed(endpoint: string, from: string, to: string): string {

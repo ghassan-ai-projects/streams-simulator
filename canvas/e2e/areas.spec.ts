@@ -35,3 +35,30 @@ test("an area is added inside the site, shown nested in the outline, used by equ
   const written = JSON.parse(readFileSync(file, "utf8")) as { areas: { name: string; parent?: string }[] };
   expect(written.areas).toContainEqual({ name: "Pump house", parent: "Site" });
 });
+
+test("an area is renamed and an empty one deleted from the Build panel, and the outline follows", async ({ page }) => {
+  await page.goto(env("CANVAS_APP_URL"));
+  await page.getByRole("button", { name: "New plant" }).click();
+  const form = page.getByRole("form", { name: "New plant" });
+  await form.getByLabel("Name").fill("Area renames");
+  await form.getByLabel("Start from").selectOption({ label: "Factory utilities" });
+  await form.getByRole("radio", { name: /^An empty plant/ }).check();
+  await form.getByRole("button", { name: "Create and open the editor" }).click();
+  await expect(page.getByRole("heading", { name: "No equipment yet" })).toBeVisible();
+  const build = page.getByRole("complementary", { name: "Build" });
+  const area = build.getByRole("form", { name: "Add area" });
+  for (const name of ["Scratch", "Pump house"]) {
+    await area.getByLabel("Area name").fill(name);
+    await area.getByRole("button", { name: "Add area" }).click();
+  }
+  const areas = build.getByRole("region", { name: "Areas" });
+  const row = areas.locator("li").filter({ has: page.getByLabel("Name of Pump house", { exact: true }) });
+  await row.getByLabel("Name of Pump house", { exact: true }).fill("Pumps");
+  await row.getByRole("button", { name: "Rename" }).click();
+  const outline = page.getByRole("navigation", { name: "Outline" });
+  await expect(outline.getByRole("group").filter({ hasText: "Pumps" })).toHaveCount(1);
+  await expect(outline.getByRole("group").filter({ hasText: "Pump house" })).toHaveCount(0);
+  await areas.getByRole("button", { name: "Delete Scratch" }).click();
+  await expect(outline.getByRole("group").filter({ hasText: "Scratch" })).toHaveCount(0);
+  await expect(areas.getByLabel("Name of Pumps", { exact: true })).toBeVisible();
+});
