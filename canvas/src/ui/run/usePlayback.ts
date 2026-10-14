@@ -17,6 +17,12 @@ export function usePlayback(review: ReviewStore, playing: boolean) {
       clearInterval(timer);
     };
   }, [review, playing]);
+  useEffect(
+    () => () => {
+      review.pause();
+    },
+    [review],
+  );
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== " " || event.repeat || !plainKey(event) || ownsSpace(event.target)) return;

@@ -70,6 +70,19 @@ describe("review", () => {
     expect(store.index.readings("CH-1", 30e9)[0]?.value).toBe(95.1);
   });
 
+  it("ignores Play before any observation has arrived and starts from where the run settles", () => {
+    const { bridge, store, flushes } = setup();
+    store.open("w-1");
+    store.play();
+    expect(store.snapshot().playing).toBe(false);
+    bridge.stream("w-1", journal, null);
+    flushes.forEach((flush) => {
+      flush();
+    });
+    store.play();
+    expect(store.snapshot()).toMatchObject({ playing: true, positionNs: 12e9 });
+  });
+
   it("plays back at its speed from the start, stops at the end and plays again from the start", () => {
     const { bridge, store, flushes } = setup();
     store.open("w-1");
@@ -90,7 +103,7 @@ describe("review", () => {
     store.tick(5000);
     expect(store.snapshot()).toMatchObject({ playing: false, positionNs: 30e9 });
     store.play();
-    expect(store.snapshot()).toMatchObject({ playing: true, positionNs: 10e9 });
+    expect(store.snapshot()).toMatchObject({ playing: true, positionNs: 12e9 });
     store.pause();
     store.pause();
     expect(store.snapshot().playing).toBe(false);

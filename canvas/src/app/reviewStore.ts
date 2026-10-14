@@ -102,9 +102,11 @@ export class ReviewStore extends Observable<ReviewState> {
 
   play(): void {
     const bounds = this.index.bounds();
+    const settled = this.index.settled();
+    if (bounds === null || settled === null) return;
     const state = this.snapshot();
-    const atEnd = bounds !== null && state.positionNs >= bounds.endNs;
-    this.set({ ...state, playing: true, positionNs: atEnd ? bounds.startNs : state.positionNs });
+    const fresh = state.positionNs >= bounds.endNs || state.positionNs < bounds.startNs;
+    this.set({ ...state, playing: true, positionNs: fresh ? settled : state.positionNs });
   }
 
   pause(): void {
@@ -152,7 +154,8 @@ export class ReviewStore extends Observable<ReviewState> {
     this.update(worldId, { phase });
     const state = this.snapshot();
     const settled = this.index.settled();
-    if (settled !== null && state.worldId === worldId && state.positionNs === 0) this.seek(settled);
+    const before = (this.index.bounds()?.startNs ?? 0) > state.positionNs;
+    if (settled !== null && state.worldId === worldId && before) this.seek(settled);
   }
 
   private update(worldId: string, playback: Partial<ReviewState["playback"]>): void {
