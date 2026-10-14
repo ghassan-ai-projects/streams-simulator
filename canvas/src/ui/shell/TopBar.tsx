@@ -1,9 +1,11 @@
 import { Activity, Monitor, Moon, Sun } from "lucide-react";
+import type { ReactNode } from "react";
 import type { ThemePreference } from "../../model/theme";
 import { preferenceLabel } from "../../model/theme";
 import styles from "./TopBar.module.css";
 
 interface TopBarProps {
+  readonly status?: ReactNode;
   readonly preference: ThemePreference;
   readonly onCycleTheme: () => void;
   readonly onHome: () => void;
@@ -11,7 +13,7 @@ interface TopBarProps {
 
 const themeIcons = { system: Monitor, light: Sun, dark: Moon } as const;
 
-export function TopBar({ preference, onCycleTheme, onHome }: TopBarProps) {
+export function TopBar({ status, preference, onCycleTheme, onHome }: TopBarProps) {
   const ThemeIcon = themeIcons[preference];
   const label = preferenceLabel(preference);
   return (
@@ -23,6 +25,7 @@ export function TopBar({ preference, onCycleTheme, onHome }: TopBarProps) {
         Streams Simulator
       </button>
       <div className={styles.spacer} />
+      {status}
       <button type="button" className={styles.iconButton} onClick={onCycleTheme} aria-label={label} title={label}>
         <ThemeIcon size={16} strokeWidth={2} aria-hidden="true" />
       </button>

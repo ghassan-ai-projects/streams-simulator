@@ -177,6 +177,7 @@ function RightPanel(props: RightProps) {
     <LaunchPanel
       launch={launch}
       plant={state.plant}
+      path={state.path}
       onClose={onClose}
       onFinished={(worldId) => {
         navigation.go({ screen: "run", worldId });
@@ -185,40 +186,30 @@ function RightPanel(props: RightProps) {
   );
 }
 
-function useLaunching(launch: LaunchStore, initially: boolean) {
+function useLaunching(initially: boolean) {
   const [launching, setLaunching] = useState(initially);
-  const busy = useStore(launch).phase === "running";
   const button = useRef<HTMLButtonElement>(null);
   const toggle = () => {
-    if (!busy) setLaunching(!launching);
+    setLaunching(!launching);
   };
   const close = () => {
     setLaunching(false);
     button.current?.focus();
   };
-  return { launching, busy, button, toggle, close };
+  return { launching, button, toggle, close };
 }
 
 function RunButton({
   launching,
-  busy,
   button,
   onToggle,
 }: {
   readonly launching: boolean;
-  readonly busy: boolean;
   readonly button: RefObject<HTMLButtonElement | null>;
   readonly onToggle: () => void;
 }) {
   return (
-    <button
-      type="button"
-      ref={button}
-      className={styles.run}
-      aria-pressed={launching}
-      aria-disabled={busy}
-      onClick={onToggle}
-    >
+    <button type="button" ref={button} className={styles.run} aria-pressed={launching} onClick={onToggle}>
       <Play size={14} aria-hidden="true" />
       Run plant
     </button>
@@ -255,7 +246,7 @@ function NotReady({ state, domain }: { readonly state: PlantState; readonly doma
 
 export function PlantScreen(props: PlantScreenProps) {
   const { plants, workspace, navigation, launch, domain, hall, startLaunching = false } = props;
-  const run = useLaunching(launch, startLaunching);
+  const run = useLaunching(startLaunching);
   const state = useStore(plants);
   const listing = useStore(workspace);
   useEffect(() => {
@@ -271,7 +262,7 @@ export function PlantScreen(props: PlantScreenProps) {
             <Network size={14} aria-hidden="true" />
             <Crumbs state={state} hall={hall} navigation={navigation} />
             <EditButton state={state} navigation={navigation} />
-            <RunButton launching={run.launching} busy={run.busy} button={run.button} onToggle={run.toggle} />
+            <RunButton launching={run.launching} button={run.button} onToggle={run.toggle} />
             <ZoomBar />
           </div>
           <Graph state={state} hall={hall} plants={plants} navigation={navigation} />

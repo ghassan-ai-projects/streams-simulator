@@ -16,6 +16,7 @@ import styles from "./LaunchPanel.module.css";
 interface LaunchPanelProps {
   readonly launch: LaunchStore;
   readonly plant: Plant;
+  readonly path: string;
   readonly onClose: () => void;
   readonly onFinished: (worldId: string) => void;
 }
@@ -49,8 +50,12 @@ function Progress({
           launch.cancel();
         }}
       >
-        Cancel the run
+        Cancel and discard
       </button>
+      <p className={panel.hint}>
+        You can close this panel or leave the plant: the run goes on and its progress shows in the top bar. Cancel stops
+        it at the next step and keeps nothing.
+      </p>
     </div>
   );
 }
@@ -86,44 +91,55 @@ interface BodyProps {
   readonly state: LaunchState;
   readonly launch: LaunchStore;
   readonly plant: Plant;
+  readonly path: string;
   readonly draft: Draft;
   readonly change: (change: Change) => void;
 }
 
-function Body({ state, launch, plant, draft, change }: BodyProps) {
-  if (state.phase === "running") return <Progress state={state} launch={launch} title={plant.title || plant.id} />;
-  if (state.phase === "failed") return <Failure state={state} launch={launch} />;
+function Elsewhere({ state }: { readonly state: Running }) {
+  return (
+    <div className={panel.body}>
+      <p className={styles.status} role="status">{`A run of ${state.origin.title} is in progress.`}</p>
+      <p className={panel.hint}>One run at a time: follow it from the top bar, or cancel it on its plant.</p>
+    </div>
+  );
+}
+
+function Body({ state, launch, plant, path, draft, change }: BodyProps) {
+  const own = state.phase !== "idle" && state.origin.domain === plant.id;
+  if (state.phase === "running") {
+    return own ? (
+      <Progress state={state} launch={launch} title={plant.title || plant.id} />
+    ) : (
+      <Elsewhere state={state} />
+    );
+  }
+  if (state.phase === "failed" && own) return <Failure state={state} launch={launch} />;
   return (
     <LaunchForm
       plant={plant}
       draft={draft}
       change={change}
       onStart={(plan) => {
-        void launch.start(plant.id, plan);
+        void launch.start({ domain: plant.id, title: plant.title || plant.id, path }, plan);
       }}
     />
   );
 }
 
-function useLaunch(launch: LaunchStore, onFinished: (worldId: string) => void) {
+function useLaunch(launch: LaunchStore, plant: string, onFinished: (worldId: string) => void) {
   const state = useStore(launch);
   useEffect(() => {
-    if (launch.snapshot().phase !== "running") launch.reset();
-    return () => {
-      launch.cancel();
-    };
-  }, [launch]);
-  useEffect(() => {
-    if (state.phase === "done") {
+    if (state.phase === "done" && state.origin.domain === plant) {
       launch.reset();
       onFinished(state.worldId);
     }
-  }, [state, launch, onFinished]);
+  }, [state, launch, plant, onFinished]);
   return state;
 }
 
-export function LaunchPanel({ launch, plant, onClose, onFinished }: LaunchPanelProps) {
-  const state = useLaunch(launch, onFinished);
+export function LaunchPanel({ launch, plant, path, onClose, onFinished }: LaunchPanelProps) {
+  const state = useLaunch(launch, plant.id, onFinished);
   const [draft, setDraft] = useState<Draft>(() => {
     const proposed = launch.proposal(plant.id);
     return proposed === null ? firstDraft : draftOf(proposed);
@@ -133,17 +149,11 @@ export function LaunchPanel({ launch, plant, onClose, onFinished }: LaunchPanelP
       <header className={panel.head}>
         <Play size={16} aria-hidden="true" />
         <h2 id="launch-title">{`Run ${plant.title || plant.id}`}</h2>
-        <button
-          type="button"
-          className={panel.icon}
-          aria-label="Close the run panel"
-          disabled={state.phase === "running"}
-          onClick={onClose}
-        >
+        <button type="button" className={panel.icon} aria-label="Close the run panel" onClick={onClose}>
           <X size={16} aria-hidden="true" />
         </button>
       </header>
-      <Body state={state} launch={launch} plant={plant} draft={draft} change={setDraft} />
+      <Body state={state} launch={launch} plant={plant} path={path} draft={draft} change={setDraft} />
     </aside>
   );
 }

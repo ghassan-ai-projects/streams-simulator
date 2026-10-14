@@ -9,6 +9,8 @@ import { FakeBridge, failure } from "../../test/fakeBridge";
 import { domain } from "../../test/plantFixture";
 import { LaunchPanel } from "./LaunchPanel";
 
+const path = "domains/mini.domain.json";
+
 function bridge() {
   const fake = new FakeBridge();
   fake.actions.set("world.create", success({ world_id: "w-7" }));
@@ -22,7 +24,7 @@ function bridge() {
 function renderPanel(fake: FakeBridge, onFinished = vi.fn<(worldId: string) => void>()) {
   const launch = new LaunchStore(fake);
   const view = render(
-    <LaunchPanel launch={launch} plant={parsePlant(domain)} onClose={vi.fn()} onFinished={onFinished} />,
+    <LaunchPanel launch={launch} plant={parsePlant(domain)} path={path} onClose={vi.fn()} onFinished={onFinished} />,
   );
   return { launch, view, onFinished };
 }
@@ -93,10 +95,9 @@ describe("launch panel", () => {
     renderPanel(fake);
     fireEvent.click(screen.getByRole("button", { name: "Start the run" }));
     expect(await screen.findByText("Running Mini plant as w-7")).toHaveAttribute("role", "status");
-    expect(screen.getByRole("button", { name: "Cancel the run" })).toHaveFocus();
+    expect(screen.getByRole("button", { name: "Cancel and discard" })).toHaveFocus();
     expect(screen.getByText("00:00:00 of 00:30:00 simulated")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Close the run panel" })).toBeDisabled();
-    fireEvent.click(screen.getByRole("button", { name: "Cancel the run" }));
+    fireEvent.click(screen.getByRole("button", { name: "Cancel and discard" }));
     expect(screen.getByRole("status")).toHaveTextContent("Canceling at the next step");
     await act(async () => {
       fake.release();
@@ -116,7 +117,9 @@ describe("launch panel lifetime", () => {
       explore: false,
       faults: [{ entity: "CH-1", fault: "chiller__fouling", atS: 600 }],
     });
-    render(<LaunchPanel launch={launch} plant={parsePlant(domain)} onClose={vi.fn()} onFinished={vi.fn()} />);
+    render(
+      <LaunchPanel launch={launch} plant={parsePlant(domain)} path={path} onClose={vi.fn()} onFinished={vi.fn()} />,
+    );
     expect(screen.getByLabelText("Seed")).toHaveValue("5");
     expect(screen.getByLabelText("Duration")).toHaveValue("2");
     expect(screen.getByLabelText("Duration unit")).toHaveValue("hours");
@@ -126,28 +129,55 @@ describe("launch panel lifetime", () => {
     expect(launch.proposal("other")).toBeNull();
   });
 
-  it("drops a run left from another visit and cancels its own run when it closes", async () => {
+  it("keeps a run going when the panel closes and opens its review when it is back on that plant", async () => {
     const fake = new HeldBridge();
     const launch = new LaunchStore(fake);
     const onFinished = vi.fn<(worldId: string) => void>();
     const plant = parsePlant(domain);
-    const first = render(<LaunchPanel launch={launch} plant={plant} onClose={vi.fn()} onFinished={onFinished} />);
+    const panel = () => (
+      <LaunchPanel launch={launch} plant={plant} path={path} onClose={vi.fn()} onFinished={onFinished} />
+    );
+    const first = render(panel());
     fireEvent.click(screen.getByRole("button", { name: "Start the run" }));
     await screen.findByText("Running Mini plant as w-7");
     first.unmount();
-    expect(launch.snapshot()).toMatchObject({ canceling: true });
+    expect(launch.snapshot()).toMatchObject({ phase: "running", canceling: false, origin: { domain: "mini", path } });
+    render(panel());
+    expect(screen.getByText("Running Mini plant as w-7")).toBeInTheDocument();
     await act(async () => {
-      fake.release();
+      fake.free();
       await Promise.resolve();
     });
-    render(<LaunchPanel launch={launch} plant={plant} onClose={vi.fn()} onFinished={onFinished} />);
-    expect(screen.getByRole("button", { name: "Start the run" })).toBeInTheDocument();
+    await vi.waitFor(() => {
+      expect(onFinished).toHaveBeenCalledWith("w-7");
+    });
+  });
+
+  it("tells another plant that a run is in progress and leaves a finished run of another plant alone", async () => {
+    const fake = new HeldBridge();
+    const launch = new LaunchStore(fake);
+    const elsewhere = { domain: "other", title: "Other plant", path: "domains/other.domain.json" };
+    void launch.start(elsewhere, { seed: 1, durationS: 60, explore: true, faults: [] });
+    const onFinished = vi.fn<(worldId: string) => void>();
+    render(
+      <LaunchPanel launch={launch} plant={parsePlant(domain)} path={path} onClose={vi.fn()} onFinished={onFinished} />,
+    );
+    expect(await screen.findByText("A run of Other plant is in progress.")).toBeInTheDocument();
+    await act(async () => {
+      fake.free();
+      await Promise.resolve();
+    });
+    await vi.waitFor(() => {
+      expect(launch.snapshot()).toMatchObject({ phase: "done", origin: { domain: "other" } });
+    });
     expect(onFinished).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Start the run" })).toBeInTheDocument();
   });
 });
 
 class HeldBridge extends FakeBridge {
   private held: (() => void) | null = null;
+  private open = false;
 
   constructor() {
     super();
@@ -155,7 +185,7 @@ class HeldBridge extends FakeBridge {
   }
 
   override action(name: string, args: Readonly<Record<string, unknown>>): Promise<Outcome<unknown>> {
-    if (name !== "clock.advance") return super.action(name, args);
+    if (name !== "clock.advance" || this.open) return super.action(name, args);
     this.calls.push({ name, args });
     return new Promise((resolve) => {
       this.held = () => {
@@ -165,6 +195,11 @@ class HeldBridge extends FakeBridge {
   }
 
   release(): void {
+    this.held?.();
+  }
+
+  free(): void {
+    this.open = true;
     this.held?.();
   }
 }

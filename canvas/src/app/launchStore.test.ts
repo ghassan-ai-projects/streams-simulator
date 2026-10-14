@@ -13,14 +13,15 @@ function bridge() {
   return fake;
 }
 
+const origin = { domain: "factory", title: "Factory", path: "domains/factory.domain.json" };
 const plan = { seed: 3, durationS: 40, explore: false, faults: [{ entity: "CT-1", fault: "fan", atS: 10 }] };
 
 describe("launch", () => {
   it("creates the world, injects at the fault's time, advances to the end and ends the run", async () => {
     const fake = bridge();
     const store = new LaunchStore(fake);
-    await store.start("factory", plan);
-    expect(store.snapshot()).toEqual({ phase: "done", worldId: "w-4" });
+    await store.start(origin, plan);
+    expect(store.snapshot()).toEqual({ phase: "done", origin, worldId: "w-4" });
     const names = fake.calls.map((call) => call.name);
     expect([names[0], names.at(-1)]).toEqual(["world.create", "run.end"]);
     const advanced = (calls: typeof fake.calls) =>
@@ -36,7 +37,7 @@ describe("launch", () => {
     const fake = bridge();
     fake.actions.set("fault.inject", failed(failure("unknown_fault", 422, "no such fault")));
     const store = new LaunchStore(fake);
-    await store.start("factory", plan);
+    await store.start(origin, plan);
     expect(store.snapshot()).toMatchObject({ phase: "failed", failure: { code: "unknown_fault" } });
     expect(fake.calls.at(-1)).toEqual({ name: "world.destroy", args: { world_id: "w-4" } });
   });
@@ -44,8 +45,8 @@ describe("launch", () => {
   it("stops at the next step when canceled and can be reset", async () => {
     const fake = bridge();
     const store = new LaunchStore(fake);
-    const running = store.start("factory", { ...plan, faults: [] });
-    await store.start("factory", plan);
+    const running = store.start(origin, { ...plan, faults: [] });
+    await store.start(origin, plan);
     store.cancel();
     expect(store.snapshot()).toMatchObject({ phase: "running", canceling: true });
     await running;
@@ -60,7 +61,7 @@ describe("launch", () => {
     const fake = bridge();
     fake.actions.set("world.create", failed(failure("domain_invalid", 422, "bad domain")));
     const store = new LaunchStore(fake);
-    await store.start("factory", plan);
+    await store.start(origin, plan);
     expect(store.snapshot()).toMatchObject({ phase: "failed", failure: { code: "domain_invalid" } });
     expect(fake.calls.map((call) => call.name)).toEqual(["world.create"]);
   });

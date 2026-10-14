@@ -14,6 +14,7 @@ import { PairingScreen } from "../pairing/PairingScreen";
 import { PlantScreen } from "../plant/PlantScreen";
 import { RunScreen } from "../run/RunScreen";
 import { KeyHelp } from "./KeyHelp";
+import { RunIndicator } from "./RunIndicator";
 import { Shell } from "./Shell";
 import { TopBar } from "./TopBar";
 import { Unreachable } from "./Unreachable";
@@ -100,6 +101,7 @@ export function App({ stores }: { readonly stores: Stores }) {
   }
   const topBar = (
     <TopBar
+      status={<RunIndicator launch={stores.launch} navigation={stores.navigation} />}
       preference={preference}
       onCycleTheme={() => {
         stores.themes.cycle();
