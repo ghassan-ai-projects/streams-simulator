@@ -1,8 +1,6 @@
-import type { BridgeFailure, Outcome } from "../model/bridge";
-import { failed, success } from "../model/bridge";
+import type { BridgeFailure } from "../model/bridge";
 import type { Composition } from "../model/composition";
 import { domainOf, parseComposition, serialise } from "../model/composition";
-import { copyComposition, newComposition } from "../model/compositionEdits";
 import type { ExamplePlant } from "../model/library";
 import { parseExamples } from "../model/library";
 import type { Bridge } from "./ports";
@@ -25,6 +23,20 @@ function taken(id: string): BridgeFailure {
   return { status: 409, code: "plant_exists", message: `A plant with the id ${id} already exists.`, issues: [] };
 }
 
+function baseOf(source: PlantSource): Readonly<Record<string, string>> {
+  return "example" in source ? { example: source.example } : { from: source.file };
+}
+
+function worded(failure: BridgeFailure): BridgeFailure {
+  if (failure.issues.length === 0) return failure;
+  return { ...failure, message: failure.issues.map((issue) => issue.message).join("; ") };
+}
+
+function compositionOf(value: unknown): Composition | null {
+  const body = typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
+  return parseComposition(JSON.stringify(body.composition ?? null));
+}
+
 export class PlantMaker {
   constructor(private readonly bridge: Bridge) {}
 
@@ -34,15 +46,21 @@ export class PlantMaker {
   }
 
   async create(source: PlantSource, id: string, title: string, copy: boolean): Promise<BridgeFailure | Made> {
-    const base = await this.read(source);
-    if (!base.ok) return base.failure;
     const domain = domainOf({ id });
-    const existing = await this.bridge.readFile(domain);
-    if (existing.ok) return taken(id);
+    if ((await this.bridge.readFile(domain)).ok) return taken(id);
+    const made = await this.bridge.action("component.new", {
+      id,
+      title,
+      ...baseOf(source),
+      ...(copy ? {} : { empty: true }),
+    });
+    if (!made.ok) return worded(made.failure);
+    const doc = compositionOf(made.value);
+    if (doc === null) return unreadable;
     const composition = `compositions/${id}.composition.json`;
-    const doc = copy ? copyComposition(base.value, id, title) : newComposition(base.value, id, title);
     const written = await this.bridge.writeFile(composition, serialise(doc), "");
-    return written.ok ? { composition, domain } : written.failure;
+    if (written.ok) return { composition, domain };
+    return written.failure.code === "conflict" ? taken(id) : written.failure;
   }
 
   async tryExample(example: ExamplePlant, id: string): Promise<BridgeFailure | Made> {
@@ -54,22 +72,5 @@ export class PlantMaker {
       etag: "",
     });
     return composed.ok ? made : composed.failure;
-  }
-
-  private async read(source: PlantSource): Promise<Outcome<Composition>> {
-    if ("example" in source) return this.example(source.example);
-    const file = await this.bridge.readFile(source.file);
-    if (!file.ok) return file;
-    const doc = parseComposition(file.value.content);
-    return doc === null ? failed(unreadable) : success(doc);
-  }
-
-  private async example(id: string): Promise<Outcome<Composition>> {
-    const shown = await this.bridge.action("component.example", { id });
-    if (!shown.ok) return shown;
-    const body =
-      typeof shown.value === "object" && shown.value !== null ? (shown.value as Record<string, unknown>) : {};
-    const doc = parseComposition(JSON.stringify(body.example ?? null));
-    return doc === null ? failed(unreadable) : success(doc);
   }
 }

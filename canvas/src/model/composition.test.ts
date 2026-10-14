@@ -16,7 +16,6 @@ import {
   issueTargets,
   isTemplate,
   moveInstance,
-  newComposition,
   removeInstance,
   renameInstance,
 } from "./compositionEdits";
@@ -79,12 +78,6 @@ describe("composition", () => {
     expect(equipmentOf(removeInstance(doc, "WX-{n}"))).toHaveLength(2);
     expect(connectionsOf(disconnect(doc, 0))).toEqual([{ index: 0, from: "CT-1.basin_out", to: "CH-2.cond_in" }]);
     expect(removed.profiles).toBe(doc.profiles);
-  });
-
-  it("starts a new composition from a base without its equipment, links or description", () => {
-    const fresh = newComposition(doc, "lab-two", "Lab two");
-    expect(fresh).toMatchObject({ id: "lab-two", title: "Lab two", equipment: [], connections: [], areas: doc.areas });
-    expect(fresh).not.toHaveProperty("description");
   });
 
   it("puts each issue of the binary on the instances its pointer names", () => {

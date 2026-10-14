@@ -36,8 +36,14 @@ describe("plant maker", () => {
       equipment: lab.equipment,
       description: "base",
     });
-    await maker.create({ file: base }, "lab-three", "Lab three", false);
-    expect(JSON.parse(fake.writes[1]?.content ?? "")).toMatchObject({ id: "lab-three", equipment: [] });
+    expect(fake.calls.find((call) => call.name === "component.new")?.args).toEqual({
+      id: "lab-two",
+      title: "Lab two",
+      from: base,
+    });
+    await maker.create({ example: "pilot" }, "lab-three", "Lab three", false);
+    expect(fake.calls.at(-1)?.args).toEqual({ id: "lab-three", title: "Lab three", example: "pilot", empty: true });
+    expect(JSON.parse(fake.writes[1]?.content ?? "")).not.toHaveProperty("equipment");
   });
 
   it("refuses an existing plant, an unreadable base and an unknown example", async () => {
@@ -46,18 +52,25 @@ describe("plant maker", () => {
     expect(await maker.create({ file: base }, "lab", "Lab", true)).toMatchObject({ code: "plant_exists" });
     fake.files.set("compositions/bad.composition.json", success({ path: "x", content: "[", etag: "e" }));
     expect(await maker.create({ file: "compositions/bad.composition.json" }, "bad-copy", "B", true)).toMatchObject({
-      code: "composition_unreadable",
+      code: "composition_invalid",
     });
-    expect(await maker.create({ file: "compositions/none.composition.json" }, "x-y-z", "X", true)).toMatchObject({
-      code: "not_found",
-    });
-    fake.actions.set("component.example", failed(failure("component_failed", 422, "no such example plant")));
-    expect(await maker.create({ example: "nope" }, "nope-copy", "N", true)).toMatchObject({ code: "component_failed" });
-    fake.actions.set("component.example", success({ example: "not a plant" }));
+    const refusal = {
+      ...failure("composition_invalid", 422, "fails"),
+      issues: [{ pointer: "/id", message: "bad id" }],
+    };
+    fake.actions.set("component.new", failed(refusal));
+    expect(await maker.create({ example: "pilot" }, "Bad_Id", "B", true)).toMatchObject({ message: "bad id" });
+    fake.actions.set("component.new", success({ composition: "not a plant" }));
     expect(await maker.create({ example: "odd" }, "odd-copy", "O", true)).toMatchObject({
       code: "composition_unreadable",
     });
     expect(fake.writes).toEqual([]);
+    fake.actions.delete("component.new");
+    fake.writeOutcomes.set(
+      "compositions/lab-two.composition.json",
+      failed(failure("conflict", 409, "changed on disk")),
+    );
+    expect(await maker.create({ file: base }, "lab-two", "Lab two", true)).toMatchObject({ code: "plant_exists" });
   });
 
   it("lists the shipped examples and tries one: copied, composed and ready to run", async () => {

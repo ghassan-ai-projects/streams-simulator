@@ -75,7 +75,36 @@ export class FakeBridge implements Bridge {
 
   action(name: string, args: Readonly<Record<string, unknown>>): Promise<Outcome<unknown>> {
     this.calls.push({ name, args });
-    return Promise.resolve(this.actions.get(name) ?? failed(failure("unknown_action", 404)));
+    const set = this.actions.get(name);
+    if (set === undefined && name === "component.new") return Promise.resolve(this.newPlant(args));
+    return Promise.resolve(set ?? failed(failure("unknown_action", 404)));
+  }
+
+  private basePlant(args: Readonly<Record<string, unknown>>): Outcome<unknown> {
+    if (typeof args.from !== "string") {
+      const shown = this.actions.get("component.example") ?? failed(failure("component_failed", 422, "no example"));
+      return shown.ok ? success((shown.value as { example?: unknown }).example) : shown;
+    }
+    const file = this.files.get(args.from) ?? failed(failure("not_found", 404, `no ${args.from}`));
+    if (!file.ok) return file;
+    try {
+      return success(JSON.parse(file.value.content) as unknown);
+    } catch {
+      return success(null);
+    }
+  }
+
+  private newPlant(args: Readonly<Record<string, unknown>>): Outcome<unknown> {
+    const base = this.basePlant(args);
+    if (!base.ok) return base;
+    if (typeof base.value !== "object" || base.value === null || Array.isArray(base.value))
+      return failed(failure("composition_invalid", 422, "the base is not a composition"));
+    const plant: Record<string, unknown> = { ...base.value, id: args.id, title: args.title };
+    if (args.empty !== true) return success({ composition: plant });
+    const frame = Object.fromEntries(
+      Object.entries(plant).filter(([key]) => !["description", "equipment", "connections"].includes(key)),
+    );
+    return success({ composition: frame });
   }
 
   followers = new Map<string, RunFollower>();

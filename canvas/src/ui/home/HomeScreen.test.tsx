@@ -152,7 +152,9 @@ describe("home screen", () => {
     await vi.waitFor(() => {
       expect(bridge.writes[0]?.path).toBe("compositions/bare-hall.composition.json");
     });
-    expect(JSON.parse(bridge.writes[0]?.content ?? "")).toMatchObject({ title: "Bare hall", equipment: [] });
+    const written = JSON.parse(bridge.writes[0]?.content ?? "") as Record<string, unknown>;
+    expect(written).toMatchObject({ id: "bare-hall", title: "Bare hall" });
+    expect(written).not.toHaveProperty("equipment");
   });
 
   it("reports a plant that could not be created and cancels", async () => {
