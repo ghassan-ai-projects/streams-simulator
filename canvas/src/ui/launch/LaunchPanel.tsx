@@ -1,10 +1,14 @@
 import { Play, X } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import type { LaunchState, LaunchStore } from "../../app/launchStore";
 import { clockOf } from "../../model/launch";
 import type { Plant } from "../../model/plant";
 import { useStore } from "../useStore";
+import type { Draft } from "./draft";
+import { firstDraft } from "./draft";
+import type { Change } from "./FaultRows";
 import { LaunchForm } from "./LaunchForm";
+import { useFocusOnMount } from "../useFocusOnMount";
 import { cx } from "../cx";
 import panel from "../panel.module.css";
 import styles from "./LaunchPanel.module.css";
@@ -18,22 +22,34 @@ interface LaunchPanelProps {
 
 type Running = Extract<LaunchState, { phase: "running" }>;
 
-function Progress({ state, launch }: { readonly state: Running; readonly launch: LaunchStore }) {
+function Progress({
+  state,
+  launch,
+  title,
+}: {
+  readonly state: Running;
+  readonly launch: LaunchStore;
+  readonly title: string;
+}) {
+  const cancel = useFocusOnMount<HTMLButtonElement>();
+  const words = state.worldId === null ? "Creating the world…" : `Running ${title} as ${state.worldId}`;
   return (
     <div className={cx(panel.body, styles.progress)}>
       <p className={styles.status} role="status">
-        {state.worldId === null ? "Creating the world…" : `Running ${state.worldId}`}
+        {state.canceling ? "Canceling at the next step…" : words}
       </p>
       <progress max={state.durationS} value={state.atS} aria-label="Simulated time" />
       <p className={styles.clock}>{`${clockOf(state.atS)} of ${clockOf(state.durationS)} simulated`}</p>
       <button
         type="button"
+        ref={cancel}
         className={panel.secondary}
+        aria-disabled={state.canceling}
         onClick={() => {
           launch.cancel();
         }}
       >
-        Cancel
+        Cancel the run
       </button>
     </div>
   );
@@ -46,11 +62,15 @@ function Failure({
   readonly state: Extract<LaunchState, { phase: "failed" }>;
   readonly launch: LaunchStore;
 }) {
+  const back = useFocusOnMount<HTMLButtonElement>();
   return (
     <div className={cx(panel.body, styles.failure)} role="alert">
-      <p>{`The run did not finish: ${state.failure.message}`}</p>
+      <p>
+        <strong>The run did not finish.</strong> {state.failure.message}
+      </p>
       <button
         type="button"
+        ref={back}
         className={panel.secondary}
         onClick={() => {
           launch.reset();
@@ -62,20 +82,22 @@ function Failure({
   );
 }
 
-function Body({
-  state,
-  launch,
-  plant,
-}: {
+interface BodyProps {
   readonly state: LaunchState;
   readonly launch: LaunchStore;
   readonly plant: Plant;
-}) {
-  if (state.phase === "running") return <Progress state={state} launch={launch} />;
+  readonly draft: Draft;
+  readonly change: (change: Change) => void;
+}
+
+function Body({ state, launch, plant, draft, change }: BodyProps) {
+  if (state.phase === "running") return <Progress state={state} launch={launch} title={plant.title || plant.id} />;
   if (state.phase === "failed") return <Failure state={state} launch={launch} />;
   return (
     <LaunchForm
       plant={plant}
+      draft={draft}
+      change={change}
       onStart={(plan) => {
         void launch.start(plant.id, plan);
       }}
@@ -83,14 +105,26 @@ function Body({
   );
 }
 
-export function LaunchPanel({ launch, plant, onClose, onFinished }: LaunchPanelProps) {
+function useLaunch(launch: LaunchStore, onFinished: (worldId: string) => void) {
   const state = useStore(launch);
+  useEffect(() => {
+    if (launch.snapshot().phase !== "running") launch.reset();
+    return () => {
+      launch.cancel();
+    };
+  }, [launch]);
   useEffect(() => {
     if (state.phase === "done") {
       launch.reset();
       onFinished(state.worldId);
     }
   }, [state, launch, onFinished]);
+  return state;
+}
+
+export function LaunchPanel({ launch, plant, onClose, onFinished }: LaunchPanelProps) {
+  const state = useLaunch(launch, onFinished);
+  const [draft, setDraft] = useState<Draft>(firstDraft);
   return (
     <aside className={panel.panel} aria-labelledby="launch-title">
       <header className={panel.head}>
@@ -106,7 +140,7 @@ export function LaunchPanel({ launch, plant, onClose, onFinished }: LaunchPanelP
           <X size={16} aria-hidden="true" />
         </button>
       </header>
-      <Body state={state} launch={launch} plant={plant} />
+      <Body state={state} launch={launch} plant={plant} draft={draft} change={setDraft} />
     </aside>
   );
 }

@@ -44,10 +44,12 @@ describe("launch plan", () => {
     expect(planProblems(plan({}))).toEqual([]);
     expect(planProblems(plan({ seed: -1, durationS: 0, faults: [{ entity: "", fault: "", atS: 5 }] }))).toEqual([
       "The seed is a whole number, 0 or more.",
-      "The duration is at least one second.",
+      "The duration is at least one minute.",
       "Fault 1 needs an instance and a fault.",
       "Fault 1 starts inside the run, before its end.",
     ]);
+    expect(planProblems(plan({ seed: 2 ** 53 + 1 }))).toEqual(["The seed is a whole number, 0 or more."]);
+    expect(planProblems(plan({ durationS: 59 }))).toEqual(["The duration is at least one minute."]);
   });
 });
 

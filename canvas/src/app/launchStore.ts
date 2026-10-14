@@ -6,7 +6,13 @@ import type { Bridge } from "./ports";
 
 export type LaunchState =
   | { readonly phase: "idle" }
-  | { readonly phase: "running"; readonly worldId: string | null; readonly atS: number; readonly durationS: number }
+  | {
+      readonly phase: "running";
+      readonly worldId: string | null;
+      readonly atS: number;
+      readonly durationS: number;
+      readonly canceling: boolean;
+    }
   | { readonly phase: "done"; readonly worldId: string }
   | { readonly phase: "failed"; readonly failure: BridgeFailure };
 
@@ -31,12 +37,13 @@ export class LaunchStore extends Observable<LaunchState> {
   }
 
   async start(domain: string, plan: LaunchPlan): Promise<void> {
+    if (this.snapshot().phase === "running") return;
     this.stop = false;
-    this.set({ phase: "running", worldId: null, atS: 0, durationS: plan.durationS });
+    this.progress(null, 0, plan.durationS);
     let worldId = "";
     try {
       worldId = worldOf(await this.call("world.create", { domain, seed: plan.seed, explore: plan.explore }));
-      this.set({ phase: "running", worldId, atS: 0, durationS: plan.durationS });
+      this.progress(worldId, 0, plan.durationS);
       await this.steps(worldId, plan);
       await this.call("run.end", { world_id: worldId });
       this.set({ phase: "done", worldId });
@@ -46,7 +53,14 @@ export class LaunchStore extends Observable<LaunchState> {
   }
 
   cancel(): void {
+    const state = this.snapshot();
+    if (state.phase !== "running") return;
     this.stop = true;
+    this.set({ ...state, canceling: true });
+  }
+
+  private progress(worldId: string | null, atS: number, durationS: number): void {
+    this.set({ phase: "running", worldId, atS, durationS, canceling: this.stop });
   }
 
   reset(): void {
@@ -57,7 +71,7 @@ export class LaunchStore extends Observable<LaunchState> {
     for (const step of launchSteps(plan)) {
       if (this.stop) throw new Stopped(canceled);
       await this.step(worldId, step);
-      if (step.kind === "advance") this.set({ phase: "running", worldId, atS: step.toS, durationS: plan.durationS });
+      if (step.kind === "advance") this.progress(worldId, step.toS, plan.durationS);
     }
   }
 

@@ -208,3 +208,8 @@
 .edit:hover {
   background: var(--surface-hover);
 }
+
+.run[aria-disabled="true"] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

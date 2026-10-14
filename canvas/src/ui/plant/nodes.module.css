@@ -448,3 +448,10 @@
 .dot:global(.valid) {
   transform: scale(1.5);
 }
+
+.dot:global(.connectable)::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+}

@@ -96,4 +96,13 @@ describe("plant store", () => {
     if (state.phase !== "ready") throw new Error(state.phase);
     expect(state.plant.instances.map((instance) => instance.id)).toContain("MB-2");
   });
+
+  it("reloads the open plant when its composition appears in the listing", async () => {
+    const fake = bridge();
+    const store = new PlantStore(fake);
+    await store.load("domains/mini.domain.json", sampleWorkspace);
+    expect(store.snapshot()).toMatchObject({ composition: null });
+    await store.load("domains/mini.domain.json", workspace);
+    expect(store.snapshot()).toMatchObject({ phase: "ready", composition: "compositions/mini.composition.json" });
+  });
 });

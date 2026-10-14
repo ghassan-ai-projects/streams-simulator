@@ -45,10 +45,14 @@ describe("launch", () => {
     const fake = bridge();
     const store = new LaunchStore(fake);
     const running = store.start("factory", { ...plan, faults: [] });
+    await store.start("factory", plan);
     store.cancel();
+    expect(store.snapshot()).toMatchObject({ phase: "running", canceling: true });
     await running;
     expect(store.snapshot()).toMatchObject({ phase: "failed", failure: { code: "canceled" } });
+    expect(fake.calls.filter((call) => call.name === "world.create")).toHaveLength(1);
     store.reset();
+    store.cancel();
     expect(store.snapshot()).toEqual({ phase: "idle" });
   });
 

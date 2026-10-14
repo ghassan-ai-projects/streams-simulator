@@ -5,10 +5,13 @@ import type { Draft, EditorStore } from "../../app/editorStore";
 import { areasOf } from "../../model/composition";
 import type { Presets } from "../../model/library";
 import panel from "../panel.module.css";
+import type { FocusRequest } from "./panelProps";
+import { SubmitRow } from "./SubmitRow";
 
 interface AddProps {
   readonly draft: Draft;
   readonly editor: EditorStore;
+  readonly request: FocusRequest;
 }
 
 const noPresets: Presets = { options: [], preferred: "" };
@@ -81,7 +84,7 @@ function missing(use: string, name: string, area: string): string | null {
   return area === "" ? "Choose an area." : null;
 }
 
-export function AddEquipment({ draft, editor }: AddProps) {
+export function AddEquipment({ draft, editor, request }: AddProps) {
   const [use, setUse] = useState("");
   const [name, setName] = useState("");
   const areas = areasOf(draft.doc);
@@ -91,6 +94,7 @@ export function AddEquipment({ draft, editor }: AddProps) {
   const submit = (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (problem !== null) return;
+    request.ask("instance");
     void editor.add({ use, preset, name: name.trim(), area });
     setName("");
   };
@@ -111,11 +115,10 @@ export function AddEquipment({ draft, editor }: AddProps) {
       />
       <NameField name={name} setName={setName} />
       <Choice label="Area" value={area} options={areas.map((entry) => [entry, entry] as const)} onChange={setArea} />
-      {problem !== null && <p className={panel.hint}>{problem}</p>}
-      <button type="submit" className={panel.secondary} aria-disabled={problem !== null}>
+      <SubmitRow id="add-reason" reason={problem}>
         <Plus size={14} aria-hidden="true" />
         Add to the plant
-      </button>
+      </SubmitRow>
     </form>
   );
 }

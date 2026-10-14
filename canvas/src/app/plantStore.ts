@@ -28,6 +28,10 @@ function parsed(content: string): unknown {
   }
 }
 
+function pairOf(id: string, workspace: Workspace): string | null {
+  return workspace.compositions.find((entry) => entry.id === id && id !== "")?.path ?? null;
+}
+
 export class PlantStore extends Observable<PlantState> {
   constructor(private readonly bridge: Bridge) {
     super({ phase: "idle" });
@@ -38,7 +42,13 @@ export class PlantStore extends Observable<PlantState> {
     const held = this.held(path);
     if (held === null) this.set({ phase: "loading", path });
     const file = await this.bridge.readFile(path);
-    if (file.ok && file.value.etag === held?.etag) return;
+    if (
+      held !== null &&
+      file.ok &&
+      file.value.etag === held.etag &&
+      pairOf(held.plant.id, workspace) === held.composition
+    )
+      return;
     if (!file.ok) {
       this.set({ phase: "failed", path, failure: file.failure });
       return;
@@ -59,7 +69,7 @@ export class PlantStore extends Observable<PlantState> {
   private async open(path: string, file: FileContent, workspace: Workspace, selected: string | null): Promise<void> {
     const domain = parsed(file.content);
     const id = typeof domain === "object" && domain !== null && "id" in domain ? String(domain.id) : "";
-    const composition = workspace.compositions.find((entry) => entry.id === id && id !== "")?.path ?? null;
+    const composition = pairOf(id, workspace);
     const plant = parsePlant(domain, composition === null ? null : await this.composition(composition));
     const kept = plant.instances.some((instance) => instance.id === selected) ? selected : null;
     const specs = await this.specs(plant);

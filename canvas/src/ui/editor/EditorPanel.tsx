@@ -4,8 +4,9 @@ import { AddEquipment } from "./AddEquipment";
 import styles from "./Editor.module.css";
 import { InstanceEditor } from "./InstanceEditor";
 import type { PanelProps } from "./panelProps";
+import { useRequestedFocus } from "./panelProps";
 
-function Issues({ draft, editor }: Omit<PanelProps, "plant">) {
+function Issues({ draft, editor, request }: Omit<PanelProps, "plant">) {
   const listed = draft.issues?.listed ?? [];
   if (listed.length === 0) return null;
   return (
@@ -22,6 +23,7 @@ function Issues({ draft, editor }: Omit<PanelProps, "plant">) {
                 type="button"
                 className={styles.issue}
                 onClick={() => {
+                  request.ask("instance");
                   editor.select(issue.target);
                 }}
               >
@@ -36,23 +38,30 @@ function Issues({ draft, editor }: Omit<PanelProps, "plant">) {
   );
 }
 
-export function EditorPanel({ draft, plant, editor }: PanelProps) {
-  const instance = plant.instances.find((entry) => entry.id === draft.selected);
-  if (instance !== undefined) return <InstanceEditor draft={draft} plant={plant} editor={editor} instance={instance} />;
+function Build({ draft, editor, request }: Omit<PanelProps, "plant">) {
+  const heading = useRequestedFocus<HTMLHeadingElement>(request, "build");
   return (
     <aside className={panel.panel} aria-labelledby="build-title">
       <header className={panel.head}>
         <Wrench size={16} aria-hidden="true" />
-        <h2 id="build-title">Build</h2>
+        <h2 id="build-title" ref={heading} tabIndex={-1}>
+          Build
+        </h2>
       </header>
       <div className={panel.body}>
-        <Issues draft={draft} editor={editor} />
-        <AddEquipment draft={draft} editor={editor} />
+        <Issues draft={draft} editor={editor} request={request} />
+        <AddEquipment draft={draft} editor={editor} request={request} />
         <p className={panel.hint}>
-          Select an instance to rename it, move it to another area, link its ports or delete it. Drag from an output pin
-          to an input pin to link two instances.
+          Select an instance to rename it, move it to another area, link its ports or delete it. Link ports with Link an
+          output in the instance panel, or at 100 % zoom drag from an output pin to an input pin.
         </p>
       </div>
     </aside>
   );
+}
+
+export function EditorPanel(props: PanelProps) {
+  const instance = props.plant.instances.find((entry) => entry.id === props.draft.selected);
+  if (instance !== undefined) return <InstanceEditor {...props} instance={instance} />;
+  return <Build draft={props.draft} editor={props.editor} request={props.request} />;
 }

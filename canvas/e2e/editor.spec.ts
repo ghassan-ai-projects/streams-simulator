@@ -1,6 +1,10 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { env } from "./support/env";
 
 test.use({ storageState: env("CANVAS_APP_STATE") });
@@ -42,11 +46,21 @@ test("a new plant is built in Chrome, refused with the issue on its element, fix
   await page.getByRole("button", { name: "Save" }).click();
   await expect(page.getByRole("status").filter({ hasText: /^Saved, not composed/ })).toBeVisible();
   await expect(page.getByRole("group", { name: /^CT 1, .*has issues$/ })).toBeVisible();
-  await expect(page.getByRole("list", { name: "Issues" })).toContainText("does not match pattern");
+  await expect(page.getByRole("region", { name: "Issues on CT 1" })).toContainText("does not match pattern");
   await page.getByLabel("Name").fill("CT-1");
   await page.getByRole("button", { name: "Rename" }).click();
   await page.getByRole("button", { name: "Save" }).click();
   await expect(page.getByRole("status").filter({ hasText: /^Saved\. Composed \d+ channels/ })).toBeVisible();
+  const folder = env("CANVAS_WORKSPACE");
+  const cli = join(mkdtempSync(join(tmpdir(), "compose-")), "lab.domain.json");
+  execFileSync(env("CANVAS_BINARY"), [
+    "domain",
+    "compose",
+    join(folder, "compositions", "lab-cooling.composition.json"),
+    "--out",
+    cli,
+  ]);
+  expect(readFileSync(join(folder, "domains", "lab-cooling.domain.json"), "utf8")).toBe(readFileSync(cli, "utf8"));
   await page.getByRole("button", { name: "Open plant" }).click();
   await expect(page.getByText("2 instances · 1 links")).toBeVisible();
   await expect(page.getByRole("button", { name: "Edit plant" })).toBeVisible();
@@ -64,5 +78,6 @@ test("an existing plant opens in the editor from its plant screen, unchanged unt
   await expect(page.getByRole("navigation", { name: "Outline" }).getByRole("button")).toHaveCount(22);
   await expect(page.getByRole("status").filter({ hasText: "Unsaved changes" })).toBeVisible();
   await page.getByRole("button", { name: "Revert" }).click();
+  await page.getByRole("button", { name: "Discard changes" }).click();
   await expect(page.getByRole("navigation", { name: "Outline" }).getByRole("button")).toHaveCount(23);
 });

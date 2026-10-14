@@ -95,8 +95,12 @@ describe("home screen", () => {
     fireEvent.change(within(form).getByLabelText("Title"), { target: { value: "Lab two" } });
     fireEvent.click(within(form).getByRole("button", { name: "Create and edit" }));
     expect(await within(form).findByRole("alert")).toHaveTextContent("no compositions/factory-utilities");
-    fireEvent.click(within(form).getByRole("button", { name: "Cancel" }));
-    expect(screen.getByRole("button", { name: "New plant" })).toBeInTheDocument();
+    fireEvent.keyDown(within(form).getByLabelText("Title"), { key: "Escape" });
+    expect(screen.getByRole("button", { name: "New plant" })).toHaveFocus();
+    fireEvent.click(screen.getByRole("button", { name: "New plant" }));
+    expect(screen.getByLabelText("Id")).toHaveFocus();
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.getByRole("button", { name: "New plant" })).toHaveFocus();
   });
 
   it("says what to do in an empty workspace", async () => {

@@ -20,6 +20,10 @@ function holds(entry: Json, id: string): boolean {
   return namesOf(entry).includes(id) || (namesOf(entry).length === 0 && entry.id_template === id);
 }
 
+export function isTemplate(doc: Composition, id: string): boolean {
+  return entries(doc).some((entry) => namesOf(entry).length === 0 && entry.id_template === id);
+}
+
 export function addEquipment(doc: Composition, added: NewEquipment): Composition {
   const entry: Json = {
     use: added.use,
@@ -97,11 +101,18 @@ export interface IssueTargets {
   readonly listed: readonly { readonly target: string | null; readonly message: string }[];
 }
 
+function equipmentTargets(doc: Composition, at: number, field: string, index: string): readonly string[] {
+  const names = equipmentOf(doc)[at]?.names ?? [];
+  if (field !== "names" || !/^\d+$/.test(index)) return names;
+  const name = names[Number(index)];
+  return name === undefined ? [] : [name];
+}
+
 function targetsOf(doc: Composition, pointer: string): readonly string[] {
-  const [, collection = "", index = ""] = pointer.split("/");
+  const [, collection = "", index = "", field = "", item = ""] = pointer.split("/");
   if (!/^\d+$/.test(index)) return [];
   const at = Number(index);
-  if (collection === "equipment") return equipmentOf(doc)[at]?.names ?? [];
+  if (collection === "equipment") return equipmentTargets(doc, at, field, item);
   if (collection !== "connections") return [];
   const wire = connectionsOf(doc)[at];
   return wire === undefined ? [] : [endpointOf(wire.from).id, endpointOf(wire.to).id];

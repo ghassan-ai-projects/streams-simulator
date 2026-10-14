@@ -75,3 +75,8 @@
   height: 8px;
   accent-color: var(--accent);
 }
+
+.note {
+  grid-column: 2;
+  color: var(--text-secondary);
+}

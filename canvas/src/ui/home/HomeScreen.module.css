@@ -247,3 +247,24 @@
   gap: var(--space-1);
   margin-bottom: var(--space-2);
 }
+
+.create {
+  height: 26px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--accent-strong);
+  border-radius: var(--radius-md);
+  background: var(--accent-strong);
+  color: var(--text-on-accent);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.create:hover {
+  background: var(--accent-hover);
+}
+
+.open[aria-disabled="true"],
+.create[aria-disabled="true"] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

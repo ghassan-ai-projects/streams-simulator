@@ -29,7 +29,12 @@ test("a file added on disk appears without a reload", async ({ page }) => {
   const folder = join(env("CANVAS_WORKSPACE"), "compositions");
   const copy = join(folder, "copy.composition.json");
   const source = readFileSync(join(folder, "factory-utilities.composition.json"), "utf8");
-  writeFileSync(copy, source.replace('"id": "factory-utilities"', '"id": "copied-plant"'));
+  writeFileSync(
+    copy,
+    source
+      .replace('"id": "factory-utilities"', '"id": "copied-plant"')
+      .replace('"title": "Factory utilities"', '"title": "Copied plant"'),
+  );
   try {
     await expect(compositions.getByText("compositions/copy.composition.json")).toBeVisible({ timeout: 5000 });
   } finally {

@@ -10,12 +10,16 @@ import { componentSpecs } from "./componentSpecs";
 import { Observable } from "./observable";
 import type { Bridge } from "./ports";
 
-type Outcome = { readonly kind: "composed"; readonly summary: string } | { readonly kind: "refused" } | null;
+type Outcome =
+  | { readonly kind: "composed"; readonly summary: string }
+  | { readonly kind: "refused"; readonly message: string | null }
+  | null;
 
 export interface Draft {
   readonly phase: "ready";
   readonly path: string;
   readonly etag: string;
+  readonly domainEtag: string;
   readonly saved: Composition;
   readonly doc: Composition;
   readonly specs: ReadonlyMap<string, ComponentSpec>;
@@ -32,6 +36,10 @@ export type EditorState =
   | { readonly phase: "loading"; readonly path: string }
   | { readonly phase: "failed"; readonly path: string; readonly failure: BridgeFailure }
   | Draft;
+
+function taken(id: string): BridgeFailure {
+  return { status: 409, code: "plant_exists", message: `A plant with the id ${id} already exists.`, issues: [] };
+}
 
 const unreadable: BridgeFailure = {
   status: 0,
@@ -53,26 +61,51 @@ export class EditorStore extends Observable<EditorState> {
 
   async open(path: string): Promise<void> {
     const state = this.snapshot();
-    if (state.phase !== "idle" && state.phase !== "failed" && state.path === path) return;
-    this.set({ phase: "loading", path });
+    if (state.phase === "loading" && state.path === path) return;
+    if (state.phase === "ready" && state.path === path && state.doc !== state.saved) return;
+    if (state.phase !== "ready" || state.path !== path) this.set({ phase: "loading", path });
+    await this.load(path, state.phase === "ready" && state.path === path ? state.etag : null);
+  }
+
+  async reload(): Promise<void> {
+    const draft = this.draft();
+    if (draft !== null) await this.load(draft.path, null);
+  }
+
+  private async load(path: string, held: string | null): Promise<void> {
     const file = await this.bridge.readFile(path);
+    if (file.ok && file.value.etag === held) return;
     const doc = file.ok ? parseComposition(file.value.content) : null;
+    if (!this.current(path)) return;
     if (!file.ok || doc === null) {
       this.set({ phase: "failed", path, failure: file.ok ? unreadable : file.failure });
       return;
     }
-    const listed = await this.bridge.action("component.list", {});
+    const [listed, specs, domainEtag] = await Promise.all([
+      this.bridge.action("component.list", {}),
+      componentSpecs(
+        this.bridge,
+        equipmentOf(doc).map((entry) => componentOf(entry.use)),
+      ),
+      this.versionOf(domainOf(doc)),
+    ]);
     const library = parseLibrary(listed.ok ? listed.value : null);
-    const specs = await componentSpecs(
-      this.bridge,
-      equipmentOf(doc).map((entry) => componentOf(entry.use)),
-    );
-    this.set({ ...this.fresh(path, file.value.etag, doc), library, specs });
+    if (this.current(path)) this.set({ ...this.fresh(path, file.value.etag, doc), domainEtag, library, specs });
+  }
+
+  private current(path: string): boolean {
+    const state = this.snapshot();
+    return state.phase !== "idle" && state.path === path;
+  }
+
+  private async versionOf(path: string): Promise<string> {
+    const file = await this.bridge.readFile(path);
+    return file.ok ? file.value.etag : "";
   }
 
   private fresh(path: string, etag: string, doc: Composition): Draft {
     const empty = { specs: new Map(), library: [], selected: null, issues: null, outcome: null, failure: null };
-    return { phase: "ready", path, etag, saved: doc, doc, saving: false, ...empty };
+    return { phase: "ready", path, etag, domainEtag: "", saved: doc, doc, saving: false, ...empty };
   }
 
   select(id: string | null): void {
@@ -80,7 +113,11 @@ export class EditorStore extends Observable<EditorState> {
   }
 
   edit(change: (doc: Composition) => Composition, selected?: string | null): void {
-    this.update((draft) => ({ ...draft, doc: change(draft.doc), selected: selected ?? draft.selected }));
+    this.update((draft) => ({
+      ...draft,
+      doc: change(draft.doc),
+      selected: selected === undefined ? draft.selected : selected,
+    }));
   }
 
   revert(): void {
@@ -115,28 +152,39 @@ export class EditorStore extends Observable<EditorState> {
   }
 
   private async compose(doc: Composition): Promise<void> {
-    const out = domainOf(doc);
-    const current = await this.bridge.readFile(out);
-    const etag = current.ok ? current.value.etag : "";
     const draft = this.draft();
-    const composed = await this.bridge.action("domain.compose", { composition: draft?.path ?? "", out, etag });
+    if (draft === null) return;
+    const out = domainOf(doc);
+    const composed = await this.bridge.action("domain.compose", {
+      composition: draft.path,
+      out,
+      etag: draft.domainEtag,
+    });
+    const domainEtag = composed.ok ? await this.versionOf(out) : draft.domainEtag;
     this.update((state) =>
       composed.ok
-        ? { ...state, saving: false, issues: null, outcome: { kind: "composed", summary: summaryOf(composed.value) } }
+        ? {
+            ...state,
+            domainEtag,
+            saving: false,
+            issues: null,
+            outcome: { kind: "composed", summary: summaryOf(composed.value) },
+          }
         : this.refused(state, doc, composed.failure),
     );
   }
 
   private refused(state: Draft, doc: Composition, failure: BridgeFailure): Draft {
     const issues = issueTargets(doc, failure.issues);
-    const general = failure.issues.length === 0 ? failure : null;
-    return { ...state, saving: false, issues, outcome: { kind: "refused" }, failure: general };
+    const message = failure.issues.length === 0 ? failure.message : null;
+    return { ...state, saving: false, issues, outcome: { kind: "refused", message } };
   }
 
   async create(base: string, id: string, title: string): Promise<BridgeFailure | string> {
     const file = await this.bridge.readFile(base);
     const doc = file.ok ? parseComposition(file.value.content) : null;
     if (!file.ok || doc === null) return file.ok ? unreadable : file.failure;
+    if ((await this.versionOf(domainOf({ id }))) !== "") return taken(id);
     const path = `compositions/${id}.composition.json`;
     const written = await this.bridge.writeFile(path, serialise(newComposition(doc, id, title)), "");
     return written.ok ? path : written.failure;

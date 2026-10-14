@@ -1,4 +1,5 @@
-import { ChevronRight, PenLine, Save, Undo2 } from "lucide-react";
+import { ChevronRight, PenLine, RefreshCw, Save, Undo2 } from "lucide-react";
+import { useState } from "react";
 import type { Draft, EditorStore } from "../../app/editorStore";
 import type { NavigationStore } from "../../app/navigationStore";
 import { domainOf, titleOf } from "../../model/composition";
@@ -23,7 +24,8 @@ interface Status {
 function outcomeStatus(draft: Draft): Status {
   if (draft.outcome?.kind === "refused") {
     const count = draft.issues?.listed.length ?? 0;
-    return { text: `Saved, not composed: ${String(count)} ${count === 1 ? "issue" : "issues"}`, tone: "warn" };
+    const why = draft.outcome.message ?? `${String(count)} ${count === 1 ? "issue" : "issues"}`;
+    return { text: `Saved, not composed: ${why}`, tone: "warn" };
   }
   if (draft.outcome?.kind === "composed") return { text: `Saved. ${draft.outcome.summary}`, tone: "ok" };
   return { text: "No changes", tone: "" };
@@ -73,6 +75,44 @@ function OpenPlant({ draft, navigation }: Omit<BarProps, "editor">) {
   );
 }
 
+function Reload({ draft, editor }: Omit<BarProps, "navigation">) {
+  if (draft.failure?.code !== "conflict") return null;
+  return (
+    <button
+      type="button"
+      className={styles.action}
+      onClick={() => {
+        void editor.reload();
+      }}
+    >
+      <RefreshCw size={14} aria-hidden="true" />
+      Reload from disk
+    </button>
+  );
+}
+
+function Revert({ disabled, editor }: { readonly disabled: boolean; readonly editor: EditorStore }) {
+  const [confirming, setConfirming] = useState(false);
+  return (
+    <button
+      type="button"
+      className={confirming ? styles.danger : styles.action}
+      aria-disabled={disabled}
+      onBlur={() => {
+        setConfirming(false);
+      }}
+      onClick={() => {
+        if (disabled) return;
+        if (confirming) editor.revert();
+        setConfirming(!confirming);
+      }}
+    >
+      <Undo2 size={14} aria-hidden="true" />
+      {confirming ? "Discard changes" : "Revert"}
+    </button>
+  );
+}
+
 export function EditorBar({ draft, editor, navigation }: BarProps) {
   const status = statusOf(draft);
   const clean = draft.doc === draft.saved;
@@ -84,17 +124,8 @@ export function EditorBar({ draft, editor, navigation }: BarProps) {
         {status.text}
       </span>
       <OpenPlant draft={draft} navigation={navigation} />
-      <button
-        type="button"
-        className={styles.action}
-        aria-disabled={clean || draft.saving}
-        onClick={() => {
-          if (!clean && !draft.saving) editor.revert();
-        }}
-      >
-        <Undo2 size={14} aria-hidden="true" />
-        Revert
-      </button>
+      <Reload draft={draft} editor={editor} />
+      <Revert disabled={clean || draft.saving} editor={editor} />
       <button
         type="button"
         className={styles.save}

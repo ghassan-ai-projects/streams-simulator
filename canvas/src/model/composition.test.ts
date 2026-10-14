@@ -5,6 +5,7 @@ import {
   connect,
   disconnect,
   issueTargets,
+  isTemplate,
   moveInstance,
   newComposition,
   removeInstance,
@@ -82,11 +83,14 @@ describe("composition", () => {
       { pointer: "/equipment/0/area", message: "bad area" },
       { pointer: "/connections/1/from", message: "no port" },
       { pointer: "/equipment", message: "too few" },
+      { pointer: "/equipment/0/names/1", message: "bad name" },
+      { pointer: "/equipment/0/names/7", message: "gone" },
     ]);
     expect(targets.instances.get("CH-1")).toEqual(["bad area"]);
-    expect(targets.instances.get("CH-2")).toEqual(["bad area", "no port"]);
+    expect(targets.instances.get("CH-2")).toEqual(["bad area", "no port", "bad name"]);
     expect(targets.instances.get("CT-1")).toEqual(["no port"]);
-    expect(targets.listed.map((entry) => entry.target)).toEqual(["CH-1", "CT-1", null]);
+    expect(targets.listed.map((entry) => entry.target)).toEqual(["CH-1", "CT-1", null, "CH-2", null]);
+    expect([isTemplate(doc, "WX-{n}"), isTemplate(doc, "CH-1")]).toEqual([true, false]);
   });
 
   it("lists the library's equipment and a component's presets", () => {

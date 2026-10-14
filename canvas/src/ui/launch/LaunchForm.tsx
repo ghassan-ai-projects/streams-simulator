@@ -4,15 +4,18 @@ import type { LaunchPlan } from "../../model/launch";
 import { planProblems } from "../../model/launch";
 import type { Plant } from "../../model/plant";
 import type { Draft } from "./draft";
-import { firstDraft, planOf } from "./draft";
+import { planOf } from "./draft";
 import type { Change } from "./FaultRows";
 import { FaultRows } from "./FaultRows";
 import { cx } from "../cx";
 import panel from "../panel.module.css";
+import { useFocusOnMount } from "../useFocusOnMount";
 import styles from "./LaunchPanel.module.css";
 
 interface FormProps {
   readonly plant: Plant;
+  readonly draft: Draft;
+  readonly change: (change: Change) => void;
   readonly onStart: (plan: LaunchPlan) => void;
 }
 
@@ -49,39 +52,69 @@ function Duration({ draft, change }: DraftProps) {
   );
 }
 
-function Settings({ draft, change }: DraftProps) {
+function Mode({ draft, change }: DraftProps) {
+  const choose = (explore: boolean) => {
+    change((d) => ({ ...d, explore }));
+  };
   return (
     <fieldset className={panel.group}>
-      <legend>Run</legend>
-      <label className={panel.field}>
-        <span>Seed</span>
-        <input
-          inputMode="numeric"
-          value={draft.seed}
-          onChange={(event) => {
-            change((d) => ({ ...d, seed: event.target.value }));
-          }}
-        />
-      </label>
-      <Duration draft={draft} change={change} />
+      <legend>Mode</legend>
       <label className={panel.check}>
         <input
-          type="checkbox"
+          type="radio"
+          name="launch-mode"
           checked={draft.explore}
-          onChange={(event) => {
-            change((d) => ({ ...d, explore: event.target.checked }));
+          onChange={() => {
+            choose(true);
           }}
         />
-        <span>Explore: truth visible after the run (unblinded, not for scoring)</span>
+        <span>Explore: the truth is visible after the run; not for scoring.</span>
+      </label>
+      <label className={panel.check}>
+        <input
+          type="radio"
+          name="launch-mode"
+          checked={!draft.explore}
+          onChange={() => {
+            choose(false);
+          }}
+        />
+        <span>Evaluate: the truth stays sealed so a consumer can be scored.</span>
       </label>
     </fieldset>
   );
 }
 
-function Problems({ problems }: { readonly problems: readonly string[] }) {
-  if (problems.length === 0) return null;
+function Settings({ draft, change }: DraftProps) {
+  const seed = useFocusOnMount<HTMLInputElement>();
   return (
-    <ul className={panel.problems} id="launch-problems">
+    <fieldset className={panel.group}>
+      <legend>Run</legend>
+      <div className={panel.field}>
+        <label htmlFor="launch-seed">Seed</label>
+        <input
+          id="launch-seed"
+          ref={seed}
+          inputMode="numeric"
+          aria-describedby="launch-seed-hint"
+          value={draft.seed}
+          onChange={(event) => {
+            change((d) => ({ ...d, seed: event.target.value }));
+          }}
+        />
+        <small id="launch-seed-hint" className={styles.note}>
+          The same seed gives the same run.
+        </small>
+      </div>
+      <Duration draft={draft} change={change} />
+    </fieldset>
+  );
+}
+
+function Problems({ problems }: { readonly problems: readonly string[] }) {
+  const list = useFocusOnMount<HTMLUListElement>();
+  return (
+    <ul className={panel.problems} id="launch-problems" ref={list} tabIndex={-1} aria-label="Fix before starting">
       {problems.map((problem) => (
         <li key={problem}>{problem}</li>
       ))}
@@ -89,24 +122,25 @@ function Problems({ problems }: { readonly problems: readonly string[] }) {
   );
 }
 
-export function LaunchForm({ plant, onStart }: FormProps) {
-  const [draft, setDraft] = useState<Draft>(firstDraft);
+export function LaunchForm({ plant, draft, change, onStart }: FormProps) {
+  const [tried, setTried] = useState(0);
   const plan = planOf(draft);
   const problems = planProblems(plan);
   const submit = (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setTried((count) => count + 1);
     if (problems.length === 0) onStart(plan);
   };
   return (
     <form className={panel.body} onSubmit={submit} noValidate>
-      <Settings draft={draft} change={setDraft} />
-      <FaultRows plant={plant} draft={draft} change={setDraft} />
-      <Problems problems={problems} />
+      <Settings draft={draft} change={change} />
+      <Mode draft={draft} change={change} />
+      <FaultRows plant={plant} draft={draft} change={change} />
+      {tried > 0 && problems.length > 0 && <Problems key={tried} problems={problems} />}
       <button
         type="submit"
         className={panel.primary}
-        aria-disabled={problems.length > 0}
-        aria-describedby={problems.length > 0 ? "launch-problems" : undefined}
+        aria-describedby={tried > 0 && problems.length > 0 ? "launch-problems" : undefined}
       >
         Start the run
       </button>

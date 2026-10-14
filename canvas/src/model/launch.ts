@@ -42,8 +42,8 @@ export function launchSteps(plan: LaunchPlan, chunks = 20): readonly LaunchStep[
 
 export function planProblems(plan: LaunchPlan): readonly string[] {
   const problems: string[] = [];
-  if (!Number.isInteger(plan.seed) || plan.seed < 0) problems.push("The seed is a whole number, 0 or more.");
-  if (!Number.isInteger(plan.durationS) || plan.durationS < 1) problems.push("The duration is at least one second.");
+  if (!Number.isSafeInteger(plan.seed) || plan.seed < 0) problems.push("The seed is a whole number, 0 or more.");
+  if (!Number.isInteger(plan.durationS) || plan.durationS < 60) problems.push("The duration is at least one minute.");
   plan.faults.forEach((fault, index) => {
     if (fault.entity === "" || fault.fault === "")
       problems.push(`Fault ${String(index + 1)} needs an instance and a fault.`);

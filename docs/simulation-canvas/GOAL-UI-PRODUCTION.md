@@ -42,6 +42,9 @@ end to end on real files through the real binary, and looks and behaves like a f
 - Acceptance tests A1–A7 as written; this goal's four flow tests replace them for now.
 - P8b's open findings (R0-15, R0-16, R2-01), the plant wire, reference worlds and hardening.
 
+- Compose returning its output path and validating the plant id in the binary (round 1, E-5 and E-6); the editor
+  follows the `domains/<id>.domain.json` convention until then.
+
 Anything else that turns out to hold a flow back is postponed here with one line, not worked around.
 
 ## Rules

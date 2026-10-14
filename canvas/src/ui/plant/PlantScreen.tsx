@@ -1,6 +1,7 @@
 import { ReactFlowProvider } from "@xyflow/react";
 import { ChevronRight, Network, PenLine, Play } from "lucide-react";
-import { Fragment, useEffect, useMemo, useState } from "react";
+import type { RefObject } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import type { LaunchStore } from "../../app/launchStore";
 import type { NavigationStore } from "../../app/navigationStore";
 import type { PlantState, PlantStore } from "../../app/plantStore";
@@ -145,22 +146,20 @@ function RightPanel({
   launch,
   navigation,
   launching,
-  setLaunching,
+  onClose,
 }: {
   readonly state: Ready;
   readonly launch: LaunchStore;
   readonly navigation: NavigationStore;
   readonly launching: boolean;
-  readonly setLaunching: (open: boolean) => void;
+  readonly onClose: () => void;
 }) {
   if (!launching) return <Inspector plant={state.plant} selected={state.selected} />;
   return (
     <LaunchPanel
       launch={launch}
       plant={state.plant}
-      onClose={() => {
-        setLaunching(false);
-      }}
+      onClose={onClose}
       onFinished={(worldId) => {
         navigation.go({ screen: "run", worldId });
       }}
@@ -168,9 +167,40 @@ function RightPanel({
   );
 }
 
-function RunButton({ launching, onOpen }: { readonly launching: boolean; readonly onOpen: () => void }) {
+function useLaunching(launch: LaunchStore) {
+  const [launching, setLaunching] = useState(false);
+  const busy = useStore(launch).phase === "running";
+  const button = useRef<HTMLButtonElement>(null);
+  const toggle = () => {
+    if (!busy) setLaunching(!launching);
+  };
+  const close = () => {
+    setLaunching(false);
+    button.current?.focus();
+  };
+  return { launching, busy, button, toggle, close };
+}
+
+function RunButton({
+  launching,
+  busy,
+  button,
+  onToggle,
+}: {
+  readonly launching: boolean;
+  readonly busy: boolean;
+  readonly button: RefObject<HTMLButtonElement | null>;
+  readonly onToggle: () => void;
+}) {
   return (
-    <button type="button" className={styles.run} aria-pressed={launching} onClick={onOpen}>
+    <button
+      type="button"
+      ref={button}
+      className={styles.run}
+      aria-pressed={launching}
+      aria-disabled={busy}
+      onClick={onToggle}
+    >
       <Play size={14} aria-hidden="true" />
       Run plant
     </button>
@@ -206,7 +236,7 @@ function NotReady({ state, domain }: { readonly state: PlantState; readonly doma
 }
 
 export function PlantScreen({ plants, workspace, navigation, launch, domain, hall }: PlantScreenProps) {
-  const [launching, setLaunching] = useState(false);
+  const run = useLaunching(launch);
   const state = useStore(plants);
   const listing = useStore(workspace);
   useEffect(() => {
@@ -222,12 +252,7 @@ export function PlantScreen({ plants, workspace, navigation, launch, domain, hal
             <Network size={14} aria-hidden="true" />
             <Crumbs state={state} hall={hall} navigation={navigation} />
             <EditButton state={state} navigation={navigation} />
-            <RunButton
-              launching={launching}
-              onOpen={() => {
-                setLaunching(true);
-              }}
-            />
+            <RunButton launching={run.launching} busy={run.busy} button={run.button} onToggle={run.toggle} />
             <ZoomBar />
           </div>
           <Graph state={state} hall={hall} plants={plants} navigation={navigation} />
@@ -236,8 +261,8 @@ export function PlantScreen({ plants, workspace, navigation, launch, domain, hal
           state={state}
           launch={launch}
           navigation={navigation}
-          launching={launching}
-          setLaunching={setLaunching}
+          launching={run.launching}
+          onClose={run.close}
         />
       </div>
     </ReactFlowProvider>

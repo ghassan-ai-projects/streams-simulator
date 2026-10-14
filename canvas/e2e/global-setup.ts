@@ -31,6 +31,7 @@ export default async function globalSetup(): Promise<() => void> {
   process.env.CANVAS_APP_URL = app.url;
   process.env.CANVAS_APP_STATE = state;
   process.env.CANVAS_WORKSPACE = fixture.workspace;
+  process.env.CANVAS_BINARY = fixture.binary;
   return () => {
     pairing.process.kill();
     app.process.kill();

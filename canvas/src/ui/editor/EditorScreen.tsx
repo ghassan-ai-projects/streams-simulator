@@ -1,5 +1,5 @@
 import { ReactFlowProvider } from "@xyflow/react";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Draft, EditorStore } from "../../app/editorStore";
 import type { NavigationStore } from "../../app/navigationStore";
 import { compositionPlant } from "../../model/composition";
@@ -13,6 +13,7 @@ import { useStore } from "../useStore";
 import { EditorBar } from "./EditorBar";
 import styles from "./Editor.module.css";
 import { EditorPanel } from "./EditorPanel";
+import { FocusRequest } from "./panelProps";
 
 interface EditorScreenProps {
   readonly editor: EditorStore;
@@ -31,8 +32,23 @@ function usePlant(draft: Draft) {
   return { plant, view, flagged };
 }
 
+function useLeaveGuard(dirty: boolean) {
+  useEffect(() => {
+    if (!dirty) return undefined;
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => {
+      window.removeEventListener("beforeunload", warn);
+    };
+  }, [dirty]);
+}
+
 function Editing({ draft, editor, navigation }: { readonly draft: Draft } & Omit<EditorScreenProps, "composition">) {
   const { plant, view, flagged } = usePlant(draft);
+  const [request] = useState(() => new FocusRequest());
+  useLeaveGuard(draft.doc !== draft.saved);
   const select = (id: string | null) => {
     editor.select(id);
   };
@@ -54,6 +70,7 @@ function Editing({ draft, editor, navigation }: { readonly draft: Draft } & Omit
               fitKey={`${draft.path}:${String(plant.instances.length)}`}
               selected={draft.selected}
               flagged={flagged}
+              minFitZoom={1}
               onSelect={select}
               onConnect={(from, to) => {
                 editor.edit((doc) => connect(doc, from, to));
@@ -61,7 +78,7 @@ function Editing({ draft, editor, navigation }: { readonly draft: Draft } & Omit
             />
           )}
         </section>
-        <EditorPanel draft={draft} plant={plant} editor={editor} />
+        <EditorPanel draft={draft} plant={plant} editor={editor} request={request} />
       </div>
     </ReactFlowProvider>
   );

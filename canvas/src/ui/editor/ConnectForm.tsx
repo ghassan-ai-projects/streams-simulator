@@ -5,6 +5,7 @@ import { connect } from "../../model/compositionEdits";
 import type { Instance, Plant } from "../../model/plant";
 import type { ComponentSpec } from "../../model/ports";
 import panel from "../panel.module.css";
+import { SubmitRow } from "./SubmitRow";
 import type { PanelProps } from "./panelProps";
 
 type FormProps = PanelProps & { readonly instance: Instance };
@@ -79,10 +80,10 @@ export function ConnectForm({ draft, plant, editor, instance }: FormProps) {
         }}
       />
       <Pick label="Input" value={input} options={portsOf(draft.specs, targetInstance, "in")} onChange={setInput} />
-      <button type="submit" className={panel.secondary} aria-disabled={!ready}>
+      <SubmitRow id="link-reason" reason={ready ? null : "Choose an output, an instance and its input."}>
         <Cable size={14} aria-hidden="true" />
         Link
-      </button>
+      </SubmitRow>
     </form>
   );
 }

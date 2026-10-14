@@ -1,5 +1,5 @@
 .crumbs {
-  flex: 0 1 auto;
+  flex: 1 1 auto;
   overflow: hidden;
 }
 
@@ -7,7 +7,9 @@
 .status-busy,
 .status-ok,
 .status-warn {
-  flex: 1 1 auto;
+  flex: 0 0 auto;
+  max-width: 45%;
+  margin-left: auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -30,7 +32,8 @@
 }
 
 .action,
-.save {
+.save,
+.danger {
   display: inline-flex;
   flex: none;
   align-items: center;
@@ -51,6 +54,12 @@
 
 .action:hover {
   background: var(--surface-hover);
+}
+
+.danger {
+  border: 1px solid var(--status-alarm);
+  background: var(--status-alarm-bg);
+  color: var(--status-alarm);
 }
 
 .save {
@@ -137,4 +146,28 @@
   place-items: center;
   margin: 0;
   color: var(--text-secondary);
+}
+
+.flagged {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border-left: 3px solid var(--status-alarm);
+  background: var(--status-alarm-bg);
+}
+
+.flagged h3 {
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--status-alarm);
+}
+
+.flagged ul {
+  margin: 0;
+  padding-left: var(--space-4);
+  max-height: 120px;
+  overflow: auto;
+  overflow-wrap: anywhere;
 }

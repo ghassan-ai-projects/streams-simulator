@@ -90,4 +90,42 @@ describe("editor store", () => {
     store.select("CH-1");
     expect(store.snapshot()).toMatchObject({ phase: "failed" });
   });
+
+  it("recovers from a conflict by reloading, keeps a dirty draft and refreshes a clean one", async () => {
+    const { store, fake } = await opened();
+    const changed = { ...doc, title: "Lab changed" };
+    fake.files.set(path, success({ path, content: JSON.stringify(changed), etag: "c2" }));
+    await store.open(path);
+    expect(store.snapshot()).toMatchObject({ etag: "c2", doc: { title: "Lab changed" } });
+    store.edit((current) => ({ ...current, title: "Mine" }));
+    fake.files.set(path, success({ path, content: JSON.stringify(doc), etag: "c3" }));
+    await store.open(path);
+    expect(store.snapshot()).toMatchObject({ etag: "c2", doc: { title: "Mine" } });
+    fake.writeOutcomes.set(path, failed(failure("conflict", 409, "changed on disk")));
+    await store.save();
+    expect(store.snapshot()).toMatchObject({ failure: { code: "conflict" } });
+    await store.reload();
+    expect(store.snapshot()).toMatchObject({ etag: "c3", failure: null, doc: { title: "Lab" } });
+  });
+
+  it("composes over the domain version read when the plant was opened and says why compose failed", async () => {
+    const { store, fake } = await opened();
+    fake.files.set("domains/lab.domain.json", success({ path: "x", content: "{}", etag: "d9" }));
+    fake.actions.set("domain.compose", failed(failure("conflict", 409, "the domain changed on disk")));
+    await store.save();
+    expect(fake.calls.find((call) => call.name === "domain.compose")?.args).toMatchObject({ etag: "d1" });
+    expect(store.snapshot()).toMatchObject({
+      failure: null,
+      outcome: { kind: "refused", message: "the domain changed on disk" },
+    });
+    store.edit((current) => current, null);
+    expect(store.snapshot()).toMatchObject({ selected: null });
+  });
+
+  it("refuses a new plant whose domain already exists", async () => {
+    const fake = bridge();
+    const store = new EditorStore(fake);
+    expect(await store.create(path, "lab", "Lab again")).toMatchObject({ code: "plant_exists" });
+    expect(fake.writes).toEqual([]);
+  });
 });

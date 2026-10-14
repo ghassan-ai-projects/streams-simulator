@@ -5,6 +5,7 @@ import type { EditorStore } from "../../app/editorStore";
 import type { NavigationStore } from "../../app/navigationStore";
 import type { Definition } from "../../model/bridge";
 import { cx } from "../cx";
+import { useFocusOnMount } from "../useFocusOnMount";
 import styles from "./HomeScreen.module.css";
 
 interface NewPlantProps {
@@ -18,18 +19,25 @@ function Field({
   hint,
   value,
   onChange,
+  first = false,
+  placeholder,
 }: {
   readonly label: string;
   readonly hint?: string;
   readonly value: string;
   readonly onChange: (value: string) => void;
+  readonly first?: boolean;
+  readonly placeholder?: string;
 }) {
   const id = useId();
+  const input = useFocusOnMount<HTMLInputElement>(first);
   return (
     <div className={styles.newField}>
       <label htmlFor={id}>{label}</label>
       <input
         id={id}
+        ref={input}
+        placeholder={placeholder}
         value={value}
         aria-describedby={hint === undefined ? undefined : `${id}-hint`}
         onChange={(event) => {
@@ -82,6 +90,34 @@ function useCreate({ editor, navigation }: Omit<NewPlantProps, "bases">) {
   return { failure, create };
 }
 
+function Actions({
+  failure,
+  ready,
+  onCancel,
+}: {
+  readonly failure: string;
+  readonly ready: boolean;
+  readonly onCancel: () => void;
+}) {
+  return (
+    <>
+      {failure !== "" && (
+        <p role="alert" className={styles.failure}>
+          {failure}
+        </p>
+      )}
+      <span className={styles.newActions}>
+        <button type="submit" className={styles.create} aria-disabled={!ready}>
+          Create and edit
+        </button>
+        <button type="button" className={styles.open} onClick={onCancel}>
+          Cancel
+        </button>
+      </span>
+    </>
+  );
+}
+
 function NewPlantForm({ bases, editor, navigation, onCancel }: NewPlantProps & { readonly onCancel: () => void }) {
   const [id, setId] = useState("");
   const [title, setTitle] = useState("");
@@ -93,35 +129,41 @@ function NewPlantForm({ bases, editor, navigation, onCancel }: NewPlantProps & {
     if (ready) void create(base, id.trim(), title.trim());
   };
   return (
-    <form className={styles.newPlant} onSubmit={submit} aria-label="New plant" noValidate>
-      <Field label="Id" hint="Lower case, digits and hyphens, at least three characters." value={id} onChange={setId} />
+    <form
+      className={styles.newPlant}
+      onSubmit={submit}
+      onKeyDown={(event) => {
+        if (event.key === "Escape") onCancel();
+      }}
+      aria-label="New plant"
+      noValidate
+    >
+      <Field
+        first
+        label="Id"
+        placeholder="e.g. cooling-hall"
+        hint="Lower case, digits and hyphens, at least three characters."
+        value={id}
+        onChange={setId}
+      />
       <Field label="Title" value={title} onChange={setTitle} />
       <BasePick bases={bases} base={base} setBase={setBase} />
-      {failure !== "" && (
-        <p role="alert" className={styles.failure}>
-          {failure}
-        </p>
-      )}
-      <span className={styles.newActions}>
-        <button type="submit" className={styles.open} aria-disabled={!ready}>
-          Create and edit
-        </button>
-        <button type="button" className={styles.open} onClick={onCancel}>
-          Cancel
-        </button>
-      </span>
+      <Actions failure={failure} ready={ready} onCancel={onCancel} />
     </form>
   );
 }
 
 export function NewPlant(props: NewPlantProps) {
   const [open, setOpen] = useState(false);
+  const [closed, setClosed] = useState(0);
+  const button = useFocusOnMount<HTMLButtonElement>(closed);
   if (open && props.bases.length > 0) {
     return (
       <NewPlantForm
         {...props}
         onCancel={() => {
           setOpen(false);
+          setClosed((count) => count + 1);
         }}
       />
     );
@@ -129,6 +171,7 @@ export function NewPlant(props: NewPlantProps) {
   return (
     <button
       type="button"
+      ref={button}
       className={cx(styles.open, styles.newButton)}
       aria-disabled={props.bases.length === 0}
       onClick={() => {
