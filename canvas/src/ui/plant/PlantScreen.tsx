@@ -8,6 +8,8 @@ import type { PlantState, PlantStore } from "../../app/plantStore";
 import type { WorkspaceStore } from "../../app/workspaceStore";
 import { hallCount, plantView } from "../../model/plantView";
 import type { Route } from "../../model/route";
+import type { RunRow } from "../../model/workspace";
+import { runRows } from "../../model/workspace";
 import { useScreen } from "../useScreen";
 import { useStore } from "../useStore";
 import { Navigator, ZoomBar } from "./GraphControls";
@@ -142,20 +144,35 @@ function PlantSide({
   );
 }
 
-function RightPanel({
-  state,
-  launch,
-  navigation,
-  launching,
-  onClose,
-}: {
+interface RightProps {
   readonly state: Ready;
   readonly launch: LaunchStore;
   readonly navigation: NavigationStore;
   readonly launching: boolean;
   readonly onClose: () => void;
-}) {
-  if (!launching) return <Inspector plant={state.plant} selected={state.selected} />;
+  readonly plants: PlantStore;
+  readonly runs: readonly RunRow[];
+}
+
+function PlantInspector({ state, navigation, plants, runs }: RightProps) {
+  return (
+    <Inspector
+      plant={state.plant}
+      selected={state.selected}
+      runs={runs}
+      onClose={() => {
+        plants.select(null);
+      }}
+      onReview={(worldId) => {
+        navigation.go({ screen: "run", worldId });
+      }}
+    />
+  );
+}
+
+function RightPanel(props: RightProps) {
+  const { state, launch, navigation, launching, onClose } = props;
+  if (!launching) return <PlantInspector {...props} />;
   return (
     <LaunchPanel
       launch={launch}
@@ -265,6 +282,8 @@ export function PlantScreen(props: PlantScreenProps) {
           navigation={navigation}
           launching={run.launching}
           onClose={run.close}
+          plants={plants}
+          runs={listing.phase === "ready" ? runRows(listing.workspace, state.plant.id) : []}
         />
       </div>
     </ReactFlowProvider>

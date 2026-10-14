@@ -124,7 +124,7 @@ function nodeBox(node: ViewNode, readout: number): LayoutNode {
   if (node.instance === null) {
     return { id: node.id, group: node.group, width: nodeSize.groupWidth, height: nodeSize.groupHeight };
   }
-  const rows = Math.max(1, node.pins.ins.length, node.pins.outs.length);
+  const rows = Math.max(2, node.pins.ins.length, node.pins.outs.length);
   const height = nodeSize.header + nodeSize.padding + rows * nodeSize.pin + readout;
   return { id: node.id, group: node.group, width: nodeSize.width, height };
 }

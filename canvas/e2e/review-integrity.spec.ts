@@ -22,7 +22,10 @@ test("an incomplete stamp never reads Reproduces when the completed journals con
   await expect(page.getByRole("status").filter({ hasText: /^Verified$/ })).toHaveCount(0);
   await replay.getByText("What differs").click();
   await expect(replay.locator("pre")).toContainText("incomplete");
-  await page.getByRole("navigation", { name: "Outline" }).getByRole("button", { name: "CH-1", exact: true }).click();
+  await page
+    .getByRole("navigation", { name: "Outline" })
+    .getByRole("button", { name: /^CH-1 / })
+    .click();
   await expect(details.getByRole("region", { name: "KPI truth" })).toContainText("CH-1");
   await expect(details.getByRole("note")).toContainText("This run did not verify");
 });
