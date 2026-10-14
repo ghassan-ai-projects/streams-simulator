@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import axe from "axe-core";
 import { describe, expect, it, vi } from "vitest";
-import { EditorStore } from "../../app/editorStore";
+import { PlantMaker } from "../../app/plantMaker";
 import { NavigationStore } from "../../app/navigationStore";
 import { WorkspaceStore } from "../../app/workspaceStore";
 import { failed, success } from "../../model/bridge";
@@ -25,7 +25,7 @@ function navigation() {
 async function show(bridge: FakeBridge, nav = navigation()) {
   const store = new WorkspaceStore(bridge);
   await store.reload();
-  return render(<HomeScreen workspace={store} navigation={nav.store} editor={new EditorStore(bridge)} />);
+  return render(<HomeScreen workspace={store} navigation={nav.store} maker={new PlantMaker(bridge)} />);
 }
 
 describe("home screen", () => {
@@ -81,7 +81,7 @@ describe("home screen", () => {
       <HomeScreen
         workspace={store}
         navigation={navigation().store}
-        editor={new EditorStore(bridge)}
+        maker={new PlantMaker(bridge)}
         badgeFor={(id) => (id === "w-1" ? "verified" : null)}
       />,
     );
@@ -173,13 +173,67 @@ describe("home screen", () => {
     expect(screen.getAllByRole("listitem")).toHaveLength(3);
   });
 
+  it("offers the shipped examples in an empty workspace and opens a tried one ready to run", async () => {
+    const nav = navigation();
+    const bridge = new FakeBridge();
+    bridge.workspaceOutcome = success({ name: "fresh", domains: [], compositions: [], scenarios: [], runs: [] });
+    bridge.actions.set(
+      "component.examples",
+      success({ examples: [{ id: "pilot", title: "Pilot", description: "A small plant." }] }),
+    );
+    bridge.actions.set("component.example", success({ example: { id: "pilot", title: "Pilot", equipment: [] } }));
+    bridge.actions.set("domain.compose", success({}));
+    const view = await show(bridge, nav);
+    const examples = await screen.findByRole("region", { name: "Try an example" });
+    expect(within(examples).getByText("A small plant.")).toBeInTheDocument();
+    expect((await axe.run(view.container)).violations).toEqual([]);
+    fireEvent.click(within(examples).getByRole("button", { name: "Try Pilot" }));
+    await vi.waitFor(() => {
+      expect(nav.location.hash).toBe("#/plant?domain=domains%2Fpilot.domain.json&run=1");
+    });
+    expect(bridge.writes[0]?.path).toBe("compositions/pilot.composition.json");
+  });
+
+  it("says why an example could not be set up", async () => {
+    const bridge = new FakeBridge();
+    bridge.workspaceOutcome = success({ name: "fresh", domains: [], compositions: [], scenarios: [], runs: [] });
+    bridge.actions.set("component.examples", success({ examples: [{ id: "pilot", title: "Pilot" }] }));
+    bridge.actions.set("component.example", failed(failure("component_failed", 422, "gone")));
+    await show(bridge);
+    fireEvent.click(await screen.findByRole("button", { name: "Try Pilot" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Pilot could not be set up: gone");
+  });
+
+  it("creates a new plant from a shipped example", async () => {
+    const nav = navigation();
+    const bridge = new FakeBridge();
+    bridge.actions.set("component.examples", success({ examples: [{ id: "pilot", title: "Pilot" }] }));
+    bridge.actions.set(
+      "component.example",
+      success({ example: { id: "pilot", title: "Pilot", equipment: [{ use: "x@1" }] } }),
+    );
+    await show(bridge, nav);
+    await vi.waitFor(() => {
+      expect(bridge.calls.some((call) => call.name === "component.examples")).toBe(true);
+    });
+    fireEvent.click(screen.getByRole("button", { name: "New plant" }));
+    const form = screen.getByRole("form", { name: "New plant" });
+    fireEvent.change(within(form).getByLabelText("Start from"), { target: { value: "example:pilot" } });
+    fireEvent.change(within(form).getByLabelText("Name"), { target: { value: "My pilot" } });
+    fireEvent.click(within(form).getByRole("button", { name: "Create and open the editor" }));
+    await vi.waitFor(() => {
+      expect(nav.location.hash).toBe("#/edit?composition=compositions%2Fmy-pilot.composition.json");
+    });
+    expect(JSON.parse(bridge.writes[0]?.content ?? "")).toMatchObject({ id: "my-pilot", equipment: [{ use: "x@1" }] });
+  });
+
   it("shows the loading state and the bridge's failure", async () => {
     const bridge = new FakeBridge();
     render(
       <HomeScreen
         workspace={new WorkspaceStore(bridge)}
         navigation={navigation().store}
-        editor={new EditorStore(bridge)}
+        maker={new PlantMaker(bridge)}
       />,
     );
     expect(screen.getByRole("status")).toHaveTextContent("Loading the workspace");

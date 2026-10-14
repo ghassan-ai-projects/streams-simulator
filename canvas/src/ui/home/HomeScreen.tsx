@@ -1,5 +1,5 @@
 import { Boxes, FileJson } from "lucide-react";
-import type { EditorStore } from "../../app/editorStore";
+import type { PlantMaker } from "../../app/plantMaker";
 import type { NavigationStore } from "../../app/navigationStore";
 import type { WorkspaceStore } from "../../app/workspaceStore";
 import type { Workspace } from "../../model/bridge";
@@ -8,30 +8,39 @@ import { workspaceEmpty, workspaceSummary } from "../../model/workspace";
 import { useScreen } from "../useScreen";
 import { useStore } from "../useStore";
 import styles from "./HomeScreen.module.css";
+import { ExampleList, useExamples } from "./Examples";
 import { PlantList } from "./PlantList";
 import { RunList } from "./RunList";
 
 interface ContentsProps {
   readonly workspace: Workspace;
   readonly navigation: NavigationStore;
-  readonly editor: EditorStore;
+  readonly maker: PlantMaker;
   readonly badgeFor: (worldId: string) => Badge | null;
 }
 
-function EmptyWorkspace({ name }: { readonly name: string }) {
+function EmptyWorkspace({
+  name,
+  maker,
+  navigation,
+}: { readonly name: string } & Omit<ContentsProps, "workspace" | "badgeFor">) {
   const heading = useScreen(name);
+  const examples = useExamples(maker);
   return (
     <div className={styles.empty}>
       <Boxes size={28} aria-hidden="true" />
       <h1 className={styles.emptyTitle} ref={heading} tabIndex={-1}>
         {`${name} has no plants yet`}
       </h1>
+      <p className={styles.lead}>
+        Build a simulated plant, generate its readings, test how a connected system responds, and review what happened.
+      </p>
+      <ExampleList examples={examples} taken={[]} maker={maker} navigation={navigation} />
       <ol className={styles.steps}>
-        <li>Copy a plant into the workspace: a composition into compositions/, or a domain into domains/.</li>
-        <li>Open it here, then Run it with the faults you want to test.</li>
+        <li>Try an example above, or copy a composition into compositions/ or a domain into domains/.</li>
+        <li>Open the plant and Run it with the faults you want to test.</li>
         <li>Review the run: play it back, read the report and the verdict.</li>
       </ol>
-      <p className={styles.lead}>Files you add appear here on their own.</p>
     </div>
   );
 }
@@ -56,8 +65,9 @@ function Scenarios({ workspace }: { readonly workspace: Workspace }) {
   );
 }
 
-function Contents({ workspace, navigation, editor, badgeFor }: ContentsProps) {
+function Contents({ workspace, navigation, maker, badgeFor }: ContentsProps) {
   const heading = useScreen(workspace.name);
+  const examples = useExamples(maker);
   return (
     <div className={styles.page}>
       <header className={styles.header}>
@@ -67,7 +77,7 @@ function Contents({ workspace, navigation, editor, badgeFor }: ContentsProps) {
         <span className={styles.summary}>{workspaceSummary(workspace)}</span>
       </header>
       <div className={styles.grid}>
-        <PlantList workspace={workspace} navigation={navigation} editor={editor} />
+        <PlantList workspace={workspace} navigation={navigation} maker={maker} examples={examples} />
         <div className={styles.column}>
           <RunList workspace={workspace} navigation={navigation} badgeFor={badgeFor} />
           <Scenarios workspace={workspace} />
@@ -80,12 +90,12 @@ function Contents({ workspace, navigation, editor, badgeFor }: ContentsProps) {
 export function HomeScreen({
   workspace,
   navigation,
-  editor,
+  maker,
   badgeFor = () => null,
 }: {
   readonly workspace: WorkspaceStore;
   readonly navigation: NavigationStore;
-  readonly editor: EditorStore;
+  readonly maker: PlantMaker;
   readonly badgeFor?: (worldId: string) => Badge | null;
 }) {
   const state = useStore(workspace);
@@ -103,6 +113,8 @@ export function HomeScreen({
       </p>
     );
   }
-  if (workspaceEmpty(state.workspace)) return <EmptyWorkspace name={state.workspace.name} />;
-  return <Contents workspace={state.workspace} navigation={navigation} editor={editor} badgeFor={badgeFor} />;
+  if (workspaceEmpty(state.workspace)) {
+    return <EmptyWorkspace name={state.workspace.name} maker={maker} navigation={navigation} />;
+  }
+  return <Contents workspace={state.workspace} navigation={navigation} maker={maker} badgeFor={badgeFor} />;
 }

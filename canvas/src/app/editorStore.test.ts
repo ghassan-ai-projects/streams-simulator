@@ -75,16 +75,10 @@ describe("editor store", () => {
     expect(store.snapshot()).toMatchObject({ failure: { code: "conflict" }, saving: false });
   });
 
-  it("creates a new composition from a base and refuses an unreadable file", async () => {
+  it("refuses to open a file that is not a composition", async () => {
     const fake = bridge();
     const store = new EditorStore(fake);
-    expect(await store.create(path, "lab-two", "Lab two")).toBe("compositions/lab-two.composition.json");
-    expect(fake.writes[0]).toMatchObject({ path: "compositions/lab-two.composition.json", etag: "" });
-    expect(JSON.parse(fake.writes[0]?.content ?? "")).toMatchObject({ id: "lab-two", equipment: [] });
     fake.files.set("compositions/bad.composition.json", success({ path: "x", content: "[", etag: "e" }));
-    expect(await store.create("compositions/bad.composition.json", "x-y-z", "X")).toMatchObject({
-      code: "composition_unreadable",
-    });
     await store.open("compositions/bad.composition.json");
     expect(store.snapshot()).toMatchObject({ phase: "failed", failure: { code: "composition_unreadable" } });
     store.select("CH-1");
@@ -120,13 +114,6 @@ describe("editor store", () => {
     });
     store.edit((current) => current, null);
     expect(store.snapshot()).toMatchObject({ selected: null });
-  });
-
-  it("refuses a new plant whose domain already exists", async () => {
-    const fake = bridge();
-    const store = new EditorStore(fake);
-    expect(await store.create(path, "lab", "Lab again")).toMatchObject({ code: "plant_exists" });
-    expect(fake.writes).toEqual([]);
   });
 
   it("undoes and redoes every edit, revert included, and forgets the redo after a new edit", async () => {

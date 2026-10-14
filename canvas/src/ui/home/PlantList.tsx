@@ -1,9 +1,10 @@
 import { Factory, Pencil, Play, Plus } from "lucide-react";
 import type { ReactNode, RefObject } from "react";
 import { useRef, useState } from "react";
-import type { EditorStore } from "../../app/editorStore";
+import type { PlantMaker } from "../../app/plantMaker";
 import type { NavigationStore } from "../../app/navigationStore";
 import type { Workspace } from "../../model/bridge";
+import type { ExamplePlant } from "../../model/library";
 import type { Route } from "../../model/route";
 import type { PlantEntry } from "../../model/workspace";
 import { plantsOf, whenOf } from "../../model/workspace";
@@ -13,7 +14,8 @@ import styles from "./HomeScreen.module.css";
 interface ListProps {
   readonly workspace: Workspace;
   readonly navigation: NavigationStore;
-  readonly editor: EditorStore;
+  readonly maker: PlantMaker;
+  readonly examples: readonly ExamplePlant[];
 }
 
 function meta(plant: PlantEntry): string {
@@ -130,7 +132,7 @@ function Heading({
   );
 }
 
-export function PlantList({ workspace, navigation, editor }: ListProps) {
+export function PlantList({ workspace, navigation, maker, examples }: ListProps) {
   const plants = plantsOf(workspace);
   const [creating, setCreating] = useState(false);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -144,17 +146,18 @@ export function PlantList({ workspace, navigation, editor }: ListProps) {
       <Heading
         count={plants.length}
         creating={creating}
-        canCreate={bases.length > 0}
+        canCreate={bases.length + examples.length > 0}
         trigger={trigger}
         onToggle={() => {
-          if (bases.length > 0) setCreating(!creating);
+          if (bases.length + examples.length > 0) setCreating(!creating);
         }}
       />
       {creating && (
         <NewPlantForm
           bases={bases}
+          examples={examples}
           taken={plants.map((plant) => plant.id)}
-          editor={editor}
+          maker={maker}
           navigation={navigation}
           onCancel={close}
         />

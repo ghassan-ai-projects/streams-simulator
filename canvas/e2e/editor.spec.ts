@@ -82,3 +82,14 @@ test("an existing plant opens in the editor from its plant screen, unchanged unt
   await page.getByRole("button", { name: "Discard changes" }).click();
   await expect(page.getByRole("navigation", { name: "Outline" }).getByRole("button")).toHaveCount(23);
 });
+
+test("a plant copied from a shipped example opens in the editor with its equipment", async ({ page }) => {
+  await page.goto(env("CANVAS_APP_URL"));
+  await page.getByRole("button", { name: "New plant" }).click();
+  const form = page.getByRole("form", { name: "New plant" });
+  await form.getByLabel("Start from").selectOption({ label: "Chiller pilot" });
+  await form.getByLabel("Name").fill("Pilot copy");
+  await form.getByRole("button", { name: "Create and open the editor" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Pilot copy" })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Outline" }).getByRole("button")).not.toHaveCount(0);
+});

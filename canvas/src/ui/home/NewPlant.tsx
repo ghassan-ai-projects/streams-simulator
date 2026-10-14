@@ -1,16 +1,18 @@
 import type { SyntheticEvent } from "react";
 import { useId, useState } from "react";
-import type { EditorStore } from "../../app/editorStore";
+import type { PlantMaker, PlantSource } from "../../app/plantMaker";
 import type { NavigationStore } from "../../app/navigationStore";
 import type { Definition } from "../../model/bridge";
+import type { ExamplePlant } from "../../model/library";
 import { suggestedId } from "../../model/workspace";
 import { useFocusOnMount } from "../useFocusOnMount";
 import styles from "./HomeScreen.module.css";
 
 export interface NewPlantProps {
   readonly bases: readonly Definition[];
+  readonly examples: readonly ExamplePlant[];
   readonly taken: readonly string[];
-  readonly editor: EditorStore;
+  readonly maker: PlantMaker;
   readonly navigation: NavigationStore;
 }
 
@@ -51,13 +53,10 @@ function Field({
 
 function BasePick({
   bases,
+  examples,
   base,
   setBase,
-}: {
-  readonly bases: readonly Definition[];
-  readonly base: string;
-  readonly setBase: (base: string) => void;
-}) {
+}: Pick<NewPlantProps, "bases" | "examples"> & { readonly base: string; readonly setBase: (base: string) => void }) {
   return (
     <div className={styles.newField}>
       <label htmlFor="new-plant-base">Start from</label>
@@ -68,14 +67,31 @@ function BasePick({
           setBase(event.target.value);
         }}
       >
-        {bases.map((item) => (
-          <option key={item.path} value={item.path}>
-            {item.title || item.id}
-          </option>
-        ))}
+        {bases.length > 0 && (
+          <optgroup label="Your plants">
+            {bases.map((item) => (
+              <option key={item.path} value={`file:${item.path}`}>
+                {item.title || item.id}
+              </option>
+            ))}
+          </optgroup>
+        )}
+        {examples.length > 0 && (
+          <optgroup label="Examples">
+            {examples.map((example) => (
+              <option key={example.id} value={`example:${example.id}`}>
+                {example.title}
+              </option>
+            ))}
+          </optgroup>
+        )}
       </select>
     </div>
   );
+}
+
+function sourceOf(base: string): PlantSource {
+  return base.startsWith("example:") ? { example: base.slice(8) } : { file: base.slice(5) };
 }
 
 function CopyChoice({ copy, setCopy }: { readonly copy: boolean; readonly setCopy: (copy: boolean) => void }) {
@@ -112,11 +128,11 @@ function CopyChoice({ copy, setCopy }: { readonly copy: boolean; readonly setCop
   );
 }
 
-function useCreate({ editor, navigation }: Pick<NewPlantProps, "editor" | "navigation">) {
+function useCreate({ maker, navigation }: Pick<NewPlantProps, "maker" | "navigation">) {
   const [failure, setFailure] = useState("");
   const create = async (base: string, id: string, title: string, copy: boolean) => {
-    const made = await editor.create(base, id, title, copy);
-    if (typeof made === "string") navigation.go({ screen: "edit", composition: made });
+    const made = await maker.create(sourceOf(base), id, title, copy);
+    if ("composition" in made) navigation.go({ screen: "edit", composition: made.composition });
     else setFailure(made.message);
   };
   return { failure, create };
@@ -158,12 +174,13 @@ function useNaming(taken: readonly string[]) {
 }
 
 export function NewPlantForm(props: NewPlantProps & { readonly onCancel: () => void }) {
-  const { bases, taken, onCancel } = props;
+  const { bases, examples, taken, onCancel } = props;
   const { name, setName, id, setId } = useNaming(taken);
-  const [base, setBase] = useState(bases[0]?.path ?? "");
+  const first = bases[0] === undefined ? `example:${examples[0]?.id ?? ""}` : `file:${bases[0].path}`;
+  const [base, setBase] = useState(first);
   const [copy, setCopy] = useState(true);
   const { failure, create } = useCreate(props);
-  const ready = id.trim() !== "" && name.trim() !== "" && base !== "";
+  const ready = id.trim() !== "" && name.trim() !== "" && base !== "example:";
   const submit = (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (ready) void create(base, id.trim(), name.trim(), copy);
@@ -180,7 +197,7 @@ export function NewPlantForm(props: NewPlantProps & { readonly onCancel: () => v
     >
       <Field first label="Name" placeholder="e.g. Cooling hall" value={name} onChange={setName} />
       <Field label="Id" hint="Used for its file names: lower case, digits and hyphens." value={id} onChange={setId} />
-      <BasePick bases={bases} base={base} setBase={setBase} />
+      <BasePick bases={bases} examples={examples} base={base} setBase={setBase} />
       <CopyChoice copy={copy} setCopy={setCopy} />
       <Actions failure={failure} ready={ready} onCancel={onCancel} />
     </form>

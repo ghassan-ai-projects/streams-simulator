@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import type { EditorStore } from "../../app/editorStore";
 import type { PanelStore } from "../../app/panelStore";
+import type { PlantMaker } from "../../app/plantMaker";
 import type { NavigationStore } from "../../app/navigationStore";
 import type { PlantStore } from "../../app/plantStore";
 import type { LaunchStore } from "../../app/launchStore";
@@ -33,6 +34,7 @@ export interface Stores {
   readonly launch: LaunchStore;
   readonly editor: EditorStore;
   readonly panels: PanelStore;
+  readonly maker: PlantMaker;
 }
 
 function useSession({ session, workspace }: Stores) {
@@ -89,7 +91,7 @@ function Screen({ stores, route }: { readonly stores: Stores; readonly route: Ro
     <HomeScreen
       workspace={stores.workspace}
       navigation={stores.navigation}
-      editor={stores.editor}
+      maker={stores.maker}
       badgeFor={(worldId) => stores.review.badgeFor(worldId)}
     />
   );

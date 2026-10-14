@@ -45,3 +45,21 @@ export function parsePresets(shown: unknown): Presets {
   }));
   return { options, preferred: text(document.default_preset) };
 }
+
+export interface ExamplePlant {
+  readonly id: string;
+  readonly title: string;
+  readonly description: string;
+}
+
+export function parseExamples(listed: unknown): readonly ExamplePlant[] {
+  const examples = record(listed).examples;
+  return (Array.isArray(examples) ? examples : [])
+    .map(record)
+    .filter((entry) => text(entry.id) !== "")
+    .map((entry) => ({
+      id: text(entry.id),
+      title: text(entry.title) || text(entry.id),
+      description: text(entry.description),
+    }));
+}

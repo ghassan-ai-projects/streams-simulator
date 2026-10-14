@@ -330,3 +330,45 @@
 .choice strong {
   color: var(--text-primary);
 }
+
+.examples {
+  display: grid;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.examples h2 {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--text-md);
+  color: var(--text-primary);
+}
+
+.examples ul {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.examples li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-panel);
+}
+
+.examples .meta {
+  white-space: normal;
+}
+
+.examples li button {
+  flex: none;
+  white-space: nowrap;
+}
