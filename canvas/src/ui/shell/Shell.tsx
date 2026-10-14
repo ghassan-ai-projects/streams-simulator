@@ -12,7 +12,7 @@ export function Shell({ topBar, children, left = true, right = true }: ShellProp
   return (
     <div className={styles.shell} data-left={left ? "open" : "closed"} data-right={right ? "open" : "closed"}>
       {topBar}
-      <main className={styles.main} aria-label="Workspace">
+      <main id="main" className={styles.main} aria-label="Workspace" tabIndex={-1}>
         {children}
       </main>
     </div>

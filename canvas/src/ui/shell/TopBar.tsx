@@ -31,6 +31,15 @@ function ThemeButton({ preference, onCycle }: { readonly preference: ThemePrefer
 export function TopBar({ crumbs, status, toggles, help, preference, onCycleTheme, onHome }: TopBarProps) {
   return (
     <header className={styles.bar}>
+      <button
+        type="button"
+        className={styles.skip}
+        onClick={() => {
+          document.getElementById("main")?.focus();
+        }}
+      >
+        Skip to the screen
+      </button>
       <button type="button" className={styles.brand} onClick={onHome} aria-label="Streams Simulator, workspace home">
         <span className={styles.mark} aria-hidden="true">
           <Activity size={16} strokeWidth={2.25} />
