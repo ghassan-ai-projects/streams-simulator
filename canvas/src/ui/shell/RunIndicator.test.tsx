@@ -33,13 +33,14 @@ function setup() {
 describe("run indicator", () => {
   it("is absent without a run and opens the review of a finished run", async () => {
     const { launch, location } = setup();
-    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(screen.getByRole("status")).toBeEmptyDOMElement();
     await act(async () => {
       await launch.start(origin, plan);
     });
+    expect(screen.getByRole("status")).toHaveTextContent("Run w-5 finished");
     fireEvent.click(screen.getByRole("button", { name: "Run w-5 of Mini plant finished · Review" }));
     expect(location.hash).toBe("#/run?world=w-5");
-    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(screen.getByRole("status")).toBeEmptyDOMElement();
   });
 
   it("shows progress, links back to the plant's run panel, and lets a failure be dismissed", async () => {
@@ -50,13 +51,19 @@ describe("run indicator", () => {
       running = launch.start(origin, plan);
     });
     expect(screen.getByRole("button", { name: "Running Mini plant · 00:00:00 of 00:01:00" })).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent(/^Run of Mini plant started$/);
     fireEvent.click(screen.getByRole("button", { name: /^Running Mini plant/ }));
     expect(location.hash).toBe("#/plant?domain=domains%2Fmini.domain.json&run=1");
     await act(async () => {
       await running;
     });
     expect(screen.getByRole("status")).toHaveTextContent("The run of Mini plant did not finish");
+    const heading = document.createElement("h1");
+    heading.tabIndex = -1;
+    document.body.prepend(heading);
     fireEvent.click(screen.getByRole("button", { name: "Dismiss" }));
-    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(screen.getByRole("status")).toBeEmptyDOMElement();
+    expect(heading).toHaveFocus();
+    heading.remove();
   });
 });
