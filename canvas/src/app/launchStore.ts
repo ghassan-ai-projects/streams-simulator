@@ -67,6 +67,10 @@ export class LaunchStore extends Observable<LaunchState> {
     this.proposed = { domain, plan, left };
   }
 
+  forgetProposal(): void {
+    this.proposed = null;
+  }
+
   proposal(domain: string): Proposal | null {
     return this.proposed?.domain === domain ? { plan: this.proposed.plan, left: this.proposed.left } : null;
   }
@@ -127,9 +131,11 @@ export class LaunchStore extends Observable<LaunchState> {
   }
 
   private async steps(worldId: string, plan: LaunchPlan): Promise<void> {
+    let advanced = false;
     for (const step of launchSteps(plan)) {
-      if (this.stop) return;
+      if (this.stop && advanced) return;
       await this.step(worldId, step);
+      advanced ||= step.kind === "advance";
       if (step.kind === "advance") this.progress(worldId, step.toS);
     }
   }

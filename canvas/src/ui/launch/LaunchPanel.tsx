@@ -168,6 +168,12 @@ function useLaunch(launch: LaunchStore, plant: string, onFinished: (worldId: str
 
 function useDraft(launch: LaunchStore, plant: string, selected: string | null) {
   const [proposed] = useState(() => launch.proposal(plant));
+  useEffect(
+    () => () => {
+      launch.forgetProposal();
+    },
+    [launch],
+  );
   const [draft, setDraft] = useState<Draft>(() => (proposed === null ? firstDraft : draftOf(proposed.plan)));
   const [seen, setSeen] = useState(selected);
   if (seen !== selected) {

@@ -42,7 +42,7 @@ describe("launch", () => {
     expect(fake.calls.at(-1)).toEqual({ name: "world.destroy", args: { world_id: "w-4" } });
   });
 
-  it("stops early at the next step, keeps the shorter run and can be reset", async () => {
+  it("stops early after at least one step, keeps the shorter run and can be reset", async () => {
     const fake = bridge();
     const store = new LaunchStore(fake);
     const running = store.start(origin, { ...plan, faults: [] });
@@ -51,7 +51,7 @@ describe("launch", () => {
     expect(store.snapshot()).toMatchObject({ phase: "running", stopping: true });
     await running;
     expect(store.snapshot()).toEqual({ phase: "done", origin, worldId: "w-4", early: true });
-    expect(fake.calls.map((call) => call.name)).toEqual(["world.create", "run.end"]);
+    expect(fake.calls.map((call) => call.name)).toEqual(["world.create", "clock.advance", "run.end"]);
     store.reset();
     store.stopEarly();
     expect(store.snapshot()).toEqual({ phase: "idle" });

@@ -175,7 +175,7 @@ describe("launch panel lifetime", () => {
       explore: false,
       faults: [{ entity: "CH-1", fault: "chiller__fouling", atS: 600 }],
     });
-    render(
+    const view = render(
       <LaunchPanel launch={launch} plant={parsePlant(domain)} path={path} onClose={vi.fn()} onFinished={vi.fn()} />,
     );
     expect(screen.getByLabelText("Seed")).toHaveValue("5");
@@ -186,6 +186,8 @@ describe("launch panel lifetime", () => {
     expect(screen.getByLabelText("Fault 1 starts at minute")).toHaveValue("10");
     expect(launch.proposal("other")).toBeNull();
     expect(screen.queryByRole("note")).toBeNull();
+    view.unmount();
+    expect(launch.proposal("mini")).toBeNull();
   });
 
   it("keeps a run's seconds and says what Run again could not copy", () => {
