@@ -4559,6 +4559,7 @@
         {"name": "pressure_drop", "unit": "kPa", "initial": 18.0652},
         {"name": "power", "unit": "kW", "initial": 4.1},
         {"name": "purge_flow", "unit": "m3/h", "initial": 8.92567},
+        {"name": "outlet_flow", "unit": "m3/h", "initial": 586.119, "min": 0},
         {"name": "dew_point__bias", "unit": "degC", "initial": 0},
         {"name": "pressure_drop__bias", "unit": "kPa", "initial": 0},
         {"name": "power__bias", "unit": "kW", "initial": 0}
@@ -4668,6 +4669,11 @@
             "form": "product",
             "inputs": [{"state": "regen_active", "coef": 1}, {"state": "inlet_flow", "coef": 0.03}]
           }
+        },
+        {
+          "target": "outlet_flow",
+          "tier": "F1",
+          "f1": {"form": "sum", "inputs": [{"state": "inlet_flow", "coef": 1}, {"state": "purge_flow", "coef": -1}]}
         }
       ],
       "flows": [{"name": "bed_regeneration", "conductance": 1.5, "from": "bed_saturation", "scale": ["regen_scale"]}],
@@ -9207,7 +9213,7 @@
       "area": "Compressor room",
       "provenance": {
         "component": "streamsim/air-dryer",
-        "digest": "sha256:315861e8721c0316e3430edba8404056367409161ec8566e03cfaed684703165",
+        "digest": "sha256:60d3a242e077e2d634b9e2ac4c3f22bc329c386e814d992b087c1a94f15fae37",
         "instrument_digests": {
           "streamsim/power-meter@1": "sha256:d2d2e745c5cb4e16a75a348c0ca43869c215400e56e9ef30743c9c4bdc941c81",
           "streamsim/pressure-transmitter@1": "sha256:27b43198bfab62c47f90e47612b2ece1d41c551fe27db2e0c4a918dddfd296c0",
