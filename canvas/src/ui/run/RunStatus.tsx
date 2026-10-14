@@ -75,7 +75,7 @@ function Mode({ report }: { readonly report: Report }) {
       </span>
       {!report.ended && <span className={styles.chip}>not finished</span>}
       <span className={styles.facts}>{runFacts(report)}</span>
-      <RunInfo text={runIdentity(report)} />
+      <RunInfo lines={[explore ? modeWords.explore : modeWords.evaluate, runIdentity(report)]} />
     </>
   );
 }

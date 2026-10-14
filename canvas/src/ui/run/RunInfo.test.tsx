@@ -6,7 +6,7 @@ describe("run info", () => {
   it("opens on click, closes on Escape with focus back on its button, and closes when focus leaves", () => {
     render(
       <>
-        <RunInfo text="factory-utilities · seed 7" />
+        <RunInfo lines={["Explore: the truth is visible.", "factory-utilities · seed 7"]} />
         <button type="button">Elsewhere</button>
       </>,
     );

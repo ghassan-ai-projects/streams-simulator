@@ -491,6 +491,19 @@
   overflow-wrap: anywhere;
 }
 
+.popover p:first-child {
+  font-family: var(--font-ui);
+}
+
+.popover p {
+  margin: 0;
+}
+
+.popover p + p {
+  margin-top: var(--space-2);
+  color: var(--text-secondary);
+}
+
 .runActions {
   display: flex;
   gap: var(--space-2);

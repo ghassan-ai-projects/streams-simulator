@@ -2,7 +2,7 @@ import { Info } from "lucide-react";
 import { useId, useRef, useState } from "react";
 import styles from "./RunScreen.module.css";
 
-export function RunInfo({ text }: { readonly text: string }) {
+export function RunInfo({ lines }: { readonly lines: readonly string[] }) {
   const [open, setOpen] = useState(false);
   const button = useRef<HTMLButtonElement>(null);
   const id = useId();
@@ -32,9 +32,11 @@ export function RunInfo({ text }: { readonly text: string }) {
       >
         <Info size={14} aria-hidden="true" />
       </button>
-      <p id={id} className={styles.popover} hidden={!open}>
-        {text}
-      </p>
+      <div id={id} className={styles.popover} hidden={!open}>
+        {lines.map((line) => (
+          <p key={line}>{line}</p>
+        ))}
+      </div>
     </span>
   );
 }
