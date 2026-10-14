@@ -1,10 +1,26 @@
 import type { Report } from "./report";
+import { clockOf } from "./launch";
 import { humanise } from "./report";
+
+export function runClock(ns: number, startNs: number): string {
+  return clockOf((ns - startNs) / 1e9);
+}
+
+export type MarkKind = "fault" | "cleared" | "disturbance" | "alarm" | "effector";
+
+export const markWords: Readonly<Record<MarkKind, string>> = {
+  fault: "Fault starts",
+  cleared: "Disturbance ends",
+  disturbance: "Other disturbance",
+  alarm: "Alarm",
+  effector: "Effector call",
+};
 
 export interface EventMark {
   readonly atNs: number;
   readonly label: string;
   readonly raw: string;
+  readonly kind: MarkKind;
   readonly tone: "fault" | "alarm" | "other";
   readonly entity: string;
   readonly untilNs: number | null;
@@ -29,6 +45,7 @@ function endMarks(report: Report): readonly EventMark[] {
             atNs: d.clearedNs,
             label: `${d.target} ${humanise(d.name)} ${endings[d.clearedBy] ?? "cleared"}`,
             raw: `${d.kind} ${d.target} ${d.name} · ${d.clearedBy}`,
+            kind: "cleared",
             tone: "other",
             entity: d.target,
             untilNs: null,
@@ -43,6 +60,7 @@ export function eventMarks(report: Report | null): readonly EventMark[] {
     atNs: d.onsetNs,
     label: `${d.target} ${humanise(d.name)}`,
     raw: `${d.kind} ${d.action} ${d.target} ${d.name}`,
+    kind: d.kind === "fault" ? "fault" : "disturbance",
     tone: d.kind === "fault" ? "fault" : "other",
     entity: d.target,
     untilNs: d.clearedNs,
@@ -51,6 +69,7 @@ export function eventMarks(report: Report | null): readonly EventMark[] {
     atNs: c.atNs,
     label: `${c.entity} ${humanise(c.effector)}`,
     raw: `${c.entity} ${c.effector} · ${c.outcome}`,
+    kind: "effector",
     tone: "other",
     entity: c.entity,
     untilNs: null,
@@ -59,6 +78,7 @@ export function eventMarks(report: Report | null): readonly EventMark[] {
     atNs: a.atNs,
     label: `${a.entity} ${humanise(a.state)} activated`,
     raw: `alarm activation ${a.entity} ${a.state} · ${a.priority}`,
+    kind: "alarm",
     tone: "alarm",
     entity: a.entity,
     untilNs: null,
@@ -85,6 +105,11 @@ export function faultedAt(report: Report | null, atNs: number): ReadonlyMap<stri
   return active;
 }
 
+export function kindsOf(marks: readonly EventMark[]): readonly MarkKind[] {
+  const present = new Set(marks.map((mark) => mark.kind));
+  return (Object.keys(markWords) as MarkKind[]).filter((kind) => present.has(kind));
+}
+
 export interface ChipPlace {
   readonly left: number;
   readonly row: number;
@@ -98,7 +123,7 @@ export function placeChips(
   const ends: number[] = [];
   return positions.map((position, index) => {
     const width = widths[index] ?? 0;
-    const left = Math.max(0, Math.min(position, lane.width - width));
+    const left = Math.max(0, Math.min(position - width / 2, lane.width - width));
     const free = ends.findIndex((end) => end <= left);
     const row = free >= 0 ? free : ends.length < lane.rows ? ends.length : -1;
     if (row >= 0) ends[row] = left + width + lane.gap;

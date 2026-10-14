@@ -1,6 +1,7 @@
 import type { PlantState } from "../../app/plantStore";
 import type { ReviewState, ReviewStore } from "../../app/reviewStore";
-import { wallClock } from "../../model/report";
+import { runSpan } from "../../model/report";
+import { runClock } from "../../model/timeline";
 import shared from "../shared.module.css";
 import { Observed } from "./Observed";
 import { ReportPanel } from "./ReportPanel";
@@ -16,6 +17,10 @@ interface RunPanelProps {
   readonly unit: (entity: string, state: string) => string;
 }
 
+function startOf({ state, review }: RunPanelProps): number {
+  return runSpan(state.report.phase === "ready" ? state.report.value : null, review.index.bounds()).startNs;
+}
+
 function Inspect(props: RunPanelProps) {
   const entity = props.state.selected;
   if (entity === null)
@@ -26,7 +31,7 @@ function Inspect(props: RunPanelProps) {
         <h2 className={shared.sectionTitle}>
           {"Observed · "}
           <span className={styles.asIs}>{entity}</span>
-          <span className={styles.note}>{`at ${wallClock(props.state.positionNs)}`}</span>
+          <span className={styles.note}>{`at ${runClock(props.state.positionNs, startOf(props))}`}</span>
         </h2>
         <Observed review={props.review} state={props.state} plant={props.plant} entity={entity} />
       </section>

@@ -5,8 +5,8 @@ import { shortChannel } from "../../model/playback";
 import { hallOf } from "../../model/plantView";
 import type { Shown } from "../../model/readout";
 import { abnormalFirst, channelWords, showReading, statusWords } from "../../model/readout";
-import { wallClock } from "../../model/report";
-import { faultedAt } from "../../model/timeline";
+import { runSpan } from "../../model/report";
+import { faultedAt, runClock } from "../../model/timeline";
 import { cx } from "../cx";
 import styles from "./RunScreen.module.css";
 
@@ -47,7 +47,13 @@ function HallNote({ plant, entity }: { readonly plant: ReadyPlant | null; readon
   );
 }
 
-function ObservedTable({ shown, at }: { readonly shown: readonly Shown[]; readonly at: ReadonlyMap<string, number> }) {
+interface TableProps {
+  readonly shown: readonly Shown[];
+  readonly at: ReadonlyMap<string, number>;
+  readonly startNs: number;
+}
+
+function ObservedTable({ shown, at, startNs }: TableProps) {
   return (
     <table className={styles.table}>
       <thead className="sr-only">
@@ -67,8 +73,8 @@ function ObservedTable({ shown, at }: { readonly shown: readonly Shown[]; readon
               {entry.value}
               {entry.unit !== "" && <span className={styles.unit}>{entry.unit}</span>}
             </td>
-            <td className={styles.clock} title="time of this observation">
-              {wallClock(at.get(entry.channel) ?? 0)}
+            <td className={styles.clock} title="run time of this observation">
+              {runClock(at.get(entry.channel) ?? startNs, startNs)}
             </td>
           </tr>
         ))}
@@ -90,7 +96,7 @@ export function Observed({ review, state, plant, entity }: ObservedProps) {
   return (
     <>
       <ActiveNow faults={faultedAt(report, state.positionNs).get(entity) ?? []} shown={shown} />
-      <ObservedTable shown={shown} at={at} />
+      <ObservedTable shown={shown} at={at} startNs={runSpan(report, review.index.bounds()).startNs} />
     </>
   );
 }

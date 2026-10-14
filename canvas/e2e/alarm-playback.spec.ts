@@ -11,7 +11,8 @@ test("reported alarm activation chips and Jump to alarm seek to the simulator's 
   const chip = page
     .getByRole("list", { name: "Events" })
     .getByRole("button", { name: "00:02:20 HEAT-1 temp alarm activated" });
-  await expect(chip).toContainText("alarm");
+  await expect(chip).toContainText("00:02:20 HEAT-1");
+  await expect(page.getByRole("list", { name: "Event types" })).toContainText("Alarm");
   await chip.click();
   await expect(slider).toHaveAttribute("aria-valuetext", "00:02:20");
   await expect(page.getByRole("region", { name: "Observed · HEAT-1" })).toContainText("85");

@@ -1,8 +1,9 @@
 import type { ReactNode } from "react";
 import type { Report, VerifyState } from "../../model/report";
-import { badgeOf, humanise, replayLine, wallClock } from "../../model/report";
+import { badgeOf, humanise, replayLine } from "../../model/report";
 import { integrityLine, kpisOf } from "../../model/reportViews";
 import { displayUnit } from "../../model/units";
+import { runClock } from "../../model/timeline";
 import shared from "../shared.module.css";
 import styles from "./RunScreen.module.css";
 
@@ -154,7 +155,7 @@ function TruthNote({ report }: { readonly report: Report }) {
 }
 
 function Truth({ report, unit, entity }: TruthProps) {
-  const at = (ns: number) => wallClock(ns, report.startNs);
+  const at = (ns: number) => runClock(ns, report.startNs);
   return (
     <>
       <TruthNote report={report} />

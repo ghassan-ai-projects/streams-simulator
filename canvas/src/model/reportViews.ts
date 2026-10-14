@@ -1,7 +1,7 @@
 import type { LaunchPlan } from "./launch";
 import { durationOf } from "./workspace";
 import type { KpiRow, Report, VerifyState } from "./report";
-import { badgeOf, replayLine } from "./report";
+import { badgeOf, replayLine, wallClock } from "./report";
 
 export function kpisOf(report: Report, entity: string | null): readonly KpiRow[] {
   if (entity === null) return report.kpis;
@@ -14,6 +14,7 @@ export function runIdentity(report: Report): string {
     report.seed === null ? "" : `seed ${String(report.seed)}`,
     report.adapterId,
     report.simVersion === "" ? "" : `sim ${report.simVersion}`,
+    report.endNs > report.startNs ? `run time 00:00:00 is ${wallClock(report.startNs)} UTC simulated` : "",
   ]
     .filter((part) => part !== "")
     .join(" · ");
