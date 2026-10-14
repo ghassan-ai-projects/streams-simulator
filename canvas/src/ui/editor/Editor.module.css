@@ -217,7 +217,7 @@
   gap: var(--space-1);
 }
 
-.library select {
+.library select[size] {
   height: auto;
   padding: var(--space-1);
 }
