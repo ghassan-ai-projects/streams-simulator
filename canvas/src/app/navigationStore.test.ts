@@ -2,15 +2,17 @@ import { describe, expect, it } from "vitest";
 import { NavigationStore } from "./navigationStore";
 import type { Location } from "./ports";
 
-function memoryLocation(initial: string): Location & { hash: string; fire: () => void } {
+function memoryLocation(initial: string): Location & { hash: string; replaced: boolean; fire: () => void } {
   const listeners = new Set<() => void>();
   return {
     hash: initial,
+    replaced: false,
     read() {
       return this.hash;
     },
-    write(hash) {
+    write(hash, replace = false) {
       this.hash = hash;
+      this.replaced = replace;
     },
     subscribe(listener) {
       listeners.add(listener);
@@ -31,6 +33,15 @@ describe("navigation", () => {
     expect(navigation.snapshot()).toEqual({ screen: "run", worldId: "w-2" });
     navigation.go({ screen: "plant", domain: "domains/a.domain.json", hall: null });
     expect(location.hash).toBe("#/plant?domain=domains%2Fa.domain.json");
+    expect(location.replaced).toBe(false);
+  });
+
+  it("replaces the address without a new history entry when asked", () => {
+    const location = memoryLocation("#/plant?domain=d&run=1");
+    const navigation = new NavigationStore(location);
+    navigation.replace({ screen: "plant", domain: "d", hall: null });
+    expect([location.hash, location.replaced]).toEqual(["#/plant?domain=d", true]);
+    expect(navigation.snapshot()).toEqual({ screen: "plant", domain: "d", hall: null });
   });
 
   it("follows the address when the user goes back", () => {

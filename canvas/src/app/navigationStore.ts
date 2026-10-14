@@ -15,4 +15,9 @@ export class NavigationStore extends Observable<Route> {
     this.location.write(formatRoute(route));
     this.set(route);
   }
+
+  replace(route: Route): void {
+    this.location.write(formatRoute(route), true);
+    this.set(route);
+  }
 }

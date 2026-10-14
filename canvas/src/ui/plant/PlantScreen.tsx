@@ -1,6 +1,6 @@
 import { ReactFlowProvider } from "@xyflow/react";
 import { Network } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { LaunchStore } from "../../app/launchStore";
 import type { NavigationStore } from "../../app/navigationStore";
 import type { PlantState, PlantStore } from "../../app/plantStore";
@@ -176,7 +176,13 @@ function RightPanel(props: RightProps) {
 
 const noop = () => undefined;
 
-function useLaunching(asked: boolean, onShow: () => void) {
+function useConsume(navigation: NavigationStore, domain: string, hall: string | null) {
+  return useCallback(() => {
+    navigation.replace({ screen: "plant", domain, hall });
+  }, [navigation, domain, hall]);
+}
+
+function useLaunching(asked: boolean, onShow: () => void, consume: () => void) {
   const [launching, setLaunching] = useState(asked);
   const button = useRef<HTMLButtonElement>(null);
   const [seen, setSeen] = useState(asked);
@@ -185,8 +191,10 @@ function useLaunching(asked: boolean, onShow: () => void) {
     if (asked) setLaunching(true);
   }
   useEffect(() => {
-    if (asked) onShow();
-  }, [asked, onShow]);
+    if (!asked) return;
+    onShow();
+    consume();
+  }, [asked, onShow, consume]);
   const toggle = () => {
     if (!launching) onShow();
     setLaunching(!launching);
@@ -211,7 +219,7 @@ function NotReady({ state, domain }: { readonly state: PlantState; readonly doma
 
 export function PlantScreen(props: PlantScreenProps) {
   const { plants, workspace, navigation, launch, domain, hall, startLaunching = false, onShowDetails = noop } = props;
-  const run = useLaunching(startLaunching, onShowDetails);
+  const run = useLaunching(startLaunching, onShowDetails, useConsume(navigation, domain, hall));
   const state = useStore(plants);
   const running = useRunningHere(launch, state.phase === "ready" ? state.plant.id : "");
   const listing = useStore(workspace);

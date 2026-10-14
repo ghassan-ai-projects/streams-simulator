@@ -53,3 +53,20 @@ test("opening the run panel shows the details panel even when it was hidden", as
   await expect(page.getByRole("complementary", { name: "Run Factory utilities" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Details panel" })).toHaveAttribute("aria-pressed", "true");
 });
+
+test("the top-bar run indicator brings back a closed run panel, and Stop now keeps the shorter run", async ({
+  page,
+}) => {
+  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Ffactory-utilities.domain.json&run=1`);
+  const panel = page.getByRole("complementary", { name: "Run Factory utilities" });
+  await panel.getByLabel("Duration", { exact: true }).fill("24");
+  await panel.getByLabel("Duration unit").selectOption("hours");
+  await panel.getByRole("button", { name: "Start the run" }).click();
+  await expect(panel.getByText(/^Running Factory utilities as run w-/)).toBeVisible();
+  await panel.getByRole("button", { name: "Close the run panel" }).click();
+  await expect(panel).toBeHidden();
+  await page.getByRole("button", { name: /^Running Factory utilities · / }).click();
+  await expect(panel.getByRole("button", { name: "Stop now" })).toBeVisible();
+  await panel.getByRole("button", { name: "Stop now" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: /^Run w-/ })).toBeVisible({ timeout: 60_000 });
+});
