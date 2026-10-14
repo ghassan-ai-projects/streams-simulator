@@ -33,7 +33,7 @@ func checkPath(t *testing.T, rel string) {
 	if journal, err := RunJournal(rel); err == nil && (strings.Contains(rel, "/") || journal.RunFile != "journal.jsonl") {
 		t.Fatalf("RunJournal(%q) = %+v", rel, journal)
 	}
-	_ = ClosedJournal([]byte(rel))
+	_ = SummarizeRun([]byte(rel), []byte(rel))
 	_ = Scrub(rel, "/work")
 	parsed, err := ParsePath(rel)
 	if err != nil {
@@ -98,7 +98,7 @@ func checkArguments(t *testing.T, raw []byte) {
 		_, _ = Lookup(string(raw))
 		_ = ToolFailure(string(raw))
 		_ = CommandFailure(raw, 1, string(raw))
-		_ = ExploreRun(raw)
+		_ = SummarizeRun(raw, raw)
 		return
 	}
 	for _, action := range Actions() {

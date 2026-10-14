@@ -25,3 +25,17 @@ func TestARunIsSummarisedFromItsJournalOpeningAndClosing(t *testing.T) {
 		})
 	}
 }
+
+func TestARunEndsOnlyWhenClosedAndNoLongerRunning(t *testing.T) {
+	t.Parallel()
+	closed := RunSummary{Closed: true, Explore: true}
+	if got := closed.State(false); got != (RunState{Ended: true, Explore: true}) {
+		t.Fatalf("closed, not running = %+v", got)
+	}
+	if got := closed.State(true); got.Ended {
+		t.Fatalf("closed but running = %+v", got)
+	}
+	if got := (RunSummary{}).State(false); got != (RunState{}) {
+		t.Fatalf("unreadable journal = %+v", got)
+	}
+}

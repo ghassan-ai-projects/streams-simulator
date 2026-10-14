@@ -40,6 +40,10 @@ func SummarizeRun(firstLine, tail []byte) RunSummary {
 	return summary
 }
 
+func (s RunSummary) State(running bool) RunState {
+	return RunState{Ended: s.Closed && !running, Explore: s.Explore}
+}
+
 func lastLine(tail []byte) []byte {
 	trimmed := bytes.TrimRight(tail, "\n")
 	return bytes.TrimSpace(trimmed[bytes.LastIndexByte(trimmed, '\n')+1:])

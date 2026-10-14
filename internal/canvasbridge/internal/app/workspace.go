@@ -82,19 +82,26 @@ func (b *Bridge) runs() ([]domain.RunEntry, error) {
 }
 
 func (b *Bridge) runEntry(name string) domain.RunEntry {
-	journal := "runs/" + name + "/journal.jsonl"
-	head, _ := b.edges.Workspace.ReadFrom(journal, 0, firstLineLimit)
-	first, _, _ := bytes.Cut(head, []byte("\n"))
-	tail, _ := b.edges.Workspace.Tail(journal, closingLimit)
-	summary := domain.SummarizeRun(first, tail)
+	summary := b.summary(name)
 	return domain.RunEntry{
 		WorldID:    name,
-		Ended:      summary.Closed && !b.runIsRunning(name),
+		Ended:      summary.State(b.runIsRunning(name)).Ended,
 		Explore:    summary.Explore,
 		Plant:      summary.Plant,
 		DurationNs: summary.DurationNs,
-		RecordedAt: b.recordedAt(journal),
+		RecordedAt: b.recordedAt("runs/" + name + "/journal.jsonl"),
 	}
+}
+
+func (b *Bridge) summary(runID string) domain.RunSummary {
+	journal := "runs/" + runID + "/journal.jsonl"
+	head, headErr := b.edges.Workspace.ReadFrom(journal, 0, firstLineLimit)
+	tail, tailErr := b.edges.Workspace.Tail(journal, closingLimit)
+	if headErr != nil || tailErr != nil {
+		return domain.RunSummary{}
+	}
+	first, _, _ := bytes.Cut(head, []byte("\n"))
+	return domain.SummarizeRun(first, tail)
 }
 
 func (b *Bridge) recordedAt(rel string) string {

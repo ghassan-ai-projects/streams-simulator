@@ -46,16 +46,6 @@ func Version(content []byte) string {
 	return hex.EncodeToString(sum[:16])
 }
 
-type RunOpening struct {
-	Type string `json:"type"`
-	Mode string `json:"mode"`
-}
-
-func ExploreRun(firstJournalLine []byte) bool {
-	var opening RunOpening
-	return json.Unmarshal(firstJournalLine, &opening) == nil && opening.Type == "run.opened" && opening.Mode == "explore"
-}
-
 type ConflictError struct {
 	Path string
 	Etag string
