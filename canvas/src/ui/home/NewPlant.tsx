@@ -14,6 +14,7 @@ export interface NewPlantProps {
   readonly taken: readonly string[];
   readonly maker: PlantMaker;
   readonly navigation: NavigationStore;
+  readonly blank?: boolean;
 }
 
 function Field({
@@ -131,6 +132,31 @@ function CopyChoice({ copy, setCopy }: { readonly copy: boolean; readonly setCop
   );
 }
 
+function BlankNote() {
+  return (
+    <p className={styles.meta}>
+      A blank plant: you add its equipment, areas and connections in the editor, then compose and run it.
+    </p>
+  );
+}
+
+function Choices(
+  props: NewPlantProps & {
+    readonly base: string;
+    readonly setBase: (base: string) => void;
+    readonly copy: boolean;
+    readonly setCopy: (copy: boolean) => void;
+  },
+) {
+  if (props.blank === true) return <BlankNote />;
+  return (
+    <>
+      <BasePick {...props} />
+      <CopyChoice {...props} />
+    </>
+  );
+}
+
 function useCreate({ maker, navigation }: Pick<NewPlantProps, "maker" | "navigation">) {
   const [failure, setFailure] = useState("");
   const create = async (base: string, id: string, title: string, copy: boolean) => {
@@ -195,11 +221,11 @@ function readiness(name: string, id: string, base: string): string {
 }
 
 export function NewPlantForm(props: NewPlantProps & { readonly onCancel: () => void }) {
-  const { bases, examples, taken, onCancel } = props;
+  const { bases, examples, taken, blank = false, onCancel } = props;
   const { name, setName, id, setId, followAgain } = useNaming(taken);
   const first = bases[0] === undefined ? `example:${examples[0]?.id ?? ""}` : `file:${bases[0].path}`;
   const [base, setBase] = useState(first);
-  const [copy, setCopy] = useState(true);
+  const [copy, setCopy] = useState(!blank);
   const { failure, create } = useCreate(props);
   const reason = readiness(name, id, base);
   const ready = reason === "";
@@ -225,8 +251,7 @@ export function NewPlantForm(props: NewPlantProps & { readonly onCancel: () => v
         onChange={setId}
         onLeave={followAgain}
       />
-      <BasePick bases={bases} examples={examples} base={base} setBase={setBase} />
-      <CopyChoice copy={copy} setCopy={setCopy} />
+      <Choices {...props} base={base} setBase={setBase} copy={copy} setCopy={setCopy} />
       <Actions failure={failure} reason={reason} onCancel={onCancel} />
     </form>
   );

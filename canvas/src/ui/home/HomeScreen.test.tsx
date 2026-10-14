@@ -184,6 +184,7 @@ describe("home screen", () => {
     const crumbs = screen.getByRole("navigation", { name: "Breadcrumb" });
     expect(within(crumbs).getByRole("heading", { level: 1, name: "Workspace" })).toBeInTheDocument();
     expect(screen.getAllByRole("listitem")).toHaveLength(4);
+    expect(screen.queryByText(/compositions\//)).not.toBeInTheDocument();
   });
 
   it("offers the shipped examples in an empty workspace and opens a tried one ready to run", async () => {
@@ -205,6 +206,46 @@ describe("home screen", () => {
       expect(nav.location.hash).toBe("#/plant?domain=domains%2Fpilot.domain.json&run=1");
     });
     expect(bridge.writes[0]?.path).toBe("compositions/pilot.composition.json");
+  });
+
+  it("creates a blank plant from an empty workspace with only a name and an id", async () => {
+    const nav = navigation();
+    const bridge = new FakeBridge();
+    bridge.workspaceOutcome = success({ name: "fresh", domains: [], compositions: [], scenarios: [], runs: [] });
+    bridge.actions.set("component.examples", success({ examples: [{ id: "pilot", title: "Pilot" }] }));
+    bridge.actions.set("component.example", success({ example: { id: "pilot", title: "Pilot", equipment: [] } }));
+    const view = await show(bridge, nav);
+    const start = await screen.findByRole("button", { name: "New plant" });
+    await vi.waitFor(() => {
+      expect(start).not.toHaveAttribute("aria-disabled", "true");
+    });
+    fireEvent.click(start);
+    const form = screen.getByRole("form", { name: "New plant" });
+    expect(within(form).queryByLabelText("Start from")).not.toBeInTheDocument();
+    expect(within(form).getByText(/A blank plant/)).toBeInTheDocument();
+    expect((await axe.run(view.container)).violations).toEqual([]);
+    fireEvent.change(within(form).getByLabelText("Name"), { target: { value: "Office tower HVAC" } });
+    expect(within(form).getByLabelText("Id")).toHaveValue("office-tower-hvac");
+    fireEvent.click(within(form).getByRole("button", { name: "Create and open the editor" }));
+    await vi.waitFor(() => {
+      expect(nav.location.hash).toBe("#/edit?composition=compositions%2Foffice-tower-hvac.composition.json");
+    });
+    expect(bridge.calls.find((call) => call.name === "component.new")?.args).toMatchObject({
+      id: "office-tower-hvac",
+      title: "Office tower HVAC",
+      example: "pilot",
+      empty: true,
+    });
+  });
+
+  it("keeps the blank plant button unavailable until a frame to start from exists", async () => {
+    const bridge = new FakeBridge();
+    bridge.workspaceOutcome = success({ name: "fresh", domains: [], compositions: [], scenarios: [], runs: [] });
+    await show(bridge);
+    const start = screen.getByRole("button", { name: "New plant" });
+    fireEvent.click(start);
+    expect(start).toHaveAttribute("aria-disabled", "true");
+    expect(screen.queryByRole("form", { name: "New plant" })).not.toBeInTheDocument();
   });
 
   it("says why an example could not be set up", async () => {

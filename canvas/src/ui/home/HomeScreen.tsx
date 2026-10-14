@@ -9,6 +9,7 @@ import { Breadcrumb } from "../shell/Breadcrumb";
 import { useScreen } from "../useScreen";
 import { useStore } from "../useStore";
 import styles from "./HomeScreen.module.css";
+import { BlankPlantStart } from "./EmptyStart";
 import { ExampleList, useExamples } from "./Examples";
 import { PlantList } from "./PlantList";
 import { RunList } from "./RunList";
@@ -33,12 +34,11 @@ function EmptyWorkspace({
       <p className={styles.lead}>
         Build a simulated plant, generate its readings, test how a connected system responds, and review what happened.
       </p>
+      <BlankPlantStart examples={examples} maker={maker} navigation={navigation} />
       <ExampleList examples={examples} taken={[]} maker={maker} navigation={navigation} />
       <ol className={styles.steps}>
         <li>
-          {examples.length > 0
-            ? "Try an example above, or copy a composition into compositions/ or a domain into domains/."
-            : "Copy a composition into compositions/ or a domain into domains/."}
+          Create a new plant{examples.length > 0 ? " or try an example" : ""}, then add its equipment in the editor.
         </li>
         <li>Open the plant and Run it with the faults you want to test.</li>
         <li>Review the run: play it back, read the report and the verdict.</li>
