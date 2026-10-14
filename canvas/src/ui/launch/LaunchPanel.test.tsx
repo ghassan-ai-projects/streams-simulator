@@ -70,8 +70,12 @@ describe("launch panel", () => {
     fireEvent.click(screen.getByRole("button", { name: "Add fault" }));
     expect(screen.queryByText("The duration is at least one minute.")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Start the run" }));
-    expect(screen.getByRole("list", { name: "Fix before starting" })).toHaveFocus();
-    expect(screen.getByText("The duration is at least one minute.")).toBeInTheDocument();
+    expect(screen.getByLabelText("Duration")).toHaveFocus();
+    expect(screen.getByLabelText("Duration")).toHaveAccessibleDescription("The duration is at least one minute.");
+    expect(screen.getByLabelText("Fault 1 instance")).toHaveAccessibleDescription(
+      "Fault 1 needs an instance and a fault.",
+    );
+    expect(screen.getByRole("status")).toHaveTextContent(/^2 to fix before starting/);
     expect(fake.calls).toEqual([]);
     fireEvent.click(screen.getByRole("button", { name: "Remove fault 1" }));
     expect(screen.getByRole("button", { name: "Add fault" })).toHaveFocus();
@@ -94,7 +98,8 @@ describe("launch panel", () => {
     const fake = new HeldBridge();
     const { onFinished } = renderPanel(fake);
     fireEvent.click(screen.getByRole("button", { name: "Start the run" }));
-    expect(await screen.findByText("Running Mini plant as w-7")).toHaveFocus();
+    expect(await screen.findByText("Running Mini plant as run w-7")).toHaveFocus();
+    expect(screen.getByText("30 min of simulated time · Explore · no faults")).toBeInTheDocument();
     expect(screen.getByText("00:00:00 of 00:30:00 simulated")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Stop now" }));
     expect(screen.getByRole("status")).toHaveTextContent("Stopping at the next step");
@@ -116,6 +121,33 @@ describe("launch panel", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "The run did not finish. the world is gone What ran before the failure is kept as run w-7.",
     );
+  });
+});
+
+describe("launch panel picking", () => {
+  it("takes a fault's instance from the graph and rolls a new seed", () => {
+    const launch = new LaunchStore(bridge());
+    const plant = parsePlant(domain);
+    const panel = (selected: string | null) => (
+      <LaunchPanel
+        launch={launch}
+        plant={plant}
+        path={path}
+        selected={selected}
+        onClose={vi.fn()}
+        onFinished={vi.fn()}
+      />
+    );
+    const view = render(panel(null));
+    fireEvent.click(screen.getByRole("button", { name: "Add fault" }));
+    view.rerender(panel("CH-1"));
+    expect(screen.getByLabelText("Fault 1 instance")).toHaveValue("CH-1");
+    fireEvent.click(screen.getByRole("button", { name: "Add fault on CH-1" }));
+    expect(screen.getByLabelText("Fault 2 instance")).toHaveValue("CH-1");
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    fireEvent.click(screen.getByRole("button", { name: "Pick a new seed" }));
+    expect(screen.getByLabelText("Seed")).toHaveValue("500000");
+    vi.restoreAllMocks();
   });
 });
 
@@ -178,11 +210,11 @@ describe("launch panel lifetime", () => {
     );
     const first = render(panel());
     fireEvent.click(screen.getByRole("button", { name: "Start the run" }));
-    await screen.findByText("Running Mini plant as w-7");
+    await screen.findByText("Running Mini plant as run w-7");
     first.unmount();
     expect(launch.snapshot()).toMatchObject({ phase: "running", stopping: false, origin: { domain: "mini", path } });
     render(panel());
-    expect(screen.getByText("Running Mini plant as w-7")).toBeInTheDocument();
+    expect(screen.getByText("Running Mini plant as run w-7")).toBeInTheDocument();
     await act(async () => {
       fake.free();
       await Promise.resolve();

@@ -1,6 +1,5 @@
 import { ReactFlowProvider } from "@xyflow/react";
-import { Network, PenLine, Play } from "lucide-react";
-import type { RefObject } from "react";
+import { Network } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { LaunchStore } from "../../app/launchStore";
 import type { NavigationStore } from "../../app/navigationStore";
@@ -15,6 +14,7 @@ import { useScreen } from "../useScreen";
 import { useStore } from "../useStore";
 import { Navigator, ZoomBar } from "./GraphControls";
 import { LaunchPanel } from "../launch/LaunchPanel";
+import { EditButton, RunButton, useRunningHere } from "./PlantActions";
 import { Inspector } from "./Inspector";
 import { Outline } from "./Outline";
 import { PlantGraph } from "./PlantGraph";
@@ -165,6 +165,7 @@ function RightPanel(props: RightProps) {
       launch={launch}
       plant={state.plant}
       path={state.path}
+      selected={state.selected}
       onClose={onClose}
       onFinished={(worldId) => {
         navigation.go({ screen: "run", worldId });
@@ -197,40 +198,6 @@ function useLaunching(asked: boolean, onShow: () => void) {
   return { launching, button, toggle, close };
 }
 
-function RunButton({
-  launching,
-  button,
-  onToggle,
-}: {
-  readonly launching: boolean;
-  readonly button: RefObject<HTMLButtonElement | null>;
-  readonly onToggle: () => void;
-}) {
-  return (
-    <button type="button" ref={button} className={styles.run} aria-pressed={launching} onClick={onToggle}>
-      <Play size={14} aria-hidden="true" />
-      Run plant
-    </button>
-  );
-}
-
-function EditButton({ state, navigation }: { readonly state: Ready; readonly navigation: NavigationStore }) {
-  const composition = state.composition;
-  if (composition === null) return null;
-  return (
-    <button
-      type="button"
-      className={styles.edit}
-      onClick={() => {
-        navigation.go({ screen: "edit", composition });
-      }}
-    >
-      <PenLine size={14} aria-hidden="true" />
-      Edit plant
-    </button>
-  );
-}
-
 function NotReady({ state, domain }: { readonly state: PlantState; readonly domain: string }) {
   const failed = state.phase === "failed" && state.path === domain;
   return (
@@ -246,6 +213,7 @@ export function PlantScreen(props: PlantScreenProps) {
   const { plants, workspace, navigation, launch, domain, hall, startLaunching = false, onShowDetails = noop } = props;
   const run = useLaunching(startLaunching, onShowDetails);
   const state = useStore(plants);
+  const running = useRunningHere(launch, state.phase === "ready" ? state.plant.id : "");
   const listing = useStore(workspace);
   useEffect(() => {
     if (listing.phase === "ready") void plants.load(domain, listing.workspace);
@@ -260,8 +228,8 @@ export function PlantScreen(props: PlantScreenProps) {
             <Network size={14} aria-hidden="true" />
             <Crumbs state={state} hall={hall} navigation={navigation} />
             <span className={styles.summary}>{summary(state, hall)}</span>
-            <EditButton state={state} navigation={navigation} />
-            <RunButton launching={run.launching} button={run.button} onToggle={run.toggle} />
+            <EditButton composition={state.composition} running={running} navigation={navigation} />
+            <RunButton launching={run.launching} running={running} button={run.button} onToggle={run.toggle} />
             <ZoomBar />
           </div>
           <Graph state={state} hall={hall} plants={plants} navigation={navigation} />

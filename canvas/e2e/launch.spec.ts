@@ -9,7 +9,7 @@ test("a plant runs with a planned fault and the finished run opens in the review
   await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Ffactory-utilities.domain.json`);
   await page.getByRole("button", { name: "Run plant" }).click();
   const panel = page.getByRole("complementary", { name: "Run Factory utilities" });
-  await panel.getByLabel("Seed").fill("11");
+  await panel.getByLabel("Seed", { exact: true }).fill("11");
   await panel.getByLabel("Duration", { exact: true }).fill("5");
   await panel.getByRole("button", { name: "Add fault" }).click();
   await panel.getByLabel("Fault 1 instance").selectOption("CT-1");
@@ -38,8 +38,8 @@ test("a plan with problems cannot start", async ({ page }) => {
   await panel.getByRole("button", { name: "Add fault" }).click();
   await panel.getByLabel("Fault 1 instance").selectOption("CT-1");
   await panel.getByRole("button", { name: "Start the run" }).click();
-  await expect(panel.getByRole("list", { name: "Fix before starting" })).toBeFocused();
-  await expect(panel.getByText("Fault 1 needs an instance and a fault.")).toBeVisible();
+  await expect(panel.getByLabel("Fault 1 fault")).toBeFocused();
+  await expect(panel.getByLabel("Fault 1 fault")).toHaveAccessibleDescription("Fault 1 needs an instance and a fault.");
   await panel.getByRole("button", { name: "Close the run panel" }).click();
   await expect(page.getByRole("complementary", { name: "Inspector" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Run plant" })).toBeFocused();

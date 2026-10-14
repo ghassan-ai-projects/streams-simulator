@@ -18,6 +18,9 @@ export type LaunchState =
       readonly worldId: string | null;
       readonly atS: number;
       readonly durationS: number;
+      readonly plan: LaunchPlan;
+      readonly startedMs: number;
+      readonly atMs: number;
       readonly stopping: boolean;
     }
   | { readonly phase: "done"; readonly origin: LaunchOrigin; readonly worldId: string; readonly early: boolean }
@@ -56,6 +59,8 @@ export interface Proposal {
 export class LaunchStore extends Observable<LaunchState> {
   private stop = false;
   private origin: LaunchOrigin = nowhere;
+  private plan: LaunchPlan = { seed: 0, durationS: 0, explore: true, faults: [] };
+  private startedMs = 0;
   private proposed: (Proposal & { readonly domain: string }) | null = null;
 
   propose(domain: string, plan: LaunchPlan, left: readonly string[] = []): void {
@@ -66,7 +71,10 @@ export class LaunchStore extends Observable<LaunchState> {
     return this.proposed?.domain === domain ? { plan: this.proposed.plan, left: this.proposed.left } : null;
   }
 
-  constructor(private readonly bridge: Bridge) {
+  constructor(
+    private readonly bridge: Bridge,
+    private readonly now: () => number = () => Date.now(),
+  ) {
     super({ phase: "idle" });
   }
 
@@ -74,13 +82,15 @@ export class LaunchStore extends Observable<LaunchState> {
     if (this.snapshot().phase === "running") return;
     const domain = origin.domain;
     this.origin = origin;
+    this.plan = plan;
+    this.startedMs = this.now();
     this.proposed = null;
     this.stop = false;
-    this.progress(null, 0, plan.durationS);
+    this.progress(null, 0);
     let worldId = "";
     try {
       worldId = worldOf(await this.call("world.create", { domain, seed: plan.seed, explore: plan.explore }));
-      this.progress(worldId, 0, plan.durationS);
+      this.progress(worldId, 0);
       await this.steps(worldId, plan);
       await this.call("run.end", { world_id: worldId });
       this.set({ phase: "done", origin, worldId, early: this.stop });
@@ -96,8 +106,20 @@ export class LaunchStore extends Observable<LaunchState> {
     this.set({ ...state, stopping: true });
   }
 
-  private progress(worldId: string | null, atS: number, durationS: number): void {
-    this.set({ phase: "running", origin: this.origin, worldId, atS, durationS, stopping: this.stop });
+  private progress(worldId: string | null, atS: number): void {
+    const { origin, plan, startedMs } = this;
+    const atMs = this.now();
+    this.set({
+      phase: "running",
+      origin,
+      worldId,
+      atS,
+      durationS: plan.durationS,
+      plan,
+      startedMs,
+      atMs,
+      stopping: this.stop,
+    });
   }
 
   reset(): void {
@@ -108,7 +130,7 @@ export class LaunchStore extends Observable<LaunchState> {
     for (const step of launchSteps(plan)) {
       if (this.stop) return;
       await this.step(worldId, step);
-      if (step.kind === "advance") this.progress(worldId, step.toS, plan.durationS);
+      if (step.kind === "advance") this.progress(worldId, step.toS);
     }
   }
 

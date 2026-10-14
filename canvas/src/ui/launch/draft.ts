@@ -51,3 +51,9 @@ export function draftOf(plan: LaunchPlan): Draft {
     nextKey: plan.faults.length + 1,
   };
 }
+
+export function pickedOnGraph(draft: Draft, entity: string): Draft {
+  const last = draft.faults.at(-1);
+  if (last?.entity !== "") return draft;
+  return { ...draft, faults: draft.faults.map((fault) => (fault === last ? { ...fault, entity, fault: "" } : fault)) };
+}

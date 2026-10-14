@@ -146,7 +146,10 @@ describe("run report", () => {
     expect(rerunOf(parsed).left).toEqual(["1 delivery perturbation", "1 environment change"]);
     expect(rerunOf(parseReport(null))).toEqual({
       plan: { seed: 1, durationS: 60, explore: false, faults: [] },
-      left: ["the seed, which the run did not record (seed 1 is used)", "a length under one minute (one minute is used)"],
+      left: [
+        "the seed, which the run did not record (seed 1 is used)",
+        "a length under one minute (one minute is used)",
+      ],
     });
     expect(runFacts(parseReport(null))).toBe("");
   });

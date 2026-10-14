@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { LaunchPlan } from "./launch";
-import { clockOf, launchSteps, planProblems } from "./launch";
+import { clockOf, launchSteps, planProblems, planSummary } from "./launch";
 
 const plan = (overrides: Partial<LaunchPlan>): LaunchPlan => ({
   seed: 7,
@@ -42,14 +42,25 @@ describe("launch plan", () => {
 
   it("names every problem of a plan in words", () => {
     expect(planProblems(plan({}))).toEqual([]);
-    expect(planProblems(plan({ seed: -1, durationS: 0, faults: [{ entity: "", fault: "", atS: 5 }] }))).toEqual([
-      "The seed is a whole number, 0 or more.",
-      "The duration is at least one minute.",
-      "Fault 1 needs an instance and a fault.",
-      "Fault 1 starts inside the run, before its end.",
+    const texts = (p: LaunchPlan) => planProblems(p).map((problem) => problem.text);
+    const faults = [
+      { entity: "", fault: "", atS: 5 },
+      { entity: "CT-1", fault: "fan", atS: 500 },
+    ];
+    expect(planProblems(plan({ seed: -1, durationS: 0, faults }))).toEqual([
+      { field: "seed", text: "The seed is a whole number, 0 or more." },
+      { field: "duration", text: "The duration is at least one minute." },
+      { field: 0, text: "Fault 1 needs an instance and a fault." },
+      { field: 1, text: "Fault 2 starts inside the run, before its end." },
     ]);
-    expect(planProblems(plan({ seed: 2 ** 53 + 1 }))).toEqual(["The seed is a whole number, 0 or more."]);
-    expect(planProblems(plan({ durationS: 59 }))).toEqual(["The duration is at least one minute."]);
+    expect(texts(plan({ seed: 2 ** 53 + 1 }))).toEqual(["The seed is a whole number, 0 or more."]);
+    expect(texts(plan({ durationS: 59 }))).toEqual(["The duration is at least one minute."]);
+  });
+
+  it("says in words what a plan will run", () => {
+    expect(planSummary(plan({}), "30 min")).toBe("30 min of simulated time · Explore · no faults");
+    const faults = [{ entity: "CT-1", fault: "fan", atS: 5 }];
+    expect(planSummary(plan({ explore: false, faults }), "1 h")).toBe("1 h of simulated time · Evaluate · 1 fault");
   });
 });
 

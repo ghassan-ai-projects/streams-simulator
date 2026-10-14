@@ -1,11 +1,13 @@
 import { Play, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { LaunchState, LaunchStore } from "../../app/launchStore";
-import { clockOf } from "../../model/launch";
+import { clockOf, planSummary, speedOf } from "../../model/launch";
+import { humanise } from "../../model/report";
+import { durationOf } from "../../model/workspace";
 import type { Plant } from "../../model/plant";
 import { useStore } from "../useStore";
 import type { Draft } from "./draft";
-import { draftOf, firstDraft } from "./draft";
+import { draftOf, firstDraft, pickedOnGraph } from "./draft";
 import type { Change } from "./FaultRows";
 import { LaunchForm } from "./LaunchForm";
 import { useFocusOnMount } from "../useFocusOnMount";
@@ -17,11 +19,29 @@ interface LaunchPanelProps {
   readonly launch: LaunchStore;
   readonly plant: Plant;
   readonly path: string;
+  readonly selected?: string | null;
   readonly onClose: () => void;
   readonly onFinished: (worldId: string) => void;
 }
 
 type Running = Extract<LaunchState, { phase: "running" }>;
+
+function ProgressBar({ state }: { readonly state: Running }) {
+  return (
+    <div className={styles.bar}>
+      <progress max={state.durationS} value={state.atS} aria-label="Simulated time" />
+      {state.plan.faults.map((fault, index) => (
+        <span
+          key={String(index)}
+          className={fault.atS <= state.atS ? styles.tickDone : styles.tick}
+          style={{ left: `${String((fault.atS / state.durationS) * 100)}%` }}
+          title={`${fault.entity} ${humanise(fault.fault)} at ${clockOf(fault.atS)}`}
+          aria-hidden="true"
+        />
+      ))}
+    </div>
+  );
+}
 
 function Progress({
   state,
@@ -33,14 +53,18 @@ function Progress({
   readonly title: string;
 }) {
   const status = useFocusOnMount<HTMLParagraphElement>();
-  const words = state.worldId === null ? "Creating the world…" : `Running ${title} as ${state.worldId}`;
+  const words = state.worldId === null ? "Creating the world…" : `Running ${title} as run ${state.worldId}`;
+  const speed = speedOf(state.atS, state.atMs - state.startedMs);
   return (
     <div className={cx(panel.body, styles.progress)}>
       <p className={styles.status} role="status" ref={status} tabIndex={-1}>
         {state.stopping ? "Stopping at the next step…" : words}
       </p>
-      <progress max={state.durationS} value={state.atS} aria-label="Simulated time" />
-      <p className={styles.clock}>{`${clockOf(state.atS)} of ${clockOf(state.durationS)} simulated`}</p>
+      <p className={styles.clock}>{planSummary(state.plan, durationOf(state.durationS))}</p>
+      <ProgressBar state={state} />
+      <p className={styles.clock}>
+        {`${clockOf(state.atS)} of ${clockOf(state.durationS)} simulated${speed === "" ? "" : ` · ${speed}`}`}
+      </p>
       <button
         type="button"
         className={panel.secondary}
@@ -93,6 +117,7 @@ interface BodyProps {
   readonly plant: Plant;
   readonly path: string;
   readonly draft: Draft;
+  readonly selected: string | null;
   readonly change: (change: Change) => void;
 }
 
@@ -105,7 +130,7 @@ function Elsewhere({ state }: { readonly state: Running }) {
   );
 }
 
-function Body({ state, launch, plant, path, draft, change }: BodyProps) {
+function Body({ state, launch, plant, path, draft, selected, change }: BodyProps) {
   const own = state.phase !== "idle" && state.origin.domain === plant.id;
   if (state.phase === "running") {
     return own ? (
@@ -119,6 +144,7 @@ function Body({ state, launch, plant, path, draft, change }: BodyProps) {
     <LaunchForm
       plant={plant}
       draft={draft}
+      selected={selected}
       change={change}
       onStart={(plan) => {
         void launch.start({ domain: plant.id, title: plant.title || plant.id, path }, plan);
@@ -140,10 +166,20 @@ function useLaunch(launch: LaunchStore, plant: string, onFinished: (worldId: str
   return state;
 }
 
-export function LaunchPanel({ launch, plant, path, onClose, onFinished }: LaunchPanelProps) {
-  const state = useLaunch(launch, plant.id, onFinished);
-  const [proposed] = useState(() => launch.proposal(plant.id));
+function useDraft(launch: LaunchStore, plant: string, selected: string | null) {
+  const [proposed] = useState(() => launch.proposal(plant));
   const [draft, setDraft] = useState<Draft>(() => (proposed === null ? firstDraft : draftOf(proposed.plan)));
+  const [seen, setSeen] = useState(selected);
+  if (seen !== selected) {
+    setSeen(selected);
+    if (selected !== null) setDraft((current) => pickedOnGraph(current, selected));
+  }
+  return { proposed, draft, setDraft };
+}
+
+export function LaunchPanel({ launch, plant, path, selected = null, onClose, onFinished }: LaunchPanelProps) {
+  const state = useLaunch(launch, plant.id, onFinished);
+  const { proposed, draft, setDraft } = useDraft(launch, plant.id, selected);
   return (
     <aside className={panel.panel} aria-labelledby="launch-title">
       <header className={panel.head}>
@@ -158,7 +194,15 @@ export function LaunchPanel({ launch, plant, path, onClose, onFinished }: Launch
           {`Copied from the earlier run: its seed, length, mode and faults. Not copied: ${proposed.left.join("; ")}.`}
         </p>
       )}
-      <Body state={state} launch={launch} plant={plant} path={path} draft={draft} change={setDraft} />
+      <Body
+        state={state}
+        launch={launch}
+        plant={plant}
+        path={path}
+        draft={draft}
+        selected={selected}
+        change={setDraft}
+      />
     </aside>
   );
 }
