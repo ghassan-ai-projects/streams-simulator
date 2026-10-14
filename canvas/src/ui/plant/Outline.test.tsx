@@ -31,4 +31,12 @@ describe("outline", () => {
     );
     expect(screen.getByRole("status")).toHaveTextContent("No instances yet.");
   });
+
+  it("marks instances the binary flagged", () => {
+    render(
+      <Outline plant={parsePlant(domain)} hall={null} selected={null} onSelect={vi.fn()} flagged={new Set(["CT-1"])} />,
+    );
+    expect(screen.getByRole("button", { name: /^CT-1.*has issues$/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^CH-1/ })).not.toHaveTextContent("has issues");
+  });
 });

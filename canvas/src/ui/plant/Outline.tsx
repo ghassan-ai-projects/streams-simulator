@@ -1,4 +1,4 @@
-import { Search } from "lucide-react";
+import { OctagonAlert, Search } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { Plant } from "../../model/plant";
 import { areaOf } from "../../model/plant";
@@ -8,6 +8,7 @@ import shared from "../shared.module.css";
 import styles from "./PlantScreen.module.css";
 
 interface OutlineProps {
+  readonly flagged?: ReadonlySet<string>;
   readonly plant: Plant;
   readonly hall: string | null;
   readonly selected: string | null;
@@ -18,6 +19,7 @@ interface OutlineProps {
 interface Item {
   readonly id: string;
   readonly kind: string;
+  readonly flagged?: boolean;
 }
 
 function matches(item: Item, filter: string): boolean {
@@ -74,6 +76,12 @@ function Entry({ item, current, marks, onPick }: Omit<SectionProps, "title" | "i
       >
         <span className={styles.itemId}>{item.id}</span>
         {item.kind !== "" && <span className={styles.itemKind}>{item.kind}</span>}
+        {item.flagged === true && (
+          <span className={styles.itemIssue}>
+            <OctagonAlert size={12} aria-hidden="true" />
+            <span className="sr-only">has issues</span>
+          </span>
+        )}
       </button>
     </li>
   );
@@ -120,10 +128,17 @@ function matchWords(plant: Plant, shown: ReturnType<typeof groups>, filter: stri
   return `${String(count)} ${count === 1 ? "instance matches" : "instances match"}.`;
 }
 
-export function Outline({ plant, hall, selected, onSelect, onOpenHall }: OutlineProps) {
+function marked(shown: ReturnType<typeof groups>, flagged: ReadonlySet<string> | undefined) {
+  if (flagged === undefined || flagged.size === 0) return shown;
+  return shown.map(
+    ([area, items]) => [area, items.map((item) => ({ ...item, flagged: flagged.has(item.id) }))] as const,
+  );
+}
+
+export function Outline({ plant, hall, selected, onSelect, onOpenHall, flagged }: OutlineProps) {
   const [filter, setFilter] = useState("");
   const halls = hallsOf(plant).map((id) => ({ id, kind: "" }));
-  const shown = groups(plant, hall, filter);
+  const shown = marked(groups(plant, hall, filter), flagged);
   return (
     <nav className={styles.outline} aria-label="Outline">
       <Filter value={filter} onChange={setFilter} />
