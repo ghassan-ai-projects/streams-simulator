@@ -105,9 +105,9 @@ export class FakeBridge implements Bridge {
     const plant: Record<string, unknown> = { ...base.value, id: args.id, title: args.title };
     if (args.empty !== true) return success({ composition: plant });
     const frame = Object.fromEntries(
-      Object.entries(plant).filter(([key]) => !["description", "equipment", "connections"].includes(key)),
+      Object.entries(plant).filter(([key]) => !["description", "equipment", "connections", "areas"].includes(key)),
     );
-    return success({ composition: frame });
+    return success({ composition: { ...frame, areas: [{ name: siteArea(plant.site) }] } });
   }
 
   followers = new Map<string, RunFollower>();
@@ -134,4 +134,9 @@ export class FakeBridge implements Bridge {
       watcher();
     });
   }
+}
+
+function siteArea(site: unknown): string {
+  if (typeof site !== "object" || site === null || !("name" in site)) return "Site";
+  return typeof site.name === "string" ? site.name : "Site";
 }

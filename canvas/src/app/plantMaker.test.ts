@@ -14,7 +14,12 @@ function bridge() {
     "component.examples",
     success({ examples: [{ id: "pilot", title: "Pilot", description: "small" }, { title: "no id" }] }),
   );
-  fake.actions.set("component.example", success({ example: { ...lab, id: "pilot", title: "Pilot" } }));
+  fake.actions.set(
+    "component.example",
+    success({
+      example: { ...lab, id: "pilot", title: "Pilot", site: { name: "Pilot plant" }, areas: [{ name: "Utilities" }] },
+    }),
+  );
   fake.actions.set("domain.compose", success({ channels: 1 }));
   return fake;
 }
@@ -43,7 +48,9 @@ describe("plant maker", () => {
     });
     await maker.create({ example: "pilot" }, "lab-three", "Lab three", false);
     expect(fake.calls.at(-1)?.args).toEqual({ id: "lab-three", title: "Lab three", example: "pilot", empty: true });
-    expect(JSON.parse(fake.writes[1]?.content ?? "")).not.toHaveProperty("equipment");
+    const made = JSON.parse(fake.writes[1]?.content ?? "") as Record<string, unknown>;
+    expect(made).toMatchObject({ site: { name: "Pilot plant" }, areas: [{ name: "Pilot plant" }] });
+    expect(made).not.toHaveProperty("equipment");
   });
 
   it("refuses an existing plant, an unreadable base and an unknown example", async () => {
