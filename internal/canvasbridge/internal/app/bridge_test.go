@@ -29,7 +29,7 @@ func TestPairingAdmitsTheSessionItIssued(t *testing.T) {
 func TestTheWorkspaceListsDefinitionsWithTheirIdsAndRunsWithTheirState(t *testing.T) {
 	t.Parallel()
 	h := newHarness(t)
-	h.write(t, plant, `{"id":"plant","title":"Plant","instances":[{"id":"a"},{"id":"b"}]}`)
+	h.write(t, plant, `{"id":"plant","title":"Plant","instances":[{"kind":"a","names":["a-1","a-2"]}]}`)
 	h.write(t, inDomains("notes.txt"), "x")
 	h.write(t, "compositions/broken.composition.json", "{")
 	h.write(t, "runs/w-1/journal.jsonl", `{"type":"run.opened","mode":"explore"}`+"\n")

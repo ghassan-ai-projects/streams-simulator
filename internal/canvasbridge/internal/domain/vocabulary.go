@@ -15,16 +15,39 @@ type Definition struct {
 	Instances int    `json:"instances,omitempty"`
 }
 
+type instanceSet struct {
+	Names []json.RawMessage `json:"names"`
+	Count struct {
+		Default int `json:"default"`
+	} `json:"count"`
+}
+
+func (set instanceSet) expanded() int {
+	if len(set.Names) > 0 {
+		return len(set.Names)
+	}
+	return set.Count.Default
+}
+
 func DefinitionOf(rel string, content []byte) Definition {
 	var head struct {
-		ID        string            `json:"id"`
-		Title     string            `json:"title"`
-		Instances []json.RawMessage `json:"instances"`
+		ID        string        `json:"id"`
+		Title     string        `json:"title"`
+		Instances []instanceSet `json:"instances"`
+		Equipment []instanceSet `json:"equipment"`
 	}
 	if json.Unmarshal(content, &head) != nil {
 		return Definition{Path: rel}
 	}
-	return Definition{Path: rel, ID: head.ID, Title: head.Title, Instances: len(head.Instances)}
+	return Definition{Path: rel, ID: head.ID, Title: head.Title, Instances: expandedCount(head.Instances) + expandedCount(head.Equipment)}
+}
+
+func expandedCount(sets []instanceSet) int {
+	total := 0
+	for _, set := range sets {
+		total += set.expanded()
+	}
+	return total
 }
 
 type RunEntry struct {
