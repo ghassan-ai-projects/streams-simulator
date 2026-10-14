@@ -74,6 +74,10 @@ function Build({ draft, editor, request }: Omit<PanelProps, "plant">) {
           Select an instance to rename, move, link or delete it. To link two instances, drag from an output pin to an
           input pin, or use “Link an output” on the selected instance.
         </p>
+        <p className={panel.hint}>
+          Sensors are not added by hand: every instance is measured on each of its ports, and the plant gets one channel
+          for each.
+        </p>
       </div>
     </aside>
   );

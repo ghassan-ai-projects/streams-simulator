@@ -97,7 +97,10 @@ export function PlantOverview({
         <p
           className={styles.kindLine}
         >{`${String(plant.instances.length)} instances in ${where} · ${String(plant.links.length)} links`}</p>
-        <p className={styles.hint}>Select an instance to see its channels, links, faults and effectors.</p>
+        <p className={styles.hint}>
+          Select an instance to see its channels (the values measured on it, one for each port and state), links, faults
+          and effectors.
+        </p>
       </header>
       <Runs runs={runs} onReview={onReview} />
       {halls.length > 0 && <Tally title="Halls" rows={halls} />}

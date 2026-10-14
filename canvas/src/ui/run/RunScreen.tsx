@@ -63,7 +63,7 @@ function OpeningPlant() {
 
 function graphWords(state: ReviewState, settled: number | null): string {
   const loading = state.playback.phase === "loading" ? " · loading" : "";
-  const opening = settled !== null && state.positionNs === settled ? " · opened once every instrument reported" : "";
+  const opening = settled !== null && state.positionNs === settled ? " · opened once every channel reported" : "";
   return `${grouped(state.playback.records)} observations${loading}${opening}`;
 }
 
