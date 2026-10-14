@@ -329,7 +329,13 @@
   font-weight: 600;
 }
 
+.tagWord {
+  flex: none;
+}
+
 .tagText {
+  min-width: 0;
+  font-weight: 400;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

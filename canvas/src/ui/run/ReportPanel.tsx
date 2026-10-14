@@ -75,7 +75,7 @@ function ReplayCheck({ verify }: { readonly verify: VerifyState }) {
       <p className={styles.verdict}>{replayLine(verify)}</p>
       {detail !== "" && (
         <details className={styles.details}>
-          <summary>What differs</summary>
+          <summary>{verify.phase === "ready" && verify.value.matches ? "Details" : "What differs"}</summary>
           <pre>{detail}</pre>
         </details>
       )}

@@ -104,21 +104,22 @@ interface TagProps {
   readonly fault?: string;
 }
 
-function tagText(status: NonNullable<NodeStatus>, count: number, fault: string): string {
-  if (count > 0) return `${statusWords[status]} ${String(count)}`;
-  return status === "fault" && fault !== "" ? `${statusWords[status]}: ${fault}` : statusWords[status];
-}
-
 function StatusTag({ status, count = 0, fault = "" }: TagProps) {
   if (status === null) return null;
   const Icon = statusIcons[status];
-  const text = tagText(status, count, fault);
+  const word = count > 0 ? `${statusWords[status]} ${String(count)}` : statusWords[status];
+  const name = status === "fault" ? fault : "";
   return (
-    <span className={cx(styles.tag, styles[`tag-${status}`])} title={text}>
+    <span className={cx(styles.tag, styles[`tag-${status}`])} title={name === "" ? word : `${word}: ${name}`}>
       <Icon size={12} aria-hidden="true" />
-      <span className={styles.tagText} aria-hidden="true">
-        {text}
+      <span className={styles.tagWord} aria-hidden="true">
+        {word}
       </span>
+      {name !== "" && (
+        <span className={styles.tagText} aria-hidden="true">
+          {name}
+        </span>
+      )}
     </span>
   );
 }
