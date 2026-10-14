@@ -2,6 +2,7 @@ export interface LibraryEntry {
   readonly component: string;
   readonly ref: string;
   readonly title: string;
+  readonly words: string;
 }
 
 interface Preset {
@@ -12,6 +13,7 @@ interface Preset {
 export interface Presets {
   readonly options: readonly Preset[];
   readonly preferred: string;
+  readonly description: string;
 }
 
 type Json = Readonly<Record<string, unknown>>;
@@ -24,6 +26,15 @@ function text(value: unknown): string {
   return typeof value === "string" ? value : "";
 }
 
+function tags(value: unknown): readonly string[] {
+  return Array.isArray(value) ? value.map(text) : [];
+}
+
+export function searchLibrary(entries: readonly LibraryEntry[], query: string): readonly LibraryEntry[] {
+  const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
+  return entries.filter((entry) => terms.every((term) => entry.words.includes(term)));
+}
+
 export function parseLibrary(listed: unknown): readonly LibraryEntry[] {
   const components = record(listed).components;
   return (Array.isArray(components) ? components : [])
@@ -33,6 +44,7 @@ export function parseLibrary(listed: unknown): readonly LibraryEntry[] {
       component: text(entry.id),
       ref: `${text(entry.id)}@${typeof entry.version === "number" ? String(entry.version) : "1"}`,
       title: text(entry.title) || text(entry.id),
+      words: [text(entry.title), text(entry.id), text(entry.class), ...tags(entry.tags)].join(" ").toLowerCase(),
     }))
     .sort((a, b) => a.title.localeCompare(b.title));
 }
@@ -43,7 +55,7 @@ export function parsePresets(shown: unknown): Presets {
     name,
     title: text(record(raw).title) || name,
   }));
-  return { options, preferred: text(document.default_preset) };
+  return { options, preferred: text(document.default_preset), description: text(document.description) };
 }
 
 export interface ExamplePlant {

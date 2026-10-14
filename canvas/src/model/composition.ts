@@ -131,6 +131,24 @@ export function linkEnd(connection: Connection, id: string): LinkEnd {
     : { outgoing: false, port: words(to.port), other: from.id, otherPort: words(from.port) };
 }
 
+function initials(title: string): string {
+  const letters = title
+    .split(/[\s-]+/)
+    .filter(Boolean)
+    .map((word) => word[0]?.toUpperCase() ?? "")
+    .join("");
+  return letters === "" ? "X" : letters.slice(0, 3);
+}
+
+export function suggestedName(doc: Composition, use: string, title: string): string {
+  const names = equipmentOf(doc).flatMap((entry) => entry.names);
+  const sibling = equipmentOf(doc).find((entry) => componentOf(entry.use) === componentOf(use))?.names[0];
+  const prefix = sibling?.match(/^(.*?)-?\d+$/)?.[1] ?? initials(title);
+  let n = 1;
+  while (names.includes(`${prefix}-${String(n)}`)) n += 1;
+  return `${prefix}-${String(n)}`;
+}
+
 export function titleOf(doc: Composition): string {
   return text(doc.title) || text(doc.id);
 }

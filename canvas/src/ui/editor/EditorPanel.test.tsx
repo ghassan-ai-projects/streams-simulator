@@ -75,10 +75,13 @@ describe("plant editor panel", () => {
     const { editor, view } = await editing();
     expect((await axe.run(view.container)).violations).toEqual([]);
     const form = screen.getByRole("form", { name: "Add equipment" });
-    choose("Component", "lib/pump@1", form);
+    choose("Find equipment", "nothing like this", form);
+    expect(within(form).getByText('Nothing in the library matches "nothing like this".')).toBeInTheDocument();
+    choose("Find equipment", "pu", form);
+    choose("Equipment", "lib/pump@1", form);
+    expect(within(form).getByLabelText("Name")).toHaveValue("P-1");
     expect(await within(form).findByRole("option", { name: "Small" })).toBeInTheDocument();
-    choose("Preset", "small", form);
-    choose("Name", "P-1", form);
+    choose("Size", "small", form);
     choose("Area", "Yard", form);
     fireEvent.click(within(form).getByRole("button", { name: "Add to the plant" }));
     await vi.waitFor(() => {

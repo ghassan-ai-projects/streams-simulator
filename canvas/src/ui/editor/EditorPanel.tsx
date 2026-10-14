@@ -52,8 +52,8 @@ function Build({ draft, editor, request }: Omit<PanelProps, "plant">) {
         <Issues draft={draft} editor={editor} request={request} />
         <AddEquipment draft={draft} editor={editor} request={request} />
         <p className={panel.hint}>
-          Select an instance to rename it, move it to another area, link its ports or delete it. Link ports with Link an
-          output in the instance panel, or at 100 % zoom drag from an output pin to an input pin.
+          Select an instance to rename, move, link or delete it. To link two instances, drag from an output pin to an
+          input pin, or use “Link an output” on the selected instance.
         </p>
       </div>
     </aside>

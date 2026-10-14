@@ -12,8 +12,9 @@ test.setTimeout(60_000);
 
 async function add(page: Page, component: string, name: string) {
   const build = page.getByRole("complementary", { name: "Build" });
-  await build.getByLabel("Component").selectOption({ label: component });
-  await expect(build.getByLabel("Preset").getByRole("option")).not.toHaveCount(1);
+  await build.getByLabel("Find equipment").fill(component.split(" ")[0] ?? "");
+  await build.getByLabel("Equipment", { exact: true }).selectOption({ label: component });
+  await expect(build.getByLabel("Size").getByRole("option")).not.toHaveCount(1);
   await build.getByLabel("Name").fill(name);
   await build.getByLabel("Area").selectOption("Chiller plant");
   await build.getByRole("button", { name: "Add to the plant" }).click();
