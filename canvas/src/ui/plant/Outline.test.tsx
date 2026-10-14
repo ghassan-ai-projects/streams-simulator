@@ -39,4 +39,26 @@ describe("outline", () => {
     expect(screen.getByRole("button", { name: /^CT-1.*has issues$/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^CH-1/ })).not.toHaveTextContent("has issues");
   });
+
+  it("indents areas under their parent and shows an empty area only when asked", () => {
+    const plant = parsePlant({
+      id: "tree",
+      site: {
+        name: "Site",
+        areas: [{ name: "Site" }, { name: "Plant room", parent: "Site" }, { name: "Roof", parent: "Site" }],
+      },
+      instances: [{ kind: "pump", names: ["P-1"], area: "Plant room" }],
+    });
+    const { rerender } = render(<Outline plant={plant} hall={null} selected={null} onSelect={vi.fn()} />);
+    expect(screen.getByText("Plant room")).toBeInTheDocument();
+    expect(screen.queryByText("Roof")).not.toBeInTheDocument();
+    rerender(<Outline plant={plant} hall={null} selected={null} onSelect={vi.fn()} showEmptyAreas />);
+    const titles = screen.getAllByRole("group").map((group) => group.querySelector("summary")?.textContent);
+    expect(titles).toEqual(["Site0", "Plant room1", "Roof0"]);
+    expect(screen.getAllByRole("group").map((group) => group.getAttribute("style"))).toEqual([
+      "margin-left: calc(var(--space-3) * 0);",
+      "margin-left: calc(var(--space-3) * 1);",
+      "margin-left: calc(var(--space-3) * 1);",
+    ]);
+  });
 });

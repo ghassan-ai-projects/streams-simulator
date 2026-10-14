@@ -1,3 +1,5 @@
+import type { AreaNode } from "./areaTree";
+import { areaTree } from "./areaTree";
 import type { Instance, Link, Plant } from "./plant";
 
 type Json = Readonly<Record<string, unknown>>;
@@ -69,10 +71,12 @@ export function connectionsOf(doc: Composition): readonly Connection[] {
   }));
 }
 
-export function areasOf(doc: Composition): readonly string[] {
-  return list(doc.areas)
-    .map((raw) => text(record(raw).name))
-    .filter(Boolean);
+export function areaNodesOf(doc: Composition): readonly AreaNode[] {
+  return areaTree(
+    list(doc.areas)
+      .map((raw) => ({ name: text(record(raw).name), parent: text(record(raw).parent) || null }))
+      .filter((area) => area.name !== ""),
+  );
 }
 
 export function componentOf(use: string): string {

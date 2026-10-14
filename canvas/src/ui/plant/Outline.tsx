@@ -1,5 +1,6 @@
 import { OctagonAlert, Search } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { areaTree } from "../../model/areaTree";
 import type { Plant } from "../../model/plant";
 import { areaOf } from "../../model/plant";
 import { hallOf, hallsOf } from "../../model/plantView";
@@ -14,6 +15,7 @@ interface OutlineProps {
   readonly selected: string | null;
   readonly onSelect: (id: string) => void;
   readonly onOpenHall?: (hall: string) => void;
+  readonly showEmptyAreas?: boolean;
 }
 
 interface Item {
@@ -34,7 +36,13 @@ function kindWords(kind: string): string {
   return acronym ? words : words.charAt(0).toLowerCase() + words.slice(1);
 }
 
-function groups(plant: Plant, hall: string | null, filter: string): readonly (readonly [string, readonly Item[]])[] {
+interface Group {
+  readonly area: string;
+  readonly depth: number;
+  readonly items: readonly Item[];
+}
+
+function itemsByArea(plant: Plant, hall: string | null, filter: string): ReadonlyMap<string, readonly Item[]> {
   const halls = hallsOf(plant);
   const visible = plant.instances.filter(
     (instance) => halls.length === 0 || hallOf(instance.id) === hall || hallOf(instance.id) === null,
@@ -46,11 +54,23 @@ function groups(plant: Plant, hall: string | null, filter: string): readonly (re
     const area = areaOf(plant, instance);
     byArea.set(area, [...(byArea.get(area) ?? []), item]);
   });
-  return [...byArea.entries()];
+  return byArea;
+}
+
+function groups(plant: Plant, hall: string | null, filter: string, empty: boolean): readonly Group[] {
+  const byArea = itemsByArea(plant, hall, filter);
+  const tree = areaTree(plant.areas).map((node) => ({ area: node.name, depth: node.depth }));
+  const known = new Set(tree.map((node) => node.area));
+  const loose = [...byArea.keys()].filter((area) => !known.has(area)).map((area) => ({ area, depth: 0 }));
+  const showEmpty = empty && filter.trim() === "";
+  return [...tree, ...loose]
+    .map(({ area, depth }) => ({ area, depth, items: byArea.get(area) ?? [] }))
+    .filter((group) => group.items.length > 0 || showEmpty);
 }
 
 interface SectionProps {
   readonly title: string;
+  readonly depth?: number;
   readonly items: readonly Item[];
   readonly current: string | null;
   readonly marks: "location" | "selection";
@@ -87,9 +107,9 @@ function Entry({ item, current, marks, onPick }: Omit<SectionProps, "title" | "i
   );
 }
 
-function Section({ title, items, current, marks, onPick }: SectionProps) {
+function Section({ title, depth = 0, items, current, marks, onPick }: SectionProps) {
   return (
-    <details open className={styles.group}>
+    <details open className={styles.group} style={{ marginLeft: `calc(var(--space-3) * ${String(depth)})` }}>
       <summary className={shared.sectionTitle}>
         {title}
         <span className={styles.count}>{items.length}</span>
@@ -120,33 +140,42 @@ function Filter({ value, onChange }: { readonly value: string; readonly onChange
   );
 }
 
-function matchWords(plant: Plant, shown: ReturnType<typeof groups>, filter: string): string {
+function matchWords(plant: Plant, shown: readonly Group[], filter: string): string {
   if (plant.instances.length === 0) return "No instances yet.";
-  const count = shown.reduce((sum, [, items]) => sum + items.length, 0);
+  const count = shown.reduce((sum, group) => sum + group.items.length, 0);
   if (filter.trim() === "") return "";
   if (count === 0) return `No instance matches "${filter.trim()}".`;
   return `${String(count)} ${count === 1 ? "instance matches" : "instances match"}.`;
 }
 
-function marked(shown: ReturnType<typeof groups>, flagged: ReadonlySet<string> | undefined) {
+function marked(shown: readonly Group[], flagged: ReadonlySet<string> | undefined): readonly Group[] {
   if (flagged === undefined || flagged.size === 0) return shown;
-  return shown.map(
-    ([area, items]) => [area, items.map((item) => ({ ...item, flagged: flagged.has(item.id) }))] as const,
-  );
+  return shown.map((group) => ({
+    ...group,
+    items: group.items.map((item) => ({ ...item, flagged: flagged.has(item.id) })),
+  }));
 }
 
-export function Outline({ plant, hall, selected, onSelect, onOpenHall, flagged }: OutlineProps) {
+export function Outline({ plant, hall, selected, onSelect, onOpenHall, flagged, showEmptyAreas }: OutlineProps) {
   const [filter, setFilter] = useState("");
   const halls = hallsOf(plant).map((id) => ({ id, kind: "" }));
-  const shown = marked(groups(plant, hall, filter), flagged);
+  const shown = marked(groups(plant, hall, filter, showEmptyAreas === true), flagged);
   return (
     <nav className={styles.outline} aria-label="Outline">
       <Filter value={filter} onChange={setFilter} />
       {halls.length > 0 && onOpenHall !== undefined && filter === "" && (
         <Section title="Halls" items={halls} current={hall} marks="location" onPick={onOpenHall} />
       )}
-      {shown.map(([area, items]) => (
-        <Section key={area} title={area} items={items} current={selected} marks="selection" onPick={onSelect} />
+      {shown.map(({ area, depth, items }) => (
+        <Section
+          key={area}
+          title={area}
+          depth={depth}
+          items={items}
+          current={selected}
+          marks="selection"
+          onPick={onSelect}
+        />
       ))}
       <p className={shown.length === 0 ? styles.noMatch : "sr-only"} role="status">
         {matchWords(plant, shown, filter)}

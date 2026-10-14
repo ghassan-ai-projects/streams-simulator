@@ -13,8 +13,8 @@ async function add(page: Page, component: string, name: string, size?: string) {
   await build.getByLabel("Equipment", { exact: true }).selectOption({ label: component });
   await expect(build.getByLabel("Size").getByRole("option")).not.toHaveCount(1);
   if (size !== undefined) await build.getByLabel("Size").selectOption({ label: size });
-  await build.getByLabel("Name").fill(name);
-  await build.getByLabel("Area").selectOption("Chiller plant");
+  await build.getByLabel("Name", { exact: true }).fill(name);
+  await build.getByLabel("Area", { exact: true }).selectOption("Chiller plant");
   await build.getByRole("button", { name: "Add to the plant" }).click();
   await expect(page.getByRole("complementary", { name })).toBeVisible();
   await page.getByRole("button", { name: "Close the instance" }).click();

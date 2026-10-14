@@ -97,7 +97,14 @@ function Editing({ draft, editor, navigation }: { readonly draft: Draft } & Omit
     <ReactFlowProvider>
       <div className={plantStyles.screen}>
         <div className={plantStyles.side}>
-          <Outline plant={plant} hall={null} selected={draft.selected} onSelect={select} flagged={flagged} />
+          <Outline
+            plant={plant}
+            hall={null}
+            selected={draft.selected}
+            onSelect={select}
+            flagged={flagged}
+            showEmptyAreas
+          />
           {plant.instances.length > 0 ? <Navigator /> : null}
         </div>
         <section className={plantStyles.center} aria-label={`Editing ${plant.title || plant.id}`}>

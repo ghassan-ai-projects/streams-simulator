@@ -2,7 +2,7 @@ import { Plus } from "lucide-react";
 import type { SyntheticEvent } from "react";
 import { useEffect, useState } from "react";
 import type { Draft, EditorStore } from "../../app/editorStore";
-import { areasOf, suggestedName } from "../../model/composition";
+import { areaNodesOf, suggestedName } from "../../model/composition";
 import { instanceNameFits, instanceNameRule } from "../../model/instanceNameRule";
 import type { LibraryEntry, Presets } from "../../model/library";
 import { searchLibrary } from "../../model/library";
@@ -52,6 +52,7 @@ function Choice({
     <label className={panel.field}>
       <span>{label}</span>
       <select
+        aria-label={label}
         value={value}
         onChange={(event) => {
           onChange(event.target.value);
@@ -160,11 +161,17 @@ function useNaming(draft: Draft, use: string) {
   };
 }
 
+function useArea(draft: Draft) {
+  const nodes = areaNodesOf(draft.doc);
+  const [picked, setArea] = useState("");
+  const area = nodes.some((node) => node.name === picked) ? picked : (nodes[0]?.name ?? "");
+  return { area, setArea, options: nodes.map((node) => [node.name, node.path] as const) };
+}
+
 export function AddEquipment({ draft, editor, request }: AddProps) {
   const [use, setUse] = useState("");
   const { typed, suggested, name, setTyped, reset } = useNaming(draft, use);
-  const areas = areasOf(draft.doc);
-  const [area, setArea] = useState(areas[0] ?? "");
+  const { area, setArea, options } = useArea(draft);
   const { presets, preset, setPreset } = usePresets(editor, use);
   const problem = missing(use, name, area);
   const submit = (event: SyntheticEvent<HTMLFormElement>) => {
@@ -188,7 +195,7 @@ export function AddEquipment({ draft, editor, request }: AddProps) {
       {presets.description !== "" && <p className={styles.describe}>{presets.description}</p>}
       <Choice label="Size" value={preset} options={sizes(presets)} onChange={setPreset} />
       <NameField typed={typed} suggested={suggested} setTyped={setTyped} />
-      <Choice label="Area" value={area} options={areas.map((entry) => [entry, entry] as const)} onChange={setArea} />
+      <Choice label="Area" value={area} options={options} onChange={setArea} />
       <SubmitRow id="add-reason" reason={problem}>
         <Plus size={14} aria-hidden="true" />
         Add to the plant

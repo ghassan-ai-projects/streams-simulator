@@ -202,6 +202,21 @@ describe("plant editor panel", () => {
     expect(within(block).getByText(/These are from the last save/)).toBeInTheDocument();
   });
 
+  it("adds an area inside another one, offers it for equipment, and refuses a repeated name", async () => {
+    const { editor, view } = await editing();
+    const form = screen.getByRole("form", { name: "Add area" });
+    expect((await axe.run(view.container)).violations).toEqual([]);
+    fireEvent.change(within(form).getByLabelText("Area name"), { target: { value: "Yard" } });
+    expect(within(form).getByText('There is already an area named "Yard".')).toBeInTheDocument();
+    fireEvent.change(within(form).getByLabelText("Area name"), { target: { value: "Pump house" } });
+    choose("Inside", "Yard", form);
+    fireEvent.click(within(form).getByRole("button", { name: "Add area" }));
+    expect(current(editor).areas).toEqual([...doc.areas, { name: "Pump house", parent: "Yard" }]);
+    const equipment = screen.getByRole("form", { name: "Add equipment" });
+    expect(within(equipment).getByRole("option", { name: "Yard › Pump house" })).toBeInTheDocument();
+    expect(within(form).getByLabelText("Area name")).toHaveValue("");
+  });
+
   it("says why the file was not saved", async () => {
     const { fake, editor } = await editing();
     act(() => {

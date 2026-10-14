@@ -53,6 +53,12 @@ export function addEquipment(doc: Composition, added: NewEquipment): Composition
   return { ...doc, equipment: placed(entries(doc), entry) };
 }
 
+export function addArea(doc: Composition, name: string, parent: string): Composition {
+  const areas = Array.isArray(doc.areas) ? (doc.areas as readonly Json[]) : [];
+  if (areas.some((area) => area.name === name)) return doc;
+  return { ...doc, areas: [...areas, { name, ...(parent === "" ? {} : { parent }) }] };
+}
+
 function renamed(endpoint: string, from: string, to: string): string {
   const { id, port } = endpointOf(endpoint);
   return id === from ? `${to}.${port}` : endpoint;

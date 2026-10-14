@@ -15,8 +15,8 @@ async function add(page: Page, component: string, name: string) {
   await build.getByLabel("Find equipment").fill(component.split(" ")[0] ?? "");
   await build.getByLabel("Equipment", { exact: true }).selectOption({ label: component });
   await expect(build.getByLabel("Size").getByRole("option")).not.toHaveCount(1);
-  await build.getByLabel("Name").fill(name);
-  await build.getByLabel("Area").selectOption("Chiller plant");
+  await build.getByLabel("Name", { exact: true }).fill(name);
+  await build.getByLabel("Area", { exact: true }).selectOption("Chiller plant");
   await build.getByRole("button", { name: "Add to the plant" }).click();
   await expect(page.getByRole("complementary", { name })).toBeVisible();
   await page.getByRole("button", { name: "Close the instance" }).click();
@@ -43,10 +43,10 @@ test("a new plant is built in Chrome, a name the binary would refuse is stopped 
   const build = page.getByRole("complementary", { name: "Build" });
   await build.getByLabel("Find equipment").fill("Cooling");
   await build.getByLabel("Equipment", { exact: true }).selectOption({ label: "Cooling tower" });
-  await build.getByLabel("Name").fill("CT 1");
+  await build.getByLabel("Name", { exact: true }).fill("CT 1");
   await expect(build.getByText(/"CT 1" is not a valid name\. An instance name: a letter or digit/)).toBeVisible();
   await expect(build.getByRole("button", { name: "Add to the plant" })).toHaveAttribute("aria-disabled", "true");
-  await build.getByLabel("Name").fill("CT-1");
+  await build.getByLabel("Name", { exact: true }).fill("CT-1");
   await build.getByRole("button", { name: "Add to the plant" }).click();
   await page.getByRole("button", { name: "Close the instance" }).click();
   await pin(page, "CH-1", "heat_out").dragTo(pin(page, "CT-1", "heat_in"));

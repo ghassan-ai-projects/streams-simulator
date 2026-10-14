@@ -5,7 +5,7 @@ import { useState } from "react";
 import type { Draft } from "../../app/editorStore";
 import type { Instance } from "../../model/plant";
 import type { Connection } from "../../model/composition";
-import { areasOf, connectionsOf, endpointOf, linkEnd } from "../../model/composition";
+import { areaNodesOf, connectionsOf, endpointOf, linkEnd } from "../../model/composition";
 import { instanceNameFits, instanceNameRule } from "../../model/instanceNameRule";
 import { disconnect, isTemplate, moveInstance, removeInstance, renameInstance } from "../../model/compositionEdits";
 import panel from "../panel.module.css";
@@ -77,9 +77,9 @@ function AreaPick({ draft, instance, editor }: Pick<EditorProps, "draft" | "inst
           editor.edit((doc) => moveInstance(doc, instance.id, area));
         }}
       >
-        {areasOf(draft.doc).map((area) => (
-          <option key={area} value={area}>
-            {area}
+        {areaNodesOf(draft.doc).map((area) => (
+          <option key={area.name} value={area.name}>
+            {area.path}
           </option>
         ))}
       </select>

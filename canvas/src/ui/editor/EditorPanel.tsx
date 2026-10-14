@@ -2,6 +2,7 @@ import { CircleAlert, Wrench } from "lucide-react";
 import panel from "../panel.module.css";
 import type { IssueGroup } from "../../model/compositionEdits";
 import { groupIssues } from "../../model/compositionEdits";
+import { AddArea } from "./AddArea";
 import { AddEquipment } from "./AddEquipment";
 import styles from "./Editor.module.css";
 import { InstanceEditor } from "./InstanceEditor";
@@ -68,6 +69,7 @@ function Build({ draft, editor, request }: Omit<PanelProps, "plant">) {
       <div className={panel.body}>
         <Issues draft={draft} editor={editor} request={request} />
         <AddEquipment draft={draft} editor={editor} request={request} />
+        <AddArea draft={draft} editor={editor} />
         <p className={panel.hint}>
           Select an instance to rename, move, link or delete it. To link two instances, drag from an output pin to an
           input pin, or use “Link an output” on the selected instance.
