@@ -36,7 +36,7 @@ test("two pumps, two chillers of different sizes and two air-handling units comp
   await add(page, "Air-handling unit", "ahu-a");
   await add(page, "Air-handling unit", "ahu-b");
   await page.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByRole("status").filter({ hasText: /^Saved\. Composed \d+ channels/ })).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: /^Ready to run\. Composed \d+ channels/ })).toBeVisible();
   const file = join(env("CANVAS_WORKSPACE"), "compositions", "pairs.composition.json");
   const written = JSON.parse(readFileSync(file, "utf8")) as { equipment: { names: string[] }[] };
   expect(written.equipment.map((entry) => entry.names)).toEqual([

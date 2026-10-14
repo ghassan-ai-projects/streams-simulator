@@ -39,7 +39,7 @@ test("a file added on disk appears without a reload", async ({ page }) => {
       .replace('"title": "Factory utilities"', '"title": "Copied plant"'),
   );
   try {
-    await expect(plants.getByRole("listitem").filter({ hasText: "Copied plant" })).toContainText("Not composed yet", {
+    await expect(plants.getByRole("listitem").filter({ hasText: "Copied plant" })).toContainText("Not runnable yet", {
       timeout: 5000,
     });
   } finally {

@@ -72,7 +72,7 @@ describe("workspace", () => {
       },
     ]);
     const [draft, factory, legacy] = plantsOf(lab);
-    expect(draft && plantFacts(draft)).toBe("Not composed yet: edit and save it to run it.");
+    expect(draft && plantFacts(draft)).toBe("Not runnable yet: open Edit, save, and fix any issue it lists.");
     expect(factory && plantFacts(factory)).toMatch(/^23 instance definitions · 2 runs · last 1[45] Oct 2026/);
     expect(legacy && plantFacts(legacy)).toBe("No runs yet");
     expect(factory && plantFacts({ ...factory, instanceDefinitions: 1, runs: 0, lastRun: "" })).toBe(

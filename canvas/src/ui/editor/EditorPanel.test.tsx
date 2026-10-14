@@ -163,7 +163,7 @@ describe("plant editor panel", () => {
       }),
     );
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
-    expect(await screen.findByText("Saved, not composed: 1 issue")).toBeInTheDocument();
+    expect(await screen.findByText("Needs fixing: 1 issue. Your changes are saved.")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /^CH-1/ }));
     expect(screen.getByRole("heading", { name: "CH-1" })).toHaveFocus();
     expect(screen.getByRole("region", { name: "Issues on CH-1" })).toHaveTextContent('has no port "heat_in"');
@@ -172,7 +172,9 @@ describe("plant editor panel", () => {
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "CH-2" } });
     fireEvent.click(screen.getByRole("button", { name: "Rename" }));
     fireEvent.keyDown(document.body, { key: "s", ctrlKey: true });
-    expect(await screen.findByText("Saved. Composed 4 channels, 2 faults, 0 effectors.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Ready to run. Composed 4 channels, 2 faults, 0 effectors. Saved."),
+    ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Open plant" })).toBeInTheDocument();
   });
 
@@ -190,7 +192,7 @@ describe("plant editor panel", () => {
       }),
     );
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
-    expect(await screen.findByText("Saved, not composed: 4 issues")).toBeInTheDocument();
+    expect(await screen.findByText("Needs fixing: 4 issues. Your changes are saved.")).toBeInTheDocument();
     const block = screen.getByRole("region", { name: "Issues from the binary" });
     expect(within(block).getAllByRole("listitem")).toHaveLength(2);
     expect(within(block).getByRole("button", { name: /CH-1.*not a name \(×3\)/ })).toBeInTheDocument();

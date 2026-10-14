@@ -25,9 +25,9 @@ function outcomeStatus(draft: Draft): Status {
   if (draft.outcome?.kind === "refused") {
     const count = draft.issues?.listed.length ?? 0;
     const why = draft.outcome.message ?? `${String(count)} ${count === 1 ? "issue" : "issues"}`;
-    return { text: `Saved, not composed: ${why}`, tone: "warn" };
+    return { text: `Needs fixing: ${why}. Your changes are saved.`, tone: "warn" };
   }
-  if (draft.outcome?.kind === "composed") return { text: `Saved. ${draft.outcome.summary}`, tone: "ok" };
+  if (draft.outcome?.kind === "composed") return { text: `Ready to run. ${draft.outcome.summary} Saved.`, tone: "ok" };
   return { text: "No changes", tone: "" };
 }
 
