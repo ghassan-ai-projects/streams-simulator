@@ -27,7 +27,30 @@ export function runFacts(report: Report): string {
     .join(" · ");
 }
 
-export function planOfRun(report: Report): LaunchPlan {
+export interface Rerun {
+  readonly plan: LaunchPlan;
+  readonly left: readonly string[];
+}
+
+function count(n: number, one: string, many: string): string {
+  return n === 0 ? "" : `${String(n)} ${n === 1 ? one : many}`;
+}
+
+function leftOut(report: Report): readonly string[] {
+  const kinds = (kind: string) => report.disturbances.filter((d) => d.kind === kind).length;
+  return [
+    report.seed === null ? "the seed, which the run did not record (seed 1 is used)" : "",
+    report.endNs - report.startNs < 60e9 ? "a length under one minute (one minute is used)" : "",
+    count(kinds("perturbation"), "delivery perturbation", "delivery perturbations"),
+    count(kinds("environment"), "environment change", "environment changes"),
+  ].filter((part) => part !== "");
+}
+
+export function rerunOf(report: Report): Rerun {
+  return { plan: planOfRun(report), left: leftOut(report) };
+}
+
+function planOfRun(report: Report): LaunchPlan {
   return {
     seed: report.seed ?? 1,
     durationS: Math.max(60, Math.round((report.endNs - report.startNs) / 1e9)),

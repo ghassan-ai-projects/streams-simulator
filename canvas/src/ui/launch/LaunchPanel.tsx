@@ -142,10 +142,8 @@ function useLaunch(launch: LaunchStore, plant: string, onFinished: (worldId: str
 
 export function LaunchPanel({ launch, plant, path, onClose, onFinished }: LaunchPanelProps) {
   const state = useLaunch(launch, plant.id, onFinished);
-  const [draft, setDraft] = useState<Draft>(() => {
-    const proposed = launch.proposal(plant.id);
-    return proposed === null ? firstDraft : draftOf(proposed);
-  });
+  const [proposed] = useState(() => launch.proposal(plant.id));
+  const [draft, setDraft] = useState<Draft>(() => (proposed === null ? firstDraft : draftOf(proposed.plan)));
   return (
     <aside className={panel.panel} aria-labelledby="launch-title">
       <header className={panel.head}>
@@ -155,6 +153,11 @@ export function LaunchPanel({ launch, plant, path, onClose, onFinished }: Launch
           <X size={16} aria-hidden="true" />
         </button>
       </header>
+      {proposed !== null && proposed.left.length > 0 && state.phase !== "running" && (
+        <p className={panel.hint} role="note">
+          {`Copied from the earlier run: its seed, length, mode and faults. Not copied: ${proposed.left.join("; ")}.`}
+        </p>
+      )}
       <Body state={state} launch={launch} plant={plant} path={path} draft={draft} change={setDraft} />
     </aside>
   );

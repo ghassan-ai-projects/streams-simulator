@@ -2,7 +2,7 @@ import { RotateCcw } from "lucide-react";
 import type { LaunchStore } from "../../app/launchStore";
 import type { NavigationStore } from "../../app/navigationStore";
 import type { ReviewState } from "../../app/reviewStore";
-import { planOfRun } from "../../model/reportViews";
+import { rerunOf } from "../../model/reportViews";
 import type { Crumb } from "../shell/Breadcrumb";
 import { Breadcrumb } from "../shell/Breadcrumb";
 import { useScreen } from "../useScreen";
@@ -42,7 +42,8 @@ function RunActions({ state, navigation, launch, plant }: Omit<HeaderProps, "wor
           type="button"
           className={styles.runAction}
           onClick={() => {
-            launch.propose(report.domainId, planOfRun(report));
+            const rerun = rerunOf(report);
+            launch.propose(report.domainId, rerun.plan, rerun.left);
             navigation.go({ screen: "plant", domain: path, hall: null, launch: true });
           }}
         >

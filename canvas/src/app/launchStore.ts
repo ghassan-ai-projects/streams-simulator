@@ -48,17 +48,22 @@ function worldOf(value: unknown): string {
   return typeof record.world_id === "string" ? record.world_id : "";
 }
 
+export interface Proposal {
+  readonly plan: LaunchPlan;
+  readonly left: readonly string[];
+}
+
 export class LaunchStore extends Observable<LaunchState> {
   private stop = false;
   private origin: LaunchOrigin = nowhere;
-  private proposed: { readonly domain: string; readonly plan: LaunchPlan } | null = null;
+  private proposed: (Proposal & { readonly domain: string }) | null = null;
 
-  propose(domain: string, plan: LaunchPlan): void {
-    this.proposed = { domain, plan };
+  propose(domain: string, plan: LaunchPlan, left: readonly string[] = []): void {
+    this.proposed = { domain, plan, left };
   }
 
-  proposal(domain: string): LaunchPlan | null {
-    return this.proposed?.domain === domain ? this.proposed.plan : null;
+  proposal(domain: string): Proposal | null {
+    return this.proposed?.domain === domain ? { plan: this.proposed.plan, left: this.proposed.left } : null;
   }
 
   constructor(private readonly bridge: Bridge) {

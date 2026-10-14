@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { report } from "../test/runFixture";
-import { kpisOf, planOfRun, runFacts, runIdentity } from "./reportViews";
+import { kpisOf, rerunOf, runFacts, runIdentity } from "./reportViews";
 import { badgeLabels, badgeOf, humanise, parseReport, runSpan, parseReplay, replayLine, wallClock } from "./report";
 
 describe("run report", () => {
@@ -137,13 +137,17 @@ describe("run report", () => {
   it("says a run's facts in words and plans the same run again", () => {
     const parsed = parseReport(report);
     expect(runFacts(parsed)).toBe("seed 7 · 1 h");
-    expect(planOfRun(parsed)).toEqual({
+    expect(rerunOf(parsed).plan).toEqual({
       seed: 7,
       durationS: 3600,
       explore: false,
       faults: [{ entity: "CT-1", fault: "tower__fan_failure", atS: 600 }],
     });
-    expect(planOfRun(parseReport(null))).toEqual({ seed: 1, durationS: 60, explore: false, faults: [] });
+    expect(rerunOf(parsed).left).toEqual(["1 delivery perturbation", "1 environment change"]);
+    expect(rerunOf(parseReport(null))).toEqual({
+      plan: { seed: 1, durationS: 60, explore: false, faults: [] },
+      left: ["the seed, which the run did not record (seed 1 is used)", "a length under one minute (one minute is used)"],
+    });
     expect(runFacts(parseReport(null))).toBe("");
   });
 });
