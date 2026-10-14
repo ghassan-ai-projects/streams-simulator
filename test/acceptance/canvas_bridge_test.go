@@ -150,6 +150,7 @@ func driveWorld(t *testing.T, client *bridgeClient, world string, stream *eventS
 	if injected["fault_id"] == nil {
 		t.Fatalf("fault.inject = %v", injected)
 	}
+	checkEffectorCall(t, client, world)
 	client.action("clock.advance", map[string]any{"world_id": world, "by_ns": 60 * 1e9})
 	observed := 0
 	read := stream.until(func(event serverEvent) bool {
@@ -164,6 +165,18 @@ func driveWorld(t *testing.T, client *bridgeClient, world string, stream *eventS
 	})
 	if first := read[0]; first.recordType() != "run.opened" || first.id != "0" {
 		t.Fatalf("the stream opens with %+v", first)
+	}
+}
+
+func checkEffectorCall(t *testing.T, client *bridgeClient, world string) {
+	t.Helper()
+	listed := client.action("effector.list", map[string]any{"world_id": world})
+	if !strings.Contains(client.heard(), "cooling_tower__set_fan_speed") || listed["effectors"] == nil {
+		t.Fatalf("effector.list = %v", listed)
+	}
+	ack := client.action("effector.invoke", map[string]any{"world_id": world, "entity_id": "CT-1", "effector": "cooling_tower__set_fan_speed", "args": map[string]any{"tower_id": "CT-1", "speed": 0.8}})
+	if ack["accepted"] != true || ack["command_id"] == "" || ack["token"] != nil {
+		t.Fatalf("effector.invoke = %v", ack)
 	}
 }
 

@@ -50,6 +50,19 @@ func worldIDInput() toolInput {
 	}
 }
 
+func worldInvokeInput() toolInput {
+	return toolInput{
+		Properties: map[string]any{
+			"world_id":   stringSchema(),
+			"entity_id":  stringSchema(),
+			"effector":   stringSchema(),
+			"command_id": stringSchema(),
+			"args":       objectSchema(),
+		},
+		Required: []string{"world_id", "entity_id", "effector"},
+	}
+}
+
 func clockAdvanceInput() toolInput {
 	return toolInput{
 		Properties: map[string]any{

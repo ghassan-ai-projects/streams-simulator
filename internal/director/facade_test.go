@@ -149,6 +149,25 @@ func TestFacadeOperatorOperationsNeedTheWorldsCapabilityToken(t *testing.T) {
 	}
 }
 
+func TestFacadeWorldEffectorsListAndInvokeForTheDirector(t *testing.T) {
+	t.Parallel()
+	d := newTestDirector(t)
+	created, err := d.CreateWorld(director.WorldRequest{Domain: "aquaculture-pond"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	worldID, entity := created["world_id"].(string), created["entity_ids"].([]string)[0]
+	listed, err := d.WorldEffectors(worldID)
+	effectors, _ := listed["effectors"].([]director.EffectorInfo)
+	if err != nil || len(effectors) == 0 {
+		t.Fatalf("effectors = %v, %v", listed, err)
+	}
+	ack, err := d.InvokeWorldEffector(worldID, effectors[0].Name, entity, "", testsupport.ArgsForSchema(effectors[0].ArgsSchema, entity))
+	if err != nil || !ack.Accepted || ack.CommandID == "" {
+		t.Fatalf("ack = %+v, %v", ack, err)
+	}
+}
+
 func errOf(_ string, err error) error { return err }
 
 func TestFacadeConstructorsAndRefusals(t *testing.T) {

@@ -21,6 +21,22 @@ func TestEveryActionNamesItsToolOrCommandOnce(t *testing.T) {
 	}
 }
 
+func TestEffectorActionsTakeTheWorldAndNeverTheCapabilityToken(t *testing.T) {
+	t.Parallel()
+	list, _ := Lookup("effector.list")
+	invoke, _ := Lookup("effector.invoke")
+	if list.Tool != "sim.world.effectors" || list.Mutating || invoke.Tool != "sim.world.invoke" || !invoke.Mutating {
+		t.Fatalf("effector actions = %+v, %+v", list, invoke)
+	}
+	args := map[string]any{"world_id": "w-1", "entity_id": "P-1", "effector": "pump__start", "args": map[string]any{"pump_id": "P-1"}, "command_id": "c-1"}
+	if got, err := invoke.ToolArguments(args); err != nil || !reflect.DeepEqual(got, args) {
+		t.Fatalf("ToolArguments = %v, %v", got, err)
+	}
+	if _, err := invoke.ToolArguments(map[string]any{"world_id": "w-1", "token": "t-secret"}); !errors.Is(err, ErrBadArguments) {
+		t.Fatalf("a token passed through: %v", err)
+	}
+}
+
 func TestToolArgumentsAreClosedAndNeverUnblind(t *testing.T) {
 	t.Parallel()
 	reveal, err := Lookup("truth.reveal")
