@@ -68,3 +68,21 @@ Scores: director 3/5 (five High: D3-1 report cells cut, D3-2 readout values and 
 | Director D3-10, D3-13 | Fixed: chips size to their text and stay in the lane with a count of the rest; the flat density strip is gone; transport errors are amber. Open: alarm activations on the lane need alarm events in the report |
 | Director D3-11, D3-12 | Logged as R9-14 and R9-13: report and verify memory on the campus, playback indexing off the main thread; an Explore truth read for the true state |
 | Director D3-15, D3-16, D3-17 | D3-16 and D3-17 fixed with E3-1 and A3-11. Accepted for now: wires over frame titles and frame gutters (layout round) |
+
+## Round 4 (after round 3 fixes)
+
+Scores: director 3/5 (High: D4-1 fault and alarm text past the node edge, D4-2 row headers in browser default style), accessibility 4/5 (High: A4-1 status word cut at the opening zoom), engineer 3/5 (High: E4-1 verify passed a missing evidence file or digest, E4-2 the canvas worked out fault state itself).
+
+### Round 4 dispositions (commits 1a1db02, c2c9f3b, c204052, 5b862c5, 7e4ff4c, 47080d9, e3c708d and the design commit after them)
+
+| Findings | Disposition |
+|---|---|
+| Engineer E4-1, E4-3, E4-8 (R9-15–R9-17) | Fixed in the simulator: every evidence file and digest of a closed run is required, checked against what was recorded and what the replay gives; verify names a `reason` and `file`; the canvas headline is phrased from the reason |
+| Engineer E4-2, E4-4 (R9-20, R9-21) | Fixed in the simulator: the report gives each fault as an interval with how it ended; instruments declare their state vocabulary and compose copies it onto the channel; the canvas only presents both |
+| Engineer E4-5–E4-7 | Fixed: the status word never truncates; an end-to-end run with two faults in one hall proves the rollup, the fault names and the way back; e2e specs have their own tsconfig |
+| A11y A4-1–A4-10 | Fixed: tags at 11 px on screen with the kind giving way; fault name in the readout and the node name; chip and hall-entry announcements; headings hold only titles and every table has headers; set times as text; the key list closes when focus leaves; review breadcrumb nav; one application role |
+| A11y A4-11 | Accepted: a run that does not verify is a 422 from the bridge, its contract for a failed command; the browser logs the status |
+| Director D4-1, D4-2 | Fixed: word values in the label face with an ellipsis and a title, labels keep room; row headers styled as cells |
+| Director D4-3–D4-7, D4-10, D4-11 | Fixed: double-click opens a hall; selected wires stand out; hall summaries; Inspect lists what is active now; scrubber time ticks and an empty-lane message; compact labels at 11 px; separators; legend for filled and hollow pins |
+| Director D4-8, D4-9; alarm events on the lane | Logged as R9-22, R9-23, R9-24 for the simulator |
+| Watch test flake | Fixed: the test replaces the file atomically; os.WriteFile showed two real changes |
