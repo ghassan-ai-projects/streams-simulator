@@ -58,8 +58,8 @@ Round-1 and round-2 issues marked fixed were not re-reported; only regressions a
 - Observed: The new plant already has top-level "UTILITIES" (with "CHILLER HALL" and "OFFICE BLOCK" under it). Default Area is "Utilities". The text "its site, areas, profiles and axes" does not say what an "axis" is or that the areas come from the chosen start plant. To get "Site" I had to add it as a new top-level area.
 - Expected: The start point's areas are described, or the empty plant starts with a single "Site" area.
 - Suggestion: Name the source of the areas on the form, or start an empty plant with one "Site" area.
-- Status: fixed 88ebe63 (the form wording); needs-binary for the single "Site" area
-- Fix: The New plant option now reads "An empty plant with the site, areas, profiles and axes of the start plant and no equipment". Needs-binary: the areas are copied from the start plant by the binary (`emptyPlant` in internal/component/internal/domain/new_plant.go keeps the base's site and areas); proposal: an empty plant keeps the site and starts with one top-level "Site" area. Test: HomeScreen.test.tsx.
+- Status: fixed a0e7b1f (one site area), with 88ebe63 (the form wording)
+- Fix: The New plant option now reads "An empty plant with the site, areas, profiles and axes of the start plant and no equipment". The binary: `emptyPlant` in internal/component/internal/domain/new_plant.go keeps the site and starts an empty plant with one top-level area named after the site ("Site" when unnamed). Tests: internal/component/new_plant_test.go and new_plant_test.go in the domain package. The canvas fake (`component.new`) and plantMaker.test.ts follow it (02d7f75). Test: HomeScreen.test.tsx.
 
 ## ISS-3-05 Typed instance Name is dropped when the form re-renders; the suggestion placeholder looks like a typed value
 - Severity: Medium
