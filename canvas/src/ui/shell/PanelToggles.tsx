@@ -37,7 +37,7 @@ function usePanelKeys(panels: PanelStore) {
   }, [panels]);
 }
 
-export function PanelToggles({ panels }: { readonly panels: PanelStore }) {
+export function PanelToggles({ panels, right = "Details" }: { readonly panels: PanelStore; readonly right?: string }) {
   const state = useStore(panels);
   usePanelKeys(panels);
   const toggle = (side: Side, word: string, key: string, Icon: typeof PanelLeft) => (
@@ -59,7 +59,7 @@ export function PanelToggles({ panels }: { readonly panels: PanelStore }) {
   return (
     <span className={styles.toggles}>
       {toggle("left", "Outline", "[", PanelLeft)}
-      {toggle("right", "Details", "]", PanelRight)}
+      {toggle("right", right, "]", PanelRight)}
     </span>
   );
 }

@@ -39,4 +39,10 @@ describe("panel toggles", () => {
     await act(() => new Promise((resolve) => requestAnimationFrame(resolve)));
     expect(screen.getByRole("heading", { name: "Plant" })).toHaveFocus();
   });
+
+  it("names the right panel after what it shows", () => {
+    render(<PanelToggles panels={new PanelStore(preferences())} right="Build" />);
+    expect(screen.getByRole("button", { name: "Build panel" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.queryByRole("button", { name: "Details panel" })).not.toBeInTheDocument();
+  });
 });

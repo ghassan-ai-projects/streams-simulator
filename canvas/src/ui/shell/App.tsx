@@ -114,7 +114,11 @@ export function App({ stores }: { readonly stores: Stores }) {
       crumbs={setSlot}
       help={<KeyHelp />}
       status={<RunIndicator launch={stores.launch} navigation={stores.navigation} />}
-      toggles={route.screen === "home" ? null : <PanelToggles panels={stores.panels} />}
+      toggles={
+        route.screen === "home" ? null : (
+          <PanelToggles panels={stores.panels} right={route.screen === "edit" ? "Build" : "Inspector"} />
+        )
+      }
       preference={preference}
       onCycleTheme={() => {
         stores.themes.cycle();
