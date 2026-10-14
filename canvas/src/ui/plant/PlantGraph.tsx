@@ -4,7 +4,7 @@ import type { CSSProperties, KeyboardEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { directionOf, firstOf, nearest } from "../../model/graphKeys";
 import type { PlantView } from "../../model/plantView";
-import { describeNode, viewSummary } from "../../model/plantView";
+import { describeNode, hallCount } from "../../model/plantView";
 import { anchorsOnly, centreOf, inView, openingViewport, tierOf } from "../../model/viewport";
 import type { FlowNode, NodeLive } from "./flow";
 import { flowEdges, flowNodes } from "./flow";
@@ -35,8 +35,8 @@ function useFollowSelection(selected: string | null) {
     if (node === undefined) return;
     const box = {
       ...node.internals.positionAbsolute,
-      width: node.measured.width ?? 0,
-      height: node.measured.height ?? 0,
+      width: node.width ?? node.measured.width ?? 0,
+      height: node.height ?? node.measured.height ?? 0,
     };
     const viewport = flow.getViewport();
     if (!inView(box, viewport, { width, height })) {
@@ -79,6 +79,14 @@ function useZoomKeys() {
   };
 }
 
+function useSelectionMoves(view: PlantView, selected: string | null, setActive: (id: string) => void) {
+  const [seen, setSeen] = useState(selected);
+  if (seen !== selected) {
+    setSeen(selected);
+    if (selected !== null && view.nodes.some((entry) => entry.id === selected)) setActive(selected);
+  }
+}
+
 function useViewActive(view: PlantView, viewKey: string) {
   const [active, setActive] = useState<string | null>(null);
   const [shownKey, setShownKey] = useState(viewKey);
@@ -87,7 +95,7 @@ function useViewActive(view: PlantView, viewKey: string) {
     const back = view.nodes.some((entry) => entry.id === shownKey);
     setShownKey(viewKey);
     setActive(back ? shownKey : firstOf(view.layout.nodes));
-    setEntered(back ? "" : `${viewKey}, ${viewSummary(view)}. `);
+    setEntered(back ? "" : `${viewKey}, ${hallCount(view, viewKey)}. `);
   }
   const current = active !== null && view.nodes.some((entry) => entry.id === active) ? active : null;
   const move = (id: string | null) => {
@@ -97,18 +105,36 @@ function useViewActive(view: PlantView, viewKey: string) {
   return { active: current, setActive: move, entered };
 }
 
+function announce(
+  view: PlantView,
+  active: string | null,
+  selected: string | null,
+  live: ((id: string) => NodeLive) | undefined,
+): string {
+  const node = view.nodes.find((entry) => entry.id === active);
+  if (node === undefined) return "";
+  const now = live?.(node.id);
+  return describeNode(node, node.id === selected, now?.status ?? null, now?.count ?? 0, now?.fault ?? "");
+}
+
+function enterHall(id: string, onSelect: (id: string | null) => void, onOpenHall?: (hall: string) => void) {
+  if (onOpenHall === undefined) {
+    onSelect(id);
+    return;
+  }
+  onSelect(null);
+  onOpenHall(id);
+}
+
 function useGraphKeys({ view, viewKey, selected, live, onSelect, onOpenHall, onEscape }: PlantGraphProps): Keys {
   const { active, setActive, entered } = useViewActive(view, viewKey);
+  useSelectionMoves(view, selected, setActive);
   const zoomKey = useZoomKeys();
-  const node = view.nodes.find((entry) => entry.id === active);
-  const now = node === undefined ? undefined : live?.(node.id);
-  const announcement =
-    node === undefined
-      ? ""
-      : entered + describeNode(node, node.id === selected, now?.status ?? null, now?.count ?? 0, now?.fault ?? "");
+  const said = announce(view, active, selected, live);
+  const announcement = said === "" ? "" : entered + said;
   const activate = (id: string) => {
-    if (view.nodes.find((entry) => entry.id === id)?.instance === null) onOpenHall?.(id);
-    else onSelect(id);
+    if (view.nodes.find((entry) => entry.id === id)?.instance !== null) onSelect(id);
+    else enterHall(id, onSelect, onOpenHall);
   };
   const move = (key: string): boolean => {
     const direction = directionOf(key);
@@ -118,7 +144,8 @@ function useGraphKeys({ view, viewKey, selected, live, onSelect, onOpenHall, onE
   };
   const choose = (key: string): boolean => {
     if ((key !== "Enter" && key !== " ") || active === null) return false;
-    activate(active);
+    if (key === " ") onSelect(active);
+    else activate(active);
     return true;
   };
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -137,6 +164,13 @@ function useGraphKeys({ view, viewKey, selected, live, onSelect, onOpenHall, onE
   };
   return { active, announcement, onKeyDown, onFocus, point };
 }
+
+const graphNames = {
+  "aria-roledescription": "plant graph",
+  "aria-label": "Plant graph",
+  "aria-describedby": "graph-keys",
+  tabIndex: 0,
+} as const;
 
 const fixedProps = {
   nodeTypes,
@@ -163,7 +197,8 @@ function Flow({
   const nodes = useMemo(() => flowNodes(view, selected, live ?? null, active), [view, selected, live, active]);
   const zoom = useStore((state) => state.transform[2]);
   const anchors = anchorsOnly(tierOf(zoom));
-  const edges = useMemo(() => flowEdges(view, anchors, selected), [view, anchors, selected]);
+  const shown = view.nodes.some((entry) => entry.id === selected) ? selected : null;
+  const edges = useMemo(() => flowEdges(view, anchors, shown), [view, anchors, shown]);
   return (
     <ReactFlow
       nodes={nodes}
@@ -171,17 +206,14 @@ function Flow({
       {...fixedProps}
       className={`tier-${tierOf(zoom)}`}
       style={{ "--zoom": String(zoom) } as CSSProperties}
-      aria-roledescription="plant graph"
-      aria-label="Plant graph"
-      aria-describedby="graph-keys"
-      tabIndex={0}
+      {...graphNames}
       onKeyDown={keys.onKeyDown}
       onFocus={keys.onFocus}
       onNodeClick={(_, node: FlowNode) => {
         onSelect(node.type === "frame" ? null : node.id);
       }}
       onNodeDoubleClick={(_, node: FlowNode) => {
-        if (node.type === "hall") onOpenHall?.(node.id);
+        if (node.type === "hall") enterHall(node.id, onSelect, onOpenHall);
       }}
       onPaneClick={() => {
         onSelect(null);
@@ -199,8 +231,8 @@ export function PlantGraph(props: PlantGraphProps) {
   return (
     <div className={styles.graph}>
       <p id="graph-keys" className="sr-only">
-        Arrow keys move between instances, Enter selects or opens a hall, Escape clears the selection, question mark
-        lists every key. The outline lists every instance.
+        Arrow keys move between instances, Space selects, Enter selects an instance or opens a hall, Escape clears the
+        selection, question mark lists every key. The outline lists every instance.
       </p>
       <p id="graph-said" className="sr-only" aria-live="polite">
         {keys.announcement}

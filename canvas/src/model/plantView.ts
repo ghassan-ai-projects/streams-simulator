@@ -208,8 +208,8 @@ function counted(n: number, noun: string): string {
 function stateOf(status: NodeStatus, count: number, fault: string): string {
   if (status === null) return "";
   const where = count > 0 ? ` in ${String(count)}` : "";
-  const name = status === "fault" && fault !== "" ? `: ${fault}` : "";
-  return `${statusWords[status]}${where}${name}, `;
+  if (fault === "") return `${statusWords[status]}${where}, `;
+  return status === "fault" ? `${statusWords.fault}: ${fault}, ` : `${statusWords[status]}${where}, Fault: ${fault}, `;
 }
 
 export function describeNode(
@@ -221,7 +221,7 @@ export function describeNode(
 ): string {
   const ports =
     node.instance === null
-      ? "Enter opens the hall"
+      ? "Space selects, Enter opens the hall"
       : `${counted(node.pins.ins.length, "input")}, ${counted(node.pins.outs.length, "output")}`;
   const state = stateOf(status, count, fault);
   return `${node.label}, ${state}${node.detail}, ${ports}${selected ? ", selected" : ""}`;
@@ -239,4 +239,10 @@ export function hallMembers(plant: Plant, hall: string): readonly (readonly [str
     if (hallOf(instance.id) === hall) counts.set(instance.kind, (counts.get(instance.kind) ?? 0) + 1);
   }
   return [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+}
+
+export function hallCount(view: PlantView, hall: string): string {
+  const own = view.nodes.filter((node) => hallOf(node.id) === hall).length;
+  const shared = view.nodes.filter((node) => node.instance !== null).length - own;
+  return `${String(own)} instances${shared > 0 ? ` plus ${String(shared)} shared` : ""}`;
 }

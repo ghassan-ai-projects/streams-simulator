@@ -143,8 +143,10 @@
   fill: var(--accent);
 }
 
-.react-flow__edge.wire-off {
-  opacity: 0.18;
+.react-flow__edge.wire-off .react-flow__edge-path {
+  stroke: var(--text-tertiary);
+  stroke-width: 1.5;
+  stroke-dasharray: none;
 }
 
 .react-flow__edge.wire-on .react-flow__edge-path {

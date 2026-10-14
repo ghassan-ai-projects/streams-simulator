@@ -59,11 +59,12 @@ export function nextEvent(marks: readonly EventMark[], atNs: number): number | n
   return marks.find((mark) => mark.atNs > atNs)?.atNs ?? null;
 }
 
-export function faultedAt(report: Report | null, atNs: number): ReadonlyMap<string, string> {
-  const active = new Map<string, string>();
+export function faultedAt(report: Report | null, atNs: number): ReadonlyMap<string, readonly string[]> {
+  const active = new Map<string, string[]>();
   for (const d of report?.disturbances ?? []) {
     const ended = d.clearedNs !== null && d.clearedNs <= atNs;
-    if (d.kind === "fault" && d.onsetNs <= atNs && !ended) active.set(d.target, humanise(d.name));
+    if (d.kind === "fault" && d.onsetNs <= atNs && !ended)
+      active.set(d.target, [...(active.get(d.target) ?? []), humanise(d.name)]);
   }
   return active;
 }

@@ -4,7 +4,8 @@ import styles from "./KeyHelp.module.css";
 const keys: readonly (readonly [string, string])[] = [
   ["Tab, Shift Tab", "move between the top bar, the outline, the graph, the inspector and the report"],
   ["Arrow keys (graph)", "move to the nearest instance in that direction"],
-  ["Enter or Space (graph)", "select the instance, or open the hall"],
+  ["Space (graph)", "select the instance or hall"],
+  ["Enter (graph)", "select the instance, or open the hall"],
   ["Escape (graph)", "clear the selection, then leave the hall"],
   ["+ and − (graph)", "zoom in and out"],
   ["0 (graph)", "fit the plant in view"],

@@ -19,12 +19,14 @@ interface ObservedProps {
   readonly entity: string;
 }
 
-function ActiveNow({ fault, shown }: { readonly fault: string; readonly shown: readonly Shown[] }) {
+function ActiveNow({ faults, shown }: { readonly faults: readonly string[]; readonly shown: readonly Shown[] }) {
   const alarmed = shown.filter((entry) => entry.attention !== null);
-  if (fault === "" && alarmed.length === 0) return null;
+  if (faults.length === 0 && alarmed.length === 0) return null;
   return (
     <ul className={styles.activeNow} aria-label="Active now">
-      {fault !== "" && <li className={styles["value-alarm"]}>{`${statusWords.fault}: ${fault}`}</li>}
+      {faults.map((fault) => (
+        <li key={fault} className={styles["value-alarm"]}>{`${statusWords.fault}: ${fault}`}</li>
+      ))}
       {alarmed.map((entry) => (
         <li key={entry.channel} className={styles[`value-${entry.attention ?? "warn"}`]}>
           {`${statusWords[entry.attention ?? "warn"]}: ${channelWords(entry.channel)} ${entry.value}`}
@@ -45,6 +47,36 @@ function HallNote({ plant, entity }: { readonly plant: ReadyPlant | null; readon
   );
 }
 
+function ObservedTable({ shown, at }: { readonly shown: readonly Shown[]; readonly at: ReadonlyMap<string, number> }) {
+  return (
+    <table className={styles.table}>
+      <thead className="sr-only">
+        <tr>
+          <th scope="col">Channel</th>
+          <th scope="col">Value</th>
+          <th scope="col">Observed at</th>
+        </tr>
+      </thead>
+      <tbody>
+        {shown.map((entry) => (
+          <tr key={entry.channel}>
+            <th scope="row" className={styles.label} title={entry.channel}>
+              {channelWords(entry.channel)}
+            </th>
+            <td className={cx(styles.number, entry.attention !== null && styles[`value-${entry.attention}`])}>
+              {entry.value}
+              {entry.unit !== "" && <span className={styles.unit}>{entry.unit}</span>}
+            </td>
+            <td className={styles.clock} title="time of this observation">
+              {wallClock(at.get(entry.channel) ?? 0)}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
 export function Observed({ review, state, plant, entity }: ObservedProps) {
   const readings = review.index.readings(entity, state.positionNs);
   if (readings.length === 0) return <HallNote plant={plant} entity={entity} />;
@@ -57,25 +89,8 @@ export function Observed({ review, state, plant, entity }: ObservedProps) {
   const at = new Map(readings.map((reading) => [shortChannel(reading.channel), reading.atNs]));
   return (
     <>
-      <ActiveNow fault={faultedAt(report, state.positionNs).get(entity) ?? ""} shown={shown} />
-      <table className={styles.table}>
-        <tbody>
-          {shown.map((entry) => (
-            <tr key={entry.channel}>
-              <td className={styles.label} title={entry.channel}>
-                {channelWords(entry.channel)}
-              </td>
-              <td className={cx(styles.number, entry.attention !== null && styles[`value-${entry.attention}`])}>
-                {entry.value}
-                {entry.unit !== "" && <span className={styles.unit}>{entry.unit}</span>}
-              </td>
-              <td className={styles.clock} title="time of this observation">
-                {wallClock(at.get(entry.channel) ?? 0)}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <ActiveNow faults={faultedAt(report, state.positionNs).get(entity) ?? []} shown={shown} />
+      <ObservedTable shown={shown} at={at} />
     </>
   );
 }

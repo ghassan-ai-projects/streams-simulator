@@ -112,7 +112,11 @@ function LaneNotes({
         {said}
       </p>
       {empty && <p className={styles.laneMore}>No disturbances or effector calls in this run.</p>}
-      {hidden > 0 && <p className={styles.laneMore}>{`${String(hidden)} more events: use Previous and Next event`}</p>}
+      {hidden > 0 && (
+        <p
+          className={styles.laneMore}
+        >{`${String(hidden)} more ${hidden === 1 ? "event" : "events"}: use Previous and Next event`}</p>
+      )}
     </>
   );
 }

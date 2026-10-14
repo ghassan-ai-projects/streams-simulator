@@ -82,7 +82,7 @@ export function useZoomActions() {
       in: () => void flow.zoomIn({ duration: motion(120) }),
       out: () => void flow.zoomOut({ duration: motion(120) }),
       fit: () => void flow.fitView({ padding: 0.04, duration: motion(120) }),
-      centre: (x: number, y: number, zoom: number) => void flow.setCenter(x, y, { zoom, duration: motion(200) }),
+      centre: (x: number, y: number, zoom: number) => void flow.setCenter(x, y, { zoom }),
     }),
     [flow],
   );

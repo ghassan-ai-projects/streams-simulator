@@ -152,3 +152,49 @@ test("Enter opens a hall and the arrows keep working inside it; Escape returns t
   await expect(graph).toBeFocused();
   await expect(said).toContainText(`${hall},`);
 });
+
+function insideGraph(id: string): boolean {
+  const graph = document.querySelector("[aria-roledescription='plant graph']")?.getBoundingClientRect();
+  const node = document.querySelector(`.react-flow__node[data-id='${id}']`)?.getBoundingClientRect();
+  if (!graph || !node) return false;
+  return node.left >= graph.left && node.right <= graph.right && node.top >= graph.top && node.bottom <= graph.bottom;
+}
+
+function dimContrast(): number {
+  const luminance = (rgb: string) => {
+    const [r = 0, g = 0, b = 0] = (rgb.match(/\d+/g) ?? []).map(Number).map((c) => {
+      const s = c / 255;
+      return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+    });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const path = document.querySelector(".react-flow__edge.wire-off .react-flow__edge-path");
+  const graph = document.querySelector("[aria-roledescription='plant graph']");
+  if (!path || !graph) return 0;
+  const [a, b] = [luminance(getComputedStyle(path).stroke), luminance(getComputedStyle(graph).backgroundColor)];
+  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+}
+
+test("a selection made outside the graph comes into view, and arrow travel keeps the active node on screen", async ({
+  page,
+}) => {
+  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Ffactory-utilities.domain.json`);
+  const graph = page.getByRole("application", { name: "Plant graph" });
+  await expect(page.getByRole("group", { name: /^CT-1, cooling tower,/ })).toBeVisible();
+  await graph.focus();
+  await expect
+    .poll(async () => {
+      await page.keyboard.press("+");
+      return graph.getAttribute("class");
+    })
+    .toMatch(/tier-full/);
+  await page.getByRole("navigation", { name: "Outline" }).getByRole("button", { name: "MB-PROC" }).click();
+  await expect.poll(() => page.evaluate(insideGraph, "MB-PROC")).toBe(true);
+  await graph.focus();
+  for (const key of ["ArrowLeft", "ArrowUp", "ArrowLeft", "ArrowUp"]) {
+    await page.keyboard.press(key);
+    const said = (await page.locator("#graph-said").textContent()) ?? "";
+    await expect.poll(() => page.evaluate(insideGraph, said.split(",")[0] ?? "")).toBe(true);
+  }
+  expect(await page.evaluate(dimContrast)).toBeGreaterThanOrEqual(3);
+});

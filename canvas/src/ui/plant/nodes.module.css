@@ -328,11 +328,20 @@
 .tag-alarm,
 .tag-fault {
   background: var(--status-alarm-bg);
+  color: var(--text-primary);
+}
+
+.tag-alarm svg,
+.tag-fault svg {
   color: var(--status-alarm);
 }
 
 .tag-warn {
   background: var(--status-warn-bg);
+  color: var(--text-primary);
+}
+
+.tag-warn svg {
   color: var(--status-warn);
 }
 

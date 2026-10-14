@@ -19,10 +19,10 @@ export function useLive(review: ReviewStore, state: ReviewState, plant: ReadyPla
         .map((reading) => showReading(reading, plant === null ? [] : statesOf(plant.plant, id, reading.channel)));
       const attention = attentionOf(shown);
       return {
-        shown: withFault(abnormalFirst(shown), faulted.get(id) ?? ""),
+        shown: withFault(abnormalFirst(shown), (faulted.get(id) ?? []).join(", ")),
         status: attention === "alarm" ? "alarm" : faulted.has(id) ? "fault" : attention,
         count: 0,
-        fault: faulted.get(id) ?? "",
+        fault: (faulted.get(id) ?? []).join(", "),
       };
     },
     [review, state.positionNs, plant, faulted],
