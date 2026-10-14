@@ -97,3 +97,21 @@ test("a plant copied from a shipped example opens in the editor with its equipme
   await expect(page.getByRole("heading", { level: 1, name: "Pilot copy" })).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Outline" }).getByRole("button")).not.toHaveCount(0);
 });
+
+test("Enter in the instance name adds the equipment, as the button does", async ({ page }) => {
+  await page.goto(env("CANVAS_APP_URL"));
+  await page.getByRole("button", { name: "New plant" }).click();
+  const form = page.getByRole("form", { name: "New plant" });
+  await form.getByLabel("Name").fill("Enter probe");
+  await form.getByLabel("Start from").selectOption({ label: "Factory utilities" });
+  await form.getByRole("radio", { name: /^An empty plant/ }).check();
+  await form.getByRole("button", { name: "Create and open the editor" }).click();
+  await expect(page.getByRole("heading", { name: "No equipment yet" })).toBeVisible();
+  const build = page.getByRole("complementary", { name: "Build" });
+  await build.getByLabel("Find equipment").fill("pump");
+  await build.getByLabel("Equipment", { exact: true }).selectOption({ label: "Centrifugal pump" });
+  await build.getByLabel("Area", { exact: true }).selectOption({ index: 1 });
+  await build.getByLabel("Name", { exact: true }).fill("pump-2");
+  await build.getByLabel("Name", { exact: true }).press("Enter");
+  await expect(page.getByRole("navigation", { name: "Outline" }).getByRole("button", { name: "pump-2" })).toBeVisible();
+});
