@@ -131,6 +131,9 @@ describe("home screen", () => {
     fireEvent.change(within(form).getByLabelText("Id"), { target: { value: "bare-hall" } });
     fireEvent.change(within(form).getByLabelText("Name"), { target: { value: "Bare hall" } });
     fireEvent.click(within(form).getByRole("radio", { name: /^An empty plant/ }));
+    expect(within(form).getByRole("radio", { name: /^An empty plant/ })).toHaveAccessibleName(
+      /the site, areas, profiles and axes of the start plant/,
+    );
     fireEvent.click(within(form).getByRole("button", { name: "Create and open the editor" }));
     await vi.waitFor(() => {
       expect(bridge.writes[0]?.path).toBe("compositions/bare-hall.composition.json");

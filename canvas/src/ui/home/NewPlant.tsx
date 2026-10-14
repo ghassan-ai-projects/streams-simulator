@@ -132,7 +132,8 @@ function CopyChoice({ copy, setCopy }: { readonly copy: boolean; readonly setCop
           }}
         />
         <span>
-          <strong>An empty plant</strong> with only its site, areas, profiles and axes; you add the equipment.
+          <strong>An empty plant</strong> with the site, areas, profiles and axes of the start plant and no equipment;
+          you add the equipment.
         </span>
       </label>
     </fieldset>
