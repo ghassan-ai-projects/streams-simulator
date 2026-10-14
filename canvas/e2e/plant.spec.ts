@@ -41,9 +41,9 @@ test("wire arrows point to receivers and selected connections remain prominent",
   await expect(selected).toBeVisible();
   await expect(selected.locator(".react-flow__edge-path")).toHaveAttribute("marker-end", /url\(['"]?#/);
   await expect(selected.locator(".react-flow__edge-path")).toHaveCSS("stroke-width", "3px");
-  await expect(graph.locator(".react-flow__edge.wire-off .react-flow__edge-path").first()).toHaveAttribute(
-    "marker-end",
-    /color-mix/,
+  await expect(graph.locator(".react-flow__edge.wire-off .react-flow__edge-path").first()).toHaveCSS(
+    "stroke-opacity",
+    "0.3",
   );
 });
 
