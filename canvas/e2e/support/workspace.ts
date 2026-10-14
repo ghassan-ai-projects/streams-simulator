@@ -66,6 +66,17 @@ function editDescription(path: string): void {
   writeFileSync(path, JSON.stringify({ ...domain, description: "Edited after the runs were recorded." }, null, 2));
 }
 
+function markIncomplete(path: string): void {
+  const artifact = JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>;
+  writeFileSync(path, JSON.stringify({ ...artifact, incomplete: true }, null, 2));
+}
+
+function dropLedgerDigest(path: string): void {
+  const artifact = JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>;
+  delete artifact.ledger_digest;
+  writeFileSync(path, JSON.stringify(artifact, null, 2));
+}
+
 export function buildFixture(): Fixture {
   const root = mkdtempSync(join(tmpdir(), "streamsim-canvas-e2e-"));
   const binary = builtBinary();
@@ -89,6 +100,10 @@ export function buildFixture(): Fixture {
   dropCommands(join(workspace, "runs", "w-diverged", "run.json"), "fault.inject");
   record(binary, workspace, "w-tampered", []);
   retitleRecordedPlant(join(workspace, "runs", "w-tampered", "run.json"));
+  record(binary, workspace, "w-incomplete-stamp", []);
+  markIncomplete(join(workspace, "runs", "w-incomplete-stamp", "run.json"));
+  record(binary, workspace, "w-missing-digest", []);
+  dropLedgerDigest(join(workspace, "runs", "w-missing-digest", "run.json"));
   editDescription(join(workspace, "domains", "factory-utilities.domain.json"));
   return { binary, workspace, root };
 }

@@ -106,3 +106,20 @@ Scores: director 3/5 (High: D5-1 ellipses at the opening zoom, D5-2 dimmed wires
 | Engineer E5-3, E5-6, E5-7 | Fixed: every active fault per instance; an alarm state by its declared name from a composed domain, end to end |
 | Engineer E5-1, E5-2, E5-4 | In progress in the simulator (see the P9 handoff) |
 | Engineer E5-5, E5-8 | Logged as R9-25 and R9-26 |
+
+## Round 6 (frozen merged build, 2026-10-14)
+
+Scores: design director 4/5, desktop keyboard/input 3/5, process/test engineer 2/5. **Not approved**.
+The owner requests functionality first and visual optimization afterwards; the second reviewer now covers desktop
+keyboard/input usability. Full findings, build digests, actual width/theme coverage and prior-disposition checks:
+[P9-round-6.md](P9-round-6.md).
+
+| Findings | Disposition |
+|---|---|
+| E6-1 | Fixed: rejected verify results warn above truth even when the overall badge is Incomplete, including hall KPI-only view. Component regression and real-binary Chrome test. Awaiting re-review. |
+| E5-1, E5-2 | Chrome regressions prove an incomplete stamp never says Reproduces and a missing ledger digest fails file/replay checks. |
+| E6-2–E6-5 | R9-14, R9-22, R9-24 and R9-13 remain functional P9 blockers. |
+| U6-1 | Open: reproduce hall clipping at the reported widths and assert Fit geometrically in Chrome; reviewers disagree on different views. |
+| U6-2 | Open: direct keyboard route to the graph. |
+| D6-01, D5-12, frame-title wire crossings | Deferred visual detail after functionality per owner direction. |
+| E6-boundary | Candidate: strict response validation at the adapters boundary needs verification and correction. |
