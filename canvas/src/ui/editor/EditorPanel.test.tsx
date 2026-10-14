@@ -132,7 +132,9 @@ describe("plant editor panel", () => {
       }),
     );
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
-    expect(await screen.findByText("Needs fixing: 1 issue. Your changes are saved.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Needs fixing: 1 issue, listed in Build. Your changes are saved."),
+    ).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /^CH-1/ }));
     expect(screen.getByRole("heading", { name: "CH-1" })).toHaveFocus();
     expect(screen.getByRole("region", { name: "Issues on CH-1" })).toHaveTextContent('has no port "heat_in"');
@@ -161,7 +163,9 @@ describe("plant editor panel", () => {
       }),
     );
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
-    expect(await screen.findByText("Needs fixing: 4 issues. Your changes are saved.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Needs fixing: 4 issues, listed in Build. Your changes are saved."),
+    ).toBeInTheDocument();
     const block = screen.getByRole("region", { name: "Issues from the binary" });
     expect(within(block).getAllByRole("listitem")).toHaveLength(2);
     expect(within(block).getByRole("button", { name: /CH-1.*not a name \(×3\)/ })).toBeInTheDocument();

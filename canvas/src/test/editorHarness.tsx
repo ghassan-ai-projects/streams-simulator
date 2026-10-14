@@ -42,7 +42,7 @@ export function Harness({ editor }: { readonly editor: EditorStore }) {
   const navigation = new NavigationStore({ read: () => "#/", write: vi.fn(), subscribe: () => () => undefined });
   return (
     <ReactFlowProvider>
-      <EditorBar draft={state} editor={editor} navigation={navigation} />
+      <EditorBar draft={state} editor={editor} navigation={navigation} request={request} />
       <EditorPanel draft={state} plant={plant} editor={editor} request={request} />
     </ReactFlowProvider>
   );

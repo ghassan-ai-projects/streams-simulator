@@ -8,6 +8,7 @@ import plantStyles from "../plant/PlantScreen.module.css";
 import { Breadcrumb } from "../shell/Breadcrumb";
 import { useScreen } from "../useScreen";
 import styles from "./Editor.module.css";
+import type { FocusRequest } from "./panelProps";
 import { useEditorKeys } from "./useEditorKeys";
 
 interface BarProps {
@@ -24,7 +25,8 @@ interface Status {
 function outcomeStatus(draft: Draft): Status {
   if (draft.outcome?.kind === "refused") {
     const count = draft.issues?.listed.length ?? 0;
-    const why = draft.outcome.message ?? `${String(count)} ${count === 1 ? "issue" : "issues"}`;
+    const counted = `${String(count)} ${count === 1 ? "issue" : "issues"}`;
+    const why = draft.outcome.message ?? `${counted}, listed in Build`;
     return { text: `Needs fixing: ${why}. Your changes are saved.`, tone: "warn" };
   }
   if (draft.outcome?.kind === "composed") return { text: `Ready to run. ${draft.outcome.summary} Saved.`, tone: "ok" };
@@ -63,6 +65,30 @@ function OpenPlant({ draft, navigation }: Omit<BarProps, "editor">) {
       }}
     >
       Open plant
+    </button>
+  );
+}
+
+function ShowIssues({
+  draft,
+  editor,
+  request,
+}: {
+  readonly draft: Draft;
+  readonly editor: EditorStore;
+  readonly request: FocusRequest;
+}) {
+  if ((draft.issues?.listed.length ?? 0) === 0) return null;
+  return (
+    <button
+      type="button"
+      className={styles.action}
+      onClick={() => {
+        request.ask("build");
+        editor.select(null);
+      }}
+    >
+      Show issues
     </button>
   );
 }
@@ -179,7 +205,7 @@ function RevertButton({
   );
 }
 
-export function EditorBar({ draft, editor, navigation }: BarProps) {
+export function EditorBar({ draft, editor, navigation, request }: BarProps & { readonly request: FocusRequest }) {
   useEditorKeys(editor);
   const status = statusOf(draft);
   const clean = draft.doc === draft.saved;
@@ -191,6 +217,7 @@ export function EditorBar({ draft, editor, navigation }: BarProps) {
         {status.text}
       </span>
       <OpenPlant draft={draft} navigation={navigation} />
+      <ShowIssues draft={draft} editor={editor} request={request} />
       <Reload draft={draft} editor={editor} />
       <History draft={draft} editor={editor} />
       <Revert disabled={clean || draft.saving} editor={editor} />

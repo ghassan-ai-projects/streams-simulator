@@ -108,7 +108,7 @@ function Editing({ draft, editor, navigation }: { readonly draft: Draft } & Omit
           {plant.instances.length > 0 ? <Navigator /> : null}
         </div>
         <section className={plantStyles.center} aria-label={`Editing ${plant.title || plant.id}`}>
-          <EditorBar draft={draft} editor={editor} navigation={navigation} />
+          <EditorBar draft={draft} editor={editor} navigation={navigation} request={request} />
           <div ref={ref} className={plantStyles.graphHost}>
             {plant.instances.length === 0 ? (
               <NoEquipment />
