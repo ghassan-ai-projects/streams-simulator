@@ -184,14 +184,7 @@ export function AddEquipment({ draft, editor, request }: AddProps) {
   return (
     <form className={panel.group} onSubmit={submit} aria-labelledby="add-title" noValidate>
       <h3 id="add-title">Add equipment</h3>
-      <LibraryPick
-        library={draft.library}
-        use={use}
-        setUse={(next) => {
-          setUse(next);
-          reset();
-        }}
-      />
+      <LibraryPick library={draft.library} use={use} setUse={setUse} />
       {presets.description !== "" && <p className={styles.describe}>{presets.description}</p>}
       <Choice label="Size" value={preset} options={sizes(presets)} onChange={setPreset} />
       <NameField typed={typed} suggested={suggested} setTyped={setTyped} />

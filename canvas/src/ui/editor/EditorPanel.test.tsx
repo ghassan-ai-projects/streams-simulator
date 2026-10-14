@@ -31,6 +31,23 @@ describe("plant editor panel", () => {
     expect(screen.getByRole("status")).toHaveTextContent("Unsaved changes");
   });
 
+  it("keeps a typed name when equipment is chosen or the plant changes, and shows the suggestion only as a placeholder", async () => {
+    const { editor } = await editing();
+    const form = screen.getByRole("form", { name: "Add equipment" });
+    fireEvent.change(within(form).getByLabelText("Name"), { target: { value: "P-9" } });
+    choose("Equipment", "lib/pump@1", form);
+    expect(within(form).getByLabelText("Name")).toHaveValue("P-9");
+    act(() => {
+      editor.edit((current) => ({ ...current, title: "Lab two" }));
+    });
+    expect(within(form).getByLabelText("Name")).toHaveValue("P-9");
+    expect(within(form).getByLabelText("Name")).toHaveAttribute("placeholder", "P-1");
+    fireEvent.click(within(form).getByRole("button", { name: "Add to the plant" }));
+    await vi.waitFor(() => {
+      expect(equipmentOf(current(editor)).flatMap((entry) => entry.names)).toContain("P-9");
+    });
+  });
+
   it("refuses a name the binary's rule rejects, in the add and the rename forms, naming the rule", async () => {
     const { editor } = await editing();
     const form = screen.getByRole("form", { name: "Add equipment" });
