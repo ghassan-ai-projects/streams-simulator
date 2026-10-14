@@ -57,6 +57,13 @@ describe("launch plan", () => {
     expect(texts(plan({ durationS: 59 }))).toEqual(["The duration is at least one minute."]);
   });
 
+  it("names only the missing part of a fault draft", () => {
+    const texts = (faults: LaunchPlan["faults"]) => planProblems(plan({ faults })).map((problem) => problem.text);
+    expect(texts([{ entity: "h02/M-1", fault: "", atS: 0 }])).toEqual(["Fault 1 needs a fault."]);
+    expect(texts([{ entity: "", fault: "tooling_wear", atS: 0 }])).toEqual(["Fault 1 needs an instance."]);
+    expect(texts([{ entity: "", fault: "", atS: 0 }])).toEqual(["Fault 1 needs an instance and a fault."]);
+  });
+
   it("says in words what a plan will run", () => {
     expect(planSummary(plan({}), "30 min")).toBe("30 min of simulated time · Explore · no faults");
     const faults = [{ entity: "CT-1", fault: "fan", atS: 5 }];

@@ -82,6 +82,19 @@ describe("launch panel", () => {
     expect(screen.getByText("None: the plant runs healthy.")).toBeInTheDocument();
   });
 
+  it("names the missing fault after an instance is chosen and blocks the run", () => {
+    const fake = bridge();
+    renderPanel(fake);
+    fireEvent.click(screen.getByRole("button", { name: "Add fault" }));
+    change("Fault 1 instance", "CH-1");
+    expect(screen.getByText("1 fault needs attention before starting.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Start the run" }));
+    const fault = screen.getByLabelText("Fault 1 fault");
+    expect(fault).toHaveFocus();
+    expect(fault).toHaveAccessibleDescription("Fault 1 needs a fault.");
+    expect(fake.calls).toEqual([]);
+  });
+
   it("shows the binary's refusal and returns to the plan", async () => {
     const fake = bridge();
     fake.actions.set("world.create", failed(failure("domain_invalid", 422, "bad domain")));
