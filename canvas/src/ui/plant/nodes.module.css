@@ -494,3 +494,8 @@
   inset: -6px;
   border-radius: 50%;
 }
+
+:global(.tier-compact) .readout [role="img"] svg {
+  width: min(calc(11px / var(--zoom)), 20px);
+  height: min(calc(11px / var(--zoom)), 20px);
+}

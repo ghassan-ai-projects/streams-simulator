@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from "react";
 import type { PlantState } from "../../app/plantStore";
 import type { ReviewState, ReviewStore } from "../../app/reviewStore";
-import { statesOf } from "../../model/plant";
+import { channelOf } from "../../model/plant";
 import { hallOf } from "../../model/plantView";
 import { abnormalFirst, attentionOf, showReading, withFault, worstOf } from "../../model/readout";
 import { faultedAt } from "../../model/timeline";
@@ -16,7 +16,7 @@ export function useLive(review: ReviewStore, state: ReviewState, plant: ReadyPla
     (id: string): NodeLive => {
       const shown = review.index
         .readings(id, state.positionNs)
-        .map((reading) => showReading(reading, plant === null ? [] : statesOf(plant.plant, id, reading.channel)));
+        .map((reading) => showReading(reading, plant === null ? null : channelOf(plant.plant, id, reading.channel)));
       const attention = attentionOf(shown);
       return {
         shown: withFault(abnormalFirst(shown), (faulted.get(id) ?? []).join(", ")),

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { composition, domain } from "../test/plantFixture";
-import { areaOf, linkLines, linksOf, parsePlant, stateUnit, statesOf } from "./plant";
+import { areaOf, linkLines, linksOf, parsePlant, stateUnit, channelOf } from "./plant";
 
 describe("plant from a domain file", () => {
   it("reads instances, kinds, areas and links", () => {
@@ -16,7 +16,7 @@ describe("plant from a domain file", () => {
     expect(plant.instances[2]?.component).toBeNull();
     expect(plant.kinds.get("chiller")).toEqual({
       name: "chiller",
-      channels: [{ name: "chiller.power", unit: "kW", states: [] }],
+      channels: [{ name: "chiller.power", unit: "kW", states: [], range: null }],
       states: ["cop"],
       units: new Map([["cop", ""]]),
       faults: ["chiller__fouling"],
@@ -50,6 +50,7 @@ describe("plant from a domain file", () => {
           channels: [
             {
               name: "chiller.alarm_state",
+              range: { min: 0, max: 4 },
               states: [
                 { value: 1, name: "unacknowledged", attention: "alarm" },
                 { value: "x", name: "bad" },
@@ -61,12 +62,13 @@ describe("plant from a domain file", () => {
       ],
     });
     expect(plant.links[0]).toMatchObject({ fromPort: "power_out", toPort: "loads_in" });
-    expect(statesOf(plant, "CH-1", "chiller.alarm_state")).toEqual([
+    expect(channelOf(plant, "CH-1", "chiller.alarm_state")?.states).toEqual([
       { value: 1, name: "unacknowledged", attention: "alarm" },
       { value: 4, name: "shelved", attention: null },
     ]);
-    expect(statesOf(plant, "CH-1", "chiller.power")).toEqual([]);
-    expect(statesOf(plant, "nobody", "chiller.alarm_state")).toEqual([]);
+    expect(channelOf(plant, "CH-1", "chiller.alarm_state")?.range).toEqual({ min: 0, max: 4 });
+    expect(channelOf(plant, "CH-1", "chiller.power")).toBeNull();
+    expect(channelOf(plant, "nobody", "chiller.alarm_state")).toBeNull();
     expect(stateUnit(plant, "CH-1", "cop")).toBe("ratio");
     expect(stateUnit(plant, "nobody", "cop")).toBe("");
   });

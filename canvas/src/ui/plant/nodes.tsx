@@ -9,6 +9,7 @@ import type { NodeStatus, Shown } from "../../model/readout";
 import { channelWords, statusWords } from "../../model/readout";
 import type { FrameNodeType, HallNodeType, InstanceNodeType } from "./flow";
 import { cx } from "../cx";
+import { OutsideMark } from "../OutsideMark";
 import styles from "./nodes.module.css";
 
 function pinLook(pin: Pin): { readonly family: string; readonly shape: string; readonly typeName: string } {
@@ -99,6 +100,7 @@ function Readout({ shown }: { readonly shown: readonly Shown[] }) {
           <dd className={entry.word ? styles.word : undefined} title={entry.word ? entry.value : undefined}>
             {entry.value}
             {entry.unit !== "" && <span className={styles.unit}>{entry.unit}</span>}
+            <OutsideMark text={entry.outside} />
           </dd>
         </div>
       ))}
