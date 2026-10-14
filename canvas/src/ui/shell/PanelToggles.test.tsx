@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { PanelStore } from "../../app/panelStore";
 import { PanelToggles } from "./PanelToggles";
 
@@ -38,6 +38,15 @@ describe("panel toggles", () => {
     expect(screen.getByRole("button", { name: "Outline panel" })).toHaveAttribute("aria-pressed", "false");
     await act(() => new Promise((resolve) => requestAnimationFrame(resolve)));
     expect(screen.getByRole("heading", { name: "Plant" })).toHaveFocus();
+  });
+
+  it("hands the right toggle to its own press when one is given, and leaves the panel to it", () => {
+    const panels = new PanelStore(preferences());
+    const press = vi.fn();
+    render(<PanelToggles panels={panels} right="Build" onRightPress={press} />);
+    fireEvent.click(screen.getByRole("button", { name: "Build panel" }));
+    expect(press).toHaveBeenCalledTimes(1);
+    expect(panels.snapshot().right).toBe(true);
   });
 
   it("names the right panel after what it shows", () => {

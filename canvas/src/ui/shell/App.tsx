@@ -18,6 +18,7 @@ import { RunScreen } from "../run/RunScreen";
 import { CrumbSlot } from "./Breadcrumb";
 import { KeyHelp } from "./KeyHelp";
 import { PanelToggles } from "./PanelToggles";
+import { showBuild } from "./showBuild";
 import { RunIndicator } from "./RunIndicator";
 import { Shell } from "./Shell";
 import { TopBar } from "./TopBar";
@@ -100,6 +101,19 @@ function Screen({ stores, route }: { readonly stores: Stores; readonly route: Ro
   );
 }
 
+function ShellToggles({ stores, route }: { readonly stores: Stores; readonly route: Route }) {
+  if (route.screen !== "edit") return <PanelToggles panels={stores.panels} right="Inspector" />;
+  return (
+    <PanelToggles
+      panels={stores.panels}
+      right="Build"
+      onRightPress={() => {
+        showBuild(stores.editor, stores.panels);
+      }}
+    />
+  );
+}
+
 export function App({ stores }: { readonly stores: Stores }) {
   const { preference } = useTheme(stores.themes);
   const state = useSession(stores);
@@ -114,11 +128,7 @@ export function App({ stores }: { readonly stores: Stores }) {
       crumbs={setSlot}
       help={<KeyHelp />}
       status={<RunIndicator launch={stores.launch} navigation={stores.navigation} />}
-      toggles={
-        route.screen === "home" ? null : (
-          <PanelToggles panels={stores.panels} right={route.screen === "edit" ? "Build" : "Inspector"} />
-        )
-      }
+      toggles={route.screen === "home" ? null : <ShellToggles stores={stores} route={route} />}
       preference={preference}
       onCycleTheme={() => {
         stores.themes.cycle();
