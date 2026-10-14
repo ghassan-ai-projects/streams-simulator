@@ -6,6 +6,8 @@ import { areaNodesOf, suggestedName } from "../../model/composition";
 import { instanceNameFits, instanceNameRule } from "../../model/instanceNameRule";
 import type { LibraryEntry, Presets } from "../../model/library";
 import { searchLibrary } from "../../model/library";
+import type { Plant } from "../../model/plant";
+import { instanceIdTaken } from "../../model/plant";
 import panel from "../panel.module.css";
 import styles from "./Editor.module.css";
 import type { FocusRequest } from "./panelProps";
@@ -13,6 +15,7 @@ import { SubmitRow } from "./SubmitRow";
 
 interface AddProps {
   readonly draft: Draft;
+  readonly plant: Plant;
   readonly editor: EditorStore;
   readonly request: FocusRequest;
 }
@@ -114,6 +117,9 @@ function LibraryPick({ library, use, setUse }: PickProps) {
         onChange={(event) => {
           setQuery(event.target.value);
         }}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") event.preventDefault();
+        }}
       />
       <select
         aria-label="Equipment"
@@ -139,10 +145,11 @@ function sizes(presets: Presets): readonly (readonly [string, string])[] {
   return [["", "Default"], ...presets.options.map((option) => [option.name, option.title] as const)];
 }
 
-function missing(use: string, name: string, area: string): string | null {
+function missing(use: string, name: string, area: string, plant: Plant): string | null {
   if (use === "") return "Choose equipment from the library.";
   if (name === "") return "Give the instance a name.";
   if (!instanceNameFits(name)) return `"${name}" is not a valid name. ${instanceNameRule()}`;
+  if (instanceIdTaken(plant, name)) return `${name} is already used by another instance.`;
   return area === "" ? "Choose an area." : null;
 }
 
@@ -168,12 +175,12 @@ function useArea(draft: Draft) {
   return { area, setArea, options: nodes.map((node) => [node.name, node.path] as const) };
 }
 
-export function AddEquipment({ draft, editor, request }: AddProps) {
+export function AddEquipment({ draft, plant, editor, request }: AddProps) {
   const [use, setUse] = useState("");
   const { typed, suggested, name, setTyped, reset } = useNaming(draft, use);
   const { area, setArea, options } = useArea(draft);
   const { presets, preset, setPreset } = usePresets(editor, use);
-  const problem = missing(use, name, area);
+  const problem = missing(use, name, area, plant);
   const submit = (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (problem !== null) return;

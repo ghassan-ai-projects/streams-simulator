@@ -66,6 +66,19 @@ describe("plant editor panel", () => {
     expect(equipmentOf(current(editor)).flatMap((entry) => entry.names)).toContain("CH-1");
   });
 
+  it("does not add equipment when Return is pressed in the search, and refuses a name another instance already has", async () => {
+    const { editor } = await editing();
+    const form = screen.getByRole("form", { name: "Add equipment" });
+    choose("Equipment", "lib/pump@1", form);
+    fireEvent.change(within(form).getByLabelText("Find equipment"), { target: { value: "pu" } });
+    expect(fireEvent.keyDown(within(form).getByLabelText("Find equipment"), { key: "Enter" })).toBe(false);
+    expect(equipmentOf(current(editor))).toHaveLength(2);
+    fireEvent.change(within(form).getByLabelText("Name"), { target: { value: "CT-1" } });
+    expect(within(form).getByText("CT-1 is already used by another instance.")).toBeInTheDocument();
+    fireEvent.click(within(form).getByRole("button", { name: "Add to the plant" }));
+    expect(equipmentOf(current(editor))).toHaveLength(2);
+  });
+
   it("renames, moves, links, unlinks and deletes the selected instance, and reverts", async () => {
     const { editor } = await editing();
     act(() => {

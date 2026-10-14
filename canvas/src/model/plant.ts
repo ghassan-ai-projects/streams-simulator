@@ -196,6 +196,10 @@ export function areaOf(plant: Plant, instance: Instance): string {
   return instance.area || plant.site || "Plant";
 }
 
+export function instanceIdTaken(plant: Plant, id: string): boolean {
+  return plant.instances.some((instance) => instance.id === id);
+}
+
 export function linksOf(
   plant: Plant,
   id: string,

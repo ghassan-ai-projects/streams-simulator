@@ -56,7 +56,7 @@ function Issues({ draft, editor, request }: Omit<PanelProps, "plant">) {
   );
 }
 
-function Build({ draft, editor, request }: Omit<PanelProps, "plant">) {
+function Build({ draft, plant, editor, request }: PanelProps) {
   const heading = useRequestedFocus<HTMLHeadingElement>(request, "build");
   return (
     <aside className={panel.panel} aria-labelledby="build-title">
@@ -68,7 +68,7 @@ function Build({ draft, editor, request }: Omit<PanelProps, "plant">) {
       </header>
       <div className={panel.body}>
         <Issues draft={draft} editor={editor} request={request} />
-        <AddEquipment draft={draft} editor={editor} request={request} />
+        <AddEquipment draft={draft} plant={plant} editor={editor} request={request} />
         <AddArea draft={draft} editor={editor} />
         <p className={panel.hint}>
           Select an instance to rename, move, link or delete it. To link two instances, drag from an output pin to an
@@ -86,5 +86,5 @@ function Build({ draft, editor, request }: Omit<PanelProps, "plant">) {
 export function EditorPanel(props: PanelProps) {
   const instance = props.plant.instances.find((entry) => entry.id === props.draft.selected);
   if (instance !== undefined) return <InstanceEditor {...props} instance={instance} />;
-  return <Build draft={props.draft} editor={props.editor} request={props.request} />;
+  return <Build draft={props.draft} plant={props.plant} editor={props.editor} request={props.request} />;
 }
