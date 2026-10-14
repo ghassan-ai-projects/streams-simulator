@@ -1,3 +1,4 @@
+import type { ChannelState } from "./plant";
 import type { Reading } from "./playback";
 import { shortChannel } from "./playback";
 import { displayUnit } from "./units";
@@ -18,28 +19,17 @@ export interface Shown {
   readonly attention: Attention;
 }
 
-const annunciatorStates = ["normal", "unacknowledged", "acknowledged", "returned, unacknowledged", "shelved"] as const;
-const annunciatorAttention: readonly Attention[] = [null, "alarm", "alarm", "warn", null];
-
-function isAnnunciator(instrument: string): boolean {
-  return instrument.startsWith("streamsim/annunciator");
-}
-
 function number(value: number): string {
   const abs = Math.abs(value);
   return value.toFixed(abs >= 100 ? 0 : abs >= 10 ? 1 : 2);
 }
 
-export function showReading(reading: Reading, instrument: string): Shown {
+export function showReading(reading: Reading, states: readonly ChannelState[]): Shown {
   const channel = shortChannel(reading.channel);
-  if (isAnnunciator(instrument) && typeof reading.value === "number") {
-    const code = Math.round(reading.value);
-    return {
-      channel,
-      value: annunciatorStates[code] ?? `code ${String(code)}`,
-      unit: "",
-      attention: annunciatorAttention[code] ?? null,
-    };
+  if (states.length > 0 && typeof reading.value === "number") {
+    const value = reading.value;
+    const state = states.find((entry) => entry.value === value);
+    return { channel, value: state?.name ?? `state ${String(value)}`, unit: "", attention: state?.attention ?? null };
   }
   if (typeof reading.value === "number") {
     return { channel, value: number(reading.value), unit: displayUnit(reading.unit), attention: null };

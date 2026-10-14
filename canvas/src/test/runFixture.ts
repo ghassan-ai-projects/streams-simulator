@@ -14,7 +14,17 @@ export const report = {
   verification: { status: "files_match", checks: [{ name: "trace", status: "match" }] },
   counts: { emitted: 12, delivered: 10, dropped: 2, dropped_by_reason: { dropped_by_perturbation: 2 } },
   truth: {
-    faults: [{ action: "inject", entity_id: "CT-1", fault: "tower__fan_failure", at_ns: 0, onset_ns: 600e9 }],
+    faults: [
+      {
+        fault_id: "f-0",
+        entity_id: "CT-1",
+        fault: "tower__fan_failure",
+        injected_at_ns: 0,
+        onset_ns: 600e9,
+        cleared_ns: null,
+        cleared_by: null,
+      },
+    ],
     perturbations: [{ action: "apply", perturbation: "drop", from_ns: 300e9 }],
     environment: [{ at_ns: 900e9, target: "weather", fault: "heat_wave" }],
     effector_calls: [

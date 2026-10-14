@@ -4,30 +4,38 @@ import { displayUnit } from "./units";
 
 const at = (channel: string, value: number | string | boolean, unit = "") => ({ channel, value, unit, atNs: 0 });
 
+const annunciator = [
+  { value: 0, name: "normal", attention: null },
+  { value: 1, name: "unacknowledged", attention: "alarm" },
+  { value: 2, name: "acknowledged", attention: "alarm" },
+  { value: 3, name: "returned unacknowledged", attention: "warn" },
+  { value: 4, name: "shelved", attention: null },
+] as const;
+
 describe("readouts", () => {
-  it("decodes an annunciator into its documented states and attention", () => {
-    const of = (code: number) => showReading(at("air_compressor.alarm_state", code, "on"), "streamsim/annunciator@1");
+  it("names a channel value from the vocabulary the domain declares for it", () => {
+    const of = (code: number) => showReading(at("air_compressor.alarm_state", code, "on"), annunciator);
     expect([0, 1, 2, 3, 4, 9].map((code) => of(code).value)).toEqual([
       "normal",
       "unacknowledged",
       "acknowledged",
-      "returned, unacknowledged",
+      "returned unacknowledged",
       "shelved",
-      "code 9",
+      "state 9",
     ]);
     expect([0, 1, 2, 3, 4].map((code) => of(code).attention)).toEqual([null, "alarm", "alarm", "warn", null]);
   });
 
   it("shows numbers with fixed decimals and the unit apart, and other values as words", () => {
-    expect(showReading(at("chiller.cond_temp", 33.14, "degC"), "streamsim/rtd@1")).toEqual({
+    expect(showReading(at("chiller.cond_temp", 33.14, "degC"), [])).toEqual({
       channel: "cond_temp",
       value: "33.1",
       unit: "°C",
       attention: null,
     });
-    expect(showReading(at("meter.power", 852.4, "kW"), "")).toMatchObject({ value: "852", unit: "kW" });
-    expect(showReading(at("x.cop", 5.954), "")).toMatchObject({ value: "5.95", unit: "" });
-    expect(showReading(at("x.run_status", true), "streamsim/run-status@1")).toMatchObject({ value: "true", unit: "" });
+    expect(showReading(at("meter.power", 852.4, "kW"), [])).toMatchObject({ value: "852", unit: "kW" });
+    expect(showReading(at("x.cop", 5.954), [])).toMatchObject({ value: "5.95", unit: "" });
+    expect(showReading(at("x.run_status", true), [])).toMatchObject({ value: "true", unit: "" });
   });
 
   it("raises a node's attention to its worst readout", () => {

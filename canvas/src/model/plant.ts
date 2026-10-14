@@ -3,9 +3,29 @@ interface Area {
   readonly parent: string | null;
 }
 
+export interface ChannelState {
+  readonly value: number;
+  readonly name: string;
+  readonly attention: "alarm" | "warn" | null;
+}
+
 interface Channel {
   readonly name: string;
   readonly unit: string;
+  readonly states: readonly ChannelState[];
+}
+
+function attention(value: unknown): ChannelState["attention"] {
+  return value === "alarm" || value === "warn" ? value : null;
+}
+
+function channelStates(value: unknown): readonly ChannelState[] {
+  return list(value).flatMap((raw) => {
+    const entry = record(raw);
+    return typeof entry.value === "number"
+      ? [{ value: entry.value, name: text(entry.name), attention: attention(entry.attention) }]
+      : [];
+  });
 }
 
 interface Kind {
@@ -68,6 +88,7 @@ function kind(value: unknown): Kind {
   const channels = list(entry.channels).map((channel) => ({
     name: text(record(channel).name),
     unit: text(record(channel).unit),
+    states: channelStates(record(channel).states),
   }));
   return {
     name: text(entry.name),
@@ -197,6 +218,7 @@ export function stateUnit(plant: Plant, entity: string, state: string): string {
   return (kind === undefined ? undefined : plant.kinds.get(kind)?.units.get(state)) ?? "";
 }
 
-export function instrumentOf(plant: Plant, entity: string, point: string): string {
-  return plant.instances.find((instance) => instance.id === entity)?.instruments.get(point) ?? "";
+export function statesOf(plant: Plant, entity: string, channel: string): readonly ChannelState[] {
+  const kindName = plant.instances.find((instance) => instance.id === entity)?.kind ?? "";
+  return plant.kinds.get(kindName)?.channels.find((entry) => entry.name === channel)?.states ?? [];
 }

@@ -9,13 +9,35 @@ export interface EventMark {
   readonly entity: string;
 }
 
+const endings: Readonly<Record<string, string>> = {
+  command: "cleared",
+  pulse_end: "ended",
+  responder: "cleared by its responder",
+};
+
+function endMarks(report: Report): readonly EventMark[] {
+  return report.disturbances.flatMap((d): EventMark[] =>
+    d.clearedNs === null
+      ? []
+      : [
+          {
+            atNs: d.clearedNs,
+            label: `${d.target} ${humanise(d.name)} ${endings[d.clearedBy] ?? "cleared"}`,
+            raw: `${d.kind} ${d.target} ${d.name} · ${d.clearedBy}`,
+            tone: "other",
+            entity: d.target,
+          },
+        ],
+  );
+}
+
 export function eventMarks(report: Report | null): readonly EventMark[] {
   if (report === null) return [];
   const disturbances = report.disturbances.map((d): EventMark => ({
     atNs: d.onsetNs,
-    label: `${d.target} ${humanise(d.name)}${d.action === "clear" ? " cleared" : ""}`,
+    label: `${d.target} ${humanise(d.name)}`,
     raw: `${d.kind} ${d.action} ${d.target} ${d.name}`,
-    tone: d.kind === "fault" && d.action !== "clear" ? "fault" : "other",
+    tone: d.kind === "fault" ? "fault" : "other",
     entity: d.target,
   }));
   const calls = report.effectorCalls.map((c): EventMark => ({
@@ -25,7 +47,7 @@ export function eventMarks(report: Report | null): readonly EventMark[] {
     tone: "other",
     entity: c.entity,
   }));
-  return [...disturbances, ...calls].sort((a, b) => a.atNs - b.atNs);
+  return [...disturbances, ...endMarks(report), ...calls].sort((a, b) => a.atNs - b.atNs);
 }
 
 export function previousEvent(marks: readonly EventMark[], atNs: number): number | null {
@@ -40,9 +62,8 @@ export function nextEvent(marks: readonly EventMark[], atNs: number): number | n
 export function faultedAt(report: Report | null, atNs: number): ReadonlyMap<string, string> {
   const active = new Map<string, string>();
   for (const d of report?.disturbances ?? []) {
-    if (d.kind !== "fault" || d.onsetNs > atNs) continue;
-    if (d.action === "clear") active.delete(d.target);
-    else active.set(d.target, humanise(d.name));
+    const ended = d.clearedNs !== null && d.clearedNs <= atNs;
+    if (d.kind === "fault" && d.onsetNs <= atNs && !ended) active.set(d.target, humanise(d.name));
   }
   return active;
 }

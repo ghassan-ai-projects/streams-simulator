@@ -12,6 +12,8 @@ interface Disturbance {
   readonly onsetNs: number;
   readonly target: string;
   readonly name: string;
+  readonly clearedNs: number | null;
+  readonly clearedBy: string;
 }
 
 interface EffectorCall {
@@ -72,11 +74,13 @@ function faults(truth: Json): Disturbance[] {
     const f = obj(raw);
     return {
       kind: "fault",
-      action: str(f.action),
-      injectedNs: num(f.at_ns),
-      onsetNs: num(f.onset_ns) || num(f.at_ns),
+      action: "inject",
+      injectedNs: num(f.injected_at_ns),
+      onsetNs: num(f.onset_ns),
       target: str(f.entity_id),
       name: str(f.fault) || str(f.fault_id),
+      clearedNs: typeof f.cleared_ns === "number" ? f.cleared_ns : null,
+      clearedBy: str(f.cleared_by),
     };
   });
 }
@@ -91,6 +95,8 @@ function perturbations(truth: Json): Disturbance[] {
       onsetNs: num(p.from_ns) || num(p.at_ns),
       target: "delivery",
       name: str(p.perturbation),
+      clearedNs: null,
+      clearedBy: "",
     };
   });
 }
@@ -105,6 +111,8 @@ function environment(truth: Json): Disturbance[] {
       onsetNs: num(e.at_ns),
       target: str(e.target),
       name: str(e.fault),
+      clearedNs: null,
+      clearedBy: "",
     };
   });
 }

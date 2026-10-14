@@ -31,15 +31,14 @@ describe("timeline", () => {
   it("knows which instances carry an active fault at a time", () => {
     expect([...faultedAt(parsed, 599e9)]).toEqual([]);
     expect([...faultedAt(parsed, 600e9)]).toEqual([["CT-1", "fan failure"]]);
+    const fault = parsed.disturbances.find((d) => d.kind === "fault");
     const cleared = {
       ...parsed,
-      disturbances: [
-        ...parsed.disturbances,
-        { kind: "fault", action: "clear", injectedNs: 700e9, onsetNs: 700e9, target: "CT-1", name: "f-0" },
-      ],
-    } as const;
-    expect([...faultedAt(cleared, 800e9)]).toEqual([]);
-    expect(eventMarks(cleared).find((mark) => mark.atNs === 700e9)?.label).toBe("CT-1 f-0 cleared");
+      disturbances: fault === undefined ? [] : [{ ...fault, clearedNs: 700e9, clearedBy: "pulse_end" }],
+    };
+    expect([...faultedAt(cleared, 699e9)]).toEqual([["CT-1", "fan failure"]]);
+    expect([...faultedAt(cleared, 700e9)]).toEqual([]);
+    expect(eventMarks(cleared).find((mark) => mark.atNs === 700e9)?.label).toBe("CT-1 fan failure ended");
     expect([...faultedAt(null, 0)]).toEqual([]);
   });
 });

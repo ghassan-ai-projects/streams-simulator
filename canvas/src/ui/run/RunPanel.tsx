@@ -1,7 +1,6 @@
 import type { PlantState } from "../../app/plantStore";
 import type { ReviewState, ReviewStore } from "../../app/reviewStore";
-import { instrumentOf } from "../../model/plant";
-import { shortChannel } from "../../model/playback";
+import { statesOf } from "../../model/plant";
 import { channelWords, showReading } from "../../model/readout";
 import { wallClock } from "../../model/report";
 import { cx } from "../cx";
@@ -36,10 +35,7 @@ function Readings({
     <table className={styles.table}>
       <tbody>
         {readings.map((reading) => {
-          const shown = showReading(
-            reading,
-            plant === null ? "" : instrumentOf(plant.plant, entity, shortChannel(reading.channel)),
-          );
+          const shown = showReading(reading, plant === null ? [] : statesOf(plant.plant, entity, reading.channel));
           return (
             <tr key={reading.channel}>
               <td className={styles.label} title={shown.channel}>
