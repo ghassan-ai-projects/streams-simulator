@@ -86,3 +86,23 @@ Scores: director 3/5 (High: D4-1 fault and alarm text past the node edge, D4-2 r
 | Director D4-3–D4-7, D4-10, D4-11 | Fixed: double-click opens a hall; selected wires stand out; hall summaries; Inspect lists what is active now; scrubber time ticks and an empty-lane message; compact labels at 11 px; separators; legend for filled and hollow pins |
 | Director D4-8, D4-9; alarm events on the lane | Logged as R9-22, R9-23, R9-24 for the simulator |
 | Watch test flake | Fixed: the test replaces the file atomically; os.WriteFile showed two real changes |
+
+## Round 5 (after round 4 fixes; reviewed on a frozen build at 6a653c8)
+
+Scores: director 3/5 (High: D5-1 ellipses at the opening zoom, D5-2 dimmed wires under 3:1, D5-3 "no events" while the report loads), accessibility 3/5 (High: A5-1 dimmed wires under 3:1; regressions A5-3 outside selection not followed, A5-6 arrow travel off screen), engineer 3/5 (High: E5-1 `incomplete: true` in run.json bypasses every evidence check).
+
+### Round 5 dispositions (commits 58729f9, 596dc11, 8726dd8)
+
+| Findings | Disposition |
+|---|---|
+| A11y A5-1; director D5-2 | Fixed: dimmed wires are the tertiary text colour (5.3:1 light, 7:1 dark), measured by an end-to-end test |
+| A11y A5-2; director D5-4 | Fixed: opening a hall clears the selection; nothing is emphasised for a node outside the view |
+| A11y A5-3, A5-6 | Fixed: outline and chip selections move the keyboard position and come into view; the follow is instant and uses layout sizes; end-to-end tests |
+| A11y A5-4, A5-5, A5-7–A5-9 | Fixed: tag text in the primary colour with a coloured icon; Space selects and Enter opens a hall; every active fault named, also under an alarm; Observed table headers; consistent hall counts; singular lane note |
+| Director D5-1, D5-8 | Fixed: the compact tier wires to anchors, drops the pin band and stacks label over value with wrapping, so the opening zoom shows no ellipsis |
+| Director D5-3, D5-5, D5-13 | Fixed: the lane says events appear once the report is read; short chips in three rows; red only while the fault is active |
+| Director D5-6, D5-7, D5-9–D5-11 | Fixed: words for members, checks and pins; the header names plant, version, seed, adapter and simulator; overview ids fit; copy |
+| Director D5-12 | Open: one summary figure per hall tile |
+| Engineer E5-3, E5-6, E5-7 | Fixed: every active fault per instance; an alarm state by its declared name from a composed domain, end to end |
+| Engineer E5-1, E5-2, E5-4 | In progress in the simulator (see the P9 handoff) |
+| Engineer E5-5, E5-8 | Logged as R9-25 and R9-26 |
