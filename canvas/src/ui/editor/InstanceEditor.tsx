@@ -186,7 +186,9 @@ export function InstanceEditor(props: EditorProps) {
       <Head instance={instance} editor={editor} request={request} />
       <div className={panel.body}>
         <Problems id={instance.id} messages={draft.issues?.instances.get(instance.id) ?? []} />
-        <p className={panel.hint}>{`${instance.kind} · ${instance.component ?? ""}`}</p>
+        <p className={panel.hint} title={instance.component ?? undefined}>
+          {instance.kind}
+        </p>
         <Editing {...props} />
         <Links draft={draft} instance={instance} editor={editor} />
         {!isTemplate(draft.doc, instance.id) && (

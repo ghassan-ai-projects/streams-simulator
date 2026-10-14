@@ -104,7 +104,9 @@ describe("plant editor panel", () => {
     choose("Area", "Yard");
     choose("Output", "power_out");
     choose("To", "CT-1");
-    choose("Input", "heat_in");
+    const inputs = within(screen.getByLabelText("Input")).getAllByRole("option");
+    expect(inputs.map((option) => option.textContent)).toEqual(["Choose…", "power in"]);
+    choose("Input", "power_in");
     fireEvent.click(screen.getByRole("button", { name: "Link" }));
     expect(connectionsOf(current(editor)).map((wire) => wire.from)).toEqual(["CH-9.heat_out", "CH-9.power_out"]);
     fireEvent.click(screen.getByRole("button", { name: "Remove link: heat out to CT-1 heat in" }));

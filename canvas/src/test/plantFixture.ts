@@ -48,6 +48,7 @@ export const chillerPorts = {
 export const towerPorts = {
   ports: [
     { name: "heat_in", type: "heat_rejection", direction: "consumes" },
+    { name: "power_in", type: "electrical", direction: "consumes" },
     { name: "basin_out", type: "cooling_water_temp", direction: "provides" },
   ],
 };
