@@ -6,6 +6,7 @@ import { wallClock } from "../../model/report";
 import type { ChipPlace, EventMark } from "../../model/timeline";
 import { activeAt, eventMarks, nextEvent, placeChips, previousEvent, timeTicks } from "../../model/timeline";
 import styles from "./RunScreen.module.css";
+import { AlarmJump } from "./AlarmJump";
 
 interface ScrubberProps {
   readonly startNs: number;
@@ -27,7 +28,8 @@ interface LaneProps {
 }
 
 const chipText = (mark: EventMark, startNs: number) => `${wallClock(mark.atNs, startNs)} ${mark.label}`;
-const chipShort = (mark: EventMark, startNs: number) => `${wallClock(mark.atNs, startNs)} ${mark.entity}`;
+const chipShort = (mark: EventMark, startNs: number) =>
+  `${wallClock(mark.atNs, startNs)} ${mark.entity}${mark.tone === "alarm" ? " · alarm" : ""}`;
 const chipWidth = (text: string) => Math.min(200, 20 + text.length * 7);
 
 function useWidth() {
@@ -122,7 +124,7 @@ function LaneNotes({
         <p className={styles.laneMore}>
           {reading
             ? "Events appear once streamsim report has read the run."
-            : "No disturbances or effector calls in this run."}
+            : "No disturbances, alarm activations or effector calls in this run."}
         </p>
       )}
       {hidden > 0 && (
@@ -251,6 +253,7 @@ export function Scrubber({ startNs, endNs, positionNs, report, onSeek, onEvent }
         <span className={styles.time}>{wallClock(positionNs, startNs)}</span>
         <span className={styles.muted}>{`of ${wallClock(startNs)} – ${wallClock(endNs, startNs)} UTC`}</span>
         <Steps marks={marks} positionNs={positionNs} clamp={clamp} onSeek={onSeek} />
+        <AlarmJump marks={marks} positionNs={positionNs} onSeek={onSeek} onEvent={onEvent} />
       </div>
       <Ticks startNs={startNs} endNs={endNs} fraction={fraction} />
       <div className={styles.track}>

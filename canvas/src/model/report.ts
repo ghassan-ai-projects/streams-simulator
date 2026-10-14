@@ -1,3 +1,6 @@
+import type { AlarmActivation } from "./reportAlarms";
+import { parseAlarmActivations } from "./reportAlarms";
+
 export type Badge = "verifying" | "not-checked" | "verified" | "not-verified" | "incomplete";
 
 interface Check {
@@ -53,6 +56,7 @@ export interface Report {
   readonly effectorCalls: readonly EffectorCall[];
   readonly kpis: readonly KpiRow[];
   readonly alarms: Readonly<Record<string, number>>;
+  readonly alarmActivations: readonly AlarmActivation[];
   readonly scoring: { readonly status: string; readonly reason: string } | null;
   readonly truthUnavailable: string;
 }
@@ -195,6 +199,7 @@ export function parseReport(value: unknown): Report {
     effectorCalls: effectorCalls(truth),
     kpis: kpis(truth),
     alarms: numbers(obj(truth.kpis).alarm_system),
+    alarmActivations: parseAlarmActivations(obj(truth.kpis).entities),
     scoring: scoring(body.scoring),
     truthUnavailable: str(body.truth_unavailable),
   };

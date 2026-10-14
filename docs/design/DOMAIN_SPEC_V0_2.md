@@ -650,7 +650,9 @@ director journal as one `kpi.truth` record at the close; the report shows it wit
   standing at the end.
 - **Alarms** (ISA-18.2 / EEMUA 191): an alarm is active while its code is `1` or `2`; an activation is a sample where it turns
   active after the first sample (unshelving an active alarm annunciates it again). Per alarm: `activations`, `chattering`
-  (three activations within 60 s), `active_s`, `longest_active_s` and `active_at_end`. For the alarm system:
+  (three activations within 60 s), `active_s`, `longest_active_s` and `active_at_end`. `activation_times_ns` gives
+  the ordered absolute simulation instants of exactly those counted activations; the first sample contributes no
+  activation. The sealed KPI record and report carry the instants for playback navigation. For the alarm system:
   `activations`, `peak_per_10_min` (the most activations in any 600 s window), `flood_intervals` (epoch-aligned 10-minute
   intervals with more than 10 activations), `chattering`, `stale` (alarms active for 24 h or more) and `standing_at_end`.
 - **Determinism**: the samples read the states the world would read anyway, so tracking changes no trace, ledger or

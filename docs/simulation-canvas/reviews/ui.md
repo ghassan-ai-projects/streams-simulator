@@ -123,3 +123,22 @@ keyboard/input usability. Full findings, build digests, actual width/theme cover
 | U6-2 | Open: direct keyboard route to the graph. |
 | D6-01, D5-12, frame-title wire crossings | Deferred visual detail after functionality per owner direction. |
 | E6-boundary | Candidate: strict response validation at the adapters boundary needs verification and correction. |
+
+## Round 7 (functional alarm-playback batch)
+
+The owner requests functionality before visual optimization. This round reviews R9-24 and integrity propagation;
+it does **not** approve all of P9 or repeat the campus review. A freshly frozen simulator 0.3.2 binary and UI
+serve a synthetic scheduled-alarm run. Its reported activation is 140 seconds after start.
+
+| Lens | Scoped score | Review record |
+|---|---|---|
+| Design director | 5/5 | [P9-alarm-design-review.md](P9-alarm-design-review.md) |
+| Desktop input | 5/5 | [P9-alarm-input-review.md](P9-alarm-input-review.md) |
+| Process/test engineer | 4/5 | [P9-alarm-engineering-review.md](P9-alarm-engineering-review.md) |
+
+Dispositions: E7-1 fixed by propagating verify state into Inspect; R9-24 now supplies alarm instants, lane chips
+and Jump to alarm; event reveal opens Inspect. Independent scan, owned-copy, initially standing alarm and
+open-Evaluate truth tests pass, and Chrome proves the 02:20 chip/jump, source selection and 85 °C reading.
+E7-3/E8-1 becomes R9-37, a precision requirement on the next bounded query contract.
+All remaining P9 functional blockers stay open. The full phase gate passed;
+[P9-alarm-evidence.md](P9-alarm-evidence.md) records the command, toolchain and exact pin differences.

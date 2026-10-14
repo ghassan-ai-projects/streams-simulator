@@ -6,6 +6,20 @@ import { eventMarks, faultedAt, nextEvent, placeChips, previousEvent, timeTicks 
 const parsed = parseReport(report);
 
 describe("timeline", () => {
+  it("shows reported alarm instants as navigation marks without inferring an active interval", () => {
+    const alarmActivations = [{ atNs: 650e9, entity: "CH-1", state: "temp_alarm", priority: "high" }];
+    const marks = eventMarks({ ...parsed, alarmActivations });
+    expect(marks.find((mark) => mark.tone === "alarm")).toEqual({
+      atNs: 650e9,
+      label: "CH-1 temp alarm activated",
+      raw: "alarm activation CH-1 temp_alarm · high",
+      tone: "alarm",
+      entity: "CH-1",
+      untilNs: null,
+    });
+    expect(nextEvent(marks, 600e9)).toBe(650e9);
+    expect(previousEvent(marks, 900e9)).toBe(650e9);
+  });
   it("lists disturbances and effector calls in time order with words for ids", () => {
     const marks = eventMarks(parsed);
     expect(marks.map((mark) => [mark.atNs / 1e9, mark.label, mark.tone])).toEqual([

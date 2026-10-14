@@ -90,6 +90,11 @@ export function buildFixture(): Fixture {
   const campus = join(workspace, "compositions", "campus-3.composition.json");
   copyFileSync(join(import.meta.dirname, "..", "fixtures", "campus-3.composition.json"), campus);
   run(binary, ["domain", "compose", campus, "--out", join(workspace, "domains", "campus-3.domain.json")]);
+  copyFileSync(
+    join(import.meta.dirname, "..", "fixtures", "alarm-playback.domain.json"),
+    join(workspace, "domains", "alarm-playback.domain.json"),
+  );
+  record(binary, workspace, "w-alarm", [], "alarm-playback");
   record(binary, workspace, "w-explore", ["-explore"]);
   const jams = ["-fault", "h02/M-1=molder__product_jam@300", "-fault", "h02/M-2=molder__bearing_wear@300"];
   record(binary, workspace, "w-hall", ["-explore", ...jams], "campus-3");

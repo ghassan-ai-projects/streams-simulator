@@ -20,7 +20,7 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/schemas"
 )
 
-const SimVersion = "0.3.1"
+const SimVersion = "0.3.2"
 
 const DefaultStartTimeNS int64 = 1767225600000000000
 

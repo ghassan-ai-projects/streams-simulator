@@ -31,7 +31,13 @@ function Inspect(props: RunPanelProps) {
         <Observed review={props.review} state={props.state} plant={props.plant} entity={entity} />
       </section>
       {props.state.report.phase === "ready" && (
-        <ReportPanel report={props.state.report.value} unit={props.unit} entity={entity} only="kpi" />
+        <ReportPanel
+          report={props.state.report.value}
+          unit={props.unit}
+          entity={entity}
+          only="kpi"
+          verify={props.state.verified}
+        />
       )}
     </>
   );
