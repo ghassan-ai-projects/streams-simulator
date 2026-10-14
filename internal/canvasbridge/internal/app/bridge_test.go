@@ -97,6 +97,10 @@ func TestCommandActionsRunWithAbsoluteWorkspacePathsAndTheirFlags(t *testing.T) 
 	if _, err := h.bridge.RunAction(context.Background(), "component.list", nil); err != nil || !slices.Equal(h.argv[1], []string{"component", "list", "--components-dir", "/lib"}) {
 		t.Fatalf("component list argv = %v, %v", h.argv[1], err)
 	}
+	if _, err := h.bridge.RunAction(context.Background(), "component.example", map[string]any{"id": "factory-utilities"}); err != nil ||
+		!slices.Equal(h.argv[2], []string{"component", "example", "factory-utilities"}) {
+		t.Fatalf("component example argv = %v, %v", h.argv[2], err)
+	}
 	h.command = process.CommandResult{ExitCode: 1, Stdout: []byte(`{"error":{"code":"domain_invalid","message":"bad","issues":[{"pointer":"/x"}]}}`)}
 	var failure *domain.Failure
 	if _, err := h.bridge.RunAction(context.Background(), "domain.validate", map[string]any{"path": plant}); !errors.As(err, &failure) ||

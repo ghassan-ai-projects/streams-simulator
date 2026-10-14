@@ -35,6 +35,9 @@ var (
 	cliComponentList = Action{Name: "component.list", Kind: KindCLI, Command: []string{"component", "list"}, Library: true}
 	cliComponentShow = Action{Name: "component.show", Kind: KindCLI, Command: []string{"component", "show"}, Library: true,
 		CLIArgs: []CLIArg{{Key: "ref", Shape: ShapeText, Required: true}}}
+	cliExamples = Action{Name: "component.examples", Kind: KindCLI, Command: []string{"component", "examples"}}
+	cliExample  = Action{Name: "component.example", Kind: KindCLI, Command: []string{"component", "example"},
+		CLIArgs: []CLIArg{{Key: "id", Shape: ShapeText, Required: true}}}
 	cliCompose = Action{Name: "domain.compose", Kind: KindCLI, Command: []string{"domain", "compose"}, Library: true, Mutating: true, Etag: true,
 		CLIArgs: []CLIArg{{Key: "composition", Shape: ShapePath, Class: ClassComposition, Required: true},
 			{Key: "out", Flag: "--out", Shape: ShapePath, Class: ClassDomain, Required: true}}}
