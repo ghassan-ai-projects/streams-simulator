@@ -83,11 +83,29 @@ function Reload({ draft, editor }: Omit<BarProps, "navigation">) {
   );
 }
 
+function useHistoryAnnouncement(draft: Draft): string {
+  const counts = { past: draft.past.length, future: draft.future.length };
+  const [seen, setSeen] = useState(counts);
+  const [said, setSaid] = useState("");
+  if (seen.past !== counts.past || seen.future !== counts.future) {
+    setSeen(counts);
+    const left = `${String(counts.past)} more to undo`;
+    if (counts.future === seen.future + 1) setSaid(`Undone. ${left}.`);
+    else if (counts.future === seen.future - 1) setSaid(`Redone. ${left}.`);
+    else setSaid("");
+  }
+  return said;
+}
+
 function History({ draft, editor }: Omit<BarProps, "navigation">) {
   const mac = navigator.platform.toLowerCase().includes("mac");
   const key = mac ? "⌘" : "Ctrl+";
+  const said = useHistoryAnnouncement(draft);
   return (
     <span className={styles.history}>
+      <span className="sr-only" aria-live="polite">
+        {said}
+      </span>
       <button
         type="button"
         className={styles.icon}
@@ -120,6 +138,27 @@ function History({ draft, editor }: Omit<BarProps, "navigation">) {
 
 function Revert({ disabled, editor }: { readonly disabled: boolean; readonly editor: EditorStore }) {
   const [confirming, setConfirming] = useState(false);
+  return (
+    <>
+      <span className="sr-only" aria-live="polite">
+        {confirming ? "Press Discard changes again to drop every unsaved change" : ""}
+      </span>
+      <RevertButton disabled={disabled} editor={editor} confirming={confirming} setConfirming={setConfirming} />
+    </>
+  );
+}
+
+function RevertButton({
+  disabled,
+  editor,
+  confirming,
+  setConfirming,
+}: {
+  readonly disabled: boolean;
+  readonly editor: EditorStore;
+  readonly confirming: boolean;
+  readonly setConfirming: (confirming: boolean) => void;
+}) {
   return (
     <button
       type="button"

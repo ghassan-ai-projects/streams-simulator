@@ -189,7 +189,7 @@ describe("home screen", () => {
     const examples = await screen.findByRole("region", { name: "Try an example" });
     expect(within(examples).getByText("A small plant.")).toBeInTheDocument();
     expect((await axe.run(view.container)).violations).toEqual([]);
-    fireEvent.click(within(examples).getByRole("button", { name: "Try Pilot" }));
+    fireEvent.click(within(examples).getByRole("button", { name: "Try it: Pilot" }));
     await vi.waitFor(() => {
       expect(nav.location.hash).toBe("#/plant?domain=domains%2Fpilot.domain.json&run=1");
     });
@@ -202,7 +202,7 @@ describe("home screen", () => {
     bridge.actions.set("component.examples", success({ examples: [{ id: "pilot", title: "Pilot" }] }));
     bridge.actions.set("component.example", failed(failure("component_failed", 422, "gone")));
     await show(bridge);
-    fireEvent.click(await screen.findByRole("button", { name: "Try Pilot" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Try it: Pilot" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Pilot could not be set up: gone");
   });
 

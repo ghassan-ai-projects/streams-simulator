@@ -41,6 +41,31 @@ function useTry({ maker, navigation, taken }: Omit<TryProps, "examples">) {
   return { busy, failure, start };
 }
 
+function TryButton({
+  example,
+  busy,
+  onTry,
+}: {
+  readonly example: ExamplePlant;
+  readonly busy: string;
+  readonly onTry: (example: ExamplePlant) => Promise<void>;
+}) {
+  return (
+    <button
+      type="button"
+      className={styles.create}
+      aria-disabled={busy !== ""}
+      onClick={() => {
+        if (busy === "") void onTry(example);
+      }}
+    >
+      <Play size={13} aria-hidden="true" />
+      {busy === example.id ? "Setting up…" : "Try it"}
+      <span className="sr-only">{`: ${example.title}`}</span>
+    </button>
+  );
+}
+
 export function ExampleList(props: TryProps) {
   const { busy, failure, start } = useTry(props);
   if (props.examples.length === 0) return null;
@@ -57,21 +82,13 @@ export function ExampleList(props: TryProps) {
               <span className={styles.name}>{example.title}</span>
               <span className={styles.meta}>{example.description}</span>
             </span>
-            <button
-              type="button"
-              className={styles.create}
-              aria-label={`Try ${example.title}`}
-              aria-disabled={busy !== ""}
-              onClick={() => {
-                if (busy === "") void start(example);
-              }}
-            >
-              <Play size={13} aria-hidden="true" />
-              {busy === example.id ? "Setting up…" : "Try it"}
-            </button>
+            <TryButton example={example} busy={busy} onTry={start} />
           </li>
         ))}
       </ul>
+      <p role="status" className="sr-only">
+        {busy === "" ? "" : `Setting up ${props.examples.find((example) => example.id === busy)?.title ?? busy}…`}
+      </p>
       {failure !== "" && (
         <p role="alert" className={styles.failure}>
           {failure}

@@ -7,6 +7,7 @@ import { EditorStore } from "../../app/editorStore";
 import { NavigationStore } from "../../app/navigationStore";
 import { failed, success } from "../../model/bridge";
 import { compositionPlant, connectionsOf, equipmentOf } from "../../model/composition";
+import { moveInstance } from "../../model/compositionEdits";
 import { FakeBridge, failure } from "../../test/fakeBridge";
 import { chillerPorts, towerPorts } from "../../test/plantFixture";
 import { useStore } from "../useStore";
@@ -183,5 +184,18 @@ describe("plant editor panel", () => {
     expect(screen.getByText(/Generated from an id template/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Delete T-{n}" })).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Name")).not.toBeInTheDocument();
+  });
+
+  it("says what undo and redo did, and what Revert's second press will do", async () => {
+    const { editor } = await editing();
+    act(() => {
+      editor.edit((current) => moveInstance(current, "CT-1", "Yard"));
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(screen.getByText("Undone. 0 more to undo.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Redo" }));
+    expect(screen.getByText("Redone. 1 more to undo.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Revert" }));
+    expect(screen.getByText(/^Press Discard changes again/)).toBeInTheDocument();
   });
 });
