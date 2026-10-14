@@ -20,7 +20,7 @@ test("selecting an instance in the outline shows its kind in the inspector", asy
   await page.getByRole("navigation", { name: "Outline" }).getByRole("button", { name: "CT-1" }).click();
   const inspector = page.getByRole("complementary", { name: "Inspector" });
   await expect(inspector.getByRole("heading", { name: "CT-1" })).toBeVisible();
-  await expect(inspector.getByRole("region", { name: "Channels" })).toContainText("cooling_tower.basin_temp · degC");
+  await expect(inspector.getByRole("region", { name: "Channels" })).toContainText("basin temp · °C");
   await expect(inspector.getByRole("region", { name: "Links in" })).toContainText("CH-1.heat_out → heat_in");
   await expect(inspector.getByRole("region", { name: "Faults" })).toContainText("fan failure");
   await page.getByRole("button", { name: "Workspace", exact: true }).click();

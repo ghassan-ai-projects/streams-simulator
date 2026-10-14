@@ -2,7 +2,7 @@ import type { PlantState } from "../../app/plantStore";
 import type { ReviewState, ReviewStore } from "../../app/reviewStore";
 import { instrumentOf } from "../../model/plant";
 import { shortChannel } from "../../model/playback";
-import { showReading } from "../../model/readout";
+import { channelWords, showReading } from "../../model/readout";
 import { wallClock } from "../../model/report";
 import { cx } from "../cx";
 import shared from "../shared.module.css";
@@ -42,7 +42,9 @@ function Readings({
           );
           return (
             <tr key={reading.channel}>
-              <td className={styles.id}>{shown.channel}</td>
+              <td className={styles.label} title={shown.channel}>
+                {channelWords(shown.channel)}
+              </td>
               <td className={cx(styles.number, shown.attention !== null && styles[`value-${shown.attention}`])}>
                 {shown.value}
                 {shown.unit !== "" && <span className={styles.unit}>{shown.unit}</span>}

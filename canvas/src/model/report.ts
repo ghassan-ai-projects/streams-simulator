@@ -255,3 +255,8 @@ export function runSpan(
   }
   return observed ?? { startNs: 0, endNs: 0 };
 }
+
+export function kpisOf(report: Report, entity: string | null): readonly KpiRow[] {
+  if (entity === null) return report.kpis;
+  return report.kpis.filter((row) => row.entity === entity || row.entity.startsWith(`${entity}/`));
+}

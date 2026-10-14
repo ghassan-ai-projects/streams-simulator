@@ -46,10 +46,6 @@ describe("playback", () => {
     expect(new PlaybackIndex().bounds()).toBeNull();
   });
 
-  it("counts observations per time bucket for the timeline", () => {
-    expect(indexOf(journal).density(0, 40e9, 4)).toEqual([0, 1, 2, 1]);
-  });
-
   it("names a channel without its kind", () => {
     expect(shortChannel("cooling_tower.basin_temp")).toBe("basin_temp");
     expect(shortChannel("plain")).toBe("plain");

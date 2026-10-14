@@ -51,3 +51,27 @@ export function attentionOf(shown: readonly Shown[]): Attention {
   if (shown.some((entry) => entry.attention === "alarm")) return "alarm";
   return shown.some((entry) => entry.attention === "warn") ? "warn" : null;
 }
+
+const attentionRank = { alarm: 0, warn: 1 } as const;
+
+export function abnormalFirst(shown: readonly Shown[]): readonly Shown[] {
+  return [...shown].sort(
+    (a, b) =>
+      (a.attention === null ? 2 : attentionRank[a.attention]) - (b.attention === null ? 2 : attentionRank[b.attention]),
+  );
+}
+
+export function channelWords(name: string): string {
+  return name.replaceAll("_", " ");
+}
+
+const statusRank = { alarm: 0, fault: 1, warn: 2 } as const;
+
+export function worstOf(statuses: readonly NodeStatus[]): { readonly status: NodeStatus; readonly count: number } {
+  const ranked = statuses.flatMap((status) => (status === null ? [] : [status]));
+  const worst = ranked.reduce<NodeStatus>(
+    (best, status) => (best === null || statusRank[status] < statusRank[best] ? status : best),
+    null,
+  );
+  return { status: worst, count: ranked.filter((status) => status === worst).length };
+}

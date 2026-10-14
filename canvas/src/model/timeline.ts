@@ -6,6 +6,7 @@ export interface EventMark {
   readonly label: string;
   readonly raw: string;
   readonly tone: "fault" | "other";
+  readonly entity: string;
 }
 
 export function eventMarks(report: Report | null): readonly EventMark[] {
@@ -15,12 +16,14 @@ export function eventMarks(report: Report | null): readonly EventMark[] {
     label: `${d.target} ${humanise(d.name)}${d.action === "clear" ? " cleared" : ""}`,
     raw: `${d.kind} ${d.action} ${d.target} ${d.name}`,
     tone: d.kind === "fault" && d.action !== "clear" ? "fault" : "other",
+    entity: d.target,
   }));
   const calls = report.effectorCalls.map((c): EventMark => ({
     atNs: c.atNs,
     label: `${c.entity} ${humanise(c.effector)}`,
     raw: `${c.entity} ${c.effector} · ${c.outcome}`,
     tone: "other",
+    entity: c.entity,
   }));
   return [...disturbances, ...calls].sort((a, b) => a.atNs - b.atNs);
 }

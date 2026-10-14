@@ -5,6 +5,7 @@ import type { PlantView, ViewNode } from "../../model/plantView";
 export interface NodeLive {
   readonly shown: readonly Shown[];
   readonly status: NodeStatus;
+  readonly count: number;
 }
 
 type InstanceData = Readonly<{ view: ViewNode; live: NodeLive | null; active: boolean }>;

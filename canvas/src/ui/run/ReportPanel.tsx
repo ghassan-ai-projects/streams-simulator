@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import type { Report, VerifyState } from "../../model/report";
-import { badgeOf, humanise, replayLine, wallClock } from "../../model/report";
+import { badgeOf, humanise, kpisOf, replayLine, wallClock } from "../../model/report";
 import { displayUnit } from "../../model/units";
 import shared from "../shared.module.css";
 import styles from "./RunScreen.module.css";
@@ -159,7 +159,7 @@ function Scoring({ report }: { readonly report: Report }) {
 }
 
 function KpiTruth({ report, unit, entity }: TruthProps) {
-  const kpis = report.kpis.filter((row) => entity === null || row.entity === entity);
+  const kpis = kpisOf(report, entity);
   return (
     <Section title="KPI truth" note={entity === null ? "mean · min – max" : `${entity} · mean · min – max`}>
       <Rows

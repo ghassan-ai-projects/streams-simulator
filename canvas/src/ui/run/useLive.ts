@@ -1,0 +1,41 @@
+import { useCallback, useMemo } from "react";
+import type { PlantState } from "../../app/plantStore";
+import type { ReviewState, ReviewStore } from "../../app/reviewStore";
+import { instrumentOf } from "../../model/plant";
+import { shortChannel } from "../../model/playback";
+import { hallOf } from "../../model/plantView";
+import { abnormalFirst, attentionOf, showReading, worstOf } from "../../model/readout";
+import { faultedAt } from "../../model/timeline";
+import type { NodeLive } from "../plant/flow";
+
+type ReadyPlant = Extract<PlantState, { phase: "ready" }>;
+
+export function useLive(review: ReviewStore, state: ReviewState, plant: ReadyPlant | null) {
+  const report = state.report.phase === "ready" ? state.report.value : null;
+  const faulted = useMemo(() => faultedAt(report, state.positionNs), [report, state.positionNs]);
+  const one = useCallback(
+    (id: string): NodeLive => {
+      const shown = review.index
+        .readings(id, state.positionNs)
+        .map((reading) =>
+          showReading(reading, plant === null ? "" : instrumentOf(plant.plant, id, shortChannel(reading.channel))),
+        );
+      const attention = attentionOf(shown);
+      return {
+        shown: abnormalFirst(shown),
+        status: attention === "alarm" ? "alarm" : faulted.has(id) ? "fault" : attention,
+        count: 0,
+      };
+    },
+    [review, state.positionNs, plant, faulted],
+  );
+  return useCallback(
+    (id: string): NodeLive => {
+      const members = plant?.plant.instances.filter((instance) => hallOf(instance.id) === id) ?? [];
+      if (members.length === 0) return one(id);
+      const worst = worstOf(members.map((member) => one(member.id).status));
+      return { shown: [], status: worst.status, count: worst.count };
+    },
+    [one, plant],
+  );
+}

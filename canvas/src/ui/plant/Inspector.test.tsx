@@ -14,9 +14,7 @@ describe("inspector", () => {
   it("shows the selected instance's kind and links with no accessibility violation", async () => {
     const view = render(<Inspector plant={parsePlant(domain, composition)} selected="CH-1" />);
     expect(screen.getByRole("heading", { name: "CH-1" })).toBeInTheDocument();
-    expect(
-      within(screen.getByRole("region", { name: "Channels" })).getByText("chiller.power · kW"),
-    ).toBeInTheDocument();
+    expect(within(screen.getByRole("region", { name: "Channels" })).getByText("power · kW")).toBeInTheDocument();
     expect(
       within(screen.getByRole("region", { name: "Links out" })).getByText("heat_out → CT-1.heat_in"),
     ).toBeInTheDocument();

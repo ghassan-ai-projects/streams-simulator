@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { campus, chillerPorts, composition, domain, towerPorts } from "../test/plantFixture";
 import { parsePlant } from "./plant";
-import { hallOf, hallsOf, nodeSize, plantView, viewSummary } from "./plantView";
+import { describeNode, hallOf, hallsOf, nodeSize, plantView, viewSummary } from "./plantView";
 import { parsePorts } from "./ports";
 
 const specs = new Map([
@@ -67,5 +67,11 @@ describe("plant view", () => {
     const one = parsePlant({ instances: [{ kind: "k", names: ["h01/a", "h01/b"], area: "A" }] });
     expect(hallsOf(one)).toEqual([]);
     expect(plantView(one, new Map(), null).nodes).toHaveLength(2);
+  });
+
+  it("describes an instance with its status at the playback time", () => {
+    const node = plantView(parsePlant(domain), new Map(), null).nodes.find((entry) => entry.id === "CH-1");
+    expect(node && describeNode(node, false, "alarm")).toMatch(/^CH-1, Alarm, /);
+    expect(node && describeNode(node, true)).toMatch(/^CH-1, [^A].*, selected$/);
   });
 });

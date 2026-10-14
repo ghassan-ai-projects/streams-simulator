@@ -12,19 +12,8 @@ interface ScrubberProps {
   readonly endNs: number;
   readonly positionNs: number;
   readonly report: Report | null;
-  readonly density: readonly number[];
   readonly onSeek: (ns: number) => void;
-}
-
-function Density({ density }: { readonly density: readonly number[] }) {
-  const peak = Math.max(1, ...density);
-  return (
-    <div className={styles.density} aria-hidden="true">
-      {density.map((count, index) => (
-        <span key={index} style={{ height: `${String(Math.round((count / peak) * 100))}%` }} />
-      ))}
-    </div>
-  );
+  readonly onEvent?: (mark: EventMark) => void;
 }
 
 interface LaneProps {
@@ -32,6 +21,7 @@ interface LaneProps {
   readonly fraction: (ns: number) => number;
   readonly startNs: number;
   readonly onSeek: (ns: number) => void;
+  readonly onEvent: ((mark: EventMark) => void) | undefined;
 }
 
 const chipWidth = 168;
@@ -53,7 +43,7 @@ function useWidth() {
   return { ref, width };
 }
 
-function Lane({ marks, fraction, startNs, onSeek }: LaneProps) {
+function Lane({ marks, fraction, startNs, onSeek, onEvent }: LaneProps) {
   const { ref, width } = useWidth();
   const rows = laneRows(
     marks.map((mark) => fraction(mark.atNs) * width),
@@ -78,7 +68,8 @@ function Lane({ marks, fraction, startNs, onSeek }: LaneProps) {
             className={mark.tone === "fault" ? styles.chipFault : styles.chipEvent}
             title={`${wallClock(mark.atNs, startNs)} · ${mark.raw}`}
             onClick={() => {
-              onSeek(mark.atNs);
+              if (onEvent === undefined) onSeek(mark.atNs);
+              else onEvent(mark);
             }}
           >
             {`${wallClock(mark.atNs, startNs)} ${mark.label}`}
@@ -150,7 +141,7 @@ function PlaybackRange({ startNs, span, positionNs, onSeek, onKeyDown }: RangePr
   );
 }
 
-export function Scrubber({ startNs, endNs, positionNs, report, density, onSeek }: ScrubberProps) {
+export function Scrubber({ startNs, endNs, positionNs, report, onSeek, onEvent }: ScrubberProps) {
   const span = Math.max(1, endNs - startNs);
   const fraction = (ns: number) => Math.min(1, Math.max(0, (ns - startNs) / span));
   const clamp = (ns: number) => Math.min(endNs, Math.max(startNs, ns));
@@ -168,13 +159,12 @@ export function Scrubber({ startNs, endNs, positionNs, report, density, onSeek }
         <Steps marks={marks} positionNs={positionNs} clamp={clamp} onSeek={onSeek} />
       </div>
       <div className={styles.track}>
-        <Density density={density} />
         <PlaybackRange startNs={startNs} span={span} positionNs={positionNs} onSeek={onSeek} onKeyDown={onKeyDown} />
       </div>
       <p id="scrub-keys" className="sr-only">
         Arrow keys move one second, Shift and arrow keys one minute, Page Up and Page Down further.
       </p>
-      <Lane marks={marks} fraction={fraction} startNs={startNs} onSeek={onSeek} />
+      <Lane marks={marks} fraction={fraction} startNs={startNs} onSeek={onSeek} onEvent={onEvent} />
     </div>
   );
 }

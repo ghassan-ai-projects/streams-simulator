@@ -1,6 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { report } from "../test/runFixture";
-import { badgeLabels, badgeOf, humanise, parseReport, runSpan, parseReplay, replayLine, wallClock } from "./report";
+import {
+  badgeLabels,
+  badgeOf,
+  humanise,
+  parseReport,
+  runSpan,
+  kpisOf,
+  parseReplay,
+  replayLine,
+  wallClock,
+} from "./report";
 
 describe("run report", () => {
   it("reads the run, counts, verification and truth sections", () => {
@@ -85,5 +95,19 @@ describe("run report", () => {
     expect(humanise("compressor_lead__oil_cooler_fouling")).toBe("oil cooler fouling");
     expect(humanise("cooling_tower__basin_temp__offset")).toBe("basin temp · offset");
     expect(humanise("discharge_temp")).toBe("discharge temp");
+  });
+
+  it("filters KPI truth to an instance, or to every instance of a hall", () => {
+    const rows = ["h03/M-1", "h03/M-2", "h13/M-1", "CH-1"].map((entity) => ({
+      entity,
+      state: "s",
+      mean: 1,
+      min: 0,
+      max: 2,
+    }));
+    const report = { ...parseReport({}), kpis: rows };
+    expect(kpisOf(report, null)).toHaveLength(4);
+    expect(kpisOf(report, "h03").map((row) => row.entity)).toEqual(["h03/M-1", "h03/M-2"]);
+    expect(kpisOf(report, "CH-1").map((row) => row.entity)).toEqual(["CH-1"]);
   });
 });

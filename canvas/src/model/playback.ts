@@ -116,20 +116,6 @@ export class PlaybackIndex {
       return value === undefined || at === undefined ? [] : [{ channel, value, unit: series.unit, atNs: at }];
     });
   }
-
-  density(startNs: number, endNs: number, buckets: number): readonly number[] {
-    const counts = new Array<number>(buckets).fill(0);
-    const width = Math.max(1, (endNs - startNs) / buckets);
-    this.series.forEach((channels) => {
-      channels.forEach((series) => {
-        series.times.forEach((time) => {
-          const bucket = Math.min(buckets - 1, Math.max(0, Math.floor((time - startNs) / width)));
-          counts[bucket] = (counts[bucket] ?? 0) + 1;
-        });
-      });
-    });
-    return counts;
-  }
 }
 
 function lastAtOrBefore(times: readonly number[], atNs: number): number {

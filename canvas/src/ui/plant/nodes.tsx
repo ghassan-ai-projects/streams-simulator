@@ -6,7 +6,7 @@ import { describeNode } from "../../model/plantView";
 import { familyNames, shapeOf } from "../../model/ports";
 import type { Pin } from "../../model/ports";
 import type { NodeStatus, Shown } from "../../model/readout";
-import { statusWords } from "../../model/readout";
+import { channelWords, statusWords } from "../../model/readout";
 import type { FrameNodeType, HallNodeType, InstanceNodeType } from "./flow";
 import { cx } from "../cx";
 import styles from "./nodes.module.css";
@@ -64,7 +64,7 @@ function Pins({ ins, outs }: { readonly ins: readonly Pin[]; readonly outs: read
   );
 }
 
-export const readoutHeight = 84;
+export const readoutHeight = 96;
 
 function Readout({ shown }: { readonly shown: readonly Shown[] }) {
   if (shown.length === 0) {
@@ -79,7 +79,7 @@ function Readout({ shown }: { readonly shown: readonly Shown[] }) {
     <dl className={styles.readout}>
       {shown.slice(0, more > 0 ? 3 : 4).map((entry) => (
         <div key={entry.channel} className={entry.attention === null ? undefined : styles[entry.attention]}>
-          <dt>{entry.channel}</dt>
+          <dt title={entry.channel}>{channelWords(entry.channel)}</dt>
           <dd>
             {entry.value}
             {entry.unit !== "" && <span className={styles.unit}>{entry.unit}</span>}
@@ -98,13 +98,13 @@ function Readout({ shown }: { readonly shown: readonly Shown[] }) {
 
 const statusIcons = { alarm: OctagonAlert, fault: Wrench, warn: TriangleAlert } as const;
 
-function StatusTag({ status }: { readonly status: NodeStatus }) {
+function StatusTag({ status, count = 0 }: { readonly status: NodeStatus; readonly count?: number }) {
   if (status === null) return null;
   const Icon = statusIcons[status];
   return (
     <span className={cx(styles.tag, styles[`tag-${status}`])} aria-hidden="true">
       <Icon size={12} />
-      {statusWords[status]}
+      {count > 0 ? `${statusWords[status]} ${String(count)}` : statusWords[status]}
     </span>
   );
 }
@@ -140,15 +140,24 @@ export function InstanceNode({ data, selected }: NodeProps<InstanceNodeType>) {
 
 export function HallNode({ data, selected }: NodeProps<HallNodeType>) {
   const { view } = data;
+  const status = data.live?.status ?? null;
+  const count = data.live?.count ?? 0;
   return (
     <div
-      className={cx(styles.node, styles.hall, selected && styles.selected, data.active && styles.active)}
+      className={cx(
+        styles.node,
+        styles.hall,
+        selected && styles.selected,
+        data.active && styles.active,
+        statusClass(status),
+      )}
       role="group"
-      aria-label={describeNode(view, selected)}
+      aria-label={describeNode(view, selected, status, count)}
     >
       <Handle type="target" position={Position.Left} id="in" className={styles.plain} isConnectable={false} />
       <div className={styles.header}>
         <span className={styles.id}>{view.label}</span>
+        <StatusTag status={status} count={count} />
         <ChevronRight size={14} aria-hidden="true" className={styles.open} />
       </div>
       <div className={styles.members}>{view.detail}</div>

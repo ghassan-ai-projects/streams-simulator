@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { attentionOf, showReading } from "./readout";
+import { abnormalFirst, attentionOf, channelWords, showReading, worstOf } from "./readout";
 import { displayUnit } from "./units";
 
 const at = (channel: string, value: number | string | boolean, unit = "") => ({ channel, value, unit, atNs: 0 });
@@ -39,5 +39,23 @@ describe("readouts", () => {
 
   it("writes units the way people read them", () => {
     expect(["degC", "m3/h", "kWh/m3", "kPa"].map(displayUnit)).toEqual(["°C", "m³/h", "kWh/m³", "kPa"]);
+  });
+
+  it("puts alarmed and warned channels first and names channels in words", () => {
+    const entry = (channel: string, attention: "alarm" | "warn" | null) => ({
+      channel,
+      value: "1",
+      unit: "",
+      attention,
+    });
+    const order = abnormalFirst([entry("a", null), entry("b", "warn"), entry("c", "alarm"), entry("d", null)]);
+    expect(order.map((shown) => shown.channel)).toEqual(["c", "b", "a", "d"]);
+    expect(channelWords("chw_supply_temp")).toBe("chw supply temp");
+  });
+
+  it("rolls a hall up to its worst status and how many members share it", () => {
+    expect(worstOf(["warn", null, "fault", "alarm", "alarm"])).toEqual({ status: "alarm", count: 2 });
+    expect(worstOf(["warn", "fault"])).toEqual({ status: "fault", count: 1 });
+    expect(worstOf([null, null])).toEqual({ status: null, count: 0 });
   });
 });

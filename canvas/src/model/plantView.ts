@@ -201,12 +201,12 @@ export function plantView(plant: Plant, specs: Specs, open: string | null, reado
   return withinHall(instanceLevel(context, keep), open);
 }
 
-export function describeNode(node: ViewNode, selected: boolean, status: NodeStatus = null): string {
+export function describeNode(node: ViewNode, selected: boolean, status: NodeStatus = null, count = 0): string {
   const ports =
     node.instance === null
       ? "Enter opens the hall"
       : `${String(node.pins.ins.length)} inputs, ${String(node.pins.outs.length)} outputs`;
-  const state = status === null ? "" : `${statusWords[status]}, `;
+  const state = status === null ? "" : `${statusWords[status]}${count > 0 ? ` in ${String(count)}` : ""}, `;
   return `${node.label}, ${state}${node.detail}, ${ports}${selected ? ", selected" : ""}`;
 }
 

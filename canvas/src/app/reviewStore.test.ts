@@ -44,6 +44,8 @@ describe("review", () => {
     store.showTab("report");
     store.select(null);
     expect(store.snapshot().tab).toBe("report");
+    store.reveal(600e9, "CT-1");
+    expect(store.snapshot()).toMatchObject({ positionNs: 600e9, selected: "CT-1", tab: "report" });
   });
 
   it("asks the binary for the report and verification and streams the observer journal", async () => {

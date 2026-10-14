@@ -73,16 +73,7 @@ describe("report panel", () => {
 describe("scrubber", () => {
   it("seeks with the slider and jumps to a disturbance", () => {
     const seek = vi.fn();
-    render(
-      <Scrubber
-        startNs={0}
-        endNs={3_600e9}
-        positionNs={60e9}
-        report={parseReport(report)}
-        density={[1, 3, 2]}
-        onSeek={seek}
-      />,
-    );
+    render(<Scrubber startNs={0} endNs={3_600e9} positionNs={60e9} report={parseReport(report)} onSeek={seek} />);
     const slider = screen.getByRole("slider", { name: "Playback time" });
     expect(slider).toHaveAttribute("aria-valuetext", "00:01:00");
     fireEvent.change(slider, { target: { value: "120" } });
@@ -98,7 +89,7 @@ describe("scrubber", () => {
   });
 
   it("works before the report arrives", () => {
-    render(<Scrubber startNs={0} endNs={0} positionNs={0} report={null} density={[]} onSeek={vi.fn()} />);
+    render(<Scrubber startNs={0} endNs={0} positionNs={0} report={null} onSeek={vi.fn()} />);
     expect(screen.getByRole("list", { name: "Events" })).toBeEmptyDOMElement();
     expect(screen.getByRole("button", { name: "Next event: none" })).toHaveAttribute("aria-disabled", "true");
   });

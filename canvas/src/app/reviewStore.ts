@@ -100,6 +100,10 @@ export class ReviewStore extends Observable<ReviewState> {
     this.set({ ...this.snapshot(), selected: entity, tab: entity === null ? this.snapshot().tab : "inspect" });
   }
 
+  reveal(positionNs: number, entity: string): void {
+    this.set({ ...this.snapshot(), positionNs, selected: entity });
+  }
+
   showTab(tab: ReviewState["tab"]): void {
     this.set({ ...this.snapshot(), tab });
   }

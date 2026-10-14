@@ -7,6 +7,7 @@ const units: Readonly<Record<string, string>> = {
   "kWh/m3": "kWh/m³",
   pct: "%",
   percent: "%",
+  ratio: "",
 };
 
 export function displayUnit(unit: string): string {

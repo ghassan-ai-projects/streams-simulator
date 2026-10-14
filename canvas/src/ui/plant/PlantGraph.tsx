@@ -1,11 +1,11 @@
 import { Background, ReactFlow, useReactFlow, useStore } from "@xyflow/react";
 import "@xyflow/react/dist/base.css";
 import type { CSSProperties, KeyboardEvent } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { directionOf, firstOf, nearest } from "../../model/graphKeys";
 import type { PlantView } from "../../model/plantView";
 import { describeNode } from "../../model/plantView";
-import { anchorsOnly, centreOf, inView, tierOf } from "../../model/viewport";
+import { anchorsOnly, centreOf, inView, openingViewport, tierOf } from "../../model/viewport";
 import type { FlowNode, NodeLive } from "./flow";
 import { flowEdges, flowNodes } from "./flow";
 import { useZoomActions } from "./GraphControls";
@@ -47,6 +47,20 @@ function useFollowSelection(selected: string | null) {
   }, [flow, zoomTo, selected, width, height]);
 }
 
+function useOpening(viewKey: string, minZoom: number) {
+  const flow = useReactFlow<FlowNode>();
+  const ready = useStore((state) => state.nodes.length > 0);
+  const width = useStore((state) => state.width);
+  const height = useStore((state) => state.height);
+  const opened = useRef("");
+  useEffect(() => {
+    if (!ready || width === 0 || opened.current === viewKey) return;
+    opened.current = viewKey;
+    const bounds = flow.getNodesBounds(flow.getNodes());
+    void flow.setViewport(openingViewport(bounds, { width, height }, { pad: 16, minZoom, maxZoom: 1 }));
+  }, [flow, ready, width, height, viewKey, minZoom]);
+}
+
 interface Keys {
   readonly active: string | null;
   readonly announcement: string;
@@ -81,8 +95,9 @@ function useGraphKeys({ view, viewKey, selected, live, onSelect, onOpenHall, onE
   const [active, setActive] = useViewActive(view, viewKey);
   const zoomKey = useZoomKeys();
   const node = view.nodes.find((entry) => entry.id === active);
+  const now = node === undefined ? undefined : live?.(node.id);
   const announcement =
-    node === undefined ? "" : describeNode(node, node.id === selected, live?.(node.id).status ?? null);
+    node === undefined ? "" : describeNode(node, node.id === selected, now?.status ?? null, now?.count ?? 0);
   const activate = (id: string) => {
     if (view.nodes.find((entry) => entry.id === id)?.instance === null) onOpenHall?.(id);
     else onSelect(id);
@@ -123,7 +138,6 @@ const fixedProps = {
   edgesFocusable: false,
   disableKeyboardA11y: true,
   onlyRenderVisibleElements: true,
-  fitView: true,
   minZoom: 0.05,
   proOptions: { hideAttribution: true },
 } as const;
@@ -136,7 +150,6 @@ function Flow({
   onSelect,
   onOpenHall,
   active,
-  minFitZoom,
 }: PlantGraphProps & { readonly active: string | null }) {
   const nodes = useMemo(() => flowNodes(view, selected, live ?? null, active), [view, selected, live, active]);
   const zoom = useStore((state) => state.transform[2]);
@@ -148,7 +161,6 @@ function Flow({
       nodes={nodes}
       edges={edges}
       {...fixedProps}
-      fitViewOptions={{ padding: 0.04, maxZoom: 1, minZoom: minFitZoom ?? 0.05 }}
       onNodeClick={(_, node: FlowNode) => {
         onSelect(node.type === "frame" ? null : node.id);
       }}
@@ -167,6 +179,7 @@ function Flow({
 export function PlantGraph(props: PlantGraphProps) {
   const zoom = useStore((state) => state.transform[2]);
   const keys = useGraphKeys(props);
+  useOpening(props.viewKey, props.minFitZoom ?? 0.05);
   useFollowSelection(keys.active ?? props.selected);
   return (
     <div

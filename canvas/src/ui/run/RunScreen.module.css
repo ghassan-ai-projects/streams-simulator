@@ -1,6 +1,6 @@
 .screen {
   display: grid;
-  grid-template-columns: 220px minmax(0, 1fr) 400px;
+  grid-template-columns: 220px minmax(0, 1fr) clamp(400px, 26vw, 520px);
   grid-template-rows: 44px minmax(0, 1fr);
   grid-template-areas:
     "bar bar bar"
@@ -96,22 +96,7 @@
 
 .track {
   position: relative;
-  height: 48px;
-}
-
-.density {
-  position: absolute;
-  inset: 0 0 24px;
-  display: flex;
-  align-items: flex-end;
-  gap: 1px;
-  opacity: 0.6;
-}
-
-.density span {
-  flex: 1;
-  min-height: 1px;
-  background: var(--border-default);
+  height: 24px;
 }
 
 .range {

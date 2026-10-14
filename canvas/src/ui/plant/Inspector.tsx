@@ -1,6 +1,9 @@
 import type { Plant } from "../../model/plant";
 import { linkLines, linksOf } from "../../model/plant";
+import { shortChannel } from "../../model/playback";
+import { channelWords } from "../../model/readout";
 import { humanise } from "../../model/report";
+import { displayUnit } from "../../model/units";
 import shared from "../shared.module.css";
 import styles from "./PlantScreen.module.css";
 
@@ -38,6 +41,11 @@ function List({
   );
 }
 
+function channelLine(name: string, channels: readonly { readonly name: string; readonly unit: string }[]): string {
+  const unit = displayUnit(channels.find((channel) => channel.name === name)?.unit ?? "");
+  return `${channelWords(shortChannel(name))}${unit === "" ? "" : ` · ${unit}`}`;
+}
+
 export function Inspector({ plant, selected }: { readonly plant: Plant; readonly selected: string | null }) {
   const instance = plant.instances.find((entry) => entry.id === selected);
   if (instance === undefined) {
@@ -59,13 +67,15 @@ export function Inspector({ plant, selected }: { readonly plant: Plant; readonly
       </header>
       <List
         title="Channels"
-        items={(kind?.channels ?? []).map((channel) => `${channel.name}${channel.unit ? ` · ${channel.unit}` : ""}`)}
+        items={(kind?.channels ?? []).map((channel) => channel.name)}
+        mono={false}
+        show={(name) => channelLine(name, kind?.channels ?? [])}
       />
       <List title="Links in" items={linkLines(incoming, instance.id, "in")} count={incoming.length} />
       <List title="Links out" items={linkLines(outgoing, instance.id, "out")} count={outgoing.length} />
       <List title="Faults" items={kind?.faults ?? []} mono={false} show={humanise} />
-      <List title="Effectors" items={kind?.effectors ?? []} />
-      <List title="States" items={kind?.states ?? []} />
+      <List title="Effectors" items={kind?.effectors ?? []} mono={false} show={humanise} />
+      <List title="States" items={kind?.states ?? []} mono={false} show={channelWords} />
     </aside>
   );
 }

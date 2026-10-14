@@ -5,14 +5,10 @@ import type { NavigationStore } from "../../app/navigationStore";
 import type { PlantState, PlantStore } from "../../app/plantStore";
 import type { ReviewState, ReviewStore } from "../../app/reviewStore";
 import type { WorkspaceStore } from "../../app/workspaceStore";
-import { instrumentOf, stateUnit } from "../../model/plant";
-import { shortChannel } from "../../model/playback";
+import { stateUnit } from "../../model/plant";
 import { plantView } from "../../model/plantView";
-import { attentionOf, showReading } from "../../model/readout";
 import type { Report } from "../../model/report";
 import { runSpan } from "../../model/report";
-import { faultedAt } from "../../model/timeline";
-import type { NodeLive } from "../plant/flow";
 import { Navigator, ZoomBar } from "../plant/GraphControls";
 import { Outline } from "../plant/Outline";
 import { readoutHeight } from "../plant/nodes";
@@ -23,6 +19,7 @@ import { useStore } from "../useStore";
 import { Banners, Status } from "./RunStatus";
 import { RunPanel } from "./RunPanel";
 import { Scrubber } from "./Scrubber";
+import { useLive } from "./useLive";
 import styles from "./RunScreen.module.css";
 
 interface RunScreenProps {
@@ -35,16 +32,40 @@ interface RunScreenProps {
 
 type ReadyPlant = Extract<PlantState, { phase: "ready" }>;
 
+interface HallProps {
+  readonly hall: string | null;
+  readonly onHall: (hall: string | null) => void;
+}
+
+function RunCrumb({ worldId, onHall }: { readonly worldId: string; readonly onHall: (hall: null) => void }) {
+  return (
+    <>
+      <button
+        type="button"
+        className={shared.crumb}
+        onClick={() => {
+          onHall(null);
+        }}
+      >
+        {worldId}
+      </button>
+      <ChevronRight size={14} aria-hidden="true" />
+    </>
+  );
+}
+
 function Header({
   state,
   navigation,
   worldId,
+  hall,
+  onHall,
 }: {
   readonly state: ReviewState;
   readonly navigation: NavigationStore;
   readonly worldId: string;
-}) {
-  const heading = useScreen(`${worldId} · review`);
+} & HallProps) {
+  const heading = useScreen(hall === null ? `${worldId} · review` : `${hall} · ${worldId} · review`);
   return (
     <div className={styles.bar}>
       <button
@@ -57,8 +78,9 @@ function Header({
         Workspace
       </button>
       <ChevronRight size={14} aria-hidden="true" />
+      {hall !== null && <RunCrumb worldId={worldId} onHall={onHall} />}
       <h1 className={styles.here} ref={heading} tabIndex={-1}>
-        {worldId}
+        {hall ?? worldId}
       </h1>
       <Status state={state} />
     </div>
@@ -81,34 +103,12 @@ function useRunPlant(state: ReviewState, plants: PlantStore, workspace: Workspac
   return plant.path === key || plant.path === fallback ? plant : null;
 }
 
-function useLive(review: ReviewStore, state: ReviewState, plant: ReadyPlant | null) {
-  const report = state.report.phase === "ready" ? state.report.value : null;
-  const faulted = useMemo(() => faultedAt(report, state.positionNs), [report, state.positionNs]);
-  return useCallback(
-    (id: string): NodeLive => {
-      const shown = review.index
-        .readings(id, state.positionNs)
-        .map((reading) =>
-          showReading(reading, plant === null ? "" : instrumentOf(plant.plant, id, shortChannel(reading.channel))),
-        );
-      const attention = attentionOf(shown);
-      return { shown, status: attention === "alarm" ? "alarm" : faulted.has(id) ? "fault" : attention };
-    },
-    [review, state.positionNs, plant, faulted],
-  );
-}
-
 function OpeningPlant() {
   return (
     <p className={styles.muted} role="status">
       Opening the plant this run used…
     </p>
   );
-}
-
-interface HallProps {
-  readonly hall: string | null;
-  readonly onHall: (hall: string | null) => void;
 }
 
 function Graph({
@@ -155,19 +155,17 @@ function Graph({
 function Timeline({ review, state }: { readonly review: ReviewStore; readonly state: ReviewState }) {
   const report: Report | null = state.report.phase === "ready" ? state.report.value : null;
   const span = runSpan(report, review.index.bounds());
-  const density = useMemo(
-    () => (state.playback.phase === "ready" ? review.index.density(span.startNs, span.endNs, 120) : []),
-    [review, state.playback.phase, span.startNs, span.endNs],
-  );
   return (
     <Scrubber
       startNs={span.startNs}
       endNs={span.endNs}
       positionNs={state.positionNs === 0 ? span.endNs : state.positionNs}
       report={report}
-      density={density}
       onSeek={(ns) => {
         review.seek(ns);
+      }}
+      onEvent={(mark) => {
+        review.reveal(mark.atNs, mark.entity);
       }}
     />
   );
@@ -216,7 +214,7 @@ export function RunScreen({ review, plants, workspace, navigation, worldId }: Ru
   return (
     <ReactFlowProvider>
       <div className={styles.screen}>
-        <Header state={state} navigation={navigation} worldId={worldId} />
+        <Header state={state} navigation={navigation} worldId={worldId} hall={hall} onHall={setHall} />
         <Side review={review} state={state} plant={plant} hall={hall} onHall={setHall} />
         <section className={styles.center} aria-label={`Run ${worldId}`}>
           <Banners state={state} />
