@@ -23,7 +23,7 @@ describe("theme", () => {
 
   it("labels every preference", () => {
     expect(["system", "light", "dark"].map((p) => preferenceLabel(parsePreference(p)))).toEqual([
-      "Theme: follow the system",
+      "Theme: system",
       "Theme: light",
       "Theme: dark",
     ]);

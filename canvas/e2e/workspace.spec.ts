@@ -21,7 +21,7 @@ test("the workspace lists each real plant once with its actions, and its runs, i
   const runs = page.getByRole("region", { name: "Runs" });
   await expect(runs.getByRole("listitem").filter({ hasText: "w-explore" })).toContainText("Factory utilities");
   await expect(runs.getByRole("listitem").filter({ hasText: "w-evaluate" })).toContainText("30 min");
-  for (const label of ["Theme: follow the system", "Theme: light"]) {
+  for (const label of ["Theme: system", "Theme: light"]) {
     await page.getByRole("button", { name: label }).click();
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   }

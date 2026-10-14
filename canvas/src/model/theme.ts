@@ -23,7 +23,7 @@ export function parsePreference(value: string | null): ThemePreference {
 export function preferenceLabel(preference: ThemePreference): string {
   switch (preference) {
     case "system":
-      return "Theme: follow the system";
+      return "Theme: system";
     case "light":
       return "Theme: light";
     case "dark":

@@ -13,4 +13,10 @@ describe("top bar", () => {
     fireEvent.click(screen.getByRole("button", { name: "Skip to the screen" }));
     expect(screen.getByRole("main", { name: "Workspace" })).toHaveFocus();
   });
+
+  it("says on screen that the button changes the theme and shows its current value", () => {
+    render(<TopBar crumbs={vi.fn()} help={null} preference="dark" onCycleTheme={vi.fn()} onHome={vi.fn()} />);
+    const button = screen.getByRole("button", { name: "Theme: dark" });
+    expect(button).toHaveTextContent("Theme: Dark");
+  });
 });
