@@ -28,6 +28,17 @@ func (spec CLIArg) renderPath(value any) (ArgvPart, error) {
 	return ArgvPart{Path: path.Rel}, nil
 }
 
+func (spec CLIArg) renderSwitch(value any) ([]ArgvPart, error) {
+	on, ok := value.(bool)
+	if !ok {
+		return nil, fmt.Errorf("want true or false, got %v", value)
+	}
+	if !on {
+		return nil, nil
+	}
+	return literals(flagOf(spec)), nil
+}
+
 func runPart(runID, file string) (ArgvPart, error) {
 	if badSegment(runID) {
 		return ArgvPart{}, fmt.Errorf("want a run id, got %q", runID)

@@ -15,6 +15,7 @@ const (
 	ShapePath ArgShape = "path"
 	ShapeRun  ArgShape = "run"
 	ShapeNum  ArgShape = "number"
+	ShapeFlag ArgShape = "switch"
 )
 
 type CLIArg struct {
@@ -38,6 +39,10 @@ var (
 	cliExamples = Action{Name: "component.examples", Kind: KindCLI, Command: []string{"component", "examples"}}
 	cliExample  = Action{Name: "component.example", Kind: KindCLI, Command: []string{"component", "example"},
 		CLIArgs: []CLIArg{{Key: "id", Shape: ShapeText, Required: true}}}
+	cliNewPlant = Action{Name: "component.new", Kind: KindCLI, Command: []string{"component", "new"},
+		CLIArgs: []CLIArg{{Key: "id", Shape: ShapeText, Required: true}, {Key: "title", Flag: "--title", Shape: ShapeText, Required: true},
+			{Key: "from", Flag: "--from", Shape: ShapePath, Class: ClassComposition}, {Key: "example", Flag: "--example", Shape: ShapeText},
+			{Key: "empty", Flag: "--empty", Shape: ShapeFlag}}}
 	cliCompose = Action{Name: "domain.compose", Kind: KindCLI, Command: []string{"domain", "compose"}, Library: true, Mutating: true, Etag: true,
 		CLIArgs: []CLIArg{{Key: "composition", Shape: ShapePath, Class: ClassComposition, Required: true},
 			{Key: "out", Flag: "--out", Shape: ShapePath, Class: ClassDomain, Required: true}}}
@@ -77,9 +82,20 @@ func (a Action) argument(spec CLIArg, args map[string]any) ([]ArgvPart, error) {
 	case !present:
 		return nil, nil
 	}
-	rendered, err := spec.render(value)
+	parts, err := spec.parts(value)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s %q: %w", ErrBadArguments, a.Name, spec.Key, err)
+	}
+	return parts, nil
+}
+
+func (spec CLIArg) parts(value any) ([]ArgvPart, error) {
+	if spec.Shape == ShapeFlag {
+		return spec.renderSwitch(value)
+	}
+	rendered, err := spec.render(value)
+	if err != nil {
+		return nil, err
 	}
 	return append(literals(flagOf(spec)), rendered), nil
 }
