@@ -5,7 +5,7 @@ import type { Workspace } from "../../model/bridge";
 import type { Badge } from "../../model/report";
 import { badgeLabels } from "../../model/report";
 import type { RunRow } from "../../model/workspace";
-import { durationOf, plantsOf, runRows, whenOf } from "../../model/workspace";
+import { durationOf, faultWords, plantsOf, runRows, whenOf } from "../../model/workspace";
 import styles from "./HomeScreen.module.css";
 
 interface ListProps {
@@ -17,7 +17,7 @@ interface ListProps {
 const page = 20;
 
 function detail(row: RunRow): string {
-  return [row.run.worldId, whenOf(row.run.recordedAt), durationOf(row.run.durationS)]
+  return [row.run.worldId, whenOf(row.run.recordedAt), durationOf(row.run.durationS), faultWords(row.run)]
     .filter((part) => part !== "")
     .join(" · ");
 }

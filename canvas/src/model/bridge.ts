@@ -12,6 +12,7 @@ export interface RunEntry {
   readonly plant: string;
   readonly durationS: number;
   readonly recordedAt: string;
+  readonly faults?: number;
 }
 
 export interface Workspace {
@@ -81,6 +82,7 @@ function runEntry(value: unknown): RunEntry {
     plant: text(entry.plant),
     durationS: typeof entry.duration_ns === "number" ? Math.round(entry.duration_ns / 1e9) : 0,
     recordedAt: text(entry.recorded_at),
+    faults: typeof entry.faults === "number" ? entry.faults : 0,
   };
 }
 

@@ -3,6 +3,7 @@ import type { Workspace } from "./bridge";
 import { sampleWorkspace } from "../test/fakeBridge";
 import {
   durationOf,
+  faultWords,
   plantFacts,
   plantsOf,
   runRows,
@@ -109,5 +110,12 @@ describe("workspace", () => {
     expect(suggestedId("Cooling hall", ["cooling-hall", "cooling-hall-2"])).toBe("cooling-hall-3");
     expect(suggestedId("42 AB", [])).toBe("plant-ab");
     expect(suggestedId("Kühlhalle", [])).toBe("kuhlhalle");
+  });
+
+  it("says how many faults a finished run injected", () => {
+    const finished = { worldId: "w", ended: true, explore: true, plant: "p", durationS: 60, recordedAt: "" };
+    expect(faultWords({ ...finished, faults: 1 })).toBe("1 fault");
+    expect(faultWords(finished)).toBe("no faults");
+    expect(faultWords({ ...finished, ended: false, faults: 3 })).toBe("");
   });
 });

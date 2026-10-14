@@ -33,6 +33,7 @@ type RunEntry struct {
 	Explore    bool   `json:"explore"`
 	Plant      string `json:"plant,omitempty"`
 	DurationNs int64  `json:"duration_ns,omitempty"`
+	Faults     int    `json:"faults,omitempty"`
 	RecordedAt string `json:"recorded_at,omitempty"`
 }
 

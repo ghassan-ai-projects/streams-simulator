@@ -39,3 +39,14 @@ func TestARunEndsOnlyWhenClosedAndNoLongerRunning(t *testing.T) {
 		t.Fatalf("unreadable journal = %+v", got)
 	}
 }
+
+func TestFaultsInjectedCountsTheRunsFaultCommands(t *testing.T) {
+	t.Parallel()
+	run := []byte(`{"command_log":[{"op":"fault.inject"},{"op":"clock.advance"},{"op":"fault.inject"},{"op":"fault.clear"}]}`)
+	if got := FaultsInjected(run); got != 2 {
+		t.Fatalf("FaultsInjected = %d, want 2", got)
+	}
+	if got := FaultsInjected([]byte("{")); got != 0 {
+		t.Fatalf("unreadable run.json = %d", got)
+	}
+}

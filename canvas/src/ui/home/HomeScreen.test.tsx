@@ -42,7 +42,7 @@ describe("home screen", () => {
     const runs = within(screen.getByRole("region", { name: "Runs" })).getAllByRole("listitem");
     expect(runs.map((row) => row.textContent)).toEqual([
       expect.stringMatching(/^Factory utilitiesExplore.*w-2 · .*not finishedReview$/),
-      expect.stringMatching(/^Factory utilitiesEvaluate.*w-1 · .* · 30 minReview$/),
+      expect.stringMatching(/^Factory utilitiesEvaluate.*w-1 · .* · 30 min · no faultsReview$/),
     ]);
     expect(screen.queryByRole("region", { name: "Scenarios" })).not.toBeInTheDocument();
     expect(screen.queryByText(/domains\//)).not.toBeInTheDocument();

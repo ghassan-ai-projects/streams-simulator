@@ -80,8 +80,17 @@ func (b *Bridge) runEntry(name string) domain.RunEntry {
 		Explore:    summary.Explore,
 		Plant:      summary.Plant,
 		DurationNs: summary.DurationNs,
+		Faults:     b.faults(name),
 		RecordedAt: b.recordedAt("runs/" + name + "/journal.jsonl"),
 	}
+}
+
+func (b *Bridge) faults(runID string) int {
+	content, err := b.edges.Workspace.Read("runs/"+runID+"/run.json", domain.MaxFileBytes)
+	if err != nil {
+		return 0
+	}
+	return domain.FaultsInjected(content)
 }
 
 func (b *Bridge) summary(runID string) domain.RunSummary {

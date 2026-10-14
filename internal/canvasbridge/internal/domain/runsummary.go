@@ -40,6 +40,26 @@ func SummarizeRun(firstLine, tail []byte) RunSummary {
 	return summary
 }
 
+type runCommands struct {
+	CommandLog []struct {
+		Op string `json:"op"`
+	} `json:"command_log"`
+}
+
+func FaultsInjected(runJSON []byte) int {
+	var run runCommands
+	if json.Unmarshal(runJSON, &run) != nil {
+		return 0
+	}
+	count := 0
+	for _, command := range run.CommandLog {
+		if command.Op == "fault.inject" {
+			count++
+		}
+	}
+	return count
+}
+
 func (s RunSummary) State(running bool) RunState {
 	return RunState{Ended: s.Closed && !running, Explore: s.Explore}
 }

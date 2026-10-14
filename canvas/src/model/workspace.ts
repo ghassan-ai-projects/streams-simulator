@@ -44,6 +44,12 @@ function plural(count: number, one: string): string {
   return `${String(count)} ${count === 1 ? one : `${one}s`}`;
 }
 
+export function faultWords(run: RunEntry): string {
+  if (!run.ended) return "";
+  const faults = run.faults ?? 0;
+  return faults === 0 ? "no faults" : plural(faults, "fault");
+}
+
 export function plantFacts(plant: PlantEntry): string {
   if (plant.domain === null) return "Not composed yet: edit and save it to run it.";
   const size = plant.instances > 0 ? `${plural(plant.instances, "instance")} · ` : "";

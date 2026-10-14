@@ -24,6 +24,7 @@ describe("bridge payloads", () => {
           plant: "a",
           duration_ns: 1.8e12,
           recorded_at: "2026-10-14T10:00:00Z",
+          faults: 2,
         },
         { world_id: "w-2" },
       ],
@@ -35,8 +36,16 @@ describe("bridge payloads", () => {
     ]);
     expect(listing.compositions).toEqual([]);
     expect(listing.runs).toEqual([
-      { worldId: "w-1", ended: true, explore: false, plant: "a", durationS: 1800, recordedAt: "2026-10-14T10:00:00Z" },
-      { worldId: "w-2", ended: false, explore: false, plant: "", durationS: 0, recordedAt: "" },
+      {
+        worldId: "w-1",
+        ended: true,
+        explore: false,
+        plant: "a",
+        durationS: 1800,
+        recordedAt: "2026-10-14T10:00:00Z",
+        faults: 2,
+      },
+      { worldId: "w-2", ended: false, explore: false, plant: "", durationS: 0, recordedAt: "", faults: 0 },
     ]);
     expect(parseWorkspace(null).runs).toEqual([]);
   });
