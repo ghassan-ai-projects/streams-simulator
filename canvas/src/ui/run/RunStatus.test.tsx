@@ -1,29 +1,8 @@
 import { render, screen } from "@testing-library/react";
 import axe from "axe-core";
 import { describe, expect, it } from "vitest";
-import type { ReviewState } from "../../app/reviewStore";
-import { parseReport } from "../../model/report";
-import { report } from "../../test/runFixture";
+import { reviewState as state } from "../../test/reviewFixture";
 import { Banners, Status } from "./RunStatus";
-
-const parsed = parseReport(report);
-
-function state(overrides: Partial<ReviewState>): ReviewState {
-  return {
-    worldId: "w-1",
-    report: { phase: "ready", value: parsed },
-    verified: { phase: "ready", value: { matches: true, domainChanged: false, detail: "", reason: "", file: "" } },
-    playback: { phase: "ready", records: parsed.counts.delivered ?? 0, adapter: "native-jsonl" },
-    positionNs: 0,
-    selected: null,
-    runDomain: { phase: "loading" },
-    tab: "report",
-    playing: false,
-    speed: 60,
-    openedAt: 0,
-    ...overrides,
-  };
-}
 
 describe("run status", () => {
   it("badges a divergent replay Not verified with no warning banner", () => {

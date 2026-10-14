@@ -61,6 +61,7 @@ function worldOf(value: unknown): string {
 export interface Proposal {
   readonly plan: LaunchPlan;
   readonly left: readonly string[];
+  readonly from: string;
 }
 
 export class LaunchStore extends Observable<LaunchState> {
@@ -71,8 +72,8 @@ export class LaunchStore extends Observable<LaunchState> {
   private startedMs = 0;
   private proposed: (Proposal & { readonly domain: string }) | null = null;
 
-  propose(domain: string, plan: LaunchPlan, left: readonly string[] = []): void {
-    this.proposed = { domain, plan, left };
+  propose(domain: string, plan: LaunchPlan, left: readonly string[] = [], from = ""): void {
+    this.proposed = { domain, plan, left, from };
   }
 
   forgetProposal(): void {
@@ -80,7 +81,9 @@ export class LaunchStore extends Observable<LaunchState> {
   }
 
   proposal(domain: string): Proposal | null {
-    return this.proposed?.domain === domain ? { plan: this.proposed.plan, left: this.proposed.left } : null;
+    return this.proposed?.domain === domain
+      ? { plan: this.proposed.plan, left: this.proposed.left, from: this.proposed.from }
+      : null;
   }
 
   constructor(

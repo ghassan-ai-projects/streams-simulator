@@ -205,16 +205,23 @@ describe("launch panel lifetime", () => {
     expect(launch.proposal("mini")).toBeNull();
   });
 
-  it("keeps a run's seconds and says what Run again could not copy", () => {
+  it("keeps a run's seconds, names the run it was prefilled from, and says what was not copied", () => {
     const launch = new LaunchStore(bridge());
     const faults = [{ entity: "CH-1", fault: "chiller__fouling", atS: 620 }];
-    launch.propose("mini", { seed: 5, durationS: 90, explore: true, faults, calls: [] }, ["1 delivery perturbation"]);
+    launch.propose(
+      "mini",
+      { seed: 5, durationS: 90, explore: true, faults, calls: [] },
+      ["1 delivery perturbation"],
+      "w-4",
+    );
     render(
       <LaunchPanel launch={launch} plant={parsePlant(domain)} path={path} onClose={vi.fn()} onFinished={vi.fn()} />,
     );
     expect(screen.getByLabelText("Duration")).toHaveValue("1.5");
     expect(screen.getByLabelText("Fault 1 starts at minute")).toHaveValue("10.33");
-    expect(screen.getByRole("note")).toHaveTextContent("Not copied: 1 delivery perturbation.");
+    expect(screen.getByRole("note")).toHaveTextContent(
+      "Prefilled from w-4: seed, duration, mode and faults. Change them if needed. Not copied: 1 delivery perturbation.",
+    );
   });
 
   it("keeps a run going when the panel closes and opens its review when it is back on that plant", async () => {

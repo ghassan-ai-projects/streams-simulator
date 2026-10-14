@@ -22,7 +22,7 @@ interface HeaderProps extends HallProps {
   readonly plant: { readonly title: string; readonly path: string | null };
 }
 
-function RunActions({ state, navigation, launch, plant }: Omit<HeaderProps, "worldId" | "hall" | "onHall">) {
+function RunActions({ state, navigation, launch, plant, worldId }: Omit<HeaderProps, "hall" | "onHall">) {
   const report = state.report.phase === "ready" ? state.report.value : null;
   const path = plant.path;
   if (path === null) return null;
@@ -43,12 +43,12 @@ function RunActions({ state, navigation, launch, plant }: Omit<HeaderProps, "wor
           className={styles.runAction}
           onClick={() => {
             const rerun = rerunOf(report);
-            launch.propose(report.domainId, rerun.plan, rerun.left);
+            launch.propose(report.domainId, rerun.plan, rerun.left, worldId);
             navigation.go({ screen: "plant", domain: path, hall: null, launch: true });
           }}
         >
           <RotateCcw size={14} aria-hidden="true" />
-          Run again
+          Set up another run
         </button>
       )}
     </div>

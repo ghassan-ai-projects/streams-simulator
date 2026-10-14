@@ -1,6 +1,6 @@
 import { Play, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import type { LaunchState, LaunchStore } from "../../app/launchStore";
+import type { LaunchState, LaunchStore, Proposal } from "../../app/launchStore";
 import type { CallOutcome } from "../../model/launch";
 import { clockOf, planSummary, speedOf } from "../../model/launch";
 import { humanise } from "../../model/report";
@@ -211,6 +211,16 @@ function useLaunch(launch: LaunchStore, plant: string, onFinished: (worldId: str
   return state;
 }
 
+function shownProposal(proposed: Proposal): boolean {
+  return proposed.from !== "" || proposed.left.length > 0;
+}
+
+function proposalNote(proposed: Proposal): string {
+  const source = proposed.from === "" ? "the earlier run" : proposed.from;
+  const copied = `Prefilled from ${source}: seed, duration, mode and faults. Change them if needed.`;
+  return proposed.left.length === 0 ? copied : `${copied} Not copied: ${proposed.left.join("; ")}.`;
+}
+
 function useDraft(launch: LaunchStore, plant: string, selected: string | null) {
   const [proposed] = useState(() => launch.proposal(plant));
   useEffect(
@@ -240,9 +250,9 @@ export function LaunchPanel({ launch, plant, path, selected = null, onClose, onF
           <X size={16} aria-hidden="true" />
         </button>
       </header>
-      {proposed !== null && proposed.left.length > 0 && state.phase !== "running" && (
+      {proposed !== null && shownProposal(proposed) && state.phase !== "running" && (
         <p className={panel.hint} role="note">
-          {`Copied from the earlier run: its seed, length, mode and faults. Not copied: ${proposed.left.join("; ")}.`}
+          {proposalNote(proposed)}
         </p>
       )}
       <Body
