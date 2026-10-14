@@ -103,8 +103,13 @@ describe("plant editor panel", () => {
     choose("Input", "heat_in");
     fireEvent.click(screen.getByRole("button", { name: "Link" }));
     expect(connectionsOf(current(editor)).map((wire) => wire.from)).toEqual(["CH-9.heat_out", "CH-9.power_out"]);
-    fireEvent.click(screen.getByRole("button", { name: "Remove link CH-9.heat_out to CT-1.heat_in" }));
+    fireEvent.click(screen.getByRole("button", { name: "Remove link: heat out to CT-1 heat in" }));
     expect(screen.getByRole("heading", { name: "Links (1)" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "CT-1" }));
+    expect(screen.getByRole("heading", { name: "CT-1" })).toBeInTheDocument();
+    act(() => {
+      editor.select("CH-9");
+    });
     fireEvent.click(screen.getByRole("button", { name: "Delete CH-9" }));
     expect(equipmentOf(current(editor)).map((entry) => entry.names[0])).toEqual(["CT-1"]);
     expect(screen.getByRole("heading", { name: "Build" })).toHaveFocus();

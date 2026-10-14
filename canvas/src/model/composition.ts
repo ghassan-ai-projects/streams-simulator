@@ -115,6 +115,22 @@ export function compositionPlant(doc: Composition, titleOf: (component: string) 
   };
 }
 
+export interface LinkEnd {
+  readonly outgoing: boolean;
+  readonly port: string;
+  readonly other: string;
+  readonly otherPort: string;
+}
+
+export function linkEnd(connection: Connection, id: string): LinkEnd {
+  const from = endpointOf(connection.from);
+  const to = endpointOf(connection.to);
+  const words = (port: string) => port.replaceAll("_", " ");
+  return from.id === id
+    ? { outgoing: true, port: words(from.port), other: to.id, otherPort: words(to.port) }
+    : { outgoing: false, port: words(to.port), other: from.id, otherPort: words(from.port) };
+}
+
 export function titleOf(doc: Composition): string {
   return text(doc.title) || text(doc.id);
 }

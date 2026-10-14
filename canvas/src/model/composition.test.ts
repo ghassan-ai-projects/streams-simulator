@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { compositionPlant, connectionsOf, equipmentOf, parseComposition, serialise } from "./composition";
+import { compositionPlant, connectionsOf, equipmentOf, linkEnd, parseComposition, serialise } from "./composition";
 import {
   addEquipment,
   connect,
@@ -108,5 +108,12 @@ describe("composition", () => {
     expect(parseLibrary(null)).toEqual([]);
     const presets = parsePresets({ document: { default_preset: "medium", presets: { small: { title: "Small" } } } });
     expect(presets).toEqual({ options: [{ name: "small", title: "Small" }], preferred: "medium" });
+  });
+
+  it("says a link from one instance's side in words", () => {
+    const [first] = connectionsOf(doc);
+    if (first === undefined) throw new Error("no link");
+    expect(linkEnd(first, "CH-1")).toEqual({ outgoing: true, port: "heat out", other: "CT-1", otherPort: "heat in" });
+    expect(linkEnd(first, "CT-1")).toEqual({ outgoing: false, port: "heat in", other: "CH-1", otherPort: "heat out" });
   });
 });

@@ -2,7 +2,8 @@ import { Box, Trash2, X } from "lucide-react";
 import type { SyntheticEvent } from "react";
 import { useState } from "react";
 import type { Instance } from "../../model/plant";
-import { areasOf, connectionsOf, endpointOf } from "../../model/composition";
+import type { Connection } from "../../model/composition";
+import { areasOf, connectionsOf, endpointOf, linkEnd } from "../../model/composition";
 import { disconnect, isTemplate, moveInstance, removeInstance, renameInstance } from "../../model/compositionEdits";
 import panel from "../panel.module.css";
 import { ConnectForm } from "./ConnectForm";
@@ -69,6 +70,41 @@ function AreaPick({ draft, instance, editor }: Pick<EditorProps, "draft" | "inst
   );
 }
 
+function LinkRow({ wire, instance, editor }: { readonly wire: Connection } & Pick<EditorProps, "instance" | "editor">) {
+  const end = linkEnd(wire, instance.id);
+  const words = `${end.port} ${end.outgoing ? "to" : "from"} ${end.other} ${end.otherPort}`;
+  return (
+    <li>
+      <span className={styles.linkText}>
+        <span>{end.port}</span>
+        <span aria-hidden="true">{end.outgoing ? "→" : "←"}</span>
+        <button
+          type="button"
+          className={styles.linkOther}
+          title={`Select ${end.other}`}
+          onClick={() => {
+            editor.select(end.other);
+          }}
+        >
+          {end.other}
+        </button>
+        <span>{end.otherPort}</span>
+      </span>
+      <button
+        type="button"
+        className={panel.icon}
+        aria-label={`Remove link: ${words}`}
+        title="Remove this link"
+        onClick={() => {
+          editor.edit((doc) => disconnect(doc, wire.index));
+        }}
+      >
+        <Trash2 size={14} aria-hidden="true" />
+      </button>
+    </li>
+  );
+}
+
 function Links({ draft, instance, editor }: Pick<EditorProps, "draft" | "instance" | "editor">) {
   const touching = connectionsOf(draft.doc).filter(
     (wire) => endpointOf(wire.from).id === instance.id || endpointOf(wire.to).id === instance.id,
@@ -79,19 +115,7 @@ function Links({ draft, instance, editor }: Pick<EditorProps, "draft" | "instanc
       {touching.length === 0 && <p className={panel.hint}>Not linked yet.</p>}
       <ul className={styles.links}>
         {touching.map((wire) => (
-          <li key={wire.index}>
-            <span>{`${wire.from} → ${wire.to}`}</span>
-            <button
-              type="button"
-              className={panel.icon}
-              aria-label={`Remove link ${wire.from} to ${wire.to}`}
-              onClick={() => {
-                editor.edit((doc) => disconnect(doc, wire.index));
-              }}
-            >
-              <Trash2 size={14} aria-hidden="true" />
-            </button>
-          </li>
+          <LinkRow key={wire.index} wire={wire} instance={instance} editor={editor} />
         ))}
       </ul>
     </section>
