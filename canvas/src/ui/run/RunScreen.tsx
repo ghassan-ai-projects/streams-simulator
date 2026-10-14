@@ -181,6 +181,9 @@ export function RunScreen({ review, plants, workspace, navigation, launch, world
   const [hall, setHall] = useState<string | null>(null);
   useEffect(() => {
     review.open(worldId);
+    return () => {
+      review.close();
+    };
   }, [review, worldId]);
   usePlayback(review, state.playing);
   const unit = useCallback(

@@ -21,8 +21,8 @@ export function runIdentity(report: Report): string {
 }
 
 export function runFacts(report: Report): string {
-  const minutes = report.endNs > report.startNs ? Math.round((report.endNs - report.startNs) / 1e9) : 0;
-  return [report.seed === null ? "" : `seed ${String(report.seed)}`, durationOf(minutes)]
+  const seconds = report.endNs > report.startNs ? Math.round((report.endNs - report.startNs) / 1e9) : 0;
+  return [report.seed === null ? "" : `seed ${String(report.seed)}`, durationOf(seconds)]
     .filter((part) => part !== "")
     .join(" · ");
 }

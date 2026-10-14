@@ -60,7 +60,8 @@ export class ReviewStore extends Observable<ReviewState> {
   }
 
   open(worldId: string): void {
-    if (this.snapshot().worldId === worldId) return;
+    const state = this.snapshot();
+    if (state.worldId === worldId && (this.stop !== null || state.playback.phase !== "loading")) return;
     this.close();
     this.index = new PlaybackIndex();
     this.set({ ...idle, worldId, openedAt: this.now() });

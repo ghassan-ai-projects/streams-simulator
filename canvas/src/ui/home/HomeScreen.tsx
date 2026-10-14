@@ -35,7 +35,11 @@ function EmptyWorkspace({
       </p>
       <ExampleList examples={examples} taken={[]} maker={maker} navigation={navigation} />
       <ol className={styles.steps}>
-        <li>Try an example above, or copy a composition into compositions/ or a domain into domains/.</li>
+        <li>
+          {examples.length > 0
+            ? "Try an example above, or copy a composition into compositions/ or a domain into domains/."
+            : "Copy a composition into compositions/ or a domain into domains/."}
+        </li>
         <li>Open the plant and Run it with the faults you want to test.</li>
         <li>Review the run: play it back, read the report and the verdict.</li>
       </ol>

@@ -4,6 +4,11 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **Starter examples in the binary.** `streamsim component examples` lists the example compositions the binary ships
+  (`factory-utilities`, `chiller-pilot`) and `streamsim component example <id>` prints one, so a fresh workspace can start
+  from a working plant. The canvas offers them as "Try an example" on an empty workspace and as a starting point in New
+  plant. `cli-output-v0.1` gains both documents.
+
 - **Alarm playback truth** (R9-24). Simulator 0.3.2 publishes each alarm's ordered `activation_times_ns`
   beside its aggregate KPI count in sealed KPI truth and the run report. These are the existing scan's counted
   transitions, including unshelving, with no activation attributed to an initially standing alarm. Playback

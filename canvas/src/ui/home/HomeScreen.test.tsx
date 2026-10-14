@@ -118,6 +118,10 @@ describe("home screen", () => {
     expect(within(form).getByLabelText("Id")).toHaveValue("factory-utilities-2");
     fireEvent.change(within(form).getByLabelText("Name"), { target: { value: "Lab two" } });
     expect(within(form).getByLabelText("Id")).toHaveValue("lab-two");
+    fireEvent.change(within(form).getByLabelText("Id"), { target: { value: "" } });
+    expect(within(form).getByLabelText("Id")).toHaveValue("");
+    fireEvent.blur(within(form).getByLabelText("Id"));
+    expect(within(form).getByLabelText("Id")).toHaveValue("lab-two");
     fireEvent.click(within(form).getByRole("button", { name: "Create and open the editor" }));
     await vi.waitFor(() => {
       expect(nav.location.hash).toBe("#/edit?composition=compositions%2Flab-two.composition.json");

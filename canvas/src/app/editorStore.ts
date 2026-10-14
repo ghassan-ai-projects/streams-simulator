@@ -54,6 +54,11 @@ function summaryOf(result: unknown): string {
 
 const historyLimit = 100;
 
+function kept(doc: Composition, draft: Draft): string | null {
+  const selected = draft.selected;
+  return selected !== null && equipmentOf(doc).some((entry) => entry.names.includes(selected)) ? selected : null;
+}
+
 export class EditorStore extends Observable<EditorState> {
   constructor(private readonly bridge: Bridge) {
     super({ phase: "idle" });
@@ -131,7 +136,8 @@ export class EditorStore extends Observable<EditorState> {
     this.update((draft) => {
       const previous = draft.past.at(-1);
       if (previous === undefined) return draft;
-      return { ...draft, doc: previous, past: draft.past.slice(0, -1), future: [draft.doc, ...draft.future] };
+      const past = draft.past.slice(0, -1);
+      return { ...draft, doc: previous, past, future: [draft.doc, ...draft.future], selected: kept(previous, draft) };
     });
   }
 
@@ -139,7 +145,8 @@ export class EditorStore extends Observable<EditorState> {
     this.update((draft) => {
       const next = draft.future[0];
       if (next === undefined) return draft;
-      return { ...draft, doc: next, past: [...draft.past, draft.doc], future: draft.future.slice(1) };
+      const future = draft.future.slice(1);
+      return { ...draft, doc: next, past: [...draft.past, draft.doc], future, selected: kept(next, draft) };
     });
   }
 

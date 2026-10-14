@@ -1,4 +1,4 @@
-import type { BridgeFailure, FileContent, Workspace } from "../model/bridge";
+import type { BridgeFailure, FileContent, Outcome, Workspace } from "../model/bridge";
 import type { Plant } from "../model/plant";
 import { parsePlant } from "../model/plant";
 import type { ComponentSpec } from "../model/ports";
@@ -32,23 +32,30 @@ function pairOf(id: string, workspace: Workspace): string | null {
   return workspace.compositions.find((entry) => entry.id === id && id !== "")?.path ?? null;
 }
 
+function unchanged(
+  held: Extract<PlantState, { phase: "ready" }> | null,
+  file: Outcome<FileContent>,
+  workspace: Workspace,
+): boolean {
+  return (
+    held !== null && file.ok && file.value.etag === held.etag && pairOf(held.plant.id, workspace) === held.composition
+  );
+}
+
 export class PlantStore extends Observable<PlantState> {
+  private wanted = "";
+
   constructor(private readonly bridge: Bridge) {
     super({ phase: "idle" });
   }
 
   async load(path: string, workspace: Workspace): Promise<void> {
     if (this.loading(path)) return;
+    this.wanted = path;
     const held = this.held(path);
     if (held === null) this.set({ phase: "loading", path });
     const file = await this.bridge.readFile(path);
-    if (
-      held !== null &&
-      file.ok &&
-      file.value.etag === held.etag &&
-      pairOf(held.plant.id, workspace) === held.composition
-    )
-      return;
+    if (this.wanted !== path || unchanged(held, file, workspace)) return;
     if (!file.ok) {
       this.set({ phase: "failed", path, failure: file.failure });
       return;
@@ -73,15 +80,18 @@ export class PlantStore extends Observable<PlantState> {
     const plant = parsePlant(domain, composition === null ? null : await this.composition(composition));
     const kept = plant.instances.some((instance) => instance.id === selected) ? selected : null;
     const specs = await this.specs(plant);
+    if (this.wanted !== path) return;
     this.set({ phase: "ready", path, etag: file.etag, plant, specs, composition, selected: kept });
   }
 
   async show(key: string, domain: unknown): Promise<void> {
     const state = this.snapshot();
     if (state.phase !== "idle" && state.phase !== "failed" && state.path === key) return;
+    this.wanted = key;
     this.set({ phase: "loading", path: key });
     const plant = parsePlant(domain);
     const specs = await this.specs(plant);
+    if (this.wanted !== key) return;
     this.set({ phase: "ready", path: key, etag: "", plant, specs, composition: null, selected: null });
   }
 

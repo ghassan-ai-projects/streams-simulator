@@ -105,4 +105,19 @@ describe("plant store", () => {
     await store.load("domains/mini.domain.json", workspace);
     expect(store.snapshot()).toMatchObject({ phase: "ready", composition: "compositions/mini.composition.json" });
   });
+
+  it("ends on the plant asked for last when two loads overlap", async () => {
+    const fake = bridge();
+    fake.files.set("domains/other.domain.json", file("domains/other.domain.json", { ...domain, id: "other" }));
+    const read = fake.readFile.bind(fake);
+    fake.readFile = async (path: string) => {
+      if (path === "domains/mini.domain.json") await new Promise((resolve) => setTimeout(resolve, 5));
+      return read(path);
+    };
+    const store = new PlantStore(fake);
+    const first = store.load("domains/mini.domain.json", workspace);
+    const second = store.load("domains/other.domain.json", workspace);
+    await Promise.all([first, second]);
+    expect(store.snapshot()).toMatchObject({ phase: "ready", path: "domains/other.domain.json" });
+  });
 });

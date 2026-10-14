@@ -23,6 +23,7 @@ function Field({
   onChange,
   first = false,
   placeholder,
+  onLeave,
 }: {
   readonly label: string;
   readonly hint?: string;
@@ -30,6 +31,7 @@ function Field({
   readonly onChange: (value: string) => void;
   readonly first?: boolean;
   readonly placeholder?: string;
+  readonly onLeave?: () => void;
 }) {
   const id = useId();
   const input = useFocusOnMount<HTMLInputElement>(first);
@@ -45,6 +47,7 @@ function Field({
         onChange={(event) => {
           onChange(event.target.value);
         }}
+        onBlur={onLeave}
       />
       {hint !== undefined && <small id={`${id}-hint`}>{hint}</small>}
     </div>
@@ -170,12 +173,15 @@ function useNaming(taken: readonly string[]) {
   const [name, setName] = useState("");
   const [typed, setTyped] = useState<string | null>(null);
   const id = typed ?? (name.trim() === "" ? "" : suggestedId(name, taken));
-  return { name, setName, id, setId: setTyped };
+  const followAgain = () => {
+    if (typed === "") setTyped(null);
+  };
+  return { name, setName, id, setId: setTyped, followAgain };
 }
 
 export function NewPlantForm(props: NewPlantProps & { readonly onCancel: () => void }) {
   const { bases, examples, taken, onCancel } = props;
-  const { name, setName, id, setId } = useNaming(taken);
+  const { name, setName, id, setId, followAgain } = useNaming(taken);
   const first = bases[0] === undefined ? `example:${examples[0]?.id ?? ""}` : `file:${bases[0].path}`;
   const [base, setBase] = useState(first);
   const [copy, setCopy] = useState(true);
@@ -196,7 +202,13 @@ export function NewPlantForm(props: NewPlantProps & { readonly onCancel: () => v
       noValidate
     >
       <Field first label="Name" placeholder="e.g. Cooling hall" value={name} onChange={setName} />
-      <Field label="Id" hint="Used for its file names: lower case, digits and hyphens." value={id} onChange={setId} />
+      <Field
+        label="Id"
+        hint="Used for its file names: lower case, digits and hyphens."
+        value={id}
+        onChange={setId}
+        onLeave={followAgain}
+      />
       <BasePick bases={bases} examples={examples} base={base} setBase={setBase} />
       <CopyChoice copy={copy} setCopy={setCopy} />
       <Actions failure={failure} ready={ready} onCancel={onCancel} />

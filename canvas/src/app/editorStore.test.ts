@@ -142,4 +142,17 @@ describe("editor store", () => {
     store.edit((doc) => doc);
     expect(store.snapshot()).toBe(before);
   });
+
+  it("drops a selection that undo or redo takes out of the plant", async () => {
+    const { store } = await opened();
+    store.edit(
+      (doc) => ({ ...doc, equipment: [...(doc.equipment as unknown[]), { use: "x@1", names: ["P-9"] }] }),
+      "P-9",
+    );
+    store.undo();
+    expect(store.snapshot()).toMatchObject({ selected: null });
+    store.select("CH-1");
+    store.redo();
+    expect(store.snapshot()).toMatchObject({ selected: "CH-1" });
+  });
 });
