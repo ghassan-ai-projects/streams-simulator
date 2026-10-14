@@ -1,7 +1,9 @@
 # P9 continuation handoff — 2026-10-14
 
 The goal governing this work is [GOAL-UI-PRODUCTION.md](../GOAL-UI-PRODUCTION.md); its review protocol (three Sonnet
-reviewer subagents) replaces the reviewer instructions below.
+reviewer subagents) replaces the reviewer instructions below. Steps 2 and 3 below (bounded playback queries, bounded
+verify/replay) are superseded by decision D-16 in `docs/DECISIONS.md` (a run stores actions, not data), deferred until
+the UI goal is done; only R9-13 and R9-37 stay in P9.
 
 This is the current handoff for Claude. Read `AGENTS.md` first, then this file, the seven rounds and every
 disposition in [ui.md](ui.md), [P9-functional-plan.md](P9-functional-plan.md), and `governance/FINDINGS.md`.

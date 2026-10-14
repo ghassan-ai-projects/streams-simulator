@@ -18,9 +18,7 @@ Each item is proven by a test or a recorded review, not by a claim.
 
 1. **P9 playback and review closed.** Every finding assigned to P9 is done or carries an owner-approved disposition;
    the CANVAS_PLAN row reads Done with an evidence file and review record. This includes:
-   - bounded memory and time for `report`, `verify` and `replay` on the 26-hall campus (R9-14, R2-01);
-   - a simulator-owned windowed read of observations and true state, so playback seeks without streaming the whole
-     journal and Explore runs show true state next to reported values after sealing (R9-04, R9-05, R9-13, R9-37);
+   - Explore runs show true state next to reported values after sealing, exact to the nanosecond (R9-13, R9-37);
    - negative air flow fixed at its cause in the simulator (R9-22);
    - the remaining P9 items: R9-01, R9-03, R9-23, R9-25, R9-26, R9-34, R9-35, R9-36, D5-12, D6-01, frame titles.
 2. **P10 live run and control.** Director-driven runs from the canvas: start, play, pause, step, speed, reset; live
@@ -37,10 +35,12 @@ Each item is proven by a test or a recorded review, not by a claim.
    simulations and the race detector run on demand (`make test-long`, `make test-race`) whenever a change touches
    dynamics, components, goroutines or locks.
 
+Run storage and its memory at campus scale (R9-04, R9-05, R9-14) are out of this goal: decision
+[D-16](../DECISIONS.md) replaces them with "a run stores actions, not data" after the UI is finished.
+
 ## Order of work
 
-1. P9: bounded verify and replay evidence → windowed observation and true-state reads in the simulator, then the
-   canvas on top → R9-22 → remaining P9 findings → full P9 review round → close P9.
+1. P9: Explore true state in the review → R9-22 → remaining P9 findings → full P9 review round → close P9.
 2. P10: design note for the live-control bridge surface and pacing, then implementation, then its review rounds.
 3. P11a, P11b, P11c in turn, each with its design note, implementation and review rounds.
 4. A1–A7 completed and the final whole-UI review round.
