@@ -10,7 +10,7 @@ test("a blank plant is created from an empty workspace with a name and an id, an
   page,
 }) => {
   await page.goto(env("CANVAS_EMPTY_URL"));
-  await expect(page.getByRole("heading", { name: /has no plants yet/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /workspace has no plants yet/ })).toBeVisible();
   const start = page.getByRole("button", { name: "New plant" });
   await expect(start).toHaveAttribute("aria-disabled", "false");
   await start.click();

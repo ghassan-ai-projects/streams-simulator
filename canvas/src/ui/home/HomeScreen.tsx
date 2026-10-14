@@ -30,9 +30,10 @@ function EmptyWorkspace({
   return (
     <div className={styles.empty}>
       <Boxes size={28} aria-hidden="true" />
-      <h2 className={styles.emptyTitle}>{`${name} has no plants yet`}</h2>
+      <h2 className={styles.emptyTitle}>{`The ${name} workspace has no plants yet`}</h2>
       <p className={styles.lead}>
         Build a simulated plant, generate its readings, test how a connected system responds, and review what happened.
+        Plants you create are saved in the {name} workspace folder.
       </p>
       <BlankPlantStart examples={examples} maker={maker} navigation={navigation} />
       <ExampleList examples={examples} taken={[]} maker={maker} navigation={navigation} />
@@ -72,7 +73,7 @@ function Contents({ workspace, navigation, maker, badgeFor }: ContentsProps) {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <span className={styles.eyebrow}>Folder</span>
+        <span className={styles.eyebrow}>Workspace folder</span>
         <h2 className={styles.title}>{workspace.name}</h2>
         <span className={styles.summary}>{workspaceSummary(workspace)}</span>
       </header>

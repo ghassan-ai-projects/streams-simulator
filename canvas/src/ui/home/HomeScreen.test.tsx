@@ -180,11 +180,12 @@ describe("home screen", () => {
     const bridge = new FakeBridge();
     bridge.workspaceOutcome = success({ name: "fresh", domains: [], compositions: [], scenarios: [], runs: [] });
     await show(bridge);
-    expect(screen.getByRole("heading", { name: "fresh has no plants yet" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "The fresh workspace has no plants yet" })).toBeInTheDocument();
     const crumbs = screen.getByRole("navigation", { name: "Breadcrumb" });
     expect(within(crumbs).getByRole("heading", { level: 1, name: "Workspace" })).toBeInTheDocument();
     expect(screen.getAllByRole("listitem")).toHaveLength(4);
     expect(screen.queryByText(/compositions\//)).not.toBeInTheDocument();
+    expect(screen.getByText(/saved in the fresh workspace folder/)).toBeInTheDocument();
   });
 
   it("offers the shipped examples in an empty workspace and opens a tried one ready to run", async () => {
