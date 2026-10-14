@@ -136,6 +136,7 @@ Commands:
   domain format <path>                  Rewrite a domain spec in canonical formatting
   domain compose <composition> [--out]  Compose a plant from the component library into a domain
   component list|show <ref>|validate    The component library: equipment, instruments, vocabulary
+  component examples|example <id>       Ready-to-run example plants shipped with the library
                                         (built in; --components-dir adds customer
                                         directories, repeatable; STREAMSIM_COMPONENTS_DIRS)
   adapter list|verify [path]            Installed adapters; verify one against its golden

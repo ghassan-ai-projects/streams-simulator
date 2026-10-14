@@ -93,11 +93,13 @@ It prints `{id, digest, channels, faults, effectors}` as `domain validate` does,
 Lists, shows and validates the component library: equipment, instruments and vocabulary.
 
 ```text
-streamsim component [list|show <namespace/name[@major]>|validate] [--components-dir <dir>]...
+streamsim component [list|show <namespace/name[@major]>|validate|examples|example <id>] [--components-dir <dir>]...
 ```
 
 - `component list` — every entry as `{id, version, kind, title, class, tags, digest}` (no file path), sorted by id and version. For an instrument `class` is its unit family and `tags` its ISA-5.1 letters.
 - `component show <ref>` — the entry and the file's document; `ns/name` without a major selects the highest major.
+- `component examples` — the ready-to-run example plants shipped with the library, as `{id, title, description}`.
+- `component example <id>` — one example plant's composition, ready to copy into a workspace; an id that is not shipped fails with `component_failed`.
 - `component validate` — loads and checks every file of the directories and prints `{valid, directories, equipment, instruments}`, where `directories` are the customer directories (the built-in library is always checked and counted). A file that breaks its schema or a library rule fails with `component_invalid`, naming the file and listing every issue with its pointer.
 
 ### `adapter`

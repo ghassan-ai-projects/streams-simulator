@@ -38,6 +38,12 @@
       "$ref": "#/$defs/component_validate"
     },
     {
+      "$ref": "#/$defs/component_examples"
+    },
+    {
+      "$ref": "#/$defs/component_example"
+    },
+    {
       "$ref": "#/$defs/adapter_list"
     },
     {
@@ -940,6 +946,50 @@
           "items": {
             "$ref": "#/$defs/component_summary"
           }
+        }
+      }
+    },
+    "component_examples": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "examples"
+      ],
+      "properties": {
+        "examples": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "title": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "component_example": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "example"
+      ],
+      "properties": {
+        "example": {
+          "type": "object"
         }
       }
     },

@@ -52,6 +52,20 @@ func TestComponentListPrintsEveryLibraryEntry(t *testing.T) {
 	}
 }
 
+func TestComponentExamplesListTheShippedExamplePlantsAndPrintOne(t *testing.T) {
+	t.Parallel()
+	list := invoke(t, "component", "examples").mustSucceed(t).document(t, "component_examples")
+	entries, _ := list["examples"].([]any)
+	first, _ := entries[0].(map[string]any)
+	if len(entries) < 2 || first["id"] != "chiller-pilot" || first["title"] != "Chiller pilot" {
+		t.Fatalf("examples = %v", list)
+	}
+	shown := invoke(t, "component", "example", "factory-utilities").mustSucceed(t).document(t, "component_example")
+	if example, _ := shown["example"].(map[string]any); example["id"] != "factory-utilities" || example["equipment"] == nil {
+		t.Fatalf("example = %v", shown)
+	}
+}
+
 func TestComponentWithoutADirectoryListsTheBuiltInLibraryWhateverTheWorkingDirectory(t *testing.T) {
 	t.Parallel()
 	doc := invoke(t, "component").mustSucceed(t).document(t, "component_list")
@@ -144,6 +158,9 @@ func TestComponentCommandsRefuseWhatTheyCannotDo(t *testing.T) {
 		{"list with an argument", []string{"component", "list", "extra"}, "usage_invalid", 2},
 		{"validate with an argument", []string{"component", "validate", "extra"}, "usage_invalid", 2},
 		{"show of an absent entry", []string{"component", "show", "streamsim/nothing"}, "component_failed", 1},
+		{"examples with an argument", []string{"component", "examples", "extra"}, "usage_invalid", 2},
+		{"example without an id", []string{"component", "example"}, "usage_invalid", 2},
+		{"an example that is not shipped", []string{"component", "example", "nothing"}, "component_failed", 1},
 		{"a directory that does not exist", []string{"component", "list", "--components-dir", "no-such-dir"}, "file_not_found", 1},
 	}
 	for _, tc := range cases {
