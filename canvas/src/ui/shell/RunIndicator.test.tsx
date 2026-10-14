@@ -7,7 +7,7 @@ import { FakeBridge, failure } from "../../test/fakeBridge";
 import { RunIndicator } from "./RunIndicator";
 
 const origin = { domain: "mini", title: "Mini plant", path: "domains/mini.domain.json" };
-const plan = { seed: 1, durationS: 60, explore: true, faults: [] };
+const plan = { seed: 1, durationS: 60, explore: true, faults: [], calls: [] };
 
 function setup() {
   const bridge = new FakeBridge();

@@ -40,6 +40,7 @@ export class FakeBridge implements Bridge {
   workspaceOutcome: Outcome<Workspace> = success(sampleWorkspace);
   files = new Map<string, Outcome<FileContent>>();
   actions = new Map<string, Outcome<unknown>>();
+  handlers = new Map<string, (args: Readonly<Record<string, unknown>>) => Outcome<unknown>>();
   calls: { name: string; args: Readonly<Record<string, unknown>> }[] = [];
   watchers = new Set<() => void>();
   pairedCodes: string[] = [];
@@ -75,6 +76,8 @@ export class FakeBridge implements Bridge {
 
   action(name: string, args: Readonly<Record<string, unknown>>): Promise<Outcome<unknown>> {
     this.calls.push({ name, args });
+    const handler = this.handlers.get(name);
+    if (handler !== undefined) return Promise.resolve(handler(args));
     const set = this.actions.get(name);
     if (set === undefined && name === "component.new") return Promise.resolve(this.newPlant(args));
     return Promise.resolve(set ?? failed(failure("unknown_action", 404)));

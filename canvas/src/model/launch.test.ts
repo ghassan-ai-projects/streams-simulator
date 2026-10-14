@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
-import type { LaunchPlan } from "./launch";
-import { clockOf, launchSteps, planProblems, planSummary } from "./launch";
+import type { LaunchPlan, PlannedCall } from "./launch";
+import { clockOf, disturbanceWords, launchSteps, outcomeOf, planProblems, planSummary } from "./launch";
 
 const plan = (overrides: Partial<LaunchPlan>): LaunchPlan => ({
   seed: 7,
   durationS: 100,
   explore: true,
   faults: [],
+  calls: [],
   ...overrides,
 });
 
@@ -68,6 +69,81 @@ describe("launch plan", () => {
     expect(planSummary(plan({}), "30 min")).toBe("30 min of simulated time · Explore · no faults");
     const faults = [{ entity: "CT-1", fault: "fan", atS: 5 }];
     expect(planSummary(plan({ explore: false, faults }), "1 h")).toBe("1 h of simulated time · Evaluate · 1 fault");
+  });
+});
+
+const setpoint = {
+  name: "chiller__set_setpoint",
+  entityArg: "chiller_id",
+  args: [{ name: "setpoint_c", type: "number", required: true, options: [], min: 4, max: 12 }],
+} as const;
+
+const call = (overrides: Partial<PlannedCall>): PlannedCall => ({
+  entity: "CH-1",
+  effector: "chiller__set_setpoint",
+  atS: 60,
+  args: { chiller_id: "CH-1", setpoint_c: 7 },
+  ...overrides,
+});
+
+describe("effector calls in a plan", () => {
+  it("makes each call at its minute, after the faults of the same minute, at the world's clock", () => {
+    const steps = launchSteps(
+      plan({
+        durationS: 120,
+        faults: [{ entity: "CT-1", fault: "fan", atS: 60 }],
+        calls: [call({ atS: 60 }), call({ atS: 0, args: { chiller_id: "CH-1", setpoint_c: 9 } })],
+      }),
+      1,
+    );
+    expect(steps).toEqual([
+      { kind: "invoke", ...call({ atS: 0, args: { chiller_id: "CH-1", setpoint_c: 9 } }) },
+      { kind: "advance", byNs: 60e9, toS: 60 },
+      { kind: "inject", entity: "CT-1", fault: "fan" },
+      { kind: "invoke", ...call({ atS: 60 }) },
+      { kind: "advance", byNs: 60e9, toS: 120 },
+    ]);
+  });
+
+  it("names what is missing from a call and what its arguments get wrong", () => {
+    const specOf = (entity: string, effector: string) =>
+      entity === "CH-1" && effector === setpoint.name ? setpoint : undefined;
+    const texts = (calls: PlannedCall[]) => planProblems(plan({ calls }), specOf).map((problem) => problem.text);
+    expect(texts([call({})])).toEqual([]);
+    expect(texts([call({ entity: "", effector: "" })])).toEqual(["Effector call 1 needs an instance and an effector."]);
+    expect(texts([call({ entity: "" })])).toEqual(["Effector call 1 needs an instance."]);
+    expect(texts([call({ effector: "" })])).toEqual(["Effector call 1 needs an effector."]);
+    expect(texts([call({ atS: 100 })])).toEqual(["Effector call 1 is made inside the run, before its end."]);
+    expect(texts([call({ effector: "chiller__stop" })])).toEqual(["Effector call 1: CH-1 has no effector stop."]);
+    expect(texts([call({ args: { chiller_id: "CH-1" } })])).toEqual(["Effector call 1: setpoint c needs a value."]);
+    expect(texts([call({ args: { setpoint_c: 20 } })])).toEqual([
+      "Effector call 1: setpoint c is a number from 4 to 12.",
+    ]);
+    expect(planProblems(plan({ calls: [call({ atS: 100 })] }))[0]).toMatchObject({ field: "call", call: 0 });
+  });
+
+  it("says in words how many faults and effector calls a plan holds", () => {
+    expect(disturbanceWords(plan({}))).toBe("no faults");
+    expect(disturbanceWords(plan({ calls: [call({})] }))).toBe("no faults and 1 effector call");
+    const faults = [
+      { entity: "CT-1", fault: "fan", atS: 5 },
+      { entity: "CT-1", fault: "fan", atS: 6 },
+    ];
+    expect(disturbanceWords(plan({ faults, calls: [call({}), call({})] }))).toBe("2 faults and 2 effector calls");
+    expect(planSummary(plan({ calls: [call({})] }), "30 min")).toBe(
+      "30 min of simulated time · Explore · no faults · 1 effector call",
+    );
+  });
+
+  it("reads the acknowledgement as accepted or refused with the binary's reason", () => {
+    const accepted = outcomeOf(call({}), { accepted: true, effect_eta_ns: 5e9, command_id: "director-1" });
+    expect(accepted).toMatchObject({ accepted: true, reason: "", effectEtaNs: 5e9, entity: "CH-1", atS: 60 });
+    expect(outcomeOf(call({}), { accepted: false, reason: "effector_refused" })).toMatchObject({
+      accepted: false,
+      reason: "effector_refused",
+      effectEtaNs: null,
+    });
+    expect(outcomeOf(call({}), null)).toMatchObject({ accepted: false, reason: "no reason given" });
   });
 });
 

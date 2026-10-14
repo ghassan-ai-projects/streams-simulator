@@ -170,7 +170,7 @@ describe("launch panel lifetime", () => {
     const launch = new LaunchStore(bridge());
     await launch.start(
       { domain: "mini", title: "Mini plant", path },
-      { seed: 1, durationS: 60, explore: true, faults: [] },
+      { seed: 1, durationS: 60, explore: true, faults: [], calls: [] },
     );
     expect(launch.snapshot()).toMatchObject({ phase: "done" });
     const onFinished = vi.fn<(worldId: string) => void>();
@@ -188,6 +188,7 @@ describe("launch panel lifetime", () => {
       durationS: 7200,
       explore: false,
       faults: [{ entity: "CH-1", fault: "chiller__fouling", atS: 600 }],
+      calls: [],
     });
     const view = render(
       <LaunchPanel launch={launch} plant={parsePlant(domain)} path={path} onClose={vi.fn()} onFinished={vi.fn()} />,
@@ -207,7 +208,7 @@ describe("launch panel lifetime", () => {
   it("keeps a run's seconds and says what Run again could not copy", () => {
     const launch = new LaunchStore(bridge());
     const faults = [{ entity: "CH-1", fault: "chiller__fouling", atS: 620 }];
-    launch.propose("mini", { seed: 5, durationS: 90, explore: true, faults }, ["1 delivery perturbation"]);
+    launch.propose("mini", { seed: 5, durationS: 90, explore: true, faults, calls: [] }, ["1 delivery perturbation"]);
     render(
       <LaunchPanel launch={launch} plant={parsePlant(domain)} path={path} onClose={vi.fn()} onFinished={vi.fn()} />,
     );
@@ -244,7 +245,7 @@ describe("launch panel lifetime", () => {
     const fake = new HeldBridge();
     const launch = new LaunchStore(fake);
     const elsewhere = { domain: "other", title: "Other plant", path: "domains/other.domain.json" };
-    void launch.start(elsewhere, { seed: 1, durationS: 60, explore: true, faults: [] });
+    void launch.start(elsewhere, { seed: 1, durationS: 60, explore: true, faults: [], calls: [] });
     const onFinished = vi.fn<(worldId: string) => void>();
     render(
       <LaunchPanel launch={launch} plant={parsePlant(domain)} path={path} onClose={vi.fn()} onFinished={onFinished} />,

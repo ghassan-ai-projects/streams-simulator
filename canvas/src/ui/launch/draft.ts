@@ -30,6 +30,7 @@ export function planOf(draft: Draft): LaunchPlan {
       fault: fault.fault,
       atS: whole(fault.atMinutes, 60),
     })),
+    calls: [],
   };
 }
 
