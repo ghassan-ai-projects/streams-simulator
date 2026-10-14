@@ -94,6 +94,10 @@ export function buildFixture(): Fixture {
     join(import.meta.dirname, "..", "fixtures", "alarm-playback.domain.json"),
     join(workspace, "domains", "alarm-playback.domain.json"),
   );
+  copyFileSync(
+    join(repository, "examples", "chiller-pilot.domain.json"),
+    join(workspace, "domains", "chiller-pilot.domain.json"),
+  );
   record(binary, workspace, "w-alarm", [], "alarm-playback");
   record(binary, workspace, "w-explore", ["-explore"]);
   const jams = ["-fault", "h02/M-1=molder__product_jam@300", "-fault", "h02/M-2=molder__bearing_wear@300"];

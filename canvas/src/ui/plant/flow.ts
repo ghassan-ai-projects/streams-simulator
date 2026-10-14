@@ -1,3 +1,4 @@
+import { MarkerType } from "@xyflow/react";
 import type { Edge, Node } from "@xyflow/react";
 import type { NodeStatus, Shown } from "../../model/readout";
 import type { PlantView, ViewNode } from "../../model/plantView";
@@ -81,6 +82,22 @@ function emphasis(selected: string | null, from: string, to: string): string {
   return touches(selected, from, to) ? " wire-on" : " wire-off";
 }
 
+function familyColor(family: PlantView["edges"][number]["family"]): string {
+  return family === null ? "var(--border-strong)" : `var(--port-${family})`;
+}
+
+function markerColor(
+  family: PlantView["edges"][number]["family"],
+  selected: string | null,
+  from: string,
+  to: string,
+): string {
+  if (selected !== null && !touches(selected, from, to)) {
+    return "color-mix(in srgb, var(--text-tertiary) 30%, transparent)";
+  }
+  return familyColor(family);
+}
+
 export function flowEdges(view: PlantView, anchors = false, selected: string | null = null): Edge[] {
   return view.edges.map((edge) => ({
     id: edge.id,
@@ -88,6 +105,12 @@ export function flowEdges(view: PlantView, anchors = false, selected: string | n
     target: edge.to,
     sourceHandle: anchors ? "out" : (edge.fromHandle ?? "out"),
     targetHandle: anchors ? "in" : (edge.toHandle ?? "in"),
+    markerEnd: {
+      type: MarkerType.ArrowClosed,
+      width: 10,
+      height: 10,
+      color: markerColor(edge.family, selected, edge.from, edge.to),
+    },
     className: `wire family-${edge.family ?? "none"}${emphasis(selected, edge.from, edge.to)}`,
     zIndex: touches(selected, edge.from, edge.to) ? 1 : 0,
     label: edge.count > 1 ? `×${String(edge.count)}` : undefined,

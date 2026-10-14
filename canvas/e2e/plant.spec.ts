@@ -27,6 +27,38 @@ test("selecting an instance in the outline shows its kind in the inspector", asy
   await expect(page.getByRole("heading", { name: "lab-workspace" })).toBeVisible();
 });
 
+test("wire arrows point to receivers and selected connections remain prominent", async ({ page }) => {
+  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Ffactory-utilities.domain.json`);
+  const graph = page.getByRole("application", { name: "Plant graph" });
+  const edge = graph.locator(".react-flow__edge").first();
+  await expect(edge.locator(".react-flow__edge-path")).toHaveAttribute("marker-end", /url\(['"]?#/);
+  await page.getByRole("button", { name: "Legend" }).click();
+  await expect(
+    page.getByText("Model connections carry values from outputs to inputs; arrows point to the receiving endpoint."),
+  ).toBeVisible();
+  await page.getByRole("navigation", { name: "Outline" }).getByRole("button", { name: "CH-1" }).click();
+  const selected = graph.locator(".react-flow__edge.wire-on").first();
+  await expect(selected).toBeVisible();
+  await expect(selected.locator(".react-flow__edge-path")).toHaveAttribute("marker-end", /url\(['"]?#/);
+  await expect(selected.locator(".react-flow__edge-path")).toHaveCSS("stroke-width", "3px");
+  await expect(graph.locator(".react-flow__edge.wire-off .react-flow__edge-path").first()).toHaveAttribute(
+    "marker-end",
+    /color-mix/,
+  );
+});
+
+test("the chiller pilot renders target arrow markers at overview scale", async ({ page }) => {
+  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Fchiller-pilot.domain.json`);
+  const graph = page.getByRole("application", { name: "Plant graph" });
+  const edge = graph.locator(".react-flow__edge").first();
+  await expect(edge).toBeVisible();
+  await expect(edge.locator(".react-flow__edge-path")).toHaveAttribute("marker-end", /url\(['"]?#/);
+  await page.getByRole("button", { name: "Legend" }).click();
+  await expect(
+    page.getByText("Model connections carry values from outputs to inputs; arrows point to the receiving endpoint."),
+  ).toBeVisible();
+});
+
 test("a shared campus link navigates to its declared receiver in another hall", async ({ page }) => {
   await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Fcampus-3.domain.json`);
   await page.getByRole("navigation", { name: "Outline" }).getByRole("button", { name: "CAL-1" }).click();
