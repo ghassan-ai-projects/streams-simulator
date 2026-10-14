@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { Report, VerifyState } from "../../model/report";
-import { badgeOf, humanise, kpisOf, replayLine, wallClock } from "../../model/report";
+import { badgeOf, humanise, replayLine, wallClock } from "../../model/report";
+import { kpisOf } from "../../model/reportViews";
 import { displayUnit } from "../../model/units";
 import shared from "../shared.module.css";
 import styles from "./RunScreen.module.css";
@@ -111,7 +112,10 @@ function Facts({ report, verify }: { readonly report: Report; readonly verify: V
           The report compares the files in the run folder with the digests the run recorded.
         </p>
         <Rows
-          rows={report.checks.map((check) => [check.name, check.status])}
+          rows={report.checks.map((check) => [
+            { text: check.name.replaceAll("_", " "), title: check.name },
+            check.status.replaceAll("_", " "),
+          ])}
           columns={["text", "text"]}
           headers={["File", "Check"]}
         />

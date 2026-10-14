@@ -196,5 +196,6 @@ test("a selection made outside the graph comes into view, and arrow travel keeps
     const said = (await page.locator("#graph-said").textContent()) ?? "";
     await expect.poll(() => page.evaluate(insideGraph, said.split(",")[0] ?? "")).toBe(true);
   }
-  expect(await page.evaluate(dimContrast)).toBeGreaterThanOrEqual(3);
+  await page.keyboard.press("0");
+  await expect.poll(() => page.evaluate(dimContrast)).toBeGreaterThanOrEqual(3);
 });

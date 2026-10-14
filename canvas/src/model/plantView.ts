@@ -227,12 +227,6 @@ export function describeNode(
   return `${node.label}, ${state}${node.detail}, ${ports}${selected ? ", selected" : ""}`;
 }
 
-export function viewSummary(view: PlantView): string {
-  const links = view.edges.reduce((sum, edge) => sum + edge.count, 0);
-  const instances = view.nodes.reduce((sum, node) => sum + node.members, 0);
-  return `${String(instances)} instances · ${String(links)} links in view`;
-}
-
 export function hallMembers(plant: Plant, hall: string): readonly (readonly [string, number])[] {
   const counts = new Map<string, number>();
   for (const instance of plant.instances) {

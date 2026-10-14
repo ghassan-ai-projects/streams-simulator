@@ -29,7 +29,7 @@ function ActiveNow({ faults, shown }: { readonly faults: readonly string[]; read
       ))}
       {alarmed.map((entry) => (
         <li key={entry.channel} className={styles[`value-${entry.attention ?? "warn"}`]}>
-          {`${statusWords[entry.attention ?? "warn"]}: ${channelWords(entry.channel)} ${entry.value}`}
+          {`${statusWords[entry.attention ?? "warn"]} · ${channelWords(entry.channel)}: ${entry.value}`}
         </li>
       ))}
     </ul>

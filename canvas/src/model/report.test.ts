@@ -1,16 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { report } from "../test/runFixture";
-import {
-  badgeLabels,
-  badgeOf,
-  humanise,
-  parseReport,
-  runSpan,
-  kpisOf,
-  parseReplay,
-  replayLine,
-  wallClock,
-} from "./report";
+import { kpisOf, runIdentity } from "./reportViews";
+import { badgeLabels, badgeOf, humanise, parseReport, runSpan, parseReplay, replayLine, wallClock } from "./report";
 
 describe("run report", () => {
   it("reads the run, counts, verification and truth sections", () => {
@@ -126,5 +117,18 @@ describe("run report", () => {
     expect(kpisOf(report, null)).toHaveLength(4);
     expect(kpisOf(report, "h03").map((row) => row.entity)).toEqual(["h03/M-1", "h03/M-2"]);
     expect(kpisOf(report, "CH-1").map((row) => row.entity)).toEqual(["CH-1"]);
+  });
+
+  it("names the run by its plant, seed, adapter and simulator", () => {
+    const parsed = parseReport({
+      run: {
+        domain: { id: "factory", version: "0.1.0" },
+        adapter: { id: "native-jsonl" },
+        seed: 7,
+        sim_version: "0.3.1",
+      },
+    });
+    expect(runIdentity(parsed)).toBe("factory 0.1.0 · seed 7 · native-jsonl · sim 0.3.1");
+    expect(runIdentity(parseReport({ run: { domain: { id: "factory" } } }))).toBe("factory");
   });
 });

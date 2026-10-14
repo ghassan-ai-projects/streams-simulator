@@ -161,7 +161,7 @@
   border: 0 !important;
 }
 
-:global(.tier-compact) .pinName,
+:global(.tier-compact) .pins,
 :global(.tier-overview) .kind,
 :global(.tier-map) .kind,
 :global(.tier-overview) .pins,
@@ -180,12 +180,29 @@
   font-size: min(calc(12.5px / var(--zoom)), 22px);
 }
 
+:global(.tier-compact) .node {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
 :global(.tier-compact) .readout {
-  gap: 0;
+  flex: 1 1 auto;
+  gap: calc(4px / var(--zoom));
+  height: auto;
+  border-bottom: 0;
 }
 
 :global(.tier-compact) .readout div {
-  gap: calc(4px / var(--zoom));
+  display: block;
+}
+
+:global(.tier-compact) .readout dt,
+:global(.tier-compact) .readout dd,
+:global(.tier-compact) .readout dd.word {
+  overflow: visible;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 :global(.tier-compact) .kind,
@@ -214,11 +231,6 @@
   font-size: calc(11px / var(--zoom));
 }
 
-:global(.tier-compact) .dot {
-  width: calc(10px / var(--zoom)) !important;
-  height: calc(10px / var(--zoom)) !important;
-}
-
 :global(.tier-overview) .node,
 :global(.tier-map) .node {
   height: 100%;
@@ -228,12 +240,13 @@
 :global(.tier-map) .header {
   align-items: flex-start;
   height: 100%;
-  padding-top: calc(4px / var(--zoom));
+  padding-top: calc(2px / var(--zoom));
   border-radius: 7px;
 }
 
 :global(.tier-overview) .id {
   font-size: min(calc(12.5px / var(--zoom)), 46px);
+  line-height: 1;
   overflow: hidden;
   text-overflow: ellipsis;
 }

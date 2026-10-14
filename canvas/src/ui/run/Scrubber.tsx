@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { Report } from "../../model/report";
 import { wallClock } from "../../model/report";
 import type { ChipPlace, EventMark } from "../../model/timeline";
-import { eventMarks, nextEvent, placeChips, previousEvent, timeTicks } from "../../model/timeline";
+import { activeAt, eventMarks, nextEvent, placeChips, previousEvent, timeTicks } from "../../model/timeline";
 import styles from "./RunScreen.module.css";
 
 interface ScrubberProps {
@@ -22,10 +22,13 @@ interface LaneProps {
   readonly startNs: number;
   readonly onSeek: (ns: number) => void;
   readonly onEvent: ((mark: EventMark) => void) | undefined;
+  readonly reading: boolean;
+  readonly positionNs: number;
 }
 
 const chipText = (mark: EventMark, startNs: number) => `${wallClock(mark.atNs, startNs)} ${mark.label}`;
-const chipWidth = (text: string) => Math.min(320, 20 + text.length * 7);
+const chipShort = (mark: EventMark, startNs: number) => `${wallClock(mark.atNs, startNs)} ${mark.entity}`;
+const chipWidth = (text: string) => Math.min(200, 20 + text.length * 7);
 
 function useWidth() {
   const [width, setWidth] = useState(800);
@@ -49,16 +52,18 @@ interface ChipProps {
   readonly chip: ChipPlace;
   readonly text: string;
   readonly startNs: number;
+  readonly active: boolean;
   readonly pick: (mark: EventMark) => void;
 }
 
-function Chip({ mark, chip, text, startNs, pick }: ChipProps) {
+function Chip({ mark, chip, text, startNs, active, pick }: ChipProps) {
   return (
     <li className={styles.laneItem} style={{ left: `${String(chip.left)}px`, top: `${String(chip.row * 28)}px` }}>
       <button
         type="button"
-        className={mark.tone === "fault" ? styles.chipFault : styles.chipEvent}
+        className={active ? styles.chipFault : styles.chipEvent}
         title={`${wallClock(mark.atNs, startNs)} · ${mark.raw}`}
+        aria-label={chipText(mark, startNs)}
         onClick={() => {
           pick(mark);
         }}
@@ -101,17 +106,25 @@ function LaneNotes({
   said,
   empty,
   hidden,
+  reading,
 }: {
   readonly said: string;
   readonly empty: boolean;
   readonly hidden: number;
+  readonly reading: boolean;
 }) {
   return (
     <>
       <p className="sr-only" aria-live="polite">
         {said}
       </p>
-      {empty && <p className={styles.laneMore}>No disturbances or effector calls in this run.</p>}
+      {empty && (
+        <p className={styles.laneMore}>
+          {reading
+            ? "Events appear once streamsim report has read the run."
+            : "No disturbances or effector calls in this run."}
+        </p>
+      )}
       {hidden > 0 && (
         <p
           className={styles.laneMore}
@@ -121,13 +134,13 @@ function LaneNotes({
   );
 }
 
-function Lane({ marks, fraction, startNs, onSeek, onEvent }: LaneProps) {
+function Lane({ marks, fraction, startNs, onSeek, onEvent, reading, positionNs }: LaneProps) {
   const { ref, width } = useWidth();
-  const texts = marks.map((mark) => chipText(mark, startNs));
+  const texts = marks.map((mark) => chipShort(mark, startNs));
   const chips = placeChips(
     marks.map((mark) => fraction(mark.atNs) * width),
     texts.map(chipWidth),
-    { width, rows: 2, gap: 4 },
+    { width, rows: 3, gap: 4 },
   );
   const hidden = chips.filter((chip) => chip.row < 0).length;
   const { said, pick } = usePick(startNs, onSeek, onEvent);
@@ -150,12 +163,13 @@ function Lane({ marks, fraction, startNs, onSeek, onEvent }: LaneProps) {
               chip={chip}
               text={texts[index] ?? ""}
               startNs={startNs}
+              active={activeAt(mark, positionNs)}
               pick={pick}
             />
           );
         })}
       </ol>
-      <LaneNotes said={said} empty={marks.length === 0} hidden={hidden} />
+      <LaneNotes said={said} empty={marks.length === 0} hidden={hidden} reading={reading} />
     </>
   );
 }
@@ -245,7 +259,15 @@ export function Scrubber({ startNs, endNs, positionNs, report, onSeek, onEvent }
       <p id="scrub-keys" className="sr-only">
         Arrow keys move one second, Shift and arrow keys one minute, Page Up and Page Down further.
       </p>
-      <Lane marks={marks} fraction={fraction} startNs={startNs} onSeek={onSeek} onEvent={onEvent} />
+      <Lane
+        marks={marks}
+        fraction={fraction}
+        startNs={startNs}
+        onSeek={onSeek}
+        onEvent={onEvent}
+        reading={report === null}
+        positionNs={positionNs}
+      />
     </div>
   );
 }

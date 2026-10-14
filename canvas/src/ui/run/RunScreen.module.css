@@ -462,3 +462,11 @@
 .ticks span:last-child {
   transform: translateX(-100%);
 }
+
+.identity {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font: var(--text-xs) var(--font-mono);
+  color: var(--text-secondary);
+}

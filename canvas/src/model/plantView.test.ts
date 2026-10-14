@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { campus, chillerPorts, composition, domain, towerPorts } from "../test/plantFixture";
 import { parsePlant } from "./plant";
-import { describeNode, hallMembers, hallOf, hallsOf, nodeSize, plantView, viewSummary } from "./plantView";
+import { describeNode, hallCount, hallMembers, hallOf, hallsOf, nodeSize, plantView } from "./plantView";
 import { parsePorts } from "./ports";
 
 const specs = new Map([
@@ -40,7 +40,8 @@ describe("plant view", () => {
       ["h03", "2 instances"],
     ]);
     expect(view.edges).toEqual([]);
-    expect(viewSummary(view)).toBe("7 instances · 0 links in view");
+    const inside = plantView(plant, new Map(), "h01");
+    expect(hallCount(inside, "h01")).toBe("2 instances plus 1 shared");
     expect(view.layout.nodes.get("h01")?.width).toBe(nodeSize.groupWidth);
   });
 

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import type { ReviewState } from "../../app/reviewStore";
 import type { Badge, Report } from "../../model/report";
 import { badgeLabels, badgeOf } from "../../model/report";
+import { runIdentity } from "../../model/reportViews";
 import styles from "./RunScreen.module.css";
 
 const badgeIcons = {
@@ -59,10 +60,13 @@ function ReportPending({ loading, elapsed }: { readonly loading: boolean; readon
 function Mode({ report }: { readonly report: Report }) {
   const explore = report.mode === "explore";
   return (
-    <span className={explore ? styles.truth : styles.chip}>
-      {explore ? <Eye size={13} aria-hidden="true" /> : <Lock size={13} aria-hidden="true" />}
-      {`${explore ? "Explore · unblinded" : "Evaluate"} · ${report.ended ? "ended" : "not closed"}`}
-    </span>
+    <>
+      <span className={explore ? styles.truth : styles.chip}>
+        {explore ? <Eye size={13} aria-hidden="true" /> : <Lock size={13} aria-hidden="true" />}
+        {`${explore ? "Explore · unblinded" : "Evaluate"} · ${report.ended ? "ended" : "not closed"}`}
+      </span>
+      <span className={styles.identity}>{runIdentity(report)}</span>
+    </>
   );
 }
 

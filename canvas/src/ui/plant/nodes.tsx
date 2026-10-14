@@ -38,7 +38,7 @@ function PinRow({ pin, side }: { readonly pin: Pin; readonly side: "in" | "out" 
         className={cx(styles.dot, styles[look.shape], styles[pin.connection], `family-${look.family}`)}
         isConnectable={false}
       />
-      <span className={styles.pinName}>{pin.name}</span>
+      <span className={styles.pinName}>{channelWords(pin.name)}</span>
       <span className="sr-only">{`, ${look.typeName}, ${connectionWords[pin.connection]}`}</span>
     </div>
   );

@@ -61,7 +61,12 @@ function HallSummary({
         <h2 className={styles.mono}>{hall}</h2>
         <p className={styles.muted}>{`Hall · ${String(total)} instances · Enter or double-click opens it`}</p>
       </header>
-      <List title="Members" items={members.map(([kind, n]) => `${kind} × ${String(n)}`)} mono={false} count={total} />
+      <List
+        title="Members"
+        items={members.map(([kind, n]) => `${channelWords(kind)} × ${String(n)}`)}
+        mono={false}
+        count={total}
+      />
     </aside>
   );
 }

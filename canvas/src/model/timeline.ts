@@ -7,6 +7,11 @@ export interface EventMark {
   readonly raw: string;
   readonly tone: "fault" | "other";
   readonly entity: string;
+  readonly untilNs: number | null;
+}
+
+export function activeAt(mark: EventMark, atNs: number): boolean {
+  return mark.tone === "fault" && mark.atNs <= atNs && (mark.untilNs === null || atNs < mark.untilNs);
 }
 
 const endings: Readonly<Record<string, string>> = {
@@ -26,6 +31,7 @@ function endMarks(report: Report): readonly EventMark[] {
             raw: `${d.kind} ${d.target} ${d.name} · ${d.clearedBy}`,
             tone: "other",
             entity: d.target,
+            untilNs: null,
           },
         ],
   );
@@ -39,6 +45,7 @@ export function eventMarks(report: Report | null): readonly EventMark[] {
     raw: `${d.kind} ${d.action} ${d.target} ${d.name}`,
     tone: d.kind === "fault" ? "fault" : "other",
     entity: d.target,
+    untilNs: d.clearedNs,
   }));
   const calls = report.effectorCalls.map((c): EventMark => ({
     atNs: c.atNs,
@@ -46,6 +53,7 @@ export function eventMarks(report: Report | null): readonly EventMark[] {
     raw: `${c.entity} ${c.effector} · ${c.outcome}`,
     tone: "other",
     entity: c.entity,
+    untilNs: null,
   }));
   return [...disturbances, ...endMarks(report), ...calls].sort((a, b) => a.atNs - b.atNs);
 }

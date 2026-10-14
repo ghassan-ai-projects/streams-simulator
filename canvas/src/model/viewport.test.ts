@@ -22,7 +22,7 @@ describe("viewport", () => {
     ]);
     expect(["full", "compact", "overview", "map"].map((tier) => anchorsOnly(tier as Tier))).toEqual([
       false,
-      false,
+      true,
       true,
       true,
     ]);

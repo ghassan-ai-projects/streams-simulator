@@ -23,7 +23,7 @@ interface EffectorCall {
   readonly outcome: string;
 }
 
-interface KpiRow {
+export interface KpiRow {
   readonly entity: string;
   readonly state: string;
   readonly mean: number;
@@ -39,8 +39,10 @@ export interface Report {
   readonly incompleteReason: string;
   readonly unblinded: boolean;
   readonly domainId: string;
+  readonly domainVersion: string;
   readonly adapterId: string;
-  readonly seed: number;
+  readonly seed: number | null;
+  readonly simVersion: string;
   readonly startNs: number;
   readonly endNs: number;
   readonly verification: string;
@@ -167,8 +169,10 @@ function runFacts(run: Json) {
     incompleteReason: str(run.incomplete_reason),
     unblinded: run.unblinded === true,
     domainId: str(obj(run.domain).id),
+    domainVersion: str(obj(run.domain).version),
     adapterId: str(obj(run.adapter).id),
-    seed: num(run.seed),
+    seed: typeof run.seed === "number" ? run.seed : null,
+    simVersion: str(run.sim_version),
     startNs: num(run.start_time_ns),
     endNs: num(run.end_time_ns),
   };
@@ -281,9 +285,4 @@ export function runSpan(
     return { startNs: report.startNs, endNs: report.endNs };
   }
   return observed ?? { startNs: 0, endNs: 0 };
-}
-
-export function kpisOf(report: Report, entity: string | null): readonly KpiRow[] {
-  if (entity === null) return report.kpis;
-  return report.kpis.filter((row) => row.entity === entity || row.entity.startsWith(`${entity}/`));
 }
