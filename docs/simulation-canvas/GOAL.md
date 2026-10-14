@@ -8,6 +8,8 @@
   **Phases**: [PLAN.md](../../governance/CANVAS_PLAN.md) · **Open findings**: [FINDINGS.md](../../governance/FINDINGS.md) ·
   **Design review**: [REVIEW-2026-10-12.md](REVIEW-2026-10-12.md)
 
+Current focus: [GOAL-UI-PRODUCTION.md](GOAL-UI-PRODUCTION.md) (finish P9, then P10, P11 and acceptance A1–A7).
+
 ## Outcome
 
 A person or a coding agent can **build** a simulated plant, **run** it with a consumer

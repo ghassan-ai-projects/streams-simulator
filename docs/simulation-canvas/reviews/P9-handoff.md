@@ -1,5 +1,8 @@
 # P9 continuation handoff — 2026-10-14
 
+The goal governing this work is [GOAL-UI-PRODUCTION.md](../GOAL-UI-PRODUCTION.md); its review protocol (three Sonnet
+reviewer subagents) replaces the reviewer instructions below.
+
 This is the current handoff for Claude. Read `AGENTS.md` first, then this file, the seven rounds and every
 disposition in [ui.md](ui.md), [P9-functional-plan.md](P9-functional-plan.md), and `governance/FINDINGS.md`.
 
