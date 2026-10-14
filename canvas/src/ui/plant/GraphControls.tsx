@@ -22,6 +22,10 @@ function Legend() {
       <p className={styles.legendTitle} id="port-types-title">
         Wire colour and pin shape by port type
       </p>
+      <p className={styles.direction}>
+        <span aria-hidden="true">→</span> Model connections carry values from outputs to inputs; arrows point to the
+        receiving endpoint.
+      </p>
       <ul className={styles.legendList}>
         {families.map((family) => (
           <li key={family}>

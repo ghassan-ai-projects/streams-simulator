@@ -1,0 +1,470 @@
+[
+  {
+    "name": "workspace",
+    "width": 1280,
+    "height": 900,
+    "theme": "light",
+    "file": "comprehension-screenshots/workspace-1280-light.png",
+    "axe": [],
+    "overflow": {
+      "width": 1280,
+      "viewport": 1280
+    },
+    "errors": []
+  },
+  {
+    "name": "shared-feeds",
+    "width": 1280,
+    "height": 900,
+    "theme": "light",
+    "file": "comprehension-screenshots/shared-feeds-1280-light.png",
+    "axe": [],
+    "overflow": {
+      "width": 1280,
+      "viewport": 1280
+    },
+    "errors": []
+  },
+  {
+    "name": "receiver",
+    "width": 1280,
+    "height": 900,
+    "theme": "light",
+    "file": "comprehension-screenshots/receiver-1280-light.png",
+    "axe": [],
+    "overflow": {
+      "width": 1280,
+      "viewport": 1280
+    },
+    "errors": []
+  },
+  {
+    "name": "factory-focus",
+    "width": 1280,
+    "height": 900,
+    "theme": "light",
+    "file": "comprehension-screenshots/factory-focus-1280-light.png",
+    "axe": [],
+    "overflow": {
+      "width": 1280,
+      "viewport": 1280
+    },
+    "errors": []
+  },
+  {
+    "name": "component-model",
+    "width": 1280,
+    "height": 900,
+    "theme": "light",
+    "file": "comprehension-screenshots/component-model-1280-light.png",
+    "axe": [],
+    "overflow": {
+      "width": 1280,
+      "viewport": 1280
+    },
+    "errors": []
+  },
+  {
+    "name": "review",
+    "width": 1280,
+    "height": 900,
+    "theme": "light",
+    "file": "comprehension-screenshots/review-1280-light.png",
+    "axe": [],
+    "overflow": {
+      "width": 1280,
+      "viewport": 1280
+    },
+    "errors": []
+  },
+  {
+    "name": "workspace",
+    "width": 1280,
+    "height": 900,
+    "theme": "dark",
+    "file": "comprehension-screenshots/workspace-1280-dark.png",
+    "axe": [],
+    "overflow": {
+      "width": 1280,
+      "viewport": 1280
+    },
+    "errors": []
+  },
+  {
+    "name": "shared-feeds",
+    "width": 1280,
+    "height": 900,
+    "theme": "dark",
+    "file": "comprehension-screenshots/shared-feeds-1280-dark.png",
+    "axe": [],
+    "overflow": {
+      "width": 1280,
+      "viewport": 1280
+    },
+    "errors": []
+  },
+  {
+    "name": "receiver",
+    "width": 1280,
+    "height": 900,
+    "theme": "dark",
+    "file": "comprehension-screenshots/receiver-1280-dark.png",
+    "axe": [],
+    "overflow": {
+      "width": 1280,
+      "viewport": 1280
+    },
+    "errors": []
+  },
+  {
+    "name": "factory-focus",
+    "width": 1280,
+    "height": 900,
+    "theme": "dark",
+    "file": "comprehension-screenshots/factory-focus-1280-dark.png",
+    "axe": [],
+    "overflow": {
+      "width": 1280,
+      "viewport": 1280
+    },
+    "errors": []
+  },
+  {
+    "name": "component-model",
+    "width": 1280,
+    "height": 900,
+    "theme": "dark",
+    "file": "comprehension-screenshots/component-model-1280-dark.png",
+    "axe": [],
+    "overflow": {
+      "width": 1280,
+      "viewport": 1280
+    },
+    "errors": []
+  },
+  {
+    "name": "review",
+    "width": 1280,
+    "height": 900,
+    "theme": "dark",
+    "file": "comprehension-screenshots/review-1280-dark.png",
+    "axe": [],
+    "overflow": {
+      "width": 1280,
+      "viewport": 1280
+    },
+    "errors": []
+  },
+  {
+    "name": "workspace",
+    "width": 1440,
+    "height": 900,
+    "theme": "light",
+    "file": "comprehension-screenshots/workspace-1440-light.png",
+    "axe": [],
+    "overflow": {
+      "width": 1440,
+      "viewport": 1440
+    },
+    "errors": []
+  },
+  {
+    "name": "shared-feeds",
+    "width": 1440,
+    "height": 900,
+    "theme": "light",
+    "file": "comprehension-screenshots/shared-feeds-1440-light.png",
+    "axe": [],
+    "overflow": {
+      "width": 1440,
+      "viewport": 1440
+    },
+    "errors": []
+  },
+  {
+    "name": "receiver",
+    "width": 1440,
+    "height": 900,
+    "theme": "light",
+    "file": "comprehension-screenshots/receiver-1440-light.png",
+    "axe": [],
+    "overflow": {
+      "width": 1440,
+      "viewport": 1440
+    },
+    "errors": []
+  },
+  {
+    "name": "factory-focus",
+    "width": 1440,
+    "height": 900,
+    "theme": "light",
+    "file": "comprehension-screenshots/factory-focus-1440-light.png",
+    "axe": [],
+    "overflow": {
+      "width": 1440,
+      "viewport": 1440
+    },
+    "errors": []
+  },
+  {
+    "name": "component-model",
+    "width": 1440,
+    "height": 900,
+    "theme": "light",
+    "file": "comprehension-screenshots/component-model-1440-light.png",
+    "axe": [],
+    "overflow": {
+      "width": 1440,
+      "viewport": 1440
+    },
+    "errors": []
+  },
+  {
+    "name": "review",
+    "width": 1440,
+    "height": 900,
+    "theme": "light",
+    "file": "comprehension-screenshots/review-1440-light.png",
+    "axe": [],
+    "overflow": {
+      "width": 1440,
+      "viewport": 1440
+    },
+    "errors": []
+  },
+  {
+    "name": "workspace",
+    "width": 1440,
+    "height": 900,
+    "theme": "dark",
+    "file": "comprehension-screenshots/workspace-1440-dark.png",
+    "axe": [],
+    "overflow": {
+      "width": 1440,
+      "viewport": 1440
+    },
+    "errors": []
+  },
+  {
+    "name": "shared-feeds",
+    "width": 1440,
+    "height": 900,
+    "theme": "dark",
+    "file": "comprehension-screenshots/shared-feeds-1440-dark.png",
+    "axe": [],
+    "overflow": {
+      "width": 1440,
+      "viewport": 1440
+    },
+    "errors": []
+  },
+  {
+    "name": "receiver",
+    "width": 1440,
+    "height": 900,
+    "theme": "dark",
+    "file": "comprehension-screenshots/receiver-1440-dark.png",
+    "axe": [],
+    "overflow": {
+      "width": 1440,
+      "viewport": 1440
+    },
+    "errors": []
+  },
+  {
+    "name": "factory-focus",
+    "width": 1440,
+    "height": 900,
+    "theme": "dark",
+    "file": "comprehension-screenshots/factory-focus-1440-dark.png",
+    "axe": [],
+    "overflow": {
+      "width": 1440,
+      "viewport": 1440
+    },
+    "errors": []
+  },
+  {
+    "name": "component-model",
+    "width": 1440,
+    "height": 900,
+    "theme": "dark",
+    "file": "comprehension-screenshots/component-model-1440-dark.png",
+    "axe": [],
+    "overflow": {
+      "width": 1440,
+      "viewport": 1440
+    },
+    "errors": []
+  },
+  {
+    "name": "review",
+    "width": 1440,
+    "height": 900,
+    "theme": "dark",
+    "file": "comprehension-screenshots/review-1440-dark.png",
+    "axe": [],
+    "overflow": {
+      "width": 1440,
+      "viewport": 1440
+    },
+    "errors": []
+  },
+  {
+    "name": "workspace",
+    "width": 1920,
+    "height": 1080,
+    "theme": "light",
+    "file": "comprehension-screenshots/workspace-1920-light.png",
+    "axe": [],
+    "overflow": {
+      "width": 1920,
+      "viewport": 1920
+    },
+    "errors": []
+  },
+  {
+    "name": "shared-feeds",
+    "width": 1920,
+    "height": 1080,
+    "theme": "light",
+    "file": "comprehension-screenshots/shared-feeds-1920-light.png",
+    "axe": [],
+    "overflow": {
+      "width": 1920,
+      "viewport": 1920
+    },
+    "errors": []
+  },
+  {
+    "name": "receiver",
+    "width": 1920,
+    "height": 1080,
+    "theme": "light",
+    "file": "comprehension-screenshots/receiver-1920-light.png",
+    "axe": [],
+    "overflow": {
+      "width": 1920,
+      "viewport": 1920
+    },
+    "errors": []
+  },
+  {
+    "name": "factory-focus",
+    "width": 1920,
+    "height": 1080,
+    "theme": "light",
+    "file": "comprehension-screenshots/factory-focus-1920-light.png",
+    "axe": [],
+    "overflow": {
+      "width": 1920,
+      "viewport": 1920
+    },
+    "errors": []
+  },
+  {
+    "name": "component-model",
+    "width": 1920,
+    "height": 1080,
+    "theme": "light",
+    "file": "comprehension-screenshots/component-model-1920-light.png",
+    "axe": [],
+    "overflow": {
+      "width": 1920,
+      "viewport": 1920
+    },
+    "errors": []
+  },
+  {
+    "name": "review",
+    "width": 1920,
+    "height": 1080,
+    "theme": "light",
+    "file": "comprehension-screenshots/review-1920-light.png",
+    "axe": [],
+    "overflow": {
+      "width": 1920,
+      "viewport": 1920
+    },
+    "errors": []
+  },
+  {
+    "name": "workspace",
+    "width": 1920,
+    "height": 1080,
+    "theme": "dark",
+    "file": "comprehension-screenshots/workspace-1920-dark.png",
+    "axe": [],
+    "overflow": {
+      "width": 1920,
+      "viewport": 1920
+    },
+    "errors": []
+  },
+  {
+    "name": "shared-feeds",
+    "width": 1920,
+    "height": 1080,
+    "theme": "dark",
+    "file": "comprehension-screenshots/shared-feeds-1920-dark.png",
+    "axe": [],
+    "overflow": {
+      "width": 1920,
+      "viewport": 1920
+    },
+    "errors": []
+  },
+  {
+    "name": "receiver",
+    "width": 1920,
+    "height": 1080,
+    "theme": "dark",
+    "file": "comprehension-screenshots/receiver-1920-dark.png",
+    "axe": [],
+    "overflow": {
+      "width": 1920,
+      "viewport": 1920
+    },
+    "errors": []
+  },
+  {
+    "name": "factory-focus",
+    "width": 1920,
+    "height": 1080,
+    "theme": "dark",
+    "file": "comprehension-screenshots/factory-focus-1920-dark.png",
+    "axe": [],
+    "overflow": {
+      "width": 1920,
+      "viewport": 1920
+    },
+    "errors": []
+  },
+  {
+    "name": "component-model",
+    "width": 1920,
+    "height": 1080,
+    "theme": "dark",
+    "file": "comprehension-screenshots/component-model-1920-dark.png",
+    "axe": [],
+    "overflow": {
+      "width": 1920,
+      "viewport": 1920
+    },
+    "errors": []
+  },
+  {
+    "name": "review",
+    "width": 1920,
+    "height": 1080,
+    "theme": "dark",
+    "file": "comprehension-screenshots/review-1920-dark.png",
+    "axe": [],
+    "overflow": {
+      "width": 1920,
+      "viewport": 1920
+    },
+    "errors": []
+  }
+]

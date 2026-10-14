@@ -27,6 +27,68 @@ test("selecting an instance in the outline shows its kind in the inspector", asy
   await expect(page.getByRole("heading", { name: "lab-workspace" })).toBeVisible();
 });
 
+test("wire arrows point to receivers and selected connections remain prominent", async ({ page }) => {
+  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Ffactory-utilities.domain.json`);
+  const graph = page.getByRole("application", { name: "Plant graph" });
+  const edge = graph.locator(".react-flow__edge").first();
+  await expect(edge.locator(".react-flow__edge-path")).toHaveAttribute("marker-end", /url\(['"]?#/);
+  await page.getByRole("button", { name: "Legend" }).click();
+  await expect(
+    page.getByText("Model connections carry values from outputs to inputs; arrows point to the receiving endpoint."),
+  ).toBeVisible();
+  await page.getByRole("navigation", { name: "Outline" }).getByRole("button", { name: "CH-1" }).click();
+  const selected = graph.locator(".react-flow__edge.wire-on").first();
+  await expect(selected).toBeVisible();
+  await expect(selected.locator(".react-flow__edge-path")).toHaveAttribute("marker-end", /url\(['"]?#/);
+  await expect(selected.locator(".react-flow__edge-path")).toHaveCSS("stroke-width", "3px");
+  await expect(graph.locator(".react-flow__edge.wire-off .react-flow__edge-path").first()).toHaveCSS(
+    "stroke-opacity",
+    "0.3",
+  );
+});
+
+test("the chiller pilot renders target arrow markers at overview scale", async ({ page }) => {
+  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Fchiller-pilot.domain.json`);
+  const graph = page.getByRole("application", { name: "Plant graph" });
+  const edge = graph.locator(".react-flow__edge").first();
+  await expect(edge).toBeVisible();
+  await expect(edge.locator(".react-flow__edge-path")).toHaveAttribute("marker-end", /url\(['"]?#/);
+  await page.getByRole("button", { name: "Legend" }).click();
+  await expect(
+    page.getByText("Model connections carry values from outputs to inputs; arrows point to the receiving endpoint."),
+  ).toBeVisible();
+});
+
+test("the chiller pilot inspector explains AHU and chiller components from the library", async ({ page }) => {
+  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Fchiller-pilot.domain.json`);
+  const outline = page.getByRole("navigation", { name: "Outline" });
+  const inspector = page.getByRole("complementary", { name: "Inspector" });
+  await outline.getByRole("button", { name: /^AHU-1/ }).click();
+  await expect(inspector).toContainText("Air-handling unit · Office block");
+  await expect(inspector).toContainText("Kind: ahu · streamsim/ahu");
+  await inspector.getByText("What this component models").click();
+  await expect(inspector).toContainText(
+    "Air-handling unit with a chilled-water coil. Its cooling load is the occupancy-driven internal gain, the outdoor-air load and a constant envelope gain; the coil cannot hold the supply-air setpoint when the chilled water is too warm.",
+  );
+  await outline.getByRole("button", { name: /^CH-1/ }).click();
+  await expect(inspector).toContainText("Water-cooled chiller · Chiller hall");
+  await expect(inspector).toContainText("Kind: chiller_large · streamsim/chiller");
+  await inspector.getByText("What this component models").click();
+  await expect(inspector).toContainText(
+    "Vapour-compression chiller on a chilled-water loop. Supply temperature follows the setpoint and degrades above capacity or when stopped; power follows load through a part-load efficiency curve that also depends on the entering condenser water; COP, return temperature and energy cost rate are derived; start and stop act through the running state.",
+  );
+});
+
+test("a shared campus link navigates to its declared receiver in another hall", async ({ page }) => {
+  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Fcampus-3.domain.json`);
+  await page.getByRole("navigation", { name: "Outline" }).getByRole("button", { name: "CAL-1" }).click();
+  const inspector = page.getByRole("complementary", { name: "Inspector" });
+  await inspector.getByText("Browse outgoing links (18)").click();
+  await inspector.getByRole("button", { name: /Select receiver h02\/M-1; CAL-1 shift out/ }).click();
+  await expect(page.getByRole("heading", { name: "h02", level: 1 })).toBeVisible();
+  await expect(inspector.getByRole("heading", { name: "h02/M-1", level: 2 })).toBeVisible();
+});
+
 test("the graph works from the keyboard: arrows move, Enter selects, Escape clears, ? lists the keys", async ({
   page,
 }) => {

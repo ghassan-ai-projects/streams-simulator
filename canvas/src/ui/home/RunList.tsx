@@ -31,8 +31,8 @@ function Status({ row, badge }: { readonly row: RunRow; readonly badge: Badge | 
       </span>
     );
   }
-  if (badge === null) return null;
-  return <span className={badge === "verified" ? styles.verified : styles.badge}>{badgeLabels[badge]}</span>;
+  const state = badge ?? "not-checked";
+  return <span className={state === "verified" ? styles.verified : styles.badge}>{badgeLabels[state]}</span>;
 }
 
 function Row({
@@ -58,6 +58,7 @@ function Row({
           type="button"
           className={styles.open}
           aria-label={`Review ${row.run.worldId}`}
+          title="Review checks recording integrity using the run files."
           onClick={() => {
             navigation.go({ screen: "run", worldId: row.run.worldId });
           }}

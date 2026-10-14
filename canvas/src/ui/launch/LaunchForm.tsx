@@ -177,6 +177,12 @@ function startWords(plan: LaunchPlan): string {
   return `Start simulates ${length} of plant time in ${plan.explore ? "Explore" : "Evaluate"} mode with ${injected}, as fast as it can, then saves the run and opens its review.`;
 }
 
+function planCue(shown: readonly PlanProblem[], plan: LaunchPlan): string {
+  const count = shown.length;
+  if (count > 0) return `${String(count)} ${count === 1 ? "entry needs" : "entries need"} attention before starting.`;
+  return startWords(plan);
+}
+
 export function LaunchForm({ plant, draft, selected, change, onStart }: FormProps) {
   const [tried, setTried] = useState(0);
   const [told, setTold] = useState("");
@@ -200,7 +206,7 @@ export function LaunchForm({ plant, draft, selected, change, onStart }: FormProp
       <Mode draft={draft} change={change} />
       <FaultRows plant={plant} draft={draft} problems={shown} selected={selected} change={change} />
       <p id="launch-summary" className={styles.summary}>
-        {startWords(plan)}
+        {planCue(shown, plan)}
       </p>
       <p className="sr-only" role="status">
         {told}

@@ -296,6 +296,23 @@
   overflow-wrap: anywhere;
 }
 
+.modelDetails {
+  margin-top: var(--space-2);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.modelDetails summary {
+  width: fit-content;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.modelDetails p {
+  margin: var(--space-2) 0 0;
+  line-height: 1.45;
+}
+
 .tally {
   margin: 0;
   padding: 0;
@@ -325,6 +342,22 @@
 
 .linkButton:hover {
   text-decoration: underline;
+}
+
+.linkDetails {
+  padding: var(--space-2) var(--space-3);
+  color: var(--text-secondary);
+}
+
+.linkSummary {
+  cursor: pointer;
+  color: var(--accent);
+}
+
+.linkGroup {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-sm);
+  color: var(--text-primary);
 }
 
 :global([data-left="closed"]) .screen > :first-child,

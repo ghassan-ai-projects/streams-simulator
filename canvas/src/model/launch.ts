@@ -48,8 +48,10 @@ export interface PlanProblem {
 function faultProblems(plan: LaunchPlan): readonly PlanProblem[] {
   return plan.faults.flatMap((fault, index): PlanProblem[] => {
     const name = `Fault ${String(index + 1)}`;
-    if (fault.entity === "" || fault.fault === "")
+    if (fault.entity === "" && fault.fault === "")
       return [{ field: index, text: `${name} needs an instance and a fault.` }];
+    if (fault.entity === "") return [{ field: index, text: `${name} needs an instance.` }];
+    if (fault.fault === "") return [{ field: index, text: `${name} needs a fault.` }];
     if (!Number.isInteger(fault.atS) || fault.atS < 0 || fault.atS >= plan.durationS)
       return [{ field: index, text: `${name} starts inside the run, before its end.` }];
     return [];
