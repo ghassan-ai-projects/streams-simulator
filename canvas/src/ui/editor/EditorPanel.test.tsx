@@ -1,75 +1,12 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
-import { ReactFlowProvider } from "@xyflow/react";
 import axe from "axe-core";
-import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { EditorStore } from "../../app/editorStore";
-import { NavigationStore } from "../../app/navigationStore";
 import { failed, success } from "../../model/bridge";
-import { compositionPlant, connectionsOf, equipmentOf } from "../../model/composition";
+import { connectionsOf, equipmentOf } from "../../model/composition";
 import { moveInstance } from "../../model/compositionEdits";
-import { FakeBridge, failure } from "../../test/fakeBridge";
-import { chillerPorts, towerPorts } from "../../test/plantFixture";
-import { useStore } from "../useStore";
-import { EditorBar } from "./EditorBar";
-import { EditorPanel } from "./EditorPanel";
-import { FocusRequest } from "./panelProps";
-
-const path = "compositions/lab.composition.json";
-const doc = {
-  id: "lab",
-  title: "Lab",
-  areas: [{ name: "Cooling" }, { name: "Yard" }],
-  equipment: [
-    { use: "lib/chiller@1", names: ["CH-1"], area: "Cooling" },
-    { use: "lib/tower@1", names: ["CT-1"], area: "Cooling" },
-  ],
-  connections: [{ from: "CH-1.heat_out", to: "CT-1.heat_in" }],
-};
-
-class LabBridge extends FakeBridge {
-  override action(name: string, args: Readonly<Record<string, unknown>>) {
-    if (name !== "component.show") return super.action(name, args);
-    this.calls.push({ name, args });
-    const ports = args.ref === "lib/tower" ? towerPorts : chillerPorts;
-    return Promise.resolve(success({ document: { ...ports, presets: { small: { title: "Small" } } } }));
-  }
-}
-
-function Harness({ editor }: { readonly editor: EditorStore }) {
-  const state = useStore(editor);
-  const [request] = useState(() => new FocusRequest());
-  if (state.phase !== "ready") return <p>{state.phase}</p>;
-  const plant = compositionPlant(state.doc, (component) => component);
-  const navigation = new NavigationStore({ read: () => "#/", write: vi.fn(), subscribe: () => () => undefined });
-  return (
-    <ReactFlowProvider>
-      <EditorBar draft={state} editor={editor} navigation={navigation} />
-      <EditorPanel draft={state} plant={plant} editor={editor} request={request} />
-    </ReactFlowProvider>
-  );
-}
-
-async function editing() {
-  const fake = new LabBridge();
-  fake.files.set(path, success({ path, content: JSON.stringify(doc), etag: "c1" }));
-  fake.actions.set("component.list", success({ components: [{ id: "lib/pump", kind: "equipment", title: "Pump" }] }));
-  fake.actions.set("domain.compose", success({ channels: 4, faults: 2, effectors: 0 }));
-  const editor = new EditorStore(fake);
-  await editor.open(path);
-  const view = render(<Harness editor={editor} />);
-  return { fake, editor, view };
-}
-
-function current(editor: EditorStore) {
-  const state = editor.snapshot();
-  if (state.phase !== "ready") throw new Error(state.phase);
-  return state.doc;
-}
-
-function choose(label: string, value: string, scope: HTMLElement = document.body) {
-  fireEvent.change(within(scope).getByLabelText(label), { target: { value } });
-}
+import { failure } from "../../test/fakeBridge";
+import { choose, current, doc, editing, Harness, LabBridge, path } from "../../test/editorHarness";
 
 describe("plant editor panel", () => {
   it("adds equipment from the library with its preset into an area", async () => {
@@ -230,6 +167,39 @@ describe("plant editor panel", () => {
     fake.writeOutcomes.delete(path);
     fireEvent.click(screen.getByRole("button", { name: "Reload from disk" }));
     expect(await screen.findByText("No changes")).toBeInTheDocument();
+  });
+
+  it("keeps the chosen instance when the output changes, and says why no instance can be linked", async () => {
+    const { editor } = await editing();
+    act(() => {
+      editor.select("CH-1");
+    });
+    choose("Output", "heat_out");
+    choose("To", "CT-1");
+    choose("Input", "heat_in");
+    choose("Output", "power_out");
+    expect(screen.getByLabelText("To")).toHaveValue("CT-1");
+    expect(screen.getByLabelText("Input")).toHaveValue("");
+    choose("Output", "heat_out");
+    expect(screen.getByLabelText("To")).toHaveValue("CT-1");
+    expect(screen.getByLabelText("Input")).toHaveValue("");
+  });
+
+  it("names the missing target when nothing takes what an output gives", async () => {
+    const fake = new LabBridge();
+    const alone = { ...doc, equipment: [doc.equipment[0]], connections: [] };
+    fake.files.set(path, success({ path, content: JSON.stringify(alone), etag: "d1" }));
+    fake.actions.set("component.list", success({ components: [] }));
+    const editor = new EditorStore(fake);
+    await editor.open(path);
+    render(<Harness editor={editor} />);
+    act(() => {
+      editor.select("CH-1");
+    });
+    expect(within(screen.getByLabelText("To")).getByRole("option")).toHaveTextContent("Choose an output first");
+    choose("Output", "heat_out");
+    expect(within(screen.getByLabelText("To")).getByRole("option")).toHaveTextContent("No instance takes heat yet");
+    expect(within(screen.getByLabelText("Input")).getByRole("option")).toHaveTextContent("Choose an instance first");
   });
 
   it("leaves an instance generated from an id template to the file", async () => {
