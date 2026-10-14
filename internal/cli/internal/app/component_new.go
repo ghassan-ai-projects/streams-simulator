@@ -38,7 +38,7 @@ func cmdNewPlant(s *session, args []string) (any, error) {
 func newPlant(id string, options newPlantOptions) (any, error) {
 	base, source, err := newPlantBase(options)
 	if err != nil {
-		return nil, wrapCLI(err)
+		return nil, err
 	}
 	plant := component.NewPlant{ID: id, Title: options.title, Empty: options.empty}
 	composition, err := component.NewComposition(base, plant, source)
@@ -48,8 +48,8 @@ func newPlant(id string, options newPlantOptions) (any, error) {
 func newPlantBase(options newPlantOptions) ([]byte, string, error) {
 	if options.example != "" {
 		example, err := component.Example(options.example)
-		return example, "example " + options.example, err
+		return example, "example " + options.example, wrapCLI(err)
 	}
 	raw, err := files.Read(options.from)
-	return raw, options.from, err
+	return raw, options.from, wrapCLI(err)
 }
