@@ -31,6 +31,30 @@ test("a plant runs with a planned fault and the finished run opens in the review
   await expect(disturbances).toContainText("fan failure");
 });
 
+test("an effector call is made at its minute and its outcome is listed before the review", async ({ page }) => {
+  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Ffactory-utilities.domain.json`);
+  await page.getByRole("button", { name: "Run plant" }).click();
+  const panel = page.getByRole("complementary", { name: "Run Factory utilities" });
+  await panel.getByLabel("Seed", { exact: true }).fill("11");
+  await panel.getByLabel("Duration", { exact: true }).fill("5");
+  await panel.getByRole("button", { name: "Add effector call" }).click();
+  await panel.getByLabel("Effector call 1 instance").selectOption("CH-1");
+  await panel.getByLabel("Effector call 1 effector").selectOption({ label: "set setpoint" });
+  await panel.getByLabel("Effector call 1 setpoint c").fill("20");
+  await panel.getByRole("button", { name: "Start the run" }).click();
+  await expect(panel.getByLabel("Effector call 1 setpoint c")).toHaveAccessibleDescription(
+    "Effector call 1: setpoint c is a number from 4 to 12.",
+  );
+  await panel.getByLabel("Effector call 1 setpoint c").fill("7");
+  await panel.getByLabel("Effector call 1 starts at minute").fill("2");
+  expect((await new AxeBuilder({ page }).include("aside").analyze()).violations).toEqual([]);
+  await panel.getByRole("button", { name: "Start the run" }).click();
+  const results = panel.getByRole("list", { name: "Effector call results" });
+  await expect(results).toContainText("00:02:00 · CH-1 · set setpoint: ", { timeout: 60_000 });
+  await panel.getByRole("button", { name: "Open the review" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: /^Run w-/ })).toBeVisible();
+});
+
 test("a plan with problems cannot start", async ({ page }) => {
   await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Ffactory-utilities.domain.json`);
   await page.getByRole("button", { name: "Run plant" }).click();
