@@ -1,4 +1,4 @@
-export interface KeyRow {
+interface KeyRow {
   readonly keys: readonly string[];
   readonly does: string;
 }
