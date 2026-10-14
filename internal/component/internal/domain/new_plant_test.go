@@ -21,7 +21,7 @@ func TestAnEmptyPlantKeepsItsFrameAndDropsWhatNamedTheOldEquipment(t *testing.T)
 	}
 	profiles, _ := doc["profiles"].([]any)
 	nominal, _ := profiles[0].(map[string]any)
-	if doc["id"] != "fresh" || doc["equipment"] != nil || doc["description"] != nil || len(profiles) != 1 || nominal["fault_weights"] != nil {
+	if doc["id"] != "fresh" || doc["equipment"] != nil || doc["description"] != nil || len(profiles) != 3 || nominal["fault_weights"] != nil {
 		t.Fatalf("empty plant = %v", doc)
 	}
 	copied, err := NewComposition([]byte(basePlant), NewPlant{ID: "copy", Title: "Copy"}, "base")
@@ -43,7 +43,25 @@ func TestANewPlantWithABadIDSaysWhatAnIDMustBe(t *testing.T) {
 	}
 	empty := NewPlant{ID: "solo", Title: "Solo", Empty: true}
 	doc, err := NewComposition([]byte(strings.Replace(basePlant, `"name":"nominal","duration_s":60,`, `"not_applicable":"no nominal day in this base plant","name":"n",`, 1)), empty, "base")
-	if profiles, _ := doc["profiles"].([]any); err != nil || len(profiles) != 1 {
+	if profiles, _ := doc["profiles"].([]any); err != nil || len(profiles) != 3 {
 		t.Fatalf("all profiles not applicable = %v, %v", doc, err)
+	}
+}
+
+func TestAnEmptyPlantAlwaysCarriesTheThreeProfilesTheDomainSpecRequires(t *testing.T) {
+	t.Parallel()
+	if got := requiredProfileNames(); len(got) != 3 || got[0] != "nominal" || got[1] != "correlated_cascade" || got[2] != "sensor_pathology" {
+		t.Fatalf("required profiles = %v", got)
+	}
+	doc, err := NewComposition([]byte(basePlant), NewPlant{ID: "fresh", Title: "Fresh", Empty: true}, "base")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var names []string
+	for _, entry := range doc["profiles"].([]any) {
+		names = append(names, entry.(map[string]any)["name"].(string))
+	}
+	if strings.Join(names, ",") != "nominal,correlated_cascade,sensor_pathology" {
+		t.Fatalf("profile names = %v", names)
 	}
 }
