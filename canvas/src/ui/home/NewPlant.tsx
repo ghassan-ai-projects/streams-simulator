@@ -1,4 +1,4 @@
-import type { SyntheticEvent } from "react";
+import type { FocusEvent, SyntheticEvent } from "react";
 import { useId, useState } from "react";
 import type { PlantMaker, PlantSource } from "../../app/plantMaker";
 import type { NavigationStore } from "../../app/navigationStore";
@@ -17,6 +17,10 @@ export interface NewPlantProps {
   readonly blank?: boolean;
 }
 
+function selectText(event: FocusEvent<HTMLInputElement>) {
+  event.currentTarget.select();
+}
+
 function Field({
   label,
   hint,
@@ -25,6 +29,7 @@ function Field({
   first = false,
   placeholder,
   onLeave,
+  selectOnFocus = false,
 }: {
   readonly label: string;
   readonly hint?: string;
@@ -33,6 +38,7 @@ function Field({
   readonly first?: boolean;
   readonly placeholder?: string;
   readonly onLeave?: () => void;
+  readonly selectOnFocus?: boolean;
 }) {
   const id = useId();
   const input = useFocusOnMount<HTMLInputElement>(first);
@@ -49,6 +55,7 @@ function Field({
           onChange(event.target.value);
         }}
         onBlur={onLeave}
+        onFocus={selectOnFocus ? selectText : undefined}
       />
       {hint !== undefined && <small id={`${id}-hint`}>{hint}</small>}
     </div>
@@ -250,6 +257,7 @@ export function NewPlantForm(props: NewPlantProps & { readonly onCancel: () => v
         value={id}
         onChange={setId}
         onLeave={followAgain}
+        selectOnFocus
       />
       <Choices {...props} base={base} setBase={setBase} copy={copy} setCopy={setCopy} />
       <Actions failure={failure} reason={reason} onCancel={onCancel} />

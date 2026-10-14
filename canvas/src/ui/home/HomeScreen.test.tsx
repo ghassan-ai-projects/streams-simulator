@@ -2,31 +2,11 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import axe from "axe-core";
 import { describe, expect, it, vi } from "vitest";
 import { PlantMaker } from "../../app/plantMaker";
-import { NavigationStore } from "../../app/navigationStore";
 import { WorkspaceStore } from "../../app/workspaceStore";
 import { failed, success } from "../../model/bridge";
 import { FakeBridge, failure, sampleWorkspace } from "../../test/fakeBridge";
+import { navigation, show } from "../../test/homeHarness";
 import { HomeScreen } from "./HomeScreen";
-
-function navigation() {
-  const location = {
-    hash: "#/",
-    read() {
-      return this.hash;
-    },
-    write(hash: string) {
-      this.hash = hash;
-    },
-    subscribe: () => () => undefined,
-  };
-  return { location, store: new NavigationStore(location) };
-}
-
-async function show(bridge: FakeBridge, nav = navigation()) {
-  const store = new WorkspaceStore(bridge);
-  await store.reload();
-  return render(<HomeScreen workspace={store} navigation={nav.store} maker={new PlantMaker(bridge)} />);
-}
 
 describe("home screen", () => {
   it("lists each plant once with its actions, and its runs newest first, with no accessibility violation", async () => {
