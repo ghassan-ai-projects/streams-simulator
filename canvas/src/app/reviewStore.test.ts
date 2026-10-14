@@ -166,4 +166,23 @@ describe("review", () => {
     await Promise.resolve();
     expect(store.snapshot().verified).toMatchObject({ phase: "failed", failure: { code: "verify_unreadable" } });
   });
+
+  it("reads the report and verification again when a run it watched live closes, once", async () => {
+    const { bridge, store, flushes } = setup();
+    bridge.actions.set("run.report", success({ ...report, run: { ...report.run, ended: false } }));
+    store.open("w-1");
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(store.snapshot().report).toMatchObject({ phase: "ready", value: { ended: false } });
+    bridge.actions.set("run.report", success(report));
+    bridge.stream("w-1", journal);
+    flushes.forEach((flush) => {
+      flush();
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(bridge.calls.filter((call) => call.name === "run.report")).toHaveLength(2);
+    expect(bridge.calls.filter((call) => call.name === "run.verify")).toHaveLength(2);
+    expect(store.snapshot().report).toMatchObject({ phase: "ready", value: { ended: true } });
+  });
 });

@@ -48,6 +48,7 @@ export class ReviewStore extends Observable<ReviewState> {
   private readonly badges = new Map<string, Badge>();
   private stop: (() => void) | null = null;
   private pending = 0;
+  private refreshed = false;
 
   constructor(
     private readonly bridge: Bridge,
@@ -63,6 +64,7 @@ export class ReviewStore extends Observable<ReviewState> {
     const state = this.snapshot();
     if (state.worldId === worldId && (this.stop !== null || state.playback.phase !== "loading")) return;
     this.close();
+    this.refreshed = false;
     this.index = new PlaybackIndex();
     this.set({ ...idle, worldId, openedAt: this.now() });
     void this.loadReport(worldId);
@@ -153,10 +155,22 @@ export class ReviewStore extends Observable<ReviewState> {
 
   private finish(worldId: string, phase: "ready" | "failed"): void {
     this.update(worldId, { phase });
+    if (phase === "ready") this.refreshIfLive(worldId);
     const state = this.snapshot();
     const settled = this.index.settled();
     const before = (this.index.bounds()?.startNs ?? 0) > state.positionNs;
     if (settled !== null && state.worldId === worldId && before) this.seek(settled);
+  }
+
+  private refreshIfLive(worldId: string): void {
+    const state = this.snapshot();
+    if (this.refreshed || state.worldId !== worldId || state.report.phase !== "ready" || state.report.value.ended)
+      return;
+    if (state.playback.phase !== "ready") return;
+    this.refreshed = true;
+    this.set({ ...state, verified: { phase: "loading" } });
+    void this.loadReport(worldId);
+    void this.loadVerify(worldId);
   }
 
   private update(worldId: string, playback: Partial<ReviewState["playback"]>): void {
@@ -174,6 +188,7 @@ export class ReviewStore extends Observable<ReviewState> {
         ? { phase: "ready", value: parseReport(outcome.value) }
         : { phase: "failed", failure: outcome.failure },
     });
+    this.refreshIfLive(worldId);
   }
 
   private async loadRunDomain(worldId: string): Promise<void> {
