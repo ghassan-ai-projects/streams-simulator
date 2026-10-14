@@ -5,7 +5,7 @@ import { clockOf } from "../../model/launch";
 import type { Plant } from "../../model/plant";
 import { useStore } from "../useStore";
 import type { Draft } from "./draft";
-import { firstDraft } from "./draft";
+import { draftOf, firstDraft } from "./draft";
 import type { Change } from "./FaultRows";
 import { LaunchForm } from "./LaunchForm";
 import { useFocusOnMount } from "../useFocusOnMount";
@@ -124,7 +124,10 @@ function useLaunch(launch: LaunchStore, onFinished: (worldId: string) => void) {
 
 export function LaunchPanel({ launch, plant, onClose, onFinished }: LaunchPanelProps) {
   const state = useLaunch(launch, onFinished);
-  const [draft, setDraft] = useState<Draft>(firstDraft);
+  const [draft, setDraft] = useState<Draft>(() => {
+    const proposed = launch.proposal(plant.id);
+    return proposed === null ? firstDraft : draftOf(proposed);
+  });
   return (
     <aside className={panel.panel} aria-labelledby="launch-title">
       <header className={panel.head}>

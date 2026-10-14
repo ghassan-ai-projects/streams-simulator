@@ -108,6 +108,24 @@ describe("launch panel", () => {
 });
 
 describe("launch panel lifetime", () => {
+  it("starts from a plan proposed for this plant, such as Run again", () => {
+    const launch = new LaunchStore(bridge());
+    launch.propose("mini", {
+      seed: 5,
+      durationS: 7200,
+      explore: false,
+      faults: [{ entity: "CH-1", fault: "chiller__fouling", atS: 600 }],
+    });
+    render(<LaunchPanel launch={launch} plant={parsePlant(domain)} onClose={vi.fn()} onFinished={vi.fn()} />);
+    expect(screen.getByLabelText("Seed")).toHaveValue("5");
+    expect(screen.getByLabelText("Duration")).toHaveValue("2");
+    expect(screen.getByLabelText("Duration unit")).toHaveValue("hours");
+    expect(screen.getByRole("radio", { name: /^Evaluate/ })).toBeChecked();
+    expect(screen.getByLabelText("Fault 1 instance")).toHaveValue("CH-1");
+    expect(screen.getByLabelText("Fault 1 starts at minute")).toHaveValue("10");
+    expect(launch.proposal("other")).toBeNull();
+  });
+
   it("drops a run left from another visit and cancels its own run when it closes", async () => {
     const fake = new HeldBridge();
     const launch = new LaunchStore(fake);

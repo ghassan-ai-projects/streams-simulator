@@ -7,8 +7,10 @@ import type { ChipPlace, EventMark } from "../../model/timeline";
 import { activeAt, eventMarks, nextEvent, placeChips, previousEvent, timeTicks } from "../../model/timeline";
 import styles from "./RunScreen.module.css";
 import { AlarmJump } from "./AlarmJump";
+import type { PlayProps } from "./PlayControls";
+import { PlayControls } from "./PlayControls";
 
-interface ScrubberProps {
+interface ScrubberProps extends PlayProps {
   readonly startNs: number;
   readonly endNs: number;
   readonly positionNs: number;
@@ -237,7 +239,8 @@ function PlaybackRange({ startNs, span, positionNs, onSeek, onKeyDown }: RangePr
   );
 }
 
-export function Scrubber({ startNs, endNs, positionNs, report, onSeek, onEvent }: ScrubberProps) {
+export function Scrubber(props: ScrubberProps) {
+  const { startNs, endNs, positionNs, report, onSeek, onEvent } = props;
   const span = Math.max(1, endNs - startNs);
   const fraction = (ns: number) => Math.min(1, Math.max(0, (ns - startNs) / span));
   const clamp = (ns: number) => Math.min(endNs, Math.max(startNs, ns));
@@ -250,6 +253,7 @@ export function Scrubber({ startNs, endNs, positionNs, report, onSeek, onEvent }
   return (
     <div className={styles.scrubber}>
       <div className={styles.timeRow}>
+        <PlayControls {...props} />
         <span className={styles.time}>{wallClock(positionNs, startNs)}</span>
         <span className={styles.muted}>{`of ${wallClock(startNs)} – ${wallClock(endNs, startNs)} UTC`}</span>
         <Steps marks={marks} positionNs={positionNs} clamp={clamp} onSeek={onSeek} />

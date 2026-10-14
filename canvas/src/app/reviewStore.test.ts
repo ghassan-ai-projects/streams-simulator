@@ -66,8 +66,34 @@ describe("review", () => {
       flush();
     });
     expect(store.snapshot().playback).toEqual({ phase: "ready", records: 4, adapter: "native-jsonl" });
-    expect(store.snapshot().positionNs).toBe(30e9);
-    expect(store.index.readings("CH-1", store.snapshot().positionNs)[0]?.value).toBe(95.1);
+    expect(store.snapshot().positionNs).toBe(12e9);
+    expect(store.index.readings("CH-1", 30e9)[0]?.value).toBe(95.1);
+  });
+
+  it("plays back at its speed from the start, stops at the end and plays again from the start", () => {
+    const { bridge, store, flushes } = setup();
+    store.open("w-1");
+    bridge.stream("w-1", journal);
+    flushes.forEach((flush) => {
+      flush();
+    });
+    store.tick(1000);
+    expect(store.snapshot().positionNs).toBe(12e9);
+    store.setSpeed(10);
+    store.play();
+    store.tick(1000);
+    expect(store.snapshot()).toMatchObject({ playing: true, positionNs: 22e9 });
+    store.pause();
+    store.tick(1000);
+    expect(store.snapshot()).toMatchObject({ playing: false, positionNs: 22e9 });
+    store.play();
+    store.tick(5000);
+    expect(store.snapshot()).toMatchObject({ playing: false, positionNs: 30e9 });
+    store.play();
+    expect(store.snapshot()).toMatchObject({ playing: true, positionNs: 10e9 });
+    store.pause();
+    store.pause();
+    expect(store.snapshot().playing).toBe(false);
   });
 
   it("seeks, selects and ignores reopening the same run", () => {

@@ -1,5 +1,5 @@
 import type { BridgeFailure } from "../model/bridge";
-import { PlaybackIndex, parseJournalRecord } from "../model/playback";
+import { PlaybackIndex, advance, parseJournalRecord } from "../model/playback";
 import type { Badge, Report } from "../model/report";
 import type { Replay } from "../model/report";
 import { badgeOf, parseReplay, parseReport } from "../model/report";
@@ -25,6 +25,8 @@ export interface ReviewState {
   readonly runDomain: Load<unknown>;
   readonly tab: "report" | "inspect";
   readonly openedAt: number;
+  readonly playing: boolean;
+  readonly speed: number;
 }
 
 const idle: ReviewState = {
@@ -37,6 +39,8 @@ const idle: ReviewState = {
   runDomain: { phase: "loading" },
   tab: "report",
   openedAt: 0,
+  playing: false,
+  speed: 60,
 };
 
 export class ReviewStore extends Observable<ReviewState> {
@@ -96,6 +100,29 @@ export class ReviewStore extends Observable<ReviewState> {
     this.set({ ...this.snapshot(), positionNs });
   }
 
+  play(): void {
+    const bounds = this.index.bounds();
+    const state = this.snapshot();
+    const atEnd = bounds !== null && state.positionNs >= bounds.endNs;
+    this.set({ ...state, playing: true, positionNs: atEnd ? bounds.startNs : state.positionNs });
+  }
+
+  pause(): void {
+    if (this.snapshot().playing) this.set({ ...this.snapshot(), playing: false });
+  }
+
+  setSpeed(speed: number): void {
+    this.set({ ...this.snapshot(), speed });
+  }
+
+  tick(elapsedMs: number): void {
+    const state = this.snapshot();
+    const bounds = this.index.bounds();
+    if (!state.playing || bounds === null) return;
+    const positionNs = advance(state.positionNs, elapsedMs, state.speed, bounds.endNs);
+    this.set({ ...state, positionNs, playing: positionNs < bounds.endNs });
+  }
+
   select(entity: string | null): void {
     this.set({ ...this.snapshot(), selected: entity, tab: entity === null ? this.snapshot().tab : "inspect" });
   }
@@ -123,9 +150,9 @@ export class ReviewStore extends Observable<ReviewState> {
 
   private finish(worldId: string, phase: "ready" | "failed"): void {
     this.update(worldId, { phase });
-    const bounds = this.index.bounds();
     const state = this.snapshot();
-    if (bounds !== null && state.worldId === worldId && state.positionNs === 0) this.seek(bounds.endNs);
+    const settled = this.index.settled();
+    if (settled !== null && state.worldId === worldId && state.positionNs === 0) this.seek(settled);
   }
 
   private update(worldId: string, playback: Partial<ReviewState["playback"]>): void {

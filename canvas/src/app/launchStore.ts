@@ -31,6 +31,15 @@ function worldOf(value: unknown): string {
 
 export class LaunchStore extends Observable<LaunchState> {
   private stop = false;
+  private proposed: { readonly domain: string; readonly plan: LaunchPlan } | null = null;
+
+  propose(domain: string, plan: LaunchPlan): void {
+    this.proposed = { domain, plan };
+  }
+
+  proposal(domain: string): LaunchPlan | null {
+    return this.proposed?.domain === domain ? this.proposed.plan : null;
+  }
 
   constructor(private readonly bridge: Bridge) {
     super({ phase: "idle" });
@@ -38,6 +47,7 @@ export class LaunchStore extends Observable<LaunchState> {
 
   async start(domain: string, plan: LaunchPlan): Promise<void> {
     if (this.snapshot().phase === "running") return;
+    this.proposed = null;
     this.stop = false;
     this.progress(null, 0, plan.durationS);
     let worldId = "";

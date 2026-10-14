@@ -18,6 +18,8 @@ function state(overrides: Partial<ReviewState>): ReviewState {
     selected: null,
     runDomain: { phase: "loading" },
     tab: "report",
+    playing: false,
+    speed: 60,
     openedAt: 0,
     ...overrides,
   };

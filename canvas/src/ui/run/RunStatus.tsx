@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import type { ReviewState } from "../../app/reviewStore";
 import type { Badge, Report } from "../../model/report";
 import { badgeLabels, badgeOf } from "../../model/report";
-import { runIdentity } from "../../model/reportViews";
+import { runFacts, runIdentity } from "../../model/reportViews";
 import styles from "./RunScreen.module.css";
 
 const badgeIcons = {
@@ -57,15 +57,27 @@ function ReportPending({ loading, elapsed }: { readonly loading: boolean; readon
   );
 }
 
+const modeWords = {
+  explore: "Explore: the truth is visible; not for scoring.",
+  evaluate: "Evaluate: the truth stays sealed so a consumer can be scored.",
+} as const;
+
 function Mode({ report }: { readonly report: Report }) {
   const explore = report.mode === "explore";
   return (
     <>
-      <span className={explore ? styles.truth : styles.chip}>
+      <span className={explore ? styles.truth : styles.chip} title={explore ? modeWords.explore : modeWords.evaluate}>
         {explore ? <Eye size={13} aria-hidden="true" /> : <Lock size={13} aria-hidden="true" />}
-        {`${explore ? "Explore · unblinded" : "Evaluate"} · ${report.ended ? "ended" : "not closed"}`}
+        {explore ? "Explore" : "Evaluate"}
       </span>
-      <span className={styles.identity}>{runIdentity(report)}</span>
+      {!report.ended && <span className={styles.chip}>not finished</span>}
+      <span className={styles.facts}>{runFacts(report)}</span>
+      <details className={styles.info}>
+        <summary aria-label="Run details" title="Run details">
+          <Info size={14} aria-hidden="true" />
+        </summary>
+        <p className={styles.popover}>{runIdentity(report)}</p>
+      </details>
     </>
   );
 }
@@ -78,13 +90,11 @@ export function Status({ state }: { readonly state: ReviewState }) {
   const report = state.report.value;
   const badge = badgeOf(report, state.verified);
   const label = badge === "verifying" ? `Verifying · replaying the run · ${String(elapsed)} s` : badgeLabels[badge];
-  const records = `${state.playback.records.toLocaleString("en-US")} observations${state.playback.phase === "loading" ? " · loading" : ""}`;
   return (
     <>
+      <Mode report={report} />
       <Chip badge={badge} label={label} />
       <Announce text={badge === "verifying" ? "Verifying: replaying the run" : badgeLabels[badge]} />
-      <Mode report={report} />
-      <span className={styles.progress}>{records}</span>
     </>
   );
 }

@@ -17,12 +17,12 @@ test("a plant runs with a planned fault and the finished run opens in the review
   await panel.getByLabel("Fault 1 starts at minute").fill("2");
   expect((await new AxeBuilder({ page }).include("aside").analyze()).violations).toEqual([]);
   await panel.getByRole("button", { name: "Start the run" }).click();
-  const header = page.getByRole("heading", { level: 1, name: /^w-/ });
+  const header = page.getByRole("heading", { level: 1, name: /^Run w-/ });
   await expect(header).toBeVisible({ timeout: 60_000 });
-  await expect(page.getByText("Explore · unblinded · ended")).toBeVisible();
-  await expect(page.getByText(/· seed 11 ·/)).toBeVisible();
+  await expect(page.getByText("Explore", { exact: true })).toBeVisible();
+  await expect(page.getByText(/^seed 11 · /)).toBeVisible();
   const slider = page.getByRole("slider", { name: "Playback time" });
-  await expect(slider).toHaveAttribute("aria-valuetext", "00:05:00", { timeout: 60_000 });
+  await expect(slider).toHaveAttribute("max", "300", { timeout: 60_000 });
   const disturbances = page
     .getByRole("complementary", { name: "Run details" })
     .getByRole("region", { name: "Disturbances" });

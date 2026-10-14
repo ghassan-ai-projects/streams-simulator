@@ -1,6 +1,6 @@
 import { ReactFlowProvider } from "@xyflow/react";
-import { ChevronRight } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import type { LaunchStore } from "../../app/launchStore";
 import type { NavigationStore } from "../../app/navigationStore";
 import type { PlantState, PlantStore } from "../../app/plantStore";
 import type { ReviewState, ReviewStore } from "../../app/reviewStore";
@@ -13,13 +13,14 @@ import { Navigator, ZoomBar } from "../plant/GraphControls";
 import { Outline } from "../plant/Outline";
 import { readoutHeight } from "../plant/nodes";
 import { PlantGraph } from "../plant/PlantGraph";
-import shared from "../shared.module.css";
-import { useScreen } from "../useScreen";
 import { useStore } from "../useStore";
-import { Banners, Status } from "./RunStatus";
+import { Banners } from "./RunStatus";
+import type { HallProps } from "./RunHeader";
+import { Header } from "./RunHeader";
 import { RunPanel } from "./RunPanel";
 import { Scrubber } from "./Scrubber";
 import { useLive } from "./useLive";
+import { usePlayback } from "./usePlayback";
 import styles from "./RunScreen.module.css";
 
 interface RunScreenProps {
@@ -27,67 +28,11 @@ interface RunScreenProps {
   readonly plants: PlantStore;
   readonly workspace: WorkspaceStore;
   readonly navigation: NavigationStore;
+  readonly launch: LaunchStore;
   readonly worldId: string;
 }
 
 type ReadyPlant = Extract<PlantState, { phase: "ready" }>;
-
-interface HallProps {
-  readonly hall: string | null;
-  readonly onHall: (hall: string | null) => void;
-}
-
-function RunCrumb({ worldId, onHall }: { readonly worldId: string; readonly onHall: (hall: null) => void }) {
-  return (
-    <>
-      <button
-        type="button"
-        className={shared.crumb}
-        onClick={() => {
-          onHall(null);
-        }}
-      >
-        {worldId}
-      </button>
-      <ChevronRight size={14} aria-hidden="true" />
-    </>
-  );
-}
-
-function Header({
-  state,
-  navigation,
-  worldId,
-  hall,
-  onHall,
-}: {
-  readonly state: ReviewState;
-  readonly navigation: NavigationStore;
-  readonly worldId: string;
-} & HallProps) {
-  const heading = useScreen(hall === null ? `${worldId} · review` : `${hall} · ${worldId} · review`);
-  return (
-    <div className={styles.bar}>
-      <nav className={styles.crumbs} aria-label="Breadcrumb">
-        <button
-          type="button"
-          className={shared.crumb}
-          onClick={() => {
-            navigation.go({ screen: "home" });
-          }}
-        >
-          Workspace
-        </button>
-        <ChevronRight size={14} aria-hidden="true" />
-        {hall !== null && <RunCrumb worldId={worldId} onHall={onHall} />}
-        <h1 aria-current="location" className={styles.here} ref={heading} tabIndex={-1}>
-          {hall ?? worldId}
-        </h1>
-      </nav>
-      <Status state={state} />
-    </div>
-  );
-}
 
 function useRunPlant(state: ReviewState, plants: PlantStore, workspace: WorkspaceStore): ReadyPlant | null {
   const listing = useStore(workspace);
@@ -113,6 +58,17 @@ function OpeningPlant() {
   );
 }
 
+function GraphBar({ state }: { readonly state: ReviewState }) {
+  return (
+    <div className={styles.graphBar}>
+      <span
+        className={styles.muted}
+      >{`Plant at the playback time · ${state.playback.records.toLocaleString("en-US")} observations${state.playback.phase === "loading" ? " · loading" : ""}`}</span>
+      <ZoomBar />
+    </div>
+  );
+}
+
 function Graph({
   review,
   state,
@@ -132,10 +88,7 @@ function Graph({
   if (view === null) return <OpeningPlant />;
   return (
     <div className={styles.graphArea}>
-      <div className={styles.graphBar}>
-        <span className={styles.muted}>Plant at the playback time · values are observations</span>
-        <ZoomBar />
-      </div>
+      <GraphBar state={state} />
       <PlantGraph
         minFitZoom={0.5}
         view={view}
@@ -161,8 +114,19 @@ function Timeline({ review, state }: { readonly review: ReviewStore; readonly st
     <Scrubber
       startNs={span.startNs}
       endNs={span.endNs}
-      positionNs={state.positionNs === 0 ? span.endNs : state.positionNs}
+      positionNs={state.positionNs === 0 ? span.startNs : state.positionNs}
       report={report}
+      playing={state.playing}
+      speed={state.speed}
+      onPlay={() => {
+        review.play();
+      }}
+      onPause={() => {
+        review.pause();
+      }}
+      onSpeed={(speed) => {
+        review.setSpeed(speed);
+      }}
       onSeek={(ns) => {
         review.seek(ns);
       }}
@@ -202,13 +166,23 @@ function Side({
   );
 }
 
-export function RunScreen({ review, plants, workspace, navigation, worldId }: RunScreenProps) {
+function usePlantIdentity(state: ReviewState, workspace: WorkspaceStore, plant: ReadyPlant | null) {
+  const listing = useStore(workspace);
+  const domainId = state.report.phase === "ready" ? state.report.value.domainId : "";
+  const entry = listing.phase === "ready" ? listing.workspace.domains.find((d) => d.id === domainId) : undefined;
+  const title = plant?.plant.title ?? entry?.title ?? domainId;
+  return { title: title === "" ? "Plant" : title, path: entry?.path ?? null };
+}
+
+export function RunScreen({ review, plants, workspace, navigation, launch, worldId }: RunScreenProps) {
   const state = useStore(review);
   const plant = useRunPlant(state, plants, workspace);
+  const identity = usePlantIdentity(state, workspace, plant);
   const [hall, setHall] = useState<string | null>(null);
   useEffect(() => {
     review.open(worldId);
   }, [review, worldId]);
+  usePlayback(review, state.playing);
   const unit = useCallback(
     (entity: string, name: string) => (plant === null ? "" : stateUnit(plant.plant, entity, name)),
     [plant],
@@ -216,7 +190,15 @@ export function RunScreen({ review, plants, workspace, navigation, worldId }: Ru
   return (
     <ReactFlowProvider>
       <div className={styles.screen}>
-        <Header state={state} navigation={navigation} worldId={worldId} hall={hall} onHall={setHall} />
+        <Header
+          state={state}
+          navigation={navigation}
+          launch={launch}
+          worldId={worldId}
+          hall={hall}
+          onHall={setHall}
+          plant={identity}
+        />
         <Side review={review} state={state} plant={plant} hall={hall} onHall={setHall} />
         <section className={styles.center} aria-label={`Run ${worldId}`}>
           <Banners state={state} />

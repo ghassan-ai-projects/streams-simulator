@@ -19,7 +19,7 @@
   --radius-lg: 10px;
   --topbar-height: 44px;
   --sidebar-width: 256px;
-  --inspector-width: 336px;
+  --inspector-width: clamp(336px, 26vw, 460px);
   --motion-fast: 120ms;
   --node-width: 232px;
   --node-width-compact: 176px;

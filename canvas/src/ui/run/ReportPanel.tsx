@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import type { Report, VerifyState } from "../../model/report";
 import { badgeOf, humanise, replayLine, wallClock } from "../../model/report";
-import { kpisOf } from "../../model/reportViews";
+import { integrityLine, kpisOf } from "../../model/reportViews";
 import { displayUnit } from "../../model/units";
 import shared from "../shared.module.css";
 import styles from "./RunScreen.module.css";
@@ -59,7 +59,7 @@ function Rows({ rows, columns, headers, empty = "None" }: RowsProps) {
   if (rows.length === 0) return <p className={styles.muted}>{empty}</p>;
   return (
     <table className={styles.table}>
-      <thead className="sr-only">
+      <thead className={styles.head}>
         <tr>
           {headers.map((header) => (
             <th key={header} scope="col">
@@ -99,13 +99,26 @@ function ReplayCheck({ verify }: { readonly verify: VerifyState }) {
   );
 }
 
-function Facts({ report, verify }: { readonly report: Report; readonly verify: VerifyState }) {
+function Deliveries({ report }: { readonly report: Report }) {
   const dropped = Object.entries(report.dropped).map(([reason, n]) => [
     reason.replaceAll("_", " "),
     n.toLocaleString("en-US"),
   ]);
   return (
-    <>
+    <Section title="Deliveries" note={report.ended ? undefined : "run not closed"}>
+      <Rows
+        rows={[...["emitted", "delivered", "dropped"].map((key) => [key, count(report, key)]), ...dropped]}
+        columns={["text", "number"]}
+        headers={["Records", "Count"]}
+      />
+    </Section>
+  );
+}
+
+function Integrity({ report, verify }: { readonly report: Report; readonly verify: VerifyState }) {
+  return (
+    <details className={styles.integrity}>
+      <summary>{integrityLine(report, verify)}</summary>
       <ReplayCheck verify={verify} />
       <Section title="File check" note={report.verification.replaceAll("_", " ") || "not recorded"}>
         <p className={styles.muted}>
@@ -120,14 +133,8 @@ function Facts({ report, verify }: { readonly report: Report; readonly verify: V
           headers={["File", "Check"]}
         />
       </Section>
-      <Section title="Deliveries" note={report.ended ? undefined : "run not closed"}>
-        <Rows
-          rows={[...["emitted", "delivered", "dropped"].map((key) => [key, count(report, key)]), ...dropped]}
-          columns={["text", "number"]}
-          headers={["Records", "Count"]}
-        />
-      </Section>
-    </>
+      <Deliveries report={report} />
+    </details>
   );
 }
 
@@ -142,11 +149,15 @@ function Truth({ report, unit, entity }: TruthProps) {
   const at = (ns: number) => wallClock(ns, report.startNs);
   return (
     <>
-      <Section title="Disturbances" note="onset · set">
+      <Section title="Disturbances">
         <Rows
-          rows={report.disturbances.map((d) => [at(d.onsetNs), d.target, named(d.name), at(d.injectedNs)])}
-          columns={["clock", "id", "label", "clock"]}
-          headers={["Onset", "Target", "Disturbance", "Set at"]}
+          rows={report.disturbances.map((d) => [
+            { text: at(d.onsetNs), title: `set at ${at(d.injectedNs)}` },
+            d.target,
+            named(d.name),
+          ])}
+          columns={["clock", "id", "label"]}
+          headers={["Starts", "Instance", "Disturbance"]}
         />
       </Section>
       <Section title="Effector calls">
@@ -188,7 +199,7 @@ function Scoring({ report }: { readonly report: Report }) {
 function KpiTruth({ report, unit, entity }: TruthProps) {
   const kpis = kpisOf(report, entity);
   return (
-    <Section title="KPI truth" note={entity === null ? "mean · min – max" : `${entity} · mean · min – max`}>
+    <Section title="KPI truth" note={entity ?? undefined}>
       <Rows
         rows={kpis.map((row) => [
           { text: `${row.entity} · ${humanise(row.state)}`, title: `${row.entity} ${row.state}` },
@@ -196,7 +207,7 @@ function KpiTruth({ report, unit, entity }: TruthProps) {
           `${fixed(row.min)} – ${fixed(row.max)}`,
         ])}
         columns={["label", "number", "number"]}
-        headers={["KPI", "Mean", "Min – max"]}
+        headers={["KPI", "Mean", "Range"]}
         empty={entity === null ? "None" : `No KPI truth for ${entity}.`}
       />
     </Section>
@@ -235,7 +246,7 @@ export function ReportPanel({
   }
   return (
     <>
-      <Facts report={report} verify={verify} />
+      <Integrity report={report} verify={verify} />
       <TruthCaution report={report} verify={verify} />
       {report.truthUnavailable || !report.ended ? (
         <Section title="Truth">

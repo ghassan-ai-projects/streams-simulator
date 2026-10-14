@@ -32,3 +32,20 @@ export function planOf(draft: Draft): LaunchPlan {
     })),
   };
 }
+
+export function draftOf(plan: LaunchPlan): Draft {
+  const hours = plan.durationS % 3600 === 0;
+  return {
+    seed: String(plan.seed),
+    duration: String(hours ? plan.durationS / 3600 : Math.round(plan.durationS / 60)),
+    unit: hours ? "hours" : "minutes",
+    explore: plan.explore,
+    faults: plan.faults.map((fault, index) => ({
+      key: index + 1,
+      entity: fault.entity,
+      fault: fault.fault,
+      atMinutes: String(Math.round(fault.atS / 60)),
+    })),
+    nextKey: plan.faults.length + 1,
+  };
+}

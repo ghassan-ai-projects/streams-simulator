@@ -106,6 +106,15 @@ export class PlaybackIndex {
     return this.total === 0 ? null : { startNs: this.first, endNs: this.last };
   }
 
+  settled(): number | null {
+    if (this.total === 0) return null;
+    const firsts = [...this.series.values()].flatMap((channels) =>
+      [...channels.values()].map((series) => series.times[0] ?? this.first),
+    );
+    const cap = this.first + (this.last - this.first) / 10;
+    return Math.min(cap, Math.max(this.first, ...firsts));
+  }
+
   readings(entity: string, atNs: number): readonly Reading[] {
     const channels = this.series.get(entity);
     if (channels === undefined) return [];
@@ -137,4 +146,10 @@ function lastAtOrBefore(times: readonly number[], atNs: number): number {
 export function shortChannel(channel: string): string {
   const dot = channel.indexOf(".");
   return dot < 0 ? channel : channel.slice(dot + 1);
+}
+
+export const playbackSpeeds = [1, 10, 60, 600] as const;
+
+export function advance(positionNs: number, elapsedMs: number, speed: number, endNs: number): number {
+  return Math.min(endNs, positionNs + Math.max(0, elapsedMs) * 1e6 * speed);
 }

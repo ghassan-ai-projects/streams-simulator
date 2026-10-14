@@ -76,6 +76,7 @@ function Screen({ stores, route }: { readonly stores: Stores; readonly route: Ro
         plants={stores.plants}
         workspace={stores.workspace}
         navigation={stores.navigation}
+        launch={stores.launch}
         worldId={route.worldId}
       />
     );
