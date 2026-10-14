@@ -21,10 +21,8 @@ function KpiLine({ row, unit }: { readonly row: KpiRow; readonly unit: KpiTableP
       <th scope="row" className={styles.kpiName} title={`${row.entity} ${row.state}`}>
         {kpiWords(row.state)}
       </th>
-      <td className={styles.number}>
-        {fixed(row.mean)}
-        {shown !== "" && <span className={styles.unit}>{shown}</span>}
-      </td>
+      <td className={styles.number}>{fixed(row.mean)}</td>
+      <td className={styles.unitCell}>{shown}</td>
       <td className={steady ? styles.steady : styles.number}>
         {steady ? "steady" : `${fixed(row.min)} – ${fixed(row.max)}`}
       </td>
@@ -41,6 +39,9 @@ export function KpiTable({ rows, grouped, unit }: KpiTableProps) {
           <th scope="col" className={styles.numberHead}>
             Mean
           </th>
+          <th scope="col">
+            <span className="sr-only">Unit</span>
+          </th>
           <th scope="col" className={styles.numberHead}>
             Range
           </th>
@@ -51,7 +52,7 @@ export function KpiTable({ rows, grouped, unit }: KpiTableProps) {
           <Fragment key={group.entity}>
             {grouped && (
               <tr className={styles.groupRow}>
-                <th scope="rowgroup" colSpan={3}>
+                <th scope="rowgroup" colSpan={4}>
                   {group.entity}
                 </th>
               </tr>

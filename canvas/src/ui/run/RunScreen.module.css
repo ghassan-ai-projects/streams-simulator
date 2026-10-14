@@ -151,6 +151,14 @@
   text-align: right;
 }
 
+.table .unitCell {
+  width: 1%;
+  padding-left: 0;
+  white-space: nowrap;
+  font: 500 var(--text-xs) var(--font-ui);
+  color: var(--text-tertiary);
+}
+
 .table .steady {
   color: var(--text-tertiary);
   font-size: var(--text-sm);
