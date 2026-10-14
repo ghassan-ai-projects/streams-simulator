@@ -1,3 +1,4 @@
+import { Boxes } from "lucide-react";
 import { ReactFlowProvider } from "@xyflow/react";
 import { useEffect, useMemo, useState } from "react";
 import type { Draft, EditorStore } from "../../app/editorStore";
@@ -45,6 +46,19 @@ function useLeaveGuard(dirty: boolean) {
   }, [dirty]);
 }
 
+function NoEquipment() {
+  return (
+    <div className={styles.empty}>
+      <Boxes size={28} aria-hidden="true" />
+      <h2>No equipment yet</h2>
+      <p>
+        Find a piece of equipment in the Build panel, give it a name and an area, and add it. Then link an output to an
+        input, and save to compose the plant.
+      </p>
+    </div>
+  );
+}
+
 function Editing({ draft, editor, navigation }: { readonly draft: Draft } & Omit<EditorScreenProps, "composition">) {
   const { plant, view, flagged } = usePlant(draft);
   const [request] = useState(() => new FocusRequest());
@@ -57,12 +71,12 @@ function Editing({ draft, editor, navigation }: { readonly draft: Draft } & Omit
       <div className={plantStyles.screen}>
         <div className={plantStyles.side}>
           <Outline plant={plant} hall={null} selected={draft.selected} onSelect={select} />
-          <Navigator />
+          {plant.instances.length > 0 ? <Navigator /> : null}
         </div>
         <section className={plantStyles.center} aria-label={`Editing ${plant.title || plant.id}`}>
           <EditorBar draft={draft} editor={editor} navigation={navigation} />
           {plant.instances.length === 0 ? (
-            <p className={styles.empty}>No equipment yet. Add the first piece from the Build panel.</p>
+            <NoEquipment />
           ) : (
             <PlantGraph
               view={view}

@@ -38,7 +38,7 @@ test("a new plant is built in Chrome, refused with the issue on its element, fix
   await form.getByRole("radio", { name: /^An empty plant/ }).check();
   await form.getByRole("button", { name: "Create and open the editor" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Lab cooling" })).toBeVisible();
-  await expect(page.getByText("No equipment yet.")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "No equipment yet" })).toBeVisible();
   await add(page, "Water-cooled chiller", "CH-1");
   await add(page, "Cooling tower", "CT 1");
   await pin(page, "CH-1", "heat_out").dragTo(pin(page, "CT 1", "heat_in"));

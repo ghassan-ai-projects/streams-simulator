@@ -2,7 +2,7 @@ import { PenLine, Redo, RefreshCw, Save, Undo, Undo2 } from "lucide-react";
 import { useState } from "react";
 import type { Draft, EditorStore } from "../../app/editorStore";
 import type { NavigationStore } from "../../app/navigationStore";
-import { domainOf, titleOf } from "../../model/composition";
+import { domainOf, equipmentOf, titleOf } from "../../model/composition";
 import { ZoomBar } from "../plant/GraphControls";
 import plantStyles from "../plant/PlantScreen.module.css";
 import { Breadcrumb } from "../shell/Breadcrumb";
@@ -206,7 +206,7 @@ export function EditorBar({ draft, editor, navigation }: BarProps) {
         <Save size={14} aria-hidden="true" />
         Save
       </button>
-      <ZoomBar />
+      {equipmentOf(draft.doc).length > 0 && <ZoomBar />}
     </div>
   );
 }

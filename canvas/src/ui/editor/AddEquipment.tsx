@@ -80,15 +80,13 @@ function NameField({ name, setName }: { readonly name: string; readonly setName:
   );
 }
 
-function LibraryPick({
-  library,
-  use,
-  setUse,
-}: {
+interface PickProps {
   readonly library: readonly LibraryEntry[];
   readonly use: string;
   readonly setUse: (use: string) => void;
-}) {
+}
+
+function LibraryPick({ library, use, setUse }: PickProps) {
   const [query, setQuery] = useState("");
   const found = searchLibrary(library, query);
   return (
@@ -110,6 +108,7 @@ function LibraryPick({
           setUse(event.target.value);
         }}
       >
+        <option value="" hidden />
         {found.map((entry) => (
           <option key={entry.ref} value={entry.ref}>
             {entry.title}
