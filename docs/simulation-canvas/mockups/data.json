@@ -1,0 +1,1548 @@
+{
+ "explore": {
+  "prefault_time": "09:39:50",
+  "now": "10:25:00",
+  "fault_onset": "09:40:00",
+  "at": {
+   "09:39:50": {
+    "R-1.header_pressure": 662,
+    "D-1.pressure_drop": 62,
+    "M-1.air_flow": 250,
+    "M-2.air_flow": 254,
+    "M-3.air_flow": 84,
+    "M-4.air_flow": 516,
+    "AC-1.air_flow": 694,
+    "AC-1.run_status": 1,
+    "AC-1.load_status": 1,
+    "AC-1.alarm_state": 0,
+    "AC-2.air_flow": 38,
+    "AC-2.run_status": 1,
+    "AC-2.load_status": 0,
+    "AC-2.alarm_state": 0,
+    "R-1.outlet_flow": 1102,
+    "R-1.drain_status": 0,
+    "D-1.run_status": 1,
+    "P-1.flow": 170,
+    "P-2.flow": 169,
+    "P-3.flow": 169,
+    "P-4.flow": 169,
+    "MB-AIR.current": 175,
+    "MB-COOL.current": 230,
+    "MB-PROC.current": 927,
+    "MM-1.current": 1325,
+    "WX-1.dry_bulb_temp": 29.9,
+    "WX-1.wet_bulb_temp": 23.5,
+    "AHU-1.supply_air_temp": 13,
+    "AC-1.discharge_temp": 96.2,
+    "AC-2.discharge_temp": 77.8,
+    "R-1.condensate_level": 0.3,
+    "D-1.dew_point": -40,
+    "CH-1.chw_supply_temp": 7.1,
+    "CH-1.chw_return_temp": 8.9,
+    "CH-1.cond_temp": 32.1,
+    "CT-1.basin_temp": 27.7,
+    "CAL-1.site_load": 110,
+    "M-1.power": 215,
+    "M-2.power": 214,
+    "M-3.power": 68.5,
+    "M-4.power": 80.3,
+    "AHU-1.cooling_load": 153,
+    "AC-1.power": 76.8,
+    "AC-2.power": 24.7,
+    "D-1.power": 7.2,
+    "CH-1.power": 69.6,
+    "CT-1.fan_power": 5.4,
+    "P-1.power": 17.3,
+    "P-2.power": 17.4,
+    "P-3.power": 17.4,
+    "P-4.power": 17.3,
+    "MB-AIR.power": 110,
+    "MB-AIR.demand": 142,
+    "MB-COOL.power": 145,
+    "MB-COOL.demand": 150,
+    "MB-PROC.power": 577,
+    "MB-PROC.demand": 635,
+    "MM-1.power": 832,
+    "MM-1.demand": 930,
+    "WX-1.humidity_rh": 58.1,
+    "M-1.vibration": 2.53,
+    "M-2.vibration": 2.46,
+    "M-3.vibration": 2.46,
+    "M-4.vibration": 1.81,
+    "AC-1.vibration": 2.58,
+    "AC-2.vibration": 1.84,
+    "M-1.units_made": 181943,
+    "M-2.units_made": 181943,
+    "M-3.units_made": 60971,
+    "M-4.units_made": 531526,
+    "MB-AIR.energy": 80838,
+    "MB-COOL.energy": 81057,
+    "MB-PROC.energy": 252571,
+    "MM-1.energy": 904466
+   },
+   "10:25:00": {
+    "R-1.header_pressure": 698,
+    "D-1.pressure_drop": 70,
+    "M-1.air_flow": 256,
+    "M-2.air_flow": 255,
+    "M-3.air_flow": 83,
+    "M-4.air_flow": 517,
+    "AC-1.air_flow": 697,
+    "AC-1.run_status": 1,
+    "AC-1.load_status": 1,
+    "AC-1.alarm_state": 0,
+    "AC-2.air_flow": 198,
+    "AC-2.run_status": 1,
+    "AC-2.load_status": 0,
+    "AC-2.alarm_state": 0,
+    "R-1.outlet_flow": 1149,
+    "R-1.drain_status": 0,
+    "D-1.run_status": 1,
+    "P-1.flow": 167,
+    "P-2.flow": 166,
+    "P-3.flow": 167,
+    "P-4.flow": 168,
+    "MB-AIR.current": 174,
+    "MB-COOL.current": 252,
+    "MB-PROC.current": 1023,
+    "MM-1.current": 1466,
+    "WX-1.dry_bulb_temp": 31.1,
+    "WX-1.wet_bulb_temp": 24,
+    "AHU-1.supply_air_temp": 13,
+    "AC-1.discharge_temp": 96.6,
+    "AC-2.discharge_temp": 81.9,
+    "R-1.condensate_level": 0.3,
+    "D-1.dew_point": -40.1,
+    "CH-1.chw_supply_temp": 7.1,
+    "CH-1.chw_return_temp": 9.1,
+    "CH-1.cond_temp": 35.9,
+    "CT-1.basin_temp": 33.2,
+    "CAL-1.site_load": 110,
+    "M-1.power": 237,
+    "M-2.power": 237,
+    "M-3.power": 76,
+    "M-4.power": 89,
+    "AHU-1.cooling_load": 157,
+    "AC-1.power": 77.3,
+    "AC-2.power": 26.4,
+    "D-1.power": 7.4,
+    "CH-1.power": 87.9,
+    "CT-1.fan_power": 0.2,
+    "P-1.power": 17,
+    "P-2.power": 17.2,
+    "P-3.power": 17,
+    "P-4.power": 17.2,
+    "MB-AIR.power": 111,
+    "MB-AIR.demand": 143,
+    "MB-COOL.power": 157,
+    "MB-COOL.demand": 149,
+    "MB-PROC.power": 639,
+    "MB-PROC.demand": 635,
+    "MM-1.power": 899,
+    "MM-1.demand": 924,
+    "WX-1.humidity_rh": 55.5,
+    "M-1.vibration": 2.41,
+    "M-2.vibration": 2.44,
+    "M-3.vibration": 2.49,
+    "M-4.vibration": 1.82,
+    "AC-1.vibration": 2.58,
+    "AC-2.vibration": 1.77,
+    "M-1.units_made": 182325,
+    "M-2.units_made": 182325,
+    "M-3.units_made": 61162,
+    "M-4.units_made": 533740,
+    "MB-AIR.energy": 80945,
+    "MB-COOL.energy": 81171,
+    "MB-PROC.energy": 253038,
+    "MM-1.energy": 905154
+   }
+  },
+  "twin_at": {
+   "10:25:00": {
+    "R-1.header_pressure": 698,
+    "D-1.pressure_drop": 70,
+    "M-1.air_flow": 256,
+    "M-2.air_flow": 255,
+    "M-3.air_flow": 83,
+    "M-4.air_flow": 517,
+    "AC-1.air_flow": 697,
+    "AC-1.run_status": 1,
+    "AC-1.load_status": 1,
+    "AC-1.alarm_state": 0,
+    "AC-2.air_flow": 198,
+    "AC-2.run_status": 1,
+    "AC-2.load_status": 0,
+    "AC-2.alarm_state": 0,
+    "R-1.outlet_flow": 1149,
+    "R-1.drain_status": 0,
+    "D-1.run_status": 1,
+    "P-1.flow": 167,
+    "P-2.flow": 166,
+    "P-3.flow": 167,
+    "P-4.flow": 168,
+    "MB-AIR.current": 174,
+    "MB-COOL.current": 243,
+    "MB-PROC.current": 1023,
+    "MM-1.current": 1457,
+    "WX-1.dry_bulb_temp": 31.1,
+    "WX-1.wet_bulb_temp": 24,
+    "AHU-1.supply_air_temp": 13,
+    "AC-1.discharge_temp": 96.6,
+    "AC-2.discharge_temp": 81.9,
+    "R-1.condensate_level": 0.3,
+    "D-1.dew_point": -40.1,
+    "CH-1.chw_supply_temp": 7.1,
+    "CH-1.chw_return_temp": 9.1,
+    "CH-1.cond_temp": 32.8,
+    "CT-1.basin_temp": 28.3,
+    "CAL-1.site_load": 110,
+    "M-1.power": 237,
+    "M-2.power": 237,
+    "M-3.power": 76,
+    "M-4.power": 89,
+    "AHU-1.cooling_load": 157,
+    "AC-1.power": 77.3,
+    "AC-2.power": 26.4,
+    "D-1.power": 7.4,
+    "CH-1.power": 76.6,
+    "CT-1.fan_power": 5.7,
+    "P-1.power": 17,
+    "P-2.power": 17.2,
+    "P-3.power": 17,
+    "P-4.power": 17.2,
+    "MB-AIR.power": 111,
+    "MB-AIR.demand": 143,
+    "MB-COOL.power": 151,
+    "MB-COOL.demand": 149,
+    "MB-PROC.power": 639,
+    "MB-PROC.demand": 635,
+    "MM-1.power": 893,
+    "MM-1.demand": 924,
+    "WX-1.humidity_rh": 55.5,
+    "M-1.vibration": 2.41,
+    "M-2.vibration": 2.44,
+    "M-3.vibration": 2.49,
+    "M-4.vibration": 1.82,
+    "AC-1.vibration": 2.58,
+    "AC-2.vibration": 1.77,
+    "M-1.units_made": 182325,
+    "M-2.units_made": 182325,
+    "M-3.units_made": 61162,
+    "M-4.units_made": 533740,
+    "MB-AIR.energy": 80945,
+    "MB-COOL.energy": 81171,
+    "MB-PROC.energy": 253038,
+    "MM-1.energy": 905153
+   }
+  },
+  "truth_at": {
+   "09:39:50": {
+    "CH-1.cop": 7.55,
+    "CT-1.fan_health": 1,
+    "CT-1.fan_eff": 0.64,
+    "CT-1.fan_speed": 0.6,
+    "CT-1.fan_trim": 1.067,
+    "CT-1.approach": 4.23
+   },
+   "10:25:00": {
+    "CH-1.cop": 6.45,
+    "CT-1.fan_health": 0.325,
+    "CT-1.fan_eff": 0.213,
+    "CT-1.fan_speed": 0.6,
+    "CT-1.fan_trim": 1.093,
+    "CT-1.approach": 10.62
+   }
+  },
+  "fan_health_floor": {
+   "value": 0.325,
+   "time": "10:25:00",
+   "first_decline": "09:40:10"
+  },
+  "series": {
+   "CT-1.basin_temp": [
+    [
+     "09:25:00",
+     27.5
+    ],
+    [
+     "09:30:00",
+     27.7
+    ],
+    [
+     "09:35:00",
+     27.7
+    ],
+    [
+     "09:40:00",
+     27.8
+    ],
+    [
+     "09:45:00",
+     27.9
+    ],
+    [
+     "09:50:00",
+     28.3
+    ],
+    [
+     "09:55:00",
+     28.6
+    ],
+    [
+     "10:00:00",
+     29
+    ],
+    [
+     "10:05:00",
+     29.6
+    ],
+    [
+     "10:10:00",
+     30.5
+    ],
+    [
+     "10:15:00",
+     31.1
+    ],
+    [
+     "10:20:00",
+     32
+    ],
+    [
+     "10:25:00",
+     33.2
+    ]
+   ],
+   "WX-1.wet_bulb_temp": [
+    [
+     "09:25:00",
+     23.4
+    ],
+    [
+     "09:30:00",
+     23.4
+    ],
+    [
+     "09:35:00",
+     23.5
+    ],
+    [
+     "09:40:00",
+     23.6
+    ],
+    [
+     "09:45:00",
+     23.7
+    ],
+    [
+     "09:50:00",
+     23.7
+    ],
+    [
+     "09:55:00",
+     23.8
+    ],
+    [
+     "10:00:00",
+     23.9
+    ],
+    [
+     "10:05:00",
+     23.9
+    ],
+    [
+     "10:10:00",
+     23.9
+    ],
+    [
+     "10:15:00",
+     24.1
+    ],
+    [
+     "10:20:00",
+     24
+    ],
+    [
+     "10:25:00",
+     24
+    ]
+   ],
+   "CT-1.fan_power": [
+    [
+     "09:25:00",
+     5.5
+    ],
+    [
+     "09:30:00",
+     5.4
+    ],
+    [
+     "09:35:00",
+     5.4
+    ],
+    [
+     "09:40:00",
+     5.3
+    ],
+    [
+     "09:45:00",
+     4.5
+    ],
+    [
+     "09:50:00",
+     3.4
+    ],
+    [
+     "09:55:00",
+     2.2
+    ],
+    [
+     "10:00:00",
+     1.9
+    ],
+    [
+     "10:05:00",
+     1.6
+    ],
+    [
+     "10:10:00",
+     1.2
+    ],
+    [
+     "10:15:00",
+     0.8
+    ],
+    [
+     "10:20:00",
+     0.4
+    ],
+    [
+     "10:25:00",
+     0.2
+    ]
+   ],
+   "MM-1.power": [
+    [
+     "09:25:00",
+     866
+    ],
+    [
+     "09:30:00",
+     872
+    ],
+    [
+     "09:35:00",
+     892
+    ],
+    [
+     "09:40:00",
+     852
+    ],
+    [
+     "09:45:00",
+     830
+    ],
+    [
+     "09:50:00",
+     850
+    ],
+    [
+     "09:55:00",
+     903
+    ],
+    [
+     "10:00:00",
+     928
+    ],
+    [
+     "10:05:00",
+     934
+    ],
+    [
+     "10:10:00",
+     934
+    ],
+    [
+     "10:15:00",
+     906
+    ],
+    [
+     "10:20:00",
+     890
+    ],
+    [
+     "10:25:00",
+     899
+    ]
+   ],
+   "R-1.header_pressure": [
+    [
+     "09:25:00",
+     683
+    ],
+    [
+     "09:30:00",
+     660
+    ],
+    [
+     "09:35:00",
+     642
+    ],
+    [
+     "09:40:00",
+     640
+    ],
+    [
+     "09:45:00",
+     671
+    ],
+    [
+     "09:50:00",
+     700
+    ],
+    [
+     "09:55:00",
+     703
+    ],
+    [
+     "10:00:00",
+     682
+    ],
+    [
+     "10:05:00",
+     661
+    ],
+    [
+     "10:10:00",
+     641
+    ],
+    [
+     "10:15:00",
+     642
+    ],
+    [
+     "10:20:00",
+     673
+    ],
+    [
+     "10:25:00",
+     698
+    ]
+   ],
+   "CH-1.chw_supply_temp": [
+    [
+     "09:25:00",
+     7
+    ],
+    [
+     "09:30:00",
+     7
+    ],
+    [
+     "09:35:00",
+     7
+    ],
+    [
+     "09:40:00",
+     7
+    ],
+    [
+     "09:45:00",
+     7
+    ],
+    [
+     "09:50:00",
+     7
+    ],
+    [
+     "09:55:00",
+     7
+    ],
+    [
+     "10:00:00",
+     7
+    ],
+    [
+     "10:05:00",
+     7
+    ],
+    [
+     "10:10:00",
+     7
+    ],
+    [
+     "10:15:00",
+     7.1
+    ],
+    [
+     "10:20:00",
+     7
+    ],
+    [
+     "10:25:00",
+     7.1
+    ]
+   ],
+   "CH-1.cop_truth": [
+    [
+     "09:25:00",
+     7.57
+    ],
+    [
+     "09:30:00",
+     7.55
+    ],
+    [
+     "09:35:00",
+     7.55
+    ],
+    [
+     "09:40:00",
+     7.55
+    ],
+    [
+     "09:45:00",
+     7.52
+    ],
+    [
+     "09:50:00",
+     7.45
+    ],
+    [
+     "09:55:00",
+     7.36
+    ],
+    [
+     "10:00:00",
+     7.23
+    ],
+    [
+     "10:05:00",
+     7.1
+    ],
+    [
+     "10:10:00",
+     6.97
+    ],
+    [
+     "10:15:00",
+     6.83
+    ],
+    [
+     "10:20:00",
+     6.68
+    ],
+    [
+     "10:25:00",
+     6.45
+    ]
+   ]
+  },
+  "counts": {
+   "observed_at_now": 301645,
+   "delivered": 301645,
+   "dropped": 0,
+   "twin_observed": 301645
+  }
+ },
+ "evaluate": {
+  "alarm_time": "07:15:30",
+  "ack_time": null,
+  "trip_time": "08:05:30",
+  "return_time": "08:06:00",
+  "now": "07:40:00",
+  "seen_in_final_run": {
+   "alarm_time": "07:15:30",
+   "ack_time": null,
+   "trip_time": null,
+   "return_time": null
+  },
+  "truth_trip_time": null,
+  "at_now": {
+   "R-1.header_pressure": 682,
+   "D-1.pressure_drop": 67,
+   "M-1.air_flow": 256,
+   "M-2.air_flow": 251,
+   "M-3.air_flow": 85,
+   "M-4.air_flow": 510,
+   "AC-1.air_flow": 696,
+   "AC-1.run_status": 1,
+   "AC-1.load_status": 1,
+   "AC-1.alarm_state": 1,
+   "AC-2.air_flow": 685,
+   "AC-2.run_status": 1,
+   "AC-2.load_status": 1,
+   "AC-2.alarm_state": 0,
+   "R-1.outlet_flow": 1129,
+   "R-1.drain_status": 0,
+   "D-1.run_status": 1,
+   "P-1.flow": 170,
+   "P-2.flow": 169,
+   "P-3.flow": 170,
+   "P-4.flow": 170,
+   "MB-AIR.current": 259,
+   "MB-COOL.current": 225,
+   "MB-PROC.current": 923,
+   "MM-1.current": 1404,
+   "WX-1.dry_bulb_temp": 27.2,
+   "WX-1.wet_bulb_temp": 22.1,
+   "AHU-1.supply_air_temp": 13.1,
+   "AC-1.discharge_temp": 104.9,
+   "AC-2.discharge_temp": 81.3,
+   "R-1.condensate_level": 0.3,
+   "D-1.dew_point": -40,
+   "CH-1.chw_supply_temp": 7,
+   "CH-1.chw_return_temp": 8.8,
+   "CH-1.cond_temp": 30.4,
+   "CT-1.basin_temp": 26.1,
+   "CAL-1.site_load": 109,
+   "M-1.power": 214,
+   "M-2.power": 213,
+   "M-3.power": 68,
+   "M-4.power": 80.2,
+   "AHU-1.cooling_load": 138,
+   "AC-1.power": 76.9,
+   "AC-2.power": 76.5,
+   "D-1.power": 7.2,
+   "CH-1.power": 64,
+   "CT-1.fan_power": 5.2,
+   "P-1.power": 18,
+   "P-2.power": 18,
+   "P-3.power": 18,
+   "P-4.power": 18,
+   "MB-AIR.power": 160,
+   "MB-AIR.demand": 143,
+   "MB-COOL.power": 142,
+   "MB-COOL.demand": 145,
+   "MB-PROC.power": 573,
+   "MB-PROC.demand": 638,
+   "MM-1.power": 880,
+   "MM-1.demand": 927,
+   "WX-1.humidity_rh": 64.5,
+   "M-1.vibration": 2.45,
+   "M-2.vibration": 2.58,
+   "M-3.vibration": 2.49,
+   "M-4.vibration": 1.86,
+   "AC-1.vibration": 2.58,
+   "AC-2.vibration": 2.52,
+   "M-1.units_made": 180955,
+   "M-2.units_made": 180955,
+   "M-3.units_made": 60478,
+   "M-4.units_made": 525670,
+   "MB-AIR.energy": 80560,
+   "MB-COOL.energy": 80767,
+   "MB-PROC.energy": 251370,
+   "MM-1.energy": 902697
+  },
+  "series": {
+   "AC-1.discharge_temp": [
+    [
+     "04:55:00",
+     55.3
+    ],
+    [
+     "05:10:00",
+     58.7
+    ],
+    [
+     "05:25:00",
+     55
+    ],
+    [
+     "05:40:00",
+     67.7
+    ],
+    [
+     "05:55:00",
+     87
+    ],
+    [
+     "06:10:00",
+     94.1
+    ],
+    [
+     "06:25:00",
+     95.8
+    ],
+    [
+     "06:40:00",
+     97.8
+    ],
+    [
+     "06:55:00",
+     99.6
+    ],
+    [
+     "07:10:00",
+     101.3
+    ],
+    [
+     "07:25:00",
+     103.1
+    ],
+    [
+     "07:40:00",
+     104.9
+    ]
+   ]
+  },
+  "counts": {
+   "observed_at_now": 221726,
+   "delivered": 221726,
+   "dropped": 0
+  },
+  "note": "alarm/trip/return times come from the longer probe run (same seed); the final run ends at now"
+ },
+ "review": {
+  "report": {
+   "schema_version": "0.1",
+   "run": {
+    "run_id": "r-2xd43slxznxqs",
+    "mode": "evaluate",
+    "complete": true,
+    "ended": true,
+    "unblinded": false,
+    "sim_version": "0.3.1",
+    "domain": {
+     "id": "factory-utilities",
+     "version": "0.1.0",
+     "digest": "sha256:72440eb8a8a5dfeb36ac38b38700b0a96701c9d66cb2c410257932dc3b48a80d"
+    },
+    "adapter": {
+     "id": "native-jsonl",
+     "version": "0.1.0",
+     "digest": "sha256:9ed74a7cf0c4599c68ad43499bc8f35f72ca32e6be342ecc339e53f35a42bde9"
+    },
+    "seed": 7,
+    "sink": "inproc",
+    "time_mode": "stepped",
+    "start_time_ns": 1767225600000000000,
+    "end_time_ns": 1767290400000000000,
+    "entity_count": 23
+   },
+   "digests": {
+    "world": "sha256:2f9e8efb3ad7dee5f5fb3fae1a6711e97f3ae134a41b1835c4389a4b977dbd46",
+    "trace": "sha256:b85ce044e4ef65bc4f87a72e3606f547a5923bbbff58ada5f7e634ec5fb3c7e1",
+    "journal": "sha256:92b4c498270e41cbaeef15bd2aadfa18f94b0be6e6bcba6fbf48a70d11f8a42f",
+    "sealed_journal": "sha256:7253523f0c6843e1f018a3348216f75d0b2de8611c3a0977d179d6cad8acb9bf",
+    "ledger": "sha256:aa3702df0b2b15c44048a1cd9a0bcf53efcb1092344c2a9a5760d383b56c038a",
+    "history": "sha256:a9dd39540bbe724bcb7cf2f4236567aae3e495ef4c0c944796f027b1fe144eb6"
+   },
+   "verification": {
+    "status": "files_match",
+    "checks": [
+     {
+      "name": "trace",
+      "status": "match",
+      "recorded": "sha256:b85ce044e4ef65bc4f87a72e3606f547a5923bbbff58ada5f7e634ec5fb3c7e1",
+      "computed": "sha256:b85ce044e4ef65bc4f87a72e3606f547a5923bbbff58ada5f7e634ec5fb3c7e1"
+     },
+     {
+      "name": "journal",
+      "status": "match",
+      "recorded": "sha256:92b4c498270e41cbaeef15bd2aadfa18f94b0be6e6bcba6fbf48a70d11f8a42f",
+      "computed": "sha256:92b4c498270e41cbaeef15bd2aadfa18f94b0be6e6bcba6fbf48a70d11f8a42f"
+     },
+     {
+      "name": "sealed_journal",
+      "status": "match",
+      "recorded": "sha256:7253523f0c6843e1f018a3348216f75d0b2de8611c3a0977d179d6cad8acb9bf",
+      "computed": "sha256:7253523f0c6843e1f018a3348216f75d0b2de8611c3a0977d179d6cad8acb9bf"
+     },
+     {
+      "name": "journal_file",
+      "status": "match",
+      "recorded": "sha256:92b4c498270e41cbaeef15bd2aadfa18f94b0be6e6bcba6fbf48a70d11f8a42f",
+      "computed": "sha256:92b4c498270e41cbaeef15bd2aadfa18f94b0be6e6bcba6fbf48a70d11f8a42f"
+     },
+     {
+      "name": "sealed_journal_file",
+      "status": "match",
+      "recorded": "sha256:7253523f0c6843e1f018a3348216f75d0b2de8611c3a0977d179d6cad8acb9bf",
+      "computed": "sha256:7253523f0c6843e1f018a3348216f75d0b2de8611c3a0977d179d6cad8acb9bf"
+     },
+     {
+      "name": "ledger",
+      "status": "match",
+      "recorded": "sha256:aa3702df0b2b15c44048a1cd9a0bcf53efcb1092344c2a9a5760d383b56c038a",
+      "computed": "sha256:aa3702df0b2b15c44048a1cd9a0bcf53efcb1092344c2a9a5760d383b56c038a"
+     }
+    ]
+   },
+   "counts": {
+    "emitted": 520498,
+    "observed": 520444,
+    "ledger_rows": 520498,
+    "delivered": 520444,
+    "dropped": 54,
+    "delivered_by_reason": {
+     "ok": 520444
+    },
+    "dropped_by_reason": {
+     "dropped_by_perturbation": 54
+    }
+   },
+   "truth": {
+    "faults": [
+     {
+      "seq": 0,
+      "at_ns": 1767225600000000000,
+      "action": "inject",
+      "entity_id": "AC-1",
+      "fault": "compressor_lead__oil_cooler_fouling",
+      "onset_ns": 1767247200000000000
+     },
+     {
+      "seq": 1,
+      "at_ns": 1767225600000000000,
+      "action": "inject",
+      "entity_id": "CT-1",
+      "fault": "cooling_tower__fan_failure",
+      "onset_ns": 1767260400000000000
+     }
+    ],
+    "perturbations": [
+     {
+      "seq": 2,
+      "at_ns": 1767225600000000000,
+      "action": "apply",
+      "perturbation": "drop",
+      "from_ns": 1767259200000000000,
+      "until_ns": 1767259800000000000
+     }
+    ],
+    "environment": [],
+    "effector_calls": [
+     {
+      "seq": 3,
+      "at_ns": 1767251880000000000,
+      "command_id": "cli-0",
+      "effector": "compressor_lead__acknowledge_reset",
+      "entity_id": "AC-1",
+      "args": {
+       "compressor_id": "AC-1"
+      },
+      "outcome": {
+       "accepted": true,
+       "mode": "ok",
+       "effect_applied": true,
+       "ack_latency_ms": 353
+      }
+     }
+    ],
+    "kpis": {
+     "from_ns": 1767225600000000000,
+     "to_ns": 1767290400000000000,
+     "entities": [
+      {
+       "entity_id": "M-1",
+       "kpis": [
+        {
+         "state": "specific_power",
+         "mean": 2.5,
+         "min": 2.5,
+         "max": 2.5,
+         "samples": 1081
+        },
+        {
+         "state": "cycle_time",
+         "mean": 7.177493212543301,
+         "min": 6,
+         "max": 8.100000000000001,
+         "samples": 1081
+        },
+        {
+         "state": "scrap_pct",
+         "mean": 2.177787867875023,
+         "min": 1.2,
+         "max": 2.95245,
+         "samples": 1081
+        }
+       ]
+      },
+      {
+       "entity_id": "M-2",
+       "kpis": [
+        {
+         "state": "specific_power",
+         "mean": 2.5,
+         "min": 2.5,
+         "max": 2.5,
+         "samples": 1081
+        },
+        {
+         "state": "cycle_time",
+         "mean": 7.177493212543301,
+         "min": 6,
+         "max": 8.100000000000001,
+         "samples": 1081
+        },
+        {
+         "state": "scrap_pct",
+         "mean": 2.177787867875023,
+         "min": 1.2,
+         "max": 2.95245,
+         "samples": 1081
+        }
+       ]
+      },
+      {
+       "entity_id": "M-3",
+       "kpis": [
+        {
+         "state": "specific_power",
+         "mean": 0.7999999999999862,
+         "min": 0.8,
+         "max": 0.8,
+         "samples": 1081
+        },
+        {
+         "state": "cycle_time",
+         "mean": 14.354986425086603,
+         "min": 12,
+         "max": 16.200000000000003,
+         "samples": 1081
+        },
+        {
+         "state": "scrap_pct",
+         "mean": 2.177787867875023,
+         "min": 1.2,
+         "max": 2.95245,
+         "samples": 1081
+        }
+       ]
+      },
+      {
+       "entity_id": "M-4",
+       "kpis": [
+        {
+         "state": "specific_power",
+         "mean": 0.8999999999999843,
+         "min": 0.9,
+         "max": 0.9,
+         "samples": 1081
+        },
+        {
+         "state": "cycle_time",
+         "mean": 1.3356932521141547,
+         "min": 1,
+         "max": 1.6,
+         "samples": 1081
+        },
+        {
+         "state": "scrap_pct",
+         "mean": 1.7965725638085548,
+         "min": 0.8,
+         "max": 2.590538,
+         "samples": 1081
+        }
+       ]
+      },
+      {
+       "entity_id": "AC-1",
+       "kpis": [
+        {
+         "state": "specific_power",
+         "mean": 0.10714300000011522,
+         "min": 0.107143,
+         "max": 0.107143,
+         "samples": 64801
+        },
+        {
+         "state": "load_frac",
+         "mean": 0.16198824092220798,
+         "min": 0,
+         "max": 1,
+         "samples": 64801
+        }
+       ],
+       "alarms": [
+        {
+         "state": "temp_alarm",
+         "priority": "high",
+         "activations": 1,
+         "chattering": false,
+         "active_s": 3027,
+         "longest_active_s": 3027,
+         "active_at_end": false
+        }
+       ]
+      },
+      {
+       "entity_id": "AC-2",
+       "kpis": [
+        {
+         "state": "specific_power",
+         "mean": 0.10714300000011522,
+         "min": 0.107143,
+         "max": 0.107143,
+         "samples": 64801
+        },
+        {
+         "state": "load_frac",
+         "mean": 0.6221663245937563,
+         "min": 0,
+         "max": 1,
+         "samples": 64801
+        }
+       ],
+       "alarms": [
+        {
+         "state": "temp_alarm",
+         "priority": "high",
+         "activations": 0,
+         "chattering": false,
+         "active_s": 0,
+         "longest_active_s": 0,
+         "active_at_end": false
+        }
+       ]
+      },
+      {
+       "entity_id": "D-1",
+       "kpis": [
+        {
+         "state": "regen_duty",
+         "mean": 0.4622344917547732,
+         "min": 0.04566413067504262,
+         "max": 0.9824033025884567,
+         "samples": 1081
+        }
+       ]
+      },
+      {
+       "entity_id": "CH-1",
+       "kpis": [
+        {
+         "state": "cop",
+         "mean": 5.947535496395273,
+         "min": 4.6468098799890765,
+         "max": 8.848399481249352,
+         "samples": 1081
+        },
+        {
+         "state": "specific_power",
+         "mean": 0.17451301842010966,
+         "min": 0.115427848947307,
+         "max": 0.21563811058594892,
+         "samples": 1081
+        }
+       ]
+      },
+      {
+       "entity_id": "CT-1",
+       "kpis": [
+        {
+         "state": "approach",
+         "mean": 10.068756309836205,
+         "min": 3.688620027855272,
+         "max": 18.675149106606508,
+         "samples": 1081
+        }
+       ]
+      },
+      {
+       "entity_id": "P-1",
+       "kpis": [
+        {
+         "state": "specific_energy",
+         "mean": 0.10151239149956658,
+         "min": 0.09543324258198398,
+         "max": 0.10637466318153556,
+         "samples": 1081
+        }
+       ]
+      },
+      {
+       "entity_id": "P-2",
+       "kpis": [
+        {
+         "state": "specific_energy",
+         "mean": 0.10151239149956658,
+         "min": 0.09543324258198398,
+         "max": 0.10637466318153556,
+         "samples": 1081
+        }
+       ]
+      },
+      {
+       "entity_id": "P-3",
+       "kpis": [
+        {
+         "state": "specific_energy",
+         "mean": 0.10151239149956658,
+         "min": 0.09543324258198398,
+         "max": 0.10637466318153556,
+         "samples": 1081
+        }
+       ]
+      },
+      {
+       "entity_id": "P-4",
+       "kpis": [
+        {
+         "state": "specific_energy",
+         "mean": 0.10151239149956658,
+         "min": 0.09543324258198398,
+         "max": 0.10637466318153556,
+         "samples": 1081
+        }
+       ]
+      },
+      {
+       "entity_id": "MB-AIR",
+       "kpis": [
+        {
+         "state": "loading",
+         "mean": 31.85649575853026,
+         "min": 18.3730866426702,
+         "max": 64.40821327373143,
+         "samples": 1081
+        }
+       ]
+      },
+      {
+       "entity_id": "MB-COOL",
+       "kpis": [
+        {
+         "state": "loading",
+         "mean": 53.25317216949458,
+         "min": 33.11255230363542,
+         "max": 67.48379689607695,
+         "samples": 1081
+        }
+       ]
+      },
+      {
+       "entity_id": "MB-PROC",
+       "kpis": [
+        {
+         "state": "loading",
+         "mean": 52.947844252800536,
+         "min": 4.5,
+         "max": 79.95874999999978,
+         "samples": 1081
+        }
+       ]
+      },
+      {
+       "entity_id": "MM-1",
+       "kpis": [
+        {
+         "state": "loading",
+         "mean": 25.45427695369867,
+         "min": 6.591090143655426,
+         "max": 37.78753685192777,
+         "samples": 1081
+        }
+       ]
+      },
+      {
+       "entity_id": "TX-1",
+       "kpis": [
+        {
+         "state": "loading",
+         "mean": 0.19874287074437844,
+         "min": 0.05149091031130615,
+         "max": 0.29523109654297336,
+         "samples": 6481
+        }
+       ],
+       "alarms": [
+        {
+         "state": "temp_alarm",
+         "priority": "high",
+         "activations": 0,
+         "chattering": false,
+         "active_s": 0,
+         "longest_active_s": 0,
+         "active_at_end": false
+        }
+       ]
+      }
+     ],
+     "alarm_system": {
+      "activations": 1,
+      "peak_per_10_min": 1,
+      "flood_intervals": 0,
+      "chattering": 0,
+      "stale": 0,
+      "standing_at_end": 0
+     }
+    }
+   }
+  },
+  "verify": {
+   "detail": "",
+   "first_divergence": null,
+   "got": "sha256:b85ce044e4ef65bc4f87a72e3606f547a5923bbbff58ada5f7e634ec5fb3c7e1",
+   "matches": true,
+   "version_match": true,
+   "want": "sha256:b85ce044e4ef65bc4f87a72e3606f547a5923bbbff58ada5f7e634ec5fb3c7e1"
+  },
+  "alarm_time": "07:15:30",
+  "ack_time": "07:18:05",
+  "trip_time": "08:05:28",
+  "return_time": "08:06:00",
+  "truth_trip_time": "08:05:28",
+  "ack_commanded_at": "07:18:00",
+  "at_0945": {
+   "R-1.header_pressure": 422,
+   "D-1.pressure_drop": 25,
+   "M-1.air_flow": 262,
+   "M-2.air_flow": 255,
+   "M-3.air_flow": 84,
+   "M-4.air_flow": 501,
+   "AC-1.air_flow": 3,
+   "AC-1.run_status": 0,
+   "AC-1.load_status": 0,
+   "AC-1.alarm_state": 0,
+   "AC-2.air_flow": 693,
+   "AC-2.run_status": 1,
+   "AC-2.load_status": 1,
+   "AC-2.alarm_state": 0,
+   "R-1.outlet_flow": 704,
+   "R-1.drain_status": 0,
+   "D-1.run_status": 1,
+   "P-1.flow": 168,
+   "P-2.flow": 168,
+   "P-3.flow": 168,
+   "P-4.flow": 168,
+   "MB-AIR.current": 129,
+   "MB-COOL.current": 230,
+   "MB-PROC.current": 932,
+   "MM-1.current": 1286,
+   "WX-1.dry_bulb_temp": 30.1,
+   "WX-1.wet_bulb_temp": 23.7,
+   "AHU-1.supply_air_temp": 13,
+   "AC-1.discharge_temp": 51.7,
+   "AC-2.discharge_temp": 96.3,
+   "R-1.condensate_level": 0.3,
+   "D-1.dew_point": -40.1,
+   "CH-1.chw_supply_temp": 7,
+   "CH-1.chw_return_temp": 8.7,
+   "CH-1.cond_temp": 32.1,
+   "CT-1.basin_temp": 27.9,
+   "CAL-1.site_load": 110,
+   "M-1.power": 216,
+   "M-2.power": 214,
+   "M-3.power": 68.9,
+   "M-4.power": 81.2,
+   "AHU-1.cooling_load": 154,
+   "AC-1.power": -0.2,
+   "AC-2.power": 77.3,
+   "D-1.power": 4.7,
+   "CH-1.power": 69.8,
+   "CT-1.fan_power": 4.5,
+   "P-1.power": 17.4,
+   "P-2.power": 17.5,
+   "P-3.power": 17.3,
+   "P-4.power": 17.5,
+   "MB-AIR.power": 82.3,
+   "MB-AIR.demand": 142,
+   "MB-COOL.power": 145,
+   "MB-COOL.demand": 149,
+   "MB-PROC.power": 581,
+   "MB-PROC.demand": 635,
+   "MM-1.power": 803,
+   "MM-1.demand": 922,
+   "WX-1.humidity_rh": 58.1,
+   "M-1.vibration": 2.53,
+   "M-2.vibration": 2.56,
+   "M-3.vibration": 2.49,
+   "M-4.vibration": 1.76,
+   "AC-1.vibration": 0.01,
+   "AC-2.vibration": 2.56,
+   "M-1.units_made": 181796,
+   "M-2.units_made": 181796,
+   "M-3.units_made": 60898,
+   "M-4.units_made": 530083,
+   "MB-AIR.energy": 80755,
+   "MB-COOL.energy": 81071,
+   "MB-PROC.energy": 252629,
+   "MM-1.energy": 904455
+  },
+  "truth_0945": {
+   "CH-1.cop": 7.52,
+   "CT-1.fan_health": 0.925,
+   "CT-1.fan_eff": 0.593,
+   "CT-1.fan_speed": 0.6,
+   "CT-1.fan_trim": 1.069,
+   "CT-1.approach": 4.51
+  },
+  "counts": {
+   "observed": 520444,
+   "delivered": 520444,
+   "dropped": 54
+  }
+ },
+ "campus": {
+  "now": "09:12:30",
+  "halls": {
+   "01": {
+    "power": 878,
+    "alarm": 0,
+    "fault": false
+   },
+   "02": {
+    "power": 888,
+    "alarm": 0,
+    "fault": false
+   },
+   "03": {
+    "power": 893,
+    "alarm": 0,
+    "fault": false
+   },
+   "04": {
+    "power": 878,
+    "alarm": 0,
+    "fault": false
+   },
+   "05": {
+    "power": 876,
+    "alarm": 0,
+    "fault": false
+   },
+   "06": {
+    "power": 884,
+    "alarm": 0,
+    "fault": false
+   },
+   "07": {
+    "power": 890,
+    "alarm": 1,
+    "fault": true
+   },
+   "08": {
+    "power": 884,
+    "alarm": 0,
+    "fault": false
+   },
+   "09": {
+    "power": 877,
+    "alarm": 0,
+    "fault": false
+   },
+   "10": {
+    "power": 872,
+    "alarm": 0,
+    "fault": false
+   },
+   "11": {
+    "power": 894,
+    "alarm": 0,
+    "fault": false
+   },
+   "12": {
+    "power": 883,
+    "alarm": 0,
+    "fault": false
+   },
+   "13": {
+    "power": 882,
+    "alarm": 0,
+    "fault": false
+   },
+   "14": {
+    "power": 883,
+    "alarm": 0,
+    "fault": false
+   },
+   "15": {
+    "power": 879,
+    "alarm": 0,
+    "fault": false
+   },
+   "16": {
+    "power": 881,
+    "alarm": 0,
+    "fault": false
+   },
+   "17": {
+    "power": 878,
+    "alarm": 0,
+    "fault": false
+   },
+   "18": {
+    "power": 876,
+    "alarm": 0,
+    "fault": false
+   },
+   "19": {
+    "power": 902,
+    "alarm": 0,
+    "fault": true
+   },
+   "20": {
+    "power": 887,
+    "alarm": 0,
+    "fault": false
+   },
+   "21": {
+    "power": 885,
+    "alarm": 0,
+    "fault": false
+   },
+   "22": {
+    "power": 886,
+    "alarm": 0,
+    "fault": false
+   },
+   "23": {
+    "power": 888,
+    "alarm": 0,
+    "fault": false
+   },
+   "24": {
+    "power": 878,
+    "alarm": 0,
+    "fault": false
+   },
+   "25": {
+    "power": 887,
+    "alarm": 0,
+    "fault": false
+   },
+   "26": {
+    "power": 887,
+    "alarm": 0,
+    "fault": false
+   }
+  },
+  "hall07": {
+   "R-1.header_pressure": 648,
+   "CH-1.chw_supply_temp": 7,
+   "MB-COOL.power": 139,
+   "MM-1.power": 890,
+   "AC-1.discharge_temp": 102.7,
+   "AC-1.alarm_state": 1,
+   "AC-1.run_status": 1,
+   "AC-1.power": 76,
+   "alarm_time": "09:06:50"
+  },
+  "hall19": {
+   "CT-1.basin_temp": 38.3,
+   "CT-1.fan_power": 0.1,
+   "CH-1.chw_supply_temp": 7,
+   "MB-COOL.power": 162,
+   "MM-1.power": 902,
+   "AC-1.alarm_state": 0,
+   "WX-1.wet_bulb_temp": 20.4
+  },
+  "counts": {
+   "observed": 3780206,
+   "per_min_last_10": 12109.5
+  },
+  "instances": 548,
+  "tags": 2032,
+  "faults": {
+   "h07/AC-1": "oil_cooler_fouling onset 07:30:00",
+   "h19/CT-1": "fan_failure onset 07:20:00"
+  },
+  "run_window": {
+   "start": "04:00:00",
+   "end": "09:12:30"
+  }
+ }
+}

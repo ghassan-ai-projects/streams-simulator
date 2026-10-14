@@ -34,7 +34,7 @@ func TestTheObserverJournalShowsTheTraceRecordForRecordIncludingTheAdapterFramin
 	if _, err := r.End(""); err != nil {
 		t.Fatal(err)
 	}
-	records, err := journal.Read(readFile(t, filepath.Join(dir, journal.ObserverFile)))
+	records, err := decodeJournalBytes(readFile(t, filepath.Join(dir, journal.ObserverFile)))
 	if err != nil {
 		t.Fatal(err)
 	}

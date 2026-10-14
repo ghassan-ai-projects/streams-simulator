@@ -13,16 +13,19 @@ func completeLines(raw []byte) [][]byte {
 	return lines[:len(lines)-1]
 }
 
-func Read(raw []byte) ([]Record, error) {
-	var records []Record
-	for index, line := range completeLines(raw) {
-		rec, err := decodeLine(line)
-		if err != nil {
-			return records, fmt.Errorf("journal: line %d: %w", index+1, err)
-		}
-		records = append(records, rec)
+func DecodeLine(line []byte, number int) (Record, error) {
+	rec, err := decodeLine(line)
+	if err != nil {
+		return Record{}, fmt.Errorf("journal: line %d: %w", number, err)
 	}
-	return records, nil
+	return rec, nil
+}
+
+func Replayable(line []byte) bool {
+	var head struct {
+		Type string `json:"type"`
+	}
+	return json.Unmarshal(line, &head) != nil || !IsSession(head.Type)
 }
 
 func decodeLine(line []byte) (Record, error) {
@@ -89,10 +92,7 @@ func takeInt(fields map[string]any, key string) (int64, error) {
 func replayableLines(raw []byte) [][]byte {
 	var kept [][]byte
 	for _, line := range completeLines(raw) {
-		var head struct {
-			Type string `json:"type"`
-		}
-		if json.Unmarshal(line, &head) != nil || !IsSession(head.Type) {
+		if Replayable(line) {
 			kept = append(kept, line)
 		}
 	}

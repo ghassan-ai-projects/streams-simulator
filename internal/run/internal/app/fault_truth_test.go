@@ -19,7 +19,7 @@ const pondFault = "aerator_failure"
 
 func faultTruthRecords(t *testing.T, dir string) [][]model.FaultInterval {
 	t.Helper()
-	director, err := journal.Read(readFile(t, filepath.Join(dir, journal.DirectorFile)))
+	director, err := decodeJournalBytes(readFile(t, filepath.Join(dir, journal.DirectorFile)))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -30,7 +30,7 @@ func ReconcileSealed(folder Folder) Folder {
 	if folder.Mismatch != "" || !folder.Director.Present {
 		return folder
 	}
-	records, _ := journal.Read(folder.Director.Raw)
+	records := folder.Director.scan(DirectorJournal).Records
 	if len(records) == 0 || records[0].Type != journal.TypeRunOpened {
 		return folder
 	}
@@ -47,7 +47,7 @@ func foreign(folder Folder, reason string) Folder {
 }
 
 func observerOpened(doc Document) (opened, bool) {
-	records, _ := journal.Read(doc.Raw)
+	records := doc.scan(ObserverJournal).Records
 	var first opened
 	if len(records) == 0 || records[0].Type != journal.TypeRunOpened {
 		return first, false

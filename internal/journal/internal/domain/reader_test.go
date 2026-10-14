@@ -90,3 +90,23 @@ func TestFirstDifferenceNamesTheFirstReplayableRecordThatDiffers(t *testing.T) {
 		}
 	}
 }
+
+func TestDecodeLineNamesItsNumberAndReplayableSkipsSessionRecords(t *testing.T) {
+	t.Parallel()
+	if _, err := DecodeLine([]byte(`nope`), 7); err == nil || !strings.HasPrefix(err.Error(), "journal: line 7: ") {
+		t.Fatalf("err = %v, want line 7 named", err)
+	}
+	if rec, err := DecodeLine([]byte(`{"stream":"observer","seq":0,"type":"run.opened","at_ns":0}`), 1); err != nil || rec.Type != TypeRunOpened {
+		t.Fatalf("record = %+v (%v), want the opening", rec, err)
+	}
+	for line, want := range map[string]bool{
+		`{"type":"observation"}`:       true,
+		`{"type":"consumer.reported"}`: false,
+		`{"type":"wire"}`:              false,
+		`not json`:                     true,
+	} {
+		if got := Replayable([]byte(line)); got != want {
+			t.Errorf("Replayable(%s) = %v, want %v", line, got, want)
+		}
+	}
+}

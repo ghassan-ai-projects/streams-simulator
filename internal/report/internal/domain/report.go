@@ -148,6 +148,7 @@ const (
 type Document struct {
 	Raw     []byte
 	Present bool
+	Scan    *Scan
 }
 
 type Folder struct {

@@ -10,7 +10,6 @@ import (
 type streams struct {
 	observer []journal.Record
 	director []journal.Record
-	ledger   []model.LedgerRecord
 }
 
 func TruthAllowed(folder Folder) bool {
@@ -20,8 +19,7 @@ func TruthAllowed(folder Folder) bool {
 	if folder.Artifact != nil {
 		return true
 	}
-	records, _ := journal.Read(folder.Observer.Raw)
-	return openRun(records).Mode == journal.ModeExplore
+	return openRun(folder.Observer.scan(ObserverJournal).Records).Mode == journal.ModeExplore
 }
 
 func Assemble(folder Folder, scoring *Scoring) (*Report, error) {
@@ -48,7 +46,7 @@ func newReport(folder Folder, in streams, scoring *Scoring) *Report {
 		Run:              run,
 		Digests:          digestsOf(folder.Artifact),
 		Verification:     verify(folder),
-		Counts:           countsOf(folder, in),
+		Counts:           countsOf(folder),
 		Consumer:         consumerOf(folder.Verdict),
 		Scoring:          scoring,
 	}
@@ -65,24 +63,18 @@ func truthUnavailable(folder Folder, run Run) string {
 }
 
 func parse(folder Folder) (streams, error) {
-	observer, err := readStream("journal.jsonl", folder.Observer)
-	if err != nil {
+	observer := folder.Observer.scan(ObserverJournal)
+	if observer.Err != nil {
+		return streams{}, fmt.Errorf("report: journal.jsonl: %w", observer.Err)
+	}
+	director := folder.Director.scan(DirectorJournal)
+	if director.Err != nil {
+		return streams{}, fmt.Errorf("report: sealed/journal.jsonl: %w", director.Err)
+	}
+	if err := folder.Ledger.scan(LedgerRows).Err; err != nil {
 		return streams{}, err
 	}
-	director, err := readStream("sealed/journal.jsonl", folder.Director)
-	if err != nil {
-		return streams{}, err
-	}
-	ledger, err := readLedger(folder.Ledger)
-	return streams{observer: observer, director: director, ledger: ledger}, err
-}
-
-func readStream(name string, doc Document) ([]journal.Record, error) {
-	records, err := journal.Read(doc.Raw)
-	if err != nil {
-		return nil, fmt.Errorf("report: %s: %w", name, err)
-	}
-	return records, nil
+	return streams{observer: observer.Records, director: director.Records}, nil
 }
 
 func withTruth(report *Report, art *model.RunArtifact, in streams) (*Report, error) {

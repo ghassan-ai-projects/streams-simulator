@@ -178,7 +178,7 @@ func checkClosedLoopJournal(t *testing.T, d *directormod.Director, artifact stri
 	if err != nil {
 		t.Fatal(err)
 	}
-	records, err := journal.Read(observer)
+	records, err := decodeJournalBytes(observer)
 	if err != nil {
 		t.Fatal(err)
 	}

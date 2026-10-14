@@ -49,7 +49,9 @@ No customer data/configuration in GitHub. Each reviewer owns and stops only its 
 
 ## Ordered next steps
 
-1. **Streaming report memory**: design only, no implementation started. Read [P9-report-memory.md](P9-report-memory.md).
+1. **Streaming report memory: DONE** (report portion of R9-14; results in [P9-report-memory.md](P9-report-memory.md)):
+   campus report 31.5 s / 8.8 GB to 20.7 s / 26 MB with byte-identical output. Verify and replay (step 3) remain.
+   Original design notes follow.
    Whole-file evidence buffers, repeated full journal decoding and retained ledger rows drive report memory/time.
    Use existing kernel/journal/report layers, incremental digests and bounded retained report records, not new packages.
    Preserve every byte digest, committed-record validation, torn-tail behavior, identity/truth gate and error precedence.

@@ -1,6 +1,6 @@
 # P9 report memory — design and verification plan
 
-R9-14, report portion. **Design only; no implementation has started.** Prepared in an isolated worktree
+R9-14, report portion. **Implemented (report portion only)**; see Results. Prepared in an isolated worktree
 and copied here for the next engineer. This is behavior-preserving for the recorded report documents: no simulation, scoring, KPI or digest
 rule changes, and no simulator-version bump. No new Go package or dependency.
 
@@ -46,3 +46,25 @@ records, torn/malformed/error cases and cancellation. Existing report package te
 tests, strict function length, architecture tests, lint and `make quick`. Compare report output bytes and peak RSS/
 wall time with the frozen 26-hall campus and factory, using `/usr/bin/time -l`. Review every facade change before
 integrating; run the full phase gate after integration. Record actual results here, not estimates.
+
+## Results (2026-10-14)
+
+Measured on the 26-hall campus run (725,253 observations; 1.02 GB of evidence: journal 260 MB, sealed journal 719 MB,
+ledger 191 MB, history 399 MB, trace 169 MB), `/usr/bin/time -l bin/streams-simulator report <run>`, same machine:
+
+| | before | after |
+|---|---|---|
+| wall time | 31.5 s | 20.7 s |
+| peak resident memory | 8.83 GB | 26 MB |
+| report JSON | reference | byte-identical (`cmp`) |
+
+As built: `kernel.OpenIfPresent` (cancellable reader, facade delegating); `journal.DecodeLine` and `journal.Replayable`
+(the existing per-line rules, exposed); `report/internal/domain.Scanner` summarizes a file one committed line at a time
+(raw digest, replay digest, delivered count, ledger tally, the first record and only the record types the report reads);
+`report/internal/files.Scan` streams the file (lines bounded to 8 MiB, context checked per line). `journal.Read` was
+production-dead after this change and is removed; tests decode through `DecodeLine`. Whole-buffer `Document.Raw` remains
+only for the small verdict file and for tests, which share the scanner so parity holds by construction.
+
+Open from this design: the `os.Root` confinement of the reader (a symlink escaping the run folder) was not added; the
+existing read path never had it, so nothing is tightened or loosened. Verify, replay, bridge file reads and playback
+queries remain tracked under R9-14, R2-01, R9-04 and R9-05.

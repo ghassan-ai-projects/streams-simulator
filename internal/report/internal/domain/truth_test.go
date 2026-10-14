@@ -39,10 +39,11 @@ func TestEffectorCallsPairWithTheirOutcomesByCommandAndKeepRefusals(t *testing.T
 		outcomeLine("c1", `"result":{"accepted":true,"mode":"silent_no_effect","ack_latency_ms":12.5}`),
 		outcomeLine("c2", `"refused":"interlock"`),
 	)
-	records, err := readStream("sealed/journal.jsonl", director)
-	if err != nil {
-		t.Fatal(err)
+	scan := director.scan(DirectorJournal)
+	if scan.Err != nil {
+		t.Fatal(scan.Err)
 	}
+	records := scan.Records
 	calls := effectorCalls([]model.Command{invoke(0, "c1", 7), invoke(1, "c2", 8), invoke(2, "c3", 9)}, records)
 	silent, refused, unrecorded := calls[0], calls[1], calls[2]
 	if silent.AtNS != 7 || silent.Outcome.Mode != "silent_no_effect" || *silent.Outcome.EffectApplied || *silent.Outcome.AckLatencyMS != 12.5 {

@@ -1,8 +1,6 @@
 package domain
 
 import (
-	"github.com/ghassan-ai-projects/streams-simulator/internal/canonical"
-	"github.com/ghassan-ai-projects/streams-simulator/internal/journal"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
@@ -35,7 +33,7 @@ func (f Folder) document(file string) Document {
 func check(entry model.EvidenceDigest, doc Document) Check {
 	result := Check{Name: entry.Name, Recorded: entry.Digest, Status: CheckMissing}
 	if doc.Present {
-		result.Computed = computeDigest(entry, doc.Raw)
+		result.Computed = computeDigest(entry, doc.scan(kindOf(entry.File)))
 		result.Status = digestStatus(result)
 	}
 	if entry.Digest == "" {
@@ -51,11 +49,23 @@ func digestStatus(result Check) string {
 	return CheckDiffers
 }
 
-func computeDigest(entry model.EvidenceDigest, raw []byte) string {
+func computeDigest(entry model.EvidenceDigest, scan *Scan) string {
 	if entry.Replayable {
-		return journal.Digest(raw)
+		return scan.ReplayDigest
 	}
-	return canonical.DigestBytes(raw)
+	return scan.RawDigest
+}
+
+func kindOf(file string) Kind {
+	switch file {
+	case model.FileObserverJournal:
+		return ObserverJournal
+	case model.FileDirectorJournal:
+		return DirectorJournal
+	case model.FileLedger:
+		return LedgerRows
+	}
+	return DigestOnly
 }
 
 func statusOf(checks []Check) string {

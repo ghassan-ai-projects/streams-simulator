@@ -5,8 +5,12 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
-func Read(raw []byte) ([]Record, error) {
-	return layer.Read(raw)
+func DecodeLine(line []byte, number int) (Record, error) {
+	return layer.DecodeLine(line, number)
+}
+
+func Replayable(line []byte) bool {
+	return layer.Replayable(line)
 }
 
 func Digest(raw []byte) string {

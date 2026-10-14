@@ -33,7 +33,7 @@ func TestARunSealsItsKPITruthIntoTheDirectorJournalOnceBeforeItCloses(t *testing
 	if _, err := r.End(""); err != nil {
 		t.Fatal(err)
 	}
-	director, err := journal.Read(readFile(t, filepath.Join(dir, journal.DirectorFile)))
+	director, err := decodeJournalBytes(readFile(t, filepath.Join(dir, journal.DirectorFile)))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -46,7 +46,7 @@ func TestARunSealsItsKPITruthIntoTheDirectorJournalOnceBeforeItCloses(t *testing
 	if len(sealed) != 1 || sealed[0] != len(director)-2 || director[len(director)-1].Type != "run.closed" {
 		t.Fatalf("kpi.truth records at %v of %d, want exactly one just before run.closed", sealed, len(director))
 	}
-	observer, err := journal.Read(readFile(t, filepath.Join(dir, journal.ObserverFile)))
+	observer, err := decodeJournalBytes(readFile(t, filepath.Join(dir, journal.ObserverFile)))
 	if err != nil {
 		t.Fatal(err)
 	}
