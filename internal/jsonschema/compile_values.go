@@ -100,6 +100,7 @@ func fillPattern(s *Schema, m map[string]any) error {
 			return fmt.Errorf("jsonschema: bad pattern %q: %w", p, err)
 		}
 		s.pattern = re
+		s.expected, _ = m["x-expected"].(string)
 	}
 	return nil
 }

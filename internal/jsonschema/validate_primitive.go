@@ -17,11 +17,15 @@ func (s *Schema) validatePrimitive(v any, fail func(string)) {
 }
 
 func (s *Schema) validatePattern(v any, fail func(string)) {
-	if s.pattern != nil {
-		if str, ok := v.(string); ok && !s.pattern.MatchString(str) {
-			fail(fmt.Sprintf("string does not match pattern %s", s.pattern))
-		}
+	str, ok := v.(string)
+	if s.pattern == nil || !ok || s.pattern.MatchString(str) {
+		return
 	}
+	if s.expected != "" {
+		fail(fmt.Sprintf("%q is not %s", str, s.expected))
+		return
+	}
+	fail(fmt.Sprintf("string does not match pattern %s", s.pattern))
 }
 
 func (s *Schema) validateStringLimits(str string, fail func(string)) {

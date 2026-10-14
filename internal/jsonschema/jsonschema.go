@@ -50,6 +50,7 @@ type Schema struct {
 	maxLen            int
 	hasMaxLen         bool
 	pattern           *regexp.Regexp
+	expected          string
 	min               float64
 	hasMin            bool
 	max               float64
