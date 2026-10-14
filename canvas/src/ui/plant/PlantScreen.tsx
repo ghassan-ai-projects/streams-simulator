@@ -1,15 +1,16 @@
 import { ReactFlowProvider } from "@xyflow/react";
-import { ChevronRight, Network, PenLine, Play } from "lucide-react";
+import { Network, PenLine, Play } from "lucide-react";
 import type { RefObject } from "react";
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { LaunchStore } from "../../app/launchStore";
 import type { NavigationStore } from "../../app/navigationStore";
 import type { PlantState, PlantStore } from "../../app/plantStore";
 import type { WorkspaceStore } from "../../app/workspaceStore";
 import { hallCount, plantView } from "../../model/plantView";
-import type { Route } from "../../model/route";
 import type { RunRow } from "../../model/workspace";
 import { runRows } from "../../model/workspace";
+import type { Crumb } from "../shell/Breadcrumb";
+import { Breadcrumb } from "../shell/Breadcrumb";
 import { useScreen } from "../useScreen";
 import { useStore } from "../useStore";
 import { Navigator, ZoomBar } from "./GraphControls";
@@ -17,7 +18,6 @@ import { LaunchPanel } from "../launch/LaunchPanel";
 import { Inspector } from "./Inspector";
 import { Outline } from "./Outline";
 import { PlantGraph } from "./PlantGraph";
-import shared from "../shared.module.css";
 import styles from "./PlantScreen.module.css";
 
 type Ready = Extract<PlantState, { phase: "ready" }>;
@@ -31,11 +31,6 @@ interface PlantScreenProps {
   readonly hall: string | null;
   readonly startLaunching?: boolean;
   readonly onShowDetails?: () => void;
-}
-
-interface Crumb {
-  readonly label: string;
-  readonly route: Route;
 }
 
 function summary(state: Ready, hall: string | null): string {
@@ -58,32 +53,23 @@ function Crumbs({
 }) {
   const title = state.plant.title || state.plant.id;
   const heading = useScreen(hall === null ? `${title} · plant` : `${hall} · ${title}`);
-  const trail: readonly Crumb[] = [
-    { label: "Workspace", route: { screen: "home" } },
-    ...(hall === null ? [] : [{ label: title, route: { screen: "plant", domain: state.path, hall: null } } as const]),
+  const trail: Crumb[] = [
+    {
+      label: "Workspace",
+      onGo: () => {
+        navigation.go({ screen: "home" });
+      },
+    },
   ];
-  return (
-    <nav className={styles.crumbs} aria-label="Breadcrumb">
-      {trail.map((crumb) => (
-        <Fragment key={crumb.label}>
-          <button
-            type="button"
-            className={shared.crumb}
-            onClick={() => {
-              navigation.go(crumb.route);
-            }}
-          >
-            {crumb.label}
-          </button>
-          <ChevronRight size={14} aria-hidden="true" />
-        </Fragment>
-      ))}
-      <h1 aria-current="location" className={styles.here} ref={heading} tabIndex={-1}>
-        {hall ?? title}
-      </h1>
-      <span className={styles.summary}>{summary(state, hall)}</span>
-    </nav>
-  );
+  if (hall !== null) {
+    trail.push({
+      label: title,
+      onGo: () => {
+        navigation.go({ screen: "plant", domain: state.path, hall: null });
+      },
+    });
+  }
+  return <Breadcrumb trail={trail} here={hall ?? title} heading={heading} />;
 }
 
 function Graph({
@@ -273,6 +259,7 @@ export function PlantScreen(props: PlantScreenProps) {
           <div className={styles.bar}>
             <Network size={14} aria-hidden="true" />
             <Crumbs state={state} hall={hall} navigation={navigation} />
+            <span className={styles.summary}>{summary(state, hall)}</span>
             <EditButton state={state} navigation={navigation} />
             <RunButton launching={run.launching} button={run.button} onToggle={run.toggle} />
             <ZoomBar />

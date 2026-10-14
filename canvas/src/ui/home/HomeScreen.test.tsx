@@ -170,7 +170,9 @@ describe("home screen", () => {
     bridge.workspaceOutcome = success({ name: "fresh", domains: [], compositions: [], scenarios: [], runs: [] });
     await show(bridge);
     expect(screen.getByRole("heading", { name: "fresh has no plants yet" })).toBeInTheDocument();
-    expect(screen.getAllByRole("listitem")).toHaveLength(3);
+    const crumbs = screen.getByRole("navigation", { name: "Breadcrumb" });
+    expect(within(crumbs).getByRole("heading", { level: 1, name: "Workspace" })).toBeInTheDocument();
+    expect(screen.getAllByRole("listitem")).toHaveLength(4);
   });
 
   it("offers the shipped examples in an empty workspace and opens a tried one ready to run", async () => {

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import type { EditorStore } from "../../app/editorStore";
 import type { PanelStore } from "../../app/panelStore";
 import type { PlantMaker } from "../../app/plantMaker";
@@ -15,6 +15,7 @@ import { HomeScreen } from "../home/HomeScreen";
 import { PairingScreen } from "../pairing/PairingScreen";
 import { PlantScreen } from "../plant/PlantScreen";
 import { RunScreen } from "../run/RunScreen";
+import { CrumbSlot } from "./Breadcrumb";
 import { KeyHelp } from "./KeyHelp";
 import { PanelToggles } from "./PanelToggles";
 import { RunIndicator } from "./RunIndicator";
@@ -104,11 +105,14 @@ export function App({ stores }: { readonly stores: Stores }) {
   const state = useSession(stores);
   const route = useStore(stores.navigation);
   const panels = useStore(stores.panels);
+  const [slot, setSlot] = useState<HTMLElement | null>(null);
   if (state.phase === "unpaired") {
     return <PairingScreen session={stores.session} />;
   }
   const topBar = (
     <TopBar
+      crumbs={setSlot}
+      help={<KeyHelp />}
       status={<RunIndicator launch={stores.launch} navigation={stores.navigation} />}
       toggles={route.screen === "home" ? null : <PanelToggles panels={stores.panels} />}
       preference={preference}
@@ -121,11 +125,12 @@ export function App({ stores }: { readonly stores: Stores }) {
     />
   );
   return (
-    <Shell topBar={topBar} left={panels.left} right={panels.right}>
-      {state.phase === "checking" && <p role="status">Connecting to the bridge…</p>}
-      {state.phase === "unreachable" && <Unreachable failure={state.failure} />}
-      {state.phase === "paired" && <Screen stores={stores} route={route} />}
-      <KeyHelp />
-    </Shell>
+    <CrumbSlot value={slot}>
+      <Shell topBar={topBar} left={panels.left} right={panels.right}>
+        {state.phase === "checking" && <p role="status">Connecting to the bridge…</p>}
+        {state.phase === "unreachable" && <Unreachable failure={state.failure} />}
+        {state.phase === "paired" && <Screen stores={stores} route={route} />}
+      </Shell>
+    </CrumbSlot>
   );
 }

@@ -1,19 +1,11 @@
-.crumbs {
-  flex: 1 1 auto;
-  overflow: hidden;
-}
-
 .status-idle,
 .status-busy,
 .status-ok,
 .status-warn {
-  flex: 0 0 auto;
-  max-width: 45%;
-  margin-left: auto;
+  flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  text-align: right;
   font-size: var(--text-sm);
 }
 

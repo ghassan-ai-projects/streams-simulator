@@ -9,6 +9,14 @@
   margin-bottom: var(--space-5);
 }
 
+.eyebrow {
+  color: var(--text-tertiary);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 .title {
   margin: 0;
   font-size: var(--text-xl);

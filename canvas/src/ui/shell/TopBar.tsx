@@ -5,18 +5,30 @@ import { preferenceLabel } from "../../model/theme";
 import styles from "./TopBar.module.css";
 
 interface TopBarProps {
+  readonly crumbs: (slot: HTMLElement | null) => void;
   readonly status?: ReactNode;
   readonly toggles?: ReactNode;
+  readonly help: ReactNode;
   readonly preference: ThemePreference;
   readonly onCycleTheme: () => void;
   readonly onHome: () => void;
 }
 
 const themeIcons = { system: Monitor, light: Sun, dark: Moon } as const;
+const themeWords = { system: "System", light: "Light", dark: "Dark" } as const;
 
-export function TopBar({ status, toggles, preference, onCycleTheme, onHome }: TopBarProps) {
+function ThemeButton({ preference, onCycle }: { readonly preference: ThemePreference; readonly onCycle: () => void }) {
   const ThemeIcon = themeIcons[preference];
   const label = preferenceLabel(preference);
+  return (
+    <button type="button" className={styles.labelled} onClick={onCycle} aria-label={label} title={label}>
+      <ThemeIcon size={16} strokeWidth={2} aria-hidden="true" />
+      {themeWords[preference]}
+    </button>
+  );
+}
+
+export function TopBar({ crumbs, status, toggles, help, preference, onCycleTheme, onHome }: TopBarProps) {
   return (
     <header className={styles.bar}>
       <button type="button" className={styles.brand} onClick={onHome} aria-label="Streams Simulator, workspace home">
@@ -25,12 +37,13 @@ export function TopBar({ status, toggles, preference, onCycleTheme, onHome }: To
         </span>
         Streams Simulator
       </button>
-      <div className={styles.spacer} />
+      <div className={styles.crumbs} ref={crumbs} />
       {status}
-      {toggles}
-      <button type="button" className={styles.iconButton} onClick={onCycleTheme} aria-label={label} title={label}>
-        <ThemeIcon size={16} strokeWidth={2} aria-hidden="true" />
-      </button>
+      <span className={styles.tools}>
+        {toggles}
+        {help}
+        <ThemeButton preference={preference} onCycle={onCycleTheme} />
+      </span>
     </header>
   );
 }

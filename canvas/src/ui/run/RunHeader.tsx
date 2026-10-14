@@ -1,9 +1,10 @@
-import { ChevronRight, RotateCcw } from "lucide-react";
+import { RotateCcw } from "lucide-react";
 import type { LaunchStore } from "../../app/launchStore";
 import type { NavigationStore } from "../../app/navigationStore";
 import type { ReviewState } from "../../app/reviewStore";
 import { planOfRun } from "../../model/reportViews";
-import shared from "../shared.module.css";
+import type { Crumb } from "../shell/Breadcrumb";
+import { Breadcrumb } from "../shell/Breadcrumb";
 import { useScreen } from "../useScreen";
 import { Status } from "./RunStatus";
 import styles from "./RunScreen.module.css";
@@ -11,17 +12,6 @@ import styles from "./RunScreen.module.css";
 export interface HallProps {
   readonly hall: string | null;
   readonly onHall: (hall: string | null) => void;
-}
-
-function Crumb({ label, onClick }: { readonly label: string; readonly onClick: () => void }) {
-  return (
-    <>
-      <button type="button" className={shared.crumb} onClick={onClick}>
-        {label}
-      </button>
-      <ChevronRight size={14} aria-hidden="true" />
-    </>
-  );
 }
 
 interface HeaderProps extends HallProps {
@@ -64,40 +54,41 @@ function RunActions({ state, navigation, launch, plant }: Omit<HeaderProps, "wor
   );
 }
 
+function trailOf({ navigation, worldId, hall, onHall, plant }: HeaderProps): Crumb[] {
+  const trail: Crumb[] = [
+    {
+      label: "Workspace",
+      onGo: () => {
+        navigation.go({ screen: "home" });
+      },
+    },
+  ];
+  const path = plant.path;
+  if (path !== null) {
+    trail.push({
+      label: plant.title,
+      onGo: () => {
+        navigation.go({ screen: "plant", domain: path, hall: null });
+      },
+    });
+  }
+  if (hall !== null)
+    trail.push({
+      label: `Run ${worldId}`,
+      onGo: () => {
+        onHall(null);
+      },
+    });
+  return trail;
+}
+
 export function Header(props: HeaderProps) {
-  const { state, navigation, worldId, hall, onHall, plant } = props;
+  const { state, worldId, hall, plant } = props;
   const run = `Run ${worldId}`;
   const heading = useScreen(hall === null ? `${run} · ${plant.title}` : `${hall} · ${run}`);
-  const path = plant.path;
   return (
     <div className={styles.bar}>
-      <nav className={styles.crumbs} aria-label="Breadcrumb">
-        <Crumb
-          label="Workspace"
-          onClick={() => {
-            navigation.go({ screen: "home" });
-          }}
-        />
-        {path !== null && (
-          <Crumb
-            label={plant.title}
-            onClick={() => {
-              navigation.go({ screen: "plant", domain: path, hall: null });
-            }}
-          />
-        )}
-        {hall !== null && (
-          <Crumb
-            label={run}
-            onClick={() => {
-              onHall(null);
-            }}
-          />
-        )}
-        <h1 aria-current="location" className={styles.here} ref={heading} tabIndex={-1}>
-          {hall ?? run}
-        </h1>
-      </nav>
+      <Breadcrumb trail={trailOf(props)} here={hall ?? run} heading={heading} />
       <Status state={state} />
       <RunActions {...props} />
     </div>

@@ -1,12 +1,11 @@
-import { ChevronRight, PenLine, Redo, RefreshCw, Save, Undo, Undo2 } from "lucide-react";
+import { PenLine, Redo, RefreshCw, Save, Undo, Undo2 } from "lucide-react";
 import { useState } from "react";
 import type { Draft, EditorStore } from "../../app/editorStore";
 import type { NavigationStore } from "../../app/navigationStore";
 import { domainOf, titleOf } from "../../model/composition";
 import { ZoomBar } from "../plant/GraphControls";
 import plantStyles from "../plant/PlantScreen.module.css";
-import { cx } from "../cx";
-import shared from "../shared.module.css";
+import { Breadcrumb } from "../shell/Breadcrumb";
 import { useScreen } from "../useScreen";
 import styles from "./Editor.module.css";
 import { useEditorKeys } from "./useEditorKeys";
@@ -42,23 +41,15 @@ function statusOf(draft: Draft): Status {
 function Title({ draft, navigation }: Omit<BarProps, "editor">) {
   const title = titleOf(draft.doc);
   const heading = useScreen(`${title} · editor`);
-  return (
-    <nav className={cx(plantStyles.crumbs, styles.crumbs)} aria-label="Breadcrumb">
-      <button
-        type="button"
-        className={shared.crumb}
-        onClick={() => {
-          navigation.go({ screen: "home" });
-        }}
-      >
-        Workspace
-      </button>
-      <ChevronRight size={14} aria-hidden="true" />
-      <h1 aria-current="location" className={plantStyles.here} ref={heading} tabIndex={-1}>
-        {title}
-      </h1>
-    </nav>
-  );
+  const trail = [
+    {
+      label: "Workspace",
+      onGo: () => {
+        navigation.go({ screen: "home" });
+      },
+    },
+  ];
+  return <Breadcrumb trail={trail} here={title} heading={heading} tag="Editing" />;
 }
 
 function OpenPlant({ draft, navigation }: Omit<BarProps, "editor">) {

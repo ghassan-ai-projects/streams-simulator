@@ -1,10 +1,11 @@
 import { Boxes, FileJson } from "lucide-react";
 import type { PlantMaker } from "../../app/plantMaker";
 import type { NavigationStore } from "../../app/navigationStore";
-import type { WorkspaceStore } from "../../app/workspaceStore";
+import type { WorkspaceState, WorkspaceStore } from "../../app/workspaceStore";
 import type { Workspace } from "../../model/bridge";
 import type { Badge } from "../../model/report";
 import { workspaceEmpty, workspaceSummary } from "../../model/workspace";
+import { Breadcrumb } from "../shell/Breadcrumb";
 import { useScreen } from "../useScreen";
 import { useStore } from "../useStore";
 import styles from "./HomeScreen.module.css";
@@ -24,14 +25,11 @@ function EmptyWorkspace({
   maker,
   navigation,
 }: { readonly name: string } & Omit<ContentsProps, "workspace" | "badgeFor">) {
-  const heading = useScreen(name);
   const examples = useExamples(maker);
   return (
     <div className={styles.empty}>
       <Boxes size={28} aria-hidden="true" />
-      <h1 className={styles.emptyTitle} ref={heading} tabIndex={-1}>
-        {`${name} has no plants yet`}
-      </h1>
+      <h2 className={styles.emptyTitle}>{`${name} has no plants yet`}</h2>
       <p className={styles.lead}>
         Build a simulated plant, generate its readings, test how a connected system responds, and review what happened.
       </p>
@@ -66,14 +64,12 @@ function Scenarios({ workspace }: { readonly workspace: Workspace }) {
 }
 
 function Contents({ workspace, navigation, maker, badgeFor }: ContentsProps) {
-  const heading = useScreen(workspace.name);
   const examples = useExamples(maker);
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <h1 className={styles.title} ref={heading} tabIndex={-1}>
-          {workspace.name}
-        </h1>
+        <span className={styles.eyebrow}>Folder</span>
+        <h2 className={styles.title}>{workspace.name}</h2>
         <span className={styles.summary}>{workspaceSummary(workspace)}</span>
       </header>
       <div className={styles.grid}>
@@ -87,18 +83,17 @@ function Contents({ workspace, navigation, maker, badgeFor }: ContentsProps) {
   );
 }
 
-export function HomeScreen({
-  workspace,
+function HomeCrumb({ name }: { readonly name: string }) {
+  const heading = useScreen(name === "" ? "Workspace" : `${name} · workspace`);
+  return <Breadcrumb trail={[]} here="Workspace" heading={heading} />;
+}
+
+function HomeBody({
+  state,
   navigation,
   maker,
-  badgeFor = () => null,
-}: {
-  readonly workspace: WorkspaceStore;
-  readonly navigation: NavigationStore;
-  readonly maker: PlantMaker;
-  readonly badgeFor?: (worldId: string) => Badge | null;
-}) {
-  const state = useStore(workspace);
+  badgeFor,
+}: { readonly state: WorkspaceState } & Omit<ContentsProps, "workspace">) {
   if (state.phase === "loading") {
     return (
       <p className={styles.loading} role="status">
@@ -117,4 +112,24 @@ export function HomeScreen({
     return <EmptyWorkspace name={state.workspace.name} maker={maker} navigation={navigation} />;
   }
   return <Contents workspace={state.workspace} navigation={navigation} maker={maker} badgeFor={badgeFor} />;
+}
+
+export function HomeScreen({
+  workspace,
+  navigation,
+  maker,
+  badgeFor = () => null,
+}: {
+  readonly workspace: WorkspaceStore;
+  readonly navigation: NavigationStore;
+  readonly maker: PlantMaker;
+  readonly badgeFor?: (worldId: string) => Badge | null;
+}) {
+  const state = useStore(workspace);
+  return (
+    <>
+      <HomeCrumb name={state.phase === "ready" ? state.workspace.name : ""} />
+      <HomeBody state={state} navigation={navigation} maker={maker} badgeFor={badgeFor} />
+    </>
+  );
 }
