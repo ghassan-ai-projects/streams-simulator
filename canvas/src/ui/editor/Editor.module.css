@@ -1,0 +1,140 @@
+.crumbs {
+  flex: 0 1 auto;
+  overflow: hidden;
+}
+
+.status-idle,
+.status-busy,
+.status-ok,
+.status-warn {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: right;
+  font-size: var(--text-sm);
+}
+
+.status-idle,
+.status-busy {
+  color: var(--text-secondary);
+}
+
+.status-ok {
+  color: var(--status-ok);
+}
+
+.status-warn {
+  color: var(--status-warn);
+  font-weight: 600;
+}
+
+.action,
+.save {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-1);
+  height: 28px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.action {
+  border: 1px solid var(--border-strong);
+  background: var(--surface-sunken);
+  color: var(--text-primary);
+}
+
+.action:hover {
+  background: var(--surface-hover);
+}
+
+.save {
+  border: 1px solid var(--accent-strong);
+  background: var(--accent-strong);
+  color: var(--text-on-accent);
+}
+
+.save:hover {
+  background: var(--accent-hover);
+}
+
+.action[aria-disabled="true"],
+.save[aria-disabled="true"] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.issues,
+.links {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.issues li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  color: var(--status-alarm);
+}
+
+.issue {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.issue:hover strong {
+  text-decoration: underline;
+}
+
+.links li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+.delete {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  gap: var(--space-1);
+  height: 30px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--status-alarm);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--status-alarm);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.delete:hover {
+  background: var(--status-alarm-bg);
+}
+
+.empty {
+  display: grid;
+  place-items: center;
+  margin: 0;
+  color: var(--text-secondary);
+}

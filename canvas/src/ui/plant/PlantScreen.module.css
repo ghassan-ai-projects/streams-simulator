@@ -188,3 +188,23 @@
   background: var(--surface-hover);
   color: var(--text-primary);
 }
+
+.edit {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-1);
+  height: 28px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  color: var(--text-primary);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.edit:hover {
+  background: var(--surface-hover);
+}

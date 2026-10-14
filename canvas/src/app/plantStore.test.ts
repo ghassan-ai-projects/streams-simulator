@@ -82,4 +82,18 @@ describe("plant store", () => {
     await store.load("domains/mini.domain.json", { ...sampleWorkspace, runs: [] });
     expect(store.snapshot()).toBe(open);
   });
+
+  it("reloads the open plant when its file changed on disk and keeps a selection that still exists", async () => {
+    const fake = bridge();
+    const store = new PlantStore(fake);
+    await store.load("domains/mini.domain.json", sampleWorkspace);
+    store.select("CT-1");
+    const grown = { ...domain, instances: [...domain.instances, { kind: "meter", names: ["MB-2"], area: "Power" }] };
+    fake.files.set("domains/mini.domain.json", success({ path: "x", content: JSON.stringify(grown), etag: "e2" }));
+    await store.load("domains/mini.domain.json", sampleWorkspace);
+    expect(store.snapshot()).toMatchObject({ phase: "ready", etag: "e2", selected: "CT-1" });
+    const state = store.snapshot();
+    if (state.phase !== "ready") throw new Error(state.phase);
+    expect(state.plant.instances.map((instance) => instance.id)).toContain("MB-2");
+  });
 });

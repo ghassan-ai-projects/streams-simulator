@@ -1,4 +1,4 @@
-import type { FileContent, Outcome, Workspace } from "../model/bridge";
+import type { FileContent, Outcome, Workspace, Written } from "../model/bridge";
 
 export interface PreferenceStore {
   read(key: string): string | null;
@@ -15,6 +15,7 @@ export interface Bridge {
   pair(code: string): Promise<Outcome<boolean>>;
   workspace(): Promise<Outcome<Workspace>>;
   readFile(path: string): Promise<Outcome<FileContent>>;
+  writeFile(path: string, content: string, etag: string): Promise<Outcome<Written>>;
   action(name: string, args: Readonly<Record<string, unknown>>): Promise<Outcome<unknown>>;
   watchWorkspace(onChange: () => void): () => void;
   followRun(worldId: string, follower: RunFollower): () => void;

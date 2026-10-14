@@ -2,6 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { hashLocation, localPreferences, mediaSystemTheme } from "./adapters/browser";
 import { bridgeClient, browserTransport } from "./adapters/bridgeClient";
+import { EditorStore } from "./app/editorStore";
 import { NavigationStore } from "./app/navigationStore";
 import { PlantStore } from "./app/plantStore";
 import { LaunchStore } from "./app/launchStore";
@@ -32,6 +33,7 @@ if (root) {
           plants: new PlantStore(bridge),
           review: new ReviewStore(bridge),
           launch: new LaunchStore(bridge),
+          editor: new EditorStore(bridge),
         }}
       />
     </StrictMode>,

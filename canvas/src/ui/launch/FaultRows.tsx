@@ -2,6 +2,7 @@ import { Plus, Trash2 } from "lucide-react";
 import type { Plant } from "../../model/plant";
 import { humanise } from "../../model/report";
 import type { Draft, DraftFault } from "./draft";
+import panel from "../panel.module.css";
 import styles from "./LaunchPanel.module.css";
 
 export type Change = (draft: Draft) => Draft;
@@ -96,7 +97,7 @@ function FaultRow({
       <MinutePick {...row} />
       <button
         type="button"
-        className={styles.icon}
+        className={panel.icon}
         aria-label={`Remove ${label.toLowerCase()}`}
         onClick={() => {
           change((draft) => ({ ...draft, faults: draft.faults.filter((f) => f.key !== fault.key) }));
@@ -125,15 +126,15 @@ export function FaultRows({
     }));
   };
   return (
-    <fieldset className={styles.group}>
+    <fieldset className={panel.group}>
       <legend>Faults to inject</legend>
-      {draft.faults.length === 0 && <p className={styles.hint}>None: the plant runs healthy.</p>}
+      {draft.faults.length === 0 && <p className={panel.hint}>None: the plant runs healthy.</p>}
       <ol className={styles.faults}>
         {draft.faults.map((fault, index) => (
           <FaultRow key={fault.key} plant={plant} fault={fault} index={index} change={change} />
         ))}
       </ol>
-      <button type="button" className={styles.secondary} onClick={add}>
+      <button type="button" className={panel.secondary} onClick={add}>
         <Plus size={14} aria-hidden="true" />
         Add fault
       </button>

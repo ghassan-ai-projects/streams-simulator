@@ -1,8 +1,8 @@
-import type { BridgeFailure, Workspace } from "../model/bridge";
+import type { BridgeFailure, FileContent, Workspace } from "../model/bridge";
 import type { Plant } from "../model/plant";
 import { parsePlant } from "../model/plant";
 import type { ComponentSpec } from "../model/ports";
-import { parseComponent } from "../model/ports";
+import { componentSpecs } from "./componentSpecs";
 import { Observable } from "./observable";
 import type { Bridge } from "./ports";
 
@@ -13,6 +13,7 @@ export type PlantState =
   | {
       readonly phase: "ready";
       readonly path: string;
+      readonly etag: string;
       readonly plant: Plant;
       readonly specs: ReadonlyMap<string, ComponentSpec>;
       readonly composition: string | null;
@@ -33,25 +34,45 @@ export class PlantStore extends Observable<PlantState> {
   }
 
   async load(path: string, workspace: Workspace): Promise<void> {
-    if (this.holds(path)) return;
-    this.set({ phase: "loading", path });
+    if (this.loading(path)) return;
+    const held = this.held(path);
+    if (held === null) this.set({ phase: "loading", path });
     const file = await this.bridge.readFile(path);
+    if (file.ok && file.value.etag === held?.etag) return;
     if (!file.ok) {
       this.set({ phase: "failed", path, failure: file.failure });
       return;
     }
-    const domain = parsed(file.value.content);
+    await this.open(path, file.value, workspace, held?.selected ?? null);
+  }
+
+  private loading(path: string): boolean {
+    const state = this.snapshot();
+    return state.phase === "loading" && state.path === path;
+  }
+
+  private held(path: string): Extract<PlantState, { phase: "ready" }> | null {
+    const state = this.snapshot();
+    return state.phase === "ready" && state.path === path ? state : null;
+  }
+
+  private async open(path: string, file: FileContent, workspace: Workspace, selected: string | null): Promise<void> {
+    const domain = parsed(file.content);
     const id = typeof domain === "object" && domain !== null && "id" in domain ? String(domain.id) : "";
     const composition = workspace.compositions.find((entry) => entry.id === id && id !== "")?.path ?? null;
     const plant = parsePlant(domain, composition === null ? null : await this.composition(composition));
-    this.set({ phase: "ready", path, plant, specs: await this.specs(plant), composition, selected: null });
+    const kept = plant.instances.some((instance) => instance.id === selected) ? selected : null;
+    const specs = await this.specs(plant);
+    this.set({ phase: "ready", path, etag: file.etag, plant, specs, composition, selected: kept });
   }
 
   async show(key: string, domain: unknown): Promise<void> {
-    if (this.holds(key)) return;
+    const state = this.snapshot();
+    if (state.phase !== "idle" && state.phase !== "failed" && state.path === key) return;
     this.set({ phase: "loading", path: key });
     const plant = parsePlant(domain);
-    this.set({ phase: "ready", path: key, plant, specs: await this.specs(plant), composition: null, selected: null });
+    const specs = await this.specs(plant);
+    this.set({ phase: "ready", path: key, etag: "", plant, specs, composition: null, selected: null });
   }
 
   select(id: string | null): void {
@@ -61,26 +82,15 @@ export class PlantStore extends Observable<PlantState> {
     }
   }
 
-  private holds(path: string): boolean {
-    const state = this.snapshot();
-    return (state.phase === "ready" || state.phase === "loading") && state.path === path;
-  }
-
   private async composition(path: string): Promise<unknown> {
     const file = await this.bridge.readFile(path);
     return file.ok ? parsed(file.value.content) : null;
   }
 
-  private async specs(plant: Plant): Promise<ReadonlyMap<string, ComponentSpec>> {
-    const components = [
-      ...new Set(plant.instances.map((instance) => instance.component).filter((ref): ref is string => ref !== null)),
-    ];
-    const entries = await Promise.all(
-      components.map(async (ref) => {
-        const shown = await this.bridge.action("component.show", { ref });
-        return [ref, parseComponent(shown.ok ? shown.value : null)] as const;
-      }),
+  private specs(plant: Plant): Promise<ReadonlyMap<string, ComponentSpec>> {
+    return componentSpecs(
+      this.bridge,
+      plant.instances.map((instance) => instance.component),
     );
-    return new Map(entries);
   }
 }

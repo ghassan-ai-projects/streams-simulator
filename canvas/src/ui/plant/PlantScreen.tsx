@@ -1,5 +1,5 @@
 import { ReactFlowProvider } from "@xyflow/react";
-import { ChevronRight, Network, Play } from "lucide-react";
+import { ChevronRight, Network, PenLine, Play } from "lucide-react";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import type { LaunchStore } from "../../app/launchStore";
 import type { NavigationStore } from "../../app/navigationStore";
@@ -177,6 +177,23 @@ function RunButton({ launching, onOpen }: { readonly launching: boolean; readonl
   );
 }
 
+function EditButton({ state, navigation }: { readonly state: Ready; readonly navigation: NavigationStore }) {
+  const composition = state.composition;
+  if (composition === null) return null;
+  return (
+    <button
+      type="button"
+      className={styles.edit}
+      onClick={() => {
+        navigation.go({ screen: "edit", composition });
+      }}
+    >
+      <PenLine size={14} aria-hidden="true" />
+      Edit plant
+    </button>
+  );
+}
+
 function NotReady({ state, domain }: { readonly state: PlantState; readonly domain: string }) {
   const failed = state.phase === "failed" && state.path === domain;
   return (
@@ -204,6 +221,7 @@ export function PlantScreen({ plants, workspace, navigation, launch, domain, hal
           <div className={styles.bar}>
             <Network size={14} aria-hidden="true" />
             <Crumbs state={state} hall={hall} navigation={navigation} />
+            <EditButton state={state} navigation={navigation} />
             <RunButton
               launching={launching}
               onOpen={() => {

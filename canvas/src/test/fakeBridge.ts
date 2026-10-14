@@ -1,5 +1,5 @@
 import type { Bridge, RunFollower } from "../app/ports";
-import type { BridgeFailure, FileContent, Outcome, Workspace } from "../model/bridge";
+import type { BridgeFailure, FileContent, Outcome, Workspace, Written } from "../model/bridge";
 import { failed, success } from "../model/bridge";
 
 export const sampleWorkspace: Workspace = {
@@ -47,6 +47,16 @@ export class FakeBridge implements Bridge {
 
   readFile(path: string): Promise<Outcome<FileContent>> {
     return Promise.resolve(this.files.get(path) ?? failed(failure("not_found", 404, `no ${path}`)));
+  }
+
+  writes: { path: string; content: string; etag: string }[] = [];
+  writeOutcomes = new Map<string, Outcome<Written>>();
+
+  writeFile(path: string, content: string, etag: string): Promise<Outcome<Written>> {
+    this.writes.push({ path, content, etag });
+    const outcome = this.writeOutcomes.get(path) ?? success({ path, etag: `e${String(this.writes.length)}` });
+    if (outcome.ok) this.files.set(path, success({ path, content, etag: outcome.value.etag }));
+    return Promise.resolve(outcome);
   }
 
   action(name: string, args: Readonly<Record<string, unknown>>): Promise<Outcome<unknown>> {

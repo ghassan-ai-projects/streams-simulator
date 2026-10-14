@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import axe from "axe-core";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { EditorStore } from "../../app/editorStore";
 import { NavigationStore } from "../../app/navigationStore";
 import { WorkspaceStore } from "../../app/workspaceStore";
 import { failed, success } from "../../model/bridge";
@@ -24,7 +25,7 @@ function navigation() {
 async function show(bridge: FakeBridge, nav = navigation()) {
   const store = new WorkspaceStore(bridge);
   await store.reload();
-  return render(<HomeScreen workspace={store} navigation={nav.store} />);
+  return render(<HomeScreen workspace={store} navigation={nav.store} editor={new EditorStore(bridge)} />);
 }
 
 describe("home screen", () => {
@@ -52,6 +53,7 @@ describe("home screen", () => {
       <HomeScreen
         workspace={store}
         navigation={navigation().store}
+        editor={new EditorStore(bridge)}
         badgeFor={(id) => (id === "w-1" ? "verified" : null)}
       />,
     );
@@ -65,6 +67,38 @@ describe("home screen", () => {
     expect(nav.location.hash).toBe("#/plant?domain=domains%2Ffactory-utilities.domain.json");
   });
 
+  it("edits a composition from its row and creates a new plant from a base", async () => {
+    const nav = navigation();
+    const bridge = new FakeBridge();
+    const base = "compositions/factory-utilities.composition.json";
+    bridge.files.set(base, success({ path: base, content: JSON.stringify({ id: "factory-utilities" }), etag: "b" }));
+    await show(bridge, nav);
+    fireEvent.click(screen.getByRole("button", { name: "Edit composition factory-utilities" }));
+    expect(nav.location.hash).toBe("#/edit?composition=compositions%2Ffactory-utilities.composition.json");
+    fireEvent.click(screen.getByRole("button", { name: "New plant" }));
+    const form = screen.getByRole("form", { name: "New plant" });
+    fireEvent.change(within(form).getByLabelText("Id"), { target: { value: "lab-two" } });
+    fireEvent.change(within(form).getByLabelText("Title"), { target: { value: "Lab two" } });
+    fireEvent.click(within(form).getByRole("button", { name: "Create and edit" }));
+    await vi.waitFor(() => {
+      expect(nav.location.hash).toBe("#/edit?composition=compositions%2Flab-two.composition.json");
+    });
+    expect(bridge.writes[0]).toMatchObject({ path: "compositions/lab-two.composition.json", etag: "" });
+  });
+
+  it("reports a plant that could not be created and cancels", async () => {
+    const bridge = new FakeBridge();
+    await show(bridge);
+    fireEvent.click(screen.getByRole("button", { name: "New plant" }));
+    const form = screen.getByRole("form", { name: "New plant" });
+    fireEvent.change(within(form).getByLabelText("Id"), { target: { value: "lab-two" } });
+    fireEvent.change(within(form).getByLabelText("Title"), { target: { value: "Lab two" } });
+    fireEvent.click(within(form).getByRole("button", { name: "Create and edit" }));
+    expect(await within(form).findByRole("alert")).toHaveTextContent("no compositions/factory-utilities");
+    fireEvent.click(within(form).getByRole("button", { name: "Cancel" }));
+    expect(screen.getByRole("button", { name: "New plant" })).toBeInTheDocument();
+  });
+
   it("says what to do in an empty workspace", async () => {
     const bridge = new FakeBridge();
     bridge.workspaceOutcome = success({ name: "fresh", domains: [], compositions: [], scenarios: [], runs: [] });
@@ -74,7 +108,13 @@ describe("home screen", () => {
 
   it("shows the loading state and the bridge's failure", async () => {
     const bridge = new FakeBridge();
-    render(<HomeScreen workspace={new WorkspaceStore(bridge)} navigation={navigation().store} />);
+    render(
+      <HomeScreen
+        workspace={new WorkspaceStore(bridge)}
+        navigation={navigation().store}
+        editor={new EditorStore(bridge)}
+      />,
+    );
     expect(screen.getByRole("status")).toHaveTextContent("Loading the workspace");
     bridge.workspaceOutcome = failed(failure("bridge_failed", 500, "disk full"));
     await show(bridge);

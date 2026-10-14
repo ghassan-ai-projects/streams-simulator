@@ -5,6 +5,8 @@ import { clockOf } from "../../model/launch";
 import type { Plant } from "../../model/plant";
 import { useStore } from "../useStore";
 import { LaunchForm } from "./LaunchForm";
+import { cx } from "../cx";
+import panel from "../panel.module.css";
 import styles from "./LaunchPanel.module.css";
 
 interface LaunchPanelProps {
@@ -18,7 +20,7 @@ type Running = Extract<LaunchState, { phase: "running" }>;
 
 function Progress({ state, launch }: { readonly state: Running; readonly launch: LaunchStore }) {
   return (
-    <div className={styles.progress}>
+    <div className={cx(panel.body, styles.progress)}>
       <p className={styles.status} role="status">
         {state.worldId === null ? "Creating the world…" : `Running ${state.worldId}`}
       </p>
@@ -26,7 +28,7 @@ function Progress({ state, launch }: { readonly state: Running; readonly launch:
       <p className={styles.clock}>{`${clockOf(state.atS)} of ${clockOf(state.durationS)} simulated`}</p>
       <button
         type="button"
-        className={styles.secondary}
+        className={panel.secondary}
         onClick={() => {
           launch.cancel();
         }}
@@ -45,11 +47,11 @@ function Failure({
   readonly launch: LaunchStore;
 }) {
   return (
-    <div className={styles.failure} role="alert">
+    <div className={cx(panel.body, styles.failure)} role="alert">
       <p>{`The run did not finish: ${state.failure.message}`}</p>
       <button
         type="button"
-        className={styles.secondary}
+        className={panel.secondary}
         onClick={() => {
           launch.reset();
         }}
@@ -90,13 +92,13 @@ export function LaunchPanel({ launch, plant, onClose, onFinished }: LaunchPanelP
     }
   }, [state, launch, onFinished]);
   return (
-    <aside className={styles.panel} aria-labelledby="launch-title">
-      <header className={styles.head}>
+    <aside className={panel.panel} aria-labelledby="launch-title">
+      <header className={panel.head}>
         <Play size={16} aria-hidden="true" />
         <h2 id="launch-title">{`Run ${plant.title || plant.id}`}</h2>
         <button
           type="button"
-          className={styles.icon}
+          className={panel.icon}
           aria-label="Close the run panel"
           disabled={state.phase === "running"}
           onClick={onClose}

@@ -1,0 +1,121 @@
+import { Plus } from "lucide-react";
+import type { SyntheticEvent } from "react";
+import { useEffect, useState } from "react";
+import type { Draft, EditorStore } from "../../app/editorStore";
+import { areasOf } from "../../model/composition";
+import type { Presets } from "../../model/library";
+import panel from "../panel.module.css";
+
+interface AddProps {
+  readonly draft: Draft;
+  readonly editor: EditorStore;
+}
+
+const noPresets: Presets = { options: [], preferred: "" };
+
+function usePresets(editor: EditorStore, use: string) {
+  const [presets, setPresets] = useState<Presets>(noPresets);
+  const [preset, setPreset] = useState("");
+  useEffect(() => {
+    let current = true;
+    if (use === "") return undefined;
+    void editor.presets(use).then((found) => {
+      if (!current) return;
+      setPresets(found);
+      setPreset(found.preferred);
+    });
+    return () => {
+      current = false;
+    };
+  }, [editor, use]);
+  return { presets: use === "" ? noPresets : presets, preset, setPreset };
+}
+
+function Choice({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  readonly label: string;
+  readonly value: string;
+  readonly options: readonly (readonly [string, string])[];
+  readonly onChange: (value: string) => void;
+}) {
+  return (
+    <label className={panel.field}>
+      <span>{label}</span>
+      <select
+        value={value}
+        onChange={(event) => {
+          onChange(event.target.value);
+        }}
+      >
+        {options.map(([key, text]) => (
+          <option key={key} value={key}>
+            {text}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+function NameField({ name, setName }: { readonly name: string; readonly setName: (name: string) => void }) {
+  return (
+    <label className={panel.field}>
+      <span>Name</span>
+      <input
+        value={name}
+        onChange={(event) => {
+          setName(event.target.value);
+        }}
+      />
+    </label>
+  );
+}
+
+function missing(use: string, name: string, area: string): string | null {
+  if (use === "") return "Choose a component.";
+  if (name.trim() === "") return "Give the instance a name.";
+  return area === "" ? "Choose an area." : null;
+}
+
+export function AddEquipment({ draft, editor }: AddProps) {
+  const [use, setUse] = useState("");
+  const [name, setName] = useState("");
+  const areas = areasOf(draft.doc);
+  const [area, setArea] = useState(areas[0] ?? "");
+  const { presets, preset, setPreset } = usePresets(editor, use);
+  const problem = missing(use, name, area);
+  const submit = (event: SyntheticEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (problem !== null) return;
+    void editor.add({ use, preset, name: name.trim(), area });
+    setName("");
+  };
+  return (
+    <form className={panel.group} onSubmit={submit} aria-labelledby="add-title" noValidate>
+      <h3 id="add-title">Add equipment</h3>
+      <Choice
+        label="Component"
+        value={use}
+        options={[["", "Choose…"], ...draft.library.map((entry) => [entry.ref, entry.title] as const)]}
+        onChange={setUse}
+      />
+      <Choice
+        label="Preset"
+        value={preset}
+        options={[["", "Default"], ...presets.options.map((option) => [option.name, option.title] as const)]}
+        onChange={setPreset}
+      />
+      <NameField name={name} setName={setName} />
+      <Choice label="Area" value={area} options={areas.map((entry) => [entry, entry] as const)} onChange={setArea} />
+      {problem !== null && <p className={panel.hint}>{problem}</p>}
+      <button type="submit" className={panel.secondary} aria-disabled={problem !== null}>
+        <Plus size={14} aria-hidden="true" />
+        Add to the plant
+      </button>
+    </form>
+  );
+}

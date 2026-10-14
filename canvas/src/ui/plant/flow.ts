@@ -9,7 +9,13 @@ export interface NodeLive {
   readonly fault: string;
 }
 
-type InstanceData = Readonly<{ view: ViewNode; live: NodeLive | null; active: boolean }>;
+type InstanceData = Readonly<{
+  view: ViewNode;
+  live: NodeLive | null;
+  active: boolean;
+  flagged: boolean;
+  editable: boolean;
+}>;
 type FrameData = Readonly<{ title: string; count: number }>;
 
 export type InstanceNodeType = Node<InstanceData, "instance">;
@@ -40,6 +46,8 @@ export function flowNodes(
   selected: string | null,
   live: ((id: string) => NodeLive) | null = null,
   active: string | null = null,
+  flagged: ReadonlySet<string> | null = null,
+  editable = false,
 ): FlowNode[] {
   const nodes = view.nodes.map((node): InstanceNodeType | HallNodeType => {
     const box = view.layout.nodes.get(node.id) ?? { x: 0, y: 0, width: 0, height: 0 };
@@ -47,7 +55,13 @@ export function flowNodes(
       id: node.id,
       type: node.instance === null ? "hall" : "instance",
       position: { x: box.x, y: box.y },
-      data: { view: node, live: live === null ? null : live(node.id), active: node.id === active },
+      data: {
+        view: node,
+        live: live === null ? null : live(node.id),
+        active: node.id === active,
+        flagged: flagged?.has(node.id) ?? false,
+        editable,
+      },
       selected: node.id === selected,
       draggable: false,
       width: box.width,

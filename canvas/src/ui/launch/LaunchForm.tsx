@@ -7,6 +7,8 @@ import type { Draft } from "./draft";
 import { firstDraft, planOf } from "./draft";
 import type { Change } from "./FaultRows";
 import { FaultRows } from "./FaultRows";
+import { cx } from "../cx";
+import panel from "../panel.module.css";
 import styles from "./LaunchPanel.module.css";
 
 interface FormProps {
@@ -21,9 +23,9 @@ interface DraftProps {
 
 function Duration({ draft, change }: DraftProps) {
   return (
-    <div className={styles.field}>
+    <div className={panel.field}>
       <label htmlFor="launch-duration">Duration</label>
-      <span className={styles.pair}>
+      <span className={cx(panel.pair, styles.pair)}>
         <input
           id="launch-duration"
           inputMode="numeric"
@@ -49,9 +51,9 @@ function Duration({ draft, change }: DraftProps) {
 
 function Settings({ draft, change }: DraftProps) {
   return (
-    <fieldset className={styles.group}>
+    <fieldset className={panel.group}>
       <legend>Run</legend>
-      <label className={styles.field}>
+      <label className={panel.field}>
         <span>Seed</span>
         <input
           inputMode="numeric"
@@ -62,7 +64,7 @@ function Settings({ draft, change }: DraftProps) {
         />
       </label>
       <Duration draft={draft} change={change} />
-      <label className={styles.check}>
+      <label className={panel.check}>
         <input
           type="checkbox"
           checked={draft.explore}
@@ -79,7 +81,7 @@ function Settings({ draft, change }: DraftProps) {
 function Problems({ problems }: { readonly problems: readonly string[] }) {
   if (problems.length === 0) return null;
   return (
-    <ul className={styles.problems} id="launch-problems">
+    <ul className={panel.problems} id="launch-problems">
       {problems.map((problem) => (
         <li key={problem}>{problem}</li>
       ))}
@@ -96,13 +98,13 @@ export function LaunchForm({ plant, onStart }: FormProps) {
     if (problems.length === 0) onStart(plan);
   };
   return (
-    <form className={styles.form} onSubmit={submit} noValidate>
+    <form className={panel.body} onSubmit={submit} noValidate>
       <Settings draft={draft} change={setDraft} />
       <FaultRows plant={plant} draft={draft} change={setDraft} />
       <Problems problems={problems} />
       <button
         type="submit"
-        className={styles.primary}
+        className={panel.primary}
         aria-disabled={problems.length > 0}
         aria-describedby={problems.length > 0 ? "launch-problems" : undefined}
       >
