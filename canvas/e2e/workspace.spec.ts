@@ -12,9 +12,7 @@ test("the workspace lists each real plant once with its actions, and its runs, i
   await expect(plants.getByRole("button", { name: "Edit Factory utilities" })).toBeVisible();
   await expect(plants.getByRole("button", { name: "Run Factory utilities" })).toBeVisible();
   await expect(plants.getByText("factory-utilities", { exact: true })).toHaveCount(1);
-  await expect(plants.getByRole("listitem").filter({ hasText: "Factory utilities" })).toContainText(
-    "20 instance definitions",
-  );
+  await expect(plants.getByRole("listitem").filter({ hasText: "Factory utilities" })).toContainText("23 instances");
   await expect(plants).not.toContainText("can expand into several instances");
   const runs = page.getByRole("region", { name: "Runs" });
   await expect(runs.getByRole("listitem").filter({ hasText: "w-explore" })).toContainText("Factory utilities");

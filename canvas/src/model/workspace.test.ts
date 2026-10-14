@@ -48,7 +48,7 @@ describe("workspace", () => {
         title: "Draft plant",
         domain: null,
         composition: "compositions/draft.composition.json",
-        instanceDefinitions: 0,
+        instances: 0,
         runs: 0,
         lastRun: "",
       },
@@ -57,7 +57,7 @@ describe("workspace", () => {
         title: "Factory",
         domain: "domains/factory.domain.json",
         composition: "compositions/factory.composition.json",
-        instanceDefinitions: 23,
+        instances: 23,
         runs: 2,
         lastRun: "2026-10-14T12:00:00Z",
       },
@@ -66,18 +66,16 @@ describe("workspace", () => {
         title: "legacy",
         domain: "domains/legacy.domain.json",
         composition: null,
-        instanceDefinitions: 0,
+        instances: 0,
         runs: 0,
         lastRun: "",
       },
     ]);
     const [draft, factory, legacy] = plantsOf(lab);
     expect(draft && plantFacts(draft)).toBe("Not runnable yet: open Edit, save, and fix any issue it lists.");
-    expect(factory && plantFacts(factory)).toMatch(/^23 instance definitions · 2 runs · last 1[45] Oct 2026/);
+    expect(factory && plantFacts(factory)).toMatch(/^23 instances · 2 runs · last 1[45] Oct 2026/);
     expect(legacy && plantFacts(legacy)).toBe("No runs yet");
-    expect(factory && plantFacts({ ...factory, instanceDefinitions: 1, runs: 0, lastRun: "" })).toBe(
-      "1 instance definition · no runs yet",
-    );
+    expect(factory && plantFacts({ ...factory, instances: 1, runs: 0, lastRun: "" })).toBe("1 instance · no runs yet");
   });
 
   it("lists runs newest first with their plant's title, and filters by plant", () => {
