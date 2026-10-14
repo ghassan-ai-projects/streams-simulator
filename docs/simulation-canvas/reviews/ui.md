@@ -142,3 +142,17 @@ open-Evaluate truth tests pass, and Chrome proves the 02:20 chip/jump, source se
 E7-3/E8-1 becomes R9-37, a precision requirement on the next bounded query contract.
 All remaining P9 functional blockers stay open. The full phase gate passed;
 [P9-alarm-evidence.md](P9-alarm-evidence.md) records the command, toolchain and exact pin differences.
+
+## Continuation handoff (2026-10-14)
+
+Owner requested a progress update and commit for Claude to continue. Main PR #33 was merged cleanly as `856bcb9`;
+its test-speed changes carry owner approval in `762c7fa`. No additional gate change. P9 stays In progress;
+round 7 scores apply only to the completed alarm batch. [P9-handoff.md](P9-handoff.md) is the current state,
+ordered work and fresh-workspace recipe; [P9-report-memory.md](P9-report-memory.md) is the next design, not an
+implementation claim. Existing untracked owner files are preserved; no push or new PR.
+
+[Latest-main integration review](P9-main-integration.md) records incoming gate changes and the independent
+engineering review, including exact clock and long-horizon coverage limits.
+
+Post-merge `make quick` and full `make phase-gate` passed (130 unit/component, 18 real-binary Chrome tests);
+behavior pin matches and Enola delta is enforced. No new architecture/script gate diff against origin/main.

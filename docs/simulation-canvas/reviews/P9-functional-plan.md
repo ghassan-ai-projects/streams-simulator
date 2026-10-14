@@ -5,10 +5,10 @@ retain Luna code and Chrome reviewers. Every finding and disposition is persiste
 
 ## Ordered batches
 
-1. R9-24: publish alarm activation instants from the existing world KPI tracker, through sealed KPI truth and
+1. **Completed in `bf7ebc5`, scoped round 7 approved.** R9-24: publish alarm activation instants from the existing world KPI tracker, through sealed KPI truth and
    the report; show alarm chips and a jump-to-alarm control in playback. Prove exact instants against the existing
    independent alarm scan, report preservation, and installed-Chrome end-to-end navigation.
-2. R9-13/R9-05/R9-14: bounded simulator-owned playback/true-state queries and streaming report/verify evidence;
+2. **Next; design only, no implementation yet.** Begin streaming report per [P9-report-memory.md](P9-report-memory.md), then R9-13/R9-05/R9-14: bounded simulator-owned playback/true-state queries and streaming report/verify evidence;
    canvas displays those results. Measure campus memory/time and browser responsiveness, not estimates.
 3. R9-22: correct measurement semantics using declared instrumentation bounds without hiding faults or
    changing the observer/oracle relationship. Specify the rule before implementation and prove RNG/replay determinism.
