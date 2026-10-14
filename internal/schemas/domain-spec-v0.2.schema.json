@@ -797,6 +797,21 @@
             "max_s": {"type": "number", "minimum": 0}
           }
         },
+        "states": {
+          "type": "array",
+          "minItems": 1,
+          "description": "The vocabulary of a coded channel: what each value the channel reports means, so a consumer of the domain decodes it without a table of its own. Values are unique; attention says how much notice a value deserves (alarm, warn, or null for none).",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["value", "name"],
+            "properties": {
+              "value": {"type": "integer"},
+              "name": {"type": "string", "minLength": 1, "maxLength": 64},
+              "attention": {"enum": ["alarm", "warn", null]}
+            }
+          }
+        },
         "attacker_controlled": {
           "type": "boolean",
           "default": false,

@@ -26,7 +26,7 @@ func (w *World) dispatchResponder(r *model.Responder, inv invocation) {
 	}
 	for _, id := range matched {
 		if r.ClearFault {
-			_ = w.ClearFault(id, arrival)
+			_ = w.clearFaultBy(id, arrival, model.ClearedByResponder)
 		}
 	}
 	w.scheduleDeltas(inv.entityID, deltas, inv.args, arrival, 1)

@@ -660,3 +660,15 @@ director journal as one `kpi.truth` record at the close; the report shows it wit
 Cross-checks: a scripted alarm's activations, active time and state at the end against an independent scan of its code on
 the alarm grid (two horizons); a KPI's mean, minimum and maximum against the same samples read from a world that does not
 track; chattering, peak rate and flood intervals on constructed activation times.
+
+## 30. Channel state vocabulary (phase P9)
+
+A channel that reports a code (an alarm state, an operating mode) may declare what each code means:
+`kinds[k].channels[c].states` is a list of `{value, name, attention}`. `value` is an integer and unique within the channel
+(`/kinds/k/channels/c/states/i/value` names a repeat); `name` is a non-empty word; `attention` is `"alarm"`, `"warn"` or
+`null` (omitted means `null`) and says how much notice a consumer should give the value. `states` is optional on any channel
+and the world ignores it: it changes no reading, only what the domain says about its readings, so a domain and the
+`domain_spec` a run records are self-describing and a consumer (the canvas) decodes a coded channel without a table of its
+own. The member is called `value` and not `code` because the schema's closed-grammar gate rejects a member whose name reads
+as an expression. An instrument declares the same list (`states`, components v0.1 section 3) and compose copies it onto the
+channel it produces; nothing in the binary keys on an instrument id.

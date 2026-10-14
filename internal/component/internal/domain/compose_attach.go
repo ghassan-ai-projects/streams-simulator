@@ -83,12 +83,19 @@ func (b *entryBuild) channel(point MeasurementPoint, instrument *Instrument, mea
 	scaleSigma(channel, instrument.Scaling, measured.scale)
 	channel["name"] = b.name + "." + point.Name
 	channel["observes"], channel["tag"] = point.State, point.Tag
+	copyStates(channel, instrument)
 	setUnit(channel, instrument.Unit)
 	channel["range"] = map[string]any{"min": measured.lo, "max": measured.hi}
 	if !measured.conv.identity() {
 		channel["observation_gain"], channel["observation_offset"] = measured.conv.gain, measured.conv.offset
 	}
 	return channel
+}
+
+func copyStates(channel map[string]any, instrument *Instrument) {
+	if states, declared := instrument.Document["states"]; declared {
+		channel["states"] = cloneValue(states)
+	}
 }
 
 func setUnit(channel map[string]any, unit string) {

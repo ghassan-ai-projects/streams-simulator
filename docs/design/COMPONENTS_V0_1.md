@@ -82,6 +82,7 @@ checked at load: compose validates the composed domain.
 | `scaling` | `absolute` (default) or `span`: with `span`, `channel.noise.sigma` and fault magnitudes are fractions of the point's span (its range converted to the instrument unit, before the intersection with `range`) |
 | `channel` | `value_type`, `resolution`, `fidelity`, `absence`, `cadence`, `noise`, `drift`, `availability`, `link_delay` (domain-spec v0.2 channel members; they may name no state) |
 | `faults[]` | `{id, form, magnitude, duration_s?, is_negative_class?}` |
+| `states[]` | `{value, name, attention}` (optional): the vocabulary of the values the instrument reports (domain-spec v0.2 section 30). `value` is an integer unique in the list, `attention` is `alarm`, `warn` or `null`. The annunciator declares the alarm codes the world emits (`0` normal, `1` unacknowledged, `2` acknowledged, `3` returned unacknowledged, `4` shelved) |
 
 An instrument's `class` in a listing is its unit family and its `tags` the one tag letter.
 
@@ -94,6 +95,7 @@ An instrument's `class` in a listing is its unit family and its `tags` the one t
 | `unit` | the instrument's unit; written for `number` and `counter` channels only (the domain contract forbids it on a boolean channel) |
 | `observation_gain`, `observation_offset` | the conversion from the state's unit to the instrument's unit, both in the point's family: with `base = s·x + o` for the state unit and `base = s'·y + o'` for the instrument unit, gain `s/s'` and offset `(o − o')/s'`; omitted when the units are equal |
 | `range` | the point's range (in the state's unit) converted to the instrument's unit, intersected with the instrument's range |
+| `states` | the instrument's `states`, copied verbatim when it declares them |
 | other members | the instrument's `channel` members; `noise.sigma` multiplied by the span of the converted point range when `scaling` is `span` |
 
 The **span** that scales noise and fault magnitudes is the point's range converted to the instrument's unit, before it is

@@ -21,6 +21,7 @@ func (r *Run) InjectFault(entityID, faultID string, onsetNS int64, params map[st
 		return "", fmt.Errorf("run: inject fault: %w", err)
 	}
 	r.recordWorldCommand(model.OpFaultInject, map[string]any{"entity_id": entityID, "fault": faultID, "onset_ns": onsetNS, "params": params})
+	r.journalFaultTruth()
 	return fid, nil
 }
 
@@ -35,6 +36,7 @@ func (r *Run) ClearFault(faultID string, atNS int64) error {
 		return fmt.Errorf("ClearFault: %w", err)
 	}
 	r.recordWorldCommand(model.OpFaultClear, map[string]any{"fault_id": faultID, "at_ns": atNS})
+	r.journalFaultTruth()
 	return nil
 }
 
@@ -87,6 +89,7 @@ func (r *Run) invokeEffector(effector, entityID, commandID string, args map[stri
 	r.journalEffectorCall(journal.Call{Effector: effector, EntityID: entityID, CommandID: commandID}, result, err)
 
 	r.recordWorldCommand(model.OpEffectorInvoke, map[string]any{"effector": effector, "entity_id": entityID, "command_id": commandID, "args": args, "at_ns": atNS})
+	r.journalFaultTruth()
 	if err != nil {
 		return nil, fmt.Errorf("InvokeEffector: %w", err)
 	}

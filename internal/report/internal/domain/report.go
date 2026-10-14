@@ -72,22 +72,11 @@ type Counts struct {
 }
 
 type Truth struct {
-	Faults        []Fault         `json:"faults"`
-	Perturbations []Perturbation  `json:"perturbations"`
-	Environment   []Environment   `json:"environment"`
-	EffectorCalls []EffectorCall  `json:"effector_calls"`
-	KPIs          *model.KPITruth `json:"kpis,omitempty"`
-}
-
-type Fault struct {
-	Seq      int64          `json:"seq"`
-	AtNS     int64          `json:"at_ns"`
-	Action   string         `json:"action"`
-	EntityID string         `json:"entity_id,omitempty"`
-	Fault    string         `json:"fault,omitempty"`
-	FaultID  string         `json:"fault_id,omitempty"`
-	OnsetNS  *int64         `json:"onset_ns,omitempty"`
-	Params   map[string]any `json:"params,omitempty"`
+	Faults        []model.FaultInterval `json:"faults"`
+	Perturbations []Perturbation        `json:"perturbations"`
+	Environment   []Environment         `json:"environment"`
+	EffectorCalls []EffectorCall        `json:"effector_calls"`
+	KPIs          *model.KPITruth       `json:"kpis,omitempty"`
 }
 
 type Perturbation struct {

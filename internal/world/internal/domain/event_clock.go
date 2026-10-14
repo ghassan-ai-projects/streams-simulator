@@ -7,7 +7,7 @@ import (
 )
 
 func (w *World) schedulePulse(active *activeFault, durationNS int64) {
-	active.clearedNS = active.onsetNS + durationNS
+	active.clearedNS, active.clearedBy = active.onsetNS+durationNS, model.ClearedByPulseEnd
 	w.checkPulseEdge(active, active.onsetNS)
 	w.checkPulseEdge(active, active.clearedNS)
 }

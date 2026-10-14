@@ -68,6 +68,10 @@ func parameterSeverity(fault *model.Fault, faultID string, params map[string]any
 }
 
 func (w *World) ClearFault(faultID string, atNS int64) error {
+	return w.clearFaultBy(faultID, atNS, model.ClearedByCommand)
+}
+
+func (w *World) clearFaultBy(faultID string, atNS int64, by string) error {
 	af, ok := w.faultsByID[faultID]
 	if !ok {
 		return fmt.Errorf("world: unknown fault id %q", faultID)
@@ -77,7 +81,7 @@ func (w *World) ClearFault(faultID string, atNS int64) error {
 		return err
 	}
 	if af.clearedNS == 0 || atNS < af.clearedNS {
-		af.clearedNS = atNS
+		af.clearedNS, af.clearedBy = atNS, by
 		w.checkPulseEdge(af, atNS)
 	}
 	return nil
@@ -98,7 +102,7 @@ func (w *World) ListFaults() []FaultInfo {
 func (w *World) ActiveFaultsCount() int { return len(w.ListFaults()) }
 
 func (w *World) registerFault(fault *model.Fault, entity string, onset int64, severity float64) string {
-	active := &activeFault{fault: fault, entity: entity, onsetNS: onset, severity: severity}
+	active := &activeFault{fault: fault, entity: entity, onsetNS: onset, injectedNS: w.clockNS, severity: severity}
 	id := "f-" + strconv.FormatInt(int64(len(w.faultsByID)), 10)
 	w.faultsByID[id] = active
 	w.faultOrder = append(w.faultOrder, id)

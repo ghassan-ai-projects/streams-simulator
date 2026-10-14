@@ -9,7 +9,7 @@ import (
 )
 
 func (checks domainChecks) checkChannel(ch *model.Channel) error {
-	for _, check := range []func(*model.Channel) error{checks.channelReferences, checks.channelDelivery, checks.channelNoise, checks.channelAvailability} {
+	for _, check := range []func(*model.Channel) error{checks.channelReferences, checks.channelDelivery, checks.channelNoise, checks.channelAvailability, checks.channelStates} {
 		if err := check(ch); err != nil {
 			return err
 		}
@@ -149,6 +149,13 @@ func (checks domainChecks) checkProfile(p *model.Profile) error {
 		if p.FaultWeights[name] < 0 {
 			return checks.bad("/fault_weights"+memberPointer(name), "profile %q has negative weight for %q", p.Name, name)
 		}
+	}
+	return nil
+}
+
+func (checks domainChecks) channelStates(ch *model.Channel) error {
+	if index, repeated := model.RepeatedStateCode(ch.States); repeated {
+		return checks.bad(fmt.Sprintf("/states/%d/value", index), "channel %q declares state value %d twice", ch.Name, ch.States[index].Value)
 	}
 	return nil
 }

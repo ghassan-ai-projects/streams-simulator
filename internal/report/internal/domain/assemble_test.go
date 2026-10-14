@@ -1,7 +1,7 @@
 package domain
 
 import (
-	"encoding/json"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -15,15 +15,6 @@ func doc(lines ...string) Document {
 func command(t *testing.T, seq int64, op string, args map[string]any) model.Command {
 	t.Helper()
 	return model.Command{Seq: seq, AtNS: 1000, Op: op, Args: args}
-}
-
-func directorCommand(t *testing.T, seq int, c model.Command) string {
-	t.Helper()
-	raw, err := json.Marshal(map[string]any{"stream": "director", "seq": seq, "type": "command", "at_ns": 1000, "command": c})
-	if err != nil {
-		t.Fatal(err)
-	}
-	return string(raw)
 }
 
 const (
@@ -47,22 +38,46 @@ func TestAssembleFromAnObserverStreamAloneIsOpenAndHasNoTruth(t *testing.T) {
 	}
 }
 
-func TestAssembleReadsAnExploreRunsCommandsFromTheDirectorStream(t *testing.T) {
+func TestAssembleReadsAnExploreRunsFaultIntervalsFromTheDirectorStream(t *testing.T) {
 	t.Parallel()
-	inject := command(t, 0, model.OpFaultInject, map[string]any{"entity_id": "a", "fault": "f", "onset_ns": json.Number("2000")})
-	report, err := Assemble(Folder{Observer: doc(openedExplore), Director: doc(directorCommand(t, 1, inject))}, nil)
+	report, err := Assemble(Folder{Observer: doc(openedExplore), Director: doc(faultTruthLine(1, `"cleared_ns":null,"cleared_by":null`))}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !report.Run.Unblinded || report.Run.Mode != "explore" || report.Truth == nil || len(report.Truth.Faults) != 1 || *report.Truth.Faults[0].OnsetNS != 2000 {
+	if !report.Run.Unblinded || report.Run.Mode != "explore" || report.Truth == nil || len(report.Truth.Faults) != 1 || report.Truth.Faults[0].OnsetNS != 2000 {
 		t.Fatalf("report = %+v truth %+v, want an unblinded explore run with its one fault", report.Run, report.Truth)
+	}
+}
+
+func faultTruthLine(seq int, end string) string {
+	return `{"stream":"director","seq":` + strconv.Itoa(seq) + `,"type":"fault.truth","at_ns":1000,"faults":[{"fault_id":"f-0","entity_id":"a","fault":"f","injected_at_ns":1000,"onset_ns":2000,` + end + `}]}`
+}
+
+func TestAssembleTakesTheLastFaultTruthRecordAsTheRunsFaultTruth(t *testing.T) {
+	t.Parallel()
+	director := doc(faultTruthLine(1, `"cleared_ns":null,"cleared_by":null`), faultTruthLine(2, `"cleared_ns":4000,"cleared_by":"pulse_end"`))
+	report, err := Assemble(Folder{Observer: doc(openedExplore), Director: director}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fault := report.Truth.Faults[0]
+	if len(report.Truth.Faults) != 1 || fault.ClearedNS == nil || *fault.ClearedNS != 4000 || *fault.ClearedBy != model.ClearedByPulseEnd {
+		t.Fatalf("faults = %+v, want the one interval of the last record, cleared at 4000 by pulse_end", report.Truth.Faults)
+	}
+}
+
+func TestAssembleNamesAFaultTruthRecordThatDoesNotDecode(t *testing.T) {
+	t.Parallel()
+	bad := `{"stream":"director","seq":1,"type":"fault.truth","at_ns":1000,"faults":{"fault_id":"f-0"}}`
+	_, err := Assemble(Folder{Observer: doc(openedExplore), Director: doc(bad)}, nil)
+	if err == nil || !strings.Contains(err.Error(), "sealed/journal.jsonl record 1") {
+		t.Fatalf("err = %v, want the record named", err)
 	}
 }
 
 func TestAssembleKeepsTruthOfAnEvaluateRunOutOfTheDirectorStreamUnlessEnded(t *testing.T) {
 	t.Parallel()
-	inject := command(t, 0, model.OpFaultInject, map[string]any{"entity_id": "a", "fault": "f"})
-	report, err := Assemble(Folder{Observer: doc(openedEvaluate), Director: doc(directorCommand(t, 1, inject))}, nil)
+	report, err := Assemble(Folder{Observer: doc(openedEvaluate), Director: doc(faultTruthLine(1, `"cleared_ns":null,"cleared_by":null`))}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

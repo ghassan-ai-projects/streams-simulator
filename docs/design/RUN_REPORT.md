@@ -71,7 +71,7 @@ Contract: [`run-report-v0.1`](../../contracts/run-report-v0.1.schema.json).
 | `digests` | `world`, `trace`, `journal`, `sealed_journal` as the run recorded them; a digest the run did not record is absent | `run.json` |
 | `verification` | `status` and one check per recorded digest | §4 |
 | `counts` | `emitted` (the run's own count), `observed` (observer observations), `ledger_rows`, `delivered`, `dropped`, `delivered_by_reason`, `dropped_by_reason` | `run.json`, observer journal, `ledger.jsonl` |
-| `truth` | `faults`, `perturbations`, `environment`, `effector_calls`, from the command log in command order | §5 |
+| `truth` | `faults` (one interval per fault, from the director stream's `fault.truth` record), `perturbations`, `environment`, `effector_calls` (from the command log in command order) | §5 |
 | `consumer` | `name`, `version`, `arm`, `config_digest` | `verdict.json` |
 | `scoring` | `status` (`scored`, `not_scored`, `failed`), `reason`, `scorecard` | §6 |
 
@@ -111,16 +111,29 @@ checks (no `run.json`, or an artifact that recorded no digests).
 
 ## 5. Faults, perturbations, environment and effector calls
 
-All four come from the command log (`run.json`; for an Explore run with no `run.json`, from the
-`command` records of the director stream), in command order, each entry carrying the command's
-`seq` and `at_ns`.
+`perturbations`, `environment` and `effector_calls` come from the command log (`run.json`; for an Explore
+run with no `run.json`, from the `command` records of the director stream), in command order, each entry
+carrying the command's `seq` and `at_ns`. `faults` is not a command list: the world owns when a fault is active,
+and a clear command alone does not say it (the clear carries no entity and an effective `at_ns` that may be
+later than its command time; a pulse fault and an effector responder end faults with no command at all).
 
 | List | Commands | Entry |
 |---|---|---|
-| `faults` | `fault.inject`, `fault.clear` | `action` (`inject`, `clear`), `entity_id`, `fault`, `fault_id`, `onset_ns`, `params` as present |
+| `faults` | the director stream's last `fault.truth` record | an interval, below |
 | `perturbations` | `perturb.apply`, `perturb.clear` | `action` (`apply`, `clear`), `perturbation`, `perturb_id`, `from_ns`, `until_ns`, `params` as present |
 | `environment` | `env.inject` | `target`, `fault`, `params` |
 | `effector_calls` | `effector.invoke` | `command_id`, `effector`, `entity_id`, `at_ns`, `args`, and `outcome` |
+
+A `faults` entry is the interval the world gave the fault, in injection order: `fault_id` (the id a clear
+command names), `entity_id`, `fault` (the kind's fault id), `injected_at_ns` (the world clock when the inject
+command ran), `onset_ns`, `cleared_ns` (the instant the world ends the fault, `null` when it is still active at
+the end of the run, including a clear scheduled after the end) and `cleared_by` (`command`: a `fault.clear` took
+effect at its `at_ns`; `pulse_end`: the pulse ran its `duration_s`; `responder`: an effector responder with
+`clear_fault` cleared it at its arrival; `null` while active). The earliest end wins: a clear command ahead of a
+pulse's end shortens the pulse, one at or after it leaves `pulse_end`. The entries exist only in the truth
+section: the director stream is sealed until the run closes in evaluate mode, so the intervals are withheld
+exactly as the rest of the truth. An open Explore run shows the schedule as of the last fault command (an end
+the world has scheduled is shown even when the clock has not reached it).
 
 `outcome` is the director stream's `effector.outcome` record for the call (matched by
 `command_id`, first unused): `accepted`, `mode` (the failure mode the world chose, for example

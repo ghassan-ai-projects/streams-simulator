@@ -28,6 +28,10 @@ func (j *Journal) KPITruth(atNS int64, truth *model.KPITruth) {
 	j.director.Append(TypeKPITruth, atNS, map[string]any{"kpis": truth})
 }
 
+func (j *Journal) FaultTruth(atNS int64, faults []model.FaultInterval) {
+	j.director.Append(TypeFaultTruth, atNS, map[string]any{"faults": faults})
+}
+
 func (j *Journal) Unblinded(atNS int64, reason string) {
 	j.director.Append(TypeRunUnblinded, atNS, map[string]any{"reason": reason})
 }

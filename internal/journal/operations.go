@@ -69,6 +69,10 @@ func (j *Journal) KPITruth(atNS int64, truth *model.KPITruth) {
 	j.impl.KPITruth(atNS, truth)
 }
 
+func (j *Journal) FaultTruth(atNS int64, faults []model.FaultInterval) {
+	j.impl.FaultTruth(atNS, faults)
+}
+
 func (j *Journal) Outcome(atNS int64, call Call, result any, refusal string) {
 	j.impl.Outcome(atNS, call, result, refusal)
 }

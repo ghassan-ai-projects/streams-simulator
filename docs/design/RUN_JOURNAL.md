@@ -71,6 +71,7 @@ mode the world chose.
 | `delivery` | `delivery`: the delivery-ledger row |
 | `state` | `state`: the world-state snapshot taken at an emission |
 | `effector.outcome` | `command_id`, `effector`, `entity_id` and either `result` (the world's `InvokeResult`: failure mode, whether the effect applied, latency) or `refused` (why the call was declined) |
+| `fault.truth` | `faults`: every fault of the run as an interval (`fault_id`, `entity_id`, `fault`, `injected_at_ns`, `onset_ns`, `cleared_ns`, `cleared_by`), the world's own record of when each fault ends (clear command, pulse end, effector responder). Written after each `fault.inject`, `fault.clear` and `effector.invoke` that changes it, and once more at the close (when it drops ends scheduled after the end of the run); the last record is the run's fault truth. A run without faults writes none |
 | `run.unblinded` | `reason`: `explore` (written right after `run.opened`, at creation) or `revealed` (truth was revealed on the open run; written at the close, before `run.closed`, so replay can reproduce it). The wall-clock moment is in the artifact (`unblinded_at`), not in the stream |
 | `kpi.truth` | `kpis`: the run's KPI truth (domain-spec v0.2 §29), written once at the close, before `run.unblinded` and `run.closed`, so replay reproduces it |
 | `run.closed` | `incomplete`, `error` (when the run failed) |

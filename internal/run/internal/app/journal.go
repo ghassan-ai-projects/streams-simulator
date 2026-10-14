@@ -64,6 +64,7 @@ func (r *Run) journalEffectorCall(call journal.Call, result *world.InvokeResult,
 }
 
 func (r *Run) closeJournal() {
+	r.journalFinalFaultTruth()
 	if truth := r.World.KPITruth(); truth != nil {
 		r.journal.KPITruth(r.journalNow(), truth)
 	}

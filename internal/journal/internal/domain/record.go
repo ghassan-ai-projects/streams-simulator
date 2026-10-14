@@ -51,6 +51,7 @@ const (
 	TypePacing           = "pacing"
 	TypeWire             = "wire"
 	TypeKPITruth         = "kpi.truth"
+	TypeFaultTruth       = "fault.truth"
 )
 
 const (

@@ -4,6 +4,21 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **Fault intervals in the run report and a state vocabulary on channels** (findings E4-2, E4-4; R9-20, R9-21). Breaking:
+  `truth.faults` in `streamsim report` is no longer the inject and clear commands; each fault is an interval the world
+  gave it: `fault_id`, `entity_id`, `fault`, `injected_at_ns`, `onset_ns`, `cleared_ns` (`null` while active at the end
+  of the run) and `cleared_by` (`command`, `pulse_end`, `responder` or `null`). A clear command ends the fault at its
+  effective `at_ns`, a pulse at onset plus its duration, an effector responder at its arrival; the earliest end wins.
+  The world records each end (`world.FaultIntervals`, `FinalFaultIntervals`), the run seals them in the director journal
+  as `fault.truth` records (after each fault inject, clear and effector call that changes them, and at the close), and
+  the report takes the last record, so evaluate-mode truth stays sealed until the run closes. Every run with a fault
+  has a new sealed journal digest; the pinned report run, its goldens and the run-report and run-journal schemas change.
+  A channel may declare `states` (`[{value, name, attention}]`, `attention` is `alarm`, `warn` or `null`, `value`
+  unique); an instrument declares the same list and `domain compose` copies it onto its channel. The annunciator
+  instrument declares the five alarm states; `examples/factory-utilities.domain.json` is recomposed. The member is
+  `value`, not `code`: the domain schema's closed-grammar gate rejects a member named like an expression. The report
+  schema now lists the `journal_file` and `sealed_journal_file` checks the report already wrote.
+
 - **Verify review fixes** (findings E3-2, E3-3, E3-6, E3-8, E3-10). `streamsim verify` and `replay` report an artifact whose own
   recorded digests do not hold (the embedded domain or adapter spec does not hash to its digest, or the recorded specs replay
   to a different world digest) as `matches: false` with a `detail`, in the `result` of `replay_mismatch`, instead of an error

@@ -3053,6 +3053,13 @@
           "observes": "temp_alarm",
           "range": {"min": 0, "max": 4},
           "resolution": 1,
+          "states": [
+            {"name": "normal", "attention": null, "value": 0},
+            {"name": "unacknowledged", "attention": "alarm", "value": 1},
+            {"name": "acknowledged", "attention": "alarm", "value": 2},
+            {"name": "returned unacknowledged", "attention": "warn", "value": 3},
+            {"name": "shelved", "attention": null, "value": 4}
+          ],
           "tag": "YA",
           "value_type": "number"
         }
@@ -3706,6 +3713,13 @@
           "observes": "temp_alarm",
           "range": {"min": 0, "max": 4},
           "resolution": 1,
+          "states": [
+            {"name": "normal", "attention": null, "value": 0},
+            {"name": "unacknowledged", "attention": "alarm", "value": 1},
+            {"name": "acknowledged", "attention": "alarm", "value": 2},
+            {"name": "returned unacknowledged", "attention": "warn", "value": 3},
+            {"name": "shelved", "attention": null, "value": 4}
+          ],
           "tag": "YA",
           "value_type": "number"
         }
@@ -9114,7 +9128,7 @@
         "digest": "sha256:e089e33b67eff854e90ee64b68c39e9fd7bf0741807b7b9f22bd6e0c902d87be",
         "instrument_digests": {
           "streamsim/accelerometer@1": "sha256:02a05a3e0037888d7f61ba9da7c4e4173f3dee74783caf5c7b53f24c19d11ff1",
-          "streamsim/annunciator@1": "sha256:a47feedfb4e993eada8567c6b627847e6fb63b7c2686600f4f2870eb34422cd4",
+          "streamsim/annunciator@1": "sha256:ef3946f693b8bede6385185ee30ba734a45d080f003de0dcf95113de64f36680",
           "streamsim/power-meter@1": "sha256:d2d2e745c5cb4e16a75a348c0ca43869c215400e56e9ef30743c9c4bdc941c81",
           "streamsim/rtd@1": "sha256:bceb694b0f3a120a3889afe298ebe5580e6e287af8e8a22e7b982b5eb41f084c",
           "streamsim/run-status@1": "sha256:f7f883909ecb976be9bc4244840ed801ad650c589cef9fe030e18c54ebbf9fe2",
@@ -9143,7 +9157,7 @@
         "digest": "sha256:e089e33b67eff854e90ee64b68c39e9fd7bf0741807b7b9f22bd6e0c902d87be",
         "instrument_digests": {
           "streamsim/accelerometer@1": "sha256:02a05a3e0037888d7f61ba9da7c4e4173f3dee74783caf5c7b53f24c19d11ff1",
-          "streamsim/annunciator@1": "sha256:a47feedfb4e993eada8567c6b627847e6fb63b7c2686600f4f2870eb34422cd4",
+          "streamsim/annunciator@1": "sha256:ef3946f693b8bede6385185ee30ba734a45d080f003de0dcf95113de64f36680",
           "streamsim/power-meter@1": "sha256:d2d2e745c5cb4e16a75a348c0ca43869c215400e56e9ef30743c9c4bdc941c81",
           "streamsim/rtd@1": "sha256:bceb694b0f3a120a3889afe298ebe5580e6e287af8e8a22e7b982b5eb41f084c",
           "streamsim/run-status@1": "sha256:f7f883909ecb976be9bc4244840ed801ad650c589cef9fe030e18c54ebbf9fe2",

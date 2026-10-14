@@ -3,6 +3,8 @@ package domain
 import (
 	"strconv"
 	"strings"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
 const withheld = "Truth withheld: the run has not ended (no run.json)."
@@ -34,13 +36,20 @@ func listOrNone(count int, lines []string) []string {
 	return lines
 }
 
-func faultLines(faults []Fault, start int64) []string {
+func faultLines(faults []model.FaultInterval, start int64) []string {
 	rows := make([][]string, len(faults))
 	for i, f := range faults {
-		rows[i] = []string{seq(f.Seq), instant(f.AtNS, start), f.Action, f.EntityID, first(f.Fault, f.FaultID),
-			optionalInstant(f.OnsetNS, start), codeJSON(f.Params)}
+		rows[i] = []string{f.FaultID, f.EntityID, f.Fault, instant(f.InjectedAtNS, start), instant(f.OnsetNS, start),
+			optionalInstant(f.ClearedNS, start), clearedBy(f.ClearedBy)}
 	}
-	return table([]string{"Seq", "At", "Action", "Entity", "Fault", "Onset", "Params"}, rows)
+	return table([]string{"Fault id", "Entity", "Fault", "Injected", "Onset", "Cleared", "Cleared by"}, rows)
+}
+
+func clearedBy(by *string) string {
+	if by == nil {
+		return ""
+	}
+	return *by
 }
 
 func perturbationLines(items []Perturbation, start int64) []string {

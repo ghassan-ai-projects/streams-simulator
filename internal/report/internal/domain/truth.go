@@ -3,6 +3,7 @@ package domain
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/journal"
@@ -54,12 +55,11 @@ func convert(from, to any) error {
 
 func truthOf(commands []model.Command, director []journal.Record) (*Truth, error) {
 	truth := &Truth{
-		Faults:        collect(commands, faultOf),
 		Perturbations: collect(commands, perturbationOf),
 		Environment:   collect(commands, environmentOf),
 		EffectorCalls: effectorCalls(commands, director),
 	}
-	return truth, truth.readKPIs(director)
+	return truth, errors.Join(truth.readFaults(director), truth.readKPIs(director))
 }
 
 func collect[T any](commands []model.Command, build func(model.Command) (T, bool)) []T {
@@ -70,19 +70,6 @@ func collect[T any](commands []model.Command, build func(model.Command) (T, bool
 		}
 	}
 	return items
-}
-
-func faultOf(c model.Command) (Fault, bool) {
-	return pick(c, model.OpFaultInject, injectedFault, model.OpFaultClear, clearedFault)
-}
-
-func injectedFault(c model.Command) Fault {
-	return Fault{Seq: c.Seq, AtNS: c.AtNS, Action: "inject", EntityID: text(c.Args, "entity_id"),
-		Fault: text(c.Args, "fault"), OnsetNS: optionalInt(c.Args, "onset_ns"), Params: object(c.Args, "params")}
-}
-
-func clearedFault(c model.Command) Fault {
-	return Fault{Seq: c.Seq, AtNS: c.AtNS, Action: "clear", FaultID: text(c.Args, "fault_id")}
 }
 
 func perturbationOf(c model.Command) (Perturbation, bool) {
