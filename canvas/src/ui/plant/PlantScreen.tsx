@@ -164,6 +164,7 @@ function PlantInspector({ state, hall, navigation, plants, runs }: RightProps) {
         navigation.go({ screen: "run", worldId });
       }}
       onSelect={(id) => {
+        if (!state.plant.instances.some((instance) => instance.id === id)) return;
         plants.select(id);
         const destination = hallOf(id);
         if (destination !== null && hallsOf(state.plant).includes(destination) && destination !== hall) {
