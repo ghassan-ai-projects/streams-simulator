@@ -30,6 +30,6 @@ Chrome tab (`http://127.0.0.1:8766`, paired). Restart the canvas server on a bin
 - Do not stage `docs/product-strategy-20261011/`, `docs/simulation-ideas/`, `docs/simulation-canvas/mockups/data.json`.
 
 ## Stop rules
-Stop and write a status note in the folder README when: ten simulations and a 10/10 director score are reached; or six rounds
+Stop and write a status note in the folder README when: ten simulations and a 10/10 director score are reached; or ten rounds
 have run without the director's score rising; or a fix needs a gate change or a design decision (record it, do not decide).
 Scores are reported as measured; never raise one to finish.
