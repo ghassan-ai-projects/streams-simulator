@@ -1,17 +1,18 @@
 import type { Connection } from "@xyflow/react";
-import { Background, ReactFlow, useReactFlow, useStore } from "@xyflow/react";
+import { Background, ReactFlow, useStore } from "@xyflow/react";
 import "@xyflow/react/dist/base.css";
 import type { CSSProperties, KeyboardEvent } from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { directionOf, firstOf, nearest } from "../../model/graphKeys";
 import type { PlantView } from "../../model/plantView";
 import { describeNode, hallCount } from "../../model/plantView";
-import { anchorsOnly, centreOf, inView, openingViewport, tierOf } from "../../model/viewport";
+import { anchorsOnly, tierOf } from "../../model/viewport";
 import type { FlowNode, NodeLive } from "./flow";
 import { flowEdges, flowNodes } from "./flow";
 import { useZoomActions } from "./GraphControls";
 import { plainKey } from "../keys";
 import { FrameNode, HallNode, InstanceNode } from "./nodes";
+import { useFitted, useFollowSelection } from "./viewportFit";
 import styles from "./PlantScreen.module.css";
 
 const nodeTypes = { instance: InstanceNode, hall: HallNode, frame: FrameNode };
@@ -25,44 +26,10 @@ export interface PlantGraphProps {
   readonly onOpenHall?: (hall: string) => void;
   readonly onEscape?: () => void;
   readonly minFitZoom?: number;
+  readonly focusZoom?: number;
   readonly flagged?: ReadonlySet<string>;
   readonly fitKey?: string;
   readonly onConnect?: (from: string, to: string) => void;
-}
-
-function useFollowSelection(selected: string | null) {
-  const flow = useReactFlow<FlowNode>();
-  const zoomTo = useZoomActions();
-  const width = useStore((state) => state.width);
-  const height = useStore((state) => state.height);
-  useEffect(() => {
-    const node = selected === null ? undefined : flow.getInternalNode(selected);
-    if (node === undefined) return;
-    const box = {
-      ...node.internals.positionAbsolute,
-      width: node.width ?? node.measured.width ?? 0,
-      height: node.height ?? node.measured.height ?? 0,
-    };
-    const viewport = flow.getViewport();
-    if (!inView(box, viewport, { width, height })) {
-      const centre = centreOf(box);
-      zoomTo.centre(centre.x, centre.y, viewport.zoom);
-    }
-  }, [flow, zoomTo, selected, width, height]);
-}
-
-function useOpening(viewKey: string, minZoom: number) {
-  const flow = useReactFlow<FlowNode>();
-  const ready = useStore((state) => state.nodes.length > 0);
-  const width = useStore((state) => state.width);
-  const height = useStore((state) => state.height);
-  const opened = useRef("");
-  useEffect(() => {
-    if (!ready || width === 0 || opened.current === viewKey) return;
-    opened.current = viewKey;
-    const bounds = flow.getNodesBounds(flow.getNodes());
-    void flow.setViewport(openingViewport(bounds, { width, height }, { pad: 16, minZoom, maxZoom: 1 }));
-  }, [flow, ready, width, height, viewKey, minZoom]);
 }
 
 interface Keys {
@@ -248,8 +215,8 @@ function Flow(props: FlowProps) {
 
 export function PlantGraph(props: PlantGraphProps) {
   const keys = useGraphKeys(props);
-  useOpening(props.fitKey ?? props.viewKey, props.minFitZoom ?? 0.05);
-  useFollowSelection(keys.active ?? props.selected);
+  useFitted(props.fitKey ?? props.viewKey, props.minFitZoom ?? 0.05);
+  useFollowSelection(keys.active ?? props.selected, props.focusZoom ?? 0);
   return (
     <div className={styles.graph}>
       <p id="graph-keys" className="sr-only">

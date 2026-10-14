@@ -1,10 +1,11 @@
-import { MiniMap, useOnViewportChange, useReactFlow, useStore } from "@xyflow/react";
+import { MiniMap, useOnViewportChange, useReactFlow, useStore, useStoreApi } from "@xyflow/react";
 import { List, Maximize, Minus, Plus } from "lucide-react";
 import type { KeyboardEvent } from "react";
 import { useMemo, useRef, useState } from "react";
 import { familyNames, shapeOf } from "../../model/ports";
 import type { Family } from "../../model/ports";
 import type { FlowNode } from "./flow";
+import { fittedViewport } from "./viewportFit";
 import { cx } from "../cx";
 import styles from "./GraphControls.module.css";
 
@@ -77,14 +78,14 @@ function motion(ms: number): number {
 
 export function useZoomActions() {
   const flow = useReactFlow<FlowNode>();
+  const store = useStoreApi<FlowNode>();
   return useMemo(
     () => ({
       in: () => void flow.zoomIn({ duration: motion(120) }),
       out: () => void flow.zoomOut({ duration: motion(120) }),
-      fit: () => void flow.fitView({ padding: 0.04, duration: motion(120) }),
-      centre: (x: number, y: number, zoom: number) => void flow.setCenter(x, y, { zoom }),
+      fit: () => void flow.setViewport(fittedViewport(flow, store.getState(), 0.05), { duration: motion(120) }),
     }),
-    [flow],
+    [flow, store],
   );
 }
 

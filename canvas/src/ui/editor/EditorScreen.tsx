@@ -70,7 +70,8 @@ function Editing({ draft, editor, navigation }: { readonly draft: Draft } & Omit
               fitKey={`${draft.path}:${String(plant.instances.length)}`}
               selected={draft.selected}
               flagged={flagged}
-              minFitZoom={1}
+              minFitZoom={0.5}
+              focusZoom={1}
               onSelect={select}
               onConnect={(from, to) => {
                 editor.edit((doc) => connect(doc, from, to));
