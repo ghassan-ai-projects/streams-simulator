@@ -47,7 +47,6 @@ describe("home screen", () => {
     ]);
     const review = screen.getByRole("button", { name: "Review w-1" });
     expect(review).toHaveAttribute("title", "Review checks recording integrity using the run files.");
-    expect(review).toHaveAttribute("aria-description", "Review checks recording integrity using the run files.");
     expect(screen.queryByRole("region", { name: "Scenarios" })).not.toBeInTheDocument();
     expect(screen.queryByText(/domains\//)).not.toBeInTheDocument();
     expect((await axe.run(view.container)).violations).toEqual([]);

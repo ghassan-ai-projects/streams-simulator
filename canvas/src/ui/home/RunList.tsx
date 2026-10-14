@@ -59,7 +59,6 @@ function Row({
           className={styles.open}
           aria-label={`Review ${row.run.worldId}`}
           title="Review checks recording integrity using the run files."
-          aria-description="Review checks recording integrity using the run files."
           onClick={() => {
             navigation.go({ screen: "run", worldId: row.run.worldId });
           }}
