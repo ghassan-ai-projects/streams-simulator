@@ -77,6 +77,12 @@
   min-height: 0;
 }
 
+.graphHost {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+}
+
 .count {
   margin-left: auto;
   font-family: var(--font-mono);

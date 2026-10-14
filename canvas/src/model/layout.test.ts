@@ -53,4 +53,20 @@ describe("layout", () => {
     expect((placed.groups.get("A")?.x ?? 0) > 0).toBe(true);
     expect((placed.groups.get("B")?.y ?? 0) > 0).toBe(true);
   });
+
+  it("packs areas into rows that suit the canvas shape", () => {
+    const nodes = ["a", "b", "c", "d", "e", "f"].map((group) => ({ id: group, group, width: 200, height: 120 }));
+    const extent = (aspect?: number) => {
+      const boxes = [...layout(nodes, [], [], undefined, aspect).groups.values()];
+      return {
+        width: Math.max(...boxes.map((box) => box.x + box.width)),
+        height: Math.max(...boxes.map((box) => box.y + box.height)),
+      };
+    };
+    const wide = extent(4);
+    const square = extent(1);
+    expect(wide.width).toBeGreaterThan(square.width);
+    expect(square.height).toBeGreaterThan(wide.height);
+    expect(extent()).toEqual(extent(10));
+  });
 });

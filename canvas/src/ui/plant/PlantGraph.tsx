@@ -178,7 +178,7 @@ function useFlowContent({ view, selected, live, flagged, onConnect, active }: Fl
     [view, selected, live, active, flagged, editable],
   );
   const zoom = useStore((state) => state.transform[2]);
-  const anchors = anchorsOnly(tierOf(zoom));
+  const anchors = live !== undefined || anchorsOnly(tierOf(zoom));
   const shown = view.nodes.some((entry) => entry.id === selected) ? selected : null;
   const edges = useMemo(() => flowEdges(view, anchors, shown), [view, anchors, shown]);
   return { nodes, edges, zoom };

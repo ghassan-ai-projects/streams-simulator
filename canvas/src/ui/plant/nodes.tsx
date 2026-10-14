@@ -81,7 +81,7 @@ function Pins({
   );
 }
 
-export const readoutHeight = 96;
+export const readoutHeight = 148;
 
 function Readout({ shown }: { readonly shown: readonly Shown[] }) {
   if (shown.length === 0) {
@@ -173,7 +173,7 @@ export function InstanceNode({ data, selected }: NodeProps<InstanceNodeType>) {
         </span>
       </div>
       {data.live !== null && <Readout shown={data.live.shown} />}
-      <Pins ins={view.pins.ins} outs={view.pins.outs} editable={data.editable} />
+      {data.live === null && <Pins ins={view.pins.ins} outs={view.pins.outs} editable={data.editable} />}
     </div>
   );
 }

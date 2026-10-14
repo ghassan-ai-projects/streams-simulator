@@ -17,6 +17,7 @@ import { LaunchPanel } from "../launch/LaunchPanel";
 import { EditButton, RunButton, useRunningHere } from "./PlantActions";
 import { Inspector } from "./Inspector";
 import { Outline } from "./Outline";
+import { useCanvasAspect } from "./canvasAspect";
 import { PlantGraph } from "./PlantGraph";
 import styles from "./PlantScreen.module.css";
 
@@ -83,22 +84,29 @@ function Graph({
   readonly plants: PlantStore;
   readonly navigation: NavigationStore;
 }) {
-  const view = useMemo(() => plantView(state.plant, state.specs, hall), [state.plant, state.specs, hall]);
+  const { ref, aspect } = useCanvasAspect<HTMLDivElement>();
+  const view = useMemo(
+    () => plantView(state.plant, state.specs, hall, 0, aspect),
+    [state.plant, state.specs, hall, aspect],
+  );
   return (
-    <PlantGraph
-      view={view}
-      viewKey={hall ?? "plant"}
-      selected={state.selected}
-      onSelect={(id) => {
-        plants.select(id);
-      }}
-      onOpenHall={(name) => {
-        navigation.go({ screen: "plant", domain: state.path, hall: name });
-      }}
-      onEscape={() => {
-        if (hall !== null) navigation.go({ screen: "plant", domain: state.path, hall: null });
-      }}
-    />
+    <div ref={ref} className={styles.graphHost}>
+      <PlantGraph
+        view={view}
+        viewKey={hall ?? "plant"}
+        fitKey={`${hall ?? "plant"}:${String(aspect)}`}
+        selected={state.selected}
+        onSelect={(id) => {
+          plants.select(id);
+        }}
+        onOpenHall={(name) => {
+          navigation.go({ screen: "plant", domain: state.path, hall: name });
+        }}
+        onEscape={() => {
+          if (hall !== null) navigation.go({ screen: "plant", domain: state.path, hall: null });
+        }}
+      />
+    </div>
   );
 }
 

@@ -5,9 +5,11 @@ import type { Draft, EditorStore } from "../../app/editorStore";
 import type { NavigationStore } from "../../app/navigationStore";
 import { compositionPlant } from "../../model/composition";
 import { connect } from "../../model/compositionEdits";
+import type { PlantView } from "../../model/plantView";
 import { plantView } from "../../model/plantView";
 import { Navigator } from "../plant/GraphControls";
 import { Outline } from "../plant/Outline";
+import { useCanvasAspect } from "../plant/canvasAspect";
 import { PlantGraph } from "../plant/PlantGraph";
 import plantStyles from "../plant/PlantScreen.module.css";
 import { useStore } from "../useStore";
@@ -22,13 +24,13 @@ interface EditorScreenProps {
   readonly composition: string;
 }
 
-function usePlant(draft: Draft) {
+function usePlant(draft: Draft, aspect: number | undefined) {
   const titles = useMemo(() => new Map(draft.library.map((entry) => [entry.component, entry.title])), [draft.library]);
   const plant = useMemo(
     () => compositionPlant(draft.doc, (component) => titles.get(component) ?? component),
     [draft.doc, titles],
   );
-  const view = useMemo(() => plantView(plant, draft.specs, null), [plant, draft.specs]);
+  const view = useMemo(() => plantView(plant, draft.specs, null, 0, aspect), [plant, draft.specs, aspect]);
   const flagged = useMemo(() => new Set(draft.issues?.instances.keys() ?? []), [draft.issues]);
   return { plant, view, flagged };
 }
@@ -59,8 +61,37 @@ function NoEquipment() {
   );
 }
 
+interface GraphProps {
+  readonly draft: Draft;
+  readonly editor: EditorStore;
+  readonly view: PlantView;
+  readonly flagged: ReadonlySet<string>;
+  readonly aspect: number | undefined;
+}
+
+function EditorGraph({ draft, editor, view, flagged, aspect }: GraphProps) {
+  return (
+    <PlantGraph
+      view={view}
+      viewKey={`edit:${draft.path}`}
+      fitKey={`${draft.path}:${String(view.nodes.length)}:${String(aspect)}`}
+      selected={draft.selected}
+      flagged={flagged}
+      minFitZoom={0.25}
+      focusZoom={1}
+      onSelect={(id) => {
+        editor.select(id);
+      }}
+      onConnect={(from, to) => {
+        editor.edit((doc) => connect(doc, from, to));
+      }}
+    />
+  );
+}
+
 function Editing({ draft, editor, navigation }: { readonly draft: Draft } & Omit<EditorScreenProps, "composition">) {
-  const { plant, view, flagged } = usePlant(draft);
+  const { ref, aspect } = useCanvasAspect<HTMLDivElement>();
+  const { plant, view, flagged } = usePlant(draft, aspect);
   const [request] = useState(() => new FocusRequest());
   useLeaveGuard(draft.doc !== draft.saved);
   const select = (id: string | null) => {
@@ -75,23 +106,13 @@ function Editing({ draft, editor, navigation }: { readonly draft: Draft } & Omit
         </div>
         <section className={plantStyles.center} aria-label={`Editing ${plant.title || plant.id}`}>
           <EditorBar draft={draft} editor={editor} navigation={navigation} />
-          {plant.instances.length === 0 ? (
-            <NoEquipment />
-          ) : (
-            <PlantGraph
-              view={view}
-              viewKey={`edit:${draft.path}`}
-              fitKey={`${draft.path}:${String(plant.instances.length)}`}
-              selected={draft.selected}
-              flagged={flagged}
-              minFitZoom={0.25}
-              focusZoom={1}
-              onSelect={select}
-              onConnect={(from, to) => {
-                editor.edit((doc) => connect(doc, from, to));
-              }}
-            />
-          )}
+          <div ref={ref} className={plantStyles.graphHost}>
+            {plant.instances.length === 0 ? (
+              <NoEquipment />
+            ) : (
+              <EditorGraph draft={draft} editor={editor} view={view} flagged={flagged} aspect={aspect} />
+            )}
+          </div>
         </section>
         <EditorPanel draft={draft} plant={plant} editor={editor} request={request} />
       </div>

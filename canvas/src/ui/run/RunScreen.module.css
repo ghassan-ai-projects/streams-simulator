@@ -363,6 +363,14 @@
   padding: 0;
 }
 
+.barWords {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .details summary {
   cursor: pointer;
   color: var(--text-secondary);

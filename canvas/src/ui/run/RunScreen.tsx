@@ -13,7 +13,9 @@ import { grouped } from "../../model/units";
 import { Navigator, ZoomBar } from "../plant/GraphControls";
 import { Outline } from "../plant/Outline";
 import { readoutHeight } from "../plant/nodes";
+import { useCanvasAspect } from "../plant/canvasAspect";
 import { PlantGraph } from "../plant/PlantGraph";
+import plantStyles from "../plant/PlantScreen.module.css";
 import { useStore } from "../useStore";
 import { Banners } from "./RunStatus";
 import type { HallProps } from "./RunHeader";
@@ -61,54 +63,55 @@ function OpeningPlant() {
 
 function graphWords(state: ReviewState, settled: number | null): string {
   const loading = state.playback.phase === "loading" ? " · loading" : "";
-  const opening =
-    settled !== null && state.positionNs === settled ? " · opens where every instrument has reported" : "";
-  return `Plant at the playback time · ${grouped(state.playback.records)} observations${loading}${opening}`;
+  const opening = settled !== null && state.positionNs === settled ? " · opened once every instrument reported" : "";
+  return `${grouped(state.playback.records)} observations${loading}${opening}`;
 }
 
 function GraphBar({ state, settled }: { readonly state: ReviewState; readonly settled: number | null }) {
   return (
     <div className={styles.graphBar}>
-      <span className={styles.muted}>{graphWords(state, settled)}</span>
+      <span className={styles.barWords} title={graphWords(state, settled)}>
+        {graphWords(state, settled)}
+      </span>
       <ZoomBar />
     </div>
   );
 }
 
-function Graph({
-  review,
-  state,
-  plant,
-  hall,
-  onHall,
-}: {
+interface GraphProps extends HallProps {
   readonly review: ReviewStore;
   readonly state: ReviewState;
   readonly plant: ReadyPlant | null;
-} & HallProps) {
+}
+
+function Graph({ review, state, plant, hall, onHall }: GraphProps) {
+  const { ref, aspect } = useCanvasAspect<HTMLDivElement>();
   const view = useMemo(
-    () => (plant === null ? null : plantView(plant.plant, plant.specs, hall, readoutHeight)),
-    [plant, hall],
+    () => (plant === null ? null : plantView(plant.plant, plant.specs, hall, readoutHeight, aspect)),
+    [plant, hall, aspect],
   );
   const live = useLive(review, state, plant);
   if (view === null) return <OpeningPlant />;
   return (
     <div className={styles.graphArea}>
       <GraphBar state={state} settled={review.index.settled()} />
-      <PlantGraph
-        minFitZoom={0.5}
-        view={view}
-        viewKey={hall ?? "review"}
-        selected={state.selected}
-        live={live}
-        onSelect={(id) => {
-          review.select(id);
-        }}
-        onOpenHall={onHall}
-        onEscape={() => {
-          onHall(null);
-        }}
-      />
+      <div ref={ref} className={plantStyles.graphHost}>
+        <PlantGraph
+          minFitZoom={0.5}
+          view={view}
+          viewKey={hall ?? "review"}
+          fitKey={`${hall ?? "review"}:${String(aspect)}`}
+          selected={state.selected}
+          live={live}
+          onSelect={(id) => {
+            review.select(id);
+          }}
+          onOpenHall={onHall}
+          onEscape={() => {
+            onHall(null);
+          }}
+        />
+      </div>
     </div>
   );
 }
