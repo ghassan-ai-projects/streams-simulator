@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Workspace } from "./bridge";
 import { sampleWorkspace } from "../test/fakeBridge";
-import { durationOf, plantsOf, runRows, whenOf, workspaceEmpty, workspaceSummary } from "./workspace";
+import { durationOf, plantsOf, runRows, suggestedId, whenOf, workspaceEmpty, workspaceSummary } from "./workspace";
 
 const run = (worldId: string, plant: string, recordedAt: string) => ({
   worldId,
@@ -79,5 +79,12 @@ describe("workspace", () => {
       "1 h 30 min",
       "24 h",
     ]);
+  });
+
+  it("suggests a free id from a plant's name", () => {
+    expect(suggestedId("Cooling Hall 2!", [])).toBe("cooling-hall-2");
+    expect(suggestedId("Cooling hall", ["cooling-hall", "cooling-hall-2"])).toBe("cooling-hall-3");
+    expect(suggestedId("42 AB", [])).toBe("plant-ab");
+    expect(suggestedId("Kühlhalle", [])).toBe("kuhlhalle");
   });
 });

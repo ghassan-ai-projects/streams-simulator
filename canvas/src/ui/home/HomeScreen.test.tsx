@@ -103,19 +103,50 @@ describe("home screen", () => {
     const nav = navigation();
     const bridge = new FakeBridge();
     const base = "compositions/factory-utilities.composition.json";
-    bridge.files.set(base, success({ path: base, content: JSON.stringify({ id: "factory-utilities" }), etag: "b" }));
+    const factory = {
+      id: "factory-utilities",
+      equipment: [{ use: "lib/chiller@1", names: ["CH-1"] }],
+      connections: [],
+    };
+    bridge.files.set(base, success({ path: base, content: JSON.stringify(factory), etag: "b" }));
     await show(bridge, nav);
     fireEvent.click(screen.getByRole("button", { name: "Edit Factory utilities" }));
     expect(nav.location.hash).toBe("#/edit?composition=compositions%2Ffactory-utilities.composition.json");
     fireEvent.click(screen.getByRole("button", { name: "New plant" }));
     const form = screen.getByRole("form", { name: "New plant" });
-    fireEvent.change(within(form).getByLabelText("Id"), { target: { value: "lab-two" } });
-    fireEvent.change(within(form).getByLabelText("Title"), { target: { value: "Lab two" } });
-    fireEvent.click(within(form).getByRole("button", { name: "Create and edit" }));
+    fireEvent.change(within(form).getByLabelText("Name"), { target: { value: "Factory utilities!" } });
+    expect(within(form).getByLabelText("Id")).toHaveValue("factory-utilities-2");
+    fireEvent.change(within(form).getByLabelText("Name"), { target: { value: "Lab two" } });
+    expect(within(form).getByLabelText("Id")).toHaveValue("lab-two");
+    fireEvent.click(within(form).getByRole("button", { name: "Create and open the editor" }));
     await vi.waitFor(() => {
       expect(nav.location.hash).toBe("#/edit?composition=compositions%2Flab-two.composition.json");
     });
     expect(bridge.writes[0]).toMatchObject({ path: "compositions/lab-two.composition.json", etag: "" });
+    expect(JSON.parse(bridge.writes[0]?.content ?? "")).toMatchObject({
+      title: "Lab two",
+      equipment: factory.equipment,
+    });
+  });
+
+  it("creates an empty plant from a base and keeps an id typed by hand", async () => {
+    const nav = navigation();
+    const bridge = new FakeBridge();
+    const base = "compositions/factory-utilities.composition.json";
+    const factory = { id: "factory-utilities", equipment: [{ use: "lib/chiller@1", names: ["CH-1"] }] };
+    bridge.files.set(base, success({ path: base, content: JSON.stringify(factory), etag: "b" }));
+    await show(bridge, nav);
+    fireEvent.click(screen.getByRole("button", { name: "New plant" }));
+    const form = screen.getByRole("form", { name: "New plant" });
+    fireEvent.change(within(form).getByLabelText("Name"), { target: { value: "Bare" } });
+    fireEvent.change(within(form).getByLabelText("Id"), { target: { value: "bare-hall" } });
+    fireEvent.change(within(form).getByLabelText("Name"), { target: { value: "Bare hall" } });
+    fireEvent.click(within(form).getByRole("radio", { name: /^An empty plant/ }));
+    fireEvent.click(within(form).getByRole("button", { name: "Create and open the editor" }));
+    await vi.waitFor(() => {
+      expect(bridge.writes[0]?.path).toBe("compositions/bare-hall.composition.json");
+    });
+    expect(JSON.parse(bridge.writes[0]?.content ?? "")).toMatchObject({ title: "Bare hall", equipment: [] });
   });
 
   it("reports a plant that could not be created and cancels", async () => {
@@ -123,14 +154,13 @@ describe("home screen", () => {
     await show(bridge);
     fireEvent.click(screen.getByRole("button", { name: "New plant" }));
     const form = screen.getByRole("form", { name: "New plant" });
-    fireEvent.change(within(form).getByLabelText("Id"), { target: { value: "lab-two" } });
-    fireEvent.change(within(form).getByLabelText("Title"), { target: { value: "Lab two" } });
-    fireEvent.click(within(form).getByRole("button", { name: "Create and edit" }));
+    fireEvent.change(within(form).getByLabelText("Name"), { target: { value: "Lab two" } });
+    fireEvent.click(within(form).getByRole("button", { name: "Create and open the editor" }));
     expect(await within(form).findByRole("alert")).toHaveTextContent("no compositions/factory-utilities");
-    fireEvent.keyDown(within(form).getByLabelText("Title"), { key: "Escape" });
+    fireEvent.keyDown(within(form).getByLabelText("Name"), { key: "Escape" });
     expect(screen.getByRole("button", { name: "New plant" })).toHaveFocus();
     fireEvent.click(screen.getByRole("button", { name: "New plant" }));
-    expect(screen.getByLabelText("Id")).toHaveFocus();
+    expect(screen.getByLabelText("Name")).toHaveFocus();
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
     expect(screen.getByRole("button", { name: "New plant" })).toHaveFocus();
   });

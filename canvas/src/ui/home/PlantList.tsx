@@ -150,7 +150,15 @@ export function PlantList({ workspace, navigation, editor }: ListProps) {
           if (bases.length > 0) setCreating(!creating);
         }}
       />
-      {creating && <NewPlantForm bases={bases} editor={editor} navigation={navigation} onCancel={close} />}
+      {creating && (
+        <NewPlantForm
+          bases={bases}
+          taken={plants.map((plant) => plant.id)}
+          editor={editor}
+          navigation={navigation}
+          onCancel={close}
+        />
+      )}
       <ul className={styles.rows}>
         {plants.map((plant) => (
           <PlantRow key={plant.id} plant={plant} navigation={navigation} />

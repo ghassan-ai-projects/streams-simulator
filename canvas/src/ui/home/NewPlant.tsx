@@ -3,11 +3,13 @@ import { useId, useState } from "react";
 import type { EditorStore } from "../../app/editorStore";
 import type { NavigationStore } from "../../app/navigationStore";
 import type { Definition } from "../../model/bridge";
+import { suggestedId } from "../../model/workspace";
 import { useFocusOnMount } from "../useFocusOnMount";
 import styles from "./HomeScreen.module.css";
 
 export interface NewPlantProps {
   readonly bases: readonly Definition[];
+  readonly taken: readonly string[];
   readonly editor: EditorStore;
   readonly navigation: NavigationStore;
 }
@@ -58,10 +60,9 @@ function BasePick({
 }) {
   return (
     <div className={styles.newField}>
-      <label htmlFor="new-plant-base">Based on</label>
+      <label htmlFor="new-plant-base">Start from</label>
       <select
         id="new-plant-base"
-        aria-describedby="new-plant-base-hint"
         value={base}
         onChange={(event) => {
           setBase(event.target.value);
@@ -73,15 +74,48 @@ function BasePick({
           </option>
         ))}
       </select>
-      <small id="new-plant-base-hint">Copies its site, areas, profiles and axes; starts with no equipment.</small>
     </div>
   );
 }
 
-function useCreate({ editor, navigation }: Omit<NewPlantProps, "bases">) {
+function CopyChoice({ copy, setCopy }: { readonly copy: boolean; readonly setCopy: (copy: boolean) => void }) {
+  return (
+    <fieldset className={styles.choice}>
+      <legend className="sr-only">What to keep</legend>
+      <label>
+        <input
+          type="radio"
+          name="new-plant-copy"
+          checked={copy}
+          onChange={() => {
+            setCopy(true);
+          }}
+        />
+        <span>
+          <strong>A full copy</strong> of its equipment, connections and settings, ready to run.
+        </span>
+      </label>
+      <label>
+        <input
+          type="radio"
+          name="new-plant-copy"
+          checked={!copy}
+          onChange={() => {
+            setCopy(false);
+          }}
+        />
+        <span>
+          <strong>An empty plant</strong> with only its site, areas, profiles and axes; you add the equipment.
+        </span>
+      </label>
+    </fieldset>
+  );
+}
+
+function useCreate({ editor, navigation }: Pick<NewPlantProps, "editor" | "navigation">) {
   const [failure, setFailure] = useState("");
-  const create = async (base: string, id: string, title: string) => {
-    const made = await editor.create(base, id, title);
+  const create = async (base: string, id: string, title: string, copy: boolean) => {
+    const made = await editor.create(base, id, title, copy);
     if (typeof made === "string") navigation.go({ screen: "edit", composition: made });
     else setFailure(made.message);
   };
@@ -106,7 +140,7 @@ function Actions({
       )}
       <span className={styles.newActions}>
         <button type="submit" className={styles.create} aria-disabled={!ready}>
-          Create and edit
+          Create and open the editor
         </button>
         <button type="button" className={styles.open} onClick={onCancel}>
           Cancel
@@ -116,20 +150,23 @@ function Actions({
   );
 }
 
-export function NewPlantForm({
-  bases,
-  editor,
-  navigation,
-  onCancel,
-}: NewPlantProps & { readonly onCancel: () => void }) {
-  const [id, setId] = useState("");
-  const [title, setTitle] = useState("");
+function useNaming(taken: readonly string[]) {
+  const [name, setName] = useState("");
+  const [typed, setTyped] = useState<string | null>(null);
+  const id = typed ?? (name.trim() === "" ? "" : suggestedId(name, taken));
+  return { name, setName, id, setId: setTyped };
+}
+
+export function NewPlantForm(props: NewPlantProps & { readonly onCancel: () => void }) {
+  const { bases, taken, onCancel } = props;
+  const { name, setName, id, setId } = useNaming(taken);
   const [base, setBase] = useState(bases[0]?.path ?? "");
-  const { failure, create } = useCreate({ editor, navigation });
-  const ready = id.trim() !== "" && title.trim() !== "" && base !== "";
+  const [copy, setCopy] = useState(true);
+  const { failure, create } = useCreate(props);
+  const ready = id.trim() !== "" && name.trim() !== "" && base !== "";
   const submit = (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (ready) void create(base, id.trim(), title.trim());
+    if (ready) void create(base, id.trim(), name.trim(), copy);
   };
   return (
     <form
@@ -141,16 +178,10 @@ export function NewPlantForm({
       aria-label="New plant"
       noValidate
     >
-      <Field
-        first
-        label="Id"
-        placeholder="e.g. cooling-hall"
-        hint="Lower case, digits and hyphens, at least three characters."
-        value={id}
-        onChange={setId}
-      />
-      <Field label="Title" value={title} onChange={setTitle} />
+      <Field first label="Name" placeholder="e.g. Cooling hall" value={name} onChange={setName} />
+      <Field label="Id" hint="Used for its file names: lower case, digits and hyphens." value={id} onChange={setId} />
       <BasePick bases={bases} base={base} setBase={setBase} />
+      <CopyChoice copy={copy} setCopy={setCopy} />
       <Actions failure={failure} ready={ready} onCancel={onCancel} />
     </form>
   );

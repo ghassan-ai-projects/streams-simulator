@@ -31,10 +31,11 @@ test("a new plant is built in Chrome, refused with the issue on its element, fix
   await page.goto(env("CANVAS_APP_URL"));
   await page.getByRole("button", { name: "New plant" }).click();
   const form = page.getByRole("form", { name: "New plant" });
-  await form.getByLabel("Id").fill("lab-cooling");
-  await form.getByLabel("Title").fill("Lab cooling");
-  await form.getByLabel("Based on").selectOption({ label: "Factory utilities" });
-  await form.getByRole("button", { name: "Create and edit" }).click();
+  await form.getByLabel("Name").fill("Lab cooling");
+  await expect(form.getByLabel("Id")).toHaveValue("lab-cooling");
+  await form.getByLabel("Start from").selectOption({ label: "Factory utilities" });
+  await form.getByRole("radio", { name: /^An empty plant/ }).check();
+  await form.getByRole("button", { name: "Create and open the editor" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Lab cooling" })).toBeVisible();
   await expect(page.getByText("No equipment yet.")).toBeVisible();
   await add(page, "Water-cooled chiller", "CH-1");

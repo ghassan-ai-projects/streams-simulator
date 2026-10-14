@@ -94,3 +94,18 @@ export function durationOf(seconds: number): string {
   if (hours === 0) return `${String(minutes)} min`;
   return minutes % 60 === 0 ? `${String(hours)} h` : `${String(hours)} h ${String(minutes % 60)} min`;
 }
+
+export function suggestedId(name: string, taken: readonly string[]): string {
+  const base = name
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .replace(/^[^a-z]+/, "")
+    .slice(0, 56);
+  const stem = base.length >= 3 ? base : `plant-${base}`.replace(/-$/, "");
+  let candidate = stem;
+  for (let n = 2; taken.includes(candidate); n += 1) candidate = `${stem}-${String(n)}`;
+  return candidate;
+}

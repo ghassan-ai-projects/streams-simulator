@@ -96,6 +96,10 @@ export function newComposition(base: Composition, id: string, title: string): Co
   return { ...kept, id, title, equipment: [], connections: [] };
 }
 
+export function copyComposition(base: Composition, id: string, title: string): Composition {
+  return { ...base, id, title };
+}
+
 export interface IssueTargets {
   readonly instances: ReadonlyMap<string, readonly string[]>;
   readonly listed: readonly { readonly target: string | null; readonly message: string }[];

@@ -2,7 +2,7 @@ import type { BridgeFailure } from "../model/bridge";
 import type { Composition, NewEquipment } from "../model/composition";
 import { componentOf, domainOf, equipmentOf, parseComposition, serialise } from "../model/composition";
 import type { IssueTargets } from "../model/compositionEdits";
-import { addEquipment, issueTargets, newComposition } from "../model/compositionEdits";
+import { addEquipment, copyComposition, issueTargets, newComposition } from "../model/compositionEdits";
 import type { LibraryEntry, Presets } from "../model/library";
 import { parseLibrary, parsePresets } from "../model/library";
 import type { ComponentSpec } from "../model/ports";
@@ -203,13 +203,17 @@ export class EditorStore extends Observable<EditorState> {
     return { ...state, saving: false, issues, outcome: { kind: "refused", message } };
   }
 
-  async create(base: string, id: string, title: string): Promise<BridgeFailure | string> {
+  async create(base: string, id: string, title: string, copy = false): Promise<BridgeFailure | string> {
     const file = await this.bridge.readFile(base);
     const doc = file.ok ? parseComposition(file.value.content) : null;
     if (!file.ok || doc === null) return file.ok ? unreadable : file.failure;
     if ((await this.versionOf(domainOf({ id }))) !== "") return taken(id);
     const path = `compositions/${id}.composition.json`;
-    const written = await this.bridge.writeFile(path, serialise(newComposition(doc, id, title)), "");
+    const written = await this.bridge.writeFile(
+      path,
+      serialise(copy ? copyComposition(doc, id, title) : newComposition(doc, id, title)),
+      "",
+    );
     return written.ok ? path : written.failure;
   }
 
