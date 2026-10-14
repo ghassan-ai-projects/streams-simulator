@@ -79,7 +79,9 @@ function Mode({ draft, change }: DraftProps) {
             choose(false);
           }}
         />
-        <span>Evaluate: the truth stays sealed so a consumer can be scored.</span>
+        <span>
+          Evaluate: the truth stays sealed while it runs, so a consumer can be scored; it is revealed when the run ends.
+        </span>
       </label>
     </fieldset>
   );

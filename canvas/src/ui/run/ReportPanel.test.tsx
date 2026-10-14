@@ -27,7 +27,7 @@ describe("report panel", () => {
       />,
     );
     expect(screen.getByRole("note")).toHaveTextContent("This run did not verify");
-    expect(screen.getByRole("region", { name: "KPI truth" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "True KPIs" })).toBeInTheDocument();
   });
 
   it("lists every section of the binary's report with no accessibility violation", async () => {
@@ -51,8 +51,8 @@ describe("report panel", () => {
     expect(
       within(screen.getByRole("region", { name: "Effector calls" })).getByText("refused: interlock"),
     ).toBeInTheDocument();
-    expect(within(screen.getByRole("region", { name: "KPI truth" })).getByText("4.65 – 8.85")).toBeInTheDocument();
-    expect(within(screen.getByRole("region", { name: "KPI truth" })).getByText("5.95")).toBeInTheDocument();
+    expect(within(screen.getByRole("region", { name: "True KPIs" })).getByText("4.65 – 8.85")).toBeInTheDocument();
+    expect(within(screen.getByRole("region", { name: "True KPIs" })).getByText("5.95")).toBeInTheDocument();
     expect(
       within(screen.getByRole("region", { name: "Scoring" })).getByText("The report has no scoring section."),
     ).toBeInTheDocument();
@@ -74,7 +74,7 @@ describe("report panel", () => {
   it("filters KPI truth to the selected instance and states what is not available", () => {
     const { rerender } = render(<ReportPanel report={parseReport(report)} unit={() => ""} entity="CT-1" />);
     expect(
-      within(screen.getByRole("region", { name: "KPI truth" })).getByText("No KPI truth for CT-1."),
+      within(screen.getByRole("region", { name: "True KPIs" })).getByText("No true KPIs for CT-1."),
     ).toBeInTheDocument();
     rerender(
       <ReportPanel

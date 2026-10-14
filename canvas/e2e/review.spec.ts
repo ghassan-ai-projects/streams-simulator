@@ -24,7 +24,7 @@ test("a recorded run plays back with the binary's report and a Verified badge", 
   await expect(report.getByRole("region", { name: "File check" })).toContainText("files match");
   await expect(report.getByRole("region", { name: "Replay check" })).toContainText("Reproduces");
   await expect(page.getByRole("status").filter({ hasText: "plant file changed after this run" })).toBeVisible();
-  await expect(report.getByRole("region", { name: "KPI truth" })).toContainText("CH-1");
+  await expect(report.getByRole("region", { name: "True KPIs" })).toContainText("CH-1");
   await expect(page.getByText(/[\d,]+ observations$/)).toBeVisible({ timeout: 60_000 });
   await page.getByRole("navigation", { name: "Outline" }).getByRole("button", { name: "AC-1" }).click();
   const observed = page.getByRole("region", { name: "Observed · AC-1" });

@@ -145,10 +145,19 @@ interface TruthProps {
   readonly only?: "kpi";
 }
 
+function TruthNote({ report }: { readonly report: Report }) {
+  const text =
+    report.mode === "explore"
+      ? "Explore run: the simulated truth below was visible while it ran."
+      : "Evaluate run: the simulated truth below stayed sealed while it ran and was revealed when it ended.";
+  return <p className={styles.truthNote}>{text}</p>;
+}
+
 function Truth({ report, unit, entity }: TruthProps) {
   const at = (ns: number) => wallClock(ns, report.startNs);
   return (
     <>
+      <TruthNote report={report} />
       <Section title="Disturbances">
         <Rows
           rows={report.disturbances.map((d) => [
@@ -199,7 +208,7 @@ function Scoring({ report }: { readonly report: Report }) {
 function KpiTruth({ report, unit, entity }: TruthProps) {
   const kpis = kpisOf(report, entity);
   return (
-    <Section title="KPI truth" note={entity ?? undefined}>
+    <Section title="True KPIs" note={entity ?? undefined}>
       <Rows
         rows={kpis.map((row) => [
           { text: `${row.entity} · ${humanise(row.state)}`, title: `${row.entity} ${row.state}` },
@@ -208,7 +217,7 @@ function KpiTruth({ report, unit, entity }: TruthProps) {
         ])}
         columns={["label", "number", "number"]}
         headers={["KPI", "Mean", "Range"]}
-        empty={entity === null ? "None" : `No KPI truth for ${entity}.`}
+        empty={entity === null ? "None" : `No true KPIs for ${entity}.`}
       />
     </Section>
   );
