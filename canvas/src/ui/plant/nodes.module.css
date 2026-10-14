@@ -161,7 +161,7 @@
   border: 0 !important;
 }
 
-:global(.tier-compact) .pins,
+:global(.tier-compact) .node:has(.readout) .pins,
 :global(.tier-map) .kind,
 :global(.tier-overview) .pins,
 :global(.tier-map) .pins,
@@ -177,6 +177,21 @@
 
 :global(.tier-compact) .id {
   font-size: min(calc(12.5px / var(--zoom)), 22px);
+}
+
+:global(.tier-compact) .pin {
+  padding: 0 calc(6px / var(--zoom));
+  font-size: min(calc(10.5px / var(--zoom)), 19px);
+  color: var(--text-tertiary);
+}
+
+:global(.tier-compact) .pin .dot {
+  visibility: hidden;
+}
+
+:global(.tier-compact) .pins > div {
+  min-width: 0;
+  flex: 1 1 0;
 }
 
 :global(.tier-compact) .node {
