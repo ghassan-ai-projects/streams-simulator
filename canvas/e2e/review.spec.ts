@@ -39,6 +39,11 @@ test("a recorded run plays back with the binary's report and a Verified badge", 
   await expect(page.getByRole("button", { name: "Play" })).toBeVisible();
   await slider.fill("60");
   await expect(slider).toHaveAttribute("aria-valuetext", "00:01:00");
+  await slider.focus();
+  await page.keyboard.press("Space");
+  await expect(page.getByRole("button", { name: "Pause" })).toBeVisible();
+  await page.keyboard.press("Space");
+  await expect(page.getByRole("button", { name: "Play" })).toBeVisible();
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 });
 

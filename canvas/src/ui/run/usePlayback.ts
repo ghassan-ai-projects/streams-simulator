@@ -1,12 +1,8 @@
 import { useEffect } from "react";
 import type { ReviewStore } from "../../app/reviewStore";
+import { ownsSpace, plainKey } from "../keys";
 
 const frameMs = 100;
-
-function typing(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) return false;
-  return target.closest("input, textarea, select, button, a, [role='application'], [contenteditable='true']") !== null;
-}
 
 export function usePlayback(review: ReviewStore, playing: boolean) {
   useEffect(() => {
@@ -23,7 +19,7 @@ export function usePlayback(review: ReviewStore, playing: boolean) {
   }, [review, playing]);
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.key !== " " || event.repeat || typing(event.target)) return;
+      if (event.key !== " " || event.repeat || !plainKey(event) || ownsSpace(event.target)) return;
       event.preventDefault();
       if (review.snapshot().playing) review.pause();
       else review.play();

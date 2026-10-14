@@ -34,6 +34,9 @@ test("the graph works from the keyboard: arrows move, Enter selects, Escape clea
   await expect(page).toHaveTitle("Factory utilities · plant · Streams Simulator");
   const graph = page.getByRole("application", { name: "Plant graph" });
   await graph.focus();
+  const zoom = await page.getByText(/^Zoom \d+ %$/).textContent();
+  await page.keyboard.press("ControlOrMeta+Equal");
+  await expect(page.getByText(/^Zoom \d+ %$/)).toHaveText(zoom ?? "");
   await page.keyboard.press("ArrowRight");
   await page.keyboard.press("Enter");
   const inspector = page.getByRole("complementary", { name: "Inspector" });

@@ -1,9 +1,6 @@
 import { useEffect } from "react";
 import type { EditorStore } from "../../app/editorStore";
-
-function inField(target: EventTarget | null): boolean {
-  return target instanceof HTMLElement && target.closest("input, textarea, select, [contenteditable='true']") !== null;
-}
+import { inTextField } from "../keys";
 
 function command(event: KeyboardEvent, editor: EditorStore): boolean {
   const key = event.key.toLowerCase();
@@ -12,7 +9,7 @@ function command(event: KeyboardEvent, editor: EditorStore): boolean {
     if (state.phase === "ready" && state.doc !== state.saved) void editor.save();
     return true;
   }
-  if (inField(event.target)) return false;
+  if (inTextField(event.target)) return false;
   if (key === "z" && event.shiftKey) editor.redo();
   else if (key === "z") editor.undo();
   else if (key === "y") editor.redo();

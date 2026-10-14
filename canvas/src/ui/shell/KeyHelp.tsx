@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { inTextField } from "../keys";
 import styles from "./KeyHelp.module.css";
 
 const keys: readonly (readonly [string, string])[] = [
@@ -17,18 +18,11 @@ const keys: readonly (readonly [string, string])[] = [
   ["?", "show or hide this list"],
 ];
 
-function typing(target: EventTarget | null): boolean {
-  return (
-    target instanceof HTMLElement &&
-    (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)
-  );
-}
-
 function useToggle(): readonly [boolean, (open: boolean) => void] {
   const [open, setOpen] = useState(false);
   useEffect(() => {
     const onKey = (event: globalThis.KeyboardEvent) => {
-      if (event.key === "?" && !typing(event.target)) setOpen((current) => !current);
+      if (event.key === "?" && !inTextField(event.target)) setOpen((current) => !current);
       if (event.key === "Escape") setOpen(false);
     };
     window.addEventListener("keydown", onKey);

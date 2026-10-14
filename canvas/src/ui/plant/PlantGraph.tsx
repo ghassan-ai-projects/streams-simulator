@@ -10,6 +10,7 @@ import { anchorsOnly, centreOf, inView, openingViewport, tierOf } from "../../mo
 import type { FlowNode, NodeLive } from "./flow";
 import { flowEdges, flowNodes } from "./flow";
 import { useZoomActions } from "./GraphControls";
+import { plainKey } from "../keys";
 import { FrameNode, HallNode, InstanceNode } from "./nodes";
 import styles from "./PlantScreen.module.css";
 
@@ -153,6 +154,7 @@ function useGraphKeys({ view, viewKey, selected, live, onSelect, onOpenHall, onE
     return true;
   };
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (!plainKey(event)) return;
     if (move(event.key) || choose(event.key) || zoomKey(event.key)) {
       event.preventDefault();
     } else if (event.key === "Escape") {
