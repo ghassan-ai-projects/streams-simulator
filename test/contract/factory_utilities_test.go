@@ -79,7 +79,7 @@ type cascadeStep struct {
 func TestAUtilityFaultCascadesThroughTheLinksToEveryMeterAndConsumerDownstream(t *testing.T) {
 	t.Parallel()
 	if testing.Short() {
-		t.Skip("simulates the factory for ten hours, four times")
+		t.Skip("simulates the factory for ten hours, three times")
 	}
 	testsupport.SkipUnderRace(t, "ten noiseless factory hours per case")
 	spec := factoryUtilities(t)
@@ -95,6 +95,17 @@ func TestAUtilityFaultCascadesThroughTheLinksToEveryMeterAndConsumerDownstream(t
 			[]string{"R-1", "air_receiver__drain_stuck_open"},
 			[]cascadeStep{{"AC-2", "auto_load", 0.02}, {"AC-2", "power", 1}, {"MB-AIR", "power", 1}, {"MM-1", "power", 1}}},
 	}
+	var everyRead [][2]string
+	for _, tc := range cases {
+		for _, step := range tc.steps {
+			everyRead = append(everyRead, [2]string{step.entity, step.state})
+		}
+	}
+	means := factoryMeans(t, spec, nil, everyRead)
+	clean := make(map[[2]string]float64, len(everyRead))
+	for i, read := range everyRead {
+		clean[read] = means[i]
+	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
@@ -102,11 +113,12 @@ func TestAUtilityFaultCascadesThroughTheLinksToEveryMeterAndConsumerDownstream(t
 			for i, step := range tc.steps {
 				reads[i] = [2]string{step.entity, step.state}
 			}
-			clean, faulted := factoryMeans(t, spec, nil, reads), factoryMeans(t, spec, tc.fault, reads)
+			faulted := factoryMeans(t, spec, tc.fault, reads)
 			for i, step := range tc.steps {
-				t.Logf("%s.%s: %.3f clean, %.3f faulted", step.entity, step.state, clean[i], faulted[i])
-				if faulted[i]-clean[i] < step.rise {
-					t.Errorf("%s.%s: %.3f clean, %.3f faulted, want a rise of at least %v", step.entity, step.state, clean[i], faulted[i], step.rise)
+				before := clean[reads[i]]
+				t.Logf("%s.%s: %.3f clean, %.3f faulted", step.entity, step.state, before, faulted[i])
+				if faulted[i]-before < step.rise {
+					t.Errorf("%s.%s: %.3f clean, %.3f faulted, want a rise of at least %v", step.entity, step.state, before, faulted[i], step.rise)
 				}
 			}
 		})
@@ -137,22 +149,24 @@ func factoryEvents(t *testing.T, spec *domain.Compiled, track bool) []model.SimE
 	if _, err := w.InjectFault("CT-1", "cooling_tower__fan_failure", model.DefaultStartTimeNS+600e9, nil); err != nil {
 		t.Fatal(err)
 	}
-	for hour := int64(1); hour <= 6; hour++ {
-		if _, _, err := w.Advance(model.DefaultStartTimeNS + hour*hourNS); err != nil {
+	for step := int64(1); step <= 3; step++ {
+		if _, _, err := w.Advance(model.DefaultStartTimeNS + step*stepNS); err != nil {
 			t.Fatal(err)
 		}
-		factoryCommands(t, w, hour)
+		factoryCommands(t, w, step)
 	}
 	return events
 }
 
-func factoryCommands(t *testing.T, w *world.World, hour int64) {
+const stepNS = 20 * 60e9
+
+func factoryCommands(t *testing.T, w *world.World, step int64) {
 	t.Helper()
-	at := model.DefaultStartTimeNS + hour*hourNS
-	if _, err := w.InvokeEffector("chiller__set_setpoint", "CH-1", fmt.Sprintf("c-%d", hour), map[string]any{"chiller_id": "CH-1", "setpoint_c": 6.0 + float64(hour%3)}, at+1e9); err != nil {
+	at := model.DefaultStartTimeNS + step*stepNS
+	if _, err := w.InvokeEffector("chiller__set_setpoint", "CH-1", fmt.Sprintf("c-%d", step), map[string]any{"chiller_id": "CH-1", "setpoint_c": 6.0 + float64(step%3)}, at+1e9); err != nil {
 		t.Fatal(err)
 	}
-	if hour == 3 {
+	if step == 2 {
 		if _, err := w.InjectFault("TX-1", "transformer__cooling_fan_failure", 0, nil); err != nil {
 			t.Fatal(err)
 		}

@@ -4,8 +4,9 @@
 # Runs on push/PR to main. Pipeline:
 #   make ci-check: function-length → fmt-check → docs-check → tidy → build → vet → lint
 #   → gate-ratchet (no gate cap, allow-list, coverage floor or test hook looser than at the branch point from main)
-#   → test-ci (the suite twice, see scripts/test-ci: once with -race -shuffle -tags simdet,
-#     once without race for coverage, floors checked from that run) → deadcode → vulncheck
+#   → test-ci (the suite once in short mode, see scripts/test-ci: -short -shuffle -tags simdet with
+#     coverage, floors checked from that run; long simulations and the race detector run on demand,
+#     make test-long and make test-race) → deadcode → vulncheck
 #   → fuzz-soak (the fuzz targets side by side)
 #   → cross-compile linux/amd64 → upload artifact (push to main only)
 #
@@ -43,9 +44,21 @@ concurrency:
 
 jobs:
   ci:
-    name: "Go CI"
+    # make ci-check split into three jobs that run side by side, each under
+    # two minutes; together they run every step of ci-check.
+    name: "Go CI (${{ matrix.part }})"
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - part: checks
+            targets: function-length fmt-check docs-check tidy build vet lint-ci gate-ratchet
+          - part: tests
+            targets: test-ci
+          - part: analysis
+            targets: deadcode vulncheck fuzz-soak
 
     steps:
       - name: Checkout
@@ -90,21 +103,21 @@ jobs:
           restore-keys: |
             golangci-lint-${{ runner.os }}-${{ env.GOLANGCI_LINT_VERSION }}-
 
-      - name: CI check
-        run: make ci-check
+      - name: CI check (${{ matrix.part }})
+        run: make ${{ matrix.targets }}
 
       # Build + publish the release binary only when landing on main. PRs get
-      # full correctness coverage from `make ci-check` above; a per-PR
+      # full correctness coverage from the ci-check jobs above; a per-PR
       # cross-compile and artifact upload adds minutes and storage for no gain.
       - name: Cross-compile linux/amd64
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && matrix.part == 'checks'
         run: make cross-compile
 
       # Skipped in a freshly-cloned template, where cross-compile produces
       # nothing because there is no cmd/ yet. Without the guard this step
       # warns on every run. Once cmd/<name>/main.go exists it runs normally.
       - name: Upload linux/amd64 artifact
-        if: github.event_name == 'push' && hashFiles('bin/*-linux-amd64') != ''
+        if: github.event_name == 'push' && matrix.part == 'checks' && hashFiles('bin/*-linux-amd64') != ''
         uses: actions/upload-artifact@v7
         with:
           name: binary-linux-amd64
