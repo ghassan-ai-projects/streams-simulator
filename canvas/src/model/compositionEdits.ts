@@ -116,9 +116,29 @@ export function disconnect(doc: Composition, index: number): Composition {
   return { ...doc, connections: wires(doc).filter((_, at) => at !== index) };
 }
 
+export interface ListedIssue {
+  readonly target: string | null;
+  readonly message: string;
+  readonly pointer: string;
+}
+
 export interface IssueTargets {
   readonly instances: ReadonlyMap<string, readonly string[]>;
-  readonly listed: readonly { readonly target: string | null; readonly message: string }[];
+  readonly listed: readonly ListedIssue[];
+}
+
+export interface IssueGroup extends ListedIssue {
+  readonly count: number;
+}
+
+export function groupIssues(listed: readonly ListedIssue[]): readonly IssueGroup[] {
+  const groups = new Map<string, IssueGroup>();
+  listed.forEach((issue) => {
+    const key = `${issue.target ?? ""}\n${issue.message}\n${issue.target === null ? issue.pointer : ""}`;
+    const seen = groups.get(key);
+    groups.set(key, { ...issue, count: (seen?.count ?? 0) + 1 });
+  });
+  return [...groups.values()];
 }
 
 function equipmentTargets(doc: Composition, at: number, field: string, index: string): readonly string[] {
@@ -143,7 +163,7 @@ export function issueTargets(doc: Composition, issues: readonly Issue[]): IssueT
   const listed = issues.map((issue) => {
     const targets = targetsOf(doc, issue.pointer);
     targets.forEach((id) => instances.set(id, [...(instances.get(id) ?? []), issue.message]));
-    return { target: targets[0] ?? null, message: issue.message };
+    return { target: targets[0] ?? null, message: issue.message, pointer: issue.pointer };
   });
   return { instances, listed };
 }

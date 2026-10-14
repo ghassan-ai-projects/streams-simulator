@@ -176,6 +176,32 @@ describe("plant editor panel", () => {
     expect(screen.getByRole("button", { name: "Open plant" })).toBeInTheDocument();
   });
 
+  it("lists repeated issues once with a count, says where a plant-wide one applies, and marks a stale list", async () => {
+    const { fake, editor } = await editing();
+    act(() => {
+      editor.edit((doc) => ({ ...doc, title: "Lab two" }));
+    });
+    const same = { pointer: "/equipment/0/names/0", message: "not a name" };
+    fake.actions.set(
+      "domain.compose",
+      failed({
+        ...failure("composition_invalid", 422, "invalid"),
+        issues: [same, same, same, { pointer: "/profiles", message: "needs more items" }],
+      }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(await screen.findByText("Saved, not composed: 4 issues")).toBeInTheDocument();
+    const block = screen.getByRole("region", { name: "Issues from the binary" });
+    expect(within(block).getAllByRole("listitem")).toHaveLength(2);
+    expect(within(block).getByRole("button", { name: /CH-1.*not a name \(×3\)/ })).toBeInTheDocument();
+    expect(within(block).getByText("in /profiles")).toBeInTheDocument();
+    expect(within(block).queryByText(/from the last save/i)).not.toBeInTheDocument();
+    act(() => {
+      editor.edit((doc) => ({ ...doc, title: "Lab three" }));
+    });
+    expect(within(block).getByText(/These are from the last save/)).toBeInTheDocument();
+  });
+
   it("says why the file was not saved", async () => {
     const { fake, editor } = await editing();
     act(() => {

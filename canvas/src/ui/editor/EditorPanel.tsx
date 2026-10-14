@@ -1,36 +1,53 @@
 import { CircleAlert, Wrench } from "lucide-react";
 import panel from "../panel.module.css";
+import type { IssueGroup } from "../../model/compositionEdits";
+import { groupIssues } from "../../model/compositionEdits";
 import { AddEquipment } from "./AddEquipment";
 import styles from "./Editor.module.css";
 import { InstanceEditor } from "./InstanceEditor";
 import type { PanelProps } from "./panelProps";
 import { useRequestedFocus } from "./panelProps";
 
+function IssueRow({ issue, editor, request }: { readonly issue: IssueGroup } & Omit<PanelProps, "plant" | "draft">) {
+  const times = issue.count > 1 ? ` (×${String(issue.count)})` : "";
+  if (issue.target === null) {
+    return (
+      <span>
+        {`${issue.message}${times}`}
+        {issue.pointer !== "" && <code className={styles.where}>{`in ${issue.pointer}`}</code>}
+      </span>
+    );
+  }
+  const target = issue.target;
+  return (
+    <button
+      type="button"
+      className={styles.issue}
+      onClick={() => {
+        request.ask("instance");
+        editor.select(target);
+      }}
+    >
+      <strong>{target}</strong>
+      {`${issue.message}${times}`}
+    </button>
+  );
+}
+
 function Issues({ draft, editor, request }: Omit<PanelProps, "plant">) {
-  const listed = draft.issues?.listed ?? [];
-  if (listed.length === 0) return null;
+  const groups = groupIssues(draft.issues?.listed ?? []);
+  if (groups.length === 0) return null;
   return (
     <section className={panel.group} aria-labelledby="issues-title">
       <h3 id="issues-title">Issues from the binary</h3>
+      {draft.doc !== draft.saved && (
+        <p className={panel.hint}>These are from the last save. Save again to check your changes.</p>
+      )}
       <ul className={styles.issues}>
-        {listed.map((issue, index) => (
+        {groups.map((issue, index) => (
           <li key={`${String(index)}:${issue.message}`}>
             <CircleAlert size={14} aria-hidden="true" />
-            {issue.target === null ? (
-              <span>{issue.message}</span>
-            ) : (
-              <button
-                type="button"
-                className={styles.issue}
-                onClick={() => {
-                  request.ask("instance");
-                  editor.select(issue.target);
-                }}
-              >
-                <strong>{issue.target}</strong>
-                {issue.message}
-              </button>
-            )}
+            <IssueRow issue={issue} editor={editor} request={request} />
           </li>
         ))}
       </ul>

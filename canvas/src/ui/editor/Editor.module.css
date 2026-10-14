@@ -102,6 +102,13 @@
   cursor: pointer;
 }
 
+.where {
+  display: block;
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  overflow-wrap: anywhere;
+}
+
 .issue:hover strong {
   text-decoration: underline;
 }
