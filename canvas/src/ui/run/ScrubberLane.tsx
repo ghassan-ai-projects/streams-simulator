@@ -111,21 +111,15 @@ export function Legend({ marks }: { readonly marks: readonly EventMark[] }) {
 
 interface NotesProps {
   readonly said: string;
-  readonly marks: readonly EventMark[];
   readonly hidden: number;
-  readonly reading: boolean;
 }
 
-function LaneNotes({ said, marks, hidden, reading }: NotesProps) {
-  const empty = reading
-    ? "Events appear once streamsim report has read the run."
-    : "No disturbances, alarm activations or effector calls in this run.";
+function LaneNotes({ said, hidden }: NotesProps) {
   return (
     <div className={styles.laneNotes}>
       <p className="sr-only" aria-live="polite">
         {said}
       </p>
-      {marks.length === 0 && <p className={styles.laneMore}>{empty}</p>}
       {hidden > 0 && (
         <p className={styles.laneMore}>
           {`${String(hidden)} more ${hidden === 1 ? "event" : "events"}: use Previous and Next event`}
@@ -135,8 +129,16 @@ function LaneNotes({ said, marks, hidden, reading }: NotesProps) {
   );
 }
 
-function laneHeight(marks: readonly EventMark[], chips: readonly ChipPlace[]): string {
-  return `${String(marks.length === 0 ? 0 : (Math.max(0, ...chips.map((chip) => chip.row)) + 1) * 28)}px`;
+function laneHeight(chips: readonly ChipPlace[]): string {
+  return `${String((Math.max(0, ...chips.map((chip) => chip.row)) + 1) * 28)}px`;
+}
+
+function EmptyLane({ reading }: { readonly reading: boolean }) {
+  return (
+    <p className={styles.laneEmpty}>
+      {reading ? "Events appear once streamsim report has read the run." : "No events in this run."}
+    </p>
+  );
 }
 
 export function Lane({ marks, fraction, startNs, onSeek, onEvent, reading, positionNs }: LaneProps) {
@@ -150,7 +152,8 @@ export function Lane({ marks, fraction, startNs, onSeek, onEvent, reading, posit
   const { said, pick } = usePick(startNs, onSeek, onEvent);
   return (
     <>
-      <ol ref={ref} className={styles.lane} aria-label="Events" style={{ height: laneHeight(marks, chips) }}>
+      {marks.length === 0 && <EmptyLane reading={reading} />}
+      <ol ref={ref} className={styles.lane} aria-label="Events" style={{ height: laneHeight(chips) }}>
         {marks.map((mark, index) => {
           const chip = chips[index];
           return chip === undefined || chip.row < 0 ? null : (
@@ -166,7 +169,7 @@ export function Lane({ marks, fraction, startNs, onSeek, onEvent, reading, posit
           );
         })}
       </ol>
-      <LaneNotes said={said} marks={marks} hidden={chips.filter((chip) => chip.row < 0).length} reading={reading} />
+      <LaneNotes said={said} hidden={chips.filter((chip) => chip.row < 0).length} />
     </>
   );
 }

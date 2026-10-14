@@ -143,6 +143,13 @@
   box-shadow: 0 0 0 2px var(--surface-panel);
 }
 
+.laneEmpty {
+  position: absolute;
+  margin: 6px calc(var(--thumb) / 2) 0;
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+}
+
 .lane {
   position: relative;
   height: 28px;
