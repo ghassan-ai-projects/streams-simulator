@@ -1,4 +1,7 @@
+import { callArgs } from "../../model/effectors";
 import type { LaunchPlan } from "../../model/launch";
+import type { Plant } from "../../model/plant";
+import { effectorOf } from "../../model/plant";
 
 export interface DraftFault {
   readonly key: number;
@@ -7,20 +10,37 @@ export interface DraftFault {
   readonly atMinutes: string;
 }
 
+export interface DraftCall {
+  readonly key: number;
+  readonly entity: string;
+  readonly effector: string;
+  readonly atMinutes: string;
+  readonly values: Readonly<Record<string, string>>;
+}
+
 export interface Draft {
   readonly seed: string;
   readonly duration: string;
   readonly unit: "minutes" | "hours";
   readonly explore: boolean;
   readonly faults: readonly DraftFault[];
+  readonly calls: readonly DraftCall[];
   readonly nextKey: number;
 }
 
-export const firstDraft: Draft = { seed: "1", duration: "30", unit: "minutes", explore: true, faults: [], nextKey: 1 };
+export const firstDraft: Draft = {
+  seed: "1",
+  duration: "30",
+  unit: "minutes",
+  explore: true,
+  faults: [],
+  calls: [],
+  nextKey: 1,
+};
 
 const whole = (text: string, scale: number) => Math.round(Number(text.trim() === "" ? Number.NaN : text) * scale);
 
-export function planOf(draft: Draft): LaunchPlan {
+export function planOf(draft: Draft, plant: Plant): LaunchPlan {
   return {
     seed: Number(draft.seed.trim() === "" ? Number.NaN : draft.seed),
     durationS: whole(draft.duration, draft.unit === "hours" ? 3600 : 60),
@@ -30,7 +50,12 @@ export function planOf(draft: Draft): LaunchPlan {
       fault: fault.fault,
       atS: whole(fault.atMinutes, 60),
     })),
-    calls: [],
+    calls: draft.calls.map((call) => ({
+      entity: call.entity,
+      effector: call.effector,
+      atS: whole(call.atMinutes, 60),
+      args: callArgs(effectorOf(plant, call.entity, call.effector), call.entity, call.values),
+    })),
   };
 }
 
@@ -49,12 +74,22 @@ export function draftOf(plan: LaunchPlan): Draft {
       fault: fault.fault,
       atMinutes: minutesOf(fault.atS),
     })),
-    nextKey: plan.faults.length + 1,
+    calls: plan.calls.map((call, index) => ({
+      key: plan.faults.length + index + 1,
+      entity: call.entity,
+      effector: call.effector,
+      atMinutes: minutesOf(call.atS),
+      values: Object.fromEntries(Object.entries(call.args).map(([name, value]) => [name, String(value)])),
+    })),
+    nextKey: plan.faults.length + plan.calls.length + 1,
   };
 }
 
 export function pickedOnGraph(draft: Draft, entity: string): Draft {
-  const last = draft.faults.at(-1);
-  if (last?.entity !== "") return draft;
-  return { ...draft, faults: draft.faults.map((fault) => (fault === last ? { ...fault, entity, fault: "" } : fault)) };
+  const fault = draft.faults.at(-1);
+  if (fault?.entity === "")
+    return { ...draft, faults: draft.faults.map((f) => (f === fault ? { ...f, entity, fault: "" } : f)) };
+  const call = draft.calls.at(-1);
+  if (call?.entity !== "") return draft;
+  return { ...draft, calls: draft.calls.map((c) => (c === call ? { ...c, entity, effector: "", values: {} } : c)) };
 }

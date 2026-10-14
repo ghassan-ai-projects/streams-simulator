@@ -2,11 +2,13 @@ import { Dices, TriangleAlert } from "lucide-react";
 import type { SyntheticEvent } from "react";
 import { useEffect, useRef, useState } from "react";
 import type { LaunchPlan, PlanProblem } from "../../model/launch";
-import { planProblems } from "../../model/launch";
+import { disturbanceWords, planProblems } from "../../model/launch";
 import type { Plant } from "../../model/plant";
+import { effectorOf } from "../../model/plant";
 import { durationOf } from "../../model/workspace";
 import type { Draft } from "./draft";
 import { planOf } from "./draft";
+import { CallRows } from "./CallRows";
 import type { Change } from "./FaultRows";
 import { FaultRows } from "./FaultRows";
 import { cx } from "../cx";
@@ -172,9 +174,7 @@ function problemWords(problems: readonly PlanProblem[]): string {
 
 function startWords(plan: LaunchPlan): string {
   const length = durationOf(plan.durationS) || "the chosen time";
-  const faults = plan.faults.length;
-  const injected = faults === 0 ? "no faults" : `${String(faults)} ${faults === 1 ? "fault" : "faults"}`;
-  return `Start simulates ${length} of plant time in ${plan.explore ? "Explore" : "Evaluate"} mode with ${injected}, as fast as it can, then saves the run and opens its review.`;
+  return `Start simulates ${length} of plant time in ${plan.explore ? "Explore" : "Evaluate"} mode with ${disturbanceWords(plan)}, as fast as it can, then saves the run and opens its review.`;
 }
 
 function planCue(shown: readonly PlanProblem[], plan: LaunchPlan): string {
@@ -187,8 +187,8 @@ export function LaunchForm({ plant, draft, selected, change, onStart }: FormProp
   const [tried, setTried] = useState(0);
   const [told, setTold] = useState("");
   const form = useFocusFirstProblem(tried);
-  const plan = planOf(draft);
-  const problems = planProblems(plan);
+  const plan = planOf(draft, plant);
+  const problems = planProblems(plan, (entity, effector) => effectorOf(plant, entity, effector));
   const shown = tried > 0 ? problems : [];
   const submit = (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -205,6 +205,7 @@ export function LaunchForm({ plant, draft, selected, change, onStart }: FormProp
       </fieldset>
       <Mode draft={draft} change={change} />
       <FaultRows plant={plant} draft={draft} problems={shown} selected={selected} change={change} />
+      <CallRows plant={plant} draft={draft} problems={shown} selected={selected} change={change} />
       <p id="launch-summary" className={styles.summary}>
         {planCue(shown, plan)}
       </p>

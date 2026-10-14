@@ -69,6 +69,7 @@ export type SpecOf = (entity: string, effector: string) => EffectorSpec | undefi
 export interface PlanProblem {
   readonly field: "seed" | "duration" | "call" | number;
   readonly call?: number;
+  readonly part?: "instance" | "effector" | "minute" | "args";
   readonly text: string;
 }
 
@@ -85,22 +86,26 @@ function faultProblems(plan: LaunchPlan): readonly PlanProblem[] {
   });
 }
 
-function callText(call: PlannedCall, name: string, plan: LaunchPlan, specOf: SpecOf): string {
-  if (call.entity === "" && call.effector === "") return `${name} needs an instance and an effector.`;
-  if (call.entity === "") return `${name} needs an instance.`;
-  if (call.effector === "") return `${name} needs an effector.`;
+type CallProblem = Pick<PlanProblem, "part" | "text">;
+
+function callProblem(call: PlannedCall, name: string, plan: LaunchPlan, specOf: SpecOf): CallProblem | null {
+  if (call.entity === "" && call.effector === "")
+    return { part: "instance", text: `${name} needs an instance and an effector.` };
+  if (call.entity === "") return { part: "instance", text: `${name} needs an instance.` };
+  if (call.effector === "") return { part: "effector", text: `${name} needs an effector.` };
   if (!Number.isInteger(call.atS) || call.atS < 0 || call.atS >= plan.durationS)
-    return `${name} is made inside the run, before its end.`;
+    return { part: "minute", text: `${name} is made inside the run, before its end.` };
   const spec = specOf(call.entity, call.effector);
-  if (spec === undefined) return `${name}: ${call.entity} has no effector ${humanise(call.effector)}.`;
+  if (spec === undefined)
+    return { part: "effector", text: `${name}: ${call.entity} has no effector ${humanise(call.effector)}.` };
   const problem = argProblem(spec, call.args);
-  return problem === "" ? "" : `${name}: ${problem}`;
+  return problem === "" ? null : { part: "args", text: `${name}: ${problem}` };
 }
 
 function callProblems(plan: LaunchPlan, specOf: SpecOf): readonly PlanProblem[] {
   return plan.calls.flatMap((call, index): PlanProblem[] => {
-    const text = callText(call, `Effector call ${String(index + 1)}`, plan, specOf);
-    return text === "" ? [] : [{ field: "call", call: index, text }];
+    const found = callProblem(call, `Effector call ${String(index + 1)}`, plan, specOf);
+    return found === null ? [] : [{ field: "call", call: index, ...found }];
   });
 }
 

@@ -1,6 +1,7 @@
 import { Play, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { LaunchState, LaunchStore } from "../../app/launchStore";
+import type { CallOutcome } from "../../model/launch";
 import { clockOf, planSummary, speedOf } from "../../model/launch";
 import { humanise } from "../../model/report";
 import { durationOf } from "../../model/workspace";
@@ -25,17 +26,50 @@ interface LaunchPanelProps {
 }
 
 type Running = Extract<LaunchState, { phase: "running" }>;
+type Done = Extract<LaunchState, { phase: "done" }>;
+
+function outcomeWords(outcome: CallOutcome): string {
+  const call = `${clockOf(outcome.atS)} · ${outcome.entity} · ${humanise(outcome.effector)}`;
+  return outcome.accepted ? `${call}: accepted` : `${call}: command not accepted: ${outcome.reason}`;
+}
+
+function Result({ state, onOpen }: { readonly state: Done; readonly onOpen: () => void }) {
+  const status = useFocusOnMount<HTMLParagraphElement>();
+  const refused = state.calls.filter((call) => !call.accepted).length;
+  return (
+    <div className={panel.body}>
+      <p className={styles.status} role="status" ref={status} tabIndex={-1}>
+        {`Run ${state.worldId} ${state.early ? "stopped early and was saved" : "finished"}. ${
+          refused === 0
+            ? "Every effector call was accepted."
+            : `${String(refused)} of ${String(state.calls.length)} effector calls were not accepted.`
+        }`}
+      </p>
+      <ul className={styles.outcomes} aria-label="Effector call results">
+        {state.calls.map((outcome, index) => (
+          <li key={String(index)}>{outcomeWords(outcome)}</li>
+        ))}
+      </ul>
+      <button type="button" className={panel.primary} onClick={onOpen}>
+        Open the review
+      </button>
+    </div>
+  );
+}
 
 function ProgressBar({ state }: { readonly state: Running }) {
   return (
     <div className={styles.bar}>
       <progress max={state.durationS} value={state.atS} aria-label="Simulated time" />
-      {state.plan.faults.map((fault, index) => (
+      {[
+        ...state.plan.faults.map((fault) => ({ ...fault, what: fault.fault })),
+        ...state.plan.calls.map((call) => ({ ...call, what: call.effector })),
+      ].map((fault, index) => (
         <span
           key={String(index)}
           className={fault.atS <= state.atS ? styles.tickDone : styles.tick}
           style={{ left: `${String((fault.atS / state.durationS) * 100)}%` }}
-          title={`${fault.entity} ${humanise(fault.fault)} at ${clockOf(fault.atS)}`}
+          title={`${fault.entity} ${humanise(fault.what)} at ${clockOf(fault.atS)}`}
           aria-hidden="true"
         />
       ))}
@@ -119,6 +153,7 @@ interface BodyProps {
   readonly draft: Draft;
   readonly selected: string | null;
   readonly change: (change: Change) => void;
+  readonly onFinished: (worldId: string) => void;
 }
 
 function Elsewhere({ state }: { readonly state: Running }) {
@@ -130,7 +165,7 @@ function Elsewhere({ state }: { readonly state: Running }) {
   );
 }
 
-function Body({ state, launch, plant, path, draft, selected, change }: BodyProps) {
+function Body({ state, launch, plant, path, draft, selected, change, onFinished }: BodyProps) {
   const own = state.phase !== "idle" && state.origin.domain === plant.id;
   if (state.phase === "running") {
     return own ? (
@@ -140,6 +175,16 @@ function Body({ state, launch, plant, path, draft, selected, change }: BodyProps
     );
   }
   if (state.phase === "failed" && own) return <Failure state={state} launch={launch} />;
+  if (state.phase === "done" && own && state.calls.length > 0)
+    return (
+      <Result
+        state={state}
+        onOpen={() => {
+          launch.reset();
+          onFinished(state.worldId);
+        }}
+      />
+    );
   return (
     <LaunchForm
       plant={plant}
@@ -158,7 +203,7 @@ function useLaunch(launch: LaunchStore, plant: string, onFinished: (worldId: str
   const [watched, setWatched] = useState(false);
   if (!watched && state.phase === "running" && state.origin.domain === plant) setWatched(true);
   useEffect(() => {
-    if (watched && state.phase === "done" && state.origin.domain === plant) {
+    if (watched && state.phase === "done" && state.origin.domain === plant && state.calls.length === 0) {
       launch.reset();
       onFinished(state.worldId);
     }
@@ -208,6 +253,7 @@ export function LaunchPanel({ launch, plant, path, selected = null, onClose, onF
         draft={draft}
         selected={selected}
         change={setDraft}
+        onFinished={onFinished}
       />
     </aside>
   );

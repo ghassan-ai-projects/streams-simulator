@@ -119,7 +119,11 @@ describe("effector calls in a plan", () => {
     expect(texts([call({ args: { setpoint_c: 20 } })])).toEqual([
       "Effector call 1: setpoint c is a number from 4 to 12.",
     ]);
-    expect(planProblems(plan({ calls: [call({ atS: 100 })] }))[0]).toMatchObject({ field: "call", call: 0 });
+    expect(planProblems(plan({ calls: [call({ atS: 100 })] }))[0]).toMatchObject({
+      field: "call",
+      call: 0,
+      part: "minute",
+    });
   });
 
   it("says in words how many faults and effector calls a plan holds", () => {
