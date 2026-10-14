@@ -44,3 +44,12 @@ test("a plan with problems cannot start", async ({ page }) => {
   await expect(page.getByRole("complementary", { name: "Inspector" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Run plant" })).toBeFocused();
 });
+
+test("opening the run panel shows the details panel even when it was hidden", async ({ page }) => {
+  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Ffactory-utilities.domain.json`);
+  await page.getByRole("button", { name: "Details panel" }).click();
+  await expect(page.getByRole("complementary", { name: "Inspector" })).toBeHidden();
+  await page.getByRole("button", { name: "Run plant" }).click();
+  await expect(page.getByRole("complementary", { name: "Run Factory utilities" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Details panel" })).toHaveAttribute("aria-pressed", "true");
+});

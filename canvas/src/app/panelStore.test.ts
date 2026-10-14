@@ -24,5 +24,8 @@ describe("panels", () => {
     panels.toggle("right");
     expect(stored.values.get("streamsim.canvas.panel.right")).toBe("closed");
     expect(new PanelStore(preferences({ "streamsim.canvas.panel.left": "open" })).snapshot().left).toBe(true);
+    panels.show("right");
+    panels.show("right");
+    expect(panels.snapshot().right).toBe(true);
   });
 });

@@ -18,6 +18,10 @@ export class PanelStore extends Observable<PanelState> {
     super({ left: preferences.read(keys.left) !== "closed", right: preferences.read(keys.right) !== "closed" });
   }
 
+  show(side: Side): void {
+    if (!this.snapshot()[side]) this.toggle(side);
+  }
+
   toggle(side: Side): void {
     const open = !this.snapshot()[side];
     this.preferences.write(keys[side], open ? "open" : "closed");

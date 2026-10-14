@@ -36,6 +36,7 @@ function renderApp(bridge: FakeBridge) {
     editor: new EditorStore(bridge),
     panels: new PanelStore({ read: () => null, write: () => undefined }),
     maker: new PlantMaker(bridge),
+    showDetails: () => undefined,
   };
   return render(<App stores={stores} />);
 }

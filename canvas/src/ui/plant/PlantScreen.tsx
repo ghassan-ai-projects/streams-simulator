@@ -30,6 +30,7 @@ interface PlantScreenProps {
   readonly domain: string;
   readonly hall: string | null;
   readonly startLaunching?: boolean;
+  readonly onShowDetails?: () => void;
 }
 
 interface Crumb {
@@ -186,10 +187,21 @@ function RightPanel(props: RightProps) {
   );
 }
 
-function useLaunching(initially: boolean) {
-  const [launching, setLaunching] = useState(initially);
+const noop = () => undefined;
+
+function useLaunching(asked: boolean, onShow: () => void) {
+  const [launching, setLaunching] = useState(asked);
   const button = useRef<HTMLButtonElement>(null);
+  const [seen, setSeen] = useState(asked);
+  if (asked !== seen) {
+    setSeen(asked);
+    if (asked) setLaunching(true);
+  }
+  useEffect(() => {
+    if (asked) onShow();
+  }, [asked, onShow]);
   const toggle = () => {
+    if (!launching) onShow();
     setLaunching(!launching);
   };
   const close = () => {
@@ -245,8 +257,8 @@ function NotReady({ state, domain }: { readonly state: PlantState; readonly doma
 }
 
 export function PlantScreen(props: PlantScreenProps) {
-  const { plants, workspace, navigation, launch, domain, hall, startLaunching = false } = props;
-  const run = useLaunching(startLaunching);
+  const { plants, workspace, navigation, launch, domain, hall, startLaunching = false, onShowDetails = noop } = props;
+  const run = useLaunching(startLaunching, onShowDetails);
   const state = useStore(plants);
   const listing = useStore(workspace);
   useEffect(() => {

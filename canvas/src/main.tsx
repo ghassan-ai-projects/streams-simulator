@@ -24,6 +24,7 @@ if (root) {
     mediaSystemTheme(window.matchMedia("(prefers-color-scheme: dark)")),
   );
   const bridge = bridgeClient(browserTransport());
+  const panels = new PanelStore(localPreferences(window.localStorage));
   createRoot(root).render(
     <StrictMode>
       <App
@@ -36,8 +37,11 @@ if (root) {
           review: new ReviewStore(bridge),
           launch: new LaunchStore(bridge),
           editor: new EditorStore(bridge),
-          panels: new PanelStore(localPreferences(window.localStorage)),
+          panels,
           maker: new PlantMaker(bridge),
+          showDetails: () => {
+            panels.show("right");
+          },
         }}
       />
     </StrictMode>,

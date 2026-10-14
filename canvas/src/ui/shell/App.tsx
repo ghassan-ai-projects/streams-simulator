@@ -35,6 +35,7 @@ export interface Stores {
   readonly editor: EditorStore;
   readonly panels: PanelStore;
   readonly maker: PlantMaker;
+  readonly showDetails: () => void;
 }
 
 function useSession({ session, workspace }: Stores) {
@@ -69,6 +70,7 @@ function Screen({ stores, route }: { readonly stores: Stores; readonly route: Ro
         domain={route.domain}
         hall={route.hall}
         startLaunching={route.launch === true}
+        onShowDetails={stores.showDetails}
       />
     );
   }
