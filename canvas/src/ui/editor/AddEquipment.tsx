@@ -196,6 +196,7 @@ export function AddEquipment({ draft, editor, request }: AddProps) {
       <Choice label="Size" value={preset} options={sizes(presets)} onChange={setPreset} />
       <NameField typed={typed} suggested={suggested} setTyped={setTyped} />
       <Choice label="Area" value={area} options={options} onChange={setArea} />
+      <p className={panel.hint}>The areas are this plant's own, the site first. Add more under Add area.</p>
       <SubmitRow id="add-reason" reason={problem}>
         <Plus size={14} aria-hidden="true" />
         Add to the plant
