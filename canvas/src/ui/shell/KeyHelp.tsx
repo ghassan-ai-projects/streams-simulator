@@ -95,6 +95,7 @@ export function KeyHelp() {
       {open && (
         <dialog
           open
+          tabIndex={-1}
           className={styles.dialog}
           aria-labelledby="keys-title"
           aria-modal="false"

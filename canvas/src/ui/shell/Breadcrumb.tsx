@@ -36,8 +36,8 @@ function Trail({ trail, here, heading, tag }: BreadcrumbProps) {
             {here}
           </h1>
         </li>
-        {tag !== undefined && <li className={styles.tag}>{tag}</li>}
       </ol>
+      {tag !== undefined && <span className={styles.tag}>{tag}</span>}
     </nav>
   );
 }

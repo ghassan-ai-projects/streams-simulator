@@ -165,6 +165,11 @@ function useFocusFirstProblem(tried: number) {
   return form;
 }
 
+function problemWords(problems: readonly PlanProblem[]): string {
+  if (problems.length === 0) return "";
+  return `${String(problems.length)} to fix before starting: ${problems.map((problem) => problem.text).join(" ")}`;
+}
+
 function startWords(plan: LaunchPlan): string {
   const length = durationOf(plan.durationS) || "the chosen time";
   const faults = plan.faults.length;
@@ -174,6 +179,7 @@ function startWords(plan: LaunchPlan): string {
 
 export function LaunchForm({ plant, draft, selected, change, onStart }: FormProps) {
   const [tried, setTried] = useState(0);
+  const [told, setTold] = useState("");
   const form = useFocusFirstProblem(tried);
   const plan = planOf(draft);
   const problems = planProblems(plan);
@@ -181,6 +187,7 @@ export function LaunchForm({ plant, draft, selected, change, onStart }: FormProp
   const submit = (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
     setTried((count) => count + 1);
+    setTold(problemWords(problems));
     if (problems.length === 0) onStart(plan);
   };
   return (
@@ -196,9 +203,7 @@ export function LaunchForm({ plant, draft, selected, change, onStart }: FormProp
         {startWords(plan)}
       </p>
       <p className="sr-only" role="status">
-        {shown.length === 0
-          ? ""
-          : `${String(shown.length)} to fix before starting: ${shown.map((p) => p.text).join(" ")}`}
+        {told}
       </p>
       <button type="submit" className={panel.primary} aria-describedby="launch-summary">
         Start the run

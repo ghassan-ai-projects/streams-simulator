@@ -101,16 +101,21 @@ function LinkPicks({ draft, plant, instance, choice, setChoice }: PicksProps) {
 export function ConnectForm(props: FormProps) {
   const { editor, instance } = props;
   const [choice, setChoice] = useState(none);
+  const [said, setSaid] = useState("");
   const ready = choice.output !== "" && choice.target !== "" && choice.input !== "";
   const submit = (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!ready) return;
     editor.edit((doc) => connect(doc, `${instance.id}.${choice.output}`, `${choice.target}.${choice.input}`));
+    setSaid(`Linked ${choice.output.replaceAll("_", " ")} to ${choice.target} ${choice.input.replaceAll("_", " ")}`);
     setChoice({ ...choice, input: "" });
   };
   return (
     <form className={panel.group} onSubmit={submit} aria-labelledby="connect-title" noValidate>
       <h3 id="connect-title">Link an output</h3>
+      <p className="sr-only" aria-live="polite">
+        {said}
+      </p>
       <LinkPicks {...props} choice={choice} setChoice={setChoice} />
       <SubmitRow
         id="link-reason"

@@ -141,15 +141,14 @@ function useCreate({ maker, navigation }: Pick<NewPlantProps, "maker" | "navigat
   return { failure, create };
 }
 
-function Actions({
-  failure,
-  ready,
-  onCancel,
-}: {
+interface ActionsProps {
   readonly failure: string;
-  readonly ready: boolean;
+  readonly reason: string;
   readonly onCancel: () => void;
-}) {
+}
+
+function Actions({ failure, reason, onCancel }: ActionsProps) {
+  const ready = reason === "";
   return (
     <>
       {failure !== "" && (
@@ -158,12 +157,22 @@ function Actions({
         </p>
       )}
       <span className={styles.newActions}>
-        <button type="submit" className={styles.create} aria-disabled={!ready}>
+        <button
+          type="submit"
+          className={styles.create}
+          aria-disabled={!ready}
+          aria-describedby={ready ? undefined : "new-plant-reason"}
+        >
           Create and open the editor
         </button>
         <button type="button" className={styles.open} onClick={onCancel}>
           Cancel
         </button>
+        {!ready && (
+          <span id="new-plant-reason" className={styles.meta}>
+            {reason}
+          </span>
+        )}
       </span>
     </>
   );
@@ -179,6 +188,12 @@ function useNaming(taken: readonly string[]) {
   return { name, setName, id, setId: setTyped, followAgain };
 }
 
+function readiness(name: string, id: string, base: string): string {
+  if (name.trim() === "") return "Name the plant first.";
+  if (id.trim() === "") return "Give it an id.";
+  return base === "example:" ? "Choose what to start from." : "";
+}
+
 export function NewPlantForm(props: NewPlantProps & { readonly onCancel: () => void }) {
   const { bases, examples, taken, onCancel } = props;
   const { name, setName, id, setId, followAgain } = useNaming(taken);
@@ -186,7 +201,8 @@ export function NewPlantForm(props: NewPlantProps & { readonly onCancel: () => v
   const [base, setBase] = useState(first);
   const [copy, setCopy] = useState(true);
   const { failure, create } = useCreate(props);
-  const ready = id.trim() !== "" && name.trim() !== "" && base !== "example:";
+  const reason = readiness(name, id, base);
+  const ready = reason === "";
   const submit = (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (ready) void create(base, id.trim(), name.trim(), copy);
@@ -211,7 +227,7 @@ export function NewPlantForm(props: NewPlantProps & { readonly onCancel: () => v
       />
       <BasePick bases={bases} examples={examples} base={base} setBase={setBase} />
       <CopyChoice copy={copy} setCopy={setCopy} />
-      <Actions failure={failure} ready={ready} onCancel={onCancel} />
+      <Actions failure={failure} reason={reason} onCancel={onCancel} />
     </form>
   );
 }
