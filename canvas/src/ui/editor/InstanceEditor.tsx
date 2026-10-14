@@ -7,9 +7,10 @@ import type { Instance } from "../../model/plant";
 import type { Connection } from "../../model/composition";
 import { areaNodesOf, connectionsOf, endpointOf, linkEnd } from "../../model/composition";
 import { instanceNameFits, instanceNameRule } from "../../model/instanceNameRule";
-import { disconnect, isTemplate, moveInstance, removeInstance, renameInstance } from "../../model/compositionEdits";
+import { disconnect, isTemplate, moveInstance, renameInstance } from "../../model/compositionEdits";
 import panel from "../panel.module.css";
 import { ConnectForm } from "./ConnectForm";
+import { DeleteInstance } from "./DeleteInstance";
 import styles from "./Editor.module.css";
 import type { PanelProps } from "./panelProps";
 import { useRequestedFocus } from "./panelProps";
@@ -216,17 +217,7 @@ export function InstanceEditor(props: EditorProps) {
         <Editing {...props} />
         <Links draft={draft} instance={instance} editor={editor} />
         {!isTemplate(draft.doc, instance.id) && (
-          <button
-            type="button"
-            className={styles.delete}
-            onClick={() => {
-              request.ask("build");
-              editor.edit((doc) => removeInstance(doc, instance.id), null);
-            }}
-          >
-            <Trash2 size={14} aria-hidden="true" />
-            {`Delete ${instance.id}`}
-          </button>
+          <DeleteInstance draft={draft} editor={editor} request={request} instance={instance} />
         )}
       </div>
     </aside>

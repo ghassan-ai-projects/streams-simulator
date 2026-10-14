@@ -79,6 +79,7 @@ test("an existing plant opens in the editor from its plant screen, unchanged unt
   await expect(page.getByRole("button", { name: "Revert" })).toHaveAttribute("aria-disabled", "true");
   await page.getByRole("navigation", { name: "Outline" }).getByRole("button", { name: "MB-PROC" }).click();
   await page.getByRole("button", { name: "Delete MB-PROC" }).click();
+  await page.getByRole("button", { name: /^Delete MB-PROC and its \d+ links?\?$/ }).click();
   await expect(page.getByRole("navigation", { name: "Outline" }).getByRole("button")).toHaveCount(22);
   await expect(page.getByRole("status").filter({ hasText: "Unsaved changes" })).toBeVisible();
   await page.getByRole("button", { name: "Revert" }).click();

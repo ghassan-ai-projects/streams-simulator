@@ -74,6 +74,8 @@ describe("plant editor panel", () => {
       editor.select("CH-9");
     });
     fireEvent.click(screen.getByRole("button", { name: "Delete CH-9" }));
+    expect(equipmentOf(current(editor))).toHaveLength(2);
+    fireEvent.click(screen.getByRole("button", { name: "Delete CH-9 and its 1 link?" }));
     expect(equipmentOf(current(editor)).map((entry) => entry.names[0])).toEqual(["CT-1"]);
     expect(screen.getByRole("heading", { name: "Build" })).toHaveFocus();
     fireEvent.click(screen.getByRole("button", { name: "Revert" }));
@@ -200,6 +202,16 @@ describe("plant editor panel", () => {
     choose("Output", "heat_out");
     expect(within(screen.getByLabelText("To")).getByRole("option")).toHaveTextContent("No instance takes heat yet");
     expect(within(screen.getByLabelText("Input")).getByRole("option")).toHaveTextContent("Choose an instance first");
+  });
+
+  it("deletes an instance without links at once, and asks first when it has links", async () => {
+    const { editor } = await editing();
+    act(() => {
+      editor.edit((current) => ({ ...current, connections: [] }));
+      editor.select("CT-1");
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Delete CT-1" }));
+    expect(equipmentOf(current(editor)).map((entry) => entry.names[0])).toEqual(["CH-1"]);
   });
 
   it("leaves an instance generated from an id template to the file", async () => {

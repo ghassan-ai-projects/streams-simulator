@@ -163,6 +163,10 @@
   background: var(--status-alarm-bg);
 }
 
+.deleteRow {
+  display: flex;
+}
+
 .empty {
   display: flex;
   flex-direction: column;
