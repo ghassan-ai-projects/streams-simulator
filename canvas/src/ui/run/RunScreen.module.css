@@ -531,23 +531,21 @@
   position: relative;
 }
 
-.info > summary {
+.info > button {
   display: grid;
   place-items: center;
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
   border-radius: 50%;
+  background: transparent;
   color: var(--text-tertiary);
-  list-style: none;
   cursor: pointer;
 }
 
-.info > summary::-webkit-details-marker {
-  display: none;
-}
-
-.info > summary:hover,
-.info[open] > summary {
+.info > button:hover,
+.info > button[aria-expanded="true"] {
   color: var(--text-primary);
   background: var(--surface-hover);
 }
@@ -564,7 +562,10 @@
   background: var(--surface-panel);
   box-shadow: var(--shadow-panel);
   font: var(--text-sm) var(--font-mono);
-  white-space: nowrap;
+  width: max-content;
+  max-width: 440px;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .runActions {

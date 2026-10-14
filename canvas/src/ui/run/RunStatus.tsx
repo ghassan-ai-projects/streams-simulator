@@ -4,6 +4,7 @@ import type { ReviewState } from "../../app/reviewStore";
 import type { Badge, Report } from "../../model/report";
 import { badgeLabels, badgeOf } from "../../model/report";
 import { runFacts, runIdentity } from "../../model/reportViews";
+import { RunInfo } from "./RunInfo";
 import styles from "./RunScreen.module.css";
 
 const badgeIcons = {
@@ -73,12 +74,7 @@ function Mode({ report }: { readonly report: Report }) {
       </span>
       {!report.ended && <span className={styles.chip}>not finished</span>}
       <span className={styles.facts}>{runFacts(report)}</span>
-      <details className={styles.info}>
-        <summary aria-label="Run details" title="Run details">
-          <Info size={14} aria-hidden="true" />
-        </summary>
-        <p className={styles.popover}>{runIdentity(report)}</p>
-      </details>
+      <RunInfo text={runIdentity(report)} />
     </>
   );
 }
