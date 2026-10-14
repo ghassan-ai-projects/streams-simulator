@@ -15,9 +15,7 @@ test("the workspace lists each real plant once with its actions, and its runs, i
   await expect(plants.getByRole("listitem").filter({ hasText: "Factory utilities" })).toContainText(
     "20 instance definitions",
   );
-  await expect(plants).toContainText(
-    "Instance definitions are entries in the plant file. One definition can expand into several instances when you open the plant.",
-  );
+  await expect(plants).not.toContainText("can expand into several instances");
   const runs = page.getByRole("region", { name: "Runs" });
   await expect(runs.getByRole("listitem").filter({ hasText: "w-explore" })).toContainText("Factory utilities");
   await expect(runs.getByRole("listitem").filter({ hasText: "w-evaluate" })).toContainText("30 min");

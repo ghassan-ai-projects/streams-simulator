@@ -35,7 +35,7 @@ describe("home screen", () => {
     const plants = screen.getByRole("region", { name: "Plants" });
     expect(within(plants).getAllByRole("listitem")).toHaveLength(1);
     expect(within(plants).getByText("Factory utilities")).toBeInTheDocument();
-    expect(within(plants).getByText(/Instance definitions are entries in the plant file/)).toBeInTheDocument();
+    expect(within(plants).queryByText(/can expand into several instances/)).not.toBeInTheDocument();
     expect(within(plants).getByText(/^2 runs · last /)).toBeInTheDocument();
     for (const action of ["Open", "Edit", "Run"]) {
       expect(within(plants).getByRole("button", { name: `${action} Factory utilities` })).toBeInTheDocument();
