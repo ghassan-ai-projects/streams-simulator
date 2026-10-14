@@ -207,7 +207,7 @@ function Truth({ report, unit, entity }: TruthProps) {
 function Scoring({ report }: { readonly report: Report }) {
   const text =
     report.scoring === null
-      ? "The report has no scoring section."
+      ? "Nothing was scored: no consumer verdict was recorded for this run. A consumer attaches through the operator endpoint; the canvas does not attach one."
       : `${report.scoring.status}${report.scoring.reason ? ` · ${report.scoring.reason}` : ""}`;
   return (
     <Section title="Scoring">
