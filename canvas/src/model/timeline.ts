@@ -37,23 +37,33 @@ export function nextEvent(marks: readonly EventMark[], atNs: number): number | n
   return marks.find((mark) => mark.atNs > atNs)?.atNs ?? null;
 }
 
-export function faultedAt(report: Report | null, atNs: number): ReadonlySet<string> {
-  const active = new Set<string>();
+export function faultedAt(report: Report | null, atNs: number): ReadonlyMap<string, string> {
+  const active = new Map<string, string>();
   for (const d of report?.disturbances ?? []) {
     if (d.kind !== "fault" || d.onsetNs > atNs) continue;
     if (d.action === "clear") active.delete(d.target);
-    else active.add(d.target);
+    else active.set(d.target, humanise(d.name));
   }
   return active;
 }
 
-export function laneRows(positions: readonly number[], width: number, rows = 3): readonly number[] {
+export interface ChipPlace {
+  readonly left: number;
+  readonly row: number;
+}
+
+export function placeChips(
+  positions: readonly number[],
+  widths: readonly number[],
+  lane: { readonly width: number; readonly rows: number; readonly gap: number },
+): readonly ChipPlace[] {
   const ends: number[] = [];
-  return positions.map((position) => {
-    const free = ends.findIndex((end) => end <= position);
-    const row = free >= 0 ? free : ends.length < rows ? ends.length : -1;
-    if (row < 0) return -1;
-    ends[row] = position + width;
-    return row;
+  return positions.map((position, index) => {
+    const width = widths[index] ?? 0;
+    const left = Math.max(0, Math.min(position, lane.width - width));
+    const free = ends.findIndex((end) => end <= left);
+    const row = free >= 0 ? free : ends.length < lane.rows ? ends.length : -1;
+    if (row >= 0) ends[row] = left + width + lane.gap;
+    return { left, row };
   });
 }

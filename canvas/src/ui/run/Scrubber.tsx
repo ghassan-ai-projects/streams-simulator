@@ -3,8 +3,8 @@ import type { KeyboardEvent, ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Report } from "../../model/report";
 import { wallClock } from "../../model/report";
-import type { EventMark } from "../../model/timeline";
-import { eventMarks, laneRows, nextEvent, previousEvent } from "../../model/timeline";
+import type { ChipPlace, EventMark } from "../../model/timeline";
+import { eventMarks, nextEvent, placeChips, previousEvent } from "../../model/timeline";
 import styles from "./RunScreen.module.css";
 
 interface ScrubberProps {
@@ -24,7 +24,8 @@ interface LaneProps {
   readonly onEvent: ((mark: EventMark) => void) | undefined;
 }
 
-const chipWidth = 168;
+const chipText = (mark: EventMark, startNs: number) => `${wallClock(mark.atNs, startNs)} ${mark.label}`;
+const chipWidth = (text: string) => Math.min(320, 20 + text.length * 7);
 
 function useWidth() {
   const [width, setWidth] = useState(800);
@@ -43,40 +44,68 @@ function useWidth() {
   return { ref, width };
 }
 
+interface ChipProps {
+  readonly mark: EventMark;
+  readonly chip: ChipPlace;
+  readonly text: string;
+  readonly startNs: number;
+  readonly pick: (mark: EventMark) => void;
+}
+
+function Chip({ mark, chip, text, startNs, pick }: ChipProps) {
+  return (
+    <li className={styles.laneItem} style={{ left: `${String(chip.left)}px`, top: `${String(chip.row * 28)}px` }}>
+      <button
+        type="button"
+        className={mark.tone === "fault" ? styles.chipFault : styles.chipEvent}
+        title={`${wallClock(mark.atNs, startNs)} · ${mark.raw}`}
+        onClick={() => {
+          pick(mark);
+        }}
+      >
+        {text}
+      </button>
+    </li>
+  );
+}
+
 function Lane({ marks, fraction, startNs, onSeek, onEvent }: LaneProps) {
   const { ref, width } = useWidth();
-  const rows = laneRows(
+  const texts = marks.map((mark) => chipText(mark, startNs));
+  const chips = placeChips(
     marks.map((mark) => fraction(mark.atNs) * width),
-    chipWidth + 4,
-    2,
+    texts.map(chipWidth),
+    { width, rows: 2, gap: 4 },
   );
+  const hidden = chips.filter((chip) => chip.row < 0).length;
+  const pick = (mark: EventMark) => {
+    if (onEvent === undefined) onSeek(mark.atNs);
+    else onEvent(mark);
+  };
   return (
-    <ol
-      ref={ref}
-      className={styles.lane}
-      aria-label="Events"
-      style={{ height: `${String((Math.max(0, ...rows) + 1) * 28)}px` }}
-    >
-      {marks.map((mark, index) => (
-        <li
-          key={`${String(mark.atNs)}${mark.label}`}
-          style={{ left: `${String(fraction(mark.atNs) * 100)}%`, top: `${String((rows[index] ?? 0) * 28)}px` }}
-          className={styles.laneItem}
-        >
-          <button
-            type="button"
-            className={mark.tone === "fault" ? styles.chipFault : styles.chipEvent}
-            title={`${wallClock(mark.atNs, startNs)} · ${mark.raw}`}
-            onClick={() => {
-              if (onEvent === undefined) onSeek(mark.atNs);
-              else onEvent(mark);
-            }}
-          >
-            {`${wallClock(mark.atNs, startNs)} ${mark.label}`}
-          </button>
-        </li>
-      ))}
-    </ol>
+    <>
+      <ol
+        ref={ref}
+        className={styles.lane}
+        aria-label="Events"
+        style={{ height: `${String((Math.max(0, ...chips.map((chip) => chip.row)) + 1) * 28)}px` }}
+      >
+        {marks.map((mark, index) => {
+          const chip = chips[index];
+          return chip === undefined || chip.row < 0 ? null : (
+            <Chip
+              key={`${String(mark.atNs)}${mark.label}`}
+              mark={mark}
+              chip={chip}
+              text={texts[index] ?? ""}
+              startNs={startNs}
+              pick={pick}
+            />
+          );
+        })}
+      </ol>
+      {hidden > 0 && <p className={styles.laneMore}>{`${String(hidden)} more events: use Previous and Next event`}</p>}
+    </>
   );
 }
 

@@ -25,6 +25,7 @@ export function useLive(review: ReviewStore, state: ReviewState, plant: ReadyPla
         shown: abnormalFirst(shown),
         status: attention === "alarm" ? "alarm" : faulted.has(id) ? "fault" : attention,
         count: 0,
+        fault: faulted.get(id) ?? "",
       };
     },
     [review, state.positionNs, plant, faulted],
@@ -34,7 +35,7 @@ export function useLive(review: ReviewStore, state: ReviewState, plant: ReadyPla
       const members = plant?.plant.instances.filter((instance) => hallOf(instance.id) === id) ?? [];
       if (members.length === 0) return one(id);
       const worst = worstOf(members.map((member) => one(member.id).status));
-      return { shown: [], status: worst.status, count: worst.count };
+      return { shown: [], status: worst.status, count: worst.count, fault: "" };
     },
     [one, plant],
   );

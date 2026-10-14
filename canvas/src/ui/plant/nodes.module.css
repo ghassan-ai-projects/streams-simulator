@@ -318,13 +318,21 @@
 
 .tag {
   display: inline-flex;
-  flex: none;
+  flex: 0 1 auto;
   align-items: center;
+  min-width: 0;
+  max-width: 60%;
   gap: 3px;
   padding: 0 5px;
   border-radius: 4px;
   font-size: var(--text-xs);
   font-weight: 600;
+}
+
+.tagText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .tag-alarm,

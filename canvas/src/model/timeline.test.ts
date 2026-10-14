@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { report } from "../test/runFixture";
 import { parseReport } from "./report";
-import { eventMarks, faultedAt, laneRows, nextEvent, previousEvent } from "./timeline";
+import { eventMarks, faultedAt, nextEvent, placeChips, previousEvent } from "./timeline";
 
 const parsed = parseReport(report);
 
@@ -30,7 +30,7 @@ describe("timeline", () => {
 
   it("knows which instances carry an active fault at a time", () => {
     expect([...faultedAt(parsed, 599e9)]).toEqual([]);
-    expect([...faultedAt(parsed, 600e9)]).toEqual(["CT-1"]);
+    expect([...faultedAt(parsed, 600e9)]).toEqual([["CT-1", "fan failure"]]);
     const cleared = {
       ...parsed,
       disturbances: [
@@ -46,9 +46,16 @@ describe("timeline", () => {
 
 describe("event lane", () => {
   it("puts close events on separate rows and reuses a row once it is free", () => {
-    expect(laneRows([0, 5, 10, 30, 31], 20)).toEqual([0, 1, 2, 0, 1]);
-    expect(laneRows([0, 25, 26], 20, 2)).toEqual([0, 0, 1]);
-    expect(laneRows([0, 1, 2, 3], 20, 2)).toEqual([0, 1, -1, -1]);
-    expect(laneRows([], 20)).toEqual([]);
+    const lane = { width: 100, rows: 2, gap: 4 };
+    const rows = (positions: number[]) =>
+      placeChips(
+        positions,
+        positions.map(() => 20),
+        lane,
+      ).map((chip) => chip.row);
+    expect(rows([0, 30, 31])).toEqual([0, 0, 1]);
+    expect(rows([0, 1, 2, 3])).toEqual([0, 1, -1, -1]);
+    expect(rows([])).toEqual([]);
+    expect(placeChips([95], [40], lane)).toEqual([{ left: 60, row: 0 }]);
   });
 });

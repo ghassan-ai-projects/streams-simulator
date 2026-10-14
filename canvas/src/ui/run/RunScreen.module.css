@@ -196,8 +196,11 @@
 }
 
 .failure {
-  padding: var(--space-3);
-  color: var(--status-alarm);
+  margin: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-left: 3px solid var(--status-warn);
+  background: var(--status-warn-bg);
+  color: var(--text-primary);
 }
 
 .side {
@@ -307,15 +310,22 @@
   list-style: none;
 }
 
+.laneMore {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
 .laneItem {
   position: absolute;
   top: 0;
+  width: max-content;
 }
 
 .chipFault,
 .chipEvent {
   height: 24px;
-  max-width: 168px;
+  max-width: 320px;
   padding: 0 var(--space-2);
   overflow: hidden;
   text-overflow: ellipsis;

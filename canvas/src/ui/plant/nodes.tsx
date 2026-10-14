@@ -98,13 +98,27 @@ function Readout({ shown }: { readonly shown: readonly Shown[] }) {
 
 const statusIcons = { alarm: OctagonAlert, fault: Wrench, warn: TriangleAlert } as const;
 
-function StatusTag({ status, count = 0 }: { readonly status: NodeStatus; readonly count?: number }) {
+interface TagProps {
+  readonly status: NodeStatus;
+  readonly count?: number;
+  readonly fault?: string;
+}
+
+function tagText(status: NonNullable<NodeStatus>, count: number, fault: string): string {
+  if (count > 0) return `${statusWords[status]} ${String(count)}`;
+  return status === "fault" && fault !== "" ? `${statusWords[status]}: ${fault}` : statusWords[status];
+}
+
+function StatusTag({ status, count = 0, fault = "" }: TagProps) {
   if (status === null) return null;
   const Icon = statusIcons[status];
+  const text = tagText(status, count, fault);
   return (
-    <span className={cx(styles.tag, styles[`tag-${status}`])} aria-hidden="true">
-      <Icon size={12} />
-      {count > 0 ? `${statusWords[status]} ${String(count)}` : statusWords[status]}
+    <span className={cx(styles.tag, styles[`tag-${status}`])} title={text}>
+      <Icon size={12} aria-hidden="true" />
+      <span className={styles.tagText} aria-hidden="true">
+        {text}
+      </span>
     </span>
   );
 }
@@ -127,7 +141,7 @@ export function InstanceNode({ data, selected }: NodeProps<InstanceNodeType>) {
       <Handle type="source" position={Position.Right} id="out" className={styles.anchor} isConnectable={false} />
       <div className={styles.header}>
         <span className={styles.id}>{view.label}</span>
-        <StatusTag status={status} />
+        <StatusTag status={status} fault={data.live?.fault ?? ""} />
         <span className={styles.kind} title={view.detail}>
           {view.detail}
         </span>

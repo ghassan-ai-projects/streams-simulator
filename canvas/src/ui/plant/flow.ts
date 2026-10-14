@@ -6,6 +6,7 @@ export interface NodeLive {
   readonly shown: readonly Shown[];
   readonly status: NodeStatus;
   readonly count: number;
+  readonly fault: string;
 }
 
 type InstanceData = Readonly<{ view: ViewNode; live: NodeLive | null; active: boolean }>;
