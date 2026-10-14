@@ -235,7 +235,7 @@
     },
     "incomplete": {
       "type": "boolean",
-      "description": "True when a rendering, sink, or lifecycle error aborted the run before a complete adapter end state was written."
+      "description": "True when a rendering, sink, or lifecycle error aborted the run before a complete adapter end state was written. `verify` never reports such a run as matching (reason `incomplete`), and checks the stamp against the `run.closed` record of each journal and against `reproducible`, which is false for an incomplete run."
     },
     "error": {
       "type": "string",

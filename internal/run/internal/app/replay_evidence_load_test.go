@@ -28,10 +28,10 @@ func editRunJSON(t *testing.T, path string, edit func(doc map[string]any)) {
 func TestVerdictLoadingToleratesOnlyAbsentEvidenceDigests(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
-		name         string
-		edit         func(doc map[string]any)
-		strictFails  bool
-		verdictFails bool
+		name              string
+		edit              func(doc map[string]any)
+		strictFails       bool
+		verificationFails bool
 	}{
 		{"untouched", func(map[string]any) {}, false, false},
 		{"a ledger digest removed", func(doc map[string]any) { delete(doc, "ledger_digest") }, true, false},
@@ -45,7 +45,9 @@ func TestVerdictLoadingToleratesOnlyAbsentEvidenceDigests(t *testing.T) {
 			delete(doc, "ledger_digest")
 			doc["seed"] = "seven"
 		}, true, true},
-		{"a digest malformed", func(doc map[string]any) { doc["ledger_digest"] = "sha256:00" }, true, true},
+		{"a digest malformed", func(doc map[string]any) { doc["ledger_digest"] = "sha256:00" }, true, false},
+		{"a digest empty", func(doc map[string]any) { doc["ledger_digest"] = "" }, true, false},
+		{"a digest of the wrong type", func(doc map[string]any) { doc["ledger_digest"] = 7 }, true, true},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -57,8 +59,8 @@ func TestVerdictLoadingToleratesOnlyAbsentEvidenceDigests(t *testing.T) {
 			if _, err := LoadArtifact(path); (err != nil) != tc.strictFails {
 				t.Fatalf("LoadArtifact error = %v, want failure %v", err, tc.strictFails)
 			}
-			if _, err := loadArtifactForVerdict(path); (err != nil) != tc.verdictFails {
-				t.Fatalf("loadArtifactForVerdict error = %v, want failure %v", err, tc.verdictFails)
+			if _, err := LoadArtifactForVerification(path); (err != nil) != tc.verificationFails {
+				t.Fatalf("LoadArtifactForVerification error = %v, want failure %v", err, tc.verificationFails)
 			}
 		})
 	}

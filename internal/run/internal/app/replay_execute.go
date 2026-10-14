@@ -65,7 +65,7 @@ func noteStampDivergence(replay *Run, art *model.RunArtifact, result *ReplayResu
 }
 
 func noteTraceDivergence(replay *Run, art *model.RunArtifact, result *ReplayResult) {
-	if result.GotDigest == result.WantDigest || (!art.Incomplete && result.WantDigest == "") {
+	if result.GotDigest == result.WantDigest || result.WantDigest == "" {
 		return
 	}
 	index := firstDivergentRecord(replay, art)

@@ -17,6 +17,10 @@ func FirstDifference(a, b []byte) int {
 	return layer.FirstDifference(a, b)
 }
 
+func ClosedIncomplete(raw []byte) (incomplete, closed bool) {
+	return layer.ClosedIncomplete(raw)
+}
+
 func (j *Journal) Opened(o Opened) {
 	j.impl.Opened(o)
 }

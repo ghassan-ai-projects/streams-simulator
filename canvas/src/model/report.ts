@@ -231,6 +231,9 @@ const reasons: Readonly<Record<string, (file: string) => string>> = {
   digest_missing: (file) => `Does not verify: run.json records no digest for ${file || "an evidence file"}.`,
   file_differs: (file) => `Does not verify: ${file || "a file"} differs from what the run recorded.`,
   file_missing: (file) => `Does not verify: ${file || "a file"} is missing from the run folder.`,
+  incomplete: () => "Does not verify: the run ended incomplete, so it cannot be verified as complete.",
+  incomplete_stamp: (file) =>
+    `Does not verify: run.json says the run ended incomplete, which ${file || "the run's evidence"} contradicts.`,
 };
 
 export function replayLine(verify: VerifyState): string {

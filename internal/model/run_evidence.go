@@ -1,5 +1,7 @@
 package model
 
+import "regexp"
+
 type EvidenceDigest struct {
 	Name       string
 	Field      string
@@ -8,14 +10,38 @@ type EvidenceDigest struct {
 	Replayable bool
 }
 
+var wellFormedDigest = regexp.MustCompile(`^sha256:[0-9a-f]{64}$`)
+
+type evidenceSlot struct {
+	EvidenceDigest
+	value *string
+}
+
+func (a *RunArtifact) evidenceSlots() []evidenceSlot {
+	return []evidenceSlot{
+		{EvidenceDigest{"trace", "expected_trace_digest", FileTrace, "", false}, &a.ExpectedTraceDigest},
+		{EvidenceDigest{"journal", "journal_digest", FileObserverJournal, "", true}, &a.JournalDigest},
+		{EvidenceDigest{"sealed_journal", "sealed_journal_digest", FileDirectorJournal, "", true}, &a.SealedJournalDigest},
+		{EvidenceDigest{"journal_file", "journal_file_digest", FileObserverJournal, "", false}, &a.JournalFileDigest},
+		{EvidenceDigest{"sealed_journal_file", "sealed_journal_file_digest", FileDirectorJournal, "", false}, &a.SealedFileDigest},
+		{EvidenceDigest{"ledger", "ledger_digest", FileLedger, "", false}, &a.LedgerDigest},
+		{EvidenceDigest{"history", "history_digest", FileHistory, "", false}, &a.HistoryDigest},
+	}
+}
+
 func (a *RunArtifact) EvidenceDigests() []EvidenceDigest {
-	return []EvidenceDigest{
-		{"trace", "expected_trace_digest", FileTrace, a.ExpectedTraceDigest, false},
-		{"journal", "journal_digest", FileObserverJournal, a.JournalDigest, true},
-		{"sealed_journal", "sealed_journal_digest", FileDirectorJournal, a.SealedJournalDigest, true},
-		{"journal_file", "journal_file_digest", FileObserverJournal, a.JournalFileDigest, false},
-		{"sealed_journal_file", "sealed_journal_file_digest", FileDirectorJournal, a.SealedFileDigest, false},
-		{"ledger", "ledger_digest", FileLedger, a.LedgerDigest, false},
-		{"history", "history_digest", FileHistory, a.HistoryDigest, false},
+	var digests []EvidenceDigest
+	for _, slot := range a.evidenceSlots() {
+		slot.Digest = *slot.value
+		digests = append(digests, slot.EvidenceDigest)
+	}
+	return digests
+}
+
+func (a *RunArtifact) DropMalformedEvidenceDigests() {
+	for _, slot := range a.evidenceSlots() {
+		if !wellFormedDigest.MatchString(*slot.value) {
+			*slot.value = ""
+		}
 	}
 }

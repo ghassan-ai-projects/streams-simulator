@@ -113,7 +113,7 @@ func readInto(dir string, slots []slot, folder *domain.Folder) error {
 }
 
 func loadArtifact(dir string) (*model.RunArtifact, error) {
-	artifact, err := run.LoadArtifact(filepath.Join(dir, model.FileRunArtifact))
+	artifact, err := run.LoadArtifactForVerification(filepath.Join(dir, model.FileRunArtifact))
 	if errors.Is(err, fs.ErrNotExist) {
 		return nil, nil
 	}

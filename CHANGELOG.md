@@ -4,6 +4,21 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **Incomplete runs and the report's loading** (findings E5-1, E5-2, E5-4; R9-30 to R9-32). Breaking: `streamsim verify` never
+  reports a run that ended `incomplete` as matching. It answers `matches: false` with `reason: incomplete` (exit 1,
+  `replay_mismatch`) even when the replay and every file agree; a more specific reason (a file that differs or is missing, a
+  trace that diverges) wins when one applies. Every evidence file and digest an incomplete run does have is compared with
+  each other; the replayed journals, ledger and history are not compared with the replay (the close of a failed run cannot be
+  reproduced). The `incomplete` stamp is checked against the `run.closed` record of `journal.jsonl` and `sealed/journal.jsonl`
+  and against `reproducible` (an incomplete run is never reproducible): a contradiction, which editing `incomplete` on a closed
+  run's `run.json` produces, is `reason: incomplete_stamp` and names the journal. `cli-output-v0.1` lists both reasons and the
+  `replay` document now carries `incomplete`, `emitted` and `journal_diverged`; the `sim.run.verify` tool carries `reason` and
+  `incomplete`. An empty or malformed evidence digest (`"ledger_digest": ""`) is a verdict (`digest_missing`), not a schema
+  rejection. `streamsim report` loads `run.json` as `verify` does (`run.LoadArtifactForVerification`): a run that ended
+  complete with an evidence digest absent, empty or malformed is `verification.status: files_differ` with a `digest_missing`
+  check (`recorded` absent), where it failed with `artifact_invalid`; `run-report-v0.1` lists the status. A run still open in
+  evaluate mode reports `truth_unavailable: "sealed until the run ends"` (the same field, same vocabulary as the
+  foreign-run reason). The canvas names the two new reasons.
 - **Fault intervals in the run report and a state vocabulary on channels** (findings E4-2, E4-4; R9-20, R9-21). Breaking:
   `truth.faults` in `streamsim report` is no longer the inject and clear commands; each fault is an interval the world
   gave it: `fault_id`, `entity_id`, `fault`, `injected_at_ns`, `onset_ns`, `cleared_ns` (`null` while active at the end

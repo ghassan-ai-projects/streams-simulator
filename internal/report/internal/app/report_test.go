@@ -17,7 +17,7 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/testsupport"
 )
 
-const withheldLine = "Truth withheld: the run has not ended (no run.json)."
+const withheldLine = "Truth unavailable: sealed until the run ends"
 
 func render(t *testing.T, dir, format string) []byte {
 	t.Helper()
@@ -99,6 +99,9 @@ func TestReportOfARunCutBeforeItsArtifactShowsItIncompleteAndWithholdsTruth(t *t
 	var report domain.Report
 	if err := json.Unmarshal(got, &report); err != nil {
 		t.Fatal(err)
+	}
+	if report.TruthUnavailable != domain.TruthSealed {
+		t.Fatalf("truth_unavailable = %q, want %q", report.TruthUnavailable, domain.TruthSealed)
 	}
 	if report.Run.Complete || report.Run.Ended || report.Truth != nil || report.Run.Seed != nil || report.Verification.Status != domain.NotChecked {
 		t.Fatalf("open run report = %+v, want incomplete, not ended, no truth, no seed, not checked", report)

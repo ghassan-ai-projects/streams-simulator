@@ -30,12 +30,21 @@ type ReplayResult struct {
 	CurrentDomainDigest string `json:"current_domain_digest,omitempty"`
 }
 
+func Reproduced(r *ReplayResult) bool {
+	return r.Matches || r.Reason == ReasonIncomplete
+}
+
 func LoadArtifact(path string) (*model.RunArtifact, error) {
 	return readArtifact(path, rules.ValidateArtifactDocument)
 }
 
-func loadArtifactForVerdict(path string) (*model.RunArtifact, error) {
-	return readArtifact(path, rules.ValidateArtifactDocumentForVerdict)
+func LoadArtifactForVerification(path string) (*model.RunArtifact, error) {
+	artifact, err := readArtifact(path, rules.ValidateArtifactDocumentForVerification)
+	if err != nil {
+		return nil, err
+	}
+	artifact.DropMalformedEvidenceDigests()
+	return artifact, nil
 }
 
 func readArtifact(path string, validate func([]byte, string) error) (*model.RunArtifact, error) {
@@ -55,7 +64,11 @@ func readArtifact(path string, validate func([]byte, string) error) (*model.RunA
 
 func ReplayArtifact(ctx context.Context, art *model.RunArtifact, spec *domain.Compiled, adapterSpec *model.Adapter, sinkTarget string) (*ReplayResult, error) {
 	result, _, err := replayArtifactRun(ctx, art, spec, adapterSpec, sinkTarget)
-	return result, err
+	if err != nil {
+		return nil, err
+	}
+	concludeIncomplete(art, result)
+	return result, nil
 }
 
 func replayArtifactRun(ctx context.Context, art *model.RunArtifact, spec *domain.Compiled, adapterSpec *model.Adapter, sinkTarget string) (*ReplayResult, *Run, error) {
@@ -81,19 +94,13 @@ type ReplayEvidence struct {
 }
 
 func ReplayArtifactEvidence(ctx context.Context, art *model.RunArtifact, spec *domain.Compiled, adapterSpec *model.Adapter) (*ReplayEvidence, error) {
-	spec, adapterSpec, result, err := prepareReplay(art, spec, adapterSpec)
+	result, replay, err := replayArtifactRun(ctx, art, spec, adapterSpec, "")
 	if err != nil {
 		return nil, err
 	}
-	replay, err := newReplayRun(ctx, art, spec, adapterSpec, "")
-	if err != nil {
-		return nil, err
-	}
-	if err := replayCommands(ctx, replay, art.CommandLog); err != nil {
-		return nil, err
-	}
+	concludeIncomplete(art, result)
 	calls := append([]world.EffectorCall{}, replay.World.EffectorCalls()...)
-	return &ReplayEvidence{Result: finishReplayResult(replay, art, result), Calls: calls, Ledger: replay.ledger, History: replay.history}, nil
+	return &ReplayEvidence{Result: result, Calls: calls, Ledger: replay.ledger, History: replay.history}, nil
 }
 
 func replayInputs(art *model.RunArtifact, spec *domain.Compiled, adapterSpec *model.Adapter) (*domain.Compiled, *model.Adapter, error) {

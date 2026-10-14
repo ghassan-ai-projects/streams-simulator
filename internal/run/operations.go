@@ -17,6 +17,14 @@ func LoadArtifact(path string) (*model.RunArtifact, error) {
 	return layer.LoadArtifact(path)
 }
 
+func LoadArtifactForVerification(path string) (*model.RunArtifact, error) {
+	return layer.LoadArtifactForVerification(path)
+}
+
+func Reproduced(res *ReplayResult) bool {
+	return layer.Reproduced(res)
+}
+
 func ReplayArtifact(ctx context.Context, art *model.RunArtifact, spec *domain.Compiled, adapterSpec *model.Adapter, sinkTarget string) (*ReplayResult, error) {
 	return layer.ReplayArtifact(ctx, art, spec, adapterSpec, sinkTarget)
 }

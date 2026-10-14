@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/journal"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
@@ -31,6 +32,12 @@ func noteJournalDivergence(replay *Run, art *model.RunArtifact, result *ReplayRe
 }
 
 func divergeJournal(result *ReplayResult, stream, note string) {
-	result.JournalDiverged = append(result.JournalDiverged, stream)
+	noteDivergedJournal(result, stream)
 	diverge(result, ReasonJournalDivergence, "", note)
+}
+
+func noteDivergedJournal(result *ReplayResult, stream string) {
+	if !slices.Contains(result.JournalDiverged, stream) {
+		result.JournalDiverged = append(result.JournalDiverged, stream)
+	}
 }

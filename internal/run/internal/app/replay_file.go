@@ -13,7 +13,7 @@ import (
 type Directories struct{ Domains, Adapters string }
 
 func ReplayFile(ctx context.Context, artifactPath string, dirs Directories) (*ReplayResult, error) {
-	art, err := loadArtifactForVerdict(artifactPath)
+	art, err := LoadArtifactForVerification(artifactPath)
 	if err != nil {
 		return nil, fmt.Errorf("streamsim: %w", err)
 	}
@@ -103,5 +103,6 @@ func replayWithJournalFiles(ctx context.Context, art *model.RunArtifact, spec *d
 	if err := checkEvidenceFiles(dir, replay, art, res); err != nil {
 		return nil, fmt.Errorf("streamsim: %w", err)
 	}
+	concludeIncomplete(art, res)
 	return res, nil
 }

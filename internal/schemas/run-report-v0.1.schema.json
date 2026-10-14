@@ -55,11 +55,11 @@
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["name", "status", "recorded"],
+            "required": ["name", "status"],
             "properties": {
               "name": {"enum": ["trace", "journal", "sealed_journal", "journal_file", "sealed_journal_file", "ledger", "history"]},
-              "status": {"enum": ["match", "mismatch", "missing_file"]},
-              "recorded": {"$ref": "#/$defs/digest"},
+              "status": {"enum": ["match", "mismatch", "missing_file", "digest_missing"], "description": "digest_missing: run.json records no usable digest for the file (absent, empty or malformed) although the run ended complete; the run cannot be verified from its files."},
+              "recorded": {"$ref": "#/$defs/digest", "description": "Absent for digest_missing."},
               "computed": {"$ref": "#/$defs/digest"}
             }
           }
@@ -79,7 +79,7 @@
         "dropped_by_reason": {"$ref": "#/$defs/reason_counts"}
       }
     },
-    "truth_unavailable": {"type": "string", "minLength": 1, "description": "Present when a file of the folder belongs to another run than the journals: the reason, and the truth object is absent."},
+    "truth_unavailable": {"type": "string", "minLength": 1, "description": "Present when the truth object is absent, with the reason: `sealed until the run ends` for a run still open in evaluate mode (no run.json), or the reason a file of the folder belongs to another run than the journals."},
     "torn_tail": {"type": "array", "minItems": 1, "items": {"enum": ["journal.jsonl", "sealed/journal.jsonl", "ledger.jsonl"]}, "description": "Files whose last line was cut short, as by a crash, and was dropped."},
     "truth": {
       "type": "object",

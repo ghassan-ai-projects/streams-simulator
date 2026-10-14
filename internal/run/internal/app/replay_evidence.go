@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/canonical"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/journal"
@@ -24,7 +25,7 @@ func (f evidenceFile) digestOf(raw []byte) string {
 }
 
 func evidenceFiles(replay *Run, art *model.RunArtifact) []evidenceFile {
-	replayed := replay.replayedDigests()
+	replayed := replay.comparableDigests(art)
 	var files []evidenceFile
 	for _, digest := range art.EvidenceDigests() {
 		file := evidenceFile{EvidenceDigest: digest, replayedDigest: replayed[digest.Name],
@@ -38,6 +39,13 @@ func evidenceFiles(replay *Run, art *model.RunArtifact) []evidenceFile {
 }
 
 var evidenceStreams = map[string]string{"journal": journal.StreamObserver, "sealed_journal": journal.StreamDirector}
+
+func (r *Run) comparableDigests(art *model.RunArtifact) map[string]string {
+	if art.Incomplete {
+		return nil
+	}
+	return r.replayedDigests()
+}
 
 func (r *Run) replayedDigests() map[string]string {
 	if r.replayedDigest == nil {
@@ -59,7 +67,7 @@ func noteMissingDigests(art *model.RunArtifact, result *ReplayResult) {
 	}
 	for _, digest := range art.EvidenceDigests() {
 		if digest.Digest == "" {
-			diverge(result, ReasonDigestMissing, digest.File, fmt.Sprintf("run.json records no %s for %s", digest.Field, digest.File))
+			diverge(result, ReasonDigestMissing, digest.File, fmt.Sprintf("run.json records no usable %s for %s", digest.Field, digest.File))
 		}
 	}
 }
@@ -77,11 +85,8 @@ func noteEvidenceDivergence(replay *Run, art *model.RunArtifact, result *ReplayR
 }
 
 func checkEvidenceFiles(dir string, replay *Run, art *model.RunArtifact, result *ReplayResult) error {
-	if art.Incomplete {
-		return nil
-	}
 	for _, group := range groupByFile(evidenceFiles(replay, art)) {
-		if err := checkEvidenceGroup(dir, group, result); err != nil {
+		if err := checkEvidenceGroup(dir, group, art, result); err != nil {
 			return err
 		}
 	}
@@ -103,20 +108,28 @@ func groupByFile(files []evidenceFile) [][]evidenceFile {
 	return groups
 }
 
-func checkEvidenceGroup(dir string, group []evidenceFile, result *ReplayResult) error {
-	name := group[0].File
-	onDisk, present, err := durable.ReadJournal(dir, name)
+func checkEvidenceGroup(dir string, group []evidenceFile, art *model.RunArtifact, result *ReplayResult) error {
+	onDisk, present, err := durable.ReadJournal(dir, group[0].File)
 	if err != nil {
 		return err
 	}
 	if !present {
-		diverge(result, ReasonFileMissing, name, fmt.Sprintf("%s is missing from the run folder", name))
+		noteAbsentFile(group, art, result)
 		return nil
 	}
 	for _, file := range group {
 		checkEvidenceBytes(file, onDisk, result)
 	}
+	noteClosingStamp(group[0].File, onDisk, art, result)
 	return nil
+}
+
+func noteAbsentFile(group []evidenceFile, art *model.RunArtifact, result *ReplayResult) {
+	name := group[0].File
+	if art.Incomplete && !slices.ContainsFunc(group, func(file evidenceFile) bool { return file.Digest != "" }) {
+		return
+	}
+	diverge(result, ReasonFileMissing, name, fmt.Sprintf("%s is missing from the run folder", name))
 }
 
 func checkEvidenceBytes(file evidenceFile, onDisk []byte, result *ReplayResult) {
@@ -132,7 +145,7 @@ func checkEvidenceBytes(file evidenceFile, onDisk []byte, result *ReplayResult) 
 
 func noteDivergedStream(file evidenceFile, result *ReplayResult) {
 	if stream, ok := evidenceStreams[file.Name]; ok {
-		result.JournalDiverged = append(result.JournalDiverged, stream)
+		noteDivergedJournal(result, stream)
 	}
 }
 

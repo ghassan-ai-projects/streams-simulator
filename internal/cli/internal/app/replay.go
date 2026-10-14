@@ -59,9 +59,13 @@ func parseReplayOptions(command string, args []string, stderr io.Writer) (*flag.
 
 func replayResult(res *run.ReplayResult) map[string]any {
 	doc := map[string]any{"matches": res.Matches, "version_match": res.VersionMatch,
-		"got": res.GotDigest, "want": res.WantDigest, "first_divergence": res.FirstDivergence, "detail": res.Detail, "reason": res.Reason}
+		"got": res.GotDigest, "want": res.WantDigest, "first_divergence": res.FirstDivergence, "detail": res.Detail, "reason": res.Reason,
+		"emitted": res.Emitted, "incomplete": res.Incomplete}
 	if res.File != "" {
 		doc["file"] = res.File
+	}
+	if len(res.JournalDiverged) > 0 {
+		doc["journal_diverged"] = res.JournalDiverged
 	}
 	if res.DomainChanged {
 		doc["domain_changed"], doc["current_domain_digest"] = true, res.CurrentDomainDigest

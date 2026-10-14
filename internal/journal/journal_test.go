@@ -44,6 +44,21 @@ func TestNewMemoryKeepsDigestsAndBytesWithoutFiles(t *testing.T) {
 	}
 }
 
+func TestClosedIncompleteReadsTheClosingRecordThroughTheFacade(t *testing.T) {
+	t.Parallel()
+	j := NewMemory(true)
+	if _, err := j.Close(5, true, "sink failed"); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := j.Bytes(StreamObserver)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if incomplete, closed := ClosedIncomplete(raw); !closed || !incomplete {
+		t.Fatalf("ClosedIncomplete = %v, %v; want a closing record that says incomplete", incomplete, closed)
+	}
+}
+
 func TestNewInDirWritesTheTwoJournalFiles(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()

@@ -12,6 +12,16 @@ import (
 
 func dropRecordedDigest(t *testing.T, artifact, field string) {
 	t.Helper()
+	editArtifactJSON(t, artifact, func(doc map[string]any) { delete(doc, field) })
+}
+
+func markIncomplete(t *testing.T, artifact string, reproducible bool) {
+	t.Helper()
+	editArtifactJSON(t, artifact, func(doc map[string]any) { doc["incomplete"], doc["reproducible"] = true, reproducible })
+}
+
+func editArtifactJSON(t *testing.T, artifact string, edit func(doc map[string]any)) {
+	t.Helper()
 	raw, err := os.ReadFile(artifact)
 	if err != nil {
 		t.Fatal(err)
@@ -20,7 +30,7 @@ func dropRecordedDigest(t *testing.T, artifact, field string) {
 	if err := json.Unmarshal(raw, &doc); err != nil {
 		t.Fatal(err)
 	}
-	delete(doc, field)
+	edit(doc)
 	edited, err := json.Marshal(doc)
 	if err != nil {
 		t.Fatal(err)
@@ -54,6 +64,23 @@ func TestVerifyDocumentsNameTheReasonAndValidateAgainstTheContract(t *testing.T)
 		{"ledger digest removed", func(t *testing.T, artifact string) {
 			dropRecordedDigest(t, artifact, "ledger_digest")
 		}, "digest_missing", "ledger.jsonl"},
+		{"ledger digest emptied", func(t *testing.T, artifact string) {
+			editArtifactJSON(t, artifact, func(doc map[string]any) { doc["ledger_digest"] = "" })
+		}, "digest_missing", "ledger.jsonl"},
+		{"incomplete flipped on a closed run", func(t *testing.T, artifact string) {
+			markIncomplete(t, artifact, false)
+		}, "incomplete_stamp", "journal.jsonl"},
+		{"incomplete run without its journals", func(t *testing.T, artifact string) {
+			markIncomplete(t, artifact, false)
+			for _, field := range []string{"journal_digest", "sealed_journal_digest", "journal_file_digest", "sealed_journal_file_digest"} {
+				dropRecordedDigest(t, artifact, field)
+			}
+			for _, name := range []string{"journal.jsonl", "sealed/journal.jsonl"} {
+				if err := os.Remove(inFolder(name)(artifact)); err != nil {
+					t.Fatal(err)
+				}
+			}
+		}, "incomplete", ""},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -71,7 +98,7 @@ func TestVerifyDocumentsNameTheReasonAndValidateAgainstTheContract(t *testing.T)
 				}
 			}
 			file, _ := doc["file"].(string)
-			if doc["reason"] != tc.reason || file != tc.file {
+			if doc["reason"] != tc.reason || file != tc.file || doc["incomplete"] != strings.HasPrefix(tc.reason, "incomplete") {
 				t.Fatalf("document %v; want reason %q and file %q", doc, tc.reason, tc.file)
 			}
 		})

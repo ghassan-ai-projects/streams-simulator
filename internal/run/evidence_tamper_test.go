@@ -106,19 +106,64 @@ func TestVerifyNamesTheRecordedDigestThatTheReplayDoesNotReproduce(t *testing.T)
 	}
 }
 
-func TestAnIncompleteRunKeepsItsOptionalEvidenceDigests(t *testing.T) {
+func TestFlippingIncompleteOnAClosedRunNeverVerifiesAsAMatch(t *testing.T) {
 	t.Parallel()
-	dir, dirs := publishedRun(t)
-	fields := []string{"ledger_digest", "history_digest", "journal_file_digest", "sealed_journal_file_digest"}
-	editArtifact(t, filepath.Join(dir, model.FileRunArtifact), func(doc map[string]any) {
-		doc["incomplete"] = true
-		dropDigests(fields)(doc)
-	})
-	if err := os.Remove(filepath.Join(dir, model.FileHistory)); err != nil {
+	allDigests := []string{"ledger_digest", "history_digest", "journal_digest", "sealed_journal_digest", "journal_file_digest",
+		"sealed_journal_file_digest", "expected_trace_digest"}
+	cases := []struct {
+		name         string
+		tamper       func(t *testing.T, dir string)
+		reason, file string
+		detail       string
+	}{
+		{"files intact", func(*testing.T, string) {}, "incomplete_stamp", model.FileObserverJournal, "closed with incomplete=false"},
+		{"ledger deleted", func(t *testing.T, dir string) { removeFile(t, dir, model.FileLedger) },
+			"incomplete_stamp", model.FileObserverJournal, model.FileLedger + " is missing"},
+		{"sealed folder deleted", func(t *testing.T, dir string) { removeFile(t, dir, model.FileDirectorJournal) },
+			"incomplete_stamp", model.FileObserverJournal, model.FileDirectorJournal + " is missing"},
+		{"ledger deleted and every digest removed", func(t *testing.T, dir string) {
+			removeFile(t, dir, model.FileLedger)
+			editArtifact(t, filepath.Join(dir, model.FileRunArtifact), dropDigests(allDigests))
+		}, "incomplete_stamp", model.FileObserverJournal, "closed with incomplete=false"},
+		{"every digest removed with the journals deleted too", func(t *testing.T, dir string) {
+			for _, file := range []string{model.FileLedger, model.FileObserverJournal, model.FileDirectorJournal} {
+				removeFile(t, dir, file)
+			}
+			editArtifact(t, filepath.Join(dir, model.FileRunArtifact), dropDigests(allDigests))
+		}, "incomplete_stamp", "", "never reproducible"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			dir, dirs := publishedRun(t)
+			editArtifact(t, filepath.Join(dir, model.FileRunArtifact), func(doc map[string]any) { doc["incomplete"] = true })
+			tc.tamper(t, dir)
+			res, err := run.ReplayFile(t.Context(), filepath.Join(dir, model.FileRunArtifact), dirs)
+			if err != nil || res.Matches || res.Reason == "match" || res.Reason != tc.reason || res.File != tc.file || !res.Incomplete || !strings.Contains(res.Detail, tc.detail) {
+				t.Fatalf("%+v, %v; want matches:false, reason %s, file %q, incomplete:true", res, err, tc.reason, tc.file)
+			}
+		})
+	}
+}
+
+func removeFile(t *testing.T, dir, name string) {
+	t.Helper()
+	if err := os.Remove(filepath.Join(dir, name)); err != nil {
 		t.Fatal(err)
 	}
-	res, err := run.ReplayFile(t.Context(), filepath.Join(dir, model.FileRunArtifact), dirs)
-	if err != nil || res.Reason == "digest_missing" || res.Reason == "file_missing" {
-		t.Fatalf("%+v, %v; an incomplete run is not held to the closed-run evidence rule", res, err)
+}
+
+func TestAnEmptyOrMalformedEvidenceDigestIsAVerdictNotASchemaRejection(t *testing.T) {
+	t.Parallel()
+	for name, value := range map[string]any{"empty": "", "malformed": "sha256:00", "uppercase": "SHA256:" + strings.Repeat("A", 64)} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			dir, dirs := publishedRun(t)
+			editArtifact(t, filepath.Join(dir, model.FileRunArtifact), func(doc map[string]any) { doc["ledger_digest"] = value })
+			res, err := run.ReplayFile(t.Context(), filepath.Join(dir, model.FileRunArtifact), dirs)
+			if err != nil || res.Matches || res.Reason != "digest_missing" || res.File != model.FileLedger {
+				t.Fatalf("%+v, %v; want matches:false, reason digest_missing, file %s", res, err, model.FileLedger)
+			}
+		})
 	}
 }

@@ -10,7 +10,7 @@ func verify(folder Folder) Verification {
 	checks := []Check{}
 	if folder.Artifact != nil {
 		for _, entry := range folder.Artifact.EvidenceDigests() {
-			if entry.Digest != "" {
+			if entry.Digest != "" || !folder.Artifact.Incomplete {
 				checks = append(checks, check(entry, folder.document(entry.File)))
 			}
 		}
@@ -34,15 +34,21 @@ func (f Folder) document(file string) Document {
 
 func check(entry model.EvidenceDigest, doc Document) Check {
 	result := Check{Name: entry.Name, Recorded: entry.Digest, Status: CheckMissing}
-	if !doc.Present {
-		return result
+	if doc.Present {
+		result.Computed = computeDigest(entry, doc.Raw)
+		result.Status = digestStatus(result)
 	}
-	result.Computed = computeDigest(entry, doc.Raw)
-	result.Status = CheckMatch
-	if result.Computed != entry.Digest {
-		result.Status = CheckDiffers
+	if entry.Digest == "" {
+		result.Status = CheckNoDigest
 	}
 	return result
+}
+
+func digestStatus(result Check) string {
+	if result.Computed == result.Recorded {
+		return CheckMatch
+	}
+	return CheckDiffers
 }
 
 func computeDigest(entry model.EvidenceDigest, raw []byte) string {

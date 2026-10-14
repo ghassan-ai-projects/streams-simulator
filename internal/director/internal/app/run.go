@@ -192,7 +192,7 @@ func (d *Director) verifyArtifact(art *model.RunArtifact, spec *domain.Compiled,
 	}
 	return map[string]any{
 		"matches": res.Matches, "version_match": res.VersionMatch,
-		"first_divergence": res.FirstDivergence, "detail": res.Detail,
+		"first_divergence": res.FirstDivergence, "detail": res.Detail, "reason": res.Reason, "incomplete": res.Incomplete,
 	}, nil
 }
 

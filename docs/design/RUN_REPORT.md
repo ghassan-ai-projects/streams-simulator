@@ -46,8 +46,11 @@ Truth is included only when the run has ended, that is when `run.json` exists (i
 count only. `run.ended` is `false`, and there is no `truth` object, seed, ledger count, drop
 reason or verification. A live director world writes its ledger while `run.json` is absent, so
 the rule is on `run.json`, not on the ledger. The report of an open Evaluate run therefore cannot
-be used to read ahead. For an open Explore run the seed comes from the director `run.opened`
-record.
+be used to read ahead. The report says so: `truth_unavailable` is `sealed until the run ends` (the one
+vocabulary of that field: a sentence naming why truth is absent, here and for a file of another run,
+below), so a consumer tells a truth that is sealed until the run ends from one that does not exist.
+For an open Explore run the seed comes from the director `run.opened` record, truth is read and
+`truth_unavailable` is absent.
 
 A file belongs to the run of the journals or it is not used. `run.json` must carry the `run_id`,
 `sim_version`, `domain` and `adapter` of the observer `run.opened`; `sealed/journal.jsonl` must carry
@@ -105,11 +108,15 @@ proof; the report's check is cheap and needs no inputs.
 | `ledger` | SHA-256 of `ledger.jsonl` | `ledger_digest` |
 | `history` | SHA-256 of `world_state_history.jsonl` | `history_digest` |
 
-Each check has `status` `match`, `mismatch` or `missing_file` (a digest was recorded and the file
-is absent), plus `recorded` and `computed` digests. A digest the run did not record is not
-checked and has no entry. `verification.status` is `files_differ` when any check is not `match`,
+Each check has `status` `match`, `mismatch`, `missing_file` (a digest was recorded and the file
+is absent) or `digest_missing` (the run ended complete but `run.json` records no usable digest for the
+file: absent, empty or malformed), plus `recorded` and `computed` digests (`recorded` is absent for
+`digest_missing`). The report loads `run.json` as `streamsim verify` does (`run.LoadArtifactForVerification`),
+so an artifact missing digests is a failing verification, not an error. A run that ended incomplete
+need not record every digest: a digest it did not record is not checked and has no entry.
+`verification.status` is `files_differ` when any check is not `match`,
 `files_match` when there is at least one check and all match, and `not_checked` when there are no
-checks (no `run.json`, or an artifact that recorded no digests).
+checks (no `run.json`, or an incomplete run that recorded no digests).
 
 ## 5. Faults, perturbations, environment and effector calls
 
@@ -226,5 +233,9 @@ reads). It composes `run` (artifact loading), `journal` (reading and digesting s
   `ledger.jsonl` and `sealed/` left in place, no fault, perturbation, seed, ledger count or drop
   reason appears in the JSON or Markdown of an Evaluate run).
 - A tampered `trace.jsonl` reports `files_differ`.
+- A run still open in evaluate mode (no `run.json`) reports `truth_unavailable: "sealed until the run ends"`
+  and no `truth`; an Explore run has truth and no `truth_unavailable`.
+- A `run.json` missing, emptying or malforming an evidence digest reports `verification.status`
+  `files_differ` with a `digest_missing` check instead of failing to load.
 - A `run.json` or sealed journal of another run reports `truth_unavailable` and leaks no truth; a
   torn last line is dropped and named in `torn_tail`, a damaged middle line fails.

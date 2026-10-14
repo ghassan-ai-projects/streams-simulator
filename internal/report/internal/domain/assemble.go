@@ -40,17 +40,28 @@ func Assemble(folder Folder, scoring *Scoring) (*Report, error) {
 }
 
 func newReport(folder Folder, in streams, scoring *Scoring) *Report {
+	run := runOf(folder, in.observer)
 	return &Report{
 		SchemaVersion:    SchemaVersion,
-		TruthUnavailable: folder.Mismatch,
+		TruthUnavailable: truthUnavailable(folder, run),
 		TornTail:         tornFiles(folder),
-		Run:              runOf(folder, in.observer),
+		Run:              run,
 		Digests:          digestsOf(folder.Artifact),
 		Verification:     verify(folder),
 		Counts:           countsOf(folder, in),
 		Consumer:         consumerOf(folder.Verdict),
 		Scoring:          scoring,
 	}
+}
+
+func truthUnavailable(folder Folder, run Run) string {
+	switch {
+	case folder.Mismatch != "":
+		return folder.Mismatch
+	case folder.Artifact == nil && run.Mode != journal.ModeExplore:
+		return TruthSealed
+	}
+	return ""
 }
 
 func parse(folder Folder) (streams, error) {

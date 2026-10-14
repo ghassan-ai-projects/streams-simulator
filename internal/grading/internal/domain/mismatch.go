@@ -28,7 +28,7 @@ func RequireBlind(art *model.RunArtifact) error {
 }
 
 func RequireReproduced(replayed *run.ReplayEvidence) error {
-	if !replayed.Result.Matches {
+	if !run.Reproduced(replayed.Result) {
 		return &ReplayMismatchError{Result: replayed.Result}
 	}
 	return nil

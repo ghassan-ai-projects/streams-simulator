@@ -11,6 +11,8 @@ const (
 	ReasonDigestMissing      = "digest_missing"
 	ReasonFileDiffers        = "file_differs"
 	ReasonFileMissing        = "file_missing"
+	ReasonIncomplete         = "incomplete"
+	ReasonIncompleteStamp    = "incomplete_stamp"
 )
 
 func diverge(result *ReplayResult, reason, file, note string) {

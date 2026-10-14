@@ -86,6 +86,8 @@ describe("run report", () => {
     );
     expect(because("trace_divergence")).toMatch(/^Does not reproduce: .* different trace/);
     expect(because("recorded_spec")).toMatch(/nothing was replayed/);
+    expect(because("incomplete")).toMatch(/ended incomplete/);
+    expect(because("incomplete_stamp", "journal.jsonl")).toMatch(/journal.jsonl contradicts/);
   });
 
   it("spans the run from the report, or from the observations while the report is missing", () => {
