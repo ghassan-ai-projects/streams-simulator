@@ -4,6 +4,12 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **Alarm playback truth** (R9-24). Simulator 0.3.2 publishes each alarm's ordered `activation_times_ns`
+  beside its aggregate KPI count in sealed KPI truth and the run report. These are the existing scan's counted
+  transitions, including unshelving, with no activation attributed to an initially standing alarm. Playback
+  can navigate the reported instants without reconstructing alarm transitions. The sealed journal and run
+  digests deliberately change; alarm dynamics and aggregate KPI calculations are unchanged.
+
 - **Incomplete runs and the report's loading** (findings E5-1, E5-2, E5-4; R9-30 to R9-32). Breaking: `streamsim verify` never
   reports a run that ended `incomplete` as matching. It answers `matches: false` with `reason: incomplete` (exit 1,
   `replay_mismatch`) even when the replay and every file agree; a more specific reason (a file that differs or is missing, a

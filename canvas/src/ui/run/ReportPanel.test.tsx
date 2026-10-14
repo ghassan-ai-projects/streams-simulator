@@ -7,6 +7,29 @@ import { ReportPanel } from "./ReportPanel";
 import { Scrubber } from "./Scrubber";
 
 describe("report panel", () => {
+  it.each([undefined, "kpi"] as const)("cautions rejected incomplete truth in the %s view", (only) => {
+    render(
+      <ReportPanel
+        report={{ ...parseReport(report), complete: false }}
+        unit={() => ""}
+        entity={null}
+        {...(only === undefined ? {} : { only })}
+        verify={{
+          phase: "ready",
+          value: {
+            matches: false,
+            domainChanged: false,
+            detail: "",
+            reason: "incomplete_stamp",
+            file: "journal.jsonl",
+          },
+        }}
+      />,
+    );
+    expect(screen.getByRole("note")).toHaveTextContent("This run did not verify");
+    expect(screen.getByRole("region", { name: "KPI truth" })).toBeInTheDocument();
+  });
+
   it("lists every section of the binary's report with no accessibility violation", async () => {
     const view = render(
       <ReportPanel

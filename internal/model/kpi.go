@@ -22,13 +22,14 @@ type KPIValue struct {
 }
 
 type AlarmKPI struct {
-	State          string  `json:"state"`
-	Priority       string  `json:"priority"`
-	Activations    int     `json:"activations"`
-	Chattering     bool    `json:"chattering"`
-	ActiveS        float64 `json:"active_s"`
-	LongestActiveS float64 `json:"longest_active_s"`
-	ActiveAtEnd    bool    `json:"active_at_end"`
+	State             string  `json:"state"`
+	Priority          string  `json:"priority"`
+	Activations       int     `json:"activations"`
+	ActivationTimesNS []int64 `json:"activation_times_ns"`
+	Chattering        bool    `json:"chattering"`
+	ActiveS           float64 `json:"active_s"`
+	LongestActiveS    float64 `json:"longest_active_s"`
+	ActiveAtEnd       bool    `json:"active_at_end"`
 }
 
 type AlarmSystemKPIs struct {

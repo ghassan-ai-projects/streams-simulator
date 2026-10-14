@@ -8,10 +8,16 @@
   with regression tests by the hardening program (`docs/refactoring/hardening-20261010/PLAN.md`);
   the register in `DEFERRED.md` is stale and is not relied on.
 
-- **Working agreements (owner, 2026-10-12)**: make it work first and keep it simple; Sonnet 5.5
+- **Historical working agreements (owner, 2026-10-12)**: make it work first and keep it simple; Sonnet 5.5
   subagents implement, Haiku 5.5 runs lint passes; one review per phase, run in parallel with
   the gate; findings below High are carried to a named phase instead of iterated; the full
   local gate (`make ci-check`) runs in at most 2 minutes.
+
+- **Current continuation direction (owner, 2026-10-14)**: functionality before visual optimization;
+  implement directly without waiting for Sonnet; three Luna review lenses (design, desktop input, engineering),
+  always Chrome at desktop widths and both themes, until every score is at least 4 and no High. Persist findings
+  in the reviews folder. Continue `codex/canvas-p9-playback`; PR #32 is merged. Commit locally; no push/new PR
+  until asked. Latest main/test-speed PR #33 merged as `856bcb9`; its approved test-tier change is authoritative.
 
 Order: simulator foundations the canvas consumes (P2e–P4), then the data model (P5–P6), then
 the plant wire (P7), then the canvas (P8–P11), then reference worlds and hardening (P12–P13).
@@ -100,4 +106,4 @@ The commit hash of a phase is recorded by the first commit of the next phase.
 | P7l | Done | d1206dd (PR #31), review fixes 4f5a43b | [evidence/P7l.md](../docs/simulation-canvas/evidence/P7l.md) | [reviews/P7l.md](../docs/simulation-canvas/reviews/P7l.md) |
 | P8a | Done | recorded by P8b | [evidence/P8a.md](../docs/simulation-canvas/evidence/P8a.md) | design review in the evidence; independent review with P8b |
 | P8b | Built, findings R0-15, R0-16, R2-01 open | `8e1597e` | bridge behind `streamsim canvas`: pairing, admission, workspace files, action registry, journal stream | reviewed with the P9 UI rounds |
-| P9 | In progress | branch `canvas-foundation` (unpushed), last `8726dd8` | real UI on real workspace files; 15 Playwright tests against the binary; [handoff](../docs/simulation-canvas/reviews/P9-handoff.md) | five UI rounds in [reviews/ui.md](../docs/simulation-canvas/reviews/ui.md); not yet approved |
+| P9 | In progress | `53aefb8`, `bf7ebc5`; latest main merged as `856bcb9` on `codex/canvas-p9-playback` | incomplete truth caution and simulator-owned alarm navigation; 130 unit/component and 18 real-binary Chrome tests; [current handoff](../docs/simulation-canvas/reviews/P9-handoff.md) | seven rounds in [reviews/ui.md](../docs/simulation-canvas/reviews/ui.md); round 7 approves only the alarm batch (5/5, 5/5, 4/5); remaining P9 findings open; functionality first |

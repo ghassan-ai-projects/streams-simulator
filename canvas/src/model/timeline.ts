@@ -5,7 +5,7 @@ export interface EventMark {
   readonly atNs: number;
   readonly label: string;
   readonly raw: string;
-  readonly tone: "fault" | "other";
+  readonly tone: "fault" | "alarm" | "other";
   readonly entity: string;
   readonly untilNs: number | null;
 }
@@ -55,7 +55,15 @@ export function eventMarks(report: Report | null): readonly EventMark[] {
     entity: c.entity,
     untilNs: null,
   }));
-  return [...disturbances, ...endMarks(report), ...calls].sort((a, b) => a.atNs - b.atNs);
+  const alarms = report.alarmActivations.map((a): EventMark => ({
+    atNs: a.atNs,
+    label: `${a.entity} ${humanise(a.state)} activated`,
+    raw: `alarm activation ${a.entity} ${a.state} · ${a.priority}`,
+    tone: "alarm",
+    entity: a.entity,
+    untilNs: null,
+  }));
+  return [...disturbances, ...endMarks(report), ...calls, ...alarms].sort((a, b) => a.atNs - b.atNs);
 }
 
 export function previousEvent(marks: readonly EventMark[], atNs: number): number | null {

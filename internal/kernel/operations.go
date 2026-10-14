@@ -2,12 +2,17 @@ package kernel
 
 import (
 	"context"
+	"io"
 	"net"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/kernel/internal/files"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/kernel/internal/process"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/kernel/internal/sockets"
 )
+
+func OpenIfPresent(path string) (io.ReadCloser, bool, error) {
+	return files.OpenIfPresent(path)
+}
 
 func Read(path string) ([]byte, error) {
 	return files.Read(path)

@@ -2,6 +2,7 @@ package files
 
 import (
 	"errors"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -117,5 +118,25 @@ func TestALogUnderAFileCannotOpen(t *testing.T) {
 	var pathErr *fs.PathError
 	if _, err := OpenLog(filepath.Join(blocker, "log"), false); !errors.As(err, &pathErr) {
 		t.Fatalf("a log under a file = %v", err)
+	}
+}
+
+func TestOpenIfPresentOpensAFileAndReportsAnAbsentOneWithoutError(t *testing.T) {
+	t.Parallel()
+	path := filepath.Join(t.TempDir(), "f")
+	if err := os.WriteFile(path, []byte("abc"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	file, present, err := OpenIfPresent(path)
+	if err != nil || !present {
+		t.Fatalf("present = %v (%v), want the file open", present, err)
+	}
+	got, _ := io.ReadAll(file)
+	_ = file.Close()
+	if string(got) != "abc" {
+		t.Fatalf("read %q, want abc", got)
+	}
+	if _, present, err := OpenIfPresent(path + ".absent"); present || err != nil {
+		t.Fatalf("absent = %v (%v), want not present and no error", present, err)
 	}
 }

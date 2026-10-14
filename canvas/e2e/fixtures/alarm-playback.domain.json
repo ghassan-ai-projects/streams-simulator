@@ -1,0 +1,94 @@
+{
+  "id": "alarm-playback",
+  "version": "0.1.0",
+  "title": "Alarm playback instrument",
+  "stresses": "An alarm changes state on a known scan grid so playback must navigate the simulator's activation truth.",
+  "axes": {
+    "rate": "low",
+    "cardinality": "singleton",
+    "value_shape": ["scalar"],
+    "cadence": ["periodic"],
+    "lateness": "none",
+    "absence": "signal",
+    "time_reference": "wall",
+    "correlation": ["independent"],
+    "seasonality": ["none"],
+    "actuation": "observe_only",
+    "consequence": ["cost"],
+    "fidelity": ["F0", "F1"]
+  },
+  "kinds": [
+    {
+      "name": "heater",
+      "state": [
+        { "name": "temp", "initial": 50, "unit": "degC" },
+        { "name": "temp_alarm", "initial": 0 }
+      ],
+      "dynamics": [
+        {
+          "target": "temp",
+          "tier": "F0",
+          "f0": {
+            "schedule": {
+              "interpolation": "step",
+              "points": [
+                { "at_s": 0, "value": 50 },
+                { "at_s": 100, "value": 85 },
+                { "at_s": 300, "value": 50 }
+              ]
+            }
+          }
+        },
+        {
+          "target": "temp_alarm",
+          "tier": "F1",
+          "dt_ms": 10000,
+          "f1": {
+            "form": "alarm",
+            "alarm": {
+              "watch": "temp",
+              "limit": 80,
+              "direction": "high",
+              "deadband": 2,
+              "on_delay_s": 30,
+              "off_delay_s": 20,
+              "priority": "high"
+            }
+          }
+        }
+      ],
+      "channels": [
+        {
+          "name": "temperature",
+          "value_type": "number",
+          "unit": "degC",
+          "resolution": 0.1,
+          "observes": "temp",
+          "fidelity": "F0",
+          "absence": "signal",
+          "cadence": { "mode": "periodic", "period_s": 10 },
+          "noise": { "model": "none", "sigma": 0 }
+        }
+      ],
+      "faults": [
+        {
+          "id": "heater_overload",
+          "onset": { "shape": "step" },
+          "affects": [{ "state": "temp", "delta": 20 }],
+          "observability": { "detector": { "form": "single_channel_snr", "channel": "temperature" } }
+        }
+      ]
+    }
+  ],
+  "instances": [{ "kind": "heater", "names": ["HEAT-1"] }],
+  "profiles": [
+    { "name": "nominal", "description": "A scheduled temperature rise." },
+    { "name": "sensor_pathology", "description": "A scheduled temperature rise." },
+    {
+      "name": "correlated_cascade",
+      "description": "A single instrument.",
+      "not_applicable": "There is only one independent instrument."
+    }
+  ],
+  "ground_truth": { "negative_class_fraction": 0.4 }
+}

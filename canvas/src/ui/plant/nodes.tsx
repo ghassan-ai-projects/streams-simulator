@@ -24,7 +24,15 @@ const connectionWords = {
   unknown: "link without a recorded port",
 } as const;
 
-function PinRow({ pin, side }: { readonly pin: Pin; readonly side: "in" | "out" }) {
+function PinRow({
+  pin,
+  side,
+  editable,
+}: {
+  readonly pin: Pin;
+  readonly side: "in" | "out";
+  readonly editable: boolean;
+}) {
   const look = pinLook(pin);
   return (
     <div
@@ -36,7 +44,7 @@ function PinRow({ pin, side }: { readonly pin: Pin; readonly side: "in" | "out" 
         position={side === "in" ? Position.Left : Position.Right}
         id={pin.name}
         className={cx(styles.dot, styles[look.shape], styles[pin.connection], `family-${look.family}`)}
-        isConnectable={false}
+        isConnectable={editable}
       />
       <span className={styles.pinName}>{channelWords(pin.name)}</span>
       <span className="sr-only">{`, ${look.typeName}, ${connectionWords[pin.connection]}`}</span>
@@ -44,7 +52,15 @@ function PinRow({ pin, side }: { readonly pin: Pin; readonly side: "in" | "out" 
   );
 }
 
-function Pins({ ins, outs }: { readonly ins: readonly Pin[]; readonly outs: readonly Pin[] }) {
+function Pins({
+  ins,
+  outs,
+  editable,
+}: {
+  readonly ins: readonly Pin[];
+  readonly outs: readonly Pin[];
+  readonly editable: boolean;
+}) {
   if (ins.length + outs.length === 0) {
     return <div className={styles.none}>no port data</div>;
   }
@@ -52,12 +68,12 @@ function Pins({ ins, outs }: { readonly ins: readonly Pin[]; readonly outs: read
     <div className={styles.pins}>
       <div>
         {ins.map((pin) => (
-          <PinRow key={pin.name} pin={pin} side="in" />
+          <PinRow key={pin.name} pin={pin} side="in" editable={editable} />
         ))}
       </div>
       <div>
         {outs.map((pin) => (
-          <PinRow key={pin.name} pin={pin} side="out" />
+          <PinRow key={pin.name} pin={pin} side="out" editable={editable} />
         ))}
       </div>
     </div>
@@ -110,6 +126,20 @@ function StatusTag({ status, count = 0 }: { readonly status: NodeStatus; readonl
   );
 }
 
+function issueWords(flagged: boolean): string {
+  return flagged ? ", has issues" : "";
+}
+
+function IssueTag({ flagged }: { readonly flagged: boolean }) {
+  if (!flagged) return null;
+  return (
+    <span className={cx(styles.tag, styles["tag-alarm"])} aria-hidden="true">
+      <OctagonAlert size={12} />
+      Issue
+    </span>
+  );
+}
+
 function statusClass(status: NodeStatus): string | undefined {
   return status === null ? undefined : styles[`status-${status}`];
 }
@@ -119,9 +149,15 @@ export function InstanceNode({ data, selected }: NodeProps<InstanceNodeType>) {
   const status = data.live?.status ?? null;
   return (
     <div
-      className={cx(styles.node, selected && styles.selected, data.active && styles.active, statusClass(status))}
+      className={cx(
+        styles.node,
+        selected && styles.selected,
+        data.active && styles.active,
+        data.flagged && styles.flagged,
+        statusClass(status),
+      )}
       role="group"
-      aria-label={describeNode(view, selected, status, 0, data.live?.fault ?? "")}
+      aria-label={describeNode(view, selected, status, 0, data.live?.fault ?? "") + issueWords(data.flagged)}
       style={{ "--cat": `var(--cat-${view.category})` } as CSSProperties}
     >
       <Handle type="target" position={Position.Left} id="in" className={styles.anchor} isConnectable={false} />
@@ -129,12 +165,13 @@ export function InstanceNode({ data, selected }: NodeProps<InstanceNodeType>) {
       <div className={styles.header}>
         <span className={styles.id}>{view.label}</span>
         <StatusTag status={status} />
+        <IssueTag flagged={data.flagged} />
         <span className={styles.kind} title={view.detail}>
           {view.detail}
         </span>
       </div>
       {data.live !== null && <Readout shown={data.live.shown} />}
-      <Pins ins={view.pins.ins} outs={view.pins.outs} />
+      <Pins ins={view.pins.ins} outs={view.pins.outs} editable={data.editable} />
     </div>
   );
 }

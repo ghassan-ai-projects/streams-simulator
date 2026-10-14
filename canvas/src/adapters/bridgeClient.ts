@@ -1,6 +1,6 @@
 import type { Bridge } from "../app/ports";
 import type { BridgeFailure, Outcome } from "../model/bridge";
-import { failed, parseFailure, parseFile, parsePaired, parseWorkspace, success } from "../model/bridge";
+import { failed, parseFailure, parseFile, parsePaired, parseWorkspace, parseWritten, success } from "../model/bridge";
 
 export interface Transport {
   fetch(input: string, init?: RequestInit): Promise<Response>;
@@ -40,8 +40,12 @@ async function call<T>(
   return response.ok ? success(parse(value)) : failed(parseFailure(response.status, value));
 }
 
+function send(method: "POST" | "PUT", payload: unknown): RequestInit {
+  return { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) };
+}
+
 function post(payload: unknown): RequestInit {
-  return { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) };
+  return send("POST", payload);
 }
 
 function result(value: unknown): unknown {
@@ -54,6 +58,8 @@ export function bridgeClient(transport: Transport): Bridge {
     pair: (code) => call(transport, "/api/session", parsePaired, post({ code })),
     workspace: () => call(transport, "/api/workspace", parseWorkspace),
     readFile: (path) => call(transport, `/api/file?path=${encodeURIComponent(path)}`, parseFile),
+    writeFile: (path, content, etag) =>
+      call(transport, "/api/file", parseWritten, send("PUT", { path, content, etag })),
     action: (name, args) => call(transport, `/api/actions/${encodeURIComponent(name)}`, result, post({ args })),
     followRun(worldId, follower) {
       const source = transport.events(`/api/runs/${encodeURIComponent(worldId)}/events`);

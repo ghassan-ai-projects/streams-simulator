@@ -5,6 +5,7 @@ import (
 	"cmp"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -17,6 +18,18 @@ func Read(path string) ([]byte, error) {
 		return nil, fmt.Errorf("%w", err)
 	}
 	return raw, nil
+}
+
+func OpenIfPresent(path string) (io.ReadCloser, bool, error) {
+	// #nosec G304 -- every caller reads a path its user or its own run named.
+	file, err := os.Open(path)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, false, nil
+	}
+	if err != nil {
+		return nil, false, fmt.Errorf("%w", err)
+	}
+	return file, true, nil
 }
 
 func ReadIfPresent(path string) ([]byte, bool, error) {

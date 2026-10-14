@@ -208,6 +208,16 @@ const notClosed = "Not available: the run is not closed, so its truth is still s
 const loading: VerifyState = { phase: "loading" };
 const unverifiedTruth = "This run did not verify, so the truth below may not describe the files in the run folder.";
 
+function TruthCaution({ report, verify }: { readonly report: Report; readonly verify: VerifyState }) {
+  const rejected = verify.phase === "ready" && !verify.value.matches;
+  if (!rejected && badgeOf(report, verify) !== "not-verified") return null;
+  return (
+    <p className={styles.caution} role="note">
+      {unverifiedTruth}
+    </p>
+  );
+}
+
 export function ReportPanel({
   report,
   unit,
@@ -216,16 +226,17 @@ export function ReportPanel({
   verify = loading,
 }: TruthProps & { readonly verify?: VerifyState }) {
   if (only === "kpi") {
-    return report.truthUnavailable || !report.ended ? null : <KpiTruth report={report} unit={unit} entity={entity} />;
+    return report.truthUnavailable || !report.ended ? null : (
+      <>
+        <TruthCaution report={report} verify={verify} />
+        <KpiTruth report={report} unit={unit} entity={entity} />
+      </>
+    );
   }
   return (
     <>
       <Facts report={report} verify={verify} />
-      {badgeOf(report, verify) === "not-verified" && (
-        <p className={styles.caution} role="note">
-          {unverifiedTruth}
-        </p>
-      )}
+      <TruthCaution report={report} verify={verify} />
       {report.truthUnavailable || !report.ended ? (
         <Section title="Truth">
           <p className={styles.muted}>

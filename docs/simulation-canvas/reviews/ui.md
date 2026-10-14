@@ -106,3 +106,53 @@ Scores: director 3/5 (High: D5-1 ellipses at the opening zoom, D5-2 dimmed wires
 | Engineer E5-3, E5-6, E5-7 | Fixed: every active fault per instance; an alarm state by its declared name from a composed domain, end to end |
 | Engineer E5-1, E5-2, E5-4 | In progress in the simulator (see the P9 handoff) |
 | Engineer E5-5, E5-8 | Logged as R9-25 and R9-26 |
+
+## Round 6 (frozen merged build, 2026-10-14)
+
+Scores: design director 4/5, desktop keyboard/input 3/5, process/test engineer 2/5. **Not approved**.
+The owner requests functionality first and visual optimization afterwards; the second reviewer now covers desktop
+keyboard/input usability. Full findings, build digests, actual width/theme coverage and prior-disposition checks:
+[P9-round-6.md](P9-round-6.md).
+
+| Findings | Disposition |
+|---|---|
+| E6-1 | Fixed: rejected verify results warn above truth even when the overall badge is Incomplete, including hall KPI-only view. Component regression and real-binary Chrome test. Awaiting re-review. |
+| E5-1, E5-2 | Chrome regressions prove an incomplete stamp never says Reproduces and a missing ledger digest fails file/replay checks. |
+| E6-2–E6-5 | R9-14, R9-22, R9-24 and R9-13 remain functional P9 blockers. |
+| U6-1 | Open: reproduce hall clipping at the reported widths and assert Fit geometrically in Chrome; reviewers disagree on different views. |
+| U6-2 | Open: direct keyboard route to the graph. |
+| D6-01, D5-12, frame-title wire crossings | Deferred visual detail after functionality per owner direction. |
+| E6-boundary | Candidate: strict response validation at the adapters boundary needs verification and correction. |
+
+## Round 7 (functional alarm-playback batch)
+
+The owner requests functionality before visual optimization. This round reviews R9-24 and integrity propagation;
+it does **not** approve all of P9 or repeat the campus review. A freshly frozen simulator 0.3.2 binary and UI
+serve a synthetic scheduled-alarm run. Its reported activation is 140 seconds after start.
+
+| Lens | Scoped score | Review record |
+|---|---|---|
+| Design director | 5/5 | [P9-alarm-design-review.md](P9-alarm-design-review.md) |
+| Desktop input | 5/5 | [P9-alarm-input-review.md](P9-alarm-input-review.md) |
+| Process/test engineer | 4/5 | [P9-alarm-engineering-review.md](P9-alarm-engineering-review.md) |
+
+Dispositions: E7-1 fixed by propagating verify state into Inspect; R9-24 now supplies alarm instants, lane chips
+and Jump to alarm; event reveal opens Inspect. Independent scan, owned-copy, initially standing alarm and
+open-Evaluate truth tests pass, and Chrome proves the 02:20 chip/jump, source selection and 85 °C reading.
+E7-3/E8-1 becomes R9-37, a precision requirement on the next bounded query contract.
+All remaining P9 functional blockers stay open. The full phase gate passed;
+[P9-alarm-evidence.md](P9-alarm-evidence.md) records the command, toolchain and exact pin differences.
+
+## Continuation handoff (2026-10-14)
+
+Owner requested a progress update and commit for Claude to continue. Main PR #33 was merged cleanly as `856bcb9`;
+its test-speed changes carry owner approval in `762c7fa`. No additional gate change. P9 stays In progress;
+round 7 scores apply only to the completed alarm batch. [P9-handoff.md](P9-handoff.md) is the current state,
+ordered work and fresh-workspace recipe; [P9-report-memory.md](P9-report-memory.md) is the next design, not an
+implementation claim. Existing untracked owner files are preserved; no push or new PR.
+
+[Latest-main integration review](P9-main-integration.md) records incoming gate changes and the independent
+engineering review, including exact clock and long-horizon coverage limits.
+
+Post-merge `make quick` and full `make phase-gate` passed (130 unit/component, 18 real-binary Chrome tests);
+behavior pin matches and Enola delta is enforced. No new architecture/script gate diff against origin/main.

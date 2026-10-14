@@ -15,13 +15,7 @@ func TestCountsSplitLedgerRowsByDeliveryAndReason(t *testing.T) {
 		`{"delivery_id":4,"delivered":false,"delivery_reason":"dropped_by_perturbation"}`,
 	)
 	art := &model.RunArtifact{Counts: model.Counts{Emitted: 3}}
-	in := streams{}
-	rows, err := readLedger(ledger)
-	if err != nil {
-		t.Fatal(err)
-	}
-	in.ledger = rows
-	counts := countsOf(Folder{Artifact: art, Ledger: ledger}, in)
+	counts := countsOf(Folder{Artifact: art, Ledger: ledger})
 	if *counts.Emitted != 3 || *counts.LedgerRows != 4 || *counts.Delivered != 2 || *counts.Dropped != 2 ||
 		counts.DeliveredByReason["duplicated"] != 1 || counts.DroppedByReason["dropped_by_perturbation"] != 2 {
 		t.Fatalf("counts = %+v, want 3 emitted, 4 rows, 2 delivered, 2 dropped by reason", counts)
@@ -30,7 +24,7 @@ func TestCountsSplitLedgerRowsByDeliveryAndReason(t *testing.T) {
 
 func TestCountsOmitWhatTheFolderDoesNotHold(t *testing.T) {
 	t.Parallel()
-	if counts := countsOf(Folder{}, streams{}); counts.Emitted != nil || counts.Observed != nil || counts.Delivered != nil {
+	if counts := countsOf(Folder{}); counts.Emitted != nil || counts.Observed != nil || counts.Delivered != nil {
 		t.Fatalf("counts = %+v, want none", counts)
 	}
 }

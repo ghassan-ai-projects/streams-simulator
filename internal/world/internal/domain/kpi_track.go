@@ -66,7 +66,7 @@ func (k *kpiTrack) alarmKPI(endNS int64, retired bool) model.AlarmKPI {
 	if k.activeSince >= 0 {
 		active, longest = active+endNS-k.activeSince, max(longest, endNS-k.activeSince)
 	}
-	return model.AlarmKPI{State: k.state, Priority: k.priority, Activations: len(k.activations), Chattering: chattering(k.activations),
+	return model.AlarmKPI{State: k.state, Priority: k.priority, Activations: len(k.activations), ActivationTimesNS: append([]int64{}, k.activations...), Chattering: chattering(k.activations),
 		ActiveS: float64(active) / secondsPerNS, LongestActiveS: float64(longest) / secondsPerNS, ActiveAtEnd: k.activeSince >= 0 && !retired}
 }
 

@@ -1,3 +1,4 @@
+import type { Connection } from "@xyflow/react";
 import { Background, ReactFlow, useReactFlow, useStore } from "@xyflow/react";
 import "@xyflow/react/dist/base.css";
 import type { CSSProperties, KeyboardEvent } from "react";
@@ -23,6 +24,9 @@ export interface PlantGraphProps {
   readonly onOpenHall?: (hall: string) => void;
   readonly onEscape?: () => void;
   readonly minFitZoom?: number;
+  readonly flagged?: ReadonlySet<string>;
+  readonly fitKey?: string;
+  readonly onConnect?: (from: string, to: string) => void;
 }
 
 function useFollowSelection(selected: string | null) {
@@ -175,7 +179,6 @@ const graphNames = {
 const fixedProps = {
   nodeTypes,
   nodesDraggable: false,
-  nodesConnectable: false,
   nodesFocusable: false,
   edgesFocusable: false,
   disableKeyboardA11y: true,
@@ -185,25 +188,42 @@ const fixedProps = {
   proOptions: { hideAttribution: true },
 } as const;
 
-function Flow({
-  view,
-  selected,
-  live,
-  onSelect,
-  onOpenHall,
-  active,
-  keys,
-}: PlantGraphProps & { readonly active: string | null; readonly keys: Keys }) {
-  const nodes = useMemo(() => flowNodes(view, selected, live ?? null, active), [view, selected, live, active]);
+function connection(onConnect: PlantGraphProps["onConnect"]) {
+  if (onConnect === undefined) return { nodesConnectable: false };
+  return {
+    nodesConnectable: true,
+    onConnect: (made: Connection) => {
+      if (made.sourceHandle && made.targetHandle) {
+        onConnect(`${made.source}.${made.sourceHandle}`, `${made.target}.${made.targetHandle}`);
+      }
+    },
+  };
+}
+
+type FlowProps = PlantGraphProps & { readonly active: string | null; readonly keys: Keys };
+
+function useFlowContent({ view, selected, live, flagged, onConnect, active }: FlowProps) {
+  const editable = onConnect !== undefined;
+  const nodes = useMemo(
+    () => flowNodes(view, selected, live ?? null, active, flagged ?? null, editable),
+    [view, selected, live, active, flagged, editable],
+  );
   const zoom = useStore((state) => state.transform[2]);
   const anchors = anchorsOnly(tierOf(zoom));
   const shown = view.nodes.some((entry) => entry.id === selected) ? selected : null;
   const edges = useMemo(() => flowEdges(view, anchors, shown), [view, anchors, shown]);
+  return { nodes, edges, zoom };
+}
+
+function Flow(props: FlowProps) {
+  const { onSelect, onOpenHall, onConnect, keys } = props;
+  const { nodes, edges, zoom } = useFlowContent(props);
   return (
     <ReactFlow
       nodes={nodes}
       edges={edges}
       {...fixedProps}
+      {...connection(onConnect)}
       className={`tier-${tierOf(zoom)}`}
       style={{ "--zoom": String(zoom) } as CSSProperties}
       {...graphNames}
@@ -226,7 +246,7 @@ function Flow({
 
 export function PlantGraph(props: PlantGraphProps) {
   const keys = useGraphKeys(props);
-  useOpening(props.viewKey, props.minFitZoom ?? 0.05);
+  useOpening(props.fitKey ?? props.viewKey, props.minFitZoom ?? 0.05);
   useFollowSelection(keys.active ?? props.selected);
   return (
     <div className={styles.graph}>

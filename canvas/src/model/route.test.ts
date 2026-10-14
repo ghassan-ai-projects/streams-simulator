@@ -8,6 +8,7 @@ describe("routes", () => {
       { screen: "plant", domain: "domains/a b.domain.json", hall: null },
       { screen: "plant", domain: "domains/c.domain.json", hall: "h07" },
       { screen: "run", worldId: "w-1" },
+      { screen: "edit", composition: "compositions/lab.composition.json" },
     ] as const;
     for (const route of routes) {
       expect(parseRoute(formatRoute(route))).toEqual(route);
@@ -17,6 +18,7 @@ describe("routes", () => {
   it("falls back to home for anything it does not know", () => {
     expect(parseRoute("")).toEqual({ screen: "home" });
     expect(parseRoute("#/plant")).toEqual({ screen: "home" });
+    expect(parseRoute("#/edit")).toEqual({ screen: "home" });
     expect(parseRoute("#/elsewhere?x=1")).toEqual({ screen: "home" });
   });
 });

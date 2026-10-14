@@ -1,5 +1,6 @@
 import { Boxes, FileJson, Radio, Square } from "lucide-react";
 import type { ReactNode } from "react";
+import type { EditorStore } from "../../app/editorStore";
 import type { NavigationStore } from "../../app/navigationStore";
 import type { WorkspaceStore } from "../../app/workspaceStore";
 import type { Definition, RunEntry, Workspace } from "../../model/bridge";
@@ -9,6 +10,7 @@ import { workspaceEmpty, workspaceSummary } from "../../model/workspace";
 import { useScreen } from "../useScreen";
 import { useStore } from "../useStore";
 import styles from "./HomeScreen.module.css";
+import { NewPlant } from "./NewPlant";
 
 function Section({
   title,
@@ -36,9 +38,10 @@ interface RowsProps {
   readonly items: readonly Definition[];
   readonly empty: string;
   readonly onOpen?: (item: Definition) => void;
+  readonly verb?: { readonly label: string; readonly name: string };
 }
 
-function DefinitionRows({ items, empty, onOpen }: RowsProps) {
+function DefinitionRows({ items, empty, onOpen, verb = { label: "Open", name: "Open plant" } }: RowsProps) {
   if (items.length === 0) {
     return <p className={styles.none}>{empty}</p>;
   }
@@ -57,9 +60,9 @@ function DefinitionRows({ items, empty, onOpen }: RowsProps) {
               onClick={() => {
                 onOpen(item);
               }}
-              aria-label={`Open plant ${item.id || item.path}`}
+              aria-label={`${verb.name} ${item.id || item.path}`}
             >
-              Open
+              {verb.label}
             </button>
           )}
         </li>
@@ -129,10 +132,27 @@ function EmptyWorkspace({ name }: { readonly name: string }) {
 interface ContentsProps {
   readonly workspace: Workspace;
   readonly navigation: NavigationStore;
+  readonly editor: EditorStore;
   readonly badgeFor: (worldId: string) => Badge | null;
 }
 
-function Contents({ workspace, navigation, badgeFor }: ContentsProps) {
+function Compositions({ workspace, navigation, editor }: Omit<ContentsProps, "badgeFor">) {
+  return (
+    <Section title="Compositions" folder="compositions/">
+      <NewPlant bases={workspace.compositions} editor={editor} navigation={navigation} />
+      <DefinitionRows
+        items={workspace.compositions}
+        empty="No compositions yet."
+        verb={{ label: "Edit", name: "Edit composition" }}
+        onOpen={(item) => {
+          navigation.go({ screen: "edit", composition: item.path });
+        }}
+      />
+    </Section>
+  );
+}
+
+function Contents({ workspace, navigation, editor, badgeFor }: ContentsProps) {
   const heading = useScreen(workspace.name);
   const openPlant = (item: Definition) => {
     navigation.go({ screen: "plant", domain: item.path, hall: null });
@@ -161,9 +181,7 @@ function Contents({ workspace, navigation, badgeFor }: ContentsProps) {
             }}
           />
         </Section>
-        <Section title="Compositions" folder="compositions/">
-          <DefinitionRows items={workspace.compositions} empty="No compositions yet." />
-        </Section>
+        <Compositions workspace={workspace} navigation={navigation} editor={editor} />
         <Section title="Scenarios" folder="scenarios/">
           <DefinitionRows items={workspace.scenarios} empty="No scenarios yet." />
         </Section>
@@ -175,10 +193,12 @@ function Contents({ workspace, navigation, badgeFor }: ContentsProps) {
 export function HomeScreen({
   workspace,
   navigation,
+  editor,
   badgeFor = () => null,
 }: {
   readonly workspace: WorkspaceStore;
   readonly navigation: NavigationStore;
+  readonly editor: EditorStore;
   readonly badgeFor?: (worldId: string) => Badge | null;
 }) {
   const state = useStore(workspace);
@@ -196,5 +216,5 @@ export function HomeScreen({
       </p>
     );
   }
-  return <Contents workspace={state.workspace} navigation={navigation} badgeFor={badgeFor} />;
+  return <Contents workspace={state.workspace} navigation={navigation} editor={editor} badgeFor={badgeFor} />;
 }

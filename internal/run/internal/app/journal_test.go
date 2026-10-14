@@ -116,7 +116,7 @@ func TestConsumerReportsAreWrittenButNotPartOfTheReplayIdentity(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
 	scriptedJournalRun(t, dir, nil)
-	records, err := journal.Read(readFile(t, filepath.Join(dir, journal.ObserverFile)))
+	records, err := decodeJournalBytes(readFile(t, filepath.Join(dir, journal.ObserverFile)))
 	if err != nil {
 		t.Fatal(err)
 	}

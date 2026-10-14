@@ -200,3 +200,71 @@
 .state + .verified {
   margin-left: 0;
 }
+
+.newPlant {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+}
+
+.newField {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+}
+
+.newField small {
+  grid-column: 2;
+  color: var(--text-secondary);
+}
+
+.newField input,
+.newField select {
+  height: 28px;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface-panel);
+  color: var(--text-primary);
+  font: inherit;
+}
+
+.newActions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.newButton {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  gap: var(--space-1);
+  margin-bottom: var(--space-2);
+}
+
+.create {
+  height: 26px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--accent-strong);
+  border-radius: var(--radius-md);
+  background: var(--accent-strong);
+  color: var(--text-on-accent);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.create:hover {
+  background: var(--accent-hover);
+}
+
+.open[aria-disabled="true"],
+.create[aria-disabled="true"] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

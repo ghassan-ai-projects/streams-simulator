@@ -7,16 +7,14 @@ func tornFiles(folder Folder) []string {
 	for _, entry := range []struct {
 		name string
 		doc  Document
-	}{{"journal.jsonl", folder.Observer}, {"sealed/journal.jsonl", folder.Director}, {model.FileLedger, folder.Ledger}} {
-		if hasTornTail(entry.doc) {
+		kind Kind
+	}{{"journal.jsonl", folder.Observer, ObserverJournal}, {"sealed/journal.jsonl", folder.Director, DirectorJournal},
+		{model.FileLedger, folder.Ledger, LedgerRows}} {
+		if entry.doc.scan(entry.kind).Torn {
 			torn = append(torn, entry.name)
 		}
 	}
 	return torn
-}
-
-func hasTornTail(doc Document) bool {
-	return len(doc.Raw) > 0 && doc.Raw[len(doc.Raw)-1] != '\n'
 }
 
 func tornLines(torn []string) []string {

@@ -150,6 +150,22 @@ that lowering: the validated document is the runtime form, a domain may declare 
 instance sets, channel, fault and effector names are unique across the domain, and every
 reference resolves inside its kind. Single-kind domains are bit-identical to P5a.
 
+### D-16 (decision, deferred until the UI goal is done). A run stores actions, not data
+Owner decision, 2026-10-14. A 1-hour run of the 26-hall campus wrote 1.6 GB (each reading written about five times
+across trace, ledger, state history and two journals) and took 4–9 GB of memory to run, report and verify. The owner
+does not want gigabytes written at all. Because a run is deterministic, its actions reproduce every stream exactly,
+so the run folder keeps only `run.json`: the inputs (simulator version, domain, adapter, seed) and every action in
+order (clock advances, faults, perturbations, environment changes, consumer effector calls, quiescence), in the
+style of event sourcing / CQRS. Trace, delivery ledger, true state, KPIs and the report are projections computed by
+re-running the actions in the binary, streamed and never written to disk; the delivery ledger is one of those
+projections. The trace, ledger, state-history and journal files, the `replay` and `verify` commands with their
+file comparisons, the report's file checks, the bridge's journal streaming and sealed-file gate, and the canvas's
+journal-based playback are removed. Acceptance test A5 (playback without the binary) is dropped. Seeking re-runs
+from the start; a few minutes for a long campus run is acceptable, so no checkpoints. Not started: the canvas UI goal
+([GOAL-UI-PRODUCTION.md](simulation-canvas/GOAL-UI-PRODUCTION.md)) is finished first. Before implementing, a design
+note covers the new `run.json` contract, the projection API the canvas uses, how determinism is still evidenced once
+`verify` is gone, and the impact on the nine non-negotiables (determinism, delivery ledger, sealed oracle).
+
 ## Frozen constants
 
 | Constant | Value | Where |

@@ -117,3 +117,17 @@ func TestEveryRecordVerbReachesItsStream(t *testing.T) {
 		t.Fatalf("FirstDifference of a journal with itself = %d", first)
 	}
 }
+
+func TestDecodeLineAndReplayableAreReachableThroughTheFacade(t *testing.T) {
+	t.Parallel()
+	record, err := DecodeLine([]byte(`{"stream":"observer","seq":0,"type":"run.opened","at_ns":0}`), 1)
+	if err != nil || record.Type != TypeRunOpened {
+		t.Fatalf("record = %+v (%v), want the opening", record, err)
+	}
+	if _, err := DecodeLine([]byte(`nope`), 4); err == nil || !strings.HasPrefix(err.Error(), "journal: line 4: ") {
+		t.Fatalf("err = %v, want line 4 named", err)
+	}
+	if !Replayable([]byte(`{"type":"observation"}`)) || Replayable([]byte(`{"type":"consumer.reported"}`)) {
+		t.Fatal("Replayable must keep observations and skip session records")
+	}
+}

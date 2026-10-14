@@ -18,7 +18,7 @@ export interface Workspace {
   readonly runs: readonly RunEntry[];
 }
 
-interface Issue {
+export interface Issue {
   readonly pointer: string;
   readonly message: string;
 }
@@ -98,6 +98,16 @@ export function parseFailure(status: number, value: unknown): BridgeFailure {
 export function parseFile(value: unknown): FileContent {
   const body = isRecord(value) ? value : {};
   return { path: text(body.path), content: text(body.content), etag: text(body.etag) };
+}
+
+export interface Written {
+  readonly path: string;
+  readonly etag: string;
+}
+
+export function parseWritten(value: unknown): Written {
+  const body = isRecord(value) ? value : {};
+  return { path: text(body.path), etag: text(body.etag) };
 }
 
 export function parsePaired(value: unknown): boolean {

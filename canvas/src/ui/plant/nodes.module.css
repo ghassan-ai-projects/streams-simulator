@@ -431,3 +431,27 @@
 :global(.tier-compact) .readout dd.word {
   font-size: calc(11.5px / var(--zoom));
 }
+
+.flagged {
+  border: 2px solid var(--status-alarm);
+  box-shadow:
+    0 0 0 3px var(--status-alarm-bg),
+    var(--shadow-panel);
+}
+
+.dot:global(.connectable) {
+  cursor: crosshair;
+}
+
+.dot:global(.connectable):hover,
+.dot:global(.connectingfrom),
+.dot:global(.valid) {
+  transform: scale(1.5);
+}
+
+.dot:global(.connectable)::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+}

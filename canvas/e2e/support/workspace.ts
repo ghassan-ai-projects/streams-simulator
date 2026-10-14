@@ -66,6 +66,17 @@ function editDescription(path: string): void {
   writeFileSync(path, JSON.stringify({ ...domain, description: "Edited after the runs were recorded." }, null, 2));
 }
 
+function markIncomplete(path: string): void {
+  const artifact = JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>;
+  writeFileSync(path, JSON.stringify({ ...artifact, incomplete: true }, null, 2));
+}
+
+function dropLedgerDigest(path: string): void {
+  const artifact = JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>;
+  delete artifact.ledger_digest;
+  writeFileSync(path, JSON.stringify(artifact, null, 2));
+}
+
 export function buildFixture(): Fixture {
   const root = mkdtempSync(join(tmpdir(), "streamsim-canvas-e2e-"));
   const binary = builtBinary();
@@ -79,6 +90,11 @@ export function buildFixture(): Fixture {
   const campus = join(workspace, "compositions", "campus-3.composition.json");
   copyFileSync(join(import.meta.dirname, "..", "fixtures", "campus-3.composition.json"), campus);
   run(binary, ["domain", "compose", campus, "--out", join(workspace, "domains", "campus-3.domain.json")]);
+  copyFileSync(
+    join(import.meta.dirname, "..", "fixtures", "alarm-playback.domain.json"),
+    join(workspace, "domains", "alarm-playback.domain.json"),
+  );
+  record(binary, workspace, "w-alarm", [], "alarm-playback");
   record(binary, workspace, "w-explore", ["-explore"]);
   const jams = ["-fault", "h02/M-1=molder__product_jam@300", "-fault", "h02/M-2=molder__bearing_wear@300"];
   record(binary, workspace, "w-hall", ["-explore", ...jams], "campus-3");
@@ -89,6 +105,10 @@ export function buildFixture(): Fixture {
   dropCommands(join(workspace, "runs", "w-diverged", "run.json"), "fault.inject");
   record(binary, workspace, "w-tampered", []);
   retitleRecordedPlant(join(workspace, "runs", "w-tampered", "run.json"));
+  record(binary, workspace, "w-incomplete-stamp", []);
+  markIncomplete(join(workspace, "runs", "w-incomplete-stamp", "run.json"));
+  record(binary, workspace, "w-missing-digest", []);
+  dropLedgerDigest(join(workspace, "runs", "w-missing-digest", "run.json"));
   editDescription(join(workspace, "domains", "factory-utilities.domain.json"));
   return { binary, workspace, root };
 }

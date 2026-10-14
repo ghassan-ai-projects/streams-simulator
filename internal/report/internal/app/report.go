@@ -15,7 +15,7 @@ import (
 )
 
 func Build(ctx context.Context, dir string) (*domain.Report, error) {
-	folder, err := load(dir)
+	folder, err := load(ctx, dir)
 	if err != nil {
 		return nil, err
 	}
@@ -43,30 +43,30 @@ func Render(report *domain.Report, format string) ([]byte, error) {
 	return nil, fmt.Errorf("%w %q", ErrUnknownFormat, format)
 }
 
-func load(dir string) (domain.Folder, error) {
-	folder, err := loadConsumerSide(dir)
+func load(ctx context.Context, dir string) (domain.Folder, error) {
+	folder, err := loadConsumerSide(ctx, dir)
 	if err != nil {
 		return domain.Folder{}, err
 	}
-	if folder, err = loadSealedSide(dir, domain.Reconcile(folder)); err != nil {
+	if folder, err = loadSealedSide(ctx, dir, domain.Reconcile(folder)); err != nil {
 		return domain.Folder{}, err
 	}
 	folder.Verdict, err = loadVerdict(dir)
 	return folder, err
 }
 
-func loadSealedSide(dir string, folder domain.Folder) (domain.Folder, error) {
+func loadSealedSide(ctx context.Context, dir string, folder domain.Folder) (domain.Folder, error) {
 	if !domain.TruthAllowed(folder) {
 		return folder, nil
 	}
-	if err := readInto(dir, directorSlots, &folder); err != nil {
+	if err := readInto(ctx, dir, directorSlots, &folder); err != nil {
 		return domain.Folder{}, err
 	}
 	return domain.ReconcileSealed(folder), nil
 }
 
-func loadConsumerSide(dir string) (domain.Folder, error) {
-	folder, err := loadDocuments(dir, consumerSlots)
+func loadConsumerSide(ctx context.Context, dir string) (domain.Folder, error) {
+	folder, err := loadDocuments(ctx, dir, consumerSlots)
 	if err != nil {
 		return domain.Folder{}, err
 	}
@@ -81,29 +81,30 @@ func loadConsumerSide(dir string) (domain.Folder, error) {
 
 type slot struct {
 	name   string
+	kind   domain.Kind
 	target func(*domain.Folder) *domain.Document
 }
 
 var consumerSlots = []slot{
-	{model.FileTrace, func(f *domain.Folder) *domain.Document { return &f.Trace }},
-	{"journal.jsonl", func(f *domain.Folder) *domain.Document { return &f.Observer }},
+	{model.FileTrace, domain.DigestOnly, func(f *domain.Folder) *domain.Document { return &f.Trace }},
+	{"journal.jsonl", domain.ObserverJournal, func(f *domain.Folder) *domain.Document { return &f.Observer }},
 }
 
 var directorSlots = []slot{
-	{"sealed/journal.jsonl", func(f *domain.Folder) *domain.Document { return &f.Director }},
-	{model.FileLedger, func(f *domain.Folder) *domain.Document { return &f.Ledger }},
-	{model.FileHistory, func(f *domain.Folder) *domain.Document { return &f.History }},
+	{"sealed/journal.jsonl", domain.DirectorJournal, func(f *domain.Folder) *domain.Document { return &f.Director }},
+	{model.FileLedger, domain.LedgerRows, func(f *domain.Folder) *domain.Document { return &f.Ledger }},
+	{model.FileHistory, domain.DigestOnly, func(f *domain.Folder) *domain.Document { return &f.History }},
 }
 
-func loadDocuments(dir string, slots []slot) (domain.Folder, error) {
+func loadDocuments(ctx context.Context, dir string, slots []slot) (domain.Folder, error) {
 	var folder domain.Folder
-	err := readInto(dir, slots, &folder)
+	err := readInto(ctx, dir, slots, &folder)
 	return folder, err
 }
 
-func readInto(dir string, slots []slot, folder *domain.Folder) error {
+func readInto(ctx context.Context, dir string, slots []slot, folder *domain.Folder) error {
 	for _, s := range slots {
-		doc, err := files.Read(filepath.Join(dir, s.name))
+		doc, err := files.Scan(ctx, filepath.Join(dir, s.name), s.kind)
 		if err != nil {
 			return err
 		}

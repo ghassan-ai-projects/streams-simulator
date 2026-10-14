@@ -18,7 +18,7 @@ import (
 
 func readJournal(t *testing.T, dir, name string) []journal.Record {
 	t.Helper()
-	records, err := journal.Read(readFile(t, filepath.Join(dir, name)))
+	records, err := decodeJournalBytes(readFile(t, filepath.Join(dir, name)))
 	if err != nil {
 		t.Fatalf("%s: %v", name, err)
 	}
@@ -48,12 +48,12 @@ func TestJournalOfARunThatHasNotEndedIsReadableUpToItsLastCompleteLine(t *testin
 	}
 	advanceAndReport(t, r, r.World.Clock()+600e9)
 	raw := readFile(t, filepath.Join(dir, journal.ObserverFile))
-	records, err := journal.Read(raw)
+	records, err := decodeJournalBytes(raw)
 	if err != nil || len(records) < 3 || records[0].Type != "run.opened" || len(recordsOfType(records, "run.closed")) != 0 {
 		t.Fatalf("observer journal before End: %d records, %v", len(records), err)
 	}
 	cut := raw[:len(raw)-7]
-	torn, err := journal.Read(cut)
+	torn, err := decodeJournalBytes(cut)
 	if err != nil || len(torn) != len(records)-1 {
 		t.Fatalf("a torn last line: %d records, %v; want %d", len(torn), err, len(records)-1)
 	}
