@@ -20,14 +20,16 @@ Use these commands unless the task is documentation-only:
 
 - `make build` builds `cmd/streamsim` into `bin/`.
 - `make ci-check` runs `function-length -> fmt-check -> docs-check -> tidy -> build -> vet -> lint-ci -> gate-ratchet -> test-ci -> deadcode -> vulncheck -> fuzz-soak`.
-- `make test-ci` (`scripts/test-ci`) is the whole test tier: the suite runs twice and no third time.
-  Run 1 is `-race -shuffle=on -tags simdet` with no coverage (`-race` forces atomic coverage counters,
-  which slow the simulation loops several-fold). Run 2 is without race and without the simdet tag,
-  with cheap `-cover`; the per-package coverage floors are checked from that run's output
-  (`scripts/check-coverage REPORT...`), and because it runs untagged it also tests the real wall-clock
-  implementation in `internal/wall` and `internal/run/internal/clock`. Neither run uses `-short`:
-  the long generation tests are cheap enough to be always on.
-- `make test-short`, `make test-simdet`, `make test-race` and `make coverage-check` remain as standalone
+- `make test-ci` (`scripts/test-ci`) is the whole pipeline test tier: the suite runs once,
+  `-short -shuffle=on -tags simdet` with cheap `-cover`; the per-package coverage floors are checked from
+  that run's output (`scripts/check-coverage REPORT...`). Every pipeline (`make ci-check`, `make phase-gate`,
+  each CI job) stays under 2 minutes of wall time.
+- Long simulations run on demand only: a test that simulates hours of plant time or sweeps the whole
+  component library must start with `if testing.Short() { t.Skip("<what it simulates>; on demand: make test-long") }`.
+  `make test-long` runs the whole suite without `-short`; `make test-race` runs it under the race detector.
+  Neither is part of `ci-check`, `phase-gate` or CI; run them when a change touches what they cover
+  (long-horizon dynamics, the component library, goroutines and locks).
+- `make test-short`, `make test-simdet` and `make coverage-check` remain as standalone
   targets for working on one concern; `ci-check` does not call them.
 - `make fuzz-soak` runs every fuzz target side by side (`FUZZSOAKTIME`, default 5s each); `make fuzz`
   runs them one after another (`FUZZTIME`, default 10s). Add a target by appending to `FUZZ_NAMES` and

@@ -42,7 +42,7 @@ HAS_MAIN := $(if $(MAIN_PKGS),yes,no)
 .DEFAULT_GOAL := help
 
 # ---- Phony declarations ---------------------------------------------------
-.PHONY: help all build vet fmt tidy lint lint-ci docs-check test test-short test-race \
+.PHONY: help all build vet fmt tidy lint lint-ci docs-check test test-short test-race test-long \
         test-coverage test-ci ci-check deadcode vulncheck fuzz $(FUZZ_TARGETS) soak fuzz-soak perf \
         manifest clean run cross-compile architecture architecture-baseline function-length \
         coverage-check behaviour-pin behaviour-pin-check canvas-check phase-gate fmt-check contract-sync gate-ratchet
@@ -178,12 +178,15 @@ test-simdet: ## Run the deterministic suite with the wall clock removed (standal
 	  echo "(no packages yet -- skipping test)"; \
 	fi
 
-test-ci: ## The ci-check test tier: whole suite once (race, shuffle, simdet, coverage), floors checked from that run
+test-ci: ## The ci-check test tier: whole suite once in short mode (shuffle, simdet, coverage), floors checked from that run
 	./scripts/test-ci
 
-test-race: ## Run tests with race detector
+test-long: ## On demand, not in ci-check or CI: the whole suite including the long simulations (hours of plant time, every library component)
+	go test -tags simdet -shuffle=on -count=1 ./...
+
+test-race: ## On demand, not in ci-check or CI: the whole suite under the race detector
 	@if [ "$(HAS_PKGS)" = "yes" ]; then \
-	  go test -race -count=1 $(PKGS); \
+	  go test -tags simdet -race -shuffle=on -count=1 $(PKGS); \
 	else \
 	  echo "(no packages yet -- skipping test)"; \
 	fi

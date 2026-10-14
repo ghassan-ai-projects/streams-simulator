@@ -76,7 +76,7 @@ func TestCatalogEveryEquipmentPreset(t *testing.T) {
 	t.Parallel()
 	testsupport.SkipUnderRace(t, "simulates every component of the library")
 	if testing.Short() {
-		t.Skip("simulates every component of the library; runs in ci-check, not in make quick")
+		t.Skip("simulates every component of the library; on demand: make test-long")
 	}
 	cases := catalogCases(t)
 	if len(cases) == 0 {

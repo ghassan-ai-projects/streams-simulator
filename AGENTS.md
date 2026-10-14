@@ -133,6 +133,7 @@ Primary commands:
 - `make quick` (inner loop, about 30 s with the test cache: fmt, function length, build, vet, short tests including `test/architecture`)
 - `make ci-check`
 - `make phase-gate` (simulation-canvas goal: `ci-check` plus the Enola check)
+- `make test-long` and `make test-race` (on demand only: long simulations and the race detector; not in any pipeline)
 
 Use `make quick` while working. Run `make phase-gate` once per pull request, before pushing (CI runs `ci-check` again); not after every step.
 - `make function-length`
