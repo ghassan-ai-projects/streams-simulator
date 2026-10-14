@@ -56,6 +56,3 @@ runs/
 # A customer workspace carries a STREAMSIM_CUSTOMER_WORKSPACE marker; test/architecture/canvas_test.go fails if one is here.
 /workspaces/
 
-# --- Review screenshots (regenerate from the documented scenario) ---
-docs/**/screenshots/
-docs/**/*-screenshots/
