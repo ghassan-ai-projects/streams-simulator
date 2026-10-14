@@ -1,6 +1,6 @@
 # P9 handoff — playback and review (2026-10-14)
 
-State at `8726dd8` on branch `canvas-foundation` (86 commits ahead of `main`, not pushed; no PR yet).
+State at the head of `canvas-foundation` on branch `canvas-foundation` (86 commits ahead of `main`, not pushed; no PR yet).
 
 ## Where it stands
 
@@ -11,23 +11,17 @@ State at `8726dd8` on branch `canvas-foundation` (86 commits ahead of `main`, no
 - The canvas computes nothing the binary owns: fault intervals, channel state vocabularies and the verify reason come
   from the simulator (R9-15–R9-17, R9-20, R9-21).
 - Gates: `make ci-check`, `make quick`, and `cd canvas && STREAMSIM_BIN=$(cd .. && pwd)/bin/streams-simulator npm run
-  check` (124 unit and component tests, 15 Playwright tests against the real binary) all pass at `8726dd8`.
+  check` (124 unit and component tests, 15 Playwright tests against the real binary) and `make phase-gate` (including the Enola check) all pass.
 - Review loop: five rounds with three reviewers (design director, accessibility, engineer); record in
   [ui.md](ui.md). Every reviewer is at 3/5 with the round 5 findings fixed but not yet re-reviewed. The bar is all
   three at 4 or more with no High.
 
 ## Next session, in order
 
-1. **Finish E5-1, E5-2, E5-4 in the simulator** (a subagent was working in worktree
-   `.claude/worktrees/agent-adb9ec37e1de800eb`, uncommitted when this session ended; check it, or redo):
-   - E5-1 (High): `incomplete: true` in `run.json` makes `verify` skip every evidence check and return `match`, exit 0;
-     the CLI document drops `incomplete`. An incomplete run must never read `match` (reason `incomplete`), the stamp
-     must be checked against the journals' `run.closed` and `reproducible`, and the evidence it has still compared.
-     `TestAnIncompleteRunKeepsItsOptionalEvidenceDigests` pins the bypass today.
-   - E5-2: `report` must load an artifact as tolerantly as `verify` and give a failing verification for a missing or
-     empty digest, not `artifact_invalid`.
-   - E5-4: the report says truth is sealed until the run ends for an open evaluate run.
-   - Then the canvas: phrase reason `incomplete`; never "Reproduces" for an incomplete run.
+1. **E5-1, E5-2, E5-4 are fixed** (`cf24c70`, R9-30–R9-32): an incomplete run never verifies as a match (reasons
+   `incomplete`, `incomplete_stamp`), report loads run.json as verify does and reports a missing digest as a failing
+   check, and an open evaluate report says truth is sealed until the run ends. Check in round 6 that the canvas never
+   reads "Reproduces" for an incomplete run.
 2. **Round 6**: freeze a build (copy `bin/streams-simulator` and `canvas/dist`), record a fresh review workspace (recipe
    below), send the three reviewers with the previous findings and the round 5 dispositions. Loop until approved.
 3. **Simulator items that block P9 sign-off** (reviewers' judgement): R9-24 alarm activations in the report (lane
