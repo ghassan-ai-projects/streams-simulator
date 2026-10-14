@@ -82,6 +82,51 @@ export function portType(spec: ComponentSpec | undefined, name: string): string 
   return spec?.ports.find((port) => port.name === name)?.type ?? "";
 }
 
+export function specOf(
+  specs: ReadonlyMap<string, ComponentSpec>,
+  instance: Instance | undefined,
+): ComponentSpec | undefined {
+  return instance?.component ? specs.get(instance.component) : undefined;
+}
+
+function words(text: string): string {
+  return text.replaceAll("_", " ");
+}
+
+function listed(items: readonly string[]): string {
+  if (items.length < 2) return items.join("");
+  return `${items.slice(0, -1).join(", ")} and ${items.at(-1) ?? ""}`;
+}
+
+function inputTypesElsewhere(
+  plant: Plant,
+  specs: ReadonlyMap<string, ComponentSpec>,
+  from: Instance,
+): readonly string[] {
+  const types = plant.instances
+    .filter((instance) => instance.id !== from.id)
+    .flatMap((instance) => specOf(specs, instance)?.ports ?? [])
+    .filter((port) => port.direction === "in")
+    .map((port) => port.type);
+  return [...new Set(types)];
+}
+
+export function noTargetReason(
+  plant: Plant,
+  specs: ReadonlyMap<string, ComponentSpec>,
+  from: Instance,
+  output: string,
+): string {
+  const type = portType(specOf(specs, from), output);
+  if (type === "") return "No instance in this plant has an input.";
+  const taken = inputTypesElsewhere(plant, specs, from);
+  const inputs =
+    taken.length === 0
+      ? "The other instances here have no inputs."
+      : `The inputs in this plant take ${listed(taken.map(words))}.`;
+  return `No instance takes ${words(type)}: ${from.id}'s ${words(output)} is ${words(type)}. ${inputs}`;
+}
+
 const classCategories: readonly (readonly [string, Category])[] = [
   ["electrical/", "elec"],
   ["process/", "prod"],

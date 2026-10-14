@@ -4,16 +4,12 @@ import { useState } from "react";
 import { connect } from "../../model/compositionEdits";
 import type { Instance, Plant } from "../../model/plant";
 import type { ComponentSpec } from "../../model/ports";
-import { familyNames, familyOf, portsMatching, portType } from "../../model/ports";
+import { noTargetReason, portsMatching, portType, specOf } from "../../model/ports";
 import panel from "../panel.module.css";
 import { SubmitRow } from "./SubmitRow";
 import type { PanelProps } from "./panelProps";
 
 type FormProps = PanelProps & { readonly instance: Instance };
-
-function specOf(specs: ReadonlyMap<string, ComponentSpec>, instance: Instance | undefined): ComponentSpec | undefined {
-  return instance?.component ? specs.get(instance.component) : undefined;
-}
 
 function Pick({
   label,
@@ -85,9 +81,21 @@ function withOutput(
   };
 }
 
-function typeWords(type: string): string {
-  const family = familyOf(type);
-  return family === null ? type.replaceAll("_", " ") : familyNames[family].toLowerCase();
+function TargetNote({
+  plant,
+  draft,
+  instance,
+  output,
+  count,
+}: {
+  readonly plant: Plant;
+  readonly draft: PicksProps["draft"];
+  readonly instance: Instance;
+  readonly output: string;
+  readonly count: number;
+}) {
+  if (output === "" || count > 0) return null;
+  return <p className={panel.hint}>{noTargetReason(plant, draft.specs, instance, output)}</p>;
 }
 
 function LinkPicks({ draft, plant, instance, choice, setChoice }: PicksProps) {
@@ -95,7 +103,7 @@ function LinkPicks({ draft, plant, instance, choice, setChoice }: PicksProps) {
   const type = portType(spec, choice.output);
   const targetInstance = plant.instances.find((entry) => entry.id === choice.target);
   const options = targets(plant, draft.specs, instance.id, type);
-  const noTarget = choice.output === "" ? "Choose an output first" : `No instance takes ${typeWords(type)} yet`;
+  const noTarget = choice.output === "" ? "Choose an output first" : "No instance takes it";
   return (
     <>
       <Pick
@@ -116,6 +124,7 @@ function LinkPicks({ draft, plant, instance, choice, setChoice }: PicksProps) {
           setChoice({ ...choice, target, input: "" });
         }}
       />
+      <TargetNote plant={plant} draft={draft} instance={instance} output={choice.output} count={options.length} />
       <Pick
         label="Input"
         value={choice.input}

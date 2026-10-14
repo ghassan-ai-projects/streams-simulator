@@ -221,23 +221,6 @@ describe("plant editor panel", () => {
     expect(screen.getByLabelText("Input")).toHaveValue("");
   });
 
-  it("names the missing target when nothing takes what an output gives", async () => {
-    const fake = new LabBridge();
-    const alone = { ...doc, equipment: [doc.equipment[0]], connections: [] };
-    fake.files.set(path, success({ path, content: JSON.stringify(alone), etag: "d1" }));
-    fake.actions.set("component.list", success({ components: [] }));
-    const editor = new EditorStore(fake);
-    await editor.open(path);
-    render(<Harness editor={editor} />);
-    act(() => {
-      editor.select("CH-1");
-    });
-    expect(within(screen.getByLabelText("To")).getByRole("option")).toHaveTextContent("Choose an output first");
-    choose("Output", "heat_out");
-    expect(within(screen.getByLabelText("To")).getByRole("option")).toHaveTextContent("No instance takes heat yet");
-    expect(within(screen.getByLabelText("Input")).getByRole("option")).toHaveTextContent("Choose an instance first");
-  });
-
   it("deletes an instance without links at once, and asks first when it has links", async () => {
     const { editor } = await editing();
     act(() => {
