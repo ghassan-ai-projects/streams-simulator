@@ -110,7 +110,7 @@ describe("plant editor panel", () => {
     fireEvent.click(screen.getByRole("button", { name: "Link" }));
     expect(connectionsOf(current(editor)).map((wire) => wire.from)).toEqual(["CH-9.heat_out", "CH-9.power_out"]);
     fireEvent.click(screen.getByRole("button", { name: "Remove link: heat out to CT-1 heat in" }));
-    expect(screen.getByRole("heading", { name: "Links (1)" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Links 1" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "CT-1" }));
     expect(screen.getByRole("heading", { name: "CT-1" })).toBeInTheDocument();
     act(() => {

@@ -43,7 +43,7 @@ test("a new plant is built in Chrome, refused with the issue on its element, fix
   await add(page, "Cooling tower", "CT 1");
   await pin(page, "CH-1", "heat_out").dragTo(pin(page, "CT 1", "heat_in"));
   await page.getByRole("navigation", { name: "Outline" }).getByRole("button", { name: "CT 1" }).click();
-  await expect(page.getByRole("heading", { name: "Links (1)" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Links 1" })).toBeVisible();
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await page.getByRole("button", { name: "Save" }).click();
   await expect(page.getByRole("status").filter({ hasText: /^Saved, not composed/ })).toBeVisible();

@@ -92,6 +92,7 @@
 
 .summary {
   margin: 0;
+  text-wrap: pretty;
   color: var(--text-secondary);
   font-size: var(--text-sm);
 }
@@ -141,4 +142,5 @@
 .note {
   grid-column: 2;
   color: var(--text-secondary);
+  text-wrap: pretty;
 }

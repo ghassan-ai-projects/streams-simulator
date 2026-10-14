@@ -113,7 +113,9 @@ function Links({ draft, instance, editor }: Pick<EditorProps, "draft" | "instanc
   );
   return (
     <section className={panel.group} aria-labelledby="links-title">
-      <h3 id="links-title">{`Links (${String(touching.length)})`}</h3>
+      <h3 id="links-title" className={styles.counted}>
+        Links <span className={styles.count}>{touching.length}</span>
+      </h3>
       {touching.length === 0 && <p className={panel.hint}>Not linked yet.</p>}
       <ul className={styles.links}>
         {touching.map((wire) => (

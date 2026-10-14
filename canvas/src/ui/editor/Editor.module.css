@@ -268,3 +268,15 @@
   color: var(--text-secondary);
   font-size: var(--text-sm);
 }
+
+.counted {
+  display: flex;
+  align-items: baseline;
+}
+
+.count {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-weight: 400;
+  letter-spacing: 0;
+}

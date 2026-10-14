@@ -1,4 +1,4 @@
-import { Radio } from "lucide-react";
+import { Eye, Lock, Radio } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { NavigationStore } from "../../app/navigationStore";
 import type { Workspace } from "../../model/bridge";
@@ -46,6 +46,7 @@ function Row({
         <span className={styles.line}>
           <span className={styles.name}>{row.plantTitle}</span>
           <span className={row.run.explore ? styles.explore : styles.badge}>
+            {row.run.explore ? <Eye size={12} aria-hidden="true" /> : <Lock size={12} aria-hidden="true" />}
             {row.run.explore ? "Explore" : "Evaluate"}
           </span>
         </span>
