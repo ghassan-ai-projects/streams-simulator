@@ -5,7 +5,7 @@ export interface PlantEntry {
   readonly title: string;
   readonly domain: string | null;
   readonly composition: string | null;
-  readonly instances: number;
+  readonly instanceDefinitions: number;
   readonly runs: number;
   readonly lastRun: string;
 }
@@ -34,7 +34,7 @@ function entry(id: string, domain: Definition | undefined, composition: Definiti
     title: firstText(domain?.title, composition?.title, id),
     domain: domain?.path ?? null,
     composition: composition?.path ?? null,
-    instances: domain?.instances ?? 0,
+    instanceDefinitions: domain?.instances ?? 0,
     runs: mine.length,
     lastRun: mine.map((run) => run.recordedAt).reduce((a, b) => (b > a ? b : a), ""),
   };
@@ -52,7 +52,7 @@ export function faultWords(run: RunEntry): string {
 
 export function plantFacts(plant: PlantEntry): string {
   if (plant.domain === null) return "Not composed yet: edit and save it to run it.";
-  const size = plant.instances > 0 ? `${plural(plant.instances, "instance")} · ` : "";
+  const size = plant.instanceDefinitions > 0 ? `${plural(plant.instanceDefinitions, "instance definition")} · ` : "";
   if (plant.runs === 0) return size === "" ? "No runs yet" : `${size}no runs yet`;
   const last = whenOf(plant.lastRun);
   return `${size}${plural(plant.runs, "run")}${last === "" ? "" : ` · last ${last}`}`;
