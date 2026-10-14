@@ -66,3 +66,12 @@
 :global([data-left="closed"][data-right="closed"]) .panels {
   grid-template-columns: 0 minmax(0, 1fr) 0;
 }
+
+.scrolls {
+  background:
+    linear-gradient(var(--surface-panel) 40%, transparent) center top / 100% 32px no-repeat local,
+    linear-gradient(transparent, var(--surface-panel) 60%) center bottom / 100% 32px no-repeat local,
+    linear-gradient(var(--scroll-shadow), transparent) center top / 100% 10px no-repeat scroll,
+    linear-gradient(transparent, var(--scroll-shadow)) center bottom / 100% 10px no-repeat scroll,
+    var(--surface-panel);
+}

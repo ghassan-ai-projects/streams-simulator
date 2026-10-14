@@ -72,6 +72,7 @@
   --node-dim: 0.8;
   --shadow-panel: 0 4px 14px rgb(15 23 42 / 12%), 0 1px 2px rgb(15 23 42 / 10%);
   --scrim: rgb(15 23 42 / 32%);
+  --scroll-shadow: rgb(15 23 42 / 14%);
 }
 
 :root[data-theme="dark"] {
@@ -124,6 +125,7 @@
   --node-dim: 0.8;
   --shadow-panel: 0 6px 18px rgb(0 0 0 / 45%), 0 1px 2px rgb(0 0 0 / 40%);
   --scrim: rgb(0 0 0 / 55%);
+  --scroll-shadow: rgb(0 0 0 / 55%);
 }
 
 @media (prefers-reduced-motion: reduce) {

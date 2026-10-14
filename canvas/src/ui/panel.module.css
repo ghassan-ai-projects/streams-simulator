@@ -1,10 +1,10 @@
 .panel {
+  composes: scrolls from "./shared.module.css";
   display: flex;
   flex-direction: column;
   min-height: 0;
   overflow: auto;
   border-left: 1px solid var(--border-subtle);
-  background: var(--surface-panel);
 }
 
 .head {

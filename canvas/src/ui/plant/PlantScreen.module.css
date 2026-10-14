@@ -10,7 +10,6 @@
 .inspector {
   min-height: 0;
   overflow: auto;
-  background: var(--surface-panel);
 }
 
 .side {
@@ -22,11 +21,13 @@
 }
 
 .outline {
+  composes: scrolls from "../shared.module.css";
   flex: 1;
   padding-bottom: var(--space-4);
 }
 
 .inspector {
+  composes: scrolls from "../shared.module.css";
   border-left: 1px solid var(--border-subtle);
 }
 

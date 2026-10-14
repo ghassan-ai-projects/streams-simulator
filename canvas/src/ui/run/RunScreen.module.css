@@ -73,11 +73,11 @@
 }
 
 .report {
+  composes: scrolls from "../shared.module.css";
   grid-area: report;
   min-height: 0;
   overflow: auto;
   border-left: 1px solid var(--border-subtle);
-  background: var(--surface-panel);
 }
 
 .mark,
