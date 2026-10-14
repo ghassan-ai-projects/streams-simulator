@@ -42,8 +42,11 @@ describe("home screen", () => {
     const runs = within(screen.getByRole("region", { name: "Runs" })).getAllByRole("listitem");
     expect(runs.map((row) => row.textContent)).toEqual([
       expect.stringMatching(/^Factory utilitiesExplore.*w-2 · .*not finishedReview$/),
-      expect.stringMatching(/^Factory utilitiesEvaluate.*w-1 · .* · 30 min · no faultsReview$/),
+      expect.stringMatching(/^Factory utilitiesEvaluate.*w-1 · .* · 30 min · no faultsNot checkedReview$/),
     ]);
+    const review = screen.getByRole("button", { name: "Review w-1" });
+    expect(review).toHaveAttribute("title", "Review checks recording integrity using the run files.");
+    expect(review).toHaveAttribute("aria-description", "Review checks recording integrity using the run files.");
     expect(screen.queryByRole("region", { name: "Scenarios" })).not.toBeInTheDocument();
     expect(screen.queryByText(/domains\//)).not.toBeInTheDocument();
     expect((await axe.run(view.container)).violations).toEqual([]);
