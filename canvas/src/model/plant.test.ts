@@ -106,7 +106,7 @@ describe("plant from a domain file", () => {
   it("lists a few links one by one and groups many by the instance's own port", () => {
     const few = [{ from: "A", to: "B", type: "t", fromPort: "out", toPort: null }];
     expect(linkLines(few, "A", "out")).toEqual(["out → B"]);
-    expect(linkLines(few, "B", "in")).toEqual(["A.out → B"]);
+    expect(linkLines(few, "B", "in")).toEqual(["A out → B"]);
     const many = Array.from({ length: 26 }, (_, index) => ({
       from: "SH",
       to: `H${String(index % 13)}`,
@@ -114,7 +114,7 @@ describe("plant from a domain file", () => {
       fromPort: index < 20 ? "shift_out" : null,
       toPort: "shift_in",
     }));
-    expect(linkLines(many, "SH", "out")).toEqual(["shift_out → 20 links, 13 instances", "SH → 6 links, 6 instances"]);
-    expect(linkLines(many, "H0", "in")).toEqual(["26 links, 1 instance → shift_in"]);
+    expect(linkLines(many, "SH", "out")).toEqual(["shift out → 20 links, 13 instances", "SH → 6 links, 6 instances"]);
+    expect(linkLines(many, "H0", "in")).toEqual(["26 links, 1 instance → shift in"]);
   });
 });

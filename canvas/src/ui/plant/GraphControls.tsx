@@ -18,7 +18,10 @@ const families = Object.keys(familyNames) as Family[];
 
 function Legend() {
   return (
-    <div className={styles.legend} id="port-types">
+    <div className={styles.legend} id="port-types" role="group" aria-labelledby="port-types-title">
+      <p className={styles.legendTitle} id="port-types-title">
+        Wire colour and pin shape by port type
+      </p>
       <ul className={styles.legendList}>
         {families.map((family) => (
           <li key={family}>
@@ -57,15 +60,16 @@ function LegendButton() {
       <button
         ref={button}
         type="button"
-        className={styles.button}
+        className={styles.legendButton}
         aria-expanded={open}
         aria-controls="port-types"
-        aria-label="Port types"
+        title="What the wire colours and pin shapes mean"
         onClick={() => {
           setOpen((value) => !value);
         }}
       >
         <List size={14} aria-hidden="true" />
+        Legend
       </button>
       {open && <Legend />}
     </div>

@@ -124,8 +124,8 @@ function InstanceDetails({
         mono={false}
         show={(name) => channelLine(name, kind?.channels ?? [])}
       />
-      <List title="Links in" items={linkLines(incoming, instance.id, "in")} count={incoming.length} />
-      <List title="Links out" items={linkLines(outgoing, instance.id, "out")} count={outgoing.length} />
+      <List title="Links in" items={linkLines(incoming, instance.id, "in")} count={incoming.length} mono={false} />
+      <List title="Links out" items={linkLines(outgoing, instance.id, "out")} count={outgoing.length} mono={false} />
       <List title="Faults" items={kind?.faults ?? []} mono={false} show={humanise} folded />
       <List title="Effectors" items={kind?.effectors ?? []} mono={false} show={humanise} />
       <List title="States" items={kind?.states ?? []} mono={false} show={channelWords} folded />

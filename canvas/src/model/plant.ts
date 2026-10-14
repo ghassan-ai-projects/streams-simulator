@@ -203,8 +203,10 @@ export function linksOf(
 
 const listedLinks = 12;
 
+const portWords = (port: string) => port.replaceAll("_", " ");
+
 function linkEnd(id: string, port: string | null): string {
-  return port === null ? id : `${id}.${port}`;
+  return port === null ? id : `${id} ${portWords(port)}`;
 }
 
 function counted(n: number, noun: string): string {
@@ -212,7 +214,10 @@ function counted(n: number, noun: string): string {
 }
 
 export function linkLines(links: readonly Link[], self: string, side: "in" | "out"): readonly string[] {
-  const own = (link: Link) => (side === "in" ? link.toPort : link.fromPort) ?? self;
+  const own = (link: Link) => {
+    const port = side === "in" ? link.toPort : link.fromPort;
+    return port === null ? self : portWords(port);
+  };
   const other = (link: Link) => (side === "in" ? linkEnd(link.from, link.fromPort) : linkEnd(link.to, link.toPort));
   if (links.length <= listedLinks)
     return links.map((link) => (side === "in" ? `${other(link)} → ${own(link)}` : `${own(link)} → ${other(link)}`));
