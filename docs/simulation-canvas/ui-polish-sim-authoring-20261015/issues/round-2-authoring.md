@@ -93,8 +93,8 @@ Issue counts: High 3, Medium 9, Low 6 (18 issues total).
 - Observed: Messages use schema words ("minItems", "contains", "kind name ... used by another entry"). The block lists only the first problem each time, and does not say which instance or what to add. The "array shorter than minItems 3" and "no array item matches contains" messages gave no hint which items to add. Clicking the kind message selects one instance, but the names can be stale (the message still named "pump" after the second pump was deleted, until the next save).
 - Expected: One plain sentence per problem, naming the instance and what to change ("Add at least 3 ...", "The plant needs a ... to run"), and all problems listed.
 - Suggestion: List every problem with the instance name and a plain fix; refresh the list on every save.
-- Status: fixed ed6153d (wording of the messages themselves: needs-binary)
-- Fix: Identical issues are listed once with a count, each names its instance or, for plant-wide ones, the file location; a stale list says "from the last save". Missing in the binary: the messages "array shorter than minItems 3" and "no array item matches contains" are the jsonschema package's own words. Proposal: give those schema nodes an `x-expected` sentence (what to add, e.g. "at least 3 profiles") in `contracts/composition-v0.1.schema.json` so the binary reports it, and report every kind-name clash in one pass instead of the first.
+- Status: fixed ed6153d, c0a0445 (the kind-name clash is reported one at a time: still the binary's, see ISS-2-01)
+- Fix: Identical issues are listed once with a count, each names its instance or, for plant-wide ones, the file location; a stale list says "from the last save". In the binary (c0a0445): `x-expected` now also words a minItems or contains failure, and the domain-spec schema (`contracts/` and `internal/schemas`, equal) gives the profiles array and each mandatory profile a sentence, so the two messages read "needs at least 3 profiles: add nominal, correlated_cascade and sensor_pathology" and "needs a profile named nominal" (and likewise for correlated_cascade and sensor_pathology).
 
 ## ISS-2-09 "Saved" is shown while the plant is "Not composed", which reads as done
 - Severity: Medium
@@ -149,8 +149,8 @@ Issue counts: High 3, Medium 9, Low 6 (18 issues total).
 - Observed: Outputs are "dew point out" and "power out" only. The dryer takes compressed air but does not give it on. The air path therefore ends at the dryer, and I had to connect the compressor directly to the receiver.
 - Expected: Either an air outlet, or a note on the component ("this component ends the air path") so the user knows the topology is intended.
 - Suggestion: Add an air outlet to the dryer, or show a short note on the component about what it does not pass on.
-- Status: needs-binary
-- Fix: The dryer component has no compressed-air outlet port in `internal/component` (library data). Proposal: add an `air_out` provides port of type `compressed_air` to `air-dryer`, or declare in its description that it ends the air path.
+- Status: fixed 641343b
+- Fix: The built-in air dryer gains an `outlet_flow` state (inlet flow less purge flow, an F1 sum declared in data) and an `air_out` provides port of type `compressed_air`, so compressor -> dryer -> receiver composes. The factory-utilities example domain is composed again (its dryer digest changes). Existing plants that ended the path at the dryer still compose unchanged.
 
 ## ISS-2-13 No sensors can be added; "channels", "instruments" and "observations" are used for the same thing
 - Severity: Medium
@@ -177,8 +177,8 @@ Issue counts: High 3, Medium 9, Low 6 (18 issues total).
 - Observed: The effectors are plain text with no action. The Run form has faults only. The run report says "EFFECTOR CALLS: None" and gives no way to add one. Start/stop of pumps, fans or compressors is therefore not testable from the UI.
 - Expected: A way to call an effector (a button in the inspector, and a "Schedule effector call" row in the run form), or a note that effectors are only callable by a consumer.
 - Suggestion: Add an "Effector calls" section to the run form, or label effectors as "consumer only".
-- Status: needs-binary
-- Fix: The canvas bridge registry (`internal/canvasbridge/internal/domain/registry.go`) has no effector action; `sim.effector.list` and `sim.effector.invoke` are operator-role tools needing a capability token that `world.create` withholds. Proposal: bridge actions `effector.list` {world_id} (names, argument schemas) and `effector.invoke` {world_id, effector, entity_id, args, command_id}, the bridge holding the operator token server side and returning the invoke result; the canvas would then add "Effector calls" rows (instance, effector, at minute) to the launch plan like fault rows, advancing the clock to the minute before invoking.
+- Status: binary done 1bc4389 (canvas side open)
+- Fix: The bridge now registers `effector.list` {world_id} and `effector.invoke` {world_id, entity_id, effector, args?, command_id?}. They call the director's new tools `sim.world.effectors` and `sim.world.invoke`, which resolve the world's own operator view and use its existing `ListEffectors` and `Invoke` (one implementation; the capability token never leaves the director). `effector.list` returns `{world_id, effectors: [{name, args_schema, risk_class}], simulated}`; names are `<kind>__<effector>` (for example `chw_pump__start`) and `args_schema` is the JSON Schema of the arguments (usually `<kind>_id` plus the set-point). `effector.invoke` returns the operator acknowledgement `{accepted, simulated, world_id, command_id, effect_eta_ns?, reason?}`: `accepted: false` with `reason` (`effector_refused`, `unknown_effector`, ...) is a refusal, `effect_eta_ns` is when the effect lands on the world clock. The call applies at the world's current clock, so the canvas advances the clock to the scheduled minute first; an omitted `command_id` is numbered `director-N` per world.
 
 ## ISS-2-20 Empty "What this component models" heading in the plant inspector
 - Severity: Low
@@ -257,8 +257,8 @@ Issue counts: High 3, Medium 9, Low 6 (18 issues total).
 - Observed: The same seven items are called "definitions" on Home and "instances" in the plant view. The word "definition" is not used anywhere else.
 - Expected: One word for the same thing.
 - Suggestion: Use "instances" on both screens.
-- Status: needs-binary
-- Fix: The Home count is the binary's listing field `instances` = `len(head.Instances)` (definitions, `internal/canvasbridge/internal/domain/vocabulary.go`), which differs from the plant view's instance count when an entry has several names or an id template. Proposal: count expanded instances there (len(names), or count.default for id_template sets); the canvas then labels it "instances". The expansion sentence was removed (ISS-2-02).
+- Status: binary done b4c6b24 (canvas label open)
+- Fix: The listing field `instances` now sums the names of each set (or `count.default` for an id_template set) in a domain's `instances` and in a composition's `equipment`, so it matches the plant view; the canvas can label it "instances". The expansion sentence was removed (ISS-2-02).
 
 ## Worked well
 - The New plant form (round 1 fix) now asks "Start from" and "What to keep" in plain words; the Id is filled from the name as you type.
