@@ -1,5 +1,5 @@
 import { Radio } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { NavigationStore } from "../../app/navigationStore";
 import type { Workspace } from "../../model/bridge";
 import type { Badge } from "../../model/report";
@@ -98,9 +98,23 @@ function PlantFilter({
   );
 }
 
+function useMore() {
+  const [shown, setShown] = useState(page);
+  const list = useRef<HTMLUListElement>(null);
+  const [focusAt, setFocusAt] = useState<number | null>(null);
+  useEffect(() => {
+    if (focusAt !== null) list.current?.querySelectorAll<HTMLButtonElement>("button")[focusAt]?.focus();
+  }, [focusAt]);
+  const more = () => {
+    setFocusAt(shown);
+    setShown(shown + page);
+  };
+  return { shown, list, more };
+}
+
 export function RunList({ workspace, navigation, badgeFor }: ListProps) {
   const [plant, setPlant] = useState("");
-  const [shown, setShown] = useState(page);
+  const { shown, list, more } = useMore();
   const rows = runRows(workspace, plant === "" ? null : plant);
   return (
     <section className={styles.section} aria-labelledby="runs-title">
@@ -110,19 +124,16 @@ export function RunList({ workspace, navigation, badgeFor }: ListProps) {
         <PlantFilter workspace={workspace} plant={plant} setPlant={setPlant} />
       </header>
       {rows.length === 0 && <p className={styles.none}>No runs yet. Open a plant and choose Run.</p>}
-      <ul className={styles.rows}>
+      <p className="sr-only" role="status">
+        {plant === "" ? "" : `${String(rows.length)} ${rows.length === 1 ? "run" : "runs"} shown`}
+      </p>
+      <ul className={styles.rows} ref={list}>
         {rows.slice(0, shown).map((row) => (
           <Row key={row.run.worldId} row={row} badge={badgeFor(row.run.worldId)} navigation={navigation} />
         ))}
       </ul>
       {rows.length > shown && (
-        <button
-          type="button"
-          className={styles.more}
-          onClick={() => {
-            setShown(shown + page);
-          }}
-        >
+        <button type="button" className={styles.more} onClick={more}>
           {`Show ${String(Math.min(page, rows.length - shown))} more of ${String(rows.length - shown)}`}
         </button>
       )}

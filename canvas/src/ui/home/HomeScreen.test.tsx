@@ -69,8 +69,10 @@ describe("home screen", () => {
     expect(within(region).getAllByRole("listitem")).toHaveLength(20);
     fireEvent.click(within(region).getByRole("button", { name: "Show 5 more of 5" }));
     expect(within(region).getAllByRole("listitem")).toHaveLength(25);
+    expect(within(region).getAllByRole("button", { name: /^Review / })[20]).toHaveFocus();
     fireEvent.change(within(region).getByLabelText("Show runs of"), { target: { value: "other" } });
     expect(within(region).getAllByRole("listitem")).toHaveLength(5);
+    expect(within(region).getByRole("status")).toHaveTextContent("5 runs shown");
   });
 
   it("shows the badge of a run already checked in this session", async () => {

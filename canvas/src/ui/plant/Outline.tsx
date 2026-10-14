@@ -25,6 +25,13 @@ function matches(item: Item, filter: string): boolean {
   return wanted === "" || item.id.toLowerCase().includes(wanted) || item.kind.toLowerCase().includes(wanted);
 }
 
+function kindWords(kind: string): string {
+  const words = humanise(kind);
+  const acronym =
+    words.charAt(1) === words.charAt(1).toUpperCase() && words.charAt(1) !== words.charAt(1).toLowerCase();
+  return acronym ? words : words.charAt(0).toLowerCase() + words.slice(1);
+}
+
 function groups(plant: Plant, hall: string | null, filter: string): readonly (readonly [string, readonly Item[]])[] {
   const halls = hallsOf(plant);
   const visible = plant.instances.filter(
@@ -32,7 +39,7 @@ function groups(plant: Plant, hall: string | null, filter: string): readonly (re
   );
   const byArea = new Map<string, Item[]>();
   visible.forEach((instance) => {
-    const item = { id: instance.id, kind: humanise(instance.kind) };
+    const item = { id: instance.id, kind: kindWords(instance.kind) };
     if (!matches(item, filter)) return;
     const area = areaOf(plant, instance);
     byArea.set(area, [...(byArea.get(area) ?? []), item]);
@@ -44,7 +51,7 @@ interface SectionProps {
   readonly title: string;
   readonly items: readonly Item[];
   readonly current: string | null;
-  readonly marks: "location" | "pressed";
+  readonly marks: "location" | "selection";
   readonly onPick: (item: string) => void;
 }
 
@@ -60,8 +67,7 @@ function Entry({ item, current, marks, onPick }: Omit<SectionProps, "title" | "i
         ref={button}
         type="button"
         className={isCurrent ? styles.current : styles.item}
-        aria-current={marks === "location" && isCurrent ? "location" : undefined}
-        aria-pressed={marks === "pressed" ? isCurrent : undefined}
+        aria-current={isCurrent ? (marks === "location" ? "location" : "true") : undefined}
         onClick={() => {
           onPick(item.id);
         }}
@@ -106,6 +112,14 @@ function Filter({ value, onChange }: { readonly value: string; readonly onChange
   );
 }
 
+function matchWords(plant: Plant, shown: ReturnType<typeof groups>, filter: string): string {
+  if (plant.instances.length === 0) return "No instances yet.";
+  const count = shown.reduce((sum, [, items]) => sum + items.length, 0);
+  if (filter.trim() === "") return "";
+  if (count === 0) return `No instance matches "${filter.trim()}".`;
+  return `${String(count)} ${count === 1 ? "instance matches" : "instances match"}.`;
+}
+
 export function Outline({ plant, hall, selected, onSelect, onOpenHall }: OutlineProps) {
   const [filter, setFilter] = useState("");
   const halls = hallsOf(plant).map((id) => ({ id, kind: "" }));
@@ -117,9 +131,11 @@ export function Outline({ plant, hall, selected, onSelect, onOpenHall }: Outline
         <Section title="Halls" items={halls} current={hall} marks="location" onPick={onOpenHall} />
       )}
       {shown.map(([area, items]) => (
-        <Section key={area} title={area} items={items} current={selected} marks="pressed" onPick={onSelect} />
+        <Section key={area} title={area} items={items} current={selected} marks="selection" onPick={onSelect} />
       ))}
-      {shown.length === 0 && <p className={styles.noMatch}>{`No instance matches "${filter.trim()}".`}</p>}
+      <p className={shown.length === 0 ? styles.noMatch : "sr-only"} role="status">
+        {matchWords(plant, shown, filter)}
+      </p>
     </nav>
   );
 }
