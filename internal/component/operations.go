@@ -1,6 +1,8 @@
 package component
 
 import (
+	"encoding/json"
+
 	layer "github.com/ghassan-ai-projects/streams-simulator/internal/component/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/component/internal/files"
 )
@@ -43,4 +45,16 @@ func (l *Library) Counts() (equipment, instruments int) {
 
 func CustomerDirectories(flags []string, environment string) []string {
 	return files.CustomerDirectories(flags, environment)
+}
+
+func Examples() ([]ExampleSummary, error) {
+	return files.ListExamples()
+}
+
+func Example(id string) (json.RawMessage, error) {
+	return files.FindExample(id)
+}
+
+func NewComposition(base []byte, plant NewPlant, source string) (map[string]any, error) {
+	return layer.NewComposition(base, plant, source)
 }

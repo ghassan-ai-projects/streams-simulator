@@ -1,5 +1,7 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import type { EditorStore } from "../../app/editorStore";
+import type { PanelStore } from "../../app/panelStore";
+import type { PlantMaker } from "../../app/plantMaker";
 import type { NavigationStore } from "../../app/navigationStore";
 import type { PlantStore } from "../../app/plantStore";
 import type { LaunchStore } from "../../app/launchStore";
@@ -13,7 +15,10 @@ import { HomeScreen } from "../home/HomeScreen";
 import { PairingScreen } from "../pairing/PairingScreen";
 import { PlantScreen } from "../plant/PlantScreen";
 import { RunScreen } from "../run/RunScreen";
+import { CrumbSlot } from "./Breadcrumb";
 import { KeyHelp } from "./KeyHelp";
+import { PanelToggles } from "./PanelToggles";
+import { RunIndicator } from "./RunIndicator";
 import { Shell } from "./Shell";
 import { TopBar } from "./TopBar";
 import { Unreachable } from "./Unreachable";
@@ -29,6 +34,9 @@ export interface Stores {
   readonly review: ReviewStore;
   readonly launch: LaunchStore;
   readonly editor: EditorStore;
+  readonly panels: PanelStore;
+  readonly maker: PlantMaker;
+  readonly showDetails: () => void;
 }
 
 function useSession({ session, workspace }: Stores) {
@@ -62,6 +70,8 @@ function Screen({ stores, route }: { readonly stores: Stores; readonly route: Ro
         launch={stores.launch}
         domain={route.domain}
         hall={route.hall}
+        startLaunching={route.launch === true}
+        onShowDetails={stores.showDetails}
       />
     );
   }
@@ -75,6 +85,7 @@ function Screen({ stores, route }: { readonly stores: Stores; readonly route: Ro
         plants={stores.plants}
         workspace={stores.workspace}
         navigation={stores.navigation}
+        launch={stores.launch}
         worldId={route.worldId}
       />
     );
@@ -83,7 +94,7 @@ function Screen({ stores, route }: { readonly stores: Stores; readonly route: Ro
     <HomeScreen
       workspace={stores.workspace}
       navigation={stores.navigation}
-      editor={stores.editor}
+      maker={stores.maker}
       badgeFor={(worldId) => stores.review.badgeFor(worldId)}
     />
   );
@@ -93,11 +104,17 @@ export function App({ stores }: { readonly stores: Stores }) {
   const { preference } = useTheme(stores.themes);
   const state = useSession(stores);
   const route = useStore(stores.navigation);
+  const panels = useStore(stores.panels);
+  const [slot, setSlot] = useState<HTMLElement | null>(null);
   if (state.phase === "unpaired") {
     return <PairingScreen session={stores.session} />;
   }
   const topBar = (
     <TopBar
+      crumbs={setSlot}
+      help={<KeyHelp />}
+      status={<RunIndicator launch={stores.launch} navigation={stores.navigation} />}
+      toggles={route.screen === "home" ? null : <PanelToggles panels={stores.panels} />}
       preference={preference}
       onCycleTheme={() => {
         stores.themes.cycle();
@@ -108,11 +125,12 @@ export function App({ stores }: { readonly stores: Stores }) {
     />
   );
   return (
-    <Shell topBar={topBar}>
-      {state.phase === "checking" && <p role="status">Connecting to the bridge…</p>}
-      {state.phase === "unreachable" && <Unreachable failure={state.failure} />}
-      {state.phase === "paired" && <Screen stores={stores} route={route} />}
-      <KeyHelp />
-    </Shell>
+    <CrumbSlot value={slot}>
+      <Shell topBar={topBar} left={panels.left} right={panels.right}>
+        {state.phase === "checking" && <p role="status">Connecting to the bridge…</p>}
+        {state.phase === "unreachable" && <Unreachable failure={state.failure} />}
+        {state.phase === "paired" && <Screen stores={stores} route={route} />}
+      </Shell>
+    </CrumbSlot>
   );
 }

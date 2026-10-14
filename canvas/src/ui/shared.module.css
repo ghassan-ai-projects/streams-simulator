@@ -25,3 +25,84 @@
   text-transform: uppercase;
   color: var(--text-secondary);
 }
+
+summary.sectionTitle {
+  gap: var(--space-1);
+  list-style: none;
+  cursor: pointer;
+}
+
+summary.sectionTitle::-webkit-details-marker {
+  display: none;
+}
+
+summary.sectionTitle::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  margin: 0 var(--space-1) 0 2px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform var(--motion-fast);
+}
+
+details[open] > summary.sectionTitle::before {
+  transform: rotate(45deg);
+}
+
+summary.sectionTitle:hover {
+  color: var(--text-primary);
+}
+
+.button {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-1);
+  height: 28px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  color: var(--text-primary);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.button:hover {
+  background: var(--surface-hover);
+}
+
+.button[aria-disabled="true"] {
+  border-color: var(--disabled-border);
+  background: var(--disabled-bg);
+  color: var(--disabled-fg);
+  cursor: not-allowed;
+}
+
+.panels {
+  min-width: 0;
+}
+
+:global([data-left="closed"]) .panels {
+  grid-template-columns: 0 minmax(0, 1fr) var(--inspector-width);
+}
+
+:global([data-right="closed"]) .panels {
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr) 0;
+}
+
+:global([data-left="closed"][data-right="closed"]) .panels {
+  grid-template-columns: 0 minmax(0, 1fr) 0;
+}
+
+.scrolls {
+  background:
+    linear-gradient(var(--surface-panel) 40%, transparent) center top / 100% 32px no-repeat local,
+    linear-gradient(transparent, var(--surface-panel) 60%) center bottom / 100% 32px no-repeat local,
+    linear-gradient(var(--scroll-shadow), transparent) center top / 100% 10px no-repeat scroll,
+    linear-gradient(transparent, var(--scroll-shadow)) center bottom / 100% 10px no-repeat scroll,
+    var(--surface-panel);
+}

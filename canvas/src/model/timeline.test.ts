@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { report } from "../test/runFixture";
 import { parseReport } from "./report";
-import { eventMarks, faultedAt, nextEvent, placeChips, previousEvent, timeTicks } from "./timeline";
+import { eventMarks, faultedAt, kindsOf, nextEvent, placeChips, previousEvent, runClock, timeTicks } from "./timeline";
 
 const parsed = parseReport(report);
 
@@ -13,6 +13,7 @@ describe("timeline", () => {
       atNs: 650e9,
       label: "CH-1 temp alarm activated",
       raw: "alarm activation CH-1 temp_alarm · high",
+      kind: "alarm",
       tone: "alarm",
       entity: "CH-1",
       untilNs: null,
@@ -63,7 +64,7 @@ describe("timeline", () => {
 });
 
 describe("event lane", () => {
-  it("puts close events on separate rows and reuses a row once it is free", () => {
+  it("centres each chip on its event and puts close events on separate rows, reusing a row once free", () => {
     const lane = { width: 100, rows: 2, gap: 4 };
     const rows = (positions: number[]) =>
       placeChips(
@@ -71,7 +72,8 @@ describe("event lane", () => {
         positions.map(() => 20),
         lane,
       ).map((chip) => chip.row);
-    expect(rows([0, 30, 31])).toEqual([0, 0, 1]);
+    expect(rows([10, 40, 41])).toEqual([0, 0, 1]);
+    expect(placeChips([50], [20], lane)).toEqual([{ left: 40, row: 0 }]);
     expect(rows([0, 1, 2, 3])).toEqual([0, 1, -1, -1]);
     expect(rows([])).toEqual([]);
     expect(placeChips([95], [40], lane)).toEqual([{ left: 60, row: 0 }]);
@@ -82,5 +84,12 @@ describe("event lane", () => {
     expect(timeTicks(0, 1800e9)).toEqual([0, 600e9, 1200e9, 1800e9]);
     expect(timeTicks(100e9, 3700e9).at(0)).toBe(600e9);
     expect(timeTicks(0, 0)).toEqual([]);
+  });
+
+  it("reads times from the run's start and names the kinds of event present", () => {
+    expect(runClock(5_000e9 + 3_723e9, 5_000e9)).toBe("01:02:03");
+    const marks = eventMarks({ ...parsed, alarmActivations: [{ atNs: 1e9, entity: "A", state: "s", priority: "p" }] });
+    expect(kindsOf(marks)).toContain("alarm");
+    expect(kindsOf([])).toEqual([]);
   });
 });

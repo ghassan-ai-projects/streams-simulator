@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/canvasbridge/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/canvasbridge/internal/process"
@@ -28,18 +29,26 @@ func TestPairingAdmitsTheSessionItIssued(t *testing.T) {
 func TestTheWorkspaceListsDefinitionsWithTheirIdsAndRunsWithTheirState(t *testing.T) {
 	t.Parallel()
 	h := newHarness(t)
-	h.write(t, plant, `{"id":"plant","title":"Plant"}`)
+	h.write(t, plant, `{"id":"plant","title":"Plant","instances":[{"id":"a"},{"id":"b"}]}`)
 	h.write(t, inDomains("notes.txt"), "x")
 	h.write(t, "compositions/broken.composition.json", "{")
 	h.write(t, "runs/w-1/journal.jsonl", `{"type":"run.opened","mode":"explore"}`+"\n")
-	h.write(t, "runs/w-2/journal.jsonl", `{"type":"run.opened","mode":"evaluate"}`+"\n"+`{"type":"run.closed"}`+"\n")
+	h.write(t, "runs/w-2/journal.jsonl", `{"type":"run.opened","mode":"evaluate","start_time_ns":100,"domain":{"id":"plant"}}`+"\n"+
+		`{"type":"run.closed","at_ns":1800000000100}`+"\n")
+	h.write(t, "runs/w-2/run.json", `{"command_log":[{"op":"fault.inject"}]}`)
 	h.write(t, "runs/w-3/other.txt", "x")
 	listing, err := h.bridge.Workspace()
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []domain.RunEntry{{WorldID: "w-1", Explore: true}, {WorldID: "w-2", Ended: true}}
-	if len(listing.Domains) != 1 || listing.Domains[0] != (domain.Definition{Path: plant, ID: "plant", Title: "Plant"}) ||
+	for i, run := range listing.Runs {
+		if _, err := time.Parse(time.RFC3339, run.RecordedAt); err != nil {
+			t.Fatalf("run %d recorded at %q", i, run.RecordedAt)
+		}
+		listing.Runs[i].RecordedAt = ""
+	}
+	want := []domain.RunEntry{{WorldID: "w-1", Explore: true}, {WorldID: "w-2", Ended: true, Plant: "plant", DurationNs: 1800000000000, Faults: 1}}
+	if len(listing.Domains) != 1 || listing.Domains[0] != (domain.Definition{Path: plant, ID: "plant", Title: "Plant", Instances: 2}) ||
 		listing.Compositions[0].ID != "" || !slices.Equal(listing.Runs, want) || len(listing.Scenarios) != 0 {
 		t.Fatalf("listing = %+v", listing)
 	}
@@ -88,6 +97,10 @@ func TestCommandActionsRunWithAbsoluteWorkspacePathsAndTheirFlags(t *testing.T) 
 	}
 	if _, err := h.bridge.RunAction(context.Background(), "component.list", nil); err != nil || !slices.Equal(h.argv[1], []string{"component", "list", "--components-dir", "/lib"}) {
 		t.Fatalf("component list argv = %v, %v", h.argv[1], err)
+	}
+	if _, err := h.bridge.RunAction(context.Background(), "component.example", map[string]any{"id": "factory-utilities"}); err != nil ||
+		!slices.Equal(h.argv[2], []string{"component", "example", "factory-utilities"}) {
+		t.Fatalf("component example argv = %v, %v", h.argv[2], err)
 	}
 	h.command = process.CommandResult{ExitCode: 1, Stdout: []byte(`{"error":{"code":"domain_invalid","message":"bad","issues":[{"pointer":"/x"}]}}`)}
 	var failure *domain.Failure

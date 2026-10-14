@@ -14,17 +14,39 @@ describe("bridge payloads", () => {
   it("reads a workspace listing and tolerates missing fields", () => {
     const listing = parseWorkspace({
       name: "lab",
-      domains: [{ path: "domains/a.domain.json", id: "a", title: "A" }, null],
+      domains: [{ path: "domains/a.domain.json", id: "a", title: "A", instances: 4 }, null],
       compositions: "not a list",
-      runs: [{ world_id: "w-1", ended: true, explore: false }],
+      runs: [
+        {
+          world_id: "w-1",
+          ended: true,
+          explore: false,
+          plant: "a",
+          duration_ns: 1.8e12,
+          recorded_at: "2026-10-14T10:00:00Z",
+          faults: 2,
+        },
+        { world_id: "w-2" },
+      ],
     });
     expect(listing.name).toBe("lab");
     expect(listing.domains).toEqual([
-      { path: "domains/a.domain.json", id: "a", title: "A" },
-      { path: "", id: "", title: "" },
+      { path: "domains/a.domain.json", id: "a", title: "A", instances: 4 },
+      { path: "", id: "", title: "", instances: 0 },
     ]);
     expect(listing.compositions).toEqual([]);
-    expect(listing.runs).toEqual([{ worldId: "w-1", ended: true, explore: false }]);
+    expect(listing.runs).toEqual([
+      {
+        worldId: "w-1",
+        ended: true,
+        explore: false,
+        plant: "a",
+        durationS: 1800,
+        recordedAt: "2026-10-14T10:00:00Z",
+        faults: 2,
+      },
+      { worldId: "w-2", ended: false, explore: false, plant: "", durationS: 0, recordedAt: "", faults: 0 },
+    ]);
     expect(parseWorkspace(null).runs).toEqual([]);
   });
 

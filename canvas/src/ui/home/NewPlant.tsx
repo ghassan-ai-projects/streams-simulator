@@ -1,16 +1,18 @@
-import { Plus } from "lucide-react";
 import type { SyntheticEvent } from "react";
 import { useId, useState } from "react";
-import type { EditorStore } from "../../app/editorStore";
+import type { PlantMaker, PlantSource } from "../../app/plantMaker";
 import type { NavigationStore } from "../../app/navigationStore";
 import type { Definition } from "../../model/bridge";
-import { cx } from "../cx";
+import type { ExamplePlant } from "../../model/library";
+import { suggestedId } from "../../model/workspace";
 import { useFocusOnMount } from "../useFocusOnMount";
 import styles from "./HomeScreen.module.css";
 
-interface NewPlantProps {
+export interface NewPlantProps {
   readonly bases: readonly Definition[];
-  readonly editor: EditorStore;
+  readonly examples: readonly ExamplePlant[];
+  readonly taken: readonly string[];
+  readonly maker: PlantMaker;
   readonly navigation: NavigationStore;
 }
 
@@ -21,6 +23,7 @@ function Field({
   onChange,
   first = false,
   placeholder,
+  onLeave,
 }: {
   readonly label: string;
   readonly hint?: string;
@@ -28,6 +31,7 @@ function Field({
   readonly onChange: (value: string) => void;
   readonly first?: boolean;
   readonly placeholder?: string;
+  readonly onLeave?: () => void;
 }) {
   const id = useId();
   const input = useFocusOnMount<HTMLInputElement>(first);
@@ -43,6 +47,7 @@ function Field({
         onChange={(event) => {
           onChange(event.target.value);
         }}
+        onBlur={onLeave}
       />
       {hint !== undefined && <small id={`${id}-hint`}>{hint}</small>}
     </div>
@@ -51,54 +56,99 @@ function Field({
 
 function BasePick({
   bases,
+  examples,
   base,
   setBase,
-}: {
-  readonly bases: readonly Definition[];
-  readonly base: string;
-  readonly setBase: (base: string) => void;
-}) {
+}: Pick<NewPlantProps, "bases" | "examples"> & { readonly base: string; readonly setBase: (base: string) => void }) {
   return (
     <div className={styles.newField}>
-      <label htmlFor="new-plant-base">Based on</label>
+      <label htmlFor="new-plant-base">Start from</label>
       <select
         id="new-plant-base"
-        aria-describedby="new-plant-base-hint"
         value={base}
         onChange={(event) => {
           setBase(event.target.value);
         }}
       >
-        {bases.map((item) => (
-          <option key={item.path} value={item.path}>
-            {item.title || item.id}
-          </option>
-        ))}
+        {bases.length > 0 && (
+          <optgroup label="Your plants">
+            {bases.map((item) => (
+              <option key={item.path} value={`file:${item.path}`}>
+                {item.title || item.id}
+              </option>
+            ))}
+          </optgroup>
+        )}
+        {examples.length > 0 && (
+          <optgroup label="Examples">
+            {examples.map((example) => (
+              <option key={example.id} value={`example:${example.id}`}>
+                {example.title}
+              </option>
+            ))}
+          </optgroup>
+        )}
       </select>
-      <small id="new-plant-base-hint">Copies its site, areas, profiles and axes; starts with no equipment.</small>
     </div>
   );
 }
 
-function useCreate({ editor, navigation }: Omit<NewPlantProps, "bases">) {
+function sourceOf(base: string): PlantSource {
+  return base.startsWith("example:") ? { example: base.slice(8) } : { file: base.slice(5) };
+}
+
+function CopyChoice({ copy, setCopy }: { readonly copy: boolean; readonly setCopy: (copy: boolean) => void }) {
+  return (
+    <fieldset className={styles.choice}>
+      <legend className="sr-only">What to keep</legend>
+      <label>
+        <input
+          type="radio"
+          name="new-plant-copy"
+          checked={copy}
+          onChange={() => {
+            setCopy(true);
+          }}
+        />
+        <span>
+          <strong>A full copy</strong> of its equipment, connections and settings, ready to run.
+        </span>
+      </label>
+      <label>
+        <input
+          type="radio"
+          name="new-plant-copy"
+          checked={!copy}
+          onChange={() => {
+            setCopy(false);
+          }}
+        />
+        <span>
+          <strong>An empty plant</strong> with only its site, areas, profiles and axes; you add the equipment.
+        </span>
+      </label>
+    </fieldset>
+  );
+}
+
+function useCreate({ maker, navigation }: Pick<NewPlantProps, "maker" | "navigation">) {
   const [failure, setFailure] = useState("");
-  const create = async (base: string, id: string, title: string) => {
-    const made = await editor.create(base, id, title);
-    if (typeof made === "string") navigation.go({ screen: "edit", composition: made });
+  const create = async (base: string, id: string, title: string, copy: boolean) => {
+    const made = await maker.create(sourceOf(base), id, title, copy);
+    if ("composition" in made) navigation.go({ screen: "edit", composition: made.composition });
     else setFailure(made.message);
   };
   return { failure, create };
 }
 
-function Actions({
-  failure,
-  ready,
-  onCancel,
-}: {
+interface ActionsProps {
   readonly failure: string;
-  readonly ready: boolean;
+  readonly reason: string;
   readonly onCancel: () => void;
-}) {
+}
+
+function Actions({ failure, reason, onCancel }: ActionsProps) {
+  const ready = reason === "";
   return (
     <>
       {failure !== "" && (
@@ -107,26 +157,55 @@ function Actions({
         </p>
       )}
       <span className={styles.newActions}>
-        <button type="submit" className={styles.create} aria-disabled={!ready}>
-          Create and edit
+        <button
+          type="submit"
+          className={styles.create}
+          aria-disabled={!ready}
+          aria-describedby={ready ? undefined : "new-plant-reason"}
+        >
+          Create and open the editor
         </button>
         <button type="button" className={styles.open} onClick={onCancel}>
           Cancel
         </button>
+        {!ready && (
+          <span id="new-plant-reason" className={styles.meta}>
+            {reason}
+          </span>
+        )}
       </span>
     </>
   );
 }
 
-function NewPlantForm({ bases, editor, navigation, onCancel }: NewPlantProps & { readonly onCancel: () => void }) {
-  const [id, setId] = useState("");
-  const [title, setTitle] = useState("");
-  const [base, setBase] = useState(bases[0]?.path ?? "");
-  const { failure, create } = useCreate({ editor, navigation });
-  const ready = id.trim() !== "" && title.trim() !== "" && base !== "";
+function useNaming(taken: readonly string[]) {
+  const [name, setName] = useState("");
+  const [typed, setTyped] = useState<string | null>(null);
+  const id = typed ?? (name.trim() === "" ? "" : suggestedId(name, taken));
+  const followAgain = () => {
+    if (typed === "") setTyped(null);
+  };
+  return { name, setName, id, setId: setTyped, followAgain };
+}
+
+function readiness(name: string, id: string, base: string): string {
+  if (name.trim() === "") return "Name the plant first.";
+  if (id.trim() === "") return "Give it an id.";
+  return base === "example:" ? "Choose what to start from." : "";
+}
+
+export function NewPlantForm(props: NewPlantProps & { readonly onCancel: () => void }) {
+  const { bases, examples, taken, onCancel } = props;
+  const { name, setName, id, setId, followAgain } = useNaming(taken);
+  const first = bases[0] === undefined ? `example:${examples[0]?.id ?? ""}` : `file:${bases[0].path}`;
+  const [base, setBase] = useState(first);
+  const [copy, setCopy] = useState(true);
+  const { failure, create } = useCreate(props);
+  const reason = readiness(name, id, base);
+  const ready = reason === "";
   const submit = (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (ready) void create(base, id.trim(), title.trim());
+    if (ready) void create(base, id.trim(), name.trim(), copy);
   };
   return (
     <form
@@ -138,48 +217,17 @@ function NewPlantForm({ bases, editor, navigation, onCancel }: NewPlantProps & {
       aria-label="New plant"
       noValidate
     >
+      <Field first label="Name" placeholder="e.g. Cooling hall" value={name} onChange={setName} />
       <Field
-        first
         label="Id"
-        placeholder="e.g. cooling-hall"
-        hint="Lower case, digits and hyphens, at least three characters."
+        hint="Used for its file names: lower case, digits and hyphens."
         value={id}
         onChange={setId}
+        onLeave={followAgain}
       />
-      <Field label="Title" value={title} onChange={setTitle} />
-      <BasePick bases={bases} base={base} setBase={setBase} />
-      <Actions failure={failure} ready={ready} onCancel={onCancel} />
+      <BasePick bases={bases} examples={examples} base={base} setBase={setBase} />
+      <CopyChoice copy={copy} setCopy={setCopy} />
+      <Actions failure={failure} reason={reason} onCancel={onCancel} />
     </form>
-  );
-}
-
-export function NewPlant(props: NewPlantProps) {
-  const [open, setOpen] = useState(false);
-  const [closed, setClosed] = useState(0);
-  const button = useFocusOnMount<HTMLButtonElement>(closed);
-  if (open && props.bases.length > 0) {
-    return (
-      <NewPlantForm
-        {...props}
-        onCancel={() => {
-          setOpen(false);
-          setClosed((count) => count + 1);
-        }}
-      />
-    );
-  }
-  return (
-    <button
-      type="button"
-      ref={button}
-      className={cx(styles.open, styles.newButton)}
-      aria-disabled={props.bases.length === 0}
-      onClick={() => {
-        setOpen(props.bases.length > 0);
-      }}
-    >
-      <Plus size={14} aria-hidden="true" />
-      New plant
-    </button>
   );
 }

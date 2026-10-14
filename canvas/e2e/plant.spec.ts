@@ -6,7 +6,7 @@ test.use({ storageState: env("CANVAS_APP_STATE") });
 
 test("the factory opens from the workspace as a typed plant graph", async ({ page }) => {
   await page.goto(env("CANVAS_APP_URL"));
-  await page.getByRole("button", { name: "Open plant factory-utilities" }).click();
+  await page.getByRole("button", { name: "Open Factory utilities" }).click();
   const graph = page.getByRole("region", { name: "Plant factory-utilities" });
   await expect(graph.getByText("23 instances · 59 links")).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Outline" }).getByRole("button")).toHaveCount(23);
@@ -21,7 +21,7 @@ test("selecting an instance in the outline shows its kind in the inspector", asy
   const inspector = page.getByRole("complementary", { name: "Inspector" });
   await expect(inspector.getByRole("heading", { name: "CT-1" })).toBeVisible();
   await expect(inspector.getByRole("region", { name: "Channels" })).toContainText("basin temp · °C");
-  await expect(inspector.getByRole("region", { name: "Links in" })).toContainText("CH-1.heat_out → heat_in");
+  await expect(inspector.getByRole("region", { name: "Links in" })).toContainText("CH-1 heat out → heat in");
   await expect(inspector.getByRole("region", { name: "Faults" })).toContainText("fan failure");
   await page.getByRole("button", { name: "Workspace", exact: true }).click();
   await expect(page.getByRole("heading", { name: "lab-workspace" })).toBeVisible();
@@ -34,6 +34,9 @@ test("the graph works from the keyboard: arrows move, Enter selects, Escape clea
   await expect(page).toHaveTitle("Factory utilities · plant · Streams Simulator");
   const graph = page.getByRole("application", { name: "Plant graph" });
   await graph.focus();
+  const zoom = await page.getByText(/^Zoom \d+ %$/).textContent();
+  await page.keyboard.press("ControlOrMeta+Equal");
+  await expect(page.getByText(/^Zoom \d+ %$/)).toHaveText(zoom ?? "");
   await page.keyboard.press("ArrowRight");
   await page.keyboard.press("Enter");
   const inspector = page.getByRole("complementary", { name: "Inspector" });

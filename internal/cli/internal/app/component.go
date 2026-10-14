@@ -34,6 +34,8 @@ func (s *session) componentDirs(flags listFlag) []string {
 
 func componentVerb(verb string, library *component.Library, directories, args []string) (any, error) {
 	switch {
+	case verb == "examples" || verb == "example":
+		return exampleVerb(verb, args)
 	case verb == "show":
 		return showComponent(library, args)
 	case len(args) > 0 && (verb == "list" || verb == "validate"):

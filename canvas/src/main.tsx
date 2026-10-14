@@ -4,6 +4,8 @@ import { hashLocation, localPreferences, mediaSystemTheme } from "./adapters/bro
 import { bridgeClient, browserTransport } from "./adapters/bridgeClient";
 import { EditorStore } from "./app/editorStore";
 import { NavigationStore } from "./app/navigationStore";
+import { PanelStore } from "./app/panelStore";
+import { PlantMaker } from "./app/plantMaker";
 import { PlantStore } from "./app/plantStore";
 import { LaunchStore } from "./app/launchStore";
 import { ReviewStore } from "./app/reviewStore";
@@ -22,6 +24,7 @@ if (root) {
     mediaSystemTheme(window.matchMedia("(prefers-color-scheme: dark)")),
   );
   const bridge = bridgeClient(browserTransport());
+  const panels = new PanelStore(localPreferences(window.localStorage));
   createRoot(root).render(
     <StrictMode>
       <App
@@ -34,6 +37,11 @@ if (root) {
           review: new ReviewStore(bridge),
           launch: new LaunchStore(bridge),
           editor: new EditorStore(bridge),
+          panels,
+          maker: new PlantMaker(bridge),
+          showDetails: () => {
+            panels.show("right");
+          },
         }}
       />
     </StrictMode>,

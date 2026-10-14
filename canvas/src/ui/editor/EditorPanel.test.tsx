@@ -7,6 +7,7 @@ import { EditorStore } from "../../app/editorStore";
 import { NavigationStore } from "../../app/navigationStore";
 import { failed, success } from "../../model/bridge";
 import { compositionPlant, connectionsOf, equipmentOf } from "../../model/composition";
+import { moveInstance } from "../../model/compositionEdits";
 import { FakeBridge, failure } from "../../test/fakeBridge";
 import { chillerPorts, towerPorts } from "../../test/plantFixture";
 import { useStore } from "../useStore";
@@ -75,10 +76,13 @@ describe("plant editor panel", () => {
     const { editor, view } = await editing();
     expect((await axe.run(view.container)).violations).toEqual([]);
     const form = screen.getByRole("form", { name: "Add equipment" });
-    choose("Component", "lib/pump@1", form);
+    choose("Find equipment", "nothing like this", form);
+    expect(within(form).getByText('Nothing in the library matches "nothing like this".')).toBeInTheDocument();
+    choose("Find equipment", "pu", form);
+    choose("Equipment", "lib/pump@1", form);
+    expect(within(form).getByLabelText("Name")).toHaveValue("P-1");
     expect(await within(form).findByRole("option", { name: "Small" })).toBeInTheDocument();
-    choose("Preset", "small", form);
-    choose("Name", "P-1", form);
+    choose("Size", "small", form);
     choose("Area", "Yard", form);
     fireEvent.click(within(form).getByRole("button", { name: "Add to the plant" }));
     await vi.waitFor(() => {
@@ -100,23 +104,37 @@ describe("plant editor panel", () => {
     choose("Area", "Yard");
     choose("Output", "power_out");
     choose("To", "CT-1");
-    choose("Input", "heat_in");
+    const inputs = within(screen.getByLabelText("Input")).getAllByRole("option");
+    expect(inputs.map((option) => option.textContent)).toEqual(["Choose…", "power in"]);
+    choose("Input", "power_in");
     fireEvent.click(screen.getByRole("button", { name: "Link" }));
     expect(connectionsOf(current(editor)).map((wire) => wire.from)).toEqual(["CH-9.heat_out", "CH-9.power_out"]);
-    fireEvent.click(screen.getByRole("button", { name: "Remove link CH-9.heat_out to CT-1.heat_in" }));
-    expect(screen.getByRole("heading", { name: "Links (1)" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Remove link: heat out to CT-1 heat in" }));
+    expect(screen.getByRole("heading", { name: "Links 1" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "CT-1" }));
+    expect(screen.getByRole("heading", { name: "CT-1" })).toBeInTheDocument();
+    act(() => {
+      editor.select("CH-9");
+    });
     fireEvent.click(screen.getByRole("button", { name: "Delete CH-9" }));
     expect(equipmentOf(current(editor)).map((entry) => entry.names[0])).toEqual(["CT-1"]);
     expect(screen.getByRole("heading", { name: "Build" })).toHaveFocus();
     fireEvent.click(screen.getByRole("button", { name: "Revert" }));
     expect(screen.getByRole("status")).toHaveTextContent("Unsaved changes");
     fireEvent.click(screen.getByRole("button", { name: "Discard changes" }));
+    fireEvent.keyDown(document.body, { key: "z", ctrlKey: true });
+    expect(equipmentOf(current(editor)).map((entry) => entry.names[0])).toEqual(["CT-1"]);
+    fireEvent.click(screen.getByRole("button", { name: "Redo" }));
     expect(current(editor)).toEqual(doc);
     expect(screen.getByRole("status")).toHaveTextContent("No changes");
   });
 
   it("saves, shows the binary's issues on the instance and selects it from the list", async () => {
-    const { fake } = await editing();
+    const { fake, editor } = await editing();
+    expect(screen.getByRole("button", { name: "Save" })).toHaveAttribute("aria-disabled", "true");
+    act(() => {
+      editor.edit((doc) => ({ ...doc, title: "Lab two" }));
+    });
     fake.actions.set(
       "domain.compose",
       failed({
@@ -131,13 +149,18 @@ describe("plant editor panel", () => {
     expect(screen.getByRole("region", { name: "Issues on CH-1" })).toHaveTextContent('has no port "heat_in"');
     expect(screen.getByLabelText("Name")).toHaveAccessibleDescription(/has no port/);
     fake.actions.set("domain.compose", success({ channels: 4, faults: 2, effectors: 0 }));
-    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "CH-2" } });
+    fireEvent.click(screen.getByRole("button", { name: "Rename" }));
+    fireEvent.keyDown(document.body, { key: "s", ctrlKey: true });
     expect(await screen.findByText("Saved. Composed 4 channels, 2 faults, 0 effectors.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Open plant" })).toBeInTheDocument();
   });
 
   it("says why the file was not saved", async () => {
-    const { fake } = await editing();
+    const { fake, editor } = await editing();
+    act(() => {
+      editor.edit((doc) => ({ ...doc, title: "Lab two" }));
+    });
     fake.writeOutcomes.set(path, failed(failure("conflict", 409, "the file changed on disk")));
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     expect(await screen.findByText("Not saved: the file changed on disk")).toBeInTheDocument();
@@ -163,5 +186,18 @@ describe("plant editor panel", () => {
     expect(screen.getByText(/Generated from an id template/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Delete T-{n}" })).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Name")).not.toBeInTheDocument();
+  });
+
+  it("says what undo and redo did, and what Revert's second press will do", async () => {
+    const { editor } = await editing();
+    act(() => {
+      editor.edit((current) => moveInstance(current, "CT-1", "Yard"));
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(screen.getByText("Undone. 0 more to undo.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Redo" }));
+    expect(screen.getByText("Redone. 1 more to undo.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Revert" }));
+    expect(screen.getByText(/^Press Discard changes again/)).toBeInTheDocument();
   });
 });

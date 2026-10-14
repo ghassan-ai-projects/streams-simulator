@@ -66,8 +66,47 @@ describe("review", () => {
       flush();
     });
     expect(store.snapshot().playback).toEqual({ phase: "ready", records: 4, adapter: "native-jsonl" });
-    expect(store.snapshot().positionNs).toBe(30e9);
-    expect(store.index.readings("CH-1", store.snapshot().positionNs)[0]?.value).toBe(95.1);
+    expect(store.snapshot().positionNs).toBe(12e9);
+    expect(store.index.readings("CH-1", 30e9)[0]?.value).toBe(95.1);
+  });
+
+  it("ignores Play before any observation has arrived and starts from where the run settles", () => {
+    const { bridge, store, flushes } = setup();
+    store.open("w-1");
+    store.play();
+    expect(store.snapshot().playing).toBe(false);
+    bridge.stream("w-1", journal, null);
+    flushes.forEach((flush) => {
+      flush();
+    });
+    store.play();
+    expect(store.snapshot()).toMatchObject({ playing: true, positionNs: 12e9 });
+  });
+
+  it("plays back at its speed from the start, stops at the end and plays again from the start", () => {
+    const { bridge, store, flushes } = setup();
+    store.open("w-1");
+    bridge.stream("w-1", journal);
+    flushes.forEach((flush) => {
+      flush();
+    });
+    store.tick(1000);
+    expect(store.snapshot().positionNs).toBe(12e9);
+    store.setSpeed(10);
+    store.play();
+    store.tick(1000);
+    expect(store.snapshot()).toMatchObject({ playing: true, positionNs: 22e9 });
+    store.pause();
+    store.tick(1000);
+    expect(store.snapshot()).toMatchObject({ playing: false, positionNs: 22e9 });
+    store.play();
+    store.tick(5000);
+    expect(store.snapshot()).toMatchObject({ playing: false, positionNs: 30e9 });
+    store.play();
+    expect(store.snapshot()).toMatchObject({ playing: true, positionNs: 12e9 });
+    store.pause();
+    store.pause();
+    expect(store.snapshot().playing).toBe(false);
   });
 
   it("seeks, selects and ignores reopening the same run", () => {
@@ -126,5 +165,24 @@ describe("review", () => {
     await Promise.resolve();
     await Promise.resolve();
     expect(store.snapshot().verified).toMatchObject({ phase: "failed", failure: { code: "verify_unreadable" } });
+  });
+
+  it("reads the report and verification again when a run it watched live closes, once", async () => {
+    const { bridge, store, flushes } = setup();
+    bridge.actions.set("run.report", success({ ...report, run: { ...report.run, ended: false } }));
+    store.open("w-1");
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(store.snapshot().report).toMatchObject({ phase: "ready", value: { ended: false } });
+    bridge.actions.set("run.report", success(report));
+    bridge.stream("w-1", journal);
+    flushes.forEach((flush) => {
+      flush();
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(bridge.calls.filter((call) => call.name === "run.report")).toHaveLength(2);
+    expect(bridge.calls.filter((call) => call.name === "run.verify")).toHaveLength(2);
+    expect(store.snapshot().report).toMatchObject({ phase: "ready", value: { ended: true } });
   });
 });

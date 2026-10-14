@@ -118,13 +118,14 @@ interface Context {
   readonly specs: Specs;
   readonly halls: readonly string[];
   readonly readout: number;
+  readonly aspect: number | undefined;
 }
 
 function nodeBox(node: ViewNode, readout: number): LayoutNode {
   if (node.instance === null) {
     return { id: node.id, group: node.group, width: nodeSize.groupWidth, height: nodeSize.groupHeight };
   }
-  const rows = Math.max(1, node.pins.ins.length, node.pins.outs.length);
+  const rows = readout > 0 ? 0 : Math.max(2, node.pins.ins.length, node.pins.outs.length);
   const height = nodeSize.header + nodeSize.padding + rows * nodeSize.pin + readout;
   return { id: node.id, group: node.group, width: nodeSize.width, height };
 }
@@ -133,7 +134,7 @@ function finish(context: Context, nodes: readonly ViewNode[], edges: readonly Vi
   const order = ["Halls", ...context.plant.areas.map((area) => area.name)];
   const boxes = nodes.map((node) => nodeBox(node, context.readout));
   const rows = (group: string, count: number) => (group === "Halls" ? Math.ceil(Math.sqrt(count)) : 3);
-  return { nodes, edges, layout: layout(boxes, edges, order, rows), halls: context.halls };
+  return { nodes, edges, layout: layout(boxes, edges, order, rows, context.aspect), halls: context.halls };
 }
 
 function hallLevel(context: Context): PlantView {
@@ -183,8 +184,8 @@ function withinHall(view: PlantView, hall: string): PlantView {
   };
 }
 
-export function plantView(plant: Plant, specs: Specs, open: string | null, readout = 0): PlantView {
-  const context = { plant, specs, halls: hallsOf(plant), readout };
+export function plantView(plant: Plant, specs: Specs, open: string | null, readout = 0, aspect?: number): PlantView {
+  const context = { plant, specs, halls: hallsOf(plant), readout, aspect };
   if (context.halls.length === 0) {
     return instanceLevel(context, () => true);
   }

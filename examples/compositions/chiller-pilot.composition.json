@@ -3,7 +3,7 @@
   "id": "chiller-pilot",
   "version": "0.1.0",
   "title": "Chiller pilot",
-  "description": "The P7g worked example: two chiller sizes with two instrument sets and an air-handling unit linked to a chiller.",
+  "description": "A small chilled-water plant: two chillers of different sizes, each with its own instruments, and an air-handling unit fed by one of them.",
   "stresses": "a small chilled-water plant composed only from the component library: instrument offsets against process faults",
   "axes": {"absence": "signal", "actuation": "advisory", "cadence": ["periodic"], "cardinality": "small", "consequence": ["cost"],
     "correlation": ["independent"], "fidelity": ["F0", "F1"], "lateness": "none", "rate": "low", "seasonality": ["diurnal"],

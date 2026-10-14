@@ -1,5 +1,5 @@
 import type { BridgeFailure } from "../model/bridge";
-import { PlaybackIndex, parseJournalRecord } from "../model/playback";
+import { PlaybackIndex, advance, parseJournalRecord } from "../model/playback";
 import type { Badge, Report } from "../model/report";
 import type { Replay } from "../model/report";
 import { badgeOf, parseReplay, parseReport } from "../model/report";
@@ -25,6 +25,8 @@ export interface ReviewState {
   readonly runDomain: Load<unknown>;
   readonly tab: "report" | "inspect";
   readonly openedAt: number;
+  readonly playing: boolean;
+  readonly speed: number;
 }
 
 const idle: ReviewState = {
@@ -37,6 +39,8 @@ const idle: ReviewState = {
   runDomain: { phase: "loading" },
   tab: "report",
   openedAt: 0,
+  playing: false,
+  speed: 60,
 };
 
 export class ReviewStore extends Observable<ReviewState> {
@@ -44,6 +48,7 @@ export class ReviewStore extends Observable<ReviewState> {
   private readonly badges = new Map<string, Badge>();
   private stop: (() => void) | null = null;
   private pending = 0;
+  private refreshed = false;
 
   constructor(
     private readonly bridge: Bridge,
@@ -56,8 +61,10 @@ export class ReviewStore extends Observable<ReviewState> {
   }
 
   open(worldId: string): void {
-    if (this.snapshot().worldId === worldId) return;
+    const state = this.snapshot();
+    if (state.worldId === worldId && (this.stop !== null || state.playback.phase !== "loading")) return;
     this.close();
+    this.refreshed = false;
     this.index = new PlaybackIndex();
     this.set({ ...idle, worldId, openedAt: this.now() });
     void this.loadReport(worldId);
@@ -96,6 +103,31 @@ export class ReviewStore extends Observable<ReviewState> {
     this.set({ ...this.snapshot(), positionNs });
   }
 
+  play(): void {
+    const bounds = this.index.bounds();
+    const settled = this.index.settled();
+    if (bounds === null || settled === null) return;
+    const state = this.snapshot();
+    const fresh = state.positionNs >= bounds.endNs || state.positionNs < bounds.startNs;
+    this.set({ ...state, playing: true, positionNs: fresh ? settled : state.positionNs });
+  }
+
+  pause(): void {
+    if (this.snapshot().playing) this.set({ ...this.snapshot(), playing: false });
+  }
+
+  setSpeed(speed: number): void {
+    this.set({ ...this.snapshot(), speed });
+  }
+
+  tick(elapsedMs: number): void {
+    const state = this.snapshot();
+    const bounds = this.index.bounds();
+    if (!state.playing || bounds === null) return;
+    const positionNs = advance(state.positionNs, elapsedMs, state.speed, bounds.endNs);
+    this.set({ ...state, positionNs, playing: positionNs < bounds.endNs });
+  }
+
   select(entity: string | null): void {
     this.set({ ...this.snapshot(), selected: entity, tab: entity === null ? this.snapshot().tab : "inspect" });
   }
@@ -123,9 +155,22 @@ export class ReviewStore extends Observable<ReviewState> {
 
   private finish(worldId: string, phase: "ready" | "failed"): void {
     this.update(worldId, { phase });
-    const bounds = this.index.bounds();
+    if (phase === "ready") this.refreshIfLive(worldId);
     const state = this.snapshot();
-    if (bounds !== null && state.worldId === worldId && state.positionNs === 0) this.seek(bounds.endNs);
+    const settled = this.index.settled();
+    const before = (this.index.bounds()?.startNs ?? 0) > state.positionNs;
+    if (settled !== null && state.worldId === worldId && before) this.seek(settled);
+  }
+
+  private refreshIfLive(worldId: string): void {
+    const state = this.snapshot();
+    if (this.refreshed || state.worldId !== worldId || state.report.phase !== "ready" || state.report.value.ended)
+      return;
+    if (state.playback.phase !== "ready") return;
+    this.refreshed = true;
+    this.set({ ...state, verified: { phase: "loading" } });
+    void this.loadReport(worldId);
+    void this.loadVerify(worldId);
   }
 
   private update(worldId: string, playback: Partial<ReviewState["playback"]>): void {
@@ -143,6 +188,7 @@ export class ReviewStore extends Observable<ReviewState> {
         ? { phase: "ready", value: parseReport(outcome.value) }
         : { phase: "failed", failure: outcome.failure },
     });
+    this.refreshIfLive(worldId);
   }
 
   private async loadRunDomain(worldId: string): Promise<void> {

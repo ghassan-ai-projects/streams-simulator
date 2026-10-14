@@ -1,8 +1,9 @@
 package app
 
 import (
-	"encoding/json"
+	"bytes"
 	"strings"
+	"time"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/canvasbridge/internal/domain"
 )
@@ -50,19 +51,11 @@ func (b *Bridge) definitions(folder string) ([]domain.Definition, error) {
 }
 
 func (b *Bridge) definition(rel string) domain.Definition {
-	entry := domain.Definition{Path: rel}
 	content, err := b.edges.Workspace.Read(rel, domain.MaxFileBytes)
 	if err != nil {
-		return entry
+		return domain.Definition{Path: rel}
 	}
-	var head struct {
-		ID    string `json:"id"`
-		Title string `json:"title"`
-	}
-	if json.Unmarshal(content, &head) == nil {
-		entry.ID, entry.Title = head.ID, head.Title
-	}
-	return entry
+	return domain.DefinitionOf(rel, content)
 }
 
 func (b *Bridge) runs() ([]domain.RunEntry, error) {
@@ -73,9 +66,48 @@ func (b *Bridge) runs() ([]domain.RunEntry, error) {
 	runs := []domain.RunEntry{}
 	for _, name := range names {
 		if b.edges.Workspace.Exists("runs/" + name + "/journal.jsonl") {
-			state := b.runState(name)
-			runs = append(runs, domain.RunEntry{WorldID: name, Ended: state.Ended, Explore: state.Explore})
+			runs = append(runs, b.runEntry(name))
 		}
 	}
 	return runs, nil
+}
+
+func (b *Bridge) runEntry(name string) domain.RunEntry {
+	summary := b.summary(name)
+	return domain.RunEntry{
+		WorldID:    name,
+		Ended:      summary.State(b.runIsRunning(name)).Ended,
+		Explore:    summary.Explore,
+		Plant:      summary.Plant,
+		DurationNs: summary.DurationNs,
+		Faults:     b.faults(name),
+		RecordedAt: b.recordedAt("runs/" + name + "/journal.jsonl"),
+	}
+}
+
+func (b *Bridge) faults(runID string) int {
+	content, err := b.edges.Workspace.Read("runs/"+runID+"/run.json", domain.MaxFileBytes)
+	if err != nil {
+		return 0
+	}
+	return domain.FaultsInjected(content)
+}
+
+func (b *Bridge) summary(runID string) domain.RunSummary {
+	journal := "runs/" + runID + "/journal.jsonl"
+	head, headErr := b.edges.Workspace.ReadFrom(journal, 0, firstLineLimit)
+	tail, tailErr := b.edges.Workspace.Tail(journal, closingLimit)
+	if headErr != nil || tailErr != nil {
+		return domain.RunSummary{}
+	}
+	first, _, _ := bytes.Cut(head, []byte("\n"))
+	return domain.SummarizeRun(first, tail)
+}
+
+func (b *Bridge) recordedAt(rel string) string {
+	modified, err := b.edges.Workspace.Modified(rel)
+	if err != nil {
+		return ""
+	}
+	return modified.UTC().Format(time.RFC3339)
 }

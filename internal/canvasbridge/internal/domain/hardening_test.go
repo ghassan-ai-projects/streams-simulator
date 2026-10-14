@@ -26,8 +26,8 @@ func TestAJournalIsClosedOnlyWhenItsLastRecordClosesTheRun(t *testing.T) {
 		`{"type":"run.closed"}` + "\n" + `{"type":"observation"}` + "\n": false,
 		`{"type":"observation"}` + "\n":                                  false, `partial {"type":"run.closed"}`: false, `{"type":"run.clo`: false,
 	} {
-		if got := ClosedJournal([]byte(tail)); got != want {
-			t.Errorf("ClosedJournal(%q) = %v, want %v", tail, got, want)
+		if got := SummarizeRun([]byte(`{"type":"run.opened"}`), []byte(tail)).Closed; got != want {
+			t.Errorf("SummarizeRun closed for tail %q = %v, want %v", tail, got, want)
 		}
 	}
 }

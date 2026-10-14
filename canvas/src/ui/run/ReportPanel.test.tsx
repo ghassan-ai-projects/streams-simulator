@@ -27,7 +27,7 @@ describe("report panel", () => {
       />,
     );
     expect(screen.getByRole("note")).toHaveTextContent("This run did not verify");
-    expect(screen.getByRole("region", { name: "KPI truth" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "True KPIs" })).toBeInTheDocument();
   });
 
   it("lists every section of the binary's report with no accessibility violation", async () => {
@@ -51,8 +51,8 @@ describe("report panel", () => {
     expect(
       within(screen.getByRole("region", { name: "Effector calls" })).getByText("refused: interlock"),
     ).toBeInTheDocument();
-    expect(within(screen.getByRole("region", { name: "KPI truth" })).getByText("4.65 – 8.85")).toBeInTheDocument();
-    expect(within(screen.getByRole("region", { name: "KPI truth" })).getByText("5.95")).toBeInTheDocument();
+    expect(within(screen.getByRole("region", { name: "True KPIs" })).getByText("4.65 – 8.85")).toBeInTheDocument();
+    expect(within(screen.getByRole("region", { name: "True KPIs" })).getByText("5.95")).toBeInTheDocument();
     expect(
       within(screen.getByRole("region", { name: "Scoring" })).getByText("The report has no scoring section."),
     ).toBeInTheDocument();
@@ -74,7 +74,7 @@ describe("report panel", () => {
   it("filters KPI truth to the selected instance and states what is not available", () => {
     const { rerender } = render(<ReportPanel report={parseReport(report)} unit={() => ""} entity="CT-1" />);
     expect(
-      within(screen.getByRole("region", { name: "KPI truth" })).getByText("No KPI truth for CT-1."),
+      within(screen.getByRole("region", { name: "True KPIs" })).getByText("No true KPIs for CT-1."),
     ).toBeInTheDocument();
     rerender(
       <ReportPanel
@@ -93,10 +93,14 @@ describe("report panel", () => {
   });
 });
 
+const idle = { playing: false, speed: 60, onPlay: vi.fn(), onPause: vi.fn(), onSpeed: vi.fn() };
+
 describe("scrubber", () => {
   it("seeks with the slider and jumps to a disturbance", () => {
     const seek = vi.fn();
-    render(<Scrubber startNs={0} endNs={3_600e9} positionNs={60e9} report={parseReport(report)} onSeek={seek} />);
+    render(
+      <Scrubber {...idle} startNs={0} endNs={3_600e9} positionNs={60e9} report={parseReport(report)} onSeek={seek} />,
+    );
     const slider = screen.getByRole("slider", { name: "Playback time" });
     expect(slider).toHaveAttribute("aria-valuetext", "00:01:00");
     fireEvent.change(slider, { target: { value: "120" } });
@@ -107,12 +111,32 @@ describe("scrubber", () => {
     expect(seek).toHaveBeenLastCalledWith(300e9);
     fireEvent.click(screen.getByRole("button", { name: "Forward 10 minutes" }));
     expect(seek).toHaveBeenLastCalledWith(660e9);
+    expect(screen.getByText("Moved to 00:11:00")).toBeInTheDocument();
+    fireEvent.keyDown(document.body, { key: "." });
+    expect(seek).toHaveBeenLastCalledWith(300e9);
     fireEvent.keyDown(slider, { key: "ArrowRight", shiftKey: true });
     expect(seek).toHaveBeenLastCalledWith(120e9);
   });
 
+  it("plays, pauses and picks a speed", () => {
+    const controls = { ...idle, onPlay: vi.fn(), onPause: vi.fn(), onSpeed: vi.fn() };
+    const view = render(
+      <Scrubber {...controls} startNs={0} endNs={60e9} positionNs={0} report={null} onSeek={vi.fn()} />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Play" }));
+    expect(controls.onPlay).toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "60×" })).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(screen.getByRole("button", { name: "600×" }));
+    expect(controls.onSpeed).toHaveBeenCalledWith(600);
+    view.rerender(
+      <Scrubber {...controls} playing startNs={0} endNs={60e9} positionNs={0} report={null} onSeek={vi.fn()} />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Pause" }));
+    expect(controls.onPause).toHaveBeenCalled();
+  });
+
   it("works before the report arrives", () => {
-    render(<Scrubber startNs={0} endNs={0} positionNs={0} report={null} onSeek={vi.fn()} />);
+    render(<Scrubber {...idle} startNs={0} endNs={0} positionNs={0} report={null} onSeek={vi.fn()} />);
     expect(screen.getByRole("list", { name: "Events" })).toBeEmptyDOMElement();
     expect(screen.getByRole("button", { name: "Next event: none" })).toHaveAttribute("aria-disabled", "true");
   });

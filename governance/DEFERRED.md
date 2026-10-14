@@ -60,6 +60,7 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 | D-38 | L | `domain/validation_records.go:95,144`, `jsonschema/compile.go:44` | Which validation error surfaces varies with map order (pass/fail identical). |
 | D-39 | L | `canonical/number.go:29-38` | Integer literals pass through verbatim, so integers beyond 2^53 are not RFC 8785 form. Digest-bearing; pin, do not touch. |
 | D-40 | L | `adapter/expression.go:110-113` | Counter default width is dead: `checkCounter` rejects 0 while the engine pretends a default exists. |
+| D-41 | M | `world` observation noise | Observations are not bounded by the channel's declared `range`: gaussian noise around a near-zero true value reports negative flows (factory run w-1: AC-1 `air_flow` −4.60 m³/h against `range` 0–1120). Real transmitters saturate or report out of range. Clamping changes every trace digest: needs a design decision (saturate, or emit an out-of-range quality flag). The canvas marks such readings meanwhile (UX goal, UXD-4). |
 
 ## Design decisions needing an owner
 

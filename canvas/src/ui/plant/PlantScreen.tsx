@@ -1,21 +1,24 @@
 import { ReactFlowProvider } from "@xyflow/react";
-import { ChevronRight, Network, PenLine, Play } from "lucide-react";
-import type { RefObject } from "react";
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { Network } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { LaunchStore } from "../../app/launchStore";
 import type { NavigationStore } from "../../app/navigationStore";
 import type { PlantState, PlantStore } from "../../app/plantStore";
 import type { WorkspaceStore } from "../../app/workspaceStore";
 import { hallCount, plantView } from "../../model/plantView";
-import type { Route } from "../../model/route";
+import type { RunRow } from "../../model/workspace";
+import { runRows } from "../../model/workspace";
+import type { Crumb } from "../shell/Breadcrumb";
+import { Breadcrumb } from "../shell/Breadcrumb";
 import { useScreen } from "../useScreen";
 import { useStore } from "../useStore";
 import { Navigator, ZoomBar } from "./GraphControls";
 import { LaunchPanel } from "../launch/LaunchPanel";
+import { EditButton, RunButton, useRunningHere } from "./PlantActions";
 import { Inspector } from "./Inspector";
 import { Outline } from "./Outline";
+import { useCanvasAspect } from "./canvasAspect";
 import { PlantGraph } from "./PlantGraph";
-import shared from "../shared.module.css";
 import styles from "./PlantScreen.module.css";
 
 type Ready = Extract<PlantState, { phase: "ready" }>;
@@ -27,11 +30,8 @@ interface PlantScreenProps {
   readonly launch: LaunchStore;
   readonly domain: string;
   readonly hall: string | null;
-}
-
-interface Crumb {
-  readonly label: string;
-  readonly route: Route;
+  readonly startLaunching?: boolean;
+  readonly onShowDetails?: () => void;
 }
 
 function summary(state: Ready, hall: string | null): string {
@@ -54,32 +54,23 @@ function Crumbs({
 }) {
   const title = state.plant.title || state.plant.id;
   const heading = useScreen(hall === null ? `${title} · plant` : `${hall} · ${title}`);
-  const trail: readonly Crumb[] = [
-    { label: "Workspace", route: { screen: "home" } },
-    ...(hall === null ? [] : [{ label: title, route: { screen: "plant", domain: state.path, hall: null } } as const]),
+  const trail: Crumb[] = [
+    {
+      label: "Workspace",
+      onGo: () => {
+        navigation.go({ screen: "home" });
+      },
+    },
   ];
-  return (
-    <nav className={styles.crumbs} aria-label="Breadcrumb">
-      {trail.map((crumb) => (
-        <Fragment key={crumb.label}>
-          <button
-            type="button"
-            className={shared.crumb}
-            onClick={() => {
-              navigation.go(crumb.route);
-            }}
-          >
-            {crumb.label}
-          </button>
-          <ChevronRight size={14} aria-hidden="true" />
-        </Fragment>
-      ))}
-      <h1 aria-current="location" className={styles.here} ref={heading} tabIndex={-1}>
-        {hall ?? title}
-      </h1>
-      <span className={styles.summary}>{summary(state, hall)}</span>
-    </nav>
-  );
+  if (hall !== null) {
+    trail.push({
+      label: title,
+      onGo: () => {
+        navigation.go({ screen: "plant", domain: state.path, hall: null });
+      },
+    });
+  }
+  return <Breadcrumb trail={trail} here={hall ?? title} heading={heading} />;
 }
 
 function Graph({
@@ -93,22 +84,29 @@ function Graph({
   readonly plants: PlantStore;
   readonly navigation: NavigationStore;
 }) {
-  const view = useMemo(() => plantView(state.plant, state.specs, hall), [state.plant, state.specs, hall]);
+  const { ref, aspect } = useCanvasAspect<HTMLDivElement>();
+  const view = useMemo(
+    () => plantView(state.plant, state.specs, hall, 0, aspect),
+    [state.plant, state.specs, hall, aspect],
+  );
   return (
-    <PlantGraph
-      view={view}
-      viewKey={hall ?? "plant"}
-      selected={state.selected}
-      onSelect={(id) => {
-        plants.select(id);
-      }}
-      onOpenHall={(name) => {
-        navigation.go({ screen: "plant", domain: state.path, hall: name });
-      }}
-      onEscape={() => {
-        if (hall !== null) navigation.go({ screen: "plant", domain: state.path, hall: null });
-      }}
-    />
+    <div ref={ref} className={styles.graphHost}>
+      <PlantGraph
+        view={view}
+        viewKey={hall ?? "plant"}
+        fitKey={`${hall ?? "plant"}:${String(aspect)}`}
+        selected={state.selected}
+        onSelect={(id) => {
+          plants.select(id);
+        }}
+        onOpenHall={(name) => {
+          navigation.go({ screen: "plant", domain: state.path, hall: name });
+        }}
+        onEscape={() => {
+          if (hall !== null) navigation.go({ screen: "plant", domain: state.path, hall: null });
+        }}
+      />
+    </div>
   );
 }
 
@@ -141,24 +139,41 @@ function PlantSide({
   );
 }
 
-function RightPanel({
-  state,
-  launch,
-  navigation,
-  launching,
-  onClose,
-}: {
+interface RightProps {
   readonly state: Ready;
   readonly launch: LaunchStore;
   readonly navigation: NavigationStore;
   readonly launching: boolean;
   readonly onClose: () => void;
-}) {
-  if (!launching) return <Inspector plant={state.plant} selected={state.selected} />;
+  readonly plants: PlantStore;
+  readonly runs: readonly RunRow[];
+}
+
+function PlantInspector({ state, navigation, plants, runs }: RightProps) {
+  return (
+    <Inspector
+      plant={state.plant}
+      selected={state.selected}
+      runs={runs}
+      onClose={() => {
+        plants.select(null);
+      }}
+      onReview={(worldId) => {
+        navigation.go({ screen: "run", worldId });
+      }}
+    />
+  );
+}
+
+function RightPanel(props: RightProps) {
+  const { state, launch, navigation, launching, onClose } = props;
+  if (!launching) return <PlantInspector {...props} />;
   return (
     <LaunchPanel
       launch={launch}
       plant={state.plant}
+      path={state.path}
+      selected={state.selected}
       onClose={onClose}
       onFinished={(worldId) => {
         navigation.go({ screen: "run", worldId });
@@ -167,61 +182,36 @@ function RightPanel({
   );
 }
 
-function useLaunching(launch: LaunchStore) {
-  const [launching, setLaunching] = useState(false);
-  const busy = useStore(launch).phase === "running";
+const noop = () => undefined;
+
+function useConsume(navigation: NavigationStore, domain: string, hall: string | null) {
+  return useCallback(() => {
+    navigation.replace({ screen: "plant", domain, hall });
+  }, [navigation, domain, hall]);
+}
+
+function useLaunching(asked: boolean, onShow: () => void, consume: () => void) {
+  const [launching, setLaunching] = useState(asked);
   const button = useRef<HTMLButtonElement>(null);
+  const [seen, setSeen] = useState(asked);
+  if (asked !== seen) {
+    setSeen(asked);
+    if (asked) setLaunching(true);
+  }
+  useEffect(() => {
+    if (!asked) return;
+    onShow();
+    consume();
+  }, [asked, onShow, consume]);
   const toggle = () => {
-    if (!busy) setLaunching(!launching);
+    if (!launching) onShow();
+    setLaunching(!launching);
   };
   const close = () => {
     setLaunching(false);
     button.current?.focus();
   };
-  return { launching, busy, button, toggle, close };
-}
-
-function RunButton({
-  launching,
-  busy,
-  button,
-  onToggle,
-}: {
-  readonly launching: boolean;
-  readonly busy: boolean;
-  readonly button: RefObject<HTMLButtonElement | null>;
-  readonly onToggle: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      ref={button}
-      className={styles.run}
-      aria-pressed={launching}
-      aria-disabled={busy}
-      onClick={onToggle}
-    >
-      <Play size={14} aria-hidden="true" />
-      Run plant
-    </button>
-  );
-}
-
-function EditButton({ state, navigation }: { readonly state: Ready; readonly navigation: NavigationStore }) {
-  const composition = state.composition;
-  if (composition === null) return null;
-  return (
-    <button
-      type="button"
-      className={styles.edit}
-      onClick={() => {
-        navigation.go({ screen: "edit", composition });
-      }}
-    >
-      <PenLine size={14} aria-hidden="true" />
-      Edit plant
-    </button>
-  );
+  return { launching, button, toggle, close };
 }
 
 function NotReady({ state, domain }: { readonly state: PlantState; readonly domain: string }) {
@@ -235,9 +225,11 @@ function NotReady({ state, domain }: { readonly state: PlantState; readonly doma
   );
 }
 
-export function PlantScreen({ plants, workspace, navigation, launch, domain, hall }: PlantScreenProps) {
-  const run = useLaunching(launch);
+export function PlantScreen(props: PlantScreenProps) {
+  const { plants, workspace, navigation, launch, domain, hall, startLaunching = false, onShowDetails = noop } = props;
+  const run = useLaunching(startLaunching, onShowDetails, useConsume(navigation, domain, hall));
   const state = useStore(plants);
+  const running = useRunningHere(launch, state.phase === "ready" ? state.plant.id : "");
   const listing = useStore(workspace);
   useEffect(() => {
     if (listing.phase === "ready") void plants.load(domain, listing.workspace);
@@ -251,8 +243,9 @@ export function PlantScreen({ plants, workspace, navigation, launch, domain, hal
           <div className={styles.bar}>
             <Network size={14} aria-hidden="true" />
             <Crumbs state={state} hall={hall} navigation={navigation} />
-            <EditButton state={state} navigation={navigation} />
-            <RunButton launching={run.launching} busy={run.busy} button={run.button} onToggle={run.toggle} />
+            <span className={styles.summary}>{summary(state, hall)}</span>
+            <EditButton composition={state.composition} running={running} navigation={navigation} />
+            <RunButton launching={run.launching} running={running} button={run.button} onToggle={run.toggle} />
             <ZoomBar />
           </div>
           <Graph state={state} hall={hall} plants={plants} navigation={navigation} />
@@ -263,6 +256,8 @@ export function PlantScreen({ plants, workspace, navigation, launch, domain, hal
           navigation={navigation}
           launching={run.launching}
           onClose={run.close}
+          plants={plants}
+          runs={listing.phase === "ready" ? runRows(listing.workspace, state.plant.id) : []}
         />
       </div>
     </ReactFlowProvider>

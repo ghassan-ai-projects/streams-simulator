@@ -89,13 +89,6 @@ export function disconnect(doc: Composition, index: number): Composition {
   return { ...doc, connections: wires(doc).filter((_, at) => at !== index) };
 }
 
-const leftBehind = new Set(["description", "equipment", "connections"]);
-
-export function newComposition(base: Composition, id: string, title: string): Composition {
-  const kept = Object.fromEntries(Object.entries(base).filter(([key]) => !leftBehind.has(key)));
-  return { ...kept, id, title, equipment: [], connections: [] };
-}
-
 export interface IssueTargets {
   readonly instances: ReadonlyMap<string, readonly string[]>;
   readonly listed: readonly { readonly target: string | null; readonly message: string }[];

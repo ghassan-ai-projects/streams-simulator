@@ -75,16 +75,10 @@ describe("editor store", () => {
     expect(store.snapshot()).toMatchObject({ failure: { code: "conflict" }, saving: false });
   });
 
-  it("creates a new composition from a base and refuses an unreadable file", async () => {
+  it("refuses to open a file that is not a composition", async () => {
     const fake = bridge();
     const store = new EditorStore(fake);
-    expect(await store.create(path, "lab-two", "Lab two")).toBe("compositions/lab-two.composition.json");
-    expect(fake.writes[0]).toMatchObject({ path: "compositions/lab-two.composition.json", etag: "" });
-    expect(JSON.parse(fake.writes[0]?.content ?? "")).toMatchObject({ id: "lab-two", equipment: [] });
     fake.files.set("compositions/bad.composition.json", success({ path: "x", content: "[", etag: "e" }));
-    expect(await store.create("compositions/bad.composition.json", "x-y-z", "X")).toMatchObject({
-      code: "composition_unreadable",
-    });
     await store.open("compositions/bad.composition.json");
     expect(store.snapshot()).toMatchObject({ phase: "failed", failure: { code: "composition_unreadable" } });
     store.select("CH-1");
@@ -122,10 +116,43 @@ describe("editor store", () => {
     expect(store.snapshot()).toMatchObject({ selected: null });
   });
 
-  it("refuses a new plant whose domain already exists", async () => {
-    const fake = bridge();
-    const store = new EditorStore(fake);
-    expect(await store.create(path, "lab", "Lab again")).toMatchObject({ code: "plant_exists" });
-    expect(fake.writes).toEqual([]);
+  it("undoes and redoes every edit, revert included, and forgets the redo after a new edit", async () => {
+    const { store } = await opened();
+    const title = () => {
+      const state = store.snapshot();
+      return state.phase === "ready" ? state.doc.title : "";
+    };
+    store.edit((doc) => ({ ...doc, title: "One" }));
+    store.edit((doc) => ({ ...doc, title: "Two" }));
+    store.revert();
+    expect(title()).toBe("Lab");
+    store.undo();
+    expect(title()).toBe("Two");
+    store.undo();
+    store.undo();
+    store.undo();
+    expect(title()).toBe("Lab");
+    store.redo();
+    expect(title()).toBe("One");
+    store.edit((doc) => ({ ...doc, title: "Three" }));
+    store.redo();
+    expect(title()).toBe("Three");
+    expect(store.snapshot()).toMatchObject({ future: [] });
+    const before = store.snapshot();
+    store.edit((doc) => doc);
+    expect(store.snapshot()).toBe(before);
+  });
+
+  it("drops a selection that undo or redo takes out of the plant", async () => {
+    const { store } = await opened();
+    store.edit(
+      (doc) => ({ ...doc, equipment: [...(doc.equipment as unknown[]), { use: "x@1", names: ["P-9"] }] }),
+      "P-9",
+    );
+    store.undo();
+    expect(store.snapshot()).toMatchObject({ selected: null });
+    store.select("CH-1");
+    store.redo();
+    expect(store.snapshot()).toMatchObject({ selected: "CH-1" });
   });
 });

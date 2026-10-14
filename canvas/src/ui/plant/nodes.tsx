@@ -1,6 +1,6 @@
 import type { NodeProps } from "@xyflow/react";
 import { Handle, Position } from "@xyflow/react";
-import { OctagonAlert, TriangleAlert, Wrench } from "lucide-react";
+import { ChevronRight, OctagonAlert, TriangleAlert, Wrench } from "lucide-react";
 import type { CSSProperties } from "react";
 import { describeNode } from "../../model/plantView";
 import { familyNames, shapeOf } from "../../model/ports";
@@ -9,6 +9,7 @@ import type { NodeStatus, Shown } from "../../model/readout";
 import { channelWords, statusWords } from "../../model/readout";
 import type { FrameNodeType, HallNodeType, InstanceNodeType } from "./flow";
 import { cx } from "../cx";
+import { OutsideMark } from "../OutsideMark";
 import styles from "./nodes.module.css";
 
 function pinLook(pin: Pin): { readonly family: string; readonly shape: string; readonly typeName: string } {
@@ -80,7 +81,7 @@ function Pins({
   );
 }
 
-export const readoutHeight = 96;
+export const readoutHeight = 148;
 
 function Readout({ shown }: { readonly shown: readonly Shown[] }) {
   if (shown.length === 0) {
@@ -99,6 +100,7 @@ function Readout({ shown }: { readonly shown: readonly Shown[] }) {
           <dd className={entry.word ? styles.word : undefined} title={entry.word ? entry.value : undefined}>
             {entry.value}
             {entry.unit !== "" && <span className={styles.unit}>{entry.unit}</span>}
+            <OutsideMark text={entry.outside} />
           </dd>
         </div>
       ))}
@@ -171,7 +173,7 @@ export function InstanceNode({ data, selected }: NodeProps<InstanceNodeType>) {
         </span>
       </div>
       {data.live !== null && <Readout shown={data.live.shown} />}
-      <Pins ins={view.pins.ins} outs={view.pins.outs} editable={data.editable} />
+      {data.live === null && <Pins ins={view.pins.ins} outs={view.pins.outs} editable={data.editable} />}
     </div>
   );
 }
@@ -196,8 +198,11 @@ export function HallNode({ data, selected }: NodeProps<HallNodeType>) {
       <div className={styles.header}>
         <span className={styles.id}>{view.label}</span>
         <StatusTag status={status} count={count} />
+        <ChevronRight size={14} aria-hidden="true" className={styles.opens} />
       </div>
-      <div className={styles.members}>{view.detail}</div>
+      <div className={styles.members} title="Double-click, or press Enter, to open the hall">
+        {view.detail}
+      </div>
       <Handle type="source" position={Position.Right} id="out" className={styles.plain} isConnectable={false} />
     </div>
   );

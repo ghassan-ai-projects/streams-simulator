@@ -1,4 +1,5 @@
 .screen {
+  composes: panels from "../shared.module.css";
   display: grid;
   grid-template-columns: var(--sidebar-width) minmax(0, 1fr) var(--inspector-width);
   height: 100%;
@@ -9,7 +10,6 @@
 .inspector {
   min-height: 0;
   overflow: auto;
-  background: var(--surface-panel);
 }
 
 .side {
@@ -21,11 +21,13 @@
 }
 
 .outline {
+  composes: scrolls from "../shared.module.css";
   flex: 1;
   padding-bottom: var(--space-4);
 }
 
 .inspector {
+  composes: scrolls from "../shared.module.css";
   border-left: 1px solid var(--border-subtle);
 }
 
@@ -75,6 +77,12 @@
   min-height: 0;
 }
 
+.graphHost {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+}
+
 .count {
   margin-left: auto;
   font-family: var(--font-mono);
@@ -106,6 +114,59 @@
 .item:hover {
   background: var(--surface-hover);
   color: var(--text-primary);
+}
+
+.item,
+.current {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.itemId {
+  flex: none;
+}
+
+.itemKind {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+}
+
+.filter {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--surface-panel);
+  color: var(--text-tertiary);
+}
+
+.filter input {
+  flex: 1;
+  min-width: 0;
+  height: 26px;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  color: var(--text-primary);
+  font: inherit;
+}
+
+.noMatch {
+  margin: 0;
+  padding: var(--space-3);
+  color: var(--text-secondary);
 }
 
 .current {
@@ -141,13 +202,9 @@
 
 .muted,
 .hint {
-  margin: var(--space-1) 0 0;
-  padding: 0 var(--space-3);
+  margin: var(--space-3) 0 0;
+  padding: 0;
   color: var(--text-secondary);
-}
-
-.hint {
-  padding: var(--space-4) var(--space-3);
 }
 
 .inspectorHead .muted {
@@ -190,26 +247,117 @@
 }
 
 .edit {
-  display: inline-flex;
-  flex: none;
+  composes: button from "../shared.module.css";
+}
+
+.run[aria-disabled="true"] {
+  border-color: var(--disabled-border);
+  background: var(--disabled-bg);
+  color: var(--disabled-fg);
+  cursor: not-allowed;
+}
+
+.headLine {
+  display: flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-2);
+}
+
+.headLine h2 {
+  flex: 1;
+  margin: 0;
+}
+
+.close {
+  display: grid;
+  place-items: center;
+  width: 28px;
   height: 28px;
-  padding: 0 var(--space-3);
-  border: 1px solid var(--border-strong);
+  border: 0;
   border-radius: var(--radius-md);
-  background: var(--surface-sunken);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.close:hover {
+  background: var(--surface-hover);
+}
+
+.kindLine {
+  margin: var(--space-1) 0 0;
   color: var(--text-primary);
+}
+
+.source {
+  margin: 2px 0 0;
+  font: var(--text-xs) var(--font-mono);
+  color: var(--text-tertiary);
+  overflow-wrap: anywhere;
+}
+
+.tally {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tally li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-height: 24px;
+  padding: 0 var(--space-3);
+  color: var(--text-secondary);
+}
+
+.linkButton {
+  flex: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
   font: inherit;
   font-weight: 500;
   cursor: pointer;
 }
 
-.edit:hover {
-  background: var(--surface-hover);
+.linkButton:hover {
+  text-decoration: underline;
 }
 
-.run[aria-disabled="true"] {
-  opacity: 0.6;
+:global([data-left="closed"]) .screen > :first-child,
+:global([data-right="closed"]) .screen > :last-child {
+  visibility: hidden;
+  overflow: hidden;
+}
+
+.edit[aria-disabled="true"] {
+  border-color: var(--disabled-border);
+  background: var(--disabled-bg);
+  color: var(--disabled-fg);
   cursor: not-allowed;
+}
+
+.spin {
+  animation: spin 1.2s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spin {
+    animation: none;
+  }
+}
+
+.itemIssue {
+  display: inline-flex;
+  margin-left: auto;
+  color: var(--status-alarm);
 }

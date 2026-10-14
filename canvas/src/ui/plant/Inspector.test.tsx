@@ -16,10 +16,10 @@ describe("inspector", () => {
     expect(screen.getByRole("heading", { name: "CH-1" })).toBeInTheDocument();
     expect(within(screen.getByRole("region", { name: "Channels" })).getByText("power · kW")).toBeInTheDocument();
     expect(
-      within(screen.getByRole("region", { name: "Links out" })).getByText("heat_out → CT-1.heat_in"),
+      within(screen.getByRole("region", { name: "Links out" })).getByText("heat out → CT-1 heat in"),
     ).toBeInTheDocument();
     expect(
-      within(screen.getByRole("region", { name: "Links in" })).getByText("CT-1.basin_out → cond_in"),
+      within(screen.getByRole("region", { name: "Links in" })).getByText("CT-1 basin out → cond in"),
     ).toBeInTheDocument();
     expect(within(screen.getByRole("region", { name: "Faults" })).getByText("fouling")).toHaveAttribute(
       "title",

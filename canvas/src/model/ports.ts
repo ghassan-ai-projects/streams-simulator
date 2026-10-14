@@ -70,6 +70,16 @@ export interface ComponentSpec {
   readonly category: Category;
 }
 
+export function portsMatching(spec: ComponentSpec | undefined, direction: "in" | "out", type = ""): readonly string[] {
+  return (spec?.ports ?? [])
+    .filter((port) => port.direction === direction && (type === "" || port.type === "" || port.type === type))
+    .map((port) => port.name);
+}
+
+export function portType(spec: ComponentSpec | undefined, name: string): string {
+  return spec?.ports.find((port) => port.name === name)?.type ?? "";
+}
+
 const classCategories: readonly (readonly [string, Category])[] = [
   ["electrical/", "elec"],
   ["process/", "prod"],

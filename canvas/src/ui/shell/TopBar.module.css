@@ -34,24 +34,130 @@
   color: var(--text-primary);
 }
 
-.spacer {
+.crumbs {
+  display: flex;
   flex: 1;
+  min-width: 0;
+  padding-left: var(--space-2);
+  border-left: 1px solid var(--border-subtle);
 }
 
-.iconButton {
-  display: grid;
-  place-items: center;
-  width: 32px;
+.tools {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.labelled {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
   height: 32px;
+  padding: 0 var(--space-3);
   border: 1px solid transparent;
   border-radius: var(--radius-md);
   background: transparent;
   color: var(--text-secondary);
+  font: inherit;
+  font-size: var(--text-sm);
+  white-space: nowrap;
   cursor: pointer;
-  transition: background var(--motion-fast);
 }
 
-.iconButton:hover {
+.labelled:hover {
   background: var(--surface-hover);
   color: var(--text-primary);
+}
+
+.labelled[aria-pressed="true"] {
+  border-color: var(--border-strong);
+  background: var(--surface-sunken);
+  color: var(--text-primary);
+}
+
+.run-running,
+.run-done,
+.run-failed {
+  display: flex;
+  align-items: center;
+  height: 30px;
+  border: 1px solid var(--border-strong);
+  border-radius: 15px;
+  background: var(--surface-sunken);
+  overflow: hidden;
+}
+
+.run-done {
+  border-color: var(--status-ok);
+  background: var(--status-ok-bg);
+}
+
+.run-failed {
+  border-color: var(--status-warn);
+  background: var(--status-warn-bg);
+}
+
+.runOpen,
+.runDismiss {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 100%;
+  padding: 0 var(--space-3);
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.runOpen:hover,
+.runDismiss:hover {
+  background: var(--surface-hover);
+}
+
+.runDismiss {
+  padding: 0 var(--space-2);
+  border-left: 1px solid var(--border-subtle);
+}
+
+.spin {
+  animation: spin 1.2s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spin {
+    animation: none;
+  }
+}
+
+.toggles {
+  display: flex;
+  gap: 2px;
+}
+
+.skip {
+  position: absolute;
+  left: var(--space-2);
+  top: -48px;
+  z-index: 20;
+  height: 32px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface-panel);
+  color: var(--text-primary);
+  font: inherit;
+}
+
+.skip:focus-visible {
+  top: 6px;
 }

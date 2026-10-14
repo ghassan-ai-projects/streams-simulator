@@ -103,7 +103,9 @@
 }
 
 .primary:disabled {
-  opacity: 0.5;
+  border-color: var(--disabled-border);
+  background: var(--disabled-bg);
+  color: var(--disabled-fg);
   cursor: not-allowed;
 }
 

@@ -1,8 +1,11 @@
+import { humanise } from "../../model/report";
 import { Box, Trash2, X } from "lucide-react";
 import type { SyntheticEvent } from "react";
 import { useState } from "react";
+import type { Draft } from "../../app/editorStore";
 import type { Instance } from "../../model/plant";
-import { areasOf, connectionsOf, endpointOf } from "../../model/composition";
+import type { Connection } from "../../model/composition";
+import { areasOf, connectionsOf, endpointOf, linkEnd } from "../../model/composition";
 import { disconnect, isTemplate, moveInstance, removeInstance, renameInstance } from "../../model/compositionEdits";
 import panel from "../panel.module.css";
 import { ConnectForm } from "./ConnectForm";
@@ -69,29 +72,54 @@ function AreaPick({ draft, instance, editor }: Pick<EditorProps, "draft" | "inst
   );
 }
 
+function LinkRow({ wire, instance, editor }: { readonly wire: Connection } & Pick<EditorProps, "instance" | "editor">) {
+  const end = linkEnd(wire, instance.id);
+  const words = `${end.port} ${end.outgoing ? "to" : "from"} ${end.other} ${end.otherPort}`;
+  return (
+    <li>
+      <span className={styles.linkText}>
+        <span>{end.port}</span>
+        <span aria-hidden="true">{end.outgoing ? "→" : "←"}</span>
+        <button
+          type="button"
+          className={styles.linkOther}
+          title={`Select ${end.other}`}
+          onClick={() => {
+            editor.select(end.other);
+          }}
+        >
+          {end.other}
+        </button>
+        <span>{end.otherPort}</span>
+      </span>
+      <button
+        type="button"
+        className={panel.icon}
+        aria-label={`Remove link: ${words}`}
+        title="Remove this link"
+        onClick={() => {
+          editor.edit((doc) => disconnect(doc, wire.index));
+        }}
+      >
+        <Trash2 size={14} aria-hidden="true" />
+      </button>
+    </li>
+  );
+}
+
 function Links({ draft, instance, editor }: Pick<EditorProps, "draft" | "instance" | "editor">) {
   const touching = connectionsOf(draft.doc).filter(
     (wire) => endpointOf(wire.from).id === instance.id || endpointOf(wire.to).id === instance.id,
   );
   return (
     <section className={panel.group} aria-labelledby="links-title">
-      <h3 id="links-title">{`Links (${String(touching.length)})`}</h3>
+      <h3 id="links-title" className={styles.counted}>
+        Links <span className={styles.count}>{touching.length}</span>
+      </h3>
       {touching.length === 0 && <p className={panel.hint}>Not linked yet.</p>}
       <ul className={styles.links}>
         {touching.map((wire) => (
-          <li key={wire.index}>
-            <span>{`${wire.from} → ${wire.to}`}</span>
-            <button
-              type="button"
-              className={panel.icon}
-              aria-label={`Remove link ${wire.from} to ${wire.to}`}
-              onClick={() => {
-                editor.edit((doc) => disconnect(doc, wire.index));
-              }}
-            >
-              <Trash2 size={14} aria-hidden="true" />
-            </button>
-          </li>
+          <LinkRow key={wire.index} wire={wire} instance={instance} editor={editor} />
         ))}
       </ul>
     </section>
@@ -155,6 +183,11 @@ function Editing({ draft, plant, editor, request, instance }: EditorProps) {
   );
 }
 
+function kindLine(draft: Draft, instance: Instance): string {
+  const title = draft.library.find((entry) => entry.component === instance.component)?.title;
+  return title === undefined ? humanise(instance.kind) : `${title} · ${humanise(instance.kind)}`;
+}
+
 export function InstanceEditor(props: EditorProps) {
   const { draft, editor, request, instance } = props;
   return (
@@ -162,7 +195,9 @@ export function InstanceEditor(props: EditorProps) {
       <Head instance={instance} editor={editor} request={request} />
       <div className={panel.body}>
         <Problems id={instance.id} messages={draft.issues?.instances.get(instance.id) ?? []} />
-        <p className={panel.hint}>{`${instance.kind} · ${instance.component ?? ""}`}</p>
+        <p className={panel.hint} title={instance.component ?? undefined}>
+          {kindLine(draft, instance)}
+        </p>
         <Editing {...props} />
         <Links draft={draft} instance={instance} editor={editor} />
         {!isTemplate(draft.doc, instance.id) && (

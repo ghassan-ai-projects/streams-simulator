@@ -119,6 +119,12 @@
   font-size: var(--text-xs);
 }
 
+.opens {
+  flex: none;
+  margin-left: auto;
+  color: var(--text-tertiary);
+}
+
 .hall .header {
   box-shadow: inset 0 3px 0 var(--cat-env);
 }
@@ -161,8 +167,7 @@
   border: 0 !important;
 }
 
-:global(.tier-compact) .pins,
-:global(.tier-overview) .kind,
+:global(.tier-compact) .node:has(.readout) .pins,
 :global(.tier-map) .kind,
 :global(.tier-overview) .pins,
 :global(.tier-map) .pins,
@@ -178,6 +183,21 @@
 
 :global(.tier-compact) .id {
   font-size: min(calc(12.5px / var(--zoom)), 22px);
+}
+
+:global(.tier-compact) .pin {
+  padding: 0 calc(6px / var(--zoom));
+  font-size: min(calc(10.5px / var(--zoom)), 19px);
+  color: var(--text-tertiary);
+}
+
+:global(.tier-compact) .pin .dot {
+  visibility: hidden;
+}
+
+:global(.tier-compact) .pins > div {
+  min-width: 0;
+  flex: 1 1 0;
 }
 
 :global(.tier-compact) .node {
@@ -207,7 +227,7 @@
 
 :global(.tier-compact) .kind,
 :global(.tier-compact) .none {
-  font-size: calc(11.5px / var(--zoom));
+  font-size: calc(10.5px / var(--zoom));
 }
 
 :global(.tier-compact) .readout div:nth-child(n + 3) {
@@ -244,7 +264,26 @@
   border-radius: 7px;
 }
 
+:global(.tier-overview) .header {
+  flex-direction: column;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  overflow: hidden;
+  gap: calc(1px / var(--zoom)) calc(24px / var(--zoom));
+  padding: calc(3px / var(--zoom)) calc(6px / var(--zoom));
+  box-shadow: inset calc(4px / var(--zoom)) 0 0 var(--cat, var(--border-strong));
+}
+
+:global(.tier-overview) .kind {
+  width: 100%;
+  max-width: 100%;
+  margin-left: 0;
+  font-size: min(calc(10.5px / var(--zoom)), 36px);
+  line-height: 1.1;
+}
+
 :global(.tier-overview) .id {
+  width: 100%;
   font-size: min(calc(12.5px / var(--zoom)), 46px);
   line-height: 1;
   overflow: hidden;
@@ -280,7 +319,7 @@
   grid-template-columns: minmax(0, 1fr);
   align-content: start;
   gap: 2px;
-  height: 96px;
+  height: 132px;
   margin: 0;
   padding: var(--space-2) var(--space-3);
   border-bottom: 1px solid var(--node-border);
@@ -432,11 +471,9 @@
   font-size: calc(11.5px / var(--zoom));
 }
 
-.flagged {
-  border: 2px solid var(--status-alarm);
-  box-shadow:
-    0 0 0 3px var(--status-alarm-bg),
-    var(--shadow-panel);
+.flagged .header {
+  background: var(--status-alarm-bg);
+  box-shadow: inset 0 3px 0 var(--status-alarm);
 }
 
 .dot:global(.connectable) {
@@ -454,4 +491,9 @@
   position: absolute;
   inset: -6px;
   border-radius: 50%;
+}
+
+:global(.tier-compact) .readout [role="img"] svg {
+  width: min(calc(11px / var(--zoom)), 20px);
+  height: min(calc(11px / var(--zoom)), 20px);
 }

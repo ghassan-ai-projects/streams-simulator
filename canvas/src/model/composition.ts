@@ -91,6 +91,10 @@ function link(connection: Connection): Link {
   return { from: from.id, to: to.id, type: "", fromPort: from.port || null, toPort: to.port || null };
 }
 
+export function shortKind(component: string): string {
+  return (component.split("/").at(-1) ?? component).replaceAll("-", "_");
+}
+
 export function compositionPlant(doc: Composition, titleOf: (component: string) => string): Plant {
   const instances: Instance[] = equipmentOf(doc).flatMap((entry) =>
     entry.names.map((id) => ({
@@ -113,6 +117,40 @@ export function compositionPlant(doc: Composition, titleOf: (component: string) 
     links: connectionsOf(doc).map(link),
     kinds: new Map(),
   };
+}
+
+export interface LinkEnd {
+  readonly outgoing: boolean;
+  readonly port: string;
+  readonly other: string;
+  readonly otherPort: string;
+}
+
+export function linkEnd(connection: Connection, id: string): LinkEnd {
+  const from = endpointOf(connection.from);
+  const to = endpointOf(connection.to);
+  const words = (port: string) => port.replaceAll("_", " ");
+  return from.id === id
+    ? { outgoing: true, port: words(from.port), other: to.id, otherPort: words(to.port) }
+    : { outgoing: false, port: words(to.port), other: from.id, otherPort: words(from.port) };
+}
+
+function initials(title: string): string {
+  const letters = title
+    .split(/[\s-]+/)
+    .filter(Boolean)
+    .map((word) => word[0]?.toUpperCase() ?? "")
+    .join("");
+  return letters === "" ? "X" : letters.slice(0, 3);
+}
+
+export function suggestedName(doc: Composition, use: string, title: string): string {
+  const names = equipmentOf(doc).flatMap((entry) => entry.names);
+  const sibling = equipmentOf(doc).find((entry) => componentOf(entry.use) === componentOf(use))?.names[0];
+  const prefix = sibling?.match(/^(.*?)-?\d+$/)?.[1] ?? initials(title);
+  let n = 1;
+  while (names.includes(`${prefix}-${String(n)}`)) n += 1;
+  return `${prefix}-${String(n)}`;
 }
 
 export function titleOf(doc: Composition): string {

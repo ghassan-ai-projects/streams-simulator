@@ -1,9 +1,11 @@
 import type { ReactNode } from "react";
 import type { Report, VerifyState } from "../../model/report";
-import { badgeOf, humanise, replayLine, wallClock } from "../../model/report";
-import { kpisOf } from "../../model/reportViews";
-import { displayUnit } from "../../model/units";
+import { badgeOf, humanise, replayLine } from "../../model/report";
+import { integrityLine, kpisOf } from "../../model/reportViews";
+import { runClock } from "../../model/timeline";
+import { grouped } from "../../model/units";
 import shared from "../shared.module.css";
+import { KpiTable } from "./KpiTable";
 import styles from "./RunScreen.module.css";
 
 type Cell = string | { readonly text: string; readonly title: string };
@@ -59,7 +61,7 @@ function Rows({ rows, columns, headers, empty = "None" }: RowsProps) {
   if (rows.length === 0) return <p className={styles.muted}>{empty}</p>;
   return (
     <table className={styles.table}>
-      <thead className="sr-only">
+      <thead className={styles.head}>
         <tr>
           {headers.map((header) => (
             <th key={header} scope="col">
@@ -77,12 +79,9 @@ function Rows({ rows, columns, headers, empty = "None" }: RowsProps) {
   );
 }
 
-const fixed = (value: number) =>
-  Math.abs(value) >= 100 ? value.toFixed(0) : Math.abs(value) >= 10 ? value.toFixed(1) : value.toFixed(2);
 const named = (id: string): Cell => ({ text: humanise(id), title: id });
 const words = (text: string): Cell => ({ text, title: text });
-const count = (report: Report, key: string) =>
-  report.ended ? (report.counts[key] ?? 0).toLocaleString("en-US") : "n/a";
+const count = (report: Report, key: string) => (report.ended ? grouped(report.counts[key] ?? 0) : "n/a");
 
 function ReplayCheck({ verify }: { readonly verify: VerifyState }) {
   const detail = verify.phase === "ready" ? verify.value.detail : "";
@@ -99,13 +98,23 @@ function ReplayCheck({ verify }: { readonly verify: VerifyState }) {
   );
 }
 
-function Facts({ report, verify }: { readonly report: Report; readonly verify: VerifyState }) {
-  const dropped = Object.entries(report.dropped).map(([reason, n]) => [
-    reason.replaceAll("_", " "),
-    n.toLocaleString("en-US"),
-  ]);
+function Deliveries({ report }: { readonly report: Report }) {
+  const dropped = Object.entries(report.dropped).map(([reason, n]) => [reason.replaceAll("_", " "), grouped(n)]);
   return (
-    <>
+    <Section title="Deliveries" note={report.ended ? undefined : "run not closed"}>
+      <Rows
+        rows={[...["emitted", "delivered", "dropped"].map((key) => [key, count(report, key)]), ...dropped]}
+        columns={["text", "number"]}
+        headers={["Records", "Count"]}
+      />
+    </Section>
+  );
+}
+
+function Integrity({ report, verify }: { readonly report: Report; readonly verify: VerifyState }) {
+  return (
+    <details className={styles.integrity}>
+      <summary>{integrityLine(report, verify)}</summary>
       <ReplayCheck verify={verify} />
       <Section title="File check" note={report.verification.replaceAll("_", " ") || "not recorded"}>
         <p className={styles.muted}>
@@ -120,14 +129,8 @@ function Facts({ report, verify }: { readonly report: Report; readonly verify: V
           headers={["File", "Check"]}
         />
       </Section>
-      <Section title="Deliveries" note={report.ended ? undefined : "run not closed"}>
-        <Rows
-          rows={[...["emitted", "delivered", "dropped"].map((key) => [key, count(report, key)]), ...dropped]}
-          columns={["text", "number"]}
-          headers={["Records", "Count"]}
-        />
-      </Section>
-    </>
+      <Deliveries report={report} />
+    </details>
   );
 }
 
@@ -138,15 +141,34 @@ interface TruthProps {
   readonly only?: "kpi";
 }
 
-function Truth({ report, unit, entity }: TruthProps) {
-  const at = (ns: number) => wallClock(ns, report.startNs);
+function TruthNote({ report }: { readonly report: Report }) {
+  const text =
+    report.mode === "explore"
+      ? "Explore run: the simulated truth below was visible while it ran."
+      : "Evaluate run: the simulated truth below stayed sealed while it ran and was revealed when it ended.";
+  return <p className={styles.truthNote}>{text}</p>;
+}
+
+function Events({ report }: { readonly report: Report }) {
+  const at = (ns: number) => runClock(ns, report.startNs);
+  if (report.disturbances.length === 0 && report.effectorCalls.length === 0) {
+    return (
+      <Section title="Disturbances and effector calls">
+        <p className={styles.muted}>None in this run.</p>
+      </Section>
+    );
+  }
   return (
     <>
-      <Section title="Disturbances" note="onset · set">
+      <Section title="Disturbances">
         <Rows
-          rows={report.disturbances.map((d) => [at(d.onsetNs), d.target, named(d.name), at(d.injectedNs)])}
-          columns={["clock", "id", "label", "clock"]}
-          headers={["Onset", "Target", "Disturbance", "Set at"]}
+          rows={report.disturbances.map((d) => [
+            { text: at(d.onsetNs), title: `set at ${at(d.injectedNs)}` },
+            d.target,
+            named(d.name),
+          ])}
+          columns={["clock", "id", "label"]}
+          headers={["Starts", "Instance", "Disturbance"]}
         />
       </Section>
       <Section title="Effector calls">
@@ -161,10 +183,19 @@ function Truth({ report, unit, entity }: TruthProps) {
           headers={["Time", "Instance", "Effector", "Outcome"]}
         />
       </Section>
+    </>
+  );
+}
+
+function Truth({ report, unit, entity }: TruthProps) {
+  return (
+    <>
+      <TruthNote report={report} />
+      <Events report={report} />
       <KpiTruth report={report} unit={unit} entity={entity} />
       <Section title="Alarm system" note="ISA-18.2">
         <Rows
-          rows={Object.entries(report.alarms).map(([key, n]) => [key.replaceAll("_", " "), n.toLocaleString("en-US")])}
+          rows={Object.entries(report.alarms).map(([key, n]) => [key.replaceAll("_", " "), grouped(n)])}
           columns={["text", "number"]}
           headers={["Measure", "Value"]}
         />
@@ -188,17 +219,12 @@ function Scoring({ report }: { readonly report: Report }) {
 function KpiTruth({ report, unit, entity }: TruthProps) {
   const kpis = kpisOf(report, entity);
   return (
-    <Section title="KPI truth" note={entity === null ? "mean · min – max" : `${entity} · mean · min – max`}>
-      <Rows
-        rows={kpis.map((row) => [
-          { text: `${row.entity} · ${humanise(row.state)}`, title: `${row.entity} ${row.state}` },
-          `${fixed(row.mean)} ${displayUnit(unit(row.entity, row.state))}`.trim(),
-          `${fixed(row.min)} – ${fixed(row.max)}`,
-        ])}
-        columns={["label", "number", "number"]}
-        headers={["KPI", "Mean", "Min – max"]}
-        empty={entity === null ? "None" : `No KPI truth for ${entity}.`}
-      />
+    <Section title="True KPIs" note={entity ?? undefined}>
+      {kpis.length === 0 ? (
+        <p className={styles.muted}>{entity === null ? "None" : `No true KPIs for ${entity}.`}</p>
+      ) : (
+        <KpiTable rows={kpis} grouped={entity === null} unit={unit} />
+      )}
     </Section>
   );
 }
@@ -235,7 +261,7 @@ export function ReportPanel({
   }
   return (
     <>
-      <Facts report={report} verify={verify} />
+      <Integrity report={report} verify={verify} />
       <TruthCaution report={report} verify={verify} />
       {report.truthUnavailable || !report.ended ? (
         <Section title="Truth">

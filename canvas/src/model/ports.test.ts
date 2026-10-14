@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { chillerPorts, composition, domain } from "../test/plantFixture";
 import { parsePlant } from "./plant";
-import { familyOf, parseComponent, parsePorts, pinsOf, shapeOf } from "./ports";
+import { familyOf, parseComponent, parsePorts, pinsOf, portType, portsMatching, shapeOf } from "./ports";
 
 describe("ports and pins", () => {
   it("maps every library port type to one of nine families with a shape", () => {
@@ -66,5 +66,21 @@ describe("ports and pins", () => {
       outs: [],
     });
     expect(pinsOf(parsePlant(domain), meter, undefined)).toEqual({ ins: [], outs: [] });
+  });
+
+  it("offers only ports that take what an output gives", () => {
+    const spec = {
+      category: "cool" as const,
+      ports: [
+        { name: "heat_in", type: "heat_rejection", direction: "in" as const },
+        { name: "power_in", type: "electrical", direction: "in" as const },
+        { name: "any_in", type: "", direction: "in" as const },
+        { name: "power_out", type: "electrical", direction: "out" as const },
+      ],
+    };
+    expect(portsMatching(spec, "in", "electrical")).toEqual(["power_in", "any_in"]);
+    expect(portsMatching(spec, "in")).toEqual(["heat_in", "power_in", "any_in"]);
+    expect(portsMatching(undefined, "out")).toEqual([]);
+    expect([portType(spec, "power_out"), portType(spec, "nothing")]).toEqual(["electrical", ""]);
   });
 });

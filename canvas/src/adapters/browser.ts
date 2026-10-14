@@ -34,8 +34,10 @@ export function mediaSystemTheme(media: MediaQueryList): SystemTheme {
 export function hashLocation(window: Window): Location {
   return {
     read: () => window.location.hash,
-    write(hash) {
-      if (window.location.hash !== hash) window.location.hash = hash;
+    write(hash, replace = false) {
+      if (window.location.hash === hash) return;
+      if (replace) window.history.replaceState(null, "", hash);
+      else window.location.hash = hash;
     },
     subscribe(listener) {
       window.addEventListener("hashchange", listener);

@@ -116,3 +116,20 @@ func TestTheOperatorTokenNeverLeavesTheBridge(t *testing.T) {
 		t.Fatalf("an action without withheld keys changed its result: %s, %v", got, err)
 	}
 }
+
+func TestANewPlantPassesItsEmptySwitchOnlyWhenOn(t *testing.T) {
+	t.Parallel()
+	create, _ := Lookup("component.new")
+	got, err := create.Argv(map[string]any{"id": "lab", "title": "Lab", "from": "compositions/f.composition.json", "empty": true})
+	want := []ArgvPart{{Literal: "component"}, {Literal: "new"}, {Literal: "lab"}, {Literal: "--title"}, {Literal: "Lab"},
+		{Literal: "--from"}, {Path: "compositions/f.composition.json"}, {Literal: "--empty"}}
+	if err != nil || !reflect.DeepEqual(got, want) {
+		t.Fatalf("Argv = %+v, %v", got, err)
+	}
+	if got, err := create.Argv(map[string]any{"id": "lab", "title": "Lab", "example": "chiller-pilot", "empty": false}); err != nil || len(got) != 7 {
+		t.Fatalf("empty off = %+v, %v", got, err)
+	}
+	if _, err := create.Argv(map[string]any{"id": "lab", "title": "Lab", "empty": "yes"}); !errors.Is(err, ErrBadArguments) {
+		t.Fatalf("a switch that is not a boolean = %v", err)
+	}
+}

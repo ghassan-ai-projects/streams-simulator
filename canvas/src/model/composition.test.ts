@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { compositionPlant, connectionsOf, equipmentOf, parseComposition, serialise } from "./composition";
+import {
+  compositionPlant,
+  connectionsOf,
+  equipmentOf,
+  linkEnd,
+  parseComposition,
+  serialise,
+  shortKind,
+  suggestedName,
+} from "./composition";
 import {
   addEquipment,
   connect,
@@ -7,11 +16,10 @@ import {
   issueTargets,
   isTemplate,
   moveInstance,
-  newComposition,
   removeInstance,
   renameInstance,
 } from "./compositionEdits";
-import { parseLibrary, parsePresets } from "./library";
+import { parseLibrary, parsePresets, searchLibrary } from "./library";
 
 const doc = {
   id: "lab",
@@ -72,12 +80,6 @@ describe("composition", () => {
     expect(removed.profiles).toBe(doc.profiles);
   });
 
-  it("starts a new composition from a base without its equipment, links or description", () => {
-    const fresh = newComposition(doc, "lab-two", "Lab two");
-    expect(fresh).toMatchObject({ id: "lab-two", title: "Lab two", equipment: [], connections: [], areas: doc.areas });
-    expect(fresh).not.toHaveProperty("description");
-  });
-
   it("puts each issue of the binary on the instances its pointer names", () => {
     const targets = issueTargets(doc, [
       { pointer: "/equipment/0/area", message: "bad area" },
@@ -96,17 +98,48 @@ describe("composition", () => {
   it("lists the library's equipment and a component's presets", () => {
     const library = parseLibrary({
       components: [
-        { id: "streamsim/pump", version: 2, kind: "equipment", title: "Pump" },
+        { id: "streamsim/pump", version: 2, kind: "equipment", title: "Pump", class: "rotating/pump", tags: ["water"] },
         { id: "streamsim/rtd", version: 1, kind: "instrument", title: "RTD" },
         { id: "streamsim/ahu", kind: "equipment", title: "Air-handling unit" },
       ],
     });
-    expect(library).toEqual([
-      { component: "streamsim/ahu", ref: "streamsim/ahu@1", title: "Air-handling unit" },
-      { component: "streamsim/pump", ref: "streamsim/pump@2", title: "Pump" },
+    expect(library.map((entry) => [entry.component, entry.ref, entry.title])).toEqual([
+      ["streamsim/ahu", "streamsim/ahu@1", "Air-handling unit"],
+      ["streamsim/pump", "streamsim/pump@2", "Pump"],
     ]);
     expect(parseLibrary(null)).toEqual([]);
-    const presets = parsePresets({ document: { default_preset: "medium", presets: { small: { title: "Small" } } } });
-    expect(presets).toEqual({ options: [{ name: "small", title: "Small" }], preferred: "medium" });
+    expect(searchLibrary(library, "")).toHaveLength(2);
+    expect(searchLibrary(library, "AIR unit").map((entry) => entry.title)).toEqual(["Air-handling unit"]);
+    expect(searchLibrary(library, "pump chiller")).toEqual([]);
+    const presets = parsePresets({
+      document: { default_preset: "medium", description: "Moves water.", presets: { small: { title: "Small" } } },
+    });
+    expect(presets).toEqual({
+      options: [{ name: "small", title: "Small" }],
+      preferred: "medium",
+      description: "Moves water.",
+    });
+  });
+
+  it("suggests the next free name like its siblings, or from the title's initials", () => {
+    expect(suggestedName(doc, "streamsim/chiller@1", "Chiller")).toBe("CH-3");
+    expect(suggestedName(doc, "streamsim/pump@1", "Chilled water pump")).toBe("CWP-1");
+    expect(suggestedName(doc, "streamsim/cooling-tower@1", "Cooling tower")).toBe("CT-2");
+    expect(suggestedName({}, "x@1", "")).toBe("X-1");
+  });
+
+  it("says a link from one instance's side in words", () => {
+    const [first] = connectionsOf(doc);
+    if (first === undefined) throw new Error("no link");
+    expect(linkEnd(first, "CH-1")).toEqual({ outgoing: true, port: "heat out", other: "CT-1", otherPort: "heat in" });
+    expect(linkEnd(first, "CT-1")).toEqual({ outgoing: false, port: "heat in", other: "CH-1", otherPort: "heat out" });
+  });
+
+  it("names a kind the way the plant screen does, from the component's last segment", () => {
+    expect([shortKind("streamsim/air-receiver"), shortKind("chiller"), shortKind("lib/a/b-c-d")]).toEqual([
+      "air_receiver",
+      "chiller",
+      "b_c_d",
+    ]);
   });
 });

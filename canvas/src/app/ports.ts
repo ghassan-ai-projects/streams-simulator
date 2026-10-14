@@ -29,6 +29,6 @@ export interface RunFollower {
 
 export interface Location {
   read(): string;
-  write(hash: string): void;
+  write(hash: string, replace?: boolean): void;
   subscribe(listener: () => void): () => void;
 }

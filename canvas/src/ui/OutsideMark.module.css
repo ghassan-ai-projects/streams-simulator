@@ -1,0 +1,6 @@
+.mark {
+  display: inline-flex;
+  margin-left: 4px;
+  vertical-align: -1px;
+  color: var(--status-warn);
+}

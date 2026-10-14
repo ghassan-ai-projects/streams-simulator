@@ -3,6 +3,8 @@ import axe from "axe-core";
 import { describe, expect, it } from "vitest";
 import { SessionStore } from "../../app/sessionStore";
 import { EditorStore } from "../../app/editorStore";
+import { PanelStore } from "../../app/panelStore";
+import { PlantMaker } from "../../app/plantMaker";
 import { LaunchStore } from "../../app/launchStore";
 import { NavigationStore } from "../../app/navigationStore";
 import { PlantStore } from "../../app/plantStore";
@@ -32,6 +34,9 @@ function renderApp(bridge: FakeBridge) {
     review: new ReviewStore(bridge),
     launch: new LaunchStore(bridge),
     editor: new EditorStore(bridge),
+    panels: new PanelStore({ read: () => null, write: () => undefined }),
+    maker: new PlantMaker(bridge),
+    showDetails: () => undefined,
   };
   return render(<App stores={stores} />);
 }

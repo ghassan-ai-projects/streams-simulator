@@ -4,6 +4,23 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **`streamsim component new`.** Prints a new plant's composition, copied from a composition file or a shipped example
+  or emptied to its frame, with the id and title checked by the binary. The canvas creates plants through it, so the
+  rule for what an empty plant keeps and the id check live in the binary.
+- **Run listing fault counts.** Each run in the canvas bridge's workspace listing carries `faults`, the fault
+  injections in its command log.
+
+- **Validation messages in words.** A JSON Schema node with a `pattern` may carry `x-expected`, a phrase naming what the
+  value must be; a value that fails the pattern is then reported as `"bad name" is not an instance name: …` instead
+  of quoting the regular expression. The composition contract describes plant ids and instance names this way.
+  Patterns without the annotation keep their message.
+- **Canvas bridge listing.** Each domain in the workspace listing carries its `instances` count.
+
+- **Starter examples in the binary.** `streamsim component examples` lists the example compositions the binary ships
+  (`factory-utilities`, `chiller-pilot`) and `streamsim component example <id>` prints one, so a fresh workspace can start
+  from a working plant. The canvas offers them as "Try an example" on an empty workspace and as a starting point in New
+  plant. `cli-output-v0.1` gains both documents.
+
 - **Alarm playback truth** (R9-24). Simulator 0.3.2 publishes each alarm's ordered `activation_times_ns`
   beside its aggregate KPI count in sealed KPI truth and the run report. These are the existing scan's counted
   transitions, including unshelving, with no activation attributed to an initially standing alarm. Playback

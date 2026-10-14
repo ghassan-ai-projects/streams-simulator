@@ -40,17 +40,44 @@ export function launchSteps(plan: LaunchPlan, chunks = 20): readonly LaunchStep[
   return steps;
 }
 
-export function planProblems(plan: LaunchPlan): readonly string[] {
-  const problems: string[] = [];
-  if (!Number.isSafeInteger(plan.seed) || plan.seed < 0) problems.push("The seed is a whole number, 0 or more.");
-  if (!Number.isInteger(plan.durationS) || plan.durationS < 60) problems.push("The duration is at least one minute.");
-  plan.faults.forEach((fault, index) => {
+export interface PlanProblem {
+  readonly field: "seed" | "duration" | number;
+  readonly text: string;
+}
+
+function faultProblems(plan: LaunchPlan): readonly PlanProblem[] {
+  return plan.faults.flatMap((fault, index): PlanProblem[] => {
+    const name = `Fault ${String(index + 1)}`;
     if (fault.entity === "" || fault.fault === "")
-      problems.push(`Fault ${String(index + 1)} needs an instance and a fault.`);
+      return [{ field: index, text: `${name} needs an instance and a fault.` }];
     if (!Number.isInteger(fault.atS) || fault.atS < 0 || fault.atS >= plan.durationS)
-      problems.push(`Fault ${String(index + 1)} starts inside the run, before its end.`);
+      return [{ field: index, text: `${name} starts inside the run, before its end.` }];
+    return [];
   });
-  return problems;
+}
+
+export function planProblems(plan: LaunchPlan): readonly PlanProblem[] {
+  const problems: PlanProblem[] = [];
+  if (!Number.isSafeInteger(plan.seed) || plan.seed < 0)
+    problems.push({ field: "seed", text: "The seed is a whole number, 0 or more." });
+  if (!Number.isInteger(plan.durationS) || plan.durationS < 60)
+    problems.push({ field: "duration", text: "The duration is at least one minute." });
+  return [...problems, ...faultProblems(plan)];
+}
+
+export function planSummary(plan: LaunchPlan, length: string): string {
+  const faults = plan.faults.length;
+  return [
+    `${length} of simulated time`,
+    plan.explore ? "Explore" : "Evaluate",
+    faults === 0 ? "no faults" : `${String(faults)} ${faults === 1 ? "fault" : "faults"}`,
+  ].join(" · ");
+}
+
+export function speedOf(atS: number, wallMs: number): string {
+  if (wallMs < 1000 || atS <= 0) return "";
+  const speed = atS / (wallMs / 1000);
+  return speed >= 10 ? `about ${String(Math.round(speed))}× real time` : `about ${speed.toFixed(1)}× real time`;
 }
 
 export function clockOf(seconds: number): string {

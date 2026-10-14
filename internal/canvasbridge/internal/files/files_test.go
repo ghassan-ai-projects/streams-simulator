@@ -165,3 +165,17 @@ func TestFailuresAreNamedWithTheOperationThatFailed(t *testing.T) {
 }
 
 func second[T any](_ T, err error) error { return err }
+
+func TestModifiedReadsAFilesTimeAndNamesAnAbsentFile(t *testing.T) {
+	t.Parallel()
+	w, dir := workspace(t)
+	if err := os.WriteFile(filepath.Join(dir, "plants", "a.txt"), []byte("x"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if at, err := w.Modified("plants/a.txt"); err != nil || at.IsZero() {
+		t.Fatalf("Modified = %v, %v", at, err)
+	}
+	if _, err := w.Modified("plants/missing.txt"); !errors.Is(err, domain.ErrAbsent) {
+		t.Fatalf("missing = %v", err)
+	}
+}

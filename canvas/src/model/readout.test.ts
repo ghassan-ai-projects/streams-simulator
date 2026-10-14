@@ -14,7 +14,8 @@ const annunciator = [
 
 describe("readouts", () => {
   it("names a channel value from the vocabulary the domain declares for it", () => {
-    const of = (code: number) => showReading(at("air_compressor.alarm_state", code, "on"), annunciator);
+    const of = (code: number) =>
+      showReading(at("air_compressor.alarm_state", code, "on"), { states: annunciator, range: null });
     expect([0, 1, 2, 3, 4, 9].map((code) => of(code).value)).toEqual([
       "normal",
       "unacknowledged",
@@ -27,17 +28,26 @@ describe("readouts", () => {
   });
 
   it("shows numbers with fixed decimals and the unit apart, and other values as words", () => {
-    expect(showReading(at("chiller.cond_temp", 33.14, "degC"), [])).toEqual({
+    expect(showReading(at("chiller.cond_temp", 33.14, "degC"))).toEqual({
       channel: "cond_temp",
       value: "33.1",
       unit: "°C",
       attention: null,
       word: false,
+      outside: "",
     });
-    expect(showReading(at("meter.power", 852.4, "kW"), [])).toMatchObject({ value: "852", unit: "kW" });
-    expect(showReading(at("x.cop", 5.954), [])).toMatchObject({ value: "5.95", unit: "" });
-    expect(showReading(at("x.run_status", true), [])).toMatchObject({ value: "on", unit: "", word: true });
-    expect(showReading(at("x.mode", "auto"), [])).toMatchObject({ value: "auto", word: true });
+    expect(showReading(at("meter.power", 852.4, "kW"))).toMatchObject({ value: "852", unit: "kW" });
+    expect(showReading(at("x.cop", 5.954), null)).toMatchObject({ value: "5.95", unit: "" });
+    expect(showReading(at("x.run_status", true))).toMatchObject({ value: "on", unit: "", word: true });
+    expect(showReading(at("x.mode", "auto"))).toMatchObject({ value: "auto", word: true });
+  });
+
+  it("flags a number outside the instrument's declared range", () => {
+    const flow = { states: [], range: { min: 0, max: 600 } };
+    expect(showReading(at("molder.air_flow", -4.6, "m3/h"), flow).outside).toBe(
+      "Outside the instrument's range of 0.00 to 600 m³/h",
+    );
+    expect(showReading(at("molder.air_flow", 12, "m3/h"), flow).outside).toBe("");
   });
 
   it("raises a node's attention to its worst readout", () => {
@@ -47,6 +57,7 @@ describe("readouts", () => {
       unit: "",
       attention,
       word: true,
+      outside: "",
     });
     expect(attentionOf([shown(null), shown("warn")])).toBe("warn");
     expect(attentionOf([shown("warn"), shown("alarm")])).toBe("alarm");
@@ -64,6 +75,7 @@ describe("readouts", () => {
       unit: "",
       attention,
       word: false,
+      outside: "",
     });
     const order = abnormalFirst([entry("a", null), entry("b", "warn"), entry("c", "alarm"), entry("d", null)]);
     expect(order.map((shown) => shown.channel)).toEqual(["c", "b", "a", "d"]);

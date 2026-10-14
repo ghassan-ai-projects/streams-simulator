@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { report } from "../test/runFixture";
-import { kpisOf, runIdentity } from "./reportViews";
+import { kpiGroups, kpisOf, kpiWords, rerunOf, runFacts, runIdentity } from "./reportViews";
 import { badgeLabels, badgeOf, humanise, parseReport, runSpan, parseReplay, replayLine, wallClock } from "./report";
 
 describe("run report", () => {
@@ -132,5 +132,44 @@ describe("run report", () => {
     });
     expect(runIdentity(parsed)).toBe("factory 0.1.0 · seed 7 · native-jsonl · sim 0.3.1");
     expect(runIdentity(parseReport({ run: { domain: { id: "factory" } } }))).toBe("factory");
+  });
+
+  it("says a run's facts in words and plans the same run again", () => {
+    const parsed = parseReport(report);
+    expect(runFacts(parsed)).toBe("seed 7 · 1 h");
+    expect(rerunOf(parsed).plan).toEqual({
+      seed: 7,
+      durationS: 3600,
+      explore: false,
+      faults: [{ entity: "CT-1", fault: "tower__fan_failure", atS: 600 }],
+    });
+    expect(rerunOf(parsed).left).toEqual(["1 delivery perturbation", "1 environment change", "4 effector calls"]);
+    const cleared = parsed.disturbances.map((d) => (d.kind === "fault" ? { ...d, clearedNs: 900e9 } : d));
+    expect(rerunOf({ ...parsed, disturbances: cleared, effectorCalls: [] }).left).toContain(
+      "1 fault clear (the fault stays on)",
+    );
+    expect(rerunOf(parseReport(null))).toEqual({
+      plan: { seed: 1, durationS: 60, explore: false, faults: [] },
+      left: [
+        "the seed, which the run did not record (seed 1 is used)",
+        "a length under one minute (one minute is used)",
+      ],
+    });
+    expect(runFacts(parseReport(null))).toBe("");
+  });
+
+  it("names KPIs in words and groups them by instance in report order", () => {
+    expect(["scrap_pct", "load_frac", "cop", "specific_power"].map(kpiWords)).toEqual([
+      "Scrap",
+      "Load fraction",
+      "COP",
+      "Specific power",
+    ]);
+    const row = (entity: string, state: string) => ({ entity, state, mean: 1, min: 1, max: 1 });
+    const groups = kpiGroups([row("M-1", "a"), row("M-1", "b"), row("M-2", "a")]);
+    expect(groups.map((group) => [group.entity, group.rows.length])).toEqual([
+      ["M-1", 2],
+      ["M-2", 1],
+    ]);
   });
 });

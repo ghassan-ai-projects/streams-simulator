@@ -1,10 +1,10 @@
 .panel {
+  composes: scrolls from "./shared.module.css";
   display: flex;
   flex-direction: column;
   min-height: 0;
   overflow: auto;
   border-left: 1px solid var(--border-subtle);
-  background: var(--surface-panel);
 }
 
 .head {
@@ -90,6 +90,7 @@
 .hint {
   margin: 0;
   color: var(--text-secondary);
+  text-wrap: pretty;
 }
 
 .problems {
@@ -126,7 +127,9 @@
 }
 
 .primary[aria-disabled="true"] {
-  opacity: 0.6;
+  border-color: var(--disabled-border);
+  background: var(--disabled-bg);
+  color: var(--disabled-fg);
   cursor: not-allowed;
 }
 
@@ -143,7 +146,9 @@
 }
 
 .secondary[aria-disabled="true"] {
-  opacity: 0.6;
+  border-color: var(--disabled-border);
+  background: var(--disabled-bg);
+  color: var(--disabled-fg);
   cursor: not-allowed;
 }
 

@@ -183,6 +183,18 @@ func TestPathReporting(t *testing.T) {
 	}
 }
 
+func TestAPatternWithExpectedWordsSaysWhatItWants(t *testing.T) {
+	t.Parallel()
+	described := compileDoc(t, `{"type": "string", "pattern": "^[a-z]+$", "x-expected": "a lower-case word"}`)
+	if errs := validateDoc(t, described, `"Two words"`); len(errs) != 1 || errs[0].Msg != `"Two words" is not a lower-case word` {
+		t.Fatalf("described = %v", errs)
+	}
+	bare := compileDoc(t, `{"type": "string", "pattern": "^[a-z]+$"}`)
+	if errs := validateDoc(t, bare, `"X"`); len(errs) != 1 || errs[0].Msg != "string does not match pattern ^[a-z]+$" {
+		t.Fatalf("bare = %v", errs)
+	}
+}
+
 // A malformed keyword in a user-supplied schema is an error at compile time,
 // never a panic and never silently read as zero.
 func TestCompileRefusesMalformedCountAndUniqueKeywords(t *testing.T) {

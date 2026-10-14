@@ -1,14 +1,14 @@
-import { ChevronRight, PenLine, RefreshCw, Save, Undo2 } from "lucide-react";
+import { PenLine, Redo, RefreshCw, Save, Undo, Undo2 } from "lucide-react";
 import { useState } from "react";
 import type { Draft, EditorStore } from "../../app/editorStore";
 import type { NavigationStore } from "../../app/navigationStore";
-import { domainOf, titleOf } from "../../model/composition";
+import { domainOf, equipmentOf, titleOf } from "../../model/composition";
 import { ZoomBar } from "../plant/GraphControls";
 import plantStyles from "../plant/PlantScreen.module.css";
-import { cx } from "../cx";
-import shared from "../shared.module.css";
+import { Breadcrumb } from "../shell/Breadcrumb";
 import { useScreen } from "../useScreen";
 import styles from "./Editor.module.css";
+import { useEditorKeys } from "./useEditorKeys";
 
 interface BarProps {
   readonly draft: Draft;
@@ -41,27 +41,19 @@ function statusOf(draft: Draft): Status {
 function Title({ draft, navigation }: Omit<BarProps, "editor">) {
   const title = titleOf(draft.doc);
   const heading = useScreen(`${title} · editor`);
-  return (
-    <nav className={cx(plantStyles.crumbs, styles.crumbs)} aria-label="Breadcrumb">
-      <button
-        type="button"
-        className={shared.crumb}
-        onClick={() => {
-          navigation.go({ screen: "home" });
-        }}
-      >
-        Workspace
-      </button>
-      <ChevronRight size={14} aria-hidden="true" />
-      <h1 aria-current="location" className={plantStyles.here} ref={heading} tabIndex={-1}>
-        {title}
-      </h1>
-    </nav>
-  );
+  const trail = [
+    {
+      label: "Workspace",
+      onGo: () => {
+        navigation.go({ screen: "home" });
+      },
+    },
+  ];
+  return <Breadcrumb trail={trail} here={title} heading={heading} tag="Editing" />;
 }
 
 function OpenPlant({ draft, navigation }: Omit<BarProps, "editor">) {
-  if (draft.outcome?.kind !== "composed" || draft.doc !== draft.saved) return null;
+  if (draft.domainEtag === "" && draft.outcome?.kind !== "composed") return null;
   return (
     <button
       type="button"
@@ -91,8 +83,82 @@ function Reload({ draft, editor }: Omit<BarProps, "navigation">) {
   );
 }
 
+function useHistoryAnnouncement(draft: Draft): string {
+  const counts = { past: draft.past.length, future: draft.future.length };
+  const [seen, setSeen] = useState(counts);
+  const [said, setSaid] = useState("");
+  if (seen.past !== counts.past || seen.future !== counts.future) {
+    setSeen(counts);
+    const left = `${String(counts.past)} more to undo`;
+    if (counts.future === seen.future + 1) setSaid(`Undone. ${left}.`);
+    else if (counts.future === seen.future - 1) setSaid(`Redone. ${left}.`);
+    else setSaid("");
+  }
+  return said;
+}
+
+function History({ draft, editor }: Omit<BarProps, "navigation">) {
+  const mac = navigator.platform.toLowerCase().includes("mac");
+  const key = mac ? "⌘" : "Ctrl+";
+  const said = useHistoryAnnouncement(draft);
+  return (
+    <span className={styles.history}>
+      <span className="sr-only" aria-live="polite">
+        {said}
+      </span>
+      <button
+        type="button"
+        className={styles.icon}
+        aria-label="Undo"
+        aria-keyshortcuts="Control+Z Meta+Z"
+        title={`Undo (${key}Z)`}
+        aria-disabled={draft.past.length === 0}
+        onClick={() => {
+          editor.undo();
+        }}
+      >
+        <Undo size={14} aria-hidden="true" />
+      </button>
+      <button
+        type="button"
+        className={styles.icon}
+        aria-label="Redo"
+        aria-keyshortcuts="Control+Shift+Z Meta+Shift+Z"
+        title={`Redo (${key}Shift+Z)`}
+        aria-disabled={draft.future.length === 0}
+        onClick={() => {
+          editor.redo();
+        }}
+      >
+        <Redo size={14} aria-hidden="true" />
+      </button>
+    </span>
+  );
+}
+
 function Revert({ disabled, editor }: { readonly disabled: boolean; readonly editor: EditorStore }) {
   const [confirming, setConfirming] = useState(false);
+  return (
+    <>
+      <span className="sr-only" aria-live="polite">
+        {confirming ? "Press Discard changes again to drop every unsaved change" : ""}
+      </span>
+      <RevertButton disabled={disabled} editor={editor} confirming={confirming} setConfirming={setConfirming} />
+    </>
+  );
+}
+
+function RevertButton({
+  disabled,
+  editor,
+  confirming,
+  setConfirming,
+}: {
+  readonly disabled: boolean;
+  readonly editor: EditorStore;
+  readonly confirming: boolean;
+  readonly setConfirming: (confirming: boolean) => void;
+}) {
   return (
     <button
       type="button"
@@ -114,6 +180,7 @@ function Revert({ disabled, editor }: { readonly disabled: boolean; readonly edi
 }
 
 export function EditorBar({ draft, editor, navigation }: BarProps) {
+  useEditorKeys(editor);
   const status = statusOf(draft);
   const clean = draft.doc === draft.saved;
   return (
@@ -125,19 +192,21 @@ export function EditorBar({ draft, editor, navigation }: BarProps) {
       </span>
       <OpenPlant draft={draft} navigation={navigation} />
       <Reload draft={draft} editor={editor} />
+      <History draft={draft} editor={editor} />
       <Revert disabled={clean || draft.saving} editor={editor} />
       <button
         type="button"
         className={styles.save}
-        aria-disabled={draft.saving}
+        aria-disabled={clean || draft.saving}
+        title={clean ? "Nothing to save" : "Save and compose (Ctrl+S)"}
         onClick={() => {
-          void editor.save();
+          if (!clean) void editor.save();
         }}
       >
         <Save size={14} aria-hidden="true" />
         Save
       </button>
-      <ZoomBar />
+      {equipmentOf(draft.doc).length > 0 && <ZoomBar />}
     </div>
   );
 }

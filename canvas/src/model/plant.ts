@@ -9,10 +9,21 @@ export interface ChannelState {
   readonly attention: "alarm" | "warn" | null;
 }
 
+export interface ChannelRange {
+  readonly min: number;
+  readonly max: number;
+}
+
 interface Channel {
   readonly name: string;
   readonly unit: string;
   readonly states: readonly ChannelState[];
+  readonly range: ChannelRange | null;
+}
+
+function rangeFrom(value: unknown): ChannelRange | null {
+  const range = record(value);
+  return typeof range.min === "number" && typeof range.max === "number" ? { min: range.min, max: range.max } : null;
 }
 
 function attention(value: unknown): ChannelState["attention"] {
@@ -89,6 +100,7 @@ function kind(value: unknown): Kind {
     name: text(record(channel).name),
     unit: text(record(channel).unit),
     states: channelStates(record(channel).states),
+    range: rangeFrom(record(channel).range),
   }));
   return {
     name: text(entry.name),
@@ -191,8 +203,10 @@ export function linksOf(
 
 const listedLinks = 12;
 
+const portWords = (port: string) => port.replaceAll("_", " ");
+
 function linkEnd(id: string, port: string | null): string {
-  return port === null ? id : `${id}.${port}`;
+  return port === null ? id : `${id} ${portWords(port)}`;
 }
 
 function counted(n: number, noun: string): string {
@@ -200,7 +214,10 @@ function counted(n: number, noun: string): string {
 }
 
 export function linkLines(links: readonly Link[], self: string, side: "in" | "out"): readonly string[] {
-  const own = (link: Link) => (side === "in" ? link.toPort : link.fromPort) ?? self;
+  const own = (link: Link) => {
+    const port = side === "in" ? link.toPort : link.fromPort;
+    return port === null ? self : portWords(port);
+  };
   const other = (link: Link) => (side === "in" ? linkEnd(link.from, link.fromPort) : linkEnd(link.to, link.toPort));
   if (links.length <= listedLinks)
     return links.map((link) => (side === "in" ? `${other(link)} → ${own(link)}` : `${own(link)} → ${other(link)}`));
@@ -218,7 +235,7 @@ export function stateUnit(plant: Plant, entity: string, state: string): string {
   return (kind === undefined ? undefined : plant.kinds.get(kind)?.units.get(state)) ?? "";
 }
 
-export function statesOf(plant: Plant, entity: string, channel: string): readonly ChannelState[] {
+export function channelOf(plant: Plant, entity: string, channel: string): Channel | null {
   const kindName = plant.instances.find((instance) => instance.id === entity)?.kind ?? "";
-  return plant.kinds.get(kindName)?.channels.find((entry) => entry.name === channel)?.states ?? [];
+  return plant.kinds.get(kindName)?.channels.find((entry) => entry.name === channel) ?? null;
 }

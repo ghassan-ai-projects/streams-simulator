@@ -7,6 +7,7 @@ describe("routes", () => {
       { screen: "home" },
       { screen: "plant", domain: "domains/a b.domain.json", hall: null },
       { screen: "plant", domain: "domains/c.domain.json", hall: "h07" },
+      { screen: "plant", domain: "domains/c.domain.json", hall: null, launch: true },
       { screen: "run", worldId: "w-1" },
       { screen: "edit", composition: "compositions/lab.composition.json" },
     ] as const;

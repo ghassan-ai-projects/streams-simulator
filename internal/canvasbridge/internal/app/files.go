@@ -1,10 +1,6 @@
 package app
 
-import (
-	"bytes"
-
-	"github.com/ghassan-ai-projects/streams-simulator/internal/canvasbridge/internal/domain"
-)
+import "github.com/ghassan-ai-projects/streams-simulator/internal/canvasbridge/internal/domain"
 
 func (b *Bridge) ReadFile(rel string) (domain.FileDocument, error) {
 	path, err := domain.ParsePath(rel)
@@ -39,21 +35,7 @@ func (b *Bridge) runState(runID string) domain.RunState {
 	if runID == "" {
 		return domain.RunState{}
 	}
-	return domain.RunState{Ended: b.closedRun(runID) && !b.runIsRunning(runID), Explore: b.exploreRun(runID)}
-}
-
-func (b *Bridge) closedRun(runID string) bool {
-	tail, err := b.edges.Workspace.Tail("runs/"+runID+"/journal.jsonl", closingLimit)
-	return err == nil && domain.ClosedJournal(tail)
-}
-
-func (b *Bridge) exploreRun(runID string) bool {
-	head, err := b.edges.Workspace.ReadFrom("runs/"+runID+"/journal.jsonl", 0, firstLineLimit)
-	if err != nil {
-		return false
-	}
-	first, _, _ := bytes.Cut(head, []byte("\n"))
-	return domain.ExploreRun(first)
+	return b.summary(runID).State(b.runIsRunning(runID))
 }
 
 func writablePath(rel string) (domain.WorkspacePath, error) {

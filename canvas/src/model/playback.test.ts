@@ -44,6 +44,17 @@ describe("playback", () => {
     ]);
     expect(index.readings("nobody", 30e9)).toEqual([]);
     expect(new PlaybackIndex().bounds()).toBeNull();
+    expect(new PlaybackIndex().settled()).toBeNull();
+    expect(index.settled()).toBe(12e9);
+  });
+
+  it("settles when every channel has reported once", () => {
+    const index = new PlaybackIndex();
+    const at = (atNs: number, channel: string) => ({ entity: "A", channel, value: 1, unit: "", atNs });
+    [at(0, "a.x"), at(5e9, "a.y"), at(100e9, "a.x")].forEach((observation) => {
+      index.add(observation);
+    });
+    expect(index.settled()).toBe(5e9);
   });
 
   it("names a channel without its kind", () => {

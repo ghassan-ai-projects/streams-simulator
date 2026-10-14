@@ -47,22 +47,26 @@ interface Size {
   readonly height: number;
 }
 
-function placed(start: number, extent: number, room: number, zoom: number, pad: number): number {
+function centred(start: number, extent: number, room: number, zoom: number, pad: number): number {
   const used = extent * zoom;
   return used <= room ? pad + (room - used) / 2 - start * zoom : pad - start * zoom;
 }
 
-export function openingViewport(
-  bounds: Rect,
-  screen: Size,
-  limits: { readonly pad: number; readonly minZoom: number; readonly maxZoom: number },
-): Viewport {
-  const room = { width: screen.width - 2 * limits.pad, height: screen.height - 2 * limits.pad };
+export interface FitLimits {
+  readonly pad: number;
+  readonly headroom: number;
+  readonly minZoom: number;
+  readonly maxZoom: number;
+}
+
+export function openingViewport(bounds: Rect, screen: Size, limits: FitLimits): Viewport {
+  const top = limits.pad + limits.headroom;
+  const room = { width: screen.width - 2 * limits.pad, height: screen.height - top - limits.pad };
   const fit = Math.min(room.width / bounds.width, room.height / bounds.height);
   const zoom = Math.min(limits.maxZoom, Math.max(limits.minZoom, fit));
-  return {
-    x: placed(bounds.x, bounds.width, room.width, zoom, limits.pad),
-    y: placed(bounds.y, bounds.height, room.height, zoom, limits.pad),
-    zoom,
-  };
+  return { x: centred(bounds.x, bounds.width, room.width, zoom, limits.pad), y: top - bounds.y * zoom, zoom };
+}
+
+export function sameViewport(a: Viewport, b: Viewport): boolean {
+  return Math.abs(a.x - b.x) < 0.5 && Math.abs(a.y - b.y) < 0.5 && Math.abs(a.zoom - b.zoom) < 1e-4;
 }

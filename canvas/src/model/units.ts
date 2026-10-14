@@ -13,3 +13,7 @@ const units: Readonly<Record<string, string>> = {
 export function displayUnit(unit: string): string {
   return units[unit] ?? unit;
 }
+
+export function grouped(count: number): string {
+  return count.toLocaleString("en-US").replaceAll(",", "\u202f");
+}

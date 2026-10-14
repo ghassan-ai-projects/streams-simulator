@@ -7,6 +7,7 @@ it("jumps to the next reported alarm and wraps at the end, selecting the source 
   const marks: EventMark[] = [100, 200].map((atNs) => ({
     atNs,
     entity: "CH-1",
+    kind: "alarm",
     tone: "alarm",
     label: "CH-1 hot",
     raw: "hot",

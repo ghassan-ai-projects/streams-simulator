@@ -72,9 +72,13 @@ export function flowNodes(
   return [...frames(view), ...nodes];
 }
 
+function touches(selected: string | null, from: string, to: string): boolean {
+  return selected !== null && (from === selected || to === selected);
+}
+
 function emphasis(selected: string | null, from: string, to: string): string {
   if (selected === null) return "";
-  return from === selected || to === selected ? " wire-on" : " wire-off";
+  return touches(selected, from, to) ? " wire-on" : " wire-off";
 }
 
 export function flowEdges(view: PlantView, anchors = false, selected: string | null = null): Edge[] {
@@ -85,6 +89,7 @@ export function flowEdges(view: PlantView, anchors = false, selected: string | n
     sourceHandle: anchors ? "out" : (edge.fromHandle ?? "out"),
     targetHandle: anchors ? "in" : (edge.toHandle ?? "in"),
     className: `wire family-${edge.family ?? "none"}${emphasis(selected, edge.from, edge.to)}`,
+    zIndex: touches(selected, edge.from, edge.to) ? 1 : 0,
     label: edge.count > 1 ? `×${String(edge.count)}` : undefined,
     ariaLabel: `${edge.from} to ${edge.to}${edge.count > 1 ? `, ${String(edge.count)} links` : ""}`,
     focusable: false,

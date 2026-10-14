@@ -3,7 +3,9 @@ import { useEffect, useState } from "react";
 import type { ReviewState } from "../../app/reviewStore";
 import type { Badge, Report } from "../../model/report";
 import { badgeLabels, badgeOf } from "../../model/report";
-import { runIdentity } from "../../model/reportViews";
+import { runFacts, runIdentity } from "../../model/reportViews";
+import { grouped } from "../../model/units";
+import { RunInfo } from "./RunInfo";
 import styles from "./RunScreen.module.css";
 
 const badgeIcons = {
@@ -57,15 +59,23 @@ function ReportPending({ loading, elapsed }: { readonly loading: boolean; readon
   );
 }
 
+const modeWords = {
+  explore: "Explore: the truth is visible; not for scoring.",
+  evaluate:
+    "Evaluate: the truth stays sealed while it runs, so a consumer can be scored; it is revealed when the run ends.",
+} as const;
+
 function Mode({ report }: { readonly report: Report }) {
   const explore = report.mode === "explore";
   return (
     <>
-      <span className={explore ? styles.truth : styles.chip}>
+      <span className={explore ? styles.truth : styles.chip} title={explore ? modeWords.explore : modeWords.evaluate}>
         {explore ? <Eye size={13} aria-hidden="true" /> : <Lock size={13} aria-hidden="true" />}
-        {`${explore ? "Explore · unblinded" : "Evaluate"} · ${report.ended ? "ended" : "not closed"}`}
+        {explore ? "Explore" : "Evaluate"}
       </span>
-      <span className={styles.identity}>{runIdentity(report)}</span>
+      {!report.ended && <span className={styles.chip}>not finished</span>}
+      <span className={styles.facts}>{runFacts(report)}</span>
+      <RunInfo lines={[explore ? modeWords.explore : modeWords.evaluate, runIdentity(report)]} />
     </>
   );
 }
@@ -78,13 +88,11 @@ export function Status({ state }: { readonly state: ReviewState }) {
   const report = state.report.value;
   const badge = badgeOf(report, state.verified);
   const label = badge === "verifying" ? `Verifying · replaying the run · ${String(elapsed)} s` : badgeLabels[badge];
-  const records = `${state.playback.records.toLocaleString("en-US")} observations${state.playback.phase === "loading" ? " · loading" : ""}`;
   return (
     <>
+      <Mode report={report} />
       <Chip badge={badge} label={label} />
       <Announce text={badge === "verifying" ? "Verifying: replaying the run" : badgeLabels[badge]} />
-      <Mode report={report} />
-      <span className={styles.progress}>{records}</span>
     </>
   );
 }
@@ -101,15 +109,15 @@ function verifyWarning(state: ReviewState): Warning | null {
 
 function countWarning(state: ReviewState, report: Report): Warning | null {
   const delivered = report.counts.delivered ?? 0;
-  const records = state.playback.records.toLocaleString("en-US");
+  const records = grouped(state.playback.records);
   if (state.playback.phase === "failed")
     return {
-      text: `Playback is incomplete: ${records} of ${delivered.toLocaleString("en-US")} delivered observations arrived.`,
+      text: `Playback is incomplete: ${records} of ${grouped(delivered)} delivered observations arrived.`,
       details: "",
     };
   if (state.playback.phase === "ready" && report.ended && state.playback.records !== delivered) {
     return {
-      text: `Playback has ${records} observations; the report counts ${delivered.toLocaleString("en-US")} delivered.`,
+      text: `Playback has ${records} observations; the report counts ${grouped(delivered)} delivered.`,
       details: "",
     };
   }

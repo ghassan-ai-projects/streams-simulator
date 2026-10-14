@@ -1,31 +1,15 @@
-import { useEffect, useRef, useState } from "react";
+import { Keyboard } from "lucide-react";
+import { Fragment, useEffect, useRef, useState } from "react";
+import { inTextField } from "../keys";
 import styles from "./KeyHelp.module.css";
-
-const keys: readonly (readonly [string, string])[] = [
-  ["Tab, Shift Tab", "move between the top bar, the outline, the graph, the inspector and the report"],
-  ["Arrow keys (graph)", "move to the nearest instance in that direction"],
-  ["Space (graph)", "select the instance or hall"],
-  ["Enter (graph)", "select the instance, or open the hall"],
-  ["Escape (graph)", "clear the selection, then leave the hall"],
-  ["+ and − (graph)", "zoom in and out"],
-  ["0 (graph)", "fit the plant in view"],
-  ["Arrow keys (playback)", "step one second; Shift and arrow one minute; Page Up and Page Down further"],
-  ["Previous and next event", "jump between disturbances and effector calls"],
-  ["?", "show or hide this list"],
-];
-
-function typing(target: EventTarget | null): boolean {
-  return (
-    target instanceof HTMLElement &&
-    (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)
-  );
-}
+import { keyGroups } from "./keyList";
+import topBar from "./TopBar.module.css";
 
 function useToggle(): readonly [boolean, (open: boolean) => void] {
   const [open, setOpen] = useState(false);
   useEffect(() => {
     const onKey = (event: globalThis.KeyboardEvent) => {
-      if (event.key === "?" && !typing(event.target)) setOpen((current) => !current);
+      if (event.key === "?" && !inTextField(event.target)) setOpen((current) => !current);
       if (event.key === "Escape") setOpen(false);
     };
     window.addEventListener("keydown", onKey);
@@ -37,27 +21,35 @@ function useToggle(): readonly [boolean, (open: boolean) => void] {
 }
 
 function KeyList() {
-  return (
-    <dl className={styles.list}>
-      {keys.map(([key, does]) => (
-        <div key={key}>
-          <dt>
-            <kbd>{key}</kbd>
-          </dt>
-          <dd>{does}</dd>
-        </div>
-      ))}
-    </dl>
-  );
+  return keyGroups.map((group, index) => (
+    <section key={group.scope} className={styles.group} aria-labelledby={`keys-${String(index)}`}>
+      <h3 id={`keys-${String(index)}`}>{group.scope}</h3>
+      <dl className={styles.list}>
+        {group.rows.map((row) => (
+          <div key={row.does}>
+            <dt>
+              {row.keys.map((key, index) => (
+                <Fragment key={key}>
+                  {index > 0 && <span className={styles.or}>, </span>}
+                  <kbd>{key}</kbd>
+                </Fragment>
+              ))}
+            </dt>
+            <dd>{row.does}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
+  ));
 }
 
 function useFocusReturn(open: boolean) {
-  const close = useRef<HTMLButtonElement>(null);
+  const title = useRef<HTMLHeadingElement>(null);
   const previous = useRef<Element | null>(null);
   useEffect(() => {
     if (open) {
       previous.current = document.activeElement;
-      close.current?.focus();
+      title.current?.focus();
     } else if (previous.current instanceof HTMLElement) {
       previous.current.focus();
       previous.current = null;
@@ -66,39 +58,62 @@ function useFocusReturn(open: boolean) {
   const forget = () => {
     previous.current = null;
   };
-  return { close, forget };
+  return { title, forget };
+}
+
+function HelpButton({ open, onOpen }: { readonly open: boolean; readonly onOpen: () => void }) {
+  return (
+    <button
+      type="button"
+      className={topBar.labelled}
+      aria-expanded={open}
+      aria-keyshortcuts="?"
+      title="Keyboard (?)"
+      onClick={onOpen}
+    >
+      <Keyboard size={16} aria-hidden="true" />
+      Keyboard
+    </button>
+  );
 }
 
 export function KeyHelp() {
   const [open, setOpen] = useToggle();
-  const { close, forget } = useFocusReturn(open);
-  if (!open) return null;
+  const { title, forget } = useFocusReturn(open);
+  const close = () => {
+    setOpen(false);
+  };
   return (
-    <dialog
-      open
-      className={styles.dialog}
-      aria-labelledby="keys-title"
-      aria-modal="false"
-      onBlur={(event) => {
-        if (event.currentTarget.contains(event.relatedTarget)) return;
-        forget();
-        setOpen(false);
-      }}
-    >
-      <h2 id="keys-title" className={styles.title}>
-        Keyboard
-      </h2>
-      <KeyList />
-      <button
-        ref={close}
-        type="button"
-        className={styles.close}
-        onClick={() => {
-          setOpen(false);
+    <>
+      <HelpButton
+        open={open}
+        onOpen={() => {
+          setOpen(true);
         }}
-      >
-        Close
-      </button>
-    </dialog>
+      />
+      {open && <div className={styles.scrim} aria-hidden="true" onClick={close} />}
+      {open && (
+        <dialog
+          open
+          tabIndex={-1}
+          className={styles.dialog}
+          aria-labelledby="keys-title"
+          aria-modal="false"
+          onBlur={(event) => {
+            if (event.currentTarget.contains(event.relatedTarget)) return;
+            forget();
+            close();
+          }}
+        >
+          <h2 id="keys-title" className={styles.title} ref={title} tabIndex={-1}>
+            Keyboard
+          </h2>
+          <KeyList />
+          <button type="button" className={styles.close} onClick={close}>
+            Close
+          </button>
+        </dialog>
+      )}
+    </>
   );
 }

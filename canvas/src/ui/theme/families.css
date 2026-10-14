@@ -76,7 +76,8 @@
 
 .react-flow__edge .react-flow__edge-path {
   stroke: var(--border-strong);
-  stroke-width: 2;
+  stroke-width: 1.6;
+  vector-effect: non-scaling-stroke;
 }
 
 .react-flow__edge.family-signal .react-flow__edge-path {
@@ -88,7 +89,7 @@
 }
 
 .react-flow__edge.family-heat .react-flow__edge-path {
-  stroke-width: 3.6;
+  stroke-width: 2.6;
 }
 
 .react-flow__edge.selected .react-flow__edge-path,
@@ -145,7 +146,8 @@
 
 .react-flow__edge.wire-off .react-flow__edge-path {
   stroke: var(--text-tertiary);
-  stroke-width: 1.5;
+  stroke-width: 1;
+  stroke-opacity: 0.3;
   stroke-dasharray: none;
 }
 
