@@ -59,12 +59,17 @@ function OpeningPlant() {
   );
 }
 
-function GraphBar({ state }: { readonly state: ReviewState }) {
+function graphWords(state: ReviewState, settled: number | null): string {
+  const loading = state.playback.phase === "loading" ? " · loading" : "";
+  const opening =
+    settled !== null && state.positionNs === settled ? " · opens where every instrument has reported" : "";
+  return `Plant at the playback time · ${grouped(state.playback.records)} observations${loading}${opening}`;
+}
+
+function GraphBar({ state, settled }: { readonly state: ReviewState; readonly settled: number | null }) {
   return (
     <div className={styles.graphBar}>
-      <span
-        className={styles.muted}
-      >{`Plant at the playback time · ${grouped(state.playback.records)} observations${state.playback.phase === "loading" ? " · loading" : ""}`}</span>
+      <span className={styles.muted}>{graphWords(state, settled)}</span>
       <ZoomBar />
     </div>
   );
@@ -89,7 +94,7 @@ function Graph({
   if (view === null) return <OpeningPlant />;
   return (
     <div className={styles.graphArea}>
-      <GraphBar state={state} />
+      <GraphBar state={state} settled={review.index.settled()} />
       <PlantGraph
         minFitZoom={0.5}
         view={view}
