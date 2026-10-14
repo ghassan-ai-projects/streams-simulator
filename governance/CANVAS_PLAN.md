@@ -99,5 +99,5 @@ The commit hash of a phase is recorded by the first commit of the next phase.
 | P7k | Done | 8a0917d | [evidence/P7k.md](../docs/simulation-canvas/evidence/P7k.md) | reviewed with P7j and the architecture audit of PR #30 |
 | P7l | Done | d1206dd (PR #31), review fixes 4f5a43b | [evidence/P7l.md](../docs/simulation-canvas/evidence/P7l.md) | [reviews/P7l.md](../docs/simulation-canvas/reviews/P7l.md) |
 | P8a | Done | recorded by P8b | [evidence/P8a.md](../docs/simulation-canvas/evidence/P8a.md) | design review in the evidence; independent review with P8b |
-| P8b | Done | `8e1597e` | bridge behind `streamsim canvas`: pairing, admission, workspace files, action registry, journal stream | reviewed with the P9 UI rounds |
+| P8b | Built, findings R0-15, R0-16, R2-01 open | `8e1597e` | bridge behind `streamsim canvas`: pairing, admission, workspace files, action registry, journal stream | reviewed with the P9 UI rounds |
 | P9 | In progress | branch `canvas-foundation` (unpushed), last `8726dd8` | real UI on real workspace files; 15 Playwright tests against the binary; [handoff](../docs/simulation-canvas/reviews/P9-handoff.md) | five UI rounds in [reviews/ui.md](../docs/simulation-canvas/reviews/ui.md); not yet approved |

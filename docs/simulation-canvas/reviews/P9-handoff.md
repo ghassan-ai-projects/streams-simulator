@@ -51,5 +51,7 @@ to the run artifact.
 
 ## Known open findings
 
-R9-01 world ids collide; R9-04 8 MiB file cap; R9-05 playback streams the whole journal; R9-13, R9-14, R9-22–R9-26
+P8b is built but R0-15 (bridge threat model, one test per threat), R0-16 (stress fixture) and R2-01 (size bound on
+every input read) are open, so it is not marked Done (the findings gate enforces this). R9-01 world ids collide; R9-04
+8 MiB file cap; R9-05 playback streams the whole journal; R9-13, R9-14, R9-22–R9-26
 (see `governance/FINDINGS.md`); D5-12 hall summary figure; wires over frame titles (layout round).
