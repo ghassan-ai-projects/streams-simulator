@@ -6,7 +6,7 @@ import type { Category, ComponentSpec, Family, Pins } from "./ports";
 import { familyOf, pinsOf } from "./ports";
 import type { NodeStatus } from "./readout";
 import { statusWords } from "./readout";
-import { humanise } from "./report";
+import { kindLabel } from "./report";
 
 export interface ViewNode {
   readonly id: string;
@@ -57,7 +57,7 @@ function instanceNode(plant: Plant, instance: Instance, specs: Specs): ViewNode 
   return {
     id: instance.id,
     label: instance.id,
-    detail: humanise(instance.kind),
+    detail: kindLabel(instance.kind),
     group: areaOf(plant, instance),
     instance,
     category: spec?.category ?? "env",

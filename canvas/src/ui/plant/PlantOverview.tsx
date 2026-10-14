@@ -1,7 +1,7 @@
 import type { Plant } from "../../model/plant";
 import { areaOf } from "../../model/plant";
 import { hallOf } from "../../model/plantView";
-import { humanise } from "../../model/report";
+import { kindLabel } from "../../model/report";
 import type { RunRow } from "../../model/workspace";
 import { durationOf, faultWords, whenOf } from "../../model/workspace";
 import shared from "../shared.module.css";
@@ -105,7 +105,7 @@ export function PlantOverview({
       <Runs runs={runs} onReview={onReview} />
       {halls.length > 0 && <Tally title="Halls" rows={halls} />}
       <Tally title={halls.length > 0 ? "Areas across the halls" : "Areas"} rows={areas} />
-      <Tally title="Kinds" rows={counts(plant.instances.map((instance) => humanise(instance.kind)))} />
+      <Tally title="Kinds" rows={counts(plant.instances.map((instance) => kindLabel(instance.kind)))} />
     </aside>
   );
 }

@@ -1,4 +1,4 @@
-import { humanise } from "../../model/report";
+import { kindLabel } from "../../model/report";
 import { Box, Trash2, X } from "lucide-react";
 import type { SyntheticEvent } from "react";
 import { useState } from "react";
@@ -201,7 +201,7 @@ function Editing({ draft, plant, editor, request, instance }: EditorProps) {
 
 function kindLine(draft: Draft, instance: Instance): string {
   const title = draft.library.find((entry) => entry.component === instance.component)?.title;
-  return title === undefined ? humanise(instance.kind) : `${title} · ${humanise(instance.kind)}`;
+  return title ?? kindLabel(instance.kind);
 }
 
 export function InstanceEditor(props: EditorProps) {

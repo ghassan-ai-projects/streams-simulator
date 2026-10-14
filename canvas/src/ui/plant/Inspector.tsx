@@ -5,7 +5,7 @@ import { linkLines, linksOf } from "../../model/plant";
 import { hallMembers } from "../../model/plantView";
 import { shortChannel } from "../../model/playback";
 import { channelWords } from "../../model/readout";
-import { humanise } from "../../model/report";
+import { humanise, kindLabel } from "../../model/report";
 import { displayUnit } from "../../model/units";
 import { X } from "lucide-react";
 import type { RunRow } from "../../model/workspace";
@@ -126,7 +126,7 @@ function Head({
   readonly spec: ComponentSpec | undefined;
   readonly onClose?: (() => void) | undefined;
 }) {
-  const title = spec?.title ?? humanise(instance.kind);
+  const title = spec?.title ?? kindLabel(instance.kind);
   const reference = [spec?.title === undefined ? "" : `Kind: ${instance.kind}`, instance.component ?? ""]
     .filter(Boolean)
     .join(" · ");

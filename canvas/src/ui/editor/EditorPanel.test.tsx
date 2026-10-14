@@ -231,6 +231,24 @@ describe("plant editor panel", () => {
     expect(equipmentOf(current(editor)).map((entry) => entry.names[0])).toEqual(["CH-1"]);
   });
 
+  it("shows a repeated instance's plain kind under its name, without the internal kind number", async () => {
+    const fake = new LabBridge();
+    const repeated = {
+      ...doc,
+      equipment: [...doc.equipment, { use: "lib/chiller@1", as: "chiller_2", names: ["CH-2"], area: "Cooling" }],
+    };
+    fake.files.set(path, success({ path, content: JSON.stringify(repeated), etag: "k1" }));
+    fake.actions.set("component.list", success({ components: [] }));
+    const editor = new EditorStore(fake);
+    await editor.open(path);
+    render(<Harness editor={editor} />);
+    act(() => {
+      editor.select("CH-2");
+    });
+    expect(screen.getByText("chiller", { exact: true })).toBeInTheDocument();
+    expect(screen.queryByText(/chiller 2/)).not.toBeInTheDocument();
+  });
+
   it("leaves an instance generated from an id template to the file", async () => {
     const fake = new LabBridge();
     const templated = {

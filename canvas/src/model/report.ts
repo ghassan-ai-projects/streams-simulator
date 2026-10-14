@@ -277,6 +277,10 @@ export function humanise(id: string): string {
   return meaningful.map((part) => part.replaceAll("_", " ")).join(" · ");
 }
 
+export function kindLabel(kind: string): string {
+  return humanise(kind).replace(/ \d+$/, "");
+}
+
 const day = 86_400e9;
 
 export function wallClock(ns: number, startNs = ns): string {

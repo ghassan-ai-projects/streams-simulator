@@ -1,7 +1,17 @@
 import { describe, expect, it } from "vitest";
 import { report } from "../test/runFixture";
 import { kpiGroups, kpisOf, kpiWords, rerunOf, runFacts, runIdentity } from "./reportViews";
-import { badgeLabels, badgeOf, humanise, parseReport, runSpan, parseReplay, replayLine, wallClock } from "./report";
+import {
+  badgeLabels,
+  badgeOf,
+  humanise,
+  kindLabel,
+  parseReport,
+  runSpan,
+  parseReplay,
+  replayLine,
+  wallClock,
+} from "./report";
 
 describe("run report", () => {
   it("reads the run, counts, verification and truth sections", () => {
@@ -105,6 +115,9 @@ describe("run report", () => {
     expect(humanise("compressor_lead__oil_cooler_fouling")).toBe("oil cooler fouling");
     expect(humanise("cooling_tower__basin_temp__offset")).toBe("basin temp · offset");
     expect(humanise("discharge_temp")).toBe("discharge temp");
+    expect(kindLabel("air_compressor_2")).toBe("air compressor");
+    expect(kindLabel("compressor_lead__air_compressor_2")).toBe("air compressor");
+    expect(kindLabel("chiller")).toBe("chiller");
   });
 
   it("filters KPI truth to an instance, or to every instance of a hall", () => {

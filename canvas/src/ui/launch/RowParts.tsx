@@ -1,7 +1,7 @@
 import { Trash2, TriangleAlert } from "lucide-react";
 import { useRef, useState } from "react";
 import type { Plant } from "../../model/plant";
-import { humanise } from "../../model/report";
+import { kindLabel } from "../../model/report";
 import type { Draft } from "./draft";
 import panel from "../panel.module.css";
 import { useFocusOnMount } from "../useFocusOnMount";
@@ -39,7 +39,7 @@ export function InstancePick({ plant, entity, label, id, problem, fresh, onPick 
       <option value="">Choose an instance, or click one on the graph</option>
       {plant.instances.map((instance) => (
         <option key={instance.id} value={instance.id}>
-          {`${instance.id} · ${humanise(instance.kind)}`}
+          {`${instance.id} · ${kindLabel(instance.kind)}`}
         </option>
       ))}
     </select>

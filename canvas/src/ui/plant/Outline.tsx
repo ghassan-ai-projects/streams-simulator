@@ -4,7 +4,7 @@ import { areaTree } from "../../model/areaTree";
 import type { Plant } from "../../model/plant";
 import { areaOf } from "../../model/plant";
 import { hallOf, hallsOf } from "../../model/plantView";
-import { humanise } from "../../model/report";
+import { kindLabel } from "../../model/report";
 import shared from "../shared.module.css";
 import styles from "./PlantScreen.module.css";
 
@@ -30,7 +30,7 @@ function matches(item: Item, filter: string): boolean {
 }
 
 function kindWords(kind: string): string {
-  const words = humanise(kind);
+  const words = kindLabel(kind);
   const acronym =
     words.charAt(1) === words.charAt(1).toUpperCase() && words.charAt(1) !== words.charAt(1).toLowerCase();
   return acronym ? words : words.charAt(0).toLowerCase() + words.slice(1);
