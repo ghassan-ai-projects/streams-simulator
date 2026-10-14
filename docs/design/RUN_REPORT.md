@@ -102,6 +102,8 @@ proof; the report's check is cheap and needs no inputs.
 | `sealed_journal` | digest of the replayable lines of `sealed/journal.jsonl` | `sealed_journal_digest` |
 | `journal_file` | SHA-256 of `journal.jsonl`, session records included | `journal_file_digest` |
 | `sealed_journal_file` | SHA-256 of `sealed/journal.jsonl`, session records included | `sealed_journal_file_digest` |
+| `ledger` | SHA-256 of `ledger.jsonl` | `ledger_digest` |
+| `history` | SHA-256 of `world_state_history.jsonl` | `history_digest` |
 
 Each check has `status` `match`, `mismatch` or `missing_file` (a digest was recorded and the file
 is absent), plus `recorded` and `computed` digests. A digest the run did not record is not

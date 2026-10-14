@@ -96,6 +96,7 @@ type Run struct {
 	durableLedger     *durable.Ledger
 	journal           *journal.Journal
 	journalDigests    journal.Digests
+	replayedDigest    map[string]string
 
 	finished     bool
 	incomplete   bool

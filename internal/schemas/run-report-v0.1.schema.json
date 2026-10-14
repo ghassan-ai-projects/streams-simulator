@@ -57,7 +57,7 @@
             "additionalProperties": false,
             "required": ["name", "status", "recorded"],
             "properties": {
-              "name": {"enum": ["trace", "journal", "sealed_journal", "journal_file", "sealed_journal_file", "ledger"]},
+              "name": {"enum": ["trace", "journal", "sealed_journal", "journal_file", "sealed_journal_file", "ledger", "history"]},
               "status": {"enum": ["match", "mismatch", "missing_file"]},
               "recorded": {"$ref": "#/$defs/digest"},
               "computed": {"$ref": "#/$defs/digest"}

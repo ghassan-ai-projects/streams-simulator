@@ -154,4 +154,5 @@ type Folder struct {
 	Observer Document
 	Director Document
 	Ledger   Document
+	History  Document
 }

@@ -524,7 +524,8 @@
         "got",
         "want",
         "first_divergence",
-        "detail"
+        "detail",
+        "reason"
       ],
       "properties": {
         "matches": {
@@ -548,6 +549,25 @@
         },
         "detail": {
           "type": "string"
+        },
+        "reason": {
+          "enum": [
+            "match",
+            "recorded_spec",
+            "world_digest",
+            "trace_divergence",
+            "journal_divergence",
+            "evidence_divergence",
+            "unblinded_stamp",
+            "digest_missing",
+            "file_differs",
+            "file_missing"
+          ],
+          "description": "Why the result is what it is: match, or the first cause found. recorded_spec: a recorded domain or adapter spec does not match its digest (nothing replayed). world_digest: the recorded specs replay to another world than the recorded world digest. trace_divergence: the replayed trace differs from the recorded trace digest. journal_divergence: a replayed journal stream differs from its recorded digest. evidence_divergence: the replayed ledger or history differs from its recorded digest (file names it). unblinded_stamp: the replay disagrees with the artifact on unblinding. digest_missing: a closed run's run.json records no digest for the file. file_differs: the file on disk differs from its recorded digest or from the replay. file_missing: the file is absent from the run folder."
+        },
+        "file": {
+          "type": "string",
+          "description": "The run-folder file the reason names, relative to the run folder; present for digest_missing, file_differs, file_missing and evidence_divergence."
         },
         "domain_changed": {
           "type": "boolean"

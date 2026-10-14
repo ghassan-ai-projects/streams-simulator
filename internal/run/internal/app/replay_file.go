@@ -13,7 +13,7 @@ import (
 type Directories struct{ Domains, Adapters string }
 
 func ReplayFile(ctx context.Context, artifactPath string, dirs Directories) (*ReplayResult, error) {
-	art, err := LoadArtifact(artifactPath)
+	art, err := loadArtifactForVerdict(artifactPath)
 	if err != nil {
 		return nil, fmt.Errorf("streamsim: %w", err)
 	}
@@ -31,7 +31,7 @@ func ReplayFile(ctx context.Context, artifactPath string, dirs Directories) (*Re
 func ResolveInputs(art *model.RunArtifact, dirs Directories) (*domain.Compiled, *model.Adapter, error) {
 	spec, adap, err := recordedInputs(art, dirs)
 	if err != nil {
-		return nil, nil, fmt.Errorf("%w", err)
+		return nil, nil, err
 	}
 	return replayInputs(art, spec, adap)
 }
@@ -42,13 +42,13 @@ func brokenRecordedDigests(art *model.RunArtifact, err error) (*ReplayResult, er
 		return nil, err
 	}
 	return &ReplayResult{VersionMatch: art.SimVersion == model.SimVersion, WantDigest: art.ExpectedTraceDigest,
-		Incomplete: art.Incomplete, Detail: mismatch.verdict()}, nil
+		Incomplete: art.Incomplete, Detail: mismatch.verdict(), Reason: brokenSpecReason(mismatch.subject)}, nil
 }
 
 func replayRecordedInputs(ctx context.Context, art *model.RunArtifact, dirs Directories, runDir string) (*ReplayResult, error) {
 	spec, adap, err := recordedInputs(art, dirs)
 	if err != nil {
-		return nil, fmt.Errorf("%w", err)
+		return nil, err
 	}
 	return replayWithJournalFiles(ctx, art, spec, adap, runDir)
 }
@@ -100,7 +100,7 @@ func replayWithJournalFiles(ctx context.Context, art *model.RunArtifact, spec *d
 	if err != nil {
 		return nil, fmt.Errorf("streamsim: %w", err)
 	}
-	if err := errors.Join(checkJournalFiles(dir, replay, art, res), checkEvidenceFiles(dir, replay, art, res)); err != nil {
+	if err := checkEvidenceFiles(dir, replay, art, res); err != nil {
 		return nil, fmt.Errorf("streamsim: %w", err)
 	}
 	return res, nil

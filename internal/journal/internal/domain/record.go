@@ -17,8 +17,8 @@ const (
 )
 
 const (
-	ObserverFile = "journal.jsonl"
-	DirectorFile = "sealed/journal.jsonl"
+	ObserverFile = model.FileObserverJournal
+	DirectorFile = model.FileDirectorJournal
 )
 
 const (

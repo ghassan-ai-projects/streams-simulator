@@ -62,20 +62,25 @@ func TestReplayFileReportsABrokenRecordedDigestAsAVerdictNotAFailure(t *testing.
 	cases := map[string]struct {
 		tamper func(t *testing.T, artifact string)
 		detail string
+		reason string
+		file   string
 	}{
 		"the embedded spec edited": {
 			func(t *testing.T, artifact string) { editDomainSpec(t, artifact, false) },
 			"the recorded domain spec does not match its digest",
+			"recorded_spec", "",
 		},
 		"the embedded spec and its digest rewritten together": {
 			func(t *testing.T, artifact string) { editDomainSpec(t, artifact, true) },
 			"the recorded specs replay to a different world than the recorded world digest",
+			"world_digest", "",
 		},
 		"the trace file with an appended newline": {
 			func(t *testing.T, artifact string) {
 				rewrite(t, filepath.Join(filepath.Dir(artifact), model.FileTrace), func(raw []byte) []byte { return append(raw, '\n') })
 			},
 			model.FileTrace + " differs from the digest run.json recorded",
+			"file_differs", model.FileTrace,
 		},
 	}
 	for name, tc := range cases {
@@ -84,8 +89,8 @@ func TestReplayFileReportsABrokenRecordedDigestAsAVerdictNotAFailure(t *testing.
 			artifact, _, dirs := runInEditableDomains(t)
 			tc.tamper(t, artifact)
 			res, err := run.ReplayFile(t.Context(), artifact, dirs)
-			if err != nil || res.Matches || !strings.Contains(res.Detail, tc.detail) || res.WantDigest == "" {
-				t.Fatalf("%+v, %v; want matches:false with detail %q", res, err, tc.detail)
+			if err != nil || res.Matches || !strings.Contains(res.Detail, tc.detail) || res.WantDigest == "" || res.Reason != tc.reason || res.File != tc.file {
+				t.Fatalf("%+v, %v; want matches:false, reason %s, file %q, with detail %q", res, err, tc.reason, tc.file, tc.detail)
 			}
 		})
 	}

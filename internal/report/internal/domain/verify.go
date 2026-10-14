@@ -3,51 +3,53 @@ package domain
 import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/canonical"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/journal"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
-
-type recorded struct {
-	name    string
-	digest  string
-	doc     Document
-	compute func([]byte) string
-}
 
 func verify(folder Folder) Verification {
 	checks := []Check{}
-	for _, entry := range recordedDigests(folder) {
-		if entry.digest != "" {
-			checks = append(checks, check(entry))
+	if folder.Artifact != nil {
+		for _, entry := range folder.Artifact.EvidenceDigests() {
+			if entry.Digest != "" {
+				checks = append(checks, check(entry, folder.document(entry.File)))
+			}
 		}
 	}
 	return Verification{Status: statusOf(checks), Checks: checks}
 }
 
-func recordedDigests(folder Folder) []recorded {
-	art := folder.Artifact
-	if art == nil {
-		return nil
+func (f Folder) document(file string) Document {
+	switch file {
+	case model.FileTrace:
+		return f.Trace
+	case model.FileObserverJournal:
+		return f.Observer
+	case model.FileDirectorJournal:
+		return f.Director
+	case model.FileLedger:
+		return f.Ledger
 	}
-	return []recorded{
-		{"trace", art.ExpectedTraceDigest, folder.Trace, canonical.DigestBytes},
-		{"journal", art.JournalDigest, folder.Observer, journal.Digest},
-		{"sealed_journal", art.SealedJournalDigest, folder.Director, journal.Digest},
-		{"journal_file", art.JournalFileDigest, folder.Observer, canonical.DigestBytes},
-		{"sealed_journal_file", art.SealedFileDigest, folder.Director, canonical.DigestBytes},
-		{"ledger", art.LedgerDigest, folder.Ledger, canonical.DigestBytes},
-	}
+	return f.History
 }
 
-func check(entry recorded) Check {
-	result := Check{Name: entry.name, Recorded: entry.digest, Status: CheckMissing}
-	if !entry.doc.Present {
+func check(entry model.EvidenceDigest, doc Document) Check {
+	result := Check{Name: entry.Name, Recorded: entry.Digest, Status: CheckMissing}
+	if !doc.Present {
 		return result
 	}
-	result.Computed = entry.compute(entry.doc.Raw)
+	result.Computed = computeDigest(entry, doc.Raw)
 	result.Status = CheckMatch
-	if result.Computed != entry.digest {
+	if result.Computed != entry.Digest {
 		result.Status = CheckDiffers
 	}
 	return result
+}
+
+func computeDigest(entry model.EvidenceDigest, raw []byte) string {
+	if entry.Replayable {
+		return journal.Digest(raw)
+	}
+	return canonical.DigestBytes(raw)
 }
 
 func statusOf(checks []Check) string {

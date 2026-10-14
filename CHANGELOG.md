@@ -18,6 +18,21 @@ This project has not established a formal release stream yet. Until it does, cha
   instrument declares the five alarm states; `examples/factory-utilities.domain.json` is recomposed. The member is
   `value`, not `code`: the domain schema's closed-grammar gate rejects a member named like an expression. The report
   schema now lists the `journal_file` and `sealed_journal_file` checks the report already wrote.
+- **Verify evidence review** (findings E4-1, E4-3, E4-8; R9-15 to R9-17). A run that ended complete must record a digest for every
+  evidence file (`expected_trace_digest`, `journal_digest`, `sealed_journal_digest`, `journal_file_digest`,
+  `sealed_journal_file_digest`, `ledger_digest`, `history_digest`; the run artifact schema requires them unless `incomplete`),
+  and `streamsim verify` requires each file (`trace.jsonl`, `ledger.jsonl`, `world_state_history.jsonl`, `journal.jsonl`,
+  `sealed/journal.jsonl`) beside `run.json`, comparing it with the recorded digest and with the replay; a missing file or
+  digest, which verified as matching before, is `matches: false`. The replay and verify result carries `reason` (`match`,
+  `recorded_spec`, `world_digest`, `trace_divergence`, `journal_divergence`, `evidence_divergence`, `unblinded_stamp`,
+  `digest_missing`, `file_differs`, `file_missing`) and `file`; `cli-output-v0.1` requires `reason`. `streamsim report` checks
+  `world_state_history.jsonl` too, from the same digest list (`RunArtifact.EvidenceDigests`), and its schema names all seven
+  checks. A trace written to a `--sink-target` outside the run folder is also written to `trace.jsonl` in it. `verify --help`
+  prints "Usage of verify". Breaking: older `run.json` files without the digests no longer pass `report` or `score`
+  (`artifact_invalid`) and `verify` reports them as `digest_missing`. The report fixture (`internal/report/testdata/run`) gains
+  the four digests and a three-row `world_state_history.jsonl`, with both goldens, and the behaviour pin is regenerated (the
+  `verify`, `replay` and `failure/replay-mismatch` documents gain `reason`; the `unknown-command` usage line for `canvas` was
+  already missing from it).
 
 - **Verify review fixes** (findings E3-2, E3-3, E3-6, E3-8, E3-10). `streamsim verify` and `replay` report an artifact whose own
   recorded digests do not hold (the embedded domain or adapter spec does not hash to its digest, or the recorded specs replay

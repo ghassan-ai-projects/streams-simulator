@@ -135,6 +135,42 @@ func TestReportShowsAnEditedTraceAsFilesDiffer(t *testing.T) {
 	}
 }
 
+func TestReportChecksTheStateHistoryFileAgainstItsRecordedDigest(t *testing.T) {
+	t.Parallel()
+	cases := map[string]struct {
+		tamper func(t *testing.T, path string)
+		status string
+	}{
+		"the file as written": {func(*testing.T, string) {}, domain.CheckMatch},
+		"a row deleted": {func(t *testing.T, path string) {
+			if err := os.WriteFile(path, []byte("{}\n"), 0o600); err != nil {
+				t.Fatal(err)
+			}
+		}, domain.CheckDiffers},
+		"the file deleted": {func(t *testing.T, path string) {
+			if err := os.Remove(path); err != nil {
+				t.Fatal(err)
+			}
+		}, domain.CheckMissing},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			dir := copyFolder(t, testsupport.ReportRun())
+			tc.tamper(t, filepath.Join(dir, model.FileHistory))
+			built, err := Build(t.Context(), dir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			checks := built.Verification.Checks
+			last := checks[len(checks)-1]
+			if last.Name != "history" || last.Status != tc.status {
+				t.Fatalf("checks = %+v, want a history check with status %s", checks, tc.status)
+			}
+		})
+	}
+}
+
 func TestReportOfACopiedFolderWhoseScoringFailsIsTheSameBytes(t *testing.T) {
 	t.Parallel()
 	first, second := copyFolder(t, testsupport.ReportRun()), copyFolder(t, testsupport.ReportRun())

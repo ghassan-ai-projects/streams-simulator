@@ -21,6 +21,8 @@ type ReplayResult struct {
 	Emitted         int64  `json:"emitted"`
 	Incomplete      bool   `json:"incomplete,omitempty"`
 	Detail          string `json:"detail,omitempty"`
+	Reason          string `json:"reason"`
+	File            string `json:"file,omitempty"`
 
 	JournalDiverged []string `json:"journal_diverged,omitempty"`
 
@@ -29,11 +31,19 @@ type ReplayResult struct {
 }
 
 func LoadArtifact(path string) (*model.RunArtifact, error) {
+	return readArtifact(path, rules.ValidateArtifactDocument)
+}
+
+func loadArtifactForVerdict(path string) (*model.RunArtifact, error) {
+	return readArtifact(path, rules.ValidateArtifactDocumentForVerdict)
+}
+
+func readArtifact(path string, validate func([]byte, string) error) (*model.RunArtifact, error) {
 	raw, err := durable.ReadArtifact(path)
 	if err != nil {
 		return nil, err
 	}
-	if err := rules.ValidateArtifactDocument(raw, path); err != nil {
+	if err := validate(raw, path); err != nil {
 		return nil, err
 	}
 	artifact, err := rules.DecodeArtifact(raw)

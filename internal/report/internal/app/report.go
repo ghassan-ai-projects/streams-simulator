@@ -92,6 +92,7 @@ var consumerSlots = []slot{
 var directorSlots = []slot{
 	{"sealed/journal.jsonl", func(f *domain.Folder) *domain.Document { return &f.Director }},
 	{model.FileLedger, func(f *domain.Folder) *domain.Document { return &f.Ledger }},
+	{model.FileHistory, func(f *domain.Folder) *domain.Document { return &f.History }},
 }
 
 func loadDocuments(dir string, slots []slot) (domain.Folder, error) {

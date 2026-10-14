@@ -26,7 +26,7 @@ func TruthAllowed(folder Folder) bool {
 
 func Assemble(folder Folder, scoring *Scoring) (*Report, error) {
 	if !TruthAllowed(folder) {
-		folder.Director, folder.Ledger = Document{}, Document{}
+		folder.Director, folder.Ledger, folder.History = Document{}, Document{}, Document{}
 	}
 	in, err := parse(folder)
 	if err != nil {
