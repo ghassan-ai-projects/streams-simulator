@@ -2,6 +2,7 @@ export interface Definition {
   readonly path: string;
   readonly id: string;
   readonly title: string;
+  readonly instances?: number;
 }
 
 export interface RunEntry {
@@ -67,7 +68,8 @@ function list(value: unknown): readonly unknown[] {
 
 function definition(value: unknown): Definition {
   const entry = isRecord(value) ? value : {};
-  return { path: text(entry.path), id: text(entry.id), title: text(entry.title) };
+  const instances = typeof entry.instances === "number" ? entry.instances : 0;
+  return { path: text(entry.path), id: text(entry.id), title: text(entry.title), instances };
 }
 
 function runEntry(value: unknown): RunEntry {

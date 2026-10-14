@@ -9,9 +9,22 @@ type FileDocument struct {
 }
 
 type Definition struct {
-	Path  string `json:"path"`
-	ID    string `json:"id,omitempty"`
-	Title string `json:"title,omitempty"`
+	Path      string `json:"path"`
+	ID        string `json:"id,omitempty"`
+	Title     string `json:"title,omitempty"`
+	Instances int    `json:"instances,omitempty"`
+}
+
+func DefinitionOf(rel string, content []byte) Definition {
+	var head struct {
+		ID        string            `json:"id"`
+		Title     string            `json:"title"`
+		Instances []json.RawMessage `json:"instances"`
+	}
+	if json.Unmarshal(content, &head) != nil {
+		return Definition{Path: rel}
+	}
+	return Definition{Path: rel, ID: head.ID, Title: head.Title, Instances: len(head.Instances)}
 }
 
 type RunEntry struct {

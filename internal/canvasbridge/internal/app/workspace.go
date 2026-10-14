@@ -2,7 +2,6 @@ package app
 
 import (
 	"bytes"
-	"encoding/json"
 	"strings"
 	"time"
 
@@ -52,19 +51,11 @@ func (b *Bridge) definitions(folder string) ([]domain.Definition, error) {
 }
 
 func (b *Bridge) definition(rel string) domain.Definition {
-	entry := domain.Definition{Path: rel}
 	content, err := b.edges.Workspace.Read(rel, domain.MaxFileBytes)
 	if err != nil {
-		return entry
+		return domain.Definition{Path: rel}
 	}
-	var head struct {
-		ID    string `json:"id"`
-		Title string `json:"title"`
-	}
-	if json.Unmarshal(content, &head) == nil {
-		entry.ID, entry.Title = head.ID, head.Title
-	}
-	return entry
+	return domain.DefinitionOf(rel, content)
 }
 
 func (b *Bridge) runs() ([]domain.RunEntry, error) {

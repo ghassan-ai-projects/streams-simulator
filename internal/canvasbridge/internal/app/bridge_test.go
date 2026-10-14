@@ -29,7 +29,7 @@ func TestPairingAdmitsTheSessionItIssued(t *testing.T) {
 func TestTheWorkspaceListsDefinitionsWithTheirIdsAndRunsWithTheirState(t *testing.T) {
 	t.Parallel()
 	h := newHarness(t)
-	h.write(t, plant, `{"id":"plant","title":"Plant"}`)
+	h.write(t, plant, `{"id":"plant","title":"Plant","instances":[{"id":"a"},{"id":"b"}]}`)
 	h.write(t, inDomains("notes.txt"), "x")
 	h.write(t, "compositions/broken.composition.json", "{")
 	h.write(t, "runs/w-1/journal.jsonl", `{"type":"run.opened","mode":"explore"}`+"\n")
@@ -47,7 +47,7 @@ func TestTheWorkspaceListsDefinitionsWithTheirIdsAndRunsWithTheirState(t *testin
 		listing.Runs[i].RecordedAt = ""
 	}
 	want := []domain.RunEntry{{WorldID: "w-1", Explore: true}, {WorldID: "w-2", Ended: true, Plant: "plant", DurationNs: 1800000000000}}
-	if len(listing.Domains) != 1 || listing.Domains[0] != (domain.Definition{Path: plant, ID: "plant", Title: "Plant"}) ||
+	if len(listing.Domains) != 1 || listing.Domains[0] != (domain.Definition{Path: plant, ID: "plant", Title: "Plant", Instances: 2}) ||
 		listing.Compositions[0].ID != "" || !slices.Equal(listing.Runs, want) || len(listing.Scenarios) != 0 {
 		t.Fatalf("listing = %+v", listing)
 	}

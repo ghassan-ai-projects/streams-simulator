@@ -7,7 +7,7 @@ import type { Workspace } from "../../model/bridge";
 import type { ExamplePlant } from "../../model/library";
 import type { Route } from "../../model/route";
 import type { PlantEntry } from "../../model/workspace";
-import { plantsOf, whenOf } from "../../model/workspace";
+import { plantFacts, plantsOf } from "../../model/workspace";
 import { NewPlantForm } from "./NewPlant";
 import styles from "./HomeScreen.module.css";
 
@@ -16,13 +16,6 @@ interface ListProps {
   readonly navigation: NavigationStore;
   readonly maker: PlantMaker;
   readonly examples: readonly ExamplePlant[];
-}
-
-function meta(plant: PlantEntry): string {
-  if (plant.domain === null) return "Not composed yet: edit and save it to run it.";
-  if (plant.runs === 0) return "No runs yet";
-  const last = whenOf(plant.lastRun);
-  return `${String(plant.runs)} ${plant.runs === 1 ? "run" : "runs"}${last === "" ? "" : ` · last ${last}`}`;
 }
 
 function files(plant: PlantEntry): string {
@@ -92,7 +85,7 @@ function PlantRow({ plant, navigation }: { readonly plant: PlantEntry; readonly 
           <span className={styles.id}>{plant.id}</span>
           {plant.composition === null && <span className={styles.badge}>read-only</span>}
         </span>
-        <span className={styles.meta}>{meta(plant)}</span>
+        <span className={styles.meta}>{plantFacts(plant)}</span>
       </span>
       <Actions plant={plant} navigation={navigation} />
     </li>

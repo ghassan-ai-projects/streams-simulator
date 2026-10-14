@@ -5,6 +5,7 @@ export interface PlantEntry {
   readonly title: string;
   readonly domain: string | null;
   readonly composition: string | null;
+  readonly instances: number;
   readonly runs: number;
   readonly lastRun: string;
 }
@@ -33,9 +34,22 @@ function entry(id: string, domain: Definition | undefined, composition: Definiti
     title: firstText(domain?.title, composition?.title, id),
     domain: domain?.path ?? null,
     composition: composition?.path ?? null,
+    instances: domain?.instances ?? 0,
     runs: mine.length,
     lastRun: mine.map((run) => run.recordedAt).reduce((a, b) => (b > a ? b : a), ""),
   };
+}
+
+function plural(count: number, one: string): string {
+  return `${String(count)} ${count === 1 ? one : `${one}s`}`;
+}
+
+export function plantFacts(plant: PlantEntry): string {
+  if (plant.domain === null) return "Not composed yet: edit and save it to run it.";
+  const size = plant.instances > 0 ? `${plural(plant.instances, "instance")} · ` : "";
+  if (plant.runs === 0) return size === "" ? "No runs yet" : `${size}no runs yet`;
+  const last = whenOf(plant.lastRun);
+  return `${size}${plural(plant.runs, "run")}${last === "" ? "" : ` · last ${last}`}`;
 }
 
 export function plantsOf(workspace: Workspace): readonly PlantEntry[] {

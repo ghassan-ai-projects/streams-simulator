@@ -14,7 +14,7 @@ describe("bridge payloads", () => {
   it("reads a workspace listing and tolerates missing fields", () => {
     const listing = parseWorkspace({
       name: "lab",
-      domains: [{ path: "domains/a.domain.json", id: "a", title: "A" }, null],
+      domains: [{ path: "domains/a.domain.json", id: "a", title: "A", instances: 4 }, null],
       compositions: "not a list",
       runs: [
         {
@@ -30,8 +30,8 @@ describe("bridge payloads", () => {
     });
     expect(listing.name).toBe("lab");
     expect(listing.domains).toEqual([
-      { path: "domains/a.domain.json", id: "a", title: "A" },
-      { path: "", id: "", title: "" },
+      { path: "domains/a.domain.json", id: "a", title: "A", instances: 4 },
+      { path: "", id: "", title: "", instances: 0 },
     ]);
     expect(listing.compositions).toEqual([]);
     expect(listing.runs).toEqual([
