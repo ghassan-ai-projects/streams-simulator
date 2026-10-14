@@ -146,8 +146,28 @@
   color: var(--text-primary);
 }
 
-.number {
+.table .number,
+.table .numberHead {
   text-align: right;
+}
+
+.table .steady {
+  color: var(--text-tertiary);
+  font-size: var(--text-sm);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.table .kpiName {
+  color: var(--text-secondary);
+  white-space: normal;
+}
+
+.groupRow th {
+  padding-top: var(--space-3);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-weight: 600;
 }
 
 .label {

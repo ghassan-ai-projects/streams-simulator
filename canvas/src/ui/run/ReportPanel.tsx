@@ -2,9 +2,9 @@ import type { ReactNode } from "react";
 import type { Report, VerifyState } from "../../model/report";
 import { badgeOf, humanise, replayLine } from "../../model/report";
 import { integrityLine, kpisOf } from "../../model/reportViews";
-import { displayUnit } from "../../model/units";
 import { runClock } from "../../model/timeline";
 import shared from "../shared.module.css";
+import { KpiTable } from "./KpiTable";
 import styles from "./RunScreen.module.css";
 
 type Cell = string | { readonly text: string; readonly title: string };
@@ -78,8 +78,6 @@ function Rows({ rows, columns, headers, empty = "None" }: RowsProps) {
   );
 }
 
-const fixed = (value: number) =>
-  Math.abs(value) >= 100 ? value.toFixed(0) : Math.abs(value) >= 10 ? value.toFixed(1) : value.toFixed(2);
 const named = (id: string): Cell => ({ text: humanise(id), title: id });
 const words = (text: string): Cell => ({ text, title: text });
 const count = (report: Report, key: string) =>
@@ -154,11 +152,17 @@ function TruthNote({ report }: { readonly report: Report }) {
   return <p className={styles.truthNote}>{text}</p>;
 }
 
-function Truth({ report, unit, entity }: TruthProps) {
+function Events({ report }: { readonly report: Report }) {
   const at = (ns: number) => runClock(ns, report.startNs);
+  if (report.disturbances.length === 0 && report.effectorCalls.length === 0) {
+    return (
+      <Section title="Disturbances and effector calls">
+        <p className={styles.muted}>None in this run.</p>
+      </Section>
+    );
+  }
   return (
     <>
-      <TruthNote report={report} />
       <Section title="Disturbances">
         <Rows
           rows={report.disturbances.map((d) => [
@@ -182,6 +186,15 @@ function Truth({ report, unit, entity }: TruthProps) {
           headers={["Time", "Instance", "Effector", "Outcome"]}
         />
       </Section>
+    </>
+  );
+}
+
+function Truth({ report, unit, entity }: TruthProps) {
+  return (
+    <>
+      <TruthNote report={report} />
+      <Events report={report} />
       <KpiTruth report={report} unit={unit} entity={entity} />
       <Section title="Alarm system" note="ISA-18.2">
         <Rows
@@ -210,16 +223,11 @@ function KpiTruth({ report, unit, entity }: TruthProps) {
   const kpis = kpisOf(report, entity);
   return (
     <Section title="True KPIs" note={entity ?? undefined}>
-      <Rows
-        rows={kpis.map((row) => [
-          { text: `${row.entity} · ${humanise(row.state)}`, title: `${row.entity} ${row.state}` },
-          `${fixed(row.mean)} ${displayUnit(unit(row.entity, row.state))}`.trim(),
-          `${fixed(row.min)} – ${fixed(row.max)}`,
-        ])}
-        columns={["label", "number", "number"]}
-        headers={["KPI", "Mean", "Range"]}
-        empty={entity === null ? "None" : `No true KPIs for ${entity}.`}
-      />
+      {kpis.length === 0 ? (
+        <p className={styles.muted}>{entity === null ? "None" : `No true KPIs for ${entity}.`}</p>
+      ) : (
+        <KpiTable rows={kpis} grouped={entity === null} unit={unit} />
+      )}
     </Section>
   );
 }

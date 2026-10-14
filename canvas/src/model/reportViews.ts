@@ -8,6 +8,32 @@ export function kpisOf(report: Report, entity: string | null): readonly KpiRow[]
   return report.kpis.filter((row) => row.entity === entity || row.entity.startsWith(`${entity}/`));
 }
 
+const kpiTokens: Readonly<Record<string, string>> = { pct: "", frac: "fraction", cop: "COP" };
+
+export function kpiWords(state: string): string {
+  const text = state
+    .split("_")
+    .map((word) => kpiTokens[word] ?? word)
+    .filter((word) => word !== "")
+    .join(" ");
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+export interface KpiGroup {
+  readonly entity: string;
+  readonly rows: readonly KpiRow[];
+}
+
+export function kpiGroups(rows: readonly KpiRow[]): readonly KpiGroup[] {
+  const groups: { entity: string; rows: KpiRow[] }[] = [];
+  for (const row of rows) {
+    const last = groups.at(-1);
+    if (last?.entity === row.entity) last.rows.push(row);
+    else groups.push({ entity: row.entity, rows: [row] });
+  }
+  return groups;
+}
+
 export function runIdentity(report: Report): string {
   return [
     `${report.domainId} ${report.domainVersion}`.trim(),

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { report } from "../test/runFixture";
-import { kpisOf, rerunOf, runFacts, runIdentity } from "./reportViews";
+import { kpiGroups, kpisOf, kpiWords, rerunOf, runFacts, runIdentity } from "./reportViews";
 import { badgeLabels, badgeOf, humanise, parseReport, runSpan, parseReplay, replayLine, wallClock } from "./report";
 
 describe("run report", () => {
@@ -152,5 +152,20 @@ describe("run report", () => {
       ],
     });
     expect(runFacts(parseReport(null))).toBe("");
+  });
+
+  it("names KPIs in words and groups them by instance in report order", () => {
+    expect(["scrap_pct", "load_frac", "cop", "specific_power"].map(kpiWords)).toEqual([
+      "Scrap",
+      "Load fraction",
+      "COP",
+      "Specific power",
+    ]);
+    const row = (entity: string, state: string) => ({ entity, state, mean: 1, min: 1, max: 1 });
+    const groups = kpiGroups([row("M-1", "a"), row("M-1", "b"), row("M-2", "a")]);
+    expect(groups.map((group) => [group.entity, group.rows.length])).toEqual([
+      ["M-1", 2],
+      ["M-2", 1],
+    ]);
   });
 });
