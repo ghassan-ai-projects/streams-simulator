@@ -1,5 +1,6 @@
 import type { Plant } from "../../model/plant";
 import { areaOf } from "../../model/plant";
+import { hallOf } from "../../model/plantView";
 import { humanise } from "../../model/report";
 import type { RunRow } from "../../model/workspace";
 import { durationOf, whenOf } from "../../model/workspace";
@@ -86,17 +87,20 @@ export function PlantOverview({
   readonly onReview?: ((worldId: string) => void) | undefined;
 }) {
   const areas = counts(plant.instances.map((instance) => areaOf(plant, instance)));
+  const halls = counts(plant.instances.flatMap((instance) => hallOf(instance.id) ?? []));
+  const where = halls.length > 0 ? `${String(halls.length)} halls and the site` : `${String(areas.length)} areas`;
   return (
     <aside className={styles.inspector} aria-label="Inspector" tabIndex={0}>
       <header className={styles.inspectorHead}>
         <h2>{plant.title || plant.id}</h2>
         <p
           className={styles.kindLine}
-        >{`${String(plant.instances.length)} instances in ${String(areas.length)} areas · ${String(plant.links.length)} links`}</p>
+        >{`${String(plant.instances.length)} instances in ${where} · ${String(plant.links.length)} links`}</p>
         <p className={styles.hint}>Select an instance to see its channels, links, faults and effectors.</p>
       </header>
       <Runs runs={runs} onReview={onReview} />
-      <Tally title="Areas" rows={areas} />
+      {halls.length > 0 && <Tally title="Halls" rows={halls} />}
+      <Tally title={halls.length > 0 ? "Areas across the halls" : "Areas"} rows={areas} />
       <Tally title="Kinds" rows={counts(plant.instances.map((instance) => humanise(instance.kind)))} />
     </aside>
   );

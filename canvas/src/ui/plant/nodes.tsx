@@ -1,6 +1,6 @@
 import type { NodeProps } from "@xyflow/react";
 import { Handle, Position } from "@xyflow/react";
-import { OctagonAlert, TriangleAlert, Wrench } from "lucide-react";
+import { ChevronRight, OctagonAlert, TriangleAlert, Wrench } from "lucide-react";
 import type { CSSProperties } from "react";
 import { describeNode } from "../../model/plantView";
 import { familyNames, shapeOf } from "../../model/ports";
@@ -196,8 +196,11 @@ export function HallNode({ data, selected }: NodeProps<HallNodeType>) {
       <div className={styles.header}>
         <span className={styles.id}>{view.label}</span>
         <StatusTag status={status} count={count} />
+        <ChevronRight size={14} aria-hidden="true" className={styles.opens} />
       </div>
-      <div className={styles.members}>{view.detail}</div>
+      <div className={styles.members} title="Double-click, or press Enter, to open the hall">
+        {view.detail}
+      </div>
       <Handle type="source" position={Position.Right} id="out" className={styles.plain} isConnectable={false} />
     </div>
   );
