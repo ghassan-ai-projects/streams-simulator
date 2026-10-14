@@ -30,6 +30,8 @@ Round-1 and round-2 issues marked fixed were not re-reported; only regressions a
 - Observed: The status and the card say "fix any issue it lists" but the list is not visible on the editor's first screen, and the status line does not say where the list is. After closing the inspector, the list appeared only in the Build panel, and it disappears again after a reload.
 - Expected: The status line names where the issues are ("see Build > Issues") or the list stays visible next to the status.
 - Suggestion: Make the status a link or button that opens the issue list.
+- Status: fixed 3ce3e35
+- Fix: The editor status reads "Needs fixing: N issues, listed in Build. Your changes are saved." and a "Show issues" button in the top bar deselects the instance and opens the Build panel's issue list. Tests: EditorStatus.test.tsx, EditorPanel.test.tsx.
 
 ## ISS-3-03 Areas cannot be renamed or deleted, so starting from an example or empty copy leaves unwanted areas behind
 - Severity: Medium
@@ -43,6 +45,8 @@ Round-1 and round-2 issues marked fixed were not re-reported; only regressions a
 - Observed: Empty areas stay in the Outline and in every "Area" select. There is no way to rename or remove an area, so the brief's tree (Site > ...) sits next to leftover areas.
 - Expected: An area can be renamed, and an empty area can be removed (or the start copy does not bring areas the user did not ask for).
 - Suggestion: Add "Rename" and "Delete (empty areas only)" for areas, like instances have.
+- Status: fixed fc8cef3
+- Fix: The Build panel has an "Areas" list: each area can be renamed (its child areas, its instances' area and every Area select follow) and deleted only when no instance is in it and no area is inside it; a row that cannot be deleted says why ("Move the 2 instances out of it first."). The rules are in compositionEdits.ts. Tests: AreaEditor.test.tsx, compositionEdits.test.ts, areas.spec.ts. The Outline headers still only collapse.
 
 ## ISS-3-04 Empty plant from "Chiller pilot" starts with Utilities / Chiller hall / Office block, not a site
 - Severity: Low
@@ -54,6 +58,8 @@ Round-1 and round-2 issues marked fixed were not re-reported; only regressions a
 - Observed: The new plant already has top-level "UTILITIES" (with "CHILLER HALL" and "OFFICE BLOCK" under it). Default Area is "Utilities". The text "its site, areas, profiles and axes" does not say what an "axis" is or that the areas come from the chosen start plant. To get "Site" I had to add it as a new top-level area.
 - Expected: The start point's areas are described, or the empty plant starts with a single "Site" area.
 - Suggestion: Name the source of the areas on the form, or start an empty plant with one "Site" area.
+- Status: fixed 88ebe63 (the form wording); needs-binary for the single "Site" area
+- Fix: The New plant option now reads "An empty plant with the site, areas, profiles and axes of the start plant and no equipment". Needs-binary: the areas are copied from the start plant by the binary (`emptyPlant` in internal/component/internal/domain/new_plant.go keeps the base's site and areas); proposal: an empty plant keeps the site and starts with one top-level "Site" area. Test: HomeScreen.test.tsx.
 
 ## ISS-3-05 Typed instance Name is dropped when the form re-renders; the suggestion placeholder looks like a typed value
 - Severity: Medium
@@ -121,6 +127,8 @@ Round-1 and round-2 issues marked fixed were not re-reported; only regressions a
 - Observed: The valves' only inlet is "pressure in", so pump "flow out" cannot be linked to any valve. The message does not say that the library has no water inlet that accepts a pump's flow. I could not show pump-to-valve flow and wired the valves to the reservoir only.
 - Expected: The message names the reason (for example "control valves take pressure, not water") or the library offers a compatible inlet.
 - Suggestion: Explain why the To list is empty, or add a water inlet to the control valve.
+- Status: fixed efdaf79
+- Fix: The empty To list says why, from the output's type and the plant's inputs: "No instance takes chilled water: pump-1's flow out is chilled water. The inputs in this plant take liquid flow and pressure." The pump's "flow out" is chilled water and the tank takes liquid flow, so both read as water but do not match. Tests: ports.test.ts, ConnectForm.test.tsx.
 
 ## ISS-3-10 Reservoir port "outflow in" used for a valve feed; the port names do not say which side is feed
 - Severity: Low
@@ -132,6 +140,8 @@ Round-1 and round-2 issues marked fixed were not re-reported; only regressions a
 - Observed: The link "flow out -> reservoir-tank outflow in" was created. Nothing says whether "outflow in" is a valid feed for a valve or what the tank does with it. The guess was mine.
 - Expected: Port names or a short hint make the feed side clear, or a second feed can be added to "inflow in".
 - Suggestion: Add a one-line hint on each port (for example "feeds the tank" / "draws from the tank").
+- Status: needs-binary: a port's declared description is not in the component contract
+- Fix: No canvas change. The port spec carries only name, type, direction (provides/consumes) and state (`contracts/component-v0.1.schema.json`), and the canvas already shows direction. Proposal: an optional per-port `description` in the component contract and the builtin library (for example storage-tank `outflow_in`: "draws from the tank"), which the canvas would show under the Input choice.
 
 ## ISS-3-11 Enter in the Name field does not add the equipment
 - Severity: Low
@@ -171,6 +181,26 @@ Round-1 and round-2 issues marked fixed were not re-reported; only regressions a
 - Suggestion: Refresh the card count on every save.
 - Status: not a binary defect; canvas servers run the old binary
 - Fix: `DefinitionOf` counts expanded instances since b4c6b24 (confirmed by `TestADefinitionCountsTheInstancesItExpandsTo`: named sets by name, id_template sets by `count.default`, composition `equipment` the same way). The card shows 7 because the running bridge is the old build, which counts `len(instances)` (definitions); restart the servers on a binary built after b4c6b24. The "definitions" label in the canvas is still open (ISS-2-17).
+
+## ISS-3-14 Return in the "Find equipment" search submits the add form
+- Severity: Medium (found in review of the add form, not in the round-3 file)
+- Kind: not-working
+- Where: Build panel "ADD EQUIPMENT" > "Find equipment" search box
+- Steps: choose an Equipment, type in "Find equipment", press Return.
+- Observed (code review): the search box sits inside the add form, so Return is an implicit submit and adds the chosen equipment with the typed name, while the user only meant to filter the list.
+- Expected: Return in the search box only filters.
+- Status: fixed 405b12a (fixed together with ISS-3-15)
+- Fix: Return in the search box is consumed (no implicit submit). Equipment is added by the Add button or by Return in the Name field. Tests: EditorPanel.test.tsx (keyDown is default-prevented, nothing added); editor.spec.ts "Enter in the equipment search only filters...".
+
+## ISS-3-15 A name another instance already uses is refused only after Save
+- Severity: Medium (found in review of the add form, not in the round-3 file)
+- Kind: unclear
+- Where: Build panel "ADD EQUIPMENT" > "Name"; the editor status after Save
+- Steps: add an instance named "CT-1" when "CT-1" already exists; press "Add to the plant".
+- Observed (code review): the form accepts the name, and the binary refuses the duplicate only at Save, so the error appears later on the instance and in the status.
+- Expected: The form says it at once: "<name> is already used by another instance." and does not add.
+- Status: fixed 405b12a (fixed together with ISS-3-14)
+- Fix: The add form checks the name against the plant's instance list (the plant shown in the editor, including unsaved adds) and shows "<name> is already used by another instance." in place of the Add button's reason; the add is refused. Tests: EditorPanel.test.tsx, editor.spec.ts "Enter in the equipment search only filters; a name another instance uses is refused in the add form".
 
 ## Simulator behaviour notes
 
