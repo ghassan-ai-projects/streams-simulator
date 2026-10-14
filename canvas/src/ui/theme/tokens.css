@@ -73,6 +73,9 @@
   --shadow-panel: 0 4px 14px rgb(15 23 42 / 12%), 0 1px 2px rgb(15 23 42 / 10%);
   --scrim: rgb(15 23 42 / 32%);
   --scroll-shadow: rgb(15 23 42 / 14%);
+  --disabled-bg: #eceff3;
+  --disabled-border: #d5dae1;
+  --disabled-fg: #646c79;
 }
 
 :root[data-theme="dark"] {
@@ -126,6 +129,9 @@
   --shadow-panel: 0 6px 18px rgb(0 0 0 / 45%), 0 1px 2px rgb(0 0 0 / 40%);
   --scrim: rgb(0 0 0 / 55%);
   --scroll-shadow: rgb(0 0 0 / 55%);
+  --disabled-bg: #20242c;
+  --disabled-border: #2f3542;
+  --disabled-fg: #8b93a1;
 }
 
 @media (prefers-reduced-motion: reduce) {

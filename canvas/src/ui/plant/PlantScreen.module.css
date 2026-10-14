@@ -249,7 +249,9 @@
 }
 
 .run[aria-disabled="true"] {
-  opacity: 0.6;
+  border-color: var(--disabled-border);
+  background: var(--disabled-bg);
+  color: var(--disabled-fg);
   cursor: not-allowed;
 }
 
@@ -330,7 +332,9 @@
 }
 
 .edit[aria-disabled="true"] {
-  opacity: 0.55;
+  border-color: var(--disabled-border);
+  background: var(--disabled-bg);
+  color: var(--disabled-fg);
   cursor: not-allowed;
 }
 
