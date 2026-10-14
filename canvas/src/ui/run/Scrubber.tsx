@@ -7,6 +7,7 @@ import { eventMarks, nextEvent, previousEvent, runClock, timeTicks } from "../..
 import runStyles from "./RunScreen.module.css";
 import styles from "./Scrubber.module.css";
 import { Lane, Legend, MarkRail } from "./ScrubberLane";
+import { useEventKeys } from "./useEventKeys";
 import { AlarmJump } from "./AlarmJump";
 import type { PlayProps } from "./PlayControls";
 import { PlayControls } from "./PlayControls";
@@ -45,6 +46,8 @@ interface StepsProps {
   readonly onSeek: (ns: number) => void;
 }
 
+const keyOf: Readonly<Record<string, string | undefined>> = { "Previous event": ",", "Next event": "." };
+
 function Steps({ marks, positionNs, clamp, onSeek }: StepsProps) {
   const previous = previousEvent(marks, positionNs);
   const next = nextEvent(marks, positionNs);
@@ -53,7 +56,8 @@ function Steps({ marks, positionNs, clamp, onSeek }: StepsProps) {
       type="button"
       className={runStyles.step}
       aria-label={target === null ? `${label}: none` : label}
-      title={target === null ? `${label}: none` : label}
+      aria-keyshortcuts={keyOf[label]}
+      title={target === null ? `${label}: none` : `${label}${keyOf[label] === undefined ? "" : ` (${keyOf[label]})`}`}
       aria-disabled={target === null}
       onClick={() => {
         if (target !== null) onSeek(target);
@@ -113,6 +117,7 @@ function TimeRow(props: RowProps) {
     setSaid(`Moved to ${runClock(ns, startNs)}`);
     props.onSeek(ns);
   };
+  useEventKeys(marks, positionNs, onSeek);
   const onEvent =
     props.onEvent === undefined
       ? undefined

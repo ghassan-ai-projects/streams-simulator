@@ -35,6 +35,7 @@ export const keyGroups: readonly KeyGroup[] = [
     scope: "Run review",
     rows: [
       { keys: ["Space"], does: "play or pause" },
+      { keys: [",", "."], does: "go to the previous event, the next event" },
       { keys: ["←", "→"], does: "on the time slider, step one second" },
       { keys: ["Shift ←", "Shift →"], does: "on the time slider, step one minute" },
       { keys: ["Page Up", "Page Down"], does: "on the time slider, step further" },

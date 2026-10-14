@@ -112,6 +112,8 @@ describe("scrubber", () => {
     fireEvent.click(screen.getByRole("button", { name: "Forward 10 minutes" }));
     expect(seek).toHaveBeenLastCalledWith(660e9);
     expect(screen.getByText("Moved to 00:11:00")).toBeInTheDocument();
+    fireEvent.keyDown(document.body, { key: "." });
+    expect(seek).toHaveBeenLastCalledWith(300e9);
     fireEvent.keyDown(slider, { key: "ArrowRight", shiftKey: true });
     expect(seek).toHaveBeenLastCalledWith(120e9);
   });
