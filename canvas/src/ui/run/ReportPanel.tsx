@@ -3,6 +3,7 @@ import type { Report, VerifyState } from "../../model/report";
 import { badgeOf, humanise, replayLine } from "../../model/report";
 import { integrityLine, kpisOf } from "../../model/reportViews";
 import { runClock } from "../../model/timeline";
+import { grouped } from "../../model/units";
 import shared from "../shared.module.css";
 import { KpiTable } from "./KpiTable";
 import styles from "./RunScreen.module.css";
@@ -80,8 +81,7 @@ function Rows({ rows, columns, headers, empty = "None" }: RowsProps) {
 
 const named = (id: string): Cell => ({ text: humanise(id), title: id });
 const words = (text: string): Cell => ({ text, title: text });
-const count = (report: Report, key: string) =>
-  report.ended ? (report.counts[key] ?? 0).toLocaleString("en-US") : "n/a";
+const count = (report: Report, key: string) => (report.ended ? grouped(report.counts[key] ?? 0) : "n/a");
 
 function ReplayCheck({ verify }: { readonly verify: VerifyState }) {
   const detail = verify.phase === "ready" ? verify.value.detail : "";
@@ -99,10 +99,7 @@ function ReplayCheck({ verify }: { readonly verify: VerifyState }) {
 }
 
 function Deliveries({ report }: { readonly report: Report }) {
-  const dropped = Object.entries(report.dropped).map(([reason, n]) => [
-    reason.replaceAll("_", " "),
-    n.toLocaleString("en-US"),
-  ]);
+  const dropped = Object.entries(report.dropped).map(([reason, n]) => [reason.replaceAll("_", " "), grouped(n)]);
   return (
     <Section title="Deliveries" note={report.ended ? undefined : "run not closed"}>
       <Rows
@@ -198,7 +195,7 @@ function Truth({ report, unit, entity }: TruthProps) {
       <KpiTruth report={report} unit={unit} entity={entity} />
       <Section title="Alarm system" note="ISA-18.2">
         <Rows
-          rows={Object.entries(report.alarms).map(([key, n]) => [key.replaceAll("_", " "), n.toLocaleString("en-US")])}
+          rows={Object.entries(report.alarms).map(([key, n]) => [key.replaceAll("_", " "), grouped(n)])}
           columns={["text", "number"]}
           headers={["Measure", "Value"]}
         />

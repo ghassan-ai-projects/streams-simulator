@@ -4,6 +4,7 @@ import type { ReviewState } from "../../app/reviewStore";
 import type { Badge, Report } from "../../model/report";
 import { badgeLabels, badgeOf } from "../../model/report";
 import { runFacts, runIdentity } from "../../model/reportViews";
+import { grouped } from "../../model/units";
 import { RunInfo } from "./RunInfo";
 import styles from "./RunScreen.module.css";
 
@@ -108,15 +109,15 @@ function verifyWarning(state: ReviewState): Warning | null {
 
 function countWarning(state: ReviewState, report: Report): Warning | null {
   const delivered = report.counts.delivered ?? 0;
-  const records = state.playback.records.toLocaleString("en-US");
+  const records = grouped(state.playback.records);
   if (state.playback.phase === "failed")
     return {
-      text: `Playback is incomplete: ${records} of ${delivered.toLocaleString("en-US")} delivered observations arrived.`,
+      text: `Playback is incomplete: ${records} of ${grouped(delivered)} delivered observations arrived.`,
       details: "",
     };
   if (state.playback.phase === "ready" && report.ended && state.playback.records !== delivered) {
     return {
-      text: `Playback has ${records} observations; the report counts ${delivered.toLocaleString("en-US")} delivered.`,
+      text: `Playback has ${records} observations; the report counts ${grouped(delivered)} delivered.`,
       details: "",
     };
   }

@@ -9,6 +9,7 @@ import { stateUnit } from "../../model/plant";
 import { plantView } from "../../model/plantView";
 import type { Report } from "../../model/report";
 import { runSpan } from "../../model/report";
+import { grouped } from "../../model/units";
 import { Navigator, ZoomBar } from "../plant/GraphControls";
 import { Outline } from "../plant/Outline";
 import { readoutHeight } from "../plant/nodes";
@@ -63,7 +64,7 @@ function GraphBar({ state }: { readonly state: ReviewState }) {
     <div className={styles.graphBar}>
       <span
         className={styles.muted}
-      >{`Plant at the playback time · ${state.playback.records.toLocaleString("en-US")} observations${state.playback.phase === "loading" ? " · loading" : ""}`}</span>
+      >{`Plant at the playback time · ${grouped(state.playback.records)} observations${state.playback.phase === "loading" ? " · loading" : ""}`}</span>
       <ZoomBar />
     </div>
   );

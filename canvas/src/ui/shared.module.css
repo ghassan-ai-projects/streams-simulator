@@ -26,6 +26,35 @@
   color: var(--text-secondary);
 }
 
+summary.sectionTitle {
+  gap: var(--space-1);
+  list-style: none;
+  cursor: pointer;
+}
+
+summary.sectionTitle::-webkit-details-marker {
+  display: none;
+}
+
+summary.sectionTitle::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  margin: 0 var(--space-1) 0 2px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform var(--motion-fast);
+}
+
+details[open] > summary.sectionTitle::before {
+  transform: rotate(45deg);
+}
+
+summary.sectionTitle:hover {
+  color: var(--text-primary);
+}
+
 .button {
   display: inline-flex;
   flex: none;

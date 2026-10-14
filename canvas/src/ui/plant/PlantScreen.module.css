@@ -196,13 +196,9 @@
 
 .muted,
 .hint {
-  margin: var(--space-1) 0 0;
-  padding: 0 var(--space-3);
+  margin: var(--space-3) 0 0;
+  padding: 0;
   color: var(--text-secondary);
-}
-
-.hint {
-  padding: var(--space-4) var(--space-3);
 }
 
 .inspectorHead .muted {
