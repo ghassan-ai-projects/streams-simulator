@@ -94,7 +94,7 @@ function usePick(startNs: number, onSeek: (ns: number) => void, onEvent: ((mark:
   return { said, pick };
 }
 
-function Legend({ marks }: { readonly marks: readonly EventMark[] }) {
+export function Legend({ marks }: { readonly marks: readonly EventMark[] }) {
   const kinds = kindsOf(marks);
   if (kinds.length === 0) return null;
   return (
@@ -126,7 +126,6 @@ function LaneNotes({ said, marks, hidden, reading }: NotesProps) {
         {said}
       </p>
       {marks.length === 0 && <p className={styles.laneMore}>{empty}</p>}
-      <Legend marks={marks} />
       {hidden > 0 && (
         <p className={styles.laneMore}>
           {`${String(hidden)} more ${hidden === 1 ? "event" : "events"}: use Previous and Next event`}

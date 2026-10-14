@@ -1,12 +1,12 @@
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 import type { CSSProperties, KeyboardEvent, ReactNode } from "react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import type { Report } from "../../model/report";
 import type { EventMark } from "../../model/timeline";
 import { eventMarks, nextEvent, previousEvent, runClock, timeTicks } from "../../model/timeline";
 import runStyles from "./RunScreen.module.css";
 import styles from "./Scrubber.module.css";
-import { Lane, MarkRail } from "./ScrubberLane";
+import { Lane, Legend, MarkRail } from "./ScrubberLane";
 import { AlarmJump } from "./AlarmJump";
 import type { PlayProps } from "./PlayControls";
 import { PlayControls } from "./PlayControls";
@@ -101,6 +101,42 @@ function PlaybackRange({ startNs, span, positionNs, onSeek, onKeyDown }: RangePr
   );
 }
 
+interface RowProps extends ScrubberProps {
+  readonly marks: readonly EventMark[];
+  readonly clamp: (ns: number) => number;
+}
+
+function TimeRow(props: RowProps) {
+  const { startNs, endNs, positionNs, marks, clamp } = props;
+  const [said, setSaid] = useState("");
+  const onSeek = (ns: number) => {
+    setSaid(`Moved to ${runClock(ns, startNs)}`);
+    props.onSeek(ns);
+  };
+  const onEvent =
+    props.onEvent === undefined
+      ? undefined
+      : (mark: EventMark) => {
+          setSaid(`Moved to ${runClock(mark.atNs, startNs)}, ${mark.label}`);
+          props.onEvent?.(mark);
+        };
+  return (
+    <div className={styles.timeRow}>
+      <p className="sr-only" aria-live="polite">
+        {said}
+      </p>
+      <PlayControls {...props} />
+      <span className={styles.time}>{runClock(positionNs, startNs)}</span>
+      <span className={styles.span}>{`of ${runClock(endNs, startNs)}`}</span>
+      <span className={styles.controls}>
+        <Legend marks={marks} />
+        <Steps marks={marks} positionNs={positionNs} clamp={clamp} onSeek={onSeek} />
+        <AlarmJump marks={marks} positionNs={positionNs} onSeek={onSeek} onEvent={onEvent} />
+      </span>
+    </div>
+  );
+}
+
 export function Scrubber(props: ScrubberProps) {
   const { startNs, endNs, positionNs, report, onSeek, onEvent } = props;
   const span = Math.max(1, endNs - startNs);
@@ -114,18 +150,14 @@ export function Scrubber(props: ScrubberProps) {
   };
   return (
     <div className={styles.scrubber}>
-      <div className={styles.timeRow}>
-        <PlayControls {...props} />
-        <span className={styles.time}>{runClock(positionNs, startNs)}</span>
-        <span className={styles.span}>{`of ${runClock(endNs, startNs)}`}</span>
-        <Steps marks={marks} positionNs={positionNs} clamp={clamp} onSeek={onSeek} />
-        <AlarmJump marks={marks} positionNs={positionNs} onSeek={onSeek} onEvent={onEvent} />
-      </div>
+      <TimeRow {...props} marks={marks} clamp={clamp} />
       <div className={styles.axis}>
         <Ticks startNs={startNs} endNs={endNs} fraction={fraction} />
       </div>
-      <PlaybackRange startNs={startNs} span={span} positionNs={positionNs} onSeek={onSeek} onKeyDown={onKeyDown} />
-      <MarkRail marks={marks} fraction={fraction} />
+      <div className={styles.trackWrap}>
+        <PlaybackRange startNs={startNs} span={span} positionNs={positionNs} onSeek={onSeek} onKeyDown={onKeyDown} />
+        <MarkRail marks={marks} fraction={fraction} />
+      </div>
       <p id="scrub-keys" className="sr-only">
         Arrow keys move one second, Shift and arrow keys one minute, Page Up and Page Down further.
       </p>
