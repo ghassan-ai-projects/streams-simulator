@@ -18,10 +18,15 @@ export type LaunchState =
       readonly worldId: string | null;
       readonly atS: number;
       readonly durationS: number;
-      readonly canceling: boolean;
+      readonly stopping: boolean;
     }
-  | { readonly phase: "done"; readonly origin: LaunchOrigin; readonly worldId: string }
-  | { readonly phase: "failed"; readonly origin: LaunchOrigin; readonly failure: BridgeFailure };
+  | { readonly phase: "done"; readonly origin: LaunchOrigin; readonly worldId: string; readonly early: boolean }
+  | {
+      readonly phase: "failed";
+      readonly origin: LaunchOrigin;
+      readonly failure: BridgeFailure;
+      readonly kept: string | null;
+    };
 
 const nowhere: LaunchOrigin = { domain: "", title: "", path: "" };
 
@@ -31,7 +36,12 @@ class Stopped extends Error {
   }
 }
 
-const canceled: BridgeFailure = { status: 0, code: "canceled", message: "The run was canceled.", issues: [] };
+const broken: BridgeFailure = {
+  status: 0,
+  code: "launch_failed",
+  message: "The run stopped unexpectedly.",
+  issues: [],
+};
 
 function worldOf(value: unknown): string {
   const record = typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
@@ -68,21 +78,21 @@ export class LaunchStore extends Observable<LaunchState> {
       this.progress(worldId, 0, plan.durationS);
       await this.steps(worldId, plan);
       await this.call("run.end", { world_id: worldId });
-      this.set({ phase: "done", origin, worldId });
+      this.set({ phase: "done", origin, worldId, early: this.stop });
     } catch (error) {
       await this.abandon(worldId, error);
     }
   }
 
-  cancel(): void {
+  stopEarly(): void {
     const state = this.snapshot();
     if (state.phase !== "running") return;
     this.stop = true;
-    this.set({ ...state, canceling: true });
+    this.set({ ...state, stopping: true });
   }
 
   private progress(worldId: string | null, atS: number, durationS: number): void {
-    this.set({ phase: "running", origin: this.origin, worldId, atS, durationS, canceling: this.stop });
+    this.set({ phase: "running", origin: this.origin, worldId, atS, durationS, stopping: this.stop });
   }
 
   reset(): void {
@@ -91,7 +101,7 @@ export class LaunchStore extends Observable<LaunchState> {
 
   private async steps(worldId: string, plan: LaunchPlan): Promise<void> {
     for (const step of launchSteps(plan)) {
-      if (this.stop) throw new Stopped(canceled);
+      if (this.stop) return;
       await this.step(worldId, step);
       if (step.kind === "advance") this.progress(worldId, step.toS, plan.durationS);
     }
@@ -110,8 +120,7 @@ export class LaunchStore extends Observable<LaunchState> {
 
   private async abandon(worldId: string, error: unknown): Promise<void> {
     if (worldId !== "") await this.bridge.action("world.destroy", { world_id: worldId });
-    const failure =
-      error instanceof Stopped ? error.failure : { ...canceled, code: "launch_failed", message: String(error) };
-    this.set({ phase: "failed", origin: this.origin, failure });
+    const failure = error instanceof Stopped ? error.failure : { ...broken, message: String(error) };
+    this.set({ phase: "failed", origin: this.origin, failure, kept: worldId === "" ? null : worldId });
   }
 }

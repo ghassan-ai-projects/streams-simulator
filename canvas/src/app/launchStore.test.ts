@@ -21,7 +21,7 @@ describe("launch", () => {
     const fake = bridge();
     const store = new LaunchStore(fake);
     await store.start(origin, plan);
-    expect(store.snapshot()).toEqual({ phase: "done", origin, worldId: "w-4" });
+    expect(store.snapshot()).toEqual({ phase: "done", origin, worldId: "w-4", early: false });
     const names = fake.calls.map((call) => call.name);
     expect([names[0], names.at(-1)]).toEqual(["world.create", "run.end"]);
     const advanced = (calls: typeof fake.calls) =>
@@ -42,18 +42,18 @@ describe("launch", () => {
     expect(fake.calls.at(-1)).toEqual({ name: "world.destroy", args: { world_id: "w-4" } });
   });
 
-  it("stops at the next step when canceled and can be reset", async () => {
+  it("stops early at the next step, keeps the shorter run and can be reset", async () => {
     const fake = bridge();
     const store = new LaunchStore(fake);
     const running = store.start(origin, { ...plan, faults: [] });
     await store.start(origin, plan);
-    store.cancel();
-    expect(store.snapshot()).toMatchObject({ phase: "running", canceling: true });
+    store.stopEarly();
+    expect(store.snapshot()).toMatchObject({ phase: "running", stopping: true });
     await running;
-    expect(store.snapshot()).toMatchObject({ phase: "failed", failure: { code: "canceled" } });
-    expect(fake.calls.filter((call) => call.name === "world.create")).toHaveLength(1);
+    expect(store.snapshot()).toEqual({ phase: "done", origin, worldId: "w-4", early: true });
+    expect(fake.calls.map((call) => call.name)).toEqual(["world.create", "run.end"]);
     store.reset();
-    store.cancel();
+    store.stopEarly();
     expect(store.snapshot()).toEqual({ phase: "idle" });
   });
 

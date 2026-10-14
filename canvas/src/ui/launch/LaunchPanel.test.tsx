@@ -90,21 +90,32 @@ describe("launch panel", () => {
     expect(screen.getByLabelText("Seed")).toHaveValue("4");
   });
 
-  it("shows progress and cancels while running", async () => {
+  it("shows progress and stops early, keeping the shorter run and opening it", async () => {
     const fake = new HeldBridge();
-    renderPanel(fake);
+    const { onFinished } = renderPanel(fake);
     fireEvent.click(screen.getByRole("button", { name: "Start the run" }));
-    expect(await screen.findByText("Running Mini plant as w-7")).toHaveAttribute("role", "status");
-    expect(screen.getByRole("button", { name: "Cancel and discard" })).toHaveFocus();
+    expect(await screen.findByText("Running Mini plant as w-7")).toHaveFocus();
     expect(screen.getByText("00:00:00 of 00:30:00 simulated")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Cancel and discard" }));
-    expect(screen.getByRole("status")).toHaveTextContent("Canceling at the next step");
+    fireEvent.click(screen.getByRole("button", { name: "Stop now" }));
+    expect(screen.getByRole("status")).toHaveTextContent("Stopping at the next step");
     await act(async () => {
       fake.release();
       await Promise.resolve();
     });
-    expect(await screen.findByRole("alert")).toHaveTextContent("The run was canceled.");
-    expect(fake.calls.at(-1)?.name).toBe("world.destroy");
+    await vi.waitFor(() => {
+      expect(onFinished).toHaveBeenCalledWith("w-7");
+    });
+    expect(fake.calls.at(-1)?.name).toBe("run.end");
+  });
+
+  it("says which partial run was kept when the binary refuses a step", async () => {
+    const fake = bridge();
+    fake.actions.set("clock.advance", failed(failure("world_gone", 404, "the world is gone")));
+    renderPanel(fake);
+    fireEvent.click(screen.getByRole("button", { name: "Start the run" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "The run did not finish. the world is gone What ran before the failure is kept as run w-7.",
+    );
   });
 });
 
@@ -141,7 +152,7 @@ describe("launch panel lifetime", () => {
     fireEvent.click(screen.getByRole("button", { name: "Start the run" }));
     await screen.findByText("Running Mini plant as w-7");
     first.unmount();
-    expect(launch.snapshot()).toMatchObject({ phase: "running", canceling: false, origin: { domain: "mini", path } });
+    expect(launch.snapshot()).toMatchObject({ phase: "running", stopping: false, origin: { domain: "mini", path } });
     render(panel());
     expect(screen.getByText("Running Mini plant as w-7")).toBeInTheDocument();
     await act(async () => {

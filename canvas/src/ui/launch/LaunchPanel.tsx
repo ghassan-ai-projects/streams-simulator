@@ -32,29 +32,28 @@ function Progress({
   readonly launch: LaunchStore;
   readonly title: string;
 }) {
-  const cancel = useFocusOnMount<HTMLButtonElement>();
+  const status = useFocusOnMount<HTMLParagraphElement>();
   const words = state.worldId === null ? "Creating the world…" : `Running ${title} as ${state.worldId}`;
   return (
     <div className={cx(panel.body, styles.progress)}>
-      <p className={styles.status} role="status">
-        {state.canceling ? "Canceling at the next step…" : words}
+      <p className={styles.status} role="status" ref={status} tabIndex={-1}>
+        {state.stopping ? "Stopping at the next step…" : words}
       </p>
       <progress max={state.durationS} value={state.atS} aria-label="Simulated time" />
       <p className={styles.clock}>{`${clockOf(state.atS)} of ${clockOf(state.durationS)} simulated`}</p>
       <button
         type="button"
-        ref={cancel}
         className={panel.secondary}
-        aria-disabled={state.canceling}
+        aria-disabled={state.stopping}
         onClick={() => {
-          launch.cancel();
+          launch.stopEarly();
         }}
       >
-        Cancel and discard
+        Stop now
       </button>
       <p className={panel.hint}>
-        You can close this panel or leave the plant: the run goes on and its progress shows in the top bar. Cancel stops
-        it at the next step and keeps nothing.
+        Stop now ends the run at the next step and keeps what ran as a shorter run you can review. You can close this
+        panel or leave the plant: the run goes on and its progress shows in the top bar.
       </p>
     </div>
   );
@@ -72,6 +71,7 @@ function Failure({
     <div className={cx(panel.body, styles.failure)} role="alert">
       <p>
         <strong>The run did not finish.</strong> {state.failure.message}
+        {state.kept !== null && ` What ran before the failure is kept as run ${state.kept}.`}
       </p>
       <button
         type="button"

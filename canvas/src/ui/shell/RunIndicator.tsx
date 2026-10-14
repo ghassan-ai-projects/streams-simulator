@@ -15,9 +15,11 @@ type Shown = Exclude<LaunchState, { phase: "idle" }>;
 function words(state: Shown): string {
   if (state.phase === "running") {
     const at = `${clockOf(state.atS)} of ${clockOf(state.durationS)}`;
-    return state.canceling ? `Canceling the run of ${state.origin.title}` : `Running ${state.origin.title} · ${at}`;
+    return state.stopping ? `Stopping the run of ${state.origin.title}` : `Running ${state.origin.title} · ${at}`;
   }
-  if (state.phase === "done") return `Run ${state.worldId} of ${state.origin.title} finished · Review`;
+  if (state.phase === "done") {
+    return `Run ${state.worldId} of ${state.origin.title} ${state.early ? "stopped early" : "finished"} · Review`;
+  }
   return `The run of ${state.origin.title} did not finish`;
 }
 
