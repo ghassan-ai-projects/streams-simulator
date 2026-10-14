@@ -120,6 +120,21 @@ describe("launch panel", () => {
 });
 
 describe("launch panel lifetime", () => {
+  it("does not jump to a run that finished while nobody watched it", async () => {
+    const launch = new LaunchStore(bridge());
+    await launch.start(
+      { domain: "mini", title: "Mini plant", path },
+      { seed: 1, durationS: 60, explore: true, faults: [] },
+    );
+    expect(launch.snapshot()).toMatchObject({ phase: "done" });
+    const onFinished = vi.fn<(worldId: string) => void>();
+    render(
+      <LaunchPanel launch={launch} plant={parsePlant(domain)} path={path} onClose={vi.fn()} onFinished={onFinished} />,
+    );
+    expect(screen.getByRole("button", { name: "Start the run" })).toBeInTheDocument();
+    expect(onFinished).not.toHaveBeenCalled();
+  });
+
   it("starts from a plan proposed for this plant, such as Run again", () => {
     const launch = new LaunchStore(bridge());
     launch.propose("mini", {

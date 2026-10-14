@@ -129,12 +129,14 @@ function Body({ state, launch, plant, path, draft, change }: BodyProps) {
 
 function useLaunch(launch: LaunchStore, plant: string, onFinished: (worldId: string) => void) {
   const state = useStore(launch);
+  const [watched, setWatched] = useState(false);
+  if (!watched && state.phase === "running" && state.origin.domain === plant) setWatched(true);
   useEffect(() => {
-    if (state.phase === "done" && state.origin.domain === plant) {
+    if (watched && state.phase === "done" && state.origin.domain === plant) {
       launch.reset();
       onFinished(state.worldId);
     }
-  }, [state, launch, plant, onFinished]);
+  }, [watched, state, launch, plant, onFinished]);
   return state;
 }
 
