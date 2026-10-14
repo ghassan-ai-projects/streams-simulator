@@ -19,7 +19,7 @@ func (s *Schema) validateArray(arr []any, path string, errs *[]Error) {
 
 func (s *Schema) validateArraySize(arr []any, path string, errs *[]Error) {
 	if s.hasMinItems && len(arr) < s.minItems {
-		*errs = append(*errs, Error{Path: path, Msg: fmt.Sprintf("array shorter than minItems %d", s.minItems)})
+		*errs = append(*errs, Error{Path: path, Msg: s.shortArrayMessage()})
 	}
 	if s.hasMaxItems && len(arr) > s.maxItems {
 		*errs = append(*errs, Error{Path: path, Msg: fmt.Sprintf("array longer than maxItems %d", s.maxItems)})
@@ -47,6 +47,20 @@ func (s *Schema) validateContains(arr []any, path string, errs *[]Error) {
 				return
 			}
 		}
-		*errs = append(*errs, Error{Path: path, Msg: "no array item matches contains"})
+		*errs = append(*errs, Error{Path: path, Msg: s.missingItemMessage()})
 	}
+}
+
+func (s *Schema) shortArrayMessage() string {
+	if s.expected != "" {
+		return "needs " + s.expected
+	}
+	return fmt.Sprintf("array shorter than minItems %d", s.minItems)
+}
+
+func (s *Schema) missingItemMessage() string {
+	if s.expected != "" {
+		return "needs " + s.expected
+	}
+	return "no array item matches contains"
 }

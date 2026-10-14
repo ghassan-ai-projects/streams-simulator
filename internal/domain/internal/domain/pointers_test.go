@@ -3,6 +3,7 @@ package domain
 import (
 	"encoding/json"
 	"errors"
+	"slices"
 	"testing"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
@@ -76,5 +77,24 @@ func TestAMissingRequiredMemberIsReportedAtTheMember(t *testing.T) {
 	var invalid *model.ValidationError
 	if !errors.As(err, &invalid) || len(invalid.Issues) != 1 || invalid.Issues[0].Pointer != "/kinds/0/channels/0/resolution" {
 		t.Fatalf("err = %v, want one issue at the missing resolution member", err)
+	}
+}
+
+func TestMissingMandatoryProfilesAreReportedAsWhatToAdd(t *testing.T) {
+	t.Parallel()
+	raw := mutated(t, func(_, _, doc map[string]any) { doc["profiles"] = doc["profiles"].([]any)[:2] })
+	_, err := Parse(raw, "few-profiles.json")
+	var invalid *model.ValidationError
+	if !errors.As(err, &invalid) || len(invalid.Issues) == 0 {
+		t.Fatalf("err = %v, want issues", err)
+	}
+	var messages []string
+	for _, issue := range invalid.Issues {
+		messages = append(messages, issue.Message)
+	}
+	for _, want := range []string{"needs at least 3 profiles: add nominal, correlated_cascade and sensor_pathology", "needs a profile named sensor_pathology"} {
+		if !slices.Contains(messages, want) {
+			t.Errorf("messages = %q, want %q among them", messages, want)
+		}
 	}
 }
