@@ -66,6 +66,8 @@ Round-1 and round-2 issues marked fixed were not re-reported; only regressions a
 - Observed: For the chiller, the Name field showed the grey suggestion "chiller-ch-1" and the typed text was gone; the instance was not created with my name. It only worked after waiting for the form to settle and clicking again. The grey suggestion is styled like a value, so it looks entered.
 - Expected: Typed text stays in the field. The suggestion should be visibly a hint, not a value.
 - Suggestion: Do not reset the Name field after choosing the equipment, or make the suggestion a distinct hint style.
+- Status: fixed 464453c
+- Fix: Typed name is kept when equipment is chosen or the plant re-renders (the choice no longer clears it); the suggestion is an italic placeholder. Tests: EditorPanel.test.tsx.
 
 ## ISS-3-06 New plant "Id" field appends typed text to the id derived from the Name
 - Severity: Medium
@@ -77,6 +79,8 @@ Round-1 and round-2 issues marked fixed were not re-reported; only regressions a
 - Observed: Id had already been filled as "water-pumping-station" from the Name, and typing appended: the field read "water-pumping-stationwater-pumping-station". The form still accepted it until I triple-clicked and retyped.
 - Expected: Typing in Id replaces the derived value, or the Id stays derived until the user edits it.
 - Suggestion: Select the derived Id text when the field is focused, or stop deriving it once the user has typed in Id.
+- Status: fixed 04dfd17
+- Fix: Id field selects its derived text on focus, so typing replaces it; deriving stops once Id is typed. Tests: NewPlant.test.tsx (shared harness in src/test/homeHarness.tsx).
 
 ## ISS-3-07 Instance subtitle shows an internal kind number: "chiller 2", "air compressor 2", "storage tank 2" on the first instances too
 - Severity: Medium
@@ -89,6 +93,8 @@ Round-1 and round-2 issues marked fixed were not re-reported; only regressions a
 - Observed: The second word after the kind appears on some instances but not others, and it is the same for every instance of that kind in a plant. It is not an instance number and is not explained anywhere.
 - Expected: A plain kind name ("chiller", "air compressor") or a visible instance number that differs per instance.
 - Suggestion: Show the kind's display name only; drop the internal kind suffix from the subtitle.
+- Status: fixed 2983767
+- Fix: Kind labels drop the internal numeric suffix (kindLabel in model/report.ts) in the outline, inspector, editor subtitle, run fault and call lists, and plant kind tally. Component titles still win where the library has one.
 
 ## ISS-3-08 Clicking Build while an instance is selected shows the instance inspector, not the Build panel
 - Severity: Low
@@ -101,6 +107,8 @@ Round-1 and round-2 issues marked fixed were not re-reported; only regressions a
 - Observed: The panel shows the instance inspector ("Link an output", "Delete ..."), not the "Build" heading and "ADD EQUIPMENT". Clicking "Build" again toggles the whole panel closed. The only way to get Add equipment back was to close the inspector with the "X".
 - Expected: "Build" opens the Build panel (switching from the inspector), and the Build button does not toggle the panel closed unexpectedly.
 - Suggestion: Make "Build" always show the Build panel, and let the inspector close on its own.
+- Status: fixed cc5dc44
+- Fix: Build with an instance selected deselects it and shows the Build panel; with nothing selected it toggles as before. Tests: showBuild.test.ts, PanelToggles.test.tsx.
 
 ## ISS-3-09 A pump's flow output has no target; the link form says "No instance takes water yet" without saying why
 - Severity: Medium
@@ -135,6 +143,8 @@ Round-1 and round-2 issues marked fixed were not re-reported; only regressions a
 - Observed: Nothing happened; the form still shows "pump-2" and the button "Add to the plant" must be clicked.
 - Expected: Return adds the equipment, as in most forms, or the hint says "click Add to the plant".
 - Suggestion: Submit on Return in the Name field.
+- Status: fixed f023c8a
+- Fix: Not reproduced on the current build: Return in Name already submits and adds the equipment in Chrome. Added a Chrome e2e guard (editor.spec.ts) so it stays that way; no product code changed.
 
 ## ISS-3-12 "Run again" does not start a run; it opens the run setup with the old faults filled in
 - Severity: Low
@@ -146,6 +156,8 @@ Round-1 and round-2 issues marked fixed were not re-reported; only regressions a
 - Observed: The page goes to "Opening the plant..." and then the plant's run panel "Run Compressed-air works" with seed 1, duration 30 minutes, and both faults (compressor-2 at 10, compressor-1 at 20) already filled in. Nothing is started until "Start the run" is pressed. The label suggests the run starts immediately.
 - Expected: Either a run starts, or the label says "Set up another run" / the panel says it is prefilled from w-4.
 - Suggestion: Rename the button or add a line "Starts with the faults of w-4; change them if needed."
+- Status: fixed 63be44c
+- Fix: Button is now "Set up another run"; the panel note reads "Prefilled from w-4: seed, duration, mode and faults. Change them if needed." (mode added because it is copied too). Tests: RunHeader.test.tsx, LaunchPanel.test.tsx.
 
 ## ISS-3-13 Home card counts 7 instance definitions for Compressed-air works after it gained an 8th instance
 - Severity: Low
