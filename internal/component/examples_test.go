@@ -41,3 +41,15 @@ func TestEveryShippedExamplePlantComposesAndMatchesTheRepositoryExample(t *testi
 		t.Fatalf("Example(nope) error = %v", err)
 	}
 }
+
+func TestANewPlantStartsFromAShippedExample(t *testing.T) {
+	t.Parallel()
+	base, err := component.Example("chiller-pilot")
+	if err != nil {
+		t.Fatal(err)
+	}
+	plant, err := component.NewComposition(base, component.NewPlant{ID: "lab", Title: "Lab", Empty: true}, "example chiller-pilot")
+	if err != nil || plant["id"] != "lab" || plant["equipment"] != nil {
+		t.Fatalf("NewComposition = %v, %v", plant, err)
+	}
+}
