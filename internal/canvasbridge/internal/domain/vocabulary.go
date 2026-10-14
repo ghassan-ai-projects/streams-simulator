@@ -15,9 +15,12 @@ type Definition struct {
 }
 
 type RunEntry struct {
-	WorldID string `json:"world_id"`
-	Ended   bool   `json:"ended"`
-	Explore bool   `json:"explore"`
+	WorldID    string `json:"world_id"`
+	Ended      bool   `json:"ended"`
+	Explore    bool   `json:"explore"`
+	Plant      string `json:"plant,omitempty"`
+	DurationNs int64  `json:"duration_ns,omitempty"`
+	RecordedAt string `json:"recorded_at,omitempty"`
 }
 
 type Listing struct {

@@ -1,7 +1,6 @@
 package domain
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 )
@@ -21,9 +20,8 @@ func ReadableRunFile(path WorkspacePath, state RunState) error {
 }
 
 func ClosedJournal(tail []byte) bool {
-	last := tail[bytes.LastIndexByte(bytes.TrimRight(tail, "\n"), '\n')+1:]
 	var closing struct {
 		Type string `json:"type"`
 	}
-	return json.Unmarshal(bytes.TrimSpace(last), &closing) == nil && closing.Type == "run.closed"
+	return json.Unmarshal(lastLine(tail), &closing) == nil && closing.Type == "run.closed"
 }

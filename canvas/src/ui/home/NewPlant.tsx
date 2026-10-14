@@ -1,14 +1,12 @@
-import { Plus } from "lucide-react";
 import type { SyntheticEvent } from "react";
 import { useId, useState } from "react";
 import type { EditorStore } from "../../app/editorStore";
 import type { NavigationStore } from "../../app/navigationStore";
 import type { Definition } from "../../model/bridge";
-import { cx } from "../cx";
 import { useFocusOnMount } from "../useFocusOnMount";
 import styles from "./HomeScreen.module.css";
 
-interface NewPlantProps {
+export interface NewPlantProps {
   readonly bases: readonly Definition[];
   readonly editor: EditorStore;
   readonly navigation: NavigationStore;
@@ -118,7 +116,12 @@ function Actions({
   );
 }
 
-function NewPlantForm({ bases, editor, navigation, onCancel }: NewPlantProps & { readonly onCancel: () => void }) {
+export function NewPlantForm({
+  bases,
+  editor,
+  navigation,
+  onCancel,
+}: NewPlantProps & { readonly onCancel: () => void }) {
   const [id, setId] = useState("");
   const [title, setTitle] = useState("");
   const [base, setBase] = useState(bases[0]?.path ?? "");
@@ -150,36 +153,5 @@ function NewPlantForm({ bases, editor, navigation, onCancel }: NewPlantProps & {
       <BasePick bases={bases} base={base} setBase={setBase} />
       <Actions failure={failure} ready={ready} onCancel={onCancel} />
     </form>
-  );
-}
-
-export function NewPlant(props: NewPlantProps) {
-  const [open, setOpen] = useState(false);
-  const [closed, setClosed] = useState(0);
-  const button = useFocusOnMount<HTMLButtonElement>(closed);
-  if (open && props.bases.length > 0) {
-    return (
-      <NewPlantForm
-        {...props}
-        onCancel={() => {
-          setOpen(false);
-          setClosed((count) => count + 1);
-        }}
-      />
-    );
-  }
-  return (
-    <button
-      type="button"
-      ref={button}
-      className={cx(styles.open, styles.newButton)}
-      aria-disabled={props.bases.length === 0}
-      onClick={() => {
-        setOpen(props.bases.length > 0);
-      }}
-    >
-      <Plus size={14} aria-hidden="true" />
-      New plant
-    </button>
   );
 }

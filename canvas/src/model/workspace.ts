@@ -1,20 +1,96 @@
-import type { Workspace } from "./bridge";
+import type { Definition, RunEntry, Workspace } from "./bridge";
+
+export interface PlantEntry {
+  readonly id: string;
+  readonly title: string;
+  readonly domain: string | null;
+  readonly composition: string | null;
+  readonly runs: number;
+  readonly lastRun: string;
+}
+
+export interface RunRow {
+  readonly run: RunEntry;
+  readonly plantTitle: string;
+}
 
 function counted(count: number, one: string, many: string): string {
   return `${String(count)} ${count === 1 ? one : many}`;
 }
 
+function firstText(...values: readonly (string | undefined)[]): string {
+  return values.find((value) => value !== undefined && value !== "") ?? "";
+}
+
+function idOf(definition: Definition): string {
+  return firstText(definition.id, (definition.path.split("/").at(-1) ?? "").split(".")[0], definition.path);
+}
+
+function entry(id: string, domain: Definition | undefined, composition: Definition | undefined, runs: RunEntry[]) {
+  const mine = runs.filter((run) => run.plant === id);
+  return {
+    id,
+    title: firstText(domain?.title, composition?.title, id),
+    domain: domain?.path ?? null,
+    composition: composition?.path ?? null,
+    runs: mine.length,
+    lastRun: mine.map((run) => run.recordedAt).reduce((a, b) => (b > a ? b : a), ""),
+  };
+}
+
+export function plantsOf(workspace: Workspace): readonly PlantEntry[] {
+  const ids = [...new Set([...workspace.domains, ...workspace.compositions].map(idOf))];
+  const runs = [...workspace.runs];
+  return ids
+    .map((id) =>
+      entry(
+        id,
+        workspace.domains.find((d) => idOf(d) === id),
+        workspace.compositions.find((c) => idOf(c) === id),
+        runs,
+      ),
+    )
+    .sort((a, b) => a.title.localeCompare(b.title));
+}
+
+function newerFirst(a: RunEntry, b: RunEntry): number {
+  if (a.recordedAt !== b.recordedAt) return b.recordedAt.localeCompare(a.recordedAt);
+  return b.worldId.localeCompare(a.worldId, undefined, { numeric: true });
+}
+
+export function runRows(workspace: Workspace, plant: string | null): readonly RunRow[] {
+  const titles = new Map(plantsOf(workspace).map((p) => [p.id, p.title] as const));
+  return workspace.runs
+    .filter((run) => plant === null || run.plant === plant)
+    .sort(newerFirst)
+    .map((run) => ({ run, plantTitle: titles.get(run.plant) ?? (run.plant || "Unknown plant") }));
+}
+
 export function workspaceSummary(workspace: Workspace): string {
-  return [
-    counted(workspace.domains.length, "plant", "plants"),
-    counted(workspace.compositions.length, "composition", "compositions"),
-    counted(workspace.scenarios.length, "scenario", "scenarios"),
-    counted(workspace.runs.length, "run", "runs"),
-  ].join(" · ");
+  return [counted(plantsOf(workspace).length, "plant", "plants"), counted(workspace.runs.length, "run", "runs")].join(
+    " · ",
+  );
 }
 
 export function workspaceEmpty(workspace: Workspace): boolean {
   return (
     workspace.domains.length + workspace.compositions.length + workspace.scenarios.length + workspace.runs.length === 0
   );
+}
+
+export function whenOf(iso: string): string {
+  const date = new Date(iso);
+  if (iso === "" || Number.isNaN(date.getTime())) return "";
+  const day = date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  const time = date.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  return `${day}, ${time}`;
+}
+
+export function durationOf(seconds: number): string {
+  if (seconds <= 0) return "";
+  if (seconds < 60) return `${String(seconds)} s`;
+  const minutes = Math.round(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  if (hours === 0) return `${String(minutes)} min`;
+  return minutes % 60 === 0 ? `${String(hours)} h` : `${String(hours)} h ${String(minutes % 60)} min`;
 }

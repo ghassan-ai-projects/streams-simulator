@@ -7,7 +7,7 @@ test.setTimeout(90_000);
 
 test("a recorded run plays back with the binary's report and a Verified badge", async ({ page }) => {
   await page.goto(env("CANVAS_APP_URL"));
-  await page.getByRole("button", { name: "Open review of w-evaluate" }).click();
+  await page.getByRole("button", { name: "Review w-evaluate" }).click();
   const header = page.getByRole("heading", { name: "w-evaluate" });
   await expect(header).toBeVisible();
   await expect(page.getByRole("status").filter({ hasText: /^Verified$/ })).toHaveCount(1, { timeout: 60_000 });

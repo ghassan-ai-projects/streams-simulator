@@ -8,6 +8,9 @@ export interface RunEntry {
   readonly worldId: string;
   readonly ended: boolean;
   readonly explore: boolean;
+  readonly plant: string;
+  readonly durationS: number;
+  readonly recordedAt: string;
 }
 
 export interface Workspace {
@@ -69,7 +72,14 @@ function definition(value: unknown): Definition {
 
 function runEntry(value: unknown): RunEntry {
   const entry = isRecord(value) ? value : {};
-  return { worldId: text(entry.world_id), ended: entry.ended === true, explore: entry.explore === true };
+  return {
+    worldId: text(entry.world_id),
+    ended: entry.ended === true,
+    explore: entry.explore === true,
+    plant: text(entry.plant),
+    durationS: typeof entry.duration_ns === "number" ? Math.round(entry.duration_ns / 1e9) : 0,
+    recordedAt: text(entry.recorded_at),
+  };
 }
 
 export function parseWorkspace(value: unknown): Workspace {

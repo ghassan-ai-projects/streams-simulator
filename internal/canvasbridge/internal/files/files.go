@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/canvasbridge/internal/domain"
 )
@@ -72,6 +73,14 @@ func (w *Workspace) ReadFrom(rel string, offset int64, limit int64) ([]byte, err
 func (w *Workspace) Exists(rel string) bool {
 	_, err := w.root.Stat(rel)
 	return err == nil
+}
+
+func (w *Workspace) Modified(rel string) (time.Time, error) {
+	info, err := w.root.Stat(rel)
+	if err != nil {
+		return time.Time{}, absent(rel, err)
+	}
+	return info.ModTime(), nil
 }
 
 func (w *Workspace) Names(dir string) ([]string, error) {

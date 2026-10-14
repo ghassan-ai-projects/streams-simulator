@@ -6,7 +6,7 @@ test.use({ storageState: env("CANVAS_APP_STATE") });
 
 test("the factory opens from the workspace as a typed plant graph", async ({ page }) => {
   await page.goto(env("CANVAS_APP_URL"));
-  await page.getByRole("button", { name: "Open plant factory-utilities" }).click();
+  await page.getByRole("button", { name: "Open Factory utilities" }).click();
   const graph = page.getByRole("region", { name: "Plant factory-utilities" });
   await expect(graph.getByText("23 instances · 59 links")).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Outline" }).getByRole("button")).toHaveCount(23);

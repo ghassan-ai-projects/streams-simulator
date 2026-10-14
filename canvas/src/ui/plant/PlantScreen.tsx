@@ -27,6 +27,7 @@ interface PlantScreenProps {
   readonly launch: LaunchStore;
   readonly domain: string;
   readonly hall: string | null;
+  readonly startLaunching?: boolean;
 }
 
 interface Crumb {
@@ -167,8 +168,8 @@ function RightPanel({
   );
 }
 
-function useLaunching(launch: LaunchStore) {
-  const [launching, setLaunching] = useState(false);
+function useLaunching(launch: LaunchStore, initially: boolean) {
+  const [launching, setLaunching] = useState(initially);
   const busy = useStore(launch).phase === "running";
   const button = useRef<HTMLButtonElement>(null);
   const toggle = () => {
@@ -235,8 +236,9 @@ function NotReady({ state, domain }: { readonly state: PlantState; readonly doma
   );
 }
 
-export function PlantScreen({ plants, workspace, navigation, launch, domain, hall }: PlantScreenProps) {
-  const run = useLaunching(launch);
+export function PlantScreen(props: PlantScreenProps) {
+  const { plants, workspace, navigation, launch, domain, hall, startLaunching = false } = props;
+  const run = useLaunching(launch, startLaunching);
   const state = useStore(plants);
   const listing = useStore(workspace);
   useEffect(() => {

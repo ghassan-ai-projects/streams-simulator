@@ -10,8 +10,22 @@ export const sampleWorkspace: Workspace = {
   ],
   scenarios: [],
   runs: [
-    { worldId: "w-1", ended: true, explore: false },
-    { worldId: "w-2", ended: false, explore: true },
+    {
+      worldId: "w-1",
+      ended: true,
+      explore: false,
+      plant: "factory-utilities",
+      durationS: 1800,
+      recordedAt: "2026-10-14T10:00:00Z",
+    },
+    {
+      worldId: "w-2",
+      ended: false,
+      explore: true,
+      plant: "factory-utilities",
+      durationS: 0,
+      recordedAt: "2026-10-14T11:00:00Z",
+    },
   ],
 };
 

@@ -62,6 +62,7 @@ function Screen({ stores, route }: { readonly stores: Stores; readonly route: Ro
         launch={stores.launch}
         domain={route.domain}
         hall={route.hall}
+        startLaunching={route.launch === true}
       />
     );
   }

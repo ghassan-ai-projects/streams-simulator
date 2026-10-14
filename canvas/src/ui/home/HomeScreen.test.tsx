@@ -5,7 +5,7 @@ import { EditorStore } from "../../app/editorStore";
 import { NavigationStore } from "../../app/navigationStore";
 import { WorkspaceStore } from "../../app/workspaceStore";
 import { failed, success } from "../../model/bridge";
-import { FakeBridge, failure } from "../../test/fakeBridge";
+import { FakeBridge, failure, sampleWorkspace } from "../../test/fakeBridge";
 import { HomeScreen } from "./HomeScreen";
 
 function navigation() {
@@ -29,20 +29,48 @@ async function show(bridge: FakeBridge, nav = navigation()) {
 }
 
 describe("home screen", () => {
-  it("lists plants, runs and compositions with no accessibility violation", async () => {
+  it("lists each plant once with its actions, and its runs newest first, with no accessibility violation", async () => {
     const view = await show(new FakeBridge());
-    expect(screen.getByText("1 plant · 1 composition · 0 scenarios · 2 runs")).toBeInTheDocument();
-    const runs = screen.getByRole("region", { name: "Runs" });
-    expect(within(runs).getByText("w-1")).toBeInTheDocument();
-    expect(within(runs).getByText("Evaluate")).toBeInTheDocument();
-    expect(within(runs).getByText("not closed")).toBeInTheDocument();
-    expect(within(runs).getAllByText("not checked yet")).toHaveLength(2);
-    expect(within(runs).getAllByRole("button", { name: /Open review of/ })).toHaveLength(2);
-    expect(within(screen.getByRole("region", { name: "Plants" })).getByText("factory-utilities")).toBeInTheDocument();
-    expect(
-      within(screen.getByRole("region", { name: "Scenarios" })).getByText("No scenarios yet."),
-    ).toBeInTheDocument();
+    expect(screen.getByText("1 plant · 2 runs")).toBeInTheDocument();
+    const plants = screen.getByRole("region", { name: "Plants" });
+    expect(within(plants).getAllByRole("listitem")).toHaveLength(1);
+    expect(within(plants).getByText("Factory utilities")).toBeInTheDocument();
+    expect(within(plants).getByText(/^2 runs · last /)).toBeInTheDocument();
+    for (const action of ["Open", "Edit", "Run"]) {
+      expect(within(plants).getByRole("button", { name: `${action} Factory utilities` })).toBeInTheDocument();
+    }
+    const runs = within(screen.getByRole("region", { name: "Runs" })).getAllByRole("listitem");
+    expect(runs.map((row) => row.textContent)).toEqual([
+      expect.stringMatching(/^Factory utilitiesExplore.*w-2 · .*not finishedReview$/),
+      expect.stringMatching(/^Factory utilitiesEvaluate.*w-1 · .* · 30 minReview$/),
+    ]);
+    expect(screen.queryByRole("region", { name: "Scenarios" })).not.toBeInTheDocument();
+    expect(screen.queryByText(/domains\//)).not.toBeInTheDocument();
     expect((await axe.run(view.container)).violations).toEqual([]);
+  });
+
+  it("filters runs by plant and pages a long list", async () => {
+    const bridge = new FakeBridge();
+    const runs = Array.from({ length: 25 }, (_, i) => ({
+      worldId: `w-${String(i)}`,
+      ended: true,
+      explore: false,
+      plant: i % 5 === 0 ? "other" : "factory-utilities",
+      durationS: 60,
+      recordedAt: `2026-10-14T10:${String(i).padStart(2, "0")}:00Z`,
+    }));
+    bridge.workspaceOutcome = success({
+      ...sampleWorkspace,
+      domains: [...sampleWorkspace.domains, { path: "domains/other.domain.json", id: "other", title: "Other" }],
+      runs,
+    });
+    await show(bridge);
+    const region = screen.getByRole("region", { name: "Runs" });
+    expect(within(region).getAllByRole("listitem")).toHaveLength(20);
+    fireEvent.click(within(region).getByRole("button", { name: "Show 5 more of 5" }));
+    expect(within(region).getAllByRole("listitem")).toHaveLength(25);
+    fireEvent.change(within(region).getByLabelText("Show runs of"), { target: { value: "other" } });
+    expect(within(region).getAllByRole("listitem")).toHaveLength(5);
   });
 
   it("shows the badge of a run already checked in this session", async () => {
@@ -63,8 +91,12 @@ describe("home screen", () => {
   it("opens a plant from its row", async () => {
     const nav = navigation();
     await show(new FakeBridge(), nav);
-    fireEvent.click(screen.getByRole("button", { name: "Open plant factory-utilities" }));
+    fireEvent.click(screen.getByRole("button", { name: "Open Factory utilities" }));
     expect(nav.location.hash).toBe("#/plant?domain=domains%2Ffactory-utilities.domain.json");
+    fireEvent.click(screen.getByRole("button", { name: "Run Factory utilities" }));
+    expect(nav.location.hash).toBe("#/plant?domain=domains%2Ffactory-utilities.domain.json&run=1");
+    fireEvent.click(screen.getByRole("button", { name: "Review w-1" }));
+    expect(nav.location.hash).toBe("#/run?world=w-1");
   });
 
   it("edits a composition from its row and creates a new plant from a base", async () => {
@@ -73,7 +105,7 @@ describe("home screen", () => {
     const base = "compositions/factory-utilities.composition.json";
     bridge.files.set(base, success({ path: base, content: JSON.stringify({ id: "factory-utilities" }), etag: "b" }));
     await show(bridge, nav);
-    fireEvent.click(screen.getByRole("button", { name: "Edit composition factory-utilities" }));
+    fireEvent.click(screen.getByRole("button", { name: "Edit Factory utilities" }));
     expect(nav.location.hash).toBe("#/edit?composition=compositions%2Ffactory-utilities.composition.json");
     fireEvent.click(screen.getByRole("button", { name: "New plant" }));
     const form = screen.getByRole("form", { name: "New plant" });
@@ -107,7 +139,8 @@ describe("home screen", () => {
     const bridge = new FakeBridge();
     bridge.workspaceOutcome = success({ name: "fresh", domains: [], compositions: [], scenarios: [], runs: [] });
     await show(bridge);
-    expect(screen.getByRole("heading", { name: "fresh is empty" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "fresh has no plants yet" })).toBeInTheDocument();
+    expect(screen.getAllByRole("listitem")).toHaveLength(3);
   });
 
   it("shows the loading state and the bridge's failure", async () => {

@@ -1,8 +1,10 @@
 package app
 
 import (
+	"bytes"
 	"encoding/json"
 	"strings"
+	"time"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/canvasbridge/internal/domain"
 )
@@ -73,9 +75,32 @@ func (b *Bridge) runs() ([]domain.RunEntry, error) {
 	runs := []domain.RunEntry{}
 	for _, name := range names {
 		if b.edges.Workspace.Exists("runs/" + name + "/journal.jsonl") {
-			state := b.runState(name)
-			runs = append(runs, domain.RunEntry{WorldID: name, Ended: state.Ended, Explore: state.Explore})
+			runs = append(runs, b.runEntry(name))
 		}
 	}
 	return runs, nil
+}
+
+func (b *Bridge) runEntry(name string) domain.RunEntry {
+	journal := "runs/" + name + "/journal.jsonl"
+	head, _ := b.edges.Workspace.ReadFrom(journal, 0, firstLineLimit)
+	first, _, _ := bytes.Cut(head, []byte("\n"))
+	tail, _ := b.edges.Workspace.Tail(journal, closingLimit)
+	summary := domain.SummarizeRun(first, tail)
+	return domain.RunEntry{
+		WorldID:    name,
+		Ended:      summary.Closed && !b.runIsRunning(name),
+		Explore:    summary.Explore,
+		Plant:      summary.Plant,
+		DurationNs: summary.DurationNs,
+		RecordedAt: b.recordedAt(journal),
+	}
+}
+
+func (b *Bridge) recordedAt(rel string) string {
+	modified, err := b.edges.Workspace.Modified(rel)
+	if err != nil {
+		return ""
+	}
+	return modified.UTC().Format(time.RFC3339)
 }

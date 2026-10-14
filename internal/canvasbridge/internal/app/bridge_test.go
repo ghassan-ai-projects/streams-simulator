@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/canvasbridge/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/canvasbridge/internal/process"
@@ -32,13 +33,20 @@ func TestTheWorkspaceListsDefinitionsWithTheirIdsAndRunsWithTheirState(t *testin
 	h.write(t, inDomains("notes.txt"), "x")
 	h.write(t, "compositions/broken.composition.json", "{")
 	h.write(t, "runs/w-1/journal.jsonl", `{"type":"run.opened","mode":"explore"}`+"\n")
-	h.write(t, "runs/w-2/journal.jsonl", `{"type":"run.opened","mode":"evaluate"}`+"\n"+`{"type":"run.closed"}`+"\n")
+	h.write(t, "runs/w-2/journal.jsonl", `{"type":"run.opened","mode":"evaluate","start_time_ns":100,"domain":{"id":"plant"}}`+"\n"+
+		`{"type":"run.closed","at_ns":1800000000100}`+"\n")
 	h.write(t, "runs/w-3/other.txt", "x")
 	listing, err := h.bridge.Workspace()
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []domain.RunEntry{{WorldID: "w-1", Explore: true}, {WorldID: "w-2", Ended: true}}
+	for i, run := range listing.Runs {
+		if _, err := time.Parse(time.RFC3339, run.RecordedAt); err != nil {
+			t.Fatalf("run %d recorded at %q", i, run.RecordedAt)
+		}
+		listing.Runs[i].RecordedAt = ""
+	}
+	want := []domain.RunEntry{{WorldID: "w-1", Explore: true}, {WorldID: "w-2", Ended: true, Plant: "plant", DurationNs: 1800000000000}}
 	if len(listing.Domains) != 1 || listing.Domains[0] != (domain.Definition{Path: plant, ID: "plant", Title: "Plant"}) ||
 		listing.Compositions[0].ID != "" || !slices.Equal(listing.Runs, want) || len(listing.Scenarios) != 0 {
 		t.Fatalf("listing = %+v", listing)
