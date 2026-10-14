@@ -38,7 +38,7 @@ test("the graph works from the keyboard: arrows move, Enter selects, Escape clea
   await page.keyboard.press("Enter");
   const inspector = page.getByRole("complementary", { name: "Inspector" });
   await expect(inspector.getByRole("heading", { level: 2 })).toBeVisible();
-  await expect(graph.locator("[aria-live=polite]")).toContainText("selected");
+  await expect(page.locator("#graph-said")).toContainText("selected");
   await page.keyboard.press("Escape");
   await expect(inspector).toContainText("Select an instance");
   await page.keyboard.press("?");
@@ -132,7 +132,7 @@ test("the keyboard ring stays 2 px on screen when zoomed out", async ({ page }) 
 test("Enter opens a hall and the arrows keep working inside it; Escape returns to the hall", async ({ page }) => {
   await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Fcampus-3.domain.json`);
   const graph = page.getByRole("application", { name: "Plant graph" });
-  const said = graph.locator("[aria-live=polite]");
+  const said = page.locator("#graph-said");
   await expect(page.getByRole("group", { name: /^h01,/ })).toBeVisible();
   await graph.focus();
   await expect

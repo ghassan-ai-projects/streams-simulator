@@ -18,43 +18,58 @@ function Section({
 }) {
   return (
     <section className={styles.section} aria-label={title}>
-      <h2 className={shared.sectionTitle}>
-        {title}
+      <div className={shared.sectionTitle}>
+        <h2 className={styles.sectionName}>{title}</h2>
         {note !== undefined && <span className={styles.note}>{note}</span>}
-      </h2>
+      </div>
       {children}
     </section>
   );
 }
 
-function Rows({
-  rows,
-  columns,
-  empty = "None",
-}: {
+interface RowsProps {
   readonly rows: readonly (readonly Cell[])[];
   readonly columns: readonly string[];
+  readonly headers: readonly string[];
   readonly empty?: string;
-}) {
+}
+
+function Row({ row, columns }: { readonly row: readonly Cell[]; readonly columns: readonly string[] }) {
+  return (
+    <tr>
+      {row.map((cell, c) => {
+        const Tag = c === 0 ? "th" : "td";
+        return (
+          <Tag
+            key={c}
+            scope={c === 0 ? "row" : undefined}
+            className={styles[columns[c] ?? "text"]}
+            title={typeof cell === "string" ? undefined : cell.title}
+          >
+            {typeof cell === "string" ? cell : cell.text}
+          </Tag>
+        );
+      })}
+    </tr>
+  );
+}
+
+function Rows({ rows, columns, headers, empty = "None" }: RowsProps) {
   if (rows.length === 0) return <p className={styles.muted}>{empty}</p>;
   return (
     <table className={styles.table}>
+      <thead className="sr-only">
+        <tr>
+          {headers.map((header) => (
+            <th key={header} scope="col">
+              {header}
+            </th>
+          ))}
+        </tr>
+      </thead>
       <tbody>
         {rows.map((row, r) => (
-          <tr key={r}>
-            {row.map((cell, c) => {
-              const text = typeof cell === "string" ? cell : cell.text;
-              return (
-                <td
-                  key={c}
-                  className={styles[columns[c] ?? "text"]}
-                  title={typeof cell === "string" ? undefined : cell.title}
-                >
-                  {text}
-                </td>
-              );
-            })}
-          </tr>
+          <Row key={r} row={row} columns={columns} />
         ))}
       </tbody>
     </table>
@@ -74,7 +89,7 @@ function ReplayCheck({ verify }: { readonly verify: VerifyState }) {
     <Section title="Replay check" note="streamsim verify">
       <p className={styles.verdict}>{replayLine(verify)}</p>
       {detail !== "" && (
-        <details className={styles.details}>
+        <details className={styles.inset}>
           <summary>{verify.phase === "ready" && verify.value.matches ? "Details" : "What differs"}</summary>
           <pre>{detail}</pre>
         </details>
@@ -95,12 +110,17 @@ function Facts({ report, verify }: { readonly report: Report; readonly verify: V
         <p className={styles.muted}>
           The report compares the files in the run folder with the digests the run recorded.
         </p>
-        <Rows rows={report.checks.map((check) => [check.name, check.status])} columns={["text", "text"]} />
+        <Rows
+          rows={report.checks.map((check) => [check.name, check.status])}
+          columns={["text", "text"]}
+          headers={["File", "Check"]}
+        />
       </Section>
       <Section title="Deliveries" note={report.ended ? undefined : "run not closed"}>
         <Rows
           rows={[...["emitted", "delivered", "dropped"].map((key) => [key, count(report, key)]), ...dropped]}
           columns={["text", "number"]}
+          headers={["Records", "Count"]}
         />
       </Section>
     </>
@@ -118,10 +138,11 @@ function Truth({ report, unit, entity }: TruthProps) {
   const at = (ns: number) => wallClock(ns, report.startNs);
   return (
     <>
-      <Section title="Disturbances" note="at onset; hover for when it was set">
+      <Section title="Disturbances" note="onset · set">
         <Rows
-          rows={report.disturbances.map((d) => [at(d.onsetNs), d.target, named(d.name)])}
-          columns={["clock", "id", "label"]}
+          rows={report.disturbances.map((d) => [at(d.onsetNs), d.target, named(d.name), at(d.injectedNs)])}
+          columns={["clock", "id", "label", "clock"]}
+          headers={["Onset", "Target", "Disturbance", "Set at"]}
         />
       </Section>
       <Section title="Effector calls">
@@ -133,6 +154,7 @@ function Truth({ report, unit, entity }: TruthProps) {
             words(call.outcome),
           ])}
           columns={["clock", "id", "label", "label"]}
+          headers={["Time", "Instance", "Effector", "Outcome"]}
         />
       </Section>
       <KpiTruth report={report} unit={unit} entity={entity} />
@@ -140,6 +162,7 @@ function Truth({ report, unit, entity }: TruthProps) {
         <Rows
           rows={Object.entries(report.alarms).map(([key, n]) => [key.replaceAll("_", " "), String(n)])}
           columns={["text", "number"]}
+          headers={["Measure", "Value"]}
         />
       </Section>
     </>
@@ -169,6 +192,7 @@ function KpiTruth({ report, unit, entity }: TruthProps) {
           `${fixed(row.min)} – ${fixed(row.max)}`,
         ])}
         columns={["label", "number", "number"]}
+        headers={["KPI", "Mean", "Min – max"]}
         empty={entity === null ? "None" : `No KPI truth for ${entity}.`}
       />
     </Section>

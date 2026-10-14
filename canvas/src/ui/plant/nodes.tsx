@@ -98,28 +98,14 @@ function Readout({ shown }: { readonly shown: readonly Shown[] }) {
 
 const statusIcons = { alarm: OctagonAlert, fault: Wrench, warn: TriangleAlert } as const;
 
-interface TagProps {
-  readonly status: NodeStatus;
-  readonly count?: number;
-  readonly fault?: string;
-}
-
-function StatusTag({ status, count = 0, fault = "" }: TagProps) {
+function StatusTag({ status, count = 0 }: { readonly status: NodeStatus; readonly count?: number }) {
   if (status === null) return null;
   const Icon = statusIcons[status];
   const word = count > 0 ? `${statusWords[status]} ${String(count)}` : statusWords[status];
-  const name = status === "fault" ? fault : "";
   return (
-    <span className={cx(styles.tag, styles[`tag-${status}`])} title={name === "" ? word : `${word}: ${name}`}>
-      <Icon size={12} aria-hidden="true" />
-      <span className={styles.tagWord} aria-hidden="true">
-        {word}
-      </span>
-      {name !== "" && (
-        <span className={styles.tagText} aria-hidden="true">
-          {name}
-        </span>
-      )}
+    <span className={cx(styles.tag, styles[`tag-${status}`])} aria-hidden="true">
+      <Icon size={12} />
+      {word}
     </span>
   );
 }
@@ -135,14 +121,14 @@ export function InstanceNode({ data, selected }: NodeProps<InstanceNodeType>) {
     <div
       className={cx(styles.node, selected && styles.selected, data.active && styles.active, statusClass(status))}
       role="group"
-      aria-label={describeNode(view, selected, status)}
+      aria-label={describeNode(view, selected, status, 0, data.live?.fault ?? "")}
       style={{ "--cat": `var(--cat-${view.category})` } as CSSProperties}
     >
       <Handle type="target" position={Position.Left} id="in" className={styles.anchor} isConnectable={false} />
       <Handle type="source" position={Position.Right} id="out" className={styles.anchor} isConnectable={false} />
       <div className={styles.header}>
         <span className={styles.id}>{view.label}</span>
-        <StatusTag status={status} fault={data.live?.fault ?? ""} />
+        <StatusTag status={status} />
         <span className={styles.kind} title={view.detail}>
           {view.detail}
         </span>

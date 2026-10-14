@@ -201,12 +201,29 @@ export function plantView(plant: Plant, specs: Specs, open: string | null, reado
   return withinHall(instanceLevel(context, keep), open);
 }
 
-export function describeNode(node: ViewNode, selected: boolean, status: NodeStatus = null, count = 0): string {
+function counted(n: number, noun: string): string {
+  return `${String(n)} ${noun}${n === 1 ? "" : "s"}`;
+}
+
+function stateOf(status: NodeStatus, count: number, fault: string): string {
+  if (status === null) return "";
+  const where = count > 0 ? ` in ${String(count)}` : "";
+  const name = status === "fault" && fault !== "" ? `: ${fault}` : "";
+  return `${statusWords[status]}${where}${name}, `;
+}
+
+export function describeNode(
+  node: ViewNode,
+  selected: boolean,
+  status: NodeStatus = null,
+  count = 0,
+  fault = "",
+): string {
   const ports =
     node.instance === null
       ? "Enter opens the hall"
-      : `${String(node.pins.ins.length)} inputs, ${String(node.pins.outs.length)} outputs`;
-  const state = status === null ? "" : `${statusWords[status]}${count > 0 ? ` in ${String(count)}` : ""}, `;
+      : `${counted(node.pins.ins.length, "input")}, ${counted(node.pins.outs.length, "output")}`;
+  const state = stateOf(status, count, fault);
   return `${node.label}, ${state}${node.detail}, ${ports}${selected ? ", selected" : ""}`;
 }
 

@@ -4,7 +4,7 @@ import type { ReviewState, ReviewStore } from "../../app/reviewStore";
 import { instrumentOf } from "../../model/plant";
 import { shortChannel } from "../../model/playback";
 import { hallOf } from "../../model/plantView";
-import { abnormalFirst, attentionOf, showReading, worstOf } from "../../model/readout";
+import { abnormalFirst, attentionOf, showReading, withFault, worstOf } from "../../model/readout";
 import { faultedAt } from "../../model/timeline";
 import type { NodeLive } from "../plant/flow";
 
@@ -22,7 +22,7 @@ export function useLive(review: ReviewStore, state: ReviewState, plant: ReadyPla
         );
       const attention = attentionOf(shown);
       return {
-        shown: abnormalFirst(shown),
+        shown: withFault(abnormalFirst(shown), faulted.get(id) ?? ""),
         status: attention === "alarm" ? "alarm" : faulted.has(id) ? "fault" : attention,
         count: 0,
         fault: faulted.get(id) ?? "",

@@ -50,8 +50,7 @@ function KeyList() {
   );
 }
 
-export function KeyHelp() {
-  const [open, setOpen] = useToggle();
+function useFocusReturn(open: boolean) {
   const close = useRef<HTMLButtonElement>(null);
   const previous = useRef<Element | null>(null);
   useEffect(() => {
@@ -63,9 +62,28 @@ export function KeyHelp() {
       previous.current = null;
     }
   }, [open]);
+  const forget = () => {
+    previous.current = null;
+  };
+  return { close, forget };
+}
+
+export function KeyHelp() {
+  const [open, setOpen] = useToggle();
+  const { close, forget } = useFocusReturn(open);
   if (!open) return null;
   return (
-    <dialog open className={styles.dialog} aria-labelledby="keys-title" aria-modal="false">
+    <dialog
+      open
+      className={styles.dialog}
+      aria-labelledby="keys-title"
+      aria-modal="false"
+      onBlur={(event) => {
+        if (event.currentTarget.contains(event.relatedTarget)) return;
+        forget();
+        setOpen(false);
+      }}
+    >
       <h2 id="keys-title" className={styles.title}>
         Keyboard
       </h2>

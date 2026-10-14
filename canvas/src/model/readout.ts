@@ -75,3 +75,7 @@ export function worstOf(statuses: readonly NodeStatus[]): { readonly status: Nod
   );
   return { status: worst, count: ranked.filter((status) => status === worst).length };
 }
+
+export function withFault(shown: readonly Shown[], fault: string): readonly Shown[] {
+  return fault === "" ? shown : [{ channel: "fault", value: fault, unit: "", attention: "alarm" }, ...shown];
+}

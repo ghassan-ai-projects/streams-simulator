@@ -316,29 +316,19 @@
     var(--shadow-panel);
 }
 
+.header:has(.tag) .kind {
+  display: none;
+}
+
 .tag {
   display: inline-flex;
-  flex: 0 1 auto;
+  flex: none;
   align-items: center;
-  min-width: 0;
-  max-width: 60%;
   gap: 3px;
   padding: 0 5px;
   border-radius: 4px;
   font-size: var(--text-xs);
   font-weight: 600;
-}
-
-.tagWord {
-  flex: none;
-}
-
-.tagText {
-  min-width: 0;
-  font-weight: 400;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .tag-alarm,
@@ -397,7 +387,7 @@
 
 :global(.tier-compact) .tag {
   padding: 0 calc(4px / var(--zoom));
-  font-size: min(calc(11px / var(--zoom)), 20px);
+  font-size: calc(11px / var(--zoom));
 }
 
 :global(.tier-compact) .tag svg,

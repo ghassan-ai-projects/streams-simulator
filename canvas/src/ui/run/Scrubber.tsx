@@ -69,6 +69,16 @@ function Chip({ mark, chip, text, startNs, pick }: ChipProps) {
   );
 }
 
+function usePick(startNs: number, onSeek: (ns: number) => void, onEvent: ((mark: EventMark) => void) | undefined) {
+  const [said, setSaid] = useState("");
+  const pick = (mark: EventMark) => {
+    if (onEvent === undefined) onSeek(mark.atNs);
+    else onEvent(mark);
+    setSaid(`${chipText(mark, startNs)}: moved to ${wallClock(mark.atNs, startNs)}, ${mark.entity} selected`);
+  };
+  return { said, pick };
+}
+
 function Lane({ marks, fraction, startNs, onSeek, onEvent }: LaneProps) {
   const { ref, width } = useWidth();
   const texts = marks.map((mark) => chipText(mark, startNs));
@@ -78,10 +88,7 @@ function Lane({ marks, fraction, startNs, onSeek, onEvent }: LaneProps) {
     { width, rows: 2, gap: 4 },
   );
   const hidden = chips.filter((chip) => chip.row < 0).length;
-  const pick = (mark: EventMark) => {
-    if (onEvent === undefined) onSeek(mark.atNs);
-    else onEvent(mark);
-  };
+  const { said, pick } = usePick(startNs, onSeek, onEvent);
   return (
     <>
       <ol
@@ -104,6 +111,9 @@ function Lane({ marks, fraction, startNs, onSeek, onEvent }: LaneProps) {
           );
         })}
       </ol>
+      <p className="sr-only" aria-live="polite">
+        {said}
+      </p>
       {hidden > 0 && <p className={styles.laneMore}>{`${String(hidden)} more events: use Previous and Next event`}</p>}
     </>
   );

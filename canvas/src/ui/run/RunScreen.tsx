@@ -68,20 +68,22 @@ function Header({
   const heading = useScreen(hall === null ? `${worldId} · review` : `${hall} · ${worldId} · review`);
   return (
     <div className={styles.bar}>
-      <button
-        type="button"
-        className={shared.crumb}
-        onClick={() => {
-          navigation.go({ screen: "home" });
-        }}
-      >
-        Workspace
-      </button>
-      <ChevronRight size={14} aria-hidden="true" />
-      {hall !== null && <RunCrumb worldId={worldId} onHall={onHall} />}
-      <h1 className={styles.here} ref={heading} tabIndex={-1}>
-        {hall ?? worldId}
-      </h1>
+      <nav className={styles.crumbs} aria-label="Breadcrumb">
+        <button
+          type="button"
+          className={shared.crumb}
+          onClick={() => {
+            navigation.go({ screen: "home" });
+          }}
+        >
+          Workspace
+        </button>
+        <ChevronRight size={14} aria-hidden="true" />
+        {hall !== null && <RunCrumb worldId={worldId} onHall={onHall} />}
+        <h1 aria-current="location" className={styles.here} ref={heading} tabIndex={-1}>
+          {hall ?? worldId}
+        </h1>
+      </nav>
       <Status state={state} />
     </div>
   );

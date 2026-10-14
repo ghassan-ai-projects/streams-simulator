@@ -4,13 +4,12 @@ import type { CSSProperties, KeyboardEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { directionOf, firstOf, nearest } from "../../model/graphKeys";
 import type { PlantView } from "../../model/plantView";
-import { describeNode } from "../../model/plantView";
+import { describeNode, viewSummary } from "../../model/plantView";
 import { anchorsOnly, centreOf, inView, openingViewport, tierOf } from "../../model/viewport";
 import type { FlowNode, NodeLive } from "./flow";
 import { flowEdges, flowNodes } from "./flow";
 import { useZoomActions } from "./GraphControls";
 import { FrameNode, HallNode, InstanceNode } from "./nodes";
-import { cx } from "../cx";
 import styles from "./PlantScreen.module.css";
 
 const nodeTypes = { instance: InstanceNode, hall: HallNode, frame: FrameNode };
@@ -83,21 +82,30 @@ function useZoomKeys() {
 function useViewActive(view: PlantView, viewKey: string) {
   const [active, setActive] = useState<string | null>(null);
   const [shownKey, setShownKey] = useState(viewKey);
+  const [entered, setEntered] = useState("");
   if (shownKey !== viewKey) {
+    const back = view.nodes.some((entry) => entry.id === shownKey);
     setShownKey(viewKey);
-    setActive(view.nodes.some((entry) => entry.id === shownKey) ? shownKey : firstOf(view.layout.nodes));
+    setActive(back ? shownKey : firstOf(view.layout.nodes));
+    setEntered(back ? "" : `${viewKey}, ${viewSummary(view)}. `);
   }
   const current = active !== null && view.nodes.some((entry) => entry.id === active) ? active : null;
-  return [current, setActive] as const;
+  const move = (id: string | null) => {
+    setEntered("");
+    setActive(id);
+  };
+  return { active: current, setActive: move, entered };
 }
 
 function useGraphKeys({ view, viewKey, selected, live, onSelect, onOpenHall, onEscape }: PlantGraphProps): Keys {
-  const [active, setActive] = useViewActive(view, viewKey);
+  const { active, setActive, entered } = useViewActive(view, viewKey);
   const zoomKey = useZoomKeys();
   const node = view.nodes.find((entry) => entry.id === active);
   const now = node === undefined ? undefined : live?.(node.id);
   const announcement =
-    node === undefined ? "" : describeNode(node, node.id === selected, now?.status ?? null, now?.count ?? 0);
+    node === undefined
+      ? ""
+      : entered + describeNode(node, node.id === selected, now?.status ?? null, now?.count ?? 0, now?.fault ?? "");
   const activate = (id: string) => {
     if (view.nodes.find((entry) => entry.id === id)?.instance === null) onOpenHall?.(id);
     else onSelect(id);
@@ -144,23 +152,30 @@ const fixedProps = {
 
 function Flow({
   view,
-  viewKey,
   selected,
   live,
   onSelect,
   onOpenHall,
   active,
-}: PlantGraphProps & { readonly active: string | null }) {
+  keys,
+}: PlantGraphProps & { readonly active: string | null; readonly keys: Keys }) {
   const nodes = useMemo(() => flowNodes(view, selected, live ?? null, active), [view, selected, live, active]);
   const zoom = useStore((state) => state.transform[2]);
   const anchors = anchorsOnly(tierOf(zoom));
   const edges = useMemo(() => flowEdges(view, anchors), [view, anchors]);
   return (
     <ReactFlow
-      key={viewKey}
       nodes={nodes}
       edges={edges}
       {...fixedProps}
+      className={`tier-${tierOf(zoom)}`}
+      style={{ "--zoom": String(zoom) } as CSSProperties}
+      aria-roledescription="plant graph"
+      aria-label="Plant graph"
+      aria-describedby="graph-keys"
+      tabIndex={0}
+      onKeyDown={keys.onKeyDown}
+      onFocus={keys.onFocus}
       onNodeClick={(_, node: FlowNode) => {
         onSelect(node.type === "frame" ? null : node.id);
       }}
@@ -177,31 +192,21 @@ function Flow({
 }
 
 export function PlantGraph(props: PlantGraphProps) {
-  const zoom = useStore((state) => state.transform[2]);
   const keys = useGraphKeys(props);
   useOpening(props.viewKey, props.minFitZoom ?? 0.05);
   useFollowSelection(keys.active ?? props.selected);
   return (
-    <div
-      className={cx(styles.graph, `tier-${tierOf(zoom)}`)}
-      style={{ "--zoom": String(zoom) } as CSSProperties}
-      role="application"
-      aria-roledescription="plant graph"
-      aria-label="Plant graph"
-      aria-describedby="graph-keys"
-      tabIndex={0}
-      onKeyDown={keys.onKeyDown}
-      onFocus={keys.onFocus}
-    >
+    <div className={styles.graph}>
       <p id="graph-keys" className="sr-only">
         Arrow keys move between instances, Enter selects or opens a hall, Escape clears the selection, question mark
         lists every key. The outline lists every instance.
       </p>
-      <p className="sr-only" aria-live="polite">
+      <p id="graph-said" className="sr-only" aria-live="polite">
         {keys.announcement}
       </p>
       <Flow
         {...props}
+        keys={keys}
         active={keys.active}
         onSelect={(id) => {
           keys.point(id);
