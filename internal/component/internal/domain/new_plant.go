@@ -76,22 +76,26 @@ func (c contractSchema) checkNew(doc map[string]any, source string, empty bool) 
 	return nil
 }
 
-func requiredProfileNames() []string {
-	var spec struct {
+type profileClause struct {
+	Contains struct {
 		Properties struct {
-			Profiles struct {
-				AllOf []struct {
-					Contains struct {
-						Properties struct {
-							Name struct {
-								Const string `json:"const"`
-							} `json:"name"`
-						} `json:"properties"`
-					} `json:"contains"`
-				} `json:"allOf"`
-			} `json:"profiles"`
+			Name struct {
+				Const string `json:"const"`
+			} `json:"name"`
 		} `json:"properties"`
-	}
+	} `json:"contains"`
+}
+
+type profileRules struct {
+	Properties struct {
+		Profiles struct {
+			AllOf []profileClause `json:"allOf"`
+		} `json:"profiles"`
+	} `json:"properties"`
+}
+
+func requiredProfileNames() []string {
+	var spec profileRules
 	if json.Unmarshal(schemas.DomainSpec(), &spec) != nil {
 		return nil
 	}
