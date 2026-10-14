@@ -1,0 +1,586 @@
+[
+  {
+    "name": "workspace",
+    "width": 1280,
+    "height": 900,
+    "theme": "light",
+    "file": "screenshots/workspace-1280-light.png",
+    "axe": [],
+    "overflow": {
+      "width": 1280,
+      "viewport": 1280
+    },
+    "errors": []
+  },
+  {
+    "name": "plant",
+    "width": 1280,
+    "height": 900,
+    "theme": "light",
+    "file": "screenshots/plant-1280-light.png",
+    "axe": [],
+    "overflow": {
+      "width": 1280,
+      "viewport": 1280
+    },
+    "errors": []
+  },
+  {
+    "name": "campus",
+    "width": 1280,
+    "height": 900,
+    "theme": "light",
+    "file": "screenshots/campus-1280-light.png",
+    "axe": [],
+    "overflow": {
+      "width": 1280,
+      "viewport": 1280
+    },
+    "errors": []
+  },
+  {
+    "name": "editor",
+    "width": 1280,
+    "height": 900,
+    "theme": "light",
+    "file": "screenshots/editor-1280-light.png",
+    "axe": [],
+    "overflow": {
+      "width": 1280,
+      "viewport": 1280
+    },
+    "errors": []
+  },
+  {
+    "name": "launch",
+    "width": 1280,
+    "height": 900,
+    "theme": "light",
+    "file": "screenshots/launch-1280-light.png",
+    "axe": [],
+    "overflow": {
+      "width": 1280,
+      "viewport": 1280
+    },
+    "errors": []
+  },
+  {
+    "name": "review",
+    "width": 1280,
+    "height": 900,
+    "theme": "light",
+    "file": "screenshots/review-1280-light.png",
+    "axe": [],
+    "overflow": {
+      "width": 1280,
+      "viewport": 1280
+    },
+    "errors": []
+  },
+  {
+    "name": "tampered",
+    "width": 1280,
+    "height": 900,
+    "theme": "light",
+    "file": "screenshots/tampered-1280-light.png",
+    "axe": [],
+    "overflow": {
+      "width": 1280,
+      "viewport": 1280
+    },
+    "errors": [
+      "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"
+    ]
+  },
+  {
+    "name": "workspace",
+    "width": 1280,
+    "height": 900,
+    "theme": "dark",
+    "file": "screenshots/workspace-1280-dark.png",
+    "axe": [],
+    "overflow": {
+      "width": 1280,
+      "viewport": 1280
+    },
+    "errors": []
+  },
+  {
+    "name": "plant",
+    "width": 1280,
+    "height": 900,
+    "theme": "dark",
+    "file": "screenshots/plant-1280-dark.png",
+    "axe": [],
+    "overflow": {
+      "width": 1280,
+      "viewport": 1280
+    },
+    "errors": []
+  },
+  {
+    "name": "campus",
+    "width": 1280,
+    "height": 900,
+    "theme": "dark",
+    "file": "screenshots/campus-1280-dark.png",
+    "axe": [],
+    "overflow": {
+      "width": 1280,
+      "viewport": 1280
+    },
+    "errors": []
+  },
+  {
+    "name": "editor",
+    "width": 1280,
+    "height": 900,
+    "theme": "dark",
+    "file": "screenshots/editor-1280-dark.png",
+    "axe": [],
+    "overflow": {
+      "width": 1280,
+      "viewport": 1280
+    },
+    "errors": []
+  },
+  {
+    "name": "launch",
+    "width": 1280,
+    "height": 900,
+    "theme": "dark",
+    "file": "screenshots/launch-1280-dark.png",
+    "axe": [],
+    "overflow": {
+      "width": 1280,
+      "viewport": 1280
+    },
+    "errors": []
+  },
+  {
+    "name": "review",
+    "width": 1280,
+    "height": 900,
+    "theme": "dark",
+    "file": "screenshots/review-1280-dark.png",
+    "axe": [],
+    "overflow": {
+      "width": 1280,
+      "viewport": 1280
+    },
+    "errors": []
+  },
+  {
+    "name": "tampered",
+    "width": 1280,
+    "height": 900,
+    "theme": "dark",
+    "file": "screenshots/tampered-1280-dark.png",
+    "axe": [],
+    "overflow": {
+      "width": 1280,
+      "viewport": 1280
+    },
+    "errors": [
+      "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"
+    ]
+  },
+  {
+    "name": "workspace",
+    "width": 1440,
+    "height": 900,
+    "theme": "light",
+    "file": "screenshots/workspace-1440-light.png",
+    "axe": [],
+    "overflow": {
+      "width": 1440,
+      "viewport": 1440
+    },
+    "errors": []
+  },
+  {
+    "name": "plant",
+    "width": 1440,
+    "height": 900,
+    "theme": "light",
+    "file": "screenshots/plant-1440-light.png",
+    "axe": [],
+    "overflow": {
+      "width": 1440,
+      "viewport": 1440
+    },
+    "errors": []
+  },
+  {
+    "name": "campus",
+    "width": 1440,
+    "height": 900,
+    "theme": "light",
+    "file": "screenshots/campus-1440-light.png",
+    "axe": [],
+    "overflow": {
+      "width": 1440,
+      "viewport": 1440
+    },
+    "errors": []
+  },
+  {
+    "name": "editor",
+    "width": 1440,
+    "height": 900,
+    "theme": "light",
+    "file": "screenshots/editor-1440-light.png",
+    "axe": [],
+    "overflow": {
+      "width": 1440,
+      "viewport": 1440
+    },
+    "errors": []
+  },
+  {
+    "name": "launch",
+    "width": 1440,
+    "height": 900,
+    "theme": "light",
+    "file": "screenshots/launch-1440-light.png",
+    "axe": [],
+    "overflow": {
+      "width": 1440,
+      "viewport": 1440
+    },
+    "errors": []
+  },
+  {
+    "name": "review",
+    "width": 1440,
+    "height": 900,
+    "theme": "light",
+    "file": "screenshots/review-1440-light.png",
+    "axe": [],
+    "overflow": {
+      "width": 1440,
+      "viewport": 1440
+    },
+    "errors": []
+  },
+  {
+    "name": "tampered",
+    "width": 1440,
+    "height": 900,
+    "theme": "light",
+    "file": "screenshots/tampered-1440-light.png",
+    "axe": [],
+    "overflow": {
+      "width": 1440,
+      "viewport": 1440
+    },
+    "errors": [
+      "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"
+    ]
+  },
+  {
+    "name": "workspace",
+    "width": 1440,
+    "height": 900,
+    "theme": "dark",
+    "file": "screenshots/workspace-1440-dark.png",
+    "axe": [],
+    "overflow": {
+      "width": 1440,
+      "viewport": 1440
+    },
+    "errors": []
+  },
+  {
+    "name": "plant",
+    "width": 1440,
+    "height": 900,
+    "theme": "dark",
+    "file": "screenshots/plant-1440-dark.png",
+    "axe": [],
+    "overflow": {
+      "width": 1440,
+      "viewport": 1440
+    },
+    "errors": []
+  },
+  {
+    "name": "campus",
+    "width": 1440,
+    "height": 900,
+    "theme": "dark",
+    "file": "screenshots/campus-1440-dark.png",
+    "axe": [],
+    "overflow": {
+      "width": 1440,
+      "viewport": 1440
+    },
+    "errors": []
+  },
+  {
+    "name": "editor",
+    "width": 1440,
+    "height": 900,
+    "theme": "dark",
+    "file": "screenshots/editor-1440-dark.png",
+    "axe": [],
+    "overflow": {
+      "width": 1440,
+      "viewport": 1440
+    },
+    "errors": []
+  },
+  {
+    "name": "launch",
+    "width": 1440,
+    "height": 900,
+    "theme": "dark",
+    "file": "screenshots/launch-1440-dark.png",
+    "axe": [],
+    "overflow": {
+      "width": 1440,
+      "viewport": 1440
+    },
+    "errors": []
+  },
+  {
+    "name": "review",
+    "width": 1440,
+    "height": 900,
+    "theme": "dark",
+    "file": "screenshots/review-1440-dark.png",
+    "axe": [],
+    "overflow": {
+      "width": 1440,
+      "viewport": 1440
+    },
+    "errors": []
+  },
+  {
+    "name": "tampered",
+    "width": 1440,
+    "height": 900,
+    "theme": "dark",
+    "file": "screenshots/tampered-1440-dark.png",
+    "axe": [],
+    "overflow": {
+      "width": 1440,
+      "viewport": 1440
+    },
+    "errors": [
+      "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"
+    ]
+  },
+  {
+    "name": "workspace",
+    "width": 1920,
+    "height": 1080,
+    "theme": "light",
+    "file": "screenshots/workspace-1920-light.png",
+    "axe": [],
+    "overflow": {
+      "width": 1920,
+      "viewport": 1920
+    },
+    "errors": []
+  },
+  {
+    "name": "plant",
+    "width": 1920,
+    "height": 1080,
+    "theme": "light",
+    "file": "screenshots/plant-1920-light.png",
+    "axe": [],
+    "overflow": {
+      "width": 1920,
+      "viewport": 1920
+    },
+    "errors": []
+  },
+  {
+    "name": "campus",
+    "width": 1920,
+    "height": 1080,
+    "theme": "light",
+    "file": "screenshots/campus-1920-light.png",
+    "axe": [],
+    "overflow": {
+      "width": 1920,
+      "viewport": 1920
+    },
+    "errors": []
+  },
+  {
+    "name": "editor",
+    "width": 1920,
+    "height": 1080,
+    "theme": "light",
+    "file": "screenshots/editor-1920-light.png",
+    "axe": [],
+    "overflow": {
+      "width": 1920,
+      "viewport": 1920
+    },
+    "errors": []
+  },
+  {
+    "name": "launch",
+    "width": 1920,
+    "height": 1080,
+    "theme": "light",
+    "file": "screenshots/launch-1920-light.png",
+    "axe": [],
+    "overflow": {
+      "width": 1920,
+      "viewport": 1920
+    },
+    "errors": []
+  },
+  {
+    "name": "review",
+    "width": 1920,
+    "height": 1080,
+    "theme": "light",
+    "file": "screenshots/review-1920-light.png",
+    "axe": [],
+    "overflow": {
+      "width": 1920,
+      "viewport": 1920
+    },
+    "errors": []
+  },
+  {
+    "name": "tampered",
+    "width": 1920,
+    "height": 1080,
+    "theme": "light",
+    "file": "screenshots/tampered-1920-light.png",
+    "axe": [],
+    "overflow": {
+      "width": 1920,
+      "viewport": 1920
+    },
+    "errors": [
+      "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"
+    ]
+  },
+  {
+    "name": "workspace",
+    "width": 1920,
+    "height": 1080,
+    "theme": "dark",
+    "file": "screenshots/workspace-1920-dark.png",
+    "axe": [],
+    "overflow": {
+      "width": 1920,
+      "viewport": 1920
+    },
+    "errors": []
+  },
+  {
+    "name": "plant",
+    "width": 1920,
+    "height": 1080,
+    "theme": "dark",
+    "file": "screenshots/plant-1920-dark.png",
+    "axe": [],
+    "overflow": {
+      "width": 1920,
+      "viewport": 1920
+    },
+    "errors": []
+  },
+  {
+    "name": "campus",
+    "width": 1920,
+    "height": 1080,
+    "theme": "dark",
+    "file": "screenshots/campus-1920-dark.png",
+    "axe": [],
+    "overflow": {
+      "width": 1920,
+      "viewport": 1920
+    },
+    "errors": []
+  },
+  {
+    "name": "editor",
+    "width": 1920,
+    "height": 1080,
+    "theme": "dark",
+    "file": "screenshots/editor-1920-dark.png",
+    "axe": [],
+    "overflow": {
+      "width": 1920,
+      "viewport": 1920
+    },
+    "errors": []
+  },
+  {
+    "name": "launch",
+    "width": 1920,
+    "height": 1080,
+    "theme": "dark",
+    "file": "screenshots/launch-1920-dark.png",
+    "axe": [],
+    "overflow": {
+      "width": 1920,
+      "viewport": 1920
+    },
+    "errors": []
+  },
+  {
+    "name": "review",
+    "width": 1920,
+    "height": 1080,
+    "theme": "dark",
+    "file": "screenshots/review-1920-dark.png",
+    "axe": [],
+    "overflow": {
+      "width": 1920,
+      "viewport": 1920
+    },
+    "errors": []
+  },
+  {
+    "name": "tampered",
+    "width": 1920,
+    "height": 1080,
+    "theme": "dark",
+    "file": "screenshots/tampered-1920-dark.png",
+    "axe": [],
+    "overflow": {
+      "width": 1920,
+      "viewport": 1920
+    },
+    "errors": [
+      "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"
+    ]
+  },
+  {
+    "name": "review",
+    "width": 1280,
+    "height": 900,
+    "theme": "light",
+    "file": "screenshots/fit-review-1280-light.png",
+    "axe": [],
+    "overflow": {
+      "width": 1280,
+      "viewport": 1280
+    },
+    "errors": []
+  },
+  {
+    "name": "review",
+    "width": 1280,
+    "height": 900,
+    "theme": "dark",
+    "file": "screenshots/fit-review-1280-dark.png",
+    "axe": [],
+    "overflow": {
+      "width": 1280,
+      "viewport": 1280
+    },
+    "errors": []
+  }
+]
