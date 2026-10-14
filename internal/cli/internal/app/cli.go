@@ -33,7 +33,7 @@ type command struct {
 var commands = map[string]command{
 	"catalog":     {run: cmdCatalog},
 	"domain":      {run: cmdDomain},
-	"component":   {run: cmdComponent},
+	"component":   {run: componentCommand},
 	"adapter":     {run: cmdAdapter},
 	"run":         {run: cmdRun},
 	"replay":      {run: cmdReplay},
@@ -137,6 +137,7 @@ Commands:
   domain compose <composition> [--out]  Compose a plant from the component library into a domain
   component list|show <ref>|validate    The component library: equipment, instruments, vocabulary
   component examples|example <id>       Ready-to-run example plants shipped with the library
+  component new <id> --title --from|--example [--empty]  A new plant's composition, copied or empty
                                         (built in; --components-dir adds customer
                                         directories, repeatable; STREAMSIM_COMPONENTS_DIRS)
   adapter list|verify [path]            Installed adapters; verify one against its golden

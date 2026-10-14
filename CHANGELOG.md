@@ -4,6 +4,12 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **`streamsim component new`.** Prints a new plant's composition, copied from a composition file or a shipped example
+  or emptied to its frame, with the id and title checked by the binary. The canvas creates plants through it, so the
+  rule for what an empty plant keeps and the id check live in the binary.
+- **Run listing fault counts.** Each run in the canvas bridge's workspace listing carries `faults`, the fault
+  injections in its command log.
+
 - **Validation messages in words.** A JSON Schema node with a `pattern` may carry `x-expected`, a phrase naming what the
   value must be; a value that fails the pattern is then reported as `"bad name" is not an instance name: …` instead
   of quoting the regular expression. The composition contract describes plant ids and instance names this way.

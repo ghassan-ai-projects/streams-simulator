@@ -53,6 +53,7 @@ var cliAppFiles = map[string]cliFile{
 	"domain_lint.go":        {"command: domain lint", []string{"internal/domain", "internal/lint"}, 60},
 	"component.go":          {"command: component library and domain compose", []string{cliF, "internal/component"}, 130},
 	"component_examples.go": {"command: component examples", []string{"internal/component"}, 32},
+	"component_new.go":      {"command: component new", []string{cliF, "internal/component"}, 58},
 	"device.go":             {"command: device serve", []string{"internal/device", "internal/deviceworld"}, 100},
 	"manifest.go":           {"command: manifest", []string{"internal/release"}, 40},
 	"mcp.go":                {"command: mcp", []string{"internal/mcp"}, 60},

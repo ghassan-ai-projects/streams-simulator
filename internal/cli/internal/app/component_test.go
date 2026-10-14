@@ -199,3 +199,32 @@ func TestComponentValidateReportsAnInvalidLibraryFileWithItsPointers(t *testing.
 		t.Fatalf("failure = %v, want component_invalid at the unit family of %s", failure, path)
 	}
 }
+
+func TestComponentNewCopiesOrEmptiesAPlantAndChecksItsID(t *testing.T) {
+	t.Parallel()
+	copied := invoke(t, "component", "new", "lab-copy", "--title", "Lab copy", "--from", testsupport.PilotComposition()).
+		mustSucceed(t).document(t, "component_new")
+	plant, _ := copied["composition"].(map[string]any)
+	if plant["id"] != "lab-copy" || plant["title"] != "Lab copy" || plant["equipment"] == nil {
+		t.Fatalf("copy = %v", copied)
+	}
+	emptied := invoke(t, "component", "new", "lab-empty", "--title", "Empty", "--example", "chiller-pilot", "--empty").
+		mustSucceed(t).document(t, "component_new")
+	plant, _ = emptied["composition"].(map[string]any)
+	profiles, _ := plant["profiles"].([]any)
+	if plant["equipment"] != nil || plant["connections"] != nil || len(profiles) == 0 {
+		t.Fatalf("empty = %v", emptied)
+	}
+	for _, profile := range profiles {
+		if entry, _ := profile.(map[string]any); entry["fault_weights"] != nil || entry["not_applicable"] != nil {
+			t.Fatalf("empty plant kept %v", entry)
+		}
+	}
+	refused := invoke(t, "component", "new", "Cool_Hall", "--title", "Cool hall", "--example", "chiller-pilot")
+	if refused.code == 0 || !strings.Contains(refused.stdout, `"Cool_Hall\" is not a plant id`) {
+		t.Fatalf("bad id: exit %d %s", refused.code, refused.stdout)
+	}
+	if usage := invoke(t, "component", "new", "lab", "--title", "Lab"); usage.code == 0 {
+		t.Fatalf("no base accepted: %s", usage.stdout)
+	}
+}

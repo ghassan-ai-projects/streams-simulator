@@ -44,6 +44,9 @@
       "$ref": "#/$defs/component_example"
     },
     {
+      "$ref": "#/$defs/component_new"
+    },
+    {
       "$ref": "#/$defs/adapter_list"
     },
     {
@@ -989,6 +992,18 @@
       ],
       "properties": {
         "example": {
+          "type": "object"
+        }
+      }
+    },
+    "component_new": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "composition"
+      ],
+      "properties": {
+        "composition": {
           "type": "object"
         }
       }

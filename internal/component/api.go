@@ -15,6 +15,8 @@ type Composed = layer.Composed
 
 type ExampleSummary = layer.ExampleSummary
 
+type NewPlant = layer.NewPlant
+
 var ErrUnknownExample = layer.ErrUnknownExample
 
 type DomainSummary = specs.Summary

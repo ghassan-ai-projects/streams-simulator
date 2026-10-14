@@ -100,6 +100,7 @@ streamsim component [list|show <namespace/name[@major]>|validate|examples|exampl
 - `component show <ref>` — the entry and the file's document; `ns/name` without a major selects the highest major.
 - `component examples` — the ready-to-run example plants shipped with the library, as `{id, title, description}`.
 - `component example <id>` — one example plant's composition, ready to copy into a workspace; an id that is not shipped fails with `component_failed`.
+- `component new <id> --title <title> (--from <composition.json> | --example <id>) [--empty]` — a new plant's composition as `{composition}`: a full copy of the base with the new id and title, or with `--empty` only its frame (site, areas, axes, stresses, ground truth and profiles without fault weights; no equipment, connections or description). The id and title are checked against `composition-v0.1`; a bad id fails with `composition_invalid` and says what an id must be. Nothing is written.
 - `component validate` — loads and checks every file of the directories and prints `{valid, directories, equipment, instruments}`, where `directories` are the customer directories (the built-in library is always checked and counted). A file that breaks its schema or a library rule fails with `component_invalid`, naming the file and listing every issue with its pointer.
 
 ### `adapter`

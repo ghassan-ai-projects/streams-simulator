@@ -54,3 +54,7 @@ func Examples() ([]ExampleSummary, error) {
 func Example(id string) (json.RawMessage, error) {
 	return files.FindExample(id)
 }
+
+func NewComposition(base []byte, plant NewPlant, source string) (map[string]any, error) {
+	return layer.NewComposition(base, plant, source)
+}
