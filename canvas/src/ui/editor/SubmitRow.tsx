@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import panel from "../panel.module.css";
+import styles from "./Editor.module.css";
 
 interface SubmitRowProps {
   readonly id: string;
@@ -9,12 +10,7 @@ interface SubmitRowProps {
 
 export function SubmitRow({ id, reason, children }: SubmitRowProps) {
   return (
-    <>
-      {reason !== null && (
-        <p className={panel.hint} id={id}>
-          {reason}
-        </p>
-      )}
+    <div className={styles.submitRow}>
       <button
         type="submit"
         className={panel.secondary}
@@ -23,6 +19,11 @@ export function SubmitRow({ id, reason, children }: SubmitRowProps) {
       >
         {children}
       </button>
-    </>
+      {reason !== null && (
+        <p className={styles.reason} id={id}>
+          {reason}
+        </p>
+      )}
+    </div>
   );
 }
