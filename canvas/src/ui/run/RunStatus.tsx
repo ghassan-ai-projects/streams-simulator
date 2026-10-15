@@ -79,7 +79,6 @@ function Mode({ report }: { readonly report: Report }) {
         {explore ? <Eye size={13} aria-hidden="true" /> : <Lock size={13} aria-hidden="true" />}
         {explore ? "Explore" : "Evaluate"}
       </span>
-      {!report.ended && <span className={styles.chip}>not finished</span>}
       <span className={styles.facts}>{runFacts(report)}</span>
       <RunInfo lines={[explore ? modeWords.explore : modeWords.evaluate, runIdentity(report)]} />
     </>

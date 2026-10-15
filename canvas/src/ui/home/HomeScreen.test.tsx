@@ -22,7 +22,7 @@ describe("home screen", () => {
     }
     const runs = within(screen.getByRole("region", { name: "Runs" })).getAllByRole("listitem");
     expect(runs.map((row) => row.textContent)).toEqual([
-      expect.stringMatching(/^Factory utilitiesExplore.*w-2 · .*not finishedReview$/),
+      expect.stringMatching(/^Factory utilitiesExplore.*w-2 · .*Did not finishReview$/),
       expect.stringMatching(/^Factory utilitiesEvaluate.*w-1 · .* · 30 min · seed 7 · no faultsReview$/),
     ]);
     expect(runs[0]?.querySelector("[title='Factory utilities']")).not.toBeNull();

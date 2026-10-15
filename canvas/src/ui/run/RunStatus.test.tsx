@@ -36,6 +36,13 @@ describe("run status", () => {
     expect(screen.getByText("the world was destroyed")).toBeInTheDocument();
   });
 
+  it("names a run the listing still shows as open Did not finish, never not finished", () => {
+    const open = state({ report: { phase: "ready", value: { ...parsed, ended: false, complete: false } } });
+    render(<Status state={open} />);
+    expect(screen.getByRole("status")).toHaveTextContent("Did not finish");
+    expect(screen.queryByText("not finished")).toBeNull();
+  });
+
   it("says when the plant file changed after the run, as information", async () => {
     const changed = state({
       verified: { phase: "ready", value: { matches: true, domainChanged: true, detail: "", reason: "", file: "" } },

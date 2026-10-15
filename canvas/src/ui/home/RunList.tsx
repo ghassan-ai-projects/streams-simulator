@@ -34,7 +34,7 @@ function Status({ row, badge }: { readonly row: RunRow; readonly badge: Badge | 
     return (
       <span className={styles.live}>
         <Radio size={12} aria-hidden="true" />
-        not finished
+        Did not finish
       </span>
     );
   }
