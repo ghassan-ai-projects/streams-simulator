@@ -5,7 +5,7 @@ import type { Workspace } from "../../model/bridge";
 import type { Badge } from "../../model/report";
 import { badgeLabels } from "../../model/report";
 import type { RunRow } from "../../model/workspace";
-import { plantsOf, runFacts, runRows, unfinishedReason, whenOf } from "../../model/workspace";
+import { counted, plantsOf, runFacts, runRows, unfinishedReason, whenOf } from "../../model/workspace";
 import styles from "./HomeScreen.module.css";
 import { MetaParts } from "../MetaParts";
 
@@ -18,7 +18,7 @@ interface ListProps {
 const page = 20;
 
 function moreLabel(count: number): string {
-  return `Show ${String(count)} more ${count === 1 ? "run" : "runs"}`;
+  return `Show ${counted(count, "more run", "more runs")}`;
 }
 
 function detailParts(row: RunRow): readonly string[] {

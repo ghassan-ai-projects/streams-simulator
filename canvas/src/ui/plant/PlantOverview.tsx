@@ -3,7 +3,7 @@ import type { Plant } from "../../model/plant";
 import { areaCounts, hallOf } from "../../model/plantView";
 import { kindLabel } from "../../model/report";
 import type { RunRow } from "../../model/workspace";
-import { runFacts, whenOf } from "../../model/workspace";
+import { counted, runFacts, whenOf } from "../../model/workspace";
 import shared from "../shared.module.css";
 import { MetaParts } from "../MetaParts";
 import { cx } from "../cx";
@@ -107,14 +107,21 @@ export function PlantOverview({
 }) {
   const areas = areaCounts(plant);
   const halls = counts(plant.instances.flatMap((instance) => hallOf(instance.id) ?? []));
-  const where = halls.length > 0 ? `${String(halls.length)} halls and the site` : `${String(areas.length)} areas`;
+  const where =
+    halls.length > 0
+      ? `${counted(halls.length, "hall", "halls")} and the site`
+      : counted(areas.length, "area", "areas");
   return (
     <aside className={styles.inspector} aria-label="Inspector" tabIndex={0}>
       <header className={styles.inspectorHead}>
         <h2>{plant.title || plant.id}</h2>
-        <p
-          className={styles.kindLine}
-        >{`${String(plant.instances.length)} instances in ${where} · ${String(plant.links.length)} links`}</p>
+        <p className={styles.kindLine}>
+          {`${counted(plant.instances.length, "instance", "instances")} in ${where} · ${counted(
+            plant.links.length,
+            "link",
+            "links",
+          )}`}
+        </p>
         <p className={styles.hint}>
           Select an instance to see its channels (the values measured on it, one for each port and state), links, faults
           and effectors.

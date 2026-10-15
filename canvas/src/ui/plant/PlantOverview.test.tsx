@@ -29,6 +29,16 @@ describe("plant overview", () => {
     ).toEqual(["Cooling2", "Power1"]);
   });
 
+  it("singularises the one-instance plant summary", () => {
+    const single = parsePlant({
+      id: "single",
+      site: { name: "Site", areas: [{ name: "Site" }] },
+      instances: [{ kind: "pump", names: ["P-1"], area: "Site" }],
+    });
+    render(<PlantOverview plant={single} runs={[]} />);
+    expect(screen.getByText("1 instance in 1 area · 0 links")).toBeInTheDocument();
+  });
+
   it("shows five recent runs and offers the rest on request", () => {
     const runs: RunRow[] = Array.from({ length: 8 }, (_, i) => ({
       plantTitle: "Campus",

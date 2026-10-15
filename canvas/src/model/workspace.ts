@@ -15,7 +15,7 @@ export interface RunRow {
   readonly plantTitle: string;
 }
 
-function counted(count: number, one: string, many: string): string {
+export function counted(count: number, one: string, many: string): string {
   return `${String(count)} ${count === 1 ? one : many}`;
 }
 
