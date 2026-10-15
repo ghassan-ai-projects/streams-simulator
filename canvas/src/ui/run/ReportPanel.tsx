@@ -180,7 +180,7 @@ function Events({ report }: { readonly report: Report }) {
             named(call.effector),
             words(call.outcome),
           ])}
-          columns={["clock", "id", "label", "outcome"]}
+          columns={["clock", "id", "effector", "outcome"]}
           headers={["Time", "Instance", "Effector", "Outcome"]}
         />
       </Section>

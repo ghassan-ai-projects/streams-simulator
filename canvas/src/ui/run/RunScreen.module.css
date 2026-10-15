@@ -186,6 +186,10 @@
   white-space: nowrap;
 }
 
+.effector {
+  overflow-wrap: anywhere;
+}
+
 .outcome {
   width: 1%;
   min-width: 10em;
