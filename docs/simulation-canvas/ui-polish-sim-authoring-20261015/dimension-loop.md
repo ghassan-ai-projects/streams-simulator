@@ -41,6 +41,8 @@ Coherence (5) → Colour (6) → Components (7) → Motion (7) → Graph (3, ded
 | 16 | Graph round: pan cue into plant+editor (Option A), full-tier header hug, wire-routing pass (stash) | done — 7c06d48 pan cue (plant+editor), 0348a3e wire routing with the stashed hug-avoidance and 6 new tests (grid hug marking, crowd, path choice; the popped code refactored under the complexity gates), d472050 full-tier header hug (CSS, rows hug under the category band). The failed fixer session (usage limit) left a half-threaded tier-aware header height that would have desynced wire ends from rendered rows — reverted in favour of the contained CSS hug; a true tier-aware layout stays deferred with ISS-8D-17's won't-fix rationale. | 7c06d48, 0348a3e, d472050 |
 | 17 | Round-13 re-score | pending — blocked on subagent quota until 2026-10-16 03:51 | — |
 
+The loop's work rides on branch `ui-score-loop`, PR #42 (`canvas: the dimension score loop — side panels and the graph round (overall 3 → 7)`); PR #41 was merged earlier on 2026-10-15 from the same line's predecessor.
+
 Still needs an owner/binary decision: P-11-4 Size preset units ("m³/h" from the component library — Go-side data change, may touch composed-domain bytes and the behaviour pin).
 
 ## Graph-round decision framing (fit-vs-floor, P-11-1 / ISS-11D-02)
