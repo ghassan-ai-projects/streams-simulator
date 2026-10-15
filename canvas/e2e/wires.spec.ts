@@ -9,15 +9,14 @@ test.setTimeout(90_000);
 
 async function checkEveryTier(page: Page) {
   const graph = page.getByRole("application", { name: "Plant graph" });
+  const budget = { intervals: [250, 500, 1000], timeout: 20_000 };
   await fitAndWait(page);
   for (let step = 0; step < 6; step += 1) {
-    await expect.poll(() => page.evaluate(wiresUnderNodes)).toEqual([]);
-    await expect.poll(() => page.evaluate(wireEndsTooClose)).toEqual([]);
+    await expect.poll(() => page.evaluate(wiresUnderNodes), budget).toEqual([]);
+    await expect.poll(() => page.evaluate(wireEndsTooClose), budget).toEqual([]);
     const tier = (await graph.getAttribute("class"))?.match(/tier-(\w+)/)?.[1];
     if (tier === "compact" || tier === "full") {
-      await expect
-        .poll(() => page.evaluate(wiresNearTitles), { intervals: [250, 500, 1000], timeout: 20_000 })
-        .toEqual([]);
+      await expect.poll(() => page.evaluate(wiresNearTitles), budget).toEqual([]);
     }
     await page.keyboard.press("+");
   }

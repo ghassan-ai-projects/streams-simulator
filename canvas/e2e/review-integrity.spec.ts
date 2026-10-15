@@ -35,7 +35,7 @@ test("a complete run missing a recorded digest fails both file and replay checks
   await expect(page.getByRole("status").filter({ hasText: /^Not verified$/ })).toHaveCount(1, { timeout: 60_000 });
   const details = page.getByRole("complementary", { name: "Run details" });
   await openIntegrity(page);
-  await expect(details.getByRole("region", { name: "File check" })).toContainText("files differ");
+  await expect(details.getByRole("region", { name: "File check" })).toContainText("The files changed after the run.");
   await expect(details.getByRole("region", { name: "Replay check" })).toContainText(
     "records no digest for ledger.jsonl",
   );

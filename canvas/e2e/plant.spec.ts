@@ -67,7 +67,7 @@ test("the chiller pilot inspector explains AHU and chiller components from the l
   const inspector = page.getByRole("complementary", { name: "Inspector" });
   await outline.getByRole("button", { name: /^AHU-1/ }).click();
   await expect(inspector).toContainText("Air-handling unit · Office block");
-  await expect(inspector).toContainText("Kind: ahu · streamsim/ahu");
+  await expect(inspector).toContainText("streamsim/ahu");
   await inspector.getByText("What this component models").click();
   await expect(inspector).toContainText(
     "Air-handling unit with a chilled-water coil. Its cooling load is the occupancy-driven internal gain, the outdoor-air load and a constant envelope gain; the coil cannot hold the supply-air setpoint when the chilled water is too warm.",

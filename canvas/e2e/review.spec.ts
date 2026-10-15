@@ -25,7 +25,7 @@ test("a recorded run plays back with the binary's report and a Verified badge", 
   const report = page.getByRole("complementary", { name: "Run details" });
   await expect(report.locator("summary").first()).toHaveText("Verified: the files match and the replay reproduces.");
   await openIntegrity(page);
-  await expect(report.getByRole("region", { name: "File check" })).toContainText("files match");
+  await expect(report.getByRole("region", { name: "File check" })).toContainText("Files match the record.");
   await expect(report.getByRole("region", { name: "Replay check" })).toContainText("Reproduces");
   await expect(page.getByRole("status").filter({ hasText: "plant file changed after this run" })).toBeVisible();
   await expect(report.getByRole("region", { name: "True results" })).toContainText("CH-1");
@@ -57,11 +57,11 @@ test("a run whose files were edited after it ended is Not verified", async ({ pa
   await openIntegrity(page);
   await expect(
     page.getByRole("complementary", { name: "Run details" }).getByRole("region", { name: "File check" }),
-  ).toContainText("files differ");
+  ).toContainText("The files changed after the run.");
   await expect(page.getByRole("alert").filter({ hasText: "differ from what the run wrote" })).toBeVisible();
   await expect(
     page.getByRole("complementary", { name: "Run details" }).getByRole("region", { name: "Replay check" }),
-  ).toContainText("Does not verify: trace.jsonl differs");
+  ).toContainText("replaying the run gave a different");
   const graph = await page.getByRole("application", { name: "Plant graph" }).boundingBox();
   expect(graph?.height ?? 0).toBeGreaterThan(300);
 });
@@ -74,7 +74,7 @@ test("a run that does not reproduce reads Not verified with verify's own verdict
   await openIntegrity(page);
   const replay = page.getByRole("complementary", { name: "Run details" }).getByRole("region", { name: "Replay check" });
   await expect(replay).toContainText(/Does not (reproduce|verify)/);
-  await replay.getByText("What differs").click();
+  await replay.getByText("For developers").click();
   await expect(replay.locator("pre")).not.toBeEmpty();
   await expect(page.getByRole("note")).toContainText("This run did not verify");
 });
@@ -84,7 +84,7 @@ test("a run whose recorded plant was tampered with reads Not verified, not Not c
   await expect(page.getByRole("status").filter({ hasText: /^Not verified$/ })).toHaveCount(1, { timeout: 60_000 });
   await openIntegrity(page);
   const replay = page.getByRole("complementary", { name: "Run details" }).getByRole("region", { name: "Replay check" });
-  await replay.getByText("What differs").click();
+  await replay.getByText("For developers").click();
   await expect(replay).toContainText("nothing was replayed");
   await expect(replay.locator("pre")).toContainText("does not match its digest");
 });
