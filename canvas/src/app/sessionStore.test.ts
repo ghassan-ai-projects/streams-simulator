@@ -55,6 +55,14 @@ describe("session", () => {
     expect(store.snapshot()).toMatchObject({ failure: null, code: "AAAABBBBCCCD" });
   });
 
+  it("keeps a code typed while a second status check is still answering", async () => {
+    const { store } = await unpaired();
+    store.type("3s2q-k7mp-lxq4");
+    await store.check();
+    expect(store.snapshot()).toMatchObject({ phase: "unpaired", code: "3S2QK7MPLXQ4" });
+    expect(store.canPair()).toBe(true);
+  });
+
   it("blocks typing and pairing once the bridge locks or the code was used", async () => {
     for (const code of ["pairing_locked", "pairing_used"]) {
       const { bridge, store } = await unpaired();
