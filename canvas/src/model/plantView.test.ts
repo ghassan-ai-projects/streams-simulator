@@ -27,6 +27,13 @@ describe("plant view", () => {
     expect([...view.layout.groups.keys()]).toEqual(["Cooling", "Power"]);
   });
 
+  it("places an area that a link feeds to the right of the area it leaves", () => {
+    const plant = parsePlant(domain, composition);
+    const view = plantView(plant, specs, null);
+    const order = [...view.layout.groups.entries()].sort((a, b) => a[1].x - b[1].x).map(([name]) => name);
+    expect(order).toEqual(["Cooling", "Power"]);
+  });
+
   it("ends a link without a recorded port on the first unconnected pin of its side", () => {
     const plant = parsePlant(domain, composition);
     const unrecorded = { ...plant, links: plant.links.map((link) => ({ ...link, fromPort: null, toPort: null })) };
