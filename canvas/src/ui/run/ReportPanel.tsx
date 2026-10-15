@@ -233,14 +233,14 @@ function Scoring({ report }: { readonly report: Report }) {
   );
 }
 
-function KpiTruth({ report, unit, entity }: TruthProps) {
+const truthLead =
+  "What really happened in the plant. An outside system could not see it while the run was live; it is shown here once the run has ended.";
+
+function KpiTruth({ report, unit, entity, lead = true }: TruthProps & { readonly lead?: boolean }) {
   const kpis = kpisOf(report, entity);
   return (
     <Section title="True results" note={entity ?? undefined}>
-      <p className={styles.muted}>
-        What really happened in the plant. An outside system could not see it while the run was live; it is shown here
-        once the run has ended.
-      </p>
+      {lead && <p className={styles.muted}>{truthLead}</p>}
       {kpis.length === 0 ? (
         <p className={styles.muted}>{entity === null ? "None" : `No true results for ${entity}.`}</p>
       ) : (
@@ -276,7 +276,7 @@ export function ReportPanel({
     return report.truthUnavailable || !report.ended ? null : (
       <>
         <TruthCaution report={report} verify={verify} />
-        <KpiTruth report={report} unit={unit} entity={entity} />
+        <KpiTruth report={report} unit={unit} entity={entity} lead={false} />
       </>
     );
   }
