@@ -122,6 +122,21 @@ test("a review node lists every port of its kind as a row, observed or not, at e
   }
 });
 
+test("a faulted node's id, kind, cause and effector outcome never overlap at any zoom step", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto(`${env("CANVAS_APP_URL")}/#/run?world=w-boiler`);
+  await expect(page.getByText(/\d+ observations/)).toBeVisible({ timeout: 60_000 });
+  await page.getByRole("slider", { name: "Playback time" }).fill("660");
+  const boiler = page.getByRole("group", { name: /^boiler-1, / });
+  await expect(boiler.getByText("Fault · scaling")).toBeVisible();
+  const graph = page.getByRole("application", { name: "Plant graph" });
+  await graph.focus();
+  for (const key of ["+", "+", "-", "-", "-", "-"]) {
+    await page.keyboard.press(key);
+    await expect.poll(() => page.evaluate(textClashes)).toEqual([]);
+  }
+});
+
 function transformOf(): string | undefined {
   return document.querySelector<HTMLElement>(".react-flow__viewport")?.style.transform;
 }

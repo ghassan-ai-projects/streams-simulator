@@ -1,0 +1,250 @@
+{
+  "areas": [
+    {
+      "name": "Site"
+    },
+    {
+      "name": "Boiler house",
+      "parent": "Site"
+    },
+    {
+      "name": "Distribution",
+      "parent": "Site"
+    },
+    {
+      "name": "Process hall",
+      "parent": "Site"
+    },
+    {
+      "name": "Gas train",
+      "parent": "Boiler house"
+    },
+    {
+      "name": "Heat users",
+      "parent": "Process hall"
+    }
+  ],
+  "axes": {
+    "absence": "signal",
+    "actuation": "advisory",
+    "cadence": [
+      "periodic"
+    ],
+    "cardinality": "fleet",
+    "consequence": [
+      "cost",
+      "downtime"
+    ],
+    "correlation": [
+      "coupled",
+      "cascading"
+    ],
+    "fidelity": [
+      "F0",
+      "F1"
+    ],
+    "lateness": "none",
+    "rate": "medium",
+    "seasonality": [
+      "diurnal",
+      "weekly"
+    ],
+    "time_reference": "wall",
+    "value_shape": [
+      "scalar"
+    ]
+  },
+  "ground_truth": {
+    "min_per_label": 10,
+    "min_scenarios": 100,
+    "negative_class_fraction": 0.35,
+    "pre_degraded_fraction": 0
+  },
+  "id": "boiler-steam-loop",
+  "profiles": [
+    {
+      "description": "A production day of the factory, one fault per scenario.",
+      "duration_s": 86400,
+      "name": "nominal"
+    },
+    {
+      "description": "An instrument lies while the process is healthy.",
+      "duration_s": 86400,
+      "name": "sensor_pathology"
+    },
+    {
+      "description": "A utility fault spreads through the links: low header pressure slows every line, a weak tower warms the chilled water every line and the air handler draw on.",
+      "duration_s": 86400,
+      "name": "correlated_cascade"
+    }
+  ],
+  "schema_version": "0.1",
+  "site": {
+    "name": "Factory",
+    "timezone": "Europe/Berlin"
+  },
+  "stresses": "coupled utility subsystems whose faults look alike across subsystems: air leaks against airend wear, tower fan failure against a heat wave, a stale main meter against its sub-meters",
+  "title": "Boiler steam loop",
+  "version": "0.1.0",
+  "equipment": [
+    {
+      "use": "streamsim/boiler@1",
+      "preset": "medium",
+      "names": [
+        "boiler-1"
+      ],
+      "area": "Boiler house"
+    },
+    {
+      "use": "streamsim/heat-exchanger@1",
+      "preset": "medium",
+      "names": [
+        "hx-1"
+      ],
+      "area": "Boiler house"
+    },
+    {
+      "use": "streamsim/pump@1",
+      "preset": "medium",
+      "names": [
+        "pump-feed"
+      ],
+      "area": "Boiler house"
+    },
+    {
+      "use": "streamsim/motor-drive@1",
+      "preset": "medium",
+      "names": [
+        "drive-feed"
+      ],
+      "area": "Boiler house"
+    },
+    {
+      "use": "streamsim/pump@1",
+      "preset": "medium",
+      "names": [
+        "pump-circ"
+      ],
+      "area": "Distribution",
+      "as": "pump_2"
+    },
+    {
+      "use": "streamsim/pump@1",
+      "preset": "medium",
+      "names": [
+        "pump-return"
+      ],
+      "area": "Process hall",
+      "as": "pump_3"
+    },
+    {
+      "use": "streamsim/motor-drive@1",
+      "preset": "medium",
+      "names": [
+        "drive-circ"
+      ],
+      "area": "Distribution",
+      "as": "motor_drive_2"
+    },
+    {
+      "use": "streamsim/storage-tank@1",
+      "preset": "medium",
+      "names": [
+        "tank-cond"
+      ],
+      "area": "Distribution"
+    },
+    {
+      "use": "streamsim/control-valve@1",
+      "preset": "medium",
+      "names": [
+        "valve-steam"
+      ],
+      "area": "Boiler house"
+    },
+    {
+      "use": "streamsim/control-valve@1",
+      "preset": "medium",
+      "names": [
+        "valve-process"
+      ],
+      "area": "Process hall",
+      "as": "control_valve_2"
+    },
+    {
+      "use": "streamsim/feeder-meter@1",
+      "preset": "medium",
+      "names": [
+        "meter-gas"
+      ],
+      "area": "Boiler house"
+    },
+    {
+      "use": "streamsim/heat-exchanger@1",
+      "preset": "medium",
+      "names": [
+        "hx-2"
+      ],
+      "area": "Process hall",
+      "as": "heat_exchanger_2"
+    },
+    {
+      "use": "streamsim/weather@1",
+      "preset": "medium",
+      "names": [
+        "weather"
+      ],
+      "area": "Site"
+    },
+    {
+      "use": "streamsim/site-calendar@1",
+      "preset": "medium",
+      "names": [
+        "calendar"
+      ],
+      "area": "Site"
+    }
+  ],
+  "connections": [
+    {
+      "from": "boiler-1.pressure_out",
+      "to": "valve-steam.pressure_in"
+    },
+    {
+      "from": "pump-feed.liquid_out",
+      "to": "tank-cond.inflow_in"
+    },
+    {
+      "from": "drive-feed.power_out",
+      "to": "meter-gas.loads_in"
+    },
+    {
+      "from": "pump-feed.power_out",
+      "to": "meter-gas.loads_in"
+    },
+    {
+      "from": "tank-cond.level_out",
+      "to": "pump-circ.level_in"
+    },
+    {
+      "from": "drive-circ.power_out",
+      "to": "meter-gas.loads_in"
+    },
+    {
+      "from": "pump-circ.flow_out",
+      "to": "hx-2.hot_flow_in"
+    },
+    {
+      "from": "hx-1.hot_out",
+      "to": "hx-2.hot_in"
+    },
+    {
+      "from": "pump-feed.cw_flow_out",
+      "to": "hx-1.cold_flow_in"
+    },
+    {
+      "from": "boiler-1.pressure_out",
+      "to": "valve-process.pressure_in"
+    }
+  ]
+}

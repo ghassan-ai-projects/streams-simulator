@@ -1,19 +1,22 @@
 import type { NodeProps } from "@xyflow/react";
 import { Handle, Position, useStore } from "@xyflow/react";
-import { ChevronRight, OctagonAlert, TriangleAlert, Wrench } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useRef } from "react";
 import { countWords } from "../../model/frameTitle";
+import { fitId, idRoom } from "../../model/headerFit";
 import type { ViewNode } from "../../model/plantView";
 import { describeNode } from "../../model/nodeWords";
 import { headerHeight, idExtra } from "../../model/plantView";
 import { familyNames, shapeOf } from "../../model/ports";
 import type { Pin } from "../../model/ports";
+import { tierOf } from "../../model/viewport";
 import type { NodeStatus } from "../../model/readout";
-import { pinWords, statusWords } from "../../model/readout";
+import { pinWords } from "../../model/readout";
 import type { PlanMark } from "../../model/planMarks";
 import type { FrameTitleNodeType, HallNodeType, InstanceNodeType, NodeLive } from "./flow";
 import { cx } from "../cx";
+import { EffectorTag, IssueTag, StatusTag, tagWords } from "./Marks";
 import { Readout } from "./Readout";
 import { useLabelFit } from "./labelFit";
 import styles from "./nodes.module.css";
@@ -97,51 +100,8 @@ function Pins({
   );
 }
 
-const statusIcons = { alarm: OctagonAlert, fault: Wrench, warn: TriangleAlert } as const;
-
-function StatusTag({
-  status,
-  count = 0,
-  cause = "",
-}: {
-  readonly status: NodeStatus;
-  readonly count?: number;
-  readonly cause?: string;
-}) {
-  if (status === null) return null;
-  const Icon = statusIcons[status];
-  const word = count > 0 ? `${statusWords[status]} ${String(count)}` : statusWords[status];
-  const words = cause === "" ? word : `${word} · ${cause}`;
-  return (
-    <span className={cx(styles.tag, styles[`tag-${status}`])} aria-hidden="true" title={words}>
-      <Icon size={12} />
-      <span className={styles.tagWords}>{words}</span>
-    </span>
-  );
-}
-
-function EffectorTag({ effector }: { readonly effector: string }) {
-  if (effector === "") return null;
-  return (
-    <span className={styles.effectorTag} title={`Effector call · ${effector}`}>
-      <span className={styles.effectorMark} aria-hidden="true" />
-      <span className="sr-only">{`Effector call: ${effector}`}</span>
-    </span>
-  );
-}
-
 function issueWords(flagged: boolean): string {
   return flagged ? ", has issues" : "";
-}
-
-function IssueTag({ flagged }: { readonly flagged: boolean }) {
-  if (!flagged) return null;
-  return (
-    <span className={cx(styles.tag, styles["tag-alarm"])} aria-hidden="true">
-      <OctagonAlert size={12} />
-      Issue
-    </span>
-  );
 }
 
 function statusClass(status: NodeStatus): string | undefined {
@@ -157,18 +117,61 @@ function instanceStyle(view: ViewNode): CSSProperties {
   } as CSSProperties;
 }
 
-function InstanceHeader({ data, status }: { readonly data: InstanceNodeType["data"]; readonly status: NodeStatus }) {
+function markWords(data: InstanceNodeType["data"], status: NodeStatus): number | null {
+  const { effector } = shownOf(data);
+  if (status === null && effector === "" && !data.flagged) return null;
+  const issue = data.flagged ? 6 : 0;
+  if (status === null || data.live !== null) return issue;
+  return issue + tagWords(status, 0, data.plan?.fault ?? "").length;
+}
+
+function IdText({
+  label,
+  zoom,
+  words,
+}: {
+  readonly label: string;
+  readonly zoom: number;
+  readonly words: number | null;
+}) {
+  if (tierOf(zoom) !== "compact") return label;
+  const fitted = fitId(label, idRoom(zoom, words), zoom, 25);
+  if (fitted.text === label) return <span style={{ fontSize: `${String(fitted.size)}px` }}>{label}</span>;
+  return (
+    <span style={{ fontSize: `${String(fitted.size)}px` }}>
+      <span aria-hidden="true">{fitted.text}</span>
+      <span className="sr-only">{label}</span>
+    </span>
+  );
+}
+
+function InstanceHeader({
+  data,
+  status,
+  zoom,
+}: {
+  readonly data: InstanceNodeType["data"];
+  readonly status: NodeStatus;
+  readonly zoom: number;
+}) {
   const { view } = data;
   const planned = data.live === null ? data.plan : null;
+  const words = markWords(data, status);
   return (
     <div className={styles.header}>
       <span className={styles.id} title={view.label}>
-        {view.label}
+        <IdText label={view.label} zoom={zoom} words={words} />
       </span>
-      <StatusTag status={status} cause={planned?.fault ?? ""} />
-      {data.live !== null && data.live.fault !== "" && <span className="sr-only">{`Fault: ${data.live.fault}`}</span>}
-      <EffectorTag effector={shownOf(data).effector} />
-      <IssueTag flagged={data.flagged} />
+      {words !== null && (
+        <span className={styles.marks}>
+          <StatusTag status={status} cause={planned?.fault ?? ""} brief={data.live !== null} />
+          {data.live !== null && data.live.fault !== "" && (
+            <span className="sr-only">{`Fault: ${data.live.fault}`}</span>
+          )}
+          <EffectorTag effector={shownOf(data).effector} />
+          <IssueTag flagged={data.flagged} />
+        </span>
+      )}
       <span className={styles.kind} title={view.detail}>
         {view.detail}
       </span>
@@ -213,7 +216,7 @@ export function InstanceNode({ data, selected }: NodeProps<InstanceNodeType>) {
     >
       <Handle type="target" position={Position.Left} id="in" className={styles.anchor} isConnectable={false} />
       <Handle type="source" position={Position.Right} id="out" className={styles.anchor} isConnectable={false} />
-      <InstanceHeader data={data} status={status} />
+      <InstanceHeader data={data} status={status} zoom={zoom} />
       {data.live !== null && (
         <Readout
           shown={data.live.shown}

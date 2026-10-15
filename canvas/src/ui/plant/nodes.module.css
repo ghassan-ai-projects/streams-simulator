@@ -213,8 +213,26 @@
   display: none;
 }
 
+:global(.tier-compact) .header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) fit-content(55%);
+  align-content: start;
+  align-items: center;
+  gap: 0 var(--space-2);
+}
+
 :global(.tier-compact) .id {
-  font-size: min(calc(12.5px / var(--zoom)), 22px);
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+:global(.tier-compact) .marks {
+  grid-column: 2;
+}
+
+:global(.tier-compact) .brief .tagWords {
+  display: none;
 }
 
 :global(.tier-compact) .pin {
@@ -238,7 +256,12 @@
   height: 100%;
 }
 
-:global(.tier-compact) .kind,
+:global(.tier-compact) .kind {
+  grid-column: 1 / -1;
+  font-size: max(var(--floor), min(calc(10.5px / var(--zoom)), 21px));
+  line-height: 1.2;
+}
+
 :global(.tier-compact) .none {
   font-size: calc(10.5px / var(--zoom));
 }
@@ -455,6 +478,14 @@
   max-width: 100%;
 }
 
+.marks {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+  max-width: 100%;
+}
+
 .tag-alarm,
 .tag-fault {
   background: var(--status-alarm-bg);
@@ -489,8 +520,8 @@
 }
 
 :global(.tier-compact) .effectorMark {
-  width: calc(10px / var(--zoom));
-  height: calc(10px / var(--zoom));
+  width: min(calc(10px / var(--zoom)), 22px);
+  height: min(calc(10px / var(--zoom)), 22px);
 }
 
 :global(.tier-overview) .effectorMark,
@@ -543,10 +574,15 @@
 
 :global(.tier-compact) .tag {
   padding: 0 calc(4px / var(--zoom));
-  font-size: calc(11px / var(--zoom));
+  font-size: max(var(--floor), min(calc(11px / var(--zoom)), 22px));
+  line-height: 1.2;
 }
 
-:global(.tier-compact) .tag svg,
+:global(.tier-compact) .tag svg {
+  width: min(calc(12px / var(--zoom)), 22px);
+  height: min(calc(12px / var(--zoom)), 22px);
+}
+
 :global(.tier-overview) .tag svg,
 :global(.tier-map) .tag svg {
   width: min(calc(12px / var(--zoom)), 40px);

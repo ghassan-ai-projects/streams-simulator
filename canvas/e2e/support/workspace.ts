@@ -105,6 +105,12 @@ export function buildFixture(): Fixture {
   record(binary, workspace, "w-evaluate", []);
   const stop = 'air_dryer__set_running@D-1@900@{"dryer_id":"D-1","running":0}';
   record(binary, workspace, "w-late", ["-fault", "D-1=air_dryer__prefilter_clogging@600", "-effector", stop]);
+  const boiler = join(workspace, "compositions", "boiler-steam-loop.composition.json");
+  copyFileSync(join(import.meta.dirname, "..", "fixtures", "boiler-steam-loop.composition.json"), boiler);
+  run(binary, ["domain", "compose", boiler, "--out", join(workspace, "domains", "boiler-steam-loop.domain.json")]);
+  const running = 'boiler__set_running@boiler-1@600@{"boiler_id":"boiler-1","running":1}';
+  const scaling = ["-fault", "boiler-1=boiler__scaling@600", "-effector", running];
+  record(binary, workspace, "w-boiler", scaling, "boiler-steam-loop");
   record(binary, workspace, "w-edited", []);
   appendFileSync(join(workspace, "runs", "w-edited", "trace.jsonl"), "\n");
   record(binary, workspace, "w-diverged", ["-fault", "CT-1=cooling_tower__fan_failure@600"]);
