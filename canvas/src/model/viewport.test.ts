@@ -40,16 +40,16 @@ describe("viewport", () => {
     expect(centreOf({ x: 10, y: 20, width: 100, height: 40 })).toEqual({ x: 60, y: 40 });
   });
 
-  it("opens on the whole plant at the top when it fits, and on its top-left corner at the minimum zoom when not", () => {
+  it("opens on the whole plant centred when it fits, and on its top-left corner at the minimum zoom when not", () => {
     const limits = { pad: 10, headroom: 20, minZoom: 0.5, maxZoom: 1 };
     expect(openingViewport({ x: 0, y: 0, width: 390, height: 290 }, screen, limits)).toEqual({
       x: 205,
-      y: 30,
+      y: 165,
       zoom: 1,
     });
     expect(openingViewport({ x: 100, y: 50, width: 1560, height: 580 }, screen, limits)).toEqual({
       x: -40,
-      y: 5,
+      y: 140,
       zoom: 0.5,
     });
     expect(openingViewport({ x: 100, y: 50, width: 3000, height: 2000 }, screen, limits)).toEqual({

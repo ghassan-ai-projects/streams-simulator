@@ -74,7 +74,11 @@ export function openingViewport(bounds: Rect, screen: Size, limits: FitLimits): 
   const room = { width: screen.width - 2 * limits.pad, height: screen.height - top - limits.pad };
   const fit = Math.min(room.width / bounds.width, room.height / bounds.height);
   const zoom = Math.min(limits.maxZoom, Math.max(limits.minZoom, fit));
-  return { x: centred(bounds.x, bounds.width, room.width, zoom, limits.pad), y: top - bounds.y * zoom, zoom };
+  return {
+    x: centred(bounds.x, bounds.width, room.width, zoom, limits.pad),
+    y: centred(bounds.y, bounds.height, room.height, zoom, top),
+    zoom,
+  };
 }
 
 export function sameViewport(a: Viewport, b: Viewport): boolean {
