@@ -66,7 +66,7 @@ Still needs an owner/binary decision: **P-12-4 (was P-11-4) Size preset units.**
 - **Option B: fit-first** — reopens sub-0.4 tiers at the opening zoom on wide plants (labels at the 8 px floor again), the exact regression the floor closed in round 10. Needs the overview tier to get genuinely better first.
 - Hybrid (fit when overflow ≤ ~15 %, floor otherwise) rejected for now: two rules to test at every tier, against the simplicity priority.
 
-The wire-routing pass (stash `wire hug avoidance`) and the full-tier header hug (P-11-2) are decision-free and proceed either way.
+The wire-routing pass (the stashed `wire hug avoidance`) and the full-tier header hug (P-11-2) were decision-free and both landed in round 16 (`0348a3e`, `d472050`).
 
 ## Infrastructure (this machine)
 
@@ -78,15 +78,28 @@ The wire-routing pass (stash `wire hug avoidance`) and the full-tier header hug 
 - Both review instances serve `canvas/dist`; after each fix round run `cd canvas && npm run build` so the
   review sees the fix.
 - Screenshots and review scripts live under `/tmp/canvas-review/` (never committed).
+- The full local `npm run check` is load-sensitive on this machine: three wall-clock specs can flake
+  while the whole suite runs in parallel — the alarm-playback "Verified" wait, launch's 3 s
+  effector-mark hold, and plant's "a selection made outside the graph comes into view" — and each
+  passes with `--workers=1` and in CI. Run the suite on a quiet machine, or re-run a failure alone
+  before treating it as a regression.
 - `governance/CANVAS_UI_ACCEPTANCE.md` §3 is the review rubric; `docs/simulation-canvas/UI-EXPECTATIONS.md`
   the numbered expectations.
 
 ## Parked work
 
-- **Stashed wire-routing work** (`git stash`): "wire hug avoidance (for the graph dimension round)" —
-  grid hug margins (wireGrid), frame margin lanes + crowd occupancy (wireRoute/wireSearch), routeView wiring
-  (wireView). Model unit tests passed with it, but it had no test of its own and no committed coverage; the
-  graph round must land it with tests or redo it.
-- Round-10 open graph items for that round: ISS-10D-02/04 (overview-tier kind lines, opening zoom floor),
-  ISS-10D-03 (review readout kind collisions), ISS-10D-06 (wire through area title), ISS-6D-35 (frames cut
-  at inspector edge — partly side panel), ISS-6D-20 (wires under node bodies, known exclusion).
+- **Stashed wire-routing work** — **landed and consumed.** Round 16 (`0348a3e`) took the stashed work
+  (grid hug margins in `wireGrid`, frame margin lanes + crowd occupancy in `wireRoute`/`wireSearch`,
+  `wireView` wiring) and gave it the tests it lacked (grid hug marking, crowd, path choice), so
+  `git stash list` is empty now and the redo instruction no longer applies.
+- Round-10 open graph items, status after rounds 16–18: ISS-10D-02/04 (overview-tier kind lines, opening
+  zoom floor) — closed; the floor decision is Option A and every screen opens on it (round 18), kind
+  lines are complete at every opening zoom. ISS-10D-03 (review readout kind collisions) — closed by the
+  40 % / 8 px readout floor and the label-intersection guards. ISS-10D-06 (wire through area title) —
+  closed by the routing pass; round 13 measured 0 title crossings across eleven plant/zoom combinations.
+  ISS-6D-35 (frames cut at the inspector edge) — now the accepted, cued floor behaviour. ISS-6D-20
+  (wires under node bodies) — still recorded: round 13 could not reproduce it, because the
+  factory-utilities plant that showed it is not in the review instance's workspace (the verifier's
+  factory-utilities routes answer 404 there). The plant is reachable in the e2e fixture — `canvas/e2e/support/workspace.ts`
+  composes `examples/compositions/factory-utilities.composition.json` into the fixture's workspace — so a
+  Playwright check over that fixture is the practical place to settle it before calling it closed.
