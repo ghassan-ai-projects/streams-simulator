@@ -27,32 +27,16 @@
   "axes": {
     "absence": "signal",
     "actuation": "advisory",
-    "cadence": [
-      "periodic"
-    ],
+    "cadence": ["periodic"],
     "cardinality": "fleet",
-    "consequence": [
-      "cost",
-      "downtime"
-    ],
-    "correlation": [
-      "coupled",
-      "cascading"
-    ],
-    "fidelity": [
-      "F0",
-      "F1"
-    ],
+    "consequence": ["cost", "downtime"],
+    "correlation": ["coupled", "cascading"],
+    "fidelity": ["F0", "F1"],
     "lateness": "none",
     "rate": "medium",
-    "seasonality": [
-      "diurnal",
-      "weekly"
-    ],
+    "seasonality": ["diurnal", "weekly"],
     "time_reference": "wall",
-    "value_shape": [
-      "scalar"
-    ]
+    "value_shape": ["scalar"]
   },
   "ground_truth": {
     "min_per_label": 10,
@@ -90,118 +74,90 @@
     {
       "use": "streamsim/boiler@1",
       "preset": "medium",
-      "names": [
-        "boiler-1"
-      ],
+      "names": ["boiler-1"],
       "area": "Boiler house"
     },
     {
       "use": "streamsim/heat-exchanger@1",
       "preset": "medium",
-      "names": [
-        "hx-1"
-      ],
+      "names": ["hx-1"],
       "area": "Boiler house"
     },
     {
       "use": "streamsim/pump@1",
       "preset": "medium",
-      "names": [
-        "pump-feed"
-      ],
+      "names": ["pump-feed"],
       "area": "Boiler house"
     },
     {
       "use": "streamsim/motor-drive@1",
       "preset": "medium",
-      "names": [
-        "drive-feed"
-      ],
+      "names": ["drive-feed"],
       "area": "Boiler house"
     },
     {
       "use": "streamsim/pump@1",
       "preset": "medium",
-      "names": [
-        "pump-circ"
-      ],
+      "names": ["pump-circ"],
       "area": "Distribution",
       "as": "pump_2"
     },
     {
       "use": "streamsim/pump@1",
       "preset": "medium",
-      "names": [
-        "pump-return"
-      ],
+      "names": ["pump-return"],
       "area": "Process hall",
       "as": "pump_3"
     },
     {
       "use": "streamsim/motor-drive@1",
       "preset": "medium",
-      "names": [
-        "drive-circ"
-      ],
+      "names": ["drive-circ"],
       "area": "Distribution",
       "as": "motor_drive_2"
     },
     {
       "use": "streamsim/storage-tank@1",
       "preset": "medium",
-      "names": [
-        "tank-cond"
-      ],
+      "names": ["tank-cond"],
       "area": "Distribution"
     },
     {
       "use": "streamsim/control-valve@1",
       "preset": "medium",
-      "names": [
-        "valve-steam"
-      ],
+      "names": ["valve-steam"],
       "area": "Boiler house"
     },
     {
       "use": "streamsim/control-valve@1",
       "preset": "medium",
-      "names": [
-        "valve-process"
-      ],
+      "names": ["valve-process"],
       "area": "Process hall",
       "as": "control_valve_2"
     },
     {
       "use": "streamsim/feeder-meter@1",
       "preset": "medium",
-      "names": [
-        "meter-gas"
-      ],
+      "names": ["meter-gas"],
       "area": "Boiler house"
     },
     {
       "use": "streamsim/heat-exchanger@1",
       "preset": "medium",
-      "names": [
-        "hx-2"
-      ],
+      "names": ["hx-2"],
       "area": "Process hall",
       "as": "heat_exchanger_2"
     },
     {
       "use": "streamsim/weather@1",
       "preset": "medium",
-      "names": [
-        "weather"
-      ],
+      "names": ["weather"],
       "area": "Site"
     },
     {
       "use": "streamsim/site-calendar@1",
       "preset": "medium",
-      "names": [
-        "calendar"
-      ],
+      "names": ["calendar"],
       "area": "Site"
     }
   ],
