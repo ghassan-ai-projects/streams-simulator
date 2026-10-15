@@ -77,7 +77,7 @@ test("an empty area is one line of at most 28 px in the outline, however long it
     await area.getByLabel("Area name").fill(name);
     await area.getByRole("button", { name: "Add area" }).click();
   }
-  const rows = page.getByRole("navigation", { name: "Outline" }).locator("summary").filter({ hasText: "0 · empty" });
+  const rows = page.getByRole("navigation", { name: "Outline" }).locator('summary:has([title="No equipment yet"])');
   await expect(rows).toHaveCount(3);
   const shapes = await rows.evaluateAll((elements) =>
     elements.map((element) => {
