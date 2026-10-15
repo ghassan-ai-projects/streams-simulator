@@ -1,8 +1,9 @@
 import { textFloorPx } from "./viewport";
 
-const glyph = 0.62;
+const glyph = 0.605;
 const idScreenPx = 12.5;
 const headerInner = 206;
+const nodeInner = 230;
 const markGap = 8;
 const markPad = 4;
 const iconPx = 12;
@@ -38,6 +39,18 @@ export function markRoom(zoom: number, wordsLength: number): number {
   return Math.min(chip + words, headerInner * markCap) + markGap;
 }
 
-export function idRoom(zoom: number, wordsLength: number | null): number {
+export type IdTier = "compact" | "overview";
+
+export const idCap: Readonly<Record<IdTier, number>> = { compact: 25, overview: 46 };
+
+function overviewMark(zoom: number): number {
+  return Math.min(iconPx / zoom, 40) + (2 * 2) / zoom + 4 / zoom;
+}
+
+export function idRoom(zoom: number, wordsLength: number | null, tier: IdTier = "compact"): number {
+  if (tier === "overview") {
+    const inner = nodeInner - 16 / zoom;
+    return inner - (wordsLength === null ? 0 : overviewMark(zoom));
+  }
   return headerInner - (wordsLength === null ? 0 : markRoom(zoom, wordsLength));
 }

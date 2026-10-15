@@ -221,7 +221,8 @@
   gap: 0 var(--space-2);
 }
 
-:global(.tier-compact) .id {
+:global(.tier-compact) .id,
+:global(.tier-overview) .id {
   display: flex;
   align-items: center;
   min-width: 0;

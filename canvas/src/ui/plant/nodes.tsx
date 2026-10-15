@@ -4,7 +4,7 @@ import { ChevronRight } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useRef } from "react";
 import { countWords } from "../../model/frameTitle";
-import { fitId, idRoom } from "../../model/headerFit";
+import { fitId, idCap, idRoom } from "../../model/headerFit";
 import type { ViewNode } from "../../model/plantView";
 import { describeNode } from "../../model/nodeWords";
 import { headerHeight, idExtra } from "../../model/plantView";
@@ -134,8 +134,9 @@ function IdText({
   readonly zoom: number;
   readonly words: number | null;
 }) {
-  if (tierOf(zoom) !== "compact") return label;
-  const fitted = fitId(label, idRoom(zoom, words), zoom, 25);
+  const tier = tierOf(zoom);
+  if (tier !== "compact" && tier !== "overview") return label;
+  const fitted = fitId(label, idRoom(zoom, words, tier), zoom, idCap[tier]);
   if (fitted.text === label) return <span style={{ fontSize: `${String(fitted.size)}px` }}>{label}</span>;
   return (
     <span style={{ fontSize: `${String(fitted.size)}px` }}>

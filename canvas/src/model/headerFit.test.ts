@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fitId, idRoom, markRoom, middleCut } from "./headerFit";
+import { fitId, idCap, idRoom, markRoom, middleCut } from "./headerFit";
 
 describe("header text fit", () => {
   it("cuts the middle of a long name and keeps its distinguishing tail", () => {
@@ -8,6 +8,17 @@ describe("header text fit", () => {
     expect(cut).toHaveLength(11);
     expect(cut.endsWith("line-a")).toBe(true);
     expect(cut).toContain("…");
+  });
+
+  it("sets a long id on one line at the overview and cuts it only at the 8 pixel floor", () => {
+    const room = idRoom(0.35, null, "overview");
+    const fitted = fitId("production-line-a", room, 0.35, idCap.overview);
+    expect(fitted.size * 0.35).toBeCloseTo(8, 1);
+    expect(fitted.text).toContain("…");
+    expect(fitted.text.endsWith("line-a")).toBe(true);
+    const short = fitId("compressor-1", room, 0.35, idCap.overview);
+    expect(short.text).toBe("compressor-1");
+    expect(short.size * 0.35).toBeGreaterThanOrEqual(8);
   });
 
   it("keeps the id at its wanted size when it fits", () => {
@@ -34,5 +45,7 @@ describe("header text fit", () => {
     expect(markRoom(0.4, 40)).toBeLessThan(206 * 0.55 + 8.1);
     expect(idRoom(0.4, null)).toBe(206);
     expect(idRoom(0.4, 0)).toBeLessThan(206);
+    expect(idRoom(0.3, null, "overview")).toBeLessThan(230);
+    expect(idRoom(0.3, 0, "overview")).toBeLessThan(idRoom(0.3, null, "overview"));
   });
 });
