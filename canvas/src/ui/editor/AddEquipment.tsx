@@ -78,7 +78,9 @@ interface NameProps {
 }
 
 function suggestedWords(suggested: string): string {
-  return suggested === "" ? "Leave empty to use the suggested name." : `Leave empty to use the suggested name, ${suggested}.`;
+  return suggested === ""
+    ? "Leave empty to use the suggested name."
+    : `Leave empty to use the suggested name, ${suggested}.`;
 }
 
 function NameField({ typed, suggested, setTyped }: NameProps) {
