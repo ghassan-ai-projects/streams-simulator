@@ -201,6 +201,13 @@ function useConsume(navigation: NavigationStore, domain: string, hall: string | 
   }, [navigation, domain, hall]);
 }
 
+function useShowRun(launch: LaunchStore, onShow: () => void) {
+  return useCallback(() => {
+    launch.reset();
+    onShow();
+  }, [launch, onShow]);
+}
+
 function useLaunching(asked: boolean, onShow: () => void, consume: () => void) {
   const [launching, setLaunching] = useState(asked);
   const button = useRef<HTMLButtonElement>(null);
@@ -245,7 +252,7 @@ function NotReady({
 
 export function PlantScreen(props: PlantScreenProps) {
   const { plants, workspace, navigation, launch, domain, hall, startLaunching = false, onShowDetails = noop } = props;
-  const run = useLaunching(startLaunching, onShowDetails, useConsume(navigation, domain, hall));
+  const run = useLaunching(startLaunching, useShowRun(launch, onShowDetails), useConsume(navigation, domain, hall));
   const state = useStore(plants);
   const running = useRunningHere(launch, state.phase === "ready" ? state.plant.id : "");
   const listing = useStore(workspace);
