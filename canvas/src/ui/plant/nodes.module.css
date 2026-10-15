@@ -30,6 +30,11 @@
   font-weight: 600;
 }
 
+:global(.tier-full) .header {
+  align-content: start;
+  row-gap: var(--space-1);
+}
+
 .id {
   flex: 0 1 auto;
   min-width: 0;
