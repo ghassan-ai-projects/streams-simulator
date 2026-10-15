@@ -90,6 +90,7 @@ improvement pass, run as three independent reviews and one fix batch on this sam
   name in the row's own style rather than borrowing the section-heading style, with the disclosure affordance
   split out so headings keep their uppercase; `dd755ee` a run with no recorded end wears the warn chip
   instead of the success tokens, with the listing's missing abandonment signal recorded rather than guessed.
+  `6c168b8` the empty fault list says only what the plan knows instead of claiming plant health.
   `IMP-02` was dropped rather than implemented, because the backlog proved the premise wrong.
 
 Two deliberate divergences from the backlog: the panel naming uses one truthful name per screen
@@ -99,9 +100,9 @@ its title and the help pinned to it by a per-screen coherence test, instead of "
 domain. `CB-16`'s open question — the workspace listing carries no abandonment signal, so a recorded run that
 did not finish cannot be told from one still open — is binary-owned and recorded, not guessed in the canvas.
 
-Not yet landed when this was written, and therefore still a backlog entry rather than done work: `CB-36`
-("None: the plant runs healthy." still overstates the schedule). The backlog's remaining entries, including
-its 12-item recommended batch, are the next pass's work list.
+Every item accepted for this batch has now landed; `IMP-02` was dropped because the backlog proved its
+premise wrong, not deferred. The backlog's remaining entries — including its 12-item recommended batch and the
+owner decisions it names — are the next pass's work list.
 
 ## Graph-round decision framing (fit-vs-floor, P-11-1 / ISS-11D-02) — resolved
 
