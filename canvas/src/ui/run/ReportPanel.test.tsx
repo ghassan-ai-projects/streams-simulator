@@ -122,6 +122,29 @@ describe("scrubber", () => {
     expect(seek).toHaveBeenLastCalledWith(120e9);
   });
 
+  it("a fault mark on the track selects its event at its own time, as its label does", () => {
+    const seek = vi.fn();
+    const onEvent = vi.fn();
+    const { container } = render(
+      <Scrubber
+        {...idle}
+        startNs={0}
+        endNs={3_600e9}
+        positionNs={0}
+        report={parseReport(report)}
+        onSeek={seek}
+        onEvent={onEvent}
+      />,
+    );
+    const marks = [...container.querySelectorAll<HTMLButtonElement>("button[tabindex='-1']")];
+    expect(marks.length).toBeGreaterThan(0);
+    marks.forEach((mark) => {
+      fireEvent.click(mark);
+    });
+    expect(onEvent).toHaveBeenCalledWith(expect.objectContaining({ atNs: 600e9 }));
+    expect(seek).not.toHaveBeenCalled();
+  });
+
   it("plays, pauses and picks a speed", () => {
     const controls = { ...idle, onPlay: vi.fn(), onPause: vi.fn(), onSpeed: vi.fn() };
     const view = render(

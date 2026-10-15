@@ -8,10 +8,10 @@ export interface LaneProps {
   readonly marks: readonly EventMark[];
   readonly fraction: (ns: number) => number;
   readonly startNs: number;
-  readonly onSeek: (ns: number) => void;
-  readonly onEvent: ((mark: EventMark) => void) | undefined;
   readonly reading: boolean;
   readonly positionNs: number;
+  readonly said: string;
+  readonly pick: (mark: EventMark) => void;
 }
 
 const chipText = (mark: EventMark, startNs: number) => `${runClock(mark.atNs, startNs)} ${mark.label}`;
@@ -23,17 +23,23 @@ function Swatch({ kind }: { readonly kind: MarkKind }) {
   return <span className={cx(styles.swatch, styles[`mark-${kind}`])} aria-hidden="true" />;
 }
 
-export function MarkRail({ marks, fraction }: Pick<LaneProps, "marks" | "fraction">) {
+export function MarkRail({ marks, fraction, pick }: Pick<LaneProps, "marks" | "fraction" | "pick">) {
   return (
     <div className={styles.rail} aria-hidden="true">
       {marks.map((mark) => (
-        <span
+        <button
+          type="button"
           key={`${String(mark.atNs)}${mark.label}`}
+          tabIndex={-1}
           className={styles.railMark}
+          title={mark.raw}
           style={{ left: percent(fraction(mark.atNs)) }}
+          onClick={() => {
+            pick(mark);
+          }}
         >
           <Swatch kind={mark.kind} />
-        </span>
+        </button>
       ))}
     </div>
   );
@@ -84,7 +90,11 @@ function Chip({ mark, chip, text, startNs, active, pick }: ChipProps) {
   );
 }
 
-function usePick(startNs: number, onSeek: (ns: number) => void, onEvent: ((mark: EventMark) => void) | undefined) {
+export function usePick(
+  startNs: number,
+  onSeek: (ns: number) => void,
+  onEvent: ((mark: EventMark) => void) | undefined,
+) {
   const [said, setSaid] = useState("");
   const pick = (mark: EventMark) => {
     if (onEvent === undefined) onSeek(mark.atNs);
@@ -141,7 +151,7 @@ function EmptyLane({ reading }: { readonly reading: boolean }) {
   );
 }
 
-export function Lane({ marks, fraction, startNs, onSeek, onEvent, reading, positionNs }: LaneProps) {
+export function Lane({ marks, fraction, startNs, reading, positionNs, said, pick }: LaneProps) {
   const { ref, width } = useWidth();
   const texts = marks.map((mark) => chipShort(mark, startNs));
   const chips = placeChips(
@@ -149,7 +159,6 @@ export function Lane({ marks, fraction, startNs, onSeek, onEvent, reading, posit
     texts.map(chipWidth),
     { width, rows: 3, gap: 4 },
   );
-  const { said, pick } = usePick(startNs, onSeek, onEvent);
   return (
     <>
       {marks.length === 0 && <EmptyLane reading={reading} />}
