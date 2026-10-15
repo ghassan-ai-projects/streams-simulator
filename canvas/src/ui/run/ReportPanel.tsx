@@ -194,13 +194,17 @@ function Truth({ report, unit, entity }: TruthProps) {
       <TruthNote report={report} />
       <Events report={report} />
       <KpiTruth report={report} unit={unit} entity={entity} />
-      <Section title="Alarms" note="ISA-18.2 measures">
+      <Section title="Alarms">
         <p className={styles.muted}>How the alarm system behaved during the run.</p>
         <Rows
           rows={Object.entries(report.alarms).map(([key, n]) => alarmRow(key, grouped(n)))}
           columns={["text", "number", "text"]}
           headers={["Measure", "Count", "What it means"]}
         />
+        <details className={styles.muted}>
+          <summary>For developers</summary>
+          <p>The alarm measures follow ISA-18.2: floods, chattering, stale and standing alarms.</p>
+        </details>
       </Section>
     </>
   );
