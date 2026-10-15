@@ -50,13 +50,17 @@ function Row({
     <li className={styles.item}>
       <span className={styles.lines}>
         <span className={styles.line}>
-          <span className={styles.name}>{row.plantTitle}</span>
+          <span className={styles.name} title={row.plantTitle}>
+            {row.plantTitle}
+          </span>
           <span className={row.run.explore ? styles.explore : styles.badge}>
             {row.run.explore ? <Eye size={12} aria-hidden="true" /> : <Lock size={12} aria-hidden="true" />}
             {row.run.explore ? "Explore" : "Evaluate"}
           </span>
         </span>
-        <span className={styles.meta}>{detail(row)}</span>
+        <span className={styles.meta} title={detail(row)}>
+          {detail(row)}
+        </span>
       </span>
       <Status row={row} badge={badge} />
       <span className={styles.actions}>

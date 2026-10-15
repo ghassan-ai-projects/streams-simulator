@@ -14,7 +14,7 @@ describe("home screen", () => {
     expect(screen.getByText("1 plant · 2 runs")).toBeInTheDocument();
     const plants = screen.getByRole("region", { name: "Plants" });
     expect(within(plants).getAllByRole("listitem")).toHaveLength(1);
-    expect(within(plants).getByText("Factory utilities")).toBeInTheDocument();
+    expect(within(plants).getByText("Factory utilities")).toHaveAttribute("title", "Factory utilities");
     expect(within(plants).queryByText(/can expand into several instances/)).not.toBeInTheDocument();
     expect(within(plants).getByText(/^2 runs · last /)).toBeInTheDocument();
     for (const action of ["Open", "Edit", "Run"]) {
@@ -25,6 +25,7 @@ describe("home screen", () => {
       expect.stringMatching(/^Factory utilitiesExplore.*w-2 · .*not finishedReview$/),
       expect.stringMatching(/^Factory utilitiesEvaluate.*w-1 · .* · 30 min · seed 7 · no faultsNot checkedReview$/),
     ]);
+    expect(runs[0]?.querySelector("[title='Factory utilities']")).not.toBeNull();
     const review = screen.getByRole("button", { name: "Review w-1" });
     expect(review).toHaveAttribute("title", "Review checks recording integrity using the run files.");
     expect(screen.queryByRole("region", { name: "Scenarios" })).not.toBeInTheDocument();

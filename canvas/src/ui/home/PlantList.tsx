@@ -81,7 +81,9 @@ function PlantRow({ plant, navigation }: { readonly plant: PlantEntry; readonly 
       <Factory size={16} aria-hidden="true" className={styles.icon} />
       <span className={styles.lines}>
         <span className={styles.line}>
-          <span className={styles.name}>{plant.title}</span>
+          <span className={styles.name} title={plant.title}>
+            {plant.title}
+          </span>
           <span className={styles.id}>{plant.id}</span>
           {plant.composition === null && <span className={styles.badge}>read-only</span>}
         </span>
