@@ -186,6 +186,13 @@
   white-space: nowrap;
 }
 
+.outcome {
+  width: 1%;
+  min-width: 10em;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
 .text {
   overflow-wrap: anywhere;
 }
