@@ -67,8 +67,8 @@ function OpeningPlant() {
 }
 
 function openedWords(opening: Opening, startNs: number): string {
-  const when = opening.full ? "once every channel had reported" : "before every channel had reported";
-  return ` · opened at ${runClock(opening.atNs, startNs)}, ${when}`;
+  const at = runClock(opening.atNs, startNs);
+  return opening.full ? ` · readings start at ${at}` : ` · opened at ${at}, some channels report later`;
 }
 
 function graphWords(state: ReviewState, opening: Opening | null, startNs: number): string {
@@ -92,7 +92,7 @@ function GraphBar({
       <span className={styles.barWords} title={words}>
         {words}
       </span>
-      <ZoomBar />
+      <ZoomBar review />
     </div>
   );
 }

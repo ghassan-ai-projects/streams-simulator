@@ -220,6 +220,7 @@ export function InstanceNode({ data, selected }: NodeProps<InstanceNodeType>) {
       {data.live !== null && (
         <Readout
           shown={data.live.shown}
+          observed={data.live.observed}
           pins={view.pins}
           channels={view.channels}
           fault={data.live.fault}

@@ -8,6 +8,7 @@ export interface ReviewRow {
   readonly pin: Pin | null;
   readonly side: "in" | "out" | null;
   readonly reading: Shown | null;
+  readonly observed: boolean;
 }
 
 export interface ReviewBody {
@@ -45,32 +46,45 @@ function labelOf(pin: Pin, pins: Pins): string {
   return channelWords(pin.channel === null || shared ? pin.name : pin.channel);
 }
 
-function portRow(pin: Pin, side: "in" | "out", pins: Pins, shown: readonly Shown[]): ReviewRow {
-  const reading = pin.channel === null ? null : (shown.find((entry) => entry.channel === pin.channel) ?? null);
+function portRow(pin: Pin, side: "in" | "out", pins: Pins, run: Run): ReviewRow {
+  const reading = pin.channel === null ? null : (run.shown.find((entry) => entry.channel === pin.channel) ?? null);
   return {
     key: `${side}:${pin.name}`,
     label: labelOf(pin, pins),
     pin,
     side,
     reading,
+    observed: reading !== null || (pin.channel !== null && run.observed.has(pin.channel)),
   };
 }
 
-function channelRow(channel: string, shown: readonly Shown[]): ReviewRow {
-  const reading = shown.find((entry) => entry.channel === channel) ?? null;
-  return { key: `channel:${channel}`, label: channelWords(channel), pin: null, side: null, reading };
+function channelRow(channel: string, run: Run): ReviewRow {
+  const reading = run.shown.find((entry) => entry.channel === channel) ?? null;
+  const observed = reading !== null || run.observed.has(channel);
+  return { key: `channel:${channel}`, label: channelWords(channel), pin: null, side: null, reading, observed };
 }
 
-function listedRows(pins: Pins, channels: readonly string[], shown: readonly Shown[]): readonly ReviewRow[] {
-  if (portless(pins)) return channels.slice(0, channelRows).map((channel) => channelRow(channel, shown));
+interface Run {
+  readonly shown: readonly Shown[];
+  readonly observed: ReadonlySet<string>;
+}
+
+function listedRows(pins: Pins, channels: readonly string[], run: Run): readonly ReviewRow[] {
+  if (portless(pins)) return channels.slice(0, channelRows).map((channel) => channelRow(channel, run));
   return [
-    ...pins.ins.map((pin) => portRow(pin, "in", pins, shown)),
-    ...pins.outs.map((pin) => portRow(pin, "out", pins, shown)),
+    ...pins.ins.map((pin) => portRow(pin, "in", pins, run)),
+    ...pins.outs.map((pin) => portRow(pin, "out", pins, run)),
   ];
 }
 
-export function reviewBody(pins: Pins, channels: readonly string[], shown: readonly Shown[]): ReviewBody {
-  const hidden = hiddenOf(pins, channels);
+export function reviewBody(
+  pins: Pins,
+  channels: readonly string[],
+  shown: readonly Shown[],
+  observed: ReadonlySet<string>,
+): ReviewBody {
+  const hidden = hiddenOf(pins, channels).filter((channel) => observed.has(channel));
   const readings = shown.filter((entry) => hidden.includes(entry.channel));
-  return { rows: listedRows(pins, channels, shown), hidden: hidden.length, hiddenAttention: attentionOf(readings) };
+  const run = { shown, observed };
+  return { rows: listedRows(pins, channels, run), hidden: hidden.length, hiddenAttention: attentionOf(readings) };
 }

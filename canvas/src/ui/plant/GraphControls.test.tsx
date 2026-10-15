@@ -8,6 +8,25 @@ function legend() {
 }
 
 describe("graph controls legend", () => {
+  it("explains the reading marks only in a review", () => {
+    const { unmount } = render(
+      <ReactFlowProvider>
+        <ZoomBar />
+      </ReactFlowProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Legend" }));
+    expect(screen.queryByText("Not reported by this run")).not.toBeInTheDocument();
+    unmount();
+    render(
+      <ReactFlowProvider>
+        <ZoomBar review />
+      </ReactFlowProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Legend" }));
+    expect(screen.getByText("Not reported by this run")).toBeInTheDocument();
+    expect(screen.getByText("No reading yet at this time")).toBeInTheDocument();
+  });
+
   it("closes on Escape wherever focus is, and on a press outside that still reaches its target", () => {
     render(
       <ReactFlowProvider>

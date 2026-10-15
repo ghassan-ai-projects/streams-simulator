@@ -8,6 +8,7 @@ import type { Point } from "../../model/wireRoute";
 
 export interface NodeLive {
   readonly shown: readonly Shown[];
+  readonly observed: ReadonlySet<string>;
   readonly status: NodeStatus;
   readonly count: number;
   readonly fault: string;

@@ -408,18 +408,6 @@
   color: var(--text-tertiary);
 }
 
-.notObservedShort {
-  display: none;
-}
-
-:global(.tier-compact) .notObservedLong {
-  display: none;
-}
-
-:global(.tier-compact) .notObservedShort {
-  display: inline;
-}
-
 .note {
   display: flex;
   flex-direction: column;

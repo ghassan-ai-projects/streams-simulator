@@ -114,6 +114,11 @@ test("a review node lists every port of its kind as a row, observed or not, at e
   const rows = await chiller.locator("dl > div").count();
   expect([ports, ports + 1]).toContain(rows);
   await expect(chiller.locator("dl")).toContainText("not observed");
+  await expect(chiller.locator("dl")).not.toContainText("–");
+  await page.getByRole("button", { name: "Legend" }).click();
+  await expect(page.getByText("Not reported by this run")).toBeVisible();
+  await expect(page.getByText("No reading yet at this time")).toBeVisible();
+  await page.getByRole("button", { name: "Legend" }).click();
   const graph = page.getByRole("application", { name: "Plant graph" });
   await graph.focus();
   for (let step = 0; step < 3; step += 1) {

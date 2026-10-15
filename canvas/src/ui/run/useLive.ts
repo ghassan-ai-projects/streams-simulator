@@ -21,6 +21,7 @@ export function useLive(review: ReviewStore, state: ReviewState, plant: ReadyPla
       const attention = attentionOf(shown);
       return {
         shown,
+        observed: review.index.observed(id),
         status: attention === "alarm" ? "alarm" : faulted.has(id) ? "fault" : attention,
         count: 0,
         fault: (faulted.get(id) ?? []).join(", "),
@@ -34,7 +35,14 @@ export function useLive(review: ReviewStore, state: ReviewState, plant: ReadyPla
       const members = plant?.plant.instances.filter((instance) => hallOf(instance.id) === id) ?? [];
       if (members.length === 0) return one(id);
       const worst = worstOf(members.map((member) => one(member.id).status));
-      return { shown: [], status: worst.status, count: worst.count, fault: "", effector: "" };
+      return {
+        shown: [],
+        observed: new Set<string>(),
+        status: worst.status,
+        count: worst.count,
+        fault: "",
+        effector: "",
+      };
     },
     [one, plant],
   );
