@@ -25,7 +25,7 @@ interface ListProps {
 }
 
 function Items({ items, mono = true, show }: Pick<ListProps, "items" | "mono" | "show">) {
-  if (items.length === 0) return <p className={styles.muted}>None</p>;
+  if (items.length === 0) return <p className={styles.empty}>None</p>;
   return (
     <ul className={styles.items}>
       {items.map((item) => (

@@ -200,6 +200,12 @@
   font-family: var(--font-mono);
 }
 
+.empty {
+  margin: var(--space-3) 0 0;
+  padding: 2px var(--space-3);
+  color: var(--text-secondary);
+}
+
 .muted,
 .hint {
   margin: var(--space-3) 0 0;
