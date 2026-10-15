@@ -45,9 +45,25 @@ function plural(count: number, one: string): string {
 }
 
 export function faultWords(run: RunEntry): string {
-  if (!run.ended) return "";
+  if (!run.ended || !run.complete) return "";
   const faults = run.faults ?? 0;
   return faults === 0 ? "no faults" : plural(faults, "fault");
+}
+
+export function seedWords(run: RunEntry): string {
+  return run.seed === null ? "" : `seed ${String(run.seed)}`;
+}
+
+export function unfinishedReason(run: RunEntry): string {
+  return run.incompleteReason || "the run did not close.";
+}
+
+export function outcomeWords(run: RunEntry): string {
+  return run.ended && !run.complete ? `Did not finish: ${unfinishedReason(run)}` : "";
+}
+
+export function runFacts(run: RunEntry): readonly string[] {
+  return [durationOf(run.durationS), seedWords(run), faultWords(run), outcomeWords(run)].filter((part) => part !== "");
 }
 
 export function plantFacts(plant: PlantEntry): string {

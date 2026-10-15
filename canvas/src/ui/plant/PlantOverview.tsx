@@ -3,7 +3,7 @@ import { areaOf } from "../../model/plant";
 import { hallOf } from "../../model/plantView";
 import { kindLabel } from "../../model/report";
 import type { RunRow } from "../../model/workspace";
-import { durationOf, faultWords, whenOf } from "../../model/workspace";
+import { runFacts, whenOf } from "../../model/workspace";
 import shared from "../shared.module.css";
 import styles from "./PlantScreen.module.css";
 
@@ -38,13 +38,12 @@ function RunItem({ row, onReview }: { readonly row: RunRow; readonly onReview: R
   const words = [
     row.run.worldId,
     row.run.explore ? "Explore" : "Evaluate",
-    durationOf(row.run.durationS),
-    faultWords(row.run),
+    ...runFacts(row.run),
     whenOf(row.run.recordedAt),
   ];
   return (
     <li>
-      <span>{words.filter(Boolean).join(" · ")}</span>
+      <span className={styles.figures}>{words.filter(Boolean).join(" · ")}</span>
       {onReview !== undefined && (
         <button
           type="button"

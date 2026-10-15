@@ -1,11 +1,11 @@
-import { Eye, Lock, Radio } from "lucide-react";
+import { Eye, Lock, Radio, TriangleAlert } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { NavigationStore } from "../../app/navigationStore";
 import type { Workspace } from "../../model/bridge";
 import type { Badge } from "../../model/report";
 import { badgeLabels } from "../../model/report";
 import type { RunRow } from "../../model/workspace";
-import { durationOf, faultWords, plantsOf, runRows, whenOf } from "../../model/workspace";
+import { plantsOf, runFacts, runRows, unfinishedReason, whenOf } from "../../model/workspace";
 import styles from "./HomeScreen.module.css";
 
 interface ListProps {
@@ -17,9 +17,7 @@ interface ListProps {
 const page = 20;
 
 function detail(row: RunRow): string {
-  return [row.run.worldId, whenOf(row.run.recordedAt), durationOf(row.run.durationS), faultWords(row.run)]
-    .filter((part) => part !== "")
-    .join(" · ");
+  return [row.run.worldId, whenOf(row.run.recordedAt), ...runFacts(row.run)].filter((part) => part !== "").join(" · ");
 }
 
 function Status({ row, badge }: { readonly row: RunRow; readonly badge: Badge | null }) {
@@ -28,6 +26,14 @@ function Status({ row, badge }: { readonly row: RunRow; readonly badge: Badge | 
       <span className={styles.live}>
         <Radio size={12} aria-hidden="true" />
         not finished
+      </span>
+    );
+  }
+  if (!row.run.complete) {
+    return (
+      <span className={styles.badge} title={unfinishedReason(row.run)}>
+        <TriangleAlert size={12} aria-hidden="true" />
+        {badgeLabels.incomplete}
       </span>
     );
   }

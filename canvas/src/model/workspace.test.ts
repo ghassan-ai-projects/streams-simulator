@@ -4,9 +4,12 @@ import { sampleWorkspace } from "../test/fakeBridge";
 import {
   durationOf,
   faultWords,
+  outcomeWords,
   plantFacts,
   plantsOf,
+  runFacts,
   runRows,
+  seedWords,
   suggestedId,
   whenOf,
   workspaceEmpty,
@@ -114,6 +117,28 @@ describe("workspace", () => {
     expect(suggestedId("Cooling hall", ["cooling-hall", "cooling-hall-2"])).toBe("cooling-hall-3");
     expect(suggestedId("42 AB", [])).toBe("plant-ab");
     expect(suggestedId("Kühlhalle", [])).toBe("kuhlhalle");
+  });
+
+  it("lists the seed and the outcome of a run in its facts", () => {
+    const finished = {
+      worldId: "w",
+      ended: true,
+      complete: true,
+      incompleteReason: "",
+      explore: true,
+      seed: 7,
+      plant: "p",
+      durationS: 1800,
+      recordedAt: "",
+      faults: 0,
+    };
+    expect(runFacts(finished)).toEqual(["30 min", "seed 7", "no faults"]);
+    expect(seedWords({ ...finished, seed: null })).toBe("");
+    const abandoned = { ...finished, complete: false, incompleteReason: "run was stopped", faults: 2 };
+    expect(runFacts(abandoned)).toEqual(["30 min", "seed 7", "Did not finish: run was stopped"]);
+    expect(outcomeWords({ ...abandoned, incompleteReason: "" })).toBe("Did not finish: the run did not close.");
+    expect(outcomeWords(finished)).toBe("");
+    expect(outcomeWords({ ...abandoned, ended: false })).toBe("");
   });
 
   it("says how many faults a finished run injected", () => {

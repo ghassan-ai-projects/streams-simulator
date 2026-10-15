@@ -143,6 +143,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
 }
 
 .actions {

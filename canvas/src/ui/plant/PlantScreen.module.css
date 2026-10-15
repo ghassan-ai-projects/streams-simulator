@@ -325,6 +325,10 @@
   line-height: 1.45;
 }
 
+.figures {
+  font-variant-numeric: tabular-nums;
+}
+
 .tally {
   margin: 0;
   padding: 0;

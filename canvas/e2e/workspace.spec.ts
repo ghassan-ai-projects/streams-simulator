@@ -16,6 +16,7 @@ test("the workspace lists each real plant once with its actions, and its runs, i
   await expect(plants).not.toContainText("can expand into several instances");
   const runs = page.getByRole("region", { name: "Runs" });
   await expect(runs.getByRole("listitem").filter({ hasText: "w-explore" })).toContainText("Factory utilities");
+  await expect(runs.getByRole("listitem").filter({ hasText: "w-explore" })).toContainText("seed 7");
   await expect(runs.getByRole("listitem").filter({ hasText: "w-evaluate" })).toContainText("30 min");
   for (const label of ["Theme: system", "Theme: light"]) {
     await page.getByRole("button", { name: label }).click();
