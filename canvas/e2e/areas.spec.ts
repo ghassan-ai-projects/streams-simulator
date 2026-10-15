@@ -20,20 +20,21 @@ test("an area is added inside the site, shown nested in the outline, used by equ
   const build = page.getByRole("complementary", { name: "Build" });
   const area = build.getByRole("form", { name: "Add area" });
   await area.getByLabel("Area name").fill("Pump house");
-  await area.getByLabel("Inside").selectOption({ label: "Site" });
+  const site = ((await area.getByLabel("Inside").locator("option").nth(1).textContent()) ?? "").trim();
+  await area.getByLabel("Inside").selectOption({ index: 1 });
   await area.getByRole("button", { name: "Add area" }).click();
   const outline = page.getByRole("navigation", { name: "Outline" });
   await expect(outline.getByText("Pump house")).toBeVisible();
   await build.getByLabel("Find equipment").fill("pump");
   await build.getByLabel("Equipment", { exact: true }).selectOption({ label: "Centrifugal pump" });
-  await build.getByLabel("Area", { exact: true }).selectOption({ label: "Site › Pump house" });
+  await build.getByLabel("Area", { exact: true }).selectOption({ label: `${site} › Pump house` });
   await build.getByRole("button", { name: "Add to the plant" }).click();
   await expect(outline.getByRole("group").filter({ hasText: "Pump house" }).getByRole("button")).toHaveCount(1);
   await page.getByRole("button", { name: "Save" }).click();
   await expect(page.getByRole("status").filter({ hasText: /^Ready to run\. Saved\.$/ })).toBeVisible();
   const file = join(env("CANVAS_WORKSPACE"), "compositions", "tiered.composition.json");
   const written = JSON.parse(readFileSync(file, "utf8")) as { areas: { name: string; parent?: string }[] };
-  expect(written.areas).toContainEqual({ name: "Pump house", parent: "Site" });
+  expect(written.areas).toContainEqual({ name: "Pump house", parent: site });
 });
 
 test("an area is renamed and an empty one deleted from the Build panel, and the outline follows", async ({ page }) => {
