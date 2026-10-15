@@ -321,3 +321,10 @@
   font-size: var(--text-sm);
   overflow-wrap: anywhere;
 }
+
+.nameError {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  color: var(--status-alarm);
+}

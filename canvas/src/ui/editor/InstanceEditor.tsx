@@ -1,5 +1,5 @@
 import { kindLabel } from "../../model/report";
-import { Box, Trash2, X } from "lucide-react";
+import { Box, Trash2, TriangleAlert, X } from "lucide-react";
 import type { SyntheticEvent } from "react";
 import { useState } from "react";
 import type { Draft } from "../../app/editorStore";
@@ -18,11 +18,21 @@ import { useRequestedFocus } from "./panelProps";
 type EditorProps = PanelProps & { readonly instance: Instance };
 
 function NameRule({ fits }: { readonly fits: boolean }) {
+  if (fits)
+    return (
+      <>
+        <span />
+        <span className={panel.hint} id="instance-name-rule">
+          {instanceNameRule()}
+        </span>
+      </>
+    );
   return (
     <>
       <span />
-      <span className={panel.hint} id="instance-name-rule">
-        {fits ? instanceNameRule() : `Not a valid name. ${instanceNameRule()}`}
+      <span className={styles.nameError} id="instance-name-rule">
+        <TriangleAlert size={13} aria-hidden="true" />
+        {`Not a valid name. ${instanceNameRule()}`}
       </span>
     </>
   );

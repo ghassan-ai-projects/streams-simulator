@@ -25,6 +25,12 @@ button {
   color: inherit;
 }
 
+html input[aria-invalid="true"],
+html select[aria-invalid="true"] {
+  border-color: var(--status-alarm);
+  box-shadow: 0 0 0 1px var(--status-alarm);
+}
+
 :focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
