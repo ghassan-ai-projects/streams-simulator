@@ -97,9 +97,14 @@ function headerLines(): { name: string; lines: number; sameBaseline: boolean; fu
     const name = title.querySelector("[class*='frameName']");
     const count = title.querySelector("[class*='frameCount']");
     const boxes = [name, count].map((part) => {
-      const range = document.createRange();
-      if (part) range.selectNodeContents(part);
-      return [...range.getClientRects()].filter((box) => box.width > 0);
+      const walker = document.createTreeWalker(part ?? title, NodeFilter.SHOW_TEXT);
+      const found: DOMRect[] = [];
+      while (walker.nextNode()) {
+        const range = document.createRange();
+        range.selectNodeContents(walker.currentNode);
+        found.push(...[...range.getClientRects()].filter((box) => box.width > 0));
+      }
+      return found;
     });
     const tops = boxes.flat().map((box) => box.top);
     const lines = Math.max(...tops) - Math.min(...tops) > 3 ? 2 : 1;

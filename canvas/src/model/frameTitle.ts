@@ -37,3 +37,21 @@ export function boundsWithTitles(
   const top = Math.min(bounds.y, ...tops);
   return { ...bounds, y: top, height: bounds.height + (bounds.y - top) };
 }
+
+const breaks = /[\s\-_/]/;
+const tailChars = 6;
+
+function tailStart(name: string): number {
+  if (name.length <= tailChars + 2) return name.length;
+  const lastBreak = name
+    .split("")
+    .map((char) => breaks.test(char))
+    .lastIndexOf(true);
+  const word = name.length - lastBreak - 1;
+  return lastBreak > 0 && word <= tailChars ? lastBreak : name.length - tailChars;
+}
+
+export function splitName(name: string): { readonly head: string; readonly tail: string } {
+  const at = tailStart(name);
+  return { head: name.slice(0, at), tail: name.slice(at) };
+}

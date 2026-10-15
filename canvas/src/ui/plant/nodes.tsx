@@ -3,7 +3,7 @@ import { Handle, Position, useStore } from "@xyflow/react";
 import { ChevronRight } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useRef } from "react";
-import { countWords } from "../../model/frameTitle";
+import { countWords, splitName } from "../../model/frameTitle";
 import { fitId, idCap, idRoom } from "../../model/headerFit";
 import type { ViewNode } from "../../model/plantView";
 import { describeNode } from "../../model/nodeWords";
@@ -268,10 +268,14 @@ export function FrameNode() {
 
 export function FrameTitleNode({ data }: NodeProps<FrameTitleNodeType>) {
   const count = countWords(data.count);
+  const { head, tail } = splitName(data.title);
   return (
     <div className={styles.frameTitleNode}>
       <div className={styles.frameTitle} title={`${data.title} · ${count}`}>
-        <span className={styles.frameName}>{data.title}</span>
+        <span className={styles.frameName}>
+          <span className={styles.nameHead}>{head}</span>
+          <span className={styles.nameTail}>{tail}</span>
+        </span>
         <span className={styles.frameCount}>{count}</span>
       </div>
     </div>

@@ -81,3 +81,39 @@ test("below 40 % an id stays on one line and never breaks mid-word, down to the 
   }
   await expect(graph).toHaveClass(/tier-overview/);
 });
+
+function titleProblems(): string[] {
+  const textBoxes = (part: Element | null): DOMRect[] => {
+    const walker = document.createTreeWalker(part ?? document.body, NodeFilter.SHOW_TEXT);
+    const found: DOMRect[] = [];
+    while (walker.nextNode()) {
+      const range = document.createRange();
+      range.selectNodeContents(walker.currentNode);
+      found.push(...[...range.getClientRects()].filter((box) => box.width > 0));
+    }
+    return found;
+  };
+  return [...document.querySelectorAll<HTMLElement>("[class*='frameTitle_']")].flatMap((title) => {
+    const box = title.getBoundingClientRect();
+    const parts = ["frameName", "frameCount"].map((name) => textBoxes(title.querySelector(`[class*='${name}']`)));
+    const all = parts.flat();
+    const name = title.getAttribute("title") ?? "";
+    const spread = Math.max(...all.map((part) => part.bottom)) - Math.min(...all.map((part) => part.bottom));
+    const outside = all.some((part) => part.right > box.right + 0.5);
+    return [...(outside ? [`${name}: text outside the title`] : []), ...(spread > 3 ? [`${name}: wraps`] : [])];
+  });
+}
+
+test("an area header is one line at every zoom and keeps the last word of its name beside the count", async ({
+  page,
+}) => {
+  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Fboiler-steam-loop.domain.json`);
+  const graph = page.getByRole("application", { name: "Plant graph" });
+  await expect(page.locator(".react-flow__node-instance").first()).toBeAttached();
+  await graph.focus();
+  for (let step = 0; step < 5; step += 1) {
+    await page.keyboard.press("-");
+    await expect.poll(() => page.evaluate(titleProblems)).toEqual([]);
+  }
+  await expect(page.locator("[class*='nameTail']").filter({ hasText: "house" })).toBeVisible();
+});

@@ -173,10 +173,21 @@
 }
 
 .frameName {
+  display: flex;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.nameHead {
   flex: 0 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.nameTail {
+  flex: none;
+  white-space: pre;
 }
 
 .frameCount {
