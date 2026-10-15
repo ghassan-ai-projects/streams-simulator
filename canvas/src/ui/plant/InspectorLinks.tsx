@@ -23,6 +23,37 @@ function ownPort(link: Link, side: "in" | "out"): string {
   return (side === "in" ? link.toPort : link.fromPort) ?? "";
 }
 
+function endpoint(id: string, port: string | null): string {
+  return port === null ? `${id} · port not recorded` : `${id} ${port.replaceAll("_", " ")}`;
+}
+
+function LinkRow({
+  link,
+  side,
+  onSelect,
+}: {
+  readonly link: Link;
+  readonly side: "in" | "out";
+  readonly onSelect: (id: string) => void;
+}) {
+  const id = side === "in" ? link.from : link.to;
+  const relation = `${endpoint(link.from, link.fromPort)} → ${endpoint(link.to, link.toPort)}`;
+  return (
+    <li>
+      <button
+        type="button"
+        className={styles.linkButton}
+        aria-label={`Select ${side === "out" ? "receiver" : "source"} ${id}; ${relation}`}
+        onClick={() => {
+          onSelect(id);
+        }}
+      >
+        {relation}
+      </button>
+    </li>
+  );
+}
+
 function LinkGroup({
   hall,
   links,
@@ -34,37 +65,25 @@ function LinkGroup({
   readonly side: "in" | "out";
   readonly onSelect: (id: string) => void;
 }) {
+  const rows = (
+    <ul className={styles.items}>
+      {links.map((link, index) => (
+        <LinkRow
+          key={`${link.from}:${link.fromPort ?? ""}:${link.to}:${link.toPort ?? ""}:${link.type}:${String(index)}`}
+          link={link}
+          side={side}
+          onSelect={onSelect}
+        />
+      ))}
+    </ul>
+  );
+  if (hall === "") return rows;
   return (
     <section aria-label={`${hall} linked instances`}>
       <h4 className={styles.linkGroup}>{hall}</h4>
-      <ul className={styles.items}>
-        {links.map((link, index) => {
-          const id = side === "in" ? link.from : link.to;
-          const relation = `${endpoint(link.from, link.fromPort)} → ${endpoint(link.to, link.toPort)}`;
-          return (
-            <li
-              key={`${link.from}:${link.fromPort ?? ""}:${link.to}:${link.toPort ?? ""}:${link.type}:${String(index)}`}
-            >
-              <button
-                type="button"
-                className={styles.linkButton}
-                aria-label={`Select ${side === "out" ? "receiver" : "source"} ${id}; ${relation}`}
-                onClick={() => {
-                  onSelect(id);
-                }}
-              >
-                {relation}
-              </button>
-            </li>
-          );
-        })}
-      </ul>
+      {rows}
     </section>
   );
-}
-
-function endpoint(id: string, port: string | null): string {
-  return port === null ? `${id} · port not recorded` : `${id} ${port.replaceAll("_", " ")}`;
 }
 
 export function InspectorLinks({
@@ -74,24 +93,21 @@ export function InspectorLinks({
 }: {
   readonly links: readonly Link[];
   readonly side: "in" | "out";
-  readonly onSelect?: ((id: string) => void) | undefined;
+  readonly onSelect: (id: string) => void;
 }) {
   const linked = ordered(links, side);
-  if (linked.length === 0 || onSelect === undefined) return null;
+  if (linked.length === 0) return <p className={styles.empty}>None</p>;
   const groups = new Map<string, Link[]>();
   linked.forEach((link) => {
     const id = side === "in" ? link.from : link.to;
-    const group = hallOf(id) ?? "Site";
+    const group = hallOf(id) ?? "";
     groups.set(group, [...(groups.get(group) ?? []), link]);
   });
   return (
-    <details className={styles.linkDetails}>
-      <summary className={styles.linkSummary}>
-        Browse {side === "out" ? "outgoing links" : "incoming links"} ({String(linked.length)})
-      </summary>
+    <>
       {[...groups].map(([hall, group]) => (
         <LinkGroup key={hall} hall={hall} links={group} side={side} onSelect={onSelect} />
       ))}
-    </details>
+    </>
   );
 }

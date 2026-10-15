@@ -21,7 +21,7 @@ test("selecting an instance in the outline shows its kind in the inspector", asy
   const inspector = page.getByRole("complementary", { name: "Inspector" });
   await expect(inspector.getByRole("heading", { name: "CT-1" })).toBeVisible();
   await expect(inspector.getByRole("region", { name: "Channels" })).toContainText("basin temp · °C");
-  await expect(inspector.getByRole("region", { name: "Links in" })).toContainText("CH-1 heat out → heat in");
+  await expect(inspector.getByRole("region", { name: "Links in" })).toContainText("CH-1 heat out → CT-1 heat in");
   await expect(inspector.getByRole("region", { name: "Faults" })).toContainText("fan failure");
   await page.getByRole("button", { name: "Workspace", exact: true }).click();
   await expect(page.getByRole("heading", { name: "lab-workspace" })).toBeVisible();
@@ -83,7 +83,6 @@ test("a shared campus link navigates to its declared receiver in another hall", 
   await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Fcampus-3.domain.json`);
   await page.getByRole("navigation", { name: "Outline" }).getByRole("button", { name: "CAL-1" }).click();
   const inspector = page.getByRole("complementary", { name: "Inspector" });
-  await inspector.getByText("Browse outgoing links (18)").click();
   await inspector.getByRole("button", { name: /Select receiver h02\/M-1; CAL-1 shift out/ }).click();
   await expect(page.getByRole("heading", { name: "h02", level: 1 })).toBeVisible();
   await expect(inspector.getByRole("heading", { name: "h02/M-1", level: 2 })).toBeVisible();

@@ -360,16 +360,6 @@
   text-decoration: underline;
 }
 
-.linkDetails {
-  padding: var(--space-2) var(--space-3);
-  color: var(--text-secondary);
-}
-
-.linkSummary {
-  cursor: pointer;
-  color: var(--accent);
-}
-
 .linkGroup {
   margin: var(--space-2) 0 0;
   font-size: var(--text-sm);

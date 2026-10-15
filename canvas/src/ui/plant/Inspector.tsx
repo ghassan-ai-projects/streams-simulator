@@ -21,7 +21,7 @@ interface ListProps {
   readonly show?: ((item: string) => string) | undefined;
   readonly count?: number;
   readonly folded?: boolean;
-  readonly extra?: ReactNode;
+  readonly rows?: ReactNode;
 }
 
 function Items({ items, mono = true, show }: Pick<ListProps, "items" | "mono" | "show">) {
@@ -37,7 +37,7 @@ function Items({ items, mono = true, show }: Pick<ListProps, "items" | "mono" | 
   );
 }
 
-function List({ title, items, mono, show, count = items.length, folded = false, extra }: ListProps) {
+function List({ title, items, mono, show, count = items.length, folded = false, rows }: ListProps) {
   const heading = (
     <>
       {title}
@@ -49,8 +49,7 @@ function List({ title, items, mono, show, count = items.length, folded = false, 
       <section className={styles.section} aria-label={title}>
         <details>
           <summary className={shared.sectionTitle}>{heading}</summary>
-          <Items items={items} mono={mono} show={show} />
-          {extra}
+          {rows ?? <Items items={items} mono={mono} show={show} />}
         </details>
       </section>
     );
@@ -58,8 +57,7 @@ function List({ title, items, mono, show, count = items.length, folded = false, 
   return (
     <section className={styles.section} aria-label={title}>
       <h3 className={shared.sectionTitle}>{heading}</h3>
-      <Items items={items} mono={mono} show={show} />
-      {extra}
+      {rows ?? <Items items={items} mono={mono} show={show} />}
     </section>
   );
 }
@@ -82,13 +80,15 @@ function LinkList({
   readonly side: "in" | "out";
   readonly onSelect?: ((id: string) => void) | undefined;
 }) {
+  if (onSelect === undefined)
+    return <List title={title} items={linkLines(links, instance.id, side)} count={links.length} mono={false} />;
   return (
     <List
       title={title}
-      items={linkLines(links, instance.id, side)}
+      items={[]}
       count={links.length}
       mono={false}
-      extra={<InspectorLinks links={links} side={side} onSelect={onSelect} />}
+      rows={<InspectorLinks links={links} side={side} onSelect={onSelect} />}
     />
   );
 }
