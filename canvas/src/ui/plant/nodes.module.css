@@ -31,7 +31,10 @@
 }
 
 .id {
-  flex: none;
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-family: var(--font-mono);
   white-space: nowrap;
 }

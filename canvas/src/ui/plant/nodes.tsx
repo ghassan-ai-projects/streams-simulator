@@ -165,7 +165,9 @@ export function InstanceNode({ data, selected }: NodeProps<InstanceNodeType>) {
       <Handle type="target" position={Position.Left} id="in" className={styles.anchor} isConnectable={false} />
       <Handle type="source" position={Position.Right} id="out" className={styles.anchor} isConnectable={false} />
       <div className={styles.header}>
-        <span className={styles.id}>{view.label}</span>
+        <span className={styles.id} title={view.label}>
+          {view.label}
+        </span>
         <StatusTag status={status} />
         <IssueTag flagged={data.flagged} />
         <span className={styles.kind} title={view.detail}>

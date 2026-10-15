@@ -148,6 +148,7 @@
   align-self: flex-start;
   align-items: center;
   gap: var(--space-1);
+  max-width: 100%;
   height: 30px;
   padding: 0 var(--space-3);
   border: 1px solid var(--status-alarm);
@@ -165,6 +166,14 @@
 
 .deleteRow {
   display: flex;
+  min-width: 0;
+}
+
+.deleteWords {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .empty {

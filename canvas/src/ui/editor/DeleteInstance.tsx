@@ -32,6 +32,7 @@ export function DeleteInstance(props: DeleteProps) {
       <button
         type="button"
         className={confirming ? styles.danger : styles.delete}
+        title={`Delete ${instance.id}`}
         onBlur={() => {
           setConfirming(false);
         }}
@@ -41,7 +42,7 @@ export function DeleteInstance(props: DeleteProps) {
         }}
       >
         <Trash2 size={14} aria-hidden="true" />
-        {confirming ? question : `Delete ${instance.id}`}
+        {confirming ? question : <span className={styles.deleteWords}>{`Delete ${instance.id}`}</span>}
       </button>
     </div>
   );
