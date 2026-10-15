@@ -205,13 +205,24 @@ function Truth({ report, unit, entity }: TruthProps) {
 }
 
 function Scoring({ report }: { readonly report: Report }) {
-  const text =
-    report.scoring === null
-      ? "Nothing was scored: no consumer verdict was recorded for this run. A consumer attaches through the operator endpoint; the canvas does not attach one."
-      : `${report.scoring.status}${report.scoring.reason ? ` · ${report.scoring.reason}` : ""}`;
+  if (report.scoring !== null) {
+    const { status, reason } = report.scoring;
+    return (
+      <Section title="Scoring">
+        <p className={styles.muted}>{`${status}${reason ? ` · ${reason}` : ""}`}</p>
+      </Section>
+    );
+  }
   return (
     <Section title="Scoring">
-      <p className={styles.muted}>{text}</p>
+      <p className={styles.muted}>Not scored: no outside system is connected to this run.</p>
+      <details className={styles.muted}>
+        <summary>For developers</summary>
+        <p>
+          Nothing was scored: no consumer verdict was recorded for this run. A consumer attaches through the operator
+          endpoint; the canvas does not attach one.
+        </p>
+      </details>
     </Section>
   );
 }

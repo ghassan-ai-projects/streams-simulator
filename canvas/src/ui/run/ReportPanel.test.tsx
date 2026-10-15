@@ -55,7 +55,7 @@ describe("report panel", () => {
     expect(within(screen.getByRole("region", { name: "True KPIs" })).getByText("5.95")).toBeInTheDocument();
     expect(
       within(screen.getByRole("region", { name: "Scoring" })).getByText(
-        /^Nothing was scored: no consumer verdict was recorded/,
+        "Not scored: no outside system is connected to this run.",
       ),
     ).toBeInTheDocument();
     expect((await axe.run(view.container)).violations).toEqual([]);
@@ -91,7 +91,7 @@ describe("report panel", () => {
     ).toBeInTheDocument();
     expect(
       within(screen.getByRole("region", { name: "Scoring" })).getByText(
-        /^Nothing was scored: no consumer verdict was recorded/,
+        "Not scored: no outside system is connected to this run.",
       ),
     ).toBeInTheDocument();
   });
