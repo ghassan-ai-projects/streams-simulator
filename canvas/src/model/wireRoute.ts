@@ -17,6 +17,7 @@ export interface WireLink {
   readonly leaves?: Side;
   readonly enters?: Side;
   readonly stub?: number;
+  readonly corridor?: Rect;
 }
 
 export interface WireScene {
@@ -121,6 +122,17 @@ function weight(link: WireLink): number {
   return Math.abs(link.to.x - link.from.x) + Math.abs(link.to.y - link.from.y);
 }
 
+function pathOf(
+  grid: Grid,
+  occupancy: ReturnType<typeof emptyOccupancy>,
+  ends: { readonly start: number; readonly goal: number },
+  turned: { readonly start: boolean; readonly goal: boolean },
+  corridor: Rect | undefined,
+): number[] | null {
+  const within = corridor === undefined ? null : findPath(grid, occupancy, ends, turned, corridor);
+  return within ?? findPath(grid, occupancy, ends, turned);
+}
+
 function routeOn(scene: WireScene, titleClearance: number | null, ordered: readonly WireLink[]): Map<string, Point[]> {
   const grid = gridOf(scene, obstaclesOf(scene, titleClearance));
   const routes = new Map<string, Point[]>();
@@ -129,7 +141,7 @@ function routeOn(scene: WireScene, titleClearance: number | null, ordered: reado
     const { start, goal } = stubs(link);
     const ends = { start: vertexOf(grid, start), goal: vertexOf(grid, goal) };
     const turned = { start: !horizontal(link.leaves ?? "right"), goal: !horizontal(link.enters ?? "left") };
-    const found = grid.nx * grid.ny <= gridLimit ? findPath(grid, occupancy, ends, turned) : null;
+    const found = grid.nx * grid.ny <= gridLimit ? pathOf(grid, occupancy, ends, turned, link.corridor) : null;
     if (found !== null) occupy(grid, occupancy, found);
     routes.set(link.id, found === null ? [] : polyline(link, grid, found));
   }

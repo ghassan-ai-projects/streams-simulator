@@ -1,3 +1,4 @@
+import type { Rect } from "./viewport";
 import type { Grid } from "./wireGrid";
 
 const bendCost = 24;
@@ -89,6 +90,7 @@ class Search {
   constructor(
     private readonly grid: Grid,
     private readonly occupancy: Occupancy,
+    private readonly corridor: Rect | null,
   ) {
     this.cost = new Float64Array(grid.nx * grid.ny * 2).fill(Number.POSITIVE_INFINITY);
     this.parent = new Int32Array(grid.nx * grid.ny * 2).fill(-1);
@@ -124,7 +126,8 @@ class Search {
     const vertex = state >> 1;
     const vertical = (state & 1) === 1;
     const turn: Move = { to: vertex * 2 + (vertical ? 0 : 1), cost: bendCost };
-    return [turn, ...(vertical ? this.vertical(vertex) : this.horizontal(vertex))];
+    const along = vertical ? this.vertical(vertex) : this.horizontal(vertex);
+    return [turn, ...along.filter((move) => this.allowed(move.to >> 1))];
   }
 
   private horizontal(vertex: number): Move[] {
@@ -157,6 +160,15 @@ class Search {
     return moves;
   }
 
+  private allowed(vertex: number): boolean {
+    const box = this.corridor;
+    if (box === null) return true;
+    const { xs, ys, ny } = this.grid;
+    const x = xs[Math.floor(vertex / ny)] ?? 0;
+    const y = ys[vertex % ny] ?? 0;
+    return x >= box.x && x <= box.x + box.width && y >= box.y && y <= box.y + box.height;
+  }
+
   private step(to: number, orientation: 0 | 1, length: number, used: boolean): Move {
     const across = orientation === 0 ? this.occupancy.passV[to] : this.occupancy.passH[to];
     const extra = (used ? overlapCost : 0) + (across === 1 ? crossingCost : 0);
@@ -183,8 +195,9 @@ export function findPath(
   occupancy: Occupancy,
   ends: Ends,
   vertical: { readonly start: boolean; readonly goal: boolean },
+  corridor: Rect | null = null,
 ): number[] | null {
-  return new Search(grid, occupancy).run(ends.start, ends.goal, vertical);
+  return new Search(grid, occupancy, corridor).run(ends.start, ends.goal, vertical);
 }
 
 export function occupy(grid: Grid, occupancy: Occupancy, path: readonly number[]): void {

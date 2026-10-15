@@ -82,6 +82,19 @@ function stubOf(from: End, to: End): number | undefined {
   return gap < 2 * wireClearance.stub ? Math.max(1, gap / 2) : undefined;
 }
 
+export const corridorGutter = 48;
+
+function corridorOf(view: PlantView, edge: PlantView["edges"][number]): Rect | undefined {
+  const from = view.layout.nodes.get(edge.from);
+  const to = view.layout.nodes.get(edge.to);
+  if (from === undefined || to === undefined) return undefined;
+  const x = Math.min(from.x, to.x) - corridorGutter;
+  const y = Math.min(from.y, to.y) - corridorGutter;
+  const right = Math.max(from.x + from.width, to.x + to.width) + corridorGutter;
+  const bottom = Math.max(from.y + from.height, to.y + to.height) + corridorGutter;
+  return { x, y, width: right - x, height: bottom - y };
+}
+
 function linksOf(view: PlantView, mode: WireMode, pixel: number): WireLink[] {
   const pairs = view.edges.map((edge) => pairOf(view, edge, mode));
   const placed = spreadEnds(pairs.flat(), pixel);
@@ -89,12 +102,14 @@ function linksOf(view: PlantView, mode: WireMode, pixel: number): WireLink[] {
     const [from, to] = pairs[index] ?? [];
     if (from === undefined || to === undefined) return { id: edge.id, from: { x: 0, y: 0 }, to: { x: 0, y: 0 } };
     const stub = stubOf(from, to);
+    const corridor = corridorOf(view, edge);
     return {
       id: edge.id,
       from: placed.get(`${edge.id}:from`) ?? from.point,
       to: placed.get(`${edge.id}:to`) ?? to.point,
       leaves: from.side,
       enters: to.side,
+      ...(corridor === undefined ? {} : { corridor }),
       ...(stub === undefined ? {} : { stub }),
     };
   });
