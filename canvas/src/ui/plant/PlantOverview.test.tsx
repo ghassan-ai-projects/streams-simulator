@@ -21,7 +21,12 @@ describe("plant overview", () => {
   it("counts a plant without halls by area", () => {
     render(<PlantOverview plant={parsePlant(domain)} runs={[]} />);
     expect(screen.queryByRole("region", { name: "Halls" })).toBeNull();
-    expect(screen.getByRole("region", { name: "Areas" })).toBeInTheDocument();
+    const areas = screen.getByRole("region", { name: "Areas" });
+    expect(
+      within(areas)
+        .getAllByRole("listitem")
+        .map((item) => item.textContent),
+    ).toEqual(["Cooling2", "Power1"]);
   });
 
   it("shows five recent runs and offers the rest on request", () => {

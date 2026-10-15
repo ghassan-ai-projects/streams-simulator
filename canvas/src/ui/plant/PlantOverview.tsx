@@ -1,7 +1,6 @@
 import { useState } from "react";
 import type { Plant } from "../../model/plant";
-import { areaOf } from "../../model/plant";
-import { hallOf } from "../../model/plantView";
+import { areaCounts, hallOf } from "../../model/plantView";
 import { kindLabel } from "../../model/report";
 import type { RunRow } from "../../model/workspace";
 import { runFacts, whenOf } from "../../model/workspace";
@@ -106,7 +105,7 @@ export function PlantOverview({
   readonly runs: readonly RunRow[];
   readonly onReview?: ((worldId: string) => void) | undefined;
 }) {
-  const areas = counts(plant.instances.map((instance) => areaOf(plant, instance)));
+  const areas = areaCounts(plant);
   const halls = counts(plant.instances.flatMap((instance) => hallOf(instance.id) ?? []));
   const where = halls.length > 0 ? `${String(halls.length)} halls and the site` : `${String(areas.length)} areas`;
   return (

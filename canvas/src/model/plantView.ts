@@ -1,6 +1,7 @@
 import type { Layout, LayoutNode } from "./layout";
 import { layout } from "./layout";
 import { headerReserve } from "./frameTitle";
+import { areaTree } from "./areaTree";
 import type { Instance, Link, Plant } from "./plant";
 import { areaOf } from "./plant";
 import type { Category, ComponentSpec, Family, Pin, Pins } from "./ports";
@@ -271,6 +272,19 @@ export function hallMembers(plant: Plant, hall: string): readonly (readonly [str
     if (hallOf(instance.id) === hall) counts.set(instance.kind, (counts.get(instance.kind) ?? 0) + 1);
   }
   return [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+}
+
+export function areaCounts(plant: Plant): readonly (readonly [string, number])[] {
+  const tally = new Map<string, number>();
+  for (const instance of plant.instances) {
+    const area = areaOf(plant, instance);
+    tally.set(area, (tally.get(area) ?? 0) + 1);
+  }
+  const declared = areaTree(plant.areas)
+    .map((node) => node.name)
+    .filter((name) => tally.has(name));
+  const loose = [...tally.keys()].filter((name) => !declared.includes(name));
+  return [...declared, ...loose].map((name) => [name, tally.get(name) ?? 0] as const);
 }
 
 export function hallCount(view: PlantView, hall: string): string {
