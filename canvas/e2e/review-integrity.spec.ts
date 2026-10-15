@@ -26,7 +26,7 @@ test("an incomplete stamp never reads Reproduces when the completed journals con
     .getByRole("navigation", { name: "Outline" })
     .getByRole("button", { name: /^CH-1 / })
     .click();
-  await expect(details.getByRole("region", { name: "True KPIs" })).toContainText("CH-1");
+  await expect(details.getByRole("region", { name: "True results" })).toContainText("CH-1");
   await expect(details.getByRole("note")).toContainText("This run did not verify");
 });
 
