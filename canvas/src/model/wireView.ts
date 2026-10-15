@@ -1,7 +1,9 @@
 import type { PlantView, ViewNode } from "./plantView";
 import { headerHeight, nodeSize } from "./plantView";
 import type { Rect, Tier } from "./viewport";
-import type { Point, Side, WireLink } from "./wireRoute";
+import type { End } from "./wireEnds";
+import { runsAcross, spreadEnds } from "./wireEnds";
+import type { Point, WireLink } from "./wireRoute";
 import { routeWires, wireClearance } from "./wireRoute";
 
 export type WireMode = "pins" | "rows" | "centre";
@@ -10,14 +12,6 @@ const titleText = { height: 16, line: 17, above: 4, inside: 6 } as const;
 const titleChar = 6.3;
 const firstPinRow = 5;
 const firstReviewRow = nodeSize.note + 1;
-
-interface End {
-  readonly id: string;
-  readonly role: "from" | "to";
-  readonly point: Point;
-  readonly box: Rect;
-  readonly side: Side;
-}
 
 export function wireModeOf(tier: Tier, review: boolean): WireMode {
   if (tier === "overview" || tier === "map") return "centre";
@@ -52,7 +46,9 @@ function endOf(view: PlantView, edge: PlantView["edges"][number], role: "from" |
   const row = rowOf(node, handle, role === "from" ? "out" : "in", mode);
   const y = node === undefined || row === null ? box.y + box.height / 2 : rowCentre(node, box, row, mode);
   const side = role === "from" ? "right" : "left";
-  return { id: edge.id, role, point: { x: role === "from" ? box.x + box.width : box.x, y }, box, side };
+  const point = { x: role === "from" ? box.x + box.width : box.x, y };
+  const slot = role === "from" ? `${edge.from}.${edge.fromHandle ?? ""}` : edge.id;
+  return { id: edge.id, role, point, box, side, slot, other: point };
 }
 
 function columnEnd(end: End, other: Rect): End {
@@ -65,40 +61,15 @@ function columnEnd(end: End, other: Rect): End {
 function pairOf(view: PlantView, edge: PlantView["edges"][number], mode: WireMode): readonly [End, End] {
   const from = endOf(view, edge, "from", mode);
   const to = endOf(view, edge, "to", mode);
-  if (!stacked(from.box, to.box)) return [from, to];
-  return [columnEnd(from, to.box), columnEnd(to, from.box)];
+  const [a, b] = stacked(from.box, to.box) ? [columnEnd(from, to.box), columnEnd(to, from.box)] : [from, to];
+  return [
+    { ...a, other: b.point },
+    { ...b, other: a.point },
+  ];
 }
 
 function sideOf(end: End): "vertical" | "horizontal" {
-  return end.side === "up" || end.side === "down" ? "vertical" : "horizontal";
-}
-
-function spread(ends: readonly End[]): ReadonlyMap<string, Point> {
-  const groups = new Map<string, End[]>();
-  for (const end of ends) {
-    const key = `${end.side}:${String(end.point.x)}:${String(end.point.y)}`;
-    groups.set(key, [...(groups.get(key) ?? []), end]);
-  }
-  const placed = new Map<string, Point>();
-  for (const group of groups.values()) {
-    const sorted = [...group].sort((a, b) => a.id.localeCompare(b.id) || a.role.localeCompare(b.role));
-    sorted.forEach((end, index) => {
-      const shift = (index - (sorted.length - 1) / 2) * wireClearance.lane;
-      placed.set(`${end.id}:${end.role}`, shifted(end, shift));
-    });
-  }
-  return placed;
-}
-
-function shifted(end: End, shift: number): Point {
-  const { box, point } = end;
-  const lane = wireClearance.lane;
-  if (sideOf(end) === "vertical") {
-    const x = Math.min(Math.max(point.x + shift, box.x + lane), Math.max(box.x + lane, box.x + box.width - lane));
-    return { x, y: point.y };
-  }
-  const y = Math.min(Math.max(point.y + shift, box.y + lane), Math.max(box.y + lane, box.y + box.height - lane));
-  return { x: point.x, y };
+  return runsAcross(end) ? "vertical" : "horizontal";
 }
 
 function stubOf(from: End, to: End): number | undefined {
@@ -107,9 +78,9 @@ function stubOf(from: End, to: End): number | undefined {
   return gap < 2 * wireClearance.stub ? Math.max(1, gap / 2) : undefined;
 }
 
-function linksOf(view: PlantView, mode: WireMode): WireLink[] {
+function linksOf(view: PlantView, mode: WireMode, pixel: number): WireLink[] {
   const pairs = view.edges.map((edge) => pairOf(view, edge, mode));
-  const placed = spread(pairs.flat());
+  const placed = spreadEnds(pairs.flat(), pixel);
   return view.edges.map((edge, index) => {
     const [from, to] = pairs[index] ?? [];
     if (from === undefined || to === undefined) return { id: edge.id, from: { x: 0, y: 0 }, to: { x: 0, y: 0 } };
@@ -142,7 +113,7 @@ export function routeView(
   pixel = 1,
 ): ReadonlyMap<string, readonly Point[]> {
   return routeWires({
-    links: linksOf(view, wireModeOf(tier, review)),
+    links: linksOf(view, wireModeOf(tier, review), pixel),
     nodes: [...view.layout.nodes.values()],
     titles: [...view.layout.groups].map(([title, frame]) => titleBox(frame, tier, pixel, title)),
     titleClearances: [9 * pixel, 5 * pixel, 3 * pixel, 1.5 * pixel, 0],

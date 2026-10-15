@@ -41,14 +41,64 @@ describe("wire view", () => {
     expect(route[0]?.y).toBe(top + (inputs + 0.5) * nodeSize.pin);
   });
 
-  it("spaces wire ends that share one pin row by at least 6 px", () => {
+  it("spaces wire ends that share one input row by 6 screen pixels and keeps one source port's wires together", () => {
     const view = viewOf(false);
     const first = view.edges[0];
     if (first === undefined) throw new Error("fixture has no links");
     const twin = { ...first, id: `${first.id}-twin` };
-    const routes = routeView({ ...view, edges: [first, twin] }, "full", false);
-    const starts = [routes.get(first.id)?.[0]?.y ?? 0, routes.get(twin.id)?.[0]?.y ?? 0];
-    expect(Math.abs((starts[0] ?? 0) - (starts[1] ?? 0))).toBeGreaterThanOrEqual(6);
+    const pixel = 2.5;
+    const routes = routeView({ ...view, edges: [first, twin] }, "full", false, pixel);
+    const ends = [routes.get(first.id)?.at(-1)?.y ?? 0, routes.get(twin.id)?.at(-1)?.y ?? 0];
+    expect(Math.abs((ends[0] ?? 0) - (ends[1] ?? 0))).toBeGreaterThanOrEqual(6 * pixel);
+    expect(routes.get(first.id)?.[0]).toEqual(routes.get(twin.id)?.[0]);
+  });
+
+  it("spaces the starts of wires from different ports that meet in the middle of one node", () => {
+    const view = viewOf(false);
+    const first = view.edges[0];
+    if (first === undefined) throw new Error("fixture has no links");
+    const other = { ...first, id: "other", fromHandle: "other_out" };
+    const pixel = 4;
+    const routes = routeView({ ...view, edges: [first, other] }, "overview", false, pixel);
+    const starts = [routes.get(first.id)?.[0]?.y ?? 0, routes.get("other")?.[0]?.y ?? 0];
+    expect(Math.abs((starts[0] ?? 0) - (starts[1] ?? 0))).toBeGreaterThanOrEqual(6 * pixel);
+  });
+
+  it("keeps the ends on neighbouring input rows apart too, so a crowded row never runs into the next", () => {
+    const view = viewOf(false);
+    const first = view.edges[0];
+    const target = view.nodes.find((node) => node.id === "CH-1");
+    const [one, two] = target?.pins.ins ?? [];
+    if (first === undefined || one === undefined || two === undefined) throw new Error("fixture incomplete");
+    const edges = [
+      ...[0, 1, 2, 3].map((index) => ({
+        ...first,
+        id: `a${String(index)}`,
+        from: "CT-1",
+        to: "CH-1",
+        toHandle: one.name,
+      })),
+      ...[0, 1].map((index) => ({ ...first, id: `b${String(index)}`, from: "CT-1", to: "CH-1", toHandle: two.name })),
+    ];
+    const pixel = 2;
+    const routes = routeView({ ...view, edges }, "full", false, pixel);
+    const ys = edges.map((edge) => routes.get(edge.id)?.at(-1)?.y ?? 0).sort((a, b) => a - b);
+    ys.slice(1).forEach((y, index) => {
+      expect(y - (ys[index] ?? 0)).toBeGreaterThanOrEqual(6 * pixel - 1e-6);
+    });
+  });
+
+  it("never spreads ends outside the node, shrinking the gap when many wires meet one row", () => {
+    const view = viewOf(false);
+    const first = view.edges[0];
+    if (first === undefined) throw new Error("fixture has no links");
+    const many = Array.from({ length: 12 }, (_, index) => ({ ...first, id: `${first.id}-${String(index)}` }));
+    const routes = routeView({ ...view, edges: many }, "full", false, 4);
+    const box = boxOf(view, first.to);
+    const ys = many.map((edge) => routes.get(edge.id)?.at(-1)?.y ?? 0);
+    expect(Math.min(...ys)).toBeGreaterThanOrEqual(box.y);
+    expect(Math.max(...ys)).toBeLessThanOrEqual(box.y + box.height);
+    expect(new Set(ys).size).toBe(12);
   });
 
   it("anchors on the middle of a node at the overview tiers, where pins are not drawn", () => {

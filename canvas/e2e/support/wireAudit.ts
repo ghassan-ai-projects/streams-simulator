@@ -30,17 +30,26 @@ export function wiresUnderNodes(): string[] {
 }
 
 export function wireEndsTooClose(): string[] {
-  const ends: { readonly id: string; readonly x: number; readonly y: number }[] = [];
+  const ends: { readonly id: string; readonly port: string; readonly start: boolean; x: number; y: number }[] = [];
   document.querySelectorAll<SVGPathElement>(".react-flow__edge .react-flow__edge-path").forEach((path) => {
+    const matrix = path.getScreenCTM();
+    if (matrix === null) return;
     const id = path.closest(".react-flow__edge")?.getAttribute("data-id") ?? "wire";
-    const start = path.getPointAtLength(0);
-    const finish = path.getPointAtLength(path.getTotalLength());
-    ends.push({ id, x: start.x, y: start.y }, { id, x: finish.x, y: finish.y });
+    const [source = "", target = ""] = id.split(">");
+    const at = (point: DOMPoint) => ({
+      x: point.x * matrix.a + point.y * matrix.c + matrix.e,
+      y: point.x * matrix.b + point.y * matrix.d + matrix.f,
+    });
+    ends.push(
+      { id, port: source, start: true, ...at(path.getPointAtLength(0)) },
+      { id, port: target, start: false, ...at(path.getPointAtLength(path.getTotalLength())) },
+    );
   });
   return ends.flatMap((a, index) =>
     ends
       .slice(index + 1)
-      .filter((b) => a.id !== b.id && Math.hypot(a.x - b.x, a.y - b.y) < 6)
+      .filter((b) => a.id !== b.id && !(a.start && b.start && a.port === b.port))
+      .filter((b) => Math.hypot(a.x - b.x, a.y - b.y) < 6 - 1e-6)
       .map((b) => `${a.id} meets ${b.id}`),
   );
 }
