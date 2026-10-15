@@ -1,5 +1,6 @@
 .shell {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: var(--topbar-height) minmax(0, 1fr);
   grid-template-areas:
     "top"

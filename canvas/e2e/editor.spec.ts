@@ -210,3 +210,24 @@ test("a full copy of a plant is runnable as soon as it is created", async ({ pag
   const plants = page.getByRole("region", { name: "Plants" });
   await expect(plants.getByRole("listitem").filter({ hasText: "Factory copy" })).not.toContainText("Not runnable yet");
 });
+
+test("a long plant name is cut short in the top bar and never widens the page", async ({ page }) => {
+  const name =
+    'Hunt & "Ålborg" pumps / 冷却 test: 01 ünïcode ✓ with a very long name that keeps going to test the header wrapping';
+  await page.goto(env("CANVAS_APP_URL"));
+  await page.getByRole("button", { name: "New plant" }).click();
+  const form = page.getByRole("form", { name: "New plant" });
+  await form.getByLabel("Name").fill(name);
+  await form.getByLabel("Id").fill("long-plant-name");
+  await form.getByLabel("Start from").selectOption({ label: "Factory utilities" });
+  await form.getByRole("radio", { name: /^A full copy/ }).check();
+  await form.getByRole("button", { name: "Create and open the editor" }).click();
+  await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await expect(
+    page.getByRole("button", { name: "Theme: System" }).or(page.getByRole("button", { name: /Theme:/ })),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Keyboard" })).toBeInViewport();
+  const crumb = page.getByRole("navigation", { name: "Breadcrumb" }).getByRole("button", { name: "Workspace" });
+  expect(await crumb.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+});
