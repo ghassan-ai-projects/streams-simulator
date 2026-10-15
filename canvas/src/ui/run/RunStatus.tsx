@@ -59,9 +59,7 @@ function Announce({ text }: { readonly text: string }) {
 function ReportPending({ loading, elapsed }: { readonly loading: boolean; readonly elapsed: number }) {
   return (
     <>
-      <span className={styles.chip}>
-        {loading ? `Reading the run · ${String(elapsed)} s` : "No report"}
-      </span>
+      <span className={styles.chip}>{loading ? `Reading the run · ${String(elapsed)} s` : "No report"}</span>
       <Announce text={loading ? "Reading the run" : "No report"} />
     </>
   );

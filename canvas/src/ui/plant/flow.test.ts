@@ -66,6 +66,10 @@ describe("plant frame titles", () => {
     expect(titles.map((node) => [node.id, node.zIndex])).toEqual(
       [...view.layout.groups.keys()].map((group) => [`title:${group}`, 2]),
     );
-    expect(flowNodes(view, null).filter((node) => node.type === "frame").every((node) => node.zIndex === -1)).toBe(true);
+    expect(
+      flowNodes(view, null)
+        .filter((node) => node.type === "frame")
+        .every((node) => node.zIndex === -1),
+    ).toBe(true);
   });
 });

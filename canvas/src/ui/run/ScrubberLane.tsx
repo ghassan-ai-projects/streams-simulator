@@ -145,9 +145,7 @@ function laneHeight(chips: readonly ChipPlace[]): string {
 
 function EmptyLane({ reading }: { readonly reading: boolean }) {
   return (
-    <p className={styles.laneEmpty}>
-      {reading ? "Events appear once the run is read." : "No events in this run."}
-    </p>
+    <p className={styles.laneEmpty}>{reading ? "Events appear once the run is read." : "No events in this run."}</p>
   );
 }
 
