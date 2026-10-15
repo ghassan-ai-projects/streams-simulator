@@ -70,3 +70,29 @@ describe("layout", () => {
     expect(extent()).toEqual(extent(10));
   });
 });
+
+describe("layout header reserve", () => {
+  it("opens the gap between area rows by the tallest header, and leaves the gap alone without one", () => {
+    const nodes = [
+      { id: "a", group: "One", width: 200, height: 100 },
+      { id: "b", group: "Two", width: 200, height: 100 },
+    ];
+    const plain = layout(nodes, [], ["One", "Two"], () => 3, 0.2);
+    const reserved = layout(
+      nodes,
+      [],
+      ["One", "Two"],
+      () => 3,
+      0.2,
+      () => 70,
+    );
+    const gap = (placed: ReturnType<typeof layout>) => {
+      const one = placed.groups.get("One");
+      const two = placed.groups.get("Two");
+      if (one === undefined || two === undefined) throw new Error("no groups");
+      return Math.abs(two.y - (one.y + one.height));
+    };
+    expect(gap(plain)).toBe(spacing.group);
+    expect(gap(reserved)).toBe(70 + spacing.lane);
+  });
+});

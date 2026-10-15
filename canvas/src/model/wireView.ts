@@ -1,5 +1,6 @@
 import type { PlantView, ViewNode } from "./plantView";
-import { headerHeight, nodeSize } from "./plantView";
+import { headerHeight, groupCounts, nodeSize } from "./plantView";
+import { titleAbove, titleBandHeight, titleScale } from "./frameTitle";
 import type { Rect, Tier } from "./viewport";
 import type { End } from "./wireEnds";
 import { runsAcross, spreadEnds } from "./wireEnds";
@@ -8,8 +9,7 @@ import { routeWires, wireClearance } from "./wireRoute";
 
 export type WireMode = "pins" | "rows" | "centre";
 
-const titleText = { height: 16, line: 17, above: 4, inside: 6 } as const;
-const titleChar = 6.3;
+const titleText = { height: 16, inside: 6 } as const;
 const firstPinRow = 5;
 const firstReviewRow = nodeSize.note + 1;
 
@@ -38,17 +38,22 @@ function stacked(a: Rect, b: Rect): boolean {
   return aligned && (a.y + a.height <= b.y || b.y + b.height <= a.y);
 }
 
+function endY(view: PlantView, id: string, handle: string | null, role: "from" | "to", mode: WireMode): number | null {
+  const node = view.nodes.find((entry) => entry.id === id);
+  const box = view.layout.nodes.get(id);
+  const row = rowOf(node, handle, role === "from" ? "out" : "in", mode);
+  if (node === undefined || box === undefined || row === null) return null;
+  return rowCentre(node, box, row, mode);
+}
+
 function endOf(view: PlantView, edge: PlantView["edges"][number], role: "from" | "to", mode: WireMode): End {
   const id = role === "from" ? edge.from : edge.to;
   const handle = role === "from" ? edge.fromHandle : edge.toHandle;
   const box = view.layout.nodes.get(id) ?? noBox;
-  const node = view.nodes.find((entry) => entry.id === id);
-  const row = rowOf(node, handle, role === "from" ? "out" : "in", mode);
-  const y = node === undefined || row === null ? box.y + box.height / 2 : rowCentre(node, box, row, mode);
-  const side = role === "from" ? "right" : "left";
+  const y = endY(view, id, handle, role, mode) ?? box.y + box.height / 2;
   const point = { x: role === "from" ? box.x + box.width : box.x, y };
   const slot = role === "from" ? `${edge.from}.${edge.fromHandle ?? ""}` : edge.id;
-  return { id: edge.id, role, point, box, side, slot, other: point };
+  return { id: edge.id, role, point, box, side: role === "from" ? "right" : "left", slot, other: point };
 }
 
 function columnEnd(end: End, other: Rect): End {
@@ -96,14 +101,13 @@ function linksOf(view: PlantView, mode: WireMode, pixel: number): WireLink[] {
   });
 }
 
-export function titleBox(frame: Rect, tier: Tier, pixel: number, title = ""): Rect {
+export function titleBox(frame: Rect, tier: Tier, pixel: number, title = "", count = 0): Rect {
   if (tier === "full") {
     return { x: frame.x, y: frame.y + titleText.inside, width: frame.width, height: titleText.height };
   }
-  const words = (title.length * titleChar + 4) * pixel;
-  const lines = Math.max(1, Math.ceil(words / Math.max(1, frame.width)));
-  const height = titleText.line * lines * pixel;
-  return { x: frame.x, y: frame.y - (titleText.above * pixel + height), width: Math.min(words, frame.width), height };
+  const scale = titleScale(pixel);
+  const height = titleBandHeight(title, count, frame.width, scale);
+  return { x: frame.x, y: frame.y - (titleAbove(scale) + height), width: frame.width, height };
 }
 
 export function routeView(
@@ -112,10 +116,13 @@ export function routeView(
   review: boolean,
   pixel = 1,
 ): ReadonlyMap<string, readonly Point[]> {
+  const counts = groupCounts(view);
   return routeWires({
     links: linksOf(view, wireModeOf(tier, review), pixel),
     nodes: [...view.layout.nodes.values()],
-    titles: [...view.layout.groups].map(([title, frame]) => titleBox(frame, tier, pixel, title)),
+    titles: [...view.layout.groups].map(([title, frame]) =>
+      titleBox(frame, tier, pixel, title, counts.get(title) ?? 0),
+    ),
     titleClearances: [9 * pixel, 5 * pixel, 3 * pixel, 1.5 * pixel, 0],
   });
 }

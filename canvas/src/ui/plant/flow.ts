@@ -2,6 +2,7 @@ import { MarkerType } from "@xyflow/react";
 import type { Edge, Node } from "@xyflow/react";
 import type { NodeStatus, Shown } from "../../model/readout";
 import type { PlantView, ViewNode } from "../../model/plantView";
+import { groupCounts } from "../../model/plantView";
 import type { Point } from "../../model/wireRoute";
 
 export interface NodeLive {
@@ -27,12 +28,6 @@ type FrameNodeType = Node<FrameData, "frame">;
 export type FrameTitleNodeType = Node<FrameData, "frameTitle">;
 export type FlowNode = InstanceNodeType | HallNodeType | FrameNodeType | FrameTitleNodeType;
 
-function groupCounts(view: PlantView): Map<string, number> {
-  const counts = new Map<string, number>();
-  view.nodes.forEach((node) => counts.set(node.group, (counts.get(node.group) ?? 0) + 1));
-  return counts;
-}
-
 function frames(view: PlantView): FrameNodeType[] {
   const counts = groupCounts(view);
   return [...view.layout.groups.entries()].map(([title, box]) => ({
@@ -57,6 +52,7 @@ function frameTitles(view: PlantView): FrameTitleNodeType[] {
     type: "frameTitle",
     position: { x: box.x, y: box.y },
     data: { title, count: counts.get(title) ?? 0 },
+    width: box.width,
     style: { width: box.width },
     selectable: false,
     draggable: false,

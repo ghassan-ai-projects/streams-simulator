@@ -2,7 +2,17 @@ import type { ReactFlowInstance } from "@xyflow/react";
 import { useReactFlow, useStore, useStoreApi } from "@xyflow/react";
 import { useEffect, useRef } from "react";
 import type { Viewport } from "../../model/viewport";
-import { centreOf, followZoom, openingViewport, sameViewport, steppedViewport } from "../../model/viewport";
+import type { PlacedTitle } from "../../model/frameTitle";
+import { boundsWithTitles } from "../../model/frameTitle";
+import {
+  centreOf,
+  followZoom,
+  openingViewport,
+  sameViewport,
+  screenPixel,
+  steppedViewport,
+  tierOf,
+} from "../../model/viewport";
 import type { FlowNode } from "./flow";
 
 interface Size {
@@ -16,9 +26,22 @@ export function openingOf(store: object): Viewport | null {
   return opened.get(store) ?? null;
 }
 
+function titlesOf(nodes: readonly FlowNode[]): PlacedTitle[] {
+  return nodes.flatMap((node): PlacedTitle[] =>
+    node.type === "frameTitle"
+      ? [{ y: node.position.y, width: node.width ?? 0, title: node.data.title, count: node.data.count }]
+      : [],
+  );
+}
+
 export function fittedViewport(flow: ReactFlowInstance<FlowNode>, screen: Size, minZoom: number): Viewport {
-  const bounds = flow.getNodesBounds(flow.getNodes());
-  return openingViewport(bounds, screen, { pad: 16, headroom: 24, minZoom, maxZoom: 1 });
+  const nodes = flow.getNodes();
+  const bounds = flow.getNodesBounds(nodes);
+  const limits = { pad: 16, headroom: 24, minZoom, maxZoom: 1 };
+  const plain = openingViewport(bounds, screen, limits);
+  if (tierOf(plain.zoom) === "full") return plain;
+  const lifted = boundsWithTitles(bounds, titlesOf(nodes), screenPixel(plain.zoom));
+  return openingViewport(lifted, screen, limits);
 }
 
 interface Limits extends Size {

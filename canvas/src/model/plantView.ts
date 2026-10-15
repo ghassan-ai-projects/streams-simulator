@@ -1,5 +1,6 @@
 import type { Layout, LayoutNode } from "./layout";
 import { layout } from "./layout";
+import { headerReserve } from "./frameTitle";
 import type { Instance, Link, Plant } from "./plant";
 import { areaOf } from "./plant";
 import type { Category, ComponentSpec, Family, Pin, Pins } from "./ports";
@@ -58,6 +59,12 @@ export function idExtra(label: string): number {
 
 export function headerHeight(label: string): number {
   return nodeSize.header + nodeSize.kind + idExtra(label);
+}
+
+export function groupCounts(view: PlantView): Map<string, number> {
+  const counts = new Map<string, number>();
+  view.nodes.forEach((node) => counts.set(node.group, (counts.get(node.group) ?? 0) + 1));
+  return counts;
 }
 
 export function hallOf(id: string): string | null {
@@ -170,7 +177,12 @@ function finish(context: Context, nodes: readonly ViewNode[], edges: readonly Vi
   const order = ["Halls", ...context.plant.areas.map((area) => area.name)];
   const boxes = nodes.map((node) => nodeBox(node, context.review));
   const rows = (group: string, count: number) => (group === "Halls" ? Math.ceil(Math.sqrt(count)) : 3);
-  return { nodes, edges, layout: layout(boxes, edges, order, rows, context.aspect), halls: context.halls };
+  return {
+    nodes,
+    edges,
+    layout: layout(boxes, edges, order, rows, context.aspect, headerReserve),
+    halls: context.halls,
+  };
 }
 
 function hallLevel(context: Context): PlantView {

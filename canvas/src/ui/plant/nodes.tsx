@@ -3,6 +3,7 @@ import { Handle, Position, useStore } from "@xyflow/react";
 import { ChevronRight, OctagonAlert, TriangleAlert, Wrench } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useRef } from "react";
+import { countWords } from "../../model/frameTitle";
 import type { ViewNode } from "../../model/plantView";
 import { describeNode, headerHeight, idExtra } from "../../model/plantView";
 import { familyNames, shapeOf } from "../../model/ports";
@@ -238,7 +239,7 @@ export function FrameTitleNode({ data }: NodeProps<FrameTitleNodeType>) {
     <div className={styles.frameTitleNode}>
       <div className={styles.frameTitle}>
         {data.title}
-        <span className={styles.frameCount}>{`${String(data.count)} ${data.count === 1 ? "node" : "nodes"}`}</span>
+        <span className={styles.frameCount}>{countWords(data.count)}</span>
       </div>
     </div>
   );

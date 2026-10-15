@@ -308,15 +308,15 @@
   right: 0;
   bottom: 100%;
   height: auto;
-  padding: 0 0 calc(4px / var(--zoom));
+  padding: 0 0 min(calc(4px / var(--zoom)), 9.2px);
   background: transparent;
-  font-size: calc(13px / var(--zoom));
+  font-size: min(calc(13px / var(--zoom)), 30px);
 }
 
 :global(.tier-compact) .frameCount,
 :global(.tier-overview) .frameCount,
 :global(.tier-map) .frameCount {
-  font-size: calc(12px / var(--zoom));
+  font-size: min(calc(12px / var(--zoom)), 27.7px);
 }
 
 .readout {

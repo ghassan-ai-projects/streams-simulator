@@ -51,18 +51,19 @@ function places(desired: readonly number[], gap: number, low: number, high: numb
   return within(separated(desired, fitted), low, high);
 }
 
+function slotKey(ends: readonly End[]): readonly [number, number, string] {
+  const end = ends[0];
+  if (end === undefined) return [0, 0, ""];
+  return [axisOf(end, end.point), axisOf(end, end.other), end.slot];
+}
+
 function slotsOf(group: readonly End[]): End[][] {
   const slots = new Map<string, End[]>();
   for (const end of group) slots.set(end.slot, [...(slots.get(end.slot) ?? []), end]);
-  const first = (ends: readonly End[]) => ends[0] ?? group[0];
-  const order = (ends: readonly End[]) => {
-    const end = first(ends);
-    return end === undefined ? [0, 0] : [axisOf(end, end.point), axisOf(end, end.other)];
-  };
   return [...slots.values()].sort((a, b) => {
-    const [pa = 0, oa = 0] = order(a);
-    const [pb = 0, ob = 0] = order(b);
-    return pa - pb || oa - ob || (a[0]?.slot ?? "").localeCompare(b[0]?.slot ?? "");
+    const [pa, oa, sa] = slotKey(a);
+    const [pb, ob, sb] = slotKey(b);
+    return pa - pb || oa - ob || sa.localeCompare(sb);
   });
 }
 

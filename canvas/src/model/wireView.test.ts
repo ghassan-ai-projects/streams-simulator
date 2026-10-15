@@ -18,6 +18,16 @@ function boxOf(view: PlantView, id: string): Rect {
   return box;
 }
 
+type Routes = ReturnType<typeof routeView>;
+
+function lastY(routes: Routes, id: string): number {
+  return routes.get(id)?.at(-1)?.y ?? 0;
+}
+
+function firstY(routes: Routes, id: string): number {
+  return routes.get(id)?.[0]?.y ?? 0;
+}
+
 function viewOf(review: boolean) {
   return plantView(parsePlant(domain, composition), specs, null, review);
 }
@@ -48,8 +58,7 @@ describe("wire view", () => {
     const twin = { ...first, id: `${first.id}-twin` };
     const pixel = 2.5;
     const routes = routeView({ ...view, edges: [first, twin] }, "full", false, pixel);
-    const ends = [routes.get(first.id)?.at(-1)?.y ?? 0, routes.get(twin.id)?.at(-1)?.y ?? 0];
-    expect(Math.abs((ends[0] ?? 0) - (ends[1] ?? 0))).toBeGreaterThanOrEqual(6 * pixel);
+    expect(Math.abs(lastY(routes, first.id) - lastY(routes, twin.id))).toBeGreaterThanOrEqual(6 * pixel);
     expect(routes.get(first.id)?.[0]).toEqual(routes.get(twin.id)?.[0]);
   });
 
@@ -60,8 +69,7 @@ describe("wire view", () => {
     const other = { ...first, id: "other", fromHandle: "other_out" };
     const pixel = 4;
     const routes = routeView({ ...view, edges: [first, other] }, "overview", false, pixel);
-    const starts = [routes.get(first.id)?.[0]?.y ?? 0, routes.get("other")?.[0]?.y ?? 0];
-    expect(Math.abs((starts[0] ?? 0) - (starts[1] ?? 0))).toBeGreaterThanOrEqual(6 * pixel);
+    expect(Math.abs(firstY(routes, first.id) - firstY(routes, "other"))).toBeGreaterThanOrEqual(6 * pixel);
   });
 
   it("keeps the ends on neighbouring input rows apart too, so a crowded row never runs into the next", () => {
@@ -82,7 +90,7 @@ describe("wire view", () => {
     ];
     const pixel = 2;
     const routes = routeView({ ...view, edges }, "full", false, pixel);
-    const ys = edges.map((edge) => routes.get(edge.id)?.at(-1)?.y ?? 0).sort((a, b) => a - b);
+    const ys = edges.map((edge) => lastY(routes, edge.id)).sort((a, b) => a - b);
     ys.slice(1).forEach((y, index) => {
       expect(y - (ys[index] ?? 0)).toBeGreaterThanOrEqual(6 * pixel - 1e-6);
     });
@@ -95,7 +103,7 @@ describe("wire view", () => {
     const many = Array.from({ length: 12 }, (_, index) => ({ ...first, id: `${first.id}-${String(index)}` }));
     const routes = routeView({ ...view, edges: many }, "full", false, 4);
     const box = boxOf(view, first.to);
-    const ys = many.map((edge) => routes.get(edge.id)?.at(-1)?.y ?? 0);
+    const ys = many.map((edge) => lastY(routes, edge.id));
     expect(Math.min(...ys)).toBeGreaterThanOrEqual(box.y);
     expect(Math.max(...ys)).toBeLessThanOrEqual(box.y + box.height);
     expect(new Set(ys).size).toBe(12);
@@ -111,15 +119,17 @@ describe("wire view", () => {
     expect(Math.abs((route[0]?.y ?? 0) - (box.y + box.height / 2))).toBeLessThanOrEqual(6);
   });
 
-  it("boxes a title's text: inside the frame at full size, above it, wrapped to the frame's width, when zoomed out", () => {
+  it("boxes a title's whole header row: inside the frame at full size, above it and full width when zoomed out", () => {
     const frame = { x: 10, y: 100, width: 300, height: 200 };
     expect(titleBox(frame, "full", 1)).toEqual({ x: 10, y: 106, width: 300, height: 16 });
-    const one = titleBox(frame, "overview", 2, "Hall");
-    expect(one).toEqual({ x: 10, y: 100 - (8 + 34), width: (4 * 6.3 + 4) * 2, height: 34 });
-    const wrapped = titleBox(frame, "overview", 4, "Production hall A");
-    expect(wrapped.height).toBe(17 * 2 * 4);
+    const one = titleBox(frame, "overview", 2, "Hall", 2);
+    expect(one).toEqual({ x: 10, y: 100 - (8 + 34), width: 300, height: 34 });
+    const wrapped = titleBox(frame, "overview", 4, "Production hall A", 1);
     expect(wrapped.width).toBe(300);
-    expect(wrapped.y + wrapped.height).toBe(100 - 16);
+    expect(wrapped.height).toBeGreaterThanOrEqual(2 * 17 * (30 / 13) - 1e-6);
+    expect(wrapped.y + wrapped.height).toBeLessThan(100);
+    const capped = titleBox(frame, "map", 20, "Hall", 2);
+    expect(capped.height).toBeLessThanOrEqual(17 * (30 / 13) + 1e-6);
   });
 
   it("joins two nodes of one column bottom to top, in a straight run through the row gap", () => {
