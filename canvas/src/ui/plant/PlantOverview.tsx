@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { Plant } from "../../model/plant";
 import { areaOf } from "../../model/plant";
 import { hallOf } from "../../model/plantView";
@@ -60,7 +61,11 @@ function RunItem({ row, onReview }: { readonly row: RunRow; readonly onReview: R
   );
 }
 
+const recentShown = 5;
+
 function Runs({ runs, onReview }: { readonly runs: readonly RunRow[]; readonly onReview: Review }) {
+  const [all, setAll] = useState(false);
+  const shown = all ? runs : runs.slice(0, recentShown);
   return (
     <section className={styles.section} aria-label="Recent runs">
       <h3 className={shared.sectionTitle}>
@@ -69,10 +74,21 @@ function Runs({ runs, onReview }: { readonly runs: readonly RunRow[]; readonly o
       </h3>
       {runs.length === 0 && <p className={styles.muted}>No runs yet: use Run plant.</p>}
       <ul className={styles.tally}>
-        {runs.slice(0, 5).map((row) => (
+        {shown.map((row) => (
           <RunItem key={row.run.worldId} row={row} onReview={onReview} />
         ))}
       </ul>
+      {!all && runs.length > recentShown && (
+        <button
+          type="button"
+          className={styles.linkButton}
+          onClick={() => {
+            setAll(true);
+          }}
+        >
+          {`Show all ${String(runs.length)} runs`}
+        </button>
+      )}
     </section>
   );
 }
