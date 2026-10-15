@@ -32,7 +32,7 @@ The `sim.world.create` response includes the endpoint when configured and always
 | `sim.domain.compose` | Compose a composition into a domain; with `install` it joins the catalog so `sim.world.create` can use it (an id already installed with another digest is refused). | `composition` (object), `install` (boolean). |
 | `sim.world.create` | Create a seeded world and operator capability. | `domain`; `sink_target` for file/http-push sinks. |
 | `sim.world.describe` | Report world configuration, clock, and emitted count. | `world_id`. |
-| `sim.world.destroy` | End and remove a world. | `world_id`. |
+| `sim.world.destroy` | End and remove a world. A world destroyed before `sim.run.end` keeps its run artifact as an incomplete run, with the reason in `run.json`. | `world_id`. |
 | `sim.world.effectors` | List the world's declared effectors with their argument schemas, as the director (no capability token). | `world_id`. |
 | `sim.world.invoke` | Invoke an effector on a world as its director: the same operator logic and acknowledgement as `sim.effector.invoke`; an omitted `command_id` is numbered `director-N`. | `world_id`, `entity_id`, `effector`; optional `args`, `command_id`. |
 | `sim.clock.advance` | Advance by `by_ns` or to `to_ns`; optionally await consumer quiescence. | `world_id` and exactly one clock target. |

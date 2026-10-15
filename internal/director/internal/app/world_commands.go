@@ -172,9 +172,12 @@ func (d *Director) EnvInject(worldID, target, fault string, params map[string]an
 	return map[string]any{"env_id": id}, nil
 }
 
+const destroyedBeforeEnd = "the world was destroyed before its run ended (run.end was not called)"
+
 func (d *Director) finishDestroyedWorld(w *WorldRecord, worldID string) error {
 	if _, ended := d.runLifecycle(w); !ended {
 		dir := filepath.Join(d.OutDir, worldID)
+		w.Run.Abandon(destroyedBeforeEnd)
 		_, err := w.Run.End(dir)
 
 		d.markRunEnded(w)

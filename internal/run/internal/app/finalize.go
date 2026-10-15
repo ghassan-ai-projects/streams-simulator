@@ -7,6 +7,7 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/canonical"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/journal"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
+	rules "github.com/ghassan-ai-projects/streams-simulator/internal/run/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run/internal/durable"
 )
 
@@ -14,6 +15,22 @@ func (r *Run) End(outDir string) (*model.RunArtifact, error) {
 	r.commandMu.Lock()
 	defer r.commandMu.Unlock()
 	return r.endLocked(outDir)
+}
+
+func (r *Run) Abandon(reason string) {
+	r.commandMu.Lock()
+	defer r.commandMu.Unlock()
+	if r.finished {
+		return
+	}
+	r.unfinished, r.incomplete, r.reproducible = reason, true, false
+}
+
+func (r *Run) failureText() string {
+	if text := rules.ErrorString(r.runErr); text != "" {
+		return text
+	}
+	return r.unfinished
 }
 
 func (r *Run) Finished() bool {

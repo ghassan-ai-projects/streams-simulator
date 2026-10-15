@@ -121,6 +121,10 @@ func (r *Run) End(outDir string) (*model.RunArtifact, error) {
 	return r.run.End(outDir)
 }
 
+func (r *Run) Abandon(reason string) {
+	r.run.Abandon(reason)
+}
+
 func (r *Run) Trace() []byte {
 	return r.run.Trace()
 }
