@@ -25,5 +25,6 @@ before any is implemented.
 | B-17 | Feeder or utility trip | No trip fault and no supply model: a dependent load keeps running | missing |
 | B-18 | An alarm that raises | No round-5 run raised an alarm, including with a frozen or drifting sensor | missing (alarm rules per instrument) |
 | B-19 | Air consumers read backwards | Production and packaging lines declare `air_out` (compressed_air, provides) that feeds the receiver's `demand_in`; they have no air input. A user expects "air from the receiver to the line" and finds no inlet (author BLK-5, packaging-factory). The model is right (demand flows to the supply); the port names and descriptions do not say so | unclear (port naming/description in the library; same family as ISS-3-10) |
+| B-20 | A closed water loop (pump and storage tank) | Linking a pump to a tank and the tank level back to the pump is refused: "kinds read each other over links in a cycle ... a cycle needs a sampled read (sample_s)". The composition has no way to say where the loop is sampled; only component data can (author BLK-6-02, boiler-steam-loop) | missing (proposal: an optional `sample_s` on a composition connection that closes a loop, validated by the binary) |
 
-Source: `issues/round-3-authoring.md`, `issues/round-4-hunt.md`, `issues/round-5-hunt.md`, section "Simulator behaviour notes". Later rounds append rows.
+Source: `issues/round-3-authoring.md`, `issues/round-4-hunt.md`, `issues/round-5-hunt.md`, `issues/round-6-authoring.md`, section "Simulator behaviour notes". Later rounds append rows.
