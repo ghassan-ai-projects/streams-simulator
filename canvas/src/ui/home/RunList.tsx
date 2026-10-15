@@ -32,7 +32,7 @@ function detail(row: RunRow): string {
 function Status({ row, badge }: { readonly row: RunRow; readonly badge: Badge | null }) {
   if (!row.run.ended) {
     return (
-      <span className={styles.live}>
+      <span className={styles.unfinished}>
         <Radio size={12} aria-hidden="true" />
         Did not finish
       </span>
