@@ -1,9 +1,15 @@
 import type { Locator } from "@playwright/test";
 
 export async function headingInside(frame: Locator, name: string): Promise<boolean> {
-  const title = await frame.getByText(name).boundingBox();
   const outer = await frame.boundingBox();
-  return title !== null && outer !== null && title.x + title.width <= outer.x + outer.width - 8;
+  // The heading's box is the panel's content box even when nowrap text runs past it,
+  // so the check measures the painted text runs, not the element box.
+  const painted = await frame.getByText(name).evaluate((element) => {
+    const range = document.createRange();
+    range.selectNodeContents(element);
+    return [...range.getClientRects()].reduce((right, rect) => Math.max(right, rect.right), 0);
+  });
+  return outer !== null && painted > 0 && painted <= outer.x + outer.width - 8;
 }
 
 export function nodesOutsideCanvas(): string[] {

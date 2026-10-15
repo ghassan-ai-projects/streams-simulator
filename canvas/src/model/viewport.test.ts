@@ -8,6 +8,7 @@ import {
   inView,
   openingFloor,
   openingViewport,
+  overviewFloor,
   sameViewport,
   textFloorPx,
   tierOf,
@@ -47,6 +48,17 @@ describe("viewport", () => {
   it("keeps readouts and port rows from the opening floor of 40 % up, one rule for every screen", () => {
     expect(tierOf(openingFloor)).toBe("compact");
     expect(textFloorPx).toBe(8);
+  });
+
+  it("opens a plant that cannot fit at the floor cut and cued, the one opening rule every screen uses", () => {
+    const limits = { pad: 16, headroom: 24, minZoom: openingFloor, maxZoom: 1 };
+    const bounds = { x: 0, y: 0, width: 3000, height: 1400 };
+    const view = openingViewport(bounds, screen, limits);
+    expect(view.zoom).toBe(openingFloor);
+    expect(tierOf(view.zoom)).toBe("compact");
+    expect(cutSide(bounds, view, screen)).toBe("right");
+    expect(overviewFloor).toBeLessThan(openingFloor);
+    expect(tierOf(overviewFloor)).toBe("overview");
   });
 
   it("finds a box's centre", () => {

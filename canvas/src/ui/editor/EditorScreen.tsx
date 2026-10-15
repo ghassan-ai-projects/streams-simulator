@@ -75,7 +75,6 @@ function EditorGraph({ draft, editor, view, flagged, aspect }: GraphProps) {
       panCue
       selected={draft.selected}
       flagged={flagged}
-      minFitZoom={0.25}
       focusZoom={1}
       onSelect={(id) => {
         editor.select(id);

@@ -127,7 +127,7 @@ How to read the tables:
 | E-12 | Help copy reads as sentences, with no stray hint between fields. | ✗ "Link ports with Link an output…"; stray "Choose a component." | |
 | E-13 | The links list shows port names in words, each row selects its other end, and its count style matches the other lists. | ✗ mono snake_case `CT-1.basin_out → CH-1.cond_water_in`; unlabelled trash icons | |
 | E-14 | Every wire visibly ends on its two pins and never passes behind a node body. | ✗ wire hidden behind CH-2; loops at M-1 and M-2 inputs | |
-| E-15 | The editor opens fitted to the plant, like the plant screen. | ✗ opens at 100 % on a clipped fragment at 1440 and 1920 | |
+| E-15 | The editor opens the plant on the same opening rule as the plant screen: fitted when it fits above the 40 % floor, otherwise at the floor, with the fade where to pan. | ✅ one opening rule on plant, editor and review; the cut is cued and the Navigator shows the whole | |
 
 ## 5. Run panel (run a plant)
 

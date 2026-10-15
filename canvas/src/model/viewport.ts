@@ -59,6 +59,8 @@ export function cutSide(
 
 export const openingFloor = 0.4;
 
+export const overviewFloor = 0.25;
+
 export const textFloorPx = 8;
 
 const pixelSteps = [1, 1.25, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10, 13, 16, 20] as const;
@@ -73,7 +75,7 @@ export type Tier = "full" | "compact" | "overview" | "map";
 export function tierOf(zoom: number): Tier {
   if (zoom >= 1) return "full";
   if (zoom >= openingFloor) return "compact";
-  return zoom >= 0.25 ? "overview" : "map";
+  return zoom >= overviewFloor ? "overview" : "map";
 }
 
 interface Size {
