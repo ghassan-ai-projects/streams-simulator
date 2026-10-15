@@ -1,10 +1,9 @@
 import { OctagonAlert, Search } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
-import { areaTree } from "../../model/areaTree";
 import type { Plant } from "../../model/plant";
 import { areaOf } from "../../model/plant";
-import { hallOf, hallsOf } from "../../model/plantView";
+import { areaOrder, hallOf, hallsOf } from "../../model/plantView";
 import { kindLabel } from "../../model/report";
 import { cx } from "../cx";
 import shared from "../shared.module.css";
@@ -61,12 +60,10 @@ function itemsByArea(plant: Plant, hall: string | null, filter: string): Readonl
 
 function groups(plant: Plant, hall: string | null, filter: string, empty: boolean): readonly Group[] {
   const byArea = itemsByArea(plant, hall, filter);
-  const tree = areaTree(plant.areas).map((node) => ({ area: node.name, depth: node.depth }));
-  const known = new Set(tree.map((node) => node.area));
-  const loose = [...byArea.keys()].filter((area) => !known.has(area)).map((area) => ({ area, depth: 0 }));
+  const all = areaOrder(plant).map(([area, depth]) => ({ area, depth, items: byArea.get(area) ?? [] }));
   const showEmpty = empty && filter.trim() === "";
-  const all = [...tree, ...loose].map(({ area, depth }) => ({ area, depth, items: byArea.get(area) ?? [] }));
-  return populatedFirst(all).filter((group) => group.items.length > 0 || showEmpty);
+  const ordered = empty ? populatedFirst(all) : all;
+  return ordered.filter((group) => group.items.length > 0 || showEmpty);
 }
 
 interface Branch {

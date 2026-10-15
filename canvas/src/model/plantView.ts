@@ -274,17 +274,21 @@ export function hallMembers(plant: Plant, hall: string): readonly (readonly [str
   return [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
 }
 
+export function areaOrder(plant: Plant): readonly (readonly [string, number])[] {
+  const declared = areaTree(plant.areas).map((node) => [node.name, node.depth] as const);
+  const loose = [...new Set(plant.instances.map((instance) => areaOf(plant, instance)))].filter(
+    (area) => !declared.some(([name]) => name === area),
+  );
+  return [...declared, ...loose.map((area) => [area, 0] as const)];
+}
+
 export function areaCounts(plant: Plant): readonly (readonly [string, number])[] {
   const tally = new Map<string, number>();
   for (const instance of plant.instances) {
     const area = areaOf(plant, instance);
     tally.set(area, (tally.get(area) ?? 0) + 1);
   }
-  const declared = areaTree(plant.areas)
-    .map((node) => node.name)
-    .filter((name) => tally.has(name));
-  const loose = [...tally.keys()].filter((name) => !declared.includes(name));
-  return [...declared, ...loose].map((name) => [name, tally.get(name) ?? 0] as const);
+  return areaOrder(plant).flatMap(([name]) => (tally.has(name) ? [[name, tally.get(name) ?? 0] as const] : []));
 }
 
 export function hallCount(view: PlantView, hall: string): string {
