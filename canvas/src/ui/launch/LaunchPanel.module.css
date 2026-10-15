@@ -192,6 +192,7 @@
 .footer {
   position: sticky;
   bottom: 0;
+  box-shadow: 0 -6px 8px -6px var(--scroll-shadow);
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
