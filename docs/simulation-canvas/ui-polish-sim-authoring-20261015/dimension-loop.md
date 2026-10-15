@@ -86,7 +86,8 @@ improvement pass, run as three independent reviews and one fix batch on this sam
   above a fixed footer (the hunt's top item); `f26b0d4` the zoom controls carry the tooltip their name already
   had; `044b569` the plant view and a review promise selection, not deletion; `ee34c84` the equipment list says
   how many of the library it is showing; `71b71ee` the right panel has one name per screen, in the help and the
-  toggle. `IMP-02` was dropped rather than implemented, because the backlog proved the premise wrong.
+  toggle; `113e937` the Link form's target list names each instance's kind. `IMP-02` was dropped rather than
+  implemented, because the backlog proved the premise wrong.
 
 Two deliberate divergences from the backlog: the panel naming uses one truthful name per screen
 (`rightPanelName` — Inspector on home and plant, Run details on a review, Build in the editor) with the toggle,
@@ -95,11 +96,11 @@ its title and the help pinned to it by a per-screen coherence test, instead of "
 domain. `CB-16`'s open question — the workspace listing carries no abandonment signal, so a recorded run that
 did not finish cannot be told from one still open — is binary-owned and recorded, not guessed in the canvas.
 
-Not yet landed when this was written, and therefore still backlog entries rather than done work: `IMP-12` (the
-Link form's options carry the instance kind), `IMP-18` (the rail reuses the section-heading style, so an area
-name renders uppercase), `CB-16` (the unfinished row still wears the success-green live tokens) and `CB-36`
-("None: the plant runs healthy." still overstates the schedule). The backlog's remaining entries, including its
-12-item recommended batch, are the next pass's work list.
+Not yet landed when this was written, and therefore still backlog entries rather than done work: `IMP-18` (the
+rail reuses the section-heading style, so an area name renders uppercase), `CB-16` (the unfinished row still
+wears the success-green live tokens) and `CB-36` ("None: the plant runs healthy." still overstates the
+schedule). The backlog's remaining entries, including its 12-item recommended batch, are the next pass's work
+list.
 
 ## Graph-round decision framing (fit-vs-floor, P-11-1 / ISS-11D-02) — resolved
 
