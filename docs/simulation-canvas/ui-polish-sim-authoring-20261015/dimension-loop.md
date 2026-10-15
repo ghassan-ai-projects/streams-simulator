@@ -41,6 +41,16 @@ Coherence (5) → Colour (6) → Components (7) → Motion (7) → Graph (3, ded
 
 Still needs an owner/binary decision: P-11-4 Size preset units ("m³/h" from the component library — Go-side data change, may touch composed-domain bytes and the behaviour pin).
 
+## Graph-round decision framing (fit-vs-floor, P-11-1 / ISS-11D-02)
+
+`openingViewport` (canvas/src/model/viewport.ts) clamps the opening zoom to the 0.4 floor; `tierOf` puts compact at ≥ 0.4 — below it the tier drops/shrinks labels to the 8 px floor (2dda0b2), which is the legibility hole the floor was built to close. The campus at 1440 × 900 naturally fits at ≈ 0.30, so floor ⇒ overflow ⇒ cut (now cued in the review only).
+
+- **Option A (recommended): keep the 0.4 floor everywhere and extend the pan cue** (939406a's `cutSide`/`PanCue`) to the plant view and editor. Kind lines always readable; widest plants open overflowing with an honest affordance; Navigator shows the whole. Cheapest, consistent with the fix that lifted round 10's cap.
+- **Option B: fit-first** — reopens sub-0.4 tiers at the opening zoom on wide plants (labels at the 8 px floor again), the exact regression the floor closed in round 10. Needs the overview tier to get genuinely better first.
+- Hybrid (fit when overflow ≤ ~15 %, floor otherwise) rejected for now: two rules to test at every tier, against the simplicity priority.
+
+The wire-routing pass (stash `wire hug avoidance`) and the full-tier header hug (P-11-2) are decision-free and proceed either way.
+
 ## Infrastructure (this machine)
 
 - Owner's live instance: `127.0.0.1:8766` — DO NOT touch; it serves the original scratch lab in `/private/tmp`.
