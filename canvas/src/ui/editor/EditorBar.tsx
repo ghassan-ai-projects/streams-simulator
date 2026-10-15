@@ -1,7 +1,7 @@
 import { PenLine, Redo, RefreshCw, Save, Undo, Undo2 } from "lucide-react";
 import { useState } from "react";
 import type { Draft, EditorStore } from "../../app/editorStore";
-import { canSave, checked } from "../../app/editorStore";
+import { canSave, checked, emptyPlant } from "../../app/editorStore";
 import type { NavigationStore } from "../../app/navigationStore";
 import { domainOf, equipmentOf, titleOf } from "../../model/composition";
 import { ZoomBar } from "../plant/GraphControls";
@@ -24,6 +24,13 @@ interface Status {
   readonly tone: "busy" | "warn" | "ok" | "";
 }
 
+function uncheckedStatus(draft: Draft): Status {
+  const text = emptyPlant(draft)
+    ? "Nothing to save yet: add equipment in Build."
+    : "Not checked yet: Save to see its issues.";
+  return { text, detail: null, tone: "" };
+}
+
 function outcomeStatus(draft: Draft): Status {
   if (draft.outcome?.kind === "refused") {
     const count = draft.issues?.listed.length ?? 0;
@@ -34,7 +41,7 @@ function outcomeStatus(draft: Draft): Status {
   if (draft.outcome?.kind === "composed") {
     return { text: "Ready to run. Saved.", detail: draft.outcome.summary, tone: "ok" };
   }
-  if (!checked(draft)) return { text: "Not checked yet: Save to see its issues.", detail: null, tone: "" };
+  if (!checked(draft)) return uncheckedStatus(draft);
   return { text: "No changes", detail: null, tone: "" };
 }
 

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { failed, success } from "../model/bridge";
 import { equipmentOf } from "../model/composition";
 import { FakeBridge, failure } from "../test/fakeBridge";
-import { EditorStore } from "./editorStore";
+import { canSave, EditorStore, emptyPlant } from "./editorStore";
 
 const path = "compositions/lab.composition.json";
 const doc = {
@@ -32,6 +32,17 @@ async function opened(fake = bridge()) {
 }
 
 describe("editor store", () => {
+  it("keeps Save off for an empty plant that has never been checked", async () => {
+    const empty = { ...doc, equipment: [], areas: [] };
+    const fake = bridge();
+    fake.files.set(path, success({ path, content: JSON.stringify(empty), etag: "c1" }));
+    const { state } = await opened(fake);
+    if (state.phase !== "ready") throw new Error(state.phase);
+    expect(emptyPlant(state)).toBe(true);
+    expect(canSave(state)).toBe(false);
+    expect(canSave({ ...state, doc: { ...state.doc, title: "Changed" } })).toBe(true);
+  });
+
   it("opens a composition with the library and its components' ports", async () => {
     const { state, fake } = await opened();
     expect(state.library.map((entry) => entry.ref)).toEqual(["streamsim/pump@1"]);

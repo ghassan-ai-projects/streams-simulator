@@ -58,8 +58,12 @@ export function checked(draft: Draft): boolean {
   return draft.domainEtag !== "" || draft.outcome?.kind === "composed";
 }
 
+export function emptyPlant(draft: Draft): boolean {
+  return equipmentOf(draft.doc).length === 0;
+}
+
 export function canSave(draft: Draft): boolean {
-  return draft.doc !== draft.saved || !checked(draft);
+  return draft.doc !== draft.saved || (!checked(draft) && !emptyPlant(draft));
 }
 
 function kept(doc: Composition, draft: Draft): string | null {
