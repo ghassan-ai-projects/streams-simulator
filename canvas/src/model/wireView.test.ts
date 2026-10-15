@@ -51,6 +51,14 @@ describe("wire view", () => {
     expect(route[0]?.y).toBe(top + (inputs + 0.5) * nodeSize.pin);
   });
 
+  it("moves a review wire down with the extra note lines of its node", () => {
+    const plant = parsePlant(domain, composition);
+    const view = plantView(plant, specs, null, true, undefined, new Map([["CH-1", 3]]));
+    const route = routeView(view, "full", true).get("CH-1.heat_out>CT-1.heat_in") ?? [];
+    const top = boxOf(view, "CH-1").y + headerHeight("CH-1") + 3 * nodeSize.note + 1;
+    expect(route[0]?.y).toBe(top + (2 + 0.5) * nodeSize.pin);
+  });
+
   it("spaces wire ends that share one input row by 6 screen pixels and keeps one source port's wires together", () => {
     const view = viewOf(false);
     const first = view.edges[0];

@@ -1,5 +1,5 @@
 import type { PlantView, ViewNode } from "./plantView";
-import { headerHeight, groupCounts, nodeSize } from "./plantView";
+import { headerHeight, groupCounts, nodeSize, noteHeight } from "./plantView";
 import { titleAbove, titleBandHeight, titleScale } from "./frameTitle";
 import type { Rect, Tier } from "./viewport";
 import type { End } from "./wireEnds";
@@ -11,7 +11,6 @@ export type WireMode = "pins" | "rows" | "centre";
 
 const titleText = { height: 16, inside: 6 } as const;
 const firstPinRow = 5;
-const firstReviewRow = nodeSize.note + 1;
 
 export function wireModeOf(tier: Tier, review: boolean): WireMode {
   if (tier === "overview" || tier === "map") return "centre";
@@ -27,7 +26,7 @@ function rowOf(node: ViewNode | undefined, handle: string | null, side: "in" | "
 }
 
 function rowCentre(node: ViewNode, box: Rect, row: number, mode: WireMode): number {
-  const first = mode === "rows" ? firstReviewRow : firstPinRow;
+  const first = mode === "rows" ? noteHeight(node.noteLines) + 1 : firstPinRow;
   return box.y + headerHeight(node.label) + first + (row + 0.5) * nodeSize.pin;
 }
 

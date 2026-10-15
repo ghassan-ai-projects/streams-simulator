@@ -9,6 +9,7 @@ import { isMissing } from "../../model/bridge";
 import type { Opening } from "../../model/playback";
 import { stateUnit } from "../../model/plant";
 import { runClock } from "../../model/timeline";
+import { noteLinesByEntity } from "../../model/noteLines";
 import { plantView } from "../../model/plantView";
 import { firstEventNode } from "../../model/reviewAnchor";
 import type { Report } from "../../model/report";
@@ -104,12 +105,12 @@ interface GraphProps extends HallProps {
 
 function Graph({ review, state, plant, hall, onHall }: GraphProps) {
   const { ref, aspect } = useCanvasAspect<HTMLDivElement>();
+  const report = state.report.phase === "ready" ? state.report.value : null;
   const view = useMemo(
-    () => (plant === null ? null : plantView(plant.plant, plant.specs, hall, true, aspect)),
-    [plant, hall, aspect],
+    () => (plant === null ? null : plantView(plant.plant, plant.specs, hall, true, aspect, noteLinesByEntity(report))),
+    [plant, hall, aspect, report],
   );
   const live = useLive(review, state, plant);
-  const report = state.report.phase === "ready" ? state.report.value : null;
   const anchor = useMemo(
     () => (view === null ? null : firstEventNode(report, new Set(view.nodes.map((node) => node.id)))),
     [view, report],

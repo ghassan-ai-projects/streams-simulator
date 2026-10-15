@@ -3,6 +3,7 @@ import type { Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 import { env } from "./support/env";
 import { nodesOutsideCanvas } from "./support/fitAudit";
+import { noteProblems } from "./support/noteFit";
 import { textClashes } from "./support/textClashes";
 
 test.use({ storageState: env("CANVAS_APP_STATE") });
@@ -175,4 +176,24 @@ test("a review of a plant too large for 40 % opens at 40 % on its first fault, w
   expect(await page.evaluate(nodesOutsideCanvas)).not.toEqual([]);
   await page.getByRole("button", { name: "Fit the plant in view" }).click();
   await expect.poll(() => page.evaluate(nodesOutsideCanvas)).toEqual([]);
+});
+
+test("a fault's cause and an effector outcome wrap on the node, whole, at the opening tier and at the whole-plant fit", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto(`${env("CANVAS_APP_URL")}/#/run?world=w-late`);
+  await expect(page.getByText(/\d+ observations/)).toBeVisible({ timeout: 60_000 });
+  await page.getByRole("slider", { name: "Playback time" }).fill("930");
+  const dryer = page.getByRole("group", { name: /^D-1, / });
+  const graph = page.getByRole("application", { name: "Plant graph" });
+  await expect(graph).toHaveClass(/tier-compact/);
+  await expect(dryer.getByText("Fault · prefilter clogging")).toBeVisible();
+  await expect(dryer.getByText(/^set running · applied · \d+ ms$/)).toBeVisible();
+  await expect.poll(() => page.evaluate(noteProblems)).toEqual([]);
+  await page.getByRole("button", { name: "Fit the plant in view" }).click();
+  await expect(graph).toHaveClass(/tier-(overview|map)/);
+  await expect(dryer).toContainText("Fault: prefilter clogging");
+  await expect(dryer).toContainText(/set running · applied · \d+ ms/);
+  await expect.poll(() => page.evaluate(noteProblems)).toEqual([]);
 });

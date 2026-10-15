@@ -5,7 +5,8 @@ import type { CSSProperties } from "react";
 import { useRef } from "react";
 import { countWords } from "../../model/frameTitle";
 import type { ViewNode } from "../../model/plantView";
-import { describeNode, headerHeight, idExtra } from "../../model/plantView";
+import { describeNode } from "../../model/nodeWords";
+import { headerHeight, idExtra } from "../../model/plantView";
 import { familyNames, shapeOf } from "../../model/ports";
 import type { Pin } from "../../model/ports";
 import type { NodeStatus } from "../../model/readout";
@@ -152,6 +153,7 @@ function instanceStyle(view: ViewNode): CSSProperties {
     "--cat": `var(--cat-${view.category})`,
     "--id-extra": `${String(idExtra(view.label))}px`,
     "--header-height": `${String(headerHeight(view.label))}px`,
+    "--note-lines": String(view.noteLines),
   } as CSSProperties;
 }
 
@@ -164,6 +166,7 @@ function InstanceHeader({ data, status }: { readonly data: InstanceNodeType["dat
         {view.label}
       </span>
       <StatusTag status={status} cause={planned?.fault ?? ""} />
+      {data.live !== null && data.live.fault !== "" && <span className="sr-only">{`Fault: ${data.live.fault}`}</span>}
       <EffectorTag effector={shownOf(data).effector} />
       <IssueTag flagged={data.flagged} />
       <span className={styles.kind} title={view.detail}>
