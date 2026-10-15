@@ -34,9 +34,10 @@ Coherence (5) → Colour (6) → Components (7) → Motion (7) → Graph (3, ded
 | Round | Dimension focus | Result | Commits |
 |---|---|---|---|
 | 11 | Side panels across all ten dimensions (review) | overall 6 (was 3); lowest now Information design of graph and review 6; Layout 7, Content 7, rest 8; 11 findings (ISS-11D-01…11) + 4 parked graph notes; evaluation-round-11.md | — |
-| 12 | Side-panel fix batch 1 (fixer, in flight): 11D-01/02(review half)/04/06 + regression tests for already-fixed 10D-07/09/10/12 | in progress | — |
-| 13 | Side-panel fix batch 2 (planned): 11D-03 (run-row separator wrap), 11D-05 (AREAS in plant order), 11D-07 ("1 instance"), 11D-08 (instance header second line = raw id), 11D-09 (quiet 404/422 on incomplete runs), 11D-10 (breadcrumb crumb tooltip), 11D-11 (outline bottom fade) | pending | — |
-| 14 | Graph round (planned, dedicated): fit-vs-floor rule once for plant/editor/review (P-11-1/11D-02), full-tier header hug (P-11-2), wire routing pass with the stashed hug work, area-title re-verify at every tier | pending | — |
+| 12 | Side-panel fix batch 1: 11D-01/02(review half)/04/06 + regression tests for already-fixed 10D-07/09/10/12 | done — 5 commits (6611972 outline order, 939406a pan cue + whole-word titles, 1c9089c plain-words integrity, 3bfdbf9 legend marks, 37a7c17 gap tests); `npm run check` green (411 unit, 57 e2e); visually verified in Chrome | 6611972, 939406a, 1c9089c, 3bfdbf9, 37a7c17 |
+| 13 | Side-panel fix batch 2: 11D-03/05/07/08/09/10/11 | done — 7 commits (920ab1d MetaParts wraps, 1a1fbe1 areas in plant order, b3abb86 singular counts, 25ae10c inspector kind once, 17f2274 no doomed fetches on incomplete runs, 158a7b9 breadcrumb aria-label, 2397b3a outline bottom fade); gates running at ledger-update time | 920ab1d, 1a1fbe1, b3abb86, 25ae10c, 17f2274, 158a7b9, 2397b3a |
+| 14 | Round-12 re-score (owner: ONE viewport only — 1440×900, light and dark) | pending | — |
+| 15 | Graph round (planned, dedicated): fit-vs-floor rule once for plant/editor/review (P-11-1/11D-02), full-tier header hug (P-11-2), wire routing pass with the stashed hug work, area-title re-verify at every tier | pending | — |
 
 Still needs an owner/binary decision: P-11-4 Size preset units ("m³/h" from the component library — Go-side data change, may touch composed-domain bytes and the behaviour pin).
 
