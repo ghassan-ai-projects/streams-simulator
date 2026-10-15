@@ -120,12 +120,32 @@ that fails without it, every premise re-checked in code before the change:
   areas" title, a bare "0" when nothing is anywhere, and the state word gone.
 - `286e10d` the empty-area layout e2e selects the new count instead of the removed wording (selector only: the
   three-row count and the 28 px/one-line assertions are unchanged).
+- `18b3788` the Keyboard dialog's focused heading shows a focus ring. The first attempt did not paint: the
+  measured cause is `[tabindex="-1"]:focus { outline: none }` in `theme/base.css:56`, which ties on
+  specificity and wins on bundle order. The fix doubles the class (`.title.title:focus`, the repo's own
+  idiom) with the app's ring values rather than editing that global rule, and focus stays on the heading.
+- `1697cff` every scrolling right panel fades its bottom cut. `useCutBottom` moved out of `Outline.tsx` into
+  `src/ui/useCutBottom.ts`, the fade from the rail-specific `.outline[data-cut]` rule to
+  `shared.cut[data-cut="true"]`, and each panel is wired to the element that actually scrolls — for the run
+  plan that is the inner `[data-scroll="run-plan"]` region, because the IMP-06 footer sits outside it. No
+  positioned child sits inside a masked element.
 
-Not landed when this was written: `CB-03` (the Keyboard dialog's focus ring — the stylesheet change and its
-both-theme `e2e/keyboard.spec.ts` sat in the tree, uncommitted) and `CB-19` (the right panels' bottom cut
-fade). Left for the owner by design: `CB-41` (the editor's doomed domain probe changes how the app resolves a
-domain) and `CB-51` (the bare "·" readout re-opens a settled design); `CB-27` was already implemented
-differently, as one truthful panel name per screen with the toggle, its title and the help pinned together.
+**Gate and verification.** `npm run check` green on the first run: 95 test files / **439 tests**, coverage
+87.32 % statements, build clean, **68 e2e passed**, `EXITCODE=0` (no wall-clock flake to re-run). Pushed as
+`1697cff`; CI green on it ([38822136278](https://github.com/ghassan-ai-projects/streams-simulator/actions/runs/38822136278)).
+An independent on-screen pass (light and dark at 1440 × 900 and 1280 × 720, cache disabled, 63 screenshots in
+`/tmp/canvas-review/verify-batch3/`) reported **all seven holding**, with the cue measured as
+`data-cut` plus the computed mask on all five panel kinds and cleared at the bottom, the dialog ring measured
+unclipped inside its dialog in both themes at both sizes, and the link direction identical from either end.
+Two observations, deliberately not defects: the About-this-run popover repeats "seed 1 · 30 min" from the
+header's facts line (its only new fact is the wall-clock start), and the read-only rail still omits a parent
+with zero direct equipment (`6611972`'s decision, not this batch's).
+
+Left for the owner by design: `CB-41` (the editor's doomed domain probe changes how the app resolves a
+domain — the verification pass reproduced its 404 and console error live, on the editor of the composition
+whose row reads "Not runnable yet") and `CB-51` (the bare "·" readout re-opens a settled design); `CB-27` was
+already implemented differently, as one truthful panel name per screen with the toggle, its title and the help
+pinned together.
 
 ## Graph-round decision framing (fit-vs-floor, P-11-1 / ISS-11D-02) — resolved
 
