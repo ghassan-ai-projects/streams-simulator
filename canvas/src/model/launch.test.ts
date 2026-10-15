@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 import type { LaunchPlan, PlannedCall } from "./launch";
-import { clockOf, disturbanceWords, launchSteps, outcomeOf, planProblems, planSummary } from "./launch";
+import {
+  clockOf,
+  disturbanceWords,
+  keepKnownFaults,
+  launchSteps,
+  outcomeOf,
+  planProblems,
+  planSummary,
+} from "./launch";
 
 const plan = (overrides: Partial<LaunchPlan>): LaunchPlan => ({
   seed: 7,
@@ -156,5 +164,30 @@ describe("launch clock", () => {
     expect(clockOf(0)).toBe("00:00:00");
     expect(clockOf(3725)).toBe("01:02:05");
     expect(clockOf(-3)).toBe("00:00:00");
+  });
+});
+
+describe("prefilled faults", () => {
+  it("keeps the faults the plant has and clears the rest, naming what was cleared", () => {
+    const known = (entity: string) => (entity === "CH-1" ? ["fouling"] : null);
+    const kept = keepKnownFaults(
+      plan({
+        faults: [
+          { entity: "CH-1", fault: "fouling", atS: 10 },
+          { entity: "CH-1", fault: "gone", atS: 20 },
+          { entity: "PX-9", fault: "fouling", atS: 30 },
+        ],
+      }),
+      known,
+    );
+    expect(kept.plan.faults).toEqual([
+      { entity: "CH-1", fault: "fouling", atS: 10 },
+      { entity: "CH-1", fault: "", atS: 20 },
+      { entity: "", fault: "", atS: 30 },
+    ]);
+    expect(kept.dropped).toEqual([
+      "gone on CH-1 (no longer in this plant)",
+      "a fault on PX-9 (no longer in this plant)",
+    ]);
   });
 });

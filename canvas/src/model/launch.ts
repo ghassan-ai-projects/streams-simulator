@@ -66,6 +66,28 @@ export function launchSteps(plan: LaunchPlan, chunks = 20): readonly LaunchStep[
 
 export type SpecOf = (entity: string, effector: string) => EffectorSpec | undefined;
 
+export interface KeptPlan {
+  readonly plan: LaunchPlan;
+  readonly dropped: readonly string[];
+}
+
+function droppedWords(fault: PlannedFault, unknownInstance: boolean): string {
+  return unknownInstance
+    ? `a fault on ${fault.entity} (no longer in this plant)`
+    : `${humanise(fault.fault)} on ${fault.entity} (no longer in this plant)`;
+}
+
+export function keepKnownFaults(plan: LaunchPlan, faultsOf: (entity: string) => readonly string[] | null): KeptPlan {
+  const dropped: string[] = [];
+  const faults = plan.faults.map((fault): PlannedFault => {
+    const known = faultsOf(fault.entity);
+    if (known?.includes(fault.fault)) return fault;
+    dropped.push(droppedWords(fault, known === null));
+    return known === null ? { entity: "", fault: "", atS: fault.atS } : { ...fault, fault: "" };
+  });
+  return { plan: { ...plan, faults }, dropped };
+}
+
 export interface PlanProblem {
   readonly field: "seed" | "duration" | "call" | number;
   readonly call?: number;

@@ -1,5 +1,6 @@
 import { Plus } from "lucide-react";
 import type { PlanProblem } from "../../model/launch";
+import { faultsOf } from "../../model/plant";
 import type { Plant } from "../../model/plant";
 import { humanise } from "../../model/report";
 import type { Draft, DraftFault } from "./draft";
@@ -9,11 +10,6 @@ import panel from "../panel.module.css";
 import styles from "./LaunchPanel.module.css";
 
 export type { Change } from "./RowParts";
-
-function faultsOf(plant: Plant, entity: string): readonly string[] {
-  const kind = plant.instances.find((instance) => instance.id === entity)?.kind ?? "";
-  return plant.kinds.get(kind)?.faults ?? [];
-}
 
 interface FaultPickProps {
   readonly plant: Plant;
@@ -36,7 +32,7 @@ function FaultPick({ plant, fault, label, id, problem, update }: FaultPickProps)
       }}
     >
       <option value="">Choose a fault</option>
-      {faultsOf(plant, fault.entity).map((name) => (
+      {(faultsOf(plant, fault.entity) ?? []).map((name) => (
         <option key={name} value={name}>
           {humanise(name)}
         </option>

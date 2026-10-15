@@ -2,10 +2,11 @@ import { Play, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { LaunchState, LaunchStore, Proposal } from "../../app/launchStore";
 import type { CallOutcome } from "../../model/launch";
-import { clockOf, planSummary, speedOf } from "../../model/launch";
+import { clockOf, keepKnownFaults, planSummary, speedOf } from "../../model/launch";
 import { humanise } from "../../model/report";
 import { durationOf } from "../../model/workspace";
 import type { Plant } from "../../model/plant";
+import { faultsOf } from "../../model/plant";
 import { useStore } from "../useStore";
 import type { Draft } from "./draft";
 import { draftOf, firstDraft, pickedOnGraph } from "./draft";
@@ -221,8 +222,14 @@ function proposalNote(proposed: Proposal): string {
   return proposed.left.length === 0 ? copied : `${copied} Not copied: ${proposed.left.join("; ")}.`;
 }
 
-function useDraft(launch: LaunchStore, plant: string, selected: string | null) {
-  const [proposed] = useState(() => launch.proposal(plant));
+function prefillOf(proposal: Proposal | null, plant: Plant): Proposal | null {
+  if (proposal === null) return null;
+  const kept = keepKnownFaults(proposal.plan, (entity) => faultsOf(plant, entity));
+  return { ...proposal, plan: kept.plan, left: [...proposal.left, ...kept.dropped] };
+}
+
+function useDraft(launch: LaunchStore, plant: Plant, selected: string | null) {
+  const [proposed] = useState(() => prefillOf(launch.proposal(plant.id), plant));
   useEffect(
     () => () => {
       launch.forgetProposal();
@@ -240,7 +247,7 @@ function useDraft(launch: LaunchStore, plant: string, selected: string | null) {
 
 export function LaunchPanel({ launch, plant, path, selected = null, onClose, onFinished }: LaunchPanelProps) {
   const state = useLaunch(launch, plant.id, onFinished);
-  const { proposed, draft, setDraft } = useDraft(launch, plant.id, selected);
+  const { proposed, draft, setDraft } = useDraft(launch, plant, selected);
   return (
     <aside className={panel.panel} aria-labelledby="launch-title">
       <header className={panel.head}>

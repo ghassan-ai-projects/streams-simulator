@@ -249,6 +249,11 @@ export function channelOf(plant: Plant, entity: string, channel: string): Channe
   return plant.kinds.get(kindName)?.channels.find((entry) => entry.name === channel) ?? null;
 }
 
+export function faultsOf(plant: Plant, entity: string): readonly string[] | null {
+  const instance = plant.instances.find((item) => item.id === entity);
+  return instance === undefined ? null : (plant.kinds.get(instance.kind)?.faults ?? []);
+}
+
 export function effectorOf(plant: Plant, entity: string, effector: string): EffectorSpec | undefined {
   const kindName = plant.instances.find((instance) => instance.id === entity)?.kind ?? "";
   return plant.kinds.get(kindName)?.effectorSpecs.find((spec) => spec.name === effector);
