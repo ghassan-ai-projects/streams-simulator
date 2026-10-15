@@ -36,7 +36,7 @@ export interface PlantView {
   readonly halls: readonly string[];
 }
 
-export const nodeSize = { width: 232, header: 28, pin: 24, padding: 16, groupWidth: 176, groupHeight: 72 } as const;
+export const nodeSize = { width: 232, header: 40, pin: 24, padding: 16, groupWidth: 176, groupHeight: 72 } as const;
 
 export function hallOf(id: string): string | null {
   const slash = id.indexOf("/");
