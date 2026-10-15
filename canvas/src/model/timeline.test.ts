@@ -5,6 +5,7 @@ import {
   effectorAt,
   eventMarks,
   faultedAt,
+  firstEventLine,
   kindsOf,
   nextEvent,
   placeChips,
@@ -14,6 +15,26 @@ import {
 } from "./timeline";
 
 const parsed = parseReport(report);
+
+describe("first event line", () => {
+  it("names the first mark with its time and instance, and counts the effector calls", () => {
+    const line = firstEventLine(parsed, parsed.startNs);
+    expect(line).toMatch(/^First: disturbance · drop on delivery at 00:05:00 · \d+ effector calls?$/);
+  });
+
+  it("names a fault as a fault and leaves the count off when the only call is the first event", () => {
+    const fault = { ...parsed, disturbances: parsed.disturbances.filter((d) => d.kind === "fault"), effectorCalls: [] };
+    expect(firstEventLine(fault, parsed.startNs)).toBe("First: fault · fan failure on CT-1 at 00:10:00");
+    const call = { ...parsed, disturbances: [], alarmActivations: [], effectorCalls: parsed.effectorCalls.slice(0, 1) };
+    expect(firstEventLine(call, parsed.startNs)).toMatch(/^First: effector call · .+ at \d\d:\d\d:\d\d$/);
+  });
+
+  it("says there is nothing when the run has no fault, call or alarm, and nothing before the report", () => {
+    const quiet = { ...parsed, disturbances: [], effectorCalls: [], alarmActivations: [] };
+    expect(firstEventLine(quiet, parsed.startNs)).toBe("No faults or effector calls in this run");
+    expect(firstEventLine(null, 0)).toBeNull();
+  });
+});
 
 describe("timeline", () => {
   it("shows reported alarm instants as navigation marks without inferring an active interval", () => {

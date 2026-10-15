@@ -165,6 +165,16 @@ test("clicking a mark seeks and selects its instance and leaves the Report open 
   await expect(details.getByRole("button", { name: /^Inspect · boiler-1/ })).toHaveAttribute("aria-pressed", "true");
 });
 
+test("a review says under the scrubber what happens first, or that nothing does", async ({ page }) => {
+  await page.goto(`${env("CANVAS_APP_URL")}/#/run?world=w-boiler`);
+  await expect(page.getByText("First: fault · scaling on boiler-1 at 00:10:00 · 1 effector call")).toBeVisible({
+    timeout: 60_000,
+  });
+  await page.goto(`${env("CANVAS_APP_URL")}/#/run?world=w-explore`);
+  await page.reload();
+  await expect(page.getByText("No faults or effector calls in this run")).toBeVisible({ timeout: 60_000 });
+});
+
 function transformOf(): string | undefined {
   return document.querySelector<HTMLElement>(".react-flow__viewport")?.style.transform;
 }

@@ -154,3 +154,34 @@ export function timeTicks(startNs: number, endNs: number, most = 9): readonly nu
   const first = Math.ceil(startNs / step) * step;
   return Array.from({ length: Math.floor((endNs - first) / step) + 1 }, (_, index) => first + index * step);
 }
+
+interface Beginning {
+  readonly atNs: number;
+  readonly words: string;
+}
+
+function beginnings(report: Report): readonly Beginning[] {
+  const disturbances = report.disturbances.map((d) => ({
+    atNs: d.onsetNs,
+    words: `${d.kind === "fault" ? "fault" : "disturbance"} · ${humanise(d.name)} on ${d.target}`,
+  }));
+  const calls = report.effectorCalls.map((c) => ({
+    atNs: c.atNs,
+    words: `effector call · ${humanise(c.effector)} on ${c.entity}`,
+  }));
+  const alarms = report.alarmActivations.map((a) => ({
+    atNs: a.atNs,
+    words: `alarm · ${humanise(a.state)} on ${a.entity}`,
+  }));
+  return [...disturbances, ...calls, ...alarms].sort((a, b) => a.atNs - b.atNs);
+}
+
+export function firstEventLine(report: Report | null, startNs: number): string | null {
+  if (report === null) return null;
+  const first = beginnings(report)[0];
+  if (first === undefined) return "No faults or effector calls in this run";
+  const calls = report.effectorCalls.length;
+  const only = calls === 1 && first.words.startsWith("effector call");
+  const tail = calls === 0 || only ? "" : ` · ${String(calls)} effector call${calls === 1 ? "" : "s"}`;
+  return `First: ${first.words} at ${runClock(first.atNs, startNs)}${tail}`;
+}
