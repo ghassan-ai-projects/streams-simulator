@@ -11,6 +11,16 @@ export interface Viewport {
   readonly zoom: number;
 }
 
+export function followZoom(
+  box: Rect,
+  viewport: Viewport,
+  screen: { readonly width: number; readonly height: number },
+  focusZoom: number,
+): number | null {
+  if (inView(box, viewport, screen)) return null;
+  return Math.max(viewport.zoom, focusZoom);
+}
+
 export function inView(
   box: Rect,
   viewport: Viewport,

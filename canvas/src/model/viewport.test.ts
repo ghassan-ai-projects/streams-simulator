@@ -1,9 +1,17 @@
 import { describe, expect, it } from "vitest";
 import type { Tier } from "./viewport";
-import { anchorsOnly, centreOf, inView, openingViewport, sameViewport, tierOf } from "./viewport";
+import { anchorsOnly, centreOf, followZoom, inView, openingViewport, sameViewport, tierOf } from "./viewport";
 
 describe("viewport", () => {
   const screen = { width: 800, height: 600 };
+  it("moves the view for a selected box only when it is off screen, and then to at least the focus zoom", () => {
+    const box = { x: 10, y: 10, width: 100, height: 50 };
+    expect(followZoom(box, { x: 0, y: 0, zoom: 0.62 }, screen, 1)).toBeNull();
+    expect(followZoom(box, { x: -200, y: 0, zoom: 0.62 }, screen, 1)).toBe(1);
+    expect(followZoom(box, { x: -200, y: 0, zoom: 2 }, screen, 1)).toBe(2);
+    expect(followZoom(box, { x: -200, y: 0, zoom: 0.62 }, screen, 0)).toBe(0.62);
+  });
+
   it("knows whether a box is fully on screen at the current pan and zoom", () => {
     expect(inView({ x: 10, y: 10, width: 100, height: 50 }, { x: 0, y: 0, zoom: 1 }, screen)).toBe(true);
     expect(inView({ x: 10, y: 10, width: 100, height: 50 }, { x: -20, y: 0, zoom: 1 }, screen)).toBe(false);
