@@ -209,16 +209,18 @@ export function LaunchForm({ plant, draft, selected, change, onStart }: FormProp
     if (problems.length === 0) onStart(plan);
   };
   return (
-    <form ref={form} className={panel.body} onSubmit={submit} onKeyDown={holdEnter} noValidate aria-label="Run plan">
-      <fieldset className={panel.group}>
-        <legend>Run</legend>
-        <Seed draft={draft} change={change} problems={shown} />
-        <Duration draft={draft} change={change} problems={shown} />
-      </fieldset>
-      <Mode draft={draft} change={change} />
-      <Pace draft={draft} change={change} durationS={plan.durationS} />
-      <FaultRows plant={plant} draft={draft} problems={shown} selected={selected} change={change} />
-      <CallRows plant={plant} draft={draft} problems={shown} selected={selected} change={change} />
+    <form ref={form} className={styles.plan} onSubmit={submit} onKeyDown={holdEnter} noValidate aria-label="Run plan">
+      <div className={styles.scroll} data-scroll="run-plan">
+        <fieldset className={panel.group}>
+          <legend>Run</legend>
+          <Seed draft={draft} change={change} problems={shown} />
+          <Duration draft={draft} change={change} problems={shown} />
+        </fieldset>
+        <Mode draft={draft} change={change} />
+        <Pace draft={draft} change={change} durationS={plan.durationS} />
+        <FaultRows plant={plant} draft={draft} problems={shown} selected={selected} change={change} />
+        <CallRows plant={plant} draft={draft} problems={shown} selected={selected} change={change} />
+      </div>
       <div className={styles.footer}>
         <p id="launch-summary" className={styles.summary}>
           {planCue(shown, plan)}

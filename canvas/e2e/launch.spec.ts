@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { env } from "./support/env";
+import { underRunFooter } from "./support/footerAudit";
 
 test.use({ storageState: env("CANVAS_APP_STATE") });
 test.setTimeout(90_000);
@@ -57,7 +58,7 @@ test("choosing a fault keeps the run panel where it is, and Start stays apart fr
   const panel = page.getByRole("complementary", { name: "Run Factory utilities" });
   await panel.getByRole("button", { name: "Add fault" }).click();
   await panel.getByLabel("Fault 1 instance").selectOption("CT-1");
-  const scrolled = () => panel.evaluate((element) => element.scrollTop);
+  const scrolled = () => panel.locator("[data-scroll='run-plan']").evaluate((element) => element.scrollTop);
   const addCall = panel.getByRole("button", { name: "Add effector call" });
   const before = await scrolled();
   const lineBefore = (await addCall.boundingBox())?.y;
@@ -165,6 +166,21 @@ test("the top-bar run indicator brings back a closed run panel, and Stop now kee
   await expect(panel.getByRole("button", { name: "Stop now" })).toBeVisible();
   await panel.getByRole("button", { name: "Stop now" }).click();
   await expect(page.getByRole("heading", { level: 1, name: /^Run w-/ })).toBeVisible({ timeout: 60_000 });
+});
+
+test("no run plan field paints under the Start footer, at 1440 and at 1280", async ({ page }) => {
+  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Ffactory-utilities.domain.json`);
+  await page.getByRole("button", { name: "Run plant" }).click();
+  const panel = page.getByRole("complementary", { name: "Run Factory utilities" });
+  await panel.getByRole("button", { name: "Add fault" }).click();
+  for (const size of [
+    { width: 1440, height: 900 },
+    { width: 1280, height: 720 },
+  ]) {
+    await page.setViewportSize(size);
+    await expect.poll(() => page.evaluate(underRunFooter)).toEqual([]);
+  }
+  await expect(panel.getByRole("button", { name: "Start the run" })).toBeInViewport();
 });
 
 test("a planned fault appears on its node when the run clock reaches its minute and stays to the end", async ({
