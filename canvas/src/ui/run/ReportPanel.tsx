@@ -1,87 +1,14 @@
-import type { ReactNode } from "react";
 import type { Report, VerifyState } from "../../model/report";
-import { badgeOf, humanise, replayLine } from "../../model/report";
+import { badgeOf, replayLine } from "../../model/report";
 import { integrityLine, kpisOf } from "../../model/reportViews";
-import { runClock } from "../../model/timeline";
 import { grouped } from "../../model/units";
-import shared from "../shared.module.css";
 import { alarmRow } from "./alarmWords";
 import { KpiTable } from "./KpiTable";
+import { Rows, Section } from "./ReportParts";
+import { Events } from "./ReportEvents";
+import type { Picked } from "./ReportEvents";
 import styles from "./RunScreen.module.css";
 
-type Cell = string | { readonly text: string; readonly title: string };
-
-function Section({
-  title,
-  note,
-  children,
-}: {
-  readonly title: string;
-  readonly note?: string | undefined;
-  readonly children: ReactNode;
-}) {
-  return (
-    <section className={styles.section} aria-label={title}>
-      <div className={shared.sectionTitle}>
-        <h2 className={styles.sectionName}>{title}</h2>
-        {note !== undefined && <span className={styles.note}>{note}</span>}
-      </div>
-      {children}
-    </section>
-  );
-}
-
-interface RowsProps {
-  readonly rows: readonly (readonly Cell[])[];
-  readonly columns: readonly string[];
-  readonly headers: readonly string[];
-  readonly empty?: string;
-}
-
-function Row({ row, columns }: { readonly row: readonly Cell[]; readonly columns: readonly string[] }) {
-  return (
-    <tr>
-      {row.map((cell, c) => {
-        const Tag = c === 0 ? "th" : "td";
-        return (
-          <Tag
-            key={c}
-            scope={c === 0 ? "row" : undefined}
-            className={styles[columns[c] ?? "text"]}
-            title={typeof cell === "string" ? undefined : cell.title}
-          >
-            {typeof cell === "string" ? cell : cell.text}
-          </Tag>
-        );
-      })}
-    </tr>
-  );
-}
-
-function Rows({ rows, columns, headers, empty = "None" }: RowsProps) {
-  if (rows.length === 0) return <p className={styles.muted}>{empty}</p>;
-  return (
-    <table className={styles.table}>
-      <thead className={styles.head}>
-        <tr>
-          {headers.map((header) => (
-            <th key={header} scope="col">
-              {header}
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((row, r) => (
-          <Row key={r} row={row} columns={columns} />
-        ))}
-      </tbody>
-    </table>
-  );
-}
-
-const named = (id: string): Cell => ({ text: humanise(id), title: id });
-const words = (text: string): Cell => ({ text, title: text });
 const count = (report: Report, key: string) => (report.ended ? grouped(report.counts[key] ?? 0) : "n/a");
 
 function ReplayCheck({ verify }: { readonly verify: VerifyState }) {
@@ -137,6 +64,7 @@ function Integrity({ report, verify }: { readonly report: Report; readonly verif
 
 interface TruthProps {
   readonly report: Report;
+  readonly picked?: Picked | null;
   readonly unit: (entity: string, state: string) => string;
   readonly entity: string | null;
   readonly only?: "kpi";
@@ -150,49 +78,11 @@ function TruthNote({ report }: { readonly report: Report }) {
   return <p className={styles.truthNote}>{text}</p>;
 }
 
-function Events({ report }: { readonly report: Report }) {
-  const at = (ns: number) => runClock(ns, report.startNs);
-  if (report.disturbances.length === 0 && report.effectorCalls.length === 0) {
-    return (
-      <Section title="Disturbances and effector calls">
-        <p className={styles.muted}>None in this run.</p>
-      </Section>
-    );
-  }
-  return (
-    <>
-      <Section title="Disturbances">
-        <Rows
-          rows={report.disturbances.map((d) => [
-            { text: at(d.onsetNs), title: `set at ${at(d.injectedNs)}` },
-            d.target,
-            named(d.name),
-          ])}
-          columns={["clock", "id", "label"]}
-          headers={["Starts", "Instance", "Disturbance"]}
-        />
-      </Section>
-      <Section title="Effector calls">
-        <Rows
-          rows={report.effectorCalls.map((call) => [
-            at(call.atNs),
-            call.entity,
-            named(call.effector),
-            words(call.outcome),
-          ])}
-          columns={["clock", "id", "effector", "outcome"]}
-          headers={["Time", "Instance", "Effector", "Outcome"]}
-        />
-      </Section>
-    </>
-  );
-}
-
-function Truth({ report, unit, entity }: TruthProps) {
+function Truth({ report, unit, entity, picked = null }: TruthProps) {
   return (
     <>
       <TruthNote report={report} />
-      <Events report={report} />
+      <Events report={report} picked={picked} />
       <KpiTruth report={report} unit={unit} entity={entity} />
       <Section title="Alarms">
         <p className={styles.muted}>How the alarm system behaved during the run.</p>
@@ -270,6 +160,7 @@ export function ReportPanel({
   unit,
   entity,
   only,
+  picked = null,
   verify = loading,
 }: TruthProps & { readonly verify?: VerifyState }) {
   if (only === "kpi") {
@@ -291,7 +182,7 @@ export function ReportPanel({
           </p>
         </Section>
       ) : (
-        <Truth report={report} unit={unit} entity={entity} />
+        <Truth report={report} unit={unit} entity={entity} picked={picked} />
       )}
       <Scoring report={report} />
     </>

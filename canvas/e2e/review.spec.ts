@@ -143,6 +143,28 @@ test("a faulted node's id, kind, cause and effector outcome never overlap at any
   }
 });
 
+test("clicking a mark seeks and selects its instance and leaves the Report open with the call's row marked", async ({
+  page,
+}) => {
+  await page.goto(`${env("CANVAS_APP_URL")}/#/run?world=w-boiler`);
+  await expect(page.getByText(/\d+ observations/)).toBeVisible({ timeout: 60_000 });
+  const details = page.getByRole("complementary", { name: "Run details" });
+  await expect(details.getByRole("button", { name: "Report", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("button", { name: /^00:10:00 boiler-1 set running/ }).click();
+  await expect(page.getByRole("slider", { name: "Playback time" })).toHaveAttribute("aria-valuetext", "00:10:00");
+  await expect(page.getByRole("group", { name: /^boiler-1, .*, selected$/ })).toBeAttached();
+  await expect(details.getByRole("button", { name: "Report", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(details.getByRole("region", { name: "Disturbances" })).toBeVisible();
+  await expect(details.getByRole("region", { name: "Effector calls" }).locator("tr[aria-current='true']")).toHaveCount(
+    1,
+  );
+  await page.getByRole("button", { name: /^00:10:00 boiler-1 scaling/ }).click();
+  await expect(details.getByRole("region", { name: "Disturbances" }).locator("tr[aria-current='true']")).toHaveCount(1);
+  await details.getByRole("button", { name: /^Inspect/ }).click();
+  await page.getByRole("button", { name: /^00:10:00 boiler-1 scaling/ }).click();
+  await expect(details.getByRole("button", { name: /^Inspect · boiler-1/ })).toHaveAttribute("aria-pressed", "true");
+});
+
 function transformOf(): string | undefined {
   return document.querySelector<HTMLElement>(".react-flow__viewport")?.style.transform;
 }
