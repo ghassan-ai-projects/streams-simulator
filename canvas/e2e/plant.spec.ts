@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { env } from "./support/env";
+import { textClashes } from "./support/textClashes";
 
 test.use({ storageState: env("CANVAS_APP_STATE") });
 
@@ -177,9 +178,30 @@ test("no node overlaps another, spills its text or cuts a title or port name at 
     tiers.add((await graph.getAttribute("class"))?.match(/tier-(\w+)/)?.[1] ?? "");
     expect(await page.evaluate(overlapsAndSpills)).toEqual([]);
     expect(await page.evaluate(cutText)).toEqual([]);
+    expect(await page.evaluate(textClashes)).toEqual([]);
     await page.keyboard.press("+");
   }
   expect([...tiers]).toEqual(expect.arrayContaining(["overview", "compact", "full"]));
+});
+
+test("no two labels inside one node intersect at the compact zoom, on a flat plant and on a hall", async ({ page }) => {
+  for (const view of [
+    "domain=domains%2Ffactory-utilities.domain.json",
+    "domain=domains%2Fcampus-3.domain.json&hall=h01",
+  ]) {
+    await page.goto(`${env("CANVAS_APP_URL")}/#/plant?${view}`);
+    const graph = page.getByRole("application", { name: "Plant graph" });
+    await graph.focus();
+    await page.keyboard.press("0");
+    await expect
+      .poll(async () => {
+        await page.keyboard.press("+");
+        return graph.getAttribute("class");
+      })
+      .toMatch(/tier-compact/);
+    await expect(page.locator(".react-flow__node-instance [class*='pinName']").first()).toBeVisible();
+    expect(await page.evaluate(textClashes)).toEqual([]);
+  }
 });
 
 function activeRingOnScreen(): number {

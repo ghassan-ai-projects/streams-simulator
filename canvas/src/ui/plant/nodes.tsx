@@ -3,7 +3,8 @@ import { Handle, Position, useStore } from "@xyflow/react";
 import { ChevronRight, OctagonAlert, TriangleAlert, Wrench } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useRef } from "react";
-import { describeNode, idExtra, nodeSize, pinHandle } from "../../model/plantView";
+import type { ViewNode } from "../../model/plantView";
+import { describeNode, headerHeight, idExtra, nodeSize, pinHandle } from "../../model/plantView";
 import { familyNames, shapeOf } from "../../model/ports";
 import type { Pin } from "../../model/ports";
 import type { NodeStatus } from "../../model/readout";
@@ -162,6 +163,14 @@ function statusClass(status: NodeStatus): string | undefined {
   return status === null ? undefined : styles[`status-${status}`];
 }
 
+function instanceStyle(view: ViewNode): CSSProperties {
+  return {
+    "--cat": `var(--cat-${view.category})`,
+    "--id-extra": `${String(idExtra(view.label))}px`,
+    "--header-height": `${String(headerHeight(view.label))}px`,
+  } as CSSProperties;
+}
+
 export function InstanceNode({ data, selected }: NodeProps<InstanceNodeType>) {
   const { view } = data;
   const status = data.live?.status ?? null;
@@ -177,9 +186,7 @@ export function InstanceNode({ data, selected }: NodeProps<InstanceNodeType>) {
       )}
       role="group"
       aria-label={describeNode(view, selected, status, 0, data.live?.fault ?? "") + issueWords(data.flagged)}
-      style={
-        { "--cat": `var(--cat-${view.category})`, "--id-extra": `${String(idExtra(view.label))}px` } as CSSProperties
-      }
+      style={instanceStyle(view)}
     >
       <Handle type="target" position={Position.Left} id="in" className={styles.anchor} isConnectable={false} />
       <Handle type="source" position={Position.Right} id="out" className={styles.anchor} isConnectable={false} />

@@ -39,6 +39,7 @@ export interface PlantView {
 export const nodeSize = {
   width: 232,
   header: 40,
+  kind: 24,
   pin: 24,
   padding: 16,
   groupWidth: 176,
@@ -49,6 +50,10 @@ export const nodeSize = {
 
 export function idExtra(label: string): number {
   return (Math.ceil(label.length / nodeSize.idChars) - 1) * nodeSize.idLine;
+}
+
+export function headerHeight(label: string): number {
+  return nodeSize.header + nodeSize.kind + idExtra(label);
 }
 
 export function pinHandle(name: string, side: "in" | "out", farSide: boolean): string {
@@ -159,7 +164,7 @@ function nodeBox(node: ViewNode, readout: number): LayoutNode {
     return { id: node.id, group: node.group, width: nodeSize.groupWidth, height: nodeSize.groupHeight };
   }
   const rows = readout > 0 ? 0 : Math.max(2, node.pins.ins.length, node.pins.outs.length);
-  const height = nodeSize.header + idExtra(node.label) + nodeSize.padding + rows * nodeSize.pin + readout;
+  const height = headerHeight(node.label) + nodeSize.padding + rows * nodeSize.pin + readout;
   return { id: node.id, group: node.group, width: nodeSize.width, height };
 }
 

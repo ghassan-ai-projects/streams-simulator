@@ -20,9 +20,9 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  align-content: flex-start;
+  align-content: space-between;
   gap: 0 var(--space-2);
-  height: calc(40px + var(--id-extra, 0px));
+  height: var(--header-height, 40px);
   padding: 6px var(--space-3) 0;
   border-radius: 7px 7px 0 0;
   background: var(--surface-hover);
