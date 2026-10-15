@@ -172,6 +172,22 @@ const graphNames = {
   tabIndex: 0,
 } as const;
 
+const graphWords = {
+  select: {
+    "node.a11yDescription.default": "Press enter or space to select a node. Escape clears the selection.",
+    "node.a11yDescription.keyboardDisabled": "Press enter or space to select a node. Escape clears the selection.",
+    "edge.a11yDescription.default": "Press enter or space to select an edge. Escape clears the selection.",
+  },
+  edit: {
+    "node.a11yDescription.default":
+      "Press enter or space to select a node. Press delete to remove it and escape to cancel.",
+    "node.a11yDescription.keyboardDisabled":
+      "Press enter or space to select a node. Press delete to remove it and escape to cancel.",
+    "edge.a11yDescription.default":
+      "Press enter or space to select an edge. You can then press delete to remove it or escape to cancel.",
+  },
+} as const;
+
 const fixedProps = {
   nodeTypes,
   edgeTypes,
@@ -232,6 +248,7 @@ function Flow(props: FlowProps) {
       edges={edges}
       {...fixedProps}
       {...connection(onConnect)}
+      ariaLabelConfig={onConnect === undefined ? graphWords.select : graphWords.edit}
       className={`tier-${tierOf(zoom)}`}
       style={{ "--zoom": String(zoom), "--floor": `${String(textFloorPx / zoom)}px` } as CSSProperties}
       {...graphNames}
