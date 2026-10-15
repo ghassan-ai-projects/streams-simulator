@@ -31,6 +31,22 @@ test("a plant runs with a planned fault and the finished run opens in the review
   await expect(disturbances).toContainText("fan failure");
 });
 
+test("Enter in the fault select chooses nothing and does not start the run", async ({ page }) => {
+  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Ffactory-utilities.domain.json`);
+  await page.getByRole("button", { name: "Run plant" }).click();
+  const panel = page.getByRole("complementary", { name: "Run Factory utilities" });
+  await panel.getByLabel("Seed", { exact: true }).fill("12");
+  await panel.getByLabel("Duration", { exact: true }).fill("5");
+  await panel.getByRole("button", { name: "Add fault" }).click();
+  await panel.getByLabel("Fault 1 instance").selectOption("CT-1");
+  await panel.getByLabel("Fault 1 fault").click();
+  await page.keyboard.type("fan");
+  await page.keyboard.press("Enter");
+  await panel.getByLabel("Fault 1 fault").selectOption({ label: "fan failure" });
+  await expect(panel.getByRole("button", { name: "Start the run" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: /^Run w-/ })).toHaveCount(0);
+});
+
 test("an effector call is made at its minute and its outcome is listed before the review", async ({ page }) => {
   await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Ffactory-utilities.domain.json`);
   await page.getByRole("button", { name: "Run plant" }).click();

@@ -1,5 +1,5 @@
 import { Dices, TriangleAlert } from "lucide-react";
-import type { SyntheticEvent } from "react";
+import type { KeyboardEvent, SyntheticEvent } from "react";
 import { useEffect, useRef, useState } from "react";
 import type { LaunchPlan, PlanProblem } from "../../model/launch";
 import { disturbanceWords, planProblems } from "../../model/launch";
@@ -183,6 +183,10 @@ function planCue(shown: readonly PlanProblem[], plan: LaunchPlan): string {
   return startWords(plan);
 }
 
+function holdEnter(event: KeyboardEvent<HTMLFormElement>) {
+  if (event.key === "Enter" && event.target instanceof HTMLSelectElement) event.preventDefault();
+}
+
 export function LaunchForm({ plant, draft, selected, change, onStart }: FormProps) {
   const [tried, setTried] = useState(0);
   const [told, setTold] = useState("");
@@ -197,7 +201,7 @@ export function LaunchForm({ plant, draft, selected, change, onStart }: FormProp
     if (problems.length === 0) onStart(plan);
   };
   return (
-    <form ref={form} className={panel.body} onSubmit={submit} noValidate aria-label="Run plan">
+    <form ref={form} className={panel.body} onSubmit={submit} onKeyDown={holdEnter} noValidate aria-label="Run plan">
       <fieldset className={panel.group}>
         <legend>Run</legend>
         <Seed draft={draft} change={change} problems={shown} />
