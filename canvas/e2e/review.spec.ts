@@ -138,6 +138,7 @@ test("a faulted node's id, kind, cause and effector outcome never overlap at any
   await graph.focus();
   for (const key of ["+", "+", "-", "-", "-", "-"]) {
     await page.keyboard.press(key);
+    await expect(boiler.getByText("Fault · scaling")).toBeVisible();
     await expect.poll(() => page.evaluate(textClashes)).toEqual([]);
   }
 });

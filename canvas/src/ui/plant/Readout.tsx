@@ -48,7 +48,7 @@ function ReviewRowItem({ row }: { readonly row: ReviewRow }) {
 
 function Note({ fault, effector }: { readonly fault: string; readonly effector: string }) {
   return (
-    <div className={styles.note}>
+    <div className={cx(styles.note, fault !== "" && styles.noted)}>
       {fault !== "" && <span className={styles.noteFault} title={fault}>{`Fault · ${fault}`}</span>}
       {effector !== "" && (
         <span className={styles.noteCall} title={effector}>
