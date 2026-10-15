@@ -4,7 +4,7 @@ const rule = composition.properties.equipment.items.properties.names.items;
 const pattern = new RegExp(rule.pattern);
 
 export function instanceNameRule(): string {
-  const text = rule["x-expected"];
+  const text = rule["x-expected"].replace(/ (?=[.:_/-])|(?<=[.:_/-]) /g, "\u00a0");
   return `${text.charAt(0).toUpperCase()}${text.slice(1)}.`;
 }
 
