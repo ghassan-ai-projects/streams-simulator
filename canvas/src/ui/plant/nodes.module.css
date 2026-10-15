@@ -22,7 +22,7 @@
   align-items: center;
   align-content: center;
   gap: 0 var(--space-2);
-  height: 40px;
+  height: calc(40px + var(--id-extra, 0px));
   padding: 4px var(--space-3) 0;
   border-radius: 7px 7px 0 0;
   background: var(--surface-hover);
@@ -33,10 +33,10 @@
 .id {
   flex: 0 1 auto;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: break-word;
+  text-wrap: balance;
+  line-height: 1.2;
   font-family: var(--font-mono);
-  white-space: nowrap;
 }
 
 .kind {
@@ -73,7 +73,7 @@
 
 .pinName {
   overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .dot {
@@ -292,8 +292,6 @@
   width: 100%;
   font-size: min(calc(12.5px / var(--zoom)), 46px);
   line-height: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 :global(.tier-overview) .anchor,

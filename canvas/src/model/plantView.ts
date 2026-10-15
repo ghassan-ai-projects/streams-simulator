@@ -36,7 +36,20 @@ export interface PlantView {
   readonly halls: readonly string[];
 }
 
-export const nodeSize = { width: 232, header: 40, pin: 24, padding: 16, groupWidth: 176, groupHeight: 72 } as const;
+export const nodeSize = {
+  width: 232,
+  header: 40,
+  pin: 24,
+  padding: 16,
+  groupWidth: 176,
+  groupHeight: 72,
+  idChars: 15,
+  idLine: 36,
+} as const;
+
+export function idExtra(label: string): number {
+  return (Math.ceil(label.length / nodeSize.idChars) - 1) * nodeSize.idLine;
+}
 
 export function hallOf(id: string): string | null {
   const slash = id.indexOf("/");
@@ -126,7 +139,7 @@ function nodeBox(node: ViewNode, readout: number): LayoutNode {
     return { id: node.id, group: node.group, width: nodeSize.groupWidth, height: nodeSize.groupHeight };
   }
   const rows = readout > 0 ? 0 : Math.max(2, node.pins.ins.length, node.pins.outs.length);
-  const height = nodeSize.header + nodeSize.padding + rows * nodeSize.pin + readout;
+  const height = nodeSize.header + idExtra(node.label) + nodeSize.padding + rows * nodeSize.pin + readout;
   return { id: node.id, group: node.group, width: nodeSize.width, height };
 }
 

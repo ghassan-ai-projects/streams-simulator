@@ -137,6 +137,17 @@ function overlapsAndSpills(): string[] {
   ]);
 }
 
+function cutText(): string[] {
+  const cut = (element: HTMLElement) => {
+    const style = getComputedStyle(element);
+    const shown = style.visibility !== "hidden" && element.closest(".sr-only") === null;
+    return shown && style.overflowX !== "visible" && element.scrollWidth > element.clientWidth + 1;
+  };
+  return [...document.querySelectorAll<HTMLElement>(".react-flow__node-instance *")]
+    .filter(cut)
+    .map((element) => element.textContent);
+}
+
 function settledZoom(): Promise<string> {
   const read = () =>
     getComputedStyle(document.querySelector("[aria-roledescription='plant graph']") ?? document.body).getPropertyValue(
@@ -152,7 +163,7 @@ function settledZoom(): Promise<string> {
   });
 }
 
-test("no node overlaps another or spills its text at any zoom tier", async ({ page }) => {
+test("no node overlaps another, spills its text or cuts a title or port name at any zoom tier", async ({ page }) => {
   await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Ffactory-utilities.domain.json`);
   const graph = page.getByRole("application", { name: "Plant graph" });
   await expect(page.getByRole("group", { name: /^CT-1, cooling tower,/ })).toBeVisible();
@@ -165,6 +176,7 @@ test("no node overlaps another or spills its text at any zoom tier", async ({ pa
     await expect.poll(async () => (zoom = await page.evaluate(settledZoom)) !== "" && zoom !== previous).toBe(true);
     tiers.add((await graph.getAttribute("class"))?.match(/tier-(\w+)/)?.[1] ?? "");
     expect(await page.evaluate(overlapsAndSpills)).toEqual([]);
+    expect(await page.evaluate(cutText)).toEqual([]);
     await page.keyboard.press("+");
   }
   expect([...tiers]).toEqual(expect.arrayContaining(["overview", "compact", "full"]));

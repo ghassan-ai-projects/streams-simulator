@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { campus, chillerPorts, composition, domain, towerPorts } from "../test/plantFixture";
 import { parsePlant } from "./plant";
-import { describeNode, hallCount, hallMembers, hallOf, hallsOf, nodeSize, plantView } from "./plantView";
+import { describeNode, hallCount, hallMembers, hallOf, hallsOf, idExtra, nodeSize, plantView } from "./plantView";
 import { parsePorts } from "./ports";
 
 const specs = new Map([
@@ -83,5 +83,23 @@ describe("plant view", () => {
       plant.instances.filter((instance) => hallOf(instance.id) === hall).length,
     );
     expect(hallMembers(plant, "nowhere")).toEqual([]);
+  });
+});
+
+describe("node id lines", () => {
+  it("adds a header line only once an id is longer than one line holds", () => {
+    expect(idExtra("CH-1")).toBe(0);
+    expect(idExtra("a".repeat(nodeSize.idChars))).toBe(0);
+    expect(idExtra("a".repeat(nodeSize.idChars + 1))).toBe(nodeSize.idLine);
+  });
+
+  it("makes a node taller by one header line when its id wraps", () => {
+    const longer = JSON.parse(JSON.stringify({ domain, composition }).replaceAll("CH-1", "CHILLER-ONE-LONG")) as {
+      domain: typeof domain;
+      composition: typeof composition;
+    };
+    const view = plantView(parsePlant(longer.domain, longer.composition), specs, null);
+    const box = view.layout.nodes.get("CHILLER-ONE-LONG");
+    expect(box?.height).toBe(nodeSize.header + nodeSize.idLine + nodeSize.padding + 2 * nodeSize.pin);
   });
 });

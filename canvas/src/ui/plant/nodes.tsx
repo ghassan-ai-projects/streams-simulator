@@ -1,8 +1,9 @@
 import type { NodeProps } from "@xyflow/react";
-import { Handle, Position } from "@xyflow/react";
+import { Handle, Position, useStore } from "@xyflow/react";
 import { ChevronRight, OctagonAlert, TriangleAlert, Wrench } from "lucide-react";
 import type { CSSProperties } from "react";
-import { describeNode } from "../../model/plantView";
+import { useRef } from "react";
+import { describeNode, idExtra } from "../../model/plantView";
 import { familyNames, shapeOf } from "../../model/ports";
 import type { Pin } from "../../model/ports";
 import type { NodeStatus, Shown } from "../../model/readout";
@@ -10,6 +11,7 @@ import { channelWords, statusWords } from "../../model/readout";
 import type { FrameNodeType, HallNodeType, InstanceNodeType } from "./flow";
 import { cx } from "../cx";
 import { OutsideMark } from "../OutsideMark";
+import { useLabelFit } from "./labelFit";
 import styles from "./nodes.module.css";
 
 function pinLook(pin: Pin): { readonly family: string; readonly shape: string; readonly typeName: string } {
@@ -29,12 +31,16 @@ function PinRow({
   pin,
   side,
   editable,
+  zoom,
 }: {
   readonly pin: Pin;
   readonly side: "in" | "out";
   readonly editable: boolean;
+  readonly zoom: number;
 }) {
   const look = pinLook(pin);
+  const label = useRef<HTMLSpanElement>(null);
+  useLabelFit(label, zoom);
   return (
     <div
       className={cx(styles.pin, styles[side])}
@@ -47,7 +53,9 @@ function PinRow({
         className={cx(styles.dot, styles[look.shape], styles[pin.connection], `family-${look.family}`)}
         isConnectable={editable}
       />
-      <span className={styles.pinName}>{channelWords(pin.name)}</span>
+      <span ref={label} className={styles.pinName}>
+        {channelWords(pin.name)}
+      </span>
       <span className="sr-only">{`, ${look.typeName}, ${connectionWords[pin.connection]}`}</span>
     </div>
   );
@@ -57,10 +65,12 @@ function Pins({
   ins,
   outs,
   editable,
+  zoom,
 }: {
   readonly ins: readonly Pin[];
   readonly outs: readonly Pin[];
   readonly editable: boolean;
+  readonly zoom: number;
 }) {
   if (ins.length + outs.length === 0) {
     return <div className={styles.none}>no port data</div>;
@@ -69,12 +79,12 @@ function Pins({
     <div className={styles.pins}>
       <div>
         {ins.map((pin) => (
-          <PinRow key={pin.name} pin={pin} side="in" editable={editable} />
+          <PinRow key={pin.name} pin={pin} side="in" editable={editable} zoom={zoom} />
         ))}
       </div>
       <div>
         {outs.map((pin) => (
-          <PinRow key={pin.name} pin={pin} side="out" editable={editable} />
+          <PinRow key={pin.name} pin={pin} side="out" editable={editable} zoom={zoom} />
         ))}
       </div>
     </div>
@@ -149,6 +159,7 @@ function statusClass(status: NodeStatus): string | undefined {
 export function InstanceNode({ data, selected }: NodeProps<InstanceNodeType>) {
   const { view } = data;
   const status = data.live?.status ?? null;
+  const zoom = useStore((state) => state.transform[2]);
   return (
     <div
       className={cx(
@@ -160,7 +171,9 @@ export function InstanceNode({ data, selected }: NodeProps<InstanceNodeType>) {
       )}
       role="group"
       aria-label={describeNode(view, selected, status, 0, data.live?.fault ?? "") + issueWords(data.flagged)}
-      style={{ "--cat": `var(--cat-${view.category})` } as CSSProperties}
+      style={
+        { "--cat": `var(--cat-${view.category})`, "--id-extra": `${String(idExtra(view.label))}px` } as CSSProperties
+      }
     >
       <Handle type="target" position={Position.Left} id="in" className={styles.anchor} isConnectable={false} />
       <Handle type="source" position={Position.Right} id="out" className={styles.anchor} isConnectable={false} />
@@ -175,7 +188,7 @@ export function InstanceNode({ data, selected }: NodeProps<InstanceNodeType>) {
         </span>
       </div>
       {data.live !== null && <Readout shown={data.live.shown} />}
-      {data.live === null && <Pins ins={view.pins.ins} outs={view.pins.outs} editable={data.editable} />}
+      {data.live === null && <Pins ins={view.pins.ins} outs={view.pins.outs} editable={data.editable} zoom={zoom} />}
     </div>
   );
 }
