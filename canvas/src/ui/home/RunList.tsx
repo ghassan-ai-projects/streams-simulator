@@ -42,7 +42,12 @@ function Status({ row, badge }: { readonly row: RunRow; readonly badge: Badge | 
     );
   }
   const state = badge ?? "not-checked";
+  if (state === "not-checked") return null;
   return <span className={state === "verified" ? styles.verified : styles.badge}>{badgeLabels[state]}</span>;
+}
+
+function unchecked(rows: readonly RunRow[], badgeFor: ListProps["badgeFor"]): boolean {
+  return rows.some((row) => row.run.complete && (badgeFor(row.run.worldId) ?? "not-checked") === "not-checked");
 }
 
 function Row({
@@ -139,6 +144,7 @@ export function RunList({ workspace, navigation, badgeFor }: ListProps) {
         <span className={styles.count}>{rows.length}</span>
         <PlantFilter workspace={workspace} plant={plant} setPlant={setPlant} />
       </header>
+      {unchecked(rows, badgeFor) && <p className={styles.note}>Runs are checked when you open their review.</p>}
       {rows.length === 0 && <p className={styles.none}>No runs yet. Open a plant and choose Run.</p>}
       <p className="sr-only" role="status">
         {plant === "" ? "" : `${String(rows.length)} ${rows.length === 1 ? "run" : "runs"} shown`}

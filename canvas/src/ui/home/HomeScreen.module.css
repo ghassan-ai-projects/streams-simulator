@@ -218,6 +218,14 @@
   padding: var(--space-3);
 }
 
+.note {
+  margin: 0;
+  padding: var(--space-2) var(--space-4);
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-tertiary);
+  font-size: var(--text-sm);
+}
+
 .empty {
   display: grid;
   justify-items: start;

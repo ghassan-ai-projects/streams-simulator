@@ -23,11 +23,14 @@ describe("home screen", () => {
     const runs = within(screen.getByRole("region", { name: "Runs" })).getAllByRole("listitem");
     expect(runs.map((row) => row.textContent)).toEqual([
       expect.stringMatching(/^Factory utilitiesExplore.*w-2 · .*not finishedReview$/),
-      expect.stringMatching(/^Factory utilitiesEvaluate.*w-1 · .* · 30 min · seed 7 · no faultsNot checkedReview$/),
+      expect.stringMatching(/^Factory utilitiesEvaluate.*w-1 · .* · 30 min · seed 7 · no faultsReview$/),
     ]);
     expect(runs[0]?.querySelector("[title='Factory utilities']")).not.toBeNull();
     const review = screen.getByRole("button", { name: "Review w-1" });
     expect(review).toHaveAttribute("title", "Review checks recording integrity using the run files.");
+    expect(
+      within(screen.getByRole("region", { name: "Runs" })).getByText("Runs are checked when you open their review."),
+    ).toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "Scenarios" })).not.toBeInTheDocument();
     expect(screen.queryByText(/domains\//)).not.toBeInTheDocument();
     expect((await axe.run(view.container)).violations).toEqual([]);
