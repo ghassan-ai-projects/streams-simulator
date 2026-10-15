@@ -275,12 +275,18 @@
 }
 
 :global(.tier-overview) .kind {
+  display: -webkit-box;
   flex: none;
   width: 100%;
   max-width: 100%;
   margin-left: 0;
   font-size: min(calc(10.5px / var(--zoom)), 36px);
   line-height: 1.1;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 :global(.tier-overview) .id {

@@ -35,3 +35,21 @@ test("zooming in keeps the plant's first area titles in view, and Fit returns th
   await page.getByRole("button", { name: "Fit the plant in view" }).click();
   await expect.poll(() => page.evaluate(transform)).toBe(opening);
 });
+
+test("a large plant opens no smaller than 40 % and shows every kind in full", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 420 });
+  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Ffactory-utilities.domain.json`);
+  const graph = page.getByRole("application", { name: "Plant graph" });
+  await expect(page.getByRole("group", { name: /^CT-1, cooling tower,/ })).toBeAttached();
+  await expect
+    .poll(async () => Number(await graph.evaluate((element) => getComputedStyle(element).getPropertyValue("--zoom"))))
+    .toBeGreaterThanOrEqual(0.4);
+  const kinds = page.locator(".react-flow__node-instance [class*='kind']");
+  await expect(kinds.first()).toBeVisible();
+  const cut = await kinds.evaluateAll((elements) =>
+    elements.filter(
+      (element) => element.scrollWidth > element.clientWidth + 1 || element.scrollHeight > element.clientHeight + 1,
+    ),
+  );
+  expect(cut).toHaveLength(0);
+});

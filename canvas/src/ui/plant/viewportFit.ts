@@ -1,5 +1,5 @@
 import type { ReactFlowInstance } from "@xyflow/react";
-import { useReactFlow, useStore } from "@xyflow/react";
+import { useReactFlow, useStore, useStoreApi } from "@xyflow/react";
 import { useEffect, useRef } from "react";
 import type { Viewport } from "../../model/viewport";
 import { centreOf, followZoom, openingViewport, sameViewport, steppedViewport } from "../../model/viewport";
@@ -8,6 +8,12 @@ import type { FlowNode } from "./flow";
 interface Size {
   readonly width: number;
   readonly height: number;
+}
+
+const opened = new WeakMap<object, Viewport>();
+
+export function openingOf(store: object): Viewport | null {
+  return opened.get(store) ?? null;
 }
 
 export function fittedViewport(flow: ReactFlowInstance<FlowNode>, screen: Size, minZoom: number): Viewport {
@@ -36,6 +42,7 @@ function useScreen(): Size & { readonly ready: boolean } {
 
 export function useFitted(fitKey: string, minZoom: number) {
   const flow = useReactFlow<FlowNode>();
+  const store = useStoreApi<FlowNode>();
   const { ready, width, height } = useScreen();
   const last = useRef<{ key: string; viewport: Viewport | null }>({ key: "", viewport: null });
   useEffect(() => {
@@ -44,8 +51,9 @@ export function useFitted(fitKey: string, minZoom: number) {
     if (key === fitKey && (viewport === null || !sameViewport(viewport, flow.getViewport()))) return;
     const fitted = fittedViewport(flow, { width, height }, minZoom);
     last.current = { key: fitKey, viewport: fitted };
+    opened.set(store, fitted);
     void flow.setViewport(fitted);
-  }, [flow, ready, width, height, fitKey, minZoom]);
+  }, [flow, store, ready, width, height, fitKey, minZoom]);
 }
 
 export function useFollowSelection(selected: string | null, focusZoom: number) {

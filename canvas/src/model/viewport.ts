@@ -40,6 +40,8 @@ export function centreOf(box: Rect): { readonly x: number; readonly y: number } 
   return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
 }
 
+export const openingFloor = 0.4;
+
 export type Tier = "full" | "compact" | "overview" | "map";
 
 export function tierOf(zoom: number): Tier {

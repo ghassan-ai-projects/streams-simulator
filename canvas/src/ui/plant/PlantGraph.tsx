@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { directionOf, firstOf, nearest } from "../../model/graphKeys";
 import type { PlantView } from "../../model/plantView";
 import { describeNode, hallCount } from "../../model/plantView";
-import { tierOf } from "../../model/viewport";
+import { openingFloor, tierOf } from "../../model/viewport";
 import { routeView } from "../../model/wireView";
 import type { FlowNode, NodeLive } from "./flow";
 import { flowEdges, flowNodes } from "./flow";
@@ -247,7 +247,7 @@ function Flow(props: FlowProps) {
 
 export function PlantGraph(props: PlantGraphProps) {
   const keys = useGraphKeys(props);
-  useFitted(props.fitKey ?? props.viewKey, props.minFitZoom ?? 0.05);
+  useFitted(props.fitKey ?? props.viewKey, props.minFitZoom ?? openingFloor);
   useFollowSelection(keys.active ?? props.selected, props.focusZoom ?? 0);
   return (
     <div className={styles.graph} onPointerDown={keys.onPointerDown}>

@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { familyNames, shapeOf } from "../../model/ports";
 import type { Family } from "../../model/ports";
 import type { FlowNode } from "./flow";
-import { fittedViewport, steppedZoom } from "./viewportFit";
+import { fittedViewport, openingOf, steppedZoom } from "./viewportFit";
 import { cx } from "../cx";
 import styles from "./GraphControls.module.css";
 
@@ -109,7 +109,10 @@ export function useZoomActions() {
     () => ({
       in: () => void flow.setViewport(steppedZoom(flow, store.getState(), 1.2), { duration: motion(120) }),
       out: () => void flow.setViewport(steppedZoom(flow, store.getState(), 1 / 1.2), { duration: motion(120) }),
-      fit: () => void flow.setViewport(fittedViewport(flow, store.getState(), 0.05), { duration: motion(120) }),
+      fit: () =>
+        void flow.setViewport(openingOf(store) ?? fittedViewport(flow, store.getState(), 0.05), {
+          duration: motion(120),
+        }),
     }),
     [flow, store],
   );
