@@ -35,11 +35,10 @@ function FieldProblem({
   problems,
   field,
 }: { readonly id: string; readonly field: string } & Pick<DraftProps, "problems">) {
-  const text = problems.find((problem) => problem.field === field)?.text;
-  if (text === undefined) return null;
+  const text = problems.find((problem) => problem.field === field)?.text ?? "";
   return (
-    <small id={id} className={styles.problem}>
-      <TriangleAlert size={13} aria-hidden="true" />
+    <small id={id} className={cx(styles.problem, styles.inField)}>
+      {text !== "" && <TriangleAlert size={13} aria-hidden="true" />}
       {text}
     </small>
   );

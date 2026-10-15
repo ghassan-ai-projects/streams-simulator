@@ -68,8 +68,13 @@
   display: flex;
   align-items: center;
   gap: var(--space-1);
-  color: var(--status-warn);
+  color: var(--status-alarm);
   font-size: var(--text-sm);
+}
+
+.inField {
+  grid-column: 2;
+  min-height: 1lh;
 }
 
 .seed {
