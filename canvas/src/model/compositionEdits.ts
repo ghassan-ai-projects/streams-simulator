@@ -217,3 +217,27 @@ export function issueTargets(doc: Composition, issues: readonly Issue[]): IssueT
   });
   return { instances, listed };
 }
+
+const weightPointer = /^\/profiles\/(\d+)\/fault_weights\/(.+)$/;
+const undeclared = /^profile "(.+)" weights undeclared fault "(.+)"$/;
+
+function unescaped(token: string): string {
+  return token.replaceAll("~1", "/").replaceAll("~0", "~");
+}
+
+export function profileWeightOf(issue: ListedIssue): { readonly profile: string; readonly fault: string } | null {
+  const match = undeclared.exec(issue.message);
+  return match?.[1] === undefined || match[2] === undefined ? null : { profile: match[1], fault: match[2] };
+}
+
+export function removeProfileWeight(doc: Composition, pointer: string): Composition {
+  const match = weightPointer.exec(pointer);
+  const profiles = Array.isArray(doc.profiles) ? (doc.profiles as readonly Json[]) : [];
+  const at = Number(match?.[1] ?? -1);
+  const profile = profiles[at];
+  if (match?.[2] === undefined || profile === undefined) return doc;
+  const fault = unescaped(match[2]);
+  const weights = Object.entries(profile.fault_weights ?? {}).filter(([name]) => name !== fault);
+  const edited = { ...profile, fault_weights: Object.fromEntries(weights) };
+  return { ...doc, profiles: profiles.map((entry, index) => (index === at ? edited : entry)) };
+}

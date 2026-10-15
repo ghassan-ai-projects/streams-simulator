@@ -1,7 +1,7 @@
 import { CircleAlert, Wrench } from "lucide-react";
 import panel from "../panel.module.css";
-import type { IssueGroup } from "../../model/compositionEdits";
-import { groupIssues } from "../../model/compositionEdits";
+import type { IssueGroup, ListedIssue } from "../../model/compositionEdits";
+import { groupIssues, profileWeightOf, removeProfileWeight } from "../../model/compositionEdits";
 import { AddArea } from "./AddArea";
 import { AreaEditor } from "./AreaEditor";
 import { AddEquipment } from "./AddEquipment";
@@ -10,8 +10,27 @@ import { InstanceEditor } from "./InstanceEditor";
 import type { PanelProps } from "./panelProps";
 import { useRequestedFocus } from "./panelProps";
 
+function WeightIssue({ issue, editor }: { readonly issue: ListedIssue; readonly editor: PanelProps["editor"] }) {
+  const weight = profileWeightOf(issue);
+  return (
+    <span title={issue.message}>
+      {`Profile "${weight?.profile ?? ""}" has a weight for ${weight?.fault ?? ""}, which no instance declares. `}
+      <button
+        type="button"
+        className={styles.action}
+        onClick={() => {
+          editor.edit((doc) => removeProfileWeight(doc, issue.pointer));
+        }}
+      >
+        Remove this weight
+      </button>
+    </span>
+  );
+}
+
 function IssueRow({ issue, editor, request }: { readonly issue: IssueGroup } & Omit<PanelProps, "plant" | "draft">) {
   const times = issue.count > 1 ? ` (×${String(issue.count)})` : "";
+  if (issue.target === null && profileWeightOf(issue) !== null) return <WeightIssue issue={issue} editor={editor} />;
   if (issue.target === null) {
     return (
       <span>

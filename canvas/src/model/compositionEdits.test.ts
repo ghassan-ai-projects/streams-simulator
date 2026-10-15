@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Composition } from "./composition";
-import { areaInUse, areaNameProblem, removeArea, renameArea } from "./compositionEdits";
+import { areaInUse, areaNameProblem, removeArea, removeProfileWeight, renameArea } from "./compositionEdits";
 
 const doc: Composition = {
   id: "lab",
@@ -49,5 +49,18 @@ describe("area edits", () => {
     const moved = { ...doc, equipment: [{ use: "lib/pump@1", names: ["P-1"], area: "Cooling" }] };
     expect(removeArea(doc, "Cooling")).toBe(doc);
     expect(removeArea(moved, "Yard")).toMatchObject({ areas: [{ name: "Site" }, { name: "Cooling", parent: "Site" }] });
+  });
+});
+
+describe("profile weights a plant no longer declares", () => {
+  it("removes the weight the binary's pointer names and keeps the others", () => {
+    const profiled: Composition = {
+      ...doc,
+      profiles: [{ name: "p", fault_weights: { "a/b__c": 1, keep: 2 } }],
+    };
+    expect(removeProfileWeight(profiled, "/profiles/0/fault_weights/a~1b__c").profiles).toEqual([
+      { name: "p", fault_weights: { keep: 2 } },
+    ]);
+    expect(removeProfileWeight(profiled, "/profiles/3/fault_weights/keep")).toBe(profiled);
   });
 });
