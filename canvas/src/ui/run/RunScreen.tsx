@@ -118,7 +118,7 @@ function Graph({ review, state, plant, hall, onHall }: GraphProps) {
       />
       <div ref={ref} className={plantStyles.graphHost}>
         <PlantGraph
-          minFitZoom={0.5}
+          minFitZoom={0.1}
           view={view}
           viewKey={hall ?? "review"}
           fitKey={`${hall ?? "review"}:${String(aspect)}`}

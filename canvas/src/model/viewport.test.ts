@@ -52,6 +52,18 @@ describe("viewport", () => {
     });
   });
 
+  it("opens on the whole plant, nothing cut, when the floor is low enough to fit it", () => {
+    const limits = { pad: 16, headroom: 24, minZoom: 0.25, maxZoom: 1 };
+    const bounds = { x: 20, y: 30, width: 3000, height: 2000 };
+    const view = openingViewport(bounds, screen, limits);
+    expect(view.zoom).toBeGreaterThanOrEqual(0.25);
+    expect(view.zoom).toBeLessThan(0.5);
+    expect(bounds.x * view.zoom + view.x).toBeGreaterThanOrEqual(16);
+    expect((bounds.x + bounds.width) * view.zoom + view.x).toBeLessThanOrEqual(screen.width - 16 + 1e-6);
+    expect(bounds.y * view.zoom + view.y).toBeGreaterThanOrEqual(40);
+    expect((bounds.y + bounds.height) * view.zoom + view.y).toBeLessThanOrEqual(screen.height - 16 + 1e-6);
+  });
+
   it("treats viewports within half a pixel as the same", () => {
     expect(sameViewport({ x: 1, y: 2, zoom: 0.5 }, { x: 1.2, y: 2.3, zoom: 0.5 })).toBe(true);
     expect(sameViewport({ x: 1, y: 2, zoom: 0.5 }, { x: 1, y: 2, zoom: 0.6 })).toBe(false);

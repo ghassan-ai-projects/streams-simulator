@@ -2,6 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 import { env } from "./support/env";
+import { nodesOutsideCanvas } from "./support/fitAudit";
 import { textClashes } from "./support/textClashes";
 
 test.use({ storageState: env("CANVAS_APP_STATE") });
@@ -118,4 +119,19 @@ test("a review node lists every port of its kind as a row, observed or not, at e
     expect(await page.evaluate(textClashes)).toEqual([]);
     await page.keyboard.press("+");
   }
+});
+
+test("a review opens fitted, with every node and area inside the canvas beside the report panel", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto(`${env("CANVAS_APP_URL")}/#/run?world=w-evaluate`);
+  await expect(page.getByText(/\d+ observations/)).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByRole("group", { name: /^CH-1, chiller,/ })).toBeAttached();
+  await expect.poll(() => page.evaluate(nodesOutsideCanvas)).toEqual([]);
+  const opening = await page.evaluate(
+    () => document.querySelector<HTMLElement>(".react-flow__viewport")?.style.transform,
+  );
+  await page.getByRole("button", { name: "Fit the plant in view" }).click();
+  await expect
+    .poll(() => page.evaluate(() => document.querySelector<HTMLElement>(".react-flow__viewport")?.style.transform))
+    .toBe(opening);
 });
