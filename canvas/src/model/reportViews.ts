@@ -101,7 +101,7 @@ function planOfRun(report: Report): LaunchPlan {
 export function integrityLine(report: Report, verify: VerifyState): string {
   switch (badgeOf(report, verify)) {
     case "verified":
-      return "Verified: the files match and the replay reproduces.";
+      return "The files match and the replay reproduces.";
     case "verifying":
       return "Verifying: replaying the run…";
     case "incomplete":

@@ -19,7 +19,8 @@ describe("report panel", () => {
     const integrity = view.container.querySelector("details");
     expect(integrity).not.toBeNull();
     expect(integrity).not.toHaveAttribute("open");
-    expect(integrity).toHaveTextContent("Verified: the files match and the replay reproduces.");
+    expect(integrity).toHaveTextContent("The files match and the replay reproduces.");
+    expect(integrity).not.toHaveTextContent(/Verified:/);
   });
 
   it.each([undefined, "kpi"] as const)("cautions rejected incomplete truth in the %s view", (only) => {

@@ -22,7 +22,7 @@ test("a recorded run plays back with the binary's report and a Verified badge", 
   await expect(page.getByText("Evaluate", { exact: true })).toBeVisible();
   await expect(page.getByText("seed 7 · 30 min")).toBeVisible();
   const report = page.getByRole("complementary", { name: "Run details" });
-  await expect(report.locator("summary").first()).toHaveText("Verified: the files match and the replay reproduces.");
+  await expect(report.locator("summary").first()).toHaveText("The files match and the replay reproduces.");
   await openIntegrity(page);
   await expect(report.getByRole("region", { name: "File check" })).toContainText("Files match the record.");
   await expect(report.getByRole("region", { name: "Replay check" })).toContainText("Reproduces");
