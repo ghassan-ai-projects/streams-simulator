@@ -51,13 +51,16 @@ func expandedCount(sets []instanceSet) int {
 }
 
 type RunEntry struct {
-	WorldID    string `json:"world_id"`
-	Ended      bool   `json:"ended"`
-	Explore    bool   `json:"explore"`
-	Plant      string `json:"plant,omitempty"`
-	DurationNs int64  `json:"duration_ns,omitempty"`
-	Faults     int    `json:"faults,omitempty"`
-	RecordedAt string `json:"recorded_at,omitempty"`
+	WorldID          string  `json:"world_id"`
+	Ended            bool    `json:"ended"`
+	Complete         bool    `json:"complete"`
+	IncompleteReason string  `json:"incomplete_reason"`
+	Explore          bool    `json:"explore"`
+	Seed             *uint64 `json:"seed"`
+	Plant            string  `json:"plant,omitempty"`
+	DurationNs       int64   `json:"duration_ns,omitempty"`
+	Faults           int     `json:"faults,omitempty"`
+	RecordedAt       string  `json:"recorded_at,omitempty"`
 }
 
 type Listing struct {

@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"reflect"
 	"slices"
 	"strings"
 	"testing"
@@ -13,6 +14,8 @@ import (
 )
 
 var plant = inDomains("plant.domain.json")
+
+func seedOf(seed uint64) *uint64 { return &seed }
 
 func TestPairingAdmitsTheSessionItIssued(t *testing.T) {
 	t.Parallel()
@@ -35,8 +38,11 @@ func TestTheWorkspaceListsDefinitionsWithTheirIdsAndRunsWithTheirState(t *testin
 	h.write(t, "runs/w-1/journal.jsonl", `{"type":"run.opened","mode":"explore"}`+"\n")
 	h.write(t, "runs/w-2/journal.jsonl", `{"type":"run.opened","mode":"evaluate","start_time_ns":100,"domain":{"id":"plant"}}`+"\n"+
 		`{"type":"run.closed","at_ns":1800000000100}`+"\n")
-	h.write(t, "runs/w-2/run.json", `{"command_log":[{"op":"fault.inject"}]}`)
+	h.write(t, "runs/w-2/run.json", `{"seed":3,"command_log":[{"op":"fault.inject"}]}`)
 	h.write(t, "runs/w-3/other.txt", "x")
+	h.write(t, "runs/w-4/journal.jsonl", `{"type":"run.opened","mode":"evaluate","start_time_ns":100,"domain":{"id":"plant"}}`+"\n"+
+		`{"type":"run.closed","at_ns":1800000000100,"incomplete":true}`+"\n")
+	h.write(t, "runs/w-4/run.json", `{"seed":4,"error":"the world was destroyed before its run ended (run.end was not called)"}`)
 	listing, err := h.bridge.Workspace()
 	if err != nil {
 		t.Fatal(err)
@@ -47,9 +53,13 @@ func TestTheWorkspaceListsDefinitionsWithTheirIdsAndRunsWithTheirState(t *testin
 		}
 		listing.Runs[i].RecordedAt = ""
 	}
-	want := []domain.RunEntry{{WorldID: "w-1", Explore: true}, {WorldID: "w-2", Ended: true, Plant: "plant", DurationNs: 1800000000000, Faults: 1}}
+	want := []domain.RunEntry{
+		{WorldID: "w-1", Explore: true},
+		{WorldID: "w-2", Ended: true, Complete: true, Seed: seedOf(3), Plant: "plant", DurationNs: 1800000000000, Faults: 1},
+		{WorldID: "w-4", Ended: true, IncompleteReason: "the world was destroyed before its run ended (run.end was not called)", Seed: seedOf(4), Plant: "plant", DurationNs: 1800000000000},
+	}
 	if len(listing.Domains) != 1 || listing.Domains[0] != (domain.Definition{Path: plant, ID: "plant", Title: "Plant", Instances: 2}) ||
-		listing.Compositions[0].ID != "" || !slices.Equal(listing.Runs, want) || len(listing.Scenarios) != 0 {
+		listing.Compositions[0].ID != "" || !reflect.DeepEqual(listing.Runs, want) || len(listing.Scenarios) != 0 {
 		t.Fatalf("listing = %+v", listing)
 	}
 }

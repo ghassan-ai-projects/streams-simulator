@@ -73,24 +73,17 @@ func (b *Bridge) runs() ([]domain.RunEntry, error) {
 }
 
 func (b *Bridge) runEntry(name string) domain.RunEntry {
-	summary := b.summary(name)
-	return domain.RunEntry{
-		WorldID:    name,
-		Ended:      summary.State(b.runIsRunning(name)).Ended,
-		Explore:    summary.Explore,
-		Plant:      summary.Plant,
-		DurationNs: summary.DurationNs,
-		Faults:     b.faults(name),
-		RecordedAt: b.recordedAt("runs/" + name + "/journal.jsonl"),
-	}
+	entry := domain.NewRunEntry(name, b.summary(name), b.runIsRunning(name), b.artifact(name))
+	entry.RecordedAt = b.recordedAt("runs/" + name + "/journal.jsonl")
+	return entry
 }
 
-func (b *Bridge) faults(runID string) int {
+func (b *Bridge) artifact(runID string) domain.RunArtifact {
 	content, err := b.edges.Workspace.Read("runs/"+runID+"/run.json", domain.MaxFileBytes)
 	if err != nil {
-		return 0
+		return domain.RunArtifact{}
 	}
-	return domain.FaultsInjected(content)
+	return domain.ParseRunArtifact(content)
 }
 
 func (b *Bridge) summary(runID string) domain.RunSummary {

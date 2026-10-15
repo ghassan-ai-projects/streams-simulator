@@ -64,6 +64,7 @@ func TestTheCanvasBridgeDrivesAWorldFromPairingToTheReport(t *testing.T) {
 	checkSealedWhileOpen(t, client, world)
 	endRun(t, client, world, stream)
 	checkEvidence(t, client, world)
+	checkAbandonedWorld(t, client)
 	if token := operatorToken.FindString(client.heard()); token != "" || strings.Contains(client.heard(), "operator_endpoint") {
 		t.Fatalf("the bridge let the operator capability through: %q", token)
 	}
@@ -237,8 +238,32 @@ func checkEvidence(t *testing.T, client *bridgeClient, world string) {
 	if len(faults) != 1 || faults[0].(map[string]any)["fault"] != canvasFault {
 		t.Fatalf("report truth = %v", truth)
 	}
-	_, listing, _ := client.call(http.MethodGet, "/api/workspace", nil)
-	if runs, _ := listing["runs"].([]any); len(runs) != 1 || runs[0].(map[string]any)["ended"] != true {
-		t.Fatalf("runs = %v", listing["runs"])
+	entry := listedRun(t, client, world)
+	if entry["ended"] != true || entry["complete"] != true || entry["incomplete_reason"] != "" || entry["seed"] != float64(3) {
+		t.Fatalf("a finished run listed as %v", entry)
 	}
+}
+
+func checkAbandonedWorld(t *testing.T, client *bridgeClient) {
+	t.Helper()
+	world := createWorld(t, client)
+	client.action("world.destroy", map[string]any{"world_id": world})
+	entry := listedRun(t, client, world)
+	reason, _ := entry["incomplete_reason"].(string)
+	if entry["ended"] != true || entry["complete"] != false || !strings.Contains(reason, "destroyed before its run ended") || entry["seed"] != float64(3) {
+		t.Fatalf("an abandoned world listed as %v", entry)
+	}
+}
+
+func listedRun(t *testing.T, client *bridgeClient, world string) map[string]any {
+	t.Helper()
+	_, listing, _ := client.call(http.MethodGet, "/api/workspace", nil)
+	runs, _ := listing["runs"].([]any)
+	for _, run := range runs {
+		if entry, _ := run.(map[string]any); entry["world_id"] == world {
+			return entry
+		}
+	}
+	t.Fatalf("run %s is not listed: %v", world, listing["runs"])
+	return nil
 }
