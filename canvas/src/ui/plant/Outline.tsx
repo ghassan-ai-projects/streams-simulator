@@ -143,9 +143,12 @@ function Section({ title, depth = 0, items, current, marks, onPick }: SectionPro
   return (
     <details open className={styles.group} style={{ marginLeft: `calc(var(--space-3) * ${String(depth)})` }}>
       <summary className={cx(shared.sectionTitle, items.length === 0 && styles.emptyRow)}>
-        {title}
-        {items.length === 0 && <span className={styles.emptyNote}>No equipment yet</span>}
-        <span className={styles.count}>{items.length}</span>
+        <span className={styles.areaName} title={title}>
+          {title}
+        </span>
+        <span className={styles.count} title={items.length === 0 ? "No equipment yet" : undefined}>
+          {items.length === 0 ? "0 · empty" : items.length}
+        </span>
       </summary>
       {items.length > 0 && (
         <ul className={styles.tree}>

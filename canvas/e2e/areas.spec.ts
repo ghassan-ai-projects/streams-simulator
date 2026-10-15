@@ -63,3 +63,31 @@ test("an area is renamed and an empty one deleted from the Build panel, and the 
   await expect(outline.getByRole("group").filter({ hasText: "Scratch" })).toHaveCount(0);
   await expect(areas.getByLabel("Name of Pumps", { exact: true })).toBeVisible();
 });
+
+test("an empty area is one line of at most 28 px in the outline, however long its name", async ({ page }) => {
+  await page.goto(env("CANVAS_APP_URL"));
+  await page.getByRole("button", { name: "New plant" }).click();
+  const form = page.getByRole("form", { name: "New plant" });
+  await form.getByLabel("Name").fill("Empty rows");
+  await form.getByLabel("Start from").selectOption({ label: "Factory utilities" });
+  await form.getByRole("radio", { name: /^An empty plant/ }).check();
+  await form.getByRole("button", { name: "Create and open the editor" }).click();
+  const area = page.getByRole("complementary", { name: "Build" }).getByRole("form", { name: "Add area" });
+  for (const name of ["Production hall", "Compressor room with a very long name that keeps going"]) {
+    await area.getByLabel("Area name").fill(name);
+    await area.getByRole("button", { name: "Add area" }).click();
+  }
+  const rows = page.getByRole("navigation", { name: "Outline" }).locator("summary").filter({ hasText: "0 · empty" });
+  await expect(rows).toHaveCount(3);
+  const shapes = await rows.evaluateAll((elements) =>
+    elements.map((element) => {
+      const height = element.getBoundingClientRect().height;
+      const lines = [...element.querySelectorAll("span")].map((span) => span.getClientRects().length);
+      return { height, lines };
+    }),
+  );
+  for (const shape of shapes) {
+    expect(shape.height).toBeLessThanOrEqual(28);
+    expect(shape.lines.every((count) => count === 1)).toBe(true);
+  }
+});
