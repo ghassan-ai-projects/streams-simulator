@@ -1,10 +1,10 @@
 import { kindLabel } from "../../model/report";
 import { Box, Trash2, TriangleAlert, X } from "lucide-react";
-import type { SyntheticEvent } from "react";
+import type { ReactNode, SyntheticEvent } from "react";
 import { useState } from "react";
 import type { Draft } from "../../app/editorStore";
 import type { Instance } from "../../model/plant";
-import type { Connection } from "../../model/composition";
+import type { Connection, LinkEnd } from "../../model/composition";
 import { areaNodesOf, connectionsOf, endpointOf, linkEnd } from "../../model/composition";
 import { instanceNameFits, instanceNameRule } from "../../model/instanceNameRule";
 import { disconnect, isTemplate, moveInstance, renameInstance } from "../../model/compositionEdits";
@@ -98,25 +98,50 @@ function AreaPick({ draft, instance, editor }: Pick<EditorProps, "draft" | "inst
   );
 }
 
+function Ends({ end, other }: { readonly end: LinkEnd; readonly other: ReactNode }) {
+  if (end.outgoing) {
+    return (
+      <>
+        <span>{end.port}</span>
+        <span aria-hidden="true">→</span>
+        {other}
+        <span>{end.otherPort}</span>
+      </>
+    );
+  }
+  return (
+    <>
+      {other}
+      <span>{end.otherPort}</span>
+      <span aria-hidden="true">→</span>
+      <span>{end.port}</span>
+    </>
+  );
+}
+
 function LinkRow({ wire, instance, editor }: { readonly wire: Connection } & Pick<EditorProps, "instance" | "editor">) {
   const end = linkEnd(wire, instance.id);
-  const words = `${end.port} ${end.outgoing ? "to" : "from"} ${end.other} ${end.otherPort}`;
+  const words = end.outgoing
+    ? `${end.port} to ${end.other} ${end.otherPort}`
+    : `${end.other} ${end.otherPort} to ${end.port}`;
   return (
     <li>
       <span className={styles.linkText}>
-        <span>{end.port}</span>
-        <span aria-hidden="true">{end.outgoing ? "→" : "←"}</span>
-        <button
-          type="button"
-          className={styles.linkOther}
-          title={`Select ${end.other}`}
-          onClick={() => {
-            editor.select(end.other);
-          }}
-        >
-          {end.other}
-        </button>
-        <span>{end.otherPort}</span>
+        <Ends
+          end={end}
+          other={
+            <button
+              type="button"
+              className={styles.linkOther}
+              title={`Select ${end.other}`}
+              onClick={() => {
+                editor.select(end.other);
+              }}
+            >
+              {end.other}
+            </button>
+          }
+        />
       </span>
       <button
         type="button"
