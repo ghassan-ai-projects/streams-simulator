@@ -62,7 +62,7 @@ function ReportPending({ loading, elapsed }: { readonly loading: boolean; readon
 const modeWords = {
   explore: "Explore: the truth is visible; not for scoring.",
   evaluate:
-    "Evaluate: the truth stays sealed while it runs, so a consumer can be scored; it is revealed when the run ends.",
+    "Evaluate: The true results stay hidden from the outside system while it runs, so it can be scored; they are shown when the run ends.",
 } as const;
 
 function Mode({ report }: { readonly report: Report }) {
