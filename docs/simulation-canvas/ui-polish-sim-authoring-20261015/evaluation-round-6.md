@@ -81,8 +81,8 @@ Ordered most severe first (High, Medium, Low); IDs are in the order found.
 - Observed: the node id is cut in the header band, so the one word that identifies the node is partly hidden at the zoom the plant opens at. Full ids are not shown on hover (no title). The header band is about 16 px tall, and the kind line below it is not cut.
 - Expected: P-2 wants the id and kind legible at the opening zoom; an id that is cut at the opening zoom fails that (the node must widen or the id must wrap).
 - Suggestion: size node width from the longest id at the opening zoom, or wrap the id to two lines, before truncating.
-- Status: won't-fix (design decision)
-- Fix: Tried widening each node to its longest id or pin row: it fixed the cut labels, but the opening zoom of Compressed-air works dropped from 52 % to 49 %, which hides pin labels at the opening view, so it was reverted. The zoom-compensated text (22 px cap at compact zoom) against the 232-unit node width needs a decision on node size versus opening zoom.
+- Status: fixed 80f1b33
+- Fix: Node ids that are longer than 15 characters wrap onto a second header line, and the node is one header line taller (layout reserves it). No node title is cut with an ellipsis at the opening zoom. Measured in Chrome: Compressed-air works still opens at 62 % (widening and lowering the zoom were not used); production-line-a and receiver-header-1 wrap as "production-" / "line-a" and "receiver-" / "header-1".
 
 ## ISS-6D-11 Wire ends land on node headers and loop at the left edge
 - Severity: Medium
@@ -91,8 +91,8 @@ Ordered most severe first (High, Medium, Low); IDs are in the order found.
 - Observed: the teal and dashed wires arrive at the left edge of each node's header band and turn back in a small loop instead of ending on a pin row. The dashed site-calendar wire also runs through the Production hall A frame area. Wires cross the header row of the node, which UI-EXPECTATIONS P-14 and E-14 name as a failure.
 - Expected: a wire ends on its pin, on the side of the node that carries the port, and never on the header or in a loop (E-14, P-14).
 - Suggestion: route the end point to the port's row at the node edge and keep the header band clear of wire endings.
-- Status: fixed b04efd1 (partly)
-- Fix: The wire anchor at the compact zoom moved from the header band to the first pin row, so wires no longer land on headers. Remaining: wires that come from the right and enter from the left still loop at the node edge; that needs a routing pass.
+- Status: fixed ddb66ef (same-column wires still hook)
+- Fix: Nodes have side-facing anchor handles: a wire to a node that is left of its source leaves from the source's left side and enters the target's right side, so it no longer loops at the right-hand edge. Checked in Chrome at 62 %: the wire from packaging-line-b into production-line-a now enters from the right. Not fixed: a wire between two nodes in the same layout column (site-calendar to production-line-a) still hooks at the left edge; that needs a routing pass, which the owner scoped out, so it is recorded here.
 
 ## ISS-6D-12 The Navigator is cut off at the bottom edge at 1440x757
 - Severity: Medium
@@ -151,8 +151,8 @@ Ordered most severe first (High, Medium, Low); IDs are in the order found.
 - Observed: the port label is cut with an ellipsis where the node is narrower than the label, so the port that a link ends on is not identifiable from the node. The full name is not shown on hover (no title) and the inspector is the only other place it appears. Node width is the same for every node of a kind, so the cut repeats across the plant.
 - Expected: port names are readable on the node at the opening zoom (C-1 plain port names; P-2 legibility), or the node widens to its longest port label.
 - Suggestion: size each node's width to its longest port label at the opening zoom and show the full port name on hover.
-- Status: won't-fix (design decision)
-- Fix: Same cause as ISS-6D-10: port labels are sized in zoom-compensated text against a fixed node width; see that entry.
+- Status: fixed 80f1b33
+- Fix: A port name that does not fit its node column at the current zoom is left out of the node (the pin stays as a mark, and the full name is the row title) and comes back at the zoom where it fits. Measured in Chrome at 62 %: "dew point out" and "pressure out" are omitted, the other labels show, none is cut. The overlap e2e test now also fails on any cut title or port label.
 
 ## ISS-6D-22 Field errors in the editor read as help text, not errors
 - Severity: Medium
@@ -221,8 +221,8 @@ Ordered most severe first (High, Medium, Low); IDs are in the order found.
 - Observed: the fit at the opening zoom does not include the whole plant; the rightmost frame is cut by the panel divider, and its label is cut mid-word. Nothing in the graph indicates more content to the right.
 - Expected: the review graph opens fitted with all frame labels visible and no clipping at 1280 or 1440 (V-9, still open; "nothing clipped" in brief point 1).
 - Suggestion: fit the content box to the visible canvas width minus a margin, and add a right-edge margin inside the canvas.
-- Status: fixed b342b26, 7250ae3 (partly)
-- Fix: The run graph's column was growing under the inspector; its grid is now constrained, so the graph stops at the panel edge. Remaining: at the 50 % minimum fit the Water pumping station is still wider than the canvas, so its right frame is cut until the user pans. A lower minimum would hide pin labels (overview tier), so the minimum stays.
+- Status: won't-fix (the 50 % minimum stays; grid clipping fixed in b342b26, 7250ae3)
+- Fix: Not changed, with the reason: below 50 % the review graph is in the overview tier, where the live readouts are hidden (tier-overview .readout is display none), so a run would open with no values in its nodes. The right frame of Water pumping station stays cut at the 50 % minimum until the user pans or zooms out.
 
 ## ISS-6D-37 The editor outline lists four empty areas that the plant view does not show
 - Severity: Medium
@@ -241,8 +241,8 @@ Ordered most severe first (High, Medium, Low); IDs are in the order found.
 - Observed: the panel gives progress and the planned time but no simulated seconds per second, and no fault ticks (there are none to tick). The graph carries no running indicator at normal scale. The run finished within about half a minute and opened its review; no "Run w-25 finished" status was visible before the review took over (R-5 asks for it).
 - Expected: the running panel shows the speed (simulated seconds per second), the graph shows a running state on the plant (R-4, R-9), and the finished status stays long enough to read before the review opens (R-5).
 - Suggestion: show the speed beside the progress bar, add a running mark to the plant frame or node header, and hold the finished status for a few seconds or until the user dismisses it.
-- Status: won't-fix (design item)
-- Fix: The speed already appears in the Running line once a second of wall time has passed (launch panel, speedOf), so the screenshot was taken too early. Not done: a running mark on the plant graph and holding the finished status before the review opens; both are design changes.
+- Status: fixed 7e5f596 (no running mark on the plant graph)
+- Fix: The run panel header shows "Running · elapsed time · speed" while the run is live (the elapsed time ticks each second). A run with no effector calls now holds its "finished" status for two seconds, or until it is dismissed, before the review opens; the finished panel with "Open the review" shows during the hold. Not done: a running mark on the plant graph itself, because the top-bar run pill already shows the run on every screen. Covered by unit tests and the launch and review e2e specs; not watched live in Chrome, since that needed a new run.
 
 ## ISS-6D-02 "Show 1 more of 1" is awkward wording
 - Severity: Low
@@ -392,8 +392,8 @@ Ordered most severe first (High, Medium, Low); IDs are in the order found.
 - Observed: each observed row carries its own timestamp, and during playback the channels show different times in the same panel (flow at 00:02:20, power at 00:02:15, panel header at 00:02:21). The true-results paragraph repeats the Report's paragraph for every instance. Inspect has no trend line, no fault or alarm marks and no channel kind or area (V-5 still partly open).
 - Expected: one timestamp in the panel header for the playback time, a per-channel last-reported time only when it differs, a short trend, and the paragraph shown once in the Report (V-5).
 - Suggestion: show the playback time once, add a compact trend with the cursor, and drop the repeated paragraph from Inspect.
-- Status: fixed f762224 (partly)
-- Fix: The true-results paragraph is shown once, in the Report, not for every instance in Inspect. Not done: the per-channel time column and a trend line (a new series view, not a fix).
+- Status: fixed b9a2e70 (trend line not done)
+- Fix: Inspect shows one "Observed at" time for the instance (the latest reported time, as a caption under the header); a channel row shows its own time only when it differs. Checked in Chrome on run w-22, CP-1 at 00:00:15: the caption shows once and the rows show no times. Not done: the trend line, which is a new series view.
 
 ## ISS-6D-38 The link rows in the editor's inspector use icon-only delete buttons
 - Severity: Low

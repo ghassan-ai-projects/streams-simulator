@@ -65,8 +65,8 @@ After the runs, the Workspace list shows all three plants with 2 runs each; each
 - Observed: the typed text was appended to Area name ("Room B› Cold rooms"). Pressing Home scrolled the whole Build panel to the top, and the Inside select then showed "Site › Cold rooms › Room A" instead of the intended parent.
 - Expected: with the Inside select focused, typed text selects an option; it does not reach the name field.
 - Workaround: cleared the name field with cmd+a and Delete, retyped the name, then moved focus with Tab from the name to Inside and typed "Site › Cold rooms". Afterwards every Inside choice was checked with a zoom before Add area.
-- Status: not reproduced (no change)
-- Fix: on this build, typing with the Inside select focused selects 'Site' and leaves Area name unchanged; the fixer could not reproduce the append. Needs a re-check by the author on a fresh load.
+- Status: not reproduced (won't-fix: no change; re-checked 2026-10-15 in Chrome)
+- Fix: Fresh load, scratch plant Dir Review Empty, real keys: Probe typed into Area name, then Inside clicked and "Site" typed, and Inside focused with Tab and "f" pressed. The Area name stayed "Probe" every time, and "f" selected Factory. Return on Inside does not submit the form.
 
 Blockers count: 3 (BLK-6-01 to BLK-6-03). None stopped a plant from being completed; each needed a workaround.
 
