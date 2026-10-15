@@ -105,6 +105,8 @@ function PlaybackRange({ startNs, span, positionNs, onSeek, onKeyDown }: RangePr
   );
 }
 
+const unknownClock = "--:--:--";
+
 interface RowProps extends ScrubberProps {
   readonly marks: readonly EventMark[];
   readonly clamp: (ns: number) => number;
@@ -112,6 +114,7 @@ interface RowProps extends ScrubberProps {
 
 function TimeRow(props: RowProps) {
   const { startNs, endNs, positionNs, marks, clamp } = props;
+  const known = props.report !== null;
   const [said, setSaid] = useState("");
   const onSeek = (ns: number) => {
     setSaid(`Moved to ${runClock(ns, startNs)}`);
@@ -131,8 +134,8 @@ function TimeRow(props: RowProps) {
         {said}
       </p>
       <PlayControls {...props} />
-      <span className={styles.time}>{runClock(positionNs, startNs)}</span>
-      <span className={styles.span}>{`of ${runClock(endNs, startNs)}`}</span>
+      <span className={styles.time}>{known ? runClock(positionNs, startNs) : unknownClock}</span>
+      <span className={styles.span}>{`of ${known ? runClock(endNs, startNs) : unknownClock}`}</span>
       <span className={styles.controls}>
         <Legend marks={marks} />
         <Steps marks={marks} positionNs={positionNs} clamp={clamp} onSeek={onSeek} />
