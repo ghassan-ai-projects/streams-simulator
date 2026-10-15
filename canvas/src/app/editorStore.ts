@@ -114,6 +114,11 @@ export class EditorStore extends Observable<EditorState> {
     return { phase: "ready", path, etag, domainEtag: "", saved: doc, doc, saving: false, ...history, ...empty };
   }
 
+  unsavedChanges(): boolean {
+    const state = this.snapshot();
+    return state.phase === "ready" && state.doc !== state.saved;
+  }
+
   select(id: string | null): void {
     this.update((draft) => ({ ...draft, selected: id }));
   }

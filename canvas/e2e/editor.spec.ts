@@ -16,7 +16,7 @@ async function add(page: Page, component: string, name: string) {
   await build.getByLabel("Equipment", { exact: true }).selectOption({ label: component });
   await expect(build.getByLabel("Size").getByRole("option")).not.toHaveCount(1);
   await build.getByLabel("Name", { exact: true }).fill(name);
-  await build.getByLabel("Area", { exact: true }).selectOption("Chiller plant");
+  await build.getByLabel("Area", { exact: true }).selectOption({ index: 0 });
   await build.getByRole("button", { name: "Add to the plant" }).click();
   await expect(page.getByRole("complementary", { name })).toBeVisible();
   await page.getByRole("button", { name: "Close the instance" }).click();
@@ -87,6 +87,29 @@ test("an existing plant opens in the editor from its plant screen, unchanged unt
   await expect(page.getByRole("navigation", { name: "Outline" }).getByRole("button")).toHaveCount(23);
 });
 
+test("leaving the editor with an unsaved change asks first, Stay keeps the draft and Discard and leave drops it", async ({
+  page,
+}) => {
+  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Ffactory-utilities.domain.json`);
+  await page.getByRole("button", { name: "Edit plant" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Factory utilities" })).toBeVisible();
+  await page.getByRole("navigation", { name: "Outline" }).getByRole("button", { name: "MB-PROC" }).click();
+  await page.getByRole("button", { name: "Delete MB-PROC" }).click();
+  await page.getByRole("button", { name: /^Delete MB-PROC and its \d+ links?\?$/ }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Unsaved changes" })).toBeVisible();
+  await page.getByRole("button", { name: "Workspace", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Leave with unsaved changes?" });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("button", { name: "Stay" }).click();
+  await expect(page.getByRole("navigation", { name: "Outline" }).getByRole("button")).toHaveCount(22);
+  await page.getByRole("button", { name: "Workspace", exact: true }).click();
+  await page
+    .getByRole("dialog", { name: "Leave with unsaved changes?" })
+    .getByRole("button", { name: "Discard and leave" })
+    .click();
+  await expect(page.getByRole("heading", { level: 1, name: "Workspace" })).toBeVisible();
+});
+
 test("a plant copied from a shipped example opens in the editor with its equipment", async ({ page }) => {
   await page.goto(env("CANVAS_APP_URL"));
   await page.getByRole("button", { name: "New plant" }).click();
@@ -110,7 +133,7 @@ test("Enter in the instance name adds the equipment, as the button does", async 
   const build = page.getByRole("complementary", { name: "Build" });
   await build.getByLabel("Find equipment").fill("pump");
   await build.getByLabel("Equipment", { exact: true }).selectOption({ label: "Centrifugal pump" });
-  await build.getByLabel("Area", { exact: true }).selectOption({ index: 1 });
+  await build.getByLabel("Area", { exact: true }).selectOption({ index: 0 });
   await build.getByLabel("Name", { exact: true }).fill("pump-2");
   await build.getByLabel("Name", { exact: true }).press("Enter");
   await expect(page.getByRole("navigation", { name: "Outline" }).getByRole("button", { name: "pump-2" })).toBeVisible();
@@ -130,7 +153,7 @@ test("Enter in the equipment search only filters; a name another instance uses i
   const build = page.getByRole("complementary", { name: "Build" });
   await build.getByLabel("Find equipment").fill("pump");
   await build.getByLabel("Equipment", { exact: true }).selectOption({ label: "Centrifugal pump" });
-  await build.getByLabel("Area", { exact: true }).selectOption({ index: 1 });
+  await build.getByLabel("Area", { exact: true }).selectOption({ index: 0 });
   await build.getByLabel("Name", { exact: true }).fill("pump-1");
   await build.getByLabel("Find equipment").press("Enter");
   await expect(page.getByRole("heading", { name: "No equipment yet" })).toBeVisible();

@@ -16,6 +16,7 @@ import { useStore } from "../useStore";
 import { EditorBar } from "./EditorBar";
 import styles from "./Editor.module.css";
 import { EditorPanel } from "./EditorPanel";
+import { PendingLeave } from "./LeaveDialog";
 import { FocusRequest } from "./panelProps";
 
 interface EditorScreenProps {
@@ -119,6 +120,7 @@ function Editing({ draft, editor, navigation }: { readonly draft: Draft } & Omit
         </section>
         <EditorPanel draft={draft} plant={plant} editor={editor} request={request} />
       </div>
+      <PendingLeave title={plant.title || plant.id} editor={editor} navigation={navigation} />
     </ReactFlowProvider>
   );
 }

@@ -25,6 +25,9 @@ if (root) {
   );
   const bridge = bridgeClient(browserTransport());
   const panels = new PanelStore(localPreferences(window.localStorage));
+  const editor = new EditorStore(bridge);
+  const navigation = new NavigationStore(hashLocation(window));
+  navigation.guardUnsaved(() => editor.unsavedChanges());
   createRoot(root).render(
     <StrictMode>
       <App
@@ -32,11 +35,11 @@ if (root) {
           themes,
           session: new SessionStore(bridge),
           workspace: new WorkspaceStore(bridge),
-          navigation: new NavigationStore(hashLocation(window)),
+          navigation,
           plants: new PlantStore(bridge),
           review: new ReviewStore(bridge),
           launch: new LaunchStore(bridge),
-          editor: new EditorStore(bridge),
+          editor,
           panels,
           maker: new PlantMaker(bridge),
           showDetails: () => {
