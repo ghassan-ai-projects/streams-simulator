@@ -44,10 +44,10 @@ describe("new plant id", () => {
     expect(id).toHaveAccessibleDescription(/is not a plant id/);
     expect(screen.getAllByText(/is not a plant id/)).toHaveLength(1);
     expect(id).toHaveAttribute("aria-invalid", "true");
-    expect(screen.queryByText(/Used for its file names/)).toBeNull();
+    expect(screen.queryByText(/starting with a letter/)).toBeNull();
     fireEvent.change(id, { target: { value: "bad-plant" } });
     expect(screen.queryByText(/is not a plant id/)).toBeNull();
     expect(id).not.toHaveAttribute("aria-invalid");
-    expect(screen.getByText(/Used for its file names/)).toBeInTheDocument();
+    expect(screen.getByText(/starting with a letter/)).toBeInTheDocument();
   });
 });

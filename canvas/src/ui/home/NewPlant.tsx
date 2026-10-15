@@ -235,7 +235,7 @@ export function NewPlantForm(props: NewPlantProps & { readonly onCancel: () => v
       <Field first label="Name" placeholder="e.g. Cooling hall" value={name} onChange={setName} />
       <Field
         label="Id"
-        hint="Used for its file names: lower case, digits and hyphens."
+        hint="Lower case letters, digits and hyphens, starting with a letter."
         value={id}
         onChange={setId}
         onLeave={leave}
