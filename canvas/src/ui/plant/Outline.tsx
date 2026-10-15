@@ -114,11 +114,15 @@ function Section({ title, depth = 0, items, current, marks, onPick }: SectionPro
         {title}
         <span className={styles.count}>{items.length}</span>
       </summary>
-      <ul className={styles.tree}>
-        {items.map((item) => (
-          <Entry key={item.id} item={item} current={current} marks={marks} onPick={onPick} />
-        ))}
-      </ul>
+      {items.length === 0 ? (
+        <p className={styles.emptyArea}>No equipment yet. Add some in the Build panel.</p>
+      ) : (
+        <ul className={styles.tree}>
+          {items.map((item) => (
+            <Entry key={item.id} item={item} current={current} marks={marks} onPick={onPick} />
+          ))}
+        </ul>
+      )}
     </details>
   );
 }
