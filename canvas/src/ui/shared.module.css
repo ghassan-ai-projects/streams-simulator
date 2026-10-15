@@ -26,6 +26,11 @@
   color: var(--text-secondary);
 }
 
+.cut[data-cut="true"] {
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent);
+}
+
 summary.disclosure {
   gap: var(--space-1);
   list-style: none;

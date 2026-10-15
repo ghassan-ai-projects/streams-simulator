@@ -2,6 +2,9 @@ import { CircleAlert, Wrench } from "lucide-react";
 import panel from "../panel.module.css";
 import type { IssueGroup, ListedIssue } from "../../model/compositionEdits";
 import { groupIssues, profileWeightOf, removeProfileWeight } from "../../model/compositionEdits";
+import { cx } from "../cx";
+import shared from "../shared.module.css";
+import { useCutBottom } from "../useCutBottom";
 import { AddArea } from "./AddArea";
 import { AreaEditor } from "./AreaEditor";
 import { AddEquipment } from "./AddEquipment";
@@ -87,8 +90,14 @@ function FirstStep() {
 
 function Build({ draft, plant, editor, request }: PanelProps) {
   const heading = useRequestedFocus<HTMLHeadingElement>(request, "build");
+  const { ref, cut } = useCutBottom<HTMLElement>([draft, plant]);
   return (
-    <aside className={panel.panel} aria-labelledby="build-title">
+    <aside
+      ref={ref}
+      className={cx(panel.panel, shared.cut)}
+      data-cut={cut ? "true" : undefined}
+      aria-labelledby="build-title"
+    >
       <header className={panel.head}>
         <Wrench size={16} aria-hidden="true" />
         <h2 id="build-title" ref={heading} tabIndex={-1}>

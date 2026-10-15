@@ -1,12 +1,12 @@
 import { OctagonAlert, Search } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
-import type { RefObject } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Plant } from "../../model/plant";
 import { areaOf } from "../../model/plant";
 import { areaOrder, hallOf, hallsOf } from "../../model/plantView";
 import { kindLabel } from "../../model/report";
 import { cx } from "../cx";
 import shared from "../shared.module.css";
+import { useCutBottom } from "../useCutBottom";
 import styles from "./PlantScreen.module.css";
 
 interface OutlineProps {
@@ -214,30 +214,6 @@ function marked(shown: readonly Group[], flagged: ReadonlySet<string> | undefine
   }));
 }
 
-function continuesBelow(node: HTMLElement | null): boolean {
-  return node !== null && node.scrollTop + node.clientHeight < node.scrollHeight - 1;
-}
-
-function useCutBottom(ref: RefObject<HTMLElement | null>, content: unknown): boolean {
-  const [cut, setCut] = useState(false);
-  const measure = useCallback(() => {
-    setCut(continuesBelow(ref.current));
-  }, [ref]);
-  useEffect(() => {
-    const node = ref.current;
-    if (node === null) return undefined;
-    node.addEventListener("scroll", measure, { passive: true });
-    const watcher = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
-    watcher?.observe(node);
-    return () => {
-      node.removeEventListener("scroll", measure);
-      watcher?.disconnect();
-    };
-  }, [ref, measure]);
-  useEffect(measure, [measure, content]);
-  return cut;
-}
-
 function belowCount(shown: readonly Group[], index: number): number {
   const group = shown[index];
   if (group === undefined) return 0;
@@ -251,12 +227,16 @@ function belowCount(shown: readonly Group[], index: number): number {
 
 export function Outline({ plant, hall, selected, onSelect, onOpenHall, flagged, showEmptyAreas }: OutlineProps) {
   const [filter, setFilter] = useState("");
-  const navRef = useRef<HTMLElement | null>(null);
+  const { ref: navRef, cut } = useCutBottom<HTMLElement>([plant, hall, filter, selected, flagged]);
   const halls = hallsOf(plant).map((id) => ({ id, kind: "" }));
   const shown = marked(groups(plant, hall, filter, showEmptyAreas === true), flagged);
-  const cut = useCutBottom(navRef, [plant, hall, filter, selected, flagged]);
   return (
-    <nav ref={navRef} className={styles.outline} aria-label="Outline" data-cut={cut ? "true" : undefined}>
+    <nav
+      ref={navRef}
+      className={cx(styles.outline, shared.cut)}
+      aria-label="Outline"
+      data-cut={cut ? "true" : undefined}
+    >
       <Filter value={filter} onChange={setFilter} />
       {halls.length > 0 && onOpenHall !== undefined && filter === "" && (
         <Section title="Halls" items={halls} current={hall} marks="location" onPick={onOpenHall} />

@@ -28,6 +28,24 @@ function change(label: string, value: string) {
 const finishedWait = { timeout: 3000 };
 
 describe("launch panel", () => {
+  it("cues the cut on the run plan's own scroll region while its fields continue below", () => {
+    renderPanel(launchBridge());
+    const region = document.querySelector<HTMLElement>("[data-scroll='run-plan']");
+    expect(region).not.toBeNull();
+    expect(region).not.toHaveAttribute("data-cut");
+    const metrics = (client: number, total: number, top: number) => {
+      if (region === null) return;
+      Object.defineProperty(region, "clientHeight", { value: client, configurable: true });
+      Object.defineProperty(region, "scrollHeight", { value: total, configurable: true });
+      Object.defineProperty(region, "scrollTop", { value: top, configurable: true });
+      fireEvent.scroll(region);
+    };
+    metrics(200, 500, 0);
+    expect(region).toHaveAttribute("data-cut", "true");
+    metrics(200, 500, 300);
+    expect(region).not.toHaveAttribute("data-cut");
+  });
+
   it("plans a run with a fault and opens the finished run", async () => {
     const fake = launchBridge();
     const { view, onFinished } = renderPanel(fake);

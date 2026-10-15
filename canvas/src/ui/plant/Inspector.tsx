@@ -11,6 +11,7 @@ import { X } from "lucide-react";
 import type { RunRow } from "../../model/workspace";
 import { cx } from "../cx";
 import shared from "../shared.module.css";
+import { useCutBottom } from "../useCutBottom";
 import { PlantOverview } from "./PlantOverview";
 import styles from "./PlantScreen.module.css";
 import { InspectorLinks } from "./InspectorLinks";
@@ -102,8 +103,15 @@ function HallSummary({
   readonly members: readonly (readonly [string, number])[];
 }) {
   const total = members.reduce((sum, [, n]) => sum + n, 0);
+  const { ref, cut } = useCutBottom<HTMLElement>([members]);
   return (
-    <aside className={styles.inspector} aria-label="Inspector" tabIndex={0}>
+    <aside
+      ref={ref}
+      className={cx(styles.inspector, shared.cut)}
+      data-cut={cut ? "true" : undefined}
+      aria-label="Inspector"
+      tabIndex={0}
+    >
       <header className={styles.inspectorHead}>
         <h2 className={styles.mono}>{hall}</h2>
         <p className={styles.muted}>{`Hall · ${String(total)} instances · Enter or double-click opens it`}</p>
@@ -165,8 +173,15 @@ function InstanceDetails({
 }) {
   const kind = plant.kinds.get(instance.kind);
   const { incoming, outgoing } = linksOf(plant, instance.id);
+  const { ref, cut } = useCutBottom<HTMLElement>([plant, instance]);
   return (
-    <aside className={styles.inspector} aria-label="Inspector" tabIndex={0}>
+    <aside
+      ref={ref}
+      className={cx(styles.inspector, shared.cut)}
+      data-cut={cut ? "true" : undefined}
+      aria-label="Inspector"
+      tabIndex={0}
+    >
       <Head instance={instance} spec={spec} onClose={onClose} />
       <List
         title="Channels"

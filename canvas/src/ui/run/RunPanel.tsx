@@ -2,7 +2,9 @@ import type { PlantState } from "../../app/plantStore";
 import type { ReviewState, ReviewStore } from "../../app/reviewStore";
 import { runSpan } from "../../model/report";
 import { runClock } from "../../model/timeline";
+import { cx } from "../cx";
 import shared from "../shared.module.css";
+import { useCutBottom } from "../useCutBottom";
 import { Observed } from "./Observed";
 import { ReportPanel } from "./ReportPanel";
 import styles from "./RunScreen.module.css";
@@ -55,8 +57,15 @@ export function RunPanel(props: RunPanelProps) {
     ["report", "Report"],
     ["inspect", state.selected === null ? "Inspect" : `Inspect · ${state.selected}`],
   ];
+  const { ref, cut } = useCutBottom<HTMLElement>([state, review]);
   return (
-    <aside className={styles.report} aria-label="Run details" tabIndex={0}>
+    <aside
+      ref={ref}
+      className={cx(styles.report, shared.cut)}
+      data-cut={cut ? "true" : undefined}
+      aria-label="Run details"
+      tabIndex={0}
+    >
       <div className={styles.tabs} role="group" aria-label="Run details view">
         {tabs.map(([id, label]) => (
           <button

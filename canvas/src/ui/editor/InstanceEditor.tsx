@@ -9,6 +9,9 @@ import { areaNodesOf, connectionsOf, endpointOf, linkEnd } from "../../model/com
 import { instanceNameFits, instanceNameRule } from "../../model/instanceNameRule";
 import { disconnect, isTemplate, moveInstance, renameInstance } from "../../model/compositionEdits";
 import panel from "../panel.module.css";
+import { cx } from "../cx";
+import shared from "../shared.module.css";
+import { useCutBottom } from "../useCutBottom";
 import { ConnectForm } from "./ConnectForm";
 import { DeleteInstance } from "./DeleteInstance";
 import styles from "./Editor.module.css";
@@ -242,8 +245,14 @@ function kindLine(draft: Draft, instance: Instance): string {
 
 export function InstanceEditor(props: EditorProps) {
   const { draft, editor, request, instance } = props;
+  const { ref, cut } = useCutBottom<HTMLElement>([draft, instance]);
   return (
-    <aside className={panel.panel} aria-labelledby="instance-title">
+    <aside
+      ref={ref}
+      className={cx(panel.panel, shared.cut)}
+      data-cut={cut ? "true" : undefined}
+      aria-labelledby="instance-title"
+    >
       <Head instance={instance} editor={editor} request={request} />
       <div className={panel.body}>
         <Problems id={instance.id} messages={draft.issues?.instances.get(instance.id) ?? []} />

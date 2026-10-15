@@ -13,6 +13,8 @@ import { CallRows } from "./CallRows";
 import type { Change } from "./FaultRows";
 import { FaultRows } from "./FaultRows";
 import { cx } from "../cx";
+import shared from "../shared.module.css";
+import { useCutBottom } from "../useCutBottom";
 import panel from "../panel.module.css";
 import { useFocusOnMount } from "../useFocusOnMount";
 import styles from "./LaunchPanel.module.css";
@@ -195,6 +197,35 @@ function holdEnter(event: KeyboardEvent<HTMLFormElement>) {
   if (event.key === "Enter" && event.target instanceof HTMLSelectElement) event.preventDefault();
 }
 
+function PlanFields({
+  plant,
+  draft,
+  selected,
+  change,
+  problems,
+  shown,
+  plan,
+}: Pick<FormProps, "plant" | "draft" | "selected" | "change"> & {
+  readonly problems: readonly PlanProblem[];
+  readonly shown: readonly PlanProblem[];
+  readonly plan: LaunchPlan;
+}) {
+  const { ref, cut } = useCutBottom<HTMLDivElement>([plant, draft, problems]);
+  return (
+    <div ref={ref} className={cx(styles.scroll, shared.cut)} data-scroll="run-plan" data-cut={cut ? "true" : undefined}>
+      <fieldset className={panel.group}>
+        <legend>Run</legend>
+        <Seed draft={draft} change={change} problems={shown} />
+        <Duration draft={draft} change={change} problems={shown} />
+      </fieldset>
+      <Mode draft={draft} change={change} />
+      <Pace draft={draft} change={change} durationS={plan.durationS} />
+      <FaultRows plant={plant} draft={draft} problems={shown} selected={selected} change={change} />
+      <CallRows plant={plant} draft={draft} problems={shown} selected={selected} change={change} />
+    </div>
+  );
+}
+
 export function LaunchForm({ plant, draft, selected, change, onStart }: FormProps) {
   const [tried, setTried] = useState(0);
   const [told, setTold] = useState("");
@@ -210,17 +241,15 @@ export function LaunchForm({ plant, draft, selected, change, onStart }: FormProp
   };
   return (
     <form ref={form} className={styles.plan} onSubmit={submit} onKeyDown={holdEnter} noValidate aria-label="Run plan">
-      <div className={styles.scroll} data-scroll="run-plan">
-        <fieldset className={panel.group}>
-          <legend>Run</legend>
-          <Seed draft={draft} change={change} problems={shown} />
-          <Duration draft={draft} change={change} problems={shown} />
-        </fieldset>
-        <Mode draft={draft} change={change} />
-        <Pace draft={draft} change={change} durationS={plan.durationS} />
-        <FaultRows plant={plant} draft={draft} problems={shown} selected={selected} change={change} />
-        <CallRows plant={plant} draft={draft} problems={shown} selected={selected} change={change} />
-      </div>
+      <PlanFields
+        plant={plant}
+        draft={draft}
+        selected={selected}
+        change={change}
+        problems={problems}
+        shown={shown}
+        plan={plan}
+      />
       <div className={styles.footer}>
         <p id="launch-summary" className={styles.summary}>
           {planCue(shown, plan)}
