@@ -23,6 +23,7 @@ describe("run status", () => {
       </>,
     );
     expect(screen.getByRole("status")).toHaveTextContent("Not verified");
+    expect(document.querySelector("[title^='Not verified:']")).toHaveTextContent("Not verified");
     expect(screen.queryByRole("alert")).toBeNull();
   });
 
