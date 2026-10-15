@@ -80,7 +80,7 @@ describe("launch panel", () => {
     change("Fault 1 instance", "CH-1");
     expect(screen.queryByText(/needs attention before starting/)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Start the run" }));
-    expect(screen.getByText("1 entry needs attention before starting.")).toBeInTheDocument();
+    expect(screen.getByText("Fault 1 needs attention before starting.")).toBeInTheDocument();
     const fault = screen.getByLabelText("Fault 1 fault");
     expect(fault).toHaveFocus();
     expect(fault).toHaveAccessibleDescription("Fault 1 needs a fault.");

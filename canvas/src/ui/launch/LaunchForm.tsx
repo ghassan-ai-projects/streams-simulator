@@ -177,10 +177,17 @@ function startWords(plan: LaunchPlan): string {
   return `Start simulates ${length} of plant time in ${plan.explore ? "Explore" : "Evaluate"} mode with ${disturbanceWords(plan)}, as fast as it can, then saves the run and opens its review.`;
 }
 
+function fieldName(problem: PlanProblem): string {
+  if (problem.field === "seed") return "Seed";
+  if (problem.field === "duration") return "Duration";
+  if (problem.field === "call") return `Effector call ${String((problem.call ?? 0) + 1)}`;
+  return `Fault ${String(problem.field + 1)}`;
+}
+
 function planCue(shown: readonly PlanProblem[], plan: LaunchPlan): string {
-  const count = shown.length;
-  if (count > 0) return `${String(count)} ${count === 1 ? "entry needs" : "entries need"} attention before starting.`;
-  return startWords(plan);
+  if (shown.length === 0) return startWords(plan);
+  const names = shown.map(fieldName).join(", ");
+  return shown.length === 1 ? `${names} needs attention before starting.` : `${names} need attention before starting.`;
 }
 
 function holdEnter(event: KeyboardEvent<HTMLFormElement>) {
