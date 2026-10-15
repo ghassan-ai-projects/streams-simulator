@@ -40,7 +40,7 @@ function RunItem({ row, onReview }: { readonly row: RunRow; readonly onReview: R
     row.run.worldId,
     row.run.explore ? "Explore" : "Evaluate",
     ...runFacts(row.run),
-    whenOf(row.run.recordedAt),
+    whenOf(row.run.recordedAt).replaceAll(" ", "\u00a0"),
   ];
   return (
     <li>
