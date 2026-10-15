@@ -196,6 +196,14 @@ describe("plant editor panel", () => {
     expect(within(form).getByLabelText("Area name")).toHaveValue("");
   });
 
+  it("does not add an area when Return is pressed on the Inside choice", async () => {
+    const { editor } = await editing();
+    const form = screen.getByRole("form", { name: "Add area" });
+    fireEvent.change(within(form).getByLabelText("Area name"), { target: { value: "Shed" } });
+    fireEvent.keyDown(within(form).getByLabelText("Inside"), { key: "Enter" });
+    expect(current(editor).areas).toEqual(doc.areas);
+  });
+
   it("says why the file was not saved", async () => {
     const { fake, editor } = await editing();
     act(() => {

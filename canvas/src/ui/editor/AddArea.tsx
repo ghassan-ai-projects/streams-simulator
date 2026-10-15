@@ -1,5 +1,5 @@
 import { FolderPlus } from "lucide-react";
-import type { SyntheticEvent } from "react";
+import type { KeyboardEvent, SyntheticEvent } from "react";
 import { useState } from "react";
 import type { Draft, EditorStore } from "../../app/editorStore";
 import type { AreaNode } from "../../model/areaTree";
@@ -40,6 +40,10 @@ function ParentPick({ nodes, value, onChange }: ParentProps) {
   );
 }
 
+function holdEnter(event: KeyboardEvent<HTMLFormElement>) {
+  if (event.key === "Enter" && event.target instanceof HTMLSelectElement) event.preventDefault();
+}
+
 export function AddArea({ draft, editor }: AreaProps) {
   const [name, setName] = useState("");
   const [parent, setParent] = useState("");
@@ -52,7 +56,7 @@ export function AddArea({ draft, editor }: AreaProps) {
     setName("");
   };
   return (
-    <form className={panel.group} onSubmit={submit} aria-labelledby="add-area-title" noValidate>
+    <form className={panel.group} onSubmit={submit} onKeyDown={holdEnter} aria-labelledby="add-area-title" noValidate>
       <h3 id="add-area-title">Add area</h3>
       <label className={panel.field}>
         <span>Area name</span>
