@@ -5,6 +5,7 @@ import type { PlantState, PlantStore } from "../../app/plantStore";
 import type { PlanMark } from "../../model/planMarks";
 import { planMarks } from "../../model/planMarks";
 import { plantView } from "../../model/plantView";
+import type { PlantView } from "../../model/plantView";
 import { useStore } from "../useStore";
 import { useCanvasAspect } from "./canvasAspect";
 import { PlantGraph } from "./PlantGraph";
@@ -18,6 +19,44 @@ function useRunMarks(launch: LaunchStore, plant: string): ReadonlyMap<string, Pl
     if (run.phase !== "running" || run.origin.domain !== plant) return undefined;
     return planMarks(run.plan, run.calls, run.atS, run.atMs);
   }, [run, plant]);
+}
+
+function PlantViewGraph({
+  view,
+  state,
+  hall,
+  aspect,
+  plants,
+  navigation,
+  marks,
+}: {
+  readonly view: PlantView;
+  readonly state: Ready;
+  readonly hall: string | null;
+  readonly aspect: number | undefined;
+  readonly plants: PlantStore;
+  readonly navigation: NavigationStore;
+  readonly marks: ReadonlyMap<string, PlanMark> | undefined;
+}) {
+  return (
+    <PlantGraph
+      view={view}
+      viewKey={hall ?? "plant"}
+      fitKey={`${hall ?? "plant"}:${String(aspect)}`}
+      panCue
+      selected={state.selected}
+      {...(marks === undefined ? {} : { marks })}
+      onSelect={(id) => {
+        plants.select(id);
+      }}
+      onOpenHall={(name) => {
+        navigation.go({ screen: "plant", domain: state.path, hall: name });
+      }}
+      onEscape={() => {
+        if (hall !== null) navigation.go({ screen: "plant", domain: state.path, hall: null });
+      }}
+    />
+  );
 }
 
 export function PlantCanvas({
@@ -41,21 +80,14 @@ export function PlantCanvas({
   );
   return (
     <div ref={ref} className={styles.graphHost}>
-      <PlantGraph
+      <PlantViewGraph
         view={view}
-        viewKey={hall ?? "plant"}
-        fitKey={`${hall ?? "plant"}:${String(aspect)}`}
-        selected={state.selected}
-        {...(marks === undefined ? {} : { marks })}
-        onSelect={(id) => {
-          plants.select(id);
-        }}
-        onOpenHall={(name) => {
-          navigation.go({ screen: "plant", domain: state.path, hall: name });
-        }}
-        onEscape={() => {
-          if (hall !== null) navigation.go({ screen: "plant", domain: state.path, hall: null });
-        }}
+        state={state}
+        hall={hall}
+        aspect={aspect}
+        plants={plants}
+        navigation={navigation}
+        marks={marks}
       />
     </div>
   );

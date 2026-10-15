@@ -72,6 +72,7 @@ function EditorGraph({ draft, editor, view, flagged, aspect }: GraphProps) {
       view={view}
       viewKey={`edit:${draft.path}`}
       fitKey={`${draft.path}:${String(view.nodes.length)}:${String(aspect)}`}
+      panCue
       selected={draft.selected}
       flagged={flagged}
       minFitZoom={0.25}
