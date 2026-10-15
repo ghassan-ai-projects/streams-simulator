@@ -33,3 +33,9 @@ test("no wire runs under a node and no two wire ends meet, at every zoom tier of
   await expect(page.getByText(/\d+ observations/)).toBeVisible({ timeout: 60_000 });
   await checkEveryTier(page);
 });
+
+test("no wire runs under a node in the editor of the composed fixture plant, at every zoom tier", async ({ page }) => {
+  await page.goto(`${env("CANVAS_APP_URL")}/#/edit?composition=compositions%2Ffactory-utilities.composition.json`);
+  await expect(page.getByRole("navigation", { name: "Outline" }).getByRole("button")).not.toHaveCount(0);
+  await checkEveryTier(page);
+});
