@@ -120,7 +120,7 @@ function LinkRow({ wire, instance, editor }: { readonly wire: Connection } & Pic
       </span>
       <button
         type="button"
-        className={panel.icon}
+        className={panel.secondary}
         aria-label={`Remove link: ${words}`}
         title="Remove this link"
         onClick={() => {
@@ -128,6 +128,7 @@ function LinkRow({ wire, instance, editor }: { readonly wire: Connection } & Pic
         }}
       >
         <Trash2 size={14} aria-hidden="true" />
+        Remove
       </button>
     </li>
   );
