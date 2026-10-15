@@ -137,7 +137,7 @@ describe("wire view", () => {
     expect(capped.height).toBeCloseTo(17 * (30 / 13), 6);
   });
 
-  it("joins two nodes of one column bottom to top, in a straight run through the row gap", () => {
+  it("joins two nodes of one column from the right edge to the target's pin on its left edge, outside both", () => {
     const view = viewOf(false);
     const upper = view.layout.nodes.get("CH-1");
     const first = view.edges[0];
@@ -150,30 +150,13 @@ describe("wire view", () => {
       edges: [{ ...first, id: "down", from: "CH-1", to: "CT-1" }],
     };
     const route = routeView(stacked, "full", false).get("down") ?? [];
-    const xs = new Set(route.map((point) => point.x));
-    expect(xs.size).toBe(1);
-    expect(route[0]?.y).toBe(upper.y + upper.height);
-    expect(route.at(-1)?.y).toBe(lower.y);
-    const up = { ...stacked, edges: [{ ...first, id: "up", from: "CT-1", to: "CH-1" }] };
-    const back = routeView(up, "full", false).get("up") ?? [];
-    expect(back[0]?.y).toBe(lower.y);
-    expect(back.at(-1)?.y).toBe(upper.y + upper.height);
-  });
-
-  it("spaces the two wires of a stacked pair that meet on one edge", () => {
-    const view = viewOf(false);
-    const upper = view.layout.nodes.get("CH-1");
-    const first = view.edges[0];
-    if (upper === undefined || first === undefined) throw new Error("fixture incomplete");
-    const lower = { x: upper.x, y: upper.y + upper.height + 24, width: upper.width, height: 120 };
-    const nodes = new Map([...view.layout.nodes, ["CT-1", lower] as const]);
-    const both = [
-      { ...first, id: "down", from: "CH-1", to: "CT-1" },
-      { ...first, id: "up", from: "CT-1", to: "CH-1" },
-    ];
-    const routes = routeView({ ...view, layout: { ...view.layout, nodes }, edges: both }, "full", false);
-    const downEnd = routes.get("down")?.at(-1);
-    const upStart = routes.get("up")?.[0];
-    expect(Math.abs((downEnd?.x ?? 0) - (upStart?.x ?? 0))).toBeGreaterThanOrEqual(6);
+    expect(route[0]?.x).toBe(upper.x + upper.width);
+    expect(route.at(-1)?.x).toBe(lower.x);
+    expect(route.at(-2)?.y).toBe(route.at(-1)?.y);
+    expect(route.at(-1)?.y).toBeGreaterThan(lower.y);
+    expect(route.at(-1)?.y).toBeLessThan(lower.y + lower.height);
+    const inside = (point: { x: number; y: number }, box: Rect) =>
+      point.x > box.x && point.x < box.x + box.width && point.y > box.y && point.y < box.y + box.height;
+    expect(route.some((point) => inside(point, upper) || inside(point, lower))).toBe(false);
   });
 });

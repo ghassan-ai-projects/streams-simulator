@@ -32,11 +32,6 @@ function rowCentre(node: ViewNode, box: Rect, row: number, mode: WireMode): numb
 
 const noBox: Rect = { x: 0, y: 0, width: 0, height: 0 };
 
-function stacked(a: Rect, b: Rect): boolean {
-  const aligned = Math.abs(a.x - b.x) < 0.5 && Math.abs(a.width - b.width) < 0.5;
-  return aligned && (a.y + a.height <= b.y || b.y + b.height <= a.y);
-}
-
 function endY(view: PlantView, id: string, handle: string | null, role: "from" | "to", mode: WireMode): number | null {
   const node = view.nodes.find((entry) => entry.id === id);
   const box = view.layout.nodes.get(id);
@@ -55,20 +50,12 @@ function endOf(view: PlantView, edge: PlantView["edges"][number], role: "from" |
   return { id: edge.id, role, point, box, side: role === "from" ? "right" : "left", slot, other: point };
 }
 
-function columnEnd(end: End, other: Rect): End {
-  const lower = other.y > end.box.y;
-  const y = lower ? end.box.y + end.box.height : end.box.y;
-  const side = lower ? "down" : "up";
-  return { ...end, point: { x: end.box.x + end.box.width / 2, y }, side };
-}
-
 function pairOf(view: PlantView, edge: PlantView["edges"][number], mode: WireMode): readonly [End, End] {
   const from = endOf(view, edge, "from", mode);
   const to = endOf(view, edge, "to", mode);
-  const [a, b] = stacked(from.box, to.box) ? [columnEnd(from, to.box), columnEnd(to, from.box)] : [from, to];
   return [
-    { ...a, other: b.point },
-    { ...b, other: a.point },
+    { ...from, other: to.point },
+    { ...to, other: from.point },
   ];
 }
 
