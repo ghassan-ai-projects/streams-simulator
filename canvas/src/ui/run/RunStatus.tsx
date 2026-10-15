@@ -40,6 +40,14 @@ function Chip({ badge, label }: { readonly badge: Badge; readonly label: string 
   );
 }
 
+function Reason({ text }: { readonly text: string }) {
+  return (
+    <span className={styles.reason} title={text}>
+      {text}
+    </span>
+  );
+}
+
 function Announce({ text }: { readonly text: string }) {
   return (
     <span className="sr-only" role="status">
@@ -92,6 +100,7 @@ export function Status({ state }: { readonly state: ReviewState }) {
     <>
       <Mode report={report} />
       <Chip badge={badge} label={label} />
+      {badge === "incomplete" && <Reason text={report.incompleteReason || "the run did not close."} />}
       <Announce text={badge === "verifying" ? "Verifying: replaying the run" : badgeLabels[badge]} />
     </>
   );

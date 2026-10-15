@@ -28,6 +28,16 @@
   font-weight: 600;
 }
 
+.reason {
+  min-width: 0;
+  max-width: 36ch;
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .chip,
 .verifying,
 .not-checked,

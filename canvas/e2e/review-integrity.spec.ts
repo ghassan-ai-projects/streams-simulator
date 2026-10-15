@@ -11,7 +11,7 @@ async function openIntegrity(page: Page) {
 
 test("an incomplete stamp never reads Reproduces when the completed journals contradict it", async ({ page }) => {
   await page.goto(`${env("CANVAS_APP_URL")}/#/run?world=w-incomplete-stamp`);
-  await expect(page.getByRole("status").filter({ hasText: /^Incomplete$/ })).toHaveCount(1, { timeout: 60_000 });
+  await expect(page.getByRole("status").filter({ hasText: /^Did not finish$/ })).toHaveCount(1, { timeout: 60_000 });
   const details = page.getByRole("complementary", { name: "Run details" });
   await openIntegrity(page);
   const replay = details.getByRole("region", { name: "Replay check" });
