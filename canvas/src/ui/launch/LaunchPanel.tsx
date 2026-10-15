@@ -12,6 +12,7 @@ import type { Draft } from "./draft";
 import { draftOf, firstDraft, pickedOnGraph } from "./draft";
 import type { Change } from "./FaultRows";
 import { LaunchForm } from "./LaunchForm";
+import { RunningMark } from "./RunningMark";
 import { useFocusOnMount } from "../useFocusOnMount";
 import { cx } from "../cx";
 import panel from "../panel.module.css";
@@ -34,23 +35,28 @@ function outcomeWords(outcome: CallOutcome): string {
   return outcome.accepted ? `${call}: accepted` : `${call}: command not accepted: ${outcome.reason}`;
 }
 
+function callsWords(state: Done): string {
+  const refused = state.calls.filter((call) => !call.accepted).length;
+  if (state.calls.length === 0) return "";
+  return refused === 0
+    ? " Every effector call was accepted."
+    : ` ${String(refused)} of ${String(state.calls.length)} effector calls were not accepted.`;
+}
+
 function Result({ state, onOpen }: { readonly state: Done; readonly onOpen: () => void }) {
   const status = useFocusOnMount<HTMLParagraphElement>();
-  const refused = state.calls.filter((call) => !call.accepted).length;
   return (
     <div className={panel.body}>
       <p className={styles.status} role="status" ref={status} tabIndex={-1}>
-        {`Run ${state.worldId} ${state.early ? "stopped early and was saved" : "finished"}. ${
-          refused === 0
-            ? "Every effector call was accepted."
-            : `${String(refused)} of ${String(state.calls.length)} effector calls were not accepted.`
-        }`}
+        {`Run ${state.worldId} ${state.early ? "stopped early and was saved" : "finished"}.${callsWords(state)}`}
       </p>
-      <ul className={styles.outcomes} aria-label="Effector call results">
-        {state.calls.map((outcome, index) => (
-          <li key={String(index)}>{outcomeWords(outcome)}</li>
-        ))}
-      </ul>
+      {state.calls.length > 0 && (
+        <ul className={styles.outcomes} aria-label="Effector call results">
+          {state.calls.map((outcome, index) => (
+            <li key={String(index)}>{outcomeWords(outcome)}</li>
+          ))}
+        </ul>
+      )}
       <button type="button" className={panel.primary} onClick={onOpen}>
         Open the review
       </button>
@@ -159,6 +165,7 @@ interface BodyProps {
   readonly selected: string | null;
   readonly change: (change: Change) => void;
   readonly onFinished: (worldId: string) => void;
+  readonly watched: boolean;
 }
 
 function Elsewhere({ state }: { readonly state: Running }) {
@@ -170,7 +177,11 @@ function Elsewhere({ state }: { readonly state: Running }) {
   );
 }
 
-function Body({ state, launch, plant, path, draft, selected, change, onFinished }: BodyProps) {
+function showsResult(state: LaunchState, own: boolean, watched: boolean): state is Done {
+  return state.phase === "done" && own && (state.calls.length > 0 || watched);
+}
+
+function Body({ state, launch, plant, path, draft, selected, change, onFinished, watched }: BodyProps) {
   const own = state.phase !== "idle" && state.origin.domain === plant.id;
   if (state.phase === "running") {
     return own ? (
@@ -180,7 +191,7 @@ function Body({ state, launch, plant, path, draft, selected, change, onFinished 
     );
   }
   if (state.phase === "failed" && own) return <Failure state={state} launch={launch} />;
-  if (state.phase === "done" && own && state.calls.length > 0)
+  if (showsResult(state, own, watched))
     return (
       <Result
         state={state}
@@ -203,17 +214,23 @@ function Body({ state, launch, plant, path, draft, selected, change, onFinished 
   );
 }
 
+const finishedHold = 2000;
+
 function useLaunch(launch: LaunchStore, plant: string, onFinished: (worldId: string) => void) {
   const state = useStore(launch);
   const [watched, setWatched] = useState(false);
   if (!watched && state.phase === "running" && state.origin.domain === plant) setWatched(true);
   useEffect(() => {
-    if (watched && state.phase === "done" && state.origin.domain === plant && state.calls.length === 0) {
+    if (!watched || state.phase !== "done" || state.origin.domain !== plant || state.calls.length > 0) return undefined;
+    const timer = window.setTimeout(() => {
       launch.reset();
       onFinished(state.worldId);
-    }
+    }, finishedHold);
+    return () => {
+      window.clearTimeout(timer);
+    };
   }, [watched, state, launch, plant, onFinished]);
-  return state;
+  return { state, watched };
 }
 
 function shownProposal(proposed: Proposal): boolean {
@@ -250,13 +267,14 @@ function useDraft(launch: LaunchStore, plant: Plant, selected: string | null) {
 }
 
 export function LaunchPanel({ launch, plant, path, selected = null, onClose, onFinished }: LaunchPanelProps) {
-  const state = useLaunch(launch, plant.id, onFinished);
+  const { state, watched } = useLaunch(launch, plant.id, onFinished);
   const { proposed, draft, setDraft } = useDraft(launch, plant, selected);
   return (
     <aside className={panel.panel} aria-labelledby="launch-title">
       <header className={panel.head}>
         <Play size={16} aria-hidden="true" />
         <h2 id="launch-title">{`Run ${plant.title || plant.id}`}</h2>
+        {state.phase === "running" && state.origin.domain === plant.id && <RunningMark state={state} />}
         <button type="button" className={panel.icon} aria-label="Close the run panel" onClick={onClose}>
           <X size={16} aria-hidden="true" />
         </button>
@@ -275,6 +293,7 @@ export function LaunchPanel({ launch, plant, path, selected = null, onClose, onF
         selected={selected}
         change={setDraft}
         onFinished={onFinished}
+        watched={watched}
       />
     </aside>
   );

@@ -24,6 +24,8 @@ function change(label: string, value: string) {
   fireEvent.change(screen.getByLabelText(label), { target: { value } });
 }
 
+const finishedWait = { timeout: 3000 };
+
 describe("launch panel", () => {
   it("plans a run with a fault and opens the finished run", async () => {
     const fake = launchBridge();
@@ -45,7 +47,7 @@ describe("launch panel", () => {
     });
     await vi.waitFor(() => {
       expect(onFinished).toHaveBeenCalledWith("w-7");
-    });
+    }, finishedWait);
     expect(fake.calls[0]).toEqual({ name: "world.create", args: { domain: "mini", seed: 9, explore: false } });
     expect(fake.calls.find((call) => call.name === "fault.inject")?.args).toEqual({
       world_id: "w-7",
@@ -109,6 +111,7 @@ describe("launch panel", () => {
     expect(await screen.findByText("Running Mini plant as run w-7")).toHaveFocus();
     expect(screen.getByText("30 min of simulated time · Explore · no faults")).toBeInTheDocument();
     expect(screen.getByText("00:00:00 of 00:30:00 simulated")).toBeInTheDocument();
+    expect(screen.getByText(/^Running · 00:00:00 elapsed/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Stop now" }));
     expect(screen.getByRole("status")).toHaveTextContent("Stopping at the next step");
     await act(async () => {
@@ -117,7 +120,7 @@ describe("launch panel", () => {
     });
     await vi.waitFor(() => {
       expect(onFinished).toHaveBeenCalledWith("w-7");
-    });
+    }, finishedWait);
     expect(fake.calls.at(-1)?.name).toBe("run.end");
   });
 
@@ -237,9 +240,11 @@ describe("launch panel lifetime", () => {
       fake.free();
       await Promise.resolve();
     });
+    expect(screen.getByRole("status")).toHaveTextContent("Run w-7 finished.");
+    expect(onFinished).not.toHaveBeenCalled();
     await vi.waitFor(() => {
       expect(onFinished).toHaveBeenCalledWith("w-7");
-    });
+    }, finishedWait);
   });
 
   it("tells another plant that a run is in progress and leaves a finished run of another plant alone", async () => {
