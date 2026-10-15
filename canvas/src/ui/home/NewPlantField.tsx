@@ -1,3 +1,4 @@
+import { TriangleAlert } from "lucide-react";
 import type { FocusEvent } from "react";
 import { useId } from "react";
 import { useFocusOnMount } from "../useFocusOnMount";
@@ -60,9 +61,8 @@ function FieldInput({
 }
 
 function describedBy(id: string, hint: string | undefined, problem: string): string | undefined {
-  const parts = [hint === undefined ? "" : `${id}-hint`, problem === "" ? "" : `${id}-problem`];
-  const joined = parts.filter((part) => part !== "").join(" ");
-  return joined === "" ? undefined : joined;
+  if (problem !== "") return `${id}-problem`;
+  return hint === undefined ? undefined : `${id}-hint`;
 }
 
 function FieldNotes({
@@ -74,14 +74,13 @@ function FieldNotes({
   readonly hint: string | undefined;
   readonly problem: string;
 }) {
-  return (
-    <>
-      {hint !== undefined && <small id={`${id}-hint`}>{hint}</small>}
-      {problem !== "" && (
-        <small id={`${id}-problem`} className={styles.idProblem}>
-          {problem}
-        </small>
-      )}
-    </>
-  );
+  if (problem !== "") {
+    return (
+      <small id={`${id}-problem`} className={styles.idProblem}>
+        <TriangleAlert size={12} aria-hidden="true" />
+        {problem}
+      </small>
+    );
+  }
+  return hint === undefined ? null : <small id={`${id}-hint`}>{hint}</small>;
 }

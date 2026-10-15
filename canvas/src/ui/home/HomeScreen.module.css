@@ -250,9 +250,17 @@
   color: var(--status-alarm);
 }
 
-.idProblem {
+.newField .idProblem {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
   color: var(--status-alarm);
   font-size: var(--text-sm);
+}
+
+.newField input[aria-invalid="true"] {
+  border-color: var(--status-alarm);
+  box-shadow: 0 0 0 1px var(--status-alarm);
 }
 
 .newFailure {
