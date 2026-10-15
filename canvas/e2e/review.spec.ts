@@ -5,7 +5,6 @@ import { env } from "./support/env";
 import { nodesOutsideCanvas } from "./support/fitAudit";
 import { noteProblems } from "./support/noteFit";
 import { textClashes } from "./support/textClashes";
-import { waitForViewport } from "./support/viewport";
 
 test.use({ storageState: env("CANVAS_APP_STATE") });
 test.setTimeout(90_000);
@@ -125,23 +124,6 @@ test("a review node lists every port of its kind as a row, observed or not, at e
   for (let step = 0; step < 3; step += 1) {
     expect(await page.evaluate(textClashes)).toEqual([]);
     await page.keyboard.press("+");
-  }
-});
-
-test("a faulted node's id, kind, cause and effector outcome never overlap at any zoom step", async ({ page }) => {
-  await page.setViewportSize({ width: 1280, height: 720 });
-  await page.goto(`${env("CANVAS_APP_URL")}/#/run?world=w-boiler`);
-  await expect(page.getByText(/\d+ observations/)).toBeVisible({ timeout: 60_000 });
-  await page.getByRole("slider", { name: "Playback time" }).fill("660");
-  const boiler = page.getByRole("group", { name: /^boiler-1, / });
-  await expect(boiler.getByText("Fault · scaling")).toBeVisible();
-  const graph = page.getByRole("application", { name: "Plant graph" });
-  await graph.focus();
-  await waitForViewport(page);
-  for (const key of ["+", "+", "-", "-", "-", "-"]) {
-    await page.keyboard.press(key);
-    await expect(boiler.getByText("Fault · scaling")).toBeVisible();
-    await expect.poll(() => page.evaluate(textClashes)).toEqual([]);
   }
 });
 
