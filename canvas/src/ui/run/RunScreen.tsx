@@ -5,6 +5,7 @@ import type { NavigationStore } from "../../app/navigationStore";
 import type { PlantState, PlantStore } from "../../app/plantStore";
 import type { ReviewState, ReviewStore } from "../../app/reviewStore";
 import type { WorkspaceStore } from "../../app/workspaceStore";
+import { isMissing } from "../../model/bridge";
 import { stateUnit } from "../../model/plant";
 import { plantView } from "../../model/plantView";
 import type { Report } from "../../model/report";
@@ -17,6 +18,7 @@ import { useCanvasAspect } from "../plant/canvasAspect";
 import { PlantGraph } from "../plant/PlantGraph";
 import plantStyles from "../plant/PlantScreen.module.css";
 import { useStore } from "../useStore";
+import { MissingRun } from "./MissingRun";
 import { Banners } from "./RunStatus";
 import type { HallProps } from "./RunHeader";
 import { Header } from "./RunHeader";
@@ -175,12 +177,39 @@ function Side({
   );
 }
 
+function useUnitOf(plant: ReadyPlant | null) {
+  return useCallback(
+    (entity: string, name: string) => (plant === null ? "" : stateUnit(plant.plant, entity, name)),
+    [plant],
+  );
+}
+
 function usePlantIdentity(state: ReviewState, workspace: WorkspaceStore, plant: ReadyPlant | null) {
   const listing = useStore(workspace);
   const domainId = state.report.phase === "ready" ? state.report.value.domainId : "";
   const entry = listing.phase === "ready" ? listing.workspace.domains.find((d) => d.id === domainId) : undefined;
   const title = plant?.plant.title ?? entry?.title ?? domainId;
   return { title: title === "" ? "Plant" : title, path: entry?.path ?? null };
+}
+
+interface CentreProps extends GraphProps {
+  readonly worldId: string;
+  readonly navigation: NavigationStore;
+  readonly review: ReviewStore;
+}
+
+function Centre({ review, state, plant, hall, onHall, worldId, navigation }: CentreProps) {
+  return (
+    <section className={styles.center} aria-label={`Run ${worldId}`}>
+      <Banners state={state} />
+      <Timeline review={review} state={state} />
+      {state.report.phase === "failed" && isMissing(state.report.failure) ? (
+        <MissingRun worldId={worldId} navigation={navigation} />
+      ) : (
+        <Graph review={review} state={state} plant={plant} hall={hall} onHall={onHall} />
+      )}
+    </section>
+  );
 }
 
 export function RunScreen({ review, plants, workspace, navigation, launch, worldId }: RunScreenProps) {
@@ -195,10 +224,7 @@ export function RunScreen({ review, plants, workspace, navigation, launch, world
     };
   }, [review, worldId]);
   usePlayback(review, state.playing);
-  const unit = useCallback(
-    (entity: string, name: string) => (plant === null ? "" : stateUnit(plant.plant, entity, name)),
-    [plant],
-  );
+  const unit = useUnitOf(plant);
   return (
     <ReactFlowProvider>
       <div className={styles.screen}>
@@ -212,11 +238,15 @@ export function RunScreen({ review, plants, workspace, navigation, launch, world
           plant={identity}
         />
         <Side review={review} state={state} plant={plant} hall={hall} onHall={setHall} />
-        <section className={styles.center} aria-label={`Run ${worldId}`}>
-          <Banners state={state} />
-          <Timeline review={review} state={state} />
-          <Graph review={review} state={state} plant={plant} hall={hall} onHall={setHall} />
-        </section>
+        <Centre
+          review={review}
+          state={state}
+          plant={plant}
+          hall={hall}
+          onHall={setHall}
+          worldId={worldId}
+          navigation={navigation}
+        />
         <RunPanel review={review} state={state} plant={plant} unit={unit} />
       </div>
     </ReactFlowProvider>
