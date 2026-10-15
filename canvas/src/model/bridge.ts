@@ -8,7 +8,10 @@ export interface Definition {
 export interface RunEntry {
   readonly worldId: string;
   readonly ended: boolean;
+  readonly complete: boolean;
+  readonly incompleteReason: string;
   readonly explore: boolean;
+  readonly seed: number | null;
   readonly plant: string;
   readonly durationS: number;
   readonly recordedAt: string;
@@ -78,7 +81,10 @@ function runEntry(value: unknown): RunEntry {
   return {
     worldId: text(entry.world_id),
     ended: entry.ended === true,
+    complete: entry.complete === true,
+    incompleteReason: text(entry.incomplete_reason),
     explore: entry.explore === true,
+    seed: typeof entry.seed === "number" ? entry.seed : null,
     plant: text(entry.plant),
     durationS: typeof entry.duration_ns === "number" ? Math.round(entry.duration_ns / 1e9) : 0,
     recordedAt: text(entry.recorded_at),

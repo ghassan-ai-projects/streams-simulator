@@ -37,7 +37,10 @@ describe("home screen", () => {
     const runs = Array.from({ length: 25 }, (_, i) => ({
       worldId: `w-${String(i)}`,
       ended: true,
+      complete: true,
+      incompleteReason: "",
       explore: false,
+      seed: null,
       plant: i % 5 === 0 ? "other" : "factory-utilities",
       durationS: 60,
       recordedAt: `2026-10-14T10:${String(i).padStart(2, "0")}:00Z`,

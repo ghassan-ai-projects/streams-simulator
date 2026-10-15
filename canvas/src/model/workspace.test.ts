@@ -18,7 +18,10 @@ const run = (worldId: string, plant: string, recordedAt: string) => ({
   plant,
   recordedAt,
   ended: true,
+  complete: true,
+  incompleteReason: "",
   explore: false,
+  seed: null,
   durationS: 60,
 });
 
@@ -114,7 +117,17 @@ describe("workspace", () => {
   });
 
   it("says how many faults a finished run injected", () => {
-    const finished = { worldId: "w", ended: true, explore: true, plant: "p", durationS: 60, recordedAt: "" };
+    const finished = {
+      worldId: "w",
+      ended: true,
+      complete: true,
+      incompleteReason: "",
+      explore: true,
+      seed: null,
+      plant: "p",
+      durationS: 60,
+      recordedAt: "",
+    };
     expect(faultWords({ ...finished, faults: 1 })).toBe("1 fault");
     expect(faultWords(finished)).toBe("no faults");
     expect(faultWords({ ...finished, ended: false, faults: 3 })).toBe("");

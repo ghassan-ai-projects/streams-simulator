@@ -13,7 +13,10 @@ export const sampleWorkspace: Workspace = {
     {
       worldId: "w-1",
       ended: true,
+      complete: true,
+      incompleteReason: "",
       explore: false,
+      seed: 7,
       plant: "factory-utilities",
       durationS: 1800,
       recordedAt: "2026-10-14T10:00:00Z",
@@ -21,7 +24,10 @@ export const sampleWorkspace: Workspace = {
     {
       worldId: "w-2",
       ended: false,
+      complete: false,
+      incompleteReason: "",
       explore: true,
+      seed: null,
       plant: "factory-utilities",
       durationS: 0,
       recordedAt: "2026-10-14T11:00:00Z",
