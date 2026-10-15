@@ -8,19 +8,25 @@ export interface Point {
   readonly y: number;
 }
 
+export type Side = "right" | "left" | "down" | "up";
+
 export interface WireLink {
   readonly id: string;
   readonly from: Point;
   readonly to: Point;
+  readonly leaves?: Side;
+  readonly enters?: Side;
+  readonly stub?: number;
 }
 
 export interface WireScene {
   readonly links: readonly WireLink[];
   readonly nodes: readonly Rect[];
   readonly titles: readonly Rect[];
+  readonly titleClearances?: readonly number[];
 }
 
-export const wireClearance = { node: 8, title: 4, stub: 16, lane: 6 } as const;
+export const wireClearance = { node: 8, stub: 16, lane: 6 } as const;
 
 const laneCount = { x: 4, y: 2 } as const;
 const gridLimit = 400_000;
@@ -29,18 +35,30 @@ function inflate(box: Rect, by: number): Rect {
   return { x: box.x - by, y: box.y - by, width: box.width + 2 * by, height: box.height + 2 * by };
 }
 
+const outward: Readonly<Record<Side, Point>> = {
+  right: { x: 1, y: 0 },
+  left: { x: -1, y: 0 },
+  down: { x: 0, y: 1 },
+  up: { x: 0, y: -1 },
+};
+
+function horizontal(side: Side): boolean {
+  return side === "left" || side === "right";
+}
+
 function stubs(link: WireLink): { readonly start: Point; readonly goal: Point } {
+  const length = link.stub ?? wireClearance.stub;
+  const from = outward[link.leaves ?? "right"];
+  const to = outward[link.enters ?? "left"];
   return {
-    start: { x: link.from.x + wireClearance.stub, y: link.from.y },
-    goal: { x: link.to.x - wireClearance.stub, y: link.to.y },
+    start: { x: link.from.x + from.x * length, y: link.from.y + from.y * length },
+    goal: { x: link.to.x + to.x * length, y: link.to.y + to.y * length },
   };
 }
 
-function obstaclesOf(scene: WireScene): Rect[] {
-  return [
-    ...scene.nodes.map((box) => inflate(box, wireClearance.node)),
-    ...scene.titles.map((box) => inflate(box, wireClearance.title)),
-  ];
+function obstaclesOf(scene: WireScene, titleClearance: number | null): Rect[] {
+  const titles = titleClearance === null ? [] : scene.titles.map((box) => inflate(box, titleClearance));
+  return [...scene.nodes.map((box) => inflate(box, wireClearance.node)), ...titles];
 }
 
 function gridOf(scene: WireScene, obstacles: readonly Rect[]): Grid {
@@ -79,6 +97,10 @@ function simplify(points: readonly Point[]): Point[] {
 
 function detour(link: WireLink): Point[] {
   const { start, goal } = stubs(link);
+  if (!horizontal(link.leaves ?? "right")) {
+    const middle = (start.y + goal.y) / 2;
+    return [link.from, start, { x: start.x, y: middle }, { x: goal.x, y: middle }, goal, link.to];
+  }
   const middle = (start.x + goal.x) / 2;
   return [link.from, start, { x: middle, y: start.y }, { x: middle, y: goal.y }, goal, link.to];
 }
@@ -99,17 +121,35 @@ function weight(link: WireLink): number {
   return Math.abs(link.to.x - link.from.x) + Math.abs(link.to.y - link.from.y);
 }
 
-export function routeWires(scene: WireScene): ReadonlyMap<string, readonly Point[]> {
-  const routes = new Map<string, readonly Point[]>();
-  const grid = gridOf(scene, obstaclesOf(scene));
-  const searchable = grid.nx * grid.ny <= gridLimit;
+function routeOn(scene: WireScene, titleClearance: number | null, ordered: readonly WireLink[]): Map<string, Point[]> {
+  const grid = gridOf(scene, obstaclesOf(scene, titleClearance));
+  const routes = new Map<string, Point[]>();
   const occupancy = emptyOccupancy(grid);
-  const ordered = [...scene.links].sort((a, b) => weight(a) - weight(b) || a.id.localeCompare(b.id));
   for (const link of ordered) {
     const { start, goal } = stubs(link);
-    const found = searchable ? findPath(grid, occupancy, vertexOf(grid, start), vertexOf(grid, goal)) : null;
+    const ends = { start: vertexOf(grid, start), goal: vertexOf(grid, goal) };
+    const turned = { start: !horizontal(link.leaves ?? "right"), goal: !horizontal(link.enters ?? "left") };
+    const found = grid.nx * grid.ny <= gridLimit ? findPath(grid, occupancy, ends, turned) : null;
     if (found !== null) occupy(grid, occupancy, found);
-    routes.set(link.id, simplify(found === null ? detour(link) : polyline(link, grid, found)));
+    routes.set(link.id, found === null ? [] : polyline(link, grid, found));
   }
+  return routes;
+}
+
+export function routeWires(scene: WireScene): ReadonlyMap<string, readonly Point[]> {
+  const ordered = [...scene.links].sort((a, b) => weight(a) - weight(b) || a.id.localeCompare(b.id));
+  const routes = new Map<string, readonly Point[]>();
+  const passes: (number | null)[] = [...(scene.titleClearances ?? [0]), null];
+  let pending = ordered;
+  for (const clearance of passes) {
+    if (pending.length === 0) break;
+    const found = routeOn(scene, clearance, pending);
+    pending.forEach((link) => {
+      const path = found.get(link.id) ?? [];
+      if (path.length > 0) routes.set(link.id, simplify(path));
+    });
+    pending = pending.filter((link) => !routes.has(link.id));
+  }
+  pending.forEach((link) => routes.set(link.id, simplify(detour(link))));
   return routes;
 }

@@ -44,3 +44,30 @@ export function wireEndsTooClose(): string[] {
       .map((b) => `${a.id} meets ${b.id}`),
   );
 }
+
+export function wiresNearTitles(): string[] {
+  const texts = [...document.querySelectorAll(".react-flow__node-frameTitle")].flatMap((title) => {
+    const text = document.createTreeWalker(title, NodeFilter.SHOW_TEXT).nextNode();
+    if (text === null) return [];
+    const range = document.createRange();
+    range.selectNodeContents(text);
+    return [{ title: text.textContent ?? "", box: range.getBoundingClientRect() }];
+  });
+  const found = new Set<string>();
+  document.querySelectorAll<SVGPathElement>(".react-flow__edge .react-flow__edge-path").forEach((path) => {
+    const matrix = path.getScreenCTM();
+    if (matrix === null) return;
+    const id = path.closest(".react-flow__edge")?.getAttribute("data-id") ?? "wire";
+    for (let at = 0; at <= path.getTotalLength(); at += 3) {
+      const point = path.getPointAtLength(at);
+      const x = point.x * matrix.a + point.y * matrix.c + matrix.e;
+      const y = point.x * matrix.b + point.y * matrix.d + matrix.f;
+      for (const { title, box } of texts) {
+        const dx = Math.max(box.left - x, 0, x - box.right);
+        const dy = Math.max(box.top - y, 0, y - box.bottom);
+        if (Math.hypot(dx, dy) < 8) found.add(`${id} near ${title}`);
+      }
+    }
+  });
+  return [...found];
+}

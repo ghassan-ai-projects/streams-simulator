@@ -1,7 +1,7 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 import { env } from "./support/env";
-import { wireEndsTooClose, wiresUnderNodes } from "./support/wireAudit";
+import { wireEndsTooClose, wiresNearTitles, wiresUnderNodes } from "./support/wireAudit";
 
 test.use({ storageState: env("CANVAS_APP_STATE") });
 test.setTimeout(90_000);
@@ -13,6 +13,12 @@ async function checkEveryTier(page: Page) {
   for (let step = 0; step < 6; step += 1) {
     await expect.poll(() => page.evaluate(wiresUnderNodes)).toEqual([]);
     await expect.poll(() => page.evaluate(wireEndsTooClose)).toEqual([]);
+    const tier = (await graph.getAttribute("class"))?.match(/tier-(\w+)/)?.[1];
+    if (tier === "compact" || tier === "full") {
+      await expect
+        .poll(() => page.evaluate(wiresNearTitles), { intervals: [250, 500, 1000], timeout: 20_000 })
+        .toEqual([]);
+    }
     await page.keyboard.press("+");
   }
 }

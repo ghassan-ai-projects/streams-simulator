@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { directionOf, firstOf, nearest } from "../../model/graphKeys";
 import type { PlantView } from "../../model/plantView";
 import { describeNode, hallCount } from "../../model/plantView";
-import { openingFloor, tierOf } from "../../model/viewport";
+import { openingFloor, screenPixel, tierOf } from "../../model/viewport";
 import { routeView } from "../../model/wireView";
 import type { FlowNode, NodeLive } from "./flow";
 import { flowEdges, flowNodes } from "./flow";
@@ -203,7 +203,8 @@ function useFlowContent({ view, selected, live, flagged, onConnect, active }: Fl
   const tier = tierOf(zoom);
   const shown = view.nodes.some((entry) => entry.id === selected) ? selected : null;
   const review = live !== undefined;
-  const routes = useMemo(() => routeView(view, tier, review), [view, tier, review]);
+  const pixel = screenPixel(zoom);
+  const routes = useMemo(() => routeView(view, tier, review, pixel), [view, tier, review, pixel]);
   const edges = useMemo(() => flowEdges(view, routes, shown), [view, routes, shown]);
   return { nodes, edges, zoom };
 }

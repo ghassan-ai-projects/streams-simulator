@@ -67,8 +67,10 @@ describe("wire router", () => {
     const title = { x: 150, y: 100, width: 200, height: 28 };
     const nodes = [node(0, 90), node(500, 90)];
     const link = { id: "a", from: { x: 100, y: 120 }, to: { x: 500, y: 120 } };
-    const route = routeWires(sceneOf({ links: [link], nodes, titles: [title] })).get("a") ?? [];
-    expect(cuts(route, title, wireClearance.title - 1)).toBe(false);
+    const clearance = [8];
+    const route =
+      routeWires(sceneOf({ links: [link], nodes, titles: [title], titleClearances: clearance })).get("a") ?? [];
+    expect(cuts(route, title, 8 - 1)).toBe(false);
   });
 
   it("is the same on every run and independent of the links' order", () => {
@@ -96,5 +98,26 @@ describe("wire router", () => {
         return next?.x === point.x && next.y !== point.y ? [point.x] : [];
       });
     expect(verticals("a").filter((x) => verticals("b").includes(x))).toEqual([]);
+  });
+
+  it("leaves a node's bottom edge and enters another's top edge in the same column, round what lies between", () => {
+    const upper = node(0, 0);
+    const middle = node(0, 100);
+    const lower = node(0, 200);
+    const link = {
+      id: "a",
+      from: { x: 50, y: 60 },
+      to: { x: 50, y: 200 },
+      leaves: "down" as const,
+      enters: "up" as const,
+    };
+    const route = routeWires(sceneOf({ links: [link], nodes: [upper, middle, lower] })).get("a") ?? [];
+    expect(route[0]).toEqual(link.from);
+    expect(route[1]?.x).toBe(50);
+    expect(route[1]?.y).toBeGreaterThanOrEqual(76);
+    expect(route.at(-2)?.x).toBe(50);
+    expect(route.at(-2)?.y).toBeLessThanOrEqual(184);
+    expect(orthogonal(route)).toBe(true);
+    expect(cuts(route.slice(1, -1), middle, wireClearance.node - 1)).toBe(false);
   });
 });

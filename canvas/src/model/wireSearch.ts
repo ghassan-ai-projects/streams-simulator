@@ -94,11 +94,12 @@ class Search {
     this.parent = new Int32Array(grid.nx * grid.ny * 2).fill(-1);
   }
 
-  run(start: number, goal: number): number[] | null {
+  run(start: number, goal: number, vertical: { readonly start: boolean; readonly goal: boolean }): number[] | null {
     const heap = new Heap();
-    const target = goal * 2;
-    this.cost[start * 2] = 0;
-    heap.push(this.estimate(start, goal), start * 2);
+    const target = goal * 2 + (vertical.goal ? 1 : 0);
+    const first = start * 2 + (vertical.start ? 1 : 0);
+    this.cost[first] = 0;
+    heap.push(this.estimate(start, goal), first);
     while (heap.size > 0) {
       const state = heap.pop();
       if (state === target) return this.path(state);
@@ -172,8 +173,18 @@ class Search {
   }
 }
 
-export function findPath(grid: Grid, occupancy: Occupancy, start: number, goal: number): number[] | null {
-  return new Search(grid, occupancy).run(start, goal);
+export interface Ends {
+  readonly start: number;
+  readonly goal: number;
+}
+
+export function findPath(
+  grid: Grid,
+  occupancy: Occupancy,
+  ends: Ends,
+  vertical: { readonly start: boolean; readonly goal: boolean },
+): number[] | null {
+  return new Search(grid, occupancy).run(ends.start, ends.goal, vertical);
 }
 
 export function occupy(grid: Grid, occupancy: Occupancy, path: readonly number[]): void {

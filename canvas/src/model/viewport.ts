@@ -42,6 +42,13 @@ export function centreOf(box: Rect): { readonly x: number; readonly y: number } 
 
 export const openingFloor = 0.4;
 
+const pixelSteps = [1, 1.25, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10, 13, 16, 20] as const;
+
+export function screenPixel(zoom: number): number {
+  const wanted = 1 / Math.max(zoom, 0.05);
+  return pixelSteps.find((step) => step >= wanted) ?? 20;
+}
+
 export type Tier = "full" | "compact" | "overview" | "map";
 
 export function tierOf(zoom: number): Tier {
