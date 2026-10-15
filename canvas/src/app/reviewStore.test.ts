@@ -225,6 +225,50 @@ describe("review", () => {
     expect(store.badgeFor("w-9")).toBe("incomplete");
   });
 
+  it("answers a run the listing still shows as open from the listing, not the network", async () => {
+    const { bridge, store } = setup();
+    bridge.actions.set(
+      "run.report",
+      success({ ...report, run: { ...report.run, ended: false, complete: false, incomplete_reason: "" } }),
+    );
+    store.open("w-9", { ...entry, worldId: "w-9", ended: false, complete: false });
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(bridge.calls.map((call) => call.name)).toEqual(["run.report"]);
+    expect(bridge.reads).toEqual([]);
+    expect(store.snapshot().verified).toMatchObject({
+      phase: "failed",
+      failure: { status: 422, code: "run_incomplete", message: "the run is incomplete: the run did not close." },
+    });
+    expect(store.snapshot().runDomain).toMatchObject({
+      phase: "failed",
+      failure: { status: 404, code: "not_found" },
+    });
+    expect(store.badgeFor("w-9")).toBe("incomplete");
+  });
+
+  it("finishes a run listed as open when its journal closes while the review watches", async () => {
+    const { bridge, store, flushes } = setup();
+    bridge.actions.set("run.report", success({ ...report, run: { ...report.run, ended: false, complete: false } }));
+    store.open("w-1", { ...entry, worldId: "w-1", ended: false, complete: false });
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(bridge.calls.map((call) => call.name)).toEqual(["run.report"]);
+    bridge.actions.set("run.report", success(report));
+    bridge.stream("w-1", journal);
+    flushes.forEach((flush) => {
+      flush();
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(bridge.calls.filter((call) => call.name === "run.report")).toHaveLength(2);
+    expect(bridge.calls.filter((call) => call.name === "run.verify")).toHaveLength(1);
+    expect(store.snapshot()).toMatchObject({
+      report: { phase: "ready", value: { ended: true } },
+      verified: { phase: "ready", value: { matches: true } },
+    });
+  });
+
   it("re-asks nothing doomed when an abandoned run's journal stream closes", async () => {
     const { bridge, store, flushes } = setup();
     store.open("w-9", { ...entry, worldId: "w-9", ended: true, complete: false });

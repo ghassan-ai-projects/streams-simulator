@@ -53,8 +53,12 @@ const absentFile: BridgeFailure = {
   issues: [],
 };
 
+function knownUnfinished(known: RunEntry | undefined): known is RunEntry {
+  return known !== undefined && !known.complete;
+}
+
 function absentLoads(known: RunEntry | undefined): Pick<ReviewState, "verified" | "runDomain"> | Record<string, never> {
-  if (known === undefined || !known.ended || known.complete) return {};
+  if (!knownUnfinished(known)) return {};
   return {
     verified: {
       phase: "failed",
@@ -75,7 +79,6 @@ export class ReviewStore extends Observable<ReviewState> {
   private stop: (() => void) | null = null;
   private pending = 0;
   private refreshed = false;
-  private knownIncomplete = false;
 
   constructor(
     private readonly bridge: Bridge,
@@ -92,11 +95,10 @@ export class ReviewStore extends Observable<ReviewState> {
     if (state.worldId === worldId && (this.stop !== null || state.playback.phase !== "loading")) return;
     this.close();
     this.refreshed = false;
-    this.knownIncomplete = known !== undefined && known.ended && !known.complete;
     this.index = new PlaybackIndex();
     this.set({ ...idle, worldId, openedAt: this.now(), ...absentLoads(known) });
     void this.loadReport(worldId);
-    if (!this.knownIncomplete) {
+    if (!knownUnfinished(known)) {
       void this.loadVerify(worldId);
       void this.loadRunDomain(worldId);
     }
@@ -193,7 +195,6 @@ export class ReviewStore extends Observable<ReviewState> {
   }
 
   private refreshIfLive(worldId: string): void {
-    if (this.knownIncomplete) return;
     const state = this.snapshot();
     if (this.refreshed || state.worldId !== worldId || state.report.phase !== "ready" || state.report.value.ended)
       return;
