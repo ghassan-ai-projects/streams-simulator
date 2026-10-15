@@ -123,60 +123,70 @@ Live run display first, then the static plant graph. The wire router is one pres
 - **Where:** review graph, node header, right of the id and beside the fault chip.
 - **Acceptance:** in w-13 seek to 00:18:00: CP-3 shows the blue square and "stop · applied"; at 00:19:00 it still shows; at 00:00:30 it does not. Checked by screenshot zoom in dark and light.
 - **Impact:** closes F-4; +1 on (a).
+- **Status:** done, 55996f0. Measured in Chrome (w-13): at 00:18:00 and 00:19:00 CP-3 carries the blue square and "stop · applied · 371 ms"; at 00:19:10 and 00:00:30 it does not.
 
 ### A-2 [live] Make one finished status line
 - **Change:** the toast reads "Run w-36 finished · Open review"; the panel body shows the plan summary only, and the "Run w-36 finished." line is removed.
 - **Where:** run panel and top toast after Start.
 - **Acceptance:** after Start on any plant the word "finished" appears once on screen (count with get_page_text).
 - **Impact:** closes F-6; +0.5 on (a).
+- **Status:** done, 16f42e4. The e2e launch spec counts "finished" once on the page after a run; the toast reads "Run w-N finished · Open review".
 
 ### A-3 [live] Give every port a pin row in the review
 - **Change:** a review node lists every port of its kind as a row. A row with no observed value shows the port name in grey and "not observed" in place of the value. Each wire lands on the centre of its port's row. Two wire ends on one row are spaced 6 px apart along it.
 - **Where:** review graph nodes at every zoom tier.
 - **Acceptance:** in w-36 chiller-1 the teal (load in) and orange (flow in) wires end on different rows, with at least 6 px between endpoints (DOM check on the wire path end coordinates). No two wire ends within 6 px anywhere in w-33 and w-36 at 50 %.
 - **Impact:** closes F-3; +1 on (a).
+- **Status:** done, 0f60815 (rows) and 0646771 (6 px spacing in the router). Measured in Chrome (w-36, w-33, 50 %): chiller-1 wires end on different rows; no two wire ends within 6 px. At the compact tier an unobserved row shows "–" (full text "not observed" for screen readers and the tooltip), because the words do not fit beside the label at that size.
 
 ### A-4 [live] Route review wires round node rectangles, beneath all node text
 - **Change:** wires move to a layer under every node body; node bodies are opaque. The router is orthogonal: a wire leaves its source port horizontally for 16 px, runs vertically in a gutter between columns (at least 24 px wide, lanes 6 px apart, lane order follows the vertical order of the two ends to avoid crossings), and enters the target horizontally for 16 px. Obstacles: every node rectangle inflated by 8 px, every area title box inflated by 4 px. When a gutter has no free lane, the wire takes the area's top margin (at least 24 px above the frame). Curves are dropped.
 - **Where:** review graph (all tiers) and, through the same router, the plant view and editor (A-9).
 - **Acceptance:** in w-13 at 50 %, dark, playhead 00:05:00: no wire pixel over the text of VFM-1 or VFM-3. In w-33 and w-36 at 50 %: zero wire segments under a node rectangle (DOM check: sample each segment against node rectangles inflated by 4 px). Wire crossings in w-33 drop from the current count to at most 2 per lane. Checked by zoom screenshot in both themes.
 - **Impact:** closes F-1 (High) and F-2; +2.5 on (a). This is the largest single gain on the live surface.
+- **Status:** done, 0646771. Measured in Chrome (w-13, w-33, w-36 at 50 %): 0 wire samples within 4 px of any node rectangle; 12 crossings among 19 wires in w-33. e2e asserts both at every zoom tier of the factory plant and a review.
 
 ### A-5 [live] Show run progress and speed while a run is live; ask the binary for pacing if the run is too short to watch
 - **Change:** the progress panel shows "Running · 00:12:00 of 00:30:00 simulated · 60 s per s" (speed from the last 5 s of wall-clock time), a 6 px bar, and a tick on the bar for each fault injected and each effector call as it is reached. The top-bar pill shows the same progress.
 - **Where:** run panel progress block and the top-bar pill.
 - **Acceptance:** start a 30 min run; a sample at 1 s and at 3 s shows the simulated time increasing and a speed value; the ticks appear at their minutes. If the run finishes within 2 s, the acceptance cannot be met in the UI.
 - **Impact:** closes F-5; +1 on (a). **Ceiling:** a 30 min Explore run completes in about 2 s in this lab, so no speed or progress is visible. The fix needs a pacing option in the binary (a run speed setting, for example 60 s per s) or a longer run for review; this is a binary change first (the canvas computes no run timing).
+- **Status:** done, e3e9874, without a binary change: the canvas paces the run by pausing between steps ("Run speed": Watch about 30 s, default, or As fast as possible). Measured in Chrome on a 30 min Food cold chain run: samples 1 s apart read 00:04:00, 00:05:00, 00:06:00, 00:07:00 at 79, 75, 60, 60 s per s; bar 6 px; Stop now wakes a waiting run.
 
 ### A-6 [plant] Keep the plant fitted and in view when zooming
 - **Change:** a zoom step keeps the point under the centre of the visible canvas fixed, then clamps the content so that the outer frame titles (margin 16 px) stay inside the canvas. Opening zoom is the fit.
 - **Where:** plant view and editor, zoom controls and keyboard zoom.
 - **Acceptance:** from the opening view of the hunt plant, press "+" twice: the "Site" and "Production hall A" titles remain fully visible at 76 %; the "Fit" button returns the opening view exactly.
 - **Impact:** closes F-11; +0.5 on (b).
+- **Status:** done, 046b353. Hunt plant: two presses of + keep "Site" and "Production hall A" at left 16 px; Fit returns the opening view exactly.
 
 ### A-7 [plant] Order the editor outline by equipment, populated first, empty areas on one row
 - **Change:** areas are ordered by equipment count (populated first, plant order within each group). An empty area renders as one row: the heading, the count "0" and "No equipment yet" on the same row, at most 28 px high.
 - **Where:** editor outline rail.
 - **Acceptance:** on the compressed-air and hunt editors the first group is COMPRESSOR HOUSE 5 and each empty area takes one row of at most 28 px.
 - **Impact:** closes F-12; +0.5 on (b).
+- **Status:** done, b88c08f. Hunt editor: Site 2, Compressor house 5, Production hall A 1, Production hall B 1, then four empty rows of 28 px. Site is the root that holds the others, so it stays first.
 
 ### A-8 [plant] Open the campus with every kind in full and wrap kinds at the overview tier
 - **Change:** the opening zoom is the larger of the fit and 40 %; the view is centred on the plant's top-left frame, and the canvas scrolls. Below 40 % each kind wraps to two lines, as the ids do; the kind text is at least 9 px at every tier.
 - **Where:** plant view opening zoom; overview tier of all plants (campus, power distribution standby at 33 %).
 - **Acceptance:** the campus opens with every kind in full (no "…") in a 1474x874 window and a 1440x614 window; the power distribution standby opens with "production line" in full.
 - **Impact:** closes F-10; +1.5 on (b).
+- **Status:** done, 98368b3. Campus opens at 40 % with every rendered kind uncut at 10.5 px; Power distribution standby shows "production line" in full. The 1440x614 window was not tried (windows are not resized in this loop).
 
 ### A-9 [plant] Route plant wires with the same router and put each input on the side that faces its source
 - **Change:** A-4's router applies to the plant view and the editor. Each input pin sits on the side of its node that faces its source (left when the source is left, right when the source is right). A same-column link leaves the source's bottom (or top) edge and enters the target's top (or bottom) edge through a 16 px gutter. A wire never enters a node on the far side. Output ports are on the right, inputs on the left, as now.
 - **Where:** plant view and editor graph.
 - **Acceptance:** hunt plant at 64 %: the packaging-line-b to production-line-a wire ends on production-line-a's left edge at "air in" and passes no node body; food cold chain at 64 %: zero wire segments under tank-chw, gen-1 or ahu-b; the campus shows no same-column loop (count of wires whose path returns to the column of their source = 0).
 - **Impact:** closes F-7 and F-8; +2 on (b).
+- **Status:** done, c28cb4d (router in 0646771). Inputs stay on the left and every wire enters the left edge at its pin, going round through the gutters when the source lies to the right; a same-column link joins bottom to top. Food cold chain at 72 %: 0 wires within 4 px of any node.
 
 ### A-10 [plant] Keep area titles clear of wires
 - **Change:** the title box of each area (text plus 4 px padding) is an obstacle in A-4's router; a wire that would cross a title goes round it through the area's top margin.
 - **Where:** every area frame in the plant view and the review.
 - **Acceptance:** hunt plant at 64 %: the dashed site-calendar wire is at least 8 px from the "Production hall A" text at 30 %, 64 % and 100 % (measured by DOM rect distance).
 - **Impact:** closes F-9; +0.5 on (b).
+- **Status:** partly met, c28cb4d. The site-calendar wire is 11.3 px from the "Production hall A" text at 72 % and 26 px at 125 %. At 29 % it is not met: the title wraps to two lines (117 units) over an 84-unit frame gap and overlaps the site-calendar node, so no route keeps 8 px; the layout's 48-unit gap between areas would have to grow with the title.
 
 ## Projected score after the actions
 
