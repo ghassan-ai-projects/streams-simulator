@@ -15,6 +15,7 @@ import { flowEdges, flowNodes } from "./flow";
 import { useZoomActions } from "./GraphControls";
 import { plainKey } from "../keys";
 import { FrameNode, FrameTitleNode, HallNode, InstanceNode } from "./nodes";
+import { PanCue } from "./PanCue";
 import { WireEdge } from "./WireEdge";
 import { useFitted, useFollowSelection } from "./viewportFit";
 import styles from "./PlantScreen.module.css";
@@ -35,6 +36,7 @@ export interface PlantGraphProps {
   readonly focusZoom?: number;
   readonly flagged?: ReadonlySet<string>;
   readonly fitKey?: string;
+  readonly panCue?: boolean;
   readonly onConnect?: (from: string, to: string) => void;
   readonly marks?: ReadonlyMap<string, PlanMark>;
 }
@@ -246,6 +248,7 @@ function Flow(props: FlowProps) {
       }}
     >
       <Background gap={16} />
+      {props.panCue === true && <PanCue />}
     </ReactFlow>
   );
 }

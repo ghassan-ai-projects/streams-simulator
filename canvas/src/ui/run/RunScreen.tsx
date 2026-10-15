@@ -11,6 +11,7 @@ import { stateUnit } from "../../model/plant";
 import { runClock } from "../../model/timeline";
 import { noteLinesByEntity } from "../../model/noteLines";
 import { plantView } from "../../model/plantView";
+import type { PlantView } from "../../model/plantView";
 import { firstEventNode } from "../../model/reviewAnchor";
 import type { Report } from "../../model/report";
 import { runSpan } from "../../model/report";
@@ -103,6 +104,10 @@ interface GraphProps extends HallProps {
   readonly plant: ReadyPlant | null;
 }
 
+function anchorOf(view: PlantView | null, report: Report | null): string | null {
+  return view === null ? null : firstEventNode(report, new Set(view.nodes.map((node) => node.id)));
+}
+
 function Graph({ review, state, plant, hall, onHall }: GraphProps) {
   const { ref, aspect } = useCanvasAspect<HTMLDivElement>();
   const report = state.report.phase === "ready" ? state.report.value : null;
@@ -111,10 +116,7 @@ function Graph({ review, state, plant, hall, onHall }: GraphProps) {
     [plant, hall, aspect, report],
   );
   const live = useLive(review, state, plant);
-  const anchor = useMemo(
-    () => (view === null ? null : firstEventNode(report, new Set(view.nodes.map((node) => node.id)))),
-    [view, report],
-  );
+  const anchor = useMemo(() => anchorOf(view, report), [view, report]);
   if (view === null) return <OpeningPlant />;
   return (
     <div className={styles.graphArea}>
@@ -126,6 +128,7 @@ function Graph({ review, state, plant, hall, onHall }: GraphProps) {
       <div ref={ref} className={plantStyles.graphHost}>
         <PlantGraph
           anchor={anchor}
+          panCue
           view={view}
           viewKey={hall ?? "review"}
           fitKey={`${hall ?? "review"}:${String(aspect)}`}

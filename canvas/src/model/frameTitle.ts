@@ -41,6 +41,7 @@ export function boundsWithTitles(
 const breaks = /[\s\-_/]/;
 const tailChars = 6;
 
+// The tail is whole words only: a name with no short last word is never cut mid-word, the head's ellipsis cuts it instead.
 function tailStart(name: string): number {
   if (name.length <= tailChars + 2) return name.length;
   const lastBreak = name
@@ -48,7 +49,7 @@ function tailStart(name: string): number {
     .map((char) => breaks.test(char))
     .lastIndexOf(true);
   const word = name.length - lastBreak - 1;
-  return lastBreak > 0 && word <= tailChars ? lastBreak : name.length - tailChars;
+  return lastBreak > 0 && word <= tailChars ? lastBreak : name.length;
 }
 
 export function splitName(name: string): { readonly head: string; readonly tail: string } {

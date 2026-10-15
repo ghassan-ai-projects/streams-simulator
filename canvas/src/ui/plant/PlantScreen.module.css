@@ -85,6 +85,25 @@
   min-height: 0;
 }
 
+.panCue {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 32px;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.panCue[data-pan-cue="right"] {
+  right: 0;
+  background: linear-gradient(to right, transparent, var(--surface-canvas));
+}
+
+.panCue[data-pan-cue="left"] {
+  left: 0;
+  background: linear-gradient(to left, transparent, var(--surface-canvas));
+}
+
 .count {
   flex: none;
   margin-left: auto;

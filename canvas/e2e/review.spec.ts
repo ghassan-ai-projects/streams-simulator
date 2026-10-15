@@ -229,8 +229,10 @@ test("a review of a plant too large for 40 % opens at 40 % on its first fault, w
   expect(opened.shown).toBeGreaterThan(0);
   expect(opened.smallest).toBeGreaterThanOrEqual(7.99);
   expect(await page.evaluate(nodesOutsideCanvas)).not.toEqual([]);
+  await expect(page.locator("[data-pan-cue='right']")).toBeVisible();
   await page.getByRole("button", { name: "Fit the plant in view" }).click();
   await expect.poll(() => page.evaluate(nodesOutsideCanvas)).toEqual([]);
+  await expect(page.locator("[data-pan-cue]")).toHaveCount(0);
 });
 
 test("a fault's cause and an effector outcome wrap on the node, whole, at the opening tier and at the whole-plant fit", async ({

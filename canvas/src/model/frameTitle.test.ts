@@ -16,10 +16,11 @@ describe("frame title", () => {
     expect(splitName("Boiler house")).toEqual({ head: "Boiler", tail: " house" });
     expect(splitName("Site")).toEqual({ head: "Site", tail: "" });
     expect(splitName("production-line-a")).toEqual({ head: "production-line", tail: "-a" });
-    expect(splitName("Compressor room extension")).toEqual({
-      head: "Compressor room extension".slice(0, 19),
-      tail: "ension",
-    });
+  });
+
+  it("never cuts a word, so a name with no short last word is left whole for the ellipsis", () => {
+    expect(splitName("Reservoir")).toEqual({ head: "Reservoir", tail: "" });
+    expect(splitName("Compressor room extension")).toEqual({ head: "Compressor room extension", tail: "" });
   });
 
   it("counts nodes in words", () => {

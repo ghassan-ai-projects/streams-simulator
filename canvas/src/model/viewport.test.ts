@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Viewport } from "./viewport";
 import {
+  cutSide,
   steppedViewport,
   centreOf,
   followZoom,
@@ -50,6 +51,14 @@ describe("viewport", () => {
 
   it("finds a box's centre", () => {
     expect(centreOf({ x: 10, y: 20, width: 100, height: 40 })).toEqual({ x: 60, y: 40 });
+  });
+
+  it("names the sides a plant runs past the canvas edge, so the view can point where to pan", () => {
+    const bounds = { x: 0, y: 0, width: 2000, height: 400 };
+    expect(cutSide(bounds, { x: 16, y: 16, zoom: 0.5 }, screen)).toBe("right");
+    expect(cutSide(bounds, { x: -600, y: 16, zoom: 0.5 }, screen)).toBe("left");
+    expect(cutSide(bounds, { x: -100, y: 16, zoom: 0.5 }, screen)).toBe("both");
+    expect(cutSide({ x: 0, y: 0, width: 1000, height: 400 }, { x: 16, y: 16, zoom: 0.5 }, screen)).toBe("none");
   });
 
   it("opens on the whole plant centred when it fits, and on its top-left corner at the minimum zoom when not", () => {
