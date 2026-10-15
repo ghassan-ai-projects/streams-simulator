@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { centreOf, followZoom, inView, openingViewport, sameViewport, tierOf } from "./viewport";
+import { steppedViewport, centreOf, followZoom, inView, openingViewport, sameViewport, tierOf } from "./viewport";
 
 describe("viewport", () => {
   const screen = { width: 800, height: 600 };
@@ -55,5 +55,22 @@ describe("viewport", () => {
   it("treats viewports within half a pixel as the same", () => {
     expect(sameViewport({ x: 1, y: 2, zoom: 0.5 }, { x: 1.2, y: 2.3, zoom: 0.5 })).toBe(true);
     expect(sameViewport({ x: 1, y: 2, zoom: 0.5 }, { x: 1, y: 2, zoom: 0.6 })).toBe(false);
+  });
+
+  it("zooms about the centre of the canvas and keeps the content's top-left titles in view", () => {
+    const screen = { width: 800, height: 600 };
+    const content = { x: 0, y: 0, width: 2000, height: 1000 };
+    const start = { x: 16, y: 16, zoom: 0.4 };
+    const next = steppedViewport(start, screen, 0.48, content, 16);
+    expect(next).toEqual({ x: 16, y: 16, zoom: 0.48 });
+    const panned = steppedViewport({ x: -400, y: 16, zoom: 1 }, screen, 1.2, content, 16);
+    expect(panned.x).toBe(400 - (400 + 400) * 1.2);
+  });
+
+  it("pulls small content back inside the canvas when zooming leaves it hanging off the right", () => {
+    const screen = { width: 800, height: 600 };
+    const content = { x: 0, y: 0, width: 300, height: 200 };
+    const next = steppedViewport({ x: 480, y: 16, zoom: 1 }, screen, 1.2, content, 16);
+    expect(next.x).toBe(800 - 16 - 360);
   });
 });

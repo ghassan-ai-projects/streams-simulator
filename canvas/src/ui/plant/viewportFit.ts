@@ -2,7 +2,7 @@ import type { ReactFlowInstance } from "@xyflow/react";
 import { useReactFlow, useStore } from "@xyflow/react";
 import { useEffect, useRef } from "react";
 import type { Viewport } from "../../model/viewport";
-import { centreOf, followZoom, openingViewport, sameViewport } from "../../model/viewport";
+import { centreOf, followZoom, openingViewport, sameViewport, steppedViewport } from "../../model/viewport";
 import type { FlowNode } from "./flow";
 
 interface Size {
@@ -13,6 +13,18 @@ interface Size {
 export function fittedViewport(flow: ReactFlowInstance<FlowNode>, screen: Size, minZoom: number): Viewport {
   const bounds = flow.getNodesBounds(flow.getNodes());
   return openingViewport(bounds, screen, { pad: 16, headroom: 24, minZoom, maxZoom: 1 });
+}
+
+interface Limits extends Size {
+  readonly minZoom: number;
+  readonly maxZoom: number;
+}
+
+export function steppedZoom(flow: ReactFlowInstance<FlowNode>, screen: Limits, factor: number): Viewport {
+  const current = flow.getViewport();
+  const zoom = Math.min(screen.maxZoom, Math.max(screen.minZoom, current.zoom * factor));
+  const bounds = flow.getNodesBounds(flow.getNodes());
+  return steppedViewport(current, screen, zoom, bounds, 16);
 }
 
 function useScreen(): Size & { readonly ready: boolean } {

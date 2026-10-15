@@ -77,6 +77,32 @@ export function openingViewport(bounds: Rect, screen: Size, limits: FitLimits): 
   };
 }
 
+interface Axis {
+  readonly start: number;
+  readonly extent: number;
+  readonly room: number;
+  readonly margin: number;
+}
+
+function keptInside(offset: number, wasCut: boolean, axis: Axis): number {
+  const { start, extent, room, margin } = axis;
+  const first = margin - start;
+  if (offset < first) return wasCut ? offset : first;
+  const last = room - margin - (start + extent);
+  return extent <= room - 2 * margin && offset > last ? last : offset;
+}
+
+export function steppedViewport(current: Viewport, screen: Size, zoom: number, bounds: Rect, margin: number): Viewport {
+  const ratio = zoom / current.zoom;
+  const x = screen.width / 2 - (screen.width / 2 - current.x) * ratio;
+  const y = screen.height / 2 - (screen.height / 2 - current.y) * ratio;
+  const cutX = current.x + bounds.x * current.zoom < margin - 0.5;
+  const cutY = current.y + bounds.y * current.zoom < margin - 0.5;
+  const across = { start: bounds.x * zoom, extent: bounds.width * zoom, room: screen.width, margin };
+  const down = { start: bounds.y * zoom, extent: bounds.height * zoom, room: screen.height, margin };
+  return { x: keptInside(x, cutX, across), y: keptInside(y, cutY, down), zoom };
+}
+
 export function sameViewport(a: Viewport, b: Viewport): boolean {
   return Math.abs(a.x - b.x) < 0.5 && Math.abs(a.y - b.y) < 0.5 && Math.abs(a.zoom - b.zoom) < 1e-4;
 }
