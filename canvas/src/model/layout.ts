@@ -22,7 +22,16 @@ export interface Layout {
   readonly groups: ReadonlyMap<string, Box>;
 }
 
-export const spacing = { pad: 24, header: 40, column: 96, row: 24, group: 48, maxWidth: 2600, maxRows: 3 } as const;
+export const spacing = {
+  pad: 24,
+  header: 40,
+  column: 96,
+  row: 24,
+  group: 48,
+  lane: 24,
+  maxWidth: 2600,
+  maxRows: 3,
+} as const;
 
 function successors(ids: readonly string[], edges: readonly LayoutEdge[]): Map<string, string[]> {
   const inside = new Set(ids);
@@ -149,13 +158,16 @@ class Shelf {
   private rowHeight = 0;
   width = 0;
 
-  constructor(private readonly maxWidth: number) {}
+  constructor(
+    private readonly maxWidth: number,
+    private readonly rowGap: number = spacing.group,
+  ) {}
 
   add(group: string, columns: readonly LayoutNode[][]): void {
     const trial = new Map<string, Box>();
     let box = placeGroup(columns, this.cursor, trial);
     if (box.x > 0 && box.x + box.width > this.maxWidth) {
-      this.cursor = { x: 0, y: this.cursor.y + this.rowHeight + spacing.group };
+      this.cursor = { x: 0, y: this.cursor.y + this.rowHeight + this.rowGap };
       this.rowHeight = 0;
       trial.clear();
       box = placeGroup(columns, this.cursor, trial);
@@ -174,8 +186,8 @@ class Shelf {
 
 type Columns = readonly (readonly [string, LayoutNode[][]])[];
 
-function pack(columns: Columns, maxWidth: number): Shelf {
-  const shelf = new Shelf(maxWidth);
+function pack(columns: Columns, maxWidth: number, rowGap: number): Shelf {
+  const shelf = new Shelf(maxWidth, rowGap);
   columns.forEach(([group, groupColumns]) => {
     shelf.add(group, groupColumns);
   });
@@ -191,13 +203,25 @@ function widthsToTry(columns: Columns): readonly number[] {
   return widths.map((_, index) => widths.slice(0, index + 1).reduce((sum, w) => sum + w + spacing.group, 0));
 }
 
-function bestShelf(columns: Columns, aspect: number | undefined): Shelf {
-  if (aspect === undefined) return pack(columns, spacing.maxWidth);
-  const shelves = widthsToTry(columns).map((width) => pack(columns, width));
+function bestShelf(columns: Columns, aspect: number | undefined, rowGap: number): Shelf {
+  if (aspect === undefined) return pack(columns, spacing.maxWidth, rowGap);
+  const shelves = widthsToTry(columns).map((width) => pack(columns, width, rowGap));
   return shelves.reduce(
     (best, shelf) => (fitOf(shelf, aspect) > fitOf(best, aspect) ? shelf : best),
-    pack(columns, spacing.maxWidth),
+    pack(columns, spacing.maxWidth, rowGap),
   );
+}
+
+export type HeaderReserve = (group: string, members: number, width: number) => number;
+
+function rowGapOf(columns: Columns, reserve: HeaderReserve | undefined): number {
+  if (reserve === undefined) return spacing.group;
+  const heights = columns.map(([group, groupColumns]) => {
+    const width = placeGroup(groupColumns, { x: 0, y: 0 }, new Map()).width;
+    const members = groupColumns.reduce((sum, column) => sum + column.length, 0);
+    return reserve(group, members, width);
+  });
+  return Math.max(spacing.group, Math.max(0, ...heights) + spacing.lane);
 }
 
 export function layout(
@@ -206,12 +230,13 @@ export function layout(
   groupOrder: readonly string[],
   rowsFor: RowsFor = () => spacing.maxRows,
   aspect?: number,
+  reserve?: HeaderReserve,
 ): Layout {
   const { byGroup, order } = groupsOf(nodes, groupOrder);
   const columns: Columns = order.map((group) => {
     const members = byGroup.get(group) ?? [];
     return [group, columnsOf(members, edges, rowsFor(group, members.length))] as const;
   });
-  const shelf = bestShelf(columns, aspect);
+  const shelf = bestShelf(columns, aspect, rowGapOf(columns, reserve));
   return { nodes: shelf.placed, groups: shelf.groups };
 }

@@ -28,6 +28,7 @@ describe("prefilled run plan", () => {
     );
     expect(screen.getByLabelText("Fault 1 fault")).toHaveValue("");
     expect(screen.getByRole("note")).toHaveTextContent("Not copied: gone on CH-1 (no longer in this plant).");
+    fireEvent.click(screen.getByRole("radio", { name: /As fast as possible/ }));
     fireEvent.click(screen.getByRole("button", { name: "Start the run" }));
     expect(screen.getByLabelText("Fault 1 fault")).toHaveAccessibleDescription(/Fault 1 needs a fault\./);
   });

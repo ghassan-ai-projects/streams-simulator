@@ -124,11 +124,15 @@
 .tick,
 .tickDone {
   position: absolute;
-  top: -3px;
+  top: -5px;
   width: 2px;
   height: 16px;
   margin-left: -1px;
   background: var(--status-alarm);
+}
+
+.tickCall {
+  background: var(--accent);
 }
 
 .tick {
@@ -163,7 +167,7 @@
 .progress progress {
   display: block;
   width: 100%;
-  height: 10px;
+  height: 6px;
   accent-color: var(--accent);
 }
 

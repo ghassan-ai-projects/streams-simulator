@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { familyNames, shapeOf } from "../../model/ports";
 import type { Family } from "../../model/ports";
 import type { FlowNode } from "./flow";
-import { fittedViewport } from "./viewportFit";
+import { fittedViewport, steppedZoom } from "./viewportFit";
 import { cx } from "../cx";
 import styles from "./GraphControls.module.css";
 
@@ -16,7 +16,26 @@ function minimapClass(node: FlowNode): string {
 
 const families = Object.keys(familyNames) as Family[];
 
-function Legend() {
+function ReadingKeys() {
+  return (
+    <ul className={styles.legendList} aria-label="Readings on a node">
+      <li>
+        <span className={styles.glyph} aria-hidden="true">
+          ·
+        </span>
+        Not reported by this run
+      </li>
+      <li>
+        <span className={styles.glyph} aria-hidden="true">
+          –
+        </span>
+        No reading yet at this time
+      </li>
+    </ul>
+  );
+}
+
+function Legend({ review }: { readonly review: boolean }) {
   return (
     <div className={styles.legend} id="port-types" role="group" aria-labelledby="port-types-title">
       <p className={styles.legendTitle} id="port-types-title">
@@ -46,6 +65,7 @@ function Legend() {
           Hollow: not connected
         </li>
       </ul>
+      {review && <ReadingKeys />}
     </div>
   );
 }
@@ -71,7 +91,7 @@ function useLegendDismissal(open: boolean, anchor: RefObject<HTMLDivElement | nu
   }, [open, anchor, close]);
 }
 
-function LegendButton() {
+function LegendButton({ review }: { readonly review: boolean }) {
   const [open, setOpen] = useState(false);
   const anchor = useRef<HTMLDivElement>(null);
   const close = useCallback(() => {
@@ -93,7 +113,7 @@ function LegendButton() {
         <List size={14} aria-hidden="true" />
         Legend
       </button>
-      {open && <Legend />}
+      {open && <Legend review={review} />}
     </div>
   );
 }
@@ -107,8 +127,8 @@ export function useZoomActions() {
   const store = useStoreApi<FlowNode>();
   return useMemo(
     () => ({
-      in: () => void flow.zoomIn({ duration: motion(120) }),
-      out: () => void flow.zoomOut({ duration: motion(120) }),
+      in: () => void flow.setViewport(steppedZoom(flow, store.getState(), 1.2), { duration: motion(120) }),
+      out: () => void flow.setViewport(steppedZoom(flow, store.getState(), 1 / 1.2), { duration: motion(120) }),
       fit: () => void flow.setViewport(fittedViewport(flow, store.getState(), 0.05), { duration: motion(120) }),
     }),
     [flow, store],
@@ -125,7 +145,7 @@ function useSettledZoom(): string {
   return settled;
 }
 
-export function ZoomBar() {
+export function ZoomBar({ review = false }: { readonly review?: boolean }) {
   const zoomTo = useZoomActions();
   const zoom = useStore((state) => state.transform[2]);
   const settled = useSettledZoom();
@@ -144,7 +164,7 @@ export function ZoomBar() {
       <button type="button" className={styles.button} aria-label="Fit the plant in view" onClick={zoomTo.fit}>
         <Maximize size={14} aria-hidden="true" />
       </button>
-      <LegendButton />
+      <LegendButton review={review} />
     </div>
   );
 }

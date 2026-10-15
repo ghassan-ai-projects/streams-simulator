@@ -6,8 +6,11 @@ import {
   keepKnownFaults,
   launchSteps,
   outcomeOf,
+  paceOf,
   planProblems,
   planSummary,
+  rateWords,
+  watchWords,
 } from "./launch";
 
 const plan = (overrides: Partial<LaunchPlan>): LaunchPlan => ({
@@ -148,14 +151,21 @@ describe("effector calls in a plan", () => {
   });
 
   it("reads the acknowledgement as accepted or refused with the binary's reason", () => {
-    const accepted = outcomeOf(call({}), { accepted: true, effect_eta_ns: 5e9, command_id: "director-1" });
-    expect(accepted).toMatchObject({ accepted: true, reason: "", effectEtaNs: 5e9, entity: "CH-1", atS: 60 });
-    expect(outcomeOf(call({}), { accepted: false, reason: "effector_refused" })).toMatchObject({
+    const accepted = outcomeOf(call({}), { accepted: true, effect_eta_ns: 5e9, command_id: "director-1" }, 1234);
+    expect(accepted).toMatchObject({
+      accepted: true,
+      reason: "",
+      effectEtaNs: 5e9,
+      entity: "CH-1",
+      atS: 60,
+      atMs: 1234,
+    });
+    expect(outcomeOf(call({}), { accepted: false, reason: "effector_refused" }, 0)).toMatchObject({
       accepted: false,
       reason: "effector_refused",
       effectEtaNs: null,
     });
-    expect(outcomeOf(call({}), null)).toMatchObject({ accepted: false, reason: "no reason given" });
+    expect(outcomeOf(call({}), null, 0)).toMatchObject({ accepted: false, reason: "no reason given" });
   });
 });
 
@@ -189,5 +199,24 @@ describe("prefilled faults", () => {
       "gone on CH-1 (no longer in this plant)",
       "a fault on PX-9 (no longer in this plant)",
     ]);
+  });
+});
+
+describe("run pace", () => {
+  it("watches a run in about 30 s, at 60 to 3600 simulated seconds per second", () => {
+    expect(paceOf(plan({ durationS: 1800, pace: "watch" }))).toBe(60);
+    expect(paceOf(plan({ durationS: 86_400, pace: "watch" }))).toBe(2880);
+    expect(paceOf(plan({ durationS: 600, pace: "watch" }))).toBe(60);
+    expect(paceOf(plan({ durationS: 864_000, pace: "watch" }))).toBe(3600);
+    expect(paceOf(plan({ durationS: 1800, pace: "fast" }))).toBeNull();
+    expect(paceOf(plan({ durationS: 1800 }))).toBeNull();
+  });
+
+  it("says how long watching takes and how fast a run goes", () => {
+    expect(watchWords(1800)).toBe("about 30 s");
+    expect(watchWords(300)).toBe("about 5 s");
+    expect(watchWords(86_400)).toBe("about 30 s");
+    expect(rateWords(59.6)).toBe("60 s per s");
+    expect(rateWords(null)).toBe("");
   });
 });

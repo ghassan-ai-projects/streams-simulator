@@ -9,13 +9,14 @@ import { isMissing } from "../../model/bridge";
 import type { Opening } from "../../model/playback";
 import { stateUnit } from "../../model/plant";
 import { runClock } from "../../model/timeline";
+import { noteLinesByEntity } from "../../model/noteLines";
 import { plantView } from "../../model/plantView";
+import { firstEventNode } from "../../model/reviewAnchor";
 import type { Report } from "../../model/report";
 import { runSpan } from "../../model/report";
 import { grouped } from "../../model/units";
 import { Navigator, ZoomBar } from "../plant/GraphControls";
 import { Outline } from "../plant/Outline";
-import { readoutHeight } from "../plant/nodes";
 import { useCanvasAspect } from "../plant/canvasAspect";
 import { PlantGraph } from "../plant/PlantGraph";
 import plantStyles from "../plant/PlantScreen.module.css";
@@ -66,8 +67,8 @@ function OpeningPlant() {
 }
 
 function openedWords(opening: Opening, startNs: number): string {
-  const when = opening.full ? "once every channel had reported" : "before every channel had reported";
-  return ` · opened at ${runClock(opening.atNs, startNs)}, ${when}`;
+  const at = runClock(opening.atNs, startNs);
+  return opening.full ? ` · readings start at ${at}` : ` · opened at ${at}, some channels report later`;
 }
 
 function graphWords(state: ReviewState, opening: Opening | null, startNs: number): string {
@@ -91,7 +92,7 @@ function GraphBar({
       <span className={styles.barWords} title={words}>
         {words}
       </span>
-      <ZoomBar />
+      <ZoomBar review />
     </div>
   );
 }
@@ -104,11 +105,16 @@ interface GraphProps extends HallProps {
 
 function Graph({ review, state, plant, hall, onHall }: GraphProps) {
   const { ref, aspect } = useCanvasAspect<HTMLDivElement>();
+  const report = state.report.phase === "ready" ? state.report.value : null;
   const view = useMemo(
-    () => (plant === null ? null : plantView(plant.plant, plant.specs, hall, readoutHeight, aspect)),
-    [plant, hall, aspect],
+    () => (plant === null ? null : plantView(plant.plant, plant.specs, hall, true, aspect, noteLinesByEntity(report))),
+    [plant, hall, aspect, report],
   );
   const live = useLive(review, state, plant);
+  const anchor = useMemo(
+    () => (view === null ? null : firstEventNode(report, new Set(view.nodes.map((node) => node.id)))),
+    [view, report],
+  );
   if (view === null) return <OpeningPlant />;
   return (
     <div className={styles.graphArea}>
@@ -119,7 +125,7 @@ function Graph({ review, state, plant, hall, onHall }: GraphProps) {
       />
       <div ref={ref} className={plantStyles.graphHost}>
         <PlantGraph
-          minFitZoom={0.5}
+          anchor={anchor}
           view={view}
           viewKey={hall ?? "review"}
           fitKey={`${hall ?? "review"}:${String(aspect)}`}

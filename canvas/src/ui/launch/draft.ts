@@ -23,6 +23,7 @@ export interface Draft {
   readonly duration: string;
   readonly unit: "minutes" | "hours";
   readonly explore: boolean;
+  readonly pace: "watch" | "fast";
   readonly faults: readonly DraftFault[];
   readonly calls: readonly DraftCall[];
   readonly nextKey: number;
@@ -33,6 +34,7 @@ export const firstDraft: Draft = {
   duration: "30",
   unit: "minutes",
   explore: true,
+  pace: "watch",
   faults: [],
   calls: [],
   nextKey: 1,
@@ -45,6 +47,7 @@ export function planOf(draft: Draft, plant: Plant): LaunchPlan {
     seed: Number(draft.seed.trim() === "" ? Number.NaN : draft.seed),
     durationS: whole(draft.duration, draft.unit === "hours" ? 3600 : 60),
     explore: draft.explore,
+    pace: draft.pace,
     faults: draft.faults.map((fault) => ({
       entity: fault.entity,
       fault: fault.fault,
@@ -68,6 +71,7 @@ export function draftOf(plan: LaunchPlan): Draft {
     duration: hours ? String(plan.durationS / 3600) : minutesOf(plan.durationS),
     unit: hours ? "hours" : "minutes",
     explore: plan.explore,
+    pace: plan.pace ?? "watch",
     faults: plan.faults.map((fault, index) => ({
       key: index + 1,
       entity: fault.entity,

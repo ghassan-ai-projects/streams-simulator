@@ -128,6 +128,11 @@ export class PlaybackIndex {
     );
   }
 
+  observed(entity: string): ReadonlySet<string> {
+    const channels = this.series.get(entity);
+    return new Set([...(channels?.keys() ?? [])].map(shortChannel));
+  }
+
   readings(entity: string, atNs: number): readonly Reading[] {
     const channels = this.series.get(entity);
     if (channels === undefined) return [];

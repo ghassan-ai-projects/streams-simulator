@@ -153,3 +153,11 @@
 .hollow {
   background: transparent;
 }
+
+.glyph {
+  display: inline-block;
+  width: 10px;
+  text-align: center;
+  font-family: var(--font-mono);
+  color: var(--text-tertiary);
+}

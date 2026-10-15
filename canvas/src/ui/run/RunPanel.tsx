@@ -86,8 +86,11 @@ function ReportBody({
   readonly state: ReviewState;
   readonly unit: (entity: string, name: string) => string;
 }) {
-  if (state.report.phase === "ready")
-    return <ReportPanel report={state.report.value} unit={unit} entity={null} verify={state.verified} />;
+  if (state.report.phase === "ready") {
+    const { picked, positionNs } = state;
+    const shown = picked !== null && picked.atNs === positionNs ? picked : null;
+    return <ReportPanel report={state.report.value} unit={unit} entity={null} picked={shown} verify={state.verified} />;
+  }
   if (state.report.phase === "loading")
     return (
       <p className={styles.muted} role="status">

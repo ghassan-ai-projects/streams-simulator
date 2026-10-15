@@ -1,0 +1,61 @@
+import { act, fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import { LaunchStore } from "../../app/launchStore";
+import { parsePlant } from "../../model/plant";
+import { HeldBridge } from "../../test/heldBridge";
+import { domain } from "../../test/plantFixture";
+import { LaunchPanel } from "./LaunchPanel";
+
+const path = "domains/mini.domain.json";
+const finishedWait = { timeout: 3000 };
+
+describe("launch panel running", () => {
+  it("keeps a run going when the panel closes and opens its review when it is back on that plant", async () => {
+    const fake = new HeldBridge();
+    const launch = new LaunchStore(fake);
+    const onFinished = vi.fn<(worldId: string) => void>();
+    const plant = parsePlant(domain);
+    const panel = () => (
+      <LaunchPanel launch={launch} plant={plant} path={path} onClose={vi.fn()} onFinished={onFinished} />
+    );
+    const first = render(panel());
+    fireEvent.click(screen.getByRole("radio", { name: /As fast as possible/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Start the run" }));
+    await screen.findByText("Running Mini plant as run w-7");
+    first.unmount();
+    expect(launch.snapshot()).toMatchObject({ phase: "running", stopping: false, origin: { domain: "mini", path } });
+    render(panel());
+    expect(screen.getByText("Running Mini plant as run w-7")).toBeInTheDocument();
+    await act(async () => {
+      fake.free();
+      await Promise.resolve();
+    });
+    expect(screen.getByRole("status")).toHaveTextContent(/of simulated time · .* · no faults\.$/);
+    expect(screen.getByRole("status")).not.toHaveTextContent("finished");
+    expect(onFinished).not.toHaveBeenCalled();
+    await vi.waitFor(() => {
+      expect(onFinished).toHaveBeenCalledWith("w-7");
+    }, finishedWait);
+  });
+
+  it("tells another plant that a run is in progress and leaves a finished run of another plant alone", async () => {
+    const fake = new HeldBridge();
+    const launch = new LaunchStore(fake);
+    const elsewhere = { domain: "other", title: "Other plant", path: "domains/other.domain.json" };
+    void launch.start(elsewhere, { seed: 1, durationS: 60, explore: true, faults: [], calls: [] });
+    const onFinished = vi.fn<(worldId: string) => void>();
+    render(
+      <LaunchPanel launch={launch} plant={parsePlant(domain)} path={path} onClose={vi.fn()} onFinished={onFinished} />,
+    );
+    expect(await screen.findByText("A run of Other plant is in progress.")).toBeInTheDocument();
+    await act(async () => {
+      fake.free();
+      await Promise.resolve();
+    });
+    await vi.waitFor(() => {
+      expect(launch.snapshot()).toMatchObject({ phase: "done", origin: { domain: "other" } });
+    });
+    expect(onFinished).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Start the run" })).toBeInTheDocument();
+  });
+});

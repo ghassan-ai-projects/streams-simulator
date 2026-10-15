@@ -14,6 +14,7 @@ export function reviewState(overrides: Partial<ReviewState>): ReviewState {
     selected: null,
     runDomain: { phase: "loading" },
     tab: "report",
+    picked: null,
     playing: false,
     speed: 60,
     openedAt: 0,

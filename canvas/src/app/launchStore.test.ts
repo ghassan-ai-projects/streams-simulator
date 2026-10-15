@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { failed, success } from "../model/bridge";
 import { FakeBridge, failure } from "../test/fakeBridge";
 import { LaunchStore } from "./launchStore";
@@ -27,7 +27,15 @@ describe("launch", () => {
     const fake = bridge();
     const store = new LaunchStore(fake);
     await store.start(origin, plan);
-    expect(store.snapshot()).toEqual({ phase: "done", origin, worldId: "w-4", early: false, calls: [] });
+    expect(store.snapshot()).toEqual({
+      phase: "done",
+      origin,
+      worldId: "w-4",
+      early: false,
+      plan,
+      reachedS: plan.durationS,
+      calls: [],
+    });
     const names = fake.calls.map((call) => call.name);
     expect([names[0], names.at(-1)]).toEqual(["world.create", "run.end"]);
     const advanced = (calls: typeof fake.calls) =>
@@ -53,7 +61,15 @@ describe("launch", () => {
     const state = store.snapshot();
     expect(state).toMatchObject({ phase: "done", early: false });
     expect(state.phase === "done" ? state.calls : []).toEqual([
-      { entity: "CH-1", effector: "chiller__start", atS: 10, accepted: true, reason: "", effectEtaNs: 30e9 },
+      {
+        entity: "CH-1",
+        effector: "chiller__start",
+        atS: 10,
+        accepted: true,
+        reason: "",
+        effectEtaNs: 30e9,
+        atMs: expect.any(Number) as number,
+      },
       {
         entity: "CH-1",
         effector: "chiller__stop",
@@ -61,6 +77,7 @@ describe("launch", () => {
         accepted: false,
         reason: "interlock_refused",
         effectEtaNs: null,
+        atMs: expect.any(Number) as number,
       },
     ]);
     const invoked = fake.calls.filter((call) => call.name === "effector.invoke");
@@ -71,6 +88,24 @@ describe("launch", () => {
     const at = fake.calls.findIndex((call) => call.name === "effector.invoke");
     const before = fake.calls.slice(0, at).filter((call) => call.name === "clock.advance");
     expect(before.reduce((sum, call) => sum + Number(call.args.by_ns), 0)).toBe(10e9);
+  });
+
+  it("publishes the call the moment it is made, stamped with the wall clock, so the plant can hold its mark", async () => {
+    const fake = bridge();
+    fake.actions.set("effector.invoke", success({ accepted: true, effect_eta_ns: 1e9 }));
+    let clock = 1000;
+    const store = new LaunchStore(fake, () => (clock += 250));
+    const seen: { atS: number; calls: number; atMs: number }[] = [];
+    store.subscribe(() => {
+      const state = store.snapshot();
+      if (state.phase === "running") seen.push({ atS: state.atS, calls: state.calls.length, atMs: state.atMs });
+    });
+    const call = { entity: "CH-1", effector: "chiller__start", atS: 20, args: {} };
+    await store.start(origin, { ...plan, faults: [], calls: [call] });
+    const first = seen.findIndex((state) => state.calls === 1);
+    expect(seen[first]?.atS).toBe(20);
+    expect(seen[first - 1]?.calls).toBe(0);
+    expect(seen[first]?.atMs).toBeGreaterThan(seen[first - 1]?.atMs ?? 0);
   });
 
   it("abandons the run when the bridge fails an effector call", async () => {
@@ -100,7 +135,7 @@ describe("launch", () => {
     store.stopEarly();
     expect(store.snapshot()).toMatchObject({ phase: "running", stopping: true });
     await running;
-    expect(store.snapshot()).toEqual({ phase: "done", origin, worldId: "w-4", early: true, calls: [] });
+    expect(store.snapshot()).toMatchObject({ phase: "done", worldId: "w-4", early: true, calls: [] });
     expect(fake.calls.map((call) => call.name)).toEqual(["world.create", "clock.advance", "run.end"]);
     store.reset();
     store.stopEarly();
@@ -114,5 +149,59 @@ describe("launch", () => {
     await store.start(origin, plan);
     expect(store.snapshot()).toMatchObject({ phase: "failed", failure: { code: "domain_invalid" } });
     expect(fake.calls.map((call) => call.name)).toEqual(["world.create"]);
+  });
+
+  it("paces a watched run to the simulated time reached and reports the speed of the last seconds", async () => {
+    const fake = bridge();
+    let clock = 0;
+    const waits: number[] = [];
+    const store = new LaunchStore(
+      fake,
+      () => clock,
+      (ms) => {
+        waits.push(ms);
+        clock += ms;
+        return Promise.resolve();
+      },
+    );
+    const rates: (number | null)[] = [];
+    store.subscribe(() => {
+      const state = store.snapshot();
+      if (state.phase === "running") rates.push(state.rate);
+    });
+    await store.start(origin, { ...plan, durationS: 1800, faults: [], pace: "watch" });
+    expect(waits.reduce((sum, ms) => sum + ms, 0)).toBe(30_000);
+    expect(waits).toHaveLength(30);
+    expect(rates.at(-1)).toBe(60);
+    expect(store.snapshot()).toMatchObject({ phase: "done", early: false });
+  });
+
+  it("runs a plan without a pace as fast as the binary answers", async () => {
+    const waits: number[] = [];
+    const store = new LaunchStore(
+      bridge(),
+      () => 0,
+      (ms) => {
+        waits.push(ms);
+        return Promise.resolve();
+      },
+    );
+    await store.start(origin, plan);
+    expect(waits).toEqual([]);
+  });
+
+  it("wakes a waiting run the moment Stop now is pressed", async () => {
+    const store = new LaunchStore(
+      bridge(),
+      () => 0,
+      () => new Promise<void>(() => undefined),
+    );
+    const running = store.start(origin, { ...plan, durationS: 1800, faults: [], pace: "watch" });
+    await vi.waitFor(() => {
+      expect(store.snapshot()).toMatchObject({ phase: "running", atS: 60 });
+    });
+    store.stopEarly();
+    await running;
+    expect(store.snapshot()).toMatchObject({ phase: "done", early: true, reachedS: 60 });
   });
 });

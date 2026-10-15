@@ -24,6 +24,7 @@ export interface ReviewState {
   readonly selected: string | null;
   readonly runDomain: Load<unknown>;
   readonly tab: "report" | "inspect";
+  readonly picked: { readonly atNs: number; readonly entity: string } | null;
   readonly openedAt: number;
   readonly playing: boolean;
   readonly speed: number;
@@ -38,6 +39,7 @@ const idle: ReviewState = {
   selected: null,
   runDomain: { phase: "loading" },
   tab: "report",
+  picked: null,
   openedAt: 0,
   playing: false,
   speed: 60,
@@ -133,7 +135,7 @@ export class ReviewStore extends Observable<ReviewState> {
   }
 
   reveal(positionNs: number, entity: string): void {
-    this.set({ ...this.snapshot(), positionNs, selected: entity, tab: "inspect" });
+    this.set({ ...this.snapshot(), positionNs, selected: entity, picked: { atNs: positionNs, entity } });
   }
 
   showTab(tab: ReviewState["tab"]): void {

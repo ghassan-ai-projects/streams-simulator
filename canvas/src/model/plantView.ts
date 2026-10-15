@@ -1,11 +1,12 @@
 import type { Layout, LayoutNode } from "./layout";
 import { layout } from "./layout";
+import { headerReserve } from "./frameTitle";
 import type { Instance, Link, Plant } from "./plant";
 import { areaOf } from "./plant";
 import type { Category, ComponentSpec, Family, Pin, Pins } from "./ports";
 import { familyOf, pinsOf } from "./ports";
-import type { NodeStatus } from "./readout";
-import { statusWords } from "./readout";
+import { shortChannel } from "./playback";
+import { reviewRowCount } from "./reviewRows";
 import { kindLabel } from "./report";
 
 export interface ViewNode {
@@ -17,6 +18,8 @@ export interface ViewNode {
   readonly category: Category;
   readonly members: number;
   readonly pins: Pins;
+  readonly channels: readonly string[];
+  readonly noteLines: number;
 }
 
 interface ViewEdge {
@@ -46,25 +49,25 @@ export const nodeSize = {
   groupHeight: 72,
   idChars: 15,
   idLine: 36,
+  note: 24,
 } as const;
 
 export function idExtra(label: string): number {
   return (Math.ceil(label.length / nodeSize.idChars) - 1) * nodeSize.idLine;
 }
 
+export function noteHeight(lines: number): number {
+  return lines * nodeSize.note;
+}
+
 export function headerHeight(label: string): number {
   return nodeSize.header + nodeSize.kind + idExtra(label);
 }
 
-export function pinHandle(name: string, side: "in" | "out", farSide: boolean): string {
-  if (!farSide) return name;
-  return `${name}${side === "in" ? "@right" : "@left"}`;
-}
-
-export function pinsOnRows(node: ViewNode | undefined, channels: readonly string[]): ReadonlySet<string> {
-  if (node === undefined) return new Set();
-  const pins = [...node.pins.ins, ...node.pins.outs];
-  return new Set(pins.filter((pin) => pin.channel !== null && channels.includes(pin.channel)).map((pin) => pin.name));
+export function groupCounts(view: PlantView): Map<string, number> {
+  const counts = new Map<string, number>();
+  view.nodes.forEach((node) => counts.set(node.group, (counts.get(node.group) ?? 0) + 1));
+  return counts;
 }
 
 export function hallOf(id: string): string | null {
@@ -80,8 +83,9 @@ export function hallsOf(plant: Plant): readonly string[] {
 }
 
 type Specs = ReadonlyMap<string, ComponentSpec>;
+type Notes = ReadonlyMap<string, number>;
 
-function instanceNode(plant: Plant, instance: Instance, specs: Specs): ViewNode {
+function instanceNode(plant: Plant, instance: Instance, specs: Specs, notes: Notes): ViewNode {
   const spec = instance.component === null ? undefined : specs.get(instance.component);
   return {
     id: instance.id,
@@ -92,6 +96,8 @@ function instanceNode(plant: Plant, instance: Instance, specs: Specs): ViewNode 
     category: spec?.category ?? "env",
     members: 1,
     pins: pinsOf(plant, instance, spec?.ports),
+    channels: (plant.kinds.get(instance.kind)?.channels ?? []).map((channel) => shortChannel(channel.name)),
+    noteLines: notes.get(instance.id) ?? 1,
   };
 }
 
@@ -105,6 +111,8 @@ function hallNode(hall: string, members: number): ViewNode {
     category: "env",
     members,
     pins: { ins: [], outs: [] },
+    channels: [],
+    noteLines: 1,
   };
 }
 
@@ -155,24 +163,33 @@ interface Context {
   readonly plant: Plant;
   readonly specs: Specs;
   readonly halls: readonly string[];
-  readonly readout: number;
+  readonly review: boolean;
   readonly aspect: number | undefined;
+  readonly notes: Notes;
 }
 
-function nodeBox(node: ViewNode, readout: number): LayoutNode {
+function nodeBox(node: ViewNode, review: boolean): LayoutNode {
   if (node.instance === null) {
     return { id: node.id, group: node.group, width: nodeSize.groupWidth, height: nodeSize.groupHeight };
   }
-  const rows = readout > 0 ? 0 : Math.max(2, node.pins.ins.length, node.pins.outs.length);
-  const height = headerHeight(node.label) + nodeSize.padding + rows * nodeSize.pin + readout;
+  const rows = review
+    ? reviewRowCount(node.pins, node.channels)
+    : Math.max(2, node.pins.ins.length, node.pins.outs.length);
+  const note = review ? noteHeight(node.noteLines) : 0;
+  const height = headerHeight(node.label) + nodeSize.padding + note + rows * nodeSize.pin;
   return { id: node.id, group: node.group, width: nodeSize.width, height };
 }
 
 function finish(context: Context, nodes: readonly ViewNode[], edges: readonly ViewEdge[]): PlantView {
   const order = ["Halls", ...context.plant.areas.map((area) => area.name)];
-  const boxes = nodes.map((node) => nodeBox(node, context.readout));
+  const boxes = nodes.map((node) => nodeBox(node, context.review));
   const rows = (group: string, count: number) => (group === "Halls" ? Math.ceil(Math.sqrt(count)) : 3);
-  return { nodes, edges, layout: layout(boxes, edges, order, rows, context.aspect), halls: context.halls };
+  return {
+    nodes,
+    edges,
+    layout: layout(boxes, edges, order, rows, context.aspect, headerReserve),
+    halls: context.halls,
+  };
 }
 
 function hallLevel(context: Context): PlantView {
@@ -184,7 +201,7 @@ function hallLevel(context: Context): PlantView {
   });
   const shared = plant.instances.filter((instance) => hallOf(instance.id) === null);
   const nodes = [
-    ...shared.map((instance) => instanceNode(plant, instance, specs)),
+    ...shared.map((instance) => instanceNode(plant, instance, specs, context.notes)),
     ...halls.map((hall) => hallNode(hall, counts.get(hall) ?? 0)),
   ];
   const key = (id: string) => hallOf(id) ?? id;
@@ -207,7 +224,7 @@ function hallLevel(context: Context): PlantView {
 function instanceLevel(context: Context, keep: (instance: Instance) => boolean): PlantView {
   const kept = context.plant.instances.filter(keep);
   const ids = new Set(kept.map((instance) => instance.id));
-  const nodes = kept.map((instance) => instanceNode(context.plant, instance, context.specs));
+  const nodes = kept.map((instance) => instanceNode(context.plant, instance, context.specs, context.notes));
   const key = (id: string) => (ids.has(id) ? id : null);
   const pins = new Map(nodes.map((node) => [node.id, node.pins] as const));
   return finish(context, nodes, bundle(context.plant, context.plant.links, key, context.specs, pins));
@@ -223,8 +240,15 @@ function withinHall(view: PlantView, hall: string): PlantView {
   };
 }
 
-export function plantView(plant: Plant, specs: Specs, open: string | null, readout = 0, aspect?: number): PlantView {
-  const context = { plant, specs, halls: hallsOf(plant), readout, aspect };
+export function plantView(
+  plant: Plant,
+  specs: Specs,
+  open: string | null,
+  review = false,
+  aspect?: number,
+  notes: Notes = new Map(),
+): PlantView {
+  const context = { plant, specs, halls: hallsOf(plant), review, aspect, notes };
   if (context.halls.length === 0) {
     return instanceLevel(context, () => true);
   }
@@ -239,32 +263,6 @@ export function plantView(plant: Plant, specs: Specs, open: string | null, reado
   const keep = (instance: Instance) =>
     hallOf(instance.id) === open || (hallOf(instance.id) === null && touching.has(instance.id));
   return withinHall(instanceLevel(context, keep), open);
-}
-
-function counted(n: number, noun: string): string {
-  return `${String(n)} ${noun}${n === 1 ? "" : "s"}`;
-}
-
-function stateOf(status: NodeStatus, count: number, fault: string): string {
-  if (status === null) return "";
-  const where = count > 0 ? ` in ${String(count)}` : "";
-  if (fault === "") return `${statusWords[status]}${where}, `;
-  return status === "fault" ? `${statusWords.fault}: ${fault}, ` : `${statusWords[status]}${where}, Fault: ${fault}, `;
-}
-
-export function describeNode(
-  node: ViewNode,
-  selected: boolean,
-  status: NodeStatus = null,
-  count = 0,
-  fault = "",
-): string {
-  const ports =
-    node.instance === null
-      ? "Space selects, Enter opens the hall"
-      : `${counted(node.pins.ins.length, "input")}, ${counted(node.pins.outs.length, "output")}`;
-  const state = stateOf(status, count, fault);
-  return `${node.label}, ${state}${node.detail}, ${ports}${selected ? ", selected" : ""}`;
 }
 
 export function hallMembers(plant: Plant, hall: string): readonly (readonly [string, number])[] {

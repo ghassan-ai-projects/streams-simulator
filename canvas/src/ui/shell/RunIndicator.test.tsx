@@ -37,8 +37,8 @@ describe("run indicator", () => {
     await act(async () => {
       await launch.start(origin, plan);
     });
-    expect(screen.getByRole("status")).toHaveTextContent("Run w-5 finished");
-    fireEvent.click(screen.getByRole("button", { name: "Run w-5 of Mini plant finished · Review" }));
+    expect(screen.getByRole("status")).toHaveTextContent("The review of run w-5 is ready");
+    fireEvent.click(screen.getByRole("button", { name: "Run w-5 finished · Open review" }));
     expect(location.hash).toBe("#/run?world=w-5");
     expect(screen.getByRole("status")).toBeEmptyDOMElement();
   });

@@ -31,6 +31,12 @@ describe("playback", () => {
     });
   });
 
+  it("names the channels an entity reports in the run, short, and none for an unknown entity", () => {
+    const index = indexOf(journal);
+    expect([...index.observed("CT-1")].sort()).toEqual(["basin_temp", "run_status"]);
+    expect(index.observed("nobody").size).toBe(0);
+  });
+
   it("answers the last reading at or before a time for every channel", () => {
     const index = indexOf(journal);
     expect(index.size).toBe(4);

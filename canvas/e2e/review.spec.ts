@@ -2,6 +2,10 @@ import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 import { env } from "./support/env";
+import { nodesOutsideCanvas } from "./support/fitAudit";
+import { noteProblems } from "./support/noteFit";
+import { textClashes } from "./support/textClashes";
+import { waitForViewport } from "./support/viewport";
 
 test.use({ storageState: env("CANVAS_APP_STATE") });
 test.setTimeout(90_000);
@@ -97,4 +101,154 @@ test("a hall carries its faulted members, and inside it each names its fault", a
   await expect(page.getByRole("group", { name: /^M-1, Fault: product jam, / })).toContainText("product jam");
   await page.getByRole("button", { name: "Run w-hall" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Run w-hall" })).toBeVisible();
+});
+
+test("a review node lists every port of its kind as a row, observed or not, at each tier without a text clash", async ({
+  page,
+}) => {
+  await page.goto(`${env("CANVAS_APP_URL")}/#/run?world=w-evaluate`);
+  await expect(page.getByText(/\d+ observations/)).toBeVisible({ timeout: 60_000 });
+  const chiller = page.getByRole("group", { name: /^CH-1, chiller,/ });
+  const label = (await chiller.getAttribute("aria-label")) ?? "";
+  const [, inputs = "0", outputs = "0"] = /(\d+) inputs?, (\d+) outputs?/.exec(label) ?? [];
+  const ports = Number(inputs) + Number(outputs);
+  const rows = await chiller.locator("dl > div").count();
+  expect([ports, ports + 1]).toContain(rows);
+  await expect(chiller.locator("dl")).toContainText("not observed");
+  await expect(chiller.locator("dl")).not.toContainText("–");
+  await page.getByRole("button", { name: "Legend" }).click();
+  await expect(page.getByText("Not reported by this run")).toBeVisible();
+  await expect(page.getByText("No reading yet at this time")).toBeVisible();
+  await page.getByRole("button", { name: "Legend" }).click();
+  const graph = page.getByRole("application", { name: "Plant graph" });
+  await graph.focus();
+  for (let step = 0; step < 3; step += 1) {
+    expect(await page.evaluate(textClashes)).toEqual([]);
+    await page.keyboard.press("+");
+  }
+});
+
+test("a faulted node's id, kind, cause and effector outcome never overlap at any zoom step", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto(`${env("CANVAS_APP_URL")}/#/run?world=w-boiler`);
+  await expect(page.getByText(/\d+ observations/)).toBeVisible({ timeout: 60_000 });
+  await page.getByRole("slider", { name: "Playback time" }).fill("660");
+  const boiler = page.getByRole("group", { name: /^boiler-1, / });
+  await expect(boiler.getByText("Fault · scaling")).toBeVisible();
+  const graph = page.getByRole("application", { name: "Plant graph" });
+  await graph.focus();
+  await waitForViewport(page);
+  for (const key of ["+", "+", "-", "-", "-", "-"]) {
+    await page.keyboard.press(key);
+    await expect(boiler.getByText("Fault · scaling")).toBeVisible();
+    await expect.poll(() => page.evaluate(textClashes)).toEqual([]);
+  }
+});
+
+test("clicking a mark seeks and selects its instance and leaves the Report open with the call's row marked", async ({
+  page,
+}) => {
+  await page.goto(`${env("CANVAS_APP_URL")}/#/run?world=w-boiler`);
+  await expect(page.getByText(/\d+ observations/)).toBeVisible({ timeout: 60_000 });
+  const details = page.getByRole("complementary", { name: "Run details" });
+  await expect(details.getByRole("button", { name: "Report", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("button", { name: /^00:10:00 boiler-1 set running/ }).click();
+  await expect(page.getByRole("slider", { name: "Playback time" })).toHaveAttribute("aria-valuetext", "00:10:00");
+  await expect(page.getByRole("group", { name: /^boiler-1, .*, selected$/ })).toBeAttached();
+  await expect(details.getByRole("button", { name: "Report", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(details.getByRole("region", { name: "Disturbances" })).toBeVisible();
+  await expect(details.getByRole("region", { name: "Effector calls" }).locator("tr[aria-current='true']")).toHaveCount(
+    1,
+  );
+  await page.getByRole("button", { name: /^00:10:00 boiler-1 scaling/ }).click();
+  await expect(details.getByRole("region", { name: "Disturbances" }).locator("tr[aria-current='true']")).toHaveCount(1);
+  await details.getByRole("button", { name: /^Inspect/ }).click();
+  await page.getByRole("button", { name: /^00:10:00 boiler-1 scaling/ }).click();
+  await expect(details.getByRole("button", { name: /^Inspect · boiler-1/ })).toHaveAttribute("aria-pressed", "true");
+});
+
+test("a review says under the scrubber what happens first, or that nothing does", async ({ page }) => {
+  await page.goto(`${env("CANVAS_APP_URL")}/#/run?world=w-boiler`);
+  await expect(page.getByText("First: fault · scaling on boiler-1 at 00:10:00 · 1 effector call")).toBeVisible({
+    timeout: 60_000,
+  });
+  await page.goto(`${env("CANVAS_APP_URL")}/#/run?world=w-explore`);
+  await page.reload();
+  await expect(page.getByText("No faults or effector calls in this run")).toBeVisible({ timeout: 60_000 });
+});
+
+function transformOf(): string | undefined {
+  return document.querySelector<HTMLElement>(".react-flow__viewport")?.style.transform;
+}
+
+function readoutPixels(): { readonly zoom: number; readonly shown: number; readonly smallest: number } {
+  const graph = document.querySelector("[aria-roledescription='plant graph']");
+  const zoom = Number(graph === null ? 0 : getComputedStyle(graph).getPropertyValue("--zoom"));
+  const values = [...document.querySelectorAll(".react-flow__node-instance dd")].filter(
+    (value) => value.getClientRects().length > 0 && value.textContent.trim() !== "",
+  );
+  const sizes = values.map((value) => parseFloat(getComputedStyle(value).fontSize) * zoom);
+  return { zoom, shown: values.length, smallest: Math.min(...sizes) };
+}
+
+test("a review whose plant fits at 40 % or more opens fitted, and Fit returns the same view", async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await page.goto(`${env("CANVAS_APP_URL")}/#/run?world=w-evaluate`);
+  await expect(page.getByText(/\d+ observations/)).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByRole("group", { name: /^CH-1, chiller,/ })).toBeAttached();
+  await expect.poll(() => page.evaluate(nodesOutsideCanvas)).toEqual([]);
+  const opening = await page.evaluate(transformOf);
+  await page.getByRole("button", { name: "Fit the plant in view" }).click();
+  await expect.poll(() => page.evaluate(transformOf)).toBe(opening);
+});
+
+test("a review of a plant too large for 40 % opens at 40 % on its first fault, with readouts of 8 px or more", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto(`${env("CANVAS_APP_URL")}/#/run?world=w-late`);
+  await expect(page.getByText(/\d+ observations/)).toBeVisible({ timeout: 60_000 });
+  const dryer = page.getByRole("group", { name: /^D-1, / });
+  await expect(dryer).toBeAttached();
+  const canvas = page.locator(".react-flow");
+  await expect
+    .poll(async () => {
+      const box = await dryer.boundingBox();
+      const frame = await canvas.boundingBox();
+      if (box === null || frame === null) return false;
+      return (
+        box.x >= frame.x &&
+        box.y >= frame.y &&
+        box.x + box.width <= frame.x + frame.width &&
+        box.y + box.height <= frame.y + frame.height
+      );
+    })
+    .toBe(true);
+  const opened = await page.evaluate(readoutPixels);
+  expect(opened.zoom).toBeGreaterThanOrEqual(0.4);
+  expect(opened.shown).toBeGreaterThan(0);
+  expect(opened.smallest).toBeGreaterThanOrEqual(7.99);
+  expect(await page.evaluate(nodesOutsideCanvas)).not.toEqual([]);
+  await page.getByRole("button", { name: "Fit the plant in view" }).click();
+  await expect.poll(() => page.evaluate(nodesOutsideCanvas)).toEqual([]);
+});
+
+test("a fault's cause and an effector outcome wrap on the node, whole, at the opening tier and at the whole-plant fit", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto(`${env("CANVAS_APP_URL")}/#/run?world=w-late`);
+  await expect(page.getByText(/\d+ observations/)).toBeVisible({ timeout: 60_000 });
+  await page.getByRole("slider", { name: "Playback time" }).fill("930");
+  const dryer = page.getByRole("group", { name: /^D-1, / });
+  const graph = page.getByRole("application", { name: "Plant graph" });
+  await expect(graph).toHaveClass(/tier-compact/);
+  await expect(dryer.getByText("Fault · prefilter clogging")).toBeVisible();
+  await expect(dryer.getByText(/^set running · applied · \d+ ms$/)).toBeVisible();
+  await expect.poll(() => page.evaluate(noteProblems)).toEqual([]);
+  await page.getByRole("button", { name: "Fit the plant in view" }).click();
+  await expect(graph).toHaveClass(/tier-(overview|map)/);
+  await expect(dryer).toContainText("Fault: prefilter clogging");
+  await expect(dryer).toContainText(/set running · applied · \d+ ms/);
+  await expect.poll(() => page.evaluate(noteProblems)).toEqual([]);
 });

@@ -1,22 +1,25 @@
 import type { NodeProps } from "@xyflow/react";
 import { Handle, Position, useStore } from "@xyflow/react";
-import { ChevronRight, OctagonAlert, TriangleAlert, Wrench } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useRef } from "react";
+import { countWords, splitName } from "../../model/frameTitle";
+import { fitId, idCap, idRoom } from "../../model/headerFit";
 import type { ViewNode } from "../../model/plantView";
-import { describeNode, headerHeight, idExtra, nodeSize, pinHandle } from "../../model/plantView";
+import { describeNode } from "../../model/nodeWords";
+import { headerHeight, idExtra } from "../../model/plantView";
 import { familyNames, shapeOf } from "../../model/ports";
 import type { Pin } from "../../model/ports";
+import { tierOf } from "../../model/viewport";
 import type { NodeStatus } from "../../model/readout";
-import { channelWords, statusWords } from "../../model/readout";
-import { rowLimitOf, tierOf } from "../../model/viewport";
-import type { FrameTitleNodeType, HallNodeType, InstanceNodeType } from "./flow";
+import { pinWords } from "../../model/readout";
+import type { PlanMark } from "../../model/planMarks";
+import type { FrameTitleNodeType, HallNodeType, InstanceNodeType, NodeLive } from "./flow";
 import { cx } from "../cx";
+import { EffectorTag, IssueTag, StatusTag, tagWords } from "./Marks";
 import { Readout } from "./Readout";
 import { useLabelFit } from "./labelFit";
 import styles from "./nodes.module.css";
-
-const pinRowMiddle = nodeSize.pin / 2;
 
 function pinLook(pin: Pin): { readonly family: string; readonly shape: string; readonly typeName: string } {
   if (pin.family === null) {
@@ -43,6 +46,7 @@ function PinRow({
   readonly zoom: number;
 }) {
   const look = pinLook(pin);
+  const words = pinWords(pin.name, side);
   const label = useRef<HTMLSpanElement>(null);
   useLabelFit(label, zoom);
   return (
@@ -58,9 +62,10 @@ function PinRow({
         isConnectable={editable}
       />
       <span ref={label} className={styles.pinName}>
-        {channelWords(pin.name)}
+        <span className={styles.pinFull}>{words.full}</span>
+        <span className={styles.pinShort}>{words.short}</span>
       </span>
-      <span className="sr-only">{`, ${look.typeName}, ${connectionWords[pin.connection]}`}</span>
+      <span className="sr-only">{`, ${side === "in" ? "input" : "output"}, ${look.typeName}, ${connectionWords[pin.connection]}`}</span>
     </div>
   );
 }
@@ -91,72 +96,12 @@ function Pins({
           <PinRow key={pin.name} pin={pin} side="out" editable={editable} zoom={zoom} />
         ))}
       </div>
-      <FarHandles ins={ins} outs={outs} />
     </div>
-  );
-}
-
-function rowTop(index: number): string {
-  return `calc(var(--space-1) + ${String(pinRowMiddle + index * nodeSize.pin)}px)`;
-}
-
-function FarHandles({ ins, outs }: { readonly ins: readonly Pin[]; readonly outs: readonly Pin[] }) {
-  return (
-    <>
-      {ins.map((pin, index) => (
-        <Handle
-          key={pinHandle(pin.name, "in", true)}
-          type="target"
-          position={Position.Right}
-          id={pinHandle(pin.name, "in", true)}
-          className={styles.sideAnchor}
-          style={{ top: rowTop(index) }}
-          isConnectable={false}
-        />
-      ))}
-      {outs.map((pin, index) => (
-        <Handle
-          key={pinHandle(pin.name, "out", true)}
-          type="source"
-          position={Position.Left}
-          id={pinHandle(pin.name, "out", true)}
-          className={styles.sideAnchor}
-          style={{ top: rowTop(index) }}
-          isConnectable={false}
-        />
-      ))}
-    </>
-  );
-}
-
-export const readoutHeight = 148;
-
-const statusIcons = { alarm: OctagonAlert, fault: Wrench, warn: TriangleAlert } as const;
-
-function StatusTag({ status, count = 0 }: { readonly status: NodeStatus; readonly count?: number }) {
-  if (status === null) return null;
-  const Icon = statusIcons[status];
-  const word = count > 0 ? `${statusWords[status]} ${String(count)}` : statusWords[status];
-  return (
-    <span className={cx(styles.tag, styles[`tag-${status}`])} aria-hidden="true">
-      <Icon size={12} />
-      {word}
-    </span>
   );
 }
 
 function issueWords(flagged: boolean): string {
   return flagged ? ", has issues" : "";
-}
-
-function IssueTag({ flagged }: { readonly flagged: boolean }) {
-  if (!flagged) return null;
-  return (
-    <span className={cx(styles.tag, styles["tag-alarm"])} aria-hidden="true">
-      <OctagonAlert size={12} />
-      Issue
-    </span>
-  );
 }
 
 function statusClass(status: NodeStatus): string | undefined {
@@ -168,12 +113,94 @@ function instanceStyle(view: ViewNode): CSSProperties {
     "--cat": `var(--cat-${view.category})`,
     "--id-extra": `${String(idExtra(view.label))}px`,
     "--header-height": `${String(headerHeight(view.label))}px`,
+    "--note-lines": String(view.noteLines),
   } as CSSProperties;
+}
+
+function markWords(data: InstanceNodeType["data"], status: NodeStatus): number | null {
+  const { effector } = shownOf(data);
+  if (status === null && effector === "" && !data.flagged) return null;
+  const issue = data.flagged ? 6 : 0;
+  if (status === null || data.live !== null) return issue;
+  return issue + tagWords(status, 0, data.plan?.fault ?? "").length;
+}
+
+function IdText({
+  label,
+  zoom,
+  words,
+}: {
+  readonly label: string;
+  readonly zoom: number;
+  readonly words: number | null;
+}) {
+  const tier = tierOf(zoom);
+  if (tier !== "compact" && tier !== "overview") return label;
+  const fitted = fitId(label, idRoom(zoom, words, tier), zoom, idCap[tier]);
+  if (fitted.text === label) return <span style={{ fontSize: `${String(fitted.size)}px` }}>{label}</span>;
+  return (
+    <span style={{ fontSize: `${String(fitted.size)}px` }}>
+      <span aria-hidden="true">{fitted.text}</span>
+      <span className="sr-only">{label}</span>
+    </span>
+  );
+}
+
+function InstanceHeader({
+  data,
+  status,
+  zoom,
+}: {
+  readonly data: InstanceNodeType["data"];
+  readonly status: NodeStatus;
+  readonly zoom: number;
+}) {
+  const { view } = data;
+  const planned = data.live === null ? data.plan : null;
+  const words = markWords(data, status);
+  return (
+    <div className={styles.header}>
+      <span className={styles.id} title={view.label}>
+        <IdText label={view.label} zoom={zoom} words={words} />
+      </span>
+      {words !== null && (
+        <span className={styles.marks}>
+          <StatusTag status={status} cause={planned?.fault ?? ""} brief={data.live !== null} />
+          {data.live !== null && data.live.fault !== "" && (
+            <span className="sr-only">{`Fault: ${data.live.fault}`}</span>
+          )}
+          <EffectorTag effector={shownOf(data).effector} />
+          <IssueTag flagged={data.flagged} />
+        </span>
+      )}
+      <span className={styles.kind} title={view.detail}>
+        {view.detail}
+      </span>
+    </div>
+  );
+}
+
+interface Shown {
+  readonly status: NodeStatus;
+  readonly count: number;
+  readonly fault: string;
+  readonly effector: string;
+}
+
+function shownOf(data: { readonly live: NodeLive | null; readonly plan: PlanMark | null }): Shown {
+  const { live, plan } = data;
+  if (live !== null) return live;
+  return plan ?? { status: null, count: 0, fault: "", effector: "" };
+}
+
+function instanceLabel(data: InstanceNodeType["data"], selected: boolean): string {
+  const { status, fault, effector } = shownOf(data);
+  return describeNode(data.view, selected, status, 0, fault, effector) + issueWords(data.flagged);
 }
 
 export function InstanceNode({ data, selected }: NodeProps<InstanceNodeType>) {
   const { view } = data;
-  const status = data.live?.status ?? null;
+  const { status } = shownOf(data);
   const zoom = useStore((state) => state.transform[2]);
   return (
     <div
@@ -185,24 +212,22 @@ export function InstanceNode({ data, selected }: NodeProps<InstanceNodeType>) {
         statusClass(status),
       )}
       role="group"
-      aria-label={describeNode(view, selected, status, 0, data.live?.fault ?? "") + issueWords(data.flagged)}
+      aria-label={instanceLabel(data, selected)}
       style={instanceStyle(view)}
     >
       <Handle type="target" position={Position.Left} id="in" className={styles.anchor} isConnectable={false} />
       <Handle type="source" position={Position.Right} id="out" className={styles.anchor} isConnectable={false} />
-      <Handle type="target" position={Position.Right} id="in-right" className={styles.anchor} isConnectable={false} />
-      <Handle type="source" position={Position.Left} id="out-left" className={styles.anchor} isConnectable={false} />
-      <div className={styles.header}>
-        <span className={styles.id} title={view.label}>
-          {view.label}
-        </span>
-        <StatusTag status={status} />
-        <IssueTag flagged={data.flagged} />
-        <span className={styles.kind} title={view.detail}>
-          {view.detail}
-        </span>
-      </div>
-      {data.live !== null && <Readout shown={data.live.shown} pins={view.pins} limit={rowLimitOf(tierOf(zoom))} />}
+      <InstanceHeader data={data} status={status} zoom={zoom} />
+      {data.live !== null && (
+        <Readout
+          shown={data.live.shown}
+          observed={data.live.observed}
+          pins={view.pins}
+          channels={view.channels}
+          fault={data.live.fault}
+          effector={data.live.effector}
+        />
+      )}
       {data.live === null && <Pins ins={view.pins.ins} outs={view.pins.outs} editable={data.editable} zoom={zoom} />}
     </div>
   );
@@ -210,8 +235,7 @@ export function InstanceNode({ data, selected }: NodeProps<InstanceNodeType>) {
 
 export function HallNode({ data, selected }: NodeProps<HallNodeType>) {
   const { view } = data;
-  const status = data.live?.status ?? null;
-  const count = data.live?.count ?? 0;
+  const { status, count } = shownOf(data);
   return (
     <div
       className={cx(
@@ -225,7 +249,6 @@ export function HallNode({ data, selected }: NodeProps<HallNodeType>) {
       aria-label={describeNode(view, selected, status, count)}
     >
       <Handle type="target" position={Position.Left} id="in" className={styles.plain} isConnectable={false} />
-      <Handle type="target" position={Position.Right} id="in-right" className={styles.plain} isConnectable={false} />
       <div className={styles.header}>
         <span className={styles.id}>{view.label}</span>
         <StatusTag status={status} count={count} />
@@ -235,7 +258,6 @@ export function HallNode({ data, selected }: NodeProps<HallNodeType>) {
         {view.detail}
       </div>
       <Handle type="source" position={Position.Right} id="out" className={styles.plain} isConnectable={false} />
-      <Handle type="source" position={Position.Left} id="out-left" className={styles.plain} isConnectable={false} />
     </div>
   );
 }
@@ -245,11 +267,16 @@ export function FrameNode() {
 }
 
 export function FrameTitleNode({ data }: NodeProps<FrameTitleNodeType>) {
+  const count = countWords(data.count);
+  const { head, tail } = splitName(data.title);
   return (
     <div className={styles.frameTitleNode}>
-      <div className={styles.frameTitle}>
-        {data.title}
-        <span className={styles.frameCount}>{`${String(data.count)} ${data.count === 1 ? "node" : "nodes"}`}</span>
+      <div className={styles.frameTitle} title={`${data.title} · ${count}`}>
+        <span className={styles.frameName}>
+          <span className={styles.nameHead}>{head}</span>
+          <span className={styles.nameTail}>{tail}</span>
+        </span>
+        <span className={styles.frameCount}>{count}</span>
       </div>
     </div>
   );

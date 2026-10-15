@@ -1,15 +1,18 @@
 import { MarkerType } from "@xyflow/react";
 import type { Edge, Node } from "@xyflow/react";
 import type { NodeStatus, Shown } from "../../model/readout";
+import type { PlanMark } from "../../model/planMarks";
 import type { PlantView, ViewNode } from "../../model/plantView";
-import { pinHandle, pinsOnRows } from "../../model/plantView";
-import { displayedRows } from "../../model/readout";
+import { groupCounts } from "../../model/plantView";
+import type { Point } from "../../model/wireRoute";
 
 export interface NodeLive {
   readonly shown: readonly Shown[];
+  readonly observed: ReadonlySet<string>;
   readonly status: NodeStatus;
   readonly count: number;
   readonly fault: string;
+  readonly effector: string;
 }
 
 type InstanceData = Readonly<{
@@ -18,6 +21,7 @@ type InstanceData = Readonly<{
   active: boolean;
   flagged: boolean;
   editable: boolean;
+  plan: PlanMark | null;
 }>;
 type FrameData = Readonly<{ title: string; count: number }>;
 
@@ -26,12 +30,6 @@ export type HallNodeType = Node<InstanceData, "hall">;
 type FrameNodeType = Node<FrameData, "frame">;
 export type FrameTitleNodeType = Node<FrameData, "frameTitle">;
 export type FlowNode = InstanceNodeType | HallNodeType | FrameNodeType | FrameTitleNodeType;
-
-function groupCounts(view: PlantView): Map<string, number> {
-  const counts = new Map<string, number>();
-  view.nodes.forEach((node) => counts.set(node.group, (counts.get(node.group) ?? 0) + 1));
-  return counts;
-}
 
 function frames(view: PlantView): FrameNodeType[] {
   const counts = groupCounts(view);
@@ -57,6 +55,7 @@ function frameTitles(view: PlantView): FrameTitleNodeType[] {
     type: "frameTitle",
     position: { x: box.x, y: box.y },
     data: { title, count: counts.get(title) ?? 0 },
+    width: box.width,
     style: { width: box.width },
     selectable: false,
     draggable: false,
@@ -72,6 +71,7 @@ export function flowNodes(
   active: string | null = null,
   flagged: ReadonlySet<string> | null = null,
   editable = false,
+  marks: ReadonlyMap<string, PlanMark> | null = null,
 ): FlowNode[] {
   const nodes = view.nodes.map((node): InstanceNodeType | HallNodeType => {
     const box = view.layout.nodes.get(node.id) ?? { x: 0, y: 0, width: 0, height: 0 };
@@ -85,6 +85,7 @@ export function flowNodes(
         active: node.id === active,
         flagged: flagged?.has(node.id) ?? false,
         editable,
+        plan: marks?.get(node.id) ?? null,
       },
       selected: node.id === selected,
       draggable: false,
@@ -121,62 +122,19 @@ function markerColor(
   return familyColor(family);
 }
 
-function centreX(view: PlantView, id: string): number {
-  const box = view.layout.nodes.get(id);
-  return box === undefined ? 0 : box.x + box.width / 2;
-}
-
-interface Ends {
-  readonly sourceHandle: string;
-  readonly targetHandle: string;
-}
-
-export type PinRows = (id: string) => ReadonlySet<string>;
-
-export function rowPins(view: PlantView, live: (id: string) => NodeLive, limit: number): PinRows {
-  return (id) =>
-    pinsOnRows(
-      view.nodes.find((node) => node.id === id),
-      displayedRows(live(id).shown, limit).map((row) => row.channel),
-    );
-}
-
-type Handled = (id: string, handle: string) => boolean;
-
-function handledBy(anchors: boolean, rows: PinRows | null): Handled {
-  if (rows !== null) return (id, handle) => rows(id).has(handle);
-  return () => !anchors;
-}
-
-function ends(view: PlantView, edge: PlantView["edges"][number], handled: Handled): Ends {
-  const leftward = centreX(view, edge.to) < centreX(view, edge.from);
-  const side = leftward
-    ? { sourceHandle: "out-left", targetHandle: "in-right" }
-    : { sourceHandle: "out", targetHandle: "in" };
-  return {
-    sourceHandle:
-      edge.fromHandle !== null && handled(edge.from, edge.fromHandle)
-        ? pinHandle(edge.fromHandle, "out", leftward)
-        : side.sourceHandle,
-    targetHandle:
-      edge.toHandle !== null && handled(edge.to, edge.toHandle)
-        ? pinHandle(edge.toHandle, "in", leftward)
-        : side.targetHandle,
-  };
-}
-
 export function flowEdges(
   view: PlantView,
-  anchors = false,
+  routes: ReadonlyMap<string, readonly Point[]>,
   selected: string | null = null,
-  rows: PinRows | null = null,
 ): Edge[] {
-  const handled = handledBy(anchors, rows);
   return view.edges.map((edge) => ({
     id: edge.id,
+    type: "wire",
     source: edge.from,
     target: edge.to,
-    ...ends(view, edge, handled),
+    sourceHandle: "out",
+    targetHandle: "in",
+    data: { points: routes.get(edge.id) ?? [] },
     markerEnd: {
       type: MarkerType.ArrowClosed,
       width: 10,
@@ -184,7 +142,7 @@ export function flowEdges(
       color: markerColor(edge.family, selected, edge.from, edge.to),
     },
     className: `wire family-${edge.family ?? "none"}${emphasis(selected, edge.from, edge.to)}`,
-    zIndex: touches(selected, edge.from, edge.to) ? 1 : 0,
+    zIndex: 0,
     label: edge.count > 1 ? `×${String(edge.count)}` : undefined,
     ariaLabel: `${edge.from} to ${edge.to}${edge.count > 1 ? `, ${String(edge.count)} links` : ""}`,
     focusable: false,

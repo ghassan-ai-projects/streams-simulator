@@ -5,6 +5,7 @@ import type { Plant } from "../../model/plant";
 import { areaOf } from "../../model/plant";
 import { hallOf, hallsOf } from "../../model/plantView";
 import { kindLabel } from "../../model/report";
+import { cx } from "../cx";
 import shared from "../shared.module.css";
 import styles from "./PlantScreen.module.css";
 
@@ -67,14 +68,36 @@ function groups(plant: Plant, hall: string | null, filter: string, empty: boolea
   return populatedFirst(all).filter((group) => group.items.length > 0 || showEmpty);
 }
 
-function populatedFirst(all: readonly Group[]): Group[] {
-  const branches: Group[][] = [];
+interface Branch {
+  readonly group: Group;
+  readonly children: Branch[];
+}
+
+function branchesOf(all: readonly Group[]): Branch[] {
+  const roots: Branch[] = [];
+  const open: Branch[] = [];
   for (const group of all) {
-    if (group.depth === 0 || branches.length === 0) branches.push([group]);
-    else branches[branches.length - 1]?.push(group);
+    const branch: Branch = { group, children: [] };
+    open.length = Math.min(open.length, group.depth);
+    const parent = open[open.length - 1];
+    if (group.depth === 0 || parent === undefined) roots.push(branch);
+    else parent.children.push(branch);
+    open.push(branch);
   }
-  const holds = (branch: readonly Group[]) => branch.some((group) => group.items.length > 0);
-  return branches.sort((a, b) => Number(!holds(a)) - Number(!holds(b))).flat();
+  return roots;
+}
+
+function total(branch: Branch): number {
+  return branch.children.reduce((sum, child) => sum + total(child), branch.group.items.length);
+}
+
+function flatten(branches: readonly Branch[]): Group[] {
+  const ordered = [...branches].sort((a, b) => total(b) - total(a));
+  return ordered.flatMap((branch) => [branch.group, ...flatten(branch.children)]);
+}
+
+function populatedFirst(all: readonly Group[]): Group[] {
+  return flatten(branchesOf(all));
 }
 
 interface SectionProps {
@@ -119,13 +142,15 @@ function Entry({ item, current, marks, onPick }: Omit<SectionProps, "title" | "i
 function Section({ title, depth = 0, items, current, marks, onPick }: SectionProps) {
   return (
     <details open className={styles.group} style={{ marginLeft: `calc(var(--space-3) * ${String(depth)})` }}>
-      <summary className={shared.sectionTitle}>
-        {title}
-        <span className={styles.count}>{items.length}</span>
+      <summary className={cx(shared.sectionTitle, items.length === 0 && styles.emptyRow)}>
+        <span className={styles.areaName} title={title}>
+          {title}
+        </span>
+        <span className={styles.count} title={items.length === 0 ? "No equipment yet" : undefined}>
+          {items.length === 0 ? "0 · empty" : items.length}
+        </span>
       </summary>
-      {items.length === 0 ? (
-        <p className={styles.emptyArea}>No equipment yet</p>
-      ) : (
+      {items.length > 0 && (
         <ul className={styles.tree}>
           {items.map((item) => (
             <Entry key={item.id} item={item} current={current} marks={marks} onPick={onPick} />

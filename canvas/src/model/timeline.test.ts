@@ -1,9 +1,40 @@
 import { describe, expect, it } from "vitest";
 import { report } from "../test/runFixture";
 import { parseReport } from "./report";
-import { eventMarks, faultedAt, kindsOf, nextEvent, placeChips, previousEvent, runClock, timeTicks } from "./timeline";
+import {
+  effectorAt,
+  eventMarks,
+  faultedAt,
+  firstEventLine,
+  kindsOf,
+  nextEvent,
+  placeChips,
+  previousEvent,
+  runClock,
+  timeTicks,
+} from "./timeline";
 
 const parsed = parseReport(report);
+
+describe("first event line", () => {
+  it("names the first mark with its time and instance, and counts the effector calls", () => {
+    const line = firstEventLine(parsed, parsed.startNs);
+    expect(line).toMatch(/^First: disturbance · drop on delivery at 00:05:00 · \d+ effector calls?$/);
+  });
+
+  it("names a fault as a fault and leaves the count off when the only call is the first event", () => {
+    const fault = { ...parsed, disturbances: parsed.disturbances.filter((d) => d.kind === "fault"), effectorCalls: [] };
+    expect(firstEventLine(fault, parsed.startNs)).toBe("First: fault · fan failure on CT-1 at 00:10:00");
+    const call = { ...parsed, disturbances: [], alarmActivations: [], effectorCalls: parsed.effectorCalls.slice(0, 1) };
+    expect(firstEventLine(call, parsed.startNs)).toMatch(/^First: effector call · .+ at \d\d:\d\d:\d\d$/);
+  });
+
+  it("says there is nothing when the run has no fault, call or alarm, and nothing before the report", () => {
+    const quiet = { ...parsed, disturbances: [], effectorCalls: [], alarmActivations: [] };
+    expect(firstEventLine(quiet, parsed.startNs)).toBe("No faults or effector calls in this run");
+    expect(firstEventLine(null, 0)).toBeNull();
+  });
+});
 
 describe("timeline", () => {
   it("shows reported alarm instants as navigation marks without inferring an active interval", () => {
@@ -91,5 +122,20 @@ describe("event lane", () => {
     const marks = eventMarks({ ...parsed, alarmActivations: [{ atNs: 1e9, entity: "A", state: "s", priority: "p" }] });
     expect(kindsOf(marks)).toContain("alarm");
     expect(kindsOf([])).toEqual([]);
+  });
+
+  it("lists an effector call on its target for 60 s of simulated time after it", () => {
+    const calls = [
+      { atNs: 100e9, entity: "CP-3", effector: "stop", outcome: "applied · 371 ms" },
+      { atNs: 130e9, entity: "CP-3", effector: "start", outcome: "refused: busy" },
+    ];
+    const run = { ...parsed, effectorCalls: calls };
+    expect(effectorAt(run, 99e9).size).toBe(0);
+    expect(effectorAt(run, 100e9).get("CP-3")).toBe("stop · applied · 371 ms");
+    expect(effectorAt(run, 129e9).get("CP-3")).toBe("stop · applied · 371 ms");
+    expect(effectorAt(run, 150e9).get("CP-3")).toBe("start · refused: busy");
+    expect(effectorAt(run, 190e9).get("CP-3")).toBe("start · refused: busy");
+    expect(effectorAt(run, 191e9).size).toBe(0);
+    expect(effectorAt(null, 100e9).size).toBe(0);
   });
 });

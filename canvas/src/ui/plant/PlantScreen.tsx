@@ -1,6 +1,6 @@
 import { ReactFlowProvider } from "@xyflow/react";
 import { Network } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { LaunchStore } from "../../app/launchStore";
 import type { NavigationStore } from "../../app/navigationStore";
 import type { PlantState, PlantStore } from "../../app/plantStore";
@@ -17,9 +17,8 @@ import { LaunchPanel } from "../launch/LaunchPanel";
 import { EditButton, RunButton, useRunningHere } from "./PlantActions";
 import { Inspector } from "./Inspector";
 import { Outline } from "./Outline";
-import { useCanvasAspect } from "./canvasAspect";
 import { PlantFailure } from "./PlantFailure";
-import { PlantGraph } from "./PlantGraph";
+import { PlantCanvas } from "./PlantCanvas";
 import styles from "./PlantScreen.module.css";
 
 type Ready = Extract<PlantState, { phase: "ready" }>;
@@ -72,43 +71,6 @@ function Crumbs({
     });
   }
   return <Breadcrumb trail={trail} here={hall ?? title} heading={heading} />;
-}
-
-function Graph({
-  state,
-  hall,
-  plants,
-  navigation,
-}: {
-  readonly state: Ready;
-  readonly hall: string | null;
-  readonly plants: PlantStore;
-  readonly navigation: NavigationStore;
-}) {
-  const { ref, aspect } = useCanvasAspect<HTMLDivElement>();
-  const view = useMemo(
-    () => plantView(state.plant, state.specs, hall, 0, aspect),
-    [state.plant, state.specs, hall, aspect],
-  );
-  return (
-    <div ref={ref} className={styles.graphHost}>
-      <PlantGraph
-        view={view}
-        viewKey={hall ?? "plant"}
-        fitKey={`${hall ?? "plant"}:${String(aspect)}`}
-        selected={state.selected}
-        onSelect={(id) => {
-          plants.select(id);
-        }}
-        onOpenHall={(name) => {
-          navigation.go({ screen: "plant", domain: state.path, hall: name });
-        }}
-        onEscape={() => {
-          if (hall !== null) navigation.go({ screen: "plant", domain: state.path, hall: null });
-        }}
-      />
-    </div>
-  );
 }
 
 function PlantSide({
@@ -274,7 +236,7 @@ export function PlantScreen(props: PlantScreenProps) {
             <RunButton launching={run.launching} running={running} button={run.button} onToggle={run.toggle} />
             <ZoomBar />
           </div>
-          <Graph state={state} hall={hall} plants={plants} navigation={navigation} />
+          <PlantCanvas state={state} hall={hall} plants={plants} navigation={navigation} launch={launch} />
         </section>
         <RightPanel
           state={state}

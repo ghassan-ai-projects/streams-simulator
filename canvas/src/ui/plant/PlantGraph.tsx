@@ -4,18 +4,23 @@ import "@xyflow/react/dist/base.css";
 import type { CSSProperties, KeyboardEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { directionOf, firstOf, nearest } from "../../model/graphKeys";
+import type { PlanMark } from "../../model/planMarks";
 import type { PlantView } from "../../model/plantView";
-import { describeNode, hallCount } from "../../model/plantView";
-import { anchorsOnly, rowLimitOf, tierOf } from "../../model/viewport";
+import { describeNode } from "../../model/nodeWords";
+import { hallCount } from "../../model/plantView";
+import { openingFloor, screenPixel, textFloorPx, tierOf } from "../../model/viewport";
+import { routeView } from "../../model/wireView";
 import type { FlowNode, NodeLive } from "./flow";
-import { flowEdges, flowNodes, rowPins } from "./flow";
+import { flowEdges, flowNodes } from "./flow";
 import { useZoomActions } from "./GraphControls";
 import { plainKey } from "../keys";
 import { FrameNode, FrameTitleNode, HallNode, InstanceNode } from "./nodes";
+import { WireEdge } from "./WireEdge";
 import { useFitted, useFollowSelection } from "./viewportFit";
 import styles from "./PlantScreen.module.css";
 
 const nodeTypes = { instance: InstanceNode, hall: HallNode, frame: FrameNode, frameTitle: FrameTitleNode };
+const edgeTypes = { wire: WireEdge };
 
 export interface PlantGraphProps {
   readonly view: PlantView;
@@ -26,10 +31,12 @@ export interface PlantGraphProps {
   readonly onOpenHall?: (hall: string) => void;
   readonly onEscape?: () => void;
   readonly minFitZoom?: number;
+  readonly anchor?: string | null;
   readonly focusZoom?: number;
   readonly flagged?: ReadonlySet<string>;
   readonly fitKey?: string;
   readonly onConnect?: (from: string, to: string) => void;
+  readonly marks?: ReadonlyMap<string, PlanMark>;
 }
 
 interface Keys {
@@ -165,6 +172,7 @@ const graphNames = {
 
 const fixedProps = {
   nodeTypes,
+  edgeTypes,
   nodesDraggable: false,
   nodesFocusable: false,
   edgesFocusable: false,
@@ -189,17 +197,19 @@ function connection(onConnect: PlantGraphProps["onConnect"]) {
 
 type FlowProps = PlantGraphProps & { readonly active: string | null; readonly keys: Keys };
 
-function useFlowContent({ view, selected, live, flagged, onConnect, active }: FlowProps) {
+function useFlowContent({ view, selected, live, flagged, onConnect, active, marks }: FlowProps) {
   const editable = onConnect !== undefined;
   const nodes = useMemo(
-    () => flowNodes(view, selected, live ?? null, active, flagged ?? null, editable),
-    [view, selected, live, active, flagged, editable],
+    () => flowNodes(view, selected, live ?? null, active, flagged ?? null, editable, marks ?? null),
+    [view, selected, live, active, flagged, editable, marks],
   );
   const zoom = useStore((state) => state.transform[2]);
   const tier = tierOf(zoom);
   const shown = view.nodes.some((entry) => entry.id === selected) ? selected : null;
-  const rows = useMemo(() => (live === undefined ? null : rowPins(view, live, rowLimitOf(tier))), [view, live, tier]);
-  const edges = useMemo(() => flowEdges(view, anchorsOnly(tier), shown, rows), [view, tier, shown, rows]);
+  const review = live !== undefined;
+  const pixel = screenPixel(zoom);
+  const routes = useMemo(() => routeView(view, tier, review, pixel), [view, tier, review, pixel]);
+  const edges = useMemo(() => flowEdges(view, routes, shown), [view, routes, shown]);
   return { nodes, edges, zoom };
 }
 
@@ -221,7 +231,7 @@ function Flow(props: FlowProps) {
       {...fixedProps}
       {...connection(onConnect)}
       className={`tier-${tierOf(zoom)}`}
-      style={{ "--zoom": String(zoom) } as CSSProperties}
+      style={{ "--zoom": String(zoom), "--floor": `${String(textFloorPx / zoom)}px` } as CSSProperties}
       {...graphNames}
       onKeyDown={keys.onKeyDown}
       onFocus={keys.onFocus}
@@ -242,7 +252,8 @@ function Flow(props: FlowProps) {
 
 export function PlantGraph(props: PlantGraphProps) {
   const keys = useGraphKeys(props);
-  useFitted(props.fitKey ?? props.viewKey, props.minFitZoom ?? 0.05);
+  const anchor = props.anchor ?? firstOf(props.view.layout.nodes);
+  useFitted(props.fitKey ?? props.viewKey, props.minFitZoom ?? openingFloor, anchor);
   useFollowSelection(keys.active ?? props.selected, props.focusZoom ?? 0);
   return (
     <div className={styles.graph} onPointerDown={keys.onPointerDown}>

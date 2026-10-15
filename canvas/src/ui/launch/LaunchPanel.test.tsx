@@ -2,10 +2,11 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import axe from "axe-core";
 import { describe, expect, it, vi } from "vitest";
 import { LaunchStore } from "../../app/launchStore";
-import type { Outcome } from "../../model/bridge";
-import { failed, success } from "../../model/bridge";
+import { failed } from "../../model/bridge";
 import { parsePlant } from "../../model/plant";
-import { FakeBridge, failure } from "../../test/fakeBridge";
+import type { FakeBridge } from "../../test/fakeBridge";
+import { failure } from "../../test/fakeBridge";
+import { HeldBridge } from "../../test/heldBridge";
 import { launchBridge } from "../../test/launchFixture";
 import { domain } from "../../test/plantFixture";
 import { LaunchPanel } from "./LaunchPanel";
@@ -42,6 +43,7 @@ describe("launch panel", () => {
     change("Fault 1 fault", "chiller__fouling");
     change("Fault 1 starts at minute", "10");
     await act(async () => {
+      fireEvent.click(screen.getByRole("radio", { name: /As fast as possible/ }));
       fireEvent.click(screen.getByRole("button", { name: "Start the run" }));
       await Promise.resolve();
     });
@@ -56,12 +58,23 @@ describe("launch panel", () => {
     });
   });
 
+  it("offers to watch the run by default, says how long that takes, and can run as fast as possible", () => {
+    renderPanel(launchBridge());
+    expect(screen.getByRole("radio", { name: /Watch: about 30 s/ })).toBeChecked();
+    expect(screen.getByText(/paced to take about 30 s/)).toBeInTheDocument();
+    change("Duration", "10");
+    expect(screen.getByRole("radio", { name: /Watch: about 10 s/ })).toBeChecked();
+    fireEvent.click(screen.getByRole("radio", { name: /As fast as possible/ }));
+    expect(screen.getByText(/as fast as it can/)).toBeInTheDocument();
+  });
+
   it("lists the plan's problems only when starting, and does not start", () => {
     const fake = launchBridge();
     renderPanel(fake);
     change("Duration", "0");
     fireEvent.click(screen.getByRole("button", { name: "Add fault" }));
     expect(screen.queryByText("The duration is at least one minute.")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("radio", { name: /As fast as possible/ }));
     fireEvent.click(screen.getByRole("button", { name: "Start the run" }));
     expect(screen.getByLabelText("Duration")).toHaveFocus();
     expect(screen.getByLabelText("Duration")).toHaveAccessibleDescription("The duration is at least one minute.");
@@ -81,6 +94,7 @@ describe("launch panel", () => {
     fireEvent.click(screen.getByRole("button", { name: "Add fault" }));
     change("Fault 1 instance", "CH-1");
     expect(screen.queryByText(/needs attention before starting/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("radio", { name: /As fast as possible/ }));
     fireEvent.click(screen.getByRole("button", { name: "Start the run" }));
     expect(screen.getByText("Fault 1 needs attention before starting.")).toBeInTheDocument();
     const fault = screen.getByLabelText("Fault 1 fault");
@@ -94,6 +108,7 @@ describe("launch panel", () => {
     fake.actions.set("world.create", failed(failure("domain_invalid", 422, "bad domain")));
     renderPanel(fake);
     change("Seed", "4");
+    fireEvent.click(screen.getByRole("radio", { name: /As fast as possible/ }));
     fireEvent.click(screen.getByRole("button", { name: "Start the run" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "The run did not finish. The run stopped before it finished.",
@@ -107,17 +122,18 @@ describe("launch panel", () => {
   it("shows progress and stops early, keeping the shorter run and opening it", async () => {
     const fake = new HeldBridge();
     const { onFinished } = renderPanel(fake);
+    fireEvent.click(screen.getByRole("radio", { name: /As fast as possible/ }));
     fireEvent.click(screen.getByRole("button", { name: "Start the run" }));
     expect(await screen.findByText("Running Mini plant as run w-7")).toHaveFocus();
     expect(screen.getByText("30 min of simulated time · Explore · no faults")).toBeInTheDocument();
-    expect(screen.getByText("00:00:00 of 00:30:00 simulated")).toBeInTheDocument();
-    expect(screen.getByText(/^Running · 00:00:00 elapsed/)).toBeInTheDocument();
+    expect(screen.getByText("Running · 00:00:00 of 00:30:00 simulated")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Stop now" }));
     expect(screen.getByRole("status")).toHaveTextContent("Stopping at the next step");
     await act(async () => {
       fake.release();
       await Promise.resolve();
     });
+    expect(screen.getByRole("status")).toHaveTextContent(/^Saved at 00:\d\d:\d\d of 00:30:00/);
     await vi.waitFor(() => {
       expect(onFinished).toHaveBeenCalledWith("w-7");
     }, finishedWait);
@@ -128,6 +144,7 @@ describe("launch panel", () => {
     const fake = launchBridge();
     fake.actions.set("clock.advance", failed(failure("world_gone", 404, "the world is gone")));
     renderPanel(fake);
+    fireEvent.click(screen.getByRole("radio", { name: /As fast as possible/ }));
     fireEvent.click(screen.getByRole("button", { name: "Start the run" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "The run did not finish. The run stopped before it finished. Check the plan and start again. What ran before the failure is kept as run w-7.",
@@ -220,80 +237,4 @@ describe("launch panel lifetime", () => {
       "Prefilled from w-4: seed, duration, mode and faults. Change them if needed. Not copied: 1 delivery perturbation.",
     );
   });
-
-  it("keeps a run going when the panel closes and opens its review when it is back on that plant", async () => {
-    const fake = new HeldBridge();
-    const launch = new LaunchStore(fake);
-    const onFinished = vi.fn<(worldId: string) => void>();
-    const plant = parsePlant(domain);
-    const panel = () => (
-      <LaunchPanel launch={launch} plant={plant} path={path} onClose={vi.fn()} onFinished={onFinished} />
-    );
-    const first = render(panel());
-    fireEvent.click(screen.getByRole("button", { name: "Start the run" }));
-    await screen.findByText("Running Mini plant as run w-7");
-    first.unmount();
-    expect(launch.snapshot()).toMatchObject({ phase: "running", stopping: false, origin: { domain: "mini", path } });
-    render(panel());
-    expect(screen.getByText("Running Mini plant as run w-7")).toBeInTheDocument();
-    await act(async () => {
-      fake.free();
-      await Promise.resolve();
-    });
-    expect(screen.getByRole("status")).toHaveTextContent("Run w-7 finished.");
-    expect(onFinished).not.toHaveBeenCalled();
-    await vi.waitFor(() => {
-      expect(onFinished).toHaveBeenCalledWith("w-7");
-    }, finishedWait);
-  });
-
-  it("tells another plant that a run is in progress and leaves a finished run of another plant alone", async () => {
-    const fake = new HeldBridge();
-    const launch = new LaunchStore(fake);
-    const elsewhere = { domain: "other", title: "Other plant", path: "domains/other.domain.json" };
-    void launch.start(elsewhere, { seed: 1, durationS: 60, explore: true, faults: [], calls: [] });
-    const onFinished = vi.fn<(worldId: string) => void>();
-    render(
-      <LaunchPanel launch={launch} plant={parsePlant(domain)} path={path} onClose={vi.fn()} onFinished={onFinished} />,
-    );
-    expect(await screen.findByText("A run of Other plant is in progress.")).toBeInTheDocument();
-    await act(async () => {
-      fake.free();
-      await Promise.resolve();
-    });
-    await vi.waitFor(() => {
-      expect(launch.snapshot()).toMatchObject({ phase: "done", origin: { domain: "other" } });
-    });
-    expect(onFinished).not.toHaveBeenCalled();
-    expect(screen.getByRole("button", { name: "Start the run" })).toBeInTheDocument();
-  });
 });
-
-class HeldBridge extends FakeBridge {
-  private held: (() => void) | null = null;
-  private open = false;
-
-  constructor() {
-    super();
-    launchBridge().actions.forEach((outcome, name) => this.actions.set(name, outcome));
-  }
-
-  override action(name: string, args: Readonly<Record<string, unknown>>): Promise<Outcome<unknown>> {
-    if (name !== "clock.advance" || this.open) return super.action(name, args);
-    this.calls.push({ name, args });
-    return new Promise((resolve) => {
-      this.held = () => {
-        resolve(success({}));
-      };
-    });
-  }
-
-  release(): void {
-    this.held?.();
-  }
-
-  free(): void {
-    this.open = true;
-    this.held?.();
-  }
-}

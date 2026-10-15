@@ -105,6 +105,20 @@ export function faultedAt(report: Report | null, atNs: number): ReadonlyMap<stri
   return active;
 }
 
+const effectorShownNs = 60e9;
+
+export function effectorAt(report: Report | null, atNs: number): ReadonlyMap<string, string> {
+  const latest = new Map<string, { readonly at: number; readonly words: string }>();
+  for (const call of report?.effectorCalls ?? []) {
+    const known = latest.get(call.entity);
+    const live = call.atNs <= atNs && atNs <= call.atNs + effectorShownNs;
+    if (live && (known === undefined || call.atNs >= known.at)) {
+      latest.set(call.entity, { at: call.atNs, words: `${humanise(call.effector)} · ${call.outcome}` });
+    }
+  }
+  return new Map([...latest].map(([entity, call]) => [entity, call.words] as const));
+}
+
 export function kindsOf(marks: readonly EventMark[]): readonly MarkKind[] {
   const present = new Set(marks.map((mark) => mark.kind));
   return (Object.keys(markWords) as MarkKind[]).filter((kind) => present.has(kind));
@@ -139,4 +153,35 @@ export function timeTicks(startNs: number, endNs: number, most = 9): readonly nu
   const step = tickSteps.find((candidate) => span / candidate <= most) ?? span;
   const first = Math.ceil(startNs / step) * step;
   return Array.from({ length: Math.floor((endNs - first) / step) + 1 }, (_, index) => first + index * step);
+}
+
+interface Beginning {
+  readonly atNs: number;
+  readonly words: string;
+}
+
+function beginnings(report: Report): readonly Beginning[] {
+  const disturbances = report.disturbances.map((d) => ({
+    atNs: d.onsetNs,
+    words: `${d.kind === "fault" ? "fault" : "disturbance"} · ${humanise(d.name)} on ${d.target}`,
+  }));
+  const calls = report.effectorCalls.map((c) => ({
+    atNs: c.atNs,
+    words: `effector call · ${humanise(c.effector)} on ${c.entity}`,
+  }));
+  const alarms = report.alarmActivations.map((a) => ({
+    atNs: a.atNs,
+    words: `alarm · ${humanise(a.state)} on ${a.entity}`,
+  }));
+  return [...disturbances, ...calls, ...alarms].sort((a, b) => a.atNs - b.atNs);
+}
+
+export function firstEventLine(report: Report | null, startNs: number): string | null {
+  if (report === null) return null;
+  const first = beginnings(report)[0];
+  if (first === undefined) return "No faults or effector calls in this run";
+  const calls = report.effectorCalls.length;
+  const only = calls === 1 && first.words.startsWith("effector call");
+  const tail = calls === 0 || only ? "" : ` · ${String(calls)} effector call${calls === 1 ? "" : "s"}`;
+  return `First: ${first.words} at ${runClock(first.atNs, startNs)}${tail}`;
 }

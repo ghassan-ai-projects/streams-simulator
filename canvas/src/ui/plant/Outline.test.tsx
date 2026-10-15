@@ -54,12 +54,41 @@ describe("outline", () => {
     expect(screen.queryByText("Roof")).not.toBeInTheDocument();
     rerender(<Outline plant={plant} hall={null} selected={null} onSelect={vi.fn()} showEmptyAreas />);
     const titles = screen.getAllByRole("group").map((group) => group.querySelector("summary")?.textContent);
-    expect(titles).toEqual(["Site0", "Plant room1", "Roof0"]);
+    expect(titles).toEqual(["Site0 · empty", "Plant room1", "Roof0 · empty"]);
     expect(screen.getAllByRole("group").map((group) => group.getAttribute("style"))).toEqual([
       "margin-left: calc(var(--space-3) * 0);",
       "margin-left: calc(var(--space-3) * 1);",
       "margin-left: calc(var(--space-3) * 1);",
     ]);
-    expect(screen.getAllByText("No equipment yet")).toHaveLength(2);
+    expect(screen.getAllByText("0 · empty")).toHaveLength(2);
+  });
+
+  it("lists the populated child areas of a site before its empty ones, each empty area on one row", () => {
+    const plant = parsePlant({
+      id: "tree",
+      site: {
+        name: "Site",
+        areas: [
+          { name: "Site" },
+          { name: "Hall", parent: "Site" },
+          { name: "Substation", parent: "Site" },
+          { name: "House", parent: "Site" },
+          { name: "Cabinet", parent: "House" },
+          { name: "Yard", parent: "Site" },
+        ],
+      },
+      instances: [
+        { kind: "compressor", names: ["C-1", "C-2", "C-3"], area: "House" },
+        { kind: "meter", names: ["M-1"], area: "Cabinet" },
+        { kind: "pump", names: ["P-1"], area: "Yard" },
+      ],
+    });
+    render(<Outline plant={plant} hall={null} selected={null} onSelect={vi.fn()} showEmptyAreas />);
+    const titles = screen.getAllByRole("group").map((group) => group.querySelector("summary")?.textContent);
+    expect(titles).toEqual(["Site0 · empty", "House3", "Cabinet1", "Yard1", "Hall0 · empty", "Substation0 · empty"]);
+    const empty = screen.getAllByText("0 · empty");
+    expect(empty).toHaveLength(3);
+    expect(empty.every((note) => note.closest("summary")?.querySelectorAll("span").length === 2)).toBe(true);
+    expect(screen.getByText("Substation")).toHaveAttribute("title", "Substation");
   });
 });

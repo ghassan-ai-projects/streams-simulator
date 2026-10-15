@@ -6,7 +6,7 @@ import { hallOf } from "../../model/plantView";
 import type { Shown } from "../../model/readout";
 import { abnormalFirst, channelWords, sharedTimes, showReading, statusWords } from "../../model/readout";
 import { runSpan } from "../../model/report";
-import { faultedAt, runClock } from "../../model/timeline";
+import { effectorAt, faultedAt, runClock } from "../../model/timeline";
 import { cx } from "../cx";
 import { OutsideMark } from "../OutsideMark";
 import styles from "./RunScreen.module.css";
@@ -20,11 +20,18 @@ interface ObservedProps {
   readonly entity: string;
 }
 
-function ActiveNow({ faults, shown }: { readonly faults: readonly string[]; readonly shown: readonly Shown[] }) {
+interface ActiveProps {
+  readonly faults: readonly string[];
+  readonly shown: readonly Shown[];
+  readonly effector: string;
+}
+
+function ActiveNow({ faults, shown, effector }: ActiveProps) {
   const alarmed = shown.filter((entry) => entry.attention !== null);
-  if (faults.length === 0 && alarmed.length === 0) return null;
+  if (faults.length === 0 && alarmed.length === 0 && effector === "") return null;
   return (
     <ul className={styles.activeNow} aria-label="Active now">
+      {effector !== "" && <li>{`Effector call: ${effector}`}</li>}
       {faults.map((fault) => (
         <li key={fault} className={styles["value-alarm"]}>{`${statusWords.fault}: ${fault}`}</li>
       ))}
@@ -102,7 +109,11 @@ export function Observed({ review, state, plant, entity }: ObservedProps) {
   const at = new Map(readings.map((reading) => [shortChannel(reading.channel), reading.atNs]));
   return (
     <>
-      <ActiveNow faults={faultedAt(report, state.positionNs).get(entity) ?? []} shown={shown} />
+      <ActiveNow
+        faults={faultedAt(report, state.positionNs).get(entity) ?? []}
+        shown={shown}
+        effector={effectorAt(report, state.positionNs).get(entity) ?? ""}
+      />
       <ObservedTable shown={shown} at={at} startNs={runSpan(report, review.index.bounds()).startNs} />
     </>
   );

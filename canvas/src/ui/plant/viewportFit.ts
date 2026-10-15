@@ -2,7 +2,16 @@ import type { ReactFlowInstance } from "@xyflow/react";
 import { useReactFlow, useStore } from "@xyflow/react";
 import { useEffect, useRef } from "react";
 import type { Viewport } from "../../model/viewport";
-import { centreOf, followZoom, openingViewport, sameViewport } from "../../model/viewport";
+import { boundsWithTitles } from "../../model/frameTitle";
+import {
+  centreOf,
+  followZoom,
+  openingViewport,
+  sameViewport,
+  screenPixel,
+  steppedViewport,
+  tierOf,
+} from "../../model/viewport";
 import type { FlowNode } from "./flow";
 
 interface Size {
@@ -10,9 +19,36 @@ interface Size {
   readonly height: number;
 }
 
-export function fittedViewport(flow: ReactFlowInstance<FlowNode>, screen: Size, minZoom: number): Viewport {
+function titleTopsOf(nodes: readonly FlowNode[]): number[] {
+  return nodes.flatMap((node) => (node.type === "frameTitle" ? [node.position.y] : []));
+}
+
+export function fittedViewport(
+  flow: ReactFlowInstance<FlowNode>,
+  screen: Size,
+  minZoom: number,
+  anchor: string | null = null,
+): Viewport {
+  const nodes = flow.getNodes();
+  const bounds = flow.getNodesBounds(nodes);
+  const limits = { pad: 16, headroom: 24, minZoom, maxZoom: 1 };
+  const focus = anchor !== null && flow.getNode(anchor) !== undefined ? flow.getNodesBounds([anchor]) : null;
+  const plain = openingViewport(bounds, screen, limits, focus);
+  if (tierOf(plain.zoom) === "full") return plain;
+  const lifted = boundsWithTitles(bounds, titleTopsOf(nodes), screenPixel(plain.zoom));
+  return openingViewport(lifted, screen, limits, focus);
+}
+
+interface Limits extends Size {
+  readonly minZoom: number;
+  readonly maxZoom: number;
+}
+
+export function steppedZoom(flow: ReactFlowInstance<FlowNode>, screen: Limits, factor: number): Viewport {
+  const current = flow.getViewport();
+  const zoom = Math.min(screen.maxZoom, Math.max(screen.minZoom, current.zoom * factor));
   const bounds = flow.getNodesBounds(flow.getNodes());
-  return openingViewport(bounds, screen, { pad: 16, headroom: 24, minZoom, maxZoom: 1 });
+  return steppedViewport(current, screen, zoom, bounds, 16);
 }
 
 function useScreen(): Size & { readonly ready: boolean } {
@@ -22,7 +58,7 @@ function useScreen(): Size & { readonly ready: boolean } {
   return { ready: ready && width > 0, width, height };
 }
 
-export function useFitted(fitKey: string, minZoom: number) {
+export function useFitted(fitKey: string, minZoom: number, anchor: string | null) {
   const flow = useReactFlow<FlowNode>();
   const { ready, width, height } = useScreen();
   const last = useRef<{ key: string; viewport: Viewport | null }>({ key: "", viewport: null });
@@ -30,10 +66,10 @@ export function useFitted(fitKey: string, minZoom: number) {
     if (!ready) return;
     const { key, viewport } = last.current;
     if (key === fitKey && (viewport === null || !sameViewport(viewport, flow.getViewport()))) return;
-    const fitted = fittedViewport(flow, { width, height }, minZoom);
+    const fitted = fittedViewport(flow, { width, height }, minZoom, anchor);
     last.current = { key: fitKey, viewport: fitted };
     void flow.setViewport(fitted);
-  }, [flow, ready, width, height, fitKey, minZoom]);
+  }, [flow, ready, width, height, fitKey, minZoom, anchor]);
 }
 
 export function useFollowSelection(selected: string | null, focusZoom: number) {

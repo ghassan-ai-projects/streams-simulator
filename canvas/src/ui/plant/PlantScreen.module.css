@@ -86,7 +86,10 @@
 }
 
 .count {
+  flex: none;
   margin-left: auto;
+  padding-left: var(--space-2);
+  white-space: nowrap;
   font-family: var(--font-mono);
   letter-spacing: 0;
   font-weight: 400;
@@ -203,11 +206,16 @@
   font-family: var(--font-mono);
 }
 
-.emptyArea {
-  margin: 0;
-  padding: var(--space-1) var(--space-3) var(--space-2) var(--space-5);
-  color: var(--text-tertiary);
-  font-size: var(--text-sm);
+.emptyRow.emptyRow {
+  height: 28px;
+}
+
+.areaName {
+  min-width: 0;
+  flex: 0 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .empty {

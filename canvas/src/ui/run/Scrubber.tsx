@@ -3,7 +3,7 @@ import type { CSSProperties, KeyboardEvent, ReactNode } from "react";
 import { useMemo, useState } from "react";
 import type { Report } from "../../model/report";
 import type { EventMark } from "../../model/timeline";
-import { eventMarks, nextEvent, previousEvent, runClock, timeTicks } from "../../model/timeline";
+import { eventMarks, firstEventLine, nextEvent, previousEvent, runClock, timeTicks } from "../../model/timeline";
 import runStyles from "./RunScreen.module.css";
 import styles from "./Scrubber.module.css";
 import { Lane, Legend, MarkRail, usePick } from "./ScrubberLane";
@@ -105,6 +105,16 @@ function PlaybackRange({ startNs, span, positionNs, onSeek, onKeyDown }: RangePr
   );
 }
 
+function FirstEvent({ report, startNs }: { readonly report: Report | null; readonly startNs: number }) {
+  const line = firstEventLine(report, startNs);
+  if (line === null) return null;
+  return (
+    <p className={styles.first} title={line}>
+      {line}
+    </p>
+  );
+}
+
 const unknownClock = "--:--:--";
 
 interface RowProps extends ScrubberProps {
@@ -179,6 +189,7 @@ export function Scrubber(props: ScrubberProps) {
         said={said}
         pick={pick}
       />
+      <FirstEvent report={report} startNs={startNs} />
     </div>
   );
 }

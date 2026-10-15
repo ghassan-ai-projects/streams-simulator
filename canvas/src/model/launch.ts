@@ -1,6 +1,7 @@
 import type { ArgValue, EffectorSpec } from "./effectors";
 import { argProblem } from "./effectors";
 import { humanise } from "./report";
+import { durationOf } from "./workspace";
 
 interface PlannedFault {
   readonly entity: string;
@@ -21,6 +22,20 @@ export interface LaunchPlan {
   readonly explore: boolean;
   readonly faults: readonly PlannedFault[];
   readonly calls: readonly PlannedCall[];
+  readonly pace?: "watch" | "fast";
+}
+
+function watchRate(durationS: number): number {
+  return Math.min(3600, Math.max(60, durationS / 30));
+}
+
+export function paceOf(plan: LaunchPlan): number | null {
+  return plan.pace === "watch" ? watchRate(plan.durationS) : null;
+}
+
+export function watchWords(durationS: number): string {
+  const seconds = Math.max(1, Math.round(durationS / watchRate(durationS)));
+  return `about ${durationOf(seconds)}`;
 }
 
 export type LaunchStep =
@@ -181,21 +196,28 @@ export interface CallOutcome {
   readonly accepted: boolean;
   readonly reason: string;
   readonly effectEtaNs: number | null;
+  readonly atMs: number;
 }
 
-export function outcomeOf(call: PlannedCall, value: unknown): CallOutcome {
+export function outcomeOf(call: PlannedCall, value: unknown, atMs: number): CallOutcome {
   const ack = typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
   const accepted = ack.accepted === true;
   const eta = typeof ack.effect_eta_ns === "number" ? ack.effect_eta_ns : null;
   const reason = typeof ack.reason === "string" ? ack.reason : "";
   const { entity, effector, atS } = call;
-  return { entity, effector, atS, accepted, reason: accepted ? "" : reason || "no reason given", effectEtaNs: eta };
+  return {
+    entity,
+    effector,
+    atS,
+    accepted,
+    reason: accepted ? "" : reason || "no reason given",
+    effectEtaNs: eta,
+    atMs,
+  };
 }
 
-export function speedOf(atS: number, wallMs: number): string {
-  if (wallMs < 1000 || atS <= 0) return "";
-  const speed = atS / (wallMs / 1000);
-  return speed >= 10 ? `about ${String(Math.round(speed))}× real time` : `about ${speed.toFixed(1)}× real time`;
+export function rateWords(rate: number | null): string {
+  return rate === null ? "" : `${String(Math.max(1, Math.round(rate)))} s per s`;
 }
 
 export function clockOf(seconds: number): string {

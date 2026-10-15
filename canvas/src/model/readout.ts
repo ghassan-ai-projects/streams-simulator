@@ -62,11 +62,6 @@ export function showReading(reading: Reading, spec: ChannelSpec | null = noSpec)
   return { channel, value, unit: "", attention: null, word: true, outside: "" };
 }
 
-export function displayedRows(shown: readonly Shown[], limit: number): readonly Shown[] {
-  const more = shown.length - 4;
-  return shown.slice(0, more > 0 ? 3 : 4).slice(0, limit);
-}
-
 export function attentionOf(shown: readonly Shown[]): Attention {
   if (shown.some((entry) => entry.attention === "alarm")) return "alarm";
   return shown.some((entry) => entry.attention === "warn") ? "warn" : null;
@@ -85,6 +80,13 @@ export function channelWords(name: string): string {
   return name.replaceAll("_", " ");
 }
 
+export function pinWords(name: string, side: "in" | "out"): { readonly full: string; readonly short: string } {
+  const full = channelWords(name);
+  const suffix = ` ${side}`;
+  const short = full.endsWith(suffix) && full.length > suffix.length ? full.slice(0, -suffix.length) : full;
+  return { full, short };
+}
+
 const statusRank = { alarm: 0, fault: 1, warn: 2 } as const;
 
 export function worstOf(statuses: readonly NodeStatus[]): { readonly status: NodeStatus; readonly count: number } {
@@ -94,12 +96,6 @@ export function worstOf(statuses: readonly NodeStatus[]): { readonly status: Nod
     null,
   );
   return { status: worst, count: ranked.filter((status) => status === worst).length };
-}
-
-export function withFault(shown: readonly Shown[], fault: string): readonly Shown[] {
-  return fault === ""
-    ? shown
-    : [{ channel: "fault", value: fault, unit: "", attention: "alarm", word: true, outside: "" }, ...shown];
 }
 
 export function sharedTimes(times: readonly number[]): {

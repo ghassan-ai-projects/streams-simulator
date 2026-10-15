@@ -73,6 +73,19 @@ describe("report panel", () => {
     expect(within(screen.getByRole("region", { name: "Scoring" })).getByText("scored")).toBeInTheDocument();
   });
 
+  it("marks the disturbance row the picked mark stands for, and no row otherwise", () => {
+    Element.prototype.scrollIntoView = vi.fn();
+    const parsed = parseReport(report);
+    const first = parsed.disturbances[0];
+    if (first === undefined) throw new Error("fixture has no disturbance");
+    const picked = { atNs: first.onsetNs, entity: first.target };
+    const { rerender } = render(<ReportPanel report={parsed} unit={() => ""} entity={null} picked={picked} />);
+    const rows = within(screen.getByRole("region", { name: "Disturbances" })).getAllByRole("row");
+    expect(rows.filter((row) => row.getAttribute("aria-current") === "true")).toHaveLength(1);
+    rerender(<ReportPanel report={parsed} unit={() => ""} entity={null} picked={{ ...picked, entity: "other" }} />);
+    expect(document.querySelectorAll("[aria-current='true']")).toHaveLength(0);
+  });
+
   it("filters KPI truth to the selected instance and states what is not available", () => {
     const { rerender } = render(<ReportPanel report={parseReport(report)} unit={() => ""} entity="CT-1" />);
     expect(

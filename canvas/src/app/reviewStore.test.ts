@@ -44,8 +44,21 @@ describe("review", () => {
     store.showTab("report");
     store.select(null);
     expect(store.snapshot().tab).toBe("report");
+  });
+
+  it("reveals a mark by seeking and selecting without changing the tab, on either tab", () => {
+    const { store } = setup();
+    store.open("w-1");
     store.reveal(600e9, "CT-1");
-    expect(store.snapshot()).toMatchObject({ positionNs: 600e9, selected: "CT-1", tab: "inspect" });
+    expect(store.snapshot()).toMatchObject({
+      positionNs: 600e9,
+      selected: "CT-1",
+      tab: "report",
+      picked: { atNs: 600e9, entity: "CT-1" },
+    });
+    store.showTab("inspect");
+    store.reveal(900e9, "CH-1");
+    expect(store.snapshot()).toMatchObject({ positionNs: 900e9, selected: "CH-1", tab: "inspect" });
   });
 
   it("asks the binary for the report and verification and streams the observer journal", async () => {
