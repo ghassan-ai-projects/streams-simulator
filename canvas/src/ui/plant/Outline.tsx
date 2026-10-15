@@ -91,13 +91,24 @@ function total(branch: Branch): number {
   return branch.children.reduce((sum, child) => sum + total(child), branch.group.items.length);
 }
 
-function flatten(branches: readonly Branch[]): Group[] {
+function splitBranches(branches: readonly Branch[]): { readonly shown: Group[]; readonly empty: Group[] } {
   const ordered = [...branches].sort((a, b) => total(b) - total(a));
-  return ordered.flatMap((branch) => [branch.group, ...flatten(branch.children)]);
+  const shown: Group[] = [];
+  const empty: Group[] = [];
+  for (const branch of ordered) {
+    const below = splitBranches(branch.children);
+    if (total(branch) === 0) empty.push(branch.group, ...below.empty);
+    else {
+      shown.push(branch.group, ...below.shown);
+      empty.push(...below.empty);
+    }
+  }
+  return { shown, empty };
 }
 
 function populatedFirst(all: readonly Group[]): Group[] {
-  return flatten(branchesOf(all));
+  const { shown, empty } = splitBranches(branchesOf(all));
+  return [...shown, ...empty];
 }
 
 interface SectionProps {

@@ -91,4 +91,37 @@ describe("outline", () => {
     expect(empty.every((note) => note.closest("summary")?.querySelectorAll("span").length === 2)).toBe(true);
     expect(screen.getByText("Substation")).toHaveAttribute("title", "Substation");
   });
+
+  it("moves an empty sub-area below every populated area, never between them", () => {
+    const plant = parsePlant({
+      id: "boiler",
+      site: {
+        name: "Site",
+        areas: [
+          { name: "Site" },
+          { name: "Boiler house", parent: "Site" },
+          { name: "Gas train", parent: "Boiler house" },
+          { name: "Distribution", parent: "Site" },
+          { name: "Process hall", parent: "Site" },
+          { name: "Heat users", parent: "Process hall" },
+        ],
+      },
+      instances: [
+        { kind: "meter", names: ["M-1", "M-2"], area: "Site" },
+        { kind: "boiler", names: ["B-1", "B-2", "B-3", "B-4", "B-5", "B-6"], area: "Boiler house" },
+        { kind: "pump", names: ["P-1", "P-2", "P-3"], area: "Distribution" },
+        { kind: "pump", names: ["P-4", "P-5", "P-6"], area: "Process hall" },
+      ],
+    });
+    render(<Outline plant={plant} hall={null} selected={null} onSelect={vi.fn()} showEmptyAreas />);
+    const titles = screen.getAllByRole("group").map((group) => group.querySelector("summary")?.textContent);
+    expect(titles).toEqual([
+      "Site2",
+      "Boiler house6",
+      "Distribution3",
+      "Process hall3",
+      "Gas train0 · empty",
+      "Heat users0 · empty",
+    ]);
+  });
 });
