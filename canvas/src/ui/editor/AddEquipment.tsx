@@ -77,6 +77,10 @@ interface NameProps {
   readonly setTyped: (name: string) => void;
 }
 
+function suggestedWords(suggested: string): string {
+  return suggested === "" ? "Leave empty to use the suggested name." : `Leave empty to use the suggested name, ${suggested}.`;
+}
+
 function NameField({ typed, suggested, setTyped }: NameProps) {
   return (
     <>
@@ -92,7 +96,7 @@ function NameField({ typed, suggested, setTyped }: NameProps) {
         />
       </label>
       <p className={panel.hint} id="add-name-rule">
-        {`Used in files and links. Leave empty to use the suggestion. ${instanceNameRule()}`}
+        {`${suggestedWords(suggested)} ${instanceNameRule()}`}
       </p>
     </>
   );
@@ -196,7 +200,7 @@ export function AddEquipment({ draft, plant, editor, request }: AddProps) {
       <Choice label="Size" value={preset} options={sizes(presets)} onChange={setPreset} />
       <NameField typed={typed} suggested={suggested} setTyped={setTyped} />
       <Choice label="Area" value={area} options={options} onChange={setArea} />
-      <p className={panel.hint}>The areas are this plant's own, the site first. Add more under Add area.</p>
+      <p className={panel.hint}>Areas are listed in order, with the site first. Add more under Add area.</p>
       <SubmitRow id="add-reason" reason={problem}>
         <Plus size={14} aria-hidden="true" />
         Add to the plant

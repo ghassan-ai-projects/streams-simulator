@@ -19,6 +19,7 @@ describe("plant editor panel", () => {
     choose("Equipment", "lib/pump@1", form);
     expect(within(form).getByLabelText("Name")).toHaveValue("");
     expect(within(form).getByLabelText("Name")).toHaveAttribute("placeholder", "P-1");
+    expect(within(form).getByText("Leave empty to use the suggested name, P-1.", { exact: false })).toBeInTheDocument();
     expect(within(form).getByText(/An instance name: a letter or digit, then letters, digits and/)).toBeInTheDocument();
     expect(await within(form).findByRole("option", { name: "Small" })).toBeInTheDocument();
     choose("Size", "small", form);
