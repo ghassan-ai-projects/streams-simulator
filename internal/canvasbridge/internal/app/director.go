@@ -50,7 +50,7 @@ func (b *Bridge) callOnce(ctx context.Context, tool string, args map[string]any)
 
 func (b *Bridge) currentDirector(ctx context.Context) (Director, error) {
 	catalog := b.edges.Workspace.Fingerprint([]string{"domains"})
-	if b.director != nil && (catalog == b.catalog || b.worldsOpen()) {
+	if b.director != nil && (catalog == b.catalog || b.runLive()) {
 		return b.director, nil
 	}
 	b.stopDirector()
@@ -73,14 +73,13 @@ func (b *Bridge) dropDirector() {
 	b.stopDirector()
 	b.stateMu.Lock()
 	defer b.stateMu.Unlock()
-	clear(b.worlds)
 	clear(b.running)
 }
 
-func (b *Bridge) worldsOpen() bool {
+func (b *Bridge) runLive() bool {
 	b.stateMu.Lock()
 	defer b.stateMu.Unlock()
-	return len(b.worlds) > 0
+	return len(b.running) > 0
 }
 
 func (b *Bridge) runIsRunning(runID string) bool {
@@ -99,7 +98,6 @@ func (b *Bridge) track(action string, args map[string]any, structured json.RawMe
 	case "run.end":
 		delete(b.running, id)
 	case "world.destroy":
-		delete(b.worlds, id)
 		delete(b.running, id)
 	}
 }
@@ -109,7 +107,6 @@ func (b *Bridge) trackCreated(structured json.RawMessage) {
 		WorldID string `json:"world_id"`
 	}
 	if json.Unmarshal(structured, &created) == nil && created.WorldID != "" {
-		b.worlds[created.WorldID] = true
 		b.running[created.WorldID] = true
 	}
 }

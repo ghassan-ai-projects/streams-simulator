@@ -19,7 +19,7 @@ func TestADeadDirectorIsReplacedAndTheCallRetriedOnce(t *testing.T) {
 	h.prepare = func(d *fakeDirector) {
 		d.results["sim.world.create"] = process.ToolResult{Structured: []byte(`{"world_id":"w-1"}`)}
 	}
-	if _, err := h.bridge.RunAction(ctx, "world.create", map[string]any{"domain": "plant"}); err != nil || !h.bridge.worldsOpen() {
+	if _, err := h.bridge.RunAction(ctx, "world.create", map[string]any{"domain": "plant"}); err != nil || !h.bridge.runLive() {
 		t.Fatalf("world.create: %v", err)
 	}
 	h.directors[0].failWith = fmt.Errorf("%w: sim.catalog.list: broken pipe", process.ErrGone)
@@ -29,7 +29,7 @@ func TestADeadDirectorIsReplacedAndTheCallRetriedOnce(t *testing.T) {
 	if len(h.directors) != 2 || !h.directors[0].closed || len(h.directors[1].calls) != 1 {
 		t.Fatalf("%d directors, first closed %v: the dead director must be replaced and the call retried on the new one", len(h.directors), h.directors[0].closed)
 	}
-	if h.bridge.worldsOpen() || h.bridge.runIsRunning("w-1") {
+	if h.bridge.runLive() || h.bridge.runIsRunning("w-1") {
 		t.Fatal("the worlds of the dead director are still counted as open")
 	}
 }

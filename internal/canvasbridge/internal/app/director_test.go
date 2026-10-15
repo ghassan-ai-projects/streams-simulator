@@ -38,6 +38,46 @@ func TestTheDirectorRestartsForANewCatalogOnlyWhileNoWorldIsOpen(t *testing.T) {
 	}
 }
 
+func TestAPlantComposedAfterAFinishedRunIsInTheDirectorsCatalog(t *testing.T) {
+	t.Parallel()
+	h := newHarness(t)
+	ctx := context.Background()
+	if _, err := h.bridge.RunAction(ctx, "catalog.list", nil); err != nil {
+		t.Fatal(err)
+	}
+	h.directors[0].results["sim.world.create"] = process.ToolResult{Structured: []byte(`{"world_id":"w-1"}`)}
+	if _, err := h.bridge.RunAction(ctx, "world.create", map[string]any{"domain": "plant"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := h.bridge.RunAction(ctx, "run.end", map[string]any{"world_id": "w-1"}); err != nil {
+		t.Fatal(err)
+	}
+	h.write(t, plant, "{}")
+	if _, err := h.bridge.RunAction(ctx, "catalog.list", nil); err != nil || len(h.directors) != 2 || !h.directors[0].closed {
+		t.Fatalf("a changed catalog after the run ended must start a fresh director: %d directors, %v", len(h.directors), err)
+	}
+	if !slices.Equal(h.directors[1].calls, []string{"sim.catalog.list"}) {
+		t.Fatalf("the fresh director calls = %v", h.directors[1].calls)
+	}
+}
+
+func TestALiveRunKeepsItsDirectorWhenTheCatalogChanges(t *testing.T) {
+	t.Parallel()
+	h := newHarness(t)
+	ctx := context.Background()
+	if _, err := h.bridge.RunAction(ctx, "catalog.list", nil); err != nil {
+		t.Fatal(err)
+	}
+	h.directors[0].results["sim.world.create"] = process.ToolResult{Structured: []byte(`{"world_id":"w-1"}`)}
+	if _, err := h.bridge.RunAction(ctx, "world.create", map[string]any{"domain": "plant"}); err != nil {
+		t.Fatal(err)
+	}
+	h.write(t, plant, "{}")
+	if _, err := h.bridge.RunAction(ctx, "catalog.list", nil); err != nil || len(h.directors) != 1 || h.directors[0].closed {
+		t.Fatalf("a live run must keep its director: %d directors, %v", len(h.directors), err)
+	}
+}
+
 func TestToolFailuresAndClosedArgumentsReachTheCaller(t *testing.T) {
 	t.Parallel()
 	h := newHarness(t)
