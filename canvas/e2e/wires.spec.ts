@@ -1,6 +1,7 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 import { env } from "./support/env";
+import { fitAndWait } from "./support/viewport";
 import { wireEndsTooClose, wiresNearTitles, wiresUnderNodes } from "./support/wireAudit";
 
 test.use({ storageState: env("CANVAS_APP_STATE") });
@@ -8,8 +9,7 @@ test.setTimeout(90_000);
 
 async function checkEveryTier(page: Page) {
   const graph = page.getByRole("application", { name: "Plant graph" });
-  await graph.focus();
-  await page.keyboard.press("0");
+  await fitAndWait(page);
   for (let step = 0; step < 6; step += 1) {
     await expect.poll(() => page.evaluate(wiresUnderNodes)).toEqual([]);
     await expect.poll(() => page.evaluate(wireEndsTooClose)).toEqual([]);

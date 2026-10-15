@@ -5,6 +5,7 @@ import { env } from "./support/env";
 import { nodesOutsideCanvas } from "./support/fitAudit";
 import { noteProblems } from "./support/noteFit";
 import { textClashes } from "./support/textClashes";
+import { waitForViewport } from "./support/viewport";
 
 test.use({ storageState: env("CANVAS_APP_STATE") });
 test.setTimeout(90_000);
@@ -136,6 +137,7 @@ test("a faulted node's id, kind, cause and effector outcome never overlap at any
   await expect(boiler.getByText("Fault · scaling")).toBeVisible();
   const graph = page.getByRole("application", { name: "Plant graph" });
   await graph.focus();
+  await waitForViewport(page);
   for (const key of ["+", "+", "-", "-", "-", "-"]) {
     await page.keyboard.press(key);
     await expect(boiler.getByText("Fault · scaling")).toBeVisible();

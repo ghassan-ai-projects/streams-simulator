@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { env } from "./support/env";
 import { idProblems } from "./support/idFit";
+import { zoomOutTo } from "./support/viewport";
 
 test.use({ storageState: env("CANVAS_APP_STATE") });
 
@@ -72,13 +73,9 @@ test("below 40 % an id stays on one line and never breaks mid-word, down to the 
   const graph = page.getByRole("application", { name: "Plant graph" });
   await expect(page.locator(".react-flow__node-instance").first()).toBeAttached();
   await graph.focus();
-  const zoomOf = () => graph.evaluate((element) => Number(getComputedStyle(element).getPropertyValue("--zoom")));
-  for (let step = 0; step < 6; step += 1) {
-    const before = await zoomOf();
-    await page.keyboard.press("-");
-    await expect.poll(zoomOf).toBeLessThan(before);
-    await expect.poll(() => page.evaluate(idProblems)).toEqual([]);
-  }
+  await expect.poll(() => page.evaluate(idProblems)).toEqual([]);
+  const tier = await zoomOutTo(page, "overview", 6, () => expect.poll(() => page.evaluate(idProblems)).toEqual([]));
+  expect(tier).toBe("overview");
   await expect(graph).toHaveClass(/tier-overview/);
 });
 
