@@ -1,4 +1,5 @@
 import type { Route } from "../../model/route";
+import { rightPanelName } from "./panelName";
 
 type Screen = Route["screen"];
 
@@ -15,17 +16,21 @@ export interface KeyGroup {
 
 const mod = "Ctrl or ⌘";
 
-export const keyGroups: readonly KeyGroup[] = [
-  {
+function everywhere(screen: Screen): KeyGroup {
+  const panel = rightPanelName[screen].toLowerCase();
+  return {
     scope: "Everywhere",
     screens: ["home", "plant", "run", "edit"],
     rows: [
-      { keys: ["Tab", "Shift Tab"], does: "move between the top bar, the outline, the centre and the details panel" },
-      { keys: ["[", "]"], does: "hide or show the outline panel, the details panel" },
+      { keys: ["Tab", "Shift Tab"], does: `move between the top bar, the outline, the centre and the ${panel} panel` },
+      { keys: ["[", "]"], does: `hide or show the outline panel, the ${panel} panel` },
       { keys: ["?"], does: "show or hide this list" },
       { keys: ["Escape"], does: "close this list" },
     ],
-  },
+  };
+}
+
+const screenGroups: readonly KeyGroup[] = [
   {
     scope: "Plant graph",
     screens: ["plant", "run", "edit"],
@@ -59,3 +64,7 @@ export const keyGroups: readonly KeyGroup[] = [
     ],
   },
 ];
+
+export function keyGroups(screen: Screen | undefined): readonly KeyGroup[] {
+  return [everywhere(screen ?? "plant"), ...screenGroups];
+}
