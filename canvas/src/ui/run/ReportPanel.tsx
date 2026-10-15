@@ -5,6 +5,7 @@ import { integrityLine, kpisOf } from "../../model/reportViews";
 import { runClock } from "../../model/timeline";
 import { grouped } from "../../model/units";
 import shared from "../shared.module.css";
+import { alarmRow } from "./alarmWords";
 import { KpiTable } from "./KpiTable";
 import styles from "./RunScreen.module.css";
 
@@ -144,8 +145,8 @@ interface TruthProps {
 function TruthNote({ report }: { readonly report: Report }) {
   const text =
     report.mode === "explore"
-      ? "Explore run: the simulated truth below was visible while it ran."
-      : "Evaluate run: the simulated truth below stayed sealed while it ran and was revealed when it ended.";
+      ? "Explore run: the true results below were visible while it ran."
+      : "Evaluate run: the true results below were hidden from the outside system while it ran and shown when it ended.";
   return <p className={styles.truthNote}>{text}</p>;
 }
 
@@ -179,7 +180,7 @@ function Events({ report }: { readonly report: Report }) {
             named(call.effector),
             words(call.outcome),
           ])}
-          columns={["clock", "id", "label", "label"]}
+          columns={["clock", "id", "effector", "outcome"]}
           headers={["Time", "Instance", "Effector", "Outcome"]}
         />
       </Section>
@@ -193,35 +194,55 @@ function Truth({ report, unit, entity }: TruthProps) {
       <TruthNote report={report} />
       <Events report={report} />
       <KpiTruth report={report} unit={unit} entity={entity} />
-      <Section title="Alarm system" note="ISA-18.2">
+      <Section title="Alarms">
+        <p className={styles.muted}>How the alarm system behaved during the run.</p>
         <Rows
-          rows={Object.entries(report.alarms).map(([key, n]) => [key.replaceAll("_", " "), grouped(n)])}
-          columns={["text", "number"]}
-          headers={["Measure", "Value"]}
+          rows={Object.entries(report.alarms).map(([key, n]) => alarmRow(key, grouped(n)))}
+          columns={["text", "number", "text"]}
+          headers={["Measure", "Count", "What it means"]}
         />
+        <details className={styles.muted}>
+          <summary>For developers</summary>
+          <p>The alarm measures follow ISA-18.2: floods, chattering, stale and standing alarms.</p>
+        </details>
       </Section>
     </>
   );
 }
 
 function Scoring({ report }: { readonly report: Report }) {
-  const text =
-    report.scoring === null
-      ? "The report has no scoring section."
-      : `${report.scoring.status}${report.scoring.reason ? ` · ${report.scoring.reason}` : ""}`;
+  if (report.scoring !== null) {
+    const { status, reason } = report.scoring;
+    return (
+      <Section title="Scoring">
+        <p className={styles.muted}>{`${status}${reason ? ` · ${reason}` : ""}`}</p>
+      </Section>
+    );
+  }
   return (
     <Section title="Scoring">
-      <p className={styles.muted}>{text}</p>
+      <p className={styles.muted}>Not scored: no outside system is connected to this run.</p>
+      <details className={styles.muted}>
+        <summary>For developers</summary>
+        <p>
+          Nothing was scored: no consumer verdict was recorded for this run. A consumer attaches through the operator
+          endpoint; the canvas does not attach one.
+        </p>
+      </details>
     </Section>
   );
 }
 
-function KpiTruth({ report, unit, entity }: TruthProps) {
+const truthLead =
+  "What really happened in the plant. An outside system could not see it while the run was live; it is shown here once the run has ended.";
+
+function KpiTruth({ report, unit, entity, lead = true }: TruthProps & { readonly lead?: boolean }) {
   const kpis = kpisOf(report, entity);
   return (
-    <Section title="True KPIs" note={entity ?? undefined}>
+    <Section title="True results" note={entity ?? undefined}>
+      {lead && <p className={styles.muted}>{truthLead}</p>}
       {kpis.length === 0 ? (
-        <p className={styles.muted}>{entity === null ? "None" : `No true KPIs for ${entity}.`}</p>
+        <p className={styles.muted}>{entity === null ? "None" : `No true results for ${entity}.`}</p>
       ) : (
         <KpiTable rows={kpis} grouped={entity === null} unit={unit} />
       )}
@@ -229,7 +250,7 @@ function KpiTruth({ report, unit, entity }: TruthProps) {
   );
 }
 
-const notClosed = "Not available: the run is not closed, so its truth is still sealed.";
+const notClosed = "Not available yet: the run has not ended, so its true results are still hidden.";
 
 const loading: VerifyState = { phase: "loading" };
 const unverifiedTruth = "This run did not verify, so the truth below may not describe the files in the run folder.";
@@ -255,7 +276,7 @@ export function ReportPanel({
     return report.truthUnavailable || !report.ended ? null : (
       <>
         <TruthCaution report={report} verify={verify} />
-        <KpiTruth report={report} unit={unit} entity={entity} />
+        <KpiTruth report={report} unit={unit} entity={entity} lead={false} />
       </>
     );
   }
@@ -264,7 +285,7 @@ export function ReportPanel({
       <Integrity report={report} verify={verify} />
       <TruthCaution report={report} verify={verify} />
       {report.truthUnavailable || !report.ended ? (
-        <Section title="Truth">
+        <Section title="True results">
           <p className={styles.muted}>
             {report.truthUnavailable ? `Not available: ${report.truthUnavailable}` : notClosed}
           </p>

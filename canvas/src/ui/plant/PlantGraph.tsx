@@ -1,21 +1,21 @@
 import type { Connection } from "@xyflow/react";
-import { Background, ReactFlow, useStore } from "@xyflow/react";
+import { Background, ReactFlow, useStore, useUpdateNodeInternals } from "@xyflow/react";
 import "@xyflow/react/dist/base.css";
 import type { CSSProperties, KeyboardEvent } from "react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { directionOf, firstOf, nearest } from "../../model/graphKeys";
 import type { PlantView } from "../../model/plantView";
 import { describeNode, hallCount } from "../../model/plantView";
-import { anchorsOnly, tierOf } from "../../model/viewport";
+import { anchorsOnly, rowLimitOf, tierOf } from "../../model/viewport";
 import type { FlowNode, NodeLive } from "./flow";
-import { flowEdges, flowNodes } from "./flow";
+import { flowEdges, flowNodes, rowPins } from "./flow";
 import { useZoomActions } from "./GraphControls";
 import { plainKey } from "../keys";
-import { FrameNode, HallNode, InstanceNode } from "./nodes";
+import { FrameNode, FrameTitleNode, HallNode, InstanceNode } from "./nodes";
 import { useFitted, useFollowSelection } from "./viewportFit";
 import styles from "./PlantScreen.module.css";
 
-const nodeTypes = { instance: InstanceNode, hall: HallNode, frame: FrameNode };
+const nodeTypes = { instance: InstanceNode, hall: HallNode, frame: FrameNode, frameTitle: FrameTitleNode };
 
 export interface PlantGraphProps {
   readonly view: PlantView;
@@ -37,6 +37,7 @@ interface Keys {
   readonly announcement: string;
   readonly onKeyDown: (event: KeyboardEvent<HTMLDivElement>) => void;
   readonly onFocus: () => void;
+  readonly onPointerDown: () => void;
   readonly point: (id: string | null) => void;
 }
 
@@ -98,6 +99,25 @@ function enterHall(id: string, onSelect: (id: string | null) => void, onOpenHall
   onOpenHall(id);
 }
 
+function useGraphFocus(
+  view: PlantView,
+  active: string | null,
+  selected: string | null,
+  setActive: (id: string | null) => void,
+) {
+  const pointed = useRef(false);
+  const onPointerDown = () => {
+    pointed.current = true;
+  };
+  const onFocus = () => {
+    const fromPointer = pointed.current;
+    pointed.current = false;
+    if (active !== null) return;
+    setActive(fromPointer ? selected : (selected ?? firstOf(view.layout.nodes)));
+  };
+  return { onPointerDown, onFocus };
+}
+
 function useGraphKeys({ view, viewKey, selected, live, onSelect, onOpenHall, onEscape }: PlantGraphProps): Keys {
   const { active, setActive, entered } = useViewActive(view, viewKey);
   useSelectionMoves(view, selected, setActive);
@@ -129,13 +149,11 @@ function useGraphKeys({ view, viewKey, selected, live, onSelect, onOpenHall, onE
       else onEscape?.();
     }
   };
-  const onFocus = () => {
-    if (active === null) setActive(selected ?? firstOf(view.layout.nodes));
-  };
+  const focus = useGraphFocus(view, active, selected, setActive);
   const point = (id: string | null) => {
     if (id !== null) setActive(id);
   };
-  return { active, announcement, onKeyDown, onFocus, point };
+  return { active, announcement, onKeyDown, onFocus: focus.onFocus, onPointerDown: focus.onPointerDown, point };
 }
 
 const graphNames = {
@@ -178,15 +196,24 @@ function useFlowContent({ view, selected, live, flagged, onConnect, active }: Fl
     [view, selected, live, active, flagged, editable],
   );
   const zoom = useStore((state) => state.transform[2]);
-  const anchors = live !== undefined || anchorsOnly(tierOf(zoom));
+  const tier = tierOf(zoom);
   const shown = view.nodes.some((entry) => entry.id === selected) ? selected : null;
-  const edges = useMemo(() => flowEdges(view, anchors, shown), [view, anchors, shown]);
+  const rows = useMemo(() => (live === undefined ? null : rowPins(view, live, rowLimitOf(tier))), [view, live, tier]);
+  const edges = useMemo(() => flowEdges(view, anchorsOnly(tier), shown, rows), [view, tier, shown, rows]);
   return { nodes, edges, zoom };
+}
+
+function useRemeasuredHandles(nodes: readonly FlowNode[], tier: string) {
+  const update = useUpdateNodeInternals();
+  useEffect(() => {
+    update(nodes.map((node) => node.id));
+  }, [update, nodes, tier]);
 }
 
 function Flow(props: FlowProps) {
   const { onSelect, onOpenHall, onConnect, keys } = props;
   const { nodes, edges, zoom } = useFlowContent(props);
+  useRemeasuredHandles(nodes, tierOf(zoom));
   return (
     <ReactFlow
       nodes={nodes}
@@ -199,7 +226,7 @@ function Flow(props: FlowProps) {
       onKeyDown={keys.onKeyDown}
       onFocus={keys.onFocus}
       onNodeClick={(_, node: FlowNode) => {
-        onSelect(node.type === "frame" ? null : node.id);
+        onSelect(node.type === "frame" || node.type === "frameTitle" ? null : node.id);
       }}
       onNodeDoubleClick={(_, node: FlowNode) => {
         if (node.type === "hall") enterHall(node.id, onSelect, onOpenHall);
@@ -218,7 +245,7 @@ export function PlantGraph(props: PlantGraphProps) {
   useFitted(props.fitKey ?? props.viewKey, props.minFitZoom ?? 0.05);
   useFollowSelection(keys.active ?? props.selected, props.focusZoom ?? 0);
   return (
-    <div className={styles.graph}>
+    <div className={styles.graph} onPointerDown={keys.onPointerDown}>
       <p id="graph-keys" className="sr-only">
         Arrow keys move between instances, Space selects, Enter selects an instance or opens a hall, Escape clears the
         selection, question mark lists every key. The outline lists every instance.

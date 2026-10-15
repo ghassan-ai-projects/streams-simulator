@@ -167,3 +167,14 @@ in a reachable path or a race; **L** latent, cosmetic or hygiene.
 > verbatim): kept; seeds are `uint64`, and RFC 8785's double form would map
 > distinct seeds to one digest. Both are documented in the `canonical`
 > package comment. D-36 is fixed (canonical adapter digest, simulator 0.2.0).
+
+> **Found while authoring simulations through the canvas (2026-10-15).**
+> D-54 (`canvasbridge/internal/domain/runsummary.go`): the bridge decodes `run.json`
+> itself (run seed, fault count, completeness) because `test/architecture/dependencies_test.go`
+> lets `internal/canvasbridge` import only `kernel`; one implementation of the run
+> summary would need an allow-list change, which needs the owner's approval.
+> D-55 (`internal/component`): the motor drive consumes `load_torque` but no pump or fan
+> offers it, so a pump cannot be linked to its drive; production and packaging lines
+> declare `air_out` for air demand with no description saying so. The simulator backlog
+> of the same round lists the failure behaviours (alarm never raised, frozen reading
+> without a quality flag, no feeder trip, no late or duplicated readings).

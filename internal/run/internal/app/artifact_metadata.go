@@ -78,7 +78,7 @@ func (r *Run) attachArtifactState(artifact *model.RunArtifact, commands []model.
 	artifact.ExpectedTraceDigest = r.traceDigest
 	artifact.Reproducible = r.reproducible
 	artifact.Incomplete = r.incomplete
-	artifact.Error = rules.ErrorString(r.runErr)
+	artifact.Error = r.failureText()
 	artifact.Unblinded = r.unblinded
 	artifact.UnblindedAt = r.unblindedAt
 	artifact.Platform = model.CurrentPlatform()

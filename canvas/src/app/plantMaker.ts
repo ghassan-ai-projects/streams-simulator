@@ -27,9 +27,16 @@ function baseOf(source: PlantSource): Readonly<Record<string, string>> {
   return "example" in source ? { example: source.example } : { from: source.file };
 }
 
+const idPointer = "/id";
+
+export function idProblemOf(failure: BridgeFailure): string {
+  return failure.issues.find((issue) => issue.pointer === idPointer)?.message ?? "";
+}
+
 function worded(failure: BridgeFailure): BridgeFailure {
   if (failure.issues.length === 0) return failure;
-  return { ...failure, message: failure.issues.map((issue) => issue.message).join("; ") };
+  const others = failure.issues.filter((issue) => issue.pointer !== idPointer);
+  return { ...failure, message: others.map((issue) => issue.message).join("; ") };
 }
 
 function compositionOf(value: unknown): Composition | null {
@@ -45,7 +52,19 @@ export class PlantMaker {
     return listed.ok ? parseExamples(listed.value) : [];
   }
 
+  async idProblem(source: PlantSource, id: string, title: string): Promise<string> {
+    if ((await this.bridge.readFile(domainOf({ id }))).ok) return taken(id).message;
+    const made = await this.bridge.action("component.new", { id, title, ...baseOf(source) });
+    return made.ok ? "" : idProblemOf(made.failure);
+  }
+
   async create(source: PlantSource, id: string, title: string, copy: boolean): Promise<BridgeFailure | Made> {
+    const made = await this.write(source, id, title, copy);
+    if ("composition" in made && copy) await this.compose(made);
+    return made;
+  }
+
+  private async write(source: PlantSource, id: string, title: string, copy: boolean): Promise<BridgeFailure | Made> {
     const domain = domainOf({ id });
     if ((await this.bridge.readFile(domain)).ok) return taken(id);
     const made = await this.bridge.action("component.new", {
@@ -64,13 +83,13 @@ export class PlantMaker {
   }
 
   async tryExample(example: ExamplePlant, id: string): Promise<BridgeFailure | Made> {
-    const made = await this.create({ example: example.id }, id, example.title, true);
+    const made = await this.write({ example: example.id }, id, example.title, true);
     if (!("composition" in made)) return made;
-    const composed = await this.bridge.action("domain.compose", {
-      composition: made.composition,
-      out: made.domain,
-      etag: "",
-    });
+    const composed = await this.compose(made);
     return composed.ok ? made : composed.failure;
+  }
+
+  private compose(made: Made) {
+    return this.bridge.action("domain.compose", { composition: made.composition, out: made.domain, etag: "" });
   }
 }

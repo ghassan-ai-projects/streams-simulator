@@ -1,7 +1,17 @@
 import { describe, expect, it } from "vitest";
 import { campus, chillerPorts, composition, domain, towerPorts } from "../test/plantFixture";
 import { parsePlant } from "./plant";
-import { describeNode, hallCount, hallMembers, hallOf, hallsOf, nodeSize, plantView } from "./plantView";
+import {
+  describeNode,
+  hallCount,
+  hallMembers,
+  hallOf,
+  hallsOf,
+  headerHeight,
+  idExtra,
+  nodeSize,
+  plantView,
+} from "./plantView";
 import { parsePorts } from "./ports";
 
 const specs = new Map([
@@ -23,8 +33,19 @@ describe("plant view", () => {
       ["CT-1.basin_out>CH-1.cond_in", "temp"],
       ["CH-1.power_out>MB-1.loads_in", "power"],
     ]);
-    expect(view.layout.nodes.get("CH-1")?.height).toBe(nodeSize.header + nodeSize.padding + 2 * nodeSize.pin);
+    expect(view.layout.nodes.get("CH-1")?.height).toBe(headerHeight("CH-1") + nodeSize.padding + 2 * nodeSize.pin);
     expect([...view.layout.groups.keys()]).toEqual(["Cooling", "Power"]);
+  });
+
+  it("ends a link without a recorded port on the first unconnected pin of its side", () => {
+    const plant = parsePlant(domain, composition);
+    const unrecorded = { ...plant, links: plant.links.map((link) => ({ ...link, fromPort: null, toPort: null })) };
+    const view = plantView(unrecorded, specs, null);
+    expect(view.edges.map((edge) => [edge.from, edge.fromHandle, edge.to, edge.toHandle])).toEqual([
+      ["CH-1", "heat_out", "CT-1", "heat_in"],
+      ["CT-1", "basin_out", "CH-1", "cond_in"],
+      ["CH-1", "heat_out", "MB-1", null],
+    ]);
   });
 
   it("starts a campus at hall level with bundled links and shared instances", () => {
@@ -83,5 +104,23 @@ describe("plant view", () => {
       plant.instances.filter((instance) => hallOf(instance.id) === hall).length,
     );
     expect(hallMembers(plant, "nowhere")).toEqual([]);
+  });
+});
+
+describe("node id lines", () => {
+  it("adds a header line only once an id is longer than one line holds", () => {
+    expect(idExtra("CH-1")).toBe(0);
+    expect(idExtra("a".repeat(nodeSize.idChars))).toBe(0);
+    expect(idExtra("a".repeat(nodeSize.idChars + 1))).toBe(nodeSize.idLine);
+  });
+
+  it("makes a node taller by one header line when its id wraps", () => {
+    const longer = JSON.parse(JSON.stringify({ domain, composition }).replaceAll("CH-1", "CHILLER-ONE-LONG")) as {
+      domain: typeof domain;
+      composition: typeof composition;
+    };
+    const view = plantView(parsePlant(longer.domain, longer.composition), specs, null);
+    const box = view.layout.nodes.get("CHILLER-ONE-LONG");
+    expect(box?.height).toBe(headerHeight("CHILLER-ONE-LONG") + nodeSize.padding + 2 * nodeSize.pin);
   });
 });

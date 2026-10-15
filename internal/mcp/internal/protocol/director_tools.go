@@ -12,6 +12,7 @@ func NewDirectorServer(dir *director.Director) *mcp.Server {
 	s := mcp.NewServer(implementation, nil)
 	registerCatalogTools(s, d)
 	registerWorldTools(s, d)
+	registerEffectorTools(s, d)
 	registerInjectionTools(s, d)
 	registerRunTools(s, d)
 	registerTruthTools(s, d)
@@ -39,6 +40,11 @@ func registerWorldTools(s *mcp.Server, d directorTools) {
 	addTool(s, toolDef{name: "sim.world.destroy", description: "Destroy a world; final counts and run artifact.", schema: toolSchema("sim.world.destroy"), handler: d.handleWorldDestroy})
 	addTool(s, toolDef{name: "sim.clock.advance", description: "Advance by a relative nanosecond delta or to an absolute epoch nanosecond; await_consumer blocks on quiescence.", schema: toolSchema("sim.clock.advance"), handler: d.handleClockAdvance})
 	addTool(s, toolDef{name: "sim.clock.state", description: "The clock, next scheduled event, pending effects.", schema: toolSchema("sim.clock.state"), handler: d.handleClockState})
+}
+
+func registerEffectorTools(s *mcp.Server, d directorTools) {
+	addTool(s, toolDef{name: "sim.world.effectors", description: "The world's declared effectors and their argument schemas, listed by the director.", schema: toolSchema("sim.world.effectors"), handler: d.handleWorldEffectors})
+	addTool(s, toolDef{name: "sim.world.invoke", description: "Invoke an effector on a world as its director; returns the operator acknowledgement.", schema: toolSchema("sim.world.invoke"), handler: d.handleWorldInvoke})
 }
 
 func registerInjectionTools(s *mcp.Server, d directorTools) {

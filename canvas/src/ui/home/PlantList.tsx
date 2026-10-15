@@ -81,7 +81,9 @@ function PlantRow({ plant, navigation }: { readonly plant: PlantEntry; readonly 
       <Factory size={16} aria-hidden="true" className={styles.icon} />
       <span className={styles.lines}>
         <span className={styles.line}>
-          <span className={styles.name}>{plant.title}</span>
+          <span className={styles.name} title={plant.title}>
+            {plant.title}
+          </span>
           <span className={styles.id}>{plant.id}</span>
           {plant.composition === null && <span className={styles.badge}>read-only</span>}
         </span>
@@ -125,15 +127,6 @@ function Heading({
   );
 }
 
-function DefinitionNote() {
-  return (
-    <p className={styles.definitionNote}>
-      Instance definitions are entries in the plant file. One definition can expand into several instances when you open
-      the plant.
-    </p>
-  );
-}
-
 export function PlantList({ workspace, navigation, maker, examples }: ListProps) {
   const plants = plantsOf(workspace);
   const [creating, setCreating] = useState(false);
@@ -154,7 +147,6 @@ export function PlantList({ workspace, navigation, maker, examples }: ListProps)
           if (bases.length + examples.length > 0) setCreating(!creating);
         }}
       />
-      <DefinitionNote />
       {creating && (
         <NewPlantForm
           bases={bases}

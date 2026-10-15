@@ -1,75 +1,12 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
-import { ReactFlowProvider } from "@xyflow/react";
 import axe from "axe-core";
-import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { EditorStore } from "../../app/editorStore";
-import { NavigationStore } from "../../app/navigationStore";
 import { failed, success } from "../../model/bridge";
-import { compositionPlant, connectionsOf, equipmentOf } from "../../model/composition";
+import { connectionsOf, equipmentOf } from "../../model/composition";
 import { moveInstance } from "../../model/compositionEdits";
-import { FakeBridge, failure } from "../../test/fakeBridge";
-import { chillerPorts, towerPorts } from "../../test/plantFixture";
-import { useStore } from "../useStore";
-import { EditorBar } from "./EditorBar";
-import { EditorPanel } from "./EditorPanel";
-import { FocusRequest } from "./panelProps";
-
-const path = "compositions/lab.composition.json";
-const doc = {
-  id: "lab",
-  title: "Lab",
-  areas: [{ name: "Cooling" }, { name: "Yard" }],
-  equipment: [
-    { use: "lib/chiller@1", names: ["CH-1"], area: "Cooling" },
-    { use: "lib/tower@1", names: ["CT-1"], area: "Cooling" },
-  ],
-  connections: [{ from: "CH-1.heat_out", to: "CT-1.heat_in" }],
-};
-
-class LabBridge extends FakeBridge {
-  override action(name: string, args: Readonly<Record<string, unknown>>) {
-    if (name !== "component.show") return super.action(name, args);
-    this.calls.push({ name, args });
-    const ports = args.ref === "lib/tower" ? towerPorts : chillerPorts;
-    return Promise.resolve(success({ document: { ...ports, presets: { small: { title: "Small" } } } }));
-  }
-}
-
-function Harness({ editor }: { readonly editor: EditorStore }) {
-  const state = useStore(editor);
-  const [request] = useState(() => new FocusRequest());
-  if (state.phase !== "ready") return <p>{state.phase}</p>;
-  const plant = compositionPlant(state.doc, (component) => component);
-  const navigation = new NavigationStore({ read: () => "#/", write: vi.fn(), subscribe: () => () => undefined });
-  return (
-    <ReactFlowProvider>
-      <EditorBar draft={state} editor={editor} navigation={navigation} />
-      <EditorPanel draft={state} plant={plant} editor={editor} request={request} />
-    </ReactFlowProvider>
-  );
-}
-
-async function editing() {
-  const fake = new LabBridge();
-  fake.files.set(path, success({ path, content: JSON.stringify(doc), etag: "c1" }));
-  fake.actions.set("component.list", success({ components: [{ id: "lib/pump", kind: "equipment", title: "Pump" }] }));
-  fake.actions.set("domain.compose", success({ channels: 4, faults: 2, effectors: 0 }));
-  const editor = new EditorStore(fake);
-  await editor.open(path);
-  const view = render(<Harness editor={editor} />);
-  return { fake, editor, view };
-}
-
-function current(editor: EditorStore) {
-  const state = editor.snapshot();
-  if (state.phase !== "ready") throw new Error(state.phase);
-  return state.doc;
-}
-
-function choose(label: string, value: string, scope: HTMLElement = document.body) {
-  fireEvent.change(within(scope).getByLabelText(label), { target: { value } });
-}
+import { failure } from "../../test/fakeBridge";
+import { choose, current, doc, editing, Harness, LabBridge, path } from "../../test/editorHarness";
 
 describe("plant editor panel", () => {
   it("adds equipment from the library with its preset into an area", async () => {
@@ -80,7 +17,10 @@ describe("plant editor panel", () => {
     expect(within(form).getByText('Nothing in the library matches "nothing like this".')).toBeInTheDocument();
     choose("Find equipment", "pu", form);
     choose("Equipment", "lib/pump@1", form);
-    expect(within(form).getByLabelText("Name")).toHaveValue("P-1");
+    expect(within(form).getByLabelText("Name")).toHaveValue("");
+    expect(within(form).getByLabelText("Name")).toHaveAttribute("placeholder", "P-1");
+    expect(within(form).getByText("Leave empty to use the suggested name, P-1.", { exact: false })).toBeInTheDocument();
+    expect(within(form).getByText(/An instance name: a letter or digit, then letters, digits and/)).toBeInTheDocument();
     expect(await within(form).findByRole("option", { name: "Small" })).toBeInTheDocument();
     choose("Size", "small", form);
     choose("Area", "Yard", form);
@@ -90,6 +30,56 @@ describe("plant editor panel", () => {
     });
     expect(equipmentOf(current(editor)).at(-1)).toMatchObject({ use: "lib/pump@1", preset: "small", area: "Yard" });
     expect(screen.getByRole("status")).toHaveTextContent("Unsaved changes");
+  });
+
+  it("keeps a typed name when equipment is chosen or the plant changes, and shows the suggestion only as a placeholder", async () => {
+    const { editor } = await editing();
+    const form = screen.getByRole("form", { name: "Add equipment" });
+    fireEvent.change(within(form).getByLabelText("Name"), { target: { value: "P-9" } });
+    choose("Equipment", "lib/pump@1", form);
+    expect(within(form).getByLabelText("Name")).toHaveValue("P-9");
+    act(() => {
+      editor.edit((current) => ({ ...current, title: "Lab two" }));
+    });
+    expect(within(form).getByLabelText("Name")).toHaveValue("P-9");
+    expect(within(form).getByLabelText("Name")).toHaveAttribute("placeholder", "P-1");
+    fireEvent.click(within(form).getByRole("button", { name: "Add to the plant" }));
+    await vi.waitFor(() => {
+      expect(equipmentOf(current(editor)).flatMap((entry) => entry.names)).toContain("P-9");
+    });
+  });
+
+  it("refuses a name the binary's rule rejects, in the add and the rename forms, naming the rule", async () => {
+    const { editor } = await editing();
+    const form = screen.getByRole("form", { name: "Add equipment" });
+    choose("Equipment", "lib/pump@1", form);
+    fireEvent.change(within(form).getByLabelText("Name"), { target: { value: "Pump P 1" } });
+    expect(within(form).getByText(/"Pump P 1" is not a valid name\. An instance name: a letter/)).toBeInTheDocument();
+    fireEvent.click(within(form).getByRole("button", { name: "Add to the plant" }));
+    expect(equipmentOf(current(editor)).flatMap((entry) => entry.names)).not.toContain("Pump P 1");
+    act(() => {
+      editor.select("CH-1");
+    });
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "CH 9" } });
+    expect(screen.getByText(/^Not a valid name\. An instance name/)).toBeInTheDocument();
+    expect(screen.getByText(/^Not a valid name\. An instance name/)).toHaveClass(/nameError/);
+    expect(screen.getByLabelText("Name")).toHaveAttribute("aria-invalid", "true");
+    fireEvent.click(screen.getByRole("button", { name: "Rename" }));
+    expect(screen.getByLabelText("Name")).toHaveValue("CH 9");
+    expect(equipmentOf(current(editor)).flatMap((entry) => entry.names)).toContain("CH-1");
+  });
+
+  it("does not add equipment when Return is pressed in the search, and refuses a name another instance already has", async () => {
+    const { editor } = await editing();
+    const form = screen.getByRole("form", { name: "Add equipment" });
+    choose("Equipment", "lib/pump@1", form);
+    fireEvent.change(within(form).getByLabelText("Find equipment"), { target: { value: "pu" } });
+    expect(fireEvent.keyDown(within(form).getByLabelText("Find equipment"), { key: "Enter" })).toBe(false);
+    expect(equipmentOf(current(editor))).toHaveLength(2);
+    fireEvent.change(within(form).getByLabelText("Name"), { target: { value: "CT-1" } });
+    expect(within(form).getByText("CT-1 is already used by another instance.")).toBeInTheDocument();
+    fireEvent.click(within(form).getByRole("button", { name: "Add to the plant" }));
+    expect(equipmentOf(current(editor))).toHaveLength(2);
   });
 
   it("renames, moves, links, unlinks and deletes the selected instance, and reverts", async () => {
@@ -117,6 +107,8 @@ describe("plant editor panel", () => {
       editor.select("CH-9");
     });
     fireEvent.click(screen.getByRole("button", { name: "Delete CH-9" }));
+    expect(equipmentOf(current(editor))).toHaveLength(2);
+    fireEvent.click(screen.getByRole("button", { name: "Delete CH-9 and its 1 link?" }));
     expect(equipmentOf(current(editor)).map((entry) => entry.names[0])).toEqual(["CT-1"]);
     expect(screen.getByRole("heading", { name: "Build" })).toHaveFocus();
     fireEvent.click(screen.getByRole("button", { name: "Revert" }));
@@ -143,7 +135,9 @@ describe("plant editor panel", () => {
       }),
     );
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
-    expect(await screen.findByText("Saved, not composed: 1 issue")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Needs fixing: 1 issue, listed in Build. Your changes are saved."),
+    ).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /^CH-1/ }));
     expect(screen.getByRole("heading", { name: "CH-1" })).toHaveFocus();
     expect(screen.getByRole("region", { name: "Issues on CH-1" })).toHaveTextContent('has no port "heat_in"');
@@ -152,8 +146,62 @@ describe("plant editor panel", () => {
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "CH-2" } });
     fireEvent.click(screen.getByRole("button", { name: "Rename" }));
     fireEvent.keyDown(document.body, { key: "s", ctrlKey: true });
-    expect(await screen.findByText("Saved. Composed 4 channels, 2 faults, 0 effectors.")).toBeInTheDocument();
+    expect(await screen.findByText("Ready to run. Saved.")).toHaveAttribute(
+      "title",
+      "Composed 4 channels, 2 faults, 0 effectors.",
+    );
     expect(screen.getByRole("button", { name: "Open plant" })).toBeInTheDocument();
+  });
+
+  it("lists repeated issues once with a count, says where a plant-wide one applies, and marks a stale list", async () => {
+    const { fake, editor } = await editing();
+    act(() => {
+      editor.edit((doc) => ({ ...doc, title: "Lab two" }));
+    });
+    const same = { pointer: "/equipment/0/names/0", message: "not a name" };
+    fake.actions.set(
+      "domain.compose",
+      failed({
+        ...failure("composition_invalid", 422, "invalid"),
+        issues: [same, same, same, { pointer: "/profiles", message: "needs more items" }],
+      }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(
+      await screen.findByText("Needs fixing: 4 issues, listed in Build. Your changes are saved."),
+    ).toBeInTheDocument();
+    const block = screen.getByRole("region", { name: "Issues from the binary" });
+    expect(within(block).getAllByRole("listitem")).toHaveLength(2);
+    expect(within(block).getByRole("button", { name: /CH-1.*not a name \(×3\)/ })).toBeInTheDocument();
+    expect(within(block).getByText("in /profiles")).toBeInTheDocument();
+    expect(within(block).queryByText(/from the last save/i)).not.toBeInTheDocument();
+    act(() => {
+      editor.edit((doc) => ({ ...doc, title: "Lab three" }));
+    });
+    expect(within(block).getByText(/These are from the last save/)).toBeInTheDocument();
+  });
+
+  it("adds an area inside another one, offers it for equipment, and refuses a repeated name", async () => {
+    const { editor, view } = await editing();
+    const form = screen.getByRole("form", { name: "Add area" });
+    expect((await axe.run(view.container)).violations).toEqual([]);
+    fireEvent.change(within(form).getByLabelText("Area name"), { target: { value: "Yard" } });
+    expect(within(form).getByText('There is already an area named "Yard".')).toBeInTheDocument();
+    fireEvent.change(within(form).getByLabelText("Area name"), { target: { value: "Pump house" } });
+    choose("Inside", "Yard", form);
+    fireEvent.click(within(form).getByRole("button", { name: "Add area" }));
+    expect(current(editor).areas).toEqual([...doc.areas, { name: "Pump house", parent: "Yard" }]);
+    const equipment = screen.getByRole("form", { name: "Add equipment" });
+    expect(within(equipment).getByRole("option", { name: "Yard › Pump house" })).toBeInTheDocument();
+    expect(within(form).getByLabelText("Area name")).toHaveValue("");
+  });
+
+  it("does not add an area when Return is pressed on the Inside choice", async () => {
+    const { editor } = await editing();
+    const form = screen.getByRole("form", { name: "Add area" });
+    fireEvent.change(within(form).getByLabelText("Area name"), { target: { value: "Shed" } });
+    fireEvent.keyDown(within(form).getByLabelText("Inside"), { key: "Enter" });
+    expect(current(editor).areas).toEqual(doc.areas);
   });
 
   it("says why the file was not saved", async () => {
@@ -167,6 +215,50 @@ describe("plant editor panel", () => {
     fake.writeOutcomes.delete(path);
     fireEvent.click(screen.getByRole("button", { name: "Reload from disk" }));
     expect(await screen.findByText("No changes")).toBeInTheDocument();
+  });
+
+  it("keeps the chosen instance when the output changes, and says why no instance can be linked", async () => {
+    const { editor } = await editing();
+    act(() => {
+      editor.select("CH-1");
+    });
+    choose("Output", "heat_out");
+    choose("To", "CT-1");
+    choose("Input", "heat_in");
+    choose("Output", "power_out");
+    expect(screen.getByLabelText("To")).toHaveValue("CT-1");
+    expect(screen.getByLabelText("Input")).toHaveValue("");
+    choose("Output", "heat_out");
+    expect(screen.getByLabelText("To")).toHaveValue("CT-1");
+    expect(screen.getByLabelText("Input")).toHaveValue("");
+  });
+
+  it("deletes an instance without links at once, and asks first when it has links", async () => {
+    const { editor } = await editing();
+    act(() => {
+      editor.edit((current) => ({ ...current, connections: [] }));
+      editor.select("CT-1");
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Delete CT-1" }));
+    expect(equipmentOf(current(editor)).map((entry) => entry.names[0])).toEqual(["CH-1"]);
+  });
+
+  it("shows a repeated instance's plain kind under its name, without the internal kind number", async () => {
+    const fake = new LabBridge();
+    const repeated = {
+      ...doc,
+      equipment: [...doc.equipment, { use: "lib/chiller@1", as: "chiller_2", names: ["CH-2"], area: "Cooling" }],
+    };
+    fake.files.set(path, success({ path, content: JSON.stringify(repeated), etag: "k1" }));
+    fake.actions.set("component.list", success({ components: [] }));
+    const editor = new EditorStore(fake);
+    await editor.open(path);
+    render(<Harness editor={editor} />);
+    act(() => {
+      editor.select("CH-2");
+    });
+    expect(screen.getByText("chiller", { exact: true })).toBeInTheDocument();
+    expect(screen.queryByText(/chiller 2/)).not.toBeInTheDocument();
   });
 
   it("leaves an instance generated from an id template to the file", async () => {

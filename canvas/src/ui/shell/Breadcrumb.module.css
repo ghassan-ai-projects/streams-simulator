@@ -16,7 +16,7 @@
 .step {
   display: flex;
   align-items: center;
-  flex: 0 10 auto;
+  flex: none;
   min-width: 48px;
   color: var(--text-tertiary);
 }

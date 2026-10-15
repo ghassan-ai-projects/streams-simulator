@@ -1,6 +1,7 @@
 import type { Issue } from "./bridge";
 import type { Composition, NewEquipment } from "./composition";
-import { connectionsOf, endpointOf, equipmentOf } from "./composition";
+import { componentOf, connectionsOf, endpointOf, equipmentOf, shortKind } from "./composition";
+import { freeKind, joinable, kindOf } from "./kindNames";
 
 type Json = Readonly<Record<string, unknown>>;
 
@@ -24,6 +25,24 @@ export function isTemplate(doc: Composition, id: string): boolean {
   return entries(doc).some((entry) => namesOf(entry).length === 0 && entry.id_template === id);
 }
 
+function withName(entries_: readonly Json[], at: number, name: string): readonly Json[] {
+  return entries_.map((entry, index) => (index === at ? { ...entry, names: [...namesOf(entry), name] } : entry));
+}
+
+function distinctKind(all: readonly Json[], entry: Json): Json {
+  const kinds = new Set(all.map(kindOf));
+  const base = shortKind(componentOf(String(entry.use)));
+  if (!kinds.has(kindOf(entry))) return entry;
+  return { ...entry, as: freeKind(base, kinds) };
+}
+
+function placed(all: readonly Json[], entry: Json): readonly Json[] {
+  const at = all.findIndex((existing) => joinable(existing, entry));
+  const name = namesOf(entry)[0];
+  if (at >= 0 && name !== undefined) return withName(all, at, name);
+  return [...all, distinctKind(all, entry)];
+}
+
 export function addEquipment(doc: Composition, added: NewEquipment): Composition {
   const entry: Json = {
     use: added.use,
@@ -31,7 +50,57 @@ export function addEquipment(doc: Composition, added: NewEquipment): Composition
     names: [added.name],
     area: added.area,
   };
-  return { ...doc, equipment: [...entries(doc), entry] };
+  return { ...doc, equipment: placed(entries(doc), entry) };
+}
+
+function areasOf(doc: Composition): readonly Json[] {
+  return Array.isArray(doc.areas) ? (doc.areas as readonly Json[]) : [];
+}
+
+export function areaNameProblem(doc: Composition, name: string, current: string | null): string | null {
+  if (name === "") return "Give the area a name.";
+  const taken = name !== current && areasOf(doc).some((area) => area.name === name);
+  return taken ? `There is already an area named "${name}".` : null;
+}
+
+export function addArea(doc: Composition, name: string, parent: string): Composition {
+  if (areaNameProblem(doc, name, null) !== null) return doc;
+  return { ...doc, areas: [...areasOf(doc), { name, ...(parent === "" ? {} : { parent }) }] };
+}
+
+function renamedArea(area: Json, from: string, to: string): Json {
+  const name = area.name === from ? to : area.name;
+  return area.parent === from ? { ...area, name, parent: to } : { ...area, name };
+}
+
+export function renameArea(doc: Composition, from: string, to: string): Composition {
+  if (from === to || areaNameProblem(doc, to, from) !== null) return doc;
+  return {
+    ...doc,
+    areas: areasOf(doc).map((area) => renamedArea(area, from, to)),
+    equipment: entries(doc).map((entry) => (entry.area === from ? { ...entry, area: to } : entry)),
+  };
+}
+
+function instanceCount(entry: Json): number {
+  const names = namesOf(entry);
+  const count = entry.count as { readonly default?: number } | undefined;
+  return names.length > 0 ? names.length : (count?.default ?? 1);
+}
+
+export function areaInUse(doc: Composition, name: string): string | null {
+  const holding = entries(doc).filter((entry) => entry.area === name);
+  const inside = areasOf(doc).filter((area) => area.parent === name).length;
+  const instances = holding.reduce((sum, entry) => sum + instanceCount(entry), 0);
+  if (instances > 0)
+    return `Move the ${String(instances)} ${instances === 1 ? "instance" : "instances"} out of it first.`;
+  if (inside > 0) return `Delete the ${String(inside)} ${inside === 1 ? "area" : "areas"} inside it first.`;
+  return null;
+}
+
+export function removeArea(doc: Composition, name: string): Composition {
+  if (areaInUse(doc, name) !== null) return doc;
+  return { ...doc, areas: areasOf(doc).filter((area) => area.name !== name) };
 }
 
 function renamed(endpoint: string, from: string, to: string): string {
@@ -68,16 +137,24 @@ export function removeInstance(doc: Composition, id: string): Composition {
   return { ...doc, equipment, connections: wires(doc).filter((wire) => !touches(wire, id)) };
 }
 
-export function moveInstance(doc: Composition, id: string, area: string): Composition {
-  const equipment = entries(doc).flatMap((entry) => {
-    if (!holds(entry, id)) return [entry];
-    if (namesOf(entry).length <= 1) return [{ ...entry, area }];
-    return [
-      { ...entry, names: namesOf(entry).filter((name) => name !== id) },
-      { ...entry, names: [id], area },
-    ];
+function without(all: readonly Json[], source: Json, id: string): readonly Json[] {
+  return all.flatMap((entry) => {
+    if (entry !== source) return [entry];
+    const names = namesOf(entry).filter((name) => name !== id);
+    return names.length === 0 ? [] : [{ ...entry, names }];
   });
-  return { ...doc, equipment };
+}
+
+export function moveInstance(doc: Composition, id: string, area: string): Composition {
+  const all = entries(doc);
+  const source = all.find((entry) => holds(entry, id));
+  if (source === undefined) return doc;
+  const moved = { ...source, names: [id], area };
+  const others = all.filter((entry) => entry !== source);
+  if (namesOf(source).length <= 1 && !others.some((entry) => joinable(entry, moved))) {
+    return { ...doc, equipment: all.map((entry) => (entry === source ? moved : entry)) };
+  }
+  return { ...doc, equipment: placed(without(all, source, id), moved) };
 }
 
 export function connect(doc: Composition, from: string, to: string): Composition {
@@ -89,9 +166,29 @@ export function disconnect(doc: Composition, index: number): Composition {
   return { ...doc, connections: wires(doc).filter((_, at) => at !== index) };
 }
 
+export interface ListedIssue {
+  readonly target: string | null;
+  readonly message: string;
+  readonly pointer: string;
+}
+
 export interface IssueTargets {
   readonly instances: ReadonlyMap<string, readonly string[]>;
-  readonly listed: readonly { readonly target: string | null; readonly message: string }[];
+  readonly listed: readonly ListedIssue[];
+}
+
+export interface IssueGroup extends ListedIssue {
+  readonly count: number;
+}
+
+export function groupIssues(listed: readonly ListedIssue[]): readonly IssueGroup[] {
+  const groups = new Map<string, IssueGroup>();
+  listed.forEach((issue) => {
+    const key = `${issue.target ?? ""}\n${issue.message}\n${issue.target === null ? issue.pointer : ""}`;
+    const seen = groups.get(key);
+    groups.set(key, { ...issue, count: (seen?.count ?? 0) + 1 });
+  });
+  return [...groups.values()];
 }
 
 function equipmentTargets(doc: Composition, at: number, field: string, index: string): readonly string[] {
@@ -116,7 +213,31 @@ export function issueTargets(doc: Composition, issues: readonly Issue[]): IssueT
   const listed = issues.map((issue) => {
     const targets = targetsOf(doc, issue.pointer);
     targets.forEach((id) => instances.set(id, [...(instances.get(id) ?? []), issue.message]));
-    return { target: targets[0] ?? null, message: issue.message };
+    return { target: targets[0] ?? null, message: issue.message, pointer: issue.pointer };
   });
   return { instances, listed };
+}
+
+const weightPointer = /^\/profiles\/(\d+)\/fault_weights\/(.+)$/;
+const undeclared = /^profile "(.+)" weights undeclared fault "(.+)"$/;
+
+function unescaped(token: string): string {
+  return token.replaceAll("~1", "/").replaceAll("~0", "~");
+}
+
+export function profileWeightOf(issue: ListedIssue): { readonly profile: string; readonly fault: string } | null {
+  const match = undeclared.exec(issue.message);
+  return match?.[1] === undefined || match[2] === undefined ? null : { profile: match[1], fault: match[2] };
+}
+
+export function removeProfileWeight(doc: Composition, pointer: string): Composition {
+  const match = weightPointer.exec(pointer);
+  const profiles = Array.isArray(doc.profiles) ? (doc.profiles as readonly Json[]) : [];
+  const at = Number(match?.[1] ?? -1);
+  const profile = profiles[at];
+  if (match?.[2] === undefined || profile === undefined) return doc;
+  const fault = unescaped(match[2]);
+  const weights = Object.entries(profile.fault_weights ?? {}).filter(([name]) => name !== fault);
+  const edited = { ...profile, fault_weights: Object.fromEntries(weights) };
+  return { ...doc, profiles: profiles.map((entry, index) => (index === at ? edited : entry)) };
 }

@@ -25,6 +25,8 @@ type WorldRecord struct {
 	Operator  *rules.OperatorView
 	Started   bool
 	RunEnded  bool
+
+	DirectorCommands int
 }
 
 type Director struct {

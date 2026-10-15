@@ -268,13 +268,17 @@ export const badgeLabels: Readonly<Record<Badge, string>> = {
   "not-checked": "Not checked",
   verified: "Verified",
   "not-verified": "Not verified",
-  incomplete: "Incomplete",
+  incomplete: "Did not finish",
 };
 
 export function humanise(id: string): string {
   const parts = id.split("__");
   const meaningful = parts.length > 1 ? parts.slice(1) : parts;
   return meaningful.map((part) => part.replaceAll("_", " ")).join(" · ");
+}
+
+export function kindLabel(kind: string): string {
+  return humanise(kind).replace(/ \d+$/, "");
 }
 
 const day = 86_400e9;

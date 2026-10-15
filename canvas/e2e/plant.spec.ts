@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { env } from "./support/env";
+import { textClashes } from "./support/textClashes";
 
 test.use({ storageState: env("CANVAS_APP_STATE") });
 
@@ -21,7 +22,7 @@ test("selecting an instance in the outline shows its kind in the inspector", asy
   const inspector = page.getByRole("complementary", { name: "Inspector" });
   await expect(inspector.getByRole("heading", { name: "CT-1" })).toBeVisible();
   await expect(inspector.getByRole("region", { name: "Channels" })).toContainText("basin temp · °C");
-  await expect(inspector.getByRole("region", { name: "Links in" })).toContainText("CH-1 heat out → heat in");
+  await expect(inspector.getByRole("region", { name: "Links in" })).toContainText("CH-1 heat out → CT-1 heat in");
   await expect(inspector.getByRole("region", { name: "Faults" })).toContainText("fan failure");
   await page.getByRole("button", { name: "Workspace", exact: true }).click();
   await expect(page.getByRole("heading", { name: "lab-workspace" })).toBeVisible();
@@ -83,7 +84,6 @@ test("a shared campus link navigates to its declared receiver in another hall", 
   await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Fcampus-3.domain.json`);
   await page.getByRole("navigation", { name: "Outline" }).getByRole("button", { name: "CAL-1" }).click();
   const inspector = page.getByRole("complementary", { name: "Inspector" });
-  await inspector.getByText("Browse outgoing links (18)").click();
   await inspector.getByRole("button", { name: /Select receiver h02\/M-1; CAL-1 shift out/ }).click();
   await expect(page.getByRole("heading", { name: "h02", level: 1 })).toBeVisible();
   await expect(inspector.getByRole("heading", { name: "h02/M-1", level: 2 })).toBeVisible();
@@ -138,6 +138,17 @@ function overlapsAndSpills(): string[] {
   ]);
 }
 
+function cutText(): string[] {
+  const cut = (element: HTMLElement) => {
+    const style = getComputedStyle(element);
+    const shown = style.visibility !== "hidden" && element.closest(".sr-only") === null;
+    return shown && style.overflowX !== "visible" && element.scrollWidth > element.clientWidth + 1;
+  };
+  return [...document.querySelectorAll<HTMLElement>(".react-flow__node-instance *")]
+    .filter(cut)
+    .map((element) => element.textContent);
+}
+
 function settledZoom(): Promise<string> {
   const read = () =>
     getComputedStyle(document.querySelector("[aria-roledescription='plant graph']") ?? document.body).getPropertyValue(
@@ -153,7 +164,7 @@ function settledZoom(): Promise<string> {
   });
 }
 
-test("no node overlaps another or spills its text at any zoom tier", async ({ page }) => {
+test("no node overlaps another, spills its text or cuts a title or port name at any zoom tier", async ({ page }) => {
   await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Ffactory-utilities.domain.json`);
   const graph = page.getByRole("application", { name: "Plant graph" });
   await expect(page.getByRole("group", { name: /^CT-1, cooling tower,/ })).toBeVisible();
@@ -166,9 +177,31 @@ test("no node overlaps another or spills its text at any zoom tier", async ({ pa
     await expect.poll(async () => (zoom = await page.evaluate(settledZoom)) !== "" && zoom !== previous).toBe(true);
     tiers.add((await graph.getAttribute("class"))?.match(/tier-(\w+)/)?.[1] ?? "");
     expect(await page.evaluate(overlapsAndSpills)).toEqual([]);
+    expect(await page.evaluate(cutText)).toEqual([]);
+    expect(await page.evaluate(textClashes)).toEqual([]);
     await page.keyboard.press("+");
   }
   expect([...tiers]).toEqual(expect.arrayContaining(["overview", "compact", "full"]));
+});
+
+test("no two labels inside one node intersect at the compact zoom, on a flat plant and on a hall", async ({ page }) => {
+  for (const view of [
+    "domain=domains%2Ffactory-utilities.domain.json",
+    "domain=domains%2Fcampus-3.domain.json&hall=h01",
+  ]) {
+    await page.goto(`${env("CANVAS_APP_URL")}/#/plant?${view}`);
+    const graph = page.getByRole("application", { name: "Plant graph" });
+    await graph.focus();
+    await page.keyboard.press("0");
+    await expect
+      .poll(async () => {
+        await page.keyboard.press("+");
+        return graph.getAttribute("class");
+      })
+      .toMatch(/tier-compact/);
+    await expect(page.locator(".react-flow__node-instance [class*='pinName']").first()).toBeVisible();
+    expect(await page.evaluate(textClashes)).toEqual([]);
+  }
 });
 
 function activeRingOnScreen(): number {

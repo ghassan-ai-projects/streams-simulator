@@ -2,7 +2,7 @@ import type { ReactFlowInstance } from "@xyflow/react";
 import { useReactFlow, useStore } from "@xyflow/react";
 import { useEffect, useRef } from "react";
 import type { Viewport } from "../../model/viewport";
-import { centreOf, inView, openingViewport, sameViewport } from "../../model/viewport";
+import { centreOf, followZoom, openingViewport, sameViewport } from "../../model/viewport";
 import type { FlowNode } from "./flow";
 
 interface Size {
@@ -48,9 +48,8 @@ export function useFollowSelection(selected: string | null, focusZoom: number) {
       width: node.width ?? node.measured.width ?? 0,
       height: node.height ?? node.measured.height ?? 0,
     };
-    const viewport = flow.getViewport();
-    const zoom = Math.max(viewport.zoom, focusZoom);
-    if (zoom === viewport.zoom && inView(box, viewport, { width, height })) return;
+    const zoom = followZoom(box, flow.getViewport(), { width, height }, focusZoom);
+    if (zoom === null) return;
     const centre = centreOf(box);
     void flow.setCenter(centre.x, centre.y, { zoom });
   }, [flow, selected, focusZoom, width, height]);

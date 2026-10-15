@@ -305,6 +305,7 @@
     "profiles": {
       "type": "array",
       "minItems": 3,
+      "x-expected": "at least 3 profiles: add nominal, correlated_cascade and sensor_pathology",
       "description": "Named scenario families. nominal and sensor_pathology are mandatory for every domain: the baseline, and the instrument-lying case a threshold rule cannot get right. correlated_cascade — the alarm-flood case — is mandatory where the domain has the coupling to support one; where it does not, the domain declares the profile not_applicable with a reason. An honest absence beats an invented scenario (G-11).",
       "items": {
         "type": "object",
@@ -336,12 +337,15 @@
       },
       "allOf": [
         {
+          "x-expected": "a profile named nominal",
           "contains": {"properties": {"name": {"const": "nominal"}}, "required": ["name"]}
         },
         {
+          "x-expected": "a profile named correlated_cascade",
           "contains": {"properties": {"name": {"const": "correlated_cascade"}}, "required": ["name"]}
         },
         {
+          "x-expected": "a profile named sensor_pathology",
           "contains": {"properties": {"name": {"const": "sensor_pathology"}}, "required": ["name"]}
         }
       ]

@@ -1,11 +1,11 @@
-import { Eye, Lock, Radio } from "lucide-react";
+import { Eye, Lock, Radio, TriangleAlert } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { NavigationStore } from "../../app/navigationStore";
 import type { Workspace } from "../../model/bridge";
 import type { Badge } from "../../model/report";
 import { badgeLabels } from "../../model/report";
 import type { RunRow } from "../../model/workspace";
-import { durationOf, faultWords, plantsOf, runRows, whenOf } from "../../model/workspace";
+import { plantsOf, runFacts, runRows, unfinishedReason, whenOf } from "../../model/workspace";
 import styles from "./HomeScreen.module.css";
 
 interface ListProps {
@@ -16,10 +16,12 @@ interface ListProps {
 
 const page = 20;
 
+function moreLabel(count: number): string {
+  return `Show ${String(count)} more ${count === 1 ? "run" : "runs"}`;
+}
+
 function detail(row: RunRow): string {
-  return [row.run.worldId, whenOf(row.run.recordedAt), durationOf(row.run.durationS), faultWords(row.run)]
-    .filter((part) => part !== "")
-    .join(" · ");
+  return [row.run.worldId, whenOf(row.run.recordedAt), ...runFacts(row.run)].filter((part) => part !== "").join(" · ");
 }
 
 function Status({ row, badge }: { readonly row: RunRow; readonly badge: Badge | null }) {
@@ -31,8 +33,21 @@ function Status({ row, badge }: { readonly row: RunRow; readonly badge: Badge | 
       </span>
     );
   }
+  if (!row.run.complete) {
+    return (
+      <span className={styles.badge} title={unfinishedReason(row.run)}>
+        <TriangleAlert size={12} aria-hidden="true" />
+        {badgeLabels.incomplete}
+      </span>
+    );
+  }
   const state = badge ?? "not-checked";
+  if (state === "not-checked") return null;
   return <span className={state === "verified" ? styles.verified : styles.badge}>{badgeLabels[state]}</span>;
+}
+
+function unchecked(rows: readonly RunRow[], badgeFor: ListProps["badgeFor"]): boolean {
+  return rows.some((row) => row.run.complete && (badgeFor(row.run.worldId) ?? "not-checked") === "not-checked");
 }
 
 function Row({
@@ -44,13 +59,17 @@ function Row({
     <li className={styles.item}>
       <span className={styles.lines}>
         <span className={styles.line}>
-          <span className={styles.name}>{row.plantTitle}</span>
+          <span className={styles.name} title={row.plantTitle}>
+            {row.plantTitle}
+          </span>
           <span className={row.run.explore ? styles.explore : styles.badge}>
             {row.run.explore ? <Eye size={12} aria-hidden="true" /> : <Lock size={12} aria-hidden="true" />}
             {row.run.explore ? "Explore" : "Evaluate"}
           </span>
         </span>
-        <span className={styles.meta}>{detail(row)}</span>
+        <span className={styles.meta} title={detail(row)}>
+          {detail(row)}
+        </span>
       </span>
       <Status row={row} badge={badge} />
       <span className={styles.actions}>
@@ -125,6 +144,7 @@ export function RunList({ workspace, navigation, badgeFor }: ListProps) {
         <span className={styles.count}>{rows.length}</span>
         <PlantFilter workspace={workspace} plant={plant} setPlant={setPlant} />
       </header>
+      {unchecked(rows, badgeFor) && <p className={styles.note}>Runs are checked when you open their review.</p>}
       {rows.length === 0 && <p className={styles.none}>No runs yet. Open a plant and choose Run.</p>}
       <p className="sr-only" role="status">
         {plant === "" ? "" : `${String(rows.length)} ${rows.length === 1 ? "run" : "runs"} shown`}
@@ -136,7 +156,7 @@ export function RunList({ workspace, navigation, badgeFor }: ListProps) {
       </ul>
       {rows.length > shown && (
         <button type="button" className={styles.more} onClick={more}>
-          {`Show ${String(Math.min(page, rows.length - shown))} more of ${String(rows.length - shown)}`}
+          {moreLabel(Math.min(page, rows.length - shown))}
         </button>
       )}
     </section>

@@ -100,6 +100,7 @@ type Run struct {
 
 	finished     bool
 	incomplete   bool
+	unfinished   string
 	runErr       error
 	trace        []byte
 	traceDigest  string

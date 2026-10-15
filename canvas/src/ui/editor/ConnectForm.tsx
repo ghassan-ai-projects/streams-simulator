@@ -4,26 +4,24 @@ import { useState } from "react";
 import { connect } from "../../model/compositionEdits";
 import type { Instance, Plant } from "../../model/plant";
 import type { ComponentSpec } from "../../model/ports";
-import { portsMatching, portType } from "../../model/ports";
+import { noTargetReason, portsMatching, portType, specOf } from "../../model/ports";
 import panel from "../panel.module.css";
 import { SubmitRow } from "./SubmitRow";
 import type { PanelProps } from "./panelProps";
 
 type FormProps = PanelProps & { readonly instance: Instance };
 
-function specOf(specs: ReadonlyMap<string, ComponentSpec>, instance: Instance | undefined): ComponentSpec | undefined {
-  return instance?.component ? specs.get(instance.component) : undefined;
-}
-
 function Pick({
   label,
   value,
   options,
+  empty,
   onChange,
 }: {
   readonly label: string;
   readonly value: string;
   readonly options: readonly string[];
+  readonly empty: string;
   readonly onChange: (value: string) => void;
 }) {
   return (
@@ -35,7 +33,7 @@ function Pick({
           onChange(event.target.value);
         }}
       >
-        <option value="">Choose…</option>
+        <option value="">{options.length === 0 ? empty : "Choose…"}</option>
         {options.map((option) => (
           <option key={option} value={option}>
             {option.replaceAll("_", " ")}
@@ -65,31 +63,73 @@ interface PicksProps extends Omit<FormProps, "editor"> {
   readonly setChoice: (choice: Choice) => void;
 }
 
+function withOutput(
+  draft: PicksProps["draft"],
+  plant: Plant,
+  instance: Instance,
+  choice: Choice,
+  output: string,
+): Choice {
+  const type = portType(specOf(draft.specs, instance), output);
+  const keeps = targets(plant, draft.specs, instance.id, type).includes(choice.target);
+  const aimed = plant.instances.find((entry) => entry.id === choice.target);
+  const inputs = portsMatching(specOf(draft.specs, aimed), "in", type);
+  return {
+    output,
+    target: keeps ? choice.target : "",
+    input: keeps && inputs.includes(choice.input) ? choice.input : "",
+  };
+}
+
+function TargetNote({
+  plant,
+  draft,
+  instance,
+  output,
+  count,
+}: {
+  readonly plant: Plant;
+  readonly draft: PicksProps["draft"];
+  readonly instance: Instance;
+  readonly output: string;
+  readonly count: number;
+}) {
+  if (output === "" || count > 0) return null;
+  return <p className={panel.hint}>{noTargetReason(plant, draft.specs, instance, output)}</p>;
+}
+
 function LinkPicks({ draft, plant, instance, choice, setChoice }: PicksProps) {
-  const type = portType(specOf(draft.specs, instance), choice.output);
+  const spec = specOf(draft.specs, instance);
+  const type = portType(spec, choice.output);
   const targetInstance = plant.instances.find((entry) => entry.id === choice.target);
+  const options = targets(plant, draft.specs, instance.id, type);
+  const noTarget = choice.output === "" ? "Choose an output first" : "No instance takes it";
   return (
     <>
       <Pick
         label="Output"
         value={choice.output}
-        options={portsMatching(specOf(draft.specs, instance), "out")}
+        options={portsMatching(spec, "out")}
+        empty="This instance has no outputs"
         onChange={(output) => {
-          setChoice({ ...none, output });
+          setChoice(withOutput(draft, plant, instance, choice, output));
         }}
       />
       <Pick
         label="To"
         value={choice.target}
-        options={targets(plant, draft.specs, instance.id, type)}
+        options={options}
+        empty={noTarget}
         onChange={(target) => {
           setChoice({ ...choice, target, input: "" });
         }}
       />
+      <TargetNote plant={plant} draft={draft} instance={instance} output={choice.output} count={options.length} />
       <Pick
         label="Input"
         value={choice.input}
         options={portsMatching(specOf(draft.specs, targetInstance), "in", type)}
+        empty={choice.target === "" ? "Choose an instance first" : "No matching input"}
         onChange={(input) => {
           setChoice({ ...choice, input });
         }}

@@ -18,6 +18,7 @@ import { EditButton, RunButton, useRunningHere } from "./PlantActions";
 import { Inspector } from "./Inspector";
 import { Outline } from "./Outline";
 import { useCanvasAspect } from "./canvasAspect";
+import { PlantFailure } from "./PlantFailure";
 import { PlantGraph } from "./PlantGraph";
 import styles from "./PlantScreen.module.css";
 
@@ -200,6 +201,13 @@ function useConsume(navigation: NavigationStore, domain: string, hall: string | 
   }, [navigation, domain, hall]);
 }
 
+function useShowRun(launch: LaunchStore, onShow: () => void) {
+  return useCallback(() => {
+    launch.reset();
+    onShow();
+  }, [launch, onShow]);
+}
+
 function useLaunching(asked: boolean, onShow: () => void, consume: () => void) {
   const [launching, setLaunching] = useState(asked);
   const button = useRef<HTMLButtonElement>(null);
@@ -224,27 +232,35 @@ function useLaunching(asked: boolean, onShow: () => void, consume: () => void) {
   return { launching, button, toggle, close };
 }
 
-function NotReady({ state, domain }: { readonly state: PlantState; readonly domain: string }) {
-  const failed = state.phase === "failed" && state.path === domain;
+function NotReady({
+  state,
+  domain,
+  navigation,
+}: {
+  readonly state: PlantState;
+  readonly domain: string;
+  readonly navigation: NavigationStore;
+}) {
+  if (state.phase === "failed" && state.path === domain)
+    return <PlantFailure failure={state.failure} navigation={navigation} />;
   return (
-    <p className={failed ? styles.failure : styles.loading} role={failed ? "alert" : "status"}>
-      {state.phase === "failed" && failed
-        ? `The plant could not be opened: ${state.failure.message} (${state.failure.code})`
-        : "Opening the plant…"}
+    <p className={styles.loading} role="status">
+      Opening the plant…
     </p>
   );
 }
 
 export function PlantScreen(props: PlantScreenProps) {
   const { plants, workspace, navigation, launch, domain, hall, startLaunching = false, onShowDetails = noop } = props;
-  const run = useLaunching(startLaunching, onShowDetails, useConsume(navigation, domain, hall));
+  const run = useLaunching(startLaunching, useShowRun(launch, onShowDetails), useConsume(navigation, domain, hall));
   const state = useStore(plants);
   const running = useRunningHere(launch, state.phase === "ready" ? state.plant.id : "");
   const listing = useStore(workspace);
   useEffect(() => {
     if (listing.phase === "ready") void plants.load(domain, listing.workspace);
   }, [plants, domain, listing]);
-  if (state.phase !== "ready" || state.path !== domain) return <NotReady state={state} domain={domain} />;
+  if (state.phase !== "ready" || state.path !== domain)
+    return <NotReady state={state} domain={domain} navigation={navigation} />;
   return (
     <ReactFlowProvider>
       <div className={styles.screen}>

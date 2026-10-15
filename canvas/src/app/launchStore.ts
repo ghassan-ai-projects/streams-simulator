@@ -1,6 +1,6 @@
 import type { BridgeFailure } from "../model/bridge";
-import type { LaunchPlan, LaunchStep } from "../model/launch";
-import { launchSteps } from "../model/launch";
+import type { CallOutcome, LaunchPlan, LaunchStep } from "../model/launch";
+import { failureWords, launchSteps, outcomeOf } from "../model/launch";
 import { Observable } from "./observable";
 import type { Bridge } from "./ports";
 
@@ -22,12 +22,20 @@ export type LaunchState =
       readonly startedMs: number;
       readonly atMs: number;
       readonly stopping: boolean;
+      readonly calls: readonly CallOutcome[];
     }
-  | { readonly phase: "done"; readonly origin: LaunchOrigin; readonly worldId: string; readonly early: boolean }
+  | {
+      readonly phase: "done";
+      readonly origin: LaunchOrigin;
+      readonly worldId: string;
+      readonly early: boolean;
+      readonly calls: readonly CallOutcome[];
+    }
   | {
       readonly phase: "failed";
       readonly origin: LaunchOrigin;
       readonly failure: BridgeFailure;
+      readonly words: string;
       readonly kept: string | null;
     };
 
@@ -54,17 +62,20 @@ function worldOf(value: unknown): string {
 export interface Proposal {
   readonly plan: LaunchPlan;
   readonly left: readonly string[];
+  readonly from: string;
 }
 
 export class LaunchStore extends Observable<LaunchState> {
   private stop = false;
   private origin: LaunchOrigin = nowhere;
-  private plan: LaunchPlan = { seed: 0, durationS: 0, explore: true, faults: [] };
+  private plan: LaunchPlan = { seed: 0, durationS: 0, explore: true, faults: [], calls: [] };
+  private outcomes: readonly CallOutcome[] = [];
   private startedMs = 0;
   private proposed: (Proposal & { readonly domain: string }) | null = null;
+  private current: LaunchStep | null = null;
 
-  propose(domain: string, plan: LaunchPlan, left: readonly string[] = []): void {
-    this.proposed = { domain, plan, left };
+  propose(domain: string, plan: LaunchPlan, left: readonly string[] = [], from = ""): void {
+    this.proposed = { domain, plan, left, from };
   }
 
   forgetProposal(): void {
@@ -72,7 +83,9 @@ export class LaunchStore extends Observable<LaunchState> {
   }
 
   proposal(domain: string): Proposal | null {
-    return this.proposed?.domain === domain ? { plan: this.proposed.plan, left: this.proposed.left } : null;
+    return this.proposed?.domain === domain
+      ? { plan: this.proposed.plan, left: this.proposed.left, from: this.proposed.from }
+      : null;
   }
 
   constructor(
@@ -90,6 +103,7 @@ export class LaunchStore extends Observable<LaunchState> {
     this.startedMs = this.now();
     this.proposed = null;
     this.stop = false;
+    this.outcomes = [];
     this.progress(null, 0);
     let worldId = "";
     try {
@@ -97,7 +111,7 @@ export class LaunchStore extends Observable<LaunchState> {
       this.progress(worldId, 0);
       await this.steps(worldId, plan);
       await this.call("run.end", { world_id: worldId });
-      this.set({ phase: "done", origin, worldId, early: this.stop });
+      this.set({ phase: "done", origin, worldId, early: this.stop, calls: this.outcomes });
     } catch (error) {
       await this.abandon(worldId, error);
     }
@@ -123,6 +137,7 @@ export class LaunchStore extends Observable<LaunchState> {
       startedMs,
       atMs,
       stopping: this.stop,
+      calls: this.outcomes,
     });
   }
 
@@ -141,8 +156,23 @@ export class LaunchStore extends Observable<LaunchState> {
   }
 
   private async step(worldId: string, step: LaunchStep): Promise<void> {
+    this.current = step;
     if (step.kind === "advance") await this.call("clock.advance", { world_id: worldId, by_ns: step.byNs });
-    else await this.call("fault.inject", { world_id: worldId, entity_id: step.entity, fault: step.fault });
+    else if (step.kind === "inject")
+      await this.call("fault.inject", { world_id: worldId, entity_id: step.entity, fault: step.fault });
+    else await this.invoke(worldId, step);
+    this.current = null;
+  }
+
+  private async invoke(worldId: string, step: Extract<LaunchStep, { kind: "invoke" }>): Promise<void> {
+    const { entity, effector, args } = step;
+    const acknowledged = await this.call("effector.invoke", {
+      world_id: worldId,
+      entity_id: entity,
+      effector,
+      args,
+    });
+    this.outcomes = [...this.outcomes, outcomeOf(step, acknowledged)];
   }
 
   private async call(name: string, args: Readonly<Record<string, unknown>>): Promise<unknown> {
@@ -154,6 +184,8 @@ export class LaunchStore extends Observable<LaunchState> {
   private async abandon(worldId: string, error: unknown): Promise<void> {
     if (worldId !== "") await this.bridge.action("world.destroy", { world_id: worldId });
     const failure = error instanceof Stopped ? error.failure : { ...broken, message: String(error) };
-    this.set({ phase: "failed", origin: this.origin, failure, kept: worldId === "" ? null : worldId });
+    const words = failureWords(this.current);
+    this.current = null;
+    this.set({ phase: "failed", origin: this.origin, failure, words, kept: worldId === "" ? null : worldId });
   }
 }

@@ -4,7 +4,49 @@ import { parsePlant } from "../../model/plant";
 import type { ComponentSpec } from "../../model/ports";
 import { plantView } from "../../model/plantView";
 import { composition, domain } from "../../test/plantFixture";
-import { flowEdges } from "./flow";
+import { flowEdges, flowNodes } from "./flow";
+
+describe("plant wire anchors", () => {
+  it("leaves from the side of the node that faces the target", () => {
+    const view = plantView(parsePlant(domain, composition), new Map(), null);
+    const [first] = view.edges;
+    if (first === undefined) throw new Error("fixture has no links");
+    const boxes = new Map([...view.layout.nodes, ["CH-1", { x: 500, y: 0, width: 232, height: 104 }] as const]);
+    const extended = {
+      ...view,
+      layout: { ...view.layout, nodes: boxes },
+      edges: [{ ...first, id: "back", from: "CH-1", to: "CT-1" }],
+    };
+    const right = flowEdges(view, true).find((edge) => edge.id === first.id);
+    const back = flowEdges(extended, true).find((edge) => edge.id === "back");
+    expect(right).toMatchObject({ sourceHandle: "out", targetHandle: "in" });
+    expect(back).toMatchObject({ sourceHandle: "out-left", targetHandle: "in-right" });
+  });
+
+  it("uses the side anchors for a wire without pins when its target is to the left", () => {
+    const view = plantView(parsePlant(domain, composition), new Map(), null);
+    const [first] = view.edges;
+    if (first === undefined) throw new Error("fixture has no links");
+    const boxes = new Map([...view.layout.nodes, ["CH-1", { x: 900, y: 0, width: 232, height: 104 }] as const]);
+    const unpinned = { ...first, id: "unpinned", from: "CH-1", to: "CT-1", fromHandle: null, toHandle: null };
+    const extended = { ...view, layout: { ...view.layout, nodes: boxes }, edges: [unpinned] };
+    expect(flowEdges(extended, false)[0]).toMatchObject({ sourceHandle: "out-left", targetHandle: "in-right" });
+  });
+});
+
+describe("plant wire pins on the near side", () => {
+  it("leaves a pinned wire from the far side of its pin when the target is to the left", () => {
+    const view = plantView(parsePlant(domain, composition), new Map(), null);
+    const [first] = view.edges;
+    if (first === undefined) throw new Error("fixture has no links");
+    const boxes = new Map([...view.layout.nodes, ["CH-1", { x: 900, y: 0, width: 232, height: 104 }] as const]);
+    const pinned = { ...first, id: "pinned", from: "CH-1", to: "CT-1", fromHandle: "heat_out", toHandle: "heat_in" };
+    const leftward = { ...view, layout: { ...view.layout, nodes: boxes }, edges: [pinned] };
+    const rightward = { ...view, edges: [pinned] };
+    expect(flowEdges(leftward)[0]).toMatchObject({ sourceHandle: "heat_out@left", targetHandle: "heat_in@right" });
+    expect(flowEdges(rightward)[0]).toMatchObject({ sourceHandle: "heat_out", targetHandle: "heat_in" });
+  });
+});
 
 describe("plant wire direction", () => {
   it("points each wire at its target and keeps selected edges emphasized", () => {
@@ -38,5 +80,20 @@ describe("plant wire direction", () => {
         color: "color-mix(in srgb, var(--text-tertiary) 30%, transparent)",
       },
     });
+  });
+});
+
+describe("plant frame titles", () => {
+  it("draws each area title above the wires, in its own node", () => {
+    const view = plantView(parsePlant(domain, composition), new Map(), null);
+    const titles = flowNodes(view, null).filter((node) => node.type === "frameTitle");
+    expect(titles.map((node) => [node.id, node.zIndex])).toEqual(
+      [...view.layout.groups.keys()].map((group) => [`title:${group}`, 2]),
+    );
+    expect(
+      flowNodes(view, null)
+        .filter((node) => node.type === "frame")
+        .every((node) => node.zIndex === -1),
+    ).toBe(true);
   });
 });

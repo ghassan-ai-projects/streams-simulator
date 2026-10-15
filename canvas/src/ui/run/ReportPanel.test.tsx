@@ -27,7 +27,7 @@ describe("report panel", () => {
       />,
     );
     expect(screen.getByRole("note")).toHaveTextContent("This run did not verify");
-    expect(screen.getByRole("region", { name: "True KPIs" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "True results" })).toBeInTheDocument();
   });
 
   it("lists every section of the binary's report with no accessibility violation", async () => {
@@ -51,10 +51,12 @@ describe("report panel", () => {
     expect(
       within(screen.getByRole("region", { name: "Effector calls" })).getByText("refused: interlock"),
     ).toBeInTheDocument();
-    expect(within(screen.getByRole("region", { name: "True KPIs" })).getByText("4.65 – 8.85")).toBeInTheDocument();
-    expect(within(screen.getByRole("region", { name: "True KPIs" })).getByText("5.95")).toBeInTheDocument();
+    expect(within(screen.getByRole("region", { name: "True results" })).getByText("4.65 – 8.85")).toBeInTheDocument();
+    expect(within(screen.getByRole("region", { name: "True results" })).getByText("5.95")).toBeInTheDocument();
     expect(
-      within(screen.getByRole("region", { name: "Scoring" })).getByText("The report has no scoring section."),
+      within(screen.getByRole("region", { name: "Scoring" })).getByText(
+        "Not scored: no outside system is connected to this run.",
+      ),
     ).toBeInTheDocument();
     expect((await axe.run(view.container)).violations).toEqual([]);
   });
@@ -74,7 +76,7 @@ describe("report panel", () => {
   it("filters KPI truth to the selected instance and states what is not available", () => {
     const { rerender } = render(<ReportPanel report={parseReport(report)} unit={() => ""} entity="CT-1" />);
     expect(
-      within(screen.getByRole("region", { name: "True KPIs" })).getByText("No true KPIs for CT-1."),
+      within(screen.getByRole("region", { name: "True results" })).getByText("No true results for CT-1."),
     ).toBeInTheDocument();
     rerender(
       <ReportPanel
@@ -85,10 +87,12 @@ describe("report panel", () => {
     );
     expect(within(screen.getByRole("region", { name: "Deliveries" })).getAllByText("n/a")).toHaveLength(3);
     expect(
-      within(screen.getByRole("region", { name: "Truth" })).getByText("Not available: the run is still sealed"),
+      within(screen.getByRole("region", { name: "True results" })).getByText("Not available: the run is still sealed"),
     ).toBeInTheDocument();
     expect(
-      within(screen.getByRole("region", { name: "Scoring" })).getByText("The report has no scoring section."),
+      within(screen.getByRole("region", { name: "Scoring" })).getByText(
+        "Not scored: no outside system is connected to this run.",
+      ),
     ).toBeInTheDocument();
   });
 });
@@ -116,6 +120,29 @@ describe("scrubber", () => {
     expect(seek).toHaveBeenLastCalledWith(300e9);
     fireEvent.keyDown(slider, { key: "ArrowRight", shiftKey: true });
     expect(seek).toHaveBeenLastCalledWith(120e9);
+  });
+
+  it("a fault mark on the track selects its event at its own time, as its label does", () => {
+    const seek = vi.fn();
+    const onEvent = vi.fn();
+    const { container } = render(
+      <Scrubber
+        {...idle}
+        startNs={0}
+        endNs={3_600e9}
+        positionNs={0}
+        report={parseReport(report)}
+        onSeek={seek}
+        onEvent={onEvent}
+      />,
+    );
+    const marks = [...container.querySelectorAll<HTMLButtonElement>("button[tabindex='-1']")];
+    expect(marks.length).toBeGreaterThan(0);
+    marks.forEach((mark) => {
+      fireEvent.click(mark);
+    });
+    expect(onEvent).toHaveBeenCalledWith(expect.objectContaining({ atNs: 600e9 }));
+    expect(seek).not.toHaveBeenCalled();
   });
 
   it("plays, pauses and picks a speed", () => {

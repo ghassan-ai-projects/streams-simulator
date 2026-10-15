@@ -1,7 +1,8 @@
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { parsePlant } from "../../model/plant";
 import { campus, domain } from "../../test/plantFixture";
+import type { RunRow } from "../../model/workspace";
 import { PlantOverview } from "./PlantOverview";
 
 describe("plant overview", () => {
@@ -21,5 +22,28 @@ describe("plant overview", () => {
     render(<PlantOverview plant={parsePlant(domain)} runs={[]} />);
     expect(screen.queryByRole("region", { name: "Halls" })).toBeNull();
     expect(screen.getByRole("region", { name: "Areas" })).toBeInTheDocument();
+  });
+
+  it("shows five recent runs and offers the rest on request", () => {
+    const runs: RunRow[] = Array.from({ length: 8 }, (_, i) => ({
+      plantTitle: "Campus",
+      run: {
+        worldId: `w-${String(i)}`,
+        ended: true,
+        complete: true,
+        incompleteReason: "",
+        explore: false,
+        seed: null,
+        plant: "campus",
+        durationS: 60,
+        recordedAt: "2026-10-14T10:00:00Z",
+      },
+    }));
+    render(<PlantOverview plant={parsePlant(domain)} runs={runs} />);
+    const recent = screen.getByRole("region", { name: "Recent runs" });
+    expect(within(recent).getAllByRole("listitem")).toHaveLength(5);
+    expect(within(recent).getAllByRole("listitem")[0]?.textContent).toMatch(/14\u00a0Oct\u00a02026/);
+    fireEvent.click(within(recent).getByRole("button", { name: "Show all 8 runs" }));
+    expect(within(recent).getAllByRole("listitem")).toHaveLength(8);
   });
 });

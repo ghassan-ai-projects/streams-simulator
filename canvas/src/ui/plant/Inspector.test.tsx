@@ -57,7 +57,6 @@ describe("inspector", () => {
   it("lists cross-hall receivers in order and lets the operator select one", () => {
     const onSelect = vi.fn();
     render(<Inspector plant={parsePlant(campus(3))} selected="CAL-1" onSelect={onSelect} />);
-    fireEvent.click(screen.getByText("Browse outgoing links (6)"));
     const rows = screen.getByRole("region", { name: "Links out" });
     const hall = within(rows).getByRole("region", { name: "h02 linked instances" });
     expect(

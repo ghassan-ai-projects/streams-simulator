@@ -5,7 +5,7 @@ export interface PlantEntry {
   readonly title: string;
   readonly domain: string | null;
   readonly composition: string | null;
-  readonly instanceDefinitions: number;
+  readonly instances: number;
   readonly runs: number;
   readonly lastRun: string;
 }
@@ -34,7 +34,7 @@ function entry(id: string, domain: Definition | undefined, composition: Definiti
     title: firstText(domain?.title, composition?.title, id),
     domain: domain?.path ?? null,
     composition: composition?.path ?? null,
-    instanceDefinitions: domain?.instances ?? 0,
+    instances: domain?.instances ?? 0,
     runs: mine.length,
     lastRun: mine.map((run) => run.recordedAt).reduce((a, b) => (b > a ? b : a), ""),
   };
@@ -45,14 +45,30 @@ function plural(count: number, one: string): string {
 }
 
 export function faultWords(run: RunEntry): string {
-  if (!run.ended) return "";
+  if (!run.ended || !run.complete) return "";
   const faults = run.faults ?? 0;
   return faults === 0 ? "no faults" : plural(faults, "fault");
 }
 
+export function seedWords(run: RunEntry): string {
+  return run.seed === null ? "" : `seed ${String(run.seed)}`;
+}
+
+export function unfinishedReason(run: RunEntry): string {
+  return run.incompleteReason || "the run did not close.";
+}
+
+export function outcomeWords(run: RunEntry): string {
+  return run.ended && !run.complete ? `Did not finish: ${unfinishedReason(run)}` : "";
+}
+
+export function runFacts(run: RunEntry): readonly string[] {
+  return [durationOf(run.durationS), seedWords(run), faultWords(run), outcomeWords(run)].filter((part) => part !== "");
+}
+
 export function plantFacts(plant: PlantEntry): string {
-  if (plant.domain === null) return "Not composed yet: edit and save it to run it.";
-  const size = plant.instanceDefinitions > 0 ? `${plural(plant.instanceDefinitions, "instance definition")} · ` : "";
+  if (plant.domain === null) return "Not runnable yet: open Edit, save, and fix any issue it lists.";
+  const size = plant.instances > 0 ? `${plural(plant.instances, "instance")} · ` : "";
   if (plant.runs === 0) return size === "" ? "No runs yet" : `${size}no runs yet`;
   const last = whenOf(plant.lastRun);
   return `${size}${plural(plant.runs, "run")}${last === "" ? "" : ` · last ${last}`}`;

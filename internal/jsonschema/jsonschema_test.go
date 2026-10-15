@@ -234,3 +234,17 @@ func TestCompileReportsTheFirstBrokenDefinitionByName(t *testing.T) {
 		}
 	}
 }
+
+func TestAnArrayWithExpectedWordsSaysWhatToAdd(t *testing.T) {
+	t.Parallel()
+	described := compileDoc(t, `{"type":"array","minItems":2,"x-expected":"at least 2 profiles","contains":{"const":"a"}}`)
+	errs := validateDoc(t, described, `[]`)
+	if len(errs) != 2 || errs[0].Msg != "needs at least 2 profiles" || errs[1].Msg != "needs at least 2 profiles" {
+		t.Fatalf("described = %v", errs)
+	}
+	bare := compileDoc(t, `{"type":"array","minItems":2,"contains":{"const":"a"}}`)
+	errs = validateDoc(t, bare, `[]`)
+	if len(errs) != 2 || errs[0].Msg != "array shorter than minItems 2" || errs[1].Msg != "no array item matches contains" {
+		t.Fatalf("bare = %v", errs)
+	}
+}

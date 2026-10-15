@@ -11,6 +11,16 @@ export interface Viewport {
   readonly zoom: number;
 }
 
+export function followZoom(
+  box: Rect,
+  viewport: Viewport,
+  screen: { readonly width: number; readonly height: number },
+  focusZoom: number,
+): number | null {
+  if (inView(box, viewport, screen)) return null;
+  return Math.max(viewport.zoom, focusZoom);
+}
+
 export function inView(
   box: Rect,
   viewport: Viewport,
@@ -39,7 +49,12 @@ export function tierOf(zoom: number): Tier {
 }
 
 export function anchorsOnly(tier: Tier): boolean {
-  return tier !== "full";
+  return tier === "overview" || tier === "map";
+}
+
+export function rowLimitOf(tier: Tier): number {
+  if (tier === "full") return Number.POSITIVE_INFINITY;
+  return tier === "compact" ? 2 : 0;
 }
 
 interface Size {
@@ -64,7 +79,11 @@ export function openingViewport(bounds: Rect, screen: Size, limits: FitLimits): 
   const room = { width: screen.width - 2 * limits.pad, height: screen.height - top - limits.pad };
   const fit = Math.min(room.width / bounds.width, room.height / bounds.height);
   const zoom = Math.min(limits.maxZoom, Math.max(limits.minZoom, fit));
-  return { x: centred(bounds.x, bounds.width, room.width, zoom, limits.pad), y: top - bounds.y * zoom, zoom };
+  return {
+    x: centred(bounds.x, bounds.width, room.width, zoom, limits.pad),
+    y: centred(bounds.y, bounds.height, room.height, zoom, top),
+    zoom,
+  };
 }
 
 export function sameViewport(a: Viewport, b: Viewport): boolean {

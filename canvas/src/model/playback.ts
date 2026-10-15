@@ -67,6 +67,11 @@ interface Series {
   readonly unit: string;
 }
 
+export interface Opening {
+  readonly atNs: number;
+  readonly full: boolean;
+}
+
 export interface Reading {
   readonly channel: string;
   readonly value: number | string | boolean;
@@ -107,12 +112,20 @@ export class PlaybackIndex {
   }
 
   settled(): number | null {
+    return this.opening()?.atNs ?? null;
+  }
+
+  opening(): Opening | null {
     if (this.total === 0) return null;
-    const firsts = [...this.series.values()].flatMap((channels) =>
+    const cap = this.first + (this.last - this.first) / 10;
+    const complete = Math.max(this.first, ...this.firstReadings());
+    return { atNs: Math.min(cap, complete), full: complete <= cap };
+  }
+
+  private firstReadings(): number[] {
+    return [...this.series.values()].flatMap((channels) =>
       [...channels.values()].map((series) => series.times[0] ?? this.first),
     );
-    const cap = this.first + (this.last - this.first) / 10;
-    return Math.min(cap, Math.max(this.first, ...firsts));
   }
 
   readings(entity: string, atNs: number): readonly Reading[] {

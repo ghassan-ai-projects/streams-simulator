@@ -1,15 +1,18 @@
 import { Play, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import type { LaunchState, LaunchStore } from "../../app/launchStore";
-import { clockOf, planSummary, speedOf } from "../../model/launch";
+import type { LaunchState, LaunchStore, Proposal } from "../../app/launchStore";
+import type { CallOutcome } from "../../model/launch";
+import { clockOf, keepKnownFaults, planSummary, speedOf } from "../../model/launch";
 import { humanise } from "../../model/report";
 import { durationOf } from "../../model/workspace";
 import type { Plant } from "../../model/plant";
+import { faultsOf } from "../../model/plant";
 import { useStore } from "../useStore";
 import type { Draft } from "./draft";
 import { draftOf, firstDraft, pickedOnGraph } from "./draft";
 import type { Change } from "./FaultRows";
 import { LaunchForm } from "./LaunchForm";
+import { RunningMark } from "./RunningMark";
 import { useFocusOnMount } from "../useFocusOnMount";
 import { cx } from "../cx";
 import panel from "../panel.module.css";
@@ -25,17 +28,55 @@ interface LaunchPanelProps {
 }
 
 type Running = Extract<LaunchState, { phase: "running" }>;
+type Done = Extract<LaunchState, { phase: "done" }>;
+
+function outcomeWords(outcome: CallOutcome): string {
+  const call = `${clockOf(outcome.atS)} · ${outcome.entity} · ${humanise(outcome.effector)}`;
+  return outcome.accepted ? `${call}: accepted` : `${call}: command not accepted: ${outcome.reason}`;
+}
+
+function callsWords(state: Done): string {
+  const refused = state.calls.filter((call) => !call.accepted).length;
+  if (state.calls.length === 0) return "";
+  return refused === 0
+    ? " Every effector call was accepted."
+    : ` ${String(refused)} of ${String(state.calls.length)} effector calls were not accepted.`;
+}
+
+function Result({ state, onOpen }: { readonly state: Done; readonly onOpen: () => void }) {
+  const status = useFocusOnMount<HTMLParagraphElement>();
+  return (
+    <div className={panel.body}>
+      <p className={styles.status} role="status" ref={status} tabIndex={-1}>
+        {`Run ${state.worldId} ${state.early ? "stopped early and was saved" : "finished"}.${callsWords(state)}`}
+      </p>
+      {state.calls.length > 0 && (
+        <ul className={styles.outcomes} aria-label="Effector call results">
+          {state.calls.map((outcome, index) => (
+            <li key={String(index)}>{outcomeWords(outcome)}</li>
+          ))}
+        </ul>
+      )}
+      <button type="button" className={panel.primary} onClick={onOpen}>
+        Open the review
+      </button>
+    </div>
+  );
+}
 
 function ProgressBar({ state }: { readonly state: Running }) {
   return (
     <div className={styles.bar}>
       <progress max={state.durationS} value={state.atS} aria-label="Simulated time" />
-      {state.plan.faults.map((fault, index) => (
+      {[
+        ...state.plan.faults.map((fault) => ({ ...fault, what: fault.fault })),
+        ...state.plan.calls.map((call) => ({ ...call, what: call.effector })),
+      ].map((fault, index) => (
         <span
           key={String(index)}
           className={fault.atS <= state.atS ? styles.tickDone : styles.tick}
           style={{ left: `${String((fault.atS / state.durationS) * 100)}%` }}
-          title={`${fault.entity} ${humanise(fault.fault)} at ${clockOf(fault.atS)}`}
+          title={`${fault.entity} ${humanise(fault.what)} at ${clockOf(fault.atS)}`}
           aria-hidden="true"
         />
       ))}
@@ -94,9 +135,13 @@ function Failure({
   return (
     <div className={cx(panel.body, styles.failure)} role="alert">
       <p>
-        <strong>The run did not finish.</strong> {state.failure.message}
+        <strong>The run did not finish.</strong> {state.words}
         {state.kept !== null && ` What ran before the failure is kept as run ${state.kept}.`}
       </p>
+      <details className={styles.detail}>
+        <summary>Binary message</summary>
+        <p>{state.failure.message}</p>
+      </details>
       <button
         type="button"
         ref={back}
@@ -119,6 +164,8 @@ interface BodyProps {
   readonly draft: Draft;
   readonly selected: string | null;
   readonly change: (change: Change) => void;
+  readonly onFinished: (worldId: string) => void;
+  readonly watched: boolean;
 }
 
 function Elsewhere({ state }: { readonly state: Running }) {
@@ -130,7 +177,11 @@ function Elsewhere({ state }: { readonly state: Running }) {
   );
 }
 
-function Body({ state, launch, plant, path, draft, selected, change }: BodyProps) {
+function showsResult(state: LaunchState, own: boolean, watched: boolean): state is Done {
+  return state.phase === "done" && own && (state.calls.length > 0 || watched);
+}
+
+function Body({ state, launch, plant, path, draft, selected, change, onFinished, watched }: BodyProps) {
   const own = state.phase !== "idle" && state.origin.domain === plant.id;
   if (state.phase === "running") {
     return own ? (
@@ -140,6 +191,16 @@ function Body({ state, launch, plant, path, draft, selected, change }: BodyProps
     );
   }
   if (state.phase === "failed" && own) return <Failure state={state} launch={launch} />;
+  if (showsResult(state, own, watched))
+    return (
+      <Result
+        state={state}
+        onOpen={() => {
+          launch.reset();
+          onFinished(state.worldId);
+        }}
+      />
+    );
   return (
     <LaunchForm
       plant={plant}
@@ -153,21 +214,43 @@ function Body({ state, launch, plant, path, draft, selected, change }: BodyProps
   );
 }
 
+const finishedHold = 2000;
+
 function useLaunch(launch: LaunchStore, plant: string, onFinished: (worldId: string) => void) {
   const state = useStore(launch);
   const [watched, setWatched] = useState(false);
   if (!watched && state.phase === "running" && state.origin.domain === plant) setWatched(true);
   useEffect(() => {
-    if (watched && state.phase === "done" && state.origin.domain === plant) {
+    if (!watched || state.phase !== "done" || state.origin.domain !== plant || state.calls.length > 0) return undefined;
+    const timer = window.setTimeout(() => {
       launch.reset();
       onFinished(state.worldId);
-    }
+    }, finishedHold);
+    return () => {
+      window.clearTimeout(timer);
+    };
   }, [watched, state, launch, plant, onFinished]);
-  return state;
+  return { state, watched };
 }
 
-function useDraft(launch: LaunchStore, plant: string, selected: string | null) {
-  const [proposed] = useState(() => launch.proposal(plant));
+function shownProposal(proposed: Proposal): boolean {
+  return proposed.from !== "" || proposed.left.length > 0;
+}
+
+function proposalNote(proposed: Proposal): string {
+  const source = proposed.from === "" ? "the earlier run" : proposed.from;
+  const copied = `Prefilled from ${source}: seed, duration, mode and faults. Change them if needed.`;
+  return proposed.left.length === 0 ? copied : `${copied} Not copied: ${proposed.left.join("; ")}.`;
+}
+
+function prefillOf(proposal: Proposal | null, plant: Plant): Proposal | null {
+  if (proposal === null) return null;
+  const kept = keepKnownFaults(proposal.plan, (entity) => faultsOf(plant, entity));
+  return { ...proposal, plan: kept.plan, left: [...proposal.left, ...kept.dropped] };
+}
+
+function useDraft(launch: LaunchStore, plant: Plant, selected: string | null) {
+  const [proposed] = useState(() => prefillOf(launch.proposal(plant.id), plant));
   useEffect(
     () => () => {
       launch.forgetProposal();
@@ -184,20 +267,21 @@ function useDraft(launch: LaunchStore, plant: string, selected: string | null) {
 }
 
 export function LaunchPanel({ launch, plant, path, selected = null, onClose, onFinished }: LaunchPanelProps) {
-  const state = useLaunch(launch, plant.id, onFinished);
-  const { proposed, draft, setDraft } = useDraft(launch, plant.id, selected);
+  const { state, watched } = useLaunch(launch, plant.id, onFinished);
+  const { proposed, draft, setDraft } = useDraft(launch, plant, selected);
   return (
     <aside className={panel.panel} aria-labelledby="launch-title">
       <header className={panel.head}>
         <Play size={16} aria-hidden="true" />
-        <h2 id="launch-title">{`Run ${plant.title || plant.id}`}</h2>
+        <h2 id="launch-title" className={styles.title}>{`Run ${plant.title || plant.id}`}</h2>
+        {state.phase === "running" && state.origin.domain === plant.id && <RunningMark state={state} />}
         <button type="button" className={panel.icon} aria-label="Close the run panel" onClick={onClose}>
           <X size={16} aria-hidden="true" />
         </button>
       </header>
-      {proposed !== null && proposed.left.length > 0 && state.phase !== "running" && (
+      {proposed !== null && shownProposal(proposed) && state.phase !== "running" && (
         <p className={panel.hint} role="note">
-          {`Copied from the earlier run: its seed, length, mode and faults. Not copied: ${proposed.left.join("; ")}.`}
+          {proposalNote(proposed)}
         </p>
       )}
       <Body
@@ -208,6 +292,8 @@ export function LaunchPanel({ launch, plant, path, selected = null, onClose, onF
         draft={draft}
         selected={selected}
         change={setDraft}
+        onFinished={onFinished}
+        watched={watched}
       />
     </aside>
   );

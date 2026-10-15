@@ -68,7 +68,7 @@ describe("App", () => {
     bridge.paired = true;
     renderApp(bridge);
     await screen.findByRole("heading", { name: "lab-workspace" });
-    fireEvent.click(screen.getByRole("button", { name: "Theme: follow the system" }));
+    fireEvent.click(screen.getByRole("button", { name: "Theme: system" }));
     expect(screen.getByRole("button", { name: "Theme: light" })).toBeInTheDocument();
     expect(document.documentElement.dataset.theme).toBe("light");
   });

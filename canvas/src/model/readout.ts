@@ -62,6 +62,11 @@ export function showReading(reading: Reading, spec: ChannelSpec | null = noSpec)
   return { channel, value, unit: "", attention: null, word: true, outside: "" };
 }
 
+export function displayedRows(shown: readonly Shown[], limit: number): readonly Shown[] {
+  const more = shown.length - 4;
+  return shown.slice(0, more > 0 ? 3 : 4).slice(0, limit);
+}
+
 export function attentionOf(shown: readonly Shown[]): Attention {
   if (shown.some((entry) => entry.attention === "alarm")) return "alarm";
   return shown.some((entry) => entry.attention === "warn") ? "warn" : null;
@@ -95,4 +100,12 @@ export function withFault(shown: readonly Shown[], fault: string): readonly Show
   return fault === ""
     ? shown
     : [{ channel: "fault", value: fault, unit: "", attention: "alarm", word: true, outside: "" }, ...shown];
+}
+
+export function sharedTimes(times: readonly number[]): {
+  readonly latest: number;
+  readonly own: readonly (number | null)[];
+} {
+  const latest = Math.max(...times);
+  return { latest, own: times.map((time) => (time === latest ? null : time)) };
 }

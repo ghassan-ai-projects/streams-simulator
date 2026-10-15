@@ -1,7 +1,17 @@
 import { describe, expect, it } from "vitest";
 import { report } from "../test/runFixture";
 import { kpiGroups, kpisOf, kpiWords, rerunOf, runFacts, runIdentity } from "./reportViews";
-import { badgeLabels, badgeOf, humanise, parseReport, runSpan, parseReplay, replayLine, wallClock } from "./report";
+import {
+  badgeLabels,
+  badgeOf,
+  humanise,
+  kindLabel,
+  parseReport,
+  runSpan,
+  parseReplay,
+  replayLine,
+  wallClock,
+} from "./report";
 
 describe("run report", () => {
   it("reads the run, counts, verification and truth sections", () => {
@@ -105,6 +115,9 @@ describe("run report", () => {
     expect(humanise("compressor_lead__oil_cooler_fouling")).toBe("oil cooler fouling");
     expect(humanise("cooling_tower__basin_temp__offset")).toBe("basin temp · offset");
     expect(humanise("discharge_temp")).toBe("discharge temp");
+    expect(kindLabel("air_compressor_2")).toBe("air compressor");
+    expect(kindLabel("compressor_lead__air_compressor_2")).toBe("air compressor");
+    expect(kindLabel("chiller")).toBe("chiller");
   });
 
   it("filters KPI truth to an instance, or to every instance of a hall", () => {
@@ -142,6 +155,7 @@ describe("run report", () => {
       durationS: 3600,
       explore: false,
       faults: [{ entity: "CT-1", fault: "tower__fan_failure", atS: 600 }],
+      calls: [],
     });
     expect(rerunOf(parsed).left).toEqual(["1 delivery perturbation", "1 environment change", "4 effector calls"]);
     const cleared = parsed.disturbances.map((d) => (d.kind === "fault" ? { ...d, clearedNs: 900e9 } : d));
@@ -149,7 +163,7 @@ describe("run report", () => {
       "1 fault clear (the fault stays on)",
     );
     expect(rerunOf(parseReport(null))).toEqual({
-      plan: { seed: 1, durationS: 60, explore: false, faults: [] },
+      plan: { seed: 1, durationS: 60, explore: false, faults: [], calls: [] },
       left: [
         "the seed, which the run did not record (seed 1 is used)",
         "a length under one minute (one minute is used)",

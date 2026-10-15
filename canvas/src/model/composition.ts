@@ -1,3 +1,5 @@
+import type { AreaNode } from "./areaTree";
+import { areaTree } from "./areaTree";
 import type { Instance, Link, Plant } from "./plant";
 
 type Json = Readonly<Record<string, unknown>>;
@@ -69,10 +71,12 @@ export function connectionsOf(doc: Composition): readonly Connection[] {
   }));
 }
 
-export function areasOf(doc: Composition): readonly string[] {
-  return list(doc.areas)
-    .map((raw) => text(record(raw).name))
-    .filter(Boolean);
+export function areaNodesOf(doc: Composition): readonly AreaNode[] {
+  return areaTree(
+    list(doc.areas)
+      .map((raw) => ({ name: text(record(raw).name), parent: text(record(raw).parent) || null }))
+      .filter((area) => area.name !== ""),
+  );
 }
 
 export function componentOf(use: string): string {
@@ -144,10 +148,15 @@ function initials(title: string): string {
   return letters === "" ? "X" : letters.slice(0, 3);
 }
 
+function shortPrefix(name: string | undefined): string | null {
+  const prefix = name?.match(/^(.*?)-?\d+$/)?.[1] ?? "";
+  return /^[A-Za-z]{1,4}$/.test(prefix) ? prefix : null;
+}
+
 export function suggestedName(doc: Composition, use: string, title: string): string {
   const names = equipmentOf(doc).flatMap((entry) => entry.names);
   const sibling = equipmentOf(doc).find((entry) => componentOf(entry.use) === componentOf(use))?.names[0];
-  const prefix = sibling?.match(/^(.*?)-?\d+$/)?.[1] ?? initials(title);
+  const prefix = shortPrefix(sibling) ?? initials(title);
   let n = 1;
   while (names.includes(`${prefix}-${String(n)}`)) n += 1;
   return `${prefix}-${String(n)}`;

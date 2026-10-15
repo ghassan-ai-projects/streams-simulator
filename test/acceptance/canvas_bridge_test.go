@@ -64,6 +64,7 @@ func TestTheCanvasBridgeDrivesAWorldFromPairingToTheReport(t *testing.T) {
 	checkSealedWhileOpen(t, client, world)
 	endRun(t, client, world, stream)
 	checkEvidence(t, client, world)
+	checkAbandonedWorld(t, client)
 	if token := operatorToken.FindString(client.heard()); token != "" || strings.Contains(client.heard(), "operator_endpoint") {
 		t.Fatalf("the bridge let the operator capability through: %q", token)
 	}
@@ -150,6 +151,7 @@ func driveWorld(t *testing.T, client *bridgeClient, world string, stream *eventS
 	if injected["fault_id"] == nil {
 		t.Fatalf("fault.inject = %v", injected)
 	}
+	checkEffectorCall(t, client, world)
 	client.action("clock.advance", map[string]any{"world_id": world, "by_ns": 60 * 1e9})
 	observed := 0
 	read := stream.until(func(event serverEvent) bool {
@@ -164,6 +166,18 @@ func driveWorld(t *testing.T, client *bridgeClient, world string, stream *eventS
 	})
 	if first := read[0]; first.recordType() != "run.opened" || first.id != "0" {
 		t.Fatalf("the stream opens with %+v", first)
+	}
+}
+
+func checkEffectorCall(t *testing.T, client *bridgeClient, world string) {
+	t.Helper()
+	listed := client.action("effector.list", map[string]any{"world_id": world})
+	if !strings.Contains(client.heard(), "cooling_tower__set_fan_speed") || listed["effectors"] == nil {
+		t.Fatalf("effector.list = %v", listed)
+	}
+	ack := client.action("effector.invoke", map[string]any{"world_id": world, "entity_id": "CT-1", "effector": "cooling_tower__set_fan_speed", "args": map[string]any{"tower_id": "CT-1", "speed": 0.8}})
+	if ack["accepted"] != true || ack["command_id"] == "" || ack["token"] != nil {
+		t.Fatalf("effector.invoke = %v", ack)
 	}
 }
 
@@ -224,8 +238,32 @@ func checkEvidence(t *testing.T, client *bridgeClient, world string) {
 	if len(faults) != 1 || faults[0].(map[string]any)["fault"] != canvasFault {
 		t.Fatalf("report truth = %v", truth)
 	}
-	_, listing, _ := client.call(http.MethodGet, "/api/workspace", nil)
-	if runs, _ := listing["runs"].([]any); len(runs) != 1 || runs[0].(map[string]any)["ended"] != true {
-		t.Fatalf("runs = %v", listing["runs"])
+	entry := listedRun(t, client, world)
+	if entry["ended"] != true || entry["complete"] != true || entry["incomplete_reason"] != "" || entry["seed"] != float64(3) {
+		t.Fatalf("a finished run listed as %v", entry)
 	}
+}
+
+func checkAbandonedWorld(t *testing.T, client *bridgeClient) {
+	t.Helper()
+	world := createWorld(t, client)
+	client.action("world.destroy", map[string]any{"world_id": world})
+	entry := listedRun(t, client, world)
+	reason, _ := entry["incomplete_reason"].(string)
+	if entry["ended"] != true || entry["complete"] != false || !strings.Contains(reason, "destroyed before its run ended") || entry["seed"] != float64(3) {
+		t.Fatalf("an abandoned world listed as %v", entry)
+	}
+}
+
+func listedRun(t *testing.T, client *bridgeClient, world string) map[string]any {
+	t.Helper()
+	_, listing, _ := client.call(http.MethodGet, "/api/workspace", nil)
+	runs, _ := listing["runs"].([]any)
+	for _, run := range runs {
+		if entry, _ := run.(map[string]any); entry["world_id"] == world {
+			return entry
+		}
+	}
+	t.Fatalf("run %s is not listed: %v", world, listing["runs"])
+	return nil
 }

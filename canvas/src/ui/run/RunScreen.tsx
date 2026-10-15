@@ -5,7 +5,10 @@ import type { NavigationStore } from "../../app/navigationStore";
 import type { PlantState, PlantStore } from "../../app/plantStore";
 import type { ReviewState, ReviewStore } from "../../app/reviewStore";
 import type { WorkspaceStore } from "../../app/workspaceStore";
+import { isMissing } from "../../model/bridge";
+import type { Opening } from "../../model/playback";
 import { stateUnit } from "../../model/plant";
+import { runClock } from "../../model/timeline";
 import { plantView } from "../../model/plantView";
 import type { Report } from "../../model/report";
 import { runSpan } from "../../model/report";
@@ -17,6 +20,7 @@ import { useCanvasAspect } from "../plant/canvasAspect";
 import { PlantGraph } from "../plant/PlantGraph";
 import plantStyles from "../plant/PlantScreen.module.css";
 import { useStore } from "../useStore";
+import { MissingRun } from "./MissingRun";
 import { Banners } from "./RunStatus";
 import type { HallProps } from "./RunHeader";
 import { Header } from "./RunHeader";
@@ -61,17 +65,31 @@ function OpeningPlant() {
   );
 }
 
-function graphWords(state: ReviewState, settled: number | null): string {
-  const loading = state.playback.phase === "loading" ? " · loading" : "";
-  const opening = settled !== null && state.positionNs === settled ? " · opened once every instrument reported" : "";
-  return `${grouped(state.playback.records)} observations${loading}${opening}`;
+function openedWords(opening: Opening, startNs: number): string {
+  const when = opening.full ? "once every channel had reported" : "before every channel had reported";
+  return ` · opened at ${runClock(opening.atNs, startNs)}, ${when}`;
 }
 
-function GraphBar({ state, settled }: { readonly state: ReviewState; readonly settled: number | null }) {
+function graphWords(state: ReviewState, opening: Opening | null, startNs: number): string {
+  const loading = state.playback.phase === "loading" ? " · loading" : "";
+  const shown = opening !== null && state.positionNs === opening.atNs ? openedWords(opening, startNs) : "";
+  return `${grouped(state.playback.records)} observations${loading}${shown}`;
+}
+
+function GraphBar({
+  state,
+  opening,
+  startNs,
+}: {
+  readonly state: ReviewState;
+  readonly opening: Opening | null;
+  readonly startNs: number;
+}) {
+  const words = graphWords(state, opening, startNs);
   return (
     <div className={styles.graphBar}>
-      <span className={styles.barWords} title={graphWords(state, settled)}>
-        {graphWords(state, settled)}
+      <span className={styles.barWords} title={words}>
+        {words}
       </span>
       <ZoomBar />
     </div>
@@ -94,7 +112,11 @@ function Graph({ review, state, plant, hall, onHall }: GraphProps) {
   if (view === null) return <OpeningPlant />;
   return (
     <div className={styles.graphArea}>
-      <GraphBar state={state} settled={review.index.settled()} />
+      <GraphBar
+        state={state}
+        opening={review.index.opening()}
+        startNs={runSpan(state.report.phase === "ready" ? state.report.value : null, review.index.bounds()).startNs}
+      />
       <div ref={ref} className={plantStyles.graphHost}>
         <PlantGraph
           minFitZoom={0.5}
@@ -175,12 +197,39 @@ function Side({
   );
 }
 
+function useUnitOf(plant: ReadyPlant | null) {
+  return useCallback(
+    (entity: string, name: string) => (plant === null ? "" : stateUnit(plant.plant, entity, name)),
+    [plant],
+  );
+}
+
 function usePlantIdentity(state: ReviewState, workspace: WorkspaceStore, plant: ReadyPlant | null) {
   const listing = useStore(workspace);
   const domainId = state.report.phase === "ready" ? state.report.value.domainId : "";
   const entry = listing.phase === "ready" ? listing.workspace.domains.find((d) => d.id === domainId) : undefined;
   const title = plant?.plant.title ?? entry?.title ?? domainId;
   return { title: title === "" ? "Plant" : title, path: entry?.path ?? null };
+}
+
+interface CentreProps extends GraphProps {
+  readonly worldId: string;
+  readonly navigation: NavigationStore;
+  readonly review: ReviewStore;
+}
+
+function Centre({ review, state, plant, hall, onHall, worldId, navigation }: CentreProps) {
+  return (
+    <section className={styles.center} aria-label={`Run ${worldId}`}>
+      <Banners state={state} />
+      <Timeline review={review} state={state} />
+      {state.report.phase === "failed" && isMissing(state.report.failure) ? (
+        <MissingRun worldId={worldId} navigation={navigation} />
+      ) : (
+        <Graph review={review} state={state} plant={plant} hall={hall} onHall={onHall} />
+      )}
+    </section>
+  );
 }
 
 export function RunScreen({ review, plants, workspace, navigation, launch, worldId }: RunScreenProps) {
@@ -195,10 +244,7 @@ export function RunScreen({ review, plants, workspace, navigation, launch, world
     };
   }, [review, worldId]);
   usePlayback(review, state.playing);
-  const unit = useCallback(
-    (entity: string, name: string) => (plant === null ? "" : stateUnit(plant.plant, entity, name)),
-    [plant],
-  );
+  const unit = useUnitOf(plant);
   return (
     <ReactFlowProvider>
       <div className={styles.screen}>
@@ -212,11 +258,15 @@ export function RunScreen({ review, plants, workspace, navigation, launch, world
           plant={identity}
         />
         <Side review={review} state={state} plant={plant} hall={hall} onHall={setHall} />
-        <section className={styles.center} aria-label={`Run ${worldId}`}>
-          <Banners state={state} />
-          <Timeline review={review} state={state} />
-          <Graph review={review} state={state} plant={plant} hall={hall} onHall={setHall} />
-        </section>
+        <Centre
+          review={review}
+          state={state}
+          plant={plant}
+          hall={hall}
+          onHall={setHall}
+          worldId={worldId}
+          navigation={navigation}
+        />
         <RunPanel review={review} state={state} plant={plant} unit={unit} />
       </div>
     </ReactFlowProvider>

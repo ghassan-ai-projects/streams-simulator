@@ -26,6 +26,7 @@ func fillValueKeywords(s *Schema, m map[string]any, defs map[string]any, reg map
 	if c, ok := m["const"]; ok {
 		s.constVal, s.hasConst = c, true
 	}
+	s.expected, _ = m["x-expected"].(string)
 	return nil
 }
 

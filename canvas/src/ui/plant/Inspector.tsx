@@ -5,7 +5,7 @@ import { linkLines, linksOf } from "../../model/plant";
 import { hallMembers } from "../../model/plantView";
 import { shortChannel } from "../../model/playback";
 import { channelWords } from "../../model/readout";
-import { humanise } from "../../model/report";
+import { humanise, kindLabel } from "../../model/report";
 import { displayUnit } from "../../model/units";
 import { X } from "lucide-react";
 import type { RunRow } from "../../model/workspace";
@@ -21,11 +21,11 @@ interface ListProps {
   readonly show?: ((item: string) => string) | undefined;
   readonly count?: number;
   readonly folded?: boolean;
-  readonly extra?: ReactNode;
+  readonly rows?: ReactNode;
 }
 
 function Items({ items, mono = true, show }: Pick<ListProps, "items" | "mono" | "show">) {
-  if (items.length === 0) return <p className={styles.muted}>None</p>;
+  if (items.length === 0) return <p className={styles.empty}>None</p>;
   return (
     <ul className={styles.items}>
       {items.map((item) => (
@@ -37,7 +37,7 @@ function Items({ items, mono = true, show }: Pick<ListProps, "items" | "mono" | 
   );
 }
 
-function List({ title, items, mono, show, count = items.length, folded = false, extra }: ListProps) {
+function List({ title, items, mono, show, count = items.length, folded = false, rows }: ListProps) {
   const heading = (
     <>
       {title}
@@ -49,8 +49,7 @@ function List({ title, items, mono, show, count = items.length, folded = false, 
       <section className={styles.section} aria-label={title}>
         <details>
           <summary className={shared.sectionTitle}>{heading}</summary>
-          <Items items={items} mono={mono} show={show} />
-          {extra}
+          {rows ?? <Items items={items} mono={mono} show={show} />}
         </details>
       </section>
     );
@@ -58,8 +57,7 @@ function List({ title, items, mono, show, count = items.length, folded = false, 
   return (
     <section className={styles.section} aria-label={title}>
       <h3 className={shared.sectionTitle}>{heading}</h3>
-      <Items items={items} mono={mono} show={show} />
-      {extra}
+      {rows ?? <Items items={items} mono={mono} show={show} />}
     </section>
   );
 }
@@ -82,13 +80,15 @@ function LinkList({
   readonly side: "in" | "out";
   readonly onSelect?: ((id: string) => void) | undefined;
 }) {
+  if (onSelect === undefined)
+    return <List title={title} items={linkLines(links, instance.id, side)} count={links.length} mono={false} />;
   return (
     <List
       title={title}
-      items={linkLines(links, instance.id, side)}
+      items={[]}
       count={links.length}
       mono={false}
-      extra={<InspectorLinks links={links} side={side} onSelect={onSelect} />}
+      rows={<InspectorLinks links={links} side={side} onSelect={onSelect} />}
     />
   );
 }
@@ -126,7 +126,7 @@ function Head({
   readonly spec: ComponentSpec | undefined;
   readonly onClose?: (() => void) | undefined;
 }) {
-  const title = spec?.title ?? humanise(instance.kind);
+  const title = spec?.title ?? kindLabel(instance.kind);
   const reference = [spec?.title === undefined ? "" : `Kind: ${instance.kind}`, instance.component ?? ""]
     .filter(Boolean)
     .join(" · ");

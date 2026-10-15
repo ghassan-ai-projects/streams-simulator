@@ -91,7 +91,7 @@ function ReportBody({
   if (state.report.phase === "loading")
     return (
       <p className={styles.muted} role="status">
-        streamsim report is reading the run folder…
+        Reading the run…
       </p>
     );
   return (

@@ -37,10 +37,16 @@ function usePanelKeys(panels: PanelStore) {
   }, [panels]);
 }
 
-export function PanelToggles({ panels }: { readonly panels: PanelStore }) {
+interface TogglesProps {
+  readonly panels: PanelStore;
+  readonly right?: string;
+  readonly onRightPress?: (() => void) | undefined;
+}
+
+export function PanelToggles({ panels, right = "Details", onRightPress }: TogglesProps) {
   const state = useStore(panels);
   usePanelKeys(panels);
-  const toggle = (side: Side, word: string, key: string, Icon: typeof PanelLeft) => (
+  const toggle = (side: Side, word: string, key: string, Icon: typeof PanelLeft, press: () => void) => (
     <button
       type="button"
       className={styles.labelled}
@@ -48,9 +54,7 @@ export function PanelToggles({ panels }: { readonly panels: PanelStore }) {
       aria-label={`${word} panel`}
       aria-keyshortcuts={key}
       title={`${state[side] ? "Hide" : "Show"} the ${word.toLowerCase()} panel (${key})`}
-      onClick={() => {
-        toggleKeepingFocus(panels, side);
-      }}
+      onClick={press}
     >
       <Icon size={16} aria-hidden="true" />
       {word}
@@ -58,8 +62,19 @@ export function PanelToggles({ panels }: { readonly panels: PanelStore }) {
   );
   return (
     <span className={styles.toggles}>
-      {toggle("left", "Outline", "[", PanelLeft)}
-      {toggle("right", "Details", "]", PanelRight)}
+      {toggle("left", "Outline", "[", PanelLeft, () => {
+        toggleKeepingFocus(panels, "left");
+      })}
+      {toggle(
+        "right",
+        right,
+        "]",
+        PanelRight,
+        onRightPress ??
+          (() => {
+            toggleKeepingFocus(panels, "right");
+          }),
+      )}
     </span>
   );
 }

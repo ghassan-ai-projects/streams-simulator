@@ -2,11 +2,11 @@ import type { Layout, LayoutNode } from "./layout";
 import { layout } from "./layout";
 import type { Instance, Link, Plant } from "./plant";
 import { areaOf } from "./plant";
-import type { Category, ComponentSpec, Family, Pins } from "./ports";
+import type { Category, ComponentSpec, Family, Pin, Pins } from "./ports";
 import { familyOf, pinsOf } from "./ports";
 import type { NodeStatus } from "./readout";
 import { statusWords } from "./readout";
-import { humanise } from "./report";
+import { kindLabel } from "./report";
 
 export interface ViewNode {
   readonly id: string;
@@ -36,7 +36,36 @@ export interface PlantView {
   readonly halls: readonly string[];
 }
 
-export const nodeSize = { width: 232, header: 28, pin: 24, padding: 16, groupWidth: 176, groupHeight: 72 } as const;
+export const nodeSize = {
+  width: 232,
+  header: 40,
+  kind: 24,
+  pin: 24,
+  padding: 16,
+  groupWidth: 176,
+  groupHeight: 72,
+  idChars: 15,
+  idLine: 36,
+} as const;
+
+export function idExtra(label: string): number {
+  return (Math.ceil(label.length / nodeSize.idChars) - 1) * nodeSize.idLine;
+}
+
+export function headerHeight(label: string): number {
+  return nodeSize.header + nodeSize.kind + idExtra(label);
+}
+
+export function pinHandle(name: string, side: "in" | "out", farSide: boolean): string {
+  if (!farSide) return name;
+  return `${name}${side === "in" ? "@right" : "@left"}`;
+}
+
+export function pinsOnRows(node: ViewNode | undefined, channels: readonly string[]): ReadonlySet<string> {
+  if (node === undefined) return new Set();
+  const pins = [...node.pins.ins, ...node.pins.outs];
+  return new Set(pins.filter((pin) => pin.channel !== null && channels.includes(pin.channel)).map((pin) => pin.name));
+}
 
 export function hallOf(id: string): string | null {
   const slash = id.indexOf("/");
@@ -57,7 +86,7 @@ function instanceNode(plant: Plant, instance: Instance, specs: Specs): ViewNode 
   return {
     id: instance.id,
     label: instance.id,
-    detail: humanise(instance.kind),
+    detail: kindLabel(instance.kind),
     group: areaOf(plant, instance),
     instance,
     category: spec?.category ?? "env",
@@ -87,20 +116,29 @@ function linkFamily(plant: Plant, link: Link, specs: Specs): Family | null {
   return spec ? familyOf(spec.type) : null;
 }
 
+function pinNamed(pins: readonly Pin[], port: string | null): string | null {
+  if (port !== null && pins.some((pin) => pin.name === port)) return port;
+  return (pins.find((pin) => pin.connection === "unknown") ?? pins[0])?.name ?? null;
+}
+
+function handleOf(pins: ReadonlyMap<string, Pins>, id: string, side: "ins" | "outs", port: string | null) {
+  return pinNamed(pins.get(id)?.[side] ?? [], port);
+}
+
 function bundle(
   plant: Plant,
   links: readonly Link[],
   key: (id: string) => string | null,
   specs: Specs,
-  detailed: boolean,
+  detailed: ReadonlyMap<string, Pins> | null,
 ): ViewEdge[] {
   const edges = new Map<string, ViewEdge>();
   for (const link of links) {
     const from = key(link.from);
     const to = key(link.to);
     if (from === null || to === null || from === to) continue;
-    const fromHandle = detailed ? link.fromPort : null;
-    const toHandle = detailed ? link.toPort : null;
+    const fromHandle = detailed === null ? null : handleOf(detailed, from, "outs", link.fromPort);
+    const toHandle = detailed === null ? null : handleOf(detailed, to, "ins", link.toPort);
     const id = `${from}.${fromHandle ?? ""}>${to}.${toHandle ?? ""}`;
     const known = edges.get(id);
     edges.set(
@@ -126,7 +164,7 @@ function nodeBox(node: ViewNode, readout: number): LayoutNode {
     return { id: node.id, group: node.group, width: nodeSize.groupWidth, height: nodeSize.groupHeight };
   }
   const rows = readout > 0 ? 0 : Math.max(2, node.pins.ins.length, node.pins.outs.length);
-  const height = nodeSize.header + nodeSize.padding + rows * nodeSize.pin + readout;
+  const height = headerHeight(node.label) + nodeSize.padding + rows * nodeSize.pin + readout;
   return { id: node.id, group: node.group, width: nodeSize.width, height };
 }
 
@@ -150,7 +188,7 @@ function hallLevel(context: Context): PlantView {
     ...halls.map((hall) => hallNode(hall, counts.get(hall) ?? 0)),
   ];
   const key = (id: string) => hallOf(id) ?? id;
-  const edges = bundle(plant, plant.links, key, specs, false);
+  const edges = bundle(plant, plant.links, key, specs, null);
   const feedsAll = new Set(
     shared
       .map((instance) => instance.id)
@@ -171,7 +209,8 @@ function instanceLevel(context: Context, keep: (instance: Instance) => boolean):
   const ids = new Set(kept.map((instance) => instance.id));
   const nodes = kept.map((instance) => instanceNode(context.plant, instance, context.specs));
   const key = (id: string) => (ids.has(id) ? id : null);
-  return finish(context, nodes, bundle(context.plant, context.plant.links, key, context.specs, true));
+  const pins = new Map(nodes.map((node) => [node.id, node.pins] as const));
+  return finish(context, nodes, bundle(context.plant, context.plant.links, key, context.specs, pins));
 }
 
 function withinHall(view: PlantView, hall: string): PlantView {

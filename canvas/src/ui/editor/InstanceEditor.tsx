@@ -1,19 +1,42 @@
-import { humanise } from "../../model/report";
-import { Box, Trash2, X } from "lucide-react";
+import { kindLabel } from "../../model/report";
+import { Box, Trash2, TriangleAlert, X } from "lucide-react";
 import type { SyntheticEvent } from "react";
 import { useState } from "react";
 import type { Draft } from "../../app/editorStore";
 import type { Instance } from "../../model/plant";
 import type { Connection } from "../../model/composition";
-import { areasOf, connectionsOf, endpointOf, linkEnd } from "../../model/composition";
-import { disconnect, isTemplate, moveInstance, removeInstance, renameInstance } from "../../model/compositionEdits";
+import { areaNodesOf, connectionsOf, endpointOf, linkEnd } from "../../model/composition";
+import { instanceNameFits, instanceNameRule } from "../../model/instanceNameRule";
+import { disconnect, isTemplate, moveInstance, renameInstance } from "../../model/compositionEdits";
 import panel from "../panel.module.css";
 import { ConnectForm } from "./ConnectForm";
+import { DeleteInstance } from "./DeleteInstance";
 import styles from "./Editor.module.css";
 import type { PanelProps } from "./panelProps";
 import { useRequestedFocus } from "./panelProps";
 
 type EditorProps = PanelProps & { readonly instance: Instance };
+
+function NameRule({ fits }: { readonly fits: boolean }) {
+  if (fits)
+    return (
+      <>
+        <span />
+        <span className={panel.hint} id="instance-name-rule">
+          {instanceNameRule()}
+        </span>
+      </>
+    );
+  return (
+    <>
+      <span />
+      <span className={styles.nameError} id="instance-name-rule">
+        <TriangleAlert size={13} aria-hidden="true" />
+        {`Not a valid name. ${instanceNameRule()}`}
+      </span>
+    </>
+  );
+}
 
 function Rename({
   instance,
@@ -23,7 +46,8 @@ function Rename({
 }: Pick<EditorProps, "instance" | "editor" | "request"> & { readonly flagged: boolean }) {
   const [name, setName] = useState(instance.id);
   const input = useRequestedFocus<HTMLInputElement>(request, "name");
-  const ready = name.trim() !== "" && name.trim() !== instance.id;
+  const fits = instanceNameFits(name.trim());
+  const ready = fits && name.trim() !== instance.id;
   const submit = (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!ready) return;
@@ -37,7 +61,8 @@ function Rename({
         <input
           id="instance-name"
           ref={input}
-          aria-describedby={flagged ? "instance-issues" : undefined}
+          aria-invalid={!fits}
+          aria-describedby={flagged ? "instance-issues instance-name-rule" : "instance-name-rule"}
           value={name}
           onChange={(event) => {
             setName(event.target.value);
@@ -47,6 +72,7 @@ function Rename({
           Rename
         </button>
       </span>
+      <NameRule fits={fits} />
     </form>
   );
 }
@@ -62,9 +88,9 @@ function AreaPick({ draft, instance, editor }: Pick<EditorProps, "draft" | "inst
           editor.edit((doc) => moveInstance(doc, instance.id, area));
         }}
       >
-        {areasOf(draft.doc).map((area) => (
-          <option key={area} value={area}>
-            {area}
+        {areaNodesOf(draft.doc).map((area) => (
+          <option key={area.name} value={area.name}>
+            {area.path}
           </option>
         ))}
       </select>
@@ -94,7 +120,7 @@ function LinkRow({ wire, instance, editor }: { readonly wire: Connection } & Pic
       </span>
       <button
         type="button"
-        className={panel.icon}
+        className={panel.secondary}
         aria-label={`Remove link: ${words}`}
         title="Remove this link"
         onClick={() => {
@@ -102,6 +128,7 @@ function LinkRow({ wire, instance, editor }: { readonly wire: Connection } & Pic
         }}
       >
         <Trash2 size={14} aria-hidden="true" />
+        Remove
       </button>
     </li>
   );
@@ -185,7 +212,7 @@ function Editing({ draft, plant, editor, request, instance }: EditorProps) {
 
 function kindLine(draft: Draft, instance: Instance): string {
   const title = draft.library.find((entry) => entry.component === instance.component)?.title;
-  return title === undefined ? humanise(instance.kind) : `${title} · ${humanise(instance.kind)}`;
+  return title ?? kindLabel(instance.kind);
 }
 
 export function InstanceEditor(props: EditorProps) {
@@ -201,17 +228,7 @@ export function InstanceEditor(props: EditorProps) {
         <Editing {...props} />
         <Links draft={draft} instance={instance} editor={editor} />
         {!isTemplate(draft.doc, instance.id) && (
-          <button
-            type="button"
-            className={styles.delete}
-            onClick={() => {
-              request.ask("build");
-              editor.edit((doc) => removeInstance(doc, instance.id), null);
-            }}
-          >
-            <Trash2 size={14} aria-hidden="true" />
-            {`Delete ${instance.id}`}
-          </button>
+          <DeleteInstance draft={draft} editor={editor} request={request} instance={instance} />
         )}
       </div>
     </aside>

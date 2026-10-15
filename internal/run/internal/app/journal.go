@@ -71,7 +71,7 @@ func (r *Run) closeJournal() {
 	if r.unblinded && !r.Config.Explore {
 		r.journal.Unblinded(r.journalNow(), journal.ReasonRevealed)
 	}
-	digests, err := r.journal.Close(r.journalNow(), r.incomplete, rules.ErrorString(r.runErr))
+	digests, err := r.journal.Close(r.journalNow(), r.incomplete, r.failureText())
 	r.journalDigests = digests
 	if err != nil {
 		r.fail(err)

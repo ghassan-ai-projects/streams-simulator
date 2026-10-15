@@ -9,6 +9,7 @@ type RunSummary struct {
 	Plant      string
 	Explore    bool
 	Closed     bool
+	Incomplete bool
 	DurationNs int64
 }
 
@@ -22,8 +23,9 @@ type runOpened struct {
 }
 
 type runClosed struct {
-	Type string `json:"type"`
-	AtNs int64  `json:"at_ns"`
+	Type       string `json:"type"`
+	AtNs       int64  `json:"at_ns"`
+	Incomplete bool   `json:"incomplete"`
 }
 
 func SummarizeRun(firstLine, tail []byte) RunSummary {
@@ -34,25 +36,33 @@ func SummarizeRun(firstLine, tail []byte) RunSummary {
 	summary := RunSummary{Plant: opened.Domain.ID, Explore: opened.Mode == "explore"}
 	var closed runClosed
 	if json.Unmarshal(lastLine(tail), &closed) == nil && closed.Type == "run.closed" {
-		summary.Closed = true
+		summary.Closed, summary.Incomplete = true, closed.Incomplete
 		summary.DurationNs = closed.AtNs - opened.StartNs
 	}
 	return summary
 }
 
-type runCommands struct {
+// RunArtifact is the part of a run folder's run.json the listing reads.
+type RunArtifact struct {
+	Seed       *uint64 `json:"seed"`
+	Error      string  `json:"error"`
 	CommandLog []struct {
 		Op string `json:"op"`
 	} `json:"command_log"`
 }
 
-func FaultsInjected(runJSON []byte) int {
-	var run runCommands
-	if json.Unmarshal(runJSON, &run) != nil {
-		return 0
+// ParseRunArtifact reads run.json; an unreadable file yields no seed and no faults.
+func ParseRunArtifact(runJSON []byte) RunArtifact {
+	var artifact RunArtifact
+	if json.Unmarshal(runJSON, &artifact) != nil {
+		return RunArtifact{}
 	}
+	return artifact
+}
+
+func (a RunArtifact) Faults() int {
 	count := 0
-	for _, command := range run.CommandLog {
+	for _, command := range a.CommandLog {
 		if command.Op == "fault.inject" {
 			count++
 		}
@@ -62,6 +72,22 @@ func FaultsInjected(runJSON []byte) int {
 
 func (s RunSummary) State(running bool) RunState {
 	return RunState{Ended: s.Closed && !running, Explore: s.Explore}
+}
+
+// Complete is true for a run that ended without being abandoned or aborted.
+func (s RunSummary) Complete(running bool) bool {
+	return s.State(running).Ended && !s.Incomplete
+}
+
+// NewRunEntry lists a run; the reason is shown only for a run that is not complete.
+func NewRunEntry(worldID string, summary RunSummary, running bool, artifact RunArtifact) RunEntry {
+	complete := summary.Complete(running)
+	entry := RunEntry{WorldID: worldID, Ended: summary.State(running).Ended, Complete: complete, Seed: artifact.Seed,
+		Explore: summary.Explore, Plant: summary.Plant, DurationNs: summary.DurationNs, Faults: artifact.Faults()}
+	if !complete {
+		entry.IncompleteReason = artifact.Error
+	}
+	return entry
 }
 
 func lastLine(tail []byte) []byte {

@@ -6,7 +6,7 @@ import type { EventMark } from "../../model/timeline";
 import { eventMarks, nextEvent, previousEvent, runClock, timeTicks } from "../../model/timeline";
 import runStyles from "./RunScreen.module.css";
 import styles from "./Scrubber.module.css";
-import { Lane, Legend, MarkRail } from "./ScrubberLane";
+import { Lane, Legend, MarkRail, usePick } from "./ScrubberLane";
 import { useEventKeys } from "./useEventKeys";
 import { AlarmJump } from "./AlarmJump";
 import type { PlayProps } from "./PlayControls";
@@ -105,6 +105,8 @@ function PlaybackRange({ startNs, span, positionNs, onSeek, onKeyDown }: RangePr
   );
 }
 
+const unknownClock = "--:--:--";
+
 interface RowProps extends ScrubberProps {
   readonly marks: readonly EventMark[];
   readonly clamp: (ns: number) => number;
@@ -112,6 +114,7 @@ interface RowProps extends ScrubberProps {
 
 function TimeRow(props: RowProps) {
   const { startNs, endNs, positionNs, marks, clamp } = props;
+  const known = props.report !== null;
   const [said, setSaid] = useState("");
   const onSeek = (ns: number) => {
     setSaid(`Moved to ${runClock(ns, startNs)}`);
@@ -131,8 +134,8 @@ function TimeRow(props: RowProps) {
         {said}
       </p>
       <PlayControls {...props} />
-      <span className={styles.time}>{runClock(positionNs, startNs)}</span>
-      <span className={styles.span}>{`of ${runClock(endNs, startNs)}`}</span>
+      <span className={styles.time}>{known ? runClock(positionNs, startNs) : unknownClock}</span>
+      <span className={styles.span}>{`of ${known ? runClock(endNs, startNs) : unknownClock}`}</span>
       <span className={styles.controls}>
         <Legend marks={marks} />
         <Steps marks={marks} positionNs={positionNs} clamp={clamp} onSeek={onSeek} />
@@ -148,6 +151,7 @@ export function Scrubber(props: ScrubberProps) {
   const fraction = (ns: number) => Math.min(1, Math.max(0, (ns - startNs) / span));
   const clamp = (ns: number) => Math.min(endNs, Math.max(startNs, ns));
   const marks = useMemo(() => eventMarks(report), [report]);
+  const { said, pick } = usePick(startNs, onSeek, onEvent);
   const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (!event.shiftKey || (event.key !== "ArrowLeft" && event.key !== "ArrowRight")) return;
     event.preventDefault();
@@ -161,7 +165,7 @@ export function Scrubber(props: ScrubberProps) {
       </div>
       <div className={styles.trackWrap}>
         <PlaybackRange startNs={startNs} span={span} positionNs={positionNs} onSeek={onSeek} onKeyDown={onKeyDown} />
-        <MarkRail marks={marks} fraction={fraction} />
+        <MarkRail marks={marks} fraction={fraction} pick={pick} />
       </div>
       <p id="scrub-keys" className="sr-only">
         Arrow keys move one second, Shift and arrow keys one minute, Page Up and Page Down further.
@@ -170,10 +174,10 @@ export function Scrubber(props: ScrubberProps) {
         marks={marks}
         fraction={fraction}
         startNs={startNs}
-        onSeek={onSeek}
-        onEvent={onEvent}
         reading={report === null}
         positionNs={positionNs}
+        said={said}
+        pick={pick}
       />
     </div>
   );

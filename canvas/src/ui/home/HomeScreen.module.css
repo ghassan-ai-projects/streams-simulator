@@ -72,12 +72,6 @@
   font-weight: 600;
 }
 
-.definitionNote {
-  margin: var(--space-2) var(--space-4);
-  color: var(--text-secondary);
-  font-size: var(--text-sm);
-}
-
 .count {
   padding: 0 var(--space-2);
   border-radius: 10px;
@@ -149,6 +143,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
 }
 
 .actions {
@@ -158,6 +153,11 @@
 }
 
 .filter {
+  flex: 0 1 12rem;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
   height: 28px;
   padding: 0 var(--space-2);
   border: 1px solid var(--border-strong);
@@ -218,6 +218,14 @@
   padding: var(--space-3);
 }
 
+.note {
+  margin: 0;
+  padding: var(--space-2) var(--space-4);
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-tertiary);
+  font-size: var(--text-sm);
+}
+
 .empty {
   display: grid;
   justify-items: start;
@@ -233,6 +241,14 @@
   color: var(--text-primary);
 }
 
+.blankStart {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-2);
+  width: 100%;
+  margin: var(--space-2) 0;
+}
+
 .loading,
 .failure {
   padding: var(--space-6) var(--space-8);
@@ -240,6 +256,26 @@
 
 .failure {
   color: var(--status-alarm);
+}
+
+.newField .idProblem {
+  text-wrap: pretty;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  color: var(--status-alarm);
+  font-size: var(--text-sm);
+}
+
+.newField input[aria-invalid="true"] {
+  border-color: var(--status-alarm);
+  box-shadow: 0 0 0 1px var(--status-alarm);
+}
+
+.newFailure {
+  margin: 0;
+  color: var(--status-alarm);
+  font-size: var(--text-sm);
 }
 
 .open,
@@ -275,6 +311,7 @@
 
 .newField small {
   grid-column: 2;
+  min-height: 2lh;
   color: var(--text-secondary);
 }
 
@@ -322,6 +359,13 @@
   background: var(--disabled-bg);
   color: var(--disabled-fg);
   cursor: not-allowed;
+}
+
+.create[aria-expanded="true"],
+.create[aria-expanded="true"]:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+  color: var(--text-primary);
 }
 
 .choice {

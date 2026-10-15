@@ -1,29 +1,12 @@
 import { render, screen } from "@testing-library/react";
 import axe from "axe-core";
 import { describe, expect, it } from "vitest";
-import type { ReviewState } from "../../app/reviewStore";
+import { reviewState as state } from "../../test/reviewFixture";
 import { parseReport } from "../../model/report";
 import { report } from "../../test/runFixture";
 import { Banners, Status } from "./RunStatus";
 
 const parsed = parseReport(report);
-
-function state(overrides: Partial<ReviewState>): ReviewState {
-  return {
-    worldId: "w-1",
-    report: { phase: "ready", value: parsed },
-    verified: { phase: "ready", value: { matches: true, domainChanged: false, detail: "", reason: "", file: "" } },
-    playback: { phase: "ready", records: parsed.counts.delivered ?? 0, adapter: "native-jsonl" },
-    positionNs: 0,
-    selected: null,
-    runDomain: { phase: "loading" },
-    tab: "report",
-    playing: false,
-    speed: 60,
-    openedAt: 0,
-    ...overrides,
-  };
-}
 
 describe("run status", () => {
   it("badges a divergent replay Not verified with no warning banner", () => {
@@ -40,7 +23,17 @@ describe("run status", () => {
       </>,
     );
     expect(screen.getByRole("status")).toHaveTextContent("Not verified");
+    expect(document.querySelector("[title^='Not verified:']")).toHaveTextContent("Not verified");
     expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("says a run that did not finish in plain words, with its reason", () => {
+    const unfinished = state({
+      report: { phase: "ready", value: { ...parsed, complete: false, incompleteReason: "the world was destroyed" } },
+    });
+    render(<Status state={unfinished} />);
+    expect(screen.getByRole("status")).toHaveTextContent("Did not finish");
+    expect(screen.getByText("the world was destroyed")).toBeInTheDocument();
   });
 
   it("says when the plant file changed after the run, as information", async () => {

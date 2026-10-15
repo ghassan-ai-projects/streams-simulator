@@ -1,7 +1,18 @@
 import { describe, expect, it } from "vitest";
 import { chillerPorts, composition, domain } from "../test/plantFixture";
+import { compositionPlant } from "./composition";
 import { parsePlant } from "./plant";
-import { familyOf, parseComponent, parsePorts, pinsOf, portType, portsMatching, shapeOf } from "./ports";
+import type { ComponentSpec } from "./ports";
+import {
+  familyOf,
+  noTargetReason,
+  parseComponent,
+  parsePorts,
+  pinsOf,
+  portType,
+  portsMatching,
+  shapeOf,
+} from "./ports";
 
 describe("ports and pins", () => {
   it("maps every library port type to one of nine families with a shape", () => {
@@ -10,7 +21,7 @@ describe("ports and pins", () => {
     expect(familyOf("unknown")).toBeNull();
     expect(shapeOf("water")).toBe("circle");
     expect(shapeOf("power")).toBe("square");
-    expect(shapeOf("signal")).toBe("diamond");
+    expect(shapeOf("signal")).toBe("square");
   });
 
   it("reads a component document's ports and their directions", () => {
@@ -83,7 +94,7 @@ describe("ports and pins", () => {
     const meter = plant.instances[2];
     if (meter === undefined) throw new Error("fixture");
     expect(pinsOf(plant, meter, undefined)).toEqual({
-      ins: [{ name: "loads_in", type: "", family: null, connection: "connected" }],
+      ins: [{ name: "loads_in", type: "", family: null, connection: "connected", channel: null }],
       outs: [],
     });
     expect(pinsOf(parsePlant(domain), meter, undefined)).toEqual({ ins: [], outs: [] });
@@ -103,5 +114,30 @@ describe("ports and pins", () => {
     expect(portsMatching(spec, "in")).toEqual(["heat_in", "power_in", "any_in"]);
     expect(portsMatching(undefined, "out")).toEqual([]);
     expect([portType(spec, "power_out"), portType(spec, "nothing")]).toEqual(["electrical", ""]);
+  });
+
+  it("says why no instance takes an output, naming its type and the input types the plant has", () => {
+    const specs = new Map<string, ComponentSpec>([
+      ["lib/pump", { category: "cool", ports: [{ name: "flow_out", type: "chilled_water", direction: "out" }] }],
+      ["lib/tank", { category: "cool", ports: [{ name: "inflow_in", type: "liquid_flow", direction: "in" }] }],
+      ["lib/valve", { category: "cool", ports: [{ name: "pressure_in", type: "pressure", direction: "in" }] }],
+    ]);
+    const plant = compositionPlant(
+      {
+        equipment: [
+          { use: "lib/pump@1", names: ["pump-1"] },
+          { use: "lib/tank@1", names: ["tank-1"] },
+          { use: "lib/valve@1", names: ["valve-1"] },
+        ],
+      },
+      (component) => component,
+    );
+    const pump = plant.instances[0];
+    if (pump === undefined) throw new Error("no pump");
+    expect(noTargetReason(plant, specs, pump, "flow_out")).toBe(
+      "No instance takes chilled water: pump-1's flow out is chilled water. The inputs in this plant take liquid flow and pressure.",
+    );
+    const alone = compositionPlant({ equipment: [{ use: "lib/pump@1", names: ["pump-1"] }] }, (c) => c);
+    expect(noTargetReason(alone, specs, pump, "flow_out")).toMatch(/The other instances here have no inputs\.$/);
   });
 });

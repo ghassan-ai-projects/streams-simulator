@@ -122,6 +122,14 @@ func (d *Director) OperatorInvoke(token, effector, entityID, commandID string, a
 	return d.impl.OperatorInvoke(token, effector, entityID, commandID, args)
 }
 
+func (d *Director) WorldEffectors(worldID string) (map[string]any, error) {
+	return d.impl.WorldEffectors(worldID)
+}
+
+func (d *Director) InvokeWorldEffector(worldID, effector, entityID, commandID string, args map[string]any) (*model.EffectorAcknowledgement, error) {
+	return d.impl.InvokeWorldEffector(worldID, effector, entityID, commandID, args)
+}
+
 func (d *Director) OperatorReport(token, runID string, quiescedThroughNS int64, verdict *model.Verdict) (string, error) {
 	return d.impl.OperatorReport(token, runID, quiescedThroughNS, verdict)
 }

@@ -4,9 +4,12 @@ import { sampleWorkspace } from "../test/fakeBridge";
 import {
   durationOf,
   faultWords,
+  outcomeWords,
   plantFacts,
   plantsOf,
+  runFacts,
   runRows,
+  seedWords,
   suggestedId,
   whenOf,
   workspaceEmpty,
@@ -18,7 +21,10 @@ const run = (worldId: string, plant: string, recordedAt: string) => ({
   plant,
   recordedAt,
   ended: true,
+  complete: true,
+  incompleteReason: "",
   explore: false,
+  seed: null,
   durationS: 60,
 });
 
@@ -48,7 +54,7 @@ describe("workspace", () => {
         title: "Draft plant",
         domain: null,
         composition: "compositions/draft.composition.json",
-        instanceDefinitions: 0,
+        instances: 0,
         runs: 0,
         lastRun: "",
       },
@@ -57,7 +63,7 @@ describe("workspace", () => {
         title: "Factory",
         domain: "domains/factory.domain.json",
         composition: "compositions/factory.composition.json",
-        instanceDefinitions: 23,
+        instances: 23,
         runs: 2,
         lastRun: "2026-10-14T12:00:00Z",
       },
@@ -66,18 +72,16 @@ describe("workspace", () => {
         title: "legacy",
         domain: "domains/legacy.domain.json",
         composition: null,
-        instanceDefinitions: 0,
+        instances: 0,
         runs: 0,
         lastRun: "",
       },
     ]);
     const [draft, factory, legacy] = plantsOf(lab);
-    expect(draft && plantFacts(draft)).toBe("Not composed yet: edit and save it to run it.");
-    expect(factory && plantFacts(factory)).toMatch(/^23 instance definitions · 2 runs · last 1[45] Oct 2026/);
+    expect(draft && plantFacts(draft)).toBe("Not runnable yet: open Edit, save, and fix any issue it lists.");
+    expect(factory && plantFacts(factory)).toMatch(/^23 instances · 2 runs · last 1[45] Oct 2026/);
     expect(legacy && plantFacts(legacy)).toBe("No runs yet");
-    expect(factory && plantFacts({ ...factory, instanceDefinitions: 1, runs: 0, lastRun: "" })).toBe(
-      "1 instance definition · no runs yet",
-    );
+    expect(factory && plantFacts({ ...factory, instances: 1, runs: 0, lastRun: "" })).toBe("1 instance · no runs yet");
   });
 
   it("lists runs newest first with their plant's title, and filters by plant", () => {
@@ -115,8 +119,40 @@ describe("workspace", () => {
     expect(suggestedId("Kühlhalle", [])).toBe("kuhlhalle");
   });
 
+  it("lists the seed and the outcome of a run in its facts", () => {
+    const finished = {
+      worldId: "w",
+      ended: true,
+      complete: true,
+      incompleteReason: "",
+      explore: true,
+      seed: 7,
+      plant: "p",
+      durationS: 1800,
+      recordedAt: "",
+      faults: 0,
+    };
+    expect(runFacts(finished)).toEqual(["30 min", "seed 7", "no faults"]);
+    expect(seedWords({ ...finished, seed: null })).toBe("");
+    const abandoned = { ...finished, complete: false, incompleteReason: "run was stopped", faults: 2 };
+    expect(runFacts(abandoned)).toEqual(["30 min", "seed 7", "Did not finish: run was stopped"]);
+    expect(outcomeWords({ ...abandoned, incompleteReason: "" })).toBe("Did not finish: the run did not close.");
+    expect(outcomeWords(finished)).toBe("");
+    expect(outcomeWords({ ...abandoned, ended: false })).toBe("");
+  });
+
   it("says how many faults a finished run injected", () => {
-    const finished = { worldId: "w", ended: true, explore: true, plant: "p", durationS: 60, recordedAt: "" };
+    const finished = {
+      worldId: "w",
+      ended: true,
+      complete: true,
+      incompleteReason: "",
+      explore: true,
+      seed: null,
+      plant: "p",
+      durationS: 60,
+      recordedAt: "",
+    };
     expect(faultWords({ ...finished, faults: 1 })).toBe("1 fault");
     expect(faultWords(finished)).toBe("no faults");
     expect(faultWords({ ...finished, ended: false, faults: 3 })).toBe("");

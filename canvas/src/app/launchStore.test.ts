@@ -14,14 +14,20 @@ function bridge() {
 }
 
 const origin = { domain: "factory", title: "Factory", path: "domains/factory.domain.json" };
-const plan = { seed: 3, durationS: 40, explore: false, faults: [{ entity: "CT-1", fault: "fan", atS: 10 }] };
+const plan = {
+  seed: 3,
+  durationS: 40,
+  explore: false,
+  faults: [{ entity: "CT-1", fault: "fan", atS: 10 }],
+  calls: [],
+};
 
 describe("launch", () => {
   it("creates the world, injects at the fault's time, advances to the end and ends the run", async () => {
     const fake = bridge();
     const store = new LaunchStore(fake);
     await store.start(origin, plan);
-    expect(store.snapshot()).toEqual({ phase: "done", origin, worldId: "w-4", early: false });
+    expect(store.snapshot()).toEqual({ phase: "done", origin, worldId: "w-4", early: false, calls: [] });
     const names = fake.calls.map((call) => call.name);
     expect([names[0], names.at(-1)]).toEqual(["world.create", "run.end"]);
     const advanced = (calls: typeof fake.calls) =>
@@ -31,6 +37,50 @@ describe("launch", () => {
     expect(advanced(fake.calls)).toBe(40e9);
     expect(fake.calls[0]?.args).toEqual({ domain: "factory", seed: 3, explore: false });
     expect(fake.calls[inject]?.args).toEqual({ world_id: "w-4", entity_id: "CT-1", fault: "fan" });
+  });
+
+  it("invokes an effector at its minute, keeps a refusal as an outcome and goes on", async () => {
+    const fake = bridge();
+    fake.handlers.set("effector.invoke", (args) =>
+      args.effector === "chiller__stop"
+        ? success({ accepted: false, reason: "interlock_refused", world_id: "w-4", command_id: "director-2" })
+        : success({ accepted: true, effect_eta_ns: 30e9, world_id: "w-4", command_id: "director-1" }),
+    );
+    const start = { entity: "CH-1", effector: "chiller__start", atS: 10, args: { chiller_id: "CH-1" } };
+    const stop = { ...start, effector: "chiller__stop", atS: 20 };
+    const store = new LaunchStore(fake);
+    await store.start(origin, { ...plan, faults: [], calls: [stop, start] });
+    const state = store.snapshot();
+    expect(state).toMatchObject({ phase: "done", early: false });
+    expect(state.phase === "done" ? state.calls : []).toEqual([
+      { entity: "CH-1", effector: "chiller__start", atS: 10, accepted: true, reason: "", effectEtaNs: 30e9 },
+      {
+        entity: "CH-1",
+        effector: "chiller__stop",
+        atS: 20,
+        accepted: false,
+        reason: "interlock_refused",
+        effectEtaNs: null,
+      },
+    ]);
+    const invoked = fake.calls.filter((call) => call.name === "effector.invoke");
+    expect(invoked.map((call) => call.args)).toEqual([
+      { world_id: "w-4", entity_id: "CH-1", effector: "chiller__start", args: { chiller_id: "CH-1" } },
+      { world_id: "w-4", entity_id: "CH-1", effector: "chiller__stop", args: { chiller_id: "CH-1" } },
+    ]);
+    const at = fake.calls.findIndex((call) => call.name === "effector.invoke");
+    const before = fake.calls.slice(0, at).filter((call) => call.name === "clock.advance");
+    expect(before.reduce((sum, call) => sum + Number(call.args.by_ns), 0)).toBe(10e9);
+  });
+
+  it("abandons the run when the bridge fails an effector call", async () => {
+    const fake = bridge();
+    fake.actions.set("effector.invoke", failed(failure("invalid_args", 422, "setpoint out of range")));
+    const store = new LaunchStore(fake);
+    const call = { entity: "CH-1", effector: "chiller__start", atS: 0, args: {} };
+    await store.start(origin, { ...plan, faults: [], calls: [call] });
+    expect(store.snapshot()).toMatchObject({ phase: "failed", failure: { code: "invalid_args" }, kept: "w-4" });
+    expect(fake.calls.at(-1)).toEqual({ name: "world.destroy", args: { world_id: "w-4" } });
   });
 
   it("reports the binary's refusal and discards the world", async () => {
@@ -45,12 +95,12 @@ describe("launch", () => {
   it("stops early after at least one step, keeps the shorter run and can be reset", async () => {
     const fake = bridge();
     const store = new LaunchStore(fake);
-    const running = store.start(origin, { ...plan, faults: [] });
+    const running = store.start(origin, { ...plan, faults: [], calls: [] });
     await store.start(origin, plan);
     store.stopEarly();
     expect(store.snapshot()).toMatchObject({ phase: "running", stopping: true });
     await running;
-    expect(store.snapshot()).toEqual({ phase: "done", origin, worldId: "w-4", early: true });
+    expect(store.snapshot()).toEqual({ phase: "done", origin, worldId: "w-4", early: true, calls: [] });
     expect(fake.calls.map((call) => call.name)).toEqual(["world.create", "clock.advance", "run.end"]);
     store.reset();
     store.stopEarly();

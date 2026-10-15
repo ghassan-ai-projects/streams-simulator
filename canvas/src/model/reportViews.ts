@@ -94,6 +94,7 @@ function planOfRun(report: Report): LaunchPlan {
         fault: fault.name,
         atS: Math.max(0, Math.round((fault.onsetNs - report.startNs) / 1e9)),
       })),
+    calls: [],
   };
 }
 

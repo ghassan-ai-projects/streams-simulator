@@ -54,6 +54,18 @@ function summaryOf(result: unknown): string {
 
 const historyLimit = 100;
 
+export function checked(draft: Draft): boolean {
+  return draft.domainEtag !== "" || draft.outcome?.kind === "composed";
+}
+
+export function emptyPlant(draft: Draft): boolean {
+  return equipmentOf(draft.doc).length === 0;
+}
+
+export function canSave(draft: Draft): boolean {
+  return draft.doc !== draft.saved || (!checked(draft) && !emptyPlant(draft));
+}
+
 function kept(doc: Composition, draft: Draft): string | null {
   const selected = draft.selected;
   return selected !== null && equipmentOf(doc).some((entry) => entry.names.includes(selected)) ? selected : null;
@@ -112,6 +124,16 @@ export class EditorStore extends Observable<EditorState> {
     const empty = { specs: new Map(), library: [], selected: null, issues: null, outcome: null, failure: null };
     const history = { past: [], future: [] };
     return { phase: "ready", path, etag, domainEtag: "", saved: doc, doc, saving: false, ...history, ...empty };
+  }
+
+  savable(): boolean {
+    const state = this.snapshot();
+    return state.phase === "ready" && canSave(state);
+  }
+
+  unsavedChanges(): boolean {
+    const state = this.snapshot();
+    return state.phase === "ready" && state.doc !== state.saved;
   }
 
   select(id: string | null): void {

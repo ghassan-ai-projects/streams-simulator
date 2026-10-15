@@ -25,7 +25,11 @@ export class SessionStore extends Observable<SessionState> {
       this.set({ phase: "unreachable", failure: outcome.failure });
       return;
     }
-    this.set(outcome.value ? { phase: "paired" } : { phase: "unpaired", code: "", busy: false, failure: null });
+    if (outcome.value) {
+      this.set({ phase: "paired" });
+    } else if (this.snapshot().phase !== "unpaired") {
+      this.set({ phase: "unpaired", code: "", busy: false, failure: null });
+    }
   }
 
   type(raw: string): void {

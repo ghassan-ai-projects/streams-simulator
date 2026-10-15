@@ -28,6 +28,16 @@
   font-weight: 600;
 }
 
+.reason {
+  min-width: 0;
+  max-width: 36ch;
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .chip,
 .verifying,
 .not-checked,
@@ -67,6 +77,7 @@
 .center {
   grid-area: center;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto auto minmax(0, 1fr);
   min-width: 0;
   min-height: 0;
@@ -151,9 +162,15 @@
   text-align: right;
 }
 
+.table .kpiValue {
+  text-align: right;
+  vertical-align: baseline;
+}
+
 .table .unitCell {
   width: 1%;
   padding-left: 0;
+  vertical-align: baseline;
   white-space: nowrap;
   font: 500 var(--text-xs) var(--font-ui);
   color: var(--text-tertiary);
@@ -171,6 +188,13 @@
   white-space: normal;
 }
 
+.groupTime {
+  padding: var(--space-1) var(--space-3);
+  text-align: left;
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
 .groupRow th {
   padding-top: var(--space-3);
   color: var(--text-primary);
@@ -184,6 +208,17 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.effector {
+  overflow-wrap: anywhere;
+}
+
+.outcome {
+  width: 1%;
+  min-width: 10em;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .text {
@@ -353,6 +388,7 @@
 
 .graphArea {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: 36px minmax(360px, 1fr);
   min-height: 0;
 }
@@ -556,4 +592,12 @@
   border-bottom: 1px solid var(--border-subtle);
   color: var(--text-secondary);
   font-size: var(--text-sm);
+}
+
+.missing {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-6) var(--space-8);
 }

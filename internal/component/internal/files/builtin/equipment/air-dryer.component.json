@@ -3,7 +3,7 @@
   "id": "streamsim/air-dryer",
   "version": 1,
   "title": "Heat-reactivated desiccant air dryer",
-  "description": "Twin-tower desiccant dryer: the bed saturates with the moisture that passes, a timed regeneration removes it, and the pressure dew point follows the bed state and how much of the desiccant still works. A worn bed raises the dew point over days; a manual regeneration clears the saturation but cannot cure a worn bed, and costs heater power and purge air.",
+  "description": "Twin-tower desiccant dryer: the bed saturates with the moisture that passes, a timed regeneration removes it, and the pressure dew point follows the bed state and how much of the desiccant still works. A worn bed raises the dew point over days; a manual regeneration clears the saturation but cannot cure a worn bed, and costs heater power and purge air. The air that is not purged leaves through the air outlet.",
   "class": "static/dryer/air_dryer",
   "tags": [
     "compressed-air",
@@ -101,6 +101,12 @@
         "name": "purge_flow",
         "unit": "m3/h",
         "initial": 8.92567
+      },
+      {
+        "name": "outlet_flow",
+        "unit": "m3/h",
+        "initial": 586.119,
+        "min": 0
       }
     ],
     "dynamics": [
@@ -364,6 +370,23 @@
             }
           ]
         }
+      },
+      {
+        "target": "outlet_flow",
+        "tier": "F1",
+        "f1": {
+          "form": "sum",
+          "inputs": [
+            {
+              "state": "inlet_flow",
+              "coef": 1
+            },
+            {
+              "state": "purge_flow",
+              "coef": -1
+            }
+          ]
+        }
       }
     ],
     "kpis": [
@@ -622,6 +645,12 @@
       "state": "inlet_flow"
     },
     {
+      "name": "air_out",
+      "type": "compressed_air",
+      "direction": "provides",
+      "state": "outlet_flow"
+    },
+    {
       "name": "dew_point_out",
       "type": "dew_point",
       "direction": "provides",
@@ -653,7 +682,8 @@
         "state/inlet_flow/initial": 170.013,
         "state/power/initial": 1.4,
         "state/purge_flow/initial": 2.55019,
-        "dynamics/regen_duty/f1/inputs/inlet_flow/coef": 0.00294089
+        "dynamics/regen_duty/f1/inputs/inlet_flow/coef": 0.00294089,
+        "state/outlet_flow/initial": 167.463
       }
     },
     "medium": {
@@ -677,7 +707,8 @@
         "state/inlet_flow/initial": 2040.15,
         "state/power/initial": 13.5,
         "state/purge_flow/initial": 30.6023,
-        "dynamics/regen_duty/f1/inputs/inlet_flow/coef": 0.000245082
+        "dynamics/regen_duty/f1/inputs/inlet_flow/coef": 0.000245082,
+        "state/outlet_flow/initial": 2009.548
       }
     }
   },

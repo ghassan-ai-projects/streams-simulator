@@ -20,5 +20,5 @@ test("reported alarm activation chips and Jump to alarm seek to the simulator's 
   await page.getByRole("button", { name: "Jump to alarm: HEAT-1 temp alarm activated" }).click();
   await expect(slider).toHaveAttribute("aria-valuetext", "00:02:20");
   await page.getByRole("button", { name: "Report", exact: true }).click();
-  await expect(page.getByRole("region", { name: "Alarm system" })).toContainText("activations");
+  await expect(page.getByRole("region", { name: "Alarms" })).toContainText("Alarms raised");
 });

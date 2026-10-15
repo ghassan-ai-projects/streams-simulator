@@ -1,3 +1,6 @@
+import type { EffectorSpec } from "./effectors";
+import { parseEffectors } from "./effectors";
+
 interface Area {
   readonly name: string;
   readonly parent: string | null;
@@ -46,6 +49,7 @@ interface Kind {
   readonly units: ReadonlyMap<string, string>;
   readonly faults: readonly string[];
   readonly effectors: readonly string[];
+  readonly effectorSpecs: readonly EffectorSpec[];
 }
 
 export interface Instance {
@@ -109,6 +113,7 @@ function kind(value: unknown): Kind {
     units: new Map(list(entry.state).map((state) => [text(record(state).name), text(record(state).unit)] as const)),
     faults: names(entry.faults, "id"),
     effectors: names(entry.effectors, "name"),
+    effectorSpecs: parseEffectors(entry.effectors),
   };
 }
 
@@ -191,6 +196,10 @@ export function areaOf(plant: Plant, instance: Instance): string {
   return instance.area || plant.site || "Plant";
 }
 
+export function instanceIdTaken(plant: Plant, id: string): boolean {
+  return plant.instances.some((instance) => instance.id === id);
+}
+
 export function linksOf(
   plant: Plant,
   id: string,
@@ -238,4 +247,14 @@ export function stateUnit(plant: Plant, entity: string, state: string): string {
 export function channelOf(plant: Plant, entity: string, channel: string): Channel | null {
   const kindName = plant.instances.find((instance) => instance.id === entity)?.kind ?? "";
   return plant.kinds.get(kindName)?.channels.find((entry) => entry.name === channel) ?? null;
+}
+
+export function faultsOf(plant: Plant, entity: string): readonly string[] | null {
+  const instance = plant.instances.find((item) => item.id === entity);
+  return instance === undefined ? null : (plant.kinds.get(instance.kind)?.faults ?? []);
+}
+
+export function effectorOf(plant: Plant, entity: string, effector: string): EffectorSpec | undefined {
+  const kindName = plant.instances.find((instance) => instance.id === entity)?.kind ?? "";
+  return plant.kinds.get(kindName)?.effectorSpecs.find((spec) => spec.name === effector);
 }

@@ -15,6 +15,12 @@ func (d directorTools) handleWorldDescribe(_ context.Context, args map[string]an
 func (d directorTools) handleWorldDestroy(_ context.Context, args map[string]any) (any, error) {
 	return d.DestroyWorld(stringArg(args, "world_id"))
 }
+func (d directorTools) handleWorldEffectors(_ context.Context, args map[string]any) (any, error) {
+	return d.WorldEffectors(stringArg(args, "world_id"))
+}
+func (d directorTools) handleWorldInvoke(_ context.Context, args map[string]any) (any, error) {
+	return d.InvokeWorldEffector(stringArg(args, "world_id"), stringArg(args, "effector"), stringArg(args, "entity_id"), stringArg(args, "command_id"), mapArg(args, "args"))
+}
 func (d directorTools) handleClockAdvance(ctx context.Context, args map[string]any) (any, error) {
 	worldID := stringArg(args, "world_id")
 	toNS, hasTo := intArg(args, "to_ns")

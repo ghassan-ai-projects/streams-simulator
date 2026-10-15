@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"encoding/json"
 	"strings"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/jsonschema"
@@ -37,25 +38,39 @@ func emptyPlant(doc map[string]any) {
 		delete(doc, key)
 	}
 	doc["profiles"] = emptyProfiles(doc["profiles"])
+	doc["areas"] = []any{map[string]any{"name": siteAreaName(doc["site"])}}
 }
 
-func nominalProfile() map[string]any {
-	return map[string]any{"name": "nominal", "duration_s": float64(86400)}
+func siteAreaName(raw any) string {
+	if site, ok := raw.(map[string]any); ok {
+		if name, ok := site["name"].(string); ok {
+			return name
+		}
+	}
+	return "Site"
 }
 
 func emptyProfiles(raw any) []any {
 	listed, _ := raw.([]any)
-	kept := []any{}
+	kept, named := []any{}, map[string]bool{}
 	for _, entry := range listed {
 		if profile, ok := entry.(map[string]any); ok && profile["not_applicable"] == nil {
 			delete(profile, "fault_weights")
 			kept = append(kept, profile)
+			named[profile["name"].(string)] = true
 		}
 	}
-	if len(kept) == 0 {
-		kept = append(kept, nominalProfile())
+	return append(kept, missingRequiredProfiles(named)...)
+}
+
+func missingRequiredProfiles(named map[string]bool) []any {
+	var missing []any
+	for _, name := range requiredProfileNames() {
+		if !named[name] {
+			missing = append(missing, map[string]any{"name": name, "duration_s": float64(86400)})
+		}
 	}
-	return kept
+	return missing
 }
 
 func (c contractSchema) checkNew(doc map[string]any, source string, empty bool) error {
@@ -69,4 +84,34 @@ func (c contractSchema) checkNew(doc map[string]any, source string, empty bool) 
 		return violation(c.contract, source, model.SchemaIssues(kept))
 	}
 	return nil
+}
+
+type profileClause struct {
+	Contains struct {
+		Properties struct {
+			Name struct {
+				Const string `json:"const"`
+			} `json:"name"`
+		} `json:"properties"`
+	} `json:"contains"`
+}
+
+type profileRules struct {
+	Properties struct {
+		Profiles struct {
+			AllOf []profileClause `json:"allOf"`
+		} `json:"profiles"`
+	} `json:"properties"`
+}
+
+func requiredProfileNames() []string {
+	var spec profileRules
+	if json.Unmarshal(schemas.DomainSpec(), &spec) != nil {
+		return nil
+	}
+	var names []string
+	for _, clause := range spec.Properties.Profiles.AllOf {
+		names = append(names, clause.Contains.Properties.Name.Const)
+	}
+	return names
 }

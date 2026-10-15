@@ -41,7 +41,6 @@ type Bridge struct {
 	settings   Settings
 	stateMu    sync.Mutex
 	pairing    *domain.Pairing
-	worlds     map[string]bool
 	running    map[string]bool
 	directorMu sync.Mutex
 	director   Director
@@ -51,7 +50,7 @@ type Bridge struct {
 
 func New(edges Edges, settings Settings) *Bridge {
 	return &Bridge{edges: edges, settings: settings, pairing: domain.NewPairing(settings.PairingCode),
-		worlds: map[string]bool{}, running: map[string]bool{}}
+		running: map[string]bool{}}
 }
 
 func (b *Bridge) Pair(code string) (string, error) {

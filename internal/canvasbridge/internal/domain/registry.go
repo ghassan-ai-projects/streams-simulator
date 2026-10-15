@@ -44,6 +44,8 @@ var registry = []Action{
 	mcp("clock.state", "sim.clock.state", false, "world_id"),
 	mcp("fault.inject", "sim.fault.inject", true, "world_id", "entity_id", "fault", "onset_ns", "params"),
 	mcp("fault.clear", "sim.fault.clear", true, "world_id", "fault_id"),
+	mcp("effector.list", "sim.world.effectors", false, "world_id"),
+	mcp("effector.invoke", "sim.world.invoke", true, "world_id", "entity_id", "effector", "args", "command_id"),
 	mcp("perturb.apply", "sim.perturb.apply", true, "world_id", "perturbation", "params", "from_ns", "until_ns"),
 	mcp("perturb.clear", "sim.perturb.clear", true, "world_id", "perturb_id"),
 	mcp("env.inject", "sim.env.inject", true, "world_id", "target", "fault", "params"),

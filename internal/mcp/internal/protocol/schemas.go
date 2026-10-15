@@ -28,6 +28,8 @@ var toolInputFactories = map[string]func() toolInput{
 	"sim.world.create":       worldCreateInput,
 	"sim.world.describe":     worldIDInput,
 	"sim.world.destroy":      worldIDInput,
+	"sim.world.effectors":    worldIDInput,
+	"sim.world.invoke":       worldInvokeInput,
 	"sim.clock.state":        worldIDInput,
 	"sim.clock.advance":      clockAdvanceInput,
 	"sim.fault.inject":       faultInjectInput,

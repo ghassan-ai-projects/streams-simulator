@@ -13,7 +13,10 @@ export const sampleWorkspace: Workspace = {
     {
       worldId: "w-1",
       ended: true,
+      complete: true,
+      incompleteReason: "",
       explore: false,
+      seed: 7,
       plant: "factory-utilities",
       durationS: 1800,
       recordedAt: "2026-10-14T10:00:00Z",
@@ -21,7 +24,10 @@ export const sampleWorkspace: Workspace = {
     {
       worldId: "w-2",
       ended: false,
+      complete: false,
+      incompleteReason: "",
       explore: true,
+      seed: null,
       plant: "factory-utilities",
       durationS: 0,
       recordedAt: "2026-10-14T11:00:00Z",
@@ -40,6 +46,7 @@ export class FakeBridge implements Bridge {
   workspaceOutcome: Outcome<Workspace> = success(sampleWorkspace);
   files = new Map<string, Outcome<FileContent>>();
   actions = new Map<string, Outcome<unknown>>();
+  handlers = new Map<string, (args: Readonly<Record<string, unknown>>) => Outcome<unknown>>();
   calls: { name: string; args: Readonly<Record<string, unknown>> }[] = [];
   watchers = new Set<() => void>();
   pairedCodes: string[] = [];
@@ -75,6 +82,8 @@ export class FakeBridge implements Bridge {
 
   action(name: string, args: Readonly<Record<string, unknown>>): Promise<Outcome<unknown>> {
     this.calls.push({ name, args });
+    const handler = this.handlers.get(name);
+    if (handler !== undefined) return Promise.resolve(handler(args));
     const set = this.actions.get(name);
     if (set === undefined && name === "component.new") return Promise.resolve(this.newPlant(args));
     return Promise.resolve(set ?? failed(failure("unknown_action", 404)));
@@ -102,9 +111,9 @@ export class FakeBridge implements Bridge {
     const plant: Record<string, unknown> = { ...base.value, id: args.id, title: args.title };
     if (args.empty !== true) return success({ composition: plant });
     const frame = Object.fromEntries(
-      Object.entries(plant).filter(([key]) => !["description", "equipment", "connections"].includes(key)),
+      Object.entries(plant).filter(([key]) => !["description", "equipment", "connections", "areas"].includes(key)),
     );
-    return success({ composition: frame });
+    return success({ composition: { ...frame, areas: [{ name: siteArea(plant.site) }] } });
   }
 
   followers = new Map<string, RunFollower>();
@@ -131,4 +140,9 @@ export class FakeBridge implements Bridge {
       watcher();
     });
   }
+}
+
+function siteArea(site: unknown): string {
+  if (typeof site !== "object" || site === null || !("name" in site)) return "Site";
+  return typeof site.name === "string" ? site.name : "Site";
 }

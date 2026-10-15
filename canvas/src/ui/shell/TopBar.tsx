@@ -23,7 +23,7 @@ function ThemeButton({ preference, onCycle }: { readonly preference: ThemePrefer
   return (
     <button type="button" className={styles.labelled} onClick={onCycle} aria-label={label} title={label}>
       <ThemeIcon size={16} strokeWidth={2} aria-hidden="true" />
-      {themeWords[preference]}
+      {`Theme: ${themeWords[preference]}`}
     </button>
   );
 }

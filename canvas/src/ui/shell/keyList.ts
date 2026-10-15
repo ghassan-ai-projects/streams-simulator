@@ -1,3 +1,7 @@
+import type { Route } from "../../model/route";
+
+type Screen = Route["screen"];
+
 interface KeyRow {
   readonly keys: readonly string[];
   readonly does: string;
@@ -5,6 +9,7 @@ interface KeyRow {
 
 export interface KeyGroup {
   readonly scope: string;
+  readonly screens: readonly Screen[];
   readonly rows: readonly KeyRow[];
 }
 
@@ -13,6 +18,7 @@ const mod = "Ctrl or ⌘";
 export const keyGroups: readonly KeyGroup[] = [
   {
     scope: "Everywhere",
+    screens: ["home", "plant", "run", "edit"],
     rows: [
       { keys: ["Tab", "Shift Tab"], does: "move between the top bar, the outline, the centre and the details panel" },
       { keys: ["[", "]"], does: "hide or show the outline panel, the details panel" },
@@ -22,6 +28,7 @@ export const keyGroups: readonly KeyGroup[] = [
   },
   {
     scope: "Plant graph",
+    screens: ["plant", "run", "edit"],
     rows: [
       { keys: ["↑", "↓", "←", "→"], does: "move to the nearest instance in that direction" },
       { keys: ["Space"], does: "select the instance or hall" },
@@ -33,6 +40,7 @@ export const keyGroups: readonly KeyGroup[] = [
   },
   {
     scope: "Run review",
+    screens: ["run"],
     rows: [
       { keys: ["Space"], does: "play or pause" },
       { keys: [",", "."], does: "go to the previous event, the next event" },
@@ -43,6 +51,7 @@ export const keyGroups: readonly KeyGroup[] = [
   },
   {
     scope: "Editor",
+    screens: ["edit"],
     rows: [
       { keys: [`${mod} Z`], does: "undo" },
       { keys: [`${mod} Shift Z`, `${mod} Y`], does: "redo" },

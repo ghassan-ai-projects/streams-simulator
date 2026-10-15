@@ -2,31 +2,11 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import axe from "axe-core";
 import { describe, expect, it, vi } from "vitest";
 import { PlantMaker } from "../../app/plantMaker";
-import { NavigationStore } from "../../app/navigationStore";
 import { WorkspaceStore } from "../../app/workspaceStore";
 import { failed, success } from "../../model/bridge";
 import { FakeBridge, failure, sampleWorkspace } from "../../test/fakeBridge";
+import { navigation, show } from "../../test/homeHarness";
 import { HomeScreen } from "./HomeScreen";
-
-function navigation() {
-  const location = {
-    hash: "#/",
-    read() {
-      return this.hash;
-    },
-    write(hash: string) {
-      this.hash = hash;
-    },
-    subscribe: () => () => undefined,
-  };
-  return { location, store: new NavigationStore(location) };
-}
-
-async function show(bridge: FakeBridge, nav = navigation()) {
-  const store = new WorkspaceStore(bridge);
-  await store.reload();
-  return render(<HomeScreen workspace={store} navigation={nav.store} maker={new PlantMaker(bridge)} />);
-}
 
 describe("home screen", () => {
   it("lists each plant once with its actions, and its runs newest first, with no accessibility violation", async () => {
@@ -34,8 +14,8 @@ describe("home screen", () => {
     expect(screen.getByText("1 plant · 2 runs")).toBeInTheDocument();
     const plants = screen.getByRole("region", { name: "Plants" });
     expect(within(plants).getAllByRole("listitem")).toHaveLength(1);
-    expect(within(plants).getByText("Factory utilities")).toBeInTheDocument();
-    expect(within(plants).getByText(/Instance definitions are entries in the plant file/)).toBeInTheDocument();
+    expect(within(plants).getByText("Factory utilities")).toHaveAttribute("title", "Factory utilities");
+    expect(within(plants).queryByText(/can expand into several instances/)).not.toBeInTheDocument();
     expect(within(plants).getByText(/^2 runs · last /)).toBeInTheDocument();
     for (const action of ["Open", "Edit", "Run"]) {
       expect(within(plants).getByRole("button", { name: `${action} Factory utilities` })).toBeInTheDocument();
@@ -43,10 +23,14 @@ describe("home screen", () => {
     const runs = within(screen.getByRole("region", { name: "Runs" })).getAllByRole("listitem");
     expect(runs.map((row) => row.textContent)).toEqual([
       expect.stringMatching(/^Factory utilitiesExplore.*w-2 · .*not finishedReview$/),
-      expect.stringMatching(/^Factory utilitiesEvaluate.*w-1 · .* · 30 min · no faultsNot checkedReview$/),
+      expect.stringMatching(/^Factory utilitiesEvaluate.*w-1 · .* · 30 min · seed 7 · no faultsReview$/),
     ]);
+    expect(runs[0]?.querySelector("[title='Factory utilities']")).not.toBeNull();
     const review = screen.getByRole("button", { name: "Review w-1" });
     expect(review).toHaveAttribute("title", "Review checks recording integrity using the run files.");
+    expect(
+      within(screen.getByRole("region", { name: "Runs" })).getByText("Runs are checked when you open their review."),
+    ).toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "Scenarios" })).not.toBeInTheDocument();
     expect(screen.queryByText(/domains\//)).not.toBeInTheDocument();
     expect((await axe.run(view.container)).violations).toEqual([]);
@@ -57,7 +41,10 @@ describe("home screen", () => {
     const runs = Array.from({ length: 25 }, (_, i) => ({
       worldId: `w-${String(i)}`,
       ended: true,
+      complete: true,
+      incompleteReason: "",
       explore: false,
+      seed: null,
       plant: i % 5 === 0 ? "other" : "factory-utilities",
       durationS: 60,
       recordedAt: `2026-10-14T10:${String(i).padStart(2, "0")}:00Z`,
@@ -70,7 +57,7 @@ describe("home screen", () => {
     await show(bridge);
     const region = screen.getByRole("region", { name: "Runs" });
     expect(within(region).getAllByRole("listitem")).toHaveLength(20);
-    fireEvent.click(within(region).getByRole("button", { name: "Show 5 more of 5" }));
+    fireEvent.click(within(region).getByRole("button", { name: "Show 5 more runs" }));
     expect(within(region).getAllByRole("listitem")).toHaveLength(25);
     expect(within(region).getAllByRole("button", { name: /^Review / })[20]).toHaveFocus();
     fireEvent.change(within(region).getByLabelText("Show runs of"), { target: { value: "other" } });
@@ -151,6 +138,9 @@ describe("home screen", () => {
     fireEvent.change(within(form).getByLabelText("Id"), { target: { value: "bare-hall" } });
     fireEvent.change(within(form).getByLabelText("Name"), { target: { value: "Bare hall" } });
     fireEvent.click(within(form).getByRole("radio", { name: /^An empty plant/ }));
+    expect(within(form).getByRole("radio", { name: /^An empty plant/ })).toHaveAccessibleName(
+      /the site, areas, profiles and axes of the start plant/,
+    );
     fireEvent.click(within(form).getByRole("button", { name: "Create and open the editor" }));
     await vi.waitFor(() => {
       expect(bridge.writes[0]?.path).toBe("compositions/bare-hall.composition.json");
@@ -180,10 +170,12 @@ describe("home screen", () => {
     const bridge = new FakeBridge();
     bridge.workspaceOutcome = success({ name: "fresh", domains: [], compositions: [], scenarios: [], runs: [] });
     await show(bridge);
-    expect(screen.getByRole("heading", { name: "fresh has no plants yet" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "The fresh workspace has no plants yet" })).toBeInTheDocument();
     const crumbs = screen.getByRole("navigation", { name: "Breadcrumb" });
     expect(within(crumbs).getByRole("heading", { level: 1, name: "Workspace" })).toBeInTheDocument();
     expect(screen.getAllByRole("listitem")).toHaveLength(4);
+    expect(screen.queryByText(/compositions\//)).not.toBeInTheDocument();
+    expect(screen.getByText(/saved in the fresh workspace folder/)).toBeInTheDocument();
   });
 
   it("offers the shipped examples in an empty workspace and opens a tried one ready to run", async () => {
@@ -205,6 +197,46 @@ describe("home screen", () => {
       expect(nav.location.hash).toBe("#/plant?domain=domains%2Fpilot.domain.json&run=1");
     });
     expect(bridge.writes[0]?.path).toBe("compositions/pilot.composition.json");
+  });
+
+  it("creates a blank plant from an empty workspace with only a name and an id", async () => {
+    const nav = navigation();
+    const bridge = new FakeBridge();
+    bridge.workspaceOutcome = success({ name: "fresh", domains: [], compositions: [], scenarios: [], runs: [] });
+    bridge.actions.set("component.examples", success({ examples: [{ id: "pilot", title: "Pilot" }] }));
+    bridge.actions.set("component.example", success({ example: { id: "pilot", title: "Pilot", equipment: [] } }));
+    const view = await show(bridge, nav);
+    const start = await screen.findByRole("button", { name: "New plant" });
+    await vi.waitFor(() => {
+      expect(start).not.toHaveAttribute("aria-disabled", "true");
+    });
+    fireEvent.click(start);
+    const form = screen.getByRole("form", { name: "New plant" });
+    expect(within(form).queryByLabelText("Start from")).not.toBeInTheDocument();
+    expect(within(form).getByText(/A blank plant/)).toBeInTheDocument();
+    expect((await axe.run(view.container)).violations).toEqual([]);
+    fireEvent.change(within(form).getByLabelText("Name"), { target: { value: "Office tower HVAC" } });
+    expect(within(form).getByLabelText("Id")).toHaveValue("office-tower-hvac");
+    fireEvent.click(within(form).getByRole("button", { name: "Create and open the editor" }));
+    await vi.waitFor(() => {
+      expect(nav.location.hash).toBe("#/edit?composition=compositions%2Foffice-tower-hvac.composition.json");
+    });
+    expect(bridge.calls.find((call) => call.name === "component.new")?.args).toMatchObject({
+      id: "office-tower-hvac",
+      title: "Office tower HVAC",
+      example: "pilot",
+      empty: true,
+    });
+  });
+
+  it("keeps the blank plant button unavailable until a frame to start from exists", async () => {
+    const bridge = new FakeBridge();
+    bridge.workspaceOutcome = success({ name: "fresh", domains: [], compositions: [], scenarios: [], runs: [] });
+    await show(bridge);
+    const start = screen.getByRole("button", { name: "New plant" });
+    fireEvent.click(start);
+    expect(start).toHaveAttribute("aria-disabled", "true");
+    expect(screen.queryByRole("form", { name: "New plant" })).not.toBeInTheDocument();
   });
 
   it("says why an example could not be set up", async () => {

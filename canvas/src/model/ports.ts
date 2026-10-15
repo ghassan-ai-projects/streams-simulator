@@ -33,7 +33,7 @@ const shapes: Readonly<Record<Family, Shape>> = {
   power: "square",
   pressure: "diamond",
   temp: "diamond",
-  signal: "diamond",
+  signal: "square",
   env: "diamond",
 };
 
@@ -61,6 +61,7 @@ export interface PortSpec {
   readonly name: string;
   readonly type: string;
   readonly direction: "in" | "out";
+  readonly channel?: string;
 }
 
 export type Category = "air" | "cool" | "prod" | "elec" | "env";
@@ -80,6 +81,51 @@ export function portsMatching(spec: ComponentSpec | undefined, direction: "in" |
 
 export function portType(spec: ComponentSpec | undefined, name: string): string {
   return spec?.ports.find((port) => port.name === name)?.type ?? "";
+}
+
+export function specOf(
+  specs: ReadonlyMap<string, ComponentSpec>,
+  instance: Instance | undefined,
+): ComponentSpec | undefined {
+  return instance?.component ? specs.get(instance.component) : undefined;
+}
+
+function words(text: string): string {
+  return text.replaceAll("_", " ");
+}
+
+function listed(items: readonly string[]): string {
+  if (items.length < 2) return items.join("");
+  return `${items.slice(0, -1).join(", ")} and ${items.at(-1) ?? ""}`;
+}
+
+function inputTypesElsewhere(
+  plant: Plant,
+  specs: ReadonlyMap<string, ComponentSpec>,
+  from: Instance,
+): readonly string[] {
+  const types = plant.instances
+    .filter((instance) => instance.id !== from.id)
+    .flatMap((instance) => specOf(specs, instance)?.ports ?? [])
+    .filter((port) => port.direction === "in")
+    .map((port) => port.type);
+  return [...new Set(types)];
+}
+
+export function noTargetReason(
+  plant: Plant,
+  specs: ReadonlyMap<string, ComponentSpec>,
+  from: Instance,
+  output: string,
+): string {
+  const type = portType(specOf(specs, from), output);
+  if (type === "") return "No instance in this plant has an input.";
+  const taken = inputTypesElsewhere(plant, specs, from);
+  const inputs =
+    taken.length === 0
+      ? "The other instances here have no inputs."
+      : `The inputs in this plant take ${listed(taken.map(words))}.`;
+  return `No instance takes ${words(type)}: ${from.id}'s ${words(output)} is ${words(type)}. ${inputs}`;
 }
 
 const classCategories: readonly (readonly [string, Category])[] = [
@@ -125,6 +171,7 @@ export interface Pin {
   readonly type: string;
   readonly family: Family | null;
   readonly connection: Connection;
+  readonly channel: string | null;
 }
 
 export interface Pins {
@@ -147,11 +194,15 @@ function optionalText(value: unknown): string | undefined {
 
 export function parsePorts(document: unknown): readonly PortSpec[] {
   const ports = field(document, "ports");
-  return (Array.isArray(ports) ? ports : []).map((port: unknown) => ({
-    name: text(field(port, "name")),
-    type: text(field(port, "type")),
-    direction: field(port, "direction") === "provides" ? ("out" as const) : ("in" as const),
-  }));
+  return (Array.isArray(ports) ? ports : []).map((port: unknown) => {
+    const channel = optionalText(field(port, "state"));
+    return {
+      name: text(field(port, "name")),
+      type: text(field(port, "type")),
+      direction: field(port, "direction") === "provides" ? ("out" as const) : ("in" as const),
+      ...(channel === undefined ? {} : { channel }),
+    };
+  });
 }
 
 interface Used {
@@ -176,7 +227,9 @@ function used(plant: Plant, id: string): Used {
 }
 
 function fromLinks(names: ReadonlySet<string>): readonly Pin[] {
-  return [...names].sort().map((name) => ({ name, type: "", family: null, connection: "connected" as const }));
+  return [...names]
+    .sort()
+    .map((name) => ({ name, type: "", family: null, connection: "connected" as const, channel: null }));
 }
 
 export function pinsOf(plant: Plant, instance: Instance, specs: readonly PortSpec[] | undefined): Pins {
@@ -189,6 +242,7 @@ export function pinsOf(plant: Plant, instance: Instance, specs: readonly PortSpe
     type: spec.type,
     family: familyOf(spec.type),
     connection: names.has(spec.name) ? "connected" : unknown ? "unknown" : "open",
+    channel: spec.channel ?? null,
   });
   return {
     ins: specs.filter((spec) => spec.direction === "in").map((spec) => pin(spec, connected.ins, connected.unknownIn)),

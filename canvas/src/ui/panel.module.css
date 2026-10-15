@@ -82,6 +82,12 @@
   font: inherit;
 }
 
+.body input::placeholder {
+  color: var(--text-tertiary);
+  font-style: italic;
+  opacity: 1;
+}
+
 .body input[type="checkbox"] {
   height: auto;
   margin-top: 3px;

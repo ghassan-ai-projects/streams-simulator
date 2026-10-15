@@ -16,6 +16,7 @@ import { useStore } from "../useStore";
 import { EditorBar } from "./EditorBar";
 import styles from "./Editor.module.css";
 import { EditorPanel } from "./EditorPanel";
+import { PendingLeave } from "./LeaveDialog";
 import { FocusRequest } from "./panelProps";
 
 interface EditorScreenProps {
@@ -97,11 +98,18 @@ function Editing({ draft, editor, navigation }: { readonly draft: Draft } & Omit
     <ReactFlowProvider>
       <div className={plantStyles.screen}>
         <div className={plantStyles.side}>
-          <Outline plant={plant} hall={null} selected={draft.selected} onSelect={select} flagged={flagged} />
+          <Outline
+            plant={plant}
+            hall={null}
+            selected={draft.selected}
+            onSelect={select}
+            flagged={flagged}
+            showEmptyAreas
+          />
           {plant.instances.length > 0 ? <Navigator /> : null}
         </div>
         <section className={plantStyles.center} aria-label={`Editing ${plant.title || plant.id}`}>
-          <EditorBar draft={draft} editor={editor} navigation={navigation} />
+          <EditorBar draft={draft} editor={editor} navigation={navigation} request={request} />
           <div ref={ref} className={plantStyles.graphHost}>
             {plant.instances.length === 0 ? (
               <NoEquipment />
@@ -112,6 +120,7 @@ function Editing({ draft, editor, navigation }: { readonly draft: Draft } & Omit
         </section>
         <EditorPanel draft={draft} plant={plant} editor={editor} request={request} />
       </div>
+      <PendingLeave title={plant.title || plant.id} editor={editor} navigation={navigation} />
     </ReactFlowProvider>
   );
 }

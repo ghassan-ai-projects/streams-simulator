@@ -14,7 +14,12 @@ function bridge() {
     "component.examples",
     success({ examples: [{ id: "pilot", title: "Pilot", description: "small" }, { title: "no id" }] }),
   );
-  fake.actions.set("component.example", success({ example: { ...lab, id: "pilot", title: "Pilot" } }));
+  fake.actions.set(
+    "component.example",
+    success({
+      example: { ...lab, id: "pilot", title: "Pilot", site: { name: "Pilot plant" }, areas: [{ name: "Utilities" }] },
+    }),
+  );
   fake.actions.set("domain.compose", success({ channels: 1 }));
   return fake;
 }
@@ -41,9 +46,16 @@ describe("plant maker", () => {
       title: "Lab two",
       from: base,
     });
+    expect(fake.calls.find((call) => call.name === "domain.compose")?.args).toMatchObject({
+      composition: "compositions/lab-two.composition.json",
+      out: "domains/lab-two.domain.json",
+    });
     await maker.create({ example: "pilot" }, "lab-three", "Lab three", false);
     expect(fake.calls.at(-1)?.args).toEqual({ id: "lab-three", title: "Lab three", example: "pilot", empty: true });
-    expect(JSON.parse(fake.writes[1]?.content ?? "")).not.toHaveProperty("equipment");
+    expect(fake.calls.filter((call) => call.name === "domain.compose")).toHaveLength(1);
+    const made = JSON.parse(fake.writes[1]?.content ?? "") as Record<string, unknown>;
+    expect(made).toMatchObject({ site: { name: "Pilot plant" }, areas: [{ name: "Pilot plant" }] });
+    expect(made).not.toHaveProperty("equipment");
   });
 
   it("refuses an existing plant, an unreadable base and an unknown example", async () => {
@@ -59,7 +71,25 @@ describe("plant maker", () => {
       issues: [{ pointer: "/id", message: "bad id" }],
     };
     fake.actions.set("component.new", failed(refusal));
-    expect(await maker.create({ example: "pilot" }, "Bad_Id", "B", true)).toMatchObject({ message: "bad id" });
+    expect(await maker.create({ example: "pilot" }, "Bad_Id", "B", true)).toMatchObject({
+      message: "",
+      issues: [{ pointer: "/id", message: "bad id" }],
+    });
+    expect(await maker.idProblem({ example: "pilot" }, "Bad_Id", "B")).toBe("bad id");
+    fake.actions.set(
+      "component.new",
+      failed({
+        ...failure("composition_invalid", 422, "fails"),
+        issues: [
+          { pointer: "/equipment", message: "missing required property" },
+          { pointer: "/id", message: "bad id" },
+        ],
+      }),
+    );
+    expect(await maker.create({ example: "pilot" }, "Bad_Id", "B", true)).toMatchObject({
+      message: "missing required property",
+    });
+    expect(await maker.idProblem({ example: "pilot" }, "Bad_Id", "B")).toBe("bad id");
     fake.actions.set("component.new", success({ composition: "not a plant" }));
     expect(await maker.create({ example: "odd" }, "odd-copy", "O", true)).toMatchObject({
       code: "composition_unreadable",

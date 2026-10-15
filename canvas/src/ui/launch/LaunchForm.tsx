@@ -1,12 +1,14 @@
 import { Dices, TriangleAlert } from "lucide-react";
-import type { SyntheticEvent } from "react";
+import type { KeyboardEvent, SyntheticEvent } from "react";
 import { useEffect, useRef, useState } from "react";
 import type { LaunchPlan, PlanProblem } from "../../model/launch";
-import { planProblems } from "../../model/launch";
+import { disturbanceWords, planProblems } from "../../model/launch";
 import type { Plant } from "../../model/plant";
+import { effectorOf } from "../../model/plant";
 import { durationOf } from "../../model/workspace";
 import type { Draft } from "./draft";
 import { planOf } from "./draft";
+import { CallRows } from "./CallRows";
 import type { Change } from "./FaultRows";
 import { FaultRows } from "./FaultRows";
 import { cx } from "../cx";
@@ -33,11 +35,10 @@ function FieldProblem({
   problems,
   field,
 }: { readonly id: string; readonly field: string } & Pick<DraftProps, "problems">) {
-  const text = problems.find((problem) => problem.field === field)?.text;
-  if (text === undefined) return null;
+  const text = problems.find((problem) => problem.field === field)?.text ?? "";
   return (
-    <small id={id} className={styles.problem}>
-      <TriangleAlert size={13} aria-hidden="true" />
+    <small id={id} className={cx(styles.problem, styles.inField)}>
+      {text !== "" && <TriangleAlert size={13} aria-hidden="true" />}
       {text}
     </small>
   );
@@ -96,7 +97,7 @@ function ModeChoice({
         <small>
           {explore
             ? "The truth is visible after the run; not for scoring."
-            : "The truth stays sealed while it runs, so a consumer can be scored; it is revealed when the run ends."}
+            : "The true results stay hidden from the outside system while it runs, so it can be scored; they are shown when the run ends."}
         </small>
       </span>
     </label>
@@ -172,23 +173,32 @@ function problemWords(problems: readonly PlanProblem[]): string {
 
 function startWords(plan: LaunchPlan): string {
   const length = durationOf(plan.durationS) || "the chosen time";
-  const faults = plan.faults.length;
-  const injected = faults === 0 ? "no faults" : `${String(faults)} ${faults === 1 ? "fault" : "faults"}`;
-  return `Start simulates ${length} of plant time in ${plan.explore ? "Explore" : "Evaluate"} mode with ${injected}, as fast as it can, then saves the run and opens its review.`;
+  return `Start simulates ${length} of plant time in ${plan.explore ? "Explore" : "Evaluate"} mode with ${disturbanceWords(plan)}, as fast as it can, then saves the run and opens its review.`;
+}
+
+function fieldName(problem: PlanProblem): string {
+  if (problem.field === "seed") return "Seed";
+  if (problem.field === "duration") return "Duration";
+  if (problem.field === "call") return `Effector call ${String((problem.call ?? 0) + 1)}`;
+  return `Fault ${String(problem.field + 1)}`;
 }
 
 function planCue(shown: readonly PlanProblem[], plan: LaunchPlan): string {
-  const count = shown.length;
-  if (count > 0) return `${String(count)} ${count === 1 ? "entry needs" : "entries need"} attention before starting.`;
-  return startWords(plan);
+  if (shown.length === 0) return startWords(plan);
+  const names = shown.map(fieldName).join(", ");
+  return shown.length === 1 ? `${names} needs attention before starting.` : `${names} need attention before starting.`;
+}
+
+function holdEnter(event: KeyboardEvent<HTMLFormElement>) {
+  if (event.key === "Enter" && event.target instanceof HTMLSelectElement) event.preventDefault();
 }
 
 export function LaunchForm({ plant, draft, selected, change, onStart }: FormProps) {
   const [tried, setTried] = useState(0);
   const [told, setTold] = useState("");
   const form = useFocusFirstProblem(tried);
-  const plan = planOf(draft);
-  const problems = planProblems(plan);
+  const plan = planOf(draft, plant);
+  const problems = planProblems(plan, (entity, effector) => effectorOf(plant, entity, effector));
   const shown = tried > 0 ? problems : [];
   const submit = (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -197,7 +207,7 @@ export function LaunchForm({ plant, draft, selected, change, onStart }: FormProp
     if (problems.length === 0) onStart(plan);
   };
   return (
-    <form ref={form} className={panel.body} onSubmit={submit} noValidate aria-label="Run plan">
+    <form ref={form} className={panel.body} onSubmit={submit} onKeyDown={holdEnter} noValidate aria-label="Run plan">
       <fieldset className={panel.group}>
         <legend>Run</legend>
         <Seed draft={draft} change={change} problems={shown} />
@@ -205,15 +215,18 @@ export function LaunchForm({ plant, draft, selected, change, onStart }: FormProp
       </fieldset>
       <Mode draft={draft} change={change} />
       <FaultRows plant={plant} draft={draft} problems={shown} selected={selected} change={change} />
-      <p id="launch-summary" className={styles.summary}>
-        {planCue(shown, plan)}
-      </p>
-      <p className="sr-only" role="status">
-        {told}
-      </p>
-      <button type="submit" className={panel.primary} aria-describedby="launch-summary">
-        Start the run
-      </button>
+      <CallRows plant={plant} draft={draft} problems={shown} selected={selected} change={change} />
+      <div className={styles.footer}>
+        <p id="launch-summary" className={styles.summary}>
+          {planCue(shown, plan)}
+        </p>
+        <p className="sr-only" role="status">
+          {told}
+        </p>
+        <button type="submit" className={panel.primary} aria-describedby="launch-summary">
+          Start the run
+        </button>
+      </div>
     </form>
   );
 }

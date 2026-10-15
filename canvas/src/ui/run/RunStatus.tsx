@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import type { ReviewState } from "../../app/reviewStore";
 import type { Badge, Report } from "../../model/report";
 import { badgeLabels, badgeOf } from "../../model/report";
-import { runFacts, runIdentity } from "../../model/reportViews";
+import { integrityLine, runFacts, runIdentity } from "../../model/reportViews";
 import { grouped } from "../../model/units";
 import { RunInfo } from "./RunInfo";
 import styles from "./RunScreen.module.css";
@@ -30,12 +30,20 @@ function useNow(running: boolean): number {
   return now;
 }
 
-function Chip({ badge, label }: { readonly badge: Badge; readonly label: string }) {
+function Chip({ badge, label, title }: { readonly badge: Badge; readonly label: string; readonly title: string }) {
   const Icon = badgeIcons[badge];
   return (
-    <span className={styles[badge]}>
+    <span className={styles[badge]} title={title}>
       <Icon size={13} aria-hidden="true" />
       {label}
+    </span>
+  );
+}
+
+function Reason({ text }: { readonly text: string }) {
+  return (
+    <span className={styles.reason} title={text}>
+      {text}
     </span>
   );
 }
@@ -51,10 +59,8 @@ function Announce({ text }: { readonly text: string }) {
 function ReportPending({ loading, elapsed }: { readonly loading: boolean; readonly elapsed: number }) {
   return (
     <>
-      <span className={styles.chip}>
-        {loading ? `Report · streamsim report reading the run · ${String(elapsed)} s` : "No report"}
-      </span>
-      <Announce text={loading ? "streamsim report is reading the run" : "No report"} />
+      <span className={styles.chip}>{loading ? `Reading the run · ${String(elapsed)} s` : "No report"}</span>
+      <Announce text={loading ? "Reading the run" : "No report"} />
     </>
   );
 }
@@ -62,7 +68,7 @@ function ReportPending({ loading, elapsed }: { readonly loading: boolean; readon
 const modeWords = {
   explore: "Explore: the truth is visible; not for scoring.",
   evaluate:
-    "Evaluate: the truth stays sealed while it runs, so a consumer can be scored; it is revealed when the run ends.",
+    "Evaluate: The true results stay hidden from the outside system while it runs, so it can be scored; they are shown when the run ends.",
 } as const;
 
 function Mode({ report }: { readonly report: Report }) {
@@ -91,7 +97,8 @@ export function Status({ state }: { readonly state: ReviewState }) {
   return (
     <>
       <Mode report={report} />
-      <Chip badge={badge} label={label} />
+      <Chip badge={badge} label={label} title={integrityLine(report, state.verified)} />
+      {badge === "incomplete" && <Reason text={report.incompleteReason || "the run did not close."} />}
       <Announce text={badge === "verifying" ? "Verifying: replaying the run" : badgeLabels[badge]} />
     </>
   );

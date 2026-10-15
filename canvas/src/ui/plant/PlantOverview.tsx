@@ -1,10 +1,12 @@
+import { useState } from "react";
 import type { Plant } from "../../model/plant";
 import { areaOf } from "../../model/plant";
 import { hallOf } from "../../model/plantView";
-import { humanise } from "../../model/report";
+import { kindLabel } from "../../model/report";
 import type { RunRow } from "../../model/workspace";
-import { durationOf, faultWords, whenOf } from "../../model/workspace";
+import { runFacts, whenOf } from "../../model/workspace";
 import shared from "../shared.module.css";
+import { cx } from "../cx";
 import styles from "./PlantScreen.module.css";
 
 function counts(values: readonly string[]): readonly (readonly [string, number])[] {
@@ -38,13 +40,12 @@ function RunItem({ row, onReview }: { readonly row: RunRow; readonly onReview: R
   const words = [
     row.run.worldId,
     row.run.explore ? "Explore" : "Evaluate",
-    durationOf(row.run.durationS),
-    faultWords(row.run),
-    whenOf(row.run.recordedAt),
+    ...runFacts(row.run),
+    whenOf(row.run.recordedAt).replaceAll(" ", "\u00a0"),
   ];
   return (
     <li>
-      <span>{words.filter(Boolean).join(" · ")}</span>
+      <span className={styles.figures}>{words.filter(Boolean).join(" · ")}</span>
       {onReview !== undefined && (
         <button
           type="button"
@@ -61,7 +62,11 @@ function RunItem({ row, onReview }: { readonly row: RunRow; readonly onReview: R
   );
 }
 
+const recentShown = 5;
+
 function Runs({ runs, onReview }: { readonly runs: readonly RunRow[]; readonly onReview: Review }) {
+  const [all, setAll] = useState(false);
+  const shown = all ? runs : runs.slice(0, recentShown);
   return (
     <section className={styles.section} aria-label="Recent runs">
       <h3 className={shared.sectionTitle}>
@@ -70,10 +75,21 @@ function Runs({ runs, onReview }: { readonly runs: readonly RunRow[]; readonly o
       </h3>
       {runs.length === 0 && <p className={styles.muted}>No runs yet: use Run plant.</p>}
       <ul className={styles.tally}>
-        {runs.slice(0, 5).map((row) => (
+        {shown.map((row) => (
           <RunItem key={row.run.worldId} row={row} onReview={onReview} />
         ))}
       </ul>
+      {!all && runs.length > recentShown && (
+        <button
+          type="button"
+          className={cx(styles.linkButton, styles.moreLink)}
+          onClick={() => {
+            setAll(true);
+          }}
+        >
+          {`Show all ${String(runs.length)} runs`}
+        </button>
+      )}
     </section>
   );
 }
@@ -97,12 +113,15 @@ export function PlantOverview({
         <p
           className={styles.kindLine}
         >{`${String(plant.instances.length)} instances in ${where} · ${String(plant.links.length)} links`}</p>
-        <p className={styles.hint}>Select an instance to see its channels, links, faults and effectors.</p>
+        <p className={styles.hint}>
+          Select an instance to see its channels (the values measured on it, one for each port and state), links, faults
+          and effectors.
+        </p>
       </header>
       <Runs runs={runs} onReview={onReview} />
       {halls.length > 0 && <Tally title="Halls" rows={halls} />}
       <Tally title={halls.length > 0 ? "Areas across the halls" : "Areas"} rows={areas} />
-      <Tally title="Kinds" rows={counts(plant.instances.map((instance) => humanise(instance.kind)))} />
+      <Tally title="Kinds" rows={counts(plant.instances.map((instance) => kindLabel(instance.kind)))} />
     </aside>
   );
 }

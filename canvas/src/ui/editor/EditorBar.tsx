@@ -1,6 +1,7 @@
 import { PenLine, Redo, RefreshCw, Save, Undo, Undo2 } from "lucide-react";
 import { useState } from "react";
 import type { Draft, EditorStore } from "../../app/editorStore";
+import { canSave, checked, emptyPlant } from "../../app/editorStore";
 import type { NavigationStore } from "../../app/navigationStore";
 import { domainOf, equipmentOf, titleOf } from "../../model/composition";
 import { ZoomBar } from "../plant/GraphControls";
@@ -8,6 +9,7 @@ import plantStyles from "../plant/PlantScreen.module.css";
 import { Breadcrumb } from "../shell/Breadcrumb";
 import { useScreen } from "../useScreen";
 import styles from "./Editor.module.css";
+import type { FocusRequest } from "./panelProps";
 import { useEditorKeys } from "./useEditorKeys";
 
 interface BarProps {
@@ -18,23 +20,35 @@ interface BarProps {
 
 interface Status {
   readonly text: string;
+  readonly detail: string | null;
   readonly tone: "busy" | "warn" | "ok" | "";
+}
+
+function uncheckedStatus(draft: Draft): Status {
+  const text = emptyPlant(draft)
+    ? "Nothing to save yet: add equipment in Build."
+    : "Not checked yet: Save to see its issues.";
+  return { text, detail: null, tone: "" };
 }
 
 function outcomeStatus(draft: Draft): Status {
   if (draft.outcome?.kind === "refused") {
     const count = draft.issues?.listed.length ?? 0;
-    const why = draft.outcome.message ?? `${String(count)} ${count === 1 ? "issue" : "issues"}`;
-    return { text: `Saved, not composed: ${why}`, tone: "warn" };
+    const counted = `${String(count)} ${count === 1 ? "issue" : "issues"}`;
+    const why = draft.outcome.message ?? `${counted}, listed in Build`;
+    return { text: `Needs fixing: ${why}. Your changes are saved.`, detail: null, tone: "warn" };
   }
-  if (draft.outcome?.kind === "composed") return { text: `Saved. ${draft.outcome.summary}`, tone: "ok" };
-  return { text: "No changes", tone: "" };
+  if (draft.outcome?.kind === "composed") {
+    return { text: "Ready to run. Saved.", detail: draft.outcome.summary, tone: "ok" };
+  }
+  if (!checked(draft)) return uncheckedStatus(draft);
+  return { text: "No changes", detail: null, tone: "" };
 }
 
 function statusOf(draft: Draft): Status {
-  if (draft.saving) return { text: "Saving and composing…", tone: "busy" };
-  if (draft.failure !== null) return { text: `Not saved: ${draft.failure.message}`, tone: "warn" };
-  if (draft.doc !== draft.saved) return { text: "Unsaved changes", tone: "busy" };
+  if (draft.saving) return { text: "Saving and composing…", detail: null, tone: "busy" };
+  if (draft.failure !== null) return { text: `Not saved: ${draft.failure.message}`, detail: null, tone: "warn" };
+  if (draft.doc !== draft.saved) return { text: "Unsaved changes", detail: null, tone: "busy" };
   return outcomeStatus(draft);
 }
 
@@ -63,6 +77,30 @@ function OpenPlant({ draft, navigation }: Omit<BarProps, "editor">) {
       }}
     >
       Open plant
+    </button>
+  );
+}
+
+function ShowIssues({
+  draft,
+  editor,
+  request,
+}: {
+  readonly draft: Draft;
+  readonly editor: EditorStore;
+  readonly request: FocusRequest;
+}) {
+  if ((draft.issues?.listed.length ?? 0) === 0) return null;
+  return (
+    <button
+      type="button"
+      className={styles.action}
+      onClick={() => {
+        request.ask("build");
+        editor.select(null);
+      }}
+    >
+      Show issues
     </button>
   );
 }
@@ -179,34 +217,36 @@ function RevertButton({
   );
 }
 
-export function EditorBar({ draft, editor, navigation }: BarProps) {
+export function EditorBar({ draft, editor, navigation, request }: BarProps & { readonly request: FocusRequest }) {
   useEditorKeys(editor);
   const status = statusOf(draft);
   const clean = draft.doc === draft.saved;
+  const savable = canSave(draft);
   return (
     <div className={plantStyles.bar}>
       <PenLine size={14} aria-hidden="true" />
       <Title draft={draft} navigation={navigation} />
-      <span role="status" className={styles[`status-${status.tone || "idle"}`]} title={status.text}>
+      <OpenPlant draft={draft} navigation={navigation} />
+      <ShowIssues draft={draft} editor={editor} request={request} />
+      <Reload draft={draft} editor={editor} />
+      {equipmentOf(draft.doc).length > 0 && <ZoomBar />}
+      <span role="status" className={styles[`status-${status.tone || "idle"}`]} title={status.detail ?? status.text}>
         {status.text}
       </span>
-      <OpenPlant draft={draft} navigation={navigation} />
-      <Reload draft={draft} editor={editor} />
       <History draft={draft} editor={editor} />
       <Revert disabled={clean || draft.saving} editor={editor} />
       <button
         type="button"
         className={styles.save}
-        aria-disabled={clean || draft.saving}
-        title={clean ? "Nothing to save" : "Save and compose (Ctrl+S)"}
+        aria-disabled={!savable || draft.saving}
+        title={savable ? "Save and compose (Ctrl+S)" : "Nothing to save"}
         onClick={() => {
-          if (!clean) void editor.save();
+          if (savable) void editor.save();
         }}
       >
         <Save size={14} aria-hidden="true" />
         Save
       </button>
-      {equipmentOf(draft.doc).length > 0 && <ZoomBar />}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { MiniMap, useOnViewportChange, useReactFlow, useStore, useStoreApi } from "@xyflow/react";
 import { List, Maximize, Minus, Plus } from "lucide-react";
-import type { KeyboardEvent } from "react";
-import { useMemo, useRef, useState } from "react";
+import type { RefObject } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { familyNames, shapeOf } from "../../model/ports";
 import type { Family } from "../../model/ports";
 import type { FlowNode } from "./flow";
@@ -10,7 +10,7 @@ import { cx } from "../cx";
 import styles from "./GraphControls.module.css";
 
 function minimapClass(node: FlowNode): string {
-  if (node.type === "frame") return "minimap-frame";
+  if (node.type === "frame" || node.type === "frameTitle") return "minimap-frame";
   return node.selected === true ? "minimap-selected" : "";
 }
 
@@ -50,19 +50,37 @@ function Legend() {
   );
 }
 
+function useLegendDismissal(open: boolean, anchor: RefObject<HTMLDivElement | null>, close: () => void) {
+  useEffect(() => {
+    if (!open) return undefined;
+    const onKey = (event: globalThis.KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.stopPropagation();
+      close();
+      anchor.current?.querySelector("button")?.focus();
+    };
+    const onPointer = (event: PointerEvent) => {
+      if (event.target instanceof Node && anchor.current?.contains(event.target) !== true) close();
+    };
+    document.addEventListener("keydown", onKey, true);
+    document.addEventListener("pointerdown", onPointer, true);
+    return () => {
+      document.removeEventListener("keydown", onKey, true);
+      document.removeEventListener("pointerdown", onPointer, true);
+    };
+  }, [open, anchor, close]);
+}
+
 function LegendButton() {
   const [open, setOpen] = useState(false);
-  const button = useRef<HTMLButtonElement>(null);
-  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.key !== "Escape" || !open) return;
-    event.stopPropagation();
+  const anchor = useRef<HTMLDivElement>(null);
+  const close = useCallback(() => {
     setOpen(false);
-    button.current?.focus();
-  };
+  }, []);
+  useLegendDismissal(open, anchor, close);
   return (
-    <div className={styles.legendAnchor} onKeyDown={onKeyDown}>
+    <div className={styles.legendAnchor} ref={anchor}>
       <button
-        ref={button}
         type="button"
         className={styles.legendButton}
         aria-expanded={open}

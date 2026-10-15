@@ -4,8 +4,8 @@
 .status-warn {
   flex: 1 1 auto;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow-wrap: anywhere;
   font-size: var(--text-sm);
 }
 
@@ -102,6 +102,13 @@
   cursor: pointer;
 }
 
+.where {
+  display: block;
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  overflow-wrap: anywhere;
+}
+
 .issue:hover strong {
   text-decoration: underline;
 }
@@ -141,6 +148,7 @@
   align-self: flex-start;
   align-items: center;
   gap: var(--space-1);
+  max-width: 100%;
   height: 30px;
   padding: 0 var(--space-3);
   border: 1px solid var(--status-alarm);
@@ -154,6 +162,18 @@
 
 .delete:hover {
   background: var(--status-alarm-bg);
+}
+
+.deleteRow {
+  display: flex;
+  min-width: 0;
+}
+
+.deleteWords {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .empty {
@@ -279,4 +299,32 @@
   font-family: var(--font-mono);
   font-weight: 400;
   letter-spacing: 0;
+}
+
+.areaList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.areaRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.areaPath {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  overflow-wrap: anywhere;
+}
+
+.nameError {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  color: var(--status-alarm);
 }

@@ -51,4 +51,51 @@ describe("navigation", () => {
     location.fire();
     expect(navigation.snapshot()).toEqual({ screen: "plant", domain: "d", hall: "h01" });
   });
+
+  it("holds a move away from an edited composition until the user decides", () => {
+    const location = memoryLocation("#/edit?composition=c1");
+    const navigation = new NavigationStore(location);
+    let dirty = true;
+    navigation.guardUnsaved(() => dirty);
+    navigation.go({ screen: "home" });
+    expect([navigation.snapshot(), location.hash]).toEqual([
+      { screen: "edit", composition: "c1" },
+      "#/edit?composition=c1",
+    ]);
+    expect(navigation.leaving.snapshot()).toEqual({ route: { screen: "home" }, replace: false });
+    navigation.stay();
+    expect([navigation.snapshot(), navigation.leaving.snapshot()]).toEqual([
+      { screen: "edit", composition: "c1" },
+      null,
+    ]);
+    navigation.go({ screen: "home" });
+    dirty = false;
+    navigation.leave();
+    expect([navigation.snapshot(), location.hash]).toEqual([{ screen: "home" }, "#/"]);
+  });
+
+  it("does not hold a move when nothing is unsaved or the composition stays the same", () => {
+    const location = memoryLocation("#/edit?composition=c1");
+    const navigation = new NavigationStore(location);
+    navigation.guardUnsaved(() => true);
+    navigation.go({ screen: "edit", composition: "c1" });
+    expect(navigation.leaving.snapshot()).toBeNull();
+    navigation.guardUnsaved(() => false);
+    navigation.go({ screen: "home" });
+    expect(navigation.snapshot()).toEqual({ screen: "home" });
+  });
+
+  it("puts the address back and holds the move when the user goes back with unsaved changes", () => {
+    const location = memoryLocation("#/edit?composition=c1");
+    const navigation = new NavigationStore(location);
+    navigation.guardUnsaved(() => true);
+    location.hash = "#/";
+    location.fire();
+    expect([navigation.snapshot(), location.hash, location.replaced]).toEqual([
+      { screen: "edit", composition: "c1" },
+      "#/edit?composition=c1",
+      true,
+    ]);
+    expect(navigation.leaving.snapshot()).toEqual({ route: { screen: "home" }, replace: false });
+  });
 });

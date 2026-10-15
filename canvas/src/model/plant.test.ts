@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { composition, domain } from "../test/plantFixture";
-import { areaOf, linkLines, linksOf, parsePlant, stateUnit, channelOf } from "./plant";
+import { areaOf, channelOf, effectorOf, linkLines, linksOf, parsePlant, stateUnit } from "./plant";
 
 describe("plant from a domain file", () => {
   it("reads instances, kinds, areas and links", () => {
@@ -21,6 +21,7 @@ describe("plant from a domain file", () => {
       units: new Map([["cop", ""]]),
       faults: ["chiller__fouling"],
       effectors: ["start"],
+      effectorSpecs: [{ name: "start", entityArg: null, args: [] }],
     });
     expect(plant.links[0]).toEqual({
       from: "CH-1",
@@ -29,6 +30,13 @@ describe("plant from a domain file", () => {
       fromPort: null,
       toPort: null,
     });
+  });
+
+  it("finds the effector a kind declares for an instance", () => {
+    const plant = parsePlant(domain);
+    expect(effectorOf(plant, "CH-1", "start")).toEqual({ name: "start", entityArg: null, args: [] });
+    expect(effectorOf(plant, "CH-1", "stop")).toBeUndefined();
+    expect(effectorOf(plant, "nobody", "start")).toBeUndefined();
   });
 
   it("reads link ports and instruments the domain records, and units and states for KPIs", () => {

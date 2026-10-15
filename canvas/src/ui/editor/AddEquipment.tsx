@@ -2,9 +2,12 @@ import { Plus } from "lucide-react";
 import type { SyntheticEvent } from "react";
 import { useEffect, useState } from "react";
 import type { Draft, EditorStore } from "../../app/editorStore";
-import { areasOf, suggestedName } from "../../model/composition";
+import { areaNodesOf, suggestedName } from "../../model/composition";
+import { instanceNameFits, instanceNameRule } from "../../model/instanceNameRule";
 import type { LibraryEntry, Presets } from "../../model/library";
 import { searchLibrary } from "../../model/library";
+import type { Plant } from "../../model/plant";
+import { instanceIdTaken } from "../../model/plant";
 import panel from "../panel.module.css";
 import styles from "./Editor.module.css";
 import type { FocusRequest } from "./panelProps";
@@ -12,6 +15,7 @@ import { SubmitRow } from "./SubmitRow";
 
 interface AddProps {
   readonly draft: Draft;
+  readonly plant: Plant;
   readonly editor: EditorStore;
   readonly request: FocusRequest;
 }
@@ -51,6 +55,7 @@ function Choice({
     <label className={panel.field}>
       <span>{label}</span>
       <select
+        aria-label={label}
         value={value}
         onChange={(event) => {
           onChange(event.target.value);
@@ -66,17 +71,36 @@ function Choice({
   );
 }
 
-function NameField({ name, setName }: { readonly name: string; readonly setName: (name: string) => void }) {
+interface NameProps {
+  readonly typed: string;
+  readonly suggested: string;
+  readonly setTyped: (name: string) => void;
+}
+
+function suggestedWords(suggested: string): string {
+  return suggested === ""
+    ? "Leave empty to use the suggested name."
+    : `Leave empty to use the suggested name, ${suggested}.`;
+}
+
+function NameField({ typed, suggested, setTyped }: NameProps) {
   return (
-    <label className={panel.field}>
-      <span>Name</span>
-      <input
-        value={name}
-        onChange={(event) => {
-          setName(event.target.value);
-        }}
-      />
-    </label>
+    <>
+      <label className={panel.field}>
+        <span>Name</span>
+        <input
+          value={typed}
+          placeholder={suggested}
+          aria-describedby="add-name-rule"
+          onChange={(event) => {
+            setTyped(event.target.value);
+          }}
+        />
+      </label>
+      <p className={panel.hint} id="add-name-rule">
+        {`${suggestedWords(suggested)} ${instanceNameRule()}`}
+      </p>
+    </>
   );
 }
 
@@ -99,10 +123,13 @@ function LibraryPick({ library, use, setUse }: PickProps) {
         onChange={(event) => {
           setQuery(event.target.value);
         }}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") event.preventDefault();
+        }}
       />
       <select
         aria-label="Equipment"
-        size={6}
+        size={Math.min(6, Math.max(2, found.length))}
         value={use}
         onChange={(event) => {
           setUse(event.target.value);
@@ -124,54 +151,58 @@ function sizes(presets: Presets): readonly (readonly [string, string])[] {
   return [["", "Default"], ...presets.options.map((option) => [option.name, option.title] as const)];
 }
 
-function missing(use: string, name: string, area: string): string | null {
+function missing(use: string, name: string, area: string, plant: Plant): string | null {
   if (use === "") return "Choose equipment from the library.";
-  if (name.trim() === "") return "Give the instance a name.";
+  if (name === "") return "Give the instance a name.";
+  if (!instanceNameFits(name)) return `"${name}" is not a valid name. ${instanceNameRule()}`;
+  if (instanceIdTaken(plant, name)) return `${name} is already used by another instance.`;
   return area === "" ? "Choose an area." : null;
 }
 
 function useNaming(draft: Draft, use: string) {
-  const [typed, setTyped] = useState<string | null>(null);
+  const [typed, setTyped] = useState("");
   const title = draft.library.find((entry) => entry.ref === use)?.title ?? "";
-  const name = typed ?? (use === "" ? "" : suggestedName(draft.doc, use, title));
+  const suggested = use === "" ? "" : suggestedName(draft.doc, use, title);
   return {
-    name,
-    setName: setTyped,
+    typed,
+    suggested,
+    name: typed.trim() === "" ? suggested : typed.trim(),
+    setTyped,
     reset: () => {
-      setTyped(null);
+      setTyped("");
     },
   };
 }
 
-export function AddEquipment({ draft, editor, request }: AddProps) {
+function useArea(draft: Draft) {
+  const nodes = areaNodesOf(draft.doc);
+  const [picked, setArea] = useState("");
+  const area = nodes.some((node) => node.name === picked) ? picked : (nodes[0]?.name ?? "");
+  return { area, setArea, options: nodes.map((node) => [node.name, node.path] as const) };
+}
+
+export function AddEquipment({ draft, plant, editor, request }: AddProps) {
   const [use, setUse] = useState("");
-  const { name, setName, reset } = useNaming(draft, use);
-  const areas = areasOf(draft.doc);
-  const [area, setArea] = useState(areas[0] ?? "");
+  const { typed, suggested, name, setTyped, reset } = useNaming(draft, use);
+  const { area, setArea, options } = useArea(draft);
   const { presets, preset, setPreset } = usePresets(editor, use);
-  const problem = missing(use, name, area);
+  const problem = missing(use, name, area, plant);
   const submit = (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (problem !== null) return;
     request.ask("instance");
-    void editor.add({ use, preset, name: name.trim(), area });
+    void editor.add({ use, preset, name, area });
     reset();
   };
   return (
     <form className={panel.group} onSubmit={submit} aria-labelledby="add-title" noValidate>
       <h3 id="add-title">Add equipment</h3>
-      <LibraryPick
-        library={draft.library}
-        use={use}
-        setUse={(next) => {
-          setUse(next);
-          reset();
-        }}
-      />
+      <LibraryPick library={draft.library} use={use} setUse={setUse} />
       {presets.description !== "" && <p className={styles.describe}>{presets.description}</p>}
       <Choice label="Size" value={preset} options={sizes(presets)} onChange={setPreset} />
-      <NameField name={name} setName={setName} />
-      <Choice label="Area" value={area} options={areas.map((entry) => [entry, entry] as const)} onChange={setArea} />
+      <NameField typed={typed} suggested={suggested} setTyped={setTyped} />
+      <Choice label="Area" value={area} options={options} onChange={setArea} />
+      <p className={panel.hint}>Areas are listed in order, with the site first. Add more under Add area.</p>
       <SubmitRow id="add-reason" reason={problem}>
         <Plus size={14} aria-hidden="true" />
         Add to the plant

@@ -9,6 +9,7 @@ import { Breadcrumb } from "../shell/Breadcrumb";
 import { useScreen } from "../useScreen";
 import { useStore } from "../useStore";
 import styles from "./HomeScreen.module.css";
+import { BlankPlantStart } from "./EmptyStart";
 import { ExampleList, useExamples } from "./Examples";
 import { PlantList } from "./PlantList";
 import { RunList } from "./RunList";
@@ -29,16 +30,16 @@ function EmptyWorkspace({
   return (
     <div className={styles.empty}>
       <Boxes size={28} aria-hidden="true" />
-      <h2 className={styles.emptyTitle}>{`${name} has no plants yet`}</h2>
+      <h2 className={styles.emptyTitle}>{`The ${name} workspace has no plants yet`}</h2>
       <p className={styles.lead}>
         Build a simulated plant, generate its readings, test how a connected system responds, and review what happened.
+        Plants you create are saved in the {name} workspace folder.
       </p>
+      <BlankPlantStart examples={examples} maker={maker} navigation={navigation} />
       <ExampleList examples={examples} taken={[]} maker={maker} navigation={navigation} />
       <ol className={styles.steps}>
         <li>
-          {examples.length > 0
-            ? "Try an example above, or copy a composition into compositions/ or a domain into domains/."
-            : "Copy a composition into compositions/ or a domain into domains/."}
+          Create a new plant{examples.length > 0 ? " or try an example" : ""}, then add its equipment in the editor.
         </li>
         <li>Open the plant and Run it with the faults you want to test.</li>
         <li>Review the run: play it back, read the report and the verdict.</li>
@@ -72,7 +73,7 @@ function Contents({ workspace, navigation, maker, badgeFor }: ContentsProps) {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <span className={styles.eyebrow}>Folder</span>
+        <span className={styles.eyebrow}>Workspace folder</span>
         <h2 className={styles.title}>{workspace.name}</h2>
         <span className={styles.summary}>{workspaceSummary(workspace)}</span>
       </header>

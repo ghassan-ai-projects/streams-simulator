@@ -2,6 +2,7 @@ import { Fragment } from "react";
 import type { KpiRow } from "../../model/report";
 import { kpiGroups, kpiWords } from "../../model/reportViews";
 import { displayUnit } from "../../model/units";
+import { cx } from "../cx";
 import styles from "./RunScreen.module.css";
 
 const fixed = (value: number) =>
@@ -21,9 +22,9 @@ function KpiLine({ row, unit }: { readonly row: KpiRow; readonly unit: KpiTableP
       <th scope="row" className={styles.kpiName} title={`${row.entity} ${row.state}`}>
         {kpiWords(row.state)}
       </th>
-      <td className={styles.number}>{fixed(row.mean)}</td>
+      <td className={cx(styles.number, styles.kpiValue)}>{fixed(row.mean)}</td>
       <td className={styles.unitCell}>{shown}</td>
-      <td className={steady ? styles.steady : styles.number}>
+      <td className={cx(steady ? styles.steady : styles.number, styles.kpiValue)}>
         {steady ? "steady" : `${fixed(row.min)} – ${fixed(row.max)}`}
       </td>
     </tr>

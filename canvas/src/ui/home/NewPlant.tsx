@@ -1,11 +1,12 @@
 import type { SyntheticEvent } from "react";
-import { useId, useState } from "react";
+import { useState } from "react";
 import type { PlantMaker, PlantSource } from "../../app/plantMaker";
+import { idProblemOf } from "../../app/plantMaker";
 import type { NavigationStore } from "../../app/navigationStore";
 import type { Definition } from "../../model/bridge";
 import type { ExamplePlant } from "../../model/library";
 import { suggestedId } from "../../model/workspace";
-import { useFocusOnMount } from "../useFocusOnMount";
+import { Field } from "./NewPlantField";
 import styles from "./HomeScreen.module.css";
 
 export interface NewPlantProps {
@@ -14,44 +15,7 @@ export interface NewPlantProps {
   readonly taken: readonly string[];
   readonly maker: PlantMaker;
   readonly navigation: NavigationStore;
-}
-
-function Field({
-  label,
-  hint,
-  value,
-  onChange,
-  first = false,
-  placeholder,
-  onLeave,
-}: {
-  readonly label: string;
-  readonly hint?: string;
-  readonly value: string;
-  readonly onChange: (value: string) => void;
-  readonly first?: boolean;
-  readonly placeholder?: string;
-  readonly onLeave?: () => void;
-}) {
-  const id = useId();
-  const input = useFocusOnMount<HTMLInputElement>(first);
-  return (
-    <div className={styles.newField}>
-      <label htmlFor={id}>{label}</label>
-      <input
-        id={id}
-        ref={input}
-        placeholder={placeholder}
-        value={value}
-        aria-describedby={hint === undefined ? undefined : `${id}-hint`}
-        onChange={(event) => {
-          onChange(event.target.value);
-        }}
-        onBlur={onLeave}
-      />
-      {hint !== undefined && <small id={`${id}-hint`}>{hint}</small>}
-    </div>
-  );
+  readonly blank?: boolean;
 }
 
 function BasePick({
@@ -124,19 +88,52 @@ function CopyChoice({ copy, setCopy }: { readonly copy: boolean; readonly setCop
           }}
         />
         <span>
-          <strong>An empty plant</strong> with only its site, areas, profiles and axes; you add the equipment.
+          <strong>An empty plant</strong> with the site, areas, profiles and axes of the start plant and no equipment;
+          you add the equipment.
         </span>
       </label>
     </fieldset>
   );
 }
 
-function useCreate({ maker, navigation }: Pick<NewPlantProps, "maker" | "navigation">) {
+function BlankNote() {
+  return (
+    <p className={styles.meta}>
+      A blank plant: you add its equipment, areas and connections in the editor, then compose and run it.
+    </p>
+  );
+}
+
+function Choices(
+  props: NewPlantProps & {
+    readonly base: string;
+    readonly setBase: (base: string) => void;
+    readonly copy: boolean;
+    readonly setCopy: (copy: boolean) => void;
+  },
+) {
+  if (props.blank === true) return <BlankNote />;
+  return (
+    <>
+      <BasePick {...props} />
+      <CopyChoice {...props} />
+    </>
+  );
+}
+
+function useCreate(
+  { maker, navigation }: Pick<NewPlantProps, "maker" | "navigation">,
+  reportId: (id: string, message: string) => void,
+) {
   const [failure, setFailure] = useState("");
   const create = async (base: string, id: string, title: string, copy: boolean) => {
     const made = await maker.create(sourceOf(base), id, title, copy);
-    if ("composition" in made) navigation.go({ screen: "edit", composition: made.composition });
-    else setFailure(made.message);
+    if ("composition" in made) {
+      navigation.go({ screen: "edit", composition: made.composition });
+      return;
+    }
+    reportId(id, idProblemOf(made));
+    setFailure(made.message);
   };
   return { failure, create };
 }
@@ -151,11 +148,6 @@ function Actions({ failure, reason, onCancel }: ActionsProps) {
   const ready = reason === "";
   return (
     <>
-      {failure !== "" && (
-        <p role="alert" className={styles.failure}>
-          {failure}
-        </p>
-      )}
       <span className={styles.newActions}>
         <button
           type="submit"
@@ -174,6 +166,11 @@ function Actions({ failure, reason, onCancel }: ActionsProps) {
           </span>
         )}
       </span>
+      {failure !== "" && (
+        <p role="alert" className={styles.newFailure}>
+          {failure}
+        </p>
+      )}
     </>
   );
 }
@@ -188,6 +185,23 @@ function useNaming(taken: readonly string[]) {
   return { name, setName, id, setId: setTyped, followAgain };
 }
 
+function useIdProblem(maker: PlantMaker, base: string, name: string, id: string, followAgain: () => void) {
+  const [found, setFound] = useState<{ readonly id: string; readonly message: string } | null>(null);
+  const reportId = (value: string, message: string) => {
+    setFound({ id: value, message });
+  };
+  const check = async () => {
+    const value = id.trim();
+    if (value === "") return;
+    reportId(value, await maker.idProblem(sourceOf(base), value, name.trim() === "" ? value : name.trim()));
+  };
+  const leave = () => {
+    followAgain();
+    void check();
+  };
+  return { problem: found !== null && found.id === id.trim() ? found.message : "", leave, reportId };
+}
+
 function readiness(name: string, id: string, base: string): string {
   if (name.trim() === "") return "Name the plant first.";
   if (id.trim() === "") return "Give it an id.";
@@ -195,12 +209,13 @@ function readiness(name: string, id: string, base: string): string {
 }
 
 export function NewPlantForm(props: NewPlantProps & { readonly onCancel: () => void }) {
-  const { bases, examples, taken, onCancel } = props;
+  const { bases, examples, taken, blank = false, onCancel } = props;
   const { name, setName, id, setId, followAgain } = useNaming(taken);
   const first = bases[0] === undefined ? `example:${examples[0]?.id ?? ""}` : `file:${bases[0].path}`;
   const [base, setBase] = useState(first);
-  const [copy, setCopy] = useState(true);
-  const { failure, create } = useCreate(props);
+  const [copy, setCopy] = useState(!blank);
+  const { problem, leave, reportId } = useIdProblem(props.maker, base, name, id, followAgain);
+  const { failure, create } = useCreate(props, reportId);
   const reason = readiness(name, id, base);
   const ready = reason === "";
   const submit = (event: SyntheticEvent<HTMLFormElement>) => {
@@ -220,13 +235,14 @@ export function NewPlantForm(props: NewPlantProps & { readonly onCancel: () => v
       <Field first label="Name" placeholder="e.g. Cooling hall" value={name} onChange={setName} />
       <Field
         label="Id"
-        hint="Used for its file names: lower case, digits and hyphens."
+        hint="Lower case letters, digits and hyphens, starting with a letter."
         value={id}
         onChange={setId}
-        onLeave={followAgain}
+        onLeave={leave}
+        selectOnFocus
+        problem={problem}
       />
-      <BasePick bases={bases} examples={examples} base={base} setBase={setBase} />
-      <CopyChoice copy={copy} setCopy={setCopy} />
+      <Choices {...props} base={base} setBase={setBase} copy={copy} setCopy={setCopy} />
       <Actions failure={failure} reason={reason} onCancel={onCancel} />
     </form>
   );

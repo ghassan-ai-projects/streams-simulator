@@ -12,16 +12,13 @@ test("the workspace lists each real plant once with its actions, and its runs, i
   await expect(plants.getByRole("button", { name: "Edit Factory utilities" })).toBeVisible();
   await expect(plants.getByRole("button", { name: "Run Factory utilities" })).toBeVisible();
   await expect(plants.getByText("factory-utilities", { exact: true })).toHaveCount(1);
-  await expect(plants.getByRole("listitem").filter({ hasText: "Factory utilities" })).toContainText(
-    "20 instance definitions",
-  );
-  await expect(plants).toContainText(
-    "Instance definitions are entries in the plant file. One definition can expand into several instances when you open the plant.",
-  );
+  await expect(plants.getByRole("listitem").filter({ hasText: "Factory utilities" })).toContainText("23 instances");
+  await expect(plants).not.toContainText("can expand into several instances");
   const runs = page.getByRole("region", { name: "Runs" });
   await expect(runs.getByRole("listitem").filter({ hasText: "w-explore" })).toContainText("Factory utilities");
+  await expect(runs.getByRole("listitem").filter({ hasText: "w-explore" })).toContainText("seed 7");
   await expect(runs.getByRole("listitem").filter({ hasText: "w-evaluate" })).toContainText("30 min");
-  for (const label of ["Theme: follow the system", "Theme: light"]) {
+  for (const label of ["Theme: system", "Theme: light"]) {
     await page.getByRole("button", { name: label }).click();
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   }
@@ -41,7 +38,7 @@ test("a file added on disk appears without a reload", async ({ page }) => {
       .replace('"title": "Factory utilities"', '"title": "Copied plant"'),
   );
   try {
-    await expect(plants.getByRole("listitem").filter({ hasText: "Copied plant" })).toContainText("Not composed yet", {
+    await expect(plants.getByRole("listitem").filter({ hasText: "Copied plant" })).toContainText("Not runnable yet", {
       timeout: 5000,
     });
   } finally {
