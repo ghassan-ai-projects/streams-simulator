@@ -168,32 +168,6 @@
   color: var(--text-secondary);
 }
 
-.sideAnchor {
-  width: 1px !important;
-  height: 1px !important;
-  min-width: 0 !important;
-  min-height: 0 !important;
-  opacity: 0;
-  border: 0 !important;
-}
-
-.rowAnchor {
-  width: 1px !important;
-  height: 1px !important;
-  min-width: 0 !important;
-  min-height: 0 !important;
-  opacity: 0;
-  border: 0 !important;
-}
-
-.rowLeft {
-  left: calc(-1 * var(--space-3)) !important;
-}
-
-.rowRight {
-  right: calc(-1 * var(--space-3)) !important;
-}
-
 .anchor {
   top: calc(50% + 20px + var(--id-extra, 0px) / 2) !important;
   width: 1px !important;

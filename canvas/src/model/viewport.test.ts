@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Tier } from "./viewport";
-import { anchorsOnly, centreOf, followZoom, inView, openingViewport, sameViewport, tierOf } from "./viewport";
+import { centreOf, followZoom, inView, openingViewport, sameViewport, tierOf } from "./viewport";
 
 describe("viewport", () => {
   const screen = { width: 800, height: 600 };
@@ -27,12 +26,6 @@ describe("viewport", () => {
       "compact",
       "overview",
       "map",
-    ]);
-    expect(["full", "compact", "overview", "map"].map((tier) => anchorsOnly(tier as Tier))).toEqual([
-      false,
-      false,
-      true,
-      true,
     ]);
   });
 

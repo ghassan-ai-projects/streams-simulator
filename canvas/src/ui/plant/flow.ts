@@ -2,7 +2,7 @@ import { MarkerType } from "@xyflow/react";
 import type { Edge, Node } from "@xyflow/react";
 import type { NodeStatus, Shown } from "../../model/readout";
 import type { PlantView, ViewNode } from "../../model/plantView";
-import { pinHandle } from "../../model/plantView";
+import type { Point } from "../../model/wireRoute";
 
 export interface NodeLive {
   readonly shown: readonly Shown[];
@@ -121,34 +121,19 @@ function markerColor(
   return familyColor(family);
 }
 
-function centreX(view: PlantView, id: string): number {
-  const box = view.layout.nodes.get(id);
-  return box === undefined ? 0 : box.x + box.width / 2;
-}
-
-interface Ends {
-  readonly sourceHandle: string;
-  readonly targetHandle: string;
-}
-
-function ends(view: PlantView, edge: PlantView["edges"][number], anchors: boolean): Ends {
-  const leftward = centreX(view, edge.to) < centreX(view, edge.from);
-  const side = leftward
-    ? { sourceHandle: "out-left", targetHandle: "in-right" }
-    : { sourceHandle: "out", targetHandle: "in" };
-  return {
-    sourceHandle:
-      edge.fromHandle !== null && !anchors ? pinHandle(edge.fromHandle, "out", leftward) : side.sourceHandle,
-    targetHandle: edge.toHandle !== null && !anchors ? pinHandle(edge.toHandle, "in", leftward) : side.targetHandle,
-  };
-}
-
-export function flowEdges(view: PlantView, anchors = false, selected: string | null = null): Edge[] {
+export function flowEdges(
+  view: PlantView,
+  routes: ReadonlyMap<string, readonly Point[]>,
+  selected: string | null = null,
+): Edge[] {
   return view.edges.map((edge) => ({
     id: edge.id,
+    type: "wire",
     source: edge.from,
     target: edge.to,
-    ...ends(view, edge, anchors),
+    sourceHandle: "out",
+    targetHandle: "in",
+    data: { points: routes.get(edge.id) ?? [] },
     markerEnd: {
       type: MarkerType.ArrowClosed,
       width: 10,
@@ -156,7 +141,7 @@ export function flowEdges(view: PlantView, anchors = false, selected: string | n
       color: markerColor(edge.family, selected, edge.from, edge.to),
     },
     className: `wire family-${edge.family ?? "none"}${emphasis(selected, edge.from, edge.to)}`,
-    zIndex: touches(selected, edge.from, edge.to) ? 1 : 0,
+    zIndex: 0,
     label: edge.count > 1 ? `×${String(edge.count)}` : undefined,
     ariaLabel: `${edge.from} to ${edge.to}${edge.count > 1 ? `, ${String(edge.count)} links` : ""}`,
     focusable: false,

@@ -48,10 +48,6 @@ export function tierOf(zoom: number): Tier {
   return zoom >= 0.25 ? "overview" : "map";
 }
 
-export function anchorsOnly(tier: Tier): boolean {
-  return tier === "overview" || tier === "map";
-}
-
 interface Size {
   readonly width: number;
   readonly height: number;

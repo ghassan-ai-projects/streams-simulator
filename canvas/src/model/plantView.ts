@@ -60,11 +60,6 @@ export function headerHeight(label: string): number {
   return nodeSize.header + nodeSize.kind + idExtra(label);
 }
 
-export function pinHandle(name: string, side: "in" | "out", farSide: boolean): string {
-  if (!farSide) return name;
-  return `${name}${side === "in" ? "@right" : "@left"}`;
-}
-
 export function hallOf(id: string): string | null {
   const slash = id.indexOf("/");
   return slash > 0 ? id.slice(0, slash) : null;

@@ -1,41 +1,10 @@
-import { Handle, Position } from "@xyflow/react";
-import type { Pin, Pins as PortPins } from "../../model/ports";
+import type { Pins as PortPins } from "../../model/ports";
 import type { Shown } from "../../model/readout";
 import type { ReviewRow } from "../../model/reviewRows";
 import { reviewBody } from "../../model/reviewRows";
-import { pinHandle } from "../../model/plantView";
 import { cx } from "../cx";
 import { OutsideMark } from "../OutsideMark";
 import styles from "./nodes.module.css";
-
-function rowHandles(side: "in" | "out", pin: Pin) {
-  const type = side === "in" ? "target" : "source";
-  const near = side === "in" ? Position.Left : Position.Right;
-  const far = side === "in" ? Position.Right : Position.Left;
-  return [
-    <Handle
-      key={pin.name}
-      type={type}
-      position={near}
-      id={pin.name}
-      className={cx(styles.rowAnchor, near === Position.Left ? styles.rowLeft : styles.rowRight)}
-      isConnectable={false}
-    />,
-    <Handle
-      key={pinHandle(pin.name, side, true)}
-      type={type}
-      position={far}
-      id={pinHandle(pin.name, side, true)}
-      className={cx(styles.rowAnchor, far === Position.Left ? styles.rowLeft : styles.rowRight)}
-      isConnectable={false}
-    />,
-  ];
-}
-
-function RowPin({ row }: { readonly row: ReviewRow }) {
-  if (row.pin === null || row.side === null) return null;
-  return <>{rowHandles(row.side, row.pin)}</>;
-}
 
 function Value({ row }: { readonly row: ReviewRow }) {
   const { reading } = row;
@@ -64,10 +33,7 @@ function ReviewRowItem({ row }: { readonly row: ReviewRow }) {
   const attention = reading?.attention ?? null;
   return (
     <div className={cx(attention !== null && styles[attention], reading === null && styles.unobserved)}>
-      <dt title={row.label}>
-        {row.label}
-        <RowPin row={row} />
-      </dt>
+      <dt title={row.label}>{row.label}</dt>
       <dd
         className={reading?.word === true ? styles.word : undefined}
         title={reading?.word === true ? reading.value : undefined}

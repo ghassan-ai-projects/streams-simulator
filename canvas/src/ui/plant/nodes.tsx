@@ -4,7 +4,7 @@ import { ChevronRight, OctagonAlert, TriangleAlert, Wrench } from "lucide-react"
 import type { CSSProperties } from "react";
 import { useRef } from "react";
 import type { ViewNode } from "../../model/plantView";
-import { describeNode, headerHeight, idExtra, nodeSize, pinHandle } from "../../model/plantView";
+import { describeNode, headerHeight, idExtra } from "../../model/plantView";
 import { familyNames, shapeOf } from "../../model/ports";
 import type { Pin } from "../../model/ports";
 import type { NodeStatus } from "../../model/readout";
@@ -14,8 +14,6 @@ import { cx } from "../cx";
 import { Readout } from "./Readout";
 import { useLabelFit } from "./labelFit";
 import styles from "./nodes.module.css";
-
-const pinRowMiddle = nodeSize.pin / 2;
 
 function pinLook(pin: Pin): { readonly family: string; readonly shape: string; readonly typeName: string } {
   if (pin.family === null) {
@@ -90,41 +88,7 @@ function Pins({
           <PinRow key={pin.name} pin={pin} side="out" editable={editable} zoom={zoom} />
         ))}
       </div>
-      <FarHandles ins={ins} outs={outs} />
     </div>
-  );
-}
-
-function rowTop(index: number): string {
-  return `calc(var(--space-1) + ${String(pinRowMiddle + index * nodeSize.pin)}px)`;
-}
-
-function FarHandles({ ins, outs }: { readonly ins: readonly Pin[]; readonly outs: readonly Pin[] }) {
-  return (
-    <>
-      {ins.map((pin, index) => (
-        <Handle
-          key={pinHandle(pin.name, "in", true)}
-          type="target"
-          position={Position.Right}
-          id={pinHandle(pin.name, "in", true)}
-          className={styles.sideAnchor}
-          style={{ top: rowTop(index) }}
-          isConnectable={false}
-        />
-      ))}
-      {outs.map((pin, index) => (
-        <Handle
-          key={pinHandle(pin.name, "out", true)}
-          type="source"
-          position={Position.Left}
-          id={pinHandle(pin.name, "out", true)}
-          className={styles.sideAnchor}
-          style={{ top: rowTop(index) }}
-          isConnectable={false}
-        />
-      ))}
-    </>
   );
 }
 
@@ -220,8 +184,6 @@ export function InstanceNode({ data, selected }: NodeProps<InstanceNodeType>) {
     >
       <Handle type="target" position={Position.Left} id="in" className={styles.anchor} isConnectable={false} />
       <Handle type="source" position={Position.Right} id="out" className={styles.anchor} isConnectable={false} />
-      <Handle type="target" position={Position.Right} id="in-right" className={styles.anchor} isConnectable={false} />
-      <Handle type="source" position={Position.Left} id="out-left" className={styles.anchor} isConnectable={false} />
       <InstanceHeader data={data} status={status} />
       {data.live !== null && (
         <Readout
@@ -254,7 +216,6 @@ export function HallNode({ data, selected }: NodeProps<HallNodeType>) {
       aria-label={describeNode(view, selected, status, count)}
     >
       <Handle type="target" position={Position.Left} id="in" className={styles.plain} isConnectable={false} />
-      <Handle type="target" position={Position.Right} id="in-right" className={styles.plain} isConnectable={false} />
       <div className={styles.header}>
         <span className={styles.id}>{view.label}</span>
         <StatusTag status={status} count={count} />
@@ -264,7 +225,6 @@ export function HallNode({ data, selected }: NodeProps<HallNodeType>) {
         {view.detail}
       </div>
       <Handle type="source" position={Position.Right} id="out" className={styles.plain} isConnectable={false} />
-      <Handle type="source" position={Position.Left} id="out-left" className={styles.plain} isConnectable={false} />
     </div>
   );
 }

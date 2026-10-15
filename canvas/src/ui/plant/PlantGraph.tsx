@@ -6,16 +6,19 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { directionOf, firstOf, nearest } from "../../model/graphKeys";
 import type { PlantView } from "../../model/plantView";
 import { describeNode, hallCount } from "../../model/plantView";
-import { anchorsOnly, tierOf } from "../../model/viewport";
+import { tierOf } from "../../model/viewport";
+import { routeView } from "../../model/wireView";
 import type { FlowNode, NodeLive } from "./flow";
 import { flowEdges, flowNodes } from "./flow";
 import { useZoomActions } from "./GraphControls";
 import { plainKey } from "../keys";
 import { FrameNode, FrameTitleNode, HallNode, InstanceNode } from "./nodes";
+import { WireEdge } from "./WireEdge";
 import { useFitted, useFollowSelection } from "./viewportFit";
 import styles from "./PlantScreen.module.css";
 
 const nodeTypes = { instance: InstanceNode, hall: HallNode, frame: FrameNode, frameTitle: FrameTitleNode };
+const edgeTypes = { wire: WireEdge };
 
 export interface PlantGraphProps {
   readonly view: PlantView;
@@ -165,6 +168,7 @@ const graphNames = {
 
 const fixedProps = {
   nodeTypes,
+  edgeTypes,
   nodesDraggable: false,
   nodesFocusable: false,
   edgesFocusable: false,
@@ -198,7 +202,9 @@ function useFlowContent({ view, selected, live, flagged, onConnect, active }: Fl
   const zoom = useStore((state) => state.transform[2]);
   const tier = tierOf(zoom);
   const shown = view.nodes.some((entry) => entry.id === selected) ? selected : null;
-  const edges = useMemo(() => flowEdges(view, anchorsOnly(tier), shown), [view, tier, shown]);
+  const review = live !== undefined;
+  const routes = useMemo(() => routeView(view, tier, review), [view, tier, review]);
+  const edges = useMemo(() => flowEdges(view, routes, shown), [view, routes, shown]);
   return { nodes, edges, zoom };
 }
 
