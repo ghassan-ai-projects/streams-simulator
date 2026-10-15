@@ -54,7 +54,7 @@ test("a new plant is built in Chrome, a name the binary would refuse is stopped 
   await expect(page.getByRole("heading", { name: "Links 1" })).toBeVisible();
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await page.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByRole("status").filter({ hasText: /^Ready to run\. Composed \d+ channels/ })).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: /^Ready to run\. Saved\.$/ })).toBeVisible();
   const folder = env("CANVAS_WORKSPACE");
   const cli = join(mkdtempSync(join(tmpdir(), "compose-")), "lab.domain.json");
   execFileSync(env("CANVAS_BINARY"), [

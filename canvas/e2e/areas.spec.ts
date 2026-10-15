@@ -30,7 +30,7 @@ test("an area is added inside the site, shown nested in the outline, used by equ
   await build.getByRole("button", { name: "Add to the plant" }).click();
   await expect(outline.getByRole("group").filter({ hasText: "Pump house" }).getByRole("button")).toHaveCount(1);
   await page.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByRole("status").filter({ hasText: /^Ready to run\. Composed \d+ channels/ })).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: /^Ready to run\. Saved\.$/ })).toBeVisible();
   const file = join(env("CANVAS_WORKSPACE"), "compositions", "tiered.composition.json");
   const written = JSON.parse(readFileSync(file, "utf8")) as { areas: { name: string; parent?: string }[] };
   expect(written.areas).toContainEqual({ name: "Pump house", parent: "Site" });

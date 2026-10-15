@@ -19,6 +19,7 @@ interface BarProps {
 
 interface Status {
   readonly text: string;
+  readonly detail: string | null;
   readonly tone: "busy" | "warn" | "ok" | "";
 }
 
@@ -27,16 +28,18 @@ function outcomeStatus(draft: Draft): Status {
     const count = draft.issues?.listed.length ?? 0;
     const counted = `${String(count)} ${count === 1 ? "issue" : "issues"}`;
     const why = draft.outcome.message ?? `${counted}, listed in Build`;
-    return { text: `Needs fixing: ${why}. Your changes are saved.`, tone: "warn" };
+    return { text: `Needs fixing: ${why}. Your changes are saved.`, detail: null, tone: "warn" };
   }
-  if (draft.outcome?.kind === "composed") return { text: `Ready to run. ${draft.outcome.summary} Saved.`, tone: "ok" };
-  return { text: "No changes", tone: "" };
+  if (draft.outcome?.kind === "composed") {
+    return { text: "Ready to run. Saved.", detail: draft.outcome.summary, tone: "ok" };
+  }
+  return { text: "No changes", detail: null, tone: "" };
 }
 
 function statusOf(draft: Draft): Status {
-  if (draft.saving) return { text: "Saving and composing…", tone: "busy" };
-  if (draft.failure !== null) return { text: `Not saved: ${draft.failure.message}`, tone: "warn" };
-  if (draft.doc !== draft.saved) return { text: "Unsaved changes", tone: "busy" };
+  if (draft.saving) return { text: "Saving and composing…", detail: null, tone: "busy" };
+  if (draft.failure !== null) return { text: `Not saved: ${draft.failure.message}`, detail: null, tone: "warn" };
+  if (draft.doc !== draft.saved) return { text: "Unsaved changes", detail: null, tone: "busy" };
   return outcomeStatus(draft);
 }
 
@@ -213,12 +216,13 @@ export function EditorBar({ draft, editor, navigation, request }: BarProps & { r
     <div className={plantStyles.bar}>
       <PenLine size={14} aria-hidden="true" />
       <Title draft={draft} navigation={navigation} />
-      <span role="status" className={styles[`status-${status.tone || "idle"}`]} title={status.text}>
-        {status.text}
-      </span>
       <OpenPlant draft={draft} navigation={navigation} />
       <ShowIssues draft={draft} editor={editor} request={request} />
       <Reload draft={draft} editor={editor} />
+      {equipmentOf(draft.doc).length > 0 && <ZoomBar />}
+      <span role="status" className={styles[`status-${status.tone || "idle"}`]} title={status.detail ?? status.text}>
+        {status.text}
+      </span>
       <History draft={draft} editor={editor} />
       <Revert disabled={clean || draft.saving} editor={editor} />
       <button
@@ -233,7 +237,6 @@ export function EditorBar({ draft, editor, navigation, request }: BarProps & { r
         <Save size={14} aria-hidden="true" />
         Save
       </button>
-      {equipmentOf(draft.doc).length > 0 && <ZoomBar />}
     </div>
   );
 }

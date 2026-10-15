@@ -143,9 +143,10 @@ describe("plant editor panel", () => {
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "CH-2" } });
     fireEvent.click(screen.getByRole("button", { name: "Rename" }));
     fireEvent.keyDown(document.body, { key: "s", ctrlKey: true });
-    expect(
-      await screen.findByText("Ready to run. Composed 4 channels, 2 faults, 0 effectors. Saved."),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("Ready to run. Saved.")).toHaveAttribute(
+      "title",
+      "Composed 4 channels, 2 faults, 0 effectors.",
+    );
     expect(screen.getByRole("button", { name: "Open plant" })).toBeInTheDocument();
   });
 
