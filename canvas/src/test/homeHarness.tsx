@@ -24,6 +24,11 @@ export async function show(bridge: FakeBridge, nav = navigation(), badgeFor?: (w
   const store = new WorkspaceStore(bridge);
   await store.reload();
   return render(
-    <HomeScreen workspace={store} navigation={nav.store} maker={new PlantMaker(bridge)} badgeFor={badgeFor} />,
+    <HomeScreen
+      workspace={store}
+      navigation={nav.store}
+      maker={new PlantMaker(bridge)}
+      {...(badgeFor === undefined ? {} : { badgeFor })}
+    />,
   );
 }
