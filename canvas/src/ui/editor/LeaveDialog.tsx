@@ -49,7 +49,7 @@ function LeaveButtons({ editor, navigation }: Props) {
   );
 }
 
-export function LeaveDialog({ title, editor, navigation }: Props & { readonly title: string }) {
+function LeaveDialog({ title, editor, navigation }: Props & { readonly title: string }) {
   return (
     <div className={leave.scrim}>
       <dialog
