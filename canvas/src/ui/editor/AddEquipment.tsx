@@ -127,7 +127,7 @@ function LibraryPick({ library, use, setUse }: PickProps) {
       />
       <select
         aria-label="Equipment"
-        size={6}
+        size={Math.min(6, Math.max(2, found.length))}
         value={use}
         onChange={(event) => {
           setUse(event.target.value);
