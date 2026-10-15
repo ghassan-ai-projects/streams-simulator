@@ -158,3 +158,7 @@ export function pairingMessage(failure: BridgeFailure): string {
 export function pairingBlocked(failure: BridgeFailure | null): boolean {
   return failure !== null && (failure.code === "pairing_locked" || failure.code === "pairing_used");
 }
+
+export function isMissing(failure: BridgeFailure): boolean {
+  return failure.code === "not_found" || failure.code === "file_not_found";
+}
