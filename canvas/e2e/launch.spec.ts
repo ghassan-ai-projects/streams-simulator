@@ -87,6 +87,7 @@ test("an effector call is made at its minute and its outcome is listed before th
   await panel.getByRole("button", { name: "Start the run" }).click();
   const results = panel.getByRole("list", { name: "Effector call results" });
   await expect(results).toContainText("00:02:00 · CH-1 · set setpoint: ", { timeout: 60_000 });
+  await expect(page.getByText(/finished/)).toHaveCount(1);
   await panel.getByRole("button", { name: "Open the review" }).click();
   await expect(page.getByRole("heading", { level: 1, name: /^Run w-/ })).toBeVisible();
   const slider = page.getByRole("slider", { name: "Playback time" });

@@ -18,7 +18,7 @@ function words(state: Shown): string {
     return state.stopping ? `Stopping the run of ${state.origin.title}` : `Running ${state.origin.title} · ${at}`;
   }
   if (state.phase === "done") {
-    return `Run ${state.worldId} of ${state.origin.title} ${state.early ? "stopped early" : "finished"} · Review`;
+    return `Run ${state.worldId} ${state.early ? "stopped early" : "finished"} · Open review`;
   }
   return `The run of ${state.origin.title} did not finish`;
 }
@@ -26,7 +26,7 @@ function words(state: Shown): string {
 function announcement(state: LaunchState): string {
   if (state.phase === "idle") return "";
   if (state.phase === "running") return `Run of ${state.origin.title} started`;
-  if (state.phase === "done") return `Run ${state.worldId} ${state.early ? "stopped early" : "finished"}`;
+  if (state.phase === "done") return `The review of run ${state.worldId} is ready`;
   return words(state);
 }
 

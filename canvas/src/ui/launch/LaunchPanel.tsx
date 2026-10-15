@@ -1,7 +1,6 @@
 import { Play, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { LaunchState, LaunchStore, Proposal } from "../../app/launchStore";
-import type { CallOutcome } from "../../model/launch";
 import { clockOf, keepKnownFaults, planSummary, speedOf } from "../../model/launch";
 import { humanise } from "../../model/report";
 import { durationOf } from "../../model/workspace";
@@ -12,6 +11,7 @@ import type { Draft } from "./draft";
 import { draftOf, firstDraft, pickedOnGraph } from "./draft";
 import type { Change } from "./FaultRows";
 import { LaunchForm } from "./LaunchForm";
+import { Result } from "./LaunchResult";
 import { RunningMark } from "./RunningMark";
 import { useFocusOnMount } from "../useFocusOnMount";
 import { cx } from "../cx";
@@ -29,40 +29,6 @@ interface LaunchPanelProps {
 
 type Running = Extract<LaunchState, { phase: "running" }>;
 type Done = Extract<LaunchState, { phase: "done" }>;
-
-function outcomeWords(outcome: CallOutcome): string {
-  const call = `${clockOf(outcome.atS)} · ${outcome.entity} · ${humanise(outcome.effector)}`;
-  return outcome.accepted ? `${call}: accepted` : `${call}: command not accepted: ${outcome.reason}`;
-}
-
-function callsWords(state: Done): string {
-  const refused = state.calls.filter((call) => !call.accepted).length;
-  if (state.calls.length === 0) return "";
-  return refused === 0
-    ? " Every effector call was accepted."
-    : ` ${String(refused)} of ${String(state.calls.length)} effector calls were not accepted.`;
-}
-
-function Result({ state, onOpen }: { readonly state: Done; readonly onOpen: () => void }) {
-  const status = useFocusOnMount<HTMLParagraphElement>();
-  return (
-    <div className={panel.body}>
-      <p className={styles.status} role="status" ref={status} tabIndex={-1}>
-        {`Run ${state.worldId} ${state.early ? "stopped early and was saved" : "finished"}.${callsWords(state)}`}
-      </p>
-      {state.calls.length > 0 && (
-        <ul className={styles.outcomes} aria-label="Effector call results">
-          {state.calls.map((outcome, index) => (
-            <li key={String(index)}>{outcomeWords(outcome)}</li>
-          ))}
-        </ul>
-      )}
-      <button type="button" className={panel.primary} onClick={onOpen}>
-        Open the review
-      </button>
-    </div>
-  );
-}
 
 function ProgressBar({ state }: { readonly state: Running }) {
   return (

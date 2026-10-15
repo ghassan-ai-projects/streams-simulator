@@ -118,6 +118,7 @@ describe("launch panel", () => {
       fake.release();
       await Promise.resolve();
     });
+    expect(screen.getByRole("status")).toHaveTextContent(/^Saved at 00:\d\d:\d\d of 00:30:00 as a shorter run/);
     await vi.waitFor(() => {
       expect(onFinished).toHaveBeenCalledWith("w-7");
     }, finishedWait);
@@ -240,7 +241,8 @@ describe("launch panel lifetime", () => {
       fake.free();
       await Promise.resolve();
     });
-    expect(screen.getByRole("status")).toHaveTextContent("Run w-7 finished.");
+    expect(screen.getByRole("status")).toHaveTextContent(/of simulated time · .* · no faults\.$/);
+    expect(screen.getByRole("status")).not.toHaveTextContent("finished");
     expect(onFinished).not.toHaveBeenCalled();
     await vi.waitFor(() => {
       expect(onFinished).toHaveBeenCalledWith("w-7");

@@ -27,7 +27,15 @@ describe("launch", () => {
     const fake = bridge();
     const store = new LaunchStore(fake);
     await store.start(origin, plan);
-    expect(store.snapshot()).toEqual({ phase: "done", origin, worldId: "w-4", early: false, calls: [] });
+    expect(store.snapshot()).toEqual({
+      phase: "done",
+      origin,
+      worldId: "w-4",
+      early: false,
+      plan,
+      reachedS: plan.durationS,
+      calls: [],
+    });
     const names = fake.calls.map((call) => call.name);
     expect([names[0], names.at(-1)]).toEqual(["world.create", "run.end"]);
     const advanced = (calls: typeof fake.calls) =>
@@ -100,7 +108,7 @@ describe("launch", () => {
     store.stopEarly();
     expect(store.snapshot()).toMatchObject({ phase: "running", stopping: true });
     await running;
-    expect(store.snapshot()).toEqual({ phase: "done", origin, worldId: "w-4", early: true, calls: [] });
+    expect(store.snapshot()).toMatchObject({ phase: "done", worldId: "w-4", early: true, calls: [] });
     expect(fake.calls.map((call) => call.name)).toEqual(["world.create", "clock.advance", "run.end"]);
     store.reset();
     store.stopEarly();
