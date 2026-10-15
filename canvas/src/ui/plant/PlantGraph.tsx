@@ -130,7 +130,7 @@ function useGraphKeys({ view, viewKey, selected, live, onSelect, onOpenHall, onE
     }
   };
   const onFocus = () => {
-    if (active === null) setActive(selected ?? firstOf(view.layout.nodes));
+    if (active === null && selected !== null) setActive(selected);
   };
   const point = (id: string | null) => {
     if (id !== null) setActive(id);
