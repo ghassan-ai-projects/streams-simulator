@@ -152,6 +152,11 @@
 }
 
 .filter {
+  flex: 0 1 12rem;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
   height: 28px;
   padding: 0 var(--space-2);
   border: 1px solid var(--border-strong);
