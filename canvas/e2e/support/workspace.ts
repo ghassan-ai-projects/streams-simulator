@@ -103,6 +103,7 @@ export function buildFixture(): Fixture {
   const jams = ["-fault", "h02/M-1=molder__product_jam@300", "-fault", "h02/M-2=molder__bearing_wear@300"];
   record(binary, workspace, "w-hall", ["-explore", ...jams], "campus-3");
   record(binary, workspace, "w-evaluate", []);
+  record(binary, workspace, "w-late", ["-fault", "D-1=air_dryer__prefilter_clogging@600"]);
   record(binary, workspace, "w-edited", []);
   appendFileSync(join(workspace, "runs", "w-edited", "trace.jsonl"), "\n");
   record(binary, workspace, "w-diverged", ["-fault", "CT-1=cooling_tower__fan_failure@600"]);

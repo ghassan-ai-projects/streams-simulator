@@ -10,6 +10,7 @@ import type { Opening } from "../../model/playback";
 import { stateUnit } from "../../model/plant";
 import { runClock } from "../../model/timeline";
 import { plantView } from "../../model/plantView";
+import { firstEventNode } from "../../model/reviewAnchor";
 import type { Report } from "../../model/report";
 import { runSpan } from "../../model/report";
 import { grouped } from "../../model/units";
@@ -108,6 +109,11 @@ function Graph({ review, state, plant, hall, onHall }: GraphProps) {
     [plant, hall, aspect],
   );
   const live = useLive(review, state, plant);
+  const report = state.report.phase === "ready" ? state.report.value : null;
+  const anchor = useMemo(
+    () => (view === null ? null : firstEventNode(report, new Set(view.nodes.map((node) => node.id)))),
+    [view, report],
+  );
   if (view === null) return <OpeningPlant />;
   return (
     <div className={styles.graphArea}>
@@ -118,7 +124,7 @@ function Graph({ review, state, plant, hall, onHall }: GraphProps) {
       />
       <div ref={ref} className={plantStyles.graphHost}>
         <PlantGraph
-          minFitZoom={0.1}
+          anchor={anchor}
           view={view}
           viewKey={hall ?? "review"}
           fitKey={`${hall ?? "review"}:${String(aspect)}`}

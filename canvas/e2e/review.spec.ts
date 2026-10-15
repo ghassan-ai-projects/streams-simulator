@@ -121,17 +121,58 @@ test("a review node lists every port of its kind as a row, observed or not, at e
   }
 });
 
-test("a review opens fitted, with every node and area inside the canvas beside the report panel", async ({ page }) => {
-  await page.setViewportSize({ width: 1280, height: 720 });
+function transformOf(): string | undefined {
+  return document.querySelector<HTMLElement>(".react-flow__viewport")?.style.transform;
+}
+
+function readoutPixels(): { readonly zoom: number; readonly shown: number; readonly smallest: number } {
+  const graph = document.querySelector("[aria-roledescription='plant graph']");
+  const zoom = Number(graph === null ? 0 : getComputedStyle(graph).getPropertyValue("--zoom"));
+  const values = [...document.querySelectorAll(".react-flow__node-instance dd")].filter(
+    (value) => value.getClientRects().length > 0 && value.textContent.trim() !== "",
+  );
+  const sizes = values.map((value) => parseFloat(getComputedStyle(value).fontSize) * zoom);
+  return { zoom, shown: values.length, smallest: Math.min(...sizes) };
+}
+
+test("a review whose plant fits at 40 % or more opens fitted, and Fit returns the same view", async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 1080 });
   await page.goto(`${env("CANVAS_APP_URL")}/#/run?world=w-evaluate`);
   await expect(page.getByText(/\d+ observations/)).toBeVisible({ timeout: 60_000 });
   await expect(page.getByRole("group", { name: /^CH-1, chiller,/ })).toBeAttached();
   await expect.poll(() => page.evaluate(nodesOutsideCanvas)).toEqual([]);
-  const opening = await page.evaluate(
-    () => document.querySelector<HTMLElement>(".react-flow__viewport")?.style.transform,
-  );
+  const opening = await page.evaluate(transformOf);
   await page.getByRole("button", { name: "Fit the plant in view" }).click();
+  await expect.poll(() => page.evaluate(transformOf)).toBe(opening);
+});
+
+test("a review of a plant too large for 40 % opens at 40 % on its first fault, with readouts of 8 px or more", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto(`${env("CANVAS_APP_URL")}/#/run?world=w-late`);
+  await expect(page.getByText(/\d+ observations/)).toBeVisible({ timeout: 60_000 });
+  const dryer = page.getByRole("group", { name: /^D-1, / });
+  await expect(dryer).toBeAttached();
+  const canvas = page.locator(".react-flow");
   await expect
-    .poll(() => page.evaluate(() => document.querySelector<HTMLElement>(".react-flow__viewport")?.style.transform))
-    .toBe(opening);
+    .poll(async () => {
+      const box = await dryer.boundingBox();
+      const frame = await canvas.boundingBox();
+      if (box === null || frame === null) return false;
+      return (
+        box.x >= frame.x &&
+        box.y >= frame.y &&
+        box.x + box.width <= frame.x + frame.width &&
+        box.y + box.height <= frame.y + frame.height
+      );
+    })
+    .toBe(true);
+  const opened = await page.evaluate(readoutPixels);
+  expect(opened.zoom).toBeGreaterThanOrEqual(0.4);
+  expect(opened.shown).toBeGreaterThan(0);
+  expect(opened.smallest).toBeGreaterThanOrEqual(7.99);
+  expect(await page.evaluate(nodesOutsideCanvas)).not.toEqual([]);
+  await page.getByRole("button", { name: "Fit the plant in view" }).click();
+  await expect.poll(() => page.evaluate(nodesOutsideCanvas)).toEqual([]);
 });

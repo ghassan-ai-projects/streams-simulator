@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { abnormalFirst, attentionOf, channelWords, sharedTimes, showReading, worstOf } from "./readout";
+import { abnormalFirst, attentionOf, channelWords, pinWords, sharedTimes, showReading, worstOf } from "./readout";
 import { displayUnit } from "./units";
 
 const at = (channel: string, value: number | string | boolean, unit = "") => ({ channel, value, unit, atNs: 0 });
@@ -80,6 +80,10 @@ describe("readouts", () => {
     const order = abnormalFirst([entry("a", null), entry("b", "warn"), entry("c", "alarm"), entry("d", null)]);
     expect(order.map((shown) => shown.channel)).toEqual(["c", "b", "a", "d"]);
     expect(channelWords("chw_supply_temp")).toBe("chw supply temp");
+    expect(pinWords("cond_water_in", "in")).toEqual({ full: "cond water in", short: "cond water" });
+    expect(pinWords("power_out", "out")).toEqual({ full: "power out", short: "power" });
+    expect(pinWords("power_out", "in")).toEqual({ full: "power out", short: "power out" });
+    expect(pinWords("in", "in")).toEqual({ full: "in", short: "in" });
   });
 
   it("rolls a hall up to its worst status and how many members share it", () => {

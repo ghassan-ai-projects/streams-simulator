@@ -47,4 +47,36 @@ describe("label fit", () => {
     rerender({ zoom: 1 });
     expect(label.style.visibility).toBe("");
   });
+
+  it("falls back to the short form of a label before hiding it", () => {
+    const span = document.createElement("span");
+    Object.defineProperties(span, {
+      scrollWidth: { get: () => (span.dataset.form === "short" ? 60 : 120) },
+      clientWidth: { value: 80 },
+    });
+    renderHook(() => {
+      useLabelFit({ current: span }, 0.5);
+    });
+    expect(span.dataset.form).toBe("short");
+    expect(span.style.visibility).toBe("");
+  });
+
+  it("starts from the full form again at every zoom", () => {
+    const span = document.createElement("span");
+    let wide = true;
+    Object.defineProperties(span, {
+      scrollWidth: { get: () => (wide && span.dataset.form === "full" ? 120 : 60) },
+      clientWidth: { value: 80 },
+    });
+    const { rerender } = renderHook(
+      ({ zoom }) => {
+        useLabelFit({ current: span }, zoom);
+      },
+      { initialProps: { zoom: 0.5 } },
+    );
+    expect(span.dataset.form).toBe("short");
+    wide = false;
+    rerender({ zoom: 1 });
+    expect(span.dataset.form).toBe("full");
+  });
 });

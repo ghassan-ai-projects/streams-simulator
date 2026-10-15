@@ -7,7 +7,7 @@ import { directionOf, firstOf, nearest } from "../../model/graphKeys";
 import type { PlanMark } from "../../model/planMarks";
 import type { PlantView } from "../../model/plantView";
 import { describeNode, hallCount } from "../../model/plantView";
-import { openingFloor, screenPixel, tierOf } from "../../model/viewport";
+import { openingFloor, screenPixel, textFloorPx, tierOf } from "../../model/viewport";
 import { routeView } from "../../model/wireView";
 import type { FlowNode, NodeLive } from "./flow";
 import { flowEdges, flowNodes } from "./flow";
@@ -30,6 +30,7 @@ export interface PlantGraphProps {
   readonly onOpenHall?: (hall: string) => void;
   readonly onEscape?: () => void;
   readonly minFitZoom?: number;
+  readonly anchor?: string | null;
   readonly focusZoom?: number;
   readonly flagged?: ReadonlySet<string>;
   readonly fitKey?: string;
@@ -229,7 +230,7 @@ function Flow(props: FlowProps) {
       {...fixedProps}
       {...connection(onConnect)}
       className={`tier-${tierOf(zoom)}`}
-      style={{ "--zoom": String(zoom) } as CSSProperties}
+      style={{ "--zoom": String(zoom), "--floor": `${String(textFloorPx / zoom)}px` } as CSSProperties}
       {...graphNames}
       onKeyDown={keys.onKeyDown}
       onFocus={keys.onFocus}
@@ -250,7 +251,8 @@ function Flow(props: FlowProps) {
 
 export function PlantGraph(props: PlantGraphProps) {
   const keys = useGraphKeys(props);
-  useFitted(props.fitKey ?? props.viewKey, props.minFitZoom ?? openingFloor);
+  const anchor = props.anchor ?? firstOf(props.view.layout.nodes);
+  useFitted(props.fitKey ?? props.viewKey, props.minFitZoom ?? openingFloor, anchor);
   useFollowSelection(keys.active ?? props.selected, props.focusZoom ?? 0);
   return (
     <div className={styles.graph} onPointerDown={keys.onPointerDown}>

@@ -9,7 +9,7 @@ import { describeNode, headerHeight, idExtra } from "../../model/plantView";
 import { familyNames, shapeOf } from "../../model/ports";
 import type { Pin } from "../../model/ports";
 import type { NodeStatus } from "../../model/readout";
-import { channelWords, statusWords } from "../../model/readout";
+import { pinWords, statusWords } from "../../model/readout";
 import type { PlanMark } from "../../model/planMarks";
 import type { FrameTitleNodeType, HallNodeType, InstanceNodeType, NodeLive } from "./flow";
 import { cx } from "../cx";
@@ -42,6 +42,7 @@ function PinRow({
   readonly zoom: number;
 }) {
   const look = pinLook(pin);
+  const words = pinWords(pin.name, side);
   const label = useRef<HTMLSpanElement>(null);
   useLabelFit(label, zoom);
   return (
@@ -57,9 +58,10 @@ function PinRow({
         isConnectable={editable}
       />
       <span ref={label} className={styles.pinName}>
-        {channelWords(pin.name)}
+        <span className={styles.pinFull}>{words.full}</span>
+        <span className={styles.pinShort}>{words.short}</span>
       </span>
-      <span className="sr-only">{`, ${look.typeName}, ${connectionWords[pin.connection]}`}</span>
+      <span className="sr-only">{`, ${side === "in" ? "input" : "output"}, ${look.typeName}, ${connectionWords[pin.connection]}`}</span>
     </div>
   );
 }

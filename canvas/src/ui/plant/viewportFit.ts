@@ -1,5 +1,5 @@
 import type { ReactFlowInstance } from "@xyflow/react";
-import { useReactFlow, useStore, useStoreApi } from "@xyflow/react";
+import { useReactFlow, useStore } from "@xyflow/react";
 import { useEffect, useRef } from "react";
 import type { Viewport } from "../../model/viewport";
 import type { PlacedTitle } from "../../model/frameTitle";
@@ -20,12 +20,6 @@ interface Size {
   readonly height: number;
 }
 
-const opened = new WeakMap<object, Viewport>();
-
-export function openingOf(store: object): Viewport | null {
-  return opened.get(store) ?? null;
-}
-
 function titlesOf(nodes: readonly FlowNode[]): PlacedTitle[] {
   return nodes.flatMap((node): PlacedTitle[] =>
     node.type === "frameTitle"
@@ -34,14 +28,20 @@ function titlesOf(nodes: readonly FlowNode[]): PlacedTitle[] {
   );
 }
 
-export function fittedViewport(flow: ReactFlowInstance<FlowNode>, screen: Size, minZoom: number): Viewport {
+export function fittedViewport(
+  flow: ReactFlowInstance<FlowNode>,
+  screen: Size,
+  minZoom: number,
+  anchor: string | null = null,
+): Viewport {
   const nodes = flow.getNodes();
   const bounds = flow.getNodesBounds(nodes);
   const limits = { pad: 16, headroom: 24, minZoom, maxZoom: 1 };
-  const plain = openingViewport(bounds, screen, limits);
+  const focus = anchor !== null && flow.getNode(anchor) !== undefined ? flow.getNodesBounds([anchor]) : null;
+  const plain = openingViewport(bounds, screen, limits, focus);
   if (tierOf(plain.zoom) === "full") return plain;
   const lifted = boundsWithTitles(bounds, titlesOf(nodes), screenPixel(plain.zoom));
-  return openingViewport(lifted, screen, limits);
+  return openingViewport(lifted, screen, limits, focus);
 }
 
 interface Limits extends Size {
@@ -63,20 +63,18 @@ function useScreen(): Size & { readonly ready: boolean } {
   return { ready: ready && width > 0, width, height };
 }
 
-export function useFitted(fitKey: string, minZoom: number) {
+export function useFitted(fitKey: string, minZoom: number, anchor: string | null) {
   const flow = useReactFlow<FlowNode>();
-  const store = useStoreApi<FlowNode>();
   const { ready, width, height } = useScreen();
   const last = useRef<{ key: string; viewport: Viewport | null }>({ key: "", viewport: null });
   useEffect(() => {
     if (!ready) return;
     const { key, viewport } = last.current;
     if (key === fitKey && (viewport === null || !sameViewport(viewport, flow.getViewport()))) return;
-    const fitted = fittedViewport(flow, { width, height }, minZoom);
+    const fitted = fittedViewport(flow, { width, height }, minZoom, anchor);
     last.current = { key: fitKey, viewport: fitted };
-    opened.set(store, fitted);
     void flow.setViewport(fitted);
-  }, [flow, store, ready, width, height, fitKey, minZoom]);
+  }, [flow, ready, width, height, fitKey, minZoom, anchor]);
 }
 
 export function useFollowSelection(selected: string | null, focusZoom: number) {

@@ -80,6 +80,13 @@ export function channelWords(name: string): string {
   return name.replaceAll("_", " ");
 }
 
+export function pinWords(name: string, side: "in" | "out"): { readonly full: string; readonly short: string } {
+  const full = channelWords(name);
+  const suffix = ` ${side}`;
+  const short = full.endsWith(suffix) && full.length > suffix.length ? full.slice(0, -suffix.length) : full;
+  return { full, short };
+}
+
 const statusRank = { alarm: 0, fault: 1, warn: 2 } as const;
 
 export function worstOf(statuses: readonly NodeStatus[]): { readonly status: NodeStatus; readonly count: number } {

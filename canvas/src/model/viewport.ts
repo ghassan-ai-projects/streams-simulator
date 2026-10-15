@@ -42,6 +42,8 @@ export function centreOf(box: Rect): { readonly x: number; readonly y: number } 
 
 export const openingFloor = 0.4;
 
+export const textFloorPx = 8;
+
 const pixelSteps = [1, 1.25, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10, 13, 16, 20] as const;
 
 export function screenPixel(zoom: number): number {
@@ -53,7 +55,7 @@ export type Tier = "full" | "compact" | "overview" | "map";
 
 export function tierOf(zoom: number): Tier {
   if (zoom >= 1) return "full";
-  if (zoom >= 0.5) return "compact";
+  if (zoom >= openingFloor) return "compact";
   return zoom >= 0.25 ? "overview" : "map";
 }
 
@@ -62,9 +64,19 @@ interface Size {
   readonly height: number;
 }
 
-function centred(start: number, extent: number, room: number, zoom: number, pad: number): number {
-  const used = extent * zoom;
-  return used <= room ? pad + (room - used) / 2 - start * zoom : pad - start * zoom;
+interface Span {
+  readonly start: number;
+  readonly extent: number;
+}
+
+function centred(content: Span, room: number, zoom: number, pad: number, focus: Span | null): number {
+  const used = content.extent * zoom;
+  if (used <= room) return pad + (room - used) / 2 - content.start * zoom;
+  const lead = pad - content.start * zoom;
+  if (focus === null) return lead;
+  const trail = pad + room - (content.start + content.extent) * zoom;
+  const wanted = pad + room / 2 - (focus.start + focus.extent / 2) * zoom;
+  return Math.min(lead, Math.max(trail, wanted));
 }
 
 export interface FitLimits {
@@ -74,14 +86,16 @@ export interface FitLimits {
   readonly maxZoom: number;
 }
 
-export function openingViewport(bounds: Rect, screen: Size, limits: FitLimits): Viewport {
+export function openingViewport(bounds: Rect, screen: Size, limits: FitLimits, anchor: Rect | null = null): Viewport {
   const top = limits.pad + limits.headroom;
   const room = { width: screen.width - 2 * limits.pad, height: screen.height - top - limits.pad };
   const fit = Math.min(room.width / bounds.width, room.height / bounds.height);
   const zoom = Math.min(limits.maxZoom, Math.max(limits.minZoom, fit));
+  const across = { start: bounds.x, extent: bounds.width };
+  const down = { start: bounds.y, extent: bounds.height };
   return {
-    x: centred(bounds.x, bounds.width, room.width, zoom, limits.pad),
-    y: centred(bounds.y, bounds.height, room.height, zoom, top),
+    x: centred(across, room.width, zoom, limits.pad, anchor && { start: anchor.x, extent: anchor.width }),
+    y: centred(down, room.height, zoom, top, anchor && { start: anchor.y, extent: anchor.height }),
     zoom,
   };
 }
