@@ -21,8 +21,8 @@ Numbered by severity: Medium first (ISS-8D-01 to ISS-8D-09), then Low (ISS-8D-10
 - Observed: several wire ends sit on the lower edge of the header band or on the kind row, not on a pin row, and some wires hook back at the node edge. ISS-6D-11 and ISS-6D-32 are recorded as fixed; for these wires they are not.
 - Expected: every wire ends on the pin row of its port, never on the header and never in a loop (E-14, P-14).
 - Suggestion: anchor a wire end to the port's own row, and route a same-column link around the node edge instead of hooking it.
-- Status: partly fixed cbe39f1 (open: the live review graph still ends wires on header anchors; a link that loops at a shelf wrap, such as Site to Production hall A, is not fixed; area ordering was tried in 8b52380 and reverted in cb7553d because it clipped hall views in the review e2e)
-- Fix: Plant view: a wire end resolves to the pin row of its port at 50 % and up (a link without a recorded port takes the first unconnected pin of its side); handles re-measure on a zoom tier change. Review graph and wrap loops still open.
+- Status: fixed 3e237f3, 322db4d (area ordering left out: see the Fix line)
+- Fix: Plant view and review: a wire end lands on the pin row of its port, and a wire leaves or enters on the side that faces its other end (a far-side handle sits on the same row), so a link back to the left no longer loops round its node (boiler steam loop: 1 loop in 10 wires before, 0 after). Review: a wire ends on the readout row of its port's channel (row centre; 24 of 40 ends in the measured w-33 review), or at the body's vertical centre when that channel is not shown (16 of 40), never on the header (before: 40 of 40 ends sat at a fixed 56 px, 15 px below the header's bottom edge and on the label of the first readout row, not on a row's centre). Area ordering (8b52380, reverted in cb7553d): left out. A second attempt changed the order of the areas, not the nodes inside one, and failed two e2e specs (plant.spec "Enter opens a hall and the arrows keep working", review.spec "a hall carries its faulted members"): the hall nodes fell outside the fitted view. Nodes inside an area already follow their predecessors (orderByPredecessors), so no within-area change was made.
 
 ## ISS-8D-02 Wires cross area frame titles
 - Severity: Medium
@@ -181,8 +181,8 @@ Numbered by severity: Medium first (ISS-8D-01 to ISS-8D-09), then Low (ISS-8D-10
 - Observed: the node height is fixed by something other than its content, so a two-channel node looks unfinished.
 - Expected: node height follows its rows at each zoom, with even heights across the graph (V-14).
 - Suggestion: size node height from the number of rows, with a minimum.
-- Status: won't-fix node height is one shared readout height in plantView; a per-node height needs the review's channel count per node passed into the model, which is not done in this round
-- Fix: No change.
+- Status: won't-fix the height of a readout node cannot follow its row count in the model alone: the compact tier stacks each row's label above its value in CSS pixels that scale with 1/zoom, so a count-based height clips two-row nodes at 50 % unless the model knows the tier; the height stays one shared value
+- Fix: No change. The readout box is fixed at 132 px and the node at header + readout; a per-row height needs the tier in plantView's layout inputs (a separate change).
 
 ## ISS-8D-18 The editor outline spends the rail on four empty area groups
 - Severity: Low
