@@ -32,7 +32,7 @@ describe("inspector", () => {
     expect((await axe.run(view.container)).violations).toEqual([]);
   });
 
-  it("shows a declared component title and purpose while keeping kind and reference secondary", async () => {
+  it("shows a declared component title and purpose while keeping the raw id as the only repeat", async () => {
     const spec: ComponentSpec = {
       category: "cool",
       ports: [],
@@ -43,7 +43,8 @@ describe("inspector", () => {
       <Inspector plant={parsePlant(domain, composition)} selected="CH-1" specs={new Map([["lib/chiller", spec]])} />,
     );
     expect(screen.getByText("Chiller · Cooling")).toBeInTheDocument();
-    expect(screen.getByText("Kind: chiller · lib/chiller")).toBeInTheDocument();
+    expect(screen.getByText("lib/chiller")).toBeInTheDocument();
+    expect(screen.queryByText(/Kind: /)).not.toBeInTheDocument();
     fireEvent.click(screen.getByText("What this component models"));
     expect(screen.getByText("Moves heat from chilled water to condenser water.")).toBeInTheDocument();
     expect((await axe.run(view.container)).violations).toEqual([]);

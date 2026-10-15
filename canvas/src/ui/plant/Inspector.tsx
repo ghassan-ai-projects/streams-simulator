@@ -127,9 +127,6 @@ function Head({
   readonly onClose?: (() => void) | undefined;
 }) {
   const title = spec?.title ?? kindLabel(instance.kind);
-  const reference = [spec?.title === undefined ? "" : `Kind: ${instance.kind}`, instance.component ?? ""]
-    .filter(Boolean)
-    .join(" · ");
   return (
     <header className={styles.inspectorHead}>
       <div className={styles.headLine}>
@@ -141,7 +138,7 @@ function Head({
         )}
       </div>
       <p className={styles.kindLine}>{[title, instance.area].filter(Boolean).join(" · ")}</p>
-      {reference !== "" && <p className={styles.source}>{reference}</p>}
+      {instance.component !== null && <p className={styles.source}>{instance.component}</p>}
       {spec?.description !== undefined && (
         <details className={styles.modelDetails}>
           <summary>What this component models</summary>
