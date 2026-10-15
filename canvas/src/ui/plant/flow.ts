@@ -21,7 +21,7 @@ type FrameData = Readonly<{ title: string; count: number }>;
 
 export type InstanceNodeType = Node<InstanceData, "instance">;
 export type HallNodeType = Node<InstanceData, "hall">;
-export type FrameNodeType = Node<FrameData, "frame">;
+type FrameNodeType = Node<FrameData, "frame">;
 export type FrameTitleNodeType = Node<FrameData, "frameTitle">;
 export type FlowNode = InstanceNodeType | HallNodeType | FrameNodeType | FrameTitleNodeType;
 
