@@ -60,9 +60,9 @@ function ReportPending({ loading, elapsed }: { readonly loading: boolean; readon
   return (
     <>
       <span className={styles.chip}>
-        {loading ? `Report · streamsim report reading the run · ${String(elapsed)} s` : "No report"}
+        {loading ? `Reading the run · ${String(elapsed)} s` : "No report"}
       </span>
-      <Announce text={loading ? "streamsim report is reading the run" : "No report"} />
+      <Announce text={loading ? "Reading the run" : "No report"} />
     </>
   );
 }
