@@ -29,7 +29,7 @@ export interface WireScene {
   readonly pixel?: number;
 }
 
-export const frameMargin = 12;
+const frameMargin = 12;
 
 export const wireClearance = { node: 8, stub: 16, lane: 6 } as const;
 
