@@ -20,7 +20,7 @@ test("an incomplete stamp never reads Reproduces when the completed journals con
   await expect(replay).not.toContainText("Reproduces");
   await expect(details.getByRole("note")).toContainText("This run did not verify");
   await expect(page.getByRole("status").filter({ hasText: /^Verified$/ })).toHaveCount(0);
-  await replay.getByText("What differs").click();
+  await replay.getByText("For developers").click();
   await expect(replay.locator("pre")).toContainText("incomplete");
   await page
     .getByRole("navigation", { name: "Outline" })

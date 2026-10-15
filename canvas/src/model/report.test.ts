@@ -86,9 +86,9 @@ describe("run report", () => {
     expect(parseReplay({ matches: "yes" })).toBeNull();
     expect(parseReplay(null)).toBeNull();
     expect(replayLine({ phase: "loading" })).toMatch(/^Replaying/);
-    expect(replayLine({ phase: "failed" })).toMatch(/^Not checked/);
+    expect(replayLine({ phase: "failed" })).toMatch(/^Not checked: this run could not be replayed/);
     expect(replayLine(ready(true))).toMatch(/^Reproduces/);
-    expect(replayLine(ready(false))).toMatch(/^Does not verify: streamsim verify reported/);
+    expect(replayLine(ready(false))).toMatch(/^Does not verify: replaying the run gave a different/);
     const because = (reason: string, file = "") =>
       replayLine({ phase: "ready", value: { matches: false, domainChanged: false, detail: "", reason, file } });
     expect(because("file_missing", "ledger.jsonl")).toBe(

@@ -114,3 +114,9 @@ export function integrityLine(report: Report, verify: VerifyState): string {
       return verify.phase === "failed" ? replayLine(verify) : "Not checked: the run recorded no file digests.";
   }
 }
+
+export function fileLine(report: Report): string {
+  if (report.verification === "files_match") return "Files match the record.";
+  if (report.verification === "files_differ") return "The files changed after the run.";
+  return "The run recorded no file digests.";
+}

@@ -243,12 +243,12 @@ const reasons: Readonly<Record<string, (file: string) => string>> = {
 
 export function replayLine(verify: VerifyState): string {
   if (verify.phase === "loading") return "Replaying the run to check that it reproduces…";
-  if (verify.phase === "failed") return "Not checked: streamsim verify could not replay this run.";
+  if (verify.phase === "failed") return "Not checked: this run could not be replayed for its verdict.";
   const phrase = reasons[verify.value.reason];
   if (phrase !== undefined) return phrase(verify.value.file);
   return verify.value.matches
     ? "Reproduces: replaying the run gave the same output."
-    : "Does not verify: streamsim verify reported a mismatch.";
+    : "Does not verify: replaying the run gave a different output than recorded.";
 }
 
 export type VerifyState =

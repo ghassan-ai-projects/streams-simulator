@@ -51,7 +51,7 @@ describe("run status", () => {
       verified: { phase: "failed", failure: { status: 422, code: "x", message: "run.json missing", issues: [] } },
     });
     render(<Banners state={failed} />);
-    expect(screen.getByRole("alert")).toHaveTextContent("Not checked: streamsim verify could not replay this run.");
+    expect(screen.getByRole("alert")).toHaveTextContent("Not checked: this run could not be replayed for its verdict.");
     expect(screen.getByText("run.json missing")).toBeInTheDocument();
   });
 

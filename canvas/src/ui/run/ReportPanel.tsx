@@ -1,6 +1,6 @@
 import type { Report, VerifyState } from "../../model/report";
 import { badgeOf, replayLine } from "../../model/report";
-import { integrityLine, kpisOf } from "../../model/reportViews";
+import { fileLine, integrityLine, kpisOf } from "../../model/reportViews";
 import { grouped } from "../../model/units";
 import { alarmRow } from "./alarmWords";
 import { KpiTable } from "./KpiTable";
@@ -14,14 +14,13 @@ const count = (report: Report, key: string) => (report.ended ? grouped(report.co
 function ReplayCheck({ verify }: { readonly verify: VerifyState }) {
   const detail = verify.phase === "ready" ? verify.value.detail : "";
   return (
-    <Section title="Replay check" note="streamsim verify">
+    <Section title="Replay check">
       <p className={styles.verdict}>{replayLine(verify)}</p>
-      {detail !== "" && (
-        <details className={styles.inset}>
-          <summary>{verify.phase === "ready" && verify.value.matches ? "Details" : "What differs"}</summary>
-          <pre>{detail}</pre>
-        </details>
-      )}
+      <details className={styles.inset}>
+        <summary>For developers</summary>
+        <p className={styles.muted}>Checked with the streamsim verify command over the run folder.</p>
+        {detail !== "" && <pre>{detail}</pre>}
+      </details>
     </Section>
   );
 }
@@ -39,12 +38,12 @@ function Deliveries({ report }: { readonly report: Report }) {
   );
 }
 
-function Integrity({ report, verify }: { readonly report: Report; readonly verify: VerifyState }) {
+function FileCheck({ report }: { readonly report: Report }) {
   return (
-    <details className={styles.integrity}>
-      <summary>{integrityLine(report, verify)}</summary>
-      <ReplayCheck verify={verify} />
-      <Section title="File check" note={report.verification.replaceAll("_", " ") || "not recorded"}>
+    <Section title="File check">
+      <p className={styles.muted}>{fileLine(report)}</p>
+      <details className={styles.muted}>
+        <summary>For developers</summary>
         <p className={styles.muted}>
           The report compares the files in the run folder with the digests the run recorded.
         </p>
@@ -56,7 +55,17 @@ function Integrity({ report, verify }: { readonly report: Report; readonly verif
           columns={["text", "text"]}
           headers={["File", "Check"]}
         />
-      </Section>
+      </details>
+    </Section>
+  );
+}
+
+function Integrity({ report, verify }: { readonly report: Report; readonly verify: VerifyState }) {
+  return (
+    <details className={styles.integrity}>
+      <summary>{integrityLine(report, verify)}</summary>
+      <ReplayCheck verify={verify} />
+      <FileCheck report={report} />
       <Deliveries report={report} />
     </details>
   );

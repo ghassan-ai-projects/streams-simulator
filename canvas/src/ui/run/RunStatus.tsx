@@ -2,7 +2,7 @@ import { CircleCheck, CircleHelp, CircleX, Eye, Info, Loader, Lock, TriangleAler
 import { useEffect, useState } from "react";
 import type { ReviewState } from "../../app/reviewStore";
 import type { Badge, Report } from "../../model/report";
-import { badgeLabels, badgeOf } from "../../model/report";
+import { badgeLabels, badgeOf, replayLine } from "../../model/report";
 import { integrityLine, runFacts, runIdentity } from "../../model/reportViews";
 import { grouped } from "../../model/units";
 import { RunInfo } from "./RunInfo";
@@ -111,7 +111,7 @@ interface Warning {
 
 function verifyWarning(state: ReviewState): Warning | null {
   if (state.verified.phase !== "failed") return null;
-  return { text: "Not checked: streamsim verify could not replay this run.", details: state.verified.failure.message };
+  return { text: replayLine(state.verified), details: state.verified.failure.message };
 }
 
 function countWarning(state: ReviewState, report: Report): Warning | null {
