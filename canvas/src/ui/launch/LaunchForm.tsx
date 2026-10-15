@@ -210,15 +210,17 @@ export function LaunchForm({ plant, draft, selected, change, onStart }: FormProp
       <Mode draft={draft} change={change} />
       <FaultRows plant={plant} draft={draft} problems={shown} selected={selected} change={change} />
       <CallRows plant={plant} draft={draft} problems={shown} selected={selected} change={change} />
-      <p id="launch-summary" className={styles.summary}>
-        {planCue(shown, plan)}
-      </p>
-      <p className="sr-only" role="status">
-        {told}
-      </p>
-      <button type="submit" className={panel.primary} aria-describedby="launch-summary">
-        Start the run
-      </button>
+      <div className={styles.footer}>
+        <p id="launch-summary" className={styles.summary}>
+          {planCue(shown, plan)}
+        </p>
+        <p className="sr-only" role="status">
+          {told}
+        </p>
+        <button type="submit" className={panel.primary} aria-describedby="launch-summary">
+          Start the run
+        </button>
+      </div>
     </form>
   );
 }
