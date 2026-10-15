@@ -1,4 +1,5 @@
 import { Keyboard } from "lucide-react";
+import type { RefObject } from "react";
 import { Fragment, useEffect, useRef, useState } from "react";
 import { inTextField } from "../keys";
 import styles from "./KeyHelp.module.css";
@@ -77,6 +78,39 @@ function HelpButton({ open, onOpen }: { readonly open: boolean; readonly onOpen:
   );
 }
 
+interface DialogProps {
+  readonly title: RefObject<HTMLHeadingElement | null>;
+  readonly forget: () => void;
+  readonly close: () => void;
+}
+
+function KeyDialog({ title, forget, close }: DialogProps) {
+  return (
+    <dialog
+      open
+      tabIndex={-1}
+      className={styles.dialog}
+      aria-labelledby="keys-title"
+      aria-modal="false"
+      onBlur={(event) => {
+        if (event.currentTarget.contains(event.relatedTarget)) return;
+        forget();
+        close();
+      }}
+    >
+      <h2 id="keys-title" className={styles.title} ref={title} tabIndex={-1}>
+        Keyboard
+      </h2>
+      <div className={styles.keys}>
+        <KeyList />
+      </div>
+      <button type="button" className={styles.close} onClick={close}>
+        Close
+      </button>
+    </dialog>
+  );
+}
+
 export function KeyHelp() {
   const [open, setOpen] = useToggle();
   const { title, forget } = useFocusReturn(open);
@@ -92,28 +126,7 @@ export function KeyHelp() {
         }}
       />
       {open && <div className={styles.scrim} aria-hidden="true" onClick={close} />}
-      {open && (
-        <dialog
-          open
-          tabIndex={-1}
-          className={styles.dialog}
-          aria-labelledby="keys-title"
-          aria-modal="false"
-          onBlur={(event) => {
-            if (event.currentTarget.contains(event.relatedTarget)) return;
-            forget();
-            close();
-          }}
-        >
-          <h2 id="keys-title" className={styles.title} ref={title} tabIndex={-1}>
-            Keyboard
-          </h2>
-          <KeyList />
-          <button type="button" className={styles.close} onClick={close}>
-            Close
-          </button>
-        </dialog>
-      )}
+      {open && <KeyDialog title={title} forget={forget} close={close} />}
     </>
   );
 }
