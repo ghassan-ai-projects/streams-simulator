@@ -2,7 +2,7 @@ import type { Connection } from "@xyflow/react";
 import { Background, ReactFlow, useStore, useUpdateNodeInternals } from "@xyflow/react";
 import "@xyflow/react/dist/base.css";
 import type { CSSProperties, KeyboardEvent } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { directionOf, firstOf, nearest } from "../../model/graphKeys";
 import type { PlantView } from "../../model/plantView";
 import { describeNode, hallCount } from "../../model/plantView";
@@ -37,6 +37,7 @@ interface Keys {
   readonly announcement: string;
   readonly onKeyDown: (event: KeyboardEvent<HTMLDivElement>) => void;
   readonly onFocus: () => void;
+  readonly onPointerDown: () => void;
   readonly point: (id: string | null) => void;
 }
 
@@ -98,6 +99,25 @@ function enterHall(id: string, onSelect: (id: string | null) => void, onOpenHall
   onOpenHall(id);
 }
 
+function useGraphFocus(
+  view: PlantView,
+  active: string | null,
+  selected: string | null,
+  setActive: (id: string | null) => void,
+) {
+  const pointed = useRef(false);
+  const onPointerDown = () => {
+    pointed.current = true;
+  };
+  const onFocus = () => {
+    const fromPointer = pointed.current;
+    pointed.current = false;
+    if (active !== null) return;
+    setActive(fromPointer ? selected : (selected ?? firstOf(view.layout.nodes)));
+  };
+  return { onPointerDown, onFocus };
+}
+
 function useGraphKeys({ view, viewKey, selected, live, onSelect, onOpenHall, onEscape }: PlantGraphProps): Keys {
   const { active, setActive, entered } = useViewActive(view, viewKey);
   useSelectionMoves(view, selected, setActive);
@@ -129,13 +149,11 @@ function useGraphKeys({ view, viewKey, selected, live, onSelect, onOpenHall, onE
       else onEscape?.();
     }
   };
-  const onFocus = () => {
-    if (active === null && selected !== null) setActive(selected);
-  };
+  const focus = useGraphFocus(view, active, selected, setActive);
   const point = (id: string | null) => {
     if (id !== null) setActive(id);
   };
-  return { active, announcement, onKeyDown, onFocus, point };
+  return { active, announcement, onKeyDown, onFocus: focus.onFocus, onPointerDown: focus.onPointerDown, point };
 }
 
 const graphNames = {
@@ -227,7 +245,7 @@ export function PlantGraph(props: PlantGraphProps) {
   useFitted(props.fitKey ?? props.viewKey, props.minFitZoom ?? 0.05);
   useFollowSelection(keys.active ?? props.selected, props.focusZoom ?? 0);
   return (
-    <div className={styles.graph}>
+    <div className={styles.graph} onPointerDown={keys.onPointerDown}>
       <p id="graph-keys" className="sr-only">
         Arrow keys move between instances, Space selects, Enter selects an instance or opens a hall, Escape clears the
         selection, question mark lists every key. The outline lists every instance.
