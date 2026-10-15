@@ -147,7 +147,7 @@
 .react-flow__edge.wire-off .react-flow__edge-path {
   stroke: var(--text-tertiary);
   stroke-width: 1;
-  stroke-opacity: 0.3;
+  stroke-opacity: var(--wire-off-opacity);
   stroke-dasharray: none;
 }
 
