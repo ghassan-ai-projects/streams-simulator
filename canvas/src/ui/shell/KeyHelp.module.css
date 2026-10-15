@@ -35,8 +35,13 @@
   overflow: auto;
 }
 
-.title:focus {
-  outline: none;
+.title {
+  border-radius: var(--radius-sm);
+}
+
+.title.title:focus {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }
 
 .group h3 {
