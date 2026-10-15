@@ -273,7 +273,7 @@ export function LaunchPanel({ launch, plant, path, selected = null, onClose, onF
     <aside className={panel.panel} aria-labelledby="launch-title">
       <header className={panel.head}>
         <Play size={16} aria-hidden="true" />
-        <h2 id="launch-title">{`Run ${plant.title || plant.id}`}</h2>
+        <h2 id="launch-title" className={styles.title}>{`Run ${plant.title || plant.id}`}</h2>
         {state.phase === "running" && state.origin.domain === plant.id && <RunningMark state={state} />}
         <button type="button" className={panel.icon} aria-label="Close the run panel" onClick={onClose}>
           <X size={16} aria-hidden="true" />

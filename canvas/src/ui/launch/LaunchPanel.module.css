@@ -200,3 +200,10 @@
   border-top: 1px solid var(--border-strong);
   background: var(--surface-panel);
 }
+
+.title.title {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
