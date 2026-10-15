@@ -2,7 +2,6 @@ import type { ReactFlowInstance } from "@xyflow/react";
 import { useReactFlow, useStore } from "@xyflow/react";
 import { useEffect, useRef } from "react";
 import type { Viewport } from "../../model/viewport";
-import type { PlacedTitle } from "../../model/frameTitle";
 import { boundsWithTitles } from "../../model/frameTitle";
 import {
   centreOf,
@@ -20,12 +19,8 @@ interface Size {
   readonly height: number;
 }
 
-function titlesOf(nodes: readonly FlowNode[]): PlacedTitle[] {
-  return nodes.flatMap((node): PlacedTitle[] =>
-    node.type === "frameTitle"
-      ? [{ y: node.position.y, width: node.width ?? 0, title: node.data.title, count: node.data.count }]
-      : [],
-  );
+function titleTopsOf(nodes: readonly FlowNode[]): number[] {
+  return nodes.flatMap((node) => (node.type === "frameTitle" ? [node.position.y] : []));
 }
 
 export function fittedViewport(
@@ -40,7 +35,7 @@ export function fittedViewport(
   const focus = anchor !== null && flow.getNode(anchor) !== undefined ? flow.getNodesBounds([anchor]) : null;
   const plain = openingViewport(bounds, screen, limits, focus);
   if (tierOf(plain.zoom) === "full") return plain;
-  const lifted = boundsWithTitles(bounds, titlesOf(nodes), screenPixel(plain.zoom));
+  const lifted = boundsWithTitles(bounds, titleTopsOf(nodes), screenPixel(plain.zoom));
   return openingViewport(lifted, screen, limits, focus);
 }
 

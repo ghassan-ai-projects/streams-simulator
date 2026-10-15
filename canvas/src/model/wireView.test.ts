@@ -127,17 +127,14 @@ describe("wire view", () => {
     expect(Math.abs((route[0]?.y ?? 0) - (box.y + box.height / 2))).toBeLessThanOrEqual(6);
   });
 
-  it("boxes a title's whole header row: inside the frame at full size, above it and full width when zoomed out", () => {
+  it("boxes a title's one header line: inside the frame at full size, above it and full width when zoomed out", () => {
     const frame = { x: 10, y: 100, width: 300, height: 200 };
     expect(titleBox(frame, "full", 1)).toEqual({ x: 10, y: 106, width: 300, height: 16 });
-    const one = titleBox(frame, "overview", 2, "Hall", 2);
+    const one = titleBox(frame, "overview", 2);
     expect(one).toEqual({ x: 10, y: 100 - (8 + 34), width: 300, height: 34 });
-    const wrapped = titleBox(frame, "overview", 4, "Production hall A", 1);
-    expect(wrapped.width).toBe(300);
-    expect(wrapped.height).toBeGreaterThanOrEqual(2 * 17 * (30 / 13) - 1e-6);
-    expect(wrapped.y + wrapped.height).toBeLessThan(100);
-    const capped = titleBox(frame, "map", 20, "Hall", 2);
-    expect(capped.height).toBeLessThanOrEqual(17 * (30 / 13) + 1e-6);
+    const capped = titleBox(frame, "map", 20);
+    expect(capped.width).toBe(300);
+    expect(capped.height).toBeCloseTo(17 * (30 / 13), 6);
   });
 
   it("joins two nodes of one column bottom to top, in a straight run through the row gap", () => {

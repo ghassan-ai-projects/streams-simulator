@@ -262,11 +262,12 @@ export function FrameNode() {
 }
 
 export function FrameTitleNode({ data }: NodeProps<FrameTitleNodeType>) {
+  const count = countWords(data.count);
   return (
     <div className={styles.frameTitleNode}>
-      <div className={styles.frameTitle}>
-        {data.title}
-        <span className={styles.frameCount}>{countWords(data.count)}</span>
+      <div className={styles.frameTitle} title={`${data.title} · ${count}`}>
+        <span className={styles.frameName}>{data.title}</span>
+        <span className={styles.frameCount}>{count}</span>
       </div>
     </div>
   );

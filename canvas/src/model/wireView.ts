@@ -1,5 +1,5 @@
 import type { PlantView, ViewNode } from "./plantView";
-import { headerHeight, groupCounts, nodeSize, noteHeight } from "./plantView";
+import { headerHeight, nodeSize, noteHeight } from "./plantView";
 import { titleAbove, titleBandHeight, titleScale } from "./frameTitle";
 import type { Rect, Tier } from "./viewport";
 import type { End } from "./wireEnds";
@@ -100,12 +100,12 @@ function linksOf(view: PlantView, mode: WireMode, pixel: number): WireLink[] {
   });
 }
 
-export function titleBox(frame: Rect, tier: Tier, pixel: number, title = "", count = 0): Rect {
+export function titleBox(frame: Rect, tier: Tier, pixel: number): Rect {
   if (tier === "full") {
     return { x: frame.x, y: frame.y + titleText.inside, width: frame.width, height: titleText.height };
   }
   const scale = titleScale(pixel);
-  const height = titleBandHeight(title, count, frame.width, scale);
+  const height = titleBandHeight(scale);
   return { x: frame.x, y: frame.y - (titleAbove(scale) + height), width: frame.width, height };
 }
 
@@ -115,13 +115,10 @@ export function routeView(
   review: boolean,
   pixel = 1,
 ): ReadonlyMap<string, readonly Point[]> {
-  const counts = groupCounts(view);
   return routeWires({
     links: linksOf(view, wireModeOf(tier, review), pixel),
     nodes: [...view.layout.nodes.values()],
-    titles: [...view.layout.groups].map(([title, frame]) =>
-      titleBox(frame, tier, pixel, title, counts.get(title) ?? 0),
-    ),
+    titles: [...view.layout.groups.values()].map((frame) => titleBox(frame, tier, pixel)),
     titleClearances: [9 * pixel, 5 * pixel, 3 * pixel, 1.5 * pixel, 0],
   });
 }
