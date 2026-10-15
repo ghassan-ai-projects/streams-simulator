@@ -76,6 +76,15 @@ function Issues({ draft, editor, request }: Omit<PanelProps, "plant">) {
   );
 }
 
+function FirstStep() {
+  return (
+    <p className={panel.hint}>
+      Add the first piece of equipment: search the library below, name it and choose an area. Then link an output to an
+      input and save to compose the plant.
+    </p>
+  );
+}
+
 function Build({ draft, plant, editor, request }: PanelProps) {
   const heading = useRequestedFocus<HTMLHeadingElement>(request, "build");
   return (
@@ -88,6 +97,7 @@ function Build({ draft, plant, editor, request }: PanelProps) {
       </header>
       <div className={panel.body}>
         <Issues draft={draft} editor={editor} request={request} />
+        {plant.instances.length === 0 && <FirstStep />}
         <AddEquipment draft={draft} plant={plant} editor={editor} request={request} />
         <AddArea draft={draft} editor={editor} />
         <AreaEditor draft={draft} editor={editor} />
