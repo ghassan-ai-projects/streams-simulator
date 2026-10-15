@@ -150,7 +150,7 @@ Findings are appended below as verified, one `## ISS-4H-nn` each.
 - Suggestion: Map binary errors to the affected row where possible; show the raw message only in a details disclosure.
 
 ## ISS-4H-11 A run that did not finish is listed and reviewed as a normal run: "Verified", "10 min", "None" disturbances
-- Status: needs-binary
+- Status: fixed b333d38 (part): the canvas already discards with world.destroy and never run.end; the director wrote the destroyed run as complete. A world destroyed before run.end is now recorded incomplete with the reason, and the report surfaces it. Not checked here: the canvas Runs row and review header chip for such a run.
 - Fix: The binary records w-6 as complete: run.json and the report say ended and complete, and the journal closes with incomplete false, because a refused fault injection ends the run through a normal close. The canvas has no failure field to read. Missing in the binary: a run that stops on a refused step must be recorded as incomplete with a reason.
 - Severity: High
 - Kind: not-working
