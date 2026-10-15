@@ -167,7 +167,7 @@ function Actions({ failure, reason, onCancel }: ActionsProps) {
         )}
       </span>
       {failure !== "" && (
-        <p role="alert" className={styles.failure}>
+        <p role="alert" className={styles.newFailure}>
           {failure}
         </p>
       )}

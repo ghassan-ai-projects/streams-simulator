@@ -255,6 +255,12 @@
   font-size: var(--text-sm);
 }
 
+.newFailure {
+  margin: 0;
+  color: var(--status-alarm);
+  font-size: var(--text-sm);
+}
+
 .open,
 .run {
   composes: button from "../shared.module.css";
@@ -288,6 +294,7 @@
 
 .newField small {
   grid-column: 2;
+  min-height: 2lh;
   color: var(--text-secondary);
 }
 
