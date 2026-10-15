@@ -370,6 +370,12 @@
   text-decoration: underline;
 }
 
+.moreLink {
+  display: block;
+  padding: 2px var(--space-3);
+  font-size: var(--text-sm);
+}
+
 .linkGroup {
   margin: var(--space-2) 0 0;
   font-size: var(--text-sm);

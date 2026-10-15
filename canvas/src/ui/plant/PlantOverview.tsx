@@ -6,6 +6,7 @@ import { kindLabel } from "../../model/report";
 import type { RunRow } from "../../model/workspace";
 import { runFacts, whenOf } from "../../model/workspace";
 import shared from "../shared.module.css";
+import { cx } from "../cx";
 import styles from "./PlantScreen.module.css";
 
 function counts(values: readonly string[]): readonly (readonly [string, number])[] {
@@ -81,7 +82,7 @@ function Runs({ runs, onReview }: { readonly runs: readonly RunRow[]; readonly o
       {!all && runs.length > recentShown && (
         <button
           type="button"
-          className={styles.linkButton}
+          className={cx(styles.linkButton, styles.moreLink)}
           onClick={() => {
             setAll(true);
           }}
