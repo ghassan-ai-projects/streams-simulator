@@ -85,7 +85,8 @@ describe("launch panel", () => {
     expect(fake.calls).toEqual([]);
     fireEvent.click(screen.getByRole("button", { name: "Remove fault 1" }));
     expect(screen.getByRole("button", { name: "Add fault" })).toHaveFocus();
-    expect(screen.getByText("None: the plant runs healthy.")).toBeInTheDocument();
+    expect(screen.getByText("None: no fault is scheduled for this run.")).toBeInTheDocument();
+    expect(screen.queryByText(/runs healthy/)).not.toBeInTheDocument();
   });
 
   it("names the missing fault after an instance is chosen and blocks the run", () => {

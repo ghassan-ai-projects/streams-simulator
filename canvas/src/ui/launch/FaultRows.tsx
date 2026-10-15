@@ -114,7 +114,7 @@ export function FaultRows({ plant, draft, problems, selected, change }: FaultRow
   return (
     <fieldset className={panel.group}>
       <legend>Faults to inject</legend>
-      {draft.faults.length === 0 && <p className={panel.hint}>None: the plant runs healthy.</p>}
+      {draft.faults.length === 0 && <p className={panel.hint}>None: no fault is scheduled for this run.</p>}
       <ol className={styles.faults}>
         {draft.faults.map((fault, index) => (
           <FaultRow
