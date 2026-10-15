@@ -150,8 +150,8 @@ Findings are appended below as verified, one `## ISS-4H-nn` each.
 - Suggestion: Map binary errors to the affected row where possible; show the raw message only in a details disclosure.
 
 ## ISS-4H-11 A run that did not finish is listed and reviewed as a normal run: "Verified", "10 min", "None" disturbances
-- Status: fixed b333d38 (part): the canvas already discards with world.destroy and never run.end; the director wrote the destroyed run as complete. A world destroyed before run.end is now recorded incomplete with the reason, and the report surfaces it. Not checked here: the canvas Runs row and review header chip for such a run.
-- Fix: The binary records w-6 as complete: run.json and the report say ended and complete, and the journal closes with incomplete false, because a refused fault injection ends the run through a normal close. The canvas has no failure field to read. Missing in the binary: a run that stops on a refused step must be recorded as incomplete with a reason.
+- Status: fixed fa99419 (canvas: the Home row reads Did not finish with the reason, 4a5e88c for the review header; e2e in e2e/abandoned-run.spec.ts). Binary part fixed b333d38 and 56a910d (run listing carries complete and incomplete_reason).
+- Fix: A run that did not finish reads "Did not finish" on its Home row and in its review header, with the recorded reason as tooltip, detail line and header reason. Root cause (binary, fixed in b333d38): a world destroyed before run.end was recorded complete; the canvas now reads the listing's complete field.
 - Severity: High
 - Kind: not-working
 - Where: Workspace "Runs" row for w-6 (Compressed-air works, 15 Oct 2026, 02:01, 10 min, no faults) and its review "Run w-6" (http://127.0.0.1:8766/#/run?world=w-6). Failed run from ISS-4H-09.

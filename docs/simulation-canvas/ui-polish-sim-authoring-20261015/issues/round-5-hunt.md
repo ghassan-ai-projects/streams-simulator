@@ -128,8 +128,8 @@ Findings are appended below as verified, one `## ISS-5H-nn` each.
 - Observed: The rows read "w-14 · 15 Oct 2026, 02:35 · 30 min · no faults" and "w-15 · 15 Oct 2026, 02:35 · 30 min · no faults". The seed appears only inside the review header ("seed 1 · 30 min"). Comparing two runs of one plan (the reason to "Run again with a changed seed") needs opening each review.
 - Expected: Each run row shows the seed next to the mode (W-3 lists what a run shows; the seed is what tells runs apart). A compare view is not offered; the rows are enough for a first step.
 - Suggestion: Add "seed 2" after the mode in the run row and in Recent runs.
-- Status: needs-binary: the run listing (RunEntry in internal/canvasbridge/internal/domain/vocabulary.go) has no seed field; the binary must add the seed from runs/<id>/run.json before the run rows can show it
-- Fix: none in the canvas yet.
+- Status: fixed fa99419
+- Fix: Home Runs rows and the plant's Recent runs show "seed N" after the duration (the seed comes from the run listing, 56a910d; null shows nothing).
 
 ## ISS-5H-10 Review effector table: the Effector name is cut to "set lo…" and the Outcome runs past the window edge (partly a regression of ISS-4H-12)
 - Severity: Medium
@@ -213,5 +213,5 @@ Counts by severity: High 1, Medium 5, Low 5 (11 verified findings, ISS-5H-01 to 
 
 ## Fixer follow-up: ISS-4H-11 (abandoned run)
 
-- Status: fixed (canvas side) in 4a5e88c; the Home row part is needs-binary. The e2e for a destroyed world is not added: bin/streams-simulator was built at 02:29, before the binary fix b333d38 (02:33), so the running bridge still reads the destroyed run as Verified; add the e2e after bin is rebuilt.
-- Fix: the review header reads "Did not finish" with the report's incomplete reason beside it (the Report keeps "Incomplete: ..."). The Home run row cannot show the reason until the run listing carries complete and incomplete_reason (binary change: RunEntry in internal/canvasbridge/internal/domain/vocabulary.go).
+- Status: fixed fa99419 (Home row and e2e added after the listing carried complete and incomplete_reason, 56a910d). Earlier: 4a5e88c for the review header.
+- Fix: the review header reads "Did not finish" with the report's incomplete reason beside it (the Report keeps "Incomplete: ..."). The Home run row now shows it from the run listing (complete and incomplete_reason, 56a910d; canvas fa99419).
