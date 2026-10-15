@@ -165,3 +165,13 @@
   padding-left: var(--space-4);
   color: var(--text-secondary);
 }
+
+.detail {
+  margin-top: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+.detail summary {
+  cursor: pointer;
+}

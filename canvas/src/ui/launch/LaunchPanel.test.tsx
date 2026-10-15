@@ -6,20 +6,11 @@ import type { Outcome } from "../../model/bridge";
 import { failed, success } from "../../model/bridge";
 import { parsePlant } from "../../model/plant";
 import { FakeBridge, failure } from "../../test/fakeBridge";
+import { launchBridge } from "../../test/launchFixture";
 import { domain } from "../../test/plantFixture";
 import { LaunchPanel } from "./LaunchPanel";
 
 const path = "domains/mini.domain.json";
-
-function bridge() {
-  const fake = new FakeBridge();
-  fake.actions.set("world.create", success({ world_id: "w-7" }));
-  fake.actions.set("clock.advance", success({}));
-  fake.actions.set("fault.inject", success({ fault_id: "f-0" }));
-  fake.actions.set("run.end", success({}));
-  fake.actions.set("world.destroy", success({}));
-  return fake;
-}
 
 function renderPanel(fake: FakeBridge, onFinished = vi.fn<(worldId: string) => void>()) {
   const launch = new LaunchStore(fake);
@@ -35,7 +26,7 @@ function change(label: string, value: string) {
 
 describe("launch panel", () => {
   it("plans a run with a fault and opens the finished run", async () => {
-    const fake = bridge();
+    const fake = launchBridge();
     const { view, onFinished } = renderPanel(fake);
     expect((await axe.run(view.container)).violations).toEqual([]);
     expect(screen.getByLabelText("Seed")).toHaveFocus();
@@ -64,7 +55,7 @@ describe("launch panel", () => {
   });
 
   it("lists the plan's problems only when starting, and does not start", () => {
-    const fake = bridge();
+    const fake = launchBridge();
     renderPanel(fake);
     change("Duration", "0");
     fireEvent.click(screen.getByRole("button", { name: "Add fault" }));
@@ -83,7 +74,7 @@ describe("launch panel", () => {
   });
 
   it("names the missing fault after an instance is chosen and blocks the run", () => {
-    const fake = bridge();
+    const fake = launchBridge();
     renderPanel(fake);
     fireEvent.click(screen.getByRole("button", { name: "Add fault" }));
     change("Fault 1 instance", "CH-1");
@@ -97,12 +88,15 @@ describe("launch panel", () => {
   });
 
   it("shows the binary's refusal and returns to the plan", async () => {
-    const fake = bridge();
+    const fake = launchBridge();
     fake.actions.set("world.create", failed(failure("domain_invalid", 422, "bad domain")));
     renderPanel(fake);
     change("Seed", "4");
     fireEvent.click(screen.getByRole("button", { name: "Start the run" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("The run did not finish. bad domain");
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "The run did not finish. The run stopped before it finished.",
+    );
+    expect(screen.getByText("bad domain")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Change the plan" })).toHaveFocus();
     fireEvent.click(screen.getByRole("button", { name: "Change the plan" }));
     expect(screen.getByLabelText("Seed")).toHaveValue("4");
@@ -128,19 +122,19 @@ describe("launch panel", () => {
   });
 
   it("says which partial run was kept when the binary refuses a step", async () => {
-    const fake = bridge();
+    const fake = launchBridge();
     fake.actions.set("clock.advance", failed(failure("world_gone", 404, "the world is gone")));
     renderPanel(fake);
     fireEvent.click(screen.getByRole("button", { name: "Start the run" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "The run did not finish. the world is gone What ran before the failure is kept as run w-7.",
+      "The run did not finish. The run stopped before it finished. Check the plan and start again. What ran before the failure is kept as run w-7.",
     );
   });
 });
 
 describe("launch panel picking", () => {
   it("takes a fault's instance from the graph and rolls a new seed", () => {
-    const launch = new LaunchStore(bridge());
+    const launch = new LaunchStore(launchBridge());
     const plant = parsePlant(domain);
     const panel = (selected: string | null) => (
       <LaunchPanel
@@ -167,7 +161,7 @@ describe("launch panel picking", () => {
 
 describe("launch panel lifetime", () => {
   it("does not jump to a run that finished while nobody watched it", async () => {
-    const launch = new LaunchStore(bridge());
+    const launch = new LaunchStore(launchBridge());
     await launch.start(
       { domain: "mini", title: "Mini plant", path },
       { seed: 1, durationS: 60, explore: true, faults: [], calls: [] },
@@ -182,7 +176,7 @@ describe("launch panel lifetime", () => {
   });
 
   it("starts from a plan proposed for this plant, such as Run again", () => {
-    const launch = new LaunchStore(bridge());
+    const launch = new LaunchStore(launchBridge());
     launch.propose("mini", {
       seed: 5,
       durationS: 7200,
@@ -206,7 +200,7 @@ describe("launch panel lifetime", () => {
   });
 
   it("keeps a run's seconds, names the run it was prefilled from, and says what was not copied", () => {
-    const launch = new LaunchStore(bridge());
+    const launch = new LaunchStore(launchBridge());
     const faults = [{ entity: "CH-1", fault: "chiller__fouling", atS: 620 }];
     launch.propose(
       "mini",
@@ -276,7 +270,7 @@ class HeldBridge extends FakeBridge {
 
   constructor() {
     super();
-    bridge().actions.forEach((outcome, name) => this.actions.set(name, outcome));
+    launchBridge().actions.forEach((outcome, name) => this.actions.set(name, outcome));
   }
 
   override action(name: string, args: Readonly<Record<string, unknown>>): Promise<Outcome<unknown>> {

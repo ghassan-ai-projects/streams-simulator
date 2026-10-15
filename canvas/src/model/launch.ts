@@ -66,6 +66,14 @@ export function launchSteps(plan: LaunchPlan, chunks = 20): readonly LaunchStep[
 
 export type SpecOf = (entity: string, effector: string) => EffectorSpec | undefined;
 
+export function failureWords(step: LaunchStep | null): string {
+  if (step?.kind === "inject")
+    return `The fault "${humanise(step.fault)}" could not be added to ${step.entity}. Check that this plant still has it, choose a fault, and start again.`;
+  if (step?.kind === "invoke")
+    return `${step.entity} refused the effector call ${humanise(step.effector)}. Check the call and start again.`;
+  return "The run stopped before it finished. Check the plan and start again.";
+}
+
 export interface KeptPlan {
   readonly plan: LaunchPlan;
   readonly dropped: readonly string[];

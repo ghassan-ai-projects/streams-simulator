@@ -1,6 +1,6 @@
 import type { BridgeFailure } from "../model/bridge";
 import type { CallOutcome, LaunchPlan, LaunchStep } from "../model/launch";
-import { launchSteps, outcomeOf } from "../model/launch";
+import { failureWords, launchSteps, outcomeOf } from "../model/launch";
 import { Observable } from "./observable";
 import type { Bridge } from "./ports";
 
@@ -35,6 +35,7 @@ export type LaunchState =
       readonly phase: "failed";
       readonly origin: LaunchOrigin;
       readonly failure: BridgeFailure;
+      readonly words: string;
       readonly kept: string | null;
     };
 
@@ -71,6 +72,7 @@ export class LaunchStore extends Observable<LaunchState> {
   private outcomes: readonly CallOutcome[] = [];
   private startedMs = 0;
   private proposed: (Proposal & { readonly domain: string }) | null = null;
+  private current: LaunchStep | null = null;
 
   propose(domain: string, plan: LaunchPlan, left: readonly string[] = [], from = ""): void {
     this.proposed = { domain, plan, left, from };
@@ -154,10 +156,12 @@ export class LaunchStore extends Observable<LaunchState> {
   }
 
   private async step(worldId: string, step: LaunchStep): Promise<void> {
+    this.current = step;
     if (step.kind === "advance") await this.call("clock.advance", { world_id: worldId, by_ns: step.byNs });
     else if (step.kind === "inject")
       await this.call("fault.inject", { world_id: worldId, entity_id: step.entity, fault: step.fault });
     else await this.invoke(worldId, step);
+    this.current = null;
   }
 
   private async invoke(worldId: string, step: Extract<LaunchStep, { kind: "invoke" }>): Promise<void> {
@@ -180,6 +184,8 @@ export class LaunchStore extends Observable<LaunchState> {
   private async abandon(worldId: string, error: unknown): Promise<void> {
     if (worldId !== "") await this.bridge.action("world.destroy", { world_id: worldId });
     const failure = error instanceof Stopped ? error.failure : { ...broken, message: String(error) };
-    this.set({ phase: "failed", origin: this.origin, failure, kept: worldId === "" ? null : worldId });
+    const words = failureWords(this.current);
+    this.current = null;
+    this.set({ phase: "failed", origin: this.origin, failure, words, kept: worldId === "" ? null : worldId });
   }
 }

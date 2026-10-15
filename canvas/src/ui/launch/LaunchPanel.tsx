@@ -129,9 +129,13 @@ function Failure({
   return (
     <div className={cx(panel.body, styles.failure)} role="alert">
       <p>
-        <strong>The run did not finish.</strong> {state.failure.message}
+        <strong>The run did not finish.</strong> {state.words}
         {state.kept !== null && ` What ran before the failure is kept as run ${state.kept}.`}
       </p>
+      <details className={styles.detail}>
+        <summary>Binary message</summary>
+        <p>{state.failure.message}</p>
+      </details>
       <button
         type="button"
         ref={back}
