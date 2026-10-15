@@ -5,8 +5,7 @@ import { inTextField } from "../keys";
 function command(event: KeyboardEvent, editor: EditorStore): boolean {
   const key = event.key.toLowerCase();
   if (key === "s") {
-    const state = editor.snapshot();
-    if (state.phase === "ready" && state.doc !== state.saved) void editor.save();
+    if (editor.savable()) void editor.save();
     return true;
   }
   if (inTextField(event.target)) return false;

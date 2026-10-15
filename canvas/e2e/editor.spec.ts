@@ -2,7 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { env } from "./support/env";
@@ -166,4 +166,31 @@ test("Enter in the equipment search only filters; a name another instance uses i
   await build.getByLabel("Name", { exact: true }).fill("pump-1");
   await expect(build.getByText("pump-1 is already used by another instance.")).toBeVisible();
   await expect(build.getByRole("button", { name: "Add to the plant" })).toHaveAttribute("aria-disabled", "true");
+});
+
+test("a saved plant that has no domain yet is checked by Save, so its issues show without an edit", async ({
+  page,
+}) => {
+  const folder = env("CANVAS_WORKSPACE");
+  const file = join(folder, "compositions", "unchecked-plant.composition.json");
+  const domain = join(folder, "domains", "unchecked-plant.domain.json");
+  const source = readFileSync(join(folder, "compositions", "factory-utilities.composition.json"), "utf8");
+  writeFileSync(
+    file,
+    source
+      .replace('"id": "factory-utilities"', '"id": "unchecked-plant"')
+      .replace('"title": "Factory utilities"', '"title": "Unchecked plant"'),
+  );
+  try {
+    await page.goto(
+      `${env("CANVAS_APP_URL")}/#/edit?composition=${encodeURIComponent("compositions/unchecked-plant.composition.json")}`,
+    );
+    await expect(page.getByRole("heading", { level: 1, name: "Unchecked plant" })).toBeVisible();
+    await expect(page.getByRole("status").filter({ hasText: "Not checked yet" })).toBeVisible();
+    await page.getByRole("button", { name: "Save" }).click();
+    await expect(page.getByRole("status").filter({ hasText: /^Ready to run\. Saved\.$/ })).toBeVisible();
+  } finally {
+    rmSync(file, { force: true });
+    rmSync(domain, { force: true });
+  }
 });

@@ -14,6 +14,7 @@ import { FakeBridge } from "./fakeBridge";
 import { chillerPorts, towerPorts } from "./plantFixture";
 
 export const path = "compositions/lab.composition.json";
+const domainPath = "domains/lab.domain.json";
 export const doc = {
   id: "lab",
   title: "Lab",
@@ -48,9 +49,10 @@ export function Harness({ editor }: { readonly editor: EditorStore }) {
   );
 }
 
-export async function editing() {
+export async function editing(composed = true) {
   const fake = new LabBridge();
   fake.files.set(path, success({ path, content: JSON.stringify(doc), etag: "c1" }));
+  if (composed) fake.files.set(domainPath, success({ path: domainPath, content: "{}", etag: "d1" }));
   fake.actions.set("component.list", success({ components: [{ id: "lib/pump", kind: "equipment", title: "Pump" }] }));
   fake.actions.set("domain.compose", success({ channels: 4, faults: 2, effectors: 0 }));
   const editor = new EditorStore(fake);

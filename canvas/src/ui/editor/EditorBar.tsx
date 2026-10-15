@@ -1,6 +1,7 @@
 import { PenLine, Redo, RefreshCw, Save, Undo, Undo2 } from "lucide-react";
 import { useState } from "react";
 import type { Draft, EditorStore } from "../../app/editorStore";
+import { canSave, checked } from "../../app/editorStore";
 import type { NavigationStore } from "../../app/navigationStore";
 import { domainOf, equipmentOf, titleOf } from "../../model/composition";
 import { ZoomBar } from "../plant/GraphControls";
@@ -33,6 +34,7 @@ function outcomeStatus(draft: Draft): Status {
   if (draft.outcome?.kind === "composed") {
     return { text: "Ready to run. Saved.", detail: draft.outcome.summary, tone: "ok" };
   }
+  if (!checked(draft)) return { text: "Not checked yet: Save to see its issues.", detail: null, tone: "" };
   return { text: "No changes", detail: null, tone: "" };
 }
 
@@ -212,6 +214,7 @@ export function EditorBar({ draft, editor, navigation, request }: BarProps & { r
   useEditorKeys(editor);
   const status = statusOf(draft);
   const clean = draft.doc === draft.saved;
+  const savable = canSave(draft);
   return (
     <div className={plantStyles.bar}>
       <PenLine size={14} aria-hidden="true" />
@@ -228,10 +231,10 @@ export function EditorBar({ draft, editor, navigation, request }: BarProps & { r
       <button
         type="button"
         className={styles.save}
-        aria-disabled={clean || draft.saving}
-        title={clean ? "Nothing to save" : "Save and compose (Ctrl+S)"}
+        aria-disabled={!savable || draft.saving}
+        title={savable ? "Save and compose (Ctrl+S)" : "Nothing to save"}
         onClick={() => {
-          if (!clean) void editor.save();
+          if (savable) void editor.save();
         }}
       >
         <Save size={14} aria-hidden="true" />

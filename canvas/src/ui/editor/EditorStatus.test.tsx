@@ -29,6 +29,23 @@ describe("plant editor status", () => {
     expect(screen.getByRole("region", { name: "Issues from the binary" })).toHaveTextContent('has no port "heat_in"');
   });
 
+  it("checks a saved plant that has no domain yet on Save, so its issues show without an edit", async () => {
+    const { fake } = await editing(false);
+    expect(screen.getByRole("status")).toHaveTextContent("Not checked yet: Save to see its issues.");
+    expect(screen.getByRole("button", { name: "Save" })).toHaveAttribute("aria-disabled", "false");
+    fake.actions.set(
+      "domain.compose",
+      failed({
+        ...failure("composition_invalid", 422, "invalid"),
+        issues: [{ pointer: "/connections/0/to", message: 'instance "CT-1" has no port "heat_in"' }],
+      }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(
+      await screen.findByText("Needs fixing: 1 issue, listed in Build. Your changes are saved."),
+    ).toBeInTheDocument();
+  });
+
   it("offers one remedy for a profile weight the plant no longer declares, and removes only that weight", async () => {
     const { fake, editor } = await editing();
     act(() => {
