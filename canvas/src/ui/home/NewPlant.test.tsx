@@ -42,6 +42,7 @@ describe("new plant id", () => {
     fireEvent.blur(id);
     expect(await screen.findByText(/is not a plant id/)).toBeInTheDocument();
     expect(id).toHaveAccessibleDescription(/is not a plant id/);
+    expect(screen.getAllByText(/is not a plant id/)).toHaveLength(1);
     fireEvent.change(id, { target: { value: "bad-plant" } });
     expect(screen.queryByText(/is not a plant id/)).toBeNull();
   });

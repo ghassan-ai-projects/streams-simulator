@@ -1,6 +1,7 @@
 import type { SyntheticEvent } from "react";
 import { useState } from "react";
 import type { PlantMaker, PlantSource } from "../../app/plantMaker";
+import { idProblemOf } from "../../app/plantMaker";
 import type { NavigationStore } from "../../app/navigationStore";
 import type { Definition } from "../../model/bridge";
 import type { ExamplePlant } from "../../model/library";
@@ -120,12 +121,19 @@ function Choices(
   );
 }
 
-function useCreate({ maker, navigation }: Pick<NewPlantProps, "maker" | "navigation">) {
+function useCreate(
+  { maker, navigation }: Pick<NewPlantProps, "maker" | "navigation">,
+  reportId: (id: string, message: string) => void,
+) {
   const [failure, setFailure] = useState("");
   const create = async (base: string, id: string, title: string, copy: boolean) => {
     const made = await maker.create(sourceOf(base), id, title, copy);
-    if ("composition" in made) navigation.go({ screen: "edit", composition: made.composition });
-    else setFailure(made.message);
+    if ("composition" in made) {
+      navigation.go({ screen: "edit", composition: made.composition });
+      return;
+    }
+    reportId(id, idProblemOf(made));
+    setFailure(made.message);
   };
   return { failure, create };
 }
@@ -140,11 +148,6 @@ function Actions({ failure, reason, onCancel }: ActionsProps) {
   const ready = reason === "";
   return (
     <>
-      {failure !== "" && (
-        <p role="alert" className={styles.failure}>
-          {failure}
-        </p>
-      )}
       <span className={styles.newActions}>
         <button
           type="submit"
@@ -163,6 +166,11 @@ function Actions({ failure, reason, onCancel }: ActionsProps) {
           </span>
         )}
       </span>
+      {failure !== "" && (
+        <p role="alert" className={styles.failure}>
+          {failure}
+        </p>
+      )}
     </>
   );
 }
@@ -179,17 +187,19 @@ function useNaming(taken: readonly string[]) {
 
 function useIdProblem(maker: PlantMaker, base: string, name: string, id: string, followAgain: () => void) {
   const [found, setFound] = useState<{ readonly id: string; readonly message: string } | null>(null);
+  const reportId = (value: string, message: string) => {
+    setFound({ id: value, message });
+  };
   const check = async () => {
     const value = id.trim();
     if (value === "") return;
-    const message = await maker.idProblem(sourceOf(base), value, name.trim() === "" ? value : name.trim());
-    setFound({ id: value, message });
+    reportId(value, await maker.idProblem(sourceOf(base), value, name.trim() === "" ? value : name.trim()));
   };
   const leave = () => {
     followAgain();
     void check();
   };
-  return { problem: found !== null && found.id === id.trim() ? found.message : "", leave };
+  return { problem: found !== null && found.id === id.trim() ? found.message : "", leave, reportId };
 }
 
 function readiness(name: string, id: string, base: string): string {
@@ -204,8 +214,8 @@ export function NewPlantForm(props: NewPlantProps & { readonly onCancel: () => v
   const first = bases[0] === undefined ? `example:${examples[0]?.id ?? ""}` : `file:${bases[0].path}`;
   const [base, setBase] = useState(first);
   const [copy, setCopy] = useState(!blank);
-  const { failure, create } = useCreate(props);
-  const { problem, leave } = useIdProblem(props.maker, base, name, id, followAgain);
+  const { problem, leave, reportId } = useIdProblem(props.maker, base, name, id, followAgain);
+  const { failure, create } = useCreate(props, reportId);
   const reason = readiness(name, id, base);
   const ready = reason === "";
   const submit = (event: SyntheticEvent<HTMLFormElement>) => {

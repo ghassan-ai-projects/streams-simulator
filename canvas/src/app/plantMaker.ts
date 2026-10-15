@@ -27,9 +27,16 @@ function baseOf(source: PlantSource): Readonly<Record<string, string>> {
   return "example" in source ? { example: source.example } : { from: source.file };
 }
 
+const idPointer = "/id";
+
+export function idProblemOf(failure: BridgeFailure): string {
+  return failure.issues.find((issue) => issue.pointer === idPointer)?.message ?? "";
+}
+
 function worded(failure: BridgeFailure): BridgeFailure {
   if (failure.issues.length === 0) return failure;
-  return { ...failure, message: failure.issues.map((issue) => issue.message).join("; ") };
+  const others = failure.issues.filter((issue) => issue.pointer !== idPointer);
+  return { ...failure, message: others.map((issue) => issue.message).join("; ") };
 }
 
 function compositionOf(value: unknown): Composition | null {
@@ -48,7 +55,7 @@ export class PlantMaker {
   async idProblem(source: PlantSource, id: string, title: string): Promise<string> {
     if ((await this.bridge.readFile(domainOf({ id }))).ok) return taken(id).message;
     const made = await this.bridge.action("component.new", { id, title, ...baseOf(source) });
-    return made.ok ? "" : worded(made.failure).message;
+    return made.ok ? "" : idProblemOf(made.failure);
   }
 
   async create(source: PlantSource, id: string, title: string, copy: boolean): Promise<BridgeFailure | Made> {

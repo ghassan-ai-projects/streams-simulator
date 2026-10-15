@@ -71,7 +71,25 @@ describe("plant maker", () => {
       issues: [{ pointer: "/id", message: "bad id" }],
     };
     fake.actions.set("component.new", failed(refusal));
-    expect(await maker.create({ example: "pilot" }, "Bad_Id", "B", true)).toMatchObject({ message: "bad id" });
+    expect(await maker.create({ example: "pilot" }, "Bad_Id", "B", true)).toMatchObject({
+      message: "",
+      issues: [{ pointer: "/id", message: "bad id" }],
+    });
+    expect(await maker.idProblem({ example: "pilot" }, "Bad_Id", "B")).toBe("bad id");
+    fake.actions.set(
+      "component.new",
+      failed({
+        ...failure("composition_invalid", 422, "fails"),
+        issues: [
+          { pointer: "/equipment", message: "missing required property" },
+          { pointer: "/id", message: "bad id" },
+        ],
+      }),
+    );
+    expect(await maker.create({ example: "pilot" }, "Bad_Id", "B", true)).toMatchObject({
+      message: "missing required property",
+    });
+    expect(await maker.idProblem({ example: "pilot" }, "Bad_Id", "B")).toBe("bad id");
     fake.actions.set("component.new", success({ composition: "not a plant" }));
     expect(await maker.create({ example: "odd" }, "odd-copy", "O", true)).toMatchObject({
       code: "composition_unreadable",
