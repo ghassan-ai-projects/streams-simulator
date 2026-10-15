@@ -7,6 +7,21 @@ import { ReportPanel } from "./ReportPanel";
 import { Scrubber } from "./Scrubber";
 
 describe("report panel", () => {
+  it("opens with the integrity block collapsed, on every review", () => {
+    const view = render(
+      <ReportPanel
+        report={parseReport(report)}
+        unit={() => ""}
+        entity={null}
+        verify={{ phase: "ready", value: { matches: true, domainChanged: false, detail: "", reason: "", file: "" } }}
+      />,
+    );
+    const integrity = view.container.querySelector("details");
+    expect(integrity).not.toBeNull();
+    expect(integrity).not.toHaveAttribute("open");
+    expect(integrity).toHaveTextContent("Verified: the files match and the replay reproduces.");
+  });
+
   it.each([undefined, "kpi"] as const)("cautions rejected incomplete truth in the %s view", (only) => {
     render(
       <ReportPanel

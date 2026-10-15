@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { env } from "./support/env";
+import { headingInside } from "./support/fitAudit";
 import { textClashes } from "./support/textClashes";
 
 test.use({ storageState: env("CANVAS_APP_STATE") });
@@ -34,9 +35,9 @@ test("wire arrows point to receivers and selected connections remain prominent",
   const edge = graph.locator(".react-flow__edge").first();
   await expect(edge.locator(".react-flow__edge-path")).toHaveAttribute("marker-end", /url\(['"]?#/);
   await page.getByRole("button", { name: "Legend" }).click();
-  await expect(
-    page.getByText("Model connections carry values from outputs to inputs; arrows point to the receiving endpoint."),
-  ).toBeVisible();
+  const legend = page.getByRole("group", { name: "Wire colour and pin shape by port type" });
+  await expect(legend.getByText(/Model connections carry values from outputs to inputs/)).toBeVisible();
+  await expect.poll(() => headingInside(legend, "Wire colour and pin shape by port type")).toBe(true);
   await page.getByRole("navigation", { name: "Outline" }).getByRole("button", { name: "CH-1" }).click();
   const selected = graph.locator(".react-flow__edge.wire-on").first();
   await expect(selected).toBeVisible();

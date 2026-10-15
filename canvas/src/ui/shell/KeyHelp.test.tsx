@@ -13,6 +13,9 @@ describe("key help", () => {
     for (const scope of ["Everywhere", "Plant graph", "Run review", "Editor"]) {
       expect(within(dialog).getByRole("region", { name: scope })).toBeInTheDocument();
     }
+    const review = within(dialog).getByRole("region", { name: "Run review" });
+    expect(within(review).getByText("go to the previous event, the next event")).toBeInTheDocument();
+    expect(within(review).getByText("play or pause")).toBeInTheDocument();
     expect(within(dialog).queryByText(/\(graph\)|Previous and next event/)).toBeNull();
     fireEvent.keyDown(window, { key: "Escape" });
     expect(screen.queryByRole("dialog")).toBeNull();

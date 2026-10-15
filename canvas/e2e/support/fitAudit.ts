@@ -1,3 +1,11 @@
+import type { Locator } from "@playwright/test";
+
+export async function headingInside(frame: Locator, name: string): Promise<boolean> {
+  const title = await frame.getByText(name).boundingBox();
+  const outer = await frame.boundingBox();
+  return title !== null && outer !== null && title.x + title.width <= outer.x + outer.width - 8;
+}
+
 export function nodesOutsideCanvas(): string[] {
   const canvas = document.querySelector(".react-flow")?.getBoundingClientRect();
   if (canvas === undefined) return ["no canvas"];
