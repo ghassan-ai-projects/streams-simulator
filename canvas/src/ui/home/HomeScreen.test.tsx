@@ -54,7 +54,7 @@ describe("home screen", () => {
     await show(bridge);
     const region = screen.getByRole("region", { name: "Runs" });
     expect(within(region).getAllByRole("listitem")).toHaveLength(20);
-    fireEvent.click(within(region).getByRole("button", { name: "Show 5 more of 5" }));
+    fireEvent.click(within(region).getByRole("button", { name: "Show 5 more runs" }));
     expect(within(region).getAllByRole("listitem")).toHaveLength(25);
     expect(within(region).getAllByRole("button", { name: /^Review / })[20]).toHaveFocus();
     fireEvent.change(within(region).getByLabelText("Show runs of"), { target: { value: "other" } });

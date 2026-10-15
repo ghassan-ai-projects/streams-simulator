@@ -34,4 +34,22 @@ describe("runs on home", () => {
     );
     expect(row).not.toHaveTextContent(/Verified|Not checked/);
   });
+
+  it("names the one run left to show in the singular", async () => {
+    const bridge = new FakeBridge();
+    const runs = Array.from({ length: 21 }, (_, i) => ({
+      worldId: `w-${String(i)}`,
+      ended: true,
+      complete: true,
+      incompleteReason: "",
+      explore: false,
+      seed: null,
+      plant: "factory-utilities",
+      durationS: 60,
+      recordedAt: `2026-10-14T10:${String(i).padStart(2, "0")}:00Z`,
+    }));
+    bridge.workspaceOutcome = success({ ...sampleWorkspace, runs });
+    await show(bridge);
+    expect(screen.getByRole("button", { name: "Show 1 more run" })).toBeInTheDocument();
+  });
 });

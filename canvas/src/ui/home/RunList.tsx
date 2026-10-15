@@ -16,6 +16,10 @@ interface ListProps {
 
 const page = 20;
 
+function moreLabel(count: number): string {
+  return `Show ${String(count)} more ${count === 1 ? "run" : "runs"}`;
+}
+
 function detail(row: RunRow): string {
   return [row.run.worldId, whenOf(row.run.recordedAt), ...runFacts(row.run)].filter((part) => part !== "").join(" · ");
 }
@@ -146,7 +150,7 @@ export function RunList({ workspace, navigation, badgeFor }: ListProps) {
       </ul>
       {rows.length > shown && (
         <button type="button" className={styles.more} onClick={more}>
-          {`Show ${String(Math.min(page, rows.length - shown))} more of ${String(rows.length - shown)}`}
+          {moreLabel(Math.min(page, rows.length - shown))}
         </button>
       )}
     </section>
