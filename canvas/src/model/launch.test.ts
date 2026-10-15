@@ -6,8 +6,11 @@ import {
   keepKnownFaults,
   launchSteps,
   outcomeOf,
+  paceOf,
   planProblems,
   planSummary,
+  rateWords,
+  watchWords,
 } from "./launch";
 
 const plan = (overrides: Partial<LaunchPlan>): LaunchPlan => ({
@@ -189,5 +192,24 @@ describe("prefilled faults", () => {
       "gone on CH-1 (no longer in this plant)",
       "a fault on PX-9 (no longer in this plant)",
     ]);
+  });
+});
+
+describe("run pace", () => {
+  it("watches a run in about 30 s, at 60 to 3600 simulated seconds per second", () => {
+    expect(paceOf(plan({ durationS: 1800, pace: "watch" }))).toBe(60);
+    expect(paceOf(plan({ durationS: 86_400, pace: "watch" }))).toBe(2880);
+    expect(paceOf(plan({ durationS: 600, pace: "watch" }))).toBe(60);
+    expect(paceOf(plan({ durationS: 864_000, pace: "watch" }))).toBe(3600);
+    expect(paceOf(plan({ durationS: 1800, pace: "fast" }))).toBeNull();
+    expect(paceOf(plan({ durationS: 1800 }))).toBeNull();
+  });
+
+  it("says how long watching takes and how fast a run goes", () => {
+    expect(watchWords(1800)).toBe("about 30 s");
+    expect(watchWords(300)).toBe("about 5 s");
+    expect(watchWords(86_400)).toBe("about 30 s");
+    expect(rateWords(59.6)).toBe("60 s per s");
+    expect(rateWords(null)).toBe("");
   });
 });

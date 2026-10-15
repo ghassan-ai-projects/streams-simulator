@@ -1,6 +1,6 @@
 import type { BridgeFailure } from "../model/bridge";
 import type { CallOutcome, LaunchPlan, LaunchStep } from "../model/launch";
-import { failureWords, launchSteps, outcomeOf } from "../model/launch";
+import { failureWords, launchSteps, outcomeOf, paceOf } from "../model/launch";
 import { Observable } from "./observable";
 import type { Bridge } from "./ports";
 
@@ -22,6 +22,7 @@ export type LaunchState =
       readonly startedMs: number;
       readonly atMs: number;
       readonly stopping: boolean;
+      readonly rate: number | null;
       readonly calls: readonly CallOutcome[];
     }
   | {
@@ -74,6 +75,8 @@ export class LaunchStore extends Observable<LaunchState> {
   private outcomes: readonly CallOutcome[] = [];
   private startedMs = 0;
   private reachedS = 0;
+  private samples: readonly { readonly ms: number; readonly s: number }[] = [];
+  private interrupt: (() => void) | null = null;
   private proposed: (Proposal & { readonly domain: string }) | null = null;
   private current: LaunchStep | null = null;
 
@@ -94,6 +97,10 @@ export class LaunchStore extends Observable<LaunchState> {
   constructor(
     private readonly bridge: Bridge,
     private readonly now: () => number = () => Date.now(),
+    private readonly sleep: (ms: number) => Promise<void> = (ms) =>
+      new Promise((resolve) => {
+        window.setTimeout(resolve, ms);
+      }),
   ) {
     super({ phase: "idle" });
   }
@@ -108,6 +115,7 @@ export class LaunchStore extends Observable<LaunchState> {
     this.stop = false;
     this.outcomes = [];
     this.reachedS = 0;
+    this.samples = [];
     this.progress(null, 0);
     let worldId = "";
     try {
@@ -127,6 +135,7 @@ export class LaunchStore extends Observable<LaunchState> {
     if (state.phase !== "running") return;
     this.stop = true;
     this.set({ ...state, stopping: true });
+    this.interrupt?.();
   }
 
   private progress(worldId: string | null, atS: number): void {
@@ -143,6 +152,7 @@ export class LaunchStore extends Observable<LaunchState> {
       startedMs,
       atMs,
       stopping: this.stop,
+      rate: this.rateAt(atMs, atS),
       calls: this.outcomes,
     });
   }
@@ -153,12 +163,33 @@ export class LaunchStore extends Observable<LaunchState> {
 
   private async steps(worldId: string, plan: LaunchPlan): Promise<void> {
     let advanced = false;
-    for (const step of launchSteps(plan)) {
+    for (const step of launchSteps(plan, plan.pace === "watch" ? 30 : 20)) {
       if (this.stop && advanced) return;
       await this.step(worldId, step);
       advanced ||= step.kind === "advance";
-      if (step.kind === "advance") this.progress(worldId, step.toS);
+      if (step.kind === "advance") {
+        this.progress(worldId, step.toS);
+        await this.pace(step.toS);
+      }
     }
+  }
+
+  private rateAt(atMs: number, atS: number): number | null {
+    this.samples = [...this.samples.filter((sample) => atMs - sample.ms <= 5000), { ms: atMs, s: atS }];
+    const first = this.samples[0];
+    if (first === undefined || atMs - first.ms < 1000) return null;
+    return (atS - first.s) / ((atMs - first.ms) / 1000);
+  }
+
+  private async pace(toS: number): Promise<void> {
+    const rate = paceOf(this.plan);
+    const wait = rate === null ? 0 : this.startedMs + (toS / rate) * 1000 - this.now();
+    if (wait <= 0 || this.stop) return;
+    const woken = new Promise<void>((resolve) => {
+      this.interrupt = resolve;
+    });
+    await Promise.race([this.sleep(wait), woken]);
+    this.interrupt = null;
   }
 
   private async step(worldId: string, step: LaunchStep): Promise<void> {

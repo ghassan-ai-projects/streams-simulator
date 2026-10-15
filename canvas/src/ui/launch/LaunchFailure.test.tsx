@@ -30,6 +30,7 @@ describe("a run that stops on a fault", () => {
         onFinished={vi.fn()}
       />,
     );
+    fireEvent.click(screen.getByRole("radio", { name: /As fast as possible/ }));
     fireEvent.click(screen.getByRole("button", { name: "Start the run" }));
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent(

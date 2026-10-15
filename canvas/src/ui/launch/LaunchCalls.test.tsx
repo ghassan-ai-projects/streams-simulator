@@ -64,6 +64,7 @@ describe("effector calls in the run plan", () => {
     expect(
       screen.getByText(/^Start simulates 30 min of plant time.* with no faults and 1 effector call,/),
     ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("radio", { name: /As fast as possible/ }));
     fireEvent.click(screen.getByRole("button", { name: "Start the run" }));
     const field = screen.getByLabelText("Effector call 1 setpoint c");
     expect(field).toHaveFocus();
@@ -84,6 +85,7 @@ describe("effector calls in the run plan", () => {
     change("Effector call 2 setpoint c", "7");
     change("Effector call 2 starts at minute", "10");
     await act(async () => {
+      fireEvent.click(screen.getByRole("radio", { name: /As fast as possible/ }));
       fireEvent.click(screen.getByRole("button", { name: "Start the run" }));
       await Promise.resolve();
     });

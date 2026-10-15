@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { failed, success } from "../model/bridge";
 import { FakeBridge, failure } from "../test/fakeBridge";
 import { LaunchStore } from "./launchStore";
@@ -122,5 +122,59 @@ describe("launch", () => {
     await store.start(origin, plan);
     expect(store.snapshot()).toMatchObject({ phase: "failed", failure: { code: "domain_invalid" } });
     expect(fake.calls.map((call) => call.name)).toEqual(["world.create"]);
+  });
+
+  it("paces a watched run to the simulated time reached and reports the speed of the last seconds", async () => {
+    const fake = bridge();
+    let clock = 0;
+    const waits: number[] = [];
+    const store = new LaunchStore(
+      fake,
+      () => clock,
+      (ms) => {
+        waits.push(ms);
+        clock += ms;
+        return Promise.resolve();
+      },
+    );
+    const rates: (number | null)[] = [];
+    store.subscribe(() => {
+      const state = store.snapshot();
+      if (state.phase === "running") rates.push(state.rate);
+    });
+    await store.start(origin, { ...plan, durationS: 1800, faults: [], pace: "watch" });
+    expect(waits.reduce((sum, ms) => sum + ms, 0)).toBe(30_000);
+    expect(waits).toHaveLength(30);
+    expect(rates.at(-1)).toBe(60);
+    expect(store.snapshot()).toMatchObject({ phase: "done", early: false });
+  });
+
+  it("runs a plan without a pace as fast as the binary answers", async () => {
+    const waits: number[] = [];
+    const store = new LaunchStore(
+      bridge(),
+      () => 0,
+      (ms) => {
+        waits.push(ms);
+        return Promise.resolve();
+      },
+    );
+    await store.start(origin, plan);
+    expect(waits).toEqual([]);
+  });
+
+  it("wakes a waiting run the moment Stop now is pressed", async () => {
+    const store = new LaunchStore(
+      bridge(),
+      () => 0,
+      () => new Promise<void>(() => undefined),
+    );
+    const running = store.start(origin, { ...plan, durationS: 1800, faults: [], pace: "watch" });
+    await vi.waitFor(() => {
+      expect(store.snapshot()).toMatchObject({ phase: "running", atS: 60 });
+    });
+    store.stopEarly();
+    await running;
+    expect(store.snapshot()).toMatchObject({ phase: "done", early: true, reachedS: 60 });
   });
 });

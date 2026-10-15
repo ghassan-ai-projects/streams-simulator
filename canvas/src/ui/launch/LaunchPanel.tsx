@@ -1,7 +1,7 @@
 import { Play, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { LaunchState, LaunchStore, Proposal } from "../../app/launchStore";
-import { clockOf, keepKnownFaults, planSummary, speedOf } from "../../model/launch";
+import { clockOf, keepKnownFaults, planSummary, rateWords } from "../../model/launch";
 import { humanise } from "../../model/report";
 import { durationOf } from "../../model/workspace";
 import type { Plant } from "../../model/plant";
@@ -31,18 +31,19 @@ type Running = Extract<LaunchState, { phase: "running" }>;
 type Done = Extract<LaunchState, { phase: "done" }>;
 
 function ProgressBar({ state }: { readonly state: Running }) {
+  const marks = [
+    ...state.plan.faults.map((fault) => ({ ...fault, what: fault.fault, call: false })),
+    ...state.plan.calls.map((call) => ({ ...call, what: call.effector, call: true })),
+  ];
   return (
     <div className={styles.bar}>
       <progress max={state.durationS} value={state.atS} aria-label="Simulated time" />
-      {[
-        ...state.plan.faults.map((fault) => ({ ...fault, what: fault.fault })),
-        ...state.plan.calls.map((call) => ({ ...call, what: call.effector })),
-      ].map((fault, index) => (
+      {marks.map((mark, index) => (
         <span
           key={String(index)}
-          className={fault.atS <= state.atS ? styles.tickDone : styles.tick}
-          style={{ left: `${String((fault.atS / state.durationS) * 100)}%` }}
-          title={`${fault.entity} ${humanise(fault.what)} at ${clockOf(fault.atS)}`}
+          className={cx(mark.atS <= state.atS ? styles.tickDone : styles.tick, mark.call && styles.tickCall)}
+          style={{ left: `${String((mark.atS / state.durationS) * 100)}%` }}
+          title={`${mark.entity} ${humanise(mark.what)} at ${clockOf(mark.atS)}`}
           aria-hidden="true"
         />
       ))}
@@ -61,7 +62,7 @@ function Progress({
 }) {
   const status = useFocusOnMount<HTMLParagraphElement>();
   const words = state.worldId === null ? "Creating the world…" : `Running ${title} as run ${state.worldId}`;
-  const speed = speedOf(state.atS, state.atMs - state.startedMs);
+  const speed = rateWords(state.rate);
   return (
     <div className={cx(panel.body, styles.progress)}>
       <p className={styles.status} role="status" ref={status} tabIndex={-1}>
@@ -70,7 +71,7 @@ function Progress({
       <p className={styles.clock}>{planSummary(state.plan, durationOf(state.durationS))}</p>
       <ProgressBar state={state} />
       <p className={styles.clock}>
-        {`${clockOf(state.atS)} of ${clockOf(state.durationS)} simulated${speed === "" ? "" : ` · ${speed}`}`}
+        {`Running · ${clockOf(state.atS)} of ${clockOf(state.durationS)} simulated${speed === "" ? "" : ` · ${speed}`}`}
       </p>
       <button
         type="button"

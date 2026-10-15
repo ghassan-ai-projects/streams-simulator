@@ -15,6 +15,7 @@ test("a plant runs with a planned fault and the finished run opens in the review
   await panel.getByLabel("Fault 1 instance").selectOption("CT-1");
   await panel.getByLabel("Fault 1 fault").selectOption({ label: "fan failure" });
   await panel.getByLabel("Fault 1 starts at minute").fill("2");
+  await panel.getByRole("radio", { name: /As fast as possible/ }).check();
   expect((await new AxeBuilder({ page }).include("aside").analyze()).violations).toEqual([]);
   await panel.getByRole("button", { name: "Start the run" }).click();
   const header = page.getByRole("heading", { level: 1, name: /^Run w-/ });
@@ -73,6 +74,7 @@ test("an effector call is made at its minute and its outcome is listed before th
   const panel = page.getByRole("complementary", { name: "Run Factory utilities" });
   await panel.getByLabel("Seed", { exact: true }).fill("11");
   await panel.getByLabel("Duration", { exact: true }).fill("5");
+  await panel.getByRole("radio", { name: /As fast as possible/ }).check();
   await panel.getByRole("button", { name: "Add effector call" }).click();
   await panel.getByLabel("Effector call 1 instance").selectOption("CH-1");
   await panel.getByLabel("Effector call 1 effector").selectOption({ label: "set setpoint" });
@@ -132,6 +134,10 @@ test("the top-bar run indicator brings back a closed run panel, and Stop now kee
   await panel.getByLabel("Duration unit").selectOption("hours");
   await panel.getByRole("button", { name: "Start the run" }).click();
   await expect(panel.getByText(/^Running Factory utilities as run w-/)).toBeVisible();
+  const progress = panel.getByText(/^Running · \d\d:\d\d:\d\d of 24:00:00 simulated/);
+  const first = (await progress.textContent()) ?? "";
+  await expect(progress).toHaveText(/ · \d+ s per s$/, { timeout: 15_000 });
+  await expect(progress).not.toHaveText(first.split(" · ")[1] ?? "");
   await panel.getByRole("button", { name: "Close the run panel" }).click();
   await expect(panel).toBeHidden();
   await page.getByRole("button", { name: /^Running Factory utilities · / }).click();

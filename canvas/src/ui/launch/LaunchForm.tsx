@@ -2,7 +2,8 @@ import { Dices, TriangleAlert } from "lucide-react";
 import type { KeyboardEvent, SyntheticEvent } from "react";
 import { useEffect, useRef, useState } from "react";
 import type { LaunchPlan, PlanProblem } from "../../model/launch";
-import { disturbanceWords, planProblems } from "../../model/launch";
+import { disturbanceWords, planProblems, watchWords } from "../../model/launch";
+import { Pace } from "./PaceChoice";
 import type { Plant } from "../../model/plant";
 import { effectorOf } from "../../model/plant";
 import { durationOf } from "../../model/workspace";
@@ -173,7 +174,8 @@ function problemWords(problems: readonly PlanProblem[]): string {
 
 function startWords(plan: LaunchPlan): string {
   const length = durationOf(plan.durationS) || "the chosen time";
-  return `Start simulates ${length} of plant time in ${plan.explore ? "Explore" : "Evaluate"} mode with ${disturbanceWords(plan)}, as fast as it can, then saves the run and opens its review.`;
+  const pace = plan.pace === "watch" ? `paced to take ${watchWords(plan.durationS)}` : "as fast as it can";
+  return `Start simulates ${length} of plant time in ${plan.explore ? "Explore" : "Evaluate"} mode with ${disturbanceWords(plan)}, ${pace}, then saves the run and opens its review.`;
 }
 
 function fieldName(problem: PlanProblem): string {
@@ -214,6 +216,7 @@ export function LaunchForm({ plant, draft, selected, change, onStart }: FormProp
         <Duration draft={draft} change={change} problems={shown} />
       </fieldset>
       <Mode draft={draft} change={change} />
+      <Pace draft={draft} change={change} durationS={plan.durationS} />
       <FaultRows plant={plant} draft={draft} problems={shown} selected={selected} change={change} />
       <CallRows plant={plant} draft={draft} problems={shown} selected={selected} change={change} />
       <div className={styles.footer}>
