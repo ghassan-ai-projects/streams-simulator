@@ -10,6 +10,7 @@ export interface PlanMark {
 }
 
 const effectorShownS = 60;
+const effectorHeldMs = 3000;
 
 function callWords(call: CallOutcome): string {
   const name = humanise(call.effector);
@@ -25,10 +26,15 @@ function faultsAt(plan: LaunchPlan, atS: number): Map<string, string[]> {
   return faulted;
 }
 
-function callsAt(calls: readonly CallOutcome[], atS: number): Map<string, string> {
+function callShown(call: CallOutcome, atS: number, atMs: number): boolean {
+  if (call.atS > atS) return false;
+  return atS < call.atS + effectorShownS || atMs - call.atMs < effectorHeldMs;
+}
+
+function callsAt(calls: readonly CallOutcome[], atS: number, atMs: number): Map<string, string> {
   const shown = new Map<string, string>();
   for (const call of calls) {
-    if (call.atS <= atS && atS < call.atS + effectorShownS) shown.set(call.entity, callWords(call));
+    if (callShown(call, atS, atMs)) shown.set(call.entity, callWords(call));
   }
   return shown;
 }
@@ -44,9 +50,14 @@ function hallsOf(faulted: ReadonlyMap<string, readonly string[]>): Map<string, P
   return marks;
 }
 
-export function planMarks(plan: LaunchPlan, calls: readonly CallOutcome[], atS: number): ReadonlyMap<string, PlanMark> {
+export function planMarks(
+  plan: LaunchPlan,
+  calls: readonly CallOutcome[],
+  atS: number,
+  atMs: number,
+): ReadonlyMap<string, PlanMark> {
   const faulted = faultsAt(plan, atS);
-  const effectors = callsAt(calls, atS);
+  const effectors = callsAt(calls, atS, atMs);
   const marks = new Map<string, PlanMark>(hallsOf(faulted));
   for (const entity of new Set([...faulted.keys(), ...effectors.keys()])) {
     const causes = faulted.get(entity) ?? [];

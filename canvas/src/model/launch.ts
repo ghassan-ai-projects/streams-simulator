@@ -196,15 +196,24 @@ export interface CallOutcome {
   readonly accepted: boolean;
   readonly reason: string;
   readonly effectEtaNs: number | null;
+  readonly atMs: number;
 }
 
-export function outcomeOf(call: PlannedCall, value: unknown): CallOutcome {
+export function outcomeOf(call: PlannedCall, value: unknown, atMs: number): CallOutcome {
   const ack = typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
   const accepted = ack.accepted === true;
   const eta = typeof ack.effect_eta_ns === "number" ? ack.effect_eta_ns : null;
   const reason = typeof ack.reason === "string" ? ack.reason : "";
   const { entity, effector, atS } = call;
-  return { entity, effector, atS, accepted, reason: accepted ? "" : reason || "no reason given", effectEtaNs: eta };
+  return {
+    entity,
+    effector,
+    atS,
+    accepted,
+    reason: accepted ? "" : reason || "no reason given",
+    effectEtaNs: eta,
+    atMs,
+  };
 }
 
 export function rateWords(rate: number | null): string {

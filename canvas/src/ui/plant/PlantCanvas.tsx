@@ -16,7 +16,7 @@ function useRunMarks(launch: LaunchStore, plant: string): ReadonlyMap<string, Pl
   const run = useStore(launch);
   return useMemo(() => {
     if (run.phase !== "running" || run.origin.domain !== plant) return undefined;
-    return planMarks(run.plan, run.calls, run.atS);
+    return planMarks(run.plan, run.calls, run.atS, run.atMs);
   }, [run, plant]);
 }
 

@@ -209,7 +209,8 @@ export class LaunchStore extends Observable<LaunchState> {
       effector,
       args,
     });
-    this.outcomes = [...this.outcomes, outcomeOf(step, acknowledged)];
+    this.outcomes = [...this.outcomes, outcomeOf(step, acknowledged, this.now())];
+    this.progress(worldId, this.reachedS);
   }
 
   private async call(name: string, args: Readonly<Record<string, unknown>>): Promise<unknown> {

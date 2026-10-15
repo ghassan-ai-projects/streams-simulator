@@ -61,7 +61,15 @@ describe("launch", () => {
     const state = store.snapshot();
     expect(state).toMatchObject({ phase: "done", early: false });
     expect(state.phase === "done" ? state.calls : []).toEqual([
-      { entity: "CH-1", effector: "chiller__start", atS: 10, accepted: true, reason: "", effectEtaNs: 30e9 },
+      {
+        entity: "CH-1",
+        effector: "chiller__start",
+        atS: 10,
+        accepted: true,
+        reason: "",
+        effectEtaNs: 30e9,
+        atMs: expect.any(Number) as number,
+      },
       {
         entity: "CH-1",
         effector: "chiller__stop",
@@ -69,6 +77,7 @@ describe("launch", () => {
         accepted: false,
         reason: "interlock_refused",
         effectEtaNs: null,
+        atMs: expect.any(Number) as number,
       },
     ]);
     const invoked = fake.calls.filter((call) => call.name === "effector.invoke");
@@ -79,6 +88,24 @@ describe("launch", () => {
     const at = fake.calls.findIndex((call) => call.name === "effector.invoke");
     const before = fake.calls.slice(0, at).filter((call) => call.name === "clock.advance");
     expect(before.reduce((sum, call) => sum + Number(call.args.by_ns), 0)).toBe(10e9);
+  });
+
+  it("publishes the call the moment it is made, stamped with the wall clock, so the plant can hold its mark", async () => {
+    const fake = bridge();
+    fake.actions.set("effector.invoke", success({ accepted: true, effect_eta_ns: 1e9 }));
+    let clock = 1000;
+    const store = new LaunchStore(fake, () => (clock += 250));
+    const seen: { atS: number; calls: number; atMs: number }[] = [];
+    store.subscribe(() => {
+      const state = store.snapshot();
+      if (state.phase === "running") seen.push({ atS: state.atS, calls: state.calls.length, atMs: state.atMs });
+    });
+    const call = { entity: "CH-1", effector: "chiller__start", atS: 20, args: {} };
+    await store.start(origin, { ...plan, faults: [], calls: [call] });
+    const first = seen.findIndex((state) => state.calls === 1);
+    expect(seen[first]?.atS).toBe(20);
+    expect(seen[first - 1]?.calls).toBe(0);
+    expect(seen[first]?.atMs).toBeGreaterThan(seen[first - 1]?.atMs ?? 0);
   });
 
   it("abandons the run when the bridge fails an effector call", async () => {

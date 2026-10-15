@@ -102,6 +102,27 @@ test("an effector call is made at its minute and its outcome is listed before th
   await expect(page.getByRole("group", { name: /^CH-1, chiller/ })).not.toContainText("effector call");
 });
 
+test("a live run marks an effector call on its node and holds the mark for 3 s of wall-clock time", async ({
+  page,
+}) => {
+  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Ffactory-utilities.domain.json`);
+  await page.getByRole("button", { name: "Run plant" }).click();
+  const panel = page.getByRole("complementary", { name: "Run Factory utilities" });
+  await panel.getByLabel("Duration", { exact: true }).fill("10");
+  await panel.getByRole("button", { name: "Add effector call" }).click();
+  await panel.getByLabel("Effector call 1 instance").selectOption("CH-1");
+  await panel.getByLabel("Effector call 1 effector").selectOption({ label: "set setpoint" });
+  await panel.getByLabel("Effector call 1 setpoint c").fill("7");
+  await panel.getByLabel("Effector call 1 starts at minute").fill("3");
+  await panel.getByRole("button", { name: "Start the run" }).click();
+  const chiller = page.getByRole("group", { name: /^CH-1, .*effector call: set setpoint · / });
+  await expect(chiller).toBeVisible({ timeout: 20_000 });
+  const seen = Date.now();
+  await expect(chiller).toBeHidden({ timeout: 20_000 });
+  expect(Date.now() - seen).toBeGreaterThanOrEqual(2500);
+  await expect(page.getByText(/finished/)).toHaveCount(0);
+});
+
 test("a plan with problems cannot start", async ({ page }) => {
   await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Ffactory-utilities.domain.json`);
   await page.getByRole("button", { name: "Run plant" }).click();

@@ -151,14 +151,21 @@ describe("effector calls in a plan", () => {
   });
 
   it("reads the acknowledgement as accepted or refused with the binary's reason", () => {
-    const accepted = outcomeOf(call({}), { accepted: true, effect_eta_ns: 5e9, command_id: "director-1" });
-    expect(accepted).toMatchObject({ accepted: true, reason: "", effectEtaNs: 5e9, entity: "CH-1", atS: 60 });
-    expect(outcomeOf(call({}), { accepted: false, reason: "effector_refused" })).toMatchObject({
+    const accepted = outcomeOf(call({}), { accepted: true, effect_eta_ns: 5e9, command_id: "director-1" }, 1234);
+    expect(accepted).toMatchObject({
+      accepted: true,
+      reason: "",
+      effectEtaNs: 5e9,
+      entity: "CH-1",
+      atS: 60,
+      atMs: 1234,
+    });
+    expect(outcomeOf(call({}), { accepted: false, reason: "effector_refused" }, 0)).toMatchObject({
       accepted: false,
       reason: "effector_refused",
       effectEtaNs: null,
     });
-    expect(outcomeOf(call({}), null)).toMatchObject({ accepted: false, reason: "no reason given" });
+    expect(outcomeOf(call({}), null, 0)).toMatchObject({ accepted: false, reason: "no reason given" });
   });
 });
 
