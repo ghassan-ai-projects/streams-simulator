@@ -6,6 +6,7 @@ import { kindLabel } from "../../model/report";
 import type { RunRow } from "../../model/workspace";
 import { runFacts, whenOf } from "../../model/workspace";
 import shared from "../shared.module.css";
+import { MetaParts } from "../MetaParts";
 import { cx } from "../cx";
 import styles from "./PlantScreen.module.css";
 
@@ -41,11 +42,13 @@ function RunItem({ row, onReview }: { readonly row: RunRow; readonly onReview: R
     row.run.worldId,
     row.run.explore ? "Explore" : "Evaluate",
     ...runFacts(row.run),
-    whenOf(row.run.recordedAt).replaceAll(" ", "\u00a0"),
+    whenOf(row.run.recordedAt),
   ];
   return (
     <li>
-      <span className={styles.figures}>{words.filter(Boolean).join(" · ")}</span>
+      <span className={styles.figures}>
+        <MetaParts parts={words} />
+      </span>
       {onReview !== undefined && (
         <button
           type="button"

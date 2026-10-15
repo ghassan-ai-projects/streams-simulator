@@ -42,7 +42,7 @@ describe("plant overview", () => {
     render(<PlantOverview plant={parsePlant(domain)} runs={runs} />);
     const recent = screen.getByRole("region", { name: "Recent runs" });
     expect(within(recent).getAllByRole("listitem")).toHaveLength(5);
-    expect(within(recent).getAllByRole("listitem")[0]?.textContent).toMatch(/14\u00a0Oct\u00a02026/);
+    expect(within(recent).getAllByRole("listitem")[0]?.textContent).toMatch(/14 Oct 2026, \d\d:00/);
     fireEvent.click(within(recent).getByRole("button", { name: "Show all 8 runs" }));
     expect(within(recent).getAllByRole("listitem")).toHaveLength(8);
   });

@@ -98,6 +98,10 @@ summary.sectionTitle:hover {
   grid-template-columns: 0 minmax(0, 1fr) 0;
 }
 
+.metaPart {
+  white-space: nowrap;
+}
+
 .scrolls {
   background:
     linear-gradient(var(--surface-panel) 40%, transparent) center top / 100% 32px no-repeat local,
