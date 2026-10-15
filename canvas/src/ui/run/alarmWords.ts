@@ -1,4 +1,4 @@
-export const alarmWords: Readonly<Record<string, readonly [string, string]>> = {
+const alarmWords: Readonly<Record<string, readonly [string, string]>> = {
   activations: ["Alarms raised", "Alarms that came on during the run."],
   peak_per_10_min: ["Most alarms in 10 minutes", "The busiest 10-minute spell: how many alarms came on in it."],
   flood_intervals: [
