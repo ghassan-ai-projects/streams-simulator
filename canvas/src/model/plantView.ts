@@ -1,5 +1,5 @@
 import type { Layout, LayoutNode } from "./layout";
-import { layout, ranks } from "./layout";
+import { layout } from "./layout";
 import type { Instance, Link, Plant } from "./plant";
 import { areaOf } from "./plant";
 import type { Category, ComponentSpec, Family, Pin, Pins } from "./ports";
@@ -152,19 +152,8 @@ function nodeBox(node: ViewNode, readout: number): LayoutNode {
   return { id: node.id, group: node.group, width: nodeSize.width, height };
 }
 
-function areaOrder(nodes: readonly ViewNode[], edges: readonly ViewEdge[], order: readonly string[]): string[] {
-  const groupOf = new Map(nodes.map((node) => [node.id, node.group] as const));
-  const between = edges.flatMap((edge) => {
-    const from = groupOf.get(edge.from);
-    const to = groupOf.get(edge.to);
-    return from === undefined || to === undefined || from === to ? [] : [{ from, to }];
-  });
-  const rank = ranks(order, between);
-  return [...order].sort((a, b) => (rank.get(a) ?? 0) - (rank.get(b) ?? 0));
-}
-
 function finish(context: Context, nodes: readonly ViewNode[], edges: readonly ViewEdge[]): PlantView {
-  const order = areaOrder(nodes, edges, ["Halls", ...context.plant.areas.map((area) => area.name)]);
+  const order = ["Halls", ...context.plant.areas.map((area) => area.name)];
   const boxes = nodes.map((node) => nodeBox(node, context.readout));
   const rows = (group: string, count: number) => (group === "Halls" ? Math.ceil(Math.sqrt(count)) : 3);
   return { nodes, edges, layout: layout(boxes, edges, order, rows, context.aspect), halls: context.halls };
