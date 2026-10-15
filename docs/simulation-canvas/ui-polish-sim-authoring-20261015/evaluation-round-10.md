@@ -22,6 +22,8 @@ Ordered most severe first. Each finding was appended to this file as it was foun
 - Observed: the kind line and the first port row sit at the same height, so two texts print over each other and neither reads. The kind line also sits on the header band's lower edge on several nodes. Round 8 did not record this on these plants, and round-8 ISS-8D-01 / 8D-02 are about wires, not labels.
 - Expected: no two labels overlap at any zoom. The kind is in words (P-2), and the port names are legible (C-1, E-14). When a label does not fit, it is left out at that zoom, as ISS-6D-21 already does for port names.
 - Suggestion: reserve a row for the kind below the header and start the first port row under it; if the row does not fit at the zoom, drop the kind line there instead of overprinting.
+- Status: fixed f76dff2
+- Fix: a node's kind is a row of its own under the id: the header band is 40 units plus a 24-unit kind row (the same size as a pin row), and the pins start below it, so the node height includes it. The kind row fits every compact-tier zoom, so no kind line is dropped there; the map tier already drops it. Measured in Chrome at 1440x614, opening zoom: water pumping station at 60 % had 11 label overlaps (CP-1 kind text 167-183 over "level in" 176-189 in screen px) and at 54 % has 0 (CP-1 kind 165-181, "level in" 182-197); compressed-air works at 62 % had 4 (air compressor over pressure in on compressor-1 and -2, air dryer over air in, feeder meter over loads in) and at 62 % has 0 (compressor-1 node 104 to 128 units). e2e: "no two labels inside one node intersect" (canvas/e2e/plant.spec.ts) at the compact zoom of factory utilities and the campus hall, plus the all-tier loop; the check fails on the pre-fix build.
 
 ## ISS-10D-02 Some nodes show no kind line at all, while others show the kind cut
 - Severity: Medium
@@ -30,6 +32,8 @@ Ordered most severe first. Each finding was appended to this file as it was foun
 - Observed: a kind that fits (conveyor, weather) is missing while a longer one is cut. The eye gets no rule; the node heights also differ by one line. The outline lists the kinds of these instances, so the data is there.
 - Expected: every node shows its kind in words (P-2), by one rule at every node. A kind that does not fit wraps onto a second line, as the ids do (ISS-6D-10), or the omission is the same rule for all nodes.
 - Suggestion: one rule for the kind line (always shown, wrapped to a second line if needed), so every node in a plant has the same header height.
+- Status: partly fixed f76dff2 (compact and full tiers); the overview-tier part stays open with ISS-10D-04
+- Fix: at the compact and full tiers each node's kind is in its own row, so an id band can no longer push it out, and no kind prints over a port label (see ISS-10D-01). Not changed: at the overview tier (30 %) the id wraps on short names (cal-site) and the kind moves to a second flex column that the header clips, so cal-site shows no kind; long kinds end with an ellipsis (cooling to..., packaging ...). Both come from the overview tier's text size against the node width and belong to the opening-zoom floor (ISS-10D-04).
 
 ## ISS-10D-03 In the live review, the kind line overprints the first readout label on most nodes
 - Severity: Medium
