@@ -39,7 +39,18 @@ Coherence (5) → Colour (6) → Components (7) → Motion (7) → Graph (3, ded
 | 14 | Round-12 re-score (owner: ONE viewport only — 1440×900, light and dark) | overall 7 (was 6); Typography/Colour/Content/Motion/Craft 9; Layout/Components/Feedback/Coherence 8; graph 7; 3 findings (ISS-12D-01…03); all 12 fixes hold except 12D-01's gate width; evaluation-round-12.md | — |
 | 15 | Side-panel fix batch 3: 12D-01 gate widened to every listing-known `!complete` run (listing carries no abandonment signal — investigated), 12D-02 one `areaOrder` for rail + AREAS, 12D-03 one state name "Did not finish" | done — 43fb7ab, 3dc9570, 031d0c8; `npm run check` green | 43fb7ab, 3dc9570, 031d0c8 |
 | 16 | Graph round: pan cue into plant+editor (Option A), full-tier header hug, wire-routing pass (stash) | done — 7c06d48 pan cue (plant+editor), 0348a3e wire routing with the stashed hug-avoidance and 6 new tests (grid hug marking, crowd, path choice; the popped code refactored under the complexity gates), d472050 full-tier header hug (CSS, rows hug under the category band). The failed fixer session (usage limit) left a half-threaded tier-aware header height that would have desynced wire ends from rendered rows — reverted in favour of the contained CSS hug; a true tier-aware layout stays deferred with ISS-8D-17's won't-fix rationale. | 7c06d48, 0348a3e, d472050 |
-| 17 | Round-13 re-score | pending — blocked on subagent quota until 2026-10-16 03:51 | — |
+| 17 | Round-13 re-score (LUNA, 8768, one viewport 1440×900, light + dark) | done — overall 8 (was 7); every dimension ≥ 8, lowest Craft 8 and Whole-product coherence 8; all six fix commits hold (43fb7ab surface answered from the listing, 3dc9570 one area order, 031d0c8 one unfinished name, 7c06d48 pan cue on plant/editor/review, 0348a3e wire routing, d472050 header hug); 2 Low findings (ISS-13D-01 legend heading overflows its popover, ISS-13D-02 editor opens below the plant view's floor); P-12-1 closed as a rendering question, P-12-2 closed, P-12-3 not reproducible in that workspace, P-12-4 not re-checked; evaluation-round-13.md, 68 screenshots in `/tmp/canvas-review/round-13/` | — |
+| 18 | Side-panel fix batch 4: ISS-13D-01 legend heading overflow + ISS-13D-02 one opening rule | done — 6b52e29: `.legendTitle` wraps inside its popover on every screen, and the heading check measures the painted text runs (the element-box blind spot that let the overflow through); the editor drops its `minFitZoom={0.25}` so plant view, review and editor open on the one `openingFloor` (0.4) rule, with `overviewFloor` named, a model rule test and a cross-screen e2e check (factory-utilities opens at 0.4 on both screens). UI-EXPECTATIONS E-15 now states the implemented rule. | 6b52e29 |
+
+Off-loop pipeline repair (the PR's last CI failure): **a47a98b** deletes the review node text-clash
+check ("a faulted node's id, kind, cause and effector outcome never overlap at any zoom step").
+The check compared unclipped text runs, so a readout label that
+`overflow: hidden; text-overflow: ellipsis` cuts a few pixels short of its value was reported as an
+overlap on CI's Linux Chrome, whose font metrics are wider than the review machine's; the pair never
+paints over each other. The owner directed deleting the false-positive check rather than teaching the
+checker to discount clipped text (`Owner-approved-gate-change` in the commit body). CI is green on
+[38797824680](https://github.com/ghassan-ai-projects/streams-simulator/actions/runs/38797824680);
+the compact-tier label-intersection guard and the whole-cause wrap check still hold the same class.
 
 The loop's work rides on branch `ui-score-loop`, PR #42 (`canvas: the dimension score loop — side panels and the graph round (overall 3 → 7)`); PR #41 was merged earlier on 2026-10-15 from the same line's predecessor.
 
