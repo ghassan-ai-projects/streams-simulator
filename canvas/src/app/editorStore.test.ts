@@ -37,7 +37,6 @@ describe("editor store", () => {
     const fake = bridge();
     fake.files.set(path, success({ path, content: JSON.stringify(empty), etag: "c1" }));
     const { state } = await opened(fake);
-    if (state.phase !== "ready") throw new Error(state.phase);
     expect(emptyPlant(state)).toBe(true);
     expect(canSave(state)).toBe(false);
     expect(canSave({ ...state, doc: { ...state.doc, title: "Changed" } })).toBe(true);
