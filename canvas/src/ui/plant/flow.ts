@@ -98,13 +98,22 @@ function markerColor(
   return familyColor(family);
 }
 
+function anchorHandles(view: PlantView, from: string, to: string): { sourceHandle: string; targetHandle: string } {
+  const fromX = view.layout.nodes.get(from)?.x ?? 0;
+  const toX = view.layout.nodes.get(to)?.x ?? 0;
+  return toX >= fromX
+    ? { sourceHandle: "out", targetHandle: "in" }
+    : { sourceHandle: "out-left", targetHandle: "in-right" };
+}
+
 export function flowEdges(view: PlantView, anchors = false, selected: string | null = null): Edge[] {
   return view.edges.map((edge) => ({
     id: edge.id,
     source: edge.from,
     target: edge.to,
-    sourceHandle: anchors ? "out" : (edge.fromHandle ?? "out"),
-    targetHandle: anchors ? "in" : (edge.toHandle ?? "in"),
+    ...(anchors
+      ? anchorHandles(view, edge.from, edge.to)
+      : { sourceHandle: edge.fromHandle ?? "out", targetHandle: edge.toHandle ?? "in" }),
     markerEnd: {
       type: MarkerType.ArrowClosed,
       width: 10,

@@ -177,6 +177,8 @@ export function InstanceNode({ data, selected }: NodeProps<InstanceNodeType>) {
     >
       <Handle type="target" position={Position.Left} id="in" className={styles.anchor} isConnectable={false} />
       <Handle type="source" position={Position.Right} id="out" className={styles.anchor} isConnectable={false} />
+      <Handle type="target" position={Position.Right} id="in-right" className={styles.anchor} isConnectable={false} />
+      <Handle type="source" position={Position.Left} id="out-left" className={styles.anchor} isConnectable={false} />
       <div className={styles.header}>
         <span className={styles.id} title={view.label}>
           {view.label}
@@ -210,6 +212,7 @@ export function HallNode({ data, selected }: NodeProps<HallNodeType>) {
       aria-label={describeNode(view, selected, status, count)}
     >
       <Handle type="target" position={Position.Left} id="in" className={styles.plain} isConnectable={false} />
+      <Handle type="target" position={Position.Right} id="in-right" className={styles.plain} isConnectable={false} />
       <div className={styles.header}>
         <span className={styles.id}>{view.label}</span>
         <StatusTag status={status} count={count} />
@@ -219,6 +222,7 @@ export function HallNode({ data, selected }: NodeProps<HallNodeType>) {
         {view.detail}
       </div>
       <Handle type="source" position={Position.Right} id="out" className={styles.plain} isConnectable={false} />
+      <Handle type="source" position={Position.Left} id="out-left" className={styles.plain} isConnectable={false} />
     </div>
   );
 }
