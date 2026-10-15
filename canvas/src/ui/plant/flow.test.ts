@@ -4,7 +4,7 @@ import { parsePlant } from "../../model/plant";
 import type { ComponentSpec } from "../../model/ports";
 import { plantView } from "../../model/plantView";
 import { composition, domain } from "../../test/plantFixture";
-import { flowEdges } from "./flow";
+import { flowEdges, flowNodes } from "./flow";
 
 describe("plant wire anchors", () => {
   it("leaves from the side of the node that faces the target", () => {
@@ -56,5 +56,16 @@ describe("plant wire direction", () => {
         color: "color-mix(in srgb, var(--text-tertiary) 30%, transparent)",
       },
     });
+  });
+});
+
+describe("plant frame titles", () => {
+  it("draws each area title above the wires, in its own node", () => {
+    const view = plantView(parsePlant(domain, composition), new Map(), null);
+    const titles = flowNodes(view, null).filter((node) => node.type === "frameTitle");
+    expect(titles.map((node) => [node.id, node.zIndex])).toEqual(
+      [...view.layout.groups.keys()].map((group) => [`title:${group}`, 2]),
+    );
+    expect(flowNodes(view, null).filter((node) => node.type === "frame").every((node) => node.zIndex === -1)).toBe(true);
   });
 });

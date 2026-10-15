@@ -8,7 +8,7 @@ import { familyNames, shapeOf } from "../../model/ports";
 import type { Pin } from "../../model/ports";
 import type { NodeStatus, Shown } from "../../model/readout";
 import { channelWords, statusWords } from "../../model/readout";
-import type { FrameNodeType, HallNodeType, InstanceNodeType } from "./flow";
+import type { FrameTitleNodeType, HallNodeType, InstanceNodeType } from "./flow";
 import { cx } from "../cx";
 import { OutsideMark } from "../OutsideMark";
 import { useLabelFit } from "./labelFit";
@@ -227,9 +227,13 @@ export function HallNode({ data, selected }: NodeProps<HallNodeType>) {
   );
 }
 
-export function FrameNode({ data }: NodeProps<FrameNodeType>) {
+export function FrameNode() {
+  return <div className={styles.frame} />;
+}
+
+export function FrameTitleNode({ data }: NodeProps<FrameTitleNodeType>) {
   return (
-    <div className={styles.frame}>
+    <div className={styles.frameTitleNode}>
       <div className={styles.frameTitle}>
         {data.title}
         <span className={styles.frameCount}>{`${String(data.count)} ${data.count === 1 ? "node" : "nodes"}`}</span>

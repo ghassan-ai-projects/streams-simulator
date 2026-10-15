@@ -11,11 +11,11 @@ import type { FlowNode, NodeLive } from "./flow";
 import { flowEdges, flowNodes } from "./flow";
 import { useZoomActions } from "./GraphControls";
 import { plainKey } from "../keys";
-import { FrameNode, HallNode, InstanceNode } from "./nodes";
+import { FrameNode, FrameTitleNode, HallNode, InstanceNode } from "./nodes";
 import { useFitted, useFollowSelection } from "./viewportFit";
 import styles from "./PlantScreen.module.css";
 
-const nodeTypes = { instance: InstanceNode, hall: HallNode, frame: FrameNode };
+const nodeTypes = { instance: InstanceNode, hall: HallNode, frame: FrameNode, frameTitle: FrameTitleNode };
 
 export interface PlantGraphProps {
   readonly view: PlantView;
@@ -208,7 +208,7 @@ function Flow(props: FlowProps) {
       onKeyDown={keys.onKeyDown}
       onFocus={keys.onFocus}
       onNodeClick={(_, node: FlowNode) => {
-        onSelect(node.type === "frame" ? null : node.id);
+        onSelect(node.type === "frame" || node.type === "frameTitle" ? null : node.id);
       }}
       onNodeDoubleClick={(_, node: FlowNode) => {
         if (node.type === "hall") enterHall(node.id, onSelect, onOpenHall);

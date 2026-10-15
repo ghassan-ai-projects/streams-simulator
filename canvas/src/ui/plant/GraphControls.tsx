@@ -10,7 +10,7 @@ import { cx } from "../cx";
 import styles from "./GraphControls.module.css";
 
 function minimapClass(node: FlowNode): string {
-  if (node.type === "frame") return "minimap-frame";
+  if (node.type === "frame" || node.type === "frameTitle") return "minimap-frame";
   return node.selected === true ? "minimap-selected" : "";
 }
 

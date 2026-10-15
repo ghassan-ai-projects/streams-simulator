@@ -22,11 +22,17 @@ type FrameData = Readonly<{ title: string; count: number }>;
 export type InstanceNodeType = Node<InstanceData, "instance">;
 export type HallNodeType = Node<InstanceData, "hall">;
 export type FrameNodeType = Node<FrameData, "frame">;
-export type FlowNode = InstanceNodeType | HallNodeType | FrameNodeType;
+export type FrameTitleNodeType = Node<FrameData, "frameTitle">;
+export type FlowNode = InstanceNodeType | HallNodeType | FrameNodeType | FrameTitleNodeType;
 
-function frames(view: PlantView): FrameNodeType[] {
+function groupCounts(view: PlantView): Map<string, number> {
   const counts = new Map<string, number>();
   view.nodes.forEach((node) => counts.set(node.group, (counts.get(node.group) ?? 0) + 1));
+  return counts;
+}
+
+function frames(view: PlantView): FrameNodeType[] {
+  const counts = groupCounts(view);
   return [...view.layout.groups.entries()].map(([title, box]) => ({
     id: `frame:${title}`,
     type: "frame",
@@ -39,6 +45,21 @@ function frames(view: PlantView): FrameNodeType[] {
     draggable: false,
     focusable: false,
     zIndex: -1,
+  }));
+}
+
+function frameTitles(view: PlantView): FrameTitleNodeType[] {
+  const counts = groupCounts(view);
+  return [...view.layout.groups.entries()].map(([title, box]) => ({
+    id: `title:${title}`,
+    type: "frameTitle",
+    position: { x: box.x, y: box.y },
+    data: { title, count: counts.get(title) ?? 0 },
+    style: { width: box.width },
+    selectable: false,
+    draggable: false,
+    focusable: false,
+    zIndex: 2,
   }));
 }
 
@@ -70,7 +91,7 @@ export function flowNodes(
       style: { width: box.width },
     };
   });
-  return [...frames(view), ...nodes];
+  return [...frames(view), ...nodes, ...frameTitles(view)];
 }
 
 function touches(selected: string | null, from: string, to: string): boolean {

@@ -144,13 +144,18 @@
   pointer-events: none;
 }
 
+.frameTitleNode {
+  height: 28px;
+  pointer-events: none;
+}
+
 .frameTitle {
   display: flex;
   align-items: center;
   height: 28px;
   padding: 0 var(--space-3);
   border-radius: 9px 9px 0 0;
-  background: color-mix(in srgb, var(--border-strong) 18%, transparent);
+  background: color-mix(in srgb, var(--border-strong) 18%, var(--surface-canvas));
   font-weight: 600;
   font-size: var(--text-md);
 }
