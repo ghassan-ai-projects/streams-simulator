@@ -19,6 +19,15 @@ describe("key help", () => {
     expect(button).toHaveFocus();
   });
 
+  it("lists only the keys that work on the screen it is opened from", () => {
+    render(<KeyHelp screen="plant" />);
+    fireEvent.click(screen.getByRole("button", { name: "Keyboard" }));
+    const dialog = screen.getByRole("dialog", { name: "Keyboard" });
+    expect(within(dialog).getByRole("region", { name: "Plant graph" })).toBeInTheDocument();
+    expect(within(dialog).queryByRole("region", { name: "Run review" })).toBeNull();
+    expect(within(dialog).queryByRole("region", { name: "Editor" })).toBeNull();
+  });
+
   it("dims the page and closes when the dimmed page is clicked", () => {
     render(<KeyHelp />);
     fireEvent.keyDown(window, { key: "?" });

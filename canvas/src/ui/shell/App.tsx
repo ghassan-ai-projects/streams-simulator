@@ -126,7 +126,7 @@ export function App({ stores }: { readonly stores: Stores }) {
   const topBar = (
     <TopBar
       crumbs={setSlot}
-      help={<KeyHelp />}
+      help={<KeyHelp screen={route.screen} />}
       status={<RunIndicator launch={stores.launch} navigation={stores.navigation} />}
       toggles={route.screen === "home" ? null : <ShellToggles stores={stores} route={route} />}
       preference={preference}
