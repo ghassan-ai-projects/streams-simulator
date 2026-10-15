@@ -35,7 +35,13 @@ test("a world created and destroyed through the bridge lists and reviews as Did 
   await expect(row.getByText("Did not finish", { exact: true })).toHaveAttribute("title", new RegExp(reason));
 
   await page.goto(`${env("CANVAS_APP_URL")}/#/run?world=${world}`);
+  const doomed: string[] = [];
+  page.on("response", (response) => {
+    if (response.status() >= 400) doomed.push(`${String(response.status())} ${response.url()}`);
+  });
   await expect(page.getByRole("status").filter({ hasText: /^Did not finish$/ })).toHaveCount(1, { timeout: 60_000 });
   await expect(page.getByText(reason).first()).toBeVisible();
   await expect(page.getByRole("status").filter({ hasText: /^Verified$/ })).toHaveCount(0);
+  await expect(page.getByRole("status").filter({ hasText: /^Not checked$/ })).toHaveCount(0);
+  expect(doomed).toEqual([]);
 });

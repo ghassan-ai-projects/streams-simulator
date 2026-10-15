@@ -1,12 +1,13 @@
 import { ReactFlowProvider } from "@xyflow/react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { LaunchStore } from "../../app/launchStore";
 import type { NavigationStore } from "../../app/navigationStore";
 import type { PlantState, PlantStore } from "../../app/plantStore";
 import type { ReviewState, ReviewStore } from "../../app/reviewStore";
-import type { WorkspaceStore } from "../../app/workspaceStore";
+import type { WorkspaceState, WorkspaceStore } from "../../app/workspaceStore";
 import { isMissing } from "../../model/bridge";
 import type { Opening } from "../../model/playback";
+import type { RunEntry } from "../../model/bridge";
 import { stateUnit } from "../../model/plant";
 import { runClock } from "../../model/timeline";
 import { noteLinesByEntity } from "../../model/noteLines";
@@ -42,6 +43,26 @@ interface RunScreenProps {
 }
 
 type ReadyPlant = Extract<PlantState, { phase: "ready" }>;
+
+function entryOf(listing: WorkspaceState, worldId: string): RunEntry | undefined {
+  return listing.phase === "ready" ? listing.workspace.runs.find((run) => run.worldId === worldId) : undefined;
+}
+
+function useReviewOpen(review: ReviewStore, workspace: WorkspaceStore, worldId: string): void {
+  const listing = useStore(workspace);
+  const known = useRef<RunEntry | undefined>(undefined);
+  const settled = listing.phase !== "loading";
+  useEffect(() => {
+    known.current = entryOf(listing, worldId);
+  }, [listing, worldId]);
+  useEffect(() => {
+    if (!settled) return undefined;
+    review.open(worldId, known.current);
+    return () => {
+      review.close();
+    };
+  }, [review, worldId, settled]);
+}
 
 function useRunPlant(state: ReviewState, plants: PlantStore, workspace: WorkspaceStore): ReadyPlant | null {
   const listing = useStore(workspace);
@@ -246,12 +267,7 @@ export function RunScreen({ review, plants, workspace, navigation, launch, world
   const plant = useRunPlant(state, plants, workspace);
   const identity = usePlantIdentity(state, workspace, plant);
   const [hall, setHall] = useState<string | null>(null);
-  useEffect(() => {
-    review.open(worldId);
-    return () => {
-      review.close();
-    };
-  }, [review, worldId]);
+  useReviewOpen(review, workspace, worldId);
   usePlayback(review, state.playing);
   const unit = useUnitOf(plant);
   return (

@@ -1,8 +1,9 @@
-import type { BridgeFailure } from "../model/bridge";
+import type { BridgeFailure, RunEntry } from "../model/bridge";
 import { PlaybackIndex, advance, parseJournalRecord } from "../model/playback";
 import type { Badge, Report } from "../model/report";
 import type { Replay } from "../model/report";
 import { badgeOf, parseReplay, parseReport } from "../model/report";
+import { unfinishedReason } from "../model/workspace";
 import { Observable } from "./observable";
 import type { Bridge } from "./ports";
 
@@ -45,12 +46,36 @@ const idle: ReviewState = {
   speed: 60,
 };
 
+const absentFile: BridgeFailure = {
+  status: 404,
+  code: "not_found",
+  message: "run.json is absent: the run is still open or did not end",
+  issues: [],
+};
+
+function absentLoads(known: RunEntry | undefined): Pick<ReviewState, "verified" | "runDomain"> | Record<string, never> {
+  if (known === undefined || !known.ended || known.complete) return {};
+  return {
+    verified: {
+      phase: "failed",
+      failure: {
+        status: 422,
+        code: "run_incomplete",
+        message: `the run is incomplete: ${unfinishedReason(known)}`,
+        issues: [],
+      },
+    },
+    runDomain: { phase: "failed", failure: absentFile },
+  };
+}
+
 export class ReviewStore extends Observable<ReviewState> {
   index = new PlaybackIndex();
   private readonly badges = new Map<string, Badge>();
   private stop: (() => void) | null = null;
   private pending = 0;
   private refreshed = false;
+  private knownIncomplete = false;
 
   constructor(
     private readonly bridge: Bridge,
@@ -62,16 +87,19 @@ export class ReviewStore extends Observable<ReviewState> {
     super(idle);
   }
 
-  open(worldId: string): void {
+  open(worldId: string, known?: RunEntry): void {
     const state = this.snapshot();
     if (state.worldId === worldId && (this.stop !== null || state.playback.phase !== "loading")) return;
     this.close();
     this.refreshed = false;
+    this.knownIncomplete = known !== undefined && known.ended && !known.complete;
     this.index = new PlaybackIndex();
-    this.set({ ...idle, worldId, openedAt: this.now() });
+    this.set({ ...idle, worldId, openedAt: this.now(), ...absentLoads(known) });
     void this.loadReport(worldId);
-    void this.loadVerify(worldId);
-    void this.loadRunDomain(worldId);
+    if (!this.knownIncomplete) {
+      void this.loadVerify(worldId);
+      void this.loadRunDomain(worldId);
+    }
     this.stop = this.bridge.followRun(worldId, {
       record: (data) => {
         this.take(worldId, data);
@@ -165,6 +193,7 @@ export class ReviewStore extends Observable<ReviewState> {
   }
 
   private refreshIfLive(worldId: string): void {
+    if (this.knownIncomplete) return;
     const state = this.snapshot();
     if (this.refreshed || state.worldId !== worldId || state.report.phase !== "ready" || state.report.value.ended)
       return;
