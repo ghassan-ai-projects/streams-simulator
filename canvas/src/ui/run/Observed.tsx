@@ -59,7 +59,7 @@ function ObservedTable({ shown, at, startNs }: TableProps) {
   const shared = own.every((time) => time === null);
   return (
     <table className={styles.table}>
-      <caption className={styles.groupTime}>
+      <caption className="sr-only">
         {`${shared ? "Observed at" : "Latest observed at"} ${runClock(latest, startNs)}`}
       </caption>
       <thead className="sr-only">

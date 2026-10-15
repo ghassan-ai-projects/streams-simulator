@@ -239,7 +239,7 @@ const truthLead =
 function KpiTruth({ report, unit, entity, lead = true }: TruthProps & { readonly lead?: boolean }) {
   const kpis = kpisOf(report, entity);
   return (
-    <Section title="True results" note={entity ?? undefined}>
+    <Section title="True results">
       {lead && <p className={styles.muted}>{truthLead}</p>}
       {kpis.length === 0 ? (
         <p className={styles.muted}>{entity === null ? "None" : `No true results for ${entity}.`}</p>
