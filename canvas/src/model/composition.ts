@@ -148,10 +148,15 @@ function initials(title: string): string {
   return letters === "" ? "X" : letters.slice(0, 3);
 }
 
+function shortPrefix(name: string | undefined): string | null {
+  const prefix = name?.match(/^(.*?)-?\d+$/)?.[1] ?? "";
+  return /^[A-Za-z]{1,4}$/.test(prefix) ? prefix : null;
+}
+
 export function suggestedName(doc: Composition, use: string, title: string): string {
   const names = equipmentOf(doc).flatMap((entry) => entry.names);
   const sibling = equipmentOf(doc).find((entry) => componentOf(entry.use) === componentOf(use))?.names[0];
-  const prefix = sibling?.match(/^(.*?)-?\d+$/)?.[1] ?? initials(title);
+  const prefix = shortPrefix(sibling) ?? initials(title);
   let n = 1;
   while (names.includes(`${prefix}-${String(n)}`)) n += 1;
   return `${prefix}-${String(n)}`;

@@ -126,6 +126,10 @@ describe("composition", () => {
     expect(suggestedName(doc, "streamsim/pump@1", "Chilled water pump")).toBe("CWP-1");
     expect(suggestedName(doc, "streamsim/cooling-tower@1", "Cooling tower")).toBe("CT-2");
     expect(suggestedName({}, "x@1", "")).toBe("X-1");
+    const longPump = {
+      equipment: [{ use: "streamsim/pump@1", names: ["pump-house-secondary-circuit-feed-north-07"] }],
+    };
+    expect(suggestedName(longPump, "streamsim/pump@1", "Centrifugal pump")).toBe("CP-1");
   });
 
   it("says a link from one instance's side in words", () => {
