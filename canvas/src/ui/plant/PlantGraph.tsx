@@ -1,8 +1,8 @@
 import type { Connection } from "@xyflow/react";
-import { Background, ReactFlow, useStore } from "@xyflow/react";
+import { Background, ReactFlow, useStore, useUpdateNodeInternals } from "@xyflow/react";
 import "@xyflow/react/dist/base.css";
 import type { CSSProperties, KeyboardEvent } from "react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { directionOf, firstOf, nearest } from "../../model/graphKeys";
 import type { PlantView } from "../../model/plantView";
 import { describeNode, hallCount } from "../../model/plantView";
@@ -184,9 +184,18 @@ function useFlowContent({ view, selected, live, flagged, onConnect, active }: Fl
   return { nodes, edges, zoom };
 }
 
+function useRemeasuredHandles(nodeIds: string[], tier: string) {
+  const update = useUpdateNodeInternals();
+  useEffect(() => {
+    update(nodeIds);
+  }, [update, nodeIds, tier]);
+}
+
 function Flow(props: FlowProps) {
   const { onSelect, onOpenHall, onConnect, keys } = props;
   const { nodes, edges, zoom } = useFlowContent(props);
+  const nodeIds = useMemo(() => nodes.map((node) => node.id), [nodes]);
+  useRemeasuredHandles(nodeIds, tierOf(zoom));
   return (
     <ReactFlow
       nodes={nodes}

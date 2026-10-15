@@ -49,7 +49,7 @@ export function tierOf(zoom: number): Tier {
 }
 
 export function anchorsOnly(tier: Tier): boolean {
-  return tier !== "full";
+  return tier === "overview" || tier === "map";
 }
 
 interface Size {

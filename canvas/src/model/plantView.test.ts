@@ -27,6 +27,17 @@ describe("plant view", () => {
     expect([...view.layout.groups.keys()]).toEqual(["Cooling", "Power"]);
   });
 
+  it("ends a link without a recorded port on the first unconnected pin of its side", () => {
+    const plant = parsePlant(domain, composition);
+    const unrecorded = { ...plant, links: plant.links.map((link) => ({ ...link, fromPort: null, toPort: null })) };
+    const view = plantView(unrecorded, specs, null);
+    expect(view.edges.map((edge) => [edge.from, edge.fromHandle, edge.to, edge.toHandle])).toEqual([
+      ["CH-1", "heat_out", "CT-1", "heat_in"],
+      ["CT-1", "basin_out", "CH-1", "cond_in"],
+      ["CH-1", "heat_out", "MB-1", null],
+    ]);
+  });
+
   it("starts a campus at hall level with bundled links and shared instances", () => {
     const plant = parsePlant(campus(3));
     expect(hallOf("h02/M-1")).toBe("h02");

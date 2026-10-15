@@ -2,7 +2,7 @@ import type { Layout, LayoutNode } from "./layout";
 import { layout } from "./layout";
 import type { Instance, Link, Plant } from "./plant";
 import { areaOf } from "./plant";
-import type { Category, ComponentSpec, Family, Pins } from "./ports";
+import type { Category, ComponentSpec, Family, Pin, Pins } from "./ports";
 import { familyOf, pinsOf } from "./ports";
 import type { NodeStatus } from "./readout";
 import { statusWords } from "./readout";
@@ -100,20 +100,29 @@ function linkFamily(plant: Plant, link: Link, specs: Specs): Family | null {
   return spec ? familyOf(spec.type) : null;
 }
 
+function pinNamed(pins: readonly Pin[], port: string | null): string | null {
+  if (port !== null && pins.some((pin) => pin.name === port)) return port;
+  return (pins.find((pin) => pin.connection === "unknown") ?? pins[0])?.name ?? null;
+}
+
+function handleOf(pins: ReadonlyMap<string, Pins>, id: string, side: "ins" | "outs", port: string | null) {
+  return pinNamed(pins.get(id)?.[side] ?? [], port);
+}
+
 function bundle(
   plant: Plant,
   links: readonly Link[],
   key: (id: string) => string | null,
   specs: Specs,
-  detailed: boolean,
+  detailed: ReadonlyMap<string, Pins> | null,
 ): ViewEdge[] {
   const edges = new Map<string, ViewEdge>();
   for (const link of links) {
     const from = key(link.from);
     const to = key(link.to);
     if (from === null || to === null || from === to) continue;
-    const fromHandle = detailed ? link.fromPort : null;
-    const toHandle = detailed ? link.toPort : null;
+    const fromHandle = detailed === null ? null : handleOf(detailed, from, "outs", link.fromPort);
+    const toHandle = detailed === null ? null : handleOf(detailed, to, "ins", link.toPort);
     const id = `${from}.${fromHandle ?? ""}>${to}.${toHandle ?? ""}`;
     const known = edges.get(id);
     edges.set(
@@ -163,7 +172,7 @@ function hallLevel(context: Context): PlantView {
     ...halls.map((hall) => hallNode(hall, counts.get(hall) ?? 0)),
   ];
   const key = (id: string) => hallOf(id) ?? id;
-  const edges = bundle(plant, plant.links, key, specs, false);
+  const edges = bundle(plant, plant.links, key, specs, null);
   const feedsAll = new Set(
     shared
       .map((instance) => instance.id)
@@ -184,7 +193,8 @@ function instanceLevel(context: Context, keep: (instance: Instance) => boolean):
   const ids = new Set(kept.map((instance) => instance.id));
   const nodes = kept.map((instance) => instanceNode(context.plant, instance, context.specs));
   const key = (id: string) => (ids.has(id) ? id : null);
-  return finish(context, nodes, bundle(context.plant, context.plant.links, key, context.specs, true));
+  const pins = new Map(nodes.map((node) => [node.id, node.pins] as const));
+  return finish(context, nodes, bundle(context.plant, context.plant.links, key, context.specs, pins));
 }
 
 function withinHall(view: PlantView, hall: string): PlantView {
