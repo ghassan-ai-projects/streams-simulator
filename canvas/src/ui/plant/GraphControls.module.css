@@ -145,6 +145,16 @@
   transform: rotate(45deg) scale(0.9);
 }
 
+.bar {
+  width: 6px;
+  border-radius: 3px;
+}
+
+.hexagon {
+  border: 0;
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+}
+
 .unknown {
   background: transparent;
   border-style: dashed;

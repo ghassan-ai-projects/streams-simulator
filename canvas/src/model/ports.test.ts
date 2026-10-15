@@ -21,7 +21,16 @@ describe("ports and pins", () => {
     expect(familyOf("unknown")).toBeNull();
     expect(shapeOf("water")).toBe("circle");
     expect(shapeOf("power")).toBe("square");
-    expect(shapeOf("signal")).toBe("square");
+    expect(shapeOf("pressure")).toBe("diamond");
+  });
+
+  it("separates look-alike hues by mark, so hue is never the only carrier", () => {
+    expect(shapeOf("temp")).toBe("hexagon");
+    expect(shapeOf("signal")).toBe("hexagon");
+    expect(shapeOf("env")).toBe("bar");
+    expect(shapeOf("heat")).toBe("bar");
+    expect(shapeOf("temp")).not.toBe(shapeOf("heat"));
+    expect(shapeOf("env")).not.toBe(shapeOf("signal"));
   });
 
   it("reads a component document's ports and their directions", () => {
