@@ -45,6 +45,12 @@ export class PlantMaker {
     return listed.ok ? parseExamples(listed.value) : [];
   }
 
+  async idProblem(source: PlantSource, id: string, title: string): Promise<string> {
+    if ((await this.bridge.readFile(domainOf({ id }))).ok) return taken(id).message;
+    const made = await this.bridge.action("component.new", { id, title, ...baseOf(source) });
+    return made.ok ? "" : worded(made.failure).message;
+  }
+
   async create(source: PlantSource, id: string, title: string, copy: boolean): Promise<BridgeFailure | Made> {
     const domain = domainOf({ id });
     if ((await this.bridge.readFile(domain)).ok) return taken(id);

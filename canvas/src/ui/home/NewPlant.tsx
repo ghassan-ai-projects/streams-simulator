@@ -1,11 +1,11 @@
-import type { FocusEvent, SyntheticEvent } from "react";
-import { useId, useState } from "react";
+import type { SyntheticEvent } from "react";
+import { useState } from "react";
 import type { PlantMaker, PlantSource } from "../../app/plantMaker";
 import type { NavigationStore } from "../../app/navigationStore";
 import type { Definition } from "../../model/bridge";
 import type { ExamplePlant } from "../../model/library";
 import { suggestedId } from "../../model/workspace";
-import { useFocusOnMount } from "../useFocusOnMount";
+import { Field } from "./NewPlantField";
 import styles from "./HomeScreen.module.css";
 
 export interface NewPlantProps {
@@ -15,51 +15,6 @@ export interface NewPlantProps {
   readonly maker: PlantMaker;
   readonly navigation: NavigationStore;
   readonly blank?: boolean;
-}
-
-function selectText(event: FocusEvent<HTMLInputElement>) {
-  event.currentTarget.select();
-}
-
-function Field({
-  label,
-  hint,
-  value,
-  onChange,
-  first = false,
-  placeholder,
-  onLeave,
-  selectOnFocus = false,
-}: {
-  readonly label: string;
-  readonly hint?: string;
-  readonly value: string;
-  readonly onChange: (value: string) => void;
-  readonly first?: boolean;
-  readonly placeholder?: string;
-  readonly onLeave?: () => void;
-  readonly selectOnFocus?: boolean;
-}) {
-  const id = useId();
-  const input = useFocusOnMount<HTMLInputElement>(first);
-  return (
-    <div className={styles.newField}>
-      <label htmlFor={id}>{label}</label>
-      <input
-        id={id}
-        ref={input}
-        placeholder={placeholder}
-        value={value}
-        aria-describedby={hint === undefined ? undefined : `${id}-hint`}
-        onChange={(event) => {
-          onChange(event.target.value);
-        }}
-        onBlur={onLeave}
-        onFocus={selectOnFocus ? selectText : undefined}
-      />
-      {hint !== undefined && <small id={`${id}-hint`}>{hint}</small>}
-    </div>
-  );
 }
 
 function BasePick({
@@ -222,6 +177,21 @@ function useNaming(taken: readonly string[]) {
   return { name, setName, id, setId: setTyped, followAgain };
 }
 
+function useIdProblem(maker: PlantMaker, base: string, name: string, id: string, followAgain: () => void) {
+  const [found, setFound] = useState<{ readonly id: string; readonly message: string } | null>(null);
+  const check = async () => {
+    const value = id.trim();
+    if (value === "") return;
+    const message = await maker.idProblem(sourceOf(base), value, name.trim() === "" ? value : name.trim());
+    setFound({ id: value, message });
+  };
+  const leave = () => {
+    followAgain();
+    void check();
+  };
+  return { problem: found !== null && found.id === id.trim() ? found.message : "", leave };
+}
+
 function readiness(name: string, id: string, base: string): string {
   if (name.trim() === "") return "Name the plant first.";
   if (id.trim() === "") return "Give it an id.";
@@ -235,6 +205,7 @@ export function NewPlantForm(props: NewPlantProps & { readonly onCancel: () => v
   const [base, setBase] = useState(first);
   const [copy, setCopy] = useState(!blank);
   const { failure, create } = useCreate(props);
+  const { problem, leave } = useIdProblem(props.maker, base, name, id, followAgain);
   const reason = readiness(name, id, base);
   const ready = reason === "";
   const submit = (event: SyntheticEvent<HTMLFormElement>) => {
@@ -257,8 +228,9 @@ export function NewPlantForm(props: NewPlantProps & { readonly onCancel: () => v
         hint="Used for its file names: lower case, digits and hyphens."
         value={id}
         onChange={setId}
-        onLeave={followAgain}
+        onLeave={leave}
         selectOnFocus
+        problem={problem}
       />
       <Choices {...props} base={base} setBase={setBase} copy={copy} setCopy={setCopy} />
       <Actions failure={failure} reason={reason} onCancel={onCancel} />

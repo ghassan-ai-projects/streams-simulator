@@ -1,7 +1,7 @@
 import { fireEvent, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { success } from "../../model/bridge";
-import { FakeBridge } from "../../test/fakeBridge";
+import { failed, success } from "../../model/bridge";
+import { FakeBridge, failure } from "../../test/fakeBridge";
 import { navigation, show } from "../../test/homeHarness";
 
 describe("new plant id", () => {
@@ -21,5 +21,28 @@ describe("new plant id", () => {
     fireEvent.change(id, { target: { value: "pump" } });
     fireEvent.change(within(form).getByLabelText("Name"), { target: { value: "Water pumping hall" } });
     expect(id).toHaveValue("pump");
+  });
+
+  it("shows the binary's id rule under the Id field on leaving it, and clears the message when the id changes", async () => {
+    const bridge = new FakeBridge();
+    bridge.actions.set(
+      "component.new",
+      failed({
+        ...failure("composition_invalid", 422, "invalid"),
+        issues: [{ pointer: "/id", message: '"Bad Id!" is not a plant id: 3 to 64 lower-case letters' }],
+      }),
+    );
+    await show(bridge, navigation());
+    fireEvent.click(screen.getByRole("button", { name: "New plant" }));
+    const form = screen.getByRole("form", { name: "New plant" });
+    fireEvent.change(within(form).getByLabelText("Name"), { target: { value: "Bad plant" } });
+    const id = within(form).getByLabelText("Id");
+    fireEvent.change(id, { target: { value: "Bad Id!" } });
+    expect(screen.queryByText(/is not a plant id/)).toBeNull();
+    fireEvent.blur(id);
+    expect(await screen.findByText(/is not a plant id/)).toBeInTheDocument();
+    expect(id).toHaveAccessibleDescription(/is not a plant id/);
+    fireEvent.change(id, { target: { value: "bad-plant" } });
+    expect(screen.queryByText(/is not a plant id/)).toBeNull();
   });
 });

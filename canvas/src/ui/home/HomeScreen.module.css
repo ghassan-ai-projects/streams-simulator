@@ -244,6 +244,11 @@
   color: var(--status-alarm);
 }
 
+.idProblem {
+  color: var(--status-alarm);
+  font-size: var(--text-sm);
+}
+
 .open,
 .run {
   composes: button from "../shared.module.css";
