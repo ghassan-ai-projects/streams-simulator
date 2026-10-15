@@ -15,5 +15,10 @@ before any is implemented.
 | B-7 | Stuck or dead sensor (flat-line, frozen timestamp) | Not yet probed | to probe |
 | B-8 | Flow and pressure meters as standalone instruments | The library has no standalone flow or pressure meter equipment; measurements are generated per port | missing |
 | B-9 | A pump driven by a variable-frequency drive | `streamsim/motor-drive` consumes a `load_torque` input, but no library equipment offers a `load_torque` output: the pump exposes flow, level and electrical power only, so a pump with its drive cannot be linked (author blocker BLK-4-02) | missing (library data) |
+| B-10 | Command reported applied on a failed device | On a compressor with "fails to load", effector `set loaded` is reported `applied` and nothing changes (the run keeps its status "on"); the operator view cannot tell | partly (a sealed-truth silent no-effect; the consumer still needs a visible signal) |
+| B-11 | Shelving an alarm that is not active | "shelve alarm" is accepted with 0 activations and no refusal | missing (refusal with a reason) |
+| B-12 | Stale or drifting sensor | A stale sensor still moves; a drift fault changes about 0.1 C over 17 minutes, too small to see in a short run | partly |
+| B-13 | Unconnected equipment | A chiller and a pump with no links run as healthy for 30 minutes; nothing says the plant is incompletely wired | missing (a lint finding) |
+| B-14 | Condenser-water feed | A condenser-water pump cannot feed the water-cooled chiller (port types differ) | missing (library data) |
 
-Source: `issues/round-3-authoring.md`, section "Simulator behaviour notes". Later rounds append rows.
+Source: `issues/round-3-authoring.md`, `issues/round-4-hunt.md`, section "Simulator behaviour notes". Later rounds append rows.
