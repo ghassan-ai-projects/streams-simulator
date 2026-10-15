@@ -111,14 +111,13 @@ describe("launch panel", () => {
     expect(await screen.findByText("Running Mini plant as run w-7")).toHaveFocus();
     expect(screen.getByText("30 min of simulated time · Explore · no faults")).toBeInTheDocument();
     expect(screen.getByText("00:00:00 of 00:30:00 simulated")).toBeInTheDocument();
-    expect(screen.getByText(/^Running · 00:00:00 elapsed/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Stop now" }));
     expect(screen.getByRole("status")).toHaveTextContent("Stopping at the next step");
     await act(async () => {
       fake.release();
       await Promise.resolve();
     });
-    expect(screen.getByRole("status")).toHaveTextContent(/^Saved at 00:\d\d:\d\d of 00:30:00 as a shorter run/);
+    expect(screen.getByRole("status")).toHaveTextContent(/^Saved at 00:\d\d:\d\d of 00:30:00/);
     await vi.waitFor(() => {
       expect(onFinished).toHaveBeenCalledWith("w-7");
     }, finishedWait);

@@ -6,9 +6,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { directionOf, firstOf, nearest } from "../../model/graphKeys";
 import type { PlantView } from "../../model/plantView";
 import { describeNode, hallCount } from "../../model/plantView";
-import { anchorsOnly, rowLimitOf, tierOf } from "../../model/viewport";
+import { anchorsOnly, tierOf } from "../../model/viewport";
 import type { FlowNode, NodeLive } from "./flow";
-import { flowEdges, flowNodes, rowPins } from "./flow";
+import { flowEdges, flowNodes } from "./flow";
 import { useZoomActions } from "./GraphControls";
 import { plainKey } from "../keys";
 import { FrameNode, FrameTitleNode, HallNode, InstanceNode } from "./nodes";
@@ -198,8 +198,7 @@ function useFlowContent({ view, selected, live, flagged, onConnect, active }: Fl
   const zoom = useStore((state) => state.transform[2]);
   const tier = tierOf(zoom);
   const shown = view.nodes.some((entry) => entry.id === selected) ? selected : null;
-  const rows = useMemo(() => (live === undefined ? null : rowPins(view, live, rowLimitOf(tier))), [view, live, tier]);
-  const edges = useMemo(() => flowEdges(view, anchorsOnly(tier), shown, rows), [view, tier, shown, rows]);
+  const edges = useMemo(() => flowEdges(view, anchorsOnly(tier), shown), [view, tier, shown]);
   return { nodes, edges, zoom };
 }
 

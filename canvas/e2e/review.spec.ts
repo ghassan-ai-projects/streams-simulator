@@ -2,6 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 import { env } from "./support/env";
+import { textClashes } from "./support/textClashes";
 
 test.use({ storageState: env("CANVAS_APP_STATE") });
 test.setTimeout(90_000);
@@ -97,4 +98,24 @@ test("a hall carries its faulted members, and inside it each names its fault", a
   await expect(page.getByRole("group", { name: /^M-1, Fault: product jam, / })).toContainText("product jam");
   await page.getByRole("button", { name: "Run w-hall" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Run w-hall" })).toBeVisible();
+});
+
+test("a review node lists every port of its kind as a row, observed or not, at each tier without a text clash", async ({
+  page,
+}) => {
+  await page.goto(`${env("CANVAS_APP_URL")}/#/run?world=w-evaluate`);
+  await expect(page.getByText(/\d+ observations/)).toBeVisible({ timeout: 60_000 });
+  const chiller = page.getByRole("group", { name: /^CH-1, chiller,/ });
+  const label = (await chiller.getAttribute("aria-label")) ?? "";
+  const [, inputs = "0", outputs = "0"] = /(\d+) inputs?, (\d+) outputs?/.exec(label) ?? [];
+  const ports = Number(inputs) + Number(outputs);
+  const rows = await chiller.locator("dl > div").count();
+  expect([ports, ports + 1]).toContain(rows);
+  await expect(chiller.locator("dl")).toContainText("not observed");
+  const graph = page.getByRole("application", { name: "Plant graph" });
+  await graph.focus();
+  for (let step = 0; step < 3; step += 1) {
+    expect(await page.evaluate(textClashes)).toEqual([]);
+    await page.keyboard.press("+");
+  }
 });

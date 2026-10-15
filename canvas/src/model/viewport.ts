@@ -52,11 +52,6 @@ export function anchorsOnly(tier: Tier): boolean {
   return tier === "overview" || tier === "map";
 }
 
-export function rowLimitOf(tier: Tier): number {
-  if (tier === "full") return Number.POSITIVE_INFINITY;
-  return tier === "compact" ? 2 : 0;
-}
-
 interface Size {
   readonly width: number;
   readonly height: number;

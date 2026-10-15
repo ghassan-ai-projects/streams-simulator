@@ -105,7 +105,7 @@ export function faultedAt(report: Report | null, atNs: number): ReadonlyMap<stri
   return active;
 }
 
-export const effectorShownNs = 60e9;
+const effectorShownNs = 60e9;
 
 export function effectorAt(report: Report | null, atNs: number): ReadonlyMap<string, string> {
   const latest = new Map<string, { readonly at: number; readonly words: string }>();

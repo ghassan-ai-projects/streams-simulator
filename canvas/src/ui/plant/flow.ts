@@ -2,8 +2,7 @@ import { MarkerType } from "@xyflow/react";
 import type { Edge, Node } from "@xyflow/react";
 import type { NodeStatus, Shown } from "../../model/readout";
 import type { PlantView, ViewNode } from "../../model/plantView";
-import { pinHandle, pinsOnRows } from "../../model/plantView";
-import { displayedRows } from "../../model/readout";
+import { pinHandle } from "../../model/plantView";
 
 export interface NodeLive {
   readonly shown: readonly Shown[];
@@ -132,52 +131,24 @@ interface Ends {
   readonly targetHandle: string;
 }
 
-export type PinRows = (id: string) => ReadonlySet<string>;
-
-export function rowPins(view: PlantView, live: (id: string) => NodeLive, limit: number): PinRows {
-  return (id) =>
-    pinsOnRows(
-      view.nodes.find((node) => node.id === id),
-      displayedRows(live(id).shown, limit).map((row) => row.channel),
-    );
-}
-
-type Handled = (id: string, handle: string) => boolean;
-
-function handledBy(anchors: boolean, rows: PinRows | null): Handled {
-  if (rows !== null) return (id, handle) => rows(id).has(handle);
-  return () => !anchors;
-}
-
-function ends(view: PlantView, edge: PlantView["edges"][number], handled: Handled): Ends {
+function ends(view: PlantView, edge: PlantView["edges"][number], anchors: boolean): Ends {
   const leftward = centreX(view, edge.to) < centreX(view, edge.from);
   const side = leftward
     ? { sourceHandle: "out-left", targetHandle: "in-right" }
     : { sourceHandle: "out", targetHandle: "in" };
   return {
     sourceHandle:
-      edge.fromHandle !== null && handled(edge.from, edge.fromHandle)
-        ? pinHandle(edge.fromHandle, "out", leftward)
-        : side.sourceHandle,
-    targetHandle:
-      edge.toHandle !== null && handled(edge.to, edge.toHandle)
-        ? pinHandle(edge.toHandle, "in", leftward)
-        : side.targetHandle,
+      edge.fromHandle !== null && !anchors ? pinHandle(edge.fromHandle, "out", leftward) : side.sourceHandle,
+    targetHandle: edge.toHandle !== null && !anchors ? pinHandle(edge.toHandle, "in", leftward) : side.targetHandle,
   };
 }
 
-export function flowEdges(
-  view: PlantView,
-  anchors = false,
-  selected: string | null = null,
-  rows: PinRows | null = null,
-): Edge[] {
-  const handled = handledBy(anchors, rows);
+export function flowEdges(view: PlantView, anchors = false, selected: string | null = null): Edge[] {
   return view.edges.map((edge) => ({
     id: edge.id,
     source: edge.from,
     target: edge.to,
-    ...ends(view, edge, handled),
+    ...ends(view, edge, anchors),
     markerEnd: {
       type: MarkerType.ArrowClosed,
       width: 10,

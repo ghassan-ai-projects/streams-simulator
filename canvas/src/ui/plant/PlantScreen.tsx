@@ -87,7 +87,7 @@ function Graph({
 }) {
   const { ref, aspect } = useCanvasAspect<HTMLDivElement>();
   const view = useMemo(
-    () => plantView(state.plant, state.specs, hall, 0, aspect),
+    () => plantView(state.plant, state.specs, hall, false, aspect),
     [state.plant, state.specs, hall, aspect],
   );
   return (

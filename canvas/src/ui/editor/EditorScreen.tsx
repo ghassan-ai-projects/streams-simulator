@@ -27,7 +27,7 @@ interface EditorScreenProps {
 
 function usePlant(draft: Draft, aspect: number | undefined) {
   const plant = useMemo(() => compositionPlant(draft.doc, shortKind), [draft.doc]);
-  const view = useMemo(() => plantView(plant, draft.specs, null, 0, aspect), [plant, draft.specs, aspect]);
+  const view = useMemo(() => plantView(plant, draft.specs, null, false, aspect), [plant, draft.specs, aspect]);
   const flagged = useMemo(() => new Set(draft.issues?.instances.keys() ?? []), [draft.issues]);
   return { plant, view, flagged };
 }

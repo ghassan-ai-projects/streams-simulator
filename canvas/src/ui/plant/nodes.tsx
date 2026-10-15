@@ -9,7 +9,6 @@ import { familyNames, shapeOf } from "../../model/ports";
 import type { Pin } from "../../model/ports";
 import type { NodeStatus } from "../../model/readout";
 import { channelWords, statusWords } from "../../model/readout";
-import { rowLimitOf, tierOf } from "../../model/viewport";
 import type { FrameTitleNodeType, HallNodeType, InstanceNodeType } from "./flow";
 import { cx } from "../cx";
 import { Readout } from "./Readout";
@@ -129,8 +128,6 @@ function FarHandles({ ins, outs }: { readonly ins: readonly Pin[]; readonly outs
   );
 }
 
-export const readoutHeight = 148;
-
 const statusIcons = { alarm: OctagonAlert, fault: Wrench, warn: TriangleAlert } as const;
 
 function StatusTag({ status, count = 0 }: { readonly status: NodeStatus; readonly count?: number }) {
@@ -226,7 +223,15 @@ export function InstanceNode({ data, selected }: NodeProps<InstanceNodeType>) {
       <Handle type="target" position={Position.Right} id="in-right" className={styles.anchor} isConnectable={false} />
       <Handle type="source" position={Position.Left} id="out-left" className={styles.anchor} isConnectable={false} />
       <InstanceHeader data={data} status={status} />
-      {data.live !== null && <Readout shown={data.live.shown} pins={view.pins} limit={rowLimitOf(tierOf(zoom))} />}
+      {data.live !== null && (
+        <Readout
+          shown={data.live.shown}
+          pins={view.pins}
+          channels={view.channels}
+          fault={data.live.fault}
+          effector={data.live.effector}
+        />
+      )}
       {data.live === null && <Pins ins={view.pins.ins} outs={view.pins.outs} editable={data.editable} zoom={zoom} />}
     </div>
   );

@@ -15,7 +15,6 @@ import { runSpan } from "../../model/report";
 import { grouped } from "../../model/units";
 import { Navigator, ZoomBar } from "../plant/GraphControls";
 import { Outline } from "../plant/Outline";
-import { readoutHeight } from "../plant/nodes";
 import { useCanvasAspect } from "../plant/canvasAspect";
 import { PlantGraph } from "../plant/PlantGraph";
 import plantStyles from "../plant/PlantScreen.module.css";
@@ -105,7 +104,7 @@ interface GraphProps extends HallProps {
 function Graph({ review, state, plant, hall, onHall }: GraphProps) {
   const { ref, aspect } = useCanvasAspect<HTMLDivElement>();
   const view = useMemo(
-    () => (plant === null ? null : plantView(plant.plant, plant.specs, hall, readoutHeight, aspect)),
+    () => (plant === null ? null : plantView(plant.plant, plant.specs, hall, true, aspect)),
     [plant, hall, aspect],
   );
   const live = useLive(review, state, plant);

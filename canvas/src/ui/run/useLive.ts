@@ -3,7 +3,7 @@ import type { PlantState } from "../../app/plantStore";
 import type { ReviewState, ReviewStore } from "../../app/reviewStore";
 import { channelOf } from "../../model/plant";
 import { hallOf } from "../../model/plantView";
-import { abnormalFirst, attentionOf, showReading, withEffector, withFault, worstOf } from "../../model/readout";
+import { attentionOf, showReading, worstOf } from "../../model/readout";
 import { effectorAt, faultedAt } from "../../model/timeline";
 import type { NodeLive } from "../plant/flow";
 
@@ -20,10 +20,7 @@ export function useLive(review: ReviewStore, state: ReviewState, plant: ReadyPla
         .map((reading) => showReading(reading, plant === null ? null : channelOf(plant.plant, id, reading.channel)));
       const attention = attentionOf(shown);
       return {
-        shown: withEffector(
-          withFault(abnormalFirst(shown), (faulted.get(id) ?? []).join(", ")),
-          effectors.get(id) ?? "",
-        ),
+        shown,
         status: attention === "alarm" ? "alarm" : faulted.has(id) ? "fault" : attention,
         count: 0,
         fault: (faulted.get(id) ?? []).join(", "),

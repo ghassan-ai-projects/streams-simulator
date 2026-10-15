@@ -62,11 +62,6 @@ export function showReading(reading: Reading, spec: ChannelSpec | null = noSpec)
   return { channel, value, unit: "", attention: null, word: true, outside: "" };
 }
 
-export function displayedRows(shown: readonly Shown[], limit: number): readonly Shown[] {
-  const more = shown.length - 4;
-  return shown.slice(0, more > 0 ? 3 : 4).slice(0, limit);
-}
-
 export function attentionOf(shown: readonly Shown[]): Attention {
   if (shown.some((entry) => entry.attention === "alarm")) return "alarm";
   return shown.some((entry) => entry.attention === "warn") ? "warn" : null;
@@ -94,18 +89,6 @@ export function worstOf(statuses: readonly NodeStatus[]): { readonly status: Nod
     null,
   );
   return { status: worst, count: ranked.filter((status) => status === worst).length };
-}
-
-export function withFault(shown: readonly Shown[], fault: string): readonly Shown[] {
-  return fault === ""
-    ? shown
-    : [{ channel: "fault", value: fault, unit: "", attention: "alarm", word: true, outside: "" }, ...shown];
-}
-
-export function withEffector(shown: readonly Shown[], effector: string): readonly Shown[] {
-  return effector === ""
-    ? shown
-    : [{ channel: "effector call", value: effector, unit: "", attention: null, word: true, outside: "" }, ...shown];
 }
 
 export function sharedTimes(times: readonly number[]): {
