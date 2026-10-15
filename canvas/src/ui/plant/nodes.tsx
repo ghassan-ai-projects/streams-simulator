@@ -10,7 +10,8 @@ import { familyNames, shapeOf } from "../../model/ports";
 import type { Pin } from "../../model/ports";
 import type { NodeStatus } from "../../model/readout";
 import { channelWords, statusWords } from "../../model/readout";
-import type { FrameTitleNodeType, HallNodeType, InstanceNodeType } from "./flow";
+import type { PlanMark } from "../../model/planMarks";
+import type { FrameTitleNodeType, HallNodeType, InstanceNodeType, NodeLive } from "./flow";
 import { cx } from "../cx";
 import { Readout } from "./Readout";
 import { useLabelFit } from "./labelFit";
@@ -95,14 +96,23 @@ function Pins({
 
 const statusIcons = { alarm: OctagonAlert, fault: Wrench, warn: TriangleAlert } as const;
 
-function StatusTag({ status, count = 0 }: { readonly status: NodeStatus; readonly count?: number }) {
+function StatusTag({
+  status,
+  count = 0,
+  cause = "",
+}: {
+  readonly status: NodeStatus;
+  readonly count?: number;
+  readonly cause?: string;
+}) {
   if (status === null) return null;
   const Icon = statusIcons[status];
   const word = count > 0 ? `${statusWords[status]} ${String(count)}` : statusWords[status];
+  const words = cause === "" ? word : `${word} · ${cause}`;
   return (
-    <span className={cx(styles.tag, styles[`tag-${status}`])} aria-hidden="true">
+    <span className={cx(styles.tag, styles[`tag-${status}`])} aria-hidden="true" title={words}>
       <Icon size={12} />
-      {word}
+      <span className={styles.tagWords}>{words}</span>
     </span>
   );
 }
@@ -145,13 +155,14 @@ function instanceStyle(view: ViewNode): CSSProperties {
 
 function InstanceHeader({ data, status }: { readonly data: InstanceNodeType["data"]; readonly status: NodeStatus }) {
   const { view } = data;
+  const planned = data.live === null ? data.plan : null;
   return (
     <div className={styles.header}>
       <span className={styles.id} title={view.label}>
         {view.label}
       </span>
-      <StatusTag status={status} />
-      <EffectorTag effector={data.live?.effector ?? ""} />
+      <StatusTag status={status} cause={planned?.fault ?? ""} />
+      <EffectorTag effector={shownOf(data).effector} />
       <IssueTag flagged={data.flagged} />
       <span className={styles.kind} title={view.detail}>
         {view.detail}
@@ -160,15 +171,27 @@ function InstanceHeader({ data, status }: { readonly data: InstanceNodeType["dat
   );
 }
 
+interface Shown {
+  readonly status: NodeStatus;
+  readonly count: number;
+  readonly fault: string;
+  readonly effector: string;
+}
+
+function shownOf(data: { readonly live: NodeLive | null; readonly plan: PlanMark | null }): Shown {
+  const { live, plan } = data;
+  if (live !== null) return live;
+  return plan ?? { status: null, count: 0, fault: "", effector: "" };
+}
+
 function instanceLabel(data: InstanceNodeType["data"], selected: boolean): string {
-  const { view, live } = data;
-  const words = describeNode(view, selected, live?.status ?? null, 0, live?.fault ?? "", live?.effector ?? "");
-  return words + issueWords(data.flagged);
+  const { status, fault, effector } = shownOf(data);
+  return describeNode(data.view, selected, status, 0, fault, effector) + issueWords(data.flagged);
 }
 
 export function InstanceNode({ data, selected }: NodeProps<InstanceNodeType>) {
   const { view } = data;
-  const status = data.live?.status ?? null;
+  const { status } = shownOf(data);
   const zoom = useStore((state) => state.transform[2]);
   return (
     <div
@@ -202,8 +225,7 @@ export function InstanceNode({ data, selected }: NodeProps<InstanceNodeType>) {
 
 export function HallNode({ data, selected }: NodeProps<HallNodeType>) {
   const { view } = data;
-  const status = data.live?.status ?? null;
-  const count = data.live?.count ?? 0;
+  const { status, count } = shownOf(data);
   return (
     <div
       className={cx(

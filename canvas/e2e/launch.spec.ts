@@ -145,3 +145,22 @@ test("the top-bar run indicator brings back a closed run panel, and Stop now kee
   await panel.getByRole("button", { name: "Stop now" }).click();
   await expect(page.getByRole("heading", { level: 1, name: /^Run w-/ })).toBeVisible({ timeout: 60_000 });
 });
+
+test("a planned fault appears on its node when the run clock reaches its minute and stays to the end", async ({
+  page,
+}) => {
+  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Ffactory-utilities.domain.json&run=1`);
+  const panel = page.getByRole("complementary", { name: "Run Factory utilities" });
+  await panel.getByLabel("Seed", { exact: true }).fill("11");
+  await panel.getByLabel("Duration", { exact: true }).fill("20");
+  await panel.getByRole("button", { name: "Add fault" }).click();
+  await panel.getByLabel("Fault 1 instance").selectOption("CT-1");
+  await panel.getByLabel("Fault 1 fault").selectOption({ label: "fan failure" });
+  await panel.getByLabel("Fault 1 starts at minute").fill("5");
+  await panel.getByRole("button", { name: "Start the run" }).click();
+  const node = page.locator(".react-flow__node-instance").filter({ hasText: "CT-1" });
+  await expect(node).not.toContainText("Fault", { timeout: 10_000 });
+  await expect(node).toContainText("Fault · fan failure", { timeout: 30_000 });
+  await expect(panel.getByText(/^Running · 00:(0[5-9]|1\d)/)).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: /^Run w-/ })).toBeVisible({ timeout: 60_000 });
+});

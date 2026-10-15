@@ -423,6 +423,17 @@
   font-weight: 600;
 }
 
+.tagWords {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tag {
+  max-width: 100%;
+}
+
 .tag-alarm,
 .tag-fault {
   background: var(--status-alarm-bg);

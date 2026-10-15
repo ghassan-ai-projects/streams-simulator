@@ -4,6 +4,7 @@ import "@xyflow/react/dist/base.css";
 import type { CSSProperties, KeyboardEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { directionOf, firstOf, nearest } from "../../model/graphKeys";
+import type { PlanMark } from "../../model/planMarks";
 import type { PlantView } from "../../model/plantView";
 import { describeNode, hallCount } from "../../model/plantView";
 import { openingFloor, screenPixel, tierOf } from "../../model/viewport";
@@ -33,6 +34,7 @@ export interface PlantGraphProps {
   readonly flagged?: ReadonlySet<string>;
   readonly fitKey?: string;
   readonly onConnect?: (from: string, to: string) => void;
+  readonly marks?: ReadonlyMap<string, PlanMark>;
 }
 
 interface Keys {
@@ -193,11 +195,11 @@ function connection(onConnect: PlantGraphProps["onConnect"]) {
 
 type FlowProps = PlantGraphProps & { readonly active: string | null; readonly keys: Keys };
 
-function useFlowContent({ view, selected, live, flagged, onConnect, active }: FlowProps) {
+function useFlowContent({ view, selected, live, flagged, onConnect, active, marks }: FlowProps) {
   const editable = onConnect !== undefined;
   const nodes = useMemo(
-    () => flowNodes(view, selected, live ?? null, active, flagged ?? null, editable),
-    [view, selected, live, active, flagged, editable],
+    () => flowNodes(view, selected, live ?? null, active, flagged ?? null, editable, marks ?? null),
+    [view, selected, live, active, flagged, editable, marks],
   );
   const zoom = useStore((state) => state.transform[2]);
   const tier = tierOf(zoom);

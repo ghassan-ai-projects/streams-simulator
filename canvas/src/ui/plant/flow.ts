@@ -1,6 +1,7 @@
 import { MarkerType } from "@xyflow/react";
 import type { Edge, Node } from "@xyflow/react";
 import type { NodeStatus, Shown } from "../../model/readout";
+import type { PlanMark } from "../../model/planMarks";
 import type { PlantView, ViewNode } from "../../model/plantView";
 import { groupCounts } from "../../model/plantView";
 import type { Point } from "../../model/wireRoute";
@@ -19,6 +20,7 @@ type InstanceData = Readonly<{
   active: boolean;
   flagged: boolean;
   editable: boolean;
+  plan: PlanMark | null;
 }>;
 type FrameData = Readonly<{ title: string; count: number }>;
 
@@ -68,6 +70,7 @@ export function flowNodes(
   active: string | null = null,
   flagged: ReadonlySet<string> | null = null,
   editable = false,
+  marks: ReadonlyMap<string, PlanMark> | null = null,
 ): FlowNode[] {
   const nodes = view.nodes.map((node): InstanceNodeType | HallNodeType => {
     const box = view.layout.nodes.get(node.id) ?? { x: 0, y: 0, width: 0, height: 0 };
@@ -81,6 +84,7 @@ export function flowNodes(
         active: node.id === active,
         flagged: flagged?.has(node.id) ?? false,
         editable,
+        plan: marks?.get(node.id) ?? null,
       },
       selected: node.id === selected,
       draggable: false,
