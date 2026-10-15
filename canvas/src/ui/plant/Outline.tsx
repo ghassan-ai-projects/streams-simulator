@@ -63,9 +63,18 @@ function groups(plant: Plant, hall: string | null, filter: string, empty: boolea
   const known = new Set(tree.map((node) => node.area));
   const loose = [...byArea.keys()].filter((area) => !known.has(area)).map((area) => ({ area, depth: 0 }));
   const showEmpty = empty && filter.trim() === "";
-  return [...tree, ...loose]
-    .map(({ area, depth }) => ({ area, depth, items: byArea.get(area) ?? [] }))
-    .filter((group) => group.items.length > 0 || showEmpty);
+  const all = [...tree, ...loose].map(({ area, depth }) => ({ area, depth, items: byArea.get(area) ?? [] }));
+  return populatedFirst(all).filter((group) => group.items.length > 0 || showEmpty);
+}
+
+function populatedFirst(all: readonly Group[]): Group[] {
+  const branches: Group[][] = [];
+  for (const group of all) {
+    if (group.depth === 0 || branches.length === 0) branches.push([group]);
+    else branches[branches.length - 1]?.push(group);
+  }
+  const holds = (branch: readonly Group[]) => branch.some((group) => group.items.length > 0);
+  return branches.sort((a, b) => Number(!holds(a)) - Number(!holds(b))).flat();
 }
 
 interface SectionProps {
@@ -115,7 +124,7 @@ function Section({ title, depth = 0, items, current, marks, onPick }: SectionPro
         <span className={styles.count}>{items.length}</span>
       </summary>
       {items.length === 0 ? (
-        <p className={styles.emptyArea}>No equipment yet. Add some in the Build panel.</p>
+        <p className={styles.emptyArea}>No equipment yet</p>
       ) : (
         <ul className={styles.tree}>
           {items.map((item) => (

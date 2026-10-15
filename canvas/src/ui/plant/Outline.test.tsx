@@ -60,6 +60,6 @@ describe("outline", () => {
       "margin-left: calc(var(--space-3) * 1);",
       "margin-left: calc(var(--space-3) * 1);",
     ]);
-    expect(screen.getAllByText("No equipment yet. Add some in the Build panel.")).toHaveLength(2);
+    expect(screen.getAllByText("No equipment yet")).toHaveLength(2);
   });
 });
