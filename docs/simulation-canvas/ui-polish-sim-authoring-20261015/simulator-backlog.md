@@ -24,5 +24,6 @@ before any is implemented.
 | B-16 | Duplicated, late or out-of-order readings | No fault kind produces them in the canvas fault list (the delivery perturbation layer exists in the binary) | missing in the UI path |
 | B-17 | Feeder or utility trip | No trip fault and no supply model: a dependent load keeps running | missing |
 | B-18 | An alarm that raises | No round-5 run raised an alarm, including with a frozen or drifting sensor | missing (alarm rules per instrument) |
+| B-19 | Air consumers read backwards | Production and packaging lines declare `air_out` (compressed_air, provides) that feeds the receiver's `demand_in`; they have no air input. A user expects "air from the receiver to the line" and finds no inlet (author BLK-5, packaging-factory). The model is right (demand flows to the supply); the port names and descriptions do not say so | unclear (port naming/description in the library; same family as ISS-3-10) |
 
 Source: `issues/round-3-authoring.md`, `issues/round-4-hunt.md`, `issues/round-5-hunt.md`, section "Simulator behaviour notes". Later rounds append rows.
