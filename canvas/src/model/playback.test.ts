@@ -57,6 +57,21 @@ describe("playback", () => {
     expect(index.settled()).toBe(5e9);
   });
 
+  it("says whether playback opened after every channel reported, or before it", () => {
+    const index = new PlaybackIndex();
+    const at = (atNs: number, channel: string) => ({ entity: "A", channel, value: 1, unit: "", atNs });
+    [at(0, "a.x"), at(5e9, "a.y"), at(100e9, "a.x")].forEach((observation) => {
+      index.add(observation);
+    });
+    expect(index.opening()).toEqual({ atNs: 5e9, full: true });
+    const late = new PlaybackIndex();
+    [at(0, "a.x"), at(5e9, "a.y"), at(200e9, "a.z")].forEach((observation) => {
+      late.add(observation);
+    });
+    expect(late.opening()).toEqual({ atNs: 20e9, full: false });
+    expect(new PlaybackIndex().opening()).toBeNull();
+  });
+
   it("names a channel without its kind", () => {
     expect(shortChannel("cooling_tower.basin_temp")).toBe("basin_temp");
     expect(shortChannel("plain")).toBe("plain");

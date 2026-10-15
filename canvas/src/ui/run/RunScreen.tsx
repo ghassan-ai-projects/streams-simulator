@@ -6,7 +6,9 @@ import type { PlantState, PlantStore } from "../../app/plantStore";
 import type { ReviewState, ReviewStore } from "../../app/reviewStore";
 import type { WorkspaceStore } from "../../app/workspaceStore";
 import { isMissing } from "../../model/bridge";
+import type { Opening } from "../../model/playback";
 import { stateUnit } from "../../model/plant";
+import { runClock } from "../../model/timeline";
 import { plantView } from "../../model/plantView";
 import type { Report } from "../../model/report";
 import { runSpan } from "../../model/report";
@@ -63,17 +65,31 @@ function OpeningPlant() {
   );
 }
 
-function graphWords(state: ReviewState, settled: number | null): string {
-  const loading = state.playback.phase === "loading" ? " · loading" : "";
-  const opening = settled !== null && state.positionNs === settled ? " · opened once every channel reported" : "";
-  return `${grouped(state.playback.records)} observations${loading}${opening}`;
+function openedWords(opening: Opening, startNs: number): string {
+  const when = opening.full ? "once every channel had reported" : "before every channel had reported";
+  return ` · opened at ${runClock(opening.atNs, startNs)}, ${when}`;
 }
 
-function GraphBar({ state, settled }: { readonly state: ReviewState; readonly settled: number | null }) {
+function graphWords(state: ReviewState, opening: Opening | null, startNs: number): string {
+  const loading = state.playback.phase === "loading" ? " · loading" : "";
+  const shown = opening !== null && state.positionNs === opening.atNs ? openedWords(opening, startNs) : "";
+  return `${grouped(state.playback.records)} observations${loading}${shown}`;
+}
+
+function GraphBar({
+  state,
+  opening,
+  startNs,
+}: {
+  readonly state: ReviewState;
+  readonly opening: Opening | null;
+  readonly startNs: number;
+}) {
+  const words = graphWords(state, opening, startNs);
   return (
     <div className={styles.graphBar}>
-      <span className={styles.barWords} title={graphWords(state, settled)}>
-        {graphWords(state, settled)}
+      <span className={styles.barWords} title={words}>
+        {words}
       </span>
       <ZoomBar />
     </div>
@@ -96,7 +112,11 @@ function Graph({ review, state, plant, hall, onHall }: GraphProps) {
   if (view === null) return <OpeningPlant />;
   return (
     <div className={styles.graphArea}>
-      <GraphBar state={state} settled={review.index.settled()} />
+      <GraphBar
+        state={state}
+        opening={review.index.opening()}
+        startNs={runSpan(state.report.phase === "ready" ? state.report.value : null, review.index.bounds()).startNs}
+      />
       <div ref={ref} className={plantStyles.graphHost}>
         <PlantGraph
           minFitZoom={0.5}
