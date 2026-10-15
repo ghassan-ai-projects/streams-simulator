@@ -360,6 +360,13 @@
   cursor: not-allowed;
 }
 
+.create[aria-expanded="true"],
+.create[aria-expanded="true"]:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
 .choice {
   display: grid;
   gap: var(--space-2);
