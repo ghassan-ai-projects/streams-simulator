@@ -104,6 +104,29 @@ Every item accepted for this batch has now landed; `IMP-02` was dropped because 
 premise wrong, not deferred. The backlog's remaining entries — including its 12-item recommended batch and the
 owner decisions it names — are the next pass's work list.
 
+## Polish pass 2 (the backlog's recommended next batch) — 2026-10-16
+
+Worked from the consolidated backlog's recommended batch, presentation-only, one commit per item with a test
+that fails without it, every premise re-checked in code before the change:
+
+- `a3a7978` the integrity sentence leaves "Verified" to the badge — the other states keep their own labels,
+  because each says something the badge does not.
+- `81bc8cb` the not-runnable plant row states the state and one action.
+- `11bac04` About this run says the real span instead of a hardcoded `00:00:00` — the literal asserted a wrong
+  duration for every run, and nothing in `src/` or `e2e/` pinned the string, which is why it survived.
+- `c44f0cd` one link reads source-output to receiver-input in both panels, with the Remove label naming the
+  same order.
+- `3f95a71` an area with equipment in its children is not called empty — "0 · N below" with a "N in child
+  areas" title, a bare "0" when nothing is anywhere, and the state word gone.
+- `286e10d` the empty-area layout e2e selects the new count instead of the removed wording (selector only: the
+  three-row count and the 28 px/one-line assertions are unchanged).
+
+Not landed when this was written: `CB-03` (the Keyboard dialog's focus ring — the stylesheet change and its
+both-theme `e2e/keyboard.spec.ts` sat in the tree, uncommitted) and `CB-19` (the right panels' bottom cut
+fade). Left for the owner by design: `CB-41` (the editor's doomed domain probe changes how the app resolves a
+domain) and `CB-51` (the bare "·" readout re-opens a settled design); `CB-27` was already implemented
+differently, as one truthful panel name per screen with the toggle, its title and the help pinned together.
+
 ## Graph-round decision framing (fit-vs-floor, P-11-1 / ISS-11D-02) — resolved
 
 **Resolved in favour of Option A across rounds 16 and 18.** The cue is on the plant view, the editor and the review (7c06d48), and every screen now opens on the one 0.4 `openingFloor` rule (6b52e29 removed the editor's `minFitZoom={0.25}`), so the framing below stands as the record of the decision, not as open work. What the floor does *not* constrain: the Fit control and manual zoom still reach the overview tier (measured on the campus editor: Fit → 0.302 with every node inside and no cue), which is what the Navigator is for.
