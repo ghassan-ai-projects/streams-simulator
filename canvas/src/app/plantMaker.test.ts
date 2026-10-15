@@ -46,8 +46,13 @@ describe("plant maker", () => {
       title: "Lab two",
       from: base,
     });
+    expect(fake.calls.find((call) => call.name === "domain.compose")?.args).toMatchObject({
+      composition: "compositions/lab-two.composition.json",
+      out: "domains/lab-two.domain.json",
+    });
     await maker.create({ example: "pilot" }, "lab-three", "Lab three", false);
     expect(fake.calls.at(-1)?.args).toEqual({ id: "lab-three", title: "Lab three", example: "pilot", empty: true });
+    expect(fake.calls.filter((call) => call.name === "domain.compose")).toHaveLength(1);
     const made = JSON.parse(fake.writes[1]?.content ?? "") as Record<string, unknown>;
     expect(made).toMatchObject({ site: { name: "Pilot plant" }, areas: [{ name: "Pilot plant" }] });
     expect(made).not.toHaveProperty("equipment");

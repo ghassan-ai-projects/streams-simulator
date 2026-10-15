@@ -194,3 +194,19 @@ test("a saved plant that has no domain yet is checked by Save, so its issues sho
     rmSync(domain, { force: true });
   }
 });
+
+test("a full copy of a plant is runnable as soon as it is created", async ({ page }) => {
+  await page.goto(env("CANVAS_APP_URL"));
+  await page.getByRole("button", { name: "New plant" }).click();
+  const form = page.getByRole("form", { name: "New plant" });
+  await form.getByLabel("Name").fill("Factory copy");
+  await form.getByLabel("Start from").selectOption({ label: "Factory utilities" });
+  await form.getByRole("radio", { name: /^A full copy/ }).check();
+  await form.getByRole("button", { name: "Create and open the editor" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Factory copy" })).toBeVisible();
+  await page.getByRole("button", { name: "Open plant" }).click();
+  await expect(page.getByRole("button", { name: "Run plant" })).toBeVisible();
+  await page.goto(env("CANVAS_APP_URL"));
+  const plants = page.getByRole("region", { name: "Plants" });
+  await expect(plants.getByRole("listitem").filter({ hasText: "Factory copy" })).not.toContainText("Not runnable yet");
+});

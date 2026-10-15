@@ -52,6 +52,12 @@ export class PlantMaker {
   }
 
   async create(source: PlantSource, id: string, title: string, copy: boolean): Promise<BridgeFailure | Made> {
+    const made = await this.write(source, id, title, copy);
+    if ("composition" in made && copy) await this.compose(made);
+    return made;
+  }
+
+  private async write(source: PlantSource, id: string, title: string, copy: boolean): Promise<BridgeFailure | Made> {
     const domain = domainOf({ id });
     if ((await this.bridge.readFile(domain)).ok) return taken(id);
     const made = await this.bridge.action("component.new", {
@@ -70,13 +76,13 @@ export class PlantMaker {
   }
 
   async tryExample(example: ExamplePlant, id: string): Promise<BridgeFailure | Made> {
-    const made = await this.create({ example: example.id }, id, example.title, true);
+    const made = await this.write({ example: example.id }, id, example.title, true);
     if (!("composition" in made)) return made;
-    const composed = await this.bridge.action("domain.compose", {
-      composition: made.composition,
-      out: made.domain,
-      etag: "",
-    });
+    const composed = await this.compose(made);
     return composed.ok ? made : composed.failure;
+  }
+
+  private compose(made: Made) {
+    return this.bridge.action("domain.compose", { composition: made.composition, out: made.domain, etag: "" });
   }
 }
