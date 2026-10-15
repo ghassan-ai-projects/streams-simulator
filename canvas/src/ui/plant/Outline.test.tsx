@@ -124,4 +124,18 @@ describe("outline", () => {
       "Heat users0 · empty",
     ]);
   });
+
+  it("marks its scroll region for a bottom fade while rows continue below the cut", () => {
+    render(<Outline plant={parsePlant(domain)} hall={null} selected={null} onSelect={vi.fn()} />);
+    const outline = screen.getByRole("navigation", { name: "Outline" });
+    expect(outline).not.toHaveAttribute("data-cut");
+    Object.defineProperty(outline, "clientHeight", { value: 200, configurable: true });
+    Object.defineProperty(outline, "scrollHeight", { value: 500, configurable: true });
+    Object.defineProperty(outline, "scrollTop", { value: 0, configurable: true });
+    fireEvent.scroll(outline);
+    expect(outline).toHaveAttribute("data-cut", "true");
+    Object.defineProperty(outline, "scrollTop", { value: 300, configurable: true });
+    fireEvent.scroll(outline);
+    expect(outline).not.toHaveAttribute("data-cut");
+  });
 });

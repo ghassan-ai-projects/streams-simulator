@@ -26,6 +26,11 @@
   padding-bottom: var(--space-4);
 }
 
+.outline[data-cut="true"] {
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent);
+}
+
 .inspector {
   composes: scrolls from "../shared.module.css";
   border-left: 1px solid var(--border-subtle);
