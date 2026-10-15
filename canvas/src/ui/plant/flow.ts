@@ -2,6 +2,7 @@ import { MarkerType } from "@xyflow/react";
 import type { Edge, Node } from "@xyflow/react";
 import type { NodeStatus, Shown } from "../../model/readout";
 import type { PlantView, ViewNode } from "../../model/plantView";
+import { pinHandle } from "../../model/plantView";
 
 export interface NodeLive {
   readonly shown: readonly Shown[];
@@ -119,12 +120,25 @@ function markerColor(
   return familyColor(family);
 }
 
-function anchorHandles(view: PlantView, from: string, to: string): { sourceHandle: string; targetHandle: string } {
-  const fromX = view.layout.nodes.get(from)?.x ?? 0;
-  const toX = view.layout.nodes.get(to)?.x ?? 0;
-  return toX >= fromX
-    ? { sourceHandle: "out", targetHandle: "in" }
-    : { sourceHandle: "out-left", targetHandle: "in-right" };
+function centreX(view: PlantView, id: string): number {
+  const box = view.layout.nodes.get(id);
+  return box === undefined ? 0 : box.x + box.width / 2;
+}
+
+interface Ends {
+  readonly sourceHandle: string;
+  readonly targetHandle: string;
+}
+
+function ends(view: PlantView, edge: PlantView["edges"][number], pinned: boolean): Ends {
+  const leftward = centreX(view, edge.to) < centreX(view, edge.from);
+  const side = leftward
+    ? { sourceHandle: "out-left", targetHandle: "in-right" }
+    : { sourceHandle: "out", targetHandle: "in" };
+  return {
+    sourceHandle: pinned && edge.fromHandle !== null ? pinHandle(edge.fromHandle, "out", leftward) : side.sourceHandle,
+    targetHandle: pinned && edge.toHandle !== null ? pinHandle(edge.toHandle, "in", leftward) : side.targetHandle,
+  };
 }
 
 export function flowEdges(view: PlantView, anchors = false, selected: string | null = null): Edge[] {
@@ -132,9 +146,7 @@ export function flowEdges(view: PlantView, anchors = false, selected: string | n
     id: edge.id,
     source: edge.from,
     target: edge.to,
-    ...(anchors
-      ? anchorHandles(view, edge.from, edge.to)
-      : { sourceHandle: edge.fromHandle ?? "out", targetHandle: edge.toHandle ?? "in" }),
+    ...ends(view, edge, !anchors),
     markerEnd: {
       type: MarkerType.ArrowClosed,
       width: 10,

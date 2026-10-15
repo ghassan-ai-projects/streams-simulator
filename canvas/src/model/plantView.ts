@@ -51,6 +51,11 @@ export function idExtra(label: string): number {
   return (Math.ceil(label.length / nodeSize.idChars) - 1) * nodeSize.idLine;
 }
 
+export function pinHandle(name: string, side: "in" | "out", farSide: boolean): string {
+  if (!farSide) return name;
+  return `${name}${side === "in" ? "@right" : "@left"}`;
+}
+
 export function hallOf(id: string): string | null {
   const slash = id.indexOf("/");
   return slash > 0 ? id.slice(0, slash) : null;

@@ -3,7 +3,7 @@ import { Handle, Position, useStore } from "@xyflow/react";
 import { ChevronRight, OctagonAlert, TriangleAlert, Wrench } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useRef } from "react";
-import { describeNode, idExtra } from "../../model/plantView";
+import { describeNode, idExtra, nodeSize, pinHandle } from "../../model/plantView";
 import { familyNames, shapeOf } from "../../model/ports";
 import type { Pin } from "../../model/ports";
 import type { NodeStatus, Shown } from "../../model/readout";
@@ -13,6 +13,8 @@ import { cx } from "../cx";
 import { OutsideMark } from "../OutsideMark";
 import { useLabelFit } from "./labelFit";
 import styles from "./nodes.module.css";
+
+const pinRowMiddle = nodeSize.pin / 2;
 
 function pinLook(pin: Pin): { readonly family: string; readonly shape: string; readonly typeName: string } {
   if (pin.family === null) {
@@ -87,7 +89,41 @@ function Pins({
           <PinRow key={pin.name} pin={pin} side="out" editable={editable} zoom={zoom} />
         ))}
       </div>
+      <FarHandles ins={ins} outs={outs} />
     </div>
+  );
+}
+
+function rowTop(index: number): string {
+  return `calc(var(--space-1) + ${String(pinRowMiddle + index * nodeSize.pin)}px)`;
+}
+
+function FarHandles({ ins, outs }: { readonly ins: readonly Pin[]; readonly outs: readonly Pin[] }) {
+  return (
+    <>
+      {ins.map((pin, index) => (
+        <Handle
+          key={pinHandle(pin.name, "in", true)}
+          type="target"
+          position={Position.Right}
+          id={pinHandle(pin.name, "in", true)}
+          className={styles.sideAnchor}
+          style={{ top: rowTop(index) }}
+          isConnectable={false}
+        />
+      ))}
+      {outs.map((pin, index) => (
+        <Handle
+          key={pinHandle(pin.name, "out", true)}
+          type="source"
+          position={Position.Left}
+          id={pinHandle(pin.name, "out", true)}
+          className={styles.sideAnchor}
+          style={{ top: rowTop(index) }}
+          isConnectable={false}
+        />
+      ))}
+    </>
   );
 }
 
