@@ -8,6 +8,18 @@ function legend() {
 }
 
 describe("graph controls legend", () => {
+  it("gives the three icon-only zoom controls a tooltip with the name they carry", () => {
+    render(
+      <ReactFlowProvider>
+        <ZoomBar />
+      </ReactFlowProvider>,
+    );
+    for (const name of ["Zoom out", "Zoom in", "Fit the plant in view"]) {
+      const button = screen.getByRole("button", { name });
+      expect(button).toHaveAttribute("title", name);
+    }
+  });
+
   it("explains the reading marks only in a review", () => {
     const { unmount } = render(
       <ReactFlowProvider>
