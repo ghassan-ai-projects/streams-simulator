@@ -151,7 +151,7 @@ function Entry({ item, current, marks, onPick }: Omit<SectionProps, "title" | "i
 function Section({ title, depth = 0, items, current, marks, onPick }: SectionProps) {
   return (
     <details open className={styles.group} style={{ marginLeft: `calc(var(--space-3) * ${String(depth)})` }}>
-      <summary className={cx(shared.sectionTitle, items.length === 0 && styles.emptyRow)}>
+      <summary className={cx(styles.areaRow, shared.disclosure)}>
         <span className={styles.areaName} title={title}>
           {title}
         </span>

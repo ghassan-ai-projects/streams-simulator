@@ -9,6 +9,7 @@ import { humanise, kindLabel } from "../../model/report";
 import { displayUnit } from "../../model/units";
 import { X } from "lucide-react";
 import type { RunRow } from "../../model/workspace";
+import { cx } from "../cx";
 import shared from "../shared.module.css";
 import { PlantOverview } from "./PlantOverview";
 import styles from "./PlantScreen.module.css";
@@ -48,7 +49,7 @@ function List({ title, items, mono, show, count = items.length, folded = false, 
     return (
       <section className={styles.section} aria-label={title}>
         <details>
-          <summary className={shared.sectionTitle}>{heading}</summary>
+          <summary className={cx(shared.sectionTitle, shared.disclosure)}>{heading}</summary>
           {rows ?? <Items items={items} mono={mono} show={show} />}
         </details>
       </section>
