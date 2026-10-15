@@ -25,6 +25,7 @@ describe("review wires on readout rows", () => {
     status: null,
     count: 0,
     fault: "",
+    effector: "",
   });
 
   it("ends a wire on the row of its port's channel when that row is shown", () => {

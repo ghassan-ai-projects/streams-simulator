@@ -1,7 +1,17 @@
 import { describe, expect, it } from "vitest";
 import { report } from "../test/runFixture";
 import { parseReport } from "./report";
-import { eventMarks, faultedAt, kindsOf, nextEvent, placeChips, previousEvent, runClock, timeTicks } from "./timeline";
+import {
+  effectorAt,
+  eventMarks,
+  faultedAt,
+  kindsOf,
+  nextEvent,
+  placeChips,
+  previousEvent,
+  runClock,
+  timeTicks,
+} from "./timeline";
 
 const parsed = parseReport(report);
 
@@ -91,5 +101,20 @@ describe("event lane", () => {
     const marks = eventMarks({ ...parsed, alarmActivations: [{ atNs: 1e9, entity: "A", state: "s", priority: "p" }] });
     expect(kindsOf(marks)).toContain("alarm");
     expect(kindsOf([])).toEqual([]);
+  });
+
+  it("lists an effector call on its target for 60 s of simulated time after it", () => {
+    const calls = [
+      { atNs: 100e9, entity: "CP-3", effector: "stop", outcome: "applied · 371 ms" },
+      { atNs: 130e9, entity: "CP-3", effector: "start", outcome: "refused: busy" },
+    ];
+    const run = { ...parsed, effectorCalls: calls };
+    expect(effectorAt(run, 99e9).size).toBe(0);
+    expect(effectorAt(run, 100e9).get("CP-3")).toBe("stop · applied · 371 ms");
+    expect(effectorAt(run, 129e9).get("CP-3")).toBe("stop · applied · 371 ms");
+    expect(effectorAt(run, 150e9).get("CP-3")).toBe("start · refused: busy");
+    expect(effectorAt(run, 190e9).get("CP-3")).toBe("start · refused: busy");
+    expect(effectorAt(run, 191e9).size).toBe(0);
+    expect(effectorAt(null, 100e9).size).toBe(0);
   });
 });

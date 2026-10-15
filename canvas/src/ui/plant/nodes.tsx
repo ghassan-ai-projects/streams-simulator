@@ -145,6 +145,16 @@ function StatusTag({ status, count = 0 }: { readonly status: NodeStatus; readonl
   );
 }
 
+function EffectorTag({ effector }: { readonly effector: string }) {
+  if (effector === "") return null;
+  return (
+    <span className={styles.effectorTag} title={`Effector call · ${effector}`}>
+      <span className={styles.effectorMark} aria-hidden="true" />
+      <span className="sr-only">{`Effector call: ${effector}`}</span>
+    </span>
+  );
+}
+
 function issueWords(flagged: boolean): string {
   return flagged ? ", has issues" : "";
 }
@@ -171,6 +181,29 @@ function instanceStyle(view: ViewNode): CSSProperties {
   } as CSSProperties;
 }
 
+function InstanceHeader({ data, status }: { readonly data: InstanceNodeType["data"]; readonly status: NodeStatus }) {
+  const { view } = data;
+  return (
+    <div className={styles.header}>
+      <span className={styles.id} title={view.label}>
+        {view.label}
+      </span>
+      <StatusTag status={status} />
+      <EffectorTag effector={data.live?.effector ?? ""} />
+      <IssueTag flagged={data.flagged} />
+      <span className={styles.kind} title={view.detail}>
+        {view.detail}
+      </span>
+    </div>
+  );
+}
+
+function instanceLabel(data: InstanceNodeType["data"], selected: boolean): string {
+  const { view, live } = data;
+  const words = describeNode(view, selected, live?.status ?? null, 0, live?.fault ?? "", live?.effector ?? "");
+  return words + issueWords(data.flagged);
+}
+
 export function InstanceNode({ data, selected }: NodeProps<InstanceNodeType>) {
   const { view } = data;
   const status = data.live?.status ?? null;
@@ -185,23 +218,14 @@ export function InstanceNode({ data, selected }: NodeProps<InstanceNodeType>) {
         statusClass(status),
       )}
       role="group"
-      aria-label={describeNode(view, selected, status, 0, data.live?.fault ?? "") + issueWords(data.flagged)}
+      aria-label={instanceLabel(data, selected)}
       style={instanceStyle(view)}
     >
       <Handle type="target" position={Position.Left} id="in" className={styles.anchor} isConnectable={false} />
       <Handle type="source" position={Position.Right} id="out" className={styles.anchor} isConnectable={false} />
       <Handle type="target" position={Position.Right} id="in-right" className={styles.anchor} isConnectable={false} />
       <Handle type="source" position={Position.Left} id="out-left" className={styles.anchor} isConnectable={false} />
-      <div className={styles.header}>
-        <span className={styles.id} title={view.label}>
-          {view.label}
-        </span>
-        <StatusTag status={status} />
-        <IssueTag flagged={data.flagged} />
-        <span className={styles.kind} title={view.detail}>
-          {view.detail}
-        </span>
-      </div>
+      <InstanceHeader data={data} status={status} />
       {data.live !== null && <Readout shown={data.live.shown} pins={view.pins} limit={rowLimitOf(tierOf(zoom))} />}
       {data.live === null && <Pins ins={view.pins.ins} outs={view.pins.outs} editable={data.editable} zoom={zoom} />}
     </div>

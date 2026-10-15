@@ -89,6 +89,14 @@ test("an effector call is made at its minute and its outcome is listed before th
   await expect(results).toContainText("00:02:00 · CH-1 · set setpoint: ", { timeout: 60_000 });
   await panel.getByRole("button", { name: "Open the review" }).click();
   await expect(page.getByRole("heading", { level: 1, name: /^Run w-/ })).toBeVisible();
+  const slider = page.getByRole("slider", { name: "Playback time" });
+  await expect(slider).toHaveAttribute("max", "300", { timeout: 60_000 });
+  await slider.fill("130");
+  await expect(page.getByRole("group", { name: /^CH-1, .*effector call: set setpoint · applied/ })).toBeVisible();
+  await slider.fill("30");
+  await expect(page.getByRole("group", { name: /^CH-1, chiller/ })).not.toContainText("effector call");
+  await slider.fill("200");
+  await expect(page.getByRole("group", { name: /^CH-1, chiller/ })).not.toContainText("effector call");
 });
 
 test("a plan with problems cannot start", async ({ page }) => {

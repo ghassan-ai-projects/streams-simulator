@@ -10,6 +10,7 @@ export interface NodeLive {
   readonly status: NodeStatus;
   readonly count: number;
   readonly fault: string;
+  readonly effector: string;
 }
 
 type InstanceData = Readonly<{

@@ -102,6 +102,12 @@ export function withFault(shown: readonly Shown[], fault: string): readonly Show
     : [{ channel: "fault", value: fault, unit: "", attention: "alarm", word: true, outside: "" }, ...shown];
 }
 
+export function withEffector(shown: readonly Shown[], effector: string): readonly Shown[] {
+  return effector === ""
+    ? shown
+    : [{ channel: "effector call", value: effector, unit: "", attention: null, word: true, outside: "" }, ...shown];
+}
+
 export function sharedTimes(times: readonly number[]): {
   readonly latest: number;
   readonly own: readonly (number | null)[];

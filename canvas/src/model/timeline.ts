@@ -105,6 +105,20 @@ export function faultedAt(report: Report | null, atNs: number): ReadonlyMap<stri
   return active;
 }
 
+export const effectorShownNs = 60e9;
+
+export function effectorAt(report: Report | null, atNs: number): ReadonlyMap<string, string> {
+  const latest = new Map<string, { readonly at: number; readonly words: string }>();
+  for (const call of report?.effectorCalls ?? []) {
+    const known = latest.get(call.entity);
+    const live = call.atNs <= atNs && atNs <= call.atNs + effectorShownNs;
+    if (live && (known === undefined || call.atNs >= known.at)) {
+      latest.set(call.entity, { at: call.atNs, words: `${humanise(call.effector)} · ${call.outcome}` });
+    }
+  }
+  return new Map([...latest].map(([entity, call]) => [entity, call.words] as const));
+}
+
 export function kindsOf(marks: readonly EventMark[]): readonly MarkKind[] {
   const present = new Set(marks.map((mark) => mark.kind));
   return (Object.keys(markWords) as MarkKind[]).filter((kind) => present.has(kind));

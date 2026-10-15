@@ -258,13 +258,15 @@ export function describeNode(
   status: NodeStatus = null,
   count = 0,
   fault = "",
+  effector = "",
 ): string {
   const ports =
     node.instance === null
       ? "Space selects, Enter opens the hall"
       : `${counted(node.pins.ins.length, "input")}, ${counted(node.pins.outs.length, "output")}`;
   const state = stateOf(status, count, fault);
-  return `${node.label}, ${state}${node.detail}, ${ports}${selected ? ", selected" : ""}`;
+  const call = effector === "" ? "" : `, effector call: ${effector}`;
+  return `${node.label}, ${state}${node.detail}${call}, ${ports}${selected ? ", selected" : ""}`;
 }
 
 export function hallMembers(plant: Plant, hall: string): readonly (readonly [string, number])[] {

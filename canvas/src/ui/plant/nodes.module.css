@@ -430,6 +430,30 @@
   color: var(--status-warn);
 }
 
+.effectorTag {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+}
+
+.effectorMark {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+:global(.tier-compact) .effectorMark {
+  width: calc(10px / var(--zoom));
+  height: calc(10px / var(--zoom));
+}
+
+:global(.tier-overview) .effectorMark,
+:global(.tier-map) .effectorMark {
+  width: min(calc(10px / var(--zoom)), 36px);
+  height: min(calc(10px / var(--zoom)), 36px);
+}
+
 .unit {
   margin-left: 3px;
   font: 500 var(--text-xs) var(--font-ui);
