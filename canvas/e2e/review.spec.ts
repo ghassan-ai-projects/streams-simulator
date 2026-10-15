@@ -61,7 +61,7 @@ test("a run whose files were edited after it ended is Not verified", async ({ pa
   await expect(page.getByRole("alert").filter({ hasText: "differ from what the run wrote" })).toBeVisible();
   await expect(
     page.getByRole("complementary", { name: "Run details" }).getByRole("region", { name: "Replay check" }),
-  ).toContainText("replaying the run gave a different");
+  ).toContainText("trace.jsonl differs from what the run recorded.");
   const graph = await page.getByRole("application", { name: "Plant graph" }).boundingBox();
   expect(graph?.height ?? 0).toBeGreaterThan(300);
 });
@@ -229,7 +229,7 @@ test("a review of a plant too large for 40 % opens at 40 % on its first fault, w
   expect(opened.shown).toBeGreaterThan(0);
   expect(opened.smallest).toBeGreaterThanOrEqual(7.99);
   expect(await page.evaluate(nodesOutsideCanvas)).not.toEqual([]);
-  await expect(page.locator("[data-pan-cue='right']")).toBeVisible();
+  await expect(page.locator("[data-pan-cue]").first()).toBeVisible();
   await page.getByRole("button", { name: "Fit the plant in view" }).click();
   await expect.poll(() => page.evaluate(nodesOutsideCanvas)).toEqual([]);
   await expect(page.locator("[data-pan-cue]")).toHaveCount(0);

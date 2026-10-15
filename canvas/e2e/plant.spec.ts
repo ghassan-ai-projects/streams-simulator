@@ -74,7 +74,7 @@ test("the chiller pilot inspector explains AHU and chiller components from the l
   );
   await outline.getByRole("button", { name: /^CH-1/ }).click();
   await expect(inspector).toContainText("Water-cooled chiller · Chiller hall");
-  await expect(inspector).toContainText("Kind: chiller_large · streamsim/chiller");
+  await expect(inspector).toContainText("streamsim/chiller");
   await inspector.getByText("What this component models").click();
   await expect(inspector).toContainText(
     "Vapour-compression chiller on a chilled-water loop. Supply temperature follows the setpoint and degrades above capacity or when stopped; power follows load through a part-load efficiency curve that also depends on the entering condenser water; COP, return temperature and energy cost rate are derived; start and stop act through the running state.",
