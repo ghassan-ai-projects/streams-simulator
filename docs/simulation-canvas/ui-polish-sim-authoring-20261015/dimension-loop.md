@@ -64,6 +64,43 @@ The loop's work rides on branch `ui-score-loop`, PR #42 (`canvas: the dimension 
 
 Still needs an owner/binary decision: **P-12-4 (was P-11-4) Size preset units.** Scope verified 2026-10-15 (read-only): the canvas renders channel units typographically — `canvas/src/model/units.ts` maps `m3/h` → `m³/h` — so a plant readout shows "m³/h", while the Build panel's Size select shows the component library's preset *title* verbatim ("Small (22 kW, 200 m3/h)"), which is ASCII `m3/h`. The library holds 51 such `m3/h` strings in 15 files; nothing writes `m³/h` in Go data today, so this is a normalisation, not a mismatch between two live formats. Preset titles are display-only — neither `examples/factory-utilities.domain.json` nor its composition carries "Small (22 kW" — so composed-domain bytes are unaffected; anything that *prints* component titles (the component listing the behaviour pin hashes) would change, so the pin needs a re-run and a reviewed diff. Options: (a) normalise the 15 library files to `m³/h` and re-pin, (b) leave data-authored prose as the library writes it, (c) have the binary return structured preset facts and let the canvas format them — the largest of the three and the one the architecture rule prefers if the canvas is ever to show a size in the reader's units.
 
+## Polish pass (after the scored loop) — 2026-10-15/16
+
+The scored loop closed at round 19 with every dimension at 9 and no open finding. The owner then asked for a UI/UX
+improvement pass, run as three independent reviews and one fix batch on this same branch. Its records are:
+
+- **Three review streams.** `improvement-hunt-20261015.md` — an unconstrained hunt against the then-served bundle:
+  22 `IMP-NN` improvements plus 7 bigger bets, the ten dimensions swept one by one, 33 axe runs with zero
+  violations, 64 screenshots. `COMPREHENSION-IMPROVEMENTS-2026-10-15.md` and
+  `COMPREHENSION-ROUND-2-2026-10-15.md` — 25 + 25 comprehension proposals from a separate session against a
+  temporary lab copy, explicitly proposals rather than approval.
+- **One consolidated backlog** (`improvement-backlog-20261015.md`, `e30a50e`): 79 source items → **68 `CB-NN`
+  entries**, a 79-row equivalence map (one row per source item, script-verified, 11 merges absorbing 18 items),
+  a coherence check that settles contradictions against the source — the Link form *does* filter by port type
+  (`ConnectForm.tsx:47-51`), so the hunt's "unfiltered" claim is stale; the keyboard dialog is dimmed by a
+  sibling `.scrim` div, so its `::backdrop` finding is rejected rather than fixed; the run-panel footer was
+  already fixed. Entries opposing deliberate decisions (editor rail order, the resolved fit-vs-floor rule,
+  ISS-8D-17's header band, the six-row library list) are surfaced with the tradeoff named, and the document
+  states what it did not reach.
+- **Presentation fixes landed**, each with a test that fails without it: `bfabd05` the run plan's fields scroll
+  above a fixed footer (the hunt's top item); `f26b0d4` the zoom controls carry the tooltip their name already
+  had; `044b569` the plant view and a review promise selection, not deletion; `ee34c84` the equipment list says
+  how many of the library it is showing; `71b71ee` the right panel has one name per screen, in the help and the
+  toggle. `IMP-02` was dropped rather than implemented, because the backlog proved the premise wrong.
+
+Two deliberate divergences from the backlog: the panel naming uses one truthful name per screen
+(`rightPanelName` — Inspector on home and plant, Run details on a review, Build in the editor) with the toggle,
+its title and the help pinned to it by a per-screen coherence test, instead of "Inspector" everywhere; and
+`CB-41` (the editor's doomed domain probe) stays in the backlog because its fix changes how the app resolves a
+domain. `CB-16`'s open question — the workspace listing carries no abandonment signal, so a recorded run that
+did not finish cannot be told from one still open — is binary-owned and recorded, not guessed in the canvas.
+
+Not yet landed when this was written, and therefore still backlog entries rather than done work: `IMP-12` (the
+Link form's options carry the instance kind), `IMP-18` (the rail reuses the section-heading style, so an area
+name renders uppercase), `CB-16` (the unfinished row still wears the success-green live tokens) and `CB-36`
+("None: the plant runs healthy." still overstates the schedule). The backlog's remaining entries, including its
+12-item recommended batch, are the next pass's work list.
+
 ## Graph-round decision framing (fit-vs-floor, P-11-1 / ISS-11D-02) — resolved
 
 **Resolved in favour of Option A across rounds 16 and 18.** The cue is on the plant view, the editor and the review (7c06d48), and every screen now opens on the one 0.4 `openingFloor` rule (6b52e29 removed the editor's `minFitZoom={0.25}`), so the framing below stands as the record of the decision, not as open work. What the floor does *not* constrain: the Fit control and manual zoom still reach the overview tier (measured on the campus editor: Fit → 0.302 with every node inside and no cue), which is what the Navigator is for.
