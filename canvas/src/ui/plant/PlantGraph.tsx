@@ -6,9 +6,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { directionOf, firstOf, nearest } from "../../model/graphKeys";
 import type { PlantView } from "../../model/plantView";
 import { describeNode, hallCount } from "../../model/plantView";
-import { anchorsOnly, tierOf } from "../../model/viewport";
+import { anchorsOnly, rowLimitOf, tierOf } from "../../model/viewport";
 import type { FlowNode, NodeLive } from "./flow";
-import { flowEdges, flowNodes } from "./flow";
+import { flowEdges, flowNodes, rowPins } from "./flow";
 import { useZoomActions } from "./GraphControls";
 import { plainKey } from "../keys";
 import { FrameNode, FrameTitleNode, HallNode, InstanceNode } from "./nodes";
@@ -196,24 +196,24 @@ function useFlowContent({ view, selected, live, flagged, onConnect, active }: Fl
     [view, selected, live, active, flagged, editable],
   );
   const zoom = useStore((state) => state.transform[2]);
-  const anchors = live !== undefined || anchorsOnly(tierOf(zoom));
+  const tier = tierOf(zoom);
   const shown = view.nodes.some((entry) => entry.id === selected) ? selected : null;
-  const edges = useMemo(() => flowEdges(view, anchors, shown), [view, anchors, shown]);
+  const rows = useMemo(() => (live === undefined ? null : rowPins(view, live, rowLimitOf(tier))), [view, live, tier]);
+  const edges = useMemo(() => flowEdges(view, anchorsOnly(tier), shown, rows), [view, tier, shown, rows]);
   return { nodes, edges, zoom };
 }
 
-function useRemeasuredHandles(nodeIds: string[], tier: string) {
+function useRemeasuredHandles(nodes: readonly FlowNode[], tier: string) {
   const update = useUpdateNodeInternals();
   useEffect(() => {
-    update(nodeIds);
-  }, [update, nodeIds, tier]);
+    update(nodes.map((node) => node.id));
+  }, [update, nodes, tier]);
 }
 
 function Flow(props: FlowProps) {
   const { onSelect, onOpenHall, onConnect, keys } = props;
   const { nodes, edges, zoom } = useFlowContent(props);
-  const nodeIds = useMemo(() => nodes.map((node) => node.id), [nodes]);
-  useRemeasuredHandles(nodeIds, tierOf(zoom));
+  useRemeasuredHandles(nodes, tierOf(zoom));
   return (
     <ReactFlow
       nodes={nodes}

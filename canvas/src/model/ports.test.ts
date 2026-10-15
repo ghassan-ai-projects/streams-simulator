@@ -94,7 +94,7 @@ describe("ports and pins", () => {
     const meter = plant.instances[2];
     if (meter === undefined) throw new Error("fixture");
     expect(pinsOf(plant, meter, undefined)).toEqual({
-      ins: [{ name: "loads_in", type: "", family: null, connection: "connected" }],
+      ins: [{ name: "loads_in", type: "", family: null, connection: "connected", channel: null }],
       outs: [],
     });
     expect(pinsOf(parsePlant(domain), meter, undefined)).toEqual({ ins: [], outs: [] });

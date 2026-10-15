@@ -6,11 +6,12 @@ import { useRef } from "react";
 import { describeNode, idExtra, nodeSize, pinHandle } from "../../model/plantView";
 import { familyNames, shapeOf } from "../../model/ports";
 import type { Pin } from "../../model/ports";
-import type { NodeStatus, Shown } from "../../model/readout";
+import type { NodeStatus } from "../../model/readout";
 import { channelWords, statusWords } from "../../model/readout";
+import { rowLimitOf, tierOf } from "../../model/viewport";
 import type { FrameTitleNodeType, HallNodeType, InstanceNodeType } from "./flow";
 import { cx } from "../cx";
-import { OutsideMark } from "../OutsideMark";
+import { Readout } from "./Readout";
 import { useLabelFit } from "./labelFit";
 import styles from "./nodes.module.css";
 
@@ -129,37 +130,6 @@ function FarHandles({ ins, outs }: { readonly ins: readonly Pin[]; readonly outs
 
 export const readoutHeight = 148;
 
-function Readout({ shown }: { readonly shown: readonly Shown[] }) {
-  if (shown.length === 0) {
-    return (
-      <div className={styles.readout}>
-        <span className={styles.none}>no observation yet</span>
-      </div>
-    );
-  }
-  const more = shown.length - 4;
-  return (
-    <dl className={styles.readout}>
-      {shown.slice(0, more > 0 ? 3 : 4).map((entry) => (
-        <div key={entry.channel} className={entry.attention === null ? undefined : styles[entry.attention]}>
-          <dt title={entry.channel}>{channelWords(entry.channel)}</dt>
-          <dd className={entry.word ? styles.word : undefined} title={entry.word ? entry.value : undefined}>
-            {entry.value}
-            {entry.unit !== "" && <span className={styles.unit}>{entry.unit}</span>}
-            <OutsideMark text={entry.outside} />
-          </dd>
-        </div>
-      ))}
-      {more > 0 && (
-        <div className={styles.more}>
-          <dt>{`+${String(more + 1)} more`}</dt>
-          <dd>in Inspect</dd>
-        </div>
-      )}
-    </dl>
-  );
-}
-
 const statusIcons = { alarm: OctagonAlert, fault: Wrench, warn: TriangleAlert } as const;
 
 function StatusTag({ status, count = 0 }: { readonly status: NodeStatus; readonly count?: number }) {
@@ -225,7 +195,7 @@ export function InstanceNode({ data, selected }: NodeProps<InstanceNodeType>) {
           {view.detail}
         </span>
       </div>
-      {data.live !== null && <Readout shown={data.live.shown} />}
+      {data.live !== null && <Readout shown={data.live.shown} pins={view.pins} limit={rowLimitOf(tierOf(zoom))} />}
       {data.live === null && <Pins ins={view.pins.ins} outs={view.pins.outs} editable={data.editable} zoom={zoom} />}
     </div>
   );

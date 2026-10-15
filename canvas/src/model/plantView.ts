@@ -56,6 +56,12 @@ export function pinHandle(name: string, side: "in" | "out", farSide: boolean): s
   return `${name}${side === "in" ? "@right" : "@left"}`;
 }
 
+export function pinsOnRows(node: ViewNode | undefined, channels: readonly string[]): ReadonlySet<string> {
+  if (node === undefined) return new Set();
+  const pins = [...node.pins.ins, ...node.pins.outs];
+  return new Set(pins.filter((pin) => pin.channel !== null && channels.includes(pin.channel)).map((pin) => pin.name));
+}
+
 export function hallOf(id: string): string | null {
   const slash = id.indexOf("/");
   return slash > 0 ? id.slice(0, slash) : null;

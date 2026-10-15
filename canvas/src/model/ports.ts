@@ -61,6 +61,7 @@ export interface PortSpec {
   readonly name: string;
   readonly type: string;
   readonly direction: "in" | "out";
+  readonly channel?: string;
 }
 
 export type Category = "air" | "cool" | "prod" | "elec" | "env";
@@ -170,6 +171,7 @@ export interface Pin {
   readonly type: string;
   readonly family: Family | null;
   readonly connection: Connection;
+  readonly channel: string | null;
 }
 
 export interface Pins {
@@ -192,11 +194,15 @@ function optionalText(value: unknown): string | undefined {
 
 export function parsePorts(document: unknown): readonly PortSpec[] {
   const ports = field(document, "ports");
-  return (Array.isArray(ports) ? ports : []).map((port: unknown) => ({
-    name: text(field(port, "name")),
-    type: text(field(port, "type")),
-    direction: field(port, "direction") === "provides" ? ("out" as const) : ("in" as const),
-  }));
+  return (Array.isArray(ports) ? ports : []).map((port: unknown) => {
+    const channel = optionalText(field(port, "state"));
+    return {
+      name: text(field(port, "name")),
+      type: text(field(port, "type")),
+      direction: field(port, "direction") === "provides" ? ("out" as const) : ("in" as const),
+      ...(channel === undefined ? {} : { channel }),
+    };
+  });
 }
 
 interface Used {
@@ -221,7 +227,9 @@ function used(plant: Plant, id: string): Used {
 }
 
 function fromLinks(names: ReadonlySet<string>): readonly Pin[] {
-  return [...names].sort().map((name) => ({ name, type: "", family: null, connection: "connected" as const }));
+  return [...names]
+    .sort()
+    .map((name) => ({ name, type: "", family: null, connection: "connected" as const, channel: null }));
 }
 
 export function pinsOf(plant: Plant, instance: Instance, specs: readonly PortSpec[] | undefined): Pins {
@@ -234,6 +242,7 @@ export function pinsOf(plant: Plant, instance: Instance, specs: readonly PortSpe
     type: spec.type,
     family: familyOf(spec.type),
     connection: names.has(spec.name) ? "connected" : unknown ? "unknown" : "open",
+    channel: spec.channel ?? null,
   });
   return {
     ins: specs.filter((spec) => spec.direction === "in").map((spec) => pin(spec, connected.ins, connected.unknownIn)),
