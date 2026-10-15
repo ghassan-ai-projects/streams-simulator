@@ -4,7 +4,7 @@ import { channelOf } from "../../model/plant";
 import { shortChannel } from "../../model/playback";
 import { hallOf } from "../../model/plantView";
 import type { Shown } from "../../model/readout";
-import { abnormalFirst, channelWords, showReading, statusWords } from "../../model/readout";
+import { abnormalFirst, channelWords, sharedTimes, showReading, statusWords } from "../../model/readout";
 import { runSpan } from "../../model/report";
 import { faultedAt, runClock } from "../../model/timeline";
 import { cx } from "../cx";
@@ -55,8 +55,13 @@ interface TableProps {
 }
 
 function ObservedTable({ shown, at, startNs }: TableProps) {
+  const { latest, own } = sharedTimes(shown.map((entry) => at.get(entry.channel) ?? startNs));
+  const shared = own.every((time) => time === null);
   return (
     <table className={styles.table}>
+      <caption className={styles.groupTime}>
+        {`${shared ? "Observed at" : "Latest observed at"} ${runClock(latest, startNs)}`}
+      </caption>
       <thead className="sr-only">
         <tr>
           <th scope="col">Channel</th>
@@ -65,7 +70,7 @@ function ObservedTable({ shown, at, startNs }: TableProps) {
         </tr>
       </thead>
       <tbody>
-        {shown.map((entry) => (
+        {shown.map((entry, index) => (
           <tr key={entry.channel}>
             <th scope="row" className={styles.label} title={entry.channel}>
               {channelWords(entry.channel)}
@@ -76,7 +81,7 @@ function ObservedTable({ shown, at, startNs }: TableProps) {
               <OutsideMark text={entry.outside} />
             </td>
             <td className={styles.clock} title="run time of this observation">
-              {runClock(at.get(entry.channel) ?? startNs, startNs)}
+              {own[index] === null || own[index] === undefined ? "" : runClock(own[index], startNs)}
             </td>
           </tr>
         ))}

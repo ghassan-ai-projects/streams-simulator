@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { abnormalFirst, attentionOf, channelWords, showReading, worstOf } from "./readout";
+import { abnormalFirst, attentionOf, channelWords, sharedTimes, showReading, worstOf } from "./readout";
 import { displayUnit } from "./units";
 
 const at = (channel: string, value: number | string | boolean, unit = "") => ({ channel, value, unit, atNs: 0 });
@@ -86,5 +86,12 @@ describe("readouts", () => {
     expect(worstOf(["warn", null, "fault", "alarm", "alarm"])).toEqual({ status: "alarm", count: 2 });
     expect(worstOf(["warn", "fault"])).toEqual({ status: "fault", count: 1 });
     expect(worstOf([null, null])).toEqual({ status: null, count: 0 });
+  });
+});
+
+describe("shared observation times", () => {
+  it("gives the latest time once and only the rows that differ their own time", () => {
+    expect(sharedTimes([20e9, 20e9])).toEqual({ latest: 20e9, own: [null, null] });
+    expect(sharedTimes([15e9, 20e9, 15e9])).toEqual({ latest: 20e9, own: [15e9, null, 15e9] });
   });
 });

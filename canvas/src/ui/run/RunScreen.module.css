@@ -188,6 +188,13 @@
   white-space: normal;
 }
 
+.groupTime {
+  padding: var(--space-1) var(--space-3);
+  text-align: left;
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
 .groupRow th {
   padding-top: var(--space-3);
   color: var(--text-primary);

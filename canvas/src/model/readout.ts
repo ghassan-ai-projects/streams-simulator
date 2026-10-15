@@ -96,3 +96,11 @@ export function withFault(shown: readonly Shown[], fault: string): readonly Show
     ? shown
     : [{ channel: "fault", value: fault, unit: "", attention: "alarm", word: true, outside: "" }, ...shown];
 }
+
+export function sharedTimes(times: readonly number[]): {
+  readonly latest: number;
+  readonly own: readonly (number | null)[];
+} {
+  const latest = Math.max(...times);
+  return { latest, own: times.map((time) => (time === latest ? null : time)) };
+}
