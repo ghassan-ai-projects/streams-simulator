@@ -33,7 +33,7 @@ const shapes: Readonly<Record<Family, Shape>> = {
   power: "square",
   pressure: "diamond",
   temp: "diamond",
-  signal: "diamond",
+  signal: "square",
   env: "diamond",
 };
 

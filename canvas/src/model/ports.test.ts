@@ -21,7 +21,7 @@ describe("ports and pins", () => {
     expect(familyOf("unknown")).toBeNull();
     expect(shapeOf("water")).toBe("circle");
     expect(shapeOf("power")).toBe("square");
-    expect(shapeOf("signal")).toBe("diamond");
+    expect(shapeOf("signal")).toBe("square");
   });
 
   it("reads a component document's ports and their directions", () => {
