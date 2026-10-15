@@ -20,5 +20,9 @@ before any is implemented.
 | B-12 | Stale or drifting sensor | A stale sensor still moves; a drift fault changes about 0.1 C over 17 minutes, too small to see in a short run | partly |
 | B-13 | Unconnected equipment | A chiller and a pump with no links run as healthy for 30 minutes; nothing says the plant is incompletely wired | missing (a lint finding) |
 | B-14 | Condenser-water feed | A condenser-water pump cannot feed the water-cooled chiller (port types differ) | missing (library data) |
+| B-15 | Communication gap | The `dropout` fault freezes the value (21.9 C from 00:05 to past 00:16) and it reads as a normal observation; no staleness or quality flag, no alarm | partly |
+| B-16 | Duplicated, late or out-of-order readings | No fault kind produces them in the canvas fault list (the delivery perturbation layer exists in the binary) | missing in the UI path |
+| B-17 | Feeder or utility trip | No trip fault and no supply model: a dependent load keeps running | missing |
+| B-18 | An alarm that raises | No round-5 run raised an alarm, including with a frozen or drifting sensor | missing (alarm rules per instrument) |
 
-Source: `issues/round-3-authoring.md`, `issues/round-4-hunt.md`, section "Simulator behaviour notes". Later rounds append rows.
+Source: `issues/round-3-authoring.md`, `issues/round-4-hunt.md`, `issues/round-5-hunt.md`, section "Simulator behaviour notes". Later rounds append rows.
