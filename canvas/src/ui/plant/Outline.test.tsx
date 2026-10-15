@@ -54,12 +54,45 @@ describe("outline", () => {
     expect(screen.queryByText("Roof")).not.toBeInTheDocument();
     rerender(<Outline plant={plant} hall={null} selected={null} onSelect={vi.fn()} showEmptyAreas />);
     const titles = screen.getAllByRole("group").map((group) => group.querySelector("summary")?.textContent);
-    expect(titles).toEqual(["Site0", "Plant room1", "Roof0"]);
+    expect(titles).toEqual(["SiteNo equipment yet0", "Plant room1", "RoofNo equipment yet0"]);
     expect(screen.getAllByRole("group").map((group) => group.getAttribute("style"))).toEqual([
       "margin-left: calc(var(--space-3) * 0);",
       "margin-left: calc(var(--space-3) * 1);",
       "margin-left: calc(var(--space-3) * 1);",
     ]);
     expect(screen.getAllByText("No equipment yet")).toHaveLength(2);
+  });
+
+  it("lists the populated child areas of a site before its empty ones, each empty area on one row", () => {
+    const plant = parsePlant({
+      id: "tree",
+      site: {
+        name: "Site",
+        areas: [
+          { name: "Site" },
+          { name: "Hall", parent: "Site" },
+          { name: "Substation", parent: "Site" },
+          { name: "House", parent: "Site" },
+          { name: "Cabinet", parent: "House" },
+          { name: "Yard", parent: "Site" },
+        ],
+      },
+      instances: [
+        { kind: "compressor", names: ["C-1", "C-2", "C-3"], area: "House" },
+        { kind: "meter", names: ["M-1"], area: "Cabinet" },
+        { kind: "pump", names: ["P-1"], area: "Yard" },
+      ],
+    });
+    render(<Outline plant={plant} hall={null} selected={null} onSelect={vi.fn()} showEmptyAreas />);
+    const titles = screen.getAllByRole("group").map((group) => group.querySelector("summary")?.textContent);
+    expect(titles).toEqual([
+      "SiteNo equipment yet0",
+      "House3",
+      "Cabinet1",
+      "Yard1",
+      "HallNo equipment yet0",
+      "SubstationNo equipment yet0",
+    ]);
+    expect(screen.getAllByText("No equipment yet").every((note) => note.closest("summary") !== null)).toBe(true);
   });
 });
