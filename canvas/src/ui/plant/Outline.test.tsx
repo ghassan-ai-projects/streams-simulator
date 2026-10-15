@@ -54,13 +54,13 @@ describe("outline", () => {
     expect(screen.queryByText("Roof")).not.toBeInTheDocument();
     rerender(<Outline plant={plant} hall={null} selected={null} onSelect={vi.fn()} showEmptyAreas />);
     const titles = screen.getAllByRole("group").map((group) => group.querySelector("summary")?.textContent);
-    expect(titles).toEqual(["Site0 · empty", "Plant room1", "Roof0 · empty"]);
+    expect(titles).toEqual(["Site0 · 1 below", "Plant room1", "Roof0"]);
     expect(screen.getAllByRole("group").map((group) => group.getAttribute("style"))).toEqual([
       "margin-left: calc(var(--space-3) * 0);",
       "margin-left: calc(var(--space-3) * 1);",
       "margin-left: calc(var(--space-3) * 1);",
     ]);
-    expect(screen.getAllByText("0 · empty")).toHaveLength(2);
+    expect(screen.getByText("0 · 1 below")).toHaveAttribute("title", "1 in child areas");
   });
 
   it("lists the populated child areas of a site before its empty ones, each empty area on one row", () => {
@@ -85,10 +85,11 @@ describe("outline", () => {
     });
     render(<Outline plant={plant} hall={null} selected={null} onSelect={vi.fn()} showEmptyAreas />);
     const titles = screen.getAllByRole("group").map((group) => group.querySelector("summary")?.textContent);
-    expect(titles).toEqual(["Site0 · empty", "House3", "Cabinet1", "Yard1", "Hall0 · empty", "Substation0 · empty"]);
-    const empty = screen.getAllByText("0 · empty");
-    expect(empty).toHaveLength(3);
-    expect(empty.every((note) => note.closest("summary")?.querySelectorAll("span").length === 2)).toBe(true);
+    expect(titles).toEqual(["Site0 · 5 below", "House3", "Cabinet1", "Yard1", "Hall0", "Substation0"]);
+    const counts = screen
+      .getAllByRole("group")
+      .map((group) => group.querySelector("summary")?.querySelectorAll("span"));
+    expect(counts.every((spans) => spans?.length === 2)).toBe(true);
     expect(screen.getByText("Substation")).toHaveAttribute("title", "Substation");
   });
 
@@ -115,14 +116,31 @@ describe("outline", () => {
     });
     render(<Outline plant={plant} hall={null} selected={null} onSelect={vi.fn()} showEmptyAreas />);
     const titles = screen.getAllByRole("group").map((group) => group.querySelector("summary")?.textContent);
-    expect(titles).toEqual([
-      "Site2",
-      "Boiler house6",
-      "Distribution3",
-      "Process hall3",
-      "Gas train0 · empty",
-      "Heat users0 · empty",
-    ]);
+    expect(titles).toEqual(["Site2", "Boiler house6", "Distribution3", "Process hall3", "Gas train0", "Heat users0"]);
+  });
+
+  it("never calls a parent empty while its child areas hold equipment", () => {
+    const plant = parsePlant({
+      id: "cold-chain",
+      site: {
+        name: "Site",
+        areas: [
+          { name: "Site" },
+          { name: "Cold rooms", parent: "Site" },
+          { name: "Room A", parent: "Cold rooms" },
+          { name: "Room B", parent: "Cold rooms" },
+        ],
+      },
+      instances: [
+        { kind: "ahu", names: ["AHU-1"], area: "Room A" },
+        { kind: "ahu", names: ["AHU-2", "AHU-3"], area: "Room B" },
+      ],
+    });
+    render(<Outline plant={plant} hall={null} selected={null} onSelect={vi.fn()} showEmptyAreas />);
+    const titles = screen.getAllByRole("group").map((group) => group.querySelector("summary")?.textContent);
+    expect(titles).toEqual(["Site0 · 3 below", "Cold rooms0 · 3 below", "Room B2", "Room A1"]);
+    expect(screen.queryByText(/empty/)).not.toBeInTheDocument();
+    expect(screen.getAllByText("0 · 3 below")[1]).toHaveAttribute("title", "3 in child areas");
   });
 
   it("shows an area name in the row's own style, not in the heading style that uppercases it", () => {

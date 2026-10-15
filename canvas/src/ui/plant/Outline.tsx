@@ -113,9 +113,20 @@ interface SectionProps {
   readonly title: string;
   readonly depth?: number;
   readonly items: readonly Item[];
+  readonly below?: number;
   readonly current: string | null;
   readonly marks: "location" | "selection";
   readonly onPick: (item: string) => void;
+}
+
+function countWords(direct: number, below: number): string {
+  if (direct > 0) return String(direct);
+  return below > 0 ? `0 · ${String(below)} below` : "0";
+}
+
+function countTitle(direct: number, below: number): string | undefined {
+  if (direct > 0) return undefined;
+  return below > 0 ? `${String(below)} in child areas` : "No equipment yet";
 }
 
 function Entry({ item, current, marks, onPick }: Omit<SectionProps, "title" | "items"> & { readonly item: Item }) {
@@ -148,15 +159,15 @@ function Entry({ item, current, marks, onPick }: Omit<SectionProps, "title" | "i
   );
 }
 
-function Section({ title, depth = 0, items, current, marks, onPick }: SectionProps) {
+function Section({ title, depth = 0, items, below = 0, current, marks, onPick }: SectionProps) {
   return (
     <details open className={styles.group} style={{ marginLeft: `calc(var(--space-3) * ${String(depth)})` }}>
       <summary className={cx(styles.areaRow, shared.disclosure)}>
         <span className={styles.areaName} title={title}>
           {title}
         </span>
-        <span className={styles.count} title={items.length === 0 ? "No equipment yet" : undefined}>
-          {items.length === 0 ? "0 · empty" : items.length}
+        <span className={styles.count} title={countTitle(items.length, below)}>
+          {countWords(items.length, below)}
         </span>
       </summary>
       {items.length > 0 && (
@@ -227,6 +238,17 @@ function useCutBottom(ref: RefObject<HTMLElement | null>, content: unknown): boo
   return cut;
 }
 
+function belowCount(shown: readonly Group[], index: number): number {
+  const group = shown[index];
+  if (group === undefined) return 0;
+  let below = 0;
+  for (const child of shown.slice(index + 1)) {
+    if (child.depth <= group.depth) break;
+    below += child.items.length;
+  }
+  return below;
+}
+
 export function Outline({ plant, hall, selected, onSelect, onOpenHall, flagged, showEmptyAreas }: OutlineProps) {
   const [filter, setFilter] = useState("");
   const navRef = useRef<HTMLElement | null>(null);
@@ -239,12 +261,13 @@ export function Outline({ plant, hall, selected, onSelect, onOpenHall, flagged, 
       {halls.length > 0 && onOpenHall !== undefined && filter === "" && (
         <Section title="Halls" items={halls} current={hall} marks="location" onPick={onOpenHall} />
       )}
-      {shown.map(({ area, depth, items }) => (
+      {shown.map(({ area, depth, items }, index) => (
         <Section
           key={area}
           title={area}
           depth={depth}
           items={items}
+          below={belowCount(shown, index)}
           current={selected}
           marks="selection"
           onPick={onSelect}
