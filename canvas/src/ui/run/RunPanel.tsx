@@ -1,5 +1,5 @@
-import type { PlantState } from "../../app/plantStore";
-import type { ReviewState, ReviewStore } from "../../app/reviewStore";
+import type { PlantState } from "../../app/routeModules";
+import type { ReviewState, ReviewSession } from "../../app/routeModules";
 import { runSpan } from "../../model/report";
 import { runClock } from "../../model/timeline";
 import { cx } from "../cx";
@@ -13,7 +13,7 @@ type ReadyPlant = Extract<PlantState, { phase: "ready" }>;
 type Tab = "report" | "inspect";
 
 interface RunPanelProps {
-  readonly review: ReviewStore;
+  readonly review: ReviewSession;
   readonly state: ReviewState;
   readonly plant: ReadyPlant | null;
   readonly unit: (entity: string, state: string) => string;

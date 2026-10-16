@@ -1,6 +1,6 @@
 import { PenLine, Redo, RefreshCw, Save, Undo, Undo2 } from "lucide-react";
 import { useState } from "react";
-import type { Draft, EditorStore } from "../../app/editorStore";
+import type { Draft, EditorSession } from "../../app/routeModules";
 import { canSave, checked, emptyPlant } from "../../app/editorStore";
 import type { NavigationStore } from "../../app/navigationStore";
 import { domainOf, equipmentOf, titleOf } from "../../model/composition";
@@ -14,7 +14,7 @@ import { useEditorKeys } from "./useEditorKeys";
 
 interface BarProps {
   readonly draft: Draft;
-  readonly editor: EditorStore;
+  readonly editor: EditorSession;
   readonly navigation: NavigationStore;
 }
 
@@ -87,7 +87,7 @@ function ShowIssues({
   request,
 }: {
   readonly draft: Draft;
-  readonly editor: EditorStore;
+  readonly editor: EditorSession;
   readonly request: FocusRequest;
 }) {
   if ((draft.issues?.listed.length ?? 0) === 0) return null;
@@ -174,7 +174,7 @@ function History({ draft, editor }: Omit<BarProps, "navigation">) {
   );
 }
 
-function Revert({ disabled, editor }: { readonly disabled: boolean; readonly editor: EditorStore }) {
+function Revert({ disabled, editor }: { readonly disabled: boolean; readonly editor: EditorSession }) {
   const [confirming, setConfirming] = useState(false);
   return (
     <>
@@ -193,7 +193,7 @@ function RevertButton({
   setConfirming,
 }: {
   readonly disabled: boolean;
-  readonly editor: EditorStore;
+  readonly editor: EditorSession;
   readonly confirming: boolean;
   readonly setConfirming: (confirming: boolean) => void;
 }) {

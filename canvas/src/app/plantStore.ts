@@ -4,6 +4,8 @@ import { parsePlant } from "../model/plant";
 import type { ComponentSpec } from "../model/ports";
 import { componentSpecs } from "./componentSpecs";
 import { Observable } from "./observable";
+import { createOperationIdentity } from "./shared/operationIdentity";
+import type { OperationIdentity, OperationId } from "./shared/operationIdentity";
 import type { Bridge } from "./ports";
 
 export type PlantState =
@@ -43,15 +45,16 @@ function unchanged(
 }
 
 export class PlantStore extends Observable<PlantState> {
-  private request = 0;
-
-  constructor(private readonly bridge: Bridge) {
+  constructor(
+    private readonly bridge: Bridge,
+    private readonly operations: OperationIdentity = createOperationIdentity(),
+  ) {
     super({ phase: "idle" });
   }
 
   async load(path: string, workspace: Workspace): Promise<void> {
     if (this.loading(path)) return;
-    const request = (this.request += 1);
+    const request = this.operations.begin();
     const held = this.held(path);
     if (held === null) this.set({ phase: "loading", path });
     const file = await this.bridge.readFile(path);
@@ -63,8 +66,8 @@ export class PlantStore extends Observable<PlantState> {
     await this.open(request, path, file.value, workspace, held?.selected ?? null);
   }
 
-  private current(request: number): boolean {
-    return request === this.request;
+  private current(request: OperationId): boolean {
+    return this.operations.isCurrent(request);
   }
 
   private loading(path: string): boolean {
@@ -78,7 +81,7 @@ export class PlantStore extends Observable<PlantState> {
   }
 
   private async open(
-    request: number,
+    request: OperationId,
     path: string,
     file: FileContent,
     workspace: Workspace,
@@ -97,12 +100,17 @@ export class PlantStore extends Observable<PlantState> {
   async show(key: string, domain: unknown): Promise<void> {
     const state = this.snapshot();
     if (state.phase !== "idle" && state.phase !== "failed" && state.path === key) return;
-    const request = (this.request += 1);
+    const request = this.operations.begin();
     this.set({ phase: "loading", path: key });
     const plant = parsePlant(domain);
     const specs = await this.specs(plant);
     if (!this.current(request)) return;
     this.set({ phase: "ready", path: key, etag: "", plant, specs, composition: null, selected: null });
+  }
+
+  close(): void {
+    this.operations.invalidate();
+    this.set({ phase: "idle" });
   }
 
   select(id: string | null): void {

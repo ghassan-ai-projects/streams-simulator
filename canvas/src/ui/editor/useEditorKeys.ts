@@ -1,8 +1,8 @@
 import { useEffect } from "react";
-import type { EditorStore } from "../../app/editorStore";
+import type { EditorSession } from "../../app/routeModules";
 import { inTextField } from "../keys";
 
-function command(event: KeyboardEvent, editor: EditorStore): boolean {
+function command(event: KeyboardEvent, editor: EditorSession): boolean {
   const key = event.key.toLowerCase();
   if (key === "s") {
     if (editor.savable()) void editor.save();
@@ -16,7 +16,7 @@ function command(event: KeyboardEvent, editor: EditorStore): boolean {
   return true;
 }
 
-export function useEditorKeys(editor: EditorStore) {
+export function useEditorKeys(editor: EditorSession) {
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (!(event.ctrlKey || event.metaKey) || event.altKey) return;

@@ -2,8 +2,9 @@ import { ReactFlowProvider } from "@xyflow/react";
 import { Network } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { LaunchStore } from "../../app/launchStore";
+import type { Scheduler } from "../../app/clock";
 import type { NavigationStore } from "../../app/navigationStore";
-import type { PlantState, PlantStore } from "../../app/plantStore";
+import type { PlantState, PlantSession } from "../../app/routeModules";
 import type { WorkspaceStore } from "../../app/workspaceStore";
 import { hallCount, hallOf, hallsOf, plantView } from "../../model/graph";
 import type { RunRow } from "../../model/workspace";
@@ -23,10 +24,11 @@ import styles from "./PlantScreen.module.css";
 type Ready = Extract<PlantState, { phase: "ready" }>;
 
 interface PlantScreenProps {
-  readonly plants: PlantStore;
+  readonly plants: PlantSession;
   readonly workspace: WorkspaceStore;
   readonly navigation: NavigationStore;
   readonly launch: LaunchStore;
+  readonly scheduler: Scheduler;
   readonly domain: string;
   readonly hall: string | null;
   readonly startLaunching?: boolean;
@@ -80,7 +82,7 @@ function PlantSide({
 }: {
   readonly state: Ready;
   readonly hall: string | null;
-  readonly plants: PlantStore;
+  readonly plants: PlantSession;
   readonly navigation: NavigationStore;
 }) {
   return (
@@ -105,10 +107,11 @@ interface RightProps {
   readonly state: Ready;
   readonly hall: string | null;
   readonly launch: LaunchStore;
+  readonly scheduler: Scheduler;
   readonly navigation: NavigationStore;
   readonly launching: boolean;
   readonly onClose: () => void;
-  readonly plants: PlantStore;
+  readonly plants: PlantSession;
   readonly runs: readonly RunRow[];
 }
 
@@ -138,11 +141,12 @@ function PlantInspector({ state, hall, navigation, plants, runs }: RightProps) {
 }
 
 function RightPanel(props: RightProps) {
-  const { state, launch, navigation, launching, onClose } = props;
+  const { state, launch, scheduler, navigation, launching, onClose } = props;
   if (!launching) return <PlantInspector {...props} />;
   return (
     <LaunchPanel
       launch={launch}
+      scheduler={scheduler}
       plant={state.plant}
       path={state.path}
       selected={state.selected}
@@ -212,7 +216,17 @@ function NotReady({
 }
 
 export function PlantScreen(props: PlantScreenProps) {
-  const { plants, workspace, navigation, launch, domain, hall, startLaunching = false, onShowDetails = noop } = props;
+  const {
+    plants,
+    workspace,
+    navigation,
+    launch,
+    scheduler,
+    domain,
+    hall,
+    startLaunching = false,
+    onShowDetails = noop,
+  } = props;
   const run = useLaunching(startLaunching, useShowRun(launch, onShowDetails), useConsume(navigation, domain, hall));
   const state = useStore(plants);
   const running = useRunningHere(launch, state.phase === "ready" ? state.plant.id : "");
@@ -220,6 +234,7 @@ export function PlantScreen(props: PlantScreenProps) {
   useEffect(() => {
     if (listing.phase === "ready") void plants.load(domain, listing.workspace);
   }, [plants, domain, listing]);
+  useEffect(() => () => plants.close(), [plants, domain]);
   if (state.phase !== "ready" || state.path !== domain)
     return <NotReady state={state} domain={domain} navigation={navigation} />;
   return (
@@ -241,6 +256,7 @@ export function PlantScreen(props: PlantScreenProps) {
           state={state}
           hall={hall}
           launch={launch}
+          scheduler={scheduler}
           navigation={navigation}
           launching={run.launching}
           onClose={run.close}

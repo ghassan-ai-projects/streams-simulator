@@ -8,6 +8,8 @@ import { parseLibrary, parsePresets } from "../model/library";
 import type { ComponentSpec } from "../model/ports";
 import { componentSpecs } from "./componentSpecs";
 import { Observable } from "./observable";
+import { createOperationIdentity } from "./shared/operationIdentity";
+import type { OperationIdentity, OperationId } from "./shared/operationIdentity";
 import type { Bridge } from "./ports";
 
 type Outcome =
@@ -72,9 +74,12 @@ function kept(doc: Composition, draft: Draft): string | null {
 }
 
 export class EditorStore extends Observable<EditorState> {
-  private request = 0;
+  private active: OperationId | null = null;
 
-  constructor(private readonly bridge: Bridge) {
+  constructor(
+    private readonly bridge: Bridge,
+    private readonly operations: OperationIdentity = createOperationIdentity(),
+  ) {
     super({ phase: "idle" });
   }
 
@@ -83,16 +88,21 @@ export class EditorStore extends Observable<EditorState> {
     if (state.phase === "loading" && state.path === path) return;
     if (state.phase === "ready" && state.path === path && state.doc !== state.saved) return;
     if (state.phase !== "ready" || state.path !== path) this.set({ phase: "loading", path });
-    const request = (this.request += 1);
+    const request = this.operations.begin();
+    this.active = request;
     await this.load(request, path, state.phase === "ready" && state.path === path ? state.etag : null);
   }
 
   async reload(): Promise<void> {
     const draft = this.draft();
-    if (draft !== null) await this.load((this.request += 1), draft.path, null);
+    if (draft !== null) {
+      const request = this.operations.begin();
+      this.active = request;
+      await this.load(request, draft.path, null);
+    }
   }
 
-  private async load(request: number, path: string, held: string | null): Promise<void> {
+  private async load(request: OperationId, path: string, held: string | null): Promise<void> {
     const file = await this.bridge.readFile(path);
     if (file.ok && file.value.etag === held) return;
     const doc = file.ok ? parseComposition(file.value.content) : null;
@@ -114,9 +124,15 @@ export class EditorStore extends Observable<EditorState> {
       this.set({ ...this.fresh(path, file.value.etag, doc), domainEtag, library, specs });
   }
 
-  private current(request: number, path: string): boolean {
+  private current(request: OperationId, path: string): boolean {
     const state = this.snapshot();
-    return request === this.request && state.phase !== "idle" && state.path === path;
+    return this.operations.isCurrent(request) && state.phase !== "idle" && state.path === path;
+  }
+
+  close(): void {
+    this.operations.invalidate();
+    this.active = null;
+    this.set({ phase: "idle" });
   }
 
   private async versionOf(path: string): Promise<string> {
@@ -177,11 +193,13 @@ export class EditorStore extends Observable<EditorState> {
   }
 
   async add(entry: NewEquipment): Promise<void> {
+    const operation = this.active;
     this.edit((doc) => addEquipment(doc, entry), entry.name);
     const draft = this.draft();
     const component = componentOf(entry.use);
     if (draft === null || draft.specs.has(component)) return;
     const specs = await componentSpecs(this.bridge, [component]);
+    if (operation === null || !this.current(operation, draft.path)) return;
     this.update((current) => ({ ...current, specs: new Map([...current.specs, ...specs]) }));
   }
 
@@ -193,25 +211,29 @@ export class EditorStore extends Observable<EditorState> {
   async save(): Promise<void> {
     const draft = this.draft();
     if (draft === null || draft.saving) return;
+    const operation = this.active;
+    if (operation === null) return;
     this.set({ ...draft, saving: true, failure: null });
     const written = await this.bridge.writeFile(draft.path, serialise(draft.doc), draft.etag);
+    if (!this.current(operation, draft.path)) return;
     if (!written.ok) {
       this.update((current) => ({ ...current, saving: false, failure: written.failure }));
       return;
     }
     this.update((current) => ({ ...current, etag: written.value.etag, saved: draft.doc }));
-    await this.compose(draft.doc);
+    await this.compose(operation, draft.path, draft.doc);
   }
 
-  private async compose(doc: Composition): Promise<void> {
+  private async compose(operation: OperationId, path: string, doc: Composition): Promise<void> {
     const draft = this.draft();
-    if (draft === null) return;
+    if (draft === null || !this.current(operation, path)) return;
     const out = domainOf(doc);
     const composed = await this.bridge.action("domain.compose", {
       composition: draft.path,
       out,
       etag: draft.domainEtag,
     });
+    if (!this.current(operation, path)) return;
     const domainEtag = composed.ok ? await this.versionOf(out) : draft.domainEtag;
     this.update((state) =>
       composed.ok

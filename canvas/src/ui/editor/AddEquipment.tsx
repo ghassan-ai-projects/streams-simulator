@@ -1,7 +1,7 @@
 import { Plus } from "lucide-react";
 import type { SyntheticEvent } from "react";
 import { useEffect, useState } from "react";
-import type { Draft, EditorStore } from "../../app/editorStore";
+import type { Draft, EditorSession } from "../../app/routeModules";
 import { areaNodesOf, suggestedName } from "../../model/composition";
 import { instanceNameFits, instanceNameRule } from "../../model/instanceNameRule";
 import type { LibraryEntry, Presets } from "../../model/library";
@@ -16,13 +16,13 @@ import { SubmitRow } from "./SubmitRow";
 interface AddProps {
   readonly draft: Draft;
   readonly plant: Plant;
-  readonly editor: EditorStore;
+  readonly editor: EditorSession;
   readonly request: FocusRequest;
 }
 
 const noPresets: Presets = { options: [], preferred: "", description: "" };
 
-function usePresets(editor: EditorStore, use: string) {
+function usePresets(editor: EditorSession, use: string) {
   const [presets, setPresets] = useState<Presets>(noPresets);
   const [preset, setPreset] = useState("");
   useEffect(() => {

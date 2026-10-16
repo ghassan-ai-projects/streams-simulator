@@ -1,5 +1,5 @@
-import type { PlantState } from "../../app/plantStore";
-import type { ReviewState, ReviewStore } from "../../app/reviewStore";
+import type { PlantState } from "../../app/routeModules";
+import type { ReviewState, ReviewSession } from "../../app/routeModules";
 import { channelOf } from "../../model/plant";
 import { shortChannel } from "../../model/shared/words";
 import { hallOf } from "../../model/graph";
@@ -14,7 +14,7 @@ import styles from "./RunScreen.module.css";
 type ReadyPlant = Extract<PlantState, { phase: "ready" }>;
 
 interface ObservedProps {
-  readonly review: ReviewStore;
+  readonly review: ReviewSession;
   readonly state: ReviewState;
   readonly plant: ReadyPlant | null;
   readonly entity: string;

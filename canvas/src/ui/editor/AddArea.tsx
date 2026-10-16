@@ -1,7 +1,7 @@
 import { FolderPlus } from "lucide-react";
 import type { KeyboardEvent, SyntheticEvent } from "react";
 import { useState } from "react";
-import type { Draft, EditorStore } from "../../app/editorStore";
+import type { Draft, EditorSession } from "../../app/routeModules";
 import type { AreaNode } from "../../model/areaTree";
 import { areaNodesOf } from "../../model/composition";
 import { addArea, areaNameProblem } from "../../model/compositionEdits";
@@ -10,7 +10,7 @@ import { SubmitRow } from "./SubmitRow";
 
 interface AreaProps {
   readonly draft: Draft;
-  readonly editor: EditorStore;
+  readonly editor: EditorSession;
 }
 
 interface ParentProps {

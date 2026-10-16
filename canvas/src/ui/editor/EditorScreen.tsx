@@ -1,7 +1,7 @@
 import { Boxes } from "lucide-react";
 import { ReactFlowProvider } from "@xyflow/react";
 import { useEffect, useMemo, useState } from "react";
-import type { Draft, EditorStore } from "../../app/editorStore";
+import type { Draft, EditorSession } from "../../app/routeModules";
 import type { NavigationStore } from "../../app/navigationStore";
 import { compositionPlant, shortKind } from "../../model/composition";
 import { connect } from "../../model/compositionEdits";
@@ -17,7 +17,7 @@ import { PendingLeave } from "./LeaveDialog";
 import { FocusRequest } from "./panelProps";
 
 interface EditorScreenProps {
-  readonly editor: EditorStore;
+  readonly editor: EditorSession;
   readonly navigation: NavigationStore;
   readonly composition: string;
 }
@@ -54,7 +54,7 @@ function NoEquipment() {
 
 interface GraphProps {
   readonly draft: Draft;
-  readonly editor: EditorStore;
+  readonly editor: EditorSession;
   readonly view: PlantView;
   readonly flagged: ReadonlySet<string>;
   readonly aspect: number | undefined;
@@ -122,8 +122,13 @@ function Editing({ draft, editor, navigation }: { readonly draft: Draft } & Omit
 export function EditorScreen({ editor, navigation, composition }: EditorScreenProps) {
   const state = useStore(editor);
   useEffect(() => {
+    const disposeGuard = navigation.guardUnsaved(() => editor.unsavedChanges());
     void editor.open(composition);
-  }, [editor, composition]);
+    return () => {
+      disposeGuard();
+      editor.close();
+    };
+  }, [editor, navigation, composition]);
   if (state.phase === "ready" && state.path === composition) {
     return <Editing draft={state} editor={editor} navigation={navigation} />;
   }

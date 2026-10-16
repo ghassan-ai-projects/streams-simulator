@@ -175,4 +175,26 @@ describe("plant store", () => {
     if (state.phase !== "ready") throw new Error(state.phase);
     expect(state.plant.title).toBe(domain.title);
   });
+
+  it("rejects a late load after close and accepts a fresh close-open visit", async () => {
+    const fake = bridge();
+    const held: Deferred<Outcome<FileContent>>[] = [];
+    const read = fake.readFile.bind(fake);
+    fake.readFile = (path: string) => {
+      if (path !== "domains/mini.domain.json") return read(path);
+      const gate = deferred<Outcome<FileContent>>();
+      held.push(gate);
+      return gate.promise;
+    };
+    const store = new PlantStore(fake);
+    const first = store.load("domains/mini.domain.json", workspace);
+    store.close();
+    const reopened = store.load("domains/mini.domain.json", workspace);
+    held[0]?.resolve(file("domains/mini.domain.json", { ...domain, title: "late" }));
+    await first;
+    expect(store.snapshot()).toMatchObject({ phase: "loading", path: "domains/mini.domain.json" });
+    held[1]?.resolve(file("domains/mini.domain.json", domain));
+    await reopened;
+    expect(store.snapshot()).toMatchObject({ phase: "ready", plant: { title: domain.title } });
+  });
 });

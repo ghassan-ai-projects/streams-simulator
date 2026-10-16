@@ -2,6 +2,7 @@ import type { BridgeFailure } from "../model/bridge";
 import type { CallOutcome, LaunchPlan, LaunchStep } from "../model/launch";
 import { failureWords, launchSteps, outcomeOf, paceOf } from "../model/launch";
 import { Observable } from "./observable";
+import type { Clock, Scheduler } from "./clock";
 import type { Bridge } from "./ports";
 
 export interface LaunchOrigin {
@@ -96,11 +97,8 @@ export class LaunchStore extends Observable<LaunchState> {
 
   constructor(
     private readonly bridge: Bridge,
-    private readonly now: () => number = () => Date.now(),
-    private readonly sleep: (ms: number) => Promise<void> = (ms) =>
-      new Promise((resolve) => {
-        window.setTimeout(resolve, ms);
-      }),
+    private readonly clock: Clock,
+    private readonly scheduler: Scheduler,
   ) {
     super({ phase: "idle" });
   }
@@ -110,7 +108,7 @@ export class LaunchStore extends Observable<LaunchState> {
     const domain = origin.domain;
     this.origin = origin;
     this.plan = plan;
-    this.startedMs = this.now();
+    this.startedMs = this.clock.nowMs();
     this.proposed = null;
     this.stop = false;
     this.outcomes = [];
@@ -140,7 +138,7 @@ export class LaunchStore extends Observable<LaunchState> {
 
   private progress(worldId: string | null, atS: number): void {
     const { origin, plan, startedMs } = this;
-    const atMs = this.now();
+    const atMs = this.clock.nowMs();
     this.reachedS = atS;
     this.set({
       phase: "running",
@@ -183,13 +181,18 @@ export class LaunchStore extends Observable<LaunchState> {
 
   private async pace(toS: number): Promise<void> {
     const rate = paceOf(this.plan);
-    const wait = rate === null ? 0 : this.startedMs + (toS / rate) * 1000 - this.now();
+    const wait = rate === null ? 0 : this.startedMs + (toS / rate) * 1000 - this.clock.nowMs();
     if (wait <= 0 || this.stop) return;
     const woken = new Promise<void>((resolve) => {
       this.interrupt = resolve;
     });
-    await Promise.race([this.sleep(wait), woken]);
-    this.interrupt = null;
+    const controller = new AbortController();
+    try {
+      await Promise.race([this.scheduler.delay(wait, controller.signal), woken]);
+    } finally {
+      controller.abort();
+      this.interrupt = null;
+    }
   }
 
   private async step(worldId: string, step: LaunchStep): Promise<void> {
@@ -209,7 +212,7 @@ export class LaunchStore extends Observable<LaunchState> {
       effector,
       args,
     });
-    this.outcomes = [...this.outcomes, outcomeOf(step, acknowledged, this.now())];
+    this.outcomes = [...this.outcomes, outcomeOf(step, acknowledged, this.clock.nowMs())];
     this.progress(worldId, this.reachedS);
   }
 

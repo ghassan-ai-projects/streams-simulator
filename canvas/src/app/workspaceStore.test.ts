@@ -76,4 +76,28 @@ describe("workspace", () => {
     await opening;
     expect(bridge.watchers.size).toBe(0);
   });
+
+  it("does not let a closed visit install a watcher after the workspace reopens", async () => {
+    const bridge = new FakeBridge();
+    const first = deferred<Awaited<ReturnType<FakeBridge["workspace"]>>>();
+    const second = deferred<Awaited<ReturnType<FakeBridge["workspace"]>>>();
+    const reads = [first, second];
+    bridge.workspace = () => {
+      const next = reads.shift();
+      if (next === undefined) throw new Error("no held read left");
+      return next.promise;
+    };
+    const store = new WorkspaceStore(bridge);
+    const closedVisit = store.open();
+    store.close();
+    const reopenedVisit = store.open();
+    first.resolve(success({ ...sampleWorkspace, name: "late" }));
+    await closedVisit;
+    expect(bridge.watchers.size).toBe(0);
+    second.resolve(success({ ...sampleWorkspace, name: "current" }));
+    await reopenedVisit;
+    expect(bridge.watchers.size).toBe(1);
+    expect(store.snapshot()).toMatchObject({ phase: "ready", workspace: { name: "current" } });
+    store.close();
+  });
 });

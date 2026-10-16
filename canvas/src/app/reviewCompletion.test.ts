@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { success } from "../model/bridge";
 import { FakeBridge } from "../test/fakeBridge";
+import { fakeClock } from "../test/fakeClock";
 import { journal, report } from "../test/runFixture";
 import { ReviewStore } from "./reviewStore";
 
@@ -22,7 +23,8 @@ function setup() {
   const bridge = new FakeBridge();
   bridge.actions.set("run.verify", success({ matches: true }));
   bridge.files.set(path, success({ path, content: JSON.stringify({ domain_spec: recorded }), etag: "recorded" }));
-  const store = new ReviewStore(bridge);
+  const timers = fakeClock();
+  const store = new ReviewStore(bridge, timers, timers);
   return { bridge, store };
 }
 

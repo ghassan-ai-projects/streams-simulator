@@ -1,6 +1,8 @@
 import type { BridgeFailure, Workspace } from "../model/bridge";
 import { Observable } from "./observable";
 import type { Bridge } from "./ports";
+import { createOperationIdentity } from "./shared/operationIdentity";
+import type { OperationIdentity, OperationId } from "./shared/operationIdentity";
 
 export type WorkspaceState =
   | { readonly phase: "loading" }
@@ -9,17 +11,19 @@ export type WorkspaceState =
 
 export class WorkspaceStore extends Observable<WorkspaceState> {
   private stopWatching: (() => void) | null = null;
-  private session = 0;
-  private request = 0;
+  private readonly sessions: OperationIdentity;
+  private readonly requests: OperationIdentity;
 
-  constructor(private readonly bridge: Bridge) {
+  constructor(private readonly bridge: Bridge, operations = createOperationIdentity()) {
     super({ phase: "loading" });
+    this.sessions = operations;
+    this.requests = createOperationIdentity();
   }
 
   async open(): Promise<void> {
-    const session = (this.session += 1);
+    const session = this.sessions.begin();
     await this.reload(session);
-    if (session !== this.session) return;
+    if (!this.sessions.isCurrent(session)) return;
     this.stopWatching?.();
     this.stopWatching = this.bridge.watchWorkspace(() => {
       void this.reload(session);
@@ -27,15 +31,17 @@ export class WorkspaceStore extends Observable<WorkspaceState> {
   }
 
   close(): void {
-    this.session += 1;
+    this.sessions.invalidate();
+    this.requests.invalidate();
     this.stopWatching?.();
     this.stopWatching = null;
   }
 
-  async reload(session = this.session): Promise<void> {
-    const request = (this.request += 1);
+  async reload(session: OperationId | null = null): Promise<void> {
+    const activeSession = session ?? this.sessions.begin();
+    const request = this.requests.begin();
     const outcome = await this.bridge.workspace();
-    if (session !== this.session || request !== this.request) return;
+    if (!this.sessions.isCurrent(activeSession) || !this.requests.isCurrent(request)) return;
     this.set(outcome.ok ? { phase: "ready", workspace: outcome.value } : { phase: "failed", failure: outcome.failure });
   }
 }

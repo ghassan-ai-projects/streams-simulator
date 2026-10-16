@@ -2,6 +2,7 @@ import { settle } from "../test/deferred";
 import { describe, expect, it } from "vitest";
 import { failed, success } from "../model/bridge";
 import { FakeBridge, failure } from "../test/fakeBridge";
+import { fakeClock } from "../test/fakeClock";
 import { journal, report } from "../test/runFixture";
 import { ReviewStore } from "./reviewStore";
 
@@ -9,9 +10,9 @@ function setup() {
   const bridge = new FakeBridge();
   bridge.actions.set("run.report", success(report));
   bridge.actions.set("run.verify", success({ matches: true }));
-  const flushes: (() => void)[] = [];
-  const store = new ReviewStore(bridge, (flush) => flushes.push(flush));
-  return { bridge, store, flushes };
+  const timers = fakeClock();
+  const store = new ReviewStore(bridge, timers, timers);
+  return { bridge, store, timers };
 }
 
 describe("review", () => {
@@ -60,7 +61,7 @@ describe("review", () => {
   });
 
   it("asks the binary for the report and verification and streams the observer journal", async () => {
-    const { bridge, store, flushes } = setup();
+    const { bridge, store, timers } = setup();
     store.open("w-1");
     await settle();
     expect(bridge.calls.map((call) => [call.name, call.args])).toEqual([
@@ -72,34 +73,28 @@ describe("review", () => {
       verified: { phase: "ready", value: { matches: true, domainChanged: false, detail: "", reason: "", file: "" } },
     });
     bridge.stream("w-1", journal);
-    flushes.forEach((flush) => {
-      flush();
-    });
+    timers.advance(250);
     expect(store.snapshot().playback).toEqual({ phase: "ready", records: 4, adapter: "native-jsonl" });
     expect(store.snapshot().positionNs).toBe(12e9);
     expect(store.index.readings("CH-1", 30e9)[0]?.value).toBe(95.1);
   });
 
   it("ignores Play before any observation has arrived and starts from where the run settles", () => {
-    const { bridge, store, flushes } = setup();
+    const { bridge, store, timers } = setup();
     store.open("w-1");
     store.play();
     expect(store.snapshot().playing).toBe(false);
     bridge.stream("w-1", journal, null);
-    flushes.forEach((flush) => {
-      flush();
-    });
+    timers.advance(250);
     store.play();
     expect(store.snapshot()).toMatchObject({ playing: true, positionNs: 12e9 });
   });
 
   it("plays back at its speed from the start, stops at the end and plays again from the start", () => {
-    const { bridge, store, flushes } = setup();
+    const { bridge, store, timers } = setup();
     store.open("w-1");
     bridge.stream("w-1", journal);
-    flushes.forEach((flush) => {
-      flush();
-    });
+    timers.advance(250);
     store.tick(1000);
     expect(store.snapshot().positionNs).toBe(12e9);
     store.setSpeed(10);
@@ -174,16 +169,14 @@ describe("review", () => {
   });
 
   it("reads the report and verification again when a run it watched live closes, once", async () => {
-    const { bridge, store, flushes } = setup();
+    const { bridge, store, timers } = setup();
     bridge.actions.set("run.report", success({ ...report, run: { ...report.run, ended: false } }));
     store.open("w-1");
     await settle();
     expect(store.snapshot().report).toMatchObject({ phase: "ready", value: { ended: false } });
     bridge.actions.set("run.report", success(report));
     bridge.stream("w-1", journal);
-    flushes.forEach((flush) => {
-      flush();
-    });
+    timers.advance(250);
     await settle();
     expect(bridge.calls.filter((call) => call.name === "run.report")).toHaveLength(2);
     expect(bridge.calls.filter((call) => call.name === "run.verify")).toHaveLength(2);
@@ -237,16 +230,14 @@ describe("review", () => {
   });
 
   it("finishes a run listed as open when its journal closes while the review watches", async () => {
-    const { bridge, store, flushes } = setup();
+    const { bridge, store, timers } = setup();
     bridge.actions.set("run.report", success({ ...report, run: { ...report.run, ended: false, complete: false } }));
     store.open("w-1", { ...entry, worldId: "w-1", ended: false, complete: false });
     await settle();
     expect(bridge.calls.map((call) => call.name)).toEqual(["run.report"]);
     bridge.actions.set("run.report", success(report));
     bridge.stream("w-1", journal);
-    flushes.forEach((flush) => {
-      flush();
-    });
+    timers.advance(250);
     await settle();
     expect(bridge.calls.filter((call) => call.name === "run.report")).toHaveLength(2);
     expect(bridge.calls.filter((call) => call.name === "run.verify")).toHaveLength(1);
@@ -257,14 +248,12 @@ describe("review", () => {
   });
 
   it("re-asks nothing doomed when an abandoned run's journal stream closes", async () => {
-    const { bridge, store, flushes } = setup();
+    const { bridge, store, timers } = setup();
     bridge.actions.set("run.report", success({ ...report, run: { ...report.run, ended: false, complete: false } }));
     store.open("w-9", { ...entry, worldId: "w-9", ended: true, complete: false });
     await settle();
     bridge.stream("w-9", journal);
-    flushes.forEach((flush) => {
-      flush();
-    });
+    timers.advance(250);
     await settle();
     expect(store.snapshot().playback).toMatchObject({ phase: "ready" });
     expect(bridge.calls.map((call) => call.name)).toEqual(["run.report"]);

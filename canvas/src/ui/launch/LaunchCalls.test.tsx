@@ -1,10 +1,10 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import axe from "axe-core";
 import { describe, expect, it, vi } from "vitest";
-import { LaunchStore } from "../../app/launchStore";
 import { success } from "../../model/bridge";
 import { parsePlant } from "../../model/plant";
 import { FakeBridge } from "../../test/fakeBridge";
+import { launchHarness } from "../../test/launchFixture";
 import { domain } from "../../test/plantFixture";
 import { LaunchPanel } from "./LaunchPanel";
 
@@ -43,9 +43,9 @@ function change(label: string, value: string) {
 }
 
 function renderPanel(fake: FakeBridge, onFinished = vi.fn<(worldId: string) => void>()) {
-  const launch = new LaunchStore(fake);
+  const { launch, scheduler } = launchHarness(fake);
   const view = render(
-    <LaunchPanel launch={launch} plant={plant} path="p.json" onClose={vi.fn()} onFinished={onFinished} />,
+    <LaunchPanel launch={launch} scheduler={scheduler} plant={plant} path="p.json" onClose={vi.fn()} onFinished={onFinished} />,
   );
   return { view, onFinished };
 }

@@ -1,6 +1,6 @@
 import type { SyntheticEvent } from "react";
 import { useId, useState } from "react";
-import type { Draft, EditorStore } from "../../app/editorStore";
+import type { Draft, EditorSession } from "../../app/routeModules";
 import type { AreaNode } from "../../model/areaTree";
 import { areaNodesOf } from "../../model/composition";
 import { areaInUse, areaNameProblem, removeArea, renameArea } from "../../model/compositionEdits";
@@ -9,7 +9,7 @@ import styles from "./Editor.module.css";
 
 interface RowProps {
   readonly draft: Draft;
-  readonly editor: EditorStore;
+  readonly editor: EditorSession;
   readonly node: AreaNode;
 }
 
@@ -81,7 +81,7 @@ function AreaRow({ draft, editor, node }: RowProps) {
   );
 }
 
-export function AreaEditor({ draft, editor }: { readonly draft: Draft; readonly editor: EditorStore }) {
+export function AreaEditor({ draft, editor }: { readonly draft: Draft; readonly editor: EditorSession }) {
   const nodes = areaNodesOf(draft.doc);
   return (
     <section className={panel.group} aria-labelledby="areas-title">

@@ -2,8 +2,8 @@ import { ReactFlowProvider } from "@xyflow/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { LaunchStore } from "../../app/launchStore";
 import type { NavigationStore } from "../../app/navigationStore";
-import type { PlantState, PlantStore } from "../../app/plantStore";
-import type { ReviewState, ReviewStore } from "../../app/reviewStore";
+import type { PlantState, PlantSession } from "../../app/routeModules";
+import type { ReviewState, ReviewSession } from "../../app/routeModules";
 import type { WorkspaceState, WorkspaceStore } from "../../app/workspaceStore";
 import { isMissing } from "../../model/bridge";
 import type { RunEntry } from "../../model/bridge";
@@ -30,8 +30,8 @@ import { usePlayback } from "./usePlayback";
 import styles from "./RunScreen.module.css";
 
 interface RunScreenProps {
-  readonly review: ReviewStore;
-  readonly plants: PlantStore;
+  readonly review: ReviewSession;
+  readonly plants: PlantSession;
   readonly workspace: WorkspaceStore;
   readonly navigation: NavigationStore;
   readonly launch: LaunchStore;
@@ -44,7 +44,7 @@ function entryOf(listing: WorkspaceState, worldId: string): RunEntry | undefined
   return listing.phase === "ready" ? listing.workspace.runs.find((run) => run.worldId === worldId) : undefined;
 }
 
-function useReviewOpen(review: ReviewStore, workspace: WorkspaceStore, worldId: string): void {
+function useReviewOpen(review: ReviewSession, workspace: WorkspaceStore, worldId: string): void {
   const listing = useStore(workspace);
   const known = useRef<RunEntry | undefined>(undefined);
   const settled = listing.phase !== "loading";
@@ -61,7 +61,7 @@ function useReviewOpen(review: ReviewStore, workspace: WorkspaceStore, worldId: 
   }, [review, worldId, settled]);
 }
 
-function useRunPlant(state: ReviewState, plants: PlantStore, workspace: WorkspaceStore): ReadyPlant | null {
+function useRunPlant(state: ReviewState, plants: PlantSession, workspace: WorkspaceStore): ReadyPlant | null {
   const listing = useStore(workspace);
   const plant = useStore(plants);
   const key = `run:${state.worldId ?? ""}`;
@@ -86,7 +86,7 @@ function OpeningPlant() {
 }
 
 interface GraphProps extends HallProps {
-  readonly review: ReviewStore;
+  readonly review: ReviewSession;
   readonly state: ReviewState;
   readonly plant: ReadyPlant | null;
 }
@@ -135,7 +135,7 @@ function Graph({ review, state, plant, hall, onHall }: GraphProps) {
   );
 }
 
-function Timeline({ review, state }: { readonly review: ReviewStore; readonly state: ReviewState }) {
+function Timeline({ review, state }: { readonly review: ReviewSession; readonly state: ReviewState }) {
   const report: Report | null = state.report.phase === "ready" ? state.report.value : null;
   const span = runSpan(report, review.index.bounds());
   return (
@@ -172,7 +172,7 @@ function Side({
   hall,
   onHall,
 }: {
-  readonly review: ReviewStore;
+  readonly review: ReviewSession;
   readonly state: ReviewState;
   readonly plant: ReadyPlant | null;
 } & HallProps) {
@@ -212,7 +212,7 @@ function usePlantIdentity(state: ReviewState, workspace: WorkspaceStore, plant: 
 interface CentreProps extends GraphProps {
   readonly worldId: string;
   readonly navigation: NavigationStore;
-  readonly review: ReviewStore;
+  readonly review: ReviewSession;
 }
 
 function Centre({ review, state, plant, hall, onHall, worldId, navigation }: CentreProps) {
@@ -235,6 +235,7 @@ export function RunScreen({ review, plants, workspace, navigation, launch, world
   const identity = usePlantIdentity(state, workspace, plant);
   const [hall, setHall] = useState<string | null>(null);
   useReviewOpen(review, workspace, worldId);
+  useEffect(() => () => plants.close(), [plants, worldId]);
   usePlayback(review, state.playing);
   const unit = useUnitOf(plant);
   return (

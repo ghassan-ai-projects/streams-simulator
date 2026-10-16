@@ -85,6 +85,26 @@ describe("navigation", () => {
     expect(navigation.snapshot()).toEqual({ screen: "home" });
   });
 
+  it("removes a route's unsaved guard when its disposer runs", () => {
+    const navigation = new NavigationStore(memoryLocation("#/edit?composition=c1"));
+    const dispose = navigation.guardUnsaved(() => true);
+    navigation.go({ screen: "home" });
+    expect(navigation.leaving.snapshot()).not.toBeNull();
+    navigation.stay();
+    dispose();
+    navigation.go({ screen: "home" });
+    expect(navigation.snapshot()).toEqual({ screen: "home" });
+  });
+
+  it("does not let an old guard disposer remove a replacement guard", () => {
+    const navigation = new NavigationStore(memoryLocation("#/edit?composition=c1"));
+    const disposeOld = navigation.guardUnsaved(() => false);
+    navigation.guardUnsaved(() => true);
+    disposeOld();
+    navigation.go({ screen: "home" });
+    expect(navigation.leaving.snapshot()).not.toBeNull();
+  });
+
   it("puts the address back and holds the move when the user goes back with unsaved changes", () => {
     const location = memoryLocation("#/edit?composition=c1");
     const navigation = new NavigationStore(location);

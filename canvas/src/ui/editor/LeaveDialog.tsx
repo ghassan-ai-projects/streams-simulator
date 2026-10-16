@@ -1,4 +1,4 @@
-import type { EditorStore } from "../../app/editorStore";
+import type { EditorSession } from "../../app/routeModules";
 import type { NavigationStore } from "../../app/navigationStore";
 import { useStore } from "../useStore";
 import { useFocusOnMount } from "../useFocusOnMount";
@@ -6,7 +6,7 @@ import styles from "./Editor.module.css";
 import leave from "./LeaveDialog.module.css";
 
 interface Props {
-  readonly editor: EditorStore;
+  readonly editor: EditorSession;
   readonly navigation: NavigationStore;
 }
 

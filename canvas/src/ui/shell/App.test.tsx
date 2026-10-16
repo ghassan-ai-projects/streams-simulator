@@ -4,8 +4,8 @@ import { describe, expect, it } from "vitest";
 import { SessionStore } from "../../app/sessionStore";
 import { EditorStore } from "../../app/editorStore";
 import { PanelStore } from "../../app/panelStore";
-import { PlantMaker } from "../../app/plantMaker";
 import { LaunchStore } from "../../app/launchStore";
+import { PlantMaker } from "../../app/plantMaker";
 import { NavigationStore } from "../../app/navigationStore";
 import { PlantStore } from "../../app/plantStore";
 import { ReviewStore } from "../../app/reviewStore";
@@ -13,6 +13,7 @@ import { ThemeStore } from "../../app/themeStore";
 import { WorkspaceStore } from "../../app/workspaceStore";
 import { failed } from "../../model/bridge";
 import { FakeBridge, failure } from "../../test/fakeBridge";
+import { fakeClock } from "../../test/fakeClock";
 import { App } from "./App";
 
 function themes() {
@@ -25,14 +26,16 @@ function themes() {
 
 function renderApp(bridge: FakeBridge) {
   const location = { read: () => "#/", write: () => undefined, subscribe: () => () => undefined };
+  const timers = fakeClock();
   const stores = {
     themes: themes(),
     session: new SessionStore(bridge),
     workspace: new WorkspaceStore(bridge),
     navigation: new NavigationStore(location),
     plants: new PlantStore(bridge),
-    review: new ReviewStore(bridge),
-    launch: new LaunchStore(bridge),
+    review: new ReviewStore(bridge, timers, timers),
+    launch: new LaunchStore(bridge, timers, timers),
+    scheduler: timers,
     editor: new EditorStore(bridge),
     panels: new PanelStore({ read: () => null, write: () => undefined }),
     maker: new PlantMaker(bridge),

@@ -4,6 +4,7 @@ import { LaunchStore } from "../../app/launchStore";
 import { NavigationStore } from "../../app/navigationStore";
 import { failed, success } from "../../model/bridge";
 import { FakeBridge, failure } from "../../test/fakeBridge";
+import { fakeClock } from "../../test/fakeClock";
 import { RunIndicator } from "./RunIndicator";
 
 const origin = { domain: "mini", title: "Mini plant", path: "domains/mini.domain.json" };
@@ -25,7 +26,8 @@ function setup() {
     },
     subscribe: () => () => undefined,
   };
-  const launch = new LaunchStore(bridge);
+  const timers = fakeClock();
+  const launch = new LaunchStore(bridge, timers, timers);
   render(<RunIndicator launch={launch} navigation={new NavigationStore(location)} />);
   return { bridge, launch, location };
 }

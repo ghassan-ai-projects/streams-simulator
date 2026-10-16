@@ -1,5 +1,6 @@
 import { Play, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import type { Scheduler } from "../../app/clock";
 import type { LaunchState, LaunchStore, Proposal } from "../../app/launchStore";
 import { clockOf, keepKnownFaults, planSummary, rateWords } from "../../model/launch";
 import { humanise } from "../../model/shared/words";
@@ -20,6 +21,7 @@ import styles from "./LaunchPanel.module.css";
 
 interface LaunchPanelProps {
   readonly launch: LaunchStore;
+  readonly scheduler: Scheduler;
   readonly plant: Plant;
   readonly path: string;
   readonly selected?: string | null;
@@ -183,20 +185,17 @@ function Body({ state, launch, plant, path, draft, selected, change, onFinished,
 
 const finishedHold = 2000;
 
-function useLaunch(launch: LaunchStore, plant: string, onFinished: (worldId: string) => void) {
+function useLaunch(launch: LaunchStore, scheduler: Scheduler, plant: string, onFinished: (worldId: string) => void) {
   const state = useStore(launch);
   const [watched, setWatched] = useState(false);
   if (!watched && state.phase === "running" && state.origin.domain === plant) setWatched(true);
   useEffect(() => {
     if (!watched || state.phase !== "done" || state.origin.domain !== plant || state.calls.length > 0) return undefined;
-    const timer = window.setTimeout(() => {
+    return scheduler.schedule(finishedHold, () => {
       launch.reset();
       onFinished(state.worldId);
-    }, finishedHold);
-    return () => {
-      window.clearTimeout(timer);
-    };
-  }, [watched, state, launch, plant, onFinished]);
+    });
+  }, [watched, state, launch, scheduler, plant, onFinished]);
   return { state, watched };
 }
 
@@ -233,8 +232,8 @@ function useDraft(launch: LaunchStore, plant: Plant, selected: string | null) {
   return { proposed, draft, setDraft };
 }
 
-export function LaunchPanel({ launch, plant, path, selected = null, onClose, onFinished }: LaunchPanelProps) {
-  const { state, watched } = useLaunch(launch, plant.id, onFinished);
+export function LaunchPanel({ launch, scheduler, plant, path, selected = null, onClose, onFinished }: LaunchPanelProps) {
+  const { state, watched } = useLaunch(launch, scheduler, plant.id, onFinished);
   const { proposed, draft, setDraft } = useDraft(launch, plant, selected);
   return (
     <aside className={panel.panel} aria-labelledby="launch-title">

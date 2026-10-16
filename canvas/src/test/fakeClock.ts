@@ -1,4 +1,6 @@
 /** Implements the Clock and Scheduler signatures of the accepted architecture (A5) with a controlled queue. */
+import type { Clock, Scheduler } from "../app/clock";
+
 export interface FakeClock {
   nowMs(): number;
   schedule(delayMs: number, task: () => void): () => void;
@@ -57,7 +59,7 @@ function delayOn(queue: Queue, delayMs: number, signal?: AbortSignal): Promise<v
   });
 }
 
-export function fakeClock(startMs = 0): FakeClock {
+export function fakeClock(startMs = 0): FakeClock & Clock & Scheduler {
   const queue: Queue = { now: startMs, tasks: [] };
   const enqueueIn = (delayMs: number, run: () => void): Task => enqueue(queue, delayMs, run);
   const dropFrom = (entry: Task): void => {

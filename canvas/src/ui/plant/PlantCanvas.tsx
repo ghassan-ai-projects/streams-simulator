@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import type { LaunchStore } from "../../app/launchStore";
 import type { NavigationStore } from "../../app/navigationStore";
-import type { PlantState, PlantStore } from "../../app/plantStore";
+import type { PlantState, PlantSession } from "../../app/routeModules";
 import { showingMarks } from "../../model/launch";
 import { planMarks, plainView, plantView } from "../../model/graph";
 import type { PlanMark, PlantView } from "../../model/graph";
@@ -32,7 +32,7 @@ function PlantViewGraph({
   readonly state: Ready;
   readonly hall: string | null;
   readonly aspect: number | undefined;
-  readonly plants: PlantStore;
+  readonly plants: PlantSession;
   readonly navigation: NavigationStore;
   readonly marks: ReadonlyMap<string, PlanMark> | undefined;
 }) {
@@ -66,7 +66,7 @@ export function PlantCanvas({
 }: {
   readonly state: Ready;
   readonly hall: string | null;
-  readonly plants: PlantStore;
+  readonly plants: PlantSession;
   readonly navigation: NavigationStore;
   readonly launch: LaunchStore;
 }) {

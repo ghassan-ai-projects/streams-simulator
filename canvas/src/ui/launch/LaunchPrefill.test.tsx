@@ -1,16 +1,16 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { LaunchStore } from "../../app/launchStore";
 import { parsePlant } from "../../model/plant";
 import { FakeBridge } from "../../test/fakeBridge";
 import { domain } from "../../test/plantFixture";
+import { launchHarness } from "../../test/launchFixture";
 import { LaunchPanel } from "./LaunchPanel";
 
 const path = "domains/mini.domain.json";
 
 describe("prefilled run plan", () => {
   it("clears a prefilled fault the plant no longer has, says so, and does not start with it", () => {
-    const launch = new LaunchStore(new FakeBridge());
+    const { launch, scheduler } = launchHarness(new FakeBridge());
     launch.propose(
       "mini",
       {
@@ -24,7 +24,7 @@ describe("prefilled run plan", () => {
       "w-6",
     );
     render(
-      <LaunchPanel launch={launch} plant={parsePlant(domain)} path={path} onClose={vi.fn()} onFinished={vi.fn()} />,
+      <LaunchPanel launch={launch} scheduler={scheduler} plant={parsePlant(domain)} path={path} onClose={vi.fn()} onFinished={vi.fn()} />,
     );
     expect(screen.getByLabelText("Fault 1 fault")).toHaveValue("");
     expect(screen.getByRole("note")).toHaveTextContent("Not copied: gone on CH-1 (no longer in this plant).");

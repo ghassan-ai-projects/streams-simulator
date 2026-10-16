@@ -1,31 +1,28 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import axe from "axe-core";
 import { describe, expect, it, vi } from "vitest";
-import { LaunchStore } from "../../app/launchStore";
 import { failed } from "../../model/bridge";
 import { parsePlant } from "../../model/plant";
 import type { FakeBridge } from "../../test/fakeBridge";
 import { failure } from "../../test/fakeBridge";
 import { HeldBridge } from "../../test/heldBridge";
-import { launchBridge } from "../../test/launchFixture";
+import { launchBridge, launchHarness } from "../../test/launchFixture";
 import { domain } from "../../test/plantFixture";
 import { LaunchPanel } from "./LaunchPanel";
 
 const path = "domains/mini.domain.json";
 
 function renderPanel(fake: FakeBridge, onFinished = vi.fn<(worldId: string) => void>()) {
-  const launch = new LaunchStore(fake);
+  const { launch, scheduler, timers } = launchHarness(fake);
   const view = render(
-    <LaunchPanel launch={launch} plant={parsePlant(domain)} path={path} onClose={vi.fn()} onFinished={onFinished} />,
+    <LaunchPanel launch={launch} scheduler={scheduler} plant={parsePlant(domain)} path={path} onClose={vi.fn()} onFinished={onFinished} />,
   );
-  return { launch, view, onFinished };
+  return { launch, scheduler, timers, view, onFinished };
 }
 
 function change(label: string, value: string) {
   fireEvent.change(screen.getByLabelText(label), { target: { value } });
 }
-
-const finishedWait = { timeout: 3000 };
 
 describe("launch panel", () => {
   it("cues the cut on the run plan's own scroll region while its fields continue below", () => {
@@ -48,7 +45,7 @@ describe("launch panel", () => {
 
   it("plans a run with a fault and opens the finished run", async () => {
     const fake = launchBridge();
-    const { view, onFinished } = renderPanel(fake);
+    const { view, onFinished, timers } = renderPanel(fake);
     expect((await axe.run(view.container)).violations).toEqual([]);
     expect(screen.getByLabelText("Seed")).toHaveFocus();
     change("Seed", "9");
@@ -65,9 +62,10 @@ describe("launch panel", () => {
       fireEvent.click(screen.getByRole("button", { name: "Start the run" }));
       await Promise.resolve();
     });
-    await vi.waitFor(() => {
-      expect(onFinished).toHaveBeenCalledWith("w-7");
-    }, finishedWait);
+    await act(async () => {
+      timers.advance(2000);
+    });
+    expect(onFinished).toHaveBeenCalledWith("w-7");
     expect(fake.calls[0]).toEqual({ name: "world.create", args: { domain: "mini", seed: 9, explore: false } });
     expect(fake.calls.find((call) => call.name === "fault.inject")?.args).toEqual({
       world_id: "w-7",
@@ -173,11 +171,12 @@ describe("launch panel", () => {
 
 describe("launch panel picking", () => {
   it("takes a fault's instance from the graph and rolls a new seed", () => {
-    const launch = new LaunchStore(launchBridge());
+    const { launch, scheduler } = launchHarness(launchBridge());
     const plant = parsePlant(domain);
     const panel = (selected: string | null) => (
       <LaunchPanel
         launch={launch}
+        scheduler={scheduler}
         plant={plant}
         path={path}
         selected={selected}
@@ -200,7 +199,7 @@ describe("launch panel picking", () => {
 
 describe("launch panel lifetime", () => {
   it("does not jump to a run that finished while nobody watched it", async () => {
-    const launch = new LaunchStore(launchBridge());
+    const { launch, scheduler } = launchHarness(launchBridge());
     await launch.start(
       { domain: "mini", title: "Mini plant", path },
       { seed: 1, durationS: 60, explore: true, faults: [], calls: [] },
@@ -208,14 +207,14 @@ describe("launch panel lifetime", () => {
     expect(launch.snapshot()).toMatchObject({ phase: "done" });
     const onFinished = vi.fn<(worldId: string) => void>();
     render(
-      <LaunchPanel launch={launch} plant={parsePlant(domain)} path={path} onClose={vi.fn()} onFinished={onFinished} />,
+      <LaunchPanel launch={launch} scheduler={scheduler} plant={parsePlant(domain)} path={path} onClose={vi.fn()} onFinished={onFinished} />,
     );
     expect(screen.getByRole("button", { name: "Start the run" })).toBeInTheDocument();
     expect(onFinished).not.toHaveBeenCalled();
   });
 
   it("starts from a plan proposed for this plant, such as Run again", () => {
-    const launch = new LaunchStore(launchBridge());
+    const { launch, scheduler } = launchHarness(launchBridge());
     launch.propose("mini", {
       seed: 5,
       durationS: 7200,
@@ -224,7 +223,7 @@ describe("launch panel lifetime", () => {
       calls: [],
     });
     const view = render(
-      <LaunchPanel launch={launch} plant={parsePlant(domain)} path={path} onClose={vi.fn()} onFinished={vi.fn()} />,
+      <LaunchPanel launch={launch} scheduler={scheduler} plant={parsePlant(domain)} path={path} onClose={vi.fn()} onFinished={vi.fn()} />,
     );
     expect(screen.getByLabelText("Seed")).toHaveValue("5");
     expect(screen.getByLabelText("Duration")).toHaveValue("2");
@@ -239,7 +238,7 @@ describe("launch panel lifetime", () => {
   });
 
   it("keeps a run's seconds, names the run it was prefilled from, and says what was not copied", () => {
-    const launch = new LaunchStore(launchBridge());
+    const { launch, scheduler } = launchHarness(launchBridge());
     const faults = [{ entity: "CH-1", fault: "chiller__fouling", atS: 620 }];
     launch.propose(
       "mini",
@@ -248,7 +247,7 @@ describe("launch panel lifetime", () => {
       "w-4",
     );
     render(
-      <LaunchPanel launch={launch} plant={parsePlant(domain)} path={path} onClose={vi.fn()} onFinished={vi.fn()} />,
+      <LaunchPanel launch={launch} scheduler={scheduler} plant={parsePlant(domain)} path={path} onClose={vi.fn()} onFinished={vi.fn()} />,
     );
     expect(screen.getByLabelText("Duration")).toHaveValue("1.5");
     expect(screen.getByLabelText("Fault 1 starts at minute")).toHaveValue("10.33");

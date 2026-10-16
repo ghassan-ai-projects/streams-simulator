@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import type { EditorStore } from "../../app/editorStore";
+import type { EditorSession } from "../../app/routeModules";
+import type { Scheduler } from "../../app/clock";
 import type { PanelStore } from "../../app/panelStore";
 import type { PlantMaker } from "../../app/plantMaker";
 import type { NavigationStore } from "../../app/navigationStore";
-import type { PlantStore } from "../../app/plantStore";
+import type { PlantSession } from "../../app/routeModules";
 import type { LaunchStore } from "../../app/launchStore";
-import type { ReviewStore } from "../../app/reviewStore";
+import type { ReviewSession } from "../../app/routeModules";
 import type { SessionStore } from "../../app/sessionStore";
 import type { ThemeStore } from "../../app/themeStore";
 import type { WorkspaceStore } from "../../app/workspaceStore";
@@ -32,10 +33,11 @@ export interface Stores {
   readonly session: SessionStore;
   readonly workspace: WorkspaceStore;
   readonly navigation: NavigationStore;
-  readonly plants: PlantStore;
-  readonly review: ReviewStore;
+  readonly plants: PlantSession;
+  readonly review: ReviewSession;
   readonly launch: LaunchStore;
-  readonly editor: EditorStore;
+  readonly scheduler: Scheduler;
+  readonly editor: EditorSession;
   readonly panels: PanelStore;
   readonly maker: PlantMaker;
   readonly showDetails: () => void;
@@ -70,6 +72,7 @@ function Screen({ stores, route }: { readonly stores: Stores; readonly route: Ro
         workspace={stores.workspace}
         navigation={stores.navigation}
         launch={stores.launch}
+        scheduler={stores.scheduler}
         domain={route.domain}
         hall={route.hall}
         startLaunching={route.launch === true}

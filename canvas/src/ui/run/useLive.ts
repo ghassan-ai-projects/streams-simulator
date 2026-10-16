@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from "react";
-import type { PlantState } from "../../app/plantStore";
-import type { ReviewState, ReviewStore } from "../../app/reviewStore";
+import type { PlantState } from "../../app/routeModules";
+import type { ReviewState, ReviewSession } from "../../app/routeModules";
 import { channelOf } from "../../model/plant";
 import type { NodeLive } from "../graph";
 import type { NodeStatus, PlantView, ReadoutBody } from "../../model/graph";
@@ -24,7 +24,7 @@ function hallLive(worst: { readonly status: NodeStatus; readonly count: number }
   };
 }
 
-export function useLive(review: ReviewStore, state: ReviewState, plant: ReadyPlant | null, view: PlantView | null) {
+export function useLive(review: ReviewSession, state: ReviewState, plant: ReadyPlant | null, view: PlantView | null) {
   const report = state.report.phase === "ready" ? state.report.value : null;
   const faulted = useMemo(() => faultedAt(report, state.positionNs), [report, state.positionNs]);
   const effectors = useMemo(() => effectorAt(report, state.positionNs), [report, state.positionNs]);

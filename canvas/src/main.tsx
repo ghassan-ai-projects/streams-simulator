@@ -2,13 +2,12 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { hashLocation, localPreferences, mediaSystemTheme } from "./adapters/browser";
 import { bridgeClient, browserTransport } from "./adapters/bridgeClient";
-import { EditorStore } from "./app/editorStore";
+import { browserClock } from "./adapters/clock";
 import { NavigationStore } from "./app/navigationStore";
 import { PanelStore } from "./app/panelStore";
 import { PlantMaker } from "./app/plantMaker";
-import { PlantStore } from "./app/plantStore";
 import { LaunchStore } from "./app/launchStore";
-import { ReviewStore } from "./app/reviewStore";
+import { createEditorModule, createPlantModule, createReviewModule } from "./app/routeModules";
 import { SessionStore } from "./app/sessionStore";
 import { ThemeStore } from "./app/themeStore";
 import { WorkspaceStore } from "./app/workspaceStore";
@@ -24,10 +23,12 @@ if (root) {
     mediaSystemTheme(window.matchMedia("(prefers-color-scheme: dark)")),
   );
   const bridge = bridgeClient(browserTransport());
+  const time = browserClock();
   const panels = new PanelStore(localPreferences(window.localStorage));
-  const editor = new EditorStore(bridge);
   const navigation = new NavigationStore(hashLocation(window));
-  navigation.guardUnsaved(() => editor.unsavedChanges());
+  const plants = createPlantModule(bridge).createSession();
+  const editor = createEditorModule(bridge).createSession();
+  const review = createReviewModule(bridge, time, time).createSession();
   createRoot(root).render(
     <StrictMode>
       <App
@@ -36,9 +37,10 @@ if (root) {
           session: new SessionStore(bridge),
           workspace: new WorkspaceStore(bridge),
           navigation,
-          plants: new PlantStore(bridge),
-          review: new ReviewStore(bridge),
-          launch: new LaunchStore(bridge),
+          plants,
+          review,
+          launch: new LaunchStore(bridge, time, time),
+          scheduler: time,
           editor,
           panels,
           maker: new PlantMaker(bridge),

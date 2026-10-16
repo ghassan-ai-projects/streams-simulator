@@ -1,15 +1,15 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { LaunchStore } from "../../app/launchStore";
 import { FakeBridge } from "../../test/fakeBridge";
 import { navigation } from "../../test/homeHarness";
+import { launchHarness } from "../../test/launchFixture";
 import { reviewState } from "../../test/reviewFixture";
 import { Header } from "./RunHeader";
 
 describe("run header", () => {
   it("sets up another run from this run's plan and names the run it is prefilled from", () => {
     const nav = navigation();
-    const launch = new LaunchStore(new FakeBridge());
+    const { launch } = launchHarness(new FakeBridge());
     render(
       <Header
         state={reviewState({})}

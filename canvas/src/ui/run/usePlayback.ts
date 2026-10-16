@@ -1,10 +1,10 @@
 import { useEffect } from "react";
-import type { ReviewStore } from "../../app/reviewStore";
+import type { ReviewSession } from "../../app/routeModules";
 import { ownsSpace, plainKey } from "../keys";
 
 const frameMs = 100;
 
-export function usePlayback(review: ReviewStore, playing: boolean) {
+export function usePlayback(review: ReviewSession, playing: boolean) {
   useEffect(() => {
     if (!playing) return undefined;
     let last = performance.now();

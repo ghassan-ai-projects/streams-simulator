@@ -16,7 +16,7 @@ class LeaveSlot extends Observable<LeaveAttempt | null> {
 
 export class NavigationStore extends Observable<Route> {
   readonly leaving = new LeaveSlot(null);
-  private unsaved: () => boolean = () => false;
+  private unsaved: { readonly id: symbol; readonly check: () => boolean } | null = null;
 
   constructor(private readonly location: Location) {
     super(parseRoute(location.read()));
@@ -25,8 +25,12 @@ export class NavigationStore extends Observable<Route> {
     });
   }
 
-  guardUnsaved(check: () => boolean): void {
-    this.unsaved = check;
+  guardUnsaved(check: () => boolean): () => void {
+    const guard = { id: Symbol("unsaved-guard"), check };
+    this.unsaved = guard;
+    return () => {
+      if (this.unsaved?.id === guard.id) this.unsaved = null;
+    };
   }
 
   go(route: Route): void {
@@ -68,6 +72,6 @@ export class NavigationStore extends Observable<Route> {
 
   private blocked(route: Route): boolean {
     const current = this.snapshot();
-    return current.screen === "edit" && formatRoute(current) !== formatRoute(route) && this.unsaved();
+    return current.screen === "edit" && formatRoute(current) !== formatRoute(route) && (this.unsaved?.check() ?? false);
   }
 }

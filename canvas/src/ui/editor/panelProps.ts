@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import type { Draft, EditorStore } from "../../app/editorStore";
+import type { Draft, EditorSession } from "../../app/routeModules";
 import type { Plant } from "../../model/plant";
 
 type FocusTarget = "build" | "instance" | "name";
@@ -21,7 +21,7 @@ export class FocusRequest {
 export interface PanelProps {
   readonly draft: Draft;
   readonly plant: Plant;
-  readonly editor: EditorStore;
+  readonly editor: EditorSession;
   readonly request: FocusRequest;
 }
 

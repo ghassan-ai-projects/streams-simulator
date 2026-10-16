@@ -3,6 +3,7 @@ import type { Outcome } from "../model/bridge";
 import { success } from "../model/bridge";
 import { deferred, settle } from "../test/deferred";
 import { FakeBridge } from "../test/fakeBridge";
+import { fakeClock } from "../test/fakeClock";
 import { journal, report } from "../test/runFixture";
 import { ReviewStore } from "./reviewStore";
 
@@ -10,15 +11,9 @@ function setup() {
   const bridge = new FakeBridge();
   bridge.actions.set("run.report", success(report));
   bridge.actions.set("run.verify", success({ matches: true }));
-  const flushes: (() => void)[] = [];
-  const store = new ReviewStore(bridge, (flush) => flushes.push(flush));
-  return { bridge, store, flushes };
-}
-
-function flushAll(flushes: readonly (() => void)[]): void {
-  flushes.forEach((flush) => {
-    flush();
-  });
+  const timers = fakeClock();
+  const store = new ReviewStore(bridge, timers, timers);
+  return { bridge, store, timers };
 }
 
 describe("review lifecycle", () => {
@@ -33,34 +28,32 @@ describe("review lifecycle", () => {
   });
 
   it("ignores a flushed update whose session has already been superseded", async () => {
-    const { bridge, store, flushes } = setup();
+    const { bridge, store, timers } = setup();
     store.open("w-1");
     bridge.streamFollow(0, [{ kind: "run.opened", adapter: "wire" }]);
     store.open("w-2");
-    flushes.forEach((flush) => {
-      flush();
-    });
+    timers.advance(250);
     await Promise.resolve();
     expect(store.snapshot().playback.adapter).toBe("");
   });
 
   it("ignores a retained callback of a superseded run after another run opened", async () => {
-    const { bridge, store, flushes } = setup();
+    const { bridge, store, timers } = setup();
     store.open("w-1");
     store.open("w-2");
     bridge.streamFollow(0, journal);
-    flushAll(flushes);
+    timers.advance(250);
     await Promise.resolve();
     expect(store.snapshot()).toMatchObject({ worldId: "w-2", playback: { records: 0 } });
   });
 
   it("ignores a retained callback of an earlier visit to the same run", async () => {
-    const { bridge, store, flushes } = setup();
+    const { bridge, store, timers } = setup();
     store.open("w-1");
     store.open("w-2");
     store.open("w-1");
     bridge.streamFollow(0, journal);
-    flushAll(flushes);
+    timers.advance(250);
     await Promise.resolve();
     expect(store.snapshot()).toMatchObject({ worldId: "w-1", playback: { records: 0 } });
   });

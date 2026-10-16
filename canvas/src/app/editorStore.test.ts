@@ -193,4 +193,26 @@ describe("editor store", () => {
     await third;
     expect(store.snapshot()).toMatchObject({ phase: "ready", path, doc: { title: "Lab" } });
   });
+
+  it("rejects a late open after close and accepts the reopened document", async () => {
+    const fake = bridge();
+    const reads: Deferred<Outcome<FileContent>>[] = [];
+    const read = fake.readFile.bind(fake);
+    fake.readFile = (requested: string) => {
+      if (requested !== path) return read(requested);
+      const gate = deferred<Outcome<FileContent>>();
+      reads.push(gate);
+      return gate.promise;
+    };
+    const store = new EditorStore(fake);
+    const first = store.open(path);
+    store.close();
+    const reopened = store.open(path);
+    reads[0]?.resolve(success({ path, content: JSON.stringify({ ...doc, title: "late" }), etag: "c1" }));
+    await first;
+    expect(store.snapshot()).toMatchObject({ phase: "loading", path });
+    reads[1]?.resolve(success({ path, content: JSON.stringify(doc), etag: "c1" }));
+    await reopened;
+    expect(store.snapshot()).toMatchObject({ phase: "ready", doc: { title: "Lab" } });
+  });
 });
