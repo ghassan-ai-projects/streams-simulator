@@ -20,9 +20,18 @@ export function useCutBottom<T extends HTMLElement>(
     node.addEventListener("scroll", measure, { passive: true });
     const watcher = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
     watcher?.observe(node);
+    const changes = new MutationObserver(measure);
+    changes.observe(node, {
+      subtree: true,
+      childList: true,
+      characterData: true,
+      attributes: true,
+      attributeFilter: ["open"],
+    });
     return () => {
       node.removeEventListener("scroll", measure);
       watcher?.disconnect();
+      changes.disconnect();
     };
   }, [measure]);
   useEffect(measure, [measure, content]);
