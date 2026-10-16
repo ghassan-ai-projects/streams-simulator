@@ -197,6 +197,9 @@ See [.agents/context/go-style.md](.agents/context/go-style.md) for the repo-spec
 
 - The canvas lives in `canvas/` with its own toolchain (Node 24, npm, exact pinned versions); read `canvas/README.md` and
   `governance/CANVAS_UI_ACCEPTANCE.md` first. Gates: `make canvas-check` (part of `make phase-gate`).
+- For Canvas architecture or refactoring work, also read the
+  [accepted UI architecture](docs/simulation-canvas/ui-architecture-20261016/README.md); it is the target structure,
+  dependency contract, migration order and enforcement plan.
 - Layers `model` ← `app` ← `adapters`; `ui` uses `app` and `model` only and never touches transport (dependency-cruiser).
 - The canvas computes nothing the binary owns: validation, composition, simulation, truth, scoring and verification come
   from `streamsim` through the bridge. A missing capability goes into the simulator first.
