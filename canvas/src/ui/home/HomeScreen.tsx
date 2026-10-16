@@ -109,7 +109,7 @@ function HomeBody({
   if (state.phase === "failed") {
     return (
       <p className={styles.failure} role="alert">
-        The workspace could not be listed: {state.failure.message} ({state.failure.code})
+        The workspace could not be listed: {state.failure.diagnostic.message} ({state.failure.diagnostic.displayCode})
       </p>
     );
   }

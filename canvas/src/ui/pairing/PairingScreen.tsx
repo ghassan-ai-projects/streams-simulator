@@ -1,7 +1,8 @@
 import { KeyRound, Lock, XCircle } from "lucide-react";
 import type { SubmitEvent } from "react";
 import type { SessionState, SessionStore } from "../../app/sessionStore";
-import { PAIRING_CODE_LENGTH, pairingBlocked, pairingMessage } from "../../model/bridge";
+import { pairingBlocked } from "../../app/sessionStore";
+import { PAIRING_CODE_LENGTH } from "../../model/bridge";
 import { useScreen } from "../useScreen";
 import { useStore } from "../useStore";
 import styles from "./PairingScreen.module.css";
@@ -22,7 +23,7 @@ function Status({ state }: { readonly state: Unpaired }) {
   return (
     <span className={styles.error} role="alert">
       <Icon size={14} aria-hidden="true" />
-      {pairingMessage(state.failure)}
+      {`${state.failure.diagnostic.message} (${state.failure.diagnostic.displayCode})`}
     </span>
   );
 }

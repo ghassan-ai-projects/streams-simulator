@@ -1,7 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { hashLocation, localPreferences, mediaSystemTheme } from "./adapters/browser";
-import { bridgeClient, browserTransport } from "./adapters/bridgeClient";
+import { bridgeAdapter, browserTransport } from "./adapters/bridge";
 import { browserClock } from "./adapters/clock";
 import { NavigationStore } from "./app/navigationStore";
 import { PanelStore } from "./app/panelStore";
@@ -22,28 +22,28 @@ if (root) {
     localPreferences(window.localStorage),
     mediaSystemTheme(window.matchMedia("(prefers-color-scheme: dark)")),
   );
-  const bridge = bridgeClient(browserTransport());
+  const adapters = bridgeAdapter(browserTransport());
   const time = browserClock();
   const panels = new PanelStore(localPreferences(window.localStorage));
   const navigation = new NavigationStore(hashLocation(window));
-  const plants = createPlantModule(bridge).createSession();
-  const editor = createEditorModule(bridge).createSession();
-  const review = createReviewModule(bridge, time, time).createSession();
+  const plants = createPlantModule(adapters.plant).createSession();
+  const editor = createEditorModule(adapters.editor).createSession();
+  const review = createReviewModule(adapters.review, time, time).createSession();
   createRoot(root).render(
     <StrictMode>
       <App
         stores={{
           themes,
-          session: new SessionStore(bridge),
-          workspace: new WorkspaceStore(bridge),
+          session: new SessionStore(adapters.session),
+          workspace: new WorkspaceStore(adapters.workspace),
           navigation,
           plants,
           review,
-          launch: new LaunchStore(bridge, time, time),
+          launch: new LaunchStore(adapters.launch, time, time),
           scheduler: time,
           editor,
           panels,
-          maker: new PlantMaker(bridge),
+          maker: new PlantMaker(adapters.plant),
           showDetails: () => {
             panels.show("right");
           },

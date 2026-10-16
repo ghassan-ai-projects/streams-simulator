@@ -5,7 +5,6 @@ import type { NavigationStore } from "../../app/navigationStore";
 import type { PlantState, PlantSession } from "../../app/routeModules";
 import type { ReviewState, ReviewSession } from "../../app/routeModules";
 import type { WorkspaceState, WorkspaceStore } from "../../app/workspaceStore";
-import { isMissing } from "../../model/bridge";
 import type { RunEntry } from "../../model/bridge";
 import { stateUnit } from "../../model/plant";
 import { noteLinesByEntity } from "../../model/noteLines";
@@ -220,7 +219,7 @@ function Centre({ review, state, plant, hall, onHall, worldId, navigation }: Cen
     <section className={styles.center} aria-label={`Run ${worldId}`}>
       <Banners state={state} />
       <Timeline review={review} state={state} />
-      {state.report.phase === "failed" && isMissing(state.report.failure) ? (
+      {state.report.phase === "failed" && state.report.failure.kind === "missing" ? (
         <MissingRun worldId={worldId} navigation={navigation} />
       ) : (
         <Graph review={review} state={state} plant={plant} hall={hall} onHall={onHall} />

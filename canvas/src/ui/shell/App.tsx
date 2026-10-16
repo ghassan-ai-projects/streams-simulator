@@ -47,7 +47,7 @@ function useSession({ session, workspace }: Stores) {
   const state = useStore(session);
   const listing = useStore(workspace);
   useEffect(() => {
-    if (listing.phase === "failed" && listing.failure.code === "unpaired") void session.check();
+    if (listing.phase === "failed" && listing.failure.kind === "unpaired") void session.check();
   }, [listing, session]);
   useEffect(() => {
     void session.check();

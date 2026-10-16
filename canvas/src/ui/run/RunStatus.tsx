@@ -110,7 +110,7 @@ interface Warning {
 
 function verifyWarning(state: ReviewState): Warning | null {
   if (state.verified.phase !== "failed") return null;
-  return { text: replayLine(state.verified), details: state.verified.failure.message };
+  return { text: replayLine(state.verified), details: state.verified.failure.diagnostic.message };
 }
 
 function countWarning(state: ReviewState, report: Report): Warning | null {

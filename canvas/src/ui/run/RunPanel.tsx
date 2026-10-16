@@ -107,6 +107,9 @@ function ReportBody({
       </p>
     );
   return (
-    <p className={styles.failure} role="alert">{`${state.report.failure.message} (${state.report.failure.code})`}</p>
+    <p
+      className={styles.failure}
+      role="alert"
+    >{`${state.report.failure.diagnostic.message} (${state.report.failure.diagnostic.displayCode})`}</p>
   );
 }

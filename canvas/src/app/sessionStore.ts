@@ -1,26 +1,29 @@
-import type { BridgeFailure } from "../model/bridge";
-import { normalisePairingCode, pairingBlocked, pairingCodeComplete } from "../model/bridge";
+import { normalisePairingCode, pairingCodeComplete } from "../model/bridge";
 import { Observable } from "./observable";
-import type { Bridge } from "./ports";
+import type { SessionFailure, SessionGateway } from "./ports/session";
 
 export type SessionState =
   | { readonly phase: "checking" }
-  | { readonly phase: "unreachable"; readonly failure: BridgeFailure }
+  | { readonly phase: "unreachable"; readonly failure: SessionFailure }
   | {
       readonly phase: "unpaired";
       readonly code: string;
       readonly busy: boolean;
-      readonly failure: BridgeFailure | null;
+      readonly failure: SessionFailure | null;
     }
   | { readonly phase: "paired" };
 
+export function pairingBlocked(failure: SessionFailure | null): boolean {
+  return failure?.kind === "pairing-closed";
+}
+
 export class SessionStore extends Observable<SessionState> {
-  constructor(private readonly bridge: Bridge) {
+  constructor(private readonly gateway: SessionGateway) {
     super({ phase: "checking" });
   }
 
   async check(): Promise<void> {
-    const outcome = await this.bridge.session();
+    const outcome = await this.gateway.check();
     if (!outcome.ok) {
       this.set({ phase: "unreachable", failure: outcome.failure });
       return;
@@ -53,7 +56,7 @@ export class SessionStore extends Observable<SessionState> {
       return;
     }
     this.set({ ...state, busy: true });
-    const outcome = await this.bridge.pair(state.code);
+    const outcome = await this.gateway.pair(state.code);
     if (outcome.ok) {
       this.set({ phase: "paired" });
       return;

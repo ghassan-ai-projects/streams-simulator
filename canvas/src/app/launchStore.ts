@@ -1,9 +1,9 @@
-import type { BridgeFailure } from "../model/bridge";
 import type { CallOutcome, LaunchPlan, LaunchStep } from "../model/launch";
 import { failureWords, launchSteps, outcomeOf, paceOf } from "../model/launch";
 import { Observable } from "./observable";
 import type { Clock, Scheduler } from "./clock";
-import type { Bridge } from "./ports";
+import type { LaunchFailure, LaunchGateway } from "./ports/launch";
+import type { Outcome } from "./ports/shared";
 
 export interface LaunchOrigin {
   readonly domain: string;
@@ -38,7 +38,7 @@ export type LaunchState =
   | {
       readonly phase: "failed";
       readonly origin: LaunchOrigin;
-      readonly failure: BridgeFailure;
+      readonly failure: LaunchFailure;
       readonly words: string;
       readonly kept: string | null;
     };
@@ -46,22 +46,15 @@ export type LaunchState =
 const nowhere: LaunchOrigin = { domain: "", title: "", path: "" };
 
 class Stopped extends Error {
-  constructor(readonly failure: BridgeFailure) {
-    super(failure.message);
+  constructor(readonly failure: LaunchFailure) {
+    super(failure.diagnostic.message);
   }
 }
 
-const broken: BridgeFailure = {
-  status: 0,
-  code: "launch_failed",
-  message: "The run stopped unexpectedly.",
-  issues: [],
+const broken: LaunchFailure = {
+  kind: "unavailable",
+  diagnostic: { displayCode: "launch_failed", message: "The run stopped unexpectedly." },
 };
-
-function worldOf(value: unknown): string {
-  const record = typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
-  return typeof record.world_id === "string" ? record.world_id : "";
-}
 
 export interface Proposal {
   readonly plan: LaunchPlan;
@@ -96,7 +89,7 @@ export class LaunchStore extends Observable<LaunchState> {
   }
 
   constructor(
-    private readonly bridge: Bridge,
+    private readonly gateway: LaunchGateway,
     private readonly clock: Clock,
     private readonly scheduler: Scheduler,
   ) {
@@ -117,10 +110,12 @@ export class LaunchStore extends Observable<LaunchState> {
     this.progress(null, 0);
     let worldId = "";
     try {
-      worldId = worldOf(await this.call("world.create", { domain, seed: plan.seed, explore: plan.explore }));
+      worldId = this.require(
+        await this.gateway.createWorld({ domain, seed: plan.seed, explore: plan.explore }),
+      ).worldId;
       this.progress(worldId, 0);
       await this.steps(worldId, plan);
-      await this.call("run.end", { world_id: worldId });
+      this.require(await this.gateway.endRun(worldId));
       const { stop: early, reachedS, outcomes: calls } = this;
       this.set({ phase: "done", origin, worldId, early, plan, reachedS, calls });
     } catch (error) {
@@ -197,34 +192,30 @@ export class LaunchStore extends Observable<LaunchState> {
 
   private async step(worldId: string, step: LaunchStep): Promise<void> {
     this.current = step;
-    if (step.kind === "advance") await this.call("clock.advance", { world_id: worldId, by_ns: step.byNs });
-    else if (step.kind === "inject")
-      await this.call("fault.inject", { world_id: worldId, entity_id: step.entity, fault: step.fault });
+    if (step.kind === "advance") this.require(await this.gateway.advance(worldId, step.byNs));
+    else if (step.kind === "inject") this.require(await this.gateway.inject(worldId, step.entity, step.fault));
     else await this.invoke(worldId, step);
     this.current = null;
   }
 
   private async invoke(worldId: string, step: Extract<LaunchStep, { kind: "invoke" }>): Promise<void> {
     const { entity, effector, args } = step;
-    const acknowledged = await this.call("effector.invoke", {
-      world_id: worldId,
-      entity_id: entity,
-      effector,
-      args,
-    });
+    const acknowledged = this.require(await this.gateway.invoke(worldId, entity, effector, args));
     this.outcomes = [...this.outcomes, outcomeOf(step, acknowledged, this.clock.nowMs())];
     this.progress(worldId, this.reachedS);
   }
 
-  private async call(name: string, args: Readonly<Record<string, unknown>>): Promise<unknown> {
-    const outcome = await this.bridge.action(name, args);
+  private require<T>(outcome: Outcome<T, LaunchFailure>): T {
     if (!outcome.ok) throw new Stopped(outcome.failure);
     return outcome.value;
   }
 
   private async abandon(worldId: string, error: unknown): Promise<void> {
-    if (worldId !== "") await this.bridge.action("world.destroy", { world_id: worldId });
-    const failure = error instanceof Stopped ? error.failure : { ...broken, message: String(error) };
+    if (worldId !== "") await this.gateway.destroyWorld(worldId);
+    const failure =
+      error instanceof Stopped
+        ? error.failure
+        : { ...broken, diagnostic: { ...broken.diagnostic, message: String(error) } };
     const words = failureWords(this.current);
     this.current = null;
     this.set({ phase: "failed", origin: this.origin, failure, words, kept: worldId === "" ? null : worldId });

@@ -1,7 +1,7 @@
-import type { BridgeFailure } from "../../model/bridge";
+import type { SessionFailure } from "../../app/ports/session";
 import styles from "./Unreachable.module.css";
 
-export function Unreachable({ failure }: { readonly failure: BridgeFailure }) {
+export function Unreachable({ failure }: { readonly failure: SessionFailure }) {
   return (
     <div className={styles.wrap}>
       <section className={styles.card} aria-labelledby="unreachable-title">
@@ -9,8 +9,8 @@ export function Unreachable({ failure }: { readonly failure: BridgeFailure }) {
           The bridge is not reachable
         </h1>
         <p className={styles.body}>
-          {failure.message} The canvas reads plants, compositions and runs from a workspace folder through the local
-          bridge. Start it from a terminal and open the address it prints.
+          {failure.diagnostic.message} The canvas reads plants, compositions and runs from a workspace folder through
+          the local bridge. Start it from a terminal and open the address it prints.
         </p>
         <code className={styles.command}>
           streamsim canvas --workspace &lt;folder&gt; --ui-dir &lt;built canvas&gt;

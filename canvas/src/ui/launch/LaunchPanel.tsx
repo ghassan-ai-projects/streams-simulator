@@ -109,7 +109,7 @@ function Failure({
       </p>
       <details className={styles.detail}>
         <summary>Binary message</summary>
-        <p>{state.failure.message}</p>
+        <p>{state.failure.diagnostic.message}</p>
       </details>
       <button
         type="button"
@@ -232,7 +232,15 @@ function useDraft(launch: LaunchStore, plant: Plant, selected: string | null) {
   return { proposed, draft, setDraft };
 }
 
-export function LaunchPanel({ launch, scheduler, plant, path, selected = null, onClose, onFinished }: LaunchPanelProps) {
+export function LaunchPanel({
+  launch,
+  scheduler,
+  plant,
+  path,
+  selected = null,
+  onClose,
+  onFinished,
+}: LaunchPanelProps) {
   const { state, watched } = useLaunch(launch, scheduler, plant.id, onFinished);
   const { proposed, draft, setDraft } = useDraft(launch, plant, selected);
   return (

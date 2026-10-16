@@ -200,11 +200,14 @@ export interface CallOutcome {
   readonly atMs: number;
 }
 
-export function outcomeOf(call: PlannedCall, value: unknown, atMs: number): CallOutcome {
-  const ack = typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
-  const accepted = ack.accepted === true;
-  const eta = typeof ack.effect_eta_ns === "number" ? ack.effect_eta_ns : null;
-  const reason = typeof ack.reason === "string" ? ack.reason : "";
+export interface Acknowledgement {
+  readonly accepted: boolean;
+  readonly reason: string;
+  readonly effectEtaNs: number | null;
+}
+
+export function outcomeOf(call: PlannedCall, ack: Acknowledgement, atMs: number): CallOutcome {
+  const { accepted, effectEtaNs: eta, reason } = ack;
   const { entity, effector, atS } = call;
   return {
     entity,

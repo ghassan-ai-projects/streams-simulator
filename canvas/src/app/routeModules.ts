@@ -1,4 +1,6 @@
-import type { Bridge } from "./ports";
+import type { EditorGateway } from "./ports/editor";
+import type { PlantGateway } from "./ports/plant";
+import type { ReviewGateway } from "./ports/review";
 import { EditorStore } from "./editorStore";
 import type { EditorState } from "./editorStore";
 import { PlantStore } from "./plantStore";
@@ -12,12 +14,13 @@ import type { Composition, NewEquipment } from "../model/composition";
 import type { PlaybackIndex } from "../model/playback";
 import type { Badge } from "../model/report";
 import type { Presets } from "../model/library";
+import type { DomainDocument } from "./ports/shared";
 
 export interface PlantSession {
   readonly snapshot: () => PlantState;
   readonly subscribe: (listener: () => void) => () => void;
   load(path: string, workspace: Workspace): Promise<void>;
-  show(key: string, domain: unknown): Promise<void>;
+  show(key: string, domain: DomainDocument): Promise<void>;
   select(id: string | null): void;
   close(): void;
 }
@@ -74,16 +77,16 @@ export interface ReviewModule {
   createSession(): ReviewSession;
 }
 
-export function createPlantModule(bridge: Bridge): PlantModule {
-  return { createSession: () => new PlantStore(bridge, createOperationIdentity()) };
+export function createPlantModule(gateway: PlantGateway): PlantModule {
+  return { createSession: () => new PlantStore(gateway, createOperationIdentity()) };
 }
 
-export function createEditorModule(bridge: Bridge): EditorModule {
-  return { createSession: () => new EditorStore(bridge, createOperationIdentity()) };
+export function createEditorModule(gateway: EditorGateway): EditorModule {
+  return { createSession: () => new EditorStore(gateway, createOperationIdentity()) };
 }
 
-export function createReviewModule(bridge: Bridge, clock: Clock, scheduler: Scheduler): ReviewModule {
+export function createReviewModule(gateway: ReviewGateway, clock: Clock, scheduler: Scheduler): ReviewModule {
   return {
-    createSession: () => new ReviewStore(bridge, clock, scheduler, createOperationIdentity()),
+    createSession: () => new ReviewStore(gateway, clock, scheduler, createOperationIdentity()),
   };
 }

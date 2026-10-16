@@ -129,42 +129,6 @@ export function noTargetReason(
   return `No instance takes ${words(type)}: ${from.id}'s ${words(output)} is ${words(type)}. ${inputs}`;
 }
 
-const classCategories: readonly (readonly [string, Category])[] = [
-  ["electrical/", "elec"],
-  ["process/", "prod"],
-  ["environment/", "env"],
-];
-
-const tagCategories: readonly (readonly [string, Category])[] = [
-  ["compressed-air", "air"],
-  ["hvac", "cool"],
-  ["fluids", "cool"],
-  ["heat", "cool"],
-  ["drives", "prod"],
-  ["material-handling", "prod"],
-];
-
-function categoryOf(componentClass: string, tags: readonly string[]): Category {
-  const byClass = classCategories.find(([prefix]) => componentClass.startsWith(prefix));
-  if (byClass) return byClass[1];
-  return tagCategories.find(([tag]) => tags.includes(tag))?.[1] ?? "env";
-}
-
-export function parseComponent(shown: unknown): ComponentSpec {
-  const entry = field(shown, "entry");
-  const document = field(shown, "document");
-  const tags = field(entry, "tags");
-  const tagList = Array.isArray(tags) ? tags.filter((tag): tag is string => typeof tag === "string") : [];
-  const title = optionalText(field(entry, "title")) ?? optionalText(field(document, "title"));
-  const description = optionalText(field(document, "description"));
-  return {
-    ports: parsePorts(document),
-    category: categoryOf(text(field(entry, "class")), tagList),
-    ...(title === undefined ? {} : { title }),
-    ...(description === undefined ? {} : { description }),
-  };
-}
-
 type Connection = "connected" | "open" | "unknown";
 
 export interface Pin {
@@ -178,32 +142,6 @@ export interface Pin {
 export interface Pins {
   readonly ins: readonly Pin[];
   readonly outs: readonly Pin[];
-}
-
-function field(value: unknown, key: string): unknown {
-  return typeof value === "object" && value !== null ? (value as Record<string, unknown>)[key] : undefined;
-}
-
-function text(value: unknown): string {
-  return typeof value === "string" ? value : "";
-}
-
-function optionalText(value: unknown): string | undefined {
-  const valueText = text(value);
-  return valueText.trim() === "" ? undefined : valueText;
-}
-
-export function parsePorts(document: unknown): readonly PortSpec[] {
-  const ports = field(document, "ports");
-  return (Array.isArray(ports) ? ports : []).map((port: unknown) => {
-    const channel = optionalText(field(port, "state"));
-    return {
-      name: text(field(port, "name")),
-      type: text(field(port, "type")),
-      direction: field(port, "direction") === "provides" ? ("out" as const) : ("in" as const),
-      ...(channel === undefined ? {} : { channel }),
-    };
-  });
 }
 
 interface Used {

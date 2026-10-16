@@ -136,7 +136,7 @@ export function EditorScreen({ editor, navigation, composition }: EditorScreenPr
   return (
     <p className={failed ? plantStyles.failure : plantStyles.loading} role={failed ? "alert" : "status"}>
       {state.phase === "failed" && failed
-        ? `The composition could not be opened: ${state.failure.message} (${state.failure.code})`
+        ? `The composition could not be opened: ${state.failure.diagnostic.message} (${state.failure.diagnostic.displayCode})`
         : "Opening the composition…"}
     </p>
   );

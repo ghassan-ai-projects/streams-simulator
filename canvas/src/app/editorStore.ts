@@ -1,16 +1,15 @@
-import type { BridgeFailure } from "../model/bridge";
 import type { Composition, NewEquipment } from "../model/composition";
 import { componentOf, domainOf, equipmentOf, parseComposition, serialise } from "../model/composition";
 import type { IssueTargets } from "../model/compositionEdits";
 import { addEquipment, issueTargets } from "../model/compositionEdits";
 import type { LibraryEntry, Presets } from "../model/library";
-import { parseLibrary, parsePresets } from "../model/library";
 import type { ComponentSpec } from "../model/ports";
 import { componentSpecs } from "./componentSpecs";
 import { Observable } from "./observable";
 import { createOperationIdentity } from "./shared/operationIdentity";
 import type { OperationIdentity, OperationId } from "./shared/operationIdentity";
-import type { Bridge } from "./ports";
+import type { EditorFailure, EditorGateway } from "./ports/editor";
+import type { ComposeSummary } from "./ports/shared";
 
 type Outcome =
   | { readonly kind: "composed"; readonly summary: string }
@@ -32,26 +31,22 @@ export interface Draft {
   readonly saving: boolean;
   readonly issues: IssueTargets | null;
   readonly outcome: Outcome;
-  readonly failure: BridgeFailure | null;
+  readonly failure: EditorFailure | null;
 }
 
 export type EditorState =
   | { readonly phase: "idle" }
   | { readonly phase: "loading"; readonly path: string }
-  | { readonly phase: "failed"; readonly path: string; readonly failure: BridgeFailure }
+  | { readonly phase: "failed"; readonly path: string; readonly failure: EditorFailure }
   | Draft;
 
-const unreadable: BridgeFailure = {
-  status: 0,
-  code: "composition_unreadable",
-  message: "The file is not a JSON composition.",
-  issues: [],
+const unreadable: EditorFailure = {
+  kind: "unreadable",
+  diagnostic: { displayCode: "composition_unreadable", message: "The file is not a JSON composition." },
 };
 
-function summaryOf(result: unknown): string {
-  const body = typeof result === "object" && result !== null ? (result as Record<string, unknown>) : {};
-  const count = (key: string) => (typeof body[key] === "number" ? String(body[key]) : "0");
-  return `Composed ${count("channels")} channels, ${count("faults")} faults, ${count("effectors")} effectors.`;
+function summaryOf(result: ComposeSummary): string {
+  return `Composed ${String(result.channels)} channels, ${String(result.faults)} faults, ${String(result.effectors)} effectors.`;
 }
 
 const historyLimit = 100;
@@ -77,7 +72,7 @@ export class EditorStore extends Observable<EditorState> {
   private active: OperationId | null = null;
 
   constructor(
-    private readonly bridge: Bridge,
+    private readonly gateway: EditorGateway,
     private readonly operations: OperationIdentity = createOperationIdentity(),
   ) {
     super({ phase: "idle" });
@@ -103,7 +98,7 @@ export class EditorStore extends Observable<EditorState> {
   }
 
   private async load(request: OperationId, path: string, held: string | null): Promise<void> {
-    const file = await this.bridge.readFile(path);
+    const file = await this.gateway.readFile(path);
     if (file.ok && file.value.etag === held) return;
     const doc = file.ok ? parseComposition(file.value.content) : null;
     if (!this.current(request, path)) return;
@@ -112,14 +107,14 @@ export class EditorStore extends Observable<EditorState> {
       return;
     }
     const [listed, specs, domainEtag] = await Promise.all([
-      this.bridge.action("component.list", {}),
+      this.gateway.library(),
       componentSpecs(
-        this.bridge,
+        this.gateway,
         equipmentOf(doc).map((entry) => componentOf(entry.use)),
       ),
       this.versionOf(domainOf(doc)),
     ]);
-    const library = parseLibrary(listed.ok ? listed.value : null);
+    const library = listed.ok ? listed.value : [];
     if (this.current(request, path))
       this.set({ ...this.fresh(path, file.value.etag, doc), domainEtag, library, specs });
   }
@@ -136,7 +131,7 @@ export class EditorStore extends Observable<EditorState> {
   }
 
   private async versionOf(path: string): Promise<string> {
-    const file = await this.bridge.readFile(path);
+    const file = await this.gateway.readFile(path);
     return file.ok ? file.value.etag : "";
   }
 
@@ -198,14 +193,14 @@ export class EditorStore extends Observable<EditorState> {
     const draft = this.draft();
     const component = componentOf(entry.use);
     if (draft === null || draft.specs.has(component)) return;
-    const specs = await componentSpecs(this.bridge, [component]);
+    const specs = await componentSpecs(this.gateway, [component]);
     if (operation === null || !this.current(operation, draft.path)) return;
     this.update((current) => ({ ...current, specs: new Map([...current.specs, ...specs]) }));
   }
 
   async presets(use: string): Promise<Presets> {
-    const shown = await this.bridge.action("component.show", { ref: componentOf(use) });
-    return parsePresets(shown.ok ? shown.value : null);
+    const shown = await this.gateway.presets(componentOf(use));
+    return shown.ok ? shown.value : { options: [], preferred: "", description: "" };
   }
 
   async save(): Promise<void> {
@@ -214,7 +209,7 @@ export class EditorStore extends Observable<EditorState> {
     const operation = this.active;
     if (operation === null) return;
     this.set({ ...draft, saving: true, failure: null });
-    const written = await this.bridge.writeFile(draft.path, serialise(draft.doc), draft.etag);
+    const written = await this.gateway.writeFile(draft.path, serialise(draft.doc), draft.etag);
     if (!this.current(operation, draft.path)) return;
     if (!written.ok) {
       this.update((current) => ({ ...current, saving: false, failure: written.failure }));
@@ -228,11 +223,7 @@ export class EditorStore extends Observable<EditorState> {
     const draft = this.draft();
     if (draft === null || !this.current(operation, path)) return;
     const out = domainOf(doc);
-    const composed = await this.bridge.action("domain.compose", {
-      composition: draft.path,
-      out,
-      etag: draft.domainEtag,
-    });
+    const composed = await this.gateway.compose({ composition: draft.path, output: out, etag: draft.domainEtag });
     if (!this.current(operation, path)) return;
     const domainEtag = composed.ok ? await this.versionOf(out) : draft.domainEtag;
     if (!this.current(operation, path)) return;
@@ -249,9 +240,10 @@ export class EditorStore extends Observable<EditorState> {
     );
   }
 
-  private refused(state: Draft, doc: Composition, failure: BridgeFailure): Draft {
-    const issues = issueTargets(doc, failure.issues);
-    const message = failure.issues.length === 0 ? failure.message : null;
+  private refused(state: Draft, doc: Composition, failure: EditorFailure): Draft {
+    const failures = "issues" in failure ? (failure.issues ?? []) : [];
+    const issues = issueTargets(doc, failures);
+    const message = failures.length === 0 ? failure.diagnostic.message : null;
     return { ...state, saving: false, issues, outcome: { kind: "refused", message } };
   }
 

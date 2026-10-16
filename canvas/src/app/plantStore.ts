@@ -1,4 +1,4 @@
-import type { BridgeFailure, FileContent, Outcome, Workspace } from "../model/bridge";
+import type { Workspace } from "../model/bridge";
 import type { Plant } from "../model/plant";
 import { parsePlant } from "../model/plant";
 import type { ComponentSpec } from "../model/ports";
@@ -6,12 +6,14 @@ import { componentSpecs } from "./componentSpecs";
 import { Observable } from "./observable";
 import { createOperationIdentity } from "./shared/operationIdentity";
 import type { OperationIdentity, OperationId } from "./shared/operationIdentity";
-import type { Bridge } from "./ports";
+import type { FileContent, Outcome } from "./ports/shared";
+import type { DomainDocument } from "./ports/shared";
+import type { PlantFailure, PlantGateway } from "./ports/plant";
 
 export type PlantState =
   | { readonly phase: "idle" }
   | { readonly phase: "loading"; readonly path: string }
-  | { readonly phase: "failed"; readonly path: string; readonly failure: BridgeFailure }
+  | { readonly phase: "failed"; readonly path: string; readonly failure: PlantFailure }
   | {
       readonly phase: "ready";
       readonly path: string;
@@ -36,7 +38,7 @@ function pairOf(id: string, workspace: Workspace): string | null {
 
 function unchanged(
   held: Extract<PlantState, { phase: "ready" }> | null,
-  file: Outcome<FileContent>,
+  file: Outcome<FileContent, PlantFailure>,
   workspace: Workspace,
 ): boolean {
   return (
@@ -46,7 +48,7 @@ function unchanged(
 
 export class PlantStore extends Observable<PlantState> {
   constructor(
-    private readonly bridge: Bridge,
+    private readonly gateway: PlantGateway,
     private readonly operations: OperationIdentity = createOperationIdentity(),
   ) {
     super({ phase: "idle" });
@@ -57,7 +59,7 @@ export class PlantStore extends Observable<PlantState> {
     const request = this.operations.begin();
     const held = this.held(path);
     if (held === null) this.set({ phase: "loading", path });
-    const file = await this.bridge.readFile(path);
+    const file = await this.gateway.readFile(path);
     if (!this.current(request) || unchanged(held, file, workspace)) return;
     if (!file.ok) {
       this.set({ phase: "failed", path, failure: file.failure });
@@ -97,7 +99,7 @@ export class PlantStore extends Observable<PlantState> {
     this.set({ phase: "ready", path, etag: file.etag, plant, specs, composition, selected: kept });
   }
 
-  async show(key: string, domain: unknown): Promise<void> {
+  async show(key: string, domain: DomainDocument): Promise<void> {
     const state = this.snapshot();
     if (state.phase !== "idle" && state.phase !== "failed" && state.path === key) return;
     const request = this.operations.begin();
@@ -121,13 +123,13 @@ export class PlantStore extends Observable<PlantState> {
   }
 
   private async composition(path: string): Promise<unknown> {
-    const file = await this.bridge.readFile(path);
+    const file = await this.gateway.readFile(path);
     return file.ok ? parsed(file.value.content) : null;
   }
 
   private specs(plant: Plant): Promise<ReadonlyMap<string, ComponentSpec>> {
     return componentSpecs(
-      this.bridge,
+      this.gateway,
       plant.instances.map((instance) => instance.component),
     );
   }

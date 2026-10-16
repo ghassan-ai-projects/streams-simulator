@@ -47,7 +47,8 @@ function outcomeStatus(draft: Draft): Status {
 
 function statusOf(draft: Draft): Status {
   if (draft.saving) return { text: "Saving and composing…", detail: null, tone: "busy" };
-  if (draft.failure !== null) return { text: `Not saved: ${draft.failure.message}`, detail: null, tone: "warn" };
+  if (draft.failure !== null)
+    return { text: `Not saved: ${draft.failure.diagnostic.message}`, detail: null, tone: "warn" };
   if (draft.doc !== draft.saved) return { text: "Unsaved changes", detail: null, tone: "busy" };
   return outcomeStatus(draft);
 }
@@ -106,7 +107,7 @@ function ShowIssues({
 }
 
 function Reload({ draft, editor }: Omit<BarProps, "navigation">) {
-  if (draft.failure?.code !== "conflict") return null;
+  if (draft.failure?.kind !== "conflict") return null;
   return (
     <button
       type="button"

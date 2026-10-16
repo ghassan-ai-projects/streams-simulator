@@ -1,10 +1,12 @@
-import type { BridgeFailure, RunEntry } from "../model/bridge";
+import type { RunEntry } from "../model/bridge";
 import type { Report, Replay } from "../model/report";
 import { unfinishedReason } from "../model/workspace";
+import type { ReviewFailure } from "./ports/review";
+import type { DomainDocument } from "./ports/shared";
 
 export type Load<T> =
   | { readonly phase: "loading" }
-  | { readonly phase: "failed"; readonly failure: BridgeFailure }
+  | { readonly phase: "failed"; readonly failure: ReviewFailure }
   | { readonly phase: "ready"; readonly value: T };
 
 export interface ReviewState {
@@ -18,7 +20,7 @@ export interface ReviewState {
   };
   readonly positionNs: number;
   readonly selected: string | null;
-  readonly runDomain: Load<unknown>;
+  readonly runDomain: Load<DomainDocument>;
   readonly tab: "report" | "inspect";
   readonly picked: { readonly atNs: number; readonly entity: string } | null;
   readonly openedAt: number;
@@ -41,11 +43,12 @@ export const idle: ReviewState = {
   speed: 60,
 };
 
-const absentFile: BridgeFailure = {
-  status: 404,
-  code: "not_found",
-  message: "run.json is absent: the run is still open or did not end",
-  issues: [],
+const incomplete: ReviewFailure = {
+  kind: "run-incomplete",
+  diagnostic: {
+    displayCode: "run_incomplete",
+    message: "run.json is absent: the run is still open or did not end",
+  },
 };
 
 export function knownUnfinished(known: RunEntry | undefined): known is RunEntry {
@@ -60,12 +63,10 @@ export function absentLoads(
     verified: {
       phase: "failed",
       failure: {
-        status: 422,
-        code: "run_incomplete",
-        message: `the run is incomplete: ${unfinishedReason(known)}`,
-        issues: [],
+        ...incomplete,
+        diagnostic: { ...incomplete.diagnostic, message: `the run is incomplete: ${unfinishedReason(known)}` },
       },
     },
-    runDomain: { phase: "failed", failure: absentFile },
+    runDomain: { phase: "failed", failure: incomplete },
   };
 }

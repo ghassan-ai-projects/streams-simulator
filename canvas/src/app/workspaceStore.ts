@@ -1,12 +1,12 @@
-import type { BridgeFailure, Workspace } from "../model/bridge";
+import type { Workspace } from "../model/bridge";
 import { Observable } from "./observable";
-import type { Bridge } from "./ports";
+import type { WorkspaceFailure, WorkspaceGateway } from "./ports/workspace";
 import { createOperationIdentity } from "./shared/operationIdentity";
 import type { OperationIdentity, OperationId } from "./shared/operationIdentity";
 
 export type WorkspaceState =
   | { readonly phase: "loading" }
-  | { readonly phase: "failed"; readonly failure: BridgeFailure }
+  | { readonly phase: "failed"; readonly failure: WorkspaceFailure }
   | { readonly phase: "ready"; readonly workspace: Workspace };
 
 export class WorkspaceStore extends Observable<WorkspaceState> {
@@ -14,7 +14,10 @@ export class WorkspaceStore extends Observable<WorkspaceState> {
   private readonly sessions: OperationIdentity;
   private readonly requests: OperationIdentity;
 
-  constructor(private readonly bridge: Bridge, operations = createOperationIdentity()) {
+  constructor(
+    private readonly gateway: WorkspaceGateway,
+    operations = createOperationIdentity(),
+  ) {
     super({ phase: "loading" });
     this.sessions = operations;
     this.requests = createOperationIdentity();
@@ -25,7 +28,7 @@ export class WorkspaceStore extends Observable<WorkspaceState> {
     await this.reload(session);
     if (!this.sessions.isCurrent(session)) return;
     this.stopWatching?.();
-    this.stopWatching = this.bridge.watchWorkspace(() => {
+    this.stopWatching = this.gateway.watch(() => {
       void this.reload(session);
     });
   }
@@ -40,7 +43,7 @@ export class WorkspaceStore extends Observable<WorkspaceState> {
   async reload(session: OperationId | null = null): Promise<void> {
     const activeSession = session ?? this.sessions.begin();
     const request = this.requests.begin();
-    const outcome = await this.bridge.workspace();
+    const outcome = await this.gateway.load();
     if (!this.sessions.isCurrent(activeSession) || !this.requests.isCurrent(request)) return;
     this.set(outcome.ok ? { phase: "ready", workspace: outcome.value } : { phase: "failed", failure: outcome.failure });
   }

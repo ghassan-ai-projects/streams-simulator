@@ -14,55 +14,6 @@ export type JournalEntry =
   | { readonly kind: "closed"; readonly atNs: number; readonly incomplete: boolean }
   | { readonly kind: "other"; readonly atNs: number };
 
-type Json = Record<string, unknown>;
-
-function json(text: string): Json {
-  try {
-    const value = JSON.parse(text) as unknown;
-    return typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Json) : {};
-  } catch {
-    return {};
-  }
-}
-
-const field = (value: unknown, key: string): unknown =>
-  typeof value === "object" && value !== null ? (value as Json)[key] : undefined;
-const str = (value: unknown): string => (typeof value === "string" ? value : "");
-const num = (value: unknown): number => (typeof value === "number" ? value : 0);
-
-function reading(value: unknown): number | string | boolean {
-  return typeof value === "number" || typeof value === "boolean" ? value : str(value);
-}
-
-function observation(record: Json): JournalEntry {
-  const line = json(str(record.line));
-  return {
-    kind: "observation",
-    observation: {
-      atNs: num(record.at_ns),
-      entity: str(line.entity_id),
-      channel: str(line.channel),
-      value: reading(line.value),
-      unit: str(line.unit),
-    },
-  };
-}
-
-export function parseJournalRecord(text: string): JournalEntry {
-  const record = json(text);
-  const atNs = num(record.at_ns);
-  switch (record.type) {
-    case "observation":
-      return observation(record);
-    case "run.opened":
-      return { kind: "opened", atNs, mode: str(record.mode), adapter: str(field(record.adapter, "id")) };
-    case "run.closed":
-      return { kind: "closed", atNs, incomplete: record.incomplete === true };
-    default:
-      return { kind: "other", atNs };
-  }
-}
-
 interface Series {
   readonly times: number[];
   readonly values: (number | string | boolean)[];

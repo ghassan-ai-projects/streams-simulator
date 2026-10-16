@@ -58,7 +58,7 @@ function BasePick({
 }
 
 function sourceOf(base: string): PlantSource {
-  return base.startsWith("example:") ? { example: base.slice(8) } : { file: base.slice(5) };
+  return base.startsWith("example:") ? { kind: "example", id: base.slice(8) } : { kind: "file", path: base.slice(5) };
 }
 
 function CopyChoice({ copy, setCopy }: { readonly copy: boolean; readonly setCopy: (copy: boolean) => void }) {
@@ -133,7 +133,7 @@ function useCreate(
       return;
     }
     reportId(id, idProblemOf(made));
-    setFailure(made.message);
+    setFailure(made.diagnostic.message);
   };
   return { failure, create };
 }

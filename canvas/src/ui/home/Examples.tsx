@@ -36,7 +36,7 @@ function useTry({ maker, navigation, taken }: Omit<TryProps, "examples">) {
     const made = await maker.tryExample(example, suggestedId(example.id, taken));
     setBusy("");
     if ("domain" in made) navigation.go({ screen: "plant", domain: made.domain, hall: null, launch: true });
-    else setFailure(`${example.title} could not be set up: ${made.message}`);
+    else setFailure(`${example.title} could not be set up: ${made.diagnostic.message}`);
   };
   return { busy, failure, start };
 }

@@ -1,9 +1,13 @@
-import type { Issue } from "./bridge";
 import type { Composition, NewEquipment } from "./composition";
 import { componentOf, connectionsOf, endpointOf, equipmentOf, shortKind } from "./composition";
 import { freeKind, joinable, kindOf } from "./kindNames";
 
 type Json = Readonly<Record<string, unknown>>;
+
+interface Issue {
+  readonly pointer: string;
+  readonly message: string;
+}
 
 function entries(doc: Composition): readonly Json[] {
   return Array.isArray(doc.equipment) ? (doc.equipment as readonly Json[]) : [];

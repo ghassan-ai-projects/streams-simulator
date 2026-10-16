@@ -1,4 +1,4 @@
-import type { Location, PreferenceStore, SystemTheme } from "../app/ports";
+import type { Location, PreferenceStore, SystemTheme } from "../../../app/ports";
 
 export function localPreferences(storage: Storage): PreferenceStore {
   return {
