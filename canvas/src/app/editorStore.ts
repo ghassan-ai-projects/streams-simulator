@@ -235,6 +235,7 @@ export class EditorStore extends Observable<EditorState> {
     });
     if (!this.current(operation, path)) return;
     const domainEtag = composed.ok ? await this.versionOf(out) : draft.domainEtag;
+    if (!this.current(operation, path)) return;
     this.update((state) =>
       composed.ok
         ? {

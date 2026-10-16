@@ -215,4 +215,30 @@ describe("editor store", () => {
     await reopened;
     expect(store.snapshot()).toMatchObject({ phase: "ready", doc: { title: "Lab" } });
   });
+
+  it("does not apply a late compose version to a different reopened composition", async () => {
+    const fake = bridge();
+    const other = "compositions/other.composition.json";
+    const otherDomain = "domains/other.domain.json";
+    fake.files.set(other, success({ path: other, content: JSON.stringify({ ...doc, id: "other" }), etag: "c2" }));
+    fake.files.set(otherDomain, success({ path: otherDomain, content: "{}", etag: "d2" }));
+    const { store } = await opened(fake);
+    const heldVersion = deferred<Outcome<FileContent>>();
+    const versionRead = deferred<void>();
+    const read = fake.readFile.bind(fake);
+    fake.readFile = (requested) => {
+      if (requested === "domains/lab.domain.json") {
+        versionRead.resolve();
+        return heldVersion.promise;
+      }
+      return read(requested);
+    };
+    const saving = store.save();
+    await versionRead.promise;
+    store.close();
+    await store.open(other);
+    heldVersion.resolve(success({ path: "domains/lab.domain.json", content: "{}", etag: "d9" }));
+    await saving;
+    expect(store.snapshot()).toMatchObject({ phase: "ready", path: other, domainEtag: "d2", outcome: null });
+  });
 });
