@@ -1,7 +1,7 @@
 import type { Instance, Plant } from "./plant";
 
 export type Family = "air" | "pressure" | "water" | "cw" | "temp" | "heat" | "power" | "signal" | "env";
-export type Shape = "circle" | "square" | "diamond";
+export type Shape = "circle" | "square" | "diamond" | "hexagon" | "bar";
 
 const families: Readonly<Record<string, Family>> = {
   compressed_air: "air",
@@ -25,16 +25,17 @@ const families: Readonly<Record<string, Family>> = {
   wet_bulb_temp: "env",
 };
 
+// Look-alike hues never share a mark: the greys (env, signal) and the warm pair (temp, heat) split, so hue and mark both carry the family.
 const shapes: Readonly<Record<Family, Shape>> = {
   air: "circle",
   water: "circle",
   cw: "circle",
-  heat: "square",
+  heat: "bar",
   power: "square",
   pressure: "diamond",
-  temp: "diamond",
-  signal: "square",
-  env: "diamond",
+  temp: "hexagon",
+  signal: "hexagon",
+  env: "bar",
 };
 
 export const familyNames: Readonly<Record<Family, string>> = {

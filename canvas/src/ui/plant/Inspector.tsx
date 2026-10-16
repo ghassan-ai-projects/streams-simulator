@@ -9,7 +9,9 @@ import { humanise, kindLabel } from "../../model/report";
 import { displayUnit } from "../../model/units";
 import { X } from "lucide-react";
 import type { RunRow } from "../../model/workspace";
+import { cx } from "../cx";
 import shared from "../shared.module.css";
+import { useCutBottom } from "../useCutBottom";
 import { PlantOverview } from "./PlantOverview";
 import styles from "./PlantScreen.module.css";
 import { InspectorLinks } from "./InspectorLinks";
@@ -48,7 +50,7 @@ function List({ title, items, mono, show, count = items.length, folded = false, 
     return (
       <section className={styles.section} aria-label={title}>
         <details>
-          <summary className={shared.sectionTitle}>{heading}</summary>
+          <summary className={cx(shared.sectionTitle, shared.disclosure)}>{heading}</summary>
           {rows ?? <Items items={items} mono={mono} show={show} />}
         </details>
       </section>
@@ -101,8 +103,15 @@ function HallSummary({
   readonly members: readonly (readonly [string, number])[];
 }) {
   const total = members.reduce((sum, [, n]) => sum + n, 0);
+  const { ref, cut } = useCutBottom<HTMLElement>([members]);
   return (
-    <aside className={styles.inspector} aria-label="Inspector" tabIndex={0}>
+    <aside
+      ref={ref}
+      className={cx(styles.inspector, shared.cut)}
+      data-cut={cut ? "true" : undefined}
+      aria-label="Inspector"
+      tabIndex={0}
+    >
       <header className={styles.inspectorHead}>
         <h2 className={styles.mono}>{hall}</h2>
         <p className={styles.muted}>{`Hall · ${String(total)} instances · Enter or double-click opens it`}</p>
@@ -127,9 +136,6 @@ function Head({
   readonly onClose?: (() => void) | undefined;
 }) {
   const title = spec?.title ?? kindLabel(instance.kind);
-  const reference = [spec?.title === undefined ? "" : `Kind: ${instance.kind}`, instance.component ?? ""]
-    .filter(Boolean)
-    .join(" · ");
   return (
     <header className={styles.inspectorHead}>
       <div className={styles.headLine}>
@@ -141,7 +147,7 @@ function Head({
         )}
       </div>
       <p className={styles.kindLine}>{[title, instance.area].filter(Boolean).join(" · ")}</p>
-      {reference !== "" && <p className={styles.source}>{reference}</p>}
+      {instance.component !== null && <p className={styles.source}>{instance.component}</p>}
       {spec?.description !== undefined && (
         <details className={styles.modelDetails}>
           <summary>What this component models</summary>
@@ -167,8 +173,15 @@ function InstanceDetails({
 }) {
   const kind = plant.kinds.get(instance.kind);
   const { incoming, outgoing } = linksOf(plant, instance.id);
+  const { ref, cut } = useCutBottom<HTMLElement>([plant, instance]);
   return (
-    <aside className={styles.inspector} aria-label="Inspector" tabIndex={0}>
+    <aside
+      ref={ref}
+      className={cx(styles.inspector, shared.cut)}
+      data-cut={cut ? "true" : undefined}
+      aria-label="Inspector"
+      tabIndex={0}
+    >
       <Head instance={instance} spec={spec} onClose={onClose} />
       <List
         title="Channels"

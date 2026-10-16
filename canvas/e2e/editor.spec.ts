@@ -66,7 +66,7 @@ test("a new plant is built in Chrome, a name the binary would refuse is stopped 
   ]);
   expect(readFileSync(join(folder, "domains", "lab-cooling.domain.json"), "utf8")).toBe(readFileSync(cli, "utf8"));
   await page.getByRole("button", { name: "Open plant" }).click();
-  await expect(page.getByText("2 instances · 1 links")).toBeVisible();
+  await expect(page.getByText("2 instances · 1 link")).toBeVisible();
   await expect(page.getByRole("button", { name: "Edit plant" })).toBeVisible();
 });
 

@@ -1,12 +1,12 @@
 import { OctagonAlert, Search } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { areaTree } from "../../model/areaTree";
 import type { Plant } from "../../model/plant";
 import { areaOf } from "../../model/plant";
-import { hallOf, hallsOf } from "../../model/plantView";
+import { areaOrder, hallOf, hallsOf } from "../../model/plantView";
 import { kindLabel } from "../../model/report";
 import { cx } from "../cx";
 import shared from "../shared.module.css";
+import { useCutBottom } from "../useCutBottom";
 import styles from "./PlantScreen.module.css";
 
 interface OutlineProps {
@@ -60,12 +60,10 @@ function itemsByArea(plant: Plant, hall: string | null, filter: string): Readonl
 
 function groups(plant: Plant, hall: string | null, filter: string, empty: boolean): readonly Group[] {
   const byArea = itemsByArea(plant, hall, filter);
-  const tree = areaTree(plant.areas).map((node) => ({ area: node.name, depth: node.depth }));
-  const known = new Set(tree.map((node) => node.area));
-  const loose = [...byArea.keys()].filter((area) => !known.has(area)).map((area) => ({ area, depth: 0 }));
+  const all = areaOrder(plant).map(([area, depth]) => ({ area, depth, items: byArea.get(area) ?? [] }));
   const showEmpty = empty && filter.trim() === "";
-  const all = [...tree, ...loose].map(({ area, depth }) => ({ area, depth, items: byArea.get(area) ?? [] }));
-  return populatedFirst(all).filter((group) => group.items.length > 0 || showEmpty);
+  const ordered = empty ? populatedFirst(all) : all;
+  return ordered.filter((group) => group.items.length > 0 || showEmpty);
 }
 
 interface Branch {
@@ -91,22 +89,44 @@ function total(branch: Branch): number {
   return branch.children.reduce((sum, child) => sum + total(child), branch.group.items.length);
 }
 
-function flatten(branches: readonly Branch[]): Group[] {
+function splitBranches(branches: readonly Branch[]): { readonly shown: Group[]; readonly empty: Group[] } {
   const ordered = [...branches].sort((a, b) => total(b) - total(a));
-  return ordered.flatMap((branch) => [branch.group, ...flatten(branch.children)]);
+  const shown: Group[] = [];
+  const empty: Group[] = [];
+  for (const branch of ordered) {
+    const below = splitBranches(branch.children);
+    if (total(branch) === 0) empty.push(branch.group, ...below.empty);
+    else {
+      shown.push(branch.group, ...below.shown);
+      empty.push(...below.empty);
+    }
+  }
+  return { shown, empty };
 }
 
 function populatedFirst(all: readonly Group[]): Group[] {
-  return flatten(branchesOf(all));
+  const { shown, empty } = splitBranches(branchesOf(all));
+  return [...shown, ...empty];
 }
 
 interface SectionProps {
   readonly title: string;
   readonly depth?: number;
   readonly items: readonly Item[];
+  readonly below?: number;
   readonly current: string | null;
   readonly marks: "location" | "selection";
   readonly onPick: (item: string) => void;
+}
+
+function countWords(direct: number, below: number): string {
+  if (direct > 0) return String(direct);
+  return below > 0 ? `0 · ${String(below)} below` : "0";
+}
+
+function countTitle(direct: number, below: number): string | undefined {
+  if (direct > 0) return undefined;
+  return below > 0 ? `${String(below)} in child areas` : "No equipment yet";
 }
 
 function Entry({ item, current, marks, onPick }: Omit<SectionProps, "title" | "items"> & { readonly item: Item }) {
@@ -139,15 +159,15 @@ function Entry({ item, current, marks, onPick }: Omit<SectionProps, "title" | "i
   );
 }
 
-function Section({ title, depth = 0, items, current, marks, onPick }: SectionProps) {
+function Section({ title, depth = 0, items, below = 0, current, marks, onPick }: SectionProps) {
   return (
     <details open className={styles.group} style={{ marginLeft: `calc(var(--space-3) * ${String(depth)})` }}>
-      <summary className={cx(shared.sectionTitle, items.length === 0 && styles.emptyRow)}>
+      <summary className={cx(styles.areaRow, shared.disclosure)}>
         <span className={styles.areaName} title={title}>
           {title}
         </span>
-        <span className={styles.count} title={items.length === 0 ? "No equipment yet" : undefined}>
-          {items.length === 0 ? "0 · empty" : items.length}
+        <span className={styles.count} title={countTitle(items.length, below)}>
+          {countWords(items.length, below)}
         </span>
       </summary>
       {items.length > 0 && (
@@ -194,22 +214,40 @@ function marked(shown: readonly Group[], flagged: ReadonlySet<string> | undefine
   }));
 }
 
+function belowCount(shown: readonly Group[], index: number): number {
+  const group = shown[index];
+  if (group === undefined) return 0;
+  let below = 0;
+  for (const child of shown.slice(index + 1)) {
+    if (child.depth <= group.depth) break;
+    below += child.items.length;
+  }
+  return below;
+}
+
 export function Outline({ plant, hall, selected, onSelect, onOpenHall, flagged, showEmptyAreas }: OutlineProps) {
   const [filter, setFilter] = useState("");
+  const { ref: navRef, cut } = useCutBottom<HTMLElement>([plant, hall, filter, selected, flagged]);
   const halls = hallsOf(plant).map((id) => ({ id, kind: "" }));
   const shown = marked(groups(plant, hall, filter, showEmptyAreas === true), flagged);
   return (
-    <nav className={styles.outline} aria-label="Outline">
+    <nav
+      ref={navRef}
+      className={cx(styles.outline, shared.cut)}
+      aria-label="Outline"
+      data-cut={cut ? "true" : undefined}
+    >
       <Filter value={filter} onChange={setFilter} />
       {halls.length > 0 && onOpenHall !== undefined && filter === "" && (
         <Section title="Halls" items={halls} current={hall} marks="location" onPick={onOpenHall} />
       )}
-      {shown.map(({ area, depth, items }) => (
+      {shown.map(({ area, depth, items }, index) => (
         <Section
           key={area}
           title={area}
           depth={depth}
           items={items}
+          below={belowCount(shown, index)}
           current={selected}
           marks="selection"
           onPick={onSelect}

@@ -110,9 +110,15 @@ interface PickProps {
   readonly setUse: (use: string) => void;
 }
 
+function libraryWords(found: number, shown: number): string {
+  const counted = `${String(found)} ${found === 1 ? "component" : "components"}`;
+  return found > shown ? `${counted} · scroll the list for the rest` : counted;
+}
+
 function LibraryPick({ library, use, setUse }: PickProps) {
   const [query, setQuery] = useState("");
   const found = searchLibrary(library, query);
+  const shown = Math.min(6, Math.max(2, found.length));
   return (
     <div className={styles.library}>
       <input
@@ -129,7 +135,8 @@ function LibraryPick({ library, use, setUse }: PickProps) {
       />
       <select
         aria-label="Equipment"
-        size={Math.min(6, Math.max(2, found.length))}
+        aria-describedby="equipment-count"
+        size={shown}
         value={use}
         onChange={(event) => {
           setUse(event.target.value);
@@ -142,7 +149,9 @@ function LibraryPick({ library, use, setUse }: PickProps) {
           </option>
         ))}
       </select>
-      {found.length === 0 && <p className={panel.hint}>{`Nothing in the library matches "${query.trim()}".`}</p>}
+      <p className={panel.hint} id="equipment-count">
+        {found.length === 0 ? `Nothing in the library matches "${query.trim()}".` : libraryWords(found.length, shown)}
+      </p>
     </div>
   );
 }

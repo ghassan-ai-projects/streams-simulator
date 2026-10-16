@@ -1,0 +1,13 @@
+Command: GOTOOLCHAIN=go1.26.9 PATH="$PATH:$(go env GOPATH)/bin" make phase-gate
+Code under test: 65331fc + a9dc4ba + 0b6c538 on ui-score-loop
+Go: go1.26.9 darwin/arm64 (CI pins 1.26.9)
+Result: exit 0
+CI check passed
+Canvas: 96 test files; 445 tests passed
+Chrome: 70 tests passed (1.8m)
+Dependency audit: zero vulnerabilities
+Dependency graph: no violations
+Token clones: zero
+Enola: PASS — no structural regression
+Behaviour pin matches
+Phase gate passed

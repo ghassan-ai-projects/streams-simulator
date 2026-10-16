@@ -2,6 +2,9 @@ import { CircleAlert, Wrench } from "lucide-react";
 import panel from "../panel.module.css";
 import type { IssueGroup, ListedIssue } from "../../model/compositionEdits";
 import { groupIssues, profileWeightOf, removeProfileWeight } from "../../model/compositionEdits";
+import { cx } from "../cx";
+import shared from "../shared.module.css";
+import { useCutBottom } from "../useCutBottom";
 import { AddArea } from "./AddArea";
 import { AreaEditor } from "./AreaEditor";
 import { AddEquipment } from "./AddEquipment";
@@ -76,10 +79,25 @@ function Issues({ draft, editor, request }: Omit<PanelProps, "plant">) {
   );
 }
 
+function FirstStep() {
+  return (
+    <p className={panel.hint}>
+      Add the first piece of equipment: search the library below, name it and choose an area. Then link an output to an
+      input and save to compose the plant.
+    </p>
+  );
+}
+
 function Build({ draft, plant, editor, request }: PanelProps) {
   const heading = useRequestedFocus<HTMLHeadingElement>(request, "build");
+  const { ref, cut } = useCutBottom<HTMLElement>([draft, plant]);
   return (
-    <aside className={panel.panel} aria-labelledby="build-title">
+    <aside
+      ref={ref}
+      className={cx(panel.panel, shared.cut)}
+      data-cut={cut ? "true" : undefined}
+      aria-labelledby="build-title"
+    >
       <header className={panel.head}>
         <Wrench size={16} aria-hidden="true" />
         <h2 id="build-title" ref={heading} tabIndex={-1}>
@@ -88,6 +106,7 @@ function Build({ draft, plant, editor, request }: PanelProps) {
       </header>
       <div className={panel.body}>
         <Issues draft={draft} editor={editor} request={request} />
+        {plant.instances.length === 0 && <FirstStep />}
         <AddEquipment draft={draft} plant={plant} editor={editor} request={request} />
         <AddArea draft={draft} editor={editor} />
         <AreaEditor draft={draft} editor={editor} />

@@ -5,8 +5,9 @@ import type { Workspace } from "../../model/bridge";
 import type { Badge } from "../../model/report";
 import { badgeLabels } from "../../model/report";
 import type { RunRow } from "../../model/workspace";
-import { plantsOf, runFacts, runRows, unfinishedReason, whenOf } from "../../model/workspace";
+import { counted, plantsOf, runFacts, runRows, unfinishedReason, whenOf } from "../../model/workspace";
 import styles from "./HomeScreen.module.css";
+import { MetaParts } from "../MetaParts";
 
 interface ListProps {
   readonly workspace: Workspace;
@@ -17,19 +18,23 @@ interface ListProps {
 const page = 20;
 
 function moreLabel(count: number): string {
-  return `Show ${String(count)} more ${count === 1 ? "run" : "runs"}`;
+  return `Show ${counted(count, "more run", "more runs")}`;
+}
+
+function detailParts(row: RunRow): readonly string[] {
+  return [row.run.worldId, whenOf(row.run.recordedAt), ...runFacts(row.run)].filter((part) => part !== "");
 }
 
 function detail(row: RunRow): string {
-  return [row.run.worldId, whenOf(row.run.recordedAt), ...runFacts(row.run)].filter((part) => part !== "").join(" · ");
+  return detailParts(row).join(" · ");
 }
 
 function Status({ row, badge }: { readonly row: RunRow; readonly badge: Badge | null }) {
   if (!row.run.ended) {
     return (
-      <span className={styles.live}>
+      <span className={styles.unfinished}>
         <Radio size={12} aria-hidden="true" />
-        not finished
+        Did not finish
       </span>
     );
   }
@@ -68,7 +73,7 @@ function Row({
           </span>
         </span>
         <span className={styles.meta} title={detail(row)}>
-          {detail(row)}
+          <MetaParts parts={detailParts(row)} />
         </span>
       </span>
       <Status row={row} badge={badge} />

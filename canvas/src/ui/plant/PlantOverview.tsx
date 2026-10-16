@@ -1,12 +1,13 @@
 import { useState } from "react";
 import type { Plant } from "../../model/plant";
-import { areaOf } from "../../model/plant";
-import { hallOf } from "../../model/plantView";
+import { areaCounts, hallOf } from "../../model/plantView";
 import { kindLabel } from "../../model/report";
 import type { RunRow } from "../../model/workspace";
-import { runFacts, whenOf } from "../../model/workspace";
+import { counted, runFacts, whenOf } from "../../model/workspace";
 import shared from "../shared.module.css";
+import { MetaParts } from "../MetaParts";
 import { cx } from "../cx";
+import { useCutBottom } from "../useCutBottom";
 import styles from "./PlantScreen.module.css";
 
 function counts(values: readonly string[]): readonly (readonly [string, number])[] {
@@ -41,11 +42,13 @@ function RunItem({ row, onReview }: { readonly row: RunRow; readonly onReview: R
     row.run.worldId,
     row.run.explore ? "Explore" : "Evaluate",
     ...runFacts(row.run),
-    whenOf(row.run.recordedAt).replaceAll(" ", "\u00a0"),
+    whenOf(row.run.recordedAt),
   ];
   return (
     <li>
-      <span className={styles.figures}>{words.filter(Boolean).join(" · ")}</span>
+      <span className={styles.figures}>
+        <MetaParts parts={words} />
+      </span>
       {onReview !== undefined && (
         <button
           type="button"
@@ -94,6 +97,25 @@ function Runs({ runs, onReview }: { readonly runs: readonly RunRow[]; readonly o
   );
 }
 
+function OverviewHead({ plant, where }: { readonly plant: Plant; readonly where: string }) {
+  return (
+    <header className={styles.inspectorHead}>
+      <h2>{plant.title || plant.id}</h2>
+      <p className={styles.kindLine}>
+        {`${counted(plant.instances.length, "instance", "instances")} in ${where} · ${counted(
+          plant.links.length,
+          "link",
+          "links",
+        )}`}
+      </p>
+      <p className={styles.hint}>
+        Select an instance to see its channels (the values measured on it, one for each port and state), links, faults
+        and effectors.
+      </p>
+    </header>
+  );
+}
+
 export function PlantOverview({
   plant,
   runs,
@@ -103,21 +125,22 @@ export function PlantOverview({
   readonly runs: readonly RunRow[];
   readonly onReview?: ((worldId: string) => void) | undefined;
 }) {
-  const areas = counts(plant.instances.map((instance) => areaOf(plant, instance)));
+  const areas = areaCounts(plant);
   const halls = counts(plant.instances.flatMap((instance) => hallOf(instance.id) ?? []));
-  const where = halls.length > 0 ? `${String(halls.length)} halls and the site` : `${String(areas.length)} areas`;
+  const where =
+    halls.length > 0
+      ? `${counted(halls.length, "hall", "halls")} and the site`
+      : counted(areas.length, "area", "areas");
+  const { ref, cut } = useCutBottom<HTMLElement>([plant, runs]);
   return (
-    <aside className={styles.inspector} aria-label="Inspector" tabIndex={0}>
-      <header className={styles.inspectorHead}>
-        <h2>{plant.title || plant.id}</h2>
-        <p
-          className={styles.kindLine}
-        >{`${String(plant.instances.length)} instances in ${where} · ${String(plant.links.length)} links`}</p>
-        <p className={styles.hint}>
-          Select an instance to see its channels (the values measured on it, one for each port and state), links, faults
-          and effectors.
-        </p>
-      </header>
+    <aside
+      ref={ref}
+      className={cx(styles.inspector, shared.cut)}
+      data-cut={cut ? "true" : undefined}
+      aria-label="Inspector"
+      tabIndex={0}
+    >
+      <OverviewHead plant={plant} where={where} />
       <Runs runs={runs} onReview={onReview} />
       {halls.length > 0 && <Tally title="Halls" rows={halls} />}
       <Tally title={halls.length > 0 ? "Areas across the halls" : "Areas"} rows={areas} />

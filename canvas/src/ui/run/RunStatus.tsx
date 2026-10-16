@@ -2,7 +2,7 @@ import { CircleCheck, CircleHelp, CircleX, Eye, Info, Loader, Lock, TriangleAler
 import { useEffect, useState } from "react";
 import type { ReviewState } from "../../app/reviewStore";
 import type { Badge, Report } from "../../model/report";
-import { badgeLabels, badgeOf } from "../../model/report";
+import { badgeLabels, badgeOf, replayLine } from "../../model/report";
 import { integrityLine, runFacts, runIdentity } from "../../model/reportViews";
 import { grouped } from "../../model/units";
 import { RunInfo } from "./RunInfo";
@@ -79,7 +79,6 @@ function Mode({ report }: { readonly report: Report }) {
         {explore ? <Eye size={13} aria-hidden="true" /> : <Lock size={13} aria-hidden="true" />}
         {explore ? "Explore" : "Evaluate"}
       </span>
-      {!report.ended && <span className={styles.chip}>not finished</span>}
       <span className={styles.facts}>{runFacts(report)}</span>
       <RunInfo lines={[explore ? modeWords.explore : modeWords.evaluate, runIdentity(report)]} />
     </>
@@ -111,7 +110,7 @@ interface Warning {
 
 function verifyWarning(state: ReviewState): Warning | null {
   if (state.verified.phase !== "failed") return null;
-  return { text: "Not checked: streamsim verify could not replay this run.", details: state.verified.failure.message };
+  return { text: replayLine(state.verified), details: state.verified.failure.message };
 }
 
 function countWarning(state: ReviewState, report: Report): Warning | null {

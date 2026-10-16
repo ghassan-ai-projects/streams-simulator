@@ -193,14 +193,30 @@
   cursor: pointer;
 }
 
+.plan {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.scroll {
+  composes: scrolls from "../shared.module.css";
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-height: 0;
+  overflow: auto;
+  padding: var(--space-3);
+}
+
 .footer {
-  position: sticky;
-  bottom: 0;
-  box-shadow: 0 -6px 8px -6px var(--scroll-shadow);
+  flex: none;
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  margin: 0 calc(var(--space-3) * -1) calc(var(--space-3) * -1);
   padding: var(--space-3);
   border-top: 1px solid var(--border-strong);
   background: var(--surface-panel);

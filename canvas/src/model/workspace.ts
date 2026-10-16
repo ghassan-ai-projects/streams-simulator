@@ -15,7 +15,7 @@ export interface RunRow {
   readonly plantTitle: string;
 }
 
-function counted(count: number, one: string, many: string): string {
+export function counted(count: number, one: string, many: string): string {
   return `${String(count)} ${count === 1 ? one : many}`;
 }
 
@@ -67,7 +67,7 @@ export function runFacts(run: RunEntry): readonly string[] {
 }
 
 export function plantFacts(plant: PlantEntry): string {
-  if (plant.domain === null) return "Not runnable yet: open Edit, save, and fix any issue it lists.";
+  if (plant.domain === null) return "Not runnable yet. Edit it, then save.";
   const size = plant.instances > 0 ? `${plural(plant.instances, "instance")} · ` : "";
   if (plant.runs === 0) return size === "" ? "No runs yet" : `${size}no runs yet`;
   const last = whenOf(plant.lastRun);

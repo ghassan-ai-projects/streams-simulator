@@ -86,9 +86,9 @@ describe("run report", () => {
     expect(parseReplay({ matches: "yes" })).toBeNull();
     expect(parseReplay(null)).toBeNull();
     expect(replayLine({ phase: "loading" })).toMatch(/^Replaying/);
-    expect(replayLine({ phase: "failed" })).toMatch(/^Not checked/);
+    expect(replayLine({ phase: "failed" })).toMatch(/^Not checked: this run could not be replayed/);
     expect(replayLine(ready(true))).toMatch(/^Reproduces/);
-    expect(replayLine(ready(false))).toMatch(/^Does not verify: streamsim verify reported/);
+    expect(replayLine(ready(false))).toMatch(/^Does not verify: replaying the run gave a different/);
     const because = (reason: string, file = "") =>
       replayLine({ phase: "ready", value: { matches: false, domainChanged: false, detail: "", reason, file } });
     expect(because("file_missing", "ledger.jsonl")).toBe(
@@ -145,6 +145,24 @@ describe("run report", () => {
     });
     expect(runIdentity(parsed)).toBe("factory 0.1.0 · seed 7 · native-jsonl · sim 0.3.1");
     expect(runIdentity(parseReport({ run: { domain: { id: "factory" } } }))).toBe("factory");
+  });
+
+  it("says how long the plant ran, not a placeholder, and when its clock started", () => {
+    const identity = (seconds: number) =>
+      runIdentity(
+        parseReport({
+          run: {
+            domain: { id: "factory", version: "0.1.0" },
+            adapter: { id: "native-jsonl" },
+            seed: 7,
+            start_time_ns: 0,
+            end_time_ns: seconds * 1e9,
+          },
+        }),
+      );
+    expect(identity(1800)).toBe("factory 0.1.0 · seed 7 · native-jsonl · 30 min of plant time from 00:00:00 UTC");
+    expect(identity(5400)).toContain("1 h 30 min of plant time");
+    expect(identity(0)).toBe("factory 0.1.0 · seed 7 · native-jsonl");
   });
 
   it("says a run's facts in words and plans the same run again", () => {

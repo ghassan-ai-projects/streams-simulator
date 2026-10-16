@@ -48,6 +48,7 @@ export class FakeBridge implements Bridge {
   actions = new Map<string, Outcome<unknown>>();
   handlers = new Map<string, (args: Readonly<Record<string, unknown>>) => Outcome<unknown>>();
   calls: { name: string; args: Readonly<Record<string, unknown>> }[] = [];
+  reads: string[] = [];
   watchers = new Set<() => void>();
   pairedCodes: string[] = [];
 
@@ -67,6 +68,7 @@ export class FakeBridge implements Bridge {
   }
 
   readFile(path: string): Promise<Outcome<FileContent>> {
+    this.reads.push(path);
     return Promise.resolve(this.files.get(path) ?? failed(failure("not_found", 404, `no ${path}`)));
   }
 

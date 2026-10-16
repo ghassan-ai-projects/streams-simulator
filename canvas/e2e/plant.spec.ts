@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { env } from "./support/env";
+import { headingInside } from "./support/fitAudit";
 import { textClashes } from "./support/textClashes";
 
 test.use({ storageState: env("CANVAS_APP_STATE") });
@@ -34,9 +35,9 @@ test("wire arrows point to receivers and selected connections remain prominent",
   const edge = graph.locator(".react-flow__edge").first();
   await expect(edge.locator(".react-flow__edge-path")).toHaveAttribute("marker-end", /url\(['"]?#/);
   await page.getByRole("button", { name: "Legend" }).click();
-  await expect(
-    page.getByText("Model connections carry values from outputs to inputs; arrows point to the receiving endpoint."),
-  ).toBeVisible();
+  const legend = page.getByRole("group", { name: "Wire colour and pin shape by port type" });
+  await expect(legend.getByText(/Model connections carry values from outputs to inputs/)).toBeVisible();
+  await expect.poll(() => headingInside(legend, "Wire colour and pin shape by port type")).toBe(true);
   await page.getByRole("navigation", { name: "Outline" }).getByRole("button", { name: "CH-1" }).click();
   const selected = graph.locator(".react-flow__edge.wire-on").first();
   await expect(selected).toBeVisible();
@@ -66,14 +67,14 @@ test("the chiller pilot inspector explains AHU and chiller components from the l
   const inspector = page.getByRole("complementary", { name: "Inspector" });
   await outline.getByRole("button", { name: /^AHU-1/ }).click();
   await expect(inspector).toContainText("Air-handling unit · Office block");
-  await expect(inspector).toContainText("Kind: ahu · streamsim/ahu");
+  await expect(inspector).toContainText("streamsim/ahu");
   await inspector.getByText("What this component models").click();
   await expect(inspector).toContainText(
     "Air-handling unit with a chilled-water coil. Its cooling load is the occupancy-driven internal gain, the outdoor-air load and a constant envelope gain; the coil cannot hold the supply-air setpoint when the chilled water is too warm.",
   );
   await outline.getByRole("button", { name: /^CH-1/ }).click();
   await expect(inspector).toContainText("Water-cooled chiller · Chiller hall");
-  await expect(inspector).toContainText("Kind: chiller_large · streamsim/chiller");
+  await expect(inspector).toContainText("streamsim/chiller");
   await inspector.getByText("What this component models").click();
   await expect(inspector).toContainText(
     "Vapour-compression chiller on a chilled-water loop. Supply temperature follows the setpoint and degrades above capacity or when stopped; power follows load through a part-load efficiency curve that also depends on the entering condenser water; COP, return temperature and energy cost rate are derived; start and stop act through the running state.",

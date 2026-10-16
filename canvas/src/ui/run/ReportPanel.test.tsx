@@ -7,6 +7,22 @@ import { ReportPanel } from "./ReportPanel";
 import { Scrubber } from "./Scrubber";
 
 describe("report panel", () => {
+  it("opens with the integrity block collapsed, on every review", () => {
+    const view = render(
+      <ReportPanel
+        report={parseReport(report)}
+        unit={() => ""}
+        entity={null}
+        verify={{ phase: "ready", value: { matches: true, domainChanged: false, detail: "", reason: "", file: "" } }}
+      />,
+    );
+    const integrity = view.container.querySelector("details");
+    expect(integrity).not.toBeNull();
+    expect(integrity).not.toHaveAttribute("open");
+    expect(integrity).toHaveTextContent("The files match and the replay reproduces.");
+    expect(integrity).not.toHaveTextContent(/Verified:/);
+  });
+
   it.each([undefined, "kpi"] as const)("cautions rejected incomplete truth in the %s view", (only) => {
     render(
       <ReportPanel
@@ -39,8 +55,17 @@ describe("report panel", () => {
         verify={{ phase: "ready", value: { matches: true, domainChanged: false, detail: "", reason: "", file: "" } }}
       />,
     );
-    expect(within(screen.getByRole("region", { name: "File check" })).getByText("trace")).toBeInTheDocument();
     expect(within(screen.getByRole("region", { name: "Replay check" })).getByText(/^Reproduces/)).toBeInTheDocument();
+    const fileCheck = screen.getByRole("region", { name: "File check" });
+    expect(within(fileCheck).getByText("Files match the record.")).toBeInTheDocument();
+    const files = within(fileCheck).getByText("For developers").closest("details");
+    if (files === null) throw new Error("file check has no For developers disclosure");
+    expect(within(files).getByText("trace")).toBeInTheDocument();
+    expect(within(files).getByText(/compares the files in the run folder/)).toBeInTheDocument();
+    const replay = screen.getByRole("region", { name: "Replay check" });
+    const command = within(replay).getByText("For developers").closest("details");
+    if (command === null) throw new Error("replay check has no For developers disclosure");
+    expect(within(command).getByText(/streamsim verify command/)).toBeInTheDocument();
     expect(
       within(screen.getByRole("region", { name: "Deliveries" })).getByText("dropped by perturbation"),
     ).toBeInTheDocument();

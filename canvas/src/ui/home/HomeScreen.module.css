@@ -208,9 +208,9 @@
   color: var(--text-secondary);
 }
 
-.live {
-  color: var(--status-ok);
-  background: var(--status-ok-bg);
+.unfinished {
+  color: var(--status-warn);
+  background: var(--status-warn-bg);
 }
 
 .none {

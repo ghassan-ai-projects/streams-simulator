@@ -35,12 +35,13 @@ export function kpiGroups(rows: readonly KpiRow[]): readonly KpiGroup[] {
 }
 
 export function runIdentity(report: Report): string {
+  const seconds = report.endNs > report.startNs ? Math.round((report.endNs - report.startNs) / 1e9) : 0;
   return [
     `${report.domainId} ${report.domainVersion}`.trim(),
     report.seed === null ? "" : `seed ${String(report.seed)}`,
     report.adapterId,
     report.simVersion === "" ? "" : `sim ${report.simVersion}`,
-    report.endNs > report.startNs ? `run time 00:00:00 is ${wallClock(report.startNs)} UTC simulated` : "",
+    seconds === 0 ? "" : `${durationOf(seconds)} of plant time from ${wallClock(report.startNs)} UTC`,
   ]
     .filter((part) => part !== "")
     .join(" · ");
@@ -101,7 +102,7 @@ function planOfRun(report: Report): LaunchPlan {
 export function integrityLine(report: Report, verify: VerifyState): string {
   switch (badgeOf(report, verify)) {
     case "verified":
-      return "Verified: the files match and the replay reproduces.";
+      return "The files match and the replay reproduces.";
     case "verifying":
       return "Verifying: replaying the run…";
     case "incomplete":
@@ -113,4 +114,10 @@ export function integrityLine(report: Report, verify: VerifyState): string {
     case "not-checked":
       return verify.phase === "failed" ? replayLine(verify) : "Not checked: the run recorded no file digests.";
   }
+}
+
+export function fileLine(report: Report): string {
+  if (report.verification === "files_match") return "Files match the record.";
+  if (report.verification === "files_differ") return "The files changed after the run.";
+  return "The run recorded no file digests.";
 }

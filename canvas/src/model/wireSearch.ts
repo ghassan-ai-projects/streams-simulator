@@ -4,6 +4,7 @@ import type { Grid } from "./wireGrid";
 const bendCost = 24;
 const overlapCost = 60;
 const crossingCost = 18;
+const hugCost = 2;
 
 export interface Occupancy {
   readonly usedH: Uint8Array;
@@ -136,11 +137,11 @@ class Search {
     const moves: Move[] = [];
     if (ix > 0 && freeH[vertex - ny] === 1) {
       const length = (xs[ix] ?? 0) - (xs[ix - 1] ?? 0);
-      moves.push(this.step(vertex - ny, 0, length, this.occupancy.usedH[vertex - ny] === 1));
+      moves.push(this.step(vertex - ny, 0, length, vertex - ny));
     }
     if (ix < nx - 1 && freeH[vertex] === 1) {
       const length = (xs[ix + 1] ?? 0) - (xs[ix] ?? 0);
-      moves.push(this.step(vertex + ny, 0, length, this.occupancy.usedH[vertex] === 1));
+      moves.push(this.step(vertex + ny, 0, length, vertex));
     }
     return moves;
   }
@@ -151,11 +152,11 @@ class Search {
     const moves: Move[] = [];
     if (iy > 0 && freeV[vertex - 1] === 1) {
       const length = (ys[iy] ?? 0) - (ys[iy - 1] ?? 0);
-      moves.push(this.step(vertex - 1, 1, length, this.occupancy.usedV[vertex - 1] === 1));
+      moves.push(this.step(vertex - 1, 1, length, vertex - 1));
     }
     if (iy < ny - 1 && freeV[vertex] === 1) {
       const length = (ys[iy + 1] ?? 0) - (ys[iy] ?? 0);
-      moves.push(this.step(vertex + 1, 1, length, this.occupancy.usedV[vertex] === 1));
+      moves.push(this.step(vertex + 1, 1, length, vertex));
     }
     return moves;
   }
@@ -169,9 +170,11 @@ class Search {
     return x >= box.x && x <= box.x + box.width && y >= box.y && y <= box.y + box.height;
   }
 
-  private step(to: number, orientation: 0 | 1, length: number, used: boolean): Move {
+  private step(to: number, orientation: 0 | 1, length: number, edge: number): Move {
+    const used = (orientation === 0 ? this.occupancy.usedH : this.occupancy.usedV)[edge] === 1;
+    const hugging = (orientation === 0 ? this.grid.hugH : this.grid.hugV)[edge] === 1;
     const across = orientation === 0 ? this.occupancy.passV[to] : this.occupancy.passH[to];
-    const extra = (used ? overlapCost : 0) + (across === 1 ? crossingCost : 0);
+    const extra = (used ? overlapCost : 0) + (across === 1 ? crossingCost : 0) + (hugging ? hugCost * length : 0);
     return { to: to * 2 + orientation, cost: length + extra };
   }
 
@@ -200,17 +203,56 @@ export function findPath(
   return new Search(grid, occupancy, corridor).run(ends.start, ends.goal, vertical);
 }
 
-export function occupy(grid: Grid, occupancy: Occupancy, path: readonly number[]): void {
+export function occupy(grid: Grid, occupancy: Occupancy, path: readonly number[], pitch = 0): void {
   const { ny } = grid;
   for (let index = 1; index < path.length; index += 1) {
     const from = path[index - 1] ?? 0;
     const to = path[index] ?? 0;
-    const low = Math.min(from, to);
-    const horizontal = Math.floor(from / ny) !== Math.floor(to / ny);
-    const step = horizontal ? ny : 1;
-    for (let vertex = low; vertex <= Math.max(from, to); vertex += step) {
-      if (vertex < Math.max(from, to)) (horizontal ? occupancy.usedH : occupancy.usedV)[vertex] = 1;
-      (horizontal ? occupancy.passH : occupancy.passV)[vertex] = 1;
+    claimLine(grid, occupancy, from, to, Math.floor(from / ny) !== Math.floor(to / ny), pitch);
+  }
+}
+
+function claimLine(
+  grid: Grid,
+  occupancy: Occupancy,
+  from: number,
+  to: number,
+  horizontal: boolean,
+  pitch: number,
+): void {
+  const { ny } = grid;
+  const used = horizontal ? occupancy.usedH : occupancy.usedV;
+  const pass = horizontal ? occupancy.passH : occupancy.passV;
+  const step = horizontal ? ny : 1;
+  const last = Math.max(from, to);
+  for (let vertex = Math.min(from, to); vertex <= last; vertex += step) {
+    if (vertex < last) {
+      used[vertex] = 1;
+      crowd(grid, occupancy, vertex, horizontal, pitch);
+    }
+    pass[vertex] = 1;
+  }
+}
+
+function crowd(grid: Grid, occupancy: Occupancy, vertex: number, horizontal: boolean, pitch: number): void {
+  if (pitch <= 0) return;
+  const { ny, ys, xs } = grid;
+  const ix = Math.floor(vertex / ny);
+  const iy = vertex % ny;
+  const lines = horizontal ? ys : xs;
+  const at = horizontal ? iy : ix;
+  const used = horizontal ? occupancy.usedH : occupancy.usedV;
+  crowdLines(lines, at, pitch, (other: number): void => {
+    used[horizontal ? ix * ny + other : other * ny + iy] = 1;
+  });
+}
+
+function crowdLines(lines: readonly number[], at: number, pitch: number, close: (other: number) => void): void {
+  for (const direction of [-1, 1]) {
+    let other = at + direction;
+    while (other >= 0 && other < lines.length && Math.abs((lines[other] ?? 0) - (lines[at] ?? 0)) < pitch) {
+      close(other);
+      other += direction;
     }
   }
 }

@@ -13,6 +13,16 @@ describe("breadcrumb", () => {
     expect(go).toHaveBeenCalledOnce();
   });
 
+  it("carries the full name on a truncated crumb as its tooltip and accessible name", () => {
+    const long = 'Hunt & "Ålborg" pumps / 冷却 test with a very long name that the top bar cuts';
+    render(<Breadcrumb trail={[{ label: long, onGo: () => undefined }]} here={long} heading={null} />);
+    const nav = screen.getByRole("navigation", { name: "Breadcrumb" });
+    const crumb = within(nav).getByRole("button", { name: long });
+    expect(crumb).toHaveAttribute("title", long);
+    expect(crumb).toHaveAttribute("aria-label", long);
+    expect(within(nav).getByRole("heading", { level: 1, name: long })).toHaveAttribute("title", long);
+  });
+
   it("renders into the top bar slot when one is provided", () => {
     const slot = document.createElement("div");
     document.body.append(slot);

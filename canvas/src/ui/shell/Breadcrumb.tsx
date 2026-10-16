@@ -25,14 +25,27 @@ function Trail({ trail, here, heading, tag }: BreadcrumbProps) {
       <ol>
         {trail.map((crumb, index) => (
           <li key={String(index)} className={styles.step}>
-            <button type="button" className={shared.crumb} title={crumb.label} onClick={crumb.onGo}>
+            <button
+              type="button"
+              className={shared.crumb}
+              title={crumb.label}
+              aria-label={crumb.label}
+              onClick={crumb.onGo}
+            >
               {crumb.label}
             </button>
             <ChevronRight size={14} aria-hidden="true" />
           </li>
         ))}
         <li className={styles.hereItem}>
-          <h1 aria-current="location" className={styles.here} ref={heading} tabIndex={-1} title={here}>
+          <h1
+            aria-current="location"
+            aria-label={here}
+            className={styles.here}
+            ref={heading}
+            tabIndex={-1}
+            title={here}
+          >
             {here}
           </h1>
         </li>

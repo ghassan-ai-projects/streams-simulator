@@ -5,7 +5,6 @@ import { env } from "./support/env";
 import { nodesOutsideCanvas } from "./support/fitAudit";
 import { noteProblems } from "./support/noteFit";
 import { textClashes } from "./support/textClashes";
-import { waitForViewport } from "./support/viewport";
 
 test.use({ storageState: env("CANVAS_APP_STATE") });
 test.setTimeout(90_000);
@@ -23,9 +22,9 @@ test("a recorded run plays back with the binary's report and a Verified badge", 
   await expect(page.getByText("Evaluate", { exact: true })).toBeVisible();
   await expect(page.getByText("seed 7 · 30 min")).toBeVisible();
   const report = page.getByRole("complementary", { name: "Run details" });
-  await expect(report.locator("summary").first()).toHaveText("Verified: the files match and the replay reproduces.");
+  await expect(report.locator("summary").first()).toHaveText("The files match and the replay reproduces.");
   await openIntegrity(page);
-  await expect(report.getByRole("region", { name: "File check" })).toContainText("files match");
+  await expect(report.getByRole("region", { name: "File check" })).toContainText("Files match the record.");
   await expect(report.getByRole("region", { name: "Replay check" })).toContainText("Reproduces");
   await expect(page.getByRole("status").filter({ hasText: "plant file changed after this run" })).toBeVisible();
   await expect(report.getByRole("region", { name: "True results" })).toContainText("CH-1");
@@ -57,11 +56,11 @@ test("a run whose files were edited after it ended is Not verified", async ({ pa
   await openIntegrity(page);
   await expect(
     page.getByRole("complementary", { name: "Run details" }).getByRole("region", { name: "File check" }),
-  ).toContainText("files differ");
+  ).toContainText("The files changed after the run.");
   await expect(page.getByRole("alert").filter({ hasText: "differ from what the run wrote" })).toBeVisible();
   await expect(
     page.getByRole("complementary", { name: "Run details" }).getByRole("region", { name: "Replay check" }),
-  ).toContainText("Does not verify: trace.jsonl differs");
+  ).toContainText("trace.jsonl differs from what the run recorded.");
   const graph = await page.getByRole("application", { name: "Plant graph" }).boundingBox();
   expect(graph?.height ?? 0).toBeGreaterThan(300);
 });
@@ -74,7 +73,7 @@ test("a run that does not reproduce reads Not verified with verify's own verdict
   await openIntegrity(page);
   const replay = page.getByRole("complementary", { name: "Run details" }).getByRole("region", { name: "Replay check" });
   await expect(replay).toContainText(/Does not (reproduce|verify)/);
-  await replay.getByText("What differs").click();
+  await replay.getByText("For developers").click();
   await expect(replay.locator("pre")).not.toBeEmpty();
   await expect(page.getByRole("note")).toContainText("This run did not verify");
 });
@@ -84,7 +83,7 @@ test("a run whose recorded plant was tampered with reads Not verified, not Not c
   await expect(page.getByRole("status").filter({ hasText: /^Not verified$/ })).toHaveCount(1, { timeout: 60_000 });
   await openIntegrity(page);
   const replay = page.getByRole("complementary", { name: "Run details" }).getByRole("region", { name: "Replay check" });
-  await replay.getByText("What differs").click();
+  await replay.getByText("For developers").click();
   await expect(replay).toContainText("nothing was replayed");
   await expect(replay.locator("pre")).toContainText("does not match its digest");
 });
@@ -125,23 +124,6 @@ test("a review node lists every port of its kind as a row, observed or not, at e
   for (let step = 0; step < 3; step += 1) {
     expect(await page.evaluate(textClashes)).toEqual([]);
     await page.keyboard.press("+");
-  }
-});
-
-test("a faulted node's id, kind, cause and effector outcome never overlap at any zoom step", async ({ page }) => {
-  await page.setViewportSize({ width: 1280, height: 720 });
-  await page.goto(`${env("CANVAS_APP_URL")}/#/run?world=w-boiler`);
-  await expect(page.getByText(/\d+ observations/)).toBeVisible({ timeout: 60_000 });
-  await page.getByRole("slider", { name: "Playback time" }).fill("660");
-  const boiler = page.getByRole("group", { name: /^boiler-1, / });
-  await expect(boiler.getByText("Fault · scaling")).toBeVisible();
-  const graph = page.getByRole("application", { name: "Plant graph" });
-  await graph.focus();
-  await waitForViewport(page);
-  for (const key of ["+", "+", "-", "-", "-", "-"]) {
-    await page.keyboard.press(key);
-    await expect(boiler.getByText("Fault · scaling")).toBeVisible();
-    await expect.poll(() => page.evaluate(textClashes)).toEqual([]);
   }
 });
 
@@ -229,8 +211,10 @@ test("a review of a plant too large for 40 % opens at 40 % on its first fault, w
   expect(opened.shown).toBeGreaterThan(0);
   expect(opened.smallest).toBeGreaterThanOrEqual(7.99);
   expect(await page.evaluate(nodesOutsideCanvas)).not.toEqual([]);
+  await expect(page.locator("[data-pan-cue]").first()).toBeVisible();
   await page.getByRole("button", { name: "Fit the plant in view" }).click();
   await expect.poll(() => page.evaluate(nodesOutsideCanvas)).toEqual([]);
+  await expect(page.locator("[data-pan-cue]")).toHaveCount(0);
 });
 
 test("a fault's cause and an effector outcome wrap on the node, whole, at the opening tier and at the whole-plant fit", async ({

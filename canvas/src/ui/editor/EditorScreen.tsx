@@ -50,10 +50,7 @@ function NoEquipment() {
     <div className={styles.empty}>
       <Boxes size={28} aria-hidden="true" />
       <h2>No equipment yet</h2>
-      <p>
-        Find a piece of equipment in the Build panel, give it a name and an area, and add it. Then link an output to an
-        input, and save to compose the plant.
-      </p>
+      <p>Equipment you add from the Build panel appears here.</p>
     </div>
   );
 }
@@ -72,9 +69,9 @@ function EditorGraph({ draft, editor, view, flagged, aspect }: GraphProps) {
       view={view}
       viewKey={`edit:${draft.path}`}
       fitKey={`${draft.path}:${String(view.nodes.length)}:${String(aspect)}`}
+      panCue
       selected={draft.selected}
       flagged={flagged}
-      minFitZoom={0.25}
       focusZoom={1}
       onSelect={(id) => {
         editor.select(id);

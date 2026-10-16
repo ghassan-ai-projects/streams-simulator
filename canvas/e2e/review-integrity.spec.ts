@@ -20,7 +20,7 @@ test("an incomplete stamp never reads Reproduces when the completed journals con
   await expect(replay).not.toContainText("Reproduces");
   await expect(details.getByRole("note")).toContainText("This run did not verify");
   await expect(page.getByRole("status").filter({ hasText: /^Verified$/ })).toHaveCount(0);
-  await replay.getByText("What differs").click();
+  await replay.getByText("For developers").click();
   await expect(replay.locator("pre")).toContainText("incomplete");
   await page
     .getByRole("navigation", { name: "Outline" })
@@ -35,7 +35,7 @@ test("a complete run missing a recorded digest fails both file and replay checks
   await expect(page.getByRole("status").filter({ hasText: /^Not verified$/ })).toHaveCount(1, { timeout: 60_000 });
   const details = page.getByRole("complementary", { name: "Run details" });
   await openIntegrity(page);
-  await expect(details.getByRole("region", { name: "File check" })).toContainText("files differ");
+  await expect(details.getByRole("region", { name: "File check" })).toContainText("The files changed after the run.");
   await expect(details.getByRole("region", { name: "Replay check" })).toContainText(
     "records no digest for ledger.jsonl",
   );

@@ -23,7 +23,9 @@ function useToggle(): readonly [boolean, (open: boolean) => void] {
 }
 
 function groupsOn(screen: Route["screen"] | undefined) {
-  return keyGroups.filter((group) => group.rows.length > 0 && (screen === undefined || group.screens.includes(screen)));
+  return keyGroups(screen).filter(
+    (group) => group.rows.length > 0 && (screen === undefined || group.screens.includes(screen)),
+  );
 }
 
 function KeyList({ screen }: { readonly screen: Route["screen"] | undefined }) {

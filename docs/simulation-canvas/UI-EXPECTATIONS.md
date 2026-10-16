@@ -122,12 +122,12 @@ How to read the tables:
 | E-7 | Undo and redo (Ctrl+Z, Ctrl+Shift+Z) for every edit until save. | ✅ undo and redo with buttons and Ctrl/Cmd+Z (4446aef) | |
 | E-8 | Moving an instance between areas shows the area frames as targets. Areas can be added and renamed. | ◐ select only; no area editing | |
 | E-9 | Leaving with unsaved changes, by navigation or reload, asks first. | ◐ reload only | |
-| E-10 | The empty editor shows a clear first step ("Add the first piece of equipment") next to the add form. | ◐ outline and Navigator blank; hint mid-canvas, not by add form | |
+| E-10 | The empty editor shows a clear first step ("Add the first piece of equipment") next to the add form. | ✅ the step leads the Build panel, above the add form; the canvas empty state keeps the state and where equipment appears (a13c028) | |
 | E-11 | Save and Revert are visibly disabled when there are no changes. | ✅ Save is disabled when clean | |
-| E-12 | Help copy reads as sentences, with no stray hint between fields. | ✗ "Link ports with Link an output…"; stray "Choose a component." | |
-| E-13 | The links list shows port names in words, each row selects its other end, and its count style matches the other lists. | ✗ mono snake_case `CT-1.basin_out → CH-1.cond_water_in`; unlabelled trash icons | |
+| E-12 | Help copy reads as sentences, with no stray hint between fields. | ✅ the two named hints are gone (d41c032); the links empty state, the last fragment, is a sentence (969531d) | |
+| E-13 | The links list shows port names in words, each row selects its other end, and its count style matches the other lists. | ✅ port names in words and a labelled button that selects the other end (ba90274); a visible Remove control on every row (3f1996d); the count reads like the other lists' counts (43c79a6) | |
 | E-14 | Every wire visibly ends on its two pins and never passes behind a node body. | ✗ wire hidden behind CH-2; loops at M-1 and M-2 inputs | |
-| E-15 | The editor opens fitted to the plant, like the plant screen. | ✗ opens at 100 % on a clipped fragment at 1440 and 1920 | |
+| E-15 | The editor opens the plant on the same opening rule as the plant screen: fitted when it fits above the 40 % floor, otherwise at the floor, with the fade where to pan. | ✅ one opening rule on plant, editor and review; the cut is cued and the Navigator shows the whole | |
 
 ## 5. Run panel (run a plant)
 

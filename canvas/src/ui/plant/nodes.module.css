@@ -30,6 +30,11 @@
   font-weight: 600;
 }
 
+:global(.tier-full) .header {
+  align-content: start;
+  row-gap: var(--space-1);
+}
+
 .id {
   flex: 0 1 auto;
   min-width: 0;
@@ -107,6 +112,29 @@
 
 .out .diamond {
   transform: translate(50%, -50%) rotate(45deg) scale(0.9) !important;
+}
+
+.bar {
+  width: 6px !important;
+  border-radius: 3px !important;
+}
+
+.hexagon {
+  border: 0 !important;
+  background: currentColor !important;
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+}
+
+.hexagon::before {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  background: var(--surface-raised);
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+}
+
+.hexagon.connected::before {
+  content: none;
 }
 
 .connected {

@@ -151,17 +151,23 @@ export function ZoomBar({ review = false }: { readonly review?: boolean }) {
   const settled = useSettledZoom();
   return (
     <div className={styles.zoom} role="group" aria-label="Zoom">
-      <button type="button" className={styles.button} aria-label="Zoom out" onClick={zoomTo.out}>
+      <button type="button" className={styles.button} aria-label="Zoom out" title="Zoom out" onClick={zoomTo.out}>
         <Minus size={14} aria-hidden="true" />
       </button>
       <span className={styles.percent} aria-hidden="true">{`${String(Math.round(zoom * 100))} %`}</span>
       <span className="sr-only" aria-live="polite">
         {settled}
       </span>
-      <button type="button" className={styles.button} aria-label="Zoom in" onClick={zoomTo.in}>
+      <button type="button" className={styles.button} aria-label="Zoom in" title="Zoom in" onClick={zoomTo.in}>
         <Plus size={14} aria-hidden="true" />
       </button>
-      <button type="button" className={styles.button} aria-label="Fit the plant in view" onClick={zoomTo.fit}>
+      <button
+        type="button"
+        className={styles.button}
+        aria-label="Fit the plant in view"
+        title="Fit the plant in view"
+        onClick={zoomTo.fit}
+      >
         <Maximize size={14} aria-hidden="true" />
       </button>
       <LegendButton review={review} />

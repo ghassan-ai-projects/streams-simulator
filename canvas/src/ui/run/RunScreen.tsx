@@ -1,16 +1,18 @@
 import { ReactFlowProvider } from "@xyflow/react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { LaunchStore } from "../../app/launchStore";
 import type { NavigationStore } from "../../app/navigationStore";
 import type { PlantState, PlantStore } from "../../app/plantStore";
 import type { ReviewState, ReviewStore } from "../../app/reviewStore";
-import type { WorkspaceStore } from "../../app/workspaceStore";
+import type { WorkspaceState, WorkspaceStore } from "../../app/workspaceStore";
 import { isMissing } from "../../model/bridge";
 import type { Opening } from "../../model/playback";
+import type { RunEntry } from "../../model/bridge";
 import { stateUnit } from "../../model/plant";
 import { runClock } from "../../model/timeline";
 import { noteLinesByEntity } from "../../model/noteLines";
 import { plantView } from "../../model/plantView";
+import type { PlantView } from "../../model/plantView";
 import { firstEventNode } from "../../model/reviewAnchor";
 import type { Report } from "../../model/report";
 import { runSpan } from "../../model/report";
@@ -41,6 +43,27 @@ interface RunScreenProps {
 }
 
 type ReadyPlant = Extract<PlantState, { phase: "ready" }>;
+
+function entryOf(listing: WorkspaceState, worldId: string): RunEntry | undefined {
+  return listing.phase === "ready" ? listing.workspace.runs.find((run) => run.worldId === worldId) : undefined;
+}
+
+function useReviewOpen(review: ReviewStore, workspace: WorkspaceStore, worldId: string): void {
+  const listing = useStore(workspace);
+  const known = useRef<RunEntry | undefined>(undefined);
+  const settled = listing.phase !== "loading";
+  useEffect(() => {
+    known.current = entryOf(listing, worldId);
+    review.refreshCompleted(worldId, known.current);
+  }, [listing, worldId, review]);
+  useEffect(() => {
+    if (!settled) return undefined;
+    review.open(worldId, known.current);
+    return () => {
+      review.close();
+    };
+  }, [review, worldId, settled]);
+}
 
 function useRunPlant(state: ReviewState, plants: PlantStore, workspace: WorkspaceStore): ReadyPlant | null {
   const listing = useStore(workspace);
@@ -103,6 +126,10 @@ interface GraphProps extends HallProps {
   readonly plant: ReadyPlant | null;
 }
 
+function anchorOf(view: PlantView | null, report: Report | null): string | null {
+  return view === null ? null : firstEventNode(report, new Set(view.nodes.map((node) => node.id)));
+}
+
 function Graph({ review, state, plant, hall, onHall }: GraphProps) {
   const { ref, aspect } = useCanvasAspect<HTMLDivElement>();
   const report = state.report.phase === "ready" ? state.report.value : null;
@@ -111,10 +138,7 @@ function Graph({ review, state, plant, hall, onHall }: GraphProps) {
     [plant, hall, aspect, report],
   );
   const live = useLive(review, state, plant);
-  const anchor = useMemo(
-    () => (view === null ? null : firstEventNode(report, new Set(view.nodes.map((node) => node.id)))),
-    [view, report],
-  );
+  const anchor = useMemo(() => anchorOf(view, report), [view, report]);
   if (view === null) return <OpeningPlant />;
   return (
     <div className={styles.graphArea}>
@@ -126,6 +150,7 @@ function Graph({ review, state, plant, hall, onHall }: GraphProps) {
       <div ref={ref} className={plantStyles.graphHost}>
         <PlantGraph
           anchor={anchor}
+          panCue
           view={view}
           viewKey={hall ?? "review"}
           fitKey={`${hall ?? "review"}:${String(aspect)}`}
@@ -243,12 +268,7 @@ export function RunScreen({ review, plants, workspace, navigation, launch, world
   const plant = useRunPlant(state, plants, workspace);
   const identity = usePlantIdentity(state, workspace, plant);
   const [hall, setHall] = useState<string | null>(null);
-  useEffect(() => {
-    review.open(worldId);
-    return () => {
-      review.close();
-    };
-  }, [review, worldId]);
+  useReviewOpen(review, workspace, worldId);
   usePlayback(review, state.playing);
   const unit = useUnitOf(plant);
   return (

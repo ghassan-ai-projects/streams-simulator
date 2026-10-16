@@ -198,4 +198,103 @@ describe("review", () => {
     expect(bridge.calls.filter((call) => call.name === "run.verify")).toHaveLength(2);
     expect(store.snapshot().report).toMatchObject({ phase: "ready", value: { ended: true } });
   });
+
+  it("reviews a run the listing marks did-not-finish without asking for the doomed verdict and run.json", async () => {
+    const { bridge, store } = setup();
+    bridge.actions.set(
+      "run.report",
+      success({
+        ...report,
+        run: { ...report.run, ended: false, complete: false, incomplete_reason: "the run did not close." },
+      }),
+    );
+    store.open("w-9", { ...entry, worldId: "w-9", ended: true, complete: false });
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(bridge.calls.map((call) => call.name)).toEqual(["run.report"]);
+    expect(bridge.reads).toEqual([]);
+    expect(store.snapshot().report).toMatchObject({ phase: "ready", value: { ended: false } });
+    expect(store.snapshot().verified).toMatchObject({
+      phase: "failed",
+      failure: { status: 422, code: "run_incomplete", message: "the run is incomplete: the run did not close." },
+    });
+    expect(store.snapshot().runDomain).toMatchObject({
+      phase: "failed",
+      failure: { status: 404, code: "not_found", message: "run.json is absent: the run is still open or did not end" },
+    });
+    expect(store.badgeFor("w-9")).toBe("incomplete");
+  });
+
+  it("answers a run the listing still shows as open from the listing, not the network", async () => {
+    const { bridge, store } = setup();
+    bridge.actions.set(
+      "run.report",
+      success({ ...report, run: { ...report.run, ended: false, complete: false, incomplete_reason: "" } }),
+    );
+    store.open("w-9", { ...entry, worldId: "w-9", ended: false, complete: false });
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(bridge.calls.map((call) => call.name)).toEqual(["run.report"]);
+    expect(bridge.reads).toEqual([]);
+    expect(store.snapshot().verified).toMatchObject({
+      phase: "failed",
+      failure: { status: 422, code: "run_incomplete", message: "the run is incomplete: the run did not close." },
+    });
+    expect(store.snapshot().runDomain).toMatchObject({
+      phase: "failed",
+      failure: { status: 404, code: "not_found" },
+    });
+    expect(store.badgeFor("w-9")).toBe("incomplete");
+  });
+
+  it("finishes a run listed as open when its journal closes while the review watches", async () => {
+    const { bridge, store, flushes } = setup();
+    bridge.actions.set("run.report", success({ ...report, run: { ...report.run, ended: false, complete: false } }));
+    store.open("w-1", { ...entry, worldId: "w-1", ended: false, complete: false });
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(bridge.calls.map((call) => call.name)).toEqual(["run.report"]);
+    bridge.actions.set("run.report", success(report));
+    bridge.stream("w-1", journal);
+    flushes.forEach((flush) => {
+      flush();
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(bridge.calls.filter((call) => call.name === "run.report")).toHaveLength(2);
+    expect(bridge.calls.filter((call) => call.name === "run.verify")).toHaveLength(1);
+    expect(store.snapshot()).toMatchObject({
+      report: { phase: "ready", value: { ended: true } },
+      verified: { phase: "ready", value: { matches: true } },
+    });
+  });
+
+  it("re-asks nothing doomed when an abandoned run's journal stream closes", async () => {
+    const { bridge, store, flushes } = setup();
+    bridge.actions.set("run.report", success({ ...report, run: { ...report.run, ended: false, complete: false } }));
+    store.open("w-9", { ...entry, worldId: "w-9", ended: true, complete: false });
+    await Promise.resolve();
+    await Promise.resolve();
+    bridge.stream("w-9", journal);
+    flushes.forEach((flush) => {
+      flush();
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(store.snapshot().playback).toMatchObject({ phase: "ready" });
+    expect(bridge.calls.map((call) => call.name)).toEqual(["run.report"]);
+    expect(bridge.reads).toEqual([]);
+  });
 });
+
+const entry = {
+  worldId: "w-9",
+  ended: true,
+  complete: true,
+  incompleteReason: "the run did not close.",
+  explore: false,
+  seed: 5,
+  plant: "factory-utilities",
+  durationS: 0,
+  recordedAt: "2026-10-14T10:00:00Z",
+};

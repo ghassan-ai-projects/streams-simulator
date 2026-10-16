@@ -5,7 +5,7 @@ import { vi } from "vitest";
 import { EditorStore } from "../app/editorStore";
 import { NavigationStore } from "../app/navigationStore";
 import { success } from "../model/bridge";
-import { compositionPlant } from "../model/composition";
+import { compositionPlant, shortKind } from "../model/composition";
 import { EditorBar } from "../ui/editor/EditorBar";
 import { EditorPanel } from "../ui/editor/EditorPanel";
 import { FocusRequest } from "../ui/editor/panelProps";
@@ -39,7 +39,7 @@ export function Harness({ editor }: { readonly editor: EditorStore }) {
   const state = useStore(editor);
   const [request] = useState(() => new FocusRequest());
   if (state.phase !== "ready") return <p>{state.phase}</p>;
-  const plant = compositionPlant(state.doc, (component) => component);
+  const plant = compositionPlant(state.doc, shortKind);
   const navigation = new NavigationStore({ read: () => "#/", write: vi.fn(), subscribe: () => () => undefined });
   return (
     <ReactFlowProvider>

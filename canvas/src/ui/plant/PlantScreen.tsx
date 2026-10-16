@@ -7,7 +7,7 @@ import type { PlantState, PlantStore } from "../../app/plantStore";
 import type { WorkspaceStore } from "../../app/workspaceStore";
 import { hallCount, hallOf, hallsOf, plantView } from "../../model/plantView";
 import type { RunRow } from "../../model/workspace";
-import { runRows } from "../../model/workspace";
+import { counted, runRows } from "../../model/workspace";
 import type { Crumb } from "../shell/Breadcrumb";
 import { Breadcrumb } from "../shell/Breadcrumb";
 import { useScreen } from "../useScreen";
@@ -38,7 +38,7 @@ function summary(state: Ready, hall: string | null): string {
   const ports = state.plant.links.some((link) => link.fromPort === null) ? " · some links record no ports" : "";
   const figures =
     hall === null
-      ? `${String(state.plant.instances.length)} instances · ${String(state.plant.links.length)} links`
+      ? `${counted(state.plant.instances.length, "instance", "instances")} · ${counted(state.plant.links.length, "link", "links")}`
       : hallCount(plantView(state.plant, state.specs, hall), hall);
   return `${figures}${ports}`;
 }

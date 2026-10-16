@@ -122,5 +122,7 @@ export function routeView(
     nodes: [...view.layout.nodes.values()],
     titles: [...view.layout.groups.values()].map((frame) => titleBox(frame, tier, pixel)),
     titleClearances: [9 * pixel, 5 * pixel, 3 * pixel, 1.5 * pixel, 0],
+    frames: [...view.layout.groups.values()],
+    pixel,
   });
 }

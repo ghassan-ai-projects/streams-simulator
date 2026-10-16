@@ -25,7 +25,11 @@ export interface WireScene {
   readonly nodes: readonly Rect[];
   readonly titles: readonly Rect[];
   readonly titleClearances?: readonly number[];
+  readonly frames?: readonly Rect[];
+  readonly pixel?: number;
 }
+
+const frameMargin = 12;
 
 export const wireClearance = { node: 8, stub: 16, lane: 6 } as const;
 
@@ -63,7 +67,10 @@ function obstaclesOf(scene: WireScene, titleClearance: number | null): Rect[] {
 }
 
 function gridOf(scene: WireScene, obstacles: readonly Rect[]): Grid {
-  const { lane } = wireClearance;
+  const pixel = scene.pixel ?? 1;
+  const lane = wireClearance.lane * pixel;
+  const band = frameMargin * pixel;
+  const frames = scene.frames ?? [];
   const xs = obstacles.flatMap((box) => [
     ...lanes(box.x, -1, laneCount.x, lane),
     ...lanes(box.x + box.width, 1, laneCount.x, lane),
@@ -77,7 +84,11 @@ function gridOf(scene: WireScene, obstacles: readonly Rect[]): Grid {
     xs.push(start.x, goal.x);
     ys.push(start.y, goal.y);
   }
-  return buildGrid(obstacles, xs, ys);
+  for (const frame of frames) {
+    xs.push(frame.x - band, frame.x + band, frame.x + frame.width - band, frame.x + frame.width + band);
+    ys.push(frame.y - band, frame.y + band, frame.y + frame.height - band, frame.y + frame.height + band);
+  }
+  return buildGrid(obstacles, xs, ys, { frames, band });
 }
 
 function collinear(a: Point, b: Point, c: Point): boolean {
@@ -142,7 +153,7 @@ function routeOn(scene: WireScene, titleClearance: number | null, ordered: reado
     const ends = { start: vertexOf(grid, start), goal: vertexOf(grid, goal) };
     const turned = { start: !horizontal(link.leaves ?? "right"), goal: !horizontal(link.enters ?? "left") };
     const found = grid.nx * grid.ny <= gridLimit ? pathOf(grid, occupancy, ends, turned, link.corridor) : null;
-    if (found !== null) occupy(grid, occupancy, found);
+    if (found !== null) occupy(grid, occupancy, found, wireClearance.lane * (scene.pixel ?? 1));
     routes.set(link.id, found === null ? [] : polyline(link, grid, found));
   }
   return routes;

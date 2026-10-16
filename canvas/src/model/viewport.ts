@@ -40,7 +40,26 @@ export function centreOf(box: Rect): { readonly x: number; readonly y: number } 
   return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
 }
 
+export type CutSide = "none" | "left" | "right" | "both";
+
+export function cutSide(
+  bounds: Rect,
+  viewport: Viewport,
+  screen: { readonly width: number; readonly height: number },
+): CutSide {
+  const left = bounds.x * viewport.zoom + viewport.x;
+  const right = left + bounds.width * viewport.zoom;
+  const cutLeft = left < -0.5;
+  const cutRight = right > screen.width + 0.5;
+  if (cutLeft && cutRight) return "both";
+  if (cutLeft) return "left";
+  if (cutRight) return "right";
+  return "none";
+}
+
 export const openingFloor = 0.4;
+
+export const overviewFloor = 0.25;
 
 export const textFloorPx = 8;
 
@@ -56,7 +75,7 @@ export type Tier = "full" | "compact" | "overview" | "map";
 export function tierOf(zoom: number): Tier {
   if (zoom >= 1) return "full";
   if (zoom >= openingFloor) return "compact";
-  return zoom >= 0.25 ? "overview" : "map";
+  return zoom >= overviewFloor ? "overview" : "map";
 }
 
 interface Size {

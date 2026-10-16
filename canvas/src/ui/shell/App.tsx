@@ -18,6 +18,7 @@ import { RunScreen } from "../run/RunScreen";
 import { CrumbSlot } from "./Breadcrumb";
 import { KeyHelp } from "./KeyHelp";
 import { PanelToggles } from "./PanelToggles";
+import { rightPanelName } from "./panelName";
 import { showBuild } from "./showBuild";
 import { RunIndicator } from "./RunIndicator";
 import { Shell } from "./Shell";
@@ -102,11 +103,12 @@ function Screen({ stores, route }: { readonly stores: Stores; readonly route: Ro
 }
 
 function ShellToggles({ stores, route }: { readonly stores: Stores; readonly route: Route }) {
-  if (route.screen !== "edit") return <PanelToggles panels={stores.panels} right="Inspector" />;
+  const name = rightPanelName[route.screen];
+  if (route.screen !== "edit") return <PanelToggles panels={stores.panels} right={name} />;
   return (
     <PanelToggles
       panels={stores.panels}
-      right="Build"
+      right={name}
       onRightPress={() => {
         showBuild(stores.editor, stores.panels);
       }}

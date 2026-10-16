@@ -1,14 +1,17 @@
 import { kindLabel } from "../../model/report";
 import { Box, Trash2, TriangleAlert, X } from "lucide-react";
-import type { SyntheticEvent } from "react";
+import type { ReactNode, SyntheticEvent } from "react";
 import { useState } from "react";
 import type { Draft } from "../../app/editorStore";
 import type { Instance } from "../../model/plant";
-import type { Connection } from "../../model/composition";
+import type { Connection, LinkEnd } from "../../model/composition";
 import { areaNodesOf, connectionsOf, endpointOf, linkEnd } from "../../model/composition";
 import { instanceNameFits, instanceNameRule } from "../../model/instanceNameRule";
 import { disconnect, isTemplate, moveInstance, renameInstance } from "../../model/compositionEdits";
 import panel from "../panel.module.css";
+import { cx } from "../cx";
+import shared from "../shared.module.css";
+import { useCutBottom } from "../useCutBottom";
 import { ConnectForm } from "./ConnectForm";
 import { DeleteInstance } from "./DeleteInstance";
 import styles from "./Editor.module.css";
@@ -98,25 +101,50 @@ function AreaPick({ draft, instance, editor }: Pick<EditorProps, "draft" | "inst
   );
 }
 
+function Ends({ end, other }: { readonly end: LinkEnd; readonly other: ReactNode }) {
+  if (end.outgoing) {
+    return (
+      <>
+        <span>{end.port}</span>
+        <span aria-hidden="true">→</span>
+        {other}
+        <span>{end.otherPort}</span>
+      </>
+    );
+  }
+  return (
+    <>
+      {other}
+      <span>{end.otherPort}</span>
+      <span aria-hidden="true">→</span>
+      <span>{end.port}</span>
+    </>
+  );
+}
+
 function LinkRow({ wire, instance, editor }: { readonly wire: Connection } & Pick<EditorProps, "instance" | "editor">) {
   const end = linkEnd(wire, instance.id);
-  const words = `${end.port} ${end.outgoing ? "to" : "from"} ${end.other} ${end.otherPort}`;
+  const words = end.outgoing
+    ? `${end.port} to ${end.other} ${end.otherPort}`
+    : `${end.other} ${end.otherPort} to ${end.port}`;
   return (
     <li>
       <span className={styles.linkText}>
-        <span>{end.port}</span>
-        <span aria-hidden="true">{end.outgoing ? "→" : "←"}</span>
-        <button
-          type="button"
-          className={styles.linkOther}
-          title={`Select ${end.other}`}
-          onClick={() => {
-            editor.select(end.other);
-          }}
-        >
-          {end.other}
-        </button>
-        <span>{end.otherPort}</span>
+        <Ends
+          end={end}
+          other={
+            <button
+              type="button"
+              className={styles.linkOther}
+              title={`Select ${end.other}`}
+              onClick={() => {
+                editor.select(end.other);
+              }}
+            >
+              {end.other}
+            </button>
+          }
+        />
       </span>
       <button
         type="button"
@@ -143,7 +171,7 @@ function Links({ draft, instance, editor }: Pick<EditorProps, "draft" | "instanc
       <h3 id="links-title" className={styles.counted}>
         Links <span className={styles.count}>{touching.length}</span>
       </h3>
-      {touching.length === 0 && <p className={panel.hint}>Not linked yet.</p>}
+      {touching.length === 0 && <p className={panel.hint}>No links yet. Use “Link an output” above.</p>}
       <ul className={styles.links}>
         {touching.map((wire) => (
           <LinkRow key={wire.index} wire={wire} instance={instance} editor={editor} />
@@ -217,8 +245,14 @@ function kindLine(draft: Draft, instance: Instance): string {
 
 export function InstanceEditor(props: EditorProps) {
   const { draft, editor, request, instance } = props;
+  const { ref, cut } = useCutBottom<HTMLElement>([draft, instance]);
   return (
-    <aside className={panel.panel} aria-labelledby="instance-title">
+    <aside
+      ref={ref}
+      className={cx(panel.panel, shared.cut)}
+      data-cut={cut ? "true" : undefined}
+      aria-labelledby="instance-title"
+    >
       <Head instance={instance} editor={editor} request={request} />
       <div className={panel.body}>
         <Problems id={instance.id} messages={draft.issues?.instances.get(instance.id) ?? []} />
