@@ -72,6 +72,8 @@ function kept(doc: Composition, draft: Draft): string | null {
 }
 
 export class EditorStore extends Observable<EditorState> {
+  private request = 0;
+
   constructor(private readonly bridge: Bridge) {
     super({ phase: "idle" });
   }
@@ -81,19 +83,20 @@ export class EditorStore extends Observable<EditorState> {
     if (state.phase === "loading" && state.path === path) return;
     if (state.phase === "ready" && state.path === path && state.doc !== state.saved) return;
     if (state.phase !== "ready" || state.path !== path) this.set({ phase: "loading", path });
-    await this.load(path, state.phase === "ready" && state.path === path ? state.etag : null);
+    const request = (this.request += 1);
+    await this.load(request, path, state.phase === "ready" && state.path === path ? state.etag : null);
   }
 
   async reload(): Promise<void> {
     const draft = this.draft();
-    if (draft !== null) await this.load(draft.path, null);
+    if (draft !== null) await this.load((this.request += 1), draft.path, null);
   }
 
-  private async load(path: string, held: string | null): Promise<void> {
+  private async load(request: number, path: string, held: string | null): Promise<void> {
     const file = await this.bridge.readFile(path);
     if (file.ok && file.value.etag === held) return;
     const doc = file.ok ? parseComposition(file.value.content) : null;
-    if (!this.current(path)) return;
+    if (!this.current(request, path)) return;
     if (!file.ok || doc === null) {
       this.set({ phase: "failed", path, failure: file.ok ? unreadable : file.failure });
       return;
@@ -107,12 +110,13 @@ export class EditorStore extends Observable<EditorState> {
       this.versionOf(domainOf(doc)),
     ]);
     const library = parseLibrary(listed.ok ? listed.value : null);
-    if (this.current(path)) this.set({ ...this.fresh(path, file.value.etag, doc), domainEtag, library, specs });
+    if (this.current(request, path))
+      this.set({ ...this.fresh(path, file.value.etag, doc), domainEtag, library, specs });
   }
 
-  private current(path: string): boolean {
+  private current(request: number, path: string): boolean {
     const state = this.snapshot();
-    return state.phase !== "idle" && state.path === path;
+    return request === this.request && state.phase !== "idle" && state.path === path;
   }
 
   private async versionOf(path: string): Promise<string> {

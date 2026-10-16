@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
+import type { FileContent, Outcome } from "../model/bridge";
 import { failed, success } from "../model/bridge";
+import type { Deferred } from "../test/deferred";
+import { deferred } from "../test/deferred";
 import { equipmentOf } from "../model/composition";
 import { FakeBridge, failure } from "../test/fakeBridge";
 import { canSave, EditorStore, emptyPlant } from "./editorStore";
@@ -164,5 +167,30 @@ describe("editor store", () => {
     store.select("CH-1");
     store.redo();
     expect(store.snapshot()).toMatchObject({ selected: "CH-1" });
+  });
+
+  it("ignores an earlier visit's answer when the same composition is opened again", async () => {
+    const fake = bridge();
+    const other = "compositions/other.composition.json";
+    fake.files.set(other, success({ path: other, content: JSON.stringify({ ...doc, id: "other" }), etag: "c2" }));
+    const held: Deferred<Outcome<FileContent>>[] = [];
+    const read = fake.readFile.bind(fake);
+    fake.readFile = (requested: string) => {
+      if (requested !== path) return read(requested);
+      const gate = deferred<Outcome<FileContent>>();
+      held.push(gate);
+      return gate.promise;
+    };
+    const store = new EditorStore(fake);
+    const first = store.open(path);
+    await store.open(other);
+    const third = store.open(path);
+    held[0]?.resolve(success({ path, content: JSON.stringify({ ...doc, title: "stale" }), etag: "c1" }));
+    await first;
+    const stale = store.snapshot();
+    expect(stale).not.toMatchObject({ phase: "ready", doc: { title: "stale" } });
+    held[1]?.resolve(success({ path, content: JSON.stringify(doc), etag: "c1" }));
+    await third;
+    expect(store.snapshot()).toMatchObject({ phase: "ready", path, doc: { title: "Lab" } });
   });
 });

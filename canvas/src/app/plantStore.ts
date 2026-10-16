@@ -43,7 +43,7 @@ function unchanged(
 }
 
 export class PlantStore extends Observable<PlantState> {
-  private wanted = "";
+  private request = 0;
 
   constructor(private readonly bridge: Bridge) {
     super({ phase: "idle" });
@@ -51,16 +51,20 @@ export class PlantStore extends Observable<PlantState> {
 
   async load(path: string, workspace: Workspace): Promise<void> {
     if (this.loading(path)) return;
-    this.wanted = path;
+    const request = (this.request += 1);
     const held = this.held(path);
     if (held === null) this.set({ phase: "loading", path });
     const file = await this.bridge.readFile(path);
-    if (this.wanted !== path || unchanged(held, file, workspace)) return;
+    if (!this.current(request) || unchanged(held, file, workspace)) return;
     if (!file.ok) {
       this.set({ phase: "failed", path, failure: file.failure });
       return;
     }
-    await this.open(path, file.value, workspace, held?.selected ?? null);
+    await this.open(request, path, file.value, workspace, held?.selected ?? null);
+  }
+
+  private current(request: number): boolean {
+    return request === this.request;
   }
 
   private loading(path: string): boolean {
@@ -73,25 +77,31 @@ export class PlantStore extends Observable<PlantState> {
     return state.phase === "ready" && state.path === path ? state : null;
   }
 
-  private async open(path: string, file: FileContent, workspace: Workspace, selected: string | null): Promise<void> {
+  private async open(
+    request: number,
+    path: string,
+    file: FileContent,
+    workspace: Workspace,
+    selected: string | null,
+  ): Promise<void> {
     const domain = parsed(file.content);
     const id = typeof domain === "object" && domain !== null && "id" in domain ? String(domain.id) : "";
     const composition = pairOf(id, workspace);
     const plant = parsePlant(domain, composition === null ? null : await this.composition(composition));
     const kept = plant.instances.some((instance) => instance.id === selected) ? selected : null;
     const specs = await this.specs(plant);
-    if (this.wanted !== path) return;
+    if (!this.current(request)) return;
     this.set({ phase: "ready", path, etag: file.etag, plant, specs, composition, selected: kept });
   }
 
   async show(key: string, domain: unknown): Promise<void> {
     const state = this.snapshot();
     if (state.phase !== "idle" && state.phase !== "failed" && state.path === key) return;
-    this.wanted = key;
+    const request = (this.request += 1);
     this.set({ phase: "loading", path: key });
     const plant = parsePlant(domain);
     const specs = await this.specs(plant);
-    if (this.wanted !== key) return;
+    if (!this.current(request)) return;
     this.set({ phase: "ready", path: key, etag: "", plant, specs, composition: null, selected: null });
   }
 

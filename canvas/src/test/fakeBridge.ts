@@ -46,7 +46,10 @@ export class FakeBridge implements Bridge {
   workspaceOutcome: Outcome<Workspace> = success(sampleWorkspace);
   files = new Map<string, Outcome<FileContent>>();
   actions = new Map<string, Outcome<unknown>>();
-  handlers = new Map<string, (args: Readonly<Record<string, unknown>>) => Outcome<unknown>>();
+  handlers = new Map<
+    string,
+    (args: Readonly<Record<string, unknown>>) => Outcome<unknown> | Promise<Outcome<unknown>>
+  >();
   calls: { name: string; args: Readonly<Record<string, unknown>> }[] = [];
   reads: string[] = [];
   watchers = new Set<() => void>();
@@ -119,14 +122,23 @@ export class FakeBridge implements Bridge {
   }
 
   followers = new Map<string, RunFollower>();
+  follows: RunFollower[] = [];
 
   followRun(worldId: string, follower: RunFollower): () => void {
     this.followers.set(worldId, follower);
+    this.follows.push(follower);
     return () => this.followers.delete(worldId);
   }
 
   stream(worldId: string, records: readonly unknown[], end: "closed" | "failed" | null = "closed"): void {
-    const follower = this.followers.get(worldId);
+    this.send(this.followers.get(worldId), records, end);
+  }
+
+  streamFollow(index: number, records: readonly unknown[], end: "closed" | "failed" | null = "closed"): void {
+    this.send(this.follows[index], records, end);
+  }
+
+  private send(follower: RunFollower | undefined, records: readonly unknown[], end: "closed" | "failed" | null): void {
     records.forEach((record) => follower?.record(JSON.stringify(record)));
     if (end === "closed") follower?.closed();
     if (end === "failed") follower?.failed();
