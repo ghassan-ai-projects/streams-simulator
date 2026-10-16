@@ -2,9 +2,10 @@ import { useMemo } from "react";
 import type { LaunchStore } from "../../app/launchStore";
 import type { NavigationStore } from "../../app/navigationStore";
 import type { PlantState, PlantStore } from "../../app/plantStore";
+import { showingMarks } from "../../model/launch";
 import type { PlanMark } from "../../model/planMarks";
 import { planMarks } from "../../model/planMarks";
-import { plantView } from "../../model/plantView";
+import { plainView, plantView } from "../../model/plantView";
 import type { PlantView } from "../../model/plantView";
 import { useStore } from "../useStore";
 import { useCanvasAspect } from "./canvasAspect";
@@ -17,7 +18,7 @@ function useRunMarks(launch: LaunchStore, plant: string): ReadonlyMap<string, Pl
   const run = useStore(launch);
   return useMemo(() => {
     if (run.phase !== "running" || run.origin.domain !== plant) return undefined;
-    return planMarks(run.plan, run.calls, run.atS, run.atMs);
+    return planMarks(showingMarks(run.plan, run.calls, run.atS, run.atMs));
   }, [run, plant]);
 }
 
@@ -75,7 +76,7 @@ export function PlantCanvas({
   const { ref, aspect } = useCanvasAspect<HTMLDivElement>();
   const marks = useRunMarks(launch, state.plant.id);
   const view = useMemo(
-    () => plantView(state.plant, state.specs, hall, false, aspect),
+    () => plantView(state.plant, state.specs, hall, plainView, aspect),
     [state.plant, state.specs, hall, aspect],
   );
   return (

@@ -3,7 +3,7 @@ import type { SyntheticEvent } from "react";
 import { useState } from "react";
 import { connect } from "../../model/compositionEdits";
 import type { Instance, Plant } from "../../model/plant";
-import { kindLabel } from "../../model/report";
+import { kindLabel } from "../../model/shared/words";
 import type { ComponentSpec } from "../../model/ports";
 import { noTargetReason, portsMatching, portType, specOf } from "../../model/ports";
 import panel from "../panel.module.css";

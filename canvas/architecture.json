@@ -270,6 +270,7 @@
     "src/model/nodeWords.ts": "model/graph",
     "src/model/noteLines.test.ts": "model/review",
     "src/model/noteLines.ts": "model/review",
+    "src/model/nodePresentation.ts": "model/graph",
     "src/model/planMarks.test.ts": "model/graph",
     "src/model/planMarks.ts": "model/graph",
     "src/model/plant.test.ts": "model/plant",
@@ -294,6 +295,7 @@
     "src/model/reviewRows.ts": "model/review",
     "src/model/route.test.ts": "model/shell",
     "src/model/route.ts": "model/shell",
+    "src/model/shared/words.ts": "model/shared",
     "src/model/theme.test.ts": "model/shell",
     "src/model/theme.ts": "model/shell",
     "src/model/timeline.test.ts": "model/review",
@@ -375,7 +377,8 @@
     "src/test": "test",
     "src/adapters": "adapters/bridge",
     "src/ui": "ui/shell",
-    "src/main.tsx": "root"
+    "src/main.tsx": "root",
+    "src/model/shared/marks.ts": "model/shared"
   },
   "features": {
     "src/ui": "primitives",
@@ -882,12 +885,6 @@
       "rule": "boolean-flag-param",
       "file": "src/model/wireView.ts",
       "count": 2,
-      "phase": "P1"
-    },
-    {
-      "rule": "boolean-flag-param",
-      "file": "src/model/plantView.ts",
-      "count": 1,
       "phase": "P1"
     },
     {

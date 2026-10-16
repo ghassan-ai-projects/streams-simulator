@@ -2,7 +2,7 @@ import { Play, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { LaunchState, LaunchStore, Proposal } from "../../app/launchStore";
 import { clockOf, keepKnownFaults, planSummary, rateWords } from "../../model/launch";
-import { humanise } from "../../model/report";
+import { humanise } from "../../model/shared/words";
 import { durationOf } from "../../model/workspace";
 import type { Plant } from "../../model/plant";
 import { faultsOf } from "../../model/plant";

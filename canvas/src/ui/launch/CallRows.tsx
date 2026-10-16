@@ -3,7 +3,7 @@ import type { EffectorArg } from "../../model/effectors";
 import type { PlanProblem } from "../../model/launch";
 import type { Plant } from "../../model/plant";
 import { effectorOf } from "../../model/plant";
-import { humanise } from "../../model/report";
+import { humanise } from "../../model/shared/words";
 import type { Draft, DraftCall } from "./draft";
 import type { Change } from "./RowParts";
 import { AtMinute, InstancePick, invalid, RowTail, useAdding } from "./RowParts";

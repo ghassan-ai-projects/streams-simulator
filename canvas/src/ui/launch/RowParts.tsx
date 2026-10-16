@@ -1,7 +1,7 @@
 import { Trash2, TriangleAlert } from "lucide-react";
 import { useRef, useState } from "react";
 import type { Plant } from "../../model/plant";
-import { kindLabel } from "../../model/report";
+import { kindLabel } from "../../model/shared/words";
 import type { Draft } from "./draft";
 import panel from "../panel.module.css";
 import { useFocusOnMount } from "../useFocusOnMount";

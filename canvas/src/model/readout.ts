@@ -1,6 +1,6 @@
 import type { ChannelRange, ChannelState } from "./plant";
 import type { Reading } from "./playback";
-import { shortChannel } from "./playback";
+import { shortChannel } from "./shared/words";
 import { displayUnit } from "./units";
 
 export type Attention = "alarm" | "warn" | null;
@@ -24,6 +24,24 @@ export interface Shown {
 export interface ChannelSpec {
   readonly states: readonly ChannelState[];
   readonly range: ChannelRange | null;
+}
+
+export interface ReadoutRow {
+  readonly key: string;
+  readonly label: string;
+  readonly present: boolean;
+  readonly value: string;
+  readonly unit: string;
+  readonly word: boolean;
+  readonly attention: Attention;
+  readonly outside: string;
+  readonly observed: boolean;
+}
+
+export interface ReadoutBody {
+  readonly rows: readonly ReadoutRow[];
+  readonly hidden: number;
+  readonly hiddenAttention: Attention;
 }
 
 const noSpec: ChannelSpec = { states: [], range: null };

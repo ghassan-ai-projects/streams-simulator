@@ -1,7 +1,7 @@
 import type { LaunchState } from "../../app/launchStore";
 import type { CallOutcome } from "../../model/launch";
 import { clockOf, planSummary } from "../../model/launch";
-import { humanise } from "../../model/report";
+import { humanise } from "../../model/shared/words";
 import { durationOf } from "../../model/workspace";
 import { useFocusOnMount } from "../useFocusOnMount";
 import panel from "../panel.module.css";

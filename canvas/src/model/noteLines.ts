@@ -1,5 +1,5 @@
 import type { Report } from "./report";
-import { humanise } from "./report";
+import { humanise } from "./shared/words";
 
 const charsPerLine = 16;
 

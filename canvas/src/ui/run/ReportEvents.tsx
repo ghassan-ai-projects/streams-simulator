@@ -1,5 +1,5 @@
 import type { Report } from "../../model/report";
-import { humanise } from "../../model/report";
+import { humanise } from "../../model/shared/words";
 import { runClock } from "../../model/timeline";
 import type { Cell } from "./ReportParts";
 import { Rows, Section } from "./ReportParts";

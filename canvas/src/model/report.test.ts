@@ -1,17 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { report } from "../test/runFixture";
 import { kpiGroups, kpisOf, kpiWords, rerunOf, runFacts, runIdentity } from "./reportViews";
-import {
-  badgeLabels,
-  badgeOf,
-  humanise,
-  kindLabel,
-  parseReport,
-  runSpan,
-  parseReplay,
-  replayLine,
-  wallClock,
-} from "./report";
+import { humanise, kindLabel } from "./shared/words";
+import { badgeLabels, badgeOf, parseReport, runSpan, parseReplay, replayLine, wallClock } from "./report";
 
 describe("run report", () => {
   it("reads the run, counts, verification and truth sections", () => {

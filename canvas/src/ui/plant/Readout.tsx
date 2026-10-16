@@ -1,7 +1,4 @@
-import type { Pins as PortPins } from "../../model/ports";
-import type { Shown } from "../../model/readout";
-import type { ReviewRow } from "../../model/reviewRows";
-import { reviewBody } from "../../model/reviewRows";
+import type { ReadoutBody, ReadoutRow } from "../../model/readout";
 import { cx } from "../cx";
 import { OutsideMark } from "../OutsideMark";
 import styles from "./nodes.module.css";
@@ -16,30 +13,23 @@ function Missing({ observed }: { readonly observed: boolean }) {
   );
 }
 
-function Value({ row }: { readonly row: ReviewRow }) {
-  const { reading } = row;
-  if (reading === null) return <Missing observed={row.observed} />;
+function Value({ row }: { readonly row: ReadoutRow }) {
+  if (!row.present) return <Missing observed={row.observed} />;
   return (
     <>
-      {reading.value}
-      {reading.unit !== "" && <span className={styles.unit}>{reading.unit}</span>}
-      <OutsideMark text={reading.outside} />
+      {row.value}
+      {row.unit !== "" && <span className={styles.unit}>{row.unit}</span>}
+      <OutsideMark text={row.outside} />
     </>
   );
 }
 
-function ReviewRowItem({ row }: { readonly row: ReviewRow }) {
-  const { reading } = row;
-  const attention = reading?.attention ?? null;
+function ReadoutRowItem({ row }: { readonly row: ReadoutRow }) {
+  const { attention } = row;
   return (
-    <div
-      className={cx(attention !== null && styles[attention], reading === null && !row.observed && styles.unobserved)}
-    >
+    <div className={cx(attention !== null && styles[attention], !row.present && !row.observed && styles.unobserved)}>
       <dt title={row.label}>{row.label}</dt>
-      <dd
-        className={reading?.word === true ? styles.word : undefined}
-        title={reading?.word === true ? reading.value : undefined}
-      >
+      <dd className={row.word ? styles.word : undefined} title={row.word ? row.value : undefined}>
         <Value row={row} />
       </dd>
     </div>
@@ -60,27 +50,20 @@ function Note({ fault, effector }: { readonly fault: string; readonly effector: 
 }
 
 export function Readout({
-  shown,
-  observed,
-  pins,
-  channels,
+  body,
   fault,
   effector,
 }: {
-  readonly shown: readonly Shown[];
-  readonly observed: ReadonlySet<string>;
-  readonly pins: PortPins;
-  readonly channels: readonly string[];
+  readonly body: ReadoutBody;
   readonly fault: string;
   readonly effector: string;
 }) {
-  const body = reviewBody(pins, channels, shown, observed);
   return (
     <>
       <Note fault={fault} effector={effector} />
       <dl className={styles.readout}>
         {body.rows.map((row) => (
-          <ReviewRowItem key={row.key} row={row} />
+          <ReadoutRowItem key={row.key} row={row} />
         ))}
         {body.rows.length === 0 && body.hidden === 0 && <span className={styles.none}>no channels</span>}
         {body.hidden > 0 && (

@@ -1,8 +1,10 @@
+import type { RowCount, ViewPresentation } from "./nodePresentation";
+import { noteHeight } from "./plantView";
 import type { Pin, Pins } from "./ports";
-import type { Attention, Shown } from "./readout";
+import type { Attention, ReadoutBody, ReadoutRow, Shown } from "./readout";
 import { attentionOf, channelWords } from "./readout";
 
-export interface ReviewRow {
+interface ReviewRow {
   readonly key: string;
   readonly label: string;
   readonly pin: Pin | null;
@@ -34,12 +36,14 @@ function hiddenOf(pins: Pins, channels: readonly string[]): readonly string[] {
   return channels.filter((channel) => !ported.has(channel));
 }
 
-export function reviewRowCount(pins: Pins, channels: readonly string[]): number {
+export const reviewRowCount: RowCount = (pins, channels) => {
   const ports = pins.ins.length + pins.outs.length;
   const listed = portless(pins) ? Math.min(channels.length, channelRows) : ports;
   const more = hiddenOf(pins, channels).length > 0 ? 1 : 0;
   return Math.max(1, listed + more);
-}
+};
+
+export const reviewView: ViewPresentation = { rows: reviewRowCount, note: noteHeight };
 
 function labelOf(pin: Pin, pins: Pins): string {
   const shared = [...pins.ins, ...pins.outs].filter((other) => other.channel === pin.channel).length > 1;
@@ -87,4 +91,30 @@ export function reviewBody(
   const readings = shown.filter((entry) => hidden.includes(entry.channel));
   const run = { shown, observed };
   return { rows: listedRows(pins, channels, run), hidden: hidden.length, hiddenAttention: attentionOf(readings) };
+}
+
+function readoutRow(row: ReviewRow): ReadoutRow {
+  const { reading } = row;
+  const shown = reading ?? { value: "", unit: "", word: false, attention: null, outside: "" };
+  return {
+    key: row.key,
+    label: row.label,
+    present: reading !== null,
+    value: shown.value,
+    unit: shown.unit,
+    word: shown.word,
+    attention: shown.attention,
+    outside: shown.outside,
+    observed: row.observed,
+  };
+}
+
+export function readoutBody(
+  pins: Pins,
+  channels: readonly string[],
+  shown: readonly Shown[],
+  observed: ReadonlySet<string>,
+): ReadoutBody {
+  const body = reviewBody(pins, channels, shown, observed);
+  return { rows: body.rows.map(readoutRow), hidden: body.hidden, hiddenAttention: body.hiddenAttention };
 }

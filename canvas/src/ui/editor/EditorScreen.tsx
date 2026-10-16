@@ -6,7 +6,7 @@ import type { NavigationStore } from "../../app/navigationStore";
 import { compositionPlant, shortKind } from "../../model/composition";
 import { connect } from "../../model/compositionEdits";
 import type { PlantView } from "../../model/plantView";
-import { plantView } from "../../model/plantView";
+import { plainView, plantView } from "../../model/plantView";
 import { Navigator } from "../plant/GraphControls";
 import { Outline } from "../plant/Outline";
 import { useCanvasAspect } from "../plant/canvasAspect";
@@ -27,7 +27,7 @@ interface EditorScreenProps {
 
 function usePlant(draft: Draft, aspect: number | undefined) {
   const plant = useMemo(() => compositionPlant(draft.doc, shortKind), [draft.doc]);
-  const view = useMemo(() => plantView(plant, draft.specs, null, false, aspect), [plant, draft.specs, aspect]);
+  const view = useMemo(() => plantView(plant, draft.specs, null, plainView, aspect), [plant, draft.specs, aspect]);
   const flagged = useMemo(() => new Set(draft.issues?.instances.keys() ?? []), [draft.issues]);
   return { plant, view, flagged };
 }

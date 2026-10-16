@@ -1,7 +1,7 @@
 import type { PlantState } from "../../app/plantStore";
 import type { ReviewState, ReviewStore } from "../../app/reviewStore";
 import { channelOf } from "../../model/plant";
-import { shortChannel } from "../../model/playback";
+import { shortChannel } from "../../model/shared/words";
 import { hallOf } from "../../model/plantView";
 import type { Shown } from "../../model/readout";
 import { abnormalFirst, channelWords, sharedTimes, showReading, statusWords } from "../../model/readout";

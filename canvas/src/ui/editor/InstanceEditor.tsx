@@ -1,4 +1,4 @@
-import { kindLabel } from "../../model/report";
+import { kindLabel } from "../../model/shared/words";
 import { Box, Trash2, TriangleAlert, X } from "lucide-react";
 import type { ReactNode, SyntheticEvent } from "react";
 import { useState } from "react";

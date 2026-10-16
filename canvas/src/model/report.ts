@@ -271,16 +271,6 @@ export const badgeLabels: Readonly<Record<Badge, string>> = {
   incomplete: "Did not finish",
 };
 
-export function humanise(id: string): string {
-  const parts = id.split("__");
-  const meaningful = parts.length > 1 ? parts.slice(1) : parts;
-  return meaningful.map((part) => part.replaceAll("_", " ")).join(" · ");
-}
-
-export function kindLabel(kind: string): string {
-  return humanise(kind).replace(/ \d+$/, "");
-}
-
 const day = 86_400e9;
 
 export function wallClock(ns: number, startNs = ns): string {

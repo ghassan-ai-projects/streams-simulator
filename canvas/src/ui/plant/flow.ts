@@ -1,6 +1,6 @@
 import { MarkerType } from "@xyflow/react";
 import type { Edge, Node } from "@xyflow/react";
-import type { NodeStatus, Shown } from "../../model/readout";
+import type { NodeStatus, ReadoutBody, Shown } from "../../model/readout";
 import type { PlanMark } from "../../model/planMarks";
 import type { PlantView, ViewNode } from "../../model/plantView";
 import { groupCounts } from "../../model/plantView";
@@ -9,6 +9,7 @@ import type { Point } from "../../model/wireRoute";
 export interface NodeLive {
   readonly shown: readonly Shown[];
   readonly observed: ReadonlySet<string>;
+  readonly readout: ReadoutBody;
   readonly status: NodeStatus;
   readonly count: number;
   readonly fault: string;

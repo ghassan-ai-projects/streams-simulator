@@ -5,10 +5,10 @@ import { areaTree } from "./areaTree";
 import type { Instance, Link, Plant } from "./plant";
 import { areaOf } from "./plant";
 import type { Category, ComponentSpec, Family, Pin, Pins } from "./ports";
+import { plainRows } from "./nodePresentation";
+import type { ViewPresentation } from "./nodePresentation";
 import { familyOf, pinsOf } from "./ports";
-import { shortChannel } from "./playback";
-import { reviewRowCount } from "./reviewRows";
-import { kindLabel } from "./report";
+import { kindLabel, shortChannel } from "./shared/words";
 
 export interface ViewNode {
   readonly id: string;
@@ -52,6 +52,8 @@ export const nodeSize = {
   idLine: 36,
   note: 24,
 } as const;
+
+export const plainView: ViewPresentation = { rows: plainRows, note: () => 0 };
 
 export function idExtra(label: string): number {
   return (Math.ceil(label.length / nodeSize.idChars) - 1) * nodeSize.idLine;
@@ -164,26 +166,24 @@ interface Context {
   readonly plant: Plant;
   readonly specs: Specs;
   readonly halls: readonly string[];
-  readonly review: boolean;
+  readonly view: ViewPresentation;
   readonly aspect: number | undefined;
   readonly notes: Notes;
 }
 
-function nodeBox(node: ViewNode, review: boolean): LayoutNode {
+function nodeBox(node: ViewNode, view: ViewPresentation): LayoutNode {
   if (node.instance === null) {
     return { id: node.id, group: node.group, width: nodeSize.groupWidth, height: nodeSize.groupHeight };
   }
-  const rows = review
-    ? reviewRowCount(node.pins, node.channels)
-    : Math.max(2, node.pins.ins.length, node.pins.outs.length);
-  const note = review ? noteHeight(node.noteLines) : 0;
+  const rows = view.rows(node.pins, node.channels);
+  const note = view.note(node.noteLines);
   const height = headerHeight(node.label) + nodeSize.padding + note + rows * nodeSize.pin;
   return { id: node.id, group: node.group, width: nodeSize.width, height };
 }
 
 function finish(context: Context, nodes: readonly ViewNode[], edges: readonly ViewEdge[]): PlantView {
   const order = ["Halls", ...context.plant.areas.map((area) => area.name)];
-  const boxes = nodes.map((node) => nodeBox(node, context.review));
+  const boxes = nodes.map((node) => nodeBox(node, context.view));
   const rows = (group: string, count: number) => (group === "Halls" ? Math.ceil(Math.sqrt(count)) : 3);
   return {
     nodes,
@@ -245,11 +245,11 @@ export function plantView(
   plant: Plant,
   specs: Specs,
   open: string | null,
-  review = false,
+  view: ViewPresentation = plainView,
   aspect?: number,
   notes: Notes = new Map(),
 ): PlantView {
-  const context = { plant, specs, halls: hallsOf(plant), review, aspect, notes };
+  const context = { plant, specs, halls: hallsOf(plant), view, aspect, notes };
   if (context.halls.length === 0) {
     return instanceLevel(context, () => true);
   }

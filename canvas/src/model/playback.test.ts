@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { journal, observation } from "../test/runFixture";
-import { parseJournalRecord, PlaybackIndex, shortChannel } from "./playback";
+import { parseJournalRecord, PlaybackIndex } from "./playback";
+import { shortChannel } from "./shared/words";
 
 function indexOf(records: readonly unknown[]) {
   const index = new PlaybackIndex();

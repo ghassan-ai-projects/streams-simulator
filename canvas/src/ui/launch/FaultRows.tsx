@@ -2,7 +2,7 @@ import { Plus } from "lucide-react";
 import type { PlanProblem } from "../../model/launch";
 import { faultsOf } from "../../model/plant";
 import type { Plant } from "../../model/plant";
-import { humanise } from "../../model/report";
+import { humanise } from "../../model/shared/words";
 import type { Draft, DraftFault } from "./draft";
 import type { Change } from "./RowParts";
 import { AtMinute, InstancePick, invalid, RowTail, useAdding } from "./RowParts";

@@ -1,3 +1,5 @@
+import { shortChannel } from "./shared/words";
+
 export interface Observation {
   readonly atNs: number;
   readonly entity: string;
@@ -159,11 +161,6 @@ function lastAtOrBefore(times: readonly number[], atNs: number): number {
     }
   }
   return found;
-}
-
-export function shortChannel(channel: string): string {
-  const dot = channel.indexOf(".");
-  return dot < 0 ? channel : channel.slice(dot + 1);
 }
 
 export const playbackSpeeds = [1, 10, 60, 600] as const;

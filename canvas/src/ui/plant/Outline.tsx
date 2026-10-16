@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Plant } from "../../model/plant";
 import { areaOf } from "../../model/plant";
 import { areaOrder, hallOf, hallsOf } from "../../model/plantView";
-import { kindLabel } from "../../model/report";
+import { kindLabel } from "../../model/shared/words";
 import { cx } from "../cx";
 import shared from "../shared.module.css";
 import { useCutBottom } from "../useCutBottom";

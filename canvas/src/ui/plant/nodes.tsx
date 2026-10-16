@@ -218,16 +218,7 @@ export function InstanceNode({ data, selected }: NodeProps<InstanceNodeType>) {
       <Handle type="target" position={Position.Left} id="in" className={styles.anchor} isConnectable={false} />
       <Handle type="source" position={Position.Right} id="out" className={styles.anchor} isConnectable={false} />
       <InstanceHeader data={data} status={status} zoom={zoom} />
-      {data.live !== null && (
-        <Readout
-          shown={data.live.shown}
-          observed={data.live.observed}
-          pins={view.pins}
-          channels={view.channels}
-          fault={data.live.fault}
-          effector={data.live.effector}
-        />
-      )}
+      {data.live !== null && <Readout body={data.live.readout} fault={data.live.fault} effector={data.live.effector} />}
       {data.live === null && <Pins ins={view.pins.ins} outs={view.pins.outs} editable={data.editable} zoom={zoom} />}
     </div>
   );

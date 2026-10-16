@@ -1,6 +1,6 @@
 import type { Report } from "./report";
 import { clockOf } from "./launch";
-import { humanise } from "./report";
+import { humanise } from "./shared/words";
 
 export function runClock(ns: number, startNs: number): string {
   return clockOf((ns - startNs) / 1e9);

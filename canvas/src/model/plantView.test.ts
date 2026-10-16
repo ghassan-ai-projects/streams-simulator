@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { campus, chillerPorts, composition, domain, towerPorts } from "../test/plantFixture";
 import { parsePlant } from "./plant";
 import { describeNode } from "./nodeWords";
+import { plainView } from "./plantView";
+import { reviewView } from "./reviewRows";
 import {
   areaCounts,
   hallCount,
@@ -153,14 +155,14 @@ describe("node id lines", () => {
 describe("review note lines", () => {
   it("makes a review node taller by the lines its fault and effector text wraps to, and no other node", () => {
     const plant = parsePlant(domain, composition);
-    const plain = plantView(plant, specs, null, true);
-    const noted = plantView(plant, specs, null, true, undefined, new Map([["CH-1", 3]]));
+    const plain = plantView(plant, specs, null, reviewView);
+    const noted = plantView(plant, specs, null, reviewView, undefined, new Map([["CH-1", 3]]));
     const base = plain.layout.nodes.get("CH-1")?.height ?? 0;
     expect(noted.layout.nodes.get("CH-1")?.height).toBe(base + 2 * nodeSize.note);
     expect(noted.layout.nodes.get("CT-1")?.height).toBe(plain.layout.nodes.get("CT-1")?.height);
     expect(noted.nodes.find((node) => node.id === "CH-1")?.noteLines).toBe(3);
     expect(
-      plantView(plant, specs, null, false, undefined, new Map([["CH-1", 3]])).layout.nodes.get("CH-1")?.height,
+      plantView(plant, specs, null, plainView, undefined, new Map([["CH-1", 3]])).layout.nodes.get("CH-1")?.height,
     ).toBe(headerHeight("CH-1") + nodeSize.padding + 2 * nodeSize.pin);
   });
 });

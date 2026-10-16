@@ -6,18 +6,16 @@ import type { PlantState, PlantStore } from "../../app/plantStore";
 import type { ReviewState, ReviewStore } from "../../app/reviewStore";
 import type { WorkspaceState, WorkspaceStore } from "../../app/workspaceStore";
 import { isMissing } from "../../model/bridge";
-import type { Opening } from "../../model/playback";
 import type { RunEntry } from "../../model/bridge";
 import { stateUnit } from "../../model/plant";
-import { runClock } from "../../model/timeline";
 import { noteLinesByEntity } from "../../model/noteLines";
 import { plantView } from "../../model/plantView";
+import { reviewView } from "../../model/reviewRows";
 import type { PlantView } from "../../model/plantView";
 import { firstEventNode } from "../../model/reviewAnchor";
 import type { Report } from "../../model/report";
 import { runSpan } from "../../model/report";
-import { grouped } from "../../model/units";
-import { Navigator, ZoomBar } from "../plant/GraphControls";
+import { Navigator } from "../plant/GraphControls";
 import { Outline } from "../plant/Outline";
 import { useCanvasAspect } from "../plant/canvasAspect";
 import { PlantGraph } from "../plant/PlantGraph";
@@ -29,6 +27,7 @@ import type { HallProps } from "./RunHeader";
 import { Header } from "./RunHeader";
 import { RunPanel } from "./RunPanel";
 import { Scrubber } from "./Scrubber";
+import { GraphBar } from "./GraphBar";
 import { useLive } from "./useLive";
 import { usePlayback } from "./usePlayback";
 import styles from "./RunScreen.module.css";
@@ -89,37 +88,6 @@ function OpeningPlant() {
   );
 }
 
-function openedWords(opening: Opening, startNs: number): string {
-  const at = runClock(opening.atNs, startNs);
-  return opening.full ? ` · readings start at ${at}` : ` · opened at ${at}, some channels report later`;
-}
-
-function graphWords(state: ReviewState, opening: Opening | null, startNs: number): string {
-  const loading = state.playback.phase === "loading" ? " · loading" : "";
-  const shown = opening !== null && state.positionNs === opening.atNs ? openedWords(opening, startNs) : "";
-  return `${grouped(state.playback.records)} observations${loading}${shown}`;
-}
-
-function GraphBar({
-  state,
-  opening,
-  startNs,
-}: {
-  readonly state: ReviewState;
-  readonly opening: Opening | null;
-  readonly startNs: number;
-}) {
-  const words = graphWords(state, opening, startNs);
-  return (
-    <div className={styles.graphBar}>
-      <span className={styles.barWords} title={words}>
-        {words}
-      </span>
-      <ZoomBar review />
-    </div>
-  );
-}
-
 interface GraphProps extends HallProps {
   readonly review: ReviewStore;
   readonly state: ReviewState;
@@ -133,11 +101,12 @@ function anchorOf(view: PlantView | null, report: Report | null): string | null 
 function Graph({ review, state, plant, hall, onHall }: GraphProps) {
   const { ref, aspect } = useCanvasAspect<HTMLDivElement>();
   const report = state.report.phase === "ready" ? state.report.value : null;
+  const notes = useMemo(() => noteLinesByEntity(report), [report]);
   const view = useMemo(
-    () => (plant === null ? null : plantView(plant.plant, plant.specs, hall, true, aspect, noteLinesByEntity(report))),
-    [plant, hall, aspect, report],
+    () => (plant === null ? null : plantView(plant.plant, plant.specs, hall, reviewView, aspect, notes)),
+    [plant, hall, aspect, notes],
   );
-  const live = useLive(review, state, plant);
+  const live = useLive(review, state, plant, view);
   const anchor = useMemo(() => anchorOf(view, report), [view, report]);
   if (view === null) return <OpeningPlant />;
   return (
