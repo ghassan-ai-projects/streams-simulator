@@ -4,6 +4,7 @@ import type { Badge, Report } from "../model/report";
 import type { Replay } from "../model/report";
 import { badgeOf, parseReplay, parseReport } from "../model/report";
 import { unfinishedReason } from "../model/workspace";
+import { domainSpec } from "./reviewDomain";
 import { Observable } from "./observable";
 import type { Bridge } from "./ports";
 
@@ -79,6 +80,8 @@ export class ReviewStore extends Observable<ReviewState> {
   private stop: (() => void) | null = null;
   private pending = 0;
   private refreshed = false;
+  private deferredDomain = false;
+  private deferredVerify = false;
 
   constructor(
     private readonly bridge: Bridge,
@@ -94,7 +97,9 @@ export class ReviewStore extends Observable<ReviewState> {
     const state = this.snapshot();
     if (state.worldId === worldId && (this.stop !== null || state.playback.phase !== "loading")) return;
     this.close();
-    this.refreshed = false;
+    this.refreshed = known?.ended === true;
+    this.deferredVerify = false;
+    this.deferredDomain = knownUnfinished(known);
     this.index = new PlaybackIndex();
     this.set({ ...idle, worldId, openedAt: this.now(), ...absentLoads(known) });
     void this.loadReport(worldId);
@@ -113,6 +118,19 @@ export class ReviewStore extends Observable<ReviewState> {
         this.finish(worldId, "failed");
       },
     });
+  }
+
+  refreshCompleted(worldId: string, known: RunEntry | undefined): void {
+    const state = this.snapshot();
+    if (
+      known?.ended !== true ||
+      state.worldId !== worldId ||
+      state.report.phase !== "ready" ||
+      state.report.value.ended
+    )
+      return;
+    this.set({ ...state, report: { phase: "loading" } });
+    void this.loadReport(worldId);
   }
 
   close(): void {
@@ -200,9 +218,9 @@ export class ReviewStore extends Observable<ReviewState> {
       return;
     if (state.playback.phase !== "ready") return;
     this.refreshed = true;
-    this.set({ ...state, verified: { phase: "loading" } });
+    this.deferredDomain = true;
+    this.deferredVerify = true;
     void this.loadReport(worldId);
-    void this.loadVerify(worldId);
   }
 
   private update(worldId: string, playback: Partial<ReviewState["playback"]>): void {
@@ -220,7 +238,26 @@ export class ReviewStore extends Observable<ReviewState> {
         ? { phase: "ready", value: parseReport(outcome.value) }
         : { phase: "failed", failure: outcome.failure },
     });
+    this.resumeFinalLoads(worldId);
     this.refreshIfLive(worldId);
+  }
+
+  private resumeFinalLoads(worldId: string): void {
+    const state = this.snapshot();
+    if (state.report.phase !== "ready" || !state.report.value.ended) return;
+    if (this.deferredDomain) {
+      this.deferredDomain = false;
+      this.set({ ...state, runDomain: { phase: "loading" } });
+      void this.loadRunDomain(worldId);
+    }
+    if (
+      state.report.value.complete &&
+      (this.deferredVerify || (state.verified.phase === "failed" && state.verified.failure.code === "run_incomplete"))
+    ) {
+      this.deferredVerify = false;
+      this.set({ ...this.snapshot(), verified: { phase: "loading" } });
+      void this.loadVerify(worldId);
+    }
   }
 
   private async loadRunDomain(worldId: string): Promise<void> {
@@ -253,14 +290,5 @@ export class ReviewStore extends Observable<ReviewState> {
             }
           : { phase: "failed", failure: outcome.failure };
     this.set({ ...this.snapshot(), verified });
-  }
-}
-
-function domainSpec(content: string): unknown {
-  try {
-    const parsed = JSON.parse(content) as unknown;
-    return typeof parsed === "object" && parsed !== null && "domain_spec" in parsed ? parsed.domain_spec : null;
-  } catch {
-    return null;
   }
 }

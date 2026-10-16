@@ -271,6 +271,7 @@ describe("review", () => {
 
   it("re-asks nothing doomed when an abandoned run's journal stream closes", async () => {
     const { bridge, store, flushes } = setup();
+    bridge.actions.set("run.report", success({ ...report, run: { ...report.run, ended: false, complete: false } }));
     store.open("w-9", { ...entry, worldId: "w-9", ended: true, complete: false });
     await Promise.resolve();
     await Promise.resolve();

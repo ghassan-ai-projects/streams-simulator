@@ -72,3 +72,24 @@ test("a world the listing still shows as open reviews from the listing, with no 
   await expect(page.getByRole("status").filter({ hasText: /^Verified$/ })).toHaveCount(0);
   expect(doomed).toEqual([]);
 });
+
+test("a review opened live loads its recorded plant when the run completes", async ({ page }) => {
+  const created = await action(page, "world.create", {
+    domain: "factory-utilities",
+    seed: 11,
+    adapter: "native-jsonl",
+    time_mode: "stepped",
+  });
+  const world = String(created.world_id);
+  await page.goto(`${env("CANVAS_APP_URL")}/#/run?world=${world}`);
+  await expect(page.getByRole("status").filter({ hasText: /^Did not finish$/ })).toHaveCount(1);
+  const recordedPlant = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return url.pathname === "/api/file" && url.searchParams.get("path") === `runs/${world}/run.json`;
+  });
+  await action(page, "clock.advance", { world_id: world, by_ns: 60e9 });
+  await action(page, "run.end", { world_id: world });
+  expect((await recordedPlant).status()).toBe(200);
+  await expect(page.getByRole("status").filter({ hasText: /^Verified$/ })).toHaveCount(1);
+  await expect(page.getByRole("application", { name: "Plant graph" })).toBeVisible();
+});

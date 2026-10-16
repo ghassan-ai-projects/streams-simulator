@@ -54,7 +54,8 @@ function useReviewOpen(review: ReviewStore, workspace: WorkspaceStore, worldId: 
   const settled = listing.phase !== "loading";
   useEffect(() => {
     known.current = entryOf(listing, worldId);
-  }, [listing, worldId]);
+    review.refreshCompleted(worldId, known.current);
+  }, [listing, worldId, review]);
   useEffect(() => {
     if (!settled) return undefined;
     review.open(worldId, known.current);
