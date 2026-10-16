@@ -1,0 +1,53 @@
+# Plan review record — Canvas modular architecture migration
+
+- **Reviewed:** [PLAN.md](../PLAN.md) against [README.md](../README.md) (the accepted target architecture)
+- **Reviewers:** two independent read-only reviews, run in parallel on 2026-10-16: an architecture/sequencing lens and a
+  risk/verifiability lens. Both were given the plan, the architecture doc, `AGENTS.md`, the canvas quality bar and the
+  real source, and were told to support every finding with a file:line or doc section.
+- **Verdicts:** both `approve with changes`. No finding was rejected; all are folded into the plan.
+
+## Blockers found before implementation
+
+| # | Finding | Disposition |
+| --- | --- | --- |
+| B1 | Phase 0's checkers as `.mjs` in `canvas/scripts/` break `npm run lint`: `eslint.config.js:33` sets `projectService: true` with no `allowDefaultProject`, and no tsconfig includes `scripts/`. `npm run lint` is inside `npm run check` → `make canvas-check` → `phase-gate`, so P0 could not exit. Both reviewers reproduced the parse error independently | Fixed: D4 writes the checkers in TypeScript (Node native type stripping, the existing `typescript` dependency, compiler-API based) and P0.7 adds `tsconfig.scripts.json` plus a `disableTypeChecked` block. D2 states that tooling configuration for new files is an addition, not a loosening |
+| B2 | "No gate is loosened" has no enforcement for canvas: `make gate-ratchet` reads only `cli_wiring_test.go`, `dependencies_test.go`, `scripts/coverage-floors.txt`, `scripts/test-hooks.txt`. Caps, coverage floors, `knip` ignores, dependency-cruiser exclusions and the `npm run check` chain were all review-only | Fixed: D5 and P0.4 add `check-ratchet.ts`, comparing the working tree against the commit that introduced `canvas/architecture.json` (found with `git log --diff-filter=A`), so caps may only fall, floors only rise, ignores/exclusions only shrink, the check chain may not lose a command, and debt entries may only disappear |
+| B3 | Phase 1's exit was unreachable: editor and run still need `.screen`, `.side`, `.center`, `.bar`, `.graphHost`, `.failure`, `.loading` from `PlantScreen.module.css`, which are screen-layout classes, not graph classes | Fixed: P1's exit is scoped to graph-owned files and styles; the residual edge stays a P5-owned debt entry with its recorded cap |
+| B4 | Phase 1 depended on an ownership decision deferred past Phase 0's exit, and the stated tie-breaker could not settle it (`planMarks` imports `model/launch` and `humanise`; no module in the doc's map may hold both) | Fixed: P0.1 settles the file→module assignment for every `model/*` file, D14 makes the Phase 1 presentation inversion its own prerequisite commit, and the open question is deleted |
+| B5 | The screenshot-comparison exit conflicted with the quality bar (baselines only in the pinned CI container) and with `playwright/no-skipped-test` (verified here: `allowConditional` defaults to `false`, so a guarded spec is a lint error); the e2e fixtures also render wall-clock timestamps, so a local pixel diff could not be stable | Fixed: D9 drops the pixel-diff exit. Evidence is the e2e suite, the emitted-stylesheet oracle, audit floors and a Chrome review of images captured by a non-collected helper script; the enforceable visual claims stay in CI |
+
+## Findings folded into the plan
+
+| # | Lens | Finding | Disposition |
+| --- | --- | --- | --- |
+| 1 | both | The CSS split can flip cascade order, drop an `!important` guard or lose a `z-index`, with every current gate green: `toBeVisible` ignores occlusion, the geometry audits tolerate 0.5–6 px, and `idFit`/`noteFit` select by class substring so a rename silently disables them | D11, P0.5 (emitted-stylesheet oracle over the built file: rule order plus the exact `!important`/`z-index`/positioned multiset) and P0.9 (considered-element counts with asserted floors) |
+| 2 | verifiability | Phase 3 moves ~1 000 decoder lines out of `src/model/**`, the only place with a coverage floor, into `src/adapters/**`, which has none | P3 adds a `src/adapters/**` floor no lower than today's coverage and records per-file coverage before and after |
+| 3 | both | Phase 3's malformed-required-response correction is a behaviour change the hard rule did not name, and it is pinned by existing tests that assert today's tolerance | The hard rule now enumerates it; P3 requires each decoder change failing-first with the superseded assertion quoted in the evidence |
+| 4 | verifiability | No test asserts the composition bytes `EditorStore.save()` writes | P4 exit item, plus one e2e round-trip assertion |
+| 5 | verifiability | Strict Mode double-invocation is invisible to every gate: no harness renders `StrictMode`, and e2e serves the production build | P0.8 adds a `StrictMode` harness; P2 asserts open/close counts and the state after the second mount |
+| 6 | verifiability | Phase 2 changes the clock that the one wall-clock e2e test measures, and that test is pre-labelled flaky | P2 requires `fakeClock.ts` unit tests for `Scheduler`/`Clock` semantics, records the isolated measured hold before and after, and treats a later lower-bound failure as a regression |
+| 7 | both | Five fixtures cannot prove nineteen rules; a rule that never matches looks identical to a clean tree, and the debt list is checked by the same code it gates | P0.6: one failing fixture per rule, positive fixtures, and a fixture proving the debt list is exhaustive |
+| 8 | architecture | The checkers had no stated mechanism for facade rules, and "workflow in an entrypoint" is not regex-decidable | D4 fixes the compiler-API mechanism and P0.2 defines the mechanical proxy (only imports, re-exports and factory delegation) |
+| 9 | architecture | Fixtures inside `src` would break `typecheck`, `no-orphans`, `knip` and `jscpd` | P0.6 places them in `canvas/architecture-fixtures/`, excluded from those gates and scanned only in fixture mode |
+| 10 | architecture | `session`, `home`→`workspace`, `run`→`review` and `pairing`→`session` had no registered target; `model/bridge.ts` (48 importers) and `model/ports.ts` (26) had no owner, so `app/ports`' "exact model allow-list" could not be written | P0.1 records the current→target mapping and the file→module assignment, including the disposition of every `model/bridge.ts` export and the folding of `model/ports.ts` into `model/plant`; allow-lists may not use globs |
+| 11 | architecture | The register re-implemented a dependency-cruiser rule in a third list, so the two could drift (README:1031 asks for generation or cross-checking) | P0.2 cross-checks `.dependency-cruiser.cjs`: every layer rule in the register still exists with the same severity and no exclusion was added |
+| 12 | architecture | Missing mechanical checks the doc requires: unlisted CSS files need the 300-line default, `setTimeout` in tests, the JSX inline-style AST rule, and boolean-flag parameters | P0.2/P0.3 add them, with current violations entered as debt and the exception registers frozen after P0 |
+| 13 | architecture | Phase 5 is unbounded, and the plan's exit could be satisfied by an `index.ts` that re-exports every internal, a newly registered CSS exception, or a renamed protocol union | P1's exit names the smallest capability; the CSS exception list is frozen after P0; P3 requires closed feature-owned failure unions with no protocol-code comparison in app or UI; D1 adds a checkpoint after P3 and per unit in P5 |
+| 14 | architecture | Phase 2 must not silently drop the P0.8 regression assertions, and Phase 3 rewrites the fakes those tests use | P2 requires them green with their own assertions; P3 requires them ported with unchanged assertions |
+| 15 | architecture | `adapters/browser/index.ts`, the `ui/theme` entrypoint registration and the disposition of `families.css`, `app/shell`'s ownership and the Context rule, `contract.ts` with public contract tests, and replacing the 40+ microtask flushes with deferred drivers were missing | P5 names the adapter and theme entrypoints, the `app/shell` ownership and `contract.ts`; P0.8 replaces the flushes |
+| 16 | architecture | Two baseline counts were wrong: `Bridge.action` has 12 production call sites in 5 files plus the port declaration, not 11 in 6 | Corrected in §2; the test-file scope is re-derived by grep at phase start |
+| 17 | architecture | The behaviour pin compares Go CLI output only, so citing it as canvas evidence overstated the guarantee | The hard rule now enumerates the canvas corrections; the pin is used only as "Go unchanged" evidence |
+| 18 | both | The test ladder could not stand alone in a clean checkout (`npm run check` needs a built binary) and reached `phase-gate` only at the end | Per-phase authoritative gate is `make canvas-check`; `make phase-gate` runs at every phase exit |
+
+## What the reviewers confirmed
+
+- The phase order and the separation of behaviour correction from structural movement match README §8/§12.
+- The register plus two checkers is the doc's mechanism for F3/F4, registering the current tree with exact debt rather
+  than pre-declaring target folders.
+- Phase 0's listed lifecycle regressions genuinely fail against today's code, and the existing stale-callback test is
+  vacuous by construction (`FakeBridge.followRun` deletes the follower on dispose).
+- The baseline facts reproduce: 96 files / 445 tests green, every CSS line count, 70 `:global` / 30 `!important`, the
+  only fixed sleep, the 12 `action` call sites, the timer defaults.
+- No conflict exists between the CSS caps and ESLint's 300-line rule: ESLint does not match `.css` files and no CSS size
+  gate exists elsewhere, so the cap register is a genuine addition.
+- The checkers must not attempt to enforce the review-owned constraints; the plan assigns them explicitly.
