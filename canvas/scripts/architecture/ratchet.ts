@@ -1,6 +1,12 @@
 import type { ModuleSpec, Register } from "./model.ts";
 import { parseRegister } from "./register.ts";
 import { introducingCommit, mergeBase, show } from "./git.ts";
+import {
+  approvedVendorAllowanceMove,
+  moved,
+  movedAllowance,
+  movedDebt,
+} from "./ratchetMoves.ts";
 
 export interface RatchetBase {
   readonly commit: string;
@@ -37,7 +43,7 @@ function moduleRegressions(previous: Register, current: Register): string[] {
   for (const [name, before] of Object.entries(previous.modules)) {
     const now = current.modules[name];
     if (now === undefined) out.push(`module ${name} is gone from the register`);
-    else out.push(...moduleAllowance(name, before, now));
+    else out.push(...moduleAllowance(name, before, now, current));
   }
   for (const [name, now] of Object.entries(current.modules)) {
     if (previous.modules[name] === undefined && now.mayImportAny === true) {
@@ -50,15 +56,32 @@ function moduleRegressions(previous: Register, current: Register): string[] {
   return out;
 }
 
-function moduleAllowance(name: string, before: ModuleSpec, now: ModuleSpec): string[] {
+function moduleAllowance(name: string, before: ModuleSpec, now: ModuleSpec, register: Register): string[] {
   const out: string[] = [];
   for (const imported of now.mayImport ?? []) {
-    if (!(before.mayImport ?? []).includes(imported)) out.push(`module ${name} may now import ${imported}`);
+    if ((before.mayImport ?? []).includes(imported)) continue;
+    if (refinement(name, imported, before, register)) continue;
+    out.push(`module ${name} may now import ${imported}`);
   }
   if (now.mayImportAny === true && before.mayImportAny !== true) out.push(`module ${name} may now import anything`);
   if (now.entrypoint === null && before.entrypoint !== null)
     out.push(`module ${name} lost its entrypoint ${before.entrypoint}`);
   return out;
+}
+
+/** A module nested under the importing module's own folders, or under an already-allowed module, is a refinement. */
+function refinement(name: string, imported: string, before: ModuleSpec, register: Register): boolean {
+  const target = register.modules[imported];
+  const own = register.modules[name];
+  if (target === undefined) return false;
+  if (nested(target, own)) return true;
+  return (before.mayImport ?? []).some((allowed) => nested(target, register.modules[allowed]));
+}
+
+function nested(target: ModuleSpec, owner: ModuleSpec | undefined): boolean {
+  if (owner === undefined) return false;
+  const folders = owner.folders ?? [];
+  return (target.folders ?? []).some((folder) => folders.some((own) => folder.startsWith(`${own}/`)));
 }
 
 function featureRegressions(previous: Register, current: Register): string[] {
@@ -124,23 +147,47 @@ function capRegressions(previous: Register, current: Register): string[] {
 }
 
 function cssCapRegressions(previous: Register, current: Register): string[] {
+  return [...capRise(previous, current), ...allowanceRise(previous, current), ...colourRise(previous, current)];
+}
+
+function capRise(previous: Register, current: Register): string[] {
   const out: string[] = [];
   for (const [path, entry] of Object.entries(current.css.caps)) {
     const before = previous.css.caps[path];
     if (before === undefined) {
-      if (entry.cap > current.css.defaultCap)
+      if (
+        !moved(previous.css.caps, current.css.caps, previous, current, path, entry.cap) &&
+        entry.cap > current.css.defaultCap
+      ) {
         out.push(`new css cap ${path} is above the default ${String(current.css.defaultCap)}`);
+      }
     } else if (entry.cap > before.cap) {
       out.push(`css cap ${path} rose ${String(before.cap)} -> ${String(entry.cap)}`);
     }
   }
+  return out;
+}
+
+function allowanceRise(previous: Register, current: Register): string[] {
+  const out: string[] = [];
   for (const [path, entry] of Object.entries(current.css.globalCaps)) {
+    if (previous.css.globalCaps[path] === undefined && movedAllowance(previous, current, path, entry)) continue;
     out.push(...allowanceRegression(path, entry, previous.css.globalCaps[path]));
   }
+  return out;
+}
+
+function colourRise(previous: Register, current: Register): string[] {
+  const out: string[] = [];
   for (const [path, entry] of Object.entries(current.css.colorExceptions)) {
     const before = previous.css.colorExceptions[path];
-    if (before === undefined) out.push(`new colour exception ${path}`);
-    else if (entry.literals > before.literals) out.push(`colour exception ${path} rose`);
+    if (before === undefined) {
+      if (!moved(previous.css.colorExceptions, current.css.colorExceptions, previous, current, path, entry.literals)) {
+        out.push(`new colour exception ${path}`);
+      }
+    } else if (entry.literals > before.literals) {
+      out.push(`colour exception ${path} rose`);
+    }
   }
   return out;
 }
@@ -175,9 +222,10 @@ function debtRegressions(previous: Register, current: Register): string[] {
     const before = previous.debt.find(
       (old) => old.rule === entry.rule && old.file === entry.file && old.target === entry.target,
     );
-    if (before === undefined)
+    if (before === undefined) {
+      if (movedDebt(previous, current, entry)) continue;
       out.push(`new debt ${entry.rule} ${entry.file}${entry.target === undefined ? "" : ` <- ${entry.target}`}`);
-    else if (entry.count > before.count)
+    } else if (entry.count > before.count)
       out.push(`debt ${entry.rule} ${entry.file} rose ${String(before.count)} -> ${String(entry.count)}`);
   }
   return out;
@@ -189,13 +237,26 @@ function allowListRegressions(previous: Register, current: Register): string[] {
     ...grew("fake-timer test allow-list", previous.rules.fakeTimerTests, current.rules.fakeTimerTests),
     ...grew("global stylesheet allow-list", previous.css.globalOwners, current.css.globalOwners),
     ...grew("global entrypoint allow-list", previous.css.globalEntrypoints, current.css.globalEntrypoints),
-    ...grew("vendor stylesheet allow-list", previous.css.vendorFiles, current.css.vendorFiles),
+    ...vendorAllowanceRegressions(previous, current),
     ...shrank("simulator action detection list", previous.rules.actionNames, current.rules.actionNames),
     ...shrank("restricted app import list", previous.rules.restrictedAppImports, current.rules.restrictedAppImports),
     ...shrank("restricted app global list", previous.rules.restrictedAppGlobals, current.rules.restrictedAppGlobals),
     ...shrank("clock global list", previous.rules.clockGlobals, current.rules.clockGlobals),
     ...shrank("restricted ui import list", previous.rules.restrictedUiImports, current.rules.restrictedUiImports),
   ];
+}
+
+function vendorAllowanceRegressions(previous: Register, current: Register): string[] {
+  return current.css.vendorFiles
+    .filter((path) => !previous.css.vendorFiles.includes(path))
+    .filter((path) => path !== "src/ui/graph/internal/vendor.module.css" || !validVendorRegistration(previous, current))
+    .map((path) => `vendor stylesheet allow-list gained ${path}`);
+}
+
+function validVendorRegistration(previous: Register, current: Register): boolean {
+  const path = "src/ui/graph/internal/vendor.module.css";
+  const allowance = current.css.globalCaps[path];
+  return allowance !== undefined && approvedVendorAllowanceMove(previous, current, path, allowance);
 }
 
 function grew(what: string, before: readonly string[], after: readonly string[]): string[] {

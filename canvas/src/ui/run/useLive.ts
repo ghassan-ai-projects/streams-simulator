@@ -2,13 +2,11 @@ import { useCallback, useMemo } from "react";
 import type { PlantState } from "../../app/plantStore";
 import type { ReviewState, ReviewStore } from "../../app/reviewStore";
 import { channelOf } from "../../model/plant";
-import { hallOf } from "../../model/plantView";
-import type { PlantView } from "../../model/plantView";
-import type { NodeStatus, ReadoutBody } from "../../model/readout";
-import { attentionOf, showReading, worstOf } from "../../model/readout";
+import type { NodeLive } from "../graph";
+import type { NodeStatus, PlantView, ReadoutBody } from "../../model/graph";
+import { attentionOf, hallOf, showReading, worstOf } from "../../model/graph";
 import { readoutBody } from "../../model/reviewRows";
 import { effectorAt, faultedAt } from "../../model/timeline";
-import type { NodeLive } from "../plant/flow";
 
 type ReadyPlant = Extract<PlantState, { phase: "ready" }>;
 

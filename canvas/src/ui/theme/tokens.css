@@ -74,6 +74,11 @@
   --shadow-panel: 0 4px 14px rgb(15 23 42 / 12%), 0 1px 2px rgb(15 23 42 / 10%);
   --scrim: rgb(15 23 42 / 32%);
   --scroll-shadow: rgb(15 23 42 / 14%);
+  --scroll-shadow-bg:
+    linear-gradient(var(--surface-panel) 40%, transparent) center top / 100% 32px no-repeat local,
+    linear-gradient(transparent, var(--surface-panel) 60%) center bottom / 100% 32px no-repeat local,
+    linear-gradient(var(--scroll-shadow), transparent) center top / 100% 10px no-repeat scroll,
+    linear-gradient(transparent, var(--scroll-shadow)) center bottom / 100% 10px no-repeat scroll, var(--surface-panel);
   --disabled-bg: #eceff3;
   --disabled-border: #d5dae1;
   --disabled-fg: #646c79;

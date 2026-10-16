@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { parsePlant } from "../../model/plant";
 import { campus, domain } from "../../test/plantFixture";
 import type { RunRow } from "../../model/workspace";
-import { Outline } from "./Outline";
+import { Outline } from "../graph";
 import { PlantOverview } from "./PlantOverview";
 
 describe("plant overview", () => {

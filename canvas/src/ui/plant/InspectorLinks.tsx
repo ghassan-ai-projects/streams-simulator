@@ -1,5 +1,5 @@
 import type { Link } from "../../model/plant";
-import { hallOf } from "../../model/plantView";
+import { hallOf } from "../../model/graph";
 import styles from "./PlantScreen.module.css";
 
 function ordered(linked: readonly Link[], side: "in" | "out"): readonly Link[] {

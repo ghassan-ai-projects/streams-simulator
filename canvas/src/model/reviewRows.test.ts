@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Pin, Pins } from "./ports";
-import type { Shown } from "./readout";
+import type { Shown } from "./graph";
 import { reviewBody, reviewRowCount } from "./reviewRows";
 
 function pin(name: string, channel: string | null): Pin {

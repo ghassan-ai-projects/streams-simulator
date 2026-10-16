@@ -4,13 +4,15 @@ import { capRules, colorRules, composesRules, globalLocationRules, ownershipRule
 import type { Register, Violation } from "./model.ts";
 import { readRegister } from "./register.ts";
 import { readSources } from "./sources.ts";
-import { entrypointRules, inlineStyleRules } from "./styleRules.ts";
+import { entrypointRules } from "./facadeRules.ts";
+import { inlineStyleRules } from "./styleRules.ts";
 import {
   callerRules,
   doubleAssertionRules,
   moduleRules,
   protocolRules,
   restrictedRules,
+  targetEdgeRules,
   targetRules,
 } from "./tsRules.ts";
 
@@ -35,6 +37,7 @@ export function check(registerPath: string, ruleSet: RuleSet): CheckResult {
   const violations = [
     ...moduleRules(files, register),
     ...targetRules(files, register),
+    ...targetEdgeRules(files, register),
     ...callerRules(files, register),
     ...protocolRules(files, register),
     ...restrictedRules(files, register),

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { Plant } from "../../model/plant";
-import { areaCounts, hallOf } from "../../model/plantView";
+import { areaCounts, hallOf } from "../../model/graph";
 import { kindLabel } from "../../model/shared/words";
 import type { RunRow } from "../../model/workspace";
 import { counted, runFacts, whenOf } from "../../model/workspace";

@@ -4,7 +4,7 @@ import type { Draft, EditorStore } from "../../app/editorStore";
 import { canSave, checked, emptyPlant } from "../../app/editorStore";
 import type { NavigationStore } from "../../app/navigationStore";
 import { domainOf, equipmentOf, titleOf } from "../../model/composition";
-import { ZoomBar } from "../plant/GraphControls";
+import { ZoomBar } from "../graph";
 import plantStyles from "../plant/PlantScreen.module.css";
 import { Breadcrumb } from "../shell/Breadcrumb";
 import { useScreen } from "../useScreen";

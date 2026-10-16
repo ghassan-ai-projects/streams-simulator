@@ -1,5 +1,5 @@
 import ts from "typescript";
-import type { Register, Violation } from "./model.ts";
+import type { ModuleSpec, Register, Violation } from "./model.ts";
 import { violation } from "./model.ts";
 import type { SourceFile } from "./sources.ts";
 import { descendants, importsOf, isProduction, lineOf } from "./sources.ts";
@@ -103,6 +103,41 @@ function targetOf(path: string, register: Register): string | null {
     .filter((folder) => path.startsWith(`${folder}/`))
     .sort((a, b) => b.length - a.length);
   return folders[0] === undefined ? null : (register.targets[folders[0]] ?? null);
+}
+
+/** The accepted dependency contract, enforced for every module that has been extracted. */
+/** Foundations and the composition root may import whatever they wire; only product modules are bounded. */
+function bounded(owner: ModuleSpec): boolean {
+  return owner.kind !== "composition" && owner.kind !== "test-support";
+}
+
+export function targetEdgeRules(files: readonly SourceFile[], register: Register): Violation[] {
+  const out: Violation[] = [];
+  for (const file of files) {
+    const from = targetOf(file.path, register);
+    const contract = from === null ? undefined : contractFor(from, register, file);
+    if (from === null || contract === undefined) continue;
+    out.push(...edgeViolations(file, from, contract, register));
+  }
+  return out;
+}
+
+function contractFor(from: string, register: Register, file: SourceFile): ModuleSpec | undefined {
+  const owner = register.modules[from];
+  if (owner === undefined || !bounded(owner) || file.isTest) return undefined;
+  return register.targetModules[from];
+}
+
+function edgeViolations(file: SourceFile, from: string, contract: ModuleSpec, register: Register): Violation[] {
+  const out: Violation[] = [];
+  for (const imported of importsOf(file, register)) {
+    if (imported.target === null) continue;
+    const to = targetOf(imported.target, register);
+    if (to === null || to === from || register.testSupport.includes(to)) continue;
+    if ((contract.mayImport ?? []).includes(to)) continue;
+    out.push(violation("target-edge", file.path, imported.line, `${from} may not import ${to}`, imported.target));
+  }
+  return out;
 }
 
 export function callerRules(files: readonly SourceFile[], register: Register): Violation[] {

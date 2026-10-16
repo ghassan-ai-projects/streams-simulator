@@ -8,9 +8,19 @@
       "lifetime": "values",
       "responsibility": "immutable product values, pure transformations and parsing of canvas-owned documents",
       "folders": ["src/model"],
-      "mayImport": [],
+      "mayImport": ["model/graph"],
       "entrypoint": null,
-      "callers": ["adapters", "app", "test", "ui"]
+      "callers": ["adapters", "app", "model/graph", "test", "ui", "ui/graph"]
+    },
+    "model/graph": {
+      "kind": "model",
+      "layer": "model",
+      "lifetime": "values",
+      "responsibility": "plant-view projection, graph geometry, wire routing and graph presentation values",
+      "folders": ["src/model/graph"],
+      "mayImport": ["model"],
+      "entrypoint": "src/model/graph/index.ts",
+      "callers": ["model", "test", "ui", "ui/graph"]
     },
     "app": {
       "kind": "application",
@@ -38,9 +48,19 @@
       "lifetime": "components",
       "responsibility": "rendering, input binding and component-local ephemeral state",
       "folders": ["src/ui"],
-      "mayImport": ["app", "model", "test"],
+      "mayImport": ["app", "model", "model/graph", "test", "ui/graph"],
       "entrypoint": null,
-      "callers": ["root", "test"]
+      "callers": ["root", "test", "ui/graph"]
+    },
+    "ui/graph": {
+      "kind": "ui",
+      "layer": "ui",
+      "lifetime": "components",
+      "responsibility": "the streamsim plant graph: nodes, edges, controls, outline and viewport",
+      "folders": ["src/ui/graph"],
+      "mayImport": ["ui", "model", "model/graph"],
+      "entrypoint": "src/ui/graph/index.ts",
+      "callers": ["ui"]
     },
     "test": {
       "kind": "test-support",
@@ -50,7 +70,7 @@
       "folders": ["src/test"],
       "mayImportAny": true,
       "entrypoint": null,
-      "callers": ["app", "model", "ui"]
+      "callers": ["app", "model", "model/graph", "ui", "ui/graph"]
     },
     "root": {
       "kind": "composition",
@@ -242,8 +262,8 @@
     }
   },
   "targets": {
-    "src/model/areaTree.test.ts": "model/editor",
-    "src/model/areaTree.ts": "model/editor",
+    "src/model/areaTree.test.ts": "model/shared",
+    "src/model/areaTree.ts": "model/shared",
     "src/model/bridge.test.ts": "model/shared",
     "src/model/bridge.ts": "model/shared",
     "src/model/composition.test.ts": "model/editor",
@@ -253,36 +273,20 @@
     "src/model/compositionKinds.test.ts": "model/editor",
     "src/model/effectors.test.ts": "model/launch",
     "src/model/effectors.ts": "model/launch",
-    "src/model/frameTitle.test.ts": "model/graph",
-    "src/model/frameTitle.ts": "model/graph",
-    "src/model/graphKeys.test.ts": "model/graph",
-    "src/model/graphKeys.ts": "model/graph",
-    "src/model/headerFit.test.ts": "model/graph",
-    "src/model/headerFit.ts": "model/graph",
     "src/model/instanceNameRule.test.ts": "model/editor",
     "src/model/instanceNameRule.ts": "model/editor",
     "src/model/kindNames.ts": "model/shared",
     "src/model/launch.test.ts": "model/launch",
     "src/model/launch.ts": "model/launch",
-    "src/model/layout.test.ts": "model/graph",
-    "src/model/layout.ts": "model/graph",
     "src/model/library.ts": "model/plant",
-    "src/model/nodeWords.ts": "model/graph",
     "src/model/noteLines.test.ts": "model/review",
     "src/model/noteLines.ts": "model/review",
-    "src/model/nodePresentation.ts": "model/graph",
-    "src/model/planMarks.test.ts": "model/graph",
-    "src/model/planMarks.ts": "model/graph",
     "src/model/plant.test.ts": "model/plant",
     "src/model/plant.ts": "model/plant",
-    "src/model/plantView.test.ts": "model/graph",
-    "src/model/plantView.ts": "model/graph",
     "src/model/playback.test.ts": "model/review",
     "src/model/playback.ts": "model/review",
     "src/model/ports.test.ts": "model/plant",
     "src/model/ports.ts": "model/plant",
-    "src/model/readout.test.ts": "model/graph",
-    "src/model/readout.ts": "model/graph",
     "src/model/report.test.ts": "model/review",
     "src/model/report.ts": "model/review",
     "src/model/reportAlarms.test.ts": "model/review",
@@ -302,21 +306,6 @@
     "src/model/timeline.ts": "model/review",
     "src/model/units.test.ts": "model/shared",
     "src/model/units.ts": "model/shared",
-    "src/model/viewport.test.ts": "model/graph",
-    "src/model/viewport.ts": "model/graph",
-    "src/model/wireEnds.ts": "model/graph",
-    "src/model/wireGrid.test.ts": "model/graph",
-    "src/model/wireGrid.ts": "model/graph",
-    "src/model/wireOffice.test.ts": "model/graph",
-    "src/model/wirePath.test.ts": "model/graph",
-    "src/model/wirePath.ts": "model/graph",
-    "src/model/wirePins.test.ts": "model/graph",
-    "src/model/wireRoute.test.ts": "model/graph",
-    "src/model/wireRoute.ts": "model/graph",
-    "src/model/wireSearch.test.ts": "model/graph",
-    "src/model/wireSearch.ts": "model/graph",
-    "src/model/wireView.test.ts": "model/graph",
-    "src/model/wireView.ts": "model/graph",
     "src/model/workspace.test.ts": "model/workspace",
     "src/model/workspace.ts": "model/workspace",
     "src/app/sessionStore.ts": "app/session",
@@ -378,7 +367,9 @@
     "src/adapters": "adapters/bridge",
     "src/ui": "ui/shell",
     "src/main.tsx": "root",
-    "src/model/shared/marks.ts": "model/shared"
+    "src/model/shared/marks.ts": "model/shared",
+    "src/model/graph": "model/graph",
+    "src/ui/graph": "ui/graph"
   },
   "features": {
     "src/ui": "primitives",
@@ -389,15 +380,16 @@
     "src/ui/plant": "plant",
     "src/ui/editor": "editor",
     "src/ui/launch": "launch",
-    "src/ui/run": "review"
+    "src/ui/run": "review",
+    "src/ui/graph": "graph"
   },
   "css": {
     "globalEntrypoints": ["src/ui/theme/tokens.css", "src/ui/theme/base.css", "src/ui/theme/families.css"],
     "globalOwners": ["src/ui/shared.module.css", "src/ui/panel.module.css"],
-    "vendorFiles": [],
+    "vendorFiles": ["src/ui/graph/internal/vendor.module.css"],
     "defaultCap": 300,
     "caps": {
-      "src/ui/plant/nodes.module.css": {
+      "src/ui/graph/internal/nodes.module.css": {
         "cap": 695,
         "phase": "P5"
       },
@@ -406,7 +398,7 @@
         "phase": "P5"
       },
       "src/ui/plant/PlantScreen.module.css": {
-        "cap": 453,
+        "cap": 314,
         "phase": "P5"
       },
       "src/ui/home/HomeScreen.module.css": {
@@ -427,9 +419,14 @@
       }
     },
     "globalCaps": {
-      "src/ui/plant/nodes.module.css": {
-        "global": 70,
+      "src/ui/graph/internal/nodes.module.css": {
+        "global": 0,
         "important": 30,
+        "phase": "P5"
+      },
+      "src/ui/graph/internal/vendor.module.css": {
+        "global": 6,
+        "important": 2,
         "phase": "P1"
       },
       "src/ui/shared.module.css": {
@@ -451,11 +448,6 @@
         "global": 0,
         "important": 2,
         "phase": "P5"
-      },
-      "src/ui/plant/GraphControls.module.css": {
-        "global": 0,
-        "important": 2,
-        "phase": "P1"
       }
     },
     "colorExceptions": {
@@ -569,7 +561,7 @@
       },
       {
         "name": "graph",
-        "selector": ".tier-compact"
+        "selector": "tierCompact"
       },
       {
         "name": "theme-tokens",
@@ -580,10 +572,10 @@
         "selector": ".family-air{"
       }
     ],
-    "important": 34,
+    "important": 32,
     "zIndex": 17,
-    "positioned": 33,
-    "note": ""
+    "positioned": 32,
+    "note": "Phase 1 moved the React Flow connection hooks and the minimap panel override into graph/internal/vendor.module.css and turned the zoom-tier classes into local ones; the two !important and one positioned declaration that left the emitted sheet are the minimap overrides now scoped to React Flow's own panel class"
   },
   "debt": [
     {
@@ -593,13 +585,6 @@
       "count": 1,
       "phase": "P5",
       "reason": "a cross-feature stylesheet that P5 dissolves into primitives"
-    },
-    {
-      "rule": "css-feature-ownership",
-      "file": "src/ui/shared.module.css",
-      "target": "src/ui/plant/Outline.tsx",
-      "count": 1,
-      "phase": "P5"
     },
     {
       "rule": "css-feature-ownership",
@@ -800,7 +785,7 @@
     {
       "rule": "css-composes-cross-module",
       "file": "src/ui/plant/PlantScreen.module.css",
-      "count": 4,
+      "count": 3,
       "phase": "P5"
     },
     {
@@ -883,22 +868,18 @@
     },
     {
       "rule": "boolean-flag-param",
-      "file": "src/model/wireView.ts",
-      "count": 2,
-      "phase": "P1"
-    },
-    {
-      "rule": "boolean-flag-param",
-      "file": "src/ui/plant/flow.ts",
-      "count": 1,
-      "phase": "P1"
-    },
-    {
-      "rule": "boolean-flag-param",
       "file": "src/app/plantMaker.ts",
       "count": 2,
       "phase": "P3",
       "reason": "PlantMaker.create/write take a copy boolean; the typed component gateway replaces it with a named mode"
+    },
+    {
+      "rule": "css-feature-ownership",
+      "file": "src/ui/shared.module.css",
+      "target": "src/ui/graph/internal/Outline.tsx",
+      "count": 1,
+      "phase": "P5",
+      "reason": "the outline still borrows the shared disclosure and cut classes; Phase 5 replaces them with a primitive"
     }
   ],
   "testSupport": ["test"]

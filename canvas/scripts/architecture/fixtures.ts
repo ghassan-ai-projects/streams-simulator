@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { check } from "./check.ts";
 import { applyDebt, describe, sortViolations } from "./violations.ts";
+import { runRatchetFixtures } from "./ratchetFixtures.ts";
 
 interface Expected {
   readonly rules: readonly string[];
@@ -15,6 +16,7 @@ export function runFixtures(root: string): string[] {
   for (const name of names) {
     failures.push(...runFixture(root, name, cwd));
   }
+  failures.push(...runRatchetFixtures());
   const verdict = failures.length === 0 ? "ok" : `FAILED (${String(failures.length)})`;
   process.stdout.write(`canvas fixtures: ${verdict}, ${String(names.length)} cases\n`);
   return failures;

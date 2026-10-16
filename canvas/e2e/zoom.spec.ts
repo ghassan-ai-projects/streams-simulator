@@ -79,7 +79,7 @@ test("below 40 % an id stays on one line and never breaks mid-word, down to the 
     expect.poll(async () => guard(await page.evaluate(idProblems, 10))).toEqual([]),
   );
   expect(tier).toBe("overview");
-  await expect(graph).toHaveClass(/tier-overview/);
+  await expect(graph).toHaveAttribute("data-zoom-tier", "overview");
 });
 
 function titleProblems(atLeast = 1): { considered: number; problems: string[]; met: boolean } {

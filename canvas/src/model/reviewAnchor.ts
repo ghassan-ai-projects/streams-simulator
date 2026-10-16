@@ -1,4 +1,4 @@
-import { hallOf } from "./plantView";
+import { hallOf } from "./graph";
 import type { Report } from "./report";
 
 interface Event {

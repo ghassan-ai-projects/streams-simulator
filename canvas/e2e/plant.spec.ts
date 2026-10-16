@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { guard } from "./support/audit";
+import { stepZoom, zoomInTo, zoomOutTo } from "./support/viewport";
 import { env } from "./support/env";
 import { headingInside } from "./support/fitAudit";
 import { textClashes } from "./support/textClashes";
@@ -14,6 +15,7 @@ test("the factory opens from the workspace as a typed plant graph", async ({ pag
   await expect(graph.getByText("23 instances · 59 links")).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Outline" }).getByRole("button")).toHaveCount(23);
   await expect(page.locator(".react-flow__edge").first()).toBeVisible();
+  await expect(page.locator(".react-flow__minimap")).toHaveCSS("position", "static");
   await expect(page.getByRole("group", { name: /^CT-1, cooling tower,/ })).toBeVisible();
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 });
@@ -177,11 +179,11 @@ test("no node overlaps another, spills its text or cuts a title or port name at 
   for (let step = 0; step < 8; step += 1) {
     const previous = zoom;
     await expect.poll(async () => (zoom = await page.evaluate(settledZoom)) !== "" && zoom !== previous).toBe(true);
-    tiers.add((await graph.getAttribute("class"))?.match(/tier-(\w+)/)?.[1] ?? "");
+    tiers.add((await graph.getAttribute("data-zoom-tier")) ?? "");
     expect(await page.evaluate(overlapsAndSpills)).toEqual([]);
     expect(await page.evaluate(cutText)).toEqual([]);
     expect(guard(await page.evaluate(textClashes, 20))).toEqual([]);
-    await page.keyboard.press("+");
+    await stepZoom(page, "+");
   }
   expect([...tiers]).toEqual(expect.arrayContaining(["overview", "compact", "full"]));
 });
@@ -200,12 +202,7 @@ test("the keyboard ring stays 2 px on screen when zoomed out", async ({ page }) 
   await page.getByRole("application", { name: "Plant graph" }).focus();
   await page.keyboard.press("ArrowRight");
   await expect.poll(() => page.evaluate(activeRingOnScreen)).toBeGreaterThanOrEqual(1.9);
-  await expect
-    .poll(async () => {
-      await page.keyboard.press("-");
-      return page.getByRole("application", { name: "Plant graph" }).getAttribute("class");
-    })
-    .toMatch(/tier-map/);
+  await expect.poll(async () => zoomOutTo(page, "map", 6, () => Promise.resolve())).toBe("map");
   await expect.poll(() => page.evaluate(activeRingOnScreen)).toBeGreaterThanOrEqual(1.9);
 });
 
@@ -262,12 +259,7 @@ test("a selection made outside the graph comes into view, and arrow travel keeps
   const graph = page.getByRole("application", { name: "Plant graph" });
   await expect(page.getByRole("group", { name: /^CT-1, cooling tower,/ })).toBeVisible();
   await graph.focus();
-  await expect
-    .poll(async () => {
-      await page.keyboard.press("+");
-      return graph.getAttribute("class");
-    })
-    .toMatch(/tier-full/);
+  expect(await zoomInTo(page, "full", 6)).toBe("full");
   await page.getByRole("navigation", { name: "Outline" }).getByRole("button", { name: "MB-PROC" }).click();
   await expect.poll(() => page.evaluate(insideGraph, "MB-PROC")).toBe(true);
   await graph.focus();

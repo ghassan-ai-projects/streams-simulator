@@ -2,6 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 import { guard } from "./support/audit";
+import { stepZoom } from "./support/viewport";
 import { env } from "./support/env";
 import { nodesOutsideCanvas } from "./support/fitAudit";
 import { noteProblems } from "./support/noteFit";
@@ -124,7 +125,7 @@ test("a review node lists every port of its kind as a row, observed or not, at e
   await graph.focus();
   for (let step = 0; step < 3; step += 1) {
     expect(guard(await page.evaluate(textClashes, 20))).toEqual([]);
-    await page.keyboard.press("+");
+    await stepZoom(page, "+");
   }
 });
 
@@ -228,12 +229,12 @@ test("a fault's cause and an effector outcome wrap on the node, whole, at the op
   await page.getByRole("slider", { name: "Playback time" }).fill("930");
   const dryer = page.getByRole("group", { name: /^D-1, / });
   const graph = page.getByRole("application", { name: "Plant graph" });
-  await expect(graph).toHaveClass(/tier-compact/);
+  await expect(graph).toHaveAttribute("data-zoom-tier", "compact");
   await expect(dryer.getByText("Fault · prefilter clogging")).toBeVisible();
   await expect(dryer.getByText(/^set running · applied · \d+ ms$/)).toBeVisible();
   await expect.poll(async () => guard(await page.evaluate(noteProblems, 5))).toEqual([]);
   await page.getByRole("button", { name: "Fit the plant in view" }).click();
-  await expect(graph).toHaveClass(/tier-(overview|map)/);
+  await expect(graph).toHaveAttribute("data-zoom-tier", /overview|map/);
   await expect(dryer).toContainText("Fault: prefilter clogging");
   await expect(dryer).toContainText(/set running · applied · \d+ ms/);
   await expect.poll(async () => guard(await page.evaluate(noteProblems, 5))).toEqual([]);

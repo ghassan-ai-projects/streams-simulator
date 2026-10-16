@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { guard } from "./support/audit";
+import { zoomInTo } from "./support/viewport";
 import { env } from "./support/env";
 import { textClashes } from "./support/textClashes";
 
@@ -14,12 +15,7 @@ test("no two labels inside one node intersect at the compact zoom, on a flat pla
     const graph = page.getByRole("application", { name: "Plant graph" });
     await graph.focus();
     await page.keyboard.press("0");
-    await expect
-      .poll(async () => {
-        await page.keyboard.press("+");
-        return graph.getAttribute("class");
-      })
-      .toMatch(/tier-compact/);
+    expect(await zoomInTo(page, "compact", 3)).toBe("compact");
     await expect(page.locator(".react-flow__node-instance [class*='pinName']").first()).toBeVisible();
     expect(guard(await page.evaluate(textClashes, 50))).toEqual([]);
   }

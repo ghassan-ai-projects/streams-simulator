@@ -2,7 +2,7 @@ import type { ReviewState } from "../../app/reviewStore";
 import type { Opening } from "../../model/playback";
 import { runClock } from "../../model/timeline";
 import { grouped } from "../../model/units";
-import { ZoomBar } from "../plant/GraphControls";
+import { ZoomBar } from "../graph";
 import styles from "./RunScreen.module.css";
 
 function openedWords(opening: Opening, startNs: number): string {

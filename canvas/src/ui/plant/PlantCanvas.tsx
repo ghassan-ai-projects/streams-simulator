@@ -3,13 +3,10 @@ import type { LaunchStore } from "../../app/launchStore";
 import type { NavigationStore } from "../../app/navigationStore";
 import type { PlantState, PlantStore } from "../../app/plantStore";
 import { showingMarks } from "../../model/launch";
-import type { PlanMark } from "../../model/planMarks";
-import { planMarks } from "../../model/planMarks";
-import { plainView, plantView } from "../../model/plantView";
-import type { PlantView } from "../../model/plantView";
+import { planMarks, plainView, plantView } from "../../model/graph";
+import type { PlanMark, PlantView } from "../../model/graph";
+import { PlantGraph, useCanvasAspect } from "../graph";
 import { useStore } from "../useStore";
-import { useCanvasAspect } from "./canvasAspect";
-import { PlantGraph } from "./PlantGraph";
 import styles from "./PlantScreen.module.css";
 
 type Ready = Extract<PlantState, { phase: "ready" }>;

@@ -15,7 +15,7 @@ const screens: readonly { readonly name: string; readonly hash: string; readonly
   { name: "workspace", hash: "#/", marker: "Factory utilities" },
   { name: "plant", hash: "#/plant?domain=domains%2Ffactory-utilities.domain.json", marker: "instances ·" },
   { name: "editor", hash: "#/edit?composition=compositions%2Ffactory-utilities.composition.json", marker: "Save" },
-  { name: "review", hash: "#/run?world=w-1", marker: "Report" },
+  { name: "review", hash: "#/run?world=w-1", marker: "observations" },
   { name: "launch", hash: "#/plant?domain=domains%2Ffactory-utilities.domain.json&run=1", marker: "Start the run" },
 ];
 
@@ -96,10 +96,10 @@ async function pairingCookie(url: string, code: string): Promise<{ name: string;
   return { name, value: value.join("="), domain: new URL(url).hostname };
 }
 
-async function paintDark(page: Page): Promise<void> {
+async function paintTheme(page: Page, expected: string): Promise<void> {
   for (let press = 0; press < 3; press += 1) {
     const theme = await page.evaluate(() => document.documentElement.dataset.theme ?? "");
-    if (theme === "dark") return;
+    if (theme === expected) return;
     await page.getByRole("button", { name: /theme/i }).click();
   }
 }
@@ -114,12 +114,12 @@ async function settle(page: Page, marker: string): Promise<void> {
 async function shoot(context: BrowserContext, app: Served, out: string): Promise<void> {
   for (const width of widths) {
     const page = await context.newPage();
-    await page.setViewportSize({ width, height: 900 });
+    await page.setViewportSize({ width, height: width === 1920 ? 1080 : 900 });
     for (const theme of themes) {
-      if (theme === "dark") await paintDark(page);
       for (const screen of screens) {
         await page.goto(`${app.url}/${screen.hash}`);
         await settle(page, screen.marker);
+        await paintTheme(page, theme);
         await page.screenshot({ path: join(out, `${screen.name}-${String(width)}-${theme}.png`) });
       }
     }

@@ -49,6 +49,7 @@ test("a new plant is built in Chrome, a name the binary would refuse is stopped 
   await build.getByLabel("Name", { exact: true }).fill("CT-1");
   await build.getByRole("button", { name: "Add to the plant" }).click();
   await page.getByRole("button", { name: "Close the instance" }).click();
+  await expect(pin(page, "CH-1", "heat_out")).toHaveCSS("cursor", "crosshair");
   await pin(page, "CH-1", "heat_out").dragTo(pin(page, "CT-1", "heat_in"));
   await page.getByRole("navigation", { name: "Outline" }).getByRole("button", { name: "CT-1" }).click();
   await expect(page.getByRole("heading", { name: "Links 1" })).toBeVisible();

@@ -1,7 +1,7 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 import { env } from "./support/env";
-import { fitAndWait } from "./support/viewport";
+import { fitAndWait, stepZoom } from "./support/viewport";
 import { guard } from "./support/audit";
 import { wireEndsTooClose, wiresNearTitles, wiresUnderNodes } from "./support/wireAudit";
 
@@ -15,11 +15,11 @@ async function checkEveryTier(page: Page) {
   for (let step = 0; step < 6; step += 1) {
     await expect.poll(async () => guard(await page.evaluate(wiresUnderNodes, 10)), budget).toEqual([]);
     await expect.poll(async () => guard(await page.evaluate(wireEndsTooClose, 20)), budget).toEqual([]);
-    const tier = (await graph.getAttribute("class"))?.match(/tier-(\w+)/)?.[1];
+    const tier = await graph.getAttribute("data-zoom-tier");
     if (tier === "compact" || tier === "full") {
       await expect.poll(async () => guard(await page.evaluate(wiresNearTitles, 20)), budget).toEqual([]);
     }
-    await page.keyboard.press("+");
+    await stepZoom(page, "+");
   }
 }
 

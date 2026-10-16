@@ -1,8 +1,6 @@
-import type { RowCount, ViewPresentation } from "./nodePresentation";
-import { noteHeight } from "./plantView";
+import type { Attention, ReadoutBody, ReadoutRow, RowCount, Shown, ViewPresentation } from "./graph";
+import { attentionOf, channelWords, noteHeight } from "./graph";
 import type { Pin, Pins } from "./ports";
-import type { Attention, ReadoutBody, ReadoutRow, Shown } from "./readout";
-import { attentionOf, channelWords } from "./readout";
 
 interface ReviewRow {
   readonly key: string;

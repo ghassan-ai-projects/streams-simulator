@@ -5,9 +5,23 @@ function viewportTransform(): string {
   return document.querySelector<HTMLElement>(".react-flow__viewport")?.style.transform ?? "";
 }
 
+async function settledTier(page: Page): Promise<string> {
+  await page.evaluate(
+    () =>
+      new Promise((resolve) => {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            resolve(null);
+          });
+        });
+      }),
+  );
+  return page.evaluate(tierOfGraph);
+}
+
 function tierOfGraph(): string {
   const graph = document.querySelector("[aria-roledescription='plant graph']");
-  return /tier-(\w+)/.exec(graph?.getAttribute("class") ?? "")?.[1] ?? "";
+  return graph?.getAttribute("data-zoom-tier") ?? "";
 }
 
 export async function waitForViewport(page: Page): Promise<void> {
@@ -29,6 +43,23 @@ export async function fitAndWait(page: Page): Promise<void> {
   await page.getByRole("application", { name: "Plant graph" }).focus();
   await page.keyboard.press("0");
   await waitForViewport(page);
+}
+
+/** One zoom step that has taken effect: the keypress is ignored while a previous zoom is still animating. */
+export async function stepZoom(page: Page, key: "+" | "-"): Promise<void> {
+  await page.keyboard.press(key);
+  await waitForViewport(page);
+}
+
+export async function zoomInTo(page: Page, target: string, limit: number): Promise<string> {
+  let tier = await settledTier(page);
+  let step = 0;
+  while (step < limit && tier !== target) {
+    await stepZoom(page, "+");
+    tier = await settledTier(page);
+    step += 1;
+  }
+  return tier;
 }
 
 export async function zoomOutTo(

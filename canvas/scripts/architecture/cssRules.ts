@@ -45,18 +45,17 @@ export function globalLocationRules(root: string, register: Register): Violation
   for (const path of cssFiles(root)) {
     const text = readFileSync(path, "utf8");
     const cap = register.css.globalCaps[path] ?? { global: 0, important: 0 };
-    out.push(...overCap(":global", matches(text, /:global/g), cap.global, path, register));
-    out.push(...overCap("!important", matches(text, /!important/g), cap.important, path, register));
+    out.push(...overCap(":global", matches(text, /:global/g), cap.global, path));
+    out.push(...overCap("!important", matches(text, /!important/g), cap.important, path));
   }
   return out;
 }
 
-function overCap(kind: string, found: readonly Match[], cap: number, path: string, register: Register): Violation[] {
-  const allowed = register.css.vendorFiles.includes(path);
+function overCap(kind: string, found: readonly Match[], cap: number, path: string): Violation[] {
   return found
-    .slice(allowed ? found.length : cap)
+    .slice(cap)
     .map((entry) =>
-      violation("css-global-location", path, entry.line, `${kind} belongs in a registered vendor stylesheet`),
+      violation("css-global-location", path, entry.line, `${kind} exceeds the registered allowance of ${String(cap)}`),
     );
 }
 

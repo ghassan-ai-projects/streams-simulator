@@ -1,6 +1,4 @@
-import type { PlantView } from "../model/plantView";
-import type { Rect } from "../model/viewport";
-import type { Point } from "../model/wireRoute";
+import type { PlantView, Point, Rect } from "../model/graph";
 
 export interface Dump {
   readonly nodes: readonly {
