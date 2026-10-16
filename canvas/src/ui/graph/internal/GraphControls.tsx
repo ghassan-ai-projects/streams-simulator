@@ -11,8 +11,8 @@ import styles from "./GraphControls.module.css";
 import vendor from "./vendor.module.css";
 
 function minimapClass(node: FlowNode): string {
-  if (node.type === "frame" || node.type === "frameTitle") return "minimap-frame";
-  return node.selected === true ? "minimap-selected" : "";
+  if (node.type === "frame" || node.type === "frameTitle") return cx(styles.minimapNode, styles.minimapFrame);
+  return cx(styles.minimapNode, node.selected === true && styles.minimapSelected);
 }
 
 const families = Object.keys(familyNames) as Family[];

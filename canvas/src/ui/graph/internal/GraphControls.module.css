@@ -170,3 +170,16 @@
   font-family: var(--font-mono);
   color: var(--text-tertiary);
 }
+
+.minimap .minimapNode {
+  fill: var(--border-default);
+  stroke: none;
+}
+
+.minimap .minimapFrame {
+  fill: color-mix(in srgb, var(--border-strong) 18%, transparent);
+}
+
+.minimap .minimapSelected {
+  fill: var(--accent);
+}

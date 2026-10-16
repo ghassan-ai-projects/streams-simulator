@@ -1,0 +1,130 @@
+.tierCompact .marks {
+  grid-column: 2;
+}
+
+.tierCompact .brief .tagWords {
+  display: none;
+}
+
+.tierOverview .marks {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.tag {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 3px;
+  padding: 0 5px;
+  border-radius: 4px;
+  font-size: var(--text-xs);
+  font-weight: 600;
+}
+
+.tagWords {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tag {
+  max-width: 100%;
+}
+
+.marks {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+  max-width: 100%;
+}
+
+.tag-alarm {
+  background: var(--status-alarm-bg);
+  color: var(--text-primary);
+}
+
+.tag-fault {
+  background: var(--status-alarm-bg);
+  color: var(--text-primary);
+}
+
+.tag-alarm svg {
+  color: var(--status-alarm);
+}
+
+.tag-fault svg {
+  color: var(--status-alarm);
+}
+
+.tag-warn {
+  background: var(--status-warn-bg);
+  color: var(--text-primary);
+}
+
+.tag-warn svg {
+  color: var(--status-warn);
+}
+
+.effectorTag {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+}
+
+.effectorMark {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+.tierCompact .effectorMark {
+  width: min(calc(10px / var(--zoom)), 22px);
+  height: min(calc(10px / var(--zoom)), 22px);
+}
+
+.tierOverview .effectorMark {
+  width: min(calc(10px / var(--zoom)), 36px);
+  height: min(calc(10px / var(--zoom)), 36px);
+}
+
+.tierMap .effectorMark {
+  width: min(calc(10px / var(--zoom)), 36px);
+  height: min(calc(10px / var(--zoom)), 36px);
+}
+
+.tierCompact .tag {
+  padding: 0 calc(4px / var(--zoom));
+  font-size: max(var(--floor), min(calc(11px / var(--zoom)), 22px));
+  line-height: 1.2;
+}
+
+.tierCompact .tag svg {
+  width: min(calc(12px / var(--zoom)), 22px);
+  height: min(calc(12px / var(--zoom)), 22px);
+}
+
+.tierOverview .tag svg {
+  width: min(calc(12px / var(--zoom)), 40px);
+  height: min(calc(12px / var(--zoom)), 40px);
+}
+
+.tierMap .tag svg {
+  width: min(calc(12px / var(--zoom)), 40px);
+  height: min(calc(12px / var(--zoom)), 40px);
+}
+
+.tierOverview .tag {
+  gap: 0;
+  padding: calc(2px / var(--zoom));
+  font-size: 0;
+}
+
+.tierMap .tag {
+  gap: 0;
+  padding: calc(2px / var(--zoom));
+  font-size: 0;
+}

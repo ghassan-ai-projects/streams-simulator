@@ -24,13 +24,17 @@ import { EffectorTag, IssueTag, StatusTag, tagWords } from "./Marks";
 import { Readout } from "./Readout";
 import { useLabelFit } from "./labelFit";
 import styles from "./nodes.module.css";
+import pins from "./pins.module.css";
+import frames from "./frames.module.css";
+import readout from "./readout.module.css";
+import marks from "./marks.module.css";
 import vendor from "./vendor.module.css";
 
 export const tierClass: Record<ReturnType<typeof tierOf>, string> = {
-  map: styles.tierMap ?? "",
-  overview: styles.tierOverview ?? "",
-  compact: styles.tierCompact ?? "",
-  full: styles.tierFull ?? "",
+  map: cx(styles.tierMap, pins.tierMap, frames.tierMap, readout.tierMap, marks.tierMap),
+  overview: cx(styles.tierOverview, pins.tierOverview, frames.tierOverview, readout.tierOverview, marks.tierOverview),
+  compact: cx(styles.tierCompact, pins.tierCompact, frames.tierCompact, readout.tierCompact, marks.tierCompact),
+  full: cx(styles.tierFull, pins.tierFull, frames.tierFull, readout.tierFull, marks.tierFull),
 };
 
 function pinLook(pin: Pin): { readonly family: string; readonly shape: string; readonly typeName: string } {
@@ -62,20 +66,17 @@ function PinRow({
   const label = useRef<HTMLSpanElement>(null);
   useLabelFit(label, zoom);
   return (
-    <div
-      className={cx(styles.pin, styles[side])}
-      title={`${pin.name} · ${pin.type || look.typeName} · ${look.typeName}`}
-    >
+    <div className={cx(pins.pin, pins[side])} title={`${pin.name} · ${pin.type || look.typeName} · ${look.typeName}`}>
       <Handle
         type={side === "in" ? "target" : "source"}
         position={side === "in" ? Position.Left : Position.Right}
         id={pin.name}
-        className={cx(styles.dot, vendor.dot, styles[look.shape], styles[pin.connection], `family-${look.family}`)}
+        className={cx(pins.dot, vendor.dot, pins[look.shape], pins[pin.connection], `family-${look.family}`)}
         isConnectable={editable}
       />
-      <span ref={label} className={styles.pinName}>
-        <span className={styles.pinFull}>{words.full}</span>
-        <span className={styles.pinShort}>{words.short}</span>
+      <span ref={label} className={pins.pinName}>
+        <span className={pins.pinFull}>{words.full}</span>
+        <span className={pins.pinShort}>{words.short}</span>
       </span>
       <span className="sr-only">{`, ${side === "in" ? "input" : "output"}, ${look.typeName}, ${connectionWords[pin.connection]}`}</span>
     </div>
@@ -94,10 +95,10 @@ function Pins({
   readonly zoom: number;
 }) {
   if (ins.length + outs.length === 0) {
-    return <div className={styles.none}>no port data</div>;
+    return <div className={pins.none}>no port data</div>;
   }
   return (
-    <div className={styles.pins}>
+    <div className={pins.pins}>
       <div>
         {ins.map((pin) => (
           <PinRow key={pin.name} pin={pin} side="in" editable={editable} zoom={zoom} />
@@ -223,12 +224,13 @@ export function InstanceNode({ data, selected }: NodeProps<InstanceNodeType>) {
         data.flagged && styles.flagged,
         statusClass(status),
       )}
+      data-node-root="true"
       role="group"
       aria-label={instanceLabel(data, selected)}
       style={instanceStyle(view)}
     >
-      <Handle type="target" position={Position.Left} id="in" className={styles.anchor} isConnectable={false} />
-      <Handle type="source" position={Position.Right} id="out" className={styles.anchor} isConnectable={false} />
+      <Handle type="target" position={Position.Left} id="in" className={pins.anchor} isConnectable={false} />
+      <Handle type="source" position={Position.Right} id="out" className={pins.anchor} isConnectable={false} />
       <InstanceHeader data={data} status={status} zoom={zoom} />
       {data.live !== null && <Readout body={data.live.readout} fault={data.live.fault} effector={data.live.effector} />}
       {data.live === null && <Pins ins={view.pins.ins} outs={view.pins.outs} editable={data.editable} zoom={zoom} />}
@@ -248,10 +250,11 @@ export function HallNode({ data, selected }: NodeProps<HallNodeType>) {
         data.active && styles.active,
         statusClass(status),
       )}
+      data-node-hall="true"
       role="group"
       aria-label={describeNode(view, selected, status, count)}
     >
-      <Handle type="target" position={Position.Left} id="in" className={styles.plain} isConnectable={false} />
+      <Handle type="target" position={Position.Left} id="in" className={pins.plain} isConnectable={false} />
       <div className={styles.header}>
         <span className={styles.id}>{view.label}</span>
         <StatusTag status={status} count={count} />
@@ -260,26 +263,26 @@ export function HallNode({ data, selected }: NodeProps<HallNodeType>) {
       <div className={styles.members} title="Double-click, or press Enter, to open the hall">
         {view.detail}
       </div>
-      <Handle type="source" position={Position.Right} id="out" className={styles.plain} isConnectable={false} />
+      <Handle type="source" position={Position.Right} id="out" className={pins.plain} isConnectable={false} />
     </div>
   );
 }
 
 export function FrameNode() {
-  return <div className={styles.frame} />;
+  return <div className={frames.frame} />;
 }
 
 export function FrameTitleNode({ data }: NodeProps<FrameTitleNodeType>) {
   const count = countWords(data.count);
   const { head, tail } = splitName(data.title);
   return (
-    <div className={styles.frameTitleNode}>
-      <div className={styles.frameTitle} title={`${data.title} · ${count}`}>
-        <span className={styles.frameName}>
-          <span className={styles.nameHead}>{head}</span>
-          <span className={styles.nameTail}>{tail}</span>
+    <div className={frames.frameTitleNode}>
+      <div className={frames.frameTitle} title={`${data.title} · ${count}`}>
+        <span className={frames.frameName}>
+          <span className={frames.nameHead}>{head}</span>
+          <span className={frames.nameTail}>{tail}</span>
         </span>
-        <span className={styles.frameCount}>{count}</span>
+        <span className={frames.frameCount}>{count}</span>
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 import type { ReadoutBody, ReadoutRow } from "../../../model/graph";
 import { cx } from "../../cx";
 import { OutsideMark } from "../../OutsideMark";
-import styles from "./nodes.module.css";
+import styles from "./readout.module.css";
 
 function Missing({ observed }: { readonly observed: boolean }) {
   const words = observed ? "no reading yet" : "not observed";
@@ -38,7 +38,7 @@ function ReadoutRowItem({ row }: { readonly row: ReadoutRow }) {
 
 function Note({ fault, effector }: { readonly fault: string; readonly effector: string }) {
   return (
-    <div className={cx(styles.note, fault !== "" && styles.noted)}>
+    <div data-noted={fault !== "" ? "true" : undefined} className={cx(styles.note, fault !== "" && styles.noted)}>
       {fault !== "" && <span className={styles.noteFault} title={fault}>{`Fault · ${fault}`}</span>}
       {effector !== "" && (
         <span className={styles.noteCall} title={effector}>

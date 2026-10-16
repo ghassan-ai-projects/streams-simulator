@@ -390,7 +390,7 @@
     "defaultCap": 300,
     "caps": {
       "src/ui/graph/internal/nodes.module.css": {
-        "cap": 695,
+        "cap": 300,
         "phase": "P5"
       },
       "src/ui/run/RunScreen.module.css": {
@@ -421,7 +421,7 @@
     "globalCaps": {
       "src/ui/graph/internal/nodes.module.css": {
         "global": 0,
-        "important": 30,
+        "important": 0,
         "phase": "P5"
       },
       "src/ui/graph/internal/vendor.module.css": {
@@ -572,10 +572,10 @@
         "selector": ".family-air{"
       }
     ],
-    "important": 32,
+    "important": 2,
     "zIndex": 17,
     "positioned": 32,
-    "note": "Phase 1 moved the React Flow connection hooks and the minimap panel override into graph/internal/vendor.module.css and turned the zoom-tier classes into local ones; the two !important and one positioned declaration that left the emitted sheet are the minimap overrides now scoped to React Flow's own panel class"
+    "note": "Phase 1 moved React Flow connection hooks and the minimap panel positioning into vendor.module.css; P5 partitions node, pin, frame, readout, and mark styles, removes local handle !important overrides through scoped selector specificity, and moves minimap node colors into GraphControls.module.css"
   },
   "debt": [
     {

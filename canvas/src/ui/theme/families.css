@@ -131,19 +131,6 @@
   --xy-background-pattern-color: var(--grid-major);
 }
 
-.react-flow__minimap-node {
-  fill: var(--border-default);
-  stroke: none;
-}
-
-.react-flow__minimap-node.minimap-frame {
-  fill: color-mix(in srgb, var(--border-strong) 18%, transparent);
-}
-
-.react-flow__minimap-node.minimap-selected {
-  fill: var(--accent);
-}
-
 .react-flow__edge.wire-off .react-flow__edge-path {
   stroke: var(--text-tertiary);
   stroke-width: 1;
