@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { env } from "./support/env";
+import { guard } from "./support/audit";
 import { underRunFooter } from "./support/footerAudit";
 
 test.use({ storageState: env("CANVAS_APP_STATE") });
@@ -178,7 +179,7 @@ test("no run plan field paints under the Start footer, at 1440 and at 1280", asy
     { width: 1280, height: 720 },
   ]) {
     await page.setViewportSize(size);
-    await expect.poll(() => page.evaluate(underRunFooter)).toEqual([]);
+    await expect.poll(async () => guard(await page.evaluate(underRunFooter, 5))).toEqual([]);
   }
   await expect(panel.getByRole("button", { name: "Start the run" })).toBeInViewport();
 });

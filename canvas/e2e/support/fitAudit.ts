@@ -1,4 +1,5 @@
 import type { Locator } from "@playwright/test";
+import type { Audit } from "./audit";
 
 export async function headingInside(frame: Locator, name: string): Promise<boolean> {
   const outer = await frame.boundingBox();
@@ -12,20 +13,23 @@ export async function headingInside(frame: Locator, name: string): Promise<boole
   return outer !== null && painted > 0 && painted <= outer.x + outer.width - 8;
 }
 
-export function nodesOutsideCanvas(): string[] {
+export function nodesOutsideCanvas(atLeast = 1): Audit {
   const canvas = document.querySelector(".react-flow")?.getBoundingClientRect();
-  if (canvas === undefined) return ["no canvas"];
+  if (canvas === undefined) return { considered: 0, problems: ["no canvas"], met: false };
   const outside: string[] = [];
-  document
-    .querySelectorAll<HTMLElement>(".react-flow__node-instance, .react-flow__node-hall, .react-flow__node-frame")
-    .forEach((node) => {
-      const box = node.getBoundingClientRect();
-      const cut =
-        box.left < canvas.left - 0.5 ||
-        box.right > canvas.right + 0.5 ||
-        box.top < canvas.top - 0.5 ||
-        box.bottom > canvas.bottom + 0.5;
-      if (cut) outside.push(node.dataset.id ?? "node");
-    });
-  return outside;
+  const nodes = [
+    ...document.querySelectorAll<HTMLElement>(
+      ".react-flow__node-instance, .react-flow__node-hall, .react-flow__node-frame",
+    ),
+  ];
+  nodes.forEach((node) => {
+    const box = node.getBoundingClientRect();
+    const cut =
+      box.left < canvas.left - 0.5 ||
+      box.right > canvas.right + 0.5 ||
+      box.top < canvas.top - 0.5 ||
+      box.bottom > canvas.bottom + 0.5;
+    if (cut) outside.push(node.dataset.id ?? "node");
+  });
+  return { considered: nodes.length, problems: outside, met: nodes.length >= atLeast };
 }

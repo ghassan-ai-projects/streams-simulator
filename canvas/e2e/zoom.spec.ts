@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { env } from "./support/env";
+import { guard } from "./support/audit";
 import { idProblems } from "./support/idFit";
 import { zoomOutTo } from "./support/viewport";
 
@@ -73,13 +74,15 @@ test("below 40 % an id stays on one line and never breaks mid-word, down to the 
   const graph = page.getByRole("application", { name: "Plant graph" });
   await expect(page.locator(".react-flow__node-instance").first()).toBeAttached();
   await graph.focus();
-  await expect.poll(() => page.evaluate(idProblems)).toEqual([]);
-  const tier = await zoomOutTo(page, "overview", 6, () => expect.poll(() => page.evaluate(idProblems)).toEqual([]));
+  await expect.poll(async () => guard(await page.evaluate(idProblems, 10))).toEqual([]);
+  const tier = await zoomOutTo(page, "overview", 6, () =>
+    expect.poll(async () => guard(await page.evaluate(idProblems, 10))).toEqual([]),
+  );
   expect(tier).toBe("overview");
   await expect(graph).toHaveClass(/tier-overview/);
 });
 
-function titleProblems(): string[] {
+function titleProblems(atLeast = 1): { considered: number; problems: string[]; met: boolean } {
   const textBoxes = (part: Element | null): DOMRect[] => {
     const walker = document.createTreeWalker(part ?? document.body, NodeFilter.SHOW_TEXT);
     const found: DOMRect[] = [];
@@ -90,7 +93,8 @@ function titleProblems(): string[] {
     }
     return found;
   };
-  return [...document.querySelectorAll<HTMLElement>("[class*='frameTitle_']")].flatMap((title) => {
+  const titles = [...document.querySelectorAll<HTMLElement>("[class*='frameTitle_']")];
+  const problems = titles.flatMap((title) => {
     const box = title.getBoundingClientRect();
     const parts = ["frameName", "frameCount"].map((name) => textBoxes(title.querySelector(`[class*='${name}']`)));
     const all = parts.flat();
@@ -99,6 +103,7 @@ function titleProblems(): string[] {
     const outside = all.some((part) => part.right > box.right + 0.5);
     return [...(outside ? [`${name}: text outside the title`] : []), ...(spread > 3 ? [`${name}: wraps`] : [])];
   });
+  return { considered: titles.length, problems, met: titles.length >= atLeast };
 }
 
 test("an area header is one line at every zoom and keeps the last word of its name beside the count", async ({
@@ -110,7 +115,7 @@ test("an area header is one line at every zoom and keeps the last word of its na
   await graph.focus();
   for (let step = 0; step < 5; step += 1) {
     await page.keyboard.press("-");
-    await expect.poll(() => page.evaluate(titleProblems)).toEqual([]);
+    await expect.poll(async () => guard(await page.evaluate(titleProblems, 3))).toEqual([]);
   }
   await expect(page.locator("[class*='nameTail']").filter({ hasText: "house" })).toBeVisible();
 });

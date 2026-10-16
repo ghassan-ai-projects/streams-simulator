@@ -1,0 +1,908 @@
+{
+  "version": 1,
+  "source": "src",
+  "modules": {
+    "model": {
+      "kind": "model",
+      "layer": "model",
+      "lifetime": "values",
+      "responsibility": "immutable product values, pure transformations and parsing of canvas-owned documents",
+      "folders": ["src/model"],
+      "mayImport": [],
+      "entrypoint": null,
+      "callers": ["adapters", "app", "test", "ui"]
+    },
+    "app": {
+      "kind": "application",
+      "layer": "app",
+      "lifetime": "singleton",
+      "responsibility": "use cases, state machines and the ports the outside must implement",
+      "folders": ["src/app"],
+      "mayImport": ["model", "test"],
+      "entrypoint": null,
+      "callers": ["adapters", "root", "test", "ui"]
+    },
+    "adapters": {
+      "kind": "adapter",
+      "layer": "adapters",
+      "lifetime": "singleton",
+      "responsibility": "bridge and browser edges: transport, protocol encoding and boundary decoding",
+      "folders": ["src/adapters"],
+      "mayImport": ["app", "model", "test"],
+      "entrypoint": null,
+      "callers": ["root"]
+    },
+    "ui": {
+      "kind": "ui",
+      "layer": "ui",
+      "lifetime": "components",
+      "responsibility": "rendering, input binding and component-local ephemeral state",
+      "folders": ["src/ui"],
+      "mayImport": ["app", "model", "test"],
+      "entrypoint": null,
+      "callers": ["root", "test"]
+    },
+    "test": {
+      "kind": "test-support",
+      "layer": "test",
+      "lifetime": "per-test",
+      "responsibility": "shared test drivers, fixtures and harnesses",
+      "folders": ["src/test"],
+      "mayImportAny": true,
+      "entrypoint": null,
+      "callers": ["app", "model", "ui"]
+    },
+    "root": {
+      "kind": "composition",
+      "layer": "root",
+      "lifetime": "singleton",
+      "responsibility": "the composition root: construct adapters and application objects and render the shell",
+      "files": ["src/main.tsx"],
+      "mayImport": ["adapters", "app", "ui", "model"],
+      "entrypoint": "src/main.tsx",
+      "callers": []
+    }
+  },
+  "targetModules": {
+    "model/shared": {
+      "kind": "model",
+      "mayImport": [],
+      "responsibility": "values two or more model modules need and none owns"
+    },
+    "model/shell": {
+      "kind": "model",
+      "mayImport": ["model/shared"],
+      "responsibility": "routes, navigation and theme values"
+    },
+    "model/workspace": {
+      "kind": "model",
+      "mayImport": ["model/shared"],
+      "responsibility": "workspace catalogue and run listing values"
+    },
+    "model/plant": {
+      "kind": "model",
+      "mayImport": ["model/shared"],
+      "responsibility": "plant values and component specifications"
+    },
+    "model/graph": {
+      "kind": "model",
+      "mayImport": ["model/shared", "model/plant"],
+      "responsibility": "plant-view projection, geometry, routing and presentation values"
+    },
+    "model/editor": {
+      "kind": "model",
+      "mayImport": ["model/shared", "model/plant", "model/graph"],
+      "responsibility": "composition document, edits and history values"
+    },
+    "model/launch": {
+      "kind": "model",
+      "mayImport": ["model/shared", "model/plant"],
+      "responsibility": "launch plans, steps, effectors and call outcomes"
+    },
+    "model/review": {
+      "kind": "model",
+      "mayImport": ["model/shared", "model/workspace", "model/plant", "model/graph"],
+      "responsibility": "report and journal projection, playback and review presentation"
+    },
+    "app/shared": {
+      "kind": "application",
+      "mayImport": [],
+      "responsibility": "operation identity and application-wide foundations"
+    },
+    "app/ports": {
+      "kind": "foundation",
+      "mayImport": ["model/shared", "model/workspace", "model/plant", "model/editor", "model/launch", "model/review"],
+      "responsibility": "dependency interfaces only; no workflow"
+    },
+    "app/session": {
+      "kind": "application",
+      "mayImport": ["app/shared", "app/ports"],
+      "responsibility": "bridge pairing state and recovery"
+    },
+    "app/workspace": {
+      "kind": "application",
+      "mayImport": ["app/shared", "app/ports", "model/workspace"],
+      "responsibility": "workspace catalogue, reload lifecycle and home projections"
+    },
+    "app/plant": {
+      "kind": "application",
+      "mayImport": ["app/shared", "app/ports", "model/plant"],
+      "responsibility": "one plant projection, component specifications and selection"
+    },
+    "app/editor": {
+      "kind": "application",
+      "mayImport": ["app/shared", "app/ports", "model/editor", "model/plant", "model/graph"],
+      "responsibility": "composition draft, history, edits and the save transaction"
+    },
+    "app/launch": {
+      "kind": "application",
+      "mayImport": ["app/shared", "app/ports", "model/launch", "model/plant"],
+      "responsibility": "plan validation and execution, progress, early stop and rerun proposal"
+    },
+    "app/review": {
+      "kind": "application",
+      "mayImport": [
+        "app/shared",
+        "app/ports",
+        "app/plant",
+        "model/review",
+        "model/workspace",
+        "model/plant",
+        "model/graph"
+      ],
+      "responsibility": "report and verification loading, observer playback and review selection"
+    },
+    "app/shell": {
+      "kind": "application",
+      "mayImport": [
+        "app/shared",
+        "app/ports",
+        "app/session",
+        "app/workspace",
+        "app/plant",
+        "app/editor",
+        "app/launch",
+        "app/review",
+        "model/shell"
+      ],
+      "responsibility": "navigation, theme, panels, session gating, module composition and cross-module coordinators"
+    },
+    "adapters/browser": {
+      "kind": "adapter",
+      "mayImport": ["app/ports", "model/shell"],
+      "responsibility": "browser edges: location, preferences, system theme, clock and scheduler"
+    },
+    "adapters/bridge": {
+      "kind": "adapter",
+      "mayImport": [
+        "app/ports",
+        "model/shared",
+        "model/workspace",
+        "model/plant",
+        "model/editor",
+        "model/launch",
+        "model/review"
+      ],
+      "responsibility": "the bridge: request encoding, response decoding and the run stream"
+    },
+    "ui/primitives": {
+      "kind": "ui",
+      "mayImport": [],
+      "responsibility": "visually and semantically stable building blocks"
+    },
+    "ui/session": {
+      "kind": "ui",
+      "mayImport": ["ui/primitives", "app/session"],
+      "responsibility": "pairing screen"
+    },
+    "ui/workspace": {
+      "kind": "ui",
+      "mayImport": ["ui/primitives", "app/workspace"],
+      "responsibility": "workspace catalogue screen"
+    },
+    "ui/plant": {
+      "kind": "ui",
+      "mayImport": ["ui/primitives", "ui/graph", "ui/launch", "app/plant", "app/launch"],
+      "responsibility": "plant viewing screen, inspector and outline"
+    },
+    "ui/graph": {
+      "kind": "ui",
+      "mayImport": ["ui/primitives", "model/graph"],
+      "responsibility": "the streamsim plant graph: nodes, edges, controls and viewport"
+    },
+    "ui/editor": {
+      "kind": "ui",
+      "mayImport": ["ui/primitives", "ui/graph", "app/editor"],
+      "responsibility": "composition editor screen and panels"
+    },
+    "ui/launch": {
+      "kind": "ui",
+      "mayImport": ["ui/primitives", "app/launch"],
+      "responsibility": "launch panel and progress"
+    },
+    "ui/review": {
+      "kind": "ui",
+      "mayImport": ["ui/primitives", "ui/graph", "ui/launch", "app/review", "app/launch"],
+      "responsibility": "run review screen, report and playback"
+    },
+    "ui/shell": {
+      "kind": "ui",
+      "mayImport": ["ui/primitives", "ui/session", "ui/workspace", "ui/plant", "ui/editor", "ui/review", "app/shell"],
+      "responsibility": "application chrome, panels and routing"
+    },
+    "test": {
+      "kind": "test-support",
+      "mayImport": [],
+      "responsibility": "shared test drivers, fixtures and harnesses"
+    },
+    "root": {
+      "kind": "composition",
+      "mayImport": ["adapters", "app", "ui", "model", "test"],
+      "responsibility": "the composition root"
+    }
+  },
+  "targets": {
+    "src/model/areaTree.test.ts": "model/editor",
+    "src/model/areaTree.ts": "model/editor",
+    "src/model/bridge.test.ts": "model/shared",
+    "src/model/bridge.ts": "model/shared",
+    "src/model/composition.test.ts": "model/editor",
+    "src/model/composition.ts": "model/editor",
+    "src/model/compositionEdits.test.ts": "model/editor",
+    "src/model/compositionEdits.ts": "model/editor",
+    "src/model/compositionKinds.test.ts": "model/editor",
+    "src/model/effectors.test.ts": "model/launch",
+    "src/model/effectors.ts": "model/launch",
+    "src/model/frameTitle.test.ts": "model/graph",
+    "src/model/frameTitle.ts": "model/graph",
+    "src/model/graphKeys.test.ts": "model/graph",
+    "src/model/graphKeys.ts": "model/graph",
+    "src/model/headerFit.test.ts": "model/graph",
+    "src/model/headerFit.ts": "model/graph",
+    "src/model/instanceNameRule.test.ts": "model/editor",
+    "src/model/instanceNameRule.ts": "model/editor",
+    "src/model/kindNames.ts": "model/shared",
+    "src/model/launch.test.ts": "model/launch",
+    "src/model/launch.ts": "model/launch",
+    "src/model/layout.test.ts": "model/graph",
+    "src/model/layout.ts": "model/graph",
+    "src/model/library.ts": "model/plant",
+    "src/model/nodeWords.ts": "model/graph",
+    "src/model/noteLines.test.ts": "model/review",
+    "src/model/noteLines.ts": "model/review",
+    "src/model/planMarks.test.ts": "model/graph",
+    "src/model/planMarks.ts": "model/graph",
+    "src/model/plant.test.ts": "model/plant",
+    "src/model/plant.ts": "model/plant",
+    "src/model/plantView.test.ts": "model/graph",
+    "src/model/plantView.ts": "model/graph",
+    "src/model/playback.test.ts": "model/review",
+    "src/model/playback.ts": "model/review",
+    "src/model/ports.test.ts": "model/plant",
+    "src/model/ports.ts": "model/plant",
+    "src/model/readout.test.ts": "model/graph",
+    "src/model/readout.ts": "model/graph",
+    "src/model/report.test.ts": "model/review",
+    "src/model/report.ts": "model/review",
+    "src/model/reportAlarms.test.ts": "model/review",
+    "src/model/reportAlarms.ts": "model/review",
+    "src/model/reportViews.test.ts": "model/review",
+    "src/model/reportViews.ts": "model/review",
+    "src/model/reviewAnchor.test.ts": "model/review",
+    "src/model/reviewAnchor.ts": "model/review",
+    "src/model/reviewRows.test.ts": "model/review",
+    "src/model/reviewRows.ts": "model/review",
+    "src/model/route.test.ts": "model/shell",
+    "src/model/route.ts": "model/shell",
+    "src/model/theme.test.ts": "model/shell",
+    "src/model/theme.ts": "model/shell",
+    "src/model/timeline.test.ts": "model/review",
+    "src/model/timeline.ts": "model/review",
+    "src/model/units.test.ts": "model/shared",
+    "src/model/units.ts": "model/shared",
+    "src/model/viewport.test.ts": "model/graph",
+    "src/model/viewport.ts": "model/graph",
+    "src/model/wireEnds.ts": "model/graph",
+    "src/model/wireGrid.test.ts": "model/graph",
+    "src/model/wireGrid.ts": "model/graph",
+    "src/model/wireOffice.test.ts": "model/graph",
+    "src/model/wirePath.test.ts": "model/graph",
+    "src/model/wirePath.ts": "model/graph",
+    "src/model/wirePins.test.ts": "model/graph",
+    "src/model/wireRoute.test.ts": "model/graph",
+    "src/model/wireRoute.ts": "model/graph",
+    "src/model/wireSearch.test.ts": "model/graph",
+    "src/model/wireSearch.ts": "model/graph",
+    "src/model/wireView.test.ts": "model/graph",
+    "src/model/wireView.ts": "model/graph",
+    "src/model/workspace.test.ts": "model/workspace",
+    "src/model/workspace.ts": "model/workspace",
+    "src/app/sessionStore.ts": "app/session",
+    "src/app/sessionStore.test.ts": "app/session",
+    "src/app/workspaceStore.ts": "app/workspace",
+    "src/app/workspaceStore.test.ts": "app/workspace",
+    "src/app/plantStore.ts": "app/plant",
+    "src/app/plantStore.test.ts": "app/plant",
+    "src/app/plantMaker.ts": "app/plant",
+    "src/app/plantMaker.test.ts": "app/plant",
+    "src/app/componentSpecs.ts": "app/plant",
+    "src/app/editorStore.ts": "app/editor",
+    "src/app/editorStore.test.ts": "app/editor",
+    "src/app/launchStore.ts": "app/launch",
+    "src/app/launchStore.test.ts": "app/launch",
+    "src/app/reviewStore.ts": "app/review",
+    "src/app/reviewStore.test.ts": "app/review",
+    "src/app/reviewCompletion.test.ts": "app/review",
+    "src/app/reviewDomain.ts": "app/review",
+    "src/app/navigationStore.ts": "app/shell",
+    "src/app/navigationStore.test.ts": "app/shell",
+    "src/app/panelStore.ts": "app/shell",
+    "src/app/panelStore.test.ts": "app/shell",
+    "src/app/themeStore.ts": "app/shell",
+    "src/app/themeStore.test.ts": "app/shell",
+    "src/app/observable.ts": "app/shared",
+    "src/app/ports.ts": "app/ports",
+    "src/adapters/bridgeClient.ts": "adapters/bridge",
+    "src/adapters/bridgeClient.test.ts": "adapters/bridge",
+    "src/adapters/browser.ts": "adapters/browser",
+    "src/adapters/browser.test.ts": "adapters/browser",
+    "src/ui/home": "ui/workspace",
+    "src/ui/pairing": "ui/session",
+    "src/ui/plant": "ui/plant",
+    "src/ui/editor": "ui/editor",
+    "src/ui/launch": "ui/launch",
+    "src/ui/run": "ui/review",
+    "src/ui/shell": "ui/shell",
+    "src/ui/theme": "ui/primitives",
+    "src/ui/MetaParts.tsx": "ui/primitives",
+    "src/ui/MetaParts.test.tsx": "ui/primitives",
+    "src/ui/OutsideMark.tsx": "ui/primitives",
+    "src/ui/OutsideMark.module.css": "ui/primitives",
+    "src/ui/OutsideMark.test.tsx": "ui/primitives",
+    "src/ui/cx.ts": "ui/primitives",
+    "src/ui/keys.ts": "ui/primitives",
+    "src/ui/keys.test.ts": "ui/primitives",
+    "src/ui/panel.module.css": "ui/primitives",
+    "src/ui/shared.module.css": "ui/primitives",
+    "src/ui/useCutBottom.ts": "ui/primitives",
+    "src/ui/useCutBottom.test.tsx": "ui/primitives",
+    "src/ui/useFocusOnMount.ts": "ui/primitives",
+    "src/ui/useScreen.ts": "ui/shell",
+    "src/ui/useStore.ts": "ui/shell",
+    "src/ui/useTheme.ts": "ui/shell",
+    "src/app/reviewState.ts": "app/review",
+    "src/app/reviewLifecycle.test.ts": "app/review",
+    "src/test": "test",
+    "src/adapters": "adapters/bridge",
+    "src/ui": "ui/shell",
+    "src/main.tsx": "root"
+  },
+  "features": {
+    "src/ui": "primitives",
+    "src/ui/theme": "theme",
+    "src/ui/shell": "shell",
+    "src/ui/home": "workspace",
+    "src/ui/pairing": "session",
+    "src/ui/plant": "plant",
+    "src/ui/editor": "editor",
+    "src/ui/launch": "launch",
+    "src/ui/run": "review"
+  },
+  "css": {
+    "globalEntrypoints": ["src/ui/theme/tokens.css", "src/ui/theme/base.css", "src/ui/theme/families.css"],
+    "globalOwners": ["src/ui/shared.module.css", "src/ui/panel.module.css"],
+    "vendorFiles": [],
+    "defaultCap": 300,
+    "caps": {
+      "src/ui/plant/nodes.module.css": {
+        "cap": 695,
+        "phase": "P5"
+      },
+      "src/ui/run/RunScreen.module.css": {
+        "cap": 608,
+        "phase": "P5"
+      },
+      "src/ui/plant/PlantScreen.module.css": {
+        "cap": 453,
+        "phase": "P5"
+      },
+      "src/ui/home/HomeScreen.module.css": {
+        "cap": 434,
+        "phase": "P5"
+      },
+      "src/ui/editor/Editor.module.css": {
+        "cap": 330,
+        "phase": "P5"
+      },
+      "src/ui/run/Scrubber.module.css": {
+        "cap": 272,
+        "phase": "P5"
+      },
+      "src/ui/launch/LaunchPanel.module.css": {
+        "cap": 230,
+        "phase": "P5"
+      }
+    },
+    "globalCaps": {
+      "src/ui/plant/nodes.module.css": {
+        "global": 70,
+        "important": 30,
+        "phase": "P1"
+      },
+      "src/ui/shared.module.css": {
+        "global": 3,
+        "important": 0,
+        "phase": "P5"
+      },
+      "src/ui/plant/PlantScreen.module.css": {
+        "global": 2,
+        "important": 0,
+        "phase": "P1"
+      },
+      "src/ui/run/RunScreen.module.css": {
+        "global": 2,
+        "important": 0,
+        "phase": "P5"
+      },
+      "src/ui/home/HomeScreen.module.css": {
+        "global": 0,
+        "important": 2,
+        "phase": "P5"
+      },
+      "src/ui/plant/GraphControls.module.css": {
+        "global": 0,
+        "important": 2,
+        "phase": "P1"
+      }
+    },
+    "colorExceptions": {
+      "src/ui/shared.module.css": {
+        "literals": 2,
+        "reason": "a mask gradient uses black as an alpha mask, not a semantic colour",
+        "phase": "P5"
+      }
+    }
+  },
+  "floors": {
+    "src/model/**": {
+      "lines": 90,
+      "functions": 90,
+      "branches": 85,
+      "statements": 90
+    },
+    "src/app/**": {
+      "lines": 80,
+      "functions": 80,
+      "branches": 75,
+      "statements": 80
+    }
+  },
+  "rules": {
+    "actionNames": [
+      "clock.advance",
+      "component.example",
+      "component.examples",
+      "component.list",
+      "component.new",
+      "component.show",
+      "domain.compose",
+      "effector.invoke",
+      "fault.inject",
+      "run.end",
+      "run.report",
+      "run.verify",
+      "scenario.export",
+      "world.create",
+      "world.destroy"
+    ],
+    "protocolOwner": "adapters",
+    "protocolProductionOnly": true,
+    "restrictedAppImports": ["react", "react-dom", "react/jsx-runtime", "@xyflow/react", "lucide-react"],
+    "restrictedAppGlobals": ["window", "document", "localStorage", "EventSource", "fetch", "globalThis"],
+    "clockGlobals": [
+      "setTimeout",
+      "setInterval",
+      "clearTimeout",
+      "clearInterval",
+      "requestAnimationFrame",
+      "performance",
+      "Date"
+    ],
+    "restrictedUiImports": ["/api/"],
+    "booleanFactNames": [
+      "animate",
+      "checked",
+      "closed",
+      "dark",
+      "disabled",
+      "empty",
+      "exact",
+      "explore",
+      "hold",
+      "interactive",
+      "open",
+      "plain",
+      "readonly",
+      "replace",
+      "selected",
+      "visible",
+      "playing",
+      "systemPrefersDark"
+    ],
+    "fakeTimerTests": [],
+    "depcruiseRules": [
+      {
+        "name": "model-is-pure",
+        "severity": "error"
+      },
+      {
+        "name": "model-imports-nothing",
+        "severity": "error"
+      },
+      {
+        "name": "app-below-adapters-and-ui",
+        "severity": "error"
+      },
+      {
+        "name": "adapters-below-ui",
+        "severity": "error"
+      },
+      {
+        "name": "ui-never-touches-transport",
+        "severity": "error"
+      },
+      {
+        "name": "no-circular",
+        "severity": "error"
+      }
+    ],
+    "booleanFactNamePolicy": "a boolean parameter is allowed only when its name states one local fact; a name that selects an operating mode is a violation"
+  },
+  "emittedCss": {
+    "order": [
+      {
+        "name": "vendor-react-flow",
+        "selector": ".react-flow__handle{"
+      },
+      {
+        "name": "graph",
+        "selector": ".tier-compact"
+      },
+      {
+        "name": "theme-tokens",
+        "selector": "--surface-panel:"
+      },
+      {
+        "name": "theme-families",
+        "selector": ".family-air{"
+      }
+    ],
+    "important": 34,
+    "zIndex": 17,
+    "positioned": 33,
+    "note": ""
+  },
+  "debt": [
+    {
+      "rule": "css-feature-ownership",
+      "file": "src/ui/shared.module.css",
+      "target": "src/ui/plant/Inspector.tsx",
+      "count": 1,
+      "phase": "P5",
+      "reason": "a cross-feature stylesheet that P5 dissolves into primitives"
+    },
+    {
+      "rule": "css-feature-ownership",
+      "file": "src/ui/shared.module.css",
+      "target": "src/ui/plant/Outline.tsx",
+      "count": 1,
+      "phase": "P5"
+    },
+    {
+      "rule": "css-feature-ownership",
+      "file": "src/ui/shared.module.css",
+      "target": "src/ui/plant/PlantOverview.tsx",
+      "count": 1,
+      "phase": "P5"
+    },
+    {
+      "rule": "css-feature-ownership",
+      "file": "src/ui/shared.module.css",
+      "target": "src/ui/shell/Breadcrumb.tsx",
+      "count": 1,
+      "phase": "P5"
+    },
+    {
+      "rule": "css-feature-ownership",
+      "file": "src/ui/shared.module.css",
+      "target": "src/ui/launch/LaunchForm.tsx",
+      "count": 1,
+      "phase": "P5"
+    },
+    {
+      "rule": "css-feature-ownership",
+      "file": "src/ui/shared.module.css",
+      "target": "src/ui/run/RunPanel.tsx",
+      "count": 1,
+      "phase": "P5"
+    },
+    {
+      "rule": "css-feature-ownership",
+      "file": "src/ui/shared.module.css",
+      "target": "src/ui/run/ReportParts.tsx",
+      "count": 1,
+      "phase": "P5"
+    },
+    {
+      "rule": "css-feature-ownership",
+      "file": "src/ui/shared.module.css",
+      "target": "src/ui/editor/EditorPanel.tsx",
+      "count": 1,
+      "phase": "P5"
+    },
+    {
+      "rule": "css-feature-ownership",
+      "file": "src/ui/shared.module.css",
+      "target": "src/ui/editor/InstanceEditor.tsx",
+      "count": 1,
+      "phase": "P5"
+    },
+    {
+      "rule": "css-feature-ownership",
+      "file": "src/ui/panel.module.css",
+      "target": "src/ui/plant/PlantFailure.tsx",
+      "count": 1,
+      "phase": "P5",
+      "reason": "a cross-feature stylesheet that P5 dissolves into primitives"
+    },
+    {
+      "rule": "css-feature-ownership",
+      "file": "src/ui/panel.module.css",
+      "target": "src/ui/launch/CallRows.tsx",
+      "count": 1,
+      "phase": "P5"
+    },
+    {
+      "rule": "css-feature-ownership",
+      "file": "src/ui/panel.module.css",
+      "target": "src/ui/launch/LaunchForm.tsx",
+      "count": 1,
+      "phase": "P5"
+    },
+    {
+      "rule": "css-feature-ownership",
+      "file": "src/ui/panel.module.css",
+      "target": "src/ui/launch/LaunchPanel.tsx",
+      "count": 1,
+      "phase": "P5"
+    },
+    {
+      "rule": "css-feature-ownership",
+      "file": "src/ui/panel.module.css",
+      "target": "src/ui/launch/PaceChoice.tsx",
+      "count": 1,
+      "phase": "P5"
+    },
+    {
+      "rule": "css-feature-ownership",
+      "file": "src/ui/panel.module.css",
+      "target": "src/ui/launch/FaultRows.tsx",
+      "count": 1,
+      "phase": "P5"
+    },
+    {
+      "rule": "css-feature-ownership",
+      "file": "src/ui/panel.module.css",
+      "target": "src/ui/launch/RowParts.tsx",
+      "count": 1,
+      "phase": "P5"
+    },
+    {
+      "rule": "css-feature-ownership",
+      "file": "src/ui/panel.module.css",
+      "target": "src/ui/launch/LaunchResult.tsx",
+      "count": 1,
+      "phase": "P5"
+    },
+    {
+      "rule": "css-feature-ownership",
+      "file": "src/ui/panel.module.css",
+      "target": "src/ui/run/MissingRun.tsx",
+      "count": 1,
+      "phase": "P5"
+    },
+    {
+      "rule": "css-feature-ownership",
+      "file": "src/ui/panel.module.css",
+      "target": "src/ui/editor/SubmitRow.tsx",
+      "count": 1,
+      "phase": "P5"
+    },
+    {
+      "rule": "css-feature-ownership",
+      "file": "src/ui/panel.module.css",
+      "target": "src/ui/editor/EditorPanel.tsx",
+      "count": 1,
+      "phase": "P5"
+    },
+    {
+      "rule": "css-feature-ownership",
+      "file": "src/ui/panel.module.css",
+      "target": "src/ui/editor/InstanceEditor.tsx",
+      "count": 1,
+      "phase": "P5"
+    },
+    {
+      "rule": "css-feature-ownership",
+      "file": "src/ui/panel.module.css",
+      "target": "src/ui/editor/AddArea.tsx",
+      "count": 1,
+      "phase": "P5"
+    },
+    {
+      "rule": "css-feature-ownership",
+      "file": "src/ui/panel.module.css",
+      "target": "src/ui/editor/ConnectForm.tsx",
+      "count": 1,
+      "phase": "P5"
+    },
+    {
+      "rule": "css-feature-ownership",
+      "file": "src/ui/panel.module.css",
+      "target": "src/ui/editor/AddEquipment.tsx",
+      "count": 1,
+      "phase": "P5"
+    },
+    {
+      "rule": "css-feature-ownership",
+      "file": "src/ui/panel.module.css",
+      "target": "src/ui/editor/AreaEditor.tsx",
+      "count": 1,
+      "phase": "P5"
+    },
+    {
+      "rule": "css-feature-ownership",
+      "file": "src/ui/plant/PlantScreen.module.css",
+      "target": "src/ui/editor/EditorScreen.tsx",
+      "count": 1,
+      "phase": "P5",
+      "reason": "screen-layout classes editor and run share with the plant screen"
+    },
+    {
+      "rule": "css-feature-ownership",
+      "file": "src/ui/plant/PlantScreen.module.css",
+      "target": "src/ui/editor/EditorBar.tsx",
+      "count": 1,
+      "phase": "P5"
+    },
+    {
+      "rule": "css-feature-ownership",
+      "file": "src/ui/plant/PlantScreen.module.css",
+      "target": "src/ui/run/RunScreen.tsx",
+      "count": 1,
+      "phase": "P5"
+    },
+    {
+      "rule": "css-composes-cross-module",
+      "file": "src/ui/home/HomeScreen.module.css",
+      "count": 1,
+      "phase": "P5"
+    },
+    {
+      "rule": "css-composes-cross-module",
+      "file": "src/ui/launch/LaunchPanel.module.css",
+      "count": 1,
+      "phase": "P5"
+    },
+    {
+      "rule": "css-composes-cross-module",
+      "file": "src/ui/plant/PlantScreen.module.css",
+      "count": 4,
+      "phase": "P5"
+    },
+    {
+      "rule": "css-composes-cross-module",
+      "file": "src/ui/run/RunScreen.module.css",
+      "count": 3,
+      "phase": "P5"
+    },
+    {
+      "rule": "protocol-owner",
+      "file": "src/app/componentSpecs.ts",
+      "count": 1,
+      "phase": "P3"
+    },
+    {
+      "rule": "protocol-owner",
+      "file": "src/app/editorStore.ts",
+      "count": 3,
+      "phase": "P3"
+    },
+    {
+      "rule": "protocol-owner",
+      "file": "src/app/launchStore.ts",
+      "count": 6,
+      "phase": "P3"
+    },
+    {
+      "rule": "protocol-owner",
+      "file": "src/app/plantMaker.ts",
+      "count": 4,
+      "phase": "P3"
+    },
+    {
+      "rule": "protocol-owner",
+      "file": "src/app/reviewStore.ts",
+      "count": 2,
+      "phase": "P3"
+    },
+    {
+      "rule": "app-unknown-api",
+      "file": "src/app/ports.ts",
+      "count": 2,
+      "phase": "P3"
+    },
+    {
+      "rule": "app-unknown-api",
+      "file": "src/app/reviewState.ts",
+      "count": 1,
+      "phase": "P3"
+    },
+    {
+      "rule": "app-unknown-api",
+      "file": "src/app/plantStore.ts",
+      "count": 1,
+      "phase": "P3"
+    },
+    {
+      "rule": "app-unknown-api",
+      "file": "src/app/reviewDomain.ts",
+      "count": 1,
+      "phase": "P3"
+    },
+    {
+      "rule": "app-clock-timer",
+      "file": "src/app/launchStore.ts",
+      "count": 1,
+      "phase": "P2"
+    },
+    {
+      "rule": "app-clock-timer",
+      "file": "src/app/reviewStore.ts",
+      "count": 2,
+      "phase": "P2"
+    },
+    {
+      "rule": "app-restricted-global",
+      "file": "src/app/launchStore.ts",
+      "count": 1,
+      "phase": "P2"
+    },
+    {
+      "rule": "boolean-flag-param",
+      "file": "src/model/wireView.ts",
+      "count": 2,
+      "phase": "P1"
+    },
+    {
+      "rule": "boolean-flag-param",
+      "file": "src/model/plantView.ts",
+      "count": 1,
+      "phase": "P1"
+    },
+    {
+      "rule": "boolean-flag-param",
+      "file": "src/ui/plant/flow.ts",
+      "count": 1,
+      "phase": "P1"
+    },
+    {
+      "rule": "boolean-flag-param",
+      "file": "src/app/plantMaker.ts",
+      "count": 2,
+      "phase": "P3",
+      "reason": "PlantMaker.create/write take a copy boolean; the typed component gateway replaces it with a named mode"
+    }
+  ],
+  "testSupport": ["test"]
+}

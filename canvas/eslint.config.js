@@ -22,6 +22,7 @@ export default tseslint.config(
       "playwright-report",
       "test-results",
       "src/generated",
+      "architecture-fixtures",
       ".dependency-cruiser.cjs",
     ],
   },

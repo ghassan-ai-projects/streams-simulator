@@ -1,10 +1,13 @@
-export function noteProblems(): string[] {
+import type { Audit } from "./audit";
+
+export function noteProblems(atLeast = 1): Audit {
   const visible = (element: HTMLElement) =>
     element.closest(".sr-only") === null &&
     element.getClientRects().length > 0 &&
     getComputedStyle(element).visibility !== "hidden";
   const problems: string[] = [];
-  document.querySelectorAll<HTMLElement>(".react-flow__node-instance [role=group]").forEach((node) => {
+  const groups = [...document.querySelectorAll<HTMLElement>(".react-flow__node-instance [role=group]")];
+  groups.forEach((node) => {
     const own = node.getBoundingClientRect();
     const name = node.getAttribute("aria-label") ?? "";
     node.querySelectorAll<HTMLElement>("[class*='note'], [class*='note'] *").forEach((element) => {
@@ -16,5 +19,5 @@ export function noteProblems(): string[] {
       if (visible(element) && spills) problems.push(`${name}: spills ${element.textContent.slice(0, 40)}`);
     });
   });
-  return problems;
+  return { considered: groups.length, problems: problems, met: groups.length >= atLeast };
 }

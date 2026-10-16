@@ -1,0 +1,6 @@
+.a {
+  color: var(--text);
+}
+:global(.tier) .a {
+  color: var(--text) !important;
+}

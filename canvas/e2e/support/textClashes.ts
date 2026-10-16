@@ -1,4 +1,6 @@
-export function textClashes(): string[] {
+import type { Audit } from "./audit";
+
+export function textClashes(atLeast = 1): Audit {
   interface Box {
     readonly text: string;
     readonly owner: Text;
@@ -24,7 +26,9 @@ export function textClashes(): string[] {
   const meet = (a: DOMRect, b: DOMRect) =>
     Math.min(a.right, b.right) - Math.max(a.left, b.left) > 1 &&
     Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 1;
-  return [...document.querySelectorAll<HTMLElement>(".react-flow__node-instance")].flatMap((node) => {
+  const nodes = [...document.querySelectorAll<HTMLElement>(".react-flow__node-instance")];
+  const examined = nodes.reduce((sum, node) => sum + boxesOf(node).length, 0);
+  const problems = nodes.flatMap((node) => {
     const boxes = boxesOf(node);
     return boxes.flatMap((a, index) =>
       boxes
@@ -33,4 +37,5 @@ export function textClashes(): string[] {
         .map((b) => `${node.dataset.id ?? ""}: ${a.text} over ${b.text}`),
     );
   });
+  return { considered: examined, problems, met: examined >= atLeast };
 }

@@ -18,8 +18,10 @@
     "knip": "knip",
     "test": "vitest run --coverage",
     "e2e": "playwright test",
-    "check": "npm run format:check && npm run typecheck && npm run lint && npm run deps && npm run dup && npm run knip && npm run test && npm run build && npm run e2e",
-    "preview": "vite preview"
+    "check": "npm run format:check && npm run typecheck && npm run lint && npm run deps && npm run architecture && npm run dup && npm run knip && npm run test && npm run build && npm run css:emitted && npm run e2e",
+    "preview": "vite preview",
+    "architecture": "node scripts/check-architecture.ts && node scripts/check-css-architecture.ts && node scripts/check-ratchet.ts",
+    "css:emitted": "node scripts/check-emitted-css.ts"
   },
   "dependencies": {
     "@xyflow/react": "12.12.0",

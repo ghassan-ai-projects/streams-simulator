@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
+import { guard } from "./support/audit";
 import { env } from "./support/env";
 import { nodesOutsideCanvas } from "./support/fitAudit";
 import { noteProblems } from "./support/noteFit";
@@ -122,7 +123,7 @@ test("a review node lists every port of its kind as a row, observed or not, at e
   const graph = page.getByRole("application", { name: "Plant graph" });
   await graph.focus();
   for (let step = 0; step < 3; step += 1) {
-    expect(await page.evaluate(textClashes)).toEqual([]);
+    expect(guard(await page.evaluate(textClashes, 20))).toEqual([]);
     await page.keyboard.press("+");
   }
 });
@@ -178,7 +179,7 @@ test("a review whose plant fits at 40 % or more opens fitted, and Fit returns th
   await page.goto(`${env("CANVAS_APP_URL")}/#/run?world=w-evaluate`);
   await expect(page.getByText(/\d+ observations/)).toBeVisible({ timeout: 60_000 });
   await expect(page.getByRole("group", { name: /^CH-1, chiller,/ })).toBeAttached();
-  await expect.poll(() => page.evaluate(nodesOutsideCanvas)).toEqual([]);
+  await expect.poll(async () => guard(await page.evaluate(nodesOutsideCanvas, 5))).toEqual([]);
   const opening = await page.evaluate(transformOf);
   await page.getByRole("button", { name: "Fit the plant in view" }).click();
   await expect.poll(() => page.evaluate(transformOf)).toBe(opening);
@@ -210,10 +211,11 @@ test("a review of a plant too large for 40 % opens at 40 % on its first fault, w
   expect(opened.zoom).toBeGreaterThanOrEqual(0.4);
   expect(opened.shown).toBeGreaterThan(0);
   expect(opened.smallest).toBeGreaterThanOrEqual(7.99);
-  expect(await page.evaluate(nodesOutsideCanvas)).not.toEqual([]);
+  const overflowing = await page.evaluate(nodesOutsideCanvas, 5);
+  expect(overflowing.met && overflowing.problems.length > 0).toBe(true);
   await expect(page.locator("[data-pan-cue]").first()).toBeVisible();
   await page.getByRole("button", { name: "Fit the plant in view" }).click();
-  await expect.poll(() => page.evaluate(nodesOutsideCanvas)).toEqual([]);
+  await expect.poll(async () => guard(await page.evaluate(nodesOutsideCanvas, 5))).toEqual([]);
   await expect(page.locator("[data-pan-cue]")).toHaveCount(0);
 });
 
@@ -229,10 +231,10 @@ test("a fault's cause and an effector outcome wrap on the node, whole, at the op
   await expect(graph).toHaveClass(/tier-compact/);
   await expect(dryer.getByText("Fault · prefilter clogging")).toBeVisible();
   await expect(dryer.getByText(/^set running · applied · \d+ ms$/)).toBeVisible();
-  await expect.poll(() => page.evaluate(noteProblems)).toEqual([]);
+  await expect.poll(async () => guard(await page.evaluate(noteProblems, 5))).toEqual([]);
   await page.getByRole("button", { name: "Fit the plant in view" }).click();
   await expect(graph).toHaveClass(/tier-(overview|map)/);
   await expect(dryer).toContainText("Fault: prefilter clogging");
   await expect(dryer).toContainText(/set running · applied · \d+ ms/);
-  await expect.poll(() => page.evaluate(noteProblems)).toEqual([]);
+  await expect.poll(async () => guard(await page.evaluate(noteProblems, 5))).toEqual([]);
 });
