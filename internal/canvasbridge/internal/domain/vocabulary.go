@@ -64,12 +64,14 @@ type RunEntry struct {
 }
 
 type Listing struct {
-	Name         string       `json:"name"`
-	Domains      []Definition `json:"domains"`
-	Compositions []Definition `json:"compositions"`
-	Scenarios    []Definition `json:"scenarios"`
-	Layouts      []Definition `json:"layouts"`
-	Runs         []RunEntry   `json:"runs"`
+	Name         string           `json:"name"`
+	Domains      []Definition     `json:"domains"`
+	Compositions []Definition     `json:"compositions"`
+	Scenarios    []Definition     `json:"scenarios"`
+	Layouts      []Definition     `json:"layouts"`
+	Kinds        []KindEntry      `json:"kinds"`
+	Components   []ComponentEntry `json:"components"`
+	Runs         []RunEntry       `json:"runs"`
 }
 
 type Record struct {

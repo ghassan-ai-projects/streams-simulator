@@ -91,11 +91,27 @@ func (b *Bridge) flags(action domain.Action) []string {
 		flags = append(flags, "--domains-dir", filepath.Join(b.settings.WorkspaceDir, "domains"), "--adapters-dir", b.settings.AdaptersDir)
 	}
 	if action.Library {
-		for _, dir := range b.settings.ComponentDirs {
-			flags = append(flags, "--components-dir", dir)
-		}
+		flags = append(flags, b.libraryFlags()...)
+	}
+	if action.Kinds {
+		flags = append(flags, b.workspaceDirFlag("--kinds-dir", "kinds")...)
 	}
 	return flags
+}
+
+func (b *Bridge) libraryFlags() []string {
+	var flags []string
+	for _, dir := range b.settings.ComponentDirs {
+		flags = append(flags, "--components-dir", dir)
+	}
+	return append(flags, b.workspaceDirFlag("--components-dir", "components")...)
+}
+
+func (b *Bridge) workspaceDirFlag(flag, folder string) []string {
+	if !b.edges.Workspace.Exists(folder) {
+		return nil
+	}
+	return []string{flag, filepath.Join(b.settings.WorkspaceDir, folder)}
 }
 
 func (b *Bridge) DirectorArguments() []string {

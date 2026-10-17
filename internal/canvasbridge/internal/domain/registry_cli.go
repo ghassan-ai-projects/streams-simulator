@@ -43,10 +43,13 @@ var (
 		CLIArgs: []CLIArg{{Key: "id", Shape: ShapeText, Required: true}, {Key: "title", Flag: "--title", Shape: ShapeText, Required: true},
 			{Key: "from", Flag: "--from", Shape: ShapePath, Class: ClassComposition}, {Key: "example", Flag: "--example", Shape: ShapeText},
 			{Key: "empty", Flag: "--empty", Shape: ShapeFlag}}}
-	cliCompose = Action{Name: "domain.compose", Kind: KindCLI, Command: []string{"domain", "compose"}, Library: true, Mutating: true, Etag: true,
+	cliComponentValidate = Action{Name: "component.validate", Kind: KindCLI, Command: []string{"component", "validate"}, Library: true}
+	cliKindValidate      = Action{Name: "kind.validate", Kind: KindCLI, Command: []string{"kind", "validate"},
+		CLIArgs: []CLIArg{{Key: "path", Shape: ShapePath, Class: ClassKind, Required: true}}}
+	cliCompose = Action{Name: "domain.compose", Kind: KindCLI, Command: []string{"domain", "compose"}, Library: true, Kinds: true, Mutating: true, Etag: true,
 		CLIArgs: []CLIArg{{Key: "composition", Shape: ShapePath, Class: ClassComposition, Required: true},
 			{Key: "out", Flag: "--out", Shape: ShapePath, Class: ClassDomain, Required: true}}}
-	cliValidate = Action{Name: "domain.validate", Kind: KindCLI, Command: []string{"domain", "validate"},
+	cliValidate = Action{Name: "domain.validate", Kind: KindCLI, Command: []string{"domain", "validate"}, Kinds: true,
 		CLIArgs: []CLIArg{{Key: "path", Shape: ShapePath, Class: ClassDomain, Required: true}}}
 	cliLint = Action{Name: "domain.lint", Kind: KindCLI, Command: []string{"domain", "lint"},
 		CLIArgs: []CLIArg{{Key: "path", Shape: ShapePath, Class: ClassDomain, Required: true}, {Key: "hours", Flag: "--hours", Shape: ShapeNum}}}

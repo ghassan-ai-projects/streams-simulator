@@ -3,7 +3,7 @@
 | Term | Meaning |
 |---|---|
 | Bridge | The local HTTP server behind `streamsim canvas`; the canvas's only way to the simulator |
-| Workspace | The folder the bridge serves: `domains/`, `compositions/`, `scenarios/`, `layouts/`, `runs/` |
+| Workspace | The folder the bridge serves: `domains/`, `compositions/`, `scenarios/`, `layouts/`, `kinds/`, `components/` (`equipment/`, `instruments/`), `runs/` |
 | Pairing code | A one-time code the bridge prints on stderr; exchanged once for a session cookie |
 | Session | The paired browser, identified by an `HttpOnly`, `SameSite=Strict` cookie |
 | Admission | The check every API request passes: the bridge's host, its origin, a same-origin fetch |

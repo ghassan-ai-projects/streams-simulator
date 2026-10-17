@@ -14,6 +14,9 @@ const (
 	ClassComposition FileClass = "composition"
 	ClassScenario    FileClass = "scenario"
 	ClassLayout      FileClass = "layout"
+	ClassKind        FileClass = "kind"
+	ClassEquipment   FileClass = "equipment"
+	ClassInstrument  FileClass = "instrument"
 	ClassRun         FileClass = "run"
 )
 
@@ -32,10 +35,13 @@ var definitionFolders = map[string]struct {
 	class  FileClass
 	suffix string
 }{
-	"domains":      {ClassDomain, ".domain.json"},
-	"compositions": {ClassComposition, ".composition.json"},
-	"scenarios":    {ClassScenario, ".scenario.json"},
-	"layouts":      {ClassLayout, ".layout.json"},
+	"domains":                {ClassDomain, ".domain.json"},
+	"compositions":           {ClassComposition, ".composition.json"},
+	"scenarios":              {ClassScenario, ".scenario.json"},
+	"layouts":                {ClassLayout, ".layout.json"},
+	"kinds":                  {ClassKind, ".kind.json"},
+	"components/equipment":   {ClassEquipment, ".component.json"},
+	"components/instruments": {ClassInstrument, ".instrument.json"},
 }
 
 var runFiles = []string{"run.json", "journal.jsonl", "trace.jsonl", "ledger.jsonl", "world_state_history.jsonl",
@@ -66,8 +72,9 @@ func badSegment(part string) bool {
 }
 
 func definitionPath(rel string, parts []string) (WorkspacePath, bool) {
-	folder, known := definitionFolders[parts[0]]
-	if !known || len(parts) != 2 || !strings.HasSuffix(parts[1], folder.suffix) || parts[1] == folder.suffix {
+	name := parts[len(parts)-1]
+	folder, known := definitionFolders[strings.Join(parts[:len(parts)-1], "/")]
+	if !known || !strings.HasSuffix(name, folder.suffix) || name == folder.suffix {
 		return WorkspacePath{}, false
 	}
 	return WorkspacePath{Rel: rel, Class: folder.class}, true
@@ -93,6 +100,10 @@ func (p WorkspacePath) Writable() error {
 
 func DefinitionFolders() []string {
 	return []string{"domains", "compositions", "scenarios", "layouts"}
+}
+
+func ComponentFolders() []string {
+	return []string{"components/equipment", "components/instruments"}
 }
 
 func ClassOfFolder(folder string) (FileClass, string, bool) {

@@ -2,7 +2,6 @@ package app
 
 import (
 	"bytes"
-	"strings"
 	"time"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/canvasbridge/internal/domain"
@@ -16,6 +15,9 @@ const (
 func (b *Bridge) Workspace() (domain.Listing, error) {
 	listing := domain.Listing{Name: b.edges.Workspace.Name()}
 	if err := b.listDefinitions(&listing); err != nil {
+		return domain.Listing{}, err
+	}
+	if err := b.listDevices(&listing); err != nil {
 		return domain.Listing{}, err
 	}
 	var err error
@@ -36,26 +38,15 @@ func (b *Bridge) listDefinitions(listing *domain.Listing) error {
 }
 
 func (b *Bridge) definitions(folder string) ([]domain.Definition, error) {
-	_, suffix, _ := domain.ClassOfFolder(folder)
-	names, err := b.edges.Workspace.Names(folder)
+	rels, err := b.filesIn(folder)
 	if err != nil {
 		return nil, err
 	}
 	out := []domain.Definition{}
-	for _, name := range names {
-		if strings.HasSuffix(name, suffix) && !strings.HasPrefix(name, ".") {
-			out = append(out, b.definition(folder+"/"+name))
-		}
+	for _, rel := range rels {
+		out = append(out, domain.DefinitionOf(rel, b.content(rel)))
 	}
 	return out, nil
-}
-
-func (b *Bridge) definition(rel string) domain.Definition {
-	content, err := b.edges.Workspace.Read(rel, domain.MaxFileBytes)
-	if err != nil {
-		return domain.Definition{Path: rel}
-	}
-	return domain.DefinitionOf(rel, content)
 }
 
 func (b *Bridge) runs() ([]domain.RunEntry, error) {
