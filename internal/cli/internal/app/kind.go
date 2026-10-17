@@ -8,14 +8,21 @@ import (
 	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire"
 )
 
-const kindUsage = "usage: streamsim kind validate <file.kind.json>..."
+const kindUsage = "usage: streamsim kind validate <file.kind.json>... | kind twin [<file.kind.json>...] --choices <file>"
 
 func cmdKind(s *session, args []string) (any, error) {
-	if len(args) == 0 || args[0] != "validate" {
-		return nil, usagef(kindUsage)
+	switch {
+	case len(args) > 0 && args[0] == "validate":
+		return cmdKindValidate(s, args[1:])
+	case len(args) > 0 && args[0] == "twin":
+		return cmdKindTwin(s, args[1:])
 	}
+	return nil, usagef(kindUsage)
+}
+
+func cmdKindValidate(s *session, args []string) (any, error) {
 	fs := newFlagSet("kind validate", s.stderr)
-	if err := parseFlags(fs, args[1:]); err != nil {
+	if err := parseFlags(fs, args); err != nil {
 		return nil, err
 	}
 	if fs.NArg() == 0 {

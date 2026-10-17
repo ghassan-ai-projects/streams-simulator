@@ -53,6 +53,7 @@ var cliAppFiles = map[string]cliFile{
 	"domain_lint.go":        {"command: domain lint", []string{"internal/domain", "internal/lint"}, 60},
 	"domain_compose.go":     {"command: domain compose", []string{cliF, "internal/component"}, 85},
 	"kind.go":               {"command: kind validate and the check of a domain against its kind files", []string{"internal/domain", "internal/model", "internal/plantwire"}, 85},
+	"kind_twin.go":          {"command: kind twin", []string{cliF, "internal/component", "internal/model", "internal/plantwire"}, 95},
 	"component.go":          {"command: component library", []string{"internal/component"}, 70},
 	"component_examples.go": {"command: component examples", []string{"internal/component"}, 32},
 	"component_new.go":      {"command: component new", []string{cliF, "internal/component"}, 58},

@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ghassan-ai-projects/streams-simulator/contracts/twin-choices-v0.1.schema.json",
+  "title": "twin-choices-v0.1",
+  "description": "The choices from which streamsim kind twin scaffolds a runnable twin of one or more kind files: per kind, the library instrument that measures each metric and the response of each command. Everything else comes from the kind files.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "id", "version", "title", "kinds"],
+  "properties": {
+    "schema_version": {"const": "0.1"},
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{2,63}$",
+      "x-expected": "a domain id: 3 to 64 lower-case letters, digits and hyphens, starting with a letter"
+    },
+    "version": {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$"},
+    "title": {"type": "string", "minLength": 1, "maxLength": 120},
+    "description": {"type": "string", "maxLength": 400},
+    "site": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._/-]{0,127}$"},
+        "area": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._/-]{0,127}$",
+          "description": "The one area every instance of the twin belongs to."
+        }
+      }
+    },
+    "board": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$", "description": "The board that hosts every instance of the twin."}
+      }
+    },
+    "kinds": {
+      "type": "array",
+      "minItems": 1,
+      "description": "The kinds of the twin, in the order the domain declares them. Each names a kind file.",
+      "items": {"$ref": "#/$defs/kind"}
+    }
+  },
+  "$defs": {
+    "kind": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "instance", "metrics"],
+      "properties": {
+        "kind": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$", "description": "The kind name of a kind file."},
+        "instance": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,255}$", "description": "The one instance of the kind the twin has."},
+        "metrics": {
+          "type": "object",
+          "description": "One choice for every metric of the kind file, by metric name.",
+          "additionalProperties": {"$ref": "#/$defs/metric"}
+        },
+        "commands": {
+          "type": "object",
+          "description": "One choice for every command of the kind file that is not a safe stop, by command name.",
+          "additionalProperties": {"$ref": "#/$defs/command"}
+        }
+      }
+    },
+    "metric": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["instrument"],
+      "properties": {
+        "instrument": {
+          "type": "string",
+          "pattern": "^(none|[a-z][a-z0-9-]{1,31}/[a-z][a-z0-9-]{1,31}(@[1-9][0-9]*)?)$",
+          "x-expected": "none for a plain channel, or a library instrument such as streamsim/humidity"
+        },
+        "initial": {"type": "number", "description": "The true value at the start; for a reading a command drives, also the value it rests at."}
+      }
+    },
+    "command": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["response"],
+      "properties": {
+        "response": {"enum": ["direct", "first_order", "none"]},
+        "sets": {
+          "type": "object",
+          "description": "Argument name to the metric of the same kind that the argument sets.",
+          "additionalProperties": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"}
+        },
+        "drives": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/drive"}
+        }
+      }
+    },
+    "drive": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["from", "kind", "metric", "gain", "time_constant_s"],
+      "properties": {
+        "from": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$", "description": "A metric this command sets."},
+        "kind": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$", "description": "The kind of the reading that follows."},
+        "metric": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$", "description": "The reading that follows: it relaxes toward its initial value plus gain times the value of from."},
+        "gain": {"type": "number"},
+        "time_constant_s": {"type": "number", "exclusiveMinimum": 0}
+      }
+    }
+  }
+}

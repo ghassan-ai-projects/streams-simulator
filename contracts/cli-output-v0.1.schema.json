@@ -41,6 +41,9 @@
       "$ref": "#/$defs/kind_validate"
     },
     {
+      "$ref": "#/$defs/kind_twin"
+    },
+    {
       "$ref": "#/$defs/component_examples"
     },
     {
@@ -1104,6 +1107,54 @@
               }
             }
           }
+        }
+      }
+    },
+    "kind_twin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "digest",
+        "channels",
+        "faults",
+        "effectors",
+        "implements"
+      ],
+      "description": "The scaffolded twin's summary, as domain validate reports it, and the kind files it implements; composed names the file written by --out, otherwise domain carries the twin's spec.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "channels": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "faults": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "effectors": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "implements": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "composed": {
+          "type": "string",
+          "minLength": 1
+        },
+        "domain": {
+          "type": "object"
         }
       }
     },

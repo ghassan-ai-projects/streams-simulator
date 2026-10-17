@@ -12,4 +12,5 @@
 | Rebirth | `NBIRTH` with the next `bd_seq` and every `DBIRTH`, in the same session |
 | Epoch floor | The highest `authority_epoch` the host announced |
 | Kind file | One `NBIRTH.kinds` entry without its `kind_digest`, in `*.kind.json`; the interface a device implements (`KindFiles`, `KindSource`) |
+| Kind files read | `ReadKindFiles` reads kind files from paths and directories into one set by kind name; `CheckImplementsKinds` runs the implements check against a set already read, so a caller that read the files once checks with the same implementation |
 | Implements | A domain kind names the kind file it implements; `CheckImplements` requires the kind's metrics and commands, as `KindTemplates` gives them, to equal the kind file after canonicalisation, and names the first differing member |

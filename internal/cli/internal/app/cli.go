@@ -138,6 +138,8 @@ Commands:
   domain format <path>                  Rewrite a domain spec in canonical formatting
   domain compose <composition> [--out]  Compose a plant from the component library into a domain
   kind validate <file>...               Validate kind files (*.kind.json) against the plant wire kind schema
+  kind twin <file>... --choices <file>  Scaffold a runnable twin of kind files from chosen library
+                                        instruments and command responses (--kinds-dir, --out)
   component list|show <ref>|validate    The component library: equipment, instruments, vocabulary
   component examples|example <id>       Ready-to-run example plants shipped with the library
   component new <id> --title --from|--example [--empty]  A new plant's composition, copied or empty
@@ -151,7 +153,8 @@ Commands:
   mcp --role director                   Serve the director role over stdio
                                         (--operator-addr binds the operator role
                                         over streamable HTTP; sim.world.create
-                                        returns the endpoint with the token)
+                                        returns the endpoint with the token;
+                                        --kinds-dir checks domains that implement kind files)
   canvas --workspace <dir> --ui-dir <d> Serve the visual canvas on a loopback address
                                         (prints the address and a pairing code)
   refconsumer --trace <file>            Detect episodes in a trace; write verdict.json

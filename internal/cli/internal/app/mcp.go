@@ -25,7 +25,7 @@ func cmdMCP(s *session, args []string) (any, error) {
 
 type mcpOptions struct {
 	role, operatorAddr, domainsDir, adaptersDir, outDir string
-	componentsDirs                                      listFlag
+	componentsDirs, kinds                               listFlag
 }
 
 func parseMCPOptions(args []string, stderr io.Writer) (mcpOptions, error) {
@@ -36,6 +36,7 @@ func parseMCPOptions(args []string, stderr io.Writer) (mcpOptions, error) {
 	registerInputDirs(fs, &options.domainsDir, &options.adaptersDir)
 	registerRunFolder(fs, &options.outDir, "runs")
 	registerComponentDirs(fs, &options.componentsDirs)
+	registerKindsDirs(fs, &options.kinds)
 	if err := parseOnlyFlags(fs, args); err != nil {
 		return mcpOptions{}, err
 	}
@@ -45,7 +46,7 @@ func parseMCPOptions(args []string, stderr io.Writer) (mcpOptions, error) {
 func serveDirector(s *session, options mcpOptions) error {
 	err := mcp.ServeDirector(context.Background(), s.stderr, mcp.ServeOptions{DomainsDir: options.domainsDir,
 		AdaptersDir: options.adaptersDir, OutDir: options.outDir, OperatorAddr: options.operatorAddr,
-		ComponentsDirs: s.componentDirs(options.componentsDirs)})
+		ComponentsDirs: s.componentDirs(options.componentsDirs), CheckDomain: domainCheck(options.kinds)})
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}

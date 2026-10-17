@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/domain"
@@ -18,6 +19,23 @@ func CheckImplements(spec *model.DomainSpec, kindsDirs []string) error {
 		return fmt.Errorf("%w", err)
 	}
 	return wrapped(domain.CheckImplements(spec, kindFiles))
+}
+
+func ReadKindFiles(paths, dirs []string) (map[string]map[string]any, error) {
+	byPath, err := files.Paths(paths)
+	if err != nil {
+		return nil, fmt.Errorf("%w", err)
+	}
+	byDirectory, err := files.Directories(dirs)
+	if err != nil {
+		return nil, fmt.Errorf("%w", err)
+	}
+	kindFiles, _, err := domain.ParseKindFiles(slices.Concat(byPath, byDirectory))
+	return kindFiles, wrapped(err)
+}
+
+func CheckImplementsKinds(spec *model.DomainSpec, kinds map[string]map[string]any) error {
+	return wrapped(domain.CheckImplements(spec, kinds))
 }
 
 func ValidateKindFiles(paths []string) ([]domain.KindSummary, error) {

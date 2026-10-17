@@ -24,7 +24,7 @@ func (b *entryBuild) attach(point MeasurementPoint) error {
 		return err
 	}
 	channel := b.channel(point, instrument, measured)
-	faults, biased := b.instrumentFaults(point, instrument, measured, channel["name"].(string))
+	faults, biased := instrumentFaults(b.name, point, instrument, measured, channel["name"].(string))
 	if biased {
 		b.addBias(point, instrument, channel)
 	}
@@ -112,9 +112,13 @@ func scaleSigma(channel map[string]any, scaling string, scale float64) {
 }
 
 func (b *entryBuild) addBias(point MeasurementPoint, instrument *Instrument, channel map[string]any) {
+	b.biases = append(b.biases, biasState(channel, point, instrument.Unit))
+}
+
+func biasState(channel map[string]any, point MeasurementPoint, unit string) map[string]any {
 	name := point.Name + "__bias"
 	channel["observation_bias"] = map[string]any{"state": name, "coef": 1, "noise_scale_at_full": 1}
-	b.biases = append(b.biases, map[string]any{"name": name, "unit": instrument.Unit, "initial": 0})
+	return map[string]any{"name": name, "unit": unit, "initial": 0}
 }
 
 func (b *entryBuild) qualifyKind() error {

@@ -55,7 +55,7 @@ var registry = []Action{
 	mcp("truth.reveal", "sim.truth.reveal", false, "run_id"),
 	mcp("truth.status", "sim.truth.seal_status", false, "run_id"),
 	cliComponentList, cliComponentShow, cliComponentValidate, cliExamples, cliExample, cliNewPlant, cliCompose, cliValidate, cliLint,
-	cliKindValidate, cliVerify, cliReport, cliScenario,
+	cliKindValidate, cliKindTwin, cliVerify, cliReport, cliScenario,
 }
 
 func withholding(action Action, keys ...string) Action {

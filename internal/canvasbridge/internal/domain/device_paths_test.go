@@ -116,6 +116,48 @@ func TestKindValidateTakesOneKindFileAndNothingElse(t *testing.T) {
 	}
 }
 
+func TestKindTwinTakesAChoicesFileAndADomainToWriteAndGuardsTheDomain(t *testing.T) {
+	t.Parallel()
+	twin, err := Lookup("kind.twin")
+	if err != nil || twin.Kind != KindCLI || !twin.Mutating || !twin.Etag || !twin.Kinds || !twin.Library {
+		t.Fatalf("kind.twin = %+v, %v", twin, err)
+	}
+	args := map[string]any{"choices": "twins/fan.twin.json", "out": inDomains("fan.domain.json")}
+	got, err := twin.Argv(args)
+	want := []ArgvPart{{Literal: "kind"}, {Literal: "twin"}, {Literal: "--choices"}, {Path: "twins/fan.twin.json"}, {Literal: "--out"}, {Path: inDomains("fan.domain.json")}}
+	if err != nil || !reflect.DeepEqual(got, want) {
+		t.Fatalf("Argv = %+v, %v", got, err)
+	}
+	if guard, guarded, err := twin.Guarded(args); err != nil || !guarded || guard.Path != inDomains("fan.domain.json") {
+		t.Fatalf("Guarded = %+v, %v, %v, want the domain file guarded", guard, guarded, err)
+	}
+	refused := []struct {
+		name string
+		args map[string]any
+	}{
+		{"choices that are a kind file", map[string]any{"choices": "kinds/fan.kind.json", "out": inDomains("fan.domain.json")}},
+		{"an output that is a twin file", map[string]any{"choices": "twins/fan.twin.json", "out": "twins/other.twin.json"}},
+		{"no output", map[string]any{"choices": "twins/fan.twin.json"}},
+		{"an unknown argument", map[string]any{"choices": "twins/fan.twin.json", "out": inDomains("fan.domain.json"), "kinds_dir": "/"}},
+	}
+	for _, tc := range refused {
+		if _, err := twin.Argv(tc.args); !errors.Is(err, ErrBadArguments) {
+			t.Errorf("%s: %v, want ErrBadArguments", tc.name, err)
+		}
+	}
+}
+
+func TestAChoicesFileOfTheWorkspaceIsATwinFileThatCanBeWritten(t *testing.T) {
+	t.Parallel()
+	path, err := ParsePath("twins/fan.twin.json")
+	if err != nil || path.Class != ClassTwin || path.Writable() != nil {
+		t.Fatalf("ParsePath = %+v, %v, want a writable twin file", path, err)
+	}
+	if _, err := ParsePath("twins/fan.json"); !errors.Is(err, ErrBadPath) {
+		t.Fatalf("a twins file without its suffix: %v, want ErrBadPath", err)
+	}
+}
+
 func TestComponentValidateChecksTheWholeLibraryAndTakesNoArguments(t *testing.T) {
 	t.Parallel()
 	validate, err := Lookup("component.validate")
@@ -131,10 +173,10 @@ func TestComponentValidateChecksTheWholeLibraryAndTakesNoArguments(t *testing.T)
 	}
 }
 
-func TestOnlyDomainValidateAndComposeCarryTheWorkspaceKinds(t *testing.T) {
+func TestOnlyDomainValidateComposeAndTwinCarryTheWorkspaceKinds(t *testing.T) {
 	t.Parallel()
 	for _, action := range Actions() {
-		want := action.Name == "domain.validate" || action.Name == "domain.compose"
+		want := action.Name == "domain.validate" || action.Name == "domain.compose" || action.Name == "kind.twin"
 		if action.Kinds != want {
 			t.Errorf("%s: Kinds = %v, want %v", action.Name, action.Kinds, want)
 		}

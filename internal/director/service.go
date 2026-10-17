@@ -16,8 +16,8 @@ func New(ctx context.Context, cat *domain.Catalog, adapters map[string]*model.Ad
 	return &Director{impl: layer.NewDirector(ctx, cat, adapters, outDir)}
 }
 
-func NewFromDirs(ctx context.Context, domainsDir, adaptersDir, outDir string, componentDirs []string) (*Director, error) {
-	impl, err := layer.LoadDirector(ctx, domainsDir, adaptersDir, outDir, componentDirs)
+func NewFromDirs(ctx context.Context, domainsDir, adaptersDir, outDir string, componentDirs []string, check func(*model.DomainSpec) error) (*Director, error) {
+	impl, err := layer.LoadDirector(ctx, domainsDir, adaptersDir, outDir, componentDirs, check)
 	if err != nil {
 		return nil, err
 	}

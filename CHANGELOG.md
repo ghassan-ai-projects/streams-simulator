@@ -4,6 +4,18 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **`streamsim kind twin`.** Scaffolds a runnable twin of kind files: `kind twin [<file.kind.json>...] --choices
+  <choices.json> [--kinds-dir <dir>] [--out <file>]` writes a domain whose kinds `implements` the kind files, from a
+  small choices document (`twin-choices-v0.1`): per metric the library instrument that measures it or `none`, per
+  command one of three fixed responses (`direct`, `first_order`, `none`); a safe stop and a lease come from the kind
+  file. The twin is checked against the same kind files before it is printed. The canvas bridge gains the `kind.twin`
+  action and the `twins/` workspace folder; `cli-output-v0.1` gains `kind_twin`. The built-in vocabulary accepts `Cel`
+  for `degC` and `%` for `%RH`, the spellings of a kind file.
+- **The director checks `implements`.** `streamsim mcp --role director` takes `--kinds-dir` (repeatable), and
+  `sim.world.create` runs the `implements` check on the domain it is asked for, as `run` does; a director without kind
+  files refuses a domain that implements one. The canvas bridge starts its director with the workspace `kinds/` folder.
+  `director.NewFromDirs` and `mcp.ServeOptions` take the check as an argument.
+
 - **Kind files and `implements`.** A domain kind may declare `implements: "<kind>"`. `streamsim domain validate`,
   `domain compose` and `run` (with `--kinds-dir`, repeatable) check that the kind's plant wire interface equals the
   kind file of that name (`*.kind.json` in a kinds directory) after canonicalisation, naming the first differing member; a mismatch, an unknown

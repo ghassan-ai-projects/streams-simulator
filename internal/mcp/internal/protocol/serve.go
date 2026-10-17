@@ -8,11 +8,13 @@ import (
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/director"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/mcp/internal/transport"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
 type ServeOptions struct {
 	DomainsDir, AdaptersDir, OutDir, OperatorAddr string
 	ComponentsDirs                                []string
+	CheckDomain                                   func(*model.DomainSpec) error
 }
 
 func ServeDirector(ctx context.Context, stderr io.Writer, options ServeOptions) error {
@@ -40,5 +42,5 @@ func bindOperator(ctx context.Context, stderr io.Writer, d *director.Director, a
 }
 
 func newDirector(ctx context.Context, options ServeOptions) (*director.Director, error) {
-	return director.NewFromDirs(ctx, options.DomainsDir, options.AdaptersDir, options.OutDir, options.ComponentsDirs)
+	return director.NewFromDirs(ctx, options.DomainsDir, options.AdaptersDir, options.OutDir, options.ComponentsDirs, options.CheckDomain)
 }

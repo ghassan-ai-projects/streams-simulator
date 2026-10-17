@@ -49,10 +49,10 @@ func TestWorkspacePathsAreScrubbedFromMessages(t *testing.T) {
 	}
 }
 
-func TestOnlyCompositionAndScenarioExportGuardTheirOutputWithAVersion(t *testing.T) {
+func TestOnlyCompositionTwinAndScenarioExportGuardTheirOutputWithAVersion(t *testing.T) {
 	t.Parallel()
 	for _, action := range Actions() {
-		if action.Etag != (action.Name == "domain.compose" || action.Name == "scenario.export") {
+		if action.Etag != (action.Name == "domain.compose" || action.Name == "kind.twin" || action.Name == "scenario.export") {
 			t.Errorf("%s: Etag = %v", action.Name, action.Etag)
 		}
 	}

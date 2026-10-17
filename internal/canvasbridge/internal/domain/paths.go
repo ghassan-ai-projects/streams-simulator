@@ -15,6 +15,7 @@ const (
 	ClassScenario    FileClass = "scenario"
 	ClassLayout      FileClass = "layout"
 	ClassKind        FileClass = "kind"
+	ClassTwin        FileClass = "twin"
 	ClassEquipment   FileClass = "equipment"
 	ClassInstrument  FileClass = "instrument"
 	ClassRun         FileClass = "run"
@@ -40,6 +41,7 @@ var definitionFolders = map[string]struct {
 	"scenarios":              {ClassScenario, ".scenario.json"},
 	"layouts":                {ClassLayout, ".layout.json"},
 	"kinds":                  {ClassKind, ".kind.json"},
+	"twins":                  {ClassTwin, ".twin.json"},
 	"components/equipment":   {ClassEquipment, ".component.json"},
 	"components/instruments": {ClassInstrument, ".instrument.json"},
 }

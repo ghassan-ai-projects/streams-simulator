@@ -31,11 +31,22 @@ func (d *Director) worldConfig(req WorldRequest) (run.Config, error) {
 	if err != nil {
 		return run.Config{}, rules.ToolErrorf(rules.CodeDomainInvalid, "%v", err)
 	}
+	if err := d.checkKindFiles(spec.Spec); err != nil {
+		return run.Config{}, rules.ValidationToolError(err, rules.CodeDomainInvalid)
+	}
 	adap, err := d.worldAdapter(req)
 	if err != nil {
 		return run.Config{}, err
 	}
 	return configuredWorld(spec, adap, req), nil
+}
+
+func (d *Director) checkKindFiles(spec *model.DomainSpec) error {
+	check := d.check
+	if check == nil {
+		check = rules.RefuseImplements
+	}
+	return check(spec)
 }
 
 func (d *Director) reserveWorldIdentity() (string, string) {

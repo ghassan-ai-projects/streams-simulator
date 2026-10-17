@@ -22,6 +22,13 @@ func Compose(lib *Library, composition []byte, source string) (*Composed, error)
 	return layer.ComposeDomain(lib.library, composition, source)
 }
 
+func Twin(lib *Library, kinds map[string]map[string]any, choices []byte, source string) (*Composed, error) {
+	if lib == nil || lib.library == nil {
+		return nil, ErrNoLibrary
+	}
+	return layer.ScaffoldTwin(lib.library, kinds, choices, source)
+}
+
 func (l *Library) List() []Summary {
 	if l == nil || l.library == nil {
 		return nil

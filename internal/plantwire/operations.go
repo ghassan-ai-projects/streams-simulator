@@ -30,6 +30,14 @@ func CheckImplements(spec *model.DomainSpec, kindsDirs []string) error {
 	return app.CheckImplements(spec, kindsDirs)
 }
 
+func ReadKindFiles(paths, dirs []string) (map[string]map[string]any, error) {
+	return app.ReadKindFiles(paths, dirs)
+}
+
+func CheckImplementsKinds(spec *model.DomainSpec, kinds map[string]map[string]any) error {
+	return app.CheckImplementsKinds(spec, kinds)
+}
+
 func ValidateKindFiles(paths []string) ([]KindSummary, error) {
 	return app.ValidateKindFiles(paths)
 }

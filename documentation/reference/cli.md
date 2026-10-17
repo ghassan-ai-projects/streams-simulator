@@ -68,6 +68,31 @@ streamsim kind validate <file.kind.json>...
 
 A file that is not JSON, breaks the schema or defines a kind another file defines fails with `kind_failed`. A file that is not JSON or breaks the schema also carries `source` (the file) and `issues`, as `domain validate` does: one `{pointer, message}` per schema violation, sorted by pointer, with `pointer` an RFC 6901 pointer into the kind file (for example `/metrics/0/data_type`, `/commands` for a missing member), and `message` only for a file that is not JSON. A kind file that breaks the schema in a `--kinds-dir` fails `domain validate`, `domain compose` and `run` the same way.
 
+### `kind twin`
+
+Scaffolds a runnable twin of kind files: a domain whose kinds `implements` them. The binary does the work, so a surface needs no simulation knowledge of its own. Per metric, the choices name the library instrument that measures it (or `none` for a plain channel); per command that is not a safe stop, one of three fixed responses. Everything else comes from the kind files.
+
+```text
+streamsim kind twin [<file.kind.json>...] --choices <choices.json> [--kinds-dir <dir>]... [--out <file>] [--components-dir <dir>]...
+```
+
+- `--choices <file>` — the choices document, `twin-choices-v0.1` ([schema](../../contracts/twin-choices-v0.1.schema.json)): `id`, `version`, `title`, optional `description`, `site {name, area?}` and `board {name}`, and `kinds[]` in the order the domain declares them. Each entry is `{kind, instance, metrics, commands}`: `kind` names a kind file, `instance` is the one instance the twin has, `metrics` has one `{instrument, initial?}` for every metric of the kind file, `commands` one `{response, sets?, drives?}` for every command that is not a safe stop.
+- Kind files come from the arguments, from `--kinds-dir` (every `*.kind.json` there), or both; only the kinds the choices name are used.
+- `--out <file>` — write the domain there; without it the spec is printed inside the output document (`domain`).
+- `--components-dir <dir>` — a customer library directory, repeatable (see `domain compose`).
+
+Responses:
+
+| `response` | Takes | Result |
+| --- | --- | --- |
+| `direct` | `sets`: argument name to the writable metric of the same kind it sets | The command assigns the argument to the metric's state |
+| `first_order` | `sets`, and `drives[]` of `{from, kind, metric, gain, time_constant_s}` | As `direct`, and the read-only metric `metric` of `kind` relaxes with `time_constant_s` toward its `initial` plus `gain` times the value of `from` (a first-order lag) |
+| `none` | nothing | The command is acknowledged and changes nothing |
+
+A safe-stop command lowers every metric the kind's commands set to the low end of its range. A command whose arguments carry `lease_ms` (or `lease_s`) holds its effect for that lease and falls back to the low end of the range. An instrument keeps its noise, cadence, faults and tag; the kind file keeps the metric's unit, range and resolution, so the instrument must read in the metric's unit (an alias of the same quantity, such as `Cel` for `degC`, is accepted) and cover its range.
+
+It prints `{id, digest, channels, faults, effectors, implements}` and `composed` (the file written) or `domain`. The twin is checked against the same kind files before it is printed, so it always passes `domain validate --kinds-dir`. Choices that break their schema, name something the kind files do not hold, leave a metric or command undecided, or ask a response that does not fit fail with `kind_failed`, each issue at its pointer in the choices (`/kinds/2/commands/set_pwm_lease/drives/0/gain`); a kind file the twin cannot reproduce (a string metric, a member beyond the interface) fails the same way at `/kinds/<i>/kind`.
+
 ### `domain lint`
 
 Simulates a nominal day of one domain (noiseless, default population, no faults, no effector calls) and judges it with five rules: a non-finite state or reading, a channel reading outside its declared range, an integrated state pinned at its bound, an integrated state that has not settled by the end of the run, and a conservation balance that does not close. It prints `{domain, digest, seed, hours, samples, findings, errors, warnings}`; each finding carries `severity`, `code`, `entity`, `channel`, `state` or `fault`, `at_s` and a `detail`. Any `error` finding exits 1 with a `domain_lint` error document whose `result` is the same report; warnings alone exit 0. The output is deterministic for a domain, seed and hours.
@@ -275,6 +300,8 @@ Flags:
 - `--domains-dir <path>` — defaults to `domains`.
 - `--adapters-dir <path>` — defaults to `adapters`.
 - `--out <path>` — run artifact root; defaults to `runs`.
+- `--components-dir <dir>` — a customer component library directory, repeatable (see `domain compose`).
+- `--kinds-dir <dir>` — a directory of kind files, repeatable. `sim.world.create` runs the same `implements` check as `domain validate` on the domain it is asked for, and refuses a domain whose kind implements a kind file this director cannot find (`domain_invalid`, an issue at `/kinds/<i>/implements`). A director started without `--kinds-dir` refuses every domain that declares `implements`; a domain without `implements` is unaffected.
 
 ### `refconsumer`
 

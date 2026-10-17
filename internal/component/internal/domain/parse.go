@@ -16,7 +16,7 @@ type contractSchema struct {
 }
 
 type contracts struct {
-	component, instrument, composition, vocabulary contractSchema
+	component, instrument, composition, vocabulary, twin contractSchema
 }
 
 func compileContracts() (*contracts, error) {
@@ -24,10 +24,11 @@ func compileContracts() (*contracts, error) {
 	instrument, e2 := compileContract(model.ContractInstrument, schemas.Instrument())
 	composition, e3 := compileContract(model.ContractComposition, schemas.Composition())
 	vocabulary, e4 := compileContract(model.ContractVocabulary, schemas.ComponentVocabulary())
-	if err := errors.Join(e1, e2, e3, e4); err != nil {
+	twin, e5 := compileContract(model.ContractTwinChoices, schemas.TwinChoices())
+	if err := errors.Join(e1, e2, e3, e4, e5); err != nil {
 		return nil, err
 	}
-	return &contracts{component, instrument, composition, vocabulary}, nil
+	return &contracts{component, instrument, composition, vocabulary, twin}, nil
 }
 
 func compileContract(contract model.Contract, raw []byte) (contractSchema, error) {

@@ -46,6 +46,9 @@ var (
 	cliComponentValidate = Action{Name: "component.validate", Kind: KindCLI, Command: []string{"component", "validate"}, Library: true}
 	cliKindValidate      = Action{Name: "kind.validate", Kind: KindCLI, Command: []string{"kind", "validate"},
 		CLIArgs: []CLIArg{{Key: "path", Shape: ShapePath, Class: ClassKind, Required: true}}}
+	cliKindTwin = Action{Name: "kind.twin", Kind: KindCLI, Command: []string{"kind", "twin"}, Library: true, Kinds: true, Mutating: true, Etag: true,
+		CLIArgs: []CLIArg{{Key: "choices", Flag: "--choices", Shape: ShapePath, Class: ClassTwin, Required: true},
+			{Key: "out", Flag: "--out", Shape: ShapePath, Class: ClassDomain, Required: true}}}
 	cliCompose = Action{Name: "domain.compose", Kind: KindCLI, Command: []string{"domain", "compose"}, Library: true, Kinds: true, Mutating: true, Etag: true,
 		CLIArgs: []CLIArg{{Key: "composition", Shape: ShapePath, Class: ClassComposition, Required: true},
 			{Key: "out", Flag: "--out", Shape: ShapePath, Class: ClassDomain, Required: true}}}

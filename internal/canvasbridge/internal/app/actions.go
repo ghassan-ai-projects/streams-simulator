@@ -120,5 +120,5 @@ func (b *Bridge) DirectorArguments() []string {
 	for _, dir := range b.settings.ComponentDirs {
 		args = append(args, "--components-dir", dir)
 	}
-	return args
+	return append(args, b.workspaceDirFlag("--kinds-dir", "kinds")...)
 }

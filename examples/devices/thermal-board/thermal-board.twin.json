@@ -1,0 +1,46 @@
+{
+  "schema_version": "0.1",
+  "id": "arduino-thermal-twin",
+  "version": "0.1.0",
+  "title": "Arduino thermal bench twin, scaffolded",
+  "description": "A twin scaffolded from the three thermal kind files beside this file: a thermistor and a humidity probe read the zone, an LED indicates, and a PWM fan cools the zone under a 5 to 10 second lease.",
+  "site": {"name": "bench", "area": "thermal-bench"},
+  "board": {"name": "mega-01"},
+  "kinds": [
+    {
+      "kind": "thermal_sensor",
+      "instance": "zone-01",
+      "metrics": {
+        "temperature": {"instrument": "streamsim/thermistor", "initial": 34},
+        "humidity": {"instrument": "streamsim/humidity", "initial": 42}
+      }
+    },
+    {
+      "kind": "indicator",
+      "instance": "led-01",
+      "metrics": {
+        "brightness_permille": {"instrument": "none"},
+        "pattern": {"instrument": "none"}
+      },
+      "commands": {
+        "set_led": {"response": "direct", "sets": {"brightness_permille": "brightness_permille", "pattern": "pattern"}}
+      }
+    },
+    {
+      "kind": "fan",
+      "instance": "fan-01",
+      "metrics": {
+        "duty_permille": {"instrument": "none"}
+      },
+      "commands": {
+        "set_pwm_lease": {
+          "response": "first_order",
+          "sets": {"duty_permille": "duty_permille"},
+          "drives": [
+            {"from": "duty_permille", "kind": "thermal_sensor", "metric": "temperature", "gain": -0.02, "time_constant_s": 180}
+          ]
+        }
+      }
+    }
+  ]
+}

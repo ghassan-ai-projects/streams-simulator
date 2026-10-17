@@ -22,6 +22,7 @@ serves until interrupted. The workspace is a folder:
 | `scenarios/*.scenario.json` | Scenario files | read, write |
 | `layouts/*.layout.json` | Layout sidecars | read, write |
 | `kinds/*.kind.json` | Kind files: the interface of a device (plant wire `NBIRTH.kinds` entry) | read, write |
+| `twins/*.twin.json` | Twin choices (`twin-choices-v0.1`): the instrument of each metric and the response of each command, from which `kind.twin` scaffolds a twin | read, write |
 | `components/equipment/*.component.json` | Workspace equipment components | read, write |
 | `components/instruments/*.instrument.json` | Workspace instrument components | read, write |
 | `runs/<world_id>/…` | Run folders written by the director | read only, truth-gated (§4) |
@@ -55,7 +56,7 @@ removes it from every error and result it relays.
 | `GET /api/actions` | — | The action registry: `{name, kind: "mcp" | "cli", tool \| command, truth}` per action |
 | `POST /api/actions/{name}` | `{args}` | `{result}`: the tool's structured result or the command's JSON document |
 | `GET /api/runs/{world_id}/events` | `Last-Event-ID` | Server-Sent Events: each observer journal record as event `record` (id = the record's line index), then `closed`. `world_id` is one run id (letters, digits, `.`, `_`, `-`; an encoded `/` is `400 bad_path`) and always names the observer journal; a run folder that does not exist is `404`. Resuming with the id of the closing record sends `closed` alone |
-| `GET /api/events` | — | Server-Sent Events: `workspace` when a file of `domains/`, `compositions/`, `scenarios/`, `layouts/`, `kinds/`, `components/equipment/`, `components/instruments/` or `runs/` changes (polled every second) |
+| `GET /api/events` | — | Server-Sent Events: `workspace` when a file of `domains/`, `compositions/`, `scenarios/`, `layouts/`, `kinds/`, `twins/`, `components/equipment/`, `components/instruments/` or `runs/` changes (polled every second) |
 
 The **action registry** is the parity list (GOAL item 7): every action names its director MCP tool or CLI command. CLI
 actions build an argument vector from typed, workspace-relative arguments; no shell is involved. The device actions are
@@ -65,8 +66,19 @@ supplies the workspace folders: every library action (`component.list`, `compone
 `domain.compose`) gets `--components-dir <workspace>/components` when that folder exists, and `domain.validate` and
 `domain.compose` get `--kinds-dir <workspace>/kinds` when it exists, so the "behaviour implements interface" check runs
 against the workspace's own kind files. A kind file that does not parse stops `domain.validate` too, as it stops the CLI. `kind.validate` relays the CLI's failure unchanged: `code: "kind_failed"` and `issues: [{pointer, message}]`, one per schema violation, the same members as `domain.validate`, so the canvas decodes both alike and never parses message text.
-The director child's `world.create` does not yet check `implements`; that check stays in `streamsim run`. MCP actions go to one
-`streamsim mcp --role director` child per bridge, started with the workspace's `domains/` and `runs/`. When a domain file
+`kind.twin` (`streamsim kind twin`) scaffolds a runnable twin of the workspace's kind files, so the canvas computes none of it: its
+`choices` argument is a `twins/*.twin.json` file and its `out` argument the `domains/*.domain.json` file to write, guarded by
+`etag` as `domain.compose` guards its `out` (it changes no other file). The bridge passes `--components-dir` (the library
+supplies the instruments) and `--kinds-dir <workspace>/kinds` when that folder exists. It relays the command's document
+(`{id, digest, channels, faults, effectors, implements, composed}`) or its failure unchanged: `kind_failed` with
+`issues: [{pointer, message}]`, each pointer into the choices file (`/kinds/2/commands/set_pwm_lease/drives/0/gain`) or at
+`/kinds/<i>/kind` for a kind file a twin cannot reproduce.
+The director child checks `implements` as `streamsim run` does: it is started with `--kinds-dir <workspace>/kinds` when that
+folder exists, so `world.create` refuses a domain whose kind implements a kind file the child cannot find or that differs
+from it (`domain_invalid`, an issue at `/kinds/<i>/implements`), and fails closed when the workspace has no `kinds/` at all.
+The check reads the folder at every `world.create`, so a kind file edited while the child runs is seen at once; a `kinds/`
+folder created after the child started is seen when the child restarts with the next domain change. MCP actions go to one
+`streamsim mcp --role director` child per bridge, started with the workspace's `domains/`, `runs/` and `kinds/`. When a domain file
 changes and no world is open, the child is restarted before the next catalog or world action so its catalog is current. When the child is gone (a transport
 error, not a refusal from a tool) the bridge drops it, forgets its worlds and retries the call once on a new child; the
 child's stderr tail (it names, for instance, an invalid domain file) is part of the failure message. `domain.compose` and

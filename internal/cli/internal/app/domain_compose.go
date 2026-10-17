@@ -60,17 +60,20 @@ func composeDomain(library *component.Library, raw []byte, options composeOption
 		return nil, err
 	}
 	result := composedDomain{DomainSummary: composed.Summary}
-	return placeComposed(result, composed, options.out)
+	if err := placeComposed(&result, composed, options.out); err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
-func placeComposed(result composedDomain, composed *component.Composed, out string) (any, error) {
+func placeComposed(result *composedDomain, composed *component.Composed, out string) error {
 	if out == "" {
 		result.Domain = composed.Domain.Spec
-		return result, nil
+		return nil
 	}
 	if err := files.Write(out, composed.Bytes); err != nil {
-		return nil, fmt.Errorf("streamsim: %w", err)
+		return fmt.Errorf("streamsim: %w", err)
 	}
 	result.Composed = out
-	return result, nil
+	return nil
 }

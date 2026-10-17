@@ -10,7 +10,7 @@ import (
 
 const watchInterval = time.Second
 
-var watchedFolders = slices.Concat(workspaceFolders, []string{"kinds"}, domain.ComponentFolders())
+var watchedFolders = slices.Concat(workspaceFolders, []string{"kinds", "twins"}, domain.ComponentFolders())
 
 func (b *Bridge) Watch(ctx context.Context, changed func() error) error {
 	last := b.edges.Workspace.Fingerprint(watchedFolders)
