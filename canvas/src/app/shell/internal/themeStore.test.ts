@@ -32,7 +32,7 @@ function system(dark: boolean): SystemTheme & { set: (dark: boolean) => void } {
   };
 }
 
-describe("ThemeStore", () => {
+describe("theme store", () => {
   it("starts from the stored preference and persists each change", () => {
     const stored = memory("dark");
     const store = new ThemeStore(stored, system(false));

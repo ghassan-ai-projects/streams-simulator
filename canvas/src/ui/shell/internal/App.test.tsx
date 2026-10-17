@@ -44,12 +44,7 @@ function renderApp(bridge: FakeBridge) {
   return render(<App stores={stores} />);
 }
 
-describe("App", () => {
-  it("asks an unpaired browser for the pairing code", async () => {
-    renderApp(new FakeBridge());
-    expect(await screen.findByRole("heading", { name: "Pair this browser" })).toBeInTheDocument();
-  });
-
+describe("app shell", () => {
   it("opens the workspace once paired, with no accessibility violation", async () => {
     const bridge = new FakeBridge();
     bridge.paired = true;
@@ -76,10 +71,11 @@ describe("App", () => {
     expect(document.documentElement.dataset.theme).toBe("light");
   });
 
-  it("goes from pairing to the workspace", async () => {
+  it("asks an unpaired browser for the pairing code, then goes to the workspace once it pairs", async () => {
     const bridge = new FakeBridge();
     renderApp(bridge);
-    const field = await screen.findByLabelText("Pairing code");
+    expect(await screen.findByRole("heading", { name: "Pair this browser" })).toBeInTheDocument();
+    const field = screen.getByLabelText("Pairing code");
     fireEvent.change(field, { target: { value: "aaaa-bbbb-cccc" } });
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "Pair" }));

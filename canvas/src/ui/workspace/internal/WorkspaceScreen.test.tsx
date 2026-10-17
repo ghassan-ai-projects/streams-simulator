@@ -9,6 +9,11 @@ import { sampleWorkspace } from "../../../test/workspaceFixture";
 import { navigation, show } from "../../../test/workspaceHarness";
 import { WorkspaceScreen } from "./WorkspaceScreen";
 
+const base = "compositions/factory-utilities.composition.json";
+const frame = { schema_version: "0.1", version: "1", stresses: "none", axes: {}, profiles: [], ground_truth: {} };
+const generated = (parts: Record<string, unknown>) => success({ composition: { ...frame, ...parts } });
+const emptied = { areas: [{ name: "Site" }] };
+
 describe("workspace screen", () => {
   it("lists each plant once with its actions, and its runs newest first, with no accessibility violation", async () => {
     const view = await show(new FakeBridge());
@@ -70,21 +75,6 @@ describe("workspace screen", () => {
     expect(within(region).getByRole("status")).toHaveTextContent("5 runs shown");
   });
 
-  it("shows the badge of a run already checked in this session", async () => {
-    const bridge = new FakeBridge();
-    const store = new WorkspaceStore(bridge.workspace);
-    await store.open();
-    render(
-      <WorkspaceScreen
-        workspace={store}
-        navigation={navigation().store}
-        maker={new PlantMaker(bridge.plant)}
-        badgeFor={(id) => (id === "w-1" ? "verified" : null)}
-      />,
-    );
-    expect(screen.getByText("Verified")).toBeInTheDocument();
-  });
-
   it("opens a plant from its row", async () => {
     const nav = navigation();
     await show(new FakeBridge(), nav);
@@ -99,13 +89,8 @@ describe("workspace screen", () => {
   it("edits a composition from its row and creates a new plant from a base", async () => {
     const nav = navigation();
     const bridge = new FakeBridge();
-    const base = "compositions/factory-utilities.composition.json";
-    const factory = {
-      id: "factory-utilities",
-      equipment: [{ use: "lib/chiller@1", names: ["CH-1"] }],
-      connections: [],
-    };
-    bridge.addFile(base, factory, "b");
+    const equipment = [{ use: "lib/chiller@1", names: ["CH-1"] }];
+    bridge.actions.set("component.new", generated({ id: "lab-two", title: "Lab two", equipment }));
     await show(bridge, nav);
     fireEvent.click(screen.getByRole("button", { name: "Edit Factory utilities" }));
     expect(nav.location.hash).toBe("#/edit?composition=compositions%2Ffactory-utilities.composition.json");
@@ -123,19 +108,19 @@ describe("workspace screen", () => {
     await vi.waitFor(() => {
       expect(nav.location.hash).toBe("#/edit?composition=compositions%2Flab-two.composition.json");
     });
-    expect(bridge.writes[0]).toMatchObject({ path: "compositions/lab-two.composition.json", etag: "" });
-    expect(JSON.parse(bridge.writes[0]?.content ?? "")).toMatchObject({
+    expect(bridge.calls.find((call) => call.name === "component.new")?.args).toEqual({
+      id: "lab-two",
       title: "Lab two",
-      equipment: factory.equipment,
+      from: base,
     });
+    expect(bridge.writes[0]).toMatchObject({ path: "compositions/lab-two.composition.json", etag: "" });
+    expect(JSON.parse(bridge.writes[0]?.content ?? "")).toMatchObject({ title: "Lab two", equipment });
   });
 
   it("creates an empty plant from a base and keeps an id typed by hand", async () => {
     const nav = navigation();
     const bridge = new FakeBridge();
-    const base = "compositions/factory-utilities.composition.json";
-    const factory = { id: "factory-utilities", equipment: [{ use: "lib/chiller@1", names: ["CH-1"] }] };
-    bridge.addFile(base, factory, "b");
+    bridge.actions.set("component.new", generated({ ...emptied, id: "bare-hall", title: "Bare hall" }));
     await show(bridge, nav);
     fireEvent.click(screen.getByRole("button", { name: "New plant" }));
     const form = screen.getByRole("form", { name: "New plant" });
@@ -150,13 +135,17 @@ describe("workspace screen", () => {
     await vi.waitFor(() => {
       expect(bridge.writes[0]?.path).toBe("compositions/bare-hall.composition.json");
     });
-    const written = JSON.parse(bridge.writes[0]?.content ?? "") as Record<string, unknown>;
-    expect(written).toMatchObject({ id: "bare-hall", title: "Bare hall" });
-    expect(written).not.toHaveProperty("equipment");
+    expect(bridge.calls.find((call) => call.name === "component.new")?.args).toEqual({
+      id: "bare-hall",
+      title: "Bare hall",
+      from: base,
+      empty: true,
+    });
   });
 
   it("reports a plant that could not be created and cancels", async () => {
     const bridge = new FakeBridge();
+    bridge.actions.set("component.new", failed(cannedFailure("not_found", 404, `no ${base}`)));
     await show(bridge);
     fireEvent.click(screen.getByRole("button", { name: "New plant" }));
     const form = screen.getByRole("form", { name: "New plant" });
@@ -191,7 +180,7 @@ describe("workspace screen", () => {
       "component.examples",
       success({ examples: [{ id: "pilot", title: "Pilot", description: "A small plant." }] }),
     );
-    bridge.actions.set("component.example", success({ example: { id: "pilot", title: "Pilot", equipment: [] } }));
+    bridge.actions.set("component.new", generated({ id: "pilot", title: "Pilot", equipment: [] }));
     bridge.actions.set("domain.compose", success({ channels: 1, faults: 0, effectors: 0 }));
     const view = await show(bridge, nav);
     const examples = await screen.findByRole("region", { name: "Try an example" });
@@ -209,7 +198,7 @@ describe("workspace screen", () => {
     const bridge = new FakeBridge();
     bridge.workspaceOutcome = success({ name: "fresh", domains: [], compositions: [], scenarios: [], runs: [] });
     bridge.actions.set("component.examples", success({ examples: [{ id: "pilot", title: "Pilot" }] }));
-    bridge.actions.set("component.example", success({ example: { id: "pilot", title: "Pilot", equipment: [] } }));
+    bridge.actions.set("component.new", generated({ ...emptied, id: "office-tower-hvac", title: "Office tower HVAC" }));
     const view = await show(bridge, nav);
     const start = await screen.findByRole("button", { name: "New plant" });
     await vi.waitFor(() => {
@@ -248,7 +237,7 @@ describe("workspace screen", () => {
     const bridge = new FakeBridge();
     bridge.workspaceOutcome = success({ name: "fresh", domains: [], compositions: [], scenarios: [], runs: [] });
     bridge.actions.set("component.examples", success({ examples: [{ id: "pilot", title: "Pilot" }] }));
-    bridge.actions.set("component.example", failed(cannedFailure("component_failed", 422, "gone")));
+    bridge.actions.set("component.new", failed(cannedFailure("component_failed", 422, "gone")));
     await show(bridge);
     fireEvent.click(await screen.findByRole("button", { name: "Try it: Pilot" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Pilot could not be set up: gone");
@@ -258,10 +247,7 @@ describe("workspace screen", () => {
     const nav = navigation();
     const bridge = new FakeBridge();
     bridge.actions.set("component.examples", success({ examples: [{ id: "pilot", title: "Pilot" }] }));
-    bridge.actions.set(
-      "component.example",
-      success({ example: { id: "pilot", title: "Pilot", equipment: [{ use: "x@1" }] } }),
-    );
+    bridge.actions.set("component.new", generated({ id: "my-pilot", title: "My pilot", equipment: [{ use: "x@1" }] }));
     await show(bridge, nav);
     await vi.waitFor(() => {
       expect(bridge.calls.some((call) => call.name === "component.examples")).toBe(true);
@@ -277,6 +263,11 @@ describe("workspace screen", () => {
     fireEvent.click(within(form).getByRole("button", { name: "Create and open the editor" }));
     await vi.waitFor(() => {
       expect(nav.location.hash).toBe("#/edit?composition=compositions%2Fmy-pilot.composition.json");
+    });
+    expect(bridge.calls.find((call) => call.name === "component.new")?.args).toEqual({
+      id: "my-pilot",
+      title: "My pilot",
+      example: "pilot",
     });
     expect(JSON.parse(bridge.writes[0]?.content ?? "")).toMatchObject({ id: "my-pilot", equipment: [{ use: "x@1" }] });
   });

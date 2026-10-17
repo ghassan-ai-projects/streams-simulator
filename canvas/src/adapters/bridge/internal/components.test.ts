@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { component, examples, library, presets } from "./decoders";
 
-describe("library", () => {
+describe("library payload", () => {
   const wire = {
     components: [
       { kind: "equipment", id: "pump", title: "Pump", version: 2, class: "process/fluid", tags: ["Fluids", "Wet"] },
@@ -30,7 +30,7 @@ describe("library", () => {
   });
 });
 
-describe("presets", () => {
+describe("presets payload", () => {
   it("reads the options with title fallback, the default and the description", () => {
     expect(
       presets({
@@ -60,7 +60,7 @@ describe("presets", () => {
   });
 });
 
-describe("examples", () => {
+describe("examples payload", () => {
   it("lists examples that have an id, falling back to the id for the title", () => {
     expect(
       examples({
@@ -77,7 +77,7 @@ describe("examples", () => {
   });
 });
 
-describe("component", () => {
+describe("component payload", () => {
   const document = {
     title: "Document title",
     description: "Makes cold water",

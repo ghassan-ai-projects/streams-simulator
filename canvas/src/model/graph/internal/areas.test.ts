@@ -3,7 +3,7 @@ import { domain } from "../../../test/plantFixture";
 import { parsePlant } from "../../plant";
 import { areaCounts } from "./areas";
 
-describe("areas", () => {
+describe("area counts", () => {
   it("counts areas in plant order, matching the outline, not by count", () => {
     const plant = parsePlant({
       id: "plant",

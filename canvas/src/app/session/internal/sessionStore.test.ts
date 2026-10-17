@@ -18,7 +18,7 @@ async function unpaired() {
   return { bridge, store };
 }
 
-describe("session", () => {
+describe("session store", () => {
   it("starts paired when the bridge already knows this browser", async () => {
     const bridge = new FakeBridge();
     bridge.paired = true;

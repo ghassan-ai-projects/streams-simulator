@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { clockOf, durationOf } from "./duration";
 
-describe("launch clock", () => {
+describe("simulated clock", () => {
   it("prints simulated seconds as hours, minutes and seconds", () => {
     expect(clockOf(0)).toBe("00:00:00");
     expect(clockOf(3725)).toBe("01:02:05");

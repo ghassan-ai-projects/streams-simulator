@@ -20,7 +20,7 @@ function launch(fake: FakeBridge): LaunchStore {
   return new LaunchStore(fake.launch, timers, timers);
 }
 
-describe("launch", () => {
+describe("launch store", () => {
   it("creates the world, injects at the fault's time, advances to the end and ends the run", async () => {
     const fake = launchBridge("w-4");
     const store = launch(fake);

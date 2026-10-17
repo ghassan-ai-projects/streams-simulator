@@ -7,7 +7,6 @@ import { deferred } from "./deferred";
 import { cannedFailure } from "./fakeFailures";
 import type { Canned } from "./fakeFailures";
 import { FakeSource, answer, workspaceWire } from "./fakeWire";
-import { newPlant } from "./plantBuilder";
 import { sampleWorkspace } from "./workspaceFixture";
 
 export { cannedFailure } from "./fakeFailures";
@@ -181,14 +180,13 @@ export class FakeBridge {
 
   private action(name: string, args: Args): Promise<Canned<unknown>> {
     this.calls.push({ name, args });
-    const reply = this.handlers.get(name)?.(args) ?? this.canned(name, args);
+    const reply = this.handlers.get(name)?.(args) ?? this.canned(name);
     return Promise.resolve(reply).then((outcome) => (outcome.ok ? success({ result: outcome.value }) : outcome));
   }
 
-  private canned(name: string, args: Args): Canned<unknown> {
+  private canned(name: string): Canned<unknown> {
     const canned = this.actions.get(name);
     if (canned !== undefined) return canned;
-    if (name === "component.new") return newPlant(this.actions, this.files, args);
     return failed(cannedFailure("unknown_action", 404));
   }
 }

@@ -15,7 +15,7 @@ function setup() {
   return { store: new ReviewStore(bridge.review, timers, timers) };
 }
 
-describe("readyReport", () => {
+describe("ready report", () => {
   it("is null until the report has loaded, then the report", async () => {
     const { store } = setup();
     store.open("w-1");

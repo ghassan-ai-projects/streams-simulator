@@ -12,7 +12,7 @@ function preferences(stored: Record<string, string> = {}) {
   };
 }
 
-describe("panels", () => {
+describe("panel store", () => {
   it("opens both side panels by default, toggles each and remembers the choice", () => {
     const stored = preferences();
     const panels = new PanelStore(stored);

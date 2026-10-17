@@ -15,7 +15,7 @@ function setup() {
   return { bridge, store, timers };
 }
 
-describe("review", () => {
+describe("review store", () => {
   it("draws the domain the run used from run.json, and says when it cannot", async () => {
     const { bridge, store } = setup();
     bridge.addFile("runs/w-1/run.json", { domain_spec: { id: "mini" } });
@@ -223,24 +223,6 @@ describe("review", () => {
       failure: { kind: "run-incomplete", diagnostic: { displayCode: "run_incomplete" } },
     });
     expect(store.badgeFor("w-9")).toBe("incomplete");
-  });
-
-  it("finishes a run listed as open when its journal closes while the review watches", async () => {
-    const { bridge, store, timers } = setup();
-    bridge.actions.set("run.report", success(reportWith({ ended: false, complete: false })));
-    store.open("w-1", { ...entry, worldId: "w-1", ended: false, complete: false });
-    await flushPromises();
-    expect(bridge.calls.map((call) => call.name)).toEqual(["run.report"]);
-    bridge.actions.set("run.report", success(reportWire));
-    bridge.stream("w-1", journalWire);
-    timers.advance(250);
-    await flushPromises();
-    expect(bridge.calls.filter((call) => call.name === "run.report")).toHaveLength(2);
-    expect(bridge.calls.filter((call) => call.name === "run.verify")).toHaveLength(1);
-    expect(store.snapshot()).toMatchObject({
-      report: { phase: "ready", value: { ended: true } },
-      verified: { phase: "ready", value: { matches: true } },
-    });
   });
 
   it("re-asks nothing doomed when an abandoned run's journal stream closes", async () => {

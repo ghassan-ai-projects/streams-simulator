@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { bridgeTransport, respond } from "../../../test/bridgeTransport";
 import { bridgeAdapter } from "..";
 
-describe("bridge adapter", () => {
+describe("bridge adapter wiring", () => {
   it("pairs with a JSON body and same-origin credentials", async () => {
     const t = bridgeTransport(() => respond(200, { paired: true }));
     expect(await bridgeAdapter(t).session.pair("AAAABBBBCCCC")).toEqual({ ok: true, value: true });

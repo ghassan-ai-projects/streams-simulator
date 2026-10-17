@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { runProgressWords } from "./progress";
 
-describe("runProgressWords", () => {
+describe("run progress words", () => {
   it("says how far the run is and how fast it goes", () => {
     const progress = { atS: 60, durationS: 3600, rate: 59.6 };
     expect(runProgressWords(progress)).toBe("00:01:00 of 01:00:00 · 60 s per s");

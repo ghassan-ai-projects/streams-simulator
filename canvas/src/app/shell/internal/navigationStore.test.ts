@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { NavigationStore } from "./navigationStore";
 import { memoryLocation } from "../../../test/location";
 
-describe("navigation", () => {
+describe("navigation store", () => {
   it("starts from the address and writes every move to it", () => {
     const location = memoryLocation("#/review?world=w-2");
     const navigation = new NavigationStore(location);

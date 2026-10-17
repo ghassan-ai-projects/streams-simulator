@@ -36,7 +36,7 @@ async function expectRecordedPlant(store: ReviewStore) {
 }
 
 describe("reviewing a run listed before completion", () => {
-  it("loads the recorded plant when the watched run closes", async () => {
+  it("finishes the review and loads the recorded plant when the watched run closes", async () => {
     const { bridge, store } = setup();
     bridge.actions.set("run.report", success(reportWith({ ended: false, complete: false })));
     store.open("w-1", pending);
@@ -44,11 +44,17 @@ describe("reviewing a run listed before completion", () => {
       expect(store.snapshot().report).toMatchObject({ phase: "ready", value: { ended: false } });
     });
     expect(bridge.reads).toEqual([]);
+    expect(bridge.calls.map((call) => call.name)).toEqual(["run.report"]);
     bridge.actions.set("run.report", success(reportWire));
     bridge.stream("w-1", journalWire);
     await expectRecordedPlant(store);
     expect(bridge.reads).toEqual([path]);
+    expect(bridge.calls.filter((call) => call.name === "run.report")).toHaveLength(2);
     expect(bridge.calls.filter((call) => call.name === "run.verify")).toHaveLength(1);
+    expect(store.snapshot()).toMatchObject({
+      report: { phase: "ready", value: { ended: true } },
+      verified: { phase: "ready", value: { matches: true } },
+    });
     store.close();
   });
 

@@ -14,7 +14,7 @@ const handlers = {
   specs: new Map<string, ComponentSpec>(),
 };
 
-describe("inspector", () => {
+describe("plant inspector", () => {
   it("asks for a selection when nothing is selected", () => {
     render(<Inspector {...handlers} plant={parsePlant(domain)} selected={null} />);
     expect(screen.getByRole("complementary", { name: "Inspector" })).toHaveTextContent("Select an instance");

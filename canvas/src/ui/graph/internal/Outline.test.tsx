@@ -4,7 +4,7 @@ import { parsePlant } from "../../../model/plant";
 import { domain } from "../../../test/plantFixture";
 import { Outline } from "./Outline";
 
-describe("outline", () => {
+describe("outline rail", () => {
   beforeAll(() => {
     Element.prototype.scrollIntoView = vi.fn();
   });
