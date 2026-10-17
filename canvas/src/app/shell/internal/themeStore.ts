@@ -1,14 +1,10 @@
 import { nextPreference, parsePreference, resolveTheme } from "../../../model/shell";
-import type { Theme, ThemePreference } from "../../../model/shell";
+import type { ThemePreference } from "../../../model/shell";
 import type { PreferenceStore, SystemTheme } from "../../ports";
 import { Observable } from "../../shared";
+import type { ThemeState, ThemeStore as ThemeStoreApi } from "../contract";
 
 const key = "streamsim.canvas.theme";
-
-export interface ThemeState {
-  readonly preference: ThemePreference;
-  readonly theme: Theme;
-}
 
 function stateFor(preference: ThemePreference, system: SystemTheme): ThemeState {
   return { preference, theme: resolveTheme(preference, system.prefersDark()) };
@@ -34,4 +30,8 @@ export class ThemeStore extends Observable<ThemeState> {
   private apply(preference: ThemePreference): void {
     this.set(stateFor(preference, this.system));
   }
+}
+
+export function createThemeStore(preferences: PreferenceStore, system: SystemTheme): ThemeStoreApi {
+  return new ThemeStore(preferences, system);
 }

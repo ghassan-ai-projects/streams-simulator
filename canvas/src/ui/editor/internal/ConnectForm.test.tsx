@@ -2,7 +2,7 @@ import { act, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { success } from "../../../test/outcome";
 import { choose, doc, editing, Harness, LabBridge, path } from "../../../test/editorHarness";
-import { editorStore } from "../../../test/stores";
+import { createEditorSession } from "../../../app/editor";
 
 describe("link form", () => {
   it("names each possible target by its id and its kind, as the run panel does", async () => {
@@ -20,7 +20,7 @@ describe("link form", () => {
     const alone = { ...doc, equipment: [doc.equipment[0]], connections: [] };
     fake.addFile(path, alone, "d1");
     fake.actions.set("component.list", success({ components: [] }));
-    const editor = editorStore(fake.editor);
+    const editor = createEditorSession(fake.editor);
     await editor.open(path);
     render(<Harness editor={editor} />);
     act(() => {

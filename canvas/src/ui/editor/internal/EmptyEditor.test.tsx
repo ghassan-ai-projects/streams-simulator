@@ -3,13 +3,13 @@ import axe from "axe-core";
 import { describe, expect, it } from "vitest";
 import { success } from "../../../test/outcome";
 import { doc, editing, Harness, LabBridge, path } from "../../../test/editorHarness";
-import { editorStore } from "../../../test/stores";
+import { createEditorSession } from "../../../app/editor";
 
 async function opened(plant: unknown) {
   const fake = new LabBridge();
   fake.addFile(path, plant, "e0");
   fake.actions.set("component.list", success({ components: [] }));
-  const editor = editorStore(fake.editor);
+  const editor = createEditorSession(fake.editor);
   await editor.open(path);
   return { view: render(<Harness editor={editor} />) };
 }

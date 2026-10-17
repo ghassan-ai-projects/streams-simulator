@@ -1,8 +1,8 @@
 import { fireEvent, render, within } from "@testing-library/react";
 import { ReactFlowProvider } from "@xyflow/react";
 import { useState } from "react";
-import type { EditorStore } from "../app/editor";
-import { NavigationStore } from "../app/shell";
+import type { EditorSession } from "../app/editor";
+import { createNavigationStore } from "../app/shell";
 import { success } from "../app/ports";
 import { compositionPlant, shortKind } from "../model/editor";
 import { EditorBar, EditorPanel, FocusRequest } from "../ui/editor";
@@ -10,7 +10,7 @@ import { useStore } from "../ui/primitives";
 import { FakeBridge } from "./fakeBridge";
 import { memoryLocation } from "./location";
 import { chillerPorts, componentShown, towerPorts } from "./plantFixture";
-import { editorStore } from "./stores";
+import { createEditorSession } from "../app/editor";
 
 export const path = "compositions/lab.composition.json";
 const domainPath = "domains/lab.domain.json";
@@ -35,10 +35,10 @@ export class LabBridge extends FakeBridge {
   }
 }
 
-export function Harness({ editor }: { readonly editor: EditorStore }) {
+export function Harness({ editor }: { readonly editor: EditorSession }) {
   const state = useStore(editor);
   const [request] = useState(() => new FocusRequest());
-  const [navigation] = useState(() => new NavigationStore(memoryLocation()));
+  const [navigation] = useState(() => createNavigationStore(memoryLocation()));
   if (state.phase !== "ready") return <p>{state.phase}</p>;
   const plant = compositionPlant(state.doc, shortKind);
   return (
@@ -55,13 +55,13 @@ export async function editing(composed = true) {
   if (composed) fake.addFile(domainPath, "{}", "d1");
   fake.actions.set("component.list", success({ components: [{ id: "lib/pump", kind: "equipment", title: "Pump" }] }));
   fake.actions.set("domain.compose", success({ channels: 4, faults: 2, effectors: 0 }));
-  const editor = editorStore(fake.editor);
+  const editor = createEditorSession(fake.editor);
   await editor.open(path);
   const view = render(<Harness editor={editor} />);
   return { fake, editor, view };
 }
 
-export function current(editor: EditorStore) {
+export function current(editor: EditorSession) {
   const state = editor.snapshot();
   if (state.phase !== "ready") throw new Error(state.phase);
   return state.doc;

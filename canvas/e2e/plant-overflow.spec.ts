@@ -1,10 +1,7 @@
-import { expect, test } from "@playwright/test";
-import { env } from "./support/env";
+import { expect, test } from "./support/test";
 import { guard } from "./support/audit";
 import { nodesOutsideCanvas } from "./support/fitAudit";
 import { waitForViewport } from "./support/viewport";
-
-test.use({ storageState: env("CANVAS_APP_STATE") });
 
 function graphZoom(): number {
   const graph = document.querySelector<HTMLElement>("[aria-roledescription='plant graph']");
@@ -14,7 +11,7 @@ function graphZoom(): number {
 test("the editor opens a plant on the plant view's opening floor, one opening rule for one plant", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
   const opening = async (route: string) => {
-    await page.goto(`${env("CANVAS_APP_URL")}${route}`);
+    await page.goto(route);
     await expect.poll(() => page.evaluate(graphZoom)).toBeCloseTo(0.4, 5);
     return page.evaluate(graphZoom);
   };
@@ -27,7 +24,7 @@ test("the plant view opens a plant too large for 40 % at the 40 % floor, with a 
   page,
 }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
-  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Ffactory-utilities.domain.json`);
+  await page.goto("/#/plant?domain=domains%2Ffactory-utilities.domain.json");
   await expect(page.getByRole("group", { name: /^CT-1, cooling tower,/ })).toBeVisible();
   await waitForViewport(page);
   expect(await page.evaluate(graphZoom)).toBeCloseTo(0.4, 5);

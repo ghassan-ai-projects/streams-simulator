@@ -1,12 +1,7 @@
-import type { Workspace } from "../../../model/workspace";
 import { Observable, createOperationIdentity } from "../../shared";
-import type { WorkspaceFailure, WorkspaceGateway } from "../../ports";
+import type { WorkspaceGateway } from "../../ports";
 import type { OperationIdentity, Operation } from "../../shared";
-
-export type WorkspaceState =
-  | { readonly phase: "loading" }
-  | { readonly phase: "failed"; readonly failure: WorkspaceFailure }
-  | { readonly phase: "ready"; readonly workspace: Workspace };
+import type { WorkspaceState, WorkspaceStore as WorkspaceStoreApi } from "../contract";
 
 export class WorkspaceStore extends Observable<WorkspaceState> {
   private stopWatching: (() => void) | null = null;
@@ -44,4 +39,8 @@ export class WorkspaceStore extends Observable<WorkspaceState> {
     if (!session.live() || !request.live()) return;
     this.set(outcome.ok ? { phase: "ready", workspace: outcome.value } : { phase: "failed", failure: outcome.failure });
   }
+}
+
+export function createWorkspaceStore(gateway: WorkspaceGateway): WorkspaceStoreApi {
+  return new WorkspaceStore(gateway);
 }

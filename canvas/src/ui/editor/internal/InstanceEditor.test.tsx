@@ -2,13 +2,13 @@ import { act, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { success } from "../../../test/outcome";
 import { doc, Harness, LabBridge, path } from "../../../test/editorHarness";
-import { editorStore } from "../../../test/stores";
+import { createEditorSession } from "../../../app/editor";
 
 async function selected(plant: unknown, id: string) {
   const fake = new LabBridge();
   fake.addFile(path, plant, "e0");
   fake.actions.set("component.list", success({ components: [] }));
-  const editor = editorStore(fake.editor);
+  const editor = createEditorSession(fake.editor);
   await editor.open(path);
   render(<Harness editor={editor} />);
   act(() => {

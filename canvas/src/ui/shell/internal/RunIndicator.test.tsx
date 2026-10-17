@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { LaunchStore } from "../../../app/launch";
-import { NavigationStore } from "../../../app/shell";
+import { createLaunchStore } from "../../../app/launch";
+import { createNavigationStore } from "../../../app/shell";
 import { failure as failed } from "../../../test/outcome";
 import { cannedFailure } from "../../../test/fakeBridge";
 import { fakeClock } from "../../../test/fakeClock";
@@ -16,8 +16,8 @@ function setup() {
   const bridge = launchBridge("w-5");
   const location = memoryLocation();
   const timers = fakeClock();
-  const launch = new LaunchStore(bridge.launch, timers, timers);
-  render(<RunIndicator launch={launch} navigation={new NavigationStore(location)} />);
+  const launch = createLaunchStore(bridge.launch, timers, timers);
+  render(<RunIndicator launch={launch} navigation={createNavigationStore(location)} />);
   return { bridge, launch, location };
 }
 

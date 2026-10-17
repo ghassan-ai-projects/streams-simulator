@@ -1,10 +1,7 @@
-import { expect, test } from "@playwright/test";
-import { env } from "./support/env";
-
-test.use({ storageState: env("CANVAS_APP_STATE") });
+import { expect, test } from "./support/test";
 
 test("reported alarm activation chips and Jump to alarm seek to the simulator's scan instant", async ({ page }) => {
-  await page.goto(`${env("CANVAS_APP_URL")}/#/review?world=w-alarm`);
+  await page.goto("/#/review?world=w-alarm");
   await expect(page.getByRole("status").filter({ hasText: /^Verified$/ })).toHaveCount(1);
   const slider = page.getByRole("slider", { name: "Playback time" });
   await slider.fill("0");

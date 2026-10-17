@@ -1,13 +1,11 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./support/test";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { env } from "./support/env";
 
-test.use({ storageState: env("CANVAS_APP_STATE") });
 test.setTimeout(60_000);
 
 async function add(page: Page, component: string, name: string) {
@@ -28,8 +26,9 @@ function pin(page: Page, node: string, port: string) {
 
 test("a new plant is built in Chrome, a name the binary would refuse is stopped in the field, then it composes and opens", async ({
   page,
+  lab,
 }) => {
-  await page.goto(env("CANVAS_APP_URL"));
+  await page.goto("/");
   await page.getByRole("button", { name: "New plant" }).click();
   const form = page.getByRole("form", { name: "New plant" });
   await form.getByLabel("Name").fill("Lab cooling");
@@ -56,9 +55,9 @@ test("a new plant is built in Chrome, a name the binary would refuse is stopped 
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await page.getByRole("button", { name: "Save" }).click();
   await expect(page.getByRole("status").filter({ hasText: /^Ready to run\. Saved\.$/ })).toBeVisible();
-  const folder = env("CANVAS_WORKSPACE");
+  const folder = lab.workspace;
   const cli = join(mkdtempSync(join(tmpdir(), "compose-")), "lab.domain.json");
-  execFileSync(env("CANVAS_BINARY"), [
+  execFileSync(lab.binary, [
     "domain",
     "compose",
     join(folder, "compositions", "lab-cooling.composition.json"),
@@ -72,7 +71,7 @@ test("a new plant is built in Chrome, a name the binary would refuse is stopped 
 });
 
 test("an existing plant opens in the editor from its plant screen, unchanged until edited", async ({ page }) => {
-  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Ffactory-utilities.domain.json`);
+  await page.goto("/#/plant?domain=domains%2Ffactory-utilities.domain.json");
   await page.getByRole("button", { name: "Edit plant" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Factory utilities" })).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Outline" }).getByRole("button")).toHaveCount(23);
@@ -91,7 +90,7 @@ test("an existing plant opens in the editor from its plant screen, unchanged unt
 test("leaving the editor with an unsaved change asks first, Stay keeps the draft and Discard and leave drops it", async ({
   page,
 }) => {
-  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Ffactory-utilities.domain.json`);
+  await page.goto("/#/plant?domain=domains%2Ffactory-utilities.domain.json");
   await page.getByRole("button", { name: "Edit plant" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Factory utilities" })).toBeVisible();
   await page.getByRole("navigation", { name: "Outline" }).getByRole("button", { name: "MB-PROC" }).click();
@@ -112,7 +111,7 @@ test("leaving the editor with an unsaved change asks first, Stay keeps the draft
 });
 
 test("a plant copied from a shipped example opens in the editor with its equipment", async ({ page }) => {
-  await page.goto(env("CANVAS_APP_URL"));
+  await page.goto("/");
   await page.getByRole("button", { name: "New plant" }).click();
   const form = page.getByRole("form", { name: "New plant" });
   await form.getByLabel("Start from").selectOption({ label: "Chiller pilot" });
@@ -123,7 +122,7 @@ test("a plant copied from a shipped example opens in the editor with its equipme
 });
 
 test("Enter in the instance name adds the equipment, as the button does", async ({ page }) => {
-  await page.goto(env("CANVAS_APP_URL"));
+  await page.goto("/");
   await page.getByRole("button", { name: "New plant" }).click();
   const form = page.getByRole("form", { name: "New plant" });
   await form.getByLabel("Name").fill("Enter probe");
@@ -143,7 +142,7 @@ test("Enter in the instance name adds the equipment, as the button does", async 
 test("Enter in the equipment search only filters; a name another instance uses is refused in the add form", async ({
   page,
 }) => {
-  await page.goto(env("CANVAS_APP_URL"));
+  await page.goto("/");
   await page.getByRole("button", { name: "New plant" }).click();
   const form = page.getByRole("form", { name: "New plant" });
   await form.getByLabel("Name").fill("Search probe");
@@ -171,10 +170,10 @@ test("Enter in the equipment search only filters; a name another instance uses i
 
 test("a saved plant that has no domain yet is checked by Save, so its issues show without an edit", async ({
   page,
+  lab,
 }) => {
-  const folder = env("CANVAS_WORKSPACE");
+  const folder = lab.workspace;
   const file = join(folder, "compositions", "unchecked-plant.composition.json");
-  const domain = join(folder, "domains", "unchecked-plant.domain.json");
   const source = readFileSync(join(folder, "compositions", "factory-utilities.composition.json"), "utf8");
   writeFileSync(
     file,
@@ -182,22 +181,15 @@ test("a saved plant that has no domain yet is checked by Save, so its issues sho
       .replace('"id": "factory-utilities"', '"id": "unchecked-plant"')
       .replace('"title": "Factory utilities"', '"title": "Unchecked plant"'),
   );
-  try {
-    await page.goto(
-      `${env("CANVAS_APP_URL")}/#/edit?composition=${encodeURIComponent("compositions/unchecked-plant.composition.json")}`,
-    );
-    await expect(page.getByRole("heading", { level: 1, name: "Unchecked plant" })).toBeVisible();
-    await expect(page.getByRole("status").filter({ hasText: "Not checked yet" })).toBeVisible();
-    await page.getByRole("button", { name: "Save" }).click();
-    await expect(page.getByRole("status").filter({ hasText: /^Ready to run\. Saved\.$/ })).toBeVisible();
-  } finally {
-    rmSync(file, { force: true });
-    rmSync(domain, { force: true });
-  }
+  await page.goto(`/#/edit?composition=${encodeURIComponent("compositions/unchecked-plant.composition.json")}`);
+  await expect(page.getByRole("heading", { level: 1, name: "Unchecked plant" })).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: "Not checked yet" })).toBeVisible();
+  await page.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByRole("status").filter({ hasText: /^Ready to run\. Saved\.$/ })).toBeVisible();
 });
 
 test("a full copy of a plant is runnable as soon as it is created", async ({ page }) => {
-  await page.goto(env("CANVAS_APP_URL"));
+  await page.goto("/");
   await page.getByRole("button", { name: "New plant" }).click();
   const form = page.getByRole("form", { name: "New plant" });
   await form.getByLabel("Name").fill("Factory copy");
@@ -207,7 +199,7 @@ test("a full copy of a plant is runnable as soon as it is created", async ({ pag
   await expect(page.getByRole("heading", { level: 1, name: "Factory copy" })).toBeVisible();
   await page.getByRole("button", { name: "Open plant" }).click();
   await expect(page.getByRole("button", { name: "Run plant" })).toBeVisible();
-  await page.goto(env("CANVAS_APP_URL"));
+  await page.goto("/");
   const plants = page.getByRole("region", { name: "Plants" });
   await expect(plants.getByRole("listitem").filter({ hasText: "Factory copy" })).not.toContainText("Not runnable yet");
 });
@@ -215,7 +207,7 @@ test("a full copy of a plant is runnable as soon as it is created", async ({ pag
 test("a long plant name is cut short in the top bar and never widens the page", async ({ page }) => {
   const name =
     'Hunt & "Ålborg" pumps / 冷却 test: 01 ünïcode ✓ with a very long name that keeps going to test the header wrapping';
-  await page.goto(env("CANVAS_APP_URL"));
+  await page.goto("/");
   await page.getByRole("button", { name: "New plant" }).click();
   const form = page.getByRole("form", { name: "New plant" });
   await form.getByLabel("Name").fill(name);

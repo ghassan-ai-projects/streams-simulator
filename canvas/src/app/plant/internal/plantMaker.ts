@@ -3,13 +3,7 @@ import { domainOf, serialise } from "../../../model/editor";
 import type { ExamplePlant } from "../../../model/plant";
 import type { Outcome, PlantFailure, PlantGateway, PlantSource } from "../../ports";
 import { failure, success } from "../../ports";
-
-export type MakeMode = "copy" | "empty";
-
-export interface Made {
-  readonly composition: string;
-  readonly domain: string;
-}
+import type { Made, MakeMode, PlantMaker as PlantMakerApi } from "../contract";
 
 type MakeOutcome = Outcome<Made, PlantFailure>;
 
@@ -96,4 +90,8 @@ export class PlantMaker {
   private compose(made: Made) {
     return this.gateway.compose({ composition: made.composition, output: made.domain, etag: "" });
   }
+}
+
+export function createPlantMaker(gateway: PlantGateway): PlantMakerApi {
+  return new PlantMaker(gateway);
 }

@@ -1,5 +1,4 @@
-export { ReviewStore } from "./internal/reviewStore";
-export { createReviewModule } from "./internal/reviewModule";
+export { createReviewSession } from "./internal/reviewSession";
 export { readyReport, startNsOf } from "./internal/readyReport";
 export { rerunProposalOf } from "./internal/rerunProposal";
 export { reviewPlantFor, showRunPlant } from "./internal/reviewPlant";

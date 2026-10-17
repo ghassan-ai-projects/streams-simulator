@@ -3,7 +3,7 @@ import { FakeBridge } from "../../../test/fakeBridge";
 import { domain, domainDocument } from "../../../test/plantFixture";
 import { reviewState } from "../../../test/reviewFixture";
 import { report } from "../../../test/runFixture";
-import { plantStore } from "../../../test/stores";
+import { createPlantSession } from "../../plant";
 import { sampleWorkspace } from "../../../test/workspaceFixture";
 import type { PlantSession } from "../../plant";
 import { reviewPlantFor, showRunPlant } from "./reviewPlant";
@@ -19,7 +19,7 @@ const recorded = domainDocument({ id: "mini" });
 const idle = { phase: "idle" } as const;
 
 async function shownAs(key: string) {
-  const plants = plantStore(new FakeBridge().plant);
+  const plants = createPlantSession(new FakeBridge().plant);
   await plants.show(key, domainDocument(domain));
   return plants.snapshot();
 }

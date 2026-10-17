@@ -1,14 +1,12 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test } from "@playwright/test";
-import { env } from "./support/env";
+import { expect, test } from "./support/test";
 import { guard } from "./support/audit";
 import { underRunFooter } from "./support/footerAudit";
 
-test.use({ storageState: env("CANVAS_APP_STATE") });
 test.setTimeout(90_000);
 
 test("a plant runs with a planned fault and the finished run opens in the review", async ({ page }) => {
-  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Ffactory-utilities.domain.json`);
+  await page.goto("/#/plant?domain=domains%2Ffactory-utilities.domain.json");
   await page.getByRole("button", { name: "Run plant" }).click();
   const panel = page.getByRole("complementary", { name: "Run Factory utilities" });
   await panel.getByLabel("Seed", { exact: true }).fill("11");
@@ -35,7 +33,7 @@ test("a plant runs with a planned fault and the finished run opens in the review
 });
 
 test("Enter in the fault select chooses nothing and does not start the run", async ({ page }) => {
-  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Ffactory-utilities.domain.json`);
+  await page.goto("/#/plant?domain=domains%2Ffactory-utilities.domain.json");
   await page.getByRole("button", { name: "Run plant" }).click();
   const panel = page.getByRole("complementary", { name: "Run Factory utilities" });
   await panel.getByLabel("Seed", { exact: true }).fill("12");
@@ -54,7 +52,7 @@ test("choosing a fault keeps the run panel where it is, and Start stays apart fr
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 640 });
-  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Ffactory-utilities.domain.json`);
+  await page.goto("/#/plant?domain=domains%2Ffactory-utilities.domain.json");
   await page.getByRole("button", { name: "Run plant" }).click();
   const panel = page.getByRole("complementary", { name: "Run Factory utilities" });
   await panel.getByRole("button", { name: "Add fault" }).click();
@@ -71,7 +69,7 @@ test("choosing a fault keeps the run panel where it is, and Start stays apart fr
 });
 
 test("an effector call is made at its minute and its outcome is listed before the review", async ({ page }) => {
-  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Ffactory-utilities.domain.json`);
+  await page.goto("/#/plant?domain=domains%2Ffactory-utilities.domain.json");
   await page.getByRole("button", { name: "Run plant" }).click();
   const panel = page.getByRole("complementary", { name: "Run Factory utilities" });
   await panel.getByLabel("Seed", { exact: true }).fill("11");
@@ -107,7 +105,7 @@ test("an effector call is made at its minute and its outcome is listed before th
 test("a live run marks an effector call on its node and holds the mark for 3 s of wall-clock time", async ({
   page,
 }) => {
-  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Ffactory-utilities.domain.json`);
+  await page.goto("/#/plant?domain=domains%2Ffactory-utilities.domain.json");
   await page.getByRole("button", { name: "Run plant" }).click();
   const panel = page.getByRole("complementary", { name: "Run Factory utilities" });
   await panel.getByLabel("Duration", { exact: true }).fill("20");
@@ -126,7 +124,7 @@ test("a live run marks an effector call on its node and holds the mark for 3 s o
 });
 
 test("a plan with problems cannot start", async ({ page }) => {
-  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Ffactory-utilities.domain.json`);
+  await page.goto("/#/plant?domain=domains%2Ffactory-utilities.domain.json");
   await page.getByRole("button", { name: "Run plant" }).click();
   const panel = page.getByRole("complementary", { name: "Run Factory utilities" });
   await panel.getByRole("button", { name: "Add fault" }).click();
@@ -140,7 +138,7 @@ test("a plan with problems cannot start", async ({ page }) => {
 });
 
 test("opening the run panel shows the details panel even when it was hidden", async ({ page }) => {
-  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Ffactory-utilities.domain.json`);
+  await page.goto("/#/plant?domain=domains%2Ffactory-utilities.domain.json");
   await page.getByRole("button", { name: "Inspector panel" }).click();
   await expect(page.getByRole("complementary", { name: "Inspector" })).toBeHidden();
   await page.getByRole("button", { name: "Run plant" }).click();
@@ -151,13 +149,13 @@ test("opening the run panel shows the details panel even when it was hidden", as
 test("the top-bar run indicator brings back a closed run panel, and Stop now keeps the shorter run", async ({
   page,
 }) => {
-  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Ffactory-utilities.domain.json&launch=1`);
+  await page.goto("/#/plant?domain=domains%2Ffactory-utilities.domain.json&launch=1");
   const panel = page.getByRole("complementary", { name: "Run Factory utilities" });
-  await panel.getByLabel("Duration", { exact: true }).fill("24");
+  await panel.getByLabel("Duration", { exact: true }).fill("6");
   await panel.getByLabel("Duration unit").selectOption("hours");
   await panel.getByRole("button", { name: "Start the run" }).click();
   await expect(panel.getByText(/^Running Factory utilities as run w-/)).toBeVisible();
-  const progress = panel.getByText(/^Running · \d\d:\d\d:\d\d of 24:00:00 simulated/);
+  const progress = panel.getByText(/^Running · \d\d:\d\d:\d\d of 06:00:00 simulated/);
   const first = (await progress.textContent()) ?? "";
   await expect(progress).toHaveText(/ · \d+ s per s$/, { timeout: 15_000 });
   await expect(progress).not.toHaveText(first.split(" · ")[1] ?? "");
@@ -170,7 +168,7 @@ test("the top-bar run indicator brings back a closed run panel, and Stop now kee
 });
 
 test("no run plan field paints under the Start footer, at 1440 and at 1280", async ({ page }) => {
-  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Ffactory-utilities.domain.json`);
+  await page.goto("/#/plant?domain=domains%2Ffactory-utilities.domain.json");
   await page.getByRole("button", { name: "Run plant" }).click();
   const panel = page.getByRole("complementary", { name: "Run Factory utilities" });
   await panel.getByRole("button", { name: "Add fault" }).click();
@@ -187,7 +185,7 @@ test("no run plan field paints under the Start footer, at 1440 and at 1280", asy
 test("a planned fault appears on its node when the run clock reaches its minute and stays to the end", async ({
   page,
 }) => {
-  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Ffactory-utilities.domain.json&launch=1`);
+  await page.goto("/#/plant?domain=domains%2Ffactory-utilities.domain.json&launch=1");
   const panel = page.getByRole("complementary", { name: "Run Factory utilities" });
   await panel.getByLabel("Seed", { exact: true }).fill("11");
   await panel.getByLabel("Duration", { exact: true }).fill("20");

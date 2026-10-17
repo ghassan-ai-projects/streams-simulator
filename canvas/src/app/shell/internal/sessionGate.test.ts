@@ -3,12 +3,12 @@ import { failure as failed, success } from "../../../test/outcome";
 import { FakeBridge, cannedFailure } from "../../../test/fakeBridge";
 import { flushPromises } from "../../../test/deferred";
 import { createSession } from "../../session";
-import { WorkspaceStore } from "../../workspace";
+import { createWorkspaceStore } from "../../workspace";
 import { sessionGate } from "./sessionGate";
 
 function setup(bridge: FakeBridge) {
   const session = createSession(bridge.session);
-  const workspace = new WorkspaceStore(bridge.workspace);
+  const workspace = createWorkspaceStore(bridge.workspace);
   return { session, workspace, stop: sessionGate(session, workspace) };
 }
 

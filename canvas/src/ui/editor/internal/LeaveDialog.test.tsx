@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { isDirty } from "../../../app/editor";
-import { NavigationStore } from "../../../app/shell";
+import { createNavigationStore } from "../../../app/shell";
 import { editing, path, current } from "../../../test/editorHarness";
 import { success } from "../../../test/outcome";
 import { memoryLocation } from "../../../test/location";
@@ -13,7 +13,7 @@ async function dirtyEditor() {
     editor.edit((doc) => ({ ...doc, title: "Lab two" }));
   });
   const location = memoryLocation(`#/edit?composition=${encodeURIComponent(path)}`);
-  const navigation = new NavigationStore(location);
+  const navigation = createNavigationStore(location);
   navigation.guardUnsaved(() => isDirty(editor.snapshot()));
   render(<PendingLeave title="Lab two" editor={editor} navigation={navigation} />);
   act(() => {

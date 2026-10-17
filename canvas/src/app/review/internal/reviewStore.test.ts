@@ -90,30 +90,6 @@ describe("review store", () => {
     expect(store.snapshot()).toMatchObject({ playing: true, positionNs: 12e9 });
   });
 
-  it("plays back at its speed from the start, stops at the end and plays again from the start", () => {
-    const { bridge, store, timers } = setup();
-    store.open("w-1");
-    bridge.stream("w-1", journalWire);
-    timers.advance(250);
-    store.tick(1000);
-    expect(store.snapshot().positionNs).toBe(12e9);
-    store.setSpeed(10);
-    store.play();
-    store.tick(1000);
-    expect(store.snapshot()).toMatchObject({ playing: true, positionNs: 22e9 });
-    store.pause();
-    store.tick(1000);
-    expect(store.snapshot()).toMatchObject({ playing: false, positionNs: 22e9 });
-    store.play();
-    store.tick(5000);
-    expect(store.snapshot()).toMatchObject({ playing: false, positionNs: 30e9 });
-    store.play();
-    expect(store.snapshot()).toMatchObject({ playing: true, positionNs: 12e9 });
-    store.pause();
-    store.pause();
-    expect(store.snapshot().playing).toBe(false);
-  });
-
   it("seeks, selects and ignores reopening the same run", () => {
     const { bridge, store } = setup();
     store.open("w-1");

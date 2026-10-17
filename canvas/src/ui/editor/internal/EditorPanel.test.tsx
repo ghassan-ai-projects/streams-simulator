@@ -6,7 +6,7 @@ import { connectionsOf, equipmentOf } from "../../../model/editor";
 import { moveInstance } from "../../../model/editor";
 import { cannedFailure } from "../../../test/fakeBridge";
 import { choose, current, doc, editing, Harness, LabBridge, path } from "../../../test/editorHarness";
-import { editorStore } from "../../../test/stores";
+import { createEditorSession } from "../../../app/editor";
 
 describe("plant editor panel", () => {
   it("adds equipment from the library with its preset into an area", async () => {
@@ -253,7 +253,7 @@ describe("plant editor panel", () => {
     };
     fake.addFile(path, repeated, "k1");
     fake.actions.set("component.list", success({ components: [] }));
-    const editor = editorStore(fake.editor);
+    const editor = createEditorSession(fake.editor);
     await editor.open(path);
     render(<Harness editor={editor} />);
     act(() => {
@@ -271,7 +271,7 @@ describe("plant editor panel", () => {
     };
     fake.addFile(path, templated, "c1");
     fake.actions.set("component.list", success({ components: [] }));
-    const editor = editorStore(fake.editor);
+    const editor = createEditorSession(fake.editor);
     await editor.open(path);
     render(<Harness editor={editor} />);
     act(() => {

@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import type { Route } from "../../../model/shell";
-import { PanelStore } from "../../../app/shell";
+import { createPanelStore } from "../../../app/shell";
 import { KeyHelp } from "./KeyHelp";
 import { PanelToggles } from "./PanelToggles";
 import { rightPanelName } from "./panelName";
@@ -38,7 +38,7 @@ describe("key help", () => {
   it("gives the right panel one name per screen, in the help and on the toggle", () => {
     for (const [where, name] of Object.entries(rightPanelName) as readonly (readonly [Route["screen"], string])[]) {
       const toggle = render(
-        <PanelToggles panels={new PanelStore({ read: () => null, write: () => undefined })} right={name} />,
+        <PanelToggles panels={createPanelStore({ read: () => null, write: () => undefined })} right={name} />,
       );
       const button = screen.getByRole("button", { name: `${name} panel` });
       expect(button).toHaveAttribute("title", `Hide the ${name.toLowerCase()} panel (])`);

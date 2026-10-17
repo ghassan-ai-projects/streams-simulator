@@ -8,9 +8,7 @@ import type { LaunchState } from "./launchState";
 import type { LaunchOrigin } from "./runCursor";
 import { RunCursor } from "./runCursor";
 import { RunWatch } from "./runWatch";
-
-export type { Proposal } from "./proposalSlot";
-export type { LaunchState } from "./launchState";
+import type { LaunchStore as LaunchStoreApi } from "../contract";
 
 const nowhere: LaunchOrigin = { domain: "", title: "", path: "" };
 const noPlan: LaunchPlan = { seed: 0, durationS: 0, explore: true, faults: [], calls: [] };
@@ -170,4 +168,8 @@ export class LaunchStore extends Observable<LaunchState> {
     this.cursor.current = null;
     this.set({ phase: "failed", origin: this.cursor.origin, failure, words, kept: worldId === "" ? null : worldId });
   }
+}
+
+export function createLaunchStore(gateway: LaunchGateway, clock: Clock, scheduler: Scheduler): LaunchStoreApi {
+  return new LaunchStore(gateway, clock, scheduler);
 }

@@ -5,8 +5,9 @@ import { FakeBridge } from "./fakeBridge";
 import { navigation } from "./workspaceHarness";
 import { renderStrict } from "./strictMode";
 import type { NavigationStore } from "../app/shell";
-import { PlantMaker } from "../app/plant";
-import { WorkspaceStore } from "../app/workspace";
+import { createPlantMaker } from "../app/plant";
+import type { WorkspaceStore } from "../app/workspace";
+import { createWorkspaceStore } from "../app/workspace";
 
 function Route({
   workspace,
@@ -32,7 +33,7 @@ function Route({
       <WorkspaceScreen
         workspace={workspace}
         navigation={nav}
-        maker={new PlantMaker(bridge.plant)}
+        maker={createPlantMaker(bridge.plant)}
         badgeFor={() => null}
       />
     </>
@@ -42,7 +43,7 @@ function Route({
 describe("a route under strict mode", () => {
   it("survives the setup-cleanup-setup replay with one live watcher and the route on screen", async () => {
     const bridge = new FakeBridge();
-    const workspace = new WorkspaceStore(bridge.workspace);
+    const workspace = createWorkspaceStore(bridge.workspace);
     const nav = navigation();
     const view = renderStrict(<Route workspace={workspace} nav={nav.store} bridge={bridge} />);
     await view.findByText("opened");

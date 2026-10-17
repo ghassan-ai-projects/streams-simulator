@@ -1,15 +1,14 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./support/test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { env } from "./support/env";
 
-test.use({ storageState: env("CANVAS_APP_STATE") });
 test.setTimeout(60_000);
 
 test("an area is added inside the site, shown nested in the outline, used by equipment and composed", async ({
   page,
+  lab,
 }) => {
-  await page.goto(env("CANVAS_APP_URL"));
+  await page.goto("/");
   await page.getByRole("button", { name: "New plant" }).click();
   const form = page.getByRole("form", { name: "New plant" });
   await form.getByLabel("Name").fill("Tiered");
@@ -32,13 +31,13 @@ test("an area is added inside the site, shown nested in the outline, used by equ
   await expect(outline.getByRole("group").filter({ hasText: "Pump house" }).getByRole("button")).toHaveCount(1);
   await page.getByRole("button", { name: "Save" }).click();
   await expect(page.getByRole("status").filter({ hasText: /^Ready to run\. Saved\.$/ })).toBeVisible();
-  const file = join(env("CANVAS_WORKSPACE"), "compositions", "tiered.composition.json");
+  const file = join(lab.workspace, "compositions", "tiered.composition.json");
   const written = JSON.parse(readFileSync(file, "utf8")) as { areas: { name: string; parent?: string }[] };
   expect(written.areas).toContainEqual({ name: "Pump house", parent: site });
 });
 
 test("an area is renamed and an empty one deleted from the Build panel, and the outline follows", async ({ page }) => {
-  await page.goto(env("CANVAS_APP_URL"));
+  await page.goto("/");
   await page.getByRole("button", { name: "New plant" }).click();
   const form = page.getByRole("form", { name: "New plant" });
   await form.getByLabel("Name").fill("Area renames");
@@ -65,7 +64,7 @@ test("an area is renamed and an empty one deleted from the Build panel, and the 
 });
 
 test("an empty area is one line of at most 28 px in the outline, however long its name", async ({ page }) => {
-  await page.goto(env("CANVAS_APP_URL"));
+  await page.goto("/");
   await page.getByRole("button", { name: "New plant" }).click();
   const form = page.getByRole("form", { name: "New plant" });
   await form.getByLabel("Name").fill("Empty rows");
@@ -126,7 +125,7 @@ function headerLines(): { name: string; lines: number; sameBaseline: boolean; fu
 test("an area header is one line at every zoom, its name cut with an ellipsis and its count kept beside it", async ({
   page,
 }) => {
-  await page.goto(env("CANVAS_APP_URL"));
+  await page.goto("/");
   await page.getByRole("button", { name: "New plant" }).click();
   const form = page.getByRole("form", { name: "New plant" });
   await form.getByLabel("Name").fill("Long header");

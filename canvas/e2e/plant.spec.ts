@@ -1,15 +1,12 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./support/test";
 import { guard } from "./support/audit";
 import { settledZoom, stepZoom, zoomInTo, zoomOutTo } from "./support/viewport";
-import { env } from "./support/env";
 import { headingInside } from "./support/fitAudit";
 import { textClashes } from "./support/textClashes";
 
-test.use({ storageState: env("CANVAS_APP_STATE") });
-
 test("the factory opens from the workspace as a typed plant graph", async ({ page }) => {
-  await page.goto(env("CANVAS_APP_URL"));
+  await page.goto("/");
   await page.getByRole("button", { name: "Open Factory utilities" }).click();
   const graph = page.getByRole("region", { name: "Plant factory-utilities" });
   await expect(graph.getByText("23 instances · 59 links")).toBeVisible();
@@ -21,7 +18,7 @@ test("the factory opens from the workspace as a typed plant graph", async ({ pag
 });
 
 test("each part of a recent run's facts stays whole when the line wraps", async ({ page }) => {
-  await page.goto(env("CANVAS_APP_URL"));
+  await page.goto("/");
   await page.getByRole("button", { name: "Open Factory utilities" }).click();
   await expect(page.getByRole("region", { name: "Plant factory-utilities" })).toBeVisible();
   const runs = page.getByRole("complementary", { name: "Inspector" }).getByRole("region", { name: "Recent runs" });
@@ -32,7 +29,7 @@ test("each part of a recent run's facts stays whole when the line wraps", async 
 });
 
 test("selecting an instance in the outline shows its kind in the inspector", async ({ page }) => {
-  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Ffactory-utilities.domain.json`);
+  await page.goto("/#/plant?domain=domains%2Ffactory-utilities.domain.json");
   await page.getByRole("navigation", { name: "Outline" }).getByRole("button", { name: "CT-1" }).click();
   const inspector = page.getByRole("complementary", { name: "Inspector" });
   await expect(inspector.getByRole("heading", { name: "CT-1" })).toBeVisible();
@@ -44,7 +41,7 @@ test("selecting an instance in the outline shows its kind in the inspector", asy
 });
 
 test("wire arrows point to receivers and selected connections remain prominent", async ({ page }) => {
-  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Ffactory-utilities.domain.json`);
+  await page.goto("/#/plant?domain=domains%2Ffactory-utilities.domain.json");
   const graph = page.getByRole("application", { name: "Plant graph" });
   const edge = graph.locator(".react-flow__edge").first();
   await expect(edge.locator(".react-flow__edge-path")).toHaveAttribute("marker-end", /url\(['"]?#/);
@@ -64,7 +61,7 @@ test("wire arrows point to receivers and selected connections remain prominent",
 });
 
 test("the chiller pilot renders target arrow markers at overview scale", async ({ page }) => {
-  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Fchiller-pilot.domain.json`);
+  await page.goto("/#/plant?domain=domains%2Fchiller-pilot.domain.json");
   const graph = page.getByRole("application", { name: "Plant graph" });
   const edge = graph.locator(".react-flow__edge").first();
   await expect(edge).toBeVisible();
@@ -76,7 +73,7 @@ test("the chiller pilot renders target arrow markers at overview scale", async (
 });
 
 test("the chiller pilot inspector explains AHU and chiller components from the library", async ({ page }) => {
-  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Fchiller-pilot.domain.json`);
+  await page.goto("/#/plant?domain=domains%2Fchiller-pilot.domain.json");
   const outline = page.getByRole("navigation", { name: "Outline" });
   const inspector = page.getByRole("complementary", { name: "Inspector" });
   await outline.getByRole("button", { name: /^AHU-1/ }).click();
@@ -96,7 +93,7 @@ test("the chiller pilot inspector explains AHU and chiller components from the l
 });
 
 test("a shared campus link navigates to its declared receiver in another hall", async ({ page }) => {
-  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Fcampus-3.domain.json`);
+  await page.goto("/#/plant?domain=domains%2Fcampus-3.domain.json");
   await page.getByRole("navigation", { name: "Outline" }).getByRole("button", { name: "CAL-1" }).click();
   const inspector = page.getByRole("complementary", { name: "Inspector" });
   await inspector.getByRole("button", { name: /Select receiver h02\/M-1; CAL-1 shift out/ }).click();
@@ -107,7 +104,7 @@ test("a shared campus link navigates to its declared receiver in another hall", 
 test("the graph works from the keyboard: arrows move, Enter selects, Escape clears, ? lists the keys", async ({
   page,
 }) => {
-  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Ffactory-utilities.domain.json`);
+  await page.goto("/#/plant?domain=domains%2Ffactory-utilities.domain.json");
   await expect(page).toHaveTitle("Factory utilities · plant · Streams Simulator");
   const graph = page.getByRole("application", { name: "Plant graph" });
   await graph.focus();
@@ -165,7 +162,7 @@ function cutText(): string[] {
 }
 
 test("no node overlaps another, spills its text or cuts a title or port name at any zoom tier", async ({ page }) => {
-  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Ffactory-utilities.domain.json`);
+  await page.goto("/#/plant?domain=domains%2Ffactory-utilities.domain.json");
   const graph = page.getByRole("application", { name: "Plant graph" });
   await expect(page.getByRole("group", { name: /^CT-1, cooling tower,/ })).toBeVisible();
   await graph.focus();
@@ -193,7 +190,7 @@ function activeRingOnScreen(): number {
 }
 
 test("the keyboard ring stays 2 px on screen when zoomed out", async ({ page }) => {
-  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Ffactory-utilities.domain.json`);
+  await page.goto("/#/plant?domain=domains%2Ffactory-utilities.domain.json");
   await expect(page.getByRole("group", { name: /^CT-1, cooling tower,/ })).toBeVisible();
   await page.getByRole("application", { name: "Plant graph" }).focus();
   await page.keyboard.press("ArrowRight");
@@ -203,7 +200,7 @@ test("the keyboard ring stays 2 px on screen when zoomed out", async ({ page }) 
 });
 
 test("Enter opens a hall and the arrows keep working inside it; Escape returns to the hall", async ({ page }) => {
-  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Fcampus-3.domain.json`);
+  await page.goto("/#/plant?domain=domains%2Fcampus-3.domain.json");
   const graph = page.getByRole("application", { name: "Plant graph" });
   const said = page.locator("#graph-said");
   await expect(page.getByRole("group", { name: /^h01,/ })).toBeVisible();
@@ -251,7 +248,7 @@ function dimContrast(): number {
 test("a selection made outside the graph comes into view, and arrow travel keeps the active node on screen", async ({
   page,
 }) => {
-  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Ffactory-utilities.domain.json`);
+  await page.goto("/#/plant?domain=domains%2Ffactory-utilities.domain.json");
   const graph = page.getByRole("application", { name: "Plant graph" });
   await expect(page.getByRole("group", { name: /^CT-1, cooling tower,/ })).toBeVisible();
   await graph.focus();

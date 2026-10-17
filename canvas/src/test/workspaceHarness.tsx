@@ -1,7 +1,7 @@
 import { render } from "@testing-library/react";
-import { NavigationStore } from "../app/shell";
-import { PlantMaker } from "../app/plant";
-import { WorkspaceStore } from "../app/workspace";
+import { createNavigationStore } from "../app/shell";
+import { createPlantMaker } from "../app/plant";
+import { createWorkspaceStore } from "../app/workspace";
 import type { Badge } from "../model/review";
 import { WorkspaceScreen } from "../ui/workspace";
 import type { FakeBridge } from "./fakeBridge";
@@ -9,7 +9,7 @@ import { memoryLocation } from "./location";
 
 export function navigation() {
   const location = memoryLocation();
-  return { location, store: new NavigationStore(location) };
+  return { location, store: createNavigationStore(location) };
 }
 
 export async function show(
@@ -17,13 +17,13 @@ export async function show(
   nav = navigation(),
   badgeFor: (worldId: string) => Badge | null = () => null,
 ) {
-  const store = new WorkspaceStore(bridge.workspace);
+  const store = createWorkspaceStore(bridge.workspace);
   await store.open();
   return render(
     <WorkspaceScreen
       workspace={store}
       navigation={nav.store}
-      maker={new PlantMaker(bridge.plant)}
+      maker={createPlantMaker(bridge.plant)}
       badgeFor={badgeFor}
     />,
   );

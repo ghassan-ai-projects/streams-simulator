@@ -4,7 +4,7 @@ import { flushPromises } from "../../../test/deferred";
 import { equipmentOf } from "../../../model/editor";
 import { FakeBridge, cannedFailure, cannedFile } from "../../../test/fakeBridge";
 import { canSave, emptyPlant } from "./editorSelectors";
-import { editorStore } from "../../../test/stores";
+import { createEditorSession } from "./editorSession";
 
 const path = "compositions/lab.composition.json";
 const doc = {
@@ -26,7 +26,7 @@ function bridge() {
 }
 
 async function opened(fake = bridge()) {
-  const store = editorStore(fake.editor);
+  const store = createEditorSession(fake.editor);
   await store.open(path);
   const state = store.snapshot();
   if (state.phase !== "ready") throw new Error(state.phase);
@@ -111,7 +111,7 @@ describe("editor store", () => {
 
   it("refuses to open a file that is not a composition", async () => {
     const fake = bridge();
-    const store = editorStore(fake.editor);
+    const store = createEditorSession(fake.editor);
     fake.addFile("compositions/bad.composition.json", "[");
     await store.open("compositions/bad.composition.json");
     expect(store.snapshot()).toMatchObject({
@@ -214,7 +214,7 @@ describe("editor store", () => {
     const other = "compositions/other.composition.json";
     fake.addFile(other, { ...doc, id: "other" }, "c2");
     const held = fake.holdRead(path);
-    const store = editorStore(fake.editor);
+    const store = createEditorSession(fake.editor);
     const first = store.open(path);
     await store.open(other);
     const third = store.open(path);
@@ -230,7 +230,7 @@ describe("editor store", () => {
   it("rejects a late open after close and accepts the reopened document", async () => {
     const fake = bridge();
     const reads = fake.holdRead(path);
-    const store = editorStore(fake.editor);
+    const store = createEditorSession(fake.editor);
     const first = store.open(path);
     store.close();
     const reopened = store.open(path);

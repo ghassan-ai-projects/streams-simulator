@@ -2,23 +2,24 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import axe from "axe-core";
 import { describe, expect, it } from "vitest";
 import { createSession } from "../../../app/session";
-import { PanelStore } from "../../../app/shell";
-import { LaunchStore } from "../../../app/launch";
-import { PlantMaker } from "../../../app/plant";
-import { NavigationStore } from "../../../app/shell";
-import { ReviewStore } from "../../../app/review";
-import { ThemeStore } from "../../../app/shell";
-import { WorkspaceStore } from "../../../app/workspace";
+import { createPanelStore } from "../../../app/shell";
+import { createLaunchStore } from "../../../app/launch";
+import { createPlantMaker } from "../../../app/plant";
+import { createNavigationStore } from "../../../app/shell";
+import { createReviewSession } from "../../../app/review";
+import { createThemeStore } from "../../../app/shell";
+import { createWorkspaceStore } from "../../../app/workspace";
 import { failure as failed, success } from "../../../test/outcome";
 import { FakeBridge, cannedFailure } from "../../../test/fakeBridge";
 import { memoryLocation } from "../../../test/location";
 import { fakeClock } from "../../../test/fakeClock";
 import { App } from "./App";
-import { editorStore, plantStore } from "../../../test/stores";
+import { createEditorSession } from "../../../app/editor";
+import { createPlantSession } from "../../../app/plant";
 
 function themes() {
   let value: string | null = null;
-  return new ThemeStore(
+  return createThemeStore(
     { read: () => value, write: (_k, v) => (value = v) },
     { prefersDark: () => false, subscribe: () => () => undefined },
   );
@@ -30,15 +31,15 @@ function renderApp(bridge: FakeBridge) {
   const stores = {
     themes: themes(),
     session: createSession(bridge.session),
-    workspace: new WorkspaceStore(bridge.workspace),
-    navigation: new NavigationStore(location),
-    plants: plantStore(bridge.plant),
-    review: new ReviewStore(bridge.review, timers, timers),
-    launch: new LaunchStore(bridge.launch, timers, timers),
+    workspace: createWorkspaceStore(bridge.workspace),
+    navigation: createNavigationStore(location),
+    plants: createPlantSession(bridge.plant),
+    review: createReviewSession(bridge.review, timers, timers),
+    launch: createLaunchStore(bridge.launch, timers, timers),
     scheduler: timers,
-    editor: editorStore(bridge.editor),
-    panels: new PanelStore({ read: () => null, write: () => undefined }),
-    maker: new PlantMaker(bridge.plant),
+    editor: createEditorSession(bridge.editor),
+    panels: createPanelStore({ read: () => null, write: () => undefined }),
+    maker: createPlantMaker(bridge.plant),
     showDetails: () => undefined,
   };
   return render(<App stores={stores} />);

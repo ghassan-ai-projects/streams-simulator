@@ -1,4 +1,4 @@
-import { LaunchStore } from "../app/launch";
+import { createLaunchStore } from "../app/launch";
 import { success } from "../app/ports";
 import { FakeBridge } from "./fakeBridge";
 import type { Canned } from "./fakeFailures";
@@ -24,5 +24,5 @@ export function launchBridge(worldId = "w-7") {
 
 export function launchHarness(bridge: FakeBridge) {
   const timers = fakeClock();
-  return { launch: new LaunchStore(bridge.launch, timers, timers), timers };
+  return { launch: createLaunchStore(bridge.launch, timers, timers), timers };
 }

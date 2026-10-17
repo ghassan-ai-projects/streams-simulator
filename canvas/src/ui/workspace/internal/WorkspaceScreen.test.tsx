@@ -1,8 +1,8 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import axe from "axe-core";
 import { describe, expect, it, vi } from "vitest";
-import { PlantMaker } from "../../../app/plant";
-import { WorkspaceStore } from "../../../app/workspace";
+import { createPlantMaker } from "../../../app/plant";
+import { createWorkspaceStore } from "../../../app/workspace";
 import { failure as failed, success } from "../../../test/outcome";
 import { FakeBridge, cannedFailure } from "../../../test/fakeBridge";
 import { sampleWorkspace } from "../../../test/workspaceFixture";
@@ -276,9 +276,9 @@ describe("workspace screen", () => {
     const bridge = new FakeBridge();
     render(
       <WorkspaceScreen
-        workspace={new WorkspaceStore(bridge.workspace)}
+        workspace={createWorkspaceStore(bridge.workspace)}
         navigation={navigation().store}
-        maker={new PlantMaker(bridge.plant)}
+        maker={createPlantMaker(bridge.plant)}
         badgeFor={() => null}
       />,
     );

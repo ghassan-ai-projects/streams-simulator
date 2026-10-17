@@ -26,7 +26,7 @@ import { RunPanel } from "./RunPanel";
 import { Scrubber } from "./Scrubber";
 import { GraphBar } from "./GraphBar";
 import { useLive } from "./useLive";
-import { usePlayback } from "./usePlayback";
+import { usePlaybackKeys } from "./usePlaybackKeys";
 import parts from "./ReportParts.module.css";
 import styles from "./RunScreen.module.css";
 
@@ -230,7 +230,7 @@ export function RunScreen({ review, plants, workspace, navigation, launch, world
   const [hall, setHall] = useState<string | null>(null);
   useReviewOpen(review, workspace, worldId);
   useClosePlant(plants, worldId);
-  usePlayback(review, state.playing);
+  usePlaybackKeys(review);
   const unit = useUnitOf(plant);
   return (
     <ReactFlowProvider>

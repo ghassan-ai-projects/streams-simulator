@@ -1,15 +1,7 @@
 import type { ExamplePlant } from "../../../model/plant";
 import { plantTitle } from "../../../model/plant";
 import type { Definition } from "../../../model/workspace";
-import type { PlantSource } from "../../ports";
-import type { MakeMode } from "./plantMaker";
-
-export interface BaseChoice {
-  readonly key: string;
-  readonly label: string;
-  readonly group: "plants" | "examples";
-  readonly source: PlantSource;
-}
+import type { BaseChoice, MakeMode } from "../contract";
 
 export function baseChoices(bases: readonly Definition[], examples: readonly ExamplePlant[]): readonly BaseChoice[] {
   return [

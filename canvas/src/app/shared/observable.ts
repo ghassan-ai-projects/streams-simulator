@@ -1,3 +1,8 @@
+export interface Store<S> {
+  readonly snapshot: () => S;
+  readonly subscribe: (listener: () => void) => () => void;
+}
+
 export class Observable<S> {
   private readonly listeners = new Set<() => void>();
 

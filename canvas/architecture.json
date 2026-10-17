@@ -40,16 +40,7 @@
       "folders": ["src/app/shared"],
       "mayImport": [],
       "entrypoint": "src/app/shared/index.ts",
-      "callers": [
-        "app/editor",
-        "app/launch",
-        "app/plant",
-        "app/review",
-        "app/session",
-        "app/shell",
-        "app/workspace",
-        "test"
-      ]
+      "callers": ["app/editor", "app/launch", "app/plant", "app/review", "app/session", "app/shell", "app/workspace"]
     },
     "app/ports": {
       "kind": "foundation",

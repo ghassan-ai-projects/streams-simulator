@@ -1,12 +1,6 @@
 import { Observable } from "../../shared";
 import type { PreferenceStore } from "../../ports";
-
-export type Side = "left" | "right";
-
-export interface PanelState {
-  readonly left: boolean;
-  readonly right: boolean;
-}
+import type { PanelState, PanelStore as PanelStoreApi, Side } from "../contract";
 
 const keys: Readonly<Record<Side, string>> = {
   left: "streamsim.canvas.panel.left",
@@ -27,4 +21,8 @@ export class PanelStore extends Observable<PanelState> {
     this.preferences.write(keys[side], open ? "open" : "closed");
     this.set({ ...this.snapshot(), [side]: open });
   }
+}
+
+export function createPanelStore(preferences: PreferenceStore): PanelStoreApi {
+  return new PanelStore(preferences);
 }

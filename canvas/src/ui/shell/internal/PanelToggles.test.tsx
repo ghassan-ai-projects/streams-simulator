@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { stubCheckVisibility } from "../../../test/dom";
-import { PanelStore } from "../../../app/shell";
+import { createPanelStore } from "../../../app/shell";
 import { PanelToggles } from "./PanelToggles";
 
 function preferences() {
@@ -14,7 +14,7 @@ function preferences() {
 
 describe("panel toggles", () => {
   it("hides a panel with its key and moves focus off a control the panel hid", async () => {
-    const panels = new PanelStore(preferences());
+    const panels = createPanelStore(preferences());
     render(
       <>
         <h1 tabIndex={-1}>Plant</h1>
@@ -33,7 +33,7 @@ describe("panel toggles", () => {
   });
 
   it("hands the right toggle to its own press when one is given, and leaves the panel to it", () => {
-    const panels = new PanelStore(preferences());
+    const panels = createPanelStore(preferences());
     const press = vi.fn();
     render(<PanelToggles panels={panels} right="Build" onRightPress={press} />);
     fireEvent.click(screen.getByRole("button", { name: "Build panel" }));
@@ -42,7 +42,7 @@ describe("panel toggles", () => {
   });
 
   it("names the right panel after what it shows", () => {
-    render(<PanelToggles panels={new PanelStore(preferences())} right="Build" />);
+    render(<PanelToggles panels={createPanelStore(preferences())} right="Build" />);
     expect(screen.getByRole("button", { name: "Build panel" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.queryByRole("button", { name: "Details panel" })).not.toBeInTheDocument();
   });

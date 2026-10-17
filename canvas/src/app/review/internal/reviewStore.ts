@@ -6,6 +6,7 @@ import { badgeOf } from "../../../model/review";
 import { Observable, createOperationIdentity } from "../../shared";
 import type { OperationIdentity, Operation } from "../../shared";
 import type { Clock, Outcome, ReviewFailure, ReviewGateway, Scheduler } from "../../ports";
+import { FrameLoop } from "./frameLoop";
 import type { FinalLoads, Load, ReviewState } from "./reviewState";
 import { absentLoads, finalLoadsFor, idle, knownUnfinished, toLoad } from "./reviewState";
 
@@ -19,6 +20,7 @@ export class ReviewStore extends Observable<ReviewState> {
   private pending = 0;
   private finals: FinalLoads = finalLoadsFor(undefined);
   private cancelFlush: (() => void) | null = null;
+  private readonly frames: FrameLoop;
 
   constructor(
     private readonly gateway: ReviewGateway,
@@ -28,6 +30,7 @@ export class ReviewStore extends Observable<ReviewState> {
   ) {
     super(idle);
     this.operations = operations;
+    this.frames = new FrameLoop(clock, scheduler);
   }
 
   open(worldId: string, known?: RunEntry): void {
@@ -77,6 +80,7 @@ export class ReviewStore extends Observable<ReviewState> {
   }
 
   close(): void {
+    this.pause();
     this.operations.invalidate();
     this.stop?.();
     this.stop = null;
@@ -106,9 +110,13 @@ export class ReviewStore extends Observable<ReviewState> {
     const state = this.snapshot();
     const fresh = state.positionNs >= bounds.endNs || state.positionNs < bounds.startNs;
     this.set({ ...state, playing: true, positionNs: fresh ? settled : state.positionNs });
+    this.frames.start((elapsedMs) => {
+      this.tick(elapsedMs);
+    });
   }
 
   pause(): void {
+    this.frames.stop();
     if (this.snapshot().playing) this.set({ ...this.snapshot(), playing: false });
   }
 
@@ -116,11 +124,12 @@ export class ReviewStore extends Observable<ReviewState> {
     this.set({ ...this.snapshot(), speed });
   }
 
-  tick(elapsedMs: number): void {
+  private tick(elapsedMs: number): void {
     const state = this.snapshot();
     const bounds = this.index.bounds();
     if (!state.playing || bounds === null) return;
     const positionNs = advance(state.positionNs, elapsedMs, state.speed, bounds.endNs);
+    if (positionNs >= bounds.endNs) this.frames.stop();
     this.set({ ...state, positionNs, playing: positionNs < bounds.endNs });
   }
 

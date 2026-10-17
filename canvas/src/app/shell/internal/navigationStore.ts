@@ -2,11 +2,7 @@ import type { Route } from "../../../model/shell";
 import { formatRoute, parseRoute } from "../../../model/shell";
 import { Observable } from "../../shared";
 import type { Location } from "../../ports";
-
-export interface LeaveAttempt {
-  readonly route: Route;
-  readonly replace: boolean;
-}
+import type { LeaveAttempt, NavigationStore as NavigationStoreApi } from "../contract";
 
 class LeaveSlot extends Observable<LeaveAttempt | null> {
   hold(attempt: LeaveAttempt | null): void {
@@ -75,4 +71,8 @@ export class NavigationStore extends Observable<Route> {
     const current = this.snapshot();
     return current.screen === "edit" && formatRoute(current) !== formatRoute(route) && (this.unsaved?.check() ?? false);
   }
+}
+
+export function createNavigationStore(location: Location): NavigationStoreApi {
+  return new NavigationStore(location);
 }
