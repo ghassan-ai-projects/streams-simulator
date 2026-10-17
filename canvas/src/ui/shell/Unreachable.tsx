@@ -1,4 +1,4 @@
-import type { SessionFailure } from "../../app/ports/session";
+import type { SessionFailure } from "../../app/ports";
 import styles from "./Unreachable.module.css";
 
 export function Unreachable({ failure }: { readonly failure: SessionFailure }) {

@@ -1,7 +1,6 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import axe from "axe-core";
 import { describe, expect, it, vi } from "vitest";
-import { parseReport } from "../../model/report";
 import { report } from "../../test/runFixture";
 import { ReportPanel } from "./ReportPanel";
 import { Scrubber } from "./Scrubber";
@@ -10,7 +9,7 @@ describe("report panel", () => {
   it("opens with the integrity block collapsed, on every review", () => {
     const view = render(
       <ReportPanel
-        report={parseReport(report)}
+        report={report}
         unit={() => ""}
         entity={null}
         verify={{ phase: "ready", value: { matches: true, domainChanged: false, detail: "", reason: "", file: "" } }}
@@ -26,7 +25,7 @@ describe("report panel", () => {
   it.each([undefined, "kpi"] as const)("cautions rejected incomplete truth in the %s view", (only) => {
     render(
       <ReportPanel
-        report={{ ...parseReport(report), complete: false }}
+        report={{ ...report, complete: false }}
         unit={() => ""}
         entity={null}
         {...(only === undefined ? {} : { only })}
@@ -49,7 +48,7 @@ describe("report panel", () => {
   it("lists every section of the binary's report with no accessibility violation", async () => {
     const view = render(
       <ReportPanel
-        report={parseReport(report)}
+        report={report}
         unit={() => ""}
         entity={null}
         verify={{ phase: "ready", value: { matches: true, domainChanged: false, detail: "", reason: "", file: "" } }}
@@ -89,7 +88,7 @@ describe("report panel", () => {
   it("says None for an empty section and shows a scoring result", () => {
     render(
       <ReportPanel
-        report={{ ...parseReport(report), effectorCalls: [], scoring: { status: "scored", reason: "" } }}
+        report={{ ...report, effectorCalls: [], scoring: { status: "scored", reason: "" } }}
         unit={() => ""}
         entity={null}
       />,
@@ -100,7 +99,7 @@ describe("report panel", () => {
 
   it("marks the disturbance row the picked mark stands for, and no row otherwise", () => {
     Element.prototype.scrollIntoView = vi.fn();
-    const parsed = parseReport(report);
+    const parsed = report;
     const first = parsed.disturbances[0];
     if (first === undefined) throw new Error("fixture has no disturbance");
     const picked = { atNs: first.onsetNs, entity: first.target };
@@ -112,13 +111,13 @@ describe("report panel", () => {
   });
 
   it("filters KPI truth to the selected instance and states what is not available", () => {
-    const { rerender } = render(<ReportPanel report={parseReport(report)} unit={() => ""} entity="CT-1" />);
+    const { rerender } = render(<ReportPanel report={report} unit={() => ""} entity="CT-1" />);
     expect(
       within(screen.getByRole("region", { name: "True results" })).getByText("No true results for CT-1."),
     ).toBeInTheDocument();
     rerender(
       <ReportPanel
-        report={{ ...parseReport(report), ended: false, truthUnavailable: "the run is still sealed" }}
+        report={{ ...report, ended: false, truthUnavailable: "the run is still sealed" }}
         unit={() => ""}
         entity={null}
       />,
@@ -141,7 +140,7 @@ describe("scrubber", () => {
   it("seeks with the slider and jumps to a disturbance", () => {
     const seek = vi.fn();
     render(
-      <Scrubber {...idle} startNs={0} endNs={3_600e9} positionNs={60e9} report={parseReport(report)} onSeek={seek} />,
+      <Scrubber {...idle} startNs={0} endNs={3_600e9} positionNs={60e9} report={report} onSeek={seek} />,
     );
     const slider = screen.getByRole("slider", { name: "Playback time" });
     expect(slider).toHaveAttribute("aria-valuetext", "00:01:00");
@@ -169,7 +168,7 @@ describe("scrubber", () => {
         startNs={0}
         endNs={3_600e9}
         positionNs={0}
-        report={parseReport(report)}
+        report={report}
         onSeek={seek}
         onEvent={onEvent}
       />,
@@ -209,7 +208,7 @@ describe("scrubber", () => {
   it("states verify's own verdict and detail, and cautions that unverified truth may not describe the files", () => {
     render(
       <ReportPanel
-        report={parseReport(report)}
+        report={report}
         unit={() => ""}
         entity={null}
         verify={{

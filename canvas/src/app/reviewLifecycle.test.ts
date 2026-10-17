@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import type { Outcome } from "../model/bridge";
-import { success } from "../model/bridge";
+import { success } from "../app/ports";
 import { deferred, settle } from "../test/deferred";
 import { FakeBridge } from "../test/fakeBridge";
+import type { Canned } from "../test/fakeFailures";
 import { fakeClock } from "../test/fakeClock";
 import { journal, report } from "../test/runFixture";
 import { ReviewStore } from "./reviewStore";
@@ -12,7 +12,7 @@ function setup() {
   bridge.actions.set("run.report", success(report));
   bridge.actions.set("run.verify", success({ matches: true }));
   const timers = fakeClock();
-  const store = new ReviewStore(bridge, timers, timers);
+  const store = new ReviewStore(bridge.review, timers, timers);
   return { bridge, store, timers };
 }
 
@@ -30,7 +30,7 @@ describe("review lifecycle", () => {
   it("ignores a flushed update whose session has already been superseded", async () => {
     const { bridge, store, timers } = setup();
     store.open("w-1");
-    bridge.streamFollow(0, [{ kind: "run.opened", adapter: "wire" }]);
+    bridge.streamFollow(0, [{ kind: "opened", atNs: 0, mode: "", adapter: "wire" }]);
     store.open("w-2");
     timers.advance(250);
     await Promise.resolve();
@@ -63,7 +63,7 @@ describe("review lifecycle", () => {
     store.open("w-1");
     await settle();
     store.close();
-    bridge.actions.set("run.report", success({ ...report, run: { ...report.run, ended: false } }));
+    bridge.actions.set("run.report", success({ ...report, ended: false }));
     store.refreshCompleted("w-1", { ...entry, ended: true, complete: false });
     await settle();
     expect(bridge.calls.filter((call) => call.name === "run.report")).toHaveLength(1);
@@ -71,7 +71,7 @@ describe("review lifecycle", () => {
 
   it("does not publish a report that arrives after the same run was reopened", async () => {
     const { bridge, store } = setup();
-    const gate = deferred<Outcome<unknown>>();
+    const gate = deferred<Canned<unknown>>();
     let holding = true;
     bridge.handlers.set("run.report", () => {
       if (!holding) return success(report);
@@ -81,7 +81,7 @@ describe("review lifecycle", () => {
     store.open("w-1");
     store.open("w-2");
     store.open("w-1");
-    gate.resolve(success({ ...report, run: { ...report.run, ended: false } }));
+    gate.resolve(success({ ...report, ended: false }));
     await settle();
     expect(store.snapshot()).toMatchObject({ worldId: "w-1", report: { phase: "ready", value: { ended: true } } });
   });

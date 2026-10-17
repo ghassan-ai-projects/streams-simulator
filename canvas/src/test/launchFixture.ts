@@ -1,7 +1,7 @@
-import { success } from "../model/bridge";
+import { LaunchStore } from "../app/launchStore";
+import { success } from "../app/ports";
 import { FakeBridge } from "./fakeBridge";
 import { fakeClock } from "./fakeClock";
-import { LaunchStore } from "../app/launchStore";
 
 export function launchBridge() {
   const fake = new FakeBridge();
@@ -15,5 +15,5 @@ export function launchBridge() {
 
 export function launchHarness(bridge: FakeBridge) {
   const timers = fakeClock();
-  return { launch: new LaunchStore(bridge, timers, timers), scheduler: timers, timers };
+  return { launch: new LaunchStore(bridge.launch, timers, timers), scheduler: timers, timers };
 }

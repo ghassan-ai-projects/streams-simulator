@@ -1,6 +1,6 @@
 import type { EditorSession } from "../../app/routeModules";
 import type { NavigationStore } from "../../app/navigationStore";
-import { useStore } from "../useStore";
+import { useStore } from "../primitives";
 import { useFocusOnMount } from "../useFocusOnMount";
 import styles from "./Editor.module.css";
 import leave from "./LeaveDialog.module.css";

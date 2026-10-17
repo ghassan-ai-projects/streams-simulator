@@ -2,7 +2,7 @@ import { PanelLeft, PanelRight } from "lucide-react";
 import { useEffect } from "react";
 import type { PanelStore, Side } from "../../app/panelStore";
 import { inTextField } from "../keys";
-import { useStore } from "../useStore";
+import { useStore } from "../primitives";
 import styles from "./TopBar.module.css";
 
 const keyOf: Readonly<Record<string, Side>> = { "[": "left", "]": "right" };

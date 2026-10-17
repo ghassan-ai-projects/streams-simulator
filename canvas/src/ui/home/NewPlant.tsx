@@ -3,7 +3,7 @@ import { useState } from "react";
 import type { PlantMaker, PlantSource } from "../../app/plantMaker";
 import { idProblemOf } from "../../app/plantMaker";
 import type { NavigationStore } from "../../app/navigationStore";
-import type { Definition } from "../../model/bridge";
+import type { Definition } from "../../model/workspace";
 import type { ExamplePlant } from "../../model/library";
 import { suggestedId } from "../../model/workspace";
 import { Field } from "./NewPlantField";

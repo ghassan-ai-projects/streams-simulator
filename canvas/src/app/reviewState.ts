@@ -1,8 +1,7 @@
-import type { RunEntry } from "../model/bridge";
+import type { RunEntry } from "../model/workspace";
 import type { Report, Replay } from "../model/report";
 import { unfinishedReason } from "../model/workspace";
-import type { ReviewFailure } from "./ports/review";
-import type { DomainDocument } from "./ports/shared";
+import type { DomainDocument, ReviewFailure } from "./ports";
 
 export type Load<T> =
   | { readonly phase: "loading" }

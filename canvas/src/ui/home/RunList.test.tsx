@@ -1,6 +1,6 @@
 import { screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { success } from "../../model/bridge";
+import { success } from "../../app/ports";
 import { FakeBridge, sampleWorkspace } from "../../test/fakeBridge";
 import { show, navigation } from "../../test/homeHarness";
 

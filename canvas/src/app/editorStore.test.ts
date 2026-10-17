@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
-import type { FileContent, Outcome } from "../model/bridge";
-import { failed, success } from "../model/bridge";
+import type { FileContent } from "../app/ports";
+import { failure as failed, success } from "../app/ports";
 import type { Deferred } from "../test/deferred";
 import { deferred } from "../test/deferred";
 import { equipmentOf } from "../model/composition";
 import { FakeBridge, failure } from "../test/fakeBridge";
+import type { Canned } from "../test/fakeFailures";
 import { canSave, EditorStore, emptyPlant } from "./editorStore";
 
 const path = "compositions/lab.composition.json";
@@ -27,7 +28,7 @@ function bridge() {
 }
 
 async function opened(fake = bridge()) {
-  const store = new EditorStore(fake);
+  const store = new EditorStore(fake.editor);
   await store.open(path);
   const state = store.snapshot();
   if (state.phase !== "ready") throw new Error(state.phase);
@@ -39,10 +40,13 @@ describe("editor store", () => {
     const empty = { ...doc, equipment: [], areas: [] };
     const fake = bridge();
     fake.files.set(path, success({ path, content: JSON.stringify(empty), etag: "c1" }));
-    const { state } = await opened(fake);
+    const { store, state } = await opened(fake);
     expect(emptyPlant(state)).toBe(true);
     expect(canSave(state)).toBe(false);
-    expect(canSave({ ...state, doc: { ...state.doc, title: "Changed" } })).toBe(true);
+    store.edit((current) => ({ ...current, title: "Changed" }));
+    const edited = store.snapshot();
+    if (edited.phase !== "ready") throw new Error(edited.phase);
+    expect(canSave(edited)).toBe(true);
   });
 
   it("opens a composition with the library and its components' ports", async () => {
@@ -67,7 +71,11 @@ describe("editor store", () => {
     const state = store.snapshot();
     if (state.phase !== "ready") throw new Error(state.phase);
     expect(state.saved).toBe(state.doc);
-    expect(state.outcome).toEqual({ kind: "composed", summary: "Composed 3 channels, 2 faults, 1 effectors." });
+    expect(state.outcome).toEqual({
+      kind: "composed",
+      summary: "Composed 3 channels, 2 faults, 1 effectors.",
+      revision: 1,
+    });
     expect(equipmentOf(state.doc).map((entry) => entry.names[0])).toEqual(["CH-1", "P-1"]);
   });
 
@@ -85,15 +93,18 @@ describe("editor store", () => {
     expect(state.issues?.instances.get("CH-1")).toEqual(["unknown"]);
     fake.writeOutcomes.set(path, failed(failure("conflict", 409, "changed on disk")));
     await store.save();
-    expect(store.snapshot()).toMatchObject({ failure: { code: "conflict" }, saving: false });
+    expect(store.snapshot()).toMatchObject({ failure: { kind: "conflict" }, saving: false });
   });
 
   it("refuses to open a file that is not a composition", async () => {
     const fake = bridge();
-    const store = new EditorStore(fake);
+    const store = new EditorStore(fake.editor);
     fake.files.set("compositions/bad.composition.json", success({ path: "x", content: "[", etag: "e" }));
     await store.open("compositions/bad.composition.json");
-    expect(store.snapshot()).toMatchObject({ phase: "failed", failure: { code: "composition_unreadable" } });
+    expect(store.snapshot()).toMatchObject({
+      phase: "failed",
+      failure: { kind: "unreadable", diagnostic: { displayCode: "composition_unreadable" } },
+    });
     store.select("CH-1");
     expect(store.snapshot()).toMatchObject({ phase: "failed" });
   });
@@ -110,7 +121,7 @@ describe("editor store", () => {
     expect(store.snapshot()).toMatchObject({ etag: "c2", doc: { title: "Mine" } });
     fake.writeOutcomes.set(path, failed(failure("conflict", 409, "changed on disk")));
     await store.save();
-    expect(store.snapshot()).toMatchObject({ failure: { code: "conflict" } });
+    expect(store.snapshot()).toMatchObject({ failure: { kind: "conflict" } });
     await store.reload();
     expect(store.snapshot()).toMatchObject({ etag: "c3", failure: null, doc: { title: "Lab" } });
   });
@@ -173,15 +184,15 @@ describe("editor store", () => {
     const fake = bridge();
     const other = "compositions/other.composition.json";
     fake.files.set(other, success({ path: other, content: JSON.stringify({ ...doc, id: "other" }), etag: "c2" }));
-    const held: Deferred<Outcome<FileContent>>[] = [];
+    const held: Deferred<Canned<FileContent>>[] = [];
     const read = fake.readFile.bind(fake);
     fake.readFile = (requested: string) => {
       if (requested !== path) return read(requested);
-      const gate = deferred<Outcome<FileContent>>();
+      const gate = deferred<Canned<FileContent>>();
       held.push(gate);
       return gate.promise;
     };
-    const store = new EditorStore(fake);
+    const store = new EditorStore(fake.editor);
     const first = store.open(path);
     await store.open(other);
     const third = store.open(path);
@@ -196,15 +207,15 @@ describe("editor store", () => {
 
   it("rejects a late open after close and accepts the reopened document", async () => {
     const fake = bridge();
-    const reads: Deferred<Outcome<FileContent>>[] = [];
+    const reads: Deferred<Canned<FileContent>>[] = [];
     const read = fake.readFile.bind(fake);
     fake.readFile = (requested: string) => {
       if (requested !== path) return read(requested);
-      const gate = deferred<Outcome<FileContent>>();
+      const gate = deferred<Canned<FileContent>>();
       reads.push(gate);
       return gate.promise;
     };
-    const store = new EditorStore(fake);
+    const store = new EditorStore(fake.editor);
     const first = store.open(path);
     store.close();
     const reopened = store.open(path);
@@ -223,12 +234,12 @@ describe("editor store", () => {
     fake.files.set(other, success({ path: other, content: JSON.stringify({ ...doc, id: "other" }), etag: "c2" }));
     fake.files.set(otherDomain, success({ path: otherDomain, content: "{}", etag: "d2" }));
     const { store } = await opened(fake);
-    const heldVersion = deferred<Outcome<FileContent>>();
-    const versionRead = deferred<void>();
+    const heldVersion = deferred<Canned<FileContent>>();
+    const versionRead = deferred<true>();
     const read = fake.readFile.bind(fake);
     fake.readFile = (requested) => {
       if (requested === "domains/lab.domain.json") {
-        versionRead.resolve();
+        versionRead.resolve(true);
         return heldVersion.promise;
       }
       return read(requested);

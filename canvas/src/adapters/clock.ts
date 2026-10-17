@@ -1,4 +1,4 @@
-import type { Clock, Scheduler } from "../app/clock";
+import type { Clock, Scheduler } from "../app/ports";
 
 function abortError(): Error {
   return new DOMException("the delay was aborted", "AbortError");
@@ -24,7 +24,9 @@ export function browserClock(): Clock & Scheduler {
     nowMs: () => Date.now(),
     schedule(delayMs, task) {
       const timer = window.setTimeout(task, delayMs);
-      return () => window.clearTimeout(timer);
+      return () => {
+        window.clearTimeout(timer);
+      };
     },
     delay: delayOnBrowser,
   };

@@ -1,7 +1,7 @@
 import { act, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { EditorStore } from "../../app/editorStore";
-import { success } from "../../model/bridge";
+import { success } from "../../app/ports";
 import { choose, doc, editing, Harness, LabBridge, path } from "../../test/editorHarness";
 
 describe("link form", () => {
@@ -20,7 +20,7 @@ describe("link form", () => {
     const alone = { ...doc, equipment: [doc.equipment[0]], connections: [] };
     fake.files.set(path, success({ path, content: JSON.stringify(alone), etag: "d1" }));
     fake.actions.set("component.list", success({ components: [] }));
-    const editor = new EditorStore(fake);
+    const editor = new EditorStore(fake.editor);
     await editor.open(path);
     render(<Harness editor={editor} />);
     act(() => {

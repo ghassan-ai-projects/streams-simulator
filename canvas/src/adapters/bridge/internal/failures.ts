@@ -6,7 +6,7 @@ import type {
   ReviewFailure,
   SessionFailure,
   WorkspaceFailure,
-} from "../../../app/ports/index";
+} from "../../../app/ports";
 import type { FailureMapper, RequestFailure, WireProblem } from "./http";
 
 export function sessionFailure(error: RequestFailure): SessionFailure {

@@ -1,4 +1,4 @@
-import type { Workspace } from "../../model/bridge";
+import type { Workspace } from "../../model/workspace";
 import type { Diagnostic, Outcome } from "./shared";
 
 export type WorkspaceFailure =

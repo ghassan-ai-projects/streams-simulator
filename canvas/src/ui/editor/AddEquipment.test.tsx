@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { EditorStore } from "../../app/editorStore";
-import { success } from "../../model/bridge";
+import { success } from "../../app/ports";
 import { doc, Harness, LabBridge, path } from "../../test/editorHarness";
 
 const components = Array.from({ length: 9 }, (_, index) => ({
@@ -15,7 +15,7 @@ async function build() {
   const fake = new LabBridge();
   fake.files.set(path, success({ path, content: JSON.stringify(doc), etag: "e0" }));
   fake.actions.set("component.list", success({ components }));
-  const editor = new EditorStore(fake);
+  const editor = new EditorStore(fake.editor);
   await editor.open(path);
   render(<Harness editor={editor} />);
   return screen.getByRole("form", { name: "Add equipment" });

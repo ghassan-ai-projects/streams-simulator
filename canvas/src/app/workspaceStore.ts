@@ -1,8 +1,7 @@
-import type { Workspace } from "../model/bridge";
-import { Observable } from "./observable";
-import type { WorkspaceFailure, WorkspaceGateway } from "./ports/workspace";
-import { createOperationIdentity } from "./shared/operationIdentity";
-import type { OperationIdentity, OperationId } from "./shared/operationIdentity";
+import type { Workspace } from "../model/workspace";
+import { Observable, createOperationIdentity } from "./shared";
+import type { WorkspaceFailure, WorkspaceGateway } from "./ports";
+import type { OperationIdentity, OperationId } from "./shared";
 
 export type WorkspaceState =
   | { readonly phase: "loading" }

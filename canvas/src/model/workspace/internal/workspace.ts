@@ -1,19 +1,4 @@
-import type { Definition, RunEntry, Workspace } from "./bridge";
-
-export interface PlantEntry {
-  readonly id: string;
-  readonly title: string;
-  readonly domain: string | null;
-  readonly composition: string | null;
-  readonly instances: number;
-  readonly runs: number;
-  readonly lastRun: string;
-}
-
-export interface RunRow {
-  readonly run: RunEntry;
-  readonly plantTitle: string;
-}
+import type { Definition, PlantEntry, RunEntry, RunRow, Workspace } from "../contract";
 
 export function counted(count: number, one: string, many: string): string {
   return `${String(count)} ${count === 1 ? one : many}`;

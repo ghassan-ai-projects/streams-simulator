@@ -1,5 +1,5 @@
-import type { Outcome } from "../../../app/ports/index";
-import { failure, success } from "../../../app/ports/shared";
+import type { Outcome } from "../../../app/ports";
+import { failure, success } from "../../../app/ports";
 
 export interface Transport {
   fetch(input: string, init?: RequestInit): Promise<Response>;

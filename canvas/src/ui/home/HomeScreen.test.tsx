@@ -3,7 +3,7 @@ import axe from "axe-core";
 import { describe, expect, it, vi } from "vitest";
 import { PlantMaker } from "../../app/plantMaker";
 import { WorkspaceStore } from "../../app/workspaceStore";
-import { failed, success } from "../../model/bridge";
+import { failure as failed, success } from "../../app/ports";
 import { FakeBridge, failure, sampleWorkspace } from "../../test/fakeBridge";
 import { navigation, show } from "../../test/homeHarness";
 import { HomeScreen } from "./HomeScreen";
@@ -67,13 +67,13 @@ describe("home screen", () => {
 
   it("shows the badge of a run already checked in this session", async () => {
     const bridge = new FakeBridge();
-    const store = new WorkspaceStore(bridge);
+    const store = new WorkspaceStore(bridge.workspace);
     await store.reload();
     render(
       <HomeScreen
         workspace={store}
         navigation={navigation().store}
-        maker={new PlantMaker(bridge)}
+        maker={new PlantMaker(bridge.plant)}
         badgeFor={(id) => (id === "w-1" ? "verified" : null)}
       />,
     );
@@ -263,7 +263,11 @@ describe("home screen", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "New plant" }));
     const form = screen.getByRole("form", { name: "New plant" });
-    fireEvent.change(within(form).getByLabelText("Start from"), { target: { value: "example:pilot" } });
+    const start = within(form).getByLabelText("Start from");
+    await vi.waitFor(() => {
+      expect(within(start).getByRole("option", { name: "Pilot" })).toBeInTheDocument();
+    });
+    fireEvent.change(start, { target: { value: "example:pilot" } });
     fireEvent.change(within(form).getByLabelText("Name"), { target: { value: "My pilot" } });
     fireEvent.click(within(form).getByRole("button", { name: "Create and open the editor" }));
     await vi.waitFor(() => {
@@ -276,9 +280,9 @@ describe("home screen", () => {
     const bridge = new FakeBridge();
     render(
       <HomeScreen
-        workspace={new WorkspaceStore(bridge)}
+        workspace={new WorkspaceStore(bridge.workspace)}
         navigation={navigation().store}
-        maker={new PlantMaker(bridge)}
+        maker={new PlantMaker(bridge.plant)}
       />,
     );
     expect(screen.getByRole("status")).toHaveTextContent("Loading the workspace");

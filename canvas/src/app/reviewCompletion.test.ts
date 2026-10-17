@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { success } from "../model/bridge";
+import { success } from "../app/ports";
 import { FakeBridge } from "../test/fakeBridge";
 import { fakeClock } from "../test/fakeClock";
 import { journal, report } from "../test/runFixture";
@@ -24,7 +24,7 @@ function setup() {
   bridge.actions.set("run.verify", success({ matches: true }));
   bridge.files.set(path, success({ path, content: JSON.stringify({ domain_spec: recorded }), etag: "recorded" }));
   const timers = fakeClock();
-  const store = new ReviewStore(bridge, timers, timers);
+  const store = new ReviewStore(bridge.review, timers, timers);
   return { bridge, store };
 }
 
@@ -37,7 +37,7 @@ async function expectRecordedPlant(store: ReviewStore) {
 describe("reviewing a run listed before completion", () => {
   it("loads the recorded plant when the watched run closes", async () => {
     const { bridge, store } = setup();
-    bridge.actions.set("run.report", success({ ...report, run: { ...report.run, ended: false, complete: false } }));
+    bridge.actions.set("run.report", success({ ...report, ended: false, complete: false }));
     store.open("w-1", pending);
     await vi.waitFor(() => {
       expect(store.snapshot().report).toMatchObject({ phase: "ready", value: { ended: false } });
@@ -53,7 +53,7 @@ describe("reviewing a run listed before completion", () => {
 
   it("waits for artifact publication after the journal has already closed", async () => {
     const { bridge, store } = setup();
-    bridge.actions.set("run.report", success({ ...report, run: { ...report.run, ended: false, complete: false } }));
+    bridge.actions.set("run.report", success({ ...report, ended: false, complete: false }));
     store.open("w-1", pending);
     await vi.waitFor(() => {
       expect(store.snapshot().report.phase).toBe("ready");
@@ -83,10 +83,13 @@ describe("reviewing a run listed before completion", () => {
 
   it("reads an ended incomplete recording's plant without asking for an unavailable verdict", async () => {
     const { bridge, store } = setup();
-    bridge.actions.set("run.report", success({ ...report, run: { ...report.run, complete: false } }));
+    bridge.actions.set("run.report", success({ ...report, complete: false }));
     store.open("w-1", { ...pending, ended: true });
     await expectRecordedPlant(store);
-    expect(store.snapshot().verified).toMatchObject({ phase: "failed", failure: { code: "run_incomplete" } });
+    expect(store.snapshot().verified).toMatchObject({
+      phase: "failed",
+      failure: { kind: "run-incomplete", diagnostic: { displayCode: "run_incomplete" } },
+    });
     expect(bridge.calls.map((call) => call.name)).toEqual(["run.report"]);
     store.close();
   });

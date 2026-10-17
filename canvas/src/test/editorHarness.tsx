@@ -4,12 +4,12 @@ import { useState } from "react";
 import { vi } from "vitest";
 import { EditorStore } from "../app/editorStore";
 import { NavigationStore } from "../app/navigationStore";
-import { success } from "../model/bridge";
+import { success } from "../app/ports";
 import { compositionPlant, shortKind } from "../model/composition";
 import { EditorBar } from "../ui/editor/EditorBar";
 import { EditorPanel } from "../ui/editor/EditorPanel";
 import { FocusRequest } from "../ui/editor/panelProps";
-import { useStore } from "../ui/useStore";
+import { useStore } from "../ui/primitives";
 import { FakeBridge } from "./fakeBridge";
 import { chillerPorts, towerPorts } from "./plantFixture";
 
@@ -26,6 +26,7 @@ export const doc = {
   connections: [{ from: "CH-1.heat_out", to: "CT-1.heat_in" }],
 };
 
+/** The double answers `component.show` with a library entry and the component document, as the bridge does. */
 export class LabBridge extends FakeBridge {
   override action(name: string, args: Readonly<Record<string, unknown>>) {
     if (name !== "component.show") return super.action(name, args);
@@ -55,7 +56,7 @@ export async function editing(composed = true) {
   if (composed) fake.files.set(domainPath, success({ path: domainPath, content: "{}", etag: "d1" }));
   fake.actions.set("component.list", success({ components: [{ id: "lib/pump", kind: "equipment", title: "Pump" }] }));
   fake.actions.set("domain.compose", success({ channels: 4, faults: 2, effectors: 0 }));
-  const editor = new EditorStore(fake);
+  const editor = new EditorStore(fake.editor);
   await editor.open(path);
   const view = render(<Harness editor={editor} />);
   return { fake, editor, view };

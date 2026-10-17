@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import type { EditorSession } from "../../app/routeModules";
-import type { Scheduler } from "../../app/clock";
+import type { Scheduler } from "../../app/ports";
 import type { PanelStore } from "../../app/panelStore";
 import type { PlantMaker } from "../../app/plantMaker";
 import type { NavigationStore } from "../../app/navigationStore";
 import type { PlantSession } from "../../app/routeModules";
 import type { LaunchStore } from "../../app/launchStore";
 import type { ReviewSession } from "../../app/routeModules";
-import type { SessionStore } from "../../app/sessionStore";
+import type { Session } from "../../app/session";
 import type { ThemeStore } from "../../app/themeStore";
 import type { WorkspaceStore } from "../../app/workspaceStore";
 import type { Route } from "../../model/route";
@@ -25,12 +25,12 @@ import { RunIndicator } from "./RunIndicator";
 import { Shell } from "./Shell";
 import { TopBar } from "./TopBar";
 import { Unreachable } from "./Unreachable";
-import { useStore } from "../useStore";
+import { useStore } from "../primitives";
 import { useTheme } from "../useTheme";
 
 export interface Stores {
   readonly themes: ThemeStore;
-  readonly session: SessionStore;
+  readonly session: Session;
   readonly workspace: WorkspaceStore;
   readonly navigation: NavigationStore;
   readonly plants: PlantSession;

@@ -1,13 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { failed, success } from "../model/bridge";
+import type { Outcome, WorkspaceFailure } from "../app/ports";
+import { failure as failed, success } from "../app/ports";
+import type { Workspace } from "../model/workspace";
 import { deferred, settle } from "../test/deferred";
 import { FakeBridge, failure, sampleWorkspace } from "../test/fakeBridge";
 import { WorkspaceStore } from "./workspaceStore";
 
+type Answer = Outcome<Workspace, WorkspaceFailure>;
+
 describe("workspace", () => {
   it("lists the workspace and reloads when a file changes on disk", async () => {
     const bridge = new FakeBridge();
-    const store = new WorkspaceStore(bridge);
+    const store = new WorkspaceStore(bridge.workspace);
     await store.open();
     expect(store.snapshot()).toEqual({ phase: "ready", workspace: sampleWorkspace });
     bridge.workspaceOutcome = success({ ...sampleWorkspace, runs: [] });
@@ -18,7 +22,7 @@ describe("workspace", () => {
 
   it("watches once however often it opens, and stops on close", async () => {
     const bridge = new FakeBridge();
-    const store = new WorkspaceStore(bridge);
+    const store = new WorkspaceStore(bridge.workspace);
     await store.open();
     await store.open();
     expect(bridge.watchers.size).toBe(1);
@@ -29,22 +33,25 @@ describe("workspace", () => {
   it("shows the bridge's failure", async () => {
     const bridge = new FakeBridge();
     bridge.workspaceOutcome = failed(failure("bridge_failed", 500, "disk"));
-    const store = new WorkspaceStore(bridge);
+    const store = new WorkspaceStore(bridge.workspace);
     await store.reload();
-    expect(store.snapshot()).toMatchObject({ phase: "failed", failure: { message: "disk" } });
+    expect(store.snapshot()).toMatchObject({
+      phase: "failed",
+      failure: { kind: "unavailable", diagnostic: { message: "disk", displayCode: "bridge_failed" } },
+    });
   });
 
   it("publishes two overlapping reloads in request order, not in completion order", async () => {
     const bridge = new FakeBridge();
-    const first = deferred<Awaited<ReturnType<FakeBridge["workspace"]>>>();
-    const second = deferred<Awaited<ReturnType<FakeBridge["workspace"]>>>();
+    const first = deferred<Answer>();
+    const second = deferred<Answer>();
     const reads = [first, second];
-    bridge.workspace = () => {
+    bridge.workspace.load = () => {
       const next = reads.shift();
       if (next === undefined) throw new Error("no held read left");
       return next.promise;
     };
-    const store = new WorkspaceStore(bridge);
+    const store = new WorkspaceStore(bridge.workspace);
     const older = store.reload();
     const newer = store.reload();
     second.resolve(success({ ...sampleWorkspace, name: "newer" }));
@@ -56,7 +63,7 @@ describe("workspace", () => {
 
   it("keeps reloading on a change on disk after opening again", async () => {
     const bridge = new FakeBridge();
-    const store = new WorkspaceStore(bridge);
+    const store = new WorkspaceStore(bridge.workspace);
     await store.open();
     await store.open();
     bridge.workspaceOutcome = success({ ...sampleWorkspace, name: "changed" });
@@ -67,9 +74,9 @@ describe("workspace", () => {
 
   it("does not publish a reload that completes after close, and installs no watcher", async () => {
     const bridge = new FakeBridge();
-    const held = deferred<Awaited<ReturnType<FakeBridge["workspace"]>>>();
-    bridge.workspace = () => held.promise;
-    const store = new WorkspaceStore(bridge);
+    const held = deferred<Answer>();
+    bridge.workspace.load = () => held.promise;
+    const store = new WorkspaceStore(bridge.workspace);
     const opening = store.open();
     store.close();
     held.resolve(success({ ...sampleWorkspace, name: "late" }));
@@ -79,15 +86,15 @@ describe("workspace", () => {
 
   it("does not let a closed visit install a watcher after the workspace reopens", async () => {
     const bridge = new FakeBridge();
-    const first = deferred<Awaited<ReturnType<FakeBridge["workspace"]>>>();
-    const second = deferred<Awaited<ReturnType<FakeBridge["workspace"]>>>();
+    const first = deferred<Answer>();
+    const second = deferred<Answer>();
     const reads = [first, second];
-    bridge.workspace = () => {
+    bridge.workspace.load = () => {
       const next = reads.shift();
       if (next === undefined) throw new Error("no held read left");
       return next.promise;
     };
-    const store = new WorkspaceStore(bridge);
+    const store = new WorkspaceStore(bridge.workspace);
     const closedVisit = store.open();
     store.close();
     const reopenedVisit = store.open();

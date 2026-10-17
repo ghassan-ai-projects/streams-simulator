@@ -4,6 +4,9 @@ export type { PlantFailure, PlantGateway } from "./plant";
 export type { ReviewFailure, ReviewGateway, RunFollower } from "./review";
 export type { SessionFailure, SessionGateway } from "./session";
 export type { WorkspaceFailure, WorkspaceGateway } from "./workspace";
+export type { Clock, Scheduler } from "./clock";
+export type { Location, PreferenceStore, SystemTheme } from "./browser";
+export { failure, success } from "./shared";
 export type {
   CompositionIssue,
   ComposeSummary,

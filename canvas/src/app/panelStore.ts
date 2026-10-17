@@ -1,4 +1,4 @@
-import { Observable } from "./observable";
+import { Observable } from "./shared";
 import type { PreferenceStore } from "./ports";
 
 export type Side = "left" | "right";

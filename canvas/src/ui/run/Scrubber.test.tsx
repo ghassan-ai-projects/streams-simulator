@@ -1,6 +1,5 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { parseReport } from "../../model/report";
 import { report as runReport } from "../../test/runFixture";
 import { Scrubber } from "./Scrubber";
 
@@ -24,7 +23,7 @@ describe("scrubber clock", () => {
   });
 
   it("shows the total once the run is read", () => {
-    render(<Scrubber {...common} report={parseReport(runReport)} />);
+    render(<Scrubber {...common} report={runReport} />);
     expect(screen.getByText("of 01:00:00")).toBeInTheDocument();
   });
 });

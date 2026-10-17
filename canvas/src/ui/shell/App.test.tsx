@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import axe from "axe-core";
 import { describe, expect, it } from "vitest";
-import { SessionStore } from "../../app/sessionStore";
+import { createSession } from "../../app/session";
 import { EditorStore } from "../../app/editorStore";
 import { PanelStore } from "../../app/panelStore";
 import { LaunchStore } from "../../app/launchStore";
@@ -11,7 +11,7 @@ import { PlantStore } from "../../app/plantStore";
 import { ReviewStore } from "../../app/reviewStore";
 import { ThemeStore } from "../../app/themeStore";
 import { WorkspaceStore } from "../../app/workspaceStore";
-import { failed } from "../../model/bridge";
+import { failure as failed } from "../../app/ports";
 import { FakeBridge, failure } from "../../test/fakeBridge";
 import { fakeClock } from "../../test/fakeClock";
 import { App } from "./App";
@@ -29,16 +29,16 @@ function renderApp(bridge: FakeBridge) {
   const timers = fakeClock();
   const stores = {
     themes: themes(),
-    session: new SessionStore(bridge),
-    workspace: new WorkspaceStore(bridge),
+    session: createSession(bridge.session),
+    workspace: new WorkspaceStore(bridge.workspace),
     navigation: new NavigationStore(location),
-    plants: new PlantStore(bridge),
-    review: new ReviewStore(bridge, timers, timers),
-    launch: new LaunchStore(bridge, timers, timers),
+    plants: new PlantStore(bridge.plant),
+    review: new ReviewStore(bridge.review, timers, timers),
+    launch: new LaunchStore(bridge.launch, timers, timers),
     scheduler: timers,
-    editor: new EditorStore(bridge),
+    editor: new EditorStore(bridge.editor),
     panels: new PanelStore({ read: () => null, write: () => undefined }),
-    maker: new PlantMaker(bridge),
+    maker: new PlantMaker(bridge.plant),
     showDetails: () => undefined,
   };
   return render(<App stores={stores} />);

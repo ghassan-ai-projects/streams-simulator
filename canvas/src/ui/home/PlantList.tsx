@@ -3,7 +3,7 @@ import type { ReactNode, RefObject } from "react";
 import { useRef, useState } from "react";
 import type { PlantMaker } from "../../app/plantMaker";
 import type { NavigationStore } from "../../app/navigationStore";
-import type { Workspace } from "../../model/bridge";
+import type { Workspace } from "../../model/workspace";
 import type { ExamplePlant } from "../../model/library";
 import type { Route } from "../../model/route";
 import type { PlantEntry } from "../../model/workspace";

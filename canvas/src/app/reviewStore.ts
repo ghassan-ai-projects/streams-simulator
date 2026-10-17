@@ -1,13 +1,11 @@
-import type { RunEntry } from "../model/bridge";
+import type { RunEntry } from "../model/workspace";
 import { PlaybackIndex, advance } from "../model/playback";
 import type { JournalEntry } from "../model/playback";
 import type { Badge, Replay } from "../model/report";
 import { badgeOf } from "../model/report";
-import { Observable } from "./observable";
-import { createOperationIdentity } from "./shared/operationIdentity";
-import type { OperationIdentity, OperationId } from "./shared/operationIdentity";
-import type { Clock, Scheduler } from "./clock";
-import type { ReviewGateway } from "./ports/review";
+import { Observable, createOperationIdentity } from "./shared";
+import type { OperationIdentity, OperationId } from "./shared";
+import type { Clock, ReviewGateway, Scheduler } from "./ports";
 import type { Load, ReviewState } from "./reviewState";
 import { absentLoads, idle, knownUnfinished } from "./reviewState";
 

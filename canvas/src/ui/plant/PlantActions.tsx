@@ -3,7 +3,7 @@ import type { RefObject } from "react";
 import type { LaunchStore } from "../../app/launchStore";
 import type { NavigationStore } from "../../app/navigationStore";
 import { clockOf } from "../../model/launch";
-import { useStore } from "../useStore";
+import { useStore } from "../primitives";
 import styles from "./PlantScreen.module.css";
 
 export function useRunningHere(launch: LaunchStore, plant: string): string | null {

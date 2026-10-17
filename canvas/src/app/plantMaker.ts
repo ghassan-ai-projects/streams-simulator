@@ -1,10 +1,9 @@
 import type { Composition } from "../model/composition";
 import { domainOf, serialise } from "../model/composition";
 import type { ExamplePlant } from "../model/library";
-import type { PlantFailure, PlantGateway } from "./ports/plant";
-import type { PlantSource } from "./ports/shared";
+import type { PlantFailure, PlantGateway, PlantSource } from "./ports";
 
-export type { PlantSource } from "./ports/shared";
+export type { PlantSource } from "./ports";
 
 export interface Made {
   readonly composition: string;
@@ -60,9 +59,8 @@ export class PlantMaker {
 
   async create(source: PlantSource, id: string, title: string, copy: boolean): Promise<PlantFailure | Made> {
     const result = await this.write(source, id, title, copy);
-    if (!("composition" in result) || !copy) return result;
-    const composed = await this.compose(result);
-    return composed.ok ? result : composed.failure;
+    if ("composition" in result && copy) await this.compose(result);
+    return result;
   }
 
   async tryExample(example: ExamplePlant, id: string): Promise<PlantFailure | Made> {

@@ -1,5 +1,5 @@
-import type { Acknowledgement, ComposeSummary, FileContent } from "../../../app/ports/index";
-import type { Workspace } from "../../../model/bridge";
+import type { Acknowledgement, ComposeSummary, FileContent } from "../../../app/ports";
+import type { Workspace } from "../../../model/workspace";
 import type { ExamplePlant, LibraryEntry, Presets } from "../../../model/library";
 import type { ComponentSpec, PortSpec } from "../../../model/ports";
 import type { Replay, Report } from "../../../model/report";

@@ -1,14 +1,11 @@
-import type { Workspace } from "../model/bridge";
+import type { Workspace } from "../model/workspace";
 import type { Plant } from "../model/plant";
 import { parsePlant } from "../model/plant";
 import type { ComponentSpec } from "../model/ports";
 import { componentSpecs } from "./componentSpecs";
-import { Observable } from "./observable";
-import { createOperationIdentity } from "./shared/operationIdentity";
-import type { OperationIdentity, OperationId } from "./shared/operationIdentity";
-import type { FileContent, Outcome } from "./ports/shared";
-import type { DomainDocument } from "./ports/shared";
-import type { PlantFailure, PlantGateway } from "./ports/plant";
+import { Observable, createOperationIdentity } from "./shared";
+import type { OperationIdentity, OperationId } from "./shared";
+import type { DomainDocument, FileContent, Outcome, PlantFailure, PlantGateway } from "./ports";
 
 export type PlantState =
   | { readonly phase: "idle" }

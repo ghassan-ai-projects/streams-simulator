@@ -1,7 +1,7 @@
 import { Eye, Lock, Radio, TriangleAlert } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { NavigationStore } from "../../app/navigationStore";
-import type { Workspace } from "../../model/bridge";
+import type { Workspace } from "../../model/workspace";
 import type { Badge } from "../../model/report";
 import { badgeLabels } from "../../model/report";
 import type { RunRow } from "../../model/workspace";

@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import axe from "axe-core";
 import { describe, expect, it, vi } from "vitest";
 import { EditorStore } from "../../app/editorStore";
-import { failed, success } from "../../model/bridge";
+import { failure as failed, success } from "../../app/ports";
 import { connectionsOf, equipmentOf } from "../../model/composition";
 import { moveInstance } from "../../model/compositionEdits";
 import { failure } from "../../test/fakeBridge";
@@ -251,7 +251,7 @@ describe("plant editor panel", () => {
     };
     fake.files.set(path, success({ path, content: JSON.stringify(repeated), etag: "k1" }));
     fake.actions.set("component.list", success({ components: [] }));
-    const editor = new EditorStore(fake);
+    const editor = new EditorStore(fake.editor);
     await editor.open(path);
     render(<Harness editor={editor} />);
     act(() => {
@@ -269,7 +269,7 @@ describe("plant editor panel", () => {
     };
     fake.files.set(path, success({ path, content: JSON.stringify(templated), etag: "c1" }));
     fake.actions.set("component.list", success({ components: [] }));
-    const editor = new EditorStore(fake);
+    const editor = new EditorStore(fake.editor);
     await editor.open(path);
     render(<Harness editor={editor} />);
     act(() => {

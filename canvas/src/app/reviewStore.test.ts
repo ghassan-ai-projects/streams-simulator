@@ -1,6 +1,6 @@
 import { settle } from "../test/deferred";
 import { describe, expect, it } from "vitest";
-import { failed, success } from "../model/bridge";
+import { failure as failed, success } from "../app/ports";
 import { FakeBridge, failure } from "../test/fakeBridge";
 import { fakeClock } from "../test/fakeClock";
 import { journal, report } from "../test/runFixture";
@@ -11,7 +11,7 @@ function setup() {
   bridge.actions.set("run.report", success(report));
   bridge.actions.set("run.verify", success({ matches: true }));
   const timers = fakeClock();
-  const store = new ReviewStore(bridge, timers, timers);
+  const store = new ReviewStore(bridge.review, timers, timers);
   return { bridge, store, timers };
 }
 
@@ -28,10 +28,13 @@ describe("review", () => {
     bridge.files.set("runs/w-2/run.json", success({ path: "runs/w-2/run.json", content: "{}", etag: "e" }));
     store.open("w-2");
     await settle();
-    expect(store.snapshot().runDomain).toMatchObject({ phase: "failed", failure: { code: "no_domain_spec" } });
+    expect(store.snapshot().runDomain).toMatchObject({ phase: "failed", failure: { kind: "unreadable" } });
     store.open("w-3");
     await settle();
-    expect(store.snapshot().runDomain).toMatchObject({ phase: "failed", failure: { code: "not_found" } });
+    expect(store.snapshot().runDomain).toMatchObject({
+      phase: "failed",
+      failure: { kind: "missing", diagnostic: { displayCode: "not_found" } },
+    });
   });
 
   it("opens the inspector on a selection and keeps the chosen tab otherwise", () => {
@@ -165,12 +168,12 @@ describe("review", () => {
     bridge.actions.set("run.verify", success({}));
     store.open("w-2");
     await settle();
-    expect(store.snapshot().verified).toMatchObject({ phase: "failed", failure: { code: "verify_unreadable" } });
+    expect(store.snapshot().verified).toMatchObject({ phase: "failed", failure: { kind: "unreadable" } });
   });
 
   it("reads the report and verification again when a run it watched live closes, once", async () => {
     const { bridge, store, timers } = setup();
-    bridge.actions.set("run.report", success({ ...report, run: { ...report.run, ended: false } }));
+    bridge.actions.set("run.report", success({ ...report, ended: false }));
     store.open("w-1");
     await settle();
     expect(store.snapshot().report).toMatchObject({ phase: "ready", value: { ended: false } });
@@ -189,7 +192,9 @@ describe("review", () => {
       "run.report",
       success({
         ...report,
-        run: { ...report.run, ended: false, complete: false, incomplete_reason: "the run did not close." },
+        ended: false,
+        complete: false,
+        incompleteReason: "the run did not close.",
       }),
     );
     store.open("w-9", { ...entry, worldId: "w-9", ended: true, complete: false });
@@ -199,11 +204,20 @@ describe("review", () => {
     expect(store.snapshot().report).toMatchObject({ phase: "ready", value: { ended: false } });
     expect(store.snapshot().verified).toMatchObject({
       phase: "failed",
-      failure: { status: 422, code: "run_incomplete", message: "the run is incomplete: the run did not close." },
+      failure: {
+        kind: "run-incomplete",
+        diagnostic: { displayCode: "run_incomplete", message: "the run is incomplete: the run did not close." },
+      },
     });
     expect(store.snapshot().runDomain).toMatchObject({
       phase: "failed",
-      failure: { status: 404, code: "not_found", message: "run.json is absent: the run is still open or did not end" },
+      failure: {
+        kind: "run-incomplete",
+        diagnostic: {
+          displayCode: "run_incomplete",
+          message: "run.json is absent: the run is still open or did not end",
+        },
+      },
     });
     expect(store.badgeFor("w-9")).toBe("incomplete");
   });
@@ -212,7 +226,7 @@ describe("review", () => {
     const { bridge, store } = setup();
     bridge.actions.set(
       "run.report",
-      success({ ...report, run: { ...report.run, ended: false, complete: false, incomplete_reason: "" } }),
+      success({ ...report, ended: false, complete: false, incompleteReason: "" }),
     );
     store.open("w-9", { ...entry, worldId: "w-9", ended: false, complete: false });
     await settle();
@@ -220,18 +234,21 @@ describe("review", () => {
     expect(bridge.reads).toEqual([]);
     expect(store.snapshot().verified).toMatchObject({
       phase: "failed",
-      failure: { status: 422, code: "run_incomplete", message: "the run is incomplete: the run did not close." },
+      failure: {
+        kind: "run-incomplete",
+        diagnostic: { displayCode: "run_incomplete", message: "the run is incomplete: the run did not close." },
+      },
     });
     expect(store.snapshot().runDomain).toMatchObject({
       phase: "failed",
-      failure: { status: 404, code: "not_found" },
+      failure: { kind: "run-incomplete", diagnostic: { displayCode: "run_incomplete" } },
     });
     expect(store.badgeFor("w-9")).toBe("incomplete");
   });
 
   it("finishes a run listed as open when its journal closes while the review watches", async () => {
     const { bridge, store, timers } = setup();
-    bridge.actions.set("run.report", success({ ...report, run: { ...report.run, ended: false, complete: false } }));
+    bridge.actions.set("run.report", success({ ...report, ended: false, complete: false }));
     store.open("w-1", { ...entry, worldId: "w-1", ended: false, complete: false });
     await settle();
     expect(bridge.calls.map((call) => call.name)).toEqual(["run.report"]);
@@ -249,7 +266,7 @@ describe("review", () => {
 
   it("re-asks nothing doomed when an abandoned run's journal stream closes", async () => {
     const { bridge, store, timers } = setup();
-    bridge.actions.set("run.report", success({ ...report, run: { ...report.run, ended: false, complete: false } }));
+    bridge.actions.set("run.report", success({ ...report, ended: false, complete: false }));
     store.open("w-9", { ...entry, worldId: "w-9", ended: true, complete: false });
     await settle();
     bridge.stream("w-9", journal);

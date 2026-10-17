@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import axe from "axe-core";
 import { describe, expect, it, vi } from "vitest";
-import { success } from "../../model/bridge";
+import { success } from "../../app/ports";
 import { parsePlant } from "../../model/plant";
 import { FakeBridge } from "../../test/fakeBridge";
 import { launchHarness } from "../../test/launchFixture";

@@ -8,7 +8,7 @@ import { PanelStore } from "./app/panelStore";
 import { PlantMaker } from "./app/plantMaker";
 import { LaunchStore } from "./app/launchStore";
 import { createEditorModule, createPlantModule, createReviewModule } from "./app/routeModules";
-import { SessionStore } from "./app/sessionStore";
+import { createSession } from "./app/session";
 import { ThemeStore } from "./app/themeStore";
 import { WorkspaceStore } from "./app/workspaceStore";
 import { App } from "./ui/shell/App";
@@ -34,7 +34,7 @@ if (root) {
       <App
         stores={{
           themes,
-          session: new SessionStore(adapters.session),
+          session: createSession(adapters.session),
           workspace: new WorkspaceStore(adapters.workspace),
           navigation,
           plants,

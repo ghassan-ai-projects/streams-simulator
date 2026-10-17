@@ -11,14 +11,53 @@
   malformed-required-response correction (§5 P3), and the Phase 4 editor save-transaction rules (§5 P4). Every other
   phase is behaviour-preserving, and its evidence must show the pre-change suite passing unchanged.
 
+## 0. Execution status — 2026-10-17
+
+The user changed the execution order to **finish production migration → repair tests and run full validation → address Enola cycles**, and then requested that work stop with this plan update only. No source work, gates, or commits are authorized until the user resumes the implementation. Preserve the uncommitted work listed below; do not reset it or treat a prior checkpoint as a phase exit.
+
+### Recorded checkpoints
+
+These commits contain production checkpoints, not completed phase exits. Final-source validation remains outstanding:
+
+| Commit | Checkpoint | State |
+| --- | --- | --- |
+| `417d745` | P1 graph extraction and architecture checks | Committed; final graph tests/build/typecheck, positive Chrome rerun, visual review, and full gates remain pending. |
+| `be47ec7` | P2 clock ports and route sessions | Committed; P2 tests, final-source checks, and isolated launch-hold measurement remain pending. |
+| `d6a08ed` | P2 editor compose completion guard | Committed separately; `npx vitest run src/app/editorStore.test.ts` passed 12 tests at that checkpoint. This focused result does not complete P2 validation. |
+| `1420eca` | P5 graph CSS partition | Committed; the final P5 visual review and full validation remain pending. |
+| `56e80fb` | P3 typed application gateways | Committed with source-boundary review; adapter coverage-floor registration and final tests/gates remain pending. |
+
+### Current worktree checkpoint
+
+At this update, `git status --short` showed uncommitted P4 and P5 work and no staged changes. Preserve these files and coordinate with their current owners before resuming:
+
+- **P4:** `editorStore.ts`, `editorSave.ts`, and editor UI status/dirty-state edits are in progress. The save transaction's conflict and partial-success recovery contract remains unresolved; captured-revision behavior, retry semantics, written composition bytes, and output-etag assertions still need review and evidence.
+- **P5:** the `model/workspace` move is in progress. The app/session and shared/primitives foundation has been started, including `canvas/architecture.json`, `app/session/`, `app/shared/index.ts`, `app/ports/`, and `ui/primitives/`. The workspace/plant ownership and call-site boundaries, remaining app/UI feature modules, shell integration, CSS ownership, and P5 unit reviews/commits are incomplete.
+- Other modified files in the live worktree include typed workspace callers, bridge decoder imports, the Clock/Scheduler port relocation, and current editor transaction work. The current `git status --short` is authoritative; this list is a checkpoint summary, not a complete file manifest.
+
+### Validation that must not be mistaken for current green status
+
+- The latest focused P2 follow-up recorded 12 passing editor-store tests. Other focused suites have not been run against final migrated source.
+- At the P3 checkpoint, `cd canvas && npm run typecheck` exited 1 with 164 diagnostics in unmigrated tests/test-support; a production-path filter reported no diagnostics then. The count and result are historical and have not been reconfirmed against the current worktree.
+- Full Chrome captures/review, the adapter coverage floor, final architecture-debt checks, `make canvas-check`, and the final `make phase-gate` are pending.
+- The last recorded Enola run reported three inferred cycles. The user deferred cycle resolution until production migration and test/full validation are complete. This is an open item, not a pass; do not repin the baseline to hide it.
+
+### Resume checklist
+
+1. Re-read the current worktree and coordinate ownership; preserve every uncommitted file. Resume production migration with P4's unresolved conflict/partial-success behavior and then finish the registered P5 feature units. Keep the accepted dependency allow-lists and gates unchanged.
+2. For each P5 unit, finish its facade, internal ownership, callers, CSS paths, evidence and independent boundary review before committing that unit. Reconcile workspace/plant ownership through the accepted app/shell coordination boundary.
+3. After production migration is complete, repair and migrate legacy tests/fixtures. Run focused tests first, then the full Canvas validation and browser review; record current command output rather than reusing the historical 164-diagnostic count.
+4. Only after those steps, investigate and resolve the recorded Enola cycles without changing the baseline to suppress findings. Run the final phase gate and review the complete diff before declaring any phase or the migration complete.
+
 ## 1. Why this plan exists
 
 The accepted architecture keeps the four technical layers and the existing `Observable` + `useSyncExternalStore`
 mechanism, and adds: product modules with facades over private `internal/` trees, a shared `graph` module, typed
 simulator gateways, explicit operation identity, a transactional editor save, Clock/Scheduler ports, CSS ownership per
-module, and enforced architecture checks. Today none of that exists: there is one flat layer per technical layer, one
-raw `Bridge.action` surface, no operation identity anywhere, and `ui/editor`/`ui/run` import `ui/plant` files and
-`PlantScreen.module.css` directly.
+module, and enforced architecture checks. The following evidence describes the **pre-migration baseline captured on
+2026-10-16**, not the current worktree; see §0 for the live checkpoint and resume order. At that baseline, there was
+one flat layer per technical layer, one raw `Bridge.action` surface, no operation identity, and `ui/editor`/`ui/run`
+imported `ui/plant` files and `PlantScreen.module.css` directly.
 
 ## 2. Baseline facts (measured, not asserted)
 

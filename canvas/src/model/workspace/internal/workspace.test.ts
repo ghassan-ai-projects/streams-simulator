@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { Workspace } from "./bridge";
-import { sampleWorkspace } from "../test/fakeBridge";
+import type { Workspace } from "../contract";
+import { sampleWorkspace } from "../../../test/fakeBridge";
 import {
   durationOf,
   faultWords,

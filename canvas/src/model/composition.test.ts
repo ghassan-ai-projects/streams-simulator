@@ -19,7 +19,8 @@ import {
   removeInstance,
   renameInstance,
 } from "./compositionEdits";
-import { parseLibrary, parsePresets, searchLibrary } from "./library";
+import type { LibraryEntry } from "./library";
+import { searchLibrary } from "./library";
 
 const doc = {
   id: "lab",
@@ -95,30 +96,24 @@ describe("composition", () => {
     expect([isTemplate(doc, "WX-{n}"), isTemplate(doc, "CH-1")]).toEqual([true, false]);
   });
 
-  it("lists the library's equipment and a component's presets", () => {
-    const library = parseLibrary({
-      components: [
-        { id: "streamsim/pump", version: 2, kind: "equipment", title: "Pump", class: "rotating/pump", tags: ["water"] },
-        { id: "streamsim/rtd", version: 1, kind: "instrument", title: "RTD" },
-        { id: "streamsim/ahu", kind: "equipment", title: "Air-handling unit" },
-      ],
-    });
-    expect(library.map((entry) => [entry.component, entry.ref, entry.title])).toEqual([
-      ["streamsim/ahu", "streamsim/ahu@1", "Air-handling unit"],
-      ["streamsim/pump", "streamsim/pump@2", "Pump"],
-    ]);
-    expect(parseLibrary(null)).toEqual([]);
+  it("searches the library's equipment by its words", () => {
+    const library: readonly LibraryEntry[] = [
+      {
+        component: "streamsim/pump",
+        ref: "streamsim/pump@2",
+        title: "Pump",
+        words: "pump streamsim/pump rotating/pump water",
+      },
+      {
+        component: "streamsim/ahu",
+        ref: "streamsim/ahu@1",
+        title: "Air-handling unit",
+        words: "air-handling unit streamsim/ahu",
+      },
+    ];
     expect(searchLibrary(library, "")).toHaveLength(2);
     expect(searchLibrary(library, "AIR unit").map((entry) => entry.title)).toEqual(["Air-handling unit"]);
     expect(searchLibrary(library, "pump chiller")).toEqual([]);
-    const presets = parsePresets({
-      document: { default_preset: "medium", description: "Moves water.", presets: { small: { title: "Small" } } },
-    });
-    expect(presets).toEqual({
-      options: [{ name: "small", title: "Small" }],
-      preferred: "medium",
-      description: "Moves water.",
-    });
   });
 
   it("suggests the next free name like its siblings, or from the title's initials", () => {

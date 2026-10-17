@@ -3,16 +3,7 @@ import { chillerPorts, composition, domain } from "../test/plantFixture";
 import { compositionPlant } from "./composition";
 import { parsePlant } from "./plant";
 import type { ComponentSpec } from "./ports";
-import {
-  familyOf,
-  noTargetReason,
-  parseComponent,
-  parsePorts,
-  pinsOf,
-  portType,
-  portsMatching,
-  shapeOf,
-} from "./ports";
+import { familyOf, noTargetReason, pinsOf, portType, portsMatching, shapeOf } from "./ports";
 
 describe("ports and pins", () => {
   it("maps every library port type to one of nine families with a shape", () => {
@@ -33,55 +24,11 @@ describe("ports and pins", () => {
     expect(shapeOf("env")).not.toBe(shapeOf("signal"));
   });
 
-  it("reads a component document's ports and their directions", () => {
-    expect(parsePorts(chillerPorts).map((port) => `${port.direction}:${port.name}`)).toEqual([
-      "in:cond_in",
-      "in:spare_in",
-      "out:heat_out",
-      "out:power_out",
-    ]);
-    expect(parsePorts(null)).toEqual([]);
-  });
-
-  it("names a component's category from its library class, then its tags", () => {
-    const of = (componentClass: string, tags: string[]) =>
-      parseComponent({ entry: { class: componentClass, tags }, document: chillerPorts }).category;
-    expect(of("electrical/switchgear/feeder_meter", ["hvac"])).toBe("elec");
-    expect(of("process/production/line", [])).toBe("prod");
-    expect(of("environment/site/weather", [])).toBe("env");
-    expect(of("rotating/compressor/air", ["compressed-air"])).toBe("air");
-    expect(of("rotating/pump/centrifugal", ["fluids"])).toBe("cool");
-    expect(of("rotating/conveyor/belt", ["drives"])).toBe("prod");
-    expect(of("other/thing", [])).toBe("env");
-    expect(parseComponent({ entry: { class: "x", tags: [1, "hvac"] }, document: chillerPorts }).ports).toHaveLength(4);
-  });
-
-  it("keeps declared component title and description with a document-title fallback", () => {
-    const declared = parseComponent({
-      entry: { title: "Summary title", class: "x" },
-      document: { title: "Document title", description: "Declared purpose." },
-    });
-    expect([declared.title, declared.description]).toEqual(["Summary title", "Declared purpose."]);
-    expect(parseComponent({ entry: {}, document: { title: "Document title" } }).title).toBe("Document title");
-  });
-
-  it("ignores absent and malformed component metadata", () => {
-    expect(parseComponent(null)).toEqual({ category: "env", ports: [] });
-    expect(parseComponent({ entry: null, document: { title: 12, description: {}, ports: "bad" } })).toEqual({
-      category: "env",
-      ports: [],
-    });
-    expect(parseComponent({ entry: { title: "  " }, document: { title: "", description: " " } })).toEqual({
-      category: "env",
-      ports: [],
-    });
-  });
-
   it("marks the pins a link uses as connected", () => {
     const plant = parsePlant(domain, composition);
     const chiller = plant.instances[0];
     if (chiller === undefined) throw new Error("fixture");
-    const pins = pinsOf(plant, chiller, parsePorts(chillerPorts));
+    const pins = pinsOf(plant, chiller, chillerPorts.ports);
     expect(pins.ins.map((pin) => [pin.name, pin.connection, pin.family])).toEqual([
       ["cond_in", "connected", "temp"],
       ["spare_in", "open", "water"],
@@ -93,7 +40,7 @@ describe("ports and pins", () => {
     const plant = parsePlant(domain);
     const chiller = plant.instances[0];
     if (chiller === undefined) throw new Error("fixture");
-    const pins = pinsOf(plant, chiller, parsePorts(chillerPorts));
+    const pins = pinsOf(plant, chiller, chillerPorts.ports);
     expect(pins.ins.map((pin) => pin.connection)).toEqual(["unknown", "unknown"]);
     expect(pins.outs.map((pin) => pin.connection)).toEqual(["unknown", "unknown"]);
   });

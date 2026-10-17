@@ -1,6 +1,6 @@
 import type { Route } from "../model/route";
 import { formatRoute, parseRoute } from "../model/route";
-import { Observable } from "./observable";
+import { Observable } from "./shared";
 import type { Location } from "./ports";
 
 export interface LeaveAttempt {

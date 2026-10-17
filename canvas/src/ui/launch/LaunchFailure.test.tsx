@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { failed, success } from "../../model/bridge";
+import { failure as failed, success } from "../../app/ports";
 import { parsePlant } from "../../model/plant";
 import { FakeBridge, failure } from "../../test/fakeBridge";
 import { domain } from "../../test/plantFixture";

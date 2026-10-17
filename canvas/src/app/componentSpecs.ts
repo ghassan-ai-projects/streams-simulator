@@ -1,11 +1,11 @@
 import type { ComponentSpec } from "../model/ports";
-import type { Outcome } from "./ports/shared";
+import type { Outcome } from "./ports";
 
 interface ComponentGateway<F> {
   component(ref: string): Promise<Outcome<ComponentSpec, F>>;
 }
 
-const unavailable: ComponentSpec = { ports: [], category: "prod" };
+const unavailable: ComponentSpec = { ports: [], category: "env" };
 
 export async function componentSpecs<F>(
   gateway: ComponentGateway<F>,

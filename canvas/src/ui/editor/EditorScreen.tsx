@@ -1,6 +1,7 @@
 import { Boxes } from "lucide-react";
 import { ReactFlowProvider } from "@xyflow/react";
 import { useEffect, useMemo, useState } from "react";
+import { isDirty } from "../../app/editorStore";
 import type { Draft, EditorSession } from "../../app/routeModules";
 import type { NavigationStore } from "../../app/navigationStore";
 import { compositionPlant, shortKind } from "../../model/composition";
@@ -9,7 +10,7 @@ import { plainView, plantView } from "../../model/graph";
 import type { PlantView } from "../../model/graph";
 import { Navigator, Outline, PlantGraph, useCanvasAspect } from "../graph";
 import plantStyles from "../plant/PlantScreen.module.css";
-import { useStore } from "../useStore";
+import { useStore } from "../primitives";
 import { EditorBar } from "./EditorBar";
 import styles from "./Editor.module.css";
 import { EditorPanel } from "./EditorPanel";
@@ -84,7 +85,7 @@ function Editing({ draft, editor, navigation }: { readonly draft: Draft } & Omit
   const { ref, aspect } = useCanvasAspect<HTMLDivElement>();
   const { plant, view, flagged } = usePlant(draft, aspect);
   const [request] = useState(() => new FocusRequest());
-  useLeaveGuard(draft.doc !== draft.saved);
+  useLeaveGuard(isDirty(draft));
   const select = (id: string | null) => {
     editor.select(id);
   };

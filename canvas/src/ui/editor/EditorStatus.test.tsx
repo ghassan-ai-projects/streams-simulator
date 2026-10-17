@@ -1,6 +1,6 @@
 import { act, fireEvent, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { failed } from "../../model/bridge";
+import { failure as failed } from "../../app/ports";
 import { failure } from "../../test/fakeBridge";
 import { current, editing } from "../../test/editorHarness";
 

@@ -2,11 +2,10 @@ import { render, screen } from "@testing-library/react";
 import axe from "axe-core";
 import { describe, expect, it } from "vitest";
 import { reviewState as state } from "../../test/reviewFixture";
-import { parseReport } from "../../model/report";
 import { report } from "../../test/runFixture";
 import { Banners, Status } from "./RunStatus";
 
-const parsed = parseReport(report);
+const parsed = report;
 
 describe("run status", () => {
   it("badges a divergent replay Not verified with no warning banner", () => {
@@ -55,7 +54,10 @@ describe("run status", () => {
 
   it("warns in plain words when verify could not run, with the binary's message under Details", () => {
     const failed = state({
-      verified: { phase: "failed", failure: { status: 422, code: "x", message: "run.json missing", issues: [] } },
+      verified: {
+        phase: "failed",
+        failure: { kind: "unreadable", diagnostic: { message: "run.json missing", displayCode: "verify_unreadable" } },
+      },
     });
     render(<Banners state={failed} />);
     expect(screen.getByRole("alert")).toHaveTextContent("Not checked: this run could not be replayed for its verdict.");

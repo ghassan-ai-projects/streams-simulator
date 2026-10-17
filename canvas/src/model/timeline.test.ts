@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { report } from "../test/runFixture";
-import { parseReport } from "./report";
 import {
   effectorAt,
   eventMarks,
@@ -14,7 +13,7 @@ import {
   timeTicks,
 } from "./timeline";
 
-const parsed = parseReport(report);
+const parsed = report;
 
 describe("first event line", () => {
   it("names the first mark with its time and instance, and counts the effector calls", () => {

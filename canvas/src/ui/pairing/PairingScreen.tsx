@@ -1,13 +1,25 @@
 import { KeyRound, Lock, XCircle } from "lucide-react";
 import type { SubmitEvent } from "react";
-import type { SessionState, SessionStore } from "../../app/sessionStore";
-import { pairingBlocked } from "../../app/sessionStore";
-import { PAIRING_CODE_LENGTH } from "../../model/bridge";
+import type { SessionFailure } from "../../app/session";
+import type { Session, SessionState } from "../../app/session";
+import { pairingBlocked } from "../../app/session";
+import { PAIRING_CODE_LENGTH } from "../../app/session";
 import { useScreen } from "../useScreen";
-import { useStore } from "../useStore";
+import { useStore } from "../primitives";
 import styles from "./PairingScreen.module.css";
 
 type Unpaired = Extract<SessionState, { phase: "unpaired" }>;
+
+function pairingAlert(failure: SessionFailure): string {
+  if (failure.kind === "code-rejected")
+    return "That code did not match. Check the code in your terminal and try again.";
+  if (failure.kind === "pairing-closed") {
+    return failure.reason === "locked"
+      ? "Pairing is locked after five wrong codes. Restart streamsim canvas for a new code."
+      : "This code was already used. Restart streamsim canvas to pair another browser.";
+  }
+  return `${failure.diagnostic.message} (${failure.diagnostic.displayCode})`;
+}
 
 function grouped(code: string): string {
   return code.replace(/(.{4})(?=.)/g, "$1-");
@@ -23,12 +35,12 @@ function Status({ state }: { readonly state: Unpaired }) {
   return (
     <span className={styles.error} role="alert">
       <Icon size={14} aria-hidden="true" />
-      {`${state.failure.diagnostic.message} (${state.failure.diagnostic.displayCode})`}
+      {pairingAlert(state.failure)}
     </span>
   );
 }
 
-function CodeField({ session, state }: { readonly session: SessionStore; readonly state: Unpaired }) {
+function CodeField({ session, state }: { readonly session: Session; readonly state: Unpaired }) {
   const blocked = pairingBlocked(state.failure);
   return (
     <>
@@ -57,7 +69,7 @@ function CodeField({ session, state }: { readonly session: SessionStore; readonl
   );
 }
 
-export function PairingScreen({ session }: { readonly session: SessionStore }) {
+export function PairingScreen({ session }: { readonly session: Session }) {
   const state = useStore(session);
   useScreen("Pair this browser");
   if (state.phase !== "unpaired") {

@@ -6,7 +6,7 @@ import { showingMarks } from "../../model/launch";
 import { planMarks, plainView, plantView } from "../../model/graph";
 import type { PlanMark, PlantView } from "../../model/graph";
 import { PlantGraph, useCanvasAspect } from "../graph";
-import { useStore } from "../useStore";
+import { useStore } from "../primitives";
 import styles from "./PlantScreen.module.css";
 
 type Ready = Extract<PlantState, { phase: "ready" }>;

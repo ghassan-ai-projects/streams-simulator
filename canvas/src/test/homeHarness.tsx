@@ -21,13 +21,13 @@ export function navigation() {
 }
 
 export async function show(bridge: FakeBridge, nav = navigation(), badgeFor?: (worldId: string) => Badge | null) {
-  const store = new WorkspaceStore(bridge);
+  const store = new WorkspaceStore(bridge.workspace);
   await store.reload();
   return render(
     <HomeScreen
       workspace={store}
       navigation={nav.store}
-      maker={new PlantMaker(bridge)}
+      maker={new PlantMaker(bridge.plant)}
       {...(badgeFor === undefined ? {} : { badgeFor })}
     />,
   );

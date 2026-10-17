@@ -1,36 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { journal, observation } from "../test/runFixture";
-import { parseJournalRecord, PlaybackIndex } from "./playback";
+import { journal } from "../test/runFixture";
+import type { JournalEntry } from "./playback";
+import { PlaybackIndex } from "./playback";
 import { shortChannel } from "./shared/words";
 
-function indexOf(records: readonly unknown[]) {
+function indexOf(entries: readonly JournalEntry[]) {
   const index = new PlaybackIndex();
-  for (const record of records) {
-    const entry = parseJournalRecord(JSON.stringify(record));
+  for (const entry of entries) {
     if (entry.kind === "observation") index.add(entry.observation);
   }
   return index;
 }
 
 describe("playback", () => {
-  it("reads each kind of journal record", () => {
-    expect(parseJournalRecord(JSON.stringify(journal[0]))).toEqual({
-      kind: "opened",
-      atNs: 0,
-      mode: "evaluate",
-      adapter: "native-jsonl",
-    });
-    expect(parseJournalRecord(JSON.stringify(journal[6]))).toEqual({
-      kind: "closed",
-      atNs: 3_600e9,
-      incomplete: false,
-    });
-    expect(parseJournalRecord(JSON.stringify(journal[5]))).toEqual({ kind: "other", atNs: 30e9 });
-    expect(parseJournalRecord("not json")).toEqual({ kind: "other", atNs: 0 });
-    expect(parseJournalRecord(JSON.stringify(observation(9, 5, "A", "a.b", { odd: 1 })))).toMatchObject({
-      observation: { value: "" },
-    });
-  });
 
   it("names the channels an entity reports in the run, short, and none for an unknown entity", () => {
     const index = indexOf(journal);

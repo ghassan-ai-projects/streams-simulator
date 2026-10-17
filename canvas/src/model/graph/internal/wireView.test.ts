@@ -3,14 +3,13 @@ import { chillerPorts, composition, domain, towerPorts } from "../../../test/pla
 import { parsePlant } from "../../plant";
 import type { PlantView } from "./plantView";
 import { headerHeight, nodeSize, plainView, plantView } from "./plantView";
-import { parsePorts } from "../../ports";
 import { reviewView } from "../../reviewRows";
 import type { Rect } from "./viewport";
 import { routeView, titleBox, wireModeOf } from "./wireView";
 
 const specs = new Map([
-  ["lib/chiller", { ports: parsePorts(chillerPorts), category: "cool" as const }],
-  ["lib/tower", { ports: parsePorts(towerPorts), category: "cool" as const }],
+  ["lib/chiller", { ports: chillerPorts.ports, category: "cool" as const }],
+  ["lib/tower", { ports: towerPorts.ports, category: "cool" as const }],
 ]);
 
 function boxOf(view: PlantView, id: string): Rect {

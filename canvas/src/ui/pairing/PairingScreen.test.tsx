@@ -1,15 +1,15 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import axe from "axe-core";
 import { describe, expect, it } from "vitest";
-import { SessionStore } from "../../app/sessionStore";
-import { failed } from "../../model/bridge";
+import { createSession } from "../../app/session";
+import { failure as failed } from "../../app/ports";
 import { FakeBridge, failure } from "../../test/fakeBridge";
 import { PairingScreen } from "./PairingScreen";
 
 async function setup(...refusals: string[]) {
   const bridge = new FakeBridge();
-  bridge.pairOutcomes.push(...refusals.map((code) => failed<boolean>(failure(code))));
-  const session = new SessionStore(bridge);
+  bridge.pairOutcomes.push(...refusals.map((code) => failed(failure(code))));
+  const session = createSession(bridge.session);
   await session.check();
   const view = render(<PairingScreen session={session} />);
   return { bridge, session, view };

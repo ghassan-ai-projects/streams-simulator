@@ -1,9 +1,7 @@
 import type { CallOutcome, LaunchPlan, LaunchStep } from "../model/launch";
 import { failureWords, launchSteps, outcomeOf, paceOf } from "../model/launch";
-import { Observable } from "./observable";
-import type { Clock, Scheduler } from "./clock";
-import type { LaunchFailure, LaunchGateway } from "./ports/launch";
-import type { Outcome } from "./ports/shared";
+import { Observable } from "./shared";
+import type { Clock, LaunchFailure, LaunchGateway, Outcome, Scheduler } from "./ports";
 
 export interface LaunchOrigin {
   readonly domain: string;

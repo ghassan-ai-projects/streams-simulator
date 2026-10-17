@@ -1,13 +1,13 @@
 import { Play, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import type { Scheduler } from "../../app/clock";
+import type { Scheduler } from "../../app/ports";
 import type { LaunchState, LaunchStore, Proposal } from "../../app/launchStore";
 import { clockOf, keepKnownFaults, planSummary, rateWords } from "../../model/launch";
 import { humanise } from "../../model/shared/words";
 import { durationOf } from "../../model/workspace";
 import type { Plant } from "../../model/plant";
 import { faultsOf } from "../../model/plant";
-import { useStore } from "../useStore";
+import { useStore } from "../primitives";
 import type { Draft } from "./draft";
 import { draftOf, firstDraft, pickedOnGraph } from "./draft";
 import type { Change } from "./FaultRows";

@@ -1,20 +1,17 @@
-import type { EditorGateway } from "./ports/editor";
-import type { PlantGateway } from "./ports/plant";
-import type { ReviewGateway } from "./ports/review";
+import type { EditorGateway, PlantGateway, ReviewGateway } from "./ports";
 import { EditorStore } from "./editorStore";
 import type { EditorState } from "./editorStore";
 import { PlantStore } from "./plantStore";
 import type { PlantState } from "./plantStore";
 import { ReviewStore } from "./reviewStore";
 import type { ReviewState } from "./reviewStore";
-import { createOperationIdentity } from "./shared/operationIdentity";
-import type { Clock, Scheduler } from "./clock";
-import type { RunEntry, Workspace } from "../model/bridge";
+import { createOperationIdentity } from "./shared";
+import type { RunEntry, Workspace } from "../model/workspace";
 import type { Composition, NewEquipment } from "../model/composition";
 import type { PlaybackIndex } from "../model/playback";
 import type { Badge } from "../model/report";
 import type { Presets } from "../model/library";
-import type { DomainDocument } from "./ports/shared";
+import type { Clock, DomainDocument, Scheduler } from "./ports";
 
 export interface PlantSession {
   readonly snapshot: () => PlantState;

@@ -1,28 +1,33 @@
 import type { Composition, NewEquipment } from "../model/composition";
-import { componentOf, domainOf, equipmentOf, parseComposition, serialise } from "../model/composition";
+import { componentOf, domainOf, equipmentOf, parseComposition } from "../model/composition";
 import type { IssueTargets } from "../model/compositionEdits";
-import { addEquipment, issueTargets } from "../model/compositionEdits";
+import { addEquipment } from "../model/compositionEdits";
 import type { LibraryEntry, Presets } from "../model/library";
 import type { ComponentSpec } from "../model/ports";
 import { componentSpecs } from "./componentSpecs";
-import { Observable } from "./observable";
-import { createOperationIdentity } from "./shared/operationIdentity";
-import type { OperationIdentity, OperationId } from "./shared/operationIdentity";
-import type { EditorFailure, EditorGateway } from "./ports/editor";
-import type { ComposeSummary } from "./ports/shared";
+import { Observable, createOperationIdentity } from "./shared";
+import type { OperationIdentity, OperationId } from "./shared";
+import type { EditorFailure, EditorGateway } from "./ports";
+import { applySaveResult, captureSaveAttempt, saveCaptured, savedRevision } from "./editorSave";
+import type { SaveAttempt } from "./editorSave";
 
 type Outcome =
-  | { readonly kind: "composed"; readonly summary: string }
-  | { readonly kind: "refused"; readonly message: string | null }
+  | { readonly kind: "composed"; readonly summary: string; readonly revision: number }
+  | { readonly kind: "refused"; readonly message: string | null; readonly revision: number }
   | null;
 
 export interface Draft {
   readonly phase: "ready";
   readonly path: string;
   readonly etag: string;
+  readonly domainPath: string;
   readonly domainEtag: string;
   readonly saved: Composition;
   readonly doc: Composition;
+  readonly revision: number;
+  readonly savedRevision: number;
+  readonly saveStatus: "idle" | "saved-compose-failed";
+  readonly composeFailure: EditorFailure | null;
   readonly past: readonly Composition[];
   readonly future: readonly Composition[];
   readonly specs: ReadonlyMap<string, ComponentSpec>;
@@ -45,14 +50,15 @@ const unreadable: EditorFailure = {
   diagnostic: { displayCode: "composition_unreadable", message: "The file is not a JSON composition." },
 };
 
-function summaryOf(result: ComposeSummary): string {
-  return `Composed ${String(result.channels)} channels, ${String(result.faults)} faults, ${String(result.effectors)} effectors.`;
-}
-
 const historyLimit = 100;
 
 export function checked(draft: Draft): boolean {
-  return draft.domainEtag !== "" || draft.outcome?.kind === "composed";
+  return (
+    !isDirty(draft) &&
+    draft.saveStatus === "idle" &&
+    ((draft.domainPath === domainOf(draft.doc) && draft.domainEtag !== "") ||
+      (draft.outcome?.kind === "composed" && draft.outcome.revision === draft.revision))
+  );
 }
 
 export function emptyPlant(draft: Draft): boolean {
@@ -60,7 +66,11 @@ export function emptyPlant(draft: Draft): boolean {
 }
 
 export function canSave(draft: Draft): boolean {
-  return draft.doc !== draft.saved || (!checked(draft) && !emptyPlant(draft));
+  return isDirty(draft) || draft.saveStatus === "saved-compose-failed" || (!checked(draft) && !emptyPlant(draft));
+}
+
+export function isDirty(draft: Draft): boolean {
+  return draft.doc !== draft.saved;
 }
 
 function kept(doc: Composition, draft: Draft): string | null {
@@ -70,6 +80,8 @@ function kept(doc: Composition, draft: Draft): string | null {
 
 export class EditorStore extends Observable<EditorState> {
   private active: OperationId | null = null;
+  private attemptSequence = 0;
+  private activeAttempt: number | null = null;
 
   constructor(
     private readonly gateway: EditorGateway,
@@ -81,7 +93,7 @@ export class EditorStore extends Observable<EditorState> {
   async open(path: string): Promise<void> {
     const state = this.snapshot();
     if (state.phase === "loading" && state.path === path) return;
-    if (state.phase === "ready" && state.path === path && state.doc !== state.saved) return;
+    if (state.phase === "ready" && state.path === path && isDirty(state)) return;
     if (state.phase !== "ready" || state.path !== path) this.set({ phase: "loading", path });
     const request = this.operations.begin();
     this.active = request;
@@ -127,6 +139,7 @@ export class EditorStore extends Observable<EditorState> {
   close(): void {
     this.operations.invalidate();
     this.active = null;
+    this.activeAttempt = null;
     this.set({ phase: "idle" });
   }
 
@@ -138,7 +151,22 @@ export class EditorStore extends Observable<EditorState> {
   private fresh(path: string, etag: string, doc: Composition): Draft {
     const empty = { specs: new Map(), library: [], selected: null, issues: null, outcome: null, failure: null };
     const history = { past: [], future: [] };
-    return { phase: "ready", path, etag, domainEtag: "", saved: doc, doc, saving: false, ...history, ...empty };
+    return {
+      phase: "ready",
+      path,
+      etag,
+      domainPath: domainOf(doc),
+      domainEtag: "",
+      saved: doc,
+      doc,
+      revision: 0,
+      savedRevision: 0,
+      saveStatus: "idle",
+      composeFailure: null,
+      saving: false,
+      ...history,
+      ...empty,
+    };
   }
 
   savable(): boolean {
@@ -148,7 +176,7 @@ export class EditorStore extends Observable<EditorState> {
 
   unsavedChanges(): boolean {
     const state = this.snapshot();
-    return state.phase === "ready" && state.doc !== state.saved;
+    return state.phase === "ready" && isDirty(state);
   }
 
   select(id: string | null): void {
@@ -166,7 +194,17 @@ export class EditorStore extends Observable<EditorState> {
 
   revert(): void {
     const draft = this.draft();
-    if (draft !== null) this.edit(() => draft.saved, null);
+    if (draft !== null && draft.doc !== draft.saved) {
+      const past = [...draft.past, draft.doc].slice(-historyLimit);
+      this.set({
+        ...draft,
+        doc: draft.saved,
+        revision: draft.savedRevision,
+        past,
+        future: [],
+        selected: null,
+      });
+    }
   }
 
   undo(): void {
@@ -208,43 +246,31 @@ export class EditorStore extends Observable<EditorState> {
     if (draft === null || draft.saving) return;
     const operation = this.active;
     if (operation === null) return;
+    const attempt: SaveAttempt = captureSaveAttempt(++this.attemptSequence, operation, draft);
+    this.activeAttempt = attempt.id;
     this.set({ ...draft, saving: true, failure: null });
-    const written = await this.gateway.writeFile(draft.path, serialise(draft.doc), draft.etag);
-    if (!this.current(operation, draft.path)) return;
-    if (!written.ok) {
-      this.update((current) => ({ ...current, saving: false, failure: written.failure }));
-      return;
-    }
-    this.update((current) => ({ ...current, etag: written.value.etag, saved: draft.doc }));
-    await this.compose(operation, draft.path, draft.doc);
-  }
-
-  private async compose(operation: OperationId, path: string, doc: Composition): Promise<void> {
-    const draft = this.draft();
-    if (draft === null || !this.current(operation, path)) return;
-    const out = domainOf(doc);
-    const composed = await this.gateway.compose({ composition: draft.path, output: out, etag: draft.domainEtag });
-    if (!this.current(operation, path)) return;
-    const domainEtag = composed.ok ? await this.versionOf(out) : draft.domainEtag;
-    if (!this.current(operation, path)) return;
-    this.update((state) =>
-      composed.ok
-        ? {
-            ...state,
-            domainEtag,
-            saving: false,
-            issues: null,
-            outcome: { kind: "composed", summary: summaryOf(composed.value) },
-          }
-        : this.refused(state, doc, composed.failure),
+    if (!this.currentAttempt(attempt)) return;
+    const result = await saveCaptured(
+      this.gateway,
+      attempt,
+      () => this.currentAttempt(attempt),
+      (etag) => {
+        this.update((current) => savedRevision(current, attempt, etag));
+      },
+      (path) => this.versionOf(path),
     );
+    if (result.kind === "stale") return;
+    this.finishAttempt(attempt, (current) => applySaveResult(current, attempt, result));
   }
 
-  private refused(state: Draft, doc: Composition, failure: EditorFailure): Draft {
-    const failures = "issues" in failure ? (failure.issues ?? []) : [];
-    const issues = issueTargets(doc, failures);
-    const message = failures.length === 0 ? failure.diagnostic.message : null;
-    return { ...state, saving: false, issues, outcome: { kind: "refused", message } };
+  private currentAttempt(attempt: SaveAttempt): boolean {
+    return this.activeAttempt === attempt.id && this.current(attempt.operation, attempt.path);
+  }
+
+  private finishAttempt(attempt: SaveAttempt, change: (draft: Draft) => Draft): void {
+    if (!this.currentAttempt(attempt)) return;
+    this.activeAttempt = null;
+    this.update(change);
   }
 
   private draft(): Draft | null {
@@ -254,6 +280,9 @@ export class EditorStore extends Observable<EditorState> {
 
   private update(change: (draft: Draft) => Draft): void {
     const draft = this.draft();
-    if (draft !== null) this.set(change(draft));
+    if (draft !== null) {
+      const next = change(draft);
+      this.set(next.doc === draft.doc ? next : { ...next, revision: draft.revision + 1 });
+    }
   }
 }

@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { LaunchStore } from "../../app/launchStore";
 import { NavigationStore } from "../../app/navigationStore";
-import { failed, success } from "../../model/bridge";
+import { failure as failed, success } from "../../app/ports";
 import { FakeBridge, failure } from "../../test/fakeBridge";
 import { fakeClock } from "../../test/fakeClock";
 import { RunIndicator } from "./RunIndicator";
@@ -27,7 +27,7 @@ function setup() {
     subscribe: () => () => undefined,
   };
   const timers = fakeClock();
-  const launch = new LaunchStore(bridge, timers, timers);
+  const launch = new LaunchStore(bridge.launch, timers, timers);
   render(<RunIndicator launch={launch} navigation={new NavigationStore(location)} />);
   return { bridge, launch, location };
 }

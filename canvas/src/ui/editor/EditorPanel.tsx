@@ -1,4 +1,5 @@
 import { CircleAlert, Wrench } from "lucide-react";
+import { isDirty } from "../../app/editorStore";
 import panel from "../panel.module.css";
 import type { IssueGroup, ListedIssue } from "../../model/compositionEdits";
 import { groupIssues, profileWeightOf, removeProfileWeight } from "../../model/compositionEdits";
@@ -64,9 +65,7 @@ function Issues({ draft, editor, request }: Omit<PanelProps, "plant">) {
   return (
     <section className={panel.group} aria-labelledby="issues-title">
       <h3 id="issues-title">Issues from the binary</h3>
-      {draft.doc !== draft.saved && (
-        <p className={panel.hint}>These are from the last save. Save again to check your changes.</p>
-      )}
+      {isDirty(draft) && <p className={panel.hint}>These are from the last save. Save again to check your changes.</p>}
       <ul className={styles.issues}>
         {groups.map((issue, index) => (
           <li key={`${String(index)}:${issue.message}`}>

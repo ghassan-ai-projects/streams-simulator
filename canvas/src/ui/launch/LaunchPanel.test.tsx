@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import axe from "axe-core";
 import { describe, expect, it, vi } from "vitest";
-import { failed } from "../../model/bridge";
+import { failure as failed } from "../../app/ports";
 import { parsePlant } from "../../model/plant";
 import type { FakeBridge } from "../../test/fakeBridge";
 import { failure } from "../../test/fakeBridge";
@@ -62,7 +62,7 @@ describe("launch panel", () => {
       fireEvent.click(screen.getByRole("button", { name: "Start the run" }));
       await Promise.resolve();
     });
-    await act(async () => {
+    act(() => {
       timers.advance(2000);
     });
     expect(onFinished).toHaveBeenCalledWith("w-7");
@@ -138,7 +138,7 @@ describe("launch panel", () => {
 
   it("shows progress and stops early, keeping the shorter run and opening it", async () => {
     const fake = new HeldBridge();
-    const { onFinished } = renderPanel(fake);
+    const { onFinished, timers } = renderPanel(fake);
     fireEvent.click(screen.getByRole("radio", { name: /As fast as possible/ }));
     fireEvent.click(screen.getByRole("button", { name: "Start the run" }));
     expect(await screen.findByText("Running Mini plant as run w-7")).toHaveFocus();
@@ -151,9 +151,10 @@ describe("launch panel", () => {
       await Promise.resolve();
     });
     expect(screen.getByRole("status")).toHaveTextContent(/^Saved at 00:\d\d:\d\d of 00:30:00/);
-    await vi.waitFor(() => {
-      expect(onFinished).toHaveBeenCalledWith("w-7");
-    }, finishedWait);
+    act(() => {
+      timers.advance(2000);
+    });
+    expect(onFinished).toHaveBeenCalledWith("w-7");
     expect(fake.calls.at(-1)?.name).toBe("run.end");
   });
 

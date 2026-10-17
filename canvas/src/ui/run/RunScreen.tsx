@@ -5,7 +5,7 @@ import type { NavigationStore } from "../../app/navigationStore";
 import type { PlantState, PlantSession } from "../../app/routeModules";
 import type { ReviewState, ReviewSession } from "../../app/routeModules";
 import type { WorkspaceState, WorkspaceStore } from "../../app/workspaceStore";
-import type { RunEntry } from "../../model/bridge";
+import type { RunEntry } from "../../model/workspace";
 import { stateUnit } from "../../model/plant";
 import { noteLinesByEntity } from "../../model/noteLines";
 import { plantView } from "../../model/graph";
@@ -16,7 +16,7 @@ import { firstEventNode } from "../../model/reviewAnchor";
 import type { Report } from "../../model/report";
 import { runSpan } from "../../model/report";
 import plantStyles from "../plant/PlantScreen.module.css";
-import { useStore } from "../useStore";
+import { useStore } from "../primitives";
 import { MissingRun } from "./MissingRun";
 import { Banners } from "./RunStatus";
 import type { HallProps } from "./RunHeader";
@@ -234,7 +234,9 @@ export function RunScreen({ review, plants, workspace, navigation, launch, world
   const identity = usePlantIdentity(state, workspace, plant);
   const [hall, setHall] = useState<string | null>(null);
   useReviewOpen(review, workspace, worldId);
-  useEffect(() => () => plants.close(), [plants, worldId]);
+  useEffect(() => () => {
+    plants.close();
+  }, [plants, worldId]);
   usePlayback(review, state.playing);
   const unit = useUnitOf(plant);
   return (

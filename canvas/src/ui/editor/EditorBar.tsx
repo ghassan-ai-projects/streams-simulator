@@ -1,7 +1,7 @@
 import { PenLine, Redo, RefreshCw, Save, Undo, Undo2 } from "lucide-react";
 import { useState } from "react";
 import type { Draft, EditorSession } from "../../app/routeModules";
-import { canSave, checked, emptyPlant } from "../../app/editorStore";
+import { canSave, checked, emptyPlant, isDirty } from "../../app/editorStore";
 import type { NavigationStore } from "../../app/navigationStore";
 import { domainOf, equipmentOf, titleOf } from "../../model/composition";
 import { ZoomBar } from "../graph";
@@ -45,11 +45,18 @@ function outcomeStatus(draft: Draft): Status {
   return { text: "No changes", detail: null, tone: "" };
 }
 
+function partialStatus(draft: Draft): Status {
+  if (draft.outcome?.kind === "refused" && (draft.issues?.listed.length ?? 0) > 0) return outcomeStatus(draft);
+  const message = draft.composeFailure?.diagnostic.message ?? "Composition did not complete.";
+  return { text: `Saved, but composition failed: ${message}`, detail: null, tone: "warn" };
+}
+
 function statusOf(draft: Draft): Status {
   if (draft.saving) return { text: "Saving and composing…", detail: null, tone: "busy" };
   if (draft.failure !== null)
     return { text: `Not saved: ${draft.failure.diagnostic.message}`, detail: null, tone: "warn" };
-  if (draft.doc !== draft.saved) return { text: "Unsaved changes", detail: null, tone: "busy" };
+  if (isDirty(draft)) return { text: "Unsaved changes", detail: null, tone: "busy" };
+  if (draft.saveStatus === "saved-compose-failed") return partialStatus(draft);
   return outcomeStatus(draft);
 }
 
@@ -68,7 +75,7 @@ function Title({ draft, navigation }: Omit<BarProps, "editor">) {
 }
 
 function OpenPlant({ draft, navigation }: Omit<BarProps, "editor">) {
-  if (draft.domainEtag === "" && draft.outcome?.kind !== "composed") return null;
+  if (!checked(draft)) return null;
   return (
     <button
       type="button"
@@ -221,7 +228,7 @@ function RevertButton({
 export function EditorBar({ draft, editor, navigation, request }: BarProps & { readonly request: FocusRequest }) {
   useEditorKeys(editor);
   const status = statusOf(draft);
-  const clean = draft.doc === draft.saved;
+  const clean = !isDirty(draft);
   const savable = canSave(draft);
   return (
     <div className={plantStyles.bar}>

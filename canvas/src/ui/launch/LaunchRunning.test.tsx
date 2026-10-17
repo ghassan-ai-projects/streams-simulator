@@ -32,11 +32,11 @@ describe("launch panel running", () => {
     expect(screen.getByRole("status")).not.toHaveTextContent("finished");
     expect(onFinished).not.toHaveBeenCalled();
     expect(onFinished).not.toHaveBeenCalled();
-    await act(async () => {
+    act(() => {
       timers.advance(1999);
     });
     expect(onFinished).not.toHaveBeenCalled();
-    await act(async () => {
+    act(() => {
       timers.advance(1);
     });
     expect(onFinished).toHaveBeenCalledWith("w-7");

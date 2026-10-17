@@ -2,7 +2,7 @@ import { CircleAlert, CircleCheck, Loader, X } from "lucide-react";
 import type { LaunchState, LaunchStore } from "../../app/launchStore";
 import type { NavigationStore } from "../../app/navigationStore";
 import { clockOf, rateWords } from "../../model/launch";
-import { useStore } from "../useStore";
+import { useStore } from "../primitives";
 import styles from "./TopBar.module.css";
 
 interface IndicatorProps {

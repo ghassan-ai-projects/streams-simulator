@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { failed, success } from "../model/bridge";
+import { failure as failed, success } from "../app/ports";
 import { FakeBridge, failure } from "../test/fakeBridge";
 import { fakeClock } from "../test/fakeClock";
 import { LaunchStore } from "./launchStore";
@@ -25,7 +25,7 @@ const plan = {
 
 function launch(fake: FakeBridge): LaunchStore {
   const timers = fakeClock();
-  return new LaunchStore(fake, timers, timers);
+  return new LaunchStore(fake.launch, timers, timers);
 }
 
 describe("launch", () => {
@@ -101,7 +101,7 @@ describe("launch", () => {
     fake.actions.set("effector.invoke", success({ accepted: true, effect_eta_ns: 1e9 }));
     let now = 1000;
     const timers = fakeClock();
-    const store = new LaunchStore(fake, { nowMs: () => (now += 250) }, timers);
+    const store = new LaunchStore(fake.launch, { nowMs: () => (now += 250) }, timers);
     const seen: { atS: number; calls: number; atMs: number }[] = [];
     store.subscribe(() => {
       const state = store.snapshot();
@@ -121,7 +121,11 @@ describe("launch", () => {
     const store = launch(fake);
     const call = { entity: "CH-1", effector: "chiller__start", atS: 0, args: {} };
     await store.start(origin, { ...plan, faults: [], calls: [call] });
-    expect(store.snapshot()).toMatchObject({ phase: "failed", failure: { code: "invalid_args" }, kept: "w-4" });
+    expect(store.snapshot()).toMatchObject({
+      phase: "failed",
+      failure: { kind: "rejected", step: "invoke", diagnostic: { displayCode: "invalid_args" } },
+      kept: "w-4",
+    });
     expect(fake.calls.at(-1)).toEqual({ name: "world.destroy", args: { world_id: "w-4" } });
   });
 
@@ -130,7 +134,10 @@ describe("launch", () => {
     fake.actions.set("fault.inject", failed(failure("unknown_fault", 422, "no such fault")));
     const store = launch(fake);
     await store.start(origin, plan);
-    expect(store.snapshot()).toMatchObject({ phase: "failed", failure: { code: "unknown_fault" } });
+    expect(store.snapshot()).toMatchObject({
+      phase: "failed",
+      failure: { kind: "rejected", step: "inject", diagnostic: { displayCode: "unknown_fault" } },
+    });
     expect(fake.calls.at(-1)).toEqual({ name: "world.destroy", args: { world_id: "w-4" } });
   });
 
@@ -154,7 +161,10 @@ describe("launch", () => {
     fake.actions.set("world.create", failed(failure("domain_invalid", 422, "bad domain")));
     const store = launch(fake);
     await store.start(origin, plan);
-    expect(store.snapshot()).toMatchObject({ phase: "failed", failure: { code: "domain_invalid" } });
+    expect(store.snapshot()).toMatchObject({
+      phase: "failed",
+      failure: { kind: "rejected", step: "create", diagnostic: { displayCode: "domain_invalid" } },
+    });
     expect(fake.calls.map((call) => call.name)).toEqual(["world.create"]);
   });
 
@@ -163,14 +173,14 @@ describe("launch", () => {
     const timers = fakeClock();
     const waits: number[] = [];
     const scheduler = {
-      schedule: timers.schedule,
+      schedule: (delayMs: number, task: () => void) => timers.schedule(delayMs, task),
       delay: (ms: number) => {
         waits.push(ms);
         timers.advance(ms);
         return Promise.resolve();
       },
     };
-    const store = new LaunchStore(fake, timers, scheduler);
+    const store = new LaunchStore(fake.launch, timers, scheduler);
     const rates: (number | null)[] = [];
     store.subscribe(() => {
       const state = store.snapshot();
@@ -186,22 +196,21 @@ describe("launch", () => {
   it("runs a plan without a pace as fast as the binary answers", async () => {
     const waits: number[] = [];
     const timers = fakeClock();
-    const waits: number[] = [];
     const scheduler = {
-      schedule: timers.schedule,
+      schedule: (delayMs: number, task: () => void) => timers.schedule(delayMs, task),
       delay: (ms: number) => {
         waits.push(ms);
         return Promise.resolve();
       },
     };
-    const store = new LaunchStore(bridge(), timers, scheduler);
+    const store = new LaunchStore(bridge().launch, timers, scheduler);
     await store.start(origin, plan);
     expect(waits).toEqual([]);
   });
 
   it("wakes a waiting run the moment Stop now is pressed", async () => {
     const timers = fakeClock();
-    const store = new LaunchStore(bridge(), timers, timers);
+    const store = new LaunchStore(bridge().launch, timers, timers);
     const running = store.start(origin, { ...plan, durationS: 1800, faults: [], pace: "watch" });
     await vi.waitFor(() => {
       expect(store.snapshot()).toMatchObject({ phase: "running", atS: 60 });

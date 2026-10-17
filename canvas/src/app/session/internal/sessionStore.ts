@@ -1,23 +1,13 @@
-import { normalisePairingCode, pairingCodeComplete } from "../model/bridge";
-import { Observable } from "./observable";
-import type { SessionFailure, SessionGateway } from "./ports/session";
-
-export type SessionState =
-  | { readonly phase: "checking" }
-  | { readonly phase: "unreachable"; readonly failure: SessionFailure }
-  | {
-      readonly phase: "unpaired";
-      readonly code: string;
-      readonly busy: boolean;
-      readonly failure: SessionFailure | null;
-    }
-  | { readonly phase: "paired" };
+import type { Session, SessionState } from "../contract";
+import { Observable } from "../../shared";
+import type { SessionFailure, SessionGateway } from "../../ports";
+import { normalisePairingCode, pairingCodeComplete } from "./sessionCode";
 
 export function pairingBlocked(failure: SessionFailure | null): boolean {
   return failure?.kind === "pairing-closed";
 }
 
-export class SessionStore extends Observable<SessionState> {
+export class SessionStore extends Observable<SessionState> implements Session {
   constructor(private readonly gateway: SessionGateway) {
     super({ phase: "checking" });
   }
@@ -68,4 +58,8 @@ export class SessionStore extends Observable<SessionState> {
       failure: outcome.failure,
     });
   }
+}
+
+export function createSession(gateway: SessionGateway): Session {
+  return new SessionStore(gateway);
 }

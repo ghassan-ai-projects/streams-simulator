@@ -29,7 +29,7 @@ function Route({
   return (
     <>
       <p>{opened ? "opened" : "opening"}</p>
-      <HomeScreen workspace={workspace} navigation={nav} maker={new PlantMaker(bridge)} />
+      <HomeScreen workspace={workspace} navigation={nav} maker={new PlantMaker(bridge.plant)} />
     </>
   );
 }
@@ -37,7 +37,7 @@ function Route({
 describe("a route under strict mode", () => {
   it("survives the setup-cleanup-setup replay with one live watcher and the route on screen", async () => {
     const bridge = new FakeBridge();
-    const workspace = new WorkspaceStore(bridge);
+    const workspace = new WorkspaceStore(bridge.workspace);
     const nav = navigation();
     const view = renderStrict(<Route workspace={workspace} nav={nav.store} bridge={bridge} />);
     await view.findByText("opened");
