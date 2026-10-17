@@ -2,8 +2,8 @@ import { Cpu, RefreshCw, RotateCcw, Save, ShieldCheck } from "lucide-react";
 import type { DeviceSession, Draft } from "../../../app/devices";
 import { canSave, isBusy, isDirty, saveStatusOf } from "../../../app/devices";
 import type { NavigationStore } from "../../../app/shell";
-import { stemOf } from "../../../model/devices";
-import { Breadcrumb, screen, shared, useScreen } from "../../primitives";
+import { screen, shared } from "../../primitives";
+import { DeviceTitle } from "./DeviceTitle";
 import styles from "./Devices.module.css";
 import { useDeviceKeys } from "./useDeviceKeys";
 
@@ -19,20 +19,6 @@ const tones = {
   ok: styles.statusOk,
   "": styles.statusIdle,
 } as const;
-
-function Title({ draft, navigation }: Pick<BarProps, "draft" | "navigation">) {
-  const name = stemOf(draft.path);
-  const heading = useScreen(`${name} · device`);
-  const trail = [
-    {
-      label: "Workspace",
-      onGo: () => {
-        navigation.go({ screen: "workspace" });
-      },
-    },
-  ];
-  return <Breadcrumb trail={trail} here={name} heading={heading} tag="Editing" />;
-}
 
 function Reload({ draft, devices }: Pick<BarProps, "draft" | "devices">) {
   if (!(draft.save.kind === "write-failed" && draft.save.failure.kind === "conflict")) return null;
@@ -108,7 +94,7 @@ export function DeviceBar({ draft, devices, navigation }: BarProps) {
   return (
     <div className={screen.bar}>
       <Cpu size={14} aria-hidden="true" />
-      <Title draft={draft} navigation={navigation} />
+      <DeviceTitle path={draft.path} tag="Editing" navigation={navigation} />
       <Reload draft={draft} devices={devices} />
       <span role="status" className={tones[status.tone]} title={status.detail ?? status.text}>
         {status.text}

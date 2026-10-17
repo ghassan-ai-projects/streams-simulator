@@ -1,3 +1,4 @@
+import type { KindEntry } from "../../model/workspace";
 import type { Diagnostic, FileContent, Outcome } from "./shared";
 
 interface KindIssue {
@@ -12,16 +13,62 @@ export interface KindChecked {
   readonly commands: number;
 }
 
+export interface LibraryInstrument {
+  readonly ref: string;
+  readonly title: string;
+}
+
+export interface InstrumentSpec {
+  readonly family: string;
+  readonly unit: string;
+  readonly min: number | null;
+  readonly max: number | null;
+}
+
+export interface TwinMade {
+  readonly id: string;
+  readonly digest: string;
+  readonly channels: number;
+  readonly faults: number;
+  readonly effectors: number;
+  readonly implements: readonly string[];
+}
+
+export interface DomainChecked {
+  readonly id: string;
+  readonly digest: string;
+}
+
+interface LintFinding {
+  readonly severity: string;
+  readonly entity: string;
+  readonly detail: string;
+}
+
+export interface LintReport {
+  readonly errors: number;
+  readonly warnings: number;
+  readonly findings: readonly LintFinding[];
+}
+
 export type DeviceFailure =
   | { readonly kind: "missing" | "conflict" | "unavailable" | "unreadable"; readonly diagnostic: Diagnostic }
   | { readonly kind: "refused"; readonly diagnostic: Diagnostic; readonly issues: readonly KindIssue[] };
 
+type Written = Outcome<{ readonly path: string; readonly etag: string }, DeviceFailure>;
+
 export interface DevicesGateway {
   readFile(path: string): Promise<Outcome<FileContent, DeviceFailure>>;
-  writeFile(
-    path: string,
-    content: string,
-    etag: string,
-  ): Promise<Outcome<{ readonly path: string; readonly etag: string }, DeviceFailure>>;
+  writeFile(path: string, content: string, etag: string): Promise<Written>;
   check(path: string): Promise<Outcome<KindChecked, DeviceFailure>>;
+  kinds(): Promise<Outcome<readonly KindEntry[], DeviceFailure>>;
+  instruments(): Promise<Outcome<readonly LibraryInstrument[], DeviceFailure>>;
+  instrument(ref: string): Promise<Outcome<InstrumentSpec, DeviceFailure>>;
+  twin(input: {
+    readonly choices: string;
+    readonly out: string;
+    readonly etag: string;
+  }): Promise<Outcome<TwinMade, DeviceFailure>>;
+  validateDomain(path: string): Promise<Outcome<DomainChecked, DeviceFailure>>;
+  lint(path: string): Promise<Outcome<LintReport, DeviceFailure>>;
 }

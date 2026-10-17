@@ -56,15 +56,17 @@ export function editorFailure(action: "read" | "write" | "compose"): FailureMapp
   return plantFailure(action);
 }
 
-export function deviceFailure(step: "read" | "write" | "check"): FailureMapper<DeviceFailure> {
+type DeviceStep = "read" | "write" | "check" | "twin";
+
+export function deviceFailure(step: DeviceStep): FailureMapper<DeviceFailure> {
   return (error) => (error.kind === "http" ? deviceProblem(error.problem, step) : unreached(error));
 }
 
-function deviceProblem(problem: WireProblem, step: "read" | "write" | "check"): DeviceFailure {
+function deviceProblem(problem: WireProblem, step: DeviceStep): DeviceFailure {
   const display = diagnostic(problem);
   if (isMissing(problem)) return { kind: "missing", diagnostic: display };
   if (problem.code === "conflict") return { kind: "conflict", diagnostic: display };
-  if (step === "check" && problem.status === 422) {
+  if ((step === "check" || step === "twin") && problem.status === 422) {
     return { kind: "refused", diagnostic: display, issues: problem.issues };
   }
   return serverFault(problem, display);

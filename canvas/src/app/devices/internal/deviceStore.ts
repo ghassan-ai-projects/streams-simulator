@@ -11,14 +11,11 @@ import {
 import type { DeviceFailure, DevicesGateway, KindChecked, Outcome } from "../../ports";
 import { DraftStore, createOperationIdentity } from "../../shared";
 import type { Operation, OperationIdentity } from "../../shared";
-import type { DeviceSession } from "./api";
+import type { DeviceSession, TwinSession } from "./api";
 import type { DeviceState, Draft } from "./deviceDraft";
+import { unreadable } from "./deviceFailures";
 import { canSave, isBusy, isSaving } from "./deviceSelectors";
-
-const unreadable: DeviceFailure = {
-  kind: "unreadable",
-  diagnostic: { displayCode: "kind_unreadable", message: "The file is not a device definition." },
-};
+import { createTwinSession } from "./twinStore";
 
 const kindSelected: Selection = { part: "kind" };
 
@@ -47,12 +44,14 @@ function withResult(draft: Draft, checked: KindFile, result: Outcome<KindChecked
 class DeviceStore extends DraftStore<DeviceState, Draft> {
   private readonly checks = createOperationIdentity();
   private etag = "";
+  readonly twin: TwinSession;
 
   constructor(
     private readonly gateway: DevicesGateway,
     private readonly operations: OperationIdentity,
   ) {
     super({ phase: "idle" });
+    this.twin = createTwinSession(gateway);
   }
 
   protected override loading(path: string): DeviceState {
@@ -64,6 +63,7 @@ class DeviceStore extends DraftStore<DeviceState, Draft> {
   }
 
   close(): void {
+    this.twin.close();
     this.operations.invalidate();
     this.checks.invalidate();
     this.etag = "";

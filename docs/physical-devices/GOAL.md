@@ -56,9 +56,12 @@ A round that turns out too large is split (R3a, R3b); a round's order changes on
 7. **Thermal experiment.** `go test ./internal/device/... ./internal/deviceworld/... ./test/contract/...` stays green every
    round.
 8. **Commit.** One commit per round, naming the round and listing any gate change with its reason.
-9. **Milestone end** (after R5, R6, R9, R10, R12): `make phase-gate` run by Haiku in the background; one Sonnet reviewer
-   reads the milestone diff against this bar and PHYSICAL_DEVICES.md (High findings fixed before the next milestone); for
-   canvas milestones, the main session checks the screens in the browser at 1280 and 1440 px, light and dark.
+9. **Milestone end** (after R5, R6, R9, R10, R12): `make phase-gate` run by Haiku in the background; **two Sonnet reviewers
+   with different lenses, started from this session**: (A) correctness and architecture against this bar, AGENTS.md and
+   PHYSICAL_DEVICES.md; (B) adversarial: hostile input, bypassable checks, tests that would not fail if the code broke, truth
+   boundary. Canvas milestones add a design review in the browser at 1280 and 1440 px, light and dark, and a code-quality
+   lens. High findings are fixed and Medium findings fixed or deferred with a reason in the round log before the next
+   milestone.
 
 ## Done means
 

@@ -6,7 +6,7 @@ import type { Choices } from "../../../model/devices";
 import { cx, panel, shared } from "../../primitives";
 import styles from "./Devices.module.css";
 
-interface Aria {
+export interface Aria {
   readonly id: string;
   readonly "aria-invalid": true | undefined;
   readonly "aria-describedby": string | undefined;
@@ -68,9 +68,10 @@ interface TextBoxProps {
   readonly list?: string | undefined;
   readonly maxLength?: number | undefined;
   readonly inputRef?: RefObject<HTMLInputElement | null> | undefined;
+  readonly onCommit?: (() => void) | undefined;
 }
 
-export function TextBox({ aria, value, onChange, list, maxLength, inputRef }: TextBoxProps) {
+export function TextBox({ aria, value, onChange, list, maxLength, inputRef, onCommit }: TextBoxProps) {
   return (
     <input
       {...aria}
@@ -82,6 +83,7 @@ export function TextBox({ aria, value, onChange, list, maxLength, inputRef }: Te
       onChange={(event) => {
         onChange(event.target.value);
       }}
+      onBlur={onCommit}
     />
   );
 }
@@ -142,6 +144,7 @@ interface NumberProps {
   readonly name: string;
   readonly placeholder?: string;
   readonly onChange: (value: number | null) => void;
+  readonly onCommit?: (() => void) | undefined;
 }
 
 function parsed(typed: string): number | null | "broken" {
@@ -150,7 +153,7 @@ function parsed(typed: string): number | null | "broken" {
   return Number.isFinite(value) ? value : "broken";
 }
 
-export function NumberInput({ value, aria, name, placeholder, onChange }: NumberProps) {
+export function NumberInput({ value, aria, name, placeholder, onChange, onCommit }: NumberProps) {
   const [typed, setTyped] = useState<string | null>(null);
   const shown = typed ?? (value === null ? "" : String(value));
   const broken = typed !== null && parsed(typed) === "broken";
@@ -171,6 +174,7 @@ export function NumberInput({ value, aria, name, placeholder, onChange }: Number
         }}
         onBlur={() => {
           if (!broken) setTyped(null);
+          onCommit?.();
         }}
       />
       {broken && <p className={styles.issue}>Enter a number.</p>}

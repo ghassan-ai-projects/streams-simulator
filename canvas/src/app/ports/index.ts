@@ -1,4 +1,13 @@
-export type { DeviceFailure, DevicesGateway, KindChecked } from "./devices";
+export type {
+  DeviceFailure,
+  DevicesGateway,
+  DomainChecked,
+  InstrumentSpec,
+  KindChecked,
+  LibraryInstrument,
+  LintReport,
+  TwinMade,
+} from "./devices";
 export type { EditorFailure, EditorGateway } from "./editor";
 export type { Acknowledgement, LaunchFailure, LaunchGateway } from "./launch";
 export type { PlantFailure, PlantGateway } from "./plant";

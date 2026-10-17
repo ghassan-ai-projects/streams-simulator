@@ -18,6 +18,10 @@ export function devicePath(name: string): string {
   return `kinds/${name}.kind.json`;
 }
 
+export function looksLikeFileStem(name: string): boolean {
+  return fileStem.test(name);
+}
+
 export function deviceNameProblem(name: string, taken: readonly string[]): string {
   const stem = name.trim();
   if (stem === "") return "Give the device a name.";

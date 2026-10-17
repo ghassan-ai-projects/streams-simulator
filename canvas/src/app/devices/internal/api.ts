@@ -1,8 +1,9 @@
-import type { KindFile, Selection } from "../../../model/devices";
+import type { KindFile, Selection, TwinChoices } from "../../../model/devices";
 import type { KindEntry } from "../../../model/workspace";
 import type { DeviceFailure, Outcome } from "../../ports";
 import type { Store } from "../../shared";
 import type { DeviceState } from "./deviceDraft";
+import type { TwinState } from "./twinDraft";
 
 export interface DeviceRow {
   readonly path: string;
@@ -16,7 +17,20 @@ export interface DeviceDesk {
   create(name: string): Promise<Outcome<string, DeviceFailure>>;
 }
 
+export interface TwinSession extends Store<TwinState> {
+  open(path: string): Promise<void>;
+  reload(): Promise<void>;
+  close(): void;
+  edit(change: (choices: TwinChoices) => TwinChoices): void;
+  include(path: string): Promise<void>;
+  leave(kind: string): void;
+  persist(): Promise<void>;
+  create(): Promise<void>;
+  replace(): Promise<void>;
+}
+
 export interface DeviceSession extends Store<DeviceState> {
+  readonly twin: TwinSession;
   open(path: string): Promise<void>;
   close(): void;
   reload(): Promise<void>;

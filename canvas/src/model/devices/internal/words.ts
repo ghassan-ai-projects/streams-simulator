@@ -43,7 +43,7 @@ export const unitChoices: Choices = [
 ];
 
 export function choicesFor(choices: Choices, value: string): Choices {
-  if (value === "") return [["", "Choose…"], ...choices];
+  if (value === "") return choices.some(([key]) => key === "") ? choices : [["", "Choose…"], ...choices];
   return choices.some(([key]) => key === value) ? choices : [...choices, [value, `${value} (not accepted)`]];
 }
 
