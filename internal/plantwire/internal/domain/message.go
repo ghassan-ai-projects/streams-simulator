@@ -17,6 +17,7 @@ type Message struct {
 	ContractDigest  string         `json:"contract_digest"`
 	BDSeq           uint64         `json:"bd_seq"`
 	Boards          []Board        `json:"boards"`
+	Kinds           []any          `json:"kinds"`
 	Online          bool           `json:"online"`
 	Refusal         string         `json:"refusal"`
 	AuthorityEpoch  int64          `json:"authority_epoch"`

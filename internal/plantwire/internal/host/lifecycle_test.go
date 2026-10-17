@@ -78,3 +78,14 @@ func TestARecordFromAnotherSessionIsIgnored(t *testing.T) {
 		t.Fatalf("a sync from another session was answered: %v", replies)
 	}
 }
+
+func TestAKindWhoseContentDiffersFromItsDigestRefusesTheSession(t *testing.T) {
+	t.Parallel()
+	kinds := birth(t, "simulated").Kinds
+	kinds[0].(map[string]any)["metrics"] = []any{}
+	h := New(Options{Environment: "simulated", ProtocolMax: 1})
+	replies := h.Receive(birth(t, "simulated", map[string]any{"kinds": kinds}))
+	if h.Report().Refused != "inventory_mismatch" || len(replies) != 1 || replies[0]["online"] != false || replies[0]["refusal"] != "inventory_mismatch" {
+		t.Fatalf("refused %q, replies %v", h.Report().Refused, replies)
+	}
+}

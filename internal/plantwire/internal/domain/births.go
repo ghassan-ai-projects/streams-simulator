@@ -2,7 +2,7 @@ package domain
 
 import "github.com/ghassan-ai-projects/streams-simulator/internal/model"
 
-const ContractVersion = "1.0.0"
+const ContractVersion = "1.1.0"
 
 type NodeIdentity struct {
 	Environment  string
@@ -13,7 +13,7 @@ type NodeIdentity struct {
 }
 
 func NodeBirth(identity NodeIdentity, kinds []*model.Kind, boards []model.Board) Record {
-	templates := KindTemplates(kinds, identity.SafeStops)
+	templates := WithKindDigests(KindTemplates(kinds, identity.SafeStops))
 	return newRecord("NBIRTH", LaneControl, map[string]any{
 		"protocol_min": Version, "protocol_max": identity.ProtocolMax, "contract_version": ContractVersion,
 		"contract_digest": ContractDigest(), "environment": identity.Environment, "bd_seq": identity.BDSeq,

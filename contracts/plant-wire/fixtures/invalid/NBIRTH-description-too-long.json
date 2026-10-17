@@ -9,8 +9,8 @@
     "lane": "control",
     "protocol_min": 1,
     "protocol_max": 1,
-    "contract_version": "1.0.0",
-    "contract_digest": "sha256:ae0212be43952f881b897773d6aa7684ff5c7492d8dcd0e3f084d8f0fd4cedcd",
+    "contract_version": "1.1.0",
+    "contract_digest": "sha256:1b8b51bba3a949e32bf9ea30b936da1b524618a84ccdba9d441ed2055ba61344",
     "environment": "simulated",
     "bd_seq": 0,
     "prior_last_seq": -1,
@@ -94,7 +94,8 @@
             "risk_class": "high",
             "safe_stop": false
           }
-        ]
+        ],
+        "kind_digest": "sha256:b5e93cadac03ad9537622cacf3e529d44de2271811d35455712b7eefb3f24fb1"
       }
     ],
     "boards": [

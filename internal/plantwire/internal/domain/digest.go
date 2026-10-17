@@ -5,6 +5,7 @@ import (
 	"cmp"
 	"encoding/json"
 	"io/fs"
+	"maps"
 	"slices"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/canonical"
@@ -55,4 +56,27 @@ func CapabilityDigest(templates []any) string {
 func nameOf(command any) string {
 	name, _ := command.(map[string]any)["name"].(string)
 	return name
+}
+
+func KindDigest(entry map[string]any) string {
+	body := maps.Clone(entry)
+	delete(body, "kind_digest")
+	digest, _ := canonical.Digest(body)
+	return digest
+}
+
+func WithKindDigests(templates []any) []any {
+	for _, template := range templates {
+		entry := template.(map[string]any)
+		entry["kind_digest"] = KindDigest(entry)
+	}
+	return templates
+}
+
+func KindsMisdigested(kinds []any) bool {
+	return slices.ContainsFunc(kinds, func(kind any) bool {
+		entry, _ := kind.(map[string]any)
+		declared, _ := entry["kind_digest"].(string)
+		return declared != KindDigest(entry)
+	})
 }

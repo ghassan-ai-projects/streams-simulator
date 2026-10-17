@@ -2,7 +2,7 @@
 
 | Folder | Contents | A conformant side |
 |---|---|---|
-| `valid/` | One record per type | Accepts each |
+| `valid/` | One record per type, and one kind file (`KIND.json`) | Accepts each |
 | `invalid/` | `{schema, fails_at, record}`: a record that breaks one rule, and the member where it breaks | Refuses each (`malformed`), at that member |
 | `must-ignore/` | `{schema, record}` with members no schema knows | Accepts each and ignores the extra members |
 | `injection/` | `{schema, expect, record}` with hostile strings in descriptions and string values | Accepts each as data, quotes the strings when showing them to a model, takes no action from them |
@@ -18,7 +18,7 @@ An exchange step is one of:
 - `{"now_ns": t}`: the node's time (world time for a simulated node) is now `t`.
 
 Every command fixture's `idempotency_key` is the digest of its content (SPEC §9), except where an exchange reuses a key on
-purpose; `NBIRTH` carries the real `contract_digest` (this folder's `DIGEST`) and `capability_digest` (SPEC §5).
+purpose; `NBIRTH` carries the real `contract_digest` (this folder's `DIGEST`), `capability_digest` and each kind's `kind_digest` (SPEC §5); `valid/KIND.json` is the first kind of `valid/NBIRTH.json` without its `kind_digest`.
 
 The `lying-result-*` exchanges cover one command per class (setpoint, start, safe stop): the device reports success while the
 observations do not move. `verified-result` is the positive control: the observation moves, so the host counts it done.

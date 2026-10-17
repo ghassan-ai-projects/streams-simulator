@@ -39,7 +39,7 @@ func Parse(line []byte) (map[string]any, error) {
 
 func Check(record map[string]any) error {
 	kind, _ := record["type"].(string)
-	schema := schemas()[kind]
+	schema := recordSchema(kind)
 	if schema == nil {
 		return fmt.Errorf("plantwire: unknown record type %q", kind)
 	}
@@ -54,6 +54,22 @@ func decode(raw []byte, target any) error {
 	decoder.UseNumber()
 	if err := decoder.Decode(target); err != nil {
 		return fmt.Errorf("decode: %w", err)
+	}
+	return nil
+}
+
+const kindFileSchema = "KIND"
+
+func recordSchema(name string) *jsonschema.Schema {
+	if name == kindFileSchema {
+		return nil
+	}
+	return schemas()[name]
+}
+
+func CheckKind(entry map[string]any) error {
+	if errs := schemas()[kindFileSchema].Validate(entry); len(errs) > 0 {
+		return fmt.Errorf("plantwire: kind file fails its schema: %w", errs[0])
 	}
 	return nil
 }

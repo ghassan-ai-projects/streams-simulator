@@ -44,8 +44,11 @@ A round that turns out too large is split (R3a, R3b); a round's order changes on
    conversation.
 4. **Tests at the layer they prove**, for every changed behaviour; contract changes have fixtures and schema tests; any change
    to what a run produces has a replay-determinism test.
-5. **Gates by Haiku.** `make quick` for Go rounds; `npm run check` in `canvas/` for canvas rounds. Haiku reports only
-   failures and their output. Failures go back to the Sonnet subagent that wrote the round.
+5. **Every command by Haiku, dispatched by the main session.** The Sonnet subagent writes code only: it runs and spawns
+   nothing and returns when the code is written. The main session then starts one Haiku gate agent with a fixed command list
+   (focused `go test` for the touched packages, the thermal-experiment tests, `make quick`; `npm run check` in `canvas/` for
+   canvas rounds) that reports only failures and their output. Failures go back to the same Sonnet agent by `SendMessage`, so
+   it keeps its context; then Haiku runs the gate again. The behaviour pin runs only in rounds that claim no behaviour change.
 6. **Boundary review by the main session.** `git diff --stat` for the round, then a read of every change to
    `test/architecture`, `scripts/`, `contracts/`, module facades, `AGENTS.md` and the Makefile.
 7. **Thermal experiment.** `go test ./internal/device/... ./internal/deviceworld/... ./test/contract/...` stays green every
@@ -71,3 +74,4 @@ existing barrier wall cap; authentication and several users; the canvas producti
 
 | Round | Commit | Notes |
 |---|---|---|
+| R1 | pending | Kind file schema, `kind_digest` in `NBIRTH` (contract 1.1.0), host refuses a mismatch. Only the contract generators under `scripts/plant-wire` changed; no gate changed. The behaviour pin is stale at HEAD before this round (16 `run.json` hashes and `manifest-file` differ on a clean checkout); not touched, to be refreshed in a round that claims no behaviour change. |

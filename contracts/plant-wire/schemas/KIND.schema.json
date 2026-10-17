@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:plant-wire:v1:KIND",
+  "title": "KIND",
+  "description": "A kind file: exactly one NBIRTH.kinds entry without its kind_digest. NBIRTH.kinds items are this definition plus a required kind_digest.",
+  "type": "object",
+  "required": [
+    "kind",
+    "metrics",
+    "commands"
+  ],
+  "properties": {
+    "kind": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+    },
+    "metrics": {
+      "type": "array",
+      "maxItems": 512,
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "data_type"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+          },
+          "data_type": {
+            "enum": [
+              "number",
+              "integer",
+              "boolean",
+              "enum",
+              "string"
+            ]
+          },
+          "unit": {
+            "type": "string",
+            "maxLength": 32
+          },
+          "eu_range": {
+            "type": "object",
+            "required": [
+              "min",
+              "max"
+            ],
+            "properties": {
+              "min": {
+                "type": "number"
+              },
+              "max": {
+                "type": "number"
+              }
+            }
+          },
+          "instrument_range": {
+            "type": "object",
+            "required": [
+              "min",
+              "max"
+            ],
+            "properties": {
+              "min": {
+                "type": "number"
+              },
+              "max": {
+                "type": "number"
+              }
+            }
+          },
+          "resolution": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "enum_values": {
+            "type": "array",
+            "maxItems": 64,
+            "items": {
+              "type": "string",
+              "maxLength": 64
+            }
+          },
+          "scan_class": {
+            "type": "string",
+            "maxLength": 32
+          },
+          "deadband": {
+            "type": "number",
+            "minimum": 0
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "writable": {
+            "type": "boolean"
+          },
+          "path": {
+            "type": "string",
+            "maxLength": 256
+          }
+        }
+      }
+    },
+    "commands": {
+      "type": "array",
+      "maxItems": 128,
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "args_schema"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+          },
+          "args_schema": {
+            "type": "object"
+          },
+          "risk_class": {
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "critical"
+            ]
+          },
+          "safe_stop": {
+            "type": "boolean"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 200
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,4 +1,4 @@
-import json, os, sys
+import copy, json, os, sys
 out = sys.argv[1]
 os.makedirs(out, exist_ok=True)
 ident = {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"}
@@ -31,6 +31,11 @@ command_template = {"type": "object", "required": ["name", "args_schema"], "prop
     "name": ident, "args_schema": {"type": "object"}, "risk_class": {"enum": ["low", "medium", "high", "critical"]}, "safe_stop": {"type": "boolean"}, "description": desc}}
 kind = {"type": "object", "required": ["kind", "metrics", "commands"], "properties": {
     "kind": ident, "metrics": {"type": "array", "maxItems": 512, "items": metric_template}, "commands": {"type": "array", "maxItems": 128, "items": command_template}}}
+kind_entry = copy.deepcopy(kind)
+kind_entry["required"] = kind["required"] + ["kind_digest"]
+kind_entry["properties"]["kind_digest"] = digest
+kind_file = {"$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "urn:plant-wire:v1:KIND", "title": "KIND",
+             "description": "A kind file: exactly one NBIRTH.kinds entry without its kind_digest. NBIRTH.kinds items are this definition plus a required kind_digest.", **kind}
 board = {"type": "object", "required": ["board", "members"], "properties": {"board": ident, "members": {"type": "array", "maxItems": 4096, "items": ident}}}
 current = {"type": "object", "required": ["name", "alias", "value", "quality"], "properties": {"name": ident, "alias": u64, "value": value, "quality": quality}}
 born = {"type": "object", "required": ["name", "alias", "value", "quality"], "properties": {"name": ident, "alias": u64,
@@ -41,11 +46,12 @@ sample = {"type": "object", "required": ["alias", "value", "quality", "event_tim
     "uncertainty_ms": {"type": "number", "minimum": 0}, "device_mono_us": u64}}
 
 schemas = {
+ "KIND": kind_file,
  "NBIRTH": envelope("NBIRTH", "control", ["protocol_min", "protocol_max", "contract_version", "contract_digest", "environment", "bd_seq", "prior_last_seq", "capability_digest", "kinds", "boards"], {
     "protocol_min": {"type": "integer", "minimum": 1}, "protocol_max": {"type": "integer", "minimum": 1},
     "contract_version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"}, "contract_digest": digest,
     "environment": {"enum": ["simulated", "hardware"]}, "bd_seq": u64, "prior_last_seq": {"type": "integer", "minimum": -1},
-    "capability_digest": digest, "kinds": {"type": "array", "maxItems": 256, "items": kind}, "boards": {"type": "array", "maxItems": 4096, "items": board},
+    "capability_digest": digest, "kinds": {"type": "array", "maxItems": 256, "items": kind_entry}, "boards": {"type": "array", "maxItems": 4096, "items": board},
     "node_metrics": {"type": "object", "properties": {"clock_mode": {"enum": ["virtual", "wall"]}, "run_state": {"enum": ["running", "paused", "ended"]}}}},
     "Node birth: the session start or a rebirth. Declares each kind once; grants nothing."),
  "DBIRTH": envelope("DBIRTH", "data", ["device", "kind", "board", "boot_id", "metadata_version", "birth_time_ns", "metrics"], {
