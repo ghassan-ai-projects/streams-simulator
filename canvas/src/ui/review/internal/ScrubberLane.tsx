@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import type { ChipPlace, EventMark, MarkKind } from "../../../model/review";
 import { activeAt, kindsOf, markWords, placeChips, runClock } from "../../../model/review";
-import { cx } from "../../primitives";
+import { cx, useResizeObserver } from "../../primitives";
 import styles from "./Scrubber.module.css";
 
 export interface LaneProps {
@@ -48,17 +48,10 @@ export function MarkRail({ marks, fraction, pick }: Pick<LaneProps, "marks" | "f
 function useWidth() {
   const [width, setWidth] = useState(800);
   const ref = useRef<HTMLOListElement>(null);
-  useEffect(() => {
-    const node = ref.current;
-    if (node === null || typeof ResizeObserver === "undefined") return undefined;
-    const observer = new ResizeObserver(() => {
-      setWidth(node.clientWidth || 800);
-    });
-    observer.observe(node);
-    return () => {
-      observer.disconnect();
-    };
-  }, []);
+  useResizeObserver(ref, () => {
+    const measured = ref.current?.clientWidth ?? 0;
+    setWidth(measured || 800);
+  });
   return { ref, width };
 }
 

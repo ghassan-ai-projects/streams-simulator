@@ -1,10 +1,11 @@
 import { CircleCheck, CircleHelp, CircleX, Eye, Info, Loader, Lock, TriangleAlert } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { ReviewState } from "../../../app/review";
 import type { Badge, Report } from "../../../model/review";
 import { badgeLabels, badgeOf, replayLine } from "../../../model/review";
 import { integrityLine, runFacts, runIdentity } from "../../../model/review";
 import { grouped } from "../../../model/shared/units";
+import { useInterval } from "../../primitives";
 import { RunInfo } from "./RunInfo";
 import styles from "./RunStatus.module.css";
 
@@ -18,15 +19,12 @@ const badgeIcons = {
 
 function useNow(running: boolean): number {
   const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    if (!running) return undefined;
-    const timer = setInterval(() => {
+  useInterval(
+    () => {
       setNow(Date.now());
-    }, 1000);
-    return () => {
-      clearInterval(timer);
-    };
-  }, [running]);
+    },
+    running ? 1000 : null,
+  );
   return now;
 }
 

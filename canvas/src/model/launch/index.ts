@@ -7,8 +7,8 @@ export {
   paceOf,
   planProblems,
   planSummary,
-  rateWords,
   showingMarks,
   watchWords,
 } from "./internal/launch";
+export { runProgressWords } from "./internal/progress";
 export type { Acknowledgement, CallOutcome, LaunchPlan, LaunchStep, PlanProblem } from "./contract";

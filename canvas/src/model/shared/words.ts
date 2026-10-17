@@ -24,3 +24,7 @@ export function counted(n: number, noun: string, many = `${noun}s`): string {
 export function spaced(name: string): string {
   return name.replaceAll("_", " ");
 }
+
+export function failureLine(diagnostic: { readonly message: string; readonly displayCode: string }): string {
+  return `${diagnostic.message} (${diagnostic.displayCode})`;
+}

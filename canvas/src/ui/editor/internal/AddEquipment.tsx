@@ -9,6 +9,7 @@ import type { LibraryEntry, Presets } from "../../../model/plant";
 import { searchLibrary } from "../../../model/plant";
 import type { Plant } from "../../../model/plant";
 import { instanceIdTaken } from "../../../model/plant";
+import { Choice } from "./Choice";
 import styles from "./Editor.module.css";
 import type { FocusRequest } from "./panelProps";
 import { SubmitRow } from "./SubmitRow";
@@ -38,37 +39,6 @@ function usePresets(editor: EditorSession, use: string) {
     };
   }, [editor, use]);
   return { presets: use === "" ? noPresets : presets, preset, setPreset };
-}
-
-function Choice({
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  readonly label: string;
-  readonly value: string;
-  readonly options: readonly (readonly [string, string])[];
-  readonly onChange: (value: string) => void;
-}) {
-  return (
-    <label className={panel.field}>
-      <span>{label}</span>
-      <select
-        aria-label={label}
-        value={value}
-        onChange={(event) => {
-          onChange(event.target.value);
-        }}
-      >
-        {options.map(([key, text]) => (
-          <option key={key} value={key}>
-            {text}
-          </option>
-        ))}
-      </select>
-    </label>
-  );
 }
 
 interface NameProps {
@@ -208,9 +178,9 @@ export function AddEquipment({ draft, plant, editor, request }: AddProps) {
       <h3 id="add-title">Add equipment</h3>
       <LibraryPick library={draft.library} use={use} setUse={setUse} />
       {presets.description !== "" && <p className={styles.describe}>{presets.description}</p>}
-      <Choice label="Size" value={preset} options={sizes(presets)} onChange={setPreset} />
+      <Choice named label="Size" value={preset} options={sizes(presets)} onChange={setPreset} />
       <NameField typed={typed} suggested={suggested} setTyped={setTyped} />
-      <Choice label="Area" value={area} options={options} onChange={setArea} />
+      <Choice named label="Area" value={area} options={options} onChange={setArea} />
       <p className={panel.hint}>Areas are listed in order, with the site first. Add more under Add area.</p>
       <SubmitRow id="add-reason" reason={problem}>
         <Plus size={14} aria-hidden="true" />

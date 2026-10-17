@@ -1,4 +1,5 @@
 import type { AreaRef } from "../../shared/areaTree";
+import { groupBy } from "../../shared/collect";
 import { list, record, text } from "../../shared/json";
 import type { EffectorSpec } from "./effectors";
 import { parseEffectors } from "./effectors";
@@ -127,21 +128,23 @@ function present(value: string | undefined): string | undefined {
   return value === "" ? undefined : value;
 }
 
-function endpoint(value: unknown): { readonly id: string; readonly port: string } {
+export function endpointOf(value: unknown): { readonly id: string; readonly port: string } {
   const raw = text(value);
   const dot = raw.lastIndexOf(".");
   return dot < 0 ? { id: raw, port: "" } : { id: raw.slice(0, dot), port: raw.slice(dot + 1) };
 }
 
-function portQueues(composition: unknown): Map<string, { from: string; to: string }[]> {
-  const queues = new Map<string, { from: string; to: string }[]>();
-  for (const raw of list(record(composition).connections)) {
-    const from = endpoint(record(raw).from);
-    const to = endpoint(record(raw).to);
-    const key = `${from.id}\u0000${to.id}`;
-    queues.set(key, [...(queues.get(key) ?? []), { from: from.port, to: to.port }]);
-  }
-  return queues;
+interface Wire {
+  readonly from: ReturnType<typeof endpointOf>;
+  readonly to: ReturnType<typeof endpointOf>;
+}
+
+function portQueues(composition: unknown): Map<string, Wire[]> {
+  const wires = list(record(composition).connections).map((raw) => ({
+    from: endpointOf(record(raw).from),
+    to: endpointOf(record(raw).to),
+  }));
+  return groupBy(wires, (wire) => `${wire.from.id}\u0000${wire.to.id}`);
 }
 
 function links(value: unknown, composition: unknown): readonly Link[] {
@@ -151,8 +154,8 @@ function links(value: unknown, composition: unknown): readonly Link[] {
     const from = text(entry.from);
     const to = text(entry.to);
     const ports = queues.get(`${from}\u0000${to}`)?.shift();
-    const fromPort = present(text(entry.from_port)) ?? present(ports?.from) ?? null;
-    const toPort = present(text(entry.to_port)) ?? present(ports?.to) ?? null;
+    const fromPort = present(text(entry.from_port)) ?? present(ports?.from.port) ?? null;
+    const toPort = present(text(entry.to_port)) ?? present(ports?.to.port) ?? null;
     return { from, to, type: text(entry.type), fromPort, toPort };
   });
 }

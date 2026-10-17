@@ -3,7 +3,7 @@ import { Plus } from "lucide-react";
 import type { PlanProblem } from "../../../model/launch";
 import type { EffectorArg, Plant } from "../../../model/plant";
 import { effectorOf } from "../../../model/plant";
-import { humanise } from "../../../model/shared/words";
+import { humanise, spaced } from "../../../model/shared/words";
 import type { Draft, DraftCall } from "./draft";
 import type { Change } from "./RowParts";
 import { AtMinute, InstancePick, invalid, RowTail, useAdding } from "./RowParts";
@@ -13,8 +13,6 @@ function effectorsOf(plant: Plant, entity: string): readonly string[] {
   const kind = plant.instances.find((instance) => instance.id === entity)?.kind ?? "";
   return plant.kinds.get(kind)?.effectorSpecs.map((spec) => spec.name) ?? [];
 }
-
-const words = (name: string) => name.replaceAll("_", " ");
 
 function rangeHint(arg: EffectorArg): string {
   if (arg.min !== null && arg.max !== null) return `${String(arg.min)} to ${String(arg.max)}`;
@@ -36,10 +34,10 @@ interface ArgFieldProps {
 
 function ArgField({ arg, label, value, problem, id, onChange }: ArgFieldProps) {
   const options = choices(arg);
-  const shared = { "aria-label": `${label} ${words(arg.name)}`, value, ...invalid(problem, id) };
+  const shared = { "aria-label": `${label} ${spaced(arg.name)}`, value, ...invalid(problem, id) };
   return (
     <label>
-      {words(arg.name)}
+      {spaced(arg.name)}
       {options.length > 0 ? (
         <select
           {...shared}

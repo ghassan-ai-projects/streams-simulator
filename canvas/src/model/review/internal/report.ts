@@ -1,3 +1,6 @@
+import { groupBy } from "../../shared/collect";
+import { humanise } from "../../shared/words";
+
 export type Badge = "verifying" | "not-checked" | "verified" | "not-verified" | "incomplete";
 
 interface Check {
@@ -21,6 +24,19 @@ interface EffectorCall {
   readonly entity: string;
   readonly effector: string;
   readonly outcome: string;
+}
+
+export function callWords(call: Pick<EffectorCall, "effector" | "outcome">): string {
+  return `${humanise(call.effector)} · ${call.outcome}`;
+}
+
+export function faultNames(
+  report: Report,
+  keep: (disturbance: Disturbance) => boolean = () => true,
+): Map<string, string[]> {
+  const faults = report.disturbances.filter((d) => d.kind === "fault" && keep(d));
+  const named = groupBy(faults, (d) => d.target);
+  return new Map([...named].map(([target, same]) => [target, same.map((d) => humanise(d.name))] as const));
 }
 
 export interface AlarmActivation {

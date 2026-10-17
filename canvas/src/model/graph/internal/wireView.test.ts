@@ -28,7 +28,7 @@ function firstY(routes: Routes, id: string): number {
 }
 
 function viewOf(review: boolean) {
-  return plantView(parsePlant(domain, composition), specs, null, review ? reviewView : plainView);
+  return plantView(parsePlant(domain, composition), specs, { open: null, view: review ? reviewView : plainView });
 }
 
 describe("wire view", () => {
@@ -52,7 +52,7 @@ describe("wire view", () => {
 
   it("moves a review wire down with the extra note lines of its node", () => {
     const plant = parsePlant(domain, composition);
-    const view = plantView(plant, specs, null, reviewView, undefined, new Map([["CH-1", 3]]));
+    const view = plantView(plant, specs, { open: null, view: reviewView, notes: new Map([["CH-1", 3]]) });
     const route = routeView(view, "full", "rows", 1).get("CH-1.heat_out>CT-1.heat_in") ?? [];
     const top = boxOf(view, "CH-1").y + headerHeight("CH-1") + 3 * nodeSize.note + 1;
     expect(route[0]?.y).toBe(top + (2 + 0.5) * nodeSize.pin);

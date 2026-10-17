@@ -3,8 +3,9 @@ import type { ComponentProps } from "react";
 import { Network } from "lucide-react";
 import type { LaunchStore } from "../../../app/launch";
 import type { NavigationStore } from "../../../app/shell";
-import type { PlantSession, PlantState } from "../../../app/plant";
+import type { PlantSession, ReadyPlant } from "../../../app/plant";
 import { hallCount, plantView } from "../../../model/graph";
+import { plantTitle } from "../../../model/plant";
 import { counted } from "../../../model/workspace";
 import type { Crumb } from "../../primitives";
 import { Breadcrumb } from "../../primitives";
@@ -14,20 +15,18 @@ import { EditButton, RunButton, useRunningHere } from "./PlantActions";
 import { PlantCanvas } from "./PlantCanvas";
 import styles from "./PlantScreen.module.css";
 
-export type Ready = Extract<PlantState, { phase: "ready" }>;
-
 export interface RunControls {
   readonly launching: boolean;
   readonly button: ComponentProps<typeof RunButton>["button"];
   readonly toggle: () => void;
 }
 
-function summary(state: Ready, hall: string | null): string {
+function summary(state: ReadyPlant, hall: string | null): string {
   const ports = state.plant.links.some((link) => link.fromPort === null) ? " · some links record no ports" : "";
   const figures =
     hall === null
       ? `${counted(state.plant.instances.length, "instance", "instances")} · ${counted(state.plant.links.length, "link", "links")}`
-      : hallCount(plantView(state.plant, state.specs, hall), hall);
+      : hallCount(plantView(state.plant, state.specs, { open: hall }), hall);
   return `${figures}${ports}`;
 }
 
@@ -36,11 +35,11 @@ function Crumbs({
   hall,
   navigation,
 }: {
-  readonly state: Ready;
+  readonly state: ReadyPlant;
   readonly hall: string | null;
   readonly navigation: NavigationStore;
 }) {
-  const title = state.plant.title || state.plant.id;
+  const title = plantTitle(state.plant);
   const heading = useScreen(hall === null ? `${title} · plant` : `${hall} · ${title}`);
   const trail: Crumb[] = [
     {
@@ -69,7 +68,7 @@ export function PlantCentre({
   launch,
   run,
 }: {
-  readonly state: Ready;
+  readonly state: ReadyPlant;
   readonly hall: string | null;
   readonly plants: PlantSession;
   readonly navigation: NavigationStore;

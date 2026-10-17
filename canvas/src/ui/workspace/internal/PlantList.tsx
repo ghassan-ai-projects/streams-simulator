@@ -10,6 +10,7 @@ import type { Route } from "../../../model/shell";
 import type { PlantEntry } from "../../../model/workspace";
 import { plantFacts, plantsOf } from "../../../model/workspace";
 import { NewPlantForm } from "./NewPlant";
+import { SectionHeading } from "./SectionHeading";
 import home from "./HomeScreen.module.css";
 import rowStyles from "./ListSection.module.css";
 import badgeStyles from "./Badge.module.css";
@@ -111,9 +112,7 @@ function Heading({
   readonly onToggle: () => void;
 }) {
   return (
-    <header className={rowStyles.heading}>
-      <h2 id="plants-title">Plants</h2>
-      <span className={rowStyles.count}>{count}</span>
+    <SectionHeading id="plants-title" title="Plants" count={count}>
       <button
         type="button"
         ref={trigger}
@@ -126,7 +125,7 @@ function Heading({
         <Plus size={14} aria-hidden="true" />
         New plant
       </button>
-    </header>
+    </SectionHeading>
   );
 }
 

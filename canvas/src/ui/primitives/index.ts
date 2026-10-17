@@ -5,6 +5,8 @@ export { MetaParts } from "./internal/MetaParts";
 export { OutsideMark } from "./internal/OutsideMark";
 export { useCutBottom } from "./internal/useCutBottom";
 export { useFocusOnMount } from "./internal/useFocusOnMount";
+export { useInterval } from "./internal/useInterval";
+export { useResizeObserver } from "./internal/useResizeObserver";
 export { useScreen } from "./internal/useScreen";
 export { useStore } from "./internal/useStore";
 export { Breadcrumb, CrumbSlot } from "./internal/Breadcrumb";

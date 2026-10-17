@@ -13,7 +13,6 @@ import {
   addEquipment,
   connect,
   disconnect,
-  issueTargets,
   isTemplate,
   moveInstance,
   removeInstance,
@@ -81,18 +80,7 @@ describe("composition", () => {
     expect(removed.profiles).toBe(doc.profiles);
   });
 
-  it("puts each issue of the binary on the instances its pointer names", () => {
-    const targets = issueTargets(doc, [
-      { pointer: "/equipment/0/area", message: "bad area" },
-      { pointer: "/connections/1/from", message: "no port" },
-      { pointer: "/equipment", message: "too few" },
-      { pointer: "/equipment/0/names/1", message: "bad name" },
-      { pointer: "/equipment/0/names/7", message: "gone" },
-    ]);
-    expect(targets.instances.get("CH-1")).toEqual(["bad area"]);
-    expect(targets.instances.get("CH-2")).toEqual(["bad area", "no port", "bad name"]);
-    expect(targets.instances.get("CT-1")).toEqual(["no port"]);
-    expect(targets.listed.map((entry) => entry.target)).toEqual(["CH-1", "CT-1", null, "CH-2", null]);
+  it("tells a template from a named instance", () => {
     expect([isTemplate(doc, "WX-{n}"), isTemplate(doc, "CH-1")]).toEqual([true, false]);
   });
 

@@ -205,8 +205,7 @@
         "ui/editor",
         "ui/launch",
         "ui/plant",
-        "ui/review",
-        "ui/shell"
+        "ui/review"
       ]
     },
     "model/shell": {

@@ -2,14 +2,12 @@ import { screen } from "../../primitives";
 import { useMemo } from "react";
 import type { LaunchStore } from "../../../app/launch";
 import type { NavigationStore } from "../../../app/shell";
-import type { PlantState, PlantSession } from "../../../app/plant";
+import type { PlantSession, ReadyPlant } from "../../../app/plant";
 import { showingMarks } from "../../../model/launch";
-import { planMarks, plainView, plantView } from "../../../model/graph";
+import { planMarks, plantView } from "../../../model/graph";
 import type { PlanMark, PlantView } from "../../../model/graph";
 import { PlantGraph, useCanvasAspect } from "../../graph";
 import { useStore } from "../../primitives";
-
-type Ready = Extract<PlantState, { phase: "ready" }>;
 
 function useRunMarks(launch: LaunchStore, plant: string): ReadonlyMap<string, PlanMark> | undefined {
   const run = useStore(launch);
@@ -29,7 +27,7 @@ function PlantViewGraph({
   marks,
 }: {
   readonly view: PlantView;
-  readonly state: Ready;
+  readonly state: ReadyPlant;
   readonly hall: string | null;
   readonly aspect: number | undefined;
   readonly plants: PlantSession;
@@ -64,7 +62,7 @@ export function PlantCanvas({
   navigation,
   launch,
 }: {
-  readonly state: Ready;
+  readonly state: ReadyPlant;
   readonly hall: string | null;
   readonly plants: PlantSession;
   readonly navigation: NavigationStore;
@@ -73,7 +71,7 @@ export function PlantCanvas({
   const { ref, aspect } = useCanvasAspect<HTMLDivElement>();
   const marks = useRunMarks(launch, state.plant.id);
   const view = useMemo(
-    () => plantView(state.plant, state.specs, hall, plainView, aspect),
+    () => plantView(state.plant, state.specs, { open: hall, aspect }),
     [state.plant, state.specs, hall, aspect],
   );
   return (

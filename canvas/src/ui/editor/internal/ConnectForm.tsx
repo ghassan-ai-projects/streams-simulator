@@ -4,9 +4,10 @@ import type { SyntheticEvent } from "react";
 import { useState } from "react";
 import { connect } from "../../../model/editor";
 import type { Instance, Plant } from "../../../model/plant";
-import { kindLabel } from "../../../model/shared/words";
+import { kindLabel, spaced } from "../../../model/shared/words";
 import type { ComponentSpec } from "../../../model/plant";
 import { noTargetReason, portsMatching, portType, specOf } from "../../../model/plant";
+import { Choice } from "./Choice";
 import { SubmitRow } from "./SubmitRow";
 import type { PanelProps } from "./panelProps";
 
@@ -28,26 +29,15 @@ function Pick({
   readonly onChange: (value: string) => void;
 }) {
   return (
-    <label className={panel.field}>
-      <span>{label}</span>
-      <select
-        value={value}
-        onChange={(event) => {
-          onChange(event.target.value);
-        }}
-      >
-        <option value="">{options.length === 0 ? empty : "Choose…"}</option>
-        {options.map((option) => (
-          <option key={option} value={option}>
-            {words(option)}
-          </option>
-        ))}
-      </select>
-    </label>
+    <Choice
+      label={label}
+      value={value}
+      placeholder={options.length === 0 ? empty : "Choose…"}
+      options={options.map((option) => [option, words(option)])}
+      onChange={onChange}
+    />
   );
 }
-
-const portWords = (port: string) => port.replaceAll("_", " ");
 
 function instanceWords(plant: Plant, id: string): string {
   const instance = plant.instances.find((entry) => entry.id === id);
@@ -133,7 +123,7 @@ function TargetPicks({ draft, plant, instance, choice, setChoice }: TargetProps)
         value={choice.input}
         options={portsMatching(specOf(draft.specs, targetInstance), "in", type)}
         empty={choice.target === "" ? "Choose an instance first" : "No matching input"}
-        words={portWords}
+        words={spaced}
         onChange={(input) => {
           setChoice({ ...choice, input });
         }}
@@ -150,7 +140,7 @@ function LinkPicks({ draft, plant, instance, choice, setChoice }: PicksProps) {
         value={choice.output}
         options={portsMatching(specOf(draft.specs, instance), "out")}
         empty="This instance has no outputs"
-        words={portWords}
+        words={spaced}
         onChange={(output) => {
           setChoice(withOutput(draft, plant, instance, choice, output));
         }}
@@ -169,7 +159,7 @@ export function ConnectForm(props: FormProps) {
     event.preventDefault();
     if (!ready) return;
     editor.edit((doc) => connect(doc, `${instance.id}.${choice.output}`, `${choice.target}.${choice.input}`));
-    setSaid(`Linked ${portWords(choice.output)} to ${instanceWords(plant, choice.target)} ${portWords(choice.input)}`);
+    setSaid(`Linked ${spaced(choice.output)} to ${instanceWords(plant, choice.target)} ${spaced(choice.input)}`);
     setChoice({ ...choice, input: "" });
   };
   return (

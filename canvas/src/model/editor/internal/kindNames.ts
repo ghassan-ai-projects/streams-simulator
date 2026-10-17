@@ -7,7 +7,7 @@ const longestKind = 20;
 
 export function kindOf(entry: Json): string {
   const named = text(entry.as);
-  return named === "" ? shortKind(componentOf(String(entry.use))) : named;
+  return named === "" ? shortKind(componentOf(text(entry.use))) : named;
 }
 
 export function freeKind(base: string, taken: ReadonlySet<string>): string {

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { LaunchStore } from "../../../app/launch";
 import type { Scheduler } from "../../../app/ports";
 import type { NavigationStore } from "../../../app/shell";
-import type { PlantState, PlantSession } from "../../../app/plant";
+import type { PlantState, PlantSession, ReadyPlant } from "../../../app/plant";
 import type { WorkspaceStore } from "../../../app/workspace";
 import { hallOf, hallsOf } from "../../../model/graph";
 import type { RunRow } from "../../../model/workspace";
@@ -14,7 +14,6 @@ import { Navigator, Outline } from "../../graph";
 import { LaunchPanel } from "../../launch";
 import { Inspector } from "./Inspector";
 import { PlantCentre } from "./PlantCentre";
-import type { Ready } from "./PlantCentre";
 import { PlantFailure } from "./PlantFailure";
 
 interface PlantScreenProps {
@@ -35,7 +34,7 @@ function PlantSide({
   plants,
   navigation,
 }: {
-  readonly state: Ready;
+  readonly state: ReadyPlant;
   readonly hall: string | null;
   readonly plants: PlantSession;
   readonly navigation: NavigationStore;
@@ -59,7 +58,7 @@ function PlantSide({
 }
 
 interface RightProps {
-  readonly state: Ready;
+  readonly state: ReadyPlant;
   readonly hall: string | null;
   readonly launch: LaunchStore;
   readonly scheduler: Scheduler;

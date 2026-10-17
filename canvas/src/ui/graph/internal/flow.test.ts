@@ -8,7 +8,7 @@ import { flowEdges, flowNodes } from "./flow";
 
 describe("plant wires", () => {
   it("carries each routed polyline to the wire edge, on the generic anchors, always under the nodes", () => {
-    const view = plantView(parsePlant(domain, composition), new Map(), null);
+    const view = plantView(parsePlant(domain, composition), new Map(), { open: null });
     const routes = new Map([[view.edges[0]?.id ?? "", [{ x: 1, y: 2 }]]]);
     const edges = flowEdges(view, routes, view.edges[0]?.from ?? null);
     expect(edges[0]).toMatchObject({
@@ -28,7 +28,7 @@ describe("plant wire direction", () => {
     const specs = new Map<string, ComponentSpec>([
       ["lib/chiller", { ports: [{ name: "heat_out", type: "heat_rejection", direction: "out" }], category: "cool" }],
     ]);
-    const view = plantView(parsePlant(domain, composition), specs, null);
+    const view = plantView(parsePlant(domain, composition), specs, { open: null });
     const selected = flowEdges(view, new Map(), "CH-1").find((edge) => edge.source === "CH-1");
     expect(selected).toMatchObject({
       source: "CH-1",
@@ -40,7 +40,7 @@ describe("plant wire direction", () => {
   });
 
   it("dims unrelated target markers with their selected edges", () => {
-    const view = plantView(parsePlant(domain, composition), new Map(), null);
+    const view = plantView(parsePlant(domain, composition), new Map(), { open: null });
     const [first] = view.edges;
     if (first === undefined) throw new Error("fixture has no links");
     const extended = {
@@ -60,7 +60,7 @@ describe("plant wire direction", () => {
 
 describe("plant frame titles", () => {
   it("draws each area title above the wires, in its own node", () => {
-    const view = plantView(parsePlant(domain, composition), new Map(), null);
+    const view = plantView(parsePlant(domain, composition), new Map(), { open: null });
     const titles = flowNodes(view, null).filter((node) => node.type === "frameTitle");
     expect(titles.map((node) => [node.id, node.zIndex])).toEqual(
       [...view.layout.groups.keys()].map((group) => [`title:${group}`, 2]),

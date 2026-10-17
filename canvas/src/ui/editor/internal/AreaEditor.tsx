@@ -6,20 +6,12 @@ import type { AreaNode } from "../../../model/shared/areaTree";
 import { areaNodesOf } from "../../../model/editor";
 import { areaInUse, areaNameProblem, removeArea, renameArea } from "../../../model/editor";
 import styles from "./Editor.module.css";
+import { Reason } from "./Reason";
 
 interface RowProps {
   readonly draft: Draft;
   readonly editor: EditorSession;
   readonly node: AreaNode;
-}
-
-function Reason({ id, text }: { readonly id: string; readonly text: string | null }) {
-  if (text === null) return null;
-  return (
-    <p className={styles.reason} id={id}>
-      {text}
-    </p>
-  );
 }
 
 function DeleteArea({

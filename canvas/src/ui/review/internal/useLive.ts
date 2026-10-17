@@ -1,14 +1,13 @@
 import { useCallback, useMemo } from "react";
-import type { PlantState } from "../../../app/plant";
+import type { ReadyPlant } from "../../../app/plant";
 import type { ReviewState, ReviewSession } from "../../../app/review";
+import { readyReport } from "../../../app/review";
 import { channelOf } from "../../../model/plant";
 import type { NodeLive } from "../../graph";
 import type { NodeStatus, PlantView, ReadoutBody } from "../../../model/graph";
 import { attentionOf, hallOf, showReading, worstOf } from "../../../model/graph";
 import { readoutBody } from "../../../model/review";
 import { effectorAt, faultedAt } from "../../../model/review";
-
-type ReadyPlant = Extract<PlantState, { phase: "ready" }>;
 
 const noReadout: ReadoutBody = { rows: [], hidden: 0, hiddenAttention: null };
 
@@ -25,7 +24,7 @@ function hallLive(worst: { readonly status: NodeStatus; readonly count: number }
 }
 
 export function useLive(review: ReviewSession, state: ReviewState, plant: ReadyPlant | null, view: PlantView | null) {
-  const report = state.report.phase === "ready" ? state.report.value : null;
+  const report = readyReport(state);
   const faulted = useMemo(() => faultedAt(report, state.positionNs), [report, state.positionNs]);
   const effectors = useMemo(() => effectorAt(report, state.positionNs), [report, state.positionNs]);
   const one = useCallback(

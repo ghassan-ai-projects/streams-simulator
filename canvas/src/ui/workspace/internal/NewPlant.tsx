@@ -6,6 +6,7 @@ import { idProblemOf } from "../../../app/plant";
 import type { NavigationStore } from "../../../app/shell";
 import type { Definition } from "../../../model/workspace";
 import type { ExamplePlant } from "../../../model/plant";
+import { plantTitle } from "../../../model/plant";
 import { suggestedId } from "../../../model/workspace";
 import { Field } from "./NewPlantField";
 import home from "./HomeScreen.module.css";
@@ -40,7 +41,7 @@ function BasePick({
           <optgroup label="Your plants">
             {bases.map((item) => (
               <option key={item.path} value={`file:${item.path}`}>
-                {item.title || item.id}
+                {plantTitle(item)}
               </option>
             ))}
           </optgroup>

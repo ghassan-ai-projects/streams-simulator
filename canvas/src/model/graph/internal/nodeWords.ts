@@ -9,14 +9,16 @@ function stateOf(status: NodeStatus, count: number, fault: string): string {
   return status === "fault" ? `${statusWords.fault}: ${fault}, ` : `${statusWords[status]}${where}, Fault: ${fault}, `;
 }
 
-export function describeNode(
-  node: ViewNode,
-  selected: boolean,
-  status: NodeStatus = null,
-  count = 0,
-  fault = "",
-  effector = "",
-): string {
+interface NodeFacts {
+  readonly selected: boolean;
+  readonly status?: NodeStatus;
+  readonly count?: number;
+  readonly fault?: string;
+  readonly effector?: string;
+}
+
+export function describeNode(node: ViewNode, facts: NodeFacts): string {
+  const { selected, status = null, count = 0, fault = "", effector = "" } = facts;
   const ports =
     node.instance === null
       ? "Space selects, Enter opens the hall"

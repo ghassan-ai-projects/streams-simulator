@@ -1,8 +1,7 @@
 import { CircleAlert, CircleCheck, Loader, X } from "lucide-react";
 import type { LaunchState, LaunchStore } from "../../../app/launch";
 import type { NavigationStore } from "../../../app/shell";
-import { rateWords } from "../../../model/launch";
-import { clockOf } from "../../../model/shared/duration";
+import { runProgressWords } from "../../../model/launch";
 import { shared, useStore } from "../../primitives";
 import styles from "./TopBar.module.css";
 
@@ -15,9 +14,9 @@ type Shown = Exclude<LaunchState, { phase: "idle" }>;
 
 function words(state: Shown): string {
   if (state.phase === "running") {
-    const speed = rateWords(state.rate);
-    const at = `${clockOf(state.atS)} of ${clockOf(state.durationS)}${speed === "" ? "" : ` · ${speed}`}`;
-    return state.stopping ? `Stopping the run of ${state.origin.title}` : `Running ${state.origin.title} · ${at}`;
+    return state.stopping
+      ? `Stopping the run of ${state.origin.title}`
+      : `Running ${state.origin.title} · ${runProgressWords(state)}`;
   }
   if (state.phase === "done") {
     return `Run ${state.worldId} ${state.early ? "stopped early" : "finished"} · Open review`;

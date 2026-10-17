@@ -2,6 +2,7 @@ import type { Report, VerifyState } from "../../../model/review";
 import { badgeOf, replayLine } from "../../../model/review";
 import { fileLine, integrityLine, kpisOf } from "../../../model/review";
 import { grouped } from "../../../model/shared/units";
+import { spaced } from "../../../model/shared/words";
 import { alarmRow } from "./alarmWords";
 import { KpiTable } from "./KpiTable";
 import { Rows, Section } from "./ReportParts";
@@ -27,7 +28,7 @@ function ReplayCheck({ verify }: { readonly verify: VerifyState }) {
 }
 
 function Deliveries({ report }: { readonly report: Report }) {
-  const dropped = Object.entries(report.dropped).map(([reason, n]) => [reason.replaceAll("_", " "), grouped(n)]);
+  const dropped = Object.entries(report.dropped).map(([reason, n]) => [spaced(reason), grouped(n)]);
   return (
     <Section title="Deliveries" note={report.ended ? undefined : "run not closed"}>
       <Rows
@@ -49,10 +50,7 @@ function FileCheck({ report }: { readonly report: Report }) {
           The report compares the files in the run folder with the digests the run recorded.
         </p>
         <Rows
-          rows={report.checks.map((check) => [
-            { text: check.name.replaceAll("_", " "), title: check.name },
-            check.status.replaceAll("_", " "),
-          ])}
+          rows={report.checks.map((check) => [{ text: spaced(check.name), title: check.name }, spaced(check.status)])}
           columns={["text", "text"]}
           headers={["File", "Check"]}
         />

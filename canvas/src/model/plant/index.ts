@@ -1,9 +1,11 @@
 export { argProblem, callArgs } from "./internal/effectors";
 export { searchLibrary } from "./internal/library";
+export { plantTitle } from "./internal/title";
 export {
   areaOf,
   channelOf,
   effectorOf,
+  endpointOf,
   faultsOf,
   instanceIdTaken,
   linksOf,

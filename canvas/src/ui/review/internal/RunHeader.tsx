@@ -3,6 +3,7 @@ import { RotateCcw } from "lucide-react";
 import type { LaunchStore } from "../../../app/launch";
 import type { NavigationStore } from "../../../app/shell";
 import type { ReviewState } from "../../../app/review";
+import { readyReport } from "../../../app/review";
 import { rerunOf } from "../../../model/review";
 import type { Crumb } from "../../primitives";
 import { Breadcrumb } from "../../primitives";
@@ -24,7 +25,7 @@ interface HeaderProps extends HallProps {
 }
 
 function RunActions({ state, navigation, launch, plant, worldId }: Omit<HeaderProps, "hall" | "onHall">) {
-  const report = state.report.phase === "ready" ? state.report.value : null;
+  const report = readyReport(state);
   const path = plant.path;
   if (path === null) return null;
   return (

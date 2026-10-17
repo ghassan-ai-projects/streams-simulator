@@ -10,7 +10,7 @@ import { Lane, Legend, MarkRail, usePick } from "./ScrubberLane";
 import { useEventKeys } from "./useEventKeys";
 import { AlarmJump } from "./AlarmJump";
 import type { PlayProps } from "./PlayControls";
-import { PlayControls } from "./PlayControls";
+import { PlayControls, StepButton } from "./PlayControls";
 
 interface ScrubberProps extends PlayProps {
   readonly startNs: number;
@@ -52,19 +52,17 @@ function Steps({ marks, positionNs, clamp, onSeek }: StepsProps) {
   const previous = previousEvent(marks, positionNs);
   const next = nextEvent(marks, positionNs);
   const button = (label: string, icon: ReactNode, target: number | null) => (
-    <button
-      type="button"
-      className={runStyles.step}
-      aria-label={target === null ? `${label}: none` : label}
-      aria-keyshortcuts={keyOf[label]}
+    <StepButton
+      label={target === null ? `${label}: none` : label}
       title={target === null ? `${label}: none` : `${label}${keyOf[label] === undefined ? "" : ` (${keyOf[label]})`}`}
-      aria-disabled={target === null}
-      onClick={() => {
+      shortcut={keyOf[label]}
+      disabled={target === null}
+      onActivate={() => {
         if (target !== null) onSeek(target);
       }}
     >
       {icon}
-    </button>
+    </StepButton>
   );
   return (
     <div className={runStyles.steps} role="group" aria-label="Playback steps">

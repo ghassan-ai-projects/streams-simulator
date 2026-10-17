@@ -1,3 +1,5 @@
+import { spaced } from "../../../model/shared/words";
+
 const alarmWords: Readonly<Record<string, readonly [string, string]>> = {
   activations: ["Alarms raised", "Alarms that came on during the run."],
   peak_per_10_min: ["Most alarms in 10 minutes", "The busiest 10-minute spell: how many alarms came on in it."],
@@ -8,6 +10,6 @@ const alarmWords: Readonly<Record<string, readonly [string, string]>> = {
 };
 
 export function alarmRow(key: string, value: string): readonly [string, string, string] {
-  const [label, meaning] = alarmWords[key] ?? [key.replaceAll("_", " "), ""];
+  const [label, meaning] = alarmWords[key] ?? [spaced(key), ""];
   return [label, value, meaning];
 }

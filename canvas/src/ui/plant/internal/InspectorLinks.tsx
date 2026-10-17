@@ -1,5 +1,6 @@
 import type { Link } from "../../../model/plant";
 import { hallOf } from "../../../model/graph";
+import { spaced } from "../../../model/shared/words";
 import styles from "./PlantScreen.module.css";
 
 function ordered(linked: readonly Link[], side: "in" | "out"): readonly Link[] {
@@ -24,7 +25,7 @@ function ownPort(link: Link, side: "in" | "out"): string {
 }
 
 function endpoint(id: string, port: string | null): string {
-  return port === null ? `${id} · port not recorded` : `${id} ${port.replaceAll("_", " ")}`;
+  return port === null ? `${id} · port not recorded` : `${id} ${spaced(port)}`;
 }
 
 function LinkRow({

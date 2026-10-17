@@ -3,11 +3,12 @@ import { Play, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { Scheduler } from "../../../app/ports";
 import type { LaunchState, LaunchStore, Proposal } from "../../../app/launch";
-import { keepKnownFaults, planSummary, rateWords } from "../../../model/launch";
+import { keepKnownFaults, planSummary, runProgressWords } from "../../../model/launch";
 import { humanise } from "../../../model/shared/words";
 import { clockOf, durationOf } from "../../../model/shared/duration";
 import type { Plant } from "../../../model/plant";
 import { faultsOf } from "../../../model/plant";
+import { plantTitle } from "../../../model/plant";
 import { useStore } from "../../primitives";
 import type { Draft } from "./draft";
 import { draftOf, firstDraft, pickedOnGraph } from "./draft";
@@ -64,7 +65,6 @@ function Progress({
 }) {
   const status = useFocusOnMount<HTMLParagraphElement>();
   const words = state.worldId === null ? "Creating the world…" : `Running ${title} as run ${state.worldId}`;
-  const speed = rateWords(state.rate);
   return (
     <div className={cx(panel.body, styles.progress)}>
       <p className={styles.status} role="status" ref={status} tabIndex={-1}>
@@ -72,9 +72,7 @@ function Progress({
       </p>
       <p className={styles.clock}>{planSummary(state.plan, durationOf(state.durationS))}</p>
       <ProgressBar state={state} />
-      <p className={styles.clock}>
-        {`Running · ${clockOf(state.atS)} of ${clockOf(state.durationS)} simulated${speed === "" ? "" : ` · ${speed}`}`}
-      </p>
+      <p className={styles.clock}>{`Running · ${runProgressWords(state, " simulated")}`}</p>
       <button
         type="button"
         className={panel.secondary}
@@ -153,11 +151,7 @@ function showsResult(state: LaunchState, own: boolean, watched: boolean): state 
 function Body({ state, launch, plant, path, draft, selected, change, onFinished, watched }: BodyProps) {
   const own = state.phase !== "idle" && state.origin.domain === plant.id;
   if (state.phase === "running") {
-    return own ? (
-      <Progress state={state} launch={launch} title={plant.title || plant.id} />
-    ) : (
-      <Elsewhere state={state} />
-    );
+    return own ? <Progress state={state} launch={launch} title={plantTitle(plant)} /> : <Elsewhere state={state} />;
   }
   if (state.phase === "failed" && own) return <Failure state={state} launch={launch} />;
   if (showsResult(state, own, watched))
@@ -177,7 +171,7 @@ function Body({ state, launch, plant, path, draft, selected, change, onFinished,
       selected={selected}
       change={change}
       onStart={(plan) => {
-        void launch.start({ domain: plant.id, title: plant.title || plant.id, path }, plan);
+        void launch.start({ domain: plant.id, title: plantTitle(plant), path }, plan);
       }}
     />
   );
@@ -247,7 +241,7 @@ export function LaunchPanel({
     <aside className={panel.panel} aria-labelledby="launch-title">
       <header className={panel.head}>
         <Play size={16} aria-hidden="true" />
-        <h2 id="launch-title" className={styles.title}>{`Run ${plant.title || plant.id}`}</h2>
+        <h2 id="launch-title" className={styles.title}>{`Run ${plantTitle(plant)}`}</h2>
         {state.phase === "running" && state.origin.domain === plant.id && <RunningMark state={state} />}
         <button type="button" className={panel.icon} aria-label="Close the run panel" onClick={onClose}>
           <X size={16} aria-hidden="true" />

@@ -1,7 +1,9 @@
 import type { OutlineItem, OutlineGroup } from "./types";
 import type { Plant } from "../../plant";
 import { areaOf } from "../../plant";
-import { areaOrder, hallOf, hallsOf } from "./plantView";
+import { areaOrder } from "./areas";
+import { hallOf, hallsOf } from "./halls";
+import { groupBy } from "../../shared/collect";
 import { kindLabel } from "../../shared/words";
 
 function matches(item: OutlineItem, filter: string): boolean {
@@ -21,21 +23,28 @@ function itemsByArea(plant: Plant, hall: string | null, filter: string): Readonl
   const visible = plant.instances.filter(
     (instance) => halls.length === 0 || hallOf(instance.id) === hall || hallOf(instance.id) === null,
   );
-  const byArea = new Map<string, OutlineItem[]>();
-  visible.forEach((instance) => {
-    const item = { id: instance.id, kind: kindWords(instance.kind) };
-    if (!matches(item, filter)) return;
-    const area = areaOf(plant, instance);
-    byArea.set(area, [...(byArea.get(area) ?? []), item]);
-  });
-  return byArea;
+  const found = visible
+    .map((instance) => ({ area: areaOf(plant, instance), item: { id: instance.id, kind: kindWords(instance.kind) } }))
+    .filter(({ item }) => matches(item, filter));
+  return new Map(
+    [...groupBy(found, ({ area }) => area)].map(([area, entries]) => [area, entries.map(({ item }) => item)] as const),
+  );
 }
 
-export function groups(plant: Plant, hall: string | null, filter: string, empty: boolean): readonly OutlineGroup[] {
+interface OutlineOptions {
+  readonly emptyAreas: "hide" | "show";
+}
+
+export function groups(
+  plant: Plant,
+  hall: string | null,
+  filter: string,
+  options: OutlineOptions,
+): readonly OutlineGroup[] {
   const byArea = itemsByArea(plant, hall, filter);
   const all = areaOrder(plant).map(([area, depth]) => ({ area, depth, items: byArea.get(area) ?? [] }));
-  const showEmpty = empty && filter.trim() === "";
-  const ordered = empty ? populatedFirst(all) : all;
+  const showEmpty = options.emptyAreas === "show" && filter.trim() === "";
+  const ordered = options.emptyAreas === "show" ? populatedFirst(all) : all;
   return ordered.filter((group) => group.items.length > 0 || showEmpty);
 }
 
@@ -85,8 +94,8 @@ function populatedFirst(all: readonly OutlineGroup[]): OutlineGroup[] {
   return [...shown, ...empty];
 }
 
-export function matchWords(plant: Plant, shown: readonly OutlineGroup[], filter: string): string {
-  if (plant.instances.length === 0) return "No instances yet.";
+export function matchWords(shown: readonly OutlineGroup[], filter: string, empty: boolean): string {
+  if (empty) return "No instances yet.";
   const count = shown.reduce((sum, group) => sum + group.items.length, 0);
   if (filter.trim() === "") return "";
   if (count === 0) return `No instance matches "${filter.trim()}".`;

@@ -4,19 +4,9 @@ export { fitId, idCap, idRoom } from "./internal/headerFit";
 export { describeNode } from "./internal/nodeWords";
 export { groups, matchWords, marked, belowCount } from "./internal/outline";
 export { planMarks } from "./internal/planMarks";
-export {
-  areaCounts,
-  groupCounts,
-  hallCount,
-  hallMembers,
-  hallOf,
-  hallsOf,
-  headerHeight,
-  idExtra,
-  noteHeight,
-  plainView,
-  plantView,
-} from "./internal/plantView";
+export { areaCounts } from "./internal/areas";
+export { hallCount, hallMembers, hallOf, hallsOf } from "./internal/halls";
+export { groupCounts, headerHeight, idExtra, noteHeight, plantView } from "./internal/plantView";
 export {
   abnormalFirst,
   attentionOf,

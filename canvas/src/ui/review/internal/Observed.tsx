@@ -1,19 +1,17 @@
-import type { PlantState } from "../../../app/plant";
+import type { ReadyPlant } from "../../../app/plant";
 import type { ReviewState, ReviewSession } from "../../../app/review";
+import { readyReport, startNsOf } from "../../../app/review";
 import { channelOf } from "../../../model/plant";
 import { shortChannel } from "../../../model/shared/words";
 import { hallOf } from "../../../model/graph";
 import type { Shown } from "../../../model/graph";
 import { abnormalFirst, channelWords, sharedTimes, showReading, statusWords } from "../../../model/graph";
-import { runSpan } from "../../../model/review";
 import { effectorAt, faultedAt, runClock } from "../../../model/review";
 import { cx } from "../../primitives";
 import { OutsideMark } from "../../primitives";
 import parts from "./ReportParts.module.css";
 import cells from "./ReportTable.module.css";
 import styles from "./Observed.module.css";
-
-type ReadyPlant = Extract<PlantState, { phase: "ready" }>;
 
 interface ObservedProps {
   readonly review: ReviewSession;
@@ -107,7 +105,7 @@ export function Observed({ review, state, plant, entity }: ObservedProps) {
       showReading(reading, plant === null ? null : channelOf(plant.plant, entity, reading.channel)),
     ),
   );
-  const report = state.report.phase === "ready" ? state.report.value : null;
+  const report = readyReport(state);
   const at = new Map(readings.map((reading) => [shortChannel(reading.channel), reading.atNs]));
   return (
     <>
@@ -116,7 +114,7 @@ export function Observed({ review, state, plant, entity }: ObservedProps) {
         shown={shown}
         effector={effectorAt(report, state.positionNs).get(entity) ?? ""}
       />
-      <ObservedTable shown={shown} at={at} startNs={runSpan(report, review.index.bounds()).startNs} />
+      <ObservedTable shown={shown} at={at} startNs={startNsOf(state, review)} />
     </>
   );
 }

@@ -7,7 +7,9 @@ import type { Draft, EditorSession } from "../../../app/editor";
 import type { NavigationStore } from "../../../app/shell";
 import { compositionPlant, shortKind } from "../../../model/editor";
 import { connect } from "../../../model/editor";
-import { plainView, plantView } from "../../../model/graph";
+import { plantView } from "../../../model/graph";
+import { plantTitle } from "../../../model/plant";
+import { failureLine } from "../../../model/shared/words";
 import type { PlantView } from "../../../model/graph";
 import { Navigator, Outline, PlantGraph, useCanvasAspect } from "../../graph";
 import { useStore } from "../../primitives";
@@ -25,7 +27,7 @@ interface EditorScreenProps {
 
 function usePlant(draft: Draft, aspect: number | undefined) {
   const plant = useMemo(() => compositionPlant(draft.doc, shortKind), [draft.doc]);
-  const view = useMemo(() => plantView(plant, draft.specs, null, plainView, aspect), [plant, draft.specs, aspect]);
+  const view = useMemo(() => plantView(plant, draft.specs, { open: null, aspect }), [plant, draft.specs, aspect]);
   const flagged = useMemo(() => new Set(draft.issues?.instances.keys() ?? []), [draft.issues]);
   return { plant, view, flagged };
 }
@@ -103,7 +105,7 @@ function Editing({ draft, editor, navigation }: { readonly draft: Draft } & Omit
           />
           {plant.instances.length > 0 ? <Navigator /> : null}
         </div>
-        <section className={screen.center} aria-label={`Editing ${plant.title || plant.id}`}>
+        <section className={screen.center} aria-label={`Editing ${plantTitle(plant)}`}>
           <EditorBar draft={draft} editor={editor} navigation={navigation} request={request} />
           <div ref={ref} className={screen.graphHost}>
             {plant.instances.length === 0 ? (
@@ -115,7 +117,7 @@ function Editing({ draft, editor, navigation }: { readonly draft: Draft } & Omit
         </section>
         <EditorPanel draft={draft} plant={plant} editor={editor} request={request} />
       </div>
-      <PendingLeave title={plant.title || plant.id} editor={editor} navigation={navigation} />
+      <PendingLeave title={plantTitle(plant)} editor={editor} navigation={navigation} />
     </ReactFlowProvider>
   );
 }
@@ -137,7 +139,7 @@ export function EditorScreen({ editor, navigation, composition }: EditorScreenPr
   return (
     <p className={failed ? screen.failure : screen.loading} role={failed ? "alert" : "status"}>
       {state.phase === "failed" && failed
-        ? `The composition could not be opened: ${state.failure.diagnostic.message} (${state.failure.diagnostic.displayCode})`
+        ? `The composition could not be opened: ${failureLine(state.failure.diagnostic)}`
         : "Opening the composition…"}
     </p>
   );

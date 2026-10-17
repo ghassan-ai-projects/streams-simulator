@@ -119,6 +119,10 @@ export interface PlanProblem {
   readonly text: string;
 }
 
+function insideRun(plan: LaunchPlan, atS: number): boolean {
+  return Number.isInteger(atS) && atS >= 0 && atS < plan.durationS;
+}
+
 function faultProblems(plan: LaunchPlan): readonly PlanProblem[] {
   return plan.faults.flatMap((fault, index): PlanProblem[] => {
     const name = `Fault ${String(index + 1)}`;
@@ -126,8 +130,7 @@ function faultProblems(plan: LaunchPlan): readonly PlanProblem[] {
       return [{ field: index, text: `${name} needs an instance and a fault.` }];
     if (fault.entity === "") return [{ field: index, text: `${name} needs an instance.` }];
     if (fault.fault === "") return [{ field: index, text: `${name} needs a fault.` }];
-    if (!Number.isInteger(fault.atS) || fault.atS < 0 || fault.atS >= plan.durationS)
-      return [{ field: index, text: `${name} starts inside the run, before its end.` }];
+    if (!insideRun(plan, fault.atS)) return [{ field: index, text: `${name} starts inside the run, before its end.` }];
     return [];
   });
 }
@@ -139,8 +142,7 @@ function callProblem(call: PlannedCall, name: string, plan: LaunchPlan, specOf: 
     return { part: "instance", text: `${name} needs an instance and an effector.` };
   if (call.entity === "") return { part: "instance", text: `${name} needs an instance.` };
   if (call.effector === "") return { part: "effector", text: `${name} needs an effector.` };
-  if (!Number.isInteger(call.atS) || call.atS < 0 || call.atS >= plan.durationS)
-    return { part: "minute", text: `${name} is made inside the run, before its end.` };
+  if (!insideRun(plan, call.atS)) return { part: "minute", text: `${name} is made inside the run, before its end.` };
   const spec = specOf(call.entity, call.effector);
   if (spec === undefined)
     return { part: "effector", text: `${name}: ${call.entity} has no effector ${humanise(call.effector)}.` };

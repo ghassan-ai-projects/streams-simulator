@@ -209,7 +209,7 @@ function shownOf(data: { readonly live: NodeLive | null; readonly plan: PlanMark
 
 function instanceLabel(data: InstanceNodeType["data"], selected: boolean): string {
   const { status, fault, effector } = shownOf(data);
-  return describeNode(data.view, selected, status, 0, fault, effector) + issueWords(data.flagged);
+  return describeNode(data.view, { selected, status, fault, effector }) + issueWords(data.flagged);
 }
 
 export function InstanceNode({ data, selected }: NodeProps<InstanceNodeType>) {
@@ -253,7 +253,7 @@ export function HallNode({ data, selected }: NodeProps<HallNodeType>) {
       )}
       data-node-hall="true"
       role="group"
-      aria-label={describeNode(view, selected, status, count)}
+      aria-label={describeNode(view, { selected, status, count })}
     >
       <Handle type="target" position={Position.Left} id="in" className={pins.plain} isConnectable={false} />
       <div className={styles.header}>

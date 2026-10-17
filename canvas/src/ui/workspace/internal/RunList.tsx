@@ -7,6 +7,7 @@ import type { Badge } from "../../../model/review";
 import { badgeLabels } from "../../../model/review";
 import type { RunRow } from "../../../model/workspace";
 import { counted, plantsOf, runFacts, runRows, unfinishedReason, whenOf } from "../../../model/workspace";
+import { SectionHeading } from "./SectionHeading";
 import home from "./HomeScreen.module.css";
 import rowStyles from "./ListSection.module.css";
 import badgeStyles from "./Badge.module.css";
@@ -148,11 +149,9 @@ export function RunList({ workspace, navigation, badgeFor }: ListProps) {
   const rows = runRows(workspace, plant === "" ? null : plant);
   return (
     <section className={rowStyles.section} aria-labelledby="runs-title">
-      <header className={rowStyles.heading}>
-        <h2 id="runs-title">Runs</h2>
-        <span className={rowStyles.count}>{rows.length}</span>
+      <SectionHeading id="runs-title" title="Runs" count={rows.length}>
         <PlantFilter workspace={workspace} plant={plant} setPlant={setPlant} />
-      </header>
+      </SectionHeading>
       {unchecked(rows, badgeFor) && <p className={styles.note}>Runs are checked when you open their review.</p>}
       {rows.length === 0 && <p className={styles.none}>No runs yet. Open a plant and choose Run.</p>}
       <p className="sr-only" role="status">

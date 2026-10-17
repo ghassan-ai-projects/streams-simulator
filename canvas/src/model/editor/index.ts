@@ -4,7 +4,6 @@ export {
   compositionPlant,
   connectionsOf,
   domainOf,
-  endpointOf,
   equipmentOf,
   linkEnd,
   parseComposition,
@@ -13,23 +12,17 @@ export {
   suggestedName,
   titleOf,
 } from "./internal/composition";
+export { endpointOf } from "../plant";
+export { addArea, areaInUse, areaNameProblem, removeArea, renameArea } from "./internal/areaEdits";
 export {
-  addArea,
   addEquipment,
-  areaInUse,
-  areaNameProblem,
   connect,
   disconnect,
-  groupIssues,
   isTemplate,
-  issueTargets,
   moveInstance,
-  profileWeightOf,
-  removeArea,
   removeInstance,
-  removeProfileWeight,
-  renameArea,
   renameInstance,
 } from "./internal/compositionEdits";
+export { groupIssues, issueTargets, profileWeightOf, removeProfileWeight } from "./internal/issueTargets";
 export { instanceNameFits, instanceNameRule } from "./internal/instanceNameRule";
 export type { Composition, Connection, IssueGroup, IssueTargets, LinkEnd, ListedIssue, NewEquipment } from "./contract";

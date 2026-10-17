@@ -13,6 +13,7 @@ export {
 } from "./internal/reportViews";
 export { firstEventNode } from "./internal/reviewAnchor";
 export { readoutBody, reviewView } from "./internal/reviewRows";
+export { placeChips, timeTicks } from "./internal/timeLayout";
 export {
   activeAt,
   effectorAt,
@@ -22,10 +23,8 @@ export {
   kindsOf,
   markWords,
   nextEvent,
-  placeChips,
   previousEvent,
   runClock,
-  timeTicks,
 } from "./internal/timeline";
 export type {
   AlarmActivation,

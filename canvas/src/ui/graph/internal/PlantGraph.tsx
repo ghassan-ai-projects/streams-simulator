@@ -77,7 +77,12 @@ function announce(
   const node = view.nodes.find((entry) => entry.id === active);
   if (node === undefined) return "";
   const now = live?.(node.id);
-  return describeNode(node, node.id === selected, now?.status ?? null, now?.count ?? 0, now?.fault ?? "");
+  return describeNode(node, {
+    selected: node.id === selected,
+    status: now?.status ?? null,
+    count: now?.count ?? 0,
+    fault: now?.fault ?? "",
+  });
 }
 
 function enterHall(id: string, onSelect: (id: string | null) => void, onOpenHall?: (hall: string) => void) {

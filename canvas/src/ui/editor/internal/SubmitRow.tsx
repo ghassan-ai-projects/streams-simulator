@@ -1,6 +1,7 @@
 import { panel } from "../../primitives";
 import type { ReactNode } from "react";
 import styles from "./Editor.module.css";
+import { Reason } from "./Reason";
 
 interface SubmitRowProps {
   readonly id: string;
@@ -19,11 +20,7 @@ export function SubmitRow({ id, reason, children }: SubmitRowProps) {
       >
         {children}
       </button>
-      {reason !== null && (
-        <p className={styles.reason} id={id}>
-          {reason}
-        </p>
-      )}
+      <Reason id={id} text={reason} />
     </div>
   );
 }

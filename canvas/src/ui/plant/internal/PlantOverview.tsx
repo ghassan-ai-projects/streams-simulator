@@ -1,6 +1,7 @@
 import { shared } from "../../primitives";
 import { useState } from "react";
 import type { Plant } from "../../../model/plant";
+import { plantTitle } from "../../../model/plant";
 import { areaCounts, hallOf } from "../../../model/graph";
 import { kindLabel } from "../../../model/shared/words";
 import type { RunRow } from "../../../model/workspace";
@@ -96,7 +97,7 @@ function Runs({ runs, onReview }: { readonly runs: readonly RunRow[]; readonly o
 function OverviewHead({ plant, where }: { readonly plant: Plant; readonly where: string }) {
   return (
     <header className={styles.inspectorHead}>
-      <h2>{plant.title || plant.id}</h2>
+      <h2>{plantTitle(plant)}</h2>
       <p className={styles.kindLine}>
         {`${counted(plant.instances.length, "instance", "instances")} in ${where} · ${counted(
           plant.links.length,

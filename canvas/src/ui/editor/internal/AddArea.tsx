@@ -3,41 +3,14 @@ import { FolderPlus } from "lucide-react";
 import type { SyntheticEvent } from "react";
 import { useState } from "react";
 import type { Draft, EditorSession } from "../../../app/editor";
-import type { AreaNode } from "../../../model/shared/areaTree";
 import { areaNodesOf } from "../../../model/editor";
 import { addArea, areaNameProblem } from "../../../model/editor";
+import { Choice } from "./Choice";
 import { SubmitRow } from "./SubmitRow";
 
 interface AreaProps {
   readonly draft: Draft;
   readonly editor: EditorSession;
-}
-
-interface ParentProps {
-  readonly nodes: readonly AreaNode[];
-  readonly value: string;
-  readonly onChange: (parent: string) => void;
-}
-
-function ParentPick({ nodes, value, onChange }: ParentProps) {
-  return (
-    <label className={panel.field}>
-      <span>Inside</span>
-      <select
-        value={value}
-        onChange={(event) => {
-          onChange(event.target.value);
-        }}
-      >
-        <option value="">Top level</option>
-        {nodes.map((node) => (
-          <option key={node.name} value={node.name}>
-            {node.path}
-          </option>
-        ))}
-      </select>
-    </label>
-  );
 }
 
 export function AddArea({ draft, editor }: AreaProps) {
@@ -63,7 +36,13 @@ export function AddArea({ draft, editor }: AreaProps) {
           }}
         />
       </label>
-      <ParentPick nodes={nodes} value={parent} onChange={setParent} />
+      <Choice
+        label="Inside"
+        value={parent}
+        placeholder="Top level"
+        options={nodes.map((node) => [node.name, node.path])}
+        onChange={setParent}
+      />
       <SubmitRow id="add-area-reason" reason={reason}>
         <FolderPlus size={14} aria-hidden="true" />
         Add area

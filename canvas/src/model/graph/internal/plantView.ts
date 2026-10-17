@@ -1,7 +1,8 @@
 import type { LayoutNode, PlantView, ViewEdge, ViewNode, ViewPresentation } from "./types";
 import { layout } from "./layout";
 import { headerReserve } from "./frameTitle";
-import { areaTree } from "../../shared/areaTree";
+import { tally } from "../../shared/collect";
+import { hallOf, hallsOf } from "./halls";
 import type { ComponentSpec, Family, Instance, Link, Pin, Pins, Plant } from "../../plant";
 import { areaOf, familyOf, pinsOf } from "../../plant";
 import { kindLabel, shortChannel } from "../../shared/words";
@@ -38,21 +39,7 @@ export function headerHeight(label: string): number {
 }
 
 export function groupCounts(view: PlantView): Map<string, number> {
-  const counts = new Map<string, number>();
-  view.nodes.forEach((node) => counts.set(node.group, (counts.get(node.group) ?? 0) + 1));
-  return counts;
-}
-
-export function hallOf(id: string): string | null {
-  const slash = id.indexOf("/");
-  return slash > 0 ? id.slice(0, slash) : null;
-}
-
-export function hallsOf(plant: Plant): readonly string[] {
-  const halls = new Set(
-    plant.instances.map((instance) => hallOf(instance.id)).filter((hall): hall is string => hall !== null),
-  );
-  return halls.size > 1 ? [...halls].sort() : [];
+  return tally(view.nodes, (node) => node.group);
 }
 
 type Specs = ReadonlyMap<string, ComponentSpec>;
@@ -165,11 +152,10 @@ function finish(context: Context, nodes: readonly ViewNode[], edges: readonly Vi
 
 function hallLevel(context: Context): PlantView {
   const { plant, specs, halls } = context;
-  const counts = new Map<string, number>();
-  plant.instances.forEach((instance) => {
-    const hall = hallOf(instance.id);
-    if (hall !== null) counts.set(hall, (counts.get(hall) ?? 0) + 1);
-  });
+  const counts = tally(
+    plant.instances.flatMap((instance) => hallOf(instance.id) ?? []),
+    (hall) => hall,
+  );
   const shared = plant.instances.filter((instance) => hallOf(instance.id) === null);
   const nodes = [
     ...shared.map((instance) => instanceNode(plant, instance, specs, context.notes)),
@@ -211,14 +197,15 @@ function withinHall(view: PlantView, hall: string): PlantView {
   };
 }
 
-export function plantView(
-  plant: Plant,
-  specs: Specs,
-  open: string | null,
-  view: ViewPresentation = plainView,
-  aspect?: number,
-  notes: Notes = new Map(),
-): PlantView {
+interface PlantViewOptions {
+  readonly open: string | null;
+  readonly view?: ViewPresentation;
+  readonly aspect?: number | undefined;
+  readonly notes?: Notes;
+}
+
+export function plantView(plant: Plant, specs: Specs, options: PlantViewOptions): PlantView {
+  const { open, view = plainView, aspect, notes = new Map() } = options;
   const context = { plant, specs, halls: hallsOf(plant), view, aspect, notes };
   if (context.halls.length === 0) {
     return instanceLevel(context, () => true);
@@ -234,35 +221,4 @@ export function plantView(
   const keep = (instance: Instance) =>
     hallOf(instance.id) === open || (hallOf(instance.id) === null && touching.has(instance.id));
   return withinHall(instanceLevel(context, keep), open);
-}
-
-export function hallMembers(plant: Plant, hall: string): readonly (readonly [string, number])[] {
-  const counts = new Map<string, number>();
-  for (const instance of plant.instances) {
-    if (hallOf(instance.id) === hall) counts.set(instance.kind, (counts.get(instance.kind) ?? 0) + 1);
-  }
-  return [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
-}
-
-export function areaOrder(plant: Plant): readonly (readonly [string, number])[] {
-  const declared = areaTree(plant.areas).map((node) => [node.name, node.depth] as const);
-  const loose = [...new Set(plant.instances.map((instance) => areaOf(plant, instance)))].filter(
-    (area) => !declared.some(([name]) => name === area),
-  );
-  return [...declared, ...loose.map((area) => [area, 0] as const)];
-}
-
-export function areaCounts(plant: Plant): readonly (readonly [string, number])[] {
-  const tally = new Map<string, number>();
-  for (const instance of plant.instances) {
-    const area = areaOf(plant, instance);
-    tally.set(area, (tally.get(area) ?? 0) + 1);
-  }
-  return areaOrder(plant).flatMap(([name]) => (tally.has(name) ? [[name, tally.get(name) ?? 0] as const] : []));
-}
-
-export function hallCount(view: PlantView, hall: string): string {
-  const own = view.nodes.filter((node) => hallOf(node.id) === hall).length;
-  const shared = view.nodes.filter((node) => node.instance !== null).length - own;
-  return `${String(own)} instances${shared > 0 ? ` plus ${String(shared)} shared` : ""}`;
 }

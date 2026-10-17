@@ -1,4 +1,5 @@
 import type { Point, Rect } from "./types";
+import { groupBy } from "../../shared/collect";
 import type { Side } from "./wireRoute";
 import { wireClearance } from "./wireRoute";
 
@@ -58,9 +59,7 @@ function slotKey(ends: readonly End[]): readonly [number, number, string] {
 }
 
 function slotsOf(group: readonly End[]): End[][] {
-  const slots = new Map<string, End[]>();
-  for (const end of group) slots.set(end.slot, [...(slots.get(end.slot) ?? []), end]);
-  return [...slots.values()].sort((a, b) => {
+  return [...groupBy(group, (end) => end.slot).values()].sort((a, b) => {
     const [pa, oa, sa] = slotKey(a);
     const [pb, ob, sb] = slotKey(b);
     return pa - pb || oa - ob || sa.localeCompare(sb);
@@ -98,11 +97,7 @@ function placeSide(group: readonly End[], pixel: number, placed: Map<string, Poi
 }
 
 export function spreadEnds(ends: readonly End[], pixel: number): ReadonlyMap<string, Point> {
-  const groups = new Map<string, End[]>();
-  for (const end of ends) {
-    const key = boxKey(end);
-    groups.set(key, [...(groups.get(key) ?? []), end]);
-  }
+  const groups = groupBy(ends, boxKey);
   const placed = new Map<string, Point>();
   for (const group of groups.values()) placeSide(group, pixel, placed);
   return placed;

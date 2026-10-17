@@ -3,8 +3,9 @@ import { ReactFlowProvider } from "@xyflow/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { LaunchStore } from "../../../app/launch";
 import type { NavigationStore } from "../../../app/shell";
-import type { PlantState, PlantSession } from "../../../app/plant";
+import type { PlantSession, ReadyPlant } from "../../../app/plant";
 import type { ReviewState, ReviewSession } from "../../../app/review";
+import { readyReport, startNsOf } from "../../../app/review";
 import type { WorkspaceState, WorkspaceStore } from "../../../app/workspace";
 import type { RunEntry } from "../../../model/workspace";
 import { stateUnit } from "../../../model/plant";
@@ -37,8 +38,6 @@ interface RunScreenProps {
   readonly launch: LaunchStore;
   readonly worldId: string;
 }
-
-type ReadyPlant = Extract<PlantState, { phase: "ready" }>;
 
 function entryOf(listing: WorkspaceState, worldId: string): RunEntry | undefined {
   return listing.phase === "ready" ? listing.workspace.runs.find((run) => run.worldId === worldId) : undefined;
@@ -74,7 +73,7 @@ function useRunPlant(state: ReviewState, plants: PlantSession, workspace: Worksp
   const listing = useStore(workspace);
   const plant = useStore(plants);
   const key = `run:${state.worldId ?? ""}`;
-  const domainId = state.report.phase === "ready" ? state.report.value.domainId : null;
+  const domainId = readyReport(state)?.domainId ?? null;
   const fallback =
     listing.phase === "ready" ? listing.workspace.domains.find((entry) => entry.id === domainId)?.path : undefined;
   useEffect(() => {
@@ -106,10 +105,11 @@ function anchorOf(view: PlantView | null, report: Report | null): string | null 
 
 function Graph({ review, state, plant, hall, onHall }: GraphProps) {
   const { ref, aspect } = useCanvasAspect<HTMLDivElement>();
-  const report = state.report.phase === "ready" ? state.report.value : null;
+  const report = readyReport(state);
   const notes = useMemo(() => noteLinesByEntity(report), [report]);
   const view = useMemo(
-    () => (plant === null ? null : plantView(plant.plant, plant.specs, hall, reviewView, aspect, notes)),
+    () =>
+      plant === null ? null : plantView(plant.plant, plant.specs, { open: hall, view: reviewView, aspect, notes }),
     [plant, hall, aspect, notes],
   );
   const live = useLive(review, state, plant, view);
@@ -117,11 +117,7 @@ function Graph({ review, state, plant, hall, onHall }: GraphProps) {
   if (view === null) return <OpeningPlant />;
   return (
     <div className={styles.graphArea}>
-      <GraphBar
-        state={state}
-        opening={review.index.opening()}
-        startNs={runSpan(state.report.phase === "ready" ? state.report.value : null, review.index.bounds()).startNs}
-      />
+      <GraphBar state={state} opening={review.index.opening()} startNs={startNsOf(state, review)} />
       <div ref={ref} className={screen.graphHost}>
         <PlantGraph
           anchor={anchor}
@@ -145,7 +141,7 @@ function Graph({ review, state, plant, hall, onHall }: GraphProps) {
 }
 
 function Timeline({ review, state }: { readonly review: ReviewSession; readonly state: ReviewState }) {
-  const report: Report | null = state.report.phase === "ready" ? state.report.value : null;
+  const report = readyReport(state);
   const span = runSpan(report, review.index.bounds());
   return (
     <Scrubber
@@ -210,9 +206,13 @@ function useUnitOf(plant: ReadyPlant | null) {
   );
 }
 
+function domainIdOf(state: ReviewState): string {
+  return readyReport(state)?.domainId ?? "";
+}
+
 function usePlantIdentity(state: ReviewState, workspace: WorkspaceStore, plant: ReadyPlant | null) {
   const listing = useStore(workspace);
-  const domainId = state.report.phase === "ready" ? state.report.value.domainId : "";
+  const domainId = domainIdOf(state);
   const entry = listing.phase === "ready" ? listing.workspace.domains.find((d) => d.id === domainId) : undefined;
   const title = plant?.plant.title ?? entry?.title ?? domainId;
   return { title: title === "" ? "Plant" : title, path: entry?.path ?? null };

@@ -1,4 +1,5 @@
 import type { Layout, LayoutEdge, LayoutNode, Rect } from "./types";
+import { groupBy } from "../../shared/collect";
 
 const spacing = {
   pad: 24,
@@ -120,10 +121,7 @@ function placeGroup(columns: readonly LayoutNode[][], origin: { x: number; y: nu
 type RowsFor = (group: string, count: number) => number;
 
 function groupsOf(nodes: readonly LayoutNode[], groupOrder: readonly string[]) {
-  const byGroup = new Map<string, LayoutNode[]>();
-  nodes.forEach((node) => {
-    byGroup.set(node.group, [...(byGroup.get(node.group) ?? []), node]);
-  });
+  const byGroup = groupBy(nodes, (node) => node.group);
   const known = groupOrder.filter((group) => byGroup.has(group));
   const rest = [...byGroup.keys()].filter((group) => !groupOrder.includes(group)).sort();
   return { byGroup, order: [...known, ...rest] };

@@ -11,6 +11,7 @@ import { instanceNameFits, instanceNameRule } from "../../../model/editor";
 import { disconnect, isTemplate, moveInstance, renameInstance } from "../../../model/editor";
 import { cx } from "../../primitives";
 import { useCutBottom } from "../../primitives";
+import { Choice } from "./Choice";
 import { ConnectForm } from "./ConnectForm";
 import { DeleteInstance } from "./DeleteInstance";
 import styles from "./Editor.module.css";
@@ -76,27 +77,6 @@ function Rename({
       </span>
       <NameRule fits={fits} />
     </form>
-  );
-}
-
-function AreaPick({ draft, instance, editor }: Pick<EditorProps, "draft" | "instance" | "editor">) {
-  return (
-    <label className={panel.field}>
-      <span>Area</span>
-      <select
-        value={instance.area}
-        onChange={(event) => {
-          const area = event.target.value;
-          editor.edit((doc) => moveInstance(doc, instance.id, area));
-        }}
-      >
-        {areaNodesOf(draft.doc).map((area) => (
-          <option key={area.name} value={area.name}>
-            {area.path}
-          </option>
-        ))}
-      </select>
-    </label>
   );
 }
 
@@ -231,7 +211,14 @@ function Editing({ draft, plant, editor, request, instance }: EditorProps) {
   return (
     <>
       <Rename key={instance.id} instance={instance} editor={editor} request={request} flagged={flagged} />
-      <AreaPick draft={draft} instance={instance} editor={editor} />
+      <Choice
+        label="Area"
+        value={instance.area}
+        options={areaNodesOf(draft.doc).map((area) => [area.name, area.path])}
+        onChange={(area) => {
+          editor.edit((doc) => moveInstance(doc, instance.id, area));
+        }}
+      />
       <ConnectForm key={`connect:${instance.id}`} {...{ draft, plant, editor, request, instance }} />
     </>
   );

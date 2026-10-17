@@ -1,7 +1,8 @@
 import { shared } from "../../primitives";
-import type { PlantState } from "../../../app/plant";
+import type { ReadyPlant } from "../../../app/plant";
 import type { ReviewState, ReviewSession } from "../../../app/review";
-import { runSpan } from "../../../model/review";
+import { startNsOf } from "../../../app/review";
+import { failureLine } from "../../../model/shared/words";
 import { runClock } from "../../../model/review";
 import { cx } from "../../primitives";
 import { useCutBottom } from "../../primitives";
@@ -10,7 +11,6 @@ import { ReportPanel } from "./ReportPanel";
 import parts from "./ReportParts.module.css";
 import styles from "./RunPanel.module.css";
 
-type ReadyPlant = Extract<PlantState, { phase: "ready" }>;
 type Tab = "report" | "inspect";
 
 interface RunPanelProps {
@@ -21,7 +21,7 @@ interface RunPanelProps {
 }
 
 function startOf({ state, review }: RunPanelProps): number {
-  return runSpan(state.report.phase === "ready" ? state.report.value : null, review.index.bounds()).startNs;
+  return startNsOf(state, review);
 }
 
 function Inspect(props: RunPanelProps) {
@@ -108,9 +108,8 @@ function ReportBody({
       </p>
     );
   return (
-    <p
-      className={styles.failure}
-      role="alert"
-    >{`${state.report.failure.diagnostic.message} (${state.report.failure.diagnostic.displayCode})`}</p>
+    <p className={styles.failure} role="alert">
+      {failureLine(state.report.failure.diagnostic)}
+    </p>
   );
 }

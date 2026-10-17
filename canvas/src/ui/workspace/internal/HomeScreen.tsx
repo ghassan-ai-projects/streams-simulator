@@ -14,6 +14,7 @@ import { BlankPlantStart } from "./EmptyStart";
 import { ExampleList, useExamples } from "./Examples";
 import { PlantList } from "./PlantList";
 import { RunList } from "./RunList";
+import { SectionHeading } from "./SectionHeading";
 
 interface ContentsProps {
   readonly workspace: Workspace;
@@ -53,10 +54,7 @@ function Scenarios({ workspace }: { readonly workspace: Workspace }) {
   if (workspace.scenarios.length === 0) return null;
   return (
     <section className={rowStyles.section} aria-labelledby="scenarios-title">
-      <header className={rowStyles.heading}>
-        <h2 id="scenarios-title">Scenarios</h2>
-        <span className={rowStyles.count}>{workspace.scenarios.length}</span>
-      </header>
+      <SectionHeading id="scenarios-title" title="Scenarios" count={workspace.scenarios.length} />
       <ul className={rowStyles.rows}>
         {workspace.scenarios.map((item) => (
           <li key={item.path} className={rowStyles.item} title={item.path}>

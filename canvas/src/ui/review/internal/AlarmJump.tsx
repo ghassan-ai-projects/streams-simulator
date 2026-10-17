@@ -1,6 +1,6 @@
 import { Bell } from "lucide-react";
 import type { EventMark } from "../../../model/review";
-import styles from "./PlayControls.module.css";
+import { StepButton } from "./PlayControls";
 
 interface AlarmJumpProps {
   readonly marks: readonly EventMark[];
@@ -13,17 +13,14 @@ export function AlarmJump({ marks, positionNs, onEvent }: AlarmJumpProps) {
   const alarm = alarms.find((mark) => mark.atNs > positionNs) ?? alarms[0];
   const label = alarm === undefined ? "Jump to alarm: none" : `Jump to alarm: ${alarm.label}`;
   return (
-    <button
-      type="button"
-      className={styles.step}
-      aria-label={label}
-      title={label}
-      aria-disabled={alarm === undefined}
-      onClick={() => {
+    <StepButton
+      label={label}
+      disabled={alarm === undefined}
+      onActivate={() => {
         if (alarm !== undefined) onEvent(alarm);
       }}
     >
       <Bell size={14} aria-hidden="true" />
-    </button>
+    </StepButton>
   );
 }

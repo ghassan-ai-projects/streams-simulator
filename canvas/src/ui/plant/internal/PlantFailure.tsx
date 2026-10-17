@@ -1,6 +1,7 @@
 import { panel, screen } from "../../primitives";
 import type { PlantFailure as Failure } from "../../../app/plant";
 import type { NavigationStore } from "../../../app/shell";
+import { failureLine } from "../../../model/shared/words";
 import { Breadcrumb } from "../../primitives";
 import { useScreen } from "../../primitives";
 import styles from "./PlantScreen.module.css";
@@ -48,7 +49,7 @@ function FailureBody({ failure, navigation }: { readonly failure: Failure; reado
       </button>
       <details className={styles.detail}>
         <summary>Details</summary>
-        <p>{`${failure.diagnostic.message} (${failure.diagnostic.displayCode})`}</p>
+        <p>{failureLine(failure.diagnostic)}</p>
       </details>
     </div>
   );

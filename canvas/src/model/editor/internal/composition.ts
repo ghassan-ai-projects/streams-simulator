@@ -1,8 +1,9 @@
-import type { AreaNode } from "../../shared/areaTree";
+import type { AreaNode, AreaRef } from "../../shared/areaTree";
 import { areaTree } from "../../shared/areaTree";
 import { isRecord, list, record, text } from "../../shared/json";
 import { spaced } from "../../shared/words";
 import type { Instance, Link, Plant } from "../../plant";
+import { endpointOf } from "../../plant";
 
 type Json = Readonly<Record<string, unknown>>;
 export type Composition = Json;
@@ -61,22 +62,21 @@ export function connectionsOf(doc: Composition): readonly Connection[] {
   }));
 }
 
+function areasOf(doc: Composition): readonly AreaRef[] {
+  return list(doc.areas).map((raw) => ({ name: text(record(raw).name), parent: text(record(raw).parent) || null }));
+}
+
+function namedAreasOf(doc: Composition): readonly AreaRef[] {
+  return areasOf(doc).filter((area) => area.name !== "");
+}
+
 export function areaNodesOf(doc: Composition): readonly AreaNode[] {
-  return areaTree(
-    list(doc.areas)
-      .map((raw) => ({ name: text(record(raw).name), parent: text(record(raw).parent) || null }))
-      .filter((area) => area.name !== ""),
-  );
+  return areaTree(namedAreasOf(doc));
 }
 
 export function componentOf(use: string): string {
   const at = use.lastIndexOf("@");
   return at < 0 ? use : use.slice(0, at);
-}
-
-export function endpointOf(value: string): { readonly id: string; readonly port: string } {
-  const dot = value.lastIndexOf(".");
-  return dot < 0 ? { id: value, port: "" } : { id: value.slice(0, dot), port: value.slice(dot + 1) };
 }
 
 function link(connection: Connection): Link {
@@ -89,11 +89,11 @@ export function shortKind(component: string): string {
   return (component.split("/").at(-1) ?? component).replaceAll("-", "_");
 }
 
-export function compositionPlant(doc: Composition, titleOf: (component: string) => string): Plant {
+export function compositionPlant(doc: Composition, titleFor: (component: string) => string): Plant {
   const instances: Instance[] = equipmentOf(doc).flatMap((entry) =>
     entry.names.map((id) => ({
       id,
-      kind: entry.as || titleOf(componentOf(entry.use)),
+      kind: entry.as || titleFor(componentOf(entry.use)),
       area: entry.area,
       component: componentOf(entry.use),
       instruments: new Map<string, string>(),
@@ -103,10 +103,7 @@ export function compositionPlant(doc: Composition, titleOf: (component: string) 
     id: text(doc.id),
     title: text(doc.title),
     site: text(record(doc.site).name),
-    areas: list(doc.areas).map((raw) => ({
-      name: text(record(raw).name),
-      parent: text(record(raw).parent) || null,
-    })),
+    areas: areasOf(doc),
     instances,
     links: connectionsOf(doc).map(link),
     kinds: new Map(),

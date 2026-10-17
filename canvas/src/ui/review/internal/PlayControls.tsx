@@ -1,4 +1,5 @@
 import { Pause, Play } from "lucide-react";
+import type { ReactNode } from "react";
 import { useState } from "react";
 import { playbackSpeeds } from "../../../model/review";
 import styles from "./PlayControls.module.css";
@@ -9,6 +10,31 @@ export interface PlayProps {
   readonly onPlay: () => void;
   readonly onPause: () => void;
   readonly onSpeed: (speed: number) => void;
+}
+
+interface StepButtonProps {
+  readonly label: string;
+  readonly title?: string;
+  readonly shortcut?: string | undefined;
+  readonly disabled: boolean;
+  readonly onActivate: () => void;
+  readonly children: ReactNode;
+}
+
+export function StepButton({ label, title = label, shortcut, disabled, onActivate, children }: StepButtonProps) {
+  return (
+    <button
+      type="button"
+      className={styles.step}
+      aria-label={label}
+      aria-keyshortcuts={shortcut}
+      title={title}
+      aria-disabled={disabled}
+      onClick={onActivate}
+    >
+      {children}
+    </button>
+  );
 }
 
 function usePlayAnnouncement(playing: boolean, speed: number): string {

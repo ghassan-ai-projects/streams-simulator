@@ -21,6 +21,8 @@ export type PlantState =
       readonly selected: string | null;
     };
 
+export type ReadyPlant = Extract<PlantState, { phase: "ready" }>;
+
 function parsed(content: string): unknown {
   try {
     return JSON.parse(content) as unknown;
@@ -33,11 +35,7 @@ function pairOf(id: string, workspace: Workspace): string | null {
   return workspace.compositions.find((entry) => entry.id === id && id !== "")?.path ?? null;
 }
 
-function unchanged(
-  held: Extract<PlantState, { phase: "ready" }> | null,
-  file: Outcome<FileContent, PlantFailure>,
-  workspace: Workspace,
-): boolean {
+function unchanged(held: ReadyPlant | null, file: Outcome<FileContent, PlantFailure>, workspace: Workspace): boolean {
   return (
     held !== null && file.ok && file.value.etag === held.etag && pairOf(held.plant.id, workspace) === held.composition
   );
@@ -82,7 +80,7 @@ export class PlantStore extends Observable<PlantState> {
     );
   }
 
-  private held(path: string): Extract<PlantState, { phase: "ready" }> | null {
+  private held(path: string): ReadyPlant | null {
     const state = this.snapshot();
     return state.phase === "ready" && state.path === path ? state : null;
   }

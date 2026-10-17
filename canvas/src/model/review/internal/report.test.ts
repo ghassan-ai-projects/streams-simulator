@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { blankReport, report } from "../../../test/runFixture";
 import { kpiGroups, kpisOf, kpiWords, rerunOf, runFacts, runIdentity } from "./reportViews";
 import { humanise, kindLabel } from "../../shared/words";
-import { badgeLabels, badgeOf, replayLine, runSpan, wallClock } from "./report";
+import { badgeLabels, badgeOf, callWords, faultNames, replayLine, runSpan, wallClock } from "./report";
 
 describe("run report", () => {
   it("derives the badge from the report and verify, never from its own checks", () => {
@@ -145,5 +145,33 @@ describe("run report", () => {
       ["M-1", 2],
       ["M-2", 1],
     ]);
+  });
+
+  it("names the faults per instance, optionally only those a test keeps, and a call by effector and outcome", () => {
+    const disturbance = (kind: "fault" | "perturbation", target: string, name: string) => ({
+      kind,
+      action: "inject",
+      injectedNs: 0,
+      onsetNs: 0,
+      target,
+      name,
+      clearedNs: null,
+      clearedBy: "",
+    });
+    const mixed = {
+      ...report,
+      disturbances: [
+        disturbance("fault", "A-1", "bearing__wear"),
+        disturbance("perturbation", "A-1", "noise"),
+        disturbance("fault", "B-1", "leak"),
+        disturbance("fault", "A-1", "stall"),
+      ],
+    };
+    expect([...faultNames(mixed)]).toEqual([
+      ["A-1", ["wear", "stall"]],
+      ["B-1", ["leak"]],
+    ]);
+    expect([...faultNames(mixed, (d) => d.name === "leak")]).toEqual([["B-1", ["leak"]]]);
+    expect(callWords({ effector: "pump__set_speed", outcome: "accepted" })).toBe("set speed · accepted");
   });
 });

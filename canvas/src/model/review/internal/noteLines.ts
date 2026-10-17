@@ -1,5 +1,5 @@
 import type { Report } from "./report";
-import { humanise } from "../../shared/words";
+import { callWords, faultNames } from "./report";
 
 const charsPerLine = 16;
 
@@ -13,19 +13,13 @@ function noteLinesOf(fault: string, effector: string): number {
 }
 
 function faultsOf(report: Report): Map<string, string> {
-  const named = new Map<string, string[]>();
-  for (const disturbance of report.disturbances) {
-    if (disturbance.kind !== "fault") continue;
-    const names = named.get(disturbance.target) ?? [];
-    named.set(disturbance.target, [...names, humanise(disturbance.name)]);
-  }
-  return new Map([...named].map(([entity, names]) => [entity, names.join(", ")] as const));
+  return new Map([...faultNames(report)].map(([entity, names]) => [entity, names.join(", ")] as const));
 }
 
 function callsOf(report: Report): Map<string, string> {
   const longest = new Map<string, string>();
   for (const call of report.effectorCalls) {
-    const words = `${humanise(call.effector)} · ${call.outcome}`;
+    const words = callWords(call);
     if (words.length > (longest.get(call.entity) ?? "").length) longest.set(call.entity, words);
   }
   return longest;

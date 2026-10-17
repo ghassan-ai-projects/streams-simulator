@@ -101,7 +101,7 @@ export function Outline({ plant, hall, selected, onSelect, onOpenHall, flagged, 
   const [filter, setFilter] = useState("");
   const { ref: navRef, cut } = useCutBottom<HTMLElement>();
   const halls = hallsOf(plant).map((id) => ({ id, kind: "" }));
-  const shown = marked(groups(plant, hall, filter, showEmptyAreas === true), flagged);
+  const shown = marked(groups(plant, hall, filter, { emptyAreas: showEmptyAreas === true ? "show" : "hide" }), flagged);
   return (
     <nav
       ref={navRef}
@@ -126,7 +126,7 @@ export function Outline({ plant, hall, selected, onSelect, onOpenHall, flagged, 
         />
       ))}
       <p className={shown.length === 0 ? styles.noMatch : "sr-only"} role="status">
-        {matchWords(plant, shown, filter)}
+        {matchWords(shown, filter, plant.instances.length === 0)}
       </p>
     </nav>
   );
