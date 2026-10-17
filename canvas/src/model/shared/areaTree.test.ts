@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { areaTree } from "./areaTree";
-import { areaNodesOf } from "../../test/modelBridge";
-import { addArea } from "../../test/modelBridge";
+import { areaNodesOf } from "../../test/modelFixtures";
+import { addArea } from "../../test/modelFixtures";
 
 describe("area tree", () => {
   it("orders areas under their parent, with the path and depth", () => {

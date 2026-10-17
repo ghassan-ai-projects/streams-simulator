@@ -1,14 +1,5 @@
-.tierCompact .marks {
-  grid-column: 2;
-}
-
 .tierCompact .brief .tagWords {
   display: none;
-}
-
-.tierOverview .marks {
-  grid-column: 2;
-  grid-row: 1;
 }
 
 .tag {
@@ -33,28 +24,13 @@
   max-width: 100%;
 }
 
-.marks {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  min-width: 0;
-  max-width: 100%;
-}
-
-.tag-alarm {
-  background: var(--status-alarm-bg);
-  color: var(--text-primary);
-}
-
+.tag-alarm,
 .tag-fault {
   background: var(--status-alarm-bg);
   color: var(--text-primary);
 }
 
-.tag-alarm svg {
-  color: var(--status-alarm);
-}
-
+.tag-alarm svg,
 .tag-fault svg {
   color: var(--status-alarm);
 }
@@ -86,11 +62,7 @@
   height: min(calc(10px / var(--zoom)), 22px);
 }
 
-.tierOverview .effectorMark {
-  width: min(calc(10px / var(--zoom)), 36px);
-  height: min(calc(10px / var(--zoom)), 36px);
-}
-
+.tierOverview .effectorMark,
 .tierMap .effectorMark {
   width: min(calc(10px / var(--zoom)), 36px);
   height: min(calc(10px / var(--zoom)), 36px);
@@ -107,22 +79,13 @@
   height: min(calc(12px / var(--zoom)), 22px);
 }
 
-.tierOverview .tag svg {
-  width: min(calc(12px / var(--zoom)), 40px);
-  height: min(calc(12px / var(--zoom)), 40px);
-}
-
+.tierOverview .tag svg,
 .tierMap .tag svg {
   width: min(calc(12px / var(--zoom)), 40px);
   height: min(calc(12px / var(--zoom)), 40px);
 }
 
-.tierOverview .tag {
-  gap: 0;
-  padding: calc(2px / var(--zoom));
-  font-size: 0;
-}
-
+.tierOverview .tag,
 .tierMap .tag {
   gap: 0;
   padding: calc(2px / var(--zoom));

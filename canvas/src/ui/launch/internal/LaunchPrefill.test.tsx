@@ -10,7 +10,7 @@ const path = "domains/mini.domain.json";
 
 describe("prefilled run plan", () => {
   it("clears a prefilled fault the plant no longer has, says so, and does not start with it", () => {
-    const { launch, scheduler } = launchHarness(new FakeBridge());
+    const { launch, timers } = launchHarness(new FakeBridge());
     launch.propose(
       "mini",
       {
@@ -26,7 +26,7 @@ describe("prefilled run plan", () => {
     render(
       <LaunchPanel
         launch={launch}
-        scheduler={scheduler}
+        scheduler={timers}
         plant={parsePlant(domain)}
         path={path}
         onClose={vi.fn()}

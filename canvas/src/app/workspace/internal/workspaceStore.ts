@@ -24,12 +24,11 @@ export class WorkspaceStore extends Observable<WorkspaceState> {
 
   async open(): Promise<void> {
     const session = this.sessions.begin();
-    await this.reload(session);
-    if (!this.sessions.isCurrent(session)) return;
     this.stopWatching?.();
     this.stopWatching = this.gateway.watch(() => {
       void this.reload(session);
     });
+    await this.reload(session);
   }
 
   close(): void {
@@ -39,11 +38,10 @@ export class WorkspaceStore extends Observable<WorkspaceState> {
     this.stopWatching = null;
   }
 
-  async reload(session: OperationId | null = null): Promise<void> {
-    const activeSession = session ?? this.sessions.begin();
+  private async reload(session: OperationId): Promise<void> {
     const request = this.requests.begin();
     const outcome = await this.gateway.load();
-    if (!this.sessions.isCurrent(activeSession) || !this.requests.isCurrent(request)) return;
+    if (!this.sessions.isCurrent(session) || !this.requests.isCurrent(request)) return;
     this.set(outcome.ok ? { phase: "ready", workspace: outcome.value } : { phase: "failed", failure: outcome.failure });
   }
 }

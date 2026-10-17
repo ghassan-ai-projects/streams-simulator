@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { bridgeTransport, respond } from "../../../test/bridgeTransport";
-import { action, getFile, isRecord, putFile, request } from "./http";
+import { isRecord } from "../../../model/shared/json";
+import { action, getFile, putFile, request } from "./http";
 import type { RequestFailure, WireProblem } from "./http";
 
 function problem(failure: RequestFailure | undefined): WireProblem {

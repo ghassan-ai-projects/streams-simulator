@@ -1,15 +1,9 @@
-import type { ViewNode, ViewEdge, PlantView } from "./types";
-export type { ViewNode, PlantView } from "./types";
-import type { LayoutNode } from "./layout";
+import type { LayoutNode, PlantView, ViewEdge, ViewNode, ViewPresentation } from "./types";
 import { layout } from "./layout";
 import { headerReserve } from "./frameTitle";
 import { areaTree } from "../../shared/areaTree";
-import type { Instance, Link, Plant } from "../../plant";
-import { areaOf } from "../../plant";
-import type { ComponentSpec, Family, Pin, Pins } from "../../plant";
-import { plainRows } from "./nodePresentation";
-import type { ViewPresentation } from "./nodePresentation";
-import { familyOf, pinsOf } from "../../plant";
+import type { ComponentSpec, Family, Instance, Link, Pin, Pins, Plant } from "../../plant";
+import { areaOf, familyOf, pinsOf } from "../../plant";
 import { kindLabel, shortChannel } from "../../shared/words";
 
 export const nodeSize = {
@@ -24,6 +18,10 @@ export const nodeSize = {
   idLine: 36,
   note: 24,
 } as const;
+
+function plainRows(pins: Pins): number {
+  return Math.max(2, pins.ins.length, pins.outs.length);
+}
 
 export const plainView: ViewPresentation = { rows: plainRows, note: () => 0 };
 

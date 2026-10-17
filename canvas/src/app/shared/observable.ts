@@ -11,6 +11,7 @@ export class Observable<S> {
   };
 
   protected set(next: S): void {
+    if (Object.is(next, this.state)) return;
     this.state = next;
     this.listeners.forEach((listener) => {
       listener();

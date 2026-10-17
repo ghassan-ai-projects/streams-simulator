@@ -3,8 +3,9 @@ import { describe, expect, it } from "vitest";
 import { LaunchStore } from "../../../app/launch";
 import { NavigationStore } from "../../../app/shell";
 import { failure as failed, success } from "../../../test/outcome";
-import { FakeBridge, failure } from "../../../test/fakeBridge";
+import { FakeBridge, cannedFailure } from "../../../test/fakeBridge";
 import { fakeClock } from "../../../test/fakeClock";
+import { memoryLocation } from "../../../test/location";
 import { RunIndicator } from "./RunIndicator";
 
 const origin = { domain: "mini", title: "Mini plant", path: "domains/mini.domain.json" };
@@ -16,16 +17,7 @@ function setup() {
   bridge.actions.set("clock.advance", success({}));
   bridge.actions.set("run.end", success({}));
   bridge.actions.set("world.destroy", success({}));
-  const location = {
-    hash: "#/",
-    read() {
-      return this.hash;
-    },
-    write(hash: string) {
-      this.hash = hash;
-    },
-    subscribe: () => () => undefined,
-  };
+  const location = memoryLocation();
   const timers = fakeClock();
   const launch = new LaunchStore(bridge.launch, timers, timers);
   render(<RunIndicator launch={launch} navigation={new NavigationStore(location)} />);
@@ -47,7 +39,7 @@ describe("run indicator", () => {
 
   it("shows progress, links back to the plant's run panel, and lets a failure be dismissed", async () => {
     const { bridge, launch, location } = setup();
-    bridge.actions.set("world.create", failed(failure("domain_invalid", 422, "bad")));
+    bridge.actions.set("world.create", failed(cannedFailure("domain_invalid", 422, "bad")));
     let running = Promise.resolve();
     act(() => {
       running = launch.start(origin, plan);

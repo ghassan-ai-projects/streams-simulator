@@ -1,7 +1,7 @@
 import type { ArgValue, EffectorSpec } from "../../plant";
 import { argProblem } from "../../plant";
 import type { ShowingMarks } from "../../shared/marks";
-import { humanise } from "../../shared/words";
+import { counted, humanise } from "../../shared/words";
 import { durationOf } from "../../shared/duration";
 
 interface PlannedFault {
@@ -10,7 +10,7 @@ interface PlannedFault {
   readonly atS: number;
 }
 
-export interface PlannedCall {
+interface PlannedCall {
   readonly entity: string;
   readonly effector: string;
   readonly atS: number;
@@ -69,7 +69,7 @@ function actionsAt(plan: LaunchPlan, atS: number): readonly LaunchStep[] {
   return [...injections, ...invocations];
 }
 
-export function launchSteps(plan: LaunchPlan, chunks = 20): readonly LaunchStep[] {
+export function launchSteps(plan: LaunchPlan, chunks: number): readonly LaunchStep[] {
   const steps: LaunchStep[] = [...actionsAt(plan, 0)];
   let previous = 0;
   for (const at of boundaries(plan, chunks)) {
@@ -80,7 +80,7 @@ export function launchSteps(plan: LaunchPlan, chunks = 20): readonly LaunchStep[
   return steps;
 }
 
-export type SpecOf = (entity: string, effector: string) => EffectorSpec | undefined;
+type SpecOf = (entity: string, effector: string) => EffectorSpec | undefined;
 
 export function failureWords(step: LaunchStep | null): string {
   if (step?.kind === "inject")
@@ -90,7 +90,7 @@ export function failureWords(step: LaunchStep | null): string {
   return "The run stopped before it finished. Check the plan and start again.";
 }
 
-export interface KeptPlan {
+interface KeptPlan {
   readonly plan: LaunchPlan;
   readonly dropped: readonly string[];
 }
@@ -155,9 +155,7 @@ function callProblems(plan: LaunchPlan, specOf: SpecOf): readonly PlanProblem[] 
   });
 }
 
-const anySpec: SpecOf = (_entity, effector) => ({ name: effector, entityArg: null, args: [] });
-
-export function planProblems(plan: LaunchPlan, specOf: SpecOf = anySpec): readonly PlanProblem[] {
+export function planProblems(plan: LaunchPlan, specOf: SpecOf): readonly PlanProblem[] {
   const problems: PlanProblem[] = [];
   if (!Number.isSafeInteger(plan.seed) || plan.seed < 0)
     problems.push({ field: "seed", text: "The seed is a whole number, 0 or more." });
@@ -166,15 +164,11 @@ export function planProblems(plan: LaunchPlan, specOf: SpecOf = anySpec): readon
   return [...problems, ...faultProblems(plan), ...callProblems(plan, specOf)];
 }
 
-function counted(n: number, one: string, many: string): string {
-  return `${String(n)} ${n === 1 ? one : many}`;
-}
-
 export function disturbanceWords(plan: LaunchPlan): string {
   const faults = plan.faults.length;
   const calls = plan.calls.length;
-  const injected = faults === 0 ? "no faults" : counted(faults, "fault", "faults");
-  return calls === 0 ? injected : `${injected} and ${counted(calls, "effector call", "effector calls")}`;
+  const injected = faults === 0 ? "no faults" : counted(faults, "fault");
+  return calls === 0 ? injected : `${injected} and ${counted(calls, "effector call")}`;
 }
 
 export function planSummary(plan: LaunchPlan, length: string): string {
@@ -183,8 +177,8 @@ export function planSummary(plan: LaunchPlan, length: string): string {
   return [
     `${length} of simulated time`,
     plan.explore ? "Explore" : "Evaluate",
-    faults === 0 ? "no faults" : counted(faults, "fault", "faults"),
-    calls === 0 ? "" : counted(calls, "effector call", "effector calls"),
+    faults === 0 ? "no faults" : counted(faults, "fault"),
+    calls === 0 ? "" : counted(calls, "effector call"),
   ]
     .filter((part) => part !== "")
     .join(" · ");

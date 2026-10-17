@@ -244,7 +244,7 @@ function kindLine(draft: Draft, instance: Instance): string {
 
 export function InstanceEditor(props: EditorProps) {
   const { draft, editor, request, instance } = props;
-  const { ref, cut } = useCutBottom<HTMLElement>([draft, instance]);
+  const { ref, cut } = useCutBottom<HTMLElement>();
   return (
     <aside
       ref={ref}

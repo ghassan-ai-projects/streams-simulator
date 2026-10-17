@@ -9,9 +9,10 @@ import type {
 } from "../../../app/ports";
 import type { FailureMapper, RequestFailure, WireProblem } from "./http";
 
+type Unreached = Exclude<RequestFailure, { readonly kind: "http" }>;
+
 export function sessionFailure(error: RequestFailure): SessionFailure {
-  if (error.kind === "transport") return { kind: "unreachable", diagnostic: diagnostic(null) };
-  if (error.kind === "unreadable") return { kind: "unreachable", diagnostic: diagnostic(null) };
+  if (error.kind !== "http") return { kind: "unreachable", diagnostic: diagnostic(null) };
   const detail = error.problem;
   if (detail.code === "pairing_locked" || detail.code === "pairing_used") {
     return {
@@ -27,21 +28,14 @@ export function sessionFailure(error: RequestFailure): SessionFailure {
 }
 
 export function workspaceFailure(error: RequestFailure): WorkspaceFailure {
-  if (error.kind === "transport") return { kind: "unavailable", diagnostic: diagnostic(null) };
-  if (error.kind === "unreadable") return { kind: "unreadable", diagnostic: diagnostic(null) };
-  if (error.problem.code === "unpaired") return { kind: "unpaired", diagnostic: diagnostic(error.problem) };
+  if (error.kind !== "http") return unreached(error);
   const display = diagnostic(error.problem);
-  return error.problem.status >= 500
-    ? { kind: "unavailable", diagnostic: display }
-    : { kind: "unreadable", diagnostic: display };
+  if (error.problem.code === "unpaired") return { kind: "unpaired", diagnostic: display };
+  return serverFault(error.problem, display);
 }
 
 export function plantFailure(action: "read" | "generate" | "write" | "compose"): FailureMapper<PlantFailure> {
-  return (error) => {
-    if (error.kind === "transport") return { kind: "unavailable", diagnostic: diagnostic(null) };
-    if (error.kind === "unreadable") return { kind: "unreadable", diagnostic: diagnostic(null) };
-    return plantProblem(error.problem, action);
-  };
+  return (error) => (error.kind === "http" ? plantProblem(error.problem, action) : unreached(error));
 }
 
 function plantProblem(problem: WireProblem, action: "read" | "generate" | "write" | "compose"): PlantFailure {
@@ -54,49 +48,32 @@ function plantProblem(problem: WireProblem, action: "read" | "generate" | "write
   if (action === "compose" && problem.issues.length > 0) {
     return { kind: "compose-refused", diagnostic: display, issues: problem.issues };
   }
-  return problem.status >= 500
-    ? { kind: "unavailable", diagnostic: display }
-    : { kind: "unreadable", diagnostic: display };
+  return serverFault(problem, display);
 }
 
 export function editorFailure(action: "read" | "write" | "compose"): FailureMapper<EditorFailure> {
-  return (error) => {
-    if (error.kind === "transport") return { kind: "unavailable", diagnostic: diagnostic(null) };
-    if (error.kind === "unreadable") return { kind: "unreadable", diagnostic: diagnostic(null) };
-    const problem = error.problem;
-    const display = diagnostic(problem);
-    if (isMissing(problem)) return { kind: "missing", diagnostic: display };
-    if (problem.code === "conflict") return { kind: "conflict", diagnostic: display };
-    if (action === "compose" && problem.issues.length > 0) {
-      return { kind: "compose-refused", diagnostic: display, issues: problem.issues };
-    }
-    return problem.status >= 500
-      ? { kind: "unavailable", diagnostic: display }
-      : { kind: "unreadable", diagnostic: display };
-  };
+  return plantFailure(action);
 }
 
 export function launchFailure(step: "create" | "advance" | "inject" | "invoke" | "end"): FailureMapper<LaunchFailure> {
-  return (error) => {
-    if (error.kind === "transport") return { kind: "unavailable", diagnostic: diagnostic(null) };
-    if (error.kind === "unreadable") return { kind: "unreadable", diagnostic: diagnostic(null) };
-    return { kind: "rejected", step, diagnostic: diagnostic(error.problem) };
-  };
+  return (error) =>
+    error.kind === "http" ? { kind: "rejected", step, diagnostic: diagnostic(error.problem) } : unreached(error);
 }
 
 export function reviewFailure(error: RequestFailure): ReviewFailure {
-  if (error.kind === "transport") return { kind: "unavailable", diagnostic: diagnostic(null) };
-  if (error.kind === "unreadable") return { kind: "unreadable", diagnostic: diagnostic(null) };
-  if (error.problem.code === "not_found" || error.problem.code === "file_not_found") {
-    return { kind: "missing", diagnostic: diagnostic(error.problem) };
-  }
-  if (error.problem.code === "run_incomplete") {
-    return { kind: "run-incomplete", diagnostic: diagnostic(error.problem) };
-  }
+  if (error.kind !== "http") return unreached(error);
   const display = diagnostic(error.problem);
-  return error.problem.status >= 500
-    ? { kind: "unavailable", diagnostic: display }
-    : { kind: "unreadable", diagnostic: display };
+  if (isMissing(error.problem)) return { kind: "missing", diagnostic: display };
+  if (error.problem.code === "run_incomplete") return { kind: "run-incomplete", diagnostic: display };
+  return serverFault(error.problem, display);
+}
+
+function unreached(error: Unreached) {
+  return { kind: error.kind === "transport" ? "unavailable" : "unreadable", diagnostic: diagnostic(null) } as const;
+}
+
+function serverFault(problem: WireProblem, display: Diagnostic) {
+  return { kind: problem.status >= 500 ? "unavailable" : "unreadable", diagnostic: display } as const;
 }
 
 function diagnostic(problem: WireProblem | null): Diagnostic {

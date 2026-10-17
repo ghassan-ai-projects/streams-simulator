@@ -3,10 +3,10 @@ import { componentOf, domainOf, equipmentOf, parseComposition } from "../../../m
 import { addEquipment } from "../../../model/editor";
 import type { Presets } from "../../../model/plant";
 import { componentSpecs } from "../../plant";
-import { Observable, createOperationIdentity } from "../../shared";
+import { Observable } from "../../shared";
 import type { OperationIdentity, OperationId } from "../../shared";
 import type { EditorFailure, EditorGateway } from "../../ports";
-import { applySaveResult, captureSaveAttempt, saveCaptured, savedRevision } from "./editorSave";
+import { applySaveResult, captureSaveAttempt, markSaved, saveCaptured } from "./editorSave";
 import type { SaveAttempt } from "./editorSave";
 import type { Draft, EditorState } from "./editorDraft";
 
@@ -22,7 +22,7 @@ export function checked(draft: Draft): boolean {
     !isDirty(draft) &&
     draft.saveStatus === "idle" &&
     ((draft.domainPath === domainOf(draft.doc) && draft.domainEtag !== "") ||
-      (draft.outcome?.kind === "composed" && draft.outcome.revision === draft.revision))
+      (draft.outcome?.kind === "composed" && draft.outcome.doc === draft.doc))
   );
 }
 
@@ -50,33 +50,29 @@ export class EditorStore extends Observable<EditorState> {
 
   constructor(
     private readonly gateway: EditorGateway,
-    private readonly operations: OperationIdentity = createOperationIdentity(),
+    private readonly operations: OperationIdentity,
   ) {
     super({ phase: "idle" });
   }
 
   async open(path: string): Promise<void> {
-    const state = this.snapshot();
-    if (state.phase === "loading" && state.path === path) return;
-    if (state.phase === "ready" && state.path === path && isDirty(state)) return;
-    if (state.phase !== "ready" || state.path !== path) this.set({ phase: "loading", path });
-    const request = this.operations.begin();
-    this.active = request;
-    await this.load(request, path, state.phase === "ready" && state.path === path ? state.etag : null);
+    this.set({ phase: "loading", path });
+    await this.restart(path);
   }
 
   async reload(): Promise<void> {
     const draft = this.draft();
-    if (draft !== null) {
-      const request = this.operations.begin();
-      this.active = request;
-      await this.load(request, draft.path, null);
-    }
+    if (draft !== null) await this.restart(draft.path);
   }
 
-  private async load(request: OperationId, path: string, held: string | null): Promise<void> {
+  private async restart(path: string): Promise<void> {
+    const request = this.operations.begin();
+    this.active = request;
+    await this.load(request, path);
+  }
+
+  private async load(request: OperationId, path: string): Promise<void> {
     const file = await this.gateway.readFile(path);
-    if (file.ok && file.value.etag === held) return;
     const doc = file.ok ? parseComposition(file.value.content) : null;
     if (!this.current(request, path)) return;
     if (!file.ok || doc === null) {
@@ -124,8 +120,6 @@ export class EditorStore extends Observable<EditorState> {
       domainEtag: "",
       saved: doc,
       doc,
-      revision: 0,
-      savedRevision: 0,
       saveStatus: "idle",
       composeFailure: null,
       saving: false,
@@ -159,17 +153,9 @@ export class EditorStore extends Observable<EditorState> {
 
   revert(): void {
     const draft = this.draft();
-    if (draft !== null && draft.doc !== draft.saved) {
-      const past = [...draft.past, draft.doc].slice(-historyLimit);
-      this.set({
-        ...draft,
-        doc: draft.saved,
-        revision: draft.savedRevision,
-        past,
-        future: [],
-        selected: null,
-      });
-    }
+    if (draft === null || draft.saving || draft.doc === draft.saved) return;
+    const past = [...draft.past, draft.doc].slice(-historyLimit);
+    this.set({ ...draft, doc: draft.saved, past, future: [], selected: null });
   }
 
   undo(): void {
@@ -220,7 +206,7 @@ export class EditorStore extends Observable<EditorState> {
       attempt,
       () => this.currentAttempt(attempt),
       (etag) => {
-        this.update((current) => savedRevision(current, attempt, etag));
+        this.update((current) => markSaved(current, attempt, etag));
       },
       (path) => this.versionOf(path),
     );
@@ -245,9 +231,6 @@ export class EditorStore extends Observable<EditorState> {
 
   private update(change: (draft: Draft) => Draft): void {
     const draft = this.draft();
-    if (draft !== null) {
-      const next = change(draft);
-      this.set(next.doc === draft.doc ? next : { ...next, revision: draft.revision + 1 });
-    }
+    if (draft !== null) this.set(change(draft));
   }
 }

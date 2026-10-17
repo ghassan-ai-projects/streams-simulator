@@ -65,6 +65,6 @@ const screenGroups: readonly KeyGroup[] = [
   },
 ];
 
-export function keyGroups(screen: Screen | undefined): readonly KeyGroup[] {
-  return [everywhere(screen ?? "plant"), ...screenGroups];
+export function keyGroups(screen: Screen): readonly KeyGroup[] {
+  return [everywhere(screen), ...screenGroups];
 }

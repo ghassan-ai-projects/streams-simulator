@@ -1,6 +1,7 @@
 import { nextPreference, parsePreference, resolveTheme } from "../../../model/shell";
 import type { Theme, ThemePreference } from "../../../model/shell";
 import type { PreferenceStore, SystemTheme } from "../../ports";
+import { Observable } from "../../shared";
 
 const key = "streamsim.canvas.theme";
 
@@ -9,41 +10,28 @@ export interface ThemeState {
   readonly theme: Theme;
 }
 
-export class ThemeStore {
-  private state: ThemeState;
-  private readonly listeners = new Set<() => void>();
+function stateFor(preference: ThemePreference, system: SystemTheme): ThemeState {
+  return { preference, theme: resolveTheme(preference, system.prefersDark()) };
+}
 
+export class ThemeStore extends Observable<ThemeState> {
   constructor(
     private readonly preferences: PreferenceStore,
     private readonly system: SystemTheme,
   ) {
-    this.state = this.stateFor(parsePreference(preferences.read(key)));
+    super(stateFor(parsePreference(preferences.read(key)), system));
     system.subscribe(() => {
-      this.update(this.state.preference);
+      this.apply(this.snapshot().preference);
     });
   }
-
-  readonly snapshot = (): ThemeState => this.state;
-
-  readonly subscribe = (listener: () => void): (() => void) => {
-    this.listeners.add(listener);
-    return () => this.listeners.delete(listener);
-  };
 
   cycle(): void {
-    const preference = nextPreference(this.state.preference);
+    const preference = nextPreference(this.snapshot().preference);
     this.preferences.write(key, preference);
-    this.update(preference);
+    this.apply(preference);
   }
 
-  private update(preference: ThemePreference): void {
-    this.state = this.stateFor(preference);
-    this.listeners.forEach((listener) => {
-      listener();
-    });
-  }
-
-  private stateFor(preference: ThemePreference): ThemeState {
-    return { preference, theme: resolveTheme(preference, this.system.prefersDark()) };
+  private apply(preference: ThemePreference): void {
+    this.set(stateFor(preference, this.system));
   }
 }

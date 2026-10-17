@@ -2,7 +2,7 @@ import type { DomainDocument, FileContent, Outcome, ReviewFailure } from "../app
 import { failure as failed, success } from "../app/ports";
 import type { Replay, Report } from "../model/review";
 import type { Canned } from "./fakeFailures";
-import { collect, failure, reviewFailure } from "./fakeFailures";
+import { collect, cannedFailure, reviewFailure } from "./fakeFailures";
 import { isReport, replayOf, runDomainOf } from "./fakeValues";
 
 export interface ReviewSource {
@@ -31,6 +31,6 @@ export async function reviewDomain(
   if (!file.ok) return failed(reviewFailure(file.failure));
   const domain = runDomainOf(file.value.content);
   return domain === null
-    ? failed(reviewFailure(failure("unreadable", 200, "the run recorded no domain")))
+    ? failed(reviewFailure(cannedFailure("unreadable", 200, "the run recorded no domain")))
     : success(domain);
 }

@@ -11,7 +11,6 @@ export interface BridgeTransport {
   readonly close: Mock<() => void>;
 }
 
-/** A transport whose answers, event listeners and close count a test can inspect. */
 export function bridgeTransport(handler: BridgeHandler): BridgeTransport {
   const listeners = new Map<string, (event?: Event) => void>();
   const close = vi.fn(() => undefined);

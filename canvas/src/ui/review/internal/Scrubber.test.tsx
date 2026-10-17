@@ -14,6 +14,7 @@ const common = {
   onPause: vi.fn(),
   onSpeed: vi.fn(),
   onSeek: vi.fn(),
+  onEvent: vi.fn(),
 };
 
 describe("scrubber clock", () => {

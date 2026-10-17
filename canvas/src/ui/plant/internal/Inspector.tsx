@@ -2,7 +2,7 @@ import { shared } from "../../primitives";
 import type { Instance, Plant } from "../../../model/plant";
 import type { ReactNode } from "react";
 import type { ComponentSpec } from "../../../model/plant";
-import { linkLines, linksOf } from "../../../model/plant";
+import { linksOf } from "../../../model/plant";
 import { channelWords, hallMembers } from "../../../model/graph";
 import { shortChannel } from "../../../model/shared/words";
 import { humanise, kindLabel } from "../../../model/shared/words";
@@ -71,18 +71,14 @@ function channelLine(name: string, channels: readonly { readonly name: string; r
 function LinkList({
   title,
   links,
-  instance,
   side,
   onSelect,
 }: {
   readonly title: string;
   readonly links: ReturnType<typeof linksOf>["incoming"];
-  readonly instance: Instance;
   readonly side: "in" | "out";
-  readonly onSelect?: ((id: string) => void) | undefined;
+  readonly onSelect: (id: string) => void;
 }) {
-  if (onSelect === undefined)
-    return <List title={title} items={linkLines(links, instance.id, side)} count={links.length} mono={false} />;
   return (
     <List
       title={title}
@@ -102,11 +98,11 @@ function HallSummary({
   readonly members: readonly (readonly [string, number])[];
 }) {
   const total = members.reduce((sum, [, n]) => sum + n, 0);
-  const { ref, cut } = useCutBottom<HTMLElement>([members]);
+  const { ref, cut } = useCutBottom<HTMLElement>();
   return (
     <aside
       ref={ref}
-      className={cx(cx(styles.inspector, shared.scrolls), shared.cut)}
+      className={cx(styles.inspector, shared.scrolls, shared.cut)}
       data-cut={cut ? "true" : undefined}
       aria-label="Inspector"
       tabIndex={0}
@@ -132,18 +128,16 @@ function Head({
 }: {
   readonly instance: Instance;
   readonly spec: ComponentSpec | undefined;
-  readonly onClose?: (() => void) | undefined;
+  readonly onClose: () => void;
 }) {
   const title = spec?.title ?? kindLabel(instance.kind);
   return (
     <header className={styles.inspectorHead}>
       <div className={styles.headLine}>
         <h2 className={styles.mono}>{instance.id}</h2>
-        {onClose !== undefined && (
-          <button type="button" className={styles.close} aria-label="Close the inspector" onClick={onClose}>
-            <X size={16} aria-hidden="true" />
-          </button>
-        )}
+        <button type="button" className={styles.close} aria-label="Close the inspector" onClick={onClose}>
+          <X size={16} aria-hidden="true" />
+        </button>
       </div>
       <p className={styles.kindLine}>{[title, instance.area].filter(Boolean).join(" · ")}</p>
       {instance.component !== null && <p className={styles.source}>{instance.component}</p>}
@@ -166,17 +160,17 @@ function InstanceDetails({
 }: {
   readonly plant: Plant;
   readonly instance: Instance;
-  readonly onClose?: (() => void) | undefined;
-  readonly onSelect?: ((id: string) => void) | undefined;
+  readonly onClose: () => void;
+  readonly onSelect: (id: string) => void;
   readonly spec: ComponentSpec | undefined;
 }) {
   const kind = plant.kinds.get(instance.kind);
   const { incoming, outgoing } = linksOf(plant, instance.id);
-  const { ref, cut } = useCutBottom<HTMLElement>([plant, instance]);
+  const { ref, cut } = useCutBottom<HTMLElement>();
   return (
     <aside
       ref={ref}
-      className={cx(cx(styles.inspector, shared.scrolls), shared.cut)}
+      className={cx(styles.inspector, shared.scrolls, shared.cut)}
       data-cut={cut ? "true" : undefined}
       aria-label="Inspector"
       tabIndex={0}
@@ -188,8 +182,8 @@ function InstanceDetails({
         mono={false}
         show={(name) => channelLine(name, kind?.channels ?? [])}
       />
-      <LinkList title="Links in" links={incoming} instance={instance} side="in" onSelect={onSelect} />
-      <LinkList title="Links out" links={outgoing} instance={instance} side="out" onSelect={onSelect} />
+      <LinkList title="Links in" links={incoming} side="in" onSelect={onSelect} />
+      <LinkList title="Links out" links={outgoing} side="out" onSelect={onSelect} />
       <List title="Faults" items={kind?.faults ?? []} mono={false} show={humanise} folded />
       <List title="Effectors" items={kind?.effectors ?? []} mono={false} show={humanise} />
       <List title="States" items={kind?.states ?? []} mono={false} show={channelWords} folded />
@@ -200,17 +194,17 @@ function InstanceDetails({
 interface InspectorProps {
   readonly plant: Plant;
   readonly selected: string | null;
-  readonly onClose?: () => void;
-  readonly runs?: readonly RunRow[];
-  readonly onReview?: (worldId: string) => void;
-  readonly onSelect?: (id: string) => void;
-  readonly specs?: ReadonlyMap<string, ComponentSpec>;
+  readonly onClose: () => void;
+  readonly runs: readonly RunRow[];
+  readonly onReview: (worldId: string) => void;
+  readonly onSelect: (id: string) => void;
+  readonly specs: ReadonlyMap<string, ComponentSpec>;
 }
 
-export function Inspector({ plant, selected, onClose, runs = [], onReview, onSelect, specs }: InspectorProps) {
+export function Inspector({ plant, selected, onClose, runs, onReview, onSelect, specs }: InspectorProps) {
   const instance = plant.instances.find((entry) => entry.id === selected);
   if (instance !== undefined) {
-    const spec = instance.component === null ? undefined : specs?.get(instance.component);
+    const spec = instance.component === null ? undefined : specs.get(instance.component);
     return <InstanceDetails plant={plant} instance={instance} onClose={onClose} onSelect={onSelect} spec={spec} />;
   }
   const members = selected === null ? [] : hallMembers(plant, selected);

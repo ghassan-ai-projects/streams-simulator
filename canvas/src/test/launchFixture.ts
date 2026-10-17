@@ -15,5 +15,5 @@ export function launchBridge() {
 
 export function launchHarness(bridge: FakeBridge) {
   const timers = fakeClock();
-  return { launch: new LaunchStore(bridge.launch, timers, timers), scheduler: timers, timers };
+  return { launch: new LaunchStore(bridge.launch, timers, timers), timers };
 }

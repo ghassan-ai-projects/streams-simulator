@@ -22,13 +22,11 @@ function useToggle(): readonly [boolean, (open: boolean) => void] {
   return [open, setOpen];
 }
 
-function groupsOn(screen: Route["screen"] | undefined) {
-  return keyGroups(screen).filter(
-    (group) => group.rows.length > 0 && (screen === undefined || group.screens.includes(screen)),
-  );
+function groupsOn(screen: Route["screen"]) {
+  return keyGroups(screen).filter((group) => group.rows.length > 0 && group.screens.includes(screen));
 }
 
-function KeyList({ screen }: { readonly screen: Route["screen"] | undefined }) {
+function KeyList({ screen }: { readonly screen: Route["screen"] }) {
   return groupsOn(screen).map((group, index) => (
     <section key={group.scope} className={styles.group} aria-labelledby={`keys-${String(index)}`}>
       <h3 id={`keys-${String(index)}`}>{group.scope}</h3>
@@ -89,7 +87,7 @@ interface DialogProps {
   readonly title: RefObject<HTMLHeadingElement | null>;
   readonly forget: () => void;
   readonly close: () => void;
-  readonly screen: Route["screen"] | undefined;
+  readonly screen: Route["screen"];
 }
 
 function KeyDialog({ title, forget, close, screen }: DialogProps) {
@@ -119,7 +117,7 @@ function KeyDialog({ title, forget, close, screen }: DialogProps) {
   );
 }
 
-export function KeyHelp({ screen }: { readonly screen?: Route["screen"] }) {
+export function KeyHelp({ screen }: { readonly screen: Route["screen"] }) {
   const [open, setOpen] = useToggle();
   const { title, forget } = useFocusReturn(open);
   const close = () => {

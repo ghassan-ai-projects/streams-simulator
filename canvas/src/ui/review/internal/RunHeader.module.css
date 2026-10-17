@@ -10,31 +10,8 @@
   min-width: 0;
 }
 
-.here {
-  margin: 0 var(--space-2) 0 0;
-  font-size: var(--text-md);
-  font-weight: 600;
-}
-
-.progress {
-  margin-left: auto;
-  color: var(--text-secondary);
-  font-family: var(--font-mono);
-  font-size: var(--text-sm);
-}
-
-.crumbs {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  min-width: 0;
-}
-
 .runActions {
   display: flex;
   gap: var(--space-2);
   margin-left: auto;
-}
-
-.runAction {
 }

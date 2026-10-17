@@ -1,4 +1,4 @@
-import { shared, cx } from "../../primitives";
+import { shared } from "../../primitives";
 import { RotateCcw } from "lucide-react";
 import type { LaunchStore } from "../../../app/launch";
 import type { NavigationStore } from "../../../app/shell";
@@ -31,7 +31,7 @@ function RunActions({ state, navigation, launch, plant, worldId }: Omit<HeaderPr
     <div className={styles.runActions}>
       <button
         type="button"
-        className={cx(styles.runAction, shared.button)}
+        className={shared.button}
         onClick={() => {
           navigation.go({ screen: "plant", domain: path, hall: null });
         }}
@@ -41,7 +41,7 @@ function RunActions({ state, navigation, launch, plant, worldId }: Omit<HeaderPr
       {report !== null && (
         <button
           type="button"
-          className={cx(styles.runAction, shared.button)}
+          className={shared.button}
           onClick={() => {
             const rerun = rerunOf(report);
             launch.propose(report.domainId, rerun.plan, rerun.left, worldId);

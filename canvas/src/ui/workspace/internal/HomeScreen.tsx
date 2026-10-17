@@ -5,7 +5,7 @@ import type { WorkspaceState, WorkspaceStore } from "../../../app/workspace";
 import type { Workspace } from "../../../model/workspace";
 import type { Badge } from "../../../model/review";
 import { workspaceEmpty, workspaceSummary } from "../../../model/workspace";
-import { Breadcrumb } from "../../primitives";
+import { Breadcrumb, screen } from "../../primitives";
 import { useScreen } from "../../primitives";
 import { useStore } from "../../primitives";
 import rowStyles from "./ListSection.module.css";
@@ -102,14 +102,14 @@ function HomeBody({
 }: { readonly state: WorkspaceState } & Omit<ContentsProps, "workspace">) {
   if (state.phase === "loading") {
     return (
-      <p className={styles.loading} role="status">
+      <p className={screen.loading} role="status">
         Loading the workspace…
       </p>
     );
   }
   if (state.phase === "failed") {
     return (
-      <p className={styles.failure} role="alert">
+      <p className={screen.failure} role="alert">
         The workspace could not be listed: {state.failure.diagnostic.message} ({state.failure.diagnostic.displayCode})
       </p>
     );
@@ -124,12 +124,12 @@ export function HomeScreen({
   workspace,
   navigation,
   maker,
-  badgeFor = () => null,
+  badgeFor,
 }: {
   readonly workspace: WorkspaceStore;
   readonly navigation: NavigationStore;
   readonly maker: PlantMaker;
-  readonly badgeFor?: (worldId: string) => Badge | null;
+  readonly badgeFor: (worldId: string) => Badge | null;
 }) {
   const state = useStore(workspace);
   return (

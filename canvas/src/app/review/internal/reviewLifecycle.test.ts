@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { success } from "../../ports";
-import { deferred, settle } from "../../../test/deferred";
+import { deferred, flushPromises } from "../../../test/deferred";
 import { FakeBridge } from "../../../test/fakeBridge";
 import type { Canned } from "../../../test/fakeFailures";
 import { fakeClock } from "../../../test/fakeClock";
@@ -22,7 +22,7 @@ describe("review lifecycle", () => {
     store.open("w-1");
     store.open("w-2");
     expect([...bridge.followers.keys()]).toEqual(["w-2"]);
-    await settle();
+    await flushPromises();
     bridge.stream("w-1", journal);
     expect(store.snapshot()).toMatchObject({ worldId: "w-2", playback: { records: 0 } });
   });
@@ -61,11 +61,11 @@ describe("review lifecycle", () => {
   it("does not publish anything for a run that is no longer open", async () => {
     const { bridge, store } = setup();
     store.open("w-1");
-    await settle();
+    await flushPromises();
     store.close();
     bridge.actions.set("run.report", success({ ...report, ended: false }));
     store.refreshCompleted("w-1", { ...entry, ended: true, complete: false });
-    await settle();
+    await flushPromises();
     expect(bridge.calls.filter((call) => call.name === "run.report")).toHaveLength(1);
   });
 
@@ -82,7 +82,7 @@ describe("review lifecycle", () => {
     store.open("w-2");
     store.open("w-1");
     gate.resolve(success({ ...report, ended: false }));
-    await settle();
+    await flushPromises();
     expect(store.snapshot()).toMatchObject({ worldId: "w-1", report: { phase: "ready", value: { ended: true } } });
   });
 
@@ -96,5 +96,6 @@ describe("review lifecycle", () => {
     plant: "factory-utilities",
     durationS: 0,
     recordedAt: "2026-10-14T10:00:00Z",
+    faults: 0,
   };
 });

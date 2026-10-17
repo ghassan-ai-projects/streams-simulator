@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { composition, domain } from "../../../test/plantFixture";
-import { areaOf, channelOf, effectorOf, linkLines, linksOf, parsePlant, stateUnit } from "./plant";
+import { areaOf, channelOf, effectorOf, linksOf, parsePlant, stateUnit } from "./plant";
 
 describe("plant from a domain file", () => {
   it("reads instances, kinds, areas and links", () => {
@@ -109,20 +109,5 @@ describe("plant from a domain file", () => {
     );
     expect(linksOf(plant, "CT-1").incoming.map((link) => link.from)).toEqual(["CH-1"]);
     expect(linksOf(plant, "CT-1").outgoing.map((link) => link.to)).toEqual(["CH-1"]);
-  });
-
-  it("lists a few links one by one and groups many by the instance's own port", () => {
-    const few = [{ from: "A", to: "B", type: "t", fromPort: "out", toPort: null }];
-    expect(linkLines(few, "A", "out")).toEqual(["out → B"]);
-    expect(linkLines(few, "B", "in")).toEqual(["A out → B"]);
-    const many = Array.from({ length: 26 }, (_, index) => ({
-      from: "SH",
-      to: `H${String(index % 13)}`,
-      type: "t",
-      fromPort: index < 20 ? "shift_out" : null,
-      toPort: "shift_in",
-    }));
-    expect(linkLines(many, "SH", "out")).toEqual(["shift out → 20 links, 13 instances", "SH → 6 links, 6 instances"]);
-    expect(linkLines(many, "H0", "in")).toEqual(["26 links, 1 instance → shift in"]);
   });
 });

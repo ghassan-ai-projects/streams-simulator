@@ -41,7 +41,7 @@ function Action({
   return (
     <button
       type="button"
-      className={run ? cx(home.run, shared.button) : cx(home.open, shared.button)}
+      className={run ? cx(home.run, shared.button) : shared.button}
       aria-label={`${label} ${plant.title}`}
       onClick={onClick}
     >

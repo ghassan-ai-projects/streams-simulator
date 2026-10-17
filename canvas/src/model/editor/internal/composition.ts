@@ -1,5 +1,7 @@
 import type { AreaNode } from "../../shared/areaTree";
 import { areaTree } from "../../shared/areaTree";
+import { isRecord, list, record, text } from "../../shared/json";
+import { spaced } from "../../shared/words";
 import type { Instance, Link, Plant } from "../../plant";
 
 type Json = Readonly<Record<string, unknown>>;
@@ -27,22 +29,10 @@ export interface NewEquipment {
   readonly area: string;
 }
 
-function record(value: unknown): Json {
-  return typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Json) : {};
-}
-
-function list(value: unknown): readonly unknown[] {
-  return Array.isArray(value) ? value : [];
-}
-
-function text(value: unknown): string {
-  return typeof value === "string" ? value : "";
-}
-
 export function parseComposition(content: string): Composition | null {
   try {
     const value: unknown = JSON.parse(content);
-    return typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Json) : null;
+    return isRecord(value) ? value : null;
   } catch {
     return null;
   }
@@ -133,10 +123,9 @@ export interface LinkEnd {
 export function linkEnd(connection: Connection, id: string): LinkEnd {
   const from = endpointOf(connection.from);
   const to = endpointOf(connection.to);
-  const words = (port: string) => port.replaceAll("_", " ");
   return from.id === id
-    ? { outgoing: true, port: words(from.port), other: to.id, otherPort: words(to.port) }
-    : { outgoing: false, port: words(to.port), other: from.id, otherPort: words(from.port) };
+    ? { outgoing: true, port: spaced(from.port), other: to.id, otherPort: spaced(to.port) }
+    : { outgoing: false, port: spaced(to.port), other: from.id, otherPort: spaced(from.port) };
 }
 
 function initials(title: string): string {

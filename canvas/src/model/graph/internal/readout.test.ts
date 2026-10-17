@@ -28,7 +28,7 @@ describe("readouts", () => {
   });
 
   it("shows numbers with fixed decimals and the unit apart, and other values as words", () => {
-    expect(showReading(at("chiller.cond_temp", 33.14, "degC"))).toEqual({
+    expect(showReading(at("chiller.cond_temp", 33.14, "degC"), null)).toEqual({
       channel: "cond_temp",
       value: "33.1",
       unit: "°C",
@@ -36,10 +36,10 @@ describe("readouts", () => {
       word: false,
       outside: "",
     });
-    expect(showReading(at("meter.power", 852.4, "kW"))).toMatchObject({ value: "852", unit: "kW" });
+    expect(showReading(at("meter.power", 852.4, "kW"), null)).toMatchObject({ value: "852", unit: "kW" });
     expect(showReading(at("x.cop", 5.954), null)).toMatchObject({ value: "5.95", unit: "" });
-    expect(showReading(at("x.run_status", true))).toMatchObject({ value: "on", unit: "", word: true });
-    expect(showReading(at("x.mode", "auto"))).toMatchObject({ value: "auto", word: true });
+    expect(showReading(at("x.run_status", true), null)).toMatchObject({ value: "on", unit: "", word: true });
+    expect(showReading(at("x.mode", "auto"), null)).toMatchObject({ value: "auto", word: true });
   });
 
   it("flags a number outside the instrument's declared range", () => {

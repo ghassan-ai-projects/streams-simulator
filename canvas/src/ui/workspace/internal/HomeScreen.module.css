@@ -78,19 +78,6 @@
   color: var(--text-primary);
 }
 
-.loading,
-.failure {
-  padding: var(--space-6) var(--space-8);
-}
-
-.failure {
-  color: var(--status-alarm);
-}
-
-.open,
-.run {
-}
-
 .run {
   border-color: var(--accent-strong) !important;
   color: var(--accent) !important;

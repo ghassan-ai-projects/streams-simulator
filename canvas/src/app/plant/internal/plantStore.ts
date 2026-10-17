@@ -3,7 +3,7 @@ import type { Plant } from "../../../model/plant";
 import { parsePlant } from "../../../model/plant";
 import type { ComponentSpec } from "../../../model/plant";
 import { componentSpecs } from "./componentSpecs";
-import { Observable, createOperationIdentity } from "../../shared";
+import { Observable } from "../../shared";
 import type { OperationIdentity, OperationId } from "../../shared";
 import type { DomainDocument, FileContent, Outcome, PlantFailure, PlantGateway } from "../../ports";
 
@@ -44,15 +44,18 @@ function unchanged(
 }
 
 export class PlantStore extends Observable<PlantState> {
+  private asked: { readonly path: string; readonly workspace: Workspace } | null = null;
+
   constructor(
     private readonly gateway: PlantGateway,
-    private readonly operations: OperationIdentity = createOperationIdentity(),
+    private readonly operations: OperationIdentity,
   ) {
     super({ phase: "idle" });
   }
 
   async load(path: string, workspace: Workspace): Promise<void> {
-    if (this.loading(path)) return;
+    if (this.loading(path, workspace)) return;
+    this.asked = { path, workspace };
     const request = this.operations.begin();
     const held = this.held(path);
     if (held === null) this.set({ phase: "loading", path });
@@ -69,9 +72,14 @@ export class PlantStore extends Observable<PlantState> {
     return this.operations.isCurrent(request);
   }
 
-  private loading(path: string): boolean {
+  private loading(path: string, workspace: Workspace): boolean {
     const state = this.snapshot();
-    return state.phase === "loading" && state.path === path;
+    return (
+      state.phase === "loading" &&
+      state.path === path &&
+      this.asked?.path === path &&
+      this.asked.workspace === workspace
+    );
   }
 
   private held(path: string): Extract<PlantState, { phase: "ready" }> | null {
@@ -108,6 +116,7 @@ export class PlantStore extends Observable<PlantState> {
   }
 
   close(): void {
+    this.asked = null;
     this.operations.invalidate();
     this.set({ phase: "idle" });
   }

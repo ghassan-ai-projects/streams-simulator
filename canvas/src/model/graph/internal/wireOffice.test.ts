@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
-import type { PlantView } from "./plantView";
-import { corridorGutter, routeView } from "./wireView";
+import type { PlantView } from "./types";
+import { routeView } from "./wireView";
+
+const corridorGutter = 48;
 
 type NodeRow = readonly [string, number, number, number, number, readonly string[], readonly string[]];
 type FrameRow = readonly [string, number, number, number, number];

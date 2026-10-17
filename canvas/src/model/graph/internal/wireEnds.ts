@@ -1,5 +1,5 @@
-import type { Rect } from "./viewport";
-import type { Point, Side } from "./wireRoute";
+import type { Point, Rect } from "./types";
+import type { Side } from "./wireRoute";
 import { wireClearance } from "./wireRoute";
 
 export interface End {
@@ -99,7 +99,10 @@ function placeSide(group: readonly End[], pixel: number, placed: Map<string, Poi
 
 export function spreadEnds(ends: readonly End[], pixel: number): ReadonlyMap<string, Point> {
   const groups = new Map<string, End[]>();
-  for (const end of ends) groups.set(boxKey(end), [...(groups.get(boxKey(end)) ?? []), end]);
+  for (const end of ends) {
+    const key = boxKey(end);
+    groups.set(key, [...(groups.get(key) ?? []), end]);
+  }
   const placed = new Map<string, Point>();
   for (const group of groups.values()) placeSide(group, pixel, placed);
   return placed;

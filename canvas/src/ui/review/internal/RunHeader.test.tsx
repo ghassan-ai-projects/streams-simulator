@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { FakeBridge } from "../../../test/fakeBridge";
-import { navigation } from "../../../test/homeHarness";
+import { navigation } from "../../../test/workspaceHarness";
 import { launchHarness } from "../../../test/launchFixture";
 import { reviewState } from "../../../test/reviewFixture";
 import { Header } from "./RunHeader";

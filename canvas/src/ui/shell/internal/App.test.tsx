@@ -2,19 +2,19 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import axe from "axe-core";
 import { describe, expect, it } from "vitest";
 import { createSession } from "../../../app/session";
-import { EditorStore } from "../../../app/editor";
 import { PanelStore } from "../../../app/shell";
 import { LaunchStore } from "../../../app/launch";
 import { PlantMaker } from "../../../app/plant";
 import { NavigationStore } from "../../../app/shell";
-import { PlantStore } from "../../../app/plant";
 import { ReviewStore } from "../../../app/review";
 import { ThemeStore } from "../../../app/shell";
 import { WorkspaceStore } from "../../../app/workspace";
 import { failure as failed } from "../../../test/outcome";
-import { FakeBridge, failure } from "../../../test/fakeBridge";
+import { FakeBridge, cannedFailure } from "../../../test/fakeBridge";
+import { memoryLocation } from "../../../test/location";
 import { fakeClock } from "../../../test/fakeClock";
 import { App } from "./App";
+import { editorStore, plantStore } from "../../../test/stores";
 
 function themes() {
   let value: string | null = null;
@@ -25,18 +25,18 @@ function themes() {
 }
 
 function renderApp(bridge: FakeBridge) {
-  const location = { read: () => "#/", write: () => undefined, subscribe: () => () => undefined };
+  const location = memoryLocation();
   const timers = fakeClock();
   const stores = {
     themes: themes(),
     session: createSession(bridge.session),
     workspace: new WorkspaceStore(bridge.workspace),
     navigation: new NavigationStore(location),
-    plants: new PlantStore(bridge.plant),
+    plants: plantStore(bridge.plant),
     review: new ReviewStore(bridge.review, timers, timers),
     launch: new LaunchStore(bridge.launch, timers, timers),
     scheduler: timers,
-    editor: new EditorStore(bridge.editor),
+    editor: editorStore(bridge.editor),
     panels: new PanelStore({ read: () => null, write: () => undefined }),
     maker: new PlantMaker(bridge.plant),
     showDetails: () => undefined,
@@ -60,7 +60,7 @@ describe("App", () => {
 
   it("explains an unreachable bridge", async () => {
     const bridge = new FakeBridge();
-    bridge.sessionOutcome = failed(failure("unreachable", 0, "The bridge did not answer."));
+    bridge.sessionOutcome = failed(cannedFailure("unreachable", 0, "The bridge did not answer."));
     renderApp(bridge);
     expect(await screen.findByRole("heading", { name: "The bridge is not reachable" })).toBeInTheDocument();
     expect(screen.getByText(/The bridge did not answer\./)).toBeInTheDocument();

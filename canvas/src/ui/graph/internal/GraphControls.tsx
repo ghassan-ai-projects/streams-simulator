@@ -2,10 +2,10 @@ import { MiniMap, useOnViewportChange, useReactFlow, useStore, useStoreApi } fro
 import { List, Maximize, Minus, Plus } from "lucide-react";
 import type { RefObject } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { familyNames, shapeOf } from "../../../model/graph";
-import type { Family } from "../../../model/graph";
+import type { Family } from "../../../model/plant";
+import { familyNames, shapeOf } from "../../../model/plant";
 import type { FlowNode } from "./flow";
-import { fittedViewport, steppedZoom } from "./viewportFit";
+import { fittedViewport, lowestZoom, steppedZoom } from "./viewportFit";
 import { cx } from "../../primitives";
 import styles from "./GraphControls.module.css";
 import vendor from "./vendor.module.css";
@@ -130,7 +130,7 @@ export function useZoomActions() {
     () => ({
       in: () => void flow.setViewport(steppedZoom(flow, store.getState(), 1.2), { duration: motion(120) }),
       out: () => void flow.setViewport(steppedZoom(flow, store.getState(), 1 / 1.2), { duration: motion(120) }),
-      fit: () => void flow.setViewport(fittedViewport(flow, store.getState(), 0.05), { duration: motion(120) }),
+      fit: () => void flow.setViewport(fittedViewport(flow, store.getState(), lowestZoom), { duration: motion(120) }),
     }),
     [flow, store],
   );

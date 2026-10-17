@@ -68,14 +68,8 @@
   align-items: baseline;
 }
 
-.tierCompact .frameCount {
-  font-size: min(calc(12px / var(--zoom)), 27.7px);
-}
-
-.tierOverview .frameCount {
-  font-size: min(calc(12px / var(--zoom)), 27.7px);
-}
-
+.tierCompact .frameCount,
+.tierOverview .frameCount,
 .tierMap .frameCount {
   font-size: min(calc(12px / var(--zoom)), 27.7px);
 }

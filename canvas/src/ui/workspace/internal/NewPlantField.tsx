@@ -42,7 +42,7 @@ function FieldInput({
   hint,
   problem,
 }: Omit<FieldProps, "label" | "problem"> & { readonly id: string; readonly problem: string }) {
-  const ref = useFocusOnMount<HTMLInputElement>(first);
+  const ref = useFocusOnMount<HTMLInputElement>({ when: first });
   return (
     <input
       id={id}

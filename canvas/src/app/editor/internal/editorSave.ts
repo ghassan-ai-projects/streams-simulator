@@ -9,7 +9,6 @@ export interface SaveAttempt {
   readonly id: number;
   readonly operation: OperationId;
   readonly path: string;
-  readonly revision: number;
   readonly doc: Composition;
   readonly source: string;
   readonly sourceEtag: string;
@@ -29,7 +28,6 @@ export function captureSaveAttempt(id: number, operation: OperationId, draft: Dr
     id,
     operation,
     path: draft.path,
-    revision: draft.revision,
     doc: draft.doc,
     source: serialise(draft.doc),
     sourceEtag: draft.etag,
@@ -38,8 +36,8 @@ export function captureSaveAttempt(id: number, operation: OperationId, draft: Dr
   };
 }
 
-export function savedRevision(draft: Draft, attempt: SaveAttempt, etag: string): Draft {
-  return { ...draft, etag, saved: attempt.doc, savedRevision: attempt.revision };
+export function markSaved(draft: Draft, attempt: SaveAttempt, etag: string): Draft {
+  return { ...draft, etag, saved: attempt.doc };
 }
 
 export function applySaveResult(draft: Draft, attempt: SaveAttempt, result: SaveResult): Draft {
@@ -53,7 +51,7 @@ function composeFailed(draft: Draft, attempt: SaveAttempt, failure: EditorFailur
   const failures = "issues" in failure ? (failure.issues ?? []) : [];
   const issues = issueTargets(attempt.doc, failures);
   const message = failures.length === 0 ? failure.diagnostic.message : null;
-  const outcome = { kind: "refused" as const, message, revision: attempt.revision };
+  const outcome = { kind: "refused" as const, message, doc: attempt.doc };
   return { ...draft, saving: false, saveStatus: "saved-compose-failed", composeFailure: failure, issues, outcome };
 }
 
@@ -67,7 +65,7 @@ function composed(draft: Draft, attempt: SaveAttempt, result: ComposeSummary, ou
     saveStatus: "idle",
     composeFailure: null,
     issues: null,
-    outcome: { kind: "composed", summary, revision: attempt.revision },
+    outcome: { kind: "composed", summary, doc: attempt.doc },
   };
 }
 

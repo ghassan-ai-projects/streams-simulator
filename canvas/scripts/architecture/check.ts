@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { appClockRules, appUnknownRules, booleanParameterRules, testTimerRules } from "./codeRules.ts";
+import { cssKeyRules } from "./cssKeyRules.ts";
 import { capRules, colorRules, composesRules, globalLocationRules, ownershipRules } from "./cssRules.ts";
 import type { Register, Violation } from "./model.ts";
 import { readRegister } from "./register.ts";
@@ -24,6 +25,8 @@ const cssRuleNames = [
   "css-color-literal",
   "css-feature-ownership",
   "css-composes-cross-module",
+  "css-class-undefined",
+  "css-class-unused",
 ];
 
 export interface CheckResult {
@@ -53,6 +56,7 @@ export function check(registerPath: string, ruleSet: RuleSet): CheckResult {
     ...colorRules(register.source, register),
     ...ownershipRules(files, register),
     ...composesRules(register.source, register),
+    ...cssKeyRules(files, register.source),
   ];
   return { register, violations: violations.filter((entry) => wanted(entry, ruleSet)) };
 }

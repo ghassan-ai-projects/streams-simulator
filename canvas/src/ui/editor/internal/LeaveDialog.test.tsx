@@ -2,25 +2,25 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { NavigationStore } from "../../../app/shell";
 import { editing, path, current } from "../../../test/editorHarness";
+import { success } from "../../../test/outcome";
+import { deferred } from "../../../test/deferred";
+import type { Canned } from "../../../test/fakeFailures";
+import { memoryLocation } from "../../../test/location";
 import { PendingLeave } from "./LeaveDialog";
 
 async function dirtyEditor() {
-  const { editor } = await editing();
+  const { editor, fake } = await editing();
   act(() => {
     editor.edit((doc) => ({ ...doc, title: "Lab two" }));
   });
-  const location = {
-    read: () => `#/edit?composition=${encodeURIComponent(path)}`,
-    write: vi.fn(),
-    subscribe: () => () => undefined,
-  };
+  const location = memoryLocation(`#/edit?composition=${encodeURIComponent(path)}`);
   const navigation = new NavigationStore(location);
   navigation.guardUnsaved(() => editor.unsavedChanges());
   render(<PendingLeave title="Lab two" editor={editor} navigation={navigation} />);
   act(() => {
     navigation.go({ screen: "home" });
   });
-  return { editor, navigation };
+  return { editor, navigation, fake };
 }
 
 describe("leaving the editor with unsaved changes", () => {
@@ -53,5 +53,19 @@ describe("leaving the editor with unsaved changes", () => {
       expect(navigation.snapshot()).toEqual({ screen: "home" });
     });
     expect(editor.unsavedChanges()).toBe(false);
+  });
+
+  it("cannot discard while the save is still being written", async () => {
+    const { fake } = await dirtyEditor();
+    const write = deferred<Canned<{ path: string; etag: string }>>();
+    fake.writeFile = () => write.promise;
+    fireEvent.click(screen.getByRole("button", { name: "Save and leave" }));
+    await vi.waitFor(() => {
+      expect(screen.getByRole("button", { name: "Discard and leave" })).toBeDisabled();
+    });
+    write.resolve(success({ path, etag: "c2" }));
+    await vi.waitFor(() => {
+      expect(screen.queryByRole("dialog")).toBeNull();
+    });
   });
 });

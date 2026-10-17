@@ -137,5 +137,3 @@ export function flowEdges(
     focusable: false,
   }));
 }
-
-export type { NodeLive } from "./types";

@@ -1,11 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { chillerPorts, composition, domain, towerPorts } from "../../../test/plantFixture";
 import { parsePlant } from "../../plant";
-import type { PlantView } from "./plantView";
+import type { PlantView, Rect } from "./types";
 import { headerHeight, nodeSize, plainView, plantView } from "./plantView";
-import { reviewView } from "../../../test/modelBridge";
-import type { Rect } from "./viewport";
-import { routeView, titleBox, wireModeOf } from "./wireView";
+import { reviewView } from "../../../test/modelFixtures";
+import { routeView, titleBox } from "./wireView";
 
 const specs = new Map([
   ["lib/chiller", { ports: chillerPorts.ports, category: "cool" as const }],
@@ -35,7 +34,7 @@ function viewOf(review: boolean) {
 describe("wire view", () => {
   it("leaves each wire from its output pin row on the source's right edge and enters on the target's left edge", () => {
     const view = viewOf(false);
-    const route = routeView(view, "full", "pins").get("CH-1.heat_out>CT-1.heat_in") ?? [];
+    const route = routeView(view, "full", "pins", 1).get("CH-1.heat_out>CT-1.heat_in") ?? [];
     const box = boxOf(view, "CH-1");
     const pinY = box.y + headerHeight("CH-1") + 5 + 0.5 * nodeSize.pin;
     expect(route[0]).toEqual({ x: box.x + box.width, y: pinY });
@@ -45,7 +44,7 @@ describe("wire view", () => {
 
   it("puts a review wire on the row of its port, outputs after inputs, below the note row", () => {
     const view = viewOf(true);
-    const route = routeView(view, "full", "rows").get("CH-1.heat_out>CT-1.heat_in") ?? [];
+    const route = routeView(view, "full", "rows", 1).get("CH-1.heat_out>CT-1.heat_in") ?? [];
     const inputs = 2;
     const top = boxOf(view, "CH-1").y + headerHeight("CH-1") + nodeSize.note + 1;
     expect(route[0]?.y).toBe(top + (inputs + 0.5) * nodeSize.pin);
@@ -54,7 +53,7 @@ describe("wire view", () => {
   it("moves a review wire down with the extra note lines of its node", () => {
     const plant = parsePlant(domain, composition);
     const view = plantView(plant, specs, null, reviewView, undefined, new Map([["CH-1", 3]]));
-    const route = routeView(view, "full", "rows").get("CH-1.heat_out>CT-1.heat_in") ?? [];
+    const route = routeView(view, "full", "rows", 1).get("CH-1.heat_out>CT-1.heat_in") ?? [];
     const top = boxOf(view, "CH-1").y + headerHeight("CH-1") + 3 * nodeSize.note + 1;
     expect(route[0]?.y).toBe(top + (2 + 0.5) * nodeSize.pin);
   });
@@ -118,13 +117,17 @@ describe("wire view", () => {
   });
 
   it("anchors on the middle of a node at the overview tiers, where pins are not drawn", () => {
-    expect(wireModeOf("overview", "pins")).toBe("centre");
-    expect(wireModeOf("compact", "rows")).toBe("rows");
-    expect(wireModeOf("full", "pins")).toBe("pins");
+    const id = "CH-1.heat_out>CT-1.heat_in";
     const view = viewOf(false);
-    const route = routeView(view, "overview", "pins").get("CH-1.heat_out>CT-1.heat_in") ?? [];
+    const startY = (tier: "full" | "compact" | "overview" | "map", detail: "pins" | "rows") =>
+      routeView(view, tier, detail, 1).get(id)?.[0]?.y ?? 0;
+    expect(startY("compact", "pins")).toBe(startY("full", "pins"));
+    expect(startY("compact", "rows")).toBe(startY("full", "rows"));
+    expect(startY("overview", "rows")).toBe(startY("overview", "pins"));
+    expect(startY("map", "pins")).toBe(startY("overview", "pins"));
+    expect(startY("overview", "pins")).not.toBe(startY("full", "pins"));
     const box = boxOf(view, "CH-1");
-    expect(Math.abs((route[0]?.y ?? 0) - (box.y + box.height / 2))).toBeLessThanOrEqual(6);
+    expect(Math.abs(startY("overview", "pins") - (box.y + box.height / 2))).toBeLessThanOrEqual(6);
   });
 
   it("boxes a title's one header line: inside the frame at full size, above it and full width when zoomed out", () => {
@@ -149,7 +152,7 @@ describe("wire view", () => {
       layout: { ...view.layout, nodes },
       edges: [{ ...first, id: "down", from: "CH-1", to: "CT-1" }],
     };
-    const route = routeView(stacked, "full", "pins").get("down") ?? [];
+    const route = routeView(stacked, "full", "pins", 1).get("down") ?? [];
     expect(route[0]?.x).toBe(upper.x + upper.width);
     expect(route.at(-1)?.x).toBe(lower.x);
     expect(route.at(-2)?.y).toBe(route.at(-1)?.y);

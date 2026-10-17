@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { failure } from "../../../test/fakeFailures";
+import { cannedFailure } from "../../../test/fakeFailures";
 import {
   editorFailure,
   launchFailure,
@@ -12,7 +12,7 @@ import type { WireProblem } from "./http";
 
 const http = (code: string, status = 400, issues: readonly { pointer: string; message: string }[] = []) => ({
   kind: "http" as const,
-  problem: { ...failure(code, status), issues, result: null },
+  problem: { ...cannedFailure(code, status), issues, result: null },
 });
 
 describe("protocol failures mapped to the owning feature", () => {
@@ -99,7 +99,7 @@ describe("protocol failures mapped to the owning feature", () => {
   });
 
   it("keeps an unknown protocol code as display data, not as feature behaviour", () => {
-    const unknown: WireProblem = { ...failure("something_new", 418, "never seen"), result: null };
+    const unknown: WireProblem = { ...cannedFailure("something_new", 418, "never seen"), result: null };
     expect(plantFailure("read")({ kind: "http", problem: unknown })).toMatchObject({
       kind: "unreadable",
       diagnostic: { displayCode: "something_new", message: "never seen" },

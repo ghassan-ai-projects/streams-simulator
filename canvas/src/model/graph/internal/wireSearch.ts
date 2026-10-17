@@ -1,4 +1,4 @@
-import type { Rect } from "./viewport";
+import type { Rect } from "./types";
 import type { Grid } from "./wireGrid";
 
 const bendCost = 24;
@@ -188,16 +188,21 @@ class Search {
   }
 }
 
-export interface Ends {
+interface Ends {
   readonly start: number;
   readonly goal: number;
+}
+
+export interface Turns {
+  readonly start: boolean;
+  readonly goal: boolean;
 }
 
 export function findPath(
   grid: Grid,
   occupancy: Occupancy,
   ends: Ends,
-  vertical: { readonly start: boolean; readonly goal: boolean },
+  vertical: Turns,
   corridor: Rect | null = null,
 ): number[] | null {
   return new Search(grid, occupancy, corridor).run(ends.start, ends.goal, vertical);

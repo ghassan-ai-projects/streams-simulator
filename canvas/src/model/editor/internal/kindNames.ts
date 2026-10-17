@@ -1,3 +1,4 @@
+import { text } from "../../shared/json";
 import { componentOf, shortKind } from "./composition";
 
 type Json = Readonly<Record<string, unknown>>;
@@ -5,7 +6,7 @@ type Json = Readonly<Record<string, unknown>>;
 const longestKind = 20;
 
 export function kindOf(entry: Json): string {
-  const named = typeof entry.as === "string" ? entry.as : "";
+  const named = text(entry.as);
   return named === "" ? shortKind(componentOf(String(entry.use))) : named;
 }
 

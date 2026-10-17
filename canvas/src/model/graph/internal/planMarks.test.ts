@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { CallOutcome, LaunchPlan } from "../../../test/modelBridge";
-import { showingMarks } from "../../../test/modelBridge";
+import type { CallOutcome, LaunchPlan } from "../../../test/modelFixtures";
+import { showingMarks } from "../../../test/modelFixtures";
 import { planMarks } from "./planMarks";
 
 const plan: LaunchPlan = {

@@ -1,12 +1,12 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import axe from "axe-core";
 import { describe, expect, it, vi } from "vitest";
-import { EditorStore } from "../../../app/editor";
 import { failure as failed, success } from "../../../test/outcome";
 import { connectionsOf, equipmentOf } from "../../../model/editor";
 import { moveInstance } from "../../../model/editor";
-import { failure } from "../../../test/fakeBridge";
+import { cannedFailure } from "../../../test/fakeBridge";
 import { choose, current, doc, editing, Harness, LabBridge, path } from "../../../test/editorHarness";
+import { editorStore } from "../../../test/stores";
 
 describe("plant editor panel", () => {
   it("adds equipment from the library with its preset into an area", async () => {
@@ -130,7 +130,7 @@ describe("plant editor panel", () => {
     fake.actions.set(
       "domain.compose",
       failed({
-        ...failure("composition_invalid", 422, "invalid"),
+        ...cannedFailure("composition_invalid", 422, "invalid"),
         issues: [{ pointer: "/connections/0/to", message: 'instance "CT-1" has no port "heat_in"' }],
       }),
     );
@@ -162,7 +162,7 @@ describe("plant editor panel", () => {
     fake.actions.set(
       "domain.compose",
       failed({
-        ...failure("composition_invalid", 422, "invalid"),
+        ...cannedFailure("composition_invalid", 422, "invalid"),
         issues: [same, same, same, { pointer: "/profiles", message: "needs more items" }],
       }),
     );
@@ -209,7 +209,7 @@ describe("plant editor panel", () => {
     act(() => {
       editor.edit((doc) => ({ ...doc, title: "Lab two" }));
     });
-    fake.writeOutcomes.set(path, failed(failure("conflict", 409, "the file changed on disk")));
+    fake.writeOutcomes.set(path, failed(cannedFailure("conflict", 409, "the file changed on disk")));
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     expect(await screen.findByText("Not saved: the file changed on disk")).toBeInTheDocument();
     fake.writeOutcomes.delete(path);
@@ -249,9 +249,9 @@ describe("plant editor panel", () => {
       ...doc,
       equipment: [...doc.equipment, { use: "lib/chiller@1", as: "chiller_2", names: ["CH-2"], area: "Cooling" }],
     };
-    fake.files.set(path, success({ path, content: JSON.stringify(repeated), etag: "k1" }));
+    fake.addFile(path, repeated, "k1");
     fake.actions.set("component.list", success({ components: [] }));
-    const editor = new EditorStore(fake.editor);
+    const editor = editorStore(fake.editor);
     await editor.open(path);
     render(<Harness editor={editor} />);
     act(() => {
@@ -267,9 +267,9 @@ describe("plant editor panel", () => {
       ...doc,
       equipment: [...doc.equipment, { use: "lib/tower@1", id_template: "T-{n}", area: "Yard" }],
     };
-    fake.files.set(path, success({ path, content: JSON.stringify(templated), etag: "c1" }));
+    fake.addFile(path, templated, "c1");
     fake.actions.set("component.list", success({ components: [] }));
-    const editor = new EditorStore(fake.editor);
+    const editor = editorStore(fake.editor);
     await editor.open(path);
     render(<Harness editor={editor} />);
     act(() => {

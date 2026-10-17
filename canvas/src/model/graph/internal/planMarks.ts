@@ -1,5 +1,4 @@
 import type { PlanMark } from "./types";
-export type { PlanMark } from "./types";
 import type { ShowingMarks } from "../../shared/marks";
 import { hallOf } from "./plantView";
 

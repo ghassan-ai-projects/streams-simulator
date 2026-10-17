@@ -1,8 +1,6 @@
 .badge,
 .explore,
-.verified,
-.state,
-.live {
+.verified {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);

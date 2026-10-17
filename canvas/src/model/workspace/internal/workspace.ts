@@ -1,9 +1,6 @@
 import type { Definition, PlantEntry, RunEntry, RunRow, Workspace } from "./types";
 import { durationOf } from "../../shared/duration";
-
-export function counted(count: number, one: string, many: string): string {
-  return `${String(count)} ${count === 1 ? one : many}`;
-}
+import { counted, seedWords } from "../../shared/words";
 
 function firstText(...values: readonly (string | undefined)[]): string {
   return values.find((value) => value !== undefined && value !== "") ?? "";
@@ -26,18 +23,9 @@ function entry(id: string, domain: Definition | undefined, composition: Definiti
   };
 }
 
-function plural(count: number, one: string): string {
-  return `${String(count)} ${count === 1 ? one : `${one}s`}`;
-}
-
-export function faultWords(run: RunEntry): string {
+function faultWords(run: RunEntry): string {
   if (!run.ended || !run.complete) return "";
-  const faults = run.faults ?? 0;
-  return faults === 0 ? "no faults" : plural(faults, "fault");
-}
-
-export function seedWords(run: RunEntry): string {
-  return run.seed === null ? "" : `seed ${String(run.seed)}`;
+  return run.faults === 0 ? "no faults" : counted(run.faults, "fault");
 }
 
 export function unfinishedReason(run: RunEntry): string {
@@ -49,15 +37,17 @@ export function outcomeWords(run: RunEntry): string {
 }
 
 export function runFacts(run: RunEntry): readonly string[] {
-  return [durationOf(run.durationS), seedWords(run), faultWords(run), outcomeWords(run)].filter((part) => part !== "");
+  return [durationOf(run.durationS), seedWords(run.seed), faultWords(run), outcomeWords(run)].filter(
+    (part) => part !== "",
+  );
 }
 
 export function plantFacts(plant: PlantEntry): string {
   if (plant.domain === null) return "Not runnable yet. Edit it, then save.";
-  const size = plant.instances > 0 ? `${plural(plant.instances, "instance")} · ` : "";
+  const size = plant.instances > 0 ? `${counted(plant.instances, "instance")} · ` : "";
   if (plant.runs === 0) return size === "" ? "No runs yet" : `${size}no runs yet`;
   const last = whenOf(plant.lastRun);
-  return `${size}${plural(plant.runs, "run")}${last === "" ? "" : ` · last ${last}`}`;
+  return `${size}${counted(plant.runs, "run")}${last === "" ? "" : ` · last ${last}`}`;
 }
 
 export function plantsOf(workspace: Workspace): readonly PlantEntry[] {
@@ -89,9 +79,7 @@ export function runRows(workspace: Workspace, plant: string | null): readonly Ru
 }
 
 export function workspaceSummary(workspace: Workspace): string {
-  return [counted(plantsOf(workspace).length, "plant", "plants"), counted(workspace.runs.length, "run", "runs")].join(
-    " · ",
-  );
+  return [counted(plantsOf(workspace).length, "plant"), counted(workspace.runs.length, "run")].join(" · ");
 }
 
 export function workspaceEmpty(workspace: Workspace): boolean {

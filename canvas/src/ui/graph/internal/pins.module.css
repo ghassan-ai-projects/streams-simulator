@@ -25,10 +25,7 @@
   white-space: nowrap;
 }
 
-.pinShort {
-  display: none;
-}
-
+.pinShort,
 .pinName[data-form="short"] .pinFull {
   display: none;
 }
@@ -117,18 +114,9 @@
   border: 0;
 }
 
-.tierOverview .pins {
-  display: none;
-}
-
-.tierMap .pins {
-  display: none;
-}
-
-.tierOverview .none {
-  display: none;
-}
-
+.tierOverview .pins,
+.tierOverview .none,
+.tierMap .pins,
 .tierMap .none {
   display: none;
 }
@@ -152,10 +140,7 @@
   font-size: calc(10.5px / var(--zoom));
 }
 
-.tierOverview [data-node-root] .anchor {
-  top: 50%;
-}
-
+.tierOverview [data-node-root] .anchor,
 .tierMap [data-node-root] .anchor {
   top: 50%;
 }

@@ -1,7 +1,7 @@
-import type { Rect } from "./viewport";
+import type { Rect } from "./types";
 import { centreOf } from "./viewport";
 
-export type Direction = "left" | "right" | "up" | "down";
+type Direction = "left" | "right" | "up" | "down";
 
 const directions: Readonly<Record<string, Direction>> = {
   ArrowLeft: "left",

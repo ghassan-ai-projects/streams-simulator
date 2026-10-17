@@ -8,13 +8,13 @@ import { rightPanelName } from "./panelName";
 
 describe("key help", () => {
   it("opens from a visible Keyboard button, grouped by where each key works, and returns focus on Escape", () => {
-    render(<KeyHelp />);
+    render(<KeyHelp screen="run" />);
     const button = screen.getByRole("button", { name: "Keyboard" });
     button.focus();
     fireEvent.click(button);
     const dialog = screen.getByRole("dialog", { name: "Keyboard" });
     expect(within(dialog).getByRole("heading", { name: "Keyboard" })).toHaveFocus();
-    for (const scope of ["Everywhere", "Plant graph", "Run review", "Editor"]) {
+    for (const scope of ["Everywhere", "Run review"]) {
       expect(within(dialog).getByRole("region", { name: scope })).toBeInTheDocument();
     }
     const review = within(dialog).getByRole("region", { name: "Run review" });
@@ -53,7 +53,7 @@ describe("key help", () => {
   });
 
   it("dims the page and closes when the dimmed page is clicked", () => {
-    render(<KeyHelp />);
+    render(<KeyHelp screen="plant" />);
     fireEvent.keyDown(window, { key: "?" });
     const scrim = document.querySelector("[aria-hidden='true'][class*='scrim']");
     expect(scrim).not.toBeNull();

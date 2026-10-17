@@ -1,0 +1,7 @@
+.known {
+  color: var(--text-primary);
+}
+
+.forgotten {
+  color: var(--text-secondary);
+}

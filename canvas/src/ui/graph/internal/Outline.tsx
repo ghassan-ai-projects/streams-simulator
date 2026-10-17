@@ -60,7 +60,7 @@ function Entry({ item, current, marks, onPick }: Omit<SectionProps, "title" | "i
 
 function Section({ title, depth = 0, items, below = 0, current, marks, onPick }: SectionProps) {
   return (
-    <details open className={styles.group} style={{ marginLeft: `calc(var(--space-3) * ${String(depth)})` }}>
+    <details open style={{ marginLeft: `calc(var(--space-3) * ${String(depth)})` }}>
       <summary className={cx(styles.areaRow, shared.disclosure)}>
         <span className={styles.areaName} title={title}>
           {title}
@@ -99,7 +99,7 @@ function Filter({ value, onChange }: { readonly value: string; readonly onChange
 
 export function Outline({ plant, hall, selected, onSelect, onOpenHall, flagged, showEmptyAreas }: OutlineProps) {
   const [filter, setFilter] = useState("");
-  const { ref: navRef, cut } = useCutBottom<HTMLElement>([plant, hall, filter, selected, flagged]);
+  const { ref: navRef, cut } = useCutBottom<HTMLElement>();
   const halls = hallsOf(plant).map((id) => ({ id, kind: "" }));
   const shown = marked(groups(plant, hall, filter, showEmptyAreas === true), flagged);
   return (

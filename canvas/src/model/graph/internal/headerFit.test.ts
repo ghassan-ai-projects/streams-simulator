@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { fitId, idCap, idRoom, markRoom, middleCut } from "./headerFit";
+import { fitId, idCap, idRoom } from "./headerFit";
 
 describe("header text fit", () => {
   it("cuts the middle of a long name and keeps its distinguishing tail", () => {
-    expect(middleCut("production-line-a", 17)).toBe("production-line-a");
-    const cut = middleCut("production-line-a", 11);
+    expect(fitId("production-line-a", 90, 1, 25).text).toBe("production-line-a");
+    const cut = fitId("production-line-a", 55, 1, 25).text;
     expect(cut).toHaveLength(11);
     expect(cut.endsWith("line-a")).toBe(true);
     expect(cut).toContain("…");
@@ -41,10 +41,10 @@ describe("header text fit", () => {
   });
 
   it("reserves a narrow column for an icon mark and a capped one for words", () => {
-    expect(markRoom(0.4, 0)).toBeLessThan(70);
-    expect(markRoom(0.4, 40)).toBeLessThan(206 * 0.55 + 8.1);
-    expect(idRoom(0.4, null)).toBe(206);
-    expect(idRoom(0.4, 0)).toBeLessThan(206);
+    expect(206 - idRoom(0.4, 0, "compact")).toBeLessThan(70);
+    expect(206 - idRoom(0.4, 40, "compact")).toBeLessThan(206 * 0.55 + 8.1);
+    expect(idRoom(0.4, null, "compact")).toBe(206);
+    expect(idRoom(0.4, 0, "compact")).toBeLessThan(206);
     expect(idRoom(0.3, null, "overview")).toBeLessThan(230);
     expect(idRoom(0.3, 0, "overview")).toBeLessThan(idRoom(0.3, null, "overview"));
   });

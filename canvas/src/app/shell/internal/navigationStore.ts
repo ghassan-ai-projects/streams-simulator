@@ -57,6 +57,7 @@ export class NavigationStore extends Observable<Route> {
   }
 
   private arrive(route: Route): void {
+    if (formatRoute(route) === formatRoute(this.snapshot())) return;
     if (!this.blocked(route)) {
       this.set(route);
       return;

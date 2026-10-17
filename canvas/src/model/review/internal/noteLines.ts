@@ -7,7 +7,7 @@ function linesOf(text: string): number {
   return text === "" ? 0 : Math.ceil(text.length / charsPerLine);
 }
 
-export function noteLinesOf(fault: string, effector: string): number {
+function noteLinesOf(fault: string, effector: string): number {
   const cause = fault === "" ? "" : `Fault · ${fault}`;
   return Math.max(1, linesOf(cause) + linesOf(effector));
 }

@@ -2,9 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
 
 /** True while a scrolling element has more content below the cut. */
-export function useCutBottom<T extends HTMLElement>(
-  content: unknown,
-): {
+export function useCutBottom<T extends HTMLElement>(): {
   readonly ref: RefObject<T | null>;
   readonly cut: boolean;
 } {
@@ -34,6 +32,6 @@ export function useCutBottom<T extends HTMLElement>(
       changes.disconnect();
     };
   }, [measure]);
-  useEffect(measure, [measure, content]);
+  useEffect(measure, [measure]);
   return { ref, cut };
 }

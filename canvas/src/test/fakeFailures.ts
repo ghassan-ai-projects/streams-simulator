@@ -16,7 +16,6 @@ interface CannedIssue {
   readonly message: string;
 }
 
-/** A protocol-shaped canned answer, the shape the bridge double drives the old generic surface with. */
 export interface CannedFailure {
   readonly status: number;
   readonly code: string;
@@ -31,11 +30,10 @@ export type PlantAction = "read" | "generate" | "write" | "compose";
 export type EditorAction = "read" | "write" | "compose";
 export type LaunchStep = "create" | "advance" | "inject" | "invoke" | "end";
 
-export function failure(code: string, status = 401, message = "refused"): CannedFailure {
+export function cannedFailure(code: string, status = 401, message = "refused"): CannedFailure {
   return { status, code, message, issues: [] };
 }
 
-/** `unreachable` is the double's stand-in for a transport that never answered. */
 function asRequest(canned: CannedFailure | null): RequestFailure {
   return canned === null || canned.code === "unreachable"
     ? { kind: "transport" }
@@ -46,7 +44,6 @@ export function settle<T, F>(outcome: Canned<T>, map: (problem: CannedFailure) =
   return outcome.ok ? success(outcome.value) : failed(map(outcome.failure));
 }
 
-/** A successful answer the double cannot project is a decode failure, exactly as the real adapter reports one. */
 export function collect<T, F>(
   outcome: Canned<unknown>,
   map: (problem: CannedFailure) => F,
@@ -55,7 +52,7 @@ export function collect<T, F>(
   if (!outcome.ok) return failed(map(outcome.failure));
   const value = read(outcome.value);
   return value === null
-    ? failed(map(failure("unreadable", 200, "the bridge answered something else")))
+    ? failed(map(cannedFailure("unreadable", 200, "the bridge answered something else")))
     : success(value);
 }
 

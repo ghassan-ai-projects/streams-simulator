@@ -1,13 +1,13 @@
 import type { RunEntry } from "../../../model/workspace";
 import { PlaybackIndex, advance } from "../../../model/review";
 import type { JournalEntry } from "../../../model/review";
-import type { Badge, Replay } from "../../../model/review";
+import type { Badge } from "../../../model/review";
 import { badgeOf } from "../../../model/review";
 import { Observable, createOperationIdentity } from "../../shared";
 import type { OperationIdentity, OperationId } from "../../shared";
-import type { Clock, ReviewGateway, Scheduler } from "../../ports";
+import type { Clock, Outcome, ReviewFailure, ReviewGateway, Scheduler } from "../../ports";
 import type { Load, ReviewState } from "./reviewState";
-import { absentLoads, idle, knownUnfinished } from "./reviewState";
+import { absentLoads, idle, knownUnfinished, toLoad } from "./reviewState";
 
 export type { ReviewState } from "./reviewState";
 export class ReviewStore extends Observable<ReviewState> {
@@ -33,17 +33,9 @@ export class ReviewStore extends Observable<ReviewState> {
   }
 
   open(worldId: string, known?: RunEntry): void {
-    const state = this.snapshot();
-    if (state.worldId === worldId && this.activeSession !== null && this.live(this.activeSession)) return;
+    if (this.snapshot().worldId === worldId && this.activeSession !== null && this.live(this.activeSession)) return;
     this.close();
-    const session = this.operations.begin();
-    this.activeSession = session;
-    this.refreshed = known?.ended === true;
-    this.deferredVerify = false;
-    this.deferredDomain = knownUnfinished(known);
-    this.pending = 0;
-    this.index = new PlaybackIndex();
-    this.set({ ...idle, worldId, openedAt: this.clock.nowMs(), ...absentLoads(known) });
+    const session = this.beginVisit(worldId, known);
     void this.loadReport(worldId, session);
     if (!knownUnfinished(known)) {
       void this.loadVerify(worldId, session);
@@ -51,7 +43,7 @@ export class ReviewStore extends Observable<ReviewState> {
     }
     this.stop = this.gateway.follow(worldId, {
       entry: (entry) => {
-        this.take(worldId, session, entry);
+        this.take(session, entry);
       },
       closed: () => {
         this.finish(worldId, session, "ready");
@@ -62,10 +54,21 @@ export class ReviewStore extends Observable<ReviewState> {
     });
   }
 
+  private beginVisit(worldId: string, known: RunEntry | undefined): OperationId {
+    const session = this.operations.begin();
+    this.activeSession = session;
+    this.refreshed = known?.ended === true;
+    this.deferredVerify = false;
+    this.deferredDomain = knownUnfinished(known);
+    this.pending = 0;
+    this.index = new PlaybackIndex();
+    this.set({ ...idle, worldId, openedAt: this.clock.nowMs(), ...absentLoads(known) });
+    return session;
+  }
+
   refreshCompleted(worldId: string, known: RunEntry | undefined): void {
     const state = this.snapshot();
     if (
-      this.stop === null ||
       known?.ended !== true ||
       state.worldId !== worldId ||
       state.report.phase !== "ready" ||
@@ -143,35 +146,34 @@ export class ReviewStore extends Observable<ReviewState> {
     this.set({ ...this.snapshot(), tab });
   }
 
-  private take(worldId: string, session: OperationId, entry: JournalEntry): void {
+  private take(session: OperationId, entry: JournalEntry): void {
     if (!this.live(session)) return;
     if (entry.kind === "observation") this.index.add(entry.observation);
-    if (entry.kind === "opened") this.update(worldId, session, { adapter: entry.adapter });
+    if (entry.kind === "opened") this.update(session, { adapter: entry.adapter });
     this.pending += 1;
     if (this.pending === 1) {
       this.cancelFlush = this.scheduler.schedule(250, () => {
         if (!this.live(session)) return;
         this.cancelFlush = null;
         this.pending = 0;
-        this.update(worldId, session, {});
+        this.update(session, {});
       });
     }
   }
 
   private finish(worldId: string, session: OperationId, phase: "ready" | "failed"): void {
     if (!this.live(session)) return;
-    this.update(worldId, session, { phase });
+    this.update(session, { phase });
     if (phase === "ready") this.refreshIfLive(worldId, session);
     const state = this.snapshot();
     const settled = this.index.settled();
     const before = (this.index.bounds()?.startNs ?? 0) > state.positionNs;
-    if (settled !== null && state.worldId === worldId && before) this.seek(settled);
+    if (settled !== null && before) this.seek(settled);
   }
 
   private refreshIfLive(worldId: string, session: OperationId): void {
     const state = this.snapshot();
-    if (this.refreshed || state.worldId !== worldId || state.report.phase !== "ready" || state.report.value.ended)
-      return;
+    if (this.refreshed || state.report.phase !== "ready" || state.report.value.ended) return;
     if (state.playback.phase !== "ready") return;
     this.refreshed = true;
     this.deferredDomain = true;
@@ -179,19 +181,18 @@ export class ReviewStore extends Observable<ReviewState> {
     void this.loadReport(worldId, session);
   }
 
-  private update(worldId: string, session: OperationId, playback: Partial<ReviewState["playback"]>): void {
+  private update(session: OperationId, playback: Partial<ReviewState["playback"]>): void {
+    if (!this.live(session)) return;
     const state = this.snapshot();
-    if (state.worldId !== worldId || !this.live(session)) return;
     this.set({ ...state, playback: { ...state.playback, records: this.index.size, ...playback } });
   }
 
   private async loadReport(worldId: string, session: OperationId): Promise<void> {
-    const outcome = await this.gateway.report(worldId);
-    if (this.snapshot().worldId !== worldId || !this.live(session)) return;
-    this.set({
-      ...this.snapshot(),
-      report: outcome.ok ? { phase: "ready", value: outcome.value } : { phase: "failed", failure: outcome.failure },
-    });
+    const applied = await this.loadInto(session, this.gateway.report(worldId), (state, report) => ({
+      ...state,
+      report,
+    }));
+    if (!applied) return;
     this.resumeFinalLoads(worldId, session);
     this.refreshIfLive(worldId, session);
   }
@@ -215,20 +216,21 @@ export class ReviewStore extends Observable<ReviewState> {
   }
 
   private async loadRunDomain(worldId: string, session: OperationId): Promise<void> {
-    const domain = await this.gateway.runDomain(worldId);
-    if (this.snapshot().worldId !== worldId || !this.live(session)) return;
-    const runDomain: ReviewState["runDomain"] = domain.ok
-      ? { phase: "ready", value: domain.value }
-      : { phase: "failed", failure: domain.failure };
-    this.set({ ...this.snapshot(), runDomain });
+    await this.loadInto(session, this.gateway.runDomain(worldId), (state, runDomain) => ({ ...state, runDomain }));
   }
 
   private async loadVerify(worldId: string, session: OperationId): Promise<void> {
-    const outcome = await this.gateway.verify(worldId);
-    if (this.snapshot().worldId !== worldId || !this.live(session)) return;
-    const verified: Load<Replay> = outcome.ok
-      ? { phase: "ready", value: outcome.value }
-      : { phase: "failed", failure: outcome.failure };
-    this.set({ ...this.snapshot(), verified });
+    await this.loadInto(session, this.gateway.verify(worldId), (state, verified) => ({ ...state, verified }));
+  }
+
+  private async loadInto<T>(
+    session: OperationId,
+    pending: Promise<Outcome<T, ReviewFailure>>,
+    place: (state: ReviewState, load: Load<T>) => ReviewState,
+  ): Promise<boolean> {
+    const load = toLoad(await pending);
+    if (!this.live(session)) return false;
+    this.set(place(this.snapshot(), load));
+    return true;
   }
 }

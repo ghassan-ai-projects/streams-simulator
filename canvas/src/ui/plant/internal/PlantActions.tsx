@@ -1,4 +1,4 @@
-import { shared, cx } from "../../primitives";
+import { shared } from "../../primitives";
 import { Loader, PenLine, Play } from "lucide-react";
 import type { RefObject } from "react";
 import type { LaunchStore } from "../../../app/launch";
@@ -26,7 +26,7 @@ export function RunButton({ launching, running, button, onToggle }: RunButtonPro
       {running === null ? (
         <Play size={14} aria-hidden="true" />
       ) : (
-        <Loader size={14} aria-hidden="true" className={styles.spin} />
+        <Loader size={14} aria-hidden="true" className={shared.spin} />
       )}
       {running === null ? "Run plant" : `Running · ${running}`}
     </button>
@@ -45,7 +45,7 @@ export function EditButton({ composition, running, navigation }: EditButtonProps
   return (
     <button
       type="button"
-      className={cx(styles.edit, shared.button)}
+      className={shared.button}
       aria-disabled={busy}
       title={
         busy ? "Editing waits for the run: saving would change the plant file the run is checked against" : undefined

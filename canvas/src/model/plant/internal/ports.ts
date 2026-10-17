@@ -1,7 +1,8 @@
+import { spaced } from "../../shared/words";
 import type { Instance, Plant } from "./plant";
 
 export type Family = "air" | "pressure" | "water" | "cw" | "temp" | "heat" | "power" | "signal" | "env";
-export type Shape = "circle" | "square" | "diamond" | "hexagon" | "bar";
+type Shape = "circle" | "square" | "diamond" | "hexagon" | "bar";
 
 const families: Readonly<Record<string, Family>> = {
   compressed_air: "air",
@@ -91,10 +92,6 @@ export function specOf(
   return instance?.component ? specs.get(instance.component) : undefined;
 }
 
-function words(text: string): string {
-  return text.replaceAll("_", " ");
-}
-
 function listed(items: readonly string[]): string {
   if (items.length < 2) return items.join("");
   return `${items.slice(0, -1).join(", ")} and ${items.at(-1) ?? ""}`;
@@ -125,8 +122,8 @@ export function noTargetReason(
   const inputs =
     taken.length === 0
       ? "The other instances here have no inputs."
-      : `The inputs in this plant take ${listed(taken.map(words))}.`;
-  return `No instance takes ${words(type)}: ${from.id}'s ${words(output)} is ${words(type)}. ${inputs}`;
+      : `The inputs in this plant take ${listed(taken.map(spaced))}.`;
+  return `No instance takes ${spaced(type)}: ${from.id}'s ${spaced(output)} is ${spaced(type)}. ${inputs}`;
 }
 
 type Connection = "connected" | "open" | "unknown";

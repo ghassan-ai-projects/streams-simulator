@@ -1,5 +1,3 @@
-import type { AlarmActivation } from "./reportAlarms";
-
 export type Badge = "verifying" | "not-checked" | "verified" | "not-verified" | "incomplete";
 
 interface Check {
@@ -23,6 +21,13 @@ interface EffectorCall {
   readonly entity: string;
   readonly effector: string;
   readonly outcome: string;
+}
+
+export interface AlarmActivation {
+  readonly atNs: number;
+  readonly entity: string;
+  readonly state: string;
+  readonly priority: string;
 }
 
 export interface KpiRow {

@@ -1,8 +1,6 @@
 import type { Replay, Report } from "../../../model/review";
 import type { AlarmActivation } from "../../../model/review";
-import { isRecord } from "./http";
-
-type Json = Record<string, unknown>;
+import { isRecord, list, number, record, text } from "../../../model/shared/json";
 
 export function parseReportPayload(value: unknown): Report | null {
   if (!isRecord(value) || !isRecord(value.run) || !isRecord(value.counts)) {
@@ -12,17 +10,17 @@ export function parseReportPayload(value: unknown): Report | null {
   return decodeReport(value);
 }
 
-function decodeReport(value: Json): Report {
-  const truth = object(value.truth);
-  const counts = object(value.counts);
-  const verification = object(value.verification);
-  const kpis = object(truth.kpis);
+function decodeReport(value: Record<string, unknown>): Report {
+  const truth = record(value.truth);
+  const counts = record(value.counts);
+  const verification = record(value.verification);
+  const kpis = record(truth.kpis);
   return {
-    ...runFacts(object(value.run)),
+    ...runFacts(record(value.run)),
     verification: text(verification.status),
     checks: list(verification.checks).map((check) => ({
-      name: text(object(check).name),
-      status: text(object(check).status),
+      name: text(record(check).name),
+      status: text(record(check).status),
     })),
     counts: numbers(counts),
     dropped: numbers(counts.dropped_by_reason),
@@ -38,7 +36,7 @@ function decodeReport(value: Json): Report {
   };
 }
 
-function runFacts(run: Json) {
+function runFacts(run: Record<string, unknown>) {
   return {
     runId: text(run.run_id),
     mode: text(run.mode),
@@ -46,9 +44,9 @@ function runFacts(run: Json) {
     complete: run.complete === true,
     incompleteReason: text(run.incomplete_reason),
     unblinded: run.unblinded === true,
-    domainId: text(object(run.domain).id),
-    domainVersion: text(object(run.domain).version),
-    adapterId: text(object(run.adapter).id),
+    domainId: text(record(run.domain).id),
+    domainVersion: text(record(run.domain).version),
+    adapterId: text(record(run.adapter).id),
     seed: typeof run.seed === "number" ? run.seed : null,
     simVersion: text(run.sim_version),
     startNs: number(run.start_time_ns),
@@ -56,9 +54,9 @@ function runFacts(run: Json) {
   };
 }
 
-function faults(truth: Json) {
+function faults(truth: Record<string, unknown>) {
   return list(truth.faults).map((raw) => {
-    const fault = object(raw);
+    const fault = record(raw);
     return {
       kind: "fault" as const,
       action: "inject",
@@ -72,9 +70,9 @@ function faults(truth: Json) {
   });
 }
 
-function perturbations(truth: Json) {
+function perturbations(truth: Record<string, unknown>) {
   return list(truth.perturbations).map((raw) => {
-    const perturbation = object(raw);
+    const perturbation = record(raw);
     return {
       kind: "perturbation" as const,
       action: text(perturbation.action),
@@ -88,9 +86,9 @@ function perturbations(truth: Json) {
   });
 }
 
-function environment(truth: Json) {
+function environment(truth: Record<string, unknown>) {
   return list(truth.environment).map((raw) => {
-    const event = object(raw);
+    const event = record(raw);
     return {
       kind: "environment" as const,
       action: "inject",
@@ -104,10 +102,10 @@ function environment(truth: Json) {
   });
 }
 
-function effectorCalls(truth: Json) {
+function effectorCalls(truth: Record<string, unknown>) {
   return list(truth.effector_calls).map((raw) => {
-    const call = object(raw);
-    const outcome = object(call.outcome);
+    const call = record(raw);
+    const outcome = record(call.outcome);
     return {
       atNs: number(call.at_ns),
       entity: text(call.entity_id),
@@ -117,18 +115,18 @@ function effectorCalls(truth: Json) {
   });
 }
 
-function outcomeText(outcome: Json): string {
+function outcomeText(outcome: Record<string, unknown>): string {
   if (outcome.accepted !== true) return `refused${text(outcome.refusal) ? `: ${text(outcome.refusal)}` : ""}`;
   return outcome.effect_applied === true
     ? `applied · ${String(Math.round(number(outcome.ack_latency_ms)))} ms`
     : `accepted, no effect · ${text(outcome.mode)}`;
 }
 
-function kpiRows(truth: Json) {
-  return list(object(truth.kpis).entities).flatMap((raw) => {
-    const entity = object(raw);
+function kpiRows(truth: Record<string, unknown>) {
+  return list(record(truth.kpis).entities).flatMap((raw) => {
+    const entity = record(raw);
     return list(entity.kpis).map((item) => {
-      const row = object(item);
+      const row = record(item);
       return {
         entity: text(entity.entity_id),
         state: text(row.state),
@@ -142,9 +140,9 @@ function kpiRows(truth: Json) {
 
 function alarmActivations(entities: unknown): readonly AlarmActivation[] {
   return list(entities).flatMap((raw) => {
-    const entity = object(raw);
+    const entity = record(raw);
     return list(entity.alarms).flatMap((rawAlarm) => {
-      const alarm = object(rawAlarm);
+      const alarm = record(rawAlarm);
       return list(alarm.activation_times_ns)
         .filter((at): at is number => typeof at === "number" && Number.isFinite(at))
         .map((atNs) => ({
@@ -158,13 +156,13 @@ function alarmActivations(entities: unknown): readonly AlarmActivation[] {
 }
 
 function scoring(value: unknown): Report["scoring"] {
-  const entry = object(value);
+  const entry = record(value);
   return text(entry.status) ? { status: text(entry.status), reason: text(entry.reason) } : null;
 }
 
 function numbers(value: unknown): Record<string, number> {
   return Object.fromEntries(
-    Object.entries(object(value)).filter((entry): entry is [string, number] => typeof entry[1] === "number"),
+    Object.entries(record(value)).filter((entry): entry is [string, number] => typeof entry[1] === "number"),
   );
 }
 
@@ -177,20 +175,4 @@ export function parseReplayPayload(value: unknown): Replay | null {
     reason: text(value.reason),
     file: text(value.file),
   };
-}
-
-function object(value: unknown): Json {
-  return isRecord(value) ? value : {};
-}
-
-function list(value: unknown): readonly unknown[] {
-  return Array.isArray(value) ? value : [];
-}
-
-function text(value: unknown): string {
-  return typeof value === "string" ? value : "";
-}
-
-function number(value: unknown): number {
-  return typeof value === "number" ? value : 0;
 }

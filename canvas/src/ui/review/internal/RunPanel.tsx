@@ -58,11 +58,11 @@ export function RunPanel(props: RunPanelProps) {
     ["report", "Report"],
     ["inspect", state.selected === null ? "Inspect" : `Inspect · ${state.selected}`],
   ];
-  const { ref, cut } = useCutBottom<HTMLElement>([state, review]);
+  const { ref, cut } = useCutBottom<HTMLElement>();
   return (
     <aside
       ref={ref}
-      className={cx(cx(styles.report, shared.scrolls), shared.cut)}
+      className={cx(styles.report, shared.scrolls, shared.cut)}
       data-cut={cut ? "true" : undefined}
       aria-label="Run details"
       tabIndex={0}

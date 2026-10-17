@@ -123,22 +123,6 @@
   border-left: 1px solid var(--border-subtle);
 }
 
-.spin {
-  animation: spin 1.2s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .spin {
-    animation: none;
-  }
-}
-
 .toggles {
   display: flex;
   gap: 2px;

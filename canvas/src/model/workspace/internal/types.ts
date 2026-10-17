@@ -2,7 +2,7 @@ export interface Definition {
   readonly path: string;
   readonly id: string;
   readonly title: string;
-  readonly instances?: number;
+  readonly instances: number;
 }
 
 export interface RunEntry {
@@ -15,7 +15,7 @@ export interface RunEntry {
   readonly plant: string;
   readonly durationS: number;
   readonly recordedAt: string;
-  readonly faults?: number;
+  readonly faults: number;
 }
 
 export interface Workspace {

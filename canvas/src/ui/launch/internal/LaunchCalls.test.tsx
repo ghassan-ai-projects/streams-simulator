@@ -43,11 +43,11 @@ function change(label: string, value: string) {
 }
 
 function renderPanel(fake: FakeBridge, onFinished = vi.fn<(worldId: string) => void>()) {
-  const { launch, scheduler } = launchHarness(fake);
+  const { launch, timers } = launchHarness(fake);
   const view = render(
     <LaunchPanel
       launch={launch}
-      scheduler={scheduler}
+      scheduler={timers}
       plant={plant}
       path="p.json"
       onClose={vi.fn()}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { LaunchPlan, PlannedCall } from "./launch";
+import type { LaunchPlan } from "./launch";
 import {
   disturbanceWords,
   keepKnownFaults,
@@ -11,6 +11,10 @@ import {
   rateWords,
   watchWords,
 } from "./launch";
+
+type PlannedCall = LaunchPlan["calls"][number];
+
+const anySpec = (_entity: string, effector: string) => ({ name: effector, entityArg: null, args: [] });
 
 const plan = (overrides: Partial<LaunchPlan>): LaunchPlan => ({
   seed: 7,
@@ -52,13 +56,13 @@ describe("launch plan", () => {
   });
 
   it("names every problem of a plan in words", () => {
-    expect(planProblems(plan({}))).toEqual([]);
-    const texts = (p: LaunchPlan) => planProblems(p).map((problem) => problem.text);
+    expect(planProblems(plan({}), anySpec)).toEqual([]);
+    const texts = (p: LaunchPlan) => planProblems(p, anySpec).map((problem) => problem.text);
     const faults = [
       { entity: "", fault: "", atS: 5 },
       { entity: "CT-1", fault: "fan", atS: 500 },
     ];
-    expect(planProblems(plan({ seed: -1, durationS: 0, faults }))).toEqual([
+    expect(planProblems(plan({ seed: -1, durationS: 0, faults }), anySpec)).toEqual([
       { field: "seed", text: "The seed is a whole number, 0 or more." },
       { field: "duration", text: "The duration is at least one minute." },
       { field: 0, text: "Fault 1 needs an instance and a fault." },
@@ -69,7 +73,8 @@ describe("launch plan", () => {
   });
 
   it("names only the missing part of a fault draft", () => {
-    const texts = (faults: LaunchPlan["faults"]) => planProblems(plan({ faults })).map((problem) => problem.text);
+    const texts = (faults: LaunchPlan["faults"]) =>
+      planProblems(plan({ faults }), anySpec).map((problem) => problem.text);
     expect(texts([{ entity: "h02/M-1", fault: "", atS: 0 }])).toEqual(["Fault 1 needs a fault."]);
     expect(texts([{ entity: "", fault: "tooling_wear", atS: 0 }])).toEqual(["Fault 1 needs an instance."]);
     expect(texts([{ entity: "", fault: "", atS: 0 }])).toEqual(["Fault 1 needs an instance and a fault."]);
@@ -129,7 +134,7 @@ describe("effector calls in a plan", () => {
     expect(texts([call({ args: { setpoint_c: 20 } })])).toEqual([
       "Effector call 1: setpoint c is a number from 4 to 12.",
     ]);
-    expect(planProblems(plan({ calls: [call({ atS: 100 })] }))[0]).toMatchObject({
+    expect(planProblems(plan({ calls: [call({ atS: 100 })] }), anySpec)[0]).toMatchObject({
       field: "call",
       call: 0,
       part: "minute",

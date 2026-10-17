@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { failure as failed, success } from "../../ports";
-import { FakeBridge, failure } from "../../../test/fakeBridge";
+import { FakeBridge, cannedFailure } from "../../../test/fakeBridge";
 import { fakeClock } from "../../../test/fakeClock";
 import { LaunchStore } from "./launchStore";
 
@@ -117,7 +117,7 @@ describe("launch", () => {
 
   it("abandons the run when the bridge fails an effector call", async () => {
     const fake = bridge();
-    fake.actions.set("effector.invoke", failed(failure("invalid_args", 422, "setpoint out of range")));
+    fake.actions.set("effector.invoke", failed(cannedFailure("invalid_args", 422, "setpoint out of range")));
     const store = launch(fake);
     const call = { entity: "CH-1", effector: "chiller__start", atS: 0, args: {} };
     await store.start(origin, { ...plan, faults: [], calls: [call] });
@@ -131,7 +131,7 @@ describe("launch", () => {
 
   it("reports the binary's refusal and discards the world", async () => {
     const fake = bridge();
-    fake.actions.set("fault.inject", failed(failure("unknown_fault", 422, "no such fault")));
+    fake.actions.set("fault.inject", failed(cannedFailure("unknown_fault", 422, "no such fault")));
     const store = launch(fake);
     await store.start(origin, plan);
     expect(store.snapshot()).toMatchObject({
@@ -158,7 +158,7 @@ describe("launch", () => {
 
   it("fails without a world when the world cannot be created", async () => {
     const fake = bridge();
-    fake.actions.set("world.create", failed(failure("domain_invalid", 422, "bad domain")));
+    fake.actions.set("world.create", failed(cannedFailure("domain_invalid", 422, "bad domain")));
     const store = launch(fake);
     await store.start(origin, plan);
     expect(store.snapshot()).toMatchObject({

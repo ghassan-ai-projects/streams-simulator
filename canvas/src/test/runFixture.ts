@@ -1,7 +1,6 @@
 import type { JournalEntry } from "../model/review";
 import type { Report } from "../model/review";
 
-/** The wire report payload the bridge answers `run.report` with, as `streamsim` writes run.json. */
 export const reportWire = {
   run: {
     run_id: "r-1",
@@ -54,7 +53,6 @@ export const reportWire = {
   },
 };
 
-/** The same report decoded at the bridge boundary; the adapter test pins the two together. */
 export const report: Report = {
   runId: "r-1",
   mode: "evaluate",
@@ -118,7 +116,6 @@ export const report: Report = {
   truthUnavailable: "",
 };
 
-/** A report with every section empty, for selector tests that only care about one section. */
 export function blankReport(overrides: Partial<Report> = {}): Report {
   return {
     runId: "",
@@ -159,7 +156,6 @@ export function observation(seq: number, atNs: number, entity: string, channel: 
   };
 }
 
-/** The observer journal as the bridge streams it, line by line. */
 export const journalWire = [
   { stream: "observer", type: "run.opened", seq: 0, at_ns: 0, mode: "evaluate", adapter: { id: "native-jsonl" } },
   observation(1, 10e9, "CH-1", "chiller.power", 92.7),
@@ -170,7 +166,6 @@ export const journalWire = [
   { stream: "observer", type: "run.closed", seq: 6, at_ns: 3_600e9, incomplete: false },
 ];
 
-/** The same journal decoded into the entry union the review store consumes. */
 export const journal: readonly JournalEntry[] = [
   { kind: "opened", atNs: 0, mode: "evaluate", adapter: "native-jsonl" },
   {

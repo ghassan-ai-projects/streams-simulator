@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { useCutBottom } from "./useCutBottom";
 
 function Probe() {
-  const { ref, cut } = useCutBottom<HTMLDivElement>([]);
+  const { ref, cut } = useCutBottom<HTMLDivElement>();
   return (
     <div ref={ref} data-testid="probe" data-cut={cut ? "true" : undefined}>
       <details>

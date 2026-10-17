@@ -1,20 +1,25 @@
 import { describe, expect, it } from "vitest";
-import { layout, ranks, spacing } from "./layout";
+import { layout } from "./layout";
+
+const spacing = { pad: 24, header: 40, column: 96, group: 48, lane: 24 } as const;
 
 const node = (id: string, group = "A", height = 60) => ({ id, group, width: 100, height });
 
 describe("layout", () => {
   it("ranks along links and breaks cycles in a stable order", () => {
-    const rank = ranks(
-      ["a", "b", "c"],
+    const placed = layout(
+      [node("a"), node("b"), node("c")],
       [
         { from: "a", to: "b" },
         { from: "b", to: "c" },
         { from: "c", to: "a" },
         { from: "a", to: "a" },
       ],
+      ["A"],
     );
-    expect(Object.fromEntries(rank)).toEqual({ a: 0, b: 1, c: 2 });
+    const step = 100 + spacing.column;
+    const xs = ["a", "b", "c"].map((id) => placed.nodes.get(id)?.x);
+    expect(xs).toEqual([spacing.pad, spacing.pad + step, spacing.pad + 2 * step]);
   });
 
   it("places each rank in its own column inside a framed group", () => {

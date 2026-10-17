@@ -1,10 +1,10 @@
-import type { Acknowledgement, ComposeSummary, FileContent } from "../../../app/ports";
+import type { Acknowledgement, ComposeSummary, DomainDocument, FileContent } from "../../../app/ports";
 import type { Workspace } from "../../../model/workspace";
 import type { ExamplePlant, LibraryEntry, Presets } from "../../../model/plant";
 import type { ComponentSpec, PortSpec } from "../../../model/plant";
 import type { Replay, Report } from "../../../model/review";
 import { parseReportPayload, parseReplayPayload } from "./reportDecoder";
-import { isRecord, string } from "./http";
+import { isRecord, record, text } from "../../../model/shared/json";
 export { journalEntry } from "./journalDecoder";
 
 export function paired(value: unknown): boolean | null {
@@ -47,9 +47,9 @@ export function workspace(value: unknown): Workspace | null {
 function definition(value: unknown): Workspace["domains"][number] {
   const entry = record(value);
   return {
-    path: string(entry.path),
-    id: string(entry.id),
-    title: string(entry.title),
+    path: text(entry.path),
+    id: text(entry.id),
+    title: text(entry.title),
     instances: typeof entry.instances === "number" ? entry.instances : 0,
   };
 }
@@ -57,15 +57,15 @@ function definition(value: unknown): Workspace["domains"][number] {
 function runEntry(value: unknown): Workspace["runs"][number] {
   const entry = record(value);
   return {
-    worldId: string(entry.world_id),
+    worldId: text(entry.world_id),
     ended: entry.ended === true,
     complete: entry.complete === true,
-    incompleteReason: string(entry.incomplete_reason),
+    incompleteReason: text(entry.incomplete_reason),
     explore: entry.explore === true,
     seed: typeof entry.seed === "number" ? entry.seed : null,
-    plant: string(entry.plant),
+    plant: text(entry.plant),
     durationS: typeof entry.duration_ns === "number" ? Math.round(entry.duration_ns / 1e9) : 0,
-    recordedAt: string(entry.recorded_at),
+    recordedAt: text(entry.recorded_at),
     faults: typeof entry.faults === "number" ? entry.faults : 0,
   };
 }
@@ -74,14 +74,12 @@ export function library(value: unknown): readonly LibraryEntry[] | null {
   if (!isRecord(value) || !Array.isArray(value.components)) return null;
   return value.components
     .map(record)
-    .filter((entry) => entry.kind === "equipment" && string(entry.id) !== "")
+    .filter((entry) => entry.kind === "equipment" && text(entry.id) !== "")
     .map((entry) => ({
-      component: string(entry.id),
-      ref: `${string(entry.id)}@${typeof entry.version === "number" ? String(entry.version) : "1"}`,
-      title: string(entry.title) || string(entry.id),
-      words: [string(entry.title), string(entry.id), string(entry.class), ...strings(entry.tags)]
-        .join(" ")
-        .toLowerCase(),
+      component: text(entry.id),
+      ref: `${text(entry.id)}@${typeof entry.version === "number" ? String(entry.version) : "1"}`,
+      title: text(entry.title) || text(entry.id),
+      words: [text(entry.title), text(entry.id), text(entry.class), ...strings(entry.tags)].join(" ").toLowerCase(),
     }))
     .sort((a, b) => a.title.localeCompare(b.title));
 }
@@ -92,20 +90,20 @@ export function presets(value: unknown): Presets | null {
   const rawPresets = record(document.presets);
   const options = Object.entries(rawPresets).map(([name, raw]) => ({
     name,
-    title: string(record(raw).title) || name,
+    title: text(record(raw).title) || name,
   }));
-  return { options, preferred: string(document.default_preset), description: string(document.description) };
+  return { options, preferred: text(document.default_preset), description: text(document.description) };
 }
 
 export function examples(value: unknown): readonly ExamplePlant[] | null {
   if (!isRecord(value) || !Array.isArray(value.examples)) return null;
   return value.examples
     .map(record)
-    .filter((entry) => string(entry.id) !== "")
+    .filter((entry) => text(entry.id) !== "")
     .map((entry) => ({
-      id: string(entry.id),
-      title: string(entry.title) || string(entry.id),
-      description: string(entry.description),
+      id: text(entry.id),
+      title: text(entry.title) || text(entry.id),
+      description: text(entry.description),
     }));
 }
 
@@ -118,7 +116,7 @@ export function component(value: unknown): ComponentSpec | null {
   const description = nonblank(document.description);
   return {
     ports: parsePorts(document),
-    category: category(string(entry.class), tags),
+    category: category(text(entry.class), tags),
     ...(title === undefined ? {} : { title }),
     ...(description === undefined ? {} : { description }),
   };
@@ -130,8 +128,8 @@ function parsePorts(document: Record<string, unknown>): readonly PortSpec[] {
     const port = record(raw);
     const channel = nonblank(port.state);
     return {
-      name: string(port.name),
-      type: string(port.type),
+      name: text(port.name),
+      type: text(port.type),
       direction: port.direction === "provides" ? "out" : "in",
       ...(channel === undefined ? {} : { channel }),
     };
@@ -160,7 +158,7 @@ function category(componentClass: string, tags: readonly string[]): ComponentSpe
 export function composition(value: unknown): Record<string, unknown> | null {
   if (!isRecord(value) || !isRecord(value.composition)) return null;
   const doc = value.composition;
-  if (doc.schema_version !== "0.1" || !["id", "version", "title", "stresses"].every((key) => string(doc[key]))) {
+  if (doc.schema_version !== "0.1" || !["id", "version", "title", "stresses"].every((key) => text(doc[key]))) {
     return null;
   }
   if (!isRecord(doc.axes) || !Array.isArray(doc.profiles) || !isRecord(doc.ground_truth)) return null;
@@ -186,7 +184,7 @@ export function acknowledgement(value: unknown): Acknowledgement | null {
   if (value.effect_eta_ns !== undefined && typeof value.effect_eta_ns !== "number") return null;
   return {
     accepted: value.accepted,
-    reason: string(value.reason),
+    reason: text(value.reason),
     effectEtaNs: typeof value.effect_eta_ns === "number" ? value.effect_eta_ns : null,
   };
 }
@@ -196,11 +194,11 @@ export function advanceResult(value: unknown): true | null {
 }
 
 export function faultInjected(value: unknown): true | null {
-  return isRecord(value) && string(value.fault_id) !== "" && value.simulated === true ? true : null;
+  return isRecord(value) && text(value.fault_id) !== "" && value.simulated === true ? true : null;
 }
 
 export function runEnded(value: unknown): true | null {
-  return isRecord(value) && string(value.run_artifact_path) !== "" ? true : null;
+  return isRecord(value) && text(value.run_artifact_path) !== "" ? true : null;
 }
 
 export function destroyed(value: unknown): true | null {
@@ -215,19 +213,15 @@ export function replay(value: unknown): Replay | null {
   return parseReplayPayload(value);
 }
 
-export function runDomain(value: unknown): object | null {
+export function runDomain(value: unknown): DomainDocument | null {
   if (!isRecord(value) || typeof value.content !== "string") return null;
   try {
     const artifact: unknown = JSON.parse(value.content);
     if (!isRecord(artifact) || !isRecord(artifact.domain_spec)) return null;
-    return artifact.domain_spec;
+    return artifact.domain_spec as DomainDocument;
   } catch {
     return null;
   }
-}
-
-function record(value: unknown): Record<string, unknown> {
-  return isRecord(value) ? value : {};
 }
 
 function array(value: unknown): readonly unknown[] | null {
@@ -235,10 +229,10 @@ function array(value: unknown): readonly unknown[] | null {
 }
 
 function strings(value: unknown): readonly string[] {
-  return Array.isArray(value) ? value.map(string) : [];
+  return Array.isArray(value) ? value.map(text) : [];
 }
 
 function nonblank(value: unknown): string | undefined {
-  const text = string(value);
-  return text.trim() === "" ? undefined : text;
+  const content = text(value);
+  return content.trim() === "" ? undefined : content;
 }

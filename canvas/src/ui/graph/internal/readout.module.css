@@ -4,26 +4,11 @@
   font-size: var(--text-xs);
 }
 
-.tierOverview .readout {
-  display: none;
-}
-
-.tierMap .readout {
-  display: none;
-}
-
-.tierOverview .note {
-  display: none;
-}
-
-.tierMap .note {
-  display: none;
-}
-
-.tierOverview .none {
-  display: none;
-}
-
+.tierOverview .readout,
+.tierOverview .note,
+.tierOverview .none,
+.tierMap .readout,
+.tierMap .note,
 .tierMap .none {
   display: none;
 }
@@ -37,22 +22,13 @@
   font-size: max(var(--floor), min(calc(10.5px / var(--zoom)), 19px));
 }
 
-.tierCompact .readout dd {
-  font-size: max(var(--floor), min(calc(11.5px / var(--zoom)), 21px));
-}
-
-.tierCompact .more {
-  font-size: max(var(--floor), min(calc(11.5px / var(--zoom)), 21px));
-}
-
+.tierCompact .readout dd,
+.tierCompact .more,
 .tierCompact .readout dd.word {
   font-size: max(var(--floor), min(calc(11.5px / var(--zoom)), 21px));
 }
 
-.tierCompact .unit {
-  font-size: max(var(--floor), min(calc(10.5px / var(--zoom)), 19px));
-}
-
+.tierCompact .unit,
 .tierCompact .notObserved {
   font-size: max(var(--floor), min(calc(10.5px / var(--zoom)), 19px));
 }
@@ -162,11 +138,7 @@
   color: var(--text-secondary);
 }
 
-.readout .more dt {
-  font: inherit;
-  color: inherit;
-}
-
+.readout .more dt,
 .readout .more dd {
   font: inherit;
   color: inherit;

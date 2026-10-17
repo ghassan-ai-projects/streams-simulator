@@ -1,5 +1,5 @@
-import type { Instance, ChannelState, ChannelRange } from "../../plant";
-import type { Category, Family, Pins } from "../../plant";
+import type { Category, ChannelRange, ChannelState, Family, Instance, Pins } from "../../plant";
+
 export interface ReadingValue {
   readonly channel: string;
   readonly value: number | string | boolean;
@@ -106,13 +106,6 @@ export interface Point {
   readonly y: number;
 }
 
-export interface Box {
-  readonly x: number;
-  readonly y: number;
-  readonly width: number;
-  readonly height: number;
-}
-
 export interface LayoutNode {
   readonly id: string;
   readonly group: string;
@@ -126,8 +119,8 @@ export interface LayoutEdge {
 }
 
 export interface Layout {
-  readonly nodes: ReadonlyMap<string, Box>;
-  readonly groups: ReadonlyMap<string, Box>;
+  readonly nodes: ReadonlyMap<string, Rect>;
+  readonly groups: ReadonlyMap<string, Rect>;
 }
 
 export interface FittedId {

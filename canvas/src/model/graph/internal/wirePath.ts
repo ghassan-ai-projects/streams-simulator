@@ -1,4 +1,4 @@
-import type { Point } from "./wireRoute";
+import type { Point } from "./types";
 
 function towards(from: Point, to: Point, distance: number): Point {
   const length = Math.hypot(to.x - from.x, to.y - from.y);

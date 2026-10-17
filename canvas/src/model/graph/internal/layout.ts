@@ -1,7 +1,6 @@
-import type { Box, LayoutNode, LayoutEdge, Layout } from "./types";
-export type { LayoutNode, LayoutEdge, Layout } from "./types";
+import type { Layout, LayoutEdge, LayoutNode, Rect } from "./types";
 
-export const spacing = {
+const spacing = {
   pad: 24,
   header: 40,
   column: 96,
@@ -46,7 +45,7 @@ function acyclicOrder(
   return { order, back };
 }
 
-export function ranks(ids: readonly string[], edges: readonly LayoutEdge[]): Map<string, number> {
+function ranks(ids: readonly string[], edges: readonly LayoutEdge[]): Map<string, number> {
   const next = successors(ids, edges);
   const { order, back } = acyclicOrder(ids, next);
   const rank = new Map(ids.map((id) => [id, 0]));
@@ -97,7 +96,7 @@ function orderByPredecessors(columns: LayoutNode[][], edges: readonly LayoutEdge
   });
 }
 
-function placeGroup(columns: readonly LayoutNode[][], origin: { x: number; y: number }, out: Map<string, Box>): Box {
+function placeGroup(columns: readonly LayoutNode[][], origin: { x: number; y: number }, out: Map<string, Rect>): Rect {
   let x = origin.x + spacing.pad;
   let bottom = origin.y + spacing.header;
   for (const column of columns) {
@@ -131,8 +130,8 @@ function groupsOf(nodes: readonly LayoutNode[], groupOrder: readonly string[]) {
 }
 
 class Shelf {
-  readonly placed = new Map<string, Box>();
-  readonly groups = new Map<string, Box>();
+  readonly placed = new Map<string, Rect>();
+  readonly groups = new Map<string, Rect>();
   private cursor = { x: 0, y: 0 };
   private rowHeight = 0;
   width = 0;
@@ -143,7 +142,7 @@ class Shelf {
   ) {}
 
   add(group: string, columns: readonly LayoutNode[][]): void {
-    const trial = new Map<string, Box>();
+    const trial = new Map<string, Rect>();
     let box = placeGroup(columns, this.cursor, trial);
     if (box.x > 0 && box.x + box.width > this.maxWidth) {
       this.cursor = { x: 0, y: this.cursor.y + this.rowHeight + this.rowGap };
@@ -191,7 +190,7 @@ function bestShelf(columns: Columns, aspect: number | undefined, rowGap: number)
   );
 }
 
-export type HeaderReserve = (group: string, members: number, width: number) => number;
+type HeaderReserve = (group: string, members: number, width: number) => number;
 
 function rowGapOf(columns: Columns, reserve: HeaderReserve | undefined): number {
   if (reserve === undefined) return spacing.group;

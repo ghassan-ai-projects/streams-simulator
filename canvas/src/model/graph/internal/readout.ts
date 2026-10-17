@@ -1,8 +1,6 @@
-import type { Attention, NodeStatus, Shown, ChannelSpec } from "./types";
-export type { Attention, NodeStatus, Shown, ChannelSpec } from "./types";
-import type { ReadingValue } from "./types";
+import type { Attention, ChannelSpec, NodeStatus, ReadingValue, Shown } from "./types";
 import type { ChannelRange, ChannelState } from "../../plant";
-import { shortChannel } from "../../shared/words";
+import { shortChannel, spaced } from "../../shared/words";
 import { displayUnit } from "../../shared/units";
 
 export const statusWords: Readonly<Record<NonNullable<NodeStatus>, string>> = {
@@ -35,7 +33,7 @@ function measured(channel: string, value: number, rawUnit: string, range: Channe
   return { channel, value: number(value), unit, attention: null, word: false, outside: outsideOf(value, range, unit) };
 }
 
-export function showReading(reading: ReadingValue, spec: ChannelSpec | null = noSpec): Shown {
+export function showReading(reading: ReadingValue, spec: ChannelSpec | null): Shown {
   const { states, range } = spec ?? noSpec;
   const channel = shortChannel(reading.channel);
   if (typeof reading.value === "number") {
@@ -61,12 +59,10 @@ export function abnormalFirst(shown: readonly Shown[]): readonly Shown[] {
   );
 }
 
-export function channelWords(name: string): string {
-  return name.replaceAll("_", " ");
-}
+export const channelWords = spaced;
 
 export function pinWords(name: string, side: "in" | "out"): { readonly full: string; readonly short: string } {
-  const full = channelWords(name);
+  const full = spaced(name);
   const suffix = ` ${side}`;
   const short = full.endsWith(suffix) && full.length > suffix.length ? full.slice(0, -suffix.length) : full;
   return { full, short };

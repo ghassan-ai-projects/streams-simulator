@@ -35,9 +35,7 @@ function Tally({ title, rows }: { readonly title: string; readonly rows: readonl
   );
 }
 
-type Review = ((worldId: string) => void) | undefined;
-
-function RunItem({ row, onReview }: { readonly row: RunRow; readonly onReview: Review }) {
+function RunItem({ row, onReview }: { readonly row: RunRow; readonly onReview: (worldId: string) => void }) {
   const words = [
     row.run.worldId,
     row.run.explore ? "Explore" : "Evaluate",
@@ -49,25 +47,23 @@ function RunItem({ row, onReview }: { readonly row: RunRow; readonly onReview: R
       <span className={styles.figures}>
         <MetaParts parts={words} />
       </span>
-      {onReview !== undefined && (
-        <button
-          type="button"
-          className={styles.linkButton}
-          aria-label={`Review ${row.run.worldId}`}
-          onClick={() => {
-            onReview(row.run.worldId);
-          }}
-        >
-          Review
-        </button>
-      )}
+      <button
+        type="button"
+        className={styles.linkButton}
+        aria-label={`Review ${row.run.worldId}`}
+        onClick={() => {
+          onReview(row.run.worldId);
+        }}
+      >
+        Review
+      </button>
     </li>
   );
 }
 
 const recentShown = 5;
 
-function Runs({ runs, onReview }: { readonly runs: readonly RunRow[]; readonly onReview: Review }) {
+function Runs({ runs, onReview }: { readonly runs: readonly RunRow[]; readonly onReview: (worldId: string) => void }) {
   const [all, setAll] = useState(false);
   const shown = all ? runs : runs.slice(0, recentShown);
   return (
@@ -123,7 +119,7 @@ export function PlantOverview({
 }: {
   readonly plant: Plant;
   readonly runs: readonly RunRow[];
-  readonly onReview?: ((worldId: string) => void) | undefined;
+  readonly onReview: (worldId: string) => void;
 }) {
   const areas = areaCounts(plant);
   const halls = counts(plant.instances.flatMap((instance) => hallOf(instance.id) ?? []));
@@ -131,11 +127,11 @@ export function PlantOverview({
     halls.length > 0
       ? `${counted(halls.length, "hall", "halls")} and the site`
       : counted(areas.length, "area", "areas");
-  const { ref, cut } = useCutBottom<HTMLElement>([plant, runs]);
+  const { ref, cut } = useCutBottom<HTMLElement>();
   return (
     <aside
       ref={ref}
-      className={cx(cx(styles.inspector, shared.scrolls), shared.cut)}
+      className={cx(styles.inspector, shared.scrolls, shared.cut)}
       data-cut={cut ? "true" : undefined}
       aria-label="Inspector"
       tabIndex={0}

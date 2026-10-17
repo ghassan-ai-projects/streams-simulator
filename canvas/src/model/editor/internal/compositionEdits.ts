@@ -1,3 +1,5 @@
+import { list } from "../../shared/json";
+import { counted } from "../../shared/words";
 import type { Composition, NewEquipment } from "./composition";
 import { componentOf, connectionsOf, endpointOf, equipmentOf, shortKind } from "./composition";
 import { freeKind, joinable, kindOf } from "./kindNames";
@@ -9,12 +11,16 @@ interface Issue {
   readonly message: string;
 }
 
+function rows(value: unknown): readonly Json[] {
+  return list(value) as readonly Json[];
+}
+
 function entries(doc: Composition): readonly Json[] {
-  return Array.isArray(doc.equipment) ? (doc.equipment as readonly Json[]) : [];
+  return rows(doc.equipment);
 }
 
 function wires(doc: Composition): readonly Json[] {
-  return Array.isArray(doc.connections) ? (doc.connections as readonly Json[]) : [];
+  return rows(doc.connections);
 }
 
 function namesOf(entry: Json): readonly string[] {
@@ -58,7 +64,7 @@ export function addEquipment(doc: Composition, added: NewEquipment): Composition
 }
 
 function areasOf(doc: Composition): readonly Json[] {
-  return Array.isArray(doc.areas) ? (doc.areas as readonly Json[]) : [];
+  return rows(doc.areas);
 }
 
 export function areaNameProblem(doc: Composition, name: string, current: string | null): string | null {
@@ -96,9 +102,8 @@ export function areaInUse(doc: Composition, name: string): string | null {
   const holding = entries(doc).filter((entry) => entry.area === name);
   const inside = areasOf(doc).filter((area) => area.parent === name).length;
   const instances = holding.reduce((sum, entry) => sum + instanceCount(entry), 0);
-  if (instances > 0)
-    return `Move the ${String(instances)} ${instances === 1 ? "instance" : "instances"} out of it first.`;
-  if (inside > 0) return `Delete the ${String(inside)} ${inside === 1 ? "area" : "areas"} inside it first.`;
+  if (instances > 0) return `Move the ${counted(instances, "instance")} out of it first.`;
+  if (inside > 0) return `Delete the ${counted(inside, "area")} inside it first.`;
   return null;
 }
 
@@ -236,7 +241,7 @@ export function profileWeightOf(issue: ListedIssue): { readonly profile: string;
 
 export function removeProfileWeight(doc: Composition, pointer: string): Composition {
   const match = weightPointer.exec(pointer);
-  const profiles = Array.isArray(doc.profiles) ? (doc.profiles as readonly Json[]) : [];
+  const profiles = rows(doc.profiles);
   const at = Number(match?.[1] ?? -1);
   const profile = profiles[at];
   if (match?.[2] === undefined || profile === undefined) return doc;

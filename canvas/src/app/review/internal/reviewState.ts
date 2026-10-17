@@ -1,12 +1,16 @@
 import type { RunEntry } from "../../../model/workspace";
 import type { Report, Replay } from "../../../model/review";
 import { unfinishedReason } from "../../../model/workspace";
-import type { DomainDocument, ReviewFailure } from "../../ports";
+import type { DomainDocument, Outcome, ReviewFailure } from "../../ports";
 
 export type Load<T> =
   | { readonly phase: "loading" }
   | { readonly phase: "failed"; readonly failure: ReviewFailure }
   | { readonly phase: "ready"; readonly value: T };
+
+export function toLoad<T>(outcome: Outcome<T, ReviewFailure>): Load<T> {
+  return outcome.ok ? { phase: "ready", value: outcome.value } : { phase: "failed", failure: outcome.failure };
+}
 
 export interface ReviewState {
   readonly worldId: string | null;

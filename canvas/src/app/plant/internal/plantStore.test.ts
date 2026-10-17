@@ -3,11 +3,12 @@ import type { Deferred } from "../../../test/deferred";
 import { deferred } from "../../../test/deferred";
 import type { FileContent } from "../../ports";
 import { failure as failed, success } from "../../ports";
-import { FakeBridge, failure, sampleWorkspace } from "../../../test/fakeBridge";
+import { FakeBridge, cannedFailure } from "../../../test/fakeBridge";
+import { sampleWorkspace } from "../../../test/workspaceFixture";
 import type { Canned } from "../../../test/fakeFailures";
 import { domainDocument } from "../../../test/fakeValues";
 import { chillerPorts, composition, domain } from "../../../test/plantFixture";
-import { PlantStore } from "./plantStore";
+import { plantStore } from "../../../test/stores";
 
 function file(path: string, value: unknown) {
   return success({ path, content: typeof value === "string" ? value : JSON.stringify(value), etag: "e" });
@@ -22,7 +23,7 @@ function bridge() {
 
 const workspace = {
   ...sampleWorkspace,
-  compositions: [{ path: "compositions/mini.composition.json", id: "mini", title: "Mini" }],
+  compositions: [{ path: "compositions/mini.composition.json", id: "mini", title: "Mini", instances: 0 }],
 };
 
 describe("plant store", () => {
@@ -32,7 +33,7 @@ describe("plant store", () => {
       "component.show",
       success({ entry: { class: "static/heat_exchanger/chiller", tags: ["hvac"] }, document: chillerPorts }),
     );
-    const store = new PlantStore(fake.plant);
+    const store = plantStore(fake.plant);
     await store.load("domains/mini.domain.json", workspace);
     const state = store.snapshot();
     if (state.phase !== "ready") throw new Error(state.phase);
@@ -49,7 +50,7 @@ describe("plant store", () => {
 
   it("opens a domain without a composition, and tolerates a library that refuses", async () => {
     const fake = bridge();
-    const store = new PlantStore(fake.plant);
+    const store = plantStore(fake.plant);
     await store.load("domains/mini.domain.json", sampleWorkspace);
     const state = store.snapshot();
     if (state.phase !== "ready") throw new Error(state.phase);
@@ -58,7 +59,7 @@ describe("plant store", () => {
   });
 
   it("selects and clears an instance only when a plant is open", async () => {
-    const store = new PlantStore(bridge().plant);
+    const store = plantStore(bridge().plant);
     store.select("CH-1");
     expect(store.snapshot()).toEqual({ phase: "idle" });
     await store.load("domains/mini.domain.json", sampleWorkspace);
@@ -70,20 +71,20 @@ describe("plant store", () => {
 
   it("reports a missing file and survives a file that is not JSON", async () => {
     const fake = bridge();
-    const store = new PlantStore(fake.plant);
+    const store = plantStore(fake.plant);
     await store.load("domains/none.domain.json", sampleWorkspace);
     expect(store.snapshot()).toMatchObject({
       phase: "failed",
       failure: { kind: "missing", diagnostic: { displayCode: "not_found" } },
     });
     fake.files.set("domains/bad.domain.json", file("domains/bad.domain.json", "{not json"));
-    fake.files.set("compositions/mini.composition.json", failed(failure("too_large", 413)));
+    fake.files.set("compositions/mini.composition.json", failed(cannedFailure("too_large", 413)));
     await store.load("domains/bad.domain.json", workspace);
     expect(store.snapshot()).toMatchObject({ phase: "ready", plant: { instances: [] } });
   });
 
   it("keeps the open plant and its selection when the workspace listing changes", async () => {
-    const store = new PlantStore(bridge().plant);
+    const store = plantStore(bridge().plant);
     await store.load("domains/mini.domain.json", sampleWorkspace);
     store.select("CH-1");
     const open = store.snapshot();
@@ -93,11 +94,11 @@ describe("plant store", () => {
 
   it("reloads the open plant when its file changed on disk and keeps a selection that still exists", async () => {
     const fake = bridge();
-    const store = new PlantStore(fake.plant);
+    const store = plantStore(fake.plant);
     await store.load("domains/mini.domain.json", sampleWorkspace);
     store.select("CT-1");
     const grown = { ...domain, instances: [...domain.instances, { kind: "meter", names: ["MB-2"], area: "Power" }] };
-    fake.files.set("domains/mini.domain.json", success({ path: "x", content: JSON.stringify(grown), etag: "e2" }));
+    fake.addFile("domains/mini.domain.json", grown, "e2");
     await store.load("domains/mini.domain.json", sampleWorkspace);
     expect(store.snapshot()).toMatchObject({ phase: "ready", etag: "e2", selected: "CT-1" });
     const state = store.snapshot();
@@ -107,7 +108,7 @@ describe("plant store", () => {
 
   it("reloads the open plant when its composition appears in the listing", async () => {
     const fake = bridge();
-    const store = new PlantStore(fake.plant);
+    const store = plantStore(fake.plant);
     await store.load("domains/mini.domain.json", sampleWorkspace);
     expect(store.snapshot()).toMatchObject({ composition: null });
     await store.load("domains/mini.domain.json", workspace);
@@ -125,7 +126,7 @@ describe("plant store", () => {
       reads.set(path, held);
       return held.promise;
     };
-    const store = new PlantStore(fake.plant);
+    const store = plantStore(fake.plant);
     const first = store.load("domains/mini.domain.json", workspace);
     const second = store.load("domains/other.domain.json", workspace);
     await second;
@@ -145,7 +146,7 @@ describe("plant store", () => {
       fake.reads.push(path);
       return gate.promise;
     };
-    const store = new PlantStore(fake.plant);
+    const store = plantStore(fake.plant);
     const first = store.load("domains/mini.domain.json", workspace);
     const second = store.load("domains/mini.domain.json", workspace);
     gate.resolve(file("domains/mini.domain.json", domain));
@@ -154,6 +155,24 @@ describe("plant store", () => {
     await store.show("memory:mini", domainDocument(domain));
     expect(fake.reads.filter((path) => path === "memory:mini")).toHaveLength(0);
     expect(store.snapshot()).toMatchObject({ phase: "ready", path: "memory:mini", composition: null });
+  });
+
+  it("pairs the composition of the workspace asked for last when the same plant is asked for twice", async () => {
+    const fake = bridge();
+    const gate = deferred<Canned<FileContent>>();
+    const read = fake.readFile.bind(fake);
+    let held = true;
+    fake.readFile = (path: string) => {
+      if (path !== "domains/mini.domain.json" || !held) return read(path);
+      held = false;
+      return gate.promise;
+    };
+    const store = plantStore(fake.plant);
+    const first = store.load("domains/mini.domain.json", sampleWorkspace);
+    const second = store.load("domains/mini.domain.json", workspace);
+    gate.resolve(file("domains/mini.domain.json", domain));
+    await Promise.all([first, second]);
+    expect(store.snapshot()).toMatchObject({ phase: "ready", composition: "compositions/mini.composition.json" });
   });
 
   it("ignores an earlier visit's answer when the same plant is asked for again", async () => {
@@ -167,7 +186,7 @@ describe("plant store", () => {
       held.push(gate);
       return gate.promise;
     };
-    const store = new PlantStore(fake.plant);
+    const store = plantStore(fake.plant);
     const first = store.load("domains/mini.domain.json", workspace);
     await store.load("domains/other.domain.json", workspace);
     const third = store.load("domains/mini.domain.json", workspace);
@@ -191,7 +210,7 @@ describe("plant store", () => {
       held.push(gate);
       return gate.promise;
     };
-    const store = new PlantStore(fake.plant);
+    const store = plantStore(fake.plant);
     const first = store.load("domains/mini.domain.json", workspace);
     store.close();
     const reopened = store.load("domains/mini.domain.json", workspace);

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { chillerPorts, composition, domain } from "../../../test/plantFixture";
-import { compositionPlant } from "../../../test/modelBridge";
+import { compositionPlant } from "../../../test/modelFixtures";
 import { parsePlant } from "./plant";
 import type { ComponentSpec } from "./ports";
 import { familyOf, noTargetReason, pinsOf, portType, portsMatching, shapeOf } from "./ports";

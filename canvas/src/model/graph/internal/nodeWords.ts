@@ -1,10 +1,6 @@
-import type { ViewNode } from "./plantView";
-import type { NodeStatus } from "./readout";
+import { counted } from "../../shared/words";
+import type { NodeStatus, ViewNode } from "./types";
 import { statusWords } from "./readout";
-
-function counted(n: number, noun: string): string {
-  return `${String(n)} ${noun}${n === 1 ? "" : "s"}`;
-}
 
 function stateOf(status: NodeStatus, count: number, fault: string): string {
   if (status === null) return "";

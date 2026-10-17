@@ -1,7 +1,7 @@
 import { act, fireEvent, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { failure as failed } from "../../../test/outcome";
-import { failure } from "../../../test/fakeBridge";
+import { cannedFailure } from "../../../test/fakeBridge";
 import { current, editing } from "../../../test/editorHarness";
 
 describe("plant editor status", () => {
@@ -16,7 +16,7 @@ describe("plant editor status", () => {
     fake.actions.set(
       "domain.compose",
       failed({
-        ...failure("composition_invalid", 422, "invalid"),
+        ...cannedFailure("composition_invalid", 422, "invalid"),
         issues: [{ pointer: "/connections/0/to", message: 'instance "CT-1" has no port "heat_in"' }],
       }),
     );
@@ -36,7 +36,7 @@ describe("plant editor status", () => {
     fake.actions.set(
       "domain.compose",
       failed({
-        ...failure("composition_invalid", 422, "invalid"),
+        ...cannedFailure("composition_invalid", 422, "invalid"),
         issues: [{ pointer: "/connections/0/to", message: 'instance "CT-1" has no port "heat_in"' }],
       }),
     );
@@ -57,7 +57,7 @@ describe("plant editor status", () => {
     fake.actions.set(
       "domain.compose",
       failed({
-        ...failure("composition_invalid", 422, "invalid"),
+        ...cannedFailure("composition_invalid", 422, "invalid"),
         issues: [
           {
             pointer: "/profiles/0/fault_weights/gone__fault",

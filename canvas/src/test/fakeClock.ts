@@ -1,4 +1,3 @@
-/** Implements the Clock and Scheduler signatures of the accepted architecture (A5) with a controlled queue. */
 import type { Clock, Scheduler } from "../app/ports";
 
 export interface FakeClock {

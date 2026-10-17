@@ -17,12 +17,13 @@ const pending = {
   plant: "mini",
   durationS: 0,
   recordedAt: "2026-10-16T00:00:00Z",
+  faults: 0,
 };
 
 function setup() {
   const bridge = new FakeBridge();
   bridge.actions.set("run.verify", success({ matches: true }));
-  bridge.files.set(path, success({ path, content: JSON.stringify({ domain_spec: recorded }), etag: "recorded" }));
+  bridge.addFile(path, { domain_spec: recorded }, "recorded");
   const timers = fakeClock();
   const store = new ReviewStore(bridge.review, timers, timers);
   return { bridge, store };

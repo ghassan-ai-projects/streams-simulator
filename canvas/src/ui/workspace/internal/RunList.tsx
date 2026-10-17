@@ -1,4 +1,4 @@
-import { shared, cx } from "../../primitives";
+import { shared } from "../../primitives";
 import { Eye, Lock, Radio, TriangleAlert } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { NavigationStore } from "../../../app/shell";
@@ -84,7 +84,7 @@ function Row({
       <span className={rowStyles.actions}>
         <button
           type="button"
-          className={cx(home.open, shared.button)}
+          className={shared.button}
           aria-label={`Review ${row.run.worldId}`}
           title="Review checks recording integrity using the run files."
           onClick={() => {

@@ -38,7 +38,6 @@ const categories = [
   ["material-handling", "prod"],
 ] as const;
 
-/** The bridge answers `component.show` with a library entry and the component document; the double reads both. */
 export function specOf(value: unknown): ComponentSpec | null {
   if (!isRecord(value)) return null;
   const document = documentOf(value);
@@ -150,7 +149,6 @@ export function domainDocument(value: object): DomainDocument {
   return value as DomainDocument;
 }
 
-/** run.json carries the domain the run used; the double reads it from the file surface, as the bridge does. */
 export function runDomainOf(content: string): DomainDocument | null {
   try {
     const artifact: unknown = JSON.parse(content);

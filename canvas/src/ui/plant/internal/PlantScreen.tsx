@@ -25,8 +25,8 @@ interface PlantScreenProps {
   readonly scheduler: Scheduler;
   readonly domain: string;
   readonly hall: string | null;
-  readonly startLaunching?: boolean;
-  readonly onShowDetails?: () => void;
+  readonly startLaunching: boolean;
+  readonly onShowDetails: () => void;
 }
 
 function PlantSide({
@@ -113,8 +113,6 @@ function RightPanel(props: RightProps) {
   );
 }
 
-const noop = () => undefined;
-
 function useConsume(navigation: NavigationStore, domain: string, hall: string | null) {
   return useCallback(() => {
     navigation.replace({ screen: "plant", domain, hall });
@@ -185,17 +183,7 @@ function NotReady({
 }
 
 export function PlantScreen(props: PlantScreenProps) {
-  const {
-    plants,
-    workspace,
-    navigation,
-    launch,
-    scheduler,
-    domain,
-    hall,
-    startLaunching = false,
-    onShowDetails = noop,
-  } = props;
+  const { plants, workspace, navigation, launch, scheduler, domain, hall, startLaunching, onShowDetails } = props;
   const run = useLaunching(startLaunching, useShowRun(launch, onShowDetails), useConsume(navigation, domain, hall));
   const state = useStore(plants);
   const listing = usePlantLoad(plants, domain, workspace);

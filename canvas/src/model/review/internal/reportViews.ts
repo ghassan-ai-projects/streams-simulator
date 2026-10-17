@@ -1,5 +1,6 @@
 import type { LaunchPlan } from "../../launch";
 import { durationOf } from "../../shared/duration";
+import { counted, seedWords } from "../../shared/words";
 import type { KpiRow, Report, VerifyState } from "./report";
 import { badgeOf, replayLine, wallClock } from "./report";
 
@@ -19,7 +20,7 @@ export function kpiWords(state: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-export interface KpiGroup {
+interface KpiGroup {
   readonly entity: string;
   readonly rows: readonly KpiRow[];
 }
@@ -34,11 +35,15 @@ export function kpiGroups(rows: readonly KpiRow[]): readonly KpiGroup[] {
   return groups;
 }
 
+function spanSeconds(report: Report): number {
+  return report.endNs > report.startNs ? Math.round((report.endNs - report.startNs) / 1e9) : 0;
+}
+
 export function runIdentity(report: Report): string {
-  const seconds = report.endNs > report.startNs ? Math.round((report.endNs - report.startNs) / 1e9) : 0;
+  const seconds = spanSeconds(report);
   return [
     `${report.domainId} ${report.domainVersion}`.trim(),
-    report.seed === null ? "" : `seed ${String(report.seed)}`,
+    seedWords(report.seed),
     report.adapterId,
     report.simVersion === "" ? "" : `sim ${report.simVersion}`,
     seconds === 0 ? "" : `${durationOf(seconds)} of plant time from ${wallClock(report.startNs)} UTC`,
@@ -48,19 +53,16 @@ export function runIdentity(report: Report): string {
 }
 
 export function runFacts(report: Report): string {
-  const seconds = report.endNs > report.startNs ? Math.round((report.endNs - report.startNs) / 1e9) : 0;
-  return [report.seed === null ? "" : `seed ${String(report.seed)}`, durationOf(seconds)]
-    .filter((part) => part !== "")
-    .join(" · ");
+  return [seedWords(report.seed), durationOf(spanSeconds(report))].filter((part) => part !== "").join(" · ");
 }
 
-export interface Rerun {
+interface Rerun {
   readonly plan: LaunchPlan;
   readonly left: readonly string[];
 }
 
 function count(n: number, one: string, many: string): string {
-  return n === 0 ? "" : `${String(n)} ${n === 1 ? one : many}`;
+  return n === 0 ? "" : counted(n, one, many);
 }
 
 function clearedFaults(report: Report): number {

@@ -3,7 +3,7 @@ import type { LaunchState, LaunchStore } from "../../../app/launch";
 import type { NavigationStore } from "../../../app/shell";
 import { rateWords } from "../../../model/launch";
 import { clockOf } from "../../../model/shared/duration";
-import { useStore } from "../../primitives";
+import { shared, useStore } from "../../primitives";
 import styles from "./TopBar.module.css";
 
 interface IndicatorProps {
@@ -62,7 +62,7 @@ function Pill({ launch, navigation, state }: IndicatorProps & { readonly state: 
   return (
     <div className={styles[`run-${state.phase}`]}>
       <button type="button" className={styles.runOpen} onClick={open}>
-        <Icon size={14} aria-hidden="true" className={state.phase === "running" ? styles.spin : undefined} />
+        <Icon size={14} aria-hidden="true" className={state.phase === "running" ? shared.spin : undefined} />
         {words(state)}
       </button>
       {state.phase !== "running" && (

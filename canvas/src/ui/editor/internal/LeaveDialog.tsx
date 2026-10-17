@@ -12,6 +12,8 @@ interface Props {
 
 function LeaveButtons({ editor, navigation }: Props) {
   const stay = useFocusOnMount<HTMLButtonElement>();
+  const state = useStore(editor);
+  const saving = state.phase === "ready" && state.saving;
   const saveAndLeave = async () => {
     await editor.save();
     if (editor.unsavedChanges()) navigation.stay();
@@ -33,7 +35,7 @@ function LeaveButtons({ editor, navigation }: Props) {
       >
         Stay
       </button>
-      <button type="button" className={styles.danger} onClick={discardAndLeave}>
+      <button type="button" className={styles.danger} disabled={saving} onClick={discardAndLeave}>
         Discard and leave
       </button>
       <button
@@ -55,7 +57,7 @@ function LeaveDialog({ title, editor, navigation }: Props & { readonly title: st
       <dialog
         open
         className={leave.dialog}
-        aria-modal="true"
+        aria-modal="false"
         aria-labelledby="leave-title"
         aria-describedby="leave-text"
         onKeyDown={(event) => {

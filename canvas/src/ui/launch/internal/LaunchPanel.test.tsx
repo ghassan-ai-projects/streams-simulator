@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { failure as failed } from "../../../test/outcome";
 import { parsePlant } from "../../../model/plant";
 import type { FakeBridge } from "../../../test/fakeBridge";
-import { failure } from "../../../test/fakeBridge";
+import { cannedFailure } from "../../../test/fakeBridge";
 import { HeldBridge } from "../../../test/heldBridge";
 import { launchBridge, launchHarness } from "../../../test/launchFixture";
 import { domain } from "../../../test/plantFixture";
@@ -13,18 +13,18 @@ import { LaunchPanel } from "./LaunchPanel";
 const path = "domains/mini.domain.json";
 
 function renderPanel(fake: FakeBridge, onFinished = vi.fn<(worldId: string) => void>()) {
-  const { launch, scheduler, timers } = launchHarness(fake);
+  const { launch, timers } = launchHarness(fake);
   const view = render(
     <LaunchPanel
       launch={launch}
-      scheduler={scheduler}
+      scheduler={timers}
       plant={parsePlant(domain)}
       path={path}
       onClose={vi.fn()}
       onFinished={onFinished}
     />,
   );
-  return { launch, scheduler, timers, view, onFinished };
+  return { launch, timers, view, onFinished };
 }
 
 function change(label: string, value: string) {
@@ -129,7 +129,7 @@ describe("launch panel", () => {
 
   it("shows the binary's refusal and returns to the plan", async () => {
     const fake = launchBridge();
-    fake.actions.set("world.create", failed(failure("domain_invalid", 422, "bad domain")));
+    fake.actions.set("world.create", failed(cannedFailure("domain_invalid", 422, "bad domain")));
     renderPanel(fake);
     change("Seed", "4");
     fireEvent.click(screen.getByRole("radio", { name: /As fast as possible/ }));
@@ -167,7 +167,7 @@ describe("launch panel", () => {
 
   it("says which partial run was kept when the binary refuses a step", async () => {
     const fake = launchBridge();
-    fake.actions.set("clock.advance", failed(failure("world_gone", 404, "the world is gone")));
+    fake.actions.set("clock.advance", failed(cannedFailure("world_gone", 404, "the world is gone")));
     renderPanel(fake);
     fireEvent.click(screen.getByRole("radio", { name: /As fast as possible/ }));
     fireEvent.click(screen.getByRole("button", { name: "Start the run" }));
@@ -179,12 +179,12 @@ describe("launch panel", () => {
 
 describe("launch panel picking", () => {
   it("takes a fault's instance from the graph and rolls a new seed", () => {
-    const { launch, scheduler } = launchHarness(launchBridge());
+    const { launch, timers } = launchHarness(launchBridge());
     const plant = parsePlant(domain);
     const panel = (selected: string | null) => (
       <LaunchPanel
         launch={launch}
-        scheduler={scheduler}
+        scheduler={timers}
         plant={plant}
         path={path}
         selected={selected}
@@ -207,7 +207,7 @@ describe("launch panel picking", () => {
 
 describe("launch panel lifetime", () => {
   it("does not jump to a run that finished while nobody watched it", async () => {
-    const { launch, scheduler } = launchHarness(launchBridge());
+    const { launch, timers } = launchHarness(launchBridge());
     await launch.start(
       { domain: "mini", title: "Mini plant", path },
       { seed: 1, durationS: 60, explore: true, faults: [], calls: [] },
@@ -217,7 +217,7 @@ describe("launch panel lifetime", () => {
     render(
       <LaunchPanel
         launch={launch}
-        scheduler={scheduler}
+        scheduler={timers}
         plant={parsePlant(domain)}
         path={path}
         onClose={vi.fn()}
@@ -229,7 +229,7 @@ describe("launch panel lifetime", () => {
   });
 
   it("starts from a plan proposed for this plant, such as Run again", () => {
-    const { launch, scheduler } = launchHarness(launchBridge());
+    const { launch, timers } = launchHarness(launchBridge());
     launch.propose("mini", {
       seed: 5,
       durationS: 7200,
@@ -240,7 +240,7 @@ describe("launch panel lifetime", () => {
     const view = render(
       <LaunchPanel
         launch={launch}
-        scheduler={scheduler}
+        scheduler={timers}
         plant={parsePlant(domain)}
         path={path}
         onClose={vi.fn()}
@@ -260,7 +260,7 @@ describe("launch panel lifetime", () => {
   });
 
   it("keeps a run's seconds, names the run it was prefilled from, and says what was not copied", () => {
-    const { launch, scheduler } = launchHarness(launchBridge());
+    const { launch, timers } = launchHarness(launchBridge());
     const faults = [{ entity: "CH-1", fault: "chiller__fouling", atS: 620 }];
     launch.propose(
       "mini",
@@ -271,7 +271,7 @@ describe("launch panel lifetime", () => {
     render(
       <LaunchPanel
         launch={launch}
-        scheduler={scheduler}
+        scheduler={timers}
         plant={parsePlant(domain)}
         path={path}
         onClose={vi.fn()}

@@ -1,8 +1,7 @@
-import type { Point } from "./types";
-export type { Point } from "./types";
-import type { Rect } from "./viewport";
+import type { Point, Rect } from "./types";
 import type { Grid } from "./wireGrid";
 import { buildGrid, lanes, nearestIndex } from "./wireGrid";
+import type { Occupancy, Turns } from "./wireSearch";
 import { emptyOccupancy, findPath, occupy } from "./wireSearch";
 
 export type Side = "right" | "left" | "down" | "up";
@@ -17,7 +16,7 @@ export interface WireLink {
   readonly corridor?: Rect;
 }
 
-export interface WireScene {
+interface WireScene {
   readonly links: readonly WireLink[];
   readonly nodes: readonly Rect[];
   readonly titles: readonly Rect[];
@@ -132,12 +131,12 @@ function weight(link: WireLink): number {
 
 function pathOf(
   grid: Grid,
-  occupancy: ReturnType<typeof emptyOccupancy>,
+  occupancy: Occupancy,
   ends: { readonly start: number; readonly goal: number },
-  turned: { readonly start: boolean; readonly goal: boolean },
-  corridor: Rect | undefined,
+  turned: Turns,
+  corridor: Rect | null,
 ): number[] | null {
-  const within = corridor === undefined ? null : findPath(grid, occupancy, ends, turned, corridor);
+  const within = corridor === null ? null : findPath(grid, occupancy, ends, turned, corridor);
   return within ?? findPath(grid, occupancy, ends, turned);
 }
 
@@ -149,7 +148,7 @@ function routeOn(scene: WireScene, titleClearance: number | null, ordered: reado
     const { start, goal } = stubs(link);
     const ends = { start: vertexOf(grid, start), goal: vertexOf(grid, goal) };
     const turned = { start: !horizontal(link.leaves ?? "right"), goal: !horizontal(link.enters ?? "left") };
-    const found = grid.nx * grid.ny <= gridLimit ? pathOf(grid, occupancy, ends, turned, link.corridor) : null;
+    const found = grid.nx * grid.ny <= gridLimit ? pathOf(grid, occupancy, ends, turned, link.corridor ?? null) : null;
     if (found !== null) occupy(grid, occupancy, found, wireClearance.lane * (scene.pixel ?? 1));
     routes.set(link.id, found === null ? [] : polyline(link, grid, found));
   }

@@ -8,7 +8,7 @@ import { PlantOverview } from "./PlantOverview";
 
 describe("plant overview", () => {
   it("counts a campus by hall and keeps its areas apart", () => {
-    render(<PlantOverview plant={parsePlant(campus(3))} runs={[]} />);
+    render(<PlantOverview plant={parsePlant(campus(3))} runs={[]} onReview={vi.fn()} />);
     expect(screen.getByText("7 instances in 3 halls and the site · 9 links")).toBeInTheDocument();
     const halls = screen.getByRole("region", { name: "Halls" });
     expect(
@@ -20,7 +20,7 @@ describe("plant overview", () => {
   });
 
   it("counts a plant without halls by area", () => {
-    render(<PlantOverview plant={parsePlant(domain)} runs={[]} />);
+    render(<PlantOverview plant={parsePlant(domain)} runs={[]} onReview={vi.fn()} />);
     expect(screen.queryByRole("region", { name: "Halls" })).toBeNull();
     const areas = screen.getByRole("region", { name: "Areas" });
     expect(
@@ -36,7 +36,7 @@ describe("plant overview", () => {
       site: { name: "Site", areas: [{ name: "Site" }] },
       instances: [{ kind: "pump", names: ["P-1"], area: "Site" }],
     });
-    render(<PlantOverview plant={single} runs={[]} />);
+    render(<PlantOverview plant={single} runs={[]} onReview={vi.fn()} />);
     expect(screen.getByText("1 instance in 1 area · 0 links")).toBeInTheDocument();
   });
 
@@ -92,7 +92,7 @@ describe("plant overview", () => {
       },
     ];
     for (const { plant, declared } of shapes) {
-      const overview = render(<PlantOverview plant={parsePlant(plant)} runs={[]} />);
+      const overview = render(<PlantOverview plant={parsePlant(plant)} runs={[]} onReview={vi.fn()} />);
       const rail = render(<Outline plant={parsePlant(plant)} hall={null} selected={null} onSelect={vi.fn()} />);
       const areas = within(overview.getByRole("region", { name: "Areas" }))
         .getAllByRole("listitem")
@@ -120,13 +120,17 @@ describe("plant overview", () => {
         plant: "campus",
         durationS: 60,
         recordedAt: "2026-10-14T10:00:00Z",
+        faults: 0,
       },
     }));
-    render(<PlantOverview plant={parsePlant(domain)} runs={runs} />);
+    const onReview = vi.fn();
+    render(<PlantOverview plant={parsePlant(domain)} runs={runs} onReview={onReview} />);
     const recent = screen.getByRole("region", { name: "Recent runs" });
     expect(within(recent).getAllByRole("listitem")).toHaveLength(5);
     expect(within(recent).getAllByRole("listitem")[0]?.textContent).toMatch(/14 Oct 2026, \d\d:00/);
     fireEvent.click(within(recent).getByRole("button", { name: "Show all 8 runs" }));
     expect(within(recent).getAllByRole("listitem")).toHaveLength(8);
+    fireEvent.click(within(recent).getByRole("button", { name: "Review w-3" }));
+    expect(onReview).toHaveBeenCalledWith("w-3");
   });
 });

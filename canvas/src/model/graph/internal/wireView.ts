@@ -1,18 +1,18 @@
-import type { PlantView, ViewNode } from "./plantView";
+import type { PlantView, Point, Rect, ViewEdge, ViewNode } from "./types";
 import { headerHeight, nodeSize, noteHeight } from "./plantView";
 import { titleAbove, titleBandHeight, titleScale } from "./frameTitle";
-import type { Rect, Tier } from "./viewport";
+import type { Tier } from "./viewport";
 import type { End } from "./wireEnds";
 import { runsAcross, spreadEnds } from "./wireEnds";
-import type { Point, WireLink } from "./wireRoute";
+import type { WireLink } from "./wireRoute";
 import { routeWires, wireClearance } from "./wireRoute";
 
-export type WireMode = "pins" | "rows" | "centre";
+type WireMode = "pins" | "rows" | "centre";
 
 const titleText = { height: 16, inside: 6 } as const;
 const firstPinRow = 5;
 
-export function wireModeOf(tier: Tier, detail: "pins" | "rows"): WireMode {
+function wireModeOf(tier: Tier, detail: "pins" | "rows"): WireMode {
   if (tier === "overview" || tier === "map") return "centre";
   return detail;
 }
@@ -40,7 +40,7 @@ function endY(view: PlantView, id: string, handle: string | null, role: "from" |
   return rowCentre(node, box, row, mode);
 }
 
-function endOf(view: PlantView, edge: PlantView["edges"][number], role: "from" | "to", mode: WireMode): End {
+function endOf(view: PlantView, edge: ViewEdge, role: "from" | "to", mode: WireMode): End {
   const id = role === "from" ? edge.from : edge.to;
   const handle = role === "from" ? edge.fromHandle : edge.toHandle;
   const box = view.layout.nodes.get(id) ?? noBox;
@@ -50,7 +50,7 @@ function endOf(view: PlantView, edge: PlantView["edges"][number], role: "from" |
   return { id: edge.id, role, point, box, side: role === "from" ? "right" : "left", slot, other: point };
 }
 
-function pairOf(view: PlantView, edge: PlantView["edges"][number], mode: WireMode): readonly [End, End] {
+function pairOf(view: PlantView, edge: ViewEdge, mode: WireMode): readonly [End, End] {
   const from = endOf(view, edge, "from", mode);
   const to = endOf(view, edge, "to", mode);
   return [
@@ -59,22 +59,18 @@ function pairOf(view: PlantView, edge: PlantView["edges"][number], mode: WireMod
   ];
 }
 
-function sideOf(end: End): "vertical" | "horizontal" {
-  return runsAcross(end) ? "vertical" : "horizontal";
-}
-
 function stubOf(from: End, to: End): number | undefined {
-  if (sideOf(from) !== "vertical") return undefined;
+  if (!runsAcross(from)) return undefined;
   const gap = Math.abs(to.point.y - from.point.y);
   return gap < 2 * wireClearance.stub ? Math.max(1, gap / 2) : undefined;
 }
 
-export const corridorGutter = 48;
+const corridorGutter = 48;
 
-function corridorOf(view: PlantView, edge: PlantView["edges"][number]): Rect | undefined {
+function corridorOf(view: PlantView, edge: ViewEdge): Rect | null {
   const from = view.layout.nodes.get(edge.from);
   const to = view.layout.nodes.get(edge.to);
-  if (from === undefined || to === undefined) return undefined;
+  if (from === undefined || to === undefined) return null;
   const x = Math.min(from.x, to.x) - corridorGutter;
   const y = Math.min(from.y, to.y) - corridorGutter;
   const right = Math.max(from.x + from.width, to.x + to.width) + corridorGutter;
@@ -82,12 +78,13 @@ function corridorOf(view: PlantView, edge: PlantView["edges"][number]): Rect | u
   return { x, y, width: right - x, height: bottom - y };
 }
 
-function linksOf(view: PlantView, mode: WireMode, pixel: number): WireLink[] {
-  const pairs = view.edges.map((edge) => pairOf(view, edge, mode));
-  const placed = spreadEnds(pairs.flat(), pixel);
-  return view.edges.map((edge, index) => {
-    const [from, to] = pairs[index] ?? [];
-    if (from === undefined || to === undefined) return { id: edge.id, from: { x: 0, y: 0 }, to: { x: 0, y: 0 } };
+function wireLinks(view: PlantView, mode: WireMode, pixel: number): WireLink[] {
+  const routed = view.edges.map((edge) => ({ edge, pair: pairOf(view, edge, mode) }));
+  const placed = spreadEnds(
+    routed.flatMap(({ pair }) => pair),
+    pixel,
+  );
+  return routed.map(({ edge, pair: [from, to] }) => {
     const stub = stubOf(from, to);
     const corridor = corridorOf(view, edge);
     return {
@@ -96,7 +93,7 @@ function linksOf(view: PlantView, mode: WireMode, pixel: number): WireLink[] {
       to: placed.get(`${edge.id}:to`) ?? to.point,
       leaves: from.side,
       enters: to.side,
-      ...(corridor === undefined ? {} : { corridor }),
+      ...(corridor === null ? {} : { corridor }),
       ...(stub === undefined ? {} : { stub }),
     };
   });
@@ -115,10 +112,10 @@ export function routeView(
   view: PlantView,
   tier: Tier,
   detail: "pins" | "rows",
-  pixel = 1,
+  pixel: number,
 ): ReadonlyMap<string, readonly Point[]> {
   return routeWires({
-    links: linksOf(view, wireModeOf(tier, detail), pixel),
+    links: wireLinks(view, wireModeOf(tier, detail), pixel),
     nodes: [...view.layout.nodes.values()],
     titles: [...view.layout.groups.values()].map((frame) => titleBox(frame, tier, pixel)),
     titleClearances: [9 * pixel, 5 * pixel, 3 * pixel, 1.5 * pixel, 0],

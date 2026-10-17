@@ -87,10 +87,7 @@ summary.disclosure:hover {
   cursor: not-allowed;
 }
 
-.panels {
-  min-width: 0;
-}
-
+.panels,
 .hidesSide {
   min-width: 0;
 }
@@ -123,4 +120,20 @@ summary.disclosure:hover {
 
 .scrolls {
   background: var(--scroll-shadow-bg);
+}
+
+.spin {
+  animation: spin 1.2s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spin {
+    animation: none;
+  }
 }

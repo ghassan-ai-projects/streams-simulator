@@ -2,8 +2,7 @@ import { describe, expect, it } from "vitest";
 import { campus, chillerPorts, composition, domain, towerPorts } from "../../../test/plantFixture";
 import { parsePlant } from "../../plant";
 import { describeNode } from "./nodeWords";
-import { plainView } from "./plantView";
-import { reviewView } from "../../../test/modelBridge";
+import { reviewView } from "../../../test/modelFixtures";
 import {
   areaCounts,
   hallCount,
@@ -13,6 +12,7 @@ import {
   headerHeight,
   idExtra,
   nodeSize,
+  plainView,
   plantView,
 } from "./plantView";
 

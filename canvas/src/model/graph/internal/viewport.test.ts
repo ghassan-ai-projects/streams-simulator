@@ -1,18 +1,18 @@
 import { describe, expect, it } from "vitest";
-import type { Viewport } from "./viewport";
+import type { Rect, Viewport } from "./types";
 import {
   cutSide,
   steppedViewport,
   centreOf,
   followZoom,
-  inView,
   openingFloor,
   openingViewport,
-  overviewFloor,
   sameViewport,
   textFloorPx,
   tierOf,
 } from "./viewport";
+
+const overviewFloor = 0.25;
 
 describe("viewport", () => {
   const screen = { width: 800, height: 600 };
@@ -25,10 +25,11 @@ describe("viewport", () => {
   });
 
   it("knows whether a box is fully on screen at the current pan and zoom", () => {
-    expect(inView({ x: 10, y: 10, width: 100, height: 50 }, { x: 0, y: 0, zoom: 1 }, screen)).toBe(true);
-    expect(inView({ x: 10, y: 10, width: 100, height: 50 }, { x: -20, y: 0, zoom: 1 }, screen)).toBe(false);
-    expect(inView({ x: 700, y: 10, width: 200, height: 50 }, { x: 0, y: 0, zoom: 0.5 }, screen)).toBe(true);
-    expect(inView({ x: 10, y: 590, width: 10, height: 20 }, { x: 0, y: 0, zoom: 1 }, screen)).toBe(false);
+    const inView = (box: Rect, viewport: Viewport) => followZoom(box, viewport, screen, 9) === null;
+    expect(inView({ x: 10, y: 10, width: 100, height: 50 }, { x: 0, y: 0, zoom: 1 })).toBe(true);
+    expect(inView({ x: 10, y: 10, width: 100, height: 50 }, { x: -20, y: 0, zoom: 1 })).toBe(false);
+    expect(inView({ x: 700, y: 10, width: 200, height: 50 }, { x: 0, y: 0, zoom: 0.5 })).toBe(true);
+    expect(inView({ x: 10, y: 590, width: 10, height: 20 }, { x: 0, y: 0, zoom: 1 })).toBe(false);
   });
 
   it("picks the node tier for a zoom, so text never shrinks below its size", () => {

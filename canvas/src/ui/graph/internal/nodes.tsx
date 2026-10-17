@@ -16,9 +16,10 @@ import {
   tierOf,
 } from "../../../model/graph";
 import type { NodeStatus, PlanMark, ViewNode } from "../../../model/graph";
-import { familyNames, shapeOf } from "../../../model/graph";
-import type { Pin } from "../../../model/graph";
-import type { FrameTitleNodeType, HallNodeType, InstanceNodeType, NodeLive } from "./flow";
+import type { Pin } from "../../../model/plant";
+import { familyNames, shapeOf } from "../../../model/plant";
+import type { FrameTitleNodeType, HallNodeType, InstanceNodeType } from "./flow";
+import type { NodeLive } from "./types";
 import { cx } from "../../primitives";
 import { EffectorTag, IssueTag, StatusTag, tagWords } from "./Marks";
 import { Readout } from "./Readout";
@@ -34,7 +35,7 @@ export const tierClass: Record<ReturnType<typeof tierOf>, string> = {
   map: cx(styles.tierMap, pins.tierMap, frames.tierMap, readout.tierMap, marks.tierMap),
   overview: cx(styles.tierOverview, pins.tierOverview, frames.tierOverview, readout.tierOverview, marks.tierOverview),
   compact: cx(styles.tierCompact, pins.tierCompact, frames.tierCompact, readout.tierCompact, marks.tierCompact),
-  full: cx(styles.tierFull, pins.tierFull, frames.tierFull, readout.tierFull, marks.tierFull),
+  full: cx(styles.tierFull),
 };
 
 function pinLook(pin: Pin): { readonly family: string; readonly shape: string; readonly typeName: string } {
@@ -177,7 +178,7 @@ function InstanceHeader({
         <IdText label={view.label} zoom={zoom} words={words} />
       </span>
       {words !== null && (
-        <span className={styles.marks}>
+        <span>
           <StatusTag status={status} cause={planned?.fault ?? ""} brief={data.live !== null} />
           {data.live !== null && data.live.fault !== "" && (
             <span className="sr-only">{`Fault: ${data.live.fault}`}</span>

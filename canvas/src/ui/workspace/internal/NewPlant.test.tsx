@@ -1,15 +1,15 @@
 import { fireEvent, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { failure as failed, success } from "../../../test/outcome";
-import { FakeBridge, failure } from "../../../test/fakeBridge";
-import { navigation, show } from "../../../test/homeHarness";
+import { failure as failed } from "../../../test/outcome";
+import { FakeBridge, cannedFailure } from "../../../test/fakeBridge";
+import { navigation, show } from "../../../test/workspaceHarness";
 
 describe("new plant id", () => {
   it("replaces the derived id when typing in Id, and stops deriving it once typed", async () => {
     const bridge = new FakeBridge();
     const base = "compositions/factory-utilities.composition.json";
     const factory = { id: "factory-utilities", equipment: [{ use: "lib/chiller@1", names: ["CH-1"] }] };
-    bridge.files.set(base, success({ path: base, content: JSON.stringify(factory), etag: "b" }));
+    bridge.addFile(base, factory, "b");
     await show(bridge, navigation());
     fireEvent.click(screen.getByRole("button", { name: "New plant" }));
     const form = screen.getByRole("form", { name: "New plant" });
@@ -28,7 +28,7 @@ describe("new plant id", () => {
     bridge.actions.set(
       "component.new",
       failed({
-        ...failure("composition_invalid", 422, "invalid"),
+        ...cannedFailure("composition_invalid", 422, "invalid"),
         issues: [{ pointer: "/id", message: '"Bad Id!" is not a plant id: 3 to 64 lower-case letters' }],
       }),
     );

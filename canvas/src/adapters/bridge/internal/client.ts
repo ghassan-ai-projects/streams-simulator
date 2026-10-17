@@ -1,13 +1,8 @@
-import type {
-  BridgeAdapters,
-  DomainDocument,
-  Outcome,
-  PlantSource,
-  ReviewFailure,
-  RunFollower,
-} from "../../../app/ports";
+import type { BridgeAdapters, Outcome, PlantSource, ReviewFailure, RunFollower } from "../../../app/ports";
+import { isRecord, text } from "../../../model/shared/json";
 import type { Replay } from "../../../model/review";
-import { action, getFile, putFile, request, type Transport, type WireProblem } from "./http";
+import type { FailureMapper, Transport, WireProblem } from "./http";
+import { action, getFile, post, putFile, request } from "./http";
 import {
   acknowledgement,
   advanceResult,
@@ -57,10 +52,22 @@ export function bridgeAdapter(transport: Transport): BridgeAdapters {
   };
 }
 
+type ComposeInput = Parameters<BridgeAdapters["plant"]["compose"]>[0];
+
+function fileActions<F>(transport: Transport, failure: (step: "read" | "write" | "compose") => FailureMapper<F>) {
+  return {
+    readFile: (path: string) => getFile(transport, path, fileContent, failure("read")),
+    component: (ref: string) => action(transport, "component.show", { ref }, component, failure("read")),
+    writeFile: (path: string, content: string, etag: string) =>
+      putFile(transport, path, content, etag, written, failure("write")),
+    compose: ({ composition: from, output, etag }: ComposeInput) =>
+      action(transport, "domain.compose", { composition: from, out: output, etag }, composeSummary, failure("compose")),
+  };
+}
+
 function plantGateway(transport: Transport): BridgeAdapters["plant"] {
   return {
-    readFile: (path) => getFile(transport, path, fileContent, plantFailure("read")),
-    component: (ref) => action(transport, "component.show", { ref }, component, plantFailure("read")),
+    ...fileActions(transport, plantFailure),
     examples: () => action(transport, "component.examples", {}, examples, plantFailure("read")),
     generateComposition: (input) =>
       action(
@@ -70,33 +77,14 @@ function plantGateway(transport: Transport): BridgeAdapters["plant"] {
         composition,
         plantFailure("generate"),
       ),
-    writeFile: (path, content, etag) => putFile(transport, path, content, etag, written, plantFailure("write")),
-    compose: ({ composition: from, output, etag }) =>
-      action(
-        transport,
-        "domain.compose",
-        { composition: from, out: output, etag },
-        composeSummary,
-        plantFailure("compose"),
-      ),
   };
 }
 
 function editorGateway(transport: Transport): BridgeAdapters["editor"] {
   return {
-    readFile: (path) => getFile(transport, path, fileContent, editorFailure("read")),
+    ...fileActions(transport, editorFailure),
     library: () => action(transport, "component.list", {}, library, editorFailure("read")),
-    component: (ref) => action(transport, "component.show", { ref }, component, editorFailure("read")),
     presets: (ref) => action(transport, "component.show", { ref }, presets, editorFailure("read")),
-    writeFile: (path, content, etag) => putFile(transport, path, content, etag, written, editorFailure("write")),
-    compose: ({ composition: from, output, etag }) =>
-      action(
-        transport,
-        "domain.compose",
-        { composition: from, out: output, etag },
-        composeSummary,
-        editorFailure("compose"),
-      ),
   };
 }
 
@@ -138,7 +126,7 @@ function reviewGateway(transport: Transport): BridgeAdapters["review"] {
   return {
     report: (runId) => action(transport, "run.report", { run: runId }, report, reviewFailure),
     verify: (runId) => verify(transport, runId),
-    runDomain: (runId) => getRunDomain(transport, runId),
+    runDomain: (runId) => getFile(transport, `runs/${runId}/run.json`, runDomain, reviewFailure),
     follow: (runId, follower) => followRun(transport, runId, follower),
   };
 }
@@ -154,9 +142,8 @@ function generationArgs(
 }
 
 function worldCreated(value: unknown): { readonly worldId: string } | null {
-  if (typeof value !== "object" || value === null || !("world_id" in value)) return null;
-  const worldId = value.world_id;
-  return typeof worldId === "string" && worldId !== "" ? { worldId } : null;
+  const worldId = isRecord(value) ? text(value.world_id) : "";
+  return worldId === "" ? null : { worldId };
 }
 
 function toVoid<F>(outcome: Outcome<true, F>): Outcome<void, F> {
@@ -166,12 +153,6 @@ function toVoid<F>(outcome: Outcome<true, F>): Outcome<void, F> {
 function verify(transport: Transport, runId: string): Promise<Outcome<Replay, ReviewFailure>> {
   return action(transport, "run.verify", { run: runId }, replay, reviewFailure, (problem: WireProblem) =>
     replay(problem.result),
-  );
-}
-
-function getRunDomain(transport: Transport, runId: string): Promise<Outcome<DomainDocument, ReviewFailure>> {
-  return getFile(transport, `runs/${runId}/run.json`, runDomain, reviewFailure).then((outcome) =>
-    outcome.ok ? { ok: true, value: outcome.value as DomainDocument } : outcome,
   );
 }
 
@@ -209,8 +190,4 @@ function watchWorkspace(transport: Transport, onChange: () => void): () => void 
 
 async function destroy(transport: Transport, worldId: string): Promise<void> {
   await action(transport, "world.destroy", { world_id: worldId }, destroyed, launchFailure("end"));
-}
-
-function post(payload: unknown): RequestInit {
-  return { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) };
 }

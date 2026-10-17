@@ -5,16 +5,16 @@ export interface Deferred<T> {
 }
 
 export function deferred<T>(): Deferred<T> {
-  let settle: ((value: T) => void) | null = null;
+  let fulfil: ((value: T) => void) | null = null;
   let fail: ((reason: unknown) => void) | null = null;
   const promise = new Promise<T>((resolve, reject) => {
-    settle = resolve;
+    fulfil = resolve;
     fail = reject;
   });
   return {
     promise,
     resolve: (value) => {
-      settle?.(value);
+      fulfil?.(value);
     },
     reject: (reason) => {
       fail?.(reason);
@@ -22,7 +22,6 @@ export function deferred<T>(): Deferred<T> {
   };
 }
 
-/** Drains the microtask queue: a store's await chain plus the double's projection hop per gateway call. */
-export async function settle(): Promise<void> {
+export async function flushPromises(): Promise<void> {
   for (let tick = 0; tick < 5; tick += 1) await Promise.resolve();
 }

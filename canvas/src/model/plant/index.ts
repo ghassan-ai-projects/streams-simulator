@@ -6,7 +6,6 @@ export {
   effectorOf,
   faultsOf,
   instanceIdTaken,
-  linkLines,
   linksOf,
   parsePlant,
   stateUnit,

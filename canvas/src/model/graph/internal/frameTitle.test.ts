@@ -1,13 +1,7 @@
 import { describe, expect, it } from "vitest";
-import {
-  boundsWithTitles,
-  capScale,
-  countWords,
-  headerReserve,
-  splitName,
-  titleBandHeight,
-  titleScale,
-} from "./frameTitle";
+import { boundsWithTitles, countWords, headerReserve, splitName, titleBandHeight, titleScale } from "./frameTitle";
+
+const capScale = 30 / 13;
 
 describe("frame title", () => {
   it("keeps the last word of a name apart so a cut name still tells its sisters apart", () => {

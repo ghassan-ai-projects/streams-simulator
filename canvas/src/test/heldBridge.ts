@@ -3,7 +3,6 @@ import type { Canned } from "./fakeFailures";
 import { FakeBridge } from "./fakeBridge";
 import { launchBridge } from "./launchFixture";
 
-/** A bridge whose `clock.advance` stays unanswered until the test releases it. */
 export class HeldBridge extends FakeBridge {
   private held: (() => void) | null = null;
   private open = false;

@@ -1,10 +1,7 @@
+import type { AreaRef } from "../../shared/areaTree";
+import { list, record, text } from "../../shared/json";
 import type { EffectorSpec } from "./effectors";
 import { parseEffectors } from "./effectors";
-
-interface Area {
-  readonly name: string;
-  readonly parent: string | null;
-}
 
 export interface ChannelState {
   readonly value: number;
@@ -72,24 +69,10 @@ export interface Plant {
   readonly id: string;
   readonly title: string;
   readonly site: string;
-  readonly areas: readonly Area[];
+  readonly areas: readonly AreaRef[];
   readonly instances: readonly Instance[];
   readonly links: readonly Link[];
   readonly kinds: ReadonlyMap<string, Kind>;
-}
-
-type Json = Record<string, unknown>;
-
-function record(value: unknown): Json {
-  return typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Json) : {};
-}
-
-function text(value: unknown): string {
-  return typeof value === "string" ? value : "";
-}
-
-function list(value: unknown): readonly unknown[] {
-  return Array.isArray(value) ? value : [];
 }
 
 function names(value: unknown, key: string): readonly string[] {
@@ -133,7 +116,7 @@ function instances(value: unknown): readonly Instance[] {
   });
 }
 
-function areas(site: Json): readonly Area[] {
+function areas(site: Readonly<Record<string, unknown>>): readonly AreaRef[] {
   return list(site.areas).map((raw) => {
     const entry = record(raw);
     return { name: text(entry.name), parent: text(entry.parent) || null };
@@ -210,51 +193,23 @@ export function linksOf(
   };
 }
 
-const listedLinks = 12;
-
-const portWords = (port: string) => port.replaceAll("_", " ");
-
-function linkEnd(id: string, port: string | null): string {
-  return port === null ? id : `${id} ${portWords(port)}`;
-}
-
-function counted(n: number, noun: string): string {
-  return `${String(n)} ${noun}${n === 1 ? "" : "s"}`;
-}
-
-export function linkLines(links: readonly Link[], self: string, side: "in" | "out"): readonly string[] {
-  const own = (link: Link) => {
-    const port = side === "in" ? link.toPort : link.fromPort;
-    return port === null ? self : portWords(port);
-  };
-  const other = (link: Link) => (side === "in" ? linkEnd(link.from, link.fromPort) : linkEnd(link.to, link.toPort));
-  if (links.length <= listedLinks)
-    return links.map((link) => (side === "in" ? `${other(link)} → ${own(link)}` : `${own(link)} → ${other(link)}`));
-  const groups = new Map<string, Link[]>();
-  for (const link of links) groups.set(own(link), [...(groups.get(own(link)) ?? []), link]);
-  return [...groups].map(([port, group]) => {
-    const ends = new Set(group.map((link) => (side === "in" ? link.from : link.to))).size;
-    const count = `${counted(group.length, "link")}, ${counted(ends, "instance")}`;
-    return side === "in" ? `${count} → ${port}` : `${port} → ${count}`;
-  });
+function kindOfEntity(plant: Plant, entity: string): Kind | undefined {
+  const kind = plant.instances.find((instance) => instance.id === entity)?.kind;
+  return kind === undefined ? undefined : plant.kinds.get(kind);
 }
 
 export function stateUnit(plant: Plant, entity: string, state: string): string {
-  const kind = plant.instances.find((instance) => instance.id === entity)?.kind;
-  return (kind === undefined ? undefined : plant.kinds.get(kind)?.units.get(state)) ?? "";
+  return kindOfEntity(plant, entity)?.units.get(state) ?? "";
 }
 
 export function channelOf(plant: Plant, entity: string, channel: string): Channel | null {
-  const kindName = plant.instances.find((instance) => instance.id === entity)?.kind ?? "";
-  return plant.kinds.get(kindName)?.channels.find((entry) => entry.name === channel) ?? null;
+  return kindOfEntity(plant, entity)?.channels.find((entry) => entry.name === channel) ?? null;
 }
 
 export function faultsOf(plant: Plant, entity: string): readonly string[] | null {
-  const instance = plant.instances.find((item) => item.id === entity);
-  return instance === undefined ? null : (plant.kinds.get(instance.kind)?.faults ?? []);
+  return instanceIdTaken(plant, entity) ? (kindOfEntity(plant, entity)?.faults ?? []) : null;
 }
 
 export function effectorOf(plant: Plant, entity: string, effector: string): EffectorSpec | undefined {
-  const kindName = plant.instances.find((instance) => instance.id === entity)?.kind ?? "";
-  return plant.kinds.get(kindName)?.effectorSpecs.find((spec) => spec.name === effector);
+  return kindOfEntity(plant, entity)?.effectorSpecs.find((spec) => spec.name === effector);
 }

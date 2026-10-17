@@ -10,13 +10,13 @@ const path = "domains/mini.domain.json";
 describe("launch panel running", () => {
   it("keeps a run going when the panel closes and opens its review when it is back on that plant", async () => {
     const fake = new HeldBridge();
-    const { launch, scheduler, timers } = launchHarness(fake);
+    const { launch, timers } = launchHarness(fake);
     const onFinished = vi.fn<(worldId: string) => void>();
     const plant = parsePlant(domain);
     const panel = () => (
       <LaunchPanel
         launch={launch}
-        scheduler={scheduler}
+        scheduler={timers}
         plant={plant}
         path={path}
         onClose={vi.fn()}
@@ -51,14 +51,14 @@ describe("launch panel running", () => {
 
   it("tells another plant that a run is in progress and leaves a finished run of another plant alone", async () => {
     const fake = new HeldBridge();
-    const { launch, scheduler } = launchHarness(fake);
+    const { launch, timers } = launchHarness(fake);
     const elsewhere = { domain: "other", title: "Other plant", path: "domains/other.domain.json" };
     void launch.start(elsewhere, { seed: 1, durationS: 60, explore: true, faults: [], calls: [] });
     const onFinished = vi.fn<(worldId: string) => void>();
     render(
       <LaunchPanel
         launch={launch}
-        scheduler={scheduler}
+        scheduler={timers}
         plant={parsePlant(domain)}
         path={path}
         onClose={vi.fn()}

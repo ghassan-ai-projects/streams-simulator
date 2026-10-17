@@ -1,6 +1,6 @@
 import type { Report } from "./report";
 import { clockOf } from "../../shared/duration";
-import { humanise } from "../../shared/words";
+import { counted, humanise } from "../../shared/words";
 
 export function runClock(ns: number, startNs: number): string {
   return clockOf((ns - startNs) / 1e9);
@@ -182,6 +182,6 @@ export function firstEventLine(report: Report | null, startNs: number): string |
   if (first === undefined) return "No faults or effector calls in this run";
   const calls = report.effectorCalls.length;
   const only = calls === 1 && first.words.startsWith("effector call");
-  const tail = calls === 0 || only ? "" : ` · ${String(calls)} effector call${calls === 1 ? "" : "s"}`;
+  const tail = calls === 0 || only ? "" : ` · ${counted(calls, "effector call")}`;
   return `First: ${first.words} at ${runClock(first.atNs, startNs)}${tail}`;
 }

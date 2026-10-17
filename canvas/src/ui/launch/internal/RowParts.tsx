@@ -23,7 +23,7 @@ interface InstancePickProps {
 }
 
 export function InstancePick({ plant, entity, label, id, problem, fresh, onPick }: InstancePickProps) {
-  const first = useFocusOnMount<HTMLSelectElement>(fresh);
+  const first = useFocusOnMount<HTMLSelectElement>({ when: fresh });
   return (
     <select
       ref={first}

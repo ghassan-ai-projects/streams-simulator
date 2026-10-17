@@ -15,7 +15,7 @@ import { plainKey } from "../../primitives";
 import { FrameNode, FrameTitleNode, HallNode, InstanceNode, tierClass } from "./nodes";
 import { PanCue } from "./PanCue";
 import { WireEdge } from "./WireEdge";
-import { useFitted, useFollowSelection } from "./viewportFit";
+import { lowestZoom, useFitted, useFollowSelection } from "./viewportFit";
 import styles from "./graph.module.css";
 import "./vendor.module.css";
 
@@ -178,7 +178,7 @@ const fixedProps = {
   disableKeyboardA11y: true,
   zoomOnDoubleClick: false,
   onlyRenderVisibleElements: true,
-  minZoom: 0.05,
+  minZoom: lowestZoom,
   proOptions: { hideAttribution: true },
 } as const;
 
@@ -256,7 +256,7 @@ function Flow(props: FlowProps) {
 export function PlantGraph(props: PlantGraphProps) {
   const keys = useGraphKeys(props);
   const anchor = props.anchor ?? firstOf(props.view.layout.nodes);
-  useFitted(props.fitKey ?? props.viewKey, props.minFitZoom ?? openingFloor, anchor);
+  useFitted(props.fitKey ?? props.viewKey, openingFloor, anchor);
   useFollowSelection(keys.active ?? props.selected, props.focusZoom ?? 0);
   return (
     <div className={styles.graph} onPointerDown={keys.onPointerDown}>

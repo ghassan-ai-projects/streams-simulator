@@ -4,8 +4,9 @@ import { describe, expect, it, vi } from "vitest";
 import { PlantMaker } from "../../../app/plant";
 import { WorkspaceStore } from "../../../app/workspace";
 import { failure as failed, success } from "../../../test/outcome";
-import { FakeBridge, failure, sampleWorkspace } from "../../../test/fakeBridge";
-import { navigation, show } from "../../../test/homeHarness";
+import { FakeBridge, cannedFailure } from "../../../test/fakeBridge";
+import { sampleWorkspace } from "../../../test/workspaceFixture";
+import { navigation, show } from "../../../test/workspaceHarness";
 import { HomeScreen } from "./HomeScreen";
 
 describe("home screen", () => {
@@ -48,10 +49,14 @@ describe("home screen", () => {
       plant: i % 5 === 0 ? "other" : "factory-utilities",
       durationS: 60,
       recordedAt: `2026-10-14T10:${String(i).padStart(2, "0")}:00Z`,
+      faults: 0,
     }));
     bridge.workspaceOutcome = success({
       ...sampleWorkspace,
-      domains: [...sampleWorkspace.domains, { path: "domains/other.domain.json", id: "other", title: "Other" }],
+      domains: [
+        ...sampleWorkspace.domains,
+        { path: "domains/other.domain.json", id: "other", title: "Other", instances: 0 },
+      ],
       runs,
     });
     await show(bridge);
@@ -68,7 +73,7 @@ describe("home screen", () => {
   it("shows the badge of a run already checked in this session", async () => {
     const bridge = new FakeBridge();
     const store = new WorkspaceStore(bridge.workspace);
-    await store.reload();
+    await store.open();
     render(
       <HomeScreen
         workspace={store}
@@ -100,7 +105,7 @@ describe("home screen", () => {
       equipment: [{ use: "lib/chiller@1", names: ["CH-1"] }],
       connections: [],
     };
-    bridge.files.set(base, success({ path: base, content: JSON.stringify(factory), etag: "b" }));
+    bridge.addFile(base, factory, "b");
     await show(bridge, nav);
     fireEvent.click(screen.getByRole("button", { name: "Edit Factory utilities" }));
     expect(nav.location.hash).toBe("#/edit?composition=compositions%2Ffactory-utilities.composition.json");
@@ -130,7 +135,7 @@ describe("home screen", () => {
     const bridge = new FakeBridge();
     const base = "compositions/factory-utilities.composition.json";
     const factory = { id: "factory-utilities", equipment: [{ use: "lib/chiller@1", names: ["CH-1"] }] };
-    bridge.files.set(base, success({ path: base, content: JSON.stringify(factory), etag: "b" }));
+    bridge.addFile(base, factory, "b");
     await show(bridge, nav);
     fireEvent.click(screen.getByRole("button", { name: "New plant" }));
     const form = screen.getByRole("form", { name: "New plant" });
@@ -243,7 +248,7 @@ describe("home screen", () => {
     const bridge = new FakeBridge();
     bridge.workspaceOutcome = success({ name: "fresh", domains: [], compositions: [], scenarios: [], runs: [] });
     bridge.actions.set("component.examples", success({ examples: [{ id: "pilot", title: "Pilot" }] }));
-    bridge.actions.set("component.example", failed(failure("component_failed", 422, "gone")));
+    bridge.actions.set("component.example", failed(cannedFailure("component_failed", 422, "gone")));
     await show(bridge);
     fireEvent.click(await screen.findByRole("button", { name: "Try it: Pilot" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Pilot could not be set up: gone");
@@ -283,10 +288,11 @@ describe("home screen", () => {
         workspace={new WorkspaceStore(bridge.workspace)}
         navigation={navigation().store}
         maker={new PlantMaker(bridge.plant)}
+        badgeFor={() => null}
       />,
     );
     expect(screen.getByRole("status")).toHaveTextContent("Loading the workspace");
-    bridge.workspaceOutcome = failed(failure("bridge_failed", 500, "disk full"));
+    bridge.workspaceOutcome = failed(cannedFailure("bridge_failed", 500, "disk full"));
     await show(bridge);
     expect(screen.getByRole("alert")).toHaveTextContent("disk full (bridge_failed)");
   });

@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { navigation } from "../../../test/homeHarness";
+import { navigation } from "../../../test/workspaceHarness";
 import { MissingRun } from "./MissingRun";
 
 describe("a run that is not in the workspace", () => {

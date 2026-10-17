@@ -1,8 +1,7 @@
 import { fireEvent, render, within } from "@testing-library/react";
 import { ReactFlowProvider } from "@xyflow/react";
 import { useState } from "react";
-import { vi } from "vitest";
-import { EditorStore } from "../app/editor";
+import type { EditorStore } from "../app/editor";
 import { NavigationStore } from "../app/shell";
 import { success } from "../app/ports";
 import { compositionPlant, shortKind } from "../model/editor";
@@ -11,7 +10,9 @@ import { EditorPanel } from "../ui/editor";
 import { FocusRequest } from "../ui/editor";
 import { useStore } from "../ui/primitives";
 import { FakeBridge } from "./fakeBridge";
+import { memoryLocation } from "./location";
 import { chillerPorts, towerPorts } from "./plantFixture";
+import { editorStore } from "./stores";
 
 export const path = "compositions/lab.composition.json";
 const domainPath = "domains/lab.domain.json";
@@ -26,7 +27,6 @@ export const doc = {
   connections: [{ from: "CH-1.heat_out", to: "CT-1.heat_in" }],
 };
 
-/** The double answers `component.show` with a library entry and the component document, as the bridge does. */
 export class LabBridge extends FakeBridge {
   override action(name: string, args: Readonly<Record<string, unknown>>) {
     if (name !== "component.show") return super.action(name, args);
@@ -39,9 +39,9 @@ export class LabBridge extends FakeBridge {
 export function Harness({ editor }: { readonly editor: EditorStore }) {
   const state = useStore(editor);
   const [request] = useState(() => new FocusRequest());
+  const [navigation] = useState(() => new NavigationStore(memoryLocation()));
   if (state.phase !== "ready") return <p>{state.phase}</p>;
   const plant = compositionPlant(state.doc, shortKind);
-  const navigation = new NavigationStore({ read: () => "#/", write: vi.fn(), subscribe: () => () => undefined });
   return (
     <ReactFlowProvider>
       <EditorBar draft={state} editor={editor} navigation={navigation} request={request} />
@@ -52,11 +52,11 @@ export function Harness({ editor }: { readonly editor: EditorStore }) {
 
 export async function editing(composed = true) {
   const fake = new LabBridge();
-  fake.files.set(path, success({ path, content: JSON.stringify(doc), etag: "c1" }));
-  if (composed) fake.files.set(domainPath, success({ path: domainPath, content: "{}", etag: "d1" }));
+  fake.addFile(path, doc, "c1");
+  if (composed) fake.addFile(domainPath, "{}", "d1");
   fake.actions.set("component.list", success({ components: [{ id: "lib/pump", kind: "equipment", title: "Pump" }] }));
   fake.actions.set("domain.compose", success({ channels: 4, faults: 2, effectors: 0 }));
-  const editor = new EditorStore(fake.editor);
+  const editor = editorStore(fake.editor);
   await editor.open(path);
   const view = render(<Harness editor={editor} />);
   return { fake, editor, view };

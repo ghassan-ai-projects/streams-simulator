@@ -21,7 +21,7 @@ describe("panel toggles", () => {
     render(
       <>
         <h1 tabIndex={-1}>Plant</h1>
-        <PanelToggles panels={panels} />
+        <PanelToggles panels={panels} right="Details" />
         <button type="button">Inside the outline</button>
       </>,
     );

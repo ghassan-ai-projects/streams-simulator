@@ -45,7 +45,6 @@ function Row({
   return (
     <tr
       aria-current={current ? "true" : undefined}
-      className={current ? cells.current : undefined}
       ref={current ? (element) => element?.scrollIntoView({ block: "nearest" }) : undefined}
     >
       {row.map((cell, c) => {

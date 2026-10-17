@@ -1,3 +1,6 @@
+import { list, record } from "../../shared/json";
+import { spaced } from "../../shared/words";
+
 export type ArgValue = string | number | boolean;
 
 export interface EffectorArg {
@@ -14,13 +17,6 @@ export interface EffectorSpec {
   readonly entityArg: string | null;
   readonly args: readonly EffectorArg[];
 }
-
-type Json = Record<string, unknown>;
-
-const record = (value: unknown): Json =>
-  typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Json) : {};
-
-const list = (value: unknown): readonly unknown[] => (Array.isArray(value) ? value : []);
 
 const bound = (value: unknown): number | null => (typeof value === "number" && Number.isFinite(value) ? value : null);
 
@@ -80,8 +76,6 @@ export function callArgs(
   return out;
 }
 
-const words = (name: string) => name.replaceAll("_", " ");
-
 function rangeWords(arg: EffectorArg): string {
   if (arg.min !== null && arg.max !== null) return ` from ${String(arg.min)} to ${String(arg.max)}`;
   if (arg.min !== null) return ` of ${String(arg.min)} or more`;
@@ -93,15 +87,15 @@ function numberProblem(arg: EffectorArg, value: ArgValue): string {
   const whole = arg.type === "integer" ? "a whole number" : "a number";
   const wrong = !Number.isFinite(number) || (arg.type === "integer" && !Number.isInteger(number));
   if (wrong || (arg.min !== null && number < arg.min) || (arg.max !== null && number > arg.max))
-    return `${words(arg.name)} is ${whole}${rangeWords(arg)}.`;
+    return `${spaced(arg.name)} is ${whole}${rangeWords(arg)}.`;
   return "";
 }
 
 function valueProblem(arg: EffectorArg, value: ArgValue | undefined): string {
-  if (value === undefined) return arg.required ? `${words(arg.name)} needs a value.` : "";
+  if (value === undefined) return arg.required ? `${spaced(arg.name)} needs a value.` : "";
   if (arg.type === "number" || arg.type === "integer") return numberProblem(arg, value);
   if (arg.options.length > 0 && !arg.options.includes(String(value)))
-    return `${words(arg.name)} is one of ${arg.options.join(", ")}.`;
+    return `${spaced(arg.name)} is one of ${arg.options.join(", ")}.`;
   return "";
 }
 
@@ -109,7 +103,7 @@ export function argProblem(spec: EffectorSpec, args: Readonly<Record<string, Arg
   for (const arg of spec.args) {
     const problem =
       arg.type === "other" && arg.required
-        ? `${words(arg.name)} cannot be entered here.`
+        ? `${spaced(arg.name)} cannot be entered here.`
         : valueProblem(arg, args[arg.name]);
     if (problem !== "") return problem;
   }

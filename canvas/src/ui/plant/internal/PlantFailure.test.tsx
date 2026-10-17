@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import type { PlantFailure as Failure } from "../../../app/plant";
-import { navigation } from "../../../test/homeHarness";
+import { navigation } from "../../../test/workspaceHarness";
 import { PlantFailure } from "./PlantFailure";
 
 describe("a plant that cannot be opened", () => {

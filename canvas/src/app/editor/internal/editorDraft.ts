@@ -2,9 +2,9 @@ import type { Composition, IssueTargets } from "../../../model/editor";
 import type { ComponentSpec, LibraryEntry } from "../../../model/plant";
 import type { EditorFailure } from "../../ports";
 
-type Outcome =
-  | { readonly kind: "composed"; readonly summary: string; readonly revision: number }
-  | { readonly kind: "refused"; readonly message: string | null; readonly revision: number }
+type ComposeOutcome =
+  | { readonly kind: "composed"; readonly summary: string; readonly doc: Composition }
+  | { readonly kind: "refused"; readonly message: string | null; readonly doc: Composition }
   | null;
 
 export interface Draft {
@@ -15,8 +15,6 @@ export interface Draft {
   readonly domainEtag: string;
   readonly saved: Composition;
   readonly doc: Composition;
-  readonly revision: number;
-  readonly savedRevision: number;
   readonly saveStatus: "idle" | "saved-compose-failed";
   readonly composeFailure: EditorFailure | null;
   readonly past: readonly Composition[];
@@ -26,7 +24,7 @@ export interface Draft {
   readonly selected: string | null;
   readonly saving: boolean;
   readonly issues: IssueTargets | null;
-  readonly outcome: Outcome;
+  readonly outcome: ComposeOutcome;
   readonly failure: EditorFailure | null;
 }
 

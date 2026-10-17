@@ -1,14 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { Workspace } from "./types";
-import { sampleWorkspace } from "../../../test/fakeBridge";
+import { sampleWorkspace } from "../../../test/workspaceFixture";
 import {
-  faultWords,
   outcomeWords,
   plantFacts,
   plantsOf,
   runFacts,
   runRows,
-  seedWords,
   suggestedId,
   whenOf,
   workspaceEmpty,
@@ -25,17 +23,18 @@ const run = (worldId: string, plant: string, recordedAt: string) => ({
   explore: false,
   seed: null,
   durationS: 60,
+  faults: 0,
 });
 
 const lab: Workspace = {
   name: "lab",
   domains: [
     { path: "domains/factory.domain.json", id: "factory", title: "Factory", instances: 23 },
-    { path: "domains/legacy.domain.json", id: "", title: "" },
+    { path: "domains/legacy.domain.json", id: "", title: "", instances: 0 },
   ],
   compositions: [
-    { path: "compositions/factory.composition.json", id: "factory", title: "Factory" },
-    { path: "compositions/draft.composition.json", id: "draft", title: "Draft plant" },
+    { path: "compositions/factory.composition.json", id: "factory", title: "Factory", instances: 0 },
+    { path: "compositions/draft.composition.json", id: "draft", title: "Draft plant", instances: 0 },
   ],
   scenarios: [],
   runs: [
@@ -125,7 +124,7 @@ describe("workspace", () => {
       faults: 0,
     };
     expect(runFacts(finished)).toEqual(["30 min", "seed 7", "no faults"]);
-    expect(seedWords({ ...finished, seed: null })).toBe("");
+    expect(runFacts({ ...finished, seed: null })).toEqual(["30 min", "no faults"]);
     const abandoned = { ...finished, complete: false, incompleteReason: "run was stopped", faults: 2 };
     expect(runFacts(abandoned)).toEqual(["30 min", "seed 7", "Did not finish: run was stopped"]);
     expect(outcomeWords({ ...abandoned, incompleteReason: "" })).toBe("Did not finish: the run did not close.");
@@ -145,8 +144,10 @@ describe("workspace", () => {
       durationS: 60,
       recordedAt: "",
     };
-    expect(faultWords({ ...finished, faults: 1 })).toBe("1 fault");
-    expect(faultWords(finished)).toBe("no faults");
-    expect(faultWords({ ...finished, ended: false, faults: 3 })).toBe("");
+    const faultsOf = (run: typeof finished & { faults: number }) =>
+      runFacts(run).filter((part) => part.includes("fault"));
+    expect(faultsOf({ ...finished, faults: 1 })).toEqual(["1 fault"]);
+    expect(faultsOf({ ...finished, faults: 0 })).toEqual(["no faults"]);
+    expect(faultsOf({ ...finished, ended: false, faults: 3 })).toEqual([]);
   });
 });

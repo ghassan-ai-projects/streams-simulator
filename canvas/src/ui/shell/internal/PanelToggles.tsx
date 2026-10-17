@@ -39,11 +39,11 @@ function usePanelKeys(panels: PanelStore) {
 
 interface TogglesProps {
   readonly panels: PanelStore;
-  readonly right?: string;
+  readonly right: string;
   readonly onRightPress?: (() => void) | undefined;
 }
 
-export function PanelToggles({ panels, right = "Details", onRightPress }: TogglesProps) {
+export function PanelToggles({ panels, right, onRightPress }: TogglesProps) {
   const state = useStore(panels);
   usePanelKeys(panels);
   const toggle = (side: Side, word: string, key: string, Icon: typeof PanelLeft, press: () => void) => (

@@ -1,5 +1,4 @@
-import type { Rect, Viewport, CutSide } from "./types";
-export type { Rect, Viewport, CutSide } from "./types";
+import type { CutSide, Rect, Viewport } from "./types";
 
 export function followZoom(
   box: Rect,
@@ -11,11 +10,7 @@ export function followZoom(
   return Math.max(viewport.zoom, focusZoom);
 }
 
-export function inView(
-  box: Rect,
-  viewport: Viewport,
-  screen: { readonly width: number; readonly height: number },
-): boolean {
+function inView(box: Rect, viewport: Viewport, screen: { readonly width: number; readonly height: number }): boolean {
   const left = box.x * viewport.zoom + viewport.x;
   const top = box.y * viewport.zoom + viewport.y;
   return (
@@ -47,7 +42,7 @@ export function cutSide(
 
 export const openingFloor = 0.4;
 
-export const overviewFloor = 0.25;
+const overviewFloor = 0.25;
 
 export const textFloorPx = 8;
 
@@ -86,7 +81,7 @@ function centred(content: Span, room: number, zoom: number, pad: number, focus: 
   return Math.min(lead, Math.max(trail, wanted));
 }
 
-export interface FitLimits {
+interface FitLimits {
   readonly pad: number;
   readonly headroom: number;
   readonly minZoom: number;

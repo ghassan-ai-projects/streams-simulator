@@ -90,15 +90,10 @@ function Chip({ mark, chip, text, startNs, active, pick }: ChipProps) {
   );
 }
 
-export function usePick(
-  startNs: number,
-  onSeek: (ns: number) => void,
-  onEvent: ((mark: EventMark) => void) | undefined,
-) {
+export function usePick(startNs: number, onEvent: (mark: EventMark) => void) {
   const [said, setSaid] = useState("");
   const pick = (mark: EventMark) => {
-    if (onEvent === undefined) onSeek(mark.atNs);
-    else onEvent(mark);
+    onEvent(mark);
     setSaid(`${chipText(mark, startNs)}: moved to ${runClock(mark.atNs, startNs)}, ${mark.entity} selected`);
   };
   return { said, pick };

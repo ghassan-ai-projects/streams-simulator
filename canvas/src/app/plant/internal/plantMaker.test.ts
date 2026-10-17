@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { failure as failed, success } from "../../ports";
-import { FakeBridge, failure } from "../../../test/fakeBridge";
+import { FakeBridge, cannedFailure } from "../../../test/fakeBridge";
 import { PlantMaker } from "./plantMaker";
 
 const base = "compositions/lab.composition.json";
@@ -8,8 +8,8 @@ const lab = { id: "lab", title: "Lab", description: "base", equipment: [{ use: "
 
 function bridge() {
   const fake = new FakeBridge();
-  fake.files.set(base, success({ path: base, content: JSON.stringify(lab), etag: "c1" }));
-  fake.files.set("domains/lab.domain.json", success({ path: "domains/lab.domain.json", content: "{}", etag: "d1" }));
+  fake.addFile(base, lab, "c1");
+  fake.addFile("domains/lab.domain.json", "{}", "d1");
   fake.actions.set(
     "component.examples",
     success({ examples: [{ id: "pilot", title: "Pilot", description: "small" }, { title: "no id" }] }),
@@ -65,12 +65,12 @@ describe("plant maker", () => {
       kind: "conflict",
       diagnostic: { displayCode: "plant_exists" },
     });
-    fake.files.set("compositions/bad.composition.json", success({ path: "x", content: "[", etag: "e" }));
+    fake.addFile("compositions/bad.composition.json", "[");
     expect(
       await maker.create({ kind: "file", path: "compositions/bad.composition.json" }, "bad-copy", "B", true),
     ).toMatchObject({ kind: "unreadable", diagnostic: { displayCode: "composition_invalid" } });
     const refusal = {
-      ...failure("composition_invalid", 422, "fails"),
+      ...cannedFailure("composition_invalid", 422, "fails"),
       issues: [{ pointer: "/id", message: "bad id" }],
     };
     fake.actions.set("component.new", failed(refusal));
@@ -83,7 +83,7 @@ describe("plant maker", () => {
     fake.actions.set(
       "component.new",
       failed({
-        ...failure("composition_invalid", 422, "fails"),
+        ...cannedFailure("composition_invalid", 422, "fails"),
         issues: [
           { pointer: "/equipment", message: "missing required property" },
           { pointer: "/id", message: "bad id" },
@@ -103,7 +103,7 @@ describe("plant maker", () => {
     fake.actions.delete("component.new");
     fake.writeOutcomes.set(
       "compositions/lab-two.composition.json",
-      failed(failure("conflict", 409, "changed on disk")),
+      failed(cannedFailure("conflict", 409, "changed on disk")),
     );
     expect(await maker.create({ kind: "file", path: base }, "lab-two", "Lab two", true)).toMatchObject({
       kind: "conflict",
@@ -126,12 +126,12 @@ describe("plant maker", () => {
       name: "domain.compose",
       args: { composition: "compositions/pilot.composition.json", out: "domains/pilot.domain.json", etag: "" },
     });
-    fake.actions.set("domain.compose", failed(failure("composition_invalid", 422, "bad")));
+    fake.actions.set("domain.compose", failed(cannedFailure("composition_invalid", 422, "bad")));
     expect(await maker.tryExample(pilot, "pilot-2")).toMatchObject({
       kind: "unreadable",
       diagnostic: { displayCode: "composition_invalid" },
     });
-    fake.actions.set("component.examples", failed(failure("bridge_failed", 500)));
+    fake.actions.set("component.examples", failed(cannedFailure("bridge_failed", 500)));
     expect(await maker.examples()).toEqual([]);
   });
 });

@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { failure as failed, success } from "../../ports";
-import { FakeBridge, failure } from "../../../test/fakeBridge";
+import { FakeBridge, cannedFailure } from "../../../test/fakeBridge";
 import { sessionFailure } from "../../../test/fakeFailures";
 import { pairingBlocked, SessionStore } from "./sessionStore";
 
-const refused = (code: string) => sessionFailure(failure(code, 401));
+const refused = (code: string) => sessionFailure(cannedFailure(code, 401));
 
 async function unpaired() {
   const bridge = new FakeBridge();
@@ -25,7 +25,7 @@ describe("session", () => {
 
   it("reports an unreachable bridge with its failure", async () => {
     const bridge = new FakeBridge();
-    bridge.sessionOutcome = failed(failure("unreachable", 0, "gone"));
+    bridge.sessionOutcome = failed(cannedFailure("unreachable", 0, "gone"));
     const store = new SessionStore(bridge.session);
     await store.check();
     expect(store.snapshot()).toMatchObject({ phase: "unreachable", failure: { kind: "unreachable" } });
@@ -46,7 +46,7 @@ describe("session", () => {
 
   it("keeps the code after a wrong code and clears the error on the next keystroke", async () => {
     const { bridge, store } = await unpaired();
-    bridge.pairOutcomes.push(failed(failure("wrong_code")));
+    bridge.pairOutcomes.push(failed(cannedFailure("wrong_code")));
     store.type("AAAABBBBCCCC");
     await store.pair();
     expect(store.snapshot()).toMatchObject({
@@ -69,7 +69,7 @@ describe("session", () => {
   it("blocks typing and pairing once the bridge locks or the code was used", async () => {
     for (const code of ["pairing_locked", "pairing_used"]) {
       const { bridge, store } = await unpaired();
-      bridge.pairOutcomes.push(failed(failure(code)));
+      bridge.pairOutcomes.push(failed(cannedFailure(code)));
       store.type("AAAABBBBCCCC");
       await store.pair();
       const expected = code === "pairing_locked" ? "locked" : "already-used";

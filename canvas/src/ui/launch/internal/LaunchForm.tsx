@@ -1,6 +1,6 @@
-import { panel, shared } from "../../primitives";
+import { holdEnter, panel, shared } from "../../primitives";
 import { Dices, TriangleAlert } from "lucide-react";
-import type { KeyboardEvent, SyntheticEvent } from "react";
+import type { SyntheticEvent } from "react";
 import { useEffect, useRef, useState } from "react";
 import type { LaunchPlan, PlanProblem } from "../../../model/launch";
 import { disturbanceWords, planProblems, watchWords } from "../../../model/launch";
@@ -192,28 +192,22 @@ function planCue(shown: readonly PlanProblem[], plan: LaunchPlan): string {
   return shown.length === 1 ? `${names} needs attention before starting.` : `${names} need attention before starting.`;
 }
 
-function holdEnter(event: KeyboardEvent<HTMLFormElement>) {
-  if (event.key === "Enter" && event.target instanceof HTMLSelectElement) event.preventDefault();
-}
-
 function PlanFields({
   plant,
   draft,
   selected,
   change,
-  problems,
   shown,
   plan,
 }: Pick<FormProps, "plant" | "draft" | "selected" | "change"> & {
-  readonly problems: readonly PlanProblem[];
   readonly shown: readonly PlanProblem[];
   readonly plan: LaunchPlan;
 }) {
-  const { ref, cut } = useCutBottom<HTMLDivElement>([plant, draft, problems]);
+  const { ref, cut } = useCutBottom<HTMLDivElement>();
   return (
     <div
       ref={ref}
-      className={cx(cx(styles.scroll, shared.scrolls), shared.cut)}
+      className={cx(styles.scroll, shared.scrolls, shared.cut)}
       data-scroll="run-plan"
       data-cut={cut ? "true" : undefined}
     >
@@ -245,15 +239,7 @@ export function LaunchForm({ plant, draft, selected, change, onStart }: FormProp
   };
   return (
     <form ref={form} className={styles.plan} onSubmit={submit} onKeyDown={holdEnter} noValidate aria-label="Run plan">
-      <PlanFields
-        plant={plant}
-        draft={draft}
-        selected={selected}
-        change={change}
-        problems={problems}
-        shown={shown}
-        plan={plan}
-      />
+      <PlanFields plant={plant} draft={draft} selected={selected} change={change} shown={shown} plan={plan} />
       <div className={styles.footer}>
         <p id="launch-summary" className={styles.summary}>
           {planCue(shown, plan)}

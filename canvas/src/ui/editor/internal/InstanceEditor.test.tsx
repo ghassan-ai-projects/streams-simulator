@@ -1,14 +1,14 @@
 import { act, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { EditorStore } from "../../../app/editor";
 import { success } from "../../../test/outcome";
 import { doc, Harness, LabBridge, path } from "../../../test/editorHarness";
+import { editorStore } from "../../../test/stores";
 
 async function selected(plant: unknown, id: string) {
   const fake = new LabBridge();
-  fake.files.set(path, success({ path, content: JSON.stringify(plant), etag: "e0" }));
+  fake.addFile(path, plant, "e0");
   fake.actions.set("component.list", success({ components: [] }));
-  const editor = new EditorStore(fake.editor);
+  const editor = editorStore(fake.editor);
   await editor.open(path);
   render(<Harness editor={editor} />);
   act(() => {

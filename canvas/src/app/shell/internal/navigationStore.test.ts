@@ -1,30 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { NavigationStore } from "./navigationStore";
-import type { Location } from "../../ports";
-
-function memoryLocation(initial: string): Location & { hash: string; replaced: boolean; fire: () => void } {
-  const listeners = new Set<() => void>();
-  return {
-    hash: initial,
-    replaced: false,
-    read() {
-      return this.hash;
-    },
-    write(hash, replace = false) {
-      this.hash = hash;
-      this.replaced = replace;
-    },
-    subscribe(listener) {
-      listeners.add(listener);
-      return () => listeners.delete(listener);
-    },
-    fire() {
-      listeners.forEach((listener) => {
-        listener();
-      });
-    },
-  };
-}
+import { memoryLocation } from "../../../test/location";
 
 describe("navigation", () => {
   it("starts from the address and writes every move to it", () => {
@@ -117,5 +93,18 @@ describe("navigation", () => {
       true,
     ]);
     expect(navigation.leaving.snapshot()).toEqual({ route: { screen: "home" }, replace: false });
+  });
+
+  it("publishes a move once although the address announces it again", () => {
+    const location = memoryLocation("#/");
+    const navigation = new NavigationStore(location);
+    let published = 0;
+    navigation.subscribe(() => {
+      published += 1;
+    });
+    navigation.go({ screen: "run", worldId: "w-2" });
+    location.fire();
+    expect(published).toBe(1);
+    expect(navigation.snapshot()).toEqual({ screen: "run", worldId: "w-2" });
   });
 });

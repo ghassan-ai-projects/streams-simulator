@@ -5,11 +5,10 @@ import styles from "./PlayControls.module.css";
 interface AlarmJumpProps {
   readonly marks: readonly EventMark[];
   readonly positionNs: number;
-  readonly onSeek: (ns: number) => void;
-  readonly onEvent: ((mark: EventMark) => void) | undefined;
+  readonly onEvent: (mark: EventMark) => void;
 }
 
-export function AlarmJump({ marks, positionNs, onSeek, onEvent }: AlarmJumpProps) {
+export function AlarmJump({ marks, positionNs, onEvent }: AlarmJumpProps) {
   const alarms = marks.filter((mark) => mark.tone === "alarm");
   const alarm = alarms.find((mark) => mark.atNs > positionNs) ?? alarms[0];
   const label = alarm === undefined ? "Jump to alarm: none" : `Jump to alarm: ${alarm.label}`;
@@ -21,9 +20,7 @@ export function AlarmJump({ marks, positionNs, onSeek, onEvent }: AlarmJumpProps
       title={label}
       aria-disabled={alarm === undefined}
       onClick={() => {
-        if (alarm === undefined) return;
-        if (onEvent === undefined) onSeek(alarm.atNs);
-        else onEvent(alarm);
+        if (alarm !== undefined) onEvent(alarm);
       }}
     >
       <Bell size={14} aria-hidden="true" />

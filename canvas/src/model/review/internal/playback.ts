@@ -1,6 +1,6 @@
 import { shortChannel } from "../../shared/words";
 
-export interface Observation {
+interface Observation {
   readonly atNs: number;
   readonly entity: string;
   readonly channel: string;

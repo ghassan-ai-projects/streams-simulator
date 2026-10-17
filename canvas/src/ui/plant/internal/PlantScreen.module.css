@@ -4,22 +4,6 @@
   border-left: 1px solid var(--border-subtle);
 }
 
-.crumbs {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-  min-width: 0;
-  flex: 1;
-}
-
-.here {
-  margin: 0;
-  font-size: var(--text-md);
-  padding: 0 var(--space-2);
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
 .summary {
   margin-left: auto;
   overflow: hidden;
@@ -52,7 +36,8 @@
   border-bottom: 1px solid var(--border-subtle);
 }
 
-.items {
+.items,
+.tally {
   margin: 0;
   padding: 0;
   list-style: none;
@@ -115,9 +100,6 @@
   border-color: var(--border-strong);
   background: var(--surface-hover);
   color: var(--text-primary);
-}
-
-.edit {
 }
 
 .run[aria-disabled="true"] {
@@ -187,12 +169,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-.tally {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
 .tally li {
   display: flex;
   align-items: center;
@@ -228,27 +204,4 @@
   margin: var(--space-2) 0 0;
   font-size: var(--text-sm);
   color: var(--text-primary);
-}
-
-.edit[aria-disabled="true"] {
-  border-color: var(--disabled-border);
-  background: var(--disabled-bg);
-  color: var(--disabled-fg);
-  cursor: not-allowed;
-}
-
-.spin {
-  animation: spin 1.2s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .spin {
-    animation: none;
-  }
 }

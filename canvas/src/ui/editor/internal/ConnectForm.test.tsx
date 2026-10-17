@@ -1,8 +1,8 @@
 import { act, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { EditorStore } from "../../../app/editor";
 import { success } from "../../../test/outcome";
 import { choose, doc, editing, Harness, LabBridge, path } from "../../../test/editorHarness";
+import { editorStore } from "../../../test/stores";
 
 describe("link form", () => {
   it("names each possible target by its id and its kind, as the run panel does", async () => {
@@ -18,9 +18,9 @@ describe("link form", () => {
   it("names the missing target when nothing takes what an output gives", async () => {
     const fake = new LabBridge();
     const alone = { ...doc, equipment: [doc.equipment[0]], connections: [] };
-    fake.files.set(path, success({ path, content: JSON.stringify(alone), etag: "d1" }));
+    fake.addFile(path, alone, "d1");
     fake.actions.set("component.list", success({ components: [] }));
-    const editor = new EditorStore(fake.editor);
+    const editor = editorStore(fake.editor);
     await editor.open(path);
     render(<Harness editor={editor} />);
     act(() => {

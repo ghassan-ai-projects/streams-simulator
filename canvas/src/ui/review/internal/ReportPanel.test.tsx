@@ -139,13 +139,24 @@ const idle = { playing: false, speed: 60, onPlay: vi.fn(), onPause: vi.fn(), onS
 describe("scrubber", () => {
   it("seeks with the slider and jumps to a disturbance", () => {
     const seek = vi.fn();
-    render(<Scrubber {...idle} startNs={0} endNs={3_600e9} positionNs={60e9} report={report} onSeek={seek} />);
+    const onEvent = vi.fn();
+    render(
+      <Scrubber
+        {...idle}
+        startNs={0}
+        endNs={3_600e9}
+        positionNs={60e9}
+        report={report}
+        onSeek={seek}
+        onEvent={onEvent}
+      />,
+    );
     const slider = screen.getByRole("slider", { name: "Playback time" });
     expect(slider).toHaveAttribute("aria-valuetext", "00:01:00");
     fireEvent.change(slider, { target: { value: "120" } });
     expect(seek).toHaveBeenLastCalledWith(120e9);
     fireEvent.click(screen.getByRole("button", { name: "00:10:00 CT-1 fan failure" }));
-    expect(seek).toHaveBeenLastCalledWith(600e9);
+    expect(onEvent).toHaveBeenLastCalledWith(expect.objectContaining({ atNs: 600e9 }));
     fireEvent.click(screen.getByRole("button", { name: "Next event" }));
     expect(seek).toHaveBeenLastCalledWith(300e9);
     fireEvent.click(screen.getByRole("button", { name: "Forward 10 minutes" }));
@@ -175,7 +186,15 @@ describe("scrubber", () => {
   it("plays, pauses and picks a speed", () => {
     const controls = { ...idle, onPlay: vi.fn(), onPause: vi.fn(), onSpeed: vi.fn() };
     const view = render(
-      <Scrubber {...controls} startNs={0} endNs={60e9} positionNs={0} report={null} onSeek={vi.fn()} />,
+      <Scrubber
+        {...controls}
+        startNs={0}
+        endNs={60e9}
+        positionNs={0}
+        report={null}
+        onSeek={vi.fn()}
+        onEvent={vi.fn()}
+      />,
     );
     fireEvent.click(screen.getByRole("button", { name: "Play" }));
     expect(controls.onPlay).toHaveBeenCalled();
@@ -183,14 +202,25 @@ describe("scrubber", () => {
     fireEvent.click(screen.getByRole("button", { name: "600×" }));
     expect(controls.onSpeed).toHaveBeenCalledWith(600);
     view.rerender(
-      <Scrubber {...controls} playing startNs={0} endNs={60e9} positionNs={0} report={null} onSeek={vi.fn()} />,
+      <Scrubber
+        {...controls}
+        playing
+        startNs={0}
+        endNs={60e9}
+        positionNs={0}
+        report={null}
+        onSeek={vi.fn()}
+        onEvent={vi.fn()}
+      />,
     );
     fireEvent.click(screen.getByRole("button", { name: "Pause" }));
     expect(controls.onPause).toHaveBeenCalled();
   });
 
   it("works before the report arrives", () => {
-    render(<Scrubber {...idle} startNs={0} endNs={0} positionNs={0} report={null} onSeek={vi.fn()} />);
+    render(
+      <Scrubber {...idle} startNs={0} endNs={0} positionNs={0} report={null} onSeek={vi.fn()} onEvent={vi.fn()} />,
+    );
     expect(screen.getByRole("list", { name: "Events" })).toBeEmptyDOMElement();
     expect(screen.getByRole("button", { name: "Next event: none" })).toHaveAttribute("aria-disabled", "true");
   });

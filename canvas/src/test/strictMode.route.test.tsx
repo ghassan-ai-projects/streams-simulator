@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { describe, expect, it } from "vitest";
 import { HomeScreen } from "../ui/workspace";
 import { FakeBridge } from "./fakeBridge";
-import { navigation } from "./homeHarness";
+import { navigation } from "./workspaceHarness";
 import { renderStrict } from "./strictMode";
 import type { NavigationStore } from "../app/shell";
 import { PlantMaker } from "../app/plant";
@@ -29,7 +29,7 @@ function Route({
   return (
     <>
       <p>{opened ? "opened" : "opening"}</p>
-      <HomeScreen workspace={workspace} navigation={nav} maker={new PlantMaker(bridge.plant)} />
+      <HomeScreen workspace={workspace} navigation={nav} maker={new PlantMaker(bridge.plant)} badgeFor={() => null} />
     </>
   );
 }

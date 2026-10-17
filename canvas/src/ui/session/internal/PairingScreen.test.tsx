@@ -3,12 +3,12 @@ import axe from "axe-core";
 import { describe, expect, it } from "vitest";
 import { createSession } from "../../../app/session";
 import { failure as failed } from "../../../test/outcome";
-import { FakeBridge, failure } from "../../../test/fakeBridge";
+import { FakeBridge, cannedFailure } from "../../../test/fakeBridge";
 import { PairingScreen } from "./PairingScreen";
 
 async function setup(...refusals: string[]) {
   const bridge = new FakeBridge();
-  bridge.pairOutcomes.push(...refusals.map((code) => failed(failure(code))));
+  bridge.pairOutcomes.push(...refusals.map((code) => failed(cannedFailure(code))));
   const session = createSession(bridge.session);
   await session.check();
   const view = render(<PairingScreen session={session} />);

@@ -1,5 +1,4 @@
 export type {
-  Attention,
   CutSide,
   NodeStatus,
   OutlineItem,

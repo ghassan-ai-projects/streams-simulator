@@ -18,7 +18,7 @@ interface ScrubberProps extends PlayProps {
   readonly positionNs: number;
   readonly report: Report | null;
   readonly onSeek: (ns: number) => void;
-  readonly onEvent?: (mark: EventMark) => void;
+  readonly onEvent: (mark: EventMark) => void;
 }
 
 interface TicksProps {
@@ -131,13 +131,10 @@ function TimeRow(props: RowProps) {
     props.onSeek(ns);
   };
   useEventKeys(marks, positionNs, onSeek);
-  const onEvent =
-    props.onEvent === undefined
-      ? undefined
-      : (mark: EventMark) => {
-          setSaid(`Moved to ${runClock(mark.atNs, startNs)}, ${mark.label}`);
-          props.onEvent?.(mark);
-        };
+  const onEvent = (mark: EventMark) => {
+    setSaid(`Moved to ${runClock(mark.atNs, startNs)}, ${mark.label}`);
+    props.onEvent(mark);
+  };
   return (
     <div className={styles.timeRow}>
       <p className="sr-only" aria-live="polite">
@@ -149,7 +146,7 @@ function TimeRow(props: RowProps) {
       <span className={styles.controls}>
         <Legend marks={marks} />
         <Steps marks={marks} positionNs={positionNs} clamp={clamp} onSeek={onSeek} />
-        <AlarmJump marks={marks} positionNs={positionNs} onSeek={onSeek} onEvent={onEvent} />
+        <AlarmJump marks={marks} positionNs={positionNs} onEvent={onEvent} />
       </span>
     </div>
   );
@@ -161,7 +158,7 @@ export function Scrubber(props: ScrubberProps) {
   const fraction = (ns: number) => Math.min(1, Math.max(0, (ns - startNs) / span));
   const clamp = (ns: number) => Math.min(endNs, Math.max(startNs, ns));
   const marks = useMemo(() => eventMarks(report), [report]);
-  const { said, pick } = usePick(startNs, onSeek, onEvent);
+  const { said, pick } = usePick(startNs, onEvent);
   const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (!event.shiftKey || (event.key !== "ArrowLeft" && event.key !== "ArrowRight")) return;
     event.preventDefault();

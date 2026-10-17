@@ -1,25 +1,10 @@
-import type {
-  Attention,
-  CutSide,
-  NodeStatus,
-  PlanMark,
-  PlantView,
-  Point,
-  ReadoutBody,
-  ReadoutRow,
-  Rect,
-  RowCount,
-  Shown,
-  ViewNode,
-  ViewPresentation,
-  Viewport,
-} from "./contract";
-import { boundsWithTitles, countWords, splitName } from "./internal/frameTitle";
-import { directionOf, firstOf, nearest } from "./internal/graphKeys";
-import { fitId, idCap, idRoom } from "./internal/headerFit";
-import { describeNode } from "./internal/nodeWords";
-import { planMarks } from "./internal/planMarks";
-import {
+export { boundsWithTitles, countWords, splitName } from "./internal/frameTitle";
+export { directionOf, firstOf, nearest } from "./internal/graphKeys";
+export { fitId, idCap, idRoom } from "./internal/headerFit";
+export { describeNode } from "./internal/nodeWords";
+export { groups, matchWords, marked, belowCount } from "./internal/outline";
+export { planMarks } from "./internal/planMarks";
+export {
   areaCounts,
   groupCounts,
   hallCount,
@@ -32,7 +17,7 @@ import {
   plainView,
   plantView,
 } from "./internal/plantView";
-import {
+export {
   abnormalFirst,
   attentionOf,
   channelWords,
@@ -42,7 +27,7 @@ import {
   statusWords,
   worstOf,
 } from "./internal/readout";
-import {
+export {
   centreOf,
   cutSide,
   followZoom,
@@ -54,59 +39,12 @@ import {
   textFloorPx,
   tierOf,
 } from "./internal/viewport";
-import { labelPoint, wirePath } from "./internal/wirePath";
-import { routeView } from "./internal/wireView";
-
-export {
-  abnormalFirst,
-  areaCounts,
-  attentionOf,
-  boundsWithTitles,
-  centreOf,
-  channelWords,
-  countWords,
-  cutSide,
-  describeNode,
-  directionOf,
-  fitId,
-  firstOf,
-  followZoom,
-  groupCounts,
-  hallCount,
-  hallMembers,
-  hallOf,
-  hallsOf,
-  headerHeight,
-  idCap,
-  idExtra,
-  idRoom,
-  labelPoint,
-  nearest,
-  noteHeight,
-  openingFloor,
-  openingViewport,
-  pinWords,
-  plainView,
-  planMarks,
-  plantView,
-  routeView,
-  sameViewport,
-  screenPixel,
-  sharedTimes,
-  showReading,
-  splitName,
-  statusWords,
-  steppedViewport,
-  textFloorPx,
-  tierOf,
-  wirePath,
-  worstOf,
-};
-
+export { labelPoint, wirePath } from "./internal/wirePath";
+export { routeView } from "./internal/wireView";
 export type {
-  Attention,
   CutSide,
   NodeStatus,
+  OutlineItem,
   PlanMark,
   PlantView,
   Point,
@@ -118,11 +56,4 @@ export type {
   ViewNode,
   ViewPresentation,
   Viewport,
-};
-
-export type { Plant } from "../plant";
-export type { Family, Pin } from "../plant";
-export { familyNames, shapeOf } from "../plant";
-
-export { groups, matchWords, marked, belowCount } from "./internal/outline";
-export type { OutlineItem } from "./contract";
+} from "./contract";

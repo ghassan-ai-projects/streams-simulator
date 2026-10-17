@@ -5,30 +5,21 @@ import { WorkspaceStore } from "../app/workspace";
 import type { Badge } from "../model/review";
 import { HomeScreen } from "../ui/workspace";
 import type { FakeBridge } from "./fakeBridge";
+import { memoryLocation } from "./location";
 
 export function navigation() {
-  const location = {
-    hash: "#/",
-    read() {
-      return this.hash;
-    },
-    write(hash: string) {
-      this.hash = hash;
-    },
-    subscribe: () => () => undefined,
-  };
+  const location = memoryLocation();
   return { location, store: new NavigationStore(location) };
 }
 
-export async function show(bridge: FakeBridge, nav = navigation(), badgeFor?: (worldId: string) => Badge | null) {
+export async function show(
+  bridge: FakeBridge,
+  nav = navigation(),
+  badgeFor: (worldId: string) => Badge | null = () => null,
+) {
   const store = new WorkspaceStore(bridge.workspace);
-  await store.reload();
+  await store.open();
   return render(
-    <HomeScreen
-      workspace={store}
-      navigation={nav.store}
-      maker={new PlantMaker(bridge.plant)}
-      {...(badgeFor === undefined ? {} : { badgeFor })}
-    />,
+    <HomeScreen workspace={store} navigation={nav.store} maker={new PlantMaker(bridge.plant)} badgeFor={badgeFor} />,
   );
 }

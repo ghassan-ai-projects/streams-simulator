@@ -1,3 +1,5 @@
+import { counted } from "../../shared/words";
+
 const type = {
   name: 13,
   line: 17,
@@ -5,10 +7,10 @@ const type = {
   cap: 30,
 } as const;
 
-export const capScale = type.cap / type.name;
+const capScale = type.cap / type.name;
 
 export function countWords(count: number): string {
-  return `${String(count)} ${count === 1 ? "node" : "nodes"}`;
+  return counted(count, "node");
 }
 
 export function titleScale(pixel: number): number {

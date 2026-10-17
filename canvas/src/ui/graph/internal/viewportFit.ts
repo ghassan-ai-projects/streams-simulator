@@ -14,6 +14,8 @@ import {
 } from "../../../model/graph";
 import type { FlowNode } from "./flow";
 
+export const lowestZoom = 0.05;
+
 interface Size {
   readonly width: number;
   readonly height: number;
@@ -51,7 +53,7 @@ export function steppedZoom(flow: ReactFlowInstance<FlowNode>, screen: Limits, f
   return steppedViewport(current, screen, zoom, bounds, 16);
 }
 
-function useScreen(): Size & { readonly ready: boolean } {
+function useViewportSize(): Size & { readonly ready: boolean } {
   const ready = useStore((state) => state.nodes.length > 0);
   const width = useStore((state) => state.width);
   const height = useStore((state) => state.height);
@@ -60,7 +62,7 @@ function useScreen(): Size & { readonly ready: boolean } {
 
 export function useFitted(fitKey: string, minZoom: number, anchor: string | null) {
   const flow = useReactFlow<FlowNode>();
-  const { ready, width, height } = useScreen();
+  const { ready, width, height } = useViewportSize();
   const last = useRef<{ key: string; viewport: Viewport | null }>({ key: "", viewport: null });
   useEffect(() => {
     if (!ready) return;

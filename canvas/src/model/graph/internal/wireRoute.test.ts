@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Rect } from "./viewport";
-import type { Point, WireScene } from "./wireRoute";
+import type { Point, Rect } from "./types";
 import { routeWires, wireClearance } from "./wireRoute";
 
 const node = (x: number, y: number, width = 100, height = 60): Rect => ({ x, y, width, height });
@@ -26,6 +25,8 @@ function orthogonal(points: readonly Point[]): boolean {
     return from.x === to.x || from.y === to.y;
   });
 }
+
+type WireScene = Parameters<typeof routeWires>[0];
 
 function sceneOf(partial: Partial<WireScene>): WireScene {
   return { links: [], nodes: [], titles: [], ...partial };

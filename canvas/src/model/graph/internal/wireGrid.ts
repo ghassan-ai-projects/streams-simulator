@@ -1,4 +1,4 @@
-import type { Rect } from "./viewport";
+import type { Rect } from "./types";
 
 export interface Grid {
   readonly xs: readonly number[];
@@ -106,7 +106,7 @@ export function lanes(edge: number, outward: 1 | -1, count: number, pitch: numbe
   return Array.from({ length: count }, (_, index) => edge + outward * pitch * index);
 }
 
-export interface Margins {
+interface Margins {
   readonly frames: readonly Rect[];
   readonly band: number;
 }

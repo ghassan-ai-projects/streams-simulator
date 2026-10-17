@@ -1,7 +1,7 @@
-import { settle } from "../../../test/deferred";
+import { flushPromises } from "../../../test/deferred";
 import { describe, expect, it } from "vitest";
 import { failure as failed, success } from "../../ports";
-import { FakeBridge, failure } from "../../../test/fakeBridge";
+import { FakeBridge, cannedFailure } from "../../../test/fakeBridge";
 import { fakeClock } from "../../../test/fakeClock";
 import { journal, report } from "../../../test/runFixture";
 import { ReviewStore } from "./reviewStore";
@@ -23,14 +23,14 @@ describe("review", () => {
       success({ path: "runs/w-1/run.json", content: JSON.stringify({ domain_spec: { id: "mini" } }), etag: "e" }),
     );
     store.open("w-1");
-    await settle();
+    await flushPromises();
     expect(store.snapshot().runDomain).toEqual({ phase: "ready", value: { id: "mini" } });
-    bridge.files.set("runs/w-2/run.json", success({ path: "runs/w-2/run.json", content: "{}", etag: "e" }));
+    bridge.addFile("runs/w-2/run.json", "{}");
     store.open("w-2");
-    await settle();
+    await flushPromises();
     expect(store.snapshot().runDomain).toMatchObject({ phase: "failed", failure: { kind: "unreadable" } });
     store.open("w-3");
-    await settle();
+    await flushPromises();
     expect(store.snapshot().runDomain).toMatchObject({
       phase: "failed",
       failure: { kind: "missing", diagnostic: { displayCode: "not_found" } },
@@ -66,7 +66,7 @@ describe("review", () => {
   it("asks the binary for the report and verification and streams the observer journal", async () => {
     const { bridge, store, timers } = setup();
     store.open("w-1");
-    await settle();
+    await flushPromises();
     expect(bridge.calls.map((call) => [call.name, call.args])).toEqual([
       ["run.report", { run: "w-1" }],
       ["run.verify", { run: "w-1" }],
@@ -132,17 +132,17 @@ describe("review", () => {
     store.open("w-1");
     store.open("w-2");
     expect([...bridge.followers.keys()]).toEqual(["w-2"]);
-    await settle();
+    await flushPromises();
     bridge.stream("w-1", journal);
     expect(store.snapshot()).toMatchObject({ worldId: "w-2", playback: { records: 0 } });
   });
 
   it("shows the binary's failure for report and verify, and a broken stream", async () => {
     const { bridge, store } = setup();
-    bridge.actions.set("run.report", failed(failure("bridge_failed", 422, "no run.json")));
-    bridge.actions.set("run.verify", failed(failure("bridge_failed", 422, "missing")));
+    bridge.actions.set("run.report", failed(cannedFailure("bridge_failed", 422, "no run.json")));
+    bridge.actions.set("run.verify", failed(cannedFailure("bridge_failed", 422, "missing")));
     store.open("w-9");
-    await settle();
+    await flushPromises();
     bridge.stream("w-9", [], "failed");
     expect(store.snapshot()).toMatchObject({
       report: { phase: "failed" },
@@ -157,17 +157,17 @@ describe("review", () => {
     const { bridge, store } = setup();
     bridge.actions.set(
       "run.verify",
-      failed({ ...failure("replay_mismatch", 422, "no"), result: { matches: false, detail: "trace differs" } }),
+      failed({ ...cannedFailure("replay_mismatch", 422, "no"), result: { matches: false, detail: "trace differs" } }),
     );
     store.open("w-1");
-    await settle();
+    await flushPromises();
     expect(store.snapshot().verified).toEqual({
       phase: "ready",
       value: { matches: false, domainChanged: false, detail: "trace differs", reason: "", file: "" },
     });
     bridge.actions.set("run.verify", success({}));
     store.open("w-2");
-    await settle();
+    await flushPromises();
     expect(store.snapshot().verified).toMatchObject({ phase: "failed", failure: { kind: "unreadable" } });
   });
 
@@ -175,12 +175,12 @@ describe("review", () => {
     const { bridge, store, timers } = setup();
     bridge.actions.set("run.report", success({ ...report, ended: false }));
     store.open("w-1");
-    await settle();
+    await flushPromises();
     expect(store.snapshot().report).toMatchObject({ phase: "ready", value: { ended: false } });
     bridge.actions.set("run.report", success(report));
     bridge.stream("w-1", journal);
     timers.advance(250);
-    await settle();
+    await flushPromises();
     expect(bridge.calls.filter((call) => call.name === "run.report")).toHaveLength(2);
     expect(bridge.calls.filter((call) => call.name === "run.verify")).toHaveLength(2);
     expect(store.snapshot().report).toMatchObject({ phase: "ready", value: { ended: true } });
@@ -198,7 +198,7 @@ describe("review", () => {
       }),
     );
     store.open("w-9", { ...entry, worldId: "w-9", ended: true, complete: false });
-    await settle();
+    await flushPromises();
     expect(bridge.calls.map((call) => call.name)).toEqual(["run.report"]);
     expect(bridge.reads).toEqual([]);
     expect(store.snapshot().report).toMatchObject({ phase: "ready", value: { ended: false } });
@@ -226,7 +226,7 @@ describe("review", () => {
     const { bridge, store } = setup();
     bridge.actions.set("run.report", success({ ...report, ended: false, complete: false, incompleteReason: "" }));
     store.open("w-9", { ...entry, worldId: "w-9", ended: false, complete: false });
-    await settle();
+    await flushPromises();
     expect(bridge.calls.map((call) => call.name)).toEqual(["run.report"]);
     expect(bridge.reads).toEqual([]);
     expect(store.snapshot().verified).toMatchObject({
@@ -247,12 +247,12 @@ describe("review", () => {
     const { bridge, store, timers } = setup();
     bridge.actions.set("run.report", success({ ...report, ended: false, complete: false }));
     store.open("w-1", { ...entry, worldId: "w-1", ended: false, complete: false });
-    await settle();
+    await flushPromises();
     expect(bridge.calls.map((call) => call.name)).toEqual(["run.report"]);
     bridge.actions.set("run.report", success(report));
     bridge.stream("w-1", journal);
     timers.advance(250);
-    await settle();
+    await flushPromises();
     expect(bridge.calls.filter((call) => call.name === "run.report")).toHaveLength(2);
     expect(bridge.calls.filter((call) => call.name === "run.verify")).toHaveLength(1);
     expect(store.snapshot()).toMatchObject({
@@ -265,10 +265,10 @@ describe("review", () => {
     const { bridge, store, timers } = setup();
     bridge.actions.set("run.report", success({ ...report, ended: false, complete: false }));
     store.open("w-9", { ...entry, worldId: "w-9", ended: true, complete: false });
-    await settle();
+    await flushPromises();
     bridge.stream("w-9", journal);
     timers.advance(250);
-    await settle();
+    await flushPromises();
     expect(store.snapshot().playback).toMatchObject({ phase: "ready" });
     expect(bridge.calls.map((call) => call.name)).toEqual(["run.report"]);
     expect(bridge.reads).toEqual([]);
@@ -285,4 +285,5 @@ const entry = {
   plant: "factory-utilities",
   durationS: 0,
   recordedAt: "2026-10-14T10:00:00Z",
+  faults: 0,
 };

@@ -1,8 +1,9 @@
 import { screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { success } from "../../../test/outcome";
-import { FakeBridge, sampleWorkspace } from "../../../test/fakeBridge";
-import { show, navigation } from "../../../test/homeHarness";
+import { FakeBridge } from "../../../test/fakeBridge";
+import { sampleWorkspace } from "../../../test/workspaceFixture";
+import { show, navigation } from "../../../test/workspaceHarness";
 
 describe("runs on home", () => {
   it("reads a run that did not finish as Did not finish, with its reason, and never as checked", async () => {
@@ -20,6 +21,7 @@ describe("runs on home", () => {
           plant: "factory-utilities",
           durationS: 600,
           recordedAt: "2026-10-14T10:00:00Z",
+          faults: 0,
         },
       ],
     });
@@ -50,6 +52,7 @@ describe("runs on home", () => {
           plant: "factory-utilities",
           durationS: 1800,
           recordedAt: "2026-10-15T10:00:00Z",
+          faults: 0,
         },
         {
           worldId: "w-good",
@@ -61,6 +64,7 @@ describe("runs on home", () => {
           plant: "factory-utilities",
           durationS: 1800,
           recordedAt: "2026-10-15T09:00:00Z",
+          faults: 0,
         },
       ],
     });
@@ -85,6 +89,7 @@ describe("runs on home", () => {
       plant: "factory-utilities",
       durationS: 60,
       recordedAt: `2026-10-14T10:${String(i).padStart(2, "0")}:00Z`,
+      faults: 0,
     }));
     bridge.workspaceOutcome = success({ ...sampleWorkspace, runs });
     await show(bridge);

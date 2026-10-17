@@ -1,4 +1,4 @@
-import { shared, cx } from "../../primitives";
+import { shared } from "../../primitives";
 import type { SyntheticEvent } from "react";
 import { useState } from "react";
 import type { PlantMaker, PlantSource } from "../../../app/plant";
@@ -159,7 +159,7 @@ function Actions({ failure, reason, onCancel }: ActionsProps) {
         >
           Create and open the editor
         </button>
-        <button type="button" className={cx(home.open, shared.button)} onClick={onCancel}>
+        <button type="button" className={shared.button} onClick={onCancel}>
           Cancel
         </button>
         {!ready && (

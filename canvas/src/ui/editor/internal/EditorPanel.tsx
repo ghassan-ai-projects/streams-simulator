@@ -88,7 +88,7 @@ function FirstStep() {
 
 function Build({ draft, plant, editor, request }: PanelProps) {
   const heading = useRequestedFocus<HTMLHeadingElement>(request, "build");
-  const { ref, cut } = useCutBottom<HTMLElement>([draft, plant]);
+  const { ref, cut } = useCutBottom<HTMLElement>();
   return (
     <aside
       ref={ref}

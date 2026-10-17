@@ -1,6 +1,6 @@
-import { panel } from "../../primitives";
+import { holdEnter, panel } from "../../primitives";
 import { FolderPlus } from "lucide-react";
-import type { KeyboardEvent, SyntheticEvent } from "react";
+import type { SyntheticEvent } from "react";
 import { useState } from "react";
 import type { Draft, EditorSession } from "../../../app/editor";
 import type { AreaNode } from "../../../model/shared/areaTree";
@@ -38,10 +38,6 @@ function ParentPick({ nodes, value, onChange }: ParentProps) {
       </select>
     </label>
   );
-}
-
-function holdEnter(event: KeyboardEvent<HTMLFormElement>) {
-  if (event.key === "Enter" && event.target instanceof HTMLSelectElement) event.preventDefault();
 }
 
 export function AddArea({ draft, editor }: AreaProps) {

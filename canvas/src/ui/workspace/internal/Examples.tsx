@@ -4,7 +4,7 @@ import type { NavigationStore } from "../../../app/shell";
 import type { PlantMaker } from "../../../app/plant";
 import type { ExamplePlant } from "../../../model/plant";
 import { suggestedId } from "../../../model/workspace";
-import { cx } from "../../primitives";
+import { cx, screen } from "../../primitives";
 import home from "./HomeScreen.module.css";
 import rowStyles from "./ListSection.module.css";
 import styles from "./Examples.module.css";
@@ -93,7 +93,7 @@ export function ExampleList(props: TryProps) {
         {busy === "" ? "" : `Setting up ${props.examples.find((example) => example.id === busy)?.title ?? busy}…`}
       </p>
       {failure !== "" && (
-        <p role="alert" className={home.failure}>
+        <p role="alert" className={screen.failure}>
           {failure}
         </p>
       )}

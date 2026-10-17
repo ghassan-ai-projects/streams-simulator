@@ -20,7 +20,14 @@ import { failure as failed, success } from "../app/ports";
 import type { Composition } from "../model/editor";
 import type { JournalEntry } from "../model/review";
 import type { Workspace } from "../model/workspace";
-import { editorFailure, failure, launchFailure, plantFailure, sessionFailure, workspaceFailure } from "./fakeFailures";
+import {
+  editorFailure,
+  cannedFailure,
+  launchFailure,
+  plantFailure,
+  sessionFailure,
+  workspaceFailure,
+} from "./fakeFailures";
 import type { Canned, CannedFailure, EditorAction, LaunchStep, PlantAction } from "./fakeFailures";
 import { collect, settle } from "./fakeFailures";
 import {
@@ -37,8 +44,7 @@ import { newPlant } from "./plantBuilder";
 import { reviewDomain, reviewReport, reviewVerify } from "./fakeReview";
 import { sampleWorkspace } from "./workspaceFixture";
 
-export { failure } from "./fakeFailures";
-export { sampleWorkspace } from "./workspaceFixture";
+export { cannedFailure } from "./fakeFailures";
 
 type Handler = (args: Readonly<Record<string, unknown>>) => Canned<unknown> | Promise<Canned<unknown>>;
 interface Written {
@@ -51,11 +57,6 @@ interface Compose {
   readonly etag: string;
 }
 
-/**
- * The in-memory bridge double: the generic driving surface the canvas tests have always used, plus the six typed
- * gateways the application stores now take. Canned failures stay protocol-shaped and are mapped to the owning
- * feature's failure union, exactly as the bridge adapter maps them.
- */
 export class FakeBridge {
   paired = false;
   sessionOutcome: Canned<boolean> | null = null;
@@ -147,9 +148,14 @@ export class FakeBridge {
     };
   }
 
+  addFile(path: string, content: unknown, etag = "e"): void {
+    const text = typeof content === "string" ? content : JSON.stringify(content);
+    this.files.set(path, success({ path, content: text, etag }));
+  }
+
   readFile(path: string): Promise<Canned<FileContent>> {
     this.reads.push(path);
-    return Promise.resolve(this.files.get(path) ?? failed(failure("not_found", 404, `no ${path}`)));
+    return Promise.resolve(this.files.get(path) ?? failed(cannedFailure("not_found", 404, `no ${path}`)));
   }
 
   writeFile(path: string, content: string, etag: string): Promise<Canned<Written>> {
@@ -166,7 +172,7 @@ export class FakeBridge {
     const canned = this.actions.get(name);
     if (canned === undefined && name === "component.new")
       return Promise.resolve(newPlant(this.actions, this.files, args));
-    return Promise.resolve(canned ?? failed(failure("unknown_action", 404)));
+    return Promise.resolve(canned ?? failed(cannedFailure("unknown_action", 404)));
   }
 
   followRun(runId: string, follower: RunFollower): () => void {

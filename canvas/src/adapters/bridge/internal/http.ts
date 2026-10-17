@@ -1,5 +1,6 @@
 import type { Outcome } from "../../../app/ports";
 import { failure, success } from "../../../app/ports";
+import { isRecord, text } from "../../../model/shared/json";
 
 export interface Transport {
   fetch(input: string, init?: RequestInit): Promise<Response>;
@@ -67,7 +68,7 @@ export function action<T, F>(
     actionResult(decoder),
     mapFailure,
     post({ args }),
-    recoverHttp === undefined ? undefined : (problem) => recoverHttp(problem),
+    recoverHttp,
   );
 }
 
@@ -95,7 +96,7 @@ function actionResult<T>(decoder: Decoder<T>): Decoder<T> {
   return (value) => (isRecord(value) && "result" in value ? decoder(value.result) : null);
 }
 
-function post(payload: unknown): RequestInit {
+export function post(payload: unknown): RequestInit {
   return send("POST", payload);
 }
 
@@ -115,8 +116,8 @@ function wireProblem(status: number, value: unknown): WireProblem {
   const body = isRecord(value) && isRecord(value.error) ? value.error : {};
   return {
     status,
-    code: string(body.code) || "bridge_failed",
-    message: string(body.message) || `The bridge answered ${String(status)}.`,
+    code: text(body.code) || "bridge_failed",
+    message: text(body.message) || `The bridge answered ${String(status)}.`,
     issues: issueList(body.issues),
     result: body.result ?? null,
   };
@@ -128,12 +129,4 @@ function issueList(value: unknown): readonly WireIssue[] {
     if (!isRecord(entry) || typeof entry.pointer !== "string" || typeof entry.message !== "string") return [];
     return [{ pointer: entry.pointer, message: entry.message }];
   });
-}
-
-export function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-export function string(value: unknown): string {
-  return typeof value === "string" ? value : "";
 }

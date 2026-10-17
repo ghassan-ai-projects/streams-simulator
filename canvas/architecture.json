@@ -40,7 +40,16 @@
       "folders": ["src/app/shared"],
       "mayImport": ["test"],
       "entrypoint": "src/app/shared/index.ts",
-      "callers": ["app/editor", "app/launch", "app/plant", "app/review", "app/session", "app/shell", "app/workspace"]
+      "callers": [
+        "app/editor",
+        "app/launch",
+        "app/plant",
+        "app/review",
+        "app/session",
+        "app/shell",
+        "app/workspace",
+        "test"
+      ]
     },
     "app/ports": {
       "kind": "foundation",
@@ -138,6 +147,7 @@
         "app/plant",
         "app/review",
         "app/session",
+        "app/shell",
         "app/workspace",
         "model/graph",
         "model/plant",
@@ -185,9 +195,11 @@
       "mayImport": ["test"],
       "entrypoint": null,
       "callers": [
+        "adapters",
         "model/editor",
         "model/graph",
         "model/launch",
+        "model/plant",
         "model/review",
         "model/workspace",
         "ui/editor",
@@ -1017,8 +1029,8 @@
     ],
     "important": 4,
     "zIndex": 17,
-    "positioned": 33,
-    "note": "Phase 1 moved React Flow connection hooks and the minimap panel positioning into vendor.module.css; P5 partitions node, pin, frame, readout, and mark styles, removes local handle !important overrides through scoped selector specificity, and moves minimap node colors into GraphControls.module.css; P5 close-out re-measured the built sheet: the React Flow minimap panel keeps two registered !important declarations (margin, position) in vendor.module.css next to the two on the run action in HomeScreen.module.css, so important is 4 and positioned 33 (the minimap panel is positioned statically against React Flow's absolute default); the vendor and HomeScreen allowances in css.globalCaps account for exactly these four"
+    "positioned": 31,
+    "note": "Phase 1 moved React Flow connection hooks and the minimap panel positioning into vendor.module.css; P5 partitions node, pin, frame, readout, and mark styles, removes local handle !important overrides through scoped selector specificity, and moves minimap node colors into GraphControls.module.css; P5 close-out re-measured the built sheet: the React Flow minimap panel keeps two registered !important declarations (margin, position) in vendor.module.css next to the two on the run action in HomeScreen.module.css, so important is 4 and positioned 33 (the minimap panel is positioned statically against React Flow's absolute default); the vendor and HomeScreen allowances in css.globalCaps account for exactly these four; the UI review removed the dead .mark and .markFault rules from RunScreen.module.css, which lowers positioned to 31 (they matched nothing)"
   },
   "debt": [
     {

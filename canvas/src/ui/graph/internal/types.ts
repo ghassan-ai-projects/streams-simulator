@@ -1,4 +1,5 @@
-import type { Plant, PlantView, PlanMark, Shown, ReadoutBody, NodeStatus } from "../../../model/graph";
+import type { PlantView, PlanMark, Shown, ReadoutBody, NodeStatus } from "../../../model/graph";
+import type { Plant } from "../../../model/plant";
 
 export interface PlantGraphProps {
   readonly view: PlantView;
@@ -8,7 +9,6 @@ export interface PlantGraphProps {
   readonly onSelect: (id: string | null) => void;
   readonly onOpenHall?: (hall: string) => void;
   readonly onEscape?: () => void;
-  readonly minFitZoom?: number;
   readonly anchor?: string | null;
   readonly focusZoom?: number;
   readonly flagged?: ReadonlySet<string>;
