@@ -1,4 +1,4 @@
-import { panel } from "../../primitives";
+import { cx, panel, shared } from "../../primitives";
 import { Plus } from "lucide-react";
 import type { Draft, DraftFault, PlanProblem } from "../../../model/launch";
 import { faultsOf } from "../../../model/plant";
@@ -133,7 +133,7 @@ export function FaultRows({ plant, draft, problems, selected, change }: FaultRow
       <button
         type="button"
         ref={addButton}
-        className={panel.secondary}
+        className={cx(shared.secondary, panel.secondary)}
         onClick={() => {
           add(draft.nextKey);
         }}

@@ -4,7 +4,7 @@ import type { JournalEntry } from "../../../model/review";
 import type { Badge } from "../../../model/review";
 import { badgeOf } from "../../../model/review";
 import { Observable, createOperationIdentity } from "../../shared";
-import type { OperationIdentity, OperationId } from "../../shared";
+import type { OperationIdentity, Operation } from "../../shared";
 import type { Clock, Outcome, ReviewFailure, ReviewGateway, Scheduler } from "../../ports";
 import type { FinalLoads, Load, ReviewState } from "./reviewState";
 import { absentLoads, finalLoadsFor, idle, knownUnfinished, toLoad } from "./reviewState";
@@ -16,7 +16,6 @@ export class ReviewStore extends Observable<ReviewState> {
   private stop: (() => void) | null = null;
   private readonly operations: OperationIdentity;
   private readonly reports = createOperationIdentity();
-  private activeSession: OperationId | null = null;
   private pending = 0;
   private finals: FinalLoads = finalLoadsFor(undefined);
   private cancelFlush: (() => void) | null = null;
@@ -32,7 +31,7 @@ export class ReviewStore extends Observable<ReviewState> {
   }
 
   open(worldId: string, known?: RunEntry): void {
-    if (this.snapshot().worldId === worldId && this.activeSession !== null && this.live(this.activeSession)) return;
+    if (this.snapshot().worldId === worldId && this.operations.current() !== null) return;
     this.close();
     const session = this.beginVisit(worldId, known);
     void this.loadReport(worldId, session);
@@ -53,9 +52,8 @@ export class ReviewStore extends Observable<ReviewState> {
     });
   }
 
-  private beginVisit(worldId: string, known: RunEntry | undefined): OperationId {
+  private beginVisit(worldId: string, known: RunEntry | undefined): Operation {
     const session = this.operations.begin();
-    this.activeSession = session;
     this.finals = finalLoadsFor(known);
     this.pending = 0;
     this.index = new PlaybackIndex();
@@ -72,23 +70,18 @@ export class ReviewStore extends Observable<ReviewState> {
       state.report.value.ended
     )
       return;
-    const session = this.activeSession;
-    if (session === null || !this.live(session)) return;
+    const session = this.operations.current();
+    if (session === null) return;
     this.set({ ...state, report: { phase: "loading" } });
     void this.loadReport(worldId, session);
   }
 
   close(): void {
     this.operations.invalidate();
-    this.activeSession = null;
     this.stop?.();
     this.stop = null;
     this.cancelFlush?.();
     this.cancelFlush = null;
-  }
-
-  private live(session: OperationId): boolean {
-    return this.operations.isCurrent(session);
   }
 
   badgeFor(worldId: string): Badge | null {
@@ -143,14 +136,14 @@ export class ReviewStore extends Observable<ReviewState> {
     this.set({ ...this.snapshot(), tab });
   }
 
-  private take(session: OperationId, entry: JournalEntry): void {
-    if (!this.live(session)) return;
+  private take(session: Operation, entry: JournalEntry): void {
+    if (!session.live()) return;
     if (entry.kind === "observation") this.index.add(entry.observation);
     if (entry.kind === "opened") this.update(session, { adapter: entry.adapter });
     this.pending += 1;
     if (this.pending === 1) {
       this.cancelFlush = this.scheduler.schedule(250, () => {
-        if (!this.live(session)) return;
+        if (!session.live()) return;
         this.cancelFlush = null;
         this.pending = 0;
         this.update(session, {});
@@ -158,8 +151,8 @@ export class ReviewStore extends Observable<ReviewState> {
     }
   }
 
-  private finish(worldId: string, session: OperationId, phase: "ready" | "failed"): void {
-    if (!this.live(session)) return;
+  private finish(worldId: string, session: Operation, phase: "ready" | "failed"): void {
+    if (!session.live()) return;
     this.update(session, { phase });
     if (phase === "ready") this.refreshIfLive(worldId, session);
     const state = this.snapshot();
@@ -168,7 +161,7 @@ export class ReviewStore extends Observable<ReviewState> {
     if (settled !== null && before) this.seek(settled);
   }
 
-  private refreshIfLive(worldId: string, session: OperationId): void {
+  private refreshIfLive(worldId: string, session: Operation): void {
     const state = this.snapshot();
     if (this.finals.refreshed || state.report.phase !== "ready" || state.report.value.ended) return;
     if (state.playback.phase !== "ready") return;
@@ -176,16 +169,16 @@ export class ReviewStore extends Observable<ReviewState> {
     void this.loadReport(worldId, session);
   }
 
-  private update(session: OperationId, playback: Partial<ReviewState["playback"]>): void {
-    if (!this.live(session)) return;
+  private update(session: Operation, playback: Partial<ReviewState["playback"]>): void {
+    if (!session.live()) return;
     const state = this.snapshot();
     this.set({ ...state, playback: { ...state.playback, records: this.index.size, ...playback } });
   }
 
-  private async loadReport(worldId: string, session: OperationId): Promise<void> {
+  private async loadReport(worldId: string, session: Operation): Promise<void> {
     const request = this.reports.begin();
     const applied = await this.loadInto(
-      () => this.live(session) && this.reports.isCurrent(request),
+      () => session.live() && request.live(),
       this.gateway.report(worldId),
       (state, report) => ({ ...state, report }),
     );
@@ -195,7 +188,7 @@ export class ReviewStore extends Observable<ReviewState> {
     this.refreshIfLive(worldId, session);
   }
 
-  private resumeFinalLoads(worldId: string, session: OperationId): void {
+  private resumeFinalLoads(worldId: string, session: Operation): void {
     const state = this.snapshot();
     if (state.report.phase !== "ready" || !state.report.value.ended) return;
     if (this.finals.deferred.delete("domain")) {
@@ -212,17 +205,17 @@ export class ReviewStore extends Observable<ReviewState> {
     }
   }
 
-  private async loadRunDomain(worldId: string, session: OperationId): Promise<void> {
+  private async loadRunDomain(worldId: string, session: Operation): Promise<void> {
     await this.loadInto(
-      () => this.live(session),
+      () => session.live(),
       this.gateway.runDomain(worldId),
       (state, runDomain) => ({ ...state, runDomain }),
     );
   }
 
-  private async loadVerify(worldId: string, session: OperationId): Promise<void> {
+  private async loadVerify(worldId: string, session: Operation): Promise<void> {
     const applied = await this.loadInto(
-      () => this.live(session),
+      () => session.live(),
       this.gateway.verify(worldId),
       (state, verified) => ({ ...state, verified }),
     );

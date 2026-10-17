@@ -4,7 +4,7 @@ import { deferred, flushPromises } from "../../../test/deferred";
 import { FakeBridge } from "../../../test/fakeBridge";
 import type { Canned } from "../../../test/fakeFailures";
 import { fakeClock } from "../../../test/fakeClock";
-import { journal, report } from "../../../test/runFixture";
+import { journalWire, reportWire, reportWith } from "../../../test/runFixture";
 import { ReviewStore } from "./reviewStore";
 
 const listed = {
@@ -24,7 +24,7 @@ function setup() {
   const bridge = new FakeBridge();
   bridge.actions.set("run.verify", success({ matches: true }));
   const gates: ReturnType<typeof deferred<Canned<unknown>>>[] = [];
-  const answers: (Canned<unknown> | null)[] = [success({ ...report, ended: false, complete: false })];
+  const answers: (Canned<unknown> | null)[] = [success(reportWith({ ended: false, complete: false }))];
   bridge.handlers.set("run.report", () => {
     const answer = answers.shift() ?? null;
     if (answer !== null) return answer;
@@ -41,13 +41,13 @@ describe("report ordering", () => {
     const { bridge, gates, store } = setup();
     store.open("w-1", listed);
     await flushPromises();
-    bridge.stream("w-1", journal);
+    bridge.stream("w-1", journalWire);
     store.refreshCompleted("w-1", { ...listed, ended: true, complete: true });
     await flushPromises();
     expect(gates).toHaveLength(2);
-    gates[1]?.resolve(success(report));
+    gates[1]?.resolve(success(reportWire));
     await flushPromises();
-    gates[0]?.resolve(success({ ...report, ended: false }));
+    gates[0]?.resolve(success(reportWith({ ended: false })));
     await flushPromises();
     expect(store.snapshot().report).toMatchObject({ phase: "ready", value: { ended: true } });
     expect(store.badgeFor("w-1")).not.toBe("incomplete");
@@ -57,9 +57,9 @@ describe("report ordering", () => {
     const { bridge, gates, store } = setup();
     store.open("w-1", listed);
     await flushPromises();
-    bridge.stream("w-1", journal);
+    bridge.stream("w-1", journalWire);
     await flushPromises();
-    gates[0]?.resolve(success(report));
+    gates[0]?.resolve(success(reportWire));
     await flushPromises();
     expect(store.snapshot().report).toMatchObject({ phase: "ready", value: { ended: true } });
   });

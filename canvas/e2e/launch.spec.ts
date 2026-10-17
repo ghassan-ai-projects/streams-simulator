@@ -110,7 +110,7 @@ test("a live run marks an effector call on its node and holds the mark for 3 s o
   await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Ffactory-utilities.domain.json`);
   await page.getByRole("button", { name: "Run plant" }).click();
   const panel = page.getByRole("complementary", { name: "Run Factory utilities" });
-  await panel.getByLabel("Duration", { exact: true }).fill("10");
+  await panel.getByLabel("Duration", { exact: true }).fill("20");
   await panel.getByRole("button", { name: "Add effector call" }).click();
   await panel.getByLabel("Effector call 1 instance").selectOption("CH-1");
   await panel.getByLabel("Effector call 1 effector").selectOption({ label: "set setpoint" });

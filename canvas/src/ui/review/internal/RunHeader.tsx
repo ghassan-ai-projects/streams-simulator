@@ -32,7 +32,7 @@ function RunActions({ state, navigation, launch, plant, worldId }: Omit<HeaderPr
     <div className={styles.runActions}>
       <button
         type="button"
-        className={shared.button}
+        className={shared.secondary}
         onClick={() => {
           navigation.go({ screen: "plant", domain: path, hall: null });
         }}
@@ -42,7 +42,7 @@ function RunActions({ state, navigation, launch, plant, worldId }: Omit<HeaderPr
       {report !== null && (
         <button
           type="button"
-          className={shared.button}
+          className={shared.secondary}
           onClick={() => {
             proposeRerun(launch, navigation, state, worldId, path);
           }}

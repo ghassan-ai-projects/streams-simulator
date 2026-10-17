@@ -13,7 +13,7 @@ import { useScreen } from "../../primitives";
 import { ZoomBar } from "../../graph";
 import { EditButton, RunButton, useRunningHere } from "./PlantActions";
 import { PlantCanvas } from "./PlantCanvas";
-import styles from "./PlantScreen.module.css";
+import styles from "./PlantBar.module.css";
 
 export interface RunControls {
   readonly launching: boolean;

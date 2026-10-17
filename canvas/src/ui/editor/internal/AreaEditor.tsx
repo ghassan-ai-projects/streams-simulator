@@ -1,4 +1,4 @@
-import { panel } from "../../primitives";
+import { cx, panel, shared } from "../../primitives";
 import type { SyntheticEvent } from "react";
 import { useId, useState } from "react";
 import type { Draft, EditorSession } from "../../../app/editor";
@@ -23,7 +23,7 @@ function DeleteArea({
   return (
     <button
       type="button"
-      className={panel.secondary}
+      className={cx(shared.secondary, panel.secondary)}
       aria-label={`Delete ${node.path}`}
       aria-disabled={blocked !== null}
       aria-describedby={blocked === null ? undefined : `${id}-blocked`}
@@ -61,7 +61,7 @@ function AreaRow({ draft, editor, node }: RowProps) {
               setName(event.target.value);
             }}
           />
-          <button type="submit" className={panel.secondary} aria-disabled={!ready}>
+          <button type="submit" className={cx(shared.secondary, panel.secondary)} aria-disabled={!ready}>
             Rename
           </button>
           <DeleteArea editor={editor} node={node} blocked={blocked} id={id} />

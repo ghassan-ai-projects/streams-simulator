@@ -1,4 +1,4 @@
-import { panel } from "../../primitives";
+import { cx, panel, shared } from "../../primitives";
 import { Plus } from "lucide-react";
 import type { Draft, DraftCall, PlanProblem } from "../../../model/launch";
 import type { EffectorArg, Plant } from "../../../model/plant";
@@ -223,7 +223,7 @@ export function CallRows({ plant, draft, problems, selected, change }: CallRowsP
         <button
           type="button"
           ref={addButton}
-          className={panel.secondary}
+          className={cx(shared.secondary, panel.secondary)}
           onClick={() => {
             add(draft.nextKey);
           }}

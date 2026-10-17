@@ -1,4 +1,4 @@
-import { panel } from "../../primitives";
+import { cx, panel, shared } from "../../primitives";
 import type { NavigationStore } from "../../../app/shell";
 import styles from "./MissingRun.module.css";
 
@@ -14,7 +14,7 @@ export function MissingRun({
       <p>{`Run ${worldId} is not in this workspace.`}</p>
       <button
         type="button"
-        className={panel.secondary}
+        className={cx(shared.secondary, panel.secondary)}
         onClick={() => {
           navigation.go({ screen: "home" });
         }}

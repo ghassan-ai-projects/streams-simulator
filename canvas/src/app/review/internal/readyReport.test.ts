@@ -3,13 +3,13 @@ import { success } from "../../ports";
 import { FakeBridge } from "../../../test/fakeBridge";
 import { fakeClock } from "../../../test/fakeClock";
 import { flushPromises } from "../../../test/deferred";
-import { report } from "../../../test/runFixture";
+import { report, reportWire } from "../../../test/runFixture";
 import { readyReport, startNsOf } from "./readyReport";
 import { ReviewStore } from "./reviewStore";
 
 function setup() {
   const bridge = new FakeBridge();
-  bridge.actions.set("run.report", success(report));
+  bridge.actions.set("run.report", success(reportWire));
   bridge.actions.set("run.verify", success({ matches: true }));
   const timers = fakeClock();
   return { store: new ReviewStore(bridge.review, timers, timers) };

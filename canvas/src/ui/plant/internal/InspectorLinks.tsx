@@ -1,7 +1,7 @@
 import type { Link } from "../../../model/plant";
 import { hallOf } from "../../../model/graph";
 import { spaced } from "../../../model/shared/words";
-import styles from "./PlantScreen.module.css";
+import styles from "./Inspector.module.css";
 
 function ordered(linked: readonly Link[], side: "in" | "out"): readonly Link[] {
   return [...linked].sort((a, b) => {

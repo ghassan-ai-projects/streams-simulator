@@ -1,23 +1,15 @@
 import { describe, expect, it } from "vitest";
-import type { Deferred } from "../../../test/deferred";
-import { deferred } from "../../../test/deferred";
-import type { FileContent } from "../../ports";
+import { flushPromises } from "../../../test/deferred";
 import { failure as failed, success } from "../../ports";
-import { FakeBridge, cannedFailure } from "../../../test/fakeBridge";
+import { FakeBridge, cannedFailure, cannedFile } from "../../../test/fakeBridge";
 import { sampleWorkspace } from "../../../test/workspaceFixture";
-import type { Canned } from "../../../test/fakeFailures";
-import { domainDocument } from "../../../test/fakeValues";
-import { chillerPorts, composition, domain } from "../../../test/plantFixture";
+import { chillerPorts, componentShown, composition, domain, domainDocument } from "../../../test/plantFixture";
 import { plantStore } from "../../../test/stores";
-
-function file(path: string, value: unknown) {
-  return success({ path, content: typeof value === "string" ? value : JSON.stringify(value), etag: "e" });
-}
 
 function bridge() {
   const fake = new FakeBridge();
-  fake.files.set("domains/mini.domain.json", file("domains/mini.domain.json", domain));
-  fake.files.set("compositions/mini.composition.json", file("compositions/mini.composition.json", composition));
+  fake.addFile("domains/mini.domain.json", domain);
+  fake.addFile("compositions/mini.composition.json", composition);
   return fake;
 }
 
@@ -31,7 +23,7 @@ describe("plant store", () => {
     const fake = bridge();
     fake.actions.set(
       "component.show",
-      success({ entry: { class: "static/heat_exchanger/chiller", tags: ["hvac"] }, document: chillerPorts }),
+      success(componentShown(chillerPorts, {}, { class: "static/heat_exchanger/chiller", tags: ["hvac"] })),
     );
     const store = plantStore(fake.plant);
     await store.load("domains/mini.domain.json", workspace);
@@ -77,7 +69,7 @@ describe("plant store", () => {
       phase: "failed",
       failure: { kind: "missing", diagnostic: { displayCode: "not_found" } },
     });
-    fake.files.set("domains/bad.domain.json", file("domains/bad.domain.json", "{not json"));
+    fake.addFile("domains/bad.domain.json", "{not json");
     fake.files.set("compositions/mini.composition.json", failed(cannedFailure("too_large", 413)));
     await store.load("domains/bad.domain.json", workspace);
     expect(store.snapshot()).toMatchObject({ phase: "ready", plant: { instances: [] } });
@@ -117,39 +109,25 @@ describe("plant store", () => {
 
   it("ends on the plant asked for last when two loads overlap", async () => {
     const fake = bridge();
-    fake.files.set("domains/other.domain.json", file("domains/other.domain.json", { ...domain, id: "other" }));
-    const reads = new Map<string, Deferred<Canned<FileContent>>>();
-    const read = fake.readFile.bind(fake);
-    fake.readFile = (path: string) => {
-      if (path !== "domains/mini.domain.json") return read(path);
-      const held = deferred<Canned<FileContent>>();
-      reads.set(path, held);
-      return held.promise;
-    };
+    fake.addFile("domains/other.domain.json", { ...domain, id: "other" });
+    const held = fake.holdRead("domains/mini.domain.json");
     const store = plantStore(fake.plant);
     const first = store.load("domains/mini.domain.json", workspace);
     const second = store.load("domains/other.domain.json", workspace);
     await second;
-    reads.get("domains/mini.domain.json")?.resolve(file("domains/mini.domain.json", domain));
+    held[0]?.resolve(cannedFile("domains/mini.domain.json", domain));
     await first;
     expect(store.snapshot()).toMatchObject({ phase: "ready", path: "domains/other.domain.json" });
   });
 
   it("reads once while a load of the same plant is in flight, and shows a plant without reading", async () => {
     const fake = bridge();
-    const gate = deferred<Canned<FileContent>>();
-    const read = fake.readFile.bind(fake);
-    let held = true;
-    fake.readFile = (path: string) => {
-      if (path !== "domains/mini.domain.json" || !held) return read(path);
-      held = false;
-      fake.reads.push(path);
-      return gate.promise;
-    };
+    const held = fake.holdRead("domains/mini.domain.json", 1);
     const store = plantStore(fake.plant);
     const first = store.load("domains/mini.domain.json", workspace);
     const second = store.load("domains/mini.domain.json", workspace);
-    gate.resolve(file("domains/mini.domain.json", domain));
+    await flushPromises();
+    held[0]?.resolve(cannedFile("domains/mini.domain.json", domain));
     await Promise.all([first, second]);
     expect(fake.reads.filter((path) => path === "domains/mini.domain.json")).toHaveLength(1);
     await store.show("memory:mini", domainDocument(domain));
@@ -159,41 +137,28 @@ describe("plant store", () => {
 
   it("pairs the composition of the workspace asked for last when the same plant is asked for twice", async () => {
     const fake = bridge();
-    const gate = deferred<Canned<FileContent>>();
-    const read = fake.readFile.bind(fake);
-    let held = true;
-    fake.readFile = (path: string) => {
-      if (path !== "domains/mini.domain.json" || !held) return read(path);
-      held = false;
-      return gate.promise;
-    };
+    const held = fake.holdRead("domains/mini.domain.json", 1);
     const store = plantStore(fake.plant);
     const first = store.load("domains/mini.domain.json", sampleWorkspace);
     const second = store.load("domains/mini.domain.json", workspace);
-    gate.resolve(file("domains/mini.domain.json", domain));
+    await flushPromises();
+    held[0]?.resolve(cannedFile("domains/mini.domain.json", domain));
     await Promise.all([first, second]);
     expect(store.snapshot()).toMatchObject({ phase: "ready", composition: "compositions/mini.composition.json" });
   });
 
   it("ignores an earlier visit's answer when the same plant is asked for again", async () => {
     const fake = bridge();
-    fake.files.set("domains/other.domain.json", file("domains/other.domain.json", { ...domain, id: "other" }));
-    const held: Deferred<Canned<FileContent>>[] = [];
-    const read = fake.readFile.bind(fake);
-    fake.readFile = (path: string) => {
-      if (path !== "domains/mini.domain.json") return read(path);
-      const gate = deferred<Canned<FileContent>>();
-      held.push(gate);
-      return gate.promise;
-    };
+    fake.addFile("domains/other.domain.json", { ...domain, id: "other" });
+    const held = fake.holdRead("domains/mini.domain.json");
     const store = plantStore(fake.plant);
     const first = store.load("domains/mini.domain.json", workspace);
     await store.load("domains/other.domain.json", workspace);
     const third = store.load("domains/mini.domain.json", workspace);
-    held[0]?.resolve(file("domains/mini.domain.json", { ...domain, title: "stale" }));
+    held[0]?.resolve(cannedFile("domains/mini.domain.json", { ...domain, title: "stale" }));
     await first;
     expect(store.snapshot()).not.toMatchObject({ phase: "ready", plant: { title: "stale" } });
-    held[1]?.resolve(file("domains/mini.domain.json", domain));
+    held[1]?.resolve(cannedFile("domains/mini.domain.json", domain));
     await third;
     const state = store.snapshot();
     if (state.phase !== "ready") throw new Error(state.phase);
@@ -202,22 +167,15 @@ describe("plant store", () => {
 
   it("rejects a late load after close and accepts a fresh close-open visit", async () => {
     const fake = bridge();
-    const held: Deferred<Canned<FileContent>>[] = [];
-    const read = fake.readFile.bind(fake);
-    fake.readFile = (path: string) => {
-      if (path !== "domains/mini.domain.json") return read(path);
-      const gate = deferred<Canned<FileContent>>();
-      held.push(gate);
-      return gate.promise;
-    };
+    const held = fake.holdRead("domains/mini.domain.json");
     const store = plantStore(fake.plant);
     const first = store.load("domains/mini.domain.json", workspace);
     store.close();
     const reopened = store.load("domains/mini.domain.json", workspace);
-    held[0]?.resolve(file("domains/mini.domain.json", { ...domain, title: "late" }));
+    held[0]?.resolve(cannedFile("domains/mini.domain.json", { ...domain, title: "late" }));
     await first;
     expect(store.snapshot()).toMatchObject({ phase: "loading", path: "domains/mini.domain.json" });
-    held[1]?.resolve(file("domains/mini.domain.json", domain));
+    held[1]?.resolve(cannedFile("domains/mini.domain.json", domain));
     await reopened;
     expect(store.snapshot()).toMatchObject({ phase: "ready", plant: { title: domain.title } });
   });

@@ -20,7 +20,7 @@ function WeightIssue({ issue, editor }: { readonly issue: ListedIssue; readonly 
       {`Profile "${weight?.profile ?? ""}" has a weight for ${weight?.fault ?? ""}, which no instance declares. `}
       <button
         type="button"
-        className={styles.action}
+        className={shared.secondary}
         onClick={() => {
           editor.edit((doc) => removeProfileWeight(doc, issue.pointer));
         }}

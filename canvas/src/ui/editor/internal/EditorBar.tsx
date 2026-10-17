@@ -1,4 +1,4 @@
-import { screen } from "../../primitives";
+import { screen, shared } from "../../primitives";
 import { PenLine, Redo, RefreshCw, Save, Undo, Undo2 } from "lucide-react";
 import { useState } from "react";
 import type { Draft, EditorSession } from "../../../app/editor";
@@ -38,7 +38,7 @@ function OpenPlant({ draft, navigation }: Omit<BarProps, "editor">) {
   return (
     <button
       type="button"
-      className={styles.action}
+      className={shared.secondary}
       onClick={() => {
         navigation.go({ screen: "plant", domain: domainOf(draft.doc), hall: null });
       }}
@@ -61,7 +61,7 @@ function ShowIssues({
   return (
     <button
       type="button"
-      className={styles.action}
+      className={shared.secondary}
       onClick={() => {
         request.ask("build");
         editor.select(null);
@@ -77,7 +77,7 @@ function Reload({ draft, editor }: Omit<BarProps, "navigation">) {
   return (
     <button
       type="button"
-      className={styles.action}
+      className={shared.secondary}
       onClick={() => {
         void editor.reload();
       }}
@@ -167,7 +167,7 @@ function RevertButton({
   return (
     <button
       type="button"
-      className={confirming ? styles.danger : styles.action}
+      className={confirming ? styles.danger : shared.secondary}
       aria-disabled={disabled}
       onBlur={() => {
         setConfirming(false);
@@ -205,7 +205,7 @@ export function EditorBar({ draft, editor, navigation, request }: BarProps & { r
       <Revert disabled={clean || saving} editor={editor} />
       <button
         type="button"
-        className={styles.save}
+        className={shared.primary}
         aria-disabled={!savable || saving}
         title={savable ? "Save and compose (Ctrl+S)" : "Nothing to save"}
         onClick={() => {

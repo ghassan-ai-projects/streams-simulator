@@ -1,7 +1,7 @@
 import type { Workspace } from "../../../model/workspace";
 import { Observable, createOperationIdentity } from "../../shared";
 import type { WorkspaceFailure, WorkspaceGateway } from "../../ports";
-import type { OperationIdentity, OperationId } from "../../shared";
+import type { OperationIdentity, Operation } from "../../shared";
 
 export type WorkspaceState =
   | { readonly phase: "loading" }
@@ -38,10 +38,10 @@ export class WorkspaceStore extends Observable<WorkspaceState> {
     this.stopWatching = null;
   }
 
-  private async reload(session: OperationId): Promise<void> {
+  private async reload(session: Operation): Promise<void> {
     const request = this.requests.begin();
     const outcome = await this.gateway.load();
-    if (!this.sessions.isCurrent(session) || !this.requests.isCurrent(request)) return;
+    if (!session.live() || !request.live()) return;
     this.set(outcome.ok ? { phase: "ready", workspace: outcome.value } : { phase: "failed", failure: outcome.failure });
   }
 }

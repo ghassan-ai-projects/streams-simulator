@@ -2,6 +2,7 @@ import { Activity, Monitor, Moon, Sun } from "lucide-react";
 import type { ReactNode } from "react";
 import type { ThemePreference } from "../../../model/shell";
 import { preferenceLabel } from "../../../model/shell";
+import labelled from "./Labelled.module.css";
 import styles from "./TopBar.module.css";
 
 interface TopBarProps {
@@ -21,7 +22,7 @@ function ThemeButton({ preference, onCycle }: { readonly preference: ThemePrefer
   const ThemeIcon = themeIcons[preference];
   const label = preferenceLabel(preference);
   return (
-    <button type="button" className={styles.labelled} onClick={onCycle} aria-label={label} title={label}>
+    <button type="button" className={labelled.labelled} onClick={onCycle} aria-label={label} title={label}>
       <ThemeIcon size={16} strokeWidth={2} aria-hidden="true" />
       {`Theme: ${themeWords[preference]}`}
     </button>

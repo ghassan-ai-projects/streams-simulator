@@ -20,7 +20,7 @@ function bridge() {
       example: { ...lab, id: "pilot", title: "Pilot", site: { name: "Pilot plant" }, areas: [{ name: "Utilities" }] },
     }),
   );
-  fake.actions.set("domain.compose", success({ channels: 1 }));
+  fake.actions.set("domain.compose", success({ channels: 1, faults: 0, effectors: 0 }));
   return fake;
 }
 

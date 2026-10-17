@@ -1,4 +1,9 @@
+import type { DomainDocument } from "../app/ports";
 import type { PortSpec } from "../model/plant";
+
+export function domainDocument(value: object): DomainDocument {
+  return value as DomainDocument;
+}
 
 export const domain = {
   id: "mini",
@@ -75,4 +80,18 @@ export function campus(halls: number) {
       { from: id, to: id.replace("M-1", "M-2"), type: "line__feed__line" },
     ]),
   };
+}
+
+export function componentShown(
+  spec: { readonly ports: readonly PortSpec[] },
+  document: object = {},
+  entry: object = {},
+) {
+  const ports = spec.ports.map(({ name, type, direction, channel }) => ({
+    name,
+    type,
+    direction: direction === "out" ? "provides" : "requires",
+    ...(channel === undefined ? {} : { state: channel }),
+  }));
+  return { entry, document: { ...document, ports } };
 }

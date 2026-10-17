@@ -5,11 +5,11 @@ import type { Draft } from "./editorDraft";
 import type { StoreMemo } from "./editorMemo";
 import { outputEtagOf } from "./editorMemo";
 import type { ComposeSummary, EditorFailure, EditorGateway } from "../../ports";
-import type { OperationId } from "../../shared";
+import type { Operation } from "../../shared";
 
 export interface SaveAttempt {
-  readonly id: number;
-  readonly operation: OperationId;
+  readonly operation: Operation;
+  readonly saving: Operation;
   readonly path: string;
   readonly doc: Composition;
   readonly source: string;
@@ -24,11 +24,16 @@ export type SaveResult =
   | { readonly kind: "compose-failed"; readonly failure: EditorFailure }
   | { readonly kind: "composed"; readonly summary: ComposeSummary; readonly outputEtag: string };
 
-export function captureSaveAttempt(id: number, operation: OperationId, draft: Draft, memo: StoreMemo): SaveAttempt {
+export function captureSaveAttempt(
+  operation: Operation,
+  saving: Operation,
+  draft: Draft,
+  memo: StoreMemo,
+): SaveAttempt {
   const output = domainOf(draft.doc);
   return {
-    id,
     operation,
+    saving,
     path: draft.path,
     doc: draft.doc,
     source: serialise(draft.doc),

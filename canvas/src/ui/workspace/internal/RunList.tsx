@@ -85,7 +85,7 @@ function Row({
       <span className={rowStyles.actions}>
         <button
           type="button"
-          className={shared.button}
+          className={shared.secondary}
           aria-label={`Review ${row.run.worldId}`}
           title="Review checks recording integrity using the run files."
           onClick={() => {

@@ -42,7 +42,7 @@ function Action({
   return (
     <button
       type="button"
-      className={run ? cx(home.run, shared.button) : shared.button}
+      className={run ? cx(home.run, shared.secondary) : shared.secondary}
       aria-label={`${label} ${plant.title}`}
       onClick={onClick}
     >
@@ -116,7 +116,7 @@ function Heading({
       <button
         type="button"
         ref={trigger}
-        className={home.create}
+        className={shared.primary}
         aria-expanded={creating}
         aria-disabled={!canCreate}
         title={canCreate ? undefined : "A new plant starts from an existing one."}

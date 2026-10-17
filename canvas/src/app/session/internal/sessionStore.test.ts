@@ -1,10 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { failure as failed, success } from "../../ports";
 import { FakeBridge, cannedFailure } from "../../../test/fakeBridge";
-import { sessionFailure } from "../../../test/fakeFailures";
 import { pairingBlocked, SessionStore } from "./sessionStore";
 
-const refused = (code: string) => sessionFailure(cannedFailure(code, 401));
+async function refused(code: string) {
+  const bridge = new FakeBridge();
+  bridge.pairOutcomes.push(failed(cannedFailure(code)));
+  const outcome = await bridge.session.pair("AAAABBBBCCCC");
+  if (outcome.ok) throw new Error("pairing was accepted");
+  return outcome.failure;
+}
 
 async function unpaired() {
   const bridge = new FakeBridge();
@@ -84,10 +89,10 @@ describe("session", () => {
     }
   });
 
-  it("blocks pairing only for the refusals that close it", () => {
-    expect(pairingBlocked(refused("pairing_locked"))).toBe(true);
-    expect(pairingBlocked(refused("pairing_used"))).toBe(true);
-    expect(pairingBlocked(refused("wrong_code"))).toBe(false);
+  it("blocks pairing only for the refusals that close it", async () => {
+    expect(pairingBlocked(await refused("pairing_locked"))).toBe(true);
+    expect(pairingBlocked(await refused("pairing_used"))).toBe(true);
+    expect(pairingBlocked(await refused("wrong_code"))).toBe(false);
     expect(pairingBlocked(null)).toBe(false);
   });
 

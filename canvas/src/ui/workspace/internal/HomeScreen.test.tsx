@@ -192,7 +192,7 @@ describe("home screen", () => {
       success({ examples: [{ id: "pilot", title: "Pilot", description: "A small plant." }] }),
     );
     bridge.actions.set("component.example", success({ example: { id: "pilot", title: "Pilot", equipment: [] } }));
-    bridge.actions.set("domain.compose", success({}));
+    bridge.actions.set("domain.compose", success({ channels: 1, faults: 0, effectors: 0 }));
     const view = await show(bridge, nav);
     const examples = await screen.findByRole("region", { name: "Try an example" });
     expect(within(examples).getByText("A small plant.")).toBeInTheDocument();

@@ -156,13 +156,13 @@ function Actions({ failure, reason, onCancel }: ActionsProps) {
       <span className={styles.newActions}>
         <button
           type="submit"
-          className={home.create}
+          className={shared.primary}
           aria-disabled={!ready}
           aria-describedby={ready ? undefined : "new-plant-reason"}
         >
           Create and open the editor
         </button>
-        <button type="button" className={shared.button} onClick={onCancel}>
+        <button type="button" className={shared.secondary} onClick={onCancel}>
           Cancel
         </button>
         {!ready && (

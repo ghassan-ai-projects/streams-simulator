@@ -889,11 +889,6 @@
         "global": 2,
         "important": 0,
         "phase": "P5"
-      },
-      "src/ui/workspace/internal/HomeScreen.module.css": {
-        "global": 0,
-        "important": 2,
-        "phase": "P5"
       }
     },
     "colorExceptions": {
@@ -1024,10 +1019,10 @@
         "selector": ".family-air{"
       }
     ],
-    "important": 4,
+    "important": 2,
     "zIndex": 17,
     "positioned": 31,
-    "note": "Phase 1 moved React Flow connection hooks and the minimap panel positioning into vendor.module.css; P5 partitions node, pin, frame, readout, and mark styles, removes local handle !important overrides through scoped selector specificity, and moves minimap node colors into GraphControls.module.css; P5 close-out re-measured the built sheet: the React Flow minimap panel keeps two registered !important declarations (margin, position) in vendor.module.css next to the two on the run action in HomeScreen.module.css, so important is 4 and positioned 33 (the minimap panel is positioned statically against React Flow's absolute default); the vendor and HomeScreen allowances in css.globalCaps account for exactly these four; the UI review removed the dead .mark and .markFault rules from RunScreen.module.css, which lowers positioned to 31 (they matched nothing)"
+    "note": "Phase 1 moved React Flow connection hooks and the minimap panel positioning into vendor.module.css; P5 partitions node, pin, frame, readout, and mark styles, removes local handle !important overrides through scoped selector specificity, and moves minimap node colors into GraphControls.module.css; P5 close-out re-measured the built sheet: the React Flow minimap panel keeps two registered !important declarations (margin, position) in vendor.module.css next to the two on the run action in HomeScreen.module.css, so important is 4 and positioned 33 (the minimap panel is positioned statically against React Flow's absolute default); the vendor and HomeScreen allowances in css.globalCaps account for exactly these four; the UI review removed the dead .mark and .markFault rules from RunScreen.module.css, which lowers positioned to 31 (they matched nothing); the accent and secondary button unification moved the Home run action onto shared custom properties, so its two !important declarations are gone and important is 2 (the minimap panel margin and position)"
   },
   "debt": [],
   "testSupport": ["test"]

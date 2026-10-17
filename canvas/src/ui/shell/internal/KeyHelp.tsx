@@ -5,7 +5,7 @@ import { inTextField } from "../../primitives";
 import styles from "./KeyHelp.module.css";
 import type { Route } from "../../../model/shell";
 import { keyGroups } from "./keyList";
-import topBar from "./TopBar.module.css";
+import labelled from "./Labelled.module.css";
 
 function useToggle(): readonly [boolean, (open: boolean) => void] {
   const [open, setOpen] = useState(false);
@@ -71,7 +71,7 @@ function HelpButton({ open, onOpen }: { readonly open: boolean; readonly onOpen:
   return (
     <button
       type="button"
-      className={topBar.labelled}
+      className={labelled.labelled}
       aria-expanded={open}
       aria-keyshortcuts="?"
       title="Keyboard (?)"

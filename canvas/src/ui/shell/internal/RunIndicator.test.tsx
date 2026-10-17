@@ -2,9 +2,10 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { LaunchStore } from "../../../app/launch";
 import { NavigationStore } from "../../../app/shell";
-import { failure as failed, success } from "../../../test/outcome";
-import { FakeBridge, cannedFailure } from "../../../test/fakeBridge";
+import { failure as failed } from "../../../test/outcome";
+import { cannedFailure } from "../../../test/fakeBridge";
 import { fakeClock } from "../../../test/fakeClock";
+import { launchBridge } from "../../../test/launchFixture";
 import { memoryLocation } from "../../../test/location";
 import { RunIndicator } from "./RunIndicator";
 
@@ -12,11 +13,7 @@ const origin = { domain: "mini", title: "Mini plant", path: "domains/mini.domain
 const plan = { seed: 1, durationS: 60, explore: true, faults: [], calls: [] };
 
 function setup() {
-  const bridge = new FakeBridge();
-  bridge.actions.set("world.create", success({ world_id: "w-5" }));
-  bridge.actions.set("clock.advance", success({}));
-  bridge.actions.set("run.end", success({}));
-  bridge.actions.set("world.destroy", success({}));
+  const bridge = launchBridge("w-5");
   const location = memoryLocation();
   const timers = fakeClock();
   const launch = new LaunchStore(bridge.launch, timers, timers);

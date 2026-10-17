@@ -1,11 +1,8 @@
-import { describe, expect, it } from "vitest";
-import type { FileContent } from "../../ports";
+import { describe, expect, it, vi } from "vitest";
 import { failure as failed, success } from "../../ports";
-import type { Deferred } from "../../../test/deferred";
-import { deferred, flushPromises } from "../../../test/deferred";
+import { flushPromises } from "../../../test/deferred";
 import { equipmentOf } from "../../../model/editor";
-import { FakeBridge, cannedFailure } from "../../../test/fakeBridge";
-import type { Canned } from "../../../test/fakeFailures";
+import { FakeBridge, cannedFailure, cannedFile } from "../../../test/fakeBridge";
 import { canSave, emptyPlant } from "./editorSelectors";
 import { editorStore } from "../../../test/stores";
 
@@ -185,14 +182,13 @@ describe("editor store", () => {
 
   it("keeps the edit on screen when a discard arrives while its save is in flight", async () => {
     const { store, fake } = await opened();
-    const write = deferred<Canned<{ path: string; etag: string }>>();
-    fake.writeFile = () => write.promise;
+    const write = fake.holdWrite();
     store.edit((current) => ({ ...current, title: "Mine" }));
     const saving = store.save();
     await flushPromises();
     store.revert();
     expect(store.snapshot()).toMatchObject({ save: { kind: "saving" }, doc: { title: "Mine" } });
-    write.resolve(success({ path, etag: "c2" }));
+    write[0]?.resolve(success({ path, etag: "c2" }));
     await saving;
     const state = store.snapshot();
     if (state.phase !== "ready") throw new Error(state.phase);
@@ -217,45 +213,31 @@ describe("editor store", () => {
     const fake = bridge();
     const other = "compositions/other.composition.json";
     fake.addFile(other, { ...doc, id: "other" }, "c2");
-    const held: Deferred<Canned<FileContent>>[] = [];
-    const read = fake.readFile.bind(fake);
-    fake.readFile = (requested: string) => {
-      if (requested !== path) return read(requested);
-      const gate = deferred<Canned<FileContent>>();
-      held.push(gate);
-      return gate.promise;
-    };
+    const held = fake.holdRead(path);
     const store = editorStore(fake.editor);
     const first = store.open(path);
     await store.open(other);
     const third = store.open(path);
-    held[0]?.resolve(success({ path, content: JSON.stringify({ ...doc, title: "stale" }), etag: "c1" }));
+    held[0]?.resolve(cannedFile(path, { ...doc, title: "stale" }, "c1"));
     await first;
     const stale = store.snapshot();
     expect(stale).not.toMatchObject({ phase: "ready", doc: { title: "stale" } });
-    held[1]?.resolve(success({ path, content: JSON.stringify(doc), etag: "c1" }));
+    held[1]?.resolve(cannedFile(path, doc, "c1"));
     await third;
     expect(store.snapshot()).toMatchObject({ phase: "ready", path, doc: { title: "Lab" } });
   });
 
   it("rejects a late open after close and accepts the reopened document", async () => {
     const fake = bridge();
-    const reads: Deferred<Canned<FileContent>>[] = [];
-    const read = fake.readFile.bind(fake);
-    fake.readFile = (requested: string) => {
-      if (requested !== path) return read(requested);
-      const gate = deferred<Canned<FileContent>>();
-      reads.push(gate);
-      return gate.promise;
-    };
+    const reads = fake.holdRead(path);
     const store = editorStore(fake.editor);
     const first = store.open(path);
     store.close();
     const reopened = store.open(path);
-    reads[0]?.resolve(success({ path, content: JSON.stringify({ ...doc, title: "late" }), etag: "c1" }));
+    reads[0]?.resolve(cannedFile(path, { ...doc, title: "late" }, "c1"));
     await first;
     expect(store.snapshot()).toMatchObject({ phase: "loading", path });
-    reads[1]?.resolve(success({ path, content: JSON.stringify(doc), etag: "c1" }));
+    reads[1]?.resolve(cannedFile(path, doc, "c1"));
     await reopened;
     expect(store.snapshot()).toMatchObject({ phase: "ready", doc: { title: "Lab" } });
   });
@@ -267,21 +249,14 @@ describe("editor store", () => {
     fake.addFile(other, { ...doc, id: "other" }, "c2");
     fake.addFile(otherDomain, "{}", "d2");
     const { store } = await opened(fake);
-    const heldVersion = deferred<Canned<FileContent>>();
-    const versionRead = deferred<true>();
-    const read = fake.readFile.bind(fake);
-    fake.readFile = (requested) => {
-      if (requested === "domains/lab.domain.json") {
-        versionRead.resolve(true);
-        return heldVersion.promise;
-      }
-      return read(requested);
-    };
+    const heldVersion = fake.holdRead("domains/lab.domain.json");
     const saving = store.save();
-    await versionRead.promise;
+    await vi.waitFor(() => {
+      expect(heldVersion).toHaveLength(1);
+    });
     store.close();
     await store.open(other);
-    heldVersion.resolve(success({ path: "domains/lab.domain.json", content: "{}", etag: "d9" }));
+    heldVersion[0]?.resolve(cannedFile("domains/lab.domain.json", "{}", "d9"));
     await saving;
     expect(store.snapshot()).toMatchObject({
       phase: "ready",

@@ -3,7 +3,7 @@ import type { LaunchState, LaunchStore } from "../../../app/launch";
 import type { NavigationStore } from "../../../app/shell";
 import { runProgressWords } from "../../../model/launch";
 import { shared, useStore } from "../../primitives";
-import styles from "./TopBar.module.css";
+import styles from "./RunIndicator.module.css";
 
 interface IndicatorProps {
   readonly launch: LaunchStore;

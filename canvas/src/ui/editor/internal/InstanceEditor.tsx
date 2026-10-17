@@ -63,7 +63,7 @@ function Rename({
             setName(event.target.value);
           }}
         />
-        <button type="submit" className={panel.secondary} aria-disabled={!ready}>
+        <button type="submit" className={cx(shared.secondary, panel.secondary)} aria-disabled={!ready}>
           Rename
         </button>
       </span>
@@ -108,7 +108,7 @@ function LinkRow({ wire, instance, editor }: { readonly wire: Connection } & Pic
       </span>
       <button
         type="button"
-        className={panel.secondary}
+        className={cx(shared.secondary, panel.secondary)}
         aria-label={`Remove link: ${linkWords(end)}`}
         title="Remove this link"
         onClick={() => {

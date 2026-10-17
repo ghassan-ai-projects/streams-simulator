@@ -5,7 +5,7 @@ import { parseDomainFile, parsePlant } from "../../../model/plant";
 import type { ComponentSpec } from "../../../model/plant";
 import { componentSpecs } from "./componentSpecs";
 import { Observable } from "../../shared";
-import type { OperationIdentity, OperationId } from "../../shared";
+import type { OperationIdentity, Operation } from "../../shared";
 import type { DomainDocument, FileContent, Outcome, PlantFailure, PlantGateway } from "../../ports";
 
 export type PlantState =
@@ -67,16 +67,12 @@ export class PlantStore extends Observable<PlantState> {
     const held = this.held(path);
     if (held === null) this.set({ phase: "loading", path });
     const file = await this.gateway.readFile(path);
-    if (!this.current(request) || unchanged(held, this.etag, file, workspace)) return;
+    if (!request.live() || unchanged(held, this.etag, file, workspace)) return;
     if (!file.ok) {
       this.set({ phase: "failed", path, failure: file.failure });
       return;
     }
     await this.open(request, path, file.value, workspace, held?.selected ?? null);
-  }
-
-  private current(request: OperationId): boolean {
-    return this.operations.isCurrent(request);
   }
 
   private loading(path: string, workspace: Workspace): boolean {
@@ -95,7 +91,7 @@ export class PlantStore extends Observable<PlantState> {
   }
 
   private async open(
-    request: OperationId,
+    request: Operation,
     path: string,
     file: FileContent,
     workspace: Workspace,
@@ -106,7 +102,7 @@ export class PlantStore extends Observable<PlantState> {
     const plant = parsePlant(domain, composition === null ? null : await this.composition(composition));
     const kept = plant.instances.some((instance) => instance.id === selected) ? selected : null;
     const specs = await this.specs(plant);
-    if (!this.current(request)) return;
+    if (!request.live()) return;
     this.opened({ path, etag: file.etag, plant, specs, composition, selected: kept });
   }
 
@@ -117,7 +113,7 @@ export class PlantStore extends Observable<PlantState> {
     this.set({ phase: "loading", path: key });
     const plant = parsePlant(domain);
     const specs = await this.specs(plant);
-    if (!this.current(request)) return;
+    if (!request.live()) return;
     this.opened({ path: key, etag: "", plant, specs, composition: null, selected: null });
   }
 

@@ -9,7 +9,7 @@ import { counted, runFacts, whenOf } from "../../../model/workspace";
 import { MetaParts } from "../../primitives";
 import { cx } from "../../primitives";
 import { useCutBottom } from "../../primitives";
-import styles from "./PlantScreen.module.css";
+import styles from "./Inspector.module.css";
 
 function counts(values: readonly string[]): readonly (readonly [string, number])[] {
   const tally = new Map<string, number>();

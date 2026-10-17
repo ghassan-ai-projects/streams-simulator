@@ -1,7 +1,7 @@
 import { isDirty, isSaving } from "../../../app/editor";
 import type { EditorSession } from "../../../app/editor";
 import type { NavigationStore } from "../../../app/shell";
-import { useStore } from "../../primitives";
+import { shared, useStore } from "../../primitives";
 import { useFocusOnMount } from "../../primitives";
 import styles from "./Editor.module.css";
 import leave from "./LeaveDialog.module.css";
@@ -29,7 +29,7 @@ function LeaveButtons({ editor, navigation }: Props) {
       <button
         type="button"
         ref={stay}
-        className={styles.action}
+        className={shared.secondary}
         onClick={() => {
           navigation.stay();
         }}
@@ -41,7 +41,7 @@ function LeaveButtons({ editor, navigation }: Props) {
       </button>
       <button
         type="button"
-        className={styles.save}
+        className={shared.primary}
         onClick={() => {
           void saveAndLeave();
         }}

@@ -3,8 +3,8 @@ import { useRef, useState } from "react";
 import type { NavigationStore } from "../../../app/shell";
 import type { PlantMaker } from "../../../app/plant";
 import type { ExamplePlant } from "../../../model/plant";
+import { shared } from "../../primitives";
 import { NewPlantForm } from "./NewPlant";
-import home from "./HomeScreen.module.css";
 import styles from "./EmptyStart.module.css";
 
 interface BlankStartProps {
@@ -26,7 +26,7 @@ export function BlankPlantStart({ examples, maker, navigation }: BlankStartProps
       <button
         type="button"
         ref={trigger}
-        className={home.create}
+        className={shared.primary}
         aria-expanded={creating}
         aria-disabled={!available}
         title={available ? undefined : "The plant frame is still loading."}

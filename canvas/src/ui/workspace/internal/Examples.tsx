@@ -4,7 +4,7 @@ import type { NavigationStore } from "../../../app/shell";
 import type { PlantMaker } from "../../../app/plant";
 import type { ExamplePlant } from "../../../model/plant";
 import { suggestedId } from "../../../model/workspace";
-import { cx, screen } from "../../primitives";
+import { cx, screen, shared } from "../../primitives";
 import home from "./HomeScreen.module.css";
 import rowStyles from "./ListSection.module.css";
 import styles from "./Examples.module.css";
@@ -56,7 +56,7 @@ function TryButton({
   return (
     <button
       type="button"
-      className={home.create}
+      className={shared.primary}
       aria-disabled={busy !== ""}
       onClick={() => {
         if (busy === "") void onTry(example);

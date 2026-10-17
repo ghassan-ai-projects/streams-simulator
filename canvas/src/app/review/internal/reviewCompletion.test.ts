@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { success } from "../../ports";
 import { FakeBridge } from "../../../test/fakeBridge";
 import { fakeClock } from "../../../test/fakeClock";
-import { journal, report } from "../../../test/runFixture";
+import { journalWire, reportWire, reportWith } from "../../../test/runFixture";
 import { ReviewStore } from "./reviewStore";
 
 const path = "runs/w-1/run.json";
@@ -38,14 +38,14 @@ async function expectRecordedPlant(store: ReviewStore) {
 describe("reviewing a run listed before completion", () => {
   it("loads the recorded plant when the watched run closes", async () => {
     const { bridge, store } = setup();
-    bridge.actions.set("run.report", success({ ...report, ended: false, complete: false }));
+    bridge.actions.set("run.report", success(reportWith({ ended: false, complete: false })));
     store.open("w-1", pending);
     await vi.waitFor(() => {
       expect(store.snapshot().report).toMatchObject({ phase: "ready", value: { ended: false } });
     });
     expect(bridge.reads).toEqual([]);
-    bridge.actions.set("run.report", success(report));
-    bridge.stream("w-1", journal);
+    bridge.actions.set("run.report", success(reportWire));
+    bridge.stream("w-1", journalWire);
     await expectRecordedPlant(store);
     expect(bridge.reads).toEqual([path]);
     expect(bridge.calls.filter((call) => call.name === "run.verify")).toHaveLength(1);
@@ -54,17 +54,17 @@ describe("reviewing a run listed before completion", () => {
 
   it("waits for artifact publication after the journal has already closed", async () => {
     const { bridge, store } = setup();
-    bridge.actions.set("run.report", success({ ...report, ended: false, complete: false }));
+    bridge.actions.set("run.report", success(reportWith({ ended: false, complete: false })));
     store.open("w-1", pending);
     await vi.waitFor(() => {
       expect(store.snapshot().report.phase).toBe("ready");
     });
-    bridge.stream("w-1", journal);
+    bridge.stream("w-1", journalWire);
     await vi.waitFor(() => {
       expect(bridge.calls.filter((call) => call.name === "run.report")).toHaveLength(2);
     });
     expect(bridge.calls.some((call) => call.name === "run.verify")).toBe(false);
-    bridge.actions.set("run.report", success(report));
+    bridge.actions.set("run.report", success(reportWire));
     store.refreshCompleted("w-1", { ...pending, ended: true, complete: true });
     await expectRecordedPlant(store);
     expect(store.snapshot().verified).toMatchObject({ phase: "ready", value: { matches: true } });
@@ -73,7 +73,7 @@ describe("reviewing a run listed before completion", () => {
 
   it("uses the completed report when the listing is stale, without waiting for another stream close", async () => {
     const { bridge, store } = setup();
-    bridge.actions.set("run.report", success(report));
+    bridge.actions.set("run.report", success(reportWire));
     store.open("w-1", pending);
     await expectRecordedPlant(store);
     expect(store.snapshot().verified).toMatchObject({ phase: "ready", value: { matches: true } });
@@ -84,7 +84,7 @@ describe("reviewing a run listed before completion", () => {
 
   it("reads an ended incomplete recording's plant without asking for an unavailable verdict", async () => {
     const { bridge, store } = setup();
-    bridge.actions.set("run.report", success({ ...report, complete: false }));
+    bridge.actions.set("run.report", success(reportWith({ complete: false })));
     store.open("w-1", { ...pending, ended: true });
     await expectRecordedPlant(store);
     expect(store.snapshot().verified).toMatchObject({

@@ -1,25 +1,16 @@
-import { success } from "../app/ports";
+import { deferred } from "./deferred";
 import type { Canned } from "./fakeFailures";
 import { FakeBridge } from "./fakeBridge";
-import { launchBridge } from "./launchFixture";
+import { advanced, launchBridge } from "./launchFixture";
 
 export class HeldBridge extends FakeBridge {
   private held: (() => void) | null = null;
-  private open = false;
+  private freed = false;
 
   constructor() {
     super();
     launchBridge().actions.forEach((outcome, name) => this.actions.set(name, outcome));
-  }
-
-  override action(name: string, args: Readonly<Record<string, unknown>>): Promise<Canned<unknown>> {
-    if (name !== "clock.advance" || this.open) return super.action(name, args);
-    this.calls.push({ name, args });
-    return new Promise((resolve) => {
-      this.held = () => {
-        resolve(success({}));
-      };
-    });
+    this.handlers.set("clock.advance", () => this.advance());
   }
 
   release(): void {
@@ -27,7 +18,16 @@ export class HeldBridge extends FakeBridge {
   }
 
   free(): void {
-    this.open = true;
+    this.freed = true;
     this.held?.();
+  }
+
+  private advance(): Promise<Canned<unknown>> | Canned<unknown> {
+    if (this.freed) return advanced;
+    const gate = deferred<Canned<unknown>>();
+    this.held = () => {
+      gate.resolve(advanced);
+    };
+    return gate.promise;
   }
 }

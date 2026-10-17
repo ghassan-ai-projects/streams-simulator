@@ -3,12 +3,12 @@ import { describe, expect, it } from "vitest";
 import { failure as failed, success } from "../../ports";
 import { FakeBridge, cannedFailure } from "../../../test/fakeBridge";
 import { fakeClock } from "../../../test/fakeClock";
-import { journal, report } from "../../../test/runFixture";
+import { journalWire, reportWire, reportWith } from "../../../test/runFixture";
 import { ReviewStore } from "./reviewStore";
 
 function setup() {
   const bridge = new FakeBridge();
-  bridge.actions.set("run.report", success(report));
+  bridge.actions.set("run.report", success(reportWire));
   bridge.actions.set("run.verify", success({ matches: true }));
   const timers = fakeClock();
   const store = new ReviewStore(bridge.review, timers, timers);
@@ -18,10 +18,7 @@ function setup() {
 describe("review", () => {
   it("draws the domain the run used from run.json, and says when it cannot", async () => {
     const { bridge, store } = setup();
-    bridge.files.set(
-      "runs/w-1/run.json",
-      success({ path: "runs/w-1/run.json", content: JSON.stringify({ domain_spec: { id: "mini" } }), etag: "e" }),
-    );
+    bridge.addFile("runs/w-1/run.json", { domain_spec: { id: "mini" } });
     store.open("w-1");
     await flushPromises();
     expect(store.snapshot().runDomain).toEqual({ phase: "ready", value: { id: "mini" } });
@@ -75,7 +72,7 @@ describe("review", () => {
       report: { phase: "ready", value: { domainId: "mini" } },
       verified: { phase: "ready", value: { matches: true, domainChanged: false, detail: "", reason: "", file: "" } },
     });
-    bridge.stream("w-1", journal);
+    bridge.stream("w-1", journalWire);
     timers.advance(250);
     expect(store.snapshot().playback).toEqual({ phase: "ready", records: 4, adapter: "native-jsonl" });
     expect(store.snapshot().positionNs).toBe(12e9);
@@ -87,7 +84,7 @@ describe("review", () => {
     store.open("w-1");
     store.play();
     expect(store.snapshot().playing).toBe(false);
-    bridge.stream("w-1", journal, null);
+    bridge.stream("w-1", journalWire, null);
     timers.advance(250);
     store.play();
     expect(store.snapshot()).toMatchObject({ playing: true, positionNs: 12e9 });
@@ -96,7 +93,7 @@ describe("review", () => {
   it("plays back at its speed from the start, stops at the end and plays again from the start", () => {
     const { bridge, store, timers } = setup();
     store.open("w-1");
-    bridge.stream("w-1", journal);
+    bridge.stream("w-1", journalWire);
     timers.advance(250);
     store.tick(1000);
     expect(store.snapshot().positionNs).toBe(12e9);
@@ -133,7 +130,7 @@ describe("review", () => {
     store.open("w-2");
     expect([...bridge.followers.keys()]).toEqual(["w-2"]);
     await flushPromises();
-    bridge.stream("w-1", journal);
+    bridge.stream("w-1", journalWire);
     expect(store.snapshot()).toMatchObject({ worldId: "w-2", playback: { records: 0 } });
   });
 
@@ -173,12 +170,12 @@ describe("review", () => {
 
   it("reads the report and verification again when a run it watched live closes, once", async () => {
     const { bridge, store, timers } = setup();
-    bridge.actions.set("run.report", success({ ...report, ended: false }));
+    bridge.actions.set("run.report", success(reportWith({ ended: false })));
     store.open("w-1");
     await flushPromises();
     expect(store.snapshot().report).toMatchObject({ phase: "ready", value: { ended: false } });
-    bridge.actions.set("run.report", success(report));
-    bridge.stream("w-1", journal);
+    bridge.actions.set("run.report", success(reportWire));
+    bridge.stream("w-1", journalWire);
     timers.advance(250);
     await flushPromises();
     expect(bridge.calls.filter((call) => call.name === "run.report")).toHaveLength(2);
@@ -190,12 +187,7 @@ describe("review", () => {
     const { bridge, store } = setup();
     bridge.actions.set(
       "run.report",
-      success({
-        ...report,
-        ended: false,
-        complete: false,
-        incompleteReason: "the run did not close.",
-      }),
+      success(reportWith({ ended: false, complete: false, incomplete_reason: "the run did not close." })),
     );
     store.open("w-9", { ...entry, worldId: "w-9", ended: true, complete: false });
     await flushPromises();
@@ -224,7 +216,7 @@ describe("review", () => {
 
   it("answers a run the listing still shows as open from the listing, not the network", async () => {
     const { bridge, store } = setup();
-    bridge.actions.set("run.report", success({ ...report, ended: false, complete: false, incompleteReason: "" }));
+    bridge.actions.set("run.report", success(reportWith({ ended: false, complete: false, incomplete_reason: "" })));
     store.open("w-9", { ...entry, worldId: "w-9", ended: false, complete: false });
     await flushPromises();
     expect(bridge.calls.map((call) => call.name)).toEqual(["run.report"]);
@@ -245,12 +237,12 @@ describe("review", () => {
 
   it("finishes a run listed as open when its journal closes while the review watches", async () => {
     const { bridge, store, timers } = setup();
-    bridge.actions.set("run.report", success({ ...report, ended: false, complete: false }));
+    bridge.actions.set("run.report", success(reportWith({ ended: false, complete: false })));
     store.open("w-1", { ...entry, worldId: "w-1", ended: false, complete: false });
     await flushPromises();
     expect(bridge.calls.map((call) => call.name)).toEqual(["run.report"]);
-    bridge.actions.set("run.report", success(report));
-    bridge.stream("w-1", journal);
+    bridge.actions.set("run.report", success(reportWire));
+    bridge.stream("w-1", journalWire);
     timers.advance(250);
     await flushPromises();
     expect(bridge.calls.filter((call) => call.name === "run.report")).toHaveLength(2);
@@ -263,10 +255,10 @@ describe("review", () => {
 
   it("re-asks nothing doomed when an abandoned run's journal stream closes", async () => {
     const { bridge, store, timers } = setup();
-    bridge.actions.set("run.report", success({ ...report, ended: false, complete: false }));
+    bridge.actions.set("run.report", success(reportWith({ ended: false, complete: false })));
     store.open("w-9", { ...entry, worldId: "w-9", ended: true, complete: false });
     await flushPromises();
-    bridge.stream("w-9", journal);
+    bridge.stream("w-9", journalWire);
     timers.advance(250);
     await flushPromises();
     expect(store.snapshot().playback).toMatchObject({ phase: "ready" });

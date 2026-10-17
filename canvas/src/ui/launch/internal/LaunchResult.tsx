@@ -1,4 +1,4 @@
-import { panel } from "../../primitives";
+import { cx, panel, shared } from "../../primitives";
 import type { LaunchState } from "../../../app/launch";
 import type { CallOutcome } from "../../../model/launch";
 import { planSummary } from "../../../model/launch";
@@ -43,7 +43,7 @@ export function Result({ state, onOpen }: { readonly state: Done; readonly onOpe
           ))}
         </ul>
       )}
-      <button type="button" className={panel.primary} onClick={onOpen}>
+      <button type="button" className={cx(shared.primary, panel.primary)} onClick={onOpen}>
         Open the review
       </button>
     </div>

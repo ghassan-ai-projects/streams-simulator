@@ -1,0 +1,47 @@
+.run-running,
+.run-done,
+.run-failed {
+  display: flex;
+  align-items: center;
+  height: 30px;
+  border: 1px solid var(--border-strong);
+  border-radius: 15px;
+  background: var(--surface-sunken);
+  overflow: hidden;
+}
+
+.run-done {
+  border-color: var(--status-ok);
+  background: var(--status-ok-bg);
+}
+
+.run-failed {
+  border-color: var(--status-warn);
+  background: var(--status-warn-bg);
+}
+
+.runOpen,
+.runDismiss {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 100%;
+  padding: 0 var(--space-3);
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.runOpen:hover,
+.runDismiss:hover {
+  background: var(--surface-hover);
+}
+
+.runDismiss {
+  padding: 0 var(--space-2);
+  border-left: 1px solid var(--border-subtle);
+}

@@ -4,8 +4,6 @@ import { isDirty } from "../../../app/editor";
 import { NavigationStore } from "../../../app/shell";
 import { editing, path, current } from "../../../test/editorHarness";
 import { success } from "../../../test/outcome";
-import { deferred } from "../../../test/deferred";
-import type { Canned } from "../../../test/fakeFailures";
 import { memoryLocation } from "../../../test/location";
 import { PendingLeave } from "./LeaveDialog";
 
@@ -58,13 +56,15 @@ describe("leaving the editor with unsaved changes", () => {
 
   it("cannot discard while the save is still being written", async () => {
     const { fake } = await dirtyEditor();
-    const write = deferred<Canned<{ path: string; etag: string }>>();
-    fake.writeFile = () => write.promise;
+    const write = fake.holdWrite();
     fireEvent.click(screen.getByRole("button", { name: "Save and leave" }));
     await vi.waitFor(() => {
       expect(screen.getByRole("button", { name: "Discard and leave" })).toBeDisabled();
     });
-    write.resolve(success({ path, etag: "c2" }));
+    await vi.waitFor(() => {
+      expect(write).toHaveLength(1);
+    });
+    write[0]?.resolve(success({ path, etag: "c2" }));
     await vi.waitFor(() => {
       expect(screen.queryByRole("dialog")).toBeNull();
     });

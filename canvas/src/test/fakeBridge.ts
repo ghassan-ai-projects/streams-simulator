@@ -1,60 +1,39 @@
-import type {
-  BridgeAdapters,
-  ComposeSummary,
-  EditorFailure,
-  EditorGateway,
-  FileContent,
-  LaunchFailure,
-  LaunchGateway,
-  Outcome,
-  PlantFailure,
-  PlantGateway,
-  PlantSource,
-  ReviewGateway,
-  RunFollower,
-  SessionFailure,
-  SessionGateway,
-  WorkspaceGateway,
-} from "../app/ports";
+import { bridgeAdapter } from "../adapters/bridge";
+import type { FileContent } from "../app/ports";
 import { failure as failed, success } from "../app/ports";
-import type { Composition } from "../model/editor";
-import type { JournalEntry } from "../model/review";
 import type { Workspace } from "../model/workspace";
-import {
-  editorFailure,
-  cannedFailure,
-  launchFailure,
-  plantFailure,
-  sessionFailure,
-  workspaceFailure,
-} from "./fakeFailures";
-import type { Canned, CannedFailure, EditorAction, LaunchStep, PlantAction } from "./fakeFailures";
-import { collect, settle } from "./fakeFailures";
-import {
-  acknowledgementOf,
-  compositionOf,
-  examplesOf,
-  libraryOf,
-  presetsOf,
-  specOf,
-  summaryOf,
-  worldOf,
-} from "./fakeValues";
+import type { Deferred } from "./deferred";
+import { deferred } from "./deferred";
+import { cannedFailure } from "./fakeFailures";
+import type { Canned } from "./fakeFailures";
+import { FakeSource, answer, workspaceWire } from "./fakeWire";
 import { newPlant } from "./plantBuilder";
-import { reviewDomain, reviewReport, reviewVerify } from "./fakeReview";
 import { sampleWorkspace } from "./workspaceFixture";
 
 export { cannedFailure } from "./fakeFailures";
 
-type Handler = (args: Readonly<Record<string, unknown>>) => Canned<unknown> | Promise<Canned<unknown>>;
+export function cannedFile(path: string, content: unknown, etag = "e"): Canned<FileContent> {
+  return success({ path, content: typeof content === "string" ? content : JSON.stringify(content), etag });
+}
+
+type Args = Readonly<Record<string, unknown>>;
+type Reply<T = unknown> = Canned<T> | Promise<Canned<T>>;
+type Handler = (args: Args) => Reply;
+type Transport = Parameters<typeof bridgeAdapter>[0];
+interface Body {
+  readonly args?: Args;
+  readonly code?: string;
+  readonly path?: string;
+  readonly content?: string;
+  readonly etag?: string;
+}
 interface Written {
   readonly path: string;
   readonly etag: string;
 }
-interface Compose {
-  readonly composition: string;
-  readonly output: string;
-  readonly etag: string;
+interface Hold {
+  remaining: number;
+  readonly gates: Deferred<Canned<never>>[];
 }
 
 export class FakeBridge {
@@ -65,224 +44,151 @@ export class FakeBridge {
   files = new Map<string, Canned<FileContent>>();
   actions = new Map<string, Canned<unknown>>();
   handlers = new Map<string, Handler>();
-  calls: { name: string; args: Readonly<Record<string, unknown>> }[] = [];
+  calls: { name: string; args: Args }[] = [];
   reads: string[] = [];
   writes: { path: string; content: string; etag: string }[] = [];
   writeOutcomes = new Map<string, Canned<Written>>();
-  watchers = new Set<() => void>();
-  followers = new Map<string, RunFollower>();
-  follows: RunFollower[] = [];
+  watchers = new Set<FakeSource>();
+  followers = new Map<string, FakeSource>();
+  follows: FakeSource[] = [];
   pairedCodes: string[] = [];
-
-  readonly session: SessionGateway = {
-    check: () => Promise.resolve(settle(this.sessionOutcome ?? success(this.paired), sessionFailure)),
-    pair: (code) => Promise.resolve(this.pairWith(code)),
+  private readonly holds = new Map<string, Hold>();
+  private readonly transport: Transport = {
+    fetch: (input, init) => this.serve(input, init),
+    events: (url) => this.openSource(url) as unknown as EventSource,
   };
 
-  readonly workspace: WorkspaceGateway = {
-    load: () => Promise.resolve(settle(this.workspaceOutcome, workspaceFailure)),
-    watch: (onChange) => this.watchWorkspace(onChange),
-  };
-
-  readonly plant: PlantGateway = {
-    readFile: (path) => this.readFile(path).then((file) => settle(file, (problem) => plantFailure("read", problem))),
-    component: (ref) => this.plantRead("component.show", { ref }, specOf),
-    examples: () => this.plantRead("component.examples", {}, examplesOf),
-    generateComposition: (input) => this.generate(input),
-    writeFile: (path, content, etag) =>
-      this.writeFile(path, content, etag).then((written) =>
-        settle(written, (problem) => plantFailure("write", problem)),
-      ),
-    compose: (input) => this.composed("domain.compose", input, (problem) => plantFailure("compose", problem)),
-  };
-
-  readonly editor: EditorGateway = {
-    readFile: (path) => this.readFile(path).then((file) => settle(file, (problem) => editorFailure("read", problem))),
-    library: () => this.editorRead("component.list", {}, libraryOf),
-    component: (ref) => this.editorRead("component.show", { ref }, specOf),
-    presets: (ref) => this.editorRead("component.show", { ref }, presetsOf),
-    writeFile: (path, content, etag) =>
-      this.writeFile(path, content, etag).then((written) =>
-        settle(written, (problem) => editorFailure("write", problem)),
-      ),
-    compose: (input) => this.composed("domain.compose", input, (problem) => editorFailure("compose", problem)),
-  };
-
-  readonly launch: LaunchGateway = {
-    createWorld: (input) =>
-      this.launchStep(
-        "create",
-        "world.create",
-        { domain: input.domain, seed: input.seed, explore: input.explore },
-        worldOf,
-      ),
-    advance: (worldId, byNs) => this.voidStep("advance", "clock.advance", { world_id: worldId, by_ns: byNs }),
-    inject: (worldId, entity, fault) =>
-      this.voidStep("inject", "fault.inject", { world_id: worldId, entity_id: entity, fault }),
-    invoke: (worldId, entity, effector, args) =>
-      this.launchStep(
-        "invoke",
-        "effector.invoke",
-        { world_id: worldId, entity_id: entity, effector, args },
-        acknowledgementOf,
-      ),
-    endRun: (worldId) => this.voidStep("end", "run.end", { world_id: worldId }),
-    destroyWorld: (worldId) => this.destroy(worldId),
-  };
-
-  readonly review: ReviewGateway = {
-    report: (runId) => reviewReport(this, runId),
-    verify: (runId) => reviewVerify(this, runId),
-    runDomain: (runId) => reviewDomain(this, runId),
-    follow: (runId, follower) => this.followRun(runId, follower),
-  };
-
-  adapters(): BridgeAdapters {
-    return {
-      session: this.session,
-      workspace: this.workspace,
-      plant: this.plant,
-      editor: this.editor,
-      launch: this.launch,
-      review: this.review,
-    };
-  }
+  readonly gateways = bridgeAdapter(this.transport);
+  readonly session = this.gateways.session;
+  readonly workspace = this.gateways.workspace;
+  readonly plant = this.gateways.plant;
+  readonly editor = this.gateways.editor;
+  readonly launch = this.gateways.launch;
+  readonly review = this.gateways.review;
 
   addFile(path: string, content: unknown, etag = "e"): void {
-    const text = typeof content === "string" ? content : JSON.stringify(content);
-    this.files.set(path, success({ path, content: text, etag }));
+    this.files.set(path, cannedFile(path, content, etag));
   }
 
-  readFile(path: string): Promise<Canned<FileContent>> {
-    this.reads.push(path);
-    return Promise.resolve(this.files.get(path) ?? failed(cannedFailure("not_found", 404, `no ${path}`)));
+  holdRead(path: string, count = Infinity): Deferred<Canned<FileContent>>[] {
+    return this.hold(`file:${path}`, count);
   }
 
-  writeFile(path: string, content: string, etag: string): Promise<Canned<Written>> {
-    this.writes.push({ path, content, etag });
-    const outcome = this.writeOutcomes.get(path) ?? success({ path, etag: `e${String(this.writes.length)}` });
-    if (outcome.ok) this.files.set(path, success({ path, content, etag: outcome.value.etag }));
-    return Promise.resolve(outcome);
+  holdWrite(count = Infinity): Deferred<Canned<Written>>[] {
+    return this.hold("write", count);
   }
 
-  action(name: string, args: Readonly<Record<string, unknown>>): Promise<Canned<unknown>> {
-    this.calls.push({ name, args });
-    const handler = this.handlers.get(name);
-    if (handler !== undefined) return Promise.resolve(handler(args));
-    const canned = this.actions.get(name);
-    if (canned === undefined && name === "component.new")
-      return Promise.resolve(newPlant(this.actions, this.files, args));
-    return Promise.resolve(canned ?? failed(cannedFailure("unknown_action", 404)));
+  holdWorkspace(count = Infinity): Deferred<Canned<Workspace>>[] {
+    return this.hold("workspace", count);
   }
 
-  followRun(runId: string, follower: RunFollower): () => void {
-    this.followers.set(runId, follower);
-    this.follows.push(follower);
-    return () => this.followers.delete(runId);
-  }
-
-  watchWorkspace(onChange: () => void): () => void {
-    this.watchers.add(onChange);
-    return () => this.watchers.delete(onChange);
-  }
-
-  stream(runId: string, entries: readonly JournalEntry[], end: "closed" | "failed" | null = "closed"): void {
+  stream(runId: string, entries: readonly object[], end: "closed" | "failed" | null = "closed"): void {
     this.send(this.followers.get(runId), entries, end);
   }
 
-  streamFollow(index: number, entries: readonly JournalEntry[], end: "closed" | "failed" | null = "closed"): void {
+  streamFollow(index: number, entries: readonly object[], end: "closed" | "failed" | null = "closed"): void {
     this.send(this.follows[index], entries, end);
   }
 
   changeOnDisk(): void {
-    this.watchers.forEach((watcher) => {
-      watcher();
+    this.watchers.forEach((source) => source.dispatchEvent(new Event("workspace")));
+  }
+
+  private hold<T>(key: string, count: number): Deferred<Canned<T>>[] {
+    const gates: Deferred<Canned<T>>[] = [];
+    this.holds.set(key, { remaining: count, gates: gates as Deferred<Canned<never>>[] });
+    return gates;
+  }
+
+  private gated<T>(key: string, read: () => Canned<T>): Reply<T> {
+    const hold = this.holds.get(key);
+    if (hold === undefined || hold.remaining === 0) return read();
+    hold.remaining -= 1;
+    const gate = deferred<Canned<T>>();
+    hold.gates.push(gate as Deferred<Canned<never>>);
+    return gate.promise;
+  }
+
+  private send(source: FakeSource | undefined, entries: readonly object[], end: "closed" | "failed" | null): void {
+    entries.forEach((entry) => source?.record(entry));
+    if (end !== null) source?.end(end);
+  }
+
+  private openSource(url: string): FakeSource {
+    const runId = /^\/api\/runs\/([^/]+)\/events$/.exec(url)?.[1];
+    const source = new FakeSource((closed) => {
+      this.watchers.delete(closed);
+      if (runId !== undefined) this.followers.delete(decodeURIComponent(runId));
     });
+    if (runId === undefined) this.watchers.add(source);
+    else this.followers.set(decodeURIComponent(runId), source);
+    if (runId !== undefined) this.follows.push(source);
+    return source;
   }
 
-  private send(
-    follower: RunFollower | undefined,
-    entries: readonly JournalEntry[],
-    end: "closed" | "failed" | null,
-  ): void {
-    entries.forEach((entry) => follower?.entry(entry));
-    if (end === "closed") follower?.closed();
-    if (end === "failed") follower?.failed();
+  private async serve(input: string, init?: RequestInit): Promise<Response> {
+    const url = new URL(input, "http://bridge.test");
+    const body = (typeof init?.body === "string" ? JSON.parse(init.body) : {}) as Body;
+    return answer(await this.route(url, init?.method ?? "GET", body));
   }
 
-  private pairWith(code: string): Outcome<boolean, SessionFailure> {
-    this.pairedCodes.push(code);
+  private route(url: URL, method: string, body: Body): Reply {
+    if (url.pathname.startsWith("/api/actions/"))
+      return this.action(decodeURIComponent(url.pathname.slice(13)), body.args ?? {});
+    const routes: Record<string, () => Reply> = {
+      "/api/workspace": () => this.gated("workspace", () => this.listing()),
+      "/api/session": () => (method === "POST" ? this.pair(body) : this.check()),
+      "/api/file": () => (method === "PUT" ? this.write(body) : this.read(url)),
+    };
+    return routes[url.pathname]?.() ?? failed(cannedFailure("not_found", 404, `no route ${url.pathname}`));
+  }
+
+  private listing(): Canned<unknown> {
+    return this.workspaceOutcome.ok ? success(workspaceWire(this.workspaceOutcome.value)) : this.workspaceOutcome;
+  }
+
+  private check(): Canned<unknown> {
+    const outcome = this.sessionOutcome ?? success(this.paired);
+    return outcome.ok ? success({ paired: outcome.value }) : outcome;
+  }
+
+  private pair(body: Body): Canned<unknown> {
+    this.pairedCodes.push(body.code ?? "");
     const next = this.pairOutcomes.shift() ?? success(true);
     this.paired = next.ok;
-    return settle(next, sessionFailure);
+    return next.ok ? success({ paired: next.value }) : next;
   }
 
-  private plantRead<T>(
-    name: string,
-    args: Readonly<Record<string, unknown>>,
-    read: (value: unknown) => T | null,
-    action: PlantAction = "read",
-  ): Promise<Outcome<T, PlantFailure>> {
-    return this.action(name, args).then((outcome) =>
-      collect(outcome, (problem) => plantFailure(action, problem), read),
+  private read(url: URL): Reply {
+    const path = url.searchParams.get("path") ?? "";
+    this.reads.push(path);
+    return this.gated(
+      `file:${path}`,
+      () => this.files.get(path) ?? failed(cannedFailure("not_found", 404, `no ${path}`)),
     );
   }
 
-  private editorRead<T>(
-    name: string,
-    args: Readonly<Record<string, unknown>>,
-    read: (value: unknown) => T | null,
-    action: EditorAction = "read",
-  ): Promise<Outcome<T, EditorFailure>> {
-    return this.action(name, args).then((outcome) =>
-      collect(outcome, (problem) => editorFailure(action, problem), read),
-    );
+  private write({ path = "", content = "", etag = "" }: Body): Reply {
+    this.writes.push({ path, content, etag });
+    return this.gated("write", () => this.stored(path, content));
   }
 
-  private generate(input: {
-    readonly source: PlantSource;
-    readonly id: string;
-    readonly title: string;
-    readonly mode: "copy" | "empty";
-  }): Promise<Outcome<Composition, PlantFailure>> {
-    const from = input.source.kind === "example" ? { example: input.source.id } : { from: input.source.path };
-    const args = { id: input.id, title: input.title, ...from };
-    const withMode = input.mode === "empty" ? { ...args, empty: true } : args;
-    return this.action("component.new", withMode).then((outcome) =>
-      collect(outcome, (problem) => plantFailure("generate", problem), compositionOf),
-    );
+  private stored(path: string, content: string): Canned<Written> {
+    const outcome = this.writeOutcomes.get(path) ?? success({ path, etag: `e${String(this.writes.length)}` });
+    if (outcome.ok) this.files.set(path, cannedFile(path, content, outcome.value.etag));
+    return outcome;
   }
 
-  private composed<F>(
-    name: string,
-    input: Compose,
-    map: (problem: CannedFailure) => F,
-  ): Promise<Outcome<ComposeSummary, F>> {
-    return this.action(name, { composition: input.composition, out: input.output, etag: input.etag }).then((outcome) =>
-      collect(outcome, map, summaryOf),
-    );
+  private action(name: string, args: Args): Promise<Canned<unknown>> {
+    this.calls.push({ name, args });
+    const reply = this.handlers.get(name)?.(args) ?? this.canned(name, args);
+    return Promise.resolve(reply).then((outcome) => (outcome.ok ? success({ result: outcome.value }) : outcome));
   }
 
-  private launchStep<T>(
-    step: LaunchStep,
-    name: string,
-    args: Readonly<Record<string, unknown>>,
-    read: (value: unknown) => T | null,
-  ): Promise<Outcome<T, LaunchFailure>> {
-    return this.action(name, args).then((outcome) => collect(outcome, (problem) => launchFailure(step, problem), read));
-  }
-
-  private voidStep(
-    step: LaunchStep,
-    name: string,
-    args: Readonly<Record<string, unknown>>,
-  ): Promise<Outcome<void, LaunchFailure>> {
-    return this.action(name, args).then((outcome) =>
-      outcome.ok ? success(undefined) : failed(launchFailure(step, outcome.failure)),
-    );
-  }
-
-  private async destroy(worldId: string): Promise<void> {
-    await this.voidStep("end", "world.destroy", { world_id: worldId });
+  private canned(name: string, args: Args): Canned<unknown> {
+    const canned = this.actions.get(name);
+    if (canned !== undefined) return canned;
+    if (name === "component.new") return newPlant(this.actions, this.files, args);
+    return failed(cannedFailure("unknown_action", 404));
   }
 }

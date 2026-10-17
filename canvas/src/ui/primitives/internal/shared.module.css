@@ -60,31 +60,54 @@ summary.disclosure:hover {
   color: var(--text-primary);
 }
 
-.button {
+.secondary,
+.primary {
   display: inline-flex;
   flex: none;
   align-items: center;
   gap: var(--space-1);
-  height: 28px;
-  padding: 0 var(--space-3);
-  border: 1px solid var(--border-strong);
+  height: var(--button-height, 28px);
+  padding: 0 var(--button-pad, var(--space-3));
   border-radius: var(--radius-md);
-  background: var(--surface-sunken);
-  color: var(--text-primary);
   font: inherit;
-  font-weight: 500;
+  font-weight: var(--button-weight, 500);
   cursor: pointer;
 }
 
-.button:hover {
-  background: var(--surface-hover);
+.secondary {
+  border: 1px solid var(--button-edge, var(--border-strong));
+  background: var(--button-fill, var(--surface-sunken));
+  color: var(--button-ink, var(--text-primary));
 }
 
-.button[aria-disabled="true"] {
+.primary {
+  border: 1px solid var(--accent-strong);
+  background: var(--accent-strong);
+  color: var(--text-on-accent);
+}
+
+.secondary:hover {
+  background: var(--button-hover, var(--surface-hover));
+}
+
+.primary:hover {
+  background: var(--accent-hover);
+}
+
+.secondary[aria-disabled="true"],
+.primary[aria-disabled="true"],
+.primary:disabled {
   border-color: var(--disabled-border);
   background: var(--disabled-bg);
   color: var(--disabled-fg);
   cursor: not-allowed;
+}
+
+.primary[aria-pressed="true"],
+.primary[aria-expanded="true"] {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+  color: var(--text-primary);
 }
 
 .panels,

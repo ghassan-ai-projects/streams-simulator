@@ -2,6 +2,7 @@ import { Pause, Play } from "lucide-react";
 import type { ReactNode } from "react";
 import { useState } from "react";
 import { playbackSpeeds } from "../../../model/review";
+import { cx, shared } from "../../primitives";
 import styles from "./PlayControls.module.css";
 
 export interface PlayProps {
@@ -56,7 +57,7 @@ export function PlayControls({ playing, speed, onPlay, onPause, onSpeed }: PlayP
       </p>
       <button
         type="button"
-        className={styles.playButton}
+        className={cx(shared.primary, styles.playButton)}
         aria-keyshortcuts="Space"
         title={playing ? "Pause (Space)" : "Play (Space)"}
         onClick={playing ? onPause : onPlay}

@@ -1,11 +1,11 @@
-import { shared } from "../../primitives";
+import { cx, shared } from "../../primitives";
 import { Loader, PenLine, Play } from "lucide-react";
 import type { RefObject } from "react";
 import type { LaunchStore } from "../../../app/launch";
 import type { NavigationStore } from "../../../app/shell";
 import { clockOf } from "../../../model/shared/duration";
 import { useStore } from "../../primitives";
-import styles from "./PlantScreen.module.css";
+import styles from "./PlantBar.module.css";
 
 export function useRunningHere(launch: LaunchStore, plant: string): string | null {
   const state = useStore(launch);
@@ -22,7 +22,13 @@ interface RunButtonProps {
 
 export function RunButton({ launching, running, button, onToggle }: RunButtonProps) {
   return (
-    <button type="button" ref={button} className={styles.run} aria-pressed={launching} onClick={onToggle}>
+    <button
+      type="button"
+      ref={button}
+      className={cx(shared.primary, styles.run)}
+      aria-pressed={launching}
+      onClick={onToggle}
+    >
       {running === null ? (
         <Play size={14} aria-hidden="true" />
       ) : (
@@ -45,7 +51,7 @@ export function EditButton({ composition, running, navigation }: EditButtonProps
   return (
     <button
       type="button"
-      className={shared.button}
+      className={shared.secondary}
       aria-disabled={busy}
       title={
         busy ? "Editing waits for the run: saving would change the plant file the run is checked against" : undefined

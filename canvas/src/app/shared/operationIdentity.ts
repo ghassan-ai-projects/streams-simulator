@@ -1,23 +1,26 @@
-export type OperationId = object;
+export interface Operation {
+  live(): boolean;
+}
 
 export interface OperationIdentity {
-  begin(): OperationId;
+  begin(): Operation;
   invalidate(): void;
-  isCurrent(operation: OperationId): boolean;
+  current(): Operation | null;
 }
 
 export function createOperationIdentity(): OperationIdentity {
-  let active: OperationId = {};
+  let active: Operation | null = null;
   return {
     begin() {
-      active = {};
-      return active;
+      const operation: Operation = { live: () => active === operation };
+      active = operation;
+      return operation;
     },
     invalidate() {
-      active = {};
+      active = null;
     },
-    isCurrent(operation) {
-      return active === operation;
+    current() {
+      return active;
     },
   };
 }

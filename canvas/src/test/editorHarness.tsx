@@ -11,7 +11,7 @@ import { FocusRequest } from "../ui/editor";
 import { useStore } from "../ui/primitives";
 import { FakeBridge } from "./fakeBridge";
 import { memoryLocation } from "./location";
-import { chillerPorts, towerPorts } from "./plantFixture";
+import { chillerPorts, componentShown, towerPorts } from "./plantFixture";
 import { editorStore } from "./stores";
 
 export const path = "compositions/lab.composition.json";
@@ -28,11 +28,12 @@ export const doc = {
 };
 
 export class LabBridge extends FakeBridge {
-  override action(name: string, args: Readonly<Record<string, unknown>>) {
-    if (name !== "component.show") return super.action(name, args);
-    this.calls.push({ name, args });
-    const ports = args.ref === "lib/tower" ? towerPorts : chillerPorts;
-    return Promise.resolve(success({ document: { ...ports, presets: { small: { title: "Small" } } } }));
+  constructor() {
+    super();
+    this.handlers.set("component.show", ({ ref }) => {
+      const ports = ref === "lib/tower" ? towerPorts : chillerPorts;
+      return success(componentShown(ports, { presets: { small: { title: "Small" } } }));
+    });
   }
 }
 

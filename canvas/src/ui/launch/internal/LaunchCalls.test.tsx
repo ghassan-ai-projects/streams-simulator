@@ -3,8 +3,8 @@ import axe from "axe-core";
 import { describe, expect, it, vi } from "vitest";
 import { success } from "../../../test/outcome";
 import { parsePlant } from "../../../model/plant";
-import { FakeBridge } from "../../../test/fakeBridge";
-import { launchHarness } from "../../../test/launchFixture";
+import type { FakeBridge } from "../../../test/fakeBridge";
+import { launchBridge, launchHarness } from "../../../test/launchFixture";
 import { domain } from "../../../test/plantFixture";
 import { LaunchPanel } from "./LaunchPanel";
 
@@ -25,11 +25,7 @@ const plant = parsePlant({
 });
 
 function bridge() {
-  const fake = new FakeBridge();
-  fake.actions.set("world.create", success({ world_id: "w-7" }));
-  fake.actions.set("clock.advance", success({}));
-  fake.actions.set("run.end", success({}));
-  fake.actions.set("world.destroy", success({}));
+  const fake = launchBridge();
   fake.handlers.set("effector.invoke", (args) =>
     args.effector === "start"
       ? success({ accepted: false, reason: "interlock_refused", command_id: "director-1" })

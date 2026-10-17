@@ -187,3 +187,7 @@ export const journal: readonly JournalEntry[] = [
   { kind: "other", atNs: 30e9 },
   { kind: "closed", atNs: 3_600e9, incomplete: false },
 ];
+
+export function reportWith(run: Record<string, unknown>) {
+  return { ...reportWire, run: { ...reportWire.run, ...run } };
+}

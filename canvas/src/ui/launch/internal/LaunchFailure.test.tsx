@@ -1,18 +1,16 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { failure as failed, success } from "../../../test/outcome";
+import { failure as failed } from "../../../test/outcome";
 import { parsePlant } from "../../../model/plant";
-import { FakeBridge, cannedFailure } from "../../../test/fakeBridge";
+import { cannedFailure } from "../../../test/fakeBridge";
 import { domain } from "../../../test/plantFixture";
-import { launchHarness } from "../../../test/launchFixture";
+import { launchBridge, launchHarness } from "../../../test/launchFixture";
 import { LaunchPanel } from "./LaunchPanel";
 
 describe("a run that stops on a fault", () => {
   it("names the fault and the instance in one sentence and keeps the binary message in a disclosure", async () => {
-    const fake = new FakeBridge();
-    fake.actions.set("world.create", success({ world_id: "w-8" }));
+    const fake = launchBridge("w-8");
     fake.actions.set("fault.inject", failed(cannedFailure("unknown_fault", 422, 'unknown fault "chiller__fouling"')));
-    fake.actions.set("world.destroy", success({}));
     const { launch } = launchHarness(fake);
     launch.propose("mini", {
       seed: 1,

@@ -91,22 +91,10 @@
   margin-top: var(--space-5);
 }
 
-.primary {
-  height: 36px;
-  padding: 0 var(--space-5);
-  font-weight: 600;
-  color: var(--text-on-accent);
-  background: var(--accent-strong);
-  border: 0;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-}
-
-.primary:disabled {
-  border-color: var(--disabled-border);
-  background: var(--disabled-bg);
-  color: var(--disabled-fg);
-  cursor: not-allowed;
+.pair {
+  --button-height: 36px;
+  --button-pad: calc(var(--space-5) - 1px);
+  --button-weight: 600;
 }
 
 .code[aria-invalid="true"]:focus-visible {

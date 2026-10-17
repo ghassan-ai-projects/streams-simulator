@@ -4,12 +4,12 @@ import { deferred, flushPromises } from "../../../test/deferred";
 import { FakeBridge } from "../../../test/fakeBridge";
 import type { Canned } from "../../../test/fakeFailures";
 import { fakeClock } from "../../../test/fakeClock";
-import { journal, report } from "../../../test/runFixture";
+import { journalWire, reportWire } from "../../../test/runFixture";
 import { ReviewStore } from "./reviewStore";
 
 function setup() {
   const bridge = new FakeBridge();
-  bridge.actions.set("run.report", success(report));
+  bridge.actions.set("run.report", success(reportWire));
   const verdict = deferred<Canned<unknown>>();
   bridge.handlers.set("run.verify", () => verdict.promise);
   const timers = fakeClock();
@@ -34,7 +34,7 @@ describe("review badge", () => {
     store.open("w-1");
     await flushPromises();
     expect(store.badgeFor("w-1")).toBe("not-verified");
-    bridge.stream("w-1", journal);
+    bridge.stream("w-1", journalWire);
     timers.advance(250);
     store.select("CH-1");
     store.seek(20e9);

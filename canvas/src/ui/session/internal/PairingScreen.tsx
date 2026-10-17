@@ -4,7 +4,7 @@ import type { SessionFailure } from "../../../app/session";
 import type { Session, SessionState } from "../../../app/session";
 import { pairingBlocked } from "../../../app/session";
 import { PAIRING_CODE_LENGTH } from "../../../app/session";
-import { useScreen } from "../../primitives";
+import { cx, shared, useScreen } from "../../primitives";
 import { useStore } from "../../primitives";
 import styles from "./PairingScreen.module.css";
 
@@ -91,7 +91,7 @@ export function PairingScreen({ session }: { readonly session: Session }) {
         </p>
         <CodeField session={session} state={state} />
         <div className={styles.actions}>
-          <button type="submit" className={styles.primary} disabled={!session.canPair()}>
+          <button type="submit" className={cx(shared.primary, styles.pair)} disabled={!session.canPair()}>
             {state.busy ? "Pairing…" : "Pair"}
           </button>
           <span className={styles.hint}>Five wrong codes lock pairing until the bridge restarts.</span>

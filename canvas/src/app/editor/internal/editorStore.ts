@@ -3,8 +3,8 @@ import { componentOf, domainOf, equipmentOf, parseComposition } from "../../../m
 import { addEquipment } from "../../../model/editor";
 import type { Presets } from "../../../model/plant";
 import { componentSpecs } from "../../plant";
-import { Observable } from "../../shared";
-import type { OperationIdentity, OperationId } from "../../shared";
+import { Observable, createOperationIdentity } from "../../shared";
+import type { OperationIdentity, Operation } from "../../shared";
 import type { EditorFailure, EditorGateway } from "../../ports";
 import { applySaveResult, captureSaveAttempt, markSaved, saveCaptured } from "./editorSave";
 import type { SaveAttempt, SaveResult } from "./editorSave";
@@ -26,9 +26,7 @@ function kept(doc: Composition, draft: Draft): string | null {
 }
 
 export class EditorStore extends Observable<EditorState> {
-  private active: OperationId | null = null;
-  private attemptSequence = 0;
-  private activeAttempt: number | null = null;
+  private readonly saves = createOperationIdentity();
   private memo: StoreMemo = emptyMemo;
 
   constructor(
@@ -50,14 +48,13 @@ export class EditorStore extends Observable<EditorState> {
 
   private async restart(path: string): Promise<void> {
     const request = this.operations.begin();
-    this.active = request;
     await this.load(request, path);
   }
 
-  private async load(request: OperationId, path: string): Promise<void> {
+  private async load(request: Operation, path: string): Promise<void> {
     const file = await this.gateway.readFile(path);
     const doc = file.ok ? parseComposition(file.value.content) : null;
-    if (!this.current(request, path)) return;
+    if (!this.holds(request, path)) return;
     if (!file.ok || doc === null) {
       this.set({ phase: "failed", path, failure: file.ok ? unreadable : file.failure });
       return;
@@ -71,20 +68,19 @@ export class EditorStore extends Observable<EditorState> {
       this.versionOf(domainOf(doc)),
     ]);
     const library = listed.ok ? listed.value : [];
-    if (!this.current(request, path)) return;
+    if (!this.holds(request, path)) return;
     this.memo = { etag: file.value.etag, domainPath: domainOf(doc), domainEtag };
     this.set({ ...this.fresh(path, doc, domainEtag), library, specs });
   }
 
-  private current(request: OperationId, path: string): boolean {
+  private holds(operation: Operation, path: string): boolean {
     const state = this.snapshot();
-    return this.operations.isCurrent(request) && state.phase !== "idle" && state.path === path;
+    return operation.live() && state.phase !== "idle" && state.path === path;
   }
 
   close(): void {
     this.operations.invalidate();
-    this.active = null;
-    this.activeAttempt = null;
+    this.saves.invalidate();
     this.memo = emptyMemo;
     this.set({ phase: "idle" });
   }
@@ -150,13 +146,13 @@ export class EditorStore extends Observable<EditorState> {
   }
 
   async add(entry: NewEquipment): Promise<void> {
-    const operation = this.active;
+    const operation = this.operations.current();
     this.edit((doc) => addEquipment(doc, entry), entry.name);
     const draft = this.draft();
     const component = componentOf(entry.use);
     if (draft === null || draft.specs.has(component)) return;
     const specs = await componentSpecs(this.gateway, [component]);
-    if (operation === null || !this.current(operation, draft.path)) return;
+    if (operation === null || !this.holds(operation, draft.path)) return;
     this.update((current) => ({ ...current, specs: new Map([...current.specs, ...specs]) }));
   }
 
@@ -168,10 +164,9 @@ export class EditorStore extends Observable<EditorState> {
   async save(): Promise<void> {
     const draft = this.draft();
     if (draft === null || isSaving(draft)) return;
-    const operation = this.active;
+    const operation = this.operations.current();
     if (operation === null) return;
-    const attempt: SaveAttempt = captureSaveAttempt(++this.attemptSequence, operation, draft, this.memo);
-    this.activeAttempt = attempt.id;
+    const attempt: SaveAttempt = captureSaveAttempt(operation, this.saves.begin(), draft, this.memo);
     this.set({ ...draft, save: { kind: "saving" } });
     if (!this.currentAttempt(attempt)) return;
     const result = await saveCaptured(
@@ -192,12 +187,12 @@ export class EditorStore extends Observable<EditorState> {
   }
 
   private currentAttempt(attempt: SaveAttempt): boolean {
-    return this.activeAttempt === attempt.id && this.current(attempt.operation, attempt.path);
+    return attempt.saving.live() && this.holds(attempt.operation, attempt.path);
   }
 
   private finishAttempt(attempt: SaveAttempt, result: SaveResult): void {
     if (!this.currentAttempt(attempt)) return;
-    this.activeAttempt = null;
+    this.saves.invalidate();
     if (result.kind === "composed")
       this.memo = { ...this.memo, domainPath: attempt.output, domainEtag: result.outputEtag };
     this.update((current) => applySaveResult(current, attempt, result));

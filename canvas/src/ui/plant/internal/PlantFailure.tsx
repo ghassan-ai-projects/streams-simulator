@@ -1,10 +1,10 @@
-import { panel, screen } from "../../primitives";
+import { cx, panel, screen, shared } from "../../primitives";
 import type { PlantFailure as Failure } from "../../../app/plant";
 import type { NavigationStore } from "../../../app/shell";
 import { failureLine } from "../../../model/shared/words";
 import { Breadcrumb } from "../../primitives";
 import { useScreen } from "../../primitives";
-import styles from "./PlantScreen.module.css";
+import styles from "./PlantFailure.module.css";
 
 export function PlantFailure({
   failure,
@@ -40,7 +40,7 @@ function FailureBody({ failure, navigation }: { readonly failure: Failure; reado
       </p>
       <button
         type="button"
-        className={panel.secondary}
+        className={cx(shared.secondary, panel.secondary)}
         onClick={() => {
           navigation.go({ screen: "home" });
         }}

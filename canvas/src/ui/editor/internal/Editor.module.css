@@ -1,5 +1,3 @@
-.action,
-.save,
 .danger {
   display: inline-flex;
   flex: none;
@@ -7,44 +5,13 @@
   gap: var(--space-1);
   height: 28px;
   padding: 0 var(--space-3);
+  border: 1px solid var(--status-alarm);
   border-radius: var(--radius-md);
+  background: var(--status-alarm-bg);
+  color: var(--status-alarm);
   font: inherit;
   font-weight: 500;
   cursor: pointer;
-}
-
-.action {
-  border: 1px solid var(--border-strong);
-  background: var(--surface-sunken);
-  color: var(--text-primary);
-}
-
-.action:hover {
-  background: var(--surface-hover);
-}
-
-.danger {
-  border: 1px solid var(--status-alarm);
-  background: var(--status-alarm-bg);
-  color: var(--status-alarm);
-}
-
-.save {
-  border: 1px solid var(--accent-strong);
-  background: var(--accent-strong);
-  color: var(--text-on-accent);
-}
-
-.save:hover {
-  background: var(--accent-hover);
-}
-
-.action[aria-disabled="true"],
-.save[aria-disabled="true"] {
-  border-color: var(--disabled-border);
-  background: var(--disabled-bg);
-  color: var(--disabled-fg);
-  cursor: not-allowed;
 }
 
 .issues,

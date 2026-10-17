@@ -1,4 +1,4 @@
-import { panel } from "../../primitives";
+import { cx, panel, shared } from "../../primitives";
 import type { ReactNode } from "react";
 import styles from "./Editor.module.css";
 import { Reason } from "./Reason";
@@ -14,7 +14,7 @@ export function SubmitRow({ id, reason, children }: SubmitRowProps) {
     <div className={styles.submitRow}>
       <button
         type="submit"
-        className={panel.secondary}
+        className={cx(shared.secondary, panel.secondary)}
         aria-disabled={reason !== null}
         aria-describedby={reason === null ? undefined : id}
       >

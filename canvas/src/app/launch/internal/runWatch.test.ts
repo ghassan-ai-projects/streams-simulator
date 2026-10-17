@@ -1,23 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
 import { success } from "../../ports";
-import { FakeBridge } from "../../../test/fakeBridge";
 import { fakeClock } from "../../../test/fakeClock";
+import { launchBridge } from "../../../test/launchFixture";
 import { LaunchStore } from "./launchStore";
-
-function bridge() {
-  const fake = new FakeBridge();
-  fake.actions.set("world.create", success({ world_id: "w-4" }));
-  fake.actions.set("clock.advance", success({}));
-  fake.actions.set("run.end", success({}));
-  return fake;
-}
 
 const origin = { domain: "factory", title: "Factory", path: "domains/factory.domain.json" };
 const plan = { seed: 3, durationS: 120, explore: false, faults: [], calls: [] };
 
 function setup() {
   const timers = fakeClock();
-  return { timers, launch: new LaunchStore(bridge().launch, timers, timers) };
+  return { timers, launch: new LaunchStore(launchBridge("w-4").launch, timers, timers) };
 }
 
 describe("run watch", () => {
@@ -75,7 +67,7 @@ describe("run watch", () => {
 
   it("shows the result of a run with effector calls and leaves it for the person to open", async () => {
     const timers = fakeClock();
-    const fake = bridge();
+    const fake = launchBridge("w-4");
     fake.actions.set("effector.invoke", success({ accepted: true, reason: "", command_id: "director-1" }));
     const launch = new LaunchStore(fake.launch, timers, timers);
     const watch = launch.watch("factory");

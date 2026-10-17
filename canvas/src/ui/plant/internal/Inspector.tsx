@@ -12,7 +12,7 @@ import type { RunRow } from "../../../model/workspace";
 import { cx } from "../../primitives";
 import { useCutBottom } from "../../primitives";
 import { PlantOverview } from "./PlantOverview";
-import styles from "./PlantScreen.module.css";
+import styles from "./Inspector.module.css";
 import { InspectorLinks } from "./InspectorLinks";
 
 interface ListProps {

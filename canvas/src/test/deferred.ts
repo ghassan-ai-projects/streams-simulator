@@ -23,5 +23,5 @@ export function deferred<T>(): Deferred<T> {
 }
 
 export async function flushPromises(): Promise<void> {
-  for (let tick = 0; tick < 5; tick += 1) await Promise.resolve();
+  for (let tick = 0; tick < 30; tick += 1) await Promise.resolve();
 }

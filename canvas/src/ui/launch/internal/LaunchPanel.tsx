@@ -1,4 +1,4 @@
-import { panel } from "../../primitives";
+import { panel, shared } from "../../primitives";
 import { Play, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { LaunchState, LaunchStore, Proposal, RunWatch } from "../../../app/launch";
@@ -78,7 +78,7 @@ function Progress({
       <p className={styles.clock}>{`Running · ${runProgressWords(state, " simulated")}`}</p>
       <button
         type="button"
-        className={panel.secondary}
+        className={cx(shared.secondary, panel.secondary)}
         aria-disabled={state.stopping}
         onClick={() => {
           launch.stopEarly();
@@ -115,7 +115,7 @@ function Failure({
       <button
         type="button"
         ref={back}
-        className={panel.secondary}
+        className={cx(shared.secondary, panel.secondary)}
         onClick={() => {
           launch.reset();
         }}

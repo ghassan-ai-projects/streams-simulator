@@ -216,7 +216,7 @@ export function LaunchForm({ plant, draft, selected, change, onStart }: FormProp
         <p className="sr-only" role="status">
           {told}
         </p>
-        <button type="submit" className={panel.primary} aria-describedby="launch-summary">
+        <button type="submit" className={cx(shared.primary, panel.primary)} aria-describedby="launch-summary">
           Start the run
         </button>
       </div>

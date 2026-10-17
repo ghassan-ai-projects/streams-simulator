@@ -4,12 +4,12 @@ import { deferred, flushPromises } from "../../../test/deferred";
 import { FakeBridge } from "../../../test/fakeBridge";
 import type { Canned } from "../../../test/fakeFailures";
 import { fakeClock } from "../../../test/fakeClock";
-import { journal, report } from "../../../test/runFixture";
+import { journalWire, reportWire, reportWith } from "../../../test/runFixture";
 import { ReviewStore } from "./reviewStore";
 
 function setup() {
   const bridge = new FakeBridge();
-  bridge.actions.set("run.report", success(report));
+  bridge.actions.set("run.report", success(reportWire));
   bridge.actions.set("run.verify", success({ matches: true }));
   const timers = fakeClock();
   const store = new ReviewStore(bridge.review, timers, timers);
@@ -23,14 +23,16 @@ describe("review lifecycle", () => {
     store.open("w-2");
     expect([...bridge.followers.keys()]).toEqual(["w-2"]);
     await flushPromises();
-    bridge.stream("w-1", journal);
+    bridge.stream("w-1", journalWire);
     expect(store.snapshot()).toMatchObject({ worldId: "w-2", playback: { records: 0 } });
   });
 
   it("ignores a flushed update whose session has already been superseded", async () => {
     const { bridge, store, timers } = setup();
     store.open("w-1");
-    bridge.streamFollow(0, [{ kind: "opened", atNs: 0, mode: "", adapter: "wire" }]);
+    bridge.streamFollow(0, [
+      { stream: "observer", type: "run.opened", seq: 0, at_ns: 0, mode: "evaluate", adapter: { id: "wire" } },
+    ]);
     store.open("w-2");
     timers.advance(250);
     await Promise.resolve();
@@ -41,7 +43,7 @@ describe("review lifecycle", () => {
     const { bridge, store, timers } = setup();
     store.open("w-1");
     store.open("w-2");
-    bridge.streamFollow(0, journal);
+    bridge.streamFollow(0, journalWire);
     timers.advance(250);
     await Promise.resolve();
     expect(store.snapshot()).toMatchObject({ worldId: "w-2", playback: { records: 0 } });
@@ -52,7 +54,7 @@ describe("review lifecycle", () => {
     store.open("w-1");
     store.open("w-2");
     store.open("w-1");
-    bridge.streamFollow(0, journal);
+    bridge.streamFollow(0, journalWire);
     timers.advance(250);
     await Promise.resolve();
     expect(store.snapshot()).toMatchObject({ worldId: "w-1", playback: { records: 0 } });
@@ -63,7 +65,7 @@ describe("review lifecycle", () => {
     store.open("w-1");
     await flushPromises();
     store.close();
-    bridge.actions.set("run.report", success({ ...report, ended: false }));
+    bridge.actions.set("run.report", success(reportWith({ ended: false })));
     store.refreshCompleted("w-1", { ...entry, ended: true, complete: false });
     await flushPromises();
     expect(bridge.calls.filter((call) => call.name === "run.report")).toHaveLength(1);
@@ -74,14 +76,14 @@ describe("review lifecycle", () => {
     const gate = deferred<Canned<unknown>>();
     let holding = true;
     bridge.handlers.set("run.report", () => {
-      if (!holding) return success(report);
+      if (!holding) return success(reportWire);
       holding = false;
       return gate.promise;
     });
     store.open("w-1");
     store.open("w-2");
     store.open("w-1");
-    gate.resolve(success({ ...report, ended: false }));
+    gate.resolve(success(reportWith({ ended: false })));
     await flushPromises();
     expect(store.snapshot()).toMatchObject({ worldId: "w-1", report: { phase: "ready", value: { ended: true } } });
   });

@@ -3,7 +3,8 @@ import { useEffect } from "react";
 import type { PanelStore, Side } from "../../../app/shell";
 import { inTextField } from "../../primitives";
 import { useStore } from "../../primitives";
-import styles from "./TopBar.module.css";
+import labelled from "./Labelled.module.css";
+import styles from "./PanelToggles.module.css";
 
 const keyOf: Readonly<Record<string, Side>> = { "[": "left", "]": "right" };
 
@@ -49,7 +50,7 @@ export function PanelToggles({ panels, right, onRightPress }: TogglesProps) {
   const toggle = (side: Side, word: string, key: string, Icon: typeof PanelLeft, press: () => void) => (
     <button
       type="button"
-      className={styles.labelled}
+      className={labelled.labelled}
       aria-pressed={state[side]}
       aria-label={`${word} panel`}
       aria-keyshortcuts={key}

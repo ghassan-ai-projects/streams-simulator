@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { FakeBridge } from "../../../test/fakeBridge";
-import { domainDocument } from "../../../test/fakeValues";
-import { domain } from "../../../test/plantFixture";
+import { domain, domainDocument } from "../../../test/plantFixture";
 import { reviewState } from "../../../test/reviewFixture";
 import { report } from "../../../test/runFixture";
 import { plantStore } from "../../../test/stores";
