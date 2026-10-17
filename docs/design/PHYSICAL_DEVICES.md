@@ -19,9 +19,10 @@ design rather than replacing it. Decisions taken:
 | D1 | The device model is the plant wire kind, written as a kind file with a `kind_digest`; both implementations must present it | §1 |
 | D2 | **Relay mode**: in the lab the gateway talks to the simulator and the simulator to Agentic Stream; real devices pass through untouched | §2 |
 | D3 | What a real board reports is a **recorded input** to the run, so a run stays a pure function of its inputs | §3 |
-| D4 | The canvas becomes a **live control plane**: state, data, commands and results; pause, block, emergency stop | §4 |
+| D4 | The canvas becomes a **live control plane**: state, data, commands and results; interrupts are a **local/remote switch at the node**, which may only refuse or stop, never originate or widen | §4 |
 | D5 | The Arduino thermal bench is the first proof; the co-founder's board is the second, as a new kind file with no workflow change | §6 |
 | D6 | Bench only: one desktop, local, one user, no authentication, until the system is proven | §9 |
+| D7 | A device is **defined** as an interface (kind file) plus optional simulated behaviour (component), in a canvas device editor or captured from a connected board | §1.5 |
 
 ## 1. The unified device model: the plant wire kind
 
@@ -64,6 +65,39 @@ therefore sit on both sides without leaking the oracle.
 Domain kinds keep behaviour and gain `implements`. Components stay the authoring path. The capability catalog stays the
 gateway's field mapping below the plant wire (SPEC §13); device-wire-v1, its safety fields and the firmware do not change.
 Bindings stay the emulator's bridge for field-side protocol-fault testing.
+
+### 1.5 Defining a device
+
+Today the canvas places equipment from the built-in library only; a user cannot define a new device. A device definition has two
+parts:
+
+| Part | Says | Stored as | Needed for |
+|---|---|---|---|
+| **Interface** | The board, its devices, each device's readings (name, type, unit, range, resolution, scan rate) and commands (arguments, bounds, risk class), safe stop | Kind files | Real **and** simulated: this is the device model |
+| **Behaviour** (optional) | How the twin behaves: each reading's instrument (noise, drift, faults, cadence) and each command's response | A component built from library instruments | Simulated only |
+
+A device with an interface only can be connected as hardware but not simulated; with behaviour it can also run as a twin. The
+binary checks that the behaviour implements the interface (§1.2), so the two cannot drift.
+
+**Command responses are templates, as data.** A first set covers the reference boards: a first-order change of a reading
+toward a target (fan duty lowers temperature with a time constant), an on/off state, and a setpoint that a reading follows.
+They are expressed in the domain spec's existing dynamics, not as new code; a response that needs more is a domain-spec
+change first.
+
+**Binary work** (the canvas computes nothing the binary owns):
+
+- kind files in the workspace (`kinds/*.kind.json`) with a validate action;
+- workspace components, read and written through the bridge (today `--components-dir` is read-only);
+- the "behaviour implements interface" check;
+- the response templates;
+- capturing a kind from an `NBIRTH` as a draft kind file.
+
+**Capture from a connected board.** When a real board announces itself, its kinds can be saved as draft kind files. The
+author reviews them, then adds behaviour. This follows the contract's commissioning order (discovered → reviewed → accepted):
+a birth is a claim, and a captured kind becomes the model only after review. It is the expected path for the co-founder's
+board: connect it, capture its interface, build its twin.
+
+The gateway's field mapping (which pin drives the fan) stays in the gateway's own configuration.
 
 ## 2. Relay mode
 
@@ -108,20 +142,47 @@ the **field trace**, every record the gateway sent, in order, as the simulator r
 
 ## 4. The control plane
 
-The canvas gains a live screen for a running session, simulated, real or mixed, fed by the simulator over the existing bridge
-(HTTP JSON and Server-Sent Events). It shows each device's current values and quality, its origin, births and deaths, the
-commands sent with their receipts, results and observed effects, and a timeline that follows one reading from the board to
-Tamoz's decision. A finished session opens in the same screen from its recording.
+The Review screen is already most of a control plane: the plant graph with readouts, a timeline with fault, alarm and
+effector-call marks, Inspect, and a bridge that streams a run's observer journal live (`GET /api/runs/{id}/events`). The
+control plane extends it rather than adding a dashboard beside it.
 
-Interrupts act through the party that owns them:
+### 4.1 Canvas changes
 
-| Action | Effect | Carried out by |
+| Change | What | Milestone |
 |---|---|---|
-| Pause the agent | Tamoz's commands stop being executed | Agentic Stream, which holds the authority (`authority_epoch` revocation); the canvas asks it |
-| Block a pending command | That command is refused before it reaches the device | Agentic Stream |
-| Emergency stop | Selected devices go to their safe state | The canvas directly, through the relay: `safe_stop` is always accepted and always safe |
+| **Devices** | A Devices section in the workspace beside Plants (built-in and own devices); a device editor in three steps: interface, behaviour, check (§1.5); "save as device" for a connected board; Add equipment lists own devices | M1, capture M2 |
+| **Connect session** | The Run panel gains an open-ended session: no duration, linked to Agentic Stream and optionally a gateway, until stopped; Stop ends and saves. Today a run always goes to completion (UI-EXPECTATIONS RUN-2) | M3 |
+| **Real or simulated per session** | The plant does not change; the session plan says which instances are real boards ("TH-1 is the Arduino on the gateway"). The binary checks the kind match; the canvas shows the result | M3 |
+| **Origin everywhere** | A real/simulated mark on nodes, outline rows, timeline marks and the inspector header ("Real · board mega-01 · boot 61"), by shape and colour, never colour alone; new origin tokens | M3 |
+| **Live mode** | Review follows the newest record while a session runs; scrubbing back pauses following, "Back to live" resumes; an ended session is an ordinary review | M4 |
+| **Command lifecycle** | Each command shows its stages separately: sent, accepted or refused with the reason, the board's own report, the effect observed or unknown. A commands table and richer timeline marks; "acknowledged" never reads as "done" | M4 |
+| **Connection health** | Gateway and host link state, a board going offline and coming back, reboots (`boot_id` changes), stale and disconnected readings shown as such, never as normal values (covers V-8) | M4 |
+| **Interrupts** | Hold, approve each command and emergency stop (§4.2), always visible on the live screen | M5 |
+| **Twin overlay** | In Inspect, the twin's prediction drawn over the real trend (§3) | M5 |
 
-The canvas sends no ordinary command itself. For simulated devices the same buttons act on the simulated boards.
+End-to-end tests run against the real binary as today, with a scripted stand-in gateway; the repository forbids mocking the
+binary, not the hardware. The real board is checked in each round's bench design review.
+
+### 4.2 Interrupts: a local/remote switch at the node
+
+The simulator has no knowledge of its consumers, so the canvas cannot reach Agentic Stream's operator interface through the
+bridge. Real plants already solve this with a **local/remote switch**: an operator at the panel takes equipment into local
+control, and remote commands are refused. The relay is the node, and a node may already refuse commands under the contract
+(`interlocked`, `not_ready`).
+
+| Control | Scope | Effect at the node | What the host sees |
+|---|---|---|---|
+| **Hold** (local) | A device, a board or all | Every `DCMD` is refused | `DRECEIPT refused`, reason `local_control` |
+| **Approve each command** | A device, a board or all | Each `DCMD` waits until the operator approves it or its deadline passes | `accepted` after approval; `expired` otherwise |
+| **Emergency stop** | A device, a board or all | The node sends `safe_stop` down to the device | `DSTATE` with the safe state |
+
+Rules:
+
+- **The node may only refuse or stop; it never originates an ordinary command and never widens what the host may do.**
+  Agentic Stream stays the authority that grants; the node adds a local veto, as a panel switch does.
+- Every hold, approval and emergency stop is a record in the session's journal and command log, so replay reproduces it.
+- The same controls act on simulated devices, so how Tamoz handles refusals and safe stops can be tested before hardware.
+- Agentic Stream needs no operator interface for this; it handles `local_control` refusals as it handles any refusal.
 
 ## 5. Safety
 
@@ -156,20 +217,21 @@ Each milestone is shippable on its own and ends with the thermal experiment gree
 
 | Milestone | Deliverables | Exit |
 |---|---|---|
-| **M1 — Arduino twin** | Kind file contract and `kind_digest`; `implements` check in the `domain` module; thermal kind files; a domain implementing them, as data | A simulated thermal board runs over the plant wire to Agentic Stream and Tamoz, deterministic on replay; a drifted domain kind is rejected |
-| **M2 — Gateway on the plant wire** | The Arduino gateway gains a plant wire side announcing the same kind files; Agentic Stream commissions the board read-only | Same `kind_digest` from gateway and simulator; real data ingested with zero quarantines; unplugging the board shows `link_down` and a rebirth |
-| **M3 — Relay and mixed sessions** | Relay mode (§2), per-board origin, field trace as run input (§3), simulated boards beside the real one | The real board plus N simulated boards reach Agentic Stream as one node; a recorded session replays byte-identically; a test proves no replayed or simulated command reaches the gateway |
-| **M4 — Live control plane** | Canvas live screen (§4): values, quality, origin, commands and results, timeline | One reading followed from the board to Tamoz's decision on the live screen; the same session reopened from its recording |
-| **M5 — Interrupts and real commands** | Emergency stop through the relay; pause and block through Agentic Stream; fan and LED commands commissioned; an independent instrument on the bench; twin-versus-board report | A Tamoz decision drives the real fan, confirmed by the instrument rather than `DRESULT`; pause, block and emergency stop each shown on the bench; the report names the divergences |
+| **M1 — Define the Arduino board and its twin** | Kind file contract and `kind_digest`; `implements` check in the `domain` module; workspace kind files and components with validate actions; command response templates; the thermal kind files and a twin implementing them, as data; canvas Devices section and device editor (§1.5, §4.1) | The Arduino board is defined in the canvas without editing a file; its twin runs over the plant wire to Agentic Stream and Tamoz, deterministic on replay; a twin whose kind drifts from the kind file is rejected |
+| **M2 — Gateway on the plant wire** | The Arduino gateway gains a plant wire side announcing the same kind files; Agentic Stream commissions the board read-only; capture of a kind from a connected board | Same `kind_digest` from gateway and simulator; real data ingested with zero quarantines; unplugging the board shows `link_down` and a rebirth; capturing the connected board yields kind files equal to the defined ones |
+| **M3 — Relay and mixed sessions** | Relay mode (§2), per-board origin, field trace as run input (§3), simulated boards beside the real one; canvas Connect session, real or simulated per session, origin marks | The real board plus N simulated boards reach Agentic Stream as one node; a recorded session replays byte-identically; a test proves no replayed or simulated command reaches the gateway |
+| **M4 — Live control plane** | Canvas live mode, command lifecycle and connection health (§4.1) | One reading followed from the board to Tamoz's decision on the live screen; a refused, an unconfirmed and a confirmed command are told apart at a glance; the same session reopened from its recording |
+| **M5 — Interrupts and real commands** | Hold, approve each command and emergency stop at the node (§4.2) and in the canvas; `local_control` refusal; fan and LED commands commissioned; an independent instrument on the bench; twin overlay and twin-versus-board report | A Tamoz decision drives the real fan, confirmed by the instrument rather than `DRESULT`; hold, approval and emergency stop each shown on the bench and reproduced on replay; the report names the divergences |
 | **Second proof** | The co-founder's board through M1–M5 | No change to Tamoz or Agentic Stream workflows |
 
 ## 8. Changes by repository
 
 | Repository | Change |
 |---|---|
-| streamsim | Kind files and `implements` (M1); relay, field trace, mixed node (M3); live screen (M4); emergency stop, twin report (M5) |
-| Plant wire contract | `kind_digest` in `NBIRTH` (M1); per-board environment (M3) |
-| Agentic Stream | Plant wire host for the thermal kinds (M1–M2); operator pause and block (M5) |
+| streamsim binary | Kind files, `implements`, workspace components, response templates (M1); kind capture (M2); relay, field trace, mixed node (M3); hold, approval, emergency stop at the node, twin report (M5) |
+| streamsim canvas | Devices and device editor (M1); save as device (M2); Connect session, per-session binding, origin marks (M3); live mode, command lifecycle, connection health (M4); interrupts, twin overlay (M5) |
+| Plant wire contract | `kind_digest` in `NBIRTH` (M1); per-board environment (M3); `local_control` refusal (M5) |
+| Agentic Stream | Plant wire host for the thermal kinds (M1–M2); handles `local_control` refusals like any refusal (M5) |
 | Tamoz | Workflows on the thermal kinds, unchanged across simulated, real and mixed |
 | Gateway and firmware | Plant wire side of the Arduino gateway (M2); an independent effect instrument (M5) |
 
@@ -180,11 +242,14 @@ Each milestone is shippable on its own and ends with the thermal experiment gree
 - Authentication, several users, customer sites and production reliability of the control plane (D6).
 - Remote gateways: TCP needs mutual authentication in a new contract version.
 - Incident reproduction with faults injected on a recording; more boards; fleet-scale mixed runs.
+- The gateway's field mapping in the canvas.
+- **Open**: the order of this work against the open canvas production-UI goal (P9–P11, A1–A7).
 
 ## 10. Not doing
 
 - Instruction-level emulation of a microcontroller or its firmware.
 - A serial or BLE stack, broker or device-specific code in the binary.
-- The simulator as a policy authority, or as a sender of ordinary commands to hardware.
+- The simulator as a policy authority, or as a sender of ordinary commands to hardware; it may only refuse or stop (§4.2).
+- Knowledge of Agentic Stream's operator interface in the binary or the bridge.
 - Scoring a consumer against a device's self-reports.
 - Customer devices, mappings or recordings in any repository.
