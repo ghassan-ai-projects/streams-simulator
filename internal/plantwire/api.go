@@ -19,6 +19,8 @@ type Verify = host.Verify
 
 type WireFault = domain.WireFault
 
+type KindSummary = domain.KindSummary
+
 var (
 	ErrRefused          = domain.ErrRefused
 	ErrHostLost         = app.ErrHostLost

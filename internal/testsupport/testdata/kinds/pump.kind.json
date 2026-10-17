@@ -1,0 +1,35 @@
+{
+  "kind": "pump",
+  "metrics": [
+    {"name": "flow", "data_type": "number", "unit": "m3/h", "eu_range": {"min": 0, "max": 120}, "resolution": 0.1, "writable": true},
+    {"name": "speed_setpoint", "data_type": "number", "unit": "%", "eu_range": {"min": 0, "max": 100}, "resolution": 1, "writable": true}
+  ],
+  "commands": [
+    {
+      "name": "set_speed",
+      "args_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "lease_ms": {"minimum": 1000, "type": "integer"},
+          "pct": {"maximum": 100, "minimum": 0, "type": "number"}
+        },
+        "required": ["pct", "lease_ms"],
+        "type": "object"
+      },
+      "risk_class": "medium",
+      "safe_stop": false
+    },
+    {
+      "name": "start",
+      "args_schema": {"additionalProperties": false, "properties": {}, "required": [], "type": "object"},
+      "risk_class": "medium",
+      "safe_stop": false
+    },
+    {
+      "name": "safe_stop",
+      "args_schema": {"additionalProperties": false, "properties": {}, "required": [], "type": "object"},
+      "risk_class": "medium",
+      "safe_stop": true
+    }
+  ]
+}

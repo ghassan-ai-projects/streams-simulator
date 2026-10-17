@@ -157,6 +157,12 @@ func registerComponentDirs(fs *flag.FlagSet, dst *listFlag) {
 	fs.Var(dst, "components-dir", "customer component library directory, repeatable; the built-in library is always loaded first")
 }
 
+const kindsDirFlag = "kinds-dir"
+
+func registerKindsDirs(fs *flag.FlagSet, dst *listFlag) {
+	fs.Var(dst, kindsDirFlag, "directory of kind files (*.kind.json), repeatable; a domain kind that implements a kind file needs it")
+}
+
 func registerRunFolder(fs *flag.FlagSet, dst *string, def string) {
 	fs.StringVar(dst, "out", def, "run folder for the artifact and the journal")
 }

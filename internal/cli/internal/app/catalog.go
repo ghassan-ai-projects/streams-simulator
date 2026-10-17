@@ -103,7 +103,7 @@ func cmdDomain(s *session, args []string) (any, error) {
 func domainVerb(verb string, args []string, flags *lintFlags) (any, error) {
 	switch {
 	case verb == "validate" && len(args) > 0:
-		return validateDomainFile(args[0])
+		return validateDomainFile(args[0], flags.kinds)
 	case verb == "format" && len(args) > 0:
 		return formatDomainFile(args[0])
 	case verb == "lint" && len(args) > 0:
@@ -120,19 +120,6 @@ func formatDomainFile(path string) (any, error) {
 		return nil, fmt.Errorf("streamsim: %w", err)
 	}
 	return result, nil
-}
-
-func validateDomainFile(path string) (any, error) {
-	c, err := domain.Load(path)
-	if err != nil {
-		return nil, fmt.Errorf("streamsim: %w", err)
-	}
-	return domainValidation{Summary: domain.Summarize(c), Valid: true}, nil
-}
-
-type domainValidation struct {
-	domain.Summary
-	Valid bool `json:"valid"`
 }
 
 func cmdAdapter(s *session, args []string) (any, error) {

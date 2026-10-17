@@ -2,9 +2,7 @@ package app
 
 import (
 	"fmt"
-	"io"
 
-	"github.com/ghassan-ai-projects/streams-simulator/internal/cli/internal/files"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/component"
 )
 
@@ -62,67 +60,4 @@ func showComponent(library *component.Library, args []string) (any, error) {
 func validateComponents(library *component.Library, directories []string) any {
 	equipment, instruments := library.Counts()
 	return map[string]any{"valid": true, "directories": directories, "equipment": equipment, "instruments": instruments}
-}
-
-type composeOptions struct {
-	composition, out string
-	dirs             listFlag
-}
-
-func cmdCompose(s *session, args []string) (any, error) {
-	options, err := parseComposeOptions(args, s.stderr)
-	if err != nil {
-		return nil, err
-	}
-	raw, err := files.Read(options.composition)
-	if err != nil {
-		return nil, fmt.Errorf("streamsim: %w", err)
-	}
-	library, err := component.NewLibrary(s.componentDirs(options.dirs))
-	if err != nil {
-		return nil, fmt.Errorf("streamsim: %w", err)
-	}
-	return composeDomain(library, raw, options)
-}
-
-func parseComposeOptions(args []string, stderr io.Writer) (composeOptions, error) {
-	var options composeOptions
-	fs := newFlagSet("domain compose", stderr)
-	fs.StringVar(&options.out, "out", "", "file to write the composed domain to (default: print it inside the output document)")
-	registerComponentDirs(fs, &options.dirs)
-	if err := parseFlags(fs, args); err != nil {
-		return composeOptions{}, err
-	}
-	if fs.NArg() != 1 {
-		return composeOptions{}, usagef("usage: streamsim domain compose <composition.json> [--out <file>] [--components-dir <dir>]")
-	}
-	options.composition = fs.Arg(0)
-	return options, nil
-}
-
-type composedDomain struct {
-	component.DomainSummary
-	Composed string `json:"composed,omitempty"`
-	Domain   any    `json:"domain,omitempty"`
-}
-
-func composeDomain(library *component.Library, raw []byte, options composeOptions) (any, error) {
-	composed, err := component.Compose(library, raw, options.composition)
-	if err != nil {
-		return nil, fmt.Errorf("streamsim: %w", err)
-	}
-	result := composedDomain{DomainSummary: composed.Summary}
-	return placeComposed(result, composed, options.out)
-}
-
-func placeComposed(result composedDomain, composed *component.Composed, out string) (any, error) {
-	if out == "" {
-		result.Domain = composed.Domain.Spec
-		return result, nil
-	}
-	if err := files.Write(out, composed.Bytes); err != nil {
-		return nil, fmt.Errorf("streamsim: %w", err)
-	}
-	result.Composed = out
-	return result, nil
 }

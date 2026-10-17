@@ -15,7 +15,7 @@ type runOptions struct {
 	sinkName, sinkTarget, outDir, profile        string
 	scenarioPath                                 string
 	explore                                      bool
-	faults, perts, effectors                     listFlag
+	faults, perts, effectors, kinds              listFlag
 	seed                                         uint64
 	durationS                                    float64
 	startTime                                    int64
@@ -48,6 +48,7 @@ func registerScenarioFlags(fs *flag.FlagSet, options *runOptions) {
 
 func registerExecutionFlags(fs *flag.FlagSet, options *runOptions) {
 	registerInputDirs(fs, &options.domainsDir, &options.adaptersDir)
+	registerKindsDirs(fs, &options.kinds)
 	fs.StringVar(&options.scenarioPath, "scenario", "", "scenario file (scenario-v0.1) defining the run")
 	fs.StringVar(&options.sinkName, "sink", "inproc", "sink: inproc|file|http-push")
 	fs.StringVar(&options.sinkTarget, "sink-target", "", "sink target (file path)")

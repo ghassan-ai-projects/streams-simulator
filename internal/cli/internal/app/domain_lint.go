@@ -12,20 +12,22 @@ import (
 type lintFlags struct {
 	hours float64
 	seed  uint64
+	kinds listFlag
 }
 
 func registerLintFlags(fs *flag.FlagSet) *lintFlags {
 	flags := &lintFlags{}
 	fs.Float64Var(&flags.hours, "hours", lint.DefaultHours, "lint: simulated hours of the nominal day")
 	fs.Uint64Var(&flags.seed, "seed", lint.DefaultSeed, "lint: world seed")
+	registerKindsDirs(fs, &flags.kinds)
 	return flags
 }
 
 func (flags *lintFlags) admit(fs *flag.FlagSet, verb string) error {
 	var stray []string
 	fs.Visit(func(set *flag.Flag) { stray = append(stray, set.Name) })
-	if verb != "lint" && len(stray) > 0 {
-		return usagef("domain %s: --%s applies to lint only", verb, stray[0])
+	if name, applies := misplacedFlag(stray, verb); name != "" {
+		return usagef("domain %s: --%s applies to %s only", verb, name, applies)
 	}
 	return nil
 }

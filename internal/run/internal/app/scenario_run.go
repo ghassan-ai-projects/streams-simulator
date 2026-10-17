@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/ghassan-ai-projects/streams-simulator/internal/domain"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
 type ScenarioRunOptions struct {
 	DomainsDir, AdaptersDir, SinkName, SinkTarget, OutDir string
 	Explore                                               bool
+	CheckDomain                                           func(*model.DomainSpec) error
 }
 
 type RunSummary struct {
@@ -28,9 +30,9 @@ func (e *ScenarioCheckError) Error() string { return e.Err.Error() }
 func (e *ScenarioCheckError) Unwrap() error { return e.Err }
 
 func RunScenario(ctx context.Context, scenario *model.Scenario, options ScenarioRunOptions) (RunSummary, error) {
-	spec, adap, err := LoadInputs(options.DomainsDir, options.AdaptersDir, scenario.Domain, scenario.Adapter)
+	spec, adap, err := loadChecked(scenario, options)
 	if err != nil {
-		return RunSummary{}, fmt.Errorf("%w", err)
+		return RunSummary{}, err
 	}
 	cfg := ScenarioConfig(scenario, spec, adap, options.SinkName, options.SinkTarget)
 	if err := CheckScenario(ctx, cfg, scenario); err != nil {
@@ -38,6 +40,24 @@ func RunScenario(ctx context.Context, scenario *model.Scenario, options Scenario
 	}
 	cfg.JournalDir, cfg.Explore = options.OutDir, options.Explore
 	return execute(ctx, cfg, scenario, options.OutDir)
+}
+
+func loadChecked(scenario *model.Scenario, options ScenarioRunOptions) (*domain.Compiled, *model.Adapter, error) {
+	spec, adap, err := LoadInputs(options.DomainsDir, options.AdaptersDir, scenario.Domain, scenario.Adapter)
+	if err != nil {
+		return nil, nil, fmt.Errorf("%w", err)
+	}
+	return spec, adap, checkDomain(options, spec)
+}
+
+func checkDomain(options ScenarioRunOptions, spec *domain.Compiled) error {
+	if options.CheckDomain == nil {
+		return nil
+	}
+	if err := options.CheckDomain(spec.Spec); err != nil {
+		return fmt.Errorf("%w", err)
+	}
+	return nil
 }
 
 func execute(ctx context.Context, cfg Config, scenario *model.Scenario, outDir string) (RunSummary, error) {

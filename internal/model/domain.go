@@ -20,6 +20,7 @@ type DomainSpec struct {
 type Kind struct {
 	Name       string     `json:"name"`
 	System     bool       `json:"system,omitempty"`
+	Implements string     `json:"implements,omitempty"`
 	State      []State    `json:"state,omitempty"`
 	Dynamics   []Dynamics `json:"dynamics,omitempty"`
 	Flows      []Flow     `json:"flows,omitempty"`

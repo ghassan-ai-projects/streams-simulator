@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/app"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/internal/host"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/run"
@@ -23,4 +24,12 @@ func ParseScript(raw []byte) ([]Scripted, error) {
 
 func ParseInventory(raw []byte) (map[string]string, error) {
 	return host.ParseInventory(raw)
+}
+
+func CheckImplements(spec *model.DomainSpec, kindsDirs []string) error {
+	return app.CheckImplements(spec, kindsDirs)
+}
+
+func ValidateKindFiles(paths []string) ([]KindSummary, error) {
+	return app.ValidateKindFiles(paths)
 }

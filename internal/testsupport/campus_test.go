@@ -52,7 +52,7 @@ func TestEveryFixturePathIsUnderTheRepository(t *testing.T) {
 	t.Parallel()
 	root := RepositoryRoot()
 	for _, path := range []string{StructuredDomain(), TransferDomain(), UtilityDomain(), TwoKindDomain(), Contract("domain-spec-v0.2"),
-		DeviceCapabilities(), DeviceWorldBindings(), DeviceConformance("valid", "x"), PumpBoardDomain(), CoupledDomain(), LoopDomain(),
+		DeviceCapabilities(), DeviceWorldBindings(), DeviceConformance("valid", "x"), PumpBoardDomain(), PumpKindFile(), CoupledDomain(), LoopDomain(),
 		ComponentsDir(), PilotComposition(), FactoryComposition()} {
 		if len(path) <= len(root) || path[:len(root)] != root {
 			t.Errorf("%s is not under %s", path, root)

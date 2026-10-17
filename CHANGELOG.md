@@ -4,6 +4,13 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **Kind files and `implements`.** A domain kind may declare `implements: "<kind>"`. `streamsim domain validate`,
+  `domain compose` and `run` (with `--kinds-dir`, repeatable) check that the kind's plant wire interface equals the
+  kind file of that name (`*.kind.json` in a kinds directory) after canonicalisation, naming the first differing member; a mismatch, an unknown
+  kind file or no `--kinds-dir` is a `domain_invalid` error. `streamsim kind validate <file>...` checks kind files
+  against the plant wire kind schema and prints their `kind_digest`. `cli-output-v0.1` gains `kind_validate` and
+  the `kind_failed` code.
+
 - **`streamsim component new`.** Prints a new plant's composition, copied from a composition file or a shipped example
   or emptied to its frame, with the id and title checked by the binary. The canvas creates plants through it, so the
   rule for what an empty plant keeps and the id check live in the binary.

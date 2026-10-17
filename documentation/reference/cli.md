@@ -53,8 +53,20 @@ Flags:
 Validates one domain file and reports its ID, digest, channel count, fault count, and effector count.
 
 ```text
-streamsim domain validate <path>
+streamsim domain validate <path> [--kinds-dir <dir>]...
 ```
+
+- `--kinds-dir <dir>` — a directory of kind files (`*.kind.json`), repeatable. A domain kind that declares `implements: "<kind>"` must equal that kind file's metrics and commands as a host sees them in `NBIRTH.kinds`; a mismatch, an `implements` naming no loaded kind file, or no `--kinds-dir` at all fails with `domain_invalid`, an issue at `/kinds/<i>/implements` naming the first differing member. A domain without `implements` is unaffected. `domain compose` and `run` take the same option and run the same check.
+
+### `kind validate`
+
+Checks one or more kind files against the plant wire kind schema and prints `{valid, kinds}`, where each kind is `{path, kind, kind_digest, metrics, commands}`. A kind file is one `NBIRTH.kinds` entry without its `kind_digest`; its digest is the one a host sees.
+
+```text
+streamsim kind validate <file.kind.json>...
+```
+
+A file that is not JSON, breaks the schema or defines a kind another file defines fails with `kind_failed`.
 
 ### `domain lint`
 
@@ -80,7 +92,7 @@ streamsim domain format <path>
 Composes a plant from the component library into an ordinary domain ([components](../../docs/design/COMPONENTS_V0_1.md)). The result is validated with the domain contract and written in canonical layout, so the same composition and library files always give the same bytes.
 
 ```text
-streamsim domain compose <composition.json> [--out <file>] [--components-dir <dir>]...
+streamsim domain compose <composition.json> [--out <file>] [--components-dir <dir>]... [--kinds-dir <dir>]...
 ```
 
 - `--out <file>` — write the domain there; without it the composed spec is printed inside the output document (`domain`).
@@ -194,7 +206,7 @@ A scenario's `description` is for readers; a scenario without a `clock.advance` 
 
 ```text
 streamsim run [flags]
-streamsim run --scenario <file> [--domains-dir d] [--adapters-dir d] [--sink s] [--sink-target t] [--out dir] [--explore]
+streamsim run --scenario <file> [--domains-dir d] [--adapters-dir d] [--kinds-dir d]... [--sink s] [--sink-target t] [--out dir] [--explore]
 ```
 
 With `--scenario`, the flags the scenario defines (`--domain`, `--adapter`, `--seed`,

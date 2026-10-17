@@ -35,6 +35,7 @@ var commands = map[string]command{
 	"domain":      {run: cmdDomain},
 	"component":   {run: componentCommand},
 	"adapter":     {run: cmdAdapter},
+	"kind":        {run: cmdKind},
 	"run":         {run: cmdRun},
 	"replay":      {run: cmdReplay},
 	"verify":      {run: cmdVerify},
@@ -132,9 +133,11 @@ Usage: streamsim <command> [flags]
 
 Commands:
   catalog list|describe|coverage        Installed domains and axis coverage
-  domain validate <path>                Validate a domain spec against the contract
+  domain validate <path> [--kinds-dir]  Validate a domain spec against the contract and the
+                                        kind files its kinds implement
   domain format <path>                  Rewrite a domain spec in canonical formatting
   domain compose <composition> [--out]  Compose a plant from the component library into a domain
+  kind validate <file>...               Validate kind files (*.kind.json) against the plant wire kind schema
   component list|show <ref>|validate    The component library: equipment, instruments, vocabulary
   component examples|example <id>       Ready-to-run example plants shipped with the library
   component new <id> --title --from|--example [--empty]  A new plant's composition, copied or empty

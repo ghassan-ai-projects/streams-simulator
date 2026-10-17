@@ -26,6 +26,7 @@ a bug in the simulator.
 | Axis | A dimension a domain must declare so the catalog's coverage is measurable | `CoverageReport.ByAxis` | `axes` |
 | Loading and formatting | Reading a spec from a file or directory, and rewriting a file in canonical formatting; the only I/O in the module | `Load`, `LoadAll`, `Format` (files edge) | – |
 | Catalog from a directory | Every domain in a directory, as a catalog; an empty directory name selects `domains`, and a directory with no domain is refused because its coverage report would claim nothing | `NewCatalogFromDir`, `files.LoadCatalog` | `--domains-dir` |
+| Implements | The optional kind member naming the kind file the kind implements; the module only reads it, the plantwire module checks it against the kind file | `Kind.Implements` | `implements` |
 
 ## Retired words
 
