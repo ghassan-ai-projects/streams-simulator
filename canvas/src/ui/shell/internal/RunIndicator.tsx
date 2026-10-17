@@ -55,7 +55,7 @@ function Pill({ launch, navigation, state }: IndicatorProps & { readonly state: 
   const open = () => {
     if (state.phase === "done") {
       launch.reset();
-      navigation.go({ screen: "run", worldId: state.worldId });
+      navigation.go({ screen: "review", worldId: state.worldId });
     } else navigation.go({ screen: "plant", domain: state.origin.path, hall: null, launch: true });
   };
   return (

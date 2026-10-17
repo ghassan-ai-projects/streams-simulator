@@ -8,7 +8,7 @@ import { rightPanelName } from "./panelName";
 
 describe("key help", () => {
   it("opens from a visible Keyboard button, grouped by where each key works, and returns focus on Escape", () => {
-    render(<KeyHelp screen="run" />);
+    render(<KeyHelp screen="review" />);
     const button = screen.getByRole("button", { name: "Keyboard" });
     button.focus();
     fireEvent.click(button);

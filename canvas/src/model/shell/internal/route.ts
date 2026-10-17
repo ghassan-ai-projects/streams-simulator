@@ -1,7 +1,7 @@
 export type Route =
-  | { readonly screen: "home" }
+  | { readonly screen: "workspace" }
   | { readonly screen: "plant"; readonly domain: string; readonly hall: string | null; readonly launch?: true }
-  | { readonly screen: "run"; readonly worldId: string }
+  | { readonly screen: "review"; readonly worldId: string }
   | { readonly screen: "edit"; readonly composition: string };
 
 export function parseRoute(hash: string): Route {
@@ -12,31 +12,31 @@ export function parseRoute(hash: string): Route {
   const composition = params.get("composition");
   if (path === "plant" && domain) {
     const hall = params.get("hall");
-    return params.get("run") === "1"
+    return params.get("launch") === "1"
       ? { screen: "plant", domain, hall, launch: true }
       : { screen: "plant", domain, hall };
   }
-  if (path === "run" && world) {
-    return { screen: "run", worldId: world };
+  if (path === "review" && world) {
+    return { screen: "review", worldId: world };
   }
   if (path === "edit" && composition) {
     return { screen: "edit", composition };
   }
-  return { screen: "home" };
+  return { screen: "workspace" };
 }
 
 export function formatRoute(route: Route): string {
   switch (route.screen) {
-    case "home":
+    case "workspace":
       return "#/";
     case "plant": {
       const params = new URLSearchParams({ domain: route.domain });
       if (route.hall !== null) params.set("hall", route.hall);
-      if (route.launch) params.set("run", "1");
+      if (route.launch) params.set("launch", "1");
       return `#/plant?${params.toString()}`;
     }
-    case "run":
-      return `#/run?${new URLSearchParams({ world: route.worldId }).toString()}`;
+    case "review":
+      return `#/review?${new URLSearchParams({ world: route.worldId }).toString()}`;
     case "edit":
       return `#/edit?${new URLSearchParams({ composition: route.composition }).toString()}`;
   }

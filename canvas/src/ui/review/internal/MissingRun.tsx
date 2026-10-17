@@ -16,7 +16,7 @@ export function MissingRun({
         type="button"
         className={cx(shared.secondary, panel.secondary)}
         onClick={() => {
-          navigation.go({ screen: "home" });
+          navigation.go({ screen: "workspace" });
         }}
       >
         Back to the workspace

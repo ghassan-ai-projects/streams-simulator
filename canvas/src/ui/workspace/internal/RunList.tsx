@@ -8,7 +8,7 @@ import { badgeLabels } from "../../../model/review";
 import type { RunRow } from "../../../model/workspace";
 import { counted, plantsOf, runFacts, runRows, unfinishedReason, whenOf } from "../../../model/workspace";
 import { SectionHeading } from "./SectionHeading";
-import home from "./HomeScreen.module.css";
+import workspaceStyles from "./WorkspaceScreen.module.css";
 import rowStyles from "./ListSection.module.css";
 import badgeStyles from "./Badge.module.css";
 import styles from "./RunList.module.css";
@@ -77,7 +77,7 @@ function Row({
             {row.run.explore ? "Explore" : "Evaluate"}
           </span>
         </span>
-        <span className={home.meta} title={detail(row)}>
+        <span className={workspaceStyles.meta} title={detail(row)}>
           <MetaParts parts={detailParts(row)} />
         </span>
       </span>
@@ -89,7 +89,7 @@ function Row({
           aria-label={`Review ${row.run.worldId}`}
           title="Review checks recording integrity using the run files."
           onClick={() => {
-            navigation.go({ screen: "run", worldId: row.run.worldId });
+            navigation.go({ screen: "review", worldId: row.run.worldId });
           }}
         >
           Review

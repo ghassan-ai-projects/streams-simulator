@@ -3,7 +3,7 @@ import { NavigationStore } from "../app/shell";
 import { PlantMaker } from "../app/plant";
 import { WorkspaceStore } from "../app/workspace";
 import type { Badge } from "../model/review";
-import { HomeScreen } from "../ui/workspace";
+import { WorkspaceScreen } from "../ui/workspace";
 import type { FakeBridge } from "./fakeBridge";
 import { memoryLocation } from "./location";
 
@@ -20,6 +20,11 @@ export async function show(
   const store = new WorkspaceStore(bridge.workspace);
   await store.open();
   return render(
-    <HomeScreen workspace={store} navigation={nav.store} maker={new PlantMaker(bridge.plant)} badgeFor={badgeFor} />,
+    <WorkspaceScreen
+      workspace={store}
+      navigation={nav.store}
+      maker={new PlantMaker(bridge.plant)}
+      badgeFor={badgeFor}
+    />,
   );
 }

@@ -26,7 +26,7 @@ function Title({ draft, navigation }: Omit<BarProps, "editor">) {
     {
       label: "Workspace",
       onGo: () => {
-        navigation.go({ screen: "home" });
+        navigation.go({ screen: "workspace" });
       },
     },
   ];

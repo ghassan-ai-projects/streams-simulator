@@ -9,7 +9,7 @@ import { Breadcrumb, screen } from "../../primitives";
 import { useScreen } from "../../primitives";
 import { useStore } from "../../primitives";
 import rowStyles from "./ListSection.module.css";
-import styles from "./HomeScreen.module.css";
+import styles from "./WorkspaceScreen.module.css";
 import { BlankPlantStart } from "./EmptyStart";
 import { ExampleList, useExamples } from "./Examples";
 import { PlantList } from "./PlantList";
@@ -87,12 +87,12 @@ function Contents({ workspace, navigation, maker, badgeFor }: ContentsProps) {
   );
 }
 
-function HomeCrumb({ name }: { readonly name: string }) {
+function WorkspaceCrumb({ name }: { readonly name: string }) {
   const heading = useScreen(name === "" ? "Workspace" : `${name} · workspace`);
   return <Breadcrumb trail={[]} here="Workspace" heading={heading} />;
 }
 
-function HomeBody({
+function WorkspaceBody({
   state,
   navigation,
   maker,
@@ -118,7 +118,7 @@ function HomeBody({
   return <Contents workspace={state.workspace} navigation={navigation} maker={maker} badgeFor={badgeFor} />;
 }
 
-export function HomeScreen({
+export function WorkspaceScreen({
   workspace,
   navigation,
   maker,
@@ -132,8 +132,8 @@ export function HomeScreen({
   const state = useStore(workspace);
   return (
     <>
-      <HomeCrumb name={state.phase === "ready" ? state.workspace.name : ""} />
-      <HomeBody state={state} navigation={navigation} maker={maker} badgeFor={badgeFor} />
+      <WorkspaceCrumb name={state.phase === "ready" ? state.workspace.name : ""} />
+      <WorkspaceBody state={state} navigation={navigation} maker={maker} badgeFor={badgeFor} />
     </>
   );
 }

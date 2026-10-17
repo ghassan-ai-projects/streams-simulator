@@ -60,7 +60,7 @@ function trailOf({ navigation, worldId, hall, onHall, plant }: HeaderProps): Cru
     {
       label: "Workspace",
       onGo: () => {
-        navigation.go({ screen: "home" });
+        navigation.go({ screen: "workspace" });
       },
     },
   ];

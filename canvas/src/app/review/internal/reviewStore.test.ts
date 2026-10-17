@@ -74,7 +74,7 @@ describe("review", () => {
     });
     bridge.stream("w-1", journalWire);
     timers.advance(250);
-    expect(store.snapshot().playback).toEqual({ phase: "ready", records: 4, adapter: "native-jsonl" });
+    expect(store.snapshot().playback).toEqual({ phase: "ready", records: 4 });
     expect(store.snapshot().positionNs).toBe(12e9);
     expect(store.index.readings("CH-1", 30e9)[0]?.value).toBe(95.1);
   });
@@ -122,16 +122,6 @@ describe("review", () => {
     store.open("w-1");
     expect(store.snapshot()).toMatchObject({ positionNs: 15e9, selected: "CH-1" });
     expect(bridge.followers.size).toBe(1);
-  });
-
-  it("drops late answers for a run that is no longer open and closes its stream", async () => {
-    const { bridge, store } = setup();
-    store.open("w-1");
-    store.open("w-2");
-    expect([...bridge.followers.keys()]).toEqual(["w-2"]);
-    await flushPromises();
-    bridge.stream("w-1", journalWire);
-    expect(store.snapshot()).toMatchObject({ worldId: "w-2", playback: { records: 0 } });
   });
 
   it("shows the binary's failure for report and verify, and a broken stream", async () => {

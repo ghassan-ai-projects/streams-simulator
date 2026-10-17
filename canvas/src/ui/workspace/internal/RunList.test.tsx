@@ -5,7 +5,7 @@ import { FakeBridge } from "../../../test/fakeBridge";
 import { sampleWorkspace } from "../../../test/workspaceFixture";
 import { show, navigation } from "../../../test/workspaceHarness";
 
-describe("runs on home", () => {
+describe("runs in the workspace", () => {
   it("reads a run that did not finish as Did not finish, with its reason, and never as checked", async () => {
     const bridge = new FakeBridge();
     bridge.workspaceOutcome = success({

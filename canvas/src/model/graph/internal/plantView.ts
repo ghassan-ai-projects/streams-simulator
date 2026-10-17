@@ -119,7 +119,7 @@ function bundle(
   return [...edges.values()];
 }
 
-interface Context {
+interface ViewInput {
   readonly plant: Plant;
   readonly specs: Specs;
   readonly halls: readonly string[];
@@ -138,27 +138,27 @@ function nodeBox(node: ViewNode, view: ViewPresentation): LayoutNode {
   return { id: node.id, group: node.group, width: nodeSize.width, height };
 }
 
-function finish(context: Context, nodes: readonly ViewNode[], edges: readonly ViewEdge[]): PlantView {
-  const order = ["Halls", ...context.plant.areas.map((area) => area.name)];
-  const boxes = nodes.map((node) => nodeBox(node, context.view));
+function finish(input: ViewInput, nodes: readonly ViewNode[], edges: readonly ViewEdge[]): PlantView {
+  const order = ["Halls", ...input.plant.areas.map((area) => area.name)];
+  const boxes = nodes.map((node) => nodeBox(node, input.view));
   const rows = (group: string, count: number) => (group === "Halls" ? Math.ceil(Math.sqrt(count)) : 3);
   return {
     nodes,
     edges,
-    layout: layout(boxes, edges, order, rows, context.aspect, headerReserve),
-    halls: context.halls,
+    layout: layout(boxes, edges, order, rows, input.aspect, headerReserve),
+    halls: input.halls,
   };
 }
 
-function hallLevel(context: Context): PlantView {
-  const { plant, specs, halls } = context;
+function hallLevel(input: ViewInput): PlantView {
+  const { plant, specs, halls } = input;
   const counts = tally(
     plant.instances.flatMap((instance) => hallOf(instance.id) ?? []),
     (hall) => hall,
   );
   const shared = plant.instances.filter((instance) => hallOf(instance.id) === null);
   const nodes = [
-    ...shared.map((instance) => instanceNode(plant, instance, specs, context.notes)),
+    ...shared.map((instance) => instanceNode(plant, instance, specs, input.notes)),
     ...halls.map((hall) => hallNode(hall, counts.get(hall) ?? 0)),
   ];
   const key = (id: string) => hallOf(id) ?? id;
@@ -172,19 +172,19 @@ function hallLevel(context: Context): PlantView {
     feedsAll.has(node.id) ? { ...node, detail: `${node.detail} · feeds all ${String(halls.length)} halls` } : node,
   );
   return finish(
-    context,
+    input,
     marked,
     edges.filter((edge) => !(feedsAll.has(edge.from) && halls.includes(edge.to))),
   );
 }
 
-function instanceLevel(context: Context, keep: (instance: Instance) => boolean): PlantView {
-  const kept = context.plant.instances.filter(keep);
+function instanceLevel(input: ViewInput, keep: (instance: Instance) => boolean): PlantView {
+  const kept = input.plant.instances.filter(keep);
   const ids = new Set(kept.map((instance) => instance.id));
-  const nodes = kept.map((instance) => instanceNode(context.plant, instance, context.specs, context.notes));
+  const nodes = kept.map((instance) => instanceNode(input.plant, instance, input.specs, input.notes));
   const key = (id: string) => (ids.has(id) ? id : null);
   const pins = new Map(nodes.map((node) => [node.id, node.pins] as const));
-  return finish(context, nodes, bundle(context.plant, context.plant.links, key, context.specs, pins));
+  return finish(input, nodes, bundle(input.plant, input.plant.links, key, input.specs, pins));
 }
 
 function withinHall(view: PlantView, hall: string): PlantView {
@@ -206,12 +206,12 @@ interface PlantViewOptions {
 
 export function plantView(plant: Plant, specs: Specs, options: PlantViewOptions): PlantView {
   const { open, view = plainView, aspect, notes = new Map() } = options;
-  const context = { plant, specs, halls: hallsOf(plant), view, aspect, notes };
-  if (context.halls.length === 0) {
-    return instanceLevel(context, () => true);
+  const input = { plant, specs, halls: hallsOf(plant), view, aspect, notes };
+  if (input.halls.length === 0) {
+    return instanceLevel(input, () => true);
   }
-  if (open === null || !context.halls.includes(open)) {
-    return hallLevel(context);
+  if (open === null || !input.halls.includes(open)) {
+    return hallLevel(input);
   }
   const touching = new Set(
     plant.links
@@ -220,5 +220,5 @@ export function plantView(plant: Plant, specs: Specs, options: PlantViewOptions)
   );
   const keep = (instance: Instance) =>
     hallOf(instance.id) === open || (hallOf(instance.id) === null && touching.has(instance.id));
-  return withinHall(instanceLevel(context, keep), open);
+  return withinHall(instanceLevel(input, keep), open);
 }

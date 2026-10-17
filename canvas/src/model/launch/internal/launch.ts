@@ -1,7 +1,5 @@
-import type { ArgValue, EffectorSpec } from "../../plant";
-import { argProblem } from "../../plant";
-import type { ShowingMarks } from "../../shared/marks";
-import { counted, humanise } from "../../shared/words";
+import type { ArgValue } from "../../plant";
+import { humanise } from "../../shared/words";
 import { durationOf } from "../../shared/duration";
 
 interface PlannedFault {
@@ -10,7 +8,7 @@ interface PlannedFault {
   readonly atS: number;
 }
 
-interface PlannedCall {
+export interface PlannedCall {
   readonly entity: string;
   readonly effector: string;
   readonly atS: number;
@@ -84,8 +82,6 @@ export function stepsFor(plan: LaunchPlan): readonly LaunchStep[] {
   return launchSteps(plan, plan.pace === "watch" ? 30 : 20);
 }
 
-type SpecOf = (entity: string, effector: string) => EffectorSpec | undefined;
-
 export function failureWords(step: LaunchStep | null): string {
   if (step?.kind === "inject")
     return `The fault "${humanise(step.fault)}" could not be added to ${step.entity}. Check that this plant still has it, choose a fault, and start again.`;
@@ -116,80 +112,6 @@ export function keepKnownFaults(plan: LaunchPlan, faultsOf: (entity: string) => 
   return { plan: { ...plan, faults }, dropped };
 }
 
-export interface PlanProblem {
-  readonly field: "seed" | "duration" | "call" | number;
-  readonly call?: number;
-  readonly part?: "instance" | "effector" | "minute" | "args";
-  readonly text: string;
-}
-
-function insideRun(plan: LaunchPlan, atS: number): boolean {
-  return Number.isInteger(atS) && atS >= 0 && atS < plan.durationS;
-}
-
-function faultProblems(plan: LaunchPlan): readonly PlanProblem[] {
-  return plan.faults.flatMap((fault, index): PlanProblem[] => {
-    const name = `Fault ${String(index + 1)}`;
-    if (fault.entity === "" && fault.fault === "")
-      return [{ field: index, text: `${name} needs an instance and a fault.` }];
-    if (fault.entity === "") return [{ field: index, text: `${name} needs an instance.` }];
-    if (fault.fault === "") return [{ field: index, text: `${name} needs a fault.` }];
-    if (!insideRun(plan, fault.atS)) return [{ field: index, text: `${name} starts inside the run, before its end.` }];
-    return [];
-  });
-}
-
-type CallProblem = Pick<PlanProblem, "part" | "text">;
-
-function callProblem(call: PlannedCall, name: string, plan: LaunchPlan, specOf: SpecOf): CallProblem | null {
-  if (call.entity === "" && call.effector === "")
-    return { part: "instance", text: `${name} needs an instance and an effector.` };
-  if (call.entity === "") return { part: "instance", text: `${name} needs an instance.` };
-  if (call.effector === "") return { part: "effector", text: `${name} needs an effector.` };
-  if (!insideRun(plan, call.atS)) return { part: "minute", text: `${name} is made inside the run, before its end.` };
-  const spec = specOf(call.entity, call.effector);
-  if (spec === undefined)
-    return { part: "effector", text: `${name}: ${call.entity} has no effector ${humanise(call.effector)}.` };
-  const problem = argProblem(spec, call.args);
-  return problem === "" ? null : { part: "args", text: `${name}: ${problem}` };
-}
-
-function callProblems(plan: LaunchPlan, specOf: SpecOf): readonly PlanProblem[] {
-  return plan.calls.flatMap((call, index): PlanProblem[] => {
-    const found = callProblem(call, `Effector call ${String(index + 1)}`, plan, specOf);
-    return found === null ? [] : [{ field: "call", call: index, ...found }];
-  });
-}
-
-export function planProblems(plan: LaunchPlan, specOf: SpecOf): readonly PlanProblem[] {
-  const problems: PlanProblem[] = [];
-  if (!Number.isSafeInteger(plan.seed) || plan.seed < 0)
-    problems.push({ field: "seed", text: "The seed is a whole number, 0 or more." });
-  if (!Number.isInteger(plan.durationS) || plan.durationS < 60)
-    problems.push({ field: "duration", text: "The duration is at least one minute." });
-  return [...problems, ...faultProblems(plan), ...callProblems(plan, specOf)];
-}
-
-export function disturbanceWords(plan: LaunchPlan): string {
-  const faults = plan.faults.length;
-  const calls = plan.calls.length;
-  const injected = faults === 0 ? "no faults" : counted(faults, "fault");
-  return calls === 0 ? injected : `${injected} and ${counted(calls, "effector call")}`;
-}
-
-export function planSummary(plan: LaunchPlan, length: string): string {
-  const faults = plan.faults.length;
-  const calls = plan.calls.length;
-  return [
-    `${length} of simulated time`,
-    plan.explore ? "Explore" : "Evaluate",
-    faults === 0 ? "no faults" : counted(faults, "fault"),
-    calls === 0 ? "" : counted(calls, "effector call"),
-  ]
-    .filter((part) => part !== "")
-    .join(" · ");
-}
-
 export interface CallOutcome {
   readonly entity: string;
   readonly effector: string;
@@ -218,40 +140,6 @@ export function outcomeOf(call: PlannedCall, ack: Acknowledgement, atMs: number)
     effectEtaNs: eta,
     atMs,
   };
-}
-
-const effectorShownS = 60;
-const effectorHeldMs = 3000;
-
-function callWords(call: CallOutcome): string {
-  const name = humanise(call.effector);
-  return call.accepted ? `${name} · accepted` : `${name} · refused: ${call.reason}`;
-}
-
-function faultsAt(plan: LaunchPlan, atS: number): Map<string, readonly string[]> {
-  const faulted = new Map<string, readonly string[]>();
-  for (const planned of plan.faults) {
-    if (planned.entity === "" || planned.fault === "" || planned.atS > atS) continue;
-    faulted.set(planned.entity, [...(faulted.get(planned.entity) ?? []), humanise(planned.fault)]);
-  }
-  return faulted;
-}
-
-function callShown(call: CallOutcome, atS: number, atMs: number): boolean {
-  if (call.atS > atS) return false;
-  return atS < call.atS + effectorShownS || atMs - call.atMs < effectorHeldMs;
-}
-
-function callsAt(calls: readonly CallOutcome[], atS: number, atMs: number): Map<string, string> {
-  const shown = new Map<string, string>();
-  for (const call of calls) {
-    if (callShown(call, atS, atMs)) shown.set(call.entity, callWords(call));
-  }
-  return shown;
-}
-
-export function showingMarks(plan: LaunchPlan, calls: readonly CallOutcome[], atS: number, atMs: number): ShowingMarks {
-  return { faults: faultsAt(plan, atS), effectors: callsAt(calls, atS, atMs) };
 }
 
 export function rateWords(rate: number | null): string {

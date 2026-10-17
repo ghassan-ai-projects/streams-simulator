@@ -5,7 +5,7 @@ import type { PlantMaker } from "../../../app/plant";
 import type { ExamplePlant } from "../../../model/plant";
 import { suggestedId } from "../../../model/workspace";
 import { cx, screen, shared } from "../../primitives";
-import home from "./HomeScreen.module.css";
+import workspaceStyles from "./WorkspaceScreen.module.css";
 import rowStyles from "./ListSection.module.css";
 import styles from "./Examples.module.css";
 
@@ -83,7 +83,7 @@ export function ExampleList(props: TryProps) {
           <li key={example.id}>
             <span className={rowStyles.lines}>
               <span className={rowStyles.name}>{example.title}</span>
-              <span className={cx(home.meta, styles.description)}>{example.description}</span>
+              <span className={cx(workspaceStyles.meta, styles.description)}>{example.description}</span>
             </span>
             <TryButton example={example} busy={busy} onTry={start} />
           </li>

@@ -12,7 +12,7 @@ export {
   kpiWords,
   kpisOf,
   rerunOf,
-  runFacts,
+  reportFacts,
   runIdentity,
 } from "./internal/reportViews";
 export { firstEventNode } from "./internal/reviewAnchor";

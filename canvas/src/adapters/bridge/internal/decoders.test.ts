@@ -77,7 +77,7 @@ describe("acknowledgement", () => {
   });
 });
 
-describe("workspace", () => {
+describe("workspace payload", () => {
   const wire = {
     name: "lab",
     domains: [{ path: "d.json", id: "mini", title: "Mini", instances: 4 }],
@@ -188,7 +188,7 @@ describe("confirmations", () => {
   });
 });
 
-describe("composition", () => {
+describe("composition payload", () => {
   const document = {
     schema_version: "0.1",
     id: "plant",

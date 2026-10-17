@@ -11,7 +11,7 @@ import type { PlantEntry } from "../../../model/workspace";
 import { plantFacts, plantsOf } from "../../../model/workspace";
 import { NewPlantForm } from "./NewPlant";
 import { SectionHeading } from "./SectionHeading";
-import home from "./HomeScreen.module.css";
+import workspaceStyles from "./WorkspaceScreen.module.css";
 import rowStyles from "./ListSection.module.css";
 import badgeStyles from "./Badge.module.css";
 
@@ -42,7 +42,7 @@ function Action({
   return (
     <button
       type="button"
-      className={run ? cx(home.run, shared.secondary) : shared.secondary}
+      className={run ? cx(workspaceStyles.run, shared.secondary) : shared.secondary}
       aria-label={`${label} ${plant.title}`}
       onClick={onClick}
     >
@@ -91,7 +91,7 @@ function PlantRow({ plant, navigation }: { readonly plant: PlantEntry; readonly 
           <span className={rowStyles.id}>{plant.id}</span>
           {plant.composition === null && <span className={badgeStyles.badge}>read-only</span>}
         </span>
-        <span className={home.meta}>{plantFacts(plant)}</span>
+        <span className={workspaceStyles.meta}>{plantFacts(plant)}</span>
       </span>
       <Actions plant={plant} navigation={navigation} />
     </li>

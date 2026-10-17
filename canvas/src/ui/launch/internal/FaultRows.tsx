@@ -96,6 +96,9 @@ function FaultRow({ plant, fault, index, problem, change, fresh, onRemoved }: Fa
   );
 }
 
+const problemOf = (problems: readonly PlanProblem[], index: number) =>
+  problems.find((problem) => problem.field === "fault" && problem.index === index)?.text ?? "";
+
 interface FaultRowsProps {
   readonly plant: Plant;
   readonly draft: Draft;
@@ -109,7 +112,6 @@ export function FaultRows({ plant, draft, problems, selected, change }: FaultRow
     ...d,
     faults: [...d.faults, { key, entity: selected ?? "", fault: "", atMinutes: "0" }],
   }));
-  const problemOf = (index: number) => problems.find((problem) => problem.field === index)?.text ?? "";
   return (
     <fieldset className={panel.group}>
       <legend>Faults to inject</legend>
@@ -121,7 +123,7 @@ export function FaultRows({ plant, draft, problems, selected, change }: FaultRow
             plant={plant}
             fault={fault}
             index={index}
-            problem={problemOf(index)}
+            problem={problemOf(problems, index)}
             change={change}
             fresh={fault.key === added}
             onRemoved={() => {

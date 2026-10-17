@@ -4,7 +4,7 @@ import type { ReviewState } from "../../../app/review";
 import { readyReport } from "../../../app/review";
 import type { Badge, BannerWarning, Report } from "../../../model/review";
 import { badgeLabels, badgeOf, bannerWarnings, modeWords } from "../../../model/review";
-import { integrityLine, runFacts, runIdentity } from "../../../model/review";
+import { integrityLine, reportFacts, runIdentity } from "../../../model/review";
 import { useInterval } from "../../primitives";
 import { RunInfo } from "./RunInfo";
 import styles from "./RunStatus.module.css";
@@ -71,7 +71,7 @@ function Mode({ report }: { readonly report: Report }) {
         {explore ? <Eye size={13} aria-hidden="true" /> : <Lock size={13} aria-hidden="true" />}
         {explore ? "Explore" : "Evaluate"}
       </span>
-      <span className={styles.facts}>{runFacts(report)}</span>
+      <span className={styles.facts}>{reportFacts(report)}</span>
       <RunInfo lines={[explore ? modeWords.explore : modeWords.evaluate, runIdentity(report)]} />
     </>
   );

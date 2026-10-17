@@ -77,7 +77,7 @@ function PlantInspector({ state, hall, navigation, plants, runs }: RightProps) {
         plants.select(null);
       }}
       onReview={(worldId) => {
-        navigation.go({ screen: "run", worldId });
+        navigation.go({ screen: "review", worldId });
       }}
       onSelect={(id) => {
         if (!state.plant.instances.some((instance) => instance.id === id)) return;
@@ -102,7 +102,7 @@ function RightPanel(props: RightProps) {
       selected={state.selected}
       onClose={onClose}
       onFinished={(worldId) => {
-        navigation.go({ screen: "run", worldId });
+        navigation.go({ screen: "review", worldId });
       }}
     />
   );

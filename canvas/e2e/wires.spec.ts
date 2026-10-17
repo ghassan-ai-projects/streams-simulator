@@ -30,7 +30,7 @@ test("no wire runs under a node and no two wire ends meet, at every zoom tier of
 });
 
 test("no wire runs under a node and no two wire ends meet, at every zoom tier of a review", async ({ page }) => {
-  await page.goto(`${env("CANVAS_APP_URL")}/#/run?world=w-evaluate`);
+  await page.goto(`${env("CANVAS_APP_URL")}/#/review?world=w-evaluate`);
   await expect(page.getByText(/\d+ observations/)).toBeVisible({ timeout: 60_000 });
   await checkEveryTier(page);
 });

@@ -5,7 +5,7 @@ import { FakeBridge, cannedFailure } from "../../../test/fakeBridge";
 import { sampleWorkspace } from "../../../test/workspaceFixture";
 import { WorkspaceStore } from "./workspaceStore";
 
-describe("workspace", () => {
+describe("workspace store", () => {
   it("lists the workspace and reloads when a file changes on disk", async () => {
     const bridge = new FakeBridge();
     const store = new WorkspaceStore(bridge.workspace);

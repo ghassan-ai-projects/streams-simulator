@@ -65,7 +65,7 @@ describe("run status", () => {
   });
 
   it("warns when playback holds fewer observations than the report delivered", () => {
-    render(<Banners state={state({ playback: { phase: "ready", records: 1, adapter: "native-jsonl" } })} />);
+    render(<Banners state={state({ playback: { phase: "ready", records: 1 } })} />);
     expect(screen.getByRole("alert")).toHaveTextContent("Playback has 1 observations");
   });
 });

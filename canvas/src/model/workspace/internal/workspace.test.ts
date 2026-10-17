@@ -44,7 +44,7 @@ const lab: Workspace = {
   ],
 };
 
-describe("workspace", () => {
+describe("workspace catalogue", () => {
   it("makes one plant of a domain and its composition, with its runs", () => {
     expect(plantsOf(lab)).toEqual([
       {

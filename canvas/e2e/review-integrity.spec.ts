@@ -10,7 +10,7 @@ async function openIntegrity(page: Page) {
 }
 
 test("an incomplete stamp never reads Reproduces when the completed journals contradict it", async ({ page }) => {
-  await page.goto(`${env("CANVAS_APP_URL")}/#/run?world=w-incomplete-stamp`);
+  await page.goto(`${env("CANVAS_APP_URL")}/#/review?world=w-incomplete-stamp`);
   await expect(page.getByRole("status").filter({ hasText: /^Did not finish$/ })).toHaveCount(1, { timeout: 60_000 });
   const details = page.getByRole("complementary", { name: "Run details" });
   await openIntegrity(page);
@@ -31,7 +31,7 @@ test("an incomplete stamp never reads Reproduces when the completed journals con
 });
 
 test("a complete run missing a recorded digest fails both file and replay checks", async ({ page }) => {
-  await page.goto(`${env("CANVAS_APP_URL")}/#/run?world=w-missing-digest`);
+  await page.goto(`${env("CANVAS_APP_URL")}/#/review?world=w-missing-digest`);
   await expect(page.getByRole("status").filter({ hasText: /^Not verified$/ })).toHaveCount(1, { timeout: 60_000 });
   const details = page.getByRole("complementary", { name: "Run details" });
   await openIntegrity(page);

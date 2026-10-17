@@ -17,7 +17,7 @@ async function dirtyEditor() {
   navigation.guardUnsaved(() => isDirty(editor.snapshot()));
   render(<PendingLeave title="Lab two" editor={editor} navigation={navigation} />);
   act(() => {
-    navigation.go({ screen: "home" });
+    navigation.go({ screen: "workspace" });
   });
   return { editor, navigation, fake };
 }
@@ -41,7 +41,7 @@ describe("leaving the editor with unsaved changes", () => {
   it("Discard and leave drops the unsaved change and goes", async () => {
     const { editor, navigation } = await dirtyEditor();
     fireEvent.click(screen.getByRole("button", { name: "Discard and leave" }));
-    expect(navigation.snapshot()).toEqual({ screen: "home" });
+    expect(navigation.snapshot()).toEqual({ screen: "workspace" });
     expect(current(editor).title).toBe("Lab");
   });
 
@@ -49,7 +49,7 @@ describe("leaving the editor with unsaved changes", () => {
     const { editor, navigation } = await dirtyEditor();
     fireEvent.click(screen.getByRole("button", { name: "Save and leave" }));
     await vi.waitFor(() => {
-      expect(navigation.snapshot()).toEqual({ screen: "home" });
+      expect(navigation.snapshot()).toEqual({ screen: "workspace" });
     });
     expect(isDirty(editor.snapshot())).toBe(false);
   });

@@ -2,6 +2,7 @@ import type { Report } from "./report";
 import { callWords, faultNames } from "./report";
 import { clockOf } from "../../shared/duration";
 import { counted, humanise } from "../../shared/words";
+import { effectorShownS } from "../../launch";
 
 export function runClock(ns: number, startNs: number): string {
   return clockOf((ns - startNs) / 1e9);
@@ -105,13 +106,11 @@ export function faultedAt(report: Report | null, atNs: number): ReadonlyMap<stri
   return faultNames(report, (d) => d.onsetNs <= atNs && !(d.clearedNs !== null && d.clearedNs <= atNs));
 }
 
-const effectorShownNs = 60e9;
-
 export function effectorAt(report: Report | null, atNs: number): ReadonlyMap<string, string> {
   const latest = new Map<string, { readonly at: number; readonly words: string }>();
   for (const call of report?.effectorCalls ?? []) {
     const known = latest.get(call.entity);
-    const live = call.atNs <= atNs && atNs <= call.atNs + effectorShownNs;
+    const live = call.atNs <= atNs && atNs <= call.atNs + effectorShownS * 1e9;
     if (live && (known === undefined || call.atNs >= known.at)) {
       latest.set(call.entity, { at: call.atNs, words: callWords(call) });
     }

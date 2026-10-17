@@ -19,7 +19,6 @@ export interface ReviewState {
   readonly playback: {
     readonly phase: "loading" | "ready" | "failed";
     readonly records: number;
-    readonly adapter: string;
   };
   readonly positionNs: number;
   readonly selected: string | null;
@@ -35,7 +34,7 @@ export const idle: ReviewState = {
   worldId: null,
   report: { phase: "loading" },
   verified: { phase: "loading" },
-  playback: { phase: "loading", records: 0, adapter: "" },
+  playback: { phase: "loading", records: 0 },
   positionNs: 0,
   selected: null,
   runDomain: { phase: "loading" },

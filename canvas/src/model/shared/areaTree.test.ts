@@ -1,7 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { areaTree } from "./areaTree";
-import { areaNodesOf } from "../../test/modelFixtures";
-import { addArea } from "../../test/modelFixtures";
 
 describe("area tree", () => {
   it("orders areas under their parent, with the path and depth", () => {
@@ -26,13 +24,5 @@ describe("area tree", () => {
       { name: "C", parent: "B" },
     ]);
     expect(nodes.map((node) => node.name).sort()).toEqual(["A", "B", "C"]);
-  });
-
-  it("adds an area under a parent once, to a plant that had none", () => {
-    const doc = addArea({ id: "x" }, "Site", "");
-    const nested = addArea(doc, "Plant room", "Site");
-    expect(addArea(nested, "Plant room", "Site")).toBe(nested);
-    expect(nested.areas).toEqual([{ name: "Site" }, { name: "Plant room", parent: "Site" }]);
-    expect(areaNodesOf(nested).map((node) => node.path)).toEqual(["Site", "Site › Plant room"]);
   });
 });

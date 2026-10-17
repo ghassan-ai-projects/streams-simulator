@@ -7,9 +7,9 @@ import { failure as failed, success } from "../../../test/outcome";
 import { FakeBridge, cannedFailure } from "../../../test/fakeBridge";
 import { sampleWorkspace } from "../../../test/workspaceFixture";
 import { navigation, show } from "../../../test/workspaceHarness";
-import { HomeScreen } from "./HomeScreen";
+import { WorkspaceScreen } from "./WorkspaceScreen";
 
-describe("home screen", () => {
+describe("workspace screen", () => {
   it("lists each plant once with its actions, and its runs newest first, with no accessibility violation", async () => {
     const view = await show(new FakeBridge());
     expect(screen.getByText("1 plant · 2 runs")).toBeInTheDocument();
@@ -75,7 +75,7 @@ describe("home screen", () => {
     const store = new WorkspaceStore(bridge.workspace);
     await store.open();
     render(
-      <HomeScreen
+      <WorkspaceScreen
         workspace={store}
         navigation={navigation().store}
         maker={new PlantMaker(bridge.plant)}
@@ -91,9 +91,9 @@ describe("home screen", () => {
     fireEvent.click(screen.getByRole("button", { name: "Open Factory utilities" }));
     expect(nav.location.hash).toBe("#/plant?domain=domains%2Ffactory-utilities.domain.json");
     fireEvent.click(screen.getByRole("button", { name: "Run Factory utilities" }));
-    expect(nav.location.hash).toBe("#/plant?domain=domains%2Ffactory-utilities.domain.json&run=1");
+    expect(nav.location.hash).toBe("#/plant?domain=domains%2Ffactory-utilities.domain.json&launch=1");
     fireEvent.click(screen.getByRole("button", { name: "Review w-1" }));
-    expect(nav.location.hash).toBe("#/run?world=w-1");
+    expect(nav.location.hash).toBe("#/review?world=w-1");
   });
 
   it("edits a composition from its row and creates a new plant from a base", async () => {
@@ -199,7 +199,7 @@ describe("home screen", () => {
     expect((await axe.run(view.container)).violations).toEqual([]);
     fireEvent.click(within(examples).getByRole("button", { name: "Try it: Pilot" }));
     await vi.waitFor(() => {
-      expect(nav.location.hash).toBe("#/plant?domain=domains%2Fpilot.domain.json&run=1");
+      expect(nav.location.hash).toBe("#/plant?domain=domains%2Fpilot.domain.json&launch=1");
     });
     expect(bridge.writes[0]?.path).toBe("compositions/pilot.composition.json");
   });
@@ -284,7 +284,7 @@ describe("home screen", () => {
   it("shows the loading state and the bridge's failure", async () => {
     const bridge = new FakeBridge();
     render(
-      <HomeScreen
+      <WorkspaceScreen
         workspace={new WorkspaceStore(bridge.workspace)}
         navigation={navigation().store}
         maker={new PlantMaker(bridge.plant)}

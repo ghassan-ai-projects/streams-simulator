@@ -1,4 +1,5 @@
-import type { FittedId, IdTier } from "./types";
+import type { FittedId } from "./types";
+import type { IdTier } from "./viewport";
 import { textFloorPx } from "./viewport";
 
 const glyph = 0.605;
@@ -16,11 +17,12 @@ const wordsPad = 3;
 const overviewIconCap = 40;
 const overviewMarkPad = 8;
 const overviewInset = 16;
+const headShare = 0.4;
 
 function middleCut(text: string, chars: number): string {
   if (text.length <= chars) return text;
   const keep = Math.max(2, chars - 1);
-  const head = Math.ceil(keep * 0.4);
+  const head = Math.ceil(keep * headShare);
   return `${text.slice(0, head)}…${text.slice(text.length - (keep - head))}`;
 }
 
@@ -41,16 +43,27 @@ function markRoom(zoom: number, wordsLength: number): number {
   return Math.min(chip + words, headerInner * markCap) + markGap;
 }
 
-export const idCap: Readonly<Record<IdTier, number>> = { compact: 25, overview: 46 };
-
 function overviewMark(zoom: number): number {
   return Math.min(iconPx / zoom, overviewIconCap) + overviewMarkPad / zoom;
 }
 
+interface IdTierFit {
+  readonly cap: number;
+  readonly inner: (zoom: number) => number;
+  readonly marks: (zoom: number, wordsLength: number) => number;
+}
+
+const tierFits: Readonly<Record<IdTier, IdTierFit>> = {
+  compact: { cap: 25, inner: () => headerInner, marks: markRoom },
+  overview: { cap: 46, inner: (zoom) => nodeInner - overviewInset / zoom, marks: overviewMark },
+};
+
+export const idCap: Readonly<Record<IdTier, number>> = {
+  compact: tierFits.compact.cap,
+  overview: tierFits.overview.cap,
+};
+
 export function idRoom(zoom: number, wordsLength: number | null, tier: IdTier): number {
-  if (tier === "overview") {
-    const inner = nodeInner - overviewInset / zoom;
-    return inner - (wordsLength === null ? 0 : overviewMark(zoom));
-  }
-  return headerInner - (wordsLength === null ? 0 : markRoom(zoom, wordsLength));
+  const fit = tierFits[tier];
+  return fit.inner(zoom) - (wordsLength === null ? 0 : fit.marks(zoom, wordsLength));
 }

@@ -151,7 +151,7 @@ test("opening the run panel shows the details panel even when it was hidden", as
 test("the top-bar run indicator brings back a closed run panel, and Stop now keeps the shorter run", async ({
   page,
 }) => {
-  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Ffactory-utilities.domain.json&run=1`);
+  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Ffactory-utilities.domain.json&launch=1`);
   const panel = page.getByRole("complementary", { name: "Run Factory utilities" });
   await panel.getByLabel("Duration", { exact: true }).fill("24");
   await panel.getByLabel("Duration unit").selectOption("hours");
@@ -187,7 +187,7 @@ test("no run plan field paints under the Start footer, at 1440 and at 1280", asy
 test("a planned fault appears on its node when the run clock reaches its minute and stays to the end", async ({
   page,
 }) => {
-  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Ffactory-utilities.domain.json&run=1`);
+  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Ffactory-utilities.domain.json&launch=1`);
   const panel = page.getByRole("complementary", { name: "Run Factory utilities" });
   await panel.getByLabel("Seed", { exact: true }).fill("11");
   await panel.getByLabel("Duration", { exact: true }).fill("20");

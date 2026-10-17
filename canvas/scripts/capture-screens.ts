@@ -15,8 +15,8 @@ const screens: readonly { readonly name: string; readonly hash: string; readonly
   { name: "workspace", hash: "#/", marker: "Factory utilities" },
   { name: "plant", hash: "#/plant?domain=domains%2Ffactory-utilities.domain.json", marker: "instances ·" },
   { name: "editor", hash: "#/edit?composition=compositions%2Ffactory-utilities.composition.json", marker: "Save" },
-  { name: "review", hash: "#/run?world=w-1", marker: "observations" },
-  { name: "launch", hash: "#/plant?domain=domains%2Ffactory-utilities.domain.json&run=1", marker: "Start the run" },
+  { name: "review", hash: "#/review?world=w-1", marker: "observations" },
+  { name: "launch", hash: "#/plant?domain=domains%2Ffactory-utilities.domain.json&launch=1", marker: "Start the run" },
 ];
 
 const widths = [1440, 1920] as const;

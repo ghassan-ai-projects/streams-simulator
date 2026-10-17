@@ -23,6 +23,8 @@ interface FormProps {
   readonly onStart: (plan: LaunchPlan) => void;
 }
 
+type RunField = "seed" | "duration";
+
 interface DraftProps {
   readonly draft: Draft;
   readonly change: (change: Change) => void;
@@ -33,7 +35,7 @@ function FieldProblem({
   id,
   problems,
   field,
-}: { readonly id: string; readonly field: string } & Pick<DraftProps, "problems">) {
+}: { readonly id: string; readonly field: RunField } & Pick<DraftProps, "problems">) {
   const text = problems.find((problem) => problem.field === field)?.text ?? "";
   return (
     <small id={id} className={cx(styles.problem, styles.inField)}>
@@ -43,7 +45,7 @@ function FieldProblem({
   );
 }
 
-function described(problems: readonly PlanProblem[], field: string, id: string, hint = "") {
+function described(problems: readonly PlanProblem[], field: RunField, id: string, hint = "") {
   const wrong = problems.some((problem) => problem.field === field);
   const ids = [hint, wrong ? id : ""].filter((part) => part !== "").join(" ");
   return { "aria-invalid": wrong || undefined, "aria-describedby": ids === "" ? undefined : ids };

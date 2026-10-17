@@ -11,7 +11,7 @@ import type { Session } from "../../../app/session";
 import type { WorkspaceStore } from "../../../app/workspace";
 import type { Route } from "../../../model/shell";
 import { EditorScreen } from "../../editor";
-import { HomeScreen } from "../../workspace";
+import { WorkspaceScreen } from "../../workspace";
 import { PairingScreen } from "../../session";
 import { PlantScreen } from "../../plant";
 import { RunScreen } from "../../review";
@@ -65,7 +65,7 @@ function Screen({ stores, route }: { readonly stores: Stores; readonly route: Ro
   if (route.screen === "edit") {
     return <EditorScreen editor={stores.editor} navigation={stores.navigation} composition={route.composition} />;
   }
-  if (route.screen === "run") {
+  if (route.screen === "review") {
     return (
       <RunScreen
         review={stores.review}
@@ -78,7 +78,7 @@ function Screen({ stores, route }: { readonly stores: Stores; readonly route: Ro
     );
   }
   return (
-    <HomeScreen
+    <WorkspaceScreen
       workspace={stores.workspace}
       navigation={stores.navigation}
       maker={stores.maker}
@@ -115,13 +115,13 @@ export function App({ stores }: { readonly stores: Stores }) {
       crumbs={setSlot}
       help={<KeyHelp screen={route.screen} />}
       status={<RunIndicator launch={stores.launch} navigation={stores.navigation} />}
-      toggles={route.screen === "home" ? null : <ShellToggles stores={stores} route={route} />}
+      toggles={route.screen === "workspace" ? null : <ShellToggles stores={stores} route={route} />}
       preference={preference}
       onCycleTheme={() => {
         stores.themes.cycle();
       }}
-      onHome={() => {
-        stores.navigation.go({ screen: "home" });
+      onWorkspace={() => {
+        stores.navigation.go({ screen: "workspace" });
       }}
     />
   );

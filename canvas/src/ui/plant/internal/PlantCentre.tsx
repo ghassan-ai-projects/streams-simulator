@@ -45,7 +45,7 @@ function Crumbs({
     {
       label: "Workspace",
       onGo: () => {
-        navigation.go({ screen: "home" });
+        navigation.go({ screen: "workspace" });
       },
     },
   ];

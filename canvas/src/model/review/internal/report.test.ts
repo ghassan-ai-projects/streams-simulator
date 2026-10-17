@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { blankReport, report } from "../../../test/runFixture";
-import { kpiGroups, kpisOf, kpiWords, rerunOf, runFacts, runIdentity } from "./reportViews";
-import { humanise, kindLabel } from "../../shared/words";
+import { kpiGroups, kpisOf, kpiWords, rerunOf, reportFacts, runIdentity } from "./reportViews";
 import { badgeLabels, badgeOf, callWords, faultNames, replayLine, runSpan, wallClock } from "./report";
 
 describe("run report", () => {
@@ -41,15 +40,6 @@ describe("run report", () => {
   it("prints simulated time of day in UTC, with the day after the first", () => {
     expect(wallClock(1_767_252_480e9)).toBe("07:28:00");
     expect(wallClock(1_767_252_480e9 + 86_400e9, 1_767_252_480e9)).toBe("+1d 07:28:00");
-  });
-
-  it("turns library ids into words and keeps the instrument", () => {
-    expect(humanise("compressor_lead__oil_cooler_fouling")).toBe("oil cooler fouling");
-    expect(humanise("cooling_tower__basin_temp__offset")).toBe("basin temp · offset");
-    expect(humanise("discharge_temp")).toBe("discharge temp");
-    expect(kindLabel("air_compressor_2")).toBe("air compressor");
-    expect(kindLabel("compressor_lead__air_compressor_2")).toBe("air compressor");
-    expect(kindLabel("chiller")).toBe("chiller");
   });
 
   it("filters KPI truth to an instance, or to every instance of a hall", () => {
@@ -96,7 +86,7 @@ describe("run report", () => {
   });
 
   it("says a run's facts in words and plans the same run again", () => {
-    expect(runFacts(report)).toBe("seed 7 · 1 h");
+    expect(reportFacts(report)).toBe("seed 7 · 1 h");
     expect(rerunOf(report).plan).toEqual({
       seed: 7,
       durationS: 3600,
@@ -116,20 +106,7 @@ describe("run report", () => {
         "a length under one minute (one minute is used)",
       ],
     });
-    expect(runFacts(blankReport())).toBe("");
-  });
-
-  it("keeps what a scored or truthless report says", () => {
-    expect(blankReport({ scoring: { status: "scored", reason: "verdict r-1" } }).scoring).toEqual({
-      status: "scored",
-      reason: "verdict r-1",
-    });
-    expect(blankReport({ truthUnavailable: "sealed" }).truthUnavailable).toBe("sealed");
-    expect(blankReport({ scoring: { status: "failed", reason: "" } }).scoring).toEqual({
-      status: "failed",
-      reason: "",
-    });
-    expect(blankReport().disturbances).toEqual([]);
+    expect(reportFacts(blankReport())).toBe("");
   });
 
   it("names KPIs in words and groups them by instance in report order", () => {

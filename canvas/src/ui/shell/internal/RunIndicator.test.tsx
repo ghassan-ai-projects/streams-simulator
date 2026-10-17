@@ -30,7 +30,7 @@ describe("run indicator", () => {
     });
     expect(screen.getByRole("status")).toHaveTextContent("The review of run w-5 is ready");
     fireEvent.click(screen.getByRole("button", { name: "Run w-5 finished · Open review" }));
-    expect(location.hash).toBe("#/run?world=w-5");
+    expect(location.hash).toBe("#/review?world=w-5");
     expect(screen.getByRole("status")).toBeEmptyDOMElement();
   });
 
@@ -44,7 +44,7 @@ describe("run indicator", () => {
     expect(screen.getByRole("button", { name: "Running Mini plant · 00:00:00 of 00:01:00" })).toBeInTheDocument();
     expect(screen.getByRole("status")).toHaveTextContent(/^Run of Mini plant started$/);
     fireEvent.click(screen.getByRole("button", { name: /^Running Mini plant/ }));
-    expect(location.hash).toBe("#/plant?domain=domains%2Fmini.domain.json&run=1");
+    expect(location.hash).toBe("#/plant?domain=domains%2Fmini.domain.json&launch=1");
     await act(async () => {
       await running;
     });

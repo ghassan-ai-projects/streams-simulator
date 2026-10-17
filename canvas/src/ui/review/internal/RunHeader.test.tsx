@@ -24,6 +24,6 @@ describe("run header", () => {
     expect(screen.queryByRole("button", { name: "Run again" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Set up another run" }));
     expect(launch.proposal("mini")).toMatchObject({ from: "w-4" });
-    expect(nav.location.hash).toContain("run=1");
+    expect(nav.location.hash).toContain("launch=1");
   });
 });

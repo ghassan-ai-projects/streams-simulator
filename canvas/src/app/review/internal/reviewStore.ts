@@ -139,7 +139,6 @@ export class ReviewStore extends Observable<ReviewState> {
   private take(session: Operation, entry: JournalEntry): void {
     if (!session.live()) return;
     if (entry.kind === "observation") this.index.add(entry.observation);
-    if (entry.kind === "opened") this.update(session, { adapter: entry.adapter });
     this.pending += 1;
     if (this.pending === 1) {
       this.cancelFlush = this.scheduler.schedule(250, () => {

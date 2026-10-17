@@ -53,7 +53,7 @@ test("a recorded run plays back with the binary's report and a Verified badge", 
 });
 
 test("a run whose files were edited after it ended is Not verified", async ({ page }) => {
-  await page.goto(`${env("CANVAS_APP_URL")}/#/run?world=w-edited`);
+  await page.goto(`${env("CANVAS_APP_URL")}/#/review?world=w-edited`);
   await expect(page.getByRole("status").filter({ hasText: /^Not verified$/ })).toHaveCount(1, { timeout: 60_000 });
   await openIntegrity(page);
   await expect(
@@ -70,7 +70,7 @@ test("a run whose files were edited after it ended is Not verified", async ({ pa
 test("a run that does not reproduce reads Not verified with verify's own verdict and what differs", async ({
   page,
 }) => {
-  await page.goto(`${env("CANVAS_APP_URL")}/#/run?world=w-diverged`);
+  await page.goto(`${env("CANVAS_APP_URL")}/#/review?world=w-diverged`);
   await expect(page.getByRole("status").filter({ hasText: /^Not verified$/ })).toHaveCount(1, { timeout: 60_000 });
   await openIntegrity(page);
   const replay = page.getByRole("complementary", { name: "Run details" }).getByRole("region", { name: "Replay check" });
@@ -81,7 +81,7 @@ test("a run that does not reproduce reads Not verified with verify's own verdict
 });
 
 test("a run whose recorded plant was tampered with reads Not verified, not Not checked", async ({ page }) => {
-  await page.goto(`${env("CANVAS_APP_URL")}/#/run?world=w-tampered`);
+  await page.goto(`${env("CANVAS_APP_URL")}/#/review?world=w-tampered`);
   await expect(page.getByRole("status").filter({ hasText: /^Not verified$/ })).toHaveCount(1, { timeout: 60_000 });
   await openIntegrity(page);
   const replay = page.getByRole("complementary", { name: "Run details" }).getByRole("region", { name: "Replay check" });
@@ -91,7 +91,7 @@ test("a run whose recorded plant was tampered with reads Not verified, not Not c
 });
 
 test("a hall carries its faulted members, and inside it each names its fault", async ({ page }) => {
-  await page.goto(`${env("CANVAS_APP_URL")}/#/run?world=w-hall`);
+  await page.goto(`${env("CANVAS_APP_URL")}/#/review?world=w-hall`);
   await expect(page.getByRole("status").filter({ hasText: /^Verified$/ })).toHaveCount(1, { timeout: 60_000 });
   await page.getByRole("slider", { name: "Playback time" }).fill("1800");
   const hall = page.getByRole("group", { name: /^h02, Fault in 2, / });
@@ -107,7 +107,7 @@ test("a hall carries its faulted members, and inside it each names its fault", a
 test("a review node lists every port of its kind as a row, observed or not, at each tier without a text clash", async ({
   page,
 }) => {
-  await page.goto(`${env("CANVAS_APP_URL")}/#/run?world=w-evaluate`);
+  await page.goto(`${env("CANVAS_APP_URL")}/#/review?world=w-evaluate`);
   await expect(page.getByText(/\d+ observations/)).toBeVisible({ timeout: 60_000 });
   const chiller = page.getByRole("group", { name: /^CH-1, chiller,/ });
   const label = (await chiller.getAttribute("aria-label")) ?? "";
@@ -132,7 +132,7 @@ test("a review node lists every port of its kind as a row, observed or not, at e
 test("clicking a mark seeks and selects its instance and leaves the Report open with the call's row marked", async ({
   page,
 }) => {
-  await page.goto(`${env("CANVAS_APP_URL")}/#/run?world=w-boiler`);
+  await page.goto(`${env("CANVAS_APP_URL")}/#/review?world=w-boiler`);
   await expect(page.getByText(/\d+ observations/)).toBeVisible({ timeout: 60_000 });
   const details = page.getByRole("complementary", { name: "Run details" });
   await expect(details.getByRole("button", { name: "Report", exact: true })).toHaveAttribute("aria-pressed", "true");
@@ -152,11 +152,11 @@ test("clicking a mark seeks and selects its instance and leaves the Report open 
 });
 
 test("a review says under the scrubber what happens first, or that nothing does", async ({ page }) => {
-  await page.goto(`${env("CANVAS_APP_URL")}/#/run?world=w-boiler`);
+  await page.goto(`${env("CANVAS_APP_URL")}/#/review?world=w-boiler`);
   await expect(page.getByText("First: fault · scaling on boiler-1 at 00:10:00 · 1 effector call")).toBeVisible({
     timeout: 60_000,
   });
-  await page.goto(`${env("CANVAS_APP_URL")}/#/run?world=w-explore`);
+  await page.goto(`${env("CANVAS_APP_URL")}/#/review?world=w-explore`);
   await page.reload();
   await expect(page.getByText("No faults or effector calls in this run")).toBeVisible({ timeout: 60_000 });
 });
@@ -177,7 +177,7 @@ function readoutPixels(): { readonly zoom: number; readonly shown: number; reado
 
 test("a review whose plant fits at 40 % or more opens fitted, and Fit returns the same view", async ({ page }) => {
   await page.setViewportSize({ width: 1920, height: 1080 });
-  await page.goto(`${env("CANVAS_APP_URL")}/#/run?world=w-evaluate`);
+  await page.goto(`${env("CANVAS_APP_URL")}/#/review?world=w-evaluate`);
   await expect(page.getByText(/\d+ observations/)).toBeVisible({ timeout: 60_000 });
   await expect(page.getByRole("group", { name: /^CH-1, chiller,/ })).toBeAttached();
   await expect.poll(async () => guard(await page.evaluate(nodesOutsideCanvas, 5))).toEqual([]);
@@ -190,7 +190,7 @@ test("a review of a plant too large for 40 % opens at 40 % on its first fault, w
   page,
 }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
-  await page.goto(`${env("CANVAS_APP_URL")}/#/run?world=w-late`);
+  await page.goto(`${env("CANVAS_APP_URL")}/#/review?world=w-late`);
   await expect(page.getByText(/\d+ observations/)).toBeVisible({ timeout: 60_000 });
   const dryer = page.getByRole("group", { name: /^D-1, / });
   await expect(dryer).toBeAttached();
@@ -224,7 +224,7 @@ test("a fault's cause and an effector outcome wrap on the node, whole, at the op
   page,
 }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
-  await page.goto(`${env("CANVAS_APP_URL")}/#/run?world=w-late`);
+  await page.goto(`${env("CANVAS_APP_URL")}/#/review?world=w-late`);
   await expect(page.getByText(/\d+ observations/)).toBeVisible({ timeout: 60_000 });
   await page.getByRole("slider", { name: "Playback time" }).fill("930");
   const dryer = page.getByRole("group", { name: /^D-1, / });

@@ -18,7 +18,7 @@ export function PlantFailure({
     {
       label: "Workspace",
       onGo: () => {
-        navigation.go({ screen: "home" });
+        navigation.go({ screen: "workspace" });
       },
     },
   ];
@@ -42,7 +42,7 @@ function FailureBody({ failure, navigation }: { readonly failure: Failure; reado
         type="button"
         className={cx(shared.secondary, panel.secondary)}
         onClick={() => {
-          navigation.go({ screen: "home" });
+          navigation.go({ screen: "workspace" });
         }}
       >
         Back to the workspace

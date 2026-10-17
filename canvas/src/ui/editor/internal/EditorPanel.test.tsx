@@ -217,7 +217,7 @@ describe("plant editor panel", () => {
     expect(await screen.findByText("No changes")).toBeInTheDocument();
   });
 
-  it("keeps the chosen instance when the output changes, and says why no instance can be linked", async () => {
+  it("keeps the chosen target when the output changes, and clears the input that no longer fits", async () => {
     const { editor } = await editing();
     act(() => {
       editor.select("CH-1");
@@ -233,7 +233,7 @@ describe("plant editor panel", () => {
     expect(screen.getByLabelText("Input")).toHaveValue("");
   });
 
-  it("deletes an instance without links at once, and asks first when it has links", async () => {
+  it("deletes an instance that has no links at once", async () => {
     const { editor } = await editing();
     act(() => {
       editor.edit((current) => ({ ...current, connections: [] }));

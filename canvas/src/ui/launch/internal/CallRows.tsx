@@ -1,6 +1,6 @@
 import { cx, panel, shared } from "../../primitives";
 import { Plus } from "lucide-react";
-import type { Draft, DraftCall, PlanProblem } from "../../../model/launch";
+import type { CallProblem, Draft, DraftCall, PlanProblem } from "../../../model/launch";
 import type { EffectorArg, Plant } from "../../../model/plant";
 import { effectorNamesOf, effectorOf, hasEffectors, rangeHint } from "../../../model/plant";
 import { humanise, spaced } from "../../../model/shared/words";
@@ -60,7 +60,7 @@ interface CallRowProps {
   readonly plant: Plant;
   readonly call: DraftCall;
   readonly index: number;
-  readonly problem: PlanProblem | null;
+  readonly problem: CallProblem | null;
   readonly change: (change: Change) => void;
   readonly fresh: boolean;
   readonly onRemoved: () => void;
@@ -181,8 +181,8 @@ const emptyWords = (hasEffectors: boolean) =>
     ? "None: nothing is commanded. A call is made when the run reaches its minute; the simulator may refuse it, and the result says why."
     : "This plant declares no effectors to call.";
 
-const problemOf = (problems: readonly PlanProblem[], index: number) =>
-  problems.find((problem) => problem.field === "call" && problem.call === index) ?? null;
+const problemOf = (problems: readonly PlanProblem[], index: number): CallProblem | null =>
+  problems.find((problem): problem is CallProblem => problem.field === "call" && problem.index === index) ?? null;
 
 const appended = (draft: Draft, key: number, selected: string | null): Draft => ({
   ...draft,

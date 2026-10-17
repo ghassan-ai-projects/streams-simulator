@@ -40,7 +40,7 @@ const doc = {
   ],
 };
 
-describe("composition", () => {
+describe("composition document", () => {
   it("reads equipment, connections and a plant the graph can draw", () => {
     expect(equipmentOf(doc).map((entry) => entry.names)).toEqual([["CH-1", "CH-2"], ["CT-1"], ["WX-{n}"]]);
     expect(connectionsOf(doc)[1]).toEqual({ index: 1, from: "CT-1.basin_out", to: "CH-2.cond_in" });

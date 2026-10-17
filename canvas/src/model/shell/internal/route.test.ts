@@ -4,11 +4,11 @@ import { formatRoute, parseRoute } from "./route";
 describe("routes", () => {
   it("round-trips every screen", () => {
     const routes = [
-      { screen: "home" },
+      { screen: "workspace" },
       { screen: "plant", domain: "domains/a b.domain.json", hall: null },
       { screen: "plant", domain: "domains/c.domain.json", hall: "h07" },
       { screen: "plant", domain: "domains/c.domain.json", hall: null, launch: true },
-      { screen: "run", worldId: "w-1" },
+      { screen: "review", worldId: "w-1" },
       { screen: "edit", composition: "compositions/lab.composition.json" },
     ] as const;
     for (const route of routes) {
@@ -16,10 +16,10 @@ describe("routes", () => {
     }
   });
 
-  it("falls back to home for anything it does not know", () => {
-    expect(parseRoute("")).toEqual({ screen: "home" });
-    expect(parseRoute("#/plant")).toEqual({ screen: "home" });
-    expect(parseRoute("#/edit")).toEqual({ screen: "home" });
-    expect(parseRoute("#/elsewhere?x=1")).toEqual({ screen: "home" });
+  it("falls back to the workspace for anything it does not know", () => {
+    expect(parseRoute("")).toEqual({ screen: "workspace" });
+    expect(parseRoute("#/plant")).toEqual({ screen: "workspace" });
+    expect(parseRoute("#/edit")).toEqual({ screen: "workspace" });
+    expect(parseRoute("#/elsewhere?x=1")).toEqual({ screen: "workspace" });
   });
 });

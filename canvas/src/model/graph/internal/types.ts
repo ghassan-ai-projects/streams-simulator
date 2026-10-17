@@ -128,8 +128,6 @@ export interface FittedId {
   readonly size: number;
 }
 
-export type IdTier = "compact" | "overview";
-
 export interface OutlineItem {
   readonly id: string;
   readonly kind: string;

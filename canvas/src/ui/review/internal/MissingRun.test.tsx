@@ -9,6 +9,6 @@ describe("a run that is not in the workspace", () => {
     render(<MissingRun worldId="w-99" navigation={nav.store} />);
     expect(screen.getByRole("alert")).toHaveTextContent("Run w-99 is not in this workspace.");
     fireEvent.click(screen.getByRole("button", { name: "Back to the workspace" }));
-    expect(nav.store.snapshot()).toEqual({ screen: "home" });
+    expect(nav.store.snapshot()).toEqual({ screen: "workspace" });
   });
 });

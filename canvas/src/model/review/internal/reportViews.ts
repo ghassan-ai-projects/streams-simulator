@@ -61,7 +61,7 @@ export function runIdentity(report: Report): string {
     .join(" · ");
 }
 
-export function runFacts(report: Report): string {
+export function reportFacts(report: Report): string {
   return [seedWords(report.seed), durationOf(spanSeconds(report))].filter((part) => part !== "").join(" · ");
 }
 

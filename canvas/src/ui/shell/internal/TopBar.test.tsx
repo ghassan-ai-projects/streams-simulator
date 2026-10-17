@@ -6,7 +6,7 @@ describe("top bar", () => {
   it("offers a skip past itself to the screen", () => {
     render(
       <>
-        <TopBar crumbs={vi.fn()} help={null} preference="system" onCycleTheme={vi.fn()} onHome={vi.fn()} />
+        <TopBar crumbs={vi.fn()} help={null} preference="system" onCycleTheme={vi.fn()} onWorkspace={vi.fn()} />
         <main id="main" tabIndex={-1} aria-label="Workspace" />
       </>,
     );
@@ -15,7 +15,7 @@ describe("top bar", () => {
   });
 
   it("says on screen that the button changes the theme and shows its current value", () => {
-    render(<TopBar crumbs={vi.fn()} help={null} preference="dark" onCycleTheme={vi.fn()} onHome={vi.fn()} />);
+    render(<TopBar crumbs={vi.fn()} help={null} preference="dark" onCycleTheme={vi.fn()} onWorkspace={vi.fn()} />);
     const button = screen.getByRole("button", { name: "Theme: dark" });
     expect(button).toHaveTextContent("Theme: Dark");
   });

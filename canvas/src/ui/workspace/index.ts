@@ -1,1 +1,1 @@
-export { HomeScreen } from "./internal/HomeScreen";
+export { WorkspaceScreen } from "./internal/WorkspaceScreen";

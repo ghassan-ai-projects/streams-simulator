@@ -20,7 +20,7 @@ function everywhere(screen: Screen): KeyGroup {
   const panel = rightPanelName[screen].toLowerCase();
   return {
     scope: "Everywhere",
-    screens: ["home", "plant", "run", "edit"],
+    screens: ["workspace", "plant", "review", "edit"],
     rows: [
       { keys: ["Tab", "Shift Tab"], does: `move between the top bar, the outline, the centre and the ${panel} panel` },
       { keys: ["[", "]"], does: `hide or show the outline panel, the ${panel} panel` },
@@ -33,7 +33,7 @@ function everywhere(screen: Screen): KeyGroup {
 const screenGroups: readonly KeyGroup[] = [
   {
     scope: "Plant graph",
-    screens: ["plant", "run", "edit"],
+    screens: ["plant", "review", "edit"],
     rows: [
       { keys: ["↑", "↓", "←", "→"], does: "move to the nearest instance in that direction" },
       { keys: ["Space"], does: "select the instance or hall" },
@@ -45,7 +45,7 @@ const screenGroups: readonly KeyGroup[] = [
   },
   {
     scope: "Run review",
-    screens: ["run"],
+    screens: ["review"],
     rows: [
       { keys: ["Space"], does: "play or pause" },
       { keys: [",", "."], does: "go to the previous event, the next event" },

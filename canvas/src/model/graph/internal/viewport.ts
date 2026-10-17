@@ -55,6 +55,8 @@ export function screenPixel(zoom: number): number {
 
 export type Tier = "full" | "compact" | "overview" | "map";
 
+export type IdTier = Extract<Tier, "compact" | "overview">;
+
 export function tierOf(zoom: number): Tier {
   if (zoom >= 1) return "full";
   if (zoom >= openingFloor) return "compact";

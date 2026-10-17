@@ -15,7 +15,7 @@ describe("a plant that cannot be opened", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("This plant is not in the workspace any more.");
     expect(screen.getByText("canvasbridge: file not found (not_found)")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Back to the workspace" }));
-    expect(nav.store.snapshot()).toEqual({ screen: "home" });
+    expect(nav.store.snapshot()).toEqual({ screen: "workspace" });
   });
 
   it("says the plant could not be opened for any other failure", () => {

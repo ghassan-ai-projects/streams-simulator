@@ -4,7 +4,7 @@ import { deferred, flushPromises } from "../../../test/deferred";
 import { FakeBridge } from "../../../test/fakeBridge";
 import type { Canned } from "../../../test/fakeFailures";
 import { fakeClock } from "../../../test/fakeClock";
-import { journalWire, reportWire, reportWith } from "../../../test/runFixture";
+import { journalWire, observation, reportWire, reportWith } from "../../../test/runFixture";
 import { ReviewStore } from "./reviewStore";
 
 function setup() {
@@ -30,13 +30,11 @@ describe("review lifecycle", () => {
   it("ignores a flushed update whose session has already been superseded", async () => {
     const { bridge, store, timers } = setup();
     store.open("w-1");
-    bridge.streamFollow(0, [
-      { stream: "observer", type: "run.opened", seq: 0, at_ns: 0, mode: "evaluate", adapter: { id: "wire" } },
-    ]);
+    bridge.streamFollow(0, [observation(1, 10e9, "CH-1", "chiller.power", 92.7)]);
     store.open("w-2");
     timers.advance(250);
     await Promise.resolve();
-    expect(store.snapshot().playback.adapter).toBe("");
+    expect(store.snapshot().playback.records).toBe(0);
   });
 
   it("ignores a retained callback of a superseded run after another run opened", async () => {

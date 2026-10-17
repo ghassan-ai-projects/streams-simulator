@@ -12,7 +12,7 @@ interface TopBarProps {
   readonly help: ReactNode;
   readonly preference: ThemePreference;
   readonly onCycleTheme: () => void;
-  readonly onHome: () => void;
+  readonly onWorkspace: () => void;
 }
 
 const themeIcons = { system: Monitor, light: Sun, dark: Moon } as const;
@@ -29,7 +29,7 @@ function ThemeButton({ preference, onCycle }: { readonly preference: ThemePrefer
   );
 }
 
-export function TopBar({ crumbs, status, toggles, help, preference, onCycleTheme, onHome }: TopBarProps) {
+export function TopBar({ crumbs, status, toggles, help, preference, onCycleTheme, onWorkspace }: TopBarProps) {
   return (
     <header className={styles.bar}>
       <button
@@ -41,7 +41,12 @@ export function TopBar({ crumbs, status, toggles, help, preference, onCycleTheme
       >
         Skip to the screen
       </button>
-      <button type="button" className={styles.brand} onClick={onHome} aria-label="Streams Simulator, workspace home">
+      <button
+        type="button"
+        className={styles.brand}
+        onClick={onWorkspace}
+        aria-label="Streams Simulator, workspace home"
+      >
         <span className={styles.mark} aria-hidden="true">
           <Activity size={16} strokeWidth={2.25} />
         </span>

@@ -31,7 +31,6 @@ describe("launch panel running", () => {
     expect(screen.getByRole("status")).toHaveTextContent(/of simulated time · .* · no faults\.$/);
     expect(screen.getByRole("status")).not.toHaveTextContent("finished");
     expect(onFinished).not.toHaveBeenCalled();
-    expect(onFinished).not.toHaveBeenCalled();
     act(() => {
       timers.advance(1999);
     });

@@ -29,4 +29,36 @@ describe("outline projection", () => {
     expect(matchWords([], "missing", false)).toBe('No instance matches "missing".');
     expect(matchWords([], "", true)).toBe("No instances yet.");
   });
+
+  it("moves an empty sub-area below every populated area, never between them", () => {
+    const boiler = parsePlant({
+      id: "boiler",
+      site: {
+        name: "Site",
+        areas: [
+          { name: "Site" },
+          { name: "Boiler house", parent: "Site" },
+          { name: "Gas train", parent: "Boiler house" },
+          { name: "Distribution", parent: "Site" },
+          { name: "Process hall", parent: "Site" },
+          { name: "Heat users", parent: "Process hall" },
+        ],
+      },
+      instances: [
+        { kind: "meter", names: ["M-1", "M-2"], area: "Site" },
+        { kind: "boiler", names: ["B-1", "B-2", "B-3", "B-4", "B-5", "B-6"], area: "Boiler house" },
+        { kind: "pump", names: ["P-1", "P-2", "P-3"], area: "Distribution" },
+        { kind: "pump", names: ["P-4", "P-5", "P-6"], area: "Process hall" },
+      ],
+    });
+    const shown = groups(boiler, null, "", { emptyAreas: "show" });
+    expect(shown.map((group) => [group.area, group.items.length])).toEqual([
+      ["Site", 2],
+      ["Boiler house", 6],
+      ["Distribution", 3],
+      ["Process hall", 3],
+      ["Gas train", 0],
+      ["Heat users", 0],
+    ]);
+  });
 });

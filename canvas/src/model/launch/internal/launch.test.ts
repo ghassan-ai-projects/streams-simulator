@@ -1,17 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { LaunchPlan } from "./launch";
-import {
-  disturbanceWords,
-  keepKnownFaults,
-  launchSteps,
-  outcomeOf,
-  paceOf,
-  planProblems,
-  planSummary,
-  rateWords,
-  stepsFor,
-  watchWords,
-} from "./launch";
+import { keepKnownFaults, launchSteps, outcomeOf, paceOf, rateWords, stepsFor, watchWords } from "./launch";
+import { planProblems } from "./planProblems";
 
 type PlannedCall = LaunchPlan["calls"][number];
 
@@ -66,8 +56,8 @@ describe("launch plan", () => {
     expect(planProblems(plan({ seed: -1, durationS: 0, faults }), anySpec)).toEqual([
       { field: "seed", text: "The seed is a whole number, 0 or more." },
       { field: "duration", text: "The duration is at least one minute." },
-      { field: 0, text: "Fault 1 needs an instance and a fault." },
-      { field: 1, text: "Fault 2 starts inside the run, before its end." },
+      { field: "fault", index: 0, text: "Fault 1 needs an instance and a fault." },
+      { field: "fault", index: 1, text: "Fault 2 starts inside the run, before its end." },
     ]);
     expect(texts(plan({ seed: 2 ** 53 + 1 }))).toEqual(["The seed is a whole number, 0 or more."]);
     expect(texts(plan({ durationS: 59 }))).toEqual(["The duration is at least one minute."]);
@@ -79,12 +69,6 @@ describe("launch plan", () => {
     expect(texts([{ entity: "h02/M-1", fault: "", atS: 0 }])).toEqual(["Fault 1 needs a fault."]);
     expect(texts([{ entity: "", fault: "tooling_wear", atS: 0 }])).toEqual(["Fault 1 needs an instance."]);
     expect(texts([{ entity: "", fault: "", atS: 0 }])).toEqual(["Fault 1 needs an instance and a fault."]);
-  });
-
-  it("says in words what a plan will run", () => {
-    expect(planSummary(plan({}), "30 min")).toBe("30 min of simulated time · Explore · no faults");
-    const faults = [{ entity: "CT-1", fault: "fan", atS: 5 }];
-    expect(planSummary(plan({ explore: false, faults }), "1 h")).toBe("1 h of simulated time · Evaluate · 1 fault");
   });
 });
 
@@ -137,22 +121,9 @@ describe("effector calls in a plan", () => {
     ]);
     expect(planProblems(plan({ calls: [call({ atS: 100 })] }), anySpec)[0]).toMatchObject({
       field: "call",
-      call: 0,
+      index: 0,
       part: "minute",
     });
-  });
-
-  it("says in words how many faults and effector calls a plan holds", () => {
-    expect(disturbanceWords(plan({}))).toBe("no faults");
-    expect(disturbanceWords(plan({ calls: [call({})] }))).toBe("no faults and 1 effector call");
-    const faults = [
-      { entity: "CT-1", fault: "fan", atS: 5 },
-      { entity: "CT-1", fault: "fan", atS: 6 },
-    ];
-    expect(disturbanceWords(plan({ faults, calls: [call({}), call({})] }))).toBe("2 faults and 2 effector calls");
-    expect(planSummary(plan({ calls: [call({})] }), "30 min")).toBe(
-      "30 min of simulated time · Explore · no faults · 1 effector call",
-    );
   });
 
   it("reads the acknowledgement as accepted or refused with the binary's reason", () => {

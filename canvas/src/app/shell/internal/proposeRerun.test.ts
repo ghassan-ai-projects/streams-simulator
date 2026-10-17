@@ -17,7 +17,7 @@ describe("proposing another run", () => {
     const { location, launch, navigation } = setup();
     proposeRerun(launch, navigation, reviewState({}), "w-4", "domains/mini.domain.json");
     expect(launch.proposal("mini")).toMatchObject({ from: "w-4", plan: { seed: 7 } });
-    expect(location.hash).toContain("run=1");
+    expect(location.hash).toContain("launch=1");
     expect(navigation.snapshot()).toMatchObject({ screen: "plant", domain: "domains/mini.domain.json", launch: true });
   });
 

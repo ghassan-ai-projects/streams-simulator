@@ -8,7 +8,7 @@ import type { Definition } from "../../../model/workspace";
 import type { ExamplePlant } from "../../../model/plant";
 import { suggestedId } from "../../../model/workspace";
 import { Field } from "./NewPlantField";
-import home from "./HomeScreen.module.css";
+import workspaceStyles from "./WorkspaceScreen.module.css";
 import styles from "./NewPlant.module.css";
 
 export interface NewPlantProps {
@@ -104,7 +104,7 @@ function CopyChoice({ mode, setMode }: { readonly mode: MakeMode; readonly setMo
 
 function BlankNote() {
   return (
-    <p className={home.meta}>
+    <p className={workspaceStyles.meta}>
       A blank plant: you add its equipment, areas and connections in the editor, then compose and run it.
     </p>
   );
@@ -166,7 +166,7 @@ function Actions({ failure, reason, onCancel }: ActionsProps) {
           Cancel
         </button>
         {!ready && (
-          <span id="new-plant-reason" className={home.meta}>
+          <span id="new-plant-reason" className={workspaceStyles.meta}>
             {reason}
           </span>
         )}

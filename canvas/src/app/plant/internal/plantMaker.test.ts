@@ -5,6 +5,15 @@ import { PlantMaker } from "./plantMaker";
 
 const base = "compositions/lab.composition.json";
 const lab = { id: "lab", title: "Lab", description: "base", equipment: [{ use: "lib/chiller@1", names: ["CH-1"] }] };
+const frame = { schema_version: "0.1", version: "1", stresses: "none", axes: {}, profiles: [], ground_truth: {} };
+const copied = { ...frame, ...lab, id: "lab-two", title: "Lab two" };
+const emptied = {
+  ...frame,
+  id: "lab-three",
+  title: "Lab three",
+  site: { name: "Pilot plant" },
+  areas: [{ name: "Pilot plant" }],
+};
 
 function bridge() {
   const fake = new FakeBridge();
@@ -20,14 +29,16 @@ function bridge() {
       example: { ...lab, id: "pilot", title: "Pilot", site: { name: "Pilot plant" }, areas: [{ name: "Utilities" }] },
     }),
   );
+  fake.actions.set("component.new", success({ composition: copied }));
   fake.actions.set("domain.compose", success({ channels: 1, faults: 0, effectors: 0 }));
   return fake;
 }
 
-const content = (fake: FakeBridge) => JSON.parse(fake.writes[0]?.content ?? "") as Record<string, unknown>;
+const content = (fake: FakeBridge, index: number) =>
+  JSON.parse(fake.writes[index]?.content ?? "") as Record<string, unknown>;
 
 describe("plant maker", () => {
-  it("copies a workspace plant whole or keeps only its frame", async () => {
+  it("writes the composition the binary generated and composes a copy but not an empty frame", async () => {
     const fake = bridge();
     const maker = new PlantMaker(fake.plant);
     expect(await maker.create({ kind: "file", path: base }, "lab-two", "Lab two", "copy")).toEqual(
@@ -37,12 +48,7 @@ describe("plant maker", () => {
       }),
     );
     expect(fake.writes[0]).toMatchObject({ path: "compositions/lab-two.composition.json", etag: "" });
-    expect(content(fake)).toMatchObject({
-      id: "lab-two",
-      title: "Lab two",
-      equipment: lab.equipment,
-      description: "base",
-    });
+    expect(content(fake, 0)).toEqual(copied);
     expect(fake.calls.find((call) => call.name === "component.new")?.args).toEqual({
       id: "lab-two",
       title: "Lab two",
@@ -52,12 +58,16 @@ describe("plant maker", () => {
       composition: "compositions/lab-two.composition.json",
       out: "domains/lab-two.domain.json",
     });
+    fake.actions.set("component.new", success({ composition: emptied }));
     await maker.create({ kind: "example", id: "pilot" }, "lab-three", "Lab three", "empty");
-    expect(fake.calls.at(-1)?.args).toEqual({ id: "lab-three", title: "Lab three", example: "pilot", empty: true });
+    expect(fake.calls.filter((call) => call.name === "component.new").at(-1)?.args).toEqual({
+      id: "lab-three",
+      title: "Lab three",
+      example: "pilot",
+      empty: true,
+    });
     expect(fake.calls.filter((call) => call.name === "domain.compose")).toHaveLength(1);
-    const made = JSON.parse(fake.writes[1]?.content ?? "") as Record<string, unknown>;
-    expect(made).toMatchObject({ site: { name: "Pilot plant" }, areas: [{ name: "Pilot plant" }] });
-    expect(made).not.toHaveProperty("equipment");
+    expect(content(fake, 1)).toEqual(emptied);
   });
 
   it("refuses an existing plant, an unreadable base and an unknown example", async () => {
@@ -67,7 +77,10 @@ describe("plant maker", () => {
       ok: false,
       failure: { kind: "conflict", diagnostic: { displayCode: "plant_exists" } },
     });
-    fake.addFile("compositions/bad.composition.json", "[");
+    fake.actions.set(
+      "component.new",
+      failed(cannedFailure("composition_invalid", 422, "the base is not a composition")),
+    );
     expect(
       await maker.create({ kind: "file", path: "compositions/bad.composition.json" }, "bad-copy", "B", "copy"),
     ).toMatchObject({ ok: false, failure: { kind: "unreadable", diagnostic: { displayCode: "composition_invalid" } } });
@@ -106,7 +119,7 @@ describe("plant maker", () => {
       failure: { kind: "unreadable" },
     });
     expect(fake.writes).toEqual([]);
-    fake.actions.delete("component.new");
+    fake.actions.set("component.new", success({ composition: copied }));
     fake.writeOutcomes.set(
       "compositions/lab-two.composition.json",
       failed(cannedFailure("conflict", 409, "changed on disk")),

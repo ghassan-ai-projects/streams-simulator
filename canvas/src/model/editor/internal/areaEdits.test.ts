@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Composition } from "./composition";
-import { areaInUse, areaNameProblem, removeArea, renameArea } from "./areaEdits";
+import { addArea, areaInUse, areaNameProblem, removeArea, renameArea } from "./areaEdits";
+import { areaNodesOf } from "./composition";
 
 const doc: Composition = {
   id: "lab",
@@ -49,5 +50,13 @@ describe("area edits", () => {
     const moved = { ...doc, equipment: [{ use: "lib/pump@1", names: ["P-1"], area: "Cooling" }] };
     expect(removeArea(doc, "Cooling")).toBe(doc);
     expect(removeArea(moved, "Yard")).toMatchObject({ areas: [{ name: "Site" }, { name: "Cooling", parent: "Site" }] });
+  });
+
+  it("adds an area under a parent once, to a plant that had none", () => {
+    const first = addArea({ id: "x" }, "Site", "");
+    const nested = addArea(first, "Plant room", "Site");
+    expect(addArea(nested, "Plant room", "Site")).toBe(nested);
+    expect(nested.areas).toEqual([{ name: "Site" }, { name: "Plant room", parent: "Site" }]);
+    expect(areaNodesOf(nested).map((node) => node.path)).toEqual(["Site", "Site › Plant room"]);
   });
 });
