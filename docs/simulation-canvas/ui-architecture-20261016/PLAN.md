@@ -20,7 +20,7 @@ The user resumed the migration with a standing delegation: deviate from this pla
 | Phase | State |
 | --- | --- |
 | P0–P3 | Committed earlier; P3 test/double migration committed in `bc831583` (typed gateways, 486 tests). |
-| P4 | Editor save transaction committed; `Draft.savedRevision` is written but `isDirty` stays identity-based (undo back to the saved document reads clean). Revision-carrying history is left as a recorded follow-up. |
+| P4 | Editor save transaction committed; dirty tracking stays identity-based (documents are immutable) and the revision counters were removed. |
 | P5 | Delivered: 203 files moved into `index.ts` + `internal/` modules (28 product modules), facades and contracts, feature session factories, CSS ownership, register rebuilt from the real tree. |
 
 ### Deviations from the plan (each deliberate)
@@ -41,9 +41,21 @@ Defects found and fixed during the move (each with a regression test where it is
 - The P3 report decoder required `run.run_id`; the Go report omits it for an open run, so a still-open run reviewed as "No report". `reportDecoder.test.ts` fails without the fix; the superseded assertion (`{ run: {}, ... }` refused) now asserts a missing `run` section instead.
 - `wirePins.test.ts` iterated a tuple whose mode expression was always truthy, so `pins` was never exercised; the intended mode matrix is restored.
 
-### Open items
+### Whole-UI review (after the migration)
 
-- P4 revision-based dirty tracking; P6 test ledger and `FakeBridge` policy removal; a decoder success-path suite for `adapters/bridge`; CSS caps for the largest feature sheets (`RunScreen` 608, `HomeScreen` 434, `Editor` 330) are registered and may only fall.
+Three independent read-only reviewers (model + adapters, application + test support, UI + stylesheets) produced 85 verified findings; two implementation waves applied the low-risk majority. Dispositions are in [reviews/P5.md](reviews/P5.md). Highlights:
+
+- Lifecycle defects fixed failing-first: discard during an in-flight save, workspace watcher subscribed after the first load, plant load dropped for a newer workspace, double publish on navigation.
+- A new gate rejects references to undefined stylesheet classes and defined-but-unused classes (`check-css-architecture`, two fixtures). It immediately found four tier classes that were applied but never defined.
+- Dead code and duplication removed: one JSON-narrowing helper, one plural/underscore helper, shared failure mappers, shared `groupBy`/`tally`, dead review-row fields, 20 dead or empty CSS rules, duplicate CSS blocks, optional props production never omits.
+- P4 dirty tracking is closed by decision: `Composition` is immutable, so `doc !== saved` is the correct dirty test; the revision counters were removed.
+
+### Open items (recorded, not blocking)
+
+- Rules still held in the UI that belong in model/app: review warnings and alarm copy (`RunStatus`, `alarmWords`), the launch draft converter (`draft.ts`), `useLive` status derivation, `NewPlant` readiness, editor status text; cross-store coordinators (`useRunPlant`, `showBuild`, rerun proposal) belong in `app/shell`/`app/review`.
+- State-model simplifications in the application layer: one operation token type for all stores, `LaunchStore` run cursor, `PlantMaker` result union, the editor save-state union (`saveStatus`/`composeFailure`/`outcome`/`failure` overlap), replacing `FakeBridge` by a transport-level fake.
+- Visual unification that needs a Chrome design pass: six accent-button definitions into `shared`, `PlantScreen.module.css` split by owner.
+- P6 test ledger.
 - Enola: `make architecture` passes (no cycle or layer regression).
 
 ## 1. Why this plan exists

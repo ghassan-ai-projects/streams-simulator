@@ -30,8 +30,8 @@ export function document(): string {
 
 This table is generated from [architecture.json](architecture.json) by
 \`node scripts/write-architecture-doc.ts\` and checked by \`npm run architecture\`, so the two cannot drift. It names the
-modules that exist, what each may import and who calls it. The target structure, the reasons and the migration order are
-in [docs/simulation-canvas/ui-architecture-20261016/README.md](../../docs/simulation-canvas/ui-architecture-20261016/README.md).
+modules that exist, what each may import and who calls it. The reasons and the migration order are in the canvas
+architecture document of the migration's working folder.
 
 | Module | Kind | Layer | Lifetime | Responsibility | May import | Callers |
 | --- | --- | --- | --- | --- | --- | --- |
