@@ -69,7 +69,8 @@ export class NavigationStore extends Observable<Route> {
 
   private blocked(route: Route): boolean {
     const current = this.snapshot();
-    return current.screen === "edit" && formatRoute(current) !== formatRoute(route) && (this.unsaved?.check() ?? false);
+    const guarded = current.screen === "edit" || current.screen === "device";
+    return guarded && formatRoute(current) !== formatRoute(route) && (this.unsaved?.check() ?? false);
   }
 }
 

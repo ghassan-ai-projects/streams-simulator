@@ -61,6 +61,15 @@ describe("navigation store", () => {
     expect(navigation.snapshot()).toEqual({ screen: "workspace" });
   });
 
+  it("holds a move away from a device with unsaved changes, and not one within it", () => {
+    const navigation = new NavigationStore(memoryLocation("#/device?device=kinds%2Ffan.kind.json"));
+    navigation.guardUnsaved(() => true);
+    navigation.go({ screen: "device", path: "kinds/fan.kind.json" });
+    expect(navigation.leaving.snapshot()).toBeNull();
+    navigation.go({ screen: "workspace" });
+    expect(navigation.leaving.snapshot()).toEqual({ route: { screen: "workspace" }, replace: false });
+  });
+
   it("removes a route's unsaved guard when its disposer runs", () => {
     const navigation = new NavigationStore(memoryLocation("#/edit?composition=c1"));
     const dispose = navigation.guardUnsaved(() => true);

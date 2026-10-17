@@ -1,4 +1,5 @@
 import { render } from "@testing-library/react";
+import { createDeviceDesk, createDeviceSession } from "../app/devices";
 import { createEditorSession } from "../app/editor";
 import { createLaunchStore } from "../app/launch";
 import { createPlantMaker, createPlantSession } from "../app/plant";
@@ -33,6 +34,8 @@ function appStores(bridge: FakeBridge, hash = "#/") {
     launch: createLaunchStore(bridge.launch, timers, timers),
     scheduler: timers,
     editor: createEditorSession(bridge.editor),
+    devices: createDeviceSession(bridge.devices),
+    desk: createDeviceDesk(bridge.devices),
     panels: createPanelStore({ read: () => null, write: () => undefined }),
     maker: createPlantMaker(bridge.plant),
     showDetails: () => {

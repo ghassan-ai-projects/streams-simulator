@@ -20,7 +20,7 @@ function everywhere(screen: Screen): KeyGroup {
   const panel = rightPanelName[screen].toLowerCase();
   return {
     scope: "Everywhere",
-    screens: ["workspace", "plant", "review", "edit"],
+    screens: ["workspace", "plant", "review", "edit", "device"],
     rows: [
       { keys: ["Tab", "Shift Tab"], does: `move between the top bar, the outline, the centre and the ${panel} panel` },
       { keys: ["[", "]"], does: `hide or show the outline panel, the ${panel} panel` },
@@ -62,6 +62,11 @@ const screenGroups: readonly KeyGroup[] = [
       { keys: [`${mod} Shift Z`, `${mod} Y`], does: "redo" },
       { keys: [`${mod} S`], does: "save" },
     ],
+  },
+  {
+    scope: "Device editor",
+    screens: ["device"],
+    rows: [{ keys: [`${mod} S`], does: "save the device and ask the binary to check it" }],
   },
 ];
 

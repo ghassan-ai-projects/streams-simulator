@@ -105,6 +105,27 @@ func putKindFiles(t *testing.T, client *bridgeClient) {
 	}
 }
 
+func TestTheCanvasBridgeCreatesANewKindFileWithAHyphenatedNameAndStillRefusesBadOnes(t *testing.T) {
+	t.Parallel()
+	client, workspace := startDeviceBridge(t)
+	const rel = "kinds/e2e-fan.kind.json"
+	content := `{"kind":"e2e-fan","metrics":[],"commands":[]}`
+	putFile(t, client, rel, content)
+	status, read, _ := client.call(http.MethodGet, "/api/file?path="+rel, nil)
+	if written, _ := os.ReadFile(filepath.Join(workspace, "kinds", "e2e-fan.kind.json")); status != http.StatusOK || read["content"] != content || string(written) != content {
+		t.Fatalf("reading the new kind file: %d %v, on disk %q", status, read, written)
+	}
+	if valid := client.action("kind.validate", map[string]any{"path": rel}); valid["valid"] != true {
+		t.Fatalf("validating the new kind file = %v", valid)
+	}
+	for _, bad := range []string{"kinds/e2e-fan.json", "kinds/../e2e-fan.kind.json", "../kinds/e2e-fan.kind.json", "kinds/sub/e2e-fan.kind.json"} {
+		status, document, _ := client.call(http.MethodPut, "/api/file", map[string]string{"path": bad, "content": content, "etag": ""})
+		if status != http.StatusBadRequest || errorCode(document) != "bad_path" {
+			t.Errorf("writing %s: %d %v", bad, status, document)
+		}
+	}
+}
+
 func TestTheCanvasBridgeValidatesKindFilesAndFailsClosedOnABadOne(t *testing.T) {
 	t.Parallel()
 	client, workspace := startDeviceBridge(t)
@@ -123,6 +144,11 @@ func TestTheCanvasBridgeValidatesKindFilesAndFailsClosedOnABadOne(t *testing.T) 
 	message, _ := failure["message"].(string)
 	if failure["code"] != "kind_failed" || !strings.Contains(message, "kinds/thin.kind.json") || strings.Contains(message, workspace) {
 		t.Fatalf("a bad kind file = %v", failure)
+	}
+	wantIssues := []any{map[string]any{"pointer": "/commands", "message": `missing required property "commands"`},
+		map[string]any{"pointer": "/metrics", "message": `missing required property "metrics"`}}
+	if !jsonEqual(failure["issues"], wantIssues) {
+		t.Fatalf("the issues of a bad kind file = %v, want %v", failure["issues"], wantIssues)
 	}
 	copyIntoWorkspace(t, testsupport.ThermalBoardDomain(), workspace, thermalDomain)
 	broken := refusedAction(t, client, "domain.validate", map[string]any{"path": thermalDomain})

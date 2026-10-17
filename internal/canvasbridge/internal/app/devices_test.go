@@ -21,6 +21,8 @@ const (
 	boardFile    = "components/equipment/board.component.json"
 	dhtFile      = "components/instruments/dht.instrument.json"
 	fanKindBytes = `{"kind":"fan","metrics":[],"commands":[]}`
+
+	commandsIssue = `{"pointer":"/commands","message":"missing required property \"commands\""}`
 )
 
 func TestAnEmptyWorkspaceListsNoKindsAndNoComponentsAsEmptyArrays(t *testing.T) {
@@ -141,11 +143,11 @@ func TestKindValidateRunsTheKindCommandOnAWorkspaceFileAndRelaysItsRefusal(t *te
 		t.Fatalf("a good kind: %s, %v, argv %v", result, err, h.argv)
 	}
 	h.command = process.CommandResult{ExitCode: 1, Stdout: []byte(`{"error":{"code":"kind_failed","message":"` + h.dir +
-		`/kinds/thin.kind.json: commands: missing","issues":[{"pointer":"/commands"}]}}`)}
+		`/kinds/thin.kind.json: kind file fails its schema","source":"` + h.dir + `/kinds/thin.kind.json","issues":[` + commandsIssue + `]}}`)}
 	var failure *domain.Failure
 	_, err = h.bridge.RunAction(context.Background(), "kind.validate", map[string]any{"path": "kinds/thin.kind.json"})
-	if !errors.As(err, &failure) || failure.Code != "kind_failed" || failure.Message != "kinds/thin.kind.json: commands: missing" ||
-		!strings.Contains(string(failure.Issues), "/commands") {
+	if !errors.As(err, &failure) || failure.Code != "kind_failed" || failure.Message != "kinds/thin.kind.json: kind file fails its schema" ||
+		string(failure.Issues) != "["+commandsIssue+"]" {
 		t.Fatalf("a bad kind: %v", err)
 	}
 	if _, err := h.bridge.RunAction(context.Background(), "kind.validate", map[string]any{"path": inDomains("x.domain.json")}); !errors.Is(err, domain.ErrBadArguments) {

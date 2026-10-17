@@ -5,6 +5,7 @@ import { FakeBridge } from "./fakeBridge";
 import { navigation } from "./workspaceHarness";
 import { renderStrict } from "./strictMode";
 import type { NavigationStore } from "../app/shell";
+import { createDeviceDesk } from "../app/devices";
 import { createPlantMaker } from "../app/plant";
 import type { WorkspaceStore } from "../app/workspace";
 import { createWorkspaceStore } from "../app/workspace";
@@ -34,6 +35,7 @@ function Route({
         workspace={workspace}
         navigation={nav}
         maker={createPlantMaker(bridge.plant)}
+        desk={createDeviceDesk(bridge.devices)}
         badgeFor={() => null}
       />
     </>

@@ -23,6 +23,7 @@ const (
 	ContractInstrument      Contract = "instrument-v0.1"
 	ContractComposition     Contract = "composition-v0.1"
 	ContractVocabulary      Contract = "component-vocabulary-v0.1"
+	ContractKindFile        Contract = "kind-file-v0.1"
 )
 
 type Issue struct {

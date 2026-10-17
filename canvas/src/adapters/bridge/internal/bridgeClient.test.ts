@@ -47,7 +47,7 @@ describe("bridge adapter wiring", () => {
     });
     expect(t.fetch.mock.calls[1]?.[1]).toMatchObject({ body: '{"args":{"run":"w-1"}}' });
     expect(await adapters.review.report("w-1")).toMatchObject({ ok: false, failure: { kind: "unreadable" } });
-    const empty = { name: "lab", domains: [], compositions: [], scenarios: [], runs: [] };
+    const empty = { name: "lab", domains: [], compositions: [], scenarios: [], kinds: [], components: [], runs: [] };
     expect(await bridgeAdapter(bridgeTransport(() => respond(200, empty))).workspace.load()).toEqual({
       ok: true,
       value: empty,

@@ -72,6 +72,11 @@
   color: var(--text-secondary);
 }
 
+.deviceStrip {
+  justify-self: stretch;
+  margin-top: var(--space-4);
+}
+
 .emptyTitle {
   margin: 0;
   font-size: var(--text-xl);

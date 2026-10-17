@@ -1,0 +1,275 @@
+.formHost {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  background: var(--surface-panel);
+}
+
+.form {
+  max-width: 680px;
+  padding: var(--space-5);
+}
+
+.formTitle {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+
+.field {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-1) var(--space-3);
+}
+
+.field > label {
+  padding-top: 6px;
+  color: var(--text-secondary);
+}
+
+.control {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.control input[aria-invalid="true"],
+.control select[aria-invalid="true"] {
+  border-color: var(--status-alarm);
+  box-shadow: 0 0 0 1px var(--status-alarm);
+}
+
+.notes {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.notes p {
+  margin: 0;
+}
+
+.issue,
+.caution {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  font-size: var(--text-sm);
+  text-wrap: pretty;
+}
+
+.issue {
+  color: var(--status-alarm);
+}
+
+.caution {
+  color: var(--status-warn);
+}
+
+.check {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.remove {
+  --button-edge: var(--status-alarm);
+  --button-ink: var(--status-alarm);
+}
+
+.argRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) 72px 72px auto auto;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.argRows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.outline {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-height: 0;
+  overflow: auto;
+  padding-bottom: var(--space-3);
+}
+
+.listHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-right: var(--space-2);
+}
+
+.items {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0 var(--space-2);
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.item:hover {
+  background: var(--surface-hover);
+}
+
+.item[aria-current="true"] {
+  background: var(--surface-selected);
+}
+
+.itemLine {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  max-width: 100%;
+}
+
+.itemName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.itemFacts {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.flag {
+  flex: none;
+  color: var(--status-alarm);
+}
+
+.addRow {
+  padding: 0 var(--space-3);
+}
+
+.statusIdle,
+.statusBusy,
+.statusOk,
+.statusWarn {
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  font-size: var(--text-sm);
+}
+
+.statusIdle,
+.statusBusy {
+  color: var(--text-secondary);
+}
+
+.statusOk {
+  color: var(--status-ok);
+}
+
+.statusWarn {
+  color: var(--status-warn);
+  font-weight: 600;
+}
+
+.issueButton {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.issueButton:hover strong {
+  text-decoration: underline;
+}
+
+.issueList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--status-alarm);
+}
+
+.issueList li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 2px var(--space-3);
+  margin: 0;
+}
+
+.facts dt {
+  color: var(--text-secondary);
+}
+
+.facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}
+
+.leaveDialog {
+  width: 480px;
+  max-width: calc(100vw - 32px);
+}
+
+.leaveTitle {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-lg);
+}
+
+.leaveText {
+  margin: 0 0 var(--space-4);
+  color: var(--text-secondary);
+}
+
+.leaveActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}

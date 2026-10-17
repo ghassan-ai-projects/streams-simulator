@@ -14,6 +14,8 @@ func TestKindAndComponentFilesAreWorkspacePathsTheCanvasMayWrite(t *testing.T) {
 		class FileClass
 	}{
 		{"kinds/fan.kind.json", ClassKind},
+		{"kinds/e2e-fan.kind.json", ClassKind},
+		{"components/equipment/e2e-board.component.json", ClassEquipment},
 		{"components/equipment/arduino.component.json", ClassEquipment},
 		{"components/instruments/dht11.instrument.json", ClassInstrument},
 		{"components/equipment/a.b-c_1.component.json", ClassEquipment},

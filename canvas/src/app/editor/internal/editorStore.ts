@@ -3,7 +3,7 @@ import { componentOf, domainOf, equipmentOf, parseComposition } from "../../../m
 import { addEquipment } from "../../../model/editor";
 import type { Presets } from "../../../model/plant";
 import { componentSpecs } from "../../plant";
-import { Observable, createOperationIdentity } from "../../shared";
+import { DraftStore, createOperationIdentity } from "../../shared";
 import type { OperationIdentity, Operation } from "../../shared";
 import type { EditorFailure, EditorGateway } from "../../ports";
 import { applySaveResult, captureSaveAttempt, markSaved, saveCaptured } from "./editorSave";
@@ -25,7 +25,7 @@ function kept(doc: Composition, draft: Draft): string | null {
   return selected !== null && equipmentOf(doc).some((entry) => entry.names.includes(selected)) ? selected : null;
 }
 
-export class EditorStore extends Observable<EditorState> {
+export class EditorStore extends DraftStore<EditorState, Draft> {
   private readonly saves = createOperationIdentity();
   private memo: StoreMemo = emptyMemo;
 
@@ -36,17 +36,15 @@ export class EditorStore extends Observable<EditorState> {
     super({ phase: "idle" });
   }
 
-  async open(path: string): Promise<void> {
-    this.set({ phase: "loading", path });
-    await this.restart(path);
+  protected override loading(path: string): EditorState {
+    return { phase: "loading", path };
   }
 
-  async reload(): Promise<void> {
-    const draft = this.draft();
-    if (draft !== null) await this.restart(draft.path);
+  protected override toDraft(state: EditorState): Draft | null {
+    return state.phase === "ready" ? state : null;
   }
 
-  private async restart(path: string): Promise<void> {
+  protected override async restart(path: string): Promise<void> {
     const request = this.operations.begin();
     await this.load(request, path);
   }
@@ -196,15 +194,5 @@ export class EditorStore extends Observable<EditorState> {
     if (result.kind === "composed")
       this.memo = { ...this.memo, domainPath: attempt.output, domainEtag: result.outputEtag };
     this.update((current) => applySaveResult(current, attempt, result));
-  }
-
-  private draft(): Draft | null {
-    const state = this.snapshot();
-    return state.phase === "ready" ? state : null;
-  }
-
-  private update(change: (draft: Draft) => Draft): void {
-    const draft = this.draft();
-    if (draft !== null) this.set(change(draft));
   }
 }

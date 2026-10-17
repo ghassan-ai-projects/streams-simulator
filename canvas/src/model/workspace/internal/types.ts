@@ -18,11 +18,24 @@ export interface RunEntry {
   readonly faults: number;
 }
 
+export interface KindEntry {
+  readonly path: string;
+  readonly kind: string;
+  readonly title: string;
+}
+
 export interface Workspace {
   readonly name: string;
   readonly domains: readonly Definition[];
   readonly compositions: readonly Definition[];
   readonly scenarios: readonly Definition[];
+  readonly kinds: readonly KindEntry[];
+  readonly components: readonly {
+    readonly path: string;
+    readonly id: string;
+    readonly title: string;
+    readonly class: string;
+  }[];
   readonly runs: readonly RunEntry[];
 }
 

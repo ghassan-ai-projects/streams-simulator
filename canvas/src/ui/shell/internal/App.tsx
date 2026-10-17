@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { DeviceDesk, DeviceSession } from "../../../app/devices";
 import type { EditorSession } from "../../../app/editor";
 import type { Scheduler } from "../../../app/ports";
 import type { PlantMaker } from "../../../app/plant";
@@ -10,6 +11,7 @@ import type { ReviewSession } from "../../../app/review";
 import type { Session } from "../../../app/session";
 import type { WorkspaceStore } from "../../../app/workspace";
 import type { Route } from "../../../model/shell";
+import { DeviceScreen } from "../../devices";
 import { EditorScreen } from "../../editor";
 import { WorkspaceScreen } from "../../workspace";
 import { PairingScreen } from "../../session";
@@ -36,6 +38,8 @@ export interface Stores {
   readonly launch: LaunchStore;
   readonly scheduler: Scheduler;
   readonly editor: EditorSession;
+  readonly devices: DeviceSession;
+  readonly desk: DeviceDesk;
   readonly panels: PanelStore;
   readonly maker: PlantMaker;
   readonly showDetails: () => void;
@@ -45,6 +49,19 @@ function useSession({ session, workspace }: Stores) {
   const state = useStore(session);
   useEffect(() => sessionGate(session, workspace), [session, workspace]);
   return state;
+}
+
+function Authoring({
+  stores,
+  route,
+}: {
+  readonly stores: Stores;
+  readonly route: Extract<Route, { readonly screen: "edit" | "device" }>;
+}) {
+  if (route.screen === "edit") {
+    return <EditorScreen editor={stores.editor} navigation={stores.navigation} composition={route.composition} />;
+  }
+  return <DeviceScreen devices={stores.devices} navigation={stores.navigation} path={route.path} />;
 }
 
 function Screen({ stores, route }: { readonly stores: Stores; readonly route: Route }) {
@@ -62,9 +79,7 @@ function Screen({ stores, route }: { readonly stores: Stores; readonly route: Ro
       />
     );
   }
-  if (route.screen === "edit") {
-    return <EditorScreen editor={stores.editor} navigation={stores.navigation} composition={route.composition} />;
-  }
+  if (route.screen === "edit" || route.screen === "device") return <Authoring stores={stores} route={route} />;
   if (route.screen === "review") {
     return (
       <ReviewScreen
@@ -82,6 +97,7 @@ function Screen({ stores, route }: { readonly stores: Stores; readonly route: Ro
       workspace={stores.workspace}
       navigation={stores.navigation}
       maker={stores.maker}
+      desk={stores.desk}
       badgeFor={(worldId) => stores.review.badgeFor(worldId)}
     />
   );

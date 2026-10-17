@@ -3,6 +3,8 @@ package domain
 import (
 	"errors"
 	"fmt"
+
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 )
 
 const KindFileSuffix = ".kind.json"
@@ -62,10 +64,10 @@ func (i kindIndex) add(path string, entry map[string]any) error {
 func parseKindFile(source KindSource) (map[string]any, error) {
 	var entry map[string]any
 	if err := decode(source.Raw, &entry); err != nil {
-		return nil, fmt.Errorf("plantwire: kind file %s: %w", source.Path, err)
+		return nil, model.NotJSONError(model.ContractKindFile, source.Path, "plantwire: kind file "+source.Path, err)
 	}
 	if err := CheckKind(entry); err != nil {
-		return nil, fmt.Errorf("%s: %w", source.Path, err)
+		return nil, fmt.Errorf("%s: %w", source.Path, model.WithSource(err, source.Path))
 	}
 	return entry, nil
 }

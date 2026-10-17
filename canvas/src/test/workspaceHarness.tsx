@@ -1,4 +1,5 @@
 import { render } from "@testing-library/react";
+import { createDeviceDesk } from "../app/devices";
 import { createNavigationStore } from "../app/shell";
 import { createPlantMaker } from "../app/plant";
 import { createWorkspaceStore } from "../app/workspace";
@@ -24,6 +25,7 @@ export async function show(
       workspace={store}
       navigation={nav.store}
       maker={createPlantMaker(bridge.plant)}
+      desk={createDeviceDesk(bridge.devices)}
       badgeFor={badgeFor}
     />,
   );

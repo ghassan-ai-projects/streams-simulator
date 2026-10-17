@@ -1,0 +1,118 @@
+import { fireEvent, screen, within } from "@testing-library/react";
+import axe from "axe-core";
+import { describe, expect, it, vi } from "vitest";
+import { failure as failed, success } from "../../../test/outcome";
+import { FakeBridge, cannedFailure } from "../../../test/fakeBridge";
+import { sampleWorkspace } from "../../../test/workspaceFixture";
+import { navigation, show } from "../../../test/workspaceHarness";
+
+const fan = { path: "kinds/fan.kind.json", kind: "fan", title: "" };
+const pump = { path: "kinds/pump.kind.json", kind: "", title: "" };
+
+function withDevices() {
+  const bridge = new FakeBridge();
+  bridge.workspaceOutcome = success({ ...sampleWorkspace, kinds: [fan, pump] });
+  bridge.addFile(fan.path, {
+    kind: "fan",
+    metrics: [{ name: "duty" }, { name: "mode" }],
+    commands: [{ name: "stop" }],
+  });
+  bridge.addFile(pump.path, "not json");
+  return bridge;
+}
+
+function devices() {
+  return within(screen.getByRole("region", { name: "Devices" }));
+}
+
+describe("the devices section", () => {
+  it("says what a device is and offers to create one when there are none", async () => {
+    const view = await show(new FakeBridge());
+    expect(devices().getByText(/No devices yet/)).toBeInTheDocument();
+    expect(devices().getByRole("button", { name: "Create device" })).toHaveAttribute("aria-expanded", "false");
+    expect((await axe.run(view.container)).violations).toEqual([]);
+  });
+
+  it("lists each device with what it reports and accepts, and opens it in the device editor", async () => {
+    const nav = navigation();
+    await show(withDevices(), nav);
+    expect(await devices().findByText("2 readings · 1 command")).toBeInTheDocument();
+    expect(devices().getByText("pump")).toBeInTheDocument();
+    expect(devices().getByText("Could not be read")).toBeInTheDocument();
+    expect(devices().getAllByRole("listitem")).toHaveLength(2);
+    fireEvent.click(devices().getByRole("button", { name: "Edit fan" }));
+    expect(nav.location.hash).toBe("#/device?device=kinds%2Ffan.kind.json");
+  });
+
+  it("shows the devices while their files are still being read", async () => {
+    const bridge = withDevices();
+    bridge.holdRead(fan.path);
+    await show(bridge);
+    expect(devices().getAllByText("Reading the file…")).toHaveLength(2);
+  });
+
+  it("is on the empty workspace page too", async () => {
+    const bridge = new FakeBridge();
+    bridge.workspaceOutcome = success({ ...sampleWorkspace, domains: [], compositions: [], runs: [] });
+    await show(bridge);
+    expect(screen.getByRole("heading", { name: /has no plants yet/ })).toBeInTheDocument();
+    expect(devices().getByRole("button", { name: "Create device" })).toBeInTheDocument();
+  });
+});
+
+describe("creating a device", () => {
+  async function opened(bridge = withDevices(), nav = navigation()) {
+    await show(bridge, nav);
+    fireEvent.click(devices().getByRole("button", { name: "Create device" }));
+    return { bridge, nav, form: screen.getByRole("form", { name: "New device" }) };
+  }
+
+  it("opens a form, explains a name it cannot use, and keeps Create off until the name fits", async () => {
+    const { form } = await opened();
+    expect(within(form).getByText("Give the device a name.")).toBeInTheDocument();
+    const name = within(form).getByLabelText("Name");
+    expect(name).toHaveFocus();
+    fireEvent.change(name, { target: { value: "bad name" } });
+    expect(within(form).getByText(/Use letters, digits/)).toBeInTheDocument();
+    expect(within(form).getByRole("button", { name: "Create and open the device" })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
+    fireEvent.change(name, { target: { value: "FAN" } });
+    expect(within(form).getByText("A device named FAN already exists.")).toBeInTheDocument();
+  });
+
+  it("writes an empty device and opens it in the editor", async () => {
+    const { bridge, nav, form } = await opened();
+    fireEvent.change(within(form).getByLabelText("Name"), { target: { value: "heater" } });
+    fireEvent.submit(form);
+    await vi.waitFor(() => {
+      expect(nav.location.hash).toBe("#/device?device=kinds%2Fheater.kind.json");
+    });
+    expect(bridge.writes[0]).toMatchObject({ path: "kinds/heater.kind.json", etag: "" });
+  });
+
+  it("does not submit a name that does not fit", async () => {
+    const { bridge, form } = await opened();
+    fireEvent.submit(form);
+    expect(bridge.writes).toHaveLength(0);
+  });
+
+  it("says why the device could not be created", async () => {
+    const { bridge, form } = await opened();
+    bridge.writeOutcomes.set("kinds/heater.kind.json", failed(cannedFailure("conflict", 409, "exists")));
+    fireEvent.change(within(form).getByLabelText("Name"), { target: { value: "heater" } });
+    fireEvent.submit(form);
+    expect(await within(form).findByRole("alert")).toHaveTextContent("A device named heater already exists.");
+  });
+
+  it("closes on Escape or Cancel and returns to the button", async () => {
+    const { form } = await opened();
+    fireEvent.keyDown(form, { key: "Escape" });
+    expect(screen.queryByRole("form", { name: "New device" })).toBeNull();
+    expect(devices().getByRole("button", { name: "Create device" })).toHaveFocus();
+    fireEvent.click(devices().getByRole("button", { name: "Create device" }));
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByRole("form", { name: "New device" })).toBeNull();
+  });
+});

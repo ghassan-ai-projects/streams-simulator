@@ -19,6 +19,8 @@ export const sampleWorkspace: Workspace = {
     },
   ],
   scenarios: [],
+  kinds: [],
+  components: [],
   runs: [
     {
       worldId: "w-1",

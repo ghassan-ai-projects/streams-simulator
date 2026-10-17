@@ -64,7 +64,7 @@ validate`, the whole library: built-in, `--components-dir` and the workspace's `
 supplies the workspace folders: every library action (`component.list`, `component.show`, `component.validate`,
 `domain.compose`) gets `--components-dir <workspace>/components` when that folder exists, and `domain.validate` and
 `domain.compose` get `--kinds-dir <workspace>/kinds` when it exists, so the "behaviour implements interface" check runs
-against the workspace's own kind files. A kind file that does not parse stops `domain.validate` too, as it stops the CLI.
+against the workspace's own kind files. A kind file that does not parse stops `domain.validate` too, as it stops the CLI. `kind.validate` relays the CLI's failure unchanged: `code: "kind_failed"` and `issues: [{pointer, message}]`, one per schema violation, the same members as `domain.validate`, so the canvas decodes both alike and never parses message text.
 The director child's `world.create` does not yet check `implements`; that check stays in `streamsim run`. MCP actions go to one
 `streamsim mcp --role director` child per bridge, started with the workspace's `domains/` and `runs/`. When a domain file
 changes and no world is open, the child is restarted before the next catalog or world action so its catalog is current. When the child is gone (a transport

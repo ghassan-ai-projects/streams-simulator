@@ -5,4 +5,5 @@ export const rightPanelName: Readonly<Record<Route["screen"], string>> = {
   plant: "Inspector",
   review: "Run details",
   edit: "Build",
+  device: "Device details",
 };

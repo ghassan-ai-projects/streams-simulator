@@ -22,6 +22,7 @@
       "entrypoint": "src/model/workspace/index.ts",
       "callers": [
         "adapters",
+        "app/devices",
         "app/plant",
         "app/ports",
         "app/review",
@@ -32,6 +33,36 @@
         "ui/workspace"
       ]
     },
+    "model/devices": {
+      "kind": "model",
+      "layer": "model",
+      "lifetime": "values",
+      "responsibility": "device kind files: interface values, edits, name rules, issue placement and wording",
+      "folders": ["src/model/devices"],
+      "mayImport": ["model/shared"],
+      "entrypoint": "src/model/devices/index.ts",
+      "callers": ["app/devices", "ui/devices", "ui/workspace"]
+    },
+    "app/devices": {
+      "kind": "application",
+      "layer": "app",
+      "lifetime": "singleton",
+      "responsibility": "device draft, save and check transaction, and the device list desk",
+      "folders": ["src/app/devices"],
+      "mayImport": ["app/ports", "app/shared", "model/devices", "model/workspace"],
+      "entrypoint": "src/app/devices/index.ts",
+      "callers": ["root", "test", "ui/devices", "ui/shell", "ui/workspace"]
+    },
+    "ui/devices": {
+      "kind": "ui",
+      "layer": "ui",
+      "lifetime": "components",
+      "responsibility": "device editor screen: outline, forms, status line and details",
+      "folders": ["src/ui/devices"],
+      "mayImport": ["app/devices", "app/shell", "model/devices", "ui/primitives"],
+      "entrypoint": "src/ui/devices/index.ts",
+      "callers": ["ui/shell"]
+    },
     "app/shared": {
       "kind": "foundation",
       "layer": "app",
@@ -40,7 +71,16 @@
       "folders": ["src/app/shared"],
       "mayImport": [],
       "entrypoint": "src/app/shared/index.ts",
-      "callers": ["app/editor", "app/launch", "app/plant", "app/review", "app/session", "app/shell", "app/workspace"]
+      "callers": [
+        "app/devices",
+        "app/editor",
+        "app/launch",
+        "app/plant",
+        "app/review",
+        "app/session",
+        "app/shell",
+        "app/workspace"
+      ]
     },
     "app/ports": {
       "kind": "foundation",
@@ -52,6 +92,7 @@
       "entrypoint": "src/app/ports/index.ts",
       "callers": [
         "adapters",
+        "app/devices",
         "app/editor",
         "app/launch",
         "app/plant",
@@ -83,6 +124,7 @@
       "entrypoint": "src/ui/primitives/index.ts",
       "callers": [
         "test",
+        "ui/devices",
         "ui/editor",
         "ui/graph",
         "ui/launch",
@@ -123,6 +165,7 @@
       "entrypoint": null,
       "callers": [
         "adapters",
+        "app/devices",
         "app/editor",
         "app/launch",
         "app/plant",
@@ -134,6 +177,7 @@
         "model/plant",
         "model/review",
         "model/workspace",
+        "ui/devices",
         "ui/editor",
         "ui/graph",
         "ui/launch",
@@ -153,6 +197,7 @@
       "files": ["src/main.tsx"],
       "mayImport": [
         "adapters",
+        "app/devices",
         "app/editor",
         "app/launch",
         "app/plant",
@@ -176,6 +221,7 @@
       "entrypoint": null,
       "callers": [
         "adapters",
+        "model/devices",
         "model/editor",
         "model/graph",
         "model/launch",
@@ -321,7 +367,7 @@
         "model/shell"
       ],
       "entrypoint": "src/app/shell/index.ts",
-      "callers": ["root", "test", "ui/editor", "ui/plant", "ui/review", "ui/shell", "ui/workspace"]
+      "callers": ["root", "test", "ui/devices", "ui/editor", "ui/plant", "ui/review", "ui/shell", "ui/workspace"]
     },
     "ui/workspace": {
       "kind": "ui",
@@ -330,9 +376,11 @@
       "responsibility": "workspace catalogue screen",
       "folders": ["src/ui/workspace"],
       "mayImport": [
+        "app/devices",
         "app/plant",
         "app/shell",
         "app/workspace",
+        "model/devices",
         "model/plant",
         "model/review",
         "model/shell",
@@ -424,6 +472,7 @@
       "responsibility": "application chrome, panels and routing",
       "folders": ["src/ui/shell"],
       "mayImport": [
+        "app/devices",
         "app/editor",
         "app/launch",
         "app/plant",
@@ -434,6 +483,7 @@
         "app/workspace",
         "model/launch",
         "model/shell",
+        "ui/devices",
         "ui/editor",
         "ui/plant",
         "ui/primitives",
@@ -564,9 +614,11 @@
       "component.list",
       "component.new",
       "component.show",
+      "component.validate",
       "domain.compose",
       "effector.invoke",
       "fault.inject",
+      "kind.validate",
       "run.end",
       "run.report",
       "run.verify",

@@ -66,7 +66,7 @@ Checks one or more kind files against the plant wire kind schema and prints `{va
 streamsim kind validate <file.kind.json>...
 ```
 
-A file that is not JSON, breaks the schema or defines a kind another file defines fails with `kind_failed`.
+A file that is not JSON, breaks the schema or defines a kind another file defines fails with `kind_failed`. A file that is not JSON or breaks the schema also carries `source` (the file) and `issues`, as `domain validate` does: one `{pointer, message}` per schema violation, sorted by pointer, with `pointer` an RFC 6901 pointer into the kind file (for example `/metrics/0/data_type`, `/commands` for a missing member), and `message` only for a file that is not JSON. A kind file that breaks the schema in a `--kinds-dir` fails `domain validate`, `domain compose` and `run` the same way.
 
 ### `domain lint`
 

@@ -2,13 +2,16 @@ package domain
 
 import (
 	"bytes"
+	"cmp"
 	"encoding/json"
 	"fmt"
 	"io/fs"
+	"slices"
 	"strings"
 	"sync"
 
 	"github.com/ghassan-ai-projects/streams-simulator/internal/jsonschema"
+	"github.com/ghassan-ai-projects/streams-simulator/internal/model"
 	"github.com/ghassan-ai-projects/streams-simulator/internal/plantwire/contract"
 )
 
@@ -68,8 +71,15 @@ func recordSchema(name string) *jsonschema.Schema {
 }
 
 func CheckKind(entry map[string]any) error {
-	if errs := schemas()[kindFileSchema].Validate(entry); len(errs) > 0 {
-		return fmt.Errorf("plantwire: kind file fails its schema: %w", errs[0])
+	errs := schemas()[kindFileSchema].Validate(entry)
+	if len(errs) == 0 {
+		return nil
 	}
-	return nil
+	return &model.ValidationError{Contract: model.ContractKindFile, Summary: "plantwire: kind file fails its schema: " + errs[0].Error(),
+		Issues: sortedByPointer(model.SchemaIssues(errs)), Cause: errs[0]}
+}
+
+func sortedByPointer(issues []model.Issue) []model.Issue {
+	slices.SortStableFunc(issues, func(a, b model.Issue) int { return cmp.Compare(a.Pointer, b.Pointer) })
+	return issues
 }

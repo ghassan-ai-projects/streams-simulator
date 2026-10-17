@@ -1,4 +1,5 @@
 import { Boxes, FileJson } from "lucide-react";
+import type { DeviceDesk } from "../../../app/devices";
 import type { PlantMaker } from "../../../app/plant";
 import type { NavigationStore } from "../../../app/shell";
 import type { WorkspaceState, WorkspaceStore } from "../../../app/workspace";
@@ -10,6 +11,7 @@ import { useScreen } from "../../primitives";
 import { useStore } from "../../primitives";
 import rowStyles from "./ListSection.module.css";
 import styles from "./WorkspaceScreen.module.css";
+import { DeviceList } from "./DeviceList";
 import { BlankPlantStart } from "./EmptyStart";
 import { ExampleList, useExamples } from "./Examples";
 import { PlantList } from "./PlantList";
@@ -20,15 +22,13 @@ interface ContentsProps {
   readonly workspace: Workspace;
   readonly navigation: NavigationStore;
   readonly maker: PlantMaker;
+  readonly desk: DeviceDesk;
   readonly badgeFor: (worldId: string) => Badge | null;
 }
 
-function EmptyWorkspace({
-  name,
-  maker,
-  navigation,
-}: { readonly name: string } & Omit<ContentsProps, "workspace" | "badgeFor">) {
+function EmptyWorkspace({ workspace, maker, desk, navigation }: Omit<ContentsProps, "badgeFor">) {
   const examples = useExamples(maker);
+  const { name } = workspace;
   return (
     <div className={styles.empty}>
       <Boxes size={28} aria-hidden="true" />
@@ -46,6 +46,9 @@ function EmptyWorkspace({
         <li>Open the plant and Run it with the faults you want to test.</li>
         <li>Review the run: play it back, read the report and the verdict.</li>
       </ol>
+      <div className={styles.deviceStrip}>
+        <DeviceList workspace={workspace} navigation={navigation} desk={desk} />
+      </div>
     </div>
   );
 }
@@ -67,7 +70,7 @@ function Scenarios({ workspace }: { readonly workspace: Workspace }) {
   );
 }
 
-function Contents({ workspace, navigation, maker, badgeFor }: ContentsProps) {
+function Contents({ workspace, navigation, maker, desk, badgeFor }: ContentsProps) {
   const examples = useExamples(maker);
   return (
     <div className={styles.page}>
@@ -77,7 +80,10 @@ function Contents({ workspace, navigation, maker, badgeFor }: ContentsProps) {
         <span className={styles.summary}>{workspaceSummary(workspace)}</span>
       </header>
       <div className={styles.grid}>
-        <PlantList workspace={workspace} navigation={navigation} maker={maker} examples={examples} />
+        <div className={styles.column}>
+          <PlantList workspace={workspace} navigation={navigation} maker={maker} examples={examples} />
+          <DeviceList workspace={workspace} navigation={navigation} desk={desk} />
+        </div>
         <div className={styles.column}>
           <RunList workspace={workspace} navigation={navigation} badgeFor={badgeFor} />
           <Scenarios workspace={workspace} />
@@ -96,6 +102,7 @@ function WorkspaceBody({
   state,
   navigation,
   maker,
+  desk,
   badgeFor,
 }: { readonly state: WorkspaceState } & Omit<ContentsProps, "workspace">) {
   if (state.phase === "loading") {
@@ -113,27 +120,29 @@ function WorkspaceBody({
     );
   }
   if (workspaceEmpty(state.workspace)) {
-    return <EmptyWorkspace name={state.workspace.name} maker={maker} navigation={navigation} />;
+    return <EmptyWorkspace workspace={state.workspace} maker={maker} desk={desk} navigation={navigation} />;
   }
-  return <Contents workspace={state.workspace} navigation={navigation} maker={maker} badgeFor={badgeFor} />;
+  return <Contents workspace={state.workspace} navigation={navigation} maker={maker} desk={desk} badgeFor={badgeFor} />;
 }
 
 export function WorkspaceScreen({
   workspace,
   navigation,
   maker,
+  desk,
   badgeFor,
 }: {
   readonly workspace: WorkspaceStore;
   readonly navigation: NavigationStore;
   readonly maker: PlantMaker;
+  readonly desk: DeviceDesk;
   readonly badgeFor: (worldId: string) => Badge | null;
 }) {
   const state = useStore(workspace);
   return (
     <>
       <WorkspaceCrumb name={state.phase === "ready" ? state.workspace.name : ""} />
-      <WorkspaceBody state={state} navigation={navigation} maker={maker} badgeFor={badgeFor} />
+      <WorkspaceBody state={state} navigation={navigation} maker={maker} desk={desk} badgeFor={badgeFor} />
     </>
   );
 }

@@ -20,7 +20,9 @@ scripted gateway in tests.
 | R2 | M1 | Workspace kind files; domain kind `implements`; the "behaviour implements interface" check; `kind validate` |
 | R3 | M1 | Command response templates as domain data; thermal kind files (sensor, indicator, fan); the Arduino twin as components and a domain implementing them |
 | R4 | M1 | Bridge: workspace kinds and components read, written and validated through actions |
-| R5 | M1 | Canvas: Devices section and the device editor (interface, behaviour, check) |
+| R5a | M1 | Canvas: Devices section and the interface editor (kind file form, validate through the binary, save) |
+| R5b | M1 | Binary: scaffold a twin from a kind file and chosen library instruments and command response templates (`kind twin`), so the canvas never computes it; the `implements` check also guards the director's world path |
+| R5c | M1 | Canvas: the behaviour step of the device editor (pick instruments and responses, call the scaffold, check) |
 | R6 | M2 | `kind capture` from an `NBIRTH`; canvas "save as device"; the scripted stand-in gateway (test tool, `environment: hardware`) |
 | R7 | M3 | Per-board environment in the contract; relay mode (gateway host side, node side to the host); pass-through rules; replay has no gateway option |
 | R8 | M3 | Field trace as a run input; mixed sessions (simulated boards beside relayed ones); byte-identical replay |
@@ -44,7 +46,7 @@ A round that turns out too large is split (R3a, R3b); a round's order changes on
    conversation.
 4. **Tests at the layer they prove**, for every changed behaviour; contract changes have fixtures and schema tests; any change
    to what a run produces has a replay-determinism test.
-5. **Every command by Haiku, dispatched by the main session.** The Sonnet subagent writes code only: it runs and spawns
+5. **Every command by Haiku, dispatched by the main session.** The gate list always starts with `make build`: the canvas e2e runs `bin/streams-simulator`, and a stale binary gives false failures. The Sonnet subagent writes code only: it runs and spawns
    nothing and returns when the code is written. The main session then starts one Haiku gate agent with a fixed command list
    (focused `go test` for the touched packages, the thermal-experiment tests, `make quick`; `npm run check` in `canvas/` for
    canvas rounds) that reports only failures and their output. Failures go back to the same Sonnet agent by `SendMessage`, so
@@ -78,3 +80,4 @@ existing barrier wall cap; authentication and several users; the canvas producti
 | R2 | 8d501631 | `implements` on domain kinds; kind files from `--kinds-dir`; the check lives in plantwire (domain cannot import it) and reaches `run` as an injected `CheckDomain`; `kind validate`. Gate changes: new edge package `plantwire/internal/files` registered as prescribed; two CLI files registered, `component.go` cap lowered 130 to 70; plantwire domain coverage floor raised 93 to 95 (ratchet). |
 | R3 | f902ddfb | Thermal board as data in `examples/devices/thermal-board/` (sensor, indicator, fan kind files plus a twin domain implementing them). No schema or world change: the existing first-order lag, `assign_from_arg` and leases express the fan response; closed-form cross-check within 0.1 degC. `pattern` is an integer code; safe stops are `stop_led`/`stop_fan`. No gate changes. Lessons: the build writes `bin/streams-simulator` (the old `bin/streamsim` is stale); example names must not carry a consumer name. |
 | R4 | 01a659df | Bridge serves device definitions: `kinds[]` and `components[]` in the workspace document, read/write of `kinds/*.kind.json` and `components/{equipment,instruments}/*`, actions `kind.validate` and `component.validate`, workspace `kinds/` and `components/` passed automatically to validate/compose. Known gap: the director's `world.create` (MCP) does not check `implements` because it has no kinds directory; to close with the run path (R7/R8). No gate changes. |
+| R5a | pending | Canvas Devices section and interface editor (model/app/ui `devices`, route `#/device`, `app/shared/draftStore` shared by the plant editor and device stores, 90 e2e passing). `kind validate` now returns structured `issues` sorted by pointer, so the canvas decodes no message text. Register: three modules added, allow-lists of `ui/workspace`, `ui/shell`, `root` extended for the new modules; no cap, floor or CSS allowance changed. Save writes the file then validates, as the plant editor does. |
