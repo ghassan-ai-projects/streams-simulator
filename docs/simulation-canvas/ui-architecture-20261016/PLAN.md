@@ -66,7 +66,7 @@ Defects found on the way, fixed failing-first: a screen arriving late stole focu
 
 ### Open items (recorded, not blocking)
 
-- The Enola baseline still contains the old `canvas/.tsbuild` output, so `make architecture` prints a large advisory coupling diff; re-pin it once the branch is merged.
+- Merge the branch (not done: left to the owner).
 
 ## 1. Why this plan exists
 
