@@ -124,6 +124,14 @@ func WorkspaceDomain(id string) string {
 	return "domains/" + id + ".domain.json"
 }
 
+func ThermalBoardKindsDir() string {
+	return filepath.Join(RepositoryRoot(), "examples", "devices", "thermal-board")
+}
+
+func ThermalBoardDomain() string {
+	return filepath.Join(ThermalBoardKindsDir(), "thermal-board.domain.json")
+}
+
 func FactoryDomain() string {
 	return filepath.Join(RepositoryRoot(), "examples", "factory-utilities.domain.json")
 }

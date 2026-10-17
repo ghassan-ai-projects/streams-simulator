@@ -17,7 +17,22 @@ func shippedDomains(t *testing.T) []string {
 	if err != nil || len(paths) == 0 {
 		t.Fatalf("shipped domains %v: %v", paths, err)
 	}
-	return append(paths, testsupport.Example(), filepath.Join(testsupport.RepositoryRoot(), "examples", "chiller-pilot.domain.json"))
+	return append(paths, testsupport.Example(), filepath.Join(testsupport.RepositoryRoot(), "examples", "chiller-pilot.domain.json"), testsupport.ThermalBoardDomain())
+}
+
+func TestTheArduinoThermalTwinLintsCleanAtRest(t *testing.T) {
+	t.Parallel()
+	spec, err := domain.Load(testsupport.ThermalBoardDomain())
+	if err != nil {
+		t.Fatal(err)
+	}
+	report, err := lint.Check(spec, lint.Options{Seed: 1, Hours: 24})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, finding := range report.Findings {
+		t.Errorf("finding %+v, want none: the twin rests at its initial values", finding)
+	}
 }
 
 func TestCheckRefusesAMissingSpec(t *testing.T) {
