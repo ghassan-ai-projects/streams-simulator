@@ -21,6 +21,6 @@ Setup: the release binary served `canvas/dist` over a realistic workspace (the e
 
 ## Findings
 
-- No console errors in the tracked session. Every API call returned 2xx except the expected ones: the run list stream for a recorded (non-live) run answers 503 and a missing run answers 403/404/422. The pre-migration client opened the same stream (`followRun`), so this is existing behaviour of the bridge, not a regression.
+- No console errors in the tracked session. The network log listed `/api/runs/w-1/events` as 503, but the Go bridge has no code path that answers 503, and a direct request for the same stream with a paired cookie returns 200 with `text/event-stream` (checked with curl for w-1 and w-evaluate); the 503 is how the Chrome extension's log reports a long-lived stream that the page closed when it navigated, not an application error. The other non-2xx entries are the deliberate unknown-run probe (403 file, 404 stream, 422 report/verify) which the screen turns into 'Run … is not in this workspace'.
 - Artifacts persisted by the simulations: `runs/w-1..w-3` (command logs of 24, 33 and 25 commands), `compositions/north-annex.composition.json` and the composed `domains/north-annex.domain.json`.
 - Dragging from an output pin to an input pin with scripted mouse coordinates panned the canvas instead of linking (the pin hit area is small; the supported link paths — the inspector form — worked). Not investigated further.
