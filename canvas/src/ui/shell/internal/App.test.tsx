@@ -1,48 +1,12 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, screen } from "@testing-library/react";
 import axe from "axe-core";
 import { describe, expect, it } from "vitest";
-import { createSession } from "../../../app/session";
-import { createPanelStore } from "../../../app/shell";
-import { createLaunchStore } from "../../../app/launch";
-import { createPlantMaker } from "../../../app/plant";
-import { createNavigationStore } from "../../../app/shell";
-import { createReviewSession } from "../../../app/review";
-import { createThemeStore } from "../../../app/shell";
-import { createWorkspaceStore } from "../../../app/workspace";
+import { mountApp } from "../../../test/appHarness";
 import { failure as failed, success } from "../../../test/outcome";
 import { FakeBridge, cannedFailure } from "../../../test/fakeBridge";
-import { memoryLocation } from "../../../test/location";
-import { fakeClock } from "../../../test/fakeClock";
-import { App } from "./App";
-import { createEditorSession } from "../../../app/editor";
-import { createPlantSession } from "../../../app/plant";
-
-function themes() {
-  let value: string | null = null;
-  return createThemeStore(
-    { read: () => value, write: (_k, v) => (value = v) },
-    { prefersDark: () => false, subscribe: () => () => undefined },
-  );
-}
 
 function renderApp(bridge: FakeBridge) {
-  const location = memoryLocation();
-  const timers = fakeClock();
-  const stores = {
-    themes: themes(),
-    session: createSession(bridge.session),
-    workspace: createWorkspaceStore(bridge.workspace),
-    navigation: createNavigationStore(location),
-    plants: createPlantSession(bridge.plant),
-    review: createReviewSession(bridge.review, timers, timers),
-    launch: createLaunchStore(bridge.launch, timers, timers),
-    scheduler: timers,
-    editor: createEditorSession(bridge.editor),
-    panels: createPanelStore({ read: () => null, write: () => undefined }),
-    maker: createPlantMaker(bridge.plant),
-    showDetails: () => undefined,
-  };
-  return render(<App stores={stores} />);
+  return mountApp(bridge).view;
 }
 
 describe("app shell", () => {

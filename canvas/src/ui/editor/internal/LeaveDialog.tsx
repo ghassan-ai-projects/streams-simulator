@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { isDirty, isSaving } from "../../../app/editor";
 import type { EditorSession } from "../../../app/editor";
 import type { NavigationStore } from "../../../app/shell";
@@ -11,13 +12,17 @@ interface Props {
   readonly navigation: NavigationStore;
 }
 
-function LeaveButtons({ editor, navigation }: Props) {
+interface ButtonsProps extends Props {
+  readonly onStay: () => void;
+}
+
+function LeaveButtons({ editor, navigation, onStay }: ButtonsProps) {
   const stay = useFocusOnMount<HTMLButtonElement>();
   const state = useStore(editor);
   const saving = isSaving(state);
   const saveAndLeave = async () => {
     await editor.save();
-    if (isDirty(editor.snapshot())) navigation.stay();
+    if (isDirty(editor.snapshot())) onStay();
     else navigation.leave();
   };
   const discardAndLeave = () => {
@@ -26,14 +31,7 @@ function LeaveButtons({ editor, navigation }: Props) {
   };
   return (
     <div className={leave.actions}>
-      <button
-        type="button"
-        ref={stay}
-        className={shared.secondary}
-        onClick={() => {
-          navigation.stay();
-        }}
-      >
+      <button type="button" ref={stay} className={shared.secondary} onClick={onStay}>
         Stay
       </button>
       <button type="button" className={styles.danger} disabled={saving} onClick={discardAndLeave}>
@@ -52,7 +50,16 @@ function LeaveButtons({ editor, navigation }: Props) {
   );
 }
 
+function useStay(navigation: NavigationStore): () => void {
+  const [opener] = useState(() => document.activeElement);
+  return () => {
+    navigation.stay();
+    if (opener instanceof HTMLElement) opener.focus();
+  };
+}
+
 function LeaveDialog({ title, editor, navigation }: Props & { readonly title: string }) {
+  const stay = useStay(navigation);
   return (
     <div className={shared.scrim}>
       <dialog
@@ -62,7 +69,7 @@ function LeaveDialog({ title, editor, navigation }: Props & { readonly title: st
         aria-labelledby="leave-title"
         aria-describedby="leave-text"
         onKeyDown={(event) => {
-          if (event.key === "Escape") navigation.stay();
+          if (event.key === "Escape") stay();
         }}
       >
         <h2 id="leave-title" className={leave.title}>
@@ -71,7 +78,7 @@ function LeaveDialog({ title, editor, navigation }: Props & { readonly title: st
         <p id="leave-text" className={leave.text}>
           {`${title} has changes that are not saved. Save them and leave, discard them, or stay and keep editing.`}
         </p>
-        <LeaveButtons editor={editor} navigation={navigation} />
+        <LeaveButtons editor={editor} navigation={navigation} onStay={stay} />
       </dialog>
     </div>
   );

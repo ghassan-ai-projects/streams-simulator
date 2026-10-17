@@ -58,3 +58,15 @@ function definePrototype(target: object, name: string, value: unknown): void {
     else Object.defineProperty(target, name, original);
   });
 }
+
+export function stubFlowDom(): ResizeWatcher[] {
+  class StubMatrix {
+    readonly m22 = 1;
+  }
+  vi.stubGlobal("DOMMatrixReadOnly", StubMatrix);
+  vi.stubGlobal("matchMedia", (query: string) => ({ matches: query.includes("reduce"), media: query }));
+  definePrototype(Element.prototype, "scrollIntoView", vi.fn());
+  definePrototype(HTMLElement.prototype, "offsetWidth", 1200);
+  definePrototype(HTMLElement.prototype, "offsetHeight", 800);
+  return stubResizeObserver();
+}

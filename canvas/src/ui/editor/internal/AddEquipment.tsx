@@ -73,10 +73,38 @@ interface PickProps {
   readonly setUse: (use: string) => void;
 }
 
+function EquipmentList({
+  found,
+  use,
+  setUse,
+}: { readonly found: readonly LibraryEntry[] } & Omit<PickProps, "library">) {
+  const shown = libraryRows(found.length);
+  return (
+    <select
+      aria-label="Equipment"
+      aria-describedby="equipment-count"
+      size={shown}
+      value={use}
+      onChange={(event) => {
+        setUse(event.target.value);
+      }}
+      onKeyDown={(event) => {
+        if (event.key === "Enter") event.preventDefault();
+      }}
+    >
+      <option value="" hidden />
+      {found.map((entry) => (
+        <option key={entry.ref} value={entry.ref}>
+          {entry.title}
+        </option>
+      ))}
+    </select>
+  );
+}
+
 function LibraryPick({ library, use, setUse }: PickProps) {
   const [query, setQuery] = useState("");
   const found = searchLibrary(library, query);
-  const shown = libraryRows(found.length);
   return (
     <div className={styles.library}>
       <input
@@ -91,24 +119,9 @@ function LibraryPick({ library, use, setUse }: PickProps) {
           if (event.key === "Enter") event.preventDefault();
         }}
       />
-      <select
-        aria-label="Equipment"
-        aria-describedby="equipment-count"
-        size={shown}
-        value={use}
-        onChange={(event) => {
-          setUse(event.target.value);
-        }}
-      >
-        <option value="" hidden />
-        {found.map((entry) => (
-          <option key={entry.ref} value={entry.ref}>
-            {entry.title}
-          </option>
-        ))}
-      </select>
+      <EquipmentList found={found} use={use} setUse={setUse} />
       <p className={panel.hint} id="equipment-count">
-        {libraryWords(found.length, shown, query)}
+        {libraryWords(found.length, libraryRows(found.length), query)}
       </p>
     </div>
   );

@@ -1,4 +1,4 @@
-import { Background, ReactFlow, useStore, useUpdateNodeInternals } from "@xyflow/react";
+import { Background, Panel, ReactFlow, useStore, useUpdateNodeInternals } from "@xyflow/react";
 import "@xyflow/react/dist/base.css";
 import type { CSSProperties } from "react";
 import { useEffect, useMemo } from "react";
@@ -8,6 +8,7 @@ import { flowEdges, flowNodes } from "./flow";
 import { connection, fixedProps, graphNames, graphWords } from "./flowConfig";
 import { enterHall } from "./enterHall";
 import { PanCue } from "./PanCue";
+import styles from "./graph.module.css";
 import { tierClass } from "./tierClass";
 import type { PlantGraphProps } from "./types";
 import type { Keys } from "./useGraphKeys";
@@ -67,6 +68,11 @@ export function FlowCanvas(props: FlowProps) {
     >
       <Background gap={16} />
       {props.panCue === true && <PanCue />}
+      {typeof props.notice === "string" && (
+        <Panel position="bottom-center" role="alert" className={styles.notice}>
+          {props.notice}
+        </Panel>
+      )}
     </ReactFlow>
   );
 }

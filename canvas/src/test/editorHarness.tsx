@@ -49,12 +49,18 @@ export function Harness({ editor }: { readonly editor: EditorSession }) {
   );
 }
 
-export async function editing(composed = true) {
+export function labBridge(composed = true) {
   const fake = new LabBridge();
+  fake.sessionOutcome = success(true);
   fake.addFile(path, doc, "c1");
   if (composed) fake.addFile(domainPath, "{}", "d1");
   fake.actions.set("component.list", success({ components: [{ id: "lib/pump", kind: "equipment", title: "Pump" }] }));
   fake.actions.set("domain.compose", success({ channels: 4, faults: 2, effectors: 0 }));
+  return fake;
+}
+
+export async function editing(composed = true) {
+  const fake = labBridge(composed);
   const editor = createEditorSession(fake.editor);
   await editor.open(path);
   const view = render(<Harness editor={editor} />);

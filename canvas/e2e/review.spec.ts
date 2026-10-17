@@ -2,7 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "./support/test";
 import { guard } from "./support/audit";
-import { stepZoom } from "./support/viewport";
+import { stepZoom, waitForViewport } from "./support/viewport";
 import { nodesOutsideCanvas } from "./support/fitAudit";
 import { noteProblems } from "./support/noteFit";
 import { textClashes } from "./support/textClashes";
@@ -174,10 +174,13 @@ function readoutPixels(): { readonly zoom: number; readonly shown: number; reado
 }
 
 test("a review whose plant fits at 40 % or more opens fitted, and Fit returns the same view", async ({ page }) => {
-  await page.setViewportSize({ width: 1920, height: 1080 });
+  await page.setViewportSize({ width: 1920, height: 1200 });
   await page.goto("/#/review?world=w-evaluate");
   await expect(page.getByText(/\d+ observations/)).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByRole("status").filter({ hasText: /^Verified$/ })).toHaveCount(1, { timeout: 60_000 });
+  await expect(page.getByRole("status").filter({ hasText: "plant file changed after this run" })).toBeVisible();
   await expect(page.getByRole("group", { name: /^CH-1, chiller,/ })).toBeAttached();
+  await waitForViewport(page);
   await expect.poll(async () => guard(await page.evaluate(nodesOutsideCanvas, 5))).toEqual([]);
   const opening = await page.evaluate(transformOf);
   await page.getByRole("button", { name: "Fit the plant in view" }).click();

@@ -8,7 +8,8 @@ import type { NavigationStore } from "../../../app/shell";
 import { compositionPlant, shortKind } from "../../../model/editor";
 import { connect } from "../../../model/editor";
 import { plantView } from "../../../model/graph";
-import { plantTitle } from "../../../model/plant";
+import { linkRefusal, plantTitle } from "../../../model/plant";
+import type { Plant } from "../../../model/plant";
 import type { PlantView } from "../../../model/graph";
 import { Navigator, Outline, PlantGraph, useCanvasAspect } from "../../graph";
 import { useStore } from "../../primitives";
@@ -56,27 +57,33 @@ function NoEquipment() {
 
 interface GraphProps {
   readonly draft: Draft;
+  readonly plant: Plant;
   readonly editor: EditorSession;
   readonly view: PlantView;
   readonly flagged: ReadonlySet<string>;
   readonly aspect: number | undefined;
 }
 
-function EditorGraph({ draft, editor, view, flagged, aspect }: GraphProps) {
+function EditorGraph({ draft, plant, editor, view, flagged, aspect }: GraphProps) {
+  const [refusal, setRefusal] = useState<string | null>(null);
   return (
     <PlantGraph
       view={view}
       viewKey={`edit:${draft.path}`}
       fitKey={`${draft.path}:${String(view.nodes.length)}:${String(aspect)}`}
       panCue
+      notice={refusal}
       selected={draft.selected}
       flagged={flagged}
       focusZoom={1}
       onSelect={(id) => {
+        setRefusal(null);
         editor.select(id);
       }}
       onConnect={(from, to) => {
-        editor.edit((doc) => connect(doc, from, to));
+        const reason = linkRefusal(plant, draft.specs, from, to);
+        setRefusal(reason);
+        if (reason === null) editor.edit((doc) => connect(doc, from, to));
       }}
     />
   );
@@ -110,7 +117,7 @@ function Editing({ draft, editor, navigation }: { readonly draft: Draft } & Omit
             {plant.instances.length === 0 ? (
               <NoEquipment />
             ) : (
-              <EditorGraph draft={draft} editor={editor} view={view} flagged={flagged} aspect={aspect} />
+              <EditorGraph draft={draft} plant={plant} editor={editor} view={view} flagged={flagged} aspect={aspect} />
             )}
           </div>
         </section>

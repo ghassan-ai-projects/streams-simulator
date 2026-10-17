@@ -14,6 +14,7 @@ export interface PlantGraphProps {
   readonly flagged?: ReadonlySet<string>;
   readonly fitKey?: string;
   readonly panCue?: boolean;
+  readonly notice?: string | null;
   readonly onConnect?: (from: string, to: string) => void;
   readonly marks?: ReadonlyMap<string, PlanMark>;
 }
