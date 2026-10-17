@@ -5,7 +5,7 @@ import type { WorkspaceState, WorkspaceStore } from "../../../app/workspace";
 import type { Workspace } from "../../../model/workspace";
 import type { Badge } from "../../../model/review";
 import { workspaceEmpty, workspaceSummary } from "../../../model/workspace";
-import { Breadcrumb, screen } from "../../primitives";
+import { Breadcrumb, failureLine, screen } from "../../primitives";
 import { useScreen } from "../../primitives";
 import { useStore } from "../../primitives";
 import rowStyles from "./ListSection.module.css";
@@ -108,7 +108,7 @@ function WorkspaceBody({
   if (state.phase === "failed") {
     return (
       <p className={screen.failure} role="alert">
-        The workspace could not be listed: {state.failure.diagnostic.message} ({state.failure.diagnostic.displayCode})
+        The workspace could not be listed: {failureLine(state.failure.diagnostic)}
       </p>
     );
   }

@@ -25,9 +25,5 @@ export function spaced(name: string): string {
   return name.replaceAll("_", " ");
 }
 
-export function failureLine(diagnostic: { readonly message: string; readonly displayCode: string }): string {
-  return `${diagnostic.message} (${diagnostic.displayCode})`;
-}
-
 export const evaluateRule =
   "The true results stay hidden from the outside system while it runs, so it can be scored; they are shown when the run ends.";

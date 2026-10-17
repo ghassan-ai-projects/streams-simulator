@@ -5,6 +5,12 @@ import { FakeBridge } from "../../../test/fakeBridge";
 import { sampleWorkspace } from "../../../test/workspaceFixture";
 import { show, navigation } from "../../../test/workspaceHarness";
 
+function rowOf(worldId: string): HTMLElement {
+  const row = screen.getByRole("button", { name: `Review ${worldId}` }).closest("li");
+  if (row === null) throw new Error(`no row for ${worldId}`);
+  return row;
+}
+
 describe("runs in the workspace", () => {
   it("reads a run that did not finish as Did not finish, with its reason, and never as checked", async () => {
     const bridge = new FakeBridge();
@@ -69,12 +75,12 @@ describe("runs in the workspace", () => {
       ],
     });
     await show(bridge, navigation(), (worldId) => (worldId === "w-good" ? "verified" : null));
-    const unfinished = screen.getByText("Did not finish");
-    expect(unfinished).toHaveClass(/unfinished/);
-    expect(unfinished).not.toHaveClass(/live|verified/);
-    const verified = screen.getByText("Verified");
-    expect(verified).toHaveClass(/verified/);
-    expect(verified).not.toHaveClass(/unfinished/);
+    const open = rowOf("w-open");
+    const good = rowOf("w-good");
+    expect(within(open).getByText("Did not finish")).toBeInTheDocument();
+    expect(within(open).queryByText("Verified")).not.toBeInTheDocument();
+    expect(within(good).getByText("Verified")).toBeInTheDocument();
+    expect(within(good).queryByText("Did not finish")).not.toBeInTheDocument();
   });
 
   it("names the one run left to show in the singular", async () => {

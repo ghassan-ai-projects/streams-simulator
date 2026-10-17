@@ -4,7 +4,7 @@ import type { SessionFailure } from "../../../app/session";
 import type { Session, SessionState } from "../../../app/session";
 import { pairingBlocked } from "../../../app/session";
 import { PAIRING_CODE_LENGTH } from "../../../app/session";
-import { cx, shared, useScreen } from "../../primitives";
+import { cx, failureLine, shared, useScreen } from "../../primitives";
 import { useStore } from "../../primitives";
 import styles from "./PairingScreen.module.css";
 
@@ -18,7 +18,7 @@ function pairingAlert(failure: SessionFailure): string {
       ? "Pairing is locked after five wrong codes. Restart streamsim canvas for a new code."
       : "This code was already used. Restart streamsim canvas to pair another browser.";
   }
-  return `${failure.diagnostic.message} (${failure.diagnostic.displayCode})`;
+  return failureLine(failure.diagnostic);
 }
 
 function grouped(code: string): string {

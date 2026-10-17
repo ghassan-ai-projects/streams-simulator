@@ -1,4 +1,4 @@
-import { screen } from "../../primitives";
+import { failureLine, screen } from "../../primitives";
 import { Boxes } from "lucide-react";
 import { ReactFlowProvider } from "@xyflow/react";
 import { useEffect, useMemo, useState } from "react";
@@ -9,7 +9,6 @@ import { compositionPlant, shortKind } from "../../../model/editor";
 import { connect } from "../../../model/editor";
 import { plantView } from "../../../model/graph";
 import { plantTitle } from "../../../model/plant";
-import { failureLine } from "../../../model/shared/words";
 import type { PlantView } from "../../../model/graph";
 import { Navigator, Outline, PlantGraph, useCanvasAspect } from "../../graph";
 import { useStore } from "../../primitives";

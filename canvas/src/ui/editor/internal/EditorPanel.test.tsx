@@ -62,7 +62,9 @@ describe("plant editor panel", () => {
     });
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "CH 9" } });
     expect(screen.getByText(/^Not a valid name\. An instance name/)).toBeInTheDocument();
-    expect(screen.getByText(/^Not a valid name\. An instance name/)).toHaveClass(/nameError/);
+    expect(screen.getByLabelText("Name").getAttribute("aria-describedby")).toContain(
+      screen.getByText(/^Not a valid name\. An instance name/).id,
+    );
     expect(screen.getByLabelText("Name")).toHaveAttribute("aria-invalid", "true");
     fireEvent.click(screen.getByRole("button", { name: "Rename" }));
     expect(screen.getByLabelText("Name")).toHaveValue("CH 9");

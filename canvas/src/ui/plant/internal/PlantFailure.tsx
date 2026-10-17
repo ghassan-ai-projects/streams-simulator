@@ -1,7 +1,6 @@
-import { cx, panel, screen, shared } from "../../primitives";
+import { cx, failureLine, panel, screen, shared } from "../../primitives";
 import type { PlantFailure as Failure } from "../../../app/plant";
 import type { NavigationStore } from "../../../app/shell";
-import { failureLine } from "../../../model/shared/words";
 import { Breadcrumb } from "../../primitives";
 import { useScreen } from "../../primitives";
 import styles from "./PlantFailure.module.css";

@@ -117,15 +117,6 @@ describe("outline rail", () => {
     expect(screen.getAllByText("0 · 3 below")[1]).toHaveAttribute("title", "3 in child areas");
   });
 
-  it("shows an area name in the row's own style, not in the heading style that uppercases it", () => {
-    render(<Outline plant={parsePlant(domain)} hall={null} selected={null} onSelect={vi.fn()} />);
-    const summary = screen.getByText("Cooling").closest("summary");
-    expect(summary).not.toBeNull();
-    expect(summary).toHaveClass(/areaRow/);
-    expect(summary).toHaveClass(/disclosure/);
-    expect(summary?.className).not.toMatch(/sectionTitle/);
-  });
-
   it("marks its scroll region for a bottom fade while rows continue below the cut", () => {
     render(<Outline plant={parsePlant(domain)} hall={null} selected={null} onSelect={vi.fn()} />);
     const outline = screen.getByRole("navigation", { name: "Outline" });

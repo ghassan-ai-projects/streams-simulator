@@ -1,8 +1,7 @@
-import { shared } from "../../primitives";
+import { failureLine, shared } from "../../primitives";
 import type { ReadyPlant } from "../../../app/plant";
 import type { ReviewState, ReviewSession } from "../../../app/review";
 import { startNsOf } from "../../../app/review";
-import { failureLine } from "../../../model/shared/words";
 import { runClock } from "../../../model/review";
 import { cx } from "../../primitives";
 import { useCutBottom } from "../../primitives";

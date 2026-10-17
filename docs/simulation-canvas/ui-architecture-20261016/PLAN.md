@@ -66,8 +66,6 @@ Defects found on the way, fixed failing-first: a screen arriving late stole focu
 
 ### Open items (recorded, not blocking)
 
-- `failureLine` is not used by `ui/workspace` and `ui/session` (their allow-lists do not include `model/shared`), so two screens still format the diagnostic line themselves.
-- Class-token component tests (`Outline` row style, `RunList` chip class, `MetaParts` span class) pin implementation detail and are candidates for an e2e style check.
 - The Enola baseline still contains the old `canvas/.tsbuild` output, so `make architecture` prints a large advisory coupling diff; re-pin it once the branch is merged.
 
 ## 1. Why this plan exists

@@ -1,6 +1,7 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 import { env } from "./support/env";
+import { tokenColor } from "./support/tokenColor";
 
 test.use({ storageState: env("CANVAS_APP_STATE") });
 test.setTimeout(90_000);
@@ -61,6 +62,9 @@ test("a world the listing still shows as open reviews from the listing, with no 
     .getByRole("listitem")
     .filter({ hasText: new RegExp(`${world} ·`) });
   await expect(row).toHaveCount(1);
+  const warn = await tokenColor(page, "--status-warn-bg", "backgroundColor");
+  expect(warn).not.toBe(await tokenColor(page, "--status-ok-bg", "backgroundColor"));
+  await expect(row.getByText("Did not finish", { exact: true })).toHaveCSS("background-color", warn);
 
   const doomed: string[] = [];
   page.on("response", (response) => {

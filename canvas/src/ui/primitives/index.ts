@@ -1,4 +1,5 @@
 export { cx } from "./internal/cx";
+export { failureLine } from "./internal/failureLine";
 export { holdEnter } from "./internal/holdEnter";
 export { inTextField, ownsSpace, plainKey } from "./internal/keys";
 export { MetaParts } from "./internal/MetaParts";

@@ -20,6 +20,17 @@ test("the factory opens from the workspace as a typed plant graph", async ({ pag
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 });
 
+test("each part of a recent run's facts stays whole when the line wraps", async ({ page }) => {
+  await page.goto(env("CANVAS_APP_URL"));
+  await page.getByRole("button", { name: "Open Factory utilities" }).click();
+  await expect(page.getByRole("region", { name: "Plant factory-utilities" })).toBeVisible();
+  const runs = page.getByRole("complementary", { name: "Inspector" }).getByRole("region", { name: "Recent runs" });
+  await expect(runs.getByRole("listitem").first()).toBeVisible();
+  const parts = runs.getByRole("listitem").first().locator("span > span");
+  expect(await parts.count()).toBeGreaterThan(2);
+  for (const part of await parts.all()) await expect(part).toHaveCSS("white-space", "nowrap");
+});
+
 test("selecting an instance in the outline shows its kind in the inspector", async ({ page }) => {
   await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Ffactory-utilities.domain.json`);
   await page.getByRole("navigation", { name: "Outline" }).getByRole("button", { name: "CT-1" }).click();

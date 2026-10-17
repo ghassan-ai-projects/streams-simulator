@@ -90,6 +90,14 @@ test("an empty area is one line of at most 28 px in the outline, however long it
     expect(shape.height).toBeLessThanOrEqual(28);
     expect(shape.lines.every((count) => count === 1)).toBe(true);
   }
+  for (const style of await rows.evaluateAll((elements) =>
+    elements.map((element) => {
+      const computed = getComputedStyle(element);
+      return { transform: computed.textTransform, weight: computed.fontWeight };
+    }),
+  )) {
+    expect(style).toEqual({ transform: "none", weight: "600" });
+  }
 });
 
 function headerLines(): { name: string; lines: number; sameBaseline: boolean; full: string }[] {

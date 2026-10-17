@@ -14,12 +14,12 @@ describe("metadata parts", () => {
     expect(bound[4]?.textContent).toBe("15 Oct 2026, 02:35");
   });
 
-  it("keeps every part on the same no-wrap span class and drops empty parts", () => {
+  it("drops empty parts", () => {
     const { container } = render(<MetaParts parts={["w-6", "", "Did not finish: the run did not close."]} />);
-    const bound = [...container.querySelectorAll("span")];
-    expect(bound).toHaveLength(2);
-    expect(bound[0]?.className).not.toBe("");
-    expect(bound[0]?.className).toBe(bound[1]?.className);
+    expect([...container.querySelectorAll("span")].map((part) => part.textContent)).toEqual([
+      "w-6 ·",
+      "Did not finish: the run did not close.",
+    ]);
     expect(container.textContent).toBe("w-6 · Did not finish: the run did not close.");
   });
 });
