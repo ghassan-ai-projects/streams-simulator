@@ -1,6 +1,5 @@
 import { shared } from "../../primitives";
 import type { Instance, Plant } from "../../../model/plant";
-import type { ReactNode } from "react";
 import type { ComponentSpec } from "../../../model/plant";
 import { linksOf } from "../../../model/plant";
 import { channelWords, hallMembers } from "../../../model/graph";
@@ -14,54 +13,7 @@ import { useCutBottom } from "../../primitives";
 import { PlantOverview } from "./PlantOverview";
 import styles from "./Inspector.module.css";
 import { InspectorLinks } from "./InspectorLinks";
-
-interface ListProps {
-  readonly title: string;
-  readonly items: readonly string[];
-  readonly mono?: boolean | undefined;
-  readonly show?: ((item: string) => string) | undefined;
-  readonly count?: number;
-  readonly folded?: boolean;
-  readonly rows?: ReactNode;
-}
-
-function Items({ items, mono = true, show }: Pick<ListProps, "items" | "mono" | "show">) {
-  if (items.length === 0) return <p className={styles.empty}>None</p>;
-  return (
-    <ul className={styles.items}>
-      {items.map((item) => (
-        <li key={item} className={mono ? styles.mono : undefined} title={show && item}>
-          {show ? show(item) : item}
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function List({ title, items, mono, show, count = items.length, folded = false, rows }: ListProps) {
-  const heading = (
-    <>
-      {title}
-      <span className={styles.count}>{count}</span>
-    </>
-  );
-  if (folded && items.length > 0) {
-    return (
-      <section className={styles.section} aria-label={title}>
-        <details>
-          <summary className={cx(shared.sectionTitle, shared.disclosure)}>{heading}</summary>
-          {rows ?? <Items items={items} mono={mono} show={show} />}
-        </details>
-      </section>
-    );
-  }
-  return (
-    <section className={styles.section} aria-label={title}>
-      <h3 className={shared.sectionTitle}>{heading}</h3>
-      {rows ?? <Items items={items} mono={mono} show={show} />}
-    </section>
-  );
-}
+import { List } from "./InspectorList";
 
 function channelLine(name: string, channels: readonly { readonly name: string; readonly unit: string }[]): string {
   const unit = displayUnit(channels.find((channel) => channel.name === name)?.unit ?? "");

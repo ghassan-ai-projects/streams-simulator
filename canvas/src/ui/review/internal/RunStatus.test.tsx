@@ -69,4 +69,24 @@ describe("run status", () => {
     render(<Banners state={state({ playback: { phase: "ready", records: 1 } })} />);
     expect(screen.getByRole("alert")).toHaveTextContent("Playback has 1 observations");
   });
+
+  it("styles Not verified, Did not finish, Verified and Verifying as four different chips", () => {
+    const divergent = {
+      phase: "ready",
+      value: { matches: false, domainChanged: false, detail: "", reason: "", file: "" },
+    } as const;
+    const incomplete = { phase: "ready", value: { ...parsed, complete: false } } as const;
+    const looks = [
+      state({ verified: divergent }),
+      state({ report: incomplete }),
+      state({ verified: { phase: "loading" } }),
+      state({ verified: { phase: "ready", value: { ...divergent.value, matches: true } } }),
+    ].map((review) => {
+      const view = render(<Status state={review} now={now} />);
+      const chip = view.container.querySelector("[data-part='status-chip']");
+      view.unmount();
+      return chip?.className;
+    });
+    expect(new Set(looks).size).toBe(4);
+  });
 });

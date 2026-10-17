@@ -1,6 +1,5 @@
 import { screen, shared } from "../../primitives";
-import { PenLine, Redo, RefreshCw, Save, Undo, Undo2 } from "lucide-react";
-import { useState } from "react";
+import { PenLine, RefreshCw, Save } from "lucide-react";
 import type { Draft, EditorSession } from "../../../app/editor";
 import { canSave, checked, isDirty, isSaving, saveStatusOf } from "../../../app/editor";
 import type { NavigationStore } from "../../../app/shell";
@@ -8,8 +7,9 @@ import { domainOf, equipmentOf, titleOf } from "../../../model/editor";
 import { ZoomBar } from "../../graph";
 import { Breadcrumb } from "../../primitives";
 import { useScreen } from "../../primitives";
-import styles from "./Editor.module.css";
 import bar from "./EditorBar.module.css";
+import { History } from "./EditorHistory";
+import { Revert } from "./EditorRevert";
 import type { FocusRequest } from "./panelProps";
 import { useEditorKeys } from "./useEditorKeys";
 
@@ -84,102 +84,6 @@ function Reload({ draft, editor }: Omit<BarProps, "navigation">) {
     >
       <RefreshCw size={14} aria-hidden="true" />
       Reload from disk
-    </button>
-  );
-}
-
-function useHistoryAnnouncement(draft: Draft): string {
-  const counts = { past: draft.past.length, future: draft.future.length };
-  const [seen, setSeen] = useState(counts);
-  const [said, setSaid] = useState("");
-  if (seen.past !== counts.past || seen.future !== counts.future) {
-    setSeen(counts);
-    const left = `${String(counts.past)} more to undo`;
-    if (counts.future === seen.future + 1) setSaid(`Undone. ${left}.`);
-    else if (counts.future === seen.future - 1) setSaid(`Redone. ${left}.`);
-    else setSaid("");
-  }
-  return said;
-}
-
-function History({ draft, editor }: Omit<BarProps, "navigation">) {
-  const mac = navigator.platform.toLowerCase().includes("mac");
-  const key = mac ? "⌘" : "Ctrl+";
-  const said = useHistoryAnnouncement(draft);
-  return (
-    <span className={bar.history}>
-      <span className="sr-only" aria-live="polite">
-        {said}
-      </span>
-      <button
-        type="button"
-        className={bar.icon}
-        aria-label="Undo"
-        aria-keyshortcuts="Control+Z Meta+Z"
-        title={`Undo (${key}Z)`}
-        aria-disabled={draft.past.length === 0}
-        onClick={() => {
-          editor.undo();
-        }}
-      >
-        <Undo size={14} aria-hidden="true" />
-      </button>
-      <button
-        type="button"
-        className={bar.icon}
-        aria-label="Redo"
-        aria-keyshortcuts="Control+Shift+Z Meta+Shift+Z"
-        title={`Redo (${key}Shift+Z)`}
-        aria-disabled={draft.future.length === 0}
-        onClick={() => {
-          editor.redo();
-        }}
-      >
-        <Redo size={14} aria-hidden="true" />
-      </button>
-    </span>
-  );
-}
-
-function Revert({ disabled, editor }: { readonly disabled: boolean; readonly editor: EditorSession }) {
-  const [confirming, setConfirming] = useState(false);
-  return (
-    <>
-      <span className="sr-only" aria-live="polite">
-        {confirming ? "Press Discard changes again to drop every unsaved change" : ""}
-      </span>
-      <RevertButton disabled={disabled} editor={editor} confirming={confirming} setConfirming={setConfirming} />
-    </>
-  );
-}
-
-function RevertButton({
-  disabled,
-  editor,
-  confirming,
-  setConfirming,
-}: {
-  readonly disabled: boolean;
-  readonly editor: EditorSession;
-  readonly confirming: boolean;
-  readonly setConfirming: (confirming: boolean) => void;
-}) {
-  return (
-    <button
-      type="button"
-      className={confirming ? styles.danger : shared.secondary}
-      aria-disabled={disabled}
-      onBlur={() => {
-        setConfirming(false);
-      }}
-      onClick={() => {
-        if (disabled) return;
-        if (confirming) editor.revert();
-        setConfirming(!confirming);
-      }}
-    >
-      <Undo2 size={14} aria-hidden="true" />
-      {confirming ? "Discard changes" : "Revert"}
     </button>
   );
 }

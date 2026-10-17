@@ -1,7 +1,17 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "./support/test";
+import { tokenColor } from "./support/tokenColor";
 
 test.setTimeout(90_000);
+
+async function chipLook(page: Page, label: RegExp) {
+  const chip = page.locator("[data-part='status-chip']").filter({ hasText: label });
+  await expect(chip).toHaveCount(1, { timeout: 60_000 });
+  return chip.evaluate((node) => {
+    const style = getComputedStyle(node);
+    return { color: style.color, background: style.backgroundColor };
+  });
+}
 
 async function openIntegrity(page: Page) {
   await page.getByRole("complementary", { name: "Run details" }).locator("summary").first().click();
@@ -38,4 +48,23 @@ test("a complete run missing a recorded digest fails both file and replay checks
     "records no digest for ledger.jsonl",
   );
   await expect(details.getByRole("region", { name: "Replay check" })).not.toContainText("Reproduces");
+});
+
+test("the Not verified chip reads as an alarm and Did not finish as a warning, neither as the neutral chip", async ({
+  page,
+}) => {
+  await page.goto("/#/review?world=w-tampered");
+  const alarm = await chipLook(page, /^Not verified$/);
+  await page.goto("/#/review?world=w-incomplete-stamp");
+  const warning = await chipLook(page, /^Did not finish$/);
+  const neutral = {
+    color: await tokenColor(page, "--text-secondary", "color"),
+    background: await tokenColor(page, "--surface-hover", "backgroundColor"),
+  };
+  expect(alarm.color).toBe(await tokenColor(page, "--status-alarm", "color"));
+  expect(warning.color).toBe(await tokenColor(page, "--status-warn", "color"));
+  expect(alarm).not.toEqual(neutral);
+  expect(warning).not.toEqual(neutral);
+  expect(alarm).not.toEqual(warning);
+  expect(alarm.background).not.toBe(warning.background);
 });

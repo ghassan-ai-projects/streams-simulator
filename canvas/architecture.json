@@ -516,7 +516,7 @@
         "important": 0,
         "phase": "P5"
       },
-      "src/ui/review/internal/RunScreen.module.css": {
+      "src/ui/review/internal/ReviewScreen.module.css": {
         "global": 2,
         "important": 0,
         "phase": "P5"

@@ -1,6 +1,5 @@
 import { screen } from "../../primitives";
 import { ReactFlowProvider } from "@xyflow/react";
-import { useCallback, useEffect, useRef, useState } from "react";
 import type { LaunchStore } from "../../../app/launch";
 import type { NavigationStore } from "../../../app/shell";
 import type { PlantState, PlantSession, ReadyPlant } from "../../../app/plant";
@@ -14,6 +13,8 @@ import { LaunchPanel } from "../../launch";
 import { Inspector } from "./Inspector";
 import { PlantCentre } from "./PlantCentre";
 import { PlantFailure } from "./PlantFailure";
+import { useConsume, useLaunching, useShowRun } from "./useLaunching";
+import { usePlantLoad } from "./usePlantLoad";
 
 interface PlantScreenProps {
   readonly plants: PlantSession;
@@ -108,57 +109,6 @@ function RightPanel(props: RightProps) {
   );
 }
 
-function useConsume(navigation: NavigationStore, domain: string, hall: string | null) {
-  return useCallback(() => {
-    navigation.replace({ screen: "plant", domain, hall });
-  }, [navigation, domain, hall]);
-}
-
-function useShowRun(launch: LaunchStore, onShow: () => void) {
-  return useCallback(() => {
-    launch.reset();
-    onShow();
-  }, [launch, onShow]);
-}
-
-function useLaunching(asked: boolean, onShow: () => void, consume: () => void) {
-  const [launching, setLaunching] = useState(asked);
-  const button = useRef<HTMLButtonElement>(null);
-  const [seen, setSeen] = useState(asked);
-  if (asked !== seen) {
-    setSeen(asked);
-    if (asked) setLaunching(true);
-  }
-  useEffect(() => {
-    if (!asked) return;
-    onShow();
-    consume();
-  }, [asked, onShow, consume]);
-  const toggle = () => {
-    if (!launching) onShow();
-    setLaunching(!launching);
-  };
-  const close = () => {
-    setLaunching(false);
-    button.current?.focus();
-  };
-  return { launching, button, toggle, close };
-}
-
-function usePlantLoad(plants: PlantSession, domain: string, workspace: WorkspaceStore) {
-  const listing = useStore(workspace);
-  useEffect(() => {
-    if (listing.phase === "ready") void plants.load(domain, listing.workspace);
-  }, [plants, domain, listing]);
-  useEffect(
-    () => () => {
-      plants.close();
-    },
-    [plants, domain],
-  );
-  return listing;
-}
-
 function NotReady({
   state,
   domain,
@@ -179,7 +129,11 @@ function NotReady({
 
 export function PlantScreen(props: PlantScreenProps) {
   const { plants, workspace, navigation, launch, domain, hall, startLaunching, onShowDetails } = props;
-  const run = useLaunching(startLaunching, useShowRun(launch, onShowDetails), useConsume(navigation, domain, hall));
+  const run = useLaunching(
+    { asked: startLaunching },
+    useShowRun(launch, onShowDetails),
+    useConsume(navigation, domain, hall),
+  );
   const state = useStore(plants);
   const listing = usePlantLoad(plants, domain, workspace);
   if (state.phase !== "ready" || state.path !== domain)

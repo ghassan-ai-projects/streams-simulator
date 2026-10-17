@@ -31,7 +31,7 @@ function useNow(now: () => number, running: boolean): number {
 function Chip({ badge, label, title }: { readonly badge: Badge; readonly label: string; readonly title: string }) {
   const Icon = badgeIcons[badge];
   return (
-    <span className={styles[badge]} title={title}>
+    <span className={styles[badge]} title={title} data-part="status-chip">
       <Icon size={13} aria-hidden="true" />
       {label}
     </span>

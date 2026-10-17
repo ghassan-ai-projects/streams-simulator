@@ -9,7 +9,51 @@ export function movedAllowance(previous: Register, current: Register, path: stri
       cap.global >= entry.global &&
       cap.important >= entry.important,
   );
-  return moved || approvedVendorAllowanceMove(previous, current, path, entry);
+  return (
+    moved ||
+    renamedAllowance(previous, current, path, entry) ||
+    approvedVendorAllowanceMove(previous, current, path, entry)
+  );
+}
+
+function renamedAllowance(previous: Register, current: Register, path: string, entry: CssCap): boolean {
+  const located = Object.entries(previous.css.globalCaps).filter(
+    ([old]) => !(old in current.css.globalCaps) && renameSource(previous, current, old, path),
+  );
+  const added = Object.entries(current.css.globalCaps).filter(
+    ([name]) => dirname(name) === dirname(path) && !(name in previous.css.globalCaps),
+  );
+  return (
+    added.length <= located.length &&
+    located.some(([old, cap]) => carries(old, path, cap, entry)) &&
+    total(added, "global") <= total(located, "global") &&
+    total(added, "important") <= total(located, "important")
+  );
+}
+
+function renameSource(previous: Register, current: Register, old: string, path: string): boolean {
+  return (
+    (dirname(old) === dirname(path) && sameOwner(previous, current, old, path)) ||
+    movedBetweenModules(previous, current, old, path)
+  );
+}
+
+function carries(old: string, path: string, cap: CssCap, entry: CssCap): boolean {
+  if (dirname(old) === dirname(path)) return cap.global >= entry.global && cap.important >= entry.important;
+  return cap.global === entry.global && cap.important === entry.important;
+}
+
+function total(entries: readonly (readonly [string, CssCap])[], field: "global" | "important"): number {
+  return entries.reduce((sum, [, entry]) => sum + entry[field], 0);
+}
+
+function sameOwner(previous: Register, current: Register, before: string, after: string): boolean {
+  const source = ownerAt(previous.modules, before);
+  return source !== undefined && source.name === ownerAt(current.modules, after)?.name;
+}
+
+function dirname(path: string): string {
+  return path.slice(0, path.lastIndexOf("/"));
 }
 
 export function approvedVendorAllowanceMove(

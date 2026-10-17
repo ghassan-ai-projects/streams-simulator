@@ -1,143 +1,21 @@
 import { panel, shared } from "../../primitives";
 import { kindLabel } from "../../../model/shared/words";
-import { Box, Trash2, TriangleAlert, X } from "lucide-react";
-import type { ReactNode, SyntheticEvent } from "react";
-import { Fragment, useState } from "react";
+import { Box, X } from "lucide-react";
 import type { Draft } from "../../../app/editor";
 import type { Instance } from "../../../model/plant";
-import type { Connection, LinkEnd } from "../../../model/editor";
-import { areaNodesOf, connectionsTouching, linkEnd, linkParts, linkWords } from "../../../model/editor";
-import { nameCheck } from "../../../model/editor";
-import { disconnect, isTemplate, moveInstance, renameInstance } from "../../../model/editor";
+import { areaNodesOf, isTemplate, moveInstance } from "../../../model/editor";
 import { cx } from "../../primitives";
 import { useCutBottom } from "../../primitives";
 import { Choice } from "./Choice";
 import { ConnectForm } from "./ConnectForm";
 import { DeleteInstance } from "./DeleteInstance";
+import { Links } from "./InstanceLinks";
+import { Rename } from "./RenameInstance";
 import styles from "./Editor.module.css";
 import type { PanelProps } from "./panelProps";
 import { useRequestedFocus } from "./panelProps";
 
 type EditorProps = PanelProps & { readonly instance: Instance };
-
-function NameRule({ check }: { readonly check: ReturnType<typeof nameCheck> }) {
-  return (
-    <>
-      <span />
-      <span className={check.fits ? panel.hint : styles.nameError} id="instance-name-rule">
-        {check.fits ? null : <TriangleAlert size={13} aria-hidden="true" />}
-        {check.hint}
-      </span>
-    </>
-  );
-}
-
-function Rename({
-  instance,
-  editor,
-  request,
-  flagged,
-}: Pick<EditorProps, "instance" | "editor" | "request"> & { readonly flagged: boolean }) {
-  const [name, setName] = useState(instance.id);
-  const input = useRequestedFocus<HTMLInputElement>(request, "name");
-  const check = nameCheck(name.trim());
-  const { fits } = check;
-  const ready = fits && name.trim() !== instance.id;
-  const submit = (event: SyntheticEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!ready) return;
-    request.ask("name");
-    editor.edit((doc) => renameInstance(doc, instance.id, name.trim()), name.trim());
-  };
-  return (
-    <form className={panel.field} onSubmit={submit} noValidate>
-      <label htmlFor="instance-name">Name</label>
-      <span className={panel.pair}>
-        <input
-          id="instance-name"
-          ref={input}
-          aria-invalid={!fits}
-          aria-describedby={flagged ? "instance-issues instance-name-rule" : "instance-name-rule"}
-          value={name}
-          onChange={(event) => {
-            setName(event.target.value);
-          }}
-        />
-        <button type="submit" className={cx(shared.secondary, panel.secondary)} aria-disabled={!ready}>
-          Rename
-        </button>
-      </span>
-      <NameRule check={check} />
-    </form>
-  );
-}
-
-function Ends({ end, other }: { readonly end: LinkEnd; readonly other: ReactNode }) {
-  return linkParts(end).map((part, at) => {
-    if (part.kind === "other") return <Fragment key={at}>{other}</Fragment>;
-    if (part.kind === "arrow")
-      return (
-        <span key={at} aria-hidden="true">
-          →
-        </span>
-      );
-    return <span key={at}>{part.text}</span>;
-  });
-}
-
-function LinkRow({ wire, instance, editor }: { readonly wire: Connection } & Pick<EditorProps, "instance" | "editor">) {
-  const end = linkEnd(wire, instance.id);
-  return (
-    <li>
-      <span className={styles.linkText}>
-        <Ends
-          end={end}
-          other={
-            <button
-              type="button"
-              className={styles.linkOther}
-              title={`Select ${end.other}`}
-              onClick={() => {
-                editor.select(end.other);
-              }}
-            >
-              {end.other}
-            </button>
-          }
-        />
-      </span>
-      <button
-        type="button"
-        className={cx(shared.secondary, panel.secondary)}
-        aria-label={`Remove link: ${linkWords(end)}`}
-        title="Remove this link"
-        onClick={() => {
-          editor.edit((doc) => disconnect(doc, wire.index));
-        }}
-      >
-        <Trash2 size={14} aria-hidden="true" />
-        Remove
-      </button>
-    </li>
-  );
-}
-
-function Links({ draft, instance, editor }: Pick<EditorProps, "draft" | "instance" | "editor">) {
-  const touching = connectionsTouching(draft.doc, instance.id);
-  return (
-    <section className={panel.group} aria-labelledby="links-title">
-      <h3 id="links-title" className={styles.counted}>
-        Links <span className={styles.count}>{touching.length}</span>
-      </h3>
-      {touching.length === 0 && <p className={panel.hint}>No links yet. Use “Link an output” above.</p>}
-      <ul className={styles.links}>
-        {touching.map((wire) => (
-          <LinkRow key={wire.index} wire={wire} instance={instance} editor={editor} />
-        ))}
-      </ul>
-    </section>
-  );
-}
 
 function grouped(messages: readonly string[]): readonly (readonly [string, number])[] {
   const counts = new Map<string, number>();

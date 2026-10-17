@@ -32,6 +32,16 @@
   color: var(--status-ok);
 }
 
+.not-verified {
+  background: var(--status-alarm-bg);
+  color: var(--status-alarm);
+}
+
+.incomplete {
+  background: var(--status-warn-bg);
+  color: var(--status-warn);
+}
+
 .truth {
   background: var(--status-truth-bg);
   color: var(--status-truth);

@@ -14,7 +14,7 @@ import { EditorScreen } from "../../editor";
 import { WorkspaceScreen } from "../../workspace";
 import { PairingScreen } from "../../session";
 import { PlantScreen } from "../../plant";
-import { RunScreen } from "../../review";
+import { ReviewScreen } from "../../review";
 import { CrumbSlot } from "../../primitives";
 import { KeyHelp } from "./KeyHelp";
 import { PanelToggles } from "./PanelToggles";
@@ -67,7 +67,7 @@ function Screen({ stores, route }: { readonly stores: Stores; readonly route: Ro
   }
   if (route.screen === "review") {
     return (
-      <RunScreen
+      <ReviewScreen
         review={stores.review}
         plants={stores.plants}
         workspace={stores.workspace}

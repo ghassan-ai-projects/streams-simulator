@@ -1,31 +1,6 @@
-import { parseRegister } from "./register.ts";
-import { registerRegressions, shallowProblems } from "./ratchet.ts";
-import type { Register } from "./model.ts";
-
-interface Cap {
-  readonly cap: number;
-  readonly phase: string;
-}
-interface Allowance {
-  readonly global: number;
-  readonly important: number;
-  readonly phase: string;
-}
-interface Debt {
-  readonly rule: string;
-  readonly file: string;
-  readonly target?: string;
-  readonly count: number;
-  readonly phase: string;
-}
-interface Shape {
-  readonly extracted?: boolean;
-  readonly graphLayer?: string;
-  readonly caps?: Readonly<Record<string, Cap>>;
-  readonly globalCaps?: Readonly<Record<string, Allowance>>;
-  readonly vendorFiles?: readonly string[];
-  readonly debt?: readonly Debt[];
-}
+import { shallowProblems } from "./ratchet.ts";
+import { compare, register } from "./ratchetShape.ts";
+import { runRenameFixtures } from "./ratchetRenameFixtures.ts";
 
 const phase = "P1";
 const oldNodes = "src/ui/plant/nodes.module.css";
@@ -37,6 +12,7 @@ export function runRatchetFixtures(): string[] {
   return [
     ...validMoveFixture(),
     ...unrelatedMoveFixture(),
+    ...runRenameFixtures(),
     ...vendorCapFixture(),
     ...vendorTighterFixture(),
     ...vendorSourceFixture(),
@@ -174,63 +150,4 @@ function crossLayerFixture(): string[] {
     "new css cap src/ui/graph/internal/nodes.module.css is above the default 300",
     "new :global/!important allowance src/ui/graph/internal/nodes.module.css",
   ]);
-}
-
-function register(shape: Shape): Register {
-  const graph = shape.extracted === true;
-  return parseRegister(
-    {
-      version: 1,
-      source: "src",
-      modules: fixtureModules(graph, shape.graphLayer),
-      css: {
-        globalEntrypoints: [],
-        vendorFiles: shape.vendorFiles ?? [],
-        defaultCap: 300,
-        caps: shape.caps ?? {},
-        globalCaps: shape.globalCaps ?? {},
-        colorExceptions: {},
-      },
-      rules: emptyRules(),
-      emittedCss: { order: [], important: 0, zIndex: 0, positioned: 0, note: "" },
-      debt: shape.debt ?? [],
-    },
-    "ratchet fixture",
-  );
-}
-
-function fixtureModules(graph: boolean, graphLayer = "ui"): Register["modules"] {
-  const modules: Record<string, unknown> = {
-    ui: { kind: "ui", layer: "ui", lifetime: "components", responsibility: "ui", folders: ["src/ui"] },
-  };
-  if (graph)
-    modules["ui/graph"] = {
-      kind: "ui",
-      layer: graphLayer,
-      lifetime: "components",
-      responsibility: "graph",
-      folders: ["src/ui/graph"],
-    };
-  return modules as Register["modules"];
-}
-
-function emptyRules(): Register["rules"] {
-  return {
-    actionNames: [],
-    protocolOwner: "",
-    protocolProductionOnly: false,
-    restrictedAppImports: [],
-    restrictedAppGlobals: [],
-    restrictedUiImports: [],
-    clockGlobals: [],
-    booleanFactNames: [],
-    fakeTimerTests: [],
-    depcruiseRules: [],
-  };
-}
-
-function compare(name: string, before: Register, after: Register, expected: readonly string[]): string[] {
-  const actual = registerRegressions(before, after).sort();
-  if (JSON.stringify(actual) === JSON.stringify([...expected].sort())) return [];
-  return [`ratchet ${name}: expected [${expected.join("; ")}], found [${actual.join("; ")}]`];
 }
