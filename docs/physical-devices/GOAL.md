@@ -74,4 +74,4 @@ existing barrier wall cap; authentication and several users; the canvas producti
 
 | Round | Commit | Notes |
 |---|---|---|
-| R1 | pending | Kind file schema, `kind_digest` in `NBIRTH` (contract 1.1.0), host refuses a mismatch. Only the contract generators under `scripts/plant-wire` changed; no gate changed. The behaviour pin is stale at HEAD before this round (16 `run.json` hashes and `manifest-file` differ on a clean checkout); not touched, to be refreshed in a round that claims no behaviour change. |
+| R1 | 7e52f2c3 | Kind file schema, `kind_digest` in `NBIRTH` (contract 1.1.0), host refuses a mismatch. Only the contract generators under `scripts/plant-wire` changed; no gate changed. The behaviour pin is stale at HEAD before this round (16 `run.json` hashes and `manifest-file` differ on a clean checkout); not touched, to be refreshed in a round that claims no behaviour change. |
