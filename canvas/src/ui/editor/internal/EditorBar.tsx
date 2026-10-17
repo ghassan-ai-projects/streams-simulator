@@ -9,6 +9,7 @@ import { ZoomBar } from "../../graph";
 import { Breadcrumb } from "../../primitives";
 import { useScreen } from "../../primitives";
 import styles from "./Editor.module.css";
+import bar from "./EditorBar.module.css";
 import type { FocusRequest } from "./panelProps";
 import { useEditorKeys } from "./useEditorKeys";
 
@@ -148,13 +149,13 @@ function History({ draft, editor }: Omit<BarProps, "navigation">) {
   const key = mac ? "⌘" : "Ctrl+";
   const said = useHistoryAnnouncement(draft);
   return (
-    <span className={styles.history}>
+    <span className={bar.history}>
       <span className="sr-only" aria-live="polite">
         {said}
       </span>
       <button
         type="button"
-        className={styles.icon}
+        className={bar.icon}
         aria-label="Undo"
         aria-keyshortcuts="Control+Z Meta+Z"
         title={`Undo (${key}Z)`}
@@ -167,7 +168,7 @@ function History({ draft, editor }: Omit<BarProps, "navigation">) {
       </button>
       <button
         type="button"
-        className={styles.icon}
+        className={bar.icon}
         aria-label="Redo"
         aria-keyshortcuts="Control+Shift+Z Meta+Shift+Z"
         title={`Redo (${key}Shift+Z)`}
@@ -238,7 +239,7 @@ export function EditorBar({ draft, editor, navigation, request }: BarProps & { r
       <ShowIssues draft={draft} editor={editor} request={request} />
       <Reload draft={draft} editor={editor} />
       {equipmentOf(draft.doc).length > 0 && <ZoomBar />}
-      <span role="status" className={styles[`status-${status.tone || "idle"}`]} title={status.detail ?? status.text}>
+      <span role="status" className={bar[`status-${status.tone || "idle"}`]} title={status.detail ?? status.text}>
         {status.text}
       </span>
       <History draft={draft} editor={editor} />

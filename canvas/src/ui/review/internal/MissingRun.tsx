@@ -1,6 +1,6 @@
 import { panel } from "../../primitives";
 import type { NavigationStore } from "../../../app/shell";
-import styles from "./RunScreen.module.css";
+import styles from "./MissingRun.module.css";
 
 export function MissingRun({
   worldId,

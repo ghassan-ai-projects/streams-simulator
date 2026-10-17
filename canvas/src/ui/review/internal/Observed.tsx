@@ -9,7 +9,9 @@ import { runSpan } from "../../../model/review";
 import { effectorAt, faultedAt, runClock } from "../../../model/review";
 import { cx } from "../../primitives";
 import { OutsideMark } from "../../primitives";
-import styles from "./RunScreen.module.css";
+import parts from "./ReportParts.module.css";
+import cells from "./ReportTable.module.css";
+import styles from "./Observed.module.css";
 
 type ReadyPlant = Extract<PlantState, { phase: "ready" }>;
 
@@ -47,7 +49,7 @@ function ActiveNow({ faults, shown, effector }: ActiveProps) {
 function HallNote({ plant, entity }: { readonly plant: ReadyPlant | null; readonly entity: string }) {
   const members = plant?.plant.instances.filter((instance) => hallOf(instance.id) === entity).length ?? 0;
   return (
-    <p className={styles.muted}>
+    <p className={parts.muted}>
       {members > 0
         ? `Hall ${entity} holds ${String(members)} instances. Open it to see each one's readings.`
         : `No observation of ${entity} at this time.`}
@@ -65,7 +67,7 @@ function ObservedTable({ shown, at, startNs }: TableProps) {
   const { latest, own } = sharedTimes(shown.map((entry) => at.get(entry.channel) ?? startNs));
   const shared = own.every((time) => time === null);
   return (
-    <table className={styles.table}>
+    <table className={cells.table}>
       <caption className="sr-only">
         {`${shared ? "Observed at" : "Latest observed at"} ${runClock(latest, startNs)}`}
       </caption>
@@ -79,15 +81,15 @@ function ObservedTable({ shown, at, startNs }: TableProps) {
       <tbody>
         {shown.map((entry, index) => (
           <tr key={entry.channel}>
-            <th scope="row" className={styles.label} title={entry.channel}>
+            <th scope="row" className={cells.label} title={entry.channel}>
               {channelWords(entry.channel)}
             </th>
-            <td className={cx(styles.number, entry.attention !== null && styles[`value-${entry.attention}`])}>
+            <td className={cx(cells.number, entry.attention !== null && styles[`value-${entry.attention}`])}>
               {entry.value}
               {entry.unit !== "" && <span className={styles.unit}>{entry.unit}</span>}
               <OutsideMark text={entry.outside} />
             </td>
-            <td className={styles.clock} title="run time of this observation">
+            <td className={cells.clock} title="run time of this observation">
               {own[index] === null || own[index] === undefined ? "" : runClock(own[index], startNs)}
             </td>
           </tr>

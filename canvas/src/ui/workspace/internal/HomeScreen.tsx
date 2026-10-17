@@ -8,6 +8,7 @@ import { workspaceEmpty, workspaceSummary } from "../../../model/workspace";
 import { Breadcrumb } from "../../primitives";
 import { useScreen } from "../../primitives";
 import { useStore } from "../../primitives";
+import rowStyles from "./ListSection.module.css";
 import styles from "./HomeScreen.module.css";
 import { BlankPlantStart } from "./EmptyStart";
 import { ExampleList, useExamples } from "./Examples";
@@ -51,16 +52,16 @@ function EmptyWorkspace({
 function Scenarios({ workspace }: { readonly workspace: Workspace }) {
   if (workspace.scenarios.length === 0) return null;
   return (
-    <section className={styles.section} aria-labelledby="scenarios-title">
-      <header className={styles.heading}>
+    <section className={rowStyles.section} aria-labelledby="scenarios-title">
+      <header className={rowStyles.heading}>
         <h2 id="scenarios-title">Scenarios</h2>
-        <span className={styles.count}>{workspace.scenarios.length}</span>
+        <span className={rowStyles.count}>{workspace.scenarios.length}</span>
       </header>
-      <ul className={styles.rows}>
+      <ul className={rowStyles.rows}>
         {workspace.scenarios.map((item) => (
-          <li key={item.path} className={styles.item} title={item.path}>
-            <FileJson size={16} aria-hidden="true" className={styles.icon} />
-            <span className={styles.name}>{item.title || item.id || item.path}</span>
+          <li key={item.path} className={rowStyles.item} title={item.path}>
+            <FileJson size={16} aria-hidden="true" className={rowStyles.icon} />
+            <span className={rowStyles.name}>{item.title || item.id || item.path}</span>
           </li>
         ))}
       </ul>

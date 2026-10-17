@@ -4,7 +4,8 @@ import type { NavigationStore } from "../../../app/shell";
 import type { PlantMaker } from "../../../app/plant";
 import type { ExamplePlant } from "../../../model/plant";
 import { NewPlantForm } from "./NewPlant";
-import styles from "./HomeScreen.module.css";
+import home from "./HomeScreen.module.css";
+import styles from "./EmptyStart.module.css";
 
 interface BlankStartProps {
   readonly examples: readonly ExamplePlant[];
@@ -25,7 +26,7 @@ export function BlankPlantStart({ examples, maker, navigation }: BlankStartProps
       <button
         type="button"
         ref={trigger}
-        className={styles.create}
+        className={home.create}
         aria-expanded={creating}
         aria-disabled={!available}
         title={available ? undefined : "The plant frame is still loading."}

@@ -4,7 +4,10 @@ import type { NavigationStore } from "../../../app/shell";
 import type { PlantMaker } from "../../../app/plant";
 import type { ExamplePlant } from "../../../model/plant";
 import { suggestedId } from "../../../model/workspace";
-import styles from "./HomeScreen.module.css";
+import { cx } from "../../primitives";
+import home from "./HomeScreen.module.css";
+import rowStyles from "./ListSection.module.css";
+import styles from "./Examples.module.css";
 
 export function useExamples(maker: PlantMaker): readonly ExamplePlant[] {
   const [examples, setExamples] = useState<readonly ExamplePlant[]>([]);
@@ -53,7 +56,7 @@ function TryButton({
   return (
     <button
       type="button"
-      className={styles.create}
+      className={home.create}
       aria-disabled={busy !== ""}
       onClick={() => {
         if (busy === "") void onTry(example);
@@ -78,9 +81,9 @@ export function ExampleList(props: TryProps) {
       <ul>
         {props.examples.map((example) => (
           <li key={example.id}>
-            <span className={styles.lines}>
-              <span className={styles.name}>{example.title}</span>
-              <span className={styles.meta}>{example.description}</span>
+            <span className={rowStyles.lines}>
+              <span className={rowStyles.name}>{example.title}</span>
+              <span className={cx(home.meta, styles.description)}>{example.description}</span>
             </span>
             <TryButton example={example} busy={busy} onTry={start} />
           </li>
@@ -90,7 +93,7 @@ export function ExampleList(props: TryProps) {
         {busy === "" ? "" : `Setting up ${props.examples.find((example) => example.id === busy)?.title ?? busy}…`}
       </p>
       {failure !== "" && (
-        <p role="alert" className={styles.failure}>
+        <p role="alert" className={home.failure}>
           {failure}
         </p>
       )}

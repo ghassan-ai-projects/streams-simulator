@@ -6,7 +6,7 @@ import { badgeLabels, badgeOf, replayLine } from "../../../model/review";
 import { integrityLine, runFacts, runIdentity } from "../../../model/review";
 import { grouped } from "../../../model/shared/units";
 import { RunInfo } from "./RunInfo";
-import styles from "./RunScreen.module.css";
+import styles from "./RunStatus.module.css";
 
 const badgeIcons = {
   verifying: Loader,

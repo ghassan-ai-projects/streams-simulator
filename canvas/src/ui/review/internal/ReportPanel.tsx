@@ -7,7 +7,8 @@ import { KpiTable } from "./KpiTable";
 import { Rows, Section } from "./ReportParts";
 import { Events } from "./ReportEvents";
 import type { Picked } from "./ReportEvents";
-import styles from "./RunScreen.module.css";
+import parts from "./ReportParts.module.css";
+import styles from "./ReportPanel.module.css";
 
 const count = (report: Report, key: string) => (report.ended ? grouped(report.counts[key] ?? 0) : "n/a");
 
@@ -18,7 +19,7 @@ function ReplayCheck({ verify }: { readonly verify: VerifyState }) {
       <p className={styles.verdict}>{replayLine(verify)}</p>
       <details className={styles.inset}>
         <summary>For developers</summary>
-        <p className={styles.muted}>Checked with the streamsim verify command over the run folder.</p>
+        <p className={parts.muted}>Checked with the streamsim verify command over the run folder.</p>
         {detail !== "" && <pre>{detail}</pre>}
       </details>
     </Section>
@@ -41,10 +42,10 @@ function Deliveries({ report }: { readonly report: Report }) {
 function FileCheck({ report }: { readonly report: Report }) {
   return (
     <Section title="File check">
-      <p className={styles.muted}>{fileLine(report)}</p>
-      <details className={styles.muted}>
+      <p className={parts.muted}>{fileLine(report)}</p>
+      <details className={parts.muted}>
         <summary>For developers</summary>
-        <p className={styles.muted}>
+        <p className={parts.muted}>
           The report compares the files in the run folder with the digests the run recorded.
         </p>
         <Rows
@@ -94,13 +95,13 @@ function Truth({ report, unit, entity, picked = null }: TruthProps) {
       <Events report={report} picked={picked} />
       <KpiTruth report={report} unit={unit} entity={entity} />
       <Section title="Alarms">
-        <p className={styles.muted}>How the alarm system behaved during the run.</p>
+        <p className={parts.muted}>How the alarm system behaved during the run.</p>
         <Rows
           rows={Object.entries(report.alarms).map(([key, n]) => alarmRow(key, grouped(n)))}
           columns={["text", "number", "text"]}
           headers={["Measure", "Count", "What it means"]}
         />
-        <details className={styles.muted}>
+        <details className={parts.muted}>
           <summary>For developers</summary>
           <p>The alarm measures follow ISA-18.2: floods, chattering, stale and standing alarms.</p>
         </details>
@@ -114,14 +115,14 @@ function Scoring({ report }: { readonly report: Report }) {
     const { status, reason } = report.scoring;
     return (
       <Section title="Scoring">
-        <p className={styles.muted}>{`${status}${reason ? ` · ${reason}` : ""}`}</p>
+        <p className={parts.muted}>{`${status}${reason ? ` · ${reason}` : ""}`}</p>
       </Section>
     );
   }
   return (
     <Section title="Scoring">
-      <p className={styles.muted}>Not scored: no outside system is connected to this run.</p>
-      <details className={styles.muted}>
+      <p className={parts.muted}>Not scored: no outside system is connected to this run.</p>
+      <details className={parts.muted}>
         <summary>For developers</summary>
         <p>
           Nothing was scored: no consumer verdict was recorded for this run. A consumer attaches through the operator
@@ -139,9 +140,9 @@ function KpiTruth({ report, unit, entity, lead = true }: TruthProps & { readonly
   const kpis = kpisOf(report, entity);
   return (
     <Section title="True results" note={entity ?? undefined}>
-      {lead && <p className={styles.muted}>{truthLead}</p>}
+      {lead && <p className={parts.muted}>{truthLead}</p>}
       {kpis.length === 0 ? (
-        <p className={styles.muted}>{entity === null ? "None" : `No true results for ${entity}.`}</p>
+        <p className={parts.muted}>{entity === null ? "None" : `No true results for ${entity}.`}</p>
       ) : (
         <KpiTable rows={kpis} grouped={entity === null} unit={unit} />
       )}
@@ -186,7 +187,7 @@ export function ReportPanel({
       <TruthCaution report={report} verify={verify} />
       {report.truthUnavailable || !report.ended ? (
         <Section title="True results">
-          <p className={styles.muted}>
+          <p className={parts.muted}>
             {report.truthUnavailable ? `Not available: ${report.truthUnavailable}` : notClosed}
           </p>
         </Section>

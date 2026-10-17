@@ -7,7 +7,10 @@ import type { Badge } from "../../../model/review";
 import { badgeLabels } from "../../../model/review";
 import type { RunRow } from "../../../model/workspace";
 import { counted, plantsOf, runFacts, runRows, unfinishedReason, whenOf } from "../../../model/workspace";
-import styles from "./HomeScreen.module.css";
+import home from "./HomeScreen.module.css";
+import rowStyles from "./ListSection.module.css";
+import badgeStyles from "./Badge.module.css";
+import styles from "./RunList.module.css";
 import { MetaParts } from "../../primitives";
 
 interface ListProps {
@@ -33,7 +36,7 @@ function detail(row: RunRow): string {
 function Status({ row, badge }: { readonly row: RunRow; readonly badge: Badge | null }) {
   if (!row.run.ended) {
     return (
-      <span className={styles.unfinished}>
+      <span className={badgeStyles.unfinished}>
         <Radio size={12} aria-hidden="true" />
         Did not finish
       </span>
@@ -41,7 +44,7 @@ function Status({ row, badge }: { readonly row: RunRow; readonly badge: Badge | 
   }
   if (!row.run.complete) {
     return (
-      <span className={styles.badge} title={unfinishedReason(row.run)}>
+      <span className={badgeStyles.badge} title={unfinishedReason(row.run)}>
         <TriangleAlert size={12} aria-hidden="true" />
         {badgeLabels.incomplete}
       </span>
@@ -49,7 +52,7 @@ function Status({ row, badge }: { readonly row: RunRow; readonly badge: Badge | 
   }
   const state = badge ?? "not-checked";
   if (state === "not-checked") return null;
-  return <span className={state === "verified" ? styles.verified : styles.badge}>{badgeLabels[state]}</span>;
+  return <span className={state === "verified" ? badgeStyles.verified : badgeStyles.badge}>{badgeLabels[state]}</span>;
 }
 
 function unchecked(rows: readonly RunRow[], badgeFor: ListProps["badgeFor"]): boolean {
@@ -62,26 +65,26 @@ function Row({
   navigation,
 }: { readonly row: RunRow; readonly badge: Badge | null } & Pick<ListProps, "navigation">) {
   return (
-    <li className={styles.item}>
-      <span className={styles.lines}>
-        <span className={styles.line}>
-          <span className={styles.name} title={row.plantTitle}>
+    <li className={rowStyles.item}>
+      <span className={rowStyles.lines}>
+        <span className={rowStyles.line}>
+          <span className={rowStyles.name} title={row.plantTitle}>
             {row.plantTitle}
           </span>
-          <span className={row.run.explore ? styles.explore : styles.badge}>
+          <span className={row.run.explore ? badgeStyles.explore : badgeStyles.badge}>
             {row.run.explore ? <Eye size={12} aria-hidden="true" /> : <Lock size={12} aria-hidden="true" />}
             {row.run.explore ? "Explore" : "Evaluate"}
           </span>
         </span>
-        <span className={styles.meta} title={detail(row)}>
+        <span className={home.meta} title={detail(row)}>
           <MetaParts parts={detailParts(row)} />
         </span>
       </span>
       <Status row={row} badge={badge} />
-      <span className={styles.actions}>
+      <span className={rowStyles.actions}>
         <button
           type="button"
-          className={cx(styles.open, shared.button)}
+          className={cx(home.open, shared.button)}
           aria-label={`Review ${row.run.worldId}`}
           title="Review checks recording integrity using the run files."
           onClick={() => {
@@ -144,10 +147,10 @@ export function RunList({ workspace, navigation, badgeFor }: ListProps) {
   const { shown, list, more } = useMore();
   const rows = runRows(workspace, plant === "" ? null : plant);
   return (
-    <section className={styles.section} aria-labelledby="runs-title">
-      <header className={styles.heading}>
+    <section className={rowStyles.section} aria-labelledby="runs-title">
+      <header className={rowStyles.heading}>
         <h2 id="runs-title">Runs</h2>
-        <span className={styles.count}>{rows.length}</span>
+        <span className={rowStyles.count}>{rows.length}</span>
         <PlantFilter workspace={workspace} plant={plant} setPlant={setPlant} />
       </header>
       {unchecked(rows, badgeFor) && <p className={styles.note}>Runs are checked when you open their review.</p>}
@@ -155,7 +158,7 @@ export function RunList({ workspace, navigation, badgeFor }: ListProps) {
       <p className="sr-only" role="status">
         {plant === "" ? "" : `${String(rows.length)} ${rows.length === 1 ? "run" : "runs"} shown`}
       </p>
-      <ul className={styles.rows} ref={list}>
+      <ul className={rowStyles.rows} ref={list}>
         {rows.slice(0, shown).map((row) => (
           <Row key={row.run.worldId} row={row} badge={badgeFor(row.run.worldId)} navigation={navigation} />
         ))}

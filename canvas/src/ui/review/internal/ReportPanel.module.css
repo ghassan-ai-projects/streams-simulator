@@ -1,0 +1,52 @@
+.verdict {
+  margin: 0;
+  padding: 0 var(--space-3) var(--space-2);
+  font-weight: 600;
+}
+
+.caution {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-left: 3px solid var(--status-warn);
+  background: var(--status-warn-bg);
+  color: var(--text-primary);
+}
+
+.inset {
+  padding: 0 var(--space-3) var(--space-2);
+}
+
+.inset summary {
+  cursor: pointer;
+  color: var(--text-secondary);
+}
+
+.inset pre {
+  margin: var(--space-1) 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: var(--text-xs) var(--font-mono);
+  color: var(--text-secondary);
+}
+
+.integrity {
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.integrity > summary {
+  padding: var(--space-3);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.integrity > summary:hover {
+  background: var(--surface-hover);
+}
+
+.truthNote {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}

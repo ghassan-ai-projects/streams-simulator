@@ -1,6 +1,6 @@
 import { Bell } from "lucide-react";
 import type { EventMark } from "../../../model/review";
-import styles from "./RunScreen.module.css";
+import styles from "./PlayControls.module.css";
 
 interface AlarmJumpProps {
   readonly marks: readonly EventMark[];

@@ -1,7 +1,7 @@
 import { Pause, Play } from "lucide-react";
 import { useState } from "react";
 import { playbackSpeeds } from "../../../model/review";
-import styles from "./RunScreen.module.css";
+import styles from "./PlayControls.module.css";
 
 export interface PlayProps {
   readonly playing: boolean;

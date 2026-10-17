@@ -2,7 +2,7 @@ import { TriangleAlert } from "lucide-react";
 import type { FocusEvent } from "react";
 import { useId } from "react";
 import { useFocusOnMount } from "../../primitives";
-import styles from "./HomeScreen.module.css";
+import styles from "./NewPlant.module.css";
 
 function selectText(event: FocusEvent<HTMLInputElement>) {
   event.currentTarget.select();

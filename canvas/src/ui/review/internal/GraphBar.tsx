@@ -3,7 +3,7 @@ import type { Opening } from "../../../model/review";
 import { runClock } from "../../../model/review";
 import { grouped } from "../../../model/shared/units";
 import { ZoomBar } from "../../graph";
-import styles from "./RunScreen.module.css";
+import styles from "./GraphBar.module.css";
 
 function openedWords(opening: Opening, startNs: number): string {
   const at = runClock(opening.atNs, startNs);

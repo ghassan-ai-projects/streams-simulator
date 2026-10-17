@@ -8,7 +8,7 @@ import type { Crumb } from "../../primitives";
 import { Breadcrumb } from "../../primitives";
 import { useScreen } from "../../primitives";
 import { Status } from "./RunStatus";
-import styles from "./RunScreen.module.css";
+import styles from "./RunHeader.module.css";
 
 export interface HallProps {
   readonly hall: string | null;

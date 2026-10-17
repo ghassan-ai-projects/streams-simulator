@@ -1,6 +1,7 @@
 import { shared } from "../../primitives";
 import type { ReactNode } from "react";
-import styles from "./RunScreen.module.css";
+import cells from "./ReportTable.module.css";
+import styles from "./ReportParts.module.css";
 
 export type Cell = string | { readonly text: string; readonly title: string };
 
@@ -44,7 +45,7 @@ function Row({
   return (
     <tr
       aria-current={current ? "true" : undefined}
-      className={current ? styles.current : undefined}
+      className={current ? cells.current : undefined}
       ref={current ? (element) => element?.scrollIntoView({ block: "nearest" }) : undefined}
     >
       {row.map((cell, c) => {
@@ -53,7 +54,7 @@ function Row({
           <Tag
             key={c}
             scope={c === 0 ? "row" : undefined}
-            className={styles[columns[c] ?? "text"]}
+            className={cells[columns[c] ?? "text"]}
             title={typeof cell === "string" ? undefined : cell.title}
           >
             {typeof cell === "string" ? cell : cell.text}
@@ -67,8 +68,8 @@ function Row({
 export function Rows({ rows, columns, headers, empty = "None", current = -1 }: RowsProps) {
   if (rows.length === 0) return <p className={styles.muted}>{empty}</p>;
   return (
-    <table className={styles.table}>
-      <thead className={styles.head}>
+    <table className={cells.table}>
+      <thead className={cells.head}>
         <tr>
           {headers.map((header) => (
             <th key={header} scope="col">

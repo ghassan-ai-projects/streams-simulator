@@ -26,6 +26,7 @@ import { Scrubber } from "./Scrubber";
 import { GraphBar } from "./GraphBar";
 import { useLive } from "./useLive";
 import { usePlayback } from "./usePlayback";
+import parts from "./ReportParts.module.css";
 import styles from "./RunScreen.module.css";
 
 interface RunScreenProps {
@@ -87,7 +88,7 @@ function useRunPlant(state: ReviewState, plants: PlantSession, workspace: Worksp
 
 function OpeningPlant() {
   return (
-    <p className={styles.muted} role="status">
+    <p className={parts.muted} role="status">
       Opening the plant this run used…
     </p>
   );

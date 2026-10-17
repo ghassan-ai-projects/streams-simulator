@@ -8,7 +8,8 @@ import type { Definition } from "../../../model/workspace";
 import type { ExamplePlant } from "../../../model/plant";
 import { suggestedId } from "../../../model/workspace";
 import { Field } from "./NewPlantField";
-import styles from "./HomeScreen.module.css";
+import home from "./HomeScreen.module.css";
+import styles from "./NewPlant.module.css";
 
 export interface NewPlantProps {
   readonly bases: readonly Definition[];
@@ -99,7 +100,7 @@ function CopyChoice({ copy, setCopy }: { readonly copy: boolean; readonly setCop
 
 function BlankNote() {
   return (
-    <p className={styles.meta}>
+    <p className={home.meta}>
       A blank plant: you add its equipment, areas and connections in the editor, then compose and run it.
     </p>
   );
@@ -152,17 +153,17 @@ function Actions({ failure, reason, onCancel }: ActionsProps) {
       <span className={styles.newActions}>
         <button
           type="submit"
-          className={styles.create}
+          className={home.create}
           aria-disabled={!ready}
           aria-describedby={ready ? undefined : "new-plant-reason"}
         >
           Create and open the editor
         </button>
-        <button type="button" className={cx(styles.open, shared.button)} onClick={onCancel}>
+        <button type="button" className={cx(home.open, shared.button)} onClick={onCancel}>
           Cancel
         </button>
         {!ready && (
-          <span id="new-plant-reason" className={styles.meta}>
+          <span id="new-plant-reason" className={home.meta}>
             {reason}
           </span>
         )}

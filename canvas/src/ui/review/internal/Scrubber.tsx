@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import type { Report } from "../../../model/review";
 import type { EventMark } from "../../../model/review";
 import { eventMarks, firstEventLine, nextEvent, previousEvent, runClock, timeTicks } from "../../../model/review";
-import runStyles from "./RunScreen.module.css";
+import runStyles from "./PlayControls.module.css";
 import styles from "./Scrubber.module.css";
 import { Lane, Legend, MarkRail, usePick } from "./ScrubberLane";
 import { useEventKeys } from "./useEventKeys";

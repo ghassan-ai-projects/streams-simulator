@@ -10,7 +10,9 @@ import type { Route } from "../../../model/shell";
 import type { PlantEntry } from "../../../model/workspace";
 import { plantFacts, plantsOf } from "../../../model/workspace";
 import { NewPlantForm } from "./NewPlant";
-import styles from "./HomeScreen.module.css";
+import home from "./HomeScreen.module.css";
+import rowStyles from "./ListSection.module.css";
+import badgeStyles from "./Badge.module.css";
 
 interface ListProps {
   readonly workspace: Workspace;
@@ -39,7 +41,7 @@ function Action({
   return (
     <button
       type="button"
-      className={run ? cx(styles.run, shared.button) : cx(styles.open, shared.button)}
+      className={run ? cx(home.run, shared.button) : cx(home.open, shared.button)}
       aria-label={`${label} ${plant.title}`}
       onClick={onClick}
     >
@@ -54,7 +56,7 @@ function Actions({ plant, navigation }: { readonly plant: PlantEntry; readonly n
     navigation.go(route);
   };
   return (
-    <span className={styles.actions}>
+    <span className={rowStyles.actions}>
       {domain !== null && (
         <Action label="Open" plant={plant} onClick={go({ screen: "plant", domain, hall: null })}>
           Open
@@ -78,17 +80,17 @@ function Actions({ plant, navigation }: { readonly plant: PlantEntry; readonly n
 
 function PlantRow({ plant, navigation }: { readonly plant: PlantEntry; readonly navigation: NavigationStore }) {
   return (
-    <li className={styles.item} title={files(plant)}>
-      <Factory size={16} aria-hidden="true" className={styles.icon} />
-      <span className={styles.lines}>
-        <span className={styles.line}>
-          <span className={styles.name} title={plant.title}>
+    <li className={rowStyles.item} title={files(plant)}>
+      <Factory size={16} aria-hidden="true" className={rowStyles.icon} />
+      <span className={rowStyles.lines}>
+        <span className={rowStyles.line}>
+          <span className={rowStyles.name} title={plant.title}>
             {plant.title}
           </span>
-          <span className={styles.id}>{plant.id}</span>
-          {plant.composition === null && <span className={styles.badge}>read-only</span>}
+          <span className={rowStyles.id}>{plant.id}</span>
+          {plant.composition === null && <span className={badgeStyles.badge}>read-only</span>}
         </span>
-        <span className={styles.meta}>{plantFacts(plant)}</span>
+        <span className={home.meta}>{plantFacts(plant)}</span>
       </span>
       <Actions plant={plant} navigation={navigation} />
     </li>
@@ -109,13 +111,13 @@ function Heading({
   readonly onToggle: () => void;
 }) {
   return (
-    <header className={styles.heading}>
+    <header className={rowStyles.heading}>
       <h2 id="plants-title">Plants</h2>
-      <span className={styles.count}>{count}</span>
+      <span className={rowStyles.count}>{count}</span>
       <button
         type="button"
         ref={trigger}
-        className={styles.create}
+        className={home.create}
         aria-expanded={creating}
         aria-disabled={!canCreate}
         title={canCreate ? undefined : "A new plant starts from an existing one."}
@@ -138,7 +140,7 @@ export function PlantList({ workspace, navigation, maker, examples }: ListProps)
     trigger.current?.focus();
   };
   return (
-    <section className={styles.section} aria-labelledby="plants-title">
+    <section className={rowStyles.section} aria-labelledby="plants-title">
       <Heading
         count={plants.length}
         creating={creating}
@@ -158,7 +160,7 @@ export function PlantList({ workspace, navigation, maker, examples }: ListProps)
           onCancel={close}
         />
       )}
-      <ul className={styles.rows}>
+      <ul className={rowStyles.rows}>
         {plants.map((plant) => (
           <PlantRow key={plant.id} plant={plant} navigation={navigation} />
         ))}

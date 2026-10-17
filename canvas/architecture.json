@@ -851,18 +851,6 @@
         "cap": 300,
         "phase": "P5"
       },
-      "src/ui/review/internal/RunScreen.module.css": {
-        "cap": 608,
-        "phase": "P5"
-      },
-      "src/ui/workspace/internal/HomeScreen.module.css": {
-        "cap": 434,
-        "phase": "P5"
-      },
-      "src/ui/editor/internal/Editor.module.css": {
-        "cap": 330,
-        "phase": "P5"
-      },
       "src/ui/review/internal/Scrubber.module.css": {
         "cap": 272,
         "phase": "P5"
@@ -919,6 +907,12 @@
       "functions": 80,
       "branches": 75,
       "statements": 80
+    },
+    "src/adapters/**": {
+      "lines": 99,
+      "functions": 99,
+      "branches": 97,
+      "statements": 99
     }
   },
   "rules": {

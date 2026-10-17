@@ -1,0 +1,30 @@
+.section {
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.note {
+  margin-left: auto;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.muted {
+  margin: var(--space-2) 0;
+  padding: 0 var(--space-3);
+  color: var(--text-secondary);
+}
+
+.sectionName {
+  margin: 0;
+  font: inherit;
+  letter-spacing: inherit;
+}
+
+.asIs {
+  margin-left: 0.4em;
+  font-family: var(--font-mono);
+  letter-spacing: 0;
+  text-transform: none;
+}

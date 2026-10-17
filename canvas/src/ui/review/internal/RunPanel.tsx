@@ -7,7 +7,8 @@ import { cx } from "../../primitives";
 import { useCutBottom } from "../../primitives";
 import { Observed } from "./Observed";
 import { ReportPanel } from "./ReportPanel";
-import styles from "./RunScreen.module.css";
+import parts from "./ReportParts.module.css";
+import styles from "./RunPanel.module.css";
 
 type ReadyPlant = Extract<PlantState, { phase: "ready" }>;
 type Tab = "report" | "inspect";
@@ -26,14 +27,14 @@ function startOf({ state, review }: RunPanelProps): number {
 function Inspect(props: RunPanelProps) {
   const entity = props.state.selected;
   if (entity === null)
-    return <p className={styles.muted}>Select an instance on the graph to see every channel at the playback time.</p>;
+    return <p className={parts.muted}>Select an instance on the graph to see every channel at the playback time.</p>;
   return (
     <>
-      <section className={styles.section} aria-label={`Observed · ${entity}`}>
+      <section className={parts.section} aria-label={`Observed · ${entity}`}>
         <h2 className={shared.sectionTitle}>
           {"Observed · "}
-          <span className={styles.asIs}>{entity}</span>
-          <span className={styles.note}>{`at ${runClock(props.state.positionNs, startOf(props))}`}</span>
+          <span className={parts.asIs}>{entity}</span>
+          <span className={parts.note}>{`at ${runClock(props.state.positionNs, startOf(props))}`}</span>
         </h2>
         <Observed review={props.review} state={props.state} plant={props.plant} entity={entity} />
       </section>
@@ -102,7 +103,7 @@ function ReportBody({
   }
   if (state.report.phase === "loading")
     return (
-      <p className={styles.muted} role="status">
+      <p className={parts.muted} role="status">
         Reading the run…
       </p>
     );

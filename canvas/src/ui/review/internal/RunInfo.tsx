@@ -1,6 +1,6 @@
 import { Info } from "lucide-react";
 import { useId, useRef, useState } from "react";
-import styles from "./RunScreen.module.css";
+import styles from "./RunInfo.module.css";
 
 export function RunInfo({ lines }: { readonly lines: readonly string[] }) {
   const [open, setOpen] = useState(false);

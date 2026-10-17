@@ -3,7 +3,7 @@ import type { KpiRow } from "../../../model/review";
 import { kpiGroups, kpiWords } from "../../../model/review";
 import { displayUnit } from "../../../model/shared/units";
 import { cx } from "../../primitives";
-import styles from "./RunScreen.module.css";
+import styles from "./ReportTable.module.css";
 
 const fixed = (value: number) =>
   Math.abs(value) >= 100 ? value.toFixed(0) : Math.abs(value) >= 10 ? value.toFixed(1) : value.toFixed(2);

@@ -3,7 +3,7 @@ import { humanise } from "../../../model/shared/words";
 import { runClock } from "../../../model/review";
 import type { Cell } from "./ReportParts";
 import { Rows, Section } from "./ReportParts";
-import styles from "./RunScreen.module.css";
+import styles from "./ReportParts.module.css";
 
 export interface Picked {
   readonly atNs: number;
