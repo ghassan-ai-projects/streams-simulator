@@ -1,0 +1,1 @@
+{"modules":{"ui/a":{"kind":"ui","layer":"ui","lifetime":"components","responsibility":"src/ui/a","folders":["src/ui/a"],"mayImport":[],"entrypoint":null}}}

@@ -1,5 +1,4 @@
 {
-  "rules": [
-    "umbrella-file"
-  ]
+  "rules": ["umbrella-file"],
+  "base": "base-umbrella.register.json"
 }

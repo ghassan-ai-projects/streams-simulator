@@ -33,7 +33,10 @@ export interface CheckResult {
 }
 
 export function check(registerPath: string, ruleSet: RuleSet): CheckResult {
-  const register = readRegister(registerPath);
+  return checkRegister(readRegister(registerPath), ruleSet);
+}
+
+export function checkRegister(register: Register, ruleSet: RuleSet): CheckResult {
   const files = readSources(register);
   const violations = [
     ...moduleRules(files, register),
