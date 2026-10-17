@@ -1,9 +1,9 @@
 import { panel } from "../../primitives";
 import { Trash2, TriangleAlert } from "lucide-react";
 import { useRef, useState } from "react";
+import type { Draft } from "../../../model/launch";
 import type { Plant } from "../../../model/plant";
 import { kindLabel } from "../../../model/shared/words";
-import type { Draft } from "./draft";
 import { useFocusOnMount } from "../../primitives";
 import styles from "./LaunchPanel.module.css";
 

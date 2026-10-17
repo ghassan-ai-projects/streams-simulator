@@ -6,6 +6,7 @@ import {
   faultedAt,
   firstEventLine,
   kindsOf,
+  nextAlarm,
   nextEvent,
   previousEvent,
   runClock,
@@ -112,5 +113,21 @@ describe("event lane", () => {
     expect(effectorAt(run, 190e9).get("CP-3")).toBe("start · refused: busy");
     expect(effectorAt(run, 191e9).size).toBe(0);
     expect(effectorAt(null, 100e9).size).toBe(0);
+  });
+});
+
+describe("next alarm", () => {
+  const mark = (atNs: number, tone: "alarm" | "fault") =>
+    ({ atNs, label: `m${String(atNs)}`, raw: "", kind: "alarm", tone, entity: "CH-1", untilNs: null }) as const;
+  const marks = [mark(10, "alarm"), mark(20, "fault"), mark(30, "alarm")];
+
+  it("finds the first alarm after the position, skipping other marks", () => {
+    expect(nextAlarm(marks, 10)?.atNs).toBe(30);
+    expect(nextAlarm(marks, 5)?.atNs).toBe(10);
+  });
+
+  it("wraps to the first alarm after the last, and is none without alarms", () => {
+    expect(nextAlarm(marks, 30)?.atNs).toBe(10);
+    expect(nextAlarm([mark(20, "fault")], 0)).toBeNull();
   });
 });

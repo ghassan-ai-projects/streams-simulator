@@ -1,6 +1,7 @@
+import { parseComposition } from "../../../model/editor";
 import type { Workspace } from "../../../model/workspace";
 import type { Plant } from "../../../model/plant";
-import { parsePlant } from "../../../model/plant";
+import { parseDomainFile, parsePlant } from "../../../model/plant";
 import type { ComponentSpec } from "../../../model/plant";
 import { componentSpecs } from "./componentSpecs";
 import { Observable } from "../../shared";
@@ -14,7 +15,6 @@ export type PlantState =
   | {
       readonly phase: "ready";
       readonly path: string;
-      readonly etag: string;
       readonly plant: Plant;
       readonly specs: ReadonlyMap<string, ComponentSpec>;
       readonly composition: string | null;
@@ -23,26 +23,35 @@ export type PlantState =
 
 export type ReadyPlant = Extract<PlantState, { phase: "ready" }>;
 
-function parsed(content: string): unknown {
-  try {
-    return JSON.parse(content) as unknown;
-  } catch {
-    return null;
-  }
-}
-
 function pairOf(id: string, workspace: Workspace): string | null {
   return workspace.compositions.find((entry) => entry.id === id && id !== "")?.path ?? null;
 }
 
-function unchanged(held: ReadyPlant | null, file: Outcome<FileContent, PlantFailure>, workspace: Workspace): boolean {
-  return (
-    held !== null && file.ok && file.value.etag === held.etag && pairOf(held.plant.id, workspace) === held.composition
-  );
+function unchanged(
+  held: ReadyPlant | null,
+  etag: string,
+  file: Outcome<FileContent, PlantFailure>,
+  workspace: Workspace,
+): boolean {
+  return held !== null && file.ok && file.value.etag === etag && pairOf(held.plant.id, workspace) === held.composition;
+}
+
+interface Opened {
+  readonly path: string;
+  readonly etag: string;
+  readonly plant: Plant;
+  readonly specs: ReadonlyMap<string, ComponentSpec>;
+  readonly composition: string | null;
+  readonly selected: string | null;
+}
+
+function ready({ path, plant, specs, composition, selected }: Opened): ReadyPlant {
+  return { phase: "ready", path, plant, specs, composition, selected };
 }
 
 export class PlantStore extends Observable<PlantState> {
   private asked: { readonly path: string; readonly workspace: Workspace } | null = null;
+  private etag = "";
 
   constructor(
     private readonly gateway: PlantGateway,
@@ -58,7 +67,7 @@ export class PlantStore extends Observable<PlantState> {
     const held = this.held(path);
     if (held === null) this.set({ phase: "loading", path });
     const file = await this.gateway.readFile(path);
-    if (!this.current(request) || unchanged(held, file, workspace)) return;
+    if (!this.current(request) || unchanged(held, this.etag, file, workspace)) return;
     if (!file.ok) {
       this.set({ phase: "failed", path, failure: file.failure });
       return;
@@ -92,14 +101,13 @@ export class PlantStore extends Observable<PlantState> {
     workspace: Workspace,
     selected: string | null,
   ): Promise<void> {
-    const domain = parsed(file.content);
-    const id = typeof domain === "object" && domain !== null && "id" in domain ? String(domain.id) : "";
+    const { domain, id } = parseDomainFile(file.content);
     const composition = pairOf(id, workspace);
     const plant = parsePlant(domain, composition === null ? null : await this.composition(composition));
     const kept = plant.instances.some((instance) => instance.id === selected) ? selected : null;
     const specs = await this.specs(plant);
     if (!this.current(request)) return;
-    this.set({ phase: "ready", path, etag: file.etag, plant, specs, composition, selected: kept });
+    this.opened({ path, etag: file.etag, plant, specs, composition, selected: kept });
   }
 
   async show(key: string, domain: DomainDocument): Promise<void> {
@@ -110,7 +118,7 @@ export class PlantStore extends Observable<PlantState> {
     const plant = parsePlant(domain);
     const specs = await this.specs(plant);
     if (!this.current(request)) return;
-    this.set({ phase: "ready", path: key, etag: "", plant, specs, composition: null, selected: null });
+    this.opened({ path: key, etag: "", plant, specs, composition: null, selected: null });
   }
 
   close(): void {
@@ -126,9 +134,14 @@ export class PlantStore extends Observable<PlantState> {
     }
   }
 
+  private opened(opened: Opened): void {
+    this.etag = opened.etag;
+    this.set(ready(opened));
+  }
+
   private async composition(path: string): Promise<unknown> {
     const file = await this.gateway.readFile(path);
-    return file.ok ? parsed(file.value.content) : null;
+    return file.ok ? parseComposition(file.value.content) : null;
   }
 
   private specs(plant: Plant): Promise<ReadonlyMap<string, ComponentSpec>> {

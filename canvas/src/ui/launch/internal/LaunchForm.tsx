@@ -2,14 +2,11 @@ import { holdEnter, panel, shared } from "../../primitives";
 import { Dices, TriangleAlert } from "lucide-react";
 import type { SyntheticEvent } from "react";
 import { useEffect, useRef, useState } from "react";
-import type { LaunchPlan, PlanProblem } from "../../../model/launch";
-import { disturbanceWords, planProblems, watchWords } from "../../../model/launch";
+import type { Draft, LaunchPlan, PlanProblem } from "../../../model/launch";
+import { modeWords, planCue, planOf, planProblems, problemWords } from "../../../model/launch";
 import { Pace } from "./PaceChoice";
 import type { Plant } from "../../../model/plant";
 import { effectorOf } from "../../../model/plant";
-import { durationOf } from "../../../model/shared/duration";
-import type { Draft } from "./draft";
-import { planOf } from "./draft";
 import { CallRows } from "./CallRows";
 import type { Change } from "./FaultRows";
 import { FaultRows } from "./FaultRows";
@@ -96,11 +93,7 @@ function ModeChoice({
       <input type="radio" name="launch-mode" checked={checked} onChange={onChoose} />
       <span>
         <strong>{explore ? "Explore" : "Evaluate"}</strong>
-        <small>
-          {explore
-            ? "The truth is visible after the run; not for scoring."
-            : "The true results stay hidden from the outside system while it runs, so it can be scored; they are shown when the run ends."}
-        </small>
+        <small>{modeWords(explore)}</small>
       </span>
     </label>
   );
@@ -166,30 +159,6 @@ function useFocusFirstProblem(tried: number) {
     if (tried > 0) form.current?.querySelector<HTMLElement>("[aria-invalid='true']")?.focus();
   }, [tried]);
   return form;
-}
-
-function problemWords(problems: readonly PlanProblem[]): string {
-  if (problems.length === 0) return "";
-  return `${String(problems.length)} to fix before starting: ${problems.map((problem) => problem.text).join(" ")}`;
-}
-
-function startWords(plan: LaunchPlan): string {
-  const length = durationOf(plan.durationS) || "the chosen time";
-  const pace = plan.pace === "watch" ? `paced to take ${watchWords(plan.durationS)}` : "as fast as it can";
-  return `Start simulates ${length} of plant time in ${plan.explore ? "Explore" : "Evaluate"} mode with ${disturbanceWords(plan)}, ${pace}, then saves the run and opens its review.`;
-}
-
-function fieldName(problem: PlanProblem): string {
-  if (problem.field === "seed") return "Seed";
-  if (problem.field === "duration") return "Duration";
-  if (problem.field === "call") return `Effector call ${String((problem.call ?? 0) + 1)}`;
-  return `Fault ${String(problem.field + 1)}`;
-}
-
-function planCue(shown: readonly PlanProblem[], plan: LaunchPlan): string {
-  if (shown.length === 0) return startWords(plan);
-  const names = shown.map(fieldName).join(", ");
-  return shown.length === 1 ? `${names} needs attention before starting.` : `${names} need attention before starting.`;
 }
 
 function PlanFields({

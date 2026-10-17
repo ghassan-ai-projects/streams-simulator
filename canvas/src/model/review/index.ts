@@ -1,10 +1,14 @@
 export { noteLinesByEntity } from "./internal/noteLines";
+export { bannerWarnings } from "./internal/banners";
+export { hallLiveOf } from "./internal/live";
 export { PlaybackIndex, advance, playbackSpeeds } from "./internal/playback";
 export { badgeLabels, badgeOf, replayLine, runSpan } from "./internal/report";
 export {
   fileLine,
   integrityLine,
+  kpiFigure,
   kpiGroups,
+  kpiSteady,
   kpiWords,
   kpisOf,
   rerunOf,
@@ -12,7 +16,8 @@ export {
   runIdentity,
 } from "./internal/reportViews";
 export { firstEventNode } from "./internal/reviewAnchor";
-export { readoutBody, reviewView } from "./internal/reviewRows";
+export { reviewView } from "./internal/reviewRows";
+export { alarmRow, modeWords } from "./internal/words";
 export { placeChips, timeTicks } from "./internal/timeLayout";
 export {
   activeAt,
@@ -22,6 +27,7 @@ export {
   firstEventLine,
   kindsOf,
   markWords,
+  nextAlarm,
   nextEvent,
   previousEvent,
   runClock,
@@ -29,6 +35,7 @@ export {
 export type {
   AlarmActivation,
   Badge,
+  BannerWarning,
   ChipPlace,
   EventMark,
   JournalEntry,
@@ -37,5 +44,6 @@ export type {
   Opening,
   Replay,
   Report,
+  Rerun,
   VerifyState,
 } from "./contract";

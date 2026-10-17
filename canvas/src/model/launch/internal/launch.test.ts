@@ -9,6 +9,7 @@ import {
   planProblems,
   planSummary,
   rateWords,
+  stepsFor,
   watchWords,
 } from "./launch";
 
@@ -215,5 +216,12 @@ describe("run pace", () => {
     expect(watchWords(86_400)).toBe("about 30 s");
     expect(rateWords(59.6)).toBe("60 s per s");
     expect(rateWords(null)).toBe("");
+  });
+
+  it("cuts a watched run into finer steps than a fast one", () => {
+    const advances = (steps: readonly { kind: string }[]) => steps.filter((step) => step.kind === "advance").length;
+    expect(advances(stepsFor(plan({ durationS: 3000, pace: "watch" })))).toBe(30);
+    expect(advances(stepsFor(plan({ durationS: 3000, pace: "fast" })))).toBe(20);
+    expect(advances(stepsFor(plan({ durationS: 3000 })))).toBe(20);
   });
 });

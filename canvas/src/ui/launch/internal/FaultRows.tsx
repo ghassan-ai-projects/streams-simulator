@@ -1,10 +1,9 @@
 import { panel } from "../../primitives";
 import { Plus } from "lucide-react";
-import type { PlanProblem } from "../../../model/launch";
+import type { Draft, DraftFault, PlanProblem } from "../../../model/launch";
 import { faultsOf } from "../../../model/plant";
 import type { Plant } from "../../../model/plant";
 import { humanise } from "../../../model/shared/words";
-import type { Draft, DraftFault } from "./draft";
 import type { Change } from "./RowParts";
 import { AtMinute, InstancePick, invalid, RowTail, useAdding } from "./RowParts";
 import styles from "./LaunchPanel.module.css";

@@ -11,8 +11,6 @@ export interface EditorSession {
   open(path: string): Promise<void>;
   close(): void;
   reload(): Promise<void>;
-  savable(): boolean;
-  unsavedChanges(): boolean;
   select(id: string | null): void;
   edit(change: (doc: Composition) => Composition, selected?: string | null): void;
   revert(): void;

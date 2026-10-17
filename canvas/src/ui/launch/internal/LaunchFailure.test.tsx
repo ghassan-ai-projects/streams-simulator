@@ -13,7 +13,7 @@ describe("a run that stops on a fault", () => {
     fake.actions.set("world.create", success({ world_id: "w-8" }));
     fake.actions.set("fault.inject", failed(cannedFailure("unknown_fault", 422, 'unknown fault "chiller__fouling"')));
     fake.actions.set("world.destroy", success({}));
-    const { launch, timers } = launchHarness(fake);
+    const { launch } = launchHarness(fake);
     launch.propose("mini", {
       seed: 1,
       durationS: 3600,
@@ -24,7 +24,6 @@ describe("a run that stops on a fault", () => {
     render(
       <LaunchPanel
         launch={launch}
-        scheduler={timers}
         plant={parsePlant(domain)}
         path="domains/mini.domain.json"
         onClose={vi.fn()}

@@ -1,4 +1,10 @@
-import { spaced } from "../../../model/shared/words";
+import { evaluateRule, spaced } from "../../shared/words";
+
+export const modeWords = {
+  explore: "Explore: the truth is visible; not for scoring.",
+  evaluate: `Evaluate: ${evaluateRule}`,
+  evaluateRule,
+} as const;
 
 const alarmWords: Readonly<Record<string, readonly [string, string]>> = {
   activations: ["Alarms raised", "Alarms that came on during the run."],

@@ -125,7 +125,7 @@ function Editing({ draft, editor, navigation }: { readonly draft: Draft } & Omit
 export function EditorScreen({ editor, navigation, composition }: EditorScreenProps) {
   const state = useStore(editor);
   useEffect(() => {
-    const disposeGuard = navigation.guardUnsaved(() => editor.unsavedChanges());
+    const disposeGuard = navigation.guardUnsaved(() => isDirty(editor.snapshot()));
     void editor.open(composition);
     return () => {
       disposeGuard();

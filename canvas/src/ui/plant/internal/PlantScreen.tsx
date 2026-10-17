@@ -2,7 +2,6 @@ import { screen } from "../../primitives";
 import { ReactFlowProvider } from "@xyflow/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { LaunchStore } from "../../../app/launch";
-import type { Scheduler } from "../../../app/ports";
 import type { NavigationStore } from "../../../app/shell";
 import type { PlantState, PlantSession, ReadyPlant } from "../../../app/plant";
 import type { WorkspaceStore } from "../../../app/workspace";
@@ -21,7 +20,6 @@ interface PlantScreenProps {
   readonly workspace: WorkspaceStore;
   readonly navigation: NavigationStore;
   readonly launch: LaunchStore;
-  readonly scheduler: Scheduler;
   readonly domain: string;
   readonly hall: string | null;
   readonly startLaunching: boolean;
@@ -61,7 +59,6 @@ interface RightProps {
   readonly state: ReadyPlant;
   readonly hall: string | null;
   readonly launch: LaunchStore;
-  readonly scheduler: Scheduler;
   readonly navigation: NavigationStore;
   readonly launching: boolean;
   readonly onClose: () => void;
@@ -95,12 +92,11 @@ function PlantInspector({ state, hall, navigation, plants, runs }: RightProps) {
 }
 
 function RightPanel(props: RightProps) {
-  const { state, launch, scheduler, navigation, launching, onClose } = props;
+  const { state, launch, navigation, launching, onClose } = props;
   if (!launching) return <PlantInspector {...props} />;
   return (
     <LaunchPanel
       launch={launch}
-      scheduler={scheduler}
       plant={state.plant}
       path={state.path}
       selected={state.selected}
@@ -182,7 +178,7 @@ function NotReady({
 }
 
 export function PlantScreen(props: PlantScreenProps) {
-  const { plants, workspace, navigation, launch, scheduler, domain, hall, startLaunching, onShowDetails } = props;
+  const { plants, workspace, navigation, launch, domain, hall, startLaunching, onShowDetails } = props;
   const run = useLaunching(startLaunching, useShowRun(launch, onShowDetails), useConsume(navigation, domain, hall));
   const state = useStore(plants);
   const listing = usePlantLoad(plants, domain, workspace);
@@ -197,7 +193,6 @@ export function PlantScreen(props: PlantScreenProps) {
           state={state}
           hall={hall}
           launch={launch}
-          scheduler={scheduler}
           navigation={navigation}
           launching={run.launching}
           onClose={run.close}

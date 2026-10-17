@@ -14,14 +14,7 @@ describe("launch panel running", () => {
     const onFinished = vi.fn<(worldId: string) => void>();
     const plant = parsePlant(domain);
     const panel = () => (
-      <LaunchPanel
-        launch={launch}
-        scheduler={timers}
-        plant={plant}
-        path={path}
-        onClose={vi.fn()}
-        onFinished={onFinished}
-      />
+      <LaunchPanel launch={launch} plant={plant} path={path} onClose={vi.fn()} onFinished={onFinished} />
     );
     const first = render(panel());
     fireEvent.click(screen.getByRole("radio", { name: /As fast as possible/ }));
@@ -51,19 +44,12 @@ describe("launch panel running", () => {
 
   it("tells another plant that a run is in progress and leaves a finished run of another plant alone", async () => {
     const fake = new HeldBridge();
-    const { launch, timers } = launchHarness(fake);
+    const { launch } = launchHarness(fake);
     const elsewhere = { domain: "other", title: "Other plant", path: "domains/other.domain.json" };
     void launch.start(elsewhere, { seed: 1, durationS: 60, explore: true, faults: [], calls: [] });
     const onFinished = vi.fn<(worldId: string) => void>();
     render(
-      <LaunchPanel
-        launch={launch}
-        scheduler={timers}
-        plant={parsePlant(domain)}
-        path={path}
-        onClose={vi.fn()}
-        onFinished={onFinished}
-      />,
+      <LaunchPanel launch={launch} plant={parsePlant(domain)} path={path} onClose={vi.fn()} onFinished={onFinished} />,
     );
     expect(await screen.findByText("A run of Other plant is in progress.")).toBeInTheDocument();
     await act(async () => {

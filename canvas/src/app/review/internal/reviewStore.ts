@@ -6,8 +6,8 @@ import { badgeOf } from "../../../model/review";
 import { Observable, createOperationIdentity } from "../../shared";
 import type { OperationIdentity, OperationId } from "../../shared";
 import type { Clock, Outcome, ReviewFailure, ReviewGateway, Scheduler } from "../../ports";
-import type { Load, ReviewState } from "./reviewState";
-import { absentLoads, idle, knownUnfinished, toLoad } from "./reviewState";
+import type { FinalLoads, Load, ReviewState } from "./reviewState";
+import { absentLoads, finalLoadsFor, idle, knownUnfinished, toLoad } from "./reviewState";
 
 export type { ReviewState } from "./reviewState";
 export class ReviewStore extends Observable<ReviewState> {
@@ -15,11 +15,10 @@ export class ReviewStore extends Observable<ReviewState> {
   private readonly badges = new Map<string, Badge>();
   private stop: (() => void) | null = null;
   private readonly operations: OperationIdentity;
+  private readonly reports = createOperationIdentity();
   private activeSession: OperationId | null = null;
   private pending = 0;
-  private refreshed = false;
-  private deferredDomain = false;
-  private deferredVerify = false;
+  private finals: FinalLoads = finalLoadsFor(undefined);
   private cancelFlush: (() => void) | null = null;
 
   constructor(
@@ -57,9 +56,7 @@ export class ReviewStore extends Observable<ReviewState> {
   private beginVisit(worldId: string, known: RunEntry | undefined): OperationId {
     const session = this.operations.begin();
     this.activeSession = session;
-    this.refreshed = known?.ended === true;
-    this.deferredVerify = false;
-    this.deferredDomain = knownUnfinished(known);
+    this.finals = finalLoadsFor(known);
     this.pending = 0;
     this.index = new PlaybackIndex();
     this.set({ ...idle, worldId, openedAt: this.clock.nowMs(), ...absentLoads(known) });
@@ -98,11 +95,11 @@ export class ReviewStore extends Observable<ReviewState> {
     return this.badges.get(worldId) ?? null;
   }
 
-  protected override set(next: ReviewState): void {
-    if (next.worldId !== null && next.report.phase === "ready" && next.verified.phase !== "loading") {
-      this.badges.set(next.worldId, badgeOf(next.report.value, next.verified));
+  private recordBadge(): void {
+    const { worldId, report, verified } = this.snapshot();
+    if (worldId !== null && report.phase === "ready" && verified.phase !== "loading") {
+      this.badges.set(worldId, badgeOf(report.value, verified));
     }
-    super.set(next);
   }
 
   seek(positionNs: number): void {
@@ -173,11 +170,9 @@ export class ReviewStore extends Observable<ReviewState> {
 
   private refreshIfLive(worldId: string, session: OperationId): void {
     const state = this.snapshot();
-    if (this.refreshed || state.report.phase !== "ready" || state.report.value.ended) return;
+    if (this.finals.refreshed || state.report.phase !== "ready" || state.report.value.ended) return;
     if (state.playback.phase !== "ready") return;
-    this.refreshed = true;
-    this.deferredDomain = true;
-    this.deferredVerify = true;
+    this.finals = { refreshed: true, deferred: new Set(["domain", "verify"]) };
     void this.loadReport(worldId, session);
   }
 
@@ -188,11 +183,14 @@ export class ReviewStore extends Observable<ReviewState> {
   }
 
   private async loadReport(worldId: string, session: OperationId): Promise<void> {
-    const applied = await this.loadInto(session, this.gateway.report(worldId), (state, report) => ({
-      ...state,
-      report,
-    }));
+    const request = this.reports.begin();
+    const applied = await this.loadInto(
+      () => this.live(session) && this.reports.isCurrent(request),
+      this.gateway.report(worldId),
+      (state, report) => ({ ...state, report }),
+    );
     if (!applied) return;
+    this.recordBadge();
     this.resumeFinalLoads(worldId, session);
     this.refreshIfLive(worldId, session);
   }
@@ -200,36 +198,44 @@ export class ReviewStore extends Observable<ReviewState> {
   private resumeFinalLoads(worldId: string, session: OperationId): void {
     const state = this.snapshot();
     if (state.report.phase !== "ready" || !state.report.value.ended) return;
-    if (this.deferredDomain) {
-      this.deferredDomain = false;
+    if (this.finals.deferred.delete("domain")) {
       this.set({ ...state, runDomain: { phase: "loading" } });
       void this.loadRunDomain(worldId, session);
     }
     if (
       state.report.value.complete &&
-      (this.deferredVerify || (state.verified.phase === "failed" && state.verified.failure.kind === "run-incomplete"))
+      (this.finals.deferred.delete("verify") ||
+        (state.verified.phase === "failed" && state.verified.failure.kind === "run-incomplete"))
     ) {
-      this.deferredVerify = false;
       this.set({ ...this.snapshot(), verified: { phase: "loading" } });
       void this.loadVerify(worldId, session);
     }
   }
 
   private async loadRunDomain(worldId: string, session: OperationId): Promise<void> {
-    await this.loadInto(session, this.gateway.runDomain(worldId), (state, runDomain) => ({ ...state, runDomain }));
+    await this.loadInto(
+      () => this.live(session),
+      this.gateway.runDomain(worldId),
+      (state, runDomain) => ({ ...state, runDomain }),
+    );
   }
 
   private async loadVerify(worldId: string, session: OperationId): Promise<void> {
-    await this.loadInto(session, this.gateway.verify(worldId), (state, verified) => ({ ...state, verified }));
+    const applied = await this.loadInto(
+      () => this.live(session),
+      this.gateway.verify(worldId),
+      (state, verified) => ({ ...state, verified }),
+    );
+    if (applied) this.recordBadge();
   }
 
   private async loadInto<T>(
-    session: OperationId,
+    current: () => boolean,
     pending: Promise<Outcome<T, ReviewFailure>>,
     place: (state: ReviewState, load: Load<T>) => ReviewState,
   ): Promise<boolean> {
     const load = toLoad(await pending);
-    if (!this.live(session)) return false;
+    if (!current()) return false;
     this.set(place(this.snapshot(), load));
     return true;
   }

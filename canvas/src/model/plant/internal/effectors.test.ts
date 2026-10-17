@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { argProblem, callArgs, parseEffectors } from "./effectors";
+import { argProblem, callArgs, parseEffectors, rangeHint } from "./effectors";
 
 const declared = [
   {
@@ -28,6 +28,10 @@ const declared = [
   { name: "bare" },
   { args_schema: {} },
 ];
+
+function fail(): never {
+  throw new Error("no spec");
+}
 
 describe("effector specs from a domain kind", () => {
   const specs = parseEffectors(declared);
@@ -69,5 +73,11 @@ describe("effector specs from a domain kind", () => {
     expect(argProblem(setpoint, { setpoint_c: 13 })).toBe("setpoint c is a number from 4 to 12.");
     expect(argProblem(setpoint, { setpoint_c: Number.NaN })).toBe("setpoint c is a number from 4 to 12.");
     expect(argProblem(setpoint, { setpoint_c: 5 })).toBe("");
+  });
+
+  it("hints the range of a bounded argument and nothing for an open one", () => {
+    expect(rangeHint(specs[0]?.args[0] ?? fail())).toBe("4 to 12");
+    expect(rangeHint(specs[2]?.args.find((arg) => arg.name === "level") ?? fail())).toBe("");
+    expect(rangeHint(specs[2]?.args.find((arg) => arg.name === "mode") ?? fail())).toBe("");
   });
 });

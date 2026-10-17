@@ -4,8 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { LaunchStore } from "../../../app/launch";
 import type { NavigationStore } from "../../../app/shell";
 import type { PlantSession, ReadyPlant } from "../../../app/plant";
-import type { ReviewState, ReviewSession } from "../../../app/review";
-import { readyReport, startNsOf } from "../../../app/review";
+import type { ReviewPlant, ReviewState, ReviewSession } from "../../../app/review";
+import { readyReport, reviewPlantFor, showRunPlant, startNsOf } from "../../../app/review";
 import type { WorkspaceState, WorkspaceStore } from "../../../app/workspace";
 import type { RunEntry } from "../../../model/workspace";
 import { stateUnit } from "../../../model/plant";
@@ -69,20 +69,17 @@ function useClosePlant(plants: PlantSession, worldId: string): void {
   );
 }
 
-function useRunPlant(state: ReviewState, plants: PlantSession, workspace: WorkspaceStore): ReadyPlant | null {
+function useRunPlant(state: ReviewState, plants: PlantSession, workspace: WorkspaceStore): ReviewPlant {
   const listing = useStore(workspace);
-  const plant = useStore(plants);
-  const key = `run:${state.worldId ?? ""}`;
-  const domainId = readyReport(state)?.domainId ?? null;
-  const fallback =
-    listing.phase === "ready" ? listing.workspace.domains.find((entry) => entry.id === domainId)?.path : undefined;
+  const shown = useStore(plants);
+  const known = listing.phase === "ready" ? listing.workspace : null;
+  const view = reviewPlantFor(state, shown, known);
+  const { runDomain } = state;
+  const { key, fallback } = view;
   useEffect(() => {
-    if (state.runDomain.phase === "ready") void plants.show(key, state.runDomain.value);
-    else if (state.runDomain.phase === "failed" && fallback !== undefined && listing.phase === "ready")
-      void plants.load(fallback, listing.workspace);
-  }, [state.runDomain, key, fallback, listing, plants]);
-  if (plant.phase !== "ready") return null;
-  return plant.path === key || plant.path === fallback ? plant : null;
+    showRunPlant(plants, { key, fallback }, runDomain, known);
+  }, [runDomain, key, fallback, known, plants]);
+  return view;
 }
 
 function OpeningPlant() {
@@ -206,18 +203,6 @@ function useUnitOf(plant: ReadyPlant | null) {
   );
 }
 
-function domainIdOf(state: ReviewState): string {
-  return readyReport(state)?.domainId ?? "";
-}
-
-function usePlantIdentity(state: ReviewState, workspace: WorkspaceStore, plant: ReadyPlant | null) {
-  const listing = useStore(workspace);
-  const domainId = domainIdOf(state);
-  const entry = listing.phase === "ready" ? listing.workspace.domains.find((d) => d.id === domainId) : undefined;
-  const title = plant?.plant.title ?? entry?.title ?? domainId;
-  return { title: title === "" ? "Plant" : title, path: entry?.path ?? null };
-}
-
 interface CentreProps extends GraphProps {
   readonly worldId: string;
   readonly navigation: NavigationStore;
@@ -240,8 +225,8 @@ function Centre({ review, state, plant, hall, onHall, worldId, navigation }: Cen
 
 export function RunScreen({ review, plants, workspace, navigation, launch, worldId }: RunScreenProps) {
   const state = useStore(review);
-  const plant = useRunPlant(state, plants, workspace);
-  const identity = usePlantIdentity(state, workspace, plant);
+  const view = useRunPlant(state, plants, workspace);
+  const { plant } = view;
   const [hall, setHall] = useState<string | null>(null);
   useReviewOpen(review, workspace, worldId);
   useClosePlant(plants, worldId);
@@ -257,7 +242,7 @@ export function RunScreen({ review, plants, workspace, navigation, launch, world
           worldId={worldId}
           hall={hall}
           onHall={setHall}
-          plant={identity}
+          plant={view}
         />
         <Side review={review} state={state} plant={plant} hall={hall} onHall={setHall} />
         <Centre

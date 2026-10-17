@@ -54,6 +54,17 @@ const incomplete: ReviewFailure = {
   },
 };
 
+type FinalLoad = "domain" | "verify";
+
+export interface FinalLoads {
+  readonly refreshed: boolean;
+  readonly deferred: Set<FinalLoad>;
+}
+
+export function finalLoadsFor(known: RunEntry | undefined): FinalLoads {
+  return { refreshed: known?.ended === true, deferred: new Set(knownUnfinished(known) ? ["domain"] : []) };
+}
+
 export function knownUnfinished(known: RunEntry | undefined): known is RunEntry {
   return known !== undefined && !known.complete;
 }

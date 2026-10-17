@@ -1,10 +1,10 @@
 import { CircleCheck, CircleHelp, CircleX, Eye, Info, Loader, Lock, TriangleAlert } from "lucide-react";
 import { useState } from "react";
 import type { ReviewState } from "../../../app/review";
-import type { Badge, Report } from "../../../model/review";
-import { badgeLabels, badgeOf, replayLine } from "../../../model/review";
+import { readyReport } from "../../../app/review";
+import type { Badge, BannerWarning, Report } from "../../../model/review";
+import { badgeLabels, badgeOf, bannerWarnings, modeWords } from "../../../model/review";
 import { integrityLine, runFacts, runIdentity } from "../../../model/review";
-import { grouped } from "../../../model/shared/units";
 import { useInterval } from "../../primitives";
 import { RunInfo } from "./RunInfo";
 import styles from "./RunStatus.module.css";
@@ -63,12 +63,6 @@ function ReportPending({ loading, elapsed }: { readonly loading: boolean; readon
   );
 }
 
-const modeWords = {
-  explore: "Explore: the truth is visible; not for scoring.",
-  evaluate:
-    "Evaluate: The true results stay hidden from the outside system while it runs, so it can be scored; they are shown when the run ends.",
-} as const;
-
 function Mode({ report }: { readonly report: Report }) {
   const explore = report.mode === "explore";
   return (
@@ -101,48 +95,6 @@ export function Status({ state }: { readonly state: ReviewState }) {
   );
 }
 
-interface Warning {
-  readonly text: string;
-  readonly details: string;
-}
-
-function verifyWarning(state: ReviewState): Warning | null {
-  if (state.verified.phase !== "failed") return null;
-  return { text: replayLine(state.verified), details: state.verified.failure.diagnostic.message };
-}
-
-function countWarning(state: ReviewState, report: Report): Warning | null {
-  const delivered = report.counts.delivered ?? 0;
-  const records = grouped(state.playback.records);
-  if (state.playback.phase === "failed")
-    return {
-      text: `Playback is incomplete: ${records} of ${grouped(delivered)} delivered observations arrived.`,
-      details: "",
-    };
-  if (state.playback.phase === "ready" && report.ended && state.playback.records !== delivered) {
-    return {
-      text: `Playback has ${records} observations; the report counts ${grouped(delivered)} delivered.`,
-      details: "",
-    };
-  }
-  return null;
-}
-
-function warnings(state: ReviewState): readonly Warning[] {
-  if (state.report.phase !== "ready") return [];
-  const report = state.report.value;
-  const differ =
-    report.verification === "files_differ"
-      ? {
-          text: "The run's files differ from what the run wrote: playback shows the files as they are now.",
-          details: "",
-        }
-      : null;
-  return [verifyWarning(state), differ, countWarning(state, report)].filter(
-    (warning): warning is Warning => warning !== null,
-  );
-}
-
 function DomainNote({ state }: { readonly state: ReviewState }) {
   if (state.verified.phase !== "ready" || !state.verified.value.domainChanged) return null;
   return (
@@ -157,12 +109,12 @@ export function Banners({ state }: { readonly state: ReviewState }) {
   return (
     <div>
       <DomainNote state={state} />
-      <Alerts list={warnings(state)} />
+      <Alerts list={bannerWarnings(readyReport(state), state.verified, state.playback)} />
     </div>
   );
 }
 
-function Alerts({ list }: { readonly list: readonly Warning[] }) {
+function Alerts({ list }: { readonly list: readonly BannerWarning[] }) {
   if (list.length === 0) return null;
   return (
     <div className={styles.banners} role="alert">

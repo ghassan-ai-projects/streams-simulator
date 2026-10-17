@@ -1,14 +1,17 @@
 import type { Composition } from "../../../model/editor";
 import { domainOf, serialise } from "../../../model/editor";
 import type { ExamplePlant } from "../../../model/plant";
-import type { PlantFailure, PlantGateway, PlantSource } from "../../ports";
+import type { Outcome, PlantFailure, PlantGateway, PlantSource } from "../../ports";
+import { failure, success } from "../../ports";
 
-export type { PlantSource } from "../../ports";
+export type MakeMode = "copy" | "empty";
 
 export interface Made {
   readonly composition: string;
   readonly domain: string;
 }
+
+type MakeOutcome = Outcome<Made, PlantFailure>;
 
 const idPointer = "/id";
 
@@ -57,38 +60,37 @@ export class PlantMaker {
     return made.ok ? "" : idProblemOf(made.failure);
   }
 
-  async create(source: PlantSource, id: string, title: string, copy: boolean): Promise<PlantFailure | Made> {
-    const result = await this.write(source, id, title, copy);
-    if ("composition" in result && copy) await this.compose(result);
-    return result;
+  async create(source: PlantSource, id: string, title: string, mode: MakeMode): Promise<MakeOutcome> {
+    const made = await this.write(source, id, title, mode);
+    if (made.ok && mode === "copy") await this.compose(made.value);
+    return made;
   }
 
-  async tryExample(example: ExamplePlant, id: string): Promise<PlantFailure | Made> {
-    const result = await this.write({ kind: "example", id: example.id }, id, example.title, true);
-    if (!("composition" in result)) return result;
-    const composed = await this.compose(result);
-    return composed.ok ? result : composed.failure;
+  async tryExample(example: ExamplePlant, id: string): Promise<MakeOutcome> {
+    const made = await this.write({ kind: "example", id: example.id }, id, example.title, "copy");
+    if (!made.ok) return made;
+    const composed = await this.compose(made.value);
+    return composed.ok ? made : failure(composed.failure);
   }
 
-  private async write(source: PlantSource, id: string, title: string, copy: boolean): Promise<PlantFailure | Made> {
-    const domain = domainOf({ id });
-    const existing = await this.gateway.readFile(domain);
-    if (existing.ok) return taken(id);
-    if (existing.failure.kind !== "missing") return existing.failure;
-    const generated = await this.generate(source, id, title, copy ? "copy" : "empty");
-    if (!generated.ok) return worded(generated.failure);
+  private async write(source: PlantSource, id: string, title: string, mode: MakeMode): Promise<MakeOutcome> {
+    const existing = await this.gateway.readFile(domainOf({ id }));
+    if (existing.ok) return failure(taken(id));
+    if (existing.failure.kind !== "missing") return failure(existing.failure);
+    const generated = await this.generate(source, id, title, mode);
+    if (!generated.ok) return failure(worded(generated.failure));
     return this.writeComposition(id, generated.value);
   }
 
-  private async generate(source: PlantSource, id: string, title: string, mode: "copy" | "empty") {
+  private async generate(source: PlantSource, id: string, title: string, mode: MakeMode) {
     return this.gateway.generateComposition({ source, id, title, mode });
   }
 
-  private async writeComposition(id: string, composition: Composition): Promise<PlantFailure | Made> {
+  private async writeComposition(id: string, composition: Composition): Promise<MakeOutcome> {
     const made = asMade(id);
     const written = await this.gateway.writeFile(made.composition, serialise(composition), "");
-    if (written.ok) return made;
-    return written.failure.kind === "conflict" ? taken(id) : written.failure;
+    if (written.ok) return success(made);
+    return failure(written.failure.kind === "conflict" ? taken(id) : written.failure);
   }
 
   private compose(made: Made) {

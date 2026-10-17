@@ -95,6 +95,11 @@ export function nextEvent(marks: readonly EventMark[], atNs: number): number | n
   return marks.find((mark) => mark.atNs > atNs)?.atNs ?? null;
 }
 
+export function nextAlarm(marks: readonly EventMark[], atNs: number): EventMark | null {
+  const alarms = marks.filter((mark) => mark.tone === "alarm");
+  return alarms.find((mark) => mark.atNs > atNs) ?? alarms[0] ?? null;
+}
+
 export function faultedAt(report: Report | null, atNs: number): ReadonlyMap<string, readonly string[]> {
   if (report === null) return new Map();
   return faultNames(report, (d) => d.onsetNs <= atNs && !(d.clearedNs !== null && d.clearedNs <= atNs));

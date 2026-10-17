@@ -82,6 +82,10 @@ function rangeWords(arg: EffectorArg): string {
   return arg.max === null ? "" : ` of ${String(arg.max)} or less`;
 }
 
+export function rangeHint(arg: EffectorArg): string {
+  return arg.min !== null && arg.max !== null ? `${String(arg.min)} to ${String(arg.max)}` : "";
+}
+
 function numberProblem(arg: EffectorArg, value: ArgValue): string {
   const number = typeof value === "number" ? value : Number.NaN;
   const whole = arg.type === "integer" ? "a whole number" : "a number";

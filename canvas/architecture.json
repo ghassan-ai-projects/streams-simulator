@@ -77,8 +77,6 @@
         "app/shell",
         "app/workspace",
         "test",
-        "ui/launch",
-        "ui/plant",
         "ui/shell"
       ]
     },
@@ -90,7 +88,7 @@
       "folders": ["src/app/session"],
       "mayImport": ["app/ports", "app/shared", "test"],
       "entrypoint": "src/app/session/index.ts",
-      "callers": ["root", "ui/session", "ui/shell"]
+      "callers": ["app/shell", "root", "ui/session", "ui/shell"]
     },
     "ui/primitives": {
       "kind": "ui",
@@ -282,7 +280,7 @@
       "folders": ["src/app/workspace"],
       "mayImport": ["app/ports", "app/shared", "model/workspace", "test"],
       "entrypoint": "src/app/workspace/index.ts",
-      "callers": ["root", "test", "ui/plant", "ui/review", "ui/shell", "ui/workspace"]
+      "callers": ["app/shell", "root", "test", "ui/plant", "ui/review", "ui/shell", "ui/workspace"]
     },
     "app/plant": {
       "kind": "application",
@@ -292,7 +290,7 @@
       "folders": ["src/app/plant"],
       "mayImport": ["app/ports", "app/shared", "model/editor", "model/plant", "model/workspace", "test"],
       "entrypoint": "src/app/plant/index.ts",
-      "callers": ["app/editor", "root", "test", "ui/plant", "ui/review", "ui/shell", "ui/workspace"]
+      "callers": ["app/editor", "app/review", "root", "test", "ui/plant", "ui/review", "ui/shell", "ui/workspace"]
     },
     "app/editor": {
       "kind": "application",
@@ -302,7 +300,7 @@
       "folders": ["src/app/editor"],
       "mayImport": ["app/plant", "app/ports", "app/shared", "model/editor", "model/graph", "model/plant", "test"],
       "entrypoint": "src/app/editor/index.ts",
-      "callers": ["root", "test", "ui/editor", "ui/shell"]
+      "callers": ["app/shell", "root", "test", "ui/editor", "ui/shell"]
     },
     "app/launch": {
       "kind": "application",
@@ -312,7 +310,7 @@
       "folders": ["src/app/launch"],
       "mayImport": ["app/ports", "app/shared", "model/launch", "model/plant", "test"],
       "entrypoint": "src/app/launch/index.ts",
-      "callers": ["root", "test", "ui/launch", "ui/plant", "ui/review", "ui/shell"]
+      "callers": ["app/shell", "root", "test", "ui/launch", "ui/plant", "ui/review", "ui/shell"]
     },
     "app/review": {
       "kind": "application",
@@ -331,7 +329,7 @@
         "test"
       ],
       "entrypoint": "src/app/review/index.ts",
-      "callers": ["root", "test", "ui/review", "ui/shell"]
+      "callers": ["app/shell", "root", "test", "ui/review", "ui/shell"]
     },
     "app/shell": {
       "kind": "application",
@@ -1031,14 +1029,6 @@
     "positioned": 31,
     "note": "Phase 1 moved React Flow connection hooks and the minimap panel positioning into vendor.module.css; P5 partitions node, pin, frame, readout, and mark styles, removes local handle !important overrides through scoped selector specificity, and moves minimap node colors into GraphControls.module.css; P5 close-out re-measured the built sheet: the React Flow minimap panel keeps two registered !important declarations (margin, position) in vendor.module.css next to the two on the run action in HomeScreen.module.css, so important is 4 and positioned 33 (the minimap panel is positioned statically against React Flow's absolute default); the vendor and HomeScreen allowances in css.globalCaps account for exactly these four; the UI review removed the dead .mark and .markFault rules from RunScreen.module.css, which lowers positioned to 31 (they matched nothing)"
   },
-  "debt": [
-    {
-      "rule": "boolean-flag-param",
-      "file": "src/app/plant/internal/plantMaker.ts",
-      "count": 2,
-      "phase": "P3",
-      "reason": "PlantMaker.create/write take a copy boolean; the typed component gateway replaces it with a named mode"
-    }
-  ],
+  "debt": [],
   "testSupport": ["test"]
 }

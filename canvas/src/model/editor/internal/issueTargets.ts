@@ -1,5 +1,6 @@
 import { groupBy } from "../../shared/collect";
 import { record } from "../../shared/json";
+import { counted } from "../../shared/words";
 import type { Composition } from "./composition";
 import { connectionsOf, equipmentOf } from "./composition";
 import { rowsOf } from "./rows";
@@ -27,6 +28,10 @@ export interface IssueGroup extends ListedIssue {
 
 function groupKey(issue: ListedIssue): string {
   return `${issue.target ?? ""}\n${issue.message}\n${issue.target === null ? issue.pointer : ""}`;
+}
+
+export function issuesWords(count: number): string {
+  return counted(count, "issue");
 }
 
 export function groupIssues(listed: readonly ListedIssue[]): readonly IssueGroup[] {

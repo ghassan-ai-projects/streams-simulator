@@ -2,6 +2,8 @@ import type { Composition } from "../../../model/editor";
 import { domainOf, serialise } from "../../../model/editor";
 import { issueTargets } from "../../../model/editor";
 import type { Draft } from "./editorDraft";
+import type { StoreMemo } from "./editorMemo";
+import { outputEtagOf } from "./editorMemo";
 import type { ComposeSummary, EditorFailure, EditorGateway } from "../../ports";
 import type { OperationId } from "../../shared";
 
@@ -22,7 +24,7 @@ export type SaveResult =
   | { readonly kind: "compose-failed"; readonly failure: EditorFailure }
   | { readonly kind: "composed"; readonly summary: ComposeSummary; readonly outputEtag: string };
 
-export function captureSaveAttempt(id: number, operation: OperationId, draft: Draft): SaveAttempt {
+export function captureSaveAttempt(id: number, operation: OperationId, draft: Draft, memo: StoreMemo): SaveAttempt {
   const output = domainOf(draft.doc);
   return {
     id,
@@ -30,42 +32,37 @@ export function captureSaveAttempt(id: number, operation: OperationId, draft: Dr
     path: draft.path,
     doc: draft.doc,
     source: serialise(draft.doc),
-    sourceEtag: draft.etag,
+    sourceEtag: memo.etag,
     output,
-    outputEtag: output === draft.domainPath ? draft.domainEtag : "",
+    outputEtag: outputEtagOf(memo, output),
   };
 }
 
-export function markSaved(draft: Draft, attempt: SaveAttempt, etag: string): Draft {
-  return { ...draft, etag, saved: attempt.doc };
+export function markSaved(draft: Draft, attempt: SaveAttempt): Draft {
+  return { ...draft, saved: attempt.doc };
 }
 
 export function applySaveResult(draft: Draft, attempt: SaveAttempt, result: SaveResult): Draft {
-  if (result.kind === "write-failed") return { ...draft, saving: false, failure: result.failure };
+  if (result.kind === "write-failed") return { ...draft, save: result };
   if (result.kind === "compose-failed") return composeFailed(draft, attempt, result.failure);
-  if (result.kind === "composed") return composed(draft, attempt, result.summary, result.outputEtag);
+  if (result.kind === "composed") return composed(draft, attempt, result);
   return draft;
 }
 
 function composeFailed(draft: Draft, attempt: SaveAttempt, failure: EditorFailure): Draft {
   const failures = "issues" in failure ? (failure.issues ?? []) : [];
   const issues = issueTargets(attempt.doc, failures);
-  const message = failures.length === 0 ? failure.diagnostic.message : null;
-  const outcome = { kind: "refused" as const, message, doc: attempt.doc };
-  return { ...draft, saving: false, saveStatus: "saved-compose-failed", composeFailure: failure, issues, outcome };
+  return { ...draft, save: { kind: "compose-failed", failure }, issues };
 }
 
-function composed(draft: Draft, attempt: SaveAttempt, result: ComposeSummary, outputEtag: string): Draft {
-  const summary = `Composed ${String(result.channels)} channels, ${String(result.faults)} faults, ${String(result.effectors)} effectors.`;
+function composed(draft: Draft, attempt: SaveAttempt, result: SaveResult & { readonly kind: "composed" }): Draft {
+  const { channels, faults, effectors } = result.summary;
+  const summary = `Composed ${String(channels)} channels, ${String(faults)} faults, ${String(effectors)} effectors.`;
   return {
     ...draft,
-    domainPath: attempt.output,
-    domainEtag: outputEtag,
-    saving: false,
-    saveStatus: "idle",
-    composeFailure: null,
+    domain: result.outputEtag === "" ? null : attempt.output,
+    save: { kind: "composed", summary, doc: attempt.doc },
     issues: null,
-    outcome: { kind: "composed", summary, doc: attempt.doc },
   };
 }
 

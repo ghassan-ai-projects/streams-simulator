@@ -2,12 +2,12 @@ import { panel, shared } from "../../primitives";
 import { kindLabel } from "../../../model/shared/words";
 import { Box, Trash2, TriangleAlert, X } from "lucide-react";
 import type { ReactNode, SyntheticEvent } from "react";
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import type { Draft } from "../../../app/editor";
 import type { Instance } from "../../../model/plant";
 import type { Connection, LinkEnd } from "../../../model/editor";
-import { areaNodesOf, connectionsOf, endpointOf, linkEnd } from "../../../model/editor";
-import { instanceNameFits, instanceNameRule } from "../../../model/editor";
+import { areaNodesOf, connectionsTouching, linkEnd, linkParts, linkWords } from "../../../model/editor";
+import { nameCheck } from "../../../model/editor";
 import { disconnect, isTemplate, moveInstance, renameInstance } from "../../../model/editor";
 import { cx } from "../../primitives";
 import { useCutBottom } from "../../primitives";
@@ -20,22 +20,13 @@ import { useRequestedFocus } from "./panelProps";
 
 type EditorProps = PanelProps & { readonly instance: Instance };
 
-function NameRule({ fits }: { readonly fits: boolean }) {
-  if (fits)
-    return (
-      <>
-        <span />
-        <span className={panel.hint} id="instance-name-rule">
-          {instanceNameRule()}
-        </span>
-      </>
-    );
+function NameRule({ check }: { readonly check: ReturnType<typeof nameCheck> }) {
   return (
     <>
       <span />
-      <span className={styles.nameError} id="instance-name-rule">
-        <TriangleAlert size={13} aria-hidden="true" />
-        {`Not a valid name. ${instanceNameRule()}`}
+      <span className={check.fits ? panel.hint : styles.nameError} id="instance-name-rule">
+        {check.fits ? null : <TriangleAlert size={13} aria-hidden="true" />}
+        {check.hint}
       </span>
     </>
   );
@@ -49,7 +40,8 @@ function Rename({
 }: Pick<EditorProps, "instance" | "editor" | "request"> & { readonly flagged: boolean }) {
   const [name, setName] = useState(instance.id);
   const input = useRequestedFocus<HTMLInputElement>(request, "name");
-  const fits = instanceNameFits(name.trim());
+  const check = nameCheck(name.trim());
+  const { fits } = check;
   const ready = fits && name.trim() !== instance.id;
   const submit = (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -75,37 +67,26 @@ function Rename({
           Rename
         </button>
       </span>
-      <NameRule fits={fits} />
+      <NameRule check={check} />
     </form>
   );
 }
 
 function Ends({ end, other }: { readonly end: LinkEnd; readonly other: ReactNode }) {
-  if (end.outgoing) {
-    return (
-      <>
-        <span>{end.port}</span>
-        <span aria-hidden="true">→</span>
-        {other}
-        <span>{end.otherPort}</span>
-      </>
-    );
-  }
-  return (
-    <>
-      {other}
-      <span>{end.otherPort}</span>
-      <span aria-hidden="true">→</span>
-      <span>{end.port}</span>
-    </>
-  );
+  return linkParts(end).map((part, at) => {
+    if (part.kind === "other") return <Fragment key={at}>{other}</Fragment>;
+    if (part.kind === "arrow")
+      return (
+        <span key={at} aria-hidden="true">
+          →
+        </span>
+      );
+    return <span key={at}>{part.text}</span>;
+  });
 }
 
 function LinkRow({ wire, instance, editor }: { readonly wire: Connection } & Pick<EditorProps, "instance" | "editor">) {
   const end = linkEnd(wire, instance.id);
-  const words = end.outgoing
-    ? `${end.port} to ${end.other} ${end.otherPort}`
-    : `${end.other} ${end.otherPort} to ${end.port}`;
   return (
     <li>
       <span className={styles.linkText}>
@@ -128,7 +109,7 @@ function LinkRow({ wire, instance, editor }: { readonly wire: Connection } & Pic
       <button
         type="button"
         className={panel.secondary}
-        aria-label={`Remove link: ${words}`}
+        aria-label={`Remove link: ${linkWords(end)}`}
         title="Remove this link"
         onClick={() => {
           editor.edit((doc) => disconnect(doc, wire.index));
@@ -142,9 +123,7 @@ function LinkRow({ wire, instance, editor }: { readonly wire: Connection } & Pic
 }
 
 function Links({ draft, instance, editor }: Pick<EditorProps, "draft" | "instance" | "editor">) {
-  const touching = connectionsOf(draft.doc).filter(
-    (wire) => endpointOf(wire.from).id === instance.id || endpointOf(wire.to).id === instance.id,
-  );
+  const touching = connectionsTouching(draft.doc, instance.id);
   return (
     <section className={panel.group} aria-labelledby="links-title">
       <h3 id="links-title" className={styles.counted}>

@@ -20,6 +20,15 @@ export function kpiWords(state: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
+export function kpiFigure(value: number): string {
+  const size = Math.abs(value);
+  return size >= 100 ? value.toFixed(0) : size >= 10 ? value.toFixed(1) : value.toFixed(2);
+}
+
+export function kpiSteady(row: KpiRow): boolean {
+  return kpiFigure(row.min) === kpiFigure(row.max);
+}
+
 interface KpiGroup {
   readonly entity: string;
   readonly rows: readonly KpiRow[];
@@ -56,7 +65,7 @@ export function runFacts(report: Report): string {
   return [seedWords(report.seed), durationOf(spanSeconds(report))].filter((part) => part !== "").join(" · ");
 }
 
-interface Rerun {
+export interface Rerun {
   readonly plan: LaunchPlan;
   readonly left: readonly string[];
 }

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   compositionPlant,
   connectionsOf,
+  connectionsTouching,
   equipmentOf,
   linkEnd,
   parseComposition,
@@ -120,6 +121,12 @@ describe("composition", () => {
     if (first === undefined) throw new Error("no link");
     expect(linkEnd(first, "CH-1")).toEqual({ outgoing: true, port: "heat out", other: "CT-1", otherPort: "heat in" });
     expect(linkEnd(first, "CT-1")).toEqual({ outgoing: false, port: "heat in", other: "CH-1", otherPort: "heat out" });
+  });
+
+  it("lists the connections that touch an instance on either side", () => {
+    expect(connectionsTouching(doc, "CT-1").map((wire) => wire.index)).toEqual([0, 1]);
+    expect(connectionsTouching(doc, "CH-1").map((wire) => wire.index)).toEqual([0]);
+    expect(connectionsTouching(doc, "WX-1")).toEqual([]);
   });
 
   it("names a kind the way the plant screen does, from the component's last segment", () => {

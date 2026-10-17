@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Composition } from "./composition";
-import { groupIssues, issueTargets, profileWeightOf, removeProfileWeight } from "./issueTargets";
+import { groupIssues, issueTargets, issuesWords, profileWeightOf, removeProfileWeight } from "./issueTargets";
 
 const doc: Composition = {
   equipment: [
@@ -59,5 +59,11 @@ describe("profile weights a plant no longer declares", () => {
       { name: "p", fault_weights: { keep: 2 } },
     ]);
     expect(removeProfileWeight(profiled, "/profiles/3/fault_weights/keep")).toBe(profiled);
+  });
+});
+
+describe("issue words", () => {
+  it("counts issues in the singular and the plural", () => {
+    expect([1, 2].map(issuesWords)).toEqual(["1 issue", "2 issues"]);
   });
 });

@@ -1,9 +1,8 @@
 import type { Report, VerifyState } from "../../../model/review";
-import { badgeOf, replayLine } from "../../../model/review";
+import { alarmRow, badgeOf, replayLine } from "../../../model/review";
 import { fileLine, integrityLine, kpisOf } from "../../../model/review";
 import { grouped } from "../../../model/shared/units";
 import { spaced } from "../../../model/shared/words";
-import { alarmRow } from "./alarmWords";
 import { KpiTable } from "./KpiTable";
 import { Rows, Section } from "./ReportParts";
 import { Events } from "./ReportEvents";

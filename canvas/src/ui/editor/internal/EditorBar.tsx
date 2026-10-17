@@ -2,7 +2,7 @@ import { screen } from "../../primitives";
 import { PenLine, Redo, RefreshCw, Save, Undo, Undo2 } from "lucide-react";
 import { useState } from "react";
 import type { Draft, EditorSession } from "../../../app/editor";
-import { canSave, checked, emptyPlant, isDirty } from "../../../app/editor";
+import { canSave, checked, isDirty, isSaving, saveStatusOf } from "../../../app/editor";
 import type { NavigationStore } from "../../../app/shell";
 import { domainOf, equipmentOf, titleOf } from "../../../model/editor";
 import { ZoomBar } from "../../graph";
@@ -17,48 +17,6 @@ interface BarProps {
   readonly draft: Draft;
   readonly editor: EditorSession;
   readonly navigation: NavigationStore;
-}
-
-interface Status {
-  readonly text: string;
-  readonly detail: string | null;
-  readonly tone: "busy" | "warn" | "ok" | "";
-}
-
-function uncheckedStatus(draft: Draft): Status {
-  const text = emptyPlant(draft)
-    ? "Nothing to save yet: add equipment in Build."
-    : "Not checked yet: Save to see its issues.";
-  return { text, detail: null, tone: "" };
-}
-
-function outcomeStatus(draft: Draft): Status {
-  if (draft.outcome?.kind === "refused") {
-    const count = draft.issues?.listed.length ?? 0;
-    const counted = `${String(count)} ${count === 1 ? "issue" : "issues"}`;
-    const why = draft.outcome.message ?? `${counted}, listed in Build`;
-    return { text: `Needs fixing: ${why}. Your changes are saved.`, detail: null, tone: "warn" };
-  }
-  if (draft.outcome?.kind === "composed") {
-    return { text: "Ready to run. Saved.", detail: draft.outcome.summary, tone: "ok" };
-  }
-  if (!checked(draft)) return uncheckedStatus(draft);
-  return { text: "No changes", detail: null, tone: "" };
-}
-
-function partialStatus(draft: Draft): Status {
-  if (draft.outcome?.kind === "refused" && (draft.issues?.listed.length ?? 0) > 0) return outcomeStatus(draft);
-  const message = draft.composeFailure?.diagnostic.message ?? "Composition did not complete.";
-  return { text: `Saved, but composition failed: ${message}`, detail: null, tone: "warn" };
-}
-
-function statusOf(draft: Draft): Status {
-  if (draft.saving) return { text: "Saving and composing…", detail: null, tone: "busy" };
-  if (draft.failure !== null)
-    return { text: `Not saved: ${draft.failure.diagnostic.message}`, detail: null, tone: "warn" };
-  if (isDirty(draft)) return { text: "Unsaved changes", detail: null, tone: "busy" };
-  if (draft.saveStatus === "saved-compose-failed") return partialStatus(draft);
-  return outcomeStatus(draft);
 }
 
 function Title({ draft, navigation }: Omit<BarProps, "editor">) {
@@ -115,7 +73,7 @@ function ShowIssues({
 }
 
 function Reload({ draft, editor }: Omit<BarProps, "navigation">) {
-  if (draft.failure?.kind !== "conflict") return null;
+  if (!(draft.save.kind === "write-failed" && draft.save.failure.kind === "conflict")) return null;
   return (
     <button
       type="button"
@@ -228,7 +186,8 @@ function RevertButton({
 
 export function EditorBar({ draft, editor, navigation, request }: BarProps & { readonly request: FocusRequest }) {
   useEditorKeys(editor);
-  const status = statusOf(draft);
+  const status = saveStatusOf(draft);
+  const saving = isSaving(draft);
   const clean = !isDirty(draft);
   const savable = canSave(draft);
   return (
@@ -243,11 +202,11 @@ export function EditorBar({ draft, editor, navigation, request }: BarProps & { r
         {status.text}
       </span>
       <History draft={draft} editor={editor} />
-      <Revert disabled={clean || draft.saving} editor={editor} />
+      <Revert disabled={clean || saving} editor={editor} />
       <button
         type="button"
         className={styles.save}
-        aria-disabled={!savable || draft.saving}
+        aria-disabled={!savable || saving}
         title={savable ? "Save and compose (Ctrl+S)" : "Nothing to save"}
         onClick={() => {
           if (savable) void editor.save();

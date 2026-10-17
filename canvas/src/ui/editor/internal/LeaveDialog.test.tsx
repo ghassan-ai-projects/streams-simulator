@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { isDirty } from "../../../app/editor";
 import { NavigationStore } from "../../../app/shell";
 import { editing, path, current } from "../../../test/editorHarness";
 import { success } from "../../../test/outcome";
@@ -15,7 +16,7 @@ async function dirtyEditor() {
   });
   const location = memoryLocation(`#/edit?composition=${encodeURIComponent(path)}`);
   const navigation = new NavigationStore(location);
-  navigation.guardUnsaved(() => editor.unsavedChanges());
+  navigation.guardUnsaved(() => isDirty(editor.snapshot()));
   render(<PendingLeave title="Lab two" editor={editor} navigation={navigation} />);
   act(() => {
     navigation.go({ screen: "home" });
@@ -52,7 +53,7 @@ describe("leaving the editor with unsaved changes", () => {
     await vi.waitFor(() => {
       expect(navigation.snapshot()).toEqual({ screen: "home" });
     });
-    expect(editor.unsavedChanges()).toBe(false);
+    expect(isDirty(editor.snapshot())).toBe(false);
   });
 
   it("cannot discard while the save is still being written", async () => {

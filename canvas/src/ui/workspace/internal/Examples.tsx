@@ -38,8 +38,8 @@ function useTry({ maker, navigation, taken }: Omit<TryProps, "examples">) {
     setFailure("");
     const made = await maker.tryExample(example, suggestedId(example.id, taken));
     setBusy("");
-    if ("domain" in made) navigation.go({ screen: "plant", domain: made.domain, hall: null, launch: true });
-    else setFailure(`${example.title} could not be set up: ${made.diagnostic.message}`);
+    if (made.ok) navigation.go({ screen: "plant", domain: made.value.domain, hall: null, launch: true });
+    else setFailure(`${example.title} could not be set up: ${made.failure.diagnostic.message}`);
   };
   return { busy, failure, start };
 }

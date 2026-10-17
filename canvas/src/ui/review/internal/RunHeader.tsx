@@ -2,9 +2,9 @@ import { shared } from "../../primitives";
 import { RotateCcw } from "lucide-react";
 import type { LaunchStore } from "../../../app/launch";
 import type { NavigationStore } from "../../../app/shell";
+import { proposeRerun } from "../../../app/shell";
 import type { ReviewState } from "../../../app/review";
 import { readyReport } from "../../../app/review";
-import { rerunOf } from "../../../model/review";
 import type { Crumb } from "../../primitives";
 import { Breadcrumb } from "../../primitives";
 import { useScreen } from "../../primitives";
@@ -44,9 +44,7 @@ function RunActions({ state, navigation, launch, plant, worldId }: Omit<HeaderPr
           type="button"
           className={shared.button}
           onClick={() => {
-            const rerun = rerunOf(report);
-            launch.propose(report.domainId, rerun.plan, rerun.left, worldId);
-            navigation.go({ screen: "plant", domain: path, hall: null, launch: true });
+            proposeRerun(launch, navigation, state, worldId, path);
           }}
         >
           <RotateCcw size={14} aria-hidden="true" />

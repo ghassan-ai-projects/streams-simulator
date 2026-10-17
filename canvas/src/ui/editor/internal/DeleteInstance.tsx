@@ -1,25 +1,17 @@
 import { Trash2 } from "lucide-react";
 import { useState } from "react";
-import { connectionsOf, endpointOf } from "../../../model/editor";
-import { removeInstance } from "../../../model/editor";
+import { connectionsTouching, deleteQuestion, removeInstance } from "../../../model/editor";
 import styles from "./Editor.module.css";
 import type { PanelProps } from "./panelProps";
 import type { Instance } from "../../../model/plant";
 
 type DeleteProps = Pick<PanelProps, "draft" | "editor" | "request"> & { readonly instance: Instance };
 
-function linkCount(props: DeleteProps): number {
-  const id = props.instance.id;
-  return connectionsOf(props.draft.doc).filter(
-    (wire) => endpointOf(wire.from).id === id || endpointOf(wire.to).id === id,
-  ).length;
-}
-
 export function DeleteInstance(props: DeleteProps) {
   const { editor, request, instance } = props;
   const [confirming, setConfirming] = useState(false);
-  const links = linkCount(props);
-  const question = `Delete ${instance.id} and its ${String(links)} ${links === 1 ? "link" : "links"}?`;
+  const links = connectionsTouching(props.draft.doc, instance.id).length;
+  const question = deleteQuestion(instance.id, links);
   const remove = () => {
     request.ask("build");
     editor.edit((doc) => removeInstance(doc, instance.id), null);

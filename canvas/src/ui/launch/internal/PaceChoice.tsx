@@ -1,6 +1,6 @@
 import { panel } from "../../primitives";
-import type { Draft } from "./draft";
 import type { Change } from "./FaultRows";
+import type { Draft } from "../../../model/launch";
 import { watchWords } from "../../../model/launch";
 import styles from "./LaunchPanel.module.css";
 

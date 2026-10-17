@@ -1,12 +1,11 @@
 import { shared } from "../../primitives";
 import type { SyntheticEvent } from "react";
 import { useState } from "react";
-import type { PlantMaker, PlantSource } from "../../../app/plant";
-import { idProblemOf } from "../../../app/plant";
+import type { BaseChoice, MakeMode, PlantMaker } from "../../../app/plant";
+import { baseChoices, idProblemOf, newPlantReadiness, startingMode } from "../../../app/plant";
 import type { NavigationStore } from "../../../app/shell";
 import type { Definition } from "../../../model/workspace";
 import type { ExamplePlant } from "../../../model/plant";
-import { plantTitle } from "../../../model/plant";
 import { suggestedId } from "../../../model/workspace";
 import { Field } from "./NewPlantField";
 import home from "./HomeScreen.module.css";
@@ -21,50 +20,54 @@ export interface NewPlantProps {
   readonly blank?: boolean;
 }
 
-function BasePick({
-  bases,
-  examples,
-  base,
-  setBase,
-}: Pick<NewPlantProps, "bases" | "examples"> & { readonly base: string; readonly setBase: (base: string) => void }) {
+interface BasePickProps {
+  readonly choices: readonly BaseChoice[];
+  readonly base: BaseChoice | null;
+  readonly setBase: (base: BaseChoice) => void;
+}
+
+function BaseGroup({
+  label,
+  group,
+  choices,
+}: {
+  readonly label: string;
+  readonly group: BaseChoice["group"];
+  readonly choices: readonly BaseChoice[];
+}) {
+  const shown = choices.filter((choice) => choice.group === group);
+  if (shown.length === 0) return null;
+  return (
+    <optgroup label={label}>
+      {shown.map((choice) => (
+        <option key={choice.key} value={choice.key}>
+          {choice.label}
+        </option>
+      ))}
+    </optgroup>
+  );
+}
+
+function BasePick({ choices, base, setBase }: BasePickProps) {
   return (
     <div className={styles.newField}>
       <label htmlFor="new-plant-base">Start from</label>
       <select
         id="new-plant-base"
-        value={base}
+        value={base?.key ?? ""}
         onChange={(event) => {
-          setBase(event.target.value);
+          const picked = choices.find((choice) => choice.key === event.target.value);
+          if (picked !== undefined) setBase(picked);
         }}
       >
-        {bases.length > 0 && (
-          <optgroup label="Your plants">
-            {bases.map((item) => (
-              <option key={item.path} value={`file:${item.path}`}>
-                {plantTitle(item)}
-              </option>
-            ))}
-          </optgroup>
-        )}
-        {examples.length > 0 && (
-          <optgroup label="Examples">
-            {examples.map((example) => (
-              <option key={example.id} value={`example:${example.id}`}>
-                {example.title}
-              </option>
-            ))}
-          </optgroup>
-        )}
+        <BaseGroup label="Your plants" group="plants" choices={choices} />
+        <BaseGroup label="Examples" group="examples" choices={choices} />
       </select>
     </div>
   );
 }
 
-function sourceOf(base: string): PlantSource {
-  return base.startsWith("example:") ? { kind: "example", id: base.slice(8) } : { kind: "file", path: base.slice(5) };
-}
-
-function CopyChoice({ copy, setCopy }: { readonly copy: boolean; readonly setCopy: (copy: boolean) => void }) {
+function CopyChoice({ mode, setMode }: { readonly mode: MakeMode; readonly setMode: (mode: MakeMode) => void }) {
   return (
     <fieldset className={styles.choice}>
       <legend className="sr-only">What to keep</legend>
@@ -72,9 +75,9 @@ function CopyChoice({ copy, setCopy }: { readonly copy: boolean; readonly setCop
         <input
           type="radio"
           name="new-plant-copy"
-          checked={copy}
+          checked={mode === "copy"}
           onChange={() => {
-            setCopy(true);
+            setMode("copy");
           }}
         />
         <span>
@@ -85,9 +88,9 @@ function CopyChoice({ copy, setCopy }: { readonly copy: boolean; readonly setCop
         <input
           type="radio"
           name="new-plant-copy"
-          checked={!copy}
+          checked={mode === "empty"}
           onChange={() => {
-            setCopy(false);
+            setMode("empty");
           }}
         />
         <span>
@@ -108,14 +111,13 @@ function BlankNote() {
 }
 
 function Choices(
-  props: NewPlantProps & {
-    readonly base: string;
-    readonly setBase: (base: string) => void;
-    readonly copy: boolean;
-    readonly setCopy: (copy: boolean) => void;
+  props: BasePickProps & {
+    readonly blank: boolean;
+    readonly mode: MakeMode;
+    readonly setMode: (mode: MakeMode) => void;
   },
 ) {
-  if (props.blank === true) return <BlankNote />;
+  if (props.blank) return <BlankNote />;
   return (
     <>
       <BasePick {...props} />
@@ -129,14 +131,14 @@ function useCreate(
   reportId: (id: string, message: string) => void,
 ) {
   const [failure, setFailure] = useState("");
-  const create = async (base: string, id: string, title: string, copy: boolean) => {
-    const made = await maker.create(sourceOf(base), id, title, copy);
-    if ("composition" in made) {
-      navigation.go({ screen: "edit", composition: made.composition });
+  const create = async (base: BaseChoice, id: string, title: string, mode: MakeMode) => {
+    const made = await maker.create(base.source, id, title, mode);
+    if (made.ok) {
+      navigation.go({ screen: "edit", composition: made.value.composition });
       return;
     }
-    reportId(id, idProblemOf(made));
-    setFailure(made.diagnostic.message);
+    reportId(id, idProblemOf(made.failure));
+    setFailure(made.failure.diagnostic.message);
   };
   return { failure, create };
 }
@@ -188,15 +190,15 @@ function useNaming(taken: readonly string[]) {
   return { name, setName, id, setId: setTyped, followAgain };
 }
 
-function useIdProblem(maker: PlantMaker, base: string, name: string, id: string, followAgain: () => void) {
+function useIdProblem(maker: PlantMaker, base: BaseChoice | null, name: string, id: string, followAgain: () => void) {
   const [found, setFound] = useState<{ readonly id: string; readonly message: string } | null>(null);
   const reportId = (value: string, message: string) => {
     setFound({ id: value, message });
   };
   const check = async () => {
     const value = id.trim();
-    if (value === "") return;
-    reportId(value, await maker.idProblem(sourceOf(base), value, name.trim() === "" ? value : name.trim()));
+    if (value === "" || base === null) return;
+    reportId(value, await maker.idProblem(base.source, value, name.trim() === "" ? value : name.trim()));
   };
   const leave = () => {
     followAgain();
@@ -205,25 +207,19 @@ function useIdProblem(maker: PlantMaker, base: string, name: string, id: string,
   return { problem: found !== null && found.id === id.trim() ? found.message : "", leave, reportId };
 }
 
-function readiness(name: string, id: string, base: string): string {
-  if (name.trim() === "") return "Name the plant first.";
-  if (id.trim() === "") return "Give it an id.";
-  return base === "example:" ? "Choose what to start from." : "";
-}
-
 export function NewPlantForm(props: NewPlantProps & { readonly onCancel: () => void }) {
   const { bases, examples, taken, blank = false, onCancel } = props;
   const { name, setName, id, setId, followAgain } = useNaming(taken);
-  const first = bases[0] === undefined ? `example:${examples[0]?.id ?? ""}` : `file:${bases[0].path}`;
-  const [base, setBase] = useState(first);
-  const [copy, setCopy] = useState(!blank);
+  const choices = baseChoices(bases, examples);
+  const [base, setBase] = useState<BaseChoice | null>(choices[0] ?? null);
+  const [mode, setMode] = useState(startingMode({ blank }));
   const { problem, leave, reportId } = useIdProblem(props.maker, base, name, id, followAgain);
   const { failure, create } = useCreate(props, reportId);
-  const reason = readiness(name, id, base);
+  const reason = newPlantReadiness(name, id, base);
   const ready = reason === "";
   const submit = (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (ready) void create(base, id.trim(), name.trim(), copy);
+    if (ready && base !== null) void create(base, id.trim(), name.trim(), mode);
   };
   return (
     <form
@@ -245,7 +241,7 @@ export function NewPlantForm(props: NewPlantProps & { readonly onCancel: () => v
         selectOnFocus
         problem={problem}
       />
-      <Choices {...props} base={base} setBase={setBase} copy={copy} setCopy={setCopy} />
+      <Choices choices={choices} base={base} setBase={setBase} blank={blank} mode={mode} setMode={setMode} />
       <Actions failure={failure} reason={reason} onCancel={onCancel} />
     </form>
   );

@@ -1,5 +1,5 @@
-import type { EditorSession } from "../../../app/editor";
-import type { PanelStore } from "../../../app/shell";
+import type { EditorSession } from "../../editor";
+import type { PanelStore } from "./panelStore";
 
 export function showBuild(editor: EditorSession, panels: PanelStore): void {
   const state = editor.snapshot();

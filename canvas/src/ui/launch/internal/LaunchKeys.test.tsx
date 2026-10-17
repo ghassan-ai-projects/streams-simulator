@@ -9,11 +9,10 @@ import { LaunchPanel } from "./LaunchPanel";
 describe("launch panel keys", () => {
   it("keeps Enter in a select from starting the run", () => {
     const fake = launchBridge();
-    const { launch, timers } = launchHarness(fake);
+    const { launch } = launchHarness(fake);
     render(
       <LaunchPanel
         launch={launch}
-        scheduler={timers}
         plant={parsePlant(domain)}
         path="domains/mini.domain.json"
         onClose={vi.fn()}

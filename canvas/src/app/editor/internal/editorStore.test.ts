@@ -6,7 +6,7 @@ import { deferred, flushPromises } from "../../../test/deferred";
 import { equipmentOf } from "../../../model/editor";
 import { FakeBridge, cannedFailure } from "../../../test/fakeBridge";
 import type { Canned } from "../../../test/fakeFailures";
-import { canSave, emptyPlant } from "./editorStore";
+import { canSave, emptyPlant } from "./editorSelectors";
 import { editorStore } from "../../../test/stores";
 
 const path = "compositions/lab.composition.json";
@@ -50,6 +50,17 @@ describe("editor store", () => {
     expect(canSave(edited)).toBe(true);
   });
 
+  it("writes each save over the version the last write returned and composes over the domain it read", async () => {
+    const { store, fake } = await opened();
+    store.edit((current) => ({ ...current, title: "One" }));
+    await store.save();
+    store.edit((current) => ({ ...current, title: "Two" }));
+    await store.save();
+    expect(fake.writes.map((write) => write.etag)).toEqual(["c1", "e1"]);
+    const composes = fake.calls.filter((call) => call.name === "domain.compose");
+    expect(composes.map((call) => (call.args as { etag: string }).etag)).toEqual(["d1", "d1"]);
+  });
+
   it("opens a composition with the library and its components' ports", async () => {
     const { state, fake } = await opened();
     expect(state.library.map((entry) => entry.ref)).toEqual(["streamsim/pump@1"]);
@@ -72,7 +83,7 @@ describe("editor store", () => {
     const state = store.snapshot();
     if (state.phase !== "ready") throw new Error(state.phase);
     expect(state.saved).toBe(state.doc);
-    expect(state.outcome).toEqual({
+    expect(state.save).toEqual({
       kind: "composed",
       summary: "Composed 3 channels, 2 faults, 1 effectors.",
       doc: state.doc,
@@ -91,13 +102,13 @@ describe("editor store", () => {
     );
     const { store } = await opened(fake);
     await store.save();
-    expect(store.snapshot()).toMatchObject({ outcome: { kind: "refused" }, failure: null, saving: false });
+    expect(store.snapshot()).toMatchObject({ save: { kind: "compose-failed" } });
     const state = store.snapshot();
     if (state.phase !== "ready") throw new Error(state.phase);
     expect(state.issues?.instances.get("CH-1")).toEqual(["unknown"]);
     fake.writeOutcomes.set(path, failed(cannedFailure("conflict", 409, "changed on disk")));
     await store.save();
-    expect(store.snapshot()).toMatchObject({ failure: { kind: "conflict" }, saving: false });
+    expect(store.snapshot()).toMatchObject({ save: { kind: "write-failed", failure: { kind: "conflict" } } });
   });
 
   it("refuses to open a file that is not a composition", async () => {
@@ -118,14 +129,18 @@ describe("editor store", () => {
     const changed = { ...doc, title: "Lab changed" };
     fake.addFile(path, changed, "c2");
     await store.reload();
-    expect(store.snapshot()).toMatchObject({ etag: "c2", doc: { title: "Lab changed" } });
+    expect(store.snapshot()).toMatchObject({ doc: { title: "Lab changed" } });
     store.edit((current) => ({ ...current, title: "Mine" }));
     fake.addFile(path, doc, "c3");
     fake.writeOutcomes.set(path, failed(cannedFailure("conflict", 409, "changed on disk")));
     await store.save();
-    expect(store.snapshot()).toMatchObject({ failure: { kind: "conflict" } });
+    expect(store.snapshot()).toMatchObject({ save: { kind: "write-failed", failure: { kind: "conflict" } } });
     await store.reload();
-    expect(store.snapshot()).toMatchObject({ etag: "c3", failure: null, doc: { title: "Lab" } });
+    expect(store.snapshot()).toMatchObject({ save: { kind: "idle" }, doc: { title: "Lab" } });
+    fake.writeOutcomes.delete(path);
+    store.edit((current) => ({ ...current, title: "Again" }));
+    await store.save();
+    expect(fake.writes.at(-1)).toMatchObject({ etag: "c3" });
   });
 
   it("composes over the domain version read when the plant was opened and says why compose failed", async () => {
@@ -135,8 +150,7 @@ describe("editor store", () => {
     await store.save();
     expect(fake.calls.find((call) => call.name === "domain.compose")?.args).toMatchObject({ etag: "d1" });
     expect(store.snapshot()).toMatchObject({
-      failure: null,
-      outcome: { kind: "refused", message: "the domain changed on disk" },
+      save: { kind: "compose-failed", failure: { diagnostic: { message: "the domain changed on disk" } } },
     });
     store.edit((current) => current, null);
     expect(store.snapshot()).toMatchObject({ selected: null });
@@ -177,7 +191,7 @@ describe("editor store", () => {
     const saving = store.save();
     await flushPromises();
     store.revert();
-    expect(store.snapshot()).toMatchObject({ saving: true, doc: { title: "Mine" } });
+    expect(store.snapshot()).toMatchObject({ save: { kind: "saving" }, doc: { title: "Mine" } });
     write.resolve(success({ path, etag: "c2" }));
     await saving;
     const state = store.snapshot();
@@ -269,6 +283,11 @@ describe("editor store", () => {
     await store.open(other);
     heldVersion.resolve(success({ path: "domains/lab.domain.json", content: "{}", etag: "d9" }));
     await saving;
-    expect(store.snapshot()).toMatchObject({ phase: "ready", path: other, domainEtag: "d2", outcome: null });
+    expect(store.snapshot()).toMatchObject({
+      phase: "ready",
+      path: other,
+      domain: otherDomain,
+      save: { kind: "idle" },
+    });
   });
 });

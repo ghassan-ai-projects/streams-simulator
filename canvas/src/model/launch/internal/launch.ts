@@ -80,6 +80,10 @@ export function launchSteps(plan: LaunchPlan, chunks: number): readonly LaunchSt
   return steps;
 }
 
+export function stepsFor(plan: LaunchPlan): readonly LaunchStep[] {
+  return launchSteps(plan, plan.pace === "watch" ? 30 : 20);
+}
+
 type SpecOf = (entity: string, effector: string) => EffectorSpec | undefined;
 
 export function failureWords(step: LaunchStep | null): string {

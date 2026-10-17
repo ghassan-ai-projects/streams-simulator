@@ -3,6 +3,7 @@ export {
   componentOf,
   compositionPlant,
   connectionsOf,
+  connectionsTouching,
   domainOf,
   equipmentOf,
   linkEnd,
@@ -12,7 +13,6 @@ export {
   suggestedName,
   titleOf,
 } from "./internal/composition";
-export { endpointOf } from "../plant";
 export { addArea, areaInUse, areaNameProblem, removeArea, renameArea } from "./internal/areaEdits";
 export {
   addEquipment,
@@ -23,6 +23,8 @@ export {
   removeInstance,
   renameInstance,
 } from "./internal/compositionEdits";
-export { groupIssues, issueTargets, profileWeightOf, removeProfileWeight } from "./internal/issueTargets";
-export { instanceNameFits, instanceNameRule } from "./internal/instanceNameRule";
+export { groupIssues, issuesWords, issueTargets, profileWeightOf, removeProfileWeight } from "./internal/issueTargets";
+export { addProblem, libraryRows, libraryWords, suggestedWords } from "./internal/addWords";
+export { deleteQuestion, linkParts, linkWords, nameCheck } from "./internal/linkWords";
+export { instanceNameRule } from "./internal/instanceNameRule";
 export type { Composition, Connection, IssueGroup, IssueTargets, LinkEnd, ListedIssue, NewEquipment } from "./contract";

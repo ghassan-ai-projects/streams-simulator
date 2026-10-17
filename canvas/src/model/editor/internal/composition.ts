@@ -62,6 +62,10 @@ export function connectionsOf(doc: Composition): readonly Connection[] {
   }));
 }
 
+export function connectionsTouching(doc: Composition, id: string): readonly Connection[] {
+  return connectionsOf(doc).filter((wire) => endpointOf(wire.from).id === id || endpointOf(wire.to).id === id);
+}
+
 function areasOf(doc: Composition): readonly AreaRef[] {
   return list(doc.areas).map((raw) => ({ name: text(record(raw).name), parent: text(record(raw).parent) || null }));
 }

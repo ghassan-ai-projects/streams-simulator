@@ -1,14 +1,13 @@
 import { useEffect, useState } from "react";
 import type { EditorSession } from "../../../app/editor";
 import type { Scheduler } from "../../../app/ports";
-import type { PanelStore } from "../../../app/shell";
 import type { PlantMaker } from "../../../app/plant";
-import type { NavigationStore } from "../../../app/shell";
+import type { NavigationStore, PanelStore, ThemeStore } from "../../../app/shell";
+import { sessionGate, showBuild } from "../../../app/shell";
 import type { PlantSession } from "../../../app/plant";
 import type { LaunchStore } from "../../../app/launch";
 import type { ReviewSession } from "../../../app/review";
 import type { Session } from "../../../app/session";
-import type { ThemeStore } from "../../../app/shell";
 import type { WorkspaceStore } from "../../../app/workspace";
 import type { Route } from "../../../model/shell";
 import { EditorScreen } from "../../editor";
@@ -20,7 +19,6 @@ import { CrumbSlot } from "../../primitives";
 import { KeyHelp } from "./KeyHelp";
 import { PanelToggles } from "./PanelToggles";
 import { rightPanelName } from "./panelName";
-import { showBuild } from "./showBuild";
 import { RunIndicator } from "./RunIndicator";
 import { Shell } from "./Shell";
 import { TopBar } from "./TopBar";
@@ -45,22 +43,7 @@ export interface Stores {
 
 function useSession({ session, workspace }: Stores) {
   const state = useStore(session);
-  const listing = useStore(workspace);
-  useEffect(() => {
-    if (listing.phase === "failed" && listing.failure.kind === "unpaired") void session.check();
-  }, [listing, session]);
-  useEffect(() => {
-    void session.check();
-  }, [session]);
-  useEffect(() => {
-    if (state.phase !== "paired") {
-      return undefined;
-    }
-    void workspace.open();
-    return () => {
-      workspace.close();
-    };
-  }, [state.phase, workspace]);
+  useEffect(() => sessionGate(session, workspace), [session, workspace]);
   return state;
 }
 
@@ -72,7 +55,6 @@ function Screen({ stores, route }: { readonly stores: Stores; readonly route: Ro
         workspace={stores.workspace}
         navigation={stores.navigation}
         launch={stores.launch}
-        scheduler={stores.scheduler}
         domain={route.domain}
         hall={route.hall}
         startLaunching={route.launch === true}

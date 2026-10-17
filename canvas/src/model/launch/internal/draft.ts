@@ -1,6 +1,6 @@
-import type { LaunchPlan } from "../../../model/launch";
-import type { Plant } from "../../../model/plant";
-import { callArgs, effectorOf } from "../../../model/plant";
+import type { Plant } from "../../plant";
+import { callArgs, effectorOf } from "../../plant";
+import type { LaunchPlan } from "./launch";
 
 export interface DraftFault {
   readonly key: number;

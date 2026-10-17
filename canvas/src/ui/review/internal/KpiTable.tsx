@@ -1,12 +1,9 @@
 import { Fragment } from "react";
 import type { KpiRow } from "../../../model/review";
-import { kpiGroups, kpiWords } from "../../../model/review";
+import { kpiFigure, kpiGroups, kpiSteady, kpiWords } from "../../../model/review";
 import { displayUnit } from "../../../model/shared/units";
 import { cx } from "../../primitives";
 import styles from "./ReportTable.module.css";
-
-const fixed = (value: number) =>
-  Math.abs(value) >= 100 ? value.toFixed(0) : Math.abs(value) >= 10 ? value.toFixed(1) : value.toFixed(2);
 
 interface KpiTableProps {
   readonly rows: readonly KpiRow[];
@@ -16,16 +13,16 @@ interface KpiTableProps {
 
 function KpiLine({ row, unit }: { readonly row: KpiRow; readonly unit: KpiTableProps["unit"] }) {
   const shown = displayUnit(unit(row.entity, row.state));
-  const steady = fixed(row.min) === fixed(row.max);
+  const steady = kpiSteady(row);
   return (
     <tr>
       <th scope="row" className={styles.kpiName} title={`${row.entity} ${row.state}`}>
         {kpiWords(row.state)}
       </th>
-      <td className={cx(styles.number, styles.kpiValue)}>{fixed(row.mean)}</td>
+      <td className={cx(styles.number, styles.kpiValue)}>{kpiFigure(row.mean)}</td>
       <td className={styles.unitCell}>{shown}</td>
       <td className={cx(steady ? styles.steady : styles.number, styles.kpiValue)}>
-        {steady ? "steady" : `${fixed(row.min)} – ${fixed(row.max)}`}
+        {steady ? "steady" : `${kpiFigure(row.min)} – ${kpiFigure(row.max)}`}
       </td>
     </tr>
   );

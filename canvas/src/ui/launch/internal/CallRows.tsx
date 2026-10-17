@@ -1,23 +1,12 @@
 import { panel } from "../../primitives";
 import { Plus } from "lucide-react";
-import type { PlanProblem } from "../../../model/launch";
+import type { Draft, DraftCall, PlanProblem } from "../../../model/launch";
 import type { EffectorArg, Plant } from "../../../model/plant";
-import { effectorOf } from "../../../model/plant";
+import { effectorNamesOf, effectorOf, hasEffectors, rangeHint } from "../../../model/plant";
 import { humanise, spaced } from "../../../model/shared/words";
-import type { Draft, DraftCall } from "./draft";
 import type { Change } from "./RowParts";
 import { AtMinute, InstancePick, invalid, RowTail, useAdding } from "./RowParts";
 import styles from "./LaunchPanel.module.css";
-
-function effectorsOf(plant: Plant, entity: string): readonly string[] {
-  const kind = plant.instances.find((instance) => instance.id === entity)?.kind ?? "";
-  return plant.kinds.get(kind)?.effectorSpecs.map((spec) => spec.name) ?? [];
-}
-
-function rangeHint(arg: EffectorArg): string {
-  if (arg.min !== null && arg.max !== null) return `${String(arg.min)} to ${String(arg.max)}`;
-  return "";
-}
 
 function choices(arg: EffectorArg): readonly string[] {
   return arg.type === "boolean" ? ["true", "false"] : arg.options;
@@ -130,7 +119,7 @@ function EffectorPick({ plant, call, label, id, problem, update }: EffectorPickP
         }}
       >
         <option value="">Choose an effector</option>
-        {effectorsOf(plant, call.entity).map((name) => (
+        {effectorNamesOf(plant, call.entity).map((name) => (
           <option key={name} value={name}>
             {humanise(name)}
           </option>
@@ -187,8 +176,6 @@ function CallRow(props: CallRowProps) {
   );
 }
 
-const callable = (plant: Plant) => [...plant.kinds.values()].some((kind) => kind.effectorSpecs.length > 0);
-
 const emptyWords = (hasEffectors: boolean) =>
   hasEffectors
     ? "None: nothing is commanded. A call is made when the run reaches its minute; the simulator may refuse it, and the result says why."
@@ -215,7 +202,7 @@ export function CallRows({ plant, draft, problems, selected, change }: CallRowsP
   return (
     <fieldset className={panel.group}>
       <legend>Effector calls</legend>
-      {draft.calls.length === 0 && <p className={panel.hint}>{emptyWords(callable(plant))}</p>}
+      {draft.calls.length === 0 && <p className={panel.hint}>{emptyWords(hasEffectors(plant))}</p>}
       <ol className={styles.faults}>
         {draft.calls.map((call, index) => (
           <CallRow
@@ -232,7 +219,7 @@ export function CallRows({ plant, draft, problems, selected, change }: CallRowsP
           />
         ))}
       </ol>
-      {callable(plant) && (
+      {hasEffectors(plant) && (
         <button
           type="button"
           ref={addButton}

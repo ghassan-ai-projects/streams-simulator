@@ -4,11 +4,10 @@ import type { SyntheticEvent } from "react";
 import { useEffect, useState } from "react";
 import type { Draft, EditorSession } from "../../../app/editor";
 import { areaNodesOf, suggestedName } from "../../../model/editor";
-import { instanceNameFits, instanceNameRule } from "../../../model/editor";
+import { addProblem, instanceNameRule, libraryRows, libraryWords, suggestedWords } from "../../../model/editor";
 import type { LibraryEntry, Presets } from "../../../model/plant";
 import { searchLibrary } from "../../../model/plant";
 import type { Plant } from "../../../model/plant";
-import { instanceIdTaken } from "../../../model/plant";
 import { Choice } from "./Choice";
 import styles from "./Editor.module.css";
 import type { FocusRequest } from "./panelProps";
@@ -47,12 +46,6 @@ interface NameProps {
   readonly setTyped: (name: string) => void;
 }
 
-function suggestedWords(suggested: string): string {
-  return suggested === ""
-    ? "Leave empty to use the suggested name."
-    : `Leave empty to use the suggested name, ${suggested}.`;
-}
-
 function NameField({ typed, suggested, setTyped }: NameProps) {
   return (
     <>
@@ -80,15 +73,10 @@ interface PickProps {
   readonly setUse: (use: string) => void;
 }
 
-function libraryWords(found: number, shown: number): string {
-  const counted = `${String(found)} ${found === 1 ? "component" : "components"}`;
-  return found > shown ? `${counted} · scroll the list for the rest` : counted;
-}
-
 function LibraryPick({ library, use, setUse }: PickProps) {
   const [query, setQuery] = useState("");
   const found = searchLibrary(library, query);
-  const shown = Math.min(6, Math.max(2, found.length));
+  const shown = libraryRows(found.length);
   return (
     <div className={styles.library}>
       <input
@@ -120,7 +108,7 @@ function LibraryPick({ library, use, setUse }: PickProps) {
         ))}
       </select>
       <p className={panel.hint} id="equipment-count">
-        {found.length === 0 ? `Nothing in the library matches "${query.trim()}".` : libraryWords(found.length, shown)}
+        {libraryWords(found.length, shown, query)}
       </p>
     </div>
   );
@@ -128,14 +116,6 @@ function LibraryPick({ library, use, setUse }: PickProps) {
 
 function sizes(presets: Presets): readonly (readonly [string, string])[] {
   return [["", "Default"], ...presets.options.map((option) => [option.name, option.title] as const)];
-}
-
-function missing(use: string, name: string, area: string, plant: Plant): string | null {
-  if (use === "") return "Choose equipment from the library.";
-  if (name === "") return "Give the instance a name.";
-  if (!instanceNameFits(name)) return `"${name}" is not a valid name. ${instanceNameRule()}`;
-  if (instanceIdTaken(plant, name)) return `${name} is already used by another instance.`;
-  return area === "" ? "Choose an area." : null;
 }
 
 function useNaming(draft: Draft, use: string) {
@@ -165,7 +145,7 @@ export function AddEquipment({ draft, plant, editor, request }: AddProps) {
   const { typed, suggested, name, setTyped, reset } = useNaming(draft, use);
   const { area, setArea, options } = useArea(draft);
   const { presets, preset, setPreset } = usePresets(editor, use);
-  const problem = missing(use, name, area, plant);
+  const problem = addProblem(use, name, area, plant);
   const submit = (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (problem !== null) return;

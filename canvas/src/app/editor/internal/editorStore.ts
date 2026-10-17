@@ -7,8 +7,11 @@ import { Observable } from "../../shared";
 import type { OperationIdentity, OperationId } from "../../shared";
 import type { EditorFailure, EditorGateway } from "../../ports";
 import { applySaveResult, captureSaveAttempt, markSaved, saveCaptured } from "./editorSave";
-import type { SaveAttempt } from "./editorSave";
+import type { SaveAttempt, SaveResult } from "./editorSave";
 import type { Draft, EditorState } from "./editorDraft";
+import { isSaving } from "./editorSelectors";
+import { emptyMemo } from "./editorMemo";
+import type { StoreMemo } from "./editorMemo";
 
 const unreadable: EditorFailure = {
   kind: "unreadable",
@@ -16,27 +19,6 @@ const unreadable: EditorFailure = {
 };
 
 const historyLimit = 100;
-
-export function checked(draft: Draft): boolean {
-  return (
-    !isDirty(draft) &&
-    draft.saveStatus === "idle" &&
-    ((draft.domainPath === domainOf(draft.doc) && draft.domainEtag !== "") ||
-      (draft.outcome?.kind === "composed" && draft.outcome.doc === draft.doc))
-  );
-}
-
-export function emptyPlant(draft: Draft): boolean {
-  return equipmentOf(draft.doc).length === 0;
-}
-
-export function canSave(draft: Draft): boolean {
-  return isDirty(draft) || draft.saveStatus === "saved-compose-failed" || (!checked(draft) && !emptyPlant(draft));
-}
-
-export function isDirty(draft: Draft): boolean {
-  return draft.doc !== draft.saved;
-}
 
 function kept(doc: Composition, draft: Draft): string | null {
   const selected = draft.selected;
@@ -47,6 +29,7 @@ export class EditorStore extends Observable<EditorState> {
   private active: OperationId | null = null;
   private attemptSequence = 0;
   private activeAttempt: number | null = null;
+  private memo: StoreMemo = emptyMemo;
 
   constructor(
     private readonly gateway: EditorGateway,
@@ -88,8 +71,9 @@ export class EditorStore extends Observable<EditorState> {
       this.versionOf(domainOf(doc)),
     ]);
     const library = listed.ok ? listed.value : [];
-    if (this.current(request, path))
-      this.set({ ...this.fresh(path, file.value.etag, doc), domainEtag, library, specs });
+    if (!this.current(request, path)) return;
+    this.memo = { etag: file.value.etag, domainPath: domainOf(doc), domainEtag };
+    this.set({ ...this.fresh(path, doc, domainEtag), library, specs });
   }
 
   private current(request: OperationId, path: string): boolean {
@@ -101,6 +85,7 @@ export class EditorStore extends Observable<EditorState> {
     this.operations.invalidate();
     this.active = null;
     this.activeAttempt = null;
+    this.memo = emptyMemo;
     this.set({ phase: "idle" });
   }
 
@@ -109,33 +94,21 @@ export class EditorStore extends Observable<EditorState> {
     return file.ok ? file.value.etag : "";
   }
 
-  private fresh(path: string, etag: string, doc: Composition): Draft {
-    const empty = { specs: new Map(), library: [], selected: null, issues: null, outcome: null, failure: null };
-    const history = { past: [], future: [] };
+  private fresh(path: string, doc: Composition, domainEtag: string): Draft {
     return {
       phase: "ready",
       path,
-      etag,
-      domainPath: domainOf(doc),
-      domainEtag: "",
+      domain: domainEtag === "" ? null : domainOf(doc),
       saved: doc,
       doc,
-      saveStatus: "idle",
-      composeFailure: null,
-      saving: false,
-      ...history,
-      ...empty,
+      save: { kind: "idle" },
+      issues: null,
+      past: [],
+      future: [],
+      specs: new Map(),
+      library: [],
+      selected: null,
     };
-  }
-
-  savable(): boolean {
-    const state = this.snapshot();
-    return state.phase === "ready" && canSave(state);
-  }
-
-  unsavedChanges(): boolean {
-    const state = this.snapshot();
-    return state.phase === "ready" && isDirty(state);
   }
 
   select(id: string | null): void {
@@ -153,7 +126,7 @@ export class EditorStore extends Observable<EditorState> {
 
   revert(): void {
     const draft = this.draft();
-    if (draft === null || draft.saving || draft.doc === draft.saved) return;
+    if (draft === null || isSaving(draft) || draft.doc === draft.saved) return;
     const past = [...draft.past, draft.doc].slice(-historyLimit);
     this.set({ ...draft, doc: draft.saved, past, future: [], selected: null });
   }
@@ -194,34 +167,40 @@ export class EditorStore extends Observable<EditorState> {
 
   async save(): Promise<void> {
     const draft = this.draft();
-    if (draft === null || draft.saving) return;
+    if (draft === null || isSaving(draft)) return;
     const operation = this.active;
     if (operation === null) return;
-    const attempt: SaveAttempt = captureSaveAttempt(++this.attemptSequence, operation, draft);
+    const attempt: SaveAttempt = captureSaveAttempt(++this.attemptSequence, operation, draft, this.memo);
     this.activeAttempt = attempt.id;
-    this.set({ ...draft, saving: true, failure: null });
+    this.set({ ...draft, save: { kind: "saving" } });
     if (!this.currentAttempt(attempt)) return;
     const result = await saveCaptured(
       this.gateway,
       attempt,
       () => this.currentAttempt(attempt),
       (etag) => {
-        this.update((current) => markSaved(current, attempt, etag));
+        this.fileWritten(attempt, etag);
       },
       (path) => this.versionOf(path),
     );
-    if (result.kind === "stale") return;
-    this.finishAttempt(attempt, (current) => applySaveResult(current, attempt, result));
+    if (result.kind !== "stale") this.finishAttempt(attempt, result);
+  }
+
+  private fileWritten(attempt: SaveAttempt, etag: string): void {
+    this.memo = { ...this.memo, etag };
+    this.update((current) => markSaved(current, attempt));
   }
 
   private currentAttempt(attempt: SaveAttempt): boolean {
     return this.activeAttempt === attempt.id && this.current(attempt.operation, attempt.path);
   }
 
-  private finishAttempt(attempt: SaveAttempt, change: (draft: Draft) => Draft): void {
+  private finishAttempt(attempt: SaveAttempt, result: SaveResult): void {
     if (!this.currentAttempt(attempt)) return;
     this.activeAttempt = null;
-    this.update(change);
+    if (result.kind === "composed")
+      this.memo = { ...this.memo, domainPath: attempt.output, domainEtag: result.outputEtag };
+    this.update((current) => applySaveResult(current, attempt, result));
   }
 
   private draft(): Draft | null {

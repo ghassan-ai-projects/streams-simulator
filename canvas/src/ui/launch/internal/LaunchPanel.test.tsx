@@ -15,14 +15,7 @@ const path = "domains/mini.domain.json";
 function renderPanel(fake: FakeBridge, onFinished = vi.fn<(worldId: string) => void>()) {
   const { launch, timers } = launchHarness(fake);
   const view = render(
-    <LaunchPanel
-      launch={launch}
-      scheduler={timers}
-      plant={parsePlant(domain)}
-      path={path}
-      onClose={vi.fn()}
-      onFinished={onFinished}
-    />,
+    <LaunchPanel launch={launch} plant={parsePlant(domain)} path={path} onClose={vi.fn()} onFinished={onFinished} />,
   );
   return { launch, timers, view, onFinished };
 }
@@ -179,12 +172,11 @@ describe("launch panel", () => {
 
 describe("launch panel picking", () => {
   it("takes a fault's instance from the graph and rolls a new seed", () => {
-    const { launch, timers } = launchHarness(launchBridge());
+    const { launch } = launchHarness(launchBridge());
     const plant = parsePlant(domain);
     const panel = (selected: string | null) => (
       <LaunchPanel
         launch={launch}
-        scheduler={timers}
         plant={plant}
         path={path}
         selected={selected}
@@ -207,7 +199,7 @@ describe("launch panel picking", () => {
 
 describe("launch panel lifetime", () => {
   it("does not jump to a run that finished while nobody watched it", async () => {
-    const { launch, timers } = launchHarness(launchBridge());
+    const { launch } = launchHarness(launchBridge());
     await launch.start(
       { domain: "mini", title: "Mini plant", path },
       { seed: 1, durationS: 60, explore: true, faults: [], calls: [] },
@@ -215,21 +207,14 @@ describe("launch panel lifetime", () => {
     expect(launch.snapshot()).toMatchObject({ phase: "done" });
     const onFinished = vi.fn<(worldId: string) => void>();
     render(
-      <LaunchPanel
-        launch={launch}
-        scheduler={timers}
-        plant={parsePlant(domain)}
-        path={path}
-        onClose={vi.fn()}
-        onFinished={onFinished}
-      />,
+      <LaunchPanel launch={launch} plant={parsePlant(domain)} path={path} onClose={vi.fn()} onFinished={onFinished} />,
     );
     expect(screen.getByRole("button", { name: "Start the run" })).toBeInTheDocument();
     expect(onFinished).not.toHaveBeenCalled();
   });
 
   it("starts from a plan proposed for this plant, such as Run again", () => {
-    const { launch, timers } = launchHarness(launchBridge());
+    const { launch } = launchHarness(launchBridge());
     launch.propose("mini", {
       seed: 5,
       durationS: 7200,
@@ -238,14 +223,7 @@ describe("launch panel lifetime", () => {
       calls: [],
     });
     const view = render(
-      <LaunchPanel
-        launch={launch}
-        scheduler={timers}
-        plant={parsePlant(domain)}
-        path={path}
-        onClose={vi.fn()}
-        onFinished={vi.fn()}
-      />,
+      <LaunchPanel launch={launch} plant={parsePlant(domain)} path={path} onClose={vi.fn()} onFinished={vi.fn()} />,
     );
     expect(screen.getByLabelText("Seed")).toHaveValue("5");
     expect(screen.getByLabelText("Duration")).toHaveValue("2");
@@ -260,7 +238,7 @@ describe("launch panel lifetime", () => {
   });
 
   it("keeps a run's seconds, names the run it was prefilled from, and says what was not copied", () => {
-    const { launch, timers } = launchHarness(launchBridge());
+    const { launch } = launchHarness(launchBridge());
     const faults = [{ entity: "CH-1", fault: "chiller__fouling", atS: 620 }];
     launch.propose(
       "mini",
@@ -269,14 +247,7 @@ describe("launch panel lifetime", () => {
       "w-4",
     );
     render(
-      <LaunchPanel
-        launch={launch}
-        scheduler={timers}
-        plant={parsePlant(domain)}
-        path={path}
-        onClose={vi.fn()}
-        onFinished={vi.fn()}
-      />,
+      <LaunchPanel launch={launch} plant={parsePlant(domain)} path={path} onClose={vi.fn()} onFinished={vi.fn()} />,
     );
     expect(screen.getByLabelText("Duration")).toHaveValue("1.5");
     expect(screen.getByLabelText("Fault 1 starts at minute")).toHaveValue("10.33");

@@ -30,10 +30,12 @@ describe("plant maker", () => {
   it("copies a workspace plant whole or keeps only its frame", async () => {
     const fake = bridge();
     const maker = new PlantMaker(fake.plant);
-    expect(await maker.create({ kind: "file", path: base }, "lab-two", "Lab two", true)).toEqual({
-      composition: "compositions/lab-two.composition.json",
-      domain: "domains/lab-two.domain.json",
-    });
+    expect(await maker.create({ kind: "file", path: base }, "lab-two", "Lab two", "copy")).toEqual(
+      success({
+        composition: "compositions/lab-two.composition.json",
+        domain: "domains/lab-two.domain.json",
+      }),
+    );
     expect(fake.writes[0]).toMatchObject({ path: "compositions/lab-two.composition.json", etag: "" });
     expect(content(fake)).toMatchObject({
       id: "lab-two",
@@ -50,7 +52,7 @@ describe("plant maker", () => {
       composition: "compositions/lab-two.composition.json",
       out: "domains/lab-two.domain.json",
     });
-    await maker.create({ kind: "example", id: "pilot" }, "lab-three", "Lab three", false);
+    await maker.create({ kind: "example", id: "pilot" }, "lab-three", "Lab three", "empty");
     expect(fake.calls.at(-1)?.args).toEqual({ id: "lab-three", title: "Lab three", example: "pilot", empty: true });
     expect(fake.calls.filter((call) => call.name === "domain.compose")).toHaveLength(1);
     const made = JSON.parse(fake.writes[1]?.content ?? "") as Record<string, unknown>;
@@ -61,23 +63,26 @@ describe("plant maker", () => {
   it("refuses an existing plant, an unreadable base and an unknown example", async () => {
     const fake = bridge();
     const maker = new PlantMaker(fake.plant);
-    expect(await maker.create({ kind: "file", path: base }, "lab", "Lab", true)).toMatchObject({
-      kind: "conflict",
-      diagnostic: { displayCode: "plant_exists" },
+    expect(await maker.create({ kind: "file", path: base }, "lab", "Lab", "copy")).toMatchObject({
+      ok: false,
+      failure: { kind: "conflict", diagnostic: { displayCode: "plant_exists" } },
     });
     fake.addFile("compositions/bad.composition.json", "[");
     expect(
-      await maker.create({ kind: "file", path: "compositions/bad.composition.json" }, "bad-copy", "B", true),
-    ).toMatchObject({ kind: "unreadable", diagnostic: { displayCode: "composition_invalid" } });
+      await maker.create({ kind: "file", path: "compositions/bad.composition.json" }, "bad-copy", "B", "copy"),
+    ).toMatchObject({ ok: false, failure: { kind: "unreadable", diagnostic: { displayCode: "composition_invalid" } } });
     const refusal = {
       ...cannedFailure("composition_invalid", 422, "fails"),
       issues: [{ pointer: "/id", message: "bad id" }],
     };
     fake.actions.set("component.new", failed(refusal));
-    expect(await maker.create({ kind: "example", id: "pilot" }, "Bad_Id", "B", true)).toMatchObject({
-      kind: "invalid-composition",
-      diagnostic: { message: "" },
-      issues: [{ pointer: "/id", message: "bad id" }],
+    expect(await maker.create({ kind: "example", id: "pilot" }, "Bad_Id", "B", "copy")).toMatchObject({
+      ok: false,
+      failure: {
+        kind: "invalid-composition",
+        diagnostic: { message: "" },
+        issues: [{ pointer: "/id", message: "bad id" }],
+      },
     });
     expect(await maker.idProblem({ kind: "example", id: "pilot" }, "Bad_Id", "B")).toBe("bad id");
     fake.actions.set(
@@ -90,14 +95,15 @@ describe("plant maker", () => {
         ],
       }),
     );
-    expect(await maker.create({ kind: "example", id: "pilot" }, "Bad_Id", "B", true)).toMatchObject({
-      kind: "invalid-composition",
-      diagnostic: { message: "missing required property" },
+    expect(await maker.create({ kind: "example", id: "pilot" }, "Bad_Id", "B", "copy")).toMatchObject({
+      ok: false,
+      failure: { kind: "invalid-composition", diagnostic: { message: "missing required property" } },
     });
     expect(await maker.idProblem({ kind: "example", id: "pilot" }, "Bad_Id", "B")).toBe("bad id");
     fake.actions.set("component.new", success({ composition: "not a plant" }));
-    expect(await maker.create({ kind: "example", id: "odd" }, "odd-copy", "O", true)).toMatchObject({
-      kind: "unreadable",
+    expect(await maker.create({ kind: "example", id: "odd" }, "odd-copy", "O", "copy")).toMatchObject({
+      ok: false,
+      failure: { kind: "unreadable" },
     });
     expect(fake.writes).toEqual([]);
     fake.actions.delete("component.new");
@@ -105,9 +111,9 @@ describe("plant maker", () => {
       "compositions/lab-two.composition.json",
       failed(cannedFailure("conflict", 409, "changed on disk")),
     );
-    expect(await maker.create({ kind: "file", path: base }, "lab-two", "Lab two", true)).toMatchObject({
-      kind: "conflict",
-      diagnostic: { displayCode: "plant_exists" },
+    expect(await maker.create({ kind: "file", path: base }, "lab-two", "Lab two", "copy")).toMatchObject({
+      ok: false,
+      failure: { kind: "conflict", diagnostic: { displayCode: "plant_exists" } },
     });
   });
 
@@ -118,20 +124,33 @@ describe("plant maker", () => {
     expect(examples).toEqual([{ id: "pilot", title: "Pilot", description: "small" }]);
     const [pilot] = examples;
     if (pilot === undefined) throw new Error("no example");
-    expect(await maker.tryExample(pilot, "pilot")).toEqual({
-      composition: "compositions/pilot.composition.json",
-      domain: "domains/pilot.domain.json",
-    });
+    expect(await maker.tryExample(pilot, "pilot")).toEqual(
+      success({
+        composition: "compositions/pilot.composition.json",
+        domain: "domains/pilot.domain.json",
+      }),
+    );
     expect(fake.calls.at(-1)).toEqual({
       name: "domain.compose",
       args: { composition: "compositions/pilot.composition.json", out: "domains/pilot.domain.json", etag: "" },
     });
     fake.actions.set("domain.compose", failed(cannedFailure("composition_invalid", 422, "bad")));
     expect(await maker.tryExample(pilot, "pilot-2")).toMatchObject({
-      kind: "unreadable",
-      diagnostic: { displayCode: "composition_invalid" },
+      ok: false,
+      failure: { kind: "unreadable", diagnostic: { displayCode: "composition_invalid" } },
     });
     fake.actions.set("component.examples", failed(cannedFailure("bridge_failed", 500)));
     expect(await maker.examples()).toEqual([]);
+  });
+
+  it("keeps a created copy when composing it fails, because the editor opens the composition and composes on save", async () => {
+    const fake = bridge();
+    fake.actions.set("domain.compose", failed(cannedFailure("composition_invalid", 422, "bad")));
+    const maker = new PlantMaker(fake.plant);
+    expect(await maker.create({ kind: "file", path: base }, "lab-two", "Lab two", "copy")).toMatchObject({
+      ok: true,
+      value: { composition: "compositions/lab-two.composition.json" },
+    });
+    expect(fake.calls.filter((call) => call.name === "domain.compose")).toHaveLength(1);
   });
 });

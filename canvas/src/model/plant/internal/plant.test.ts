@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { composition, domain } from "../../../test/plantFixture";
-import { areaOf, channelOf, effectorOf, linksOf, parsePlant, stateUnit } from "./plant";
+import { areaOf, channelOf, effectorNamesOf, effectorOf, hasEffectors, linksOf, parsePlant, stateUnit } from "./plant";
 
 describe("plant from a domain file", () => {
   it("reads instances, kinds, areas and links", () => {
@@ -109,5 +109,15 @@ describe("plant from a domain file", () => {
     );
     expect(linksOf(plant, "CT-1").incoming.map((link) => link.from)).toEqual(["CH-1"]);
     expect(linksOf(plant, "CT-1").outgoing.map((link) => link.to)).toEqual(["CH-1"]);
+  });
+
+  it("names the effectors an instance can be called with and whether any instance can be", () => {
+    const plant = parsePlant(domain);
+    expect(effectorNamesOf(plant, "CH-1")).toEqual(["start"]);
+    expect(effectorNamesOf(plant, "CT-1")).toEqual([]);
+    expect(effectorNamesOf(plant, "nobody")).toEqual([]);
+    expect(hasEffectors(plant)).toBe(true);
+    expect(hasEffectors(parsePlant({ instances: [{ id: "solo", kind: "k" }], kinds: [{ name: "k" }] }))).toBe(false);
+    expect(hasEffectors(parsePlant({}))).toBe(false);
   });
 });

@@ -1,17 +1,22 @@
 import { panel } from "../../primitives";
 import { Play, X } from "lucide-react";
-import { useEffect, useState } from "react";
-import type { Scheduler } from "../../../app/ports";
-import type { LaunchState, LaunchStore, Proposal } from "../../../app/launch";
-import { keepKnownFaults, planSummary, runProgressWords } from "../../../model/launch";
+import { useEffect, useMemo, useState } from "react";
+import type { LaunchState, LaunchStore, Proposal, RunWatch } from "../../../app/launch";
+import type { Draft } from "../../../model/launch";
+import {
+  draftOf,
+  firstDraft,
+  keepKnownFaults,
+  pickedOnGraph,
+  planSummary,
+  runProgressWords,
+} from "../../../model/launch";
 import { humanise } from "../../../model/shared/words";
 import { clockOf, durationOf } from "../../../model/shared/duration";
 import type { Plant } from "../../../model/plant";
 import { faultsOf } from "../../../model/plant";
 import { plantTitle } from "../../../model/plant";
 import { useStore } from "../../primitives";
-import type { Draft } from "./draft";
-import { draftOf, firstDraft, pickedOnGraph } from "./draft";
 import type { Change } from "./FaultRows";
 import { LaunchForm } from "./LaunchForm";
 import { Result } from "./LaunchResult";
@@ -22,7 +27,6 @@ import styles from "./LaunchPanel.module.css";
 
 interface LaunchPanelProps {
   readonly launch: LaunchStore;
-  readonly scheduler: Scheduler;
   readonly plant: Plant;
   readonly path: string;
   readonly selected?: string | null;
@@ -31,7 +35,6 @@ interface LaunchPanelProps {
 }
 
 type Running = Extract<LaunchState, { phase: "running" }>;
-type Done = Extract<LaunchState, { phase: "done" }>;
 
 function ProgressBar({ state }: { readonly state: Running }) {
   const marks = [
@@ -132,7 +135,7 @@ interface BodyProps {
   readonly selected: string | null;
   readonly change: (change: Change) => void;
   readonly onFinished: (worldId: string) => void;
-  readonly watched: boolean;
+  readonly watch: RunWatch;
 }
 
 function Elsewhere({ state }: { readonly state: Running }) {
@@ -144,17 +147,13 @@ function Elsewhere({ state }: { readonly state: Running }) {
   );
 }
 
-function showsResult(state: LaunchState, own: boolean, watched: boolean): state is Done {
-  return state.phase === "done" && own && (state.calls.length > 0 || watched);
-}
-
-function Body({ state, launch, plant, path, draft, selected, change, onFinished, watched }: BodyProps) {
+function Body({ state, launch, plant, path, draft, selected, change, onFinished, watch }: BodyProps) {
   const own = state.phase !== "idle" && state.origin.domain === plant.id;
   if (state.phase === "running") {
     return own ? <Progress state={state} launch={launch} title={plantTitle(plant)} /> : <Elsewhere state={state} />;
   }
   if (state.phase === "failed" && own) return <Failure state={state} launch={launch} />;
-  if (showsResult(state, own, watched))
+  if (watch.shows(state))
     return (
       <Result
         state={state}
@@ -177,20 +176,11 @@ function Body({ state, launch, plant, path, draft, selected, change, onFinished,
   );
 }
 
-const finishedHold = 2000;
-
-function useLaunch(launch: LaunchStore, scheduler: Scheduler, plant: string, onFinished: (worldId: string) => void) {
+function useLaunch(launch: LaunchStore, plant: string, onFinished: (worldId: string) => void) {
   const state = useStore(launch);
-  const [watched, setWatched] = useState(false);
-  if (!watched && state.phase === "running" && state.origin.domain === plant) setWatched(true);
-  useEffect(() => {
-    if (!watched || state.phase !== "done" || state.origin.domain !== plant || state.calls.length > 0) return undefined;
-    return scheduler.schedule(finishedHold, () => {
-      launch.reset();
-      onFinished(state.worldId);
-    });
-  }, [watched, state, launch, scheduler, plant, onFinished]);
-  return { state, watched };
+  const watch = useMemo(() => launch.watch(plant), [launch, plant]);
+  useEffect(() => watch.holdFinished(onFinished), [watch, onFinished]);
+  return { state, watch };
 }
 
 function shownProposal(proposed: Proposal): boolean {
@@ -226,16 +216,8 @@ function useDraft(launch: LaunchStore, plant: Plant, selected: string | null) {
   return { proposed, draft, setDraft };
 }
 
-export function LaunchPanel({
-  launch,
-  scheduler,
-  plant,
-  path,
-  selected = null,
-  onClose,
-  onFinished,
-}: LaunchPanelProps) {
-  const { state, watched } = useLaunch(launch, scheduler, plant.id, onFinished);
+export function LaunchPanel({ launch, plant, path, selected = null, onClose, onFinished }: LaunchPanelProps) {
+  const { state, watch } = useLaunch(launch, plant.id, onFinished);
   const { proposed, draft, setDraft } = useDraft(launch, plant, selected);
   return (
     <aside className={panel.panel} aria-labelledby="launch-title">
@@ -261,7 +243,7 @@ export function LaunchPanel({
         selected={selected}
         change={setDraft}
         onFinished={onFinished}
-        watched={watched}
+        watch={watch}
       />
     </aside>
   );

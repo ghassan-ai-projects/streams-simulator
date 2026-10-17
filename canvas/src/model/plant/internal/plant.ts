@@ -216,3 +216,11 @@ export function faultsOf(plant: Plant, entity: string): readonly string[] | null
 export function effectorOf(plant: Plant, entity: string, effector: string): EffectorSpec | undefined {
   return kindOfEntity(plant, entity)?.effectorSpecs.find((spec) => spec.name === effector);
 }
+
+export function effectorNamesOf(plant: Plant, entity: string): readonly string[] {
+  return kindOfEntity(plant, entity)?.effectorSpecs.map((spec) => spec.name) ?? [];
+}
+
+export function hasEffectors(plant: Plant): boolean {
+  return [...plant.kinds.values()].some((kind) => kind.effectorSpecs.length > 0);
+}

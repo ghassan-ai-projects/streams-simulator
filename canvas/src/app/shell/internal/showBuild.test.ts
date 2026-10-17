@@ -1,6 +1,6 @@
 import { act } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { PanelStore } from "../../../app/shell";
+import { PanelStore } from "./panelStore";
 import { editing } from "../../../test/editorHarness";
 import { showBuild } from "./showBuild";
 

@@ -1,11 +1,12 @@
 import { useEffect } from "react";
+import { canSave } from "../../../app/editor";
 import type { EditorSession } from "../../../app/editor";
 import { inTextField } from "../../primitives";
 
 function command(event: KeyboardEvent, editor: EditorSession): boolean {
   const key = event.key.toLowerCase();
   if (key === "s") {
-    if (editor.savable()) void editor.save();
+    if (canSave(editor.snapshot())) void editor.save();
     return true;
   }
   if (inTextField(event.target)) return false;

@@ -1,3 +1,4 @@
+import { isDirty, isSaving } from "../../../app/editor";
 import type { EditorSession } from "../../../app/editor";
 import type { NavigationStore } from "../../../app/shell";
 import { useStore } from "../../primitives";
@@ -13,10 +14,10 @@ interface Props {
 function LeaveButtons({ editor, navigation }: Props) {
   const stay = useFocusOnMount<HTMLButtonElement>();
   const state = useStore(editor);
-  const saving = state.phase === "ready" && state.saving;
+  const saving = isSaving(state);
   const saveAndLeave = async () => {
     await editor.save();
-    if (editor.unsavedChanges()) navigation.stay();
+    if (isDirty(editor.snapshot())) navigation.stay();
     else navigation.leave();
   };
   const discardAndLeave = () => {
