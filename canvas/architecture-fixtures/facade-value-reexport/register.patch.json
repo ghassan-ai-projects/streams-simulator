@@ -1,0 +1,1 @@
+{"modules":{"ui/graph":{"kind":"ui","layer":"ui","lifetime":"components","responsibility":"the graph","folders":["src/ui/graph"],"mayImport":["ui"],"entrypoint":"src/ui/graph/index.ts"}}}

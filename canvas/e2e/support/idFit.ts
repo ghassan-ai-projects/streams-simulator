@@ -1,4 +1,6 @@
-export function idProblems(): string[] {
+import type { Audit } from "./audit";
+
+export function idProblems(atLeast = 1): Audit {
   const graph = document.querySelector("[aria-roledescription='plant graph']");
   const zoom = Number(graph === null ? 1 : getComputedStyle(graph).getPropertyValue("--zoom"));
   const lineTops = (element: HTMLElement): Set<number> => {
@@ -23,6 +25,7 @@ export function idProblems(): string[] {
     if (element.scrollWidth > element.clientWidth + 1) found.push(`${name}: overflows`);
     return found;
   };
-  const ids = [...document.querySelectorAll<HTMLElement>(".react-flow__node-instance [class*='id_']")];
-  return ids.filter((element) => element.getClientRects().length > 0).flatMap(problemsOf);
+  const ids = [...document.querySelectorAll<HTMLElement>('.react-flow__node-instance [data-part="id"]')];
+  const problems = ids.filter((element) => element.getClientRects().length > 0).flatMap(problemsOf);
+  return { considered: ids.length, problems, met: ids.length >= atLeast };
 }

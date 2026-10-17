@@ -1,0 +1,147 @@
+import { shared } from "../../primitives";
+import { useState } from "react";
+import type { Plant } from "../../../model/plant";
+import { plantTitle } from "../../../model/plant";
+import { areaCounts, hallOf } from "../../../model/graph";
+import { kindLabel } from "../../../model/shared/words";
+import type { RunRow } from "../../../model/workspace";
+import { counted, runFacts, whenOf } from "../../../model/workspace";
+import { MetaParts } from "../../primitives";
+import { cx } from "../../primitives";
+import { useCutBottom } from "../../primitives";
+import styles from "./Inspector.module.css";
+
+function counts(values: readonly string[]): readonly (readonly [string, number])[] {
+  const tally = new Map<string, number>();
+  values.forEach((value) => tally.set(value, (tally.get(value) ?? 0) + 1));
+  return [...tally.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+}
+
+function Tally({ title, rows }: { readonly title: string; readonly rows: readonly (readonly [string, number])[] }) {
+  return (
+    <section className={styles.section} aria-label={title}>
+      <h3 className={shared.sectionTitle}>
+        {title}
+        <span className={styles.count}>{rows.length}</span>
+      </h3>
+      <ul className={styles.tally}>
+        {rows.map(([name, n]) => (
+          <li key={name}>
+            <span>{name}</span>
+            <span className={styles.mono}>{n}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function RunItem({ row, onReview }: { readonly row: RunRow; readonly onReview: (worldId: string) => void }) {
+  const words = [
+    row.run.worldId,
+    row.run.explore ? "Explore" : "Evaluate",
+    ...runFacts(row.run),
+    whenOf(row.run.recordedAt),
+  ];
+  return (
+    <li>
+      <span className={styles.figures}>
+        <MetaParts parts={words} />
+      </span>
+      <button
+        type="button"
+        className={styles.linkButton}
+        aria-label={`Review ${row.run.worldId}`}
+        onClick={() => {
+          onReview(row.run.worldId);
+        }}
+      >
+        Review
+      </button>
+    </li>
+  );
+}
+
+const recentShown = 5;
+
+function Runs({ runs, onReview }: { readonly runs: readonly RunRow[]; readonly onReview: (worldId: string) => void }) {
+  const [all, setAll] = useState(false);
+  const shown = all ? runs : runs.slice(0, recentShown);
+  return (
+    <section className={styles.section} aria-label="Recent runs">
+      <h3 className={shared.sectionTitle}>
+        Recent runs
+        <span className={styles.count}>{runs.length}</span>
+      </h3>
+      {runs.length === 0 && <p className={styles.muted}>No runs yet: use Run plant.</p>}
+      <ul className={styles.tally}>
+        {shown.map((row) => (
+          <RunItem key={row.run.worldId} row={row} onReview={onReview} />
+        ))}
+      </ul>
+      {!all && runs.length > recentShown && (
+        <button
+          type="button"
+          className={cx(styles.linkButton, styles.moreLink)}
+          onClick={() => {
+            setAll(true);
+          }}
+        >
+          {`Show all ${String(runs.length)} runs`}
+        </button>
+      )}
+    </section>
+  );
+}
+
+function OverviewHead({ plant, where }: { readonly plant: Plant; readonly where: string }) {
+  return (
+    <header className={styles.inspectorHead}>
+      <h2>{plantTitle(plant)}</h2>
+      <p className={styles.kindLine}>
+        {`${counted(plant.instances.length, "instance", "instances")} in ${where} · ${counted(
+          plant.links.length,
+          "link",
+          "links",
+        )}`}
+      </p>
+      <p className={styles.hint}>
+        Select an instance to see its channels (the values measured on it, one for each port and state), links, faults
+        and effectors.
+      </p>
+    </header>
+  );
+}
+
+export function PlantOverview({
+  plant,
+  runs,
+  onReview,
+}: {
+  readonly plant: Plant;
+  readonly runs: readonly RunRow[];
+  readonly onReview: (worldId: string) => void;
+}) {
+  const areas = areaCounts(plant);
+  const halls = counts(plant.instances.flatMap((instance) => hallOf(instance.id) ?? []));
+  const where =
+    halls.length > 0
+      ? `${counted(halls.length, "hall", "halls")} and the site`
+      : counted(areas.length, "area", "areas");
+  const { ref, cut } = useCutBottom<HTMLElement>();
+  return (
+    <aside
+      ref={ref}
+      className={cx(styles.inspector, shared.scrolls, shared.cut)}
+      data-cut={cut ? "true" : undefined}
+      aria-label="Inspector"
+      tabIndex={0}
+    >
+      <OverviewHead plant={plant} where={where} />
+      <Runs runs={runs} onReview={onReview} />
+      {halls.length > 0 && <Tally title="Halls" rows={halls} />}
+      <Tally title={halls.length > 0 ? "Areas across the halls" : "Areas"} rows={areas} />
+      <Tally title="Kinds" rows={counts(plant.instances.map((instance) => kindLabel(instance.kind)))} />
+    </aside>
+  );
+}

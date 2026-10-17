@@ -1,0 +1,161 @@
+.inspector {
+  min-height: 0;
+  overflow: auto;
+  border-left: 1px solid var(--border-subtle);
+}
+
+.count {
+  flex: none;
+  margin-left: auto;
+  padding-left: var(--space-2);
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  letter-spacing: 0;
+  font-weight: 400;
+}
+
+.inspectorHead {
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.inspectorHead h2 {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+
+.section {
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.items,
+.tally {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.items li {
+  padding: 2px var(--space-3);
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+.empty {
+  margin: var(--space-3) 0 0;
+  padding: 2px var(--space-3);
+  color: var(--text-secondary);
+}
+
+.muted,
+.hint {
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  color: var(--text-secondary);
+}
+
+.inspectorHead .muted {
+  padding: 0;
+}
+
+.headLine {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.headLine h2 {
+  flex: 1;
+  margin: 0;
+}
+
+.close {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.close:hover {
+  background: var(--surface-hover);
+}
+
+.kindLine {
+  margin: var(--space-1) 0 0;
+  color: var(--text-primary);
+}
+
+.source {
+  margin: 2px 0 0;
+  font: var(--text-xs) var(--font-mono);
+  color: var(--text-tertiary);
+  overflow-wrap: anywhere;
+}
+
+.modelDetails {
+  margin-top: var(--space-2);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.modelDetails summary {
+  width: fit-content;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.modelDetails p {
+  margin: var(--space-2) 0 0;
+  line-height: 1.45;
+}
+
+.figures {
+  font-variant-numeric: tabular-nums;
+}
+
+.tally li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-height: 24px;
+  padding: 0 var(--space-3);
+  color: var(--text-secondary);
+}
+
+.linkButton {
+  flex: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.linkButton:hover {
+  text-decoration: underline;
+}
+
+.moreLink {
+  display: block;
+  padding: 2px var(--space-3);
+  font-size: var(--text-sm);
+}
+
+.linkGroup {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+}

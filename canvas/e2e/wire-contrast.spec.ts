@@ -1,7 +1,4 @@
-import { expect, test } from "@playwright/test";
-import { env } from "./support/env";
-
-test.use({ storageState: env("CANVAS_APP_STATE") });
+import { expect, test } from "./support/test";
 
 interface Reading {
   readonly canvas: string;
@@ -42,7 +39,7 @@ function contrast(a: readonly number[], b: readonly number[]): number {
 
 for (const theme of ["light", "dark"]) {
   test(`every wire colour reaches 3:1 against the canvas in ${theme}, the dimmed wire included`, async ({ page }) => {
-    await page.goto(env("CANVAS_APP_URL"));
+    await page.goto("/");
     const reading = await page.evaluate(read, theme);
     const canvas = channels(reading.canvas);
     for (const [name, colour] of Object.entries(reading.strokes)) {

@@ -1,0 +1,80 @@
+.newField .idProblem {
+  text-wrap: pretty;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  color: var(--status-alarm);
+  font-size: var(--text-sm);
+}
+
+.newField input[aria-invalid="true"] {
+  border-color: var(--status-alarm);
+  box-shadow: 0 0 0 1px var(--status-alarm);
+}
+
+.newFailure {
+  margin: 0;
+  color: var(--status-alarm);
+  font-size: var(--text-sm);
+}
+
+.newPlant {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--surface-sunken);
+}
+
+.newField {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+}
+
+.newField small {
+  grid-column: 2;
+  min-height: 2lh;
+  color: var(--text-secondary);
+}
+
+.newField input,
+.newField select {
+  height: 28px;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface-panel);
+  color: var(--text-primary);
+  font: inherit;
+}
+
+.newActions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.choice {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0 0 0 calc(88px + var(--space-2));
+  border: 0;
+}
+
+.choice label {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  color: var(--text-secondary);
+}
+
+.choice input {
+  margin-top: 3px;
+}
+
+.choice strong {
+  color: var(--text-primary);
+}

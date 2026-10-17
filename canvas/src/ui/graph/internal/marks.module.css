@@ -1,0 +1,90 @@
+.tierCompact .brief .tagWords {
+  display: none;
+}
+
+.tag {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 3px;
+  padding: 0 5px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  max-width: 100%;
+}
+
+.tagWords {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tag-alarm,
+.tag-fault {
+  background: var(--status-alarm-bg);
+  color: var(--text-primary);
+}
+
+.tag-alarm svg,
+.tag-fault svg {
+  color: var(--status-alarm);
+}
+
+.tag-warn {
+  background: var(--status-warn-bg);
+  color: var(--text-primary);
+}
+
+.tag-warn svg {
+  color: var(--status-warn);
+}
+
+.effectorTag {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+}
+
+.effectorMark {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+.tierCompact .effectorMark {
+  width: min(calc(10px / var(--zoom)), 22px);
+  height: min(calc(10px / var(--zoom)), 22px);
+}
+
+.tierOverview .effectorMark,
+.tierMap .effectorMark {
+  width: min(calc(10px / var(--zoom)), 36px);
+  height: min(calc(10px / var(--zoom)), 36px);
+}
+
+.tierCompact .tag {
+  padding: 0 calc(4px / var(--zoom));
+  font-size: max(var(--floor), min(calc(11px / var(--zoom)), 22px));
+  line-height: 1.2;
+}
+
+.tierCompact .tag svg {
+  width: min(calc(12px / var(--zoom)), 22px);
+  height: min(calc(12px / var(--zoom)), 22px);
+}
+
+.tierOverview .tag svg,
+.tierMap .tag svg {
+  width: min(calc(12px / var(--zoom)), 40px);
+  height: min(calc(12px / var(--zoom)), 40px);
+}
+
+.tierOverview .tag,
+.tierMap .tag {
+  gap: 0;
+  padding: calc(2px / var(--zoom));
+  font-size: 0;
+}

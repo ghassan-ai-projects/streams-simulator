@@ -136,6 +136,7 @@ Primary commands:
 - `make test-long` and `make test-race` (on demand only: long simulations and the race detector; not in any pipeline)
 
 Use `make quick` while working. Run `make phase-gate` once per pull request, before pushing (CI runs `ci-check` again); not after every step.
+
 - `make function-length`
 - `make build`
 - `go vet ./...`
@@ -196,13 +197,22 @@ See [.agents/context/go-style.md](.agents/context/go-style.md) for the repo-spec
 ## Canvas (TypeScript)
 
 - The canvas lives in `canvas/` with its own toolchain (Node 24, npm, exact pinned versions); read `canvas/README.md` and
-  `governance/CANVAS_UI_ACCEPTANCE.md` first. Gates: `make canvas-check` (part of `make phase-gate`).
+  `governance/CANVAS_UI_ACCEPTANCE.md` first. Gates: `make canvas-check` (part of `make phase-gate`), which runs `npm run check`: format, types, lint, layers, architecture
+  register (facades, CSS ownership, ratchet), duplication, dead code, tests with coverage floors, build, emitted stylesheet
+  oracle (`css:emitted`) and e2e.
+- For Canvas architecture or refactoring work, also read the
+  [accepted UI architecture](docs/simulation-canvas/ui-architecture-20261016/README.md); it is the target structure,
+  dependency contract, migration order and enforcement plan.
 - Layers `model` ← `app` ← `adapters`; `ui` uses `app` and `model` only and never touches transport (dependency-cruiser).
+- Inside a layer, code lives in modules `src/<layer>/<name>` that expose `index.ts` and keep their implementation in a
+  private `internal/`. `canvas/architecture.json` is the register (import allow-lists, callers, CSS ownership and caps, a
+  ratchet against the commit that introduced it); `canvas/ARCHITECTURE.md` is generated from it. After a module or import
+  change run `node scripts/sync-callers.ts` and `node scripts/write-architecture-doc.ts` in `canvas/`.
 - The canvas computes nothing the binary owns: validation, composition, simulation, truth, scoring and verification come
   from `streamsim` through the bridge. A missing capability goes into the simulator first.
 - Strict TypeScript (no `any`, no non-null assertion, no ts-ignore); files ≤ 300 lines; functions and components ≤ 40
   lines; cyclomatic ≤ 10, cognitive ≤ 15; no duplication of 75 tokens; no unused export; zero lint warnings.
-- Tests: unit (`model` ≥ 90 %, `app` ≥ 80 % lines), component tests with axe, Playwright end-to-end against the real binary.
+- Tests: unit (`model` ≥ 90 %, `app` ≥ 80 %, `adapters` ≥ 99 % lines), component tests with axe, Playwright end-to-end against the real binary.
   No mocks of the binary in end-to-end tests, no fixed sleeps.
 - Desktop only for now (≥ 1280 px). Every UI round ends with a design review in Chrome against the checklist in
   `governance/CANVAS_UI_ACCEPTANCE.md` §3, recorded in the phase review.

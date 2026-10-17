@@ -1,0 +1,149 @@
+import { parseComposition } from "../../../model/editor";
+import type { Workspace } from "../../../model/workspace";
+import type { Plant } from "../../../model/plant";
+import { parseDomainFile, parsePlant } from "../../../model/plant";
+import type { ComponentSpec } from "../../../model/plant";
+import { componentSpecs } from "./componentSpecs";
+import { Observable } from "../../shared";
+import type { OperationIdentity, Operation } from "../../shared";
+import type { DomainDocument, FileContent, Outcome, PlantFailure, PlantGateway } from "../../ports";
+
+export type PlantState =
+  | { readonly phase: "idle" }
+  | { readonly phase: "loading"; readonly path: string }
+  | { readonly phase: "failed"; readonly path: string; readonly failure: PlantFailure }
+  | {
+      readonly phase: "ready";
+      readonly path: string;
+      readonly plant: Plant;
+      readonly specs: ReadonlyMap<string, ComponentSpec>;
+      readonly composition: string | null;
+      readonly selected: string | null;
+    };
+
+export type ReadyPlant = Extract<PlantState, { phase: "ready" }>;
+
+function pairOf(id: string, workspace: Workspace): string | null {
+  return workspace.compositions.find((entry) => entry.id === id && id !== "")?.path ?? null;
+}
+
+function unchanged(
+  held: ReadyPlant | null,
+  etag: string,
+  file: Outcome<FileContent, PlantFailure>,
+  workspace: Workspace,
+): boolean {
+  return held !== null && file.ok && file.value.etag === etag && pairOf(held.plant.id, workspace) === held.composition;
+}
+
+interface Opened {
+  readonly path: string;
+  readonly etag: string;
+  readonly plant: Plant;
+  readonly specs: ReadonlyMap<string, ComponentSpec>;
+  readonly composition: string | null;
+  readonly selected: string | null;
+}
+
+function ready({ path, plant, specs, composition, selected }: Opened): ReadyPlant {
+  return { phase: "ready", path, plant, specs, composition, selected };
+}
+
+export class PlantStore extends Observable<PlantState> {
+  private asked: { readonly path: string; readonly workspace: Workspace } | null = null;
+  private etag = "";
+
+  constructor(
+    private readonly gateway: PlantGateway,
+    private readonly operations: OperationIdentity,
+  ) {
+    super({ phase: "idle" });
+  }
+
+  async load(path: string, workspace: Workspace): Promise<void> {
+    if (this.loading(path, workspace)) return;
+    this.asked = { path, workspace };
+    const request = this.operations.begin();
+    const held = this.held(path);
+    if (held === null) this.set({ phase: "loading", path });
+    const file = await this.gateway.readFile(path);
+    if (!request.live() || unchanged(held, this.etag, file, workspace)) return;
+    if (!file.ok) {
+      this.set({ phase: "failed", path, failure: file.failure });
+      return;
+    }
+    await this.open(request, path, file.value, workspace, held?.selected ?? null);
+  }
+
+  private loading(path: string, workspace: Workspace): boolean {
+    const state = this.snapshot();
+    return (
+      state.phase === "loading" &&
+      state.path === path &&
+      this.asked?.path === path &&
+      this.asked.workspace === workspace
+    );
+  }
+
+  private held(path: string): ReadyPlant | null {
+    const state = this.snapshot();
+    return state.phase === "ready" && state.path === path ? state : null;
+  }
+
+  private async open(
+    request: Operation,
+    path: string,
+    file: FileContent,
+    workspace: Workspace,
+    selected: string | null,
+  ): Promise<void> {
+    const { domain, id } = parseDomainFile(file.content);
+    const composition = pairOf(id, workspace);
+    const plant = parsePlant(domain, composition === null ? null : await this.composition(composition));
+    const kept = plant.instances.some((instance) => instance.id === selected) ? selected : null;
+    const specs = await this.specs(plant);
+    if (!request.live()) return;
+    this.opened({ path, etag: file.etag, plant, specs, composition, selected: kept });
+  }
+
+  async show(key: string, domain: DomainDocument): Promise<void> {
+    const state = this.snapshot();
+    if (state.phase !== "idle" && state.phase !== "failed" && state.path === key) return;
+    const request = this.operations.begin();
+    this.set({ phase: "loading", path: key });
+    const plant = parsePlant(domain);
+    const specs = await this.specs(plant);
+    if (!request.live()) return;
+    this.opened({ path: key, etag: "", plant, specs, composition: null, selected: null });
+  }
+
+  close(): void {
+    this.asked = null;
+    this.operations.invalidate();
+    this.set({ phase: "idle" });
+  }
+
+  select(id: string | null): void {
+    const state = this.snapshot();
+    if (state.phase === "ready") {
+      this.set({ ...state, selected: id });
+    }
+  }
+
+  private opened(opened: Opened): void {
+    this.etag = opened.etag;
+    this.set(ready(opened));
+  }
+
+  private async composition(path: string): Promise<unknown> {
+    const file = await this.gateway.readFile(path);
+    return file.ok ? parseComposition(file.value.content) : null;
+  }
+
+  private specs(plant: Plant): Promise<ReadonlyMap<string, ComponentSpec>> {
+    return componentSpecs(
+      this.gateway,
+      plant.instances.map((instance) => instance.component),
+    );
+  }
+}

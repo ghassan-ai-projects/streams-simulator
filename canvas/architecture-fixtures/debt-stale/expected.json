@@ -1,0 +1,6 @@
+{
+  "rules": [],
+  "stale": [
+    "protocol-owner src/app/a.ts"
+  ]
+}

@@ -1,3 +1,10 @@
+import type { DomainDocument } from "../app/ports";
+import type { PortSpec } from "../model/plant";
+
+export function domainDocument(value: object): DomainDocument {
+  return value as DomainDocument;
+}
+
 export const domain = {
   id: "mini",
   title: "Mini plant",
@@ -36,20 +43,20 @@ export const composition = {
   ],
 };
 
-export const chillerPorts = {
+export const chillerPorts: { readonly ports: readonly PortSpec[] } = {
   ports: [
-    { name: "cond_in", type: "cooling_water_temp", direction: "consumes" },
-    { name: "spare_in", type: "chilled_water", direction: "consumes" },
-    { name: "heat_out", type: "heat_rejection", direction: "provides" },
-    { name: "power_out", type: "electrical", direction: "provides" },
+    { name: "cond_in", type: "cooling_water_temp", direction: "in" },
+    { name: "spare_in", type: "chilled_water", direction: "in" },
+    { name: "heat_out", type: "heat_rejection", direction: "out" },
+    { name: "power_out", type: "electrical", direction: "out" },
   ],
 };
 
-export const towerPorts = {
+export const towerPorts: { readonly ports: readonly PortSpec[] } = {
   ports: [
-    { name: "heat_in", type: "heat_rejection", direction: "consumes" },
-    { name: "power_in", type: "electrical", direction: "consumes" },
-    { name: "basin_out", type: "cooling_water_temp", direction: "provides" },
+    { name: "heat_in", type: "heat_rejection", direction: "in" },
+    { name: "power_in", type: "electrical", direction: "in" },
+    { name: "basin_out", type: "cooling_water_temp", direction: "out" },
   ],
 };
 
@@ -73,4 +80,18 @@ export function campus(halls: number) {
       { from: id, to: id.replace("M-1", "M-2"), type: "line__feed__line" },
     ]),
   };
+}
+
+export function componentShown(
+  spec: { readonly ports: readonly PortSpec[] },
+  document: object = {},
+  entry: object = {},
+) {
+  const ports = spec.ports.map(({ name, type, direction, channel }) => ({
+    name,
+    type,
+    direction: direction === "out" ? "provides" : "requires",
+    ...(channel === undefined ? {} : { state: channel }),
+  }));
+  return { entry, document: { ...document, ports } };
 }

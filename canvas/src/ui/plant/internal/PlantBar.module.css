@@ -1,0 +1,10 @@
+.summary {
+  margin-left: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-secondary);
+}
+
+.run {
+  margin-left: auto;
+}

@@ -1,0 +1,75 @@
+.frame {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border: 1px solid color-mix(in srgb, var(--border-strong) 45%, transparent);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--border-strong) 6%, transparent);
+  pointer-events: none;
+}
+
+.frameTitleNode {
+  height: 28px;
+  pointer-events: none;
+}
+
+.frameTitle {
+  display: flex;
+  align-items: center;
+  height: 28px;
+  line-height: 28px;
+  white-space: nowrap;
+  padding: 0 var(--space-3);
+  border-radius: 9px 9px 0 0;
+  background: color-mix(in srgb, var(--border-strong) 18%, var(--surface-canvas));
+  font-weight: 600;
+  font-size: var(--text-md);
+}
+
+.frameName {
+  display: flex;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.nameHead {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nameTail {
+  flex: none;
+  white-space: pre;
+}
+
+.frameCount {
+  flex: none;
+  margin-left: auto;
+  padding-left: var(--space-2);
+  font-weight: 400;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.tierCompact .frameTitle,
+.tierOverview .frameTitle,
+.tierMap .frameTitle {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 100%;
+  height: auto;
+  padding: 0 0 min(calc(4px / var(--zoom)), 9.2px);
+  background: transparent;
+  font-size: min(calc(13px / var(--zoom)), 30px);
+  line-height: 1.3;
+  align-items: baseline;
+}
+
+.tierCompact .frameCount,
+.tierOverview .frameCount,
+.tierMap .frameCount {
+  font-size: min(calc(12px / var(--zoom)), 27.7px);
+}

@@ -1,11 +1,8 @@
-import { expect, test } from "@playwright/test";
-import { env } from "./support/env";
-
-test.use({ storageState: env("CANVAS_APP_STATE") });
+import { expect, test } from "./support/test";
 
 test("a native inspector disclosure updates its bottom cue without scrolling or resizing", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1080 });
-  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Ffactory-utilities.domain.json`);
+  await page.goto("/#/plant?domain=domains%2Ffactory-utilities.domain.json");
   await page
     .getByRole("navigation", { name: "Outline" })
     .getByRole("button", { name: /^CH-1 chiller$/ })

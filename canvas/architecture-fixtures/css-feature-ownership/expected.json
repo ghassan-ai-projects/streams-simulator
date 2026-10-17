@@ -1,0 +1,4 @@
+{
+  "rules": ["css-feature-ownership"],
+  "base": "base-ui.register.json"
+}

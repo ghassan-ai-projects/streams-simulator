@@ -1,10 +1,8 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./support/test";
 import type { Page } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { env } from "./support/env";
 
-test.use({ storageState: env("CANVAS_APP_STATE") });
 test.setTimeout(90_000);
 
 async function add(page: Page, component: string, name: string, size?: string) {
@@ -20,8 +18,11 @@ async function add(page: Page, component: string, name: string, size?: string) {
   await page.getByRole("button", { name: "Close the instance" }).click();
 }
 
-test("two pumps, two chillers of different sizes and two air-handling units compose in one plant", async ({ page }) => {
-  await page.goto(env("CANVAS_APP_URL"));
+test("two pumps, two chillers of different sizes and two air-handling units compose in one plant", async ({
+  page,
+  lab,
+}) => {
+  await page.goto("/");
   await page.getByRole("button", { name: "New plant" }).click();
   const form = page.getByRole("form", { name: "New plant" });
   await form.getByLabel("Name").fill("Pairs");
@@ -37,7 +38,7 @@ test("two pumps, two chillers of different sizes and two air-handling units comp
   await add(page, "Air-handling unit", "ahu-b");
   await page.getByRole("button", { name: "Save" }).click();
   await expect(page.getByRole("status").filter({ hasText: /^Ready to run\. Saved\.$/ })).toBeVisible();
-  const file = join(env("CANVAS_WORKSPACE"), "compositions", "pairs.composition.json");
+  const file = join(lab.workspace, "compositions", "pairs.composition.json");
   const written = JSON.parse(readFileSync(file, "utf8")) as { equipment: { names: string[] }[] };
   expect(written.equipment.map((entry) => entry.names)).toEqual([
     ["pump-a", "pump-b"],

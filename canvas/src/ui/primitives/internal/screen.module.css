@@ -1,0 +1,51 @@
+.screen {
+  composes: panels hidesSide from "./shared.module.css";
+  display: grid;
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr) var(--inspector-width);
+  height: 100%;
+  min-height: 0;
+}
+
+.side {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-right: 1px solid var(--border-subtle);
+  background: var(--surface-panel);
+}
+
+.center {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: 40px minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-3);
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--surface-panel);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.graphHost {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+}
+
+.loading,
+.failure {
+  padding: var(--space-6) var(--space-8);
+}
+
+.failure {
+  color: var(--status-alarm);
+}

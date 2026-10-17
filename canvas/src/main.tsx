@@ -1,47 +1,45 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { hashLocation, localPreferences, mediaSystemTheme } from "./adapters/browser";
-import { bridgeClient, browserTransport } from "./adapters/bridgeClient";
-import { EditorStore } from "./app/editorStore";
-import { NavigationStore } from "./app/navigationStore";
-import { PanelStore } from "./app/panelStore";
-import { PlantMaker } from "./app/plantMaker";
-import { PlantStore } from "./app/plantStore";
-import { LaunchStore } from "./app/launchStore";
-import { ReviewStore } from "./app/reviewStore";
-import { SessionStore } from "./app/sessionStore";
-import { ThemeStore } from "./app/themeStore";
-import { WorkspaceStore } from "./app/workspaceStore";
-import { App } from "./ui/shell/App";
+import { browserClock, hashLocation, localPreferences, mediaSystemTheme } from "./adapters/browser";
+import { bridgeAdapter, browserTransport } from "./adapters/bridge";
+import { createEditorSession } from "./app/editor";
+import { createLaunchStore } from "./app/launch";
+import { createPlantMaker, createPlantSession } from "./app/plant";
+import { createReviewSession } from "./app/review";
+import { createSession } from "./app/session";
+import { createNavigationStore, createPanelStore, createThemeStore } from "./app/shell";
+import { createWorkspaceStore } from "./app/workspace";
+import { App } from "./ui/shell";
 import "./ui/theme/tokens.css";
 import "./ui/theme/base.css";
 import "./ui/theme/families.css";
 
 const root = document.getElementById("root");
 if (root) {
-  const themes = new ThemeStore(
-    localPreferences(window.localStorage),
-    mediaSystemTheme(window.matchMedia("(prefers-color-scheme: dark)")),
-  );
-  const bridge = bridgeClient(browserTransport());
-  const panels = new PanelStore(localPreferences(window.localStorage));
-  const editor = new EditorStore(bridge);
-  const navigation = new NavigationStore(hashLocation(window));
-  navigation.guardUnsaved(() => editor.unsavedChanges());
+  const preferences = localPreferences(window.localStorage);
+  const themes = createThemeStore(preferences, mediaSystemTheme(window.matchMedia("(prefers-color-scheme: dark)")));
+  const adapters = bridgeAdapter(browserTransport());
+  const time = browserClock();
+  const panels = createPanelStore(preferences);
+  const navigation = createNavigationStore(hashLocation(window));
+  const plants = createPlantSession(adapters.plant);
+  const editor = createEditorSession(adapters.editor);
+  const review = createReviewSession(adapters.review, time, time);
   createRoot(root).render(
     <StrictMode>
       <App
         stores={{
           themes,
-          session: new SessionStore(bridge),
-          workspace: new WorkspaceStore(bridge),
+          session: createSession(adapters.session),
+          workspace: createWorkspaceStore(adapters.workspace),
           navigation,
-          plants: new PlantStore(bridge),
-          review: new ReviewStore(bridge),
-          launch: new LaunchStore(bridge),
+          plants,
+          review,
+          launch: createLaunchStore(adapters.launch, time, time),
+          scheduler: time,
           editor,
           panels,
-          maker: new PlantMaker(bridge),
+          maker: createPlantMaker(adapters.plant),
           showDetails: () => {
             panels.show("right");
           },

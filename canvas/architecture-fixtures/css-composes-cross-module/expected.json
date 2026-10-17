@@ -1,0 +1,4 @@
+{
+  "rules": ["css-composes-cross-module"],
+  "base": "base-ui.register.json"
+}

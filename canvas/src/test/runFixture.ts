@@ -1,4 +1,7 @@
-export const report = {
+import type { JournalEntry } from "../model/review";
+import type { Report } from "../model/review";
+
+export const reportWire = {
   run: {
     run_id: "r-1",
     mode: "evaluate",
@@ -50,8 +53,102 @@ export const report = {
   },
 };
 
+export const report: Report = {
+  runId: "r-1",
+  mode: "evaluate",
+  ended: true,
+  complete: true,
+  incompleteReason: "",
+  unblinded: false,
+  domainId: "mini",
+  domainVersion: "",
+  adapterId: "native-jsonl",
+  seed: 7,
+  simVersion: "",
+  startNs: 0,
+  endNs: 3_600e9,
+  verification: "files_match",
+  checks: [{ name: "trace", status: "match" }],
+  counts: { emitted: 12, delivered: 10, dropped: 2 },
+  dropped: { dropped_by_perturbation: 2 },
+  disturbances: [
+    {
+      kind: "perturbation",
+      action: "apply",
+      injectedNs: 0,
+      onsetNs: 300e9,
+      target: "delivery",
+      name: "drop",
+      clearedNs: null,
+      clearedBy: "",
+    },
+    {
+      kind: "fault",
+      action: "inject",
+      injectedNs: 0,
+      onsetNs: 600e9,
+      target: "CT-1",
+      name: "tower__fan_failure",
+      clearedNs: null,
+      clearedBy: "",
+    },
+    {
+      kind: "environment",
+      action: "inject",
+      injectedNs: 900e9,
+      onsetNs: 900e9,
+      target: "weather",
+      name: "heat_wave",
+      clearedNs: null,
+      clearedBy: "",
+    },
+  ],
+  effectorCalls: [
+    { atNs: 1_200e9, entity: "CH-1", effector: "start", outcome: "applied · 300 ms" },
+    { atNs: 1_300e9, entity: "CH-1", effector: "stop", outcome: "refused: interlock" },
+    { atNs: 1_400e9, entity: "CH-1", effector: "stop", outcome: "accepted, no effect · silent_no_effect" },
+    { atNs: 1_500e9, entity: "CH-1", effector: "stop", outcome: "refused" },
+  ],
+  kpis: [{ entity: "CH-1", state: "cop", mean: 5.95, min: 4.65, max: 8.85 }],
+  alarms: { activations: 1, standing_at_end: 0 },
+  alarmActivations: [],
+  scoring: null,
+  truthUnavailable: "",
+};
+
+export function blankReport(overrides: Partial<Report> = {}): Report {
+  return {
+    runId: "",
+    mode: "",
+    ended: false,
+    complete: false,
+    incompleteReason: "",
+    unblinded: false,
+    domainId: "",
+    domainVersion: "",
+    adapterId: "",
+    seed: null,
+    simVersion: "",
+    startNs: 0,
+    endNs: 0,
+    verification: "",
+    checks: [],
+    counts: {},
+    dropped: {},
+    disturbances: [],
+    effectorCalls: [],
+    kpis: [],
+    alarms: {},
+    alarmActivations: [],
+    scoring: null,
+    truthUnavailable: "",
+    ...overrides,
+  };
+}
+
 export function observation(seq: number, atNs: number, entity: string, channel: string, value: unknown, unit = "kW") {
   return {
+    stream: "observer",
     type: "observation",
     seq,
     at_ns: atNs,
@@ -59,12 +156,38 @@ export function observation(seq: number, atNs: number, entity: string, channel: 
   };
 }
 
-export const journal = [
-  { type: "run.opened", seq: 0, at_ns: 0, mode: "evaluate", adapter: { id: "native-jsonl" } },
+export const journalWire = [
+  { stream: "observer", type: "run.opened", seq: 0, at_ns: 0, mode: "evaluate", adapter: { id: "native-jsonl" } },
   observation(1, 10e9, "CH-1", "chiller.power", 92.7),
   observation(2, 20e9, "CH-1", "chiller.power", 95.1),
   observation(3, 20e9, "CT-1", "tower.basin_temp", 27.04, "degC"),
   observation(4, 30e9, "CT-1", "tower.run_status", true, ""),
-  { type: "clock.advanced", seq: 5, at_ns: 30e9 },
-  { type: "run.closed", seq: 6, at_ns: 3_600e9, incomplete: false },
+  { stream: "observer", type: "clock.advanced", seq: 5, at_ns: 30e9 },
+  { stream: "observer", type: "run.closed", seq: 6, at_ns: 3_600e9, incomplete: false },
 ];
+
+export const journal: readonly JournalEntry[] = [
+  { kind: "opened", atNs: 0, mode: "evaluate", adapter: "native-jsonl" },
+  {
+    kind: "observation",
+    observation: { atNs: 10e9, entity: "CH-1", channel: "chiller.power", value: 92.7, unit: "kW" },
+  },
+  {
+    kind: "observation",
+    observation: { atNs: 20e9, entity: "CH-1", channel: "chiller.power", value: 95.1, unit: "kW" },
+  },
+  {
+    kind: "observation",
+    observation: { atNs: 20e9, entity: "CT-1", channel: "tower.basin_temp", value: 27.04, unit: "degC" },
+  },
+  {
+    kind: "observation",
+    observation: { atNs: 30e9, entity: "CT-1", channel: "tower.run_status", value: true, unit: "" },
+  },
+  { kind: "other", atNs: 30e9 },
+  { kind: "closed", atNs: 3_600e9, incomplete: false },
+];
+
+export function reportWith(run: Record<string, unknown>) {
+  return { ...reportWire, run: { ...reportWire.run, ...run } };
+}

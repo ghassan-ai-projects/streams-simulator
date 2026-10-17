@@ -1,0 +1,166 @@
+.none {
+  padding: var(--space-2) var(--space-3);
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+}
+
+.tierOverview .readout,
+.tierOverview .note,
+.tierOverview .none,
+.tierMap .readout,
+.tierMap .note,
+.tierMap .none {
+  display: none;
+}
+
+.tierCompact .none {
+  font-size: calc(10.5px / var(--zoom));
+}
+
+.tierCompact .readout dt {
+  min-width: 2.5em;
+  font-size: max(var(--floor), min(calc(10.5px / var(--zoom)), 19px));
+}
+
+.tierCompact .readout dd,
+.tierCompact .more,
+.tierCompact .readout dd.word {
+  font-size: max(var(--floor), min(calc(11.5px / var(--zoom)), 21px));
+}
+
+.tierCompact .unit,
+.tierCompact .notObserved {
+  font-size: max(var(--floor), min(calc(10.5px / var(--zoom)), 19px));
+}
+
+.tierCompact .note {
+  padding: 0 calc(6px / var(--zoom));
+  font-size: max(var(--floor), min(calc(10.5px / var(--zoom)), 19px));
+}
+
+.tierCompact .readout {
+  padding: 0 calc(6px / var(--zoom));
+}
+
+.tierOverview .note.noted {
+  display: flex;
+  flex: none;
+  min-height: 0;
+  padding: calc(2px / var(--zoom)) calc(6px / var(--zoom)) calc(3px / var(--zoom));
+  border-bottom: 0;
+  border-radius: 0 0 7px 7px;
+  background: var(--surface-hover);
+  font-size: max(var(--floor), min(calc(9px / var(--zoom)), 27px));
+  line-height: 1.15;
+}
+
+.tierOverview .noted .noteCall {
+  display: none;
+}
+
+.readout {
+  display: block;
+  margin: 0;
+  padding: 0 var(--space-3) var(--space-1);
+  border-bottom: 1px solid var(--node-border);
+}
+
+.readout > div {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 24px;
+  line-height: 1.2;
+}
+
+.readout dt {
+  flex: 1 1 auto;
+  min-width: 3.5em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+.readout dd {
+  flex: none;
+  margin: 0;
+  white-space: nowrap;
+  font: 600 var(--text-md) var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.unobserved dt {
+  color: var(--text-tertiary);
+}
+
+.notObserved {
+  font: 400 var(--text-xs) var(--font-ui);
+  color: var(--text-tertiary);
+}
+
+.note {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: calc(var(--note-lines, 1) * 24px);
+  padding: 0 var(--space-3);
+  border-bottom: 1px solid var(--node-border);
+  font-size: var(--text-xs);
+  line-height: 1.2;
+}
+
+.noteFault {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--status-alarm);
+  font-weight: 600;
+}
+
+.noteCall {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--text-secondary);
+}
+
+.unit {
+  margin-left: 3px;
+  font: 500 var(--text-xs) var(--font-ui);
+  color: var(--text-tertiary);
+}
+
+.more {
+  display: flex;
+  gap: var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+.readout .more dt,
+.readout .more dd {
+  font: inherit;
+  color: inherit;
+}
+
+.alarm dd {
+  color: var(--status-alarm);
+}
+
+.warn dd {
+  color: var(--status-warn);
+}
+
+.readout dd.word {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font: 600 var(--text-sm) var(--font-ui);
+}
+
+.tierCompact .readout [role="img"] svg {
+  width: min(calc(11px / var(--zoom)), 20px);
+  height: min(calc(11px / var(--zoom)), 20px);
+}

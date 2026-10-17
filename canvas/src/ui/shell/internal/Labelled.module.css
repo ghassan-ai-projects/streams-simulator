@@ -1,0 +1,26 @@
+.labelled {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 32px;
+  padding: 0 var(--space-3);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: var(--text-sm);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.labelled:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.labelled[aria-pressed="true"] {
+  border-color: var(--border-strong);
+  background: var(--surface-sunken);
+  color: var(--text-primary);
+}

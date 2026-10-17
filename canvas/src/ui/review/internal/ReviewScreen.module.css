@@ -1,0 +1,46 @@
+.screen {
+  display: grid;
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr) var(--inspector-width);
+  grid-template-rows: 44px minmax(0, 1fr);
+  grid-template-areas:
+    "bar bar bar"
+    "side center report";
+  height: 100%;
+  min-height: 0;
+}
+
+.center {
+  grid-area: center;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+}
+
+.side {
+  grid-area: side;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-right: 1px solid var(--border-subtle);
+  background: var(--surface-panel);
+}
+
+.outlineSlot {
+  flex: 1;
+  min-height: 0;
+}
+
+.graphArea {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: 36px minmax(360px, 1fr);
+  min-height: 0;
+}
+
+:global([data-left="closed"]) .screen > :nth-child(2),
+:global([data-right="closed"]) .screen > :last-child {
+  visibility: hidden;
+  overflow: hidden;
+}

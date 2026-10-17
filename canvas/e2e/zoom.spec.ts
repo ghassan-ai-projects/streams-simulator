@@ -1,9 +1,7 @@
-import { expect, test } from "@playwright/test";
-import { env } from "./support/env";
+import { expect, test } from "./support/test";
+import { guard } from "./support/audit";
 import { idProblems } from "./support/idFit";
 import { zoomOutTo } from "./support/viewport";
-
-test.use({ storageState: env("CANVAS_APP_STATE") });
 
 function leftTitles(): { readonly left: number; readonly top: number }[] {
   const graph = document.querySelector("[aria-roledescription='plant graph']")?.getBoundingClientRect();
@@ -21,7 +19,7 @@ function transform(): string {
 test("zooming in keeps the plant's first area titles in view, and Fit returns the opening view exactly", async ({
   page,
 }) => {
-  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Ffactory-utilities.domain.json`);
+  await page.goto("/#/plant?domain=domains%2Ffactory-utilities.domain.json");
   await expect(page.getByRole("group", { name: /^CT-1, cooling tower,/ })).toBeVisible();
   const graph = page.getByRole("application", { name: "Plant graph" });
   await graph.focus();
@@ -52,13 +50,13 @@ test("zooming in keeps the plant's first area titles in view, and Fit returns th
 
 test("a large plant opens no smaller than 40 % and shows every kind in full", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 420 });
-  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Ffactory-utilities.domain.json`);
+  await page.goto("/#/plant?domain=domains%2Ffactory-utilities.domain.json");
   const graph = page.getByRole("application", { name: "Plant graph" });
   await expect(page.locator(".react-flow__node-instance").first()).toBeAttached();
   await expect
     .poll(async () => Number(await graph.evaluate((element) => getComputedStyle(element).getPropertyValue("--zoom"))))
     .toBeGreaterThanOrEqual(0.4);
-  const kinds = page.locator(".react-flow__node-instance [class*='kind']");
+  const kinds = page.locator('.react-flow__node-instance [data-part="kind"]');
   await expect(kinds.first()).toBeVisible();
   const cut = await kinds.evaluateAll((elements) =>
     elements.filter(
@@ -69,17 +67,19 @@ test("a large plant opens no smaller than 40 % and shows every kind in full", as
 });
 
 test("below 40 % an id stays on one line and never breaks mid-word, down to the overview tier", async ({ page }) => {
-  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Fboiler-steam-loop.domain.json`);
+  await page.goto("/#/plant?domain=domains%2Fboiler-steam-loop.domain.json");
   const graph = page.getByRole("application", { name: "Plant graph" });
   await expect(page.locator(".react-flow__node-instance").first()).toBeAttached();
   await graph.focus();
-  await expect.poll(() => page.evaluate(idProblems)).toEqual([]);
-  const tier = await zoomOutTo(page, "overview", 6, () => expect.poll(() => page.evaluate(idProblems)).toEqual([]));
+  await expect.poll(async () => guard(await page.evaluate(idProblems, 10))).toEqual([]);
+  const tier = await zoomOutTo(page, "overview", 6, () =>
+    expect.poll(async () => guard(await page.evaluate(idProblems, 10))).toEqual([]),
+  );
   expect(tier).toBe("overview");
-  await expect(graph).toHaveClass(/tier-overview/);
+  await expect(graph).toHaveAttribute("data-zoom-tier", "overview");
 });
 
-function titleProblems(): string[] {
+function titleProblems(atLeast = 1): { considered: number; problems: string[]; met: boolean } {
   const textBoxes = (part: Element | null): DOMRect[] => {
     const walker = document.createTreeWalker(part ?? document.body, NodeFilter.SHOW_TEXT);
     const found: DOMRect[] = [];
@@ -90,27 +90,29 @@ function titleProblems(): string[] {
     }
     return found;
   };
-  return [...document.querySelectorAll<HTMLElement>("[class*='frameTitle_']")].flatMap((title) => {
+  const titles = [...document.querySelectorAll<HTMLElement>('[data-part="frame-title"]')];
+  const problems = titles.flatMap((title) => {
     const box = title.getBoundingClientRect();
-    const parts = ["frameName", "frameCount"].map((name) => textBoxes(title.querySelector(`[class*='${name}']`)));
+    const parts = ["frame-name", "frame-count"].map((part) => textBoxes(title.querySelector(`[data-part="${part}"]`)));
     const all = parts.flat();
     const name = title.getAttribute("title") ?? "";
     const spread = Math.max(...all.map((part) => part.bottom)) - Math.min(...all.map((part) => part.bottom));
     const outside = all.some((part) => part.right > box.right + 0.5);
     return [...(outside ? [`${name}: text outside the title`] : []), ...(spread > 3 ? [`${name}: wraps`] : [])];
   });
+  return { considered: titles.length, problems, met: titles.length >= atLeast };
 }
 
 test("an area header is one line at every zoom and keeps the last word of its name beside the count", async ({
   page,
 }) => {
-  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Fboiler-steam-loop.domain.json`);
+  await page.goto("/#/plant?domain=domains%2Fboiler-steam-loop.domain.json");
   const graph = page.getByRole("application", { name: "Plant graph" });
   await expect(page.locator(".react-flow__node-instance").first()).toBeAttached();
   await graph.focus();
   for (let step = 0; step < 5; step += 1) {
     await page.keyboard.press("-");
-    await expect.poll(() => page.evaluate(titleProblems)).toEqual([]);
+    await expect.poll(async () => guard(await page.evaluate(titleProblems, 3))).toEqual([]);
   }
-  await expect(page.locator("[class*='nameTail']").filter({ hasText: "house" })).toBeVisible();
+  await expect(page.locator('[data-part="name-tail"]').filter({ hasText: "house" })).toBeVisible();
 });

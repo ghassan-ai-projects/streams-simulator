@@ -1,0 +1,21 @@
+.dot:global(.connectable) {
+  cursor: crosshair;
+}
+
+.dot:global(.connectable):hover,
+.dot:global(.connectingfrom),
+.dot:global(.valid) {
+  transform: scale(1.5);
+}
+
+.dot:global(.connectable)::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+}
+
+.minimap:global(.react-flow__panel) {
+  position: static;
+  margin: 0 var(--space-3);
+}

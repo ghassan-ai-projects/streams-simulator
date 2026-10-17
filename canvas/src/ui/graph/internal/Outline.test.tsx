@@ -1,0 +1,132 @@
+import { fireEvent, render, screen, within } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { parsePlant } from "../../../model/plant";
+import { stubScrollIntoView, stubScrollMetrics } from "../../../test/dom";
+import { domain } from "../../../test/plantFixture";
+import { Outline } from "./Outline";
+
+describe("outline rail", () => {
+  beforeEach(() => {
+    stubScrollIntoView();
+  });
+
+  it("marks the selection as current and says how many instances a filter keeps", () => {
+    const onSelect = vi.fn();
+    render(<Outline plant={parsePlant(domain)} hall={null} selected="CH-1" onSelect={onSelect} />);
+    const outline = screen.getByRole("navigation", { name: "Outline" });
+    expect(within(outline).getByRole("button", { name: /^CH-1/ })).toHaveAttribute("aria-current", "true");
+    expect(within(outline).getByRole("button", { name: /^CT-1/ })).not.toHaveAttribute("aria-current");
+    expect(screen.getByRole("status")).toBeEmptyDOMElement();
+    fireEvent.change(screen.getByLabelText("Filter instances"), { target: { value: "CT" } });
+    expect(screen.getByRole("status")).toHaveTextContent("1 instance matches.");
+    fireEvent.change(screen.getByLabelText("Filter instances"), { target: { value: "zzz" } });
+    expect(screen.getByRole("status")).toHaveTextContent('No instance matches "zzz".');
+    fireEvent.change(screen.getByLabelText("Filter instances"), { target: { value: "" } });
+    fireEvent.click(within(outline).getByRole("button", { name: /^CT-1/ }));
+    expect(onSelect).toHaveBeenCalledWith("CT-1");
+  });
+
+  it("says a plant without instances has none yet", () => {
+    render(
+      <Outline plant={parsePlant({ id: "empty", instances: [] })} hall={null} selected={null} onSelect={vi.fn()} />,
+    );
+    expect(screen.getByRole("status")).toHaveTextContent("No instances yet.");
+  });
+
+  it("marks instances the binary flagged", () => {
+    render(
+      <Outline plant={parsePlant(domain)} hall={null} selected={null} onSelect={vi.fn()} flagged={new Set(["CT-1"])} />,
+    );
+    expect(screen.getByRole("button", { name: /^CT-1.*has issues$/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^CH-1/ })).not.toHaveTextContent("has issues");
+  });
+
+  it("indents areas under their parent and shows an empty area only when asked", () => {
+    const plant = parsePlant({
+      id: "tree",
+      site: {
+        name: "Site",
+        areas: [{ name: "Site" }, { name: "Plant room", parent: "Site" }, { name: "Roof", parent: "Site" }],
+      },
+      instances: [{ kind: "pump", names: ["P-1"], area: "Plant room" }],
+    });
+    const { rerender } = render(<Outline plant={plant} hall={null} selected={null} onSelect={vi.fn()} />);
+    expect(screen.getByText("Plant room")).toBeInTheDocument();
+    expect(screen.queryByText("Roof")).not.toBeInTheDocument();
+    rerender(<Outline plant={plant} hall={null} selected={null} onSelect={vi.fn()} showEmptyAreas />);
+    const titles = screen.getAllByRole("group").map((group) => group.querySelector("summary")?.textContent);
+    expect(titles).toEqual(["Site0 · 1 below", "Plant room1", "Roof0"]);
+    expect(screen.getAllByRole("group").map((group) => group.getAttribute("style"))).toEqual([
+      "margin-left: calc(var(--space-3) * 0);",
+      "margin-left: calc(var(--space-3) * 1);",
+      "margin-left: calc(var(--space-3) * 1);",
+    ]);
+    expect(screen.getByText("0 · 1 below")).toHaveAttribute("title", "1 in child areas");
+  });
+
+  it("lists the populated child areas of a site before its empty ones, each empty area on one row", () => {
+    const plant = parsePlant({
+      id: "tree",
+      site: {
+        name: "Site",
+        areas: [
+          { name: "Site" },
+          { name: "Hall", parent: "Site" },
+          { name: "Substation", parent: "Site" },
+          { name: "House", parent: "Site" },
+          { name: "Cabinet", parent: "House" },
+          { name: "Yard", parent: "Site" },
+        ],
+      },
+      instances: [
+        { kind: "compressor", names: ["C-1", "C-2", "C-3"], area: "House" },
+        { kind: "meter", names: ["M-1"], area: "Cabinet" },
+        { kind: "pump", names: ["P-1"], area: "Yard" },
+      ],
+    });
+    render(<Outline plant={plant} hall={null} selected={null} onSelect={vi.fn()} showEmptyAreas />);
+    const titles = screen.getAllByRole("group").map((group) => group.querySelector("summary")?.textContent);
+    expect(titles).toEqual(["Site0 · 5 below", "House3", "Cabinet1", "Yard1", "Hall0", "Substation0"]);
+    const counts = screen
+      .getAllByRole("group")
+      .map((group) => group.querySelector("summary")?.querySelectorAll("span"));
+    expect(counts.every((spans) => spans?.length === 2)).toBe(true);
+    expect(screen.getByText("Substation")).toHaveAttribute("title", "Substation");
+  });
+
+  it("never calls a parent empty while its child areas hold equipment", () => {
+    const plant = parsePlant({
+      id: "cold-chain",
+      site: {
+        name: "Site",
+        areas: [
+          { name: "Site" },
+          { name: "Cold rooms", parent: "Site" },
+          { name: "Room A", parent: "Cold rooms" },
+          { name: "Room B", parent: "Cold rooms" },
+        ],
+      },
+      instances: [
+        { kind: "ahu", names: ["AHU-1"], area: "Room A" },
+        { kind: "ahu", names: ["AHU-2", "AHU-3"], area: "Room B" },
+      ],
+    });
+    render(<Outline plant={plant} hall={null} selected={null} onSelect={vi.fn()} showEmptyAreas />);
+    const titles = screen.getAllByRole("group").map((group) => group.querySelector("summary")?.textContent);
+    expect(titles).toEqual(["Site0 · 3 below", "Cold rooms0 · 3 below", "Room B2", "Room A1"]);
+    expect(screen.queryByText(/empty/)).not.toBeInTheDocument();
+    expect(screen.getAllByText("0 · 3 below")[1]).toHaveAttribute("title", "3 in child areas");
+  });
+
+  it("marks its scroll region for a bottom fade while rows continue below the cut", () => {
+    render(<Outline plant={parsePlant(domain)} hall={null} selected={null} onSelect={vi.fn()} />);
+    const outline = screen.getByRole("navigation", { name: "Outline" });
+    expect(outline).not.toHaveAttribute("data-cut");
+    stubScrollMetrics(outline, 200, 500, 0);
+    fireEvent.scroll(outline);
+    expect(outline).toHaveAttribute("data-cut", "true");
+    stubScrollMetrics(outline, 200, 500, 300);
+    fireEvent.scroll(outline);
+    expect(outline).not.toHaveAttribute("data-cut");
+  });
+});

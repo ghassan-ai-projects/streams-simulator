@@ -1,0 +1,297 @@
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import axe from "axe-core";
+import { describe, expect, it, vi } from "vitest";
+import { failure as failed, success } from "../../../test/outcome";
+import { connectionsOf, equipmentOf } from "../../../model/editor";
+import { moveInstance } from "../../../model/editor";
+import { cannedFailure } from "../../../test/fakeBridge";
+import { choose, current, doc, editing, Harness, LabBridge, path } from "../../../test/editorHarness";
+import { createEditorSession } from "../../../app/editor";
+
+describe("plant editor panel", () => {
+  it("adds equipment from the library with its preset into an area", async () => {
+    const { editor, view } = await editing();
+    expect((await axe.run(view.container)).violations).toEqual([]);
+    const form = screen.getByRole("form", { name: "Add equipment" });
+    choose("Find equipment", "nothing like this", form);
+    expect(within(form).getByText('Nothing in the library matches "nothing like this".')).toBeInTheDocument();
+    choose("Find equipment", "pu", form);
+    choose("Equipment", "lib/pump@1", form);
+    expect(within(form).getByLabelText("Name")).toHaveValue("");
+    expect(within(form).getByLabelText("Name")).toHaveAttribute("placeholder", "P-1");
+    expect(within(form).getByText("Leave empty to use the suggested name, P-1.", { exact: false })).toBeInTheDocument();
+    expect(within(form).getByText(/An instance name: a letter or digit, then letters, digits and/)).toBeInTheDocument();
+    expect(await within(form).findByRole("option", { name: "Small" })).toBeInTheDocument();
+    choose("Size", "small", form);
+    choose("Area", "Yard", form);
+    fireEvent.click(within(form).getByRole("button", { name: "Add to the plant" }));
+    await vi.waitFor(() => {
+      expect(screen.getByRole("heading", { name: "P-1" })).toHaveFocus();
+    });
+    expect(equipmentOf(current(editor)).at(-1)).toMatchObject({ use: "lib/pump@1", preset: "small", area: "Yard" });
+    expect(screen.getByRole("status")).toHaveTextContent("Unsaved changes");
+  });
+
+  it("keeps a typed name when equipment is chosen or the plant changes, and shows the suggestion only as a placeholder", async () => {
+    const { editor } = await editing();
+    const form = screen.getByRole("form", { name: "Add equipment" });
+    fireEvent.change(within(form).getByLabelText("Name"), { target: { value: "P-9" } });
+    choose("Equipment", "lib/pump@1", form);
+    expect(within(form).getByLabelText("Name")).toHaveValue("P-9");
+    act(() => {
+      editor.edit((current) => ({ ...current, title: "Lab two" }));
+    });
+    expect(within(form).getByLabelText("Name")).toHaveValue("P-9");
+    expect(within(form).getByLabelText("Name")).toHaveAttribute("placeholder", "P-1");
+    fireEvent.click(within(form).getByRole("button", { name: "Add to the plant" }));
+    await vi.waitFor(() => {
+      expect(equipmentOf(current(editor)).flatMap((entry) => entry.names)).toContain("P-9");
+    });
+  });
+
+  it("refuses a name the binary's rule rejects, in the add and the rename forms, naming the rule", async () => {
+    const { editor } = await editing();
+    const form = screen.getByRole("form", { name: "Add equipment" });
+    choose("Equipment", "lib/pump@1", form);
+    fireEvent.change(within(form).getByLabelText("Name"), { target: { value: "Pump P 1" } });
+    expect(within(form).getByText(/"Pump P 1" is not a valid name\. An instance name: a letter/)).toBeInTheDocument();
+    fireEvent.click(within(form).getByRole("button", { name: "Add to the plant" }));
+    expect(equipmentOf(current(editor)).flatMap((entry) => entry.names)).not.toContain("Pump P 1");
+    act(() => {
+      editor.select("CH-1");
+    });
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "CH 9" } });
+    expect(screen.getByText(/^Not a valid name\. An instance name/)).toBeInTheDocument();
+    expect(screen.getByLabelText("Name").getAttribute("aria-describedby")).toContain(
+      screen.getByText(/^Not a valid name\. An instance name/).id,
+    );
+    expect(screen.getByLabelText("Name")).toHaveAttribute("aria-invalid", "true");
+    fireEvent.click(screen.getByRole("button", { name: "Rename" }));
+    expect(screen.getByLabelText("Name")).toHaveValue("CH 9");
+    expect(equipmentOf(current(editor)).flatMap((entry) => entry.names)).toContain("CH-1");
+  });
+
+  it("does not add equipment when Return is pressed in the search, and refuses a name another instance already has", async () => {
+    const { editor } = await editing();
+    const form = screen.getByRole("form", { name: "Add equipment" });
+    choose("Equipment", "lib/pump@1", form);
+    fireEvent.change(within(form).getByLabelText("Find equipment"), { target: { value: "pu" } });
+    expect(fireEvent.keyDown(within(form).getByLabelText("Find equipment"), { key: "Enter" })).toBe(false);
+    expect(equipmentOf(current(editor))).toHaveLength(2);
+    fireEvent.change(within(form).getByLabelText("Name"), { target: { value: "CT-1" } });
+    expect(within(form).getByText("CT-1 is already used by another instance.")).toBeInTheDocument();
+    fireEvent.click(within(form).getByRole("button", { name: "Add to the plant" }));
+    expect(equipmentOf(current(editor))).toHaveLength(2);
+  });
+
+  it("renames, moves, links, unlinks and deletes the selected instance, and reverts", async () => {
+    const { editor } = await editing();
+    act(() => {
+      editor.select("CH-1");
+    });
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "CH-9" } });
+    fireEvent.click(screen.getByRole("button", { name: "Rename" }));
+    expect(screen.getByRole("heading", { name: "CH-9" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Name")).toHaveFocus();
+    choose("Area", "Yard");
+    choose("Output", "power_out");
+    choose("To", "CT-1");
+    const inputs = within(screen.getByLabelText("Input")).getAllByRole("option");
+    expect(inputs.map((option) => option.textContent)).toEqual(["Choose…", "power in"]);
+    choose("Input", "power_in");
+    fireEvent.click(screen.getByRole("button", { name: "Link" }));
+    expect(connectionsOf(current(editor)).map((wire) => wire.from)).toEqual(["CH-9.heat_out", "CH-9.power_out"]);
+    fireEvent.click(screen.getByRole("button", { name: "Remove link: heat out to CT-1 heat in" }));
+    expect(screen.getByRole("heading", { name: "Links 1" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "CT-1" }));
+    expect(screen.getByRole("heading", { name: "CT-1" })).toBeInTheDocument();
+    act(() => {
+      editor.select("CH-9");
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Delete CH-9" }));
+    expect(equipmentOf(current(editor))).toHaveLength(2);
+    fireEvent.click(screen.getByRole("button", { name: "Delete CH-9 and its 1 link?" }));
+    expect(equipmentOf(current(editor)).map((entry) => entry.names[0])).toEqual(["CT-1"]);
+    expect(screen.getByRole("heading", { name: "Build" })).toHaveFocus();
+    fireEvent.click(screen.getByRole("button", { name: "Revert" }));
+    expect(screen.getByRole("status")).toHaveTextContent("Unsaved changes");
+    fireEvent.click(screen.getByRole("button", { name: "Discard changes" }));
+    fireEvent.keyDown(document.body, { key: "z", ctrlKey: true });
+    expect(equipmentOf(current(editor)).map((entry) => entry.names[0])).toEqual(["CT-1"]);
+    fireEvent.click(screen.getByRole("button", { name: "Redo" }));
+    expect(current(editor)).toEqual(doc);
+    expect(screen.getByRole("status")).toHaveTextContent("No changes");
+  });
+
+  it("saves, shows the binary's issues on the instance and selects it from the list", async () => {
+    const { fake, editor } = await editing();
+    expect(screen.getByRole("button", { name: "Save" })).toHaveAttribute("aria-disabled", "true");
+    act(() => {
+      editor.edit((doc) => ({ ...doc, title: "Lab two" }));
+    });
+    fake.actions.set(
+      "domain.compose",
+      failed({
+        ...cannedFailure("composition_invalid", 422, "invalid"),
+        issues: [{ pointer: "/connections/0/to", message: 'instance "CT-1" has no port "heat_in"' }],
+      }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(
+      await screen.findByText("Needs fixing: 1 issue, listed in Build. Your changes are saved."),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /^CH-1/ }));
+    expect(screen.getByRole("heading", { name: "CH-1" })).toHaveFocus();
+    expect(screen.getByRole("region", { name: "Issues on CH-1" })).toHaveTextContent('has no port "heat_in"');
+    expect(screen.getByLabelText("Name")).toHaveAccessibleDescription(/has no port/);
+    fake.actions.set("domain.compose", success({ channels: 4, faults: 2, effectors: 0 }));
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "CH-2" } });
+    fireEvent.click(screen.getByRole("button", { name: "Rename" }));
+    fireEvent.keyDown(document.body, { key: "s", ctrlKey: true });
+    expect(await screen.findByText("Ready to run. Saved.")).toHaveAttribute(
+      "title",
+      "Composed 4 channels, 2 faults, 0 effectors.",
+    );
+    expect(screen.getByRole("button", { name: "Open plant" })).toBeInTheDocument();
+  });
+
+  it("lists repeated issues once with a count, says where a plant-wide one applies, and marks a stale list", async () => {
+    const { fake, editor } = await editing();
+    act(() => {
+      editor.edit((doc) => ({ ...doc, title: "Lab two" }));
+    });
+    const same = { pointer: "/equipment/0/names/0", message: "not a name" };
+    fake.actions.set(
+      "domain.compose",
+      failed({
+        ...cannedFailure("composition_invalid", 422, "invalid"),
+        issues: [same, same, same, { pointer: "/profiles", message: "needs more items" }],
+      }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(
+      await screen.findByText("Needs fixing: 4 issues, listed in Build. Your changes are saved."),
+    ).toBeInTheDocument();
+    const block = screen.getByRole("region", { name: "Issues from the binary" });
+    expect(within(block).getAllByRole("listitem")).toHaveLength(2);
+    expect(within(block).getByRole("button", { name: /CH-1.*not a name \(×3\)/ })).toBeInTheDocument();
+    expect(within(block).getByText("in /profiles")).toBeInTheDocument();
+    expect(within(block).queryByText(/from the last save/i)).not.toBeInTheDocument();
+    act(() => {
+      editor.edit((doc) => ({ ...doc, title: "Lab three" }));
+    });
+    expect(within(block).getByText(/These are from the last save/)).toBeInTheDocument();
+  });
+
+  it("adds an area inside another one, offers it for equipment, and refuses a repeated name", async () => {
+    const { editor, view } = await editing();
+    const form = screen.getByRole("form", { name: "Add area" });
+    expect((await axe.run(view.container)).violations).toEqual([]);
+    fireEvent.change(within(form).getByLabelText("Area name"), { target: { value: "Yard" } });
+    expect(within(form).getByText('There is already an area named "Yard".')).toBeInTheDocument();
+    fireEvent.change(within(form).getByLabelText("Area name"), { target: { value: "Pump house" } });
+    choose("Inside", "Yard", form);
+    fireEvent.click(within(form).getByRole("button", { name: "Add area" }));
+    expect(current(editor).areas).toEqual([...doc.areas, { name: "Pump house", parent: "Yard" }]);
+    const equipment = screen.getByRole("form", { name: "Add equipment" });
+    expect(within(equipment).getByRole("option", { name: "Yard › Pump house" })).toBeInTheDocument();
+    expect(within(form).getByLabelText("Area name")).toHaveValue("");
+  });
+
+  it("does not add an area when Return is pressed on the Inside choice", async () => {
+    const { editor } = await editing();
+    const form = screen.getByRole("form", { name: "Add area" });
+    fireEvent.change(within(form).getByLabelText("Area name"), { target: { value: "Shed" } });
+    fireEvent.keyDown(within(form).getByLabelText("Inside"), { key: "Enter" });
+    expect(current(editor).areas).toEqual(doc.areas);
+  });
+
+  it("says why the file was not saved", async () => {
+    const { fake, editor } = await editing();
+    act(() => {
+      editor.edit((doc) => ({ ...doc, title: "Lab two" }));
+    });
+    fake.persistWrites();
+    fake.addFile(path, doc, "c2");
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(await screen.findByText(`Not saved: ${path} changed on disk`)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Reload from disk" }));
+    expect(await screen.findByText("No changes")).toBeInTheDocument();
+  });
+
+  it("keeps the chosen target when the output changes, and clears the input that no longer fits", async () => {
+    const { editor } = await editing();
+    act(() => {
+      editor.select("CH-1");
+    });
+    choose("Output", "heat_out");
+    choose("To", "CT-1");
+    choose("Input", "heat_in");
+    choose("Output", "power_out");
+    expect(screen.getByLabelText("To")).toHaveValue("CT-1");
+    expect(screen.getByLabelText("Input")).toHaveValue("");
+    choose("Output", "heat_out");
+    expect(screen.getByLabelText("To")).toHaveValue("CT-1");
+    expect(screen.getByLabelText("Input")).toHaveValue("");
+  });
+
+  it("deletes an instance that has no links at once", async () => {
+    const { editor } = await editing();
+    act(() => {
+      editor.edit((current) => ({ ...current, connections: [] }));
+      editor.select("CT-1");
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Delete CT-1" }));
+    expect(equipmentOf(current(editor)).map((entry) => entry.names[0])).toEqual(["CH-1"]);
+  });
+
+  it("shows a repeated instance's plain kind under its name, without the internal kind number", async () => {
+    const fake = new LabBridge();
+    const repeated = {
+      ...doc,
+      equipment: [...doc.equipment, { use: "lib/chiller@1", as: "chiller_2", names: ["CH-2"], area: "Cooling" }],
+    };
+    fake.addFile(path, repeated, "k1");
+    fake.actions.set("component.list", success({ components: [] }));
+    const editor = createEditorSession(fake.editor);
+    await editor.open(path);
+    render(<Harness editor={editor} />);
+    act(() => {
+      editor.select("CH-2");
+    });
+    expect(screen.getByText("chiller", { exact: true })).toBeInTheDocument();
+    expect(screen.queryByText(/chiller 2/)).not.toBeInTheDocument();
+  });
+
+  it("leaves an instance generated from an id template to the file", async () => {
+    const fake = new LabBridge();
+    const templated = {
+      ...doc,
+      equipment: [...doc.equipment, { use: "lib/tower@1", id_template: "T-{n}", area: "Yard" }],
+    };
+    fake.addFile(path, templated, "c1");
+    fake.actions.set("component.list", success({ components: [] }));
+    const editor = createEditorSession(fake.editor);
+    await editor.open(path);
+    render(<Harness editor={editor} />);
+    act(() => {
+      editor.select("T-{n}");
+    });
+    expect(screen.getByText(/Generated from an id template/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Delete T-{n}" })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Name")).not.toBeInTheDocument();
+  });
+
+  it("says what undo and redo did, and what Revert's second press will do", async () => {
+    const { editor } = await editing();
+    act(() => {
+      editor.edit((current) => moveInstance(current, "CT-1", "Yard"));
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(screen.getByText("Undone. 0 more to undo.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Redo" }));
+    expect(screen.getByText("Redone. 1 more to undo.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Revert" }));
+    expect(screen.getByText(/^Press Discard changes again/)).toBeInTheDocument();
+  });
+});

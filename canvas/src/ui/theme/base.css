@@ -36,8 +36,7 @@ html select[aria-invalid="true"] {
   outline-offset: 2px;
 }
 
-code,
-.mono {
+code {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
   font-variant-ligatures: none;

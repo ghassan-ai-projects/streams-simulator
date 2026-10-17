@@ -1,13 +1,10 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test } from "@playwright/test";
-import { readFileSync, rmSync, writeFileSync } from "node:fs";
+import { expect, test } from "./support/test";
+import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { env } from "./support/env";
-
-test.use({ storageState: env("CANVAS_APP_STATE") });
 
 test("the workspace lists each real plant once with its actions, and its runs, in both themes", async ({ page }) => {
-  await page.goto(env("CANVAS_APP_URL"));
+  await page.goto("/");
   const plants = page.getByRole("region", { name: "Plants" });
   await expect(plants.getByRole("button", { name: "Edit Factory utilities" })).toBeVisible();
   await expect(plants.getByRole("button", { name: "Run Factory utilities" })).toBeVisible();
@@ -24,11 +21,11 @@ test("the workspace lists each real plant once with its actions, and its runs, i
   }
 });
 
-test("a file added on disk appears without a reload", async ({ page }) => {
-  await page.goto(env("CANVAS_APP_URL"));
+test("a file added on disk appears without a reload", async ({ page, lab }) => {
+  await page.goto("/");
   const plants = page.getByRole("region", { name: "Plants" });
   await expect(plants.getByText("Factory utilities", { exact: true })).toBeVisible();
-  const folder = join(env("CANVAS_WORKSPACE"), "compositions");
+  const folder = join(lab.workspace, "compositions");
   const copy = join(folder, "copy.composition.json");
   const source = readFileSync(join(folder, "factory-utilities.composition.json"), "utf8");
   writeFileSync(
@@ -37,11 +34,7 @@ test("a file added on disk appears without a reload", async ({ page }) => {
       .replace('"id": "factory-utilities"', '"id": "copied-plant"')
       .replace('"title": "Factory utilities"', '"title": "Copied plant"'),
   );
-  try {
-    await expect(plants.getByRole("listitem").filter({ hasText: "Copied plant" })).toContainText("Not runnable yet", {
-      timeout: 5000,
-    });
-  } finally {
-    rmSync(copy);
-  }
+  await expect(plants.getByRole("listitem").filter({ hasText: "Copied plant" })).toContainText("Not runnable yet", {
+    timeout: 5000,
+  });
 });

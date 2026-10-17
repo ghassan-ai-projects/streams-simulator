@@ -1,6 +1,5 @@
 node_modules/
 dist/
 coverage/
-.tsbuild/
 playwright-report/
 test-results/

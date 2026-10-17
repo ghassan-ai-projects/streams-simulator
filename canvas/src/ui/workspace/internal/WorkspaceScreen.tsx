@@ -1,0 +1,139 @@
+import { Boxes, FileJson } from "lucide-react";
+import type { PlantMaker } from "../../../app/plant";
+import type { NavigationStore } from "../../../app/shell";
+import type { WorkspaceState, WorkspaceStore } from "../../../app/workspace";
+import type { Workspace } from "../../../model/workspace";
+import type { Badge } from "../../../model/review";
+import { workspaceEmpty, workspaceSummary } from "../../../model/workspace";
+import { Breadcrumb, failureLine, screen } from "../../primitives";
+import { useScreen } from "../../primitives";
+import { useStore } from "../../primitives";
+import rowStyles from "./ListSection.module.css";
+import styles from "./WorkspaceScreen.module.css";
+import { BlankPlantStart } from "./EmptyStart";
+import { ExampleList, useExamples } from "./Examples";
+import { PlantList } from "./PlantList";
+import { RunList } from "./RunList";
+import { SectionHeading } from "./SectionHeading";
+
+interface ContentsProps {
+  readonly workspace: Workspace;
+  readonly navigation: NavigationStore;
+  readonly maker: PlantMaker;
+  readonly badgeFor: (worldId: string) => Badge | null;
+}
+
+function EmptyWorkspace({
+  name,
+  maker,
+  navigation,
+}: { readonly name: string } & Omit<ContentsProps, "workspace" | "badgeFor">) {
+  const examples = useExamples(maker);
+  return (
+    <div className={styles.empty}>
+      <Boxes size={28} aria-hidden="true" />
+      <h2 className={styles.emptyTitle}>{`The ${name} workspace has no plants yet`}</h2>
+      <p className={styles.lead}>
+        Build a simulated plant, generate its readings, test how a connected system responds, and review what happened.
+        Plants you create are saved in the {name} workspace folder.
+      </p>
+      <BlankPlantStart examples={examples} maker={maker} navigation={navigation} />
+      <ExampleList examples={examples} taken={[]} maker={maker} navigation={navigation} />
+      <ol className={styles.steps}>
+        <li>
+          Create a new plant{examples.length > 0 ? " or try an example" : ""}, then add its equipment in the editor.
+        </li>
+        <li>Open the plant and Run it with the faults you want to test.</li>
+        <li>Review the run: play it back, read the report and the verdict.</li>
+      </ol>
+    </div>
+  );
+}
+
+function Scenarios({ workspace }: { readonly workspace: Workspace }) {
+  if (workspace.scenarios.length === 0) return null;
+  return (
+    <section className={rowStyles.section} aria-labelledby="scenarios-title">
+      <SectionHeading id="scenarios-title" title="Scenarios" count={workspace.scenarios.length} />
+      <ul className={rowStyles.rows}>
+        {workspace.scenarios.map((item) => (
+          <li key={item.path} className={rowStyles.item} title={item.path}>
+            <FileJson size={16} aria-hidden="true" className={rowStyles.icon} />
+            <span className={rowStyles.name}>{item.title || item.id || item.path}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function Contents({ workspace, navigation, maker, badgeFor }: ContentsProps) {
+  const examples = useExamples(maker);
+  return (
+    <div className={styles.page}>
+      <header className={styles.header}>
+        <span className={styles.eyebrow}>Workspace folder</span>
+        <h2 className={styles.title}>{workspace.name}</h2>
+        <span className={styles.summary}>{workspaceSummary(workspace)}</span>
+      </header>
+      <div className={styles.grid}>
+        <PlantList workspace={workspace} navigation={navigation} maker={maker} examples={examples} />
+        <div className={styles.column}>
+          <RunList workspace={workspace} navigation={navigation} badgeFor={badgeFor} />
+          <Scenarios workspace={workspace} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function WorkspaceCrumb({ name }: { readonly name: string }) {
+  const heading = useScreen(name === "" ? "Workspace" : `${name} · workspace`);
+  return <Breadcrumb trail={[]} here="Workspace" heading={heading} />;
+}
+
+function WorkspaceBody({
+  state,
+  navigation,
+  maker,
+  badgeFor,
+}: { readonly state: WorkspaceState } & Omit<ContentsProps, "workspace">) {
+  if (state.phase === "loading") {
+    return (
+      <p className={screen.loading} role="status">
+        Loading the workspace…
+      </p>
+    );
+  }
+  if (state.phase === "failed") {
+    return (
+      <p className={screen.failure} role="alert">
+        The workspace could not be listed: {failureLine(state.failure.diagnostic)}
+      </p>
+    );
+  }
+  if (workspaceEmpty(state.workspace)) {
+    return <EmptyWorkspace name={state.workspace.name} maker={maker} navigation={navigation} />;
+  }
+  return <Contents workspace={state.workspace} navigation={navigation} maker={maker} badgeFor={badgeFor} />;
+}
+
+export function WorkspaceScreen({
+  workspace,
+  navigation,
+  maker,
+  badgeFor,
+}: {
+  readonly workspace: WorkspaceStore;
+  readonly navigation: NavigationStore;
+  readonly maker: PlantMaker;
+  readonly badgeFor: (worldId: string) => Badge | null;
+}) {
+  const state = useStore(workspace);
+  return (
+    <>
+      <WorkspaceCrumb name={state.phase === "ready" ? state.workspace.name : ""} />
+      <WorkspaceBody state={state} navigation={navigation} maker={maker} badgeFor={badgeFor} />
+    </>
+  );
+}

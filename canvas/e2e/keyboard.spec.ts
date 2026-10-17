@@ -1,21 +1,8 @@
-import { expect, test } from "@playwright/test";
-import { env } from "./support/env";
-
-test.use({ storageState: env("CANVAS_APP_STATE") });
-
-function focused(): { readonly tag: string; readonly outline: string; readonly width: string; readonly color: string } {
-  const active = document.activeElement;
-  const style = active === null ? null : getComputedStyle(active);
-  return {
-    tag: active?.tagName ?? "",
-    outline: style?.outlineStyle ?? "",
-    width: style?.outlineWidth ?? "",
-    color: style?.outlineColor ?? "",
-  };
-}
+import { expect, test } from "./support/test";
+import { expectVisibleRing } from "./support/keys";
 
 test("the keyboard dialog opens on a heading whose focus is visible, in both themes", async ({ page }) => {
-  await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Ffactory-utilities.domain.json`);
+  await page.goto("/#/plant?domain=domains%2Ffactory-utilities.domain.json");
   await expect(page.getByRole("button", { name: "Keyboard" })).toBeVisible();
   for (const theme of ["light", "dark"]) {
     await page.evaluate((value) => {
@@ -23,11 +10,8 @@ test("the keyboard dialog opens on a heading whose focus is visible, in both the
     }, theme);
     await page.keyboard.press("?");
     await expect(page.getByRole("dialog", { name: "Keyboard" })).toBeVisible();
-    const ring = await page.evaluate(focused);
-    expect(ring.tag).toBe("H2");
-    expect(ring.outline).toBe("solid");
-    expect(ring.width).not.toBe("0px");
-    expect(ring.color).not.toBe("rgba(0, 0, 0, 0)");
+    await expect(page.getByRole("heading", { level: 2, name: "Keyboard" })).toBeFocused();
+    await expectVisibleRing(page);
     await page.keyboard.press("Escape");
     await expect(page.getByRole("dialog", { name: "Keyboard" })).toBeHidden();
   }

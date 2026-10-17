@@ -18,10 +18,9 @@ export default tseslint.config(
     ignores: [
       "dist",
       "coverage",
-      ".tsbuild",
       "playwright-report",
       "test-results",
-      "src/generated",
+      "architecture-fixtures",
       ".dependency-cruiser.cjs",
     ],
   },

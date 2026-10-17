@@ -1,0 +1,26 @@
+import type { PlanMark } from "./types";
+import type { ShowingMarks } from "../../shared/marks";
+import { tally } from "../../shared/collect";
+import { hallOf } from "./halls";
+
+function faultedHalls(faulted: ReadonlyMap<string, readonly string[]>): Map<string, PlanMark> {
+  const halls = tally(
+    [...faulted.keys()].flatMap((entity) => hallOf(entity) ?? []),
+    (hall) => hall,
+  );
+  const marks = new Map<string, PlanMark>();
+  for (const [hall, count] of halls) marks.set(hall, { status: "fault", count, fault: "", effector: "" });
+  return marks;
+}
+
+export function planMarks(marks: ShowingMarks): ReadonlyMap<string, PlanMark> {
+  const faulted = marks.faults;
+  const effectors = marks.effectors;
+  const found = new Map<string, PlanMark>(faultedHalls(faulted));
+  for (const entity of new Set([...faulted.keys(), ...effectors.keys()])) {
+    const causes = faulted.get(entity) ?? [];
+    const status = causes.length > 0 ? "fault" : null;
+    found.set(entity, { status, count: 0, fault: causes.join(", "), effector: effectors.get(entity) ?? "" });
+  }
+  return found;
+}

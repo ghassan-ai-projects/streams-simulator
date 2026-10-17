@@ -1,4 +1,6 @@
-export function wiresUnderNodes(): string[] {
+import type { Audit } from "./audit";
+
+export function wiresUnderNodes(atLeast = 1): Audit {
   const graph = document.querySelector("[aria-roledescription='plant graph']");
   const zoom = Number(graph === null ? 1 : getComputedStyle(graph).getPropertyValue("--zoom"));
   const margin = 4 * zoom;
@@ -10,7 +12,8 @@ export function wiresUnderNodes(): string[] {
       ({ box }) => x > box.left - margin && x < box.right + margin && y > box.top - margin && y < box.bottom + margin,
     );
   const found: string[] = [];
-  document.querySelectorAll<SVGPathElement>(".react-flow__edge .react-flow__edge-path").forEach((path) => {
+  const paths = [...document.querySelectorAll<SVGPathElement>(".react-flow__edge .react-flow__edge-path")];
+  paths.forEach((path) => {
     const matrix = path.getScreenCTM();
     if (matrix === null) return;
     const length = path.getTotalLength();
@@ -26,10 +29,10 @@ export function wiresUnderNodes(): string[] {
       }
     }
   });
-  return found;
+  return { considered: paths.length, problems: found, met: paths.length >= atLeast };
 }
 
-export function wireEndsTooClose(): string[] {
+export function wireEndsTooClose(atLeast = 1): Audit {
   const ends: { readonly id: string; readonly port: string; readonly start: boolean; x: number; y: number }[] = [];
   document.querySelectorAll<SVGPathElement>(".react-flow__edge .react-flow__edge-path").forEach((path) => {
     const matrix = path.getScreenCTM();
@@ -45,16 +48,17 @@ export function wireEndsTooClose(): string[] {
       { id, port: target, start: false, ...at(path.getPointAtLength(path.getTotalLength())) },
     );
   });
-  return ends.flatMap((a, index) =>
+  const problems = ends.flatMap((a, index) =>
     ends
       .slice(index + 1)
       .filter((b) => a.id !== b.id && !(a.start && b.start && a.port === b.port))
       .filter((b) => Math.hypot(a.x - b.x, a.y - b.y) < 6 - 1e-6)
       .map((b) => `${a.id} meets ${b.id}`),
   );
+  return { considered: ends.length, problems: problems, met: ends.length >= atLeast };
 }
 
-export function wiresNearTitles(): string[] {
+export function wiresNearTitles(atLeast = 1): Audit {
   const texts = [...document.querySelectorAll(".react-flow__node-frameTitle")].flatMap((title) => {
     const text = document.createTreeWalker(title, NodeFilter.SHOW_TEXT).nextNode();
     if (text === null) return [];
@@ -63,7 +67,8 @@ export function wiresNearTitles(): string[] {
     return [{ title: text.textContent ?? "", box: range.getBoundingClientRect() }];
   });
   const found = new Set<string>();
-  document.querySelectorAll<SVGPathElement>(".react-flow__edge .react-flow__edge-path").forEach((path) => {
+  const paths = [...document.querySelectorAll<SVGPathElement>(".react-flow__edge .react-flow__edge-path")];
+  paths.forEach((path) => {
     const matrix = path.getScreenCTM();
     if (matrix === null) return;
     const id = path.closest(".react-flow__edge")?.getAttribute("data-id") ?? "wire";
@@ -78,5 +83,6 @@ export function wiresNearTitles(): string[] {
       }
     }
   });
-  return [...found];
+  const problems = [...found];
+  return { considered: paths.length, problems: problems, met: paths.length >= atLeast };
 }
