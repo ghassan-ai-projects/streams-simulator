@@ -1,5 +1,5 @@
-import type { JournalEntry } from "../model/playback";
-import type { Report } from "../model/report";
+import type { JournalEntry } from "../model/review";
+import type { Report } from "../model/review";
 
 /** The wire report payload the bridge answers `run.report` with, as `streamsim` writes run.json. */
 export const reportWire = {

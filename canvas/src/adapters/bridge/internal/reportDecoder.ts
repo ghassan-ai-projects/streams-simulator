@@ -1,11 +1,11 @@
-import type { Replay, Report } from "../../../model/report";
-import type { AlarmActivation } from "../../../model/reportAlarms";
+import type { Replay, Report } from "../../../model/review";
+import type { AlarmActivation } from "../../../model/review";
 import { isRecord } from "./http";
 
 type Json = Record<string, unknown>;
 
 export function parseReportPayload(value: unknown): Report | null {
-  if (!isRecord(value) || !isRecord(value.run) || typeof value.run.run_id !== "string" || !isRecord(value.counts)) {
+  if (!isRecord(value) || !isRecord(value.run) || !isRecord(value.counts)) {
     return null;
   }
   if (!isRecord(value.verification) || typeof value.verification.status !== "string") return null;

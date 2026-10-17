@@ -1,7 +1,6 @@
 import type {
   BridgeAdapters,
   ComposeSummary,
-  DomainDocument,
   EditorFailure,
   EditorGateway,
   FileContent,
@@ -11,7 +10,6 @@ import type {
   PlantFailure,
   PlantGateway,
   PlantSource,
-  ReviewFailure,
   ReviewGateway,
   RunFollower,
   SessionFailure,
@@ -19,44 +17,39 @@ import type {
   WorkspaceGateway,
 } from "../app/ports";
 import { failure as failed, success } from "../app/ports";
-import type { Composition } from "../model/composition";
-import type { JournalEntry } from "../model/playback";
-import type { Replay, Report } from "../model/report";
+import type { Composition } from "../model/editor";
+import type { JournalEntry } from "../model/review";
 import type { Workspace } from "../model/workspace";
-import {
-  editorFailure,
-  failure,
-  launchFailure,
-  plantFailure,
-  reviewFailure,
-  sessionFailure,
-  workspaceFailure,
-} from "./fakeFailures";
+import { editorFailure, failure, launchFailure, plantFailure, sessionFailure, workspaceFailure } from "./fakeFailures";
 import type { Canned, CannedFailure, EditorAction, LaunchStep, PlantAction } from "./fakeFailures";
 import { collect, settle } from "./fakeFailures";
 import {
   acknowledgementOf,
   compositionOf,
   examplesOf,
-  isReport,
   libraryOf,
   presetsOf,
-  replayOf,
-  runDomainOf,
   specOf,
   summaryOf,
   worldOf,
 } from "./fakeValues";
-
 import { newPlant } from "./plantBuilder";
+import { reviewDomain, reviewReport, reviewVerify } from "./fakeReview";
 import { sampleWorkspace } from "./workspaceFixture";
 
 export { failure } from "./fakeFailures";
 export { sampleWorkspace } from "./workspaceFixture";
 
 type Handler = (args: Readonly<Record<string, unknown>>) => Canned<unknown> | Promise<Canned<unknown>>;
-interface Written { readonly path: string; readonly etag: string }
-interface Compose { readonly composition: string; readonly output: string; readonly etag: string }
+interface Written {
+  readonly path: string;
+  readonly etag: string;
+}
+interface Compose {
+  readonly composition: string;
+  readonly output: string;
+  readonly etag: string;
+}
 
 /**
  * The in-memory bridge double: the generic driving surface the canvas tests have always used, plus the six typed
@@ -116,21 +109,30 @@ export class FakeBridge {
 
   readonly launch: LaunchGateway = {
     createWorld: (input) =>
-      this.launchStep("create", "world.create", { domain: input.domain, seed: input.seed, explore: input.explore }, worldOf),
-    advance: (worldId, byNs) =>
-      this.voidStep("advance", "clock.advance", { world_id: worldId, by_ns: byNs }),
+      this.launchStep(
+        "create",
+        "world.create",
+        { domain: input.domain, seed: input.seed, explore: input.explore },
+        worldOf,
+      ),
+    advance: (worldId, byNs) => this.voidStep("advance", "clock.advance", { world_id: worldId, by_ns: byNs }),
     inject: (worldId, entity, fault) =>
       this.voidStep("inject", "fault.inject", { world_id: worldId, entity_id: entity, fault }),
     invoke: (worldId, entity, effector, args) =>
-      this.launchStep("invoke", "effector.invoke", { world_id: worldId, entity_id: entity, effector, args }, acknowledgementOf),
+      this.launchStep(
+        "invoke",
+        "effector.invoke",
+        { world_id: worldId, entity_id: entity, effector, args },
+        acknowledgementOf,
+      ),
     endRun: (worldId) => this.voidStep("end", "run.end", { world_id: worldId }),
     destroyWorld: (worldId) => this.destroy(worldId),
   };
 
   readonly review: ReviewGateway = {
-    report: (runId) => this.reviewReport(runId),
-    verify: (runId) => this.reviewVerify(runId),
-    runDomain: (runId) => this.reviewDomain(runId),
+    report: (runId) => reviewReport(this, runId),
+    verify: (runId) => reviewVerify(this, runId),
+    runDomain: (runId) => reviewDomain(this, runId),
     follow: (runId, follower) => this.followRun(runId, follower),
   };
 
@@ -162,7 +164,8 @@ export class FakeBridge {
     const handler = this.handlers.get(name);
     if (handler !== undefined) return Promise.resolve(handler(args));
     const canned = this.actions.get(name);
-    if (canned === undefined && name === "component.new") return Promise.resolve(newPlant(this.actions, this.files, args));
+    if (canned === undefined && name === "component.new")
+      return Promise.resolve(newPlant(this.actions, this.files, args));
     return Promise.resolve(canned ?? failed(failure("unknown_action", 404)));
   }
 
@@ -191,7 +194,11 @@ export class FakeBridge {
     });
   }
 
-  private send(follower: RunFollower | undefined, entries: readonly JournalEntry[], end: "closed" | "failed" | null): void {
+  private send(
+    follower: RunFollower | undefined,
+    entries: readonly JournalEntry[],
+    end: "closed" | "failed" | null,
+  ): void {
     entries.forEach((entry) => follower?.entry(entry));
     if (end === "closed") follower?.closed();
     if (end === "failed") follower?.failed();
@@ -256,9 +263,7 @@ export class FakeBridge {
     args: Readonly<Record<string, unknown>>,
     read: (value: unknown) => T | null,
   ): Promise<Outcome<T, LaunchFailure>> {
-    return this.action(name, args).then((outcome) =>
-      collect(outcome, (problem) => launchFailure(step, problem), read),
-    );
+    return this.action(name, args).then((outcome) => collect(outcome, (problem) => launchFailure(step, problem), read));
   }
 
   private voidStep(
@@ -273,27 +278,5 @@ export class FakeBridge {
 
   private async destroy(worldId: string): Promise<void> {
     await this.voidStep("end", "world.destroy", { world_id: worldId });
-  }
-
-  private reviewReport(runId: string): Promise<Outcome<Report, ReviewFailure>> {
-    return this.action("run.report", { run: runId }).then((outcome) =>
-      collect(outcome, reviewFailure, (value) => (isReport(value) ? value : null)),
-    );
-  }
-
-  private reviewVerify(runId: string): Promise<Outcome<Replay, ReviewFailure>> {
-    return this.action("run.verify", { run: runId }).then((outcome) => {
-      const verdict = outcome.ok ? null : replayOf(outcome.failure.result);
-      return verdict === null ? collect(outcome, reviewFailure, replayOf) : success(verdict);
-    });
-  }
-
-  private async reviewDomain(runId: string): Promise<Outcome<DomainDocument, ReviewFailure>> {
-    const file = await this.readFile(`runs/${runId}/run.json`);
-    if (!file.ok) return failed(reviewFailure(file.failure));
-    const domain = runDomainOf(file.value.content);
-    return domain === null
-      ? failed(reviewFailure(failure("unreadable", 200, "the run recorded no domain")))
-      : success(domain);
   }
 }

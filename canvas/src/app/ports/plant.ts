@@ -1,6 +1,6 @@
-import type { ComponentSpec } from "../../model/ports";
-import type { Composition } from "../../model/composition";
-import type { ExamplePlant } from "../../model/library";
+import type { ComponentSpec } from "../../model/plant";
+import type { Composition } from "../../model/editor";
+import type { ExamplePlant } from "../../model/plant";
 import type { ComposeSummary, CompositionIssue, Diagnostic, FileContent, Outcome, PlantSource } from "./shared";
 
 export type PlantFailure =

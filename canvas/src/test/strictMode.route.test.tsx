@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { describe, expect, it } from "vitest";
-import { HomeScreen } from "../ui/home/HomeScreen";
+import { HomeScreen } from "../ui/workspace";
 import { FakeBridge } from "./fakeBridge";
 import { navigation } from "./homeHarness";
 import { renderStrict } from "./strictMode";
-import type { NavigationStore } from "../app/navigationStore";
-import { PlantMaker } from "../app/plantMaker";
-import { WorkspaceStore } from "../app/workspaceStore";
+import type { NavigationStore } from "../app/shell";
+import { PlantMaker } from "../app/plant";
+import { WorkspaceStore } from "../app/workspace";
 
 function Route({
   workspace,

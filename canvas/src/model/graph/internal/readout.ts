@@ -1,9 +1,9 @@
-import type { Attention, NodeStatus, Shown, ChannelSpec } from "../contract";
-export type { Attention, NodeStatus, Shown, ChannelSpec } from "../contract";
-import type { ReadingValue } from "../contract";
+import type { Attention, NodeStatus, Shown, ChannelSpec } from "./types";
+export type { Attention, NodeStatus, Shown, ChannelSpec } from "./types";
+import type { ReadingValue } from "./types";
 import type { ChannelRange, ChannelState } from "../../plant";
 import { shortChannel } from "../../shared/words";
-import { displayUnit } from "../../units";
+import { displayUnit } from "../../shared/units";
 
 export const statusWords: Readonly<Record<NonNullable<NodeStatus>, string>> = {
   alarm: "Alarm",

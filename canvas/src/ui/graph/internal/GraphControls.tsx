@@ -6,7 +6,7 @@ import { familyNames, shapeOf } from "../../../model/graph";
 import type { Family } from "../../../model/graph";
 import type { FlowNode } from "./flow";
 import { fittedViewport, steppedZoom } from "./viewportFit";
-import { cx } from "../../cx";
+import { cx } from "../../primitives";
 import styles from "./GraphControls.module.css";
 import vendor from "./vendor.module.css";
 

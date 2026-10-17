@@ -1,4 +1,4 @@
-import type { ReviewState } from "../app/reviewStore";
+import type { ReviewState } from "../app/review";
 import { report } from "./runFixture";
 
 export function reviewState(overrides: Partial<ReviewState>): ReviewState {

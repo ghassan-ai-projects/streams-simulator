@@ -1,4 +1,5 @@
 import { readFileSync, writeFileSync } from "node:fs";
+import { format, resolveConfig } from "prettier";
 import { readRegister } from "./architecture/register.ts";
 import type { ModuleSpec } from "./architecture/model.ts";
 
@@ -46,9 +47,14 @@ export function currentDoc(path: string): string {
   }
 }
 
-function main(): void {
+async function formatted(text: string): Promise<string> {
+  const options = (await resolveConfig(docPath)) ?? {};
+  return format(text, { ...options, parser: "markdown" });
+}
+
+async function main(): Promise<void> {
   const check = process.argv.includes("--check");
-  const expected = document();
+  const expected = await formatted(document());
   const actual = currentDoc(docPath);
   if (check) {
     const ok = actual === expected;
@@ -62,4 +68,4 @@ function main(): void {
   process.stdout.write(`wrote ${docPath} with ${String(moduleRows().length)} modules\n`);
 }
 
-main();
+await main();

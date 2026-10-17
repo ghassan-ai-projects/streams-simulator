@@ -24,6 +24,7 @@ interface Shape {
   readonly caps?: Readonly<Record<string, Cap>>;
   readonly globalCaps?: Readonly<Record<string, Allowance>>;
   readonly vendorFiles?: readonly string[];
+  readonly globalOwners?: readonly string[];
   readonly debt?: readonly Debt[];
 }
 
@@ -40,6 +41,7 @@ export function runRatchetFixtures(): string[] {
     ...vendorCapFixture(),
     ...vendorSourceFixture(),
     ...crossLayerFixture(),
+    ...movedOwnerFixture(),
   ];
 }
 
@@ -157,6 +159,20 @@ function crossLayerFixture(): string[] {
   ]);
 }
 
+function movedOwnerFixture(): string[] {
+  const oldShared = "src/ui/shared.module.css";
+  const newShared = "src/ui/graph/internal/shared.module.css";
+  const base = register({ globalOwners: [oldShared] });
+  const sameName = register({ extracted: true, globalOwners: [newShared] });
+  const otherName = register({ extracted: true, globalOwners: ["src/ui/graph/internal/other.module.css"] });
+  return [
+    ...compare("an owner moved to another module keeps its basename", base, sameName, []),
+    ...compare("an owner under a new name is a new owner", base, otherName, [
+      "global stylesheet allow-list gained src/ui/graph/internal/other.module.css",
+    ]),
+  ];
+}
+
 function register(shape: Shape): Register {
   const graph = shape.extracted === true;
   return parseRegister(
@@ -166,7 +182,7 @@ function register(shape: Shape): Register {
       modules: fixtureModules(graph, shape.graphLayer),
       css: {
         globalEntrypoints: [],
-        globalOwners: [],
+        globalOwners: shape.globalOwners ?? [],
         vendorFiles: shape.vendorFiles ?? [],
         defaultCap: 300,
         caps: shape.caps ?? {},

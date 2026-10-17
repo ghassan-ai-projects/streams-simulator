@@ -1,4 +1,5 @@
-import type { Definition, PlantEntry, RunEntry, RunRow, Workspace } from "../contract";
+import type { Definition, PlantEntry, RunEntry, RunRow, Workspace } from "./types";
+import { durationOf } from "../../shared/duration";
 
 export function counted(count: number, one: string, many: string): string {
   return `${String(count)} ${count === 1 ? one : many}`;
@@ -105,15 +106,6 @@ export function whenOf(iso: string): string {
   const day = date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
   const time = date.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
   return `${day}, ${time}`;
-}
-
-export function durationOf(seconds: number): string {
-  if (seconds <= 0) return "";
-  if (seconds < 60) return `${String(seconds)} s`;
-  const minutes = Math.round(seconds / 60);
-  const hours = Math.floor(minutes / 60);
-  if (hours === 0) return `${String(minutes)} min`;
-  return minutes % 60 === 0 ? `${String(hours)} h` : `${String(hours)} h ${String(minutes % 60)} min`;
 }
 
 export function suggestedId(name: string, taken: readonly string[]): string {

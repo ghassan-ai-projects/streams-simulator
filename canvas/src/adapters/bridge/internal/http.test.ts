@@ -57,10 +57,20 @@ describe("bridge requests", () => {
 
   it("separates a transport that never answered from a body it cannot decode", async () => {
     const seen: RequestFailure[] = [];
-    await request(bridgeTransport(() => Promise.reject(new Error("down"))), "/api/session", () => true, record(seen));
+    await request(
+      bridgeTransport(() => Promise.reject(new Error("down"))),
+      "/api/session",
+      () => true,
+      record(seen),
+    );
     expect(seen[0]).toEqual({ kind: "transport" });
     const onlyTrue = (value: unknown) => (value === true ? true : null);
-    await request(bridgeTransport(() => respond(200, "not json")), "/api/session", onlyTrue, record(seen));
+    await request(
+      bridgeTransport(() => respond(200, "not json")),
+      "/api/session",
+      onlyTrue,
+      record(seen),
+    );
     expect(seen[1]).toEqual({ kind: "unreadable" });
   });
 
@@ -70,8 +80,13 @@ describe("bridge requests", () => {
     );
     const readVerdict = (value: unknown) =>
       isRecord(value) && typeof value.matches === "boolean" ? { matches: value.matches } : null;
-    const outcome = await request(transport, "/api/actions/run.verify", readVerdict, () => "failed", undefined, (p) =>
-      readVerdict(p.result),
+    const outcome = await request(
+      transport,
+      "/api/actions/run.verify",
+      readVerdict,
+      () => "failed",
+      undefined,
+      (p) => readVerdict(p.result),
     );
     expect(outcome).toEqual({ ok: true, value: { matches: false } });
   });

@@ -1,7 +1,7 @@
 import { MarkerType } from "@xyflow/react";
 import { describe, expect, it } from "vitest";
 import { parsePlant } from "../../../model/plant";
-import type { ComponentSpec } from "../../../model/ports";
+import type { ComponentSpec } from "../../../model/plant";
 import { plantView } from "../../../model/graph";
 import { composition, domain } from "../../../test/plantFixture";
 import { flowEdges, flowNodes } from "./flow";

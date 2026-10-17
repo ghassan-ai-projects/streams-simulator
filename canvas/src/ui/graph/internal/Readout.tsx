@@ -1,6 +1,6 @@
 import type { ReadoutBody, ReadoutRow } from "../../../model/graph";
-import { cx } from "../../cx";
-import { OutsideMark } from "../../OutsideMark";
+import { cx } from "../../primitives";
+import { OutsideMark } from "../../primitives";
 import styles from "./readout.module.css";
 
 function Missing({ observed }: { readonly observed: boolean }) {

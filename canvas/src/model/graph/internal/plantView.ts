@@ -1,15 +1,15 @@
-import type { ViewNode, ViewEdge, PlantView } from "../contract";
-export type { ViewNode, PlantView } from "../contract";
+import type { ViewNode, ViewEdge, PlantView } from "./types";
+export type { ViewNode, PlantView } from "./types";
 import type { LayoutNode } from "./layout";
 import { layout } from "./layout";
 import { headerReserve } from "./frameTitle";
-import { areaTree } from "../../areaTree";
+import { areaTree } from "../../shared/areaTree";
 import type { Instance, Link, Plant } from "../../plant";
 import { areaOf } from "../../plant";
-import type { ComponentSpec, Family, Pin, Pins } from "../../ports";
+import type { ComponentSpec, Family, Pin, Pins } from "../../plant";
 import { plainRows } from "./nodePresentation";
 import type { ViewPresentation } from "./nodePresentation";
-import { familyOf, pinsOf } from "../../ports";
+import { familyOf, pinsOf } from "../../plant";
 import { kindLabel, shortChannel } from "../../shared/words";
 
 export const nodeSize = {

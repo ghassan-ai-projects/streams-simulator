@@ -1,4 +1,4 @@
-import { PAIRING_CODE_LENGTH } from "../contract";
+import { PAIRING_CODE_LENGTH } from "./types";
 
 const CODE_ALPHABET = /^[A-Z2-7]*$/;
 

@@ -1,5 +1,5 @@
-import type { Rect, Viewport, CutSide } from "../contract";
-export type { Rect, Viewport, CutSide } from "../contract";
+import type { Rect, Viewport, CutSide } from "./types";
+export type { Rect, Viewport, CutSide } from "./types";
 
 export function followZoom(
   box: Rect,

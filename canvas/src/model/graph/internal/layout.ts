@@ -1,5 +1,5 @@
-import type { Box, LayoutNode, LayoutEdge, Layout } from "../contract";
-export type { LayoutNode, LayoutEdge, Layout } from "../contract";
+import type { Box, LayoutNode, LayoutEdge, Layout } from "./types";
+export type { LayoutNode, LayoutEdge, Layout } from "./types";
 
 export const spacing = {
   pad: 24,

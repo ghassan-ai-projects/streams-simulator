@@ -3,8 +3,8 @@
   "compilerOptions": {
     "lib": ["ES2023"],
     "types": ["node"],
-    "outDir": ".tsbuild/node",
-    "tsBuildInfoFile": ".tsbuild/node.tsbuildinfo"
+    "outDir": "node_modules/.cache/tsbuild/node",
+    "tsBuildInfoFile": "node_modules/.cache/tsbuild/node.tsbuildinfo"
   },
   "include": ["vite.config.ts", "vitest.config.ts", "playwright.config.ts", "eslint.config.js"]
 }

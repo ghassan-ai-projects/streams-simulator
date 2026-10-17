@@ -7,15 +7,7 @@ export type { WorkspaceFailure, WorkspaceGateway } from "./workspace";
 export type { Clock, Scheduler } from "./clock";
 export type { Location, PreferenceStore, SystemTheme } from "./browser";
 export { failure, success } from "./shared";
-export type {
-  CompositionIssue,
-  ComposeSummary,
-  Diagnostic,
-  DomainDocument,
-  FileContent,
-  Outcome,
-  PlantSource,
-} from "./shared";
+export type { ComposeSummary, Diagnostic, DomainDocument, FileContent, Outcome, PlantSource } from "./shared";
 
 import type { EditorGateway } from "./editor";
 import type { LaunchGateway } from "./launch";

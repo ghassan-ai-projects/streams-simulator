@@ -1,4 +1,4 @@
-import type { PortSpec } from "../model/ports";
+import type { PortSpec } from "../model/plant";
 
 export const domain = {
   id: "mini",

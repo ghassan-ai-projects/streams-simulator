@@ -1,5 +1,12 @@
-import type { BridgeAdapters, DomainDocument, Outcome, PlantSource, ReviewFailure, RunFollower } from "../../../app/ports";
-import type { Replay } from "../../../model/report";
+import type {
+  BridgeAdapters,
+  DomainDocument,
+  Outcome,
+  PlantSource,
+  ReviewFailure,
+  RunFollower,
+} from "../../../app/ports";
+import type { Replay } from "../../../model/review";
 import { action, getFile, putFile, request, type Transport, type WireProblem } from "./http";
 import {
   acknowledgement,

@@ -7,6 +7,11 @@ function payload(entities: unknown) {
 }
 
 describe("the run report", () => {
+  it("reads the report of a run that has not ended, which carries no run id", () => {
+    const open = { run: { mode: "evaluate", ended: false }, counts: {}, verification: { status: "not_checked" } };
+    expect(parseReportPayload(open)).toMatchObject({ runId: "", ended: false, complete: false });
+  });
+
   it("reads the run, counts, verification and truth sections", () => {
     const parsed = parseReportPayload(reportWire);
     expect(parsed).toEqual(report);
@@ -45,8 +50,10 @@ describe("the run report", () => {
     expect(parseReportPayload(null)).toBeNull();
     expect(parseReportPayload({})).toBeNull();
     expect(parseReportPayload({ run: { run_id: "r-1" }, counts: {} })).toBeNull();
-    expect(parseReportPayload({ run: {}, counts: {}, verification: { status: "match" } })).toBeNull();
-    expect(parseReportPayload({ run: { run_id: "r-1" }, counts: "none", verification: { status: "match" } })).toBeNull();
+    expect(parseReportPayload({ counts: {}, verification: { status: "match" } })).toBeNull();
+    expect(
+      parseReportPayload({ run: { run_id: "r-1" }, counts: "none", verification: { status: "match" } }),
+    ).toBeNull();
   });
 
   it("keeps what a scored or truthless report says", () => {
@@ -77,8 +84,7 @@ describe("the run report", () => {
     expect(parseReportPayload(payload(null))?.alarmActivations).toEqual([]);
     expect(parseReportPayload(payload([null, { alarms: [null, { activations: 3 }] }]))?.alarmActivations).toEqual([]);
     expect(
-      parseReportPayload(payload([{ alarms: [{ activation_times_ns: ["1", null, Infinity, 2] }] }]))
-        ?.alarmActivations,
+      parseReportPayload(payload([{ alarms: [{ activation_times_ns: ["1", null, Infinity, 2] }] }]))?.alarmActivations,
     ).toEqual([{ atNs: 2, entity: "", state: "", priority: "" }]);
   });
 });

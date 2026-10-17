@@ -4,8 +4,8 @@
     "lib": ["ES2023", "DOM"],
     "types": ["node"],
     "allowImportingTsExtensions": true,
-    "outDir": ".tsbuild/scripts",
-    "tsBuildInfoFile": ".tsbuild/scripts.tsbuildinfo"
+    "outDir": "node_modules/.cache/tsbuild/scripts",
+    "tsBuildInfoFile": "node_modules/.cache/tsbuild/scripts.tsbuildinfo"
   },
   "include": ["scripts"]
 }

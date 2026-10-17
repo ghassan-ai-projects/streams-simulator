@@ -1,5 +1,5 @@
-import type { FittedId, IdTier } from "../contract";
-export type { FittedId, IdTier } from "../contract";
+import type { FittedId, IdTier } from "./types";
+export type { FittedId, IdTier } from "./types";
 import { textFloorPx } from "./viewport";
 
 const glyph = 0.605;

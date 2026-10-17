@@ -1,8 +1,7 @@
 import { describe, expect, it } from "vitest";
-import type { Workspace } from "../contract";
+import type { Workspace } from "./types";
 import { sampleWorkspace } from "../../../test/fakeBridge";
 import {
-  durationOf,
   faultWords,
   outcomeWords,
   plantFacts,
@@ -99,17 +98,10 @@ describe("workspace", () => {
     expect(workspaceEmpty({ name: "x", domains: [], compositions: [], scenarios: [], runs: [] })).toBe(true);
   });
 
-  it("says when and how long in words", () => {
+  it("says when in words", () => {
     expect(whenOf("2026-10-14T12:05:00Z")).toMatch(/^1[45] Oct 2026, \d\d:05$/);
     expect(whenOf("")).toBe("");
     expect(whenOf("nonsense")).toBe("");
-    expect([durationOf(0), durationOf(45), durationOf(1800), durationOf(5400), durationOf(86400)]).toEqual([
-      "",
-      "45 s",
-      "30 min",
-      "1 h 30 min",
-      "24 h",
-    ]);
   });
 
   it("suggests a free id from a plant's name", () => {

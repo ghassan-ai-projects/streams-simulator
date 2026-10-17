@@ -2,133 +2,75 @@
   "version": 1,
   "source": "src",
   "modules": {
-    "model": {
-      "kind": "model",
-      "layer": "model",
-      "lifetime": "values",
-      "responsibility": "immutable product values, pure transformations and parsing of canvas-owned documents",
-      "folders": [
-        "src/model"
-      ],
-      "mayImport": [
-        "model/graph",
-        "model/workspace"
-      ],
-      "entrypoint": null,
-      "callers": [
-        "adapters",
-        "app",
-        "app/ports",
-        "model/graph",
-        "test",
-        "ui",
-        "ui/graph"
-      ]
-    },
     "model/graph": {
       "kind": "model",
       "layer": "model",
       "lifetime": "values",
-      "responsibility": "plant-view projection, graph geometry, wire routing and graph presentation values",
-      "folders": [
-        "src/model/graph"
-      ],
-      "mayImport": [
-        "model"
-      ],
+      "responsibility": "plant-view projection, geometry, routing and presentation values",
+      "folders": ["src/model/graph"],
+      "mayImport": ["model/plant", "model/shared", "test"],
       "entrypoint": "src/model/graph/index.ts",
-      "callers": [
-        "model",
-        "test",
-        "ui",
-        "ui/graph"
-      ]
+      "callers": ["model/review", "test", "ui/editor", "ui/graph", "ui/plant", "ui/review"]
     },
     "model/workspace": {
       "kind": "model",
       "layer": "model",
       "lifetime": "values",
-      "responsibility": "workspace catalogue records and run listing projections",
-      "folders": [
-        "src/model/workspace"
-      ],
-      "mayImport": [
-        "model/shared",
-        "test"
-      ],
+      "responsibility": "workspace catalogue and run listing values",
+      "folders": ["src/model/workspace"],
+      "mayImport": ["model/shared", "test"],
       "entrypoint": "src/model/workspace/index.ts",
       "callers": [
         "adapters",
-        "app",
+        "app/plant",
         "app/ports",
-        "model",
+        "app/review",
+        "app/workspace",
         "test",
-        "ui"
-      ]
-    },
-    "app": {
-      "kind": "application",
-      "layer": "app",
-      "lifetime": "singleton",
-      "responsibility": "use cases, state machines and the ports the outside must implement",
-      "folders": [
-        "src/app"
-      ],
-      "mayImport": [
-        "app/ports",
-        "app/session",
-        "app/shared",
-        "model",
-        "model/workspace",
-        "test"
-      ],
-      "entrypoint": null,
-      "callers": [
-        "root",
-        "test",
-        "ui"
+        "ui/plant",
+        "ui/review",
+        "ui/workspace"
       ]
     },
     "app/shared": {
       "kind": "foundation",
       "layer": "app",
       "lifetime": "singleton",
-      "responsibility": "observable state and operation identity primitives shared by application modules",
-      "folders": [
-        "src/app/shared"
-      ],
-      "files": [
-        "src/app/observable.ts"
-      ],
-      "mayImport": [],
+      "responsibility": "operation identity and application-wide foundations",
+      "folders": ["src/app/shared"],
+      "mayImport": ["test"],
       "entrypoint": "src/app/shared/index.ts",
-      "callers": [
-        "app",
-        "app/session"
-      ]
+      "callers": ["app/editor", "app/launch", "app/plant", "app/review", "app/session", "app/shell", "app/workspace"]
     },
     "app/ports": {
       "kind": "foundation",
       "layer": "app",
       "lifetime": "singleton",
-      "responsibility": "dependency interfaces and time/browser ports required by application modules",
-      "folders": [
-        "src/app/ports"
-      ],
-      "files": [
-        "src/app/ports.ts"
-      ],
+      "responsibility": "dependency interfaces only; no workflow",
+      "folders": ["src/app/ports"],
       "mayImport": [
-        "model",
-        "model/workspace"
+        "model/editor",
+        "model/launch",
+        "model/plant",
+        "model/review",
+        "model/shared",
+        "model/workspace",
+        "test"
       ],
       "entrypoint": "src/app/ports/index.ts",
       "callers": [
         "adapters",
-        "app",
+        "app/editor",
+        "app/launch",
+        "app/plant",
+        "app/review",
         "app/session",
+        "app/shell",
+        "app/workspace",
         "test",
-        "ui"
+        "ui/launch",
+        "ui/plant",
+        "ui/shell"
       ]
     },
     "app/session": {
@@ -136,136 +78,80 @@
       "layer": "app",
       "lifetime": "singleton",
       "responsibility": "bridge pairing state and recovery",
-      "folders": [
-        "src/app/session"
-      ],
-      "mayImport": [
-        "app/ports",
-        "app/shared"
-      ],
+      "folders": ["src/app/session"],
+      "mayImport": ["app/ports", "app/shared", "test"],
       "entrypoint": "src/app/session/index.ts",
-      "callers": [
-        "root",
-        "ui"
-      ]
-    },
-    "adapters": {
-      "kind": "adapter",
-      "layer": "adapters",
-      "lifetime": "singleton",
-      "responsibility": "bridge and browser edges: transport, protocol encoding and boundary decoding",
-      "folders": [
-        "src/adapters"
-      ],
-      "mayImport": [
-        "app",
-        "app/ports",
-        "model",
-        "model/workspace",
-        "test"
-      ],
-      "entrypoint": null,
-      "callers": [
-        "root"
-      ]
-    },
-    "ui": {
-      "kind": "ui",
-      "layer": "ui",
-      "lifetime": "components",
-      "responsibility": "rendering, input binding and component-local ephemeral state",
-      "folders": [
-        "src/ui"
-      ],
-      "mayImport": [
-        "app",
-        "app/ports",
-        "app/session",
-        "model",
-        "model/graph",
-        "model/workspace",
-        "test",
-        "ui/graph",
-        "ui/primitives",
-        "ui/session"
-      ],
-      "entrypoint": null,
-      "callers": [
-        "root",
-        "test",
-        "ui/graph"
-      ]
+      "callers": ["root", "ui/session", "ui/shell"]
     },
     "ui/primitives": {
       "kind": "ui",
       "layer": "ui",
       "lifetime": "components",
-      "responsibility": "generic state subscription hook and visually stable shared building blocks",
-      "folders": [
-        "src/ui/primitives"
-      ],
-      "files": [
-        "src/ui/useStore.ts"
-      ],
-      "mayImport": [],
+      "responsibility": "visually and semantically stable building blocks",
+      "folders": ["src/ui/primitives"],
+      "mayImport": ["test"],
       "entrypoint": "src/ui/primitives/index.ts",
       "callers": [
         "test",
-        "ui"
+        "ui/editor",
+        "ui/graph",
+        "ui/launch",
+        "ui/plant",
+        "ui/review",
+        "ui/session",
+        "ui/shell",
+        "ui/workspace"
       ]
     },
     "ui/session": {
       "kind": "ui",
       "layer": "ui",
       "lifetime": "components",
-      "responsibility": "pairing screen and its presentation",
-      "folders": [
-        "src/ui/session"
-      ],
-      "mayImport": [
-        "app/session",
-        "ui/primitives"
-      ],
+      "responsibility": "pairing screen",
+      "folders": ["src/ui/session"],
+      "mayImport": ["app/session", "test", "ui/primitives"],
       "entrypoint": "src/ui/session/index.ts",
-      "callers": []
+      "callers": ["ui/shell"]
     },
     "ui/graph": {
       "kind": "ui",
       "layer": "ui",
       "lifetime": "components",
-      "responsibility": "the streamsim plant graph: nodes, edges, controls, outline and viewport",
-      "folders": [
-        "src/ui/graph"
-      ],
-      "mayImport": [
-        "ui",
-        "model",
-        "model/graph"
-      ],
+      "responsibility": "the streamsim plant graph: nodes, edges, controls and viewport",
+      "folders": ["src/ui/graph"],
+      "mayImport": ["model/graph", "model/plant", "test", "ui/primitives"],
       "entrypoint": "src/ui/graph/index.ts",
-      "callers": [
-        "ui"
-      ]
+      "callers": ["ui/editor", "ui/plant", "ui/review"]
     },
     "test": {
       "kind": "test-support",
       "layer": "test",
       "lifetime": "per-test",
       "responsibility": "shared test drivers, fixtures and harnesses",
-      "folders": [
-        "src/test"
-      ],
+      "folders": ["src/test"],
       "mayImportAny": true,
       "entrypoint": null,
       "callers": [
         "adapters",
-        "app",
+        "app/editor",
+        "app/launch",
+        "app/plant",
+        "app/review",
         "app/session",
-        "model",
+        "app/workspace",
         "model/graph",
+        "model/plant",
+        "model/review",
+        "model/shared",
         "model/workspace",
-        "ui",
-        "ui/graph"
+        "ui/editor",
+        "ui/graph",
+        "ui/launch",
+        "ui/plant",
+        "ui/review",
+        "ui/session",
+        "ui/shell",
+        "ui/workspace"
       ]
     },
     "root": {
@@ -273,18 +159,379 @@
       "layer": "root",
       "lifetime": "singleton",
       "responsibility": "the composition root: construct adapters and application objects and render the shell",
-      "files": [
-        "src/main.tsx"
-      ],
+      "files": ["src/main.tsx"],
       "mayImport": [
         "adapters",
-        "app",
+        "app/editor",
+        "app/launch",
+        "app/plant",
+        "app/review",
         "app/session",
-        "ui",
-        "model"
+        "app/shell",
+        "app/workspace",
+        "ui/primitives",
+        "ui/shell",
+        "ui/theme"
       ],
       "entrypoint": "src/main.tsx",
       "callers": []
+    },
+    "model/shared": {
+      "kind": "foundation",
+      "layer": "model",
+      "lifetime": "values",
+      "responsibility": "values two or more model modules need and none owns",
+      "folders": ["src/model/shared"],
+      "mayImport": ["test"],
+      "entrypoint": null,
+      "callers": [
+        "model/editor",
+        "model/graph",
+        "model/launch",
+        "model/review",
+        "model/workspace",
+        "ui/editor",
+        "ui/launch",
+        "ui/plant",
+        "ui/review",
+        "ui/shell"
+      ]
+    },
+    "model/shell": {
+      "kind": "model",
+      "layer": "model",
+      "lifetime": "values",
+      "responsibility": "routes, navigation and theme values",
+      "folders": ["src/model/shell"],
+      "mayImport": ["model/shared", "test"],
+      "entrypoint": "src/model/shell/index.ts",
+      "callers": ["app/shell", "ui/shell", "ui/workspace"]
+    },
+    "model/plant": {
+      "kind": "model",
+      "layer": "model",
+      "lifetime": "values",
+      "responsibility": "plant values and component specifications",
+      "folders": ["src/model/plant"],
+      "mayImport": ["model/shared", "test"],
+      "entrypoint": "src/model/plant/index.ts",
+      "callers": [
+        "adapters",
+        "app/editor",
+        "app/plant",
+        "app/ports",
+        "model/editor",
+        "model/graph",
+        "model/launch",
+        "model/review",
+        "test",
+        "ui/editor",
+        "ui/graph",
+        "ui/launch",
+        "ui/plant",
+        "ui/review",
+        "ui/workspace"
+      ]
+    },
+    "model/editor": {
+      "kind": "model",
+      "layer": "model",
+      "lifetime": "values",
+      "responsibility": "composition document, edits and history values",
+      "folders": ["src/model/editor"],
+      "mayImport": ["model/graph", "model/plant", "model/shared", "test"],
+      "entrypoint": "src/model/editor/index.ts",
+      "callers": ["app/editor", "app/plant", "app/ports", "test", "ui/editor"]
+    },
+    "model/launch": {
+      "kind": "model",
+      "layer": "model",
+      "lifetime": "values",
+      "responsibility": "launch plans, steps, effectors and call outcomes",
+      "folders": ["src/model/launch"],
+      "mayImport": ["model/plant", "model/shared", "test"],
+      "entrypoint": "src/model/launch/index.ts",
+      "callers": ["app/launch", "app/ports", "model/review", "test", "ui/launch", "ui/plant", "ui/shell"]
+    },
+    "model/review": {
+      "kind": "model",
+      "layer": "model",
+      "lifetime": "values",
+      "responsibility": "report and journal projection, playback and review presentation",
+      "folders": ["src/model/review"],
+      "mayImport": ["model/graph", "model/launch", "model/plant", "model/shared", "model/workspace", "test"],
+      "entrypoint": "src/model/review/index.ts",
+      "callers": ["adapters", "app/ports", "app/review", "test", "ui/review", "ui/workspace"]
+    },
+    "app/workspace": {
+      "kind": "application",
+      "layer": "app",
+      "lifetime": "singleton",
+      "responsibility": "workspace catalogue, reload lifecycle and home projections",
+      "folders": ["src/app/workspace"],
+      "mayImport": ["app/ports", "app/shared", "model/workspace", "test"],
+      "entrypoint": "src/app/workspace/index.ts",
+      "callers": ["root", "test", "ui/plant", "ui/review", "ui/shell", "ui/workspace"]
+    },
+    "app/plant": {
+      "kind": "application",
+      "layer": "app",
+      "lifetime": "singleton",
+      "responsibility": "one plant projection, component specifications and selection",
+      "folders": ["src/app/plant"],
+      "mayImport": ["app/ports", "app/shared", "model/editor", "model/plant", "model/workspace", "test"],
+      "entrypoint": "src/app/plant/index.ts",
+      "callers": ["app/editor", "root", "test", "ui/plant", "ui/review", "ui/shell", "ui/workspace"]
+    },
+    "app/editor": {
+      "kind": "application",
+      "layer": "app",
+      "lifetime": "singleton",
+      "responsibility": "composition draft, history, edits and the save transaction",
+      "folders": ["src/app/editor"],
+      "mayImport": ["app/plant", "app/ports", "app/shared", "model/editor", "model/graph", "model/plant", "test"],
+      "entrypoint": "src/app/editor/index.ts",
+      "callers": ["root", "test", "ui/editor", "ui/shell"]
+    },
+    "app/launch": {
+      "kind": "application",
+      "layer": "app",
+      "lifetime": "singleton",
+      "responsibility": "plan validation and execution, progress, early stop and rerun proposal",
+      "folders": ["src/app/launch"],
+      "mayImport": ["app/ports", "app/shared", "model/launch", "model/plant", "test"],
+      "entrypoint": "src/app/launch/index.ts",
+      "callers": ["root", "test", "ui/launch", "ui/plant", "ui/review", "ui/shell"]
+    },
+    "app/review": {
+      "kind": "application",
+      "layer": "app",
+      "lifetime": "singleton",
+      "responsibility": "report and verification loading, observer playback and review selection",
+      "folders": ["src/app/review"],
+      "mayImport": [
+        "app/plant",
+        "app/ports",
+        "app/shared",
+        "model/graph",
+        "model/plant",
+        "model/review",
+        "model/workspace",
+        "test"
+      ],
+      "entrypoint": "src/app/review/index.ts",
+      "callers": ["root", "test", "ui/review", "ui/shell"]
+    },
+    "app/shell": {
+      "kind": "application",
+      "layer": "app",
+      "lifetime": "singleton",
+      "responsibility": "navigation, theme, panels, session gating, module composition and cross-module coordinators",
+      "folders": ["src/app/shell"],
+      "mayImport": [
+        "app/editor",
+        "app/launch",
+        "app/plant",
+        "app/ports",
+        "app/review",
+        "app/session",
+        "app/shared",
+        "app/workspace",
+        "model/shell",
+        "test"
+      ],
+      "entrypoint": "src/app/shell/index.ts",
+      "callers": ["root", "test", "ui/editor", "ui/plant", "ui/review", "ui/shell", "ui/workspace"]
+    },
+    "ui/workspace": {
+      "kind": "ui",
+      "layer": "ui",
+      "lifetime": "components",
+      "responsibility": "workspace catalogue screen",
+      "folders": ["src/ui/workspace"],
+      "mayImport": [
+        "app/plant",
+        "app/shell",
+        "app/workspace",
+        "model/plant",
+        "model/review",
+        "model/shell",
+        "model/workspace",
+        "test",
+        "ui/primitives"
+      ],
+      "entrypoint": "src/ui/workspace/index.ts",
+      "callers": ["test", "ui/shell"]
+    },
+    "ui/plant": {
+      "kind": "ui",
+      "layer": "ui",
+      "lifetime": "components",
+      "responsibility": "plant viewing screen, inspector and outline",
+      "folders": ["src/ui/plant"],
+      "mayImport": [
+        "app/launch",
+        "app/plant",
+        "app/ports",
+        "app/shell",
+        "app/workspace",
+        "model/graph",
+        "model/launch",
+        "model/plant",
+        "model/shared",
+        "model/workspace",
+        "test",
+        "ui/graph",
+        "ui/launch",
+        "ui/primitives"
+      ],
+      "entrypoint": "src/ui/plant/index.ts",
+      "callers": ["ui/shell"]
+    },
+    "ui/editor": {
+      "kind": "ui",
+      "layer": "ui",
+      "lifetime": "components",
+      "responsibility": "composition editor screen and panels",
+      "folders": ["src/ui/editor"],
+      "mayImport": [
+        "app/editor",
+        "app/shell",
+        "model/editor",
+        "model/graph",
+        "model/plant",
+        "model/shared",
+        "test",
+        "ui/graph",
+        "ui/primitives"
+      ],
+      "entrypoint": "src/ui/editor/index.ts",
+      "callers": ["test", "ui/shell"]
+    },
+    "ui/launch": {
+      "kind": "ui",
+      "layer": "ui",
+      "lifetime": "components",
+      "responsibility": "launch panel and progress",
+      "folders": ["src/ui/launch"],
+      "mayImport": ["app/launch", "app/ports", "model/launch", "model/plant", "model/shared", "test", "ui/primitives"],
+      "entrypoint": "src/ui/launch/index.ts",
+      "callers": ["ui/plant"]
+    },
+    "ui/review": {
+      "kind": "ui",
+      "layer": "ui",
+      "lifetime": "components",
+      "responsibility": "run review screen, report and playback",
+      "folders": ["src/ui/review"],
+      "mayImport": [
+        "app/launch",
+        "app/plant",
+        "app/review",
+        "app/shell",
+        "app/workspace",
+        "model/graph",
+        "model/plant",
+        "model/review",
+        "model/shared",
+        "model/workspace",
+        "test",
+        "ui/graph",
+        "ui/launch",
+        "ui/primitives"
+      ],
+      "entrypoint": "src/ui/review/index.ts",
+      "callers": ["ui/shell"]
+    },
+    "ui/shell": {
+      "kind": "ui",
+      "layer": "ui",
+      "lifetime": "components",
+      "responsibility": "application chrome, panels and routing",
+      "folders": ["src/ui/shell"],
+      "mayImport": [
+        "app/editor",
+        "app/launch",
+        "app/plant",
+        "app/ports",
+        "app/review",
+        "app/session",
+        "app/shell",
+        "app/workspace",
+        "model/launch",
+        "model/shared",
+        "model/shell",
+        "test",
+        "ui/editor",
+        "ui/plant",
+        "ui/primitives",
+        "ui/review",
+        "ui/session",
+        "ui/workspace"
+      ],
+      "entrypoint": "src/ui/shell/index.ts",
+      "callers": ["root"]
+    },
+    "ui/theme": {
+      "kind": "ui",
+      "layer": "ui",
+      "lifetime": "components",
+      "responsibility": "global design tokens, base rules and family colours: the only global stylesheets",
+      "folders": ["src/ui/theme"],
+      "mayImport": [],
+      "entrypoint": null,
+      "callers": ["root"]
+    },
+    "model": {
+      "kind": "model",
+      "layer": "model",
+      "lifetime": "values",
+      "responsibility": "immutable product values, pure transformations and parsing of canvas-owned documents (umbrella: every file lives in a nested module)",
+      "folders": ["src/model"],
+      "mayImport": [],
+      "entrypoint": null,
+      "callers": []
+    },
+    "app": {
+      "kind": "application",
+      "layer": "app",
+      "lifetime": "singleton",
+      "responsibility": "use cases, state machines and the ports the outside must implement (umbrella: every file lives in a nested module)",
+      "folders": ["src/app"],
+      "mayImport": [],
+      "entrypoint": null,
+      "callers": []
+    },
+    "ui": {
+      "kind": "ui",
+      "layer": "ui",
+      "lifetime": "components",
+      "responsibility": "rendering, input binding and component-local ephemeral state (umbrella: every file lives in a nested module)",
+      "folders": ["src/ui"],
+      "mayImport": [],
+      "entrypoint": null,
+      "callers": []
+    },
+    "adapters": {
+      "kind": "adapter",
+      "layer": "adapters",
+      "lifetime": "singleton",
+      "responsibility": "bridge and browser edges: transport, protocol encoding, boundary decoding, browser location, preferences, theme and time",
+      "folders": ["src/adapters"],
+      "mayImport": [
+        "app/ports",
+        "app/shared",
+        "model/editor",
+        "model/launch",
+        "model/plant",
+        "model/review",
+        "model/shared",
+        "model/shell",
+        "model/workspace",
+        "test"
+      ],
+      "entrypoint": null,
+      "callers": ["root", "test"]
     }
   },
   "targetModules": {
@@ -295,58 +542,37 @@
     },
     "model/shell": {
       "kind": "model",
-      "mayImport": [
-        "model/shared"
-      ],
+      "mayImport": ["model/shared"],
       "responsibility": "routes, navigation and theme values"
     },
     "model/workspace": {
       "kind": "model",
-      "mayImport": [
-        "model/shared"
-      ],
+      "mayImport": ["model/shared"],
       "responsibility": "workspace catalogue and run listing values"
     },
     "model/plant": {
       "kind": "model",
-      "mayImport": [
-        "model/shared"
-      ],
+      "mayImport": ["model/shared"],
       "responsibility": "plant values and component specifications"
     },
     "model/graph": {
       "kind": "model",
-      "mayImport": [
-        "model/shared",
-        "model/plant"
-      ],
+      "mayImport": ["model/shared", "model/plant"],
       "responsibility": "plant-view projection, geometry, routing and presentation values"
     },
     "model/editor": {
       "kind": "model",
-      "mayImport": [
-        "model/shared",
-        "model/plant",
-        "model/graph"
-      ],
+      "mayImport": ["model/shared", "model/plant", "model/graph"],
       "responsibility": "composition document, edits and history values"
     },
     "model/launch": {
       "kind": "model",
-      "mayImport": [
-        "model/shared",
-        "model/plant"
-      ],
+      "mayImport": ["model/shared", "model/plant"],
       "responsibility": "launch plans, steps, effectors and call outcomes"
     },
     "model/review": {
       "kind": "model",
-      "mayImport": [
-        "model/shared",
-        "model/workspace",
-        "model/plant",
-        "model/graph"
-      ],
+      "mayImport": ["model/graph", "model/launch", "model/plant", "model/shared", "model/workspace"],
       "responsibility": "report and journal projection, playback and review presentation"
     },
     "app/shared": {
@@ -356,61 +582,32 @@
     },
     "app/ports": {
       "kind": "foundation",
-      "mayImport": [
-        "model/shared",
-        "model/workspace",
-        "model/plant",
-        "model/editor",
-        "model/launch",
-        "model/review"
-      ],
+      "mayImport": ["model/shared", "model/workspace", "model/plant", "model/editor", "model/launch", "model/review"],
       "responsibility": "dependency interfaces only; no workflow"
     },
     "app/session": {
       "kind": "application",
-      "mayImport": [
-        "app/shared",
-        "app/ports"
-      ],
+      "mayImport": ["app/shared", "app/ports"],
       "responsibility": "bridge pairing state and recovery"
     },
     "app/workspace": {
       "kind": "application",
-      "mayImport": [
-        "app/shared",
-        "app/ports",
-        "model/workspace"
-      ],
+      "mayImport": ["app/shared", "app/ports", "model/workspace"],
       "responsibility": "workspace catalogue, reload lifecycle and home projections"
     },
     "app/plant": {
       "kind": "application",
-      "mayImport": [
-        "app/shared",
-        "app/ports",
-        "model/plant"
-      ],
+      "mayImport": ["app/ports", "app/shared", "model/editor", "model/plant", "model/workspace"],
       "responsibility": "one plant projection, component specifications and selection"
     },
     "app/editor": {
       "kind": "application",
-      "mayImport": [
-        "app/shared",
-        "app/ports",
-        "model/editor",
-        "model/plant",
-        "model/graph"
-      ],
+      "mayImport": ["app/plant", "app/ports", "app/shared", "model/editor", "model/graph", "model/plant"],
       "responsibility": "composition draft, history, edits and the save transaction"
     },
     "app/launch": {
       "kind": "application",
-      "mayImport": [
-        "app/shared",
-        "app/ports",
-        "model/launch",
-        "model/plant"
-      ],
+      "mayImport": ["app/shared", "app/ports", "model/launch", "model/plant"],
       "responsibility": "plan validation and execution, progress, early stop and rerun proposal"
     },
     "app/review": {
@@ -441,27 +638,6 @@
       ],
       "responsibility": "navigation, theme, panels, session gating, module composition and cross-module coordinators"
     },
-    "adapters/browser": {
-      "kind": "adapter",
-      "mayImport": [
-        "app/ports",
-        "model/shell"
-      ],
-      "responsibility": "browser edges: location, preferences, system theme, clock and scheduler"
-    },
-    "adapters/bridge": {
-      "kind": "adapter",
-      "mayImport": [
-        "app/ports",
-        "model/shared",
-        "model/workspace",
-        "model/plant",
-        "model/editor",
-        "model/launch",
-        "model/review"
-      ],
-      "responsibility": "the bridge: request encoding, response decoding and the run stream"
-    },
     "ui/primitives": {
       "kind": "ui",
       "mayImport": [],
@@ -469,77 +645,105 @@
     },
     "ui/session": {
       "kind": "ui",
-      "mayImport": [
-        "ui/primitives",
-        "app/session"
-      ],
+      "mayImport": ["ui/primitives", "app/session"],
       "responsibility": "pairing screen"
     },
     "ui/workspace": {
       "kind": "ui",
       "mayImport": [
-        "ui/primitives",
-        "app/workspace"
+        "app/plant",
+        "app/shell",
+        "app/workspace",
+        "model/plant",
+        "model/review",
+        "model/shell",
+        "model/workspace",
+        "ui/primitives"
       ],
       "responsibility": "workspace catalogue screen"
     },
     "ui/plant": {
       "kind": "ui",
       "mayImport": [
-        "ui/primitives",
+        "app/launch",
+        "app/plant",
+        "app/ports",
+        "app/shell",
+        "app/workspace",
+        "model/graph",
+        "model/launch",
+        "model/plant",
+        "model/shared",
+        "model/workspace",
         "ui/graph",
         "ui/launch",
-        "app/plant",
-        "app/launch"
+        "ui/primitives"
       ],
       "responsibility": "plant viewing screen, inspector and outline"
     },
     "ui/graph": {
       "kind": "ui",
-      "mayImport": [
-        "ui/primitives",
-        "model/graph"
-      ],
+      "mayImport": ["model/graph", "model/plant", "ui/primitives"],
       "responsibility": "the streamsim plant graph: nodes, edges, controls and viewport"
     },
     "ui/editor": {
       "kind": "ui",
       "mayImport": [
-        "ui/primitives",
+        "app/editor",
+        "app/shell",
+        "model/editor",
+        "model/graph",
+        "model/plant",
+        "model/shared",
         "ui/graph",
-        "app/editor"
+        "ui/primitives"
       ],
       "responsibility": "composition editor screen and panels"
     },
     "ui/launch": {
       "kind": "ui",
-      "mayImport": [
-        "ui/primitives",
-        "app/launch"
-      ],
+      "mayImport": ["app/launch", "app/ports", "model/launch", "model/plant", "model/shared", "ui/primitives"],
       "responsibility": "launch panel and progress"
     },
     "ui/review": {
       "kind": "ui",
       "mayImport": [
-        "ui/primitives",
+        "app/launch",
+        "app/plant",
+        "app/review",
+        "app/shell",
+        "app/workspace",
+        "model/graph",
+        "model/plant",
+        "model/review",
+        "model/shared",
+        "model/workspace",
         "ui/graph",
         "ui/launch",
-        "app/review",
-        "app/launch"
+        "ui/primitives"
       ],
       "responsibility": "run review screen, report and playback"
     },
     "ui/shell": {
       "kind": "ui",
       "mayImport": [
-        "ui/primitives",
-        "ui/session",
-        "ui/workspace",
-        "ui/plant",
+        "app/editor",
+        "app/launch",
+        "app/plant",
+        "app/ports",
+        "app/review",
+        "app/session",
+        "app/shell",
+        "app/workspace",
+        "model/launch",
+        "model/shared",
+        "model/shell",
         "ui/editor",
+        "ui/plant",
+        "ui/primitives",
         "ui/review",
-        "app/shell"
+        "ui/session",
+        "ui/workspace"
       ],
       "responsibility": "application chrome, panels and routing"
     },
@@ -552,128 +756,78 @@
       "kind": "composition",
       "mayImport": [
         "adapters",
+        "adapters/bridge",
+        "adapters/browser",
         "app",
-        "ui",
+        "app/editor",
+        "app/launch",
+        "app/plant",
+        "app/review",
+        "app/session",
+        "app/shell",
+        "app/workspace",
         "model",
-        "test"
+        "test",
+        "ui",
+        "ui/primitives",
+        "ui/shell"
       ],
       "responsibility": "the composition root"
+    },
+    "ui/theme": {
+      "kind": "ui",
+      "mayImport": [],
+      "responsibility": "global design tokens, base rules and family colours: the only global stylesheets"
+    },
+    "adapters": {
+      "kind": "adapter",
+      "mayImport": [
+        "app/ports",
+        "app/shared",
+        "model/editor",
+        "model/launch",
+        "model/plant",
+        "model/review",
+        "model/shared",
+        "model/shell",
+        "model/workspace"
+      ],
+      "responsibility": "bridge and browser edges: transport, protocol encoding, boundary decoding, browser location, preferences, theme and time"
     }
   },
   "targets": {
-    "src/model/areaTree.test.ts": "model/shared",
-    "src/model/areaTree.ts": "model/shared",
-    "src/model/bridge.test.ts": "model/shared",
-    "src/model/bridge.ts": "model/shared",
-    "src/model/composition.test.ts": "model/editor",
-    "src/model/composition.ts": "model/editor",
-    "src/model/compositionEdits.test.ts": "model/editor",
-    "src/model/compositionEdits.ts": "model/editor",
-    "src/model/compositionKinds.test.ts": "model/editor",
-    "src/model/effectors.test.ts": "model/launch",
-    "src/model/effectors.ts": "model/launch",
-    "src/model/instanceNameRule.test.ts": "model/editor",
-    "src/model/instanceNameRule.ts": "model/editor",
-    "src/model/kindNames.ts": "model/shared",
-    "src/model/launch.test.ts": "model/launch",
-    "src/model/launch.ts": "model/launch",
-    "src/model/library.ts": "model/plant",
-    "src/model/noteLines.test.ts": "model/review",
-    "src/model/noteLines.ts": "model/review",
-    "src/model/plant.test.ts": "model/plant",
-    "src/model/plant.ts": "model/plant",
-    "src/model/playback.test.ts": "model/review",
-    "src/model/playback.ts": "model/review",
-    "src/model/ports.test.ts": "model/plant",
-    "src/model/ports.ts": "model/plant",
-    "src/model/report.test.ts": "model/review",
-    "src/model/report.ts": "model/review",
-    "src/model/reportAlarms.test.ts": "model/review",
-    "src/model/reportAlarms.ts": "model/review",
-    "src/model/reportViews.test.ts": "model/review",
-    "src/model/reportViews.ts": "model/review",
-    "src/model/reviewAnchor.test.ts": "model/review",
-    "src/model/reviewAnchor.ts": "model/review",
-    "src/model/reviewRows.test.ts": "model/review",
-    "src/model/reviewRows.ts": "model/review",
-    "src/model/route.test.ts": "model/shell",
-    "src/model/route.ts": "model/shell",
-    "src/model/shared/words.ts": "model/shared",
-    "src/model/theme.test.ts": "model/shell",
-    "src/model/theme.ts": "model/shell",
-    "src/model/timeline.test.ts": "model/review",
-    "src/model/timeline.ts": "model/review",
-    "src/model/units.test.ts": "model/shared",
-    "src/model/units.ts": "model/shared",
+    "src/model/shared": "model/shared",
+    "src/model/shell": "model/shell",
     "src/model/workspace": "model/workspace",
+    "src/model/plant": "model/plant",
+    "src/model/graph": "model/graph",
+    "src/model/editor": "model/editor",
+    "src/model/launch": "model/launch",
+    "src/model/review": "model/review",
     "src/app/shared": "app/shared",
-    "src/app/session": "app/session",
-    "src/app/workspaceStore.ts": "app/workspace",
-    "src/app/workspaceStore.test.ts": "app/workspace",
-    "src/app/plantStore.ts": "app/plant",
-    "src/app/plantStore.test.ts": "app/plant",
-    "src/app/plantMaker.ts": "app/plant",
-    "src/app/plantMaker.test.ts": "app/plant",
-    "src/app/componentSpecs.ts": "app/plant",
-    "src/app/editorStore.ts": "app/editor",
-    "src/app/editorStore.test.ts": "app/editor",
-    "src/app/launchStore.ts": "app/launch",
-    "src/app/launchStore.test.ts": "app/launch",
-    "src/app/reviewStore.ts": "app/review",
-    "src/app/reviewStore.test.ts": "app/review",
-    "src/app/reviewCompletion.test.ts": "app/review",
-    "src/app/reviewDomain.ts": "app/review",
-    "src/app/navigationStore.ts": "app/shell",
-    "src/app/navigationStore.test.ts": "app/shell",
-    "src/app/panelStore.ts": "app/shell",
-    "src/app/panelStore.test.ts": "app/shell",
-    "src/app/themeStore.ts": "app/shell",
-    "src/app/themeStore.test.ts": "app/shell",
-    "src/app/observable.ts": "app/shared",
-    "src/app/ports.ts": "app/ports",
     "src/app/ports": "app/ports",
-    "src/adapters/bridgeClient.test.ts": "adapters/bridge",
-    "src/adapters/bridge": "adapters/bridge",
-    "src/adapters/browser": "adapters/browser",
-    "src/adapters/browser.test.ts": "adapters/browser",
-    "src/ui/home": "ui/workspace",
+    "src/app/session": "app/session",
+    "src/app/workspace": "app/workspace",
+    "src/app/plant": "app/plant",
+    "src/app/editor": "app/editor",
+    "src/app/launch": "app/launch",
+    "src/app/review": "app/review",
+    "src/app/shell": "app/shell",
     "src/ui/primitives": "ui/primitives",
+    "src/ui/session": "ui/session",
+    "src/ui/workspace": "ui/workspace",
     "src/ui/plant": "ui/plant",
+    "src/ui/graph": "ui/graph",
     "src/ui/editor": "ui/editor",
     "src/ui/launch": "ui/launch",
-    "src/ui/run": "ui/review",
+    "src/ui/review": "ui/review",
     "src/ui/shell": "ui/shell",
-    "src/ui/theme": "ui/primitives",
-    "src/ui/MetaParts.tsx": "ui/primitives",
-    "src/ui/MetaParts.test.tsx": "ui/primitives",
-    "src/ui/OutsideMark.tsx": "ui/primitives",
-    "src/ui/OutsideMark.module.css": "ui/primitives",
-    "src/ui/OutsideMark.test.tsx": "ui/primitives",
-    "src/ui/cx.ts": "ui/primitives",
-    "src/ui/keys.ts": "ui/primitives",
-    "src/ui/keys.test.ts": "ui/primitives",
-    "src/ui/panel.module.css": "ui/primitives",
-    "src/ui/shared.module.css": "ui/primitives",
-    "src/ui/useCutBottom.ts": "ui/primitives",
-    "src/ui/useCutBottom.test.tsx": "ui/primitives",
-    "src/ui/useFocusOnMount.ts": "ui/primitives",
-    "src/ui/useScreen.ts": "ui/primitives",
-    "src/ui/useStore.ts": "ui/primitives",
-    "src/ui/useTheme.ts": "ui/shell",
-    "src/app/reviewState.ts": "app/review",
-    "src/app/reviewLifecycle.test.ts": "app/review",
     "src/test": "test",
-    "src/adapters": "adapters/bridge",
+    "src/root": "root",
+    "src/ui/theme": "ui/theme",
+    "src/adapters": "adapters",
     "src/ui": "ui/shell",
-    "src/main.tsx": "root",
-    "src/model/shared/marks.ts": "model/shared",
-    "src/model/graph": "model/graph",
-    "src/ui/graph": "ui/graph",
-    "src/app/sessionStore.test.ts": "app/session",
-    "src/app/routeModules.ts": "app/shell",
-    "src/app/editorSave.ts": "app/editor",
-    "src/ui/pairing": "ui/session",
-    "src/adapters/clock.ts": "adapters/browser"
+    "src/main.tsx": "root"
   },
   "features": {
     "src/ui": "primitives",
@@ -688,45 +842,32 @@
     "src/ui/graph": "graph"
   },
   "css": {
-    "globalEntrypoints": [
-      "src/ui/theme/tokens.css",
-      "src/ui/theme/base.css",
-      "src/ui/theme/families.css"
-    ],
-    "globalOwners": [
-      "src/ui/shared.module.css",
-      "src/ui/panel.module.css"
-    ],
-    "vendorFiles": [
-      "src/ui/graph/internal/vendor.module.css"
-    ],
+    "globalEntrypoints": ["src/ui/theme/tokens.css", "src/ui/theme/base.css", "src/ui/theme/families.css"],
+    "globalOwners": ["src/ui/primitives/internal/shared.module.css"],
+    "vendorFiles": ["src/ui/graph/internal/vendor.module.css"],
     "defaultCap": 300,
     "caps": {
       "src/ui/graph/internal/nodes.module.css": {
         "cap": 300,
         "phase": "P5"
       },
-      "src/ui/run/RunScreen.module.css": {
+      "src/ui/review/internal/RunScreen.module.css": {
         "cap": 608,
         "phase": "P5"
       },
-      "src/ui/plant/PlantScreen.module.css": {
-        "cap": 314,
-        "phase": "P5"
-      },
-      "src/ui/home/HomeScreen.module.css": {
+      "src/ui/workspace/internal/HomeScreen.module.css": {
         "cap": 434,
         "phase": "P5"
       },
-      "src/ui/editor/Editor.module.css": {
+      "src/ui/editor/internal/Editor.module.css": {
         "cap": 330,
         "phase": "P5"
       },
-      "src/ui/run/Scrubber.module.css": {
+      "src/ui/review/internal/Scrubber.module.css": {
         "cap": 272,
         "phase": "P5"
       },
-      "src/ui/launch/LaunchPanel.module.css": {
+      "src/ui/launch/internal/LaunchPanel.module.css": {
         "cap": 230,
         "phase": "P5"
       }
@@ -742,29 +883,24 @@
         "important": 2,
         "phase": "P1"
       },
-      "src/ui/shared.module.css": {
+      "src/ui/primitives/internal/shared.module.css": {
         "global": 3,
         "important": 0,
         "phase": "P5"
       },
-      "src/ui/plant/PlantScreen.module.css": {
-        "global": 2,
-        "important": 0,
-        "phase": "P1"
-      },
-      "src/ui/run/RunScreen.module.css": {
+      "src/ui/review/internal/RunScreen.module.css": {
         "global": 2,
         "important": 0,
         "phase": "P5"
       },
-      "src/ui/home/HomeScreen.module.css": {
+      "src/ui/workspace/internal/HomeScreen.module.css": {
         "global": 0,
         "important": 2,
         "phase": "P5"
       }
     },
     "colorExceptions": {
-      "src/ui/shared.module.css": {
+      "src/ui/primitives/internal/shared.module.css": {
         "literals": 2,
         "reason": "a mask gradient uses black as an alpha mask, not a semantic colour",
         "phase": "P5"
@@ -805,21 +941,8 @@
     ],
     "protocolOwner": "adapters",
     "protocolProductionOnly": true,
-    "restrictedAppImports": [
-      "react",
-      "react-dom",
-      "react/jsx-runtime",
-      "@xyflow/react",
-      "lucide-react"
-    ],
-    "restrictedAppGlobals": [
-      "window",
-      "document",
-      "localStorage",
-      "EventSource",
-      "fetch",
-      "globalThis"
-    ],
+    "restrictedAppImports": ["react", "react-dom", "react/jsx-runtime", "@xyflow/react", "lucide-react"],
+    "restrictedAppGlobals": ["window", "document", "localStorage", "EventSource", "fetch", "globalThis"],
     "clockGlobals": [
       "setTimeout",
       "setInterval",
@@ -829,9 +952,7 @@
       "performance",
       "Date"
     ],
-    "restrictedUiImports": [
-      "/api/"
-    ],
+    "restrictedUiImports": ["/api/"],
     "booleanFactNames": [
       "animate",
       "checked",
@@ -900,245 +1021,19 @@
         "selector": ".family-air{"
       }
     ],
-    "important": 2,
+    "important": 4,
     "zIndex": 17,
-    "positioned": 32,
-    "note": "Phase 1 moved React Flow connection hooks and the minimap panel positioning into vendor.module.css; P5 partitions node, pin, frame, readout, and mark styles, removes local handle !important overrides through scoped selector specificity, and moves minimap node colors into GraphControls.module.css"
+    "positioned": 33,
+    "note": "Phase 1 moved React Flow connection hooks and the minimap panel positioning into vendor.module.css; P5 partitions node, pin, frame, readout, and mark styles, removes local handle !important overrides through scoped selector specificity, and moves minimap node colors into GraphControls.module.css; P5 close-out re-measured the built sheet: the React Flow minimap panel keeps two registered !important declarations (margin, position) in vendor.module.css next to the two on the run action in HomeScreen.module.css, so important is 4 and positioned 33 (the minimap panel is positioned statically against React Flow's absolute default); the vendor and HomeScreen allowances in css.globalCaps account for exactly these four"
   },
   "debt": [
     {
-      "rule": "css-feature-ownership",
-      "file": "src/ui/shared.module.css",
-      "target": "src/ui/plant/Inspector.tsx",
-      "count": 1,
-      "phase": "P5",
-      "reason": "a cross-feature stylesheet that P5 dissolves into primitives"
-    },
-    {
-      "rule": "css-feature-ownership",
-      "file": "src/ui/shared.module.css",
-      "target": "src/ui/plant/PlantOverview.tsx",
-      "count": 1,
-      "phase": "P5"
-    },
-    {
-      "rule": "css-feature-ownership",
-      "file": "src/ui/shared.module.css",
-      "target": "src/ui/shell/Breadcrumb.tsx",
-      "count": 1,
-      "phase": "P5"
-    },
-    {
-      "rule": "css-feature-ownership",
-      "file": "src/ui/shared.module.css",
-      "target": "src/ui/launch/LaunchForm.tsx",
-      "count": 1,
-      "phase": "P5"
-    },
-    {
-      "rule": "css-feature-ownership",
-      "file": "src/ui/shared.module.css",
-      "target": "src/ui/run/RunPanel.tsx",
-      "count": 1,
-      "phase": "P5"
-    },
-    {
-      "rule": "css-feature-ownership",
-      "file": "src/ui/shared.module.css",
-      "target": "src/ui/run/ReportParts.tsx",
-      "count": 1,
-      "phase": "P5"
-    },
-    {
-      "rule": "css-feature-ownership",
-      "file": "src/ui/shared.module.css",
-      "target": "src/ui/editor/EditorPanel.tsx",
-      "count": 1,
-      "phase": "P5"
-    },
-    {
-      "rule": "css-feature-ownership",
-      "file": "src/ui/shared.module.css",
-      "target": "src/ui/editor/InstanceEditor.tsx",
-      "count": 1,
-      "phase": "P5"
-    },
-    {
-      "rule": "css-feature-ownership",
-      "file": "src/ui/panel.module.css",
-      "target": "src/ui/plant/PlantFailure.tsx",
-      "count": 1,
-      "phase": "P5",
-      "reason": "a cross-feature stylesheet that P5 dissolves into primitives"
-    },
-    {
-      "rule": "css-feature-ownership",
-      "file": "src/ui/panel.module.css",
-      "target": "src/ui/launch/CallRows.tsx",
-      "count": 1,
-      "phase": "P5"
-    },
-    {
-      "rule": "css-feature-ownership",
-      "file": "src/ui/panel.module.css",
-      "target": "src/ui/launch/LaunchForm.tsx",
-      "count": 1,
-      "phase": "P5"
-    },
-    {
-      "rule": "css-feature-ownership",
-      "file": "src/ui/panel.module.css",
-      "target": "src/ui/launch/LaunchPanel.tsx",
-      "count": 1,
-      "phase": "P5"
-    },
-    {
-      "rule": "css-feature-ownership",
-      "file": "src/ui/panel.module.css",
-      "target": "src/ui/launch/PaceChoice.tsx",
-      "count": 1,
-      "phase": "P5"
-    },
-    {
-      "rule": "css-feature-ownership",
-      "file": "src/ui/panel.module.css",
-      "target": "src/ui/launch/FaultRows.tsx",
-      "count": 1,
-      "phase": "P5"
-    },
-    {
-      "rule": "css-feature-ownership",
-      "file": "src/ui/panel.module.css",
-      "target": "src/ui/launch/RowParts.tsx",
-      "count": 1,
-      "phase": "P5"
-    },
-    {
-      "rule": "css-feature-ownership",
-      "file": "src/ui/panel.module.css",
-      "target": "src/ui/launch/LaunchResult.tsx",
-      "count": 1,
-      "phase": "P5"
-    },
-    {
-      "rule": "css-feature-ownership",
-      "file": "src/ui/panel.module.css",
-      "target": "src/ui/run/MissingRun.tsx",
-      "count": 1,
-      "phase": "P5"
-    },
-    {
-      "rule": "css-feature-ownership",
-      "file": "src/ui/panel.module.css",
-      "target": "src/ui/editor/SubmitRow.tsx",
-      "count": 1,
-      "phase": "P5"
-    },
-    {
-      "rule": "css-feature-ownership",
-      "file": "src/ui/panel.module.css",
-      "target": "src/ui/editor/EditorPanel.tsx",
-      "count": 1,
-      "phase": "P5"
-    },
-    {
-      "rule": "css-feature-ownership",
-      "file": "src/ui/panel.module.css",
-      "target": "src/ui/editor/InstanceEditor.tsx",
-      "count": 1,
-      "phase": "P5"
-    },
-    {
-      "rule": "css-feature-ownership",
-      "file": "src/ui/panel.module.css",
-      "target": "src/ui/editor/AddArea.tsx",
-      "count": 1,
-      "phase": "P5"
-    },
-    {
-      "rule": "css-feature-ownership",
-      "file": "src/ui/panel.module.css",
-      "target": "src/ui/editor/ConnectForm.tsx",
-      "count": 1,
-      "phase": "P5"
-    },
-    {
-      "rule": "css-feature-ownership",
-      "file": "src/ui/panel.module.css",
-      "target": "src/ui/editor/AddEquipment.tsx",
-      "count": 1,
-      "phase": "P5"
-    },
-    {
-      "rule": "css-feature-ownership",
-      "file": "src/ui/panel.module.css",
-      "target": "src/ui/editor/AreaEditor.tsx",
-      "count": 1,
-      "phase": "P5"
-    },
-    {
-      "rule": "css-feature-ownership",
-      "file": "src/ui/plant/PlantScreen.module.css",
-      "target": "src/ui/editor/EditorScreen.tsx",
-      "count": 1,
-      "phase": "P5",
-      "reason": "screen-layout classes editor and run share with the plant screen"
-    },
-    {
-      "rule": "css-feature-ownership",
-      "file": "src/ui/plant/PlantScreen.module.css",
-      "target": "src/ui/editor/EditorBar.tsx",
-      "count": 1,
-      "phase": "P5"
-    },
-    {
-      "rule": "css-feature-ownership",
-      "file": "src/ui/plant/PlantScreen.module.css",
-      "target": "src/ui/run/RunScreen.tsx",
-      "count": 1,
-      "phase": "P5"
-    },
-    {
-      "rule": "css-composes-cross-module",
-      "file": "src/ui/home/HomeScreen.module.css",
-      "count": 1,
-      "phase": "P5"
-    },
-    {
-      "rule": "css-composes-cross-module",
-      "file": "src/ui/launch/LaunchPanel.module.css",
-      "count": 1,
-      "phase": "P5"
-    },
-    {
-      "rule": "css-composes-cross-module",
-      "file": "src/ui/plant/PlantScreen.module.css",
-      "count": 3,
-      "phase": "P5"
-    },
-    {
-      "rule": "css-composes-cross-module",
-      "file": "src/ui/run/RunScreen.module.css",
-      "count": 3,
-      "phase": "P5"
-    },
-    {
       "rule": "boolean-flag-param",
-      "file": "src/app/plantMaker.ts",
+      "file": "src/app/plant/internal/plantMaker.ts",
       "count": 2,
       "phase": "P3",
       "reason": "PlantMaker.create/write take a copy boolean; the typed component gateway replaces it with a named mode"
-    },
-    {
-      "rule": "css-feature-ownership",
-      "file": "src/ui/shared.module.css",
-      "target": "src/ui/graph/internal/Outline.tsx",
-      "count": 1,
-      "phase": "P5",
-      "reason": "the outline still borrows the shared disclosure and cut classes; Phase 5 replaces them with a primitive"
     }
   ],
-  "testSupport": [
-    "test"
-  ]
+  "testSupport": ["test"]
 }

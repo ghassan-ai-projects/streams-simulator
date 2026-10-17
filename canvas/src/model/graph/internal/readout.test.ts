@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { abnormalFirst, attentionOf, channelWords, pinWords, sharedTimes, showReading, worstOf } from "./readout";
-import { displayUnit } from "../../units";
+import { displayUnit } from "../../shared/units";
 
 const at = (channel: string, value: number | string | boolean, unit = "") => ({ channel, value, unit, atNs: 0 });
 

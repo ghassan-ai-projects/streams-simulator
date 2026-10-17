@@ -1,4 +1,4 @@
-import type { JournalEntry } from "../../../model/playback";
+import type { JournalEntry } from "../../../model/review";
 import { isRecord, string } from "./http";
 
 const journalTypes = [

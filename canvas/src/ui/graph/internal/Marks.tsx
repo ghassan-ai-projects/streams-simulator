@@ -1,7 +1,7 @@
 import { OctagonAlert, TriangleAlert, Wrench } from "lucide-react";
 import type { NodeStatus } from "../../../model/graph";
 import { statusWords } from "../../../model/graph";
-import { cx } from "../../cx";
+import { cx } from "../../primitives";
 import styles from "./marks.module.css";
 
 const statusIcons = { alarm: OctagonAlert, fault: Wrench, warn: TriangleAlert } as const;

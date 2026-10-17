@@ -3,7 +3,9 @@ import { parseRegister } from "./register.ts";
 import { introducingCommit, mergeBase, show } from "./git.ts";
 import {
   approvedVendorAllowanceMove,
+  basename,
   moved,
+  movedBetweenModules,
   movedAllowance,
   movedDebt,
 } from "./ratchetMoves.ts";
@@ -235,7 +237,7 @@ function allowListRegressions(previous: Register, current: Register): string[] {
   return [
     ...grew("boolean fact allow-list", previous.rules.booleanFactNames, current.rules.booleanFactNames),
     ...grew("fake-timer test allow-list", previous.rules.fakeTimerTests, current.rules.fakeTimerTests),
-    ...grew("global stylesheet allow-list", previous.css.globalOwners, current.css.globalOwners),
+    ...movedOwners(previous, current),
     ...grew("global entrypoint allow-list", previous.css.globalEntrypoints, current.css.globalEntrypoints),
     ...vendorAllowanceRegressions(previous, current),
     ...shrank("simulator action detection list", previous.rules.actionNames, current.rules.actionNames),
@@ -244,6 +246,16 @@ function allowListRegressions(previous: Register, current: Register): string[] {
     ...shrank("clock global list", previous.rules.clockGlobals, current.rules.clockGlobals),
     ...shrank("restricted ui import list", previous.rules.restrictedUiImports, current.rules.restrictedUiImports),
   ];
+}
+
+function movedOwners(previous: Register, current: Register): string[] {
+  const gone = previous.css.globalOwners.filter((path) => !current.css.globalOwners.includes(path));
+  const arrived = current.css.globalOwners.filter((path) => !previous.css.globalOwners.includes(path));
+  const fresh = arrived.filter(
+    (path) =>
+      !gone.some((old) => basename(old) === basename(path) && movedBetweenModules(previous, current, old, path)),
+  );
+  return fresh.map((path) => `global stylesheet allow-list gained ${path}`);
 }
 
 function vendorAllowanceRegressions(previous: Register, current: Register): string[] {

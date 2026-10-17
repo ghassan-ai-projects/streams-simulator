@@ -1,4 +1,4 @@
-import type { OutlineItem, OutlineGroup } from "../contract";
+import type { OutlineItem, OutlineGroup } from "./types";
 import type { Plant } from "../../plant";
 import { areaOf } from "../../plant";
 import { areaOrder, hallOf, hallsOf } from "./plantView";

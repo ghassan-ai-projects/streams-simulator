@@ -1,7 +1,6 @@
 dist
 coverage
 node_modules
-.tsbuild
 playwright-report
 test-results
 package-lock.json

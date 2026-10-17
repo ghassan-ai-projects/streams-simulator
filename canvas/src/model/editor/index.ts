@@ -1,0 +1,35 @@
+export {
+  areaNodesOf,
+  componentOf,
+  compositionPlant,
+  connectionsOf,
+  domainOf,
+  endpointOf,
+  equipmentOf,
+  linkEnd,
+  parseComposition,
+  serialise,
+  shortKind,
+  suggestedName,
+  titleOf,
+} from "./internal/composition";
+export {
+  addArea,
+  addEquipment,
+  areaInUse,
+  areaNameProblem,
+  connect,
+  disconnect,
+  groupIssues,
+  isTemplate,
+  issueTargets,
+  moveInstance,
+  profileWeightOf,
+  removeArea,
+  removeInstance,
+  removeProfileWeight,
+  renameArea,
+  renameInstance,
+} from "./internal/compositionEdits";
+export { instanceNameFits, instanceNameRule } from "./internal/instanceNameRule";
+export type { Composition, Connection, IssueGroup, IssueTargets, LinkEnd, ListedIssue, NewEquipment } from "./contract";

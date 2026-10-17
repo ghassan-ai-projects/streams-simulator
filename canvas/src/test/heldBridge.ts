@@ -1,4 +1,3 @@
-import type { Outcome } from "../app/ports";
 import { success } from "../app/ports";
 import type { Canned } from "./fakeFailures";
 import { FakeBridge } from "./fakeBridge";
@@ -33,5 +32,3 @@ export class HeldBridge extends FakeBridge {
     this.held?.();
   }
 }
-
-export type { Outcome };

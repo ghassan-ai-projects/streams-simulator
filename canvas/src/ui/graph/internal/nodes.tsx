@@ -19,7 +19,7 @@ import type { NodeStatus, PlanMark, ViewNode } from "../../../model/graph";
 import { familyNames, shapeOf } from "../../../model/graph";
 import type { Pin } from "../../../model/graph";
 import type { FrameTitleNodeType, HallNodeType, InstanceNodeType, NodeLive } from "./flow";
-import { cx } from "../../cx";
+import { cx } from "../../primitives";
 import { EffectorTag, IssueTag, StatusTag, tagWords } from "./Marks";
 import { Readout } from "./Readout";
 import { useLabelFit } from "./labelFit";

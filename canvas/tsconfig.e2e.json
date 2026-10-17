@@ -3,8 +3,8 @@
   "compilerOptions": {
     "lib": ["ES2023", "DOM"],
     "types": ["node"],
-    "outDir": ".tsbuild/e2e",
-    "tsBuildInfoFile": ".tsbuild/e2e.tsbuildinfo"
+    "outDir": "node_modules/.cache/tsbuild/e2e",
+    "tsBuildInfoFile": "node_modules/.cache/tsbuild/e2e.tsbuildinfo"
   },
   "include": ["e2e"]
 }

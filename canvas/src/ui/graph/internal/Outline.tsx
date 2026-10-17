@@ -1,11 +1,11 @@
-import type { OutlineProps } from "../contract";
+import { shared } from "../../primitives";
+import type { OutlineProps } from "./types";
 import { OctagonAlert, Search } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { groups, matchWords, marked, belowCount, hallsOf } from "../../../model/graph";
 import type { OutlineItem as Item } from "../../../model/graph";
-import { cx } from "../../cx";
-import shared from "../../shared.module.css";
-import { useCutBottom } from "../../useCutBottom";
+import { cx } from "../../primitives";
+import { useCutBottom } from "../../primitives";
 import styles from "./graph.module.css";
 
 interface SectionProps {

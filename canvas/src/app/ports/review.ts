@@ -1,5 +1,5 @@
-import type { JournalEntry } from "../../model/playback";
-import type { Report, Replay } from "../../model/report";
+import type { JournalEntry } from "../../model/review";
+import type { Report, Replay } from "../../model/review";
 import type { Diagnostic, DomainDocument, Outcome } from "./shared";
 
 export type ReviewFailure =

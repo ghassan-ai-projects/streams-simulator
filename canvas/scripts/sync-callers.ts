@@ -22,32 +22,40 @@ export function observedCallers(): Map<string, string[]> {
   return new Map([...graph].map(([name, callers]) => [name, [...callers].sort()]));
 }
 
-function main(): void {
-  const check = process.argv.includes("--check");
-  const register = readRegister(registerPath);
-  const observed = observedCallers();
-  const text = readFileSync(registerPath, "utf8");
-  const parsed: unknown = JSON.parse(text);
+interface RegisterFile {
+  readonly modules: Record<string, { callers?: readonly string[] }>;
+}
+
+function readRegisterFile(): RegisterFile {
+  const parsed: unknown = JSON.parse(readFileSync(registerPath, "utf8"));
   if (typeof parsed !== "object" || parsed === null) throw new Error(`${registerPath} must hold an object`);
-  const modules = (parsed as { modules: Record<string, { callers?: readonly string[] }> }).modules;
+  return parsed as RegisterFile;
+}
+
+function applyObserved(file: RegisterFile, observed: ReadonlyMap<string, string[]>): number {
   let changed = 0;
   for (const [name, callers] of observed) {
-    const spec = modules[name];
-    if (spec === undefined) continue;
-    const recorded = [...(spec.callers ?? [])].sort();
-    if (recorded.join(",") === callers.join(",")) continue;
+    const spec = file.modules[name];
+    if (spec === undefined || [...(spec.callers ?? [])].sort().join(",") === callers.join(",")) continue;
     changed += 1;
-    process.stdout.write(`${name}: ${recorded.join(", ") || "(none)"} -> ${callers.join(", ") || "(none)"}\n`);
+    process.stdout.write(
+      `${name}: ${(spec.callers ?? []).join(", ") || "(none)"} -> ${callers.join(", ") || "(none)"}\n`,
+    );
     spec.callers = callers;
   }
-  if (check || changed === 0) {
+  return changed;
+}
+
+function main(): void {
+  const file = readRegisterFile();
+  const changed = applyObserved(file, observedCallers());
+  if (process.argv.includes("--check") || changed === 0) {
     process.stdout.write(`canvas callers: ${changed === 0 ? "ok" : `${String(changed)} out of date`}\n`);
     process.exitCode = changed === 0 ? 0 : 1;
     return;
   }
-  writeFileSync(registerPath, `${JSON.stringify(parsed, null, 2)}\n`);
+  writeFileSync(registerPath, `${JSON.stringify(file, null, 2)}\n`);
   process.stdout.write(`canvas callers: ${String(changed)} updated in ${registerPath}\n`);
-  void register;
 }
 
 main();

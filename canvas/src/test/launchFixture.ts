@@ -1,4 +1,4 @@
-import { LaunchStore } from "../app/launchStore";
+import { LaunchStore } from "../app/launch";
 import { success } from "../app/ports";
 import { FakeBridge } from "./fakeBridge";
 import { fakeClock } from "./fakeClock";

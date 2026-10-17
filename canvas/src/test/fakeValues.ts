@@ -1,8 +1,8 @@
 import type { Acknowledgement, ComposeSummary, DomainDocument } from "../app/ports";
-import type { Composition } from "../model/composition";
-import type { ExamplePlant, LibraryEntry, Presets } from "../model/library";
-import type { ComponentSpec, PortSpec } from "../model/ports";
-import type { Replay, Report } from "../model/report";
+import type { Composition } from "../model/editor";
+import type { ExamplePlant, LibraryEntry, Presets } from "../model/plant";
+import type { ComponentSpec, PortSpec } from "../model/plant";
+import type { Replay, Report } from "../model/review";
 
 type Json = Record<string, unknown>;
 
@@ -127,7 +127,7 @@ export function isReport(value: unknown): value is Report {
   return isRecord(value) && typeof value.runId === "string" && typeof value.counts === "object";
 }
 
-export function isReplay(value: unknown): value is Replay {
+function isReplay(value: unknown): value is Replay {
   return isRecord(value) && typeof value.matches === "boolean";
 }
 

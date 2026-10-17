@@ -121,8 +121,8 @@ export type {
 };
 
 export type { Plant } from "../plant";
-export type { Family, Pin } from "../ports";
-export { familyNames, shapeOf } from "../ports";
+export type { Family, Pin } from "../plant";
+export { familyNames, shapeOf } from "../plant";
 
 export { groups, matchWords, marked, belowCount } from "./internal/outline";
 export type { OutlineItem } from "./contract";

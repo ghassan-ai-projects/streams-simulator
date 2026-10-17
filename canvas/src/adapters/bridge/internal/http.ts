@@ -6,7 +6,7 @@ export interface Transport {
   events(url: string): EventSource;
 }
 
-export interface WireIssue {
+interface WireIssue {
   readonly pointer: string;
   readonly message: string;
 }

@@ -2,7 +2,7 @@ import type { Mock } from "vitest";
 import { vi } from "vitest";
 
 export type BridgeHandler = (url: string, init?: RequestInit) => Response | Promise<Response>;
-export type BridgeAnswer = (url: string, init?: RequestInit) => Promise<Response>;
+type BridgeAnswer = (url: string, init?: RequestInit) => Promise<Response>;
 
 export interface BridgeTransport {
   readonly fetch: Mock<BridgeAnswer>;

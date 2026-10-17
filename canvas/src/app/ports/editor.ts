@@ -1,5 +1,5 @@
-import type { ComponentSpec } from "../../model/ports";
-import type { LibraryEntry, Presets } from "../../model/library";
+import type { ComponentSpec } from "../../model/plant";
+import type { LibraryEntry, Presets } from "../../model/plant";
 import type { ComposeSummary, Diagnostic, FileContent, Outcome, CompositionIssue } from "./shared";
 
 export type EditorFailure =

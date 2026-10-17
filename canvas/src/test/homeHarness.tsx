@@ -1,9 +1,9 @@
 import { render } from "@testing-library/react";
-import { NavigationStore } from "../app/navigationStore";
-import { PlantMaker } from "../app/plantMaker";
-import { WorkspaceStore } from "../app/workspaceStore";
-import type { Badge } from "../model/report";
-import { HomeScreen } from "../ui/home/HomeScreen";
+import { NavigationStore } from "../app/shell";
+import { PlantMaker } from "../app/plant";
+import { WorkspaceStore } from "../app/workspace";
+import type { Badge } from "../model/review";
+import { HomeScreen } from "../ui/workspace";
 import type { FakeBridge } from "./fakeBridge";
 
 export function navigation() {

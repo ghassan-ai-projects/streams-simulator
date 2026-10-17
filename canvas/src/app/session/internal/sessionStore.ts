@@ -1,4 +1,4 @@
-import type { Session, SessionState } from "../contract";
+import type { Session, SessionState } from "./types";
 import { Observable } from "../../shared";
 import type { SessionFailure, SessionGateway } from "../../ports";
 import { normalisePairingCode, pairingCodeComplete } from "./sessionCode";

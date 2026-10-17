@@ -3,7 +3,7 @@ import { campus, chillerPorts, composition, domain, towerPorts } from "../../../
 import { parsePlant } from "../../plant";
 import { describeNode } from "./nodeWords";
 import { plainView } from "./plantView";
-import { reviewView } from "../../reviewRows";
+import { reviewView } from "../../../test/modelBridge";
 import {
   areaCounts,
   hallCount,

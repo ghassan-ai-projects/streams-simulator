@@ -1,5 +1,5 @@
-import type { NodeLive } from "../contract";
-import type { PlantGraphProps } from "../contract";
+import type { NodeLive } from "./types";
+import type { PlantGraphProps } from "./types";
 import type { Connection } from "@xyflow/react";
 import { Background, ReactFlow, useStore, useUpdateNodeInternals } from "@xyflow/react";
 import "@xyflow/react/dist/base.css";
@@ -11,7 +11,7 @@ import type { PlantView } from "../../../model/graph";
 import type { FlowNode } from "./flow";
 import { flowEdges, flowNodes } from "./flow";
 import { useZoomActions } from "./GraphControls";
-import { plainKey } from "../../keys";
+import { plainKey } from "../../primitives";
 import { FrameNode, FrameTitleNode, HallNode, InstanceNode, tierClass } from "./nodes";
 import { PanCue } from "./PanCue";
 import { WireEdge } from "./WireEdge";

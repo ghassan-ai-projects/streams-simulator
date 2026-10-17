@@ -11,43 +11,40 @@
   malformed-required-response correction (§5 P3), and the Phase 4 editor save-transaction rules (§5 P4). Every other
   phase is behaviour-preserving, and its evidence must show the pre-change suite passing unchanged.
 
-## 0. Execution status — 2026-10-17
+## 0. Execution status — 2026-10-17 (resumed)
 
-The user changed the execution order to **finish production migration → repair tests and run full validation → address Enola cycles**, and then requested that work stop with this plan update only. No source work, gates, or commits are authorized until the user resumes the implementation. Preserve the uncommitted work listed below; do not reset it or treat a prior checkpoint as a phase exit.
+The user resumed the migration with a standing delegation: deviate from this plan wherever a better design is clear, and record why. Order followed: finish production migration → repair tests and run the full chain → resolve Enola cycles → browser verification → whole-UI quality review.
 
-### Recorded checkpoints
+### Delivered
 
-These commits contain production checkpoints, not completed phase exits. Final-source validation remains outstanding:
+| Phase | State |
+| --- | --- |
+| P0–P3 | Committed earlier; P3 test/double migration committed in `bc831583` (typed gateways, 486 tests). |
+| P4 | Editor save transaction committed; `Draft.savedRevision` is written but `isDirty` stays identity-based (undo back to the saved document reads clean). Revision-carrying history is left as a recorded follow-up. |
+| P5 | Delivered: 203 files moved into `index.ts` + `internal/` modules (28 product modules), facades and contracts, feature session factories, CSS ownership, register rebuilt from the real tree. |
 
-| Commit | Checkpoint | State |
+### Deviations from the plan (each deliberate)
+
+| Plan text | What was done instead | Why |
 | --- | --- | --- |
-| `417d745` | P1 graph extraction and architecture checks | Committed; final graph tests/build/typecheck, positive Chrome rerun, visual review, and full gates remain pending. |
-| `be47ec7` | P2 clock ports and route sessions | Committed; P2 tests, final-source checks, and isolated launch-hold measurement remain pending. |
-| `d6a08ed` | P2 editor compose completion guard | Committed separately; `npx vitest run src/app/editorStore.test.ts` passed 12 tests at that checkpoint. This focused result does not complete P2 validation. |
-| `1420eca` | P5 graph CSS partition | Committed; the final P5 visual review and full validation remain pending. |
-| `56e80fb` | P3 typed application gateways | Committed with source-boundary review; adapter coverage-floor registration and final tests/gates remain pending. |
+| `app/shell` owns `createPlantModule`/`createEditorModule`/`createReviewModule` and the session interfaces | Each factory and its `*Session` interface live in the owning feature (`app/plant`, `app/editor`, `app/review`); `app/shell` keeps navigation, panels, theme | The session type belongs to the feature; shell-owned session types forced every UI feature to import `app/shell` and broke the dependency direction |
+| Six component primitives (`button`, `panel`, `disclosure`, `metadata`, `scroll-region`, `breadcrumb`) | `ui/primitives` exports `Breadcrumb`, hooks, `cx` and three stylesheet objects (`panel`, `shared`, `screen`); `ui/theme` is its own module for the three global entrypoints | Only the breadcrumb had a shared component shape; the other callers share class names, so a component per class would only wrap `className` |
+| Cross-module `composes` | Dissolved by applying the shared class in TSX; the screen side-hiding rule is native CSS nesting inside the existing `:global` selector | No new `:global` allowance and no cross-feature stylesheet import |
+| `adapters/bridge` and `adapters/browser` as two modules | One `adapters` module | The protocol-owner ratchet names the module; splitting it would loosen the rule's meaning without a benefit |
+| Register keeps `model`, `app`, `ui`, `adapters` | Kept as folder-only umbrella modules with empty allow-lists | The ratchet compares against the introducing commit; umbrellas make every new module a refinement instead of a regression |
+| Ratchet unchanged | One extension with a fixture: a global-stylesheet owner that moved between modules under the same basename is not a new owner | `shared.module.css` moved into `ui/primitives`; the old rule only knew caps and allowances moving, not the owner list |
+| `.tsbuild` output inside `canvas/` | tsc output goes to `node_modules/.cache/tsbuild` | Enola scanned the gitignored declaration output and reported its cycles as regressions |
+| Fakes keep their own failure mapping | `fakeFailures` calls the adapter's real mappers through the adapter facade | The duplicate could drift from production and tripped the duplication gate |
 
-### Current worktree checkpoint
+Defects found and fixed during the move (each with a regression test where it is a behaviour change):
 
-At this update, `git status --short` showed uncommitted P4 and P5 work and no staged changes. Preserve these files and coordinate with their current owners before resuming:
+- The P3 report decoder required `run.run_id`; the Go report omits it for an open run, so a still-open run reviewed as "No report". `reportDecoder.test.ts` fails without the fix; the superseded assertion (`{ run: {}, ... }` refused) now asserts a missing `run` section instead.
+- `wirePins.test.ts` iterated a tuple whose mode expression was always truthy, so `pins` was never exercised; the intended mode matrix is restored.
 
-- **P4:** `editorStore.ts`, `editorSave.ts`, and editor UI status/dirty-state edits are in progress. The save transaction's conflict and partial-success recovery contract remains unresolved; captured-revision behavior, retry semantics, written composition bytes, and output-etag assertions still need review and evidence.
-- **P5:** the `model/workspace` move is in progress. The app/session and shared/primitives foundation has been started, including `canvas/architecture.json`, `app/session/`, `app/shared/index.ts`, `app/ports/`, and `ui/primitives/`. The workspace/plant ownership and call-site boundaries, remaining app/UI feature modules, shell integration, CSS ownership, and P5 unit reviews/commits are incomplete.
-- Other modified files in the live worktree include typed workspace callers, bridge decoder imports, the Clock/Scheduler port relocation, and current editor transaction work. The current `git status --short` is authoritative; this list is a checkpoint summary, not a complete file manifest.
+### Open items
 
-### Validation that must not be mistaken for current green status
-
-- The latest focused P2 follow-up recorded 12 passing editor-store tests. Other focused suites have not been run against final migrated source.
-- At the P3 checkpoint, `cd canvas && npm run typecheck` exited 1 with 164 diagnostics in unmigrated tests/test-support; a production-path filter reported no diagnostics then. The count and result are historical and have not been reconfirmed against the current worktree.
-- Full Chrome captures/review, the adapter coverage floor, final architecture-debt checks, `make canvas-check`, and the final `make phase-gate` are pending.
-- The last recorded Enola run reported three inferred cycles. The user deferred cycle resolution until production migration and test/full validation are complete. This is an open item, not a pass; do not repin the baseline to hide it.
-
-### Resume checklist
-
-1. Re-read the current worktree and coordinate ownership; preserve every uncommitted file. Resume production migration with P4's unresolved conflict/partial-success behavior and then finish the registered P5 feature units. Keep the accepted dependency allow-lists and gates unchanged.
-2. For each P5 unit, finish its facade, internal ownership, callers, CSS paths, evidence and independent boundary review before committing that unit. Reconcile workspace/plant ownership through the accepted app/shell coordination boundary.
-3. After production migration is complete, repair and migrate legacy tests/fixtures. Run focused tests first, then the full Canvas validation and browser review; record current command output rather than reusing the historical 164-diagnostic count.
-4. Only after those steps, investigate and resolve the recorded Enola cycles without changing the baseline to suppress findings. Run the final phase gate and review the complete diff before declaring any phase or the migration complete.
+- P4 revision-based dirty tracking; P6 test ledger and `FakeBridge` policy removal; a decoder success-path suite for `adapters/bridge`; CSS caps for the largest feature sheets (`RunScreen` 608, `HomeScreen` 434, `Editor` 330) are registered and may only fall.
+- Enola: `make architecture` passes (no cycle or layer regression).
 
 ## 1. Why this plan exists
 

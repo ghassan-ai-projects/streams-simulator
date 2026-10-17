@@ -3,7 +3,7 @@ import { chillerPorts, composition, domain, towerPorts } from "../../../test/pla
 import { parsePlant } from "../../plant";
 import type { PlantView } from "./plantView";
 import { headerHeight, nodeSize, plainView, plantView } from "./plantView";
-import { reviewView } from "../../reviewRows";
+import { reviewView } from "../../../test/modelBridge";
 import type { Rect } from "./viewport";
 import { routeView, titleBox, wireModeOf } from "./wireView";
 

@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { failure } from "../../../test/fakeFailures";
-import { editorFailure, launchFailure, plantFailure, reviewFailure, sessionFailure, workspaceFailure } from "./failures";
+import {
+  editorFailure,
+  launchFailure,
+  plantFailure,
+  reviewFailure,
+  sessionFailure,
+  workspaceFailure,
+} from "./failures";
 import type { WireProblem } from "./http";
 
 const http = (code: string, status = 400, issues: readonly { pointer: string; message: string }[] = []) => ({
@@ -58,9 +65,9 @@ describe("protocol failures mapped to the owning feature", () => {
   it("stops an editor save for the same reasons the plant reader does", () => {
     expect(editorFailure("read")(http("not_found", 404))).toMatchObject({ kind: "missing" });
     expect(editorFailure("write")(http("conflict", 409))).toMatchObject({ kind: "conflict" });
-    expect(editorFailure("compose")(http("composition_invalid", 422, [{ pointer: "/x", message: "bad" }]))).toMatchObject(
-      { kind: "compose-refused" },
-    );
+    expect(
+      editorFailure("compose")(http("composition_invalid", 422, [{ pointer: "/x", message: "bad" }])),
+    ).toMatchObject({ kind: "compose-refused" });
     expect(editorFailure("compose")(http("composition_invalid", 422))).toMatchObject({ kind: "unreadable" });
     expect(editorFailure("read")(http("bridge_failed", 500))).toMatchObject({ kind: "unavailable" });
     expect(editorFailure("read")(http("bridge_failed", 400))).toMatchObject({ kind: "unreadable" });

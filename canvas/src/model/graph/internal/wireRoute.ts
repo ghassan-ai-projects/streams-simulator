@@ -1,5 +1,5 @@
-import type { Point } from "../contract";
-export type { Point } from "../contract";
+import type { Point } from "./types";
+export type { Point } from "./types";
 import type { Rect } from "./viewport";
 import type { Grid } from "./wireGrid";
 import { buildGrid, lanes, nearestIndex } from "./wireGrid";

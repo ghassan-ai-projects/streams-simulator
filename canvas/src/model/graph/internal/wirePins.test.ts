@@ -11,13 +11,14 @@ const plants = [
 describe("wires end on their pins", () => {
   it.each(plants)("%s: every wire enters its target on the target's pin side, at every tier", (_, dump) => {
     const view = viewOf(dump);
-    for (const [tier, pixel] of [
-      ["full", 1],
-      ["compact", 2],
-      ["overview", 3],
+    for (const [tier, mode, pixel] of [
+      ["full", "pins", 1],
+      ["compact", "pins", 2],
+      ["compact", "rows", 2],
+      ["overview", "pins", 3],
     ] as const) {
-      const routes = routeView(view, tier, "rows", pixel);
-      expect(notEnteringAtPin(view, routes), `${tier} ${String(pixel)}`).toEqual([]);
+      const routes = routeView(view, tier, mode, pixel);
+      expect(notEnteringAtPin(view, routes), `${tier} ${mode} ${String(pixel)}`).toEqual([]);
     }
   });
 

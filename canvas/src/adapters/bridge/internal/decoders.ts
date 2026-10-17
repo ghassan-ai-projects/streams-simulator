@@ -1,8 +1,8 @@
 import type { Acknowledgement, ComposeSummary, FileContent } from "../../../app/ports";
 import type { Workspace } from "../../../model/workspace";
-import type { ExamplePlant, LibraryEntry, Presets } from "../../../model/library";
-import type { ComponentSpec, PortSpec } from "../../../model/ports";
-import type { Replay, Report } from "../../../model/report";
+import type { ExamplePlant, LibraryEntry, Presets } from "../../../model/plant";
+import type { ComponentSpec, PortSpec } from "../../../model/plant";
+import type { Replay, Report } from "../../../model/review";
 import { parseReportPayload, parseReplayPayload } from "./reportDecoder";
 import { isRecord, string } from "./http";
 export { journalEntry } from "./journalDecoder";

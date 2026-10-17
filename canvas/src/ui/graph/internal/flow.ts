@@ -1,4 +1,4 @@
-import type { NodeLive } from "../contract";
+import type { NodeLive } from "./types";
 import { MarkerType } from "@xyflow/react";
 import type { Edge, Node } from "@xyflow/react";
 import type { PlanMark, PlantView, Point, ViewNode } from "../../../model/graph";
@@ -138,4 +138,4 @@ export function flowEdges(
   }));
 }
 
-export type { NodeLive } from "../contract";
+export type { NodeLive } from "./types";
