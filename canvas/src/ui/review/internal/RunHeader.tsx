@@ -90,7 +90,7 @@ export function Header(props: HeaderProps) {
   return (
     <div className={styles.bar}>
       <Breadcrumb trail={trailOf(props)} here={hall ?? run} heading={heading} />
-      <Status state={state} />
+      <Status state={state} now={() => props.launch.nowMs()} />
       <RunActions {...props} />
     </div>
   );

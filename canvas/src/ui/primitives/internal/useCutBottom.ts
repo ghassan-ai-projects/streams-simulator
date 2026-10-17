@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
 import { useResizeObserver } from "./useResizeObserver";
 
-/** True while a scrolling element has more content below the cut. */
 export function useCutBottom<T extends HTMLElement>(): {
   readonly ref: RefObject<T | null>;
   readonly cut: boolean;

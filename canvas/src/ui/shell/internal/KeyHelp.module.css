@@ -1,32 +1,15 @@
-.scrim {
-  position: fixed;
-  inset: 0;
-  z-index: 9;
-  background: var(--scrim);
-}
-
 .dialog {
-  position: fixed;
-  inset: 0;
-  margin: auto;
   display: flex;
   flex-direction: column;
-  height: fit-content;
   max-height: calc(100vh - 64px);
   overflow: hidden;
-  z-index: 10;
   width: 640px;
-  padding: var(--space-5);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-lg);
-  background: var(--surface-panel);
-  color: var(--text-primary);
-  box-shadow: var(--shadow-panel);
 }
 
 .title {
   flex: none;
   margin: 0 0 var(--space-3);
+  border-radius: var(--radius-sm);
   font-size: var(--text-lg);
 }
 
@@ -35,11 +18,7 @@
   overflow: auto;
 }
 
-.title {
-  border-radius: var(--radius-sm);
-}
-
-.title.title:focus {
+.title[tabindex]:focus {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }

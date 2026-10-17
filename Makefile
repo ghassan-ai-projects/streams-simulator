@@ -147,7 +147,7 @@ quick: ## Fast inner-loop check (about 30 s, cached): fmt, function length, buil
 	go vet ./...
 	go test -short ./...
 
-canvas-check: build ## Canvas gates: format, types, lint, layers, duplication, dead code, unit and component tests, build, e2e against the built binary
+canvas-check: build ## Canvas gates: format, types, lint, layers, architecture register (facades, CSS ownership, ratchet), duplication, dead code, tests with coverage floors, build, emitted stylesheet oracle, e2e against the built binary
 	@if ! command -v npm >/dev/null 2>&1; then echo "ERROR: npm is required for canvas-check (Node 24 or later)"; exit 1; fi
 	cd canvas && npm ci --ignore-scripts --no-fund --no-audit && npm audit --audit-level=high && STREAMSIM_BIN=$(abspath $(BINARY)) npm run check
 

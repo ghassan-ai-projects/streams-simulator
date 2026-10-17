@@ -4,7 +4,7 @@ import type { Canned } from "./fakeFailures";
 export class FakeSource extends EventTarget {
   readyState = 1;
 
-  constructor(private readonly onClose: (source: FakeSource) => void) {
+  constructor(private readonly onClose: (source: FakeSource) => void = () => undefined) {
     super();
   }
 
@@ -17,17 +17,26 @@ export class FakeSource extends EventTarget {
     this.dispatchEvent(new MessageEvent("record", { data: JSON.stringify(entry) }));
   }
 
+  reconnect(): void {
+    this.readyState = 0;
+    this.dispatchEvent(new Event("error"));
+  }
+
   end(how: "closed" | "failed"): void {
     if (how === "failed") this.readyState = 2;
     this.dispatchEvent(new Event(how === "closed" ? "closed" : "error"));
   }
 }
 
+export function respond(status: number, body: unknown): Response {
+  return typeof body === "string" ? new Response(body, { status }) : Response.json(body, { status });
+}
+
 export function answer(outcome: Canned<unknown>): Response {
-  if (outcome.ok) return Response.json(outcome.value);
+  if (outcome.ok) return respond(200, outcome.value);
   const { status, code, message, issues, result } = outcome.failure;
   if (code === "unreachable") throw new TypeError(message);
-  return Response.json({ error: { code, message, issues, result } }, { status });
+  return respond(status, { error: { code, message, issues, result } });
 }
 
 export function workspaceWire(workspace: Workspace) {

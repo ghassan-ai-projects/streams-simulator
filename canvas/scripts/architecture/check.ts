@@ -1,4 +1,3 @@
-import { readFileSync } from "node:fs";
 import { appClockRules, appUnknownRules, booleanParameterRules, testTimerRules } from "./codeRules.ts";
 import { cssKeyRules } from "./cssKeyRules.ts";
 import { capRules, colorRules, composesRules, globalLocationRules, ownershipRules } from "./cssRules.ts";
@@ -13,8 +12,7 @@ import {
   moduleRules,
   protocolRules,
   restrictedRules,
-  targetEdgeRules,
-  targetRules,
+  umbrellaRules,
 } from "./tsRules.ts";
 
 export type RuleSet = "architecture" | "css" | "all";
@@ -39,8 +37,7 @@ export function check(registerPath: string, ruleSet: RuleSet): CheckResult {
   const files = readSources(register);
   const violations = [
     ...moduleRules(files, register),
-    ...targetRules(files, register),
-    ...targetEdgeRules(files, register),
+    ...umbrellaRules(files, register),
     ...callerRules(files, register),
     ...protocolRules(files, register),
     ...restrictedRules(files, register),
@@ -65,8 +62,4 @@ function wanted(entry: Violation, ruleSet: RuleSet): boolean {
   if (ruleSet === "all") return true;
   const isCss = cssRuleNames.includes(entry.rule);
   return ruleSet === "css" ? isCss : !isCss;
-}
-
-export function readText(path: string): string {
-  return readFileSync(path, "utf8");
 }

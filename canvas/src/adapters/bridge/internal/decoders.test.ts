@@ -125,7 +125,7 @@ describe("workspace payload", () => {
   it("defaults a run's missing or mistyped fields", () => {
     const decoded = workspace({
       ...wire,
-      runs: [{ world_id: "w-2", seed: "7", duration_ns: "long", faults: null }, 5],
+      runs: [{ world_id: "w-2", seed: "7", duration_ns: "long", faults: null }],
     });
     expect(decoded?.runs).toEqual([
       {
@@ -140,7 +140,6 @@ describe("workspace payload", () => {
         recordedAt: "",
         faults: 0,
       },
-      expect.objectContaining({ worldId: "", seed: null, faults: 0 }),
     ]);
   });
 
@@ -151,6 +150,13 @@ describe("workspace payload", () => {
     ["compositions not a list", { ...wire, compositions: {} }],
     ["scenarios null", { ...wire, scenarios: null }],
     ["runs a string", { ...wire, runs: "none" }],
+    ["a run that is not an object", { ...wire, runs: [5] }],
+    ["a run without a world id", { ...wire, runs: [{ ended: true }] }],
+    ["a run with an empty world id", { ...wire, runs: [{ world_id: "" }] }],
+    ["a run with a numeric world id", { ...wire, runs: [{ world_id: 3 }] }],
+    ["a domain without a path", { ...wire, domains: [{ id: "mini" }] }],
+    ["a composition with an empty path", { ...wire, compositions: [{ path: "", id: "comp" }] }],
+    ["a scenario that is not an object", { ...wire, scenarios: ["s.json"] }],
   ])("refuses a workspace with %s", (_name, bad) => {
     expect(workspace(bad)).toBeNull();
   });

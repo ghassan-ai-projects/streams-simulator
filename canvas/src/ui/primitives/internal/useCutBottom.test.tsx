@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import { stubScrollMetrics as metrics } from "../../../test/dom";
 import { useCutBottom } from "./useCutBottom";
 
 function Probe() {
@@ -12,12 +13,6 @@ function Probe() {
       </details>
     </div>
   );
-}
-
-function metrics(node: HTMLElement, client: number, total: number, top: number) {
-  Object.defineProperty(node, "clientHeight", { value: client, configurable: true });
-  Object.defineProperty(node, "scrollHeight", { value: total, configurable: true });
-  Object.defineProperty(node, "scrollTop", { value: top, configurable: true });
 }
 
 describe("the cut cue", () => {

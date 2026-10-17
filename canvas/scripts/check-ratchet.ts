@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { gateRegressions } from "./architecture/gateRatchet.ts";
 import { repositoryRoot } from "./architecture/git.ts";
-import { registerAt, registerBase, registerRegressions } from "./architecture/ratchet.ts";
+import { registerAt, registerBase, registerRegressions, shallowProblems } from "./architecture/ratchet.ts";
 import type { Register } from "./architecture/model.ts";
 import { readRegister } from "./architecture/register.ts";
 
@@ -30,11 +30,12 @@ function floorDrift(register: Register, vitest: string): string[] {
 const canvasDir = "canvas";
 const problems: string[] = [];
 
-const base = registerBase(registerPath);
+problems.push(...shallowProblems());
+const base = problems.length > 0 ? null : registerBase(registerPath);
 const previous = base === null ? null : registerAt(base.commit, `${canvasDir}/${registerPath}`);
-if (base === null || previous === null) {
+if (problems.length === 0 && (base === null || previous === null)) {
   process.stdout.write("canvas ratchet: no baseline yet; the first commit of architecture.json becomes it\n");
-} else {
+} else if (base !== null && previous !== null) {
   const register = readRegister(registerPath);
   problems.push(...registerRegressions(previous, register));
   problems.push(...gateRegressions(base.commit, canvasDir));

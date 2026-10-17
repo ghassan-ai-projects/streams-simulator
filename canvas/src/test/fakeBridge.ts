@@ -36,8 +36,7 @@ interface Hold {
 }
 
 export class FakeBridge {
-  paired = false;
-  sessionOutcome: Canned<boolean> | null = null;
+  sessionOutcome: Canned<boolean> = success(false);
   pairOutcomes: Canned<boolean>[] = [];
   workspaceOutcome: Canned<Workspace> = success(sampleWorkspace);
   files = new Map<string, Canned<FileContent>>();
@@ -49,15 +48,16 @@ export class FakeBridge {
   writeOutcomes = new Map<string, Canned<Written>>();
   watchers = new Set<FakeSource>();
   followers = new Map<string, FakeSource>();
-  follows: FakeSource[] = [];
   pairedCodes: string[] = [];
+  private readonly follows: FakeSource[] = [];
+  private persisting = false;
   private readonly holds = new Map<string, Hold>();
   private readonly transport: Transport = {
     fetch: (input, init) => this.serve(input, init),
     events: (url) => this.openSource(url) as unknown as EventSource,
   };
 
-  readonly gateways = bridgeAdapter(this.transport);
+  private readonly gateways = bridgeAdapter(this.transport);
   readonly session = this.gateways.session;
   readonly workspace = this.gateways.workspace;
   readonly plant = this.gateways.plant;
@@ -67,6 +67,10 @@ export class FakeBridge {
 
   addFile(path: string, content: unknown, etag = "e"): void {
     this.files.set(path, cannedFile(path, content, etag));
+  }
+
+  persistWrites(): void {
+    this.persisting = true;
   }
 
   holdRead(path: string, count = Infinity): Deferred<Canned<FileContent>>[] {
@@ -135,26 +139,26 @@ export class FakeBridge {
     if (url.pathname.startsWith("/api/actions/"))
       return this.action(decodeURIComponent(url.pathname.slice(13)), body.args ?? {});
     const routes: Record<string, () => Reply> = {
-      "/api/workspace": () => this.gated("workspace", () => this.listing()),
+      "/api/workspace": () => this.listing(),
       "/api/session": () => (method === "POST" ? this.pair(body) : this.check()),
       "/api/file": () => (method === "PUT" ? this.write(body) : this.read(url)),
     };
     return routes[url.pathname]?.() ?? failed(cannedFailure("not_found", 404, `no route ${url.pathname}`));
   }
 
-  private listing(): Canned<unknown> {
-    return this.workspaceOutcome.ok ? success(workspaceWire(this.workspaceOutcome.value)) : this.workspaceOutcome;
+  private async listing(): Promise<Canned<unknown>> {
+    const outcome = await this.gated("workspace", () => this.workspaceOutcome);
+    return outcome.ok ? success(workspaceWire(outcome.value)) : outcome;
   }
 
   private check(): Canned<unknown> {
-    const outcome = this.sessionOutcome ?? success(this.paired);
+    const outcome = this.sessionOutcome;
     return outcome.ok ? success({ paired: outcome.value }) : outcome;
   }
 
   private pair(body: Body): Canned<unknown> {
     this.pairedCodes.push(body.code ?? "");
     const next = this.pairOutcomes.shift() ?? success(true);
-    this.paired = next.ok;
     return next.ok ? success({ paired: next.value }) : next;
   }
 
@@ -169,13 +173,17 @@ export class FakeBridge {
 
   private write({ path = "", content = "", etag = "" }: Body): Reply {
     this.writes.push({ path, content, etag });
-    return this.gated("write", () => this.stored(path, content));
+    return this.gated("write", () => this.writeOutcomes.get(path) ?? this.stored(path, content, etag));
   }
 
-  private stored(path: string, content: string): Canned<Written> {
-    const outcome = this.writeOutcomes.get(path) ?? success({ path, etag: `e${String(this.writes.length)}` });
-    if (outcome.ok) this.files.set(path, cannedFile(path, content, outcome.value.etag));
-    return outcome;
+  private stored(path: string, content: string, etag: string): Canned<Written> {
+    if (!this.persisting) return success({ path, etag: "written" });
+    const current = this.files.get(path);
+    if (current?.ok === true && current.value.etag !== etag)
+      return failed(cannedFailure("conflict", 409, `${path} changed on disk`));
+    const next = `e${String(this.writes.length)}`;
+    this.files.set(path, cannedFile(path, content, next));
+    return success({ path, etag: next });
   }
 
   private action(name: string, args: Args): Promise<Canned<unknown>> {

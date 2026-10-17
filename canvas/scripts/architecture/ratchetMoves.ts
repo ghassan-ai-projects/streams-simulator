@@ -19,7 +19,7 @@ export function approvedVendorAllowanceMove(
   entry: CssCap,
 ): boolean {
   if (path !== "src/ui/graph/internal/vendor.module.css") return false;
-  if (entry.global !== 6 || entry.important !== 2 || !newVendorRegistration(previous, current)) return false;
+  if (entry.global > 6 || entry.important > 2 || !newVendorRegistration(previous, current)) return false;
   const old = previous.css.globalCaps["src/ui/plant/GraphControls.module.css"];
   return old?.global === 0 && old.important === 2;
 }
@@ -56,7 +56,7 @@ export function moved<T extends { readonly phase: string }>(
   });
 }
 
-export function movedBetweenModules(previous: Register, current: Register, before: string, after: string): boolean {
+function movedBetweenModules(previous: Register, current: Register, before: string, after: string): boolean {
   const source = ownerAt(previous.modules, before);
   const destination = ownerAt(current.modules, after);
   if (source === undefined || destination === undefined || source.name === destination.name) return false;
@@ -64,7 +64,7 @@ export function movedBetweenModules(previous: Register, current: Register, befor
   return !(previous.modules[destination.name]?.folders ?? []).includes(destination.folder);
 }
 
-export function basename(path: string): string {
+function basename(path: string): string {
   return path.slice(path.lastIndexOf("/") + 1);
 }
 

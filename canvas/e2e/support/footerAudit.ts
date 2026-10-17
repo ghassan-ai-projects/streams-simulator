@@ -1,6 +1,5 @@
 import type { Audit } from "./audit";
 
-/** What a user can see painting under the run plan's footer, clipped by every scrolling ancestor. */
 export function underRunFooter(atLeast = 1): Audit {
   const fields =
     "aside button, aside p, aside small, aside select, aside input, aside legend, aside summary, aside label";

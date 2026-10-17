@@ -102,8 +102,8 @@ test("an empty area is one line of at most 28 px in the outline, however long it
 
 function headerLines(): { name: string; lines: number; sameBaseline: boolean; full: string }[] {
   return [...document.querySelectorAll(".react-flow__node-frameTitle")].map((title) => {
-    const name = title.querySelector("[class*='frameName']");
-    const count = title.querySelector("[class*='frameCount']");
+    const name = title.querySelector('[data-part="frame-name"]');
+    const count = title.querySelector('[data-part="frame-count"]');
     const boxes = [name, count].map((part) => {
       const walker = document.createTreeWalker(part ?? title, NodeFilter.SHOW_TEXT);
       const found: DOMRect[] = [];
@@ -118,7 +118,7 @@ function headerLines(): { name: string; lines: number; sameBaseline: boolean; fu
     const lines = Math.max(...tops) - Math.min(...tops) > 3 ? 2 : 1;
     const bottoms = boxes.map((list) => list[0]?.bottom ?? 0);
     const same = Math.abs((bottoms[0] ?? 0) - (bottoms[1] ?? 0)) <= 1.5;
-    const full = title.querySelector<HTMLElement>("[class*='frameTitle']:not([class*='Node'])")?.title ?? "";
+    const full = title.querySelector<HTMLElement>('[data-part="frame-title"]')?.title ?? "";
     return { name: name?.textContent ?? "", lines, sameBaseline: same, full };
   });
 }

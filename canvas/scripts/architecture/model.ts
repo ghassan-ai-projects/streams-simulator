@@ -36,7 +36,6 @@ export interface CssCap {
 
 export interface CssSpec {
   readonly globalEntrypoints: readonly string[];
-  readonly globalOwners: readonly string[];
   readonly vendorFiles: readonly string[];
   readonly defaultCap: number;
   readonly caps: Readonly<Record<string, { readonly cap: number; readonly phase: string }>>;
@@ -71,9 +70,6 @@ export interface Register {
   readonly version: number;
   readonly source: string;
   readonly modules: Readonly<Record<string, ModuleSpec>>;
-  readonly targetModules: Readonly<Record<string, ModuleSpec>>;
-  readonly targets: Readonly<Record<string, string>>;
-  readonly features: Readonly<Record<string, string>>;
   readonly testSupport: readonly string[];
   readonly css: CssSpec;
   readonly floors: Readonly<Record<string, Readonly<Record<string, number>>>>;

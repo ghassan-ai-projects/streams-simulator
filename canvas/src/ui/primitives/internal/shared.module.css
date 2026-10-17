@@ -76,7 +76,7 @@ summary.disclosure:hover {
 
 .secondary {
   border: 1px solid var(--button-edge, var(--border-strong));
-  background: var(--button-fill, var(--surface-sunken));
+  background: var(--surface-sunken);
   color: var(--button-ink, var(--text-primary));
 }
 
@@ -87,7 +87,7 @@ summary.disclosure:hover {
 }
 
 .secondary:hover {
-  background: var(--button-hover, var(--surface-hover));
+  background: var(--surface-hover);
 }
 
 .primary:hover {
@@ -159,4 +159,25 @@ summary.disclosure:hover {
   .spin {
     animation: none;
   }
+}
+
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 9;
+  background: var(--scrim);
+}
+
+.dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  margin: auto;
+  height: fit-content;
+  padding: var(--space-5);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--surface-panel);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-panel);
 }

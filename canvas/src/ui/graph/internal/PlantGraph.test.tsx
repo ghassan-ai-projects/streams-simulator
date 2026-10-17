@@ -1,24 +1,13 @@
 import { render, screen } from "@testing-library/react";
 import { ReactFlowProvider } from "@xyflow/react";
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
+import { stubResizeObserver } from "../../../test/dom";
 import type { Dump } from "../../../test/wireAudit";
 import { viewOf } from "../../../test/wireAudit";
 import { PlantGraph } from "./PlantGraph";
 
-class NoopResizeObserver {
-  observe(): void {
-    return undefined;
-  }
-  unobserve(): void {
-    return undefined;
-  }
-  disconnect(): void {
-    return undefined;
-  }
-}
-
-beforeAll(() => {
-  globalThis.ResizeObserver = NoopResizeObserver;
+beforeEach(() => {
+  stubResizeObserver();
 });
 
 const oneNode: Dump = {

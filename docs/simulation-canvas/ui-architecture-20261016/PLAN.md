@@ -17,11 +17,11 @@ The user resumed the migration with a standing delegation: deviate from this pla
 
 ### Delivered
 
-| Phase | State                                                                                                                                                                                        |
-| ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| P0–P3 | Committed earlier; P3 test/double migration committed in `bc831583` (typed gateways, 486 tests).                                                                                             |
-| P4    | Editor save transaction committed; dirty tracking stays identity-based (documents are immutable) and the revision counters were removed.                                                     |
-| P5    | Delivered: 203 files moved into `index.ts` + `internal/` modules (28 product modules), facades and contracts, feature session factories, CSS ownership, register rebuilt from the real tree. |
+| Phase | State                                                                                                                                                                                                                                                                                                                           |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| P0–P3 | Committed earlier; P3 test/double migration committed in `bc831583` (typed gateways, 486 tests).                                                                                                                                                                                                                                |
+| P4    | Editor save transaction committed; dirty tracking stays identity-based (documents are immutable) and the revision counters were removed.                                                                                                                                                                                        |
+| P5    | Delivered: 203 files moved into `index.ts` + `internal/` modules (28 modules: 27 nested modules plus `adapters`; the register has 33 entries, which also count the umbrellas `model`, `app` and `ui`, `root` and `test`), facades and contracts, feature session factories, CSS ownership, register rebuilt from the real tree. |
 
 ### Deviations from the plan (each deliberate)
 
@@ -52,21 +52,23 @@ Three independent read-only reviewers (model + adapters, application + test supp
 
 ### Follow-ups after the review (all delivered)
 
-| Item                        | Result                                                                                                                                                                                                                                                                        |
-| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Rules held in the UI        | Review warnings, alarm rows, live status, KPI figures in `model/review`; launch draft converter, mode words, effector helpers in `model/launch`/`model/plant`; editor status text and add-equipment validation in `model/editor`/`app/editor`; new-plant rules in `app/plant` |
-| Cross-store coordinators    | `reviewPlantFor`, `showRunPlant`, `rerunProposalOf` in `app/review`; `proposeRerun`, `sessionGate`, `showBuild` in `app/shell`; `RunWatch` (hold the finished run) in `app/launch`                                                                                            |
-| Application simplifications | One `Operation` token (`live()`) for every store, editor `save` union, `RunCursor`/`ProposalSlot` in `app/launch`, `PlantMaker` takes a mode and returns an `Outcome`, store bookkeeping private                                                                              |
-| Test support                | `FakeBridge` is an in-memory transport behind the real bridge adapter (app and UI tests run the real client, decoders and failure mappers); first-class hold helpers; `plantBuilder` policy removed                                                                           |
-| CSS                         | One primary and one secondary button (pixel-compared in both themes, `!important` count 4 -> 2), `PlantScreen`/`TopBar` sheets split by owner                                                                                                                                 |
-| Names                       | Routes are `workspace`/`review` (`#/review?world=…`, `launch=1`), `WorkspaceScreen`, `reportFacts`, `ViewInput`                                                                                                                                                               |
-| P6                          | [evidence/P6-test-ledger.md](evidence/P6-test-ledger.md): 145 files audited, 3 proven duplicates removed (the suite was already pruned; 298 of 646 cases add no coverage of their own but pin distinct assertions), suite 725 -> 722 tests                                    |
+| Item                        | Result                                                                                                                                                                                                                                                                                                               |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Rules held in the UI        | Review warnings, alarm rows, live status, KPI figures in `model/review`; launch draft converter, mode words, effector helpers in `model/launch`/`model/plant`; editor status text and add-equipment validation in `model/editor`/`app/editor`; new-plant rules in `app/plant`                                        |
+| Cross-store coordinators    | `reviewPlantFor`, `showRunPlant`, `rerunProposalOf` in `app/review`; `proposeRerun`, `sessionGate`, `showBuild` in `app/shell`; `RunWatch` (hold the finished run) in `app/launch`                                                                                                                                   |
+| Application simplifications | One `Operation` token (`live()`) for every store, editor `save` union, `RunCursor`/`ProposalSlot` in `app/launch`, `PlantMaker` takes a mode and returns an `Outcome`, store bookkeeping private                                                                                                                     |
+| Test support                | `FakeBridge` is an in-memory transport behind the real bridge adapter (app and UI tests run the real client, decoders and failure mappers); first-class hold helpers; `plantBuilder` policy removed                                                                                                                  |
+| CSS                         | One primary and one secondary button (pixel-compared in both themes, `!important` count 4 -> 2), `PlantScreen`/`TopBar` sheets split by owner                                                                                                                                                                        |
+| Names                       | Routes are `workspace`/`review` (`#/review?world=…`, `launch=1`), `WorkspaceScreen`, `reportFacts`, `ViewInput`                                                                                                                                                                                                      |
+| P6                          | [evidence/P6-test-ledger.md](evidence/P6-test-ledger.md): at the time of P6, 145 files audited, 3 proven duplicates removed (the suite was already pruned; 298 of 646 cases add no coverage of their own but pin distinct assertions), suite 725 -> 722 tests; now: 146 Vitest files, 721 tests, 70 Playwright tests |
 
 Defects found on the way, fixed failing-first: a screen arriving late stole focus from an open dialog (the keyboard e2e flake); a live-run e2e had a load-dependent 4 s margin (now a 20-minute run); a stale report answer could overwrite a newer one.
 
 ### Open items (recorded, not blocking)
 
 - Merge the branch (not done: left to the owner).
+
+Sections 1 onward are the original plan of 2026-10-16: the module, route and stylesheet names in them are pre-migration. Where §0 and a later section disagree, §0 and `canvas/ARCHITECTURE.md` are current.
 
 ## 1. Why this plan exists
 

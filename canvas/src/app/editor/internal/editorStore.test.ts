@@ -49,11 +49,12 @@ describe("editor store", () => {
 
   it("writes each save over the version the last write returned and composes over the domain it read", async () => {
     const { store, fake } = await opened();
+    fake.writeOutcomes.set(path, success({ path, etag: "c2" }));
     store.edit((current) => ({ ...current, title: "One" }));
     await store.save();
     store.edit((current) => ({ ...current, title: "Two" }));
     await store.save();
-    expect(fake.writes.map((write) => write.etag)).toEqual(["c1", "e1"]);
+    expect(fake.writes.map((write) => write.etag)).toEqual(["c1", "c2"]);
     const composes = fake.calls.filter((call) => call.name === "domain.compose");
     expect(composes.map((call) => (call.args as { etag: string }).etag)).toEqual(["d1", "d1"]);
   });
@@ -123,18 +124,17 @@ describe("editor store", () => {
 
   it("refreshes a clean draft from disk and recovers from a conflict by reloading", async () => {
     const { store, fake } = await opened();
+    fake.persistWrites();
     const changed = { ...doc, title: "Lab changed" };
     fake.addFile(path, changed, "c2");
     await store.reload();
     expect(store.snapshot()).toMatchObject({ doc: { title: "Lab changed" } });
     store.edit((current) => ({ ...current, title: "Mine" }));
     fake.addFile(path, doc, "c3");
-    fake.writeOutcomes.set(path, failed(cannedFailure("conflict", 409, "changed on disk")));
     await store.save();
     expect(store.snapshot()).toMatchObject({ save: { kind: "write-failed", failure: { kind: "conflict" } } });
     await store.reload();
     expect(store.snapshot()).toMatchObject({ save: { kind: "idle" }, doc: { title: "Lab" } });
-    fake.writeOutcomes.delete(path);
     store.edit((current) => ({ ...current, title: "Again" }));
     await store.save();
     expect(fake.writes.at(-1)).toMatchObject({ etag: "c3" });

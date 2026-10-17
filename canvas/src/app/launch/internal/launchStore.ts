@@ -42,6 +42,10 @@ export class LaunchStore extends Observable<LaunchState> {
     this.proposals.propose(domain, plan, left, from);
   }
 
+  nowMs(): number {
+    return this.clock.nowMs();
+  }
+
   forgetProposal(): void {
     this.proposals.forget();
   }

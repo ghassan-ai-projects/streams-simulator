@@ -25,7 +25,7 @@ export function idProblems(atLeast = 1): Audit {
     if (element.scrollWidth > element.clientWidth + 1) found.push(`${name}: overflows`);
     return found;
   };
-  const ids = [...document.querySelectorAll<HTMLElement>(".react-flow__node-instance [class*='id_']")];
+  const ids = [...document.querySelectorAll<HTMLElement>('.react-flow__node-instance [data-part="id"]')];
   const problems = ids.filter((element) => element.getClientRects().length > 0).flatMap(problemsOf);
   return { considered: ids.length, problems, met: ids.length >= atLeast };
 }

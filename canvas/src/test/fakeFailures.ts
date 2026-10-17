@@ -5,7 +5,7 @@ interface CannedIssue {
   readonly message: string;
 }
 
-export interface CannedFailure {
+interface CannedFailure {
   readonly status: number;
   readonly code: string;
   readonly message: string;

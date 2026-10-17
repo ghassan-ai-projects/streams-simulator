@@ -9,7 +9,7 @@ import { NavigationStore } from "../../../app/shell";
 import { ReviewStore } from "../../../app/review";
 import { ThemeStore } from "../../../app/shell";
 import { WorkspaceStore } from "../../../app/workspace";
-import { failure as failed } from "../../../test/outcome";
+import { failure as failed, success } from "../../../test/outcome";
 import { FakeBridge, cannedFailure } from "../../../test/fakeBridge";
 import { memoryLocation } from "../../../test/location";
 import { fakeClock } from "../../../test/fakeClock";
@@ -47,7 +47,7 @@ function renderApp(bridge: FakeBridge) {
 describe("app shell", () => {
   it("opens the workspace once paired, with no accessibility violation", async () => {
     const bridge = new FakeBridge();
-    bridge.paired = true;
+    bridge.sessionOutcome = success(true);
     const { container } = renderApp(bridge);
     expect(await screen.findByRole("heading", { name: "lab-workspace" })).toBeInTheDocument();
     expect((await axe.run(container)).violations).toEqual([]);
@@ -63,7 +63,7 @@ describe("app shell", () => {
 
   it("cycles the theme from the top bar and marks the document", async () => {
     const bridge = new FakeBridge();
-    bridge.paired = true;
+    bridge.sessionOutcome = success(true);
     renderApp(bridge);
     await screen.findByRole("heading", { name: "lab-workspace" });
     fireEvent.click(screen.getByRole("button", { name: "Theme: system" }));

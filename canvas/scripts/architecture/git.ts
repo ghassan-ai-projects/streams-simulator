@@ -1,7 +1,6 @@
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
 
-export function git(args: readonly string[]): string | null {
+function git(args: readonly string[]): string | null {
   try {
     return execFileSync("git", [...args], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
   } catch {
@@ -11,6 +10,10 @@ export function git(args: readonly string[]): string | null {
 
 export function repositoryRoot(): string {
   return git(["rev-parse", "--show-toplevel"]) ?? process.cwd();
+}
+
+export function isShallowRepository(): string | null {
+  return git(["rev-parse", "--is-shallow-repository"]);
 }
 
 export function introducingCommit(path: string): string | null {
@@ -27,10 +30,6 @@ export function mergeBase(reference: string): string | null {
 
 export function show(rev: string, path: string): string | null {
   return git(["show", `${rev}:${path}`]);
-}
-
-export function readIfPresent(path: string): string | null {
-  return existsSync(path) ? readFileSync(path, "utf8") : null;
 }
 
 export function parseJson(text: string): Record<string, unknown> {

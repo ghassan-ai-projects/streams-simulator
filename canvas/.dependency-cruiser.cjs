@@ -16,6 +16,12 @@ module.exports = {
     },
     { name: "adapters-below-ui", severity: "error", from: { path: "^src/adapters" }, to: { path: "^src/ui" } },
     { name: "ui-never-touches-transport", severity: "error", from: { path: "^src/ui" }, to: { path: "^src/adapters" } },
+    {
+      name: "no-test-support-in-production",
+      severity: "error",
+      from: { pathNot: ["^src/test/"] },
+      to: { path: "^src/test/" },
+    },
     { name: "no-circular", severity: "error", from: {}, to: { circular: true } },
     {
       name: "no-orphans",

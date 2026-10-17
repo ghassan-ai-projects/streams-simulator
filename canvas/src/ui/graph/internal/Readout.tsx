@@ -38,7 +38,11 @@ function ReadoutRowItem({ row }: { readonly row: ReadoutRow }) {
 
 function Note({ fault, effector }: { readonly fault: string; readonly effector: string }) {
   return (
-    <div data-noted={fault !== "" ? "true" : undefined} className={cx(styles.note, fault !== "" && styles.noted)}>
+    <div
+      data-part="note"
+      data-noted={fault !== "" ? "true" : undefined}
+      className={cx(styles.note, fault !== "" && styles.noted)}
+    >
       {fault !== "" && <span className={styles.noteFault} title={fault}>{`Fault · ${fault}`}</span>}
       {effector !== "" && (
         <span className={styles.noteCall} title={effector}>

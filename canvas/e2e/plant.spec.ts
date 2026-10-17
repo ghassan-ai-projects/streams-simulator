@@ -1,7 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { guard } from "./support/audit";
-import { stepZoom, zoomInTo, zoomOutTo } from "./support/viewport";
+import { settledZoom, stepZoom, zoomInTo, zoomOutTo } from "./support/viewport";
 import { env } from "./support/env";
 import { headingInside } from "./support/fitAudit";
 import { textClashes } from "./support/textClashes";
@@ -164,21 +164,6 @@ function cutText(): string[] {
     .map((element) => element.textContent);
 }
 
-function settledZoom(): Promise<string> {
-  const read = () =>
-    getComputedStyle(document.querySelector("[aria-roledescription='plant graph']") ?? document.body).getPropertyValue(
-      "--zoom",
-    );
-  const before = read();
-  return new Promise((resolve) => {
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        resolve(before === read() ? before : "");
-      });
-    });
-  });
-}
-
 test("no node overlaps another, spills its text or cuts a title or port name at any zoom tier", async ({ page }) => {
   await page.goto(`${env("CANVAS_APP_URL")}/#/plant?domain=domains%2Ffactory-utilities.domain.json`);
   const graph = page.getByRole("application", { name: "Plant graph" });
@@ -189,7 +174,7 @@ test("no node overlaps another, spills its text or cuts a title or port name at 
   let zoom = "";
   for (let step = 0; step < 8; step += 1) {
     const previous = zoom;
-    await expect.poll(async () => (zoom = await page.evaluate(settledZoom)) !== "" && zoom !== previous).toBe(true);
+    await expect.poll(async () => (zoom = await settledZoom(page)) !== "" && zoom !== previous).toBe(true);
     tiers.add((await graph.getAttribute("data-zoom-tier")) ?? "");
     expect(await page.evaluate(overlapsAndSpills)).toEqual([]);
     expect(await page.evaluate(cutText)).toEqual([]);
@@ -201,7 +186,7 @@ test("no node overlaps another, spills its text or cuts a title or port name at 
 
 function activeRingOnScreen(): number {
   const graph = document.querySelector<HTMLElement>("[aria-roledescription='plant graph']");
-  const ring = graph?.querySelector<HTMLElement>("[role=group][class*='active']");
+  const ring = graph?.querySelector<HTMLElement>('[role=group][data-active="true"]');
   if (!graph || !ring) return 0;
   const zoom = Number(graph.style.getPropertyValue("--zoom"));
   return parseFloat(getComputedStyle(ring).outlineWidth) * zoom;
@@ -213,7 +198,7 @@ test("the keyboard ring stays 2 px on screen when zoomed out", async ({ page }) 
   await page.getByRole("application", { name: "Plant graph" }).focus();
   await page.keyboard.press("ArrowRight");
   await expect.poll(() => page.evaluate(activeRingOnScreen)).toBeGreaterThanOrEqual(1.9);
-  await expect.poll(async () => zoomOutTo(page, "map", 6, () => Promise.resolve())).toBe("map");
+  expect(await zoomOutTo(page, "map", 6, () => Promise.resolve())).toBe("map");
   await expect.poll(() => page.evaluate(activeRingOnScreen)).toBeGreaterThanOrEqual(1.9);
 });
 

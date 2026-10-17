@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import type { ChipPlace, EventMark, MarkKind } from "../../../model/review";
 import { activeAt, kindsOf, markWords, placeChips, runClock } from "../../../model/review";
 import { cx, useResizeObserver } from "../../primitives";
-import styles from "./Scrubber.module.css";
+import styles from "./ScrubberLane.module.css";
 
 export interface LaneProps {
   readonly marks: readonly EventMark[];

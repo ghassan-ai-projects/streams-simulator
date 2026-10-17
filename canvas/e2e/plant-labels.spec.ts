@@ -16,7 +16,7 @@ test("no two labels inside one node intersect at the compact zoom, on a flat pla
     await graph.focus();
     await page.keyboard.press("0");
     expect(await zoomInTo(page, "compact", 3)).toBe("compact");
-    await expect(page.locator(".react-flow__node-instance [class*='pinName']").first()).toBeVisible();
+    await expect(page.locator('.react-flow__node-instance [data-part="pin-name"]').first()).toBeVisible();
     expect(guard(await page.evaluate(textClashes, 50))).toEqual([]);
   }
 });

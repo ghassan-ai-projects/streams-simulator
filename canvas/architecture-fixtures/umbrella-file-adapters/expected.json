@@ -1,5 +1,5 @@
 {
   "rules": [
-    "target-owner"
+    "umbrella-file"
   ]
 }

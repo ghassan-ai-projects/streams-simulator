@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { stubCheckVisibility } from "../../../test/dom";
 import { PanelStore } from "../../../app/shell";
 import { PanelToggles } from "./PanelToggles";
 
@@ -12,10 +13,6 @@ function preferences() {
 }
 
 describe("panel toggles", () => {
-  afterEach(() => {
-    Reflect.deleteProperty(HTMLElement.prototype, "checkVisibility");
-  });
-
   it("hides a panel with its key and moves focus off a control the panel hid", async () => {
     const panels = new PanelStore(preferences());
     render(
@@ -26,12 +23,7 @@ describe("panel toggles", () => {
       </>,
     );
     const inside = screen.getByRole("button", { name: "Inside the outline" });
-    Object.defineProperty(HTMLElement.prototype, "checkVisibility", {
-      configurable: true,
-      value(this: HTMLElement) {
-        return this !== inside;
-      },
-    });
+    stubCheckVisibility((node) => node !== inside);
     inside.focus();
     fireEvent.keyDown(inside, { key: "[" });
     expect(panels.snapshot().left).toBe(false);

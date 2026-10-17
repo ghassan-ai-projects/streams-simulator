@@ -1,7 +1,7 @@
 # Phase 6 evidence — test ledger
 
 - **Scope:** [PLAN.md](../PLAN.md) §5 Phase 6 against [BAR.md](../BAR.md) §2 (phase 6 row).
-- **Subject:** every Vitest file under `canvas/src` (145 files). The 70 Playwright tests run against the real binary and are the
+- **Subject:** every Vitest file under `canvas/src` (145 files at the time of the audit; 146 files and 721 tests now). The 70 Playwright tests run against the real binary and are the
   unchanged real-wire oracle; none was touched and none is listed as removable.
 - **Method:** each file was read; each outcome is stated at its lowest owning layer; the unique failure is the production
   mutation only that file would notice. Every removal or merge was proven by mutating the production behaviour the test pins
@@ -323,3 +323,5 @@ Nothing was moved.
 | `ui`             | 49      | 167     |
 | `test` (support) | 3       | 9       |
 | **Total**        | **145** | **722** |
+
+These are the counts at the time of the audit. The current tree has 146 test files and 721 tests (`adapters` 12 files, `app` 27, `model` 54, `ui` 50, `test` support 3).

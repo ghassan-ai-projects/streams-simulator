@@ -75,7 +75,7 @@ function PinRow({
         className={cx(pins.dot, vendor.dot, pins[look.shape], pins[pin.connection], `family-${look.family}`)}
         isConnectable={editable}
       />
-      <span ref={label} className={pins.pinName}>
+      <span ref={label} className={pins.pinName} data-part="pin-name">
         <span className={pins.pinFull}>{words.full}</span>
         <span className={pins.pinShort}>{words.short}</span>
       </span>
@@ -174,7 +174,7 @@ function InstanceHeader({
   const words = markWords(data, status);
   return (
     <div className={styles.header}>
-      <span className={styles.id} title={view.label}>
+      <span className={styles.id} data-part="id" title={view.label}>
         <IdText label={view.label} zoom={zoom} words={words} />
       </span>
       {words !== null && (
@@ -187,7 +187,7 @@ function InstanceHeader({
           <IssueTag flagged={data.flagged} />
         </span>
       )}
-      <span className={styles.kind} title={view.detail}>
+      <span className={styles.kind} data-part="kind" title={view.detail}>
         {view.detail}
       </span>
     </div>
@@ -226,6 +226,7 @@ export function InstanceNode({ data, selected }: NodeProps<InstanceNodeType>) {
         statusClass(status),
       )}
       data-node-root="true"
+      data-active={data.active ? "true" : undefined}
       role="group"
       aria-label={instanceLabel(data, selected)}
       style={instanceStyle(view)}
@@ -252,6 +253,7 @@ export function HallNode({ data, selected }: NodeProps<HallNodeType>) {
         statusClass(status),
       )}
       data-node-hall="true"
+      data-active={data.active ? "true" : undefined}
       role="group"
       aria-label={describeNode(view, { selected, status, count })}
     >
@@ -278,12 +280,16 @@ export function FrameTitleNode({ data }: NodeProps<FrameTitleNodeType>) {
   const { head, tail } = splitName(data.title);
   return (
     <div className={frames.frameTitleNode}>
-      <div className={frames.frameTitle} title={`${data.title} · ${count}`}>
-        <span className={frames.frameName}>
+      <div className={frames.frameTitle} data-part="frame-title" title={`${data.title} · ${count}`}>
+        <span className={frames.frameName} data-part="frame-name">
           <span className={frames.nameHead}>{head}</span>
-          <span className={frames.nameTail}>{tail}</span>
+          <span className={frames.nameTail} data-part="name-tail">
+            {tail}
+          </span>
         </span>
-        <span className={frames.frameCount}>{count}</span>
+        <span className={frames.frameCount} data-part="frame-count">
+          {count}
+        </span>
       </div>
     </div>
   );

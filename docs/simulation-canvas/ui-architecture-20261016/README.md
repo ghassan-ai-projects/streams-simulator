@@ -1,9 +1,11 @@
 # Canvas modular architecture design
 
 - **Date:** 2026-10-16
-- **Status:** accepted architecture; implementation has not started
+- **Status:** accepted architecture; implemented on branch `refactor-ui-code` (2026-10-17), with the deviations recorded in [PLAN.md §0](PLAN.md)
 - **Scope:** `canvas/` application architecture, module ownership, data and control flow, useful abstractions, enforceable constraints, and test design
 - **Preserves:** simulator ownership of validation, composition, simulation, truth, scoring, and verification
+
+> **Baseline notice.** This document is the design as accepted on 2026-10-16. Sections that name `ui/home`, `ui/run`, `ui/pairing`, `PlantScreen.module.css` or other pre-migration paths describe the baseline the migration started from, not the current tree (those are now `ui/workspace`, `ui/review`, `ui/session` and feature-owned stylesheets). The current module list, allow-lists and callers are in [canvas/ARCHITECTURE.md](../../../canvas/ARCHITECTURE.md), generated from `canvas/architecture.json`.
 
 ## 1. Decision
 

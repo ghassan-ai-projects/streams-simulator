@@ -1,26 +1,9 @@
 import { render } from "@testing-library/react";
 import { useRef } from "react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { ResizeWatcher } from "../../../test/dom";
+import { stubResizeObserver } from "../../../test/dom";
 import { useResizeObserver } from "./useResizeObserver";
-
-const observers: StubObserver[] = [];
-
-class StubObserver {
-  observed: Element[] = [];
-  disconnected = false;
-  constructor(readonly fire: () => void) {
-    observers.push(this);
-  }
-  observe(node: Element) {
-    this.observed.push(node);
-  }
-  disconnect() {
-    this.disconnected = true;
-  }
-  unobserve() {
-    return undefined;
-  }
-}
 
 function Probe({ callback }: { readonly callback: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -29,13 +12,13 @@ function Probe({ callback }: { readonly callback: () => void }) {
 }
 
 describe("useResizeObserver", () => {
-  afterEach(() => {
-    observers.length = 0;
-    vi.unstubAllGlobals();
+  let observers: ResizeWatcher[] = [];
+
+  beforeEach(() => {
+    observers = stubResizeObserver();
   });
 
   it("observes the element, calls the latest callback and disconnects on unmount", () => {
-    vi.stubGlobal("ResizeObserver", StubObserver);
     const first = vi.fn();
     const second = vi.fn();
     const view = render(<Probe callback={first} />);
@@ -43,7 +26,7 @@ describe("useResizeObserver", () => {
     expect(observers[0]?.observed).toEqual([view.getByTestId("probe")]);
     view.rerender(<Probe callback={second} />);
     expect(observers).toHaveLength(1);
-    observers[0]?.fire();
+    observers[0]?.trigger();
     expect(first).not.toHaveBeenCalled();
     expect(second).toHaveBeenCalledTimes(1);
     view.unmount();

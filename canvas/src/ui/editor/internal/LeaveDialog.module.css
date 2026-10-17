@@ -1,24 +1,6 @@
-.scrim {
-  position: fixed;
-  inset: 0;
-  z-index: 9;
-  background: var(--scrim);
-}
-
 .dialog {
-  position: fixed;
-  inset: 0;
-  margin: auto;
-  height: fit-content;
   width: 480px;
   max-width: calc(100vw - 32px);
-  padding: var(--space-5);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-lg);
-  background: var(--surface-panel);
-  color: var(--text-primary);
-  box-shadow: var(--shadow-panel);
-  z-index: 10;
 }
 
 .title {

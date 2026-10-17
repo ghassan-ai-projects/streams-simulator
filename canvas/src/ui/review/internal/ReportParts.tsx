@@ -3,6 +3,8 @@ import type { ReactNode } from "react";
 import cells from "./ReportTable.module.css";
 import styles from "./ReportParts.module.css";
 
+type Column = "clock" | "id" | "label" | "effector" | "outcome" | "text" | "number";
+
 export type Cell = string | { readonly text: string; readonly title: string };
 
 export function Section({
@@ -27,7 +29,7 @@ export function Section({
 
 export interface RowsProps {
   readonly rows: readonly (readonly Cell[])[];
-  readonly columns: readonly string[];
+  readonly columns: readonly Column[];
   readonly headers: readonly string[];
   readonly empty?: string;
   readonly current?: number;
@@ -39,7 +41,7 @@ function Row({
   current,
 }: {
   readonly row: readonly Cell[];
-  readonly columns: readonly string[];
+  readonly columns: readonly Column[];
   readonly current: boolean;
 }) {
   return (

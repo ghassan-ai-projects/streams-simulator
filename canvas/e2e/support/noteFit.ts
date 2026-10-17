@@ -10,7 +10,7 @@ export function noteProblems(atLeast = 1): Audit {
   groups.forEach((node) => {
     const own = node.getBoundingClientRect();
     const name = node.getAttribute("aria-label") ?? "";
-    node.querySelectorAll<HTMLElement>("[class*='note'], [class*='note'] *").forEach((element) => {
+    node.querySelectorAll<HTMLElement>('[data-part="note"], [data-part="note"] *').forEach((element) => {
       const cut = element.scrollWidth > element.clientWidth + 1 || element.scrollHeight > element.clientHeight + 1;
       if (visible(element) && cut) problems.push(`${name}: cut ${element.textContent.slice(0, 40)}`);
     });

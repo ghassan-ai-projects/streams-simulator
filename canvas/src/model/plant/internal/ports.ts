@@ -26,7 +26,7 @@ const families: Readonly<Record<string, Family>> = {
   wet_bulb_temp: "env",
 };
 
-// Look-alike hues never share a mark: the greys (env, signal) and the warm pair (temp, heat) split, so hue and mark both carry the family.
+// Look-alike hues never share a mark, so hue and mark both carry the family.
 const shapes: Readonly<Record<Family, Shape>> = {
   air: "circle",
   water: "circle",

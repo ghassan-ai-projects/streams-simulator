@@ -21,8 +21,6 @@
   --sidebar-width: 256px;
   --inspector-width: clamp(336px, 26vw, 460px);
   --motion-fast: 120ms;
-  --node-width: 232px;
-  --node-width-compact: 176px;
   color-scheme: light;
   --surface-canvas: #e9ecf1;
   --surface-panel: #ffffff;
@@ -48,7 +46,6 @@
   --status-warn-bg: rgb(138 82 0 / 12%);
   --status-alarm: #a8231b;
   --status-alarm-bg: rgb(168 35 27 / 12%);
-  --status-on-alarm: #ffffff;
   --status-truth: #6a3fc8;
   --status-truth-bg: rgb(106 63 200 / 12%);
   --grid-minor: rgb(15 23 42 / 4%);
@@ -67,10 +64,7 @@
   --cat-prod: #7d6648;
   --cat-elec: #6a7210;
   --cat-env: #5f6774;
-  --wire-dim: 1;
   --wire-off-opacity: 0.8;
-  --wire-dim-width: 1.25px;
-  --node-dim: 0.8;
   --shadow-panel: 0 4px 14px rgb(15 23 42 / 12%), 0 1px 2px rgb(15 23 42 / 10%);
   --scrim: rgb(15 23 42 / 32%);
   --scroll-shadow: rgb(15 23 42 / 14%);
@@ -110,7 +104,6 @@
   --status-warn-bg: rgb(231 162 59 / 12%);
   --status-alarm: #ff6b5e;
   --status-alarm-bg: rgb(255 107 94 / 12%);
-  --status-on-alarm: #1a0605;
   --status-truth: #b48cff;
   --status-truth-bg: rgb(180 140 255 / 12%);
   --grid-minor: rgb(255 255 255 / 3%);
@@ -129,10 +122,7 @@
   --cat-prod: #a08a6a;
   --cat-elec: #a7b34a;
   --cat-env: #7f8898;
-  --wire-dim: 0.6;
   --wire-off-opacity: 0.65;
-  --wire-dim-width: 2px;
-  --node-dim: 0.8;
   --shadow-panel: 0 6px 18px rgb(0 0 0 / 45%), 0 1px 2px rgb(0 0 0 / 40%);
   --scrim: rgb(0 0 0 / 55%);
   --scroll-shadow: rgb(0 0 0 / 55%);

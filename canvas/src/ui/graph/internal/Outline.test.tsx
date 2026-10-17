@@ -1,12 +1,13 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { beforeAll, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { parsePlant } from "../../../model/plant";
+import { stubScrollIntoView, stubScrollMetrics } from "../../../test/dom";
 import { domain } from "../../../test/plantFixture";
 import { Outline } from "./Outline";
 
 describe("outline rail", () => {
-  beforeAll(() => {
-    Element.prototype.scrollIntoView = vi.fn();
+  beforeEach(() => {
+    stubScrollIntoView();
   });
 
   it("marks the selection as current and says how many instances a filter keeps", () => {
@@ -121,12 +122,10 @@ describe("outline rail", () => {
     render(<Outline plant={parsePlant(domain)} hall={null} selected={null} onSelect={vi.fn()} />);
     const outline = screen.getByRole("navigation", { name: "Outline" });
     expect(outline).not.toHaveAttribute("data-cut");
-    Object.defineProperty(outline, "clientHeight", { value: 200, configurable: true });
-    Object.defineProperty(outline, "scrollHeight", { value: 500, configurable: true });
-    Object.defineProperty(outline, "scrollTop", { value: 0, configurable: true });
+    stubScrollMetrics(outline, 200, 500, 0);
     fireEvent.scroll(outline);
     expect(outline).toHaveAttribute("data-cut", "true");
-    Object.defineProperty(outline, "scrollTop", { value: 300, configurable: true });
+    stubScrollMetrics(outline, 200, 500, 300);
     fireEvent.scroll(outline);
     expect(outline).not.toHaveAttribute("data-cut");
   });

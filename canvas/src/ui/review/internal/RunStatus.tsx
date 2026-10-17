@@ -17,15 +17,15 @@ const badgeIcons = {
   incomplete: TriangleAlert,
 } as const;
 
-function useNow(running: boolean): number {
-  const [now, setNow] = useState(() => Date.now());
+function useNow(now: () => number, running: boolean): number {
+  const [current, setCurrent] = useState(now);
   useInterval(
     () => {
-      setNow(Date.now());
+      setCurrent(now());
     },
     running ? 1000 : null,
   );
-  return now;
+  return current;
 }
 
 function Chip({ badge, label, title }: { readonly badge: Badge; readonly label: string; readonly title: string }) {
@@ -77,9 +77,9 @@ function Mode({ report }: { readonly report: Report }) {
   );
 }
 
-export function Status({ state }: { readonly state: ReviewState }) {
-  const now = useNow(state.report.phase === "loading" || state.verified.phase === "loading");
-  const elapsed = Math.max(0, Math.round((now - state.openedAt) / 1000));
+export function Status({ state, now }: { readonly state: ReviewState; readonly now: () => number }) {
+  const current = useNow(now, state.report.phase === "loading" || state.verified.phase === "loading");
+  const elapsed = Math.max(0, Math.round((current - state.openedAt) / 1000));
   if (state.report.phase !== "ready")
     return <ReportPending loading={state.report.phase === "loading"} elapsed={elapsed} />;
   const report = state.report.value;

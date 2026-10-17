@@ -44,6 +44,7 @@
 
 .react-flow__edge.family-heat .react-flow__edge-path {
   stroke: var(--port-heat);
+  stroke-width: 2.6;
 }
 
 .family-power {
@@ -60,6 +61,7 @@
 
 .react-flow__edge.family-signal .react-flow__edge-path {
   stroke: var(--port-signal);
+  stroke-dasharray: 7 5;
 }
 
 .family-env {
@@ -68,6 +70,7 @@
 
 .react-flow__edge.family-env .react-flow__edge-path {
   stroke: var(--port-env);
+  stroke-dasharray: 2 4;
 }
 
 .family-none {
@@ -78,18 +81,6 @@
   stroke: var(--border-strong);
   stroke-width: 1.6;
   vector-effect: non-scaling-stroke;
-}
-
-.react-flow__edge.family-signal .react-flow__edge-path {
-  stroke-dasharray: 7 5;
-}
-
-.react-flow__edge.family-env .react-flow__edge-path {
-  stroke-dasharray: 2 4;
-}
-
-.react-flow__edge.family-heat .react-flow__edge-path {
-  stroke-width: 2.6;
 }
 
 .react-flow__edge.selected .react-flow__edge-path,
@@ -104,21 +95,16 @@
 
 .react-flow__edge-text {
   fill: var(--text-secondary);
-  font: 600 11px var(--font-mono);
+  font: 600 var(--text-xs) var(--font-mono);
 }
 
 .react-flow,
 :root {
   --xy-background-color: var(--surface-canvas);
   --xy-node-boxshadow-selected: none;
-  --xy-controls-button-background-color: var(--surface-panel);
-  --xy-controls-button-background-color-hover: var(--surface-hover);
-  --xy-controls-button-color: var(--text-primary);
-  --xy-controls-button-border-color: var(--border-subtle);
   --xy-minimap-background-color: var(--surface-sunken);
   --xy-minimap-mask-background-color: rgb(127 127 127 / 12%);
   --xy-minimap-node-background-color: var(--border-default);
-  --xy-attribution-background-color: transparent;
 }
 
 .react-flow__node:focus-visible {

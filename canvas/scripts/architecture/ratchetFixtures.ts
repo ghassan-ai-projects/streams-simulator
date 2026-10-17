@@ -1,5 +1,5 @@
 import { parseRegister } from "./register.ts";
-import { registerRegressions } from "./ratchet.ts";
+import { registerRegressions, shallowProblems } from "./ratchet.ts";
 import type { Register } from "./model.ts";
 
 interface Cap {
@@ -24,7 +24,6 @@ interface Shape {
   readonly caps?: Readonly<Record<string, Cap>>;
   readonly globalCaps?: Readonly<Record<string, Allowance>>;
   readonly vendorFiles?: readonly string[];
-  readonly globalOwners?: readonly string[];
   readonly debt?: readonly Debt[];
 }
 
@@ -39,10 +38,18 @@ export function runRatchetFixtures(): string[] {
     ...validMoveFixture(),
     ...unrelatedMoveFixture(),
     ...vendorCapFixture(),
+    ...vendorTighterFixture(),
     ...vendorSourceFixture(),
     ...crossLayerFixture(),
-    ...movedOwnerFixture(),
+    ...shallowFixture(),
   ];
+}
+
+function shallowFixture(): string[] {
+  const failing = [shallowProblems("true"), shallowProblems(null)];
+  const passing = shallowProblems("false");
+  if (failing.every((problems) => problems.length === 1) && passing.length === 0) return [];
+  return ["ratchet a shallow or unknown clone must fail loudly and a full clone must pass"];
 }
 
 function validMoveFixture(): string[] {
@@ -119,6 +126,16 @@ function vendorCapFixture(): string[] {
   ]);
 }
 
+function vendorTighterFixture(): string[] {
+  const base = register({ globalCaps: { [oldControls]: { global: 0, important: 2, phase } } });
+  const tighter = register({
+    extracted: true,
+    globalCaps: { [vendor]: { global: 6, important: 0, phase } },
+    vendorFiles: [vendor],
+  });
+  return compare("vendor registration may be tighter than its approved allowance", base, tighter, []);
+}
+
 function vendorSourceFixture(): string[] {
   const noSourceVendor = register({
     extracted: true,
@@ -159,20 +176,6 @@ function crossLayerFixture(): string[] {
   ]);
 }
 
-function movedOwnerFixture(): string[] {
-  const oldShared = "src/ui/shared.module.css";
-  const newShared = "src/ui/graph/internal/shared.module.css";
-  const base = register({ globalOwners: [oldShared] });
-  const sameName = register({ extracted: true, globalOwners: [newShared] });
-  const otherName = register({ extracted: true, globalOwners: ["src/ui/graph/internal/other.module.css"] });
-  return [
-    ...compare("an owner moved to another module keeps its basename", base, sameName, []),
-    ...compare("an owner under a new name is a new owner", base, otherName, [
-      "global stylesheet allow-list gained src/ui/graph/internal/other.module.css",
-    ]),
-  ];
-}
-
 function register(shape: Shape): Register {
   const graph = shape.extracted === true;
   return parseRegister(
@@ -182,7 +185,6 @@ function register(shape: Shape): Register {
       modules: fixtureModules(graph, shape.graphLayer),
       css: {
         globalEntrypoints: [],
-        globalOwners: shape.globalOwners ?? [],
         vendorFiles: shape.vendorFiles ?? [],
         defaultCap: 300,
         caps: shape.caps ?? {},

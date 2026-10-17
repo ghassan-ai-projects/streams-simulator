@@ -1,7 +1,7 @@
 import { Keyboard } from "lucide-react";
 import type { RefObject } from "react";
 import { Fragment, useEffect, useRef, useState } from "react";
-import { inTextField } from "../../primitives";
+import { cx, inTextField, shared } from "../../primitives";
 import styles from "./KeyHelp.module.css";
 import type { Route } from "../../../model/shell";
 import { keyGroups } from "./keyList";
@@ -95,7 +95,7 @@ function KeyDialog({ title, forget, close, screen }: DialogProps) {
     <dialog
       open
       tabIndex={-1}
-      className={styles.dialog}
+      className={cx(shared.dialog, styles.dialog)}
       aria-labelledby="keys-title"
       aria-modal="false"
       onBlur={(event) => {
@@ -131,7 +131,7 @@ export function KeyHelp({ screen }: { readonly screen: Route["screen"] }) {
           setOpen(true);
         }}
       />
-      {open && <div className={styles.scrim} aria-hidden="true" onClick={close} />}
+      {open && <div className={shared.scrim} aria-hidden="true" onClick={close} />}
       {open && <KeyDialog title={title} forget={forget} close={close} screen={screen} />}
     </>
   );

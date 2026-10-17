@@ -3,7 +3,7 @@ import type { CssCap, CssSpec, DebtEntry, EmittedSpec, ModuleSpec, Register, Rul
 
 type Json = Record<string, unknown>;
 
-export class RegisterError extends Error {}
+class RegisterError extends Error {}
 
 function record(value: unknown, where: string): Json {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
@@ -44,7 +44,7 @@ function optional<K extends string>(
   return value === undefined ? {} : ({ [key]: value } as Partial<Record<K, readonly string[]>>);
 }
 
-function moduleSpec(value: unknown, where: string, strict: boolean): ModuleSpec {
+function moduleSpec(value: unknown, where: string): ModuleSpec {
   const source = record(value, where);
   const entrypoint = source.entrypoint;
   const folders = optionalStrings(source, "folders", where);
@@ -53,8 +53,8 @@ function moduleSpec(value: unknown, where: string, strict: boolean): ModuleSpec 
   const callers = optionalStrings(source, "callers", where);
   return {
     kind: text(source.kind, `${where}.kind`),
-    layer: source.layer === undefined && !strict ? "" : text(source.layer, `${where}.layer`),
-    lifetime: source.lifetime === undefined && !strict ? "" : text(source.lifetime, `${where}.lifetime`),
+    layer: text(source.layer, `${where}.layer`),
+    lifetime: text(source.lifetime, `${where}.lifetime`),
     responsibility: text(source.responsibility, `${where}.responsibility`),
     ...optional("folders", folders),
     ...optional("files", files),
@@ -65,10 +65,10 @@ function moduleSpec(value: unknown, where: string, strict: boolean): ModuleSpec 
   };
 }
 
-function moduleMap(value: unknown, where: string, strict: boolean): Readonly<Record<string, ModuleSpec>> {
+function moduleMap(value: unknown, where: string): Readonly<Record<string, ModuleSpec>> {
   const source = record(value, where);
   const out: Record<string, ModuleSpec> = {};
-  for (const [key, entry] of Object.entries(source)) out[key] = moduleSpec(entry, `${where}.${key}`, strict);
+  for (const [key, entry] of Object.entries(source)) out[key] = moduleSpec(entry, `${where}.${key}`);
   return out;
 }
 
@@ -114,7 +114,6 @@ function cssSpec(value: unknown, where: string): CssSpec {
   const source = record(value, where);
   return {
     globalEntrypoints: strings(source.globalEntrypoints, `${where}.globalEntrypoints`),
-    globalOwners: strings(source.globalOwners, `${where}.globalOwners`),
     vendorFiles: strings(source.vendorFiles, `${where}.vendorFiles`),
     defaultCap: count(source.defaultCap, `${where}.defaultCap`),
     caps: caps(source.caps, `${where}.caps`),
@@ -193,29 +192,12 @@ function debtList(value: unknown, where: string): readonly DebtEntry[] {
   });
 }
 
-function targetMap(value: unknown, where: string): Readonly<Record<string, string>> {
-  const source = record(value, where);
-  const out: Record<string, string> = {};
-  for (const [key, entry] of Object.entries(source)) out[key] = text(entry, `${where}.${key}`);
-  return out;
-}
-
-function featureMap(value: unknown, where: string): Readonly<Record<string, string>> {
-  const source = record(value, where);
-  const out: Record<string, string> = {};
-  for (const [key, entry] of Object.entries(source)) out[key] = text(entry, `${where}.${key}`);
-  return out;
-}
-
 export function parseRegister(value: unknown, where: string): Register {
   const source = record(value, where);
   return {
     version: count(source.version, `${where}.version`),
     source: text(source.source, `${where}.source`),
-    modules: moduleMap(source.modules, `${where}.modules`, true),
-    targetModules: moduleMap(source.targetModules ?? {}, `${where}.targetModules`, false),
-    targets: targetMap(source.targets ?? {}, `${where}.targets`),
-    features: featureMap(source.features ?? {}, `${where}.features`),
+    modules: moduleMap(source.modules, `${where}.modules`),
     testSupport: strings(source.testSupport ?? [], `${where}.testSupport`),
     css: cssSpec(source.css, `${where}.css`),
     floors: floors(source.floors ?? {}, `${where}.floors`),

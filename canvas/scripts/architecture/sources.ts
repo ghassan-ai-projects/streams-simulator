@@ -31,7 +31,7 @@ export function walk(root: string, dir = root): string[] {
   return out;
 }
 
-export function isTestFile(path: string): boolean {
+function isTestFile(path: string): boolean {
   return /\.test\.tsx?$/.test(path) || path.startsWith("src/test/");
 }
 
@@ -75,7 +75,7 @@ export function readSources(register: Register): SourceFile[] {
     .map((path) => parseSource(path, readFileSync(path, "utf8"), register));
 }
 
-export function parseSource(path: string, text: string, register: Register): SourceFile {
+function parseSource(path: string, text: string, register: Register): SourceFile {
   return {
     path,
     text,
@@ -128,8 +128,7 @@ function ref(file: SourceFile, register: Register, specifier: string, typeOnly: 
 }
 
 function isTypeOnlyImport(clause: ts.ImportClause | undefined): boolean {
-  // eslint-disable-next-line @typescript-eslint/no-deprecated -- this TypeScript exposes no phaseModifier yet
-  return clause?.isTypeOnly === true;
+  return clause?.phaseModifier === ts.SyntaxKind.TypeKeyword;
 }
 
 function isTypeOnlyExport(statement: ts.ExportDeclaration): boolean {
@@ -150,7 +149,7 @@ export function identifiersIn(node: ts.Node): ts.Identifier[] {
   return descendantsOf(node).filter(ts.isIdentifier);
 }
 
-export function descendantsOf(node: ts.Node): ts.Node[] {
+function descendantsOf(node: ts.Node): ts.Node[] {
   const out: ts.Node[] = [];
   const visit = (current: ts.Node): void => {
     out.push(current);

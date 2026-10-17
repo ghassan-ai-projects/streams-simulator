@@ -1,7 +1,7 @@
 import { isDirty, isSaving } from "../../../app/editor";
 import type { EditorSession } from "../../../app/editor";
 import type { NavigationStore } from "../../../app/shell";
-import { shared, useStore } from "../../primitives";
+import { cx, shared, useStore } from "../../primitives";
 import { useFocusOnMount } from "../../primitives";
 import styles from "./Editor.module.css";
 import leave from "./LeaveDialog.module.css";
@@ -54,10 +54,10 @@ function LeaveButtons({ editor, navigation }: Props) {
 
 function LeaveDialog({ title, editor, navigation }: Props & { readonly title: string }) {
   return (
-    <div className={leave.scrim}>
+    <div className={shared.scrim}>
       <dialog
         open
-        className={leave.dialog}
+        className={cx(shared.dialog, leave.dialog)}
         aria-modal="false"
         aria-labelledby="leave-title"
         aria-describedby="leave-text"

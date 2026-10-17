@@ -120,10 +120,8 @@ describe("plant maker", () => {
     });
     expect(fake.writes).toEqual([]);
     fake.actions.set("component.new", success({ composition: copied }));
-    fake.writeOutcomes.set(
-      "compositions/lab-two.composition.json",
-      failed(cannedFailure("conflict", 409, "changed on disk")),
-    );
+    fake.persistWrites();
+    fake.addFile("compositions/lab-two.composition.json", copied, "taken");
     expect(await maker.create({ kind: "file", path: base }, "lab-two", "Lab two", "copy")).toMatchObject({
       ok: false,
       failure: { kind: "conflict", diagnostic: { displayCode: "plant_exists" } },

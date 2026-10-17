@@ -5,6 +5,7 @@ import { failure as failed } from "../../../test/outcome";
 import { parsePlant } from "../../../model/plant";
 import type { FakeBridge } from "../../../test/fakeBridge";
 import { cannedFailure } from "../../../test/fakeBridge";
+import { stubScrollMetrics } from "../../../test/dom";
 import { HeldBridge } from "../../../test/heldBridge";
 import { launchBridge, launchHarness } from "../../../test/launchFixture";
 import { domain } from "../../../test/plantFixture";
@@ -32,9 +33,7 @@ describe("launch panel", () => {
     expect(region).not.toHaveAttribute("data-cut");
     const metrics = (client: number, total: number, top: number) => {
       if (region === null) return;
-      Object.defineProperty(region, "clientHeight", { value: client, configurable: true });
-      Object.defineProperty(region, "scrollHeight", { value: total, configurable: true });
-      Object.defineProperty(region, "scrollTop", { value: top, configurable: true });
+      stubScrollMetrics(region, client, total, top);
       fireEvent.scroll(region);
     };
     metrics(200, 500, 0);
@@ -193,7 +192,6 @@ describe("launch panel picking", () => {
     vi.spyOn(Math, "random").mockReturnValue(0.5);
     fireEvent.click(screen.getByRole("button", { name: "Pick a new seed" }));
     expect(screen.getByLabelText("Seed")).toHaveValue("500000");
-    vi.restoreAllMocks();
   });
 });
 

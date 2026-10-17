@@ -1,7 +1,7 @@
 import { deferred } from "./deferred";
 import type { Canned } from "./fakeFailures";
 import { FakeBridge } from "./fakeBridge";
-import { advanced, launchBridge } from "./launchFixture";
+import { advanced, launchActions } from "./launchFixture";
 
 export class HeldBridge extends FakeBridge {
   private held: (() => void) | null = null;
@@ -9,7 +9,7 @@ export class HeldBridge extends FakeBridge {
 
   constructor() {
     super();
-    launchBridge().actions.forEach((outcome, name) => this.actions.set(name, outcome));
+    launchActions().forEach((outcome, name) => this.actions.set(name, outcome));
     this.handlers.set("clock.advance", () => this.advance());
   }
 

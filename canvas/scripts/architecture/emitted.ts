@@ -1,5 +1,4 @@
 import { readFileSync } from "node:fs";
-import { relative, resolve } from "node:path";
 import { globSync } from "node:fs";
 import type { Violation } from "./model.ts";
 import { violation } from "./model.ts";
@@ -71,8 +70,4 @@ function countRule(path: string, what: string, actual: number, expected: number)
 
 function count(text: string, pattern: RegExp): number {
   return [...text.matchAll(pattern)].length;
-}
-
-export function distDirectory(cwd: string): string {
-  return relative(cwd, resolve(cwd, "dist")) === "" ? "dist" : "dist";
 }

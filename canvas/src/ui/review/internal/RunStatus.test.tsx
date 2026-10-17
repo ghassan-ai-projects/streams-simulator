@@ -6,6 +6,7 @@ import { report } from "../../../test/runFixture";
 import { Banners, Status } from "./RunStatus";
 
 const parsed = report;
+const now = () => 0;
 
 describe("run status", () => {
   it("badges a divergent replay Not verified with no warning banner", () => {
@@ -17,7 +18,7 @@ describe("run status", () => {
     });
     render(
       <>
-        <Status state={divergent} />
+        <Status state={divergent} now={now} />
         <Banners state={divergent} />
       </>,
     );
@@ -30,14 +31,14 @@ describe("run status", () => {
     const unfinished = state({
       report: { phase: "ready", value: { ...parsed, complete: false, incompleteReason: "the world was destroyed" } },
     });
-    render(<Status state={unfinished} />);
+    render(<Status state={unfinished} now={now} />);
     expect(screen.getByRole("status")).toHaveTextContent("Did not finish");
     expect(screen.getByText("the world was destroyed")).toBeInTheDocument();
   });
 
   it("names a run the listing still shows as open Did not finish, never not finished", () => {
     const open = state({ report: { phase: "ready", value: { ...parsed, ended: false, complete: false } } });
-    render(<Status state={open} />);
+    render(<Status state={open} now={now} />);
     expect(screen.getByRole("status")).toHaveTextContent("Did not finish");
     expect(screen.queryByText("not finished")).toBeNull();
   });

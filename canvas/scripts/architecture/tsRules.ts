@@ -1,5 +1,5 @@
 import ts from "typescript";
-import type { ModuleSpec, Register, Violation } from "./model.ts";
+import type { Register, Violation } from "./model.ts";
 import { violation } from "./model.ts";
 import type { SourceFile } from "./sources.ts";
 import { descendants, importsOf, isProduction, lineOf } from "./sources.ts";
@@ -82,62 +82,25 @@ function entrypointRule(
   return [];
 }
 
-export function targetRules(files: readonly SourceFile[], register: Register): Violation[] {
-  const out: Violation[] = [];
-  for (const [path, target] of Object.entries(register.targets)) {
-    if (register.targetModules[target] === undefined) {
-      out.push(violation("target-owner", path, 1, `target ${target} is not a registered target module`));
-    }
-  }
-  for (const file of files) {
-    if (targetOf(file.path, register) === null) {
-      out.push(violation("target-missing", file.path, 1, "the file has no target module assignment"));
-    }
-  }
-  return out;
+export function umbrellaRules(files: readonly SourceFile[], register: Register): Violation[] {
+  const umbrellas = umbrellaModules(register);
+  return files
+    .filter((file) => umbrellas.has(file.module))
+    .map((file) =>
+      violation("umbrella-file", file.path, 1, `${file.module} only groups modules; the file belongs in one`),
+    );
 }
 
-function targetOf(path: string, register: Register): string | null {
-  if (register.targets[path] !== undefined) return register.targets[path] ?? null;
-  const folders = Object.keys(register.targets)
-    .filter((folder) => path.startsWith(`${folder}/`))
-    .sort((a, b) => b.length - a.length);
-  return folders[0] === undefined ? null : (register.targets[folders[0]] ?? null);
+function umbrellaModules(register: Register): Set<string> {
+  const entries = Object.entries(register.modules);
+  const groups = entries.filter(([, outer]) =>
+    entries.some(([, inner]) => nestsUnder(inner.folders ?? [], outer.folders ?? [])),
+  );
+  return new Set(groups.map(([name]) => name));
 }
 
-/** The accepted dependency contract, enforced for every module that has been extracted. */
-/** Foundations and the composition root may import whatever they wire; only product modules are bounded. */
-function bounded(owner: ModuleSpec): boolean {
-  return owner.kind !== "composition" && owner.kind !== "test-support";
-}
-
-export function targetEdgeRules(files: readonly SourceFile[], register: Register): Violation[] {
-  const out: Violation[] = [];
-  for (const file of files) {
-    const from = targetOf(file.path, register);
-    const contract = from === null ? undefined : contractFor(from, register, file);
-    if (from === null || contract === undefined) continue;
-    out.push(...edgeViolations(file, from, contract, register));
-  }
-  return out;
-}
-
-function contractFor(from: string, register: Register, file: SourceFile): ModuleSpec | undefined {
-  const owner = register.modules[from];
-  if (owner === undefined || !bounded(owner) || file.isTest) return undefined;
-  return register.targetModules[from];
-}
-
-function edgeViolations(file: SourceFile, from: string, contract: ModuleSpec, register: Register): Violation[] {
-  const out: Violation[] = [];
-  for (const imported of importsOf(file, register)) {
-    if (imported.target === null) continue;
-    const to = targetOf(imported.target, register);
-    if (to === null || to === from || register.testSupport.includes(to)) continue;
-    if ((contract.mayImport ?? []).includes(to)) continue;
-    out.push(violation("target-edge", file.path, imported.line, `${from} may not import ${to}`, imported.target));
-  }
-  return out;
+function nestsUnder(inner: readonly string[], outer: readonly string[]): boolean {
+  return inner.some((folder) => outer.some((own) => folder.startsWith(`${own}/`)));
 }
 
 export function callerRules(files: readonly SourceFile[], register: Register): Violation[] {

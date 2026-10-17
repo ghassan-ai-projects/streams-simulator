@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { bridgeTransport, respond } from "../../../test/bridgeTransport";
+import { bridgeTransport } from "../../../test/bridgeTransport";
+import { respond } from "../../../test/fakeWire";
 import { request } from "./http";
 import type { RequestFailure, WireProblem } from "./http";
 

@@ -6,7 +6,7 @@ interface GateFile {
   readonly compare: (before: string, after: string) => string[];
 }
 
-export const gateFiles: readonly GateFile[] = [
+const gateFiles: readonly GateFile[] = [
   { path: "vitest.config.ts", compare: coverageCompare },
   { path: "eslint.config.js", compare: eslintCompare },
   { path: ".jscpd.json", compare: cloneCompare },

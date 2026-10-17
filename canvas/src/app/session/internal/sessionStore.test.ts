@@ -21,7 +21,7 @@ async function unpaired() {
 describe("session store", () => {
   it("starts paired when the bridge already knows this browser", async () => {
     const bridge = new FakeBridge();
-    bridge.paired = true;
+    bridge.sessionOutcome = success(true);
     const store = new SessionStore(bridge.session);
     expect(store.snapshot().phase).toBe("checking");
     await store.check();
@@ -98,7 +98,7 @@ describe("session store", () => {
 
   it("ignores typing and pairing outside the unpaired phase", async () => {
     const bridge = new FakeBridge();
-    bridge.paired = true;
+    bridge.sessionOutcome = success(true);
     bridge.pairOutcomes.push(success(true));
     const store = new SessionStore(bridge.session);
     await store.check();

@@ -1,4 +1,3 @@
-/* React Flow's own classes, which only exist while a connection is being made. */
 .dot:global(.connectable) {
   cursor: crosshair;
 }
@@ -17,6 +16,6 @@
 }
 
 .minimap:global(.react-flow__panel) {
-  position: static !important;
-  margin: 0 var(--space-3) !important;
+  position: static;
+  margin: 0 var(--space-3);
 }

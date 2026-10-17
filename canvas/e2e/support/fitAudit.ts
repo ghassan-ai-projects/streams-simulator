@@ -3,8 +3,6 @@ import type { Audit } from "./audit";
 
 export async function headingInside(frame: Locator, name: string): Promise<boolean> {
   const outer = await frame.boundingBox();
-  // The heading's box is the panel's content box even when nowrap text runs past it,
-  // so the check measures the painted text runs, not the element box.
   const painted = await frame.getByText(name).evaluate((element) => {
     const range = document.createRange();
     range.selectNodeContents(element);

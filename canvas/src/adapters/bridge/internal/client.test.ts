@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { bridgeTransport, respond } from "../../../test/bridgeTransport";
+import { bridgeTransport } from "../../../test/bridgeTransport";
+import { respond } from "../../../test/fakeWire";
 import { bridgeAdapter } from "..";
 
 function answering(result: unknown) {
@@ -159,20 +160,5 @@ describe("plant and editor gateways", () => {
       ok: false,
       failure: { kind: "unreadable" },
     });
-  });
-});
-
-describe("review gateway", () => {
-  it("fails the follower when the stream closes with an error", () => {
-    const t = bridgeTransport(() => respond(200, {}));
-    const failed = { entry: () => undefined, closed: () => undefined, failed: () => undefined };
-    let count = 0;
-    bridgeAdapter(t).review.follow("w-1", { ...failed, failed: () => (count += 1) });
-    const source = t.events.mock.results[0]?.value as { readyState: number };
-    t.listeners.get("error")?.();
-    expect(count).toBe(1);
-    source.readyState = 0;
-    t.listeners.get("error")?.();
-    expect(count).toBe(1);
   });
 });

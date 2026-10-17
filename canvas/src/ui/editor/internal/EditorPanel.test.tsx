@@ -211,10 +211,10 @@ describe("plant editor panel", () => {
     act(() => {
       editor.edit((doc) => ({ ...doc, title: "Lab two" }));
     });
-    fake.writeOutcomes.set(path, failed(cannedFailure("conflict", 409, "the file changed on disk")));
+    fake.persistWrites();
+    fake.addFile(path, doc, "c2");
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
-    expect(await screen.findByText("Not saved: the file changed on disk")).toBeInTheDocument();
-    fake.writeOutcomes.delete(path);
+    expect(await screen.findByText(`Not saved: ${path} changed on disk`)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Reload from disk" }));
     expect(await screen.findByText("No changes")).toBeInTheDocument();
   });

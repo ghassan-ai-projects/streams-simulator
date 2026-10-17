@@ -59,7 +59,7 @@ test("a large plant opens no smaller than 40 % and shows every kind in full", as
   await expect
     .poll(async () => Number(await graph.evaluate((element) => getComputedStyle(element).getPropertyValue("--zoom"))))
     .toBeGreaterThanOrEqual(0.4);
-  const kinds = page.locator(".react-flow__node-instance [class*='kind']");
+  const kinds = page.locator('.react-flow__node-instance [data-part="kind"]');
   await expect(kinds.first()).toBeVisible();
   const cut = await kinds.evaluateAll((elements) =>
     elements.filter(
@@ -93,10 +93,10 @@ function titleProblems(atLeast = 1): { considered: number; problems: string[]; m
     }
     return found;
   };
-  const titles = [...document.querySelectorAll<HTMLElement>("[class*='frameTitle_']")];
+  const titles = [...document.querySelectorAll<HTMLElement>('[data-part="frame-title"]')];
   const problems = titles.flatMap((title) => {
     const box = title.getBoundingClientRect();
-    const parts = ["frameName", "frameCount"].map((name) => textBoxes(title.querySelector(`[class*='${name}']`)));
+    const parts = ["frame-name", "frame-count"].map((part) => textBoxes(title.querySelector(`[data-part="${part}"]`)));
     const all = parts.flat();
     const name = title.getAttribute("title") ?? "";
     const spread = Math.max(...all.map((part) => part.bottom)) - Math.min(...all.map((part) => part.bottom));
@@ -117,5 +117,5 @@ test("an area header is one line at every zoom and keeps the last word of its na
     await page.keyboard.press("-");
     await expect.poll(async () => guard(await page.evaluate(titleProblems, 3))).toEqual([]);
   }
-  await expect(page.locator("[class*='nameTail']").filter({ hasText: "house" })).toBeVisible();
+  await expect(page.locator('[data-part="name-tail"]').filter({ hasText: "house" })).toBeVisible();
 });

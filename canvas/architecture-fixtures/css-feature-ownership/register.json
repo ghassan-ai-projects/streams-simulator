@@ -64,33 +64,37 @@
       ],
       "mayImportAny": true,
       "entrypoint": null
-    }
-  },
-  "targetModules": {
-    "model": {
-      "kind": "model",
-      "mayImport": [],
-      "responsibility": "values"
     },
-    "test": {
-      "kind": "test-support",
+    "ui/a": {
+      "kind": "ui",
+      "layer": "ui",
+      "lifetime": "components",
+      "responsibility": "src/ui/a",
+      "folders": [
+        "src/ui/a"
+      ],
+      "mayImport": [
+        "ui/b"
+      ],
+      "entrypoint": null
+    },
+    "ui/b": {
+      "kind": "ui",
+      "layer": "ui",
+      "lifetime": "components",
+      "responsibility": "src/ui/b",
+      "folders": [
+        "src/ui/b"
+      ],
       "mayImport": [],
-      "responsibility": "drivers"
+      "entrypoint": null
     }
-  },
-  "targets": {
-    "src": "model"
-  },
-  "features": {
-    "src/ui/a": "a",
-    "src/ui/b": "b"
   },
   "testSupport": [
     "test"
   ],
   "css": {
     "globalEntrypoints": [],
-    "globalOwners": [],
     "vendorFiles": [],
     "defaultCap": 300,
     "caps": {},

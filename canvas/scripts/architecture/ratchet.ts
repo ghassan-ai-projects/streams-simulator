@@ -1,18 +1,19 @@
 import type { ModuleSpec, Register } from "./model.ts";
 import { parseRegister } from "./register.ts";
-import { introducingCommit, mergeBase, show } from "./git.ts";
-import {
-  approvedVendorAllowanceMove,
-  basename,
-  moved,
-  movedBetweenModules,
-  movedAllowance,
-  movedDebt,
-} from "./ratchetMoves.ts";
+import { introducingCommit, isShallowRepository, mergeBase, show } from "./git.ts";
+import { approvedVendorAllowanceMove, moved, movedAllowance, movedDebt } from "./ratchetMoves.ts";
 
 export interface RatchetBase {
   readonly commit: string;
   readonly label: string;
+}
+
+export function shallowProblems(flag: string | null = isShallowRepository()): string[] {
+  if (flag === "false") return [];
+  const state = flag === "true" ? "shallow" : "of unknown depth";
+  return [
+    `the repository is ${state}: the ratchet cannot find the commit that introduced the register (fetch full history)`,
+  ];
 }
 
 export function registerBase(path: string, reference = "main"): RatchetBase | null {
@@ -34,7 +35,6 @@ export function registerRegressions(previous: Register, current: Register): stri
     ...capRegressions(previous, current),
     ...allowListRegressions(previous, current),
     ...moduleRegressions(previous, current),
-    ...featureRegressions(previous, current),
     ...emittedRegressions(previous, current),
     ...probeRegressions(previous, current),
   ];
@@ -84,22 +84,6 @@ function nested(target: ModuleSpec, owner: ModuleSpec | undefined): boolean {
   if (owner === undefined) return false;
   const folders = owner.folders ?? [];
   return (target.folders ?? []).some((folder) => folders.some((own) => folder.startsWith(`${own}/`)));
-}
-
-function featureRegressions(previous: Register, current: Register): string[] {
-  const out: string[] = [];
-  for (const [folder, owner] of Object.entries(previous.features)) {
-    const now = current.features[folder];
-    if (now === undefined) out.push(`feature folder ${folder} is gone`);
-    else if (now !== owner) out.push(`feature folder ${folder} moved from ${owner} to ${now}`);
-  }
-  for (const folder of Object.keys(current.features)) {
-    if (previous.features[folder] !== undefined) continue;
-    if (!Object.keys(previous.features).some((known) => folder.startsWith(`${known}/`))) {
-      out.push(`feature folder ${folder} is not narrower than a registered folder`);
-    }
-  }
-  return out;
 }
 
 function emittedRegressions(previous: Register, current: Register): string[] {
@@ -237,7 +221,6 @@ function allowListRegressions(previous: Register, current: Register): string[] {
   return [
     ...grew("boolean fact allow-list", previous.rules.booleanFactNames, current.rules.booleanFactNames),
     ...grew("fake-timer test allow-list", previous.rules.fakeTimerTests, current.rules.fakeTimerTests),
-    ...movedOwners(previous, current),
     ...grew("global entrypoint allow-list", previous.css.globalEntrypoints, current.css.globalEntrypoints),
     ...vendorAllowanceRegressions(previous, current),
     ...shrank("simulator action detection list", previous.rules.actionNames, current.rules.actionNames),
@@ -246,16 +229,6 @@ function allowListRegressions(previous: Register, current: Register): string[] {
     ...shrank("clock global list", previous.rules.clockGlobals, current.rules.clockGlobals),
     ...shrank("restricted ui import list", previous.rules.restrictedUiImports, current.rules.restrictedUiImports),
   ];
-}
-
-function movedOwners(previous: Register, current: Register): string[] {
-  const gone = previous.css.globalOwners.filter((path) => !current.css.globalOwners.includes(path));
-  const arrived = current.css.globalOwners.filter((path) => !previous.css.globalOwners.includes(path));
-  const fresh = arrived.filter(
-    (path) =>
-      !gone.some((old) => basename(old) === basename(path) && movedBetweenModules(previous, current, old, path)),
-  );
-  return fresh.map((path) => `global stylesheet allow-list gained ${path}`);
 }
 
 function vendorAllowanceRegressions(previous: Register, current: Register): string[] {

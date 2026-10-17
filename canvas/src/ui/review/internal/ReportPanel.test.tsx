@@ -1,6 +1,7 @@
 import { render, screen, within } from "@testing-library/react";
 import axe from "axe-core";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
+import { stubScrollIntoView } from "../../../test/dom";
 import { report } from "../../../test/runFixture";
 import { ReportPanel } from "./ReportPanel";
 
@@ -97,7 +98,7 @@ describe("report panel", () => {
   });
 
   it("marks the disturbance row the picked mark stands for, and no row otherwise", () => {
-    Element.prototype.scrollIntoView = vi.fn();
+    stubScrollIntoView();
     const parsed = report;
     const first = parsed.disturbances[0];
     if (first === undefined) throw new Error("fixture has no disturbance");

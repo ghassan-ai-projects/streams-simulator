@@ -66,32 +66,14 @@
       "entrypoint": null
     }
   },
-  "targetModules": {
-    "model": {
-      "kind": "model",
-      "mayImport": [],
-      "responsibility": "values"
-    },
-    "test": {
-      "kind": "test-support",
-      "mayImport": [],
-      "responsibility": "drivers"
-    }
-  },
-  "targets": {
-    "src": "model"
-  },
-  "features": {
-    "src/ui/a": "a",
-    "src/ui/b": "b"
-  },
   "testSupport": [
     "test"
   ],
   "css": {
     "globalEntrypoints": [],
-    "globalOwners": [],
-    "vendorFiles": ["src/ui/a/x.module.css"],
+    "vendorFiles": [
+      "src/ui/a/x.module.css"
+    ],
     "defaultCap": 300,
     "caps": {},
     "globalCaps": {

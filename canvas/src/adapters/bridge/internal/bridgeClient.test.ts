@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { bridgeTransport, respond } from "../../../test/bridgeTransport";
+import { bridgeTransport } from "../../../test/bridgeTransport";
+import { respond } from "../../../test/fakeWire";
 import { bridgeAdapter } from "..";
 
 describe("bridge adapter wiring", () => {
@@ -85,29 +86,40 @@ describe("bridge adapter wiring", () => {
     expect(t.fetch.mock.calls[1]?.[0]).toBe("/api/file?path=runs%2Fw-1%2Frun.json");
   });
 
-  it("follows a run's journal until it closes, and reports a dead stream", () => {
+  it("follows a run's journal until it closes", () => {
     const t = bridgeTransport(() => respond(200, {}));
     const follower = { entry: vi.fn(), closed: vi.fn(), failed: vi.fn() };
     const stop = bridgeAdapter(t).review.follow("w 1", follower);
     expect(t.events).toHaveBeenCalledWith("/api/runs/w%201/events");
+    const source = t.sources[0];
     const record = { stream: "observer", type: "clock.advanced", seq: 1, at_ns: 30e9 };
-    t.listeners.get("record")?.(new MessageEvent("record", { data: JSON.stringify(record) }));
+    source?.record(record);
     expect(follower.entry.mock.calls).toEqual([[{ kind: "other", atNs: 30e9 }]]);
-    t.listeners.get("record")?.(new MessageEvent("record", { data: "not json" }));
+    source?.dispatchEvent(new MessageEvent("record", { data: "not json" }));
     expect(follower.failed).toHaveBeenCalledOnce();
-    expect(t.close).toHaveBeenCalled();
-    t.listeners.get("closed")?.();
+    expect(source?.readyState).toBe(2);
+    source?.end("closed");
     expect(follower.closed).toHaveBeenCalledOnce();
     stop();
+  });
+
+  it("fails a follower only when the stream died, not while it reconnects", () => {
+    const t = bridgeTransport(() => respond(200, {}));
+    const follower = { entry: vi.fn(), closed: vi.fn(), failed: vi.fn() };
+    bridgeAdapter(t).review.follow("w-1", follower);
+    t.sources[0]?.reconnect();
+    expect(follower.failed).not.toHaveBeenCalled();
+    t.sources[0]?.end("failed");
+    expect(follower.failed).toHaveBeenCalledOnce();
   });
 
   it("listens for workspace changes and closes the stream", () => {
     const t = bridgeTransport(() => respond(200, {}));
     const changed = vi.fn();
     const stop = bridgeAdapter(t).workspace.watch(changed);
-    t.listeners.get("workspace")?.();
+    t.sources[0]?.dispatchEvent(new Event("workspace"));
     expect(changed).toHaveBeenCalledOnce();
     stop();
-    expect(t.close).toHaveBeenCalledOnce();
+    expect(t.sources[0]?.readyState).toBe(2);
   });
 });

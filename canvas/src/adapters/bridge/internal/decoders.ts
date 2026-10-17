@@ -30,22 +30,31 @@ export function written(value: unknown): { readonly path: string; readonly etag:
 
 export function workspace(value: unknown): Workspace | null {
   if (!isRecord(value) || typeof value.name !== "string") return null;
-  const domains = array(value.domains);
-  const compositions = array(value.compositions);
-  const scenarios = array(value.scenarios);
-  const runs = array(value.runs);
+  const domains = definitions(value.domains);
+  const compositions = definitions(value.compositions);
+  const scenarios = definitions(value.scenarios);
+  const runs = rows(value.runs, runEntry);
   if (domains === null || compositions === null || scenarios === null || runs === null) return null;
-  return {
-    name: value.name,
-    domains: domains.map(definition),
-    compositions: compositions.map(definition),
-    scenarios: scenarios.map(definition),
-    runs: runs.map(runEntry),
-  };
+  return { name: value.name, domains, compositions, scenarios, runs };
 }
 
-function definition(value: unknown): Workspace["domains"][number] {
-  const entry = record(value);
+function definitions(value: unknown): Workspace["domains"] | null {
+  return rows(value, definition);
+}
+
+function rows<T>(value: unknown, decode: (entry: Record<string, unknown>) => T | null): readonly T[] | null {
+  if (!Array.isArray(value)) return null;
+  const decoded: T[] = [];
+  for (const raw of value) {
+    const row = isRecord(raw) ? decode(raw) : null;
+    if (row === null) return null;
+    decoded.push(row);
+  }
+  return decoded;
+}
+
+function definition(entry: Record<string, unknown>): Workspace["domains"][number] | null {
+  if (text(entry.path) === "") return null;
   return {
     path: text(entry.path),
     id: text(entry.id),
@@ -54,8 +63,8 @@ function definition(value: unknown): Workspace["domains"][number] {
   };
 }
 
-function runEntry(value: unknown): Workspace["runs"][number] {
-  const entry = record(value);
+function runEntry(entry: Record<string, unknown>): Workspace["runs"][number] | null {
+  if (text(entry.world_id) === "") return null;
   return {
     worldId: text(entry.world_id),
     ended: entry.ended === true,
@@ -222,10 +231,6 @@ export function runDomain(value: unknown): DomainDocument | null {
   } catch {
     return null;
   }
-}
-
-function array(value: unknown): readonly unknown[] | null {
-  return Array.isArray(value) ? value : null;
 }
 
 function strings(value: unknown): readonly string[] {
