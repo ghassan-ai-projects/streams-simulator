@@ -5,7 +5,6 @@ import { runSpan } from "../../../model/review";
 import { MissingRun } from "./MissingRun";
 import { Graph } from "./ReviewGraph";
 import type { GraphProps } from "./ReviewGraph";
-import { Banners } from "./RunStatus";
 import { Scrubber } from "./Scrubber";
 import styles from "./ReviewScreen.module.css";
 
@@ -48,7 +47,6 @@ interface CentreProps extends GraphProps {
 export function Centre({ review, state, plant, hall, onHall, worldId, navigation }: CentreProps) {
   return (
     <section className={styles.center} aria-label={`Run ${worldId}`}>
-      <Banners state={state} />
       <Timeline review={review} state={state} />
       {state.report.phase === "failed" && state.report.failure.kind === "missing" ? (
         <MissingRun worldId={worldId} navigation={navigation} />

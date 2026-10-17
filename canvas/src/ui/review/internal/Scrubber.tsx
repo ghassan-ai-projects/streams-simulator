@@ -104,6 +104,12 @@ function PlaybackRange({ startNs, span, positionNs, onSeek, onKeyDown }: RangePr
 }
 
 function FirstEvent({ report, startNs }: { readonly report: Report | null; readonly startNs: number }) {
+  if (report === null)
+    return (
+      <p className={styles.first} aria-hidden="true">
+        {"\u00a0"}
+      </p>
+    );
   const line = firstEventLine(report, startNs);
   if (line === null) return null;
   return (

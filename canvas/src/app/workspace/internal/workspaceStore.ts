@@ -1,7 +1,7 @@
 import { Observable, createOperationIdentity } from "../../shared";
 import type { WorkspaceGateway } from "../../ports";
 import type { OperationIdentity, Operation } from "../../shared";
-import type { WorkspaceState, WorkspaceStore as WorkspaceStoreApi } from "../contract";
+import type { WorkspaceState, WorkspaceStore as WorkspaceStoreApi } from "./api";
 
 export class WorkspaceStore extends Observable<WorkspaceState> {
   private stopWatching: (() => void) | null = null;

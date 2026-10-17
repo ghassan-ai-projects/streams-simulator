@@ -5,6 +5,11 @@
   border-left: 1px solid var(--border-subtle);
 }
 
+.body {
+  display: flow-root;
+  min-height: calc(100% - 40px);
+}
+
 .failure {
   margin: var(--space-3);
   padding: var(--space-2) var(--space-3);

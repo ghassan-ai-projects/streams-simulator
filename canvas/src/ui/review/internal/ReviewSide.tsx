@@ -17,7 +17,9 @@ export function Side({
 } & HallProps) {
   return (
     <div className={styles.side}>
-      {plant !== null && (
+      {plant === null ? (
+        <div className={styles.outlineSlot} />
+      ) : (
         <Outline
           plant={plant.plant}
           hall={hall}

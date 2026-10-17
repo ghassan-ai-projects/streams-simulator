@@ -3,7 +3,7 @@ import { domainOf, serialise } from "../../../model/editor";
 import type { ExamplePlant } from "../../../model/plant";
 import type { Outcome, PlantFailure, PlantGateway, PlantSource } from "../../ports";
 import { failure, success } from "../../ports";
-import type { Made, MakeMode, PlantMaker as PlantMakerApi } from "../contract";
+import type { Made, MakeMode, PlantMaker as PlantMakerApi } from "./api";
 
 type MakeOutcome = Outcome<Made, PlantFailure>;
 

@@ -1,6 +1,6 @@
 import { Observable } from "../../shared";
 import type { PreferenceStore } from "../../ports";
-import type { PanelState, PanelStore as PanelStoreApi, Side } from "../contract";
+import type { PanelState, PanelStore as PanelStoreApi, Side } from "./api";
 
 const keys: Readonly<Record<Side, string>> = {
   left: "streamsim.canvas.panel.left",

@@ -3,6 +3,7 @@ import type { Opening } from "../../../model/review";
 import { runClock } from "../../../model/review";
 import { grouped } from "../../../model/shared/units";
 import { ZoomBar } from "../../graph";
+import { Notices } from "./Notices";
 import styles from "./GraphBar.module.css";
 
 function openedWords(opening: Opening, startNs: number): string {
@@ -31,6 +32,7 @@ export function GraphBar({
       <span className={styles.barWords} title={words}>
         {words}
       </span>
+      <Notices state={state} />
       <ZoomBar review />
     </div>
   );

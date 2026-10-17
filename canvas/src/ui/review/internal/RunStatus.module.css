@@ -47,43 +47,6 @@
   color: var(--status-truth);
 }
 
-.banners {
-  border-bottom: 1px solid var(--border-subtle);
-  background: var(--status-warn-bg);
-}
-
-.banner {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-2);
-  margin: 0;
-  padding: var(--space-2) var(--space-4);
-  color: var(--text-primary);
-}
-
-.domainNote {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  margin: 0;
-  padding: var(--space-1) var(--space-4);
-  border-bottom: 1px solid var(--border-subtle);
-  color: var(--text-secondary);
-}
-
-.details summary {
-  cursor: pointer;
-  color: var(--text-secondary);
-}
-
-.details pre {
-  margin: var(--space-1) 0 0;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  font: var(--text-xs) var(--font-mono);
-  color: var(--text-secondary);
-}
-
 .facts {
   min-width: 0;
   overflow: hidden;

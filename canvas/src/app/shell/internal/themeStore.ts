@@ -2,7 +2,7 @@ import { nextPreference, parsePreference, resolveTheme } from "../../../model/sh
 import type { ThemePreference } from "../../../model/shell";
 import type { PreferenceStore, SystemTheme } from "../../ports";
 import { Observable } from "../../shared";
-import type { ThemeState, ThemeStore as ThemeStoreApi } from "../contract";
+import type { ThemeState, ThemeStore as ThemeStoreApi } from "./api";
 
 const key = "streamsim.canvas.theme";
 

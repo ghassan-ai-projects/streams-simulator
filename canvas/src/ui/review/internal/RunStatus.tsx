@@ -1,9 +1,8 @@
-import { CircleCheck, CircleHelp, CircleX, Eye, Info, Loader, Lock, TriangleAlert } from "lucide-react";
+import { CircleCheck, CircleHelp, CircleX, Eye, Loader, Lock, TriangleAlert } from "lucide-react";
 import { useState } from "react";
 import type { ReviewState } from "../../../app/review";
-import { readyReport } from "../../../app/review";
-import type { Badge, BannerWarning, Report } from "../../../model/review";
-import { badgeLabels, badgeOf, bannerWarnings, modeWords } from "../../../model/review";
+import type { Badge, Report } from "../../../model/review";
+import { badgeLabels, badgeOf, modeWords } from "../../../model/review";
 import { integrityLine, reportFacts, runIdentity } from "../../../model/review";
 import { useInterval } from "../../primitives";
 import { RunInfo } from "./RunInfo";
@@ -92,46 +91,5 @@ export function Status({ state, now }: { readonly state: ReviewState; readonly n
       {badge === "incomplete" && <Reason text={report.incompleteReason || "the run did not close."} />}
       <Announce text={badge === "verifying" ? "Verifying: replaying the run" : badgeLabels[badge]} />
     </>
-  );
-}
-
-function DomainNote({ state }: { readonly state: ReviewState }) {
-  if (state.verified.phase !== "ready" || !state.verified.value.domainChanged) return null;
-  return (
-    <p className={styles.domainNote} role="status">
-      <Info size={14} aria-hidden="true" />
-      The plant file changed after this run. The review and the replay use the plant the run recorded.
-    </p>
-  );
-}
-
-export function Banners({ state }: { readonly state: ReviewState }) {
-  return (
-    <div>
-      <DomainNote state={state} />
-      <Alerts list={bannerWarnings(readyReport(state), state.verified, state.playback)} />
-    </div>
-  );
-}
-
-function Alerts({ list }: { readonly list: readonly BannerWarning[] }) {
-  if (list.length === 0) return null;
-  return (
-    <div className={styles.banners} role="alert">
-      {list.map((warning) => (
-        <div key={warning.text} className={styles.banner}>
-          <TriangleAlert size={16} aria-hidden="true" />
-          <div>
-            {warning.text}
-            {warning.details !== "" && (
-              <details className={styles.details}>
-                <summary>Details</summary>
-                <pre>{warning.details}</pre>
-              </details>
-            )}
-          </div>
-        </div>
-      ))}
-    </div>
   );
 }

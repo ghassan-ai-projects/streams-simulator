@@ -1,7 +1,7 @@
 import type { LaunchStore } from "../../launch";
 import type { ReviewState } from "../../review";
 import { rerunProposalOf } from "../../review";
-import type { NavigationStore } from "../contract";
+import type { NavigationStore } from "./api";
 
 export function proposeRerun(
   launch: LaunchStore,

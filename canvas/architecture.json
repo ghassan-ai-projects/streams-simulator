@@ -648,7 +648,7 @@
     "important": 0,
     "zIndex": 15,
     "positioned": 29,
-    "note": "Built counts: important 0 because the React Flow minimap panel overrides in vendor.module.css no longer need !important; z-index 15 and positioned 29 are the measured counts of the built sheet."
+    "note": "Built counts: important 0 because the React Flow minimap panel overrides in vendor.module.css no longer need !important; z-index 15 and positioned 29 are the measured counts of the built sheet; the review notices live in the graph bar row, so none is positioned over the canvas."
   },
   "debt": [],
   "testSupport": ["test"]

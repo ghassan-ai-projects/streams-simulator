@@ -8,7 +8,7 @@ import type { LaunchState } from "./launchState";
 import type { LaunchOrigin } from "./runCursor";
 import { RunCursor } from "./runCursor";
 import { RunWatch } from "./runWatch";
-import type { LaunchStore as LaunchStoreApi } from "../contract";
+import type { LaunchStore as LaunchStoreApi } from "./api";
 
 const nowhere: LaunchOrigin = { domain: "", title: "", path: "" };
 const noPlan: LaunchPlan = { seed: 0, durationS: 0, explore: true, faults: [], calls: [] };

@@ -81,7 +81,7 @@ export function RunPanel(props: RunPanelProps) {
           </button>
         ))}
       </div>
-      <div role="region" aria-label={tab === "report" ? "Report" : "Inspect"}>
+      <div className={styles.body} role="region" aria-label={tab === "report" ? "Report" : "Inspect"}>
         {tab === "inspect" ? <Inspect {...props} /> : <ReportBody state={state} unit={props.unit} />}
       </div>
     </aside>

@@ -2,7 +2,7 @@ import type { Route } from "../../../model/shell";
 import { formatRoute, parseRoute } from "../../../model/shell";
 import { Observable } from "../../shared";
 import type { Location } from "../../ports";
-import type { LeaveAttempt, NavigationStore as NavigationStoreApi } from "../contract";
+import type { LeaveAttempt, NavigationStore as NavigationStoreApi } from "./api";
 
 class LeaveSlot extends Observable<LeaveAttempt | null> {
   hold(attempt: LeaveAttempt | null): void {

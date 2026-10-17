@@ -43,7 +43,7 @@ export function Graph({ review, state, plant, hall, onHall }: GraphProps) {
   );
   const live = useLive(review, state, plant, view);
   const anchor = useMemo(() => anchorOf(view, report), [view, report]);
-  if (view === null) return <OpeningPlant />;
+  if (view === null || state.report.phase === "loading") return <OpeningPlant />;
   return (
     <div className={styles.graphArea}>
       <GraphBar state={state} opening={review.index.opening()} startNs={startNsOf(state, review)} />

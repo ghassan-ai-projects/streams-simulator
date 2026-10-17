@@ -1,7 +1,7 @@
 import type { ExamplePlant } from "../../../model/plant";
 import { plantTitle } from "../../../model/plant";
 import type { Definition } from "../../../model/workspace";
-import type { BaseChoice, MakeMode } from "../contract";
+import type { BaseChoice, MakeMode } from "./api";
 
 export function baseChoices(bases: readonly Definition[], examples: readonly ExamplePlant[]): readonly BaseChoice[] {
   return [
