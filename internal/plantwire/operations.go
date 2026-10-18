@@ -19,6 +19,14 @@ func Host(ctx context.Context, socketPath string, delay time.Duration, options H
 	return app.ServeHost(ctx, socketPath, delay, options)
 }
 
+func Relay(ctx context.Context, options RelayOptions) (RelayStats, error) {
+	return app.Relay(ctx, options)
+}
+
+func ReplayTrace(ctx context.Context, options ReplayOptions) (ReplayStats, error) {
+	return app.ReplayTrace(ctx, options)
+}
+
 func ParseScript(raw []byte) ([]Scripted, error) {
 	return host.ParseScript(raw)
 }

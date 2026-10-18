@@ -72,7 +72,7 @@ func (h *Host) nodeBirth(m domain.Message) []map[string]any {
 	}
 	h.out = domain.NewTransmitter(m.SessionID)
 	if refusal := h.refusal(m); refusal != "" {
-		h.report.Refused = refusal
+		h.report.Refused, h.report.Reason = refusal, h.reason(refusal, m)
 		return h.reply(control("STATE", h.state(false, refusal)))
 	}
 	h.accepted, h.session = true, m.SessionID
@@ -88,19 +88,15 @@ func (h *Host) nodeDeath(m domain.Message) {
 }
 
 func (h *Host) refusal(m domain.Message) string {
-	switch {
-	case domain.ProtocolInvalid(m):
-		return "protocol_invalid"
-	case m.Environment != h.options.Environment:
-		return "environment_mismatch"
-	case domain.ContractUnsupported(m):
-		return "contract_unsupported"
-	case m.ProtocolMin > int64(h.options.ProtocolMax) || m.ProtocolMax < domain.Version:
-		return "version_unsupported"
-	case h.missingFromBirth(m) || domain.KindsMisdigested(m.Kinds) || domain.KindsDuplicated(m.Kinds):
-		return "inventory_mismatch"
-	}
-	return ""
+	return h.admission().Refusal(m, h.missingFromBirth(m))
+}
+
+func (h *Host) reason(refusal string, m domain.Message) string {
+	return h.admission().Reason(refusal, m)
+}
+
+func (h *Host) admission() domain.Admission {
+	return domain.Admission{Environment: h.options.Environment, ProtocolMax: h.options.ProtocolMax}
 }
 
 func (h *Host) missingFromBirth(m domain.Message) bool {

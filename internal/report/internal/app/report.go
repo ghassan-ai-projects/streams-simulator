@@ -88,6 +88,7 @@ type slot struct {
 var consumerSlots = []slot{
 	{model.FileTrace, domain.DigestOnly, func(f *domain.Folder) *domain.Document { return &f.Trace }},
 	{"journal.jsonl", domain.ObserverJournal, func(f *domain.Folder) *domain.Document { return &f.Observer }},
+	{model.FileFieldTrace, domain.DigestOnly, func(f *domain.Folder) *domain.Document { return &f.FieldTrace }},
 }
 
 var directorSlots = []slot{

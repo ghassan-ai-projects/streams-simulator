@@ -32,6 +32,8 @@ type Options struct {
 	Policies     []string
 	KindsDirs    []string
 	WireFaults   []domain.WireFault
+
+	NoWireJournal bool
 }
 
 var ErrBadOptions = errors.New("plantwire: invalid node options")
@@ -42,8 +44,10 @@ func validate(o Options) error {
 		return fmt.Errorf("%w: a slice and an end time are required", ErrBadOptions)
 	case o.ProtocolMax < domain.Version:
 		return fmt.Errorf("%w: protocol_max %d", ErrBadOptions, o.ProtocolMax)
-	case o.Environment != "simulated" && o.Environment != "hardware", domain.WireID(o.SessionID) != o.SessionID:
-		return fmt.Errorf("%w: environment %q, session %q", ErrBadOptions, o.Environment, o.SessionID)
+	case o.Environment != domain.EnvironmentSimulated:
+		return fmt.Errorf("%w: environment %q, a simulated world announces only %q", ErrBadOptions, o.Environment, domain.EnvironmentSimulated)
+	case domain.WireID(o.SessionID) != o.SessionID:
+		return fmt.Errorf("%w: session %q is no wire id", ErrBadOptions, o.SessionID)
 	}
 	return nil
 }
@@ -122,7 +126,7 @@ func (s *Session) adopt(state domain.Message) error {
 func (s *Session) awaitState(ctx context.Context) (domain.Message, error) {
 	inbound, met, err := s.link.AwaitHandshake(ctx, isType("STATE"))
 	for _, arrival := range inbound {
-		s.run.JournalWire("host", arrival.Record)
+		s.journalWire("host", arrival.Record)
 	}
 	if err != nil || !met || len(inbound) != 1 || inbound[0].Invalid != nil {
 		return domain.Message{}, fmt.Errorf("plantwire: no valid STATE first after NBIRTH: %w", errors.Join(err, ErrHostLost))
@@ -136,12 +140,18 @@ func (s *Session) send(records ...domain.Record) error {
 	}
 	wireRecords := domain.ApplyWireFaults(s.out.Drain(), s.options.WireFaults)
 	for _, record := range wireRecords {
-		s.run.JournalWire("node", record)
+		s.journalWire("node", record)
 	}
 	if err := s.link.Send(wireRecords); err != nil {
 		return fmt.Errorf("plantwire: send: %w", err)
 	}
 	return nil
+}
+
+func (s *Session) journalWire(direction string, record map[string]any) {
+	if !s.options.NoWireJournal {
+		s.run.JournalWire(direction, record)
+	}
 }
 
 func (s *Session) close() error {
@@ -174,6 +184,9 @@ func serveSession(ctx context.Context, r *run.Run, socketPath string, barrierCap
 }
 
 func ServeHost(ctx context.Context, socketPath string, delay time.Duration, options host.Options) (host.Report, error) {
+	if err := domain.CheckEnvironment(options.Environment); err != nil {
+		return host.Report{}, fmt.Errorf("plantwire: host: %w", err)
+	}
 	reference := host.New(options)
 	if err := uds.ServeHost(ctx, socketPath, reference, uds.Pacing{Delay: delay, Handshake: uds.HandshakeWait}, options.Ready); err != nil {
 		return reference.Report(), fmt.Errorf("plantwire: %w", err)

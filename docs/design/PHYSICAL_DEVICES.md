@@ -135,7 +135,8 @@ Deviations from the plan above:
 - `kind capture` (bridge `kind.capture`) turns one `NBIRTH` into draft kind files and compares them with the workspace's
   kind files (`new`, `same`, `differs` at the first differing pointer). It is read-only: reviewing and saving is the author's
   step, as the contract's commissioning order (discovered, reviewed, accepted) has it. A birth is a claim, so every
-  `kind_digest` is recomputed and a birth that does not hold is refused; a birth of either environment is accepted and echoed.
+  `kind_digest` is recomputed and a birth that does not hold is refused; a birth of any environment is accepted and echoed,
+  unless its node environment contradicts its boards (R7a, §2).
 - The source is a bare `NBIRTH` or the first one of a JSON Lines file, including the `wire` records of a run's observer
   journal (`direction: node`); only the observer stream is taken, read strictly, and provenance is reported (`births_seen`,
   `taken`, `later_births`, `rebirth_differs`). `environment` is the board's claim and is not verified; `claims` lists the
@@ -168,11 +169,131 @@ Rules:
   option), not a convention.
 - **Origin per device.** `NBIRTH.environment` is per node today; a mixed node marks each board `simulated` or `hardware`
   (contract change). A host and the canvas never infer origin.
+
+  *As built (R7a, contract 1.2.0):* every board in `NBIRTH.boards` carries `environment` (`simulated` or `hardware`, required)
+  and the node's `environment` gains `mixed`. A device's origin is the environment of the board its `DBIRTH` names, and
+  nothing else. The reference host checks, with one predicate it shares with `kind capture`, that a `simulated` node has only
+  simulated boards, a `hardware` node only hardware boards and a `mixed` node at least one of each; a contradiction is refused
+  with `environment_mismatch` even by a `mixed` host, and the host's report says which rule (`reason`). The host's own setting
+  has the same three values: `simulated` and `hardware` accept only a node of exactly that environment, `mixed` accepts all
+  three (`plantwire host --environment`). A simulated world is always `simulated`: its boards are, and `plantwire node` and the
+  session options refuse any other environment, so a simulated node can never announce hardware or mixed. `kind capture`
+  echoes each board's claim (`boards: [{board, environment}]`) beside the node's. Not built here: the relay and the mixed
+  node itself (R7b onward); nothing in a simulated run's artifact or digest changed, only the `NBIRTH` bytes in a wire journal.
 - **The firmware is the last line of defence.** If the simulator stops, leases expire and the board makes itself safe.
 - **Independence.** The gateway and the simulator speak the same plant wire, so Agentic Stream can always connect to the gateway
   directly. Relay mode is a lab choice, not a dependency.
 
+### As built (R7b): the relay
+
+`streamsim plantwire relay --gateway-socket <path> --host-socket <path> [--out <dir>]` is the lab shape for **hardware only**:
+gateway, relay and host, the relay being the host's one node. Simulated boards beside the gateway and the field trace as a run
+input came in R8 (below); clock pacing (D-71) and hold/approve/e-stop (R11) are not built.
+
+- **Two roles, one session each.** Toward the gateway the relay is a host: it creates the gateway socket (owner-only, the
+  reference host's helper: a live socket, a regular file or a group/world-accessible directory is refused), reads the gateway's
+  `NBIRTH` and applies the reference host's handshake checks, one predicate (`domain.Admission`) shared with `plantwire host`
+  and fixed to a `hardware` host: protocol range, contract version and digest, node and board environments (a `simulated` or
+  `mixed` gateway is refused `environment_mismatch`, the report says which rule), `kind_digest` recomputation and a kind named
+  twice (`inventory_mismatch`). A refusal is a `STATE` with the refusal and a close; the relay keeps listening. Toward the real
+  host the relay is a node: it dials the host's owner-only socket only once a gateway has been admitted (a socket others can
+  reach ends the relay with `ErrSocketNotPrivate`) and presents itself as one node.
+- **What passes through, with content unchanged.** The gateway's `NBIRTH` becomes the relay's own `NBIRTH`: kinds with their
+  `kind_digest`, `capability_digest`, boards (each with its own `environment`), node metrics, contract and environment are the
+  gateway's; so the host commissions the digests the gateway announced. `DBIRTH`, `DDATA`, `DDEATH`, `DSTATE`, `DRECEIPT`,
+  `DRESULT` and `NSYNC` go up, and `STATE`, `NCMD`, `DCMD`, `DQUERY` and `HSYNC` go down, with every member except the envelope
+  as received: values, qualities, event times, boot ids, command ids, reasons and all the safety members of a `DCMD`
+  (`expected_boot_id`, `deadline_ns`, `not_before_ns`, `authority_epoch`, `policy_digest`, `idempotency_key`,
+  `fallback_on_lease_loss`). The gateway therefore sees the real host's authority epoch and heartbeat.
+- **What the relay owns.** Only envelope members and its own sessions: the `session_id` of each link (`relay-h<n>` toward the
+  host; the gateway's own toward the gateway), `seq` assigned at transmission in the order records arrive, `bd_seq` and
+  `prior_last_seq` of its `NBIRTH`, and the `protocol_max` it can speak (1). It originates exactly: `NCMD rebirth` to the
+  gateway (when a host session starts after the gateway was born, and once per gap in the gateway's `seq`, the reference
+  host's rule; the record after the gap is still carried), a `STATE {online: false}` to the gateway when the host is lost or
+  was never there (the host's last `STATE` with `online` false, or its own with `host_id: relay`, epoch 0 and no refusal),
+  a `DDEATH link_down` per born device when the gateway is lost, and `NDEATH shutdown` when the relay ends. It never originates,
+  answers, refuses or delays a `DCMD` or `DQUERY`, sends no data of its own, rewrites no quality and keeps no record back.
+- **Sequences and the barrier.** Per carried record the relay keeps the pair (gateway `seq`, relay `seq`), the last 4096 of
+  the host session. A gateway `NSYNC` goes up as the relay's own with `through_seq` translated to the relay's `seq` of the last
+  carried record at or below it; the host's `HSYNC` comes back with `through_seq` translated to the gateway `seq` of the last
+  carried record whose relay `seq` is at or below it, so an answer to an earlier barrier never covers a later one. A barrier
+  no carried record covers is dropped, never invented. A hardware gateway runs in wall time and sends none (SPEC §8); the
+  mapping is for a gateway that does.
+- **Failures.** Host lost (end of stream, a gap in its `seq`, an unnegotiable `STATE`, or three missed heartbeats, counted in
+  250 ms ticks once the host has sent a heartbeat above zero): the gateway is told the host is offline and its session is
+  kept, so the firmware's lease logic applies; its records meanwhile are dropped (store-and-forward is the gateway's job) and
+  the relay redials on every tick. When the host is back the relay sends the gateway's cached `NBIRTH`, forwards the host's
+  `STATE` and asks the gateway for a rebirth, which goes up in the same host session with the next `bd_seq`. A host that
+  refuses the relayed session has its `STATE` forwarded to the gateway and ends the relay (`ErrRefused`, an operator's action).
+  Gateway lost (end of stream, a handshake silent for 10 s, a line over 1 MiB, or its own `NDEATH`): a `DDEATH link_down` for
+  each device it had born, in device order, and the host session is kept, because later boards share it. A returning gateway
+  is answered with the host's last `STATE` and reborn upward as a rebirth.
+- **Dropped, counted, never forwarded.** A record that fails its schema or its size limit, repeats a `seq`, has none, belongs
+  to another session or version, or is of a type that does not travel that way (a gateway's `DCMD`, `STATE`, `NCMD`, `DQUERY`,
+  `HSYNC`; a host's data) is dropped and counted in `dropped`; a bad `DCMD` is not answered with a receipt, the relay never
+  answers a command.
+- **Observation.** With `--out` the relay writes every record on both links as observer `wire` session records of the run
+  journal (`journal.jsonl`; the director stream holds only its closing record, since hardware has no truth): direction
+  `gateway` (received from the gateway) and `node` (sent to the host), `host` (received from the host) and `relay` (sent to the
+  gateway). A carried record is two consecutive lines, as received and as sent, so its own `seq` and the relayed one are both
+  there; a dropped record has only the first. `kind capture <out>/journal.jsonl` reads the relay's `NBIRTH`.
+- **Structure.** The rules are in the `plantwire` domain layer (`relay*.go`, pure: a state machine of events and moves), the
+  loop in the app layer, the sockets and ticks in the `uds` edge (`gateways.go`, `ticks.go`), the journal through
+  `run.WireTrace`. `RelayOptions` has no fault, perturbation or script option, and `TestTheRelayImportsNoPerturbationOrFaultCode`
+  keeps the relay's files from naming perturbation or wire fault code; `replay`, `run`, `scenario` and `plantwire node` have no
+  gateway option (a CLI test), so replay can never reach hardware.
+
+### As built (R8): mixed sessions
+
+`streamsim plantwire relay ... --domain <id> --out <dir>` puts the simulated world beside the gateway in the one node the real
+host sees. The hardware-only relay of R7b is unchanged (a relay without `--domain` has no world and no router).
+
+- **One birth, two origins.** The relay holds the gateway's `NBIRTH` and the world's (the world's node `Session` builds its own
+  before it runs; the relay takes it as data). The `NBIRTH` the host sees is the gateway's content with the world's boards
+  appended, `environment: mixed`, the kinds of both (a kind both sides announce appears once and only when its `kind_digest`
+  is equal; each entry keeps its own digest) and a `capability_digest` recomputed over the union. A gateway that announces a
+  board, a device or a kind with another digest that the world also has is refused `inventory_mismatch` at the handshake, the
+  rule in `reason` (and a gateway rebirth that now collides is dropped). A gateway that is itself `mixed` or `simulated` is
+  refused as before. The origin of a device is the board that announced it; a record that names a device its side did not
+  announce is dropped (a gateway cannot speak for a simulated device and the other way round).
+- **Routing, down.** A `DCMD` or `DQUERY` goes to the side of its device: hardware, to the gateway with every member as
+  received; simulated, to the world, which answers it as it answers any host (freshness, epoch, policy, effector, receipt and
+  result; the command enters the run's command log); a device on no board is refused `unknown_device` by the relay (a query is
+  dropped). `NCMD rebirth` goes to the gateway only; when the gateway's `NBIRTH` answers it the merged `NBIRTH` goes up and the
+  world is asked to birth its devices again, so the host sees the births after the birth. An `HSYNC` goes to the side whose
+  `NSYNC` it answers, mapped to that side's own `seq` (a second table of pairs for the world); an answer no barrier waits for is
+  dropped. Every host `STATE` also goes to the world; the first one of a host session starts the world's session (or asks it to
+  birth again).
+- **Direction rules are types.** `Relay.FromSim` returns a `SimMoves` (records for the host and lines for the journal): it has
+  no member for the gateway, and the loop applies it with a function that never touches the gateway link. The world's wire
+  faults and perturbations stay inside the world's session; the relay's files may not name them (the R7b gate covers the new
+  files too).
+- **The world's session.** It is the node `Session` over an in-process link: mailboxes in both directions, the barrier wait
+  capped in wall time, run on one goroutine (`uds/sim.go`). Its own wire journaling is off (`Options.NoWireJournal`); the relay
+  journals the merged stream (`gateway`, `relay`, `node`, `host`) through the run's journal. The world is advanced by the
+  barrier exactly as `plantwire node` does when the host sends `HSYNC`; **it is not paced to the wall clock** (deferred D-71).
+- **The run.** `--out` holds an ordinary run folder (`run.json`, trace, ledger, history, both journals) plus
+  `field-trace.jsonl`; `run.json` records `field_trace_digest`.
+
 ## 3. Real data as a recorded run input
+
+*As built (R8):* the field trace is `field-trace.jsonl` in the run folder: one line per record the gateway sent, in the order the
+relay received it, `{"ordinal": n, "record": {...}}` in RFC 8785 canonical JSON and nothing else (no host record, no wall clock;
+the times in it are the records' own event times). The relay writes it as it relays, including records it dropped, so the file
+is what the gateway said and not what the relay decided. The run module owns it (`run.NewFieldTrace`, `run.ReadFieldTrace`):
+the artifact gains the optional `field_trace_digest` (the SHA-256 of the file, which is the digest of the canonical form of
+the ordered records), `replay`, `verify` and `report` check the file against it with the other evidence files, and a run
+without a trace has neither the member nor the file. A mixed run is therefore a function of
+`(…, seed, command_log, field_trace)`: the world's side reproduces from the command log, the gateway's side is the trace, and
+tampering with either fails verification. `plantwire replay-trace` plays a trace to a host. **It announces the node and every
+board `simulated`**, because a replay is not a board and no consumer may take it for one, whatever the recording said; it
+keeps the recorded device ids, kinds, kind digests and values, has no gateway option or code path, refuses every command it is
+sent, and raises its own barrier after each stretch of records (the recorded `NSYNC`s only mark where) so that its stream is a
+pure function of the trace and the host's answers. It refuses a trace whose digest `run.json` does not record. Not built: the
+world's part of a mixed recording streamed to a host beside the trace (deferred D-72); it is reproduced and verified by
+`replay`.
+
+The design as first written:
 
 A run is a pure function of `(sim_version, domain_digest, adapter_digest, seed, command_log, sink)`. Relay mode adds one input:
 the **field trace**, every record the gateway sent, in order, as the simulator received it. A run becomes a function of

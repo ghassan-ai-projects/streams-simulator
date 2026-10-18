@@ -8,8 +8,8 @@
     "lane": "control",
     "protocol_min": 1,
     "protocol_max": 1,
-    "contract_version": "1.1.0",
-    "contract_digest": "sha256:cfc4e96d60a714d7102d4e4d1f3973957a07b5d33fd9460c80d59090be6b7607",
+    "contract_version": "1.2.0",
+    "contract_digest": "sha256:8ffefe39a91e383e7b9d2962491945193c885de7557e35178634fe2cf1ec504b",
     "environment": "simulated",
     "bd_seq": 0,
     "prior_last_seq": -1,
@@ -100,6 +100,7 @@
     "boards": [
       {
         "board": "board-01",
+        "environment": "simulated",
         "members": [
           "P1",
           "P2"

@@ -5,6 +5,7 @@ const (
 	FileTrace       = "trace.jsonl"
 	FileLedger      = "ledger.jsonl"
 	FileHistory     = "world_state_history.jsonl"
+	FileFieldTrace  = "field-trace.jsonl"
 
 	FileObserverJournal = "journal.jsonl"
 	FileDirectorJournal = "sealed/journal.jsonl"

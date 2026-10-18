@@ -96,6 +96,12 @@
     },
     {
       "$ref": "#/$defs/plantwire_host"
+    },
+    {
+      "$ref": "#/$defs/plantwire_relay"
+    },
+    {
+      "$ref": "#/$defs/plantwire_replay"
     }
   ],
   "$defs": {
@@ -904,6 +910,10 @@
         "refused": {
           "type": "string"
         },
+        "reason": {
+          "type": "string",
+          "description": "Which rule an environment_mismatch refusal broke; absent for any other refusal."
+        },
         "quarantined": {
           "type": "array",
           "items": {
@@ -940,6 +950,112 @@
               }
             }
           }
+        }
+      }
+    },
+    "plantwire_relay": {
+      "type": "object",
+      "description": "plantwire relay: what the relay carried between a gateway and the real host until it was interrupted.",
+      "required": [
+        "gateway_sessions",
+        "host_sessions",
+        "up",
+        "down",
+        "dropped"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "gateway_sessions": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "host_sessions": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "up": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Records sent to the host, the relay's own deaths included."
+        },
+        "down": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Records sent to the gateway, the relay's own rebirth requests and offline states included."
+        },
+        "dropped": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Records received and not relayed: invalid, duplicate, from the wrong session, of a type that does not travel that way, or with no host to take them."
+        },
+        "refused": {
+          "type": "string",
+          "description": "The refusal the relay gave a gateway at its handshake."
+        },
+        "reason": {
+          "type": "string",
+          "description": "Which rule an environment_mismatch refusal broke; absent for any other refusal."
+        },
+        "host_refused": {
+          "type": "string",
+          "description": "The refusal the host gave the relayed session."
+        },
+        "to_simulated": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Mixed session only: records handed to the simulated world, the relay's own states and rebirth requests included."
+        },
+        "from_simulated": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Mixed session only: records the simulated world sent up to the host."
+        },
+        "unknown_device": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Mixed session only: commands the relay refused with unknown_device because no board of the node holds the device."
+        }
+      }
+    },
+    "plantwire_replay": {
+      "type": "object",
+      "description": "plantwire replay-trace: what a replayed field trace played to a host. The node announced itself and every board as simulated.",
+      "required": [
+        "records",
+        "skipped",
+        "barriers",
+        "commands_refused",
+        "field_trace_digest",
+        "session_id"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "records": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Records sent to the host, the births and the replay's own death included."
+        },
+        "skipped": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Recorded records the replay did not play: invalid, duplicate, before the first NBIRTH, or of a type that is not replayed (barriers, receipts, results, deaths)."
+        },
+        "barriers": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Barriers the host answered."
+        },
+        "commands_refused": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Commands the host sent that the replay refused; a replay controls no device."
+        },
+        "field_trace_digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "session_id": {
+          "type": "string"
         }
       }
     },
@@ -1232,19 +1348,44 @@
       "additionalProperties": false,
       "required": [
         "environment",
+        "boards",
         "bd_seq",
         "births_seen",
         "taken",
         "kinds"
       ],
-      "description": "The kinds a node announced in one NBIRTH, as draft kind files; nothing is written. A birth is a claim: the document exists only when every announced kind_digest was recomputed and held, and `environment` is the board's claim as well, never verified. The first birth found is the one taken; births_seen and later_births say what else the source held, and `issues` what the scan found beside the kinds (birth_line_unreadable, rebirth_differs, capability_digest_mismatch, scan_truncated). comparison is present only when a kinds directory was given.",
+      "description": "The kinds a node announced in one NBIRTH, as draft kind files; nothing is written. A birth is a claim: the document exists only when every announced kind_digest was recomputed and held, and `environment` and each board's `environment` are the node's claims as well, never verified (a node whose claim contradicts its boards is refused). The first birth found is the one taken; births_seen and later_births say what else the source held, and `issues` what the scan found beside the kinds (birth_line_unreadable, rebirth_differs, capability_digest_mismatch, scan_truncated). comparison is present only when a kinds directory was given.",
       "properties": {
         "environment": {
           "enum": [
             "simulated",
-            "hardware"
+            "hardware",
+            "mixed"
           ],
-          "description": "What the board claims; the binary does not verify it."
+          "description": "What the node claims; the binary does not verify it. A birth whose claim contradicts its boards is refused."
+        },
+        "boards": {
+          "type": "array",
+          "description": "The boards the node announced, each with the environment it claims (the origin of every device born on it); a claim, never verified.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "board",
+              "environment"
+            ],
+            "properties": {
+              "board": {
+                "type": "string"
+              },
+              "environment": {
+                "enum": [
+                  "simulated",
+                  "hardware"
+                ]
+              }
+            }
+          }
         },
         "bd_seq": {
           "type": "integer",

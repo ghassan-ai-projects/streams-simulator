@@ -121,11 +121,12 @@ Only the observer stream is ever taken. A record of the director stream (`sealed
 
 The birth must be sound: it validates against the plant wire `NBIRTH` schema, `protocol_min` does not exceed `protocol_max`, the contract version and digest are the ones this binary speaks, the `kind_digest` of every kind is recomputed and equals the one announced (issue at `/kinds/<i>/kind_digest`, `keyword` `kind_digest_mismatch`) and no kind is announced twice, not even under another case (`kind_duplicate`, which the reference host refuses as `inventory_mismatch` too). Any violation fails with `kind_failed` and the issues in the shape `domain validate` uses; a source with no readable `NBIRTH` fails with the issue `no_birth`. A first birth that breaks the contract is refused, not skipped for a later one. Member names and values echoed in a message or pointer are cut at 128 characters, and a pointer escapes `~` and `/` (RFC 6901).
 
-It prints `{environment, bd_seq, births_seen, taken, later_births?, issues?, kinds}`:
+It prints `{environment, boards, bd_seq, births_seen, taken, later_births?, issues?, kinds}`:
 
 ```json
 {
   "environment": "hardware",
+  "boards": [{"board": "mega-01", "environment": "hardware"}],
   "bd_seq": 0,
   "births_seen": 2,
   "taken": {"line": 12, "bd_seq": 0},
@@ -144,7 +145,7 @@ It prints `{environment, bd_seq, births_seen, taken, later_births?, issues?, kin
 }
 ```
 
-- `environment` is what the board **claims**, `simulated` or `hardware`, like everything else in a birth; the binary does not verify it. A birth of either is accepted.
+- `environment` is what the node **claims**: `simulated`, `hardware` or `mixed`, like everything else in a birth; the binary does not verify it. `boards` lists every board with the environment it claims (`simulated` or `hardware`), which is the origin of the devices born on it. The two must agree (a `simulated` node has only simulated boards, a `hardware` node only hardware boards, a `mixed` node at least one of each); a birth that contradicts itself fails with `kind_failed` and an issue of keyword `environment_mismatch` at the member that breaks the rule.
 - `births_seen`, `taken`, `later_births` — provenance. The first birth found is the one captured (a rebirth later in a journal does not replace it); `taken` says where it stood (`line` counts lines of the source from 1), `later_births` lists up to 64 later births with whether their kinds equal the taken one's. The capture-level `issues` hold `rebirth_differs` (a later birth announces other kinds), `birth_line_unreadable` (a line that names a birth but cannot be read, with its line number; it is skipped, never silently), `capability_digest_mismatch` (the board's `capability_digest` does not hold; the reference host does not check it, so this is a capture-only check and the kinds are captured all the same) and `scan_truncated` (`births_seen` is a lower bound). No option takes the last birth.
 - `draft` — the `NBIRTH.kinds` entry without `kind_digest`: the content of a kind file, which must not carry that member. `kind_digest` is the digest the node announced, equal to what `kind validate` reports for the file once saved.
 - `claims` — pointers into the draft of the members that came from the board and that nothing verified: `risk_class` and `safe_stop` of each command and every bound of an `args_schema` (`minimum`, `maximum`, `exclusiveMinimum`, `exclusiveMaximum`, `multipleOf`, `minLength`, `maxLength`, `minItems`, `maxItems`, `minProperties`, `maxProperties`). A reviewer reads these before saving.
@@ -254,12 +255,19 @@ contract and that every commissioned device is in the node's birth, quarantines 
 when the world reaches their time, verifies them against later observations, and prints its report.
 
 ```text
-streamsim plantwire host --socket <path> [--script <commands.json>] [--inventory <devices.json>] [--environment simulated]
+streamsim plantwire host --socket <path> [--script <commands.json>] [--inventory <devices.json>] [--environment simulated|hardware|mixed]
                          [--policy <digest>] [--epoch <n>] [--delay-ms <n>]
 streamsim plantwire node --host-socket <path> --domain <id> --out <dir> [--domains-dir domains] [--adapter <id>] [--adapters-dir adapters]
                          [--session-id <id>] [--seed <n>] [--slice-s 60] [--duration 3600] [--barrier-cap-ms 30000]
                          [--policy <digest>]... [--kinds-dir <dir>]...
 ```
+
+`--environment` (default `simulated`) is what the host accepts, one of `simulated`, `hardware` or `mixed`; any other value fails before the host listens.
+A host set to `simulated` or `hardware` accepts only a node of exactly that environment; a `mixed` host accepts all three. Every board of a
+birth names its environment, and a node whose environment contradicts its boards (`simulated` with a hardware board, `hardware` with a
+simulated board, `mixed` without one of each) is refused even by a `mixed` host. The refusal is `environment_mismatch`, and the report
+says which rule broke in `reason`. `plantwire node` has no environment option: a simulated world announces `simulated` for itself and every one of its boards,
+and cannot be made to announce `hardware` or `mixed`.
 
 The socket's directory must be owner-only (it is created `0700` when missing); a stale socket left by a crash is replaced,
 a live host or a regular file at the path is not. Both commands stop on interrupt or `SIGTERM`, and the node still writes its
@@ -272,6 +280,69 @@ must send its birth within 10 s; after a refusal the host closes the connection.
 safe stops the domain flags (`safe_stop: true` on an effector); a domain that implements a kind file is checked against it
 (`--kinds-dir`, as `domain validate`) before the node connects, so the safe stops and the `kind_digest` it announces are the kind file's. `--barrier-cap-ms` (default 30000) bounds the wall time the node waits for each
 `HSYNC`; `--delay-ms` makes the reference host slow.
+
+### `plantwire relay`
+
+The simulator between an edge gateway and the real host: the relay is the host of one gateway and the one
+node the real host sees, alone (hardware only) or with a simulated world beside the gateway's boards (a mixed session). It creates the gateway's owner-only socket, accepts one gateway at a time, and once a gateway has been
+admitted dials the host's owner-only socket and presents the gateway's birth as its own. Records go up and commands go down
+with their content unchanged; the relay owns only the envelope. It stops on interrupt or `SIGTERM` and prints what it carried.
+
+```text
+streamsim plantwire relay --gateway-socket <path> --host-socket <path> [--out <dir>]
+                          [--domain <id> [--adapter <id>] [--seed N] [--kinds-dir <dir>] [--domains-dir <dir>] [--adapters-dir <dir>]
+                           [--slice-s N] [--duration N] [--barrier-cap-ms N] [--policy <digest>] [--session-id <id>]]
+```
+
+- `--gateway-socket` — the socket the relay creates and the gateway dials (required). Its directory must be owner-only (it is
+  created `0700` when missing); a stale socket is replaced, a live one or a regular file at the path is refused.
+- `--host-socket` — the real host's owner-only socket (required). A socket that group or others can reach is refused and ends
+  the relay; a host that is not there yet is retried every 250 ms.
+- `--out` — a folder for the journal of every record on both links (`journal.jsonl`, observer `wire` session records with the
+  directions `gateway`, `node`, `host` and `relay`; a carried record is two lines, as received and as sent) and
+  `field-trace.jsonl`, every record the gateway sent in the order the relay received it (see [artifacts](artifacts.md)).
+  Hardware has no truth, so the director stream holds only its closing record. Without it nothing is written.
+- `--domain` — makes the relay **mixed** (and then `--out` is required): the simulated world of that domain runs in the same
+  node, its boards announced `simulated` beside the gateway's `hardware` boards in one `NBIRTH` whose `environment` is `mixed`
+  (the host must accept `mixed`). The options after it are those of `plantwire node` (`--seed`, `--kinds-dir` for the
+  `implements` check, `--slice-s`, `--duration`, `--barrier-cap-ms`, `--policy`, `--session-id`). The gateway is refused
+  `inventory_mismatch`, with the rule in `reason`, when it announces a device or a board the world also has or a kind of the
+  same name with another `kind_digest` (the same kind with the same digest on both sides is fine: a twin and a board of one
+  model). A command is routed by the board that announced its device: a hardware device's goes to the gateway untouched, a
+  simulated device's to the world, and one for a device on no board is refused `unknown_device`; nothing the world does has a
+  path to the gateway link. The gateway's records are never perturbed; the world keeps its own faults. `--out` then holds a run
+  folder: `run.json` (with `field_trace_digest`), the world's trace, ledger and history, both journals and the field trace.
+  The world is advanced slice by slice in virtual time as `plantwire node` does, as fast as the host answers each barrier; it is
+  not paced to the wall clock (deferred D-71).
+
+The gateway is checked as the reference host checks a node that is set to `hardware`: a gateway that announces `simulated` or
+`mixed`, speaks another contract, announces a `kind_digest` that does not hold or a kind twice is refused with the refusal in a
+`STATE`. The host's `STATE` (heartbeat, `authority_epoch`) reaches the gateway unchanged, a host that is lost is reported to the
+gateway as offline with its session kept, a gateway that is lost has each of its devices reported `DDEATH link_down` to the host,
+and a host that refuses the session ends the relay with `plantwire_failed`. The relay never originates or answers a command and
+has no fault, perturbation or script option; `run`, `replay`, `verify`, `scenario` and `plantwire node` have no gateway option.
+The document is `{gateway_sessions, host_sessions, up, down, dropped, refused?, reason?, host_refused?}` (and, for a mixed relay,
+`to_simulated?`, `from_simulated?`, `unknown_device?`), where `dropped` counts the records received and not carried (invalid,
+oversize, repeated, of another session, of a type that does not travel that way, naming a device of the other origin, or with
+no host to take them).
+
+### `plantwire replay-trace`
+
+Plays the field trace of a run folder to a host, the way a gateway would, from the file.
+
+```text
+streamsim plantwire replay-trace --run <dir> --host-socket <path> [--session-id replay-1] [--barrier-cap-ms 30000]
+```
+
+A replay is not a board: it announces the node and **every board `simulated`**, with the recorded device ids, kinds, kind
+digests and values, so a host set to `hardware` refuses it (`environment_mismatch`) and no consumer can take it for hardware.
+It has no gateway option and no path to one; a command the host sends is refused (`not_ready` for a recorded device,
+`unknown_device` otherwise) and its result is never reported. The recorded barriers are not replayed: the replay raises its own
+after each stretch of records and waits for the host's `HSYNC`, so the stream the host sees is a pure function of the trace and
+the host's answers (two replays of one trace are byte-identical). Records the relay would have dropped (invalid, repeated, before
+the first `NBIRTH`) and the recorded receipts, results and deaths are skipped and counted. The folder's `run.json`, when there is
+one, must record the digest of the trace (`field_trace_digest`); a trace that differs from it is refused before anything is
+played. The document is `{records, skipped, barriers, commands_refused, field_trace_digest, session_id}`.
 
 ### `run`
 

@@ -41,7 +41,9 @@ kind_file = {"$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "
                             "In a metric, a range needs min below max (checked by the simulator, which a schema cannot express).",
              **copy.deepcopy(kind)}
 kind_file["properties"]["kind_digest"] = {"not": {}, "description": "Forbidden in a kind file: the digest is computed from the file."}
-board = {"type": "object", "required": ["board", "members"], "properties": {"board": ident, "members": {"type": "array", "maxItems": 4096, "items": ident}}}
+board = {"type": "object", "required": ["board", "environment", "members"], "properties": {"board": ident,
+    "environment": {"enum": ["simulated", "hardware"], "description": "What this board is: the origin of every device born on it. A claim the host checks against the node's environment (SPEC section 2), never inferred."},
+    "members": {"type": "array", "maxItems": 4096, "items": ident}}}
 current = {"type": "object", "required": ["name", "alias", "value", "quality"], "properties": {"name": ident, "alias": u64, "value": value, "quality": quality}}
 born = {"type": "object", "required": ["name", "alias", "value", "quality"], "properties": {"name": ident, "alias": u64,
     "value": {"type": ["number", "integer", "boolean", "string", "null"], "maxLength": 256}, "quality": quality},
@@ -55,10 +57,10 @@ schemas = {
  "NBIRTH": envelope("NBIRTH", "control", ["protocol_min", "protocol_max", "contract_version", "contract_digest", "environment", "bd_seq", "prior_last_seq", "capability_digest", "kinds", "boards"], {
     "protocol_min": {"type": "integer", "minimum": 1}, "protocol_max": {"type": "integer", "minimum": 1},
     "contract_version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"}, "contract_digest": digest,
-    "environment": {"enum": ["simulated", "hardware"]}, "bd_seq": u64, "prior_last_seq": {"type": "integer", "minimum": -1},
+    "environment": {"enum": ["simulated", "hardware", "mixed"], "description": "The node's environment. simulated: every board is simulated; hardware: every board is hardware; mixed: at least one board of each. A schema cannot say that, so a host checks it at the handshake (SPEC section 2)."}, "bd_seq": u64, "prior_last_seq": {"type": "integer", "minimum": -1},
     "capability_digest": digest, "kinds": {"type": "array", "maxItems": 256, "items": kind_entry}, "boards": {"type": "array", "maxItems": 4096, "items": board},
     "node_metrics": {"type": "object", "properties": {"clock_mode": {"enum": ["virtual", "wall"]}, "run_state": {"enum": ["running", "paused", "ended"]}}}},
-    "Node birth: the session start or a rebirth. Declares each kind once; grants nothing."),
+    "Node birth: the session start or a rebirth. Declares each kind once and the environment of each board; grants nothing."),
  "DBIRTH": envelope("DBIRTH", "data", ["device", "kind", "board", "boot_id", "metadata_version", "birth_time_ns", "metrics"], {
     "device": ident, "kind": ident, "board": ident, "boot_id": ident, "metadata_version": u64, "birth_time_ns": i64,
     "overrides": {"type": "object", "properties": {"add": {"type": "array", "items": metric_template}, "narrow": {"type": "array", "items": {"type": "object", "required": ["name"], "properties": {"name": ident, "eu_range": rng}}}}},

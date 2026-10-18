@@ -17,7 +17,17 @@ type evidenceSlot struct {
 	value *string
 }
 
+const fieldTraceEvidence = "field_trace"
+
 func (a *RunArtifact) evidenceSlots() []evidenceSlot {
+	slots := a.recordedSlots()
+	if a.FieldTraceDigest != "" {
+		slots = append(slots, evidenceSlot{EvidenceDigest{fieldTraceEvidence, "field_trace_digest", FileFieldTrace, "", false}, &a.FieldTraceDigest})
+	}
+	return slots
+}
+
+func (a *RunArtifact) recordedSlots() []evidenceSlot {
 	return []evidenceSlot{
 		{EvidenceDigest{"trace", "expected_trace_digest", FileTrace, "", false}, &a.ExpectedTraceDigest},
 		{EvidenceDigest{"journal", "journal_digest", FileObserverJournal, "", true}, &a.JournalDigest},
@@ -40,7 +50,7 @@ func (a *RunArtifact) EvidenceDigests() []EvidenceDigest {
 
 func (a *RunArtifact) DropMalformedEvidenceDigests() {
 	for _, slot := range a.evidenceSlots() {
-		if !wellFormedDigest.MatchString(*slot.value) {
+		if slot.Name != fieldTraceEvidence && !wellFormedDigest.MatchString(*slot.value) {
 			*slot.value = ""
 		}
 	}

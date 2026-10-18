@@ -117,4 +117,6 @@ type Run struct {
 
 	envTargets map[string]string
 	allowEnv   bool
+
+	fieldTraceDigest string
 }

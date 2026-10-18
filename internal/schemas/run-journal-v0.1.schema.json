@@ -93,9 +93,9 @@
       "properties": {"quiesced_through_ns": {"type": "integer", "minimum": 0}, "verdict_submitted": {"type": "boolean"}}
     },
     "wire": {
-      "description": "Observer, session. One plant wire record as the node sent (direction node) or received (direction host) it. Outside the stream digest: the wire is reproduced by replaying the host's records.",
+      "description": "Observer, session. One plant wire record as the node sent (direction node) or received (direction host) it; in a relay session also as the relay received it from the gateway (direction gateway) or sent it to the gateway (direction relay). Outside the stream digest: the wire is reproduced by replaying the host's records.",
       "required": ["direction", "record"],
-      "properties": {"direction": {"enum": ["node", "host"]}, "record": {"type": "object"}}
+      "properties": {"direction": {"enum": ["node", "host", "gateway", "relay"]}, "record": {"type": "object"}}
     },
     "pacing": {
       "description": "Observer, session. One plant wire barrier: the NSYNC seq it covered, the wall time the node waited and whether the wall cap expired first.",

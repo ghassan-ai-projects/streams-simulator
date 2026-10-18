@@ -64,6 +64,31 @@
 - **Wire faults (P7c)**: an outbound fault plan acts on sequenced records: `drop`, `duplicate`, `swap` (with the next record)
   and `garble` (a schema-invalid record keeping its `seq`).
 
+- **Relay (R7b)**: `plantwire relay` is the simulator between an edge gateway and the real host (hardware only; the design is
+  [PHYSICAL_DEVICES §2](../design/PHYSICAL_DEVICES.md)). It is the host of one gateway link and the node of one host link, and
+  it is a different use case from the simulated node: no run, no world, no domain. The rules are the `plantwire` domain
+  layer's (`relay*.go`, a pure state machine fed one record or event at a time that returns the records to send, the lines to
+  journal and the links to close); the app layer runs the loop over a gateway link, a host link and a tick channel; the `uds`
+  edge adds the gateway's listener (`gateways.go`, one owner-only socket, one link per connection) and the tick (`ticks.go`).
+  The handshake checks are the reference host's, one predicate (`domain.Admission`) used by both. Records are carried with the
+  content they arrived with; the relay owns only the envelope (`session_id`, `seq` assigned at transmission, the `NBIRTH`'s
+  `bd_seq` and `prior_last_seq`). The barrier is mapped through a table of (gateway `seq`, relay `seq`) pairs: `NSYNC.through_seq`
+  up, `HSYNC.through_seq` down, each to the last carried record at or below it. The journal is written through
+  `run.WireTrace` (the run module owns the run folder), with the directions `gateway`, `node`, `host` and `relay`, so a field
+  trace (R8) is the `gateway` lines. Nothing here acts on a hardware record: the relay's files may not name perturbation or
+  wire fault code (`test/architecture`), and it has no option for either.
+- **Mixed node and field trace (R8)**: the relay can run a simulated world beside the gateway. The world is an ordinary node
+  `Session` (births, slices, barrier, host records into the command log) whose link is an in-process pair of mailboxes
+  (`uds/sim.go`, with the goroutine that runs it) instead of a socket; the relay's pure state machine (`relay_mixed.go`,
+  `relay_router.go`, `relay_sim.go` in the domain layer) merges the two births into one `mixed` `NBIRTH`, routes by the board
+  that announced a device, maps `NSYNC`/`HSYNC` for the world through a second table of (world `seq`, relay `seq`) pairs and
+  re-sequences everything in the relay's one host session. What a simulated record can cause is typed: `FromSim` returns a
+  `SimMoves` that has no member for the gateway, and the loop applies it with a function that has no path to the gateway link.
+  The world's own wire journaling is switched off (`Options.NoWireJournal`) because the relay journals the merged stream. The
+  field trace is written by the `run` module (`run.NewFieldTrace`, canonical lines, the digest in `run.json` as
+  `field_trace_digest`, checked with the other evidence files); `plantwire replay-trace` plays it back with every board
+  `simulated` through a pure plan (`replay_trace.go`) and a small barrier-paced player that has no gateway path.
+
 ## 2. Disposition of the review findings (REVIEW-2026-10-12 §2–§4)
 
 | Item | Where it lands |

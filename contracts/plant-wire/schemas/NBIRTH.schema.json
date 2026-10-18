@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:plant-wire:v1:NBIRTH",
   "title": "NBIRTH",
-  "description": "Node birth: the session start or a rebirth. Declares each kind once; grants nothing.",
+  "description": "Node birth: the session start or a rebirth. Declares each kind once and the environment of each board; grants nothing.",
   "type": "object",
   "required": [
     "type",
@@ -59,8 +59,10 @@
     "environment": {
       "enum": [
         "simulated",
-        "hardware"
-      ]
+        "hardware",
+        "mixed"
+      ],
+      "description": "The node's environment. simulated: every board is simulated; hardware: every board is hardware; mixed: at least one board of each. A schema cannot say that, so a host checks it at the handshake (SPEC section 2)."
     },
     "bd_seq": {
       "type": "integer",
@@ -230,12 +232,20 @@
         "type": "object",
         "required": [
           "board",
+          "environment",
           "members"
         ],
         "properties": {
           "board": {
             "type": "string",
             "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+          },
+          "environment": {
+            "enum": [
+              "simulated",
+              "hardware"
+            ],
+            "description": "What this board is: the origin of every device born on it. A claim the host checks against the node's environment (SPEC section 2), never inferred."
           },
           "members": {
             "type": "array",

@@ -1,6 +1,6 @@
 # Plant wire v1 — specification
 
-- **Status**: contract v1.1.0, pre-release. Versioning rules apply from v1; compatibility is promised from the first field
+- **Status**: contract v1.2.0, pre-release. Versioning rules apply from v1; compatibility is promised from the first field
   deployment.
 - **Scope**: the session between a **node** (a simulated world, or an edge gateway in front of hardware) and a **host** (a plant
   supervisor). Field protocols below a gateway are out of scope; section 13 maps the one this contract meets first.
@@ -24,7 +24,17 @@ Receipts, results, state queries and the time barrier are extensions Sparkplug l
 
 v1 has **no authentication**. It is therefore carried only over a Unix socket that the host creates with owner-only permissions
 (mode 0600, in a directory of mode 0700); a node refuses to dial a socket that is group- or world-accessible. TCP is not allowed
-until mutual authentication is specified. `NBIRTH.environment` (`simulated` or `hardware`) must match the host's own setting.
+until mutual authentication is specified.
+
+**Environment.** Every board in `NBIRTH.boards` carries `environment`, `simulated` or `hardware`, and the node carries one of
+`simulated`, `hardware` or `mixed`. The node's value must agree with its boards: `simulated` means every board is `simulated`,
+`hardware` means every board is `hardware`, `mixed` means at least one board of each. A schema cannot say that, so a host
+checks it at the handshake. The host has its own setting, one of the same three values. A host set to `simulated` or `hardware`
+accepts only a node of exactly that environment; a host set to `mixed` accepts all three. A node whose environment
+contradicts its boards is refused even by a `mixed` host. Any violation is refused with `environment_mismatch` (section 6), and
+the host records which rule failed. The **origin** of a device is the environment of its board (`DBIRTH` names the board);
+nothing else may infer it, so a node that carries real and simulated devices announces each on a board whose environment is the
+device's own. A node and a board only claim their environment: a host that needs the claim to be true verifies it by other means.
 
 ## 3. Envelope
 
@@ -49,7 +59,7 @@ Node → host:
 
 | Type | Lane | Carries |
 |---|---|---|
-| `NBIRTH` | control | `protocol_min`, `protocol_max`, `contract_version`, `contract_digest` (section 11), `environment`, `bd_seq`, `prior_last_seq` (last `seq` of the node's previous session, or -1), `capability_digest`, `kinds` (each entry with its `kind_digest`), `boards`, `node_metrics` |
+| `NBIRTH` | control | `protocol_min`, `protocol_max`, `contract_version`, `contract_digest` (section 11), `environment`, `bd_seq`, `prior_last_seq` (last `seq` of the node's previous session, or -1), `capability_digest`, `kinds` (each entry with its `kind_digest`), `boards` (each `{board, environment, members}`), `node_metrics` |
 | `DBIRTH` | data | `device`, `kind`, `board`, `boot_id`, `metadata_version`, `birth_time_ns`, `overrides`, the **current value** of every metric (`null` with quality `warming_up` before its first sample) |
 | `DDATA` | data | `device`, `boot_id`, `historical`, `metrics`: one or more `{alias, value, quality, event_time_ns, time_source, uncertainty_ms?, device_mono_us?}` |
 | `DDEATH` | control | `device`, `boot_id`, `reason` (`offline`, `link_down`, `retired`, `reboot`, `poll_failure`), `last_seq` |
@@ -88,6 +98,8 @@ prose, so an id cannot carry an instruction.
   inventory** (`discovered → reviewed → accepted`), never from a birth. A birth whose kind, id or command set differs from the
   commissioned one is quarantined and its commands denied. A changed `metadata_version` needs a new session and the host's
   acknowledgement before the host acts on the device.
+- A board names its `environment`; a device born on it (`DBIRTH.board`) has that origin. Origin is never read from a device
+  name, a kind, a metric or any other member.
 - `capability_digest` is `sha256:` and the SHA-256 of the RFC 8785 canonical JSON of the array of `{kind, commands}` objects,
   sorted by `kind`, each `commands` array sorted by `name`, taken from `NBIRTH.kinds`.
 - **Kind file and `kind_digest`.** A kind file is a JSON document that is exactly one `NBIRTH.kinds` entry (`kind`, `metrics`,
@@ -108,7 +120,8 @@ prose, so an id cannot carry an instruction.
 2. The host answers `STATE`. If it accepts, `protocol_version` in `STATE` is the highest version within both ranges, and every
    later record in either direction uses it. If it refuses, it sends `STATE {online: false, refusal}` with `refusal` one of
    `version_unsupported`, `contract_unsupported` (a `contract_version` below the host's minimum, or a `contract_digest` it does
-   not know at that version), `environment_mismatch`, `inventory_mismatch` (a commissioned device missing from the birth, or a `kind_digest` that does not match its entry), `protocol_invalid` (`protocol_min` above
+   not know at that version), `environment_mismatch` (the node's environment is not one the host accepts, or contradicts its
+   boards; section 2), `inventory_mismatch` (a commissioned device missing from the birth, or a `kind_digest` that does not match its entry), `protocol_invalid` (`protocol_min` above
    `protocol_max`), then closes. A node does not reconnect after a refusal without an operator's action.
 3. The node sends every `DBIRTH`, then data.
 
@@ -242,3 +255,10 @@ declares at most 256 kinds and 4096 boards of at most 4096 devices.
 | `DRESULT` `unknown` | no result before the deadline |
 | `DSTATE.safe_state` | result `safe_state`, or state query |
 | `authority_epoch`, `stale_epoch`, `policy_not_allowed` | gateway only; device firmware is unchanged |
+
+## 14. Version history
+
+| Version | Change |
+|---|---|
+| 1.2.0 | Every board in `NBIRTH.boards` carries `environment` (`simulated` or `hardware`, required); `NBIRTH.environment` gains `mixed`; the host checks the node against its boards and against its own setting, which now has the same three values (section 2). |
+| 1.1.0 | Every entry of `NBIRTH.kinds` carries a `kind_digest`; the kind file (`KIND`) is the contract of a kind (section 5). |

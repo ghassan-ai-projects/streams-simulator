@@ -40,6 +40,7 @@ type Verify struct {
 
 type Report struct {
 	Refused     string             `json:"refused,omitempty"`
+	Reason      string             `json:"reason,omitempty"`
 	Quarantined []string           `json:"quarantined"`
 	Rebirths    int                `json:"rebirths"`
 	Commands    map[string]*Status `json:"commands"`

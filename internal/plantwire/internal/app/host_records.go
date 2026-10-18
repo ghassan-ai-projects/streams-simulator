@@ -16,7 +16,7 @@ func (s *Session) process(inbound []domain.Inbound) error {
 }
 
 func (s *Session) arrive(arrival domain.Inbound) error {
-	s.run.JournalWire("host", arrival.Record)
+	s.journalWire("host", arrival.Record)
 	fresh, err := s.inOrder(&arrival)
 	if err != nil || !fresh {
 		return err

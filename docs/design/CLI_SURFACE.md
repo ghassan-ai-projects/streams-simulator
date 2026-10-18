@@ -101,6 +101,7 @@ modules (`errors.As`/`errors.Is`), never message text.
 | `manifest` | `{manifest_written, signed, sim}` |
 | `plantwire node` | `{run_id, out}`: the run the node served; its artifact and journal (with `wire` and `pacing` records) are in `out` |
 | `plantwire host` | The reference host's report: `{refused?, quarantined, rebirths, commands: {id: {receipts, result?, verified?}}}` |
+| `plantwire relay` | What the relay carried until interrupted: `{gateway_sessions, host_sessions, up, down, dropped, refused?, reason?, host_refused?}` |
 
 The exact shapes are the `$defs` of `cli-output-v0.1`; tests validate every command's real
 output against them.

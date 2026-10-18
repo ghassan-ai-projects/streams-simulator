@@ -4,6 +4,56 @@ This project has not established a formal release stream yet. Until it does, cha
 
 ## Unreleased
 
+- **The field trace as a run input, and mixed sessions.** `plantwire relay --out <dir>` now writes `field-trace.jsonl` beside
+  its journal: every record the gateway sent, in the order the relay received it, one canonical `{ordinal, record}` line
+  each and nothing else. `plantwire relay --domain <id> ...` adds the simulated world to the node: the gateway's boards
+  (`hardware`) and the world's (`simulated`) are announced in one `NBIRTH` whose `environment` is `mixed`, kinds shared by
+  name only with equal `kind_digest`s; a command goes to the board that announced its device (hardware untouched to the
+  gateway, simulated to the world, an unknown device refused `unknown_device`) and nothing the world does has a path to the
+  gateway link; a gateway that collides with the world (a device, a board, a kind with another digest) is refused
+  `inventory_mismatch` with the rule in `reason`; the gateway's records are never perturbed. The run artifact gains the
+  optional `field_trace_digest` (and `run.json` is otherwise unchanged: a run without a trace has neither member nor file,
+  and no golden or pin changed); `replay`, `verify` and `report` check the file like the other evidence (`file_differs`,
+  `file_missing`; a `field_trace` check in the report). `plantwire replay-trace --run <dir> --host-socket <path>` plays a
+  field trace to a host as a node that announces itself and every board `simulated`, with no gateway option, refusing every
+  command, barrier-paced and byte-identical between two replays. A mixed session advances the world in virtual time as
+  `plantwire node` does and is not paced to the wall clock (D-71). New CLI document `plantwire_replay`; `plantwire_relay`
+  gains `to_simulated`, `from_simulated` and `unknown_device`; the run journal contract names the directions `gateway` and
+  `relay`; the report contract names the `field_trace` check. Gate edits: the I/O edge file `uds/sim.go` is registered
+  (a goroutine and a wall-time barrier cap), two CLI wiring files registered (`plantwire_relay_options.go`,
+  `plantwire_replay.go`) and the cap of `plantwire_relay.go` lowered from 45 to 22.
+
+- **A relay between a gateway and the real host.** `plantwire relay --gateway-socket <path> --host-socket <path> [--out <dir>]`
+  is the lab shape for hardware: the simulator is the host of one gateway and the one node the real host sees. The gateway is
+  checked as the reference host checks a `hardware` node (one shared predicate, `domain.Admission`), then its birth reaches the
+  host as the relay's own: kinds with their `kind_digest`, `capability_digest`, boards and their environments, node metrics
+  unchanged. Device records go up, and the host's `STATE`, `NCMD`, `DCMD`, `DQUERY` and `HSYNC` go down, with every member
+  except the envelope as received (values, qualities, event times, boot ids, command ids and every safety member of a command);
+  `seq` is assigned by the relay at transmission, and a barrier is mapped between the two sequences through the pairs of
+  records it carried. The relay never originates, answers, refuses or delays a command, rewrites no quality and has no fault,
+  perturbation or script option (a gate keeps its files from naming that code; `replay`, `run`, `scenario` and `plantwire node`
+  take no gateway option). A lost host is reported to the gateway as offline with its session kept, and a rebirth follows when
+  the host is back (three missed heartbeats count as loss); a lost gateway has each born device reported `DDEATH link_down`
+  while the host session is kept. With `--out` every record on both links is journaled as observer `wire` records (directions
+  `gateway`, `node`, `host`, `relay`; a carried record is two consecutive lines); `kind capture` reads that journal. New CLI
+  document `plantwire_relay`; the run module gains `WireTrace` (a journal without a world); the reference host's handshake
+  checks moved to `domain.Admission` with no change in behaviour. Gate edits: two plant wire edge files registered as I/O edges
+  (`uds/gateways.go`, `uds/ticks.go`), `plantwire_relay.go` registered as a CLI wiring file (cap 45), and a new gate that
+  keeps the relay's files from naming perturbation or wire fault code.
+
+- **Plant wire 1.2.0: every board names its environment.** `NBIRTH.boards[].environment` (`simulated` or `hardware`) is
+  required and `NBIRTH.environment` gains `mixed`; a device's origin is the environment of its board, never inferred. The
+  reference host checks that a `simulated` node has only simulated boards, a `hardware` node only hardware boards and a
+  `mixed` node at least one of each, and that the node is one it is set to accept: `plantwire host --environment` now
+  takes `simulated`, `hardware` or `mixed` (`mixed` accepts all three; any other value fails before the host listens).
+  A violation is refused as `environment_mismatch` and the host report says which rule in `reason`. `kind capture` shares
+  the node-versus-boards check, refuses a contradicting birth and prints `boards: [{board, environment}]` beside the
+  node's `environment`, both claims. A simulated node announces `simulated` for itself and all its boards and cannot be
+  made to announce `hardware` or `mixed`. The contract generators, the fixtures (eight `environment-*` exchanges, whose
+  header may carry `host_environment`, and two invalid births), the contract digest and the embedded schemas moved
+  together; the `NBIRTH` bytes of a wire journal change (`contract_version`, `boards[].environment`), and nothing else in a
+  simulated run does (the behaviour pin holds no wire run).
+
 - **A kind can be captured from a birth.** `kind capture (<file> | --stdin) [--kinds-dir <dir>]...` reads the first
   `NBIRTH` of a file (bare, or the `wire` records of a run's observer journal; streamed line by line, a line at most
   1 MiB, a scan at most 32 MiB) and prints `{environment, bd_seq, births_seen, taken, later_births?, issues?, kinds}`:

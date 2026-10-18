@@ -13,6 +13,16 @@ type HostOptions = host.Options
 
 type HostReport = host.Report
 
+type RelayOptions = app.RelayOptions
+
+type RelayStats = domain.RelayStats
+
+type SimulatedOptions = app.SimulatedOptions
+
+type ReplayOptions = app.ReplayOptions
+
+type ReplayStats = app.ReplayStats
+
 type Scripted = host.Scripted
 
 type Verify = host.Verify
@@ -35,6 +45,7 @@ var (
 	ErrNoBirth          = domain.ErrNoBirth
 	ErrBirthRefused     = domain.ErrBirthRefused
 	ErrSealedStream     = domain.ErrSealedStream
+	ErrNoReplayBirth    = domain.ErrNoReplayBirth
 	ErrNotObserver      = domain.ErrNotObserver
 	ErrHostLost         = app.ErrHostLost
 	ErrHostGap          = app.ErrHostGap

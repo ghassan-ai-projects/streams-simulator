@@ -69,6 +69,15 @@ func TestKindCaptureDraftsTheKindsOfARecordedNodeAndComparesThemWithTheKindFiles
 		plain["births_seen"] != float64(1) || taken["bd_seq"] != float64(0) || taken["line"].(float64) < 1 || plain["later_births"] != nil {
 		t.Fatalf("kind capture = %v, want the draft of pump without kind_digest or comparison from the one simulated birth, with its provenance", plain)
 	}
+	boards, _ := plain["boards"].([]any)
+	for _, board := range boards {
+		if fields, _ := board.(map[string]any); fields["board"] == "" || fields["environment"] != "simulated" {
+			t.Fatalf("board = %v, want it echoed with the environment it claims, simulated", board)
+		}
+	}
+	if len(boards) == 0 {
+		t.Fatalf("capture = %v, want the boards of the simulated node echoed", plain)
+	}
 	if claims, _ := pump["claims"].([]any); len(claims) == 0 {
 		t.Fatalf("pump = %v, want the members the board claimed listed", pump)
 	}

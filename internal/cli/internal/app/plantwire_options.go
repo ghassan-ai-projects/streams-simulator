@@ -28,7 +28,7 @@ func parsePlantWireNodeOptions(args []string, stderr io.Writer) (plantWireNodeOp
 
 func registerPlantWireNodeFlags(fs *flag.FlagSet, o *plantWireNodeOptions) {
 	fs.StringVar(&o.hostSocket, "host-socket", "", "the host's owner-only unix socket (required)")
-	fs.StringVar(&o.domain, "domain", "", "domain id (required)")
+	fs.StringVar(&o.domain, "domain", "", "domain id (required by node; on a relay it adds the simulated world beside the gateway's boards)")
 	registerDomainsDir(fs, &o.domainsDir, "domains")
 	fs.StringVar(&o.adapter, "adapter", "native-jsonl", "adapter id")
 	registerAdaptersDir(fs, &o.adaptersDir, "adapters")
@@ -64,7 +64,7 @@ func registerPlantWireHostFlags(fs *flag.FlagSet, o *plantWireHostOptions) {
 	fs.StringVar(&o.socket, "socket", "", "unix socket to listen on, created owner-only (required)")
 	fs.StringVar(&o.script, "script", "", "JSON array of scripted commands")
 	fs.StringVar(&o.inventory, "inventory", "", "JSON object of commissioned devices to kinds")
-	fs.StringVar(&o.environment, "environment", "simulated", "environment the host accepts")
+	fs.StringVar(&o.environment, "environment", "simulated", "environment the host accepts: simulated, hardware or mixed (a mixed host accepts all three)")
 	fs.StringVar(&o.policy, "policy", "", "policy digest the host signs commands with")
 	fs.Int64Var(&o.epoch, "epoch", 1, "authority epoch")
 	fs.Int64Var(&o.delayMS, "delay-ms", 0, "wall delay before each barrier answer")

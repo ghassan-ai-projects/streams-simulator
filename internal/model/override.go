@@ -55,4 +55,5 @@ type Board struct {
 	Name        string   `json:"name"`
 	Members     []string `json:"members"`
 	Description string   `json:"description,omitempty"`
+	Environment string   `json:"-"`
 }

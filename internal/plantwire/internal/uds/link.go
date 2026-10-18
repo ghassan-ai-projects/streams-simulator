@@ -32,10 +32,32 @@ func Dial(ctx context.Context, path string, wait time.Duration) (*Link, error) {
 	if err != nil {
 		return nil, fmt.Errorf("plantwire: %w", err)
 	}
-	link := &Link{conn: conn, writer: bufio.NewWriter(conn), incoming: make(chan domain.Inbound, 64), done: make(chan struct{}), wait: wait}
+	link := NewAccepted(conn, wait)
 	link.stop = context.AfterFunc(ctx, func() { _ = conn.Close() })
-	go link.read()
 	return link, nil
+}
+
+func NewAccepted(conn net.Conn, wait time.Duration) *Link {
+	link := &Link{conn: conn, writer: bufio.NewWriter(conn), incoming: make(chan domain.Inbound, 64), done: make(chan struct{}), wait: wait}
+	link.stop = func() bool { return false }
+	go link.read()
+	return link
+}
+
+func (l *Link) Incoming() <-chan domain.Inbound { return l.incoming }
+
+func (l *Link) Expect(within time.Duration) error {
+	if err := l.conn.SetReadDeadline(time.Now().Add(within)); err != nil {
+		return fmt.Errorf("plantwire: read deadline: %w", err)
+	}
+	return nil
+}
+
+func (l *Link) Settle() error {
+	if err := l.conn.SetReadDeadline(time.Time{}); err != nil {
+		return fmt.Errorf("plantwire: read deadline: %w", err)
+	}
+	return nil
 }
 
 func (l *Link) Close() error {

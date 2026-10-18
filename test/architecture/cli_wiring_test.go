@@ -77,6 +77,10 @@ var cliAppFiles = map[string]cliFile{
 	"suite.go":              {"command: suite", []string{"internal/suite"}, 80},
 	"plantwire.go":          {"command: plantwire node and host", []string{cliF, "internal/model", "internal/plantwire", "internal/run"}, 110},
 	"plantwire_options.go":  {"option parsing", []string{"internal/plantwire"}, 85},
+	"plantwire_relay.go":    {"command: plantwire relay", []string{"internal/plantwire"}, 22},
+
+	"plantwire_relay_options.go": {"option parsing", []string{"internal/plantwire"}, 46},
+	"plantwire_replay.go":        {"command: plantwire replay-trace", []string{"internal/plantwire"}, 46},
 }
 
 // cliEdge declares what one of the CLI's own edges may import and how large it

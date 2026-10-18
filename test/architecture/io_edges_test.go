@@ -56,14 +56,17 @@ var ioEdges = map[string]ioEdge{
 	"internal/canvasbridge/internal/transport/routes.go":    {uses: []string{"import:net/http"}, why: "the canvas API routes and the built UI"},
 	"internal/canvasbridge/internal/transport/transport.go": {uses: []string{"go-statement", "import:net", "import:net/http", "import:os"}, why: "loopback listener served until the context ends; the UI folder opened as an os.Root"},
 
-	"internal/run/internal/quiesce/quiesce.go":  {uses: []string{"call:time.NewTimer"}, why: "wall-clock deadline for await_consumer waits"},
-	"internal/cli/internal/process/process.go":  {uses: []string{"call:time.Now", "import:os"}, why: "standard streams and wall clock of the running process"},
-	"internal/testsupport/testsupport.go":       {uses: []string{"import:os"}, why: "repository root discovery and short socket directories for tests"},
-	"internal/device/internal/uds/uds.go":       {uses: []string{"go-statement", "import:net"}, why: "unix socket listener, accept loop and session"},
-	"internal/device/internal/uds/serve.go":     {uses: []string{"import:net", "import:os"}, why: "device socket served until the process is interrupted"},
-	"internal/plantwire/internal/uds/link.go":   {uses: []string{"call:time.Now", "go-statement", "import:net"}, why: "plant wire node: dial the host's owner-only socket (owner checked), read its records, write with a deadline"},
-	"internal/plantwire/internal/uds/await.go":  {uses: []string{"call:time.NewTimer", "call:time.Now", "call:time.Since"}, why: "wall-time cap of the plant wire barrier and the wait it measured"},
-	"internal/plantwire/internal/uds/listen.go": {uses: []string{"call:time.After", "call:time.Now", "import:net", "import:os"}, why: "reference host: owner-only socket published by rename, one node session, a handshake deadline, delayed barrier answers"},
+	"internal/run/internal/quiesce/quiesce.go":    {uses: []string{"call:time.NewTimer"}, why: "wall-clock deadline for await_consumer waits"},
+	"internal/cli/internal/process/process.go":    {uses: []string{"call:time.Now", "import:os"}, why: "standard streams and wall clock of the running process"},
+	"internal/testsupport/testsupport.go":         {uses: []string{"import:os"}, why: "repository root discovery and short socket directories for tests"},
+	"internal/device/internal/uds/uds.go":         {uses: []string{"go-statement", "import:net"}, why: "unix socket listener, accept loop and session"},
+	"internal/device/internal/uds/serve.go":       {uses: []string{"import:net", "import:os"}, why: "device socket served until the process is interrupted"},
+	"internal/plantwire/internal/uds/link.go":     {uses: []string{"call:time.Now", "go-statement", "import:net"}, why: "plant wire node: dial the host's owner-only socket (owner checked), read its records, write with a deadline"},
+	"internal/plantwire/internal/uds/await.go":    {uses: []string{"call:time.NewTimer", "call:time.Now", "call:time.Since"}, why: "wall-time cap of the plant wire barrier and the wait it measured"},
+	"internal/plantwire/internal/uds/listen.go":   {uses: []string{"call:time.After", "call:time.Now", "import:net", "import:os"}, why: "reference host: owner-only socket published by rename, one node session, a handshake deadline, delayed barrier answers"},
+	"internal/plantwire/internal/uds/gateways.go": {uses: []string{"go-statement", "import:net", "import:os"}, why: "relay: the gateway's owner-only socket published by the relay and accepted until closed, one link per connection"},
+	"internal/plantwire/internal/uds/ticks.go":    {uses: []string{"call:time.NewTicker"}, why: "relay: wall-clock ticks that count missed heartbeats and pace the redial of a lost host"},
+	"internal/plantwire/internal/uds/sim.go":      {uses: []string{"call:time.NewTimer", "call:time.Now", "call:time.Since", "go-statement"}, why: "mixed relay: the in-process link to the simulated node, its wall-time barrier cap and the goroutine that runs the node's session"},
 }
 
 func TestIOStaysInDeclaredEdges(t *testing.T) {

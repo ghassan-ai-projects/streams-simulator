@@ -13,13 +13,19 @@ import (
 var ErrBirthRefused = errors.New("plantwire: the birth is refused")
 
 type Capture struct {
-	Environment string         `json:"environment"`
-	BDSeq       uint64         `json:"bd_seq"`
-	BirthsSeen  int            `json:"births_seen"`
-	Taken       Provenance     `json:"taken"`
-	LaterBirths []LaterBirth   `json:"later_births,omitempty"`
-	Issues      []model.Issue  `json:"issues,omitempty"`
-	Kinds       []CapturedKind `json:"kinds"`
+	Environment string          `json:"environment"`
+	Boards      []CapturedBoard `json:"boards"`
+	BDSeq       uint64          `json:"bd_seq"`
+	BirthsSeen  int             `json:"births_seen"`
+	Taken       Provenance      `json:"taken"`
+	LaterBirths []LaterBirth    `json:"later_births,omitempty"`
+	Issues      []model.Issue   `json:"issues,omitempty"`
+	Kinds       []CapturedKind  `json:"kinds"`
+}
+
+type CapturedBoard struct {
+	Board       string `json:"board"`
+	Environment string `json:"environment"`
 }
 
 type Provenance struct {
@@ -110,7 +116,16 @@ func claimIssues(m Message) []model.Issue {
 	if ContractUnsupported(m) {
 		issues = append(issues, contractIssue(m))
 	}
-	return append(append(issues, digestIssues(m.Kinds)...), duplicateIssues(m.Kinds)...)
+	issues = append(append(issues, environmentIssues(m)...), digestIssues(m.Kinds)...)
+	return append(issues, duplicateIssues(m.Kinds)...)
+}
+
+func environmentIssues(m Message) []model.Issue {
+	fault := EnvironmentClaimFault(m)
+	if fault == nil {
+		return nil
+	}
+	return []model.Issue{model.RuleIssue(fault.Pointer, "environment_mismatch", "environment", fault.Reason)}
 }
 
 func contractIssue(m Message) model.Issue {
@@ -159,7 +174,15 @@ func capturedFrom(m Message) Capture {
 		entry, _ := kind.(map[string]any)
 		kinds[i] = capturedKind(entry)
 	}
-	return Capture{Environment: m.Environment, BDSeq: m.BDSeq, Kinds: kinds}
+	return Capture{Environment: m.Environment, Boards: capturedBoards(m.Boards), BDSeq: m.BDSeq, Kinds: kinds}
+}
+
+func capturedBoards(boards []Board) []CapturedBoard {
+	captured := make([]CapturedBoard, len(boards))
+	for i, board := range boards {
+		captured[i] = CapturedBoard{Board: board.Board, Environment: board.Environment}
+	}
+	return captured
 }
 
 func capturedKind(entry map[string]any) CapturedKind {

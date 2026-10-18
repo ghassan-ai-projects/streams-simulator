@@ -6,7 +6,7 @@
 | `invalid/` | `{schema, fails_at, record}`: a record that breaks one rule, and the member where it breaks | Refuses each (`malformed`), at that member |
 | `must-ignore/` | `{schema, record}` with members no schema knows | Accepts each and ignores the extra members |
 | `injection/` | `{schema, expect, record}` with hostile strings in descriptions and string values | Accepts each as data, quotes the strings when showing them to a model, takes no action from them |
-| `exchanges/` | JSON Lines: a header `{exchange, summary, gap?}`, then steps; `seq` runs from 0 by 1 per direction unless the header declares `gap` | Reproduces the expected reactions |
+| `exchanges/` | JSON Lines: a header `{exchange, summary, gap?, host_environment?}`, then steps; `seq` runs from 0 by 1 per direction unless the header declares `gap`; `host_environment` (`simulated`, `hardware` or `mixed`, default `simulated`) is the environment the host under test is set to (SPEC section 2) | Reproduces the expected reactions |
 
 An exchange step is one of:
 
@@ -22,6 +22,12 @@ purpose; `NBIRTH` carries the real `contract_digest` (this folder's `DIGEST`), `
 `kind_digest` (`invalid/KIND-has-kind-digest.json`, even a correct one): the digest is computed from the file, and a stale
 member must not be accepted and ignored. A kind file's metric ranges also need `min` below `max`; a schema cannot say that,
 so a conformant side checks it as well.
+
+The `environment-*` exchanges cover SPEC section 2: which node a host of each environment accepts, and the node-versus-boards
+invariants (a `simulated` node has only simulated boards, a `hardware` node only hardware boards, a `mixed` node at least one
+of each), which a schema cannot say and a host checks at the handshake; a contradiction is refused even by a `mixed` host.
+`invalid/NBIRTH-board-no-environment.json` and `invalid/NBIRTH-board-unknown-environment.json` cover the schema side: every
+board names its environment, and a board is `simulated` or `hardware`, never `mixed`.
 
 The `lying-result-*` exchanges cover one command per class (setpoint, start, safe stop): the device reports success while the
 observations do not move. `verified-result` is the positive control: the observation moves, so the host counts it done.
