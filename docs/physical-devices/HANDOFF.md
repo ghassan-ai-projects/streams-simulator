@@ -1,4 +1,4 @@
-# Handoff — physical-devices goal, state at the end of the first session (2026-10-18)
+# Handoff — physical-devices goal, state at the end of M3 (2026-10-18)
 
 Read first, in this order: [GOAL.md](GOAL.md) (outcome, rounds R1–R13, quality bar, round log),
 [../design/PHYSICAL_DEVICES.md](../design/PHYSICAL_DEVICES.md) (the design and as-built notes),
@@ -8,42 +8,34 @@ Read first, in this order: [GOAL.md](GOAL.md) (outcome, rounds R1–R13, quality
 
 | Branch | Holds | State |
 |---|---|---|
-| `simulator-new-vision` | M1, M2 (R1–R6b), review and CI fixes | [PR 44](https://github.com/ghassan-ai-projects/streams-simulator/pull/44), open, **not merged**; last full `make phase-gate` green |
-| `physical-devices-m3` | R7a, R7b, R8 | pushed; R8 finished with green `make phase-gate` |
+| `simulator-new-vision` | M1, M2 (R1–R6b), review and CI fixes | [PR 44](https://github.com/ghassan-ai-projects/streams-simulator/pull/44), open, **not merged** |
+| `physical-devices-m3` | R7a, R7b, R8 | pushed; `make phase-gate` green |
+| `physical-devices-r9` | M3 complete: R9 and the M3 review fixes, on top of `physical-devices-m3` | [PR 46](https://github.com/ghassan-ai-projects/streams-simulator/pull/46) to `main`, open; `make phase-gate` green |
 
-Nothing is merged to `main`. The owner merges everything when the whole goal is done and the owner has tested
-(hardware and product feel are the owner's to test at the end; do not pause for owner tests mid-goal). Cut the next
-branch (`physical-devices-m4`, ...) from the previous tip at each milestone and push it.
+Nothing is merged to `main`; the owner merges at the end. **Start M4 by cutting `physical-devices-m4` from the tip of
+`physical-devices-r9`** and push it.
 
-## R8 — what is written, what fails
+## M3 — done (2026-10-18)
 
-Written (see the R8 row of GOAL.md and PHYSICAL_DEVICES.md as-built notes): the field trace as a run input
-(`field-trace.jsonl`, `field_trace_digest` in the run artifact, optional so existing runs are byte-identical), a mixed
-relay (`plantwire relay --domain ...`: one node, gateway boards `hardware` plus simulated boards, commands routed by the
-board's origin, no code path from the simulated side to the gateway link), and `plantwire replay-trace` (a recording
-replays as simulated boards only; every command is refused).
+R7a–R9 committed; two-lens review (A correctness/architecture, B adversarial), canvas code-quality review and a
+real-Chrome design review (1280/1440, light/dark) with a re-review; every High fixed. See the GOAL.md round log
+(R8, R9, "M3 review fixes") and the PHYSICAL_DEVICES.md as-built notes for R9 and the review fixes.
 
-Open before R8 can be committed as done (from the last Haiku gate run):
+Carried into R10 (live mode, command lifecycle, connection health), owner-visible gaps found in the M3 reviews:
 
-1. `test/architecture` T4: `internal/plantwire/internal/app/relay_mixed_faults_test.go` has one test that only asserts
-   that an error occurred — assert the specific error.
-2. `test/architecture` facade rule: `internal/run/service.go` `OpenFieldTrace` does more than delegate — move the logic
-   into the run module's app layer; the facade is one delegating call.
-3. `test/architecture` function length: `internal/plantwire/internal/app/relay_loop.go` `relayLoop.step` has an 18-line
-   body (a `select` with 7 cases); it needs a design decision (group the sim ready/finished channels, or split by
-   event source into named steps) — do not compress statements.
-4. A flaky test: `TestACommandDuringAReplayIsRefusedAndReachesNothing` (`internal/plantwire/internal/app/replay_trace_test.go:141`)
-   fails 2 of 3 isolated runs: the `unknown_device` receipt is sometimes missing from the snapshot — a race in the replay
-   player or in the test's wait; fix the cause, not the test timing alone.
-5. Coverage floors (never lower them): `internal/plantwire` facade 92.3% vs 99; `internal/plantwire/internal/uds` 66.7%
-   vs 90; `internal/run/internal/durable` 63.9% vs 70; `internal/plantwire/internal/app` unknown until the tests pass.
-   Add tests for the new code.
-6. Not done by the R8 agent: D-71 (mixed-session wall-clock pacing, deliberately deferred by the owner), D-72 (the
-   world part of a mixed recording is reproduced by `replay`, not streamed by `replay-trace`), the canvasbridge run-file
-   lists and `documentation/reference/contracts.md` for the new file/members, and the R8 commit hash in the GOAL.md round
-   log (it says "(this round)").
+1. A reload during a live session gives no affordance: no top-bar session indicator, no "running" chip leading back to
+   the live panel (design review M4/N9).
+2. The plant screen shows no origin marks or live state while a session runs (M11).
+3. The live review uses alarming copy: an amber "Running" badge, "Incomplete: run.json is absent", "Not checked"; it
+   should read as live, with verification after Stop (N5).
+4. "Connected session" and the plan's simulated instances are bridge memory (`RunEntry.connected`, `RunEntry.Plan`): after
+   a bridge restart an old session lists as Evaluate and its simulated instances as "Origin unknown". Record the session
+   mode (and the plan check) in the run itself, e.g. in `run.opened` or the artifact, and read it from there.
+5. A blank row above the live status line in the Run panel; the Run panel's scroll area at 1280 is about 370 px.
+6. D-73 (no gateway liveness watchdog: a silent but connected gateway is never noticed) belongs to connection health.
 
-Then the usual: Haiku gate run, fill the round log, commit, push, and run `make phase-gate` before M3's review.
+Also open: D-71, D-72, D-74–D-76 (DEFERRED.md). The canvas `schema_version: "0.1"` of the session plan is a canvas
+constant because neither the bridge nor the binary supplies it.
 
 ## Remaining rounds (details in GOAL.md)
 
@@ -87,6 +79,18 @@ design review at 1280 and 1440 px, light and dark) and a green `make phase-gate`
 - Contract files under `contracts/plant-wire` are generated from `scripts/plant-wire/{schemas,fixtures}.py`; regenerate
   with the commands in `scripts/plant-wire/README.md` (schemas.py, then fixtures.py > DIGEST, then copy the schemas to
   `internal/plantwire/contract/schemas`).
+- `make build` also builds `bin/standin-gateway` (a test binary of `internal/plantwire/internal/app`, run with
+  `--standin-gateway`), which the canvas e2e uses as the board. A by-hand bench: an owner-only directory (`mkdir -m 700`),
+  `bin/streams-simulator plantwire host --socket D/h.sock --environment mixed --delay-ms 100`, `bin/streams-simulator canvas
+  --ui-dir canvas/dist --workspace W --addr 127.0.0.1:7788` (W holds `domains/` with
+  `examples/devices/thermal-board/thermal-board.domain.json` as `arduino-thermal.domain.json` and `kinds/` with its kind
+  files), then after the session starts `bin/standin-gateway --standin-gateway --socket D/g.sock --kinds-dir
+  examples/devices/thermal-board --board uno-07 --device zone-01:thermal_sensor:61` (another device id gives a refusal).
+- Under `-cover` (`make phase-gate`), a re-executed test binary prints a `GOCOVERDIR` warning on stderr: never compare a
+  child's stderr exactly.
+- Canvas: the emitted-CSS oracle checks module import order; a new component importing a graph stylesheet early puts
+  `graph` before `vendor-react-flow`. Keeping inactive panes mounted duplicates labels (two "Seed" inputs) and breaks
+  locators; unmount them and keep drafts in the store.
 - The thermal LED/fan experiment must stay green (`go test ./internal/device/... ./internal/deviceworld/... ./test/contract/...`).
 
 ## Not in this repository (handoff briefs are part of R13)
